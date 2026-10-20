@@ -1938,3 +1938,13 @@ html[data-lite-scene] .tod__leaves-drift {
 html[data-lite-scene] .cloud-shadow__blob {
   display: none;
 }
+
+/* Sin capa fija ni sombra gigante alrededor del mundo: el navegador lo pinta a su tamaño real en pantalla */
+html[data-lite-scene] .world {
+  will-change: auto;
+  box-shadow: none;
+}
+
+html[data-lite-scene] .room-camera[data-view='SHELF_VIEW'] .world {
+  filter: none;
+}

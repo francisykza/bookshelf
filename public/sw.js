@@ -2,7 +2,7 @@
 // - Páginas: primero la red (para recibir versiones nuevas), y si no hay conexión, la copia guardada.
 // - Recursos propios (JS/CSS con hash, la ilustración, las figuras): primero la caché.
 // - Portadas de Open Library / Google Books: se sirven de caché y se refrescan por detrás.
-const VERSION = 'bookshelf-v1.16.1';
+const VERSION = 'bookshelf-v1.16.2';
 const CORE = ['/', '/index.html', '/manifest.webmanifest', '/cozy-book-room.png', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/figures/catalog.json'];
 
 self.addEventListener('install', (event) => {

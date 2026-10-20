@@ -192,7 +192,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
         <SwayFilter id="f-clouds" region={CLOUD_REGION} keyMatrix={NOT_WOOD_KEY} freq="0.006 0.012" amp={14} dur="22s" seed="2" />
 
         {/* Noche: cielo, mar, nubes y flores exteriores pasan a azul de luna; la madera conserva la luz de dentro */}
-        <filter id="f-night" x="0" y="0" width="1" height="1" colorInterpolationFilters="sRGB">
+        <filter id="f-night" filterUnits="userSpaceOnUse" x="315" y="0" width="669" height="820" colorInterpolationFilters="sRGB">
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.5 -1.5 3 0 0" result="blue" />
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 1 1 0 -2.1" result="white" />
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -6 9 -3 0 -0.2" result="leaf" />
@@ -208,7 +208,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
         </filter>
 
         {/* Atardecer: el cielo se vuelve melocotón y rosa; el mar, malva con reflejos ámbar */}
-        <filter id="f-sunset-sky" x="0" y="0" width="1" height="1" colorInterpolationFilters="sRGB">
+        <filter id="f-sunset-sky" filterUnits="userSpaceOnUse" x="300" y="0" width="684" height="606" colorInterpolationFilters="sRGB">
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.5 -1.5 3 0 0.05" result="key" />
           <feColorMatrix
             in="SourceGraphic"
@@ -218,7 +218,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
           />
           <feComposite in="peach" in2="key" operator="in" />
         </filter>
-        <filter id="f-sunset-sea" x="0" y="0" width="1" height="1" colorInterpolationFilters="sRGB">
+        <filter id="f-sunset-sea" filterUnits="userSpaceOnUse" x="300" y="606" width="684" height="214" colorInterpolationFilters="sRGB">
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.5 -1.5 3 0 0" result="key" />
           <feColorMatrix
             in="SourceGraphic"
@@ -230,10 +230,10 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
         </filter>
 
         {/* Llave del cielo como máscara: las estrellas solo se ven sobre azul abierto */}
-        <filter id="f-skykey" x="0" y="0" width="1" height="1" colorInterpolationFilters="sRGB">
+        <filter id="f-skykey" filterUnits="userSpaceOnUse" x="300" y="0" width="684" height="606" colorInterpolationFilters="sRGB">
           <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -2 -2 4 0 -0.1" />
         </filter>
-        <mask id="m-sky" maskUnits="userSpaceOnUse" x="0" y="0" width={SCENE_W} height={SCENE_H}>
+        <mask id="m-sky" maskUnits="userSpaceOnUse" x="300" y="0" width="684" height="606">
           <g clipPath="url(#clip-sky-top)">
             <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter="url(#f-skykey)" />
           </g>
