@@ -1948,3 +1948,14 @@ html[data-lite-scene] .world {
 html[data-lite-scene] .room-camera[data-view='SHELF_VIEW'] .world {
   filter: none;
 }
+
+/* Sin desenfoque de fondo (backdrop-filter) en móvil: sobre paneles largos con scroll el navegador del
+   teléfono deja bloques sin pintar. El velo pasa a ser un degradado cálido algo más opaco. */
+html[data-lite-scene] * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-lite-scene] .panel-veil {
+  background: radial-gradient(ellipse at 50% 60%, rgb(120 78 40 / 0.55), rgb(30 16 8 / 0.78) 75%);
+}

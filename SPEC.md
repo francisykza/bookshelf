@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.16.2 · 2026-10-20 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.16.3 · 2026-10-20 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -515,6 +515,8 @@ con el primer toque o tecla en la página; los auriculares lo silencian.
   En modo ligero el mundo tampoco lleva `will-change` ni la sombra de 120 px, y la librería no desenfoca la
   habitación: así el navegador no reserva superficies del tamaño de la ilustración a densidad de pantalla.
   Los tintes de noche y atardecer y la máscara del cielo limitan su región al área que cubren (1.16.2).
+  Tampoco hay `backdrop-filter` en modo ligero (1.16.3): sobre los paneles largos con scroll el móvil dejaba
+  bloques sin pintar; el velo de los paneles es un degradado cálido más opaco.
 - **Diagnóstico** (1.16.2): con `?diag` en la dirección aparece una ficha con la versión, el modo de escena,
   pantalla y DPR, memoria, tamaño máximo de textura y modelo de GPU, si la ilustración cargó y si hay
   service worker, para capturarla desde el teléfono.
