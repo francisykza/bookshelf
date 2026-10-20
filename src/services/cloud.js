@@ -17,16 +17,19 @@ export function getClient() {
   return clientPromise;
 }
 
-/** Envía el correo con el código de 6 dígitos (y el enlace, que sirve si se abre en este mismo navegador). */
-export async function sendCode(email) {
+/** Crea la cuenta. Devuelve true si ya hay sesión, false si falta confirmar el correo. */
+export async function signUp(email, password) {
   const sb = await getClient();
-  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
+  const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
   if (error) throw error;
+  // Supabase no revela si el correo ya existía: en ese caso devuelve un usuario sin identidades
+  if (data.user && data.user.identities?.length === 0) throw new Error('User already registered');
+  return Boolean(data.session);
 }
 
-export async function verifyCode(email, token) {
+export async function signIn(email, password) {
   const sb = await getClient();
-  const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
+  const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw error;
 }
 

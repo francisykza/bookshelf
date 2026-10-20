@@ -530,11 +530,13 @@ seguridad la da RLS. Sin estas variables la app funciona igual que antes, solo e
 `version`, `updated_at` puesto por el servidor con un trigger). RLS: cada usuario solo puede leer y
 escribir su propia fila.
 
-**Inicio de sesión sin contraseña.** Correo → código de 6 dígitos que se escribe en la app
-(`signInWithOtp` + `verifyOtp`). Se usa el código y no solo el enlace porque en iPhone la app instalada
-y Safari no comparten almacenamiento: un enlace abriría la sesión en Safari, no en la app. La plantilla
-de correo de Supabase debe incluir `{{ .Token }}`. El cliente de Supabase se carga bajo demanda
-(import dinámico), solo si la nube está configurada.
+**Inicio de sesión con correo y contraseña** (`signUp` / `signInWithPassword`). Crear la cuenta manda un
+único correo de confirmación con la plantilla por defecto de Supabase (un enlace); después se entra con la
+contraseña desde cualquier dispositivo, también desde la app instalada en iPhone (que no comparte
+almacenamiento con Safari, por eso no se usa enlace mágico). El servidor de correo gratuito de Supabase no
+deja editar plantillas ni enviar más de unos pocos correos por hora: bastan para confirmar cuentas. La
+recuperación de contraseña queda para cuando la app se abra al público (requiere SMTP propio). El cliente
+de Supabase se carga bajo demanda (import dinámico), solo si la nube está configurada.
 
 **Sincronización** (`state/cloudSync.jsx`, `CloudProvider`):
 - El `localStorage` sigue siendo la fuente inmediata: la app abre y funciona sin conexión.

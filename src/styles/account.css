@@ -99,13 +99,6 @@
   font-size: 1rem;
 }
 
-.account-form input#account-code {
-  font-family: var(--font-mono);
-  font-size: 1.4rem;
-  letter-spacing: 0.3em;
-  text-align: center;
-}
-
 .account-row {
   display: flex;
   flex-wrap: wrap;

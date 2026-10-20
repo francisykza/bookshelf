@@ -1,8 +1,8 @@
-// «Tu cuenta» (SPEC §9ter, 1.16.0): entrar con el correo y un código, estado de la sincronización, elección
+// «Tu cuenta» (SPEC §9ter, 1.16.0): entrar con correo y contraseña, estado de la sincronización, elección
 // cuando hay dos versiones y copias en archivo (exportar / importar). Ficha de papel algodón como los menús.
-import { CloudCheck, CloudOff, Download, KeyRound, LogOut, Mail, RefreshCw, Upload } from 'lucide-react';
+import { CloudCheck, CloudOff, Download, KeyRound, LogOut, RefreshCw, Upload, UserPlus } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { sendCode, verifyCode } from '../../services/cloud';
+import { signIn, signUp } from '../../services/cloud';
 import { useCloud } from '../../state/cloudSync';
 import { hydrate, useLibrary } from '../../state/useLibrary';
 import { PanelShell } from './PanelShell';
@@ -39,75 +39,76 @@ function Version({ title, s, onPick, label }) {
   );
 }
 
+const authError = (text) => {
+  if (/invalid login credentials/i.test(text)) return 'Correo o contraseña incorrectos.';
+  if (/email not confirmed/i.test(text)) return 'Aún no has confirmado tu correo: abre el enlace que te enviamos y vuelve a entrar.';
+  if (/already registered/i.test(text)) return 'Ya hay una cuenta con ese correo. Entra con tu contraseña.';
+  if (/password should be|weak/i.test(text)) return 'La contraseña es demasiado corta o sencilla (mínimo 8 caracteres).';
+  if (/rate limit|security purposes/i.test(text)) return 'Demasiados intentos seguidos. Espera un poco y vuelve a probar.';
+  if (/fetch|network/i.test(text)) return 'No hay conexión con la nube.';
+  return text;
+};
+
 function SignIn() {
+  const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [step, setStep] = useState('email');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [info, setInfo] = useState('');
+  const signup = mode === 'signup';
 
-  const run = async (fn) => {
+  const submit = async (event) => {
+    event.preventDefault();
     setBusy(true);
     setMsg('');
+    setInfo('');
     try {
-      await fn();
+      if (signup) {
+        const inside = await signUp(email.trim(), password);
+        if (!inside) {
+          setInfo(`Te hemos enviado un correo a ${email.trim()}. Abre el enlace para confirmar tu cuenta y después entra aquí con tu contraseña.`);
+          setMode('login');
+        }
+      } else {
+        await signIn(email.trim(), password);
+      }
     } catch (err) {
-      const text = String(err?.message ?? err);
-      setMsg(/rate limit|security purposes/i.test(text) ? 'Demasiados intentos seguidos. Espera un poco.' : /expired|invalid/i.test(text) ? 'El código no es válido o ha caducado.' : text);
+      setMsg(authError(String(err?.message ?? err)));
     } finally {
       setBusy(false);
     }
   };
 
-  if (step === 'email') {
-    return (
-      <form
-        className="account-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          run(async () => {
-            await sendCode(email.trim());
-            setStep('code');
-          });
+  return (
+    <form className="account-form" onSubmit={submit}>
+      <label htmlFor="account-email">Correo</label>
+      <input id="account-email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@correo.com" />
+      <label htmlFor="account-password">Contraseña</label>
+      <input
+        id="account-password"
+        type="password"
+        required
+        minLength={8}
+        autoComplete={signup ? 'new-password' : 'current-password'}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder={signup ? 'Mínimo 8 caracteres' : ''}
+      />
+      <button type="submit" className="account-btn account-btn--primary" disabled={busy || !email.includes('@') || password.length < 8}>
+        {signup ? <UserPlus aria-hidden="true" /> : <KeyRound aria-hidden="true" />} {signup ? 'Crear mi cuenta' : 'Entrar'}
+      </button>
+      <button
+        type="button"
+        className="account-link"
+        onClick={() => {
+          setMode(signup ? 'login' : 'signup');
+          setMsg('');
         }}
       >
-        <label htmlFor="account-email">Tu correo</label>
-        <input id="account-email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@correo.com" />
-        <button type="submit" className="account-btn account-btn--primary" disabled={busy || !email.includes('@')}>
-          <Mail aria-hidden="true" /> Enviarme un código
-        </button>
-        <p className="account-hint">Sin contraseñas: te llega un código de 6 dígitos para entrar.</p>
-        {msg && <p className="account-error" role="alert">{msg}</p>}
-      </form>
-    );
-  }
-
-  return (
-    <form
-      className="account-form"
-      onSubmit={(event) => {
-        event.preventDefault();
-        run(() => verifyCode(email.trim(), code.trim()));
-      }}
-    >
-      <label htmlFor="account-code">Código enviado a {email}</label>
-      <input
-        id="account-code"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="[0-9]{6,8}"
-        maxLength={8}
-        required
-        value={code}
-        onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-        placeholder="123456"
-      />
-      <button type="submit" className="account-btn account-btn--primary" disabled={busy || code.length < 6}>
-        <KeyRound aria-hidden="true" /> Entrar
+        {signup ? 'Ya tengo cuenta: entrar' : '¿Primera vez? Crea tu cuenta'}
       </button>
-      <button type="button" className="account-link" onClick={() => setStep('email')}>
-        Cambiar de correo o pedir otro código
-      </button>
+      {info && <p className="account-hint" role="status">{info}</p>}
       {msg && <p className="account-error" role="alert">{msg}</p>}
     </form>
   );

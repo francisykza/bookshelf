@@ -56,7 +56,7 @@ const errorText = (error) => {
   const msg = String(error?.message ?? error ?? '');
   if (/fetch|network/i.test(msg)) return 'No hay conexión con la nube.';
   if (/rate limit|security purposes/i.test(msg)) return 'Demasiados intentos seguidos. Espera un poco y vuelve a probar.';
-  if (/expired|invalid/i.test(msg)) return 'El código no es válido o ha caducado. Pide uno nuevo.';
+  if (/jwt|session/i.test(msg)) return 'Tu sesión ha caducado. Vuelve a entrar.';
   return msg || 'Algo ha fallado al sincronizar.';
 };
 
