@@ -26,6 +26,10 @@ create trigger libraries_touch
   before insert or update on public.libraries
   for each row execute function public.libraries_touch();
 
+-- Acceso explícito para quien ha iniciado sesión (las tablas nuevas no se exponen solas a la API)
+revoke all on public.libraries from anon;
+grant select, insert, update, delete on public.libraries to authenticated;
+
 -- Seguridad por filas: cada persona solo ve y cambia su propia fila
 alter table public.libraries enable row level security;
 
