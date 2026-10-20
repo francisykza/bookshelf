@@ -1959,3 +1959,11 @@ html[data-lite-scene] * {
 html[data-lite-scene] .panel-veil {
   background: radial-gradient(ellipse at 50% 60%, rgb(120 78 40 / 0.55), rgb(30 16 8 / 0.78) 75%);
 }
+
+/* En móvil, con la librería abierta (que ocupa toda la pantalla) la habitación deja de pintarse */
+html[data-lite-scene] .room-camera[data-view='SHELF_VIEW'] .world {
+  visibility: hidden;
+  transition:
+    transform 700ms var(--ease-camera),
+    visibility 0s linear 700ms;
+}

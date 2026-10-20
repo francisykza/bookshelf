@@ -1425,3 +1425,17 @@ body[data-dragging-book] .shelf-row__track[data-dropping] {
     padding-right: max(150px, 4vw);
   }
 }
+
+/* Cerrada, la librería no se pinta (antes solo era transparente y seguía ocupando memoria gráfica) */
+.library {
+  visibility: hidden;
+  transition:
+    opacity 380ms ease,
+    transform 700ms var(--ease-camera),
+    visibility 0s linear 700ms;
+}
+
+.library[data-open='true'] {
+  visibility: visible;
+  transition-delay: 160ms, 120ms, 0s;
+}
