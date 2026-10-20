@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.16.0 · 2026-10-20 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.16.1 · 2026-10-20 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -506,6 +506,12 @@ con el primer toque o tecla en la página; los auriculares lo silencian.
 - Móvil: sin rebote ni zoom por doble toque, sin resaltado al tocar, la escena no se selecciona como texto
   y se respetan la muesca y la barra de gestos. Botón **pantalla completa** en la esquina (Android y
   escritorio).
+- **Escena ligera en móviles** (1.16.1, `scene/renderMode.js`): con puntero táctil o `deviceMemory` ≤ 4 la
+  brisa de hiedra, cortinas, flores, plantas, nubes y mar (filtros SVG animados sobre la ilustración entera)
+  queda quieta, y la noche y el atardecer tiñen la imagen fija en vez de duplicar la escena animada con
+  `<use>`. En la GPU de un teléfono esas capas agotaban la memoria y dejaban bloques sin pintar. Siguen
+  vivos la lámpara, el carillón, el vapor, las estrellas, las gaviotas, las partículas y los datos.
+  Se fuerza con `?escena=ligera` o `?escena=completa`.
 - **Probar en el teléfono** (misma wifi): `npm run movil:app` compila y sirve la app en
   `http://<IP-del-ordenador>:5191`. En Android, el botón de pantalla completa funciona directamente; para
   *instalarla* como app Chrome exige HTTPS (o, en pruebas, `chrome://flags/#unsafely-treat-insecure-origin-as-secure`

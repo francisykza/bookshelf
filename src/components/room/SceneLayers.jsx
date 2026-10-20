@@ -21,6 +21,7 @@ import {
   STEAM,
   pts,
 } from '../../scene/sceneMap';
+import { LITE_SCENE } from '../../scene/renderMode';
 
 const SPLINE = '0.45 0 0.55 1;0.45 0 0.55 1';
 
@@ -98,6 +99,15 @@ export function Crop({ clip, mask, filter }) {
         <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} preserveAspectRatio="none" />
       </g>
     </g>
+  );
+}
+
+/** Tinte de la hora del día: sobre la escena animada o, en modo ligero, sobre la ilustración fija. */
+function SceneTint({ filter }) {
+  return LITE_SCENE ? (
+    <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter={`url(#${filter})`} />
+  ) : (
+    <use href="#scene-live" filter={`url(#${filter})`} />
   );
 }
 
@@ -237,23 +247,31 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
       {/* Escena animada (se reutiliza con <use> en las capas de hora del día) */}
       <g id="scene-live">
         <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
-        {/* Capa lejana del parallax: mar y nubes se desplazan menos que la habitación */}
-        <g className="layer-far">
-          <Crop clip="clip-sea" filter="f-sea" />
-          <Crop filter="f-clouds" />
-        </g>
-        <Crop filter="f-ivy" />
-        <Crop filter="f-curtain" />
-        <Crop filter="f-plant-left" />
-        <Crop filter="f-plant-desk" />
-        <Crop filter="f-balcony-l" />
-        <Crop filter="f-balcony-r" />
-        <Crop filter="f-vase" />
+        {/* Capa lejana del parallax: mar y nubes se desplazan menos que la habitación (en móvil, quietas) */}
+        {!LITE_SCENE && (
+          <>
+            <g className="layer-far">
+              <Crop clip="clip-sea" filter="f-sea" />
+              <Crop filter="f-clouds" />
+            </g>
+            <Crop filter="f-ivy" />
+            <Crop filter="f-curtain" />
+            <Crop filter="f-plant-left" />
+            <Crop filter="f-plant-desk" />
+            <Crop filter="f-balcony-l" />
+            <Crop filter="f-balcony-r" />
+            <Crop filter="f-vase" />
+          </>
+        )}
         <g className="lamp-swing" style={{ transformOrigin: `${LAMP_SWING.pivotX}px ${LAMP_SWING.pivotY}px` }}>
           <Crop clip="clip-lamp" mask="m-lamp" />
         </g>
-        <Crop filter="f-flowers" />
-        <Crop filter="f-vines" />
+        {!LITE_SCENE && (
+          <>
+            <Crop filter="f-flowers" />
+            <Crop filter="f-vines" />
+          </>
+        )}
         <g className={`chime-swing${chimeRing ? ' is-ringing' : ''}`} style={{ transformOrigin: `${CHIME.anchorX}px ${CHIME.anchorY}px` }}>
           <Crop clip="clip-chime" mask="m-chime" />
         </g>
@@ -298,10 +316,10 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
         {timeOfDay === 'sunset' && (
           <>
             <g clipPath="url(#clip-sky-top)" opacity="0.82">
-              <use href="#scene-live" filter="url(#f-sunset-sky)" />
+              <SceneTint filter="f-sunset-sky" />
             </g>
             <g clipPath="url(#clip-sea-band)" opacity="0.7">
-              <use href="#scene-live" filter="url(#f-sunset-sea)" />
+              <SceneTint filter="f-sunset-sea" />
             </g>
           </>
         )}
@@ -312,7 +330,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
         {timeOfDay === 'night' && (
           <>
             <g clipPath="url(#clip-exterior)" opacity="0.94">
-              <use href="#scene-live" filter="url(#f-night)" />
+              <SceneTint filter="f-night" />
             </g>
             <g mask="url(#m-sky)" className="layer-far">
               {STARS.map((s, i) => (

@@ -1929,3 +1929,12 @@
 .room-spine {
   cursor: pointer;
 }
+
+/* Escena ligera en móviles (SPEC §9bis, 1.16.1): sin re-desenfocar capas grandes en cada fotograma */
+html[data-lite-scene] .tod__leaves-drift {
+  animation: none;
+}
+
+html[data-lite-scene] .cloud-shadow__blob {
+  display: none;
+}

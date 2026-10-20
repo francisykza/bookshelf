@@ -3,6 +3,7 @@
 // la capa que más se mueve; aquí viven también la respiración de Miel, la esquina de la página y el reflejo
 // de la tapa del portátil para que se muevan con ella.
 import { FRONT, LAPTOP_LID, PAGE_CORNER, PAINTED_CAT, PLANTS, SCENE_H, SCENE_SRC, SCENE_W, pts } from '../../scene/sceneMap';
+import { LITE_SCENE } from '../../scene/renderMode';
 import { Crop, Feather, LEAF_KEY, SwayFilter } from './SceneLayers';
 
 const SPLINE = '0.45 0 0.55 1;0.45 0 0.55 1';
@@ -39,7 +40,7 @@ export function FrontLayer() {
 
       <g mask="url(#m-front)">
         <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
-        <Crop filter="f-monstera" />
+        {!LITE_SCENE && <Crop filter="f-monstera" />}
       </g>
 
       {/* Reflejo de luz que recorre la tapa del portátil */}

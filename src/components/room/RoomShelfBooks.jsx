@@ -9,6 +9,7 @@ import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { rankOf } from '../../domain/figures';
 import { sprayedEdge, spineColor, spineHeight, spineWidth } from '../../domain/books';
 import { projectPoint, rectToQuad } from '../../scene/homography';
+import { LITE_SCENE } from '../../scene/renderMode';
 import { IVY_REGION, PLANTS, ROOM_SHELVES, SCENE_H, SCENE_SRC, SCENE_W, pts } from '../../scene/sceneMap';
 import { FigureArt, FigureParticles, figureAspect } from '../figures/FigureArt';
 import { useFigureCatalog } from '../figures/figureCatalog';
@@ -205,15 +206,21 @@ export function RoomOcclusion() {
       </defs>
       {/* Baldas altas: la hiedra de la derecha y las hojas de la maceta pasan por delante de las figuras */}
       <g clipPath="url(#clip-shelves-ivy)">
-        <g filter="url(#f-ivy-front)">
-          <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
-        </g>
+        {LITE_SCENE ? (
+          <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter="url(#f-leaf-front)" />
+        ) : (
+          <g filter="url(#f-ivy-front)">
+            <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
+          </g>
+        )}
       </g>
       <g clipPath="url(#clip-shelf-cabinet)">
         <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter="url(#f-leaf-front)" />
-        <g filter="url(#f-plant-front)">
-          <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
-        </g>
+        {!LITE_SCENE && (
+          <g filter="url(#f-plant-front)">
+            <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
+          </g>
+        )}
       </g>
     </svg>
   );
