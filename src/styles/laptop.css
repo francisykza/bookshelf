@@ -1,0 +1,1083 @@
+/* ── Portátil: escritorio de ordenador acogedor (SPEC §6) ─────────────── */
+.laptop {
+  position: relative;
+  width: min(1040px, calc(100vw - 32px));
+}
+
+/* Salir del ordenador: botón redondo de papel en la esquina de la tapa */
+.laptop__exit {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: #fbf3e1;
+  color: var(--color-ink);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.45);
+  transition: transform 180ms ease;
+}
+
+.laptop__exit:hover,
+.laptop__exit:focus-visible {
+  transform: scale(1.08) rotate(90deg);
+}
+
+.laptop__exit svg {
+  width: 20px;
+  height: 20px;
+}
+
+.laptop__screen {
+  padding: 12px;
+  border-radius: 22px 22px 8px 8px;
+  background: linear-gradient(180deg, #4a3a30, #2f241d);
+  box-shadow:
+    inset 0 0 0 2px rgb(255 230 200 / 0.08),
+    0 30px 60px -20px rgb(0 0 0 / 0.75);
+}
+
+/* Cámara de la tapa */
+.laptop__screen::before {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  margin: -6px auto 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #6b8fb0, #141414);
+}
+
+.laptop__base {
+  position: relative;
+  height: 22px;
+  margin: 0 -24px;
+  border-radius: 2px 2px 18px 18px;
+  background: linear-gradient(180deg, #d9c7ae, #a99376);
+  box-shadow: 0 12px 24px rgb(0 0 0 / 0.45);
+}
+
+.laptop__base::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 120px;
+  height: 7px;
+  margin-left: -60px;
+  border-radius: 0 0 8px 8px;
+  background: #8f7b62;
+}
+
+.sticker {
+  position: absolute;
+  top: -40px;
+  display: grid;
+  place-items: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #fffaf0;
+  box-shadow: 0 3px 6px rgb(0 0 0 / 0.3);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.sticker--flower {
+  right: 70px;
+  color: #e46b86;
+  transform: rotate(-12deg);
+}
+
+.sticker--cat {
+  right: 16px;
+  color: #c4623a;
+  font-size: 0.8rem;
+  transform: rotate(8deg);
+}
+
+.desk {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: min(680px, calc(100dvh - 110px));
+  overflow: hidden;
+  border-radius: 12px;
+  isolation: isolate;
+}
+
+/* Fondo de pantalla: la bahía, con un velo cálido */
+.desk::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgb(255 214 170 / 0.18), rgb(120 70 40 / 0.25));
+}
+
+.desk__menubar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 28px;
+  flex: none;
+  padding: 0 12px;
+  background: rgb(251 243 225 / 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--color-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: 0 1px 0 rgb(107 68 35 / 0.12);
+}
+
+.desk__menubar svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.75;
+}
+
+.desk__logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.desk__app {
+  color: var(--color-ink-soft);
+}
+
+.desk__spacer {
+  flex: 1;
+}
+
+.desk__menubar time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Post-it pegado en el escritorio con lo leído hoy */
+.desk__note {
+  position: absolute;
+  top: 44px;
+  right: 18px;
+  z-index: 1;
+  display: grid;
+  width: 112px;
+  padding: 10px 10px 12px;
+  background: #fff3a8;
+  color: #5a4210;
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  line-height: 1.05;
+  box-shadow: 0 8px 14px -6px rgb(60 40 10 / 0.5);
+  transform: rotate(3deg);
+}
+
+.desk__note b {
+  font-size: 1.3rem;
+}
+
+.window {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin: 14px 146px 8px 22px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #fbf6ec;
+  box-shadow:
+    0 0 0 1px rgb(107 68 35 / 0.15),
+    0 22px 40px -12px rgb(40 20 5 / 0.55);
+  animation: window-open 420ms var(--ease-camera);
+}
+
+@keyframes window-open {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+
+.window__bar {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  background: linear-gradient(#f3e8d4, #ead9bd);
+  border-bottom: 1px solid rgb(107 68 35 / 0.15);
+}
+
+.window__lights {
+  position: absolute;
+  left: 12px;
+  display: inline-flex;
+  gap: 7px;
+}
+
+.window__lights button,
+.window__lights i {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #e7a24f;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+}
+
+.window__lights button {
+  position: relative;
+  background: #e46b6b;
+}
+
+.window__lights button:hover::after,
+.window__lights button:focus-visible::after {
+  content: '×';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #6b1a1a;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.window__lights i:last-child {
+  background: #8fbf6a;
+}
+
+.window__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.window__title svg {
+  width: 16px;
+  height: 16px;
+  color: var(--color-terracotta);
+}
+
+.window__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px;
+  background: linear-gradient(#fbf6ec, #f4ead8);
+  scrollbar-width: thin;
+  scrollbar-color: rgb(176 122 69 / 0.5) transparent;
+}
+
+/* Dock de apps */
+.dock {
+  display: flex;
+  flex: none;
+  align-self: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  border-radius: 20px;
+  background: rgb(251 243 225 / 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.4),
+    0 10px 24px -8px rgb(40 20 5 / 0.5);
+}
+
+.dock button {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.dock__icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--app) 65%, #fff), var(--app));
+  color: #fffaf0;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 4px 8px rgb(40 20 5 / 0.3);
+  transition: transform 240ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.dock__icon svg {
+  width: 23px;
+  height: 23px;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.25));
+}
+
+.dock button:hover .dock__icon,
+.dock button:focus-visible .dock__icon {
+  transform: translateY(-6px) scale(1.12);
+}
+
+.dock button:focus-visible {
+  outline: none;
+}
+
+.dock button[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fffaf0;
+  box-shadow: 0 0 4px rgb(255 240 210 / 0.9);
+}
+
+.dock__label {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgb(59 42 30 / 0.88);
+  color: #fbf3e1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  pointer-events: none;
+}
+
+.dock button:hover .dock__label,
+.dock button:focus-visible .dock__label {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Calendario de lectura ── */
+.cal__head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.cal__head h3 {
+  min-width: 11em;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  text-align: center;
+}
+
+.desk__menubar time::first-letter {
+  text-transform: uppercase;
+}
+
+.desk__menubar time {
+  display: inline-block;
+}
+
+.cal__summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  color: var(--color-ink-soft);
+}
+
+.cal__summary b {
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cal__weekday {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--color-ink-soft);
+}
+
+.cal__cellwrap {
+  position: relative;
+}
+
+.cal__cell {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgb(176 122 69 / 0.22);
+  border-radius: 8px;
+  background: #fbf3e1;
+  text-align: left;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.cal__cell[data-heat='1'],
+.cal__legend i[data-heat='1'] {
+  background: #f8e6cc;
+}
+
+.cal__cell[data-heat='2'],
+.cal__legend i[data-heat='2'] {
+  background: #f3d3ab;
+}
+
+.cal__cell[data-heat='3'],
+.cal__legend i[data-heat='3'] {
+  background: #edbd88;
+}
+
+.cal__cell[data-heat='4'],
+.cal__legend i[data-heat='4'] {
+  background: #e3a067;
+}
+
+.cal__cell[data-future='true'] {
+  opacity: 0.55;
+}
+
+.cal__cell[data-today='true'] {
+  box-shadow: 0 0 0 2px #c4623a;
+}
+
+.cal__cell:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px -4px rgb(80 40 10 / 0.35);
+}
+
+.cal__cell[aria-pressed='true'] {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 2px #c4623a,
+    0 6px 12px -4px rgb(80 40 10 / 0.35);
+}
+
+.cal__num {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  z-index: 3;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--color-ink);
+}
+
+.cal__more {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 3;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #c4623a;
+  color: #fff6ea;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.cal__covers {
+  position: absolute;
+  inset: 20px 6px 18px;
+}
+
+.cal__cover {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 0 3px 6px rgb(40 20 5 / 0.35);
+}
+
+.cal__cover[data-k='0'] {
+  inset: 0 22% 0 0;
+  z-index: 2;
+}
+
+.cal__cover[data-k='1'] {
+  inset: 14% 0 -6% 30%;
+  z-index: 1;
+  transform: rotate(6deg);
+}
+
+.cal__covers:has(.cal__cover:only-child) .cal__cover {
+  inset: 0 8%;
+}
+
+.cal__pages {
+  position: absolute;
+  bottom: 3px;
+  right: 5px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgb(251 243 225 / 0.92);
+  font-size: 0.66rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.cal__pages svg {
+  width: 11px;
+  height: 11px;
+  color: #d9542f;
+}
+
+.cal__cozy {
+  position: absolute;
+  bottom: 3px;
+  left: 5px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgb(251 243 225 / 0.92);
+  color: #8a5a2b;
+}
+
+.cal__cozy svg {
+  width: 11px;
+  height: 11px;
+}
+
+.cal-pop__cozy {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #8a5a2b;
+}
+
+.cal-pop__cozy svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cal__legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  color: var(--color-ink-soft);
+}
+
+.cal__legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #fbf3e1;
+  box-shadow: inset 0 0 0 1px rgb(176 122 69 / 0.25);
+}
+
+.cal__popwrap {
+  position: absolute;
+  top: 0;
+  z-index: 20;
+  width: 270px;
+}
+
+.cal__popwrap[data-side='right'] {
+  left: calc(100% + 6px);
+}
+
+.cal__popwrap[data-side='left'] {
+  right: calc(100% + 6px);
+}
+
+.cal-pop {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fffaf0;
+  box-shadow:
+    0 0 0 1px rgb(176 122 69 / 0.2),
+    0 16px 30px -10px rgb(40 20 5 / 0.5);
+  animation: label-in 200ms var(--ease-camera);
+}
+
+.cal-pop__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+}
+
+.cal-pop__list,
+.sessions__list ul {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.cal-pop__list li,
+.sessions__list ul li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-pop__cover {
+  flex: none;
+  width: 30px;
+  height: 45px;
+  overflow: hidden;
+  border-radius: 2px 3px 3px 2px;
+  box-shadow: 0 2px 4px rgb(40 20 5 / 0.3);
+}
+
+.cal-pop__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-pop__text b {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-pop__text em {
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+}
+
+.cal-pop__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 34px;
+  border: 1.5px dashed rgb(196 98 58 / 0.5);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-terracotta);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.cal-pop__add svg {
+  width: 15px;
+  height: 15px;
+}
+
+.cal-pop__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.cal-pop__form select {
+  flex: 1 1 100%;
+  min-height: 32px;
+  padding: 2px 6px;
+  border: 1px solid rgb(107 68 35 / 0.35);
+  border-radius: 6px;
+  background: #fffaf0;
+  font: inherit;
+}
+
+.cal-pop__form input {
+  width: 4.5em;
+  min-height: 30px;
+  padding: 2px 6px;
+  border: 1px solid rgb(107 68 35 / 0.35);
+  border-radius: 6px;
+  background: #fffaf0;
+  font: inherit;
+  text-align: center;
+}
+
+.cal-pop__form .stamp-btn {
+  margin-left: auto;
+}
+
+.cal-pop__empty {
+  margin: 4px 0;
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  color: var(--color-ink-soft);
+}
+
+/* ── Sesiones ── */
+.sessions__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sessions__top p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--color-ink-soft);
+}
+
+.sessions .cal-pop__form {
+  margin-bottom: 14px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+
+.sessions__list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sessions__list h4 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgb(107 68 35 / 0.25);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+}
+
+.sessions__list h4 span {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--color-terracotta);
+}
+
+.sessions__bar {
+  flex: none;
+  width: 70px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c4623a var(--p), rgb(107 68 35 / 0.12) var(--p));
+}
+
+@media (max-width: 760px) {
+  .window {
+    margin: 8px 8px 6px;
+  }
+
+  .window__body {
+    padding: 12px;
+  }
+
+  .desk__note,
+  .desk__app,
+  .dock__label {
+    display: none;
+  }
+
+  .dock__icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .cal__grid {
+    gap: 3px;
+  }
+
+  .cal__covers {
+    inset: 18px 3px 14px;
+  }
+
+  .cal__popwrap,
+  .cal__popwrap[data-side] {
+    position: fixed;
+    top: auto;
+    right: 12px;
+    bottom: 90px;
+    left: 12px;
+    width: auto;
+  }
+
+  .laptop__base {
+    margin: 0 -8px;
+  }
+}
+
+/* ── Reto anual: torre de leídos y páginas por mes (1.8.0) ── */
+.goal__extra {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) 1.1fr;
+  gap: 18px;
+  align-items: end;
+  margin-top: 6px;
+}
+
+.tower {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fffaf0;
+  box-shadow: inset 0 0 0 1px rgb(176 122 69 / 0.18);
+}
+
+.tower figcaption {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.tower figcaption strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+.tower figcaption span {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--color-terracotta);
+}
+
+.tower figcaption em {
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  font-style: normal;
+  color: var(--color-ink-soft);
+}
+
+.tower__stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  min-height: 150px;
+}
+
+.tower__ruler {
+  position: relative;
+  border-right: 1.5px solid rgb(107 68 35 / 0.3);
+}
+
+.tower__ruler span {
+  position: absolute;
+  right: 4px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--color-ink-soft);
+  transform: translateY(50%);
+}
+
+.tower__ruler span::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  width: 6px;
+  border-top: 1px solid rgb(107 68 35 / 0.35);
+}
+
+.tower__stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 6px;
+}
+
+/* Cada libro tumbado: lomo de color con su título, un poco desalineado como en una pila de verdad */
+.tower__book {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 2px 3px 3px 2px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.22), transparent 35%, rgb(0 0 0 / 0.25)),
+    linear-gradient(90deg, rgb(0 0 0 / 0.3), transparent 6%, transparent 94%, rgb(0 0 0 / 0.25)),
+    var(--spine);
+  box-shadow:
+    0 1px 0 rgb(0 0 0 / 0.25),
+    inset 0 0 0 1px rgb(0 0 0 / 0.15);
+  transform: translateX(var(--shift)) rotate(var(--tilt));
+  animation: tower-drop 520ms cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
+}
+
+.tower__book::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  bottom: 2px;
+  width: 7px;
+  background: repeating-linear-gradient(0deg, #f6ecd6 0 1px, #e3d2b1 1px 2px);
+}
+
+.tower__book span {
+  overflow: hidden;
+  padding: 0 14px;
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #fbf0d8;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tower__book[data-edition='kindle'] {
+  --spine: #2b2b30;
+}
+
+.tower__table {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(#c98a47, #8a5a2b);
+}
+
+.tower__empty {
+  margin: auto 0 10px;
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  color: var(--color-ink-soft);
+}
+
+@keyframes tower-drop {
+  from {
+    opacity: 0;
+    transform: translate(var(--shift), -40px) rotate(var(--tilt));
+  }
+}
+
+.months-chart {
+  margin: 0;
+}
+
+.months-chart__plot {
+  grid-template-columns: repeat(12, 1fr);
+}
+
+.pages-chart__col[data-current='true'] .pages-chart__bar {
+  background: #a84a24;
+}
+
+.pages-chart__col[data-current='true'] .pages-chart__day {
+  color: var(--color-terracotta);
+}
+
+.pages-chart__col[data-future='true'] .pages-chart__bar {
+  background: rgb(107 68 35 / 0.12);
+}
+
+@media (max-width: 760px) {
+  .goal__extra {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Elección de Booknook en las misiones */
+.missions__nook {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.nook-themes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.nook-theme {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  width: 64px;
+  padding: 4px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #fffaf0;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--color-ink-soft);
+}
+
+.nook-theme[aria-checked='true'] {
+  border-color: #c4623a;
+  color: var(--color-ink);
+}
+
+.nook-theme__thumb {
+  width: 28px;
+  height: 72px;
+  border-radius: 2px;
+  background-repeat: no-repeat;
+  box-shadow: 0 2px 5px rgb(40 20 5 / 0.4);
+}
+
+/* Etiquetas de tendencia y emparejado con su libro (1.12.0) */
+.nook-theme__badge {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  z-index: 1;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #fff1de;
+  box-shadow: 0 1px 3px rgb(60 30 10 / 0.35);
+  color: #a3361f;
+  font-size: 0.5rem;
+  font-style: normal;
+  white-space: nowrap;
+  transform: translateX(-50%) rotate(-3deg);
+}
+
+.nook-pair {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  text-align: center;
+}

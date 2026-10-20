@@ -1,0 +1,1427 @@
+/* ── SHELF_VIEW: la librería de roble (SPEC §3.3) ───────────────────────── */
+.library {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: clamp(10px, 2.4vh, 28px) clamp(10px, 4vw, 72px) clamp(10px, 2.4vh, 28px) clamp(20px, 6vw, 110px);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-4%) scale(0.95);
+  transform-origin: 20% 40%;
+  transition:
+    opacity 380ms ease,
+    transform 700ms var(--ease-camera);
+}
+
+.library[data-open='true'] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition-delay: 160ms, 120ms;
+}
+
+/* El mar desenfocado se sigue viendo a la derecha del mueble */
+.library::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgb(30 18 8 / 0.55), rgb(30 18 8 / 0.15) 60%, transparent);
+  pointer-events: none;
+}
+
+.library__case {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(1120px, 100%);
+  border-radius: 6px 6px 4px 4px;
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.35), transparent 6%, transparent 94%, rgb(0 0 0 / 0.35)),
+    repeating-linear-gradient(90deg, rgb(255 220 170 / 0.035) 0 2px, transparent 2px 11px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.08) 0 1px, transparent 1px 23px),
+    linear-gradient(180deg, #3a2414, #4b2f1b 40%, #3d2615);
+  box-shadow:
+    inset 0 0 40px rgb(0 0 0 / 0.55),
+    0 30px 60px -20px rgb(0 0 0 / 0.7),
+    0 0 0 1px rgb(255 214 160 / 0.08);
+}
+
+/* Postes laterales con la madera de la ilustración */
+.library__side {
+  position: absolute;
+  top: 26px;
+  bottom: -8px;
+  z-index: 3;
+  width: 20px;
+  border-radius: 3px;
+  box-shadow:
+    inset -6px 0 10px rgb(0 0 0 / 0.35),
+    inset 4px 0 6px rgb(255 230 190 / 0.25),
+    0 10px 20px rgb(0 0 0 / 0.4);
+  filter: saturate(1.05);
+}
+
+.library__side--left {
+  left: -14px;
+}
+
+.library__side--right {
+  right: -14px;
+  transform: scaleX(-1);
+}
+
+.library__crown {
+  position: relative;
+  background:
+    repeating-linear-gradient(178deg, rgb(120 70 25 / 0.18) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(182deg, rgb(255 230 180 / 0.12) 0 1px, transparent 1px 11px),
+    linear-gradient(180deg, #e2ad6a, #c98a47 45%, #a96c33);
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  min-height: 64px;
+  padding: 12px 22px;
+  border-radius: 6px 6px 2px 2px;
+  box-shadow:
+    inset 0 -6px 10px rgb(0 0 0 / 0.35),
+    inset 0 4px 6px rgb(255 236 200 / 0.35),
+    0 10px 18px -6px rgb(0 0 0 / 0.65);
+}
+
+.library__crown::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgb(255 240 210 / 0.18), rgb(60 30 10 / 0.25));
+  pointer-events: none;
+}
+
+.library__title {
+  position: relative;
+  flex: 1 1 220px;
+  margin: 0;
+  text-align: center;
+  line-height: 1;
+}
+
+.library__title span {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 2.2vw, 1.5rem);
+  font-style: italic;
+  font-weight: 600;
+  color: #3b220f;
+  text-shadow: 0 1px 0 rgb(255 236 200 / 0.6);
+}
+
+.library__title small {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-hand);
+  font-size: clamp(1rem, 1.8vw, 1.3rem);
+  color: #5a3618;
+}
+
+.library__tools {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.brass-btn,
+.brass-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid #6b4a12;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f6dd94, #d8a94a 55%, #b8862f);
+  color: #3a2508;
+  font-size: 0.86rem;
+  font-weight: 800;
+  box-shadow:
+    inset 0 1px 0 rgb(255 250 225 / 0.8),
+    inset 0 -2px 0 rgb(110 70 10 / 0.35),
+    0 2px 4px rgb(0 0 0 / 0.35);
+  transition:
+    transform 150ms ease,
+    filter 150ms ease;
+}
+
+.brass-btn svg,
+.brass-toggle svg {
+  width: 17px;
+  height: 17px;
+}
+
+.brass-btn:hover,
+.brass-toggle button:hover {
+  filter: brightness(1.07);
+}
+
+.brass-btn:active {
+  transform: translateY(1px);
+}
+
+.brass-btn--back {
+  position: relative;
+  background: linear-gradient(180deg, #fbf3e1, #e9d6b0);
+  border-color: #8a6a3a;
+}
+
+.brass-btn--accent {
+  background: linear-gradient(180deg, #f0a07a, #c4623a 60%, #a24c2a);
+  border-color: #6b2e16;
+  color: #fff6ea;
+  text-shadow: 0 1px 0 rgb(80 30 10 / 0.5);
+}
+
+.brass-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgb(40 22 8 / 0.45);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.5);
+}
+
+.brass-toggle button {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: #f6e3bd;
+}
+
+.brass-toggle button[aria-checked='true'] {
+  border-color: #6b4a12;
+  background: linear-gradient(180deg, #f6dd94, #d8a94a 55%, #b8862f);
+  color: #3a2508;
+  box-shadow: inset 0 1px 0 rgb(255 250 225 / 0.8);
+}
+
+/* Macetas sobre el copete */
+.plant {
+  position: absolute;
+  bottom: calc(100% - 8px);
+  width: 64px;
+  height: 72px;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 4px rgb(0 0 0 / 0.35));
+}
+
+.plant--fern {
+  left: 2%;
+}
+
+.plant--leafy {
+  right: 3%;
+}
+
+.plant__leaves {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: plant-sway 6s ease-in-out infinite;
+}
+
+@keyframes plant-sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+
+/* Cintas marcapáginas de tela colgando del copete (filtro de baldas) */
+.shelf-ribbons {
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 9%;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+}
+
+.shelf-ribbon {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 28px;
+  height: 84px;
+  padding: 8px 0 16px;
+  border: 0;
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 3px),
+    linear-gradient(90deg, color-mix(in srgb, var(--ribbon) 80%, #000), var(--ribbon) 40%, color-mix(in srgb, var(--ribbon) 85%, #000));
+  color: #fffaf0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%);
+  filter: drop-shadow(0 3px 3px rgb(0 0 0 / 0.35));
+  transform-origin: 50% 0;
+  animation: ribbon-sway 4.2s ease-in-out infinite;
+  transition: height 380ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.shelf-ribbon:nth-child(2) {
+  animation-delay: -1s;
+}
+
+.shelf-ribbon:nth-child(3) {
+  animation-delay: -2.1s;
+}
+
+.shelf-ribbon:nth-child(4) {
+  animation-delay: -3s;
+}
+
+.shelf-ribbon span {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
+}
+
+.shelf-ribbon[data-light] {
+  color: #6b4423;
+}
+
+.shelf-ribbon:hover {
+  height: 92px;
+}
+
+.shelf-ribbon[aria-checked='true'] {
+  height: 106px;
+}
+
+.shelf-ribbon:focus-visible {
+  outline: none;
+  filter: drop-shadow(0 0 4px #ffcf7a) drop-shadow(0 3px 3px rgb(0 0 0 / 0.35));
+}
+
+/* Hiedra que cuelga sobre la primera balda */
+.library__ivy {
+  position: absolute;
+  top: calc(100% - 6px);
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 9;
+  pointer-events: none;
+}
+
+.library__ivy > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.ivy-strand {
+  display: block;
+  width: 40px;
+  overflow: visible;
+  transform-origin: 50% 0;
+  animation: ivy-sway 5.5s ease-in-out infinite;
+  filter: drop-shadow(0 3px 3px rgb(0 0 0 / 0.35));
+}
+
+@keyframes ivy-sway {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+.library__shelves {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 4px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: #b07a45 transparent;
+}
+
+/* ── Baldas ── */
+.shelf-row {
+  position: relative;
+  flex: none;
+}
+
+.shelf-row__scroller {
+  position: relative;
+  z-index: 2;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: -58px 0 -30px;
+  padding: 64px 26px 30px;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(216 169 74 / 0.6) transparent;
+  overscroll-behavior-x: contain;
+}
+
+.shelf-row__track {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  width: max-content;
+  min-width: 100%;
+  height: var(--row-h);
+  padding-right: 20px;
+}
+
+.library[data-open] .shelf-row__track:has(.spine) {
+  gap: 2px;
+}
+
+/* Sombra interior de la balda superior sobre los libros */
+/* Sombra que el tablón de arriba proyecta dentro de cada balda */
+.shelf-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 26px;
+  z-index: 3;
+  box-shadow: inset 0 22px 28px -10px rgb(15 8 0 / 0.75);
+  pointer-events: none;
+}
+
+.shelf-row__plank {
+  position: relative;
+  z-index: 1;
+  height: 26px;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 3px 2px rgb(255 236 200 / 0.4),
+    inset 0 -5px 6px rgb(60 30 10 / 0.45),
+    0 12px 16px -6px rgb(0 0 0 / 0.65);
+}
+
+.shelf-row__plank::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(rgb(70 40 18 / 0), rgb(70 40 18 / 0.75));
+}
+
+.shelf-row__plate {
+  border: 0;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.shelf-row__plate:hover {
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.shelf-row__plate[aria-pressed='true'] {
+  background: linear-gradient(180deg, #ffe9a8, #e2b04f);
+  box-shadow:
+    inset 0 1px 0 rgb(255 250 225 / 0.8),
+    0 0 0 2px rgb(255 214 140 / 0.6),
+    0 0 12px rgb(255 200 110 / 0.7);
+}
+
+.shelf-row__plate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  padding: 2px 10px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f6dd94, #c99a40);
+  color: #3a2508;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 250 225 / 0.8),
+    0 1px 2px rgb(0 0 0 / 0.5);
+}
+
+.shelf-row__plate::before,
+.shelf-row__plate::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 50%;
+  background: #6b4a12;
+}
+
+.shelf-row__plate::before {
+  left: 3px;
+}
+
+.shelf-row__plate::after {
+  right: 3px;
+}
+
+.shelf-row__empty {
+  align-self: center;
+  margin: 0 20px;
+  font-family: var(--font-hand);
+  font-size: 1.3rem;
+  color: rgb(246 227 189 / 0.7);
+}
+
+.figure-cell {
+  position: relative;
+  flex: none;
+  align-self: flex-end;
+  margin: 0 1px;
+}
+
+.add-slot {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 96px;
+  border: 2px dashed rgb(246 227 189 / 0.5);
+  border-radius: 4px;
+  background: rgb(251 243 225 / 0.06);
+  color: #f6e3bd;
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  transition:
+    background 200ms ease,
+    border-color 200ms ease;
+}
+
+.add-slot svg {
+  width: 26px;
+  height: 26px;
+}
+
+.add-slot:hover,
+.add-slot:focus-visible {
+  border-color: #f6dd94;
+  background: rgb(251 243 225 / 0.14);
+}
+
+/* Postales y polaroids clavadas en la madera */
+.polaroid {
+  position: absolute;
+  z-index: 10;
+  width: 66px;
+  margin: 0;
+  padding: 5px 5px 4px;
+  background: #fbf7ee;
+  box-shadow: 0 6px 12px rgb(0 0 0 / 0.45);
+  pointer-events: none;
+}
+
+.polaroid__photo {
+  display: block;
+  aspect-ratio: 1;
+  filter: saturate(0.92) contrast(1.02);
+}
+
+.polaroid figcaption {
+  padding-top: 2px;
+  font-family: var(--font-hand);
+  font-size: 0.95rem;
+  line-height: 1;
+  text-align: center;
+  color: #4a3626;
+}
+
+.polaroid__pin {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #9ec8ff, #2f6fa6 60%, #183a5a);
+  box-shadow: 0 2px 2px rgb(0 0 0 / 0.4);
+}
+
+
+/* ── Libro en vista Escaparate ── */
+.book3d {
+  position: relative;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  perspective: 900px;
+  perspective-origin: 50% 30%;
+}
+
+.book3d__body {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--w);
+  height: var(--h);
+  transform-style: preserve-3d;
+  transform: rotateY(-24deg) rotateX(6deg);
+  transition: transform 450ms var(--ease-camera);
+}
+
+.book3d:hover .book3d__body,
+.book3d:focus-visible .book3d__body {
+  transform: rotateY(-8deg) rotateX(4deg) translateY(-8px) translateZ(14px);
+}
+
+.book3d:focus-visible {
+  outline: none;
+}
+
+.book3d:focus-visible .book3d__front {
+  outline: 3px solid #ffcf7a;
+  outline-offset: 2px;
+}
+
+.book3d__face {
+  position: absolute;
+  backface-visibility: hidden;
+}
+
+.book3d__front {
+  inset: 0;
+  overflow: hidden;
+  border-radius: 2px 5px 5px 2px;
+  background: var(--spine);
+  transform: translateZ(calc(var(--d) / 2));
+  box-shadow: inset 4px 0 6px -2px rgb(0 0 0 / 0.45);
+}
+
+.book3d[data-edition='paperback'] .book3d__front {
+  border-radius: 1px 2px 2px 1px;
+}
+
+.book3d__front::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.35), rgb(255 255 255 / 0.12) 4%, transparent 9%);
+  pointer-events: none;
+}
+
+.book3d__sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 245 220 / 0.22) 45%, transparent 60%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.book3d__back {
+  inset: 0;
+  border-radius: 5px 2px 2px 5px;
+  background: var(--spine);
+  transform: rotateY(180deg) translateZ(calc(var(--d) / 2));
+}
+
+.book3d__spine {
+  top: 0;
+  left: calc(50% - var(--d) / 2);
+  display: grid;
+  place-items: center;
+  width: var(--d);
+  height: 100%;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.15) 40%, rgb(0 0 0 / 0.4)),
+    var(--spine);
+  transform: rotateY(-90deg) translateZ(calc(var(--w) / 2));
+}
+
+.book3d__spine span {
+  font-family: var(--font-display);
+  font-size: 9px;
+  color: #f6e3bd;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.book3d__pages {
+  top: 3px;
+  left: calc(50% - (var(--d) - 4px) / 2);
+  width: calc(var(--d) - 4px);
+  height: calc(100% - 6px);
+  background: repeating-linear-gradient(90deg, #f6ecd6 0 1px, #e3d2b1 1px 2px);
+  transform: rotateY(90deg) translateZ(calc(var(--w) / 2 - 3px));
+}
+
+.book3d__top {
+  top: calc(50% - (var(--d) - 4px) / 2);
+  left: 2px;
+  width: calc(var(--w) - 6px);
+  height: calc(var(--d) - 4px);
+  background: repeating-linear-gradient(0deg, #f6ecd6 0 1px, #e3d2b1 1px 2px);
+  transform: rotateX(90deg) translateZ(calc(var(--h) / 2 - 3px));
+}
+
+/* Post-its de colores: uno por cita */
+.book-tabs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.book3d .book-tabs {
+  transform: translateZ(calc(var(--d) * 0.15));
+}
+
+.book-tabs span {
+  position: absolute;
+  bottom: -3px;
+  width: 7px;
+  height: var(--h);
+  border-radius: 1px 1px 0 0;
+  background: linear-gradient(var(--tab), color-mix(in srgb, var(--tab) 80%, #000));
+  box-shadow: 0 -1px 2px rgb(0 0 0 / 0.2);
+}
+
+.spine .book-tabs span {
+  width: max(3px, 22%);
+}
+
+/* Cinta marcapáginas de tela */
+.ribbon {
+  position: absolute;
+  top: 100%;
+  left: 42%;
+  z-index: 5;
+  width: 6px;
+  height: var(--ribbon-h, 18px);
+  margin-top: -2px;
+  background: linear-gradient(90deg, #8d1a22, #cf3a44 50%, #8d1a22);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+  transform-origin: 50% 0;
+  animation: ribbon-sway 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.ribbon--3d {
+  left: 34%;
+}
+
+.book3d__progress {
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: var(--w);
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f3cf7a var(--p), rgb(255 255 255 / 0.15) var(--p));
+}
+
+.book3d__shadow {
+  position: absolute;
+  bottom: -6px;
+  left: -4px;
+  width: calc(var(--w) + 12px);
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(0 0 0 / 0.55), transparent 70%);
+  z-index: -1;
+}
+
+/* ── Libro en vista Lomos ── */
+.spine {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 2px 2px 1px 1px;
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.42), rgb(255 255 255 / 0.16) 30%, rgb(255 255 255 / 0.03) 55%, rgb(0 0 0 / 0.42)),
+    var(--spine);
+  box-shadow:
+    1px 0 0 rgb(0 0 0 / 0.4),
+    0 -2px 6px rgb(0 0 0 / 0.25);
+  container-type: inline-size;
+  transition: transform 220ms var(--ease-camera);
+}
+
+.spine:hover,
+.spine:focus-visible {
+  transform: translateY(-10px);
+}
+
+.spine[data-edition='paperback'] {
+  border-radius: 0;
+}
+
+.spine__top {
+  position: absolute;
+  top: 0;
+  left: 1px;
+  right: 1px;
+  height: 5px;
+  border-radius: 1px;
+}
+
+.spine__band {
+  flex: none;
+  width: 72%;
+  height: 2px;
+  background: #e0b25e;
+  box-shadow: 0 3px 0 -1px #e0b25e;
+  opacity: 0.85;
+}
+
+.spine__band--top {
+  margin-top: 6px;
+}
+
+.spine__title {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px 0;
+  font-family: var(--font-display);
+  font-size: clamp(8px, 44cqw, 14px);
+  font-weight: 600;
+  line-height: 1.05;
+  color: #fbf0d8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.spine__author {
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(6px, 28cqw, 9px);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: rgb(246 227 189 / 0.8);
+  text-transform: uppercase;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.spine__band--bottom {
+  margin: 4px 0 2px;
+}
+
+/* ── Portada tipográfica generada ── */
+.gen-cover {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+  width: 100%;
+  height: 100%;
+  padding: 14% 12%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.16), transparent 50%),
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.03) 0 2px, transparent 2px 6px),
+    var(--spine);
+  color: #f8e9c8;
+  text-align: center;
+  container-type: inline-size;
+}
+
+.gen-cover__frame {
+  position: absolute;
+  inset: 7%;
+  border: 1.5px solid rgb(240 210 140 / 0.65);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 3px rgb(240 210 140 / 0.15);
+}
+
+.gen-cover__title {
+  font-family: var(--font-display);
+  font-size: clamp(9px, 13cqw, 22px);
+  font-weight: 700;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.gen-cover__ornament {
+  font-size: clamp(9px, 12cqw, 20px);
+  color: #e8c27a;
+}
+
+.gen-cover__author {
+  font-size: clamp(7px, 8cqw, 13px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.cover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 1100px) {
+  .polaroid {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .library {
+    padding: 0;
+  }
+
+  .library__case {
+    width: 100%;
+    border-radius: 0;
+  }
+
+  .library__side,
+  .polaroid,
+  .plant {
+    display: none;
+  }
+
+  .library__crown {
+    padding: 10px 12px;
+    border-radius: 0;
+  }
+
+  .library__title {
+    order: -1;
+    flex-basis: 100%;
+  }
+
+  .brass-btn span,
+  .brass-toggle span {
+    display: none;
+  }
+
+  .brass-btn--back span,
+  .brass-btn--accent span {
+    display: inline;
+  }
+
+  .shelf-row__scroller {
+    padding-inline: 14px;
+  }
+}
+
+/* ── Libro al azar: dado de madera sobre el copete ── */
+.shelf-die-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shelf-die {
+  position: relative;
+  z-index: 11;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  background: none;
+  filter: drop-shadow(0 4px 4px rgb(0 0 0 / 0.4));
+  transform: rotate(-8deg);
+  transition: transform 300ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.shelf-die svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.shelf-die__face {
+  fill: #f1d29a;
+  stroke: #7a4f1d;
+  stroke-width: 1.5;
+}
+
+/* Halo cálido que respira: el dado invita a tirarlo */
+.shelf-die::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 30%;
+  background: radial-gradient(circle, rgb(255 220 150 / 0.65), transparent 70%);
+  animation: die-glow 2.6s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes die-glow {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+}
+
+.shelf-die__dot {
+  fill: #5a3618;
+}
+
+.shelf-die:hover,
+.shelf-die:focus-visible {
+  transform: rotate(6deg) translateY(-4px) scale(1.08);
+}
+
+.shelf-die[data-rolling='true'] {
+  animation: die-roll 1s cubic-bezier(0.3, 0.7, 0.4, 1) infinite;
+}
+
+@keyframes die-roll {
+  0% {
+    transform: rotate(-8deg) translateY(0);
+  }
+  25% {
+    transform: rotate(160deg) translateY(-26px) scale(1.1);
+  }
+  55% {
+    transform: rotate(320deg) translateY(-8px);
+  }
+  75% {
+    transform: rotate(390deg) translateY(-12px);
+  }
+  100% {
+    transform: rotate(352deg) translateY(0);
+  }
+}
+
+.shelf-die__tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fbf3e1;
+  color: var(--color-ink);
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.25);
+  transform: rotate(-4deg);
+  pointer-events: none;
+}
+
+/* Nota de papel con la propuesta del dado */
+.pick-note {
+  position: absolute;
+  top: 74px;
+  left: calc(50% - 150px);
+  z-index: 30;
+  display: grid;
+  gap: 4px;
+  width: min(300px, calc(100% - 44px));
+  padding: 14px 16px 12px;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(transparent 0 23px, rgb(47 111 166 / 0.15) 23px 24px),
+    #fbf6ea;
+  color: var(--color-ink);
+  box-shadow: 0 14px 30px -10px rgb(0 0 0 / 0.6);
+  transform: rotate(-1.5deg);
+  animation: label-in 300ms var(--ease-camera);
+}
+
+.pick-note .icon-btn--tiny {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.pick-note__lead {
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  color: var(--color-ink-soft);
+}
+
+.pick-note strong {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.pick-note__meta {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+}
+
+.pick-note__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* Foco de la ruleta mientras el dado decide */
+.book3d[data-scanning] .book3d__front,
+.spine[data-scanning] {
+  box-shadow:
+    0 0 0 2px #fff1c9,
+    0 0 18px 5px rgb(255 214 140 / 0.8);
+}
+
+.book3d[data-scanning] .book3d__body,
+.spine[data-scanning] {
+  translate: 0 -8px;
+  transition: translate 90ms ease;
+}
+
+/* El libro elegido brilla y da un saltito en la balda */
+.book3d[data-picked] .book3d__body,
+.spine[data-picked] {
+  animation: picked-hop 1.4s cubic-bezier(0.3, 0, 0.3, 1) 2;
+}
+
+.book3d[data-picked] .book3d__front,
+.spine[data-picked] {
+  box-shadow:
+    0 0 0 2px #ffd27a,
+    0 0 22px 6px rgb(255 200 110 / 0.75);
+}
+
+@keyframes picked-hop {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  30% {
+    translate: 0 -16px;
+  }
+  55% {
+    translate: 0 0;
+  }
+  70% {
+    translate: 0 -6px;
+  }
+}
+
+@media (max-width: 720px) {
+  .shelf-die__tag {
+    display: none;
+  }
+}
+
+/* ── Mover libros arrastrando ── */
+.book3d[draggable='true'],
+.spine[draggable='true'] {
+  cursor: grab;
+}
+
+.book3d[data-dragging],
+.spine[data-dragging] {
+  opacity: 0.35;
+}
+
+/* Mientras arrastras, las baldas se iluminan un poco para invitarte a soltar */
+body[data-dragging-book] .shelf-row__track {
+  border-radius: 6px;
+  box-shadow: inset 0 -30px 40px -30px rgb(255 214 140 / 0.35);
+}
+
+body[data-dragging-book] .shelf-row__track[data-dropping] {
+  box-shadow: inset 0 -40px 50px -30px rgb(255 214 140 / 0.6);
+}
+
+.drop-marker {
+  position: absolute;
+  bottom: 0;
+  z-index: 8;
+  width: 4px;
+  height: 92%;
+  margin-left: -2px;
+  border-radius: 4px;
+  background: linear-gradient(#fff4cf, #ffcf7a);
+  box-shadow:
+    0 0 10px 3px rgb(255 210 130 / 0.8),
+    0 0 24px 6px rgb(255 190 100 / 0.4);
+  pointer-events: none;
+  animation: marker-pulse 1s ease-in-out infinite;
+}
+
+@keyframes marker-pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* ── Anatomía de tapa dura en el escaparate (SPEC §5.3, 1.8.0) ── */
+.book3d__front {
+  box-shadow:
+    0 14px 24px rgb(20 10 0 / 0.65),
+    inset 4px 0 6px -2px rgb(0 0 0 / 0.45);
+}
+
+/* Surco de la bisagra a 8 px del borde izquierdo: sombra y brillo, como en un libro de verdad */
+.book3d__front::after {
+  background:
+    linear-gradient(
+      90deg,
+      rgb(0 0 0 / 0.38) 0,
+      rgb(255 255 255 / 0.14) 2px,
+      transparent 4px,
+      transparent 6px,
+      rgb(0 0 0 / 0.42) 8px,
+      rgb(255 255 255 / 0.3) 9.5px,
+      rgb(0 0 0 / 0.12) 11px,
+      transparent 13px
+    ),
+    linear-gradient(90deg, transparent 70%, rgb(0 0 0 / 0.12));
+}
+
+/* Textura de lino sobre la portada */
+.book3d__front::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.06) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.book3d[data-edition='paperback'] .book3d__front::after {
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.3) 0, transparent 3px, transparent 7px, rgb(0 0 0 / 0.18) 8px, rgb(255 255 255 / 0.16) 9px, transparent 11px);
+}
+
+.book3d[data-edition='kindle'] .book3d__front::before,
+.book3d[data-edition='kindle'] .book3d__front::after {
+  display: none;
+}
+
+/* ── Sol de la tarde entrando desde el balcón (derecha) sobre el mueble ── */
+.library__sun {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  background:
+    repeating-linear-gradient(242deg, transparent 0 70px, rgb(255 220 150 / 0.16) 70px 150px, transparent 150px 260px),
+    linear-gradient(242deg, rgb(255 210 130 / 0.42) 0%, rgb(255 196 120 / 0.14) 35%, transparent 62%);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  animation: sun-drift 14s ease-in-out infinite alternate;
+}
+
+@keyframes sun-drift {
+  to {
+    background-position: 40px 0, 0 0;
+    opacity: 0.85;
+  }
+}
+
+.library__leaves {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  fill: rgb(40 22 6 / 0.5);
+  mix-blend-mode: multiply;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.library__leaves g {
+  animation: leaves-drift 12s ease-in-out infinite alternate;
+}
+
+/* ── Muro de recuerdos: polaroids de los libros leídos (1.9.0) ── */
+.memory-board {
+  position: absolute;
+  top: 70px;
+  right: -132px;
+  bottom: 24px;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 112px;
+  padding: 26px 8px 10px;
+  overflow-y: auto;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(90deg, rgb(70 40 18 / 0.18) 0 2px, transparent 2px 9px),
+    linear-gradient(90deg, #8a5a2b, #b07a45 45%, #7a4f26);
+  box-shadow:
+    inset 0 0 0 2px rgb(60 30 10 / 0.35),
+    0 16px 30px -10px rgb(0 0 0 / 0.6);
+  scrollbar-width: none;
+}
+
+.memory-board::-webkit-scrollbar {
+  display: none;
+}
+
+.memory-board__title {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  padding: 1px 10px;
+  border-radius: 3px;
+  background: #fbf3e1;
+  color: var(--color-ink);
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  font-weight: 700;
+  transform: translateX(-50%) rotate(-2deg);
+}
+
+.memory-board__empty {
+  margin: 10px 0;
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  line-height: 1.1;
+  text-align: center;
+  color: #fbf3e1;
+}
+
+.memory-polaroid {
+  position: relative;
+  display: grid;
+  flex: none;
+  justify-items: center;
+  width: 84px;
+  margin-bottom: -6px;
+  padding: 5px 5px 4px;
+  border: 0;
+  background: #fbf7ee;
+  box-shadow: 0 6px 10px rgb(0 0 0 / 0.4);
+  transform: rotate(var(--tilt));
+  transition:
+    transform 250ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    box-shadow 250ms ease;
+}
+
+.memory-polaroid:hover,
+.memory-polaroid:focus-visible {
+  z-index: 2;
+  transform: rotate(0deg) scale(1.08);
+  box-shadow: 0 12px 18px rgb(0 0 0 / 0.45);
+}
+
+.memory-polaroid__pin {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff9a8a, #c4423a 60%, #7a1f1a);
+  box-shadow: 0 2px 2px rgb(0 0 0 / 0.4);
+}
+
+.memory-polaroid__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #222;
+}
+
+.memory-polaroid__photo .cover-img {
+  object-position: 50% 30%;
+}
+
+.memory-polaroid__date {
+  margin-top: 3px;
+  font-family: var(--font-hand);
+  font-size: 0.95rem;
+  line-height: 1;
+  color: #4a3626;
+}
+
+.memory-polaroid__stars {
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  color: #e2a52f;
+}
+
+.memory-polaroid__stars i {
+  font-style: normal;
+  color: #d9cdb5;
+}
+
+/* Pantallas medianas y móvil: el tablón pasa a ser una tira horizontal bajo las baldas */
+@media (max-width: 1100px) {
+  .memory-board {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    flex-direction: row;
+    gap: 10px;
+    width: auto;
+    margin: 0 10px 10px;
+    padding: 12px 12px 10px 90px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .memory-board__title {
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%) rotate(-4deg);
+  }
+
+  .memory-polaroid {
+    width: 70px;
+    margin-bottom: 0;
+  }
+}
+
+/* Hueco a la derecha del mueble para el tablón de recuerdos en pantallas anchas */
+@media (min-width: 1101px) {
+  .library {
+    padding-right: max(150px, 4vw);
+  }
+}

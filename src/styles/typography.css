@@ -1,0 +1,197 @@
+/* ── Tipografía editorial artesanal (SPEC §1bis, 1.11.0) ─────────────────────────────────────────
+   Cormorant Garamond para títulos y números grandes · Lora para el cuerpo y la interfaz ·
+   Caveat para todo lo escrito a mano · Courier Prime para sellos, fechas, páginas y el reloj.
+   Se carga al final para imponerse a las reglas de cada pantalla. */
+
+body {
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Cabeceras en Cormorant Garamond */
+:where(h1, h2, h3, h4) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+
+/* Textos literarios: cifras elzevirianas, como en un libro impreso */
+.synopsis p,
+.quote blockquote,
+.review,
+.page__head,
+.page-controls__stats,
+.confirm-book__synopsis,
+.result__text,
+.tray__book,
+.cal-pop__text,
+.sessions__list,
+.edition-note,
+.library__title,
+.gen-cover,
+.pick-note {
+  font-variant-numeric: oldstyle-nums proportional-nums;
+}
+
+/* Cuerpo de lectura en Lora: sinopsis, fichas y listas */
+.synopsis p,
+.confirm-book__synopsis {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--color-ink);
+  hyphens: auto;
+}
+
+.synopsis h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* Títulos de libros y cabeceras en Cormorant: más presencia */
+.page__head h2 {
+  font-size: clamp(1.7rem, 3.2vw, 2.15rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.005em;
+}
+
+.page__head p {
+  font-family: var(--font-sans);
+  font-style: italic;
+}
+
+/* El letrero de la librería, más grande: Cormorant tiene el ojo pequeño */
+.library__title span {
+  font-size: clamp(1.3rem, 2.8vw, 1.95rem);
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.library__title small {
+  font-size: 1.15rem;
+}
+
+.room-label__paper strong,
+.pick-note strong,
+.reading-switch__text b,
+.result__text strong,
+.cal-pop__text b,
+.tile strong,
+.goal h3,
+.tray__head h2,
+.index-card__head h2,
+
+.window__title,
+.cal__head h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.goal-ring__value,
+.tile strong {
+  font-variant-numeric: lining-nums;
+}
+
+/* Escrito a mano (Caveat): ex-libris, citas subrayadas, pensamientos, post-its y bocadillos */
+.ex-libris p {
+  font-family: var(--font-hand);
+  font-style: normal;
+  font-size: 1.25rem;
+  line-height: 1.1;
+}
+
+.quote blockquote {
+  font-family: var(--font-hand);
+  font-style: normal;
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.review {
+  font-weight: 500;
+}
+
+/* Sellos de biblioteca antigua, fechas, páginas y relojes (Courier Prime) */
+.tray__clock strong,
+.tea-mist__time {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.tea-mist__time {
+  font-size: 40px;
+}
+
+.finished-stamp {
+  font-family: var(--font-mono);
+  letter-spacing: 0.24em;
+}
+
+.room-label__paper em,
+.bed-card__meta,
+.ereader__bar,
+.open-book__ereader-bar,
+.tray__page input,
+.sessions__list h4 span,
+.memory-polaroid__date,
+.page-controls .ink-input--num,
+.quote footer > span:first-child,
+.quote-form__page,
+.audio-case__strip span,
+.spine__audio b {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.room-label__paper em {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.memory-polaroid__date {
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+}
+
+.page-controls .ink-input--num,
+.page-controls .ink-input--tiny,
+.quote-form__page input {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-style: normal;
+}
+
+/* Etiquetas en versalitas con tracking cuidado (en vez de mayúsculas a la fuerza) */
+.diary-sub,
+.shelf-row__plate,
+.reading-switch__label,
+.book3d__belly,
+.page-controls__stats strong,
+.edition-menu__title {
+  font-variant-caps: all-small-caps;
+  text-transform: none;
+  letter-spacing: 0.09em;
+}
+
+.diary-sub,
+.shelf-row__plate {
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+/* Tinta sepia sobre papel crema: nunca negro puro sobre blanco puro */
+::selection {
+  background: rgb(232 176 74 / 0.4);
+  color: #2c1e14;
+}

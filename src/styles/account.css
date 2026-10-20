@@ -1,0 +1,257 @@
+/* «Tu cuenta» (SPEC §9ter, 1.16.0): ficha de papel algodón con botones de latón, como el resto de menús */
+.account.paper-sheet {
+  --paper-bg: linear-gradient(#fbf6ec, #f5ead6);
+  width: min(460px, calc(100vw - 32px));
+  padding: 20px 22px 22px;
+  border-radius: 14px;
+  color: var(--color-ink);
+  box-shadow:
+    var(--pressed-paper),
+    0 24px 48px rgb(30 15 5 / 0.35);
+}
+
+.account__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.account__head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 600;
+}
+
+.account-section {
+  padding: 12px 0;
+  border-top: 1px dashed rgb(107 68 35 / 0.25);
+}
+
+.account-section h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+}
+
+.account-status {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.account-status svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  color: var(--brass-dark, #7a5c12);
+}
+
+.account-status[data-status='synced'] svg {
+  color: var(--color-ivy);
+}
+
+.account-status[data-status='syncing'] svg {
+  animation: account-spin 1.1s linear infinite;
+}
+
+.account-status[data-status='error'] svg,
+.account-status[data-status='conflict'] svg {
+  color: var(--color-terracotta);
+}
+
+@keyframes account-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.account-who {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: var(--color-ink-soft);
+}
+
+.account-form {
+  display: grid;
+  gap: 8px;
+}
+
+.account-form label {
+  font-size: 0.9rem;
+  color: var(--color-ink-soft);
+}
+
+.account-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgb(107 68 35 / 0.35);
+  border-radius: 8px;
+  background: #fffaf0;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.account-form input#account-code {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.account-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.account-btn {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 14px;
+  border: 1px solid rgb(122 92 18 / 0.45);
+  border-radius: 999px;
+  background: linear-gradient(#fffaf0, #f3e6c8);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(60 30 10 / 0.12);
+}
+
+.account-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.account-btn--primary {
+  border-color: var(--brass-dark, #7a5c12);
+  background: linear-gradient(var(--brass-light, #f1d68a), var(--brass, #c59b27));
+  font-weight: 600;
+}
+
+.account-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.account-link {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-bay);
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.account-hint {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--color-ink-soft);
+}
+
+.account-error {
+  margin: 4px 0 8px;
+  font-size: 0.85rem;
+  color: #a33b1f;
+}
+
+.account-conflict {
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid rgb(196 98 58 / 0.4);
+  border-radius: 10px;
+  background: rgb(255 240 220 / 0.7);
+}
+
+.account-conflict > p {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+}
+
+.account-versions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 420px) {
+  .account-versions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.account-version {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fffaf0;
+  box-shadow: inset 0 0 0 1px rgb(107 68 35 / 0.18);
+}
+
+.account-version h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.account-version p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.account-version__when {
+  color: var(--color-ink-soft);
+}
+
+.account-version .account-btn {
+  margin-top: 6px;
+}
+
+/* Botón de la nube en la esquina: un punto indica el estado */
+.corner-btn--cloud {
+  position: relative;
+}
+
+.corner-btn--cloud::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid #fbf3e1;
+  border-radius: 50%;
+  background: var(--dot, transparent);
+}
+
+.corner-btn--cloud[data-status='synced'] {
+  --dot: #4f7a3a;
+}
+
+.corner-btn--cloud[data-status='pending'],
+.corner-btn--cloud[data-status='syncing'] {
+  --dot: #c59b27;
+}
+
+.corner-btn--cloud[data-status='offline'] {
+  --dot: #8d7a66;
+}
+
+.corner-btn--cloud[data-status='error'],
+.corner-btn--cloud[data-status='conflict'] {
+  --dot: #c4623a;
+}

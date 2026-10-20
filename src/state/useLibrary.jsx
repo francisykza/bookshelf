@@ -1,0 +1,317 @@
+// Estado de la biblioteca (SPEC §5.1): reducer puro + persistencia en localStorage + acciones.
+import { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
+import { SAMPLE_EDITIONS, sampleBook, sampleBooks, sampleReadingLog } from '../data/sampleBooks';
+import { clampPage, createBook, newId, shelfSort, withStatus } from '../domain/books';
+import { dayKey, timeOfDayByClock, weekKey } from '../domain/dates';
+import { EMPTY_COMPANION, applyTreasure } from '../domain/companion';
+import { EMPTY_FIGURES, grantSeal, initialFigures, openMysteryBox } from '../domain/figures';
+
+export const STORAGE_KEY = 'bookshelf:v1';
+
+/** Ajustes propios de cada dispositivo: no viajan con la sincronización (SPEC §9ter). */
+export const DEVICE_SETTINGS = ['timeOfDay', 'timeAuto', 'sound', 'sfx', 'showGuides', 'lampOn', 'candleOn'];
+const pickDevice = (settings) => Object.fromEntries(DEVICE_SETTINGS.filter((k) => k in settings).map((k) => [k, settings[k]]));
+
+const DEFAULT_SETTINGS = {
+  owner: 'Lectora',
+  pagesPerHour: 40,
+  timeOfDay: timeOfDayByClock(),
+  timeAuto: true,
+  sound: true,
+  viewMode: 'cover',
+  pet: 'miel',
+  yearGoal: 24,
+  drink: 'icedTea',
+  focusMinutes: 25,
+  breakMinutes: 5,
+  currentBookId: 'circe',
+  pinnedQuote: null,
+  customSagas: [],
+  showGuides: false,
+  sfx: true,
+  lampOn: true,
+  candleOn: true,
+};
+
+function initialState() {
+  const books = sampleBooks();
+  return {
+    version: 5,
+    books,
+    settings: { ...DEFAULT_SETTINGS },
+    progress: { readingLog: sampleReadingLog(), pomodoros: [], claimed: {}, companion: { ...EMPTY_COMPANION }, figures: initialFigures(books) },
+  };
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? hydrate(JSON.parse(raw)) : initialState();
+  } catch {
+    return initialState();
+  }
+}
+
+/** Pasa un estado guardado (local, de la nube o de una copia) por todas las migraciones; lanza si no lo es. */
+export function hydrate(saved) {
+  if (!saved || typeof saved !== 'object' || (saved.books != null && !Array.isArray(saved.books))) throw new Error('No es un estado de BookShelf');
+  const base = initialState();
+  const v = saved.version ?? 1;
+  let books = (saved.books ?? base.books).map((b) => createBook(b));
+  // v3: catálogo de ediciones; los libros de ejemplo estrenan su edición de coleccionista
+  if (v < 3) {
+    books = books.map((b) => {
+      const ed = b.source === 'sample' && SAMPLE_EDITIONS[b.id];
+      if (!ed) return b;
+      const next = { ...b, editionType: ed.editionType };
+      if (ed.sprayedEdgeStyle) next.sprayedEdgeStyle = ed.sprayedEdgeStyle;
+      if (ed.audioHours) next.audioHours = ed.audioHours;
+      return next;
+    });
+    if (saved.books && !books.some((b) => b.id === 'alas-sangre')) books.push(sampleBook('alas-sangre'));
+  }
+  // v4: Booknooks de sagas; llega «Nacidos de la bruma» para estrenar su diorama emparejado
+  if (v < 4 && saved.books && !books.some((b) => b.id === 'mistborn')) books.push(sampleBook('mistborn'));
+  // v5: los Booknooks dejan paso a las Figuras de Coleccionista; cada pieza por encima de 3 es una caja más
+  const figures = saved.progress?.figures
+    ? { ...EMPTY_FIGURES, ...saved.progress.figures, pity: { ...EMPTY_FIGURES.pity, ...saved.progress.figures.pity } }
+    : initialFigures(books, Math.max(0, (saved.progress?.pieces ?? 3) - 3));
+  return {
+    ...base,
+    ...saved,
+    books,
+    version: 5,
+    // v2: el sonido pasa a estar activado por defecto (antes se guardaba apagado al recargar)
+    settings: {
+      ...DEFAULT_SETTINGS,
+      ...saved.settings,
+      ...(v < 2 ? { sound: true } : null),
+      timeOfDay: timeOfDayByClock(),
+      timeAuto: true,
+    },
+    progress: { ...base.progress, ...saved.progress, companion: { ...EMPTY_COMPANION, ...saved.progress?.companion }, figures },
+  };
+}
+
+/** Cambia la página de un libro registrando la lectura del día y las transiciones de estado. */
+function withPage(state, id, page, date = dayKey()) {
+  const now = new Date().toISOString();
+  let delta = 0;
+  const books = state.books.map((b) => {
+    if (b.id !== id) return b;
+    const next = clampPage(b, page);
+    delta = next - b.currentPage;
+    const patch = { currentPage: next, updatedAt: now };
+    if (next > 0 && b.status === 'want') Object.assign(patch, { status: 'reading', startedAt: b.startedAt || now });
+    if (b.pageCount && next >= b.pageCount && b.status !== 'read') Object.assign(patch, { status: 'read', finishedAt: now });
+    if (next < b.pageCount && b.status === 'read') Object.assign(patch, { status: 'reading', finishedAt: null });
+    return { ...b, ...patch };
+  });
+  if (delta <= 0) return { ...state, books };
+  const log = [...state.progress.readingLog];
+  const found = log.findIndex((e) => e.date === date && e.bookId === id);
+  if (found >= 0) log[found] = { ...log[found], pages: log[found].pages + delta };
+  else log.push({ date, bookId: id, pages: delta });
+  // Leer hoy enciende un sello del Guardián (y carga la sinergia si el libro tiene su figura al lado)
+  const figures = date === dayKey() ? grantSeal(state.progress.figures, date, { bookId: id }) : state.progress.figures;
+  return { ...state, books, progress: { ...state.progress, readingLog: log, figures } };
+}
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'addBook': {
+      const book = createBook({ ...action.book, addedAt: new Date().toISOString() });
+      return { ...state, books: [...state.books, book] };
+    }
+    case 'updateBook': {
+      const now = new Date().toISOString();
+      return {
+        ...state,
+        books: state.books.map((b) => {
+          if (b.id !== action.id) return b;
+          const next = { ...b, ...action.patch, updatedAt: now };
+          if ('review' in action.patch && action.patch.review.trim() && action.patch.review !== b.review) next.reviewedAt = now;
+          if (action.patch.status === 'read' && b.status !== 'read') {
+            next.finishedAt = now;
+            next.currentPage = b.pageCount;
+          }
+          if (action.patch.status === 'reading' && !b.startedAt) next.startedAt = now;
+          if (action.patch.status && action.patch.status !== 'read') next.finishedAt = null;
+          if ('pageCount' in action.patch) next.currentPage = clampPage(next, next.currentPage);
+          return next;
+        }),
+      };
+    }
+    case 'setPage':
+      return withPage(state, action.id, action.page);
+    case 'moveBook': {
+      // Arrastrar un libro: cambia de balda si hace falta y queda delante de `beforeId` (o al final)
+      let books = state.books.map((b) => (b.id === action.id ? withStatus(b, action.status) : b));
+      const moving = books.find((b) => b.id === action.id);
+      if (!moving) return state;
+      const row = books.filter((b) => b.status === action.status && b.id !== action.id).sort(shelfSort(action.status));
+      const at = action.beforeId ? row.findIndex((b) => b.id === action.beforeId) : -1;
+      row.splice(at < 0 ? row.length : at, 0, moving);
+      const order = new Map(row.map((b, i) => [b.id, i]));
+      books = books.map((b) => (order.has(b.id) ? { ...b, shelfOrder: order.get(b.id) } : b));
+      return { ...state, books };
+    }
+    case 'addSession': {
+      // Sesión apuntada a mano desde el calendario: suma páginas al libro y al día elegido
+      const book = state.books.find((b) => b.id === action.id);
+      if (!book || action.pages <= 0) return state;
+      return withPage(state, action.id, book.currentPage + action.pages, action.date);
+    }
+    case 'removeSession':
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          readingLog: state.progress.readingLog.filter((e) => !(e.date === action.date && e.bookId === action.id)),
+        },
+      };
+    case 'removeBook':
+      return {
+        ...state,
+        books: state.books.filter((b) => b.id !== action.id),
+        settings: state.settings.currentBookId === action.id ? { ...state.settings, currentBookId: null } : state.settings,
+      };
+    case 'addQuote':
+      return {
+        ...state,
+        books: state.books.map((b) =>
+          b.id === action.id
+            ? { ...b, quotes: [...b.quotes, { id: newId('q'), createdAt: new Date().toISOString(), ...action.quote }] }
+            : b,
+        ),
+      };
+    case 'removeQuote':
+      return {
+        ...state,
+        books: state.books.map((b) => (b.id === action.id ? { ...b, quotes: b.quotes.filter((q) => q.id !== action.quoteId) } : b)),
+      };
+    case 'settings':
+      return { ...state, settings: { ...state.settings, ...action.patch } };
+    case 'pomodoro':
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          pomodoros: [...state.progress.pomodoros, { at: new Date().toISOString(), minutes: action.minutes, drink: action.drink }],
+          figures: grantSeal(state.progress.figures, dayKey()),
+        },
+      };
+    case 'claimMission': {
+      const week = weekKey();
+      const claimed = state.progress.claimed[week] ?? [];
+      if (claimed.includes(action.id)) return state;
+      return {
+        ...state,
+        progress: {
+          ...state.progress,
+          figures: { ...state.progress.figures, boxes: state.progress.figures.boxes + 1 },
+          claimed: { ...state.progress.claimed, [week]: [...claimed, action.id] },
+        },
+      };
+    }
+    // Sobre lacrado del día (portátil)
+    case 'companionTreasure':
+      return { ...state, progress: applyTreasure(state.progress, action.treasure) };
+    case 'companionSaveCard': {
+      const c = { ...EMPTY_COMPANION, ...state.progress.companion };
+      if (!c.pendingCard) return state;
+      const cards = c.cards.includes(c.pendingCard) ? c.cards : [...c.cards, c.pendingCard];
+      return { ...state, progress: { ...state.progress, companion: { ...c, cards, pendingCard: null, lastPieceUp: false } } };
+    }
+    // Figuras de Coleccionista (SPEC §7)
+    case 'figures': {
+      const fs = state.progress.figures;
+      let next = fs;
+      if (action.op === 'display' && fs.owned[action.id]) next = { ...fs, owned: { ...fs.owned, [action.id]: { ...fs.owned[action.id], display: action.display } } };
+      if (action.op === 'guardian' && fs.owned[action.id]) next = { ...fs, guardian: action.id };
+      if (action.op === 'seal') next = grantSeal(fs, dayKey(), { force: true });
+      if (action.op === 'path') next = { ...fs, path: action.id };
+      if (action.op === 'place') {
+        const placements = { ...fs.placements };
+        if (action.bookId) placements[action.id] = action.bookId;
+        else delete placements[action.id];
+        next = { ...fs, placements };
+      }
+      if (action.op === 'open') next = openMysteryBox(fs, action.catalog, action.rnd).fs;
+      if (action.op === 'ack') next = { ...fs, lastReward: null, sealBox: false };
+      // Libros de la saga de cada figura que tienes (la sinergia ×2 sale de aquí)
+      if (action.op === 'sync') next = { ...fs, placements: action.map };
+      // Reclamar el sello de hoy si ya has leído (p. ej. si elegiste Guardián después de leer)
+      if (action.op === 'today') {
+        const today = dayKey();
+        const read = state.progress.readingLog.some((e) => e.date === today && e.pages > 0) || state.progress.pomodoros.some((p) => dayKey(new Date(p.at)) === today);
+        if (read) next = grantSeal(fs, today);
+      }
+      return next === fs ? state : { ...state, progress: { ...state.progress, figures: next } };
+    }
+    case 'reset':
+      return initialState();
+    // Estado completo llegado de la nube o de una copia (ya migrado); se conservan los ajustes del dispositivo
+    case 'replace':
+      return { ...action.state, settings: { ...action.state.settings, ...pickDevice(state.settings) } };
+    default:
+      return state;
+  }
+}
+
+const LibraryContext = createContext(null);
+
+export function LibraryProvider({ children }) {
+  const [state, dispatch] = useReducer(reducer, undefined, load);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch {
+        // Almacenamiento lleno o bloqueado: la sesión sigue funcionando en memoria.
+      }
+    }, 250);
+    return () => clearTimeout(id);
+  }, [state]);
+
+  const actions = useMemo(
+    () => ({
+      addBook: (book) => dispatch({ type: 'addBook', book }),
+      updateBook: (id, patch) => dispatch({ type: 'updateBook', id, patch }),
+      setPage: (id, page) => dispatch({ type: 'setPage', id, page }),
+      addSession: (date, id, pages) => dispatch({ type: 'addSession', date, id, pages }),
+      removeSession: (date, id) => dispatch({ type: 'removeSession', date, id }),
+      removeBook: (id) => dispatch({ type: 'removeBook', id }),
+      moveBook: (id, status, beforeId) => dispatch({ type: 'moveBook', id, status, beforeId }),
+      addQuote: (id, quote) => dispatch({ type: 'addQuote', id, quote }),
+      removeQuote: (id, quoteId) => dispatch({ type: 'removeQuote', id, quoteId }),
+      setSettings: (patch) => dispatch({ type: 'settings', patch }),
+      logPomodoro: (minutes, drink) => dispatch({ type: 'pomodoro', minutes, drink }),
+      claimMission: (id) => dispatch({ type: 'claimMission', id }),
+      figureDisplay: (id, display) => dispatch({ type: 'figures', op: 'display', id, display }),
+      setGuardian: (id) => dispatch({ type: 'figures', op: 'guardian', id }),
+      simulateSeal: () => dispatch({ type: 'figures', op: 'seal' }),
+      setFigurePath: (id) => dispatch({ type: 'figures', op: 'path', id }),
+      placeFigure: (id, bookId) => dispatch({ type: 'figures', op: 'place', id, bookId }),
+      openMysteryBox: (catalog) => dispatch({ type: 'figures', op: 'open', catalog, rnd: Array.from({ length: 8 }, Math.random) }),
+      ackFigureReward: () => dispatch({ type: 'figures', op: 'ack' }),
+      syncFigureBooks: (map) => dispatch({ type: 'figures', op: 'sync', map }),
+      claimTodaySeal: () => dispatch({ type: 'figures', op: 'today' }),
+      claimTreasure: (treasure) => dispatch({ type: 'companionTreasure', treasure }),
+      saveCard: () => dispatch({ type: 'companionSaveCard' }),
+      reset: () => dispatch({ type: 'reset' }),
+      replaceState: (state) => dispatch({ type: 'replace', state }),
+    }),
+    [],
+  );
+
+  const value = useMemo(() => ({ state, actions }), [state, actions]);
+  return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;
+}
+
+export function useLibrary() {
+  const ctx = useContext(LibraryContext);
+  if (!ctx) throw new Error('useLibrary debe usarse dentro de <LibraryProvider>');
+  return ctx;
+}

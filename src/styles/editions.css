@@ -1,0 +1,1098 @@
+/* ── Ediciones de coleccionista (SPEC §5.3, 1.10.0) ─────────────────────────────────────────────
+   Cada `data-edition` cambia el objeto físico: cantos, herrajes, texturas, e-reader y estuche.
+   Se aplica al libro 3D del Escaparate (.book3d), a los lomos (.spine) y al libro abierto. */
+
+/* ── Cantos de las hojas ── */
+.edge--constellations {
+  background:
+    radial-gradient(circle, #fff 0 0.8px, transparent 1.2px) 0 0 / 9px 11px,
+    radial-gradient(circle, #ffe7a3 0 1px, transparent 1.5px) 4px 6px / 13px 9px,
+    radial-gradient(circle, #f3c96a 0 0.6px, transparent 1px) 2px 3px / 7px 15px,
+    linear-gradient(180deg, rgb(255 214 120 / 0.28), transparent 18%, transparent 82%, rgb(255 214 120 / 0.28)),
+    linear-gradient(#141c44, #26346e 50%, #141c44) !important;
+}
+
+.edge--botanical {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='36' viewBox='0 0 16 36'%3E%3Cpath d='M8 0 C14 9 2 18 8 27 S8 36 8 36' fill='none' stroke='%234f7a3a' stroke-width='1.3'/%3E%3Cellipse cx='12' cy='8' rx='3.2' ry='1.6' fill='%236f9a4a' transform='rotate(-30 12 8)'/%3E%3Cellipse cx='4' cy='21' rx='3.2' ry='1.6' fill='%236f9a4a' transform='rotate(30 4 21)'/%3E%3Ccircle cx='3.5' cy='9' r='2.1' fill='%23e7909f'/%3E%3Ccircle cx='3.5' cy='9' r='0.8' fill='%23f7dc6f'/%3E%3Ccircle cx='12.5' cy='28' r='2' fill='%23f2b8c6'/%3E%3Ccircle cx='12.5' cy='28' r='0.7' fill='%23f7dc6f'/%3E%3C/svg%3E")
+      0 0 / 12px 27px,
+    linear-gradient(90deg, #f7ecd4, #fbf3e1 50%, #efe0c0) !important;
+}
+
+.edge--dragon_fire {
+  background:
+    radial-gradient(circle, #fff2b0 0 0.7px, transparent 1.3px) 1px 2px / 7px 13px,
+    radial-gradient(circle, #ffb347 0 0.9px, transparent 1.5px) 4px 8px / 9px 11px,
+    radial-gradient(circle at 50% 0, transparent 0 3px, rgb(255 196 90 / 0.4) 3.4px 4.2px, transparent 4.6px) 0 0 / 8px 6px,
+    linear-gradient(180deg, #2a0805, #7a1a0a 30%, #c4501a 60%, #f39a2b 85%, #ffd479) !important;
+}
+
+.edge--watercolor {
+  background:
+    radial-gradient(ellipse 60% 18% at 30% 14%, rgb(110 170 210 / 0.75), transparent 70%),
+    radial-gradient(ellipse 70% 20% at 70% 36%, rgb(64 140 150 / 0.6), transparent 70%),
+    radial-gradient(ellipse 60% 16% at 40% 58%, rgb(224 140 100 / 0.6), transparent 70%),
+    radial-gradient(ellipse 70% 18% at 60% 80%, rgb(244 196 110 / 0.65), transparent 70%),
+    radial-gradient(ellipse 50% 14% at 30% 94%, rgb(120 180 220 / 0.6), transparent 70%),
+    linear-gradient(#fbf3e1, #f3e6cb) !important;
+}
+
+/* Pan de oro de las ediciones de cuero y tela */
+.edge--gilded {
+  background:
+    repeating-linear-gradient(0deg, rgb(120 80 10 / 0.18) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #d4af37, #fff3b0 45%, #e2bf55 60%, #aa820a) !important;
+}
+
+.book3d__top.edge--gilded {
+  background:
+    repeating-linear-gradient(90deg, rgb(120 80 10 / 0.18) 0 1px, transparent 1px 3px),
+    linear-gradient(90deg, #d4af37, #fff3b0 45%, #e2bf55 60%, #aa820a) !important;
+}
+
+/* Brillo vivo del pan de oro al pasar el ratón */
+.book3d:hover .edge--gilded,
+.book3d:hover .edge--constellations {
+  filter: brightness(1.15) saturate(1.1);
+}
+
+.spine__top {
+  height: 6px;
+}
+
+/* ── Tapa dura con sobrecubierta: tapas que sobresalen 3 px y brillo satinado ── */
+.book3d[data-edition='hardcover'] .book3d__sheen,
+.book3d[data-edition='sprayed_edges'] .book3d__sheen {
+  background:
+    linear-gradient(115deg, transparent 25%, rgb(255 250 235 / 0.34) 42%, rgb(255 250 235 / 0.08) 52%, transparent 62%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.1), transparent 30%);
+  opacity: 0.85;
+  transition: background-position 700ms ease;
+  background-size: 220% 100%, 100% 100%;
+  background-position: 100% 0, 0 0;
+}
+
+.book3d[data-edition='hardcover']:hover .book3d__sheen,
+.book3d[data-edition='sprayed_edges']:hover .book3d__sheen {
+  background-position: 0 0, 0 0;
+}
+
+/* ── Bolsillo: más compacto, mate, papel tostado y marca de lectura en el lomo ── */
+.book3d[data-edition='paperback'] .book3d__sheen {
+  opacity: 0.12;
+}
+
+.book3d[data-edition='paperback'] .book3d__front {
+  filter: saturate(0.9);
+}
+
+.book3d[data-edition='paperback'] .book3d__pages {
+  top: 1px;
+  height: calc(100% - 2px);
+  background: repeating-linear-gradient(90deg, #ead5aa 0 1px, #d6bd8c 1px 2px);
+}
+
+.book3d[data-edition='paperback'] .book3d__top {
+  background: repeating-linear-gradient(0deg, #ead5aa 0 1px, #d6bd8c 1px 2px);
+  transform: rotateX(90deg) translateZ(calc(var(--h) / 2 - 1px));
+}
+
+.book3d[data-edition='paperback'] .book3d__spine,
+.spine[data-edition='paperback'] {
+  background:
+    linear-gradient(90deg, transparent 33%, rgb(255 255 255 / 0.2) 34%, transparent 35.5%, transparent 58%, rgb(255 255 255 / 0.13) 59%, transparent 60.5%),
+    linear-gradient(180deg, transparent 22%, rgb(255 255 255 / 0.08) 24%, transparent 27%),
+    linear-gradient(90deg, rgb(0 0 0 / 0.32), rgb(255 255 255 / 0.08) 30%, rgb(0 0 0 / 0.3)),
+    var(--spine);
+}
+
+/* ── Foil dorado reactivo (tela estampada y cantos pintados) ── */
+.book3d__foil {
+  position: absolute;
+  inset: 7% 8% 7% 15%;
+  z-index: 2;
+  border: 2px solid #e2ba60;
+  outline: 1px solid rgb(240 205 120 / 0.9);
+  outline-offset: 2.5px;
+  box-shadow:
+    0 0 0 1px rgb(60 35 5 / 0.45),
+    inset 0 0 0 1px rgb(60 35 5 / 0.45);
+  pointer-events: none;
+  transition:
+    border-color 300ms ease,
+    outline-color 300ms ease,
+    box-shadow 300ms ease;
+}
+
+.book3d__foil::before,
+.book3d__foil::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  background: linear-gradient(135deg, #fff3b0, #c7922e);
+  transform: rotate(45deg);
+}
+
+.book3d__foil::before {
+  top: -4px;
+}
+
+.book3d__foil::after {
+  bottom: -4px;
+}
+
+.book3d[data-edition='sprayed_edges'] .book3d__foil {
+  inset: 4% 5% 4% 12%;
+  border-width: 1.5px;
+  outline: 0;
+}
+
+.book3d[data-edition='sprayed_edges'] .book3d__foil::before,
+.book3d[data-edition='sprayed_edges'] .book3d__foil::after {
+  display: none;
+}
+
+/* Los cantos pintados se lucen: el libro gira un poco más para enseñar el bloque de hojas */
+.book3d[data-edition='sprayed_edges'] .book3d__body {
+  transform: rotateY(-36deg) rotateX(6deg);
+}
+
+.book3d[data-edition='sprayed_edges']:hover .book3d__body,
+.book3d[data-edition='sprayed_edges']:focus-visible .book3d__body {
+  transform: rotateY(-44deg) rotateX(4deg) translateY(-8px) translateZ(14px);
+}
+
+.book3d:hover .book3d__foil,
+.book3d:focus-visible .book3d__foil {
+  border-color: #fff3b0;
+  outline-color: #ffe08a;
+  box-shadow:
+    0 0 7px rgb(255 214 120 / 0.95),
+    inset 0 0 7px rgb(255 214 120 / 0.7);
+}
+
+/* ── Tela estampada: lino tejido marcado ── */
+.book3d[data-edition='clothbound'] .book3d__front::before {
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.12) 0 1px, transparent 1px 2px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.14) 0 1px, transparent 1px 2px);
+  mix-blend-mode: overlay;
+}
+
+.book3d[data-edition='clothbound'] .book3d__sheen {
+  background: linear-gradient(115deg, transparent 35%, rgb(255 230 160 / 0.4) 48%, transparent 60%);
+  background-size: 260% 100%;
+  background-position: 100% 0;
+  opacity: 0.8;
+  transition: background-position 900ms ease;
+}
+
+.book3d[data-edition='clothbound']:hover .book3d__sheen {
+  background-position: 0 0;
+}
+
+.spine[data-edition='clothbound'] {
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 2px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.12) 0 1px, transparent 1px 2px),
+    linear-gradient(90deg, rgb(0 0 0 / 0.38), rgb(255 255 255 / 0.12) 30%, rgb(0 0 0 / 0.38)),
+    var(--spine);
+}
+
+.spine__stamp {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  width: 70%;
+  max-width: 18px;
+  aspect-ratio: 1 / 1.6;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 32'%3E%3Cg fill='none' stroke='%23e2ba60' stroke-width='1.2'%3E%3Cpath d='M10 2 L18 16 L10 30 L2 16 Z'/%3E%3Cpath d='M10 8 L14 16 L10 24 L6 16 Z' fill='%23e2ba60'/%3E%3Cpath d='M0 1 H20 M0 31 H20'/%3E%3C/g%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.5));
+}
+
+.spine[data-edition='clothbound'] .spine__band {
+  height: 1px;
+  background: #e2ba60;
+  box-shadow:
+    0 3px 0 0 #e2ba60,
+    0 -3px 0 0 rgb(226 186 96 / 0.6);
+}
+
+.spine[data-edition='clothbound'] .spine__band--top {
+  margin-top: 38%;
+}
+
+/* Marcapáginas de seda dorada */
+.ribbon[data-silk] {
+  background: linear-gradient(90deg, #9a6a1a, #f6d98e 50%, #9a6a1a);
+}
+
+/* ── Grimorio en cuero y oro ── */
+.book3d__leather {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.1 0 0 0 0 0.04 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* Marco de piel con filete dorado alrededor de la portada */
+.book3d[data-edition='leatherbound'] {
+  --leather: color-mix(in srgb, var(--spine) 35%, #4a2210);
+}
+
+.book3d[data-edition='leatherbound'] .book3d__front::before {
+  z-index: 2;
+  background: none;
+  box-shadow:
+    inset 0 0 0 6px var(--leather),
+    inset 0 0 0 7px #d4af37,
+    inset 0 0 0 8px rgb(40 20 8 / 0.8),
+    inset 0 0 16px 8px rgb(20 8 2 / 0.55);
+  mix-blend-mode: normal;
+}
+
+.book3d__corner {
+  position: absolute;
+  right: 0;
+  z-index: 3;
+  width: 27%;
+  aspect-ratio: 1;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 3px, rgb(90 60 10 / 0.35) 3px 3.6px),
+    radial-gradient(circle at 72% 28%, #fff7c8 0 8%, transparent 30%),
+    linear-gradient(225deg, #f6d98e, #c7922e 45%, #7a5414);
+  pointer-events: none;
+}
+
+.book3d__corner--top {
+  top: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.book3d__corner--bottom {
+  bottom: 0;
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 3px, rgb(90 60 10 / 0.35) 3px 3.6px),
+    radial-gradient(circle at 72% 72%, #fff7c8 0 8%, transparent 30%),
+    linear-gradient(315deg, #f6d98e, #c7922e 45%, #7a5414);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.book3d:hover .book3d__corner {
+  filter: brightness(1.18);
+}
+
+/* Nervios en relieve asomando por el borde izquierdo (lomo) */
+.book3d__ridges {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  width: 11px;
+  pointer-events: none;
+}
+
+.book3d__ridges span,
+.book3d__nerve,
+.spine__nerves span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    rgb(255 235 200 / 0.45),
+    color-mix(in srgb, var(--leather, var(--spine)) 75%, #fff) 30%,
+    var(--leather, var(--spine)) 55%,
+    rgb(0 0 0 / 0.65)
+  );
+  box-shadow:
+    0 2px 2px rgb(0 0 0 / 0.45),
+    0 -3px 0 -2px #d4af37,
+    0 4px 0 -2px #d4af37;
+}
+
+.book3d[data-edition='leatherbound'] .book3d__front {
+  border-radius: 3px 6px 6px 3px;
+}
+
+.book3d[data-edition='leatherbound'] .book3d__sheen {
+  background: linear-gradient(120deg, transparent 30%, rgb(255 220 160 / 0.16) 45%, transparent 60%);
+}
+
+.book3d[data-edition='leatherbound'] .book3d__spine,
+.spine[data-edition='leatherbound'] {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.15 0 0 0 0 0.07 0 0 0 0 0.02 0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(90deg, rgb(0 0 0 / 0.55), rgb(255 230 190 / 0.16) 35%, rgb(255 255 255 / 0.03) 55%, rgb(0 0 0 / 0.55)),
+    var(--leather);
+}
+
+.spine__nerves {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.spine__nerves span {
+  left: -1px;
+  right: -1px;
+  height: 6px;
+  margin-top: -3px;
+}
+
+/* Filetes dorados arriba y abajo, como los tomos que flanquean el Booknook */
+.spine[data-edition='leatherbound'] {
+  --leather: color-mix(in srgb, var(--spine) 45%, #4a2210);
+}
+
+.spine[data-edition='leatherbound'] .spine__band {
+  width: 86%;
+  height: 1.5px;
+  background: #d4af37;
+  box-shadow:
+    0 3px 0 -0.5px #d4af37,
+    0 -3px 0 -0.5px rgb(212 175 55 / 0.7);
+}
+
+.spine[data-edition='leatherbound'] .spine__title {
+  position: relative;
+  z-index: 1;
+  color: #f3d27a;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.7);
+}
+
+.spine[data-edition='leatherbound'] .spine__author {
+  color: #e2ba60;
+}
+
+/* ── Edición anotada: post-its por el corte y faja editorial ── */
+.edition-notes {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.edition-notes span {
+  position: absolute;
+  background: linear-gradient(90deg, var(--note), color-mix(in srgb, var(--note) 82%, #000));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  transform: translateZ(calc((var(--z) - 0.45) * var(--d) * 0.9));
+}
+
+.edition-notes span[data-side='right'] {
+  top: var(--at);
+  left: calc(var(--w) - 4px);
+  width: calc(var(--out) + 5px);
+  height: max(7px, calc(var(--h) * 0.05));
+  border-radius: 0 2px 2px 0;
+}
+
+.edition-notes span[data-side='top'] {
+  top: calc(-1 * var(--out) - 1px);
+  left: var(--at);
+  width: max(7px, calc(var(--w) * 0.08));
+  height: calc(var(--out) + 5px);
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(var(--note), color-mix(in srgb, var(--note) 82%, #000));
+}
+
+.book3d__belly {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  height: 13%;
+  overflow: hidden;
+  border-top: 2px solid #8c3b3b;
+  background: linear-gradient(#f6ead0, #e8d6b2);
+  box-shadow: 0 -1px 3px rgb(0 0 0 / 0.3);
+  color: #8c3b3b;
+  font-family: var(--font-display);
+  font-size: max(6px, calc(var(--w) * 0.085));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.spine__notes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.spine__notes span {
+  position: absolute;
+  bottom: -3px;
+  width: max(3px, 20%);
+  height: calc(var(--out) + 4px);
+  border-radius: 1px 1px 0 0;
+  background: var(--note);
+  box-shadow: 0 -1px 2px rgb(0 0 0 / 0.2);
+}
+
+.spine__belly {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9%;
+  height: 9%;
+  border-top: 2px solid #8c3b3b;
+  background: linear-gradient(#f6ead0, #e2cfa8);
+  pointer-events: none;
+}
+
+/* ── Kindle / e-reader de tinta electrónica ── */
+.book3d[data-edition='kindle'] .book3d__front {
+  border-radius: 7px;
+  background: linear-gradient(160deg, #3b3d3b, #222423 60%, #2d2f2d);
+  box-shadow:
+    0 14px 24px rgb(20 10 0 / 0.65),
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    inset 0 1px 1px rgb(255 255 255 / 0.14);
+}
+
+.book3d[data-edition='kindle'][data-bezel='sage'] .book3d__front {
+  background: linear-gradient(160deg, #94a08b, #6f7b67 60%, #7f8b77);
+}
+
+.book3d[data-edition='kindle'] .book3d__pages,
+.book3d[data-edition='kindle'] .book3d__top,
+.book3d[data-edition='kindle'] .book3d__back,
+.book3d[data-edition='kindle'] .book3d__spine {
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #1d1e1d, #4a4c4a 50%, #1d1e1d);
+}
+
+.book3d[data-edition='kindle'] .book3d__top {
+  top: calc(50% - var(--d) / 2);
+  left: 0;
+  width: var(--w);
+  height: var(--d);
+  transform: rotateX(90deg) translateZ(calc(var(--h) / 2));
+}
+
+.book3d[data-edition='kindle'] .book3d__pages {
+  left: calc(50% - var(--d) / 2);
+  width: var(--d);
+  transform: rotateY(90deg) translateZ(calc(var(--w) / 2));
+}
+
+.book3d[data-edition='kindle'][data-bezel='sage'] :is(.book3d__pages, .book3d__top, .book3d__back, .book3d__spine) {
+  background: linear-gradient(90deg, #5f6a58, #a3ae9a 50%, #5f6a58);
+}
+
+.book3d[data-edition='kindle'] .book3d__spine span {
+  display: none;
+}
+
+.ereader__screen {
+  position: absolute;
+  inset: 7% 7% 14%;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #e8e5da;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.35),
+    inset 0 1px 3px rgb(0 0 0 / 0.4);
+}
+
+/* Tinta electrónica: portada en escala de grises sobre papel mate */
+.ereader__screen > * {
+  filter: grayscale(1) contrast(1.08) brightness(1.06) sepia(0.12);
+  mix-blend-mode: multiply;
+}
+
+.ereader__screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.4 0 0 0 0 0.38 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(160deg, rgb(255 255 255 / 0.12), transparent 40%);
+  pointer-events: none;
+}
+
+.ereader__bar {
+  position: absolute;
+  right: 8%;
+  bottom: 3.5%;
+  left: 8%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 7%;
+  color: #d9dcd5;
+  font-size: max(6px, calc(var(--w, 120px) * 0.07));
+  font-weight: 800;
+  line-height: 1;
+}
+
+[data-bezel='sage'] .ereader__bar {
+  color: #f1f4ec;
+}
+
+.ereader__battery {
+  position: relative;
+  width: 1.9em;
+  height: 0.9em;
+  padding: 1px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  background: linear-gradient(90deg, currentColor var(--b), transparent var(--b)) content-box;
+}
+
+.ereader__battery::after {
+  content: '';
+  position: absolute;
+  top: 25%;
+  right: -3px;
+  width: 2px;
+  height: 50%;
+  border-radius: 0 1px 1px 0;
+  background: currentColor;
+}
+
+.book3d[data-edition='kindle'] .book3d__sheen {
+  inset: 7% 7% 14%;
+  background: linear-gradient(125deg, rgb(255 255 255 / 0.18), transparent 35%);
+  opacity: 1;
+}
+
+/* Lomo del e-reader: perfil metálico ultrafino apoyado en la balda */
+.spine[data-edition='kindle'] {
+  padding: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #191a19, #6c6f6c 32%, #b4b7b2 50%, #4b4d4b 72%, #191a19);
+  box-shadow:
+    1px 0 0 rgb(0 0 0 / 0.5),
+    0 -2px 6px rgb(0 0 0 / 0.3);
+}
+
+.spine[data-edition='kindle'][data-bezel='sage'] {
+  background: linear-gradient(90deg, #4f5a49, #8e9a85 32%, #c3ccbb 50%, #6f7b67 72%, #4f5a49);
+}
+
+.spine__button {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  width: 3px;
+  height: 9px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: linear-gradient(#111, #555);
+}
+
+/* ── Audiolibro: estuche acrílico de colección ── */
+.book3d[data-edition='audiobook'] .book3d__front {
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.55), rgb(220 235 245 / 0.18) 40%, rgb(255 255 255 / 0.35));
+  box-shadow:
+    0 14px 24px rgb(20 10 0 / 0.55),
+    inset 0 0 0 1px rgb(255 255 255 / 0.75),
+    inset 0 0 0 3px rgb(255 255 255 / 0.18);
+}
+
+.book3d[data-edition='audiobook'] .book3d__front::before,
+.book3d[data-edition='audiobook'] .book3d__front::after {
+  display: none;
+}
+
+.audio-case__cover {
+  position: absolute;
+  inset: 6% 6% 21%;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgb(0 0 0 / 0.35);
+}
+
+.audio-case__strip {
+  position: absolute;
+  right: 6%;
+  bottom: 4.5%;
+  left: 6%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  height: 13%;
+  border-radius: 3px;
+  background: linear-gradient(#2e2015, #160d07);
+  box-shadow: inset 0 0 0 1px rgb(232 196 106 / 0.35);
+  color: #e8c46a;
+  font-size: max(7px, calc(var(--w, 120px) * 0.085));
+  font-weight: 800;
+  line-height: 1;
+}
+
+.audio-case__strip svg {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.book3d[data-edition='audiobook']:hover .audio-case__strip svg:first-child {
+  animation: voice-wave 900ms ease-in-out infinite;
+}
+
+@keyframes voice-wave {
+  50% {
+    transform: scaleY(0.6);
+  }
+}
+
+.book3d[data-edition='audiobook'] .book3d__sheen {
+  background: linear-gradient(118deg, transparent 18%, rgb(255 255 255 / 0.5) 30%, transparent 38%, transparent 62%, rgb(255 255 255 / 0.22) 70%, transparent 76%);
+  opacity: 1;
+  z-index: 2;
+}
+
+.book3d[data-edition='audiobook'] :is(.book3d__pages, .book3d__top, .book3d__back, .book3d__spine) {
+  top: 0;
+  height: 100%;
+  border: 1px solid rgb(255 255 255 / 0.6);
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.45), rgb(210 230 240 / 0.22) 50%, rgb(255 255 255 / 0.4));
+}
+
+.book3d[data-edition='audiobook'] .book3d__top {
+  top: calc(50% - var(--d) / 2);
+  left: 0;
+  width: var(--w);
+  height: var(--d);
+  transform: rotateX(90deg) translateZ(calc(var(--h) / 2));
+}
+
+.book3d[data-edition='audiobook'] .book3d__pages {
+  left: calc(50% - var(--d) / 2);
+  width: var(--d);
+  transform: rotateY(90deg) translateZ(calc(var(--w) / 2));
+}
+
+.book3d[data-edition='audiobook'] .book3d__spine span {
+  display: none;
+}
+
+.spine[data-edition='audiobook'] {
+  justify-content: center;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 0.45), rgb(255 255 255 / 0.08) 30%, rgb(255 255 255 / 0.04) 70%, rgb(255 255 255 / 0.35)),
+    color-mix(in srgb, var(--spine) 55%, transparent);
+}
+
+.spine__audio {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  color: #f3d27a;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.6));
+}
+
+.spine__audio svg {
+  width: 12px;
+  height: 12px;
+}
+
+.spine__audio b {
+  font-size: 9px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/* ── Menú rápido de edición en la estantería ── */
+.edition-menu {
+  position: fixed;
+  z-index: 80;
+  width: 276px;
+  padding: 10px;
+  border: 2px solid #b07a45;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(0deg, rgb(107 68 35 / 0.04) 0 1px, transparent 1px 4px),
+    #f8eedb;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.5);
+  color: var(--color-ink);
+  animation: label-in 180ms var(--ease-camera);
+}
+
+.edition-menu__title {
+  margin: 0 0 6px;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edition-menu ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.edition-menu__item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.edition-menu__item:hover,
+.edition-menu__item:focus-visible {
+  outline: none;
+  background: rgb(176 122 69 / 0.16);
+}
+
+.edition-menu__item[aria-checked='true'] {
+  background: #6b4423;
+  color: #fbf3e1;
+}
+
+.edition-swatch {
+  flex: none;
+  width: 18px;
+  height: 22px;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.25);
+}
+
+.edition-swatch[data-edition='hardcover'] {
+  background: linear-gradient(90deg, #5a2e22 0 3px, #7b3b2b 3px);
+}
+
+.edition-swatch[data-edition='paperback'] {
+  border-radius: 1px;
+  background: linear-gradient(90deg, #d9c193 0 3px, #c4623a 3px);
+}
+
+.edition-swatch[data-edition='sprayed_edges'] {
+  background: linear-gradient(90deg, #26346e 0 4px, #5b3a5e 4px);
+}
+
+.edition-swatch[data-edition='leatherbound'] {
+  background:
+    linear-gradient(225deg, #f3d27a 0 22%, transparent 22%),
+    linear-gradient(315deg, #f3d27a 0 22%, transparent 22%),
+    repeating-linear-gradient(180deg, transparent 0 4px, #d4af37 4px 5px),
+    #4a2414;
+}
+
+.edition-swatch[data-edition='clothbound'] {
+  background:
+    linear-gradient(#e2ba60, #e2ba60) center / 60% 70% no-repeat,
+    linear-gradient(#2f4b3a, #2f4b3a) center / 50% 60% no-repeat,
+    #2f4b3a;
+  outline: 1px solid #e2ba60;
+  outline-offset: -4px;
+}
+
+.edition-swatch[data-edition='annotated'] {
+  background:
+    linear-gradient(90deg, transparent 70%, #f4a3b8 70%) 0 4px / 100% 4px no-repeat,
+    linear-gradient(90deg, transparent 70%, #9cc7ec 70%) 0 11px / 100% 4px no-repeat,
+    #8c3b3b;
+}
+
+.edition-swatch[data-edition='kindle'] {
+  border-radius: 3px;
+  background: linear-gradient(#e8e5da, #e8e5da) center 40% / 70% 62% no-repeat, #2d2f2d;
+}
+
+.edition-swatch[data-edition='audiobook'] {
+  border-radius: 3px;
+  background: linear-gradient(#e8c46a, #e8c46a) center 85% / 70% 3px no-repeat, linear-gradient(135deg, #dceaf2, #a8c4d4);
+}
+
+.edge-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 6px 0 2px;
+}
+
+.edge-picker button {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  padding: 4px 2px;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.edge-picker button[aria-checked='true'] {
+  border-color: #c4623a;
+  background: rgb(196 98 58 / 0.1);
+}
+
+.edge-picker__chip {
+  display: block;
+  width: 26px;
+  height: 34px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2);
+}
+
+.edition-note {
+  margin: 4px 0 0;
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  color: #8a6d0a;
+}
+
+/* ── Libro abierto según la edición (BookDetailModal) ── */
+.open-book[data-edition='leatherbound'] .open-book__board {
+  inset: -10px;
+  border-radius: 12px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.05 0 0 0 0 0.02 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(90deg, #3a1a0e, #5e2c16 47%, #241008 50%, #5e2c16 53%, #3a1a0e);
+  box-shadow:
+    0 40px 80px -20px rgb(20 10 4 / 0.85),
+    inset 0 0 0 4px rgb(0 0 0 / 0.25),
+    inset 0 0 0 6px #c9a14a,
+    inset 0 0 0 7px rgb(40 20 8 / 0.8);
+}
+
+.open-book__corner {
+  position: absolute;
+  z-index: 3;
+  width: 58px;
+  height: 58px;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 4px, rgb(90 60 10 / 0.35) 4px 5px),
+    radial-gradient(circle at 50% 50%, #fff7c8 0 6%, transparent 22%),
+    linear-gradient(135deg, #f6d98e, #c7922e 45%, #7a5414);
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.5));
+}
+
+.open-book__corner[data-corner='tl'] {
+  top: -12px;
+  left: -12px;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.open-book__corner[data-corner='tr'] {
+  top: -12px;
+  right: -12px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.open-book__corner[data-corner='bl'] {
+  bottom: -12px;
+  left: -12px;
+  clip-path: polygon(0 0, 0 100%, 100% 100%);
+}
+
+.open-book__corner[data-corner='br'] {
+  right: -12px;
+  bottom: -12px;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.open-book[data-edition='clothbound'] .open-book__board {
+  inset: -6px;
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 2px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.08) 0 1px, transparent 1px 2px),
+    linear-gradient(90deg, #22382b, #2f4b3a 48%, #17261d 50%, #2f4b3a 52%, #22382b);
+  box-shadow:
+    0 40px 80px -20px rgb(20 10 4 / 0.8),
+    inset 0 0 0 5px rgb(0 0 0 / 0.2),
+    inset 0 0 0 6.5px #e2ba60;
+}
+
+/* Cantos visibles alrededor de las páginas: pintados o en pan de oro */
+.open-book[data-edge] .page--left {
+  box-shadow:
+    inset -28px 0 30px -18px rgb(90 60 30 / 0.45),
+    -3px 0 0 var(--edge-a),
+    -6px 0 0 var(--edge-b),
+    0 3px 0 var(--edge-a),
+    -3px 6px 0 var(--edge-b);
+}
+
+.open-book[data-edge] .page--right {
+  box-shadow:
+    inset 28px 0 30px -18px rgb(90 60 30 / 0.45),
+    3px 0 0 var(--edge-a),
+    6px 0 0 var(--edge-b),
+    0 3px 0 var(--edge-a),
+    3px 6px 0 var(--edge-b);
+}
+
+.open-book[data-edge='constellations'] {
+  --edge-a: #26346e;
+  --edge-b: #e8c46a;
+}
+
+.open-book[data-edge='botanical'] {
+  --edge-a: #6f9a4a;
+  --edge-b: #e7909f;
+}
+
+.open-book[data-edge='dragon_fire'] {
+  --edge-a: #c4501a;
+  --edge-b: #ffd479;
+}
+
+.open-book[data-edge='watercolor'] {
+  --edge-a: #6eaad2;
+  --edge-b: #e08c64;
+}
+
+.open-book[data-edge='gilded'] {
+  --edge-a: #d4af37;
+  --edge-b: #aa820a;
+}
+
+/* Franja del canto en el borde exterior de cada página, con el patrón del diseño */
+.open-book__edges {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  z-index: 2;
+  width: 7px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.open-book__edges[data-side='left'] {
+  left: 2px;
+}
+
+.open-book__edges[data-side='right'] {
+  right: 2px;
+}
+
+/* E-reader: marco biselado con luz frontal cálida */
+.open-book[data-edition='kindle'] {
+  height: min(660px, calc(100dvh - 170px));
+}
+
+.open-book[data-edition='kindle'] .open-book__board {
+  inset: -14px -14px -40px;
+  border-radius: 22px;
+  background: linear-gradient(160deg, #3b3d3b, #222423 60%, #2d2f2d);
+  box-shadow:
+    0 40px 80px -20px rgb(0 0 0 / 0.8),
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    inset 0 2px 2px rgb(255 255 255 / 0.12);
+}
+
+.open-book[data-edition='kindle'][data-bezel='sage'] .open-book__board {
+  background: linear-gradient(160deg, #94a08b, #6f7b67 60%, #7f8b77);
+}
+
+.open-book[data-edition='kindle'] .page {
+  background:
+    var(--paper-noise),
+    radial-gradient(ellipse at 50% -10%, rgb(255 214 150 / 0.45), transparent 65%),
+    linear-gradient(#f4ede0, #ebe3d3);
+}
+
+.open-book[data-edition='kindle'] .page--left,
+.open-book[data-edition='kindle'] .page--right {
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2);
+}
+
+.open-book[data-edition='kindle'] .page--left {
+  border-right: 1px solid rgb(0 0 0 / 0.08);
+}
+
+.open-book__ereader-bar {
+  position: absolute;
+  right: 18px;
+  bottom: -32px;
+  left: 18px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #d9dcd5;
+  font-size: 0.78rem;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.open-book__ereader-bar .ereader__battery {
+  font-size: 0.9rem;
+}
+
+/* Audiolibro: estuche acrílico alrededor del cuaderno */
+.open-book[data-edition='audiobook'] .open-book__board {
+  inset: -10px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.5), rgb(210 230 240 / 0.2) 45%, rgb(255 255 255 / 0.35));
+  box-shadow:
+    0 40px 80px -20px rgb(20 10 4 / 0.6),
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.8),
+    inset 0 0 30px rgb(255 255 255 / 0.25);
+  backdrop-filter: blur(6px);
+}
+
+/* Bolsillo: papel tostado */
+.open-book[data-edition='paperback'] .page {
+  background:
+    var(--paper-noise),
+    radial-gradient(ellipse at 50% 0%, rgb(255 255 255 / 0.3), transparent 60%),
+    linear-gradient(#f3e4c2, #e9d4ab);
+}
+
+.open-book[data-edition='paperback'] .open-book__board {
+  inset: 4px;
+}
+
+@media (max-width: 760px) {
+  .open-book[data-edition='kindle'] .open-book__board {
+    inset: -8px -8px -34px;
+  }
+
+  .open-book__corner {
+    width: 40px;
+    height: 40px;
+  }
+
+  .open-book__edges {
+    display: none;
+  }
+}

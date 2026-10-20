@@ -1,0 +1,1597 @@
+/* ── Figuras de Coleccionista · Edición Blíster de Lujo (SPEC §7, 1.14.0) ───────────────────────── */
+
+/* Imagen común: caja entera o figura recortada sobre su peana */
+.fig-art {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  width: 100%;
+  height: 100%;
+}
+
+
+
+
+
+
+.part-art--icon {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  color: #e8c46a;
+  font-size: 1.6rem;
+}
+
+/* Partículas vivas sobre la figura (rango ★★★ o más) */
+.fig-particles {
+  position: absolute;
+  inset: 0 0 10%;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fig-particles i {
+  position: absolute;
+  bottom: 8%;
+  width: 4%;
+  aspect-ratio: 1;
+  min-width: 2px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: fig-rise 3.6s ease-out infinite;
+}
+
+.fig-particles[data-kind='mist'] i {
+  width: 22%;
+  background: radial-gradient(circle, rgb(220 228 238 / 0.55), transparent 70%);
+  filter: blur(2px);
+  animation-name: fig-mist;
+  animation-duration: 6s;
+}
+
+.fig-particles[data-kind='embers'] i {
+  background: radial-gradient(circle, #fff1b0, #ff8a2a 60%, transparent 70%);
+  box-shadow: 0 0 6px #ff9a3a;
+}
+
+.fig-particles[data-kind='stardust'] i,
+.fig-particles[data-kind='gold'] i {
+  background: radial-gradient(circle, #fffbe0, #f2c14a 60%, transparent 70%);
+  box-shadow: 0 0 5px #f6d98e;
+  animation-name: fig-twinkle;
+}
+
+.fig-particles[data-kind='wind'] i {
+  width: 18%;
+  height: 2px;
+  aspect-ratio: auto;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgb(255 246 220 / 0.8), transparent);
+  animation-name: fig-wind;
+}
+
+.fig-particles[data-strong] i {
+  animation-duration: 2.6s;
+}
+
+@keyframes fig-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(8px, -340%) scale(1);
+  }
+}
+
+@keyframes fig-mist {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(-20%, 0) scale(0.8);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate(20%, -90%) scale(1.3);
+  }
+}
+
+@keyframes fig-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-260%) scale(1);
+  }
+}
+
+@keyframes fig-wind {
+  0% {
+    opacity: 0;
+    transform: translate(-60%, -200%);
+  }
+  40% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(260%, -400%);
+  }
+}
+
+/* ── ROOM_VIEW: vitrina en las dos baldas altas del mueble ── */
+.room-figures {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.room-shelf--figures {
+  filter: saturate(0.85) sepia(0.1) contrast(0.95) brightness(0.95) blur(0.2px);
+}
+
+.room-figure {
+  position: absolute;
+  bottom: 1px;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: auto;
+  transform-origin: 50% 100%;
+  transition:
+    transform 260ms var(--ease-camera),
+    filter 260ms ease;
+}
+
+.room-figure:hover,
+.room-figure:focus-visible {
+  outline: none;
+  filter: drop-shadow(0 0 3px rgb(255 214 120 / 0.95)) brightness(1.08);
+  transform: scale(1.05);
+}
+
+/* Sol de la tarde en el lado derecho de las cajas */
+.room-figure__sun {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(100deg, transparent 45%, rgb(255 214 140 / 0.55) 78%, rgb(255 230 180 / 0.35));
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Sombra interior del tablón de encima */
+.room-shelf__inset {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  box-shadow: inset 0 14px 18px rgb(25 12 2 / 0.75);
+  pointer-events: none;
+}
+
+/* ── ROOM_VIEW: lomos reales en la balda de la vela ── */
+.room-spine__nerves {
+  position: absolute;
+  inset: 18% -0.5px 26%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.room-spine__nerves i {
+  display: block;
+  height: 2.4px;
+  border-radius: 1px;
+  background: linear-gradient(180deg, rgb(255 230 190 / 0.5), rgb(0 0 0 / 0.55));
+  box-shadow:
+    0 -1.2px 0 -0.6px #d4af37,
+    0 1.8px 0 -0.6px #d4af37;
+}
+
+.room-spine[data-edition='leatherbound'] {
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.5), rgb(255 230 190 / 0.14) 35%, rgb(0 0 0 / 0.5)),
+    color-mix(in srgb, var(--spine) 50%, #4a2210);
+}
+
+.room-spine[data-edition='clothbound'] {
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.08) 0 1px, transparent 1px 2px),
+    linear-gradient(90deg, rgb(0 0 0 / 0.4), rgb(255 255 255 / 0.1) 32%, rgb(0 0 0 / 0.45)),
+    var(--spine);
+}
+
+/* Sombra profunda del estante de la cámara */
+.room-shelf__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(15 6 0 / 0.78), rgb(15 6 0 / 0) 38%);
+  pointer-events: none;
+}
+
+/* Resplandor de la vela que entra por la izquierda y parpadea */
+.room-shelf__candle {
+  position: absolute;
+  inset: -10% 0 -10% -30%;
+  background: radial-gradient(ellipse 55% 70% at 0% 82%, rgb(255 176 80 / 0.7), rgb(255 150 60 / 0.25) 45%, transparent 75%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: candle-flicker 3.1s ease-in-out infinite;
+}
+
+@keyframes candle-flicker {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  17% {
+    opacity: 0.7;
+  }
+  31% {
+    opacity: 1;
+  }
+  52% {
+    opacity: 0.78;
+  }
+  70% {
+    opacity: 0.95;
+  }
+  86% {
+    opacity: 0.74;
+  }
+}
+
+/* ── SHELF_VIEW: figura junto a su libro con la insignia de sinergia ── */
+.figure-cell {
+  margin: 0 4px;
+}
+
+.fig-shelf {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  height: var(--fig-h);
+}
+
+.fig-shelf__btn {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border: 0;
+  background: none;
+  transition: transform 220ms var(--ease-camera);
+}
+
+.fig-shelf__btn:hover,
+.fig-shelf__btn:focus-visible {
+  outline: none;
+  transform: translateY(-6px);
+}
+
+.fig-shelf__synergy {
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  z-index: 3;
+  padding: 1px 6px;
+  border: 1px solid rgb(232 196 106 / 0.8);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #3a2a14, #1e140a);
+  color: #f3d27a;
+  font-family: var(--font-sans);
+  font-size: 0.56rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 0 8px rgb(232 196 106 / 0.45);
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.fig-shelf__synergy em {
+  display: none;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.fig-shelf:hover .fig-shelf__synergy em,
+.fig-shelf__synergy:focus-within em {
+  display: inline;
+}
+
+.brass-btn--vault span[aria-hidden] {
+  font-size: 1rem;
+}
+
+/* ── Portátil: tu Guardián en la app de misiones ── */
+.missions__guardian {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  align-content: start;
+  text-align: center;
+}
+
+.missions__fig {
+  width: 150px;
+  height: 225px;
+}
+
+.missions__rank {
+  color: #c59b27;
+  letter-spacing: 2px;
+}
+
+.missions__seals {
+  display: flex;
+  gap: 6px;
+}
+
+.missions__seals i {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #c59b27;
+  border-radius: 50%;
+  opacity: 0.45;
+}
+
+.missions__seals i[data-on='true'] {
+  background: radial-gradient(circle, #fff3b0, #e8a33c);
+  box-shadow: 0 0 8px #f3c86a;
+  opacity: 1;
+}
+
+/* ── FIGURES_VAULT_VIEW · El Ático del Coleccionista ── */
+.vault {
+  position: relative;
+  width: min(1100px, calc(100vw - 20px));
+  max-height: min(92dvh, 900px);
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+  border-radius: 12px;
+  /* Ático de madera oscura con terciopelo y polvo de luz */
+  background:
+    radial-gradient(ellipse 60% 40% at 70% 0%, rgb(255 200 120 / 0.16), transparent 70%),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.02) 0 2px, transparent 2px 22px),
+    linear-gradient(180deg, #2a1a10, #1a100a 60%, #120a06);
+  box-shadow:
+    inset 0 0 0 2px #7a5c12,
+    inset 0 0 0 4px rgb(232 196 106 / 0.35),
+    inset 0 0 60px rgb(0 0 0 / 0.6),
+    0 30px 60px -18px rgb(0 0 0 / 0.8);
+  color: #f3e6cc;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(197 155 39 / 0.6) transparent;
+}
+
+.vault__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+}
+
+.vault__head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3.4vw, 2.3rem);
+  font-style: italic;
+  font-weight: 700;
+  color: #f3d27a;
+}
+
+.vault__head p {
+  margin: 2px 0 0;
+  font-size: 0.86rem;
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.12em;
+  color: #c9b48a;
+}
+
+.vault__tabs {
+  display: flex;
+  gap: 6px;
+  margin: 14px 0 10px;
+}
+
+.vault__tabs button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 14px;
+  border: 1px solid rgb(232 196 106 / 0.4);
+  border-radius: 999px;
+  background: rgb(255 240 210 / 0.05);
+  color: inherit;
+  font-weight: 600;
+}
+
+.vault__tabs svg {
+  width: 16px;
+  height: 16px;
+}
+
+.vault__tabs button[aria-selected='true'] {
+  border-color: #e8c46a;
+  background: linear-gradient(180deg, #f6dd94, #c59b27);
+  color: #2c1e14;
+}
+
+.vault__count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #b3261e;
+  color: #fff6ea;
+  font-size: 0.75rem;
+}
+
+.vault-notice {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border: 1px solid #e8c46a;
+  border-radius: 8px;
+  background: rgb(232 196 106 / 0.12);
+  color: #f3d27a;
+}
+
+/* Colección */
+.vault-rail {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 2px 2px 8px;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.vault-rail__item {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 92px;
+  padding: 6px;
+  border: 1px solid rgb(232 196 106 / 0.25);
+  border-radius: 8px;
+  background: rgb(255 240 210 / 0.04);
+  color: inherit;
+}
+
+.vault-rail__item[aria-pressed='true'] {
+  border-color: #e8c46a;
+  box-shadow: 0 0 12px rgb(232 196 106 / 0.35);
+}
+
+.vault-rail__item:disabled {
+  cursor: default;
+}
+
+.vault-rail__thumb {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 90px;
+}
+
+.vault-rail__locked {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 90px;
+  border: 1.5px dashed currentColor;
+  border-radius: 4px;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  opacity: 0.6;
+}
+
+.vault-rail__item[data-rarity='legendary'] .vault-rail__locked {
+  color: #e8c46a;
+}
+
+.vault-rail__item[data-rarity='epic'] .vault-rail__locked {
+  color: #c08ae8;
+}
+
+.vault-rail__item[data-rarity='rare'] .vault-rail__locked {
+  color: #7ab8e8;
+}
+
+.vault-rail__name {
+  font-size: 0.66rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.vault-rail__guardian {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 0.8rem;
+}
+
+/* Inspección */
+.vault-inspect {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 18px;
+}
+
+.vault-title h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  color: #f6e3b8;
+}
+
+.vault-title p {
+  margin: 2px 0 6px;
+  font-size: 0.86rem;
+  color: #c9b48a;
+}
+
+.vault-rarity {
+  font-weight: 700;
+}
+
+.vault-rarity[data-rarity='legendary'] {
+  color: #e8c46a;
+}
+
+.vault-rarity[data-rarity='epic'] {
+  color: #c08ae8;
+}
+
+.vault-rarity[data-rarity='rare'] {
+  color: #7ab8e8;
+}
+
+.vault-rank {
+  color: #e8c46a;
+  letter-spacing: 2px;
+}
+
+.vault-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: min(52dvh, 470px);
+  margin: 6px 0 10px;
+  perspective: 900px;
+}
+
+.vault-tilt {
+  position: relative;
+  height: 92%;
+  aspect-ratio: 2 / 3;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, -8deg));
+  transform-style: preserve-3d;
+  transition: transform 300ms ease-out;
+}
+
+.vault-stage[data-display='unboxed'] .vault-tilt {
+  aspect-ratio: 13 / 20;
+}
+
+/* Reflejo especular sobre la ventana de plástico */
+.vault-glare {
+  position: absolute;
+  z-index: 3;
+  border-radius: 4%;
+  background:
+    linear-gradient(115deg, transparent calc(var(--mx, 30%) - 18%), rgb(255 255 255 / 0.35) var(--mx, 30%), transparent calc(var(--mx, 30%) + 14%)),
+    radial-gradient(circle at var(--mx, 30%) var(--my, 30%), rgb(255 255 255 / 0.22), transparent 40%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* Brillo metálico sobre los grabados dorados de la caja negra */
+.vault-gilt {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(calc(100deg + var(--ry, 0deg) * 4), transparent 35%, rgb(255 214 120 / 0.4) 50%, transparent 65%);
+  background-size: 220% 100%;
+  background-position: calc(100% - var(--mx, 50%)) 0;
+  mix-blend-mode: soft-light;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.vault-stage__floor {
+  position: absolute;
+  bottom: 2%;
+  left: 50%;
+  width: 46%;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(0 0 0 / 0.6), transparent 70%);
+  transform: translateX(-50%);
+}
+
+.vault-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.vault-switch button {
+  padding: 7px 12px;
+  border: 1px solid rgb(232 196 106 / 0.4);
+  border-radius: 8px;
+  background: rgb(255 240 210 / 0.05);
+  color: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.vault-switch button[aria-checked='true'] {
+  border-color: #e8c46a;
+  background: rgb(232 196 106 / 0.2);
+  color: #f6e3b8;
+}
+
+.vault-guardian {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0 6px;
+}
+
+.vault-guardian .link-btn,
+.vault-simulate {
+  color: #f3d27a;
+}
+
+.vault-hint {
+  margin: 4px 0;
+  font-size: 0.8rem;
+  text-align: center;
+  color: #b9a47a;
+}
+
+.vault-simulate {
+  display: block;
+  margin: 2px auto 0;
+}
+
+/* Los 5 sellos dorados de lore */
+.vault-seals {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 14px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-seals li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 70px;
+}
+
+.vault-seals svg {
+  width: 52px;
+  height: 52px;
+}
+
+.vault-seals span {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  color: #9a8662;
+}
+
+.vault-seal__ring {
+  fill: none;
+  stroke: #7a5c12;
+  stroke-width: 2.4;
+}
+
+.vault-seal__core {
+  fill: #2a1d10;
+  stroke: #5a4410;
+  stroke-width: 1;
+}
+
+.vault-seal__star {
+  fill: #5a4410;
+}
+
+.vault-seals li[data-on='true'] svg {
+  filter: drop-shadow(0 0 6px #ffb347) drop-shadow(0 0 14px rgb(255 160 60 / 0.6));
+  animation: seal-burn 2.4s ease-in-out infinite;
+}
+
+.vault-seals li[data-on='true'] .vault-seal__ring {
+  stroke: #f3d27a;
+}
+
+.vault-seals li[data-on='true'] .vault-seal__core {
+  fill: #e8a33c;
+  stroke: #fff3b0;
+}
+
+.vault-seals li[data-on='true'] .vault-seal__star {
+  fill: #fff6d0;
+}
+
+.vault-seals li[data-on='true'] span {
+  color: #f3d27a;
+}
+
+@keyframes seal-burn {
+  50% {
+    filter: drop-shadow(0 0 9px #ffcf6a) drop-shadow(0 0 20px rgb(255 160 60 / 0.75));
+  }
+}
+
+/* Blíster de piezas */
+.vault-blister {
+  align-self: start;
+  padding: 12px;
+  border: 1px solid rgb(255 255 255 / 0.25);
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.03));
+  box-shadow: inset 0 0 18px rgb(255 255 255 / 0.06);
+}
+
+.vault-blister h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: #f3d27a;
+}
+
+.vault-blister ul {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-part {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.vault-part__slot {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 80px;
+  padding: 4px;
+  border: 1.5px solid rgb(255 255 255 / 0.35);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.08);
+}
+
+.vault-part[data-have='false'] .vault-part__slot {
+  border-style: dashed;
+  border-color: rgb(232 196 106 / 0.3);
+  background: rgb(0 0 0 / 0.2);
+  color: rgb(232 196 106 / 0.5);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+
+
+.vault-part__name {
+  font-size: 0.68rem;
+  line-height: 1.15;
+  color: #e9d8b4;
+}
+
+.vault-part[data-have='false'] .vault-part__name {
+  color: #8f7c5a;
+}
+
+/* Cámara de unboxing */
+.vault-unbox {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.vault-pity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.vault-pity b {
+  font-family: var(--font-mono);
+  color: #f3d27a;
+}
+
+.vault-path {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.vault-path select {
+  padding: 5px 8px;
+  border: 1px solid rgb(232 196 106 / 0.5);
+  border-radius: 6px;
+  background: #241810;
+  color: #f3e6cc;
+  font: inherit;
+  font-weight: 400;
+}
+
+.mystery {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.mystery-box {
+  position: relative;
+  width: 210px;
+  height: 230px;
+  padding: 0;
+  border: 0;
+  background: none;
+  touch-action: none;
+  filter: drop-shadow(0 20px 22px rgb(0 0 0 / 0.6));
+  animation: box-float 3.4s ease-in-out infinite;
+}
+
+.mystery-box__body {
+  position: absolute;
+  inset: 40px 0 0;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(45deg, rgb(232 196 106 / 0.08) 0 6px, transparent 6px 16px),
+    linear-gradient(160deg, #2a1d14, #120c08);
+  box-shadow:
+    inset 0 0 0 2px #c59b27,
+    inset 0 0 0 5px rgb(0 0 0 / 0.4),
+    inset 0 0 0 6px rgb(232 196 106 / 0.5);
+}
+
+.mystery-box__lid {
+  position: absolute;
+  inset: 18px -8px auto;
+  height: 34px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #3a2a1a, #1a120a);
+  box-shadow: inset 0 0 0 2px #c59b27;
+  transition: transform 500ms ease;
+}
+
+.mystery-box__mark {
+  font-family: var(--font-display);
+  font-size: 5rem;
+  font-weight: 700;
+  color: #e8c46a;
+  text-shadow: 0 0 18px rgb(232 196 106 / 0.6);
+}
+
+/* Precinto dorado que se rasga deslizando */
+.mystery-box__seal {
+  position: absolute;
+  top: 24px;
+  bottom: 0;
+  left: 50%;
+  width: 34px;
+  margin-left: -17px;
+  overflow: hidden;
+  background: linear-gradient(90deg, #8a6418, #fff3b0 45%, #c59b27 60%, #7a5c12);
+  box-shadow: 0 0 10px rgb(232 196 106 / 0.6);
+  clip-path: inset(calc(var(--tear, 0) * 100%) 0 0 0);
+  transition: clip-path 120ms linear;
+}
+
+.mystery-box__torn {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(180deg, transparent 0 8px, rgb(90 60 10 / 0.35) 8px 9px);
+}
+
+.mystery-box[data-phase='shake'] {
+  animation: box-shake 120ms linear infinite;
+}
+
+.mystery-box[data-phase='shake'] .mystery-box__lid {
+  transform: translateY(-26px) rotate(-8deg);
+}
+
+@keyframes box-float {
+  50% {
+    transform: translateY(-6px) rotate(-1deg);
+  }
+}
+
+@keyframes box-shake {
+  0% {
+    transform: translate(0, 0) rotate(0);
+  }
+  25% {
+    transform: translate(-4px, 1px) rotate(-2deg);
+  }
+  75% {
+    transform: translate(4px, -1px) rotate(2deg);
+  }
+}
+
+.vault-reveal {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  animation: reveal-pop 600ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.vault-reveal b {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: #f3d27a;
+}
+
+.vault-reveal em {
+  font-style: normal;
+  font-size: 0.86rem;
+  color: #c9b48a;
+}
+
+.vault-reveal__art {
+  display: grid;
+  place-items: center;
+  width: 160px;
+  min-height: 140px;
+  filter: drop-shadow(0 0 18px rgb(255 214 120 / 0.6));
+}
+
+.vault-reveal__art--figure {
+  height: 260px;
+}
+
+.vault-reveal__art--seal {
+  font-size: 5rem;
+  color: #f3d27a;
+}
+
+.vault-reveal__row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.vault-reveal__row .link-btn {
+  color: #f3d27a;
+}
+
+.vault-burst {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  pointer-events: none;
+}
+
+.vault-burst i {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffd27a;
+  box-shadow: 0 0 8px #ffb347;
+  animation: burst 900ms ease-out forwards;
+}
+
+@keyframes burst {
+  from {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(calc(var(--d) * -1));
+  }
+}
+
+@keyframes reveal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+.vault-empty {
+  max-width: 460px;
+  margin: 20px auto;
+  text-align: center;
+  color: #c9b48a;
+}
+
+@media (max-width: 760px) {
+  .vault {
+    padding: 16px 12px 18px;
+  }
+
+  .vault-inspect {
+    grid-template-columns: 1fr;
+  }
+
+  .vault-stage {
+    height: 46dvh;
+  }
+
+  .vault-seals {
+    gap: 4px;
+  }
+
+  .vault-seals li {
+    width: 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fig-particles i,
+  .room-shelf__candle,
+  .mystery-box,
+  .vault-seals li[data-on='true'] svg {
+    animation: none;
+  }
+}
+
+/* Pieza revelada: altura contenida aunque el recorte sea alargado */
+
+/* El signo de la caja asoma por encima del precinto */
+.mystery-box__body {
+  place-items: start center;
+  padding-top: 18px;
+}
+
+.mystery-box__mark {
+  position: relative;
+  z-index: 2;
+  padding: 0 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1a120a 55%, transparent 72%);
+  font-size: 4rem;
+}
+
+.vault-notice .link-btn {
+  color: #f3d27a;
+}
+
+/* ── Recortes reales (1.15.0): imágenes perezosas recortadas por CSS ── */
+.crop-img {
+  position: relative;
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.crop-img > img {
+  position: absolute;
+  display: block;
+  max-width: none;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.crop-img--round {
+  border-radius: 50%;
+}
+
+/* La caja, recortada por sus 6 vértices: sin mesa ni estanterías de la foto */
+.fig-box {
+  position: relative;
+  display: block;
+  height: 100%;
+  max-width: 100%;
+}
+
+.fig-box__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+}
+
+.fig-box__edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.fig-art--box {
+  filter: drop-shadow(0 6px 6px rgb(15 8 2 / 0.6));
+}
+
+/* En el Ático, la caja flota con su sombra proyectada propia */
+.vault-tilt .fig-art--box {
+  filter: drop-shadow(0 28px 32px rgb(0 0 0 / 0.85));
+}
+
+/* Fuera de caja: solo la figura sobre su peana, recortada por su silueta */
+.fig-art__figure {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+}
+
+.fig-art--unboxed {
+  filter: drop-shadow(0 8px 8px rgb(10 5 0 / 0.55));
+}
+
+.vault-tilt .fig-art--unboxed {
+  filter: drop-shadow(0 26px 26px rgb(0 0 0 / 0.75));
+}
+
+.fig-art__contact {
+  position: absolute;
+  bottom: 0.5%;
+  left: 50%;
+  width: 78%;
+  height: 7%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(0 0 0 / 0.55), transparent 70%);
+  transform: translateX(-50%);
+}
+
+/* Bruma plateada animada detrás de la figura en peana */
+.fig-art__mist {
+  position: absolute;
+  inset: 18% -8% 6%;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 40% 26% at 30% 70%, rgb(210 220 232 / 0.38), transparent 70%),
+    radial-gradient(ellipse 36% 22% at 72% 58%, rgb(210 220 232 / 0.3), transparent 70%),
+    radial-gradient(ellipse 50% 30% at 50% 88%, rgb(232 196 106 / 0.18), transparent 70%);
+  filter: blur(10px);
+  animation: mist-drift 9s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes mist-drift {
+  to {
+    transform: translateX(6%) scale(1.06);
+    opacity: 0.75;
+  }
+}
+
+.part-art {
+  display: block;
+  width: auto;
+  height: 90px;
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+.part-art--icon {
+  display: grid;
+  place-items: center;
+  width: 90px;
+  aspect-ratio: 1;
+  color: #e8c46a;
+  font-size: 1.6rem;
+}
+
+.vault-reveal__art .part-art {
+  height: min(200px, 30dvh);
+  max-width: 160px;
+}
+
+.pin-art {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── ROOM_VIEW: las dos baldas superiores forradas de roble en penumbra ── */
+.room-shelf--figures {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.room-shelf__oak {
+  position: absolute;
+  inset: -2px -1px 0;
+  background:
+    repeating-linear-gradient(92deg, rgb(255 220 170 / 0.05) 0 1px, transparent 1px 7px, rgb(0 0 0 / 0.06) 7px 8px, transparent 8px 15px),
+    linear-gradient(90deg, rgb(10 5 2 / 0.55), transparent 22%, transparent 62%, rgb(255 196 120 / 0.22) 92%, rgb(255 214 150 / 0.32)),
+    linear-gradient(180deg, #24140a, #3a2414 55%, #4a2e18);
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.35);
+}
+
+.room-figure__contact {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 92%;
+  height: 8%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(0 0 0 / 0.7), transparent 70%);
+  transform: translateX(-50%);
+}
+
+.room-figure .fig-art {
+  position: relative;
+  z-index: 1;
+}
+
+.room-label[data-below] {
+  transform: translate(-50%, 1.4em);
+}
+
+/* ── SHELF_VIEW: mini-figura de saga engarzada en el listón bajo su libro ── */
+.shelf-row__scroller {
+  position: relative;
+  z-index: 2;
+  padding-bottom: 24px;
+  margin-bottom: -24px;
+  pointer-events: none;
+}
+
+.shelf-row__track {
+  pointer-events: auto;
+}
+
+.book-slot {
+  position: relative;
+  flex: none;
+  display: block;
+}
+
+.saga-pin {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  padding: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3b0, #c59b27 55%, #6a4a10);
+  box-shadow:
+    0 0 0 1px rgb(60 35 5 / 0.6),
+    0 3px 5px rgb(0 0 0 / 0.55),
+    0 0 12px rgb(255 214 120 / 0.65);
+  pointer-events: auto;
+  transform: translateX(-50%);
+  transition: transform 180ms var(--ease-camera);
+}
+
+.saga-pin .pin-art {
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4);
+}
+
+.saga-pin[data-owned='false'] {
+  background: radial-gradient(circle at 35% 30%, #6a5a40, #3a2c1a 60%, #1a120a);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.6),
+    0 3px 5px rgb(0 0 0 / 0.55);
+}
+
+.saga-pin[data-owned='false'] .pin-art {
+  filter: grayscale(1) brightness(0.32) contrast(1.2);
+}
+
+.saga-pin__lock {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 15px;
+  height: 15px;
+}
+
+.saga-pin:hover,
+.saga-pin:focus-visible {
+  outline: none;
+  transform: translateX(-50%) scale(1.18);
+}
+
+.saga-pin__tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  padding: 4px 9px;
+  border: 1px solid rgb(232 196 106 / 0.6);
+  border-radius: 6px;
+  background: #1e140a;
+  color: #f3d27a;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 6px 12px rgb(0 0 0 / 0.5);
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  pointer-events: none;
+}
+
+.saga-pin:hover .saga-pin__tip,
+.saga-pin:focus-visible .saga-pin__tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ── El Ático: hornacinas iluminadas con pedestal de madera y latón ── */
+.vault-rail__item {
+  width: 104px;
+  padding: 0 0 6px;
+  overflow: hidden;
+}
+
+.vault-rail__niche {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  width: 100%;
+  height: 116px;
+  padding-bottom: 14px;
+  background: radial-gradient(ellipse 60% 70% at 50% 0%, rgb(255 210 130 / 0.32), rgb(255 190 110 / 0.06) 55%, transparent 75%);
+}
+
+.vault-rail__light {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 46%;
+  height: 100%;
+  background: linear-gradient(180deg, rgb(255 226 160 / 0.22), transparent 85%);
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.vault-rail__thumb {
+  position: relative;
+  z-index: 1;
+  width: 64px;
+  height: 92px;
+}
+
+.vault-rail__pedestal {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 78px;
+  height: 14px;
+  border-radius: 3px 3px 50% 50% / 3px 3px 100% 100%;
+  background:
+    linear-gradient(180deg, #e8c46a 0 2px, transparent 2px),
+    linear-gradient(180deg, #5a3a1e, #2a1a0c);
+  box-shadow: 0 4px 6px rgb(0 0 0 / 0.55);
+  transform: translateX(-50%);
+}
+
+.vault-rail__mystery {
+  width: 60px;
+  height: 90px;
+}
+
+.vault-rail__lock {
+  filter: drop-shadow(0 0 3px rgb(232 196 106 / 0.6));
+}
+
+.vault-rail__item[data-owned='false'] .vault-rail__niche {
+  background: radial-gradient(ellipse 60% 70% at 50% 0%, rgb(255 210 130 / 0.12), transparent 70%);
+}
+
+.vault-synergy {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f3d27a;
+}
+
+/* Tubos de pity de cristal y latón */
+.vault-pity {
+  display: grid;
+  gap: 10px;
+  width: min(520px, 100%);
+}
+
+.pity-tube {
+  display: grid;
+  gap: 4px;
+}
+
+.pity-tube__label {
+  font-size: 0.86rem;
+}
+
+.pity-tube__label b {
+  font-family: var(--font-mono);
+  color: #f3d27a;
+}
+
+.pity-tube__glass {
+  position: relative;
+  display: flex;
+  gap: 3px;
+  height: 18px;
+  padding: 3px 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.02) 60%, rgb(255 255 255 / 0.1));
+  box-shadow:
+    inset 0 0 0 1.5px #c59b27,
+    inset 0 0 0 3px rgb(0 0 0 / 0.5),
+    0 0 10px rgb(232 196 106 / 0.2);
+}
+
+.pity-tube__glass i {
+  flex: 1;
+  border-radius: 2px;
+  background: rgb(232 196 106 / 0.1);
+}
+
+.pity-tube__glass i[data-on='true'] {
+  background: linear-gradient(180deg, #fff3b0, #e8a33c 60%, #b06a10);
+  box-shadow: 0 0 6px rgb(255 190 90 / 0.8);
+}
+
+.pity-tube__glass i[data-last] {
+  animation: tube-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes tube-glow {
+  50% {
+    box-shadow: 0 0 14px rgb(255 214 120 / 1);
+  }
+}
+
+.pity-tube__cap {
+  position: absolute;
+  top: -2px;
+  width: 12px;
+  height: 22px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #7a5c12, #f3d27a 50%, #7a5c12);
+}
+
+.pity-tube__cap--l {
+  left: -3px;
+}
+
+.pity-tube__cap--r {
+  right: -3px;
+}
+
+/* Altar de Cajas Sorpresa con los 5 sellos en arco */
+.altar {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(560px, 100%);
+  padding-top: 8px;
+}
+
+.seal-arc {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 160px;
+  margin: 0 0 -4px;
+  padding: 0;
+  list-style: none;
+}
+
+.seal-arc li {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  width: 62px;
+  margin-left: -31px;
+  transform-origin: 50% 280px;
+  transform: rotate(var(--a)) translateY(0);
+}
+
+.seal-arc li > * {
+  transform: rotate(calc(var(--a) * -1));
+}
+
+.seal-arc svg {
+  width: 46px;
+  height: 46px;
+}
+
+.seal-arc span {
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  color: #9a8662;
+}
+
+.seal-arc li[data-on='true'] svg {
+  filter: drop-shadow(0 0 6px #ffb347) drop-shadow(0 0 14px rgb(255 160 60 / 0.6));
+}
+
+.seal-arc li[data-on='true'] .vault-seal__ring {
+  stroke: #f3d27a;
+}
+
+.seal-arc li[data-on='true'] .vault-seal__core {
+  fill: #e8a33c;
+  stroke: #fff3b0;
+}
+
+.seal-arc li[data-on='true'] .vault-seal__star {
+  fill: #fff6d0;
+}
+
+.seal-arc li[data-on='true'] span {
+  color: #f3d27a;
+}
+
+.altar .mystery {
+  position: relative;
+  padding-bottom: 18px;
+}
+
+/* Pedestal de terciopelo y madera bajo la caja */
+.altar__pedestal {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  z-index: -1;
+  width: 290px;
+  height: 46px;
+  border-radius: 8px 8px 50% 50% / 8px 8px 30% 30%;
+  background:
+    linear-gradient(180deg, #7a1a22 0 16px, #4a0e14 16px 20px, transparent 20px),
+    linear-gradient(180deg, #5a3a1e, #24140a);
+  box-shadow:
+    inset 0 2px 0 rgb(255 200 200 / 0.18),
+    inset 0 18px 0 -16px #c59b27,
+    0 14px 20px rgb(0 0 0 / 0.6);
+  transform: translateX(-50%);
+}
+
+.mystery-box[data-closed] {
+  cursor: default;
+  animation: none;
+  filter: drop-shadow(0 20px 22px rgb(0 0 0 / 0.6)) saturate(0.8) brightness(0.85);
+}
+
+.mystery-box[data-closed] .mystery-box__seal {
+  clip-path: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fig-art__mist,
+  .pity-tube__glass i[data-last] {
+    animation: none;
+  }
+}

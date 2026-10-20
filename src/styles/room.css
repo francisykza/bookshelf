@@ -1,0 +1,1931 @@
+/* ── Habitación viva y cámara (SPEC §2–§3) ───────────────────────────────── */
+
+/* La misma ilustración, muy desenfocada, rellena los laterales: la habitación se derrama */
+.backdrop {
+  position: fixed;
+  inset: -6%;
+  background: url('/cozy-book-room.png') center / cover no-repeat;
+  filter: blur(46px) brightness(0.78) saturate(1.3) sepia(0.12);
+  transform: scale(1.12);
+}
+
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 24%, rgb(255 214 150 / 0.22) 0 3%, transparent 9%),
+    radial-gradient(circle at 82% 70%, rgb(255 200 130 / 0.18) 0 4%, transparent 11%),
+    radial-gradient(circle at 70% 18%, rgb(255 236 190 / 0.16) 0 2%, transparent 7%),
+    radial-gradient(ellipse 70% 80% at 50% 50%, rgb(255 190 120 / 0.12), rgb(60 34 16 / 0.42));
+}
+
+.room-camera {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  perspective: 1400px;
+  perspective-origin: 30% 40%;
+}
+
+.room-camera::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 80% at 50% 50%, transparent 62%, rgb(25 14 6 / 0.35));
+}
+
+.world {
+  overflow: visible;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 984px;
+  height: 1599px;
+  transform-origin: 50% 50%;
+  transition:
+    transform 700ms var(--ease-camera),
+    filter 700ms var(--ease-camera);
+  will-change: transform;
+  box-shadow: 0 0 120px 30px rgb(20 12 6 / 0.55);
+}
+
+.room-camera[data-view='SHELF_VIEW'] .world {
+  filter: blur(6px) brightness(0.78) saturate(1.08);
+}
+
+.scene-svg,
+.room-occlusion,
+.room-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 984px;
+  height: 1599px;
+  pointer-events: none;
+}
+
+.scene-svg {
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Carillón: péndulo suave y repique al tocarlo */
+.chime-swing {
+  transform-box: view-box;
+  animation: chime-sway 4.8s ease-in-out infinite;
+}
+
+.chime-swing.is-ringing {
+  animation: chime-ring 2.6s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+@keyframes chime-sway {
+  0%,
+  100% {
+    transform: rotate(-1.3deg);
+  }
+  50% {
+    transform: rotate(1.3deg);
+  }
+}
+
+@keyframes chime-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  12% {
+    transform: rotate(5deg);
+  }
+  30% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(2.6deg);
+  }
+  70% {
+    transform: rotate(-1.4deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* Lámpara colgante que se balancea despacio */
+.lamp-swing {
+  transform-box: view-box;
+  animation: lamp-swing 7s ease-in-out infinite;
+}
+
+@keyframes lamp-swing {
+  0%,
+  100% {
+    transform: rotate(-0.9deg);
+  }
+  50% {
+    transform: rotate(0.9deg);
+  }
+}
+
+/* Reflejo que cruza la tapa del portátil cada pocos segundos */
+.lid-sheen {
+  transform-box: view-box;
+  animation: lid-sheen 9s ease-in-out infinite;
+}
+
+@keyframes lid-sheen {
+  0%,
+  55% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(460px);
+    opacity: 0;
+  }
+}
+
+/* Miel pintada: respiración, oreja inquieta, estiramiento y ronroneo */
+.miel-painted,
+.miel-painted__breath,
+.miel-painted__ear {
+  transform-box: view-box;
+}
+
+.miel-painted__breath {
+  animation: miel-breath 3.8s ease-in-out infinite;
+}
+
+.miel-painted__ear {
+  animation: miel-ear 8s ease-in-out infinite;
+}
+
+.miel-painted[data-state='waking'] {
+  animation: miel-stretch 1.5s cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+.miel-painted[data-state='purr'] .miel-painted__breath {
+  animation: miel-purr 0.09s linear infinite;
+}
+
+@keyframes miel-breath {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  45% {
+    transform: scale(1.004, 1.032);
+  }
+}
+
+@keyframes miel-ear {
+  0%,
+  86%,
+  100% {
+    transform: rotate(0deg);
+  }
+  88% {
+    transform: rotate(-10deg);
+  }
+  90% {
+    transform: rotate(3deg);
+  }
+  92% {
+    transform: rotate(-7deg);
+  }
+  95% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes miel-stretch {
+  0% {
+    transform: scale(1, 1);
+  }
+  35% {
+    transform: scale(1.075, 0.95) translateY(2px);
+  }
+  60% {
+    transform: scale(1.05, 1.045);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes miel-purr {
+  50% {
+    transform: scale(1.003, 1.012);
+  }
+}
+
+.star {
+  fill: #fffbea;
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.gull {
+  transform-box: view-box;
+  animation: gull-fly 40s linear infinite;
+}
+
+.gull path {
+  fill: #5a5a66;
+  opacity: 0.8;
+}
+
+.gulls[data-tod='sunset'] .gull path {
+  fill: #3b2630;
+}
+
+@keyframes gull-fly {
+  from {
+    transform: translate(var(--x0), var(--y0));
+  }
+  to {
+    transform: translate(var(--x1), var(--y1));
+  }
+}
+
+.tod-layer[data-on='true'] {
+  animation: tod-in 1.6s ease;
+}
+
+@keyframes tod-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── Libros en las baldas pintadas ── */
+.room-shelves {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.room-shelf {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  /* Pintura: un pelo de desenfoque y saturación contenida para fundirse con la ilustración */
+  filter: saturate(0.7) sepia(0.14) contrast(0.93) brightness(0.96) blur(0.3px);
+}
+
+.room-shelf__back {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(10 5 2 / 0.75), rgb(10 5 2 / 0) 35%),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #2a180c, #45291a 70%, #5a3721);
+  border-radius: 1px;
+}
+
+.room-spine {
+  position: absolute;
+  bottom: 1px;
+  padding: 0;
+  border: 0;
+  border-radius: 1px 1px 0 0;
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.4), rgb(255 255 255 / 0.14) 32%, rgb(255 255 255 / 0.02) 55%, rgb(0 0 0 / 0.45)),
+    var(--spine);
+  box-shadow: 1px 0 0 rgb(0 0 0 / 0.35);
+  pointer-events: auto;
+  transition:
+    transform 220ms var(--ease-camera),
+    filter 220ms ease;
+}
+
+.room-spine[data-edition='paperback'] {
+  border-radius: 0;
+}
+
+.room-spine[data-edition='kindle'] {
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.45), rgb(255 255 255 / 0.2) 40%, rgb(0 0 0 / 0.5)),
+    #2b2b30;
+}
+
+.room-spine {
+  transition:
+    transform 900ms var(--ease-camera),
+    filter 900ms ease;
+}
+
+/* Un libro asoma solo de vez en cuando */
+.room-spine[data-peek='true'] {
+  transform: translateY(-5px);
+  filter: brightness(1.18) saturate(1.1);
+}
+
+/* Al señalar la estantería, los lomos despiertan en ola de izquierda a derecha */
+.room-shelves[data-awake='true'] .room-spine {
+  animation: spine-wave 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 90ms);
+}
+
+@keyframes spine-wave {
+  0%,
+  100% {
+    transform: translateY(0);
+    filter: brightness(1.05);
+  }
+  30% {
+    transform: translateY(-4px);
+    filter: brightness(1.25);
+  }
+}
+
+.room-spine:hover,
+.room-spine:focus-visible {
+  transform: translateY(-7px);
+  filter: brightness(1.3);
+  outline: none;
+  animation: none;
+  transition-duration: 250ms;
+}
+
+.room-spine__bands {
+  position: absolute;
+  inset: 8% 0;
+  background:
+    linear-gradient(#e0b25e, #e0b25e) 50% 6% / 70% 1.4px no-repeat,
+    linear-gradient(#e0b25e, #e0b25e) 50% 94% / 70% 1.4px no-repeat,
+    linear-gradient(rgb(255 240 210 / 0.38), rgb(255 240 210 / 0.38)) 50% 40% / 40% 22% no-repeat;
+  opacity: 0.75;
+}
+
+.room-spine[data-edge] .room-spine__bands {
+  background:
+    linear-gradient(#f3cf7a, #f3cf7a) 50% 6% / 80% 2px no-repeat,
+    linear-gradient(#f3cf7a, #f3cf7a) 50% 94% / 80% 2px no-repeat,
+    linear-gradient(#f6d98e, #c99335) 50% 40% / 60% 26% no-repeat;
+}
+
+.room-spine__ribbon {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  width: 2.4px;
+  height: 12px;
+  background: linear-gradient(#b3262e, #7d1219);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+  transform-origin: 50% 0;
+  animation: ribbon-sway 3.4s ease-in-out infinite;
+}
+
+@keyframes ribbon-sway {
+  0%,
+  100% {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+/* Sombra de la balda de arriba, luz cálida lateral y sombras de contacto */
+.room-shelf__light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgb(30 15 5 / 0.7), rgb(30 15 5 / 0) 30%),
+    linear-gradient(0deg, rgb(20 10 4 / 0.55), rgb(20 10 4 / 0) 12%),
+    linear-gradient(100deg, rgb(255 220 160 / 0) 40%, rgb(255 220 160 / 0.32) 72%, rgb(255 220 160 / 0.08));
+  mix-blend-mode: multiply;
+}
+
+.room-shelf__light::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 50%, rgb(255 214 150 / 0.35) 78%, transparent 92%);
+  mix-blend-mode: screen;
+}
+
+.room-occlusion {
+  z-index: 4;
+}
+
+.tea-drain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  width: 984px;
+  height: 1599px;
+  pointer-events: none;
+}
+
+.tea-drain__empty,
+.tea-drain__surface {
+  transition:
+    height 1s linear,
+    cy 1s linear,
+    rx 1s linear;
+}
+
+.tea-drain__drop {
+  transform-box: view-box;
+  animation: tea-drop 5s ease-in infinite;
+}
+
+@keyframes tea-drop {
+  0%,
+  60% {
+    transform: translateY(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(26px);
+    opacity: 0;
+  }
+}
+
+/* ── Luz por hora del día (sin contexto de apilamiento: las mezclas tocan la escena) ── */
+.tod {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tod > * {
+  position: absolute;
+  pointer-events: none;
+  transition: opacity 1.4s ease;
+}
+
+.tod__beams {
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  mix-blend-mode: overlay;
+  opacity: 0;
+}
+
+.tod[data-tod='morning'] .tod__beams {
+  opacity: 1;
+}
+
+.tod[data-tod='sunset'] .tod__beams {
+  opacity: 0.6;
+}
+
+.tod__beam {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgb(255 228 165 / 0.85) 50%, transparent);
+  filter: blur(14px);
+  animation: beam-breathe 9s ease-in-out infinite;
+}
+
+.tod[data-tod='sunset'] .tod__beam {
+  background: linear-gradient(90deg, transparent, rgb(255 168 96 / 0.9) 50%, transparent);
+}
+
+@keyframes beam-breathe {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.tod__leaves {
+  inset: 0;
+  width: 984px;
+  height: 1599px;
+  z-index: 5;
+  fill: rgb(70 45 20 / 0.55);
+  mix-blend-mode: multiply;
+  opacity: 0;
+}
+
+.tod[data-tod='morning'] .tod__leaves {
+  opacity: 0.38;
+}
+
+.tod[data-tod='sunset'] .tod__leaves {
+  opacity: 0.2;
+}
+
+.tod__leaves-drift {
+  animation: leaves-drift 11s ease-in-out infinite alternate;
+}
+
+@keyframes leaves-drift {
+  to {
+    transform: translate(14px, -6px);
+  }
+}
+
+.tod__sunset,
+.tod__sunset-warm,
+.tod__night {
+  inset: 0;
+  z-index: 5;
+  opacity: 0;
+}
+
+.tod__sunset {
+  background: linear-gradient(180deg, rgb(255 132 74 / 0.62), rgb(255 116 140 / 0.38) 50%, rgb(130 62 110 / 0.36));
+  mix-blend-mode: soft-light;
+}
+
+.tod__sunset-warm {
+  background:
+    radial-gradient(ellipse 55% 40% at 88% 32%, rgb(255 150 70 / 0.42), transparent 70%),
+    linear-gradient(rgb(255 196 150 / 0.1), rgb(255 160 120 / 0.14));
+  mix-blend-mode: screen;
+}
+
+.tod[data-tod='sunset'] .tod__sunset,
+.tod[data-tod='sunset'] .tod__sunset-warm {
+  opacity: 1;
+}
+
+.tod__night {
+  background: rgb(24 30 74 / 0.72);
+  mix-blend-mode: multiply;
+}
+
+.tod[data-tod='night'] .tod__night {
+  opacity: 1;
+}
+
+.tod__glow {
+  z-index: 5;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+.tod__glow--lamp {
+  background: radial-gradient(ellipse 50% 50% at 50% 30%, rgb(255 168 78 / 0.55), rgb(255 136 58 / 0.18) 55%, transparent 72%);
+}
+
+.tod__glow--shelf {
+  border-radius: 40%;
+  background: radial-gradient(ellipse 50% 50% at 40% 45%, rgb(255 196 120 / 0.42), rgb(255 170 90 / 0.14) 55%, transparent 75%);
+  filter: blur(10px);
+  opacity: 0.55;
+  animation: shelf-warm 7s ease-in-out infinite;
+}
+
+@keyframes shelf-warm {
+  50% {
+    filter: blur(10px) brightness(1.25);
+  }
+}
+
+.tod[data-tod='night'] .tod__glow--shelf {
+  opacity: 1;
+}
+
+.tod__glow--bulb {
+  background: radial-gradient(circle, rgb(255 244 210 / 0.95), rgb(255 200 120 / 0.55) 35%, transparent 70%);
+}
+
+.tod__glow--lantern {
+  background: radial-gradient(circle, rgb(255 190 100 / 0.62), rgb(255 140 60 / 0.2) 45%, transparent 70%);
+  animation: flicker 2.8s ease-in-out infinite;
+}
+
+.tod__glow--candle {
+  background: radial-gradient(circle, rgb(255 196 110 / 0.6), rgb(255 140 60 / 0.15) 50%, transparent 70%);
+  animation: flicker 2.1s ease-in-out infinite reverse;
+}
+
+.tod__glow--screen {
+  background: radial-gradient(ellipse 45% 45% at 52% 40%, rgb(180 205 255 / 0.3), transparent 70%);
+}
+
+.tod__glow--lantern,
+.tod__glow--candle {
+  opacity: 0.4;
+}
+
+.tod[data-tod='night'] .tod__glow {
+  opacity: 1;
+}
+
+.tod[data-tod='sunset'] .tod__glow--lamp,
+.tod[data-tod='sunset'] .tod__glow--shelf {
+  border-radius: 40%;
+  background: radial-gradient(ellipse 50% 50% at 40% 45%, rgb(255 196 120 / 0.42), rgb(255 170 90 / 0.14) 55%, transparent 75%);
+  filter: blur(10px);
+  opacity: 0.55;
+  animation: shelf-warm 7s ease-in-out infinite;
+}
+
+@keyframes shelf-warm {
+  50% {
+    filter: blur(10px) brightness(1.25);
+  }
+}
+
+.tod[data-tod='night'] .tod__glow--shelf {
+  opacity: 1;
+}
+
+.tod__glow--bulb {
+  opacity: 0.45;
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  20% {
+    filter: brightness(0.85);
+    transform: scale(0.98);
+  }
+  45% {
+    filter: brightness(1.08);
+    transform: scale(1.02);
+  }
+  70% {
+    filter: brightness(0.92);
+  }
+}
+
+.room-canvas {
+  z-index: 6;
+}
+
+/* Vapor que sube de las tazas */
+.steam path {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.75);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  transform-box: view-box;
+  animation: steam 3s ease-in-out infinite;
+  opacity: 0;
+}
+
+/* Cámara viva: respira despacio y se inclina hacia el ratón */
+.world__parallax,
+.world__breath {
+  position: absolute;
+  inset: 0;
+}
+
+/* Parallax de tres capas: la habitación (media), el mar y el cielo (lejos) y la cama (cerca) */
+.world__parallax {
+  transform: translate3d(calc(var(--px, 0) * -18px), calc(var(--py, 0) * -9px), 0) scale(1.025);
+  transition: transform 1.6s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.layer-far {
+  transform-box: view-box;
+  transform: translate(calc(var(--px, 0) * 12px), calc(var(--py, 0) * 5px));
+  transition: transform 1.6s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.layer-front {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  transform: translate3d(calc(var(--px, 0) * -16px), calc(var(--py, 0) * -8px), 0);
+  transition: transform 1.6s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.front-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 984px;
+  height: 1599px;
+  pointer-events: none;
+}
+
+/* Marco de ventanal de madera alrededor de la escena */
+.world__frame {
+  position: absolute;
+  inset: -30px;
+  z-index: 0;
+  border: 30px solid transparent;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, rgb(255 236 200 / 0.16), transparent 30%, transparent 70%, rgb(0 0 0 / 0.18)) border-box,
+    repeating-linear-gradient(90deg, rgb(70 40 18 / 0.25) 0 2px, transparent 2px 9px) border-box,
+    linear-gradient(180deg, #b98146, #8a5a2b 50%, #6b4423) border-box;
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) padding-box exclude,
+    linear-gradient(#000 0 0);
+  box-shadow:
+    0 30px 80px rgb(20 10 4 / 0.55),
+    inset 0 0 0 2px rgb(255 230 190 / 0.2);
+  pointer-events: none;
+}
+
+.world__breath {
+  animation: room-breath 18s ease-in-out infinite;
+}
+
+/* Con un objeto señalado la cámara deja de respirar */
+.room-camera[data-pointing='true'] .world__breath {
+  animation-play-state: paused;
+}
+
+@keyframes room-breath {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.007);
+  }
+}
+
+/* ── Objetos interactivos ── */
+/* Halo cálido difuminado para la estantería y el carillón (sin silueta propia) */
+.hotspot-aura {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgb(255 222 165 / 0.42), rgb(255 190 120 / 0.14) 55%, transparent 75%);
+  filter: blur(18px);
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+
+.hotspot-aura[data-active='true'] {
+  opacity: 1;
+}
+
+/* El objeto pintado se aviva siguiendo su contorno: brillo dorado en los bordes y un 5 % más grande */
+.hotspot-lift {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+  transform-origin: 50% 70%;
+  filter: drop-shadow(0 0 2px rgb(255 244 214)) drop-shadow(0 0 7px rgb(255 206 120 / 0.95)) drop-shadow(0 0 16px rgb(255 176 80 / 0.7)) drop-shadow(0 10px 14px rgb(40 20 5 / 0.35));
+  transition:
+    opacity 320ms ease,
+    transform 520ms cubic-bezier(0.25, 1.4, 0.4, 1);
+}
+
+.hotspot-lift > span {
+  position: absolute;
+  inset: 0;
+}
+
+.hotspot-lift[data-active='true'] {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Insignias flotantes: siempre visibles, señalan qué se puede tocar */
+.hotspot-badge {
+  position: absolute;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  width: 2.5em;
+  height: 2.5em;
+  padding: 0;
+  border: 0.14em solid #fff7e6;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fffdf6, #f6e2bc 70%);
+  color: #b1552f;
+  font-size: max(11px, calc(15px / var(--k)));
+  box-shadow:
+    0 0 0 0.3em rgb(255 220 160 / 0.35),
+    0 0.3em 0.8em rgb(60 30 10 / 0.45),
+    0 0 1.6em rgb(255 200 120 / 0.7);
+  transform: translate(-50%, -50%);
+  animation: badge-bob 3s ease-in-out infinite;
+  transition: color 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hotspot-badge svg {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+.hotspot-badge::after {
+  content: '';
+  position: absolute;
+  inset: -0.2em;
+  border: 0.12em solid rgb(255 214 150 / 0.9);
+  border-radius: 50%;
+  animation: badge-ring 3s ease-out infinite;
+  animation-delay: inherit;
+  pointer-events: none;
+}
+
+.hotspot-badge[data-active='true'] {
+  color: #fffaf0;
+  background: radial-gradient(circle at 35% 30%, #f3a275, #c4623a 70%);
+  animation: badge-pop 0.9s cubic-bezier(0.3, 1.6, 0.5, 1) infinite alternate;
+}
+
+.hotspot-badge[data-active='true']::after {
+  animation-duration: 1.2s;
+}
+
+@keyframes badge-bob {
+  0%,
+  100% {
+    transform: translate(-50%, -50%);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% - 0.45em));
+  }
+}
+
+@keyframes badge-pop {
+  from {
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  to {
+    transform: translate(-50%, calc(-50% - 0.5em)) scale(1.22);
+  }
+}
+
+@keyframes badge-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+/* Destellos que rodean el objeto señalado */
+.hotspot-sparks {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  font-size: max(10px, calc(14px / var(--k)));
+}
+
+.hotspot-sparks i {
+  position: absolute;
+  color: #fff4cf;
+  font-style: normal;
+  text-shadow:
+    0 0 6px #ffd27a,
+    0 0 14px #ffb347;
+  animation: spark 1.6s ease-in-out infinite;
+  opacity: 0;
+}
+
+@keyframes spark {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1) rotate(45deg);
+  }
+}
+
+.hotspot {
+  position: absolute;
+  z-index: 7;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hotspot[data-id='shelf'] {
+  z-index: 2;
+}
+
+.hotspot:focus-visible {
+  outline: none;
+}
+
+/* Etiqueta de papel con chincheta (tamaño constante en pantalla) */
+.room-label {
+  position: absolute;
+  z-index: 9;
+  pointer-events: none;
+  font-size: calc(15px / var(--k));
+  transform: translate(-50%, -100%);
+  animation: label-in 240ms var(--ease-camera);
+}
+
+.room-label__paper {
+  position: relative;
+  display: grid;
+  gap: 0.1em;
+  max-width: 17em;
+  padding: 0.55em 0.95em 0.6em;
+  border-radius: 0.3em;
+  background:
+    radial-gradient(circle at 20% 10%, rgb(255 255 255 / 0.6), transparent 40%),
+    linear-gradient(#fbf3e1, #f1e2c4);
+  color: var(--color-ink);
+  text-align: center;
+  box-shadow:
+    0 0.15em 0.3em rgb(60 30 10 / 0.25),
+    0 0.7em 1.4em -0.3em rgb(60 30 10 / 0.45);
+  transform: rotate(-1.6deg);
+}
+
+.room-label__paper::before {
+  content: '';
+  position: absolute;
+  top: -0.35em;
+  left: 50%;
+  width: 0.7em;
+  height: 0.7em;
+  margin-left: -0.35em;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff9a8a, #c4423a 60%, #7a1f1a);
+  box-shadow: 0 0.1em 0.15em rgb(0 0 0 / 0.35);
+}
+
+.room-label__paper strong {
+  font-family: var(--font-display);
+  font-size: 1.08em;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.room-label__paper span {
+  font-family: var(--font-hand);
+  font-size: 1.22em;
+  line-height: 1.05;
+  color: var(--color-ink-soft);
+}
+
+.room-label__paper em {
+  font-style: normal;
+  font-size: 0.78em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-terracotta);
+}
+
+@keyframes label-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 0.6em));
+  }
+}
+
+/* El astro del cielo: sol, sol poniente o luna (cambia la hora del día) */
+.time-dial {
+  position: absolute;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  width: max(44px, calc(30px / var(--k)));
+  height: max(44px, calc(30px / var(--k)));
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  transform: translate(-50%, -50%);
+  transition:
+    left 1.2s var(--ease-camera),
+    top 1.2s var(--ease-camera);
+}
+
+.time-dial__body {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 42%, #fffef6, #fff3c4 45%, #ffd977 80%);
+  box-shadow:
+    0 0 14px 6px rgb(255 248 210 / 0.85),
+    0 0 60px 26px rgb(255 236 170 / 0.45);
+  animation: sun-breathe 6s ease-in-out infinite;
+  transition: transform 300ms var(--ease-camera);
+}
+
+.time-dial:hover .time-dial__body,
+.time-dial:focus-visible .time-dial__body {
+  transform: scale(1.15);
+}
+
+.time-dial:focus-visible {
+  outline-offset: 6px;
+}
+
+.time-dial[data-tod='sunset'] .time-dial__body {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at 50% 45%, #fff1c9, #ffb35c 55%, #f0703c);
+  box-shadow:
+    0 0 18px 8px rgb(255 160 80 / 0.75),
+    0 0 80px 36px rgb(255 120 70 / 0.4);
+}
+
+/* Luna creciente: sombra interior que deja el filo iluminado */
+.time-dial[data-tod='night'] .time-dial__body {
+  width: 32px;
+  height: 32px;
+  background: radial-gradient(circle at 40% 38%, #fffbe8, #f1e6c4 70%, #d9c99c);
+  box-shadow:
+    inset -9px 3px 0 1px rgb(24 32 70 / 0.92),
+    0 0 22px 6px rgb(220 230 255 / 0.35);
+  animation: none;
+}
+
+@keyframes sun-breathe {
+  50% {
+    box-shadow:
+      0 0 18px 8px rgb(255 248 210 / 0.9),
+      0 0 70px 32px rgb(255 236 170 / 0.5);
+  }
+}
+
+/* Etiqueta colgante "Ver mi librería" atada al costado de la estantería */
+.shelf-tag {
+  position: absolute;
+  z-index: 8;
+  top: 612px;
+  left: 214px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: calc(11.5px / var(--k));
+  transform-origin: 50% -1.4em;
+  animation: tag-sway 5s ease-in-out infinite;
+}
+
+.shelf-tag::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 1px;
+  height: 1.4em;
+  background: #6b4a2a;
+}
+
+.shelf-tag span {
+  display: block;
+  padding: 0.3em 0.75em 0.35em 1.1em;
+  border-radius: 0.25em 0.9em 0.9em 0.25em;
+  background: linear-gradient(#f8ecd2, #e9d6b0);
+  color: var(--color-ink);
+  font-family: var(--font-hand);
+  font-size: 1.25em;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 0.25em 0.6em rgb(40 20 5 / 0.4);
+  clip-path: polygon(0.7em 0, 100% 0, 100% 100%, 0.7em 100%, 0 50%);
+}
+
+.shelf-tag:hover span,
+.shelf-tag:focus-visible span {
+  background: linear-gradient(#fff6e2, #f3dfb8);
+}
+
+@keyframes tag-sway {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.sound-notes {
+  position: absolute;
+  z-index: 8;
+  width: 90px;
+  height: 120px;
+  pointer-events: none;
+  font-size: calc(18px / var(--k));
+  color: #fff6dc;
+  text-shadow: 0 0 8px rgb(255 210 140 / 0.9);
+}
+
+.sound-notes span {
+  position: absolute;
+  bottom: 0;
+  animation: note-float 3.3s ease-out infinite;
+  opacity: 0;
+}
+
+@keyframes note-float {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-8deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(18px, -90px) rotate(12deg);
+  }
+}
+
+.tray-timer {
+  position: absolute;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.2em 0.55em 0.2em 0.25em;
+  border-radius: 999px;
+  background: rgb(255 248 232 / 0.92);
+  color: var(--color-ink);
+  font-size: calc(13px / var(--k));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0.3em 0.8em rgb(50 25 5 / 0.35);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+
+.tray-timer svg {
+  width: 1.8em;
+  height: 1.8em;
+  transform: rotate(-90deg);
+}
+
+.tray-timer__track,
+.tray-timer__fill {
+  fill: none;
+  stroke-width: 4;
+}
+
+.tray-timer__track {
+  stroke: rgb(176 122 69 / 0.25);
+}
+
+.tray-timer__fill {
+  stroke: var(--color-terracotta);
+  stroke-dasharray: 94.25;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.cat-hearts,
+.cat-meow {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  font-size: calc(16px / var(--k));
+}
+
+.cat-hearts span {
+  position: absolute;
+  color: #ff8fa3;
+  text-shadow: 0 0 6px rgb(255 200 210 / 0.8);
+  animation: heart-up 2.2s ease-out infinite;
+  opacity: 0;
+}
+
+.cat-hearts em,
+.cat-meow {
+  font-family: var(--font-hand);
+  font-style: normal;
+  font-weight: 700;
+  color: #fff8ec;
+  text-shadow:
+    0 1px 0 rgb(80 40 10 / 0.6),
+    0 0 10px rgb(255 190 120 / 0.8);
+  white-space: nowrap;
+}
+
+.cat-hearts em {
+  position: absolute;
+  top: -1.6em;
+  left: 1.4em;
+  font-size: 1.2em;
+}
+
+.cat-meow {
+  font-size: calc(22px / var(--k));
+  animation: label-in 300ms var(--ease-camera);
+  transform: translate(-30%, -100%) rotate(-6deg);
+}
+
+@keyframes heart-up {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(10px, -70px) scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world {
+    transition: none;
+  }
+}
+
+/* ── Datos vivos sobre los objetos (SPEC §3.3, 1.8.0) ── */
+
+/* Marcapáginas de papel sobre la página del libro de la cama */
+.bed-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 8;
+  transform-origin: 0 0;
+  filter: drop-shadow(0 6px 6px rgb(60 30 10 / 0.35));
+}
+
+.bed-card__body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 7px;
+  padding: 9px 8px 26px;
+  border: 0;
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 15% 10%, rgb(255 255 255 / 0.7), transparent 45%),
+    repeating-linear-gradient(transparent 0 15px, rgb(47 111 166 / 0.1) 15px 16px),
+    linear-gradient(#fdf7e9, #f2e3c4);
+  color: var(--color-ink);
+  text-align: left;
+}
+
+.bed-card__cover {
+  flex: none;
+  width: 36px;
+  height: 54px;
+  overflow: hidden;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 0 3px 6px rgb(40 20 5 / 0.35);
+}
+
+.bed-card__text {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bed-card__text em {
+  font-family: var(--font-hand);
+  font-size: 12px;
+  font-style: normal;
+  color: var(--color-terracotta);
+  line-height: 1;
+}
+
+.bed-card__text b {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  line-height: 1.1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.bed-card__bar {
+  height: 5px;
+  margin-top: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c4623a var(--p), rgb(107 68 35 / 0.15) var(--p));
+}
+
+.bed-card__meta {
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-ink-soft);
+}
+
+.bed-card__meta b {
+  color: var(--color-terracotta);
+  font-size: 10px;
+}
+
+.bed-card__plus {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #d2734a, #b2532f);
+  color: #fff6ea;
+  font-size: 9.5px;
+  font-weight: 800;
+  box-shadow: 0 2px 0 #7d3618;
+  transition: transform 150ms ease;
+}
+
+.bed-card__plus:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+
+.bed-card__plus:disabled {
+  opacity: 0.5;
+}
+
+.bed-card__ribbon {
+  position: absolute;
+  top: -6px;
+  right: 22px;
+  width: 9px;
+  height: 30px;
+  background: linear-gradient(90deg, #8d1a22, #cf3a44 50%, #8d1a22);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+}
+
+/* Hoja que pasa al sumar páginas */
+.bed-card__flip {
+  position: absolute;
+  inset: 0 0 0 50%;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(90deg, #efe0c2, #fdf7e9);
+  box-shadow: -4px 0 10px rgb(60 30 10 / 0.25);
+  transform-origin: 0 50%;
+  animation: page-turn 700ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes page-turn {
+  0% {
+    transform: perspective(500px) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(500px) rotateY(-178deg);
+    opacity: 0;
+  }
+}
+
+/* Post-it de la tapa del portátil */
+.lid-note {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.lid-note__paper {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  padding: 6px;
+  background: linear-gradient(170deg, #fff6a8, #f6dd6a);
+  color: #5a4210;
+  font-family: var(--font-hand);
+  line-height: 1;
+  text-align: center;
+  box-shadow: 0 6px 8px -4px rgb(40 30 5 / 0.55);
+  transform: rotate(-7deg);
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 90% 100%, 0 100%);
+}
+
+.lid-note__paper b {
+  font-size: 22px;
+}
+
+.lid-note__paper span {
+  margin-top: 4px;
+  font-size: 17px;
+}
+
+/* Cuenta atrás flotando como bruma cálida sobre el té */
+.tea-mist {
+  position: absolute;
+  z-index: 8;
+  display: grid;
+  justify-items: center;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  animation: mist-float 4s ease-in-out infinite;
+}
+
+.tea-mist__wisp {
+  position: absolute;
+  inset: -20px -30px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgb(255 240 210 / 0.55), rgb(255 220 170 / 0.18) 55%, transparent 72%);
+  filter: blur(10px);
+}
+
+.tea-mist__time {
+  position: relative;
+  font-family: var(--font-hand);
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fffaf0;
+  text-shadow:
+    0 0 8px rgb(255 214 150 / 0.9),
+    0 0 22px rgb(255 190 110 / 0.7),
+    0 2px 2px rgb(90 50 20 / 0.4);
+  font-variant-numeric: tabular-nums;
+}
+
+.tea-mist__phase {
+  position: relative;
+  font-family: var(--font-hand);
+  font-size: 20px;
+  color: #fff4dc;
+  text-shadow: 0 0 8px rgb(255 200 130 / 0.9);
+}
+
+.tea-mist[data-paused='true'] {
+  opacity: 0.65;
+  animation-play-state: paused;
+}
+
+@keyframes mist-float {
+  0%,
+  100% {
+    transform: translate(-50%, -100%);
+  }
+  50% {
+    transform: translate(-50%, calc(-100% - 8px));
+  }
+}
+
+/* Notas doradas y ondas suaves desde los auriculares */
+.sound-waves {
+  position: absolute;
+  z-index: 8;
+  width: 180px;
+  height: 200px;
+  pointer-events: none;
+}
+
+.sound-waves__ring {
+  position: absolute;
+  left: 90px;
+  bottom: 30px;
+  width: 60px;
+  height: 60px;
+  margin: -30px;
+  border: 2px solid rgb(255 214 140 / 0.7);
+  border-radius: 50%;
+  opacity: 0;
+  animation: sound-ring 3.6s ease-out infinite;
+}
+
+.sound-waves__note {
+  position: absolute;
+  bottom: 30px;
+  font-size: 28px;
+  color: #ffd27a;
+  text-shadow:
+    0 0 8px rgb(255 200 110 / 0.9),
+    0 1px 1px rgb(90 50 10 / 0.5);
+  opacity: 0;
+  animation: note-rise 4s ease-out infinite;
+}
+
+@keyframes sound-ring {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+@keyframes note-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-10deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(26px, -150px) rotate(14deg);
+  }
+}
+
+/* Portada de frente en la balda del mueble y Booknook en miniatura */
+.room-cover {
+  overflow: hidden;
+  border-radius: 1px 2px 2px 1px;
+  background: #3b2a1e;
+}
+
+.room-cover .cover-img,
+.room-cover .gen-cover {
+  width: 100%;
+  height: 100%;
+}
+
+
+
+
+
+
+/* «✨ Mostrar guías»: único control fuera de la escena */
+.guides-toggle {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  right: 14px;
+  z-index: 15;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px 7px 11px;
+  border: 1px solid rgb(255 236 200 / 0.5);
+  border-radius: 999px;
+  background: rgb(251 243 225 / 0.72);
+  color: var(--color-ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgb(30 15 5 / 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0.8;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+
+.guides-toggle svg {
+  width: 15px;
+  height: 15px;
+  color: #c48a2a;
+}
+
+.guides-toggle:hover,
+.guides-toggle:focus-visible,
+.guides-toggle[aria-pressed='true'] {
+  opacity: 1;
+}
+
+.guides-toggle[aria-pressed='true'] {
+  background: linear-gradient(180deg, #f6dd94, #d8a94a);
+}
+
+/* ── Interruptores de la lámpara y la vela (1.9.0) ── */
+.tod[data-lamp='false'] .tod__glow--lamp,
+.tod[data-lamp='false'] .tod__glow--bulb,
+.tod[data-lamp='false'] .tod__glow--shelf,
+.tod[data-candle='false'] .tod__glow--lantern,
+.tod[data-candle='false'] .tod__glow--candle {
+  opacity: 0 !important;
+}
+
+/* Encendida de día, la lámpara también baña de luz cálida los libros cercanos */
+.tod[data-tod='morning'][data-lamp='true'] .tod__glow--lamp {
+  opacity: 0.32;
+}
+
+.tod__off {
+  z-index: 5;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(40 26 14 / 0.92) 0, rgb(40 26 14 / 0.6) 40%, transparent 70%);
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+
+.tod[data-lamp='false'] .tod__off--lamp,
+.tod[data-candle='false'] .tod__off--lantern,
+.tod[data-candle='false'] .tod__off--candle {
+  opacity: 1;
+}
+
+.tod[data-lamp='true'] .tod__glow--bulb {
+  animation: bulb-on 600ms ease-out;
+}
+
+@keyframes bulb-on {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.4;
+  }
+}
+
+/* ── Bebida viva: hielo que flota y mengua, vapor de bebidas calientes ── */
+.tea-drain__ice {
+  fill: rgb(255 255 255 / 0.42);
+  stroke: rgb(255 255 255 / 0.85);
+  stroke-width: 1;
+  transform-box: fill-box;
+  animation: ice-bob 3.2s ease-in-out infinite;
+}
+
+@keyframes ice-bob {
+  50% {
+    translate: 0 1.5px;
+  }
+}
+
+.drink-steam {
+  position: absolute;
+  z-index: 8;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.drink-steam span {
+  position: absolute;
+  bottom: 0;
+  width: 18px;
+  height: 120px;
+  margin-left: -9px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgb(255 255 255 / 0.55), transparent 70%);
+  filter: blur(6px);
+  opacity: 0;
+  animation: steam-column 4.4s ease-out infinite;
+}
+
+.drink-steam[data-active='true'] span {
+  animation-duration: 3.2s;
+}
+
+@keyframes steam-column {
+  0% {
+    opacity: 0;
+    transform: translate(0, 20px) scale(0.5, 0.4);
+  }
+  25% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(10px, -110px) scale(1.4, 1.1);
+  }
+}
+
+/* ── Sombra de nube de verano cada 35 s ── */
+.cloud-shadow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cloud-shadow__blob {
+  position: absolute;
+  z-index: 5;
+  top: -500px;
+  left: 700px;
+  width: 900px;
+  height: 640px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgb(40 36 70 / 0.42), rgb(40 36 70 / 0.16) 50%, transparent 72%);
+  filter: blur(30px);
+  mix-blend-mode: multiply;
+  opacity: 0;
+  animation: cloud-pass 35s linear infinite;
+  animation-delay: 6s;
+}
+
+.cloud-shadow__dim {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  background: rgb(60 60 90 / 0.18);
+  mix-blend-mode: multiply;
+  opacity: 0;
+  animation: cloud-dim 35s ease-in-out infinite;
+  animation-delay: 6s;
+}
+
+@keyframes cloud-pass {
+  0%,
+  62% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  66% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-1500px, 1900px);
+  }
+}
+
+@keyframes cloud-dim {
+  0%,
+  70%,
+  96%,
+  100% {
+    opacity: 0;
+  }
+  76%,
+  90% {
+    opacity: 1;
+  }
+}
+
+/* Interruptor de sonidos táctiles junto a las guías */
+.sfx-toggle {
+  right: auto;
+  left: max(14px, env(safe-area-inset-left));
+}
+
+/* ── Marcapáginas impreso sobre el papel real del libro de la cama (1.13.0) ──
+   Sin tarjeta blanca: tinta sepia mezclada (multiply) con la página de la foto, en su perspectiva. */
+.bed-card {
+  filter: none;
+  mix-blend-mode: multiply;
+}
+
+.bed-card__body {
+  border-radius: 2px;
+  background: radial-gradient(ellipse at 40% 40%, rgb(250 236 206 / 0.14), transparent 75%);
+  color: #2c1e14;
+}
+
+.bed-card__cover {
+  border: 1.5px solid rgb(60 35 15 / 0.6);
+  border-radius: 1px;
+  box-shadow:
+    inset 0 0 6px rgb(60 35 15 / 0.45),
+    1px 1px 0 rgb(60 35 15 / 0.25);
+  filter: sepia(0.3) saturate(0.85) contrast(0.95);
+  transform: rotate(-2deg);
+}
+
+.bed-card__text em {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b2a18;
+}
+
+.bed-card__text b {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #2c1e14;
+}
+
+.bed-card__bar {
+  height: 2px;
+  margin-top: 4px;
+  border-radius: 0;
+  background: linear-gradient(90deg, #2c1e14 var(--p), rgb(44 30 20 / 0.2) var(--p));
+}
+
+.bed-card__meta {
+  font-size: 9px;
+  color: #2c1e14;
+}
+
+.bed-card__meta b {
+  color: #2c1e14;
+}
+
+/* «+5 págs» como un sello de tinta sobre la página */
+.bed-card__plus {
+  padding: 1px 6px;
+  border: 1.2px solid #7a1f12;
+  border-radius: 3px;
+  background: transparent;
+  box-shadow: none;
+  color: #7a1f12;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  transform: rotate(-3deg);
+}
+
+.bed-card__plus:hover {
+  background: rgb(122 31 18 / 0.08);
+  transform: rotate(-3deg) scale(1.06);
+}
+
+.bed-card__ribbon {
+  width: 7px;
+  height: 24px;
+}
+
+/* ── Esquina superior derecha (1.13.0): iconos mínimos junto a «Guías» ── */
+.room-corner {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 15;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.room-corner .guides-toggle {
+  position: static;
+}
+
+.corner-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgb(255 236 200 / 0.5);
+  border-radius: 50%;
+  background: rgb(251 243 225 / 0.6);
+  color: #8a5a1c;
+  box-shadow: 0 6px 16px rgb(30 15 5 / 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0.75;
+  transition: opacity 200ms ease;
+}
+
+.corner-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.corner-btn:hover,
+.corner-btn:focus-visible {
+  opacity: 1;
+}
+
+.corner-btn[aria-pressed='false'] {
+  color: #8d7a66;
+}
+
+/* «Ver mi librería» aparece al pasar por el mueble (en táctil queda siempre, discreta) */
+.shelf-tag {
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.room-camera[data-shelf-awake='true'] .shelf-tag,
+.room-camera[data-guides='true'] .shelf-tag,
+.shelf-tag:hover,
+.shelf-tag:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .shelf-tag {
+    opacity: 0.85;
+  }
+}
+
+/* 1.15.0: nada se sale de la pantalla y la esquina respeta los márgenes seguros */
+.sanctuary {
+  overflow: hidden;
+}
+
+.room-corner {
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+}
+
+/* Los libros de la balda de la vela llevan a la librería */
+.room-spine {
+  cursor: pointer;
+}

@@ -1,0 +1,124 @@
+@import 'tailwindcss';
+@import './styles/room.css';
+@import './styles/shelf.css';
+@import './styles/book.css';
+@import './styles/editions.css';
+@import './styles/panels.css';
+@import './styles/laptop.css';
+@import './styles/figures.css';
+@import './styles/dailyquote.css';
+@import './styles/stationery.css';
+@import './styles/quotes.css';
+@import './styles/atlas.css';
+@import './styles/account.css';
+@import './styles/typography.css';
+
+/* Sistema "Mediterranean Cozy": papel crema, roble miel, terracota, azul bahía y verde hiedra */
+@theme {
+  --color-cream: #fbf6ec;
+  --color-paper: #f6ead2;
+  --color-paper-2: #efe0c2;
+  --color-ink: #2c1e14;
+  --color-ink-soft: #6b5442;
+  --color-oak: #b07a45;
+  --color-oak-dark: #6b4423;
+  --color-oak-deep: #3e2614;
+  --color-honey: #e2a94f;
+  --color-terracotta: #c4623a;
+  --color-bay: #2f6fa6;
+  --color-bay-soft: #9cc7ec;
+  --color-ivy: #4f7a3a;
+  --color-ivy-soft: #a9c98a;
+  --color-rose: #e7909f;
+  --color-gold: #d9a441;
+
+  /* Sistema tipográfico editorial (1.11.0) */
+  --font-display: 'Cormorant Garamond', 'Garamond', Georgia, serif;
+  --font-sans: 'Lora', Georgia, serif;
+  --font-hand: 'Caveat', 'Segoe Print', cursive;
+  --font-mono: 'Courier Prime', 'Courier New', monospace;
+}
+
+:root {
+  color-scheme: light;
+  --ease-camera: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #2a1d14;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2.5px solid #ffcf7a;
+  outline-offset: 2px;
+}
+
+.sr-only-focus:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ── Móvil y PWA a pantalla completa (1.13.0) ── */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+/* La escena no se selecciona como texto al mantener pulsado */
+.room-camera,
+.library__case,
+.bnk {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Abierta como app: respeta la muesca y la barra de gestos */
+@media (display-mode: fullscreen), (display-mode: standalone) {
+  .library {
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}

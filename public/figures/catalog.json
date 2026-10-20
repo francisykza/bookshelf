@@ -1,0 +1,878 @@
+{
+  "version": 1,
+  "imageSize": {
+    "w": 1024,
+    "h": 1536
+  },
+  "figures": [
+    {
+      "id": "dama_ceniza",
+      "name": "La Dama de la Ceniza",
+      "sagaTitle": "Nacidos de la Bruma",
+      "matchKeywords": [
+        "mistborn",
+        "bruma",
+        "imperio final",
+        "pozo de la ascension",
+        "heroe de las eras"
+      ],
+      "rarity": "legendary",
+      "starter": true,
+      "boxImage": "dama-ceniza-box.jpg",
+      "unboxedImage": "dama-ceniza-box.jpg",
+      "unboxedCrop": {
+        "x": 220,
+        "y": 375,
+        "w": 535,
+        "h": 805
+      },
+      "particles": "mist",
+      "accent": "#c9d2dc",
+      "loreSeals": [
+        "BRUMA",
+        "ACERO",
+        "LIBERTAD",
+        "SECRETOS",
+        "CENIZA"
+      ],
+      "blisterParts": [
+        {
+          "name": "Rostro Determinado",
+          "kind": "face",
+          "crop": {
+            "x": 795,
+            "y": 375,
+            "w": 160,
+            "h": 140
+          }
+        },
+        {
+          "name": "Rostro Sereno",
+          "kind": "face",
+          "crop": {
+            "x": 795,
+            "y": 535,
+            "w": 160,
+            "h": 145
+          }
+        },
+        {
+          "name": "Rostro Sonriente",
+          "kind": "face",
+          "crop": {
+            "x": 795,
+            "y": 695,
+            "w": 160,
+            "h": 145
+          }
+        },
+        {
+          "name": "Dagas de Cristal",
+          "kind": "weapon",
+          "crop": {
+            "x": 785,
+            "y": 860,
+            "w": 110,
+            "h": 205
+          }
+        },
+        {
+          "name": "Espiral de Bruma",
+          "kind": "effect",
+          "crop": {
+            "x": 895,
+            "y": 870,
+            "w": 75,
+            "h": 195
+          }
+        },
+        {
+          "name": "Moneda del Imperio",
+          "kind": "relic",
+          "crop": {
+            "x": 785,
+            "y": 1075,
+            "w": 80,
+            "h": 90
+          }
+        },
+        {
+          "name": "Columna en Ruinas",
+          "kind": "relic",
+          "crop": {
+            "x": 845,
+            "y": 1055,
+            "w": 120,
+            "h": 160
+          }
+        }
+      ],
+      "boxOutline": [
+        [
+          12,
+          165
+        ],
+        [
+          205,
+          65
+        ],
+        [
+          1012,
+          95
+        ],
+        [
+          1012,
+          1352
+        ],
+        [
+          210,
+          1388
+        ],
+        [
+          42,
+          1340
+        ]
+      ],
+      "unboxedSilhouette": [
+        [
+          430,
+          388
+        ],
+        [
+          520,
+          385
+        ],
+        [
+          585,
+          420
+        ],
+        [
+          605,
+          480
+        ],
+        [
+          600,
+          560
+        ],
+        [
+          655,
+          600
+        ],
+        [
+          690,
+          650
+        ],
+        [
+          680,
+          720
+        ],
+        [
+          650,
+          770
+        ],
+        [
+          700,
+          840
+        ],
+        [
+          740,
+          895
+        ],
+        [
+          700,
+          905
+        ],
+        [
+          640,
+          875
+        ],
+        [
+          660,
+          930
+        ],
+        [
+          705,
+          945
+        ],
+        [
+          712,
+          1080
+        ],
+        [
+          712,
+          1112
+        ],
+        [
+          700,
+          1150
+        ],
+        [
+          600,
+          1166
+        ],
+        [
+          495,
+          1170
+        ],
+        [
+          380,
+          1166
+        ],
+        [
+          290,
+          1150
+        ],
+        [
+          276,
+          1112
+        ],
+        [
+          280,
+          1080
+        ],
+        [
+          262,
+          1020
+        ],
+        [
+          252,
+          958
+        ],
+        [
+          300,
+          948
+        ],
+        [
+          315,
+          925
+        ],
+        [
+          345,
+          880
+        ],
+        [
+          290,
+          882
+        ],
+        [
+          226,
+          860
+        ],
+        [
+          233,
+          760
+        ],
+        [
+          250,
+          700
+        ],
+        [
+          300,
+          660
+        ],
+        [
+          290,
+          560
+        ],
+        [
+          300,
+          470
+        ],
+        [
+          350,
+          410
+        ]
+      ],
+      "pinCrop": {
+        "x": 300,
+        "y": 385,
+        "w": 300,
+        "h": 300
+      },
+      "boxWindow": {
+        "x": 225,
+        "y": 300,
+        "w": 775,
+        "h": 900
+      }
+    },
+    {
+      "id": "jinete_dragones",
+      "name": "La Jinete de Dragones",
+      "sagaTitle": "Saga Empíreo",
+      "matchKeywords": [
+        "fourth wing",
+        "alas de sangre",
+        "alas de hierro",
+        "iron flame",
+        "alas de onice",
+        "onyx storm"
+      ],
+      "rarity": "legendary",
+      "starter": true,
+      "boxImage": "jinete-dragones-box.jpg",
+      "unboxedImage": "jinete-dragones-box.jpg",
+      "unboxedCrop": {
+        "x": 240,
+        "y": 310,
+        "w": 505,
+        "h": 860
+      },
+      "particles": "embers",
+      "accent": "#ffb347",
+      "loreSeals": [
+        "VALOR",
+        "FUEGO",
+        "CIELO",
+        "LEALTAD",
+        "LIBERTAD"
+      ],
+      "blisterParts": [
+        {
+          "name": "Rostro Sonriente",
+          "kind": "face",
+          "crop": {
+            "x": 772,
+            "y": 410,
+            "w": 180,
+            "h": 165
+          }
+        },
+        {
+          "name": "Rostro Decidido",
+          "kind": "face",
+          "crop": {
+            "x": 772,
+            "y": 585,
+            "w": 180,
+            "h": 165
+          }
+        },
+        {
+          "name": "Llama de Dragón",
+          "kind": "effect",
+          "crop": {
+            "x": 780,
+            "y": 755,
+            "w": 160,
+            "h": 110
+          }
+        },
+        {
+          "name": "Grimorio del Jinete",
+          "kind": "relic",
+          "crop": {
+            "x": 800,
+            "y": 875,
+            "w": 130,
+            "h": 150
+          }
+        }
+      ],
+      "boxOutline": [
+        [
+          22,
+          140
+        ],
+        [
+          178,
+          58
+        ],
+        [
+          1000,
+          168
+        ],
+        [
+          1004,
+          1342
+        ],
+        [
+          185,
+          1388
+        ],
+        [
+          20,
+          1298
+        ]
+      ],
+      "unboxedSilhouette": [
+        [
+          380,
+          325
+        ],
+        [
+          500,
+          318
+        ],
+        [
+          570,
+          350
+        ],
+        [
+          600,
+          420
+        ],
+        [
+          625,
+          430
+        ],
+        [
+          670,
+          460
+        ],
+        [
+          737,
+          476
+        ],
+        [
+          705,
+          540
+        ],
+        [
+          728,
+          610
+        ],
+        [
+          737,
+          652
+        ],
+        [
+          702,
+          700
+        ],
+        [
+          712,
+          760
+        ],
+        [
+          692,
+          782
+        ],
+        [
+          702,
+          850
+        ],
+        [
+          727,
+          930
+        ],
+        [
+          722,
+          1000
+        ],
+        [
+          742,
+          1080
+        ],
+        [
+          737,
+          1132
+        ],
+        [
+          690,
+          1152
+        ],
+        [
+          540,
+          1160
+        ],
+        [
+          395,
+          1152
+        ],
+        [
+          343,
+          1132
+        ],
+        [
+          348,
+          1086
+        ],
+        [
+          258,
+          1032
+        ],
+        [
+          253,
+          960
+        ],
+        [
+          288,
+          900
+        ],
+        [
+          258,
+          840
+        ],
+        [
+          283,
+          760
+        ],
+        [
+          246,
+          725
+        ],
+        [
+          268,
+          690
+        ],
+        [
+          300,
+          640
+        ],
+        [
+          290,
+          560
+        ],
+        [
+          290,
+          450
+        ],
+        [
+          320,
+          380
+        ]
+      ],
+      "pinCrop": {
+        "x": 300,
+        "y": 322,
+        "w": 300,
+        "h": 300
+      },
+      "boxWindow": {
+        "x": 242,
+        "y": 288,
+        "w": 742,
+        "h": 892
+      }
+    },
+    {
+      "id": "viajero_asteroide",
+      "name": "El Pequeño Viajero del Asteroide",
+      "sagaTitle": "El Principito",
+      "matchKeywords": [
+        "principito",
+        "little prince"
+      ],
+      "rarity": "rare",
+      "boxImage": "viajero-asteroide-box.svg",
+      "unboxedImage": "viajero-asteroide-figure.svg",
+      "unboxedCrop": {
+        "x": 250,
+        "y": 330,
+        "w": 520,
+        "h": 800
+      },
+      "particles": "stardust",
+      "accent": "#f2c14a",
+      "loreSeals": [
+        "ROSA",
+        "ZORRO",
+        "ESTRELLAS",
+        "ASTEROIDE",
+        "ESENCIAL"
+      ],
+      "blisterParts": [
+        {
+          "name": "Rostro Sonriente",
+          "kind": "face",
+          "crop": {
+            "x": 785,
+            "y": 385,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Rostro Soñador",
+          "kind": "face",
+          "crop": {
+            "x": 785,
+            "y": 545,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Rosa bajo Campana",
+          "kind": "relic",
+          "crop": {
+            "x": 785,
+            "y": 705,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Bufanda al Viento",
+          "kind": "effect",
+          "crop": {
+            "x": 785,
+            "y": 865,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Asteroide B-612",
+          "kind": "relic",
+          "crop": {
+            "x": 785,
+            "y": 1025,
+            "w": 170,
+            "h": 150
+          }
+        }
+      ],
+      "boxOutline": [
+        [
+          30,
+          80
+        ],
+        [
+          1000,
+          80
+        ],
+        [
+          1000,
+          1460
+        ],
+        [
+          30,
+          1460
+        ]
+      ],
+      "pinCrop": {
+        "x": 322,
+        "y": 356,
+        "w": 336,
+        "h": 336
+      },
+      "boxWindow": {
+        "x": 228,
+        "y": 342,
+        "w": 766,
+        "h": 876
+      }
+    },
+    {
+      "id": "bardo_viento",
+      "name": "El Bardo del Viento",
+      "sagaTitle": "Crónica del Asesino de Reyes",
+      "matchKeywords": [
+        "nombre del viento",
+        "name of the wind",
+        "temor de un hombre sabio",
+        "wise man's fear"
+      ],
+      "rarity": "epic",
+      "boxImage": "bardo-viento-box.svg",
+      "unboxedImage": "bardo-viento-figure.svg",
+      "unboxedCrop": {
+        "x": 250,
+        "y": 330,
+        "w": 520,
+        "h": 800
+      },
+      "particles": "wind",
+      "accent": "#e8a33c",
+      "loreSeals": [
+        "MÚSICA",
+        "NOMBRE",
+        "FUEGO",
+        "SECRETO",
+        "VIENTO"
+      ],
+      "blisterParts": [
+        {
+          "name": "Rostro Pícaro",
+          "kind": "face",
+          "crop": {
+            "x": 785,
+            "y": 385,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Rostro Desafiante",
+          "kind": "face",
+          "crop": {
+            "x": 785,
+            "y": 545,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Laúd de la Troupe",
+          "kind": "weapon",
+          "crop": {
+            "x": 785,
+            "y": 705,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Capa de Mil Bolsillos",
+          "kind": "effect",
+          "crop": {
+            "x": 785,
+            "y": 865,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Talento de Plata",
+          "kind": "relic",
+          "crop": {
+            "x": 785,
+            "y": 1025,
+            "w": 170,
+            "h": 150
+          }
+        }
+      ],
+      "boxOutline": [
+        [
+          30,
+          80
+        ],
+        [
+          1000,
+          80
+        ],
+        [
+          1000,
+          1460
+        ],
+        [
+          30,
+          1460
+        ]
+      ],
+      "pinCrop": {
+        "x": 322,
+        "y": 356,
+        "w": 336,
+        "h": 336
+      },
+      "boxWindow": {
+        "x": 228,
+        "y": 342,
+        "w": 766,
+        "h": 876
+      }
+    },
+    {
+      "id": "hechicera_eea",
+      "name": "La Hechicera de Eea",
+      "sagaTitle": "Circe",
+      "matchKeywords": [
+        "circe"
+      ],
+      "rarity": "epic",
+      "boxImage": "hechicera-eea-box.svg",
+      "unboxedImage": "hechicera-eea-figure.svg",
+      "unboxedCrop": {
+        "x": 250,
+        "y": 330,
+        "w": 520,
+        "h": 800
+      },
+      "particles": "gold",
+      "accent": "#e8c46a",
+      "loreSeals": [
+        "HIERBAS",
+        "MAR",
+        "TITANES",
+        "TELAR",
+        "ISLA"
+      ],
+      "blisterParts": [
+        {
+          "name": "Rostro Sereno",
+          "kind": "face",
+          "crop": {
+            "x": 785,
+            "y": 385,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Rostro Desafiante",
+          "kind": "face",
+          "crop": {
+            "x": 785,
+            "y": 545,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Vara de Hechicera",
+          "kind": "weapon",
+          "crop": {
+            "x": 785,
+            "y": 705,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "Copa de Pociones",
+          "kind": "relic",
+          "crop": {
+            "x": 785,
+            "y": 865,
+            "w": 170,
+            "h": 150
+          }
+        },
+        {
+          "name": "León de Eea",
+          "kind": "relic",
+          "crop": {
+            "x": 785,
+            "y": 1025,
+            "w": 170,
+            "h": 150
+          }
+        }
+      ],
+      "boxOutline": [
+        [
+          30,
+          80
+        ],
+        [
+          1000,
+          80
+        ],
+        [
+          1000,
+          1460
+        ],
+        [
+          30,
+          1460
+        ]
+      ],
+      "pinCrop": {
+        "x": 322,
+        "y": 356,
+        "w": 336,
+        "h": 336
+      },
+      "boxWindow": {
+        "x": 228,
+        "y": 342,
+        "w": 766,
+        "h": 876
+      }
+    }
+  ]
+}

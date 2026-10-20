@@ -1,0 +1,385 @@
+/* ── Carta de algodón y lacre (SPEC §4ter, 1.12.0) ─────────────────────────────────────────────── */
+.equote {
+  position: relative;
+  margin: 14px 4px 10px;
+  filter: drop-shadow(0 10px 14px rgb(60 30 10 / 0.28)) drop-shadow(0 1px 1px rgb(60 30 10 / 0.25));
+  transform: rotate(var(--tilt, 0deg));
+  animation: equote-in 600ms cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+@keyframes equote-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) rotate(calc(var(--tilt, 0deg) - 3deg)) scale(0.96);
+  }
+}
+
+.equote__paper {
+  position: relative;
+  padding: 30px 28px 52px;
+  background:
+    var(--cotton-grain),
+    var(--cotton-fibers),
+    radial-gradient(ellipse at 30% 0%, rgb(255 255 255 / 0.7), transparent 60%),
+    radial-gradient(ellipse at 100% 100%, rgb(214 190 150 / 0.35), transparent 60%),
+    #faf5e8;
+  box-shadow: inset 0 0 35px rgb(139 94 52 / 0.14);
+  text-align: center;
+}
+
+/* Comillas capitulares en pan de oro */
+.equote__mark {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: 4.6rem;
+  font-weight: 700;
+  line-height: 1;
+  background: linear-gradient(160deg, #fff3b0, #c59b27 45%, #8a6a14);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 0 rgb(90 60 10 / 0.35));
+  pointer-events: none;
+}
+
+.equote__mark--open {
+  top: 6px;
+  left: 16px;
+}
+
+.equote__mark--close {
+  right: 18px;
+  bottom: 54px;
+}
+
+.equote__text {
+  margin: 8px 6px 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.4vw, 1.65rem);
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.32;
+  color: #2c1e14;
+  font-variant-numeric: oldstyle-nums;
+  text-wrap: pretty;
+}
+
+/* Tinta húmeda: cada palabra aparece, se emborrona un instante y se seca */
+.equote__text[data-animate] span {
+  display: inline;
+  opacity: 0;
+  animation: wet-ink 900ms ease-out forwards;
+}
+
+@keyframes wet-ink {
+  0% {
+    opacity: 0;
+    color: #6b4a2a;
+    filter: blur(2.5px);
+    text-shadow: 0 0 6px rgb(60 30 10 / 0.35);
+  }
+  45% {
+    opacity: 1;
+    color: #3a2412;
+    filter: blur(0.4px);
+  }
+  100% {
+    opacity: 1;
+    color: #2c1e14;
+    filter: none;
+    text-shadow: none;
+  }
+}
+
+.equote__rule {
+  position: relative;
+  display: block;
+  width: 62%;
+  height: 1px;
+  margin: 16px auto 10px;
+  background: linear-gradient(90deg, transparent, #c59b27 20%, #c59b27 80%, transparent);
+}
+
+.equote__rule::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  background: linear-gradient(135deg, #fff3b0, #c59b27);
+  transform: rotate(45deg);
+}
+
+.equote__by {
+  display: grid;
+  gap: 2px;
+}
+
+.equote__by b,
+.equote__by span {
+  font-family: var(--font-sans);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.18em;
+}
+
+.equote__by b {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #3b220f;
+}
+
+.equote__by span {
+  font-size: 0.82rem;
+  font-style: italic;
+  color: #8a6d3a;
+}
+
+.equote__seal {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 46px;
+  height: 46px;
+  margin-left: -23px;
+  filter: drop-shadow(0 2px 2px rgb(60 10 5 / 0.45));
+  transform: rotate(-8deg);
+}
+
+.equote__seal-text {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.equote__sprig {
+  position: absolute;
+  top: -14px;
+  right: -8px;
+  width: 92px;
+  height: 62px;
+  transform: rotate(18deg);
+  filter: drop-shadow(0 2px 2px rgb(60 30 10 / 0.3));
+  pointer-events: none;
+}
+
+.equote__washi {
+  position: absolute;
+  top: 12px;
+  right: 34px;
+  width: 40px;
+  height: 15px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.35) 0 4px, transparent 4px 8px),
+    linear-gradient(rgb(232 196 106 / 0.6), rgb(214 172 80 / 0.55));
+  clip-path: polygon(4% 0, 96% 6%, 100% 50%, 96% 100%, 3% 94%, 0 50%);
+  transform: rotate(-24deg);
+  pointer-events: none;
+}
+
+.equote__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  margin-top: 12px;
+}
+
+.equote__btn {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 4px 6px;
+  border: 0;
+  border-bottom: 1px dashed rgb(197 155 39 / 0.6);
+  background: none;
+  color: #5a3a18;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.equote__btn svg {
+  width: 14px;
+  height: 14px;
+  color: #a07a1c;
+}
+
+.equote__btn:hover:not(:disabled),
+.equote__btn[aria-pressed='true'] {
+  border-bottom-style: solid;
+  color: #2c1e14;
+}
+
+.equote__btn:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+/* Versión pequeña: clavada en la estantería */
+.equote[data-compact] {
+  margin: 0;
+  animation: none;
+}
+
+.equote[data-compact] .equote__paper {
+  padding: 16px 14px 34px;
+}
+
+.equote[data-compact] .equote__text {
+  font-size: 0.95rem;
+}
+
+.equote[data-compact] .equote__mark {
+  font-size: 2.4rem;
+}
+
+.equote[data-compact] .equote__mark--close {
+  bottom: 34px;
+}
+
+.equote[data-compact] .equote__seal {
+  width: 30px;
+  height: 30px;
+  margin-left: -15px;
+  bottom: 4px;
+}
+
+.equote[data-compact] .equote__by b {
+  font-size: 0.7rem;
+}
+
+.equote[data-compact] .equote__by span,
+.equote[data-compact] .equote__rule {
+  display: none;
+}
+
+.equote[data-compact] .equote__sprig {
+  width: 56px;
+  height: 38px;
+}
+
+/* Visor de una cita de tus libros, por encima del libro abierto */
+.equote-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(30 16 6 / 0.55);
+  backdrop-filter: blur(3px);
+  animation: label-in 220ms ease;
+}
+
+.equote-viewer__inner {
+  position: relative;
+  width: min(520px, 100%);
+}
+
+.equote-viewer__close {
+  position: absolute;
+  top: -14px;
+  right: -10px;
+  z-index: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .equote,
+  .equote__text[data-animate] span {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Cita clavada en lo alto del tablón de recuerdos */
+.pinned-quote {
+  position: relative;
+  flex: none;
+  width: 100%;
+  margin: 2px 0 10px;
+  transform: rotate(-2deg);
+}
+
+.pinned-quote .memory-polaroid__pin {
+  z-index: 3;
+  top: -2px;
+}
+
+.pinned-quote .equote__paper {
+  padding: 14px 9px 28px;
+}
+
+.pinned-quote .equote__text {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+
+.pinned-quote .equote__mark {
+  font-size: 1.8rem;
+}
+
+.pinned-quote .equote__mark--open {
+  top: 2px;
+  left: 6px;
+}
+
+.pinned-quote .equote__mark--close {
+  right: 6px;
+  bottom: 26px;
+}
+
+.pinned-quote .equote__by b {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+}
+
+.pinned-quote .equote__seal {
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+}
+
+.pinned-quote .equote__sprig,
+.pinned-quote .equote__washi {
+  display: none;
+}
+
+.pinned-quote__off {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  z-index: 4;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fbf6ec;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  color: #5a3a18;
+  font-size: 0.9rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.pinned-quote:hover .pinned-quote__off,
+.pinned-quote__off:focus-visible {
+  opacity: 1;
+}
+
+@media (max-width: 1100px) {
+  .pinned-quote {
+    width: 170px;
+    margin: 0;
+  }
+}

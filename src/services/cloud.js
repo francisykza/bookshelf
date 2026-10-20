@@ -1,0 +1,63 @@
+// Cuenta y copia en la nube con Supabase (SPEC §9ter, 1.16.0). Sin las variables VITE_SUPABASE_* la app
+// funciona solo en el dispositivo. El cliente se carga bajo demanda para no pesar en el arranque.
+const URL = import.meta.env.VITE_SUPABASE_URL;
+const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const TABLE = 'libraries';
+
+export const cloudEnabled = Boolean(URL && KEY);
+
+let clientPromise = null;
+
+/** El cliente de Supabase (o null si la nube no está configurada). */
+export function getClient() {
+  if (!cloudEnabled) return Promise.resolve(null);
+  clientPromise ??= import('@supabase/supabase-js').then(({ createClient }) =>
+    createClient(URL, KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'bookshelf:auth' } }),
+  );
+  return clientPromise;
+}
+
+/** Envía el correo con el código de 6 dígitos (y el enlace, que sirve si se abre en este mismo navegador). */
+export async function sendCode(email) {
+  const sb = await getClient();
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
+  if (error) throw error;
+}
+
+export async function verifyCode(email, token) {
+  const sb = await getClient();
+  const { error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
+  if (error) throw error;
+}
+
+export async function signOut() {
+  const sb = await getClient();
+  await sb?.auth.signOut({ scope: 'local' });
+}
+
+/** La fila del usuario: { data, updated_at } o null si aún no hay nada guardado. */
+export async function fetchLibrary(userId) {
+  const sb = await getClient();
+  const { data, error } = await sb.from(TABLE).select('data, updated_at').eq('user_id', userId).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Guarda el estado. Con `expected` (el último `updated_at` visto) la escritura solo se aplica si nadie
+ * ha escrito entretanto; devuelve el nuevo `updated_at`, o null si otro dispositivo se adelantó.
+ */
+export async function saveLibrary(userId, state, expected) {
+  const sb = await getClient();
+  const row = { data: state, version: state.version };
+  const query = expected
+    ? sb.from(TABLE).update(row).eq('user_id', userId).eq('updated_at', expected)
+    : sb.from(TABLE).insert({ ...row, user_id: userId });
+  const { data, error } = await query.select('updated_at');
+  if (error) {
+    // Insertar cuando ya existe la fila (otro dispositivo la creó antes): es un conflicto, no un fallo
+    if (error.code === '23505') return null;
+    throw error;
+  }
+  return data?.[0]?.updated_at ?? null;
+}

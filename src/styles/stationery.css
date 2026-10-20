@@ -1,0 +1,369 @@
+/* ── Alta papelería artesanal (SPEC §1ter, 1.12.0) ─────────────────────────────────────────────────
+   Grano de papel de algodón, bordes interiores de papel prensado, latón envejecido #C59B27, cinta washi
+   y clips de latón en las esquinas de los menús (temporizador, portátil y libro abierto). */
+
+:root {
+  --brass: #c59b27;
+  --brass-light: #f1d68a;
+  --brass-dark: #7a5c12;
+  --pressed-paper: inset 0 0 35px rgb(139 94 52 / 0.12);
+  /* Fibra de algodón: ruido fino casi invisible (≈ 0.035 de opacidad efectiva) */
+  --cotton-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.24 0 0 0 0 0.12 0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+  --cotton-fibers: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02 0.6' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.33 0 0 0 0 0.2 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23f)'/%3E%3C/svg%3E");
+}
+
+/* Superficies de papel: grano + borde prensado */
+.paper-sheet,
+.page,
+.window__body {
+  position: relative;
+  background-image: var(--cotton-grain), var(--cotton-fibers), var(--paper-bg, none);
+}
+
+.paper-sheet,
+.window__body {
+  box-shadow: var(--pressed-paper), var(--sheet-shadow, 0 0 0 transparent);
+}
+
+.page {
+  background:
+    var(--cotton-grain),
+    var(--cotton-fibers),
+    radial-gradient(ellipse at 50% 0%, rgb(255 255 255 / 0.5), transparent 60%),
+    linear-gradient(#fbf6ec, #f3e6cb);
+}
+
+.page--left {
+  box-shadow:
+    var(--pressed-paper),
+    inset -28px 0 30px -18px rgb(90 60 30 / 0.45),
+    -2px 0 0 #e7d6b4,
+    -4px 0 0 #dcc8a2;
+}
+
+.page--right {
+  box-shadow:
+    var(--pressed-paper),
+    inset 28px 0 30px -18px rgb(90 60 30 / 0.45),
+    2px 0 0 #e7d6b4,
+    4px 0 0 #dcc8a2;
+}
+
+/* Cinta washi translúcida */
+.washi {
+  position: absolute;
+  z-index: 6;
+  width: 74px;
+  height: 20px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.25) 0 6px, transparent 6px 12px),
+    linear-gradient(rgb(214 132 120 / 0.55), rgb(196 112 100 / 0.5));
+  box-shadow: 0 1px 2px rgb(60 30 10 / 0.18);
+  opacity: 0.88;
+  clip-path: polygon(3% 0, 97% 4%, 100% 30%, 96% 55%, 100% 80%, 97% 100%, 2% 96%, 0 70%, 4% 45%, 0 20%);
+  pointer-events: none;
+}
+
+.washi--tl {
+  top: -8px;
+  left: -14px;
+  transform: rotate(-32deg);
+}
+
+.washi--top {
+  top: -10px;
+  left: 50%;
+  width: 96px;
+  background:
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.3) 0 4px, transparent 4px 9px),
+    linear-gradient(rgb(146 180 140 / 0.6), rgb(120 160 116 / 0.55));
+  transform: translateX(-50%) rotate(-2deg);
+}
+
+.washi--window {
+  top: 8px;
+  left: -16px;
+  transform: rotate(-38deg);
+}
+
+.washi--page-l {
+  top: 4px;
+  left: 2px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.3) 0 5px, transparent 5px 10px),
+    linear-gradient(rgb(232 196 106 / 0.6), rgb(214 172 80 / 0.55));
+  transform: rotate(-34deg);
+}
+
+/* Clip de latón envejecido sujetando una esquina */
+.brass-clip {
+  position: absolute;
+  z-index: 7;
+  width: 22px;
+  height: 46px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 46'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%237a5c12'/%3E%3Cstop offset='0.4' stop-color='%23f1d68a'/%3E%3Cstop offset='0.6' stop-color='%23c59b27'/%3E%3Cstop offset='1' stop-color='%237a5c12'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M6 44 V8 a5 5 0 0 1 10 0 V36 a3 3 0 0 1 -6 0 V12' fill='none' stroke='url(%23b)' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  filter: drop-shadow(1px 2px 1px rgb(40 20 5 / 0.45));
+  pointer-events: none;
+}
+
+.brass-clip--tl {
+  top: -14px;
+  left: 26px;
+}
+
+.brass-clip--tr {
+  top: -14px;
+  right: 26px;
+}
+
+.brass-clip--window {
+  top: -16px;
+  right: 34px;
+}
+
+.brass-clip--page-r {
+  top: -14px;
+  right: 34px;
+}
+
+/* ── Temporizador: bandeja de madera de olivo ── */
+.tray__wood {
+  position: relative;
+  --olive-veins: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='260'%3E%3Cfilter id='o'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.003 0.035' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.14 0 0 0 0 0.06 0 0 -2.6 0 1.5'/%3E%3C/filter%3E%3Crect width='420' height='260' filter='url(%23o)'/%3E%3C/svg%3E");
+  background:
+    var(--olive-veins),
+    radial-gradient(ellipse 40% 30% at 22% 70%, rgb(90 55 25 / 0.35), transparent 70%),
+    radial-gradient(ellipse 30% 26% at 80% 24%, rgb(90 55 25 / 0.3), transparent 70%),
+    linear-gradient(180deg, rgb(255 240 210 / 0.18), rgb(60 30 10 / 0.12)),
+    linear-gradient(100deg, #d8b37a, #c79a5e 40%, #ddb986 65%, #b98a50);
+  background-size: 420px 260px, auto, auto, auto, auto;
+  box-shadow:
+    inset 0 0 0 9px rgb(120 78 38 / 0.55),
+    inset 0 0 0 11px rgb(255 230 190 / 0.35),
+    inset 0 0 40px rgb(60 30 10 / 0.35),
+    0 30px 60px -20px rgb(0 0 0 / 0.7);
+}
+
+.tray__main.paper-sheet {
+  --paper-bg: linear-gradient(#fbf6ec, #f5ead6);
+  border-radius: 6px;
+  --sheet-shadow: 0 6px 14px -4px rgb(60 30 10 / 0.45);
+}
+
+/* Carta de la cafetería */
+.cafe-menu.paper-sheet {
+  --paper-bg: linear-gradient(#fbf6ec, #f2e5cc);
+  --sheet-shadow: 0 8px 18px -6px rgb(60 30 10 / 0.5);
+  display: block;
+  margin-top: 18px;
+  padding: 16px 16px 12px;
+  border-radius: 4px;
+  transform: rotate(-0.6deg);
+}
+
+.cafe-menu legend.cafe-menu__title {
+  display: grid;
+  float: left;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 0 0 6px;
+  border-bottom: 1px solid rgb(197 155 39 / 0.6);
+  text-align: center;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.cafe-menu__title span {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  color: #3b220f;
+}
+
+.cafe-menu__title em {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-variant-caps: all-small-caps;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  color: #8a6d3a;
+}
+
+.cafe-menu__list {
+  display: grid;
+  clear: both;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cafe-menu .drink-choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+}
+
+.cafe-menu .drink-choice:hover:not(:disabled) {
+  background: rgb(197 155 39 / 0.1);
+}
+
+.drink-choice__art {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+}
+
+.drink-choice__text {
+  display: grid;
+  line-height: 1.15;
+}
+
+.drink-choice__text b {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: #2c1e14;
+}
+
+.drink-choice__text em {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: var(--color-ink-soft);
+}
+
+.drink-choice__leader {
+  display: none;
+}
+
+.drink-choice__temp {
+  justify-self: start;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: #a0522d;
+}
+
+/* La elegida: un círculo de tinta a mano alzada y una nota */
+.cafe-menu .drink-choice[aria-pressed='true']::before {
+  content: '';
+  position: absolute;
+  inset: 2px -2px 2px 50px;
+  border: 1.6px solid #c4623a;
+  border-radius: 48% 52% 46% 54% / 60% 44% 56% 40%;
+  transform: rotate(-1.5deg);
+  pointer-events: none;
+}
+
+.drink-choice__mark {
+  position: absolute;
+  top: -6px;
+  right: 0;
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #c4623a;
+  transform: rotate(4deg);
+}
+
+@media (max-width: 560px) {
+  .cafe-menu__list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Gotas de condensación del vaso */
+.drink__drop {
+  animation: drop-shine 4s ease-in-out infinite;
+}
+
+.drink__drop--slide {
+  animation: drop-slide 7s ease-in infinite;
+}
+
+@keyframes drop-shine {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes drop-slide {
+  0%,
+  55% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  90% {
+    transform: translateY(16px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+}
+
+.drink__steam path {
+  animation: steam-real 3.2s ease-in-out infinite;
+}
+
+@keyframes steam-real {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scaleY(0.8);
+  }
+  35% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px) scaleY(1.15);
+  }
+}
+
+/* ── Portátil: ventana de papel con detalles de latón ── */
+.window {
+  overflow: visible;
+}
+
+.window__bar {
+  border-radius: 14px 14px 0 0;
+}
+
+.window__body {
+  --paper-bg: linear-gradient(#fbf6ec, #f4ead8);
+  border-radius: 0 0 14px 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drink__drop,
+  .drink__steam path {
+    animation: none;
+  }
+}
+
+/* La base del portátil sobresale 24 px por lado: en ventanas justas no debe crear scroll horizontal */
+@media (max-width: 1240px) {
+  .laptop__base {
+    margin: 0 -8px;
+  }
+}
+
+.panel-veil {
+  overflow-x: hidden;
+}
