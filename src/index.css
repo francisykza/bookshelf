@@ -44,6 +44,19 @@
   --ease-camera: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
 html,
 body,
 #root {

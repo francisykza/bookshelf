@@ -39,11 +39,12 @@
 .world {
   overflow: visible;
   position: absolute;
-  top: 50%;
-  left: 50%;
+  /* 1.18.0: la cámara (scene/camera.js) escribe translate(x, y) scale(s) con el origen en la esquina */
+  top: 0;
+  left: 0;
   width: 984px;
   height: 1599px;
-  transform-origin: 50% 50%;
+  transform-origin: 0 0;
   transition:
     transform 700ms var(--ease-camera),
     filter 700ms var(--ease-camera);
@@ -1964,12 +1965,10 @@ html[data-lite-scene] .panel-veil > .panel {
   mix-blend-mode: normal;
 }
 
-/* En móvil, con la librería abierta (que ocupa toda la pantalla) la habitación deja de pintarse */
-html[data-lite-scene] .room-camera[data-view='SHELF_VIEW'] .world {
+/* Con la librería ya abierta, la habitación deja de pintarse y de recibir toques (sigue montada) */
+.room-camera[data-hidden] {
   visibility: hidden;
-  transition:
-    transform 700ms var(--ease-camera),
-    visibility 0s linear 700ms;
+  pointer-events: none;
 }
 
 /* ── 1.17.0 · Base estable, capas y perfil móvil (SPEC §11.2–§11.4) ───────────────────────────── */
@@ -2137,4 +2136,251 @@ html[data-lite-scene] .world__breath {
 
 .room-corner .corner-btn--cloud::after {
   border-color: #6b4423;
+}
+
+/* ── 1.18.0 · Móvil a sangre, cámara cover y transiciones (SPEC §12) ───────────────────────────── */
+
+/* El escenario ocupa todo lo que concede el navegador; nada de padding ni de restar áreas seguras */
+.sanctuary {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Solo los controles respetan las áreas seguras */
+.room-corner {
+  top: calc(env(safe-area-inset-top, 0px));
+  right: calc(env(safe-area-inset-right, 0px) + 12px);
+}
+
+.fs-hint {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 56px);
+  right: calc(env(safe-area-inset-right, 0px) + 12px);
+  z-index: 16;
+  max-width: min(320px, calc(100vw - 24px));
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #faf5e8;
+  color: #2c1e14;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  box-shadow: 0 8px 20px rgba(44, 30, 20, 0.35);
+}
+
+@media (max-width: 760px) {
+  /* Cover: la cámara se aplica directa (sin zoom elástico al cambiar barras, teclado o rotación) */
+  .world {
+    transition: none;
+  }
+
+  /* Se arrastra el escenario; el pinch-zoom del navegador se conserva */
+  .room-camera[data-cover] {
+    touch-action: pinch-zoom;
+  }
+
+  .room-camera[data-dragging] {
+    cursor: grabbing;
+  }
+
+  /* Modales: aparecen por opacidad en 140 ms, sin escala ni desenfoque */
+  .panel-veil {
+    animation-duration: 140ms;
+  }
+
+  .panel-veil > .panel {
+    animation: panel-fade 140ms cubic-bezier(0.2, 0, 0, 1);
+  }
+}
+
+@keyframes panel-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Perfil ligero: las capas de toda la escena (noche, atardecer) tiñen con alfa normal, sin mezclas.
+   Una mezcla multiply de 984×1599 sobre capas compuestas es la candidata al rectángulo violáceo. */
+html[data-lite-scene] .tod__night {
+  background: rgba(14, 18, 52, 0.5);
+  mix-blend-mode: normal;
+}
+
+html[data-lite-scene] .tod__sunset {
+  background: linear-gradient(180deg, rgba(255, 132, 74, 0.2), rgba(255, 116, 140, 0.12) 50%, rgba(130, 62, 110, 0.14));
+  mix-blend-mode: normal;
+}
+
+html[data-lite-scene] .tod__sunset-warm {
+  background: radial-gradient(ellipse 55% 40% at 88% 32%, rgba(255, 170, 90, 0.18), transparent 70%);
+  mix-blend-mode: normal;
+}
+
+/* ── 1.18.0 · Ambiente localizado (SPEC §12.6): la ilustración no se mueve; solo capas pequeñas ── */
+
+/* Rayos de luz: dos, en screen, que respiran por opacidad (sin blur ni geometría animada) */
+.tod__beams {
+  mix-blend-mode: normal;
+}
+
+.tod[data-tod='sunset'] .tod__beams {
+  opacity: 0.7;
+}
+
+.tod[data-tod='night'] .tod__beams {
+  opacity: 0;
+}
+
+.tod__beam {
+  background: linear-gradient(90deg, transparent, #ffe6ab 50%, transparent);
+  filter: none;
+  mix-blend-mode: screen;
+  opacity: 0.045;
+  animation: ray-breathe var(--beam-period, 16s) ease-in-out infinite;
+}
+
+.tod[data-tod='sunset'] .tod__beam {
+  background: linear-gradient(90deg, transparent, #ffe6ab 50%, transparent);
+}
+
+@keyframes ray-breathe {
+  0%,
+  100% {
+    opacity: 0.025;
+  }
+  50% {
+    opacity: 0.065;
+  }
+}
+
+/* Sombras de hojas: dos manchas ya suavizadas (gradientes), multiply, ≤ 4 px y ≤ 0,35° en 18–26 s */
+.tod__leafshade {
+  position: absolute;
+  z-index: 5;
+  background:
+    radial-gradient(ellipse 18% 12% at 22% 30%, #2c1e14, transparent 70%),
+    radial-gradient(ellipse 14% 10% at 48% 22%, #2c1e14, transparent 70%),
+    radial-gradient(ellipse 20% 13% at 70% 48%, #2c1e14, transparent 70%),
+    radial-gradient(ellipse 12% 9% at 35% 66%, #2c1e14, transparent 70%),
+    radial-gradient(ellipse 16% 11% at 80% 78%, #2c1e14, transparent 70%);
+  mix-blend-mode: multiply;
+  opacity: 0;
+  animation: leaf-shade var(--leaf-period, 22s) ease-in-out infinite alternate;
+}
+
+.tod[data-tod='morning'] .tod__leafshade {
+  opacity: 0.055;
+}
+
+.tod[data-tod='sunset'] .tod__leafshade {
+  opacity: 0.035;
+}
+
+@keyframes leaf-shade {
+  from {
+    transform: translate(-2px, -1px) rotate(-0.35deg);
+  }
+  to {
+    transform: translate(2px, 1px) rotate(0.35deg);
+  }
+}
+
+/* Vela y farolillo: la luz cálida es fija; encima, un halo pequeño que oscila suave (2,8 s y 4,7 s) */
+.tod__glow--lantern,
+.tod__glow--candle {
+  animation: none;
+}
+
+.tod__glow--lantern::before,
+.tod__glow--lantern::after,
+.tod__glow--candle::before,
+.tod__glow--candle::after {
+  content: '';
+  position: absolute;
+  inset: 28%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 214 140), transparent 70%);
+  opacity: 0.12;
+}
+
+.tod__glow--lantern::before,
+.tod__glow--candle::before {
+  animation: halo-a 2.8s ease-in-out infinite;
+}
+
+.tod__glow--lantern::after,
+.tod__glow--candle::after {
+  animation: halo-b 4.7s ease-in-out infinite;
+}
+
+@keyframes halo-a {
+  50% {
+    opacity: 0.17;
+  }
+}
+
+@keyframes halo-b {
+  50% {
+    opacity: 0.16;
+    transform: scale(1.015);
+  }
+}
+
+/* Vapor de la bebida caliente: 3 trazos (2 en ligero), 6–9 s, sube como mucho 18 px */
+.drink-steam span {
+  height: 46px;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgb(255 255 255 / 0.42), transparent 72%);
+  filter: none;
+  animation: steam-soft 7.5s ease-in-out infinite;
+}
+
+.drink-steam[data-active='true'] span {
+  animation-duration: 6.2s;
+}
+
+.drink-steam span:nth-child(n + 4),
+html[data-motion='light'] .drink-steam span:nth-child(3) {
+  display: none;
+}
+
+@keyframes steam-soft {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.7, 0.8);
+  }
+  35% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(3px, -18px) scale(1.1, 1);
+  }
+}
+
+/* Vapor de las tazas del balcón: más lento */
+.steam path {
+  animation-duration: 7.5s;
+}
+
+html[data-motion='light'] .steam path:nth-child(3) {
+  display: none;
+}
+
+/* Perfil ligero: sin la sombra de nube (capa multiply violácea de toda la escena) */
+html[data-lite-scene] .cloud-shadow {
+  display: none;
+}
+
+/* Movimiento reducido: ambiente estático */
+html[data-motion='reduced'] .tod__beam,
+html[data-motion='reduced'] .tod__leafshade,
+html[data-motion='reduced'] .tod__glow::before,
+html[data-motion='reduced'] .tod__glow::after {
+  animation: none;
 }

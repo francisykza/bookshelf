@@ -1,11 +1,28 @@
-// Motor de partículas a 60 fps (SPEC §2.2): destellos solares sobre la bahía, polen y polvo dorado en
-// los haces de luz, luciérnagas del balcón y luces del pueblo al anochecer. Dibuja en coordenadas de
-// la imagen; el lienzo tiene la resolución real en pantalla (escala × DPR) para verse nítido.
+// Ambiente del lienzo (SPEC §12.6–§12.7, 1.18.0): ondas y reflejos dentro del polígono del mar, polvo solo
+// en los haces de luz, el velero, las luces del pueblo y las luciérnagas de noche y las burbujas del té. La
+// ilustración base no se mueve: todo es una capa fina encima, en coordenadas de la imagen.
+//
+// Presupuesto: una sola cadena requestAnimationFrame, movimiento por tiempo (delta ≤ 50 ms), acumulador para
+// limitar los fps del perfil, sprites pre-renderizados y ninguna asignación por fotograma. Perfiles:
+// `balanced` (60 fps, DPR ≤ 1,5), `light` (30 fps, DPR ≤ 1) y `reduced` (un fotograma estático). El perfil se
+// adapta midiendo la mediana del intervalo de fotograma; al pausar se conservan las fases y el reloj.
 import { useEffect, useRef } from 'react';
-import { LITE_SCENE } from '../../scene/renderMode';
 import { pointInPolygon } from '../../scene/homography';
+import { LITE_SCENE } from '../../scene/renderMode';
 import { BOAT_LANE, FAR_COAST, MOON, SCENE_H, SCENE_W, SEA, SUN_PATH, TEA_GLASS, TOWN } from '../../scene/sceneMap';
 import { BEAMS } from './beams';
+
+const PROFILES = {
+  balanced: { fps: 60, dpr: 1.5, ripples: 12, glints: 10, dust: 14, fireflies: 8, lights: 26, bubbles: 8 },
+  light: { fps: 30, dpr: 1, ripples: 6, glints: 5, dust: 6, fireflies: 4, lights: 14, bubbles: 4 },
+};
+
+// Adaptación (SPEC §12.7)
+const SAMPLE_WINDOW_MS = 3000;
+const DOWNGRADE_MEDIAN_MS = 24;
+const TRIM_MEDIAN_MS = 40;
+const UPGRADE_MEDIAN_MS = 18;
+const UPGRADE_AFTER_MS = 15000;
 
 function rng(seed) {
   let s = seed >>> 0;
@@ -19,139 +36,141 @@ function rng(seed) {
 }
 
 const SEA_BOX = { x: 497, y: 611, w: 408, h: 154 };
+const between = (random, a, b) => a + random() * (b - a);
 
 function seaPoint(random, focusX, spread) {
   for (let i = 0; i < 40; i += 1) {
-    const x = focusX !== null && random() < 0.7 ? focusX + (random() - 0.5) * spread : SEA_BOX.x + random() * SEA_BOX.w;
-    const y = SEA_BOX.y + random() * SEA_BOX.h;
+    const x = focusX !== null ? focusX + (random() - 0.5) * spread : SEA_BOX.x + random() * SEA_BOX.w;
+    const y = SEA_BOX.y + 6 + random() * (SEA_BOX.h - 12);
     if (pointInPolygon(x, y, SEA)) return { x, y };
   }
   return { x: 820, y: 680 };
 }
 
-function beamLight(x, y) {
-  let light = 0;
-  for (const b of BEAMS) {
-    const dx = x - b.x;
-    const dy = y - b.y;
-    const along = dx * b.dx + dy * b.dy;
-    const across = dx * -b.dy + dy * b.dx;
-    if (along < -b.len / 2 || along > b.len / 2) continue;
-    light = Math.max(light, Math.exp(-(across * across) / (2 * b.w * b.w)) * b.strength);
-  }
-  return light;
+/** Un punto dentro de un haz de luz (el polvo solo vive donde hay luz). */
+function beamPoint(random, beams) {
+  const b = beams[Math.floor(random() * beams.length)];
+  const along = (random() - 0.5) * b.len * 0.8;
+  const across = (random() - 0.5) * b.w * 1.4;
+  return { x: b.x + b.dx * along - b.dy * across, y: b.y + b.dy * along + b.dx * across, beam: b };
 }
 
-function createWorld(timeOfDay) {
-  const random = rng(timeOfDay === 'night' ? 19 : timeOfDay === 'sunset' ? 7 : 3);
-  const focus = timeOfDay === 'morning' ? SUN_PATH.x + SUN_PATH.w / 2 : timeOfDay === 'sunset' ? 860 : MOON.x;
-  const glintCount = timeOfDay === 'night' ? 60 : timeOfDay === 'sunset' ? 130 : 180;
-  const glints = Array.from({ length: glintCount }, () => ({
-    ...seaPoint(random, focus, timeOfDay === 'night' ? 70 : 170),
-    phase: random() * Math.PI * 2,
-    speed: 1.4 + random() * 2.6,
-    size: 1.6 + random() * 2.8,
-  }));
-  const dustCount = timeOfDay === 'night' ? 0 : timeOfDay === 'sunset' ? 50 : 110;
-  const dust = Array.from({ length: dustCount }, () => ({
-    x: random() * SCENE_W,
-    y: 380 + random() * 1150,
-    vx: (random() - 0.5) * 6,
-    vy: -2 - random() * 5,
-    phase: random() * Math.PI * 2,
-    size: 0.8 + random() * 1.9,
-  }));
-  const fireflies =
-    timeOfDay === 'night'
-      ? Array.from({ length: 14 }, () => ({
-          x: 480 + random() * 330,
-          y: 790 + random() * 170,
-          vx: (random() - 0.5) * 10,
-          vy: (random() - 0.5) * 6,
-          phase: random() * Math.PI * 2,
-        }))
-      : [];
-  const lightsCount = timeOfDay === 'night' ? 40 : timeOfDay === 'sunset' ? 14 : 0;
-  const lights = Array.from({ length: lightsCount }, (_, i) => {
-    const far = i % 4 === 3;
-    const box = far ? FAR_COAST : TOWN;
-    return {
-      x: box.x + random() * box.w,
-      y: box.y + random() * box.h,
-      phase: random() * Math.PI * 2,
-      size: far ? 0.9 : 1.2 + random() * 1.1,
-    };
-  });
-  // Crestas de ola: trazos claros que nacen en el horizonte y avanzan hacia la orilla
-  const crests = Array.from({ length: 46 }, () => ({
-    ...seaPoint(random, null, 0),
-    len: 10 + random() * 26,
-    speed: 2.5 + random() * 4,
-    phase: random() * Math.PI * 2,
-  }));
-  // Pétalos blancos y rosados que la brisa arranca de la pérgola
-  const petals = Array.from({ length: timeOfDay === 'night' ? 8 : 26 }, () => ({
-    x: 420 + random() * 560,
-    y: random() * 1500,
-    vx: -10 - random() * 16,
-    vy: 22 + random() * 22,
-    rot: random() * Math.PI * 2,
-    spin: (random() - 0.5) * 3,
-    phase: random() * Math.PI * 2,
-    pink: random() < 0.35,
-    size: 2 + random() * 2.2,
-  }));
-  const butterflies =
-    timeOfDay === 'night'
-      ? []
-      : Array.from({ length: 3 }, (_, i) => ({
-          x: 500 + random() * 280,
-          y: 820 + random() * 120,
-          tx: 600,
-          ty: 880,
-          phase: random() * Math.PI * 2,
-          color: ['255,236,150', '255,250,240', '255,178,96'][i],
-          retarget: 0,
-        }));
-  // Motas doradas que flotan perezosas delante de la estantería
-  const shelfMotes = Array.from({ length: timeOfDay === 'night' ? 18 : 30 }, () => ({
-    x: 4 + random() * 250,
-    y: 40 + random() * 760,
-    vy: -2 - random() * 4,
-    phase: random() * Math.PI * 2,
-    size: 0.9 + random() * 1.6,
-  }));
-
-  // Burbujitas que suben entre el hielo del té
-  const bubbles = Array.from({ length: 12 }, () => ({
-    x: TEA_GLASS.x + random() * TEA_GLASS.w,
-    y: TEA_GLASS.y + random() * TEA_GLASS.h,
-    v: 6 + random() * 10,
-    r: 0.6 + random() * 1.1,
-    phase: random() * Math.PI * 2,
-  }));
-  return { glints, dust, fireflies, lights, crests, petals, butterflies, bubbles, shelfMotes, timeOfDay, random };
+/** Sprite circular suave pre-renderizado (sin gradientes por fotograma). */
+function sprite(size, rgb, core = 0.9) {
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, `rgba(${rgb},${core})`);
+  grad.addColorStop(0.45, `rgba(${rgb},${core * 0.35})`);
+  grad.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = grad;
+  g.fillRect(0, 0, size, size);
+  return c;
 }
 
-const GLINT = {
-  morning: ['255,255,250', '255,236,170'],
-  sunset: ['255,214,150', '255,170,90'],
-  night: ['225,235,255', '200,215,255'],
+/** Trazo horizontal suave (onda): más claro en el centro y transparente en los extremos. */
+function rippleSprite(rgb) {
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 6;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 64, 0);
+  grad.addColorStop(0, `rgba(${rgb},0)`);
+  grad.addColorStop(0.5, `rgba(${rgb},1)`);
+  grad.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = grad;
+  g.beginPath();
+  g.ellipse(32, 3, 32, 1.4, 0, 0, Math.PI * 2);
+  g.fill();
+  return c;
+}
+
+const TOD = {
+  morning: { ripple: '255,255,250', rippleAlpha: [0.08, 0.22], glint: '255,241,196', focus: SUN_PATH.x + SUN_PATH.w / 2, spread: 170 },
+  sunset: { ripple: '255,222,186', rippleAlpha: [0.08, 0.2], glint: '255,241,196', focus: 860, spread: 150 },
+  night: { ripple: '214,226,250', rippleAlpha: [0.04, 0.12], glint: '220,232,244', focus: MOON.x, spread: 70 },
 };
 
-const CREST = { morning: '255,255,255', sunset: '255,214,170', night: '205,220,255' };
+function createSprites() {
+  return {
+    ripple: { morning: rippleSprite(TOD.morning.ripple), sunset: rippleSprite(TOD.sunset.ripple), night: rippleSprite(TOD.night.ripple) },
+    glintDay: sprite(24, '255,241,196'),
+    glintNight: sprite(24, '220,232,244'),
+    dust: sprite(8, '255,230,171', 1),
+    light: sprite(16, '255,206,130', 0.95),
+    firefly: sprite(20, '220,255,150', 1),
+  };
+}
+
+/** Todo lo que se mueve, creado una vez por hora del día con fases deterministas. */
+function createWorld(timeOfDay) {
+  const tod = TOD[timeOfDay] ?? TOD.morning;
+  const random = rng(timeOfDay === 'night' ? 19 : timeOfDay === 'sunset' ? 7 : 3);
+  const max = PROFILES.balanced;
+  const ripples = Array.from({ length: max.ripples }, () => ({
+    ...seaPoint(random, null, 0),
+    len: between(random, 12, 38),
+    ampX: between(random, 3, 8),
+    ampY: between(random, 0.6, 2),
+    period: between(random, 4, 7),
+    phase: random() * Math.PI * 2,
+    alpha: between(random, tod.rippleAlpha[0], tod.rippleAlpha[1]),
+  }));
+  const glints = Array.from({ length: max.glints }, () => ({
+    ...seaPoint(random, tod.focus, tod.spread),
+    period: between(random, 3.5, 6),
+    phase: random() * Math.PI * 2,
+    size: between(random, 7, 12),
+  }));
+  // Rayos de luz y polvo solo de día (de noche no hay fuente real)
+  const beams = timeOfDay === 'night' ? [] : BEAMS.slice(0, 2);
+  const dust = beams.length
+    ? Array.from({ length: max.dust }, () => {
+        const p = beamPoint(random, beams);
+        return { ...p, ox: p.x, oy: p.y, r: between(random, 0.5, 1.2), speed: between(random, 2, 5), phase: random() * Math.PI * 2 };
+      })
+    : [];
+  const fireflies =
+    timeOfDay === 'night'
+      ? Array.from({ length: max.fireflies }, () => ({ x: between(random, 480, 810), y: between(random, 790, 960), phase: random() * Math.PI * 2, period: between(random, 4, 7) }))
+      : [];
+  const lightsCount = timeOfDay === 'night' ? max.lights : timeOfDay === 'sunset' ? Math.round(max.lights / 2) : 0;
+  const lights = Array.from({ length: lightsCount }, (_, i) => {
+    const box = i % 4 === 3 ? FAR_COAST : TOWN;
+    return { x: box.x + random() * box.w, y: box.y + random() * box.h, phase: random() * Math.PI * 2, size: i % 4 === 3 ? 5 : between(random, 6, 9) };
+  });
+  const bubbles = Array.from({ length: max.bubbles }, () => ({
+    x: TEA_GLASS.x + 8 + random() * (TEA_GLASS.w - 16),
+    y: TEA_GLASS.y + random() * TEA_GLASS.h,
+    v: between(random, 6, 12),
+    r: between(random, 0.6, 1.2),
+    phase: random() * Math.PI * 2,
+  }));
+  return { timeOfDay, tod, ripples, glints, dust, fireflies, lights, bubbles, random };
+}
+
+let seaPath = null;
+const getSeaPath = () => {
+  if (!seaPath) {
+    seaPath = new Path2D();
+    SEA.forEach(([x, y], i) => (i ? seaPath.lineTo(x, y) : seaPath.moveTo(x, y)));
+    seaPath.closePath();
+  }
+  return seaPath;
+};
 
 function drawBoat(c, t, tod) {
   const span = BOAT_LANE.to - BOAT_LANE.from;
-  const p = ((t / 140) % 1 + 1) % 1;
+  const p = (((t / 140) % 1) + 1) % 1;
   const x = BOAT_LANE.from + span * p;
   const y = BOAT_LANE.y + Math.sin(t * 1.4) * 0.8;
   if (!pointInPolygon(x, y + 2, SEA)) return;
-  const tilt = Math.sin(t * 0.9) * 0.06;
   c.save();
   c.translate(x, y);
-  c.rotate(tilt);
-  c.globalAlpha = tod === 'night' ? 0.55 : 0.95;
+  c.rotate(Math.sin(t * 0.9) * 0.05);
+  c.globalAlpha = tod === 'night' ? 0.5 : 0.9;
   c.fillStyle = tod === 'night' ? '#2a3050' : '#5a3a24';
   c.beginPath();
   c.moveTo(-6, 0);
@@ -167,262 +186,229 @@ function drawBoat(c, t, tod) {
   c.lineTo(5, -1.2);
   c.closePath();
   c.fill();
-  c.beginPath();
-  c.moveTo(-0.8, -1);
-  c.lineTo(-0.8, -8);
-  c.lineTo(-4.6, -1.2);
-  c.closePath();
-  c.fill();
-  // Estela
-  c.globalAlpha = 0.35;
-  c.strokeStyle = '#ffffff';
-  c.lineWidth = 0.7;
-  c.beginPath();
-  c.moveTo(-6, 2.6);
-  c.lineTo(-18, 3.4);
-  c.stroke();
   c.restore();
 }
 
-function draw(c, world, t, teaLevel = null) {
-  c.clearRect(0, 0, SCENE_W, SCENE_H);
-  const colors = GLINT[world.timeOfDay];
+/**
+ * Un fotograma. Se borra en coordenadas de buffer (transformación identidad) y se restablece la lógica.
+ * `count` limita cuántos elementos de cada grupo se dibujan según el perfil.
+ */
+function draw(c, density, world, sprites, t, count, teaLevel) {
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+  c.setTransform(density, 0, 0, density, 0, 0);
+  const tod = world.timeOfDay;
+  const TAU = Math.PI * 2;
 
-  // Crestas de las olas avanzando hacia la orilla
-  const crestColor = CREST[world.timeOfDay];
-  c.lineCap = 'round';
-  for (const k of world.crests) {
-    const a = (0.5 + 0.5 * Math.sin(t * 0.8 + k.phase)) * (world.timeOfDay === 'night' ? 0.25 : 0.6);
-    if (a < 0.04) continue;
-    const grad = c.createLinearGradient(k.x - k.len / 2, k.y, k.x + k.len / 2, k.y);
-    grad.addColorStop(0, `rgba(${crestColor},0)`);
-    grad.addColorStop(0.5, `rgba(${crestColor},${a})`);
-    grad.addColorStop(1, `rgba(${crestColor},0)`);
-    c.strokeStyle = grad;
-    c.lineWidth = 1.1 + (k.y - 611) / 90;
-    c.beginPath();
-    c.moveTo(k.x - k.len / 2, k.y);
-    c.quadraticCurveTo(k.x, k.y - 1.2, k.x + k.len / 2, k.y);
-    c.stroke();
+  // Mar: ondas horizontales y reflejos, recortados al polígono del agua
+  c.save();
+  c.clip(getSeaPath());
+  const rs = sprites.ripple[tod] ?? sprites.ripple.morning;
+  for (let i = 0; i < count.ripples; i += 1) {
+    const r = world.ripples[i];
+    const w = (TAU * t) / r.period + r.phase;
+    const breathe = 0.55 + 0.45 * Math.sin(w * 0.5);
+    c.globalAlpha = r.alpha * breathe;
+    const x = r.x + Math.sin(w) * r.ampX;
+    const y = r.y + Math.cos(w) * r.ampY;
+    c.drawImage(rs, x - r.len / 2, y - 1.5, r.len, 3);
   }
-  drawBoat(c, t, world.timeOfDay);
-
-  // Destellos: estrellas de 4 puntas que se encienden y se apagan con fase propia
-  for (const g of world.glints) {
-    const s = Math.sin(t * g.speed + g.phase);
-    const a = Math.pow(Math.max(0, s), 6);
-    if (a < 0.03) continue;
-    const r = g.size * (0.6 + a * 0.8);
-    const color = colors[g.phase > Math.PI ? 1 : 0];
-    c.globalAlpha = a * (world.timeOfDay === 'night' ? 0.7 : 0.95);
-    const glow = c.createRadialGradient(g.x, g.y, 0, g.x, g.y, r * 1.5);
-    glow.addColorStop(0, `rgba(${color},0.9)`);
-    glow.addColorStop(1, `rgba(${color},0)`);
-    c.fillStyle = glow;
-    c.fillRect(g.x - r * 1.5, g.y - r * 1.5, r * 3, r * 3);
-    c.strokeStyle = `rgba(${color},0.95)`;
-    c.lineWidth = 0.7;
-    c.beginPath();
-    c.moveTo(g.x - r * 2.2, g.y);
-    c.lineTo(g.x + r * 2.2, g.y);
-    c.moveTo(g.x, g.y - r * 1.3);
-    c.lineTo(g.x, g.y + r * 1.3);
-    c.stroke();
+  const gs = tod === 'night' ? sprites.glintNight : sprites.glintDay;
+  const glintMax = tod === 'night' ? 0.4 : 0.55;
+  for (let i = 0; i < count.glints; i += 1) {
+    const g = world.glints[i];
+    // Ciclo suave (sin destellos bruscos): coseno elevado
+    const a = 0.5 - 0.5 * Math.cos((TAU * t) / g.period + g.phase);
+    c.globalAlpha = a * a * glintMax;
+    c.drawImage(gs, g.x - g.size / 2, g.y - g.size / 4, g.size, g.size / 2);
   }
+  c.restore();
+  drawBoat(c, t, tod);
 
-  // Polen y polvo: solo brillan dentro de los haces de sol
-  const dustColor = world.timeOfDay === 'sunset' ? '255,190,120' : '255,226,150';
-  for (const d of world.dust) {
-    const light = beamLight(d.x, d.y);
-    if (light < 0.06) continue;
-    const twinkle = 0.55 + 0.45 * Math.sin(t * 1.7 + d.phase);
-    c.globalAlpha = light * twinkle * 0.9;
-    c.fillStyle = `rgba(${dustColor},1)`;
-    c.beginPath();
-    c.arc(d.x, d.y, d.size, 0, Math.PI * 2);
-    c.fill();
+  // Polvo: motas lentas que solo brillan dentro de los haces
+  for (let i = 0; i < count.dust; i += 1) {
+    const d = world.dust[i];
+    const a = 0.18 * (0.5 + 0.5 * Math.sin(t * 0.8 + d.phase));
+    if (a < 0.02) continue;
+    c.globalAlpha = a;
+    const s = d.r * 4;
+    c.drawImage(sprites.dust, d.x - s / 2, d.y - s / 2, s, s);
   }
 
-  // Luces del pueblo con su reflejo tembloroso en el agua
-  for (const l of world.lights) {
-    const flicker = 0.75 + 0.25 * Math.sin(t * 2.3 + l.phase);
-    c.globalAlpha = flicker;
-    const glow = c.createRadialGradient(l.x, l.y, 0, l.x, l.y, l.size * 3.4);
-    glow.addColorStop(0, 'rgba(255,214,130,0.95)');
-    glow.addColorStop(1, 'rgba(255,170,70,0)');
-    c.fillStyle = glow;
-    c.fillRect(l.x - l.size * 3.4, l.y - l.size * 3.4, l.size * 6.8, l.size * 6.8);
-    if (world.timeOfDay === 'night' && l.y > 680 && l.y < 700 && pointInPolygon(l.x, l.y + 14, SEA)) {
-      c.globalAlpha = 0.35 * flicker;
-      c.fillStyle = 'rgba(255,200,120,1)';
-      for (let k = 0; k < 4; k += 1) {
-        c.fillRect(l.x - 1.2 + Math.sin(t * 3 + k + l.phase) * 1.2, l.y + 10 + k * 5, 2.4, 2.2);
-      }
-    }
+  // Luces del pueblo: parpadeo lento
+  for (let i = 0; i < Math.min(count.lights, world.lights.length); i += 1) {
+    const l = world.lights[i];
+    c.globalAlpha = 0.65 + 0.25 * Math.sin(t * 1.1 + l.phase);
+    c.drawImage(sprites.light, l.x - l.size / 2, l.y - l.size / 2, l.size, l.size);
   }
 
   // Luciérnagas entre las flores del balcón
-  for (const f of world.fireflies) {
-    const pulse = Math.pow(Math.max(0, Math.sin(t * 1.3 + f.phase)), 3);
-    if (pulse < 0.05) continue;
-    c.globalAlpha = pulse;
-    const glow = c.createRadialGradient(f.x, f.y, 0, f.x, f.y, 9);
-    glow.addColorStop(0, 'rgba(236,255,160,1)');
-    glow.addColorStop(0.3, 'rgba(200,255,120,0.5)');
-    glow.addColorStop(1, 'rgba(180,255,100,0)');
-    c.fillStyle = glow;
-    c.fillRect(f.x - 9, f.y - 9, 18, 18);
+  for (let i = 0; i < Math.min(count.fireflies, world.fireflies.length); i += 1) {
+    const f = world.fireflies[i];
+    const pulse = 0.5 - 0.5 * Math.cos((TAU * t) / f.period + f.phase);
+    c.globalAlpha = pulse * 0.7;
+    const x = f.x + Math.sin(t * 0.35 + f.phase) * 18;
+    const y = f.y + Math.cos(t * 0.27 + f.phase) * 10;
+    c.drawImage(sprites.firefly, x - 8, y - 8, 16, 16);
   }
 
-  // Motas de la estantería: brillo cálido que respira
-  for (const m of world.shelfMotes) {
-    const a = 0.25 + 0.55 * Math.pow(0.5 + 0.5 * Math.sin(t * 0.9 + m.phase), 2);
-    c.globalAlpha = a;
-    const glow = c.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.size * 3);
-    glow.addColorStop(0, 'rgba(255,236,180,0.95)');
-    glow.addColorStop(1, 'rgba(255,200,120,0)');
-    c.fillStyle = glow;
-    c.fillRect(m.x - m.size * 3, m.y - m.size * 3, m.size * 6, m.size * 6);
-  }
-
-  // Burbujas del té helado
-  c.strokeStyle = 'rgba(255,248,225,0.75)';
-  c.lineWidth = 0.5;
+  // Burbujas del té helado (bajo el nivel cuando se está vaciando)
   const teaTop = teaLevel === null ? 0 : TEA_GLASS.y + TEA_GLASS.h * (1 - teaLevel);
-  for (const b of world.bubbles) {
-    if (b.y < teaTop) continue;
-    c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 3 + b.phase);
+  c.strokeStyle = 'rgba(255,248,225,0.7)';
+  c.lineWidth = 0.5;
+  for (let i = 0; i < count.bubbles; i += 1) {
+    const b = world.bubbles[i];
+    const span = TEA_GLASS.h;
+    const y = TEA_GLASS.y + span - (((b.v * t + b.phase * 20) % span) + span) % span;
+    if (y < teaTop) continue;
+    c.globalAlpha = 0.45 + 0.3 * Math.sin(t * 2 + b.phase);
     c.beginPath();
-    c.arc(b.x + Math.sin(t * 2 + b.phase) * 0.8, b.y, b.r, 0, Math.PI * 2);
+    c.arc(b.x + Math.sin(t * 1.6 + b.phase) * 0.8, y, b.r, 0, TAU);
     c.stroke();
-  }
-
-  // Pétalos girando en la brisa
-  for (const p of world.petals) {
-    const fade = p.y > 1250 ? Math.max(0, 1 - (p.y - 1250) / 200) : 1;
-    c.globalAlpha = 0.9 * fade * (world.timeOfDay === 'night' ? 0.5 : 1);
-    c.save();
-    c.translate(p.x, p.y);
-    c.rotate(p.rot);
-    c.scale(1, 0.45 + 0.55 * Math.abs(Math.sin(t * 2 + p.phase)));
-    c.fillStyle = p.pink ? '#ffc9d6' : '#fffaf2';
-    c.beginPath();
-    c.ellipse(0, 0, p.size, p.size * 0.62, 0, 0, Math.PI * 2);
-    c.fill();
-    c.restore();
-  }
-
-  // Mariposas: dos alas que baten y un cuerpo fino
-  for (const b of world.butterflies) {
-    const flap = Math.abs(Math.sin(t * 11 + b.phase));
-    c.globalAlpha = 0.95;
-    c.save();
-    c.translate(b.x, b.y);
-    c.rotate(Math.sin(t * 2 + b.phase) * 0.3);
-    c.fillStyle = `rgba(${b.color},1)`;
-    c.strokeStyle = 'rgba(80,50,20,0.6)';
-    c.lineWidth = 0.4;
-    for (const side of [-1, 1]) {
-      c.beginPath();
-      c.ellipse(side * 2.6 * (0.3 + flap * 0.7), -1, 3 * (0.25 + flap * 0.75), 2.4, side * 0.5, 0, Math.PI * 2);
-      c.fill();
-      c.stroke();
-    }
-    c.fillStyle = '#3b2a1e';
-    c.fillRect(-0.4, -2.4, 0.8, 4.4);
-    c.restore();
   }
   c.globalAlpha = 1;
 }
 
-function step(world, dt, t) {
-  for (const k of world.crests) {
-    k.y += k.speed * dt;
-    k.x += Math.sin(t * 0.3 + k.phase) * 2 * dt;
-    if (!pointInPolygon(k.x, k.y, SEA)) Object.assign(k, seaPoint(world.random, null, 0), { y: 612 + world.random() * 30 });
-  }
-  for (const m of world.shelfMotes) {
-    m.y += m.vy * dt;
-    m.x += Math.sin(t * 0.5 + m.phase) * 5 * dt;
-    if (m.y < 30) {
-      m.y = 800;
-      m.x = 4 + world.random() * 250;
-    }
-  }
-  for (const b of world.bubbles) {
-    b.y -= b.v * dt;
-    if (b.y < TEA_GLASS.y) {
-      b.y = TEA_GLASS.y + TEA_GLASS.h;
-      b.x = TEA_GLASS.x + world.random() * TEA_GLASS.w;
-    }
-  }
-  // Ráfaga de brisa sincronizada con la sombra de nube (cada 35 s): los pétalos vuelan más y más rápido
-  const cycle = (t - 6) % 35;
-  const gust = t > 6 && cycle > 22 && cycle < 32 ? 1 : 0;
-  for (const p of world.petals) {
-    p.x += (p.vx * (1 + gust * 2.4) + Math.sin(t * 1.2 + p.phase) * 14) * dt;
-    p.y += p.vy * (1 + gust * 0.6) * dt;
-    p.rot += p.spin * dt;
-    if (p.y > 1460 || p.x < -10) {
-      p.x = 440 + world.random() * 540;
-      p.y = world.random() * 260;
-    }
-  }
-  for (const b of world.butterflies) {
-    if (t > b.retarget) {
-      b.tx = 470 + world.random() * 360;
-      b.ty = 780 + world.random() * (world.random() < 0.25 ? 380 : 170);
-      b.retarget = t + 2 + world.random() * 3;
-    }
-    b.x += ((b.tx - b.x) * 0.6 + Math.sin(t * 3 + b.phase) * 22) * dt;
-    b.y += ((b.ty - b.y) * 0.6 + Math.cos(t * 4 + b.phase) * 18) * dt;
-  }
+/** El polvo deriva despacio a lo largo de su haz (2–5 px/s) y vuelve a empezar dentro de la luz. */
+function step(world, dt) {
   for (const d of world.dust) {
-    d.x += (d.vx + Math.sin(t * 0.4 + d.phase) * 4) * dt;
-    d.y += (d.vy + Math.cos(t * 0.3 + d.phase) * 2) * dt;
-    if (d.y < 360) d.y = 1530;
-    if (d.x < 0) d.x = SCENE_W;
-    if (d.x > SCENE_W) d.x = 0;
+    d.x += -d.beam.dx * d.speed * dt;
+    d.y += -d.beam.dy * d.speed * dt;
+    if (Math.hypot(d.x - d.ox, d.y - d.oy) > 90) {
+      d.x = d.ox;
+      d.y = d.oy;
+    }
   }
-  for (const f of world.fireflies) {
-    f.vx += (Math.sin(t * 0.7 + f.phase * 3) * 8 - f.vx) * dt;
-    f.vy += (Math.cos(t * 0.9 + f.phase * 2) * 6 - f.vy) * dt;
-    f.x = Math.min(820, Math.max(470, f.x + f.vx * dt));
-    f.y = Math.min(965, Math.max(785, f.y + f.vy * dt));
-  }
+}
+
+function median(buf, n) {
+  const a = Array.from(buf.subarray(0, n)).sort((x, y) => x - y);
+  return a[Math.floor(a.length / 2)] ?? 0;
 }
 
 export function RoomAtmosphereCanvas({ timeOfDay, scale, paused, reducedMotion, teaLevelRef }) {
   const ref = useRef(null);
+  // Estado persistente del motor: perfil, reloj lógico, mundo y sprites (sobrevive a pausas y modales)
+  const engine = useRef(null);
+  if (!engine.current) {
+    engine.current = {
+      profile: LITE_SCENE ? 'light' : 'balanced',
+      trim: false,
+      clock: 0,
+      world: null,
+      sprites: null,
+      density: 1,
+      lastChange: 0,
+      downgrades: 0,
+      samples: new Float32Array(240),
+      sampleCount: 0,
+      sampleStart: 0,
+      calm: 0,
+    };
+  }
+
+  // Tamaño del buffer: solo cambia con la escala o el perfil, nunca por fotograma
+  const sizeCanvas = () => {
+    const canvas = ref.current;
+    const e = engine.current;
+    if (!canvas) return;
+    const cap = PROFILES[e.profile]?.dpr ?? 1;
+    e.density = Math.max(0.2, scale) * Math.min(window.devicePixelRatio || 1, cap);
+    const w = Math.round(SCENE_W * e.density);
+    const h = Math.round(SCENE_H * e.density);
+    if (canvas.width !== w) canvas.width = w;
+    if (canvas.height !== h) canvas.height = h;
+    canvas.dataset.profile = reducedMotion ? 'reduced' : e.profile;
+    document.documentElement.dataset.motion = reducedMotion ? 'reduced' : e.profile;
+  };
+
+  useEffect(() => {
+    const e = engine.current;
+    if (!e.world || e.world.timeOfDay !== timeOfDay) e.world = createWorld(timeOfDay);
+    e.sprites ??= createSprites();
+  }, [timeOfDay]);
 
   useEffect(() => {
     const canvas = ref.current;
     const c = canvas?.getContext('2d');
+    const e = engine.current;
     if (!canvas || !c) return undefined;
-    // Buffer al tamaño mostrado (escena × escala) por la densidad de pantalla; en móvil, como mucho 1,5
-    const dpr = Math.min(window.devicePixelRatio || 1, LITE_SCENE ? 1.5 : 2);
-    const density = Math.max(0.2, scale) * dpr;
-    canvas.width = Math.round(SCENE_W * density);
-    canvas.height = Math.round(SCENE_H * density);
-    c.setTransform(density, 0, 0, density, 0, 0);
-    const world = createWorld(timeOfDay);
-    const start = performance.now();
-    draw(c, world, 0.6);
+    e.world ??= createWorld(timeOfDay);
+    e.sprites ??= createSprites();
+    sizeCanvas();
+    const counts = () => {
+      const p = PROFILES[e.profile];
+      return e.trim ? { ...p, dust: Math.ceil(p.dust / 2), glints: Math.ceil(p.glints / 2) } : p;
+    };
+    let count = counts();
+    draw(c, e.density, e.world, e.sprites, e.clock, count, teaLevelRef?.current ?? null);
+    // Movimiento reducido o pausa (librería, modal): fotograma quieto, sin cadena de animación
     if (reducedMotion || paused) return undefined;
 
     let frame = 0;
-    let last = start;
+    let last = 0;
+    let acc = 0;
+    const restartSampling = (now) => {
+      e.sampleCount = 0;
+      e.sampleStart = now;
+    };
+    const setProfile = (next, now) => {
+      if (next === e.profile) return;
+      e.profile = next;
+      e.lastChange = now;
+      sizeCanvas();
+      count = counts();
+      restartSampling(now);
+    };
+    const adapt = (now, interval) => {
+      if (e.sampleCount < e.samples.length) e.samples[e.sampleCount++] = interval;
+      if (now - e.sampleStart < SAMPLE_WINDOW_MS) return;
+      const m = median(e.samples, e.sampleCount);
+      canvas.dataset.median = m.toFixed(1);
+      if (e.profile === 'balanced' && m > DOWNGRADE_MEDIAN_MS) {
+        e.downgrades += 1;
+        setProfile('light', now);
+      } else if (e.profile === 'light' && m > TRIM_MEDIAN_MS && !e.trim) {
+        e.trim = true;
+        count = counts();
+      } else if (e.profile === 'light' && m <= UPGRADE_MEDIAN_MS) {
+        e.calm += now - e.sampleStart;
+        // Solo se sube tras 15 s seguidos con margen y 15 s desde el último cambio (sin oscilar)
+        if (e.calm >= UPGRADE_AFTER_MS && now - e.lastChange >= UPGRADE_AFTER_MS && e.downgrades < 2) {
+          e.calm = 0;
+          setProfile('balanced', now);
+        }
+      } else e.calm = 0;
+      restartSampling(now);
+    };
     const loop = (now) => {
       frame = requestAnimationFrame(loop);
-      if (document.hidden) return;
-      const dt = Math.min(0.05, (now - last) / 1000);
+      if (document.hidden) {
+        last = 0;
+        return;
+      }
+      if (!last) {
+        // Primer fotograma o vuelta de una pausa: sin salto de tiempo
+        last = now;
+        restartSampling(now);
+        return;
+      }
+      const interval = now - last;
       last = now;
-      const t = (now - start) / 1000;
-      step(world, dt, t);
-      draw(c, world, t, teaLevelRef?.current ?? null);
+      adapt(now, interval);
+      const dt = Math.min(0.05, interval / 1000);
+      acc += dt;
+      const minStep = 1 / PROFILES[e.profile].fps;
+      if (acc + 0.002 < minStep) return;
+      const stepDt = Math.min(0.05, acc);
+      acc = 0;
+      e.clock += stepDt;
+      step(e.world, stepDt);
+      draw(c, e.density, e.world, e.sprites, e.clock, count, teaLevelRef?.current ?? null);
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeOfDay, scale, paused, reducedMotion]);
 
   return <canvas ref={ref} className="room-canvas" aria-hidden="true" />;

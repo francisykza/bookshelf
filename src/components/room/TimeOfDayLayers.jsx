@@ -1,17 +1,14 @@
 // Luz de la habitación por hora del día (SPEC §2.3): haces komorebi, sombras de hojas, velo dorado
 // del atardecer y noche azul con huecos donde la lámpara colgante y las velas encienden su luz naranja.
 import { DESK_CANDLE, HOTSPOTS, LAMP, LANTERN } from '../../scene/sceneMap';
-import { useSvgIds } from '../../hooks/useSvgIds';
 import { bounds } from '../../scene/homography';
 import { BEAMS } from './beams';
 
-const LEAVES = Array.from({ length: 26 }, (_, i) => {
-  const r = (n) => {
-    const v = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
-    return v - Math.floor(v);
-  };
-  return { x: 40 + r(1) * 900, y: 860 + r(2) * 700, rx: 14 + r(3) * 26, ry: 6 + r(4) * 12, rot: r(5) * 180 };
-});
+/** Dos sombras de hojas localizadas (sobre la cama y el suelo del balcón), cada una con su periodo. */
+const LEAF_SHADES = [
+  { x: 120, y: 1000, w: 420, h: 300, period: 21 },
+  { x: 560, y: 900, w: 360, h: 260, period: 25 },
+];
 
 const laptop = bounds(HOTSPOTS.laptop.shape);
 
@@ -27,13 +24,12 @@ function nightMask(lampOn, candleOn) {
 }
 
 export function TimeOfDayLayers({ timeOfDay, lampOn = true, candleOn = true }) {
-  const sid = useSvgIds();
   const mask = nightMask(lampOn, candleOn);
   return (
     <div className="tod" data-tod={timeOfDay} data-lamp={lampOn} data-candle={candleOn} aria-hidden="true">
-      {/* Komorebi: haces diagonales que respiran y sombras de hojas a la deriva */}
+      {/* Komorebi (SPEC §12.6): dos rayos que respiran por opacidad y dos sombras de hojas ya suavizadas */}
       <div className="tod__beams">
-        {BEAMS.map((b, i) => (
+        {BEAMS.slice(0, 2).map((b, i) => (
           <span
             key={i}
             className="tod__beam"
@@ -43,24 +39,15 @@ export function TimeOfDayLayers({ timeOfDay, lampOn = true, candleOn = true }) {
               width: b.w * 5.2,
               height: b.len,
               transform: `rotate(${(Math.atan2(b.dy, b.dx) * 180) / Math.PI - 90}deg)`,
-              opacity: b.strength,
-              animationDelay: `${-i * 2.3}s`,
+              '--beam-period': `${16 + i * 3}s`,
+              animationDelay: `${-i * 5}s`,
             }}
           />
         ))}
       </div>
-      <svg className="tod__leaves" viewBox="0 0 984 1599" width="984" height="1599">
-        <defs>
-          <filter id={sid('f-leaf-blur')} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="7" />
-          </filter>
-        </defs>
-        <g filter={sid.url('f-leaf-blur')} className="tod__leaves-drift">
-          {LEAVES.map((l, i) => (
-            <ellipse key={i} cx={l.x} cy={l.y} rx={l.rx} ry={l.ry} transform={`rotate(${l.rot} ${l.x} ${l.y})`} />
-          ))}
-        </g>
-      </svg>
+      {LEAF_SHADES.map((l, i) => (
+        <span key={i} className="tod__leafshade" style={{ left: l.x, top: l.y, width: l.w, height: l.h, '--leaf-period': `${l.period}s`, animationDelay: `${-i * 7}s` }} />
+      ))}
 
       {/* Atardecer dorado: velo ámbar y rosa */}
       <div className="tod__sunset" />

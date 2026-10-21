@@ -1,6 +1,6 @@
 // BookShelf — "Mediterranean Cozy Reading Sanctuary" (SPEC.md). Interfaz diegética: la habitación es
 // el menú. Este componente coordina la cámara, los objetos que se acercan, el sonido y el temporizador.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { bell, isAmbiencePlaying, setAmbience, setSfx, setTimeOfDay } from './audio/ambientAudio';
 import { timeOfDayByClock } from './domain/dates';
 import { BookDetailModal } from './components/book/BookDetailModal';
@@ -13,16 +13,18 @@ import { CozyRoom, ROOM_VIEW, SHELF_VIEW } from './components/room/CozyRoom';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { useReadingTimer } from './hooks/useReadingTimer';
-import { SCENE_H, SCENE_W } from './scene/sceneMap';
+import { useReducedMotion } from './hooks/useReducedMotion';
+import { ENTERING, ROOM, SHELF, useShelfTransition } from './hooks/useShelfTransition';
+import { fitCamera } from './scene/camera';
 import { CloudProvider } from './state/cloudSync';
 import { LibraryProvider, useLibrary } from './state/useLibrary';
 
 /**
- * Escala uniforme de la escena (SPEC §11.4): se mide el contenedor real con ResizeObserver, agrupado en un
- * fotograma. Durante un pinch-zoom (visualViewport.scale ≠ 1) no se reescala la ilustración.
+ * Tamaño real del escenario (SPEC §12.2): se mide el contenedor con ResizeObserver y se escribe una sola vez
+ * por fotograma, solo si cambia. Durante un pinch-zoom (visualViewport.scale ≠ 1) no se reencuadra.
  */
-function useStageScale(ref) {
-  const [k, setK] = useState(() => Math.min(window.innerWidth / SCENE_W, window.innerHeight / SCENE_H));
+function useStageSize(ref) {
+  const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   useEffect(() => {
     const node = ref.current;
     if (!node) return undefined;
@@ -32,10 +34,10 @@ function useStageScale(ref) {
       frame = requestAnimationFrame(() => {
         const vv = window.visualViewport;
         if (vv && Math.abs(vv.scale - 1) > 0.01) return;
-        const { width, height } = node.getBoundingClientRect();
-        if (!width || !height) return;
-        const next = Math.min(width / SCENE_W, height / SCENE_H);
-        setK((prev) => (Math.abs(prev - next) < 0.0005 ? prev : next));
+        const w = Math.round(node.clientWidth);
+        const h = Math.round(node.clientHeight);
+        if (!w || !h) return;
+        setSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
       });
     };
     const observer = new ResizeObserver(measure);
@@ -48,15 +50,20 @@ function useStageScale(ref) {
       window.visualViewport?.removeEventListener('resize', measure);
     };
   }, [ref]);
-  return k;
+  return size;
 }
 
 function Sanctuary() {
   const { state, actions } = useLibrary();
   const { settings } = state;
   const stageRef = useRef(null);
-  const k = useStageScale(stageRef);
-  const [view, setView] = useState(ROOM_VIEW);
+  const size = useStageSize(stageRef);
+  const camera = useMemo(() => fitCamera(size.w, size.h), [size]);
+  const k = camera.scale;
+  const reducedMotion = useReducedMotion();
+  const { phase, toShelf, toRoom, onTransitionEnd } = useShelfTransition({ reducedMotion, mobile: camera.cover });
+  // La cámara de escritorio se acerca mientras la librería entra y se aleja mientras sale
+  const view = phase === ENTERING || phase === SHELF ? SHELF_VIEW : ROOM_VIEW;
   const [panel, setPanel] = useState(null);
   const [askPages, setAskPages] = useState(false);
 
@@ -122,24 +129,27 @@ function Sanctuary() {
 
   useEffect(() => {
     const onKey = (event) => {
-      if (event.key === 'Escape' && !panel && view === SHELF_VIEW) setView(ROOM_VIEW);
+      if (event.key === 'Escape' && !panel && (phase === SHELF || phase === ENTERING)) toRoom();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [panel, view]);
+  }, [panel, phase, toRoom]);
 
   const close = useCallback(() => setPanel(null), []);
   const openBook = (book) => setPanel({ type: 'book', id: book.id });
 
   return (
-    <main ref={stageRef} className="sanctuary" data-view={view} inert={panel ? true : undefined}>
+    <main ref={stageRef} className="sanctuary" data-view={view} data-phase={phase} inert={panel ? true : undefined}>
       <div className="backdrop" aria-hidden="true" />
       <h1 className="sr-only-focus">BookShelf, tu santuario de lectura junto al mar</h1>
       <CozyRoom
         k={k}
+        camera={camera}
         view={view}
+        interactive={phase === ROOM}
+        hidden={phase === SHELF}
         timer={timer}
-        onOpenShelf={() => setView(SHELF_VIEW)}
+        onOpenShelf={toShelf}
         onOpenBook={openBook}
         onOpenLaptop={() => setPanel({ type: 'laptop' })}
         onOpenTray={() => setPanel({ type: 'tray' })}
@@ -150,8 +160,9 @@ function Sanctuary() {
         modalOpen={Boolean(panel)}
       />
       <ShelfView
-        open={view === SHELF_VIEW}
-        onBack={() => setView(ROOM_VIEW)}
+        phase={phase}
+        onTransitionEnd={onTransitionEnd}
+        onBack={toRoom}
         onOpenBook={openBook}
         onAddBook={() => setPanel({ type: 'add' })}
         onOpenVault={(id) => setPanel({ type: 'vault', id })}
@@ -177,7 +188,7 @@ function Sanctuary() {
       )}
       {panel?.type === 'atlas' && <SagaMapModal onClose={close} onOpenBook={openBook} />}
       {panel?.type === 'account' && <AccountPanel onClose={close} />}
-      {panel?.type === 'add' && <AddBookCard onClose={close} onAdded={() => setView(SHELF_VIEW)} />}
+      {panel?.type === 'add' && <AddBookCard onClose={close} onAdded={toShelf} />}
     </main>
   );
 }

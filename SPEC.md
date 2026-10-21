@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.17.0 · 2026-10-21 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.18.0 · 2026-10-21 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -639,7 +639,7 @@ Se activa con `(max-width: 760px) and (pointer: coarse)` y, además, con puntero
 sobre `.sanctuary` (`100vh` de respaldo, `100dvh` preferente) y `k = min(ancho / 984, alto / 1599)`,
 agrupado en `requestAnimationFrame`; con `visualViewport.scale ≠ 1` (pinch-zoom) no se reescala.
 
-Se mantiene `contain`: en pantallas más altas que la ilustración quedan bandas, rellenas con la
+Hasta 1.17 se mantenía `contain` (sustituido en móvil por §12.2): en pantallas más altas que la ilustración quedan bandas, rellenas con la
 ilustración extendida (`.backdrop`, más clara en móvil) y sin el marco de madera en móvil. No se puede
 llenar cualquier proporción sin cortar objetos o deformar la escena, y `cover` cortaría las baldas, el
 sol, el libro o los auriculares.
@@ -738,3 +738,126 @@ Nunca se vincula un libro solo por su autor.
   - vinculación por título o saga sin falsos positivos por autor;
   - conservación de IDs e inventario;
   - recuperación tras un fallo de carga.
+
+## 12. Móvil a sangre, transiciones estables y ambiente vivo (1.18.0)
+
+### 12.1 Qué es cada franja
+| Franja | Origen | Tratamiento |
+| --- | --- | --- |
+| A | Hueco del ajuste `contain` de la ilustración | Se elimina con el encuadre *cover* en móvil (§12.2). |
+| B | Fondo o padding del contenedor | Se elimina: `.sanctuary` es `position: fixed; inset: 0` a `100dvh`, sin padding. |
+| C | Área segura (muesca, barra de gestos) | La escena llega a los bordes; solo los controles y paneles se separan (`env(safe-area-inset-*) + 12px`). |
+| D | Barras del navegador o del sistema | Fuera del alcance de CSS. Se usa la pantalla completa real (§12.3); si el sistema reserva una franja fuera del área concedida a la página, no se puede ocultar. No se manipulan los indicadores de privacidad del sistema. |
+
+La 1.18.0 sustituye la decisión de §11.4 de conservar siempre `contain` en móvil.
+
+### 12.2 Encuadre móvil (cover) con cámara desplazable
+- Coordenadas lógicas intactas (984 × 1599). Hasta 760 px de ancho: `scale = max(vw / 984, vh / 1599)`.
+  En el resto, `min(...)` (el encuadre aprobado de escritorio).
+- Una sola cámara para todo (imagen base, SVG, canvas, figuras, lomos, post-it, sol/luna, hotspots):
+  `.world` con `transform-origin: 0 0` y `transform: translate(x, y) scale(s)` (`scene/camera.js`).
+  Escritorio en `SHELF_VIEW`: `translate(centro) scale(s·1.75) rotateY(7deg) translate(-foco)`, equivalente
+  al zoom anterior.
+- *Cover* recorta sin deformar. Para llegar a lo recortado, en `ROOM_VIEW` se arrastra el escenario:
+  - el desplazamiento queda acotado (`vw − anchoRenderizado ≤ x ≤ 0` y lo mismo en vertical);
+  - si el arrastre supera 8 px CSS, al soltar no se activa el objeto;
+  - dos dedos nunca activan objetos, y el pinch-zoom del navegador se conserva (`touch-action: pinch-zoom`);
+  - `pointercancel` y la captura del puntero se gestionan; no hay inercia ni rebote.
+- Con el teclado, un objeto enfocado fuera del encuadre se trae a la vista con 16 px de margen.
+- Al rotar o cambiar las barras se conserva el centro lógico observado y se recalculan los límites. El
+  cambio de escala se aplica sin transición, también al aparecer el teclado.
+- En móvil no hay marco de madera ni rectángulos o degradados que tapen franjas.
+
+### 12.3 Pantalla completa y PWA
+- Manifiesto: `display: "fullscreen"` con `display_override: ["fullscreen", "standalone"]`; se mantienen
+  `id`/`start_url`/`scope` e iconos. La orientación vertical ya existía y no se usa para esconder fallos.
+- Pestaña de pantalla completa en el marco: solo con un toque explícito, si hay `document.fullscreenEnabled`
+  y `requestFullscreen`, sobre `document.documentElement` (incluye `#modal-root`) con
+  `{ navigationUI: "hide" }`. Los rechazos se capturan. Se sale con `exitFullscreen()`, el estado se
+  sincroniza con `fullscreenchange` y nunca se vuelve a entrar solo.
+- Modos distintos: pantalla completa por API (`document.fullscreenElement`), app instalada a pantalla
+  completa (`display-mode: fullscreen`, sin pestaña) y app instalada `standalone` (la pestaña se ofrece si la
+  API existe).
+- Sin API (Safari en iPhone): la pestaña explica, solo al tocarla, que la app instalada desde «Añadir a
+  pantalla de inicio» se abre sin barras.
+
+### 12.4 Estados de transición
+`room → enteringShelf → shelf → leavingShelf → room`, en una sola máquina de estados en `App.jsx`:
+- **Durante `enteringShelf`** la habitación sigue entera debajo y la librería (opaca, z 20) entra por
+  opacidad.
+- **En `shelf`** la habitación queda `visibility: hidden`, `pointer-events: none`, `inert` y con los
+  efectos pausados (sigue montada y la imagen decodificada).
+- **En `leavingShelf`** la habitación se hace visible antes de retirar la librería, que sale por opacidad
+  sobre ella. Nunca se desvanecen ambas a la vez.
+- **Móvil**: 180 ms, `cubic-bezier(0.2, 0, 0, 1)`, solo opacidad y sin el zoom 3D. **Escritorio**: el zoom
+  de cámara aprobado.
+- **Cierre**: con `transitionend` (filtrado por `target` y `propertyName: opacity`) y un respaldo
+  cancelable de 240 ms en móvil.
+- **Atajos**: los toques rápidos invierten el estado sin atascarse; con la pestaña oculta o movimiento
+  reducido el cambio es directo.
+- **Modales** en móvil: se abren por opacidad en 140 ms, sin escala, desenfoque ni perspectiva. El fondo
+  queda inmóvil y el portal sigue fuera del árbol transformado.
+
+### 12.5 Jerarquía y superficies
+- **Global**: habitación `z 10`, librería `z 20` y modales `z 1000`. Cada vista con `inset: 0`,
+  `isolation: isolate` y `mix-blend-mode: normal`.
+- **Librería**: tiene su propia superficie continua de roble, opaca, con la textura y los colores
+  actuales, para que la habitación no se vea entre las baldas.
+- **Rectángulo violáceo (hipótesis, sin reproducir en emulación)**: coincide con el color de la capa
+  nocturna, un `div` de 984×1599 con `multiply` sobre capas compuestas. Si el navegador del teléfono pierde
+  una tesela del fondo, la mezcla pinta ese violeta liso.
+- **En el perfil ligero**, las capas de noche y atardecer de toda la escena usan mezcla normal con alfa.
+  Las mezclas quedan reservadas a capas pequeñas: `multiply` para las sombras de hojas y `screen` para la
+  luz.
+
+### 12.6 Ambiente (la ilustración base sigue estática)
+| Efecto | Equilibrado | Ligero | Detalles |
+| --- | --- | --- | --- |
+| Ondas del mar (dentro de `SEA`) | 12 | 6 | 12–38 px, ±3–8 px horizontal, ≤ 2 px vertical, 4–7 s, opacidad 0,08–0,22 de día y 0,04–0,12 de noche, sin apariciones bruscas |
+| Reflejos en el agua | 10 | 5 | 3,5–6 s, fases deterministas, `#FFF1C4` de día y `#DCE8F4` bajo la luna |
+| Sombras de hojas | 2 | 2 | `multiply`, `#2C1E14`, opacidad 0,025–0,055, ≤ 4 px, ≤ 0,35°, 18–26 s, manchas ya suavizadas (sin blur animado) |
+| Rayos de luz | 2 | 2 | `screen`, `#FFE6AB`, opacidad 0,025–0,065, respiración de 14–20 s, solo opacidad, apagados de noche |
+| Polvo en la luz | 14 | 6 | 0,5–1,2 px, 2–5 px/s, opacidad ≤ 0,18, solo dentro de los haces |
+| Vela y farolillo | — | — | halo 0,12–0,17 y escala ≤ 1,015 con periodos superpuestos de 2,8 s y 4,7 s |
+| Vapor de bebida caliente | 3 | 2 | 6–9 s, ≤ 18 px de subida, según bebida y temporizador |
+| Vegetación | filtros del escritorio | sin animación | en móvil la planta pintada queda quieta y se mueven sus sombras (no hay recortes transparentes fiables) |
+
+Se mantienen, más discretos, el velero, las luces del pueblo de noche, las luciérnagas y las burbujas del
+té. Se retiran los pétalos, las mariposas y las motas repartidas por la estantería, que daban aspecto de
+purpurina.
+
+### 12.7 Presupuesto y perfiles de movimiento
+- `balanced`: 60 fps, DPR ≤ 1,5. `light`: 30 fps, DPR ≤ 1. `reduced`: un único fotograma estático.
+- **Cadena de dibujo**: una sola cadena `requestAnimationFrame`, movimiento por tiempo con el delta
+  limitado a 50 ms y un acumulador para el límite de fps. Al reanudar se reinicia la marca de tiempo y
+  se conservan las fases, sin resembrar.
+- **Sin coste por fotograma**: nada de `setState` ni de arrays u objetos nuevos; los reflejos, el polvo y
+  las luces son sprites pre-renderizados.
+- **Limpieza del lienzo**: se borra con la transformación identidad y se restablece la lógica. El tamaño
+  del lienzo solo cambia si cambian la escala o el perfil.
+- **Perfil adaptativo**:
+  - Móvil empieza en ligero y escritorio en equilibrado.
+  - Si la mediana del intervalo de fotograma supera 24 ms durante 3 s en equilibrado, baja a ligero.
+  - Si en ligero supera 40 ms, se dibujan la mitad de polvo y reflejos.
+  - Se sube a equilibrado tras 15 s con la mediana ≤ 18 ms, y no se reconsidera antes de 15 s desde el
+    último cambio.
+  - Las muestras excluyen la pestaña oculta y las transiciones.
+- **Pausa**: con la pestaña oculta, la librería abierta, un modal abierto o `prefers-reduced-motion`.
+  El temporizador, el audio y el registro de lectura no se tocan.
+- El perfil activo queda en `html[data-motion]` y en `canvas.dataset.profile`, para el CSS y las
+  mediciones.
+
+### 12.8 Criterios de aceptación (1.18.0)
+- **Habitación**: sin bandas internas a 360×800, 390×844, 412×915 y 915×412; imagen sin deformar; las
+  baldas, el sol/luna, el portátil, el té, el libro y los auriculares se alcanzan arrastrando; arrastrar no
+  activa objetos; al rotar no aparecen huecos.
+- **Pantalla completa**: disponible, rechazada y abandonada, con PWA y navegador comprobados por separado.
+- **Librería**: sin «Ver mi librería» ni la habitación detrás, y sin rectángulo violáceo.
+- **Estabilidad**:
+  - 20 ciclos habitación ↔ librería, y 10 aperturas de calendario, libro y temporizador;
+  - cambios rápidos durante las transiciones y vuelta desde segundo plano;
+  - movimiento reducido;
+  - cinco minutos sin crecimiento de listeners, RAF ni lienzos;
+  - sin pérdida de datos ni sesiones duplicadas.
+- **Parpadeos**: se comprueban con una secuencia de fotogramas (opacidad y visibilidad de cada plano por
+  fotograma), no con una captura final.

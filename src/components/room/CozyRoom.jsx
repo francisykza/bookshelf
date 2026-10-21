@@ -8,8 +8,8 @@ import { chime, lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook } from '../../domain/books';
 import { dayKey } from '../../domain/dates';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { useRoomCamera } from '../../hooks/useRoomCamera';
 import { LITE_SCENE } from '../../scene/renderMode';
-import { SCENE_H, SCENE_W } from '../../scene/sceneMap';
 import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
 import { FrontLayer } from './FrontLayer';
@@ -25,19 +25,8 @@ import { TimeOfDayLayers } from './TimeOfDayLayers';
 export const ROOM_VIEW = 'ROOM_VIEW';
 export const SHELF_VIEW = 'SHELF_VIEW';
 
-/** Punto de la ilustración hacia el que viaja la cámara al acercarse a la estantería. */
+/** Punto de la ilustración hacia el que viaja la cámara de escritorio al acercarse a la estantería. */
 const SHELF_FOCUS = { x: 230, y: 470, zoom: 1.75 };
-
-function cameraTransform(view, k) {
-  if (view === SHELF_VIEW) {
-    const dx = SCENE_W / 2 - SHELF_FOCUS.x;
-    const dy = SCENE_H / 2 - SHELF_FOCUS.y;
-    // En móvil (sin perspectiva de cámara) el acercamiento es un zoom 2D
-    const tilt = LITE_SCENE ? '' : ' rotateY(7deg)';
-    return `translate(-50%, -50%) scale(${k * SHELF_FOCUS.zoom})${tilt} translate(${dx}px, ${dy}px)`;
-  }
-  return `translate(-50%, -50%) scale(${k})`;
-}
 
 /** Recorrido de pistas (solo con «Mostrar guías»): un objeto tras otro se aviva para enseñarte qué tocar. */
 const SPOT_ORDER = ['book', 'laptop', 'tray', 'headphones', 'figures', 'shelf', 'lamp', 'lantern', 'chime', 'sun'];
@@ -48,7 +37,7 @@ function formatTimer(ms) {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
-export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenAccount, modalOpen = false, timer }) {
+export function CozyRoom({ k, camera, view, interactive = true, hidden = false, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenAccount, modalOpen = false, timer }) {
   const cloud = useCloud();
   const { state, actions } = useLibrary();
   const { settings, books, progress } = state;
@@ -61,7 +50,7 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
   const teaLevelRef = useRef(null);
   const timers = useRef([]);
   const reading = currentBook(books, settings);
-  const inRoom = view === ROOM_VIEW;
+  const inRoom = interactive;
   // Con un modal delante la habitación se queda quieta (el temporizador sigue contando)
   const live = inRoom && !modalOpen;
   const [base, setBase] = useState({ status: 'loading', attempt: 0 });
@@ -75,17 +64,34 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  const canFullscreen = typeof document !== 'undefined' && Boolean(document.documentElement.requestFullscreen) && !window.matchMedia?.('(display-mode: fullscreen)').matches;
+  // Tres casos (SPEC §12.3): app instalada a pantalla completa (sin pestaña), API de pantalla completa del
+  // navegador, o ninguna de las dos (la pestaña explica, solo al tocarla, la alternativa de instalarla)
+  const installedFullscreen = window.matchMedia?.('(display-mode: fullscreen)').matches ?? false;
+  const fullscreenApi = Boolean(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+  const canFullscreen = !installedFullscreen;
   const [fullscreen, setFullscreen] = useState(() => Boolean(document.fullscreenElement));
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
+  const [fsHint, setFsHint] = useState(null);
   const toggleFullscreen = () => {
-    if (document.fullscreenElement) document.exitFullscreen?.();
-    else document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }).catch(() => {});
+    if (!fullscreenApi) {
+      setFsHint('Este navegador no deja abrir la página a pantalla completa. Instala BookShelf («Añadir a pantalla de inicio») y se abrirá sin barras.');
+      return;
+    }
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    else
+      document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {
+        setFsHint('El navegador no ha concedido la pantalla completa; la app sigue igual.');
+      });
   };
+  useEffect(() => {
+    if (!fsHint) return undefined;
+    const id = setTimeout(() => setFsHint(null), 6000);
+    return () => clearTimeout(id);
+  }, [fsHint]);
 
   const pointing = Boolean(label);
   const pointingRef = useRef(false);
@@ -101,12 +107,12 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
 
   // Parallax de tres capas: el ratón (o la inclinación del móvil) mueve cada capa a su velocidad
   useEffect(() => {
-    const camera = cameraRef.current;
+    const surface = cameraRef.current;
     // En el perfil móvil no hay parallax: ni siquiera se registran los sensores
-    if (!camera || reducedMotion || !live || LITE_SCENE) return undefined;
+    if (!surface || reducedMotion || !live || LITE_SCENE) return undefined;
     const set = (x, y) => {
-      camera.style.setProperty('--px', x.toFixed(3));
-      camera.style.setProperty('--py', y.toFixed(3));
+      surface.style.setProperty('--px', x.toFixed(3));
+      surface.style.setProperty('--py', y.toFixed(3));
     };
     // Mientras señalas un objeto la habitación se queda quieta: el objetivo no se escapa del cursor
     const onMove = (event) => {
@@ -126,6 +132,9 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
     };
   }, [reducedMotion, live]);
   const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
+
+  // Cámara: una sola transformación para todas las capas; en móvil, cover desplazable (SPEC §12.2)
+  useRoomCamera({ camera, shelfFocus: !camera.cover && view === SHELF_VIEW ? SHELF_FOCUS : null, worldRef, surfaceRef: cameraRef, enabled: inRoom });
 
   const onHover = (next, id) => {
     if (next) setLabel(next);
@@ -163,13 +172,16 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
       ref={cameraRef}
       className="room-camera"
       data-view={view}
+      data-cover={camera.cover || undefined}
+      data-hidden={hidden || undefined}
+      inert={hidden ? true : undefined}
       data-modal={modalOpen || undefined}
       data-pointing={pointing}
       data-guides={guides}
       data-shelf-awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))}
       aria-hidden={!inRoom}
     >
-      <div ref={worldRef} className="world" style={{ transform: cameraTransform(view, k), '--k': k }} inert={!inRoom ? true : undefined}>
+      <div ref={worldRef} className="world" style={{ '--k': k }} inert={!inRoom ? true : undefined}>
         {/* Marco de ventanal de madera: la habitación se asoma a la pantalla sin bandas negras */}
         <span className="world__frame" aria-hidden="true" />
         <div className="world__parallax">
@@ -344,7 +356,7 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
               type="button"
               className="corner-btn"
               onClick={toggleFullscreen}
-              aria-pressed={fullscreen}
+              aria-pressed={fullscreenApi ? fullscreen : undefined}
               aria-label={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
               title={fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
             >
@@ -373,6 +385,11 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
             <span>Guías</span>
           </button>
         </div>
+      )}
+      {fsHint && (
+        <p className="fs-hint" role="status">
+          {fsHint}
+        </p>
       )}
     </div>
   );

@@ -1426,16 +1426,49 @@ body[data-dragging-book] .shelf-row__track[data-dropping] {
   }
 }
 
-/* Cerrada, la librería no se pinta (antes solo era transparente y seguía ocupando memoria gráfica) */
+/* 1.18.0 (SPEC §12.4–§12.5): la librería es una superficie de roble opaca y propia; solo se pinta mientras
+   entra, está abierta o sale. La habitación nunca se ve entre sus baldas. */
 .library {
   visibility: hidden;
-  transition:
-    opacity 380ms ease,
-    transform 700ms var(--ease-camera),
-    visibility 0s linear 700ms;
+  isolation: isolate;
+  mix-blend-mode: normal;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 220 170 / 0.03) 0 2px, transparent 2px 11px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.07) 0 1px, transparent 1px 23px),
+    linear-gradient(180deg, #2f1d10, #3d2615 45%, #2c1b0f);
 }
 
-.library[data-open='true'] {
+.library[data-phase='enteringShelf'],
+.library[data-phase='shelf'],
+.library[data-phase='leavingShelf'] {
   visibility: visible;
-  transition-delay: 160ms, 120ms, 0s;
+}
+
+/* Móvil: solo opacidad del plano que entra, 180 ms, sin el zoom 3D */
+@media (max-width: 760px) {
+  .library,
+  .library[data-open='true'] {
+    transform: none;
+    transition: opacity 180ms cubic-bezier(0.2, 0, 0, 1);
+    transition-delay: 0s;
+  }
+}
+
+/* 1.18.0 (SPEC §12.5): sin filtros ni fondos animados sobre todo el mueble. El haz de sol y las sombras de
+   hojas quedan quietos; en el perfil ligero, sin mezclas (posibles bloques oscuros en la GPU del móvil). */
+.library__sun {
+  animation: none;
+}
+
+.library__leaves g {
+  animation: none;
+}
+
+html[data-lite-scene] .library__sun {
+  mix-blend-mode: normal;
+  opacity: 0.35;
+}
+
+html[data-lite-scene] .library__leaves {
+  display: none;
 }

@@ -290,7 +290,10 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
   );
 }
 
-export function ShelfView({ open, onBack, onOpenBook, onAddBook, onOpenVault }) {
+export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook, onAddBook, onOpenVault }) {
+  // Interactiva solo cuando ya ha entrado; visible (opaca o entrando/saliendo) en cualquier fase salvo «room»
+  const open = phase === 'shelf';
+  const showing = phase === 'enteringShelf' || phase === 'shelf';
   const { state, actions } = useLibrary();
   const { books, settings, progress } = state;
   const [pick, setPick] = useState(null);
@@ -389,7 +392,7 @@ export function ShelfView({ open, onBack, onOpenBook, onAddBook, onOpenVault }) 
   }, [figCatalog, books, figs, actions, sagas]);
 
   return (
-    <div className="library" data-open={open} aria-hidden={!open} inert={!open ? true : undefined}>
+    <div className="library" data-open={showing} data-phase={phase} aria-hidden={!open} inert={!open ? true : undefined} onTransitionEnd={onTransitionEnd}>
       <div className="library__case">
         {/* Haz de sol diagonal y sombras de hiedra que entran desde el balcón */}
         <span className="library__sun" aria-hidden="true" />
