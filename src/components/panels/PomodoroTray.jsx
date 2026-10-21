@@ -4,8 +4,10 @@
 import { Pause, Play, RotateCcw, SkipForward } from 'lucide-react';
 import { useState } from 'react';
 import { CalendarDays } from 'lucide-react';
-import { currentBook, progress } from '../../domain/books';
+import { currentBook, progress, trackUnit } from '../../domain/books';
+import { ReadingEntryForm } from './ReadingEntryForm';
 import { dayKey } from '../../domain/dates';
+import { summarize } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
 import { DRINKS, Drink } from './Drinks';
 import { PanelShell } from './PanelShell';
@@ -24,7 +26,10 @@ function SessionReport({ book, onDone, onOpenCalendar }) {
     : 0;
   const [page, setPage] = useState(estimate);
   const [report, setReport] = useState(null);
-  const todayPages = state.progress.readingLog.filter((e) => e.date === dayKey()).reduce((sum, e) => sum + e.pages, 0);
+  const today = summarize(
+    state.progress.readingLog.filter((e) => e.date === dayKey()),
+    state.books,
+  );
 
   if (!chosen) {
     return (
@@ -42,7 +47,11 @@ function SessionReport({ book, onDone, onOpenCalendar }) {
       <div className="tray__ask tray__report" role="status">
         <p className="tray__report-title">¡Bien leído! ☕</p>
         <p>
-          {report.pages > 0 ? (
+          {report.percent ? (
+            <>
+              Has actualizado el porcentaje de <em>{report.title}</em>.
+            </>
+          ) : report.pages > 0 ? (
             <>
               Has avanzado <b>{report.pages} {report.pages === 1 ? 'pág.' : 'págs.'}</b> de <em>{report.title}</em>: <b>+{report.gain} %</b>, ahora vas por el{' '}
               <b>{report.now} %</b>
@@ -52,7 +61,7 @@ function SessionReport({ book, onDone, onOpenCalendar }) {
             <>Esta vez no has pasado de página, pero la sesión cuenta para tus misiones.</>
           )}
         </p>
-        <p>Hoy llevas {todayPages} páginas. Ya está apuntado en tu calendario.</p>
+        <p>Hoy llevas {today.text || '0 páginas'}. Ya está apuntado en tu calendario.</p>
         <div className="tray__report-actions">
           <button type="button" className="stamp-btn stamp-btn--small" onClick={onOpenCalendar}>
             <CalendarDays aria-hidden="true" /> Ver en el calendario
@@ -61,6 +70,24 @@ function SessionReport({ book, onDone, onOpenCalendar }) {
             Seguir aquí
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // Un libro por porcentaje registra con el mismo formulario del calendario (sin páginas inventadas)
+  if (trackUnit(chosen) === 'percent') {
+    return (
+      <div className="tray__ask">
+        <p className="tray__report-title">¡Sesión completada!</p>
+        <p>¿Por qué porcentaje vas en {chosen.title}?</p>
+        <ReadingEntryForm
+          date={dayKey()}
+          books={[chosen]}
+          bookId={chosen.id}
+          source="timer"
+          onDone={() => setReport({ title: chosen.title, pages: 0, percent: true })}
+          onCancel={onDone}
+        />
       </div>
     );
   }
@@ -74,7 +101,7 @@ function SessionReport({ book, onDone, onOpenCalendar }) {
         e.preventDefault();
         const before = progress(chosen);
         const after = chosen.pageCount ? Math.min(100, Math.round((target / chosen.pageCount) * 100)) : 0;
-        if (delta > 0) actions.setPage(chosen.id, target);
+        if (delta > 0) actions.setPage(chosen.id, target, 'timer');
         setReport({ title: chosen.title, pages: delta, gain: after - before, now: after, finished: target >= chosen.pageCount });
       }}
     >

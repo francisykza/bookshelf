@@ -1,7 +1,8 @@
 // Estado de la biblioteca (SPEC §5.1): reducer puro + persistencia en localStorage + acciones.
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { SAMPLE_EDITIONS, sampleBook, sampleBooks, sampleReadingLog } from '../data/sampleBooks';
-import { clampPage, createBook, newId, shelfSort, withStatus } from '../domain/books';
+import { clampPage, createBook, newId, normalizeRating, normalizeTotal, percentRead, roundTo, shelfSort, trackUnit, withPosition, withStatus, withTracking } from '../domain/books';
+import { appendEntry, bookLog, editEntry, isActive, normalizeLog, quickUpdate } from '../domain/reading';
 import { dayKey, timeOfDayByClock, weekKey } from '../domain/dates';
 import { EMPTY_COMPANION, applyTreasure } from '../domain/companion';
 import { EMPTY_FIGURES, grantSeal, initialFigures, markUnboxSeen, openBoxAttempt, openMysteryBox } from '../domain/figures';
@@ -36,10 +37,10 @@ const DEFAULT_SETTINGS = {
 function initialState() {
   const books = sampleBooks();
   return {
-    version: 5,
+    version: 6,
     books,
     settings: { ...DEFAULT_SETTINGS },
-    progress: { readingLog: sampleReadingLog(), pomodoros: [], claimed: {}, companion: { ...EMPTY_COMPANION }, figures: initialFigures(books) },
+    progress: { readingLog: normalizeLog(sampleReadingLog()), pomodoros: [], claimed: {}, companion: { ...EMPTY_COMPANION }, figures: initialFigures(books) },
   };
 }
 
@@ -80,7 +81,9 @@ export function hydrate(saved) {
     ...base,
     ...saved,
     books,
-    version: 5,
+    // v6 (1.20.0): libros con total opcional, porcentaje y valoración en cuartos (normalizados en createBook)
+    // y registros de lectura individuales con id (los agregados antiguos se conservan como «registrados»)
+    version: 6,
     // v2: el sonido pasa a estar activado por defecto (antes se guardaba apagado al recargar)
     settings: {
       ...DEFAULT_SETTINGS,
@@ -89,32 +92,35 @@ export function hydrate(saved) {
       timeOfDay: timeOfDayByClock(),
       timeAuto: true,
     },
-    progress: { ...base.progress, ...saved.progress, companion: { ...EMPTY_COMPANION, ...saved.progress?.companion }, figures },
+    progress: {
+      ...base.progress,
+      ...saved.progress,
+      readingLog: saved.progress?.readingLog ? normalizeLog(saved.progress.readingLog) : base.progress.readingLog,
+      companion: { ...EMPTY_COMPANION, ...saved.progress?.companion },
+      figures,
+    },
   };
 }
 
-/** Cambia la página de un libro registrando la lectura del día y las transiciones de estado. */
-function withPage(state, id, page, date = dayKey()) {
+/** Aplica la posición nueva de un libro (con sus cambios de estado). */
+const placeBook = (state, id, position, now) => state.books.map((b) => (b.id === id ? withPosition(b, position, now) : b));
+
+/** Leer hoy enciende un sello del Guardián (uno al día; las correcciones y las ediciones no). */
+const sealFor = (state, entry) =>
+  entry && isActive(entry) && entry.date === dayKey() ? grantSeal(state.progress.figures, entry.date, { bookId: entry.bookId }) : state.progress.figures;
+
+/** Botones rápidos de página (ficha, cama, temporizador): agrupados en un registro por libro y día. */
+function withQuick(state, id, target, source = 'quick') {
+  const book = state.books.find((b) => b.id === id);
+  if (!book) return state;
   const now = new Date().toISOString();
-  let delta = 0;
-  const books = state.books.map((b) => {
-    if (b.id !== id) return b;
-    const next = clampPage(b, page);
-    delta = next - b.currentPage;
-    const patch = { currentPage: next, updatedAt: now };
-    if (next > 0 && b.status === 'want') Object.assign(patch, { status: 'reading', startedAt: b.startedAt || now });
-    if (b.pageCount && next >= b.pageCount && b.status !== 'read') Object.assign(patch, { status: 'read', finishedAt: now });
-    if (next < b.pageCount && b.status === 'read') Object.assign(patch, { status: 'reading', finishedAt: null });
-    return { ...b, ...patch };
-  });
-  if (delta <= 0) return { ...state, books };
-  const log = [...state.progress.readingLog];
-  const found = log.findIndex((e) => e.date === date && e.bookId === id);
-  if (found >= 0) log[found] = { ...log[found], pages: log[found].pages + delta };
-  else log.push({ date, bookId: id, pages: delta });
-  // Leer hoy enciende un sello del Guardián (y carga la sinergia si el libro tiene su figura al lado)
-  const figures = date === dayKey() ? grantSeal(state.progress.figures, date, { bookId: id }) : state.progress.figures;
-  return { ...state, books, progress: { ...state.progress, readingLog: log, figures } };
+  const res = quickUpdate(book, state.progress.readingLog, target, { date: dayKey(), now, source });
+  if (!res) return state;
+  return {
+    ...state,
+    books: placeBook(state, id, res.position, now),
+    progress: { ...state.progress, readingLog: res.log, figures: sealFor(state, res.entry) },
+  };
 }
 
 function reducer(state, action) {
@@ -133,17 +139,27 @@ function reducer(state, action) {
           if ('review' in action.patch && action.patch.review.trim() && action.patch.review !== b.review) next.reviewedAt = now;
           if (action.patch.status === 'read' && b.status !== 'read') {
             next.finishedAt = now;
-            next.currentPage = b.pageCount;
+            next.currentPage = b.pageCount || 0;
+            next.currentPercent = 100;
           }
           if (action.patch.status === 'reading' && !b.startedAt) next.startedAt = now;
           if (action.patch.status && action.patch.status !== 'read') next.finishedAt = null;
-          if ('pageCount' in action.patch) next.currentPage = clampPage(next, next.currentPage);
+          if ('rating' in action.patch) next.rating = normalizeRating(action.patch.rating);
+          // Total desconocido → seguimiento por porcentaje conservando lo leído; total nuevo → página ajustada
+          if ('pageCount' in action.patch) {
+            next.pageCount = normalizeTotal(action.patch.pageCount);
+            if (!next.pageCount) Object.assign(next, { trackBy: 'percent', currentPercent: roundTo(percentRead(b), 1), currentPage: 0 });
+            else if (trackUnit(next) === 'pages') next.currentPage = clampPage(next, next.currentPage);
+            else next.currentPage = Math.round((next.pageCount * next.currentPercent) / 100);
+          }
           return next;
         }),
       };
     }
     case 'setPage':
-      return withPage(state, action.id, action.page);
+      return withQuick(state, action.id, action.page, action.source);
+    case 'setTracking':
+      return { ...state, books: state.books.map((b) => (b.id === action.id ? withTracking(b, action.unit) : b)) };
     case 'moveBook': {
       // Arrastrar un libro: cambia de balda si hace falta y queda delante de `beforeId` (o al final)
       let books = state.books.map((b) => (b.id === action.id ? withStatus(b, action.status) : b));
@@ -156,19 +172,35 @@ function reducer(state, action) {
       books = books.map((b) => (order.has(b.id) ? { ...b, shelfOrder: order.get(b.id) } : b));
       return { ...state, books };
     }
-    case 'addSession': {
-      // Sesión apuntada a mano desde el calendario: suma páginas al libro y al día elegido
-      const book = state.books.find((b) => b.id === action.id);
-      if (!book || action.pages <= 0) return state;
-      return withPage(state, action.id, book.currentPage + action.pages, action.date);
+    case 'logReading': {
+      // Registro completo ya validado (ReadingEntryForm); el mismo id dos veces no duplica (doble toque)
+      const { entry, position } = action;
+      const readingLog = appendEntry(state.progress.readingLog, entry);
+      if (readingLog === state.progress.readingLog || !state.books.some((b) => b.id === entry.bookId)) return state;
+      const now = entry.createdAt || new Date().toISOString();
+      return {
+        ...state,
+        books: position != null ? placeBook(state, entry.bookId, position, now) : state.books,
+        progress: { ...state.progress, readingLog, figures: sealFor(state, entry) },
+      };
+    }
+    case 'editSession': {
+      // Editar por id: recalcula el registro, no concede sellos; si es el último del libro, mueve la posición
+      const log = state.progress.readingLog;
+      const entry = log.find((e) => e.id === action.sessionId);
+      if (!entry) return state;
+      const book = state.books.find((b) => b.id === entry.bookId);
+      const res = editEntry(entry, book, action.text);
+      if (res.error) return state;
+      const mine = bookLog(log, entry.bookId);
+      const isLast = mine[mine.length - 1]?.id === entry.id;
+      const books = isLast && book && res.entry.to != null && res.entry.unit === trackUnit(book) ? placeBook(state, book.id, res.entry.to, new Date().toISOString()) : state.books;
+      return { ...state, books, progress: { ...state.progress, readingLog: log.map((e) => (e.id === entry.id ? res.entry : e)) } };
     }
     case 'removeSession':
       return {
         ...state,
-        progress: {
-          ...state.progress,
-          readingLog: state.progress.readingLog.filter((e) => !(e.date === action.date && e.bookId === action.id)),
-        },
+        progress: { ...state.progress, readingLog: state.progress.readingLog.filter((e) => e.id !== action.sessionId) },
       };
     case 'removeBook':
       return {
@@ -246,7 +278,7 @@ function reducer(state, action) {
       // Reclamar el sello de hoy si ya has leído (p. ej. si elegiste Guardián después de leer)
       if (action.op === 'today') {
         const today = dayKey();
-        const read = state.progress.readingLog.some((e) => e.date === today && e.pages > 0) || state.progress.pomodoros.some((p) => dayKey(new Date(p.at)) === today);
+        const read = state.progress.readingLog.some((e) => e.date === today && isActive(e)) || state.progress.pomodoros.some((p) => dayKey(new Date(p.at)) === today);
         if (read) next = grantSeal(fs, today);
       }
       return next === fs ? state : { ...state, progress: { ...state.progress, figures: next } };
@@ -305,9 +337,20 @@ export function LibraryProvider({ children }) {
     () => ({
       addBook: (book) => dispatch({ type: 'addBook', book }),
       updateBook: (id, patch) => dispatch({ type: 'updateBook', id, patch }),
-      setPage: (id, page) => dispatch({ type: 'setPage', id, page }),
-      addSession: (date, id, pages) => dispatch({ type: 'addSession', date, id, pages }),
-      removeSession: (date, id) => dispatch({ type: 'removeSession', date, id }),
+      setPage: (id, page, source) => dispatch({ type: 'setPage', id, page, source }),
+      setTracking: (id, unit) => dispatch({ type: 'setTracking', id, unit }),
+      logReading: (entry, position) => dispatch({ type: 'logReading', entry, position }),
+      editSession: (sessionId, text) => dispatch({ type: 'editSession', sessionId, text }),
+      removeSession: (sessionId) => dispatch({ type: 'removeSession', sessionId }),
+      // Escritura inmediata tras guardar una lectura: devuelve false si el almacenamiento falla (SPEC §14.6)
+      persistNow: () => {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(latest.current));
+          return true;
+        } catch {
+          return false;
+        }
+      },
       removeBook: (id) => dispatch({ type: 'removeBook', id }),
       moveBook: (id, status, beforeId) => dispatch({ type: 'moveBook', id, status, beforeId }),
       addQuote: (id, quote) => dispatch({ type: 'addQuote', id, quote }),

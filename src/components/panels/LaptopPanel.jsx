@@ -1,4 +1,4 @@
-// Portátil con pegatinas (SPEC §6): un escritorio de ordenador acogedor (fondo de la bahía, barra de menú
+// Portátil (SPEC §6): un escritorio de ordenador acogedor (fondo de la bahía, barra de menú
 // con reloj, dock de apps y ventana) con Calendario, Estadísticas, Sesiones, Reto anual y Misiones.
 import { BarChart3, BatteryMedium, CalendarDays, Check, Clock, Flame, Gift, Mail, Target, Trophy, Wifi, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -6,7 +6,8 @@ import { dayKey, daysLeftInYear, lastDays, parseDay, shortDay } from '../../doma
 import { useNow } from '../../hooks/useReducedMotion';
 import { SEALS_PER_BOX, rankOf } from '../../domain/figures';
 import { missionStatus } from '../../domain/missions';
-import { EDITIONS, hash, isDevice, spineColor } from '../../domain/books';
+import { EDITIONS, formatRating, hash, isDevice, spineColor } from '../../domain/books';
+import { isActive, summarize } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
 import { FigureArt, RANK_STARS } from '../figures/FigureArt';
 import { useFigureCatalog } from '../figures/figureCatalog';
@@ -30,12 +31,17 @@ const TABS = [
 function useStats(state) {
   return useMemo(() => {
     const { books, progress } = state;
+    // Páginas (las correcciones y los porcentajes suman 0) y días con lectura real, que cuentan para la racha
     const byDay = new Map();
-    progress.readingLog.forEach((e) => byDay.set(e.date, (byDay.get(e.date) ?? 0) + e.pages));
-    const days = lastDays(14).map((date) => ({ date, pages: byDay.get(date) ?? 0 }));
+    const activeDays = new Set();
+    progress.readingLog.forEach((e) => {
+      if (e.kind !== 'correction') byDay.set(e.date, (byDay.get(e.date) ?? 0) + (e.pages || 0));
+      if (isActive(e)) activeDays.add(e.date);
+    });
+    const days = lastDays(14).map((date) => ({ date, pages: byDay.get(date) ?? 0, active: activeDays.has(date) }));
     let streak = 0;
     for (let i = days.length - 1; i >= 0; i -= 1) {
-      if (days[i].pages > 0) streak += 1;
+      if (days[i].active) streak += 1;
       else if (i === days.length - 1) continue;
       else break;
     }
@@ -47,10 +53,11 @@ function useStats(state) {
     return {
       days,
       streak,
-      totalPages: progress.readingLog.reduce((s, e) => s + e.pages, 0),
+      totalPages: progress.readingLog.reduce((s, e) => s + (e.kind === 'correction' ? 0 : e.pages || 0), 0),
       weekPages: days.slice(-7).reduce((s, d) => s + d.pages, 0),
+      weekPercent: summarize(progress.readingLog.filter((e) => lastDays(7).includes(e.date)), books).percentBooks,
       readYear,
-      pagesYear: readYear.reduce((s, b) => s + b.pageCount, 0),
+      pagesYear: readYear.reduce((s, b) => s + (b.pageCount || 0), 0),
       avgRating: rated.length ? rated.reduce((s, b) => s + b.rating, 0) / rated.length : 0,
       quotes: books.reduce((s, b) => s + b.quotes.length, 0),
       genres: [...genres.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5),
@@ -108,6 +115,7 @@ function BookTower({ books }) {
   const sorted = [...books].sort((a, b) => (a.finishedAt || '').localeCompare(b.finishedAt || ''));
   const cm = sorted.reduce((sum, b) => sum + bookCm(b), 0);
   const pages = sorted.reduce((sum, b) => sum + (b.pageCount || 0), 0);
+  const unpaged = sorted.filter((b) => !b.pageCount).length;
   // 6 px por cm, encogiendo la torre si no cabe en la ventana
   const scale = Math.min(6, 220 / Math.max(1, cm));
   const passed = [...TOWER_MARKS].reverse().find((m) => cm >= m.cm);
@@ -117,7 +125,8 @@ function BookTower({ books }) {
       <figcaption>
         <strong>Torre de leídos {new Date().getFullYear()}</strong>
         <span>
-          {cm.toLocaleString('es-ES', { maximumFractionDigits: 1 })} cm · {pages.toLocaleString('es-ES')} págs. · {sorted.length} libros
+          {cm.toLocaleString('es-ES', { maximumFractionDigits: 1 })} cm · {pages.toLocaleString('es-ES')} págs.
+          {unpaged > 0 && ` (+${unpaged} sin paginación)`} · {sorted.length} libros
         </span>
         <em>{passed ? `¡Ya es ${passed.text}!` : 'Empieza a apilar tus lecturas'}{next ? ` Próxima meta: ${next.text} (${next.cm} cm).` : ''}</em>
       </figcaption>
@@ -141,7 +150,7 @@ function BookTower({ books }) {
                 className="tower__book"
                 data-edition={b.editionType}
                 style={{ height: h, width: `${w}%`, '--spine': spineColor(b), '--shift': `${((hash(b.title) % 9) - 4) * 2}px`, '--tilt': `${((hash(b.author) % 5) - 2) * 0.4}deg`, animationDelay: `${(sorted.length - i) * 70}ms` }}
-                title={`${b.title} · ${b.pageCount} págs.`}
+                title={b.pageCount ? `${b.title} · ${b.pageCount} págs.` : `${b.title} · sin paginación`}
               >
                 {h >= 11 && <span>{b.title}</span>}
               </div>
@@ -163,7 +172,7 @@ function MonthlyPages({ log }) {
   const nowMonth = new Date().getMonth();
   const months = MONTHS.map(() => 0);
   log.forEach((e) => {
-    if (e.date.startsWith(String(year))) months[Number(e.date.slice(5, 7)) - 1] += e.pages;
+    if (e.date.startsWith(String(year)) && e.kind !== 'correction') months[Number(e.date.slice(5, 7)) - 1] += e.pages || 0;
   });
   const max = Math.max(50, ...months);
   const [hover, setHover] = useState(null);
@@ -234,7 +243,10 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', onOpenVault }) {
   const now = useNow(30000);
   const current = TABS.find((t) => t.id === tab) ?? TABS[0];
   const CurrentIcon = current.icon;
-  const todayPages = state.progress.readingLog.filter((e) => e.date === dayKey()).reduce((sum, e) => sum + e.pages, 0);
+  const today = summarize(
+    state.progress.readingLog.filter((e) => e.date === dayKey()),
+    state.books,
+  );
 
   return (
     <PanelShell onClose={onClose} label="Portátil: estadísticas de lectura" variant="laptop">
@@ -257,7 +269,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', onOpenVault }) {
             </div>
             <div className="desk__note" aria-hidden="true">
               <b>Hoy</b>
-              <span>{todayPages ? `${todayPages} págs. leídas ♡` : 'Aún sin leer… ¿un capítulo?'}</span>
+              <span>{today.text ? `${today.text} ♡` : 'Aún sin leer… ¿un capítulo?'}</span>
             </div>
             <section className="window" aria-label={current.label}>
               <span className="washi washi--window" aria-hidden="true" />
@@ -282,7 +294,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', onOpenVault }) {
                   <div className="tile">
                     <span>Esta semana</span>
                     <strong>{stats.weekPages}</strong>
-                    <em>páginas</em>
+                    <em>páginas{stats.weekPercent > 0 && ` · y avance por % en ${stats.weekPercent} ${stats.weekPercent === 1 ? 'libro' : 'libros'}`}</em>
                   </div>
                   <div className="tile">
                     <span>Racha</span>
@@ -298,8 +310,8 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', onOpenVault }) {
                   </div>
                   <div className="tile">
                     <span>Valoración media</span>
-                    <strong>{stats.avgRating ? stats.avgRating.toFixed(1) : '—'}</strong>
-                    <em>estrellas</em>
+                    <strong>{stats.avgRating ? formatRating(Math.round(stats.avgRating * 100) / 100) : '—'}</strong>
+                    <em>{stats.avgRating ? 'estrellas de media' : 'sin valoraciones'}</em>
                   </div>
                 </div>
                 <PagesChart days={stats.days} />
@@ -456,10 +468,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', onOpenVault }) {
             </nav>
           </div>
         </div>
-        <div className="laptop__base" aria-hidden="true">
-          <span className="sticker sticker--flower">✿</span>
-          <span className="sticker sticker--cat">ᓚᘏᗢ</span>
-        </div>
+        <div className="laptop__base" aria-hidden="true" />
       </div>
     </PanelShell>
   );

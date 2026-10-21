@@ -4,7 +4,7 @@
 // de audiolibro. Además, post-its por cita guardada y cinta marcapáginas en los libros que estás leyendo.
 import { AudioLines, Headphones } from 'lucide-react';
 import { forwardRef, useState } from 'react';
-import { EDGE_NAMES, EDITIONS, QUOTE_COLORS, audioHours, hash, progress, spineColor, spineHeight, spineWidth, sprayedEdge } from '../../domain/books';
+import { EDGE_NAMES, EDITIONS, QUOTE_COLORS, audioHours, formatPercent, hash, percentRead, progress, ratingText, spineColor, spineHeight, spineWidth, sprayedEdge } from '../../domain/books';
 
 /** Portada tipográfica para libros sin imagen (o con la imagen rota). */
 export function GeneratedCover({ book }) {
@@ -92,7 +92,7 @@ export function EReaderScreen({ book }) {
       </span>
       <span className="ereader__bar">
         <span className="ereader__battery" style={{ '--b': `${level}%` }} title={`Batería ${level} %`} />
-        <span>{progress(book)} %</span>
+        <span>{formatPercent(percentRead(book))}</span>
       </span>
     </>
   );
@@ -112,9 +112,9 @@ export function AudioStrip({ book }) {
 function describe(book) {
   const parts = [`${book.title}, de ${book.author}`, EDITIONS[book.editionType]?.short];
   if (book.editionType === 'audiobook') parts.push(`${audioHours(book)} horas`);
-  else parts.push(`${book.pageCount} páginas`);
-  if (book.status === 'reading') parts.push(`leyendo, ${progress(book)} %`);
-  if (book.rating) parts.push(`${book.rating} estrellas`);
+  else parts.push(book.pageCount ? `${book.pageCount} páginas` : 'sin paginación');
+  if (book.status === 'reading') parts.push(`leyendo, ${formatPercent(percentRead(book))}`);
+  if (book.rating) parts.push(ratingText(book.rating));
   if (book.quotes.length) parts.push(`${book.quotes.length} citas`);
   return parts.filter(Boolean).join(' · ');
 }

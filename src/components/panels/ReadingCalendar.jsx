@@ -1,11 +1,14 @@
-// Apps del portátil (SPEC §6): Calendario de lectura (portadas de lo que leíste cada día, páginas y
-// porcentaje avanzado) y Sesiones (registro cronológico, editable).
-import { ChevronLeft, ChevronRight, Coffee, Flame, Plus, Trash2, X } from 'lucide-react';
+// Apps del portátil (SPEC §6, §14): Calendario de lectura (portadas de lo que leíste cada día con el dato de
+// ese día) y Sesiones (registro cronológico). Cada lectura es un registro propio: se ve, se edita y se borra
+// por su id, agrupada por libro, y siempre con la posición que tenía el libro al registrarla.
+import { Check, ChevronLeft, ChevronRight, Coffee, Flame, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { dayKey, parseDay } from '../../domain/dates';
-import { progress } from '../../domain/books';
+import { hash } from '../../domain/books';
+import { dayDatum, editEntry, entryInput, entryText, groupByDay, heat, isActive, summarize } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
 import { Cover } from '../shelf/BookItem';
+import { ReadingEntryForm } from './ReadingEntryForm';
 
 const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
@@ -25,70 +28,113 @@ function usePomodoros(state) {
   }, [state.progress.pomodoros]);
 }
 
-/** Lecturas agrupadas por día: { [date]: [{ book, pages, pct }] } con el libro más leído primero. */
+/** Lecturas por día y libro, con todos sus registros individuales. */
 function useDays(state) {
-  return useMemo(() => {
-    const byId = new Map(state.books.map((b) => [b.id, b]));
-    const days = {};
-    state.progress.readingLog.forEach((e) => {
-      const book = byId.get(e.bookId);
-      if (!book || e.pages <= 0) return;
-      (days[e.date] ??= []).push({ book, pages: e.pages, pct: book.pageCount ? Math.round((e.pages / book.pageCount) * 100) : 0 });
-    });
-    Object.values(days).forEach((list) => list.sort((a, b) => b.pages - a.pages));
-    return days;
-  }, [state.books, state.progress.readingLog]);
+  return useMemo(() => groupByDay(state.progress.readingLog, state.books), [state.books, state.progress.readingLog]);
 }
 
-function heat(pages) {
-  if (!pages) return 0;
-  if (pages < 15) return 1;
-  if (pages < 35) return 2;
-  if (pages < 60) return 3;
-  return 4;
-}
-
-function AddSession({ date, onDone }) {
-  const { state, actions } = useLibrary();
-  const candidates = state.books.filter((b) => b.status !== 'read' || b.id === state.settings.currentBookId);
-  const [bookId, setBookId] = useState(candidates.find((b) => b.status === 'reading')?.id ?? candidates[0]?.id ?? '');
-  const [pages, setPages] = useState(20);
-  if (!candidates.length) return <p className="cal-pop__empty">No hay libros que puedas seguir leyendo.</p>;
+/**
+ * Portada de calendario (SPEC §14.10): pequeña pieza editorial con lomo, canto de páginas y un giro
+ * determinista por id; los e-readers van en su marco de tinta electrónica. No afecta a la estantería.
+ */
+export function CalCover({ book }) {
+  const tilt = ((hash(book.id) % 41) - 20) / 10;
   return (
-    <form
-      className="cal-pop__form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        actions.addSession(date, bookId, Math.max(1, Number(pages) || 1));
-        onDone();
-      }}
-    >
-      <select value={bookId} onChange={(e) => setBookId(e.target.value)} aria-label="Libro leído">
-        {candidates.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.title}
-          </option>
-        ))}
-      </select>
-      <input type="number" min="1" max="2000" value={pages} onChange={(e) => setPages(e.target.value)} aria-label="Páginas leídas" />
-      <span>págs.</span>
-      <button type="submit" className="stamp-btn stamp-btn--small">
-        Apuntar
-      </button>
-    </form>
+    <span className="cal-cover" data-device={book.editionType === 'kindle' || undefined} style={{ '--tilt': `${tilt}deg` }}>
+      <Cover book={book} />
+    </span>
   );
 }
 
-function DayPopover({ date, entries, pomodoro, onClose }) {
+const candidatesOf = (state) => state.books.filter((b) => b.status !== 'read' || b.id === state.settings.currentBookId);
+
+/** Una fila del historial: lo que se registró, con edición y borrado de ESE registro. */
+function EntryRow({ entry, book }) {
   const { actions } = useLibrary();
-  const [adding, setAdding] = useState(!entries.length);
-  const total = entries.reduce((s, e) => s + e.pages, 0);
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState('');
+  const check = editing && text.trim() ? editEntry(entry, book, text) : null;
+  const label = entryText(entry);
+  if (editing) {
+    return (
+      <li className="entry-row" data-editing="true">
+        <form
+          className="entry-row__edit"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!check?.entry) return;
+            actions.editSession(entry.id, text);
+            setEditing(false);
+          }}
+        >
+          <input value={text} onChange={(e) => setText(e.target.value)} inputMode="decimal" aria-label={`Nuevo valor para «${label}»`} aria-invalid={!!check?.error || undefined} autoFocus />
+          <button type="submit" className="icon-btn icon-btn--tiny" disabled={!check?.entry} aria-label="Guardar el cambio">
+            <Check aria-hidden="true" />
+          </button>
+          <button type="button" className="icon-btn icon-btn--tiny" onClick={() => setEditing(false)} aria-label="Cancelar la edición">
+            <X aria-hidden="true" />
+          </button>
+          <small className={check?.error ? 'reading-form__error' : 'reading-form__help'} role={check?.error ? 'alert' : undefined}>
+            {check?.error ?? (check?.entry ? `Quedará: ${entryText(check.entry)}` : 'Escribe el valor corregido.')}
+          </small>
+        </form>
+      </li>
+    );
+  }
+  return (
+    <li className="entry-row" data-kind={entry.kind}>
+      <span className="entry-row__text">{label}</span>
+      <button
+        type="button"
+        className="icon-btn icon-btn--tiny"
+        onClick={() => {
+          setText(entryInput(entry));
+          setEditing(true);
+        }}
+        aria-label={`Editar «${label}» de ${book.title}`}
+      >
+        <Pencil aria-hidden="true" />
+      </button>
+      <button type="button" className="icon-btn icon-btn--tiny" onClick={() => actions.removeSession(entry.id)} aria-label={`Borrar «${label}» de ${book.title}`}>
+        <Trash2 aria-hidden="true" />
+      </button>
+    </li>
+  );
+}
+
+/** Un libro del día con sus registros (varias sesiones del mismo libro se ven por separado). */
+function BookGroup({ group, author }) {
+  const { book, entries } = group;
+  return (
+    <li className="day-group">
+      <span className="cal-pop__cover">
+        <CalCover book={book} />
+      </span>
+      <span className="cal-pop__text">
+        <b>{book.title}</b>
+        {author && <em>{book.author}</em>}
+        <ul className="day-group__entries">
+          {entries.map((e) => (
+            <EntryRow key={e.id} entry={e} book={book} />
+          ))}
+        </ul>
+      </span>
+    </li>
+  );
+}
+
+function DayPopover({ date, groups, pomodoro, onClose }) {
+  const { state } = useLibrary();
+  const [adding, setAdding] = useState(!groups.length);
+  const summary = summarize(groups.flatMap((g) => g.entries), state.books);
   const future = date > dayKey();
+  const candidates = candidatesOf(state);
   return (
     <div className="cal-pop" role="dialog" aria-label={`Lectura del ${fmtDay(date, { day: 'numeric', month: 'long' })}`}>
       <div className="cal-pop__head">
         <strong>
-          {fmtDay(date, { weekday: 'long', day: 'numeric', month: 'short' })} · {total} págs.
+          {fmtDay(date, { weekday: 'long', day: 'numeric', month: 'short' })}
+          {summary.text && ` · ${summary.text}`}
         </strong>
         <button type="button" className="icon-btn icon-btn--tiny" onClick={onClose} aria-label="Cerrar">
           <X aria-hidden="true" />
@@ -99,30 +145,21 @@ function DayPopover({ date, entries, pomodoro, onClose }) {
           <Coffee aria-hidden="true" /> {pomodoro.count} {pomodoro.count === 1 ? 'sesión cozy' : 'sesiones cozy'} · {pomodoro.minutes} min
         </p>
       )}
-      {entries.length > 0 && (
+      {groups.length > 0 && (
         <ul className="cal-pop__list">
-          {entries.map(({ book, pages, pct }) => (
-            <li key={book.id}>
-              <span className="cal-pop__cover">
-                <Cover book={book} />
-              </span>
-              <span className="cal-pop__text">
-                <b>{book.title}</b>
-                <em>
-                  {pages} págs. · +{pct} % · va por el {progress(book)} %
-                </em>
-              </span>
-              <button type="button" className="icon-btn icon-btn--tiny" onClick={() => actions.removeSession(date, book.id)} aria-label={`Borrar la sesión de ${book.title}`}>
-                <Trash2 aria-hidden="true" />
-              </button>
-            </li>
+          {groups.map((g) => (
+            <BookGroup key={g.book.id} group={g} />
           ))}
         </ul>
       )}
       {future ? (
         <p className="cal-pop__empty">Este día aún no ha llegado.</p>
       ) : adding ? (
-        <AddSession date={date} onDone={() => setAdding(false)} />
+        candidates.length ? (
+          <ReadingEntryForm date={date} books={candidates} onDone={() => setAdding(false)} onCancel={groups.length ? () => setAdding(false) : undefined} />
+        ) : (
+          <p className="cal-pop__empty">No hay libros que puedas seguir leyendo.</p>
+        )
       ) : (
         <button type="button" className="cal-pop__add" onClick={() => setAdding(true)}>
           <Plus aria-hidden="true" /> Apuntar otra lectura
@@ -178,11 +215,12 @@ export function CalendarApp() {
   }, [month]);
 
   const monthDays = cells.filter(Boolean);
-  const monthPages = monthDays.reduce((s, d) => s + (days[d]?.reduce((a, e) => a + e.pages, 0) ?? 0), 0);
-  const readDays = monthDays.filter((d) => days[d]).length;
-  const monthBooks = new Set(monthDays.flatMap((d) => (days[d] ?? []).map((e) => e.book.id))).size;
+  const monthEntries = monthDays.flatMap((d) => (days[d] ?? []).flatMap((g) => g.entries));
+  const monthSummary = summarize(monthEntries, state.books);
+  const readDays = monthDays.filter((d) => (days[d] ?? []).some((g) => g.entries.some(isActive))).length;
+  const monthBooks = new Set(monthEntries.map((e) => e.bookId)).size;
   const best = monthDays.reduce((acc, d) => {
-    const p = days[d]?.reduce((a, e) => a + e.pages, 0) ?? 0;
+    const p = days[d]?.reduce((a, g) => a + g.pages, 0) ?? 0;
     return p > acc.p ? { d, p } : acc;
   }, { d: null, p: 0 });
   const shift = (n) => {
@@ -203,8 +241,13 @@ export function CalendarApp() {
       </div>
       <div className="cal__summary">
         <span>
-          <b>{monthPages.toLocaleString('es-ES')}</b> páginas
+          <b>{monthSummary.pages.toLocaleString('es-ES')}</b> páginas
         </span>
+        {monthSummary.percentBooks > 0 && (
+          <span>
+            avance por % en <b>{monthSummary.percentBooks}</b> {monthSummary.percentBooks === 1 ? 'libro' : 'libros'}
+          </span>
+        )}
         <span>
           <b>{readDays}</b> días leyendo
         </span>
@@ -225,47 +268,50 @@ export function CalendarApp() {
         ))}
         {cells.map((date, i) => {
           if (!date) return <span key={`e${i}`} className="cal__blank" />;
-          const entries = days[date] ?? [];
-          const pages = entries.reduce((s, e) => s + e.pages, 0);
+          const groups = days[date] ?? [];
+          const datum = dayDatum(groups);
+          const level = heat(groups);
           const col = i % 7;
           return (
             <div key={date} className="cal__cellwrap">
               <button
                 type="button"
                 className="cal__cell"
-                data-heat={heat(pages)}
+                data-heat={level}
                 data-today={date === today}
                 data-future={date > today}
                 aria-pressed={open === date}
-                aria-label={`${fmtDay(date, { day: 'numeric', month: 'long' })}: ${pages ? `${pages} páginas, ${entries.map((e) => e.book.title).join(', ')}` : 'sin lectura'}`}
+                aria-label={`${fmtDay(date, { day: 'numeric', month: 'long' })}: ${groups.length ? `${datum.label ? `${datum.label}, ` : ''}${groups.map((g) => g.book.title).join(', ')}` : 'sin lectura'}`}
                 onClick={() => setOpen(open === date ? null : date)}
               >
                 <span className="cal__num">{parseDay(date).getDate()}</span>
-                {entries.length > 1 && <span className="cal__more">+{entries.length - 1}</span>}
-                {entries.length > 0 && (
-                  <span className="cal__covers">
-                    {entries.slice(0, 2).map((e, k) => (
-                      <span key={e.book.id} className="cal__cover" data-k={k}>
-                        <Cover book={e.book} />
+                {groups.length > 2 && <span className="cal__more">+{groups.length - 2}</span>}
+                {groups.length > 0 && (
+                  <span className="cal__covers" data-count={Math.min(2, groups.length)}>
+                    {groups.slice(0, 2).map((g, k) => (
+                      <span key={g.book.id} className="cal__cover" data-k={k}>
+                        <CalCover book={g.book} />
                       </span>
                     ))}
                   </span>
                 )}
+                {groups.length > 0 && <span className="cal__tab" aria-hidden="true" />}
                 {pomos[date] && (
                   <span className="cal__cozy" title={`${pomos[date].count} sesiones cozy`}>
                     <Coffee aria-hidden="true" />
                   </span>
                 )}
-                {pages > 0 && (
-                  <span className="cal__pages">
-                    {heat(pages) >= 3 && <Flame aria-hidden="true" />}
-                    {pages}
+                {datum.text && (
+                  <span className="cal__pages" data-kind={datum.kind}>
+                    {datum.kind === 'pages' && level >= 3 && <Flame aria-hidden="true" />}
+                    {datum.text}
+                    {datum.kind === 'pages' && <span className="cal__unit">{' págs.'}</span>}
                   </span>
                 )}
               </button>
               {open === date && !narrow && (
                 <div className="cal__popwrap" data-side={col >= 4 ? 'left' : 'right'}>
-                  <DayPopover date={date} entries={entries} pomodoro={pomos[date]} onClose={() => setOpen(null)} />
+                  <DayPopover date={date} groups={groups} pomodoro={pomos[date]} onClose={() => setOpen(null)} />
                 </div>
               )}
             </div>
@@ -274,7 +320,7 @@ export function CalendarApp() {
       </div>
       {narrow && open && (
         <div ref={panelRef} className="cal__daypanel">
-          <DayPopover date={open} entries={days[open] ?? []} pomodoro={pomos[open]} onClose={() => setOpen(null)} />
+          <DayPopover date={open} groups={days[open] ?? []} pomodoro={pomos[open]} onClose={() => setOpen(null)} />
         </div>
       )}
       <p className="cal__legend">
@@ -283,53 +329,46 @@ export function CalendarApp() {
           <i key={h} data-heat={h} />
         ))}
         <span>Más páginas</span>
+        <i data-heat="pct" className="cal__legend-pct" />
+        <span>Lectura por %</span>
       </p>
     </div>
   );
 }
 
 export function SessionsApp() {
-  const { state, actions } = useLibrary();
+  const { state } = useLibrary();
   const days = useDays(state);
   const dates = Object.keys(days).sort().reverse();
   const pomodoros = state.progress.pomodoros;
   const [adding, setAdding] = useState(false);
+  const candidates = candidatesOf(state);
   return (
     <div className="sessions">
       <div className="sessions__top">
         <p>
           {dates.length} días con lectura · {pomodoros.length} sesiones cozy con temporizador
         </p>
-        <button type="button" className="stamp-btn stamp-btn--small" onClick={() => setAdding((v) => !v)}>
+        <button type="button" className="stamp-btn stamp-btn--small" onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
           <Plus aria-hidden="true" /> Apuntar lectura de hoy
         </button>
       </div>
-      {adding && <AddSession date={dayKey()} onDone={() => setAdding(false)} />}
+      {adding && (
+        <div className="sessions__form">
+          <ReadingEntryForm date={dayKey()} books={candidates} onDone={() => setAdding(false)} onCancel={() => setAdding(false)} />
+        </div>
+      )}
       {!dates.length && <p className="cal-pop__empty">Todavía no hay sesiones. Avanza páginas en un libro o usa el temporizador.</p>}
       <ol className="sessions__list">
         {dates.map((date) => (
           <li key={date}>
             <h4>
               {fmtDay(date, { weekday: 'long', day: 'numeric', month: 'long' })}
-              <span>{days[date].reduce((s, e) => s + e.pages, 0)} págs.</span>
+              <span>{summarize(days[date].flatMap((g) => g.entries), state.books).text}</span>
             </h4>
             <ul>
-              {days[date].map(({ book, pages, pct }) => (
-                <li key={book.id}>
-                  <span className="cal-pop__cover">
-                    <Cover book={book} />
-                  </span>
-                  <span className="cal-pop__text">
-                    <b>{book.title}</b>
-                    <em>
-                      {book.author} · {pages} págs. (+{pct} %)
-                    </em>
-                  </span>
-                  <span className="sessions__bar" style={{ '--p': `${Math.min(100, pct * 4)}%` }} aria-hidden="true" />
-                  <button type="button" className="icon-btn icon-btn--tiny" onClick={() => actions.removeSession(date, book.id)} aria-label={`Borrar la sesión de ${book.title}`}>
-                    <Trash2 aria-hidden="true" />
-                  </button>
-                </li>
+              {days[date].map((g) => (
+                <BookGroup key={g.book.id} group={g} author />
               ))}
             </ul>
           </li>

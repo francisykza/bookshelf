@@ -2,10 +2,11 @@
 // con la cámara de dos estados (`ROOM_VIEW` ↔ `SHELF_VIEW`) y todos los objetos diegéticos.
 // 1.8.0: habitación viva sin botones encima, datos reales sobre los objetos y parallax de tres capas
 // (mar y cielo lejos, la habitación en medio y la cama en primer plano).
+import { summarize } from '../../domain/reading';
 import { Cloud, CloudOff, Maximize, Minimize, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { chime, lampClick, matchStrike } from '../../audio/ambientAudio';
-import { currentBook } from '../../domain/books';
+import { currentBook, progressLabel } from '../../domain/books';
 import { dayKey } from '../../domain/dates';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { useRoomCamera } from '../../hooks/useRoomCamera';
@@ -171,7 +172,10 @@ export function CozyRoom({ k, camera, view, interactive = true, hidden = false, 
   const readThisYear = books.filter((b) => b.status === 'read' && b.finishedAt?.startsWith(String(new Date().getFullYear()))).length;
   const timerText = timer.running ? `${timer.phase === 'focus' ? 'Leyendo' : 'Descanso'} · ${formatTimer(timer.remaining)}` : null;
   const today = dayKey();
-  const todayPages = progress.readingLog.filter((e) => e.date === today).reduce((sum, e) => sum + e.pages, 0);
+  const todaySummary = summarize(
+    progress.readingLog.filter((e) => e.date === today),
+    books,
+  );
   const streak = readingStreak(progress.readingLog);
 
 
@@ -231,7 +235,7 @@ export function CozyRoom({ k, camera, view, interactive = true, hidden = false, 
             <div className="layer-front">
               <FrontLayer />
               <TeaDrain level={teaLevel} />
-              <LaptopPostit streak={streak} todayPages={todayPages} />
+              <LaptopPostit streak={streak} todayPages={todaySummary.pages} todayPercent={todaySummary.percentBooks} />
               <Hotspot
                 id="book"
                 spot={spot === 'book'}
@@ -241,7 +245,7 @@ export function CozyRoom({ k, camera, view, interactive = true, hidden = false, 
                 onActivate={() => (reading ? onOpenBook(reading) : onOpenShelf())}
                 label={
                   reading
-                    ? { title: reading.title, text: reading.author, meta: `Pág. ${reading.currentPage} de ${reading.pageCount}`, aria: `Leyendo ahora: ${reading.title}, de ${reading.author}, página ${reading.currentPage} de ${reading.pageCount}. Abrir libro` }
+                    ? { title: reading.title, text: reading.author, meta: progressLabel(reading), aria: `Leyendo ahora: ${reading.title}, de ${reading.author}, ${progressLabel(reading).toLowerCase()}. Abrir libro` }
                     : { title: 'Ningún libro abierto', text: 'Elige uno en tu librería' }
                 }
               />

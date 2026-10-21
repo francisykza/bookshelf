@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.19.0 · 2026-10-21 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.20.0 · 2026-10-21 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -969,3 +969,174 @@ El cambio de hora es una transición de opacidad de 450 ms, sin animar `filter`.
   - diez aperturas sin acumular listeners, temporizadores ni RAF.
 - **Viewports**: 360×800, 390×844, 412×915, 844×390 y 1440×900, sin controles inaccesibles.
 - **Pruebas**: historial sin entradas duplicadas, restauración de vista y panel, idempotencia del intento, consumo único de caja, recuperación del resultado y transiciones interrumpidas.
+
+## 14. Portátil limpio, cuartos de estrella y progreso por páginas o porcentaje (1.20.0)
+
+### 14.1 Estado encontrado
+
+- **Marca del portátil.** `LaptopPanel` pintaba dos pegatinas (`.sticker--flower` ✿ y `.sticker--cat`
+  ᓚᘏᗢ, la «marca manuscrita») dentro de `.laptop__base`, subidas 40 px con `top: -40px`. Quedaban sobre la
+  esquina inferior derecha de la pantalla, justo donde cae el último icono del dock (la carta, «Sobre del
+  día»). Se retiran el JSX y sus estilos exclusivos; `.laptop__base::after` (la muesca de la bisagra) se
+  queda porque no sale de la base.
+- **Reflejo de la tapa.** `lid-sheen` usaba un `linearGradient` en unidades de caja (`x2=1, y2=0.35`) sobre un
+  rectángulo de 120 × 290 px. Con ese vector diagonal, la esquina inferior izquierda del rectángulo cae en el
+  31 % del gradiente (opacidad ≈ 0,24) y la superior derecha en el 89 % (≈ 0,08): el borde vertical del
+  rectángulo era visible dentro de la tapa como una franja de corte limpio. No había fondo opaco ni IDs
+  repetidos (`useSvgIds`), y el recorte (`clip-lid`, `userSpaceOnUse`) ya estaba en un grupo estático.
+- **Valoraciones.** Enteras de 1 a 5 con `0` = sin valorar; las estrellas se pintaban con `'★'.repeat()`.
+- **Lecturas.** `readingLog` guardaba una sola fila por día y libro (`{date, bookId, pages}`) que se
+  acumulaba; el calendario calculaba «va por el X %» con la página de **hoy**, y borrar una lectura
+  eliminaba todas las del libro en ese día. No había forma de registrar porcentaje ni libros sin total.
+- **Supabase.** La tabla `libraries` guarda el estado completo en `data jsonb`: valoraciones y sesiones son
+  números de JSON, no columnas. **No hace falta migración SQL**; `version` (integer) pasa a 6.
+
+### 14.2 Portátil
+
+- Sin decoraciones sobre la pantalla ni sobre el dock. El nombre «☕ BookShelf» de la barra superior se queda.
+- Cada botón del dock mide al menos 44 × 44 px (en móvil, icono de 38 px dentro de un área de 44 px), el
+  dock tiene `flex-shrink: 0` y deja 10 px hasta el borde inferior de la pantalla. Si no cabe, se reduce el
+  hueco entre iconos antes que el área táctil.
+- Comprobación: `elementFromPoint()` en el centro y en los cuatro bordes (a 2 px) del botón de la carta
+  devuelve el botón o un hijo suyo.
+
+### 14.3 Reflejo de la tapa
+
+- Grupo exterior con `clip-path` estático al polígono `LAPTOP_LID` (`clipPathUnits="userSpaceOnUse"`, en
+  píxeles de escena); grupo interior que solo se desplaza; dentro, un paralelogramo sin fondo ni trazo.
+- Gradiente horizontal: 0 % y 35 % transparentes, 50 % `#FFF1D2` a opacidad 0,10, 65 % y 100 % transparentes.
+  Los dos lados del paralelogramo caen en tramos de opacidad 0, así que no hay borde visible.
+- Ciclo de 14 s: la pasada visible dura ≈ 3 s (del 78 % al 100 %); el resto del ciclo la banda espera fuera
+  de la tapa (a la izquierda), y al reiniciar salta de fuera-derecha a fuera-izquierda sin verse.
+  `mix-blend-mode: normal`, sin filtros animados ni `backdrop-filter`.
+- Con movimiento reducido (`prefers-reduced-motion` o `html[data-motion='reduced']`) no se pinta.
+- Se mueve con la capa de primer plano y con la cámara porque vive en el mismo SVG que el recorte.
+
+### 14.4 Valoraciones en cuartos de estrella
+
+- Contrato: `rating` es `0` (sin valorar, la convención existente) o un número de 0,25 a 5 en pasos de 0,25.
+- `normalizeRating(v)`: no finito, vacío o ≤ 0 → `0`; > 5 → 5; el resto se lleva al cuarto más cercano con
+  mínimo 0,25. Nunca `parseInt`, `Math.floor` ni redondeo a enteros. Las enteras no cambian.
+- Datos antiguos fuera de contrato (p. ej. 3,3 o 7): se normalizan al cargar y el valor original se conserva
+  en `ratingOriginal` para no perderlo en silencio.
+- Interfaz (`RatingInput`): cinco estrellas (cada una es un botón que da esa nota entera), valor visible
+  «3,75 / 5», control de rango `step="0.25"` con nombre «Valoración» y texto «3,75 de 5 estrellas», botones
+  −0,25 / +0,25 de 44 × 44 px y «Quitar valoración». Las estrellas decorativas no se anuncian.
+- Representación (`RatingStars`): contorno `#B89C64`, relleno `#C59B27`, papel suave vacío; la estrella `i`
+  rellena `clamp(rating − i, 0, 1)` de su ancho con un recorte horizontal (SVG apilados, sin caracteres
+  Unicode ni IDs). Se usa en la ficha, el Muro de recuerdos, el Atlas de sagas y la media de Estadísticas
+  (con dos decimales como máximo).
+
+### 14.5 Modelo de progreso
+
+- `pageCount`: entero positivo o `null` (total desconocido). Un `0` o un valor no válido de datos antiguos
+  pasa a `null`.
+- `trackBy`: `'pages'` o `'percent'`. Sin total, siempre `'percent'`. El formato Kindle no lo decide: un
+  ebook con páginas puede seguirse por páginas y cualquier libro con total puede pasar a porcentaje.
+- Fuente de verdad según la unidad: `currentPage` (páginas) o `currentPercent` (0–100, un decimal). El otro
+  campo es derivado y se reescribe siempre a la vez (con total conocido); sin total, `currentPage` es 0 y
+  nunca se muestra «página X de Y».
+- Cambiar de unidad convierte la posición actual con el total (`page = round(total × % / 100)`, o
+  `% = página / total × 100` a un decimal). El historial conserva la unidad de cada registro.
+- Sin total: no hay horas restantes por páginas/hora ni páginas ficticias.
+- Entrada: páginas enteras ≥ 0 y ≤ total; porcentaje finito de 0 a 100 con un decimal como máximo; se acepta
+  coma o punto decimal; vacío, separadores de miles, signos o letras se rechazan con un mensaje junto al campo.
+
+### 14.6 Registro de lecturas (`progress.readingLog`)
+
+Cada registro es independiente:
+
+| Campo | Significado |
+| --- | --- |
+| `id` | Identificador estable |
+| `bookId`, `date` | Libro y día local de lectura (`YYYY-MM-DD`) |
+| `createdAt` | Momento en que se apuntó |
+| `kind` | `'read'` (lectura) o `'correction'` (corrección de posición) |
+| `unit` | `'pages'` o `'percent'` |
+| `mode` | `'added'` (he leído N), `'page'` (voy por la página), `'percent'` (voy por el %) |
+| `from`, `to` | Posición anterior conocida y posición final (`null` si no se conocen) |
+| `pages` | Páginas leídas que cuentan para estadísticas y misiones (0 en porcentaje y correcciones) |
+| `delta` | Avance en su unidad (páginas o puntos porcentuales), `null` si no se conoce |
+| `total` | Total de páginas usado al registrar (`null` si no había) |
+| `active` | Cuenta como día de lectura (racha y sello) |
+| `source` | `'form'`, `'quick'` (botones ±), `'timer'` o `'legacy'` |
+| `entered` | Valor tecleado cuando se convirtió de unidad (p. ej. `{percent: 47.6}`) |
+
+- **Posición anterior.** Si no hay registros posteriores del libro, es la posición actual del libro (si es
+  mayor que 0 o ya hay historial con posición). Si el registro es retrospectivo, es la última posición
+  conocida anterior a esa fecha en la misma unidad. Sin posición fiable, `from = null` y no se atribuye
+  avance: el primer «42,5 %» de un ebook es solo una posición.
+- **Retrospectivo.** Un registro de un día anterior nunca baja la posición actual; solo la sube si es el más
+  reciente del libro. Si choca con un registro posterior (posición mayor que la de un día siguiente), la
+  vista previa lo avisa; no se reajusta el historial.
+- **Retroceso.** Una posición menor que la anterior se ofrece como corrección («Guardar corrección»). Una
+  corrección no suma páginas, no cuenta para racha, sellos, cajas ni misiones.
+- **Botones rápidos** (±1, ±10 de la ficha, +5 de la cama): se agrupan en un único registro `quick` por
+  libro y día mientras sea el último del libro; deshacer hasta la posición de partida lo elimina.
+- **Edición y borrado** por `id`. Editar recalcula `pages`/`delta` del registro, no concede sellos y, si es
+  el registro más reciente del libro, actualiza la posición actual. Borrar quita solo ese registro.
+- **Idempotencia.** Guardar repite el mismo `id` hasta que termina: un doble toque no duplica. Los sellos
+  siguen limitados a uno al día (`grantSeal`) y solo los concede un registro nuevo y `active` de hoy.
+- **Persistencia.** El guardado es local y síncrono; tras guardar se escribe al momento en `localStorage`
+  y, si falla, el formulario conserva sus datos y permite reintentar con el mismo `id`. La nube se
+  sincroniza aparte (si no hay red queda pendiente y se reintenta como hasta ahora).
+
+### 14.7 Migración v6 (aditiva)
+
+- Libros: `pageCount` normalizado, `trackBy` (`'pages'` si hay total), `currentPercent` derivado,
+  `rating` normalizado (§14.4). IDs, fechas, estado, citas e inventario no cambian.
+- Registros antiguos: conservan `date`, `bookId` y `pages`; reciben `id` determinista
+  (`legacy-<fecha>-<libro>`), `kind: 'read'`, `unit: 'pages'`, `source: 'legacy'`, `from/to: null`,
+  `delta = pages` y `active = pages > 0`. Se muestran como «22 páginas registradas», sin inventar posición.
+- No se recalculan sellos, cajas, pity ni misiones reclamadas. La migración es idempotente.
+
+### 14.8 Formulario «Guardar lectura»
+
+- Selector de modalidad (solo una activa): «He leído» (páginas añadidas, solo con seguimiento por páginas),
+  «Voy por la página» (muestra el total) y «Voy por el porcentaje». Cada una cambia etiqueta, ayuda y
+  validación. Por defecto: porcentaje si el libro se sigue por porcentaje; si no, la última modalidad usada
+  con ese libro o «He leído».
+- En un libro por páginas, el porcentaje se convierte a página y se muestra antes de guardar
+  («= página 200 de 420 · 47,6 %»).
+- Vista previa con posición final y avance por separado: «Página 200 de 420 · +15 páginas»,
+  «42,5 % leído · +7,5 puntos porcentuales» o solo «42,5 % leído» si no hay posición anterior. Cuando el
+  avance no se conoce aparece la casilla «Este día leí (cuenta para la racha)».
+- Botón «Guardar lectura» (44 px), deshabilitado mientras guarda. Una columna en pantallas estrechas,
+  entradas de 16 px, Lora para el texto, JetBrains Mono para las cifras, tinta `#2C1E14`, papel `#FAF5E8`,
+  borde `1px solid rgba(146,112,61,.30)`, radio 10 px.
+- El mismo componente (`ReadingEntryForm`) se usa en el calendario, en Sesiones, en la ficha de los libros
+  por porcentaje («Actualizar %» de la cama abre esa ficha) y en el temporizador para libros por porcentaje.
+
+### 14.9 Estadísticas, rachas y calendario
+
+- Páginas y porcentajes nunca se suman: «22 páginas · avance registrado en 1 ebook».
+- Puntos porcentuales: `+7,5 pp` en espacio reducido y «puntos porcentuales» en el detalle; un avance
+  positivo menor de 0,1 se muestra «<0,1 pp», nunca «+0 %».
+- Racha, sello del día y misiones usan `active` y `pages`; las misiones de páginas no cuentan porcentajes.
+- Mapa de calor: escala por páginas; un día con solo porcentaje usa el estado «lectura por %» (papel con
+  trama azul pizarra), con su entrada en la leyenda.
+- Ficha y cama de un libro sin páginas: «42,5 % leído», sin «pág. X de Y»; el botón «+5 págs» pasa a
+  «Actualizar %».
+
+### 14.10 Portadas del calendario
+
+- Variante `.cal-cover` (no afecta a la estantería): proporción 2/3 dentro de la zona `inset: 20px 4px 22px`,
+  `object-fit: contain`, sombra `0 3px 5px rgba(44,30,20,.22), 0 1px 1px rgba(44,30,20,.16)`, lomo de 2 px,
+  canto de páginas crema de 1 px y giro determinista de −2° a 2° según el ID del libro.
+- Ebooks (`kindle`): marco E-Ink `#514B42`, `padding: 2px`, radio 4 px, con un punto de botón; sin lomo.
+- Celdas móviles de `clamp(88px, 23vw, 108px)`, hueco de 3 px. Abajo: «15 págs.» (o «15» con etiqueta
+  accesible) o «42,5 %» (la posición de ese día). Máximo dos portadas y `+N`.
+- Pestaña de papel crema (opacidad 0,65, `pointer-events: none`) que no cubre fecha ni dato.
+
+### 14.11 Criterios de aceptación (1.20.0)
+
+- [ ] El botón de la carta es visible y pulsable en todo su contorno; no hay pegatinas sobre la pantalla.
+- [ ] El reflejo de la tapa no muestra rectángulos, cortes ni parpadeos, con la cámara centrada y desplazada.
+- [ ] 0,25 · 0,5 · 0,75 · 3,25 · 3,5 · 3,75 · 5 se guardan, sobreviven a recargar y se pintan igual en ficha,
+      recuerdos y atlas; «Quitar valoración» vuelve a «sin valorar».
+- [ ] 185 → 200 de 420 = +15 páginas; 35 % → 42,5 % = +7,5 pp; el primer 42,5 % no inventa avance.
+- [ ] Una corrección 42,5 % → 40 % no da sellos ni cuenta para la racha.
+- [ ] Un registro retrospectivo no baja la posición actual; el historial no cambia al avanzar el libro.
+- [ ] Varias sesiones del mismo libro en un día se ven y se borran por separado.
+- [ ] Doble toque en Guardar crea un solo registro.
+- [ ] Sin desbordamiento horizontal en 360 × 800, 390 × 844, 412 × 915, 844 × 390 y 1440 × 900.

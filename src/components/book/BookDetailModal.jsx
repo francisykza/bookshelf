@@ -1,11 +1,14 @@
 // Apertura del libro en 3D (SPEC §5.4): la cubierta gira y revela dos páginas de papel crema.
 // Izquierda: ex-libris, progreso con % y horas restantes, estrellas, estado, formato y sinopsis.
 // Derecha: diario de lectura con citas subrayadas por color y reseña manuscrita.
-import { BookMarked, Feather, Heart, Minus, PenLine, Plus, Star, Trash2, X } from 'lucide-react';
+import { BookMarked, Feather, Heart, Minus, PenLine, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { markerStroke, pageRustle } from '../../audio/ambientAudio';
-import { EDGE_NAMES, FORMATS, QUOTE_COLORS, STATUS, audioHours, formatHours, hoursLeft, progress, sprayedEdge } from '../../domain/books';
+import { EDGE_NAMES, FORMATS, QUOTE_COLORS, STATUS, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, progressLabel, sprayedEdge, trackUnit } from '../../domain/books';
+import { dayKey } from '../../domain/dates';
+import { ReadingEntryForm } from '../panels/ReadingEntryForm';
+import { RatingInput } from './Rating';
 import { useLibrary } from '../../state/useLibrary';
 import { modalRoot } from '../panels/modalRoot';
 import { PanelShell } from '../panels/PanelShell';
@@ -62,24 +65,60 @@ function ExLibris({ owner, onRename }) {
   );
 }
 
-function Stars({ value, onChange }) {
-  const [hover, setHover] = useState(0);
+/**
+ * Unidad de seguimiento (SPEC §14.5): páginas o porcentaje, con la posición convertida con el total; y el
+ * total, que puede ser desconocido (un ebook sin paginación), en cuyo caso solo cabe porcentaje.
+ */
+function Tracking({ book, onTracking, onTotal }) {
+  const unit = trackUnit(book);
   return (
-    <div className="stars" role="radiogroup" aria-label="Valoración" onPointerLeave={() => setHover(0)}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          role="radio"
-          aria-checked={value === n}
-          aria-label={`${n} ${n === 1 ? 'estrella' : 'estrellas'}`}
-          data-on={(hover || value) >= n}
-          onPointerEnter={() => setHover(n)}
-          onClick={() => onChange(value === n ? 0 : n)}
-        >
-          <Star aria-hidden="true" />
+    <div className="tracking">
+      <div className="tracking__unit" role="radiogroup" aria-label="Seguir el progreso por">
+        <span>Seguir por</span>
+        <button type="button" role="radio" aria-checked={unit === 'pages'} disabled={!book.pageCount} onClick={() => onTracking('pages')}>
+          Páginas
         </button>
-      ))}
+        <button type="button" role="radio" aria-checked={unit === 'percent'} onClick={() => onTracking('percent')}>
+          Porcentaje
+        </button>
+      </div>
+      <label className="tracking__total">
+        <input type="checkbox" checked={!book.pageCount} onChange={(e) => onTotal(e.target.checked ? null : 300)} />
+        <span>Total de páginas desconocido</span>
+      </label>
+    </div>
+  );
+}
+
+/** Libro por porcentaje: posición, barra y el mismo formulario de registro del calendario. */
+function PercentControls({ book, onTotal }) {
+  const pct = percentRead(book);
+  return (
+    <div className="page-controls">
+      <div className="page-controls__stats">
+        <strong>{formatPercent(pct)} leído</strong>
+        {book.pageCount ? (
+          <label className="page-controls__total">
+            Total
+            <input
+              type="number"
+              className="ink-input ink-input--num"
+              min="1"
+              value={book.pageCount}
+              onChange={(e) => onTotal(Math.max(1, Number(e.target.value) || 1))}
+              aria-label="Total de páginas"
+            />
+            págs.
+          </label>
+        ) : (
+          <span>Sin paginación: el avance se registra en porcentaje.</span>
+        )}
+      </div>
+      <span className="page-controls__bar" style={{ '--p': `${pct}%` }} aria-hidden="true" />
+      <div className="page-controls__log">
+        <h3>Actualizar %</h3>
+        <ReadingEntryForm date={dayKey()} books={[book]} bookId={book.id} />
+      </div>
     </div>
   );
 }
@@ -133,7 +172,7 @@ function PageControls({ book, pagesPerHour, onPage, onTotal, onSpeed }) {
         aria-label="Progreso de lectura"
       />
       <div className="page-controls__stats">
-        <strong>{pct} % leído</strong>
+        <strong>{formatPercent(percentRead(book))} leído</strong>
         <span>
           {left > 0 ? `≈ ${formatHours(left)} restantes a ` : '¡Terminado! Leído a '}
           <input
@@ -291,14 +330,14 @@ export function BookDetailModal({ bookId, onClose, onSwitch }) {
                   actions.setSettings({ currentBookId: b.id });
                   onSwitch(b.id);
                 }}
-                title={`${b.title} · ${progress(b)} %`}
+                title={`${b.title} · ${formatPercent(percentRead(b))}`}
               >
                 <span className="reading-switch__cover">
                   <Cover book={b} />
                 </span>
                 <span className="reading-switch__text">
                   <b>{b.title}</b>
-                  <em>{progress(b)} %</em>
+                  <em>{formatPercent(percentRead(b))}</em>
                 </span>
               </button>
             ))}
@@ -330,9 +369,7 @@ export function BookDetailModal({ bookId, onClose, onSwitch }) {
           {book.editionType === 'kindle' && (
             <span className="open-book__ereader-bar" aria-hidden="true">
               <span className="ereader__battery" style={{ '--b': '72%' }} />
-              <span>
-                Pág. {book.currentPage} de {book.pageCount} · {progress(book)} %
-              </span>
+              <span>{trackUnit(book) === 'percent' ? progressLabel(book) : `${progressLabel(book)} · ${formatPercent(percentRead(book))}`}</span>
             </span>
           )}
           {/* Página izquierda */}
@@ -355,19 +392,24 @@ export function BookDetailModal({ bookId, onClose, onSwitch }) {
               )}
             </header>
 
-            <PageControls
-              book={book}
-              pagesPerHour={settings.pagesPerHour}
-              onPage={(p) => {
-                actions.setPage(book.id, p);
-                if (p > book.currentPage) pageRustle(0.6);
-              }}
-              onTotal={(pageCount) => update({ pageCount })}
-              onSpeed={(pagesPerHour) => actions.setSettings({ pagesPerHour })}
-            />
+            {trackUnit(book) === 'percent' ? (
+              <PercentControls book={book} onTotal={(pageCount) => update({ pageCount })} />
+            ) : (
+              <PageControls
+                book={book}
+                pagesPerHour={settings.pagesPerHour}
+                onPage={(p) => {
+                  actions.setPage(book.id, p);
+                  if (p > book.currentPage) pageRustle(0.6);
+                }}
+                onTotal={(pageCount) => update({ pageCount })}
+                onSpeed={(pagesPerHour) => actions.setSettings({ pagesPerHour })}
+              />
+            )}
+            <Tracking book={book} onTracking={(unit) => actions.setTracking(book.id, unit)} onTotal={(pageCount) => update({ pageCount })} />
 
             <div className="page__row">
-              <Stars value={book.rating} onChange={(rating) => update({ rating })} />
+              <RatingInput value={book.rating} onChange={(rating) => update({ rating })} />
               <button
                 type="button"
                 className="fav-btn"

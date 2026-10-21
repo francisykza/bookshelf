@@ -129,28 +129,32 @@
   }
 }
 
-/* Reflejo que cruza la tapa del portátil cada pocos segundos */
+/* Reflejo que cruza la tapa del portátil (SPEC §14.3): ciclo de 14 s, pasada visible de ≈ 3 s; el resto del
+   tiempo la banda espera fuera de la tapa, así que el reinicio no se ve. Sin filtros ni mezclas. */
 .lid-sheen {
   transform-box: view-box;
-  animation: lid-sheen 9s ease-in-out infinite;
+  mix-blend-mode: normal;
+  animation: lid-sheen 14s linear infinite;
 }
 
 @keyframes lid-sheen {
   0%,
-  55% {
+  78% {
     transform: translateX(0);
-    opacity: 0;
-  }
-  60% {
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
   }
   100% {
-    transform: translateX(460px);
-    opacity: 0;
+    transform: translateX(470px);
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lid-sheen-clip {
+    display: none;
+  }
+}
+
+html[data-motion='reduced'] .lid-sheen-clip {
+  display: none;
 }
 
 /* Miel pintada: respiración, oreja inquieta, estiramiento y ronroneo */

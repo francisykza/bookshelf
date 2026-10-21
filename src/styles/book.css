@@ -801,3 +801,269 @@
     height: 48px;
   }
 }
+
+/* ── 1.20.0 · Valoraciones en cuartos de estrella (SPEC §14.4) ── */
+.rating-stars {
+  display: inline-flex;
+  gap: 0.12em;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+/* Contorno y relleno independientes; el relleno se recorta en horizontal según la fracción */
+.rstar {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+}
+
+.rstar svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  overflow: visible;
+}
+
+.rstar__base path {
+  fill: rgb(250 245 232 / 0.55);
+  stroke: #b89c64;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.rstar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  overflow: hidden;
+}
+
+.rstar__fill path {
+  fill: #c59b27;
+  stroke: #b89c64;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.atlas-stop__stars,
+.memory-polaroid__stars {
+  letter-spacing: 0;
+}
+
+.memory-polaroid__stars .rating-stars {
+  font-size: 0.7rem;
+}
+
+.rating-input {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rating-input__stars {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+}
+
+.rating-input__star {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-size: 28px;
+}
+
+.rating-input__star:focus-visible,
+.rating-input__step:focus-visible,
+.rating-input input[type='range']:focus-visible {
+  outline: 2px solid #c4623a;
+  outline-offset: 2px;
+}
+
+.rating-input__value {
+  margin-left: 8px;
+  font-family: var(--font-data);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2c1e14;
+  font-variant-numeric: tabular-nums;
+}
+
+.rating-input__fine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rating-input__step {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgb(146 112 61 / 0.3);
+  border-radius: 10px;
+  background: #faf5e8;
+  color: #2c1e14;
+}
+
+.rating-input__step:disabled {
+  opacity: 0.4;
+}
+
+.rating-input__step svg {
+  width: 18px;
+  height: 18px;
+}
+
+.rating-input input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Riel de papel con el tramo valorado en oro, y tirador de latón */
+.rating-input input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c59b27 var(--p), rgb(184 156 100 / 0.28) var(--p));
+}
+
+.rating-input input[type='range']::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c59b27 var(--p), rgb(184 156 100 / 0.28) var(--p));
+}
+
+.rating-input input[type='range']::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border: 2px solid #fffaf0;
+  border-radius: 50%;
+  background: #b8862a;
+  box-shadow: 0 1px 3px rgb(44 30 20 / 0.4);
+  -webkit-appearance: none;
+}
+
+.rating-input input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fffaf0;
+  border-radius: 50%;
+  background: #b8862a;
+}
+
+.rating-input input[type='range'][data-empty] {
+  opacity: 0.55;
+}
+
+.rating-input__clear {
+  justify-self: start;
+  min-height: 32px;
+  font-size: 0.8rem;
+}
+
+@media (pointer: coarse) {
+  .rating-input__star {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ── 1.20.0 · Unidad de seguimiento y libros por porcentaje (SPEC §14.5) ── */
+.tracking {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 8px 0 12px;
+  font-size: 0.8rem;
+  color: var(--color-ink-soft);
+}
+
+.tracking__unit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tracking__unit > span {
+  margin-right: 4px;
+  font-weight: 700;
+}
+
+.tracking__unit button {
+  min-height: 32px;
+  padding: 2px 10px;
+  border: 1px solid rgb(146 112 61 / 0.3);
+  border-radius: 999px;
+  background: #faf5e8;
+  color: #2c1e14;
+  font: inherit;
+}
+
+.tracking__unit button[aria-checked='true'] {
+  border-color: #c4623a;
+  background: #c4623a;
+  color: #fffaf0;
+}
+
+.tracking__unit button:disabled {
+  opacity: 0.45;
+}
+
+.tracking__total {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-controls__bar {
+  display: block;
+  height: 6px;
+  margin: 8px 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c4623a var(--p), rgb(107 68 35 / 0.15) var(--p));
+}
+
+.page-controls__total {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-controls__log h3 {
+  margin: 10px 0 6px;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.confirm-book__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.rating-input__value[data-empty] {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-style: italic;
+  color: var(--color-ink-soft);
+}

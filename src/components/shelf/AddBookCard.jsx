@@ -134,7 +134,7 @@ export function AddBookCard({ onClose, onAdded }) {
 }
 
 function ConfirmBook({ initial, manual, onBack, onSave }) {
-  const [draft, setDraft] = useState({ status: 'want', editionType: 'paperback', ...initial, pageCount: initial.pageCount || 300 });
+  const [draft, setDraft] = useState({ status: 'want', editionType: 'paperback', ...initial, pageCount: initial.pageCount || 300, unpaged: false });
   useEffect(() => {
     setDraft((d) => ({ ...d, synopsis: d.synopsis || initial.synopsis, categories: d.categories?.length ? d.categories : initial.categories }));
   }, [initial.synopsis, initial.categories]);
@@ -147,7 +147,8 @@ function ConfirmBook({ initial, manual, onBack, onSave }) {
         e.preventDefault();
         if (!draft.title.trim()) return;
         const now = new Date().toISOString();
-        const pages = Math.max(1, Number(draft.pageCount) || 1);
+        // Total desconocido (ebook sin paginación): se sigue por porcentaje, sin páginas ficticias
+        const pages = draft.unpaged ? null : Math.max(1, Number(draft.pageCount) || 1);
         onSave({
           title: draft.title.trim(),
           author: draft.author.trim() || 'Autor desconocido',
@@ -161,7 +162,9 @@ function ConfirmBook({ initial, manual, onBack, onSave }) {
           editionType: draft.editionType,
           sprayedEdgeStyle: draft.sprayedEdgeStyle,
           pageCount: pages,
-          currentPage: draft.status === 'read' ? pages : 0,
+          trackBy: pages ? 'pages' : 'percent',
+          currentPage: draft.status === 'read' && pages ? pages : 0,
+          currentPercent: draft.status === 'read' ? 100 : 0,
           finishedAt: draft.status === 'read' ? now : null,
           startedAt: draft.status !== 'want' ? now : null,
         });
@@ -182,7 +185,11 @@ function ConfirmBook({ initial, manual, onBack, onSave }) {
         <div className="confirm-book__row">
           <label>
             Páginas
-            <input type="number" min="1" max="20000" value={draft.pageCount} onChange={(e) => set({ pageCount: e.target.value })} />
+            <input type="number" min="1" max="20000" value={draft.pageCount} disabled={draft.unpaged} onChange={(e) => set({ pageCount: e.target.value })} />
+            <span className="confirm-book__check">
+              <input type="checkbox" checked={draft.unpaged} onChange={(e) => set({ unpaged: e.target.checked })} />
+              Sin total (ebook)
+            </span>
           </label>
           <label>
             Balda

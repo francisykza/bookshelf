@@ -1,9 +1,10 @@
 // Datos vivos integrados en la habitación (SPEC §3.3, 1.8.0): tu lectura real aparece sobre los objetos
 // pintados, en su misma perspectiva. Marcapáginas sobre la página del libro de la cama, post-it con la
 // racha en la tapa del portátil, cuenta atrás como bruma sobre el té y notas doradas de los auriculares.
+import { isActive } from '../../domain/reading';
 import { useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
-import { progress } from '../../domain/books';
+import { formatPercent, isComplete, percentRead, progress, trackUnit } from '../../domain/books';
 import { addDays, dayKey } from '../../domain/dates';
 import { rectToQuad } from '../../scene/homography';
 import { BOOK_PAGE, HOTSPOTS, LAPTOP_LID_QUAD, TEA_LIQUID } from '../../scene/sceneMap';
@@ -22,7 +23,8 @@ function subQuad(quad, u0, v0, u1, v1) {
 
 /** Días seguidos leyendo hasta hoy (si hoy aún no has leído, cuenta la racha hasta ayer). */
 export function readingStreak(log, today = new Date()) {
-  const days = new Set(log.filter((e) => e.pages > 0).map((e) => e.date));
+  // Solo lecturas reales: una corrección o una posición sin lectura declarada no alarga la racha
+  const days = new Set(log.filter(isActive).map((e) => e.date));
   let cursor = days.has(dayKey(today)) ? today : addDays(today, -1);
   let streak = 0;
   while (days.has(dayKey(cursor))) {
@@ -42,7 +44,9 @@ export function BedBookmark({ book, onAdvance, onOpen }) {
   const [flip, setFlip] = useState(0);
   if (!book) return null;
   const pct = progress(book);
-  const done = book.currentPage >= book.pageCount;
+  const done = isComplete(book);
+  // Sin páginas no se suman «+5 págs.»: se abre la ficha, con el mismo formulario de registro (SPEC §14.9)
+  const byPercent = trackUnit(book) === 'percent';
   return (
     <div className="bed-card" style={{ width: CARD.w, height: CARD.h, transform: rectToQuad(CARD.w, CARD.h, BOOK_PAGE) }}>
       <button type="button" className="bed-card__body" onClick={() => onOpen(book)} aria-label={`Abrir ${book.title}`}>
@@ -54,7 +58,11 @@ export function BedBookmark({ book, onAdvance, onOpen }) {
           <b>{book.title}</b>
           <span className="bed-card__bar" style={{ '--p': `${pct}%` }} />
           <span className="bed-card__meta">
-            <b>{pct} %</b> · Pág. {book.currentPage}/{book.pageCount}
+            {byPercent ? <b>{formatPercent(percentRead(book))} leído</b> : (
+              <>
+                <b>{pct} %</b> · Pág. {book.currentPage}/{book.pageCount}
+              </>
+            )}
           </span>
         </span>
       </button>
@@ -63,13 +71,17 @@ export function BedBookmark({ book, onAdvance, onOpen }) {
         className="bed-card__plus"
         disabled={done}
         onClick={() => {
+          if (byPercent) {
+            onOpen(book);
+            return;
+          }
           onAdvance(book, 5);
           pageRustle(0.8);
           setFlip((n) => n + 1);
         }}
-        aria-label={`Sumar 5 páginas a ${book.title}`}
+        aria-label={byPercent ? `Actualizar el porcentaje de ${book.title}` : `Sumar 5 páginas a ${book.title}`}
       >
-        +5 págs
+        {byPercent ? 'Actualizar %' : '+5 págs'}
       </button>
       {/* Hoja que pasa al sumar páginas (la clave reinicia la animación) */}
       {flip > 0 && <span key={flip} className="bed-card__flip" aria-hidden="true" />}
@@ -81,13 +93,13 @@ export function BedBookmark({ book, onAdvance, onOpen }) {
 const NOTE = { w: 100, h: 78 };
 
 /** Post-it amarillo pegado en la esquina de la tapa del portátil con la racha y lo leído hoy. */
-export function LaptopPostit({ streak, todayPages }) {
+export function LaptopPostit({ streak, todayPages, todayPercent = 0 }) {
   const quad = subQuad(LAPTOP_LID_QUAD, 0.05, 0.07, 0.37, 0.42);
   return (
     <div className="lid-note" style={{ width: NOTE.w, height: NOTE.h, transform: rectToQuad(NOTE.w, NOTE.h, quad) }} aria-hidden="true">
       <span className="lid-note__paper">
         <b>🔥 {streak} {streak === 1 ? 'día' : 'días'}</b>
-        <span>{todayPages} págs hoy</span>
+        <span>{todayPages || !todayPercent ? `${todayPages} págs hoy` : 'avance en % hoy'}</span>
       </span>
     </div>
   );

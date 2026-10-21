@@ -69,12 +69,87 @@ export const spineColor = (book) => book.color || SPINE_COLORS[hash(book.id + bo
 
 export const clampPage = (book, page) => Math.max(0, Math.min(book.pageCount || 0, Math.round(page || 0)));
 
-export function progress(book) {
-  if (!book.pageCount) return 0;
-  return Math.min(100, Math.round((book.currentPage / book.pageCount) * 100));
+/* ── Progreso por páginas o por porcentaje (SPEC §14.5, 1.20.0) ── */
+
+/** Redondeo a `d` decimales sin arrastrar errores de coma flotante. */
+export const roundTo = (value, d = 1) => Math.round(value * 10 ** d) / 10 ** d;
+
+/** Total de páginas: entero positivo o `null` (desconocido, p. ej. un ebook sin paginación). */
+export function normalizeTotal(value) {
+  const n = Number(value);
+  return value != null && value !== '' && Number.isFinite(n) && n >= 1 ? Math.round(n) : null;
 }
 
+export const clampPercent = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0;
+};
+
+/** Unidad de seguimiento: sin total siempre es porcentaje. */
+export const trackUnit = (book) => (book.trackBy === 'percent' || !book.pageCount ? 'percent' : 'pages');
+
+/** Posición actual en la unidad del libro (página o porcentaje). */
+export const positionOf = (book) => (trackUnit(book) === 'percent' ? clampPercent(book.currentPercent) : book.currentPage || 0);
+
+/** Porcentaje leído exacto (con decimales). */
+export function percentRead(book) {
+  if (trackUnit(book) === 'percent') return clampPercent(book.currentPercent);
+  return Math.min(100, ((book.currentPage || 0) / book.pageCount) * 100);
+}
+
+/** Porcentaje entero para barras, cintas y lomos. */
+export const progress = (book) => Math.min(100, Math.round(percentRead(book)));
+
+export const isComplete = (book, position = positionOf(book)) =>
+  trackUnit(book) === 'percent' ? position >= 100 : position >= book.pageCount;
+
+export const fmtNum = (value, max = 1) => value.toLocaleString('es-ES', { maximumFractionDigits: max });
+export const formatPercent = (value) => `${fmtNum(roundTo(value, 1))} %`;
+
+/** «Pág. 200 de 420» o «42,5 % leído» si el libro va por porcentaje. */
+export const progressLabel = (book) =>
+  trackUnit(book) === 'percent' ? `${formatPercent(percentRead(book))} leído` : `Pág. ${book.currentPage} de ${book.pageCount}`;
+
+/**
+ * Posición nueva con el campo derivado reescrito a la vez (una sola fuente de verdad por unidad) y las
+ * transiciones de estado: empezar, terminar o volver a leyendo.
+ */
+export function withPosition(book, position, now = new Date().toISOString()) {
+  const percentUnit = trackUnit(book) === 'percent';
+  const patch = percentUnit
+    ? { currentPercent: position, currentPage: book.pageCount ? Math.round((book.pageCount * position) / 100) : 0 }
+    : { currentPage: position, currentPercent: roundTo((position / book.pageCount) * 100, 1) };
+  patch.updatedAt = now;
+  const done = isComplete(book, position);
+  if (position > 0 && book.status === 'want') Object.assign(patch, { status: 'reading', startedAt: book.startedAt || now });
+  if (done && book.status !== 'read') Object.assign(patch, { status: 'read', finishedAt: now });
+  if (!done && book.status === 'read') Object.assign(patch, { status: 'reading', finishedAt: null });
+  return { ...book, ...patch };
+}
+
+/** Cambio explícito de unidad: la posición se convierte con el total; sin total solo cabe porcentaje. */
+export function withTracking(book, unit) {
+  if (unit === trackUnit(book) || (unit === 'pages' && !book.pageCount)) return book;
+  const pct = percentRead(book);
+  if (unit === 'percent') return { ...book, trackBy: 'percent', currentPercent: roundTo(pct, 1) };
+  return { ...book, trackBy: 'pages', currentPage: Math.round((book.pageCount * pct) / 100), currentPercent: roundTo(pct, 1) };
+}
+
+/* ── Valoraciones en cuartos de estrella (SPEC §14.4) ── */
+
+/** `0` = sin valorar; si no, de 0,25 a 5 en pasos de 0,25 (nunca se redondea a enteros). */
+export function normalizeRating(value) {
+  const n = Number(value);
+  if (value == null || value === '' || typeof value === 'boolean' || !Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(5, Math.max(0.25, Math.round(n * 4) / 4));
+}
+
+export const formatRating = (rating) => rating.toLocaleString('es-ES', { maximumFractionDigits: 2 });
+export const ratingText = (rating) => (rating ? `${formatRating(rating)} de 5 estrellas` : 'Sin valorar');
+
+/** Horas que faltan a tu ritmo; `null` si no hay páginas con las que calcularlo. */
 export function hoursLeft(book, pagesPerHour) {
+  if (trackUnit(book) === 'percent') return null;
   const left = Math.max(0, (book.pageCount || 0) - (book.currentPage || 0));
   return left / Math.max(1, pagesPerHour);
 }
@@ -123,7 +198,7 @@ export function currentBook(books, settings) {
 /** El pendiente más antiguo sin empezar: el favorito del Michi Juez. */
 export function oldestUnstarted(books) {
   return [...books]
-    .filter((b) => b.status === 'want' && !b.currentPage)
+    .filter((b) => b.status === 'want' && !positionOf(b))
     .sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''))[0];
 }
 
@@ -135,7 +210,7 @@ export function createBook(data) {
   const now = new Date().toISOString();
   // `format` es el campo de versiones anteriores: se convierte en `editionType`
   const { format, editionType, sprayedEdgeStyle, ...rest } = data;
-  return {
+  const book = {
     id: newId(),
     title: 'Sin título',
     author: 'Autor desconocido',
@@ -163,6 +238,30 @@ export function createBook(data) {
       ? sprayedEdgeStyle
       : Object.keys(EDGE_STYLES)[hash(rest.id || rest.title || '') % 4],
   };
+  return normalizeBook(book);
+}
+
+/**
+ * Contrato de datos 1.20.0 (SPEC §14.7): total positivo o `null`, unidad de seguimiento, posición
+ * derivada coherente y valoración en cuartos. Es idempotente; el valor original de una valoración fuera
+ * de contrato se guarda en `ratingOriginal`.
+ */
+export function normalizeBook(book) {
+  const pageCount = normalizeTotal(book.pageCount);
+  const trackBy = book.trackBy === 'percent' || !pageCount ? 'percent' : 'pages';
+  const next = { ...book, pageCount, trackBy };
+  if (trackBy === 'pages') {
+    next.currentPage = Math.max(0, Math.min(pageCount, Math.round(Number(book.currentPage) || 0)));
+    next.currentPercent = roundTo((next.currentPage / pageCount) * 100, 1);
+  } else {
+    const fromPages = book.currentPercent == null && pageCount ? ((Number(book.currentPage) || 0) / pageCount) * 100 : book.currentPercent;
+    next.currentPercent = roundTo(clampPercent(fromPages), 1);
+    next.currentPage = pageCount ? Math.round((pageCount * next.currentPercent) / 100) : 0;
+  }
+  const rating = normalizeRating(book.rating);
+  if (rating !== book.rating && Number.isFinite(Number(book.rating)) && Number(book.rating) > 0 && book.ratingOriginal == null) next.ratingOriginal = book.rating;
+  next.rating = rating;
+  return next;
 }
 
 /** Portada de Open Library por ISBN (404 si no existe → portada tipográfica). */
@@ -206,10 +305,11 @@ export function withStatus(book, status, now = new Date().toISOString()) {
   const next = { ...book, status, updatedAt: now };
   if (status === 'read') {
     next.finishedAt = now;
-    next.currentPage = book.pageCount;
+    next.currentPage = book.pageCount || 0;
+    next.currentPercent = 100;
   } else {
     next.finishedAt = null;
-    if (book.status === 'read' && status === 'want') next.currentPage = 0;
+    if (book.status === 'read' && status === 'want') Object.assign(next, { currentPage: 0, currentPercent: 0 });
   }
   if (status === 'reading' && !book.startedAt) next.startedAt = now;
   return next;

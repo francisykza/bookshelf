@@ -37,6 +37,8 @@
   --font-sans: 'Lora', Georgia, serif;
   --font-hand: 'Caveat', 'Segoe Print', cursive;
   --font-mono: 'Courier Prime', 'Courier New', monospace;
+  /* Cifras de los formularios de lectura (1.20.0) */
+  --font-data: 'JetBrains Mono', 'Courier Prime', monospace;
 }
 
 :root {

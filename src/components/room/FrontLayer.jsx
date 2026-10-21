@@ -29,10 +29,13 @@ export function FrontLayer() {
         <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-lid')}>
           <polygon points={pts(LAPTOP_LID)} />
         </clipPath>
-        <linearGradient id={sid('g-lid-sheen')} x1="0" y1="0" x2="1" y2="0.35">
-          <stop offset="0" stopColor="#fff" stopOpacity="0" />
-          <stop offset="0.5" stopColor="#fff" stopOpacity="0.38" />
-          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        {/* Horizontal y transparente en los dos tercios exteriores: los lados de la banda no se ven (SPEC §14.3) */}
+        <linearGradient id={sid('g-lid-sheen')} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#FFF7E6" stopOpacity="0" />
+          <stop offset="0.35" stopColor="#FFF7E6" stopOpacity="0" />
+          <stop offset="0.5" stopColor="#FFF1D2" stopOpacity="0.1" />
+          <stop offset="0.65" stopColor="#FFF7E6" stopOpacity="0" />
+          <stop offset="1" stopColor="#FFF7E6" stopOpacity="0" />
         </linearGradient>
         <linearGradient id={sid('g-page-flap')} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#fbf3e1" />
@@ -48,9 +51,12 @@ export function FrontLayer() {
         </g>
       )}
 
-      {/* Reflejo de luz que recorre la tapa del portátil */}
-      <g clipPath={sid.url('clip-lid')}>
-        <rect className="lid-sheen" x="300" y="1030" width="120" height="290" fill={sid.url('g-lid-sheen')} />
+      {/* Reflejo de luz que recorre la tapa: el grupo exterior recorta (estático) y solo se mueve el interior.
+          La banda inclinada empieza fuera de la tapa, a la izquierda, y termina fuera a la derecha. */}
+      <g clipPath={sid.url('clip-lid')} className="lid-sheen-clip">
+        <g className="lid-sheen">
+          <polygon points="330,1030 450,1030 390,1320 270,1320" fill={sid.url('g-lid-sheen')} stroke="none" />
+        </g>
       </g>
 
       {/* Miel pintada: parte tranquila de la ilustración, solo respira despacio desde la panza */}

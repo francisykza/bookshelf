@@ -1,6 +1,7 @@
 // Atlas Cartográfico de Sagas (SPEC §6bis, 1.13.0): se abre tocando el sol (o la luna) del cielo. Pergamino
 // náutico con marco de latón; cada saga es una ruta: lo leído en gris con su sello, lo que toca leer ahora a
 // todo color con una brújula dorada, y los siguientes en color unidos por puntos dorados (#1 ➔ #2 ➔ #3).
+import { RatingStars } from '../book/Rating';
 import { BookOpen, Check, Compass, Plus, Trash2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
@@ -74,10 +75,7 @@ function Stop({ stop, saga, onOpen, onAdd }) {
       <span className="atlas-stop__num">{number}</span>
       <b className="atlas-stop__title">{entry.title}</b>
       {state === 'read' ? (
-        <span className="atlas-stop__stars" aria-label={book?.rating ? `${book.rating} estrellas` : 'Sin valorar'}>
-          {'★'.repeat(book?.rating || 0)}
-          <i>{'★'.repeat(5 - (book?.rating || 0))}</i>
-        </span>
+        <RatingStars value={book?.rating} className="atlas-stop__stars" />
       ) : book ? (
         <span className="atlas-stop__where">{book.status === 'reading' ? 'En tu cama' : 'En tu estantería'}</span>
       ) : (

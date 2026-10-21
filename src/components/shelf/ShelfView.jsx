@@ -1,10 +1,11 @@
 // `SHELF_VIEW` (SPEC §3.3): el mueble de roble de la ilustración visto de cerca, con la textura de madera
 // recortada de la propia imagen, postales clavadas, macetas y hiedra. Tres baldas (Leyendo ahora con el
 // la mini-figura de su saga bajo cada libro, Pendientes y Leídos) y controles como placas de latón.
+import { RatingStars } from '../book/Rating';
 import { ArrowLeft, BookOpen, Library, Plus, Trophy, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
-import { shelfSort } from '../../domain/books';
+import { ratingText, shelfSort } from '../../domain/books';
 import { PRESET_SAGAS } from '../../domain/sagas';
 import { SCENE_H, SCENE_SRC, SCENE_W, WOOD_PLANK, WOOD_SIDE } from '../../scene/sceneMap';
 import { useLibrary } from '../../state/useLibrary';
@@ -130,7 +131,7 @@ function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
           className="memory-polaroid"
           style={{ '--tilt': `${((i * 37) % 9) - 4}deg` }}
           onClick={() => onOpenBook(b)}
-          aria-label={`${b.title}, leído el ${b.finishedAt ? new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : ''}${b.rating ? `, ${b.rating} estrellas` : ''}`}
+          aria-label={`${b.title}, leído el ${b.finishedAt ? new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : ''}${b.rating ? `, ${ratingText(b.rating)}` : ''}`}
         >
           <span className="memory-polaroid__pin" aria-hidden="true" />
           <span className="memory-polaroid__photo">
@@ -139,10 +140,11 @@ function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
           <span className="memory-polaroid__date">
             {b.finishedAt ? new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
           </span>
-          <span className="memory-polaroid__stars" aria-hidden="true">
-            {'★'.repeat(b.rating || 0)}
-            <i>{'★'.repeat(5 - (b.rating || 0))}</i>
-          </span>
+          {b.rating > 0 && (
+            <span className="memory-polaroid__stars" aria-hidden="true">
+              <RatingStars value={b.rating} />
+            </span>
+          )}
         </button>
       ))}
     </aside>
@@ -532,7 +534,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
             <span className="pick-note__lead">El dado ha hablado…</span>
             <strong>¿Y si lees «{pickedBook.title}»?</strong>
             <span className="pick-note__meta">
-              {pickedBook.author} · {pickedBook.pageCount} págs.
+              {pickedBook.author} · {pickedBook.pageCount ? `${pickedBook.pageCount} págs.` : 'sin paginación'}
             </span>
             <div className="pick-note__actions">
               <button type="button" className="stamp-btn stamp-btn--small" onClick={() => onOpenBook(pickedBook)}>

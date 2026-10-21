@@ -73,32 +73,6 @@
   background: #8f7b62;
 }
 
-.sticker {
-  position: absolute;
-  top: -40px;
-  display: grid;
-  place-items: center;
-  padding: 4px 8px;
-  border-radius: 8px;
-  background: #fffaf0;
-  box-shadow: 0 3px 6px rgb(0 0 0 / 0.3);
-  font-size: 1rem;
-  pointer-events: none;
-}
-
-.sticker--flower {
-  right: 70px;
-  color: #e46b86;
-  transform: rotate(-12deg);
-}
-
-.sticker--cat {
-  right: 16px;
-  color: #c4623a;
-  font-size: 0.8rem;
-  transform: rotate(8deg);
-}
-
 .desk {
   position: relative;
   display: flex;
@@ -282,6 +256,8 @@
 .dock {
   display: flex;
   flex: none;
+  flex-shrink: 0;
+  max-width: calc(100% - 16px);
   align-self: center;
   gap: 8px;
   margin: 0 0 10px;
@@ -295,10 +271,13 @@
     0 10px 24px -8px rgb(40 20 5 / 0.5);
 }
 
+/* Área táctil mínima de 44 × 44 px por app (SPEC §14.2) */
 .dock button {
   position: relative;
   display: grid;
-  justify-items: center;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: none;
@@ -820,6 +799,12 @@
     height: 38px;
   }
 
+  /* Si no caben, se estrecha el hueco antes que el área táctil */
+  .dock {
+    gap: clamp(2px, 1.2vw, 8px);
+    padding: 0 6px;
+  }
+
   .laptop__base {
     margin: 0 -8px;
   }
@@ -1238,4 +1223,421 @@
 /* La hora de la barra superior no queda debajo de la pestaña de cierre */
 .desk__menubar {
   padding-right: 76px;
+}
+
+/* ── 1.20.0 · Formulario «Guardar lectura» (SPEC §14.8) ── */
+.reading-form {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgb(146 112 61 / 0.3);
+  border-radius: 10px;
+  background: #faf5e8;
+  color: #2c1e14;
+  font-family: 'Lora', var(--font-sans);
+  font-size: 0.86rem;
+}
+
+.reading-form__field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.reading-form__field > span,
+.reading-form__field > label {
+  font-weight: 700;
+}
+
+.reading-form select,
+.reading-form input[type='text'] {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid rgb(146 112 61 / 0.3);
+  border-radius: 10px;
+  background: #fffdf6;
+  color: #2c1e14;
+  font: inherit;
+}
+
+.reading-form input[type='text'] {
+  font-family: var(--font-data);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.reading-form input[aria-invalid='true'] {
+  border-color: #b3261e;
+}
+
+.reading-form__input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reading-form__suffix {
+  flex: none;
+  font-family: var(--font-data);
+  font-size: 0.82rem;
+  color: rgb(44 30 20 / 0.7);
+}
+
+.reading-form__modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.reading-form__modes button {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 40px;
+  padding: 4px 10px;
+  border: 1px solid rgb(146 112 61 / 0.3);
+  border-radius: 10px;
+  background: #fffdf6;
+  color: #2c1e14;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.reading-form__modes button[aria-checked='true'] {
+  border-color: #c4623a;
+  background: #c4623a;
+  color: #fffaf0;
+}
+
+.reading-form button:focus-visible,
+.reading-form input:focus-visible,
+.reading-form select:focus-visible {
+  outline: 2px solid #c4623a;
+  outline-offset: 2px;
+}
+
+.reading-form__help {
+  color: rgb(44 30 20 / 0.72);
+  font-size: 0.76rem;
+}
+
+.reading-form__num {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+.reading-form__error {
+  margin: 0;
+  color: #b3261e;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.reading-form__preview {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-left: 3px solid #c59b27;
+  border-radius: 6px;
+  background: rgb(255 253 246 / 0.9);
+  font-size: 0.8rem;
+}
+
+.reading-form__preview b {
+  font-weight: 600;
+}
+
+.reading-form__preview-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(44 30 20 / 0.6);
+}
+
+.reading-form__warn {
+  color: #8a4a12;
+  font-size: 0.76rem;
+}
+
+.reading-form__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 0.8rem;
+}
+
+.reading-form__check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #c4623a;
+}
+
+.reading-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.reading-form__save {
+  min-height: 44px;
+}
+
+.reading-form__save:disabled {
+  opacity: 0.6;
+}
+
+.sessions__form {
+  margin-bottom: 14px;
+}
+
+/* ── Registros del día agrupados por libro ── */
+.cal-pop__list .day-group,
+.sessions__list ul .day-group {
+  align-items: flex-start;
+}
+
+.day-group__entries {
+  display: grid;
+  gap: 2px;
+  margin: 3px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-family: var(--font-data);
+  font-size: 0.72rem;
+  color: #2c1e14;
+}
+
+.entry-row__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.entry-row[data-kind='correction'] .entry-row__text {
+  color: #8a4a12;
+  font-style: italic;
+}
+
+.entry-row__edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.entry-row__edit input {
+  width: 6em;
+  min-height: 36px;
+  padding: 2px 8px;
+  border: 1px solid rgb(146 112 61 / 0.3);
+  border-radius: 8px;
+  background: #fffdf6;
+  font-family: var(--font-data);
+  font-size: 1rem;
+}
+
+.entry-row__edit small {
+  flex: 1 1 100%;
+  font-family: 'Lora', var(--font-sans);
+}
+
+/* ── Portadas del calendario como pequeñas piezas editoriales (SPEC §14.10) ── */
+.cal-cover {
+  position: relative;
+  display: block;
+  aspect-ratio: 2 / 3;
+  max-width: 100%;
+  max-height: 100%;
+  height: 100%;
+  margin: 0 auto;
+  border-radius: 2px 4px 4px 2px;
+  background: #fffaf0;
+  box-shadow:
+    0 3px 5px rgba(44, 30, 20, 0.22),
+    0 1px 1px rgba(44, 30, 20, 0.16);
+  transform: rotate(var(--tilt, 0deg));
+}
+
+.cal-cover > img,
+.cal-cover > * {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+
+/* Lomo de 2 px y canto de páginas crema de 1 px */
+.cal-cover::before,
+.cal-cover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.cal-cover::before {
+  left: 0;
+  width: 2px;
+  border-radius: 2px 0 0 2px;
+  background: linear-gradient(90deg, rgb(44 30 20 / 0.35), rgb(44 30 20 / 0.08));
+}
+
+.cal-cover::after {
+  right: -1px;
+  top: 1px;
+  bottom: 1px;
+  width: 1px;
+  background: #f3e6c8;
+}
+
+/* E-reader: marco fino de tinta electrónica con su botón, sin lomo ni canto */
+.cal-cover[data-device] {
+  padding: 2px 2px 5px;
+  border-radius: 4px;
+  background: #514b42;
+}
+
+.cal-cover[data-device]::before {
+  inset: auto auto 1px 50%;
+  width: 4px;
+  height: 2px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: rgb(250 245 232 / 0.45);
+}
+
+.cal-cover[data-device]::after {
+  display: none;
+}
+
+.cal-cover[data-device] > * {
+  border-radius: 1px;
+}
+
+/* Las celdas: portadas en su propia zona, el dato abajo y la fecha arriba */
+.cal__cell .cal__covers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal__covers .cal__cover {
+  position: absolute;
+  overflow: visible;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal__covers[data-count='1'] .cal__cover {
+  inset: 0;
+}
+
+/* Dos libros: el primero delante a la izquierda y el segundo asomando a la derecha, ambos reconocibles */
+.cal__covers[data-count='2'] .cal__cover[data-k='0'] {
+  inset: 0 30% 12% 0;
+  z-index: 2;
+  justify-content: flex-start;
+}
+
+.cal__covers[data-count='2'] .cal__cover[data-k='1'] {
+  inset: 12% 0 0 30%;
+  z-index: 1;
+  justify-content: flex-end;
+  transform: none;
+}
+
+.cal__pages[data-kind='percent'] {
+  font-family: var(--font-data);
+  color: #33465f;
+}
+
+.cal__pages {
+  font-family: var(--font-data);
+}
+
+/* Pestaña de papel crema: decoración, nunca encima de la fecha ni del dato */
+.cal__tab {
+  position: absolute;
+  top: 0;
+  right: 22%;
+  width: 12px;
+  height: 7px;
+  border-radius: 0 0 2px 2px;
+  background: #f6ead0;
+  box-shadow: 0 1px 1px rgb(44 30 20 / 0.12);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+/* Día con lectura solo por porcentaje: estado propio, sin fingir una equivalencia en páginas */
+.cal__cell[data-heat='pct'],
+.cal__legend i[data-heat='pct'] {
+  background: repeating-linear-gradient(135deg, #f3efe6 0 4px, #e3e8ef 4px 8px);
+}
+
+.cal__legend i[data-heat='pct'] {
+  margin-left: 10px;
+}
+
+@media (max-width: 760px) {
+  .cal__cell {
+    height: clamp(88px, 23vw, 108px);
+    min-height: 88px;
+  }
+
+  .cal__grid {
+    gap: 3px;
+  }
+
+  .cal__covers {
+    inset: 20px 4px 22px;
+  }
+
+  .cal__cover > .cal-cover {
+    width: auto;
+    height: 100%;
+  }
+
+  .cal__unit {
+    display: none;
+  }
+
+  .reading-form__modes {
+    flex-direction: column;
+  }
+
+  .reading-form input[type='text'],
+  .reading-form select {
+    font-size: 16px;
+  }
+
+  .entry-row .icon-btn--tiny {
+    width: 40px;
+    height: 40px;
+  }
+
+  .cal__legend {
+    flex-wrap: wrap;
+  }
 }
