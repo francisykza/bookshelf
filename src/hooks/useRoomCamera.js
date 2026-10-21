@@ -6,8 +6,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { cameraCss, clampOffset, logicalCenter, offsetCentering, offsetShowing } from '../scene/camera';
 
 const DRAG_PX = 8;
+/** Franja de los bordes reservada al gesto Atrás nativo del navegador (SPEC §13.4). */
+const EDGE_PX = 24;
 
-export function useRoomCamera({ camera, shelfFocus = null, worldRef, surfaceRef, enabled = true }) {
+export function useRoomCamera({ camera, shelfFocus = null, worldRef, surfaceRef, enabled = true, onOffset }) {
   const offsetRef = useRef(null);
   const prevCamera = useRef(null);
   const frame = useRef(0);
@@ -16,10 +18,15 @@ export function useRoomCamera({ camera, shelfFocus = null, worldRef, surfaceRef,
     enabledRef.current = enabled;
   }, [enabled]);
 
+  const onOffsetRef = useRef(onOffset);
+  useEffect(() => {
+    onOffsetRef.current = onOffset;
+  }, [onOffset]);
   const apply = useCallback(() => {
     const node = worldRef.current;
     if (!node || !offsetRef.current) return;
     node.style.transform = cameraCss(camera, offsetRef.current, shelfFocus);
+    onOffsetRef.current?.(offsetRef.current, camera);
   }, [camera, shelfFocus, worldRef]);
 
   // Rotación, barras del navegador o teclado: mismo centro lógico y límites nuevos, aplicado sin transición
@@ -63,6 +70,8 @@ export function useRoomCamera({ camera, shelfFocus = null, worldRef, surfaceRef,
         return;
       }
       if (event.pointerType === 'mouse' && event.button !== 0) return;
+      // Los toques que empiezan pegados al borde son del navegador (gesto Atrás), no de la cámara
+      if (event.pointerType !== 'mouse' && (event.clientX < EDGE_PX || event.clientX > window.innerWidth - EDGE_PX)) return;
       drag = { id: event.pointerId, x: event.clientX, y: event.clientY, ox: offsetRef.current.x, oy: offsetRef.current.y, moved: false };
     };
     const move = (event) => {
@@ -116,6 +125,27 @@ export function useRoomCamera({ camera, shelfFocus = null, worldRef, surfaceRef,
     };
   }, [camera, schedule, surfaceRef]);
 
+  // Flechas: desplazar el encuadre una fracción del ancho, dentro de los límites (suave salvo movimiento reducido)
+  const panTimer = useRef(0);
+  useEffect(() => () => clearTimeout(panTimer.current), []);
+  const panBy = useCallback(
+    (dx) => {
+      const node = worldRef.current;
+      if (!node || !offsetRef.current) return;
+      offsetRef.current = clampOffset(camera, offsetRef.current.x + dx, offsetRef.current.y);
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      clearTimeout(panTimer.current);
+      if (!reduce) {
+        node.style.transition = 'transform 320ms cubic-bezier(0.2, 0, 0, 1)';
+        panTimer.current = setTimeout(() => {
+          node.style.transition = '';
+        }, 360);
+      }
+      apply();
+    },
+    [camera, apply, worldRef],
+  );
+
   // Teclado: el objeto enfocado fuera del encuadre se trae a la vista con 16 px de margen
   useEffect(() => {
     const el = worldRef.current;
@@ -130,4 +160,6 @@ export function useRoomCamera({ camera, shelfFocus = null, worldRef, surfaceRef,
     el.addEventListener('focusin', onFocus);
     return () => el.removeEventListener('focusin', onFocus);
   }, [camera, apply, worldRef]);
+
+  return { panBy };
 }

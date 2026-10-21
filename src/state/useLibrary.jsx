@@ -1,10 +1,10 @@
 // Estado de la biblioteca (SPEC §5.1): reducer puro + persistencia en localStorage + acciones.
-import { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { SAMPLE_EDITIONS, sampleBook, sampleBooks, sampleReadingLog } from '../data/sampleBooks';
 import { clampPage, createBook, newId, shelfSort, withStatus } from '../domain/books';
 import { dayKey, timeOfDayByClock, weekKey } from '../domain/dates';
 import { EMPTY_COMPANION, applyTreasure } from '../domain/companion';
-import { EMPTY_FIGURES, grantSeal, initialFigures, openMysteryBox } from '../domain/figures';
+import { EMPTY_FIGURES, grantSeal, initialFigures, markUnboxSeen, openBoxAttempt, openMysteryBox } from '../domain/figures';
 
 export const STORAGE_KEY = 'bookshelf:v1';
 
@@ -238,6 +238,8 @@ function reducer(state, action) {
         next = { ...fs, placements };
       }
       if (action.op === 'open') next = openMysteryBox(fs, action.catalog, action.rnd).fs;
+      if (action.op === 'attempt') next = openBoxAttempt(fs, action.catalog, action.rnd, action.attemptId, action.at);
+      if (action.op === 'seen') next = markUnboxSeen(fs, action.attemptId);
       if (action.op === 'ack') next = { ...fs, lastReward: null, sealBox: false };
       // Libros de la saga de cada figura que tienes (la sinergia ×2 sale de aquí)
       if (action.op === 'sync') next = { ...fs, placements: action.map };
@@ -264,16 +266,40 @@ const LibraryContext = createContext(null);
 export function LibraryProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, undefined, load);
 
+  const latest = useRef(state);
+  const savedUnbox = useRef(state.progress.figures?.unbox?.id ?? null);
   useEffect(() => {
-    const id = setTimeout(() => {
+    latest.current = state;
+    const write = () => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(latest.current));
       } catch {
         // Almacenamiento lleno o bloqueado: la sesión sigue funcionando en memoria.
       }
-    }, 250);
+    };
+    // Una caja recién abierta se guarda al momento: recargar justo después no pierde el premio (SPEC §13.6)
+    const unboxId = state.progress.figures?.unbox?.id ?? null;
+    if (unboxId !== savedUnbox.current) {
+      savedUnbox.current = unboxId;
+      write();
+      return undefined;
+    }
+    const id = setTimeout(write, 250);
     return () => clearTimeout(id);
   }, [state]);
+
+  // Al ocultar o cerrar la página se vuelca lo pendiente
+  useEffect(() => {
+    const flush = () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(latest.current));
+      } catch {
+        // Sin almacenamiento: nada que volcar.
+      }
+    };
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, []);
 
   const actions = useMemo(
     () => ({
@@ -295,6 +321,10 @@ export function LibraryProvider({ children }) {
       setFigurePath: (id) => dispatch({ type: 'figures', op: 'path', id }),
       placeFigure: (id, bookId) => dispatch({ type: 'figures', op: 'place', id, bookId }),
       openMysteryBox: (catalog) => dispatch({ type: 'figures', op: 'open', catalog, rnd: Array.from({ length: 8 }, Math.random) }),
+      // Intento identificado e idempotente: el mismo id nunca consume otra caja ni sortea otro premio
+      openBoxAttempt: (catalog, attemptId) =>
+        dispatch({ type: 'figures', op: 'attempt', catalog, attemptId, at: new Date().toISOString(), rnd: Array.from({ length: 8 }, Math.random) }),
+      markUnboxSeen: (attemptId) => dispatch({ type: 'figures', op: 'seen', attemptId }),
       ackFigureReward: () => dispatch({ type: 'figures', op: 'ack' }),
       syncFigureBooks: (map) => dispatch({ type: 'figures', op: 'sync', map }),
       claimTodaySeal: () => dispatch({ type: 'figures', op: 'today' }),

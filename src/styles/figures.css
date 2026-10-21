@@ -1246,17 +1246,7 @@
 }
 
 /* ── SHELF_VIEW: mini-figura de saga engarzada en el listón bajo su libro ── */
-.shelf-row__scroller {
-  position: relative;
-  z-index: 2;
-  padding-bottom: 24px;
-  margin-bottom: -24px;
-  pointer-events: none;
-}
-
-.shelf-row__track {
-  pointer-events: auto;
-}
+/* 1.19.0: sin `pointer-events: none` en el scroller (en iOS impedía desplazar la balda; SPEC §13.1) */
 
 .book-slot {
   position: relative;
@@ -1658,4 +1648,495 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 230, 170, 0.16),
     0 3px 8px rgba(44, 30, 20, 0.22);
+}
+
+/* ── 1.19.0 · Cámara de Unboxing (SPEC §13.5): ceremonia con la paleta del Ático ───────────────── */
+.vault[data-section='unbox'] {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, calc(100% - 24px));
+  max-height: calc(100dvh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)) - 12px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vault[data-section='unbox'] > .vault__close,
+.vault[data-section='unbox'] > .vault__head,
+.vault[data-section='unbox'] > .vault__tabs,
+.vault[data-section='unbox'] > .vault-notice {
+  flex-shrink: 0;
+}
+
+.unbox {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding-bottom: 6px;
+}
+
+.unbox > * {
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .unbox {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* Escenario: foco cenital, fondo radial cálido, pedestal de madera y perspectiva local */
+.unbox-stage {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  height: clamp(220px, 38dvh, 420px);
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 35%, rgb(214 182 111 / 0.18), transparent 70%),
+    radial-gradient(ellipse 90% 80% at 50% 100%, #3b281a, #241810 55%, #160f0b);
+  box-shadow:
+    inset 0 0 0 1px rgb(214 182 111 / 0.22),
+    inset 0 -30px 50px rgb(0 0 0 / 0.45);
+  perspective: 900px;
+}
+
+@media (max-height: 600px) {
+  .unbox-stage {
+    height: clamp(200px, 46dvh, 260px);
+  }
+}
+
+.unbox-stage__light {
+  position: absolute;
+  inset: -10% 22% 30%;
+  z-index: 0;
+  background: radial-gradient(ellipse 50% 60% at 50% 0%, rgb(244 226 175 / 0.32), transparent 72%);
+  opacity: 0.55;
+  transition:
+    opacity 450ms ease,
+    transform 450ms ease;
+}
+
+.unbox[data-phase='charging'] .unbox-stage__light,
+.unbox[data-phase='unlocking'] .unbox-stage__light {
+  opacity: 0.9;
+  transform: scaleX(0.82);
+}
+
+.unbox-stage__aura {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  z-index: 1;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(244 226 175 / 0.24), transparent 65%);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
+  transition:
+    opacity 500ms ease,
+    transform 700ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.unbox[data-phase='unlocking'] .unbox-stage__aura,
+.unbox[data-phase='opening'] .unbox-stage__aura {
+  opacity: 1;
+}
+
+.unbox[data-rarity='rare'] .unbox-stage__aura {
+  opacity: 0.7;
+}
+
+.unbox[data-rarity='epic'] .unbox-stage__aura {
+  opacity: 1;
+  background:
+    radial-gradient(circle, transparent 46%, rgb(214 182 111 / 0.22) 48%, transparent 51%),
+    radial-gradient(circle, transparent 58%, rgb(214 182 111 / 0.16) 60%, transparent 63%),
+    radial-gradient(circle, rgb(244 226 175 / 0.16), transparent 65%);
+}
+
+.unbox[data-rarity='legendary'] .unbox-stage__aura {
+  opacity: 1;
+  width: 80%;
+  background: radial-gradient(circle, rgb(244 226 175 / 0.24), rgb(214 182 111 / 0.08) 45%, transparent 68%);
+}
+
+.unbox[data-rarity='legendary'] .unbox-stage__light {
+  inset: -10% 10% 20%;
+  opacity: 0.85;
+}
+
+.unbox-stage__pedestal {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  z-index: 1;
+  width: 56%;
+  height: 12%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgb(214 182 111 / 0.35), transparent 60%),
+    linear-gradient(180deg, #5a3d22, #3b281a 55%, #241810);
+  box-shadow: 0 18px 28px rgba(0, 0, 0, 0.45);
+  transform: translateX(-50%);
+}
+
+/* Caja misteriosa CSS: cuerpo con dos caras, costura, medallón y una tapa independiente */
+.ubox {
+  position: relative;
+  z-index: 2;
+  width: min(42%, 190px);
+  aspect-ratio: 1 / 1.05;
+  margin-top: 4%;
+  transform-style: preserve-3d;
+  transform: rotateX(-5deg) rotateY(-14deg);
+  transition:
+    transform 450ms cubic-bezier(0.2, 0, 0, 1),
+    opacity 500ms ease;
+}
+
+.ubox[data-closed] {
+  opacity: 0.55;
+}
+
+.unbox[data-phase='charging'] .ubox {
+  transform: rotateX(-5deg) rotateY(-14deg) scale(1.025);
+}
+
+.unbox[data-phase='revealing'] .ubox,
+.unbox[data-phase='result'] .ubox {
+  opacity: 0.32;
+  transform: rotateX(-5deg) rotateY(-14deg) translateY(18%) scale(0.86);
+}
+
+.ubox__body {
+  position: absolute;
+  inset: 18% 0 0;
+  transform-style: preserve-3d;
+}
+
+.ubox__face {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(90deg, rgb(244 226 175 / 0.04) 0 2px, transparent 2px 9px),
+    linear-gradient(160deg, #4a3220, #2d1d12 70%);
+  box-shadow:
+    inset 0 0 0 2px rgb(214 182 111 / 0.55),
+    inset 0 0 0 6px rgb(0 0 0 / 0.25);
+}
+
+.ubox__face--side {
+  inset: 0 auto 0 100%;
+  width: 26%;
+  transform-origin: 0 50%;
+  transform: rotateY(90deg);
+  background: linear-gradient(180deg, #3b281a, #1f140c);
+}
+
+.ubox__seam {
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #d6b66f, transparent);
+  opacity: 0.35;
+  transition: opacity 400ms ease;
+}
+
+.unbox[data-phase='unlocking'] .ubox__seam,
+.unbox[data-phase='opening'] .ubox__seam {
+  opacity: 1;
+  box-shadow: 0 0 10px rgb(244 226 175 / 0.6);
+}
+
+.ubox__latch {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  width: 30%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4e2af, #d6b66f 45%, #7a5c12);
+  box-shadow:
+    0 0 0 2px #3b281a,
+    0 4px 8px rgb(0 0 0 / 0.5);
+  transform: translateX(-50%);
+}
+
+.ubox__latch::after {
+  content: '?';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #241810;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.unbox[data-phase='unlocking'] .ubox__latch {
+  animation: ubox-latch 500ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes ubox-latch {
+  50% {
+    transform: translateX(-50%) rotate(-12deg);
+  }
+}
+
+.ubox__lid {
+  position: absolute;
+  inset: 4% -3% auto;
+  height: 18%;
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, #5a3d22, #3b281a);
+  box-shadow:
+    inset 0 0 0 2px rgb(214 182 111 / 0.7),
+    0 4px 10px rgb(0 0 0 / 0.45);
+  transform-origin: 50% 0;
+  transition: transform 650ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.unbox[data-phase='opening'] .ubox__lid,
+.unbox[data-phase='revealing'] .ubox__lid,
+.unbox[data-phase='result'] .ubox__lid {
+  transform: rotateX(-105deg);
+}
+
+/* El premio sube desde dentro de la caja, intacto y con su proporción real */
+.unbox-prize {
+  position: absolute;
+  inset: 8% 9% 14%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  animation: unbox-prize 700ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+.unbox-prize > * {
+  max-width: 82%;
+  max-height: 88%;
+  object-fit: contain;
+}
+
+.unbox-prize .fig-art {
+  height: 100%;
+}
+
+.unbox-prize .part-art {
+  height: 70%;
+}
+
+.unbox-prize__seal {
+  width: 34%;
+}
+
+@keyframes unbox-prize {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.94);
+  }
+}
+
+/* Partículas cálidas, limitadas por rareza y perfil (sin destellos rápidos) */
+.unbox-stage__particles {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  z-index: 2;
+  width: 0;
+  height: 0;
+}
+
+.unbox-stage__particles i {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #f4e2af;
+  box-shadow: 0 0 6px rgb(214 182 111 / 0.8);
+  opacity: 0;
+  animation: unbox-mote 1.6s ease-out var(--t) both;
+}
+
+@keyframes unbox-mote {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(10px);
+  }
+  30% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(var(--d));
+  }
+}
+
+/* Sellos del Guardián en una franja de latón; el reflejo de la carga es solo decorativo */
+.seal-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(28px, 1fr));
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 8px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgb(214 182 111 / 0.14), rgb(214 182 111 / 0.05));
+  box-shadow: inset 0 0 0 1px rgb(214 182 111 / 0.3);
+  list-style: none;
+}
+
+.seal-strip li {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+  color: #c9b48a;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+  opacity: 0.55;
+}
+
+.seal-strip li[data-on='true'] {
+  color: #f2e5cc;
+  opacity: 1;
+}
+
+.seal-strip svg {
+  width: 100%;
+  min-width: 28px;
+  max-width: 40px;
+}
+
+.seal-strip[data-charging] li {
+  animation: seal-glint 450ms ease calc(var(--i) * 70ms);
+}
+
+@keyframes seal-glint {
+  50% {
+    filter: drop-shadow(0 0 6px rgb(244 226 175 / 0.8));
+  }
+}
+
+/* Resultado y acciones */
+.unbox__info {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.unbox-result {
+  display: grid;
+  gap: 4px;
+  min-height: 1.5em;
+}
+
+.unbox-result__rarity {
+  justify-self: start;
+  padding: 2px 10px;
+  border: 1px solid rgb(214 182 111 / 0.6);
+  border-radius: 999px;
+  color: #f4e2af;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: unbox-fade 300ms ease both;
+}
+
+.unbox-result__name {
+  color: #f2e5cc;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 4.6vw, 1.9rem);
+  animation: unbox-fade 300ms ease 120ms both;
+}
+
+.unbox-result__detail {
+  color: #c9b48a;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+  animation: unbox-fade 300ms ease 200ms both;
+}
+
+@keyframes unbox-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.unbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.unbox-actions button {
+  min-height: 44px;
+  font-family: var(--font-sans);
+  white-space: normal;
+}
+
+.unbox-actions__main {
+  flex: 1 1 220px;
+}
+
+/* Movimiento reducido: sin giros ni ascensos; el resultado aparece con un fundido de 120 ms */
+.unbox[data-reduced] .ubox,
+.unbox[data-reduced] .ubox__lid,
+.unbox[data-reduced] .unbox-stage__aura,
+.unbox[data-reduced] .unbox-stage__light {
+  transition: none;
+  animation: none;
+}
+
+.unbox[data-reduced] .unbox-prize,
+.unbox[data-reduced] .unbox-result > * {
+  animation: unbox-fade 120ms ease both;
+}
+
+.unbox[data-reduced] .unbox-stage__particles {
+  display: none;
+}
+
+/* La columna de datos de la cámara nunca se sale: tubos, senda y textos se ajustan a su ancho */
+.unbox .vault-pity {
+  width: 100%;
+  justify-content: stretch;
+}
+
+.unbox .pity-tube,
+.unbox__info > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.unbox .pity-tube__label {
+  overflow-wrap: anywhere;
+}
+
+.unbox .vault-path {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  width: 100%;
+}
+
+.unbox .vault-path select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
 }

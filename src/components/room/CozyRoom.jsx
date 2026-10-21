@@ -3,15 +3,17 @@
 // 1.8.0: habitación viva sin botones encima, datos reales sobre los objetos y parallax de tres capas
 // (mar y cielo lejos, la habitación en medio y la cama en primer plano).
 import { Cloud, CloudOff, Maximize, Minimize, Sparkles, Volume2, VolumeX } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { chime, lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook } from '../../domain/books';
 import { dayKey } from '../../domain/dates';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { useRoomCamera } from '../../hooks/useRoomCamera';
+import { ScrollChevron } from '../shelf/ScrollChevron';
 import { LITE_SCENE } from '../../scene/renderMode';
 import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
+import { DecorBoundary } from './DecorBoundary';
 import { FrontLayer } from './FrontLayer';
 import { RoomAtmosphereCanvas } from './RoomAtmosphereCanvas';
 import { Hotspot, RoomLabel, TimeDial, TOD_ORDER, todName } from './RoomHotspots';
@@ -134,7 +136,14 @@ export function CozyRoom({ k, camera, view, interactive = true, hidden = false, 
   const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
 
   // Cámara: una sola transformación para todas las capas; en móvil, cover desplazable (SPEC §12.2)
-  useRoomCamera({ camera, shelfFocus: !camera.cover && view === SHELF_VIEW ? SHELF_FOCUS : null, worldRef, surfaceRef: cameraRef, enabled: inRoom });
+  // Flechas de la habitación: solo si queda escena fuera del encuadre en ese lado (tolerancia de 2 px)
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const onOffset = useCallback((offset, cam) => {
+    const left = cam.cover && offset.x < -2;
+    const right = cam.cover && offset.x > cam.minX + 2;
+    setEdges((e) => (e.left === left && e.right === right ? e : { left, right }));
+  }, []);
+  const { panBy } = useRoomCamera({ camera, shelfFocus: !camera.cover && view === SHELF_VIEW ? SHELF_FOCUS : null, worldRef, surfaceRef: cameraRef, enabled: inRoom, onOffset });
 
   const onHover = (next, id) => {
     if (next) setLabel(next);
@@ -278,7 +287,9 @@ export function CozyRoom({ k, camera, view, interactive = true, hidden = false, 
 
             <TimeOfDayLayers timeOfDay={settings.timeOfDay} lampOn={settings.lampOn} candleOn={settings.candleOn} />
             <CloudShadow timeOfDay={settings.timeOfDay} />
-            <RoomAtmosphereCanvas timeOfDay={settings.timeOfDay} scale={k} paused={!live} reducedMotion={reducedMotion} teaLevelRef={teaLevelRef} />
+            <DecorBoundary resetKey={settings.timeOfDay}>
+              <RoomAtmosphereCanvas timeOfDay={settings.timeOfDay} scale={k} paused={!live} reducedMotion={reducedMotion} teaLevelRef={teaLevelRef} />
+            </DecorBoundary>
 
             <Hotspot
               id="chime"
@@ -385,6 +396,12 @@ export function CozyRoom({ k, camera, view, interactive = true, hidden = false, 
             <span>Guías</span>
           </button>
         </div>
+      )}
+      {camera.cover && inRoom && (
+        <>
+          <ScrollChevron dir="left" className="room-chevron room-chevron--left" available={edges.left} onClick={() => panBy(camera.vw * 0.55)} />
+          <ScrollChevron dir="right" className="room-chevron room-chevron--right" available={edges.right} onClick={() => panBy(-camera.vw * 0.55)} />
+        </>
       )}
       {fsHint && (
         <p className="fs-hint" role="status">

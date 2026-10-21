@@ -2,18 +2,18 @@
 // 1) inspección 3D de la caja blíster o de la figura en peana, con reflejo especular y brillo dorado;
 // 2) el Guardián de Lectura y sus 5 sellos dorados (uno por día leído; el 5.º da una Caja Sorpresa);
 // 3) el blíster de reliquias y expresiones que sube el rango de ★ a ★★★★★;
-// 4) la cámara de unboxing con pity garantizado y senda deseada, rasgando el precinto dorado.
+// 4) la Cámara de Unboxing (`UnboxChamber`, 1.19.0): ceremonia separada de la entrega idempotente del premio.
 import { Package, Shield, Sparkles, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { chime, pageRustle } from '../../audio/ambientAudio';
-import { FIGURE_PITY, RARITY, RELIC_PITY, SEALS_PER_BOX, rankOf } from '../../domain/figures';
-import { dayKey } from '../../domain/dates';
+import { useRef, useState } from 'react';
+import { pageRustle } from '../../audio/ambientAudio';
+import { RARITY, SEALS_PER_BOX, rankOf } from '../../domain/figures';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { useLibrary } from '../../state/useLibrary';
 import { PanelShell } from '../panels/PanelShell';
 import { bbox, FigureArt, FigureParticles, PartArt, RANK_STARS } from './FigureArt';
 import { canUnbox, shownDisplay } from './figureDisplay';
-import { forRules, useFigureCatalog } from './figureCatalog';
+import { UnboxChamber } from './UnboxChamber';
+import { useFigureCatalog } from './figureCatalog';
 
 /** Posición de la ventana de plástico dentro de la caja recortada, en %. */
 function windowStyle(fig) {
@@ -175,220 +175,6 @@ function Inspect({ fig, catalogLen }) {
   );
 }
 
-/** Tubo de cristal y latón con un segmento por caja que se enciende al llenarse. */
-function PityTube({ icon, label, value, max }) {
-  const v = Math.min(value, max);
-  return (
-    <div className="pity-tube" role="meter" aria-valuemin={0} aria-valuemax={max} aria-valuenow={v} aria-label={`${label}: ${v} de ${max}`}>
-      <span className="pity-tube__label">
-        <span aria-hidden="true">{icon}</span> {label} <b>{v}/{max}</b>
-      </span>
-      <span className="pity-tube__glass">
-        <span className="pity-tube__cap pity-tube__cap--l" aria-hidden="true" />
-        {Array.from({ length: max }, (_, i) => (
-          <i key={i} data-on={i < v} data-last={i === v - 1 || undefined} />
-        ))}
-        <span className="pity-tube__cap pity-tube__cap--r" aria-hidden="true" />
-      </span>
-    </div>
-  );
-}
-
-/** Los 5 medallones del Guardián en arco alrededor de la caja del altar. */
-function SealArc({ guardian, lit }) {
-  if (!guardian) return null;
-  return (
-    <ol className="seal-arc" aria-label={`Sellos de ${guardian.name}: ${lit} de ${SEALS_PER_BOX}`}>
-      {guardian.loreSeals.map((name, i) => (
-        <li key={name + i} data-on={i < lit} style={{ '--a': `${-48 + i * 24}deg` }}>
-          <svg viewBox="0 0 60 60" aria-hidden="true">
-            <circle cx="30" cy="30" r="26" className="vault-seal__ring" />
-            <circle cx="30" cy="30" r="19" className="vault-seal__core" />
-            <path d="M30 14 L33 26 L46 30 L33 34 L30 46 L27 34 L14 30 L27 26 Z" className="vault-seal__star" />
-          </svg>
-          <span>{name}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/** Cámara de unboxing: rasga el precinto dorado deslizando (o con tres toques) para abrir una caja. */
-function UnboxChamber({ catalog, onShowFigure }) {
-  const { state, actions } = useLibrary();
-  const fs = state.progress.figures;
-  const [phase, setPhase] = useState('idle'); // idle · shake · reveal
-  const [tear, setTear] = useState(0);
-  const drag = useRef(null);
-  const taps = useRef(0);
-  const timers = useRef([]);
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
-
-  const open = () => {
-    if (phase !== 'idle' || fs.boxes <= 0) return;
-    setTear(1);
-    pageRustle(0.9);
-    setPhase('shake');
-    timers.current.push(
-      setTimeout(() => {
-        actions.openMysteryBox(forRules(catalog));
-        setPhase('reveal');
-        chime();
-      }, 900),
-    );
-  };
-  const onDown = (event) => {
-    drag.current = { x: event.clientX, w: event.currentTarget.getBoundingClientRect().width };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  };
-  const onMove = (event) => {
-    if (!drag.current || phase !== 'idle') return;
-    const p = Math.max(0, Math.min(1, (event.clientX - drag.current.x) / (drag.current.w * 0.7)));
-    setTear(p);
-    if (p >= 1) {
-      drag.current = null;
-      open();
-    }
-  };
-  const onUp = () => {
-    if (drag.current && tear < 1) setTear(0);
-    drag.current = null;
-  };
-
-  const guardian = catalog.find((f) => f.id === fs.guardian) ?? null;
-  const today = dayKey();
-  const readToday = state.progress.readingLog.some((e) => e.date === today && e.pages > 0) || state.progress.pomodoros.some((p) => dayKey(new Date(p.at)) === today);
-  const sealedToday = fs.lastSealDay === today;
-  const canClaim = Boolean(guardian) && readToday && !sealedToday;
-  const reward = fs.lastReward;
-  const rFig = reward && catalog.find((f) => f.id === reward.id);
-  const again = () => {
-    actions.ackFigureReward();
-    setPhase('idle');
-    setTear(0);
-    taps.current = 0;
-  };
-
-  return (
-    <div className="vault-unbox">
-      <div className="vault-pity">
-        <PityTube icon="🎁" label="Pity de Reliquia" value={fs.pity.relic} max={RELIC_PITY} />
-        <PityTube icon="🌟" label="Pity de Nueva Figura Épica/Legendaria" value={fs.pity.figure} max={FIGURE_PITY} />
-        {fs.synergy > 0 && (
-          <span className="vault-synergy">
-            ⚡ Sinergia: <b>{fs.synergy}</b> (la próxima caja cuenta doble)
-          </span>
-        )}
-      </div>
-      <label className="vault-path">
-        Senda Deseada
-        <select value={fs.path ?? ''} onChange={(e) => actions.setFigurePath(e.target.value || null)}>
-          <option value="">Sin preferencia</option>
-          {catalog.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.sagaTitle} · {f.name}
-              {fs.owned[f.id] ? ' (piezas)' : ' (figura)'}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {phase === 'reveal' && reward ? (
-        <div className="vault-reveal" role="status">
-          <span className="vault-burst" aria-hidden="true">
-            {Array.from({ length: 18 }, (_, i) => (
-              <i key={i} style={{ '--a': `${i * 20}deg`, '--d': `${60 + (i % 4) * 22}px` }} />
-            ))}
-          </span>
-          {reward.type === 'figure' && rFig && (
-            <>
-              <span className="vault-reveal__art vault-reveal__art--figure">
-                <FigureArt fig={rFig} display="box" />
-              </span>
-              <b>¡Nueva figura! {rFig.name}</b>
-              <em>
-                {RARITY[rFig.rarity].label} · {rFig.sagaTitle}
-                {reward.pity && ' · ¡pity garantizado!'}
-              </em>
-            </>
-          )}
-          {reward.type === 'part' && rFig && (
-            <>
-              <span className="vault-reveal__art">
-                <PartArt fig={rFig} part={rFig.parts[reward.part]} />
-              </span>
-              <b>{rFig.parts[reward.part].name}</b>
-              <em>
-                Pieza del blíster de {rFig.name}
-                {reward.pity && ' · ¡reliquia garantizada!'}
-              </em>
-            </>
-          )}
-          {reward.type === 'seal' && (
-            <>
-              <span className="vault-reveal__art vault-reveal__art--seal">✦</span>
-              <b>Fragmento de sello</b>
-              <em>+1 sello dorado para tu Guardián de Lectura</em>
-            </>
-          )}
-          <div className="vault-reveal__row">
-            {rFig && (
-              <button type="button" className="stamp-btn stamp-btn--small" onClick={() => onShowFigure(rFig.id)}>
-                Ver en la vitrina
-              </button>
-            )}
-            <button type="button" className="link-btn" onClick={again}>
-              {fs.boxes > 0 ? `Abrir otra (${fs.boxes})` : 'Seguir'}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="altar">
-          <SealArc guardian={guardian} lit={fs.seals} />
-          <div className="mystery">
-            <button
-              type="button"
-              className="mystery-box"
-              data-phase={phase}
-              data-closed={fs.boxes <= 0 || undefined}
-              disabled={fs.boxes <= 0}
-              style={{ '--tear': tear }}
-              onPointerDown={onDown}
-              onPointerMove={onMove}
-              onPointerUp={onUp}
-              onPointerCancel={onUp}
-              onClick={() => {
-                // Sin arrastre: tres toques rasgan el precinto
-                taps.current += 1;
-                setTear(Math.min(1, taps.current / 3));
-                if (taps.current >= 3) open();
-              }}
-              aria-label={fs.boxes > 0 ? `Caja Sorpresa: desliza sobre el precinto dorado o tócala tres veces para abrirla. Tienes ${fs.boxes}.` : 'Caja Sorpresa cerrada: gánala con los sellos de tu Guardián'}
-            >
-              <span className="mystery-box__lid" />
-              <span className="mystery-box__body">
-                <span className="mystery-box__mark">?</span>
-              </span>
-              <span className="mystery-box__seal">
-                <span className="mystery-box__torn" />
-              </span>
-            </button>
-            <span className="altar__pedestal" aria-hidden="true" />
-          </div>
-          <p className="vault-hint">
-            {fs.boxes > 0
-              ? `Desliza sobre el precinto dorado (o toca tres veces) · ${fs.boxes} ${fs.boxes === 1 ? 'caja' : 'cajas'} por abrir`
-              : `Sin cajas por abrir: los ${SEALS_PER_BOX} sellos de tu Guardián, las misiones del portátil y las hojas doradas del sobre del día te dan más.`}
-          </p>
-          <button type="button" className="stamp-btn stamp-btn--small" disabled={!canClaim} onClick={actions.claimTodaySeal}>
-            {sealedToday ? '✓ Sello de hoy encendido' : readToday ? '✦ Reclamar mi sello de hoy' : '✦ Lee hoy para encender tu sello'}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /** Silueta chibi en penumbra, con un contorno tenue y un candado de filigrana dorada. */
 function MysterySilhouette() {
   return (
@@ -415,23 +201,27 @@ function MysterySilhouette() {
   );
 }
 
-export function FiguresVaultModal({ onClose, initialId }) {
+export function FiguresVaultModal({ onClose, initialId, section = 'inspect', onSection = () => {} }) {
   const { state, actions } = useLibrary();
   const catalog = useFigureCatalog();
   const fs = state.progress.figures;
   const [selected, setSelected] = useState(initialId ?? fs.guardian ?? null);
-  const [tab, setTab] = useState('inspect');
+  // Vitrina o Cámara de Unboxing: viene de la ubicación (historial), así Atrás vuelve de la cámara a la vitrina
+  const tab = section;
+  const setTab = (next, id = selected) => {
+    if (next !== tab) onSection(next, id);
+  };
   const fig = catalog.find((f) => f.id === selected && fs.owned[f.id]) ?? catalog.find((f) => fs.owned[f.id]);
   const ownedCount = catalog.filter((f) => fs.owned[f.id]).length;
 
   return (
     <PanelShell onClose={onClose} label="El Ático del Coleccionista" variant="vault">
-      <div className="vault">
+      <div className="vault" data-section={tab}>
         <button type="button" className="icon-btn vault__close" onClick={onClose} aria-label="Cerrar el Ático">
           <X aria-hidden="true" />
         </button>
         <header className="vault__head">
-          <h2>El Ático del Coleccionista</h2>
+          <h2>{tab === 'unbox' ? 'Cámara de Unboxing' : 'El Ático del Coleccionista'}</h2>
           <p>
             Figuras de coleccionista · Edición Blíster de Lujo · {ownedCount}/{catalog.length} en tu vitrina
           </p>
@@ -463,6 +253,7 @@ export function FiguresVaultModal({ onClose, initialId }) {
         )}
 
         {/* Colección: las tuyas y las que faltan por descubrir */}
+        {tab === 'inspect' && (
         <ul className="vault-rail" aria-label="Tu colección">
           {catalog.map((f) => {
             const owned = fs.owned[f.id];
@@ -477,7 +268,7 @@ export function FiguresVaultModal({ onClose, initialId }) {
                   disabled={!owned}
                   onClick={() => {
                     setSelected(f.id);
-                    setTab('inspect');
+                    setTab('inspect', f.id);
                   }}
                   title={owned ? f.name : `${RARITY[f.rarity].label} · ${f.sagaTitle} · por descubrir`}
                 >
@@ -493,6 +284,7 @@ export function FiguresVaultModal({ onClose, initialId }) {
             );
           })}
         </ul>
+        )}
 
         {tab === 'inspect' && fig && <Inspect key={fig.id} fig={fig} catalogLen={catalog.length} />}
         {tab === 'inspect' && !fig && <p className="vault-empty">Cargando tu vitrina…</p>}
@@ -500,9 +292,8 @@ export function FiguresVaultModal({ onClose, initialId }) {
           <UnboxChamber
             catalog={catalog}
             onShowFigure={(id) => {
-              actions.ackFigureReward();
               setSelected(id);
-              setTab('inspect');
+              setTab('inspect', id);
             }}
           />
         )}

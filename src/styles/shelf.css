@@ -1472,3 +1472,139 @@ html[data-lite-scene] .library__sun {
 html[data-lite-scene] .library__leaves {
   display: none;
 }
+
+/* ── 1.19.0 · Baldas con scroll nativo en iPhone (SPEC §13.4) ─────────────────────────────────────
+   Cada balda es un único scroller horizontal que no se solapa con las vecinas (antes, márgenes de −58 y
+   −30 px). El listón queda detrás, en posición absoluta; arriba hay sitio para los libros que se elevan
+   (−26 px) y abajo para la insignia de 34 px con 12 px de margen. */
+.shelf-row {
+  margin: 0;
+}
+
+.shelf-row::before {
+  bottom: 44px;
+}
+
+.shelf-row__scroller {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 30px 26px 44px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x pan-y pinch-zoom;
+  overscroll-behavior-x: auto;
+  scroll-padding-inline: 16px;
+  pointer-events: auto;
+}
+
+.shelf-row__track {
+  flex: 0 0 auto;
+}
+
+.shelf-row__plank {
+  position: absolute;
+  right: 0;
+  bottom: 18px;
+  left: 0;
+}
+
+.shelf-row__plate {
+  top: auto;
+  bottom: 31px;
+  transform: translate(calc(-50% + var(--plate-dx, 0px)), 50%);
+}
+
+.shelf-row__plate:hover {
+  transform: translate(calc(-50% + var(--plate-dx, 0px)), 50%) scale(1.06);
+}
+
+@media (max-width: 760px) {
+  .shelf-row__scroller {
+    padding-inline: 14px;
+  }
+}
+
+/* Flechas de desplazamiento: chevron de latón sin cápsula (SPEC §13.4) */
+.scroll-chevron {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #c59b27;
+  opacity: 0.35;
+  filter: drop-shadow(0 1px 2px rgba(44, 30, 20, 0.65));
+  cursor: pointer;
+  transition: opacity 160ms ease;
+}
+
+.scroll-chevron svg {
+  width: 14px;
+  height: 22px;
+}
+
+.scroll-chevron:hover,
+.scroll-chevron:focus-visible {
+  opacity: 0.8;
+}
+
+.scroll-chevron:focus-visible {
+  outline: 2px solid #c59b27;
+  outline-offset: 3px;
+}
+
+.scroll-chevron[data-nudge='left'] svg {
+  animation: chevron-nudge-left 900ms ease-in-out 2;
+}
+
+.scroll-chevron[data-nudge='right'] svg {
+  animation: chevron-nudge-right 900ms ease-in-out 2;
+}
+
+@keyframes chevron-nudge-left {
+  50% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes chevron-nudge-right {
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-chevron svg {
+    animation: none !important;
+  }
+}
+
+.shelf-row > .scroll-chevron {
+  top: calc(30px + var(--row-h) / 2 - 22px);
+}
+
+.shelf-row > .scroll-chevron--left {
+  left: -6px;
+}
+
+.shelf-row > .scroll-chevron--right {
+  right: -6px;
+}
+
+/* En pantallas táctiles la barra de scroll de cada balda sobra (hay flechas y se desliza con el dedo) */
+@media (pointer: coarse) {
+  .shelf-row__scroller {
+    scrollbar-width: none;
+  }
+
+  .shelf-row__scroller::-webkit-scrollbar {
+    display: none;
+  }
+}

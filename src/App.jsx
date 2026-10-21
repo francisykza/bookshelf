@@ -13,6 +13,7 @@ import { CozyRoom, ROOM_VIEW, SHELF_VIEW } from './components/room/CozyRoom';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { useReadingTimer } from './hooks/useReadingTimer';
+import { useAppNavigation } from './hooks/useAppNavigation';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { ENTERING, ROOM, SHELF, useShelfTransition } from './hooks/useShelfTransition';
 import { fitCamera } from './scene/camera';
@@ -64,15 +65,37 @@ function Sanctuary() {
   const { phase, toShelf, toRoom, onTransitionEnd } = useShelfTransition({ reducedMotion, mobile: camera.cover });
   // La cámara de escritorio se acerca mientras la librería entra y se aleja mientras sale
   const view = phase === ENTERING || phase === SHELF ? SHELF_VIEW : ROOM_VIEW;
-  const [panel, setPanel] = useState(null);
+  // Ubicación con historial real (SPEC §13.3): vista y panel salen del historial; Atrás vuelve al destino
+  // interno anterior antes de abandonar BookShelf
+  const { location, nav } = useAppNavigation();
+  const panel = useMemo(() => {
+    const p = location.panel;
+    if (!p) return null;
+    // Un libro que ya no existe (recarga tras borrarlo) cae al destino seguro
+    if (p.type === 'book' && !state.books.some((b) => b.id === p.id)) return null;
+    return p;
+  }, [location.panel, state.books]);
+  const locRef = useRef(location);
+  useEffect(() => {
+    locRef.current = location;
+  }, [location]);
+  const openPanel = useCallback((p) => nav.go({ view: locRef.current.view, panel: p }), [nav]);
+  const switchPanel = useCallback((p) => nav.replace({ view: locRef.current.view, panel: p }), [nav]);
   const [askPages, setAskPages] = useState(false);
+
+  // La vista sigue a la ubicación: la máquina de transición hace el resto
+  useEffect(() => {
+    if (location.view === 'shelf') toShelf();
+    else toRoom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.view]);
 
   const onFocusDone = useCallback((minutes) => {
     bell();
     actions.logPomodoro(minutes ?? settings.focusMinutes, settings.drink);
     setAskPages(true);
-    setPanel((p) => p ?? { type: 'tray' });
-  }, [actions, settings.focusMinutes, settings.drink]);
+    if (!locRef.current.panel) openPanel({ type: 'tray' });
+  }, [actions, settings.focusMinutes, settings.drink, openPanel]);
 
   const timer = useReadingTimer({
     focusMinutes: settings.focusMinutes,
@@ -129,14 +152,16 @@ function Sanctuary() {
 
   useEffect(() => {
     const onKey = (event) => {
-      if (event.key === 'Escape' && !panel && (phase === SHELF || phase === ENTERING)) toRoom();
+      if (event.key === 'Escape' && !panel && (phase === SHELF || phase === ENTERING)) nav.back();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [panel, phase, toRoom]);
+  }, [panel, phase, nav]);
 
-  const close = useCallback(() => setPanel(null), []);
-  const openBook = (book) => setPanel({ type: 'book', id: book.id });
+  // Cerrar y Volver usan la misma navegación que el gesto Atrás
+  const close = nav.back;
+  const openBook = (book) => openPanel({ type: 'book', id: book.id });
+  const openShelf = () => nav.go({ view: 'shelf', panel: null });
 
   return (
     <main ref={stageRef} className="sanctuary" data-view={view} data-phase={phase} inert={panel ? true : undefined}>
@@ -149,28 +174,36 @@ function Sanctuary() {
         interactive={phase === ROOM}
         hidden={phase === SHELF}
         timer={timer}
-        onOpenShelf={toShelf}
+        onOpenShelf={openShelf}
         onOpenBook={openBook}
-        onOpenLaptop={() => setPanel({ type: 'laptop' })}
-        onOpenTray={() => setPanel({ type: 'tray' })}
+        onOpenLaptop={() => openPanel({ type: 'laptop' })}
+        onOpenTray={() => openPanel({ type: 'tray' })}
         onToggleSound={toggleSound}
-        onOpenAtlas={() => setPanel({ type: 'atlas' })}
-        onOpenVault={(id) => setPanel({ type: 'vault', id })}
-        onOpenAccount={() => setPanel({ type: 'account' })}
+        onOpenAtlas={() => openPanel({ type: 'atlas' })}
+        onOpenVault={(id) => openPanel({ type: 'vault', id })}
+        onOpenAccount={() => openPanel({ type: 'account' })}
         modalOpen={Boolean(panel)}
       />
       <ShelfView
         phase={phase}
         onTransitionEnd={onTransitionEnd}
-        onBack={toRoom}
+        onBack={nav.back}
         onOpenBook={openBook}
-        onAddBook={() => setPanel({ type: 'add' })}
-        onOpenVault={(id) => setPanel({ type: 'vault', id })}
+        onAddBook={() => openPanel({ type: 'add' })}
+        onOpenVault={(id) => openPanel({ type: 'vault', id })}
       />
 
-      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => setPanel({ type: 'book', id })} />}
-      {panel?.type === 'laptop' && <LaptopPanel onClose={close} initialTab={panel.tab} onOpenVault={() => setPanel({ type: 'vault' })} />}
-      {panel?.type === 'vault' && <FiguresVaultModal onClose={close} initialId={panel.id} />}
+      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} />}
+      {panel?.type === 'laptop' && <LaptopPanel onClose={close} initialTab={panel.tab} onOpenVault={() => openPanel({ type: 'vault' })} />}
+      {panel?.type === 'vault' && (
+        <FiguresVaultModal
+          onClose={close}
+          initialId={panel.id}
+          section={panel.section === 'unbox' ? 'unbox' : 'inspect'}
+          // Vitrina ↔ Cámara de Unboxing es un paso de navegación: Atrás desde la cámara vuelve a la vitrina
+          onSection={(section, id) => openPanel({ type: 'vault', id: id ?? panel.id, ...(section === 'unbox' ? { section } : null) })}
+        />
+      )}
       {panel?.type === 'tray' && (
         <PomodoroTray
           onClose={() => {
@@ -182,13 +215,13 @@ function Sanctuary() {
           onPagesDone={() => setAskPages(false)}
           onOpenCalendar={() => {
             setAskPages(false);
-            setPanel({ type: 'laptop', tab: 'calendar' });
+            switchPanel({ type: 'laptop', tab: 'calendar' });
           }}
         />
       )}
       {panel?.type === 'atlas' && <SagaMapModal onClose={close} onOpenBook={openBook} />}
       {panel?.type === 'account' && <AccountPanel onClose={close} />}
-      {panel?.type === 'add' && <AddBookCard onClose={close} onAdded={toShelf} />}
+      {panel?.type === 'add' && <AddBookCard onClose={close} onAdded={() => nav.replace({ view: 'shelf', panel: null })} />}
     </main>
   );
 }

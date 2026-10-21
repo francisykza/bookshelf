@@ -6,7 +6,7 @@
 // - Portadas de Open Library / Google Books: caché y refresco por detrás.
 // - Nada de Supabase ni de otros orígenes; nunca se guardan respuestas fallidas.
 const PREFIX = 'bookshelf-';
-const VERSION = `${PREFIX}v1.18.0`;
+const VERSION = `${PREFIX}v1.19.0`;
 const COVERS = `${VERSION}-covers`;
 const CORE = ['/', '/index.html', '/manifest.webmanifest', '/cozy-book-room.jpg', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/figures/catalog.json'];
 const COVER_HOSTS = ['covers.openlibrary.org', 'books.google.com', 'books.googleusercontent.com'];

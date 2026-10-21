@@ -12,19 +12,7 @@ const LEAF_SHADES = [
 
 const laptop = bounds(HOTSPOTS.laptop.shape);
 
-/** Penumbra de noche con huecos solo donde hay luces encendidas. */
-function nightMask(lampOn, candleOn) {
-  const holes = [];
-  if (lampOn) holes.push(`radial-gradient(circle 190px at ${LAMP.x}px ${LAMP.y + 40}px, transparent 0, rgba(0,0,0,0.55) 55%, #000 100%)`);
-  if (candleOn) {
-    holes.push(`radial-gradient(circle 120px at ${LANTERN.x}px ${LANTERN.y}px, transparent 0, rgba(0,0,0,0.5) 50%, #000 100%)`);
-    holes.push(`radial-gradient(circle 80px at ${DESK_CANDLE.x}px ${DESK_CANDLE.y}px, transparent 0, #000 100%)`);
-  }
-  return holes.length ? holes.join(', ') : 'linear-gradient(#000, #000)';
-}
-
 export function TimeOfDayLayers({ timeOfDay, lampOn = true, candleOn = true }) {
-  const mask = nightMask(lampOn, candleOn);
   return (
     <div className="tod" data-tod={timeOfDay} data-lamp={lampOn} data-candle={candleOn} aria-hidden="true">
       {/* Komorebi (SPEC §12.6): dos rayos que respiran por opacidad y dos sombras de hojas ya suavizadas */}
@@ -54,7 +42,8 @@ export function TimeOfDayLayers({ timeOfDay, lampOn = true, candleOn = true }) {
       <div className="tod__sunset-warm" />
 
       {/* Noche de lectura: penumbra azul con las luces cálidas abiertas */}
-      <div className="tod__night" style={{ WebkitMaskImage: mask, maskImage: mask, maskComposite: 'intersect', WebkitMaskComposite: 'source-in' }} />
+      {/* Tinte nocturno general, sin máscara (una máscara que falla deja un rectángulo opaco) */}
+      <div className="tod__night" />
       {/* Luces apagadas: la bombilla y la llama pintadas se oscurecen */}
       <div className="tod__off tod__off--lamp" style={{ left: LAMP.x - 46, top: LAMP.y - 46, width: 92, height: 92 }} />
       <div className="tod__off tod__off--lantern" style={{ left: LANTERN.x - 30, top: LANTERN.y - 34, width: 60, height: 64 }} />

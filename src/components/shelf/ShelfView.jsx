@@ -13,6 +13,7 @@ import { figureForBook, useFigureCatalog } from '../figures/figureCatalog';
 import { EditionMenu } from '../book/EditionPicker';
 import { ElegantQuoteCard } from '../quotes/ElegantQuoteCard';
 import { BookItem, Cover } from './BookItem';
+import { ScrollChevron } from './ScrollChevron';
 
 /** Recorte de la ilustración como fondo CSS que llena el elemento. */
 export function cropStyle(region) {
@@ -210,7 +211,47 @@ function usePlateClearOfPins(sectionRef, deps) {
   return offset;
 }
 
+/** ¿Queda balda por ver a cada lado? Se recalcula con el scroll y el tamaño, una sola vez por fotograma. */
+function useScrollEdges(ref, deps) {
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    let frame = 0;
+    const read = () => {
+      const overflow = el.scrollWidth > el.clientWidth + 2;
+      const left = overflow && el.scrollLeft > 2;
+      const right = overflow && el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+      setEdges((e) => (e.left === left && e.right === right ? e : { left, right }));
+    };
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(read);
+    };
+    read();
+    el.addEventListener('scroll', measure, { passive: true });
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener('scroll', measure);
+      observer.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  return edges;
+}
+
+const smooth = () => (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+
 function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, focused, onPlate, pickedId, onMove }) {
+  const scrollerRef = useRef(null);
+  const edges = useScrollEdges(scrollerRef, [books, mode, rowH]);
+  const page = (dir) => {
+    const el = scrollerRef.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.7, behavior: smooth() });
+  };
   const trackRef = useRef(null);
   const sectionRef = useRef(null);
   const [drop, setDrop] = useState(null);
@@ -234,7 +275,7 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
 
   return (
     <section ref={sectionRef} className="shelf-row" data-row={row.id} style={{ '--row-h': `${rowH}px` }} aria-label={`${row.label}: ${books.length} libros`}>
-      <div className="shelf-row__scroller">
+      <div ref={scrollerRef} className="shelf-row__scroller">
         <div
           ref={trackRef}
           className="shelf-row__track"
@@ -274,18 +315,20 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
           )}
         </div>
       </div>
-      <div className="shelf-row__plank" style={cropStyle(WOOD_PLANK)}>
-        <button
-          type="button"
-          className="shelf-row__plate"
-          style={plateOffset ? { '--plate-dx': `${plateOffset}px` } : undefined}
-          aria-pressed={focused}
-          onClick={onPlate}
-          title={focused ? 'Volver a ver todas las baldas' : `Ver solo ${row.label.toLowerCase()}`}
-        >
-          {row.label} · {books.length}
-        </button>
-      </div>
+      <ScrollChevron dir="left" available={edges.left} onClick={() => page(-1)} />
+      <ScrollChevron dir="right" available={edges.right} onClick={() => page(1)} />
+      {/* Listón de madera bajo los libros (detrás del scroller) y su rótulo de estado, aparte */}
+      <div className="shelf-row__plank" style={cropStyle(WOOD_PLANK)} aria-hidden="true" />
+      <button
+        type="button"
+        className="shelf-row__plate"
+        style={plateOffset ? { '--plate-dx': `${plateOffset}px` } : undefined}
+        aria-pressed={focused}
+        onClick={onPlate}
+        title={focused ? 'Volver a ver todas las baldas' : `Ver solo ${row.label.toLowerCase()}`}
+      >
+        {row.label} · {books.length}
+      </button>
     </section>
   );
 }

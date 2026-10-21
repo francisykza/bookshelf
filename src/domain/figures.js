@@ -46,6 +46,8 @@ export const EMPTY_FIGURES = {
   synergyDay: null,
   lastReward: null,
   sealBox: false,
+  // Último intento de apertura confirmado (SPEC §13.6): { id, reward, at, seen }
+  unbox: null,
 };
 
 /** Estado inicial: las dos figuras de partida, la Dama como Guardián y una caja de bienvenida. */
@@ -146,4 +148,29 @@ export function openMysteryBox(fs, figs, rnd) {
     out.lastReward = reward;
   }
   return { fs: out, reward };
+}
+
+/**
+ * Abre una Caja Sorpresa dentro de un intento identificado (SPEC §13.6). Consumir la caja y conceder el
+ * premio es una sola actualización, con las reglas de `openMysteryBox` intactas. Repetir el mismo `attemptId`
+ * devuelve el estado tal cual (el premio ya confirmado), sin consumir otra caja ni sortear de nuevo.
+ */
+export function openBoxAttempt(fs, figs, rnd, attemptId, at = new Date().toISOString()) {
+  if (!fs || !attemptId) return fs;
+  if (fs.unbox?.id === attemptId) return fs;
+  if (fs.boxes <= 0 || !figs.length) return fs;
+  const { fs: next, reward } = openMysteryBox(fs, figs, rnd);
+  if (!reward) return fs;
+  let rank = null;
+  if (reward.type === 'part') {
+    const fig = figs.find((f) => f.id === reward.id);
+    rank = { before: rankOf(fig.parts.length, fs.owned[reward.id]), after: rankOf(fig.parts.length, next.owned[reward.id]) };
+  }
+  return { ...next, unbox: { id: attemptId, reward: { ...reward, rank }, at, seen: false } };
+}
+
+/** El resultado del intento ya se ha mostrado: no se vuelve a presentar al entrar en la cámara. */
+export function markUnboxSeen(fs, attemptId) {
+  if (!fs?.unbox || fs.unbox.id !== attemptId || fs.unbox.seen) return fs;
+  return { ...fs, unbox: { ...fs.unbox, seen: true }, lastReward: null };
 }

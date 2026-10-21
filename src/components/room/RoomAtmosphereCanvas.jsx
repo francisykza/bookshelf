@@ -204,7 +204,7 @@ function draw(c, density, world, sprites, t, count, teaLevel) {
   c.save();
   c.clip(getSeaPath());
   const rs = sprites.ripple[tod] ?? sprites.ripple.morning;
-  for (let i = 0; i < count.ripples; i += 1) {
+  for (let i = 0; i < Math.min(count.ripples, world.ripples.length); i += 1) {
     const r = world.ripples[i];
     const w = (TAU * t) / r.period + r.phase;
     const breathe = 0.55 + 0.45 * Math.sin(w * 0.5);
@@ -215,7 +215,7 @@ function draw(c, density, world, sprites, t, count, teaLevel) {
   }
   const gs = tod === 'night' ? sprites.glintNight : sprites.glintDay;
   const glintMax = tod === 'night' ? 0.4 : 0.55;
-  for (let i = 0; i < count.glints; i += 1) {
+  for (let i = 0; i < Math.min(count.glints, world.glints.length); i += 1) {
     const g = world.glints[i];
     // Ciclo suave (sin destellos bruscos): coseno elevado
     const a = 0.5 - 0.5 * Math.cos((TAU * t) / g.period + g.phase);
@@ -226,7 +226,8 @@ function draw(c, density, world, sprites, t, count, teaLevel) {
   drawBoat(c, t, tod);
 
   // Polvo: motas lentas que solo brillan dentro de los haces
-  for (let i = 0; i < count.dust; i += 1) {
+  // De noche no hay polvo (no hay haces de luz): cada bucle se limita a lo que existe
+  for (let i = 0; i < Math.min(count.dust, world.dust.length); i += 1) {
     const d = world.dust[i];
     const a = 0.18 * (0.5 + 0.5 * Math.sin(t * 0.8 + d.phase));
     if (a < 0.02) continue;
@@ -256,7 +257,7 @@ function draw(c, density, world, sprites, t, count, teaLevel) {
   const teaTop = teaLevel === null ? 0 : TEA_GLASS.y + TEA_GLASS.h * (1 - teaLevel);
   c.strokeStyle = 'rgba(255,248,225,0.7)';
   c.lineWidth = 0.5;
-  for (let i = 0; i < count.bubbles; i += 1) {
+  for (let i = 0; i < Math.min(count.bubbles, world.bubbles.length); i += 1) {
     const b = world.bubbles[i];
     const span = TEA_GLASS.h;
     const y = TEA_GLASS.y + span - (((b.v * t + b.phase * 20) % span) + span) % span;

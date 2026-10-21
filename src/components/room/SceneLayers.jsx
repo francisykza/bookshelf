@@ -197,7 +197,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
         <Feather id={sid('m-lamp')} x={LAMP_SWING.x - 20} y={LAMP_SWING.y} w={LAMP_SWING.w + 40} h={LAMP_SWING.h} soft={0.18} />
         <SwayFilter id={sid('f-clouds')} region={CLOUD_REGION} keyMatrix={NOT_WOOD_KEY} freq="0.006 0.012" amp={14} dur="22s" seed="2" />
 
-        {/* Noche: cielo, mar, nubes y flores exteriores pasan a azul de luna; la madera conserva la luz de dentro */}
+        {/* Noche (SPEC §13.2): cielo, mar y nubes exteriores van de #152444 a #AFC9E8 según su luz; la madera conserva la de dentro */}
         <filter id={sid('f-night')} filterUnits="userSpaceOnUse" x="315" y="0" width="669" height="820" colorInterpolationFilters="sRGB">
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.5 -1.5 3 0 0" result="blue" />
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 1 1 0 -2.1" result="white" />
@@ -207,7 +207,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
           <feColorMatrix
             in="SourceGraphic"
             type="matrix"
-            values="0.1 0.05 0.03 0 0.01  0.06 0.13 0.08 0 0.02  0.08 0.15 0.36 0 0.07  0 0 0 1 0"
+            values="0.072 0.143 0.027 0 0.082  0.078 0.153 0.028 0 0.141  0.077 0.152 0.028 0 0.267  0 0 0 1 0"
             result="moonlit"
           />
           <feComposite in="moonlit" in2="key" operator="in" />

@@ -2207,11 +2207,6 @@ html[data-lite-scene] .world__breath {
 
 /* Perfil ligero: las capas de toda la escena (noche, atardecer) tiñen con alfa normal, sin mezclas.
    Una mezcla multiply de 984×1599 sobre capas compuestas es la candidata al rectángulo violáceo. */
-html[data-lite-scene] .tod__night {
-  background: rgba(14, 18, 52, 0.5);
-  mix-blend-mode: normal;
-}
-
 html[data-lite-scene] .tod__sunset {
   background: linear-gradient(180deg, rgba(255, 132, 74, 0.2), rgba(255, 116, 140, 0.12) 50%, rgba(130, 62, 110, 0.14));
   mix-blend-mode: normal;
@@ -2383,4 +2378,68 @@ html[data-motion='reduced'] .tod__leafshade,
 html[data-motion='reduced'] .tod__glow::before,
 html[data-motion='reduced'] .tod__glow::after {
   animation: none;
+}
+
+/* ── 1.19.0 · Noche legible (SPEC §13.2): ilustración intacta, tinte azul suave y luces localizadas ── */
+.tod > * {
+  transition: opacity 450ms ease;
+}
+
+.tod-layer[data-on='true'] {
+  animation-duration: 450ms;
+}
+
+.tod__night {
+  background: linear-gradient(180deg, rgba(19, 31, 64, 0.38) 0%, rgba(24, 35, 59, 0.22) 55%, rgba(16, 24, 42, 0.3) 100%);
+  mix-blend-mode: normal;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* Halos cálidos en screen, limitados a su objeto */
+.tod__glow--lamp,
+.tod[data-tod='sunset'] .tod__glow--lamp {
+  border-radius: 50%;
+  background: radial-gradient(ellipse 50% 50% at 50% 30%, rgba(255, 204, 132, 0.2), rgba(255, 204, 132, 0.06) 45%, transparent 70%);
+  filter: none;
+  animation: none;
+  mix-blend-mode: screen;
+}
+
+.tod__glow--candle,
+.tod__glow--lantern {
+  background: radial-gradient(circle, rgba(255, 184, 94, 0.16), rgba(255, 184, 94, 0.05) 45%, transparent 70%);
+  mix-blend-mode: screen;
+}
+
+/* Luz de la estantería: fija, sin filtros animados */
+.tod__glow--shelf,
+.tod[data-tod='sunset'] .tod__glow--shelf {
+  filter: none;
+  animation: none;
+  background: radial-gradient(ellipse 50% 50% at 40% 45%, rgba(255, 196, 120, 0.16), rgba(255, 170, 90, 0.05) 55%, transparent 75%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tod > *,
+  .tod-layer[data-on='true'] {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Flechas de la habitación (SPEC §13.4): ancladas al viewport, al 52 % de altura */
+.room-chevron {
+  position: fixed;
+  top: 52%;
+  z-index: 12;
+  transform: translateY(-50%);
+}
+
+.room-chevron--left {
+  left: calc(env(safe-area-inset-left, 0px) + 24px);
+}
+
+.room-chevron--right {
+  right: calc(env(safe-area-inset-right, 0px) + 24px);
 }
