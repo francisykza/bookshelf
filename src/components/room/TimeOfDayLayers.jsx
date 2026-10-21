@@ -1,6 +1,7 @@
 // Luz de la habitación por hora del día (SPEC §2.3): haces komorebi, sombras de hojas, velo dorado
 // del atardecer y noche azul con huecos donde la lámpara colgante y las velas encienden su luz naranja.
 import { DESK_CANDLE, HOTSPOTS, LAMP, LANTERN } from '../../scene/sceneMap';
+import { useSvgIds } from '../../hooks/useSvgIds';
 import { bounds } from '../../scene/homography';
 import { BEAMS } from './beams';
 
@@ -26,6 +27,7 @@ function nightMask(lampOn, candleOn) {
 }
 
 export function TimeOfDayLayers({ timeOfDay, lampOn = true, candleOn = true }) {
+  const sid = useSvgIds();
   const mask = nightMask(lampOn, candleOn);
   return (
     <div className="tod" data-tod={timeOfDay} data-lamp={lampOn} data-candle={candleOn} aria-hidden="true">
@@ -49,11 +51,11 @@ export function TimeOfDayLayers({ timeOfDay, lampOn = true, candleOn = true }) {
       </div>
       <svg className="tod__leaves" viewBox="0 0 984 1599" width="984" height="1599">
         <defs>
-          <filter id="f-leaf-blur" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id={sid('f-leaf-blur')} x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="7" />
           </filter>
         </defs>
-        <g filter="url(#f-leaf-blur)" className="tod__leaves-drift">
+        <g filter={sid.url('f-leaf-blur')} className="tod__leaves-drift">
           {LEAVES.map((l, i) => (
             <ellipse key={i} cx={l.x} cy={l.y} rx={l.rx} ry={l.ry} transform={`rotate(${l.rot} ${l.x} ${l.y})`} />
           ))}

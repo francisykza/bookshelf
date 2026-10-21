@@ -4,7 +4,7 @@
 .backdrop {
   position: fixed;
   inset: -6%;
-  background: url('/cozy-book-room.png') center / cover no-repeat;
+  background: url('/cozy-book-room.jpg') center / cover no-repeat;
   filter: blur(46px) brightness(0.78) saturate(1.3) sepia(0.12);
   transform: scale(1.12);
 }
@@ -1957,7 +1957,11 @@ html[data-lite-scene] * {
 }
 
 html[data-lite-scene] .panel-veil {
-  background: radial-gradient(ellipse at 50% 60%, rgb(120 78 40 / 0.55), rgb(30 16 8 / 0.78) 75%);
+  background: rgba(44, 30, 20, 0.48);
+}
+
+html[data-lite-scene] .panel-veil > .panel {
+  mix-blend-mode: normal;
 }
 
 /* En móvil, con la librería abierta (que ocupa toda la pantalla) la habitación deja de pintarse */
@@ -1966,4 +1970,171 @@ html[data-lite-scene] .room-camera[data-view='SHELF_VIEW'] .world {
   transition:
     transform 700ms var(--ease-camera),
     visibility 0s linear 700ms;
+}
+
+/* ── 1.17.0 · Base estable, capas y perfil móvil (SPEC §11.2–§11.4) ───────────────────────────── */
+
+/* Escenario: alto real del viewport (dvh cuando existe) y el único recorte de la escena */
+.sanctuary {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Jerarquía global: fondo extendido 0, habitación 10, librería 20 (los modales, 1000, van en #modal-root) */
+.backdrop {
+  z-index: 0;
+}
+
+.room-camera {
+  z-index: 10;
+  isolation: isolate;
+}
+
+/* Imagen base HTML: debajo de todo dentro del mundo, sin filtros ni mezclas */
+.scene-base {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  opacity: 1;
+  filter: none;
+  mix-blend-mode: normal;
+  -webkit-user-drag: none;
+}
+
+/* Si la ilustración no carga: aviso discreto sobre papel crema y reintento manual */
+.scene-error {
+  --paper-bg: linear-gradient(#faf5e8, #f3e6cb);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 30;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  width: min(320px, calc(100vw - 32px));
+  padding: 18px 20px;
+  border-radius: 12px;
+  color: #2c1e14;
+  font-family: var(--font-sans);
+  text-align: center;
+  transform: translate(-50%, -50%);
+  box-shadow: var(--pressed-paper), 0 18px 40px rgb(20 10 4 / 0.45);
+}
+
+.scene-error p {
+  margin: 0;
+}
+
+.scene-error__retry {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid #7a5c12;
+  border-radius: 999px;
+  background: linear-gradient(#f1d68a, #c59b27);
+  color: #2c1e14;
+  font-weight: 600;
+}
+
+/* Con un modal delante, la habitación no anima nada decorativo (el temporizador sigue contando) */
+.room-camera[data-modal] *,
+.room-camera[data-modal] *::before,
+.room-camera[data-modal] *::after {
+  animation-play-state: paused !important;
+}
+
+/* Perfil móvil: sin parallax, sin respiración de cámara y sin perspectiva global en la habitación */
+html[data-lite-scene] .room-camera {
+  perspective: none;
+}
+
+html[data-lite-scene] .world__parallax,
+html[data-lite-scene] .layer-front,
+html[data-lite-scene] .layer-far {
+  transform: none;
+  transition: none;
+}
+
+html[data-lite-scene] .world__breath {
+  animation: none;
+}
+
+/* Bandas de `contain` en pantallas altas: ilustración extendida más luminosa y sin el marco de madera */
+@media (max-width: 760px) {
+  .world__frame {
+    display: none;
+  }
+
+  .world {
+    box-shadow: none;
+  }
+
+  .backdrop {
+    filter: blur(34px) brightness(0.92) saturate(1.2) sepia(0.08);
+  }
+}
+
+/* Zero-UI (SPEC §11.8): los controles de la esquina son pestañas de madera y latón colgadas del marco,
+   no cápsulas blancas flotantes. Mismas funciones: cuenta, pantalla completa, sonidos táctiles y guías. */
+.room-corner {
+  top: max(0px, env(safe-area-inset-top));
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.room-corner .corner-btn,
+.room-corner .guides-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  border: 0;
+  border-radius: 0 0 9px 9px;
+  background:
+    linear-gradient(180deg, rgb(255 230 170 / 0.1), transparent 40%),
+    repeating-linear-gradient(90deg, rgb(40 20 8 / 0.18) 0 2px, transparent 2px 7px),
+    linear-gradient(180deg, #8a5a2b, #6b4423 70%, #4d2f17);
+  color: #f1d68a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 170, 0.16),
+    inset 0 -2px 0 #c59b27,
+    0 3px 8px rgba(44, 30, 20, 0.22);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  opacity: 0.92;
+}
+
+.room-corner .corner-btn svg,
+.room-corner .guides-toggle svg {
+  color: #f1d68a;
+}
+
+.room-corner .guides-toggle {
+  padding: 0 12px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.room-corner .corner-btn[aria-pressed='false'] {
+  color: #c9b48a;
+}
+
+.room-corner .guides-toggle[aria-pressed='true'] {
+  background: linear-gradient(180deg, #f1d68a, #c59b27 60%, #8f6c17);
+  color: #2c1e14;
+}
+
+.room-corner .guides-toggle[aria-pressed='true'] svg {
+  color: #2c1e14;
+}
+
+.room-corner .corner-btn--cloud::after {
+  border-color: #6b4423;
 }

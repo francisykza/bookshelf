@@ -2,6 +2,8 @@
 // los cantos pintados, el sub-selector con los 4 diseños del canto. Lo usan el libro abierto y el menú
 // rápido de la estantería (clic derecho o pulsación larga sobre un libro).
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { modalRoot } from '../panels/modalRoot';
 import { EDGE_STYLES, EDITIONS, EDITION_IDS } from '../../domain/books';
 
 export function EdgePicker({ value, onChange }) {
@@ -62,7 +64,8 @@ export function EditionMenu({ book, x, y, onChange, onClose }) {
     items[(i + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
   };
 
-  return (
+  // En #modal-root: por encima de la librería y del libro abierto, sin ancestros transformados
+  return createPortal(
     <div ref={ref} className="edition-menu" role="dialog" aria-label={`Edición de ${book.title}`} style={pos} onKeyDown={onKeyDown}>
       <p className="edition-menu__title">Edición · {book.title}</p>
       <ul role="radiogroup" aria-label="Edición">
@@ -84,6 +87,7 @@ export function EditionMenu({ book, x, y, onChange, onClose }) {
       {book.editionType === 'sprayed_edges' && (
         <EdgePicker value={book.sprayedEdgeStyle} onChange={(sprayedEdgeStyle) => onChange({ sprayedEdgeStyle })} />
       )}
-    </div>
+    </div>,
+    modalRoot(),
   );
 }

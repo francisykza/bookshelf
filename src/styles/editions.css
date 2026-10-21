@@ -721,7 +721,7 @@
 /* ── Menú rápido de edición en la estantería ── */
 .edition-menu {
   position: fixed;
-  z-index: 80;
+  z-index: 1010;
   width: 276px;
   padding: 10px;
   border: 2px solid #b07a45;

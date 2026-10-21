@@ -15,6 +15,7 @@ objetos de la ilustración para navegar (arquitectura completa en [SPEC.md](SPEC
 ```bash
 npm install
 npm run dev
+npm test
 npm run build
 ```
 

@@ -3,8 +3,10 @@
 // reflejos) y alguna gota que resbala; en el nivel, la
 // superficie ámbar del té. Durante el descanso el vaso se rellena poco a poco.
 import { SCENE_H, SCENE_SRC, SCENE_W, TEA_LIQUID, pts } from '../../scene/sceneMap';
+import { useSvgIds } from '../../hooks/useSvgIds';
 
 export function TeaDrain({ level }) {
+  const sid = useSvgIds();
   if (level === null) return null;
   const top = TEA_LIQUID.top;
   const bottom = TEA_LIQUID.bottom;
@@ -13,14 +15,14 @@ export function TeaDrain({ level }) {
   return (
     <svg className="tea-drain" viewBox={`0 0 ${SCENE_W} ${SCENE_H}`} width={SCENE_W} height={SCENE_H} aria-hidden="true">
       <defs>
-        <clipPath id="clip-tea">
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-tea')}>
           <polygon points={pts(TEA_LIQUID.shape)} />
         </clipPath>
-        <clipPath id="clip-tea-empty">
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-tea-empty')}>
           <rect x={TEA_LIQUID.x} y={top - 10} width={TEA_LIQUID.w} height={Math.max(0, surface - top + 10)} />
         </clipPath>
         {/* Vidrio vacío: el té pierde su color y se aclara, quedan el hielo y los brillos */}
-        <filter id="f-empty-glass" x="0" y="0" width="1" height="1" colorInterpolationFilters="sRGB">
+        <filter id={sid('f-empty-glass')} x="0" y="0" width="1" height="1" colorInterpolationFilters="sRGB">
           <feColorMatrix type="saturate" values="0.08" />
           <feComponentTransfer>
             <feFuncR type="linear" slope="0.55" intercept="0.4" />
@@ -28,14 +30,14 @@ export function TeaDrain({ level }) {
             <feFuncB type="linear" slope="0.55" intercept="0.42" />
           </feComponentTransfer>
         </filter>
-        <linearGradient id="g-tea-surface" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={sid('g-tea-surface')} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ffd68a" />
           <stop offset="1" stopColor="#c8781f" />
         </linearGradient>
       </defs>
-      <g clipPath="url(#clip-tea)">
-        <g clipPath="url(#clip-tea-empty)">
-          <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter="url(#f-empty-glass)" opacity="0.92" />
+      <g clipPath={sid.url('clip-tea')}>
+        <g clipPath={sid.url('clip-tea-empty')}>
+          <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter={sid.url('f-empty-glass')} opacity="0.92" />
         </g>
         {/* Reflejos verticales del vidrio y gotitas que resbalan */}
         <rect x={TEA_LIQUID.x + 8} y={top} width="4" height={Math.max(0, surface - top)} fill="#fff" opacity="0.35" />
@@ -64,7 +66,7 @@ export function TeaDrain({ level }) {
           );
         })}
       {surface < bottom - 2 && (
-        <ellipse className="tea-drain__surface" cx={(l + r) / 2} cy={surface} rx={(r - l) / 2} ry="4.5" fill="url(#g-tea-surface)" opacity="0.95" />
+        <ellipse className="tea-drain__surface" cx={(l + r) / 2} cy={surface} rx={(r - l) / 2} ry="4.5" fill={sid.url('g-tea-surface')} opacity="0.95" />
       )}
     </svg>
   );

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "imageSize": {
     "w": 1024,
     "h": 1536
@@ -9,6 +9,7 @@
       "id": "dama_ceniza",
       "name": "La Dama de la Ceniza",
       "sagaTitle": "Nacidos de la Bruma",
+      "subtitle": "",
       "matchKeywords": [
         "mistborn",
         "bruma",
@@ -16,8 +17,15 @@
         "pozo de la ascension",
         "heroe de las eras"
       ],
+      "sagaId": "mistborn",
+      "authors": [
+        "Brandon Sanderson"
+      ],
       "rarity": "legendary",
-      "starter": true,
+      "unlockedByDefault": true,
+      "accentColor": "#c9d2dc",
+      "secondaryColor": "#C59B27",
+      "particlePreset": "mist",
       "boxImage": "dama-ceniza-box.jpg",
       "unboxedImage": "dama-ceniza-box.jpg",
       "unboxedCrop": {
@@ -26,113 +34,6 @@
         "w": 535,
         "h": 805
       },
-      "particles": "mist",
-      "accent": "#c9d2dc",
-      "loreSeals": [
-        "BRUMA",
-        "ACERO",
-        "LIBERTAD",
-        "SECRETOS",
-        "CENIZA"
-      ],
-      "blisterParts": [
-        {
-          "name": "Rostro Determinado",
-          "kind": "face",
-          "crop": {
-            "x": 795,
-            "y": 375,
-            "w": 160,
-            "h": 140
-          }
-        },
-        {
-          "name": "Rostro Sereno",
-          "kind": "face",
-          "crop": {
-            "x": 795,
-            "y": 535,
-            "w": 160,
-            "h": 145
-          }
-        },
-        {
-          "name": "Rostro Sonriente",
-          "kind": "face",
-          "crop": {
-            "x": 795,
-            "y": 695,
-            "w": 160,
-            "h": 145
-          }
-        },
-        {
-          "name": "Dagas de Cristal",
-          "kind": "weapon",
-          "crop": {
-            "x": 785,
-            "y": 860,
-            "w": 110,
-            "h": 205
-          }
-        },
-        {
-          "name": "Espiral de Bruma",
-          "kind": "effect",
-          "crop": {
-            "x": 895,
-            "y": 870,
-            "w": 75,
-            "h": 195
-          }
-        },
-        {
-          "name": "Moneda del Imperio",
-          "kind": "relic",
-          "crop": {
-            "x": 785,
-            "y": 1075,
-            "w": 80,
-            "h": 90
-          }
-        },
-        {
-          "name": "Columna en Ruinas",
-          "kind": "relic",
-          "crop": {
-            "x": 845,
-            "y": 1055,
-            "w": 120,
-            "h": 160
-          }
-        }
-      ],
-      "boxOutline": [
-        [
-          12,
-          165
-        ],
-        [
-          205,
-          65
-        ],
-        [
-          1012,
-          95
-        ],
-        [
-          1012,
-          1352
-        ],
-        [
-          210,
-          1388
-        ],
-        [
-          42,
-          1340
-        ]
-      ],
       "unboxedSilhouette": [
         [
           430,
@@ -289,6 +190,111 @@
         "w": 300,
         "h": 300
       },
+      "loreSeals": [
+        "BRUMA",
+        "ACERO",
+        "LIBERTAD",
+        "SECRETOS",
+        "CENIZA"
+      ],
+      "blisterParts": [
+        {
+          "name": "Rostro Determinado",
+          "kind": "face",
+          "crop": {
+            "x": 795,
+            "y": 375,
+            "w": 160,
+            "h": 140
+          }
+        },
+        {
+          "name": "Rostro Sereno",
+          "kind": "face",
+          "crop": {
+            "x": 795,
+            "y": 535,
+            "w": 160,
+            "h": 145
+          }
+        },
+        {
+          "name": "Rostro Sonriente",
+          "kind": "face",
+          "crop": {
+            "x": 795,
+            "y": 695,
+            "w": 160,
+            "h": 145
+          }
+        },
+        {
+          "name": "Dagas de Cristal",
+          "kind": "weapon",
+          "crop": {
+            "x": 785,
+            "y": 860,
+            "w": 110,
+            "h": 205
+          }
+        },
+        {
+          "name": "Espiral de Bruma",
+          "kind": "effect",
+          "crop": {
+            "x": 895,
+            "y": 870,
+            "w": 75,
+            "h": 195
+          }
+        },
+        {
+          "name": "Moneda del Imperio",
+          "kind": "relic",
+          "crop": {
+            "x": 785,
+            "y": 1075,
+            "w": 80,
+            "h": 90
+          }
+        },
+        {
+          "name": "Columna en Ruinas",
+          "kind": "relic",
+          "crop": {
+            "x": 845,
+            "y": 1055,
+            "w": 120,
+            "h": 160
+          }
+        }
+      ],
+      "boxOutline": [
+        [
+          12,
+          165
+        ],
+        [
+          205,
+          65
+        ],
+        [
+          1012,
+          95
+        ],
+        [
+          1012,
+          1341
+        ],
+        [
+          210,
+          1382
+        ],
+        [
+          42,
+          1350
+        ]
+      ],
       "boxWindow": {
         "x": 225,
         "y": 300,
@@ -300,6 +306,7 @@
       "id": "jinete_dragones",
       "name": "La Jinete de Dragones",
       "sagaTitle": "Saga Empíreo",
+      "subtitle": "",
       "matchKeywords": [
         "fourth wing",
         "alas de sangre",
@@ -308,8 +315,15 @@
         "alas de onice",
         "onyx storm"
       ],
+      "sagaId": "empyrean",
+      "authors": [
+        "Rebecca Yarros"
+      ],
       "rarity": "legendary",
-      "starter": true,
+      "unlockedByDefault": true,
+      "accentColor": "#ffb347",
+      "secondaryColor": "#C59B27",
+      "particlePreset": "embers",
       "boxImage": "jinete-dragones-box.jpg",
       "unboxedImage": "jinete-dragones-box.jpg",
       "unboxedCrop": {
@@ -318,83 +332,6 @@
         "w": 505,
         "h": 860
       },
-      "particles": "embers",
-      "accent": "#ffb347",
-      "loreSeals": [
-        "VALOR",
-        "FUEGO",
-        "CIELO",
-        "LEALTAD",
-        "LIBERTAD"
-      ],
-      "blisterParts": [
-        {
-          "name": "Rostro Sonriente",
-          "kind": "face",
-          "crop": {
-            "x": 772,
-            "y": 410,
-            "w": 180,
-            "h": 165
-          }
-        },
-        {
-          "name": "Rostro Decidido",
-          "kind": "face",
-          "crop": {
-            "x": 772,
-            "y": 585,
-            "w": 180,
-            "h": 165
-          }
-        },
-        {
-          "name": "Llama de Dragón",
-          "kind": "effect",
-          "crop": {
-            "x": 780,
-            "y": 755,
-            "w": 160,
-            "h": 110
-          }
-        },
-        {
-          "name": "Grimorio del Jinete",
-          "kind": "relic",
-          "crop": {
-            "x": 800,
-            "y": 875,
-            "w": 130,
-            "h": 150
-          }
-        }
-      ],
-      "boxOutline": [
-        [
-          22,
-          140
-        ],
-        [
-          178,
-          58
-        ],
-        [
-          1000,
-          168
-        ],
-        [
-          1004,
-          1342
-        ],
-        [
-          185,
-          1388
-        ],
-        [
-          20,
-          1298
-        ]
-      ],
       "unboxedSilhouette": [
         [
           380,
@@ -539,6 +476,81 @@
         "w": 300,
         "h": 300
       },
+      "loreSeals": [
+        "VALOR",
+        "FUEGO",
+        "CIELO",
+        "LEALTAD",
+        "LIBERTAD"
+      ],
+      "blisterParts": [
+        {
+          "name": "Rostro Sonriente",
+          "kind": "face",
+          "crop": {
+            "x": 772,
+            "y": 410,
+            "w": 180,
+            "h": 165
+          }
+        },
+        {
+          "name": "Rostro Decidido",
+          "kind": "face",
+          "crop": {
+            "x": 772,
+            "y": 585,
+            "w": 180,
+            "h": 165
+          }
+        },
+        {
+          "name": "Llama de Dragón",
+          "kind": "effect",
+          "crop": {
+            "x": 780,
+            "y": 755,
+            "w": 160,
+            "h": 110
+          }
+        },
+        {
+          "name": "Grimorio del Jinete",
+          "kind": "relic",
+          "crop": {
+            "x": 800,
+            "y": 875,
+            "w": 130,
+            "h": 150
+          }
+        }
+      ],
+      "boxOutline": [
+        [
+          22,
+          140
+        ],
+        [
+          178,
+          58
+        ],
+        [
+          1000,
+          168
+        ],
+        [
+          1004,
+          1340
+        ],
+        [
+          185,
+          1371
+        ],
+        [
+          20,
+          1298
+        ]
+      ],
       "boxWindow": {
         "x": 242,
         "y": 288,
@@ -550,21 +562,31 @@
       "id": "viajero_asteroide",
       "name": "El Pequeño Viajero del Asteroide",
       "sagaTitle": "El Principito",
+      "subtitle": "",
       "matchKeywords": [
         "principito",
         "little prince"
       ],
+      "authors": [
+        "Antoine de Saint-Exupéry"
+      ],
       "rarity": "rare",
+      "unlockedByDefault": false,
+      "accentColor": "#f2c14a",
+      "secondaryColor": "#C59B27",
+      "particlePreset": "stardust",
       "boxImage": "viajero-asteroide-box.svg",
       "unboxedImage": "viajero-asteroide-figure.svg",
-      "unboxedCrop": {
-        "x": 250,
-        "y": 330,
+      "unboxedSize": {
         "w": 520,
         "h": 800
       },
-      "particles": "stardust",
-      "accent": "#f2c14a",
+      "pinCrop": {
+        "x": 72,
+        "y": 26,
+        "w": 336,
+        "h": 336
+      },
       "loreSeals": [
         "ROSA",
         "ZORRO",
@@ -642,12 +664,6 @@
           1460
         ]
       ],
-      "pinCrop": {
-        "x": 322,
-        "y": 356,
-        "w": 336,
-        "h": 336
-      },
       "boxWindow": {
         "x": 228,
         "y": 342,
@@ -659,23 +675,34 @@
       "id": "bardo_viento",
       "name": "El Bardo del Viento",
       "sagaTitle": "Crónica del Asesino de Reyes",
+      "subtitle": "",
       "matchKeywords": [
         "nombre del viento",
         "name of the wind",
         "temor de un hombre sabio",
         "wise man's fear"
       ],
+      "sagaId": "kingkiller",
+      "authors": [
+        "Patrick Rothfuss"
+      ],
       "rarity": "epic",
+      "unlockedByDefault": false,
+      "accentColor": "#e8a33c",
+      "secondaryColor": "#C59B27",
+      "particlePreset": "wind",
       "boxImage": "bardo-viento-box.svg",
       "unboxedImage": "bardo-viento-figure.svg",
-      "unboxedCrop": {
-        "x": 250,
-        "y": 330,
+      "unboxedSize": {
         "w": 520,
         "h": 800
       },
-      "particles": "wind",
-      "accent": "#e8a33c",
+      "pinCrop": {
+        "x": 72,
+        "y": 26,
+        "w": 336,
+        "h": 336
+      },
       "loreSeals": [
         "MÚSICA",
         "NOMBRE",
@@ -753,12 +780,6 @@
           1460
         ]
       ],
-      "pinCrop": {
-        "x": 322,
-        "y": 356,
-        "w": 336,
-        "h": 336
-      },
       "boxWindow": {
         "x": 228,
         "y": 342,
@@ -770,20 +791,30 @@
       "id": "hechicera_eea",
       "name": "La Hechicera de Eea",
       "sagaTitle": "Circe",
+      "subtitle": "",
       "matchKeywords": [
         "circe"
       ],
+      "authors": [
+        "Madeline Miller"
+      ],
       "rarity": "epic",
+      "unlockedByDefault": false,
+      "accentColor": "#e8c46a",
+      "secondaryColor": "#C59B27",
+      "particlePreset": "gold",
       "boxImage": "hechicera-eea-box.svg",
       "unboxedImage": "hechicera-eea-figure.svg",
-      "unboxedCrop": {
-        "x": 250,
-        "y": 330,
+      "unboxedSize": {
         "w": 520,
         "h": 800
       },
-      "particles": "gold",
-      "accent": "#e8c46a",
+      "pinCrop": {
+        "x": 72,
+        "y": 26,
+        "w": 336,
+        "h": 336
+      },
       "loreSeals": [
         "HIERBAS",
         "MAR",
@@ -861,12 +892,6 @@
           1460
         ]
       ],
-      "pinCrop": {
-        "x": 322,
-        "y": 356,
-        "w": 336,
-        "h": 336
-      },
       "boxWindow": {
         "x": 228,
         "y": 342,

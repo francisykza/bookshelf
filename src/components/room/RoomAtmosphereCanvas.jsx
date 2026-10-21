@@ -2,6 +2,7 @@
 // los haces de luz, luciérnagas del balcón y luces del pueblo al anochecer. Dibuja en coordenadas de
 // la imagen; el lienzo tiene la resolución real en pantalla (escala × DPR) para verse nítido.
 import { useEffect, useRef } from 'react';
+import { LITE_SCENE } from '../../scene/renderMode';
 import { pointInPolygon } from '../../scene/homography';
 import { BOAT_LANE, FAR_COAST, MOON, SCENE_H, SCENE_W, SEA, SUN_PATH, TEA_GLASS, TOWN } from '../../scene/sceneMap';
 import { BEAMS } from './beams';
@@ -398,7 +399,8 @@ export function RoomAtmosphereCanvas({ timeOfDay, scale, paused, reducedMotion, 
     const canvas = ref.current;
     const c = canvas?.getContext('2d');
     if (!canvas || !c) return undefined;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Buffer al tamaño mostrado (escena × escala) por la densidad de pantalla; en móvil, como mucho 1,5
+    const dpr = Math.min(window.devicePixelRatio || 1, LITE_SCENE ? 1.5 : 2);
     const density = Math.max(0.2, scale) * dpr;
     canvas.width = Math.round(SCENE_W * density);
     canvas.height = Math.round(SCENE_H * density);

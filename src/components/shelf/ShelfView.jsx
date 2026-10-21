@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpen, Library, Plus, Trophy, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
 import { shelfSort } from '../../domain/books';
+import { PRESET_SAGAS } from '../../domain/sagas';
 import { SCENE_H, SCENE_SRC, SCENE_W, WOOD_PLANK, WOOD_SIDE } from '../../scene/sceneMap';
 import { useLibrary } from '../../state/useLibrary';
 import { MiniFigurePin } from '../figures/MiniFigurePin';
@@ -158,9 +159,62 @@ function useRowHeight() {
   return h;
 }
 
+/**
+ * El rótulo de estado no pisa ninguna mini-figura del listón (SPEC §11.7): se queda en el centro si está
+ * libre y, si no, se desliza al hueco más cercano; se recalcula al desplazar la balda o cambiar su tamaño.
+ */
+function usePlateClearOfPins(sectionRef, deps) {
+  const [offset, setOffset] = useState(0);
+  useEffect(() => {
+    const section = sectionRef.current;
+    const scroller = section?.querySelector('.shelf-row__scroller');
+    if (!section || !scroller) return undefined;
+    let frame = 0;
+    const place = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const plank = section.querySelector('.shelf-row__plank')?.getBoundingClientRect();
+        const plate = section.querySelector('.shelf-row__plate');
+        if (!plank || !plate) return;
+        const w = plate.offsetWidth + 12;
+        const pins = [...section.querySelectorAll('.saga-pin')].map((n) => n.getBoundingClientRect()).filter((r) => r.right > plank.left && r.left < plank.right);
+        const clear = (center) => {
+          const l = plank.left + plank.width / 2 + center - w / 2;
+          return l >= plank.left && l + w <= plank.right && pins.every((r) => r.right < l || r.left > l + w);
+        };
+        let best = 0;
+        for (let step = 0; step <= plank.width / 2; step += 6) {
+          if (clear(step)) {
+            best = step;
+            break;
+          }
+          if (clear(-step)) {
+            best = -step;
+            break;
+          }
+        }
+        setOffset((o) => (o === best ? o : best));
+      });
+    };
+    place();
+    scroller.addEventListener('scroll', place, { passive: true });
+    const observer = new ResizeObserver(place);
+    observer.observe(section);
+    return () => {
+      cancelAnimationFrame(frame);
+      scroller.removeEventListener('scroll', place);
+      observer.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  return offset;
+}
+
 function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, focused, onPlate, pickedId, onMove }) {
   const trackRef = useRef(null);
+  const sectionRef = useRef(null);
   const [drop, setDrop] = useState(null);
+  const plateOffset = usePlateClearOfPins(sectionRef, [books, mode, rowH]);
 
   /** Dónde caería el libro: delante del primer libro cuyo centro queda a la derecha del cursor. */
   const dropTarget = (event) => {
@@ -179,7 +233,7 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
 
 
   return (
-    <section className="shelf-row" data-row={row.id} style={{ '--row-h': `${rowH}px` }} aria-label={`${row.label}: ${books.length} libros`}>
+    <section ref={sectionRef} className="shelf-row" data-row={row.id} style={{ '--row-h': `${rowH}px` }} aria-label={`${row.label}: ${books.length} libros`}>
       <div className="shelf-row__scroller">
         <div
           ref={trackRef}
@@ -224,6 +278,7 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
         <button
           type="button"
           className="shelf-row__plate"
+          style={plateOffset ? { '--plate-dx': `${plateOffset}px` } : undefined}
           aria-pressed={focused}
           onClick={onPlate}
           title={focused ? 'Volver a ver todas las baldas' : `Ver solo ${row.label.toLowerCase()}`}
@@ -317,19 +372,21 @@ export function ShelfView({ open, onBack, onOpenBook, onAddBook, onOpenVault }) 
   // Mini-figuras de saga bajo los libros, y los libros de cada saga para la sinergia ×2 de pity
   const figCatalog = useFigureCatalog();
   const figs = progress.figures;
+  // Sagas explícitas (las preconfiguradas y las tuyas) para vincular cada libro con su figura
+  const sagas = useMemo(() => [...PRESET_SAGAS, ...(settings.customSagas ?? [])], [settings.customSagas]);
   const pins = (book) => {
-    const fig = figureForBook(figCatalog, book);
+    const fig = figureForBook(figCatalog, book, sagas);
     return fig ? <MiniFigurePin fig={fig} owned={Boolean(figs?.owned[fig.id])} onOpen={onOpenVault} /> : null;
   };
   useEffect(() => {
     if (!figCatalog.length || !figs) return;
     const map = {};
     books.forEach((b) => {
-      const fig = figureForBook(figCatalog, b);
+      const fig = figureForBook(figCatalog, b, sagas);
       if (fig && figs.owned[fig.id]) (map[fig.id] ??= []).push(b.id);
     });
     if (JSON.stringify(map) !== JSON.stringify(figs.placements ?? {})) actions.syncFigureBooks(map);
-  }, [figCatalog, books, figs, actions]);
+  }, [figCatalog, books, figs, actions, sagas]);
 
   return (
     <div className="library" data-open={open} aria-hidden={!open} inert={!open ? true : undefined}>

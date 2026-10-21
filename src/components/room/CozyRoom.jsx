@@ -8,6 +8,7 @@ import { chime, lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook } from '../../domain/books';
 import { dayKey } from '../../domain/dates';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { LITE_SCENE } from '../../scene/renderMode';
 import { SCENE_H, SCENE_W } from '../../scene/sceneMap';
 import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
@@ -16,6 +17,7 @@ import { RoomAtmosphereCanvas } from './RoomAtmosphereCanvas';
 import { Hotspot, RoomLabel, TimeDial, TOD_ORDER, todName } from './RoomHotspots';
 import { BedBookmark, CloudShadow, DrinkSteam, LaptopPostit, SoundWaves, TeaMist, readingStreak } from './RoomLiveData';
 import { RoomFigureShelves, RoomOcclusion, RoomShelfBooks } from './RoomShelfBooks';
+import { SceneBase } from './SceneBase';
 import { SceneLayers } from './SceneLayers';
 import { TeaDrain } from './TeaDrain';
 import { TimeOfDayLayers } from './TimeOfDayLayers';
@@ -30,7 +32,9 @@ function cameraTransform(view, k) {
   if (view === SHELF_VIEW) {
     const dx = SCENE_W / 2 - SHELF_FOCUS.x;
     const dy = SCENE_H / 2 - SHELF_FOCUS.y;
-    return `translate(-50%, -50%) scale(${k * SHELF_FOCUS.zoom}) rotateY(7deg) translate(${dx}px, ${dy}px)`;
+    // En móvil (sin perspectiva de cámara) el acercamiento es un zoom 2D
+    const tilt = LITE_SCENE ? '' : ' rotateY(7deg)';
+    return `translate(-50%, -50%) scale(${k * SHELF_FOCUS.zoom})${tilt} translate(${dx}px, ${dy}px)`;
   }
   return `translate(-50%, -50%) scale(${k})`;
 }
@@ -44,7 +48,7 @@ function formatTimer(ms) {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
-export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenAccount, timer }) {
+export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenAccount, modalOpen = false, timer }) {
   const cloud = useCloud();
   const { state, actions } = useLibrary();
   const { settings, books, progress } = state;
@@ -58,13 +62,16 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
   const timers = useRef([]);
   const reading = currentBook(books, settings);
   const inRoom = view === ROOM_VIEW;
+  // Con un modal delante la habitación se queda quieta (el temporizador sigue contando)
+  const live = inRoom && !modalOpen;
+  const [base, setBase] = useState({ status: 'loading', attempt: 0 });
   const guides = Boolean(settings.showGuides);
 
-  // Fuera de la habitación (o con movimiento reducido) se congelan los filtros animados
+  // Fuera de la habitación, con un modal delante o con movimiento reducido se congelan las animaciones SVG
   useEffect(() => {
-    const svgs = worldRef.current?.querySelectorAll('svg.scene-svg, svg.room-occlusion, svg.front-svg') ?? [];
-    svgs.forEach((svg) => (inRoom && !reducedMotion ? svg.unpauseAnimations?.() : svg.pauseAnimations?.()));
-  }, [inRoom, reducedMotion]);
+    const svgs = worldRef.current?.querySelectorAll('svg') ?? [];
+    svgs.forEach((svg) => (live && !reducedMotion ? svg.unpauseAnimations?.() : svg.pauseAnimations?.()));
+  }, [live, reducedMotion]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
@@ -95,7 +102,8 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
   // Parallax de tres capas: el ratón (o la inclinación del móvil) mueve cada capa a su velocidad
   useEffect(() => {
     const camera = cameraRef.current;
-    if (!camera || reducedMotion || !inRoom) return undefined;
+    // En el perfil móvil no hay parallax: ni siquiera se registran los sensores
+    if (!camera || reducedMotion || !live || LITE_SCENE) return undefined;
     const set = (x, y) => {
       camera.style.setProperty('--px', x.toFixed(3));
       camera.style.setProperty('--py', y.toFixed(3));
@@ -116,7 +124,7 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
       window.removeEventListener('deviceorientation', onTilt);
       set(0, 0);
     };
-  }, [reducedMotion, inRoom]);
+  }, [reducedMotion, live]);
   const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
 
   const onHover = (next, id) => {
@@ -155,6 +163,7 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
       ref={cameraRef}
       className="room-camera"
       data-view={view}
+      data-modal={modalOpen || undefined}
       data-pointing={pointing}
       data-guides={guides}
       data-shelf-awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))}
@@ -165,6 +174,7 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
         <span className="world__frame" aria-hidden="true" />
         <div className="world__parallax">
           <div className="world__breath">
+            <SceneBase attempt={base.attempt} onStatus={(status) => setBase((b) => (b.status === status ? b : { ...b, status }))} />
             <SceneLayers timeOfDay={settings.timeOfDay} chimeRing={chimeRing} />
 
             <Hotspot
@@ -256,7 +266,7 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
 
             <TimeOfDayLayers timeOfDay={settings.timeOfDay} lampOn={settings.lampOn} candleOn={settings.candleOn} />
             <CloudShadow timeOfDay={settings.timeOfDay} />
-            <RoomAtmosphereCanvas timeOfDay={settings.timeOfDay} scale={k} paused={!inRoom} reducedMotion={reducedMotion} teaLevelRef={teaLevelRef} />
+            <RoomAtmosphereCanvas timeOfDay={settings.timeOfDay} scale={k} paused={!live} reducedMotion={reducedMotion} teaLevelRef={teaLevelRef} />
 
             <Hotspot
               id="chime"
@@ -305,6 +315,16 @@ export function CozyRoom({ k, view, onOpenShelf, onOpenBook, onOpenLaptop, onOpe
         </div>
       </div>
 
+
+      {/* Si la ilustración no llega, se dice y se puede reintentar: nada de objetos flotando sobre un hueco */}
+      {base.status === 'error' && (
+        <div className="scene-error paper-sheet" role="alert">
+          <p>No se ha podido cargar la ilustración de la habitación.</p>
+          <button type="button" className="scene-error__retry" onClick={() => setBase((b) => ({ status: 'loading', attempt: b.attempt + 1 }))}>
+            Reintentar
+          </button>
+        </div>
+      )}
 
       {/* Esquina superior derecha, discreta: pantalla completa, sonidos táctiles y guías */}
       {inRoom && (

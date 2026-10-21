@@ -3,9 +3,11 @@
 // Derecha: diario de lectura con citas subrayadas por color y reseña manuscrita.
 import { BookMarked, Feather, Heart, Minus, PenLine, Plus, Star, Trash2, X } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { markerStroke, pageRustle } from '../../audio/ambientAudio';
 import { EDGE_NAMES, FORMATS, QUOTE_COLORS, STATUS, audioHours, formatHours, hoursLeft, progress, sprayedEdge } from '../../domain/books';
 import { useLibrary } from '../../state/useLibrary';
+import { modalRoot } from '../panels/modalRoot';
 import { PanelShell } from '../panels/PanelShell';
 import { Cover, bezel } from '../shelf/BookItem';
 import { EdgePicker } from './EditionPicker';
@@ -502,7 +504,7 @@ function QuoteViewer({ quote, book, pinned, onPin, onClose }) {
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [onClose]);
-  return (
+  return createPortal(
     <div className="equote-viewer" role="dialog" aria-label={`Cita de ${book.title}`} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="equote-viewer__inner">
         <button type="button" className="icon-btn equote-viewer__close" onClick={onClose} aria-label="Cerrar la carta">
@@ -510,6 +512,7 @@ function QuoteViewer({ quote, book, pinned, onPin, onClose }) {
         </button>
         <ElegantQuoteCard text={quote.text} author={book.author} work={`${book.title}${quote.page ? ` · pág. ${quote.page}` : ''}`} onPin={onPin} pinned={pinned} />
       </div>
-    </div>
+    </div>,
+    modalRoot(),
   );
 }

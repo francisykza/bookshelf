@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.16.4 · 2026-10-20 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.17.0 · 2026-10-21 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -20,7 +20,7 @@ No hay barras de navegación ni paneles negros: cada función es un objeto de la
 | Datos de libros | Google Books (sin API key) con respaldo automático en Open Library |
 
 ```
-public/cozy-book-room.png        Ilustración base (984 × 1599, JPEG con extensión .png)
+public/cozy-book-room.jpg        Ilustración base (984 × 1599, JPEG; hasta 1.16 se llamaba .png)
 src/
   main.jsx · App.jsx · index.css
   scene/sceneMap.js              Coordenadas de cada objeto de la ilustración (px de la imagen)
@@ -580,4 +580,161 @@ las mismas migraciones que al cargar). La app pide al navegador almacenamiento p
 las fotos de cajas descargadas por imágenes propias o con licencia antes de publicarla para todos.
 
 ## 10. Verificación
-`npm run build` debe compilar sin errores ni avisos. No hay `TODO` en el código.
+`npm test` (Vitest) y `npm run build` deben pasar sin errores. No hay `TODO` en el código.
+
+## 11. Estabilidad móvil, capas y catálogo (1.17.0)
+
+### 11.1 Incidencias observadas y estado de sus causas
+| Incidencia (capturas del teléfono) | Estado |
+| --- | --- |
+| La ilustración base desaparece y flotan los objetos interactivos | **Hipótesis principal**: la base se dibujaba solo dentro de un SVG con filtros animados y duplicados (`<use href="#scene-live">`) sobre una superficie de 984×1599 a DPR ≈ 2,6, y el teléfono dejaba teselas sin pintar. Mejoró al quitar filtros (1.16.x). Falta confirmar la 1.17.0 en dispositivo físico. |
+| Bloques sin pintar en paneles largos y en la librería | **Hipótesis**: `backdrop-filter` sobre contenedores con scroll y la librería invisible (opacidad 0) ocupando memoria gráfica. Mitigado en 1.16.3–1.16.4. |
+| Franja del primer plano sobre el calendario | **Pendiente**: el modal vivía dentro de `#root` junto a capas con `perspective`, `translate3d` y máscaras. Desde 1.17.0 los modales van en `#modal-root` (portal) y se comprueba con `elementFromPoint`. |
+| Portadas del calendario aplastadas | **Confirmada en código**: celdas cuadradas estrechas con `18px + 14px` reservados dejaban la portada en una línea. |
+| `cozy-book-room.png` | **Confirmado**: el archivo es JPEG y Vercel lo servía como `image/png` (200, 460 766 B, sin HTML de respaldo; las rutas inexistentes dan 404). Se renombra a `cozy-book-room.jpg` para que el tipo coincida. Vite no usa `base`: despliegue en raíz. |
+| Vercel / Supabase | **Sin evidencia** de que causen los fallos visuales: la sesión y la sincronización no desmontan la habitación ni cambian claves de React; no hay URLs firmadas ni buckets. |
+
+**Comparación controlada (franja sobre el calendario).** En emulación (Chromium de escritorio con
+viewport de móvil) no se reproduce: `elementFromPoint` sobre las celdas del calendario devuelve siempre
+nodos de `#modal-root`, con y sin `backdrop-filter`, recorte de `FrontLayer`, filtros animados o
+perspectiva. Queda pendiente en el teléfono: `?escena=completa` activa las cuatro condiciones a la vez y
+`?escena=ligera` las quita (sin `backdrop-filter`, sin la cama recortada, sin filtros animados y sin
+perspectiva), y `?diag` muestra la versión cargada.
+
+### 11.2 Arquitectura de capas
+Global (hermanos en `body`): `#root` (fondo extendido `z 0`, habitación `z 10`, librería `z 20`) y
+`#modal-root` (modales, `z 1000`). Ningún ancestro de `#modal-root` tiene `transform`, `filter`,
+`perspective` ni `contain: paint`. La pantalla completa se pide sobre `document.documentElement`, que
+contiene a ambos.
+
+Local, dentro de `.world` (la habitación tiene `isolation: isolate`): imagen base `0` · efectos SVG `1` ·
+libros y figuras `3` · oclusión y primer plano `4` · iluminación `5` · canvas `6` · hotspots y
+etiquetas `7–9`. Estas cifras no compiten con el portal.
+
+- **Imagen base**: un único `<img class="scene-base">` HTML (984×1599, `eager`, `fetchPriority="high"`),
+  independiente de filtros, máscaras, sesión, libros, catálogo, audio o canvas. Si el recurso falla de
+  verdad, una ficha de papel crema ofrece «Reintentar» (sin bucles automáticos). Los SVG ya no repiten la
+  base opaca: `#scene-live` contiene solo los recortes animados, y los tintes de hora se aplican sobre la
+  ilustración recortada a su región.
+- **Modales**: `PanelShell` se renderiza con `createPortal` en `#modal-root` (mismo árbol React y mismo
+  `LibraryProvider`), igual que el visor de citas y el menú de ediciones. Con un modal abierto, la
+  aplicación de fondo queda `inert`, las animaciones decorativas se suspenden (el temporizador sigue) y la
+  imagen base sigue visible. Se conservan Escape, cierre por fondo, foco atrapado y devuelto; el diálogo
+  acepta foco (`tabIndex={-1}`) si no tiene controles.
+- **Identificadores SVG** únicos por instancia (`useId`), con unidades explícitas en máscaras y recortes.
+
+### 11.3 Perfil móvil de renderizado
+Se activa con `(max-width: 760px) and (pointer: coarse)` y, además, con puntero táctil o
+`deviceMemory ≤ 4` (incluye tabletas, donde también pueden aparecer los fallos); se fuerza con
+`?escena=ligera` o `?escena=completa`. En él:
+- Sin parallax (no se registran `pointermove` ni `deviceorientation`), capas con `transform: none`, sin
+  respiración de cámara y con `perspective: none` en `ROOM_VIEW`; la transición a la librería es un zoom 2D.
+- `FrontLayer` no redibuja la cama (ya está en la base): solo la esquina de página, el reflejo y Miel.
+- Sin brisa SVG animada ni `backdrop-filter` (velo `rgba(44, 30, 20, 0.48)`).
+- Canvas a `min(devicePixelRatio, 1.5)`, buffer según el tamaño mostrado, un solo
+  `requestAnimationFrame`, pausado con la pestaña oculta, un modal abierto o la librería.
+
+### 11.4 Viewport, escala y bandas
+`<meta viewport … viewport-fit=cover>` sin bloquear el zoom. La escena se mide con `ResizeObserver`
+sobre `.sanctuary` (`100vh` de respaldo, `100dvh` preferente) y `k = min(ancho / 984, alto / 1599)`,
+agrupado en `requestAnimationFrame`; con `visualViewport.scale ≠ 1` (pinch-zoom) no se reescala.
+
+Se mantiene `contain`: en pantallas más altas que la ilustración quedan bandas, rellenas con la
+ilustración extendida (`.backdrop`, más clara en móvil) y sin el marco de madera en móvil. No se puede
+llenar cualquier proporción sin cortar objetos o deformar la escena, y `cover` cortaría las baldas, el
+sol, el libro o los auriculares.
+
+### 11.5 Calendario y portátil en móvil
+- Celdas de `clamp(76px, 21vw, 96px)` de alto (no cuadradas), con la portada en `inset: 20px 3px 21px`
+  y `object-fit: contain`, el número arriba a la izquierda y las páginas abajo a la derecha.
+- Cabecera sin `min-width` y flechas de 44×44.
+- El portátil cabe en el alto útil (menos áreas seguras y 12 px por lado), en columna flexible.
+  `.window__body` es la única zona de scroll (`overscroll-behavior-y: contain`) y el detalle de un día se
+  abre como panel interno dentro de la ventana.
+- Nunca se reduce con `scale()`.
+
+### 11.6 Caché y service worker
+- Versión `bookshelf-v1.17.0`. Al activarse solo borra las cachés que empiezan por `bookshelf-`.
+- Assets con hash (`/assets/`): caché primero.
+- Imágenes con nombre estable (ilustración, figuras, iconos): caché y refresco por detrás.
+- Navegación y `catalog.json`: red primero; el catálogo solo sustituye la copia guardada si es JSON
+  válido con `figures`.
+- Nunca guarda respuestas fallidas ni nada de Supabase u otros orígenes (salvo las portadas).
+- Una imagen solo se guarda si llega con `Content-Type: image/*` y un asset con hash si no es HTML: un
+  servidor con respaldo de SPA (como `vite preview`) responde 200 con HTML a rutas inexistentes.
+- Sin `skipWaiting()` inmediato: la versión nueva espera y se activa cuando la app pasa a segundo plano,
+  sin recargar la página, así no se pierden formularios ni sesiones.
+
+### 11.7 Contrato del catálogo de figuras (`public/figures/catalog.json`)
+La raíz es `{ version, imageSize, figures: [...] }`, no un array.
+
+- **Campos canónicos por figura**: `id`, `name`, `sagaTitle`, `subtitle`, `matchKeywords`, `rarity`,
+  `unlockedByDefault`, `accentColor`, `secondaryColor`, `boxImage`, `unboxedImage`, `particlePreset`,
+  `loreSeals`, `blisterParts`.
+- **Opcionales**: `sagaId` (saga de `domain/sagas.js`), `authors` (para desambiguar), `boxSize`,
+  `unboxedSize`, `boxOutline`, `boxWindow`, `pinCrop`, `pinImage` y `since` (versión del catálogo en que
+  se añadió).
+
+**Compatibilidad.** La normalización vive en un único punto, `domain/figureCatalog.js`:
+- `unlockedByDefault ?? starter ?? false`
+- `accentColor ?? accent ?? '#E8C46A'`
+- `particlePreset ?? particles ?? 'gold'`
+- `secondaryColor ?? '#C59B27'`
+- `subtitle ?? ''`
+
+Los alias internos `starter`, `accent` y `particles` se mantienen para los consumidores actuales.
+
+**Validación.**
+- IDs únicos (gana la primera entrada).
+- Rareza `legendary | epic | rare`; partículas `mist | embers | stardust | wind | gold`; colores
+  `#RGB` o `#RRGGBB`.
+- `matchKeywords` como strings no vacíos y recortes dentro de la imagen.
+- Las entradas con `since ≥ 2` deben traer 5 sellos y 5 piezas; las antiguas conservan las suyas (no se
+  recorta ningún inventario).
+- Una entrada inválida se descarta con un aviso en consola sin romper el resto.
+- Un fallo de carga no se guarda como catálogo vacío: se reintenta al recuperar la conexión o al volver
+  a montar.
+
+**Figura desprecintada.** Hay dos rutas explícitas:
+- *Asset con alfa*: un `unboxedImage` propio (PNG, WebP o SVG transparente) que se muestra entero con
+  sus dimensiones reales (`unboxedSize`), con `object-fit: contain` y sombra, sin máscara.
+- *Legacy*: si no hay asset propio, la opción «Desprecintada» aparece como no disponible con una
+  explicación breve y se muestra la caja, sin borrar la preferencia guardada.
+
+Faltan los recortes con transparencia real de La Dama de la Ceniza y La Jinete de Dragones.
+
+**Vinculación con libros** (`figureForBook`):
+1. El texto se normaliza (mayúsculas, acentos, espacios y puntuación).
+2. Primero cuenta la saga explícita (`sagaId` y los títulos de esa saga).
+3. Después, `matchKeywords` como palabras completas del título.
+4. El autor solo desambigua: si la figura declara `authors` y el libro tiene otro autor, no se vincula.
+
+Nunca se vincula un libro solo por su autor.
+
+### 11.8 Ático y controles
+- Misma paleta: espresso, madera oscura y oro champán.
+- El Ático cabe en el viewport útil con scroll vertical propio.
+- Los botones de exposición envuelven (`flex: 1 1 220px`) y el texto de sinergia parte las palabras
+  largas.
+- Los controles superiores son pestañas de madera y latón integradas en el marco.
+- El portátil se cierra con una pestaña de latón de 44×44 dentro de su marco.
+
+### 11.9 Criterios de aceptación (1.17.0)
+- La ilustración principal sigue visible en:
+  - carga fría y recarga con service worker;
+  - cambio de pestaña y rotación;
+  - día, atardecer y noche, con guías activas o no;
+  - red lenta y offline después de una carga.
+- La cama nunca tapa un modal: `elementFromPoint` sobre el calendario devuelve un nodo del modal.
+- Las portadas del calendario conservan altura visible; la última semana, la leyenda y el dock se
+  alcanzan con scroll, y no hay scroll horizontal involuntario.
+- Hotspots y objetos pintados alineados; ningún control del Ático cortado.
+- No se pierden libros, progreso, inventario, pity, sellos ni rachas.
+- Los alias antiguos del catálogo siguen funcionando y las entradas canónicas se interpretan.
+- Viewports revisados en emulación: 360×800, 390×844, 412×915, 768×1024, 1440×900 y 915×412. La
+  validación en Android físico la hace el usuario.
+- Pruebas (`npm test`):
+  - normalización de campos antiguos y canónicos;
+  - vinculación por título o saga sin falsos positivos por autor;
+  - conservación de IDs e inventario;
+  - recuperación tras un fallo de carga.

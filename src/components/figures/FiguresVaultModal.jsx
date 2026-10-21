@@ -11,7 +11,8 @@ import { dayKey } from '../../domain/dates';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { useLibrary } from '../../state/useLibrary';
 import { PanelShell } from '../panels/PanelShell';
-import { FigureArt, FigureParticles, PartArt, RANK_STARS, bbox } from './FigureArt';
+import { bbox, FigureArt, FigureParticles, PartArt, RANK_STARS } from './FigureArt';
+import { canUnbox, shownDisplay } from './figureDisplay';
 import { forRules, useFigureCatalog } from './figureCatalog';
 
 /** Posición de la ventana de plástico dentro de la caja recortada, en %. */
@@ -39,13 +40,14 @@ function InspectStage({ fig, entry, rank }) {
   const rest = () => {
     ['--ry', '--rx', '--mx', '--my'].forEach((k) => ref.current?.style.removeProperty(k));
   };
-  const box = entry.display === 'box';
+  const shown = shownDisplay(fig, entry.display);
+  const box = shown === 'box';
   return (
-    <div ref={ref} className="vault-stage" data-display={entry.display} onPointerMove={tilt} onPointerLeave={rest} onPointerUp={rest} style={{ touchAction: 'none' }}>
+    <div ref={ref} className="vault-stage" data-display={shown} onPointerMove={tilt} onPointerLeave={rest} onPointerUp={rest} style={{ touchAction: 'none' }}>
       <div className="vault-tilt">
         <FigureArt
           fig={fig}
-          display={entry.display}
+          display={shown}
           mist={!box}
           // Reflejo diagonal que solo cruza el plástico de la ventana, y brillo en los grabados dorados
           window={
@@ -104,13 +106,15 @@ function Inspect({ fig, catalogLen }) {
         </div>
         <InspectStage fig={fig} entry={entry} rank={rank} />
         <div className="vault-switch" role="radiogroup" aria-label="Cómo exponerla">
-          <button type="button" role="radio" aria-checked={entry.display === 'box'} onClick={() => actions.figureDisplay(fig.id, 'box')}>
+          <button type="button" role="radio" aria-checked={shownDisplay(fig, entry.display) === 'box'} onClick={() => actions.figureDisplay(fig.id, 'box')}>
             📦 Exponer en Caja de Coleccionista
           </button>
           <button
             type="button"
             role="radio"
-            aria-checked={entry.display === 'unboxed'}
+            aria-checked={shownDisplay(fig, entry.display) === 'unboxed'}
+            disabled={!canUnbox(fig)}
+            aria-describedby={canUnbox(fig) ? undefined : `unbox-${fig.id}`}
             onClick={() => {
               actions.figureDisplay(fig.id, 'unboxed');
               pageRustle(0.4);
@@ -119,6 +123,12 @@ function Inspect({ fig, catalogLen }) {
             ✨ Exponer Fuera de Caja (En Peana)
           </button>
         </div>
+        {/* Sin foto de la figura con fondo transparente no se inventa un recorte: se expone en su caja */}
+        {!canUnbox(fig) && (
+          <p className="vault-hint" id={`unbox-${fig.id}`}>
+            Desprecintada aún no disponible: falta la foto de esta figura sin fondo.
+          </p>
+        )}
 
         <div className="vault-guardian">
           <button type="button" className="stamp-btn stamp-btn--small" aria-pressed={isGuardian} disabled={isGuardian} onClick={() => actions.setGuardian(fig.id)}>
@@ -473,7 +483,7 @@ export function FiguresVaultModal({ onClose, initialId }) {
                 >
                   <span className="vault-rail__niche">
                     <span className="vault-rail__light" aria-hidden="true" />
-                    <span className="vault-rail__thumb">{owned ? <FigureArt fig={f} display={owned.display} /> : <MysterySilhouette />}</span>
+                    <span className="vault-rail__thumb">{owned ? <FigureArt fig={f} display={shownDisplay(f, owned.display)} /> : <MysterySilhouette />}</span>
                     <span className="vault-rail__pedestal" aria-hidden="true" />
                   </span>
                   <span className="vault-rail__name">{owned ? f.name : 'Por descubrir'}</span>

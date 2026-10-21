@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#2a1d14" />
     <!-- PWA: instalable y a pantalla completa en el móvil -->
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -18,7 +18,7 @@
       content="BookShelf: tu santuario de lectura mediterráneo. Estantería viva, diario de citas, reto anual y temporizador cozy."
     />
     <title>BookShelf · Santuario de lectura</title>
-    <link rel="preload" as="image" href="/cozy-book-room.png" />
+    <link rel="preload" as="image" href="/cozy-book-room.jpg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Tipografía editorial: Cormorant Garamond (títulos), Lora (texto), Caveat (a mano), Courier Prime (sellos) -->
@@ -29,6 +29,8 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Modales por encima de toda la habitación (SPEC §11.2): hermano de #root, sin ancestros transformados -->
+    <div id="modal-root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

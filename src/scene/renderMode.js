@@ -9,7 +9,8 @@ function detect() {
   const forced = new URLSearchParams(window.location.search).get('escena');
   if (forced === 'ligera') return true;
   if (forced === 'completa') return false;
-  return media('(pointer: coarse)') || (navigator.deviceMemory ?? 8) <= 4;
+  // Perfil móvil de SPEC §11.3, ampliado a cualquier pantalla táctil o con poca memoria
+  return media('(max-width: 760px) and (pointer: coarse)') || media('(pointer: coarse)') || (navigator.deviceMemory ?? 8) <= 4;
 }
 
 export const LITE_SCENE = detect();

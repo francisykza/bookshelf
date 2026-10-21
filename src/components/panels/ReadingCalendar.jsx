@@ -1,7 +1,7 @@
 // Apps del portátil (SPEC §6): Calendario de lectura (portadas de lo que leíste cada día, páginas y
 // porcentaje avanzado) y Sesiones (registro cronológico, editable).
 import { ChevronLeft, ChevronRight, Coffee, Flame, Plus, Trash2, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { dayKey, parseDay } from '../../domain/dates';
 import { progress } from '../../domain/books';
 import { useLibrary } from '../../state/useLibrary';
@@ -132,6 +132,20 @@ function DayPopover({ date, entries, pomodoro, onClose }) {
   );
 }
 
+/** En móvil el detalle de un día va como panel interno bajo la cuadrícula, no flotando junto a la celda. */
+const NARROW = '(max-width: 760px)';
+function useNarrow() {
+  const [narrow, setNarrow] = useState(() => window.matchMedia?.(NARROW).matches ?? false);
+  useEffect(() => {
+    const media = window.matchMedia?.(NARROW);
+    if (!media) return undefined;
+    const onChange = () => setNarrow(media.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, []);
+  return narrow;
+}
+
 export function CalendarApp() {
   const { state } = useLibrary();
   const days = useDays(state);
@@ -142,6 +156,16 @@ export function CalendarApp() {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [open, setOpen] = useState(null);
+  const narrow = useNarrow();
+  const panelRef = useRef(null);
+  // Al abrir un día en móvil, su panel entra en la zona visible de la ventana (solo se desplaza esa zona)
+  useEffect(() => {
+    const panel = panelRef.current;
+    const scroller = panel?.closest('.window__body');
+    if (!narrow || !open || !panel || !scroller) return;
+    const over = panel.getBoundingClientRect().bottom - scroller.getBoundingClientRect().bottom;
+    if (over > 0) scroller.scrollTop += over + 8;
+  }, [narrow, open]);
 
   const cells = useMemo(() => {
     const first = new Date(month);
@@ -239,7 +263,7 @@ export function CalendarApp() {
                   </span>
                 )}
               </button>
-              {open === date && (
+              {open === date && !narrow && (
                 <div className="cal__popwrap" data-side={col >= 4 ? 'left' : 'right'}>
                   <DayPopover date={date} entries={entries} pomodoro={pomos[date]} onClose={() => setOpen(null)} />
                 </div>
@@ -248,6 +272,11 @@ export function CalendarApp() {
           );
         })}
       </div>
+      {narrow && open && (
+        <div ref={panelRef} className="cal__daypanel">
+          <DayPopover date={open} entries={days[open] ?? []} pomodoro={pomos[open]} onClose={() => setOpen(null)} />
+        </div>
+      )}
       <p className="cal__legend">
         <span>Menos</span>
         {[0, 1, 2, 3, 4].map((h) => (

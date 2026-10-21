@@ -5,6 +5,7 @@
 // - Abajo (la balda bajo la cámara, junto a la vela): los lomos reales de lo que lees y de tus favoritos, con
 //   su textura de edición, la luz parpadeante de la vela por la izquierda y la sombra del estante de encima.
 import { useEffect, useMemo, useState } from 'react';
+import { useSvgIds } from '../../hooks/useSvgIds';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { rankOf } from '../../domain/figures';
 import { sprayedEdge, spineColor, spineHeight, spineWidth } from '../../domain/books';
@@ -12,6 +13,7 @@ import { projectPoint, rectToQuad } from '../../scene/homography';
 import { LITE_SCENE } from '../../scene/renderMode';
 import { IVY_REGION, PLANTS, ROOM_SHELVES, SCENE_H, SCENE_SRC, SCENE_W, pts } from '../../scene/sceneMap';
 import { FigureArt, FigureParticles, figureAspect } from '../figures/FigureArt';
+import { shownDisplay } from '../figures/figureDisplay';
 import { useFigureCatalog } from '../figures/figureCatalog';
 import { IVY_SWAY, LEAF_ALPHA, LEAF_KEY, PLANT_SWAY, SwayFilter } from './SceneLayers';
 
@@ -144,8 +146,9 @@ export function RoomFigureShelves({ figures, onOpenVault, onHover }) {
             {list.map((fig, i) => {
               const entry = figures.owned[fig.id];
               const rank = rankOf(fig.parts.length, entry);
-              const h = shelf.height * (entry.display === 'unboxed' ? 0.86 : 0.84);
-              const w = Math.min(cell - 8, h * figureAspect(fig, entry.display));
+              const display = shownDisplay(fig, entry.display);
+              const h = shelf.height * (display === 'unboxed' ? 0.86 : 0.84);
+              const w = Math.min(cell - 8, h * figureAspect(fig, display));
               const x = cell * (i + 0.5) - w / 2;
               const anchor = projectPoint(shelf.width, shelf.height, shelf.quad, x + w / 2, shelf.height - h);
               const label = { id: `fig-${fig.id}`, x: anchor.x, y: anchor.y - 4, title: fig.name, text: `${fig.sagaTitle} · ${'★'.repeat(rank)}`, meta: 'Toca: El Ático del Coleccionista' };
@@ -154,7 +157,7 @@ export function RoomFigureShelves({ figures, onOpenVault, onHover }) {
                   key={fig.id}
                   type="button"
                   className="room-figure"
-                  data-display={entry.display}
+                  data-display={display}
                   style={{ left: x, width: w, height: h }}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -167,7 +170,7 @@ export function RoomFigureShelves({ figures, onOpenVault, onHover }) {
                   aria-label={`${fig.name}: abrir El Ático del Coleccionista`}
                 >
                   <span className="room-figure__contact" aria-hidden="true" />
-                  <FigureArt fig={fig} display={entry.display} />
+                  <FigureArt fig={fig} display={display} />
                   {rank >= 3 && <FigureParticles kind={fig.particles} strong={rank >= 5} />}
                   <span className="room-figure__sun" aria-hidden="true" />
                 </button>
@@ -184,40 +187,41 @@ export function RoomFigureShelves({ figures, onOpenVault, onHover }) {
 
 /** Oclusión frontal (z-30): la hiedra y las hojas pintadas, ya mecidas por la brisa, por delante de figuras y libros. */
 export function RoomOcclusion() {
+  const sid = useSvgIds();
   const [top, middle, cabinet] = ROOM_SHELVES;
   return (
     <svg className="room-occlusion" viewBox={`0 0 ${SCENE_W} ${SCENE_H}`} width={SCENE_W} height={SCENE_H} aria-hidden="true">
       <defs>
-        <SwayFilter id="f-ivy-front" region={IVY_REGION} keyMatrix={LEAF_KEY} freq={IVY_SWAY.freq} amp={IVY_SWAY.amp} dur={IVY_SWAY.dur} seed="3" outAlpha={LEAF_ALPHA} />
-        <SwayFilter id="f-plant-front" region={PLANTS.left} keyMatrix={LEAF_KEY} freq={PLANT_SWAY.freq} amp={PLANT_SWAY.amp} dur={PLANT_SWAY.dur} seed="13" outAlpha={LEAF_ALPHA} />
-        <filter id="f-leaf-front" x="0" y="0" width="1" height="1" colorInterpolationFilters="sRGB">
+        <SwayFilter id={sid('f-ivy-front')} region={IVY_REGION} keyMatrix={LEAF_KEY} freq={IVY_SWAY.freq} amp={IVY_SWAY.amp} dur={IVY_SWAY.dur} seed="3" outAlpha={LEAF_ALPHA} />
+        <SwayFilter id={sid('f-plant-front')} region={PLANTS.left} keyMatrix={LEAF_KEY} freq={PLANT_SWAY.freq} amp={PLANT_SWAY.amp} dur={PLANT_SWAY.dur} seed="13" outAlpha={LEAF_ALPHA} />
+        <filter id={sid('f-leaf-front')} x="0" y="0" width="1" height="1" colorInterpolationFilters="sRGB">
           <feColorMatrix type="matrix" values={`1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  ${LEAF_ALPHA}`} />
           <feComponentTransfer>
             <feFuncA type="linear" slope="1.6" intercept="-0.1" />
           </feComponentTransfer>
         </filter>
-        <clipPath id="clip-shelves-ivy">
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-shelves-ivy')}>
           <polygon points={pts(top.quad)} />
           <polygon points={pts(middle.quad)} />
         </clipPath>
-        <clipPath id="clip-shelf-cabinet">
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-shelf-cabinet')}>
           <polygon points={pts(cabinet.quad)} />
         </clipPath>
       </defs>
       {/* Baldas altas: la hiedra de la derecha y las hojas de la maceta pasan por delante de las figuras */}
-      <g clipPath="url(#clip-shelves-ivy)">
+      <g clipPath={sid.url('clip-shelves-ivy')}>
         {LITE_SCENE ? (
-          <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter="url(#f-leaf-front)" />
+          <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter={sid.url('f-leaf-front')} />
         ) : (
-          <g filter="url(#f-ivy-front)">
+          <g filter={sid.url('f-ivy-front')}>
             <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
           </g>
         )}
       </g>
-      <g clipPath="url(#clip-shelf-cabinet)">
-        <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter="url(#f-leaf-front)" />
+      <g clipPath={sid.url('clip-shelf-cabinet')}>
+        <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter={sid.url('f-leaf-front')} />
         {!LITE_SCENE && (
-          <g filter="url(#f-plant-front)">
+          <g filter={sid.url('f-plant-front')}>
             <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
           </g>
         )}

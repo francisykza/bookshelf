@@ -2,6 +2,7 @@
 // filtros SVG (mar, hiedra, flores, carillón, gato) más las capas de atardecer y noche que solo tiñen
 // cielo y mar gracias a una "llave de azules". Todo en coordenadas de la imagen (984 × 1599).
 import { forwardRef } from 'react';
+import { useSvgIds } from '../../hooks/useSvgIds';
 import {
   CHIME,
   CLOUD_REGION,
@@ -82,7 +83,7 @@ export function SwayFilter({ id, region, keyMatrix, freq, amp, dur, seed, outAlp
 /** Máscara de bordes difuminados para que los recortes se fundan con la imagen de debajo. */
 export function Feather({ id, x, y, w, h, soft = 0.22 }) {
   return (
-    <mask id={id} maskUnits="userSpaceOnUse" x={x} y={y} width={w} height={h}>
+    <mask id={id} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x={x} y={y} width={w} height={h}>
       <rect x={x} y={y} width={w} height={h} fill={`url(#${id}-g)`} />
       <radialGradient id={`${id}-g`} cx="50%" cy="50%" r="50%">
         <stop offset={1 - soft * 2} stopColor="#fff" />
@@ -102,12 +103,16 @@ export function Crop({ clip, mask, filter }) {
   );
 }
 
-/** Tinte de la hora del día: sobre la escena animada o, en modo ligero, sobre la ilustración fija. */
-function SceneTint({ filter }) {
-  return LITE_SCENE ? (
-    <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter={`url(#${filter})`} />
-  ) : (
-    <use href="#scene-live" filter={`url(#${filter})`} />
+/**
+ * Tinte de la hora del día (1.17.0): la ilustración, recortada a la región del filtro, más los recortes
+ * animados de encima (`live`), para que hojas y mar sigan meciéndose teñidos. En modo ligero no hay recortes.
+ */
+function SceneTint({ filter, live }) {
+  return (
+    <g filter={`url(#${filter})`}>
+      <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
+      {!LITE_SCENE && <use href={live} />}
+    </g>
   );
 }
 
@@ -134,6 +139,7 @@ const GULLS = [
 ];
 
 export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRing }, ref) {
+  const sid = useSvgIds();
   return (
     <svg
       ref={ref}
@@ -144,25 +150,25 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
       aria-hidden="true"
     >
       <defs>
-        <clipPath id="clip-sea">
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-sea')}>
           <polygon points={pts(SEA)} />
         </clipPath>
-        <clipPath id="clip-exterior">
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-exterior')}>
           <polygon points={pts(EXTERIOR)} />
         </clipPath>
-        <clipPath id="clip-chime">
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-chime')}>
           <rect x={CHIME.x} y={CHIME.y} width={CHIME.w} height={CHIME.h} />
         </clipPath>
-        <clipPath id="clip-sky-top">
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-sky-top')}>
           <rect x="300" y="0" width="684" height="606" />
         </clipPath>
-        <clipPath id="clip-sea-band">
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-sea-band')}>
           <rect x="300" y="606" width="684" height="214" />
         </clipPath>
-        <Feather id="m-chime" x={CHIME.x} y={CHIME.y} w={CHIME.w} h={CHIME.h} soft={0.2} />
+        <Feather id={sid('m-chime')} x={CHIME.x} y={CHIME.y} w={CHIME.w} h={CHIME.h} soft={0.2} />
 
         {/* Olas lentas: la frecuencia del ruido deriva y las ondas parecen avanzar */}
-        <filter id="f-sea" filterUnits="userSpaceOnUse" x="480" y="590" width="440" height="190">
+        <filter id={sid('f-sea')} filterUnits="userSpaceOnUse" x="480" y="590" width="440" height="190">
           <feTurbulence type="fractalNoise" baseFrequency="0.008 0.11" numOctaves="2" seed="7" result="waves">
             <animate
               attributeName="baseFrequency"
@@ -176,23 +182,23 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
           <feDisplacementMap in="SourceGraphic" in2="waves" scale="11" xChannelSelector="R" yChannelSelector="G" />
         </filter>
 
-        <SwayFilter id="f-ivy" region={IVY_REGION} keyMatrix={LEAF_KEY} freq={IVY_SWAY.freq} amp={IVY_SWAY.amp} dur={IVY_SWAY.dur} seed="3" />
-        <SwayFilter id="f-curtain" region={CURTAIN_REGION} keyMatrix={NOT_WOOD_KEY} freq="0.012 0.022" amp={7} dur="6.2s" seed="9" />
-        <SwayFilter id="f-flowers" region={FLOWER_REGION} keyMatrix={NOT_WOOD_KEY} freq="0.018 0.03" amp={6.5} dur="5.8s" seed="11" />
-        <SwayFilter id="f-vines" region={RIGHT_VINES} keyMatrix={LEAF_KEY} freq="0.02 0.035" amp={6.5} dur="5.4s" seed="5" />
-        <SwayFilter id="f-plant-left" region={PLANTS.left} keyMatrix={LEAF_KEY} freq={PLANT_SWAY.freq} amp={PLANT_SWAY.amp} dur={PLANT_SWAY.dur} seed="13" />
-        <SwayFilter id="f-plant-desk" region={PLANTS.desk} keyMatrix={NOT_WOOD_KEY} freq="0.03 0.05" amp={4.5} dur="5.2s" seed="17" />
-        <SwayFilter id="f-balcony-l" region={PLANTS.balconyLeft} keyMatrix={NOT_WOOD_KEY} freq="0.035 0.05" amp={5} dur="3.9s" seed="19" />
-        <SwayFilter id="f-balcony-r" region={PLANTS.balconyRight} keyMatrix={NOT_WOOD_KEY} freq="0.035 0.05" amp={5} dur="4.3s" seed="23" />
-        <SwayFilter id="f-vase" region={PLANTS.vase} keyMatrix={NOT_WOOD_KEY} freq="0.03 0.045" amp={4} dur="4.8s" seed="29" />
-        <clipPath id="clip-lamp">
+        <SwayFilter id={sid('f-ivy')} region={IVY_REGION} keyMatrix={LEAF_KEY} freq={IVY_SWAY.freq} amp={IVY_SWAY.amp} dur={IVY_SWAY.dur} seed="3" />
+        <SwayFilter id={sid('f-curtain')} region={CURTAIN_REGION} keyMatrix={NOT_WOOD_KEY} freq="0.012 0.022" amp={7} dur="6.2s" seed="9" />
+        <SwayFilter id={sid('f-flowers')} region={FLOWER_REGION} keyMatrix={NOT_WOOD_KEY} freq="0.018 0.03" amp={6.5} dur="5.8s" seed="11" />
+        <SwayFilter id={sid('f-vines')} region={RIGHT_VINES} keyMatrix={LEAF_KEY} freq="0.02 0.035" amp={6.5} dur="5.4s" seed="5" />
+        <SwayFilter id={sid('f-plant-left')} region={PLANTS.left} keyMatrix={LEAF_KEY} freq={PLANT_SWAY.freq} amp={PLANT_SWAY.amp} dur={PLANT_SWAY.dur} seed="13" />
+        <SwayFilter id={sid('f-plant-desk')} region={PLANTS.desk} keyMatrix={NOT_WOOD_KEY} freq="0.03 0.05" amp={4.5} dur="5.2s" seed="17" />
+        <SwayFilter id={sid('f-balcony-l')} region={PLANTS.balconyLeft} keyMatrix={NOT_WOOD_KEY} freq="0.035 0.05" amp={5} dur="3.9s" seed="19" />
+        <SwayFilter id={sid('f-balcony-r')} region={PLANTS.balconyRight} keyMatrix={NOT_WOOD_KEY} freq="0.035 0.05" amp={5} dur="4.3s" seed="23" />
+        <SwayFilter id={sid('f-vase')} region={PLANTS.vase} keyMatrix={NOT_WOOD_KEY} freq="0.03 0.045" amp={4} dur="4.8s" seed="29" />
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-lamp')}>
           <rect x={LAMP_SWING.x} y={LAMP_SWING.y} width={LAMP_SWING.w} height={LAMP_SWING.h} />
         </clipPath>
-        <Feather id="m-lamp" x={LAMP_SWING.x - 20} y={LAMP_SWING.y} w={LAMP_SWING.w + 40} h={LAMP_SWING.h} soft={0.18} />
-        <SwayFilter id="f-clouds" region={CLOUD_REGION} keyMatrix={NOT_WOOD_KEY} freq="0.006 0.012" amp={14} dur="22s" seed="2" />
+        <Feather id={sid('m-lamp')} x={LAMP_SWING.x - 20} y={LAMP_SWING.y} w={LAMP_SWING.w + 40} h={LAMP_SWING.h} soft={0.18} />
+        <SwayFilter id={sid('f-clouds')} region={CLOUD_REGION} keyMatrix={NOT_WOOD_KEY} freq="0.006 0.012" amp={14} dur="22s" seed="2" />
 
         {/* Noche: cielo, mar, nubes y flores exteriores pasan a azul de luna; la madera conserva la luz de dentro */}
-        <filter id="f-night" filterUnits="userSpaceOnUse" x="315" y="0" width="669" height="820" colorInterpolationFilters="sRGB">
+        <filter id={sid('f-night')} filterUnits="userSpaceOnUse" x="315" y="0" width="669" height="820" colorInterpolationFilters="sRGB">
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.5 -1.5 3 0 0" result="blue" />
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 1 1 0 -2.1" result="white" />
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -6 9 -3 0 -0.2" result="leaf" />
@@ -208,7 +214,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
         </filter>
 
         {/* Atardecer: el cielo se vuelve melocotón y rosa; el mar, malva con reflejos ámbar */}
-        <filter id="f-sunset-sky" filterUnits="userSpaceOnUse" x="300" y="0" width="684" height="606" colorInterpolationFilters="sRGB">
+        <filter id={sid('f-sunset-sky')} filterUnits="userSpaceOnUse" x="300" y="0" width="684" height="606" colorInterpolationFilters="sRGB">
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.5 -1.5 3 0 0.05" result="key" />
           <feColorMatrix
             in="SourceGraphic"
@@ -218,7 +224,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
           />
           <feComposite in="peach" in2="key" operator="in" />
         </filter>
-        <filter id="f-sunset-sea" filterUnits="userSpaceOnUse" x="300" y="606" width="684" height="214" colorInterpolationFilters="sRGB">
+        <filter id={sid('f-sunset-sea')} filterUnits="userSpaceOnUse" x="300" y="606" width="684" height="214" colorInterpolationFilters="sRGB">
           <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.5 -1.5 3 0 0" result="key" />
           <feColorMatrix
             in="SourceGraphic"
@@ -230,50 +236,49 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
         </filter>
 
         {/* Llave del cielo como máscara: las estrellas solo se ven sobre azul abierto */}
-        <filter id="f-skykey" filterUnits="userSpaceOnUse" x="300" y="0" width="684" height="606" colorInterpolationFilters="sRGB">
+        <filter id={sid('f-skykey')} filterUnits="userSpaceOnUse" x="300" y="0" width="684" height="606" colorInterpolationFilters="sRGB">
           <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -2 -2 4 0 -0.1" />
         </filter>
-        <mask id="m-sky" maskUnits="userSpaceOnUse" x="300" y="0" width="684" height="606">
-          <g clipPath="url(#clip-sky-top)">
-            <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter="url(#f-skykey)" />
+        <mask id={sid('m-sky')} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="300" y="0" width="684" height="606">
+          <g clipPath={sid.url('clip-sky-top')}>
+            <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter={sid.url('f-skykey')} />
           </g>
         </mask>
-        <radialGradient id="g-moon-halo" cx="50%" cy="50%" r="50%">
+        <radialGradient id={sid('g-moon-halo')} cx="50%" cy="50%" r="50%">
           <stop offset="0" stopColor="#dfe8ff" stopOpacity="0.55" />
           <stop offset="1" stopColor="#dfe8ff" stopOpacity="0" />
         </radialGradient>
       </defs>
 
-      {/* Escena animada (se reutiliza con <use> en las capas de hora del día) */}
-      <g id="scene-live">
-        <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} />
+      {/* Recortes animados sobre la imagen base HTML (.scene-base): aquí ya no se repite la ilustración entera */}
+      <g id={sid('scene-live')}>
         {/* Capa lejana del parallax: mar y nubes se desplazan menos que la habitación (en móvil, quietas) */}
         {!LITE_SCENE && (
           <>
             <g className="layer-far">
-              <Crop clip="clip-sea" filter="f-sea" />
-              <Crop filter="f-clouds" />
+              <Crop clip={sid('clip-sea')} filter={sid('f-sea')} />
+              <Crop filter={sid('f-clouds')} />
             </g>
-            <Crop filter="f-ivy" />
-            <Crop filter="f-curtain" />
-            <Crop filter="f-plant-left" />
-            <Crop filter="f-plant-desk" />
-            <Crop filter="f-balcony-l" />
-            <Crop filter="f-balcony-r" />
-            <Crop filter="f-vase" />
+            <Crop filter={sid('f-ivy')} />
+            <Crop filter={sid('f-curtain')} />
+            <Crop filter={sid('f-plant-left')} />
+            <Crop filter={sid('f-plant-desk')} />
+            <Crop filter={sid('f-balcony-l')} />
+            <Crop filter={sid('f-balcony-r')} />
+            <Crop filter={sid('f-vase')} />
           </>
         )}
         <g className="lamp-swing" style={{ transformOrigin: `${LAMP_SWING.pivotX}px ${LAMP_SWING.pivotY}px` }}>
-          <Crop clip="clip-lamp" mask="m-lamp" />
+          <Crop clip={sid('clip-lamp')} mask={sid('m-lamp')} />
         </g>
         {!LITE_SCENE && (
           <>
-            <Crop filter="f-flowers" />
-            <Crop filter="f-vines" />
+            <Crop filter={sid('f-flowers')} />
+            <Crop filter={sid('f-vines')} />
           </>
         )}
         <g className={`chime-swing${chimeRing ? ' is-ringing' : ''}`} style={{ transformOrigin: `${CHIME.anchorX}px ${CHIME.anchorY}px` }}>
-          <Crop clip="clip-chime" mask="m-chime" />
+          <Crop clip={sid('clip-chime')} mask={sid('m-chime')} />
         </g>
 
         {/* Vapor de las tazas del balcón y de la mesa */}
@@ -289,7 +294,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
 
       {/* Gaviotas lejanas: enmascaradas al cielo abierto, pasan por detrás de flores y hojas */}
       {timeOfDay !== 'night' && (
-        <g mask="url(#m-sky)" className="gulls layer-far" data-tod={timeOfDay}>
+        <g mask={sid.url('m-sky')} className="gulls layer-far" data-tod={timeOfDay}>
           {GULLS.map((g, i) => (
             <g
               key={i}
@@ -315,11 +320,11 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
       <g className="tod-layer" data-on={timeOfDay === 'sunset'}>
         {timeOfDay === 'sunset' && (
           <>
-            <g clipPath="url(#clip-sky-top)" opacity="0.82">
-              <SceneTint filter="f-sunset-sky" />
+            <g clipPath={sid.url('clip-sky-top')} opacity="0.82">
+              <SceneTint filter={sid('f-sunset-sky')} live={sid.href('scene-live')} />
             </g>
-            <g clipPath="url(#clip-sea-band)" opacity="0.7">
-              <SceneTint filter="f-sunset-sea" />
+            <g clipPath={sid.url('clip-sea-band')} opacity="0.7">
+              <SceneTint filter={sid('f-sunset-sea')} live={sid.href('scene-live')} />
             </g>
           </>
         )}
@@ -329,10 +334,10 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
       <g className="tod-layer" data-on={timeOfDay === 'night'}>
         {timeOfDay === 'night' && (
           <>
-            <g clipPath="url(#clip-exterior)" opacity="0.94">
-              <SceneTint filter="f-night" />
+            <g clipPath={sid.url('clip-exterior')} opacity="0.94">
+              <SceneTint filter={sid('f-night')} live={sid.href('scene-live')} />
             </g>
-            <g mask="url(#m-sky)" className="layer-far">
+            <g mask={sid.url('m-sky')} className="layer-far">
               {STARS.map((s, i) => (
                 <circle
                   key={i}
@@ -343,7 +348,7 @@ export const SceneLayers = forwardRef(function SceneLayers({ timeOfDay, chimeRin
                   style={{ animationDuration: `${s.d}s`, animationDelay: `${s.delay}s` }}
                 />
               ))}
-              <circle cx={MOON.x} cy={MOON.y} r={MOON.r * 3.6} fill="url(#g-moon-halo)" />
+              <circle cx={MOON.x} cy={MOON.y} r={MOON.r * 3.6} fill={sid.url('g-moon-halo')} />
             </g>
           </>
         )}

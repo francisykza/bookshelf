@@ -1,9 +1,12 @@
-// Mapa de la ilustración (SPEC §2.1): todas las medidas en píxeles de `cozy-book-room.png` (984 × 1599).
+// Mapa de la ilustración (SPEC §2.1): todas las medidas en píxeles de `cozy-book-room.jpg` (984 × 1599).
 // El escenario escala un lienzo de ese tamaño, así que cada capa usa directamente estas coordenadas.
 
 export const SCENE_W = 984;
 export const SCENE_H = 1599;
-export const SCENE_SRC = '/cozy-book-room.png';
+/** Rutas de recursos según la base del despliegue (raíz en Vercel; `BASE_URL` si algún día va en subruta). */
+export const asset = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+// 1.17.0: el archivo es JPEG; con extensión .png Vercel lo servía como image/png
+export const SCENE_SRC = asset('cozy-book-room.jpg');
 
 /** Polígono → atributo `points` de SVG. */
 export const pts = (list) => list.map(([x, y]) => `${x},${y}`).join(' ');

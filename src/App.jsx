@@ -1,6 +1,6 @@
 // BookShelf — "Mediterranean Cozy Reading Sanctuary" (SPEC.md). Interfaz diegética: la habitación es
 // el menú. Este componente coordina la cámara, los objetos que se acercan, el sonido y el temporizador.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { bell, isAmbiencePlaying, setAmbience, setSfx, setTimeOfDay } from './audio/ambientAudio';
 import { timeOfDayByClock } from './domain/dates';
 import { BookDetailModal } from './components/book/BookDetailModal';
@@ -17,21 +17,45 @@ import { SCENE_H, SCENE_W } from './scene/sceneMap';
 import { CloudProvider } from './state/cloudSync';
 import { LibraryProvider, useLibrary } from './state/useLibrary';
 
-function useStageScale() {
-  const get = () => Math.min(window.innerWidth / SCENE_W, window.innerHeight / SCENE_H);
-  const [k, setK] = useState(get);
+/**
+ * Escala uniforme de la escena (SPEC §11.4): se mide el contenedor real con ResizeObserver, agrupado en un
+ * fotograma. Durante un pinch-zoom (visualViewport.scale ≠ 1) no se reescala la ilustración.
+ */
+function useStageScale(ref) {
+  const [k, setK] = useState(() => Math.min(window.innerWidth / SCENE_W, window.innerHeight / SCENE_H));
   useEffect(() => {
-    const onResize = () => setK(get());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+    const node = ref.current;
+    if (!node) return undefined;
+    let frame = 0;
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const vv = window.visualViewport;
+        if (vv && Math.abs(vv.scale - 1) > 0.01) return;
+        const { width, height } = node.getBoundingClientRect();
+        if (!width || !height) return;
+        const next = Math.min(width / SCENE_W, height / SCENE_H);
+        setK((prev) => (Math.abs(prev - next) < 0.0005 ? prev : next));
+      });
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    window.visualViewport?.addEventListener('resize', measure);
+    measure();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.visualViewport?.removeEventListener('resize', measure);
+    };
+  }, [ref]);
   return k;
 }
 
 function Sanctuary() {
   const { state, actions } = useLibrary();
   const { settings } = state;
-  const k = useStageScale();
+  const stageRef = useRef(null);
+  const k = useStageScale(stageRef);
   const [view, setView] = useState(ROOM_VIEW);
   const [panel, setPanel] = useState(null);
   const [askPages, setAskPages] = useState(false);
@@ -108,7 +132,7 @@ function Sanctuary() {
   const openBook = (book) => setPanel({ type: 'book', id: book.id });
 
   return (
-    <main className="sanctuary" data-view={view}>
+    <main ref={stageRef} className="sanctuary" data-view={view} inert={panel ? true : undefined}>
       <div className="backdrop" aria-hidden="true" />
       <h1 className="sr-only-focus">BookShelf, tu santuario de lectura junto al mar</h1>
       <CozyRoom
@@ -123,6 +147,7 @@ function Sanctuary() {
         onOpenAtlas={() => setPanel({ type: 'atlas' })}
         onOpenVault={(id) => setPanel({ type: 'vault', id })}
         onOpenAccount={() => setPanel({ type: 'account' })}
+        modalOpen={Boolean(panel)}
       />
       <ShelfView
         open={view === SHELF_VIEW}
