@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Informes de QA (Playwright): capturas, telemetría y resultados se regeneran
+qa-report

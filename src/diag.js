@@ -2,7 +2,7 @@
 // versión cargada y lo que el teléfono declara de su pantalla y su gráfica, para capturarla y compararla.
 import { LITE_SCENE } from './scene/renderMode';
 
-export const APP_VERSION = '1.20.0';
+export const APP_VERSION = '1.21.0';
 
 function gpuInfo() {
   try {
@@ -40,7 +40,7 @@ export function showDiagnostics() {
   };
   img.onload = paint;
   img.onerror = paint;
-  img.src = '/cozy-book-room.jpg';
+  img.src = '/images/cozy-book-room.jpg';
   paint();
   document.body.appendChild(box);
 }

@@ -4,7 +4,7 @@
 .backdrop {
   position: fixed;
   inset: -6%;
-  background: url('/cozy-book-room.jpg') center / cover no-repeat;
+  background: url('/images/cozy-book-room.jpg') center / cover no-repeat;
   filter: blur(46px) brightness(0.78) saturate(1.3) sepia(0.12);
   transform: scale(1.12);
 }
@@ -2446,4 +2446,340 @@ html[data-motion='reduced'] .tod__glow::after {
 
 .room-chevron--right {
   right: calc(env(safe-area-inset-right, 0px) + 24px);
+}
+
+/* ── Fase 1 · Panorama de dos habitaciones y escenario cover (SPEC §16.3–16.6) ─────────────────── */
+
+/* Viewport fijo de una pantalla; el track de dos pantallas se recorta aquí (excepción estructural esperada) */
+.panorama-viewport {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  /* clip: ni el foco ni un arrastre con selección pueden desplazar el track (hidden sí lo permite) */
+  overflow: hidden;
+  overflow: clip;
+  isolation: isolate;
+  user-select: none;
+  -webkit-user-select: none;
+  background: #2a1d14;
+  touch-action: pan-y pinch-zoom;
+}
+
+/* translateX(-50%) sobre un track del 200 % = exactamente una pantalla */
+.panorama-track {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  transform: translateX(0);
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.panorama-track[data-room='SOCIAL_ROOM'] {
+  transform: translateX(-50%);
+}
+
+.panorama-track[data-reduced] {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panorama-track {
+    transition: none;
+  }
+}
+
+.panorama-panel {
+  position: relative;
+  flex: 0 0 50%;
+  width: 50%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  overflow: clip;
+  isolation: isolate;
+}
+
+/* Escenario: ocupa el panel; el lienzo de la ilustración recibe la única transformación (origen 0 0) */
+.scene-stage,
+.room-camera {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  perspective: none;
+  background: #2a1d14;
+}
+
+.scene-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.room-camera .world {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  transition: none;
+  filter: none;
+  box-shadow: none;
+  will-change: auto;
+}
+
+.scene-base {
+  object-fit: fill;
+  background: none;
+}
+
+/* Capas dentro de la escena: fondo 0, atmósfera 10, objetos 20, hotspots 30, etiquetas 40 */
+.room-camera .tod,
+.room-camera .cloud-shadow {
+  z-index: 10;
+}
+
+.room-objects,
+.room-hotspots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.room-objects {
+  z-index: 20;
+}
+
+.room-hotspots {
+  z-index: 30;
+}
+
+.room-objects button,
+.room-objects .room-shelf--figures,
+.room-hotspots .hotspot,
+.room-hotspots .hotspot-badge,
+.room-hotspots .time-dial {
+  pointer-events: auto;
+}
+
+.room-camera .room-label {
+  z-index: 40;
+}
+
+/* Noche: el exterior de la puerta-ventana, más profundo que el interior */
+.tod__night-sky {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity 450ms ease;
+  pointer-events: none;
+}
+
+.tod__night-sky polygon {
+  fill: #0e1a33;
+}
+
+.tod[data-tod='night'] .tod__night-sky {
+  opacity: 0.42;
+}
+
+/* Controles laterales: papel, tinta y latón, legibles sobre la ilustración y dentro del área segura */
+.panorama-nav {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.panorama-nav__btn {
+  position: absolute;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #b08d57;
+  border-radius: 12px;
+  background: rgb(232 216 185 / 0.94);
+  color: #2c1e14;
+  font-family: 'Lora', var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgb(255 248 230 / 0.6),
+    0 4px 12px rgb(44 30 20 / 0.35);
+  transform: translateY(-50%);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.panorama-nav__btn--next {
+  right: calc(env(safe-area-inset-right, 0px) + 8px);
+}
+
+.panorama-nav__btn--prev {
+  left: calc(env(safe-area-inset-left, 0px) + 8px);
+}
+
+.panorama-nav__btn:focus-visible {
+  outline: 3px solid #b08d57;
+  outline-offset: 3px;
+}
+
+.panorama-nav__btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* Alternativa accesible: un único control con los objetos que el encuadre deja fuera de pantalla */
+.offscreen {
+  position: absolute;
+  left: calc(env(safe-area-inset-left, 0px) + 12px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  z-index: 15;
+  font-family: 'Lora', var(--font-sans);
+}
+
+.offscreen__toggle,
+.offscreen__list button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #b08d57;
+  border-radius: 12px;
+  background: rgb(232 216 185 / 0.94);
+  color: #2c1e14;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgb(44 30 20 / 0.3);
+}
+
+.offscreen__list {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offscreen__list button {
+  width: 100%;
+  text-align: left;
+}
+
+.offscreen__toggle:focus-visible,
+.offscreen__list button:focus-visible {
+  outline: 3px solid #b08d57;
+  outline-offset: 2px;
+}
+
+/* La esquina general va fuera del track, por encima de los dos paneles */
+.panorama-viewport > .room-corner {
+  position: absolute;
+  z-index: 16;
+}
+
+/* Diagnóstico de escena (solo desarrollo, ?sceneDebug=1) */
+.scene-debug {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+}
+
+.scene-debug__svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  overflow: visible;
+}
+
+.scene-debug__grid line {
+  stroke: rgb(0 255 255 / 0.35);
+  stroke-width: 1;
+}
+
+.scene-debug__grid line[data-major] {
+  stroke: rgb(255 0 255 / 0.55);
+}
+
+.scene-debug text {
+  fill: #fff;
+  stroke: #000;
+  stroke-width: 0.6px;
+  font: 600 12px/1 monospace;
+}
+
+.scene-debug__spot polygon {
+  fill: rgb(255 214 0 / 0.18);
+  stroke: #ffd600;
+  stroke-width: 2;
+}
+
+.scene-debug__spot circle {
+  fill: #ff3d00;
+}
+
+.scene-debug__shelf polygon {
+  fill: rgb(0 200 120 / 0.15);
+  stroke: #00c878;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.scene-debug__visible {
+  fill: none;
+  stroke: #ff3d00;
+  stroke-width: 4;
+  stroke-dasharray: 12 8;
+}
+
+.scene-debug__info {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 60px);
+  left: 8px;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 8px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.72);
+  color: #fff;
+  font: 12px/1.3 monospace;
+}
+
+.scene-debug__info dd {
+  margin: 0;
+}
+
+/* En horizontal, el centro del borde cae sobre la mesita y el té: los controles laterales bajan al pie */
+@media (min-aspect-ratio: 1/1) {
+  .panorama-nav__btn {
+    top: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    transform: none;
+  }
+
+  /* «Fuera de vista» arriba a la izquierda: abajo taparía los auriculares */
+  .offscreen {
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    bottom: auto;
+  }
+
+  .offscreen__list {
+    top: calc(100% + 6px);
+    bottom: auto;
+  }
 }

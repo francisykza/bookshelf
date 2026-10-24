@@ -4,4 +4,6 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Las pruebas unitarias viven en src/; e2e/ es de Playwright (npm run qa:full)
+  test: { include: ['src/**/*.test.js'] },
 });

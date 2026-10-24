@@ -1,10 +1,9 @@
-// Ilustración base de la habitación (SPEC §11.2, 1.17.0): una sola <img> HTML en el sistema de 984 × 1599,
-// separada de los filtros y máscaras SVG. Si un efecto falla, la habitación sigue entera debajo. No depende
-// de la sesión, los libros, el catálogo, el audio ni el canvas; solo avisa si el recurso falla de verdad.
+// Ilustración base de una habitación (SPEC §16.5): una sola <img> HTML en el sistema de coordenadas de su
+// imagen, sin filtros, máscaras ni mezclas. Si un efecto falla, la habitación sigue entera debajo. Solo avisa
+// si el recurso falla de verdad; `decode()` puede rechazarse aunque la imagen ya se pinte.
 import { useEffect, useRef } from 'react';
-import { SCENE_H, SCENE_SRC, SCENE_W } from '../../scene/sceneMap';
 
-export function SceneBase({ attempt = 0, onStatus }) {
+export function SceneBase({ room, attempt = 0, onStatus, priority = 'high' }) {
   const ref = useRef(null);
   const statusRef = useRef(onStatus);
   useEffect(() => {
@@ -15,8 +14,7 @@ export function SceneBase({ attempt = 0, onStatus }) {
   useEffect(() => {
     const img = ref.current;
     if (!img?.complete) return;
-    if (img.naturalWidth > 0) statusRef.current?.('ok');
-    else statusRef.current?.('error');
+    statusRef.current?.(img.naturalWidth > 0 ? 'ok' : 'error');
   }, [attempt]);
 
   return (
@@ -24,16 +22,15 @@ export function SceneBase({ attempt = 0, onStatus }) {
       key={attempt}
       ref={ref}
       className="scene-base"
-      src={attempt ? `${SCENE_SRC}?reintento=${attempt}` : SCENE_SRC}
-      width={SCENE_W}
-      height={SCENE_H}
+      src={attempt ? `${room.src}?reintento=${attempt}` : room.src}
+      width={room.width}
+      height={room.height}
       loading="eager"
-      fetchPriority="high"
+      fetchPriority={priority}
       decoding="async"
       draggable={false}
       alt=""
       onLoad={(event) => {
-        // `decode()` puede rechazarse aunque la imagen ya se pinte: solo cuenta como fallo si no tiene píxeles
         const img = event.currentTarget;
         statusRef.current?.('ok');
         img.decode?.().catch(() => {

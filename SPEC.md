@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.20.0 · 2026-10-21 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.21.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -1140,3 +1140,160 @@ Cada registro es independiente:
 - [ ] Varias sesiones del mismo libro en un día se ven y se borran por separado.
 - [ ] Doble toque en Guardar crea un solo registro.
 - [ ] Sin desbordamiento horizontal en 360 × 800, 390 × 844, 412 × 915, 844 × 390 y 1440 × 900.
+
+## 15. Fase 1 — Doble habitación panorámica y recalibración de MAIN_ROOM (1.21.0)
+
+### 15.1 Diagnóstico
+
+- **Activos oficiales.** Llegaron como `public/MAIN ROOM.jpeg` (941 × 1672, JPEG, 3 canales) y
+  `public/SOCIAL ROOM.jpeg` (900 × 1600), no como `public/images/*.png`. Se publican, con los mismos bytes, en
+  `public/images/cozy-book-room.jpg` y `public/images/cozy-social-room.jpg` (con extensión `.png`, Vercel
+  serviría un JPEG como `image/png`, el problema ya documentado en 1.17.0). Las dos decodifican bien.
+- **La ilustración nueva es otra habitación:** sin gato, sin carillón, sin cortina pintada sobre las baldas; el
+  mueble está vacío y tiene cuatro baldas útiles en perspectiva; el portátil mira de frente sobre una mesita
+  redonda con el té helado, una vela y fruta; la lámpara de latón cuelga del hueco izquierdo del mueble.
+- **Capas heredadas.** `SceneLayers` (mar, nubes, plantas, cortina, gato, carillón), `FrontLayer` (cama
+  recortada, gato, reflejo de la tapa), `RoomAtmosphereCanvas` (bahía, pueblo, velero), `RoomOcclusion`
+  (hiedra) y los haces de `TimeOfDayLayers` recortaban o dibujaban sobre coordenadas de la ilustración
+  anterior: sobre la nueva habrían pintado trozos de otra habitación. Se retiran en esta fase (§15.7).
+- **Cámara anterior.** `scene/camera.js` hacía cover en móvil y contain en escritorio, con arrastre del
+  encuadre, parallax de tres capas, respiración y zoom con `rotateY` al abrir la librería. Se sustituye por un
+  escenario cover con una sola transformación; el arrastre horizontal pasa a ser el gesto entre habitaciones.
+
+### 15.2 Estados
+
+| Estado | Dónde | Notas |
+| --- | --- | --- |
+| `activeRoom`: `MAIN_ROOM` \| `SOCIAL_ROOM` | `PanoramicRoom` (estado de interfaz) | Inicial `MAIN_ROOM`; no se persiste ni migra |
+| Vista de librería (`room` / `enteringShelf` / `shelf` / `leavingShelf`) | `useShelfTransition` | Sin cambios; ahora siempre con el fundido corto |
+| Panel abierto | historial (`useAppNavigation`) | Sin cambios |
+
+- Cambiar de habitación no recrea `LibraryProvider` ni `CloudProvider`, no reinicia el temporizador
+  (`useReadingTimer` vive en `Sanctuary`) ni el audio, no escribe en la biblioteca y no concede nada.
+- El panorama no cambia de habitación con un panel abierto ni con la librería delante (`locked`); la
+  navegación lateral se oculta.
+- Cerrar un panel devuelve el foco al control que lo abrió: se guarda al abrir (al volverse inerte la
+  habitación, el navegador le quita el foco) y se restaura cuando ya no hay `inert`.
+
+### 15.3 Estructura
+
+```
+PanoramicRoom (.panorama-viewport: fixed, 100dvh, overflow clip)
+  .panorama-track (200 %, translateX(0 | -50 %))
+    .panorama-panel[MAIN_ROOM]   → CozyRoom   → SceneStage → .scene-world (941 × 1672, una transformación)
+    .panorama-panel[SOCIAL_ROOM] → SocialRoom → SceneStage → .scene-world (900 × 1600)
+  .panorama-nav (fuera del track)
+  RoomCorner (fuera del track)
+Librería y modales: fuera del panorama (#modal-root)
+```
+
+- `translateX(-50%)` sobre el track del 200 % desplaza exactamente una pantalla.
+- `overflow: clip` en viewport y paneles: ni el foco ni un arrastre con selección pueden desplazarlos.
+- Sin padding de área segura en la escena; solo en controles. `viewport-fit=cover` se mantiene sin bloquear el
+  zoom del usuario.
+
+### 15.4 Una transformación (`scene/stageFit.js`)
+
+- `scale = max(panelW / imgW, panelH / imgH)`; `offset = (panel − img × scale) × encuadre`, con el encuadre por
+  relación de aspecto en `ROOMS[room].framing` (única fuente). `toScreen`, `toImage`, `stageTransform` y
+  `visibleFraction` son puras.
+- `SceneStage` mide su panel con `ResizeObserver` (no con `innerHeight` leído una vez; durante un pinch-zoom no
+  reencuadra) y aplica `translate(x, y) scale(s)` al lienzo, que contiene imagen, overlays y hotspots.
+- Encuadres de MAIN_ROOM: vertical (≤ 0,62) recorte lateral 62 % / 38 %; hasta 1:1, y = 0,62; hasta 1,8, la
+  franja de la mesita (y = 0,79); más ancho, y = 0,75 (que la esquina de controles no tape el portátil).
+- **Compromiso del cover.** Cubrir sin bandas recorta. Medido en QA: en 1440 × 900 quedan fuera la vitrina y
+  la lámpara; en 844 × 390, la vitrina, la librería, la lámpara y casi todo el libro; en 360–412 de ancho
+  vertical, la lámpara. Esos objetos siguen accesibles en un único control discreto, «Fuera de vista (n)», que
+  solo aparece cuando hay algo fuera (≥ 75 % del objeto recortado). No se simula que se vean.
+
+### 15.5 Capas y estabilidad
+
+- Dentro de la escena: ilustración 0, atmósfera 10, objetos 20, hotspots 30, etiquetas 40. Fuera del track:
+  navegación 15, esquina 16, librería 20, modales 1000.
+- Fondo: `<img>` real, `display: block`, `draggable=false`, sin eventos, filtros, mezclas ni perspectiva.
+- Track: solo traslación 2D, sin perspectiva, desenfoque ni `preserve-3d`.
+- MAIN_ROOM carga con prioridad; SOCIAL_ROOM se decodifica en segundo plano y el control «Salón Social» está
+  deshabilitado mientras carga. Si falla: aviso con «Reintentar» en el salón y el regreso sigue disponible.
+- El panel inactivo lleva `inert` y `aria-hidden`; si el foco estaba dentro, pasa al control de regreso.
+
+### 15.6 Gesto y accesibilidad
+
+- Un controlador en el viewport: puntero primario, un contacto; swipe si |dx| ≥ 50 px y |dx| > |dy| × 1,3;
+  izquierda desde MAIN, derecha desde SOCIAL, sin bucle. Un segundo contacto, `pointercancel` o la pérdida de
+  captura lo anulan. Mientras el track se anima no se aceptan más cambios (el bloqueo solo existe si la
+  transición dura ≥ 50 ms, así que con movimiento reducido no hay espera).
+- Excluidos: campos, deslizadores, `[data-no-room-swipe]`, paneles, diálogos y los propios controles.
+- Si el gesto se reconoce, se suprime solo el clic derivado (no abre el libro ni el portátil).
+- `touch-action: pan-y pinch-zoom` en el viewport; sin `preventDefault` sobre `document`.
+- Controles «Salón Social →» y «← Mi Habitación»: 44 × 44 px mínimos, Lora, tinta `#2C1E14`, papel `#E8D8B9`,
+  latón `#B08D57`, foco visible y área segura; en el centro del borde en vertical y al pie en horizontal (en el
+  centro taparían la mesita). Flechas ← → solo con el foco en el panorama y nunca en un campo.
+- Movimiento reducido: el cambio es instantáneo.
+
+### 15.7 MAIN_ROOM recalibrada (`scene/sceneMap.js`)
+
+Medidas sobre una rejilla de la propia ilustración (941 × 1672):
+
+| Objeto | Medida |
+| --- | --- |
+| Libro abierto | contorno de 13 vértices (225–875 × 1338–1662); marcapáginas en la página derecha `[[585,1402],[800,1432],[818,1560],[565,1532]]` |
+| Portátil | hotspot de 8 vértices; pantalla frontal `[[757,990],[906,1013],[893,1134],[722,1116]]` (el post-it de la racha va en ella) |
+| Auriculares | 11 vértices (22–248 × 1280–1428) |
+| Té helado | vaso 818–895 × 1090–1222; líquido 824–889 × 1112–1208 (sin vapor caliente por defecto) |
+| Vela | 762–834 × 1158–1242; llama en (798, 1166) |
+| Lámpara de latón | 0–128 × 470–597; bombilla y ancla de la luz en (75, 578) |
+| Vitrina (2 baldas altas del hueco derecho) | `top` y `middle`: cuadriláteros de 205 px en perspectiva |
+| Libros (2 baldas bajas) | `cabinet` y `cabinet2` |
+| Librería general | resto del mueble, por debajo de libros, vitrina y lámpara |
+| Astro (Atlas de Sagas) | sobre el cielo de la puerta-ventana: mañana (800, 345), atardecer (836, 470), noche (790, 352) |
+| Exterior nocturno | polígono de la puerta-ventana (655–941 × 218–965) |
+
+- IDs semánticos conservados (`book`, `laptop`, `tray`, `headphones`, `figures`, `shelf`, `lamp`; la vela
+  conserva el id histórico `lantern`).
+- El carillón no existe en la ilustración: su hotspot se elimina y el cambio de hora pasa a un control de
+  ambiente de la esquina (sol, atardecer o luna).
+- Figuras de la vitrina: desprecintadas cuando hay recurso con transparencia; si no, la caja recortada por su
+  contorno (no un rectángulo).
+- Sin parallax ni respiración: imagen, objetos y zonas táctiles se mueven juntos. La librería entra con el
+  fundido corto, sin el zoom/`rotateY` anterior.
+- Retiradas en esta fase: haces y sombras de hojas, mar con destellos, nubes, velero, plantas mecidas,
+  hiedra delante de las baldas, cortina, gato y carillón. Se rehacen sobre la ilustración nueva en fases
+  posteriores; la noche queda como tinte general + exterior más oscuro + halos de lámpara y vela.
+
+### 15.8 Rendimiento y caché
+
+- Con la habitación fuera de pantalla, tras un modal, con la pestaña oculta o con movimiento reducido se
+  pausan las animaciones SVG y los intervalos decorativos (pistas, libro que asoma); el temporizador sigue.
+- Sin canvas en esta fase (el lienzo de partículas usaba la geometría anterior).
+- Service worker `bookshelf-v1.21.0`: precarga las dos ilustraciones nuevas y las trata como imágenes
+  estables; `/cozy-book-room.jpg` sigue publicado para una sesión abierta con la versión anterior, pero ya no
+  se precarga. Mismo mecanismo de versiones; sin tocar localStorage ni IndexedDB.
+
+### 15.9 Diagnóstico (`?sceneDebug=1`, solo `npm run dev`)
+
+Rejilla de coordenadas, polígonos y anclas de hotspots, baldas, dimensiones, escala, desplazamientos,
+rectángulo visible y coordenada de imagen bajo el puntero. No escribe datos y no entra en el build.
+
+### 15.10 QA (`npm run qa:full`)
+
+`vitest run` + Playwright con servidor propio. Matriz: Chromium 360 × 800, 390 × 844, 412 × 915, 844 × 390 y
+1440 × 900; WebKit 390 × 844 y 844 × 390; Chromium 390 × 844 con movimiento reducido. Pruebas: habitación
+inicial decodificada, swipe ida y vuelta, controles y teclado, 49 px, gesto vertical, `pointercancel`, swipe
+sobre un objeto, panel que bloquea y devuelve el foco, Tab sin escapar a la escena inactiva, librería, acciones
+de los objetos, temporizador, redimensionado, idas y vueltas sin duplicados, iluminación y capturas de
+diagnóstico. Geometría: viewport, track (dos paneles), desplazamiento de un panel (±1 px), imagen que cubre
+sin deformar, anclas (±2 px), overflow del documento y prueba de impacto en puntos interiores reales de cada
+polígono. Telemetría y capturas en `qa-report/` (no se versiona). WebKit automatizado no equivale a Safari en
+un iPhone real; la geometría comprueba consistencia, no que las coordenadas coincidan con lo pintado (eso se
+revisa en las capturas de diagnóstico).
+
+### 15.11 Criterios de aceptación (Fase 1)
+
+- [x] Las dos ilustraciones oficiales se muestran (con los nombres y el formato descritos en §15.1).
+- [x] La escena ocupa 100dvh sin bandas; el panel visible cubre sus cuatro bordes.
+- [x] MAIN_ROOM ↔ SOCIAL_ROOM con swipe, controles accesibles y teclado; movimiento reducido instantáneo.
+- [x] MAIN_ROOM usa coordenadas medidas en la ilustración nueva; los objetos conservan sus acciones.
+- [x] Ningún recorte de la ilustración anterior se pinta sobre la nueva.
+- [x] Los objetos que el encuadre recorta siguen accesibles en «Fuera de vista».
+- [ ] Safari en un iPhone real (no probado aquí).
+- [ ] Atmósfera rehecha sobre la ilustración nueva (mar, plantas, haces, noche completa): fases posteriores.

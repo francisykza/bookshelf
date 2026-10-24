@@ -1,7 +1,7 @@
 {
   "name": "bookshelf",
   "private": true,
-  "version": "1.20.0",
+  "version": "1.21.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "movil": "vite --host --port 5190",
     "movil:app": "vite build && vite preview --host --port 5191",
-    "test": "vitest run"
+    "test": "vitest run",
+    "qa:install": "playwright install chromium webkit",
+    "qa:e2e": "playwright test",
+    "qa:full": "vitest run && playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
@@ -19,6 +22,7 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

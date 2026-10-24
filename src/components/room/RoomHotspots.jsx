@@ -1,12 +1,12 @@
 // Objetos interactivos de la ilustración (SPEC §3.2, 1.8.0): hotspots diegéticos vivos. Sin botones
 // pintados encima: al pasar el ratón o tocar, el propio objeto se aviva con un halo dorado que sigue su
 // silueta y crece un 5 %. Las insignias con icono solo aparecen con «✨ Mostrar guías».
-import { BookOpen, CupSoda, Flame, Headphones, Lamp, Laptop, Library, Trophy, Wind } from 'lucide-react';
+import { BookOpen, CupSoda, Flame, Headphones, Lamp, Laptop, Library, Trophy } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { bounds, clipPolygon } from '../../scene/homography';
 import { HOTSPOTS, SCENE_H, SCENE_SRC, SCENE_W, SILHOUETTES, SUN_DIAL } from '../../scene/sceneMap';
 
-const ICONS = { book: BookOpen, shelf: Library, laptop: Laptop, headphones: Headphones, tray: CupSoda, figures: Trophy, chime: Wind, lamp: Lamp, lantern: Flame };
+const ICONS = { book: BookOpen, shelf: Library, laptop: Laptop, headphones: Headphones, tray: CupSoda, figures: Trophy, lamp: Lamp, lantern: Flame };
 
 /** Silueta en px de la imagen → caja y ruta relativa a esa caja (para `clip-path: path()`). */
 function silhouetteBox(d) {
@@ -154,7 +154,7 @@ function Astrolabe() {
 
 /**
  * El astro del cielo (sol, sol poniente o luna) lleva un astrolabio dorado: al tocarlo se abre el Atlas de
- * Sagas (1.13.0). La hora del día se cambia con el carillón.
+ * Sagas (1.13.0). La hora del día se cambia con el control de ambiente de la esquina (Fase 1).
  */
 export function TimeDial({ timeOfDay, onOpen, onHover, spot = false }) {
   const at = SUN_DIAL[timeOfDay];

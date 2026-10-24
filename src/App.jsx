@@ -1,5 +1,6 @@
 // BookShelf — "Mediterranean Cozy Reading Sanctuary" (SPEC.md). Interfaz diegética: la habitación es
-// el menú. Este componente coordina la cámara, los objetos que se acercan, el sonido y el temporizador.
+// el menú. Este componente coordina el panorama de habitaciones, la librería, los paneles, el sonido y el
+// temporizador. Cambiar de habitación es estado de interfaz: no recrea proveedores ni toca la biblioteca.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { bell, isAmbiencePlaying, setAmbience, setSfx, setTimeOfDay } from './audio/ambientAudio';
 import { timeOfDayByClock } from './domain/dates';
@@ -10,60 +11,24 @@ import { PomodoroTray } from './components/panels/PomodoroTray';
 import { SagaMapModal } from './components/panels/SagaMapModal';
 import { FiguresVaultModal } from './components/figures/FiguresVaultModal';
 import { CozyRoom, ROOM_VIEW, SHELF_VIEW } from './components/room/CozyRoom';
+import { PanoramicRoom } from './components/room/PanoramicRoom';
+import { RoomCorner } from './components/room/RoomCorner';
+import { SocialRoom } from './components/room/SocialRoom';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { useReadingTimer } from './hooks/useReadingTimer';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { ENTERING, ROOM, SHELF, useShelfTransition } from './hooks/useShelfTransition';
-import { fitCamera } from './scene/camera';
 import { CloudProvider } from './state/cloudSync';
 import { LibraryProvider, useLibrary } from './state/useLibrary';
-
-/**
- * Tamaño real del escenario (SPEC §12.2): se mide el contenedor con ResizeObserver y se escribe una sola vez
- * por fotograma, solo si cambia. Durante un pinch-zoom (visualViewport.scale ≠ 1) no se reencuadra.
- */
-function useStageSize(ref) {
-  const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return undefined;
-    let frame = 0;
-    const measure = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const vv = window.visualViewport;
-        if (vv && Math.abs(vv.scale - 1) > 0.01) return;
-        const w = Math.round(node.clientWidth);
-        const h = Math.round(node.clientHeight);
-        if (!w || !h) return;
-        setSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
-      });
-    };
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    window.visualViewport?.addEventListener('resize', measure);
-    measure();
-    return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
-      window.visualViewport?.removeEventListener('resize', measure);
-    };
-  }, [ref]);
-  return size;
-}
 
 function Sanctuary() {
   const { state, actions } = useLibrary();
   const { settings } = state;
-  const stageRef = useRef(null);
-  const size = useStageSize(stageRef);
-  const camera = useMemo(() => fitCamera(size.w, size.h), [size]);
-  const k = camera.scale;
   const reducedMotion = useReducedMotion();
-  const { phase, toShelf, toRoom, onTransitionEnd } = useShelfTransition({ reducedMotion, mobile: camera.cover });
-  // La cámara de escritorio se acerca mientras la librería entra y se aleja mientras sale
+  // La librería entra por encima del panorama con un fundido corto (sin el zoom de cámara de versiones anteriores)
+  const { phase, toShelf, toRoom, onTransitionEnd } = useShelfTransition({ reducedMotion, mobile: true });
   const view = phase === ENTERING || phase === SHELF ? SHELF_VIEW : ROOM_VIEW;
   // Ubicación con historial real (SPEC §13.3): vista y panel salen del historial; Atrás vuelve al destino
   // interno anterior antes de abandonar BookShelf
@@ -79,7 +44,31 @@ function Sanctuary() {
   useEffect(() => {
     locRef.current = location;
   }, [location]);
-  const openPanel = useCallback((p) => nav.go({ view: locRef.current.view, panel: p }), [nav]);
+  // Control que abrió el panel: se guarda ANTES de abrir (al volverse inerte la habitación, el navegador le
+  // quita el foco) y se le devuelve al cerrar, ya sin `inert`
+  const opener = useRef(null);
+  const openPanel = useCallback(
+    (p) => {
+      if (!locRef.current.panel && document.activeElement instanceof HTMLElement && document.activeElement !== document.body) opener.current = document.activeElement;
+      nav.go({ view: locRef.current.view, panel: p });
+    },
+    [nav],
+  );
+  const hadPanel = useRef(false);
+  useEffect(() => {
+    if (panel) {
+      hadPanel.current = true;
+      return undefined;
+    }
+    if (!hadPanel.current) return undefined;
+    hadPanel.current = false;
+    const el = opener.current;
+    opener.current = null;
+    const id = requestAnimationFrame(() => {
+      if (el?.isConnected && !el.closest('[inert]')) el.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [panel]);
   const switchPanel = useCallback((p) => nav.replace({ view: locRef.current.view, panel: p }), [nav]);
   const [askPages, setAskPages] = useState(false);
 
@@ -164,25 +153,29 @@ function Sanctuary() {
   const openShelf = () => nav.go({ view: 'shelf', panel: null });
 
   return (
-    <main ref={stageRef} className="sanctuary" data-view={view} data-phase={phase} inert={panel ? true : undefined}>
-      <div className="backdrop" aria-hidden="true" />
+    <main className="sanctuary" data-view={view} data-phase={phase} inert={panel ? true : undefined}>
       <h1 className="sr-only-focus">BookShelf, tu santuario de lectura junto al mar</h1>
-      <CozyRoom
-        k={k}
-        camera={camera}
-        view={view}
-        interactive={phase === ROOM}
-        hidden={phase === SHELF}
-        timer={timer}
-        onOpenShelf={openShelf}
-        onOpenBook={openBook}
-        onOpenLaptop={() => openPanel({ type: 'laptop' })}
-        onOpenTray={() => openPanel({ type: 'tray' })}
-        onToggleSound={toggleSound}
-        onOpenAtlas={() => openPanel({ type: 'atlas' })}
-        onOpenVault={(id) => openPanel({ type: 'vault', id })}
-        onOpenAccount={() => openPanel({ type: 'account' })}
-        modalOpen={Boolean(panel)}
+      {/* Con un panel abierto o la librería delante, el panorama no cambia de habitación */}
+      <PanoramicRoom
+        locked={Boolean(panel) || phase !== ROOM}
+        reducedMotion={reducedMotion}
+        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} /> : null}
+        renderMain={(active) => (
+          <CozyRoom
+            active={active}
+            interactive={phase === ROOM}
+            timer={timer}
+            onOpenShelf={openShelf}
+            onOpenBook={openBook}
+            onOpenLaptop={() => openPanel({ type: 'laptop' })}
+            onOpenTray={() => openPanel({ type: 'tray' })}
+            onToggleSound={toggleSound}
+            onOpenAtlas={() => openPanel({ type: 'atlas' })}
+            onOpenVault={(id) => openPanel({ type: 'vault', id })}
+            modalOpen={Boolean(panel)}
+          />
+        )}
+        renderSocial={(active, social) => <SocialRoom status={social.status} attempt={social.attempt} onRetry={social.retry} />}
       />
       <ShelfView
         phase={phase}

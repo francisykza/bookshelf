@@ -1,13 +1,13 @@
-// Datos vivos integrados en la habitación (SPEC §3.3, 1.8.0): tu lectura real aparece sobre los objetos
-// pintados, en su misma perspectiva. Marcapáginas sobre la página del libro de la cama, post-it con la
-// racha en la tapa del portátil, cuenta atrás como bruma sobre el té y notas doradas de los auriculares.
+// Datos vivos integrados en la habitación (SPEC §3.3 y §16.7): tu lectura real aparece sobre los objetos
+// pintados, en su misma perspectiva. Marcapáginas sobre la página del libro abierto, post-it con la racha en
+// la pantalla del portátil, cuenta atrás como bruma sobre el té y notas doradas de los auriculares.
 import { isActive } from '../../domain/reading';
 import { useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
 import { formatPercent, isComplete, percentRead, progress, trackUnit } from '../../domain/books';
 import { addDays, dayKey } from '../../domain/dates';
 import { rectToQuad } from '../../scene/homography';
-import { BOOK_PAGE, HOTSPOTS, LAPTOP_LID_QUAD, TEA_LIQUID } from '../../scene/sceneMap';
+import { BOOK_PAGE, HOTSPOTS, LAPTOP_SCREEN, TEA_LIQUID } from '../../scene/sceneMap';
 import { DRINKS } from '../panels/Drinks';
 import { Cover } from '../shelf/BookItem';
 
@@ -92,9 +92,9 @@ export function BedBookmark({ book, onAdvance, onOpen }) {
 
 const NOTE = { w: 100, h: 78 };
 
-/** Post-it amarillo pegado en la esquina de la tapa del portátil con la racha y lo leído hoy. */
+/** Post-it amarillo pegado en la esquina de la pantalla del portátil con la racha y lo leído hoy. */
 export function LaptopPostit({ streak, todayPages, todayPercent = 0 }) {
-  const quad = subQuad(LAPTOP_LID_QUAD, 0.05, 0.07, 0.37, 0.42);
+  const quad = subQuad(LAPTOP_SCREEN, 0.06, 0.08, 0.5, 0.62);
   return (
     <div className="lid-note" style={{ width: NOTE.w, height: NOTE.h, transform: rectToQuad(NOTE.w, NOTE.h, quad) }} aria-hidden="true">
       <span className="lid-note__paper">
@@ -128,9 +128,9 @@ const NOTES = ['♪', '♫', '♪', '♬', '♫'];
 /** Notas musicales doradas y ondas suaves que suben desde los auriculares cuando suena el ambiente. */
 export function SoundWaves({ on }) {
   if (!on) return null;
-  const a = HOTSPOTS.headphones.badge;
+  const a = HOTSPOTS.headphones.label;
   return (
-    <div className="sound-waves" style={{ left: a.x - 90, top: a.y - 10 }} aria-hidden="true">
+    <div className="sound-waves" style={{ left: a.x - 60, top: a.y - 40 }} aria-hidden="true">
       {[0, 1, 2].map((i) => (
         <span key={`w${i}`} className="sound-waves__ring" style={{ animationDelay: `${i * 1.2}s` }} />
       ))}
