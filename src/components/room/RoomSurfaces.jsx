@@ -5,22 +5,27 @@
 // abren el panel y la ficha).
 import { progressParts } from '../../domain/roomSurfaces';
 import { rectToQuad } from '../../scene/homography';
-import { BOOK_LEFT_PAGE, BOOK_RIGHT_PAGE, LAPTOP_FOREGROUND, LAPTOP_SCREEN } from '../../scene/sceneMap';
+import { BOOK_LEFT_PAGE, BOOK_RIGHT_PAGE, LAPTOP_FOREGROUND, LAPTOP_SCREEN, asset } from '../../scene/sceneMap';
 import { CalendarApp } from '../panels/ReadingCalendar';
 import { getDeterministicVibe, stableHash } from '../../utils/vibeEngine';
 
 /** Lienzo lógico de la pantalla, proporcional a su quad (≈ 143 × 118 px de la ilustración). */
 const SCREEN = { w: 300, h: 248 };
+/** Fondo de escritorio de la pantalla (SPEC §23.4): «Bahía mediterránea al anochecer-1», 640 × 400. */
+const SCREEN_WALLPAPER = asset('images/room-refresh/pantalla-bahia.webp');
 
 /**
  * La pantalla encendida con el Calendario de BookShelf (SPEC §21.3): la vista compacta del MISMO calendario del
- * panel (`CalendarApp variant="scene"`), proyectada una vez en las esquinas interiores del bisel. La planta y el
- * vaso se repintan delante. Decorativa: el hotspot del portátil es el único objetivo táctil.
+ * panel (`CalendarApp variant="scene"`), proyectada una vez en las esquinas interiores del bisel, sobre un fondo de
+ * escritorio con la bahía (SPEC §23.4) que solo se mueve con `running`. La planta y el vaso se repintan delante.
+ * Decorativa: el hotspot del portátil es el único objetivo táctil.
  */
-export function LaptopScreen({ today }) {
+export function LaptopScreen({ today, running = false }) {
   return (
     <>
-      <div className="laptop-screen" style={{ width: SCREEN.w, height: SCREEN.h, transform: rectToQuad(SCREEN.w, SCREEN.h, LAPTOP_SCREEN) }} aria-hidden="true">
+      <div className="laptop-screen" data-running={running || undefined} style={{ width: SCREEN.w, height: SCREEN.h, transform: rectToQuad(SCREEN.w, SCREEN.h, LAPTOP_SCREEN) }} aria-hidden="true">
+        {/* Fondo de escritorio: la bahía al anochecer, recortada dentro del monitor y con un desplazamiento tenue */}
+        <span className="laptop-screen__wallpaper" style={{ backgroundImage: `url(${SCREEN_WALLPAPER})` }} />
         <CalendarApp variant="scene" today={today} />
       </div>
       {/* Lo que está delante de la pantalla, recortado de la propia ilustración */}

@@ -181,7 +181,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
             debajo de la luz y la atmósfera, que las tiñen igual que al resto de la habitación (SPEC §21.1) */}
         <div className="room-surfaces">
           <RoomShelfBooks books={books} currentId={reading?.id} onOpenShelf={onOpenShelf} onHover={onHover} active={live} scale={fit.scale} awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))} />
-          <LaptopScreen today={today} />
+          <LaptopScreen today={today} running={live && !reducedMotion} />
           <OpenBookPages book={reading} />
         </div>
 

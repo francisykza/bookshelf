@@ -3119,16 +3119,51 @@ html[data-motion='reduced'] .tod__glow::after {
   top: 0;
   left: 0;
   z-index: 3;
+  /* todo se recorta dentro de la superficie del monitor antes de proyectarse (una sola matriz) */
+  overflow: hidden;
   transform-origin: 0 0;
   pointer-events: none;
 }
 
+/* Fondo de escritorio (SPEC §23.4): la bahía al anochecer, algo mayor que la pantalla para poder desplazarse
+   unos píxeles muy despacio; solo se mueve el paisaje (nunca el calendario) y solo con la habitación activa */
+.laptop-screen__wallpaper {
+  position: absolute;
+  inset: -8px;
+  background-position: center;
+  background-size: cover;
+  animation: wallpaper-drift 48s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+
+.laptop-screen[data-running] .laptop-screen__wallpaper {
+  animation-play-state: running;
+}
+
+@keyframes wallpaper-drift {
+  from {
+    transform: translate(3px, 1px);
+  }
+  to {
+    transform: translate(-4px, -1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .laptop-screen__wallpaper {
+    animation: none;
+  }
+}
+
 .cal[data-variant='scene'] {
   position: absolute;
-  inset: 0;
+  /* la ventana del calendario sobre el escritorio: deja ver un marco de paisaje sin tapar los datos */
+  inset: 10px 10px 9px;
   display: grid;
   grid-template-rows: 26px 1fr;
   overflow: hidden;
+  border-radius: 5px;
+  box-shadow: 0 2px 6px rgb(30 18 8 / 0.28);
   background: linear-gradient(#fbf6ec, #f4ead8);
   color: var(--color-ink);
   font-family: 'Lora', var(--font-sans);
@@ -3479,6 +3514,27 @@ html[data-motion='reduced'] .tod__glow::after {
   background: rgb(255 250 240 / 0.18);
 }
 
+/* ── 1.29.0 · Lomos ilustrados (SPEC §23.3) ── la textura gouache trae relieves, nervios y ornamentos: sin
+   degradados, grano, bandas ni nervios en CSS encima. Solo una sombra de contacto cálida y suave. */
+.room-spine[data-art] {
+  border-radius: 1px 1px 0 0;
+  background-color: var(--spine);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-blend-mode: normal;
+}
+
+.room-spine[data-art]::after {
+  background: radial-gradient(closest-side, rgb(64 36 14 / 0.32), transparent);
+}
+
+.room-spine[data-art] .room-spine__nerves,
+.room-spine[data-art] .room-spine__band,
+.room-spine[data-art] .room-spine__emblem,
+.room-spine[data-art] .room-spine__label {
+  display: none;
+}
+
 /* Título real en vertical (de abajo arriba, como en las ediciones españolas); autoría a continuación si cabe */
 .room-spine__title {
   position: absolute;
@@ -3488,12 +3544,12 @@ html[data-motion='reduced'] .tod__glow::after {
   overflow: hidden;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-family: 'Cormorant Garamond', var(--font-display);
+  font-family: 'Lora', var(--font-sans);
   font-size: 6px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.02em;
-  color: rgb(255 246 226 / 0.85);
+  color: #f6efe2;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -3507,11 +3563,7 @@ html[data-motion='reduced'] .tod__glow::after {
 }
 
 .room-spine[data-ink='dark'] .room-spine__title {
-  color: rgb(40 28 18 / 0.85);
-}
-
-.room-spine[data-gilt] .room-spine__title {
-  color: #c9a96b;
+  color: #2c1e14;
 }
 
 /* El último de la fila se apoya un poco, girando sobre su base derecha (no invade al vecino) */

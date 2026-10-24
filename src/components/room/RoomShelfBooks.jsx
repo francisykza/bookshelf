@@ -8,9 +8,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { rankOf } from '../../domain/figures';
 import { EDITIONS, isDevice, sprayedEdge } from '../../domain/books';
+import { spineArtSize } from '../../domain/spineArt';
 import { projectPoint, rectToQuad } from '../../scene/homography';
-import { ROOM_SHELVES, SCENE_H, SCENE_SRC, SCENE_W, SHELF_LIPS, pts } from '../../scene/sceneMap';
-import { useCoverColor } from '../../hooks/useCoverColor';
+import { ROOM_SHELVES, SCENE_H, SCENE_SRC, SCENE_W, SHELF_LIPS, asset, pts } from '../../scene/sceneMap';
 import { useSvgIds } from '../../hooks/useSvgIds';
 import { calculateBookPhysics, stableHash } from '../../utils/vibeEngine';
 import { FigureArt, figureAspect } from '../figures/FigureArt';
@@ -75,51 +75,56 @@ const PEEK_MS = 2600;
 const TITLE_MIN_W = 11;
 const TITLE_MIN_H = 48;
 
-/** Diseños de lomo deterministas (representaciones de la app, no los lomos oficiales de la edición). */
-const VARIANTS = ['plain', 'band', 'emblem', 'label'];
-
-/** Tinta clara u oscura según la luminancia del color base del lomo. */
-function inkFor(hex) {
-  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex ?? '');
-  if (!m) return 'light';
-  const [r, g, b] = m.slice(1).map((v) => parseInt(v, 16) / 255);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? 'dark' : 'light';
-}
-
-/** Dorado justificado por la edición (cuero, tela, cantos pintados) o elegido por el usuario; nunca inferido. */
-const GILT_EDITIONS = new Set(['leatherbound', 'clothbound', 'sprayed_edges']);
-const isGilt = (book) => (typeof book.appearance?.goldFoil === 'boolean' ? book.appearance.goldFoil : GILT_EDITIONS.has(book.editionType));
-
 /**
- * Un lomo gouache (SPEC §21.4): cara mate con luz transversal suave, grano local, variación tonal determinista,
- * sombra de contacto cálida, material del motor y un diseño entre cuatro. Latón mate solo si la edición lo
- * justifica (`data-gilt`), nervios solo en cuero. Título real (y autoría si hay sitio) cuando se lee a la escala
- * actual; en lomos finos, composición simplificada.
+ * Lomos ilustrados (SPEC §23.3): doce texturas gouache recortadas de la lámina «Colección de doce lomos en
+ * gouache-1» (relieves, nervios y ornamentos ya pintados). `ratio` = ancho / alto de la textura; `ink`, la tinta
+ * del título según la luminancia medida de cada una (oscura en las claras, crema en las oscuras).
+ */
+const SPINE_ART = [
+  { ratio: 0.1861, ink: 'light' },
+  { ratio: 0.1889, ink: 'dark' },
+  { ratio: 0.1833, ink: 'light' },
+  { ratio: 0.1944, ink: 'light' },
+  { ratio: 0.1889, ink: 'dark' },
+  { ratio: 0.1944, ink: 'light' },
+  { ratio: 0.1944, ink: 'light' },
+  { ratio: 0.1861, ink: 'light' },
+  { ratio: 0.1889, ink: 'dark' },
+  { ratio: 0.1889, ink: 'dark' },
+  { ratio: 0.2111, ink: 'light' },
+  { ratio: 0.1722, ink: 'dark' },
+].map((art, i) => ({ ...art, src: asset(`images/room-refresh/lomos/web/lomo-${String(i + 1).padStart(2, '0')}.webp`) }));
+/**
+ * Un lomo ilustrado (SPEC §23.3): textura gouache elegida de forma determinista por el id del libro, con el
+ * tamaño del libro y su edición (`spineSize`), título en Lora cuando se lee a la escala actual y una sombra de
+ * contacto cálida. Los e-readers y audiolibros conservan su aspecto de objeto fabricado (sin textura de libro).
+ * Si la textura no carga, queda el color determinista del motor.
  */
 function RoomSpine({ book, physics, x, w, h, index, lean, peek, scale, onOpenShelf, onHover, label }) {
-  const [color, observe] = useCoverColor(book);
-  // Variación tonal amplia pero suave: cada libro se aclara u oscurece un poco (determinista)
-  const toneSeed = stableHash(`tone:${book.id ?? book.title}`);
-  const tone = { '--tone-mix': toneSeed % 2 ? '#fff4e4' : '#1e130a', '--tone-amt': `${(toneSeed >> 1) % 9}%` };
-  const variant = book.editionType === 'leatherbound' ? 'nerves' : VARIANTS[stableHash(`spine:${book.id ?? book.title}`) % VARIANTS.length];
+  const art = isDevice(book) ? null : SPINE_ART[stableHash(`spine:${book.id ?? book.title}`) % SPINE_ART.length];
+  const size = art ? spineArtSize(w, h, art.ratio) : null;
   const showTitle = w * scale >= TITLE_MIN_W && h * scale >= TITLE_MIN_H;
   const showAuthor = showTitle && w * scale >= 20 && Boolean(book.author);
   return (
     <button
-      ref={observe}
       type="button"
       className="room-spine"
       data-status={book.status}
       data-edition={book.editionType}
       data-material={physics.material}
-      data-variant={variant}
-      data-ink={inkFor(color)}
-      data-foil={physics.goldFoil || undefined}
-      data-gilt={isGilt(book) || undefined}
+      data-art={art ? SPINE_ART.indexOf(art) + 1 : undefined}
+      data-ink={art?.ink ?? 'light'}
       data-edge={sprayedEdge(book) || undefined}
       data-peek={peek}
       data-lean={lean || undefined}
-      style={{ left: x, width: w, height: h, '--spine': color, '--i': index, ...tone }}
+      style={{
+        left: x,
+        width: w,
+        height: h,
+        '--spine': physics.spineColor,
+        '--i': index,
+        ...(art ? { backgroundImage: `url(${art.src})`, backgroundSize: `${size.w.toFixed(2)}px ${size.h.toFixed(2)}px` } : null),
+      }}
       aria-label={`${book.title}, de ${book.author}. Ver tu librería`}
       title={book.title}
       onClick={(event) => {
@@ -132,17 +137,6 @@ function RoomSpine({ book, physics, x, w, h, index, lean, peek, scale, onOpenShe
       onFocus={() => onHover(label)}
       onBlur={() => onHover(null)}
     >
-      {variant === 'band' && <span className="room-spine__band" />}
-      {variant === 'emblem' && <span className="room-spine__emblem" />}
-      {variant === 'label' && <span className="room-spine__label" />}
-      {variant === 'nerves' && (
-        <span className="room-spine__nerves" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-          <i />
-        </span>
-      )}
       {showTitle && (
         <span className="room-spine__title" aria-hidden="true">
           {book.title}

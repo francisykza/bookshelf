@@ -280,7 +280,7 @@ test('lomos: apoyados en la balda, sin cruzarse, deterministas, dorado no genera
       [...document.querySelectorAll('.room-shelf[data-shelf^="cabinet"]')].map((shelf) => {
         const H = shelf.offsetHeight;
         const W = shelf.offsetWidth;
-        const spines = [...shelf.querySelectorAll('.room-spine')].map((el) => ({ x: el.offsetLeft, w: el.offsetWidth, h: el.offsetHeight, bottom: el.offsetTop + el.offsetHeight, foil: el.hasAttribute('data-foil'), title: Boolean(el.querySelector('.room-spine__title')), material: el.dataset.material, variant: el.dataset.variant }));
+        const spines = [...shelf.querySelectorAll('.room-spine')].map((el) => ({ x: el.offsetLeft, w: el.offsetWidth, h: el.offsetHeight, bottom: el.offsetTop + el.offsetHeight, foil: el.hasAttribute('data-foil'), title: Boolean(el.querySelector('.room-spine__title')), material: el.dataset.material, variant: el.dataset.art ?? el.dataset.edition }));
         return { H, W, spines };
       }),
     );

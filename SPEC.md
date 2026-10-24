@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.28.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.29.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2104,3 +2104,87 @@ esta entrega, §22.10).
   movimiento reducido. `e2e/v123.spec.js`: selector sin «Otros…» y sin lecturas activas.
 - Entornos: Chromium y WebKit de Playwright en Windows (320 no es un proyecto de la suite; se comprueba 360,
   390, 430, 844 × 390 y 1440). No hay Safari de iPhone real ni teclado virtual real: no se declaran.
+
+## 23. Integración de los recursos ilustrados de la habitación (1.29.0)
+
+Sobre la 1.28.0, sin reconstruir la habitación ni el calendario ni tocar cuenta, sincronización, datos de lectura o
+mecánicas gacha. Estados: **IMPLEMENTADO**, **VERIFICADO** (pruebas de esta entrega, §23.7) y **BLOQUEADO**
+(recurso que no se integra porque su resultado no es limpio; se conserva la representación anterior).
+
+### 23.1 Recursos y correspondencia
+
+Originales intactos en `assets-source/room-refresh/` (copiados de Descargas; nombres reales):
+
+| Referencia | Archivo real | Medida | Uso |
+| --- | --- | --- | --- |
+| 156986 · fondo limpio | Dormitorio costero con ventana arqueada.png | 941 × 1672 (no 864 × 1536) | Solo como fuente; **no** sustituye la base (§23.2) |
+| 156987 · 12 lomos | Colección de doce lomos en gouache-1.png | 1024 × 1536, alfa limpio | Lomos ilustrados (§23.3) |
+| 156989 · vegetación superior | Enredaderas colgantes sobre la ventana.png | 941 × 1672 | BLOQUEADO (§23.2) |
+| 156993 · enredadera lateral | Enredadera mural junto a la ventana.png | 941 × 1672 | BLOQUEADO |
+| 156992 · cortina | Cortina de lino crema con sujeción.png | 941 × 1672 | BLOQUEADO |
+| 156990 · paisaje | Bahía mediterránea al anochecer-1.png | 1586 × 992 | Fondo de la pantalla (§23.4) |
+
+De las dos láminas de lomos se elige «gouache-1» (alturas de 620 a 670 px y nervios en relieve) frente a «Doce
+lomos de libros en cuadrícula-2» (alturas iguales). Inspeccionada sobre fondos claro y oscuro: 12 piezas
+separadas, sin halo ni fondo de color; lo semitransparente es el antialias del contorno y una sombra de
+contacto leve en la base. Derivados en `public/images/room-refresh/` (nombres sin espacios ni tildes; las capas en
+PNG sin pérdida, verificadas píxel a píxel).
+
+### 23.2 Montaje estático · BLOQUEADO (se conserva la ilustración original)
+
+- El fondo limpio coincide en geometría con la ilustración vigente (desplazamiento 0; diferencias de repintado
+  pequeñas en vaso, vela y mar), pero no trae la hiedra ni la cortina pintadas.
+- Las tres capas no encajan con esta habitación: la enredadera lateral baja hasta y = 1669 (cruza la cama, los
+  auriculares y el libro; la hiedra original del pilar termina en y ≈ 1060); la cortina mide 233 × 1173 px con
+  el recogido al 60 % de su altura (la original, ≈ 100 px de ancho con el recogido al ≈ 80 %), y tapa el sillón
+  y las macetas. Ningún escalado uniforme las alinea; estirarlas está prohibido.
+- Alternativa probada: separar la hiedra ORIGINAL por diferencia con el fondo limpio y moverla sobre parches de
+  pared limpia. Dos iteraciones dejaron parches con escalones y manchas (la pared limpia tiene otro tono de
+  pintura) y hojas incompletas o trozos de viga: no es un recorte limpio y no se integra.
+- Resultado: la base sigue siendo `images/cozy-book-room.jpg`. No cambia ninguna coordenada (`ROOM_SHELVES`,
+  `SHELF_LIPS`, `LAPTOP_SCREEN`, `LAPTOP_FOREGROUND`, máscaras de agua y hotspots siguen siendo válidos y se
+  comprueban con `?sceneDebug=1`). La cortina pintada queda estática.
+
+### 23.3 Lomos ilustrados · VERIFICADO
+
+- `RoomSpine` usa las 12 texturas (`lomos/web/lomo-NN.webp`, 360 px de alto, 136 KB en total), elegidas por
+  `stableHash('spine:' + id) % 12`, sin aleatoriedad. Datos, interacción, proyección `rectToQuad`, tamaños por
+  libro y edición (`spineSize`), libros mostrados y baldas de figuras sin cambios.
+- `spineArtSize` (`domain/spineArt.js`): la textura se estira como mucho ×1,35; si el lomo es más fino o más
+  grueso, se recorta centrada (nunca deformación extrema).
+- Fuera los degradados, grano, bandas, emblemas y nervios en CSS (ya están pintados); solo una sombra de contacto
+  cálida `rgb(64 36 14 / .32)`. Título en Lora con tinta según la luminancia medida de la textura: `#2C1E14` en
+  las claras (02, 05, 09, 10, 12) y `#F6EFE2` en las demás, con los umbrales de legibilidad de siempre.
+- E-readers y audiolibros conservan su aspecto de objeto (sin textura de libro). Si una textura no carga, queda
+  el color determinista del motor. El color de portada ya no tiñe el lomo.
+
+### 23.4 Pantalla del ordenador · VERIFICADO
+
+- `pantalla-bahia.webp` (640 × 400, 11 KB) como fondo de escritorio dentro de `.laptop-screen` (con
+  `overflow: hidden`: se recorta en el monitor antes de la única proyección). La ventana de `CalendarApp
+  variant="scene"` queda encima con un margen de 10 px y su papel opaco: el calendario y sus datos no cambian.
+- Movimiento tenue solo del paisaje (desplazamiento de 7 px en 48 s, ida y vuelta), en pausa fuera de la
+  habitación, con un panel abierto o con movimiento reducido. Sin perspectiva extra ni `backdrop-filter`.
+
+### 23.5 Movimiento ambiental
+
+- **Hojas · BLOQUEADO:** sin vegetación ilustrada separable con limpieza (§23.2), se mantiene `BreezeLeaves`
+  (§22.3) como única representación; no conviven dos sistemas.
+- **Cortina · estática:** la pintada en la ilustración; la capa nueva no encaja y no hay deformación convincente.
+- **Mar:** `BaySailboats` y sus máscaras sin cambios (la base no ha cambiado).
+- **Pantalla:** el paisaje (§23.4). Pausas: documento oculto, habitación fuera de vista, panel abierto y
+  `prefers-reduced-motion`; sin estado React por fotograma.
+
+### 23.6 Archivos
+
+`src/components/room/RoomShelfBooks.jsx`, `RoomSurfaces.jsx`, `CozyRoom.jsx`, `src/domain/spineArt.js` (nuevo),
+`src/styles/room.css`, `public/images/room-refresh/` (derivados), `assets-source/room-refresh/` (originales);
+pruebas `e2e/gouache.spec.js`, `e2e/diegetic.spec.js`, `src/domain/__tests__/v128.test.js`.
+
+### 23.7 Verificación
+
+- Vitest: `spineArtSize` (cubre siempre el lomo y no deforma más de ×1,35).
+- Playwright: texturas cargadas, deterministas tras recargar, sin adornos CSS ni sombra alrededor, tinta y Lora
+  según la textura, dispositivos sin textura; pantalla dentro del bisel con el calendario legible; suite completa
+  en los 9 proyectos (Chromium y WebKit en Windows). `?sceneDebug=1` en desarrollo: geometría sin cambios.
+- No se afirma 60 fps ni pruebas en un iPhone físico.

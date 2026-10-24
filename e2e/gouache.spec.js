@@ -178,25 +178,42 @@ test('calendario: la pantalla es la vista compacta del calendario interior (dato
   expect(scene.buttons).toBe(0);
 });
 
-test('lomos: mates, latón solo en ediciones doradas, textura compartida', async ({ page }, info) => {
+test('lomos ilustrados (1.29.0): textura gouache determinista, sin adornos CSS duplicados, tinta según la textura', async ({ page }, info) => {
   await load(page);
-  const spines = await page.evaluate(() =>
-    [...document.querySelectorAll('.room-spine')].map((el) => {
-      const cs = getComputedStyle(el);
-      return { edition: el.dataset.edition, gilt: el.hasAttribute('data-gilt'), variant: el.dataset.variant, bg: cs.backgroundImage, shadow: cs.boxShadow, band: el.querySelector('.room-spine__band') ? getComputedStyle(el.querySelector('.room-spine__band')).backgroundColor : null };
-    }),
-  );
+  const read = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('.room-spine')].map((el) => {
+        const cs = getComputedStyle(el);
+        const t = el.querySelector('.room-spine__title');
+        return { id: el.getAttribute('aria-label'), edition: el.dataset.edition, art: el.dataset.art ?? null, ink: el.dataset.ink, bg: cs.backgroundImage, shadow: cs.boxShadow, ornaments: el.querySelectorAll('.room-spine__band, .room-spine__emblem, .room-spine__label, .room-spine__nerves').length, title: t ? { font: getComputedStyle(t).fontFamily, color: getComputedStyle(t).color } : null };
+      }),
+    );
+  const spines = await read();
   run.data.spines = spines;
+  // Las texturas cargan (ninguna petición fallida de lomos)
+  const loaded = await page.evaluate(() => Promise.all([...new Set([...document.querySelectorAll('.room-spine[data-art]')].map((el) => getComputedStyle(el).backgroundImage.slice(5, -2)))].map((src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i.naturalWidth > 0); i.onerror = () => ok(false); i.src = src; }))));
+  expect(loaded.every(Boolean)).toBe(true);
   for (const s of spines) {
-    const giltEdition = ['leatherbound', 'clothbound', 'sprayed_edges'].includes(s.edition);
-    expect.soft(s.gilt, s.edition).toBe(giltEdition);
-    // Sin bisel ni halo: ninguna sombra alrededor del lomo
-    expect.soft(s.shadow).toBe('none');
-    if (s.band && !s.gilt) expect.soft(s.band).not.toMatch(/rgb\(2[0-9]{2}, 1[6-9][0-9]/);
+    const device = ['kindle', 'audiobook'].includes(s.edition);
+    if (device) {
+      expect.soft(s.art, s.id).toBeNull();
+      continue;
+    }
+    expect.soft(s.bg, s.id).toMatch(/room-refresh\/lomos\/web\/lomo-\d{2}\.webp/);
+    // Los relieves y ornamentos están pintados: ninguno añadido en CSS; sin bisel ni halo alrededor
+    expect.soft(s.ornaments, s.id).toBe(0);
+    expect.soft(s.shadow, s.id).toBe('none');
+    // Tinta del título según la textura: oscura #2C1E14 en las claras, crema #F6EFE2 en las oscuras
+    expect.soft(s.ink, s.id).toBe(['2', '5', '9', '10', '12'].includes(s.art) ? 'dark' : 'light');
+    if (s.title) {
+      expect.soft(s.title.font, s.id).toMatch(/Lora/);
+      expect.soft(s.title.color, s.id).toBe(s.ink === 'dark' ? 'rgb(44, 30, 20)' : 'rgb(246, 239, 226)');
+    }
   }
-  // Una sola textura (la misma imagen de grano) para todos los lomos con textura
-  const grains = new Set(spines.map((s) => /data:image\/svg\+xml[^)]*/.exec(s.bg)?.[0]).filter(Boolean));
-  expect(grains.size).toBeLessThanOrEqual(1);
+  // Determinista: la misma textura para cada libro al recargar
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  expect((await read()).map((s) => [s.id, s.art])).toEqual(spines.map((s) => [s.id, s.art]));
   const clip = await clipOf(page, 100, 480, 350, 820);
   if (clip.width > 20 && clip.height > 20) await shot(page, info, 'gouache-lomos', clip);
 });

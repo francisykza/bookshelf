@@ -1,0 +1,114 @@
+{
+  "fuente": "Colección de doce lomos en gouache-1.png",
+  "margen": 4,
+  "lomos": [
+    {
+      "archivo": "lomos/lomo-01.png",
+      "ancho": 126,
+      "alto": 667,
+      "origen": {
+        "x": 48,
+        "y": 64
+      }
+    },
+    {
+      "archivo": "lomos/lomo-02.png",
+      "ancho": 118,
+      "alto": 628,
+      "origen": {
+        "x": 214,
+        "y": 98
+      }
+    },
+    {
+      "archivo": "lomos/lomo-03.png",
+      "ancho": 122,
+      "alto": 647,
+      "origen": {
+        "x": 367,
+        "y": 81
+      }
+    },
+    {
+      "archivo": "lomos/lomo-04.png",
+      "ancho": 123,
+      "alto": 633,
+      "origen": {
+        "x": 532,
+        "y": 91
+      }
+    },
+    {
+      "archivo": "lomos/lomo-05.png",
+      "ancho": 122,
+      "alto": 649,
+      "origen": {
+        "x": 693,
+        "y": 80
+      }
+    },
+    {
+      "archivo": "lomos/lomo-06.png",
+      "ancho": 129,
+      "alto": 646,
+      "origen": {
+        "x": 851,
+        "y": 82
+      }
+    },
+    {
+      "archivo": "lomos/lomo-07.png",
+      "ancho": 133,
+      "alto": 678,
+      "origen": {
+        "x": 43,
+        "y": 780
+      }
+    },
+    {
+      "archivo": "lomos/lomo-08.png",
+      "ancho": 124,
+      "alto": 663,
+      "origen": {
+        "x": 211,
+        "y": 788
+      }
+    },
+    {
+      "archivo": "lomos/lomo-09.png",
+      "ancho": 126,
+      "alto": 666,
+      "origen": {
+        "x": 369,
+        "y": 787
+      }
+    },
+    {
+      "archivo": "lomos/lomo-10.png",
+      "ancho": 122,
+      "alto": 650,
+      "origen": {
+        "x": 532,
+        "y": 799
+      }
+    },
+    {
+      "archivo": "lomos/lomo-11.png",
+      "ancho": 143,
+      "alto": 672,
+      "origen": {
+        "x": 685,
+        "y": 782
+      }
+    },
+    {
+      "archivo": "lomos/lomo-12.png",
+      "ancho": 119,
+      "alto": 667,
+      "origen": {
+        "x": 860,
+        "y": 785
+      }
+    }
+  ]
+}
