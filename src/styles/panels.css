@@ -1154,3 +1154,128 @@
     padding: 8px 14px;
   }
 }
+
+/* ── 1.28.0 · Reseña al terminar una lectura (SPEC §22.8) ──
+   Un solo panel en primer plano (sustituye al calendario). Cabe en el viewport; solo se desplaza el cuerpo y
+   las acciones quedan siempre a la vista (también con el teclado del iPhone abierto: `dvh`). */
+.review-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(460px, calc(100vw - 24px));
+  max-height: calc(100dvh - max(24px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 24px));
+  overflow: hidden;
+  padding: 0;
+  border-radius: 12px;
+  background: #faf5e8;
+  color: #2c1e14;
+  font-family: 'Lora', var(--font-sans);
+}
+
+.review-sheet__head {
+  display: flex;
+  flex: none;
+  gap: 14px;
+  align-items: center;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid rgba(110, 78, 46, 0.18);
+}
+
+.review-sheet__cover {
+  flex: none;
+  width: 56px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.review-sheet__cover > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.review-sheet__kicker {
+  margin: 0 0 2px;
+  font-family: 'Caveat', var(--font-hand);
+  font-size: 1.25rem;
+  color: #8a6420;
+}
+
+.review-sheet__title {
+  margin: 0;
+  font-family: 'Cormorant Garamond', var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.review-sheet__author {
+  margin: 2px 0 0;
+  font-style: italic;
+  color: rgb(44 30 20 / 0.7);
+}
+
+.review-sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 20px 8px;
+}
+
+.review-sheet__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-bottom: 8px;
+}
+
+.review-sheet__label {
+  font-weight: 600;
+}
+
+.review-sheet__note {
+  font-family: 'Caveat', var(--font-hand);
+  font-size: 1.1rem;
+  color: rgb(44 30 20 / 0.6);
+}
+
+/* Las estrellas ya son de latón (#C59B27, book.css); la cifra, en el mismo tono */
+.review-sheet .rating-input__value {
+  color: #8a6420;
+}
+
+.review-sheet__text {
+  width: 100%;
+  min-height: 120px;
+  padding: 10px 12px;
+  border: 1px solid rgba(110, 78, 46, 0.28);
+  border-radius: 8px;
+  background: #fffdf6;
+  color: #2c1e14;
+  font: 16px/1.5 'Lora', var(--font-sans);
+  resize: vertical;
+}
+
+.review-sheet__text:focus-visible {
+  outline: 2px solid #c59b27;
+  outline-offset: 2px;
+}
+
+.review-sheet__actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 20px max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(110, 78, 46, 0.18);
+  background: #faf5e8;
+}
+
+/* Registro sin lecturas activas: se dice y se ofrece la librería (sin cambiar estados) */
+.reading-form__none p {
+  margin: 0 0 4px;
+  font-style: italic;
+}

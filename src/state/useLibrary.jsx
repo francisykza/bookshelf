@@ -129,7 +129,8 @@ function withQuick(state, id, target, source = 'quick') {
   };
 }
 
-function reducer(state, action) {
+/** Exportado solo para las pruebas de dominio (doble toque, reversión); la app usa `useLibrary`. */
+export function reducer(state, action) {
   switch (action.type) {
     case 'addBook': {
       const book = createBook({ ...action.book, addedAt: new Date().toISOString() });
@@ -188,6 +189,16 @@ function reducer(state, action) {
         ...state,
         books: position != null ? placeBook(state, entry.bookId, position, now) : state.books,
         progress: { ...state.progress, readingLog, figures: sealFor(state, entry) },
+      };
+    }
+    case 'revertLog': {
+      // Deshace en memoria un registro cuyo guardado ha fallado (SPEC §22.7): quita esa entrada y devuelve el
+      // libro y los sellos a como estaban antes, para no mostrar como terminada una lectura que no se guardó
+      if (!state.progress.readingLog.some((e) => e.id === action.entryId)) return state;
+      return {
+        ...state,
+        books: state.books.map((b) => (b.id === action.book.id ? action.book : b)),
+        progress: { ...state.progress, readingLog: state.progress.readingLog.filter((e) => e.id !== action.entryId), figures: action.figures },
       };
     }
     case 'editSession': {
@@ -346,6 +357,7 @@ export function LibraryProvider({ children }) {
       setPage: (id, page, source) => dispatch({ type: 'setPage', id, page, source }),
       setTracking: (id, unit) => dispatch({ type: 'setTracking', id, unit }),
       logReading: (entry, position) => dispatch({ type: 'logReading', entry, position }),
+      revertLog: (entryId, book, figures) => dispatch({ type: 'revertLog', entryId, book, figures }),
       editSession: (sessionId, text) => dispatch({ type: 'editSession', sessionId, text }),
       removeSession: (sessionId) => dispatch({ type: 'removeSession', sessionId }),
       // Escritura inmediata tras guardar una lectura: devuelve false si el almacenamiento falla (SPEC §14.6)

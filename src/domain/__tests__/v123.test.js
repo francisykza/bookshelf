@@ -1,7 +1,7 @@
-// Pruebas de la 1.23.0 (SPEC §17): selector de lecturas activas y «Otros…», significados de colores por ID y
+// Pruebas de la 1.23.0 (SPEC §17): selector de lecturas activas, significados de colores por ID y
 // puerta de sonidos (repeticiones y voces).
 import { describe, expect, it } from 'vitest';
-import { OTHER, choiceLabels, initialReadingOrder, isBookId, normalize, readingChoices, searchLibrary } from '../bookPicker';
+import { choiceLabels, initialReadingOrder, isBookId, normalize, readingChoices } from '../bookPicker';
 import { COLOR_IDS, colorIdOf, draftFrom, meaningOf, originalDraft, toSettings, validateMeanings } from '../quoteMeanings';
 import { createSoundGate } from '../../audio/uiSounds';
 
@@ -38,24 +38,16 @@ describe('selector de lecturas activas', () => {
   });
 });
 
-describe('«Otros…»: buscar en mi biblioteca', () => {
-  const lib = [b('1', 'want', 'El Nombre del Viento', 'Patrick Rothfuss'), b('2', 'read', 'Canción de Aquiles', 'Madeline Miller'), b('3', 'reading', 'Circe', 'Madeline Miller')];
+describe('texto comparable e ids de libro', () => {
+  const lib = [b('1', 'want', 'El Nombre del Viento', 'Patrick Rothfuss')];
 
-  it('consulta vacía no lista la biblioteca', () => {
-    expect(searchLibrary(lib, '   ')).toBeNull();
-  });
-
-  it('por título y autor, sin mayúsculas, acentos ni espacios dobles', () => {
-    expect(searchLibrary(lib, 'nombre  VIENTO').map((x) => x.id)).toEqual(['1']);
-    expect(searchLibrary(lib, 'cancion').map((x) => x.id)).toEqual(['2']);
-    expect(searchLibrary(lib, 'miller').map((x) => x.id)).toEqual(['2', '3']);
-    expect(searchLibrary(lib, 'tolkien')).toEqual([]);
+  it('sin mayúsculas, acentos ni espacios dobles', () => {
     expect(normalize('  Ñandú  Ágil ')).toBe('nandu agil');
   });
 
-  it('«Otros…» nunca es un id de libro', () => {
-    expect(isBookId(lib, OTHER)).toBe(false);
+  it('solo un id de la biblioteca es guardable (1.28.0: ya no existe «Otros…»)', () => {
     expect(isBookId(lib, '')).toBe(false);
+    expect(isBookId(lib, '__other__')).toBe(false);
     expect(isBookId(lib, '1')).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-// QA de la 1.23.0 (SPEC §17): selector de lecturas y «Otros…», borrador estable y una sola zona de scroll en el
+// QA de la 1.23.0 (SPEC §17; selector según §22.6): selector de lecturas activas, borrador estable y una sola zona de scroll en el
 // formulario del calendario, significados de colores, sonidos semánticos y pulsación. Perfil vacío por prueba.
 import { expect, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -87,47 +87,27 @@ async function typeInto(locator, text) {
 
 const options = (form) => form.locator('select option').evaluateAll((els) => els.map((o) => ({ v: o.value, t: o.textContent, d: o.disabled })));
 
-test('selector: solo lecturas activas y «Otros…»; buscar y elegir un pendiente sin cambiar su estado', async ({ page }, info) => {
+test('selector: solo lecturas activas (1.28.0: sin «Otros…»); guardar no cambia estados', async ({ page }, info) => {
   await openWith(page, { type: 'laptop' });
   const form = await openTodayForm(page);
   const opts = await options(form);
   run.data.options = opts;
   const books = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.map((b) => ({ id: b.id, status: b.status })));
   const reading = books.filter((b) => b.status === 'reading').map((b) => b.id);
-  expect(opts.at(-1)).toMatchObject({ v: '__other__', t: 'Otros…' });
-  expect(opts.slice(0, -1).map((o) => o.v).sort()).toEqual([...reading].sort());
-  // Otros… → buscador local
-  await form.locator('select').selectOption('__other__');
-  await expect(form.getByLabel('Buscar en mi biblioteca')).toBeVisible();
-  await expect(form.locator('.book-search__status')).toHaveText('Escribe el título o el autor.');
-  await form.getByLabel('Buscar en mi biblioteca').fill('rothfuss');
-  await expect(form.locator('.book-search__result')).toHaveCount(1);
-  await form.getByLabel('Buscar en mi biblioteca').fill('xyz no existe');
-  await expect(form.locator('.book-search__status')).toHaveText('No hay libros que coincidan en tu biblioteca');
-  // Un pendiente sin terminar de la biblioteca de ejemplo, buscado sin tildes ni mayúsculas
-  const target = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.status === 'want' && b.trackBy === 'pages' && b.currentPage < b.pageCount - 20));
-  const query = target.title.normalize('NFD').replace(/[^a-zA-Z ]/g, '').toUpperCase().split(' ').filter(Boolean).slice(0, 2).join(' ');
-  await form.getByLabel('Buscar en mi biblioteca').fill(query);
-  const pick = form.locator('.book-search__result').first();
-  const pickedTitle = await pick.locator('b').textContent();
-  await pick.click();
-  await expect(form.locator('.reading-form__chosen')).toContainText(pickedTitle);
-  await expect(form.getByRole('button', { name: 'Cambiar libro' })).toBeVisible();
-  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.map((b) => ({ id: b.id, status: b.status })));
-  expect(after).toEqual(books);
+  expect(opts.map((o) => o.v).sort()).toEqual([...reading].sort());
+  expect(opts.some((o) => o.t === 'Otros…' || o.v === '__other__')).toBe(false);
   await shot(page, info, 'v123-selector-otros');
-  // Guardar con el libro elegido: el registro lleva su id real y nunca «__other__»
+  // Guardar con una lectura activa: el registro lleva su id real
+  const target = opts[0].v;
   await tap(form.getByRole('radio', { name: 'He leído' }));
   await typeInto(form.locator('input[inputmode="numeric"]'), '7');
   await tap(form.getByRole('button', { name: 'Guardar lectura' }));
   await expect(form.locator('.reading-form__saved')).toHaveText('✓ Guardado');
-  const raw = await page.evaluate(() => localStorage.getItem('bookshelf:v1'));
-  expect(raw.includes('__other__')).toBe(false);
-  const saved = await page.evaluate((id) => JSON.parse(localStorage.getItem('bookshelf:v1')).progress.readingLog.filter((e) => e.bookId === id && e.pages === 7).length, target.id);
+  const saved = await page.evaluate((id) => JSON.parse(localStorage.getItem('bookshelf:v1')).progress.readingLog.filter((e) => e.bookId === id && e.pages === 7).length, target);
   expect(saved).toBe(1);
 });
 
-test('selector: sin lecturas activas no elige nada en silencio', async ({ page }) => {
+test('selector: sin lecturas activas lo dice, deshabilita el registro y ofrece la librería', async ({ page }) => {
   await openWith(
     page,
     { type: 'laptop' },
@@ -138,12 +118,15 @@ test('selector: sin lecturas activas no elige nada en silencio', async ({ page }
     }),
   );
   const form = await openTodayForm(page);
-  const opts = await options(form);
-  expect(opts).toEqual([
-    { v: '', t: 'Selecciona un libro', d: true },
-    { v: '__other__', t: 'Otros…', d: false },
-  ]);
-  await expect(form.getByRole('button', { name: /Guardar/ })).toHaveCount(0);
+  await expect(form.locator('select')).toHaveCount(0);
+  await expect(form).toContainText('No tienes ninguna lectura en curso');
+  await expect(form.getByRole('button', { name: 'Guardar lectura' })).toBeDisabled();
+  const before = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.map((b) => [b.id, b.status]));
+  await form.getByRole('button', { name: 'Elegir un libro de mi biblioteca' }).click();
+  await expect(page.locator('.library[data-open="true"]')).toBeVisible();
+  await expect(page.locator('.panel-veil')).toHaveCount(0);
+  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.map((b) => [b.id, b.status]));
+  expect(after).toEqual(before);
 });
 
 test('formulario: una sola zona de scroll, acciones sticky y borrador estable con el temporizador en marcha', async ({ page }, info) => {

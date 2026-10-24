@@ -36,7 +36,7 @@ export function RatingStars({ value, className = '' }) {
 
 /**
  * Control de valoración: cada estrella da esa nota entera, el control de rango y los botones −/+ ajustan de
- * 0,25 en 0,25 y «Quitar valoración» vuelve a «sin valorar» (`0`, la convención de siempre).
+ * 0,25 en 0,25 y «Quitar valoración» vuelve a «sin valorar» (`null`, explícito).
  */
 export function RatingInput({ value, onChange }) {
   const rating = normalizeRating(value);
@@ -79,7 +79,7 @@ export function RatingInput({ value, onChange }) {
         </button>
       </div>
       {rating > 0 && (
-        <button type="button" className="link-btn rating-input__clear" onClick={() => onChange(0)}>
+        <button type="button" className="link-btn rating-input__clear" onClick={() => onChange(null)}>
           Quitar valoración
         </button>
       )}

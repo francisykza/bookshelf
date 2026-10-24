@@ -2,12 +2,14 @@
 // recortada de la propia imagen, postales clavadas, macetas y hiedra. Tres baldas (Leyendo ahora con el
 // la mini-figura de su saga bajo cada libro, Pendientes y Leídos) y controles como placas de latón.
 import { RatingStars } from '../book/Rating';
-import { ArrowLeft, BookOpen, Library, Plus, Sparkles, Trophy, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Library, Plus, Search, Sparkles, Trophy, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
 import { ratingText, shelfSort } from '../../domain/books';
+import { EMPTY_TEXT, filterLibrary, libraryEmptyState } from '../../domain/library';
 import { PRESET_SAGAS } from '../../domain/sagas';
 import { SCENE_H, SCENE_SRC, SCENE_W, WOOD_PLANK, WOOD_SIDE } from '../../scene/sceneMap';
+import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
 import { MiniFigurePin } from '../figures/MiniFigurePin';
 import { figureForBook, useFigureCatalog } from '../figures/figureCatalog';
@@ -39,6 +41,14 @@ const SHELF_LEAVES = Array.from({ length: 22 }, (_, i) => {
   };
   return [520 + r(1) * 480, r(2) * 700, 18 + r(3) * 30, 8 + r(4) * 12, r(5) * 180];
 });
+
+/** Baldas por estado, cada una en su orden de estantería. */
+function groupByStatus(list) {
+  const g = { reading: [], want: [], read: [] };
+  list.forEach((b) => g[b.status]?.push(b));
+  Object.keys(g).forEach((k) => g[k].sort(shelfSort(k)));
+  return g;
+}
 
 const FILTERS = [
   { id: 'all', label: 'Todas', color: '#f3e3c2' },
@@ -247,7 +257,7 @@ function useScrollEdges(ref, deps) {
 
 const smooth = () => (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 
-function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, focused, onPlate, pickedId, onMove }) {
+function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, focused, onPlate, pickedId, onMove, emptyText }) {
   const scrollerRef = useRef(null);
   const edges = useScrollEdges(scrollerRef, [books, mode, rowH]);
   const page = (dir) => {
@@ -308,7 +318,7 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
               {pins(book)}
             </span>
           ))}
-          {!books.length && <p className="shelf-row__empty">{row.empty}</p>}
+          {!books.length && <p className="shelf-row__empty">{emptyText ?? row.empty}</p>}
           {onAdd && (
             <button type="button" className="add-slot" onClick={onAdd} style={{ height: Math.round(rowH * 0.82) }}>
               <Plus aria-hidden="true" />
@@ -344,26 +354,30 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   const [pick, setPick] = useState(null);
   const [rolling, setRolling] = useState(false);
   const [filter, setFilter] = useState('all');
+  // Búsqueda en la biblioteca personal: se conserva al alternar Escaparate/Lomos (no se desmonta nada)
+  const [query, setQuery] = useState('');
+  const { status: cloudStatus } = useCloud();
   // Menú rápido de edición: clic derecho (o pulsación larga / tecla de menú) sobre un libro
   const [editionMenu, setEditionMenu] = useState(null);
   const rowH = useRowHeight();
   const mode = settings.viewMode;
   const backRef = useRef(null);
 
+  // Al salir se deja lista para la próxima visita desde la habitación: «Todas» y sin búsqueda (el foco al
+  // abrir va a «Volver», nunca al buscador)
   useEffect(() => {
     if (open) backRef.current?.focus({ preventScroll: true });
     else {
       setPick(null);
       setEditionMenu(null);
+      setFilter('all');
+      setQuery('');
     }
   }, [open]);
 
-  const grouped = useMemo(() => {
-    const g = { reading: [], want: [], read: [] };
-    books.forEach((b) => g[b.status]?.push(b));
-    Object.keys(g).forEach((k) => g[k].sort(shelfSort(k)));
-    return g;
-  }, [books]);
+  // Biblioteca completa por estado (dado, muro de recuerdos) y la misma con la búsqueda aplicada (baldas)
+  const grouped = useMemo(() => groupByStatus(books), [books]);
+  const found = useMemo(() => groupByStatus(filterLibrary(books, { query })), [books, query]);
 
   // Libro al azar: entre los pendientes (o, si no hay, entre los que no has terminado)
   const pool = grouped.want.length ? grouped.want : [...grouped.reading, ...grouped.want];
@@ -377,6 +391,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
     const others = pool.filter((b) => b.id !== pick);
     const next = (others.length ? others : pool)[Math.floor(Math.random() * (others.length || pool.length))];
     if (filter !== 'all' && filter !== next.status) setFilter('all');
+    if (query) setQuery('');
     setPick(null);
     setRolling(true);
     requestAnimationFrame(() => {
@@ -415,6 +430,10 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   };
 
   const visibleRows = filter === 'all' ? ROWS : ROWS.filter((r) => r.id === filter);
+  const shownCount = visibleRows.reduce((n, r) => n + found[r.id].length, 0);
+  // Ningún estado vacío mientras la cuenta trae la biblioteca de la nube
+  const empty = libraryEmptyState({ total: books.length, shown: shownCount, status: filter, query, loading: cloudStatus === 'loading' && books.length === 0 });
+  const rowEmpty = empty === 'loading' ? EMPTY_TEXT.loading : query ? EMPTY_TEXT.search : filter !== 'all' ? EMPTY_TEXT.filter : undefined;
   const shownRowH = filter === 'all' ? rowH : Math.round(rowH * 1.3);
 
   // Mini-figuras de saga bajo los libros, y los libros de cada saga para la sinergia ×2 de pity
@@ -468,11 +487,11 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
           </h1>
           <div className="library__tools">
             <div className="brass-toggle" role="radiogroup" aria-label="Vista de la librería">
-              <button type="button" role="radio" aria-checked={mode === 'cover'} onClick={() => actions.setSettings({ viewMode: 'cover' })}>
+              <button type="button" role="radio" aria-checked={mode === 'cover'} aria-label="Escaparate" onClick={() => actions.setSettings({ viewMode: 'cover' })}>
                 <BookOpen aria-hidden="true" />
                 <span>Escaparate</span>
               </button>
-              <button type="button" role="radio" aria-checked={mode === 'spine'} onClick={() => actions.setSettings({ viewMode: 'spine' })}>
+              <button type="button" role="radio" aria-checked={mode === 'spine'} aria-label="Lomos" onClick={() => actions.setSettings({ viewMode: 'spine' })}>
                 <Library aria-hidden="true" />
                 <span>Lomos</span>
               </button>
@@ -505,6 +524,30 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
               <Plus aria-hidden="true" />
               <span>Añadir libro</span>
             </button>
+          </div>
+          {/* Ficha de búsqueda en la biblioteca personal (sin Google Books ni Open Library) */}
+          <div className="shelf-search" role="search">
+            <label className="shelf-search__label" htmlFor="shelf-search-input">
+              <Search aria-hidden="true" />
+              <span className="sr-only-focus">Buscar en mi biblioteca</span>
+            </label>
+            <input
+              key="shelf-search"
+              id="shelf-search-input"
+              className="shelf-search__input"
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              aria-label="Buscar en mi biblioteca"
+              placeholder="Título o autor…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button type="button" className="shelf-search__clear" onClick={() => setQuery('')} aria-label="Limpiar búsqueda" title="Limpiar búsqueda">
+                <X aria-hidden="true" />
+              </button>
+            )}
           </div>
           <Plant variant="leafy" />
           {/* Cintas marcapáginas que cuelgan del copete: eligen qué baldas ver */}
@@ -572,12 +615,18 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
           />
         )}
 
+        {empty && (
+          <p className="library__empty" role="status">
+            {EMPTY_TEXT[empty]}
+          </p>
+        )}
         <div className="library__shelves">
           {visibleRows.map((row) => (
             <ShelfRow
               key={row.id}
               row={row}
-              books={grouped[row.id]}
+              books={found[row.id]}
+              emptyText={rowEmpty}
               mode={mode}
               rowH={shownRowH}
               focused={filter === row.id}

@@ -127,7 +127,7 @@ function BookGroup({ group, author }) {
   );
 }
 
-function DayPopover({ date, groups, pomodoro, onClose }) {
+function DayPopover({ date, groups, pomodoro, onClose, onComplete, onOpenLibrary }) {
   const { state } = useLibrary();
   const [adding, setAdding] = useState(!groups.length);
   const summary = summarize(groups.flatMap((g) => g.entries), state.books);
@@ -159,7 +159,7 @@ function DayPopover({ date, groups, pomodoro, onClose }) {
         <p className="cal-pop__empty">Este día aún no ha llegado.</p>
       ) : adding ? (
         // Instancia estable por día (key = fecha): el borrador no se pierde con re-renders ni sincronizaciones
-        <ReadingEntryForm key={date} date={date} keepOpen onCancel={groups.length ? () => setAdding(false) : undefined} />
+        <ReadingEntryForm key={date} date={date} keepOpen onCancel={groups.length ? () => setAdding(false) : undefined} onComplete={(bookId) => onComplete?.(bookId, date)} onOpenLibrary={onOpenLibrary} />
       ) : (
         <button type="button" className="cal-pop__add" onClick={() => setAdding(true)}>
           <Plus aria-hidden="true" /> Apuntar otra lectura
@@ -185,8 +185,9 @@ function useNarrow() {
 
 /**
  * Calendario de lectura. `variant="scene"` es la vista compacta que se ve en la pantalla del portátil desde la
- * habitación (SPEC §21.3): misma app, mismos datos y mismas clases; `selectToday` abre el día de hoy al llegar
- * desde esa pantalla.
+ * habitación (SPEC §21.3): misma app, mismos datos y mismas clases. `selectDay` abre ese día al llegar (hoy
+ * desde la pantalla del portátil; el día de la lectura al volver de la reseña). `onComplete(bookId, date)`: un
+ * registro de ese día acaba de terminar un libro (SPEC §22.7); `onOpenLibrary`: abrir la librería.
  */
 export function CalendarApp({ variant = 'full', ...props }) {
   return variant === 'scene' ? <CalendarScene {...props} /> : <CalendarFull {...props} />;
@@ -242,16 +243,16 @@ function CalendarScene({ today = dayKey() }) {
   );
 }
 
-function CalendarFull({ selectToday = false }) {
+function CalendarFull({ selectDay = null, onComplete, onOpenLibrary }) {
   const { state } = useLibrary();
   const days = useDays(state);
   const pomos = usePomodoros(state);
   const today = dayKey();
   const [month, setMonth] = useState(() => {
-    const d = new Date();
+    const d = selectDay ? parseDay(selectDay) : new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
-  const [open, setOpen] = useState(() => (selectToday ? today : null));
+  const [open, setOpen] = useState(selectDay);
   const narrow = useNarrow();
   const panelRef = useRef(null);
   // Al abrir un día en móvil, su panel entra en la zona visible de la ventana (solo se desplaza esa zona)
@@ -364,7 +365,7 @@ function CalendarFull({ selectToday = false }) {
               </button>
               {open === date && !narrow && (
                 <div className="cal__popwrap" data-side={col >= 4 ? 'left' : 'right'}>
-                  <DayPopover date={date} groups={groups} pomodoro={pomos[date]} onClose={() => setOpen(null)} />
+                  <DayPopover date={date} groups={groups} pomodoro={pomos[date]} onClose={() => setOpen(null)} onComplete={onComplete} onOpenLibrary={onOpenLibrary} />
                 </div>
               )}
             </div>
@@ -373,7 +374,7 @@ function CalendarFull({ selectToday = false }) {
       </div>
       {narrow && open && (
         <div ref={panelRef} className="cal__daypanel">
-          <DayPopover date={open} groups={days[open] ?? []} pomodoro={pomos[open]} onClose={() => setOpen(null)} />
+          <DayPopover date={open} groups={days[open] ?? []} pomodoro={pomos[open]} onClose={() => setOpen(null)} onComplete={onComplete} onOpenLibrary={onOpenLibrary} />
         </div>
       )}
       <p className="cal__legend">

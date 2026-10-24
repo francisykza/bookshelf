@@ -119,17 +119,14 @@ body {
 }
 
 /* Sellos de biblioteca antigua, fechas, páginas y relojes (Courier Prime) */
-.tray__clock strong,
-.tea-mist__time {
+.tray__clock strong {
   font-family: var(--font-mono);
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.tea-mist__time {
-  font-size: 40px;
-}
+/* 1.28.0: el indicador de la habitación usa JetBrains Mono a su propio tamaño (room.css, SPEC §22.2) */
 
 .finished-stamp {
   font-family: var(--font-mono);

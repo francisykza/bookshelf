@@ -1,7 +1,10 @@
 // Datos vivos integrados en la habitación (SPEC §3.3, §16.7 y §19): cuenta atrás como bruma sobre el té, notas
 // doradas de los auriculares, vapor solo para bebidas calientes y sombra de nube. La pantalla del portátil y el
 // libro abierto viven en `RoomSurfaces`.
+import { useLayoutEffect, useRef, useState } from 'react';
+import { placeAnnotation, safeAreas } from '../../scene/guidePlacement';
 import { HOTSPOTS, TEA_LIQUID } from '../../scene/sceneMap';
+import { toScreen, visibleFraction } from '../../scene/stageFit';
 import { DRINKS } from '../panels/Drinks';
 
 const fmt = (ms) => {
@@ -9,13 +12,33 @@ const fmt = (ms) => {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
 
-/** Cuenta atrás del temporizador flotando como bruma cálida sobre el vaso de té. */
-export function TeaMist({ timer }) {
-  if (!timer.running && timer.remaining >= timer.total) return null;
-  const x = (TEA_LIQUID.x + TEA_LIQUID.w / 2);
+/**
+ * Indicador del temporizador sobre el vaso de té (SPEC §22.2). Es una anotación de la habitación: va en la capa
+ * del panel (fuera del lienzo escalado y de su recorte), con el ancla del vaso proyectada UNA vez con la cámara
+ * (`toScreen`) y colocada con `placeAnnotation` dentro del área segura. Se recoloca al cambiar el encuadre
+ * (tamaño, orientación) o su propio tamaño (fuentes, cifras). Solo muestra el estado del temporizador único
+ * (no lleva cuenta propia); si el vaso queda fuera del encuadre, no se pinta.
+ */
+export function TeaMist({ timer, fit }) {
+  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+  const shown = (timer.running || timer.remaining < timer.total) && visibleFraction(fit, HOTSPOTS.tray.shape) > 0;
+  const point = toScreen(fit, TEA_LIQUID.x + TEA_LIQUID.w / 2, TEA_LIQUID.top);
+  const key = `${fit.panelW}x${fit.panelH}|${point.x.toFixed(1)},${point.y.toFixed(1)}`;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const place = () => setPos(placeAnnotation({ w: fit.panelW, h: fit.panelH }, point, { w: el.offsetWidth, h: el.offsetHeight }, safeAreas()));
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(el);
+    return () => observer.disconnect();
+    // `key` resume el encuadre y el ancla
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, shown]);
+  if (!shown) return null;
   return (
-    <div className="tea-mist" data-paused={!timer.running} style={{ left: x, top: TEA_LIQUID.top - 30 }} aria-hidden="true">
-      <span className="tea-mist__wisp" />
+    <div ref={ref} className="tea-mist" data-paused={!timer.running} data-placed={pos ? '' : undefined} style={pos ? { left: pos.x, top: pos.y } : { left: 0, top: 0, visibility: 'hidden' }} aria-hidden="true">
       <span className="tea-mist__time">{fmt(timer.remaining)}</span>
       <span className="tea-mist__phase">{timer.running ? (timer.phase === 'focus' ? 'leyendo' : 'descanso') : 'en pausa'}</span>
     </div>

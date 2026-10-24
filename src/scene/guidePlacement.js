@@ -61,3 +61,17 @@ export function placeLabel(panel, point, size, safe) {
   const side = above >= minY ? 'above' : below <= maxY ? 'below' : 'above';
   return { x: clamp(point.x - size.w / 2, minX, maxX), y: clamp(side === 'above' ? above : below, minY, maxY), side, fits };
 }
+
+/**
+ * Anotación sobre un objeto de la escena (SPEC §22.2, indicador del temporizador sobre el vaso): `point` en
+ * píxeles del panel, ya proyectado con la cámara. Márgenes mínimos `max(12px, safe-area)` por lado:
+ * x = clamp(anchorX − w/2, izquierda, ancho − derecha − w); y = clamp(anchorY − h − 12, arriba, alto − abajo − h).
+ */
+export function placeAnnotation(panel, point, size, safe) {
+  const left = Math.max(12, safe.left);
+  const right = Math.max(12, safe.right);
+  const top = Math.max(12, safe.top);
+  const bottom = Math.max(12, safe.bottom);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(Math.max(lo, hi), v));
+  return { x: clamp(point.x - size.w / 2, left, panel.w - right - size.w), y: clamp(point.y - size.h - 12, top, panel.h - bottom - size.h) };
+}

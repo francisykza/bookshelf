@@ -10,6 +10,8 @@ import { AccountPanel } from './components/panels/AccountPanel';
 import { LibrarianPanel } from './components/panels/LibrarianPanel';
 import { LaptopPanel } from './components/panels/LaptopPanel';
 import { PomodoroTray } from './components/panels/PomodoroTray';
+import { ReviewSheet } from './components/panels/ReviewSheet';
+import { dayKey } from './domain/dates';
 import { SagaMapModal } from './components/panels/SagaMapModal';
 import { FiguresVaultModal } from './components/figures/FiguresVaultModal';
 import { CozyRoom, ROOM_VIEW, SHELF_VIEW } from './components/room/CozyRoom';
@@ -25,6 +27,9 @@ import { useReducedMotion } from './hooks/useReducedMotion';
 import { ENTERING, ROOM, SHELF, useShelfTransition } from './hooks/useShelfTransition';
 import { CloudProvider } from './state/cloudSync';
 import { LibraryProvider, useLibrary } from './state/useLibrary';
+
+/** Un día local `YYYY-MM-DD` (el `select` de la navegación del calendario). */
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function Sanctuary() {
   const { state, actions } = useLibrary();
@@ -75,6 +80,11 @@ function Sanctuary() {
     return () => cancelAnimationFrame(id);
   }, [panel]);
   const switchPanel = useCallback((p) => nav.replace({ view: locRef.current.view, panel: p }), [nav]);
+  // Una reseña no se restaura al recargar (sería abrirla al hidratar): vuelve al calendario de ese día
+  useEffect(() => {
+    if (locRef.current.panel?.type === 'review') switchPanel({ type: 'laptop', tab: 'calendar', select: locRef.current.panel.select });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [askPages, setAskPages] = useState(false);
   // Guía diegética (Anexo B): arranca con MAIN_ROOM decodificada y medida, quieta y sin nada prioritario abierto
   const [mainReady, setMainReady] = useState(false);
@@ -216,10 +226,21 @@ function Sanctuary() {
       />
 
       {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} />}
-      {panel?.type === 'laptop' && <LaptopPanel onClose={close} initialTab={panel.tab} selectToday={panel.select === 'today'} onOpenVault={() => {
+      {panel?.type === 'laptop' && (
+        <LaptopPanel
+          onClose={close}
+          initialTab={panel.tab}
+          selectDay={panel.select === 'today' ? dayKey() : DAY_RE.test(panel.select ?? '') ? panel.select : null}
+          // Una lectura terminada desde el calendario abre su reseña EN LUGAR del calendario (un solo panel)
+          onComplete={(bookId, date) => switchPanel({ type: 'review', id: bookId, select: date })}
+          onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
+          onOpenVault={() => {
             playUiSound('atticOpen');
             openPanel({ type: 'vault' });
-          }} />}
+          }}
+        />
+      )}
+      {panel?.type === 'review' && <ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel({ type: 'laptop', tab: 'calendar', select: panel.select })} />}
       {panel?.type === 'vault' && (
         <FiguresVaultModal
           onClose={close}

@@ -18,12 +18,12 @@ describe('valoraciones en cuartos de estrella', () => {
     [0.25, 0.5, 0.75, 1, 3.25, 3.5, 3.75, 5].forEach((v) => expect(normalizeRating(v)).toBe(v));
   });
 
-  it('0, vacío o no numérico es «sin valorar»; fuera de rango se acota', () => {
-    expect(normalizeRating(0)).toBe(0);
-    expect(normalizeRating('')).toBe(0);
-    expect(normalizeRating(null)).toBe(0);
-    expect(normalizeRating(Number.NaN)).toBe(0);
-    expect(normalizeRating(Infinity)).toBe(0);
+  it('0, vacío o no numérico es «sin valorar» (null explícito); fuera de rango se acota', () => {
+    expect(normalizeRating(0)).toBeNull();
+    expect(normalizeRating('')).toBeNull();
+    expect(normalizeRating(null)).toBeNull();
+    expect(normalizeRating(Number.NaN)).toBeNull();
+    expect(normalizeRating(Infinity)).toBeNull();
     expect(normalizeRating(7)).toBe(5);
     expect(normalizeRating(0.1)).toBe(0.25);
     expect(normalizeRating('3.75')).toBe(3.75);

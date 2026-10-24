@@ -1608,3 +1608,118 @@ html[data-lite-scene] .library__leaves {
     display: none;
   }
 }
+
+/* ── 1.28.0 · Buscador de la biblioteca personal (SPEC §22.5): ficha de papel crema junto a los controles ── */
+.shelf-search {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1 1 220px;
+  align-items: center;
+  max-width: 340px;
+  min-height: 44px;
+  border: 1px solid rgba(110, 78, 46, 0.28);
+  border-radius: 8px;
+  background: #faf5e8;
+  color: #2c1e14;
+  box-shadow: 0 2px 6px rgba(44, 30, 20, 0.12);
+  font-family: 'Lora', var(--font-sans);
+}
+
+.shelf-search__label {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  color: #6e4e2e;
+}
+
+.shelf-search__label svg {
+  width: 18px;
+  height: 18px;
+}
+
+.shelf-search__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 4px 0 0;
+  border: 0;
+  background: transparent;
+  color: #2c1e14;
+  /* 16 px: sin el zoom de enfoque de Safari en iPhone */
+  font: 16px 'Lora', var(--font-sans);
+}
+
+.shelf-search__input::placeholder {
+  color: rgb(44 30 20 / 0.55);
+}
+
+.shelf-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.shelf-search__input:focus {
+  outline: none;
+}
+
+.shelf-search:focus-within {
+  outline: 2px solid #c59b27;
+  outline-offset: 2px;
+}
+
+.shelf-search__clear {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #6e4e2e;
+}
+
+.shelf-search__clear svg {
+  width: 18px;
+  height: 18px;
+}
+
+.shelf-search__clear:focus-visible {
+  outline: 2px solid #c59b27;
+  outline-offset: -4px;
+  border-radius: 8px;
+}
+
+/* Estado vacío de la biblioteca o de la búsqueda: una línea de papel, sin tapar las baldas */
+.library__empty {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 10px auto 0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #faf5e8;
+  color: #2c1e14;
+  box-shadow: 0 2px 6px rgba(44, 30, 20, 0.12);
+  font: italic 15px 'Lora', var(--font-sans);
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .shelf-search {
+    flex-basis: 100%;
+    max-width: none;
+    order: 5;
+  }
+}
+
+/* En pantallas estrechas el muro de recuerdos (z 9) es una franja bajo el copete y tapaba las cintas de filtro,
+   que solo asomaban la punta: el copete pasa por encima para que se puedan usar (SPEC §22.4) */
+@media (max-width: 1100px) {
+  .library__crown {
+    z-index: 10;
+  }
+}

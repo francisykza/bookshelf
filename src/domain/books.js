@@ -101,6 +101,13 @@ export const progress = (book) => Math.min(100, Math.round(percentRead(book)));
 export const isComplete = (book, position = positionOf(book)) =>
   trackUnit(book) === 'percent' ? position >= 100 : position >= book.pageCount;
 
+/**
+ * ¿Este registro TERMINA el libro? (SPEC §22.7) Transición real: antes por debajo del total válido (o del 100 %
+ * en libros por porcentaje) y la posición nueva en él. Con páginas cuenta la página alcanzada, nunca el
+ * porcentaje redondeado (419/420 no termina); sin páginas, el porcentaje exacto 100 (sin inventar un total).
+ */
+export const completesReading = (book, position) => book.status !== 'read' && !isComplete(book) && position != null && isComplete(book, position);
+
 export const fmtNum = (value, max = 1) => value.toLocaleString('es-ES', { maximumFractionDigits: max });
 export const formatPercent = (value) => `${fmtNum(roundTo(value, 1))} %`;
 
@@ -135,10 +142,13 @@ export function withTracking(book, unit) {
 
 /* ── Valoraciones en cuartos de estrella (SPEC §14.4) ── */
 
-/** `0` = sin valorar; si no, de 0,25 a 5 en pasos de 0,25 (nunca se redondea a enteros). */
+/**
+ * `null` = sin valorar, explícito (1.28.0, SPEC §22.8; antes `0`, que se migra al cargar); si no, de 0,25 a 5
+ * en pasos de 0,25 (nunca se redondea a enteros).
+ */
 export function normalizeRating(value) {
   const n = Number(value);
-  if (value == null || value === '' || typeof value === 'boolean' || !Number.isFinite(n) || n <= 0) return 0;
+  if (value == null || value === '' || typeof value === 'boolean' || !Number.isFinite(n) || n <= 0) return null;
   return Math.min(5, Math.max(0.25, Math.round(n * 4) / 4));
 }
 
@@ -220,7 +230,7 @@ export function createBook(data) {
     isbn: '',
     currentPage: 0,
     status: 'want',
-    rating: 0,
+    rating: null,
     favorite: false,
     quotes: [],
     review: '',

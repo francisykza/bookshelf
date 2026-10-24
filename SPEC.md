@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.27.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.28.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -1974,3 +1974,133 @@ diagnóstico se ha hecho reproduciendo cada caso en la app.
   la miniatura (oclusión real del asset); el resalte de un objeto al enfocarlo (`hotspot-lift`, de versiones
   anteriores) no recibe la luz de la escena; WebKit en Windows no aplica `matrix3d` proyectivo; no hay pruebas
   en iPhone ni Safari reales ni con teclado virtual real.
+
+## 22. Biblioteca completa, buscador, calendario con lecturas activas, reseña al terminar y brisa (1.28.0)
+
+Mejora incremental sobre el código actual (no se restaura nada del ZIP 1.15.0). Sin búsqueda externa, ISBN por
+escáner, ediciones, comunidad ni cambios en figuras. Estados: **IMPLEMENTADO** y **VERIFICADO** (pruebas de
+esta entrega, §22.10).
+
+### 22.1 Inspección y contrato de datos
+
+| Responsabilidad | Componente actual |
+| --- | --- |
+| Habitación, cámara, coordenadas | `SceneStage` (`fitCover`, `toScreen`), `scene/sceneMap.js`, `CozyRoom.jsx` |
+| Temporizador y su indicador | `hooks/useReadingTimer` (estado único), `PomodoroTray.jsx`, `RoomLiveData.jsx · TeaMist` |
+| Vegetación y ambiente | Ilustración única (`cozy-book-room.jpg`, sin capas de hojas), `AmbientLife.jsx`, `TimeOfDayLayers.jsx` |
+| Librería, filtros, tarjetas | `shelf/ShelfView.jsx`, `BookItem.jsx`, selectores nuevos `domain/library.js` |
+| Calendario, selector, registro | `panels/ReadingCalendar.jsx`, `ReadingEntryForm.jsx`, `domain/bookPicker.js`, `domain/reading.js` |
+| Diario, reseña, puntuación | `book/BookDetailModal.jsx`, `book/Rating.jsx`, nuevo `panels/ReviewSheet.jsx` (mismos campos) |
+| Persistencia y nube | `state/useLibrary.jsx` (`localStorage`, `persistNow`), `state/cloudSync.jsx` + `services/cloud.js` |
+
+- **Datos:** la biblioteca entera vive en el dispositivo y se copia a Supabase como UN documento por usuario
+  (tabla `libraries`, RLS por usuario). No hay consultas paginadas: filtros y búsqueda recorren siempre todos
+  los libros guardados. Progreso, sesión y finalización se escriben juntos en una sola escritura del estado
+  (`persistNow`), así que no pueden quedar a medias; la nube sube después el documento completo.
+- **Biblioteca completa** (`libraryBooks`): todo lo guardado (lo borrado sale del array). **Lecturas activas**
+  (`activeReadings`): solo `status: 'reading'`. Pendientes (`want`) y terminados (`read`). Sin estados nuevos.
+
+### 22.2 Indicador del temporizador junto al borde · VERIFICADO
+
+- Causa del recorte: `TeaMist` se pintaba DENTRO del lienzo escalado, centrado con `translate(-50%, -100%)` en
+  el vaso (x ≈ 856 de 941) y sin límites: el `overflow: clip` del panel cortaba la mitad derecha.
+- Ahora es una anotación en `.room-annotations` (capa del panel, `pointer-events: none`), con el ancla del vaso
+  proyectada una vez con la cámara (`toScreen`) y `placeAnnotation`: x = clamp(ancla − ancho/2,
+  izquierda, ancho − derecha − ancho); y = clamp(ancla − alto − 12, arriba, alto − abajo − alto), con
+  márgenes `max(12px, safe-area)`. `ResizeObserver` (fuentes, cifras) y el ciclo de encuadre de `SceneStage`
+  (tamaño, orientación, cámara); ningún bucle nuevo. Solo lee el estado del temporizador único.
+- JetBrains Mono `clamp(18px, 4.8vw, 28px)`, cifras tabulares, `#FAF5E8` con sombra
+  `0 1px 3px rgba(44,30,20,.72)`; subtítulo Lora 12 px / 1,3. Sin panel, fondo ni desenfoque.
+- Si el vaso queda totalmente fuera del encuadre, no se pinta (la bandeja sigue funcionando).
+
+### 22.3 Brisa por la ventana · VERIFICADO
+
+- La vegetación está pintada en la ilustración: no se recorta ni se mueve. Se AÑADEN 4 grupos de hojas SVG
+  junto a la hiedra del arco (`BreezeLeaves`), cada uno sujeto por su tallo. Es vegetación adicional; las hojas
+  originales no se han separado.
+- Colores medidos en la imagen (sombra `#483f22`, hoja `#596037`, luz `#949671`) y ajustados con la base
+  propuesta: **`#4A4A2C`, `#626A3F`, `#9C9C6C`**. Hojas ≈ 16 × 20 px de la imagen, como la hiedra pintada.
+- Ráfaga de 14 s: sube, oscila y vuelve; reposo ≈ 65 %. Máx. 3 px / 1,5 px y −1,2° … 1,6°, sin escala;
+  desfases 0 / −2,4 / −5,1 / −7,3 s; `ease-in-out`. Solo `transform` (y `will-change` en esos 4 grupos), bajo
+  las capas de luz, sin filtros ni mezclas. En pausa fuera de la habitación, con un panel o con la pestaña
+  oculta; estática con movimiento reducido. Sin canvas, vídeo ni estado React por fotograma.
+
+### 22.4 Librería: toda la biblioteca · VERIFICADO
+
+- Ya partía de `state.books`; ahora con selectores explícitos y, al abrir desde la habitación, «Todas» y sin
+  búsqueda previa. Las tres baldas (leyendo, pendientes, terminados) juntas; las cintas y las placas filtran.
+- En pantallas ≤ 1100 px el muro de recuerdos (z 9) tapaba las cintas de filtro (solo asomaba la punta): el
+  copete pasa por encima. Los botones Escaparate / Lomos tienen nombre accesible también en móvil.
+- Ediciones físicas y mini-insignias de saga sin cambios; ningún libro cambia de estado.
+
+### 22.5 Buscador de la biblioteca personal · VERIFICADO
+
+- Ficha de papel `#FAF5E8` junto a los controles (borde `rgba(110,78,46,.28)`, radio 8, sombra suave), Lora,
+  input de 16 px, 44 px de alto, foco `2px solid #C59B27`. «Buscar en mi biblioteca», «Título o autor…»,
+  «Limpiar búsqueda».
+- `filterLibrary`: título, autor e ISBN guardado; sin mayúsculas, tildes ni espacios sobrantes; filtro y búsqueda
+  a la vez sobre toda la biblioteca (selector memoizado: los datos están cargados). Nada de Google Books ni Open
+  Library, sin autoenfoque ni `scrollIntoView` al escribir; el input no se desmonta y se conserva al alternar
+  vistas.
+- Estados vacíos: «Tu estantería espera su primera historia», «Todavía no tienes libros en este apartado», «No
+  encontramos ese libro en tu biblioteca»; ninguno mientras la cuenta trae la biblioteca («Abriendo tu
+  biblioteca…»).
+
+### 22.6 Calendario: solo lecturas activas para registrar · VERIFICADO
+
+- Sustituye «Otros…» (§17.2): el desplegable de un registro NUEVO muestra solo lecturas activas. Sin ninguna:
+  «No tienes ninguna lectura en curso», registro deshabilitado y «Elegir un libro de mi biblioteca» (abre la
+  librería; no cambia estados).
+- El historial del calendario conserva los libros terminados; editar un registro conserva su libro original.
+- Si el libro elegido deja de estar activo, la selección pasa a otra lectura activa después de guardar, nunca
+  durante el guardado. Claves estables, sin remontar ni reenfocar (correcciones de iPhone intactas).
+
+### 22.7 Terminar desde el calendario abre la reseña · VERIFICADO
+
+- `completesReading(book, position)`: transición real de < 100 % a 100 %. Con páginas, la página alcanzada igual
+  al total válido (419/420 no termina); sin páginas, el porcentaje exacto 100 (sin inventar total).
+- Orden: validar → guardar progreso, sesión y estado en una sola escritura → confirmar el guardado → abrir la
+  reseña de ese libro (`onComplete`, solo desde el calendario) → el selector retira el libro.
+- No es un efecto sobre el estado global: nunca se abre al recargar, sincronizar o cambiar de dispositivo (una
+  reseña restaurada del historial vuelve al calendario). Id estable por operación: el doble toque no duplica
+  sesión, finalización ni sellos. No se conceden recompensas, sellos ni pity al abrir, guardar o cerrar la reseña.
+- Si falla el guardado: se conserva lo escrito, se muestra el error, el registro se deshace en memoria
+  (`revertLog`: el libro no queda terminado) y no se abre la reseña; reintentar usa el mismo id. No hay cola
+  offline persistente (la nube sincroniza el documento cuando puede).
+
+### 22.8 Reseña sin bloquear el calendario · VERIFICADO
+
+- `ReviewSheet` edita los mismos campos de la ficha (`review`, `rating`; una reseña por libro, sin relecturas) con
+  el mismo `RatingInput`. Portada y título, «Una historia terminada», puntuación, reseña, «Guardar reseña» y
+  «Ahora no» (cierra y el libro sigue terminado). Privada: no hay opción de publicar.
+- Puntuación en cuartos (3,25 / 3,5 / 3,75). **Sin valorar es `null` explícito** (antes `0`, que se migra al
+  cargar); el cero nunca es una nota.
+- Un único panel: sustituye al calendario y, al cerrar, vuelve al mismo día con el foco en el panel. Cuerpo
+  desplazable y acciones fijas (`100dvh`), también con el teclado abierto. Papel `#FAF5E8`, tinta `#2C1E14`,
+  título Cormorant, cuerpo Lora, nota Caveat, estrellas de latón `#C59B27`.
+
+### 22.9 Archivos
+
+`domain/library.js` (nuevo), `domain/bookPicker.js`, `domain/books.js`, `scene/guidePlacement.js`,
+`state/useLibrary.jsx`, `components/room/RoomLiveData.jsx`, `AmbientLife.jsx`, `CozyRoom.jsx`,
+`components/shelf/ShelfView.jsx`, `components/panels/ReadingEntryForm.jsx`, `ReadingCalendar.jsx`,
+`LaptopPanel.jsx`, `ReviewSheet.jsx` (nuevo), `components/book/Rating.jsx`, `App.jsx`, `styles/room.css`,
+`styles/shelf.css`, `styles/panels.css`, `styles/typography.css`; pruebas `domain/__tests__/v128.test.js`,
+`v123.test.js`, `reading.test.js`, `e2e/v128.spec.js`, `e2e/v123.spec.js`.
+
+### 22.10 Verificación
+
+- Vitest (`v128.test.js`): biblioteca con todos los estados; búsqueda con filtro, tildes e ISBN; estados vacíos;
+  selector de nuevos registros solo con lecturas activas; historial con terminados; 419/420 no termina y 420/420
+  sí; ebook de 99 a 100 sin páginas ficticias; doble toque sin duplicar sesión, finalización ni sellos; fallo →
+  `revertLog`; hidratar no crea orden de reseña; 3,75 se conserva al guardar y cargar; sin valorar = null;
+  márgenes del indicador.
+- Playwright (`e2e/v128.spec.js`, 9 proyectos): librería completa en Escaparate y Lomos con búsqueda conservada,
+  filtro + búsqueda y estados vacíos; calendario 419 → sin reseña, 420 con doble toque → una reseña, un panel,
+  un registro; «Ahora no» → mismo día, libro terminado, fuera del selector y en el historial; recargar → sin
+  reseña; 3,75 guardado sin cambiar sellos; fallo de almacenamiento → error, sin reseña ni finalización,
+  reintento → reseña; indicador del temporizador dentro del área visible, JetBrains Mono, fuera del lienzo y
+  estable tras mover la cámara; brisa con 3–5 grupos, en pausa con panel u otra habitación y quieta con
+  movimiento reducido. `e2e/v123.spec.js`: selector sin «Otros…» y sin lecturas activas.
+- Entornos: Chromium y WebKit de Playwright en Windows (320 no es un proyecto de la suite; se comprueba 360,
+  390, 430, 844 × 390 y 1440). No hay Safari de iPhone real ni teclado virtual real: no se declaran.

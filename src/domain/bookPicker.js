@@ -1,9 +1,5 @@
-// Selector de libro del registro de lectura (SPEC §17.2): primero las lecturas activas en un orden estable y,
-// como acción secundaria, «Otros…» para buscar cualquier libro de la biblioteca. Sin React ni red.
-
-/** Valor de la opción «Otros…»: una acción de interfaz, nunca un `bookId`. */
-export const OTHER = '__other__';
-export const PAGE = 8;
+// Selector de libro del registro de lectura (SPEC §17.2 y §22.6): SOLO las lecturas activas, en un orden
+// estable. 1.28.0: sin «Otros…» (la biblioteca completa se busca en la librería). Sin React ni red.
 
 /** Texto comparable: sin mayúsculas, acentos ni espacios repetidos. */
 export const normalize = (text) =>
@@ -41,16 +37,5 @@ export function choiceLabels(list) {
   return Object.fromEntries(list.map((b) => [b.id, counts.get(normalize(b.title)) > 1 ? `${b.title} — ${b.author}` : b.title]));
 }
 
-/** Búsqueda local por título y autor; consulta vacía → `null` (se pide escribir, no se lista la biblioteca). */
-export function searchLibrary(books, query) {
-  const q = normalize(query);
-  if (!q) return null;
-  const terms = q.split(' ');
-  return books.filter((b) => {
-    const hay = `${normalize(b.title)} ${normalize(b.author)}`;
-    return terms.every((t) => hay.includes(t));
-  });
-}
-
-/** ¿Es un ID de libro guardable? (nunca la acción «Otros…» ni un vacío) */
-export const isBookId = (books, id) => Boolean(id) && id !== OTHER && books.some((b) => b.id === id);
+/** ¿Es un ID de libro guardable? (nunca un vacío ni un id que no esté en la biblioteca) */
+export const isBookId = (books, id) => Boolean(id) && books.some((b) => b.id === id);

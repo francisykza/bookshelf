@@ -12,7 +12,7 @@ import { visibleFraction } from '../../scene/stageFit';
 import { useLibrary } from '../../state/useLibrary';
 import { OnboardingGuide } from '../onboarding/OnboardingGuide';
 import { useToday } from '../../hooks/useToday';
-import { AmbientLife } from './AmbientLife';
+import { AmbientLife, BreezeLeaves } from './AmbientLife';
 import { BaySailboats } from './BaySailboats';
 import { LaptopScreen, OpenBookPages } from './RoomSurfaces';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
@@ -160,6 +160,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           {guide?.visible && inRoom && <OnboardingGuide guide={guide} fit={fit} reducedMotion={reducedMotion} />}
           {/* Etiqueta informativa: interfaz en píxeles de pantalla, nunca dentro del lienzo escalado (ni durante
               el cambio de habitación, ni con la guía o un panel abiertos) */}
+          {/* Anotaciones de la habitación en píxeles de pantalla (capa sin eventos): el temporizador sobre el vaso */}
+          <div className="room-annotations">{inRoom && <TeaMist timer={timer} fit={fit} />}</div>
           {live && !guide?.visible && <RoomLabel label={label} fit={fit} />}
           <OffscreenReporter fit={fit} actionsRef={actionsRef} onChange={onOffscreen} />
         </>
@@ -173,6 +175,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         {/* 5 · veleros de la bahía, recortados por la máscara del agua (detrás de la luz del día) */}
         <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} />
         <AmbientLife active={live} reducedMotion={reducedMotion} candleOn={settings.candleOn} timeOfDay={settings.timeOfDay} />
+        <BreezeLeaves active={live} reducedMotion={reducedMotion} />
 
         {/* 8 · superficies integradas en la ilustración (lomos, pantalla y su primer plano, páginas del libro):
             debajo de la luz y la atmósfera, que las tiñen igual que al resto de la habitación (SPEC §21.1) */}
@@ -190,7 +193,6 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         <div className="room-objects">
           <RoomFigureShelves figures={progress.figures} onOpenVault={onOpenVault} onHover={onHover} />
           <TeaDrain level={teaLevel} />
-          <TeaMist timer={timer} />
           <DrinkSteam drink={settings.drink} active={timer.running} />
           <SoundWaves on={settings.sound && live} />
         </div>

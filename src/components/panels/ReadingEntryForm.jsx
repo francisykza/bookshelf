@@ -2,83 +2,22 @@
 // alcanzada o porcentaje alcanzado— con una sola activa, vista previa de posición y avance por separado y
 // guardado idempotente (el mismo id hasta que termina). Lo usan el calendario, Sesiones, la ficha de los
 // libros por porcentaje y el temporizador: no hay otra implementación del registro.
-// 1.23.0 (SPEC §17.2–17.3): el selector ofrece solo las lecturas activas y «Otros…» abre un buscador de la
-// biblioteca dentro del mismo formulario. El borrador es estado local de esta instancia (una por día editado):
-// no lo tocan el reloj del temporizador ni las sincronizaciones. Sin autoFocus ni desplazamientos forzados.
+// 1.28.0 (SPEC §22.6–22.7): el selector de un registro NUEVO ofrece solo las lecturas activas (sin «Otros…»);
+// sin ninguna, se dice y se ofrece abrir la librería, sin cambiar el estado de ningún libro. Si el guardado
+// termina el libro (de < 100 % a 100 %), avisa con `onComplete` solo tras confirmar el guardado; si falla, el
+// registro se deshace en memoria y se conserva lo escrito. El borrador es estado local de esta instancia (una por
+// día editado): no lo tocan el reloj del temporizador ni las sincronizaciones. Sin autoFocus ni desplazamientos.
 import { useEffect, useId, useRef, useState } from 'react';
 import { playUiSound } from '../../audio/uiSounds';
-import { OTHER, PAGE, choiceLabels, initialReadingOrder, readingChoices, searchLibrary } from '../../domain/bookPicker';
-import { STATUS, formatPercent, newId, trackUnit } from '../../domain/books';
+import { choiceLabels, initialReadingOrder, readingChoices } from '../../domain/bookPicker';
+import { completesReading, formatPercent, newId, trackUnit } from '../../domain/books';
 import { parseDay } from '../../domain/dates';
 import { MODES, buildEntry, defaultMode, describeEntry, modesFor } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
-import { Cover } from '../shelf/BookItem';
 
 const fmtDate = (key) => parseDay(key).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
 
-/**
- * Buscador de «Otros…»: solo la biblioteca del usuario (sin Google Books ni Open Library), por título y autor.
- */
-function LibrarySearch({ books, onPick, onCancel }) {
-  const uid = useId();
-  const [query, setQuery] = useState('');
-  const [limit, setLimit] = useState(PAGE);
-  const found = searchLibrary(books, query);
-  const shown = found ? found.slice(0, limit) : [];
-  const status = found === null ? 'Escribe el título o el autor.' : found.length ? `${found.length} ${found.length === 1 ? 'libro encontrado' : 'libros encontrados'}` : 'No hay libros que coincidan en tu biblioteca';
-  return (
-    <div className="book-search">
-      <label className="reading-form__field" htmlFor={`${uid}-q`}>
-        <span>Buscar en mi biblioteca</span>
-      </label>
-      <input
-        id={`${uid}-q`}
-        className="book-search__input"
-        type="search"
-        enterKeyHint="search"
-        autoComplete="off"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setLimit(PAGE);
-        }}
-      />
-      <p className="book-search__status" aria-live="polite">
-        {status}
-      </p>
-      {shown.length > 0 && (
-        <ul className="book-search__results">
-          {shown.map((b) => (
-            <li key={b.id}>
-              <button type="button" className="book-search__result" onClick={() => onPick(b.id)}>
-                <span className="book-search__cover" aria-hidden="true">
-                  <Cover book={b} />
-                </span>
-                <span className="book-search__text">
-                  <b>{b.title}</b>
-                  <span>{b.author}</span>
-                  <em>{STATUS[b.status] ?? b.status}</em>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="book-search__more">
-        {found && found.length > limit && (
-          <button type="button" className="link-btn" onClick={() => setLimit((n) => n + PAGE)}>
-            Mostrar más
-          </button>
-        )}
-        <button type="button" className="link-btn" onClick={onCancel}>
-          Volver
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDone, onCancel, keepOpen = false }) {
+export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDone, onCancel, keepOpen = false, onComplete, onOpenLibrary }) {
   const { state, actions } = useLibrary();
   const uid = useId();
   const log = state.progress.readingLog;
@@ -88,11 +27,9 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
   const labels = choiceLabels(choices);
   // Sin lecturas activas no se elige nada en silencio
   const [bookId, setBookId] = useState(() => fixedId ?? choices[0]?.id ?? '');
-  const [searching, setSearching] = useState(false);
   const [savedAt, setSavedAt] = useState(0);
   const book = state.books.find((b) => b.id === (fixedId ?? bookId));
   const missing = Boolean(bookId) && !book;
-  const pickedOther = !fixedId && book && !choices.some((b) => b.id === book.id);
   const [mode, setMode] = useState(() => (book ? defaultMode(book, log) : 'added'));
   // Un valor por modalidad: cambiar entre página y porcentaje no borra lo escrito en la otra
   const [texts, setTexts] = useState({});
@@ -126,13 +63,20 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
   const preview = draft?.entry ? describeEntry(draft.entry) : null;
   const unknownAdvance = draft?.entry && draft.entry.kind === 'read' && !(draft.entry.delta > 0);
 
+  // Si el libro elegido deja de estar activo (p. ej. se acaba de terminar), la selección pasa a otra lectura
+  // activa DESPUÉS de la operación en curso; nunca mientras se guarda
+  const stale = !fixedId && !saving && book && book.status !== 'reading';
+  const nextActive = choices[0]?.id ?? '';
+  useEffect(() => {
+    if (!stale) return;
+    setBookId(nextActive);
+    const next = state.books.find((b) => b.id === nextActive);
+    if (next) setMode(defaultMode(next, log));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stale, nextActive]);
+
   const switchBook = (id) => {
-    if (id === OTHER) {
-      setSearching(true);
-      return;
-    }
     playUiSound('select');
-    setSearching(false);
     setBookId(id);
     const next = state.books.find((b) => b.id === id);
     if (next) setMode(defaultMode(next, log));
@@ -152,12 +96,18 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
     lock.current = true;
     setSaving(true);
     setFailure('');
+    // Transición real a terminado: antes por debajo del total (o del 100 %) y ahora en él (419/420 no termina)
+    const before = book;
+    const figuresBefore = state.progress.figures;
+    const completes = completesReading(before, draft.position);
     actions.logReading(draft.entry, draft.position);
-    // Tras confirmar el estado, se escribe al momento; si falla, el formulario conserva sus datos
+    // Progreso, sesión y estado se guardan juntos en una sola escritura; si falla, se deshace en memoria (no
+    // se muestra como terminada) y el formulario conserva sus datos para reintentar con el mismo id
     setTimeout(() => {
       lock.current = false;
       setSaving(false);
       if (!actions.persistNow()) {
+        actions.revertLog(draft.entry.id, before, figuresBefore);
         setFailure('No se ha podido guardar en este dispositivo. Tus datos siguen aquí: vuelve a intentarlo.');
         return;
       }
@@ -171,31 +121,17 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
       setConfirmCorrection(false);
       if (!keepOpen) onDone?.(saved);
       else onDone?.(saved, { keepOpen: true });
+      // Solo tras el guardado confirmado y una vez por operación (el id del intento ya ha cambiado)
+      if (completes) onComplete?.(before.id, saved);
     }, 0);
   };
 
   const picker = !fixedId && (
     <div className="reading-form__picker">
-      {searching ? (
-        <LibrarySearch books={state.books} onPick={switchBook} onCancel={() => setSearching(false)} />
-      ) : pickedOther ? (
-        <div className="reading-form__chosen" aria-live="polite">
-          <span className="book-search__cover" aria-hidden="true">
-            <Cover book={book} />
-          </span>
-          <span className="book-search__text">
-            <b>{book.title}</b>
-            <span>{book.author}</span>
-            <em>{STATUS[book.status] ?? book.status}</em>
-          </span>
-          <button type="button" className="link-btn" onClick={() => setSearching(true)}>
-            Cambiar libro
-          </button>
-        </div>
-      ) : (
+      {choices.length ? (
         <label className="reading-form__field">
           <span>Libro</span>
-          <select value={book ? book.id : ''} onChange={(e) => switchBook(e.target.value)}>
+          <select value={book && choices.some((c) => c.id === book.id) ? book.id : ''} onChange={(e) => switchBook(e.target.value)} disabled={saving}>
             {!book && (
               <option value="" disabled>
                 Selecciona un libro
@@ -206,18 +142,34 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
                 {labels[b.id]}
               </option>
             ))}
-            <option value={OTHER}>Otros…</option>
           </select>
         </label>
+      ) : (
+        <div className="reading-form__none">
+          <p>No tienes ninguna lectura en curso</p>
+          {onOpenLibrary && (
+            <button type="button" className="link-btn" onClick={onOpenLibrary}>
+              Elegir un libro de mi biblioteca
+            </button>
+          )}
+        </div>
       )}
-      {missing && !searching && <p className="reading-form__error">Ese libro ya no está en tu biblioteca: elige otro.</p>}
+      {missing && <p className="reading-form__error">Ese libro ya no está en tu biblioteca: elige otro.</p>}
     </div>
   );
 
-  if (!book) {
+  if (!book || (!fixedId && book.status !== 'reading')) {
     return (
       <form className="reading-form" onSubmit={(e) => e.preventDefault()} noValidate>
         {picker || <p className="cal-pop__empty">No hay libro para registrar.</p>}
+        {/* Sin lectura activa el registro queda deshabilitado (no se elige nada en silencio) */}
+        {!fixedId && (
+          <div className="reading-form__actions">
+            <button type="submit" className="stamp-btn reading-form__save" disabled>
+              Guardar lectura
+            </button>
+          </div>
+        )}
       </form>
     );
   }
@@ -234,7 +186,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
   return (
     <form className="reading-form" onSubmit={submit} noValidate>
       {picker}
-      {!searching && modes.length > 1 && (
+      {modes.length > 1 && (
         <div className="reading-form__modes" role="radiogroup" aria-label="Cómo quieres registrarlo">
           {modes.map((m) => (
             <button
@@ -254,7 +206,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
           ))}
         </div>
       )}
-      <div className="reading-form__field" hidden={searching}>
+      <div className="reading-form__field">
         <label htmlFor={fieldId}>{modes.length > 1 ? label : MODES[activeMode].label}</label>
         <span className="reading-form__input">
           <input
@@ -283,13 +235,13 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
         {conversion && !error && <small className="reading-form__help reading-form__num">{conversion}</small>}
       </div>
 
-      {!preview && !searching && (
+      {!preview && (
         <div className="reading-form__preview reading-form__preview--empty">
           <span className="reading-form__preview-label">Se guardará · {fmtDate(date)}</span>
           <span>Escribe un valor para ver cómo quedará.</span>
         </div>
       )}
-      {preview && !searching && (
+      {preview && (
         <div className="reading-form__preview" aria-live="polite">
           <span className="reading-form__preview-label">Se guardará · {fmtDate(date)}</span>
           {preview.position && (
@@ -323,7 +275,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
           {failure}
         </p>
       )}
-      <div className="reading-form__actions" hidden={searching}>
+      <div className="reading-form__actions">
         <button type="submit" className="stamp-btn reading-form__save" disabled={saving || !!draft?.error}>
           {saving ? 'Guardando…' : confirmCorrection ? 'Guardar corrección' : 'Guardar lectura'}
         </button>
