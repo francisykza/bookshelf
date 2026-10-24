@@ -7,12 +7,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { rankOf } from '../../domain/figures';
-import { sprayedEdge, spineHeight, spineWidth } from '../../domain/books';
+import { EDITIONS, isDevice, sprayedEdge } from '../../domain/books';
 import { projectPoint, rectToQuad } from '../../scene/homography';
 import { ROOM_SHELVES, SCENE_H, SCENE_SRC, SCENE_W, SHELF_LIPS, pts } from '../../scene/sceneMap';
 import { useCoverColor } from '../../hooks/useCoverColor';
 import { useSvgIds } from '../../hooks/useSvgIds';
-import { calculateBookPhysics } from '../../utils/vibeEngine';
+import { calculateBookPhysics, stableHash } from '../../utils/vibeEngine';
 import { FigureArt, figureAspect } from '../figures/FigureArt';
 import { canUnbox, shownDisplay } from '../figures/figureDisplay';
 import { useFigureCatalog } from '../figures/figureCatalog';
@@ -23,7 +23,25 @@ const shelfOf = (id) => ROOM_SHELVES.find((s) => s.id === id);
 
 const BOOK_SHELVES = ['cabinet', 'cabinet2'];
 
-/** Lomos de las dos baldas bajas: primero lo que estás leyendo, luego tus favoritos; lo que no cabe, a la siguiente. */
+/**
+ * Escala física común de las dos baldas (SPEC §20.3): el hueco mide ≈ 28 cm de alto, así que 1 cm son
+ * 130 / 28 px de la ilustración en las dos. El tamaño de cada libro sale del motor (`calculateBookPhysics`:
+ * grosor relativo y variación de altura) y de su edición (alto y tapas); nunca se encoge para que quepan más.
+ */
+const PX_PER_CM = 130 / 28;
+function spineSize(book, shelfHeight) {
+  const physics = calculateBookPhysics(book);
+  const edition = EDITIONS[book.editionType] ?? EDITIONS.paperback;
+  const cm = isDevice(book) ? (book.editionType === 'kindle' ? 1 : 2.6) : 0.5 + 2.4 * physics.thickness + edition.cm;
+  const heightCm = 21.5 * edition.height * (isDevice(book) ? 1 : physics.height);
+  return { w: Math.round(cm * PX_PER_CM * 10) / 10, h: Math.min(shelfHeight - 8, Math.round(heightCm * PX_PER_CM)), physics };
+}
+
+/**
+ * Lomos de las dos baldas bajas: primero lo que estás leyendo, luego tus favoritos; lo que no cabe pasa a la
+ * siguiente y, si tampoco, se queda fuera (subconjunto estable: el mismo orden siempre; la librería completa
+ * sigue a un toque). No se inventan libros para rellenar huecos.
+ */
 function spinesFor(books, currentId) {
   const reading = books.filter((b) => b.status === 'reading').sort((a, b) => (a.id === currentId ? -1 : b.id === currentId ? 1 : 0));
   const favorites = books.filter((b) => b.favorite && b.status !== 'reading');
@@ -33,10 +51,10 @@ function spinesFor(books, currentId) {
     const items = [];
     let used = 3;
     while (queue.length) {
-      const w = spineWidth(queue[0].pageCount, 0.026, 7);
-      if (used + w > shelf.width - 2) break;
-      items.push({ book: queue.shift(), w, x: used });
-      used += w + GAP;
+      const size = spineSize(queue[0], shelf.height);
+      if (used + size.w > shelf.width - 2) break;
+      items.push({ book: queue.shift(), ...size, x: used });
+      used += size.w + GAP;
     }
     return { shelf, items, used };
   });
@@ -57,15 +75,28 @@ const PEEK_MS = 2600;
 const TITLE_MIN_W = 11;
 const TITLE_MIN_H = 48;
 
+/** Diseños de lomo deterministas (representaciones de la app, no los lomos oficiales de la edición). */
+const VARIANTS = ['plain', 'band', 'emblem', 'label'];
+
+/** Tinta clara u oscura según la luminancia del color base del lomo. */
+function inkFor(hex) {
+  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex ?? '');
+  if (!m) return 'light';
+  const [r, g, b] = m.slice(1).map((v) => parseInt(v, 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? 'dark' : 'light';
+}
+
 /**
- * Un lomo físico (SPEC §19.4): su color (el de la portada cuando se puede, si no el determinista), el material de
- * su edición, canto oscuro a un lado y luz estrecha al otro, textura mate y dorado solo en cuero y tela. Título
- * vertical cuando cabe legible a la escala actual.
+ * Un lomo físico (SPEC §20.3): cara principal con iluminación transversal (lomo redondeado), canto lateral
+ * oscuro, sombra de contacto, material del motor y un diseño determinista entre cuatro. Dorado solo con
+ * `goldFoil`, nervios solo en cuero. Título real (y autoría si hay sitio) cuando se lee a la escala actual; en
+ * lomos finos, composición simplificada.
  */
-function RoomSpine({ book, x, w, h, index, lean, peek, scale, onOpenShelf, onHover, label }) {
+function RoomSpine({ book, physics, x, w, h, index, lean, peek, scale, onOpenShelf, onHover, label }) {
   const [color, observe] = useCoverColor(book);
-  const physics = calculateBookPhysics(book);
+  const variant = book.editionType === 'leatherbound' ? 'nerves' : VARIANTS[stableHash(`spine:${book.id ?? book.title}`) % VARIANTS.length];
   const showTitle = w * scale >= TITLE_MIN_W && h * scale >= TITLE_MIN_H;
+  const showAuthor = showTitle && w * scale >= 20 && Boolean(book.author);
   return (
     <button
       ref={observe}
@@ -74,6 +105,8 @@ function RoomSpine({ book, x, w, h, index, lean, peek, scale, onOpenShelf, onHov
       data-status={book.status}
       data-edition={book.editionType}
       data-material={physics.material}
+      data-variant={variant}
+      data-ink={inkFor(color)}
       data-foil={physics.goldFoil || undefined}
       data-edge={sprayedEdge(book) || undefined}
       data-peek={peek}
@@ -91,8 +124,10 @@ function RoomSpine({ book, x, w, h, index, lean, peek, scale, onOpenShelf, onHov
       onFocus={() => onHover(label)}
       onBlur={() => onHover(null)}
     >
-      {physics.goldFoil && <span className="room-spine__bands" />}
-      {book.editionType === 'leatherbound' && (
+      {variant === 'band' && <span className="room-spine__band" />}
+      {variant === 'emblem' && <span className="room-spine__emblem" />}
+      {variant === 'label' && <span className="room-spine__label" />}
+      {variant === 'nerves' && (
         <span className="room-spine__nerves" aria-hidden="true">
           <i />
           <i />
@@ -103,6 +138,7 @@ function RoomSpine({ book, x, w, h, index, lean, peek, scale, onOpenShelf, onHov
       {showTitle && (
         <span className="room-spine__title" aria-hidden="true">
           {book.title}
+          {showAuthor && <small>{book.author}</small>}
         </span>
       )}
       {book.status === 'reading' && <span className="room-spine__ribbon" />}
@@ -150,13 +186,12 @@ export function RoomShelfBooks({ books, currentId, onOpenShelf, onHover, awake =
       {rows.map(({ shelf, items, used }) =>
         items.length ? (
           <div key={shelf.id} className="room-shelf" data-shelf={shelf.id} style={{ width: shelf.width, height: shelf.height, transform: rectToQuad(shelf.width, shelf.height, shelf.quad) }}>
-            {items.map(({ book, w, x }, index) => {
-              const h = Math.min(shelf.height - 4, shelf.height * 0.86 * spineHeight(book));
+            {items.map(({ book, physics, w, h, x }, index) => {
               const anchor = projectPoint(shelf.width, shelf.height, shelf.quad, x + w / 2, shelf.height - h);
               const label = { id: `spine-${book.id}`, x: anchor.x, y: anchor.y - 6, title: book.title, text: 'Toca para ver tu librería', meta: 'Mi librería de roble' };
               // Solo el último de la fila se apoya inclinado, y solo si le sobra sitio a la derecha (sin cruzarse)
               const lean = index === items.length - 1 && shelf.width - used > 8;
-              return <RoomSpine key={book.id} book={book} x={x} w={w} h={h} index={index} lean={lean} peek={peek === book.id} scale={scale} onOpenShelf={onOpenShelf} onHover={onHover} label={label} />;
+              return <RoomSpine key={book.id} book={book} physics={physics} x={x} w={w} h={h} index={index} lean={lean} peek={peek === book.id} scale={scale} onOpenShelf={onOpenShelf} onHover={onHover} label={label} />;
             })}
             <span className="room-shelf__shade" aria-hidden="true" />
           </div>

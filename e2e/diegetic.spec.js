@@ -64,7 +64,7 @@ test('calendario encendido: mes, lunes primero, hoy, actividad real, dentro del 
   await expect(page.locator('.lid-note')).toHaveCount(0);
   await expect(page.locator('.laptop-screen')).toHaveCount(1);
   const r = await page.evaluate(async () => {
-    const { LAPTOP_DISPLAY } = await import('/src/scene/sceneMap.js');
+    const { LAPTOP_SCREEN } = await import('/src/scene/sceneMap.js');
     const { isActive } = await import('/src/domain/reading.js');
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -84,12 +84,12 @@ test('calendario encendido: mes, lunes primero, hoy, actividad real, dentro del 
     const k = +stage.dataset.scale;
     const ox = +stage.dataset.offsetX;
     const oy = +stage.dataset.offsetY;
-    const b = document.querySelector('.laptop-screen__glass').getBoundingClientRect();
-    const xs = LAPTOP_DISPLAY.map((p) => ox + p[0] * k);
-    const ys = LAPTOP_DISPLAY.map((p) => oy + p[1] * k);
+    const b = document.querySelector('.laptop-screen__app').getBoundingClientRect();
+    const xs = LAPTOP_SCREEN.map((p) => ox + p[0] * k);
+    const ys = LAPTOP_SCREEN.map((p) => oy + p[1] * k);
     const quad = { l: Math.min(...xs), t: Math.min(...ys), r: Math.max(...xs), b: Math.max(...ys) };
     return {
-      monthText: document.querySelector('.laptop-screen__month').textContent,
+      monthText: document.querySelector('.laptop-screen__month-name').textContent,
       monthExpected: month.charAt(0).toUpperCase() + month.slice(1),
       wd,
       blanks,
@@ -123,10 +123,13 @@ test('el calendario se actualiza al registrar lectura y tocar la pantalla abre C
     st.progress.readingLog = st.progress.readingLog.filter((e) => e.date !== today);
   });
   await expect(page.locator('.laptop-screen__day[data-today]')).not.toHaveAttribute('data-read');
+  await expect(page.locator('.laptop-screen__empty')).toHaveText('Tu próxima página te espera');
   await page.locator('.hotspot[data-id="laptop"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.window__title')).toContainText('Calendario');
-  await page.locator('.cal__cell[data-today="true"]').click();
+  // Desde la pantalla del portátil, el día de hoy llega ya seleccionado
+  await expect(page.locator('.cal-pop')).toBeVisible();
+  if (!(await page.locator('.cal-pop').count())) await page.locator('.cal__cell[data-today="true"]').click();
   const form = page.locator('.cal-pop .reading-form');
   await form.getByRole('radio', { name: 'He leído' }).evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await form.getByRole('radio', { name: 'He leído' }).click();
@@ -140,6 +143,47 @@ test('el calendario se actualiza al registrar lectura y tocar la pantalla abre C
   await expect(form.locator('.reading-form__saved')).toHaveText('✓ Guardado');
   await page.keyboard.press('Escape');
   await expect(page.locator('.laptop-screen__day[data-today]')).toHaveAttribute('data-read');
+  // Lo leído hoy pasa a ser el dato principal de la pantalla
+  await expect(page.locator('.laptop-screen__figure')).toHaveText(/^6\s+páginas leídas$/);
+  await expect(page.locator('.laptop-screen__empty')).toHaveCount(0);
+});
+
+test('pantalla: varias lecturas hoy muestran el libro principal y «+N libros»; nunca currentPage', async ({ page }) => {
+  await load(page, (st) => {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const [a, b] = st.books.filter((x) => x.pageCount);
+    st.progress.readingLog = st.progress.readingLog.filter((e) => e.date !== today);
+    const base = { date: today, kind: 'read', unit: 'pages', active: true, source: 'form' };
+    st.progress.readingLog.push({ ...base, id: 'qa1', bookId: a.id, pages: 30, from: 10, to: 40, createdAt: `${today}T09:00:00.000Z` });
+    st.progress.readingLog.push({ ...base, id: 'qa2', bookId: b.id, pages: 12, from: 0, to: 12, createdAt: `${today}T10:00:00.000Z` });
+    window.__qaTop = a.title;
+  });
+  const top = await page.evaluate(() => {
+    const st = JSON.parse(localStorage.getItem('bookshelf:v1'));
+    const e = st.progress.readingLog.find((x) => x.id === 'qa1');
+    return st.books.find((b) => b.id === e.bookId).title;
+  });
+  await expect(page.locator('.laptop-screen__figure')).toHaveText(/^42\s+páginas leídas$/);
+  await expect(page.locator('.laptop-screen__book')).toContainText(top);
+  await expect(page.locator('.laptop-screen__book em')).toHaveText(/\+1 libro$/);
+});
+
+test('encuadre: la escena cubre todo el viewport (sin franja superior propia de la app)', async ({ page }) => {
+  await load(page);
+  const r = await page.evaluate(() => {
+    const vp = document.querySelector('.panorama-viewport').getBoundingClientRect();
+    const base = document.querySelector('[data-panel="MAIN_ROOM"] .scene-base').getBoundingClientRect();
+    return { vpTop: vp.top, vpH: vp.height, inner: innerHeight, baseTop: base.top, baseBottom: base.bottom, baseLeft: base.left, baseRight: base.right, w: innerWidth };
+  });
+  run.data.framing = r;
+  expect(r.vpTop).toBe(0);
+  expect(Math.round(r.vpH)).toBe(r.inner);
+  expect(r.baseTop).toBeLessThanOrEqual(0.5);
+  expect(r.baseBottom).toBeGreaterThanOrEqual(r.inner - 0.5);
+  expect(r.baseLeft).toBeLessThanOrEqual(0.5);
+  expect(r.baseRight).toBeGreaterThanOrEqual(r.w - 0.5);
 });
 
 test('el libro abierto muestra la lectura actual y cambia con ella', async ({ page }, info) => {
@@ -149,10 +193,27 @@ test('el libro abierto muestra la lectura actual y cambia con ella', async ({ pa
     return st.books.find((b) => b.id === st.settings.currentBookId);
   });
   await expect(page.locator('.open-pages__title')).toHaveText(current.title);
-  await expect(page.locator('.open-pages__kicker')).toHaveText('Tu lectura');
+  await expect(page.locator('.open-pages__kicker')).toHaveText('Entre tus páginas');
   await expect(page.locator('.open-pages__plate')).toHaveCount(1);
-  // La lámina nunca está vacía: portada generada de base aunque la real tarde en llegar
-  await expect(page.locator('.open-pages__plate .gen-cover').first()).toBeVisible();
+  // El título no se repite en la página izquierda y no hay instrucciones impresas
+  // (la portada generada lleva su título como ilustración de cubierta; lo que no debe haber es un pie de texto)
+  const leftText = await page.locator('.open-pages__page--left').evaluate((el) => [...el.children].filter((c) => !c.classList.contains('open-pages__plate')).map((c) => c.textContent).join(''));
+  expect(leftText).not.toContain(current.title);
+  await expect(page.locator('.open-pages')).not.toContainText('toca para');
+  // La lámina nunca está vacía (portada generada de base hasta que llega la real) y tiene presencia:
+  // 60–75 % del ancho útil de la página, ≤ 72 % del alto útil
+  const plate = await page.locator('.open-pages__plate').evaluate((el) => {
+    const page = el.closest('.open-pages__page');
+    const cs = getComputedStyle(page);
+    const uw = page.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const uh = page.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    return { w: el.offsetWidth / uw, h: el.offsetHeight / uh, painted: el.children.length > 0 };
+  });
+  run.data.plate = plate;
+  expect(plate.painted).toBe(true);
+  expect(plate.w).toBeGreaterThanOrEqual(0.6);
+  expect(plate.w).toBeLessThanOrEqual(0.76);
+  expect(plate.h).toBeLessThanOrEqual(0.73);
   const text = await page.locator('.open-pages__progress').textContent();
   expect(text).not.toMatch(/NaN|undefined/);
   // Las dos páginas son superficies separadas que no cruzan el pliegue (cada una con su quad)
@@ -185,8 +246,11 @@ test('libro: otra lectura, sin lectura, título largo, sin portada y sin total d
   const t = await page.locator('.open-pages__title').evaluate((el) => ({ clamped: el.scrollHeight > el.clientHeight + 1, overflowPage: el.closest('.open-pages__page').scrollWidth > el.closest('.open-pages__page').clientWidth + 1 }));
   expect(t.clamped).toBe(true);
   expect(t.overflowPage).toBe(false);
-  await expect(page.locator('.open-pages__plate .gen-cover')).toHaveCount(1);
+  // Sin portada: frontispicio tipográfico, sin lámina vacía
+  await expect(page.locator('.open-pages__plate')).toHaveCount(0);
+  await expect(page.locator('.open-pages__frontis')).toHaveCount(1);
   await expect(page.locator('.open-pages__progress')).toHaveText(/^37,5\s%\sleído$/);
+  await expect(page.locator('.open-pages__secondary')).toHaveCount(0);
   // Sin ninguna lectura en curso
   await page.addInitScript(
     setStored((st) => {
@@ -198,7 +262,7 @@ test('libro: otra lectura, sin lectura, título largo, sin portada y sin total d
   );
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await expect(page.locator('.open-pages__kicker')).toHaveText('Tu próxima historia empieza aquí');
+  await expect(page.locator('.open-pages__invite')).toHaveText('Tu próxima historia empieza aquí');
   await expect(page.locator('.open-pages__title')).toHaveCount(0);
 });
 
@@ -209,7 +273,7 @@ test('lomos: apoyados en la balda, sin cruzarse, deterministas, dorado no genera
       [...document.querySelectorAll('.room-shelf[data-shelf^="cabinet"]')].map((shelf) => {
         const H = shelf.offsetHeight;
         const W = shelf.offsetWidth;
-        const spines = [...shelf.querySelectorAll('.room-spine')].map((el) => ({ x: el.offsetLeft, w: el.offsetWidth, h: el.offsetHeight, bottom: el.offsetTop + el.offsetHeight, foil: el.hasAttribute('data-foil'), title: Boolean(el.querySelector('.room-spine__title')), material: el.dataset.material }));
+        const spines = [...shelf.querySelectorAll('.room-spine')].map((el) => ({ x: el.offsetLeft, w: el.offsetWidth, h: el.offsetHeight, bottom: el.offsetTop + el.offsetHeight, foil: el.hasAttribute('data-foil'), title: Boolean(el.querySelector('.room-spine__title')), material: el.dataset.material, variant: el.dataset.variant }));
         return { H, W, spines };
       }),
     );
@@ -224,6 +288,12 @@ test('lomos: apoyados en la balda, sin cruzarse, deterministas, dorado no genera
   }
   const all = a.flatMap((r) => r.spines);
   if (all.length >= 3) expect(all.filter((s) => s.foil).length).toBeLessThan(all.length);
+  // Volúmenes con cuerpo: grosores distintos (no barras iguales) y diseños que no se repiten en todos
+  if (all.length >= 4) {
+    expect(new Set(all.map((s) => s.w)).size).toBeGreaterThan(2);
+    expect(new Set(all.map((s) => s.variant)).size).toBeGreaterThan(1);
+    expect(Math.max(...all.map((s) => s.w))).toBeGreaterThanOrEqual(14);
+  }
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
   expect((await measure()).map((r) => r.spines.map((s) => s.h))).toEqual(a.map((r) => r.spines.map((s) => s.h)));

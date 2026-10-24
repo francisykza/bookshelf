@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook, progressLabel } from '../../domain/books';
 import { getDeterministicVibe } from '../../utils/vibeEngine';
-import { readingStreak, summarize } from '../../domain/reading';
+import { readingStreak } from '../../domain/reading';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { HOTSPOTS, ROOMS } from '../../scene/sceneMap';
 import { visibleFraction } from '../../scene/stageFit';
@@ -15,7 +15,7 @@ import { OnboardingGuide } from '../onboarding/OnboardingGuide';
 import { useToday } from '../../hooks/useToday';
 import { AmbientLife } from './AmbientLife';
 import { BaySailboats } from './BaySailboats';
-import { LaptopCalendar, OpenBookPages } from './RoomSurfaces';
+import { LaptopScreen, OpenBookPages } from './RoomSurfaces';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
 import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
@@ -110,12 +110,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
 
   const readThisYear = books.filter((b) => b.status === 'read' && b.finishedAt?.startsWith(String(new Date().getFullYear()))).length;
   const timerText = timer.running ? `${timer.phase === 'focus' ? 'Leyendo' : 'Descanso'} · ${formatTimer(timer.remaining)}` : null;
-  // Día local (cambia a medianoche y al volver a la app): lo usan la pantalla del portátil y el resumen de hoy
+  // Día local (cambia a medianoche y al volver a la app): lo usa la pantalla del portátil
   const today = useToday();
-  const todaySummary = summarize(
-    progress.readingLog.filter((e) => e.date === today),
-    books,
-  );
   const streak = readingStreak(progress.readingLog);
 
   const openBook = () => (reading ? onOpenBook(reading) : onOpenShelf());
@@ -187,7 +183,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           <RoomFigureShelves figures={progress.figures} onOpenVault={onOpenVault} onHover={onHover} />
           <TeaDrain level={teaLevel} />
           {/* Pantalla encendida con el calendario del mes y el libro abierto con tu lectura (los abren sus hotspots) */}
-          <LaptopCalendar log={progress.readingLog} today={today} streak={streak} todayText={todaySummary.text} />
+          <LaptopScreen log={progress.readingLog} books={books} today={today} streak={streak} />
           <OpenBookPages book={reading} />
           <TeaMist timer={timer} />
           <DrinkSteam drink={settings.drink} active={timer.running} />

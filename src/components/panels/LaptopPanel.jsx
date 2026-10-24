@@ -222,7 +222,7 @@ function Ring({ value, max }) {
   );
 }
 
-export function LaptopPanel({ onClose, initialTab = 'calendar', onOpenVault }) {
+export function LaptopPanel({ onClose, initialTab = 'calendar', selectToday = false, onOpenVault }) {
   const figCatalog = useFigureCatalog();
   const { state, actions } = useLibrary();
   const [tab, setTab] = useState(initialTab);
@@ -282,7 +282,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', onOpenVault }) {
                 </span>
               </header>
               <div className="window__body" role="tabpanel">
-            {tab === 'calendar' && <CalendarApp />}
+            {tab === 'calendar' && <CalendarApp selectToday={selectToday} />}
             {tab === 'sessions' && <SessionsApp />}
             {tab === 'stats' && (
               <>

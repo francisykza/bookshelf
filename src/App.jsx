@@ -184,7 +184,7 @@ function Sanctuary() {
             timer={timer}
             onOpenShelf={openShelf}
             onOpenBook={openBook}
-            onOpenLaptop={() => openPanel({ type: 'laptop' })}
+            onOpenLaptop={() => openPanel({ type: 'laptop', select: 'today' })}
             onOpenTray={() => openPanel({ type: 'tray' })}
             onToggleSound={toggleSound}
             onOpenAtlas={() => openPanel({ type: 'atlas' })}
@@ -216,7 +216,7 @@ function Sanctuary() {
       />
 
       {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} />}
-      {panel?.type === 'laptop' && <LaptopPanel onClose={close} initialTab={panel.tab} onOpenVault={() => {
+      {panel?.type === 'laptop' && <LaptopPanel onClose={close} initialTab={panel.tab} selectToday={panel.select === 'today'} onOpenVault={() => {
             playUiSound('atticOpen');
             openPanel({ type: 'vault' });
           }} />}

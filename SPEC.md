@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.25.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.26.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -1771,3 +1771,93 @@ se marca verificado por lectura de código. Sin llamadas a IA ni cambios en soni
   medida de iPhone ni una promesa de 60 FPS).
 - Limitaciones: WebKit en Windows no aplica `matrix3d` proyectivo (la pantalla y las páginas se ven planas
   allí); no hay pruebas en iPhone ni Safari reales.
+
+## 20. Corrección visual del portátil, el libro y los lomos (1.26.0)
+
+Sustituye las decisiones visuales de §19.2–§19.4 para estos tres elementos; conserva datos, acciones y
+utilidades. Estados: **PENDIENTE**, **IMPLEMENTADO**, **VERIFICADO** (pruebas ejecutadas en esta entrega, §20.6).
+
+### 20.0 Diagnóstico (medido, no supuesto)
+
+- **Portátil:** la 1.25.0 proyectaba sobre un área interior recortada (≈ 100 × 85 px de la ilustración) para
+  esquivar la planta y el vaso; el interior real del bisel mide ≈ 143 × 118. Resultado: una cuadrícula diminuta.
+- **Libro:** el área útil derecha empezaba ≈ 40 px por debajo del borde real del papel; la portada ocupaba el
+  52 % de la página con un lienzo apaisado; título y autor se repetían bajo la portada.
+- **Lomos:** grosor = `páginas × 0,026` (mín. 7 px) sin edición ni motor físico, y alto del 86 % del hueco: cada
+  lomo era ≈ 11 veces más alto que ancho, con bandas doradas y nervios dorados casi en todos. No había escala
+  aplicada dos veces (cada balda se proyecta una sola vez) ni contenedor mal dimensionado.
+
+### 20.1 Pantalla: BookShelf abierto en Calendario · VERIFICADO
+
+- Quad `LAPTOP_SCREEN` = esquinas interiores del bisel `(762,998) (905,1023) (872,1149) (732,1114)`, medidas en
+  rejilla. Lienzo lógico 300 × 248 proyectado una vez con `rectToQuad`. La planta, el florero y el vaso se
+  repintan delante con `images/laptop-foreground.png`, recortado de la propia ilustración (alfa por color frente
+  al gris pizarra de la pantalla apagada); el contenido no se mueve para esquivarlos: ocupa la columna izquierda.
+- Distribución 14 % cabecera («BookShelf» + pestaña «Calendario» subrayada; sin barra de direcciones) · 32 %
+  hoy · 46 % mes · 8 % estado (racha). Colores: fondo `#EDE9DF`, cabecera `#38483E` / `#F5F0E5`, texto
+  `#2E3932` / `#697267`, zona de hoy `#F8F3E8`, hoy `#B78847`; días leídos con fondo salvia suave. Fuente de
+  sistema para la interfaz y Lora en marca y títulos; sin sombras, tarjetas anidadas, emoji ni blanco puro.
+- Hoy: «HOY · 24 oct», «N páginas leídas» como dato principal, el libro con más páginas y «+N libros».
+  `todayReading` usa `groupByDay` y `dayDatum`, los mismos datos que el panel del calendario: páginas de los
+  registros de hoy, nunca `currentPage`; con solo libros por porcentaje, su posición. Sin actividad: «Tu próxima
+  página te espera». No se muestra duración.
+- Tocar el portátil abre el panel en Calendario con **hoy seleccionado** (`panel.select = 'today'`, campo
+  admitido por la navegación). Las celdas proyectadas no son botones; el hotspot es el único objetivo.
+
+### 20.2 Libro: doble página editorial · VERIFICADO
+
+- Quads del área imprimible medidos de nuevo (márgenes hacia el pliegue y los bordes); el mismo lienzo lógico
+  250 × 330 en las dos páginas (son del mismo tamaño físico; la perspectiva la pone el quad). Proyección plana,
+  sin mallas ni librerías nuevas.
+- Izquierda: la portada al 60–75 % del ancho útil y ≤ 72 % del alto útil, proporción intacta, centrada, sin
+  marco, esquinas ni sombra, sin opacidad reducida, en su propia capa con una luz muy sutil encima. La portada
+  generada solo se ve mientras la real carga o si falla. Sin portada: frontispicio tipográfico (inicial y florón).
+- Derecha: «ENTRE TUS PÁGINAS», título en Cormorant (máx. 3 líneas; 38 / 32 / 27 px según la longitud, nunca
+  más pequeño), autoría en Lora, filete, «Página N de T», «P % leído» secundario y un hilo de progreso.
+  `progressParts`: sin total no hay porcentaje ni hilo. Tinta `#473324`, secundario `#79634D`, filete
+  `rgba(104,77,43,.35)`, multiply solo en tinta. Fuera «toca para abrirlo»; el título no se repite.
+- Sin lectura: «Tu próxima historia empieza aquí» y «Elige un libro en tu librería». El bloque se monta de
+  nuevo al cambiar de libro (`key`), así que nunca mezcla datos de dos lecturas.
+
+### 20.3 Lomos con cuerpo · VERIFICADO
+
+- Escala física común: 1 cm = 130/28 px de la ilustración en las dos baldas. Grosor = `0,5 + 2,4 × thickness`
+  del motor + tapas de la edición; alto = 21,5 cm × alto de la edición × variación del motor. Lo que no cabe pasa
+  a la segunda balda y después se queda fuera (subconjunto estable; la librería completa sigue a un toque). Nunca
+  se encoge para que quepan todos; no se inventan libros.
+- Cara principal con luz transversal (sombra 18 % · base · luz ≤ 9 % · sombra 22 %), canto lateral oscuro
+  estrecho, sombra de contacto que no llega a la balda inferior y texturas por material (tela con grano fino,
+  cuero suave, papel mate, metálico con un reflejo moderado).
+- Cuatro diseños deterministas por libro (sobrio, banda editorial, emblema, recuadro de rótulo); nervios solo en
+  cuero y su filo dorado solo con pan de oro. Son representaciones de la app, no lomos oficiales. Tinta clara u
+  oscura según la luminancia del color. Título real cuando se lee y autoría si hay sitio.
+- En el móvil los lomos miden 2–12 px CSS: el título no es legible y se simplifica a color y diseño.
+
+### 20.4 Franja negra superior · DOCUMENTADO
+
+- Dentro de la página no hay franja: `.panorama-viewport` es `fixed`, `inset: 0`, `100dvh`; `fitCover` siempre
+  cubre (desplazamiento vertical ≤ 0). La prueba `encuadre` comprueba en todos los perfiles que la imagen cubre
+  el viewport entero.
+- Causa probable, no confirmada: la barra de estado de iOS, que Safari tiñe con `theme-color` `#2a1d14`
+  (o con `black-translucent` en modo app). Es interfaz del navegador o del dispositivo: no se cambia el
+  layout. Pendiente comprobarlo en un iPhone real con la captura original.
+
+### 20.5 Archivos
+
+`scene/sceneMap.js`, `domain/roomSurfaces.js`, `domain/navigation.js`, `components/room/RoomSurfaces.jsx`,
+`RoomShelfBooks.jsx`, `CozyRoom.jsx`, `panels/LaptopPanel.jsx`, `panels/ReadingCalendar.jsx`, `App.jsx`,
+`styles/room.css`, `public/images/laptop-foreground.png`; pruebas `domain/__tests__/v126.test.js`,
+`e2e/diegetic.spec.js`, `e2e/v123.spec.js`.
+
+### 20.6 Verificación
+
+- Vitest: `todayReading` (sin actividad, páginas de hoy y no `currentPage`, varias lecturas, porcentaje,
+  correcciones) y `progressParts` (con y sin total).
+- Playwright `e2e/diegetic.spec.js` en los 9 proyectos: cabecera y mes, lunes primero, hoy, marcas = registro,
+  contenido dentro del bisel; hoy sin actividad → invitación; guardar 6 páginas → «6 páginas leídas»; dos
+  lecturas → «42 páginas leídas» + «+1 libro»; abrir el portátil llega con hoy seleccionado; portada al 60–75 %
+  del ancho útil y ≤ 72 % del alto, sin título repetido ni «toca para»; sin portada, título largo, sin total y
+  sin lectura; lomos apoyados, sin cruces, deterministas, grosores y diseños variados; encuadre a pantalla completa.
+- Revisión visual en capturas de la escena completa y recortes en 360, 390, 430 y 1440.
+- Limitaciones: a 1440 × 900 el encuadre (§15) deja las baldas fuera de la vista. WebKit en Windows no aplica
+  `matrix3d` proyectivo. No hay pruebas en iPhone ni Safari reales.

@@ -182,7 +182,8 @@ function useNarrow() {
   return narrow;
 }
 
-export function CalendarApp() {
+/** `selectToday`: al llegar desde la pantalla del portátil, el día de hoy ya está abierto (SPEC §20.1). */
+export function CalendarApp({ selectToday = false }) {
   const { state } = useLibrary();
   const days = useDays(state);
   const pomos = usePomodoros(state);
@@ -191,7 +192,7 @@ export function CalendarApp() {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
-  const [open, setOpen] = useState(null);
+  const [open, setOpen] = useState(() => (selectToday ? today : null));
   const narrow = useNarrow();
   const panelRef = useRef(null);
   // Al abrir un día en móvil, su panel entra en la zona visible de la ventana (solo se desplaza esa zona)

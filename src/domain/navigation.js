@@ -1,5 +1,5 @@
 // Navegación con historial real (SPEC §13.3, 1.19.0). Cada ubicación es un estado serializable
-// `{ view: 'room' | 'shelf', panel: null | { type, id?, tab?, section? } }`. La lógica es pura y recibe el
+// `{ view: 'room' | 'shelf', panel: null | { type, id?, tab?, section?, select? } }`. La lógica es pura y recibe el
 // objeto `history`, así que se prueba sin navegador: la entrada inicial se registra con replaceState, cada
 // destino interno añade una entrada, `popstate` restaura sin volver a apilar, y Atrás desde la raíz es del
 // navegador (no hay entradas trampa).
@@ -7,7 +7,7 @@
 export const ROOT = Object.freeze({ view: 'room', panel: null });
 const KEY = 'bookshelf';
 
-const PANEL_FIELDS = ['type', 'id', 'tab', 'section'];
+const PANEL_FIELDS = ['type', 'id', 'tab', 'section', 'select'];
 
 /** Solo los campos serializables y conocidos (nada de objetos de libros ni funciones). */
 export function normalizeLocation(loc) {

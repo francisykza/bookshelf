@@ -57,7 +57,7 @@ const setStored = (fn) => `(() => { try { const st = JSON.parse(localStorage.get
 
 /** Abre el formulario del día de hoy en el calendario del portátil. */
 async function openTodayForm(page) {
-  await page.locator('.cal__cell[data-today="true"]').click();
+  if (!(await page.locator('.cal-pop').count())) await page.locator('.cal__cell[data-today="true"]').click();
   const add = page.locator('.cal-pop .cal-pop__add');
   if (await add.count()) await add.click();
   await page.waitForSelector('.cal-pop .reading-form');
