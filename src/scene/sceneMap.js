@@ -68,6 +68,26 @@ export const SCENE_W = ROOMS.MAIN_ROOM.width;
 export const SCENE_H = ROOMS.MAIN_ROOM.height;
 export const SCENE_SRC = ROOMS.MAIN_ROOM.src;
 
+/**
+ * Escena recompuesta (SPEC §24): el fondo limpio (misma geometría que la ilustración: se ha comprobado que pantalla,
+ * vaso, vela, baldas y agua caen en el mismo sitio) con la vegetación y la cortina como capas propias, colocadas
+ * con recorte de márgenes, escala proporcional y posición (sin estirar). `motion`: cómo se mueve cada capa
+ * (`sway`, giro y desplazamiento sobre su anclaje; `drape`, solo la tela libre bajo el recogido); sin `motion`,
+ * fija (la cortina de arriba y la enredadera con su poste rígido). Hasta que todo carga, se ve la ilustración original.
+ */
+const refresh = (name) => asset(`images/room-refresh/escena/${name}.webp`);
+export const SCENE_REFRESH = {
+  base: refresh('fondo-limpio'),
+  foreground: refresh('portatil-primer-plano'),
+  layers: [
+    { id: 'cortina-alta', x: 476, y: 0, w: 159, h: 495 },
+    { id: 'cortina-caida', x: 476, y: 495, w: 159, h: 303, motion: { kind: 'drape', delay: '-3.6s' } },
+    { id: 'enredadera-poste', x: 340, y: 80, w: 129, h: 660 },
+    { id: 'hiedra-izquierda', x: 0, y: 0, w: 443, h: 358, motion: { kind: 'sway', origin: [60, 10], delay: '0s' } },
+    { id: 'hiedra-derecha', x: 437, y: 0, w: 504, h: 476, motion: { kind: 'sway', origin: [253, 0], delay: '-5.1s' } },
+  ].map((l) => ({ ...l, src: refresh(l.id) })),
+};
+
 /** Polígono → atributo `points` de SVG. */
 export const pts = (list) => list.map(([x, y]) => `${x},${y}`).join(' ');
 

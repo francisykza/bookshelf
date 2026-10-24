@@ -1,0 +1,87 @@
+[
+  {
+    "id": "cortina-alta",
+    "x": 476,
+    "y": 0,
+    "w": 159,
+    "h": 495,
+    "origen": {
+      "archivo": "cortina-lino.png",
+      "recorte": [
+        448,
+        0,
+        234,
+        1174
+      ],
+      "escala": 0.68
+    }
+  },
+  {
+    "id": "cortina-caida",
+    "x": 476,
+    "y": 495,
+    "w": 159,
+    "h": 303,
+    "origen": {
+      "archivo": "cortina-lino.png",
+      "recorte": [
+        448,
+        0,
+        234,
+        1174
+      ],
+      "escala": 0.68
+    }
+  },
+  {
+    "id": "enredadera-poste",
+    "x": 340,
+    "y": 80,
+    "w": 129,
+    "h": 660,
+    "origen": {
+      "archivo": "enredadera-mural.png",
+      "recorte": [
+        183,
+        19,
+        322,
+        1651
+      ],
+      "escala": 0.4
+    }
+  },
+  {
+    "id": "hiedra-izquierda",
+    "x": 0,
+    "y": 0,
+    "w": 443,
+    "h": 358,
+    "origen": {
+      "archivo": "enredaderas-ventana.png",
+      "recorte": [
+        0,
+        0,
+        443,
+        358
+      ],
+      "escala": 1
+    }
+  },
+  {
+    "id": "hiedra-derecha",
+    "x": 437,
+    "y": 0,
+    "w": 504,
+    "h": 476,
+    "origen": {
+      "archivo": "enredaderas-ventana.png",
+      "recorte": [
+        437,
+        0,
+        504,
+        476
+      ],
+      "escala": 1
+    }
+  }
+]

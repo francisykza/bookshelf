@@ -5,7 +5,8 @@ import { BookOpen, CupSoda, Flame, Headphones, Lamp, Laptop, Library, Trophy } f
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bounds, clipPolygon } from '../../scene/homography';
 import { placeLabel, safeAreas } from '../../scene/guidePlacement';
-import { HOTSPOTS, SCENE_H, SCENE_SRC, SCENE_W, SILHOUETTES, SUN_DIAL } from '../../scene/sceneMap';
+import { useSceneArt } from '../../hooks/useSceneArt';
+import { HOTSPOTS, SCENE_H, SCENE_W, SILHOUETTES, SUN_DIAL } from '../../scene/sceneMap';
 import { toScreen } from '../../scene/stageFit';
 
 const ICONS = { book: BookOpen, shelf: Library, laptop: Laptop, headphones: Headphones, tray: CupSoda, figures: Trophy, lamp: Lamp, lantern: Flame };
@@ -30,6 +31,7 @@ const LIFTS = Object.fromEntries(Object.entries(SILHOUETTES).map(([id, d]) => [i
 
 export function Hotspot({ id, label, onActivate, onHover, spot = false, guides = false, hint = 0, children }) {
   const spotData = HOTSPOTS[id];
+  const { src: sceneSrc } = useSceneArt();
   const box = bounds(spotData.shape);
   const clip = clipPolygon(spotData.shape);
   const [hover, setHover] = useState(false);
@@ -68,7 +70,7 @@ export function Hotspot({ id, label, onActivate, onHover, spot = false, guides =
           <span
             style={{
               clipPath: `path('${lift.path}')`,
-              backgroundImage: `url(${SCENE_SRC})`,
+              backgroundImage: `url(${sceneSrc})`,
               backgroundSize: `${SCENE_W}px ${SCENE_H}px`,
               backgroundPosition: `${-lift.x}px ${-lift.y}px`,
             }}

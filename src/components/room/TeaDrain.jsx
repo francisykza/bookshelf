@@ -2,11 +2,13 @@
 // Por encima del nivel, el propio vaso pintado sin el color del té (vidrio vacío con el hielo y sus
 // reflejos) y alguna gota que resbala; en el nivel, la
 // superficie ámbar del té. Durante el descanso el vaso se rellena poco a poco.
-import { SCENE_H, SCENE_SRC, SCENE_W, TEA_LIQUID, pts } from '../../scene/sceneMap';
+import { useSceneArt } from '../../hooks/useSceneArt';
+import { SCENE_H, SCENE_W, TEA_LIQUID, pts } from '../../scene/sceneMap';
 import { useSvgIds } from '../../hooks/useSvgIds';
 
 export function TeaDrain({ level }) {
   const sid = useSvgIds();
+  const { src: sceneSrc } = useSceneArt();
   if (level === null) return null;
   const top = TEA_LIQUID.top;
   const bottom = TEA_LIQUID.bottom;
@@ -37,7 +39,7 @@ export function TeaDrain({ level }) {
       </defs>
       <g clipPath={sid.url('clip-tea')}>
         <g clipPath={sid.url('clip-tea-empty')}>
-          <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} filter={sid.url('f-empty-glass')} opacity="0.92" />
+          <image href={sceneSrc} width={SCENE_W} height={SCENE_H} filter={sid.url('f-empty-glass')} opacity="0.92" />
         </g>
         {/* Reflejos verticales del vidrio y gotitas que resbalan */}
         <rect x={TEA_LIQUID.x + 8} y={top} width="4" height={Math.max(0, surface - top)} fill="#fff" opacity="0.35" />

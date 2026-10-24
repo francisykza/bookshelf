@@ -12,7 +12,9 @@ import { visibleFraction } from '../../scene/stageFit';
 import { useLibrary } from '../../state/useLibrary';
 import { OnboardingGuide } from '../onboarding/OnboardingGuide';
 import { useToday } from '../../hooks/useToday';
+import { useSceneArtLoader, SceneArtContext } from '../../hooks/useSceneArt';
 import { AmbientLife, BreezeLeaves } from './AmbientLife';
+import { RefreshBase, RefreshLayers } from './RoomRefresh';
 import { BaySailboats } from './BaySailboats';
 import { LaptopScreen, OpenBookPages } from './RoomSurfaces';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
@@ -111,6 +113,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   const timerText = timer.running ? `${timer.phase === 'focus' ? 'Leyendo' : 'Descanso'} · ${formatTimer(timer.remaining)}` : null;
   // Día local (cambia a medianoche y al volver a la app): lo usa la pantalla del portátil
   const today = useToday();
+  // Arte activo: el fondo limpio con sus capas cuando todo ha cargado; si no, la ilustración original
+  const art = useSceneArtLoader();
 
   const openBook = () => (reading ? onOpenBook(reading) : onOpenShelf());
   const toggleLamp = () => {
@@ -137,6 +141,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   });
 
   return (
+    <SceneArtContext.Provider value={art}>
     <SceneStage
       room={ROOMS.MAIN_ROOM}
       className="room-camera"
@@ -171,11 +176,14 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
       <div ref={worldRef} className="world" data-base={base.status}>
         {/* 0 · ilustración */}
         <SceneBase room={ROOMS.MAIN_ROOM} attempt={base.attempt} onStatus={(status) => setBase((b) => (b.status === status ? b : { ...b, status }))} />
+        {/* Escena recompuesta (SPEC §24) encima, solo cuando todos sus recursos han cargado */}
+        {art.ready && <RefreshBase />}
 
         {/* 5 · veleros de la bahía, recortados por la máscara del agua (detrás de la luz del día) */}
         <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} />
         <AmbientLife active={live} reducedMotion={reducedMotion} candleOn={settings.candleOn} timeOfDay={settings.timeOfDay} />
-        <BreezeLeaves active={live} reducedMotion={reducedMotion} />
+        {/* La vegetación ilustrada sustituye a las hojas SVG: nunca las dos a la vez */}
+        {art.ready ? <RefreshLayers active={live} reducedMotion={reducedMotion} /> : <BreezeLeaves active={live} reducedMotion={reducedMotion} />}
 
         {/* 8 · superficies integradas en la ilustración (lomos, pantalla y su primer plano, páginas del libro):
             debajo de la luz y la atmósfera, que las tiñen igual que al resto de la habitación (SPEC §21.1) */}
@@ -248,5 +256,6 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
       </div>
       )}
     </SceneStage>
+    </SceneArtContext.Provider>
   );
 }

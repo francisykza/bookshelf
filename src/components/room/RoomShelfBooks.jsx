@@ -10,7 +10,8 @@ import { rankOf } from '../../domain/figures';
 import { EDITIONS, isDevice, sprayedEdge } from '../../domain/books';
 import { spineArtSize } from '../../domain/spineArt';
 import { projectPoint, rectToQuad } from '../../scene/homography';
-import { ROOM_SHELVES, SCENE_H, SCENE_SRC, SCENE_W, SHELF_LIPS, asset, pts } from '../../scene/sceneMap';
+import { useSceneArt } from '../../hooks/useSceneArt';
+import { ROOM_SHELVES, SCENE_H, SCENE_W, SHELF_LIPS, asset, pts } from '../../scene/sceneMap';
 import { useSvgIds } from '../../hooks/useSvgIds';
 import { calculateBookPhysics, stableHash } from '../../utils/vibeEngine';
 import { FigureArt, figureAspect } from '../figures/FigureArt';
@@ -151,6 +152,7 @@ function RoomSpine({ book, physics, x, w, h, index, lean, peek, scale, onOpenShe
 /** Canto delantero de cada balda de libros, recortado de la propia ilustración: tapa ligeramente la base. */
 function ShelfLips() {
   const sid = useSvgIds();
+  const { src: sceneSrc } = useSceneArt();
   return (
     <svg className="room-shelf-lips" viewBox={`0 0 ${SCENE_W} ${SCENE_H}`} width={SCENE_W} height={SCENE_H} aria-hidden="true">
       <defs>
@@ -160,7 +162,7 @@ function ShelfLips() {
           ))}
         </clipPath>
       </defs>
-      <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} clipPath={sid.url('clip-lips')} />
+      <image href={sceneSrc} width={SCENE_W} height={SCENE_H} clipPath={sid.url('clip-lips')} />
     </svg>
   );
 }

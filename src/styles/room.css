@@ -3949,3 +3949,89 @@ html[data-motion='reduced'] .tod__glow::after {
     animation: none;
   }
 }
+
+/* ── 1.30.0 · Escena recompuesta (SPEC §24) ──
+   Fondo limpio sobre la ilustración original (que queda debajo); capas por encima de los veleros y debajo de
+   objetos y luz, para recibir la misma iluminación. Sin eventos, sin filtros. */
+.scene-refresh-base {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.room-refresh {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.room-refresh__layer {
+  position: absolute;
+  display: block;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Guirnaldas: giro mínimo sobre su anclaje en la viga o el arco (≈ 2 px en la punta más lejana) y 1 px de
+   desplazamiento; ciclo de 17 s con ≈ 62 % de reposo; cada grupo con su desfase */
+.room-refresh__layer[data-motion='sway'] {
+  animation: refresh-sway 17s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+/* Cortina: solo la tela libre bajo el recogido; su borde superior (bajo el nudo) no se mueve y el bajo se
+   desplaza ≈ 3 px. No gira la cortina entera */
+.room-refresh__layer[data-motion='drape'] {
+  transform-origin: 50% 0;
+  animation: refresh-drape 19s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.room-refresh[data-running] .room-refresh__layer[data-motion] {
+  will-change: transform;
+  animation-play-state: running;
+}
+
+@keyframes refresh-sway {
+  0%,
+  38%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  12% {
+    transform: translate(1px, -0.5px) rotate(0.2deg);
+  }
+  24% {
+    transform: translate(-0.5px, 0.3px) rotate(-0.12deg);
+  }
+}
+
+@keyframes refresh-drape {
+  0%,
+  40%,
+  100% {
+    transform: skewX(0deg);
+  }
+  14% {
+    transform: skewX(-0.55deg);
+  }
+  27% {
+    transform: skewX(0.3deg);
+  }
+}
+
+.room-refresh[data-reduced] .room-refresh__layer {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-refresh__layer {
+    animation: none;
+  }
+}

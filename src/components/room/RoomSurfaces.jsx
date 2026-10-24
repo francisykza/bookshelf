@@ -6,6 +6,7 @@
 import { progressParts } from '../../domain/roomSurfaces';
 import { rectToQuad } from '../../scene/homography';
 import { BOOK_LEFT_PAGE, BOOK_RIGHT_PAGE, LAPTOP_FOREGROUND, LAPTOP_SCREEN, asset } from '../../scene/sceneMap';
+import { useSceneArt } from '../../hooks/useSceneArt';
 import { CalendarApp } from '../panels/ReadingCalendar';
 import { getDeterministicVibe, stableHash } from '../../utils/vibeEngine';
 
@@ -21,6 +22,8 @@ const SCREEN_WALLPAPER = asset('images/room-refresh/pantalla-bahia.webp');
  * Decorativa: el hotspot del portátil es el único objetivo táctil.
  */
 export function LaptopScreen({ today, running = false }) {
+  // Primer plano recortado de la MISMA pintura que se ve debajo (original o fondo limpio)
+  const { foreground } = useSceneArt();
   return (
     <>
       <div className="laptop-screen" data-running={running || undefined} style={{ width: SCREEN.w, height: SCREEN.h, transform: rectToQuad(SCREEN.w, SCREEN.h, LAPTOP_SCREEN) }} aria-hidden="true">
@@ -29,7 +32,7 @@ export function LaptopScreen({ today, running = false }) {
         <CalendarApp variant="scene" today={today} />
       </div>
       {/* Lo que está delante de la pantalla, recortado de la propia ilustración */}
-      <img className="laptop-foreground" src={LAPTOP_FOREGROUND.src} alt="" width={LAPTOP_FOREGROUND.w} height={LAPTOP_FOREGROUND.h} style={{ left: LAPTOP_FOREGROUND.x, top: LAPTOP_FOREGROUND.y }} draggable="false" aria-hidden="true" />
+      <img className="laptop-foreground" src={foreground} alt="" width={LAPTOP_FOREGROUND.w} height={LAPTOP_FOREGROUND.h} style={{ left: LAPTOP_FOREGROUND.x, top: LAPTOP_FOREGROUND.y }} draggable="false" aria-hidden="true" />
     </>
   );
 }

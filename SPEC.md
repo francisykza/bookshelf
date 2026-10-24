@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.29.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.30.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2188,3 +2188,75 @@ pruebas `e2e/gouache.spec.js`, `e2e/diegetic.spec.js`, `src/domain/__tests__/v12
   según la textura, dispositivos sin textura; pantalla dentro del bisel con el calendario legible; suite completa
   en los 9 proyectos (Chromium y WebKit en Windows). `?sceneDebug=1` en desarrollo: geometría sin cambios.
 - No se afirma 60 fps ni pruebas en un iPhone físico.
+
+## 24. Escena recompuesta sobre el fondo limpio (1.30.0)
+
+Cambio de criterio respecto a §23.2: las capas generadas son piezas para recomponer la escena, no recortes
+registrados píxel a píxel. Se permiten recorte de márgenes (con desplazamiento registrado), escala proporcional,
+posición, giro leve y división por separaciones naturales; no se estira, no se cortan hojas ni tela con bordes
+rectos visibles, no se mueve pared ni madera y no se deja vegetación ni cortina duplicadas. No se vuelve a extraer
+nada de la ilustración original. Se conservan los lomos y la pantalla de §23. Medidas verificadas en los
+archivos locales (fondo limpio 941 × 1672; capas 941 × 1672 con alfa; lámina de lomos con alfa limpio).
+
+### 24.1 Arquitectura del fondo limpio · VERIFICADO
+
+- Comparado con la original sobre rejilla y con los polígonos dibujados encima: interior de la pantalla, vaso,
+  mecha de la vela, máscaras del agua, baldas y libro caen en el mismo sitio (desplazamiento 0). No hay
+  coordenadas que recalibrar: `ROOM_SHELVES`, `SHELF_LIPS`, `LAPTOP_SCREEN`, `TEA_LIQUID`, `CANDLE`, el agua de
+  `BaySailboats` y los hotspots se mantienen (comprobado con `?sceneDebug=1` en 390 y 1440).
+- `LAPTOP_FOREGROUND` sí cambia de origen: el recorte de la planta y el vaso se rehace a partir del fondo limpio
+  (`escena/portatil-primer-plano.webp`, misma caja 216 × 172 en (725, 990)); el anterior era de la otra pintura.
+
+### 24.2 Montaje · VERIFICADO
+
+Todo en coordenadas de la imagen dentro del lienzo de `SceneStage` (una sola transformación), en
+`public/images/room-refresh/escena/` con su colocación en `escena.json`:
+
+| Pieza | Origen (recorte, escala) | Destino (x, y, ancho × alto) | Movimiento |
+| --- | --- | --- | --- |
+| `cortina-alta` | Cortina de lino… (448, 0, 234 × 1174), ×0,68 | (476, 0) 159 × 495 | fija |
+| `cortina-caida` | la misma, bajo el recogido (62 %) | (476, 495) 159 × 303 | solo la tela libre |
+| `enredadera-poste` | Enredadera mural… (183, 19, 322 × 1651), ×0,40 | (340, 80) 129 × 660 | fija (poste rígido) |
+| `hiedra-izquierda` | Enredaderas colgantes… mancha izquierda | (0, 0) 443 × 358 | giro y desplazamiento mínimos |
+| `hiedra-derecha` | la misma, mancha derecha | (437, 0) 504 × 476 | giro y desplazamiento mínimos |
+
+- **Cortina:** reducida ×0,68 junto al marco izquierdo del ventanal; cuelga desde fuera del encuadre (sin borde
+  superior visible), con el recogido en y ≈ 495 y el bajo en y ≈ 798, justo encima del respaldo del sillón
+  (y ≈ 810). Conflicto ancho/largo: a esta escala no llega al suelo; se prioriza no invadir el sillón (con más
+  escala lo taparía). El corte en el recogido queda oculto por el nudo.
+- **Enredadera lateral:** ×0,40 junto a la ventana, a la izquierda de la cortina, desde y = 80 hasta y = 740
+  (encima de las macetas): no cruza la cama, el libro ni los auriculares. Su poste rígido no se mueve.
+- **Vegetación superior:** dos grupos por su separación natural (manchas conectadas), sin cortes; la izquierda
+  sobre la viga y la estantería, la derecha colgando del arco. Las hojas pintadas que conserva el fondo limpio
+  están al otro lado del cristal; las capas quedan por dentro.
+- Orden: fondo original (alternativa) → fondo limpio → veleros → cortina → enredadera → guirnaldas → objetos y
+  luz (las capas reciben la misma iluminación que la escena). Decorativas: `aria-hidden` y sin eventos.
+- **Carga:** `useSceneArtLoader` precarga y decodifica el fondo limpio, el primer plano y las cinco capas; solo
+  entonces se muestra la escena recompuesta. Mientras tanto, o si algo falla, sigue la ilustración original con
+  sus hojas SVG (§22.3). Los recortes que copian la escena (resalte de objetos, canto de baldas, vaso, primer plano
+  de la pantalla) usan la pintura activa (`SceneArtContext`), nunca una mezcla de las dos.
+
+### 24.3 Movimiento · VERIFICADO
+
+- Validado primero el montaje estático (capturas en 390, 844 × 390 y 1440 con movimiento reducido).
+- Guirnaldas: giro de 0,2° sobre su anclaje (≈ 2 px en la punta más lejana, dentro de ±0,8° y 2 px) y 1 px de
+  desplazamiento; 17 s con ≈ 62 % de reposo y desfases 0 y −5,1 s. Dos grupos independientes, no un bloque.
+- Cortina: solo `cortina-caida`, inclinada desde su borde superior (bajo el nudo, que no se mueve) ≈ 3 px en el
+  bajo; 19 s con ≈ 60 % de reposo. No gira la cortina entera ni hay malla.
+- Sustituyen a `BreezeLeaves` cuando la escena recompuesta está activa. Pausas de siempre (documento oculto,
+  habitación fuera de vista, panel abierto, movimiento reducido); solo `transform` en CSS, sin estado por fotograma.
+- Comprobado con las animaciones congeladas en su pico: sin cortes en el nudo ni separación en los anclajes.
+
+### 24.4 Limitaciones
+
+- La cortina no llega al suelo (§24.2). Banda recta del velo nocturno en los paneles altos del arco: ya existía
+  con la ilustración original (polígono `EXTERIOR`) y no cambia. Los derivados no usados de §23 siguen en
+  `public/images/room-refresh/`. Sin pruebas en iPhone físico ni medición de fps.
+
+### 24.5 Archivos y verificación
+
+`src/scene/sceneMap.js` (`SCENE_REFRESH`), `src/hooks/useSceneArt.js` (nuevo), `src/components/room/RoomRefresh.jsx`
+(nuevo), `CozyRoom.jsx`, `RoomHotspots.jsx`, `RoomShelfBooks.jsx`, `TeaDrain.jsx`, `RoomSurfaces.jsx`,
+`src/styles/room.css`, `public/images/room-refresh/escena/`; pruebas en `e2e/v128.spec.js` (capas, orden,
+decorativas, movimiento solo en las validadas, recortes de la pintura activa, pausas, movimiento reducido y
+alternativa si falla un recurso) y la suite completa en los 9 proyectos.
