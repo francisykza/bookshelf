@@ -3070,3 +3070,38 @@ html[data-motion='reduced'] .tod__glow::after {
     font-size: 0.95rem;
   }
 }
+
+/* ── IA-1 · Tono del libro en la luz de la habitación (SPEC §18.3) ── */
+@property --vibe-light {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e8c99b;
+}
+
+@property --vibe-secondary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #92a99b;
+}
+
+.tod {
+  transition:
+    --vibe-light 1.6s ease,
+    --vibe-secondary 1.6s ease;
+}
+
+.tod__vibe {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(220px 200px at var(--lamp-x) var(--lamp-y), color-mix(in srgb, var(--vibe-light) 26%, transparent), transparent 70%),
+    radial-gradient(120px 110px at var(--candle-x) var(--candle-y), color-mix(in srgb, var(--vibe-light) 22%, transparent), transparent 70%),
+    linear-gradient(color-mix(in srgb, var(--vibe-secondary) 5%, transparent), color-mix(in srgb, var(--vibe-secondary) 5%, transparent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tod {
+    transition: none;
+  }
+}

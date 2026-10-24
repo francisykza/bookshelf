@@ -7,6 +7,7 @@ import { playUiSound, setUiVolume } from './audio/uiSounds';
 import { timeOfDayByClock } from './domain/dates';
 import { BookDetailModal } from './components/book/BookDetailModal';
 import { AccountPanel } from './components/panels/AccountPanel';
+import { LibrarianPanel } from './components/panels/LibrarianPanel';
 import { LaptopPanel } from './components/panels/LaptopPanel';
 import { PomodoroTray } from './components/panels/PomodoroTray';
 import { SagaMapModal } from './components/panels/SagaMapModal';
@@ -204,6 +205,7 @@ function Sanctuary() {
         onBack={nav.back}
         onOpenBook={openBook}
         onAddBook={() => openPanel({ type: 'add' })}
+        onAskLibrarian={() => openPanel({ type: 'librarian' })}
         onOpenVault={(id) => {
           playUiSound('atticOpen');
           openPanel({ type: 'vault', id });
@@ -241,6 +243,7 @@ function Sanctuary() {
       )}
       {panel?.type === 'atlas' && <SagaMapModal onClose={close} onOpenBook={openBook} />}
       {panel?.type === 'account' && <AccountPanel onClose={close} />}
+      {panel?.type === 'librarian' && <LibrarianPanel onClose={close} onOpenBook={(book) => switchPanel({ type: 'book', id: book.id })} />}
       {panel?.type === 'add' && <AddBookCard onClose={close} onAdded={() => nav.replace({ view: 'shelf', panel: null })} />}
     </main>
   );

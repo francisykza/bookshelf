@@ -3,7 +3,9 @@
 // objeto: cuero con nervios y cantoneras, tela con foil, cantos pintados, post-its, e-reader o estuche
 // de audiolibro. Además, post-its por cita guardada y cinta marcapáginas en los libros que estás leyendo.
 import { AudioLines, Headphones } from 'lucide-react';
-import { forwardRef, useState } from 'react';
+import { forwardRef, useCallback, useState } from 'react';
+import { useCoverColor } from '../../hooks/useCoverColor';
+import { calculateBookPhysics } from '../../utils/vibeEngine';
 import { EDGE_NAMES, EDITIONS, QUOTE_COLORS, audioHours, formatPercent, hash, percentRead, progress, ratingText, spineColor, spineHeight, spineWidth, sprayedEdge } from '../../domain/books';
 
 /** Portada tipográfica para libros sin imagen (o con la imagen rota). */
@@ -150,13 +152,26 @@ const NERVES = [0.2, 0.36, 0.52, 0.68];
 
 export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, onOpen, onEdition, picked = false, draggable = false }, ref) {
   const edition = book.editionType;
+  // Color determinista al momento; el de la portada llega después, solo si está visible y lo permite CORS
+  const [coverSpine, observe] = useCoverColor(book);
+  const physics = calculateBookPhysics(book);
+  const setRef = useCallback(
+    (el) => {
+      observe(el);
+      if (typeof ref === 'function') ref(el);
+      else if (ref) ref.current = el;
+    },
+    [observe, ref],
+  );
   const edge = sprayedEdge(book);
   const h = Math.round(rowHeight * spineHeight(book));
   const reading = book.status === 'reading';
   const silkRibbon = edition === 'clothbound';
   const title = `${book.title} · ${EDITIONS[edition]?.label}${onEdition ? ' · clic derecho: cambiar edición' : ''}`;
   const common = {
-    ref,
+    ref: setRef,
+    'data-material': physics.material,
+    'data-foil': physics.goldFoil || undefined,
     type: 'button',
     ...dragProps(book, draggable),
     'data-book-id': book.id,
@@ -179,7 +194,7 @@ export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, on
     const w = spineW(book);
     const device = edition === 'kindle' || edition === 'audiobook';
     return (
-      <button {...common} className="spine" style={{ width: w, height: h, '--spine': spineColor(book) }}>
+      <button {...common} className="spine" style={{ width: w, height: h, '--spine': coverSpine }}>
         {edge && <span className={`spine__top edge--${edge}`} title={`Cantos: ${EDGE_NAMES[edge]}`} />}
         <Tabs quotes={book.quotes} />
         {edition === 'annotated' && (
@@ -229,7 +244,7 @@ export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, on
       className="book3d"
       data-status={book.status}
       data-device={device || undefined}
-      style={{ width: w + d * 0.4, height: h, '--w': `${w}px`, '--h': `${h}px`, '--d': `${d}px`, '--spine': spineColor(book) }}
+      style={{ width: w + d * 0.4, height: h, '--w': `${w}px`, '--h': `${h}px`, '--d': `${d}px`, '--spine': coverSpine }}
     >
       <span className="book3d__body">
         <span className="book3d__face book3d__front">

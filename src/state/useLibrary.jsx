@@ -36,6 +36,8 @@ const DEFAULT_SETTINGS = {
   // anotación (solo los que cambie el usuario; viajan con sus ajustes)
   uiVolume: 0.25,
   quoteMeanings: {},
+  // IA-1: el ambiente de la habitación toma el tono del libro que estás leyendo (se puede desactivar)
+  bookVibe: true,
 };
 
 function initialState() {

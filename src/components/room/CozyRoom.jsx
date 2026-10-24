@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook, progressLabel } from '../../domain/books';
+import { getDeterministicVibe } from '../../utils/vibeEngine';
 import { dayKey } from '../../domain/dates';
 import { summarize } from '../../domain/reading';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
@@ -73,6 +74,9 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   const [label, setLabel] = useState(null);
   const [spotIndex, setSpotIndex] = useState(0);
   const reading = currentBook(books, settings);
+  // Ambiente del libro: solo el de la lectura actual (elegida por ti o la automática de siempre), nunca al
+  // pasar por encima de otro libro; desactivable en «Tu cuenta»
+  const vibe = settings.bookVibe !== false && reading ? getDeterministicVibe(reading) : null;
   const inRoom = interactive && active;
   // Con un modal delante o la habitación fuera de pantalla, lo decorativo se detiene (el temporizador sigue)
   const live = inRoom && !modalOpen;
@@ -186,7 +190,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} />
 
         {/* 10 · luz y atmósfera (sin geometría heredada) */}
-        <TimeOfDayLayers timeOfDay={settings.timeOfDay} lampOn={settings.lampOn} candleOn={settings.candleOn} />
+        <TimeOfDayLayers timeOfDay={settings.timeOfDay} lampOn={settings.lampOn} candleOn={settings.candleOn} vibe={vibe} />
         <CloudShadow timeOfDay={live ? settings.timeOfDay : 'night'} />
 
         {/* 20 · objetos dinámicos integrados en la ilustración */}

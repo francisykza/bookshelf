@@ -2,7 +2,7 @@
 // recortada de la propia imagen, postales clavadas, macetas y hiedra. Tres baldas (Leyendo ahora con el
 // la mini-figura de su saga bajo cada libro, Pendientes y Leídos) y controles como placas de latón.
 import { RatingStars } from '../book/Rating';
-import { ArrowLeft, BookOpen, Library, Plus, Trophy, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Library, Plus, Sparkles, Trophy, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
 import { ratingText, shelfSort } from '../../domain/books';
@@ -335,7 +335,7 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
   );
 }
 
-export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook, onAddBook, onOpenVault }) {
+export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook, onAddBook, onOpenVault, onAskLibrarian }) {
   // Interactiva solo cuando ya ha entrado; visible (opaca o entrando/saliendo) en cualquier fase salvo «room»
   const open = phase === 'shelf';
   const showing = phase === 'enteringShelf' || phase === 'shelf';
@@ -490,6 +490,13 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
             </svg>
                       </button>
           </span>
+            {/* Bibliotecario local (IA-1): reglas sobre tu biblioteca, sin red */}
+            {onAskLibrarian && (
+              <button type="button" className="brass-btn" onClick={onAskLibrarian} aria-label="Pedir una recomendación" title="Pedir una recomendación">
+                <Sparkles aria-hidden="true" />
+                <span>Pedir una recomendación</span>
+              </button>
+            )}
             <button type="button" className="brass-btn brass-btn--vault" onClick={() => onOpenVault()}>
               <Trophy aria-hidden="true" />
               <span>🏆 Vitrina de Figuras</span>

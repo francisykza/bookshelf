@@ -1,5 +1,6 @@
 /* «Tu cuenta» (SPEC §9ter, 1.16.0): ficha de papel algodón con botones de latón, como el resto de menús */
-.account.paper-sheet {
+.account.paper-sheet,
+.librarian.paper-sheet {
   --paper-bg: linear-gradient(#fbf6ec, #f5ead6);
   width: min(460px, calc(100vw - 32px));
   padding: 20px 22px 22px;
@@ -273,4 +274,75 @@
 .account-range input {
   width: 100%;
   accent-color: #c59b27;
+}
+
+/* ── IA-1 · Bibliotecario local ── */
+.librarian {
+  display: grid;
+  gap: 12px;
+  width: min(460px, calc(100vw - 32px));
+  max-width: 100%;
+  font-family: 'Lora', var(--font-sans);
+  color: #2c1e14;
+}
+
+.librarian__note,
+.librarian__source {
+  margin: 0;
+  font-size: 0.82rem;
+  color: rgb(44 30 20 / 0.72);
+}
+
+.librarian__source {
+  font-size: 0.74rem;
+}
+
+.librarian__form {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.librarian__form label {
+  font-weight: 700;
+}
+
+.librarian__form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid rgb(146 112 61 / 0.3);
+  border-radius: 10px;
+  background: #fffdf6;
+  color: #2c1e14;
+  font: inherit;
+  font-size: max(16px, 1rem);
+}
+
+.librarian__form .stamp-btn {
+  justify-self: start;
+  min-height: 44px;
+}
+
+.librarian__result {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.librarian__whisper {
+  margin: 0;
+  font-family: 'Caveat', var(--font-hand);
+  font-size: 1.3rem;
+  line-height: 1.25;
+  color: #6b4423;
+}
+
+.librarian__books {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }

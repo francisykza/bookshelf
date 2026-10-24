@@ -189,6 +189,11 @@ function UiSound() {
         </button>
       </div>
       <p className="account-hint">El sonido ambiental (mar y brisa) se enciende y apaga con los auriculares de la habitación.</p>
+      <h3>Ambiente</h3>
+      <label className="account-check">
+        <input type="checkbox" checked={state.settings.bookVibe !== false} onChange={(e) => actions.setSettings({ bookVibe: e.target.checked })} />
+        Teñir la luz de la habitación con el tono del libro que leo
+      </label>
     </section>
   );
 }

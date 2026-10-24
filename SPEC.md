@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.23.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.24.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -1534,3 +1534,160 @@ Estados: **PENDIENTE** (descrito, sin código), **IMPLEMENTADO** (código en el 
   ratón (no se pudo medir la presión ahí) y no crea `AudioContext` sin cabeza (se mide la emisión del evento,
   no el audio). Ninguna prueba sustituye a Safari en un iPhone: el teclado virtual de iOS no se puede emular.
 
+## 18. Fase IA-1 — Motor local y preparación para OpenRouter (1.24.0)
+
+Estados: **PENDIENTE** (solo descrito), **IMPLEMENTADO** (código en el repositorio), **VERIFICADO** (con pruebas
+ejecutadas en esta entrega, §18.10). En esta fase **no hay ninguna llamada a proveedores de IA**, ni claves, ni
+endpoints que simulen respuestas.
+
+### 18.1 Punto de partida
+
+- Los lomos tomaban su color de una paleta interna (`spineColor`) y su tamaño de la edición (`spineWidth`,
+  `spineHeight`); las ediciones (`editionType`) son elección del usuario. No había material ni pan de oro como
+  dato, ni color de portada.
+- El ambiente es la hora del día (mañana, atardecer, noche) más lámpara y vela; **no existe render de clima**
+  (lluvia, niebla, nieve, estrellas) ni sonidos por libro.
+- No había recomendaciones; solo el dado «¿Al azar?» de la librería. Existen la doble habitación, la guía y los
+  veleros (§15–16), que esta fase no toca.
+
+### 18.2 Motor físico — `src/utils/vibeEngine.js` · `calculateBookPhysics(book)` · VERIFICADO
+
+Pura, determinista, sin red, DOM ni almacenamiento; no modifica el libro; acepta datos incompletos; resultados finitos.
+
+| Campo | Regla |
+| --- | --- |
+| `thickness` (0,5–1,8) | Páginas válidas (> 0): `0,5 + clamp((páginas − 80)/920, 0, 1) × 1,3`. Audiolibro sin páginas: minutos (`durationMinutes`, o `audioHours × 60`) con `0,5 + clamp((min − 120)/2280, 0, 1) × 1,3`. Ausente, cero, negativo, NaN o unidad desconocida (`duration`) → 0,9 |
+| `height` (0,95–1,08) | `0,95 + hash × 0,13`; hash FNV-1a entero de `id` → título normalizado → `'unknown-book'` |
+| `material` | Personalización válida (`appearance.material`) > edición (`leatherbound`→leather, `clothbound`/`hardcover`→cloth, `paperback`/`annotated`→paper) > géneros (clásico→leather, poesía→cloth, ciencia ficción→metallic) > paper |
+| `goldFoil` | Personalización (`appearance.goldFoil`) > la edición si la define (cuero y tela sí, el resto no) > inferido para fantasía o clásicos. Es un recurso visual, no una característica comercial |
+| `spineColor` | Paleta estable de 8 tonos por hash: `#6B4438 #536753 #405B70 #8A7048 #66516B #A27356 #485C60 #77644F` |
+
+Integración: `spineColor(book)` (dominio) devuelve el color elegido por el usuario o el del motor; los lomos y
+libros 3D de la librería llevan `data-material` y `data-foil`. El grosor y la altura del motor quedan como datos:
+el tamaño visible sigue saliendo de la edición elegida (una inferencia no cambia una edición del usuario).
+
+### 18.3 Preajustes ambientales — `getDeterministicVibe(book)` · VERIFICADO (render parcial)
+
+Devuelve `{ presetId, lightColor, secondaryColor, weather, ambientSound }`. Etiquetas (`tags` y `categories`)
+normalizadas (minúsculas, sin acentos ni guiones, espacios colapsados) y comparadas **enteras** con un
+diccionario explícito en español e inglés. Prioridad estable (el orden de las etiquetas no influye):
+`mystery > science_fiction > winter > fantasy > romance > default`.
+
+| Preajuste | Luz | Secundario | Clima | Sonido |
+| --- | --- | --- | --- | --- |
+| fantasy | `#E7BD79` | `#68788F` | starlight | fireplace |
+| mystery | `#AAB8C6` | `#697384` | fog | rain_window |
+| romance | `#F0CAA8` | `#B58A91` | clear | library_silence |
+| science_fiction | `#A3C9D5` | `#777DA8` | starlight | night_crickets |
+| winter | `#DCE6EA` | `#97ADBE` | snow | fireplace |
+| default | `#E8C99B` | `#92A99B` | clear | library_silence |
+
+- Integración (IMPLEMENTADO, VERIFICADO): la habitación toma el tono del **libro actual** (el que eliges o la
+  lectura automática de siempre), nunca al pasar sobre otro libro: un velo muy leve y la luz de la lámpara y la
+  vela con `lightColor`/`secondaryColor`, con transición de 1,6 s (sin destellos; instantáneo con movimiento
+  reducido). Preferencia manual «Teñir la luz de la habitación con el tono del libro que leo» (`settings.bookVibe`,
+  activada por defecto) en «Tu cuenta»: si se desactiva, no hay tono. La hora del día no se toca.
+- `weather`: PENDIENTE de render (no hay clima en la escena); se devuelve el dato y la luz del preajuste es la
+  alternativa visible. `ambientSound`: contrato de datos; no reproduce nada ni cambia el audio actual.
+
+### 18.4 Color de portada — `src/utils/coverColor.js` · `extractCoverColor(url, options)` · VERIFICADO
+
+- Contrato: `{ color: '#RRGGBB', source: 'cover' | 'fallback' }`; opciones `fallbackColor`, `signal`,
+  `timeoutMs` (3000).
+- El libro se pinta al momento con su color determinista; la portada se analiza en segundo plano solo si está
+  visible o a 200 px (`IntersectionObserver`) y no hay color elegido por el usuario; el resultado se oscurece un
+  22 % hacia la tinta para funcionar como tela de lomo. Si falla, se queda el color inicial.
+- Carga: `crossOrigin = 'anonymous'` antes de `src`; errores de descarga, decodificación, `SecurityError` del
+  canvas y tiempo agotado → color inicial. Sin proxy en Vercel y sin reintentos (los fallos también se
+  recuerdan). El service worker deja pasar a la red las peticiones CORS de portadas (una copia opaca de su
+  caché no serviría para leer píxeles) y sigue sirviendo de caché las de las `<img>`.
+- Extracción: lienzo compartido de 32 × 32 (uno para toda la app), píxeles transparentes fuera, cuantización
+  de 4 bits por canal; si hay suficiente contenido con color (≥ 15 %), blancos, negros y grises no compiten;
+  imagen monocromática → sin color (se queda el inicial). Es un **color dominante aproximado**.
+- Recursos: caché LRU en memoria de 200 entradas, una tarea por URL, máximo 2 análisis a la vez; no se crean
+  `ImageBitmap` ni object URLs; nada se guarda en `localStorage`.
+- React (`useCoverColor`): un resultado de una portada anterior se ignora; al desmontar no se actualiza nada;
+  cancelar un consumidor no cancela la tarea compartida.
+- Alcance: lomos y libros 3D de la librería. Los lomos pequeños de la habitación usan el color determinista.
+
+### 18.5 Bibliotecario local — `src/utils/localLibrarian.js` · `recommendLocally({ userMood, catalog })` · VERIFICADO
+
+- Salida: `{ recommendedIds (≤ 2, siempre del catálogo), librarianWhisper (español, ≤ 20 palabras),
+  suggestedWeather (clear | rain | fog | starlight) }`. Sin red. **Es un sistema de reglas**: no entiende
+  cualquier petición y lo dice.
+- Límites: petición ≤ 500 caracteres; catálogo ≤ 5000; etiquetas ≤ 20 por libro; IDs deduplicados (gana el
+  primero); entradas inválidas ignoradas.
+- Intenciones (diccionario explícito): tranquilo/relajante/acogedor, misterio/intriga, aventura/épico,
+  romántico/amor, corto/breve, largo/extenso; géneros por nombre (fantasía, ciencia ficción, clásico, juvenil,
+  mitología, terror, histórica, literaria, poesía). Negaciones simples cercanas («sin», «nada de», «no quiero»,
+  «no me apetece», «evitar», «ni»): alcanzan como mucho tres palabras y no cruzan comas, puntos, «y» ni «pero».
+- Puntuación: intención +5, género +4, corta (1–250 páginas) +3, larga (≥ 500) +3, pendiente +1 (solo si ya
+  encaja), etiqueta rechazada −8. Empates por ID (nunca por el orden del catálogo).
+- Casos: catálogo vacío → mensaje útil; petición no reconocida → invita a probar algo sencillo, sin libros;
+  reconocida sin coincidencias → «sugerencia neutra» identificada como tal (un pendiente no rechazado); sin
+  páginas no se dice que sea breve; sin etiquetas no se atribuye tono.
+- El clima propuesto no se aplica solo.
+
+### 18.6 Interfaz · VERIFICADO
+
+- Botón «Pedir una recomendación» en las herramientas de la librería (junto al dado), con nombre accesible.
+  Panel con el sistema de modales: «¿Qué te apetece leer?», «Buscar en mi biblioteca» (Enter envía), hasta dos
+  libros con portada, autor y estado (abren la ficha), la frase del bibliotecario y la nota «Recomendación local
+  por reglas · sin IA». Resultado en una región `aria-live`. Sin velas, saldo, botones de IA ni cargas falsas.
+
+### 18.7 OpenRouter (fase siguiente) · PENDIENTE
+
+- Contrato del cliente: `{ action: 'ASK_LIBRARIAN', payload: { userMood, catalog } }`.
+- Respuesta: `{ data: { recommendedIds, librarianWhisper, suggestedWeather }, candlesRemaining: number | null,
+  fallback: boolean }`, más un campo de origen (`source: 'local' | 'remote'`) para distinguir resultado local y
+  remoto sin fingir una llamada. El panel de esta fase ya marca su resultado como local.
+- Otras dos acciones: **PENDIENTES DE ESPECIFICACIÓN** (sin nombres, prompts ni esquemas inventados).
+- Requisitos: clave solo en servidor (nunca `VITE_*`); modelo configurable en servidor, elegido tras comprobar
+  disponibilidad, precio y salida estructurada; validación de la respuesta (IDs del catálogo, tamaños, tipos)
+  antes de usarla; límites de entrada y salida; tiempo máximo y cancelación; bibliotecario local como
+  alternativa ante cualquier fallo; ninguna consulta al navegar, renderizar o cambiar de habitación; sin cambio
+  automático de proveedor. El runtime (Edge o Node) se decidirá con mediciones reales de compatibilidad y
+  latencia.
+
+### 18.8 Velas y presupuesto (fase remota) · PENDIENTE
+
+- Presupuesto previsto: 5 € de crédito en OpenRouter. No se traduce a tokens ni a consultas sin precios
+  vigentes, moneda de facturación y tamaños medidos.
+- Se distinguen: saldo en el proveedor; presupuesto máximo autorizado por BookShelf; límite diario global; y
+  tres consultas diarias por usuario. El presupuesto no se renueva solo y no hay recarga automática.
+- Necesitará: usuario autenticado para gastar crédito compartido; contador autoritativo compartido (una cookie
+  firmada no lo sustituye); reserva atómica de vela y presupuesto antes de consultar; una consulta activa por
+  usuario; idempotencia por id de petición; registro del consumo confirmado; tratamiento conservador de costes
+  inciertos; corte global al agotarse; alternativa local si no se puede autorizar.
+- Fallos: la vela se puede devolver según la política acordada, pero no se borra un coste ya facturado; un
+  tiempo agotado local no demuestra que el proveedor no haya procesado la petición.
+- Las consultas locales no consumen velas. No se crean tablas ni migraciones en esta fase.
+
+### 18.9 Archivos
+
+Nuevos: `src/utils/vibeEngine.js`, `src/utils/coverColor.js`, `src/utils/localLibrarian.js`,
+`src/hooks/useCoverColor.js`, `src/components/panels/LibrarianPanel.jsx`, `src/domain/__tests__/ia1.test.js`,
+`e2e/ia1.spec.js`. Modificados: `domain/books.js` (color inicial del motor), `shelf/BookItem.jsx`,
+`shelf/ShelfView.jsx`, `room/CozyRoom.jsx`, `room/TimeOfDayLayers.jsx`, `panels/AccountPanel.jsx`, `App.jsx`,
+`state/useLibrary.jsx` (`bookVibe`), `public/sw.js`, estilos.
+
+### 18.10 Evidencias (2026-10-24)
+
+- `npm run build` sin errores; `npm run lint` 30 avisos, ninguno nuevo.
+- `npm run qa:full`: Vitest **117/117** (26 nuevas en `ia1.test.js`: grosor con páginas ausentes, negativas,
+  NaN y extremas; minutos y horas de audio sin mezclar; límites y determinismo de altura y color; prioridad
+  personalización > edición > géneros; objetos congelados sin mutación; alias, acentos, varios géneros,
+  orden de etiquetas y datos incompletos en el ambiente; color de portada válida, CORS, tiempo agotado,
+  monocromática, caché LRU, deduplicación, 2 análisis a la vez y cancelación sin romper la tarea compartida;
+  bibliotecario con catálogo vacío, IDs repetidos, sin coincidencias, negaciones, datos insuficientes, máximo
+  dos resultados, IDs del catálogo y frases de ≤ 20 palabras). Playwright **253 superadas, 3 omitidas**
+  (capturas de diagnóstico) en los 8 proyectos; `e2e/ia1.spec.js`: estantería visible con colores
+  deterministas mientras las portadas tardan 4 s, recomendación con la red desconectada y **sin ninguna
+  petición fetch/XHR/websocket** del motor, **0 peticiones a OpenRouter, Groq u otros proveedores de IA** en
+  toda la suite, apertura de la ficha desde el resultado, sin pérdida de libros ni registros, panel usable en
+  móvil (campo de 16 px, botón de 44 px, sin desbordes) y ambiente del libro con su preferencia manual.
+- Iteraciones: las pruebas encontraron y se corrigieron una negación que cruzaba la coma («no quiero romance,
+  algo largo» negaba «largo»), el botón nuevo sin nombre accesible en móvil (las etiquetas de la librería se
+  ocultan ahí) y el panel sin papel de fondo.
+- Limitaciones: la extracción de color depende de que el servidor de cada portada permita CORS (Open Library
+  lo hace en la mayoría de casos; si no, queda el color determinista); no se ha medido en un iPhone real.

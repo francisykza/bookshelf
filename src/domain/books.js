@@ -1,5 +1,7 @@
 // Reglas puras de los libros (SPEC §5): progreso, anatomía física y etiquetas.
 
+import { calculateBookPhysics } from '../utils/vibeEngine';
+
 export const STATUS = {
   reading: 'Leyendo ahora',
   want: 'Pendiente',
@@ -50,11 +52,6 @@ export const QUOTE_COLORS = {
   gold: { label: 'Dorado Épico', hex: '#e8b04a', ink: '#7a4f0a' },
 };
 
-/** Paleta de lomos: telas y cueros cálidos que combinan con el roble. */
-const SPINE_COLORS = [
-  '#7b2d26', '#2f4b3a', '#1f3a5a', '#8a5a2b', '#5b3a5e', '#a0522d', '#33524f', '#6b4423',
-  '#274060', '#8c3b3b', '#4a5d23', '#3d2b4f', '#b5803a', '#2d4d6b', '#6d2e46', '#59693e',
-];
 
 export function hash(text) {
   let h = 2166136261;
@@ -65,7 +62,8 @@ export function hash(text) {
   return h >>> 0;
 }
 
-export const spineColor = (book) => book.color || SPINE_COLORS[hash(book.id + book.title) % SPINE_COLORS.length];
+/** Color del lomo: el elegido por el usuario o el inicial determinista del motor físico (SPEC §18.2). */
+export const spineColor = (book) => book.color || calculateBookPhysics(book).spineColor;
 
 export const clampPage = (book, page) => Math.max(0, Math.min(book.pageCount || 0, Math.round(page || 0)));
 

@@ -4,9 +4,29 @@
 // ilustración anterior) y sin máscaras: solo capas de color con opacidad.
 import { CANDLE, EXTERIOR, LAMP, SCENE_H, SCENE_W, pts } from '../../scene/sceneMap';
 
-export function TimeOfDayLayers({ timeOfDay, lampOn = true, candleOn = true }) {
+export function TimeOfDayLayers({ timeOfDay, lampOn = true, candleOn = true, vibe = null }) {
   return (
-    <div className="tod" data-tod={timeOfDay} data-lamp={lampOn} data-candle={candleOn} aria-hidden="true">
+    <div
+      className="tod"
+      data-tod={timeOfDay}
+      data-lamp={lampOn}
+      data-candle={candleOn}
+      data-vibe={vibe?.presetId}
+      style={vibe ? { '--vibe-light': vibe.lightColor, '--vibe-secondary': vibe.secondaryColor } : undefined}
+      aria-hidden="true"
+    >
+      {/* Tono del libro que lees (SPEC §18.3): un velo muy leve y la luz de la lámpara y la vela, sin destellos */}
+      {vibe && (
+        <div
+          className="tod__vibe"
+          style={{
+            '--lamp-x': `${LAMP.x}px`,
+            '--lamp-y': `${LAMP.y}px`,
+            '--candle-x': `${CANDLE.x}px`,
+            '--candle-y': `${CANDLE.y}px`,
+          }}
+        />
+      )}
       {/* Atardecer dorado: velo ámbar y rosa */}
       <div className="tod__sunset" />
       <div className="tod__sunset-warm" />
