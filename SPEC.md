@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.26.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.27.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -1861,3 +1861,116 @@ utilidades. Estados: **PENDIENTE**, **IMPLEMENTADO**, **VERIFICADO** (pruebas ej
 - Revisión visual en capturas de la escena completa y recortes en 360, 390, 430 y 1440.
 - Limitaciones: a 1440 × 900 el encuadre (§15) deja las baldas fuera de la vista. WebKit en Windows no aplica
   `matrix3d` proyectivo. No hay pruebas en iPhone ni Safari reales.
+
+## 21. Coherencia gouache y corrección de elementos recortados (1.27.0)
+
+Reemplaza las decisiones incompatibles anteriores: se retira la portada grande impresa sobre la página
+(§20.2), la paleta verde propia de la pantalla del portátil (§20.1) y el posicionamiento de etiquetas que podía
+salir del viewport. Conserva datos, acciones y motores locales. Estados: **PENDIENTE**, **IMPLEMENTADO**,
+**VERIFICADO** (pruebas ejecutadas en esta entrega, §21.8). Las capturas citadas no llegaron adjuntas: el
+diagnóstico se ha hecho reproduciendo cada caso en la app.
+
+### 21.0 Diagnóstico (causas medidas)
+
+1. **Portada como pegatina:** la lámina de §20.2 era una imagen opaca rectangular encima del papel pintado.
+2. **Calendario exterior distinto:** la pantalla tenía su propio diseño (verde `#38483E`, fuente de sistema)
+   en vez del calendario interior (`laptop.css`).
+3. **Lomos geométricos:** rayados de 0,6–1,8 px (moiré al reducirse), bisel con `inset` y brillo blanco, y
+   dorado inferido por género (`goldFoil` del motor) en casi todos.
+4. **Tarjeta del temporizador cortada:** no era el panel (que ya va en `#modal-root`), sino la etiqueta
+   informativa `RoomLabel` del vaso. Se pintaba DENTRO del lienzo escalado de la habitación con el ancla en
+   x = 858 de 941 y `translate(-50%, -100%)`, sin límites, y el `overflow: clip` del panel panorámico la cortaba
+   (z-index no lo evita). En móvil, el toque dejaba el botón enfocado y `onFocus` mantenía la tarjeta.
+   Además, el escenario tenía `overflow: hidden`: enfocar un objeto recortado (el libro a 1440 × 900) lo
+   desplazaba hasta 333 px y movía escena y anclas.
+5. **Elementos que compiten:** la capa de objetos (`.room-objects`, z 20) quedaba por encima de la luz (`.tod`,
+   z 5): pantalla, recorte de la planta, lomos y canto de las baldas no recibían la luz de la escena (con
+   atardecer o noche el recorte de la planta se veía como un rectángulo).
+
+### 21.1 Dos familias · VERIFICADO
+
+- **A · Contenido integrado** (coordenadas de la imagen, misma escala, recorte y luz): pantalla del portátil,
+  páginas del libro, lomos y canto de las baldas en `.room-surfaces` (z 2, debajo de `.tod`); luces y efectos
+  ambientales.
+- **B · Interfaz** (píxeles de pantalla, ajustada al viewport): etiquetas en la capa del panel (`overlay`),
+  paneles en `#modal-root`, guía con `placeCard`, menú «Guías» en la esquina.
+- El escenario usa `overflow: clip`: el foco ya no lo desplaza.
+
+### 21.2 Libro: portadilla editorial · VERIFICADO
+
+- Sin portada sobre el libro (la original sigue en la ficha). Contenido transparente sobre el papel pintado, sin
+  tarjetas, fondos ni sombras de texto. Mismo lienzo lógico 250 × 330 por página y quads del área imprimible.
+- Izquierda: «LECTURA ACTUAL», título en Cormorant 500 (40 / 33 / 28 px por longitud; después refluye, máx. 4
+  líneas), autoría en Lora y un ornamento SVG local (ramita, estrella, ola o geométrico) elegido con el
+  preajuste del motor (`getDeterministicVibe`) o el id; es un adorno de la app, no una ilustración de la obra.
+- Derecha: «Por donde vas», «Página 61» y «de 496 · 12,3 %» (`progressParts`), con una línea fina de
+  progreso; por porcentaje, «37,5 %» y «leído»; sin total, sin porcentaje. El título no se repite.
+- Tinta `#493727`, secundaria `#79654F`, multiply en tinta y ornamento. Sin lectura: «Tu próxima historia
+  empieza aquí» y «Elige un libro en tu librería». El libro entero abre la ficha.
+
+### 21.3 Calendario: misma aplicación, vista compacta · VERIFICADO
+
+- `CalendarApp variant="scene"`: barra de ventana con «Calendario», mes y año, cuadrícula L–D con las mismas
+  clases (`.window__bar`, `.cal__head`, `.cal__grid`, `.cal__cell`, `.cal__num`), la misma intensidad por día
+  (`heat`), el mismo anillo de hoy (`#c4623a`) y una sola línea: «Hoy · 24 páginas» o «Hoy · Sin lectura
+  registrada» (`dayDatum` de los registros de hoy, nunca la posición del libro).
+- Compartido, no duplicado: `groupByDay`, `heat`, `dayDatum` y `monthCells` (el panel completo también usa
+  ya `monthCells`). Solo cambia el tamaño; las reglas móviles del panel que dependen del viewport (alto
+  mínimo de celda) se neutralizan en la miniatura.
+- Geometría: cuadrícula de calibración renderizada sobre `LAPTOP_SCREEN` (bordes, diagonales, centro y
+  retícula del 10 %), comprobada contra el bisel antes de sustituirla. El calendario ocupa toda el área
+  interior con padding uniforme; la planta y el vaso lo tapan en parte (se respeta la oclusión). Las celdas no
+  son botones.
+
+### 21.4 Lomos gouache · VERIFICADO
+
+- Grosores, alturas y colores de §20.3 (sin escala duplicada). Una textura de grano local (SVG
+  `feTurbulence` en una variable CSS, la misma imagen para todos, `soft-light`) en vez de rayados.
+- Luz transversal suave (sombra 20–24 % en los cantos, centro +6 %), sin `inset` ni brillo blanco; variación
+  tonal determinista de −8 % a +8 % por libro; sombra de contacto cálida `rgb(64 36 14 / .45)`.
+- Latón mate `#AA8750` solo si la edición lo justifica (cuero, tela, cantos pintados) o el usuario lo eligió
+  (`appearance.goldFoil`); nunca inferido por género. Bandas y emblemas tonales en el resto.
+- Ahora reciben la luz de la escena (están bajo `.tod`). Título real solo cuando se lee.
+
+### 21.5 Temporizador, etiquetas y guía siempre visibles · VERIFICADO
+
+- Etiqueta (tooltip): en la capa del panel, con el ancla convertida una vez (`toScreen`) y colocada con
+  `placeLabel`: encima o debajo, limitada a 12 px + áreas seguras, `max-width: min(17em, 100% − 24px)`. Se
+  recoloca al cambiar encuadre, contenido o su propio tamaño (`ResizeObserver`: el primer render medía antes de
+  cargar las fuentes). Se oculta durante el cambio de habitación, con la guía o con un panel abierto.
+- En móvil el toque abre la función y no deja tarjeta (el foco del toque no la muestra); teclado y ratón sí.
+- Panel del temporizador: portal fuera del track; en ≤ 640 px de ancho o ≤ 560 px de alto cabe en el viewport,
+  la cabecera con «Cerrar» y el reloj quedan fijos y solo se desplaza el resto.
+- Guía: una sola tarjeta con `placeCard` (§16), oculta durante el cambio de habitación.
+
+### 21.6 Elementos sueltos · VERIFICADO
+
+- Puntos y marcas identificados: el punto del botón «Guías» (indicador funcional de objetos fuera de vista),
+  motas de polvo (≤ 0,28 de opacidad, sin eventos), insignias de objetos (solo si se activan) y el diagnóstico
+  de escena (solo en desarrollo con `?sceneDebug=1`). Ninguno intercepta toques: prueba de `elementFromPoint`
+  en el centro de cada objeto y `pointer-events: none` en todas las capas decorativas.
+
+### 21.7 Archivos
+
+`components/panels/ReadingCalendar.jsx`, `components/room/RoomSurfaces.jsx`, `RoomHotspots.jsx`,
+`RoomShelfBooks.jsx`, `CozyRoom.jsx`, `domain/roomSurfaces.js`, `scene/guidePlacement.js`, `styles/room.css`,
+`styles/panels.css`, `styles/figures.css`; pruebas `domain/__tests__/v127.test.js`, `v126.test.js`,
+`v125.test.js`, `e2e/gouache.spec.js`, `e2e/diegetic.spec.js`, `e2e/v123.spec.js`.
+
+### 21.8 Verificación
+
+- Vitest: `placeLabel` (centrada, borde derecho, cambio de lado, áreas seguras, ancla fuera, sin espacio) y
+  `progressParts`.
+- Playwright `e2e/gouache.spec.js` y `e2e/diegetic.spec.js` en los 9 proyectos: todas las etiquetas visibles
+  dentro del viewport y fuera del lienzo escalado; toque sin tarjeta; temporizador en portal, dentro del
+  viewport, con «Cerrar» y reloj visibles tras desplazar; calendario exterior = interior en mes, hoy,
+  intensidad por día, tipografías, colores de celda e intensidad y barra; portadilla (sin imagen, Cormorant
+  500, tinta `#493727`, multiply, sin sombra; ejemplo «Página 61 / de 496 · 12,3 %»); título largo, sin total y
+  sin lectura; lomos sin halo, latón solo en ediciones doradas, una sola textura; ninguna capa invisible
+  intercepta toques y no quedan etiquetas al cambiar de habitación.
+- Capturas: habitación, portátil, calendario abierto, libro, lomos, temporizador y etiqueta junto al borde
+  (`gouache-*`); guía cerca del borde derecho (`guia-rituales`, `e2e/anexos.spec.js`).
+- Limitaciones: a 1440 × 900 las baldas quedan fuera del encuadre (§15); la planta tapa las columnas S–D de
+  la miniatura (oclusión real del asset); el resalte de un objeto al enfocarlo (`hotspot-lift`, de versiones
+  anteriores) no recibe la luz de la escena; WebKit en Windows no aplica `matrix3d` proyectivo; no hay pruebas
+  en iPhone ni Safari reales ni con teclado virtual real.

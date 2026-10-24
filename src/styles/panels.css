@@ -1100,3 +1100,57 @@
   animation: ice-bob 3s ease-in-out infinite;
   transition: width 1s linear, height 1s linear, x 1s linear;
 }
+
+/* ── 1.27.0 · Temporizador siempre visible (SPEC §21.5) ──
+   La bandeja va en #modal-root (portal fuera del track transformado). En pantallas pequeñas no se desplaza el
+   velo entero: la bandeja cabe en el viewport (márgenes de 12 px + áreas seguras), la cabecera con «Cerrar» y
+   el reloj quedan fijos y solo se desplaza el resto. */
+@media (max-width: 640px), (max-height: 560px) {
+  .panel-veil[data-variant='tray'] {
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overflow: hidden;
+  }
+
+  .panel-veil[data-variant='tray'] .tray {
+    width: min(620px, 100%);
+    max-height: calc(100dvh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)));
+  }
+
+  .panel-veil[data-variant='tray'] .tray__wood {
+    --tray-head: 52px;
+    max-height: inherit;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-top: 0;
+  }
+
+  .panel-veil[data-variant='tray'] .tray__head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    height: var(--tray-head);
+    padding-top: 12px;
+    background: linear-gradient(180deg, #d9a66a 80%, rgb(217 166 106 / 0));
+  }
+
+  .panel-veil[data-variant='tray'] .tray__main {
+    position: sticky;
+    top: var(--tray-head);
+    z-index: 1;
+  }
+}
+
+@media (max-width: 400px) {
+  .panel-veil[data-variant='tray'] .tray {
+    max-width: min(360px, calc(100% - 0px));
+    margin-inline: auto;
+  }
+}
+
+/* Horizontal bajo: bebida y reloj en fila para que el reloj no ocupe toda la altura */
+@media (max-height: 560px) and (min-width: 641px) {
+  .panel-veil[data-variant='tray'] .tray__main {
+    grid-template-columns: auto 1fr;
+    padding: 8px 14px;
+  }
+}

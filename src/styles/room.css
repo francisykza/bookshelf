@@ -939,12 +939,16 @@ html[data-motion='reduced'] .lid-sheen-clip {
 }
 
 /* Etiqueta de papel con chincheta (tamaño constante en pantalla) */
+/* Etiqueta informativa (SPEC §21.5): en la capa del panel, en píxeles de pantalla; `placeLabel` decide el lado y
+   la limita al área segura (12 px + safe areas). Sin escala de escena ni translate de centrado. */
 .room-label {
   position: absolute;
-  z-index: 9;
+  z-index: 40;
+  /* ancho propio (no depende de `left`): lo medido es lo que se coloca */
+  width: max-content;
+  max-width: min(17em, calc(100% - 24px));
   pointer-events: none;
-  font-size: calc(15px / var(--k));
-  transform: translate(-50%, -100%);
+  font-size: 15px;
   animation: label-in 240ms var(--ease-camera);
 }
 
@@ -1005,7 +1009,7 @@ html[data-motion='reduced'] .lid-sheen-clip {
 @keyframes label-in {
   from {
     opacity: 0;
-    transform: translate(-50%, calc(-100% + 0.6em));
+    translate: 0 0.4em;
   }
 }
 
@@ -2501,12 +2505,15 @@ html[data-motion='reduced'] .tod__glow::after {
   isolation: isolate;
 }
 
-/* Escenario: ocupa el panel; el lienzo de la ilustración recibe la única transformación (origen 0 0) */
+/* Escenario: ocupa el panel; el lienzo de la ilustración recibe la única transformación (origen 0 0).
+   1.27.0: `clip` y no solo `hidden`: con `hidden` el foco de un objeto recortado (el libro a 1440 × 900)
+   desplazaba el escenario hasta 333 px y movía la escena y las anclas de las etiquetas (SPEC §21.5). */
 .scene-stage,
 .room-camera {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  overflow: clip;
   isolation: isolate;
   perspective: none;
   background: #2a1d14;
@@ -2542,11 +2549,21 @@ html[data-motion='reduced'] .tod__glow::after {
   z-index: 10;
 }
 
+.room-surfaces,
 .room-objects,
 .room-hotspots {
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+/* Superficies integradas: debajo de las capas de luz (z 5) para recibir la misma iluminación que la escena */
+.room-surfaces {
+  z-index: 2;
+}
+
+.room-surfaces button {
+  pointer-events: auto;
 }
 
 .room-objects {
@@ -3108,9 +3125,9 @@ html[data-motion='reduced'] .tod__glow::after {
 
 /* ── 1.25.0 · Integración diegética (SPEC §19) ──────────────────────────────────────────────────── */
 
-/* Pantalla del portátil (SPEC §20.1): BookShelf abierto en Calendario, proyectado en el interior del bisel.
-   Lienzo lógico 300 × 248; jerarquía de aplicación: cabecera, lo leído hoy (dato principal), mes y estado.
-   El contenido ocupa la columna izquierda: a la derecha la planta y el vaso tapan parte de la pantalla. */
+/* Pantalla del portátil (SPEC §21.3): la vista compacta del MISMO calendario del panel (clases y tokens de
+   laptop.css), en un lienzo lógico 300 × 248 proyectado en el interior del bisel con padding uniforme. Aquí
+   solo se ajustan tamaños a la miniatura; colores, intensidades y tipografías son los del calendario interior. */
 .laptop-screen {
   position: absolute;
   top: 0;
@@ -3120,158 +3137,89 @@ html[data-motion='reduced'] .tod__glow::after {
   pointer-events: none;
 }
 
-.laptop-screen__app {
+.cal[data-variant='scene'] {
   position: absolute;
   inset: 0;
-  overflow: hidden;
   display: grid;
-  grid-template-rows: 14% 32% 46% 8%;
-  background: #ede9df;
-  color: #2e3932;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-variant-numeric: tabular-nums;
+  grid-template-rows: 26px 1fr;
+  overflow: hidden;
+  background: linear-gradient(#fbf6ec, #f4ead8);
+  color: var(--color-ink);
+  font-family: 'Lora', var(--font-sans);
+}
+
+.cal[data-variant='scene'] .window__bar {
+  height: 26px;
+}
+
+.cal[data-variant='scene'] .window__title {
+  font-size: 15px;
+}
+
+.cal[data-variant='scene'] .window__title svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cal__scene-body {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 5px;
+  min-height: 0;
+  padding: 8px 12px 9px;
+}
+
+.cal[data-variant='scene'] .cal__head {
+  margin: 0;
+}
+
+.cal[data-variant='scene'] .cal__head h3 {
+  min-width: 0;
+  font-size: 19px;
   line-height: 1;
 }
 
-.laptop-screen__bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 0 14px;
-  background: #38483e;
-  color: #f5f0e5;
+.cal[data-variant='scene'] .cal__grid {
+  grid-template-rows: auto;
+  grid-auto-rows: 1fr;
+  gap: 2px;
+  min-height: 0;
 }
 
-.laptop-screen__brand {
-  font-family: 'Lora', var(--font-sans);
-  font-size: 17px;
-  font-weight: 700;
+.cal[data-variant='scene'] .cal__weekday {
+  align-self: end;
+  font-size: 9px;
 }
 
-.laptop-screen__tab {
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: inset 0 -3px 0 #b78847;
+/* Las reglas móviles del panel (alto mínimo de 76–88 px por celda, h3 en vw) dependen del viewport, no de la
+   miniatura: aquí se neutralizan para que la vista de la escena sea igual en todos los tamaños */
+.cal[data-variant='scene'] .cal__cell {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 0;
+  border-radius: 3px;
+  transition: none;
 }
 
-.laptop-screen__today {
-  display: grid;
-  align-content: center;
-  gap: 3px;
-  width: 66%;
-  padding: 0 12px 0 14px;
+.cal[data-variant='scene'] .cal__cell[data-today='true'] {
+  box-shadow: 0 0 0 1.5px #c4623a;
+}
+
+.cal[data-variant='scene'] .cal__num {
+  top: 1px;
+  left: 3px;
+  font-size: 9px;
+  line-height: 1.1;
+}
+
+.cal__today-line {
+  margin: 0;
   overflow: hidden;
-  background: #f8f3e8;
-}
-
-.laptop-screen__kicker {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #697267;
-}
-
-.laptop-screen__figure {
-  overflow: hidden;
-  font-size: 15px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.laptop-screen__figure b {
-  font-size: 38px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #2e3932;
-}
-
-.laptop-screen__book,
-.laptop-screen__empty {
-  overflow: hidden;
-  font-family: 'Lora', var(--font-sans);
   font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: #697267;
-}
-
-.laptop-screen__book em {
-  font-style: normal;
-  font-weight: 600;
-}
-
-.laptop-screen__empty {
-  font-size: 19px;
-  font-weight: 600;
-  white-space: normal;
-  line-height: 1.15;
-  color: #2e3932;
-}
-
-.laptop-screen__month {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 4px;
-  width: 58%;
-  padding: 7px 10px 0 14px;
-}
-
-.laptop-screen__month-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: #697267;
-}
-
-.laptop-screen__grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-auto-rows: 1fr;
-  gap: 1px;
-  align-items: center;
-  justify-items: center;
-  font-size: 10px;
-  color: #697267;
-}
-
-.laptop-screen__wd {
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.laptop-screen__day {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  border-radius: 3px;
-}
-
-/* Día con lectura: fondo suave verde salvia; hoy, bloque ocre bien visible desde la escena */
-.laptop-screen__day[data-read] {
-  background: rgb(115 130 105 / 0.28);
-  color: #2e3932;
-}
-
-.laptop-screen__day[data-today] {
-  background: #b78847;
-  color: #f8f3e8;
-  font-weight: 800;
-}
-
-.laptop-screen__status {
-  display: flex;
-  align-items: center;
-  width: 58%;
-  padding: 0 14px;
-  overflow: hidden;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: #697267;
+  color: var(--color-ink);
 }
 
 /* La planta y el vaso, recortados de la ilustración, delante de la pantalla */
@@ -3283,9 +3231,9 @@ html[data-motion='reduced'] .tod__glow::after {
   user-select: none;
 }
 
-/* El libro abierto como doble página editorial (SPEC §20.2). Lienzo lógico por página, cada una con su
-   quad (250 × 330, proporción de página real); el papel es el de la ilustración (fondo transparente). Tinta y filetes en multiply; la portada, en su
-   propia capa, conserva color y contraste. */
+/* El libro abierto como doble página editorial (SPEC §21.2): contenido transparente sobre el papel pintado,
+   sin tarjetas, láminas ni fondos. Lienzo lógico 250 × 330 por página (proporción de página real), cada una con
+   su quad del área imprimible. Tinta #493727 y #79654F en multiply; sin sombras en el texto. */
 .open-pages,
 .open-pages__page {
   pointer-events: none;
@@ -3302,172 +3250,125 @@ html[data-motion='reduced'] .tod__glow::after {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  color: #473324;
+  color: #493727;
   text-align: center;
 }
 
-/* Margen mayor hacia el pliegue (derecha en la página izquierda) */
+/* Márgenes generosos, mayores hacia el pliegue */
 .open-pages__page--left {
-  padding: 20px 26px 20px 18px;
+  padding: 34px 32px 34px 24px;
 }
 
 .open-pages__page--right {
-  padding: 18px 20px 18px 28px;
-}
-
-/* Portada como ilustración de apertura: ≤ 72 % del alto útil, proporción intacta, sin marco, esquinas ni sombra */
-.open-pages__plate {
-  position: relative;
-  display: block;
-  height: 72%;
-  aspect-ratio: 2 / 3;
-  max-width: 75%;
-}
-
-.open-pages__plate > .gen-cover,
-.open-pages__cover {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.open-pages__cover {
-  object-fit: contain;
-}
-
-/* Luz muy sutil alineada con la página (no cambia el recurso: es una capa encima) */
-.open-pages__plate::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(150deg, rgb(255 244 222 / 0.1), transparent 45%, rgb(60 40 20 / 0.06));
-  pointer-events: none;
+  padding: 34px 24px 34px 32px;
 }
 
 .open-pages__kicker,
 .open-pages__title,
-.open-pages__invite,
 .open-pages__author,
 .open-pages__progress,
 .open-pages__secondary,
-.open-pages__rule,
 .open-pages__meter,
-.open-pages__frontis {
+.open-pages__ornament {
   mix-blend-mode: multiply;
 }
 
 .open-pages__kicker {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
   font-family: 'Lora', var(--font-sans);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #79634d;
+  color: #79654f;
 }
 
-/* Título: jerarquía principal, máx. 3 líneas; el tamaño baja por escalones según la longitud, nunca sin límite */
-.open-pages__title,
-.open-pages__invite {
+/* Título protagonista: máx. 4 líneas; el tamaño baja por escalones según la longitud y después refluye */
+.open-pages__title {
   max-width: 100%;
   overflow: hidden;
   font-family: 'Cormorant Garamond', var(--font-display);
-  font-size: 38px;
-  font-weight: 700;
-  line-height: 1.02;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.04;
   text-wrap: balance;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
 }
 
 .open-pages__title[data-size='medium'] {
-  font-size: 32px;
+  font-size: 33px;
 }
 
 .open-pages__title[data-size='long'] {
-  font-size: 27px;
-}
-
-.open-pages__invite {
-  font-size: 30px;
+  font-size: 28px;
 }
 
 .open-pages__author {
-  margin-top: 8px;
+  margin-top: 12px;
   font-family: 'Lora', var(--font-sans);
-  font-size: 16px;
+  font-size: 15px;
   font-style: italic;
-  color: #79634d;
+  color: #79654f;
 }
 
-.open-pages__rule {
+/* Ornamento local de trazo fino */
+.open-pages__ornament {
   flex: none;
-  width: 54px;
-  height: 1px;
-  margin: 18px 0 14px;
-  background: rgba(104, 77, 43, 0.35);
+  width: 50px;
+  height: 26px;
+  margin-top: 20px;
+  fill: none;
+  stroke: #79654f;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.8;
+}
+
+.open-pages__ornament[data-kind='star'] {
+  fill: rgb(121 101 79 / 0.25);
 }
 
 .open-pages__progress {
   font-family: 'Lora', var(--font-sans);
-  font-size: 16px;
+  font-size: 26px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
 .open-pages__secondary {
-  margin-top: 5px;
+  margin-top: 6px;
   font-family: 'Lora', var(--font-sans);
-  font-size: 13px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
-  color: #79634d;
+  color: #79654f;
 }
 
-/* Motivo de progreso: un hilo fino con la parte leída en tinta */
+/* Línea editorial de progreso: un hilo fino con la parte leída en tinta */
 .open-pages__meter {
   position: relative;
   flex: none;
-  width: 96px;
-  height: 2px;
-  margin-top: 10px;
-  background: rgba(104, 77, 43, 0.22);
+  width: 110px;
+  height: 1.5px;
+  margin-top: 16px;
+  background: rgb(104 77 43 / 0.25);
 }
 
 .open-pages__meter i {
   position: absolute;
   inset: 0 auto 0 0;
-  background: #473324;
-  opacity: 0.7;
+  background: #493727;
+  opacity: 0.75;
 }
 
-/* Sin portada: frontispicio tipográfico */
-.open-pages__frontis {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-}
-
-.open-pages__initial {
-  font-family: 'Cormorant Garamond', var(--font-display);
-  font-size: 120px;
-  font-weight: 700;
-  line-height: 0.9;
-  color: #473324;
-}
-
-.open-pages__ornament {
-  font-size: 34px;
-  color: #79634d;
-  mix-blend-mode: multiply;
-}
-
-/* Lomos físicos (SPEC §20.3): cara principal con luz transversal (−18 % · base · luz ≤ 9 % · −22 %), canto lateral
-   oscuro estrecho, sombra de contacto y textura por material. Un diseño determinista por libro. */
+/* Lomos gouache (SPEC §21.4): superficies mates, variación tonal amplia y suave, una sola textura local
+   reutilizable (grano, no rayas: sin moiré al reducirse), sin bisel ni brillo blanco, sombra de contacto cálida.
+   El dorado es latón mate y solo aparece si la edición lo justifica (`data-gilt`). */
 .room-shelf {
-  filter: saturate(0.9) sepia(0.04);
+  --spine-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.4 0 0 0 0 0.3 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23n)'/%3E%3C/svg%3E");
+  filter: saturate(0.9) sepia(0.05);
 }
 
 .room-shelf__back {
@@ -3475,17 +3376,18 @@ html[data-motion='reduced'] .tod__glow::after {
 }
 
 .room-spine {
+  /* variación tonal determinista por libro (−8 % … +8 %) sobre el color de portada o de la paleta */
+  --spine-tone: color-mix(in oklab, var(--spine), var(--tone-mix, #000) var(--tone-amt, 0%));
   border-radius: 1.5px 1.5px 0 0;
   background:
-    linear-gradient(90deg, rgb(0 0 0 / 0.18) 0%, rgb(0 0 0 / 0) 24%, rgb(0 0 0 / 0) 56%, rgb(255 255 255 / 0.09) 64%, rgb(255 255 255 / 0) 72%, rgb(0 0 0 / 0.22) 100%),
-    var(--spine);
-  /* canto lateral oscuro y estrecho a la izquierda; borde superior de la tapa apenas marcado */
-  box-shadow:
-    inset 1px 0 0 rgb(0 0 0 / 0.32),
-    inset 0 1px 0 rgb(0 0 0 / 0.18);
+    var(--spine-grain) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgb(40 24 12 / 0.2) 0%, rgb(40 24 12 / 0) 30%, rgb(255 240 220 / 0.06) 50%, rgb(40 24 12 / 0) 70%, rgb(40 24 12 / 0.24) 100%),
+    var(--spine-tone);
+  background-blend-mode: soft-light, normal, normal;
+  box-shadow: none;
 }
 
-/* Sombra de contacto localizada en la base (no llega a la balda de abajo) */
+/* Sombra de contacto cálida en la base (no llega a la balda de abajo, sin halo negro alrededor) */
 .room-spine::after {
   content: '';
   position: absolute;
@@ -3494,24 +3396,22 @@ html[data-motion='reduced'] .tod__glow::after {
   bottom: -1px;
   height: 2.5px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(20 10 4 / 0.5), transparent);
+  background: radial-gradient(closest-side, rgb(64 36 14 / 0.45), transparent);
   pointer-events: none;
 }
 
-/* Texturas: tela con grano fino, cuero suave, papel mate (sin nada) y metálico con un reflejo moderado */
+/* Materiales: el grano cambia de intensidad; el cuero, algo más de cuerpo en el centro; papel, totalmente mate */
 .room-spine[data-material='cloth'] {
-  background:
-    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 0.6px, transparent 0.6px 1.8px),
-    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.035) 0 0.6px, transparent 0.6px 1.8px),
-    linear-gradient(90deg, rgb(0 0 0 / 0.18) 0%, rgb(0 0 0 / 0) 24%, rgb(0 0 0 / 0) 56%, rgb(255 255 255 / 0.08) 64%, rgb(255 255 255 / 0) 72%, rgb(0 0 0 / 0.22) 100%),
-    var(--spine);
+  background-size: 24px 24px, auto, auto;
 }
 
 .room-spine[data-material='leather'] {
   background:
-    radial-gradient(140% 30% at 50% 22%, rgb(255 232 196 / 0.07), transparent 70%),
-    linear-gradient(90deg, rgb(0 0 0 / 0.22) 0%, rgb(0 0 0 / 0) 26%, rgb(0 0 0 / 0) 56%, rgb(255 240 214 / 0.08) 64%, rgb(255 255 255 / 0) 72%, rgb(0 0 0 / 0.26) 100%),
-    var(--spine);
+    var(--spine-grain) 0 0 / 40px 40px,
+    radial-gradient(140% 40% at 50% 30%, rgb(255 236 210 / 0.05), transparent 70%),
+    linear-gradient(90deg, rgb(40 24 12 / 0.24) 0%, rgb(40 24 12 / 0) 32%, rgb(255 236 210 / 0.05) 50%, rgb(40 24 12 / 0) 68%, rgb(40 24 12 / 0.28) 100%),
+    var(--spine-tone);
+  background-blend-mode: soft-light, normal, normal, normal;
 }
 
 .room-spine[data-material='paper'] {
@@ -3520,17 +3420,23 @@ html[data-motion='reduced'] .tod__glow::after {
 
 .room-spine[data-material='metallic'] {
   background:
-    linear-gradient(90deg, rgb(0 0 0 / 0.2) 0%, rgb(255 255 255 / 0) 22%, rgb(255 255 255 / 0.14) 48%, rgb(255 255 255 / 0) 60%, rgb(0 0 0 / 0.24) 100%),
-    var(--spine);
+    linear-gradient(90deg, rgb(40 24 12 / 0.22) 0%, rgb(255 244 228 / 0) 24%, rgb(255 244 228 / 0.1) 50%, rgb(255 244 228 / 0) 66%, rgb(40 24 12 / 0.26) 100%),
+    var(--spine-tone);
 }
 
-/* Nervios del cuero: relieve en el tono del lomo; el filo dorado, solo con pan de oro */
-.room-spine:not([data-foil]) .room-spine__nerves i {
+/* Nervios del cuero: relieve en el tono del lomo; el filo de latón mate solo en ediciones doradas */
+.room-spine .room-spine__nerves i {
   box-shadow: none;
-  background: linear-gradient(180deg, rgb(255 236 206 / 0.22), rgb(0 0 0 / 0.4));
+  background: linear-gradient(180deg, rgb(255 236 206 / 0.16), rgb(40 24 12 / 0.34));
 }
 
-/* Diseños: banda editorial, pequeño emblema, recuadro de rótulo o sobrio (sin nada) */
+.room-spine[data-gilt] .room-spine__nerves i {
+  box-shadow:
+    0 -1px 0 -0.4px rgb(170 135 80 / 0.7),
+    0 1.4px 0 -0.4px rgb(170 135 80 / 0.7);
+}
+
+/* Diseños: banda editorial tonal, pequeño emblema, recuadro de rótulo o sobrio (sin nada) */
 .room-spine__band,
 .room-spine__emblem,
 .room-spine__label {
@@ -3543,21 +3449,18 @@ html[data-motion='reduced'] .tod__glow::after {
   right: 0;
   top: 16%;
   height: 7%;
-  background: rgb(0 0 0 / 0.22);
-  box-shadow:
-    0 -1px 0 rgb(255 255 255 / 0.06),
-    0 1px 0 rgb(255 255 255 / 0.06);
+  background: rgb(40 24 12 / 0.18);
 }
 
 .room-spine[data-ink='dark'] .room-spine__band {
-  background: rgb(0 0 0 / 0.16);
+  background: rgb(40 24 12 / 0.12);
 }
 
-/* Banda dorada solo si el libro tiene pan de oro */
-.room-spine[data-foil] .room-spine__band {
-  background: linear-gradient(90deg, #8a6a2e, #d2ad61 55%, #8a6a2e);
-  height: 2px;
-  box-shadow: 0 5px 0 -0.5px rgb(210 173 97 / 0.6);
+/* Banda de latón mate (#AA8750), solo si la edición es dorada */
+.room-spine[data-gilt] .room-spine__band {
+  height: 1.5px;
+  background: rgb(170 135 80 / 0.75);
+  box-shadow: 0 4px 0 -0.25px rgb(170 135 80 / 0.5);
 }
 
 .room-spine__emblem {
@@ -3567,28 +3470,27 @@ html[data-motion='reduced'] .tod__glow::after {
   aspect-ratio: 1;
   translate: -50% 0;
   rotate: 45deg;
-  border: 1px solid rgb(255 246 226 / 0.45);
+  border: 1px solid rgb(255 244 228 / 0.32);
 }
 
 .room-spine[data-ink='dark'] .room-spine__emblem {
-  border-color: rgb(40 28 18 / 0.45);
+  border-color: rgb(73 55 39 / 0.4);
 }
 
-.room-spine[data-foil] .room-spine__emblem {
-  border-color: rgb(214 176 98 / 0.85);
+.room-spine[data-gilt] .room-spine__emblem {
+  border-color: rgb(170 135 80 / 0.8);
 }
 
 .room-spine__label {
   left: 18%;
   right: 18%;
   top: 22%;
-  height: 34%;
-  background: rgb(255 246 226 / 0.16);
-  box-shadow: inset 0 0 0 0.6px rgb(0 0 0 / 0.18);
+  height: 30%;
+  background: rgb(255 244 228 / 0.12);
 }
 
 .room-spine[data-ink='dark'] .room-spine__label {
-  background: rgb(255 255 255 / 0.22);
+  background: rgb(255 250 240 / 0.18);
 }
 
 /* Título real en vertical (de abajo arriba, como en las ediciones españolas); autoría a continuación si cabe */
@@ -3622,8 +3524,8 @@ html[data-motion='reduced'] .tod__glow::after {
   color: rgb(40 28 18 / 0.85);
 }
 
-.room-spine[data-foil] .room-spine__title {
-  color: #e2c27a;
+.room-spine[data-gilt] .room-spine__title {
+  color: #c9a96b;
 }
 
 /* El último de la fila se apoya un poco, girando sobre su base derecha (no invade al vecino) */

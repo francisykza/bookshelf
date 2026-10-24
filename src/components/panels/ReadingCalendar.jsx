@@ -1,11 +1,12 @@
 // Apps del portátil (SPEC §6, §14): Calendario de lectura (portadas de lo que leíste cada día con el dato de
 // ese día) y Sesiones (registro cronológico). Cada lectura es un registro propio: se ve, se edita y se borra
 // por su id, agrupada por libro, y siempre con la posición que tenía el libro al registrarla.
-import { Check, ChevronLeft, ChevronRight, Coffee, Flame, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Coffee, Flame, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { dayKey, parseDay } from '../../domain/dates';
 import { hash } from '../../domain/books';
 import { dayDatum, editEntry, entryInput, entryText, groupByDay, heat, isActive, summarize } from '../../domain/reading';
+import { monthCells } from '../../domain/roomSurfaces';
 import { useLibrary } from '../../state/useLibrary';
 import { Cover } from '../shelf/BookItem';
 import { playUiSound } from '../../audio/uiSounds';
@@ -182,8 +183,66 @@ function useNarrow() {
   return narrow;
 }
 
-/** `selectToday`: al llegar desde la pantalla del portátil, el día de hoy ya está abierto (SPEC §20.1). */
-export function CalendarApp({ selectToday = false }) {
+/**
+ * Calendario de lectura. `variant="scene"` es la vista compacta que se ve en la pantalla del portátil desde la
+ * habitación (SPEC §21.3): misma app, mismos datos y mismas clases; `selectToday` abre el día de hoy al llegar
+ * desde esa pantalla.
+ */
+export function CalendarApp({ variant = 'full', ...props }) {
+  return variant === 'scene' ? <CalendarScene {...props} /> : <CalendarFull {...props} />;
+}
+
+/** Línea única de actividad de hoy: páginas registradas hoy (nunca la posición del libro) o el avance. */
+function todayLine(groups) {
+  const datum = dayDatum(groups.filter((g) => g.entries.some(isActive)));
+  if (datum.kind === 'pages') return `Hoy · ${datum.pages.toLocaleString('es-ES')} ${datum.pages === 1 ? 'página' : 'páginas'}`;
+  if (datum.kind === 'percent') return `Hoy · ${datum.label}`;
+  return 'Hoy · Sin lectura registrada';
+}
+
+/**
+ * Vista compacta para la escena: barra de la ventana, mes, cuadrícula con la misma intensidad por día que el
+ * panel y una sola línea de hoy. Decorativa (sin botones): el hotspot del portátil abre el calendario completo.
+ */
+function CalendarScene({ today = dayKey() }) {
+  const { state } = useLibrary();
+  const days = useDays(state);
+  const cells = useMemo(() => monthCells(today), [today]);
+  return (
+    <div className="cal" data-variant="scene" aria-hidden="true">
+      <div className="window__bar">
+        <span className="window__title">
+          <CalendarDays aria-hidden="true" />
+          Calendario
+        </span>
+      </div>
+      <div className="cal__scene-body">
+        <div className="cal__head">
+          <h3>{cap(parseDay(today).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }))}</h3>
+        </div>
+        <div className="cal__grid">
+          {WEEKDAYS.map((w) => (
+            <span key={w} className="cal__weekday">
+              {w}
+            </span>
+          ))}
+          {cells.map((date, i) =>
+            date ? (
+              <span key={date} className="cal__cell" data-heat={heat(days[date] ?? [])} data-today={date === today} data-future={date > today}>
+                <span className="cal__num">{parseDay(date).getDate()}</span>
+              </span>
+            ) : (
+              <span key={`e${i}`} className="cal__blank" />
+            ),
+          )}
+        </div>
+        <p className="cal__today-line">{todayLine(days[today] ?? [])}</p>
+      </div>
+    </div>
+  );
+}
+
+function CalendarFull({ selectToday = false }) {
   const { state } = useLibrary();
   const days = useDays(state);
   const pomos = usePomodoros(state);
@@ -204,15 +263,8 @@ export function CalendarApp({ selectToday = false }) {
     if (over > 0) scroller.scrollTop += over + 8;
   }, [narrow, open]);
 
-  const cells = useMemo(() => {
-    const first = new Date(month);
-    const offset = (first.getDay() + 6) % 7;
-    const count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-    return [
-      ...Array.from({ length: offset }, () => null),
-      ...Array.from({ length: count }, (_, i) => dayKey(new Date(month.getFullYear(), month.getMonth(), i + 1))),
-    ];
-  }, [month]);
+  // Los mismos días que la vista de la escena (lunes primero, huecos a `null`)
+  const cells = useMemo(() => monthCells(dayKey(month)), [month]);
 
   const monthDays = cells.filter(Boolean);
   const monthEntries = monthDays.flatMap((d) => (days[d] ?? []).flatMap((g) => g.entries));

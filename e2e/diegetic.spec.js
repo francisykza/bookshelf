@@ -73,28 +73,28 @@ test('calendario encendido: mes, lunes primero, hoy, actividad real, dentro del 
     const st = JSON.parse(localStorage.getItem('bookshelf:v1'));
     const prefix = today.slice(0, 7);
     const expectedRead = [...new Set(st.progress.readingLog.filter((e) => e.date.startsWith(prefix) && isActive(e)).map((e) => Number(e.date.slice(8))))].sort((a, b) => a - b);
-    const grid = document.querySelector('.laptop-screen__grid');
+    const grid = document.querySelector('.laptop-screen .cal__grid');
     const kids = [...grid.children];
     const wd = kids.slice(0, 7).map((k) => k.textContent);
     const blanks = kids.slice(7).findIndex((k) => k.textContent);
     const first = new Date(now.getFullYear(), now.getMonth(), 1);
-    const shownRead = [...grid.querySelectorAll('[data-read]')].map((k) => Number(k.textContent)).sort((a, b) => a - b);
+    const shownRead = [...grid.querySelectorAll('.cal__cell:not([data-heat="0"])')].map((k) => Number(k.textContent)).sort((a, b) => a - b);
     // Dentro del bisel: las esquinas proyectadas de la pantalla están en el quad interior medido
     const stage = document.querySelector('[data-panel="MAIN_ROOM"] .scene-stage');
     const k = +stage.dataset.scale;
     const ox = +stage.dataset.offsetX;
     const oy = +stage.dataset.offsetY;
-    const b = document.querySelector('.laptop-screen__app').getBoundingClientRect();
+    const b = document.querySelector('.laptop-screen .cal').getBoundingClientRect();
     const xs = LAPTOP_SCREEN.map((p) => ox + p[0] * k);
     const ys = LAPTOP_SCREEN.map((p) => oy + p[1] * k);
     const quad = { l: Math.min(...xs), t: Math.min(...ys), r: Math.max(...xs), b: Math.max(...ys) };
     return {
-      monthText: document.querySelector('.laptop-screen__month-name').textContent,
+      monthText: document.querySelector('.laptop-screen .cal__head h3').textContent,
       monthExpected: month.charAt(0).toUpperCase() + month.slice(1),
       wd,
       blanks,
       blanksExpected: (first.getDay() + 6) % 7,
-      todayShown: Number(document.querySelector('.laptop-screen__day[data-today]').textContent),
+      todayShown: Number(document.querySelector('.laptop-screen .cal__cell[data-today="true"]').textContent),
       todayExpected: now.getDate(),
       shownRead,
       expectedRead,
@@ -122,14 +122,14 @@ test('el calendario se actualiza al registrar lectura y tocar la pantalla abre C
     const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     st.progress.readingLog = st.progress.readingLog.filter((e) => e.date !== today);
   });
-  await expect(page.locator('.laptop-screen__day[data-today]')).not.toHaveAttribute('data-read');
-  await expect(page.locator('.laptop-screen__empty')).toHaveText('Tu próxima página te espera');
+  await expect(page.locator('.laptop-screen .cal__cell[data-today="true"]')).toHaveAttribute('data-heat', '0');
+  await expect(page.locator('.laptop-screen .cal__today-line')).toHaveText('Hoy · Sin lectura registrada');
   await page.locator('.hotspot[data-id="laptop"]').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.window__title')).toContainText('Calendario');
+  await expect(page.locator('.panel .window__title')).toContainText('Calendario');
   // Desde la pantalla del portátil, el día de hoy llega ya seleccionado
   await expect(page.locator('.cal-pop')).toBeVisible();
-  if (!(await page.locator('.cal-pop').count())) await page.locator('.cal__cell[data-today="true"]').click();
+  if (!(await page.locator('.cal-pop').count())) await page.locator('.panel .cal__cell[data-today="true"]').click();
   const form = page.locator('.cal-pop .reading-form');
   await form.getByRole('radio', { name: 'He leído' }).evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await form.getByRole('radio', { name: 'He leído' }).click();
@@ -142,13 +142,12 @@ test('el calendario se actualiza al registrar lectura y tocar la pantalla abre C
   await form.getByRole('button', { name: 'Guardar lectura' }).click();
   await expect(form.locator('.reading-form__saved')).toHaveText('✓ Guardado');
   await page.keyboard.press('Escape');
-  await expect(page.locator('.laptop-screen__day[data-today]')).toHaveAttribute('data-read');
-  // Lo leído hoy pasa a ser el dato principal de la pantalla
-  await expect(page.locator('.laptop-screen__figure')).toHaveText(/^6\s+páginas leídas$/);
-  await expect(page.locator('.laptop-screen__empty')).toHaveCount(0);
+  await expect(page.locator('.laptop-screen .cal__cell[data-today="true"]')).toHaveAttribute('data-heat', '1');
+  // La única línea de actividad de hoy, con el valor real
+  await expect(page.locator('.laptop-screen .cal__today-line')).toHaveText('Hoy · 6 páginas');
 });
 
-test('pantalla: varias lecturas hoy muestran el libro principal y «+N libros»; nunca currentPage', async ({ page }) => {
+test('pantalla: varias lecturas hoy suman sus páginas en una sola línea; nunca currentPage', async ({ page }) => {
   await load(page, (st) => {
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -165,9 +164,8 @@ test('pantalla: varias lecturas hoy muestran el libro principal y «+N libros»;
     const e = st.progress.readingLog.find((x) => x.id === 'qa1');
     return st.books.find((b) => b.id === e.bookId).title;
   });
-  await expect(page.locator('.laptop-screen__figure')).toHaveText(/^42\s+páginas leídas$/);
-  await expect(page.locator('.laptop-screen__book')).toContainText(top);
-  await expect(page.locator('.laptop-screen__book em')).toHaveText(/\+1 libro$/);
+  expect(top).toBeTruthy();
+  await expect(page.locator('.laptop-screen .cal__today-line')).toHaveText('Hoy · 42 páginas');
 });
 
 test('encuadre: la escena cubre todo el viewport (sin franja superior propia de la app)', async ({ page }) => {
@@ -186,53 +184,62 @@ test('encuadre: la escena cubre todo el viewport (sin franja superior propia de 
   expect(r.baseRight).toBeGreaterThanOrEqual(r.w - 0.5);
 });
 
-test('el libro abierto muestra la lectura actual y cambia con ella', async ({ page }, info) => {
-  await load(page);
+test('libro: portadilla editorial de la lectura actual, sin portada pegada', async ({ page }, info) => {
+  // El ejemplo de la especificación: «Proyecto Hail Mary», de Andy Weir, página 61 de 496
+  await load(page, (st) => {
+    const b = st.books.find((x) => x.id === 'hail-mary');
+    st.settings.currentBookId = 'hail-mary';
+    b.status = 'reading';
+    b.trackBy = 'pages';
+    b.pageCount = 496;
+    b.currentPage = 61;
+  });
   const current = await page.evaluate(() => {
     const st = JSON.parse(localStorage.getItem('bookshelf:v1'));
     return st.books.find((b) => b.id === st.settings.currentBookId);
   });
-  await expect(page.locator('.open-pages__title')).toHaveText(current.title);
-  await expect(page.locator('.open-pages__kicker')).toHaveText('Entre tus páginas');
-  await expect(page.locator('.open-pages__plate')).toHaveCount(1);
-  // El título no se repite en la página izquierda y no hay instrucciones impresas
-  // (la portada generada lleva su título como ilustración de cubierta; lo que no debe haber es un pie de texto)
-  const leftText = await page.locator('.open-pages__page--left').evaluate((el) => [...el.children].filter((c) => !c.classList.contains('open-pages__plate')).map((c) => c.textContent).join(''));
-  expect(leftText).not.toContain(current.title);
+  const left = page.locator('.open-pages__page--left');
+  const right = page.locator('.open-pages__page--right');
+  await expect(left.locator('.open-pages__kicker')).toHaveText('Lectura actual');
+  await expect(left.locator('.open-pages__title')).toHaveText(current.title);
+  await expect(left.locator('.open-pages__author')).toHaveText(current.author);
+  await expect(left.locator('svg.open-pages__ornament')).toHaveCount(1);
+  await expect(right.locator('.open-pages__kicker')).toHaveText('Por donde vas');
+  await expect(right.locator('.open-pages__progress')).toHaveText('Página 61');
+  await expect(right.locator('.open-pages__secondary')).toHaveText(/^de 496 · 12,3\s%$/);
+  await expect(right.locator('.open-pages__meter')).toHaveCount(1);
+  // Sin portada rectangular, imágenes, tarjetas ni el título repetido en la página derecha
+  await expect(page.locator('.open-pages img, .open-pages .gen-cover, .open-pages__plate')).toHaveCount(0);
+  await expect(right).not.toContainText(current.title);
   await expect(page.locator('.open-pages')).not.toContainText('toca para');
-  // La lámina nunca está vacía (portada generada de base hasta que llega la real) y tiene presencia:
-  // 60–75 % del ancho útil de la página, ≤ 72 % del alto útil
-  const plate = await page.locator('.open-pages__plate').evaluate((el) => {
-    const page = el.closest('.open-pages__page');
-    const cs = getComputedStyle(page);
-    const uw = page.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    const uh = page.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    return { w: el.offsetWidth / uw, h: el.offsetHeight / uh, painted: el.children.length > 0 };
+  const look = await page.evaluate(() => {
+    const page = document.querySelector('.open-pages__page--left');
+    const title = document.querySelector('.open-pages__title');
+    const cs = getComputedStyle(title);
+    return { bg: getComputedStyle(page).backgroundColor, weight: cs.fontWeight, family: cs.fontFamily, blend: cs.mixBlendMode, color: cs.color, shadow: cs.textShadow };
   });
-  run.data.plate = plate;
-  expect(plate.painted).toBe(true);
-  expect(plate.w).toBeGreaterThanOrEqual(0.6);
-  expect(plate.w).toBeLessThanOrEqual(0.76);
-  expect(plate.h).toBeLessThanOrEqual(0.73);
-  const text = await page.locator('.open-pages__progress').textContent();
-  expect(text).not.toMatch(/NaN|undefined/);
+  run.data.bookLook = look;
+  expect(look.bg).toBe('rgba(0, 0, 0, 0)');
+  expect(look.weight).toBe('500');
+  expect(look.family).toMatch(/Cormorant Garamond/);
+  expect(look.blend).toBe('multiply');
+  expect(look.color).toBe('rgb(73, 55, 39)');
+  expect(look.shadow).toBe('none');
   // Las dos páginas son superficies separadas que no cruzan el pliegue (cada una con su quad)
   const crossing = await page.evaluate(async () => {
-    const { BOOK_LEFT_PAGE, BOOK_RIGHT_PAGE } = await import('/src/scene/sceneMap.js');
-    const maxLeft = Math.max(...BOOK_LEFT_PAGE.map((p) => p[0]));
-    const minRight = Math.min(...BOOK_RIGHT_PAGE.map((p) => p[0]));
-    return { maxLeft, minRight };
+    const { BOOK_LEFT_PAGE } = await import('/src/scene/sceneMap.js');
+    return Math.max(...BOOK_LEFT_PAGE.map((p) => p[0]));
   });
-  expect(crossing.maxLeft).toBeLessThan(548);
+  expect(crossing).toBeLessThan(548);
   const clip = await clipOf(page, 220, 1330, 900, 1672);
   if (clip.width > 20 && clip.height > 20) await shot(page, info, 'diegetic-libro', clip);
-  // Tocar el libro abre su ficha
+  // Tocar el libro abre su ficha (donde sí está la portada original)
   await page.locator('.hotspot[data-id="book"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.open-book')).toBeVisible();
 });
 
-test('libro: otra lectura, sin lectura, título largo, sin portada y sin total de páginas', async ({ page }) => {
+test('libro: título largo, sin portada, sin total de páginas y sin lectura', async ({ page }) => {
   await load(page, (st) => {
     const b = st.books.find((x) => x.id === 'hail-mary');
     st.settings.currentBookId = 'hail-mary';
@@ -243,14 +250,14 @@ test('libro: otra lectura, sin lectura, título largo, sin portada y sin total d
     b.currentPercent = 37.5;
   });
   await expect(page.locator('.open-pages__title')).toContainText('Un título larguísimo');
-  const t = await page.locator('.open-pages__title').evaluate((el) => ({ clamped: el.scrollHeight > el.clientHeight + 1, overflowPage: el.closest('.open-pages__page').scrollWidth > el.closest('.open-pages__page').clientWidth + 1 }));
+  const t = await page.locator('.open-pages__title').evaluate((el) => ({ clamped: el.scrollHeight > el.clientHeight + 1, overflowPage: el.closest('.open-pages__page').scrollWidth > el.closest('.open-pages__page').clientWidth + 1, size: parseFloat(getComputedStyle(el).fontSize) }));
   expect(t.clamped).toBe(true);
   expect(t.overflowPage).toBe(false);
-  // Sin portada: frontispicio tipográfico, sin lámina vacía
-  await expect(page.locator('.open-pages__plate')).toHaveCount(0);
-  await expect(page.locator('.open-pages__frontis')).toHaveCount(1);
-  await expect(page.locator('.open-pages__progress')).toHaveText(/^37,5\s%\sleído$/);
-  await expect(page.locator('.open-pages__secondary')).toHaveCount(0);
+  // Reflujo con un tamaño mínimo, no reducción ilimitada
+  expect(t.size).toBeGreaterThanOrEqual(28);
+  // Sin total: el porcentaje como dato, sin «Página» inventada
+  await expect(page.locator('.open-pages__progress')).toHaveText(/^37,5\s%$/);
+  await expect(page.locator('.open-pages__secondary')).toHaveText('leído');
   // Sin ninguna lectura en curso
   await page.addInitScript(
     setStored((st) => {
@@ -262,8 +269,8 @@ test('libro: otra lectura, sin lectura, título largo, sin portada y sin total d
   );
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await expect(page.locator('.open-pages__invite')).toHaveText('Tu próxima historia empieza aquí');
-  await expect(page.locator('.open-pages__title')).toHaveCount(0);
+  await expect(page.locator('.open-pages__title')).toHaveText('Tu próxima historia empieza aquí');
+  await expect(page.locator('.open-pages__page--right')).toContainText('Elige un libro en tu librería');
 });
 
 test('lomos: apoyados en la balda, sin cruzarse, deterministas, dorado no generalizado', async ({ page }, info) => {

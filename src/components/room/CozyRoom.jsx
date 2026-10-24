@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from 'react';
 import { lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook, progressLabel } from '../../domain/books';
 import { getDeterministicVibe } from '../../utils/vibeEngine';
-import { readingStreak } from '../../domain/reading';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { HOTSPOTS, ROOMS } from '../../scene/sceneMap';
 import { visibleFraction } from '../../scene/stageFit';
@@ -112,7 +111,6 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   const timerText = timer.running ? `${timer.phase === 'focus' ? 'Leyendo' : 'Descanso'} · ${formatTimer(timer.remaining)}` : null;
   // Día local (cambia a medianoche y al volver a la app): lo usa la pantalla del portátil
   const today = useToday();
-  const streak = readingStreak(progress.readingLog);
 
   const openBook = () => (reading ? onOpenBook(reading) : onOpenShelf());
   const toggleLamp = () => {
@@ -160,6 +158,9 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
             </div>
           )}
           {guide?.visible && inRoom && <OnboardingGuide guide={guide} fit={fit} reducedMotion={reducedMotion} />}
+          {/* Etiqueta informativa: interfaz en píxeles de pantalla, nunca dentro del lienzo escalado (ni durante
+              el cambio de habitación, ni con la guía o un panel abiertos) */}
+          {live && !guide?.visible && <RoomLabel label={label} fit={fit} />}
           <OffscreenReporter fit={fit} actionsRef={actionsRef} onChange={onOffscreen} />
         </>
       )}
@@ -173,18 +174,22 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} />
         <AmbientLife active={live} reducedMotion={reducedMotion} candleOn={settings.candleOn} timeOfDay={settings.timeOfDay} />
 
+        {/* 8 · superficies integradas en la ilustración (lomos, pantalla y su primer plano, páginas del libro):
+            debajo de la luz y la atmósfera, que las tiñen igual que al resto de la habitación (SPEC §21.1) */}
+        <div className="room-surfaces">
+          <RoomShelfBooks books={books} currentId={reading?.id} onOpenShelf={onOpenShelf} onHover={onHover} active={live} scale={fit.scale} awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))} />
+          <LaptopScreen today={today} />
+          <OpenBookPages book={reading} />
+        </div>
+
         {/* 10 · luz y atmósfera (sin geometría heredada) */}
         <TimeOfDayLayers timeOfDay={settings.timeOfDay} lampOn={settings.lampOn} candleOn={settings.candleOn} vibe={vibe} />
         <CloudShadow timeOfDay={live ? settings.timeOfDay : 'night'} />
 
         {/* 20 · objetos dinámicos integrados en la ilustración */}
         <div className="room-objects">
-          <RoomShelfBooks books={books} currentId={reading?.id} onOpenShelf={onOpenShelf} onHover={onHover} active={live} scale={fit.scale} awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))} />
           <RoomFigureShelves figures={progress.figures} onOpenVault={onOpenVault} onHover={onHover} />
           <TeaDrain level={teaLevel} />
-          {/* Pantalla encendida con el calendario del mes y el libro abierto con tu lectura (los abren sus hotspots) */}
-          <LaptopScreen log={progress.readingLog} books={books} today={today} streak={streak} />
-          <OpenBookPages book={reading} />
           <TeaMist timer={timer} />
           <DrinkSteam drink={settings.drink} active={timer.running} />
           <SoundWaves on={settings.sound && live} />
@@ -238,8 +243,6 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           <TimeDial timeOfDay={settings.timeOfDay} onOpen={onOpenAtlas} onHover={onHover} spot={lit('sun')} />
         </div>
 
-        {/* 40 · etiquetas */}
-        <RoomLabel label={label} />
       </div>
       )}
     </SceneStage>

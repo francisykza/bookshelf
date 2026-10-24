@@ -2,9 +2,11 @@
 // pintados encima: al pasar el ratón o tocar, el propio objeto se aviva con un halo dorado que sigue su
 // silueta y crece un 5 %. Las insignias con icono solo aparecen con «✨ Mostrar guías».
 import { BookOpen, CupSoda, Flame, Headphones, Lamp, Laptop, Library, Trophy } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bounds, clipPolygon } from '../../scene/homography';
+import { placeLabel, safeAreas } from '../../scene/guidePlacement';
 import { HOTSPOTS, SCENE_H, SCENE_SRC, SCENE_W, SILHOUETTES, SUN_DIAL } from '../../scene/sceneMap';
+import { toScreen } from '../../scene/stageFit';
 
 const ICONS = { book: BookOpen, shelf: Library, laptop: Laptop, headphones: Headphones, tray: CupSoda, figures: Trophy, lamp: Lamp, lantern: Flame };
 
@@ -32,6 +34,8 @@ export function Hotspot({ id, label, onActivate, onHover, spot = false, guides =
   const clip = clipPolygon(spotData.shape);
   const [hover, setHover] = useState(false);
   const leaveTimer = useRef(0);
+  // El último puntero que tocó el botón: con el dedo, el foco que deja el toque no muestra la etiqueta
+  const lastPointer = useRef('');
   const active = hover || spot;
   const Icon = ICONS[id];
   const lift = LIFTS[id];
@@ -50,17 +54,10 @@ export function Hotspot({ id, label, onActivate, onHover, spot = false, guides =
     }, 160);
   };
   useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
-  const activate = (event) => {
-    onActivate(event);
-    if (event.nativeEvent?.pointerType === 'touch') {
-      show();
-      setHover(true);
-      window.setTimeout(() => {
-        setHover(false);
-        onHover(null, id);
-      }, 1800);
-    }
-  };
+  // En móvil el toque abre la función del objeto y no deja ninguna tarjeta encima de la escena
+  const activate = (event) => onActivate(event);
+  // Solo el foco visible (teclado) muestra la etiqueta; el que deja un toque o un cierre de panel, no
+  const focus = (event) => lastPointer.current !== 'touch' && event.currentTarget.matches(':focus-visible') && enter();
   const place = { left: box.x, top: box.y, width: box.w, height: box.h };
 
   return (
@@ -88,9 +85,15 @@ export function Hotspot({ id, label, onActivate, onHover, spot = false, guides =
         style={{ ...place, clipPath: clip }}
         aria-label={label.aria ?? `${label.title}. ${label.text ?? ''}`}
         onClick={activate}
+        onPointerDown={(event) => {
+          lastPointer.current = event.pointerType;
+        }}
+        onKeyDown={() => {
+          lastPointer.current = 'keyboard';
+        }}
         onPointerEnter={(event) => event.pointerType !== 'touch' && enter()}
         onPointerLeave={leave}
-        onFocus={enter}
+        onFocus={focus}
         onBlur={leave}
       >
         {children}
@@ -115,11 +118,32 @@ export function Hotspot({ id, label, onActivate, onHover, spot = false, guides =
   );
 }
 
-/** Etiqueta de papel con chincheta que flota junto al objeto. */
-export function RoomLabel({ label }) {
+/**
+ * Etiqueta informativa de papel (SPEC §21.5). Es interfaz, no contenido de la ilustración: se dibuja en la capa
+ * del panel (fuera del lienzo escalado y de su recorte), con el ancla convertida UNA vez a píxeles de pantalla
+ * (`toScreen`), y se coloca con `placeLabel`: encima o debajo, siempre dentro del área segura. Se recalcula al
+ * cambiar el encuadre (resize, orientación, teclado), el contenido o su propio tamaño.
+ */
+export function RoomLabel({ label, fit }) {
+  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+  const point = label ? toScreen(fit, label.x, label.y) : null;
+  const key = label ? `${label.id}|${label.title}|${label.text}|${label.meta}|${fit.panelW}x${fit.panelH}|${point.x.toFixed(1)},${point.y.toFixed(1)}` : '';
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !point) return undefined;
+    const place = () => setPos(placeLabel({ w: fit.panelW, h: fit.panelH }, point, { w: el.offsetWidth, h: el.offsetHeight }, safeAreas()));
+    place();
+    // También cuando cambia su propio tamaño (p. ej. al terminar de cargar las fuentes)
+    const observer = new ResizeObserver(place);
+    observer.observe(el);
+    return () => observer.disconnect();
+    // `key` resume todo lo que cambia el contenido o el ancla
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
   if (!label) return null;
   return (
-    <div className="room-label" data-below={label.y < 170 || undefined} style={{ left: label.x, top: label.y }} role="status">
+    <div ref={ref} className="room-label" data-side={pos?.side} data-placed={pos ? '' : undefined} style={pos ? { left: pos.x, top: pos.y } : { left: 0, top: 0, visibility: 'hidden' }} role="status">
       <div className="room-label__paper">
         <strong>{label.title}</strong>
         {label.text && <span>{label.text}</span>}

@@ -39,3 +39,25 @@ export function placeCard(fit, point, size, safe) {
   const y = point.y > fit.panelH / 2 ? (above >= minY ? above : below) : below <= maxY ? below : above;
   return { x: clampX(point.x - size.w / 2), y: clampY(y), firefly: point };
 }
+
+/** Margen de las etiquetas informativas respecto al borde (más las áreas seguras). */
+const LABEL_MARGIN = 12;
+const LABEL_GAP = 10;
+
+/**
+ * Etiqueta informativa anclada a un objeto (SPEC §21.5): `point` ya está en píxeles de pantalla del panel (no
+ * se vuelve a aplicar la escala de la escena). Prueba encima del ancla; si no cabe, debajo; después limita la
+ * posición al área segura. `fits: false` si la etiqueta es más grande que el espacio (se muestra centrada).
+ */
+export function placeLabel(panel, point, size, safe) {
+  const minX = LABEL_MARGIN + safe.left;
+  const maxX = panel.w - LABEL_MARGIN - safe.right - size.w;
+  const minY = LABEL_MARGIN + safe.top;
+  const maxY = panel.h - LABEL_MARGIN - safe.bottom - size.h;
+  const fits = maxX >= minX && maxY >= minY;
+  const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v)));
+  const above = point.y - LABEL_GAP - size.h;
+  const below = point.y + LABEL_GAP;
+  const side = above >= minY ? 'above' : below <= maxY ? 'below' : 'above';
+  return { x: clamp(point.x - size.w / 2, minX, maxX), y: clamp(side === 'above' ? above : below, minY, maxY), side, fits };
+}

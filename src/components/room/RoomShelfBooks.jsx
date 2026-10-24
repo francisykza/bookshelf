@@ -86,14 +86,21 @@ function inkFor(hex) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? 'dark' : 'light';
 }
 
+/** Dorado justificado por la edición (cuero, tela, cantos pintados) o elegido por el usuario; nunca inferido. */
+const GILT_EDITIONS = new Set(['leatherbound', 'clothbound', 'sprayed_edges']);
+const isGilt = (book) => (typeof book.appearance?.goldFoil === 'boolean' ? book.appearance.goldFoil : GILT_EDITIONS.has(book.editionType));
+
 /**
- * Un lomo físico (SPEC §20.3): cara principal con iluminación transversal (lomo redondeado), canto lateral
- * oscuro, sombra de contacto, material del motor y un diseño determinista entre cuatro. Dorado solo con
- * `goldFoil`, nervios solo en cuero. Título real (y autoría si hay sitio) cuando se lee a la escala actual; en
- * lomos finos, composición simplificada.
+ * Un lomo gouache (SPEC §21.4): cara mate con luz transversal suave, grano local, variación tonal determinista,
+ * sombra de contacto cálida, material del motor y un diseño entre cuatro. Latón mate solo si la edición lo
+ * justifica (`data-gilt`), nervios solo en cuero. Título real (y autoría si hay sitio) cuando se lee a la escala
+ * actual; en lomos finos, composición simplificada.
  */
 function RoomSpine({ book, physics, x, w, h, index, lean, peek, scale, onOpenShelf, onHover, label }) {
   const [color, observe] = useCoverColor(book);
+  // Variación tonal amplia pero suave: cada libro se aclara u oscurece un poco (determinista)
+  const toneSeed = stableHash(`tone:${book.id ?? book.title}`);
+  const tone = { '--tone-mix': toneSeed % 2 ? '#fff4e4' : '#1e130a', '--tone-amt': `${(toneSeed >> 1) % 9}%` };
   const variant = book.editionType === 'leatherbound' ? 'nerves' : VARIANTS[stableHash(`spine:${book.id ?? book.title}`) % VARIANTS.length];
   const showTitle = w * scale >= TITLE_MIN_W && h * scale >= TITLE_MIN_H;
   const showAuthor = showTitle && w * scale >= 20 && Boolean(book.author);
@@ -108,10 +115,11 @@ function RoomSpine({ book, physics, x, w, h, index, lean, peek, scale, onOpenShe
       data-variant={variant}
       data-ink={inkFor(color)}
       data-foil={physics.goldFoil || undefined}
+      data-gilt={isGilt(book) || undefined}
       data-edge={sprayedEdge(book) || undefined}
       data-peek={peek}
       data-lean={lean || undefined}
-      style={{ left: x, width: w, height: h, '--spine': color, '--i': index }}
+      style={{ left: x, width: w, height: h, '--spine': color, '--i': index, ...tone }}
       aria-label={`${book.title}, de ${book.author}. Ver tu librería`}
       title={book.title}
       onClick={(event) => {

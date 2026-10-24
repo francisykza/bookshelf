@@ -1241,9 +1241,6 @@
   z-index: 1;
 }
 
-.room-label[data-below] {
-  transform: translate(-50%, 1.4em);
-}
 
 /* ── SHELF_VIEW: mini-figura de saga engarzada en el listón bajo su libro ── */
 /* 1.19.0: sin `pointer-events: none` en el scroller (en iOS impedía desplazar la balda; SPEC §13.1) */

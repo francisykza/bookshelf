@@ -1,8 +1,7 @@
 // Pruebas de la 1.25.0 (SPEC §19): cuadrícula del mes de la pantalla del portátil, línea de progreso del libro
 // abierto y racha de lectura compartida con el panel del portátil.
 import { describe, expect, it } from 'vitest';
-import { formatPercent } from '../books';
-import { monthCells, progressLine } from '../roomSurfaces';
+import { monthCells } from '../roomSurfaces';
 import { activeDays, readingStreak } from '../reading';
 
 describe('cuadrícula del mes', () => {
@@ -22,22 +21,6 @@ describe('cuadrícula del mes', () => {
   it('domingo 1 cae en la séptima columna', () => {
     // 1 de noviembre de 2026 es domingo
     expect(monthCells('2026-11-05').indexOf('2026-11-01')).toBe(6);
-  });
-});
-
-describe('línea de progreso del libro abierto', () => {
-  it('páginas con total', () => {
-    expect(progressLine({ trackBy: 'pages', currentPage: 120, pageCount: 480 })).toBe(`Página 120 de 480 · ${formatPercent(25)}`);
-  });
-
-  it('por porcentaje', () => {
-    expect(progressLine({ trackBy: 'percent', currentPercent: 37.5 })).toBe(`${formatPercent(37.5)} leído`);
-  });
-
-  it('datos incompletos: nunca NaN ni undefined', () => {
-    for (const book of [{}, { trackBy: 'pages', pageCount: 300 }, { trackBy: 'percent' }, { currentPage: 40 }]) {
-      expect(progressLine(book)).not.toMatch(/NaN|undefined/);
-    }
   });
 });
 
