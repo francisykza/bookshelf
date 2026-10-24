@@ -18,6 +18,7 @@ import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { useReadingTimer } from './hooks/useReadingTimer';
 import { useAppNavigation } from './hooks/useAppNavigation';
+import { useOnboarding } from './hooks/useOnboarding';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { ENTERING, ROOM, SHELF, useShelfTransition } from './hooks/useShelfTransition';
 import { CloudProvider } from './state/cloudSync';
@@ -71,6 +72,10 @@ function Sanctuary() {
   }, [panel]);
   const switchPanel = useCallback((p) => nav.replace({ view: locRef.current.view, panel: p }), [nav]);
   const [askPages, setAskPages] = useState(false);
+  // Guía diegética (Anexo B): arranca con MAIN_ROOM decodificada y medida, quieta y sin nada prioritario abierto
+  const [mainReady, setMainReady] = useState(false);
+  const [settledRoom, setSettledRoom] = useState(null);
+  const guide = useOnboarding({ ready: mainReady, blocked: Boolean(panel) || phase !== ROOM || settledRoom !== 'MAIN_ROOM' });
 
   // La vista sigue a la ubicación: la máquina de transición hace el resto
   useEffect(() => {
@@ -157,9 +162,11 @@ function Sanctuary() {
       <h1 className="sr-only-focus">BookShelf, tu santuario de lectura junto al mar</h1>
       {/* Con un panel abierto o la librería delante, el panorama no cambia de habitación */}
       <PanoramicRoom
-        locked={Boolean(panel) || phase !== ROOM}
+        locked={Boolean(panel) || phase !== ROOM || guide.active}
         reducedMotion={reducedMotion}
-        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} /> : null}
+        forceMain={guide.active}
+        onSettled={setSettledRoom}
+        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} onStartGuide={guide.start} guideActive={guide.active} /> : null}
         renderMain={(active) => (
           <CozyRoom
             active={active}
@@ -173,9 +180,13 @@ function Sanctuary() {
             onOpenAtlas={() => openPanel({ type: 'atlas' })}
             onOpenVault={(id) => openPanel({ type: 'vault', id })}
             modalOpen={Boolean(panel)}
+            guide={guide}
+            onReady={setMainReady}
           />
         )}
-        renderSocial={(active, social) => <SocialRoom status={social.status} attempt={social.attempt} onRetry={social.retry} />}
+        renderSocial={(active, social) => (
+          <SocialRoom status={social.status} attempt={social.attempt} onRetry={social.retry} active={active && !panel && phase === ROOM} reducedMotion={reducedMotion} />
+        )}
       />
       <ShelfView
         phase={phase}

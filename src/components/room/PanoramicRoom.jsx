@@ -31,7 +31,7 @@ function useSocialImage() {
   return { ...state, retry };
 }
 
-export function PanoramicRoom({ locked = false, reducedMotion = false, renderMain, renderSocial, controls }) {
+export function PanoramicRoom({ locked = false, reducedMotion = false, renderMain, renderSocial, controls, forceMain = false, onSettled }) {
   const [room, setRoom] = useState(MAIN_ROOM);
   const social = useSocialImage();
   const viewportRef = useRef(null);
@@ -68,6 +68,28 @@ export function PanoramicRoom({ locked = false, reducedMotion = false, renderMai
   );
 
   useEffect(() => () => window.clearTimeout(moveTimer.current), []);
+
+  // Habitación quieta (fin del desplazamiento, o al instante sin animación): la guía recalcula sus anclas
+  const settledRef = useRef(onSettled);
+  useEffect(() => {
+    settledRef.current = onSettled;
+  }, [onSettled]);
+  const firstRoom = useRef(true);
+  useEffect(() => {
+    const track = viewportRef.current?.querySelector('.panorama-track');
+    const animated = !firstRoom.current && track && parseFloat(getComputedStyle(track).transitionDuration) >= 0.05;
+    firstRoom.current = false;
+    settledRef.current?.(null);
+    const id = window.setTimeout(() => settledRef.current?.(room), animated ? MOVE_MS + 40 : 0);
+    return () => window.clearTimeout(id);
+  }, [room]);
+
+  // La guía vive en MAIN_ROOM: si se pide desde el salón, se vuelve con la misma API del panorama
+  useEffect(() => {
+    if (!forceMain || room === MAIN_ROOM) return undefined;
+    const id = requestAnimationFrame(() => setRoom(MAIN_ROOM));
+    return () => cancelAnimationFrame(id);
+  }, [forceMain, room]);
 
   const reset = () => {
     gesture.current = null;

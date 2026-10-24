@@ -11,6 +11,8 @@ import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { HOTSPOTS, ROOMS } from '../../scene/sceneMap';
 import { visibleFraction } from '../../scene/stageFit';
 import { useLibrary } from '../../state/useLibrary';
+import { OnboardingGuide } from '../onboarding/OnboardingGuide';
+import { BaySailboats } from './BaySailboats';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
 import { BedBookmark, CloudShadow, DrinkSteam, LaptopPostit, SoundWaves, TeaMist, readingStreak } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
@@ -63,7 +65,7 @@ function OffscreenObjects({ items }) {
   );
 }
 
-export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, modalOpen = false, timer }) {
+export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, modalOpen = false, timer, guide = null, onReady }) {
   const { state, actions } = useLibrary();
   const { settings, books, progress } = state;
   const reducedMotion = useReducedMotion();
@@ -94,7 +96,20 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
     const id = setInterval(() => setSpotIndex((i) => (i + 1) % SPOT_ORDER.length), SPOT_MS);
     return () => clearInterval(id);
   }, [guides, live, reducedMotion, pointing]);
-  const spot = guides && live && !reducedMotion && !pointing ? SPOT_ORDER[spotIndex] : null;
+  const tourSpot = guides && live && !reducedMotion && !pointing ? SPOT_ORDER[spotIndex] : null;
+  // Durante la guía se avivan el objeto de la parada y sus secundarios (una sola tarjeta, sin globos sueltos)
+  const guideSpots = guide?.visible ? [guide.stop.anchor, ...guide.stop.secondary] : [];
+  const spot = guide?.visible ? null : tourSpot;
+  const lit = (id) => spot === id || guideSpots.includes(id);
+
+  // Lista para la guía: ilustración decodificada (la geometría ya está medida por el escenario)
+  const readyRef = useRef(onReady);
+  useEffect(() => {
+    readyRef.current = onReady;
+  }, [onReady]);
+  useEffect(() => {
+    readyRef.current?.(base.status === 'ok');
+  }, [base.status]);
 
   const onHover = (next, id) => {
     if (next) setLabel(next);
@@ -154,7 +169,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
               </button>
             </div>
           )}
-          {inRoom && (
+          {guide?.visible && inRoom && <OnboardingGuide guide={guide} fit={fit} reducedMotion={reducedMotion} />}
+          {inRoom && !guide?.visible && (
             <OffscreenObjects
               items={ESSENTIAL.filter((id) => visibleFraction(fit, HOTSPOTS[id].shape) < 0.25).map((id) => ({ id, ...ACTIONS[id] }))}
             />
@@ -165,6 +181,9 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
       <div ref={worldRef} className="world" data-base={base.status}>
         {/* 0 · ilustración */}
         <SceneBase room={ROOMS.MAIN_ROOM} attempt={base.attempt} onStatus={(status) => setBase((b) => (b.status === status ? b : { ...b, status }))} />
+
+        {/* 5 · veleros de la bahía, recortados por la máscara del agua (detrás de la luz del día) */}
+        <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} />
 
         {/* 10 · luz y atmósfera (sin geometría heredada) */}
         <TimeOfDayLayers timeOfDay={settings.timeOfDay} lampOn={settings.lampOn} candleOn={settings.candleOn} />
@@ -184,10 +203,10 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
 
         {/* 30 · hotspots (la librería general primero: los objetos concretos van por encima) */}
         <div className="room-hotspots">
-          <Hotspot id="shelf" spot={spot === 'shelf'} guides={guides} hint={1} onHover={onHover} onActivate={onOpenShelf} label={{ title: 'Mi librería de roble', text: `${books.length} libros · toca para acercarte` }} />
+          <Hotspot id="shelf" spot={lit('shelf')} guides={guides} hint={1} onHover={onHover} onActivate={onOpenShelf} label={{ title: 'Mi librería de roble', text: `${books.length} libros · toca para acercarte` }} />
           <Hotspot
             id="figures"
-            spot={spot === 'figures'}
+            spot={lit('figures')}
             guides={guides}
             hint={2}
             onHover={onHover}
@@ -196,7 +215,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           />
           <Hotspot
             id="book"
-            spot={spot === 'book'}
+            spot={lit('book')}
             guides={guides}
             hint={0}
             onHover={onHover}
@@ -207,10 +226,10 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
                 : { title: 'Ningún libro abierto', text: 'Elige uno en tu librería' }
             }
           />
-          <Hotspot id="laptop" spot={spot === 'laptop'} guides={guides} hint={3} onHover={onHover} onActivate={onOpenLaptop} label={{ title: 'Estadísticas y reto anual', text: `${readThisYear} de ${settings.yearGoal} libros este año`, meta: 'Calendario · Misiones del Booknook' }} />
+          <Hotspot id="laptop" spot={lit('laptop')} guides={guides} hint={3} onHover={onHover} onActivate={onOpenLaptop} label={{ title: 'Estadísticas y reto anual', text: `${readThisYear} de ${settings.yearGoal} libros este año`, meta: 'Calendario · Misiones del Booknook' }} />
           <Hotspot
             id="headphones"
-            spot={spot === 'headphones'}
+            spot={lit('headphones')}
             guides={guides}
             hint={5}
             onHover={onHover}
@@ -224,10 +243,10 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
               aria: settings.sound ? 'Silenciar el sonido ambiental' : 'Activar el sonido ambiental de olas, brisa y páginas',
             }}
           />
-          <Hotspot id="tray" spot={spot === 'tray'} guides={guides} hint={7} onHover={onHover} onActivate={onOpenTray} label={{ title: 'Temporizador cozy', text: timerText ?? 'Té helado · elige tu bebida' }} />
-          <Hotspot id="lamp" spot={spot === 'lamp'} guides={guides} hint={13} onHover={onHover} onActivate={toggleLamp} label={{ title: 'Lámpara de latón', text: settings.lampOn ? 'Encendida · tocar para apagar' : 'Apagada · tocar para encender' }} />
-          <Hotspot id="lantern" spot={spot === 'lantern'} guides={guides} hint={15} onHover={onHover} onActivate={toggleCandle} label={{ title: 'Vela de la mesita', text: settings.candleOn ? 'Encendida · tocar para soplar' : 'Apagada · tocar para encenderla' }} />
-          <TimeDial timeOfDay={settings.timeOfDay} onOpen={onOpenAtlas} onHover={onHover} spot={spot === 'sun'} />
+          <Hotspot id="tray" spot={lit('tray')} guides={guides} hint={7} onHover={onHover} onActivate={onOpenTray} label={{ title: 'Temporizador cozy', text: timerText ?? 'Té helado · elige tu bebida' }} />
+          <Hotspot id="lamp" spot={lit('lamp')} guides={guides} hint={13} onHover={onHover} onActivate={toggleLamp} label={{ title: 'Lámpara de latón', text: settings.lampOn ? 'Encendida · tocar para apagar' : 'Apagada · tocar para encender' }} />
+          <Hotspot id="lantern" spot={lit('lantern')} guides={guides} hint={15} onHover={onHover} onActivate={toggleCandle} label={{ title: 'Vela de la mesita', text: settings.candleOn ? 'Encendida · tocar para soplar' : 'Apagada · tocar para encenderla' }} />
+          <TimeDial timeOfDay={settings.timeOfDay} onOpen={onOpenAtlas} onHover={onHover} spot={lit('sun')} />
         </div>
 
         {/* 40 · etiquetas */}

@@ -10,7 +10,7 @@ import { TOD_ORDER, todName } from './RoomHotspots';
 
 const TOD_ICON = { morning: Sun, sunset: Sunset, night: Moon };
 
-export function RoomCorner({ onOpenAccount }) {
+export function RoomCorner({ onOpenAccount, onStartGuide, guideActive = false }) {
   const cloud = useCloud();
   const { state, actions } = useLibrary();
   const { settings } = state;
@@ -93,13 +93,15 @@ export function RoomCorner({ onOpenAccount }) {
         >
           {settings.sfx ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
         </button>
+        {/* «Guías» repite la guía de la habitación (Anexo B1); si las insignias de guía están visibles, las oculta */}
         <button
           type="button"
           className="guides-toggle"
-          aria-pressed={guides}
-          onClick={() => actions.setSettings({ showGuides: !guides })}
-          title={guides ? 'Ocultar las guías' : 'Resaltar lo que puedes tocar'}
-          aria-label={guides ? 'Ocultar las guías' : 'Mostrar guías: resaltar lo que puedes tocar'}
+          aria-pressed={guides || guideActive}
+          disabled={guideActive}
+          onClick={(event) => (guides ? actions.setSettings({ showGuides: false }) : onStartGuide?.(event.currentTarget))}
+          title={guides ? 'Ocultar las insignias de guía' : 'Repetir la guía de la habitación'}
+          aria-label={guides ? 'Ocultar las insignias de guía' : 'Repetir la guía de la habitación'}
         >
           <Sparkles aria-hidden="true" />
           <span>Guías</span>

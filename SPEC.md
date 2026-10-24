@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.21.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.22.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -1297,3 +1297,101 @@ revisa en las capturas de diagnóstico).
 - [x] Los objetos que el encuadre recorta siguen accesibles en «Fuera de vista».
 - [ ] Safari en un iPhone real (no probado aquí).
 - [ ] Atmósfera rehecha sobre la ilustración nueva (mar, plantas, haces, noche completa): fases posteriores.
+
+## 16. Anexos A y B — Veleros de la bahía y guía diegética (1.22.0, Fase 1)
+
+Estados: **PENDIENTE** (descrito, sin código), **IMPLEMENTADO** (código en el repositorio), **VERIFICADO**
+(implementado y comprobado por pruebas ejecutadas en esta entrega, §16.6). El proyecto sigue en JSX:
+`BaySailboats.jsx` y `OnboardingGuide.jsx` (sin migrar a TypeScript).
+
+### 16.1 Anexo A — Veleros ambientales
+
+| Req. | Estado | Implementación |
+| --- | --- | --- |
+| A1 · componente reutilizable (habitación, geometría, activo, movimiento reducido, cita, callback) | VERIFICADO | `components/room/BaySailboats.jsx`; props `roomId`, `sea`, `active`, `reducedMotion`, `quote`, `onOpenQuote`, `count` |
+| A1 · 2 veleros por habitación (máx. 3) | VERIFICADO | `count = 2`, acotado a 1–3 |
+| A1 · dirección artística | IMPLEMENTADO | Velas `#F4EBDD`, sombra `#CDBD9D`, casco `#8B6B49`, estela `#FFF8E8` a 0,22; SVG propio sin contorno negro |
+| A1 · tamaño 12–22 CSS px a 390 px | IMPLEMENTADO (ajustado) | Tras inspección, 14 y 18 px de imagen (≈ 7–9 CSS px a 390): con 24–44 px de imagen duplicaban a los veleros pintados y rompían la perspectiva. Ajustable en `sea.lanes[].size` |
+| A2 · polígono de agua, exclusiones, carriles, tamaño, ancla interactiva | VERIFICADO | `ROOMS[*].sea` en `scene/sceneMap.js`, medidos en cada ilustración (MAIN: dos bahías a ambos lados del pueblo; SOCIAL: bahía del ventanal) |
+| A2 · recorte real (no solo `overflow`) | VERIFICADO | `clip-path: path()` con las regiones de agua en px del lienzo; pueblo, montes, cipreses, hiedra y carpintería quedan fuera |
+| A2 · sin coordenadas de la habitación antigua ni % del viewport | VERIFICADO | Mismo lienzo y transformación que la imagen (`SceneStage`) |
+| A2 · sobre el agua, sin saltos al redimensionar | VERIFICADO | `boatInWater` en 21 puntos de cada carril (unitarias) y casco/vela sobre el agua en el navegador |
+| A2 · no tapar veleros pintados | VERIFICADO | Carriles a ≥ 14 px de los pintados (MAIN (775, 792), (805, 820); SOCIAL (94, 688), (162, 754)); la prueba detectó y corrigió un carril a 12,8 px |
+| A2 · pasar por detrás de los marcos | IMPLEMENTADO | Los carriles no cruzan carpintería (las regiones de agua están dentro del cristal); la máscara lo garantizaría si un carril la cruzase |
+| A3 · desplazamiento y cabeceo en nodos distintos | VERIFICADO | `.sailboat` (`sailAcross 110s linear infinite alternate`) y `.sailboat__body` (`rotateZ ±1,5°`, 7 s, `ease-in-out`, alterna) |
+| A3 · desfases deterministas | VERIFICADO | `boatPhase(room, índice)` (hash); `animation-delay` negativo |
+| A3 · estela sin partículas, canvas ni blur | IMPLEMENTADO | Un trazo SVG bajo el casco |
+| A3 · pausa fuera de pantalla, pestaña oculta y modal | VERIFICADO | `data-running` solo con la habitación activa, sin panel ni librería y `visibilityState = visible` |
+| A3 · movimiento reducido: barcos quietos | VERIFICADO | `animation: none` y posición estática determinista |
+| A4 · contrato de cita navegante | IMPLEMENTADO | Props `quote`/`onOpenQuote` y `sea.interactive`; sin cita no hay pulso, botón ni foco (`aria-hidden`) |
+| A4 · velero interactivo, resplandor `#D6AA57`, pulso 4,8 s, botón 44 × 44, nota de papel, «✨ Guardar cita», «⛵ Lanzar una cita mía al mar», guardado idempotente, formulario de publicación y moderación | PENDIENTE (Fase 2) | Requiere la fase social (contenido autorizado, atribución, visibilidad) |
+
+### 16.2 Anexo B — Guía diegética
+
+| Req. | Estado | Implementación |
+| --- | --- | --- |
+| B1 · máquina explícita `idle → welcome → reading → habits → social → gift → completed` + «Saltar guía» | VERIFICADO | `domain/onboarding.js` (`next`, `back`, `route(fase)`), `hooks/useOnboarding.js` |
+| B1 · activación con `!localStorage.getItem('bookshelf_onboarding_done')`, con excepciones y respaldo en memoria | VERIFICADO | `createDoneStore`; con `Storage` bloqueado la app abre y la guía funciona en la sesión |
+| B1 · arranque solo con MAIN_ROOM decodificada y medida, quieta y sin modal prioritario | VERIFICADO | `ready` (ilustración `ok`), `blocked` (panel, librería o habitación distinta de MAIN quieta) |
+| B1 · sin duplicados en StrictMode | VERIFICADO | Guarda `started` en una referencia; una sola tarjeta en todas las pruebas |
+| B1 · completar y saltar marcan la clave | VERIFICADO | `markDone()` en ambos casos |
+| B1 · clave local, no sincronizada | IMPLEMENTADO | Documentado aquí; no viaja a Supabase |
+| B1 · repetir desde «Guías» | VERIFICADO | El botón existente inicia la guía; si las insignias de guía estaban visibles, primero las oculta |
+| B2 · carta de bienvenida (texto, acciones, papel `#F6EAD2`, tinta, lacre `#8F352D`, Cormorant/Lora/Caveat, sin overlay oscuro) | VERIFICADO | Anclada al libro abierto; dentro del viewport seguro |
+| B3 · una luciérnaga (núcleo 6 px `#FFF2C6`, halo 24 px `#E2B85E`, sin eventos, 700 ms `cubic-bezier(0.22, 1, 0.36, 1)`) | IMPLEMENTADO | `.firefly`; con el ancla fuera de pantalla espera en el borde más cercano |
+| B3 · una tarjeta por parada; resaltado secundario discreto | VERIFICADO | Parada 1: libro + baldas (librería y vitrina); parada 2: portátil + té |
+| B3 · parada 3 (Salón Social) | PENDIENTE (Fase 2) | Registrada en `STOPS.social`, fuera de la ruta de la Fase 1 |
+| B3 · parada 4 (regalo) | PENDIENTE (Fase 3) | Registrada en `STOPS.gift`, fuera de la ruta |
+| B4 · Fase 1: estructura, bienvenida, paradas 1 y 2, final tras ellas, sin mencionar lo social | VERIFICADO | «Terminar» en la parada 2 |
+| B4 · fases 2 y 3 sin reiniciar la guía a quien la terminó | IMPLEMENTADO | `route(fase)` añade paradas; la clave de finalización no cambia |
+| B5 · regalo único `welcome_onboarding_v1` (atómico, idempotente, elegibilidad verificada, servidor si es autoritativo) | PENDIENTE (Fase 3) | No se concede nada en esta fase; saltar la guía no concede ni impide nada |
+| B6 · ancho `min(320px, calc(100vw - 32px))`, botones ≥ 44 px, áreas seguras, sin salir del viewport | VERIFICADO | `placeCard` (unitarias) y comprobación en los 8 navegadores |
+| B6 · teclado, Escape, foco | VERIFICADO | Foco en la acción principal de cada parada; Escape salta; el foco vuelve a «Guías» si se abrió desde ahí |
+| B6 · anuncio de título y explicación, no de la luciérnaga | IMPLEMENTADO | `role="dialog"` no modal con `aria-labelledby`/`aria-describedby`; luciérnaga `aria-hidden` |
+| B6 · movimiento reducido | VERIFICADO | Cambio directo de ancla, sin vuelo ni pulso |
+| B6 · transiciones del panorama | IMPLEMENTADO | La guía bloquea el panorama; si se pide desde el salón, vuelve a MAIN con la API del panorama y la tarjeta espera a que la habitación esté quieta (`onSettled`) |
+| B6 · sin temporizadores que avancen solos | VERIFICADO | Solo «Continuar», «Atrás», «Terminar» y «Saltar guía» |
+
+### 16.3 Convivencia con lo existente
+
+- Las pruebas de la habitación (§15.10) marcan la guía como vista para no mezclarse con ella.
+- «Guías» conserva el resaltado de objetos: con las insignias activas, el botón las apaga.
+- Mientras la guía está abierta no se muestra «Fuera de vista» (sus objetos tienen su propia parada).
+
+### 16.4 Reservado para fases siguientes
+
+- Fase 2: cita navegante (A4), parada del Salón Social (B3) y su demostración gestual («Desliza hacia el Salón
+  Social», contenido hacia la izquierda).
+- Fase 3: parada del regalo y concesión única `welcome_onboarding_v1` (B5), con verificación de
+  elegibilidad («sin figuras» solo con el inventario cargado; nunca «desconocido» = «sin figuras») y registro
+  atómico; alcance local documentado en modo invitado y sin duplicar al vincular una cuenta.
+
+### 16.5 Pruebas añadidas
+
+- Unitarias: `sea.test.js` (carriles sobre el agua, distancia a los veleros pintados, desfases),
+  `onboarding.test.js` (máquina por fases, almacenamiento bloqueado, colocación en el viewport seguro).
+- E2E (`e2e/anexos.spec.js`): veleros sobre el agua y recortados, en pausa fuera de pantalla, swipe sobre un
+  barco, movimiento reducido; guía en primera visita, visita posterior, saltar, repetir desde «Guías»,
+  `localStorage` bloqueado, panel prioritario, redimensionado y giro, teclado.
+
+### 16.6 Evidencias (2026-10-24)
+
+- `npm run build`: compila sin errores. `npm run lint`: 30 avisos, ninguno nuevo.
+- `npm run qa:full`: Vitest **77/77**; Playwright **165 superadas, 3 omitidas** (capturas de diagnóstico, solo
+  en tres encuadres), 0 fallidas, en los 8 proyectos (Chromium 360 × 800, 390 × 844, 412 × 915, 844 × 390,
+  1440 × 900; WebKit 390 × 844 y 844 × 390; Chromium 390 × 844 con movimiento reducido).
+- Veleros: 32/32 medidos con casco y vela sobre el agua (2 por habitación × 8 proyectos); ancho real de
+  7–10 CSS px en móviles verticales y 13–17 en horizontal; el swipe que empieza encima de un barco cambia de
+  habitación (en horizontal la bahía queda fuera del encuadre y el gesto se prueba desde el centro).
+- Guía: primera visita, visita posterior sin guía, saltar, repetir desde «Guías» (el foco vuelve al botón),
+  `localStorage` bloqueado sin errores de página, panel prioritario que la retrasa, giro y teclado: en verde en
+  los 8 proyectos.
+- Iteraciones de esta entrega: la primera pasada falló en 14 casos; causas corregidas: la prueba antigua de
+  «Guías» (que ahora abre la guía), el gesto desde un barco fuera de encuadre, el foco de vuelta en WebKit (no
+  enfoca botones al pulsar: ahora se pasa el control que abre la guía), la tarjeta demasiado alta en WebKit
+  apaisado (diseño compacto en ventanas bajas) y la telemetría que dos procesos sobrescribían.
+- **Limitación del entorno:** el WebKit de Playwright en Windows no aplica la división proyectiva de
+  `matrix3d` ni de `perspective()` (comprobado con una página mínima sin código de la app:
+  `perspective(300px) rotateY(40deg)` mide 107 px de ancho frente a 153 en Chromium). Por eso en sus capturas
+  las baldas, el marcapáginas y el post-it proyectados se ven deformados. No se considera un fallo de la app
+  ni una verificación en Safari: hay que comprobarlo en un iPhone real.

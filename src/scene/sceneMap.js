@@ -15,6 +15,20 @@ export const ROOMS = {
     src: asset('images/cozy-book-room.jpg'),
     width: 941,
     height: 1672,
+    // Bahía de la puerta-ventana: agua a la derecha del pueblo y bajo él, entre los cipreses y la hiedra
+    // (pueblo, montes, cipreses, hiedra y carpintería quedan fuera de la máscara)
+    sea: {
+      water: [
+        [[800, 642], [880, 622], [880, 742], [845, 746], [806, 736], [798, 700]],
+        [[770, 772], [868, 770], [875, 800], [870, 862], [800, 876], [770, 862]],
+      ],
+      // Veleros pintados en (775, 792) y (805, 820): los carriles van por encima del pueblo y al pie de la bahía
+      lanes: [
+        { from: [816, 690], to: [868, 682], size: 14 },
+        { from: [782, 852], to: [858, 846], size: 18 },
+      ],
+      interactive: 1,
+    },
     framing: [
       // Móvil vertical: la imagen sobra a los lados; algo más de recorte a la izquierda para que el té y el
       // portátil no se corten (la lámpara, si queda fuera, pasa al control «Fuera de vista»)
@@ -32,6 +46,16 @@ export const ROOMS = {
     src: asset('images/cozy-social-room.jpg'),
     width: 900,
     height: 1600,
+    // Bahía vista por el ventanal izquierdo (dentro del cristal: el marco queda fuera del agua)
+    sea: {
+      water: [[[45, 640], [150, 615], [190, 620], [180, 660], [165, 700], [195, 720], [230, 735], [225, 760], [150, 775], [100, 770], [70, 740], [45, 700]]],
+      // Veleros pintados en (94, 688) y (162, 754): los carriles pasan lejos de ellos
+      lanes: [
+        { from: [64, 662], to: [166, 646], size: 14 },
+        { from: [104, 732], to: [188, 738], size: 18 },
+      ],
+      interactive: 1,
+    },
     framing: [
       { maxAspect: 0.62, x: 0.5, y: 0.5 },
       { maxAspect: 1, x: 0.5, y: 0.58 },

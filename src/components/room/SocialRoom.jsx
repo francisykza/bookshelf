@@ -2,10 +2,11 @@
 // sin botones sobre la tablet, el cuadro ni los sillones (llegan en fases posteriores). Si la imagen falla, se
 // dice y se puede reintentar; el regreso a MAIN_ROOM sigue disponible en la navegación del panorama.
 import { ROOMS } from '../../scene/sceneMap';
+import { BaySailboats } from './BaySailboats';
 import { SceneBase } from './SceneBase';
 import { SceneStage } from './SceneStage';
 
-export function SocialRoom({ status, onRetry, attempt = 0 }) {
+export function SocialRoom({ status, onRetry, attempt = 0, active = false, reducedMotion = false }) {
   return (
     <SceneStage
       room={ROOMS.SOCIAL_ROOM}
@@ -22,6 +23,8 @@ export function SocialRoom({ status, onRetry, attempt = 0 }) {
       }
     >
       {status !== 'error' && <SceneBase room={ROOMS.SOCIAL_ROOM} attempt={attempt} priority="low" />}
+      {/* Veleros ambientales de la bahía del ventanal (Anexo A), en pausa cuando el salón no está a la vista */}
+      {status === 'ok' && <BaySailboats roomId="SOCIAL_ROOM" sea={ROOMS.SOCIAL_ROOM.sea} active={active} reducedMotion={reducedMotion} />}
     </SceneStage>
   );
 }

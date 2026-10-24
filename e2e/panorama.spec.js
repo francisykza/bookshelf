@@ -21,6 +21,14 @@ test.beforeEach(async ({ page }, info) => {
   page.on('requestfailed', (req) => {
     if (req.url().startsWith('http://localhost')) run.failedRequests.push({ test: info.title, url: req.url(), error: req.failure()?.errorText });
   });
+  // Estas pruebas son de la habitación: la guía de primera visita se da por vista (tiene su propio archivo)
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('bookshelf_onboarding_done', 'true');
+    } catch {
+      // sin almacenamiento
+    }
+  });
   await page.goto('/');
   await page.waitForFunction(() => {
     const img = document.querySelector('[data-panel="MAIN_ROOM"] .scene-base');
@@ -34,10 +42,11 @@ test.afterEach(async ({ page: _page }, info) => {
   run.tests[info.title] = { status: info.status, error: info.error?.message?.split('\n')[0] ?? null, duration: info.duration };
 });
 
-test.afterAll(async () => {
+test.afterAll(async ({ browserName: _b }, info) => {
   const dir = join('qa-report', 'telemetry');
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, `${run.project}.json`), JSON.stringify(run, null, 2));
+  // Un archivo por proceso de pruebas: dos workers del mismo proyecto no se pisan
+  writeFileSync(join(dir, `${run.project}-w${info.workerIndex}.json`), JSON.stringify(run, null, 2));
 });
 
 async function shot(page, info, name) {
@@ -192,10 +201,13 @@ test('1 · MAIN_ROOM inicial, geometría y anclas', async ({ page }, info) => {
   // El panel inactivo no es alcanzable
   await expect(page.locator('[data-panel="SOCIAL_ROOM"]')).toHaveAttribute('inert', '');
   await shot(page, info, 'main-limpio');
+  // «Guías» repite la guía de la habitación (Anexo B): captura con la guía abierta y salida con Escape
   await page.locator('.guides-toggle').click();
+  await expect(page.locator('.onboarding-card')).toBeVisible();
   await page.waitForTimeout(400);
   await shot(page, info, 'main-guias');
-  await page.locator('.guides-toggle').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.onboarding-card')).toHaveCount(0);
 });
 
 test('2-3 · swipe a SOCIAL_ROOM y de regreso', async ({ page }, info) => {

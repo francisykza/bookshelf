@@ -2783,3 +2783,290 @@ html[data-motion='reduced'] .tod__glow::after {
     bottom: auto;
   }
 }
+
+/* ── Anexo A · Veleros de la bahía (máscara de agua, desplazamiento y cabeceo separados) ── */
+.bay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.sailboat {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(var(--x0), var(--y0));
+  animation: sailAcross 110s linear infinite alternate;
+  animation-play-state: paused;
+}
+
+.bay[data-running] .sailboat,
+.bay[data-running] .sailboat__body {
+  animation-play-state: running;
+}
+
+@keyframes sailAcross {
+  from {
+    transform: translate(var(--x0), var(--y0));
+  }
+  to {
+    transform: translate(var(--x1), var(--y1));
+  }
+}
+
+.sailboat__body {
+  transform-origin: 50% 92%;
+  animation: sailRock 7s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+
+@keyframes sailRock {
+  from {
+    transform: rotateZ(-1.5deg);
+  }
+  to {
+    transform: rotateZ(1.5deg);
+  }
+}
+
+.sailboat__art {
+  display: block;
+  overflow: visible;
+}
+
+.sailboat__sail {
+  fill: #f4ebdd;
+}
+
+.sailboat__sail-shade {
+  fill: #cdbd9d;
+}
+
+.sailboat__hull {
+  fill: #8b6b49;
+}
+
+.sailboat__mast {
+  stroke: #8b6b49;
+  stroke-width: 0.7;
+}
+
+.sailboat__wake {
+  fill: none;
+  stroke: #fff8e8;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  opacity: 0.22;
+}
+
+/* Movimiento reducido: barcos quietos en su punto determinista, sin cabeceo */
+.bay[data-reduced] .sailboat {
+  animation: none;
+  transform: translate(var(--sx), var(--sy));
+}
+
+.bay[data-reduced] .sailboat__body {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sailboat {
+    animation: none;
+    transform: translate(var(--sx), var(--sy));
+  }
+
+  .sailboat__body {
+    animation: none;
+  }
+}
+
+/* ── Anexo B · Guía diegética: carta, tarjetas de parada y luciérnaga ── */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+/* Sin overlay: la habitación sigue a la vista y la guía solo ocupa su tarjeta */
+.onboarding {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  pointer-events: none;
+}
+
+.onboarding-card {
+  position: absolute;
+  width: min(320px, calc(100vw - 32px));
+  max-width: calc(100% - 32px);
+  padding: 16px 18px 14px;
+  border: 1px solid rgb(146 112 61 / 0.35);
+  border-radius: 12px;
+  background: #faf5e8;
+  color: #2c1e14;
+  font-family: 'Lora', var(--font-sans);
+  box-shadow:
+    0 2px 0 rgb(255 255 255 / 0.5) inset,
+    0 12px 28px rgb(44 30 20 / 0.32);
+  pointer-events: auto;
+  transition:
+    left 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.onboarding-card h2 {
+  margin: 0 0 6px;
+  font-family: 'Cormorant Garamond', var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.onboarding-card p {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+/* La carta de bienvenida: papel crema con sello de lacre */
+.onboarding-card--letter {
+  padding-top: 22px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.35), transparent 40%),
+    #f6ead2;
+}
+
+.onboarding-card__seal {
+  position: absolute;
+  top: -16px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #b04a40, #8f352d 60%, #6d2620);
+  color: #f6ead2;
+  font-family: 'Cormorant Garamond', var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  box-shadow: 0 3px 6px rgb(44 30 20 / 0.35);
+}
+
+.onboarding-card__hand {
+  font-family: 'Caveat', var(--font-hand);
+  font-size: 1.15rem !important;
+  color: #6b4423;
+}
+
+.onboarding-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onboarding-card__primary,
+.onboarding-card__secondary {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.onboarding-card__primary {
+  border: 1px solid #8f352d;
+  background: #8f352d;
+  color: #fff6ea;
+}
+
+.onboarding-card__secondary {
+  border: 1px solid #b08d57;
+  background: transparent;
+  color: #2c1e14;
+}
+
+.onboarding-card__primary:focus-visible,
+.onboarding-card__secondary:focus-visible {
+  outline: 3px solid #b08d57;
+  outline-offset: 2px;
+}
+
+/* Una sola luciérnaga: núcleo de 6 px y halo de 24 px; vuela 700 ms con desaceleración, sin rebote */
+.firefly {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: #fff2c6;
+  box-shadow: 0 0 6px 3px #e2b85e, 0 0 12px 9px rgb(226 184 94 / 0.35);
+  pointer-events: none;
+  transition:
+    left 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: firefly-glow 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes firefly-glow {
+  from {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Movimiento reducido: cambio directo de ancla, sin vuelo ni pulso */
+.onboarding[data-reduced] .firefly,
+.onboarding[data-reduced] .onboarding-card {
+  transition: none;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .firefly,
+  .onboarding-card {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Ventanas bajas (móvil apaisado): tarjeta más ancha y compacta para que quepa entera con sus botones */
+@media (max-height: 480px) {
+  .onboarding-card {
+    width: min(440px, calc(100vw - 32px));
+    padding: 12px 14px 10px;
+  }
+
+  .onboarding-card--letter {
+    padding-top: 14px;
+  }
+
+  .onboarding-card h2 {
+    margin-bottom: 4px;
+    font-size: 1.15rem;
+  }
+
+  .onboarding-card p {
+    margin-bottom: 6px;
+    font-size: 0.86rem;
+    line-height: 1.35;
+  }
+
+  .onboarding-card__hand {
+    display: none;
+  }
+
+  .onboarding-card__seal {
+    top: -12px;
+    width: 30px;
+    height: 30px;
+    font-size: 0.95rem;
+  }
+}
