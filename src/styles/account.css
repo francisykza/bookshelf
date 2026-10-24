@@ -248,3 +248,29 @@
 .corner-btn--cloud[data-status='conflict'] {
   --dot: #c4623a;
 }
+
+/* 1.23.0 · Sonido de la interfaz */
+.account-check,
+.account-range {
+  display: grid;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 0.9rem;
+}
+
+.account-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-check input {
+  width: 20px;
+  height: 20px;
+  accent-color: #c4623a;
+}
+
+.account-range input {
+  width: 100%;
+  accent-color: #c59b27;
+}

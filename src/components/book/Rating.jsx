@@ -2,6 +2,7 @@
 // contorno y relleno independientes: la estrella `i` se rellena `clamp(rating − i, 0, 1)` de su ancho con un
 // recorte horizontal (dos SVG apilados, sin caracteres Unicode ni IDs). `RatingInput` añade el ajuste fino.
 import { Minus, Plus } from 'lucide-react';
+import { playUiSound } from '../../audio/uiSounds';
 import { formatRating, normalizeRating, ratingText } from '../../domain/books';
 
 const STAR = 'M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37L2.74 9.33l6.4-.93z';
@@ -40,11 +41,16 @@ export function RatingStars({ value, className = '' }) {
 export function RatingInput({ value, onChange }) {
   const rating = normalizeRating(value);
   const set = (v) => onChange(normalizeRating(v));
+  // Clic leve solo al confirmar con una estrella o ±; el control de rango no suena al arrastrar
+  const confirm = (v) => {
+    playUiSound('select');
+    set(v);
+  };
   return (
     <div className="rating-input" role="group" aria-label="Valoración">
       <div className="rating-input__stars">
         {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} type="button" className="rating-input__star" onClick={() => set(n)} aria-label={`Valorar con ${n} ${n === 1 ? 'estrella' : 'estrellas'}`}>
+          <button key={n} type="button" className="rating-input__star" onClick={() => confirm(n)} aria-label={`Valorar con ${n} ${n === 1 ? 'estrella' : 'estrellas'}`}>
             <Star fill={Math.min(1, Math.max(0, rating - (n - 1)))} />
           </button>
         ))}
@@ -53,7 +59,7 @@ export function RatingInput({ value, onChange }) {
         </span>
       </div>
       <div className="rating-input__fine">
-        <button type="button" className="rating-input__step" onClick={() => set(Math.max(0.25, rating - 0.25))} disabled={rating <= 0.25} aria-label="Restar un cuarto de estrella">
+        <button type="button" className="rating-input__step" onClick={() => confirm(Math.max(0.25, rating - 0.25))} disabled={rating <= 0.25} aria-label="Restar un cuarto de estrella">
           <Minus aria-hidden="true" />
         </button>
         <input
@@ -68,7 +74,7 @@ export function RatingInput({ value, onChange }) {
           aria-valuetext={ratingText(rating)}
           style={{ '--p': `${rating ? ((rating - 0.25) / 4.75) * 100 : 0}%` }}
         />
-        <button type="button" className="rating-input__step" onClick={() => set(Math.min(5, rating + 0.25))} disabled={rating >= 5} aria-label="Sumar un cuarto de estrella">
+        <button type="button" className="rating-input__step" onClick={() => confirm(Math.min(5, rating + 0.25))} disabled={rating >= 5} aria-label="Sumar un cuarto de estrella">
           <Plus aria-hidden="true" />
         </button>
       </div>

@@ -6,6 +6,7 @@
 import { Package, Shield, Sparkles, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
+import { playUiSound } from '../../audio/uiSounds';
 import { RARITY, SEALS_PER_BOX, rankOf } from '../../domain/figures';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { useLibrary } from '../../state/useLibrary';
@@ -267,6 +268,7 @@ export function FiguresVaultModal({ onClose, initialId, section = 'inspect', onS
                   aria-pressed={fig?.id === f.id && tab === 'inspect'}
                   disabled={!owned}
                   onClick={() => {
+                    if (f.id !== selected) playUiSound('figureSelect');
                     setSelected(f.id);
                     setTab('inspect', f.id);
                   }}

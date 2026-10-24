@@ -9,6 +9,7 @@ import { ReadingEntryForm } from './ReadingEntryForm';
 import { dayKey } from '../../domain/dates';
 import { summarize } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
+import { playUiSound } from '../../audio/uiSounds';
 import { DRINKS, Drink } from './Drinks';
 import { PanelShell } from './PanelShell';
 
@@ -82,7 +83,6 @@ function SessionReport({ book, onDone, onOpenCalendar }) {
         <p>¿Por qué porcentaje vas en {chosen.title}?</p>
         <ReadingEntryForm
           date={dayKey()}
-          books={[chosen]}
           bookId={chosen.id}
           source="timer"
           onDone={() => setReport({ title: chosen.title, pages: 0, percent: true })}
@@ -196,11 +196,17 @@ export function PomodoroTray({ onClose, timer, askPages, onPagesDone, onOpenCale
               )}
               <div className="tray__controls">
                 {timer.running ? (
-                  <button type="button" className="stamp-btn" onClick={timer.pause}>
+                  <button type="button" className="stamp-btn" onClick={() => {
+                    playUiSound('timer');
+                    timer.pause();
+                  }}>
                     <Pause aria-hidden="true" /> Pausar
                   </button>
                 ) : (
-                  <button type="button" className="stamp-btn" onClick={timer.start}>
+                  <button type="button" className="stamp-btn" onClick={() => {
+                    playUiSound('timer');
+                    timer.start();
+                  }}>
                     <Play aria-hidden="true" /> {timer.remaining < timer.total ? 'Seguir' : 'Empezar'}
                   </button>
                 )}

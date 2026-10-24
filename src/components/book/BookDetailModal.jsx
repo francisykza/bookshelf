@@ -4,11 +4,14 @@
 import { BookMarked, Feather, Heart, Minus, PenLine, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { markerStroke, pageRustle } from '../../audio/ambientAudio';
-import { EDGE_NAMES, FORMATS, QUOTE_COLORS, STATUS, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, progressLabel, sprayedEdge, trackUnit } from '../../domain/books';
+import { pageRustle } from '../../audio/ambientAudio';
+import { playUiSound } from '../../audio/uiSounds';
+import { EDGE_NAMES, FORMATS, STATUS, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, progressLabel, sprayedEdge, trackUnit } from '../../domain/books';
 import { dayKey } from '../../domain/dates';
 import { ReadingEntryForm } from '../panels/ReadingEntryForm';
 import { RatingInput } from './Rating';
+import { QuoteMeaningsEditor } from './QuoteMeaningsEditor';
+import { COLOR_IDS, meaningOf } from '../../domain/quoteMeanings';
 import { useLibrary } from '../../state/useLibrary';
 import { modalRoot } from '../panels/modalRoot';
 import { PanelShell } from '../panels/PanelShell';
@@ -117,7 +120,7 @@ function PercentControls({ book, onTotal }) {
       <span className="page-controls__bar" style={{ '--p': `${pct}%` }} aria-hidden="true" />
       <div className="page-controls__log">
         <h3>Actualizar %</h3>
-        <ReadingEntryForm date={dayKey()} books={[book]} bookId={book.id} />
+        <ReadingEntryForm date={dayKey()} bookId={book.id} keepOpen />
       </div>
     </div>
   );
@@ -191,24 +194,59 @@ function PageControls({ book, pagesPerHour, onPage, onTotal, onSpeed }) {
   );
 }
 
-function Quotes({ book, onAdd, onRemove, onShow }) {
+/**
+ * Diario de citas (SPEC §17.4): cada color tiene el significado que elija el usuario (para todos sus libros). El
+ * filtro recuerda su selección por ID de color, así que renombrar un significado no la pierde.
+ */
+function Quotes({ book, meanings, onAdd, onRemove, onShow }) {
   const [text, setText] = useState('');
   const [page, setPage] = useState(book.currentPage || '');
   const [color, setColor] = useState('yellow');
+  const [filter, setFilter] = useState('all');
+  const [editing, setEditing] = useState(false);
+  const [notice, setNotice] = useState('');
+  const sorted = [...book.quotes].sort((a, b) => (a.page || 0) - (b.page || 0));
+  const counts = sorted.reduce((acc, q) => {
+    const id = meaningOf(meanings, q.color).id ?? 'unknown';
+    acc[id] = (acc[id] ?? 0) + 1;
+    return acc;
+  }, {});
+  const visible = filter === 'all' ? sorted : sorted.filter((q) => (meaningOf(meanings, q.color).id ?? 'unknown') === filter);
+  const current = meaningOf(meanings, color);
   return (
     <div className="quotes">
-      {book.quotes.length ? (
+      {sorted.length > 0 && (
+        <div className="quote-filter" role="radiogroup" aria-label="Filtrar citas por significado">
+          <button type="button" role="radio" aria-checked={filter === 'all'} onClick={() => setFilter('all')}>
+            Todas · {sorted.length}
+          </button>
+          {[...COLOR_IDS, ...(counts.unknown ? ['unknown'] : [])]
+            .filter((id) => counts[id])
+            .map((id) => {
+              const m = meaningOf(meanings, id === 'unknown' ? null : id);
+              return (
+                <button key={id} type="button" role="radio" aria-checked={filter === id} style={{ '--marker': m.hex }} onClick={() => setFilter(id)}>
+                  <span className="quote-filter__dot" aria-hidden="true" />
+                  {m.label} · {counts[id]}
+                </button>
+              );
+            })}
+        </div>
+      )}
+      {visible.length ? (
         <ul className="quotes__list">
-          {[...book.quotes]
-            .sort((a, b) => (a.page || 0) - (b.page || 0))
-            .map((q) => (
-              <li key={q.id} className="quote" style={{ '--marker': QUOTE_COLORS[q.color]?.hex, '--marker-ink': QUOTE_COLORS[q.color]?.ink }}>
+          {visible.map((q) => {
+            const m = meaningOf(meanings, q.color);
+            return (
+              <li key={q.id} className="quote" style={{ '--marker': m.hex, '--marker-ink': m.ink }}>
                 <blockquote>
                   <mark>{q.text}</mark>
                 </blockquote>
                 <footer>
                   <span>pág. {q.page || '—'}</span>
-                  <span className="quote__tag">{QUOTE_COLORS[q.color]?.label}</span>
+                  <span className="quote__tag" title={m.description || undefined}>
+                    {m.label}
+                  </span>
                   <button type="button" className="icon-btn icon-btn--tiny" onClick={() => onShow(q)} aria-label="Ver esta cita como carta de algodón y lacre" title="Ver como carta">
                     <Feather aria-hidden="true" />
                   </button>
@@ -217,10 +255,11 @@ function Quotes({ book, onAdd, onRemove, onShow }) {
                   </button>
                 </footer>
               </li>
-            ))}
+            );
+          })}
         </ul>
       ) : (
-        <p className="quotes__empty">Aún no has subrayado nada. Las citas que guardes asomarán como post-its por el borde del libro.</p>
+        <p className="quotes__empty">{sorted.length ? 'No hay citas con este significado.' : 'Aún no has subrayado nada. Las citas que guardes asomarán como post-its por el borde del libro.'}</p>
       )}
       <form
         className="quote-form"
@@ -229,7 +268,7 @@ function Quotes({ book, onAdd, onRemove, onShow }) {
           if (!text.trim()) return;
           onAdd({ text: text.trim(), page: Number(page) || null, color });
           setText('');
-          markerStroke();
+          playUiSound('save');
         }}
       >
         <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="Copia aquí la frase que te ha atrapado…" aria-label="Nueva cita" />
@@ -239,27 +278,51 @@ function Quotes({ book, onAdd, onRemove, onShow }) {
             <input type="number" min="0" value={page} onChange={(e) => setPage(e.target.value)} className="ink-input ink-input--tiny" aria-label="Página de la cita" />
           </label>
           <div className="markers" role="radiogroup" aria-label="Color del marcador">
-            {Object.entries(QUOTE_COLORS).map(([key, c]) => (
-              <button
-                key={key}
-                type="button"
-                role="radio"
-                aria-checked={color === key}
-                className="marker"
-                style={{ '--marker': c.hex }}
-                onClick={() => setColor(key)}
-                title={c.label}
-              >
-                <span className="sr-only-focus">{c.label}</span>
-              </button>
-            ))}
+            {COLOR_IDS.map((key) => {
+              const m = meaningOf(meanings, key);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="radio"
+                  aria-checked={color === key}
+                  className="marker"
+                  style={{ '--marker': m.hex }}
+                  onClick={() => {
+                    if (color !== key) playUiSound('pencil');
+                    setColor(key);
+                  }}
+                  title={m.label}
+                >
+                  <span className="sr-only-focus">{m.label}</span>
+                </button>
+              );
+            })}
           </div>
           <button type="submit" className="stamp-btn stamp-btn--small" disabled={!text.trim()}>
             Subrayar
           </button>
         </div>
-        <p className="quote-form__legend">{QUOTE_COLORS[color].label}</p>
+        <p className="quote-form__legend">
+          <span>{current.label}</span>
+          <button type="button" className="link-btn quote-form__customize" aria-expanded={editing} onClick={() => setEditing((v) => !v)}>
+            Personalizar colores
+          </button>
+        </p>
+        {notice && (
+          <p className="quote-form__notice" role="status">
+            {notice}
+          </p>
+        )}
       </form>
+      {editing && (
+        <QuoteMeaningsEditor
+          onClose={(saved) => {
+            setEditing(false);
+            setNotice(saved ? 'Significados guardados.' : '');
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -287,7 +350,7 @@ export function BookDetailModal({ bookId, onClose, onSwitch }) {
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setOpened(true));
-    pageRustle(0.8);
+    playUiSound('bookOpen');
     return () => cancelAnimationFrame(id);
   }, []);
 
@@ -344,10 +407,26 @@ export function BookDetailModal({ bookId, onClose, onSwitch }) {
           </nav>
         )}
         <div className="open-book__ribbons" role="tablist" aria-label="Páginas del libro">
-          <button type="button" role="tab" aria-selected={page === 'left'} onClick={() => setPage('left')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={page === 'left'}
+            onClick={() => {
+              if (page !== 'left') playUiSound('diaryTab');
+              setPage('left');
+            }}
+          >
             Ficha
           </button>
-          <button type="button" role="tab" aria-selected={page === 'right'} onClick={() => setPage('right')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={page === 'right'}
+            onClick={() => {
+              if (page !== 'right') playUiSound('diaryTab');
+              setPage('right');
+            }}
+          >
             Diario
           </button>
         </div>
@@ -494,7 +573,7 @@ export function BookDetailModal({ bookId, onClose, onSwitch }) {
           <section className="page page--right" aria-label="Diario de lectura">
             <h3 className="diary-title">Diario de lectura</h3>
             <p className="diary-sub">Citas subrayadas</p>
-            <Quotes book={book} onAdd={(q) => actions.addQuote(book.id, q)} onRemove={(qid) => actions.removeQuote(book.id, qid)} onShow={setShownQuote} />
+            <Quotes book={book} meanings={settings.quoteMeanings} onAdd={(q) => actions.addQuote(book.id, q)} onRemove={(qid) => actions.removeQuote(book.id, qid)} onShow={setShownQuote} />
             <h3 className="diary-title diary-title--small">Mis pensamientos</h3>
             <textarea
               className="review"

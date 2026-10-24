@@ -1,5 +1,6 @@
 // «Tu cuenta» (SPEC §9ter, 1.16.0): entrar con correo y contraseña, estado de la sincronización, elección
 // cuando hay dos versiones y copias en archivo (exportar / importar). Ficha de papel algodón como los menús.
+import { playUiSound } from '../../audio/uiSounds';
 import { CloudCheck, CloudOff, Download, KeyRound, LogOut, RefreshCw, Upload, UserPlus } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { signIn, signUp } from '../../services/cloud';
@@ -163,6 +164,35 @@ function Backups() {
   );
 }
 
+/**
+ * Sonido de la interfaz (SPEC §17.5): efectos activados y su volumen propio (preferencias de este dispositivo).
+ * Arrastrar el volumen no suena; solo «Probar» reproduce una muestra.
+ */
+function UiSound() {
+  const { state, actions } = useLibrary();
+  const { sfx, uiVolume = 0.25 } = state.settings;
+  const pct = Math.round(uiVolume * 100);
+  return (
+    <section className="account-section">
+      <h3>Sonido de la interfaz</h3>
+      <label className="account-check">
+        <input type="checkbox" checked={sfx !== false} onChange={(e) => actions.setSettings({ sfx: e.target.checked })} />
+        Sonidos al tocar (papel, madera, cerámica…)
+      </label>
+      <label className="account-range">
+        <span>Volumen de los efectos: {pct} %</span>
+        <input type="range" min="0" max="100" step="5" value={pct} disabled={sfx === false} onChange={(e) => actions.setSettings({ uiVolume: Number(e.target.value) / 100 })} aria-valuetext={`${pct} %`} />
+      </label>
+      <div className="account-row">
+        <button type="button" className="account-btn" disabled={sfx === false} onClick={() => playUiSound('save')}>
+          Probar
+        </button>
+      </div>
+      <p className="account-hint">El sonido ambiental (mar y brisa) se enciende y apaga con los auriculares de la habitación.</p>
+    </section>
+  );
+}
+
 export function AccountPanel({ onClose }) {
   const cloud = useCloud();
 
@@ -225,6 +255,7 @@ export function AccountPanel({ onClose }) {
         )}
 
         <Backups />
+        <UiSound />
       </div>
     </PanelShell>
   );

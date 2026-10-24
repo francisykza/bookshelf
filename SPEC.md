@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.22.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.23.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -1395,3 +1395,142 @@ Estados: **PENDIENTE** (descrito, sin código), **IMPLEMENTADO** (código en el 
   `perspective(300px) rotateY(40deg)` mide 107 px de ancho frente a 153 en Chromium). Por eso en sus capturas
   las baldas, el marcapáginas y el post-it proyectados se ven deformados. No se considera un fallo de la app
   ni una verificación en Safari: hay que comprobarlo en un iPhone real.
+
+## 17. Selector de lecturas, guardado estable en iPhone, colores con significado, sonidos y pulsación (1.23.0)
+
+### 17.1 Estado encontrado
+
+- **Selector del calendario.** Mostraba todos los libros no terminados (pendientes incluidos) más el actual.
+- **Salto de scroll en iPhone.** En móvil, el formulario del día vivía en tres zonas de scroll vertical
+  anidadas: el velo del modal (`.panel-veil`, `overflow-y: auto`), la ventana del portátil (`.window__body`) y
+  el propio panel del día (`.cal__daypanel .cal-pop`, `max-height: 60dvh; overflow-y: auto;
+  overscroll-behavior-y: contain`). Con el teclado abierto, iOS desplaza los contenedores para mostrar el campo
+  enfocado; el gesto hacia «Guardar» empezaba dentro del scroll interior, que al llegar a su final no
+  encadenaba (contain) y al cerrar el teclado iOS restauraba los desplazamientos que había hecho: el salto hacia
+  arriba. «Guardar» quedaba al fondo de un scroll interior cuya altura dependía de `dvh`. Revisadas y
+  descartadas: no hay `key` dependiente del valor, el foco inicial del modal se ejecuta una vez por apertura, la
+  trampa de foco solo actúa con Tab, el efecto que acerca el día depende solo del día abierto, el borrador es
+  estado local (el reloj del temporizador re-renderiza sin tocarlo), la habitación queda `inert` detrás y no hay
+  listeners de `touchmove` ni `touch-action: none` en la cadena.
+  **Verificado en emulación (Chromium y WebKit de Playwright), no en un iPhone real.**
+- **Colores de anotación.** Las citas ya guardan un ID estable (`pink`, `yellow`, `blue`, `gold`); los
+  significados eran fijos en código (`QUOTE_COLORS`). No había filtro por color.
+- **Sonido.** Casi todas las interacciones usaban `pageRustle` (el mismo roce de papel), sin control de volumen
+  de efectos ni límite de repeticiones.
+
+### 17.2 Selector del calendario
+
+- Opciones iniciales: solo libros en `reading` (primero el actual si está leyéndose; después el resto en el orden
+  en que estaban al abrir el formulario, que no cambia mientras está abierto; las lecturas nuevas se añaden al
+  final) y «Otros…». Con títulos repetidos se añade el autor.
+- Sin lecturas activas: «Selecciona un libro» + «Otros…»; nada se elige solo y «Guardar lectura» espera.
+- «Otros…» es una acción de interfaz (`__other__`), nunca un `bookId`: abre un buscador dentro del mismo
+  formulario («Buscar en mi biblioteca»), solo sobre la biblioteca del usuario, por título y autor, sin
+  mayúsculas, acentos ni espacios repetidos; consulta vacía → indicación; hasta 8 resultados y «Mostrar más»;
+  sin resultados → «No hay libros que coincidan en tu biblioteca». Cada resultado: portada, título, autor y
+  estado. El número de resultados se anuncia en una región `aria-live` discreta.
+- Al elegir un resultado se guarda su ID real, se cierra la lista y el formulario muestra el libro con
+  «Cambiar libro». Elegirlo no cambia su estado (las reglas de progreso de §14 deciden lo que pase al guardar).
+- La selección no cambia por sincronizaciones ni por actualizaciones de progreso; si el libro desaparece, el
+  formulario lo dice y pide elegir otro.
+
+### 17.3 Guardado estable (iPhone)
+
+- Una sola zona de scroll en el portátil (`.window__body`); el panel del día ya no tiene scroll propio ni
+  `max-height` en `dvh`; el velo del portátil no se desplaza.
+- La fila de acciones del formulario es `position: sticky; bottom: 0` dentro de esa zona: papel `#FAF5E8`,
+  borde superior `1px solid rgba(146,112,61,.20)`, `padding: 12px`, botón de 44 px; el formulario reserva su
+  espacio para que no tape el último campo (`scroll-padding-bottom` en la zona de scroll, que también respeta el
+  desplazamiento de iOS al enfocar un campo). Sin botones `fixed` ligados al viewport. En ventanas bajas
+  (≤ 480 px de alto, móvil apaisado) la zona de scroll mide ~150 px y la fila pegada taparía la mitad del
+  formulario: ahí vuelve al flujo normal y se alcanza desplazándose.
+- Cada modalidad conserva su propio valor (ir de página a porcentaje y volver no borra lo escrito) y la vista
+  previa reserva su hueco: cambiar de modalidad ya no encoge el formulario (antes perdía 74 px y, al final del
+  scroll, el navegador recortaba la posición: otro salto hacia arriba).
+- El formulario es una instancia estable por día editado (nunca por el valor); el borrador (libro, modalidad,
+  valor, búsqueda) sobrevive al cambio entre búsqueda y formulario, a los re-renders del temporizador y a las
+  actualizaciones externas. Sin `autoFocus` al cambiar de modalidad; sin `scrollTo` ni temporizadores de scroll.
+- Entradas de 16 px en móvil, `inputMode="numeric"` (páginas) o `"decimal"` (porcentaje), coma o punto.
+- Al guardar: valida, guarda, confirma la escritura y solo entonces muestra «✓ Guardado» (≈ 1200 ms, sin cambiar
+  el ancho del botón, `aria-live="polite"`) y suena el sello. Si falla, conserva libro, modalidad y valor.
+
+### 17.4 Significados de los colores
+
+- Contrato: `settings.quoteMeanings = { [colorId]: { label, description } }` (solo los cambiados). IDs fijos de
+  `QUOTE_COLORS`; el color visual nunca cambia. Resolución: significado del usuario → texto original. Un color
+  desconocido (dato antiguo) se muestra como «Color sin significado» con un tono neutro, sin tocar la cita.
+- Editor («Personalizar colores» junto a la leyenda): muestra de 24 × 24 px, significado actual, campo, descripción
+  opcional, «Restaurar valores originales», Guardar y Cancelar. Texto: «Estos significados se aplican a tus
+  anotaciones de todos los libros». Validación: etiqueta obligatoria (recortada), ≤ 32 caracteres; descripción
+  ≤ 120; sin etiquetas duplicadas (normalizadas); mensajes junto al campo; texto plano (React lo escapa).
+- Cambiar un significado actualiza leyenda, etiquetas y filtro; el texto de las citas no cambia. El filtro del
+  diario conserva su selección por ID. Restaurar cambia solo los significados; Cancelar descarta el borrador.
+- Persistencia: se guarda el objeto completo de significados con `setSettings({ quoteMeanings })` (fusión de
+  primer nivel: no toca sonido, lectura ni otros ajustes) y viaja con la sincronización como el resto de ajustes
+  compartidos. Si no se puede escribir en el dispositivo, el editor conserva el borrador y lo dice.
+
+### 17.5 Sonidos de interfaz
+
+- `playUiSound(evento)` (`src/audio/uiSounds.js`) es la única entrada; reutiliza el `AudioContext` del ambiente
+  con un bus propio de efectos y volumen independiente (`settings.uiVolume`, 25 % por defecto, preferencia del
+  dispositivo). Sonidos **procedurales** (sintetizados con Web Audio, sin grabaciones ni archivos externos),
+  agrupados por familias de material con rampas de entrada y salida:
+
+| Evento | Material | Duración |
+| --- | --- | --- |
+| `libraryOpen` | Roce de madera y libro | ≈ 180 ms |
+| `bookOpen` | Cubierta y papel | ≈ 200 ms |
+| `diaryTab` | Hoja de algodón | ≈ 95 ms |
+| `monthTurn` | Paso de página breve | ≈ 90 ms |
+| `select` | Toque suave de madera | ≈ 60 ms |
+| `pencil` | Contacto de lápiz | ≈ 55 ms |
+| `save` | Sello sobre papel | ≈ 130 ms |
+| `close` | Papel amortiguado | ≈ 95 ms |
+| `timer` | Cerámica suave | ≈ 120 ms |
+| `sessionEnd` | Campanilla cálida existente | ≈ 600 ms |
+| `atticOpen` | Pestillo de latón | ≈ 160 ms |
+| `figureSelect` | Contacto sobre madera | ≈ 70 ms |
+
+- El unboxing conserva su secuencia (no se superponen genéricos). Sin sonido al escribir, hacer scroll, hover,
+  foco, re-render, hidratar, sincronizar o validar. Las estrellas suenan al confirmar (botón de estrella o ±),
+  no al arrastrar el control de rango.
+- Concurrencia: máximo 3 sonidos breves a la vez y 80 ms entre repeticiones del mismo evento; una acción, un
+  evento. «Sonidos táctiles» desactivado silencia todos los efectos; la prueba de volumen solo suena al pulsar
+  «Probar». Un fallo de audio nunca bloquea la acción.
+
+### 17.6 Pulsación y confirmación
+
+- Botones de madera y latón: `translate: 0 1px; scale: .985` (propiedades individuales: no pisan `transform` ni
+  las perspectivas 3D), 70 ms al pulsar y 120 ms `ease-out` al soltar, sombra reducida durante la presión.
+  Papel y pestañas: capa sepia ≤ 0,04 y 1 px. Solo con `:active` (se limpia solo tras scroll o cancelación).
+- Selección visible: color con contorno y marca ✓; libro elegido con borde cálido y `aria-pressed`/texto.
+- Movimiento reducido: sin desplazamiento ni escala; quedan color, contorno y texto.
+
+### 17.7 Criterios de aceptación (1.23.0)
+
+- [x] El selector muestra solo lecturas activas y «Otros…»; con cero lecturas no elige nada.
+- [x] «Otros…» busca en la biblioteca, nunca se guarda como libro y elegir un pendiente o terminado no cambia su estado.
+- [x] El formulario conserva el borrador con el temporizador corriendo y «Guardar» queda accesible en una sola zona de scroll (sticky salvo en ventanas bajas).
+- [x] Renombrar un color actualiza leyenda y filtro, sobrevive a recargar y no toca el texto de las citas.
+- [x] Cada evento tiene su sonido; el guardado suena una sola vez y solo tras el éxito; con efectos desactivados no suena nada.
+- [x] Sin cambios de layout al pulsar; sin `transform` en la presión; sin desbordes en los cinco tamaños de pantalla.
+- [ ] Safari en un iPhone real: pendiente (todo lo anterior es emulación).
+
+### 17.8 Evidencias (2026-10-24)
+
+- `npm run build` sin errores; `npm run lint` 30 avisos, ninguno nuevo.
+- `npm run qa:full`: Vitest **91/91** (14 nuevas en `v123.test.js`: lecturas activas, orden estable, títulos
+  repetidos, búsqueda con acentos, `«Otros…»` nunca como id, significados por ID, hexadecimal antiguo,
+  validación, restaurar, puerta de sonidos) y Playwright **221 superadas, 3 omitidas** (capturas de
+  diagnóstico) en los 8 proyectos. `e2e/v123.spec.js`: selector y «Otros…», cero lecturas, borrador con el
+  temporizador en marcha, zonas de scroll, valor por modalidad, sonido de guardado único tras el éxito,
+  silencio con efectos desactivados, sonidos distintos por acción, colores (renombrar, filtrar, duplicados,
+  recargar, restaurar, sin tocar citas ni ajustes) y pulsación sin cambio de layout.
+- Iteraciones: la matriz completa sacó a la luz dos fallos reales más, ya corregidos: la fila pegada tapaba
+  los botones en móvil apaisado (zona de scroll de ~150 px) y cambiar de modalidad encogía el formulario 74 px
+  (recorte del scroll al final). Y uno de especificidad: el `:active` antiguo de los sellos (`panels.css`)
+  movía con `transform` y anulaba el movimiento reducido.
+- Limitaciones del entorno: el WebKit de Playwright en Windows con emulación táctil no activa `:active` con el
+  ratón (no se pudo medir la presión ahí) y no crea `AudioContext` sin cabeza (se mide la emisión del evento,
+  no el audio). Ninguna prueba sustituye a Safari en un iPhone: el teclado virtual de iOS no se puede emular.
+

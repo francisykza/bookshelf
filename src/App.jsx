@@ -2,7 +2,8 @@
 // el menú. Este componente coordina el panorama de habitaciones, la librería, los paneles, el sonido y el
 // temporizador. Cambiar de habitación es estado de interfaz: no recrea proveedores ni toca la biblioteca.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { bell, isAmbiencePlaying, setAmbience, setSfx, setTimeOfDay } from './audio/ambientAudio';
+import { isAmbiencePlaying, setAmbience, setSfx, setTimeOfDay } from './audio/ambientAudio';
+import { playUiSound, setUiVolume } from './audio/uiSounds';
 import { timeOfDayByClock } from './domain/dates';
 import { BookDetailModal } from './components/book/BookDetailModal';
 import { AccountPanel } from './components/panels/AccountPanel';
@@ -65,6 +66,8 @@ function Sanctuary() {
     hadPanel.current = false;
     const el = opener.current;
     opener.current = null;
+    // Un solo sonido al cerrar cualquier panel (papel amortiguado)
+    playUiSound('close');
     const id = requestAnimationFrame(() => {
       if (el?.isConnected && !el.closest('[inert]')) el.focus({ preventScroll: true });
     });
@@ -85,7 +88,7 @@ function Sanctuary() {
   }, [location.view]);
 
   const onFocusDone = useCallback((minutes) => {
-    bell();
+    playUiSound('sessionEnd', { force: true });
     actions.logPomodoro(minutes ?? settings.focusMinutes, settings.drink);
     setAskPages(true);
     if (!locRef.current.panel) openPanel({ type: 'tray' });
@@ -95,7 +98,7 @@ function Sanctuary() {
     focusMinutes: settings.focusMinutes,
     breakMinutes: settings.breakMinutes,
     onFocusDone,
-    onBreakDone: bell,
+    onBreakDone: () => playUiSound('sessionEnd', { force: true }),
   });
 
   // El sonido solo puede arrancar tras un gesto: el AudioContext se crea al pulsar los auriculares
@@ -138,8 +141,9 @@ function Sanctuary() {
     return () => clearInterval(id);
   }, [settings.timeAuto, settings.timeOfDay, actions]);
 
-  // Sonidos táctiles (papel, rotulador, ronroneo…) desactivables
+  // Sonidos táctiles (papel, rotulador, ronroneo…) desactivables, con su volumen propio
   useEffect(() => setSfx(settings.sfx !== false), [settings.sfx]);
+  useEffect(() => setUiVolume(settings.uiVolume ?? 0.25), [settings.uiVolume]);
 
   // El ambiente sonoro sigue a la hora: grillos de noche, chicharras y gaviotas al atardecer
   useEffect(() => setTimeOfDay(settings.timeOfDay), [settings.timeOfDay]);
@@ -155,7 +159,10 @@ function Sanctuary() {
   // Cerrar y Volver usan la misma navegación que el gesto Atrás
   const close = nav.back;
   const openBook = (book) => openPanel({ type: 'book', id: book.id });
-  const openShelf = () => nav.go({ view: 'shelf', panel: null });
+  const openShelf = () => {
+    playUiSound('libraryOpen');
+    nav.go({ view: 'shelf', panel: null });
+  };
 
   return (
     <main className="sanctuary" data-view={view} data-phase={phase} inert={panel ? true : undefined}>
@@ -178,7 +185,10 @@ function Sanctuary() {
             onOpenTray={() => openPanel({ type: 'tray' })}
             onToggleSound={toggleSound}
             onOpenAtlas={() => openPanel({ type: 'atlas' })}
-            onOpenVault={(id) => openPanel({ type: 'vault', id })}
+            onOpenVault={(id) => {
+              playUiSound('atticOpen');
+              openPanel({ type: 'vault', id });
+            }}
             modalOpen={Boolean(panel)}
             guide={guide}
             onReady={setMainReady}
@@ -194,11 +204,17 @@ function Sanctuary() {
         onBack={nav.back}
         onOpenBook={openBook}
         onAddBook={() => openPanel({ type: 'add' })}
-        onOpenVault={(id) => openPanel({ type: 'vault', id })}
+        onOpenVault={(id) => {
+          playUiSound('atticOpen');
+          openPanel({ type: 'vault', id });
+        }}
       />
 
       {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} />}
-      {panel?.type === 'laptop' && <LaptopPanel onClose={close} initialTab={panel.tab} onOpenVault={() => openPanel({ type: 'vault' })} />}
+      {panel?.type === 'laptop' && <LaptopPanel onClose={close} initialTab={panel.tab} onOpenVault={() => {
+            playUiSound('atticOpen');
+            openPanel({ type: 'vault' });
+          }} />}
       {panel?.type === 'vault' && (
         <FiguresVaultModal
           onClose={close}

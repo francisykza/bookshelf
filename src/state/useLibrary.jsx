@@ -10,7 +10,7 @@ import { EMPTY_FIGURES, grantSeal, initialFigures, markUnboxSeen, openBoxAttempt
 export const STORAGE_KEY = 'bookshelf:v1';
 
 /** Ajustes propios de cada dispositivo: no viajan con la sincronización (SPEC §9ter). */
-export const DEVICE_SETTINGS = ['timeOfDay', 'timeAuto', 'sound', 'sfx', 'showGuides', 'lampOn', 'candleOn'];
+export const DEVICE_SETTINGS = ['timeOfDay', 'timeAuto', 'sound', 'sfx', 'uiVolume', 'showGuides', 'lampOn', 'candleOn'];
 const pickDevice = (settings) => Object.fromEntries(DEVICE_SETTINGS.filter((k) => k in settings).map((k) => [k, settings[k]]));
 
 const DEFAULT_SETTINGS = {
@@ -32,6 +32,10 @@ const DEFAULT_SETTINGS = {
   sfx: true,
   lampOn: true,
   candleOn: true,
+  // 1.23.0: volumen de los efectos de interfaz (preferencia del dispositivo) y significados de los colores de
+  // anotación (solo los que cambie el usuario; viajan con sus ajustes)
+  uiVolume: 0.25,
+  quoteMeanings: {},
 };
 
 function initialState() {

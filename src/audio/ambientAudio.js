@@ -13,9 +13,20 @@ let sfxOn = true;
 export function setSfx(on) {
   sfxOn = on;
 }
+/** ¿Están activados los efectos de interfaz? (lo consulta `uiSounds`) */
+export const sfxEnabled = () => sfxOn;
 /** Atardecer: chicharras, gaviotas lejanas y la campana del pueblo, todo muy bajito. */
 const EVENING_LEVEL = 0.07;
 const noiseCache = {};
+
+/**
+ * Contexto de audio compartido (uno para toda la app; se crea con el primer gesto) y su bus maestro. Los efectos
+ * de interfaz cuelgan de aquí con su propio bus y volumen (`uiSounds.js`).
+ */
+export function sharedAudio() {
+  const c = audio();
+  return c ? { ctx: c, master } : null;
+}
 
 function audio() {
   if (!ctx) {

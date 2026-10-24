@@ -1213,11 +1213,7 @@
     margin: 10px 0 4px;
   }
 
-  .cal__daypanel .cal-pop {
-    max-height: 60dvh;
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
-  }
+  /* 1.23.0: sin scroll propio (antes max-height: 60dvh y overscroll contain); ver §17.3 */
 }
 
 /* La hora de la barra superior no queda debajo de la pestaña de cierre */
@@ -1639,5 +1635,259 @@
 
   .cal__legend {
     flex-wrap: wrap;
+  }
+}
+
+/* ── 1.23.0 · Una sola zona de scroll en el portátil y «Guardar» siempre alcanzable (SPEC §17.3) ── */
+
+/* El velo del portátil no se desplaza: la única zona de scroll es el cuerpo de la ventana */
+.panel-veil[data-variant='laptop'] {
+  overflow: hidden;
+}
+
+.window,
+.desk {
+  min-height: 0;
+}
+
+/* El panel del día ya no tiene scroll propio ni altura en dvh (antes: max-height 60dvh + overscroll contain) */
+.cal__daypanel .cal-pop,
+.cal-pop {
+  max-height: none;
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+
+/* Fila de acciones pegada al pie de la zona de scroll que la contiene (nunca fixed al viewport) */
+.reading-form__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 4px -12px -12px;
+  padding: 12px;
+  border-top: 1px solid rgba(146, 112, 61, 0.2);
+  border-radius: 0 0 10px 10px;
+  background: #faf5e8;
+}
+
+.reading-form__actions[hidden] {
+  display: none;
+}
+
+/* «✓ Guardado»: hueco reservado (no cambia el ancho del botón ni mueve el formulario) */
+.reading-form__saved {
+  min-width: 7.5em;
+  font-family: 'Lora', var(--font-sans);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #4a6b2f;
+}
+
+.reading-form input[type='search'],
+.book-search__input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid rgb(146 112 61 / 0.3);
+  border-radius: 10px;
+  background: #fffdf6;
+  color: #2c1e14;
+  font: inherit;
+  font-size: max(16px, 1rem);
+}
+
+.reading-form__picker {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.book-search {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.book-search__status {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgb(44 30 20 / 0.72);
+}
+
+.book-search__results {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.book-search__result,
+.reading-form__chosen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: 6px 8px;
+  border: 1px solid rgb(146 112 61 / 0.25);
+  border-radius: 10px;
+  background: #fffdf6;
+  color: #2c1e14;
+  font: inherit;
+  text-align: left;
+}
+
+/* Libro elegido: borde cálido */
+.reading-form__chosen {
+  border-color: #c59b27;
+  box-shadow: inset 0 0 0 1px rgb(197 155 39 / 0.35);
+}
+
+.book-search__cover {
+  flex: none;
+  width: 28px;
+  height: 42px;
+  overflow: hidden;
+  border-radius: 2px 3px 3px 2px;
+  box-shadow: 0 2px 3px rgb(44 30 20 / 0.25);
+}
+
+.book-search__cover > * {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-search__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+}
+
+.book-search__text b {
+  overflow: hidden;
+  font-family: 'Cormorant Garamond', var(--font-display);
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.book-search__text em {
+  font-style: normal;
+  font-size: 0.74rem;
+  color: rgb(44 30 20 / 0.65);
+}
+
+.book-search__more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.book-search__more .link-btn,
+.reading-form__chosen .link-btn {
+  min-height: 44px;
+}
+
+/* ── 1.23.0 · Pulsación leve y consistente (SPEC §17.6) ──
+   Propiedades individuales `translate`/`scale`: no pisan `transform` ni las perspectivas 3D de libros y figuras. */
+.stamp-btn,
+.reading-form__save,
+.onboarding-card__primary,
+.corner-btn,
+.guides-toggle {
+  transition:
+    translate 120ms ease-out,
+    scale 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+
+.stamp-btn:active:not(:disabled),
+.reading-form__save:active:not(:disabled),
+.onboarding-card__primary:active,
+.corner-btn:active,
+.guides-toggle:active:not(:disabled) {
+  translate: 0 1px;
+  scale: 0.985;
+  transition-duration: 70ms;
+}
+
+.stamp-btn:active:not(:disabled),
+.reading-form__save:active:not(:disabled) {
+  box-shadow:
+    inset 0 1px 3px rgba(44, 30, 20, 0.2),
+    0 1px 3px rgba(44, 30, 20, 0.16);
+}
+
+/* Papel y pestañas: velo sepia ≤ 0,04 y 1 px */
+.reading-form__modes button,
+.onboarding-card__secondary,
+.book-search__result,
+.offscreen__list button,
+.quote-filter button,
+.meanings-editor button {
+  transition:
+    translate 120ms ease-out,
+    background-image 120ms ease-out;
+}
+
+.reading-form__modes button:active,
+.onboarding-card__secondary:active,
+.book-search__result:active,
+.offscreen__list button:active,
+.quote-filter button:active,
+.meanings-editor button:active {
+  translate: 0 1px;
+  background-image: linear-gradient(rgb(112 66 20 / 0.04), rgb(112 66 20 / 0.04));
+  transition-duration: 70ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp-btn:active:not(:disabled),
+  .reading-form__save:active:not(:disabled),
+  .onboarding-card__primary:active,
+  .corner-btn:active,
+  .guides-toggle:active:not(:disabled),
+  .reading-form__modes button:active,
+  .onboarding-card__secondary:active,
+  .book-search__result:active,
+  .offscreen__list button:active,
+  .quote-filter button:active,
+  .meanings-editor button:active {
+    translate: none;
+    scale: none;
+  }
+}
+
+/* La fila pegada no tapa lo que el scroll (o el foco del teclado en iOS) lleva al borde inferior */
+.window__body {
+  scroll-padding-bottom: 84px;
+}
+
+/* La vista previa reserva su hueco: escribir o cambiar de modalidad no encoge el formulario */
+.reading-form__preview {
+  min-height: 5.6em;
+}
+
+.reading-form__preview--empty {
+  border-left-color: rgb(197 155 39 / 0.35);
+  color: rgb(44 30 20 / 0.6);
+}
+
+/* Ventanas bajas (móvil apaisado): la zona de scroll del portátil mide ~150 px y una fila pegada ocuparía la
+   mitad tapando el formulario. Ahí la fila vuelve al flujo normal (se alcanza desplazándose, sin taparlo). */
+@media (max-height: 480px) {
+  .reading-form__actions {
+    position: static;
+    margin-top: 0;
+  }
+
+  .window__body {
+    scroll-padding-bottom: 0;
   }
 }

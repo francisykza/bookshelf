@@ -8,6 +8,7 @@ import { hash } from '../../domain/books';
 import { dayDatum, editEntry, entryInput, entryText, groupByDay, heat, isActive, summarize } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
 import { Cover } from '../shelf/BookItem';
+import { playUiSound } from '../../audio/uiSounds';
 import { ReadingEntryForm } from './ReadingEntryForm';
 
 const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -46,8 +47,6 @@ export function CalCover({ book }) {
   );
 }
 
-const candidatesOf = (state) => state.books.filter((b) => b.status !== 'read' || b.id === state.settings.currentBookId);
-
 /** Una fila del historial: lo que se registró, con edición y borrado de ESE registro. */
 function EntryRow({ entry, book }) {
   const { actions } = useLibrary();
@@ -65,6 +64,10 @@ function EntryRow({ entry, book }) {
             if (!check?.entry) return;
             actions.editSession(entry.id, text);
             setEditing(false);
+            // El sello suena cuando la escritura se ha confirmado
+            setTimeout(() => {
+              if (actions.persistNow()) playUiSound('save');
+            }, 0);
           }}
         >
           <input value={text} onChange={(e) => setText(e.target.value)} inputMode="decimal" aria-label={`Nuevo valor para «${label}»`} aria-invalid={!!check?.error || undefined} autoFocus />
@@ -128,7 +131,6 @@ function DayPopover({ date, groups, pomodoro, onClose }) {
   const [adding, setAdding] = useState(!groups.length);
   const summary = summarize(groups.flatMap((g) => g.entries), state.books);
   const future = date > dayKey();
-  const candidates = candidatesOf(state);
   return (
     <div className="cal-pop" role="dialog" aria-label={`Lectura del ${fmtDay(date, { day: 'numeric', month: 'long' })}`}>
       <div className="cal-pop__head">
@@ -155,11 +157,8 @@ function DayPopover({ date, groups, pomodoro, onClose }) {
       {future ? (
         <p className="cal-pop__empty">Este día aún no ha llegado.</p>
       ) : adding ? (
-        candidates.length ? (
-          <ReadingEntryForm date={date} books={candidates} onDone={() => setAdding(false)} onCancel={groups.length ? () => setAdding(false) : undefined} />
-        ) : (
-          <p className="cal-pop__empty">No hay libros que puedas seguir leyendo.</p>
-        )
+        // Instancia estable por día (key = fecha): el borrador no se pierde con re-renders ni sincronizaciones
+        <ReadingEntryForm key={date} date={date} keepOpen onCancel={groups.length ? () => setAdding(false) : undefined} />
       ) : (
         <button type="button" className="cal-pop__add" onClick={() => setAdding(true)}>
           <Plus aria-hidden="true" /> Apuntar otra lectura
@@ -224,6 +223,7 @@ export function CalendarApp() {
     return p > acc.p ? { d, p } : acc;
   }, { d: null, p: 0 });
   const shift = (n) => {
+    playUiSound('monthTurn');
     setOpen(null);
     setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1));
   };
@@ -342,7 +342,6 @@ export function SessionsApp() {
   const dates = Object.keys(days).sort().reverse();
   const pomodoros = state.progress.pomodoros;
   const [adding, setAdding] = useState(false);
-  const candidates = candidatesOf(state);
   return (
     <div className="sessions">
       <div className="sessions__top">
@@ -355,7 +354,7 @@ export function SessionsApp() {
       </div>
       {adding && (
         <div className="sessions__form">
-          <ReadingEntryForm date={dayKey()} books={candidates} onDone={() => setAdding(false)} onCancel={() => setAdding(false)} />
+          <ReadingEntryForm key={dayKey()} date={dayKey()} keepOpen onCancel={() => setAdding(false)} />
         </div>
       )}
       {!dates.length && <p className="cal-pop__empty">Todavía no hay sesiones. Avanza páginas en un libro o usa el temporizador.</p>}
