@@ -32,6 +32,7 @@ export default defineConfig({
     { name: 'chromium-360x800', use: { ...devices['Desktop Chrome'], ...mobile(360, 800) } },
     { name: 'chromium-390x844', use: { ...devices['Desktop Chrome'], ...mobile(390, 844) } },
     { name: 'chromium-412x915', use: { ...devices['Desktop Chrome'], ...mobile(412, 915) } },
+    { name: 'chromium-430x932', use: { ...devices['Desktop Chrome'], ...mobile(430, 932) } },
     { name: 'chromium-844x390', use: { ...devices['Desktop Chrome'], ...mobile(844, 390) } },
     { name: 'chromium-1440x900', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'webkit-390x844', use: { ...devices['Desktop Safari'], ...mobile(390, 844) } },

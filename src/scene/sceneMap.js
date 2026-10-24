@@ -90,8 +90,13 @@ export const LAMP = { x: 75, y: 578, shade: { x: 23, y: 497, w: 105, h: 96 } };
 /** Vela de la mesita: punta de la llama y tarro. */
 export const CANDLE = { x: 798, y: 1166, jar: { x: 777, y: 1176, w: 42, h: 56 } };
 
-/** Pantalla del portátil (TL, TR, BR, BL): mira de frente, no es la tapa de la ilustración anterior. */
-export const LAPTOP_SCREEN = [[757, 990], [906, 1013], [893, 1134], [722, 1116]];
+/**
+ * Área INTERIOR de la pantalla del portátil (TL, TR, BR, BL), dentro del bisel y sin la monstera (a la derecha) ni
+ * el vaso de té (abajo a la derecha): ahí se proyecta el calendario encendido. Bordes paralelos a los de la tapa.
+ */
+export const LAPTOP_DISPLAY = [[766, 995], [864, 1010], [848, 1094], [730, 1080]];
+/** Toda la pantalla visible (interior del bisel, sin el vaso que está delante): la parte encendida. */
+export const LAPTOP_GLOW = [[765, 993], [866, 1009], [852, 1094], [821, 1097], [821, 1121], [727, 1112]];
 
 /** Interior del vaso de té helado (se vacía con el temporizador): bordes izquierdo y derecho a cada altura. */
 export const TEA_LIQUID = {
@@ -114,7 +119,8 @@ export const TEA_LIQUID = {
 export const ROOM_SHELVES = [
   { id: 'top', quad: [[127, 165], [328, 250], [328, 382], [127, 297]], width: 205, height: 132 },
   { id: 'middle', quad: [[127, 318], [328, 402], [328, 547], [127, 486]], width: 205, height: 150 },
-  { id: 'cabinet', quad: [[127, 506], [328, 566], [328, 670], [127, 646]], width: 205, height: 120 },
+  // 1.25.0: borde derecho medido de nuevo sobre el canto del tablón (estaba 12 px alto)
+  { id: 'cabinet', quad: [[127, 504], [328, 562], [328, 682], [127, 650]], width: 205, height: 130 },
   { id: 'cabinet2', quad: [[127, 666], [328, 688], [328, 797], [127, 800]], width: 205, height: 120 },
 ];
 
@@ -166,8 +172,21 @@ export const HOTSPOTS = {
   },
 };
 
-/** Página derecha del libro abierto (TL, TR, BR, BL), dentro del papel: ahí va el marcapáginas con tu lectura. */
-export const BOOK_PAGE = [[585, 1402], [800, 1432], [818, 1560], [565, 1532]];
+/**
+ * Páginas del libro abierto (TL, TR, BR, BL) con sus márgenes impresos: cada una tiene su quad y nada cruza el
+ * pliegue central (de (548, 1388) a (460, 1560)). Izquierda: lámina con la portada; derecha: «Tu lectura».
+ */
+export const BOOK_LEFT_PAGE = [[362, 1360], [526, 1398], [450, 1544], [268, 1486]];
+export const BOOK_RIGHT_PAGE = [[572, 1402], [812, 1442], [830, 1615], [505, 1550]];
+
+/** Canto delantero de las baldas de libros: un hilo de la propia ilustración tapa la base de los lomos. */
+export const SHELF_LIPS = {
+  cabinet: [[124, 646], [330, 680], [330, 686], [124, 652]],
+  cabinet2: [[124, 796], [330, 794], [330, 800], [124, 802]],
+};
+
+/** Aire delante de la puerta-ventana donde flotan motas de polvo a la luz del día. */
+export const DUST_REGION = { x: 470, y: 430, w: 170, h: 520 };
 
 /**
  * Siluetas de los objetos sueltos (halo dorado al señalar): las mismas medidas que sus hotspots, en ruta SVG.

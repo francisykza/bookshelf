@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.24.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.25.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -1691,3 +1691,83 @@ Nuevos: `src/utils/vibeEngine.js`, `src/utils/coverColor.js`, `src/utils/localLi
   ocultan ahí) y el panel sin papel de fondo.
 - Limitaciones: la extracción de color depende de que el servidor de cada portada permita CORS (Open Library
   lo hace en la mayoría de casos; si no, queda el color determinista); no se ha medido en un iPhone real.
+
+## 19. Integración diegética: calendario, libro actual, lomos y ambiente (1.25.0)
+
+Estados: **PENDIENTE**, **IMPLEMENTADO**, **VERIFICADO** (con pruebas ejecutadas en esta entrega, §19.8). Nada
+se marca verificado por lectura de código. Sin llamadas a IA ni cambios en sonidos, probabilidades o paleta del Ático.
+
+### 19.1 Punto de partida
+
+- La tapa del portátil llevaba un post-it amarillo con la racha (14 días como máximo) y la pantalla quedaba
+  oscura; el libro de la cama tenía un marcapáginas con «+5» que dominaba la composición.
+- Los lomos de las baldas eran rectángulos sobre un fondo oscuro, con bandas doradas en todos.
+- Las flechas del panorama eran pastillas grandes; «Fuera de vista» era un bloque fijo sobre la escena.
+- El ambiente apenas se percibía fuera de los veleros.
+
+### 19.2 Pantalla del portátil con el calendario del mes · VERIFICADO
+
+- Fuera el post-it. El interior de la pantalla (`LAPTOP_DISPLAY`, medido sobre la ilustración; la planta y el
+  vaso quedan delante) se ilumina con un polígono de luz (`LAPTOP_GLOW`) y un calendario proyectado con
+  `rectToQuad` (caja local 236 × 196): mes en Cormorant, cabecera L M X J V S D (**lunes primero**), hoy en
+  `#A46C3F` con texto `#FFF7E8`, días con lectura real marcados en `#738269`, pie «N días seguidos · lo de hoy».
+- Fechas solo locales (`dayKey`, `parseDay`; nunca `toISOString`). `useToday` refresca al cambiar de día (temporizador
+  a medianoche) y al volver a la pestaña (`visibilitychange`).
+- Una sola racha para toda la app: `readingStreak(log, today)` en `domain/reading.js` (sin tope de 14), usada por
+  la pantalla y por el panel del portátil; `activeDays(log)` da las marcas.
+- La pantalla es decorativa (`aria-hidden`); el hotspot del portátil la abre en la pestaña Calendario.
+- El contenido cabe dentro del bisel en 360, 390, 430, 844 × 390 y 1440 (prueba de esquinas proyectadas).
+
+### 19.3 Libro abierto con la lectura actual · VERIFICADO
+
+- Dos superficies separadas (`BOOK_LEFT_PAGE`, `BOOK_RIGHT_PAGE`), cada una con su homografía y sin cruzar el
+  pliegue. Página izquierda: lámina de portada al 45–60 % de ancho, `object-fit: contain`, sin marco (portada
+  generada si falta). Página derecha: «Tu lectura», título (máx. 3 líneas), autoría, filete y progreso.
+- `progressLine(book)`: «Página N de T · P %», «P % leído» por porcentaje; nunca NaN, «undefined» ni porcentaje
+  sin total. Solo el texto usa `mix-blend-mode: multiply`.
+- Sin lectura: «Tu próxima historia empieza aquí». Tocar el libro abre su ficha (el +5 vive en el panel).
+
+### 19.4 Lomos físicos · VERIFICADO
+
+- Ancho por edición y páginas, altura determinista por libro, base apoyada en la balda (±1 px), 2 px de
+  separación sin solapes, sombra de contacto. Solo el último de una fila se inclina (1,2°) y solo si sobra sitio.
+- Material del motor (`calculateBookPhysics`): cuero con nervios, tela con trama, papel mate; dorado solo con
+  `goldFoil`. Color de la portada (`useCoverColor`) o el determinista.
+- Título vertical solo si el lomo mide ≥ 11 × 48 px CSS en pantalla.
+- El canto delantero de cada balda (`SHELF_LIPS`) se recorta de la propia ilustración y tapa la base.
+
+### 19.5 Navegación discreta y «Fuera de vista» en Guías · VERIFICADO
+
+- Chevrón SVG de 20 px en un círculo de 44 × 44 con borde latón; nombres accesibles «Ir al Salón Social» y
+  «Volver a Mi Habitación»; etiqueta visible al pasar o enfocar en escritorio. El gesto de deslizar sigue igual.
+- «Guías» es un menú (`aria-expanded`, Escape o toque fuera lo cierran): repetir la guía, resaltar objetos y,
+  si el encuadre recorta alguno (≥ 75 %), la lista «Fuera de vista» con sus acciones. Un punto en el botón avisa.
+
+### 19.6 Movimiento ambiental · VERIFICADO
+
+- 10 destellos deterministas dentro de los polígonos del agua (misma máscara que los veleros), ciclos de 3–6 s,
+  opacidad máx. 0,18. Los veleros siguen a 110 s.
+- Llama de la vela anclada a la mecha (`CANDLE`), escala 0,97–1,03; sin llama ni resplandor con la vela apagada.
+- Motas de polvo en la luz de la puerta-ventana: 12 en móvil, 16 en escritorio, nunca de noche.
+- Sin vapor caliente en el té helado; nada de recortes rectangulares en movimiento. Solo `transform`/`opacity`.
+- En pausa fuera de la habitación, con modal o con la pestaña oculta; quieto con movimiento reducido.
+
+### 19.7 Archivos
+
+`scene/sceneMap.js` (quads), `domain/reading.js`, `domain/roomSurfaces.js`, `hooks/useToday.js`,
+`components/room/RoomSurfaces.jsx`, `AmbientLife.jsx`, `BaySailboats.jsx`, `RoomShelfBooks.jsx`,
+`PanoramicRoom.jsx`, `RoomCorner.jsx`, `CozyRoom.jsx`, `RoomLiveData.jsx`, `panels/LaptopPanel.jsx`, `App.jsx`,
+`styles/room.css`; pruebas `domain/__tests__/v125.test.js`, `e2e/diegetic.spec.js`, proyecto Playwright 430 × 932.
+
+### 19.8 Verificación
+
+- Vitest: cuadrícula del mes (lunes, bisiestos, domingo 1), `progressLine` con datos incompletos, racha.
+- Playwright `e2e/diegetic.spec.js` en los 9 proyectos (Chromium 360/390/430/844 × 390/1440, movimiento
+  reducido y WebKit): mes, lunes, hoy, marcas = registro, dentro del bisel, actualización al guardar, apertura
+  en Calendario; libro actual, sin lectura, título largo, sin portada, sin total; lomos apoyados, sin cruces,
+  deterministas; chevrón 44 × 44 y glifo 16–24 px; Guías con objetos recortados; destellos en el agua, pausa
+  al cambiar de habitación, sin capas duplicadas al volver; grabación de 14 s en 390 y 1440.
+- Fluidez: recuento de `requestAnimationFrame` durante 3 s en Chromium sin cabeza (informativo; no es una
+  medida de iPhone ni una promesa de 60 FPS).
+- Limitaciones: WebKit en Windows no aplica `matrix3d` proyectivo (la pantalla y las páginas se ven planas
+  allí); no hay pruebas en iPhone ni Safari reales.

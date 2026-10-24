@@ -2,7 +2,7 @@
 // guías. Viven fuera del track del panorama (no se desplazan con la habitación) y respetan el área segura.
 // 1.21 (Fase 1): la ilustración nueva no tiene carillón; cambiar la hora pasa a este control de ambiente.
 import { Cloud, CloudOff, Maximize, Minimize, Moon, Sparkles, Sun, Sunset, Volume2, VolumeX } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { chime } from '../../audio/ambientAudio';
 import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
@@ -10,11 +10,26 @@ import { TOD_ORDER, todName } from './RoomHotspots';
 
 const TOD_ICON = { morning: Sun, sunset: Sunset, night: Moon };
 
-export function RoomCorner({ onOpenAccount, onStartGuide, guideActive = false }) {
+export function RoomCorner({ onOpenAccount, onStartGuide, guideActive = false, offscreen = [] }) {
   const cloud = useCloud();
   const { state, actions } = useLibrary();
   const { settings } = state;
   const guides = Boolean(settings.showGuides);
+  const [menu, setMenu] = useState(false);
+  const menuRef = useRef(null);
+  // El menú se cierra al tocar fuera o con Escape
+  useEffect(() => {
+    if (!menu) return undefined;
+    const close = (event) => {
+      if (event.type === 'keydown' ? event.key === 'Escape' : !menuRef.current?.contains(event.target)) setMenu(false);
+    };
+    document.addEventListener('pointerdown', close, true);
+    document.addEventListener('keydown', close, true);
+    return () => {
+      document.removeEventListener('pointerdown', close, true);
+      document.removeEventListener('keydown', close, true);
+    };
+  }, [menu]);
 
   // Tres casos (SPEC §12.3): app instalada a pantalla completa, API de pantalla completa o ninguna
   const installedFullscreen = window.matchMedia?.('(display-mode: fullscreen)').matches ?? false;
@@ -93,19 +108,64 @@ export function RoomCorner({ onOpenAccount, onStartGuide, guideActive = false })
         >
           {settings.sfx ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}
         </button>
-        {/* «Guías» repite la guía de la habitación (Anexo B1); si las insignias de guía están visibles, las oculta */}
-        <button
-          type="button"
-          className="guides-toggle"
-          aria-pressed={guides || guideActive}
-          disabled={guideActive}
-          onClick={(event) => (guides ? actions.setSettings({ showGuides: false }) : onStartGuide?.(event.currentTarget))}
-          title={guides ? 'Ocultar las insignias de guía' : 'Repetir la guía de la habitación'}
-          aria-label={guides ? 'Ocultar las insignias de guía' : 'Repetir la guía de la habitación'}
-        >
-          <Sparkles aria-hidden="true" />
-          <span>Guías</span>
-        </button>
+        {/* «Guías» (SPEC §19.5): repetir la guía y, si el encuadre recorta algo, acceso a esos objetos */}
+        <div className="guides-menu" ref={menuRef} data-no-room-swipe>
+          <button
+            type="button"
+            className="guides-toggle"
+            aria-pressed={guides || guideActive}
+            aria-expanded={menu}
+            aria-haspopup="true"
+            disabled={guideActive}
+            onClick={() => setMenu((v) => !v)}
+            title="Guías"
+            aria-label={offscreen.length ? `Guías (${offscreen.length} objetos fuera de vista)` : 'Guías'}
+          >
+            <Sparkles aria-hidden="true" />
+            <span>Guías</span>
+            {offscreen.length > 0 && <i className="guides-toggle__dot" aria-hidden="true" />}
+          </button>
+          {menu && (
+            <ul className="guides-menu__list">
+              <li>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    setMenu(false);
+                    onStartGuide?.(event.currentTarget.closest('.guides-menu')?.querySelector('.guides-toggle'));
+                  }}
+                >
+                  Repetir la guía de la habitación
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenu(false);
+                    actions.setSettings({ showGuides: !guides });
+                  }}
+                >
+                  {guides ? 'Ocultar las insignias de los objetos' : 'Resaltar lo que puedes tocar'}
+                </button>
+              </li>
+              {offscreen.length > 0 && <li className="guides-menu__heading">Fuera de vista</li>}
+              {offscreen.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenu(false);
+                      item.onActivate();
+                    }}
+                  >
+                    {item.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
       {fsHint && (
         <p className="fs-hint" role="status">

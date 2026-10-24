@@ -6,16 +6,18 @@ import { useEffect, useRef, useState } from 'react';
 import { lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook, progressLabel } from '../../domain/books';
 import { getDeterministicVibe } from '../../utils/vibeEngine';
-import { dayKey } from '../../domain/dates';
-import { summarize } from '../../domain/reading';
+import { readingStreak, summarize } from '../../domain/reading';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { HOTSPOTS, ROOMS } from '../../scene/sceneMap';
 import { visibleFraction } from '../../scene/stageFit';
 import { useLibrary } from '../../state/useLibrary';
 import { OnboardingGuide } from '../onboarding/OnboardingGuide';
+import { useToday } from '../../hooks/useToday';
+import { AmbientLife } from './AmbientLife';
 import { BaySailboats } from './BaySailboats';
+import { LaptopCalendar, OpenBookPages } from './RoomSurfaces';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
-import { BedBookmark, CloudShadow, DrinkSteam, LaptopPostit, SoundWaves, TeaMist, readingStreak } from './RoomLiveData';
+import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
 import { SceneBase } from './SceneBase';
 import { SceneStage } from './SceneStage';
@@ -36,37 +38,19 @@ function formatTimer(ms) {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
-/** Un único control discreto con los objetos que el encuadre deja fuera de la pantalla. */
-function OffscreenObjects({ items }) {
-  const [open, setOpen] = useState(false);
-  if (!items.length) return null;
-  return (
-    <div className="offscreen" data-no-room-swipe>
-      <button type="button" className="offscreen__toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        Fuera de vista ({items.length})
-      </button>
-      {open && (
-        <ul className="offscreen__list">
-          {items.map((it) => (
-            <li key={it.id}>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  it.onActivate();
-                }}
-              >
-                {it.title}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+/**
+ * Avisa de qué objetos deja fuera el encuadre (≥ 75 % recortado) para ofrecerlos en «Guías» (SPEC §19.5). Solo
+ * informa cuando cambia la lista; las acciones se leen de una referencia para no quedarse viejas.
+ */
+function OffscreenReporter({ fit, actionsRef, onChange }) {
+  const ids = ESSENTIAL.filter((id) => visibleFraction(fit, HOTSPOTS[id].shape) < 0.25).join(',');
+  useEffect(() => {
+    onChange?.(ids ? ids.split(',').map((id) => ({ id, title: actionsRef.current[id].title, onActivate: () => actionsRef.current[id].onActivate() })) : []);
+  }, [ids, onChange, actionsRef]);
+  return null;
 }
 
-export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, modalOpen = false, timer, guide = null, onReady }) {
+export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
   const { state, actions } = useLibrary();
   const { settings, books, progress } = state;
   const reducedMotion = useReducedMotion();
@@ -126,8 +110,10 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
 
   const readThisYear = books.filter((b) => b.status === 'read' && b.finishedAt?.startsWith(String(new Date().getFullYear()))).length;
   const timerText = timer.running ? `${timer.phase === 'focus' ? 'Leyendo' : 'Descanso'} · ${formatTimer(timer.remaining)}` : null;
+  // Día local (cambia a medianoche y al volver a la app): lo usan la pantalla del portátil y el resumen de hoy
+  const today = useToday();
   const todaySummary = summarize(
-    progress.readingLog.filter((e) => e.date === dayKey()),
+    progress.readingLog.filter((e) => e.date === today),
     books,
   );
   const streak = readingStreak(progress.readingLog);
@@ -151,6 +137,10 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
     lamp: { title: settings.lampOn ? 'Lámpara: apagar' : 'Lámpara: encender', onActivate: toggleLamp },
     lantern: { title: settings.candleOn ? 'Vela: soplar' : 'Vela: encender', onActivate: toggleCandle },
   };
+  const actionsRef = useRef(ACTIONS);
+  useEffect(() => {
+    actionsRef.current = ACTIONS;
+  });
 
   return (
     <SceneStage
@@ -174,20 +164,18 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
             </div>
           )}
           {guide?.visible && inRoom && <OnboardingGuide guide={guide} fit={fit} reducedMotion={reducedMotion} />}
-          {inRoom && !guide?.visible && (
-            <OffscreenObjects
-              items={ESSENTIAL.filter((id) => visibleFraction(fit, HOTSPOTS[id].shape) < 0.25).map((id) => ({ id, ...ACTIONS[id] }))}
-            />
-          )}
+          <OffscreenReporter fit={fit} actionsRef={actionsRef} onChange={onOffscreen} />
         </>
       )}
     >
+      {(fit) => (
       <div ref={worldRef} className="world" data-base={base.status}>
         {/* 0 · ilustración */}
         <SceneBase room={ROOMS.MAIN_ROOM} attempt={base.attempt} onStatus={(status) => setBase((b) => (b.status === status ? b : { ...b, status }))} />
 
         {/* 5 · veleros de la bahía, recortados por la máscara del agua (detrás de la luz del día) */}
         <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} />
+        <AmbientLife active={live} reducedMotion={reducedMotion} candleOn={settings.candleOn} timeOfDay={settings.timeOfDay} />
 
         {/* 10 · luz y atmósfera (sin geometría heredada) */}
         <TimeOfDayLayers timeOfDay={settings.timeOfDay} lampOn={settings.lampOn} candleOn={settings.candleOn} vibe={vibe} />
@@ -195,11 +183,12 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
 
         {/* 20 · objetos dinámicos integrados en la ilustración */}
         <div className="room-objects">
-          <RoomShelfBooks books={books} currentId={reading?.id} onOpenShelf={onOpenShelf} onHover={onHover} active={live} awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))} />
+          <RoomShelfBooks books={books} currentId={reading?.id} onOpenShelf={onOpenShelf} onHover={onHover} active={live} scale={fit.scale} awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))} />
           <RoomFigureShelves figures={progress.figures} onOpenVault={onOpenVault} onHover={onHover} />
           <TeaDrain level={teaLevel} />
-          <LaptopPostit streak={streak} todayPages={todaySummary.pages} todayPercent={todaySummary.percentBooks} />
-          <BedBookmark book={reading} onOpen={onOpenBook} onAdvance={(book, pages) => actions.setPage(book.id, book.currentPage + pages)} />
+          {/* Pantalla encendida con el calendario del mes y el libro abierto con tu lectura (los abren sus hotspots) */}
+          <LaptopCalendar log={progress.readingLog} today={today} streak={streak} todayText={todaySummary.text} />
+          <OpenBookPages book={reading} />
           <TeaMist timer={timer} />
           <DrinkSteam drink={settings.drink} active={timer.running} />
           <SoundWaves on={settings.sound && live} />
@@ -256,6 +245,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         {/* 40 · etiquetas */}
         <RoomLabel label={label} />
       </div>
+      )}
     </SceneStage>
   );
 }

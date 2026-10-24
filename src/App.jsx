@@ -78,6 +78,8 @@ function Sanctuary() {
   const [askPages, setAskPages] = useState(false);
   // Guía diegética (Anexo B): arranca con MAIN_ROOM decodificada y medida, quieta y sin nada prioritario abierto
   const [mainReady, setMainReady] = useState(false);
+  // Objetos que el encuadre deja fuera: se ofrecen en el menú de «Guías» (SPEC §19.5)
+  const [offscreen, setOffscreen] = useState([]);
   const [settledRoom, setSettledRoom] = useState(null);
   const guide = useOnboarding({ ready: mainReady, blocked: Boolean(panel) || phase !== ROOM || settledRoom !== 'MAIN_ROOM' });
 
@@ -174,7 +176,7 @@ function Sanctuary() {
         reducedMotion={reducedMotion}
         forceMain={guide.active}
         onSettled={setSettledRoom}
-        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} onStartGuide={guide.start} guideActive={guide.active} /> : null}
+        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} onStartGuide={guide.start} guideActive={guide.active} offscreen={offscreen} /> : null}
         renderMain={(active) => (
           <CozyRoom
             active={active}
@@ -193,6 +195,7 @@ function Sanctuary() {
             modalOpen={Boolean(panel)}
             guide={guide}
             onReady={setMainReady}
+            onOffscreen={setOffscreen}
           />
         )}
         renderSocial={(active, social) => (

@@ -7,7 +7,7 @@ import { useNow } from '../../hooks/useReducedMotion';
 import { SEALS_PER_BOX, rankOf } from '../../domain/figures';
 import { missionStatus } from '../../domain/missions';
 import { EDITIONS, formatRating, hash, isDevice, spineColor } from '../../domain/books';
-import { isActive, summarize } from '../../domain/reading';
+import { isActive, readingStreak, summarize } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
 import { FigureArt, RANK_STARS } from '../figures/FigureArt';
 import { useFigureCatalog } from '../figures/figureCatalog';
@@ -39,12 +39,8 @@ function useStats(state) {
       if (isActive(e)) activeDays.add(e.date);
     });
     const days = lastDays(14).map((date) => ({ date, pages: byDay.get(date) ?? 0, active: activeDays.has(date) }));
-    let streak = 0;
-    for (let i = days.length - 1; i >= 0; i -= 1) {
-      if (days[i].active) streak += 1;
-      else if (i === days.length - 1) continue;
-      else break;
-    }
+    // La misma racha que la pantalla del portátil (sin el tope de 14 días de antes)
+    const streak = readingStreak(progress.readingLog);
     const year = String(new Date().getFullYear());
     const readYear = books.filter((b) => b.status === 'read' && b.finishedAt?.startsWith(year));
     const rated = books.filter((b) => b.rating);

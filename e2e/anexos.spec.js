@@ -212,6 +212,7 @@ test('B · saltar marca la guía y «Guías» la repite', async ({ page }) => {
   await page.waitForTimeout(600);
   await expect(page.locator('.onboarding-card')).toHaveCount(0);
   await page.locator('.guides-toggle').click();
+  await page.getByRole('button', { name: 'Repetir la guía de la habitación' }).click();
   await expect(page.locator('.onboarding')).toHaveAttribute('data-state', 'welcome');
   // Escape cierra y el foco vuelve a «Guías»
   await page.keyboard.press('Escape');

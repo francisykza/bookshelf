@@ -7,14 +7,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { rankOf } from '../../domain/figures';
-import { sprayedEdge, spineColor, spineHeight, spineWidth } from '../../domain/books';
+import { sprayedEdge, spineHeight, spineWidth } from '../../domain/books';
 import { projectPoint, rectToQuad } from '../../scene/homography';
-import { ROOM_SHELVES } from '../../scene/sceneMap';
+import { ROOM_SHELVES, SCENE_H, SCENE_SRC, SCENE_W, SHELF_LIPS, pts } from '../../scene/sceneMap';
+import { useCoverColor } from '../../hooks/useCoverColor';
+import { useSvgIds } from '../../hooks/useSvgIds';
+import { calculateBookPhysics } from '../../utils/vibeEngine';
 import { FigureArt, figureAspect } from '../figures/FigureArt';
 import { canUnbox, shownDisplay } from '../figures/figureDisplay';
 import { useFigureCatalog } from '../figures/figureCatalog';
 
-const GAP = 0.6;
+/** Separación entre lomos en px de la ilustración (≈ 1–2 px CSS en móvil). */
+const GAP = 2;
 const shelfOf = (id) => ROOM_SHELVES.find((s) => s.id === id);
 
 const BOOK_SHELVES = ['cabinet', 'cabinet2'];
@@ -49,7 +53,81 @@ function layoutFigures(figs) {
 /** Cada pocos segundos un libro asoma un poco de la balda, como si alguien lo hubiera rozado. */
 const PEEK_MS = 2600;
 
-export function RoomShelfBooks({ books, currentId, onOpenShelf, onHover, awake = false, active = true }) {
+/** Tamaño mínimo en pantalla (px CSS) para que el título del lomo se lea; si no, color y marca discreta. */
+const TITLE_MIN_W = 11;
+const TITLE_MIN_H = 48;
+
+/**
+ * Un lomo físico (SPEC §19.4): su color (el de la portada cuando se puede, si no el determinista), el material de
+ * su edición, canto oscuro a un lado y luz estrecha al otro, textura mate y dorado solo en cuero y tela. Título
+ * vertical cuando cabe legible a la escala actual.
+ */
+function RoomSpine({ book, x, w, h, index, lean, peek, scale, onOpenShelf, onHover, label }) {
+  const [color, observe] = useCoverColor(book);
+  const physics = calculateBookPhysics(book);
+  const showTitle = w * scale >= TITLE_MIN_W && h * scale >= TITLE_MIN_H;
+  return (
+    <button
+      ref={observe}
+      type="button"
+      className="room-spine"
+      data-status={book.status}
+      data-edition={book.editionType}
+      data-material={physics.material}
+      data-foil={physics.goldFoil || undefined}
+      data-edge={sprayedEdge(book) || undefined}
+      data-peek={peek}
+      data-lean={lean || undefined}
+      style={{ left: x, width: w, height: h, '--spine': color, '--i': index }}
+      aria-label={`${book.title}, de ${book.author}. Ver tu librería`}
+      title={book.title}
+      onClick={(event) => {
+        // Cualquier libro de la habitación te lleva a la librería completa
+        event.stopPropagation();
+        onOpenShelf();
+      }}
+      onPointerEnter={() => onHover(label)}
+      onPointerLeave={() => onHover(null)}
+      onFocus={() => onHover(label)}
+      onBlur={() => onHover(null)}
+    >
+      {physics.goldFoil && <span className="room-spine__bands" />}
+      {book.editionType === 'leatherbound' && (
+        <span className="room-spine__nerves" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+        </span>
+      )}
+      {showTitle && (
+        <span className="room-spine__title" aria-hidden="true">
+          {book.title}
+        </span>
+      )}
+      {book.status === 'reading' && <span className="room-spine__ribbon" />}
+    </button>
+  );
+}
+
+/** Canto delantero de cada balda de libros, recortado de la propia ilustración: tapa ligeramente la base. */
+function ShelfLips() {
+  const sid = useSvgIds();
+  return (
+    <svg className="room-shelf-lips" viewBox={`0 0 ${SCENE_W} ${SCENE_H}`} width={SCENE_W} height={SCENE_H} aria-hidden="true">
+      <defs>
+        <clipPath clipPathUnits="userSpaceOnUse" id={sid('clip-lips')}>
+          {Object.values(SHELF_LIPS).map((poly, i) => (
+            <polygon key={i} points={pts(poly)} />
+          ))}
+        </clipPath>
+      </defs>
+      <image href={SCENE_SRC} width={SCENE_W} height={SCENE_H} clipPath={sid.url('clip-lips')} />
+    </svg>
+  );
+}
+
+export function RoomShelfBooks({ books, currentId, onOpenShelf, onHover, awake = false, active = true, scale = 1 }) {
   const rows = useMemo(() => spinesFor(books, currentId), [books, currentId]);
   const reducedMotion = useReducedMotion();
   const [peek, setPeek] = useState(null);
@@ -72,49 +150,19 @@ export function RoomShelfBooks({ books, currentId, onOpenShelf, onHover, awake =
       {rows.map(({ shelf, items, used }) =>
         items.length ? (
           <div key={shelf.id} className="room-shelf" data-shelf={shelf.id} style={{ width: shelf.width, height: shelf.height, transform: rectToQuad(shelf.width, shelf.height, shelf.quad) }}>
-            <span className="room-shelf__back" style={{ width: Math.min(shelf.width, used + 2) }} />
             {items.map(({ book, w, x }, index) => {
               const h = Math.min(shelf.height - 4, shelf.height * 0.86 * spineHeight(book));
               const anchor = projectPoint(shelf.width, shelf.height, shelf.quad, x + w / 2, shelf.height - h);
               const label = { id: `spine-${book.id}`, x: anchor.x, y: anchor.y - 6, title: book.title, text: 'Toca para ver tu librería', meta: 'Mi librería de roble' };
-              return (
-                <button
-                  key={book.id}
-                  type="button"
-                  className="room-spine"
-                  data-status={book.status}
-                  data-edition={book.editionType}
-                  data-edge={sprayedEdge(book) || undefined}
-                  data-peek={peek === book.id}
-                  style={{ left: x, width: w, height: h, '--spine': spineColor(book), '--i': index }}
-                  aria-label={`${book.title}, de ${book.author}. Ver tu librería`}
-                  onClick={(event) => {
-                    // Cualquier libro de la habitación te lleva a la librería completa
-                    event.stopPropagation();
-                    onOpenShelf();
-                  }}
-                  onPointerEnter={() => onHover(label)}
-                  onPointerLeave={() => onHover(null)}
-                  onFocus={() => onHover(label)}
-                  onBlur={() => onHover(null)}
-                >
-                  <span className="room-spine__bands" />
-                  {book.editionType === 'leatherbound' && (
-                    <span className="room-spine__nerves" aria-hidden="true">
-                      <i />
-                      <i />
-                      <i />
-                      <i />
-                    </span>
-                  )}
-                  {book.status === 'reading' && <span className="room-spine__ribbon" />}
-                </button>
-              );
+              // Solo el último de la fila se apoya inclinado, y solo si le sobra sitio a la derecha (sin cruzarse)
+              const lean = index === items.length - 1 && shelf.width - used > 8;
+              return <RoomSpine key={book.id} book={book} x={x} w={w} h={h} index={index} lean={lean} peek={peek === book.id} scale={scale} onOpenShelf={onOpenShelf} onHover={onHover} label={label} />;
             })}
             <span className="room-shelf__shade" aria-hidden="true" />
           </div>
         ) : null,
       )}
+      <ShelfLips />
     </div>
   );
 }

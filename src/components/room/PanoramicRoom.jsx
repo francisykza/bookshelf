@@ -198,15 +198,23 @@ export function PanoramicRoom({ locked = false, reducedMotion = false, renderMai
               className="panorama-nav__btn panorama-nav__btn--next"
               onClick={() => go(SOCIAL_ROOM)}
               disabled={social.status === 'loading'}
-              aria-label={social.status === 'loading' ? 'Salón Social (cargando…)' : 'Ir al Salón Social'}
+              aria-label={social.status === 'loading' ? 'Ir al Salón Social (cargando…)' : 'Ir al Salón Social'}
             >
-              <span>Salón Social</span>
-              <span aria-hidden="true">→</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M7.5 3.5 L13.5 10 L7.5 16.5" />
+              </svg>
+              <span className="panorama-nav__label" aria-hidden="true">
+                Salón Social
+              </span>
             </button>
           ) : (
             <button ref={toMainRef} type="button" className="panorama-nav__btn panorama-nav__btn--prev" onClick={() => go(MAIN_ROOM)} aria-label="Volver a Mi Habitación">
-              <span aria-hidden="true">←</span>
-              <span>Mi Habitación</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M12.5 3.5 L6.5 10 L12.5 16.5" />
+              </svg>
+              <span className="panorama-nav__label" aria-hidden="true">
+                Mi Habitación
+              </span>
             </button>
           )}
         </nav>

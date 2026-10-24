@@ -188,8 +188,9 @@ async function activate(page, id) {
     await page.keyboard.press('Enter');
     return 'hotspot';
   }
-  await page.locator('.offscreen__toggle').click();
-  await page.locator('.offscreen__list button', { hasText: OFFSCREEN_TEXT[id] }).click();
+  // Los objetos que el encuadre recorta están en el menú de «Guías» (SPEC §19.5)
+  await page.locator('.guides-toggle').click();
+  await page.locator('.guides-menu__list button', { hasText: OFFSCREEN_TEXT[id] }).click();
   return 'fuera-de-vista';
 }
 
@@ -203,6 +204,7 @@ test('1 · MAIN_ROOM inicial, geometría y anclas', async ({ page }, info) => {
   await shot(page, info, 'main-limpio');
   // «Guías» repite la guía de la habitación (Anexo B): captura con la guía abierta y salida con Escape
   await page.locator('.guides-toggle').click();
+  await page.getByRole('button', { name: 'Repetir la guía de la habitación' }).click();
   await expect(page.locator('.onboarding-card')).toBeVisible();
   await page.waitForTimeout(400);
   await shot(page, info, 'main-guias');

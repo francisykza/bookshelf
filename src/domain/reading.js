@@ -3,7 +3,7 @@
 // el avance respecto a la anterior (`delta`) y las páginas leídas que cuentan para estadísticas (`pages`).
 // Todo es puro: la vista previa del formulario y el guardado usan las mismas funciones.
 import { clampPage, clampPercent, fmtNum, isDevice, newId, positionOf, roundTo, trackUnit } from './books';
-import { dayKey } from './dates';
+import { addDays, dayKey } from './dates';
 
 export const MODES = {
   added: { label: 'He leído', help: 'Páginas que has leído en esta sesión.' },
@@ -315,3 +315,22 @@ export function normalizeLog(log) {
       return next;
     });
 }
+
+/**
+ * Días seguidos leyendo hasta hoy (si hoy aún no has leído, cuenta la racha hasta ayer). Solo lecturas reales:
+ * una corrección o una posición sin lectura declarada no la alargan. Única fuente para la pantalla del portátil
+ * y para el panel de estadísticas.
+ */
+export function readingStreak(log, today = new Date()) {
+  const days = activeDays(log);
+  let cursor = days.has(dayKey(today)) ? today : addDays(today, -1);
+  let streak = 0;
+  while (days.has(dayKey(cursor))) {
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
+}
+
+/** Días (clave local `YYYY-MM-DD`) con lectura real: la marca de actividad del calendario. */
+export const activeDays = (log) => new Set((log ?? []).filter(isActive).map((e) => e.date));
