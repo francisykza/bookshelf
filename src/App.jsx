@@ -1,7 +1,7 @@
 // BookShelf — "Mediterranean Cozy Reading Sanctuary" (SPEC.md). Interfaz diegética: la habitación es
 // el menú. Este componente coordina el panorama de habitaciones, la librería, los paneles, el sonido y el
 // temporizador. Cambiar de habitación es estado de interfaz: no recrea proveedores ni toca la biblioteca.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isAmbiencePlaying, setAmbience, setSfx, setTimeOfDay } from './audio/ambientAudio';
 import { playUiSound, setUiVolume } from './audio/uiSounds';
 import { timeOfDayByClock } from './domain/dates';
@@ -26,7 +26,11 @@ import { useOnboarding } from './hooks/useOnboarding';
 import { useReducedMotion } from './hooks/useReducedMotion';
 import { ENTERING, ROOM, SHELF, useShelfTransition } from './hooks/useShelfTransition';
 import { CloudProvider } from './state/cloudSync';
+import { CommunityProvider } from './features/social/hooks/useCommunity';
 import { LibraryProvider, useLibrary } from './state/useLibrary';
+
+// La comunidad se descarga solo al abrirla (SPEC §25.13)
+const SocialHub = lazy(() => import('./features/social/components/SocialHub').then((m) => ({ default: m.SocialHub })));
 
 /** Un día local `YYYY-MM-DD` (el `select` de la navegación del calendario). */
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -225,7 +229,7 @@ function Sanctuary() {
         }}
       />
 
-      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} />}
+      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
       {panel?.type === 'laptop' && (
         <LaptopPanel
           onClose={close}
@@ -266,7 +270,12 @@ function Sanctuary() {
         />
       )}
       {panel?.type === 'atlas' && <SagaMapModal onClose={close} onOpenBook={openBook} />}
-      {panel?.type === 'account' && <AccountPanel onClose={close} />}
+      {panel?.type === 'account' && <AccountPanel onClose={close} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
+      {panel?.type === 'social' && (
+        <Suspense fallback={null}>
+          <SocialHub onClose={close} initialTab={panel.tab} />
+        </Suspense>
+      )}
       {panel?.type === 'librarian' && <LibrarianPanel onClose={close} onOpenBook={(book) => switchPanel({ type: 'book', id: book.id })} />}
       {panel?.type === 'add' && <AddBookCard onClose={close} onAdded={() => nav.replace({ view: 'shelf', panel: null })} />}
     </main>
@@ -277,7 +286,9 @@ export default function App() {
   return (
     <LibraryProvider>
       <CloudProvider>
-        <Sanctuary />
+        <CommunityProvider>
+          <Sanctuary />
+        </CommunityProvider>
       </CloudProvider>
     </LibraryProvider>
   );

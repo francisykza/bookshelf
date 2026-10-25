@@ -1,0 +1,511 @@
+/* ── Comunidad (SPEC §25): perfil, avatares, opiniones y lectores ──
+   Superficies de lectura planas (sin perspectiva, skew ni mezclas). Papel #FAF5E8, tinta #2C1E14, latón #C59B27,
+   salvia #69764F. Cormorant para títulos, Lora para texto y botones, Caveat para notas, JetBrains Mono para
+   contadores. Controles de 44 px, inputs de 16 px, foco 2px latón. */
+:root {
+  --social-paper: #faf5e8;
+  --social-ink: #2c1e14;
+  --social-brass: #c59b27;
+  --social-sage: #69764f;
+  --social-line: rgba(110, 78, 46, 0.24);
+}
+
+/* Avatar compartido */
+.reader-avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #efe3c9;
+  box-shadow: 0 2px 6px rgba(44, 30, 20, 0.22);
+}
+
+.reader-avatar[data-size='review'] {
+  width: 40px;
+}
+
+.reader-avatar[data-size='profile'] {
+  width: 96px;
+}
+
+.reader-avatar[data-size='seat'] {
+  width: clamp(44px, 12vw, 64px);
+}
+
+.reader-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reader-avatar__initial {
+  font-family: 'Cormorant Garamond', var(--font-display);
+  font-size: 1.4em;
+  font-weight: 600;
+  color: var(--social-ink);
+}
+
+/* Panel de la comunidad: una superficie de papel legible y un único scroll */
+.social-hub {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100dvh - max(24px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 24px));
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--social-paper);
+  color: var(--social-ink);
+  font-family: 'Lora', var(--font-sans);
+  transform: none;
+  mix-blend-mode: normal;
+}
+
+.social-hub__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 8px;
+}
+
+.social-hub__head h2 {
+  margin: 0;
+  font-family: 'Cormorant Garamond', var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.social-hub__tabs {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--social-line);
+}
+
+.social-hub__tabs button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.social-hub__tabs button[aria-selected='true'] {
+  border-bottom-color: var(--social-brass);
+  font-weight: 600;
+}
+
+.social-hub__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 18px max(18px, env(safe-area-inset-bottom));
+}
+
+.social-hub :focus-visible,
+.readers :focus-visible,
+.publish :focus-visible {
+  outline: 2px solid var(--social-brass);
+  outline-offset: 2px;
+}
+
+.social-note {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.social-hand {
+  font-family: 'Caveat', var(--font-hand);
+  font-size: 1.15rem;
+  color: rgb(44 30 20 / 0.7);
+}
+
+.social-error {
+  margin: 8px 0;
+  color: #8a2f1f;
+}
+
+/* Perfil */
+.profile-form {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.profile-form__me {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+}
+
+.profile-form label,
+.profile-form legend {
+  font-weight: 600;
+}
+
+.social-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid rgba(110, 78, 46, 0.28);
+  border-radius: 8px;
+  background: #fffdf6;
+  color: var(--social-ink);
+  font: 16px 'Lora', var(--font-sans);
+}
+
+.avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.avatar-picker button {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 4px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: 0.85rem 'Lora', var(--font-sans);
+  text-align: center;
+}
+
+.avatar-picker button[aria-checked='true'] {
+  border-color: var(--social-brass);
+  background: rgb(197 155 39 / 0.1);
+}
+
+.social-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 44px;
+}
+
+.social-check input {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  accent-color: var(--social-sage);
+}
+
+.social-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.social-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(110, 78, 46, 0.35);
+  border-radius: 8px;
+  background: #fffdf6;
+  color: var(--social-ink);
+  font: 600 1rem 'Lora', var(--font-sans);
+}
+
+.social-btn--primary {
+  border-color: #4f5a3a;
+  background: var(--social-sage);
+  color: #faf5e8;
+}
+
+.social-btn:disabled {
+  opacity: 0.55;
+}
+
+/* Lectores (Voces de lectores) */
+.readers {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  color: var(--social-ink);
+  font-family: 'Lora', var(--font-sans);
+  transform: none;
+  mix-blend-mode: normal;
+}
+
+.readers__summary {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.readers__average {
+  font-family: 'JetBrains Mono', var(--font-mono);
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.readers__headline {
+  margin: 0;
+}
+
+.readers__filters {
+  display: flex;
+  gap: 8px;
+}
+
+.readers__filters button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--social-line);
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.readers__filters button[aria-pressed='true'] {
+  border-color: var(--social-sage);
+  background: rgb(105 118 79 / 0.14);
+}
+
+.readers__bands,
+.readers__impressions {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.readers__bands li,
+.readers__impressions li {
+  display: grid;
+  grid-template-columns: 4.5em minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.readers__bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgb(110 78 46 / 0.12);
+}
+
+.readers__bar i {
+  display: block;
+  height: 100%;
+  background: var(--social-sage);
+}
+
+.readers__count {
+  font-family: 'JetBrains Mono', var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.review-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(110, 78, 46, 0.24);
+  border-radius: 8px;
+  background: #f7f0e1;
+  box-shadow: 0 3px 10px rgba(44, 30, 20, 0.12);
+  transform: none;
+}
+
+.review-card__head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.review-card__who {
+  display: grid;
+  min-width: 0;
+}
+
+.review-card__who b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.review-card__body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.review-card__menu {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.review-card__menu button,
+.spoiler-toggle {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: rgb(44 30 20 / 0.75);
+  font: 0.85rem 'Lora', var(--font-sans);
+  text-decoration: underline;
+}
+
+/* Publicar desde la reseña */
+.publish {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 10px;
+  color: var(--social-ink);
+  font-family: 'Lora', var(--font-sans);
+}
+
+.publish__preview {
+  padding: 12px;
+  border: 1px dashed rgba(110, 78, 46, 0.4);
+  border-radius: 8px;
+  background: #fffdf6;
+}
+
+.publish__preview dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 8px 0 0;
+}
+
+.publish__preview dt {
+  font-weight: 600;
+}
+
+.publish__preview dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.impression-row {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.impression-row__scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.impression-row__scale button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--social-line);
+  border-radius: 8px;
+  background: #fffdf6;
+  color: inherit;
+  font: 600 1rem 'JetBrains Mono', var(--font-mono);
+}
+
+.impression-row__scale button[aria-checked='true'] {
+  border-color: var(--social-sage);
+  background: rgb(105 118 79 / 0.16);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .social-hub,
+  .readers,
+  .publish__preview {
+    animation: social-in 200ms ease-out;
+  }
+}
+
+@keyframes social-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+/* «Lectores» en la ficha del libro: una hoja plana aparte (fuera de la perspectiva del libro abierto) */
+.open-book__readers {
+  position: absolute;
+  inset: 12px;
+  z-index: 12;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 18px max(18px, env(safe-area-inset-bottom));
+  border-radius: 10px;
+  background: var(--social-paper);
+  box-shadow: 0 3px 10px rgba(44, 30, 20, 0.12);
+  transform: none;
+  mix-blend-mode: normal;
+}
+
+/* En escritorio las dos páginas se ven a la vez: solo hace falta la cinta de «Lectores» */
+@media (min-width: 761px) {
+  .open-book__ribbons {
+    position: absolute;
+    top: -6px;
+    left: 18px;
+    z-index: 13;
+    display: flex;
+    gap: 8px;
+  }
+
+  .open-book__ribbons button {
+    padding: 8px 12px 14px;
+    border: 0;
+    background: #8d1a22;
+    color: #fbf3e1;
+    font: 800 0.8rem 'Lora', var(--font-sans);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+    opacity: 0.8;
+  }
+
+  .open-book__ribbons button[aria-selected='true'] {
+    background: #c4623a;
+    opacity: 1;
+    padding-bottom: 20px;
+  }
+
+  .open-book__ribbons button:not([data-readers]) {
+    display: none;
+  }
+}
+
+.open-book__ribbons button {
+  min-height: 44px;
+}
+
+/* Las cintas quedan siempre por encima de la hoja de «Lectores» (en móvil la tapaba y no se podía volver) */
+.open-book__ribbons {
+  z-index: 13;
+}
+
+.open-book__readers {
+  padding-top: 52px;
+}

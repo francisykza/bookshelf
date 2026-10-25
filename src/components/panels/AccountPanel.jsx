@@ -198,7 +198,7 @@ function UiSound() {
   );
 }
 
-export function AccountPanel({ onClose }) {
+export function AccountPanel({ onClose, onOpenProfile }) {
   const cloud = useCloud();
 
   return (
@@ -259,6 +259,16 @@ export function AccountPanel({ onClose }) {
           </section>
         )}
 
+        {/* Acceso al perfil de la comunidad (el mismo que abre la tablet de la sala social) */}
+        {onOpenProfile && (
+          <section className="account-section">
+            <h3>Mi Perfil & Avatar</h3>
+            <p className="account-hint">Tu alias, tu avatar y lo que decidas compartir con otros lectores.</p>
+            <button type="button" className="account-btn" onClick={onOpenProfile}>
+              Abrir mi perfil
+            </button>
+          </section>
+        )}
         <Backups />
         <UiSound />
       </div>

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.30.0 · 2026-10-24 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.31.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2260,3 +2260,87 @@ Todo en coordenadas de la imagen dentro del lienzo de `SceneStage` (una sola tra
 `src/styles/room.css`, `public/images/room-refresh/escena/`; pruebas en `e2e/v128.spec.js` (capas, orden,
 decorativas, movimiento solo en las validadas, recortes de la pintura activa, pausas, movimiento reducido y
 alternativa si falla un recurso) y la suite completa en los 9 proyectos.
+
+## 25. Comunidad: identidad, opiniones y rincones compartidos (entregas 2 y 3)
+
+Alcance: conectar identidad, reseñas y sala social reutilizando los seis avatares Gouache, en dos entregas
+verificables y sin comprometer la biblioteca privada. Estados: **IMPLEMENTADO**, **VERIFICADO** (pruebas de esta
+entrega), **PENDIENTE DE DESPLIEGUE** (código y migración listos; falta aplicarlos en el proyecto de Supabase) y
+**BLOQUEADO** (con la causa exacta).
+
+### 25.0 Inspección y decisiones de partida
+
+- No existían `SocialHubModal`, Tablet interactiva, «Mi Perfil & Avatar», componente de avatar, reseñas públicas ni
+  tablas sociales. La sala social (`SocialRoom`) solo pinta su ilustración y los veleros. La nube es un único
+  documento privado por usuario (`libraries`, RLS por usuario, §9ter); no hay migraciones previas aparte de
+  `supabase/schema.sql`.
+- Avatares: los seis retratos ya separados de «Retratos acogedores de fantasía y lectura.png» en
+  `public/avatars/` (PNG nativo y WebP de 256 px), con identificadores estables. No se vuelven a recortar.
+- El proyecto es JavaScript (JSX): los módulos nuevos van en JS, en `src/features/social/`,
+  `src/features/reviews/` y `src/components/avatars/`. Migraciones en `supabase/migrations/`, aditivas.
+- Entorno: sin CLI de Supabase, Docker ni `psql`, y sin `.env.local` (la nube está desactivada en local). Las
+  migraciones y sus políticas se ejecutan y prueban en un Postgres 17 real embebido (`@electric-sql/pglite`,
+  dependencia de desarrollo) con `auth.uid()` simulado y los roles `anon` y `authenticated`: así se prueban las
+  peticiones directas a la API cuenta contra cuenta. Aplicarlas en el proyecto remoto es un paso manual (SQL
+  Editor); hasta entonces, la comunidad se muestra como no disponible y la biblioteca sigue igual.
+- «Público» = visible para otros miembros autenticados que han activado la comunidad; nada es indexable ni
+  accesible sin sesión. Los perfiles empiezan con la comunidad desactivada; el alias lo elige la persona (nunca
+  el correo ni el nombre de Google).
+- Orden: entrega 2 (identidad, avatares, opiniones y estadísticas) → sus pruebas y `npm run build` → entrega 3
+  (seguir, rincones, sillones, club y tropos) → sus pruebas y `npm run build`.
+
+### 25.1 Entrega 2 · identidad y avatares · VERIFICADO
+
+- `public/avatars/catalog.json` (`id`, `label`, `image`, `alt`) = `src/domain/avatars.js` = restricción `avatar_id`
+  de `profiles` (una prueba comprueba que coinciden). El perfil guarda solo el `id`.
+- «Mi Perfil & Avatar» (`features/social/components/SocialHub.jsx`), abierto desde «Tu cuenta»; es el único perfil
+  y el único selector (la tablet de la sala social lo reutilizará). Alias de 2–40 caracteres elegido por la
+  persona (vacío al empezar, nunca el correo); «Participar en la comunidad» desactivado por defecto.
+- `components/avatars/ReaderAvatar.jsx`: un solo componente (reseñas 40 px, listados 48, perfil 96, sillones
+  44–64), círculo con `object-fit: cover`, sombra suave y sin borde extra (los retratos traen marco). Sin avatar,
+  medallón de papel con la inicial.
+- `features/social/hooks/useCommunity.jsx`: estado único del perfil, cargado bajo demanda (no al abrir la
+  habitación) y reiniciado con la caché social al cambiar de cuenta o cerrar sesión.
+
+### 25.2 Identidad de obra · VERIFICADO
+
+- `works`: obra externa solo con referencia verificada de Open Library (`/works/OL…W`, guardada al añadir un
+  libro desde Open Library como `book.workRef`) o local con identificador propio. Nunca se fusiona por título; los
+  ejemplares conservan sus ids. Al publicar, el libro guarda `workId`.
+
+### 25.3 Reseñas privadas y publicación explícita · VERIFICADO
+
+- La ficha conserva «Ficha» y «Diario» y añade «Lectores» (hoja plana aparte, cargada bajo demanda).
+  `features/reviews/PublishControls.jsx`: «Contiene spoilers», «Publicar en mi rincón» con previsualización de lo
+  que se verá, «Actualizar publicación» si cambia el borrador y «Retirar publicación» (la reseña privada queda).
+- Copia pública explícita (`publicCopy`): cuartos 1–20 o null, texto ≤ 5.000, spoilers e impresiones 1–5 o null.
+  `publicReview.userId` liga la publicación a la cuenta que la hizo. Texto siempre como texto.
+
+### 25.4 Voces de lectores · VERIFICADO
+
+- `features/reviews/ReadersPanel.jsx` con `work_review_stats` (vista del servidor, `security_invoker`): media
+  con un decimal, «Primeras valoraciones: N lectores» (< 5), «Todavía nadie la ha puntuado», «Esta historia
+  todavía espera su primera opinión», desglose bajo demanda con intervalos `(0,1]…(4,5]` sobre cuartos,
+  impresiones con su propio recuento, 20 reseñas por página en orden estable (fecha, id), filtros «Todas» y
+  «Lectores que sigo» (activo con la entrega 3), denunciar y bloquear.
+
+### 25.5 Autorización (migración `20261025090000_entrega2_identidad_opiniones.sql`) · VERIFICADO · APLICADA
+
+- RLS por operación en `profiles`, `works`, `public_reviews`, `blocks`, `reports`, `moderators`; `anon` sin
+  permisos; perfiles y opiniones visibles solo para miembros autenticados con la comunidad activa y sin bloqueo en
+  ningún sentido; una opinión por persona y obra; el autor no cambia autor ni obra ni marca «moderada»;
+  `moderate_review` solo para `moderators` (que solo se asignan desde el SQL Editor); denuncias visibles solo para
+  quien denuncia y moderación; límite de escritura por trigger en el servidor; funciones `security definer` con
+  `search_path` vacío y `execute` restringido.
+- Aplicada en el proyecto de producción por el usuario el 2026-10-25 (comprobadas las seis tablas).
+
+### 25.6 Verificación de la entrega 2
+
+- Autorización (`src/features/social/__tests__/entrega2.rls.test.js`, 14 pruebas): la migración ejecutada tal cual
+  en Postgres 17 (PGlite) con dos cuentas y `anon`, con peticiones directas.
+- Dominio (`entrega2.domain.test.js`): catálogo, cuartos (3,75), copia pública, alias, obra, estadísticas.
+- Interfaz (`e2e-community/entrega2.spec.js`, `playwright.community.config.js`, simulador de Supabase): perfil
+  persistente sin correo, publicar con previsualización, Lectores con spoiler plegado, retirar, avatar actualizado
+  en reseñas, servidor sin migración y cambio de cuenta; en 320, 390, 430, 1440 y WebKit.
+- `npm run qa:full` (suite existente) y `npm run build` en verde. Pendiente: prueba con dos cuentas reales en la
+  versión desplegada (requiere crear las cuentas el usuario).

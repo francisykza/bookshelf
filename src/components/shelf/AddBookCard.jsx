@@ -158,6 +158,8 @@ function ConfirmBook({ initial, manual, onBack, onSave }) {
           categories: draft.categories ?? [],
           isbn: draft.isbn || '',
           source: draft.source || 'manual',
+          // Identidad de obra verificada (SPEC §25.4): solo la obra de Open Library; Google da ediciones, no obras
+          ...(draft.source === 'openlibrary' && /^\/works\/OL\d+W$/.test(draft.workKey ?? '') ? { workRef: { source: 'openlibrary', id: draft.workKey } } : null),
           status: draft.status,
           editionType: draft.editionType,
           sprayedEdgeStyle: draft.sprayedEdgeStyle,

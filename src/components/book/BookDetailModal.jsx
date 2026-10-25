@@ -2,7 +2,7 @@
 // Izquierda: ex-libris, progreso con % y horas restantes, estrellas, estado, formato y sinopsis.
 // Derecha: diario de lectura con citas subrayadas por color y reseña manuscrita.
 import { BookMarked, Feather, Heart, Minus, PenLine, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
+import { Suspense, lazy, useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
 import { playUiSound } from '../../audio/uiSounds';
@@ -18,6 +18,10 @@ import { PanelShell } from '../panels/PanelShell';
 import { Cover, bezel } from '../shelf/BookItem';
 import { EdgePicker } from './EditionPicker';
 import { ElegantQuoteCard } from '../quotes/ElegantQuoteCard';
+import { PublishControls } from '../../features/reviews/PublishControls';
+
+// Las opiniones de la comunidad se cargan solo al abrirlas
+const ReadersPanel = lazy(() => import('../../features/reviews/ReadersPanel').then((m) => ({ default: m.ReadersPanel })));
 
 function ExLibris({ owner, onRename }) {
   const [editing, setEditing] = useState(false);
@@ -339,7 +343,7 @@ const EDITION_NOTES = {
   audiobook: 'Estuche acrílico de colección con sus cascos.',
 };
 
-export function BookDetailModal({ bookId, onClose, onSwitch }) {
+export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile }) {
   const { state, actions } = useLibrary();
   const book = state.books.find((b) => b.id === bookId);
   const [opened, setOpened] = useState(false);
@@ -428,6 +432,19 @@ export function BookDetailModal({ bookId, onClose, onSwitch }) {
             }}
           >
             Diario
+          </button>
+          {/* Opiniones de la comunidad (SPEC §25.5): una hoja plana aparte, fuera de la perspectiva del libro */}
+          <button
+            type="button"
+            role="tab"
+            data-readers
+            aria-selected={page === 'readers'}
+            onClick={() => {
+              if (page !== 'readers') playUiSound('diaryTab');
+              setPage(page === 'readers' ? 'left' : 'readers');
+            }}
+          >
+            Lectores
           </button>
         </div>
         <button type="button" className="open-book__close" onClick={onClose} aria-label="Cerrar el libro">
@@ -584,9 +601,18 @@ export function BookDetailModal({ bookId, onClose, onSwitch }) {
               aria-label="Tu reseña"
               rows={5}
             />
+            <PublishControls book={book} onUpdate={update} onOpenProfile={onOpenProfile} />
             {book.status === 'read' && <span className="finished-stamp">Leído</span>}
           </section>
         </div>
+        {page === 'readers' && (
+          <section className="open-book__readers" aria-label="Lectores">
+            <h3 className="diary-title">Voces de lectores</h3>
+            <Suspense fallback={<p className="social-note">Abriendo…</p>}>
+              <ReadersPanel workId={book.workId ?? null} />
+            </Suspense>
+          </section>
+        )}
 
         {/* Cubierta que gira al abrir */}
         <div className="open-book__cover" aria-hidden="true">
