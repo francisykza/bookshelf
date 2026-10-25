@@ -1,0 +1,634 @@
+/* ── 1.36.0 · Biblioteca con los recursos mediterráneos (SPEC §29) ────────────────────────────────────────────
+   Se carga después de library-depth.css. Recursos: /assets/library/header-*.webp (cabecera 2,6:1),
+   shelf-module.webp (módulo de balda 1612 × 884, nueve regiones), shelf-crossbar.webp, wood-light.webp.
+   --s es la escala del módulo: su ancho natural (1612 px) sobre el ancho real, con límites para que el canto no
+   engorde en escritorio. Medidas del módulo (px del recurso): laterales 105/107, fondo superior 30, superficie desde
+   676 (bottom 208), base de los libros en 719 (43 bajo la superficie), canto frontal desde 749 (135 de alto). */
+.library {
+  --s: 0.235;
+  --s-px: calc(var(--s) * 1px);
+}
+
+@media (min-width: 420px) {
+  .library {
+    --s: 0.26;
+  }
+}
+
+@media (min-width: 600px) {
+  .library {
+    --s: 0.32;
+  }
+}
+
+@media (min-width: 900px) {
+  .library {
+    --s: 0.4;
+  }
+}
+
+/* ── A · Cabecera ilustrada ── */
+.lib-head.lib-head--hero {
+  gap: 0;
+  padding: 0;
+  background: #e9d6b4;
+  color: var(--ink);
+  box-shadow: none;
+}
+
+.lib-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2021 / 778;
+  max-height: 300px;
+  background: #ead9b8 url('/assets/library/header-800.webp') center bottom / cover no-repeat;
+}
+
+@media (min-width: 700px) {
+  .lib-hero {
+    background-image: url('/assets/library/header-1600.webp');
+  }
+}
+
+.lib-hero__back {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top));
+  left: max(8px, env(safe-area-inset-left));
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px 0 8px;
+  border: 1px solid rgb(110 78 46 / 0.35);
+  border-radius: 999px;
+  background: rgb(250 245 232 / 0.88);
+  color: var(--ink);
+  font: 500 14px/1 var(--lib-body);
+  box-shadow: 0 2px 6px rgb(44 30 20 / 0.18);
+  cursor: pointer;
+}
+
+.lib-hero__back svg {
+  width: 16px;
+  height: 16px;
+}
+
+.lib-hero__back:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Cartel suspendido sobre la pared (entre la librería pintada y la ventana: 20–60 % del ancho) */
+.lib-hero__sign {
+  position: absolute;
+  top: 0;
+  left: 41%;
+  display: grid;
+  justify-items: center;
+  transform: translateX(-50%);
+}
+
+.lib-head .lib-hero .library__title {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin: 0;
+  text-align: center;
+}
+
+.lib-hero__plaque .hanging-plaque__rings {
+  width: calc(100% - 36px);
+  height: clamp(18px, 9vw, 46px);
+  margin-bottom: -3px;
+}
+
+.lib-hero__plaque .hanging-plaque__rings circle {
+  r: 3.4;
+}
+
+.lib-hero__plaque .hanging-plaque__plate {
+  padding: 4px clamp(14px, 4vw, 22px);
+  border-radius: 5px;
+}
+
+.lib-head .lib-hero .library__title .hanging-plaque__plate span {
+  display: block;
+  color: var(--ink);
+  font: 600 clamp(19px, 5.4vw, 30px)/1.1 var(--lib-display);
+  text-shadow: 0 1px 0 rgb(255 244 214 / 0.5);
+  white-space: nowrap;
+}
+
+.lib-head .lib-hero .library__title small {
+  display: block;
+  color: var(--ink-muted);
+  font: 500 clamp(15px, 4.4vw, 22px)/1 var(--lib-hand);
+  text-shadow: 0 1px 0 rgb(255 248 230 / 0.8);
+  white-space: nowrap;
+}
+
+/* ── B · Franja de herramientas sobre madera clara ── */
+.lib-strip {
+  display: grid;
+  gap: 8px;
+  padding: 8px max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+  background: #c18a52 url('/assets/library/wood-light.webp') center / cover;
+  box-shadow:
+    inset 0 1px 0 rgb(255 236 200 / 0.4),
+    inset 0 -1px 0 rgb(60 30 10 / 0.3);
+}
+
+.lib-strip .lib-head__row--tools {
+  gap: 6px;
+}
+
+.lib-strip .lib-toggle {
+  background: rgb(250 245 232 / 0.9);
+  border-color: rgb(110 78 46 / 0.35);
+}
+
+.lib-strip .lib-toggle button {
+  padding: 0;
+  width: 44px;
+}
+
+.lib-strip .lib-toggle button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.lib-strip .lib-tools {
+  margin-left: 0;
+}
+
+.lib-strip .lib-tools > .lib-btn {
+  width: 44px;
+  padding: 0;
+  border-color: rgb(110 78 46 / 0.35);
+  background: rgb(250 245 232 / 0.9);
+  color: var(--ink);
+}
+
+.lib-strip .lib-tools > .lib-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.lib-strip .lib-tools > .lib-btn .lib-tools__caret {
+  display: none;
+}
+
+.lib-strip .lib-tools__list {
+  left: 0;
+  right: auto;
+}
+
+.lib-strip__add {
+  margin-left: auto;
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.lib-strip .shelf-search {
+  flex: 1 1 auto;
+}
+
+.lib-strip :is(.lib-toggle button, .lib-tools > .lib-btn, .lib-strip__add, .shelf-search__input):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Cintas de tela bajo el buscador, con su extremo en V cayendo sobre la balda */
+.lib-strip .lib-tabs {
+  margin-bottom: -10px;
+  position: relative;
+  z-index: 3;
+}
+
+/* ── Módulos de balda ── */
+.library__shelves {
+  background: #3d2817;
+  padding-bottom: 40px;
+}
+
+/* Travesaño superior: solo encima del primer módulo (los demás comparten el canto del anterior) */
+.library__shelves::before {
+  content: '';
+  display: block;
+  height: calc(50 * var(--s-px));
+  min-height: 11px;
+  background: url('/assets/library/shelf-crossbar.webp') center / 100% 100% no-repeat;
+}
+
+.shelf-row,
+.keepsake-board {
+  position: relative;
+  isolation: auto;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border-style: solid;
+  border-color: transparent;
+  border-width: calc(30 * var(--s-px)) calc(107 * var(--s-px)) calc(208 * var(--s-px)) calc(105 * var(--s-px));
+  border-image-source: url('/assets/library/shelf-module.webp');
+  border-image-slice: 30 107 208 105 fill;
+  border-image-width: calc(30 * var(--s-px)) calc(107 * var(--s-px)) calc(208 * var(--s-px)) calc(105 * var(--s-px));
+  border-image-repeat: round stretch;
+  background: none;
+  box-shadow: none;
+}
+
+.shelf-row[data-panel-slice] {
+  background: none;
+}
+
+/* Lo de la 1.35 que el módulo ya pinta: tabla, laterales y sombras */
+.shelf-row__plank,
+.shelf-row__side,
+.keepsake-board__plank {
+  display: none !important;
+}
+
+.shelf-row::before,
+.shelf-row::after {
+  display: none;
+}
+
+/* Los libros apoyan en la superficie del módulo (43 px bajo su borde) y las etiquetas van en el canto */
+.shelf-row__scroller {
+  margin-bottom: calc(-165 * var(--s-px));
+  padding: 34px 6px calc(165 * var(--s-px));
+  scroll-padding-inline: 8px;
+}
+
+@media (min-width: 900px) {
+  .shelf-row__scroller {
+    padding-inline: 14px;
+  }
+}
+
+.library[data-open] .shelf-row__track {
+  gap: 14px;
+}
+
+/* Etiqueta de papel con el título bajo cada libro, sobre el canto frontal */
+.book-slot {
+  position: relative;
+}
+
+.book-label {
+  position: absolute;
+  top: calc(100% + 30 * var(--s-px) + 3px);
+  left: 50%;
+  max-width: calc(100% + 6px);
+  min-width: 70%;
+  padding: 1px 6px 2px;
+  overflow: hidden;
+  border-radius: 1px;
+  background: #f3e8cf;
+  color: var(--ink);
+  font: 500 11px/1.3 var(--lib-body);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 0 0 1px rgb(110 78 46 / 0.25),
+    0 1px 2px rgb(20 10 4 / 0.35);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.library[data-mode='spine'] .book-label {
+  display: none;
+}
+
+/* Mini-figuras: en la esquina inferior de la portada (el canto es de las etiquetas) */
+.shelf-row .saga-pin {
+  top: auto;
+  bottom: 6px;
+  right: -6px;
+  left: auto;
+}
+
+/* Cartel de sección colgando del frente de la balda, sobre el fondo del módulo siguiente */
+.shelf-row__head {
+  top: 100%;
+  bottom: auto;
+  margin-top: calc(208 * var(--s-px) - 5px);
+  z-index: 6;
+}
+
+.shelf-row > .scroll-chevron {
+  top: calc(34px + var(--row-h) / 2 - 22px);
+}
+
+.shelf-row > .scroll-chevron--left {
+  left: 0;
+}
+
+.shelf-row > .scroll-chevron--right {
+  right: 0;
+}
+
+/* Tarjeta «Añadir un libro» de papel */
+.add-slot {
+  border: 0;
+  border-radius: 3px;
+  background:
+    linear-gradient(var(--lib-paper), var(--lib-paper)) padding-box,
+    repeating-linear-gradient(90deg, rgb(110 78 46 / 0.55) 0 6px, transparent 6px 11px) border-box;
+  outline: 1.5px dashed rgb(110 78 46 / 0.55);
+  outline-offset: -7px;
+  color: var(--ink);
+  box-shadow:
+    0 3px 6px rgb(20 10 4 / 0.35),
+    inset 0 0 0 1px rgb(110 78 46 / 0.2);
+}
+
+.add-slot svg {
+  color: var(--terracotta);
+}
+
+.add-slot:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+}
+
+/* ── C · Recuerdos: franja poco profunda dentro de la estantería ── */
+.keepsake-board {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: 8px;
+  padding: 0;
+  font-family: var(--lib-body);
+}
+
+.keepsake-board__tag {
+  align-self: start;
+  margin: 8px 0 0;
+}
+
+.keepsake-board__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 2px;
+  background: #f1e4c7;
+  color: var(--ink);
+  font: 600 17px/1 var(--lib-hand);
+  box-shadow:
+    inset 0 0 0 1px rgb(110 78 46 / 0.25),
+    0 2px 4px rgb(20 10 4 / 0.4);
+  transform: rotate(-3deg);
+  cursor: pointer;
+}
+
+.keepsake-board__toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.keepsake-board[data-folded='true'] .keepsake-board__toggle svg {
+  transform: rotate(-90deg);
+}
+
+.keepsake-board__toggle:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+}
+
+.keepsake-board__pins {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: calc(-165 * var(--s-px));
+  padding: 10px 2px calc(165 * var(--s-px) - 2px) 0;
+}
+
+.keepsake-board[data-folded='true'] {
+  border-bottom-width: calc(208 * var(--s-px));
+}
+
+.keepsake-paper {
+  position: relative;
+  min-width: 0;
+  padding: 8px 12px 6px;
+  border-radius: 2px;
+  background: var(--paper) url('/art/library-refresh/journal.webp') 0 0 / 384px repeat;
+  color: var(--ink);
+  box-shadow: 0 3px 8px rgb(20 10 4 / 0.4);
+}
+
+.keepsake-paper .keepsake-postcard {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.keepsake-paper .keepsake-postcard::before {
+  display: none;
+}
+
+.keepsake-paper .keepsake-postcard__quote blockquote {
+  padding-right: 26px;
+  font: italic 15px/1.35 var(--lib-hand);
+  font-size: 18px;
+}
+
+.keepsake-paper__note {
+  display: grid;
+  margin: 0;
+  padding-right: 30px;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.keepsake-paper__note b {
+  color: var(--ink);
+  font: 600 16px/1.2 var(--lib-display);
+}
+
+.keepsake-paper__seal {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  pointer-events: none;
+}
+
+.keepsake-paper .keepsake-board__more-btn {
+  min-height: 36px;
+  margin-top: 2px;
+  padding: 0;
+  background: none;
+  color: var(--ink);
+  font: 500 13px/1 var(--lib-body);
+  text-decoration: underline 1px rgb(44 30 20 / 0.4);
+  text-underline-offset: 3px;
+}
+
+/* Fotografía del último libro terminado (formato polaroid), con su fecha a mano */
+.keepsake-photo {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: clamp(76px, 22vw, 104px);
+  max-width: none;
+  min-height: 0;
+  padding: 5px 5px 4px;
+  border: 0;
+  border-radius: 1px;
+  background: #fbf6ea;
+  color: var(--ink);
+  box-shadow: 0 3px 7px rgb(20 10 4 / 0.45);
+  transform: rotate(2.5deg);
+  cursor: pointer;
+}
+
+.keepsake-photo::before {
+  display: none;
+}
+
+.keepsake-photo__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #d9c7a2;
+}
+
+.keepsake-photo__img img,
+.keepsake-photo__img .gen-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.keepsake-photo__caption {
+  display: grid;
+  width: 100%;
+  text-align: center;
+}
+
+.keepsake-photo__caption b {
+  overflow: hidden;
+  font: 600 11px/1.2 var(--lib-body);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.keepsake-photo__caption small {
+  color: var(--ink-muted);
+  font: 500 14px/1 var(--lib-hand);
+}
+
+.keepsake-photo:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 3px;
+}
+
+.keepsake-board__list {
+  grid-column: 1 / -1;
+  margin: 8px 0 calc(-165 * var(--s-px) + 8px);
+}
+
+/* Cartel bajo «Volver al rincón»: cordeles más largos en móvil para que la placa quede por debajo del botón */
+.lib-hero__plaque .hanging-plaque__rings {
+  height: clamp(40px, 13vw, 52px);
+}
+
+.lib-hero__back {
+  min-height: 36px;
+  padding: 0 10px 0 7px;
+  font-size: 13px;
+}
+
+/* Área táctil de 44 px sin agrandar el botón visible */
+.lib-hero__back::after {
+  content: '';
+  position: absolute;
+  inset: -4px -2px;
+}
+
+@media (min-width: 900px) {
+  .lib-hero__plaque .hanging-plaque__rings {
+    height: 40px;
+  }
+
+  /* La cabecera y la franja van una encima de otra (anula la fila de la 1.34) */
+  .lib-head.lib-head--hero {
+    display: block;
+  }
+
+  .lib-strip {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 16px;
+    padding-inline: 24px;
+  }
+
+  .lib-strip .lib-head__row--search {
+    flex: none;
+    max-width: none;
+    order: 0;
+  }
+
+  .lib-strip .lib-tabs {
+    grid-column: 1 / -1;
+    order: 0;
+    margin-left: 0;
+  }
+
+  .keepsake-board__pins {
+    grid-template-columns: minmax(0, 560px) auto;
+    justify-content: start;
+  }
+}
+
+@media (max-width: 430px) {
+  .lib-hero__sign {
+    left: 52%;
+  }
+}
+
+/* Pantallas bajas (apaisado en móvil): la ilustración cede altura para que los controles quepan; la imagen
+   conserva su proporción (cover, anclada abajo: se ven la balda pintada y el cartel) */
+.lib-hero {
+  max-height: min(300px, 30vh);
+}
+
+@media (max-height: 520px) {
+  .lib-hero {
+    aspect-ratio: auto;
+    height: 92px;
+  }
+
+  .lib-hero__plaque .hanging-plaque__rings {
+    height: 22px;
+  }
+
+  .lib-head .lib-hero .library__title small {
+    display: none;
+  }
+}
+
+.lib-hero__back {
+  min-height: 44px;
+}
+
+/* Base de los libros en la línea medida del recurso (y = 719: 43 px bajo el inicio de la superficie). El scroller
+   invade los 208·s px del borde inferior y reserva 165·s para las etiquetas del canto. */
+.shelf-row__scroller {
+  margin-bottom: calc(-208 * var(--s-px));
+  padding-bottom: calc(165 * var(--s-px));
+}
+
+.keepsake-board__pins {
+  margin-bottom: calc(-208 * var(--s-px));
+  padding-bottom: calc(165 * var(--s-px));
+}

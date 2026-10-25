@@ -2,7 +2,7 @@
 // compacta (volver, buscador, cintas de estado, vista y herramientas), un tablón de recuerdos plegable dentro del
 // mueble, una balda por estado con laterales, tabla y placa de latón colgada, y como mucho dos ramas de hiedra.
 import { ArrowLeft, BookOpen, ChevronDown, Library, Plus, Search, Sparkles, Trophy, Wrench, X } from 'lucide-react';
-import { FabricTab, HangingPlaque } from '../primitives';
+import { FabricTab, HangingPlaque, WaxSeal } from '../primitives';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
 import { ratingText, shelfSort } from '../../domain/books';
@@ -92,44 +92,54 @@ function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
   };
   return (
     <aside className="keepsake-board" aria-label="Recuerdos" data-folded={folded}>
-      <div className="keepsake-board__bar">
-        <h2 className="keepsake-board__title">Recuerdos</h2>
-        {!folded && rest.length > 0 && (
-          <button type="button" className="keepsake-board__more-btn" aria-expanded={moreOpen} aria-controls="keepsake-more" onClick={() => setMoreOpen((v) => !v)}>
-            Ver más · {rest.length}
-          </button>
-        )}
+      {/* Etiqueta de papel a la izquierda: pliega y despliega la franja */}
+      <h2 className="keepsake-board__tag">
         <button type="button" className="keepsake-board__toggle" aria-expanded={!folded} aria-controls="keepsake-board-pins" onClick={toggle}>
+          <span>Recuerdos</span>
           <ChevronDown aria-hidden="true" />
-          {folded ? 'Mostrar' : 'Plegar'}
+          <span className="sr-only-focus">{folded ? 'Mostrar' : 'Plegar'}</span>
         </button>
-      </div>
+      </h2>
       {!folded && (
-        <div id="keepsake-board-pins" className="keepsake-board__pins" data-single={!last || !pinned || undefined}>
+        <div id="keepsake-board-pins" className="keepsake-board__pins">
+          {/* Papel central: la cita clavada por el usuario con su sello; si no hay, el último libro terminado */}
+          <div className="keepsake-paper">
+            {pinned ? (
+              <figure className="keepsake-postcard" data-open={quoteOpen || undefined}>
+                <button type="button" className="keepsake-postcard__quote" aria-expanded={quoteOpen} onClick={() => setQuoteOpen((v) => !v)}>
+                  <blockquote>{pinned.text}</blockquote>
+                </button>
+                <figcaption>
+                  <span>{[pinned.author, pinned.work].filter(Boolean).join(' · ')}</span>
+                  <button type="button" className="keepsake-postcard__unpin" onClick={onUnpin} aria-label="Desclavar la cita de la estantería" title="Desclavar">
+                    <X aria-hidden="true" />
+                  </button>
+                </figcaption>
+              </figure>
+            ) : (
+              <p className="keepsake-paper__note">
+                Tu último libro terminado:
+                <b>{last.title}</b>
+              </p>
+            )}
+            <WaxSeal className="keepsake-paper__seal" size={34} />
+            {rest.length > 0 && (
+              <button type="button" className="keepsake-board__more-btn" aria-expanded={moreOpen} aria-controls="keepsake-more" onClick={() => setMoreOpen((v) => !v)}>
+                Ver más recuerdos · {rest.length}
+              </button>
+            )}
+          </div>
+          {/* Fotografía: la portada del último libro terminado, con su fecha */}
           {last && (
-            <button type="button" className="keepsake-note" onClick={() => onOpenBook(last)} aria-label={`${last.title}, terminado el ${longDate(last.finishedAt)}${last.rating ? `, ${ratingText(last.rating)}` : ''}`}>
-              <span className="keepsake-note__cover" aria-hidden="true">
+            <button type="button" className="keepsake-photo keepsake-note" onClick={() => onOpenBook(last)} aria-label={`${last.title}, terminado el ${longDate(last.finishedAt)}${last.rating ? `, ${ratingText(last.rating)}` : ''}`}>
+              <span className="keepsake-photo__img" aria-hidden="true">
                 <Cover book={last} />
               </span>
-              <span className="keepsake-note__text" aria-hidden="true">
+              <span className="keepsake-photo__caption" aria-hidden="true">
                 <b>{last.title}</b>
-                <small>Terminado el {shortDate(last.finishedAt)}</small>
+                <small>{shortDate(last.finishedAt)}</small>
               </span>
             </button>
-          )}
-          {pinned && (
-            <figure className="keepsake-postcard" data-open={quoteOpen || undefined}>
-              {/* Resumen de dos líneas; al abrirla se lee entera */}
-              <button type="button" className="keepsake-postcard__quote" aria-expanded={quoteOpen} onClick={() => setQuoteOpen((v) => !v)}>
-                <blockquote>{pinned.text}</blockquote>
-              </button>
-              <figcaption>
-                <span>{[pinned.author, pinned.work].filter(Boolean).join(' · ')}</span>
-                <button type="button" className="keepsake-postcard__unpin" onClick={onUnpin} aria-label="Desclavar la cita de la estantería" title="Desclavar">
-                  <X aria-hidden="true" />
-                </button>
-              </figcaption>
-            </figure>
           )}
         </div>
       )}
@@ -145,7 +155,6 @@ function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
           ))}
         </ul>
       )}
-      <div className="keepsake-board__plank" aria-hidden="true" />
     </aside>
   );
 }
@@ -284,6 +293,12 @@ function ShelfRow({ row, index, books, mode, rowH, onOpenBook, onEdition, onAdd,
             // Cada libro con, si es de una saga del catálogo, su mini-figura engarzada en el canto de la tabla
             <span key={book.id} className="book-slot">
               <BookItem book={book} mode={mode} rowHeight={rowH} onOpen={onOpenBook} onEdition={onEdition} picked={book.id === pickedId} draggable />
+              {/* Etiqueta de papel con el título, en el canto de la balda (el nombre accesible ya lo lleva el libro) */}
+              {mode === 'cover' && (
+                <span className="book-label" aria-hidden="true">
+                  {book.title}
+                </span>
+              )}
               {pins(book)}
             </span>
           ))}
@@ -291,7 +306,7 @@ function ShelfRow({ row, index, books, mode, rowH, onOpenBook, onEdition, onAdd,
           {onAdd && (
             <button type="button" className="add-slot" onClick={onAdd} style={{ height: Math.round(rowH * 0.82) }}>
               <Plus aria-hidden="true" />
-              <span>Añadir libro</span>
+              <span>Añadir un libro</span>
             </button>
           )}
         </div>
@@ -333,9 +348,9 @@ function ToolsMenu({ dieFace, rolling, onRoll, onAskLibrarian, onOpenVault }) {
   };
   return (
     <div ref={wrapRef} className="lib-tools">
-      <button ref={buttonRef} type="button" className="lib-btn lib-btn--ghost" aria-expanded={open} aria-controls="lib-tools-list" onClick={() => setOpen((v) => !v)}>
+      <button ref={buttonRef} type="button" className="lib-btn lib-btn--ghost" aria-label="Herramientas" title="Herramientas" aria-expanded={open} aria-controls="lib-tools-list" onClick={() => setOpen((v) => !v)}>
         <Wrench aria-hidden="true" />
-        <span>Herramientas</span>
+        <span className="sr-only-focus">Herramientas</span>
         <ChevronDown aria-hidden="true" className="lib-tools__caret" />
       </button>
       {open && (
@@ -483,71 +498,78 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   const memory = <MemoryBoard books={grouped.read} onOpenBook={onOpenBook} pinned={settings.pinnedQuote} onUnpin={() => actions.setSettings({ pinnedQuote: null })} />;
 
   return (
-    <div className="library" data-open={showing} data-phase={phase} aria-hidden={!open} inert={!open ? true : undefined} onTransitionEnd={onTransitionEnd}>
+    <div className="library" data-mode={mode} data-open={showing} data-phase={phase} aria-hidden={!open} inert={!open ? true : undefined} onTransitionEnd={onTransitionEnd}>
       <div className="library__case">
-        <header className="lib-head">
-          <div className="lib-head__row lib-head__row--title">
-            <button ref={backRef} type="button" className="lib-btn lib-btn--back" onClick={onBack} aria-label="Volver a la cama">
+        <header className="lib-head lib-head--hero">
+          {/* A · Cabecera ilustrada (proporción 2,6:1 del recurso): cartel suspendido y subtítulo sobre la pared */}
+          <div className="lib-hero">
+            <button ref={backRef} type="button" className="lib-hero__back" onClick={onBack} aria-label="Volver a la cama">
               <ArrowLeft aria-hidden="true" />
-              <span>Volver</span>
+              <span>Volver al rincón</span>
             </button>
-            <h1 className="library__title">
-              <span>Mi biblioteca</span>
-              <small>de {settings.owner}</small>
-            </h1>
+            <div className="lib-hero__sign">
+              <h1 className="library__title">
+                <HangingPlaque className="lib-hero__plaque">
+                  <span>Mi biblioteca</span>
+                </HangingPlaque>
+                <small>La biblioteca de {settings.owner}</small>
+              </h1>
+            </div>
           </div>
-          <div className="lib-head__row lib-head__row--search">
-            {/* Ficha de búsqueda en la biblioteca personal (sin Google Books ni Open Library) */}
-            <div className="shelf-search" role="search">
-              <label className="shelf-search__label" htmlFor="shelf-search-input">
-                <Search aria-hidden="true" />
-                <span className="sr-only-focus">Buscar en mi biblioteca</span>
-              </label>
-              <input
-                key="shelf-search"
-                id="shelf-search-input"
-                className="shelf-search__input"
-                type="search"
-                enterKeyHint="search"
-                autoComplete="off"
-                aria-label="Buscar en mi biblioteca"
-                placeholder="Título o autor…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              {query && (
-                <button type="button" className="shelf-search__clear" onClick={() => setQuery('')} aria-label="Limpiar búsqueda" title="Limpiar búsqueda">
-                  <X aria-hidden="true" />
+          {/* B · Franja de herramientas sobre madera clara */}
+          <div className="lib-strip">
+            <div className="lib-head__row lib-head__row--tools">
+              <div className="lib-toggle" role="radiogroup" aria-label="Vista de la librería">
+                <button type="button" role="radio" aria-checked={mode === 'cover'} aria-label="Escaparate" title="Escaparate" onClick={() => actions.setSettings({ viewMode: 'cover' })}>
+                  <BookOpen aria-hidden="true" />
                 </button>
-              )}
-            </div>
-            <button type="button" className="lib-btn lib-btn--accent" onClick={onAddBook}>
-              <Plus aria-hidden="true" />
-              <span>Añadir libro</span>
-            </button>
-          </div>
-          {/* Cintas de tela: qué baldas ver */}
-          <div className="lib-tabs" role="radiogroup" aria-label="Qué baldas ver">
-            {FILTERS.map((f) => (
-              <FabricTab key={f.id} selected={filter === f.id} tone={f.id} data-status={f.id} onClick={() => setFilter(f.id)}>
-                {f.label}
-              </FabricTab>
-            ))}
-          </div>
-          <div className="lib-head__row lib-head__row--tools">
-            <div className="lib-toggle" role="radiogroup" aria-label="Vista de la librería">
-              <button type="button" role="radio" aria-checked={mode === 'cover'} aria-label="Escaparate" onClick={() => actions.setSettings({ viewMode: 'cover' })}>
-                <BookOpen aria-hidden="true" />
-                <span>Escaparate</span>
-              </button>
-              <button type="button" role="radio" aria-checked={mode === 'spine'} aria-label="Lomos" onClick={() => actions.setSettings({ viewMode: 'spine' })}>
-                <Library aria-hidden="true" />
-                <span>Lomos</span>
+                <button type="button" role="radio" aria-checked={mode === 'spine'} aria-label="Lomos" title="Lomos" onClick={() => actions.setSettings({ viewMode: 'spine' })}>
+                  <Library aria-hidden="true" />
+                </button>
+              </div>
+              <ToolsMenu dieFace={dieFace} rolling={rolling} onRoll={roll} onAskLibrarian={onAskLibrarian} onOpenVault={onOpenVault} />
+              <button type="button" className="lib-btn lib-btn--accent lib-strip__add" onClick={onAddBook}>
+                <Plus aria-hidden="true" />
+                <span>Añadir libro</span>
               </button>
             </div>
-            <ToolsMenu dieFace={dieFace} rolling={rolling} onRoll={roll} onAskLibrarian={onAskLibrarian} onOpenVault={onOpenVault} />
+            <div className="lib-head__row lib-head__row--search">
+              {/* Ficha de búsqueda en la biblioteca personal (sin Google Books ni Open Library) */}
+              <div className="shelf-search" role="search">
+                <label className="shelf-search__label" htmlFor="shelf-search-input">
+                  <Search aria-hidden="true" />
+                  <span className="sr-only-focus">Buscar en mi biblioteca</span>
+                </label>
+                <input
+                  key="shelf-search"
+                  id="shelf-search-input"
+                  className="shelf-search__input"
+                  type="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  aria-label="Buscar en mi biblioteca"
+                  placeholder="Título o autor…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                {query && (
+                  <button type="button" className="shelf-search__clear" onClick={() => setQuery('')} aria-label="Limpiar búsqueda" title="Limpiar búsqueda">
+                    <X aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Cintas de tela: qué baldas ver */}
+            <div className="lib-tabs" role="radiogroup" aria-label="Qué baldas ver">
+              {FILTERS.map((f) => (
+                <FabricTab key={f.id} selected={filter === f.id} tone={f.id} data-status={f.id} onClick={() => setFilter(f.id)}>
+                  {f.label}
+                </FabricTab>
+              ))}
+            </div>
           </div>
         </header>
+
 
         {pickedBook && !rolling && (
           <div className="pick-note" role="status">

@@ -17,7 +17,9 @@
 @import './styles/library-sheet.css';
 @import './styles/primitives.css';
 @import './styles/library-depth.css';
+@import './styles/library-module.css';
 @import './styles/notebook.css';
+@import './styles/notebook-frame.css';
 @import './styles/huellas.css';
 
 /* Sistema "Mediterranean Cozy": papel crema, roble miel, terracota, azul bahía y verde hiedra */

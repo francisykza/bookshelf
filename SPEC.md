@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.35.1 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.36.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2742,3 +2742,46 @@ Pasada solo visual y responsive sobre la 1.35.0, sin cambios en funciones, datos
   panel abierto.
 - Comunidad: tipo «Club de lectura» separado del nombre del club; actividad en cartas con portada, obra, autor,
   persona, estrellas y extracto; filas de lectores compactas.
+
+## 29. Recursos mediterráneos: cabecera, cuaderno de cuero y módulo de balda (1.36.0)
+
+Solo presentación: no cambian datos, permisos ni lógica. Referencias: las maquetas de `docs/design/references/`.
+Las láminas 157099/157115/157118/157124 citadas en el encargo NO estaban en el disco ni adjuntas: la biblioteca
+sigue la descripción escrita del encargo; el diario general, `diario-general-hoy-maqueta.png`; el cuaderno del
+libro, `ficha-diario-resena-lectores-maqueta.png`; del club no hay referencia.
+
+### 29.1 Recursos
+
+`npm run art:mediterranean` (`scripts/prepare-mediterranean-art.mjs`) genera desde `material-diseno/`:
+- `/assets/library/header-{800,1600}.webp` (2021 × 778, 2,6:1, sin recortes) de «Rincón mediterráneo entre libros
+  y mar».
+- `/assets/ui/notebook-frame.webp` (838 × 224) de «Marco de cuero con página en blanco»: alfa saneada (halo rojo
+  eliminado), recorte a su caja y recomposición tira superior (30) + un periodo de anilla (106) + tira inferior (88),
+  para pintarlo en nueve regiones (`30 60 88 96 fill`, vertical `round`): esquinas intactas, anillas enteras.
+- `/assets/library/shelf-module.webp` (1612 × 884) de «Compartimento de madera mediterránea vacío»: sin el
+  travesaño superior ni el resto de la balda inferior, para apilar módulos sin duplicar travesaños;
+  `shelf-crossbar.webp` (solo sobre el primero) y `wood-light.webp` (canto, para la franja de herramientas).
+  Medidas en `public/assets/library/manifest.json`.
+
+### 29.2 Biblioteca
+
+Cabecera ilustrada (proporción del recurso, `max-height: 300px`) con el cartel de latón «Mi biblioteca» colgado
+sobre la pared, subtítulo «La biblioteca de …» y «Volver al rincón» arriba a la izquierda. Franja de madera clara
+con vista (Escaparate/Lomos) y Herramientas como iconos con nombre accesible, «Añadir libro» en terracota, el
+buscador y las cintas de filtro. Recuerdos en un módulo poco profundo: etiqueta, papel con la cita clavada y sello
+(o el último libro), fotografía con la portada del último terminado. Baldas: módulo en nueve regiones (laterales y
+fondo del recurso), libros sobre su superficie con sombra de contacto, etiqueta de papel con el título en el canto,
+cartel de sección colgando del frente y «Añadir un libro» como tarjeta de papel.
+
+### 29.3–29.6 Cuaderno compartido
+
+`NotebookShell` pinta el marco de cuero (§29.1) y las capas de la 1.35 dejan de dibujarse. Se usa en la ficha del
+libro (Ficha · Diario · Lectores), en «Mi diario» del portátil (cabecera «Mi diario», subtítulo, «Volver», pestañas
+de tela Hoy/Calendario/Notas, fecha con apunte a tinta, lectura de hoy, «Lo que me llevo de estas páginas» con la
+última nota real y «Escribir una nota», semana, últimas anotaciones, separadores con ramita, sello de lacre) y en la
+vista de un club. Anotaciones con clip de latón; cartas de lectores con clip y «Denunciar / Bloquear» dentro del
+menú de opciones (cerrado hasta que se pide).
+
+Club: el modelo de datos actual NO tiene capítulos, encuentros ni avance por capítulo (tablas `clubs`,
+`club_members`, `club_invites`, `club_messages`). Las pestañas Conversación/Capítulos/Encuentros, el aviso del
+próximo encuentro y la protección por capítulo de la lámina 157124 no se implementan: no se inventan datos.

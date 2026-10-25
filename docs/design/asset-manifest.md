@@ -61,3 +61,12 @@ Calibración sobre la imagen de 1536×1024 (px de la imagen, medidos con rejilla
 | public/assets/ui/ | sin recursos nuevos: madera, papel y carta reutilizan `/art/library-refresh/` (1.34.0); anillas, placas, cintas, clips y sellos son SVG/CSS |
 | public/assets/adornments/ | sin recursos aislados: los adornos solo existen dentro de las maquetas (no se recortan). Se dibujan en SVG (`ReaderAdornment`) hasta tener piezas propias |
 | docs/design/pending/ | ninguna imagen ambigua; `pending/README.md` lista los recursos que faltan |
+
+## 1.36.0 · Recursos mediterráneos (SPEC §29.1)
+
+| Original (`material-diseno/`) | Destino | Tipo | Uso | Estado |
+|---|---|---|---|---|
+| Rincón mediterráneo entre libros y mar-2.png (2021×778, sin alfa) | public/assets/library/header-1600.webp (87 KB), header-800.webp (28 KB) | escena | Cabecera de la biblioteca (`.lib-hero`) | listo |
+| Marco de cuero con página en blanco-1.png (887×1774, alfa con halo rojo 1–15) | public/assets/ui/notebook-frame.webp (838×224, 26 KB) | textura/marco | `NotebookShell` (nueve regiones) | listo (halo eliminado) |
+| Compartimento de madera mediterránea vacío-3.png (1612×975, sin alfa) | public/assets/library/shelf-module.webp (79 KB), shelf-crossbar.webp, wood-light.webp | textura | Baldas, recuerdos y franja de herramientas | listo |
+| Imagen de ChatGPT 25 oct 2026, 17_33_*.jpg (6) | — | captura de la app | Estado «antes» de la 1.35.1 (no son referencias) | conservadas en material-diseno |

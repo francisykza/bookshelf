@@ -72,17 +72,18 @@ test('librería: cabecera compacta, baldas modulares y libros visibles al abrir'
     const head = document.querySelector('.lib-head');
     const book = document.querySelector('.library [data-book-id]');
     const controls = [...head.querySelectorAll('button, input')].filter((el) => el.offsetParent).map((el) => ({ name: el.getAttribute('aria-label') || el.textContent.trim(), h: r(el).height, w: r(el).width }));
-    const plank = getComputedStyle(document.querySelector('.shelf-row__plank'));
+    // 1.36.0: cada balda es el módulo de madera en nueve regiones; su canto frontal son 135 de los 208 px inferiores
+    const row0 = getComputedStyle(document.querySelector('.shelf-row'));
     const body = document.querySelector('.library .book3d__body');
-    const rows = [...document.querySelectorAll('.shelf-row')].map((row) => getComputedStyle(row).backgroundImage);
+    const rows = [...document.querySelectorAll('.shelf-row')].map((row) => getComputedStyle(row).borderImageSource);
     return {
       header: Math.round(r(head).height),
       bookBottom: Math.round(r(book).bottom),
       viewport: innerHeight,
       overflowX: document.documentElement.scrollWidth - innerWidth,
       small: controls.filter((c) => c.h < 40 || c.w < 40),
-      plankImage: plank.borderImageSource,
-      plankHeight: parseFloat(plank.height),
+      plankImage: row0.borderImageSource,
+      plankHeight: parseFloat(row0.borderBottomWidth) * (135 / 208),
       bodyTransform: body ? getComputedStyle(body).transform : null,
       rows,
       tabs: [...document.querySelectorAll('.lib-tabs [role="radio"]')].map((t) => t.textContent),
@@ -94,13 +95,13 @@ test('librería: cabecera compacta, baldas modulares y libros visibles al abrir'
   expect(m.overflowX).toBeLessThanOrEqual(0);
   expect(m.small).toEqual([]);
   expect(m.quoteInHeader).toBe(false);
-  expect(m.plankImage).toContain('/art/library-refresh/plank.webp');
-  expect(m.rows.every((bg) => bg.includes('/art/library-refresh/panel.webp'))).toBe(true);
+  expect(m.plankImage).toContain('/assets/library/shelf-module.webp');
+  expect(m.rows.every((bg) => bg.includes('/assets/library/shelf-module.webp'))).toBe(true);
   if (mobile(info)) {
     expect(m.plankHeight).toBeGreaterThanOrEqual(26);
     expect(m.plankHeight).toBeLessThanOrEqual(36);
-    // Cabecera ≈ 190–220 px a 390 (en 320 puede ocupar una fila más)
-    expect(m.header).toBeLessThanOrEqual(info.project.name.includes('360') ? 280 : 236);
+    // 1.36.0: cabecera ilustrada (2,6:1) + franja de herramientas ≈ 300 px a 390
+    expect(m.header).toBeLessThanOrEqual(330);
     // Los libros se ven en el primer encuadre
     expect(m.bookBottom).toBeLessThanOrEqual(m.viewport);
   }

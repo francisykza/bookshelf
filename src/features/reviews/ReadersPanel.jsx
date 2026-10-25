@@ -4,6 +4,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { RatingStars } from '../../components/book/Rating';
+import { OptionsMenu } from '../../components/book/Annotations';
+import { Ban, Flag } from 'lucide-react';
 import { CommunityGate } from '../social/components/SocialHub';
 import { useCommunity } from '../social/hooks/useCommunity';
 import { PAGE_SIZE, blockUser, fetchProfiles, fetchReviews, fetchStats, reportContent } from '../social/services/community';
@@ -68,6 +70,10 @@ export function ReviewCard({ review, author, mine, onBlock, onReport, onOpenAuth
   const alias = author?.alias ?? 'Lector';
   return (
     <article className="review-card">
+      {/* Clip que sujeta la hoja (decoración) */}
+      <svg className="review-card__clip" viewBox="0 0 28 44" aria-hidden="true">
+        <path d="M9 40V9a5 5 0 0 1 10 0v26a3 3 0 0 1-6 0V12" />
+      </svg>
       <div className="review-card__head">
         <ReaderAvatar avatarId={author?.avatar_id} alias={alias} size="review" />
         <div className="review-card__who">
@@ -81,6 +87,16 @@ export function ReviewCard({ review, author, mine, onBlock, onReport, onOpenAuth
           <small>{fmtDate(review.published_at)}</small>
         </div>
         {rating != null && <RatingStars value={rating} />}
+        {/* Denunciar y bloquear, dentro del menú de opciones (cerrado hasta que se pide) */}
+        {!mine && (onBlock || onReport) && !confirming && (
+          <OptionsMenu
+            label={`Opciones de la reseña de ${alias}`}
+            items={[
+              ...(onReport ? [{ label: 'Denunciar', icon: <Flag aria-hidden="true" />, onSelect: () => setConfirming('report') }] : []),
+              ...(onBlock ? [{ label: `Bloquear a ${alias}`, icon: <Ban aria-hidden="true" />, danger: true, onSelect: () => setConfirming('block') }] : []),
+            ]}
+          />
+        )}
       </div>
       {review.body &&
         (open ? (
@@ -90,20 +106,6 @@ export function ReviewCard({ review, author, mine, onBlock, onReport, onOpenAuth
             Contiene spoilers · Mostrar la reseña
           </button>
         ))}
-      {!mine && (onBlock || onReport) && !confirming && (
-        <div className="review-card__menu">
-          {onReport && (
-            <button type="button" onClick={() => setConfirming('report')}>
-              Denunciar
-            </button>
-          )}
-          {onBlock && (
-            <button type="button" onClick={() => setConfirming('block')}>
-              Bloquear a {alias}
-            </button>
-          )}
-        </div>
-      )}
       {confirming && (
         <div className="social-confirm" role="alertdialog" aria-label={confirming === 'block' ? `Bloquear a ${alias}` : 'Denunciar esta reseña'}>
           <p>

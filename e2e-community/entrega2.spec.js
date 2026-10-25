@@ -269,12 +269,14 @@ test('bloquear pide confirmación y se puede deshacer desde «Personas bloqueada
   await openCurrentBook(page);
   await page.getByRole('tab', { name: 'Lectores' }).click();
   const readers = page.getByLabel('Voces de lectores');
-  await readers.getByRole('button', { name: 'Bloquear a Bruno' }).click();
+  await readers.getByRole('button', { name: 'Opciones de la reseña de Bruno' }).click();
+  await readers.getByRole('menuitem', { name: 'Bloquear a Bruno' }).click();
   // Primero se pide confirmación; cancelar no bloquea
   await expect(readers.getByRole('alertdialog', { name: 'Bloquear a Bruno' })).toBeVisible();
   await readers.getByRole('button', { name: 'Cancelar' }).click();
   expect(mock.db.blocks).toEqual([]);
-  await readers.getByRole('button', { name: 'Bloquear a Bruno' }).click();
+  await readers.getByRole('button', { name: 'Opciones de la reseña de Bruno' }).click();
+  await readers.getByRole('menuitem', { name: 'Bloquear a Bruno' }).click();
   await readers.getByRole('button', { name: 'Sí, bloquear' }).click();
   await expect(readers.locator('.review-card')).toHaveCount(0);
   expect(mock.db.blocks).toEqual([expect.objectContaining({ blocker: ANA.id, blocked: BRUNO.id })]);

@@ -1,0 +1,558 @@
+/* ── 1.36.0 · Cuaderno compartido con el marco de cuero (SPEC §29.3) ──────────────────────────────────────────
+   /assets/ui/notebook-frame.webp (838 × 224) es el marco del recurso «Marco de cuero con página en blanco»
+   recompuesto: tira superior (30) + UN periodo de anilla (106, repetible) + tira inferior (88). Nueve regiones:
+   las esquinas no se deforman, las anillas se repiten enteras («round») y el papel central crece con el texto.
+   --nb es la escala del marco respecto al recurso. */
+.notebook-shell {
+  --nb: 0.42;
+  box-sizing: border-box;
+  padding: 0;
+  border-style: solid;
+  border-color: transparent;
+  border-width: calc(30px * var(--nb)) calc(60px * var(--nb)) calc(88px * var(--nb)) calc(96px * var(--nb));
+  border-image: url('/assets/ui/notebook-frame.webp') 30 60 88 96 fill / calc(30px * var(--nb)) calc(60px * var(--nb)) calc(88px * var(--nb)) calc(96px * var(--nb)) stretch round;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 8px 16px rgb(44 30 20 / 0.28));
+}
+
+@media (min-width: 900px) {
+  .notebook-shell {
+    --nb: 0.55;
+  }
+}
+
+/* El marco ya trae encuadernación, cantos y papel: las capas CSS de la 1.35 no se pintan */
+.notebook-shell__binding,
+.notebook-shell__edges {
+  display: none;
+}
+
+.notebook-shell__page {
+  background: transparent;
+  box-shadow: none;
+}
+
+.book-sheet.notebook-shell {
+  padding: 0;
+  background: none;
+}
+
+.book-sheet .notebook-shell__page {
+  border-radius: 0;
+}
+
+/* Pestañas como separadores de tela sobre el borde superior del papel */
+.book-sheet__bar {
+  padding: 4px 4px 0 6px;
+  border-bottom: 1px solid rgb(110 78 46 / 0.22);
+}
+
+.book-sheet__tabs button {
+  border-radius: 6px 6px 0 0;
+}
+
+.book-sheet__scroll {
+  padding: 12px 12px 18px 10px;
+}
+
+/* ── Mi diario (SPEC §29.4): cuaderno dentro de la estantería, en la ventana del portátil ── */
+.window[data-app='calendar'] .window__body {
+  padding: 10px 8px 12px;
+  background: #4a2f1a url('/assets/library/shelf-module.webp') center / cover;
+}
+
+.diary.notebook-shell {
+  position: relative;
+  min-height: 100%;
+}
+
+.diary .notebook-shell__page {
+  padding: 8px 10px 16px 6px;
+}
+
+.diary__head {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  position: relative;
+  padding: 4px 0 8px;
+  text-align: center;
+}
+
+.diary__back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 6px 0 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 500 15px/1 var(--lib-body);
+  cursor: pointer;
+}
+
+.diary__back svg {
+  width: 18px;
+  height: 18px;
+}
+
+.diary__back:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.diary__title {
+  margin: 4px 0 0;
+  font: 600 clamp(24px, 6.8vw, 32px)/1.1 var(--lib-display);
+}
+
+.diary__subtitle {
+  margin: 2px 0 0;
+  color: var(--ink-muted);
+  font: italic 14px/1.3 var(--lib-body);
+}
+
+/* Pestañas de tela: Hoy (terracota) · Calendario (salvia) · Notas (lino) */
+.diary .diary__tabs {
+  justify-content: center;
+  gap: 6px;
+  padding: 0 4px 10px;
+  border-bottom: 1px solid rgb(110 78 46 / 0.22);
+}
+
+.diary .diary__tabs button {
+  position: relative;
+  isolation: isolate;
+  flex: 0 1 108px;
+  min-height: 40px;
+  padding: 0 8px 4px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  font: 500 15px/1 var(--lib-body);
+  text-decoration: none;
+}
+
+.diary .diary__tabs button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.04) 0 1px, transparent 1px 3px),
+    #e6d8bb;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%);
+  box-shadow: inset 0 0 0 1px rgb(110 78 46 / 0.2);
+}
+
+.diary .diary__tabs button[data-view='today']::before {
+  background-color: #b3613f;
+}
+
+.diary .diary__tabs button[data-view='calendar']::before {
+  background-color: #8f9a74;
+}
+
+.diary .diary__tabs button[data-view='today'] {
+  color: var(--paper);
+}
+
+.diary .diary__tabs button[data-view='calendar'] {
+  color: #1f2a17;
+}
+
+.diary .diary__tabs button[aria-selected='true'] {
+  font-weight: 600;
+  text-decoration: underline 2px currentColor;
+  text-underline-offset: 5px;
+}
+
+.diary .diary__tabs button[data-view='today'],
+.diary .diary__tabs button[data-view='calendar'],
+.diary .diary__tabs button[data-view='notes'] {
+  background: none;
+}
+
+/* Fecha destacada con su apunte a tinta */
+.diary-date {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgb(110 78 46 / 0.22);
+}
+
+.diary-date h3 {
+  font-size: clamp(30px, 8.6vw, 40px);
+}
+
+.diary-date__vignette {
+  flex: none;
+  width: clamp(84px, 26vw, 120px);
+  height: auto;
+  color: #8a6a44;
+}
+
+/* Separadores finos con una ramita en el centro */
+.diary-section {
+  position: relative;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(110 78 46 / 0.22);
+}
+
+.diary-section::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  width: 22px;
+  height: 13px;
+  margin-left: -11px;
+  background: var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 13'%3E%3Cg fill='none' stroke='%238a6a44' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M3 10c5-1 11-4 16-8'/%3E%3Cpath d='M8 8c0-2 1-3 2-4M12 6c1-2 2-2 3-3M7 8c-2 0-3-1-4-2M11 6c-2 0-3 0-4-1'/%3E%3C/g%3E%3C/svg%3E") center / 18px no-repeat;
+}
+
+.diary-section h4 {
+  font-size: 20px;
+}
+
+/* La lectura de hoy: portada a la izquierda; datos, progreso y «Registrar lectura» a la derecha */
+.diary-book {
+  grid-template-columns: clamp(92px, 28vw, 120px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.diary-book__cover {
+  width: 100%;
+}
+
+.diary-book__text b {
+  font-size: 18px;
+}
+
+.diary-book__progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.diary-book__pct {
+  justify-self: auto;
+}
+
+.diary-book__text .diary-btn {
+  justify-self: stretch;
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+/* Lo que me llevo: tarjeta de papel con la última nota a mano y «Escribir una nota» */
+.diary-reflection {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px 6px;
+  border-radius: 4px;
+  background: #faf3e3;
+  box-shadow:
+    inset 0 0 0 1px rgb(110 78 46 / 0.18),
+    0 2px 6px rgb(44 30 20 / 0.08);
+}
+
+.diary-reflection__text {
+  margin: 0;
+  color: var(--ink);
+  font: 500 21px/1.3 var(--lib-hand);
+}
+
+.diary-reflection__empty {
+  margin: 0;
+  color: var(--ink-muted);
+  font: italic 15px/1.4 var(--lib-body);
+}
+
+.diary-reflection__write {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--terracotta);
+  font: 500 14px/1 var(--lib-body);
+  cursor: pointer;
+}
+
+.diary-reflection__write svg {
+  width: 15px;
+  height: 15px;
+}
+
+.diary-reflection__write:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Semana: círculos de 32 px, salvia con lectura y terracota hoy */
+.diary-week i {
+  width: 32px;
+  height: 32px;
+}
+
+.diary-week li[data-read] i {
+  border-color: #6f7b57;
+  background: #8f9a74;
+}
+
+.diary-week li[data-today] i {
+  border-color: #9b4a2e;
+  background: #b3613f;
+  box-shadow: none;
+}
+
+.diary-week li[data-read]::after,
+.diary-week li[data-today][data-read]::after {
+  content: '';
+  width: 4px;
+  height: 4px;
+  margin: -2px auto 0;
+  border-radius: 50%;
+  background: #6f7b57;
+}
+
+.diary-note--center {
+  text-align: center;
+}
+
+/* Últimas anotaciones: icono en círculo, fecha · texto, libro y flecha */
+.diary-latest button {
+  align-items: center;
+}
+
+.diary-latest__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ece0c6;
+  color: #6b4f30;
+}
+
+.diary-latest__icon svg {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+}
+
+.diary-latest__text {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.diary-latest__text > span {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diary-latest__text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diary-latest .diary-latest__go {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-muted);
+}
+
+/* Sello de lacre en la esquina inferior derecha (decoración, sin tapar contenido) */
+.diary__seal {
+  position: absolute;
+  right: 6px;
+  bottom: 2px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.diary .diary__view {
+  padding-bottom: 36px;
+}
+
+/* El cuaderno ocupa la ventana: su barra de título se conserva para lectores de pantalla pero no se pinta (la
+   cabecera del cuaderno ya dice «Mi diario» y tiene «Volver») */
+.window[data-app='calendar'] > .window__bar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.window[data-app='calendar'] > .washi,
+.window[data-app='calendar'] > .brass-clip {
+  display: none;
+}
+
+.diary-date h3 {
+  font-size: clamp(26px, 7.6vw, 38px);
+  white-space: nowrap;
+}
+
+.diary-date__vignette {
+  width: clamp(64px, 20vw, 110px);
+}
+
+.diary-book__text .diary-btn {
+  gap: 4px;
+  padding: 0 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.diary-book__text .diary-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.diary-book__text {
+  min-width: 0;
+}
+
+.diary-book__text .diary-btn {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+@media (min-width: 700px) {
+  .diary-book__text .diary-btn {
+    justify-self: start;
+    min-width: 240px;
+  }
+
+  .diary-book__progress {
+    max-width: 420px;
+  }
+}
+
+/* ── Diario del libro, reseña y lectores (SPEC §29.5) ── */
+/* Anotaciones: papel sujeto con un clip de latón en la esquina */
+.journal-entry.quote.annotation-card {
+  position: relative;
+  margin-top: 6px;
+}
+
+.journal-entry.quote.annotation-card::after {
+  content: '';
+  position: absolute;
+  top: -9px;
+  right: 18px;
+  width: 12px;
+  height: 26px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 26'%3E%3Cpath d='M3 24V5a3 3 0 0 1 6 0v15a2 2 0 0 1-4 0V7' fill='none' stroke='%238a6f3e' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+
+/* Voces de lectores: cada reseña en su hoja con clip; menú de opciones en la cabecera */
+.review-card {
+  position: relative;
+}
+
+.review-card__clip {
+  position: absolute;
+  top: -26px;
+  left: 22px;
+  width: 14px;
+  height: 26px;
+  fill: none;
+  stroke: #8a6f3e;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.review-card__head .options-menu {
+  margin-left: 2px;
+}
+
+.review-card .options-menu__list {
+  top: calc(100% + 4px);
+  right: 0;
+  bottom: auto;
+}
+
+.review-card .options-menu__toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -8px -10px -8px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.review-card .options-menu__toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Club (SPEC §29.6): la vista del club en el cuaderno compartido ── */
+.club-notebook.notebook-shell {
+  --nb: 0.36;
+}
+
+.club-notebook .notebook-shell__page {
+  display: grid;
+  gap: 10px;
+  padding: 10px 10px 14px 6px;
+}
+
+.club-notebook .social-title {
+  margin: 0;
+  font: 600 24px/1.15 var(--lib-display);
+}
+
+.club-notebook .club-messages,
+.club-notebook .club-message {
+  background: transparent;
+}
+
+/* Mensajes de la conversación: filas ligeras sobre el papel del cuaderno (no cartas con marco) */
+.club-notebook .review-card {
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-image: none;
+  border-radius: 6px;
+  background: rgb(255 250 240 / 0.7);
+  filter: none;
+  box-shadow: inset 0 0 0 1px rgb(110 78 46 / 0.14);
+}
+
+.club-notebook .review-card + .review-card {
+  margin-top: 8px;
+}

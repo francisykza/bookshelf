@@ -1,0 +1,68 @@
+{
+  "header": {
+    "source": "Rincón mediterráneo entre libros y mar-2.png",
+    "width": 2021,
+    "height": 778,
+    "ratio": 2.5977,
+    "files": [
+      "header-1600.webp",
+      "header-800.webp"
+    ],
+    "wall": {
+      "from": 0.2,
+      "to": 0.6
+    },
+    "shelfTop": 0.874,
+    "bytes": {
+      "800": 27640,
+      "1600": 87154
+    }
+  },
+  "notebook": {
+    "source": "Marco de cuero con página en blanco-1.png",
+    "file": "notebook-frame.webp",
+    "width": 838,
+    "height": 224,
+    "slice": {
+      "top": 30,
+      "right": 60,
+      "bottom": 88,
+      "left": 96
+    },
+    "ringPeriod": 106,
+    "note": "tira superior + 1 periodo de anilla + tira inferior; border-image vertical round",
+    "bytes": 25974
+  },
+  "shelf": {
+    "source": "Compartimento de madera mediterránea vacío-3.png",
+    "module": {
+      "file": "shelf-module.webp",
+      "width": 1612,
+      "height": 884,
+      "slice": {
+        "top": 30,
+        "right": 107,
+        "bottom": 208,
+        "left": 105
+      },
+      "surfaceTop": 676,
+      "frontEdgeTop": 749,
+      "bookBase": 719
+    },
+    "crossbar": {
+      "file": "shelf-crossbar.webp",
+      "width": 1612,
+      "height": 50
+    },
+    "woodLight": {
+      "file": "wood-light.webp",
+      "width": 1360,
+      "height": 124
+    },
+    "bytes": {
+      "module": 78976,
+      "crossbar": 9264,
+      "woodLight": 16728
+    }
+  }
+}

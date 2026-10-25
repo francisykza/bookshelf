@@ -268,7 +268,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
               <b>Hoy</b>
               <span>{today.text ? `${today.text} ♡` : 'Aún sin leer… ¿un capítulo?'}</span>
             </div>
-            <section className="window" aria-label={current.label}>
+            <section className="window" data-app={tab} aria-label={current.label}>
               <span className="washi washi--window" aria-hidden="true" />
               <span className="brass-clip brass-clip--window" aria-hidden="true" />
               <header className="window__bar">
@@ -283,7 +283,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
                 </span>
               </header>
               <div className="window__body" role="tabpanel">
-            {tab === 'calendar' && <DiaryApp selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />}
+            {tab === 'calendar' && <DiaryApp selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} onBack={onClose} />}
             {tab === 'sessions' && <SessionsApp />}
             {tab === 'stats' && (
               <>

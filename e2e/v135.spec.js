@@ -62,14 +62,18 @@ test('librería: perspectiva recuperada, huecos con profundidad y placas sin sol
     const r = (el) => el.getBoundingClientRect();
     const bodies = [...document.querySelectorAll('.library .book3d')].map((b) => ({ edition: b.dataset.edition, t: getComputedStyle(b.querySelector('.book3d__body')).transform, persp: getComputedStyle(b).perspective }));
     const rows = [...document.querySelectorAll('.shelf-row')].map((row) => {
-      const plank = r(row.querySelector('.shelf-row__plank'));
+      // 1.36.0: módulo en nueve regiones. Superficie = los 208·s px inferiores del borde; canto = los últimos 135·s
+      const cs = getComputedStyle(row);
+      const bb = parseFloat(cs.borderBottomWidth);
+      const plank = { top: r(row).bottom - bb, bottom: r(row).bottom - bb * (135 / 208) + 2 };
       const plate = r(row.querySelector('.hanging-plaque__plate'));
       const books = [...row.querySelectorAll('[data-book-id]')].map((b) => r(b));
-      const sides = [...row.querySelectorAll('.shelf-row__side')].map((s) => r(s).width);
+      const sides = [parseFloat(cs.borderLeftWidth), parseFloat(cs.borderRightWidth)];
       return {
         rings: row.querySelectorAll('.hanging-plaque__rings circle').length,
         plateBelowPlank: plate.top >= plank.top,
-        plateInsideRow: plate.bottom <= r(row).bottom + 0.5,
+        // 1.36.0: el cartel cuelga del frente de la balda, sobre el techo del módulo siguiente, sin tapar sus libros
+        plateInsideRow: (() => { const next = row.closest('.library__module')?.nextElementSibling?.querySelector('[data-book-id]'); return !next || plate.bottom <= r(next).top + 0.5; })(),
         booksAbovePlate: books.every((b) => b.bottom <= plate.top + 0.5),
         booksOnPlank: books.every((b) => b.bottom <= plank.bottom && b.bottom >= plank.top - 2),
         sides,
@@ -189,6 +193,7 @@ test('mi diario: Hoy registra una sola vez y la nota no suma páginas; Notas fil
   await expect(today.getByRole('heading', { name: 'Mi semana entre páginas' })).toBeVisible();
   await shot(page, info, 'v135-diario-hoy');
   // Nota «Lo que me llevo de estas páginas»
+  await today.getByRole('button', { name: 'Escribir una nota' }).click();
   const take = today.locator('.annotation-form');
   await take.getByLabel('Nueva anotación').fill('A veces una historia te encuentra');
   await take.getByRole('button', { name: 'Guardar nota' }).click();

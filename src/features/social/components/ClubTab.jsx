@@ -3,6 +3,7 @@
 // plegados, editar y borrar los propios, moderación del propietario, salir y archivar. Privado: solo miembros.
 import { useCallback, useEffect, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
+import { NotebookShell } from '../../../components/primitives';
 import { CLUB_MESSAGE_MAX, inviteLink } from '../connections';
 import { useCommunity } from '../hooks/useCommunity';
 import { PAGE_SIZE, blockUser, fetchProfiles, reportContent } from '../services/community';
@@ -174,7 +175,7 @@ function ClubView({ club: initial, onBack, onLeft }) {
   };
 
   return (
-    <div className="club-view">
+    <NotebookShell className="club-view club-notebook">
       <button type="button" className="spoiler-toggle" onClick={onBack}>
         ← Mis clubes
       </button>
@@ -348,7 +349,7 @@ function ClubView({ club: initial, onBack, onLeft }) {
           </div>
         </div>
       )}
-    </div>
+    </NotebookShell>
   );
 }
 

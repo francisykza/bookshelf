@@ -90,3 +90,24 @@ No se ha inventado actividad, colecciones ni información pública. Los clubes n
 - Las portadas externas (Open Library y Google) no siempre cargan en el entorno de pruebas: en algunas capturas se
   ve el hueco o la cubierta tipográfica.
 - No se afirma igualdad con las maquetas: la composición y la jerarquía se acercan, pero faltan los recursos C.
+
+# 1.36.0 · Recursos mediterráneos (SPEC §29)
+
+**Referencias**: las láminas 157099 / 157115 / 157118 / 157124 citadas en el encargo no estaban en el disco ni
+adjuntas. Biblioteca: según la descripción escrita del encargo (la maqueta `biblioteca-mediterranea-maqueta.png` es
+anterior y no tiene cabecera ilustrada). Diario general: `diario-general-hoy-maqueta.png`. Cuaderno del libro:
+`ficha-diario-resena-lectores-maqueta.png`. Club: sin referencia disponible.
+**Capturas**: `qa-report/capturas-136/` (360/390/430/1440; club, lectores y reseña en `chromium-390x844/`).
+
+| Pantalla | Cambio | Recurso renderizado | Pendiente |
+|---|---|---|---|
+| Biblioteca · cabecera | Escena 2,6:1 a todo el ancho (cover, anclada abajo), cartel de latón colgado, subtítulo, «Volver al rincón» | `/assets/library/header-800.webp` (≤ 700 px) y `-1600.webp` | Sin comparar con 157099 (no disponible) |
+| Biblioteca · herramientas | Franja de madera clara: Escaparate/Lomos/Herramientas como iconos con nombre accesible, «Añadir libro» terracota, buscador a todo el ancho, cintas de filtro | `/assets/library/wood-light.webp` | — |
+| Biblioteca · recuerdos | Módulo poco profundo: etiqueta, papel con la cita clavada y sello, foto del último libro | módulo + `journal.webp` | La foto usa la portada real; si no carga, cubierta tipográfica |
+| Biblioteca · baldas | Módulo en nueve regiones, apilado sin duplicar travesaños; libros en la superficie (y = 719), etiquetas de papel con título en el canto, cartel colgando del frente, «Añadir un libro» de papel | `/assets/library/shelf-module.webp`, `shelf-crossbar.webp` | — |
+| Cuaderno compartido | Marco de cuero con anillas en nueve regiones (`round`), contenido desplazable | `/assets/ui/notebook-frame.webp` | — |
+| Mi diario | Cuaderno en la ventana del portátil con la estantería alrededor; cabecera, pestañas de tela, fecha con apunte, lectura de hoy, reflexión, semana, últimas anotaciones, sello | marco + módulo | La barra de título de la ventana se conserva solo para lectores de pantalla |
+| Diario del libro | Anotaciones con clip | CSS | Las filas de lectura no tienen menú contextual (no se añadieron acciones nuevas) |
+| Mi reseña | Carta con pinza, valoración, firma, spoilers y estado (1.35) dentro del marco | `letter.webp` | — |
+| Lectores | Hojas con clip; «Denunciar / Bloquear» en el menú de opciones | `letter.webp` | — |
+| Club | Vista del club dentro del cuaderno; mensajes como filas ligeras | marco | **Capítulos, Encuentros, aviso de encuentro y avance por capítulo no existen en los datos**; no se simulan |
