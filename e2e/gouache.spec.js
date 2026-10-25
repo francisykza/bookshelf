@@ -146,7 +146,7 @@ test('calendario: la pantalla es la vista compacta del calendario interior (dato
   if (clip.width > 20 && clip.height > 20) await shot(page, info, 'gouache-portatil', clip);
   await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="laptop"]').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.panel .window__title')).toContainText('Calendario');
+  await expect(page.locator('.panel .window__title')).toContainText('Mi diario'); // 1.35.0: la app «Calendario» es «Mi diario» (abre en Calendario)
   await page.waitForTimeout(600);
   const panel = await page.evaluate(() => {
     const root = document.querySelector('.window .cal');

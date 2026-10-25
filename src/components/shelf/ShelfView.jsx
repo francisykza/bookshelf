@@ -1,8 +1,9 @@
-// `SHELF_VIEW` (SPEC §27.3–27.5): la librería como un mueble modular de madera gouache. Cabecera compacta
-// (volver, buscador, pestañas de estado, vista y herramientas), una balda por estado con su tramo de panel y su
-// tabla, un único recuerdo destacado tras la primera balda y, como mucho, dos ramas de hiedra detrás de los libros.
+// `SHELF_VIEW` (SPEC §27.3–27.5, §28.4): la librería como un mueble de madera gouache con profundidad. Cabecera
+// compacta (volver, buscador, cintas de estado, vista y herramientas), un tablón de recuerdos plegable dentro del
+// mueble, una balda por estado con laterales, tabla y placa de latón colgada, y como mucho dos ramas de hiedra.
 import { RatingStars } from '../book/Rating';
 import { ArrowLeft, BookOpen, ChevronDown, Library, Plus, Search, Sparkles, Trophy, Wrench, X } from 'lucide-react';
+import { FabricTab, HangingPlaque } from '../primitives';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
 import { ratingText, shelfSort } from '../../domain/books';
@@ -29,7 +30,7 @@ export function cropStyle(region) {
 const ROWS = [
   { id: 'reading', label: 'Leyendo ahora', empty: 'Ningún libro abierto: elige uno de Pendientes' },
   { id: 'want', label: 'Pendientes', empty: 'Tu lista de deseos está vacía' },
-  { id: 'read', label: 'Terminados', empty: 'Aquí irán los libros terminados' },
+  { id: 'read', label: 'Leídos', empty: 'Aquí irán los libros terminados' },
 ];
 
 /** Baldas por estado, cada una en su orden de estantería. */
@@ -44,7 +45,7 @@ const FILTERS = [
   { id: 'all', label: 'Todos' },
   { id: 'reading', label: 'Leyendo' },
   { id: 'want', label: 'Pendientes' },
-  { id: 'read', label: 'Terminados' },
+  { id: 'read', label: 'Leídos' },
 ];
 
 const DIE_DOTS = {
@@ -59,55 +60,86 @@ const DIE_DOTS = {
 const validDate = (iso) => Boolean(iso) && !Number.isNaN(new Date(iso).getTime());
 const longDate = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
+const FOLD_KEY = 'bookshelf:memories-folded';
+const readFolded = () => {
+  try {
+    return localStorage.getItem(FOLD_KEY) === 'true';
+  } catch {
+    return false;
+  }
+};
+
 /**
- * Recuerdo destacado (SPEC §27.5): el último libro terminado con fecha fiable, su valoración y la cita solo si
- * la clavó el usuario. Los demás terminados, plegados. Sin nada que recordar no se pinta nada.
+ * Tablón de recuerdos (SPEC §27.5, §28.4): dentro del mueble, una nota con el último libro terminado con fecha
+ * fiable, la postal de la cita solo si la clavó el usuario y «Ver más recuerdos». Se pliega (recordado en este
+ * dispositivo) para dejar sitio a los libros. Sin nada que recordar no se pinta nada.
  */
-function MemoryHighlight({ books, onOpenBook, pinned, onUnpin }) {
+function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
+  const [folded, setFolded] = useState(readFolded);
   const dated = books.filter((b) => validDate(b.finishedAt)).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
   const [last, ...rest] = dated;
   if (!last && !pinned) return null;
+  const toggle = () => {
+    const next = !folded;
+    setFolded(next);
+    try {
+      localStorage.setItem(FOLD_KEY, String(next));
+    } catch {
+      // sin almacenamiento: se pliega solo en esta visita
+    }
+  };
   return (
-    <aside className="lib-memory" aria-label="Recuerdos">
-      <h2 className="lib-memory__title">Recuerdos</h2>
-      {last && (
-        <button type="button" className="lib-memory__book" onClick={() => onOpenBook(last)} aria-label={`${last.title}, terminado el ${longDate(last.finishedAt)}${last.rating ? `, ${ratingText(last.rating)}` : ''}`}>
-          <span className="lib-memory__cover" aria-hidden="true">
-            <Cover book={last} />
-          </span>
-          <span className="lib-memory__text" aria-hidden="true">
-            <b>{last.title}</b>
-            <small>Terminado el {longDate(last.finishedAt)}</small>
-            {last.rating > 0 && <RatingStars value={last.rating} />}
-          </span>
+    <aside className="keepsake-board" aria-label="Recuerdos" data-folded={folded}>
+      <div className="keepsake-board__bar">
+        <h2 className="keepsake-board__title">Recuerdos</h2>
+        <button type="button" className="keepsake-board__toggle" aria-expanded={!folded} aria-controls="keepsake-board-pins" onClick={toggle}>
+          <ChevronDown aria-hidden="true" />
+          {folded ? 'Mostrar' : 'Plegar'}
         </button>
-      )}
-      {pinned && (
-        <figure className="lib-memory__quote">
-          <blockquote>{pinned.text}</blockquote>
-          <figcaption>
-            {[pinned.author, pinned.work].filter(Boolean).join(' · ')}
-            <button type="button" className="lib-memory__unpin" onClick={onUnpin} aria-label="Desclavar la cita de la estantería" title="Desclavar">
-              <X aria-hidden="true" />
+      </div>
+      {!folded && (
+        <div id="keepsake-board-pins" className="keepsake-board__pins">
+          {last && (
+            <button type="button" className="keepsake-note" onClick={() => onOpenBook(last)} aria-label={`${last.title}, terminado el ${longDate(last.finishedAt)}${last.rating ? `, ${ratingText(last.rating)}` : ''}`}>
+              <span className="keepsake-note__cover" aria-hidden="true">
+                <Cover book={last} />
+              </span>
+              <span aria-hidden="true">
+                <b>{last.title}</b>
+                <small>Terminado el {longDate(last.finishedAt)}</small>
+                {last.rating > 0 && <RatingStars value={last.rating} />}
+              </span>
             </button>
-          </figcaption>
-        </figure>
-      )}
-      {rest.length > 0 && (
-        <details className="lib-memory__more">
-          <summary>Ver más recuerdos · {rest.length}</summary>
-          <ul>
-            {rest.slice(0, 11).map((b) => (
-              <li key={b.id}>
-                <button type="button" onClick={() => onOpenBook(b)}>
-                  <span>{b.title}</span>
-                  <small>{new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</small>
+          )}
+          {pinned && (
+            <figure className="keepsake-postcard">
+              <blockquote>{pinned.text}</blockquote>
+              <figcaption>
+                <span>{[pinned.author, pinned.work].filter(Boolean).join(' · ')}</span>
+                <button type="button" className="keepsake-postcard__unpin" onClick={onUnpin} aria-label="Desclavar la cita de la estantería" title="Desclavar">
+                  <X aria-hidden="true" />
                 </button>
-              </li>
-            ))}
-          </ul>
-        </details>
+              </figcaption>
+            </figure>
+          )}
+          {rest.length > 0 && (
+            <details className="keepsake-board__more">
+              <summary>Ver más recuerdos · {rest.length}</summary>
+              <ul>
+                {rest.slice(0, 11).map((b) => (
+                  <li key={b.id}>
+                    <button type="button" onClick={() => onOpenBook(b)}>
+                      <span>{b.title}</span>
+                      <small>{new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
       )}
+      <div className="keepsake-board__plank" aria-hidden="true" />
     </aside>
   );
 }
@@ -204,16 +236,19 @@ function ShelfRow({ row, index, books, mode, rowH, onOpenBook, onEdition, onAdd,
   return (
     <section className="shelf-row" data-row={row.id} data-panel-slice={index % 3} style={{ '--row-h': `${rowH}px` }} aria-label={`${row.label}: ${books.length} libros`}>
       {ivy && <Ivy side={ivy} />}
+      <span className="shelf-row__side shelf-row__side--left" aria-hidden="true" />
+      <span className="shelf-row__side shelf-row__side--right" aria-hidden="true" />
+      {/* Placa de latón colgada del canto (la primera en el orden de foco de la balda) */}
       <div className="shelf-row__head">
-        <button
-          type="button"
-          className="shelf-row__plate"
+        <HangingPlaque
+          as="button"
+          className="shelf-row__plaque"
           aria-pressed={focused}
           onClick={onPlate}
           title={focused ? 'Volver a ver todas las baldas' : `Ver solo ${row.label.toLowerCase()}`}
         >
-          {row.label} <span className="shelf-row__count">{books.length}</span>
-        </button>
+          {row.label} <span className="shelf-row__count">· {books.length}</span>
+        </HangingPlaque>
       </div>
       <div ref={scrollerRef} className="shelf-row__scroller">
         <div
@@ -439,7 +474,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
     if (JSON.stringify(map) !== JSON.stringify(figs.placements ?? {})) actions.syncFigureBooks(map);
   }, [figCatalog, books, figs, actions, sagas]);
 
-  const memory = <MemoryHighlight books={grouped.read} onOpenBook={onOpenBook} pinned={settings.pinnedQuote} onUnpin={() => actions.setSettings({ pinnedQuote: null })} />;
+  const memory = <MemoryBoard books={grouped.read} onOpenBook={onOpenBook} pinned={settings.pinnedQuote} onUnpin={() => actions.setSettings({ pinnedQuote: null })} />;
 
   return (
     <div className="library" data-open={showing} data-phase={phase} aria-hidden={!open} inert={!open ? true : undefined} onTransitionEnd={onTransitionEnd}>
@@ -451,7 +486,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
               <span>Volver</span>
             </button>
             <h1 className="library__title">
-              <span>La biblioteca junto al mar</span>
+              <span>Mi biblioteca</span>
               <small>de {settings.owner}</small>
             </h1>
           </div>
@@ -485,12 +520,12 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
               <span>Añadir libro</span>
             </button>
           </div>
-          {/* Pestañas de papel: qué baldas ver */}
+          {/* Cintas de tela: qué baldas ver */}
           <div className="lib-tabs" role="radiogroup" aria-label="Qué baldas ver">
             {FILTERS.map((f) => (
-              <button key={f.id} type="button" role="radio" aria-checked={filter === f.id} className="lib-tab" data-status={f.id} onClick={() => setFilter(f.id)}>
+              <FabricTab key={f.id} selected={filter === f.id} tone={f.id} data-status={f.id} onClick={() => setFilter(f.id)}>
                 {f.label}
-              </button>
+              </FabricTab>
             ))}
           </div>
           <div className="lib-head__row lib-head__row--tools">
@@ -551,6 +586,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
               {EMPTY_TEXT[empty]}
             </p>
           )}
+          {memory}
           {visibleRows.map((row, i) => (
             <div key={row.id} className="library__module">
               <ShelfRow
@@ -575,7 +611,6 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
                 pins={pins}
                 ivy={i === 0 ? 'right' : i === visibleRows.length - 1 && i > 0 ? 'left' : null}
               />
-              {i === 0 && memory}
             </div>
           ))}
         </div>

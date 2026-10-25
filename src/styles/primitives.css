@@ -1,0 +1,523 @@
+/* ── 1.35.0 · Primitivas del sistema mediterráneo (SPEC §28.3) ─────────────────────────────────────────────
+   Construidas sobre los tokens de library-refresh.css. Decoración en capas aria-hidden y pointer-events: none;
+   nunca encima de texto o controles. Movimiento solo al interactuar y anulado con movimiento reducido. */
+
+/* Respuesta de presión de los botones */
+:where(.lib-btn, .fabric-tab, .sheet-btn, .diary-btn, .hanging-plaque, .lib-toggle button, .keepsake-board__toggle) {
+  transition:
+    transform 120ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+:where(.lib-btn, .fabric-tab, .sheet-btn, .diary-btn, .lib-toggle button, .keepsake-board__toggle):active {
+  transform: translateY(1px);
+}
+
+/* ── PaperSurface ── */
+.paper-surface {
+  background: var(--paper) url('/art/library-refresh/journal.webp') 0 0 / 384px repeat;
+  color: var(--ink);
+}
+
+.paper-surface[data-tone='shade'] {
+  background-color: var(--paper-shade);
+}
+
+/* ── NotebookShell: encuadernación + página + cantos ── */
+.notebook-shell {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  padding: 0 7px 0 14px;
+  border-radius: 6px 10px 10px 6px;
+  background: #7b5a3c;
+  box-shadow: 0 10px 28px rgb(44 30 20 / 0.24);
+}
+
+.notebook-shell__binding {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 14px;
+  border-radius: 6px 0 0 6px;
+  background:
+    radial-gradient(circle at 7px 50%, #c9b07a 0 2.2px, #6d4f2c 2.6px 3.2px, transparent 3.6px) 0 10px / 14px 22px repeat-y,
+    linear-gradient(90deg, #4a321f, #7b5a3c 60%, #5f4329);
+  pointer-events: none;
+}
+
+.notebook-shell__page {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper) url('/art/library-refresh/journal.webp') 0 0 / 384px repeat;
+  box-shadow:
+    inset 8px 0 10px -8px rgb(44 30 20 / 0.32),
+    1px 0 0 rgb(110 78 46 / 0.3);
+}
+
+/* Cantos de hojas: tres filos claros a la derecha */
+.notebook-shell__edges {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  bottom: 6px;
+  width: 7px;
+  border-radius: 0 8px 8px 0;
+  background: repeating-linear-gradient(90deg, #efe4cc 0 1.4px, #cbb791 1.4px 2.3px);
+  box-shadow: inset -1px 0 0 rgb(110 78 46 / 0.35);
+  pointer-events: none;
+}
+
+/* ── FabricTab: cinta de lino con extremo en V en la capa visual ── */
+.fabric-tab {
+  --tab-color: #e9dcc2;
+  --tab-band: var(--ink-muted);
+  position: relative;
+  isolation: isolate;
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px 6px;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font: 500 15px/1.2 var(--lib-body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.fabric-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(var(--tab-band), var(--tab-band)) 0 0 / 100% 4px no-repeat,
+    repeating-linear-gradient(0deg, rgb(110 78 46 / 0.05) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgb(110 78 46 / 0.05) 0 1px, transparent 1px 3px),
+    var(--tab-color);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 88%, 0 100%);
+  box-shadow: inset 0 0 0 1px rgb(110 78 46 / 0.2);
+  filter: drop-shadow(0 1px 1px rgb(44 30 20 / 0.18));
+  pointer-events: none;
+}
+
+.fabric-tab[data-tone='reading'] {
+  --tab-band: var(--terracotta);
+}
+
+.fabric-tab[data-tone='want'] {
+  --tab-band: var(--brass);
+}
+
+.fabric-tab[data-tone='read'] {
+  --tab-band: var(--sage);
+}
+
+.fabric-tab[aria-checked='true'] {
+  --tab-color: var(--lib-paper);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Indicador de selección que no depende del color: subrayado de tinta bajo la etiqueta */
+.fabric-tab[aria-checked='true'] .fabric-tab__label {
+  text-decoration: underline 2px var(--ink);
+  text-underline-offset: 5px;
+}
+
+.fabric-tab:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ── HangingPlaque: latón mate colgado de dos anillas ── */
+.hanging-plaque {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  transform-origin: 50% 0%;
+}
+
+.hanging-plaque__rings {
+  display: block;
+  width: 100%;
+  height: 12px;
+  margin-bottom: -3px;
+  fill: none;
+  stroke: #8a6f3e;
+  stroke-width: 1.8;
+  pointer-events: none;
+}
+
+.hanging-plaque__plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 3px 14px;
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 7px 50%, #6f5a30 0 1.6px, transparent 2px),
+    radial-gradient(circle at calc(100% - 7px) 50%, #6f5a30 0 1.6px, transparent 2px),
+    linear-gradient(#d2b77c, var(--brass) 55%, #9c7f45);
+  box-shadow:
+    inset 0 1px 0 rgb(255 244 214 / 0.55),
+    inset 0 -1px 0 rgb(80 58 20 / 0.45),
+    0 3px 6px rgb(44 30 20 / 0.35);
+  color: var(--ink);
+  font: 600 14px/1.15 var(--lib-body);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+@keyframes plaque-swing {
+  /* `rotate` (no `transform`): el balanceo se suma al desplazamiento de la señal sin moverla */
+  0% {
+    rotate: 0deg;
+  }
+  35% {
+    rotate: -2deg;
+  }
+  70% {
+    rotate: 1deg;
+  }
+  100% {
+    rotate: 0deg;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button.hanging-plaque:active,
+  .hanging-plaque[data-swing] {
+    animation: plaque-swing 420ms ease-out;
+  }
+}
+
+/* ── WaxSeal ── */
+.wax-seal {
+  flex: none;
+  overflow: visible;
+}
+
+.wax-seal__drip {
+  fill: #9b3328;
+  filter: drop-shadow(0 1px 1px rgb(44 30 20 / 0.35));
+}
+
+.wax-seal__ring {
+  fill: none;
+  stroke: #6e1f18;
+  stroke-width: 1.4;
+  opacity: 0.7;
+}
+
+.wax-seal__initial {
+  fill: #f3d7c9;
+  font: 600 16px/1 var(--lib-display);
+}
+
+.wax-seal__sprig {
+  fill: none;
+  stroke: #f3d7c9;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+@keyframes wax-stamp {
+  0% {
+    transform: scale(1.5) rotate(-12deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.94) rotate(2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wax-seal[data-stamped] {
+    animation: wax-stamp 420ms cubic-bezier(0.2, 0.8, 0.3, 1.2);
+  }
+}
+
+/* ── AnnotationCard: recorte con marca de color ── */
+.annotation-card {
+  position: relative;
+  padding: 12px 12px 10px 20px;
+  border-radius: 2px 6px 4px 3px;
+  background: #fffaf0;
+  box-shadow:
+    0 1px 0 rgb(110 78 46 / 0.12),
+    0 3px 8px rgb(44 30 20 / 0.1);
+}
+
+.annotation-card__mark {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 7px;
+  width: 5px;
+  border-radius: 3px;
+  background: var(--marker, var(--brass));
+  box-shadow: inset 0 0 0 1px rgb(44 30 20 / 0.18);
+  pointer-events: none;
+}
+
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .annotation-card[data-new] {
+    animation: note-in 180ms ease-out;
+  }
+}
+
+/* ── ReviewLetter: carta en nueve cortes + clip ── */
+.review-letter {
+  position: relative;
+  border: 18px solid transparent;
+  border-image: url('/art/library-refresh/letter.webp') 40 fill / 18px round;
+  background: none;
+  filter: drop-shadow(0 3px 10px rgb(44 30 20 / 0.12));
+}
+
+.review-letter__clip {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  width: 18px;
+  height: 30px;
+  margin-left: -9px;
+  fill: none;
+  stroke: #8a6f3e;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+@media (min-width: 900px) {
+  .review-letter {
+    border-width: 24px;
+    border-image-width: 24px;
+  }
+}
+
+/* ── ReaderAdornment: rama bajo el avatar ── */
+.reader-adornment {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+/* ── Señales de la habitación (SPEC §28.9) ──
+   Viven dentro del mundo escalado (px de la escena): el tamaño de letra compensa la escala (--k) para que se lean
+   igual en móvil y escritorio. Sin animación continua; balanceo solo al pasar o tocar. */
+.room-signs {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+}
+
+.room-sign {
+  position: absolute;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: max(10px, calc(12.5px / var(--k, 1)));
+  pointer-events: none;
+  transform: translateX(calc(-50% + var(--nudge, 0px)));
+  transform-origin: 50% 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.room-sign.hanging-plaque {
+  width: auto;
+}
+
+.room-sign .hanging-plaque__rings {
+  width: calc(100% - 1.6em);
+  height: 0.95em;
+}
+
+.room-sign .hanging-plaque__plate {
+  min-height: 0;
+  padding: 0.22em 0.95em;
+  font-size: 1em;
+  letter-spacing: 0.02em;
+  box-shadow:
+    inset 0 1px 0 rgb(255 244 214 / 0.55),
+    inset 0 -1px 0 rgb(80 58 20 / 0.45),
+    0 0.2em 0.45em rgb(44 30 20 / 0.45);
+}
+
+.room-sign__label {
+  display: inline-block;
+  padding: 0.25em 0.8em 0.45em;
+  color: var(--ink);
+  font: 600 1em/1.15 var(--lib-body);
+  white-space: nowrap;
+}
+
+/* Cinta de tela «Mi lectura» con extremo en V (el recorte, en la capa visual) */
+.room-sign--ribbon {
+  transform: translateX(calc(-50% + var(--nudge, 0px))) rotate(-10deg);
+}
+
+.room-sign--ribbon .room-sign__label {
+  position: relative;
+  isolation: isolate;
+  padding: 0.3em 0.9em 0.7em;
+  color: var(--paper);
+}
+
+.room-sign--ribbon .room-sign__label::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 3px),
+    linear-gradient(#5d6b4f, #4f5a43);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+}
+
+/* Pestaña «Calendario» que asoma del portátil */
+.room-sign--tab .room-sign__label {
+  position: relative;
+  isolation: isolate;
+  padding: 0.3em 0.9em 0.55em;
+}
+
+.room-sign--tab .room-sign__label::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 0 0 0.4em 0.4em;
+  background:
+    linear-gradient(var(--terracotta), var(--terracotta)) 0 0 / 100% 0.25em no-repeat,
+    var(--lib-paper);
+  box-shadow: 0 0.2em 0.4em rgb(20 10 4 / 0.4);
+}
+
+/* Etiqueta de papel con ojal y cordel */
+.room-sign--tag {
+  padding-top: 0.5em;
+}
+
+.room-sign--tag::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 0.7em;
+  background: #8a6f3e;
+  pointer-events: none;
+}
+
+.room-sign--tag .room-sign__label {
+  position: relative;
+  isolation: isolate;
+}
+
+.room-sign--tag .room-sign__label::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 50% 0.42em, #8a6f3e 0 0.12em, transparent 0.16em),
+    var(--lib-paper);
+  clip-path: polygon(0.5em 0, calc(100% - 0.5em) 0, 100% 0.5em, 100% 100%, 0 100%, 0 0.5em);
+}
+
+.room-sign--tag .room-sign__label {
+  padding-top: 0.75em;
+}
+
+
+/* Durante la ayuda inicial solo se destaca la biblioteca */
+.room-signs[data-hint] .room-sign:not([data-highlight]) {
+  opacity: 0.55;
+}
+
+.room-sign[data-highlight] .hanging-plaque__plate {
+  box-shadow:
+    0 0 0 0.18em var(--paper),
+    0 0 0 0.36em var(--terracotta),
+    0 0.2em 0.6em rgb(44 30 20 / 0.5);
+}
+
+.room-signs-hint {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+  display: grid;
+  gap: 0.5em;
+  width: 15em;
+  padding: 0.8em 1em;
+  border-radius: 0.4em;
+  background: var(--lib-paper);
+  color: var(--ink);
+  font: 1em/1.4 var(--lib-body);
+  font-size: max(12px, calc(14px / var(--k, 1)));
+  box-shadow: 0 0.4em 1em rgb(20 10 4 / 0.45);
+  transform: translateX(-30%);
+}
+
+.room-signs-hint p {
+  margin: 0;
+}
+
+.room-signs-hint button {
+  justify-self: end;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.9em;
+  border: 0;
+  border-radius: 0.4em;
+  background: var(--terracotta);
+  color: var(--paper);
+  font: 600 1em/1 var(--lib-body);
+  cursor: pointer;
+}
+
+.room-signs-hint button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* «Tiempo de lectura» en dos líneas, como una etiqueta de equipaje */
+.room-sign[data-sign='tray'] .room-sign__label {
+  width: 6.2em;
+  white-space: normal;
+  text-align: center;
+}

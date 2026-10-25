@@ -126,7 +126,7 @@ test('el calendario se actualiza al registrar lectura y tocar la pantalla abre C
   await expect(page.locator('.laptop-screen .cal__today-line')).toHaveText('Hoy · Sin lectura registrada');
   await page.locator('.hotspot[data-id="laptop"]').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.panel .window__title')).toContainText('Calendario');
+  await expect(page.locator('.panel .window__title')).toContainText('Mi diario'); // 1.35.0: la app «Calendario» es «Mi diario» (abre en Calendario)
   // Desde la pantalla del portátil, el día de hoy llega ya seleccionado
   await expect(page.locator('.cal-pop')).toBeVisible();
   if (!(await page.locator('.cal-pop').count())) await page.locator('.panel .cal__cell[data-today="true"]').click();

@@ -85,12 +85,12 @@ test('librería: cabecera compacta, baldas modulares y libros visibles al abrir'
       plankHeight: parseFloat(plank.height),
       bodyTransform: body ? getComputedStyle(body).transform : null,
       rows,
-      tabs: [...document.querySelectorAll('.lib-tab')].map((t) => t.textContent),
+      tabs: [...document.querySelectorAll('.lib-tabs [role="radio"]')].map((t) => t.textContent),
       quoteInHeader: Boolean(head.querySelector('.pinned-quote, blockquote')),
     };
   });
   run.data.library = m;
-  expect(m.tabs).toEqual(['Todos', 'Leyendo', 'Pendientes', 'Terminados']);
+  expect(m.tabs).toEqual(['Todos', 'Leyendo', 'Pendientes', 'Leídos']);
   expect(m.overflowX).toBeLessThanOrEqual(0);
   expect(m.small).toEqual([]);
   expect(m.quoteInHeader).toBe(false);
@@ -104,10 +104,10 @@ test('librería: cabecera compacta, baldas modulares y libros visibles al abrir'
     // Los libros se ven en el primer encuadre
     expect(m.bookBottom).toBeLessThanOrEqual(m.viewport);
   }
-  // Escaparate: como mucho rotateY(-5deg)
+  // 1.35.0 (SPEC §28.4): se recupera la geometría anterior a la 1.34.0, rotateY(-24deg) rotateX(6deg)
   if (m.bodyTransform && m.bodyTransform !== 'none') {
     const v = m.bodyTransform.match(/matrix3d\(([^)]+)\)/)?.[1].split(',').map(Number);
-    if (v) expect(Math.abs((Math.acos(Math.min(1, v[0])) * 180) / Math.PI)).toBeLessThanOrEqual(5.5);
+    if (v) expect(Math.abs((Math.acos(Math.min(1, v[0])) * 180) / Math.PI)).toBeGreaterThan(20);
   }
   await shot(page, info, 'v134-libreria');
 });
@@ -118,7 +118,7 @@ test('librería: filtros, búsqueda y vistas se conservan; herramientas plegadas
   const st = await stored(page);
   await openLibrary(page);
   const input = page.getByRole('searchbox', { name: 'Buscar en mi biblioteca' });
-  for (const [label, status] of [['Leyendo', 'reading'], ['Pendientes', 'want'], ['Terminados', 'read']]) {
+  for (const [label, status] of [['Leyendo', 'reading'], ['Pendientes', 'want'], ['Leídos', 'read']]) {
     await page.getByRole('radio', { name: label }).click();
     await expect(page.locator('.shelf-row')).toHaveCount(1);
     await expect(page.locator(`.shelf-row[data-row="${status}"]`)).toHaveCount(1);
@@ -153,7 +153,7 @@ test('recuerdos: uno destacado con fecha fiable; sin terminados ni cita, nada', 
   const st = await stored(page);
   await openLibrary(page);
   const dated = st.books.filter((b) => b.status === 'read' && b.finishedAt).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
-  if (dated.length) await expect(page.locator('.lib-memory__book')).toContainText(dated[0].title);
+  if (dated.length) await expect(page.locator('.keepsake-note')).toContainText(dated[0].title);
   // Hiedra: como mucho dos, decorativa
   const ivy = await page.evaluate(() => [...document.querySelectorAll('.lib-ivy')].map((el) => ({ pe: getComputedStyle(el).pointerEvents, hidden: el.getAttribute('aria-hidden'), w: el.getBoundingClientRect().width })));
   expect(ivy.length).toBeLessThanOrEqual(2);
@@ -173,7 +173,7 @@ test('recuerdos: uno destacado con fecha fiable; sin terminados ni cita, nada', 
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
   await openLibrary(page);
-  await expect(page.locator('.lib-memory')).toHaveCount(0);
+  await expect(page.locator('.keepsake-board')).toHaveCount(0);
 });
 
 test('hiedra: sin movimiento con movimiento reducido', async ({ page }, info) => {
@@ -217,7 +217,7 @@ test('ficha: orden, detalles plegados, valoración con teclado y cierre «Cerrar
   await page.getByRole('button', { name: 'Valorar con 3 estrellas' }).press('ArrowRight');
   await page.getByRole('button', { name: 'Valorar con 3 estrellas' }).press('ArrowRight');
   await page.getByRole('button', { name: 'Valorar con 3 estrellas' }).press('ArrowRight');
-  await expect(page.locator('.book-sheet .rating-input__value')).toHaveText('3,75 / 5');
+  await expect(page.locator('.sheet-page--ficha .rating-input__value')).toHaveText('3,75 / 5');
   await expect.poll(async () => (await stored(page)).books.find((b) => b.id === 'principito').rating).toBe(3.75);
   // Cierre: pestaña de papel ≥ 44 × 44, dentro de la pantalla, nombre «Cerrar»
   const close = page.getByRole('button', { name: 'Cerrar', exact: true });
@@ -246,12 +246,12 @@ test('diario: entradas fechadas y vacío con «Escribir mi primera anotación»'
   });
   await page.getByRole('tab', { name: 'Diario' }).click();
   await expect(page.getByText('¿Qué te gustaría recordar de esta historia?')).toBeVisible();
-  await expect(page.getByLabel('Nueva cita')).toHaveCount(0);
+  await expect(page.getByLabel('Nueva anotación', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Escribir mi primera anotación' }).click();
-  const text = page.getByLabel('Nueva cita');
+  const text = page.getByLabel('Nueva anotación', { exact: true });
   await expect(text).toBeFocused();
   await text.fill('Lo esencial es invisible a los ojos.');
-  await page.getByRole('button', { name: 'Subrayar' }).click();
+  await page.getByRole('button', { name: 'Guardar anotación' }).click();
   const entry = page.locator('.journal-entry.quote');
   await expect(entry).toHaveCount(1);
   // Marca lateral + nombre del significado (nunca solo color), con fecha en Caveat

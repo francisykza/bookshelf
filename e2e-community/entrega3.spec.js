@@ -101,6 +101,8 @@ test('sentarse a leer: explícito, sin compartir el libro si no se elige, y sin 
   members(mock.db, [[ANA, 'Ana lectora', 'gato-lector']]);
   await mock.attach(page, ANA);
   await ready(page);
+  // La librería normaliza `placements` (figura → lista de libros) al cargar el catálogo: se espera a que acabe
+  await page.waitForFunction(() => Object.values(JSON.parse(localStorage.getItem('bookshelf:v1')).progress.figures.placements ?? {}).every(Array.isArray));
   const figuresBefore = await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem('bookshelf:v1')).progress.figures));
   await toSalon(page);
   // Entrar al salón no sienta a nadie
@@ -155,7 +157,8 @@ test('seguir desde una reseña, «Lectores que sigo» y rincón: solo lo elegido
   await expect(readers.locator('.tropes')).toContainText('Romance a fuego lento');
   // Abrir el perfil de Bruno desde su reseña y seguirle (dos veces: no duplica)
   await readers.getByRole('button', { name: 'Bruno', exact: true }).click();
-  await expect(page.locator('.reader-profile')).toContainText('Leyendo ahora: Momo');
+  await expect(page.locator('.huella-trio')).toContainText('Actual');
+  await expect(page.locator('.huella-trio')).toContainText('Momo');
   await expect(page.locator('.reader-profile')).toContainText('Circe');
   await page.getByRole('button', { name: 'Seguir' }).click();
   await expect(page.getByRole('button', { name: 'Dejar de seguir' })).toBeVisible();

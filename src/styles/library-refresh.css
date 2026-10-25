@@ -2,21 +2,36 @@
    Se carga la última: sustituye la presentación de la librería y de la ficha sin tocar la habitación, el
    salón ni el Ático. Texturas en /art/library-refresh/ (derivados de `npm run art:library`). */
 :root {
+  /* 1.35.0 (SPEC §28.3, contraste en §28.12): tokens del sistema mediterráneo; los --lib-* son alias */
+  --paper: #f8f1e1;
+  --paper-shade: #e8d8b9;
+  --ink: #2c1e14;
+  --ink-muted: #6b5948;
+  --terracotta: #a84f34;
+  --sage: #78866b;
+  --sage-ink: #4f5a43;
+  --bay: #6f8793;
+  --brass: #b69758;
+  --brass-ink: #6e5524;
+  --wood: #b78049;
+  --wood-deep: #49301f;
   --lib-paper: #faf5e8;
-  --lib-paper-2: #f8f1e1;
-  --lib-ink: #2c1e14;
-  --lib-ink-soft: #6a5847;
-  --lib-brass: #c59b27;
-  --lib-terracotta: #b86343;
-  --lib-sage: #69764f;
+  --lib-paper-2: var(--paper);
+  --lib-ink: var(--ink);
+  --lib-ink-soft: var(--ink-muted);
+  --lib-brass: var(--brass);
+  --lib-terracotta: var(--terracotta);
+  --lib-sage: var(--sage);
   --lib-wood: #79583d;
-  --lib-wood-dark: #59432f;
+  --lib-wood-dark: var(--wood-deep);
   --lib-line: rgb(110 78 46 / 0.28);
   --lib-rule: rgb(110 78 46 / 0.18);
   --lib-display: 'Cormorant Garamond', 'Cormorant', Georgia, serif;
   --lib-body: 'Lora', Georgia, serif;
   --lib-hand: 'Caveat', 'Segoe Print', cursive;
   --lib-mono: 'JetBrains Mono', 'Courier Prime', monospace;
+  /* Foco visible que no depende solo del color: anillo de tinta + halo claro */
+  --focus-ring: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
 }
 
 /* ── Mueble ── */
@@ -131,7 +146,7 @@
 .lib-toggle button:focus-visible,
 .lib-tools__list button:focus-visible,
 .shelf-row__plate:focus-visible {
-  outline: 2px solid var(--lib-brass);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -634,7 +649,7 @@
 }
 
 .library .book3d:focus-visible {
-  outline: 2px solid var(--lib-brass);
+  outline: 2px solid var(--ink);
   outline-offset: 4px;
 }
 

@@ -25,14 +25,16 @@ const DEFAULTS = {
   blocks: () => ({ created_at: new Date().toISOString() }),
   reports: () => ({ id: randomUUID(), created_at: new Date().toISOString() }),
   follows: () => ({ created_at: new Date().toISOString() }),
-  corners: () => ({ visible: false, featured_books: [], figure_ids: [], guardian_id: null, show_current: false, current_title: null, updated_at: new Date().toISOString() }),
+  corners: () => ({ visible: false, featured_books: [], figure_ids: [], guardian_id: null, show_current: false, current_title: null, memories: [], last_book: null, next_book: null, signature_books: [], scene: 'dia', updated_at: new Date().toISOString() }),
+  collections: () => ({ id: randomUUID(), dedication: null, visible: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
+  distinctions: () => ({ id: randomUUID(), note: null, awarded_on: null }),
   reading_presence: () => ({ share_book: false, book_title: null }),
   clubs: () => ({ id: randomUUID(), description: '', work_id: null, work_title: null, discussion_point: '', status: 'active', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
   club_members: () => ({ joined_at: new Date().toISOString() }),
   club_invites: () => ({ id: randomUUID(), token: (randomUUID() + randomUUID()).replace(/-/g, ''), revoked: false, expires_at: new Date(Date.now() + 14 * 864e5).toISOString(), created_at: new Date().toISOString() }),
   club_messages: () => ({ id: randomUUID(), has_spoilers: false, status: 'visible', created_at: new Date().toISOString(), edited_at: null }),
 };
-const OWNER = { profiles: 'user_id', works: 'created_by', public_reviews: 'user_id', libraries: 'user_id', blocks: 'blocker', reports: 'reporter', follows: 'follower', corners: 'user_id', reading_presence: 'user_id', clubs: 'owner', club_members: 'user_id', club_invites: 'created_by', club_messages: 'user_id' };
+const OWNER = { profiles: 'user_id', works: 'created_by', public_reviews: 'user_id', libraries: 'user_id', blocks: 'blocker', reports: 'reporter', follows: 'follower', corners: 'user_id', reading_presence: 'user_id', clubs: 'owner', club_members: 'user_id', club_invites: 'created_by', club_messages: 'user_id', collections: 'owner', distinctions: '__admin__' };
 
 function matches(row, params) {
   for (const [k, v] of params) {
@@ -102,6 +104,10 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       }
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(out.filter((r) => matches(r, [...url.searchParams.entries()]))) });
     }
+    if (table === 'rpc/moderators_among') {
+      const { ids } = req.postDataJSON();
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify((db.moderators ?? []).filter((id) => ids.includes(id))) });
+    }
     if (table === 'rpc/my_blocked_profiles') {
       const rows = db.blocks.filter((b) => b.blocker === userId).map((b) => {
         const p = db.profiles.find((x) => x.user_id === b.blocked);
@@ -124,6 +130,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       if (table === 'profiles') rows = rows.filter((p) => p.user_id === userId || p.community_enabled);
       if (table === 'follows') rows = rows.filter((f) => f.follower === userId || f.followed === userId);
       if (table === 'corners') rows = rows.filter((c) => c.user_id === userId || c.visible);
+      if (table === 'collections') rows = rows.filter((c) => c.owner === userId || c.visible);
       if (table === 'reading_presence') rows = rows.filter((r) => r.user_id === userId || fresh(r));
       if (table === 'clubs') rows = rows.filter((c) => memberOf(c.id, userId));
       if (table === 'club_members') rows = rows.filter((m) => memberOf(m.club_id, userId));

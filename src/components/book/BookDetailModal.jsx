@@ -1,20 +1,19 @@
-// Ficha del libro (SPEC §27.6–27.8): una hoja de papel gouache con tres pestañas. Ficha: ex-libris compacto,
+// Ficha del libro (SPEC §27.6–27.8, §28.5–28.8): un cuaderno de una página con tres pestañas. Ficha: ex-libris compacto,
 // portada y título, estado, progreso, «Registrar lectura», valoración y favorito, y los detalles de la edición
 // plegados. Diario: cuaderno de entradas fechadas con lo que ya existe (sesiones, citas subrayadas y la reseña).
 // Lectores: las opiniones de la comunidad. Solo presentación: los datos y operaciones son los de siempre.
-import { BookMarked, ChevronDown, Feather, Heart, Minus, NotebookPen, PenLine, Plus, Trash2, X } from 'lucide-react';
-import { Suspense, lazy, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { BookMarked, ChevronDown, Heart, Lock, Minus, NotebookPen, PenLine, Plus, Trash2, X } from 'lucide-react';
+import { Suspense, lazy, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
 import { playUiSound } from '../../audio/uiSounds';
 import { EDGE_NAMES, FORMATS, STATUS, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, sprayedEdge, trackUnit } from '../../domain/books';
-import { dayKey, parseDay } from '../../domain/dates';
-import { journalDays } from '../../domain/journal';
-import { entryText } from '../../domain/reading';
+import { dayKey } from '../../domain/dates';
 import { ReadingEntryForm } from '../panels/ReadingEntryForm';
-import { RatingInput, RatingStars } from './Rating';
-import { QuoteMeaningsEditor } from './QuoteMeaningsEditor';
-import { COLOR_IDS, meaningOf } from '../../domain/quoteMeanings';
+import { RatingInput } from './Rating';
+import { Journal } from './Annotations';
+import { NotebookShell, ReviewLetter, WaxSeal } from '../primitives';
+import { draftDiffers } from '../../features/reviews/opinion';
 import { useLibrary } from '../../state/useLibrary';
 import { modalRoot } from '../panels/modalRoot';
 import { PanelShell } from '../panels/PanelShell';
@@ -81,8 +80,8 @@ function ExLibris({ owner, onRename }) {
   );
 }
 
-/** Progreso: posición, barra y tiempo restante; por páginas, con el ajuste rápido de la página actual. */
-function ProgressBlock({ book, pagesPerHour, onPage }) {
+/** Progreso: posición y barra; por páginas, con el ajuste rápido de la página actual (la estimación vive en los detalles). */
+function ProgressBlock({ book, onPage }) {
   const unit = trackUnit(book);
   const pct = percentRead(book);
   if (unit === 'percent') {
@@ -96,7 +95,6 @@ function ProgressBlock({ book, pagesPerHour, onPage }) {
       </div>
     );
   }
-  const left = hoursLeft(book, pagesPerHour);
   return (
     <div className="sheet-progress">
       <div className="sheet-progress__pages">
@@ -138,7 +136,7 @@ function ProgressBlock({ book, pagesPerHour, onPage }) {
       />
       <p className="sheet-progress__line">
         <strong>{formatPercent(pct)} leído</strong>
-        <span>{left > 0 ? `≈ ${formatHours(left)} restantes` : '¡Terminado!'}</span>
+        <span>{book.currentPage >= book.pageCount ? '¡Terminado!' : `Página ${book.currentPage} de ${book.pageCount}`}</span>
       </p>
     </div>
   );
@@ -159,6 +157,7 @@ const EDITION_NOTES = {
 /** «Detalles de mi edición»: total de páginas, unidad de seguimiento, velocidad y edición (plegado). */
 function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed }) {
   const unit = trackUnit(book);
+  const left = unit === 'pages' ? hoursLeft(book, pagesPerHour) : 0;
   const edge = sprayedEdge(book);
   return (
     <details className="sheet-details">
@@ -205,6 +204,7 @@ function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed }) {
           />
           <span>págs./h</span>
         </label>
+        {left > 0 && <p className="edition-note">A este ritmo: ≈ {formatHours(left)} restantes</p>}
         <label className="sheet-field">
           <span>Edición</span>
           <select value={book.editionType} onChange={(e) => onUpdate({ editionType: e.target.value })}>
@@ -240,200 +240,16 @@ function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed }) {
   );
 }
 
-const dateLabel = (key) => (key ? parseDay(key).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Sin fecha');
-
-/**
- * Diario como cuaderno (SPEC §27.7). Las citas conservan su id de color y muestran el significado que eligió el
- * usuario (para todos sus libros) con una marca lateral; el filtro recuerda su selección por id de color.
- */
-function Journal({ book, log, meanings, onAdd, onRemove, onShow }) {
-  const [text, setText] = useState('');
-  const [page, setPage] = useState(book.currentPage || '');
-  const [color, setColor] = useState('yellow');
-  const [filter, setFilter] = useState('all');
-  const [editing, setEditing] = useState(false);
-  const [notice, setNotice] = useState('');
-  const [writing, setWriting] = useState(false);
-  const textRef = useRef(null);
-  const days = useMemo(() => journalDays(book, log), [book, log]);
-  const counts = book.quotes.reduce((acc, q) => {
-    const id = meaningOf(meanings, q.color).id ?? 'unknown';
-    acc[id] = (acc[id] ?? 0) + 1;
-    return acc;
-  }, {});
-  const current = meaningOf(meanings, color);
-  const showItem = (item) => filter === 'all' || (item.kind === 'quote' && (meaningOf(meanings, item.quote.color).id ?? 'unknown') === filter);
-  const visibleDays = days.map((d) => ({ ...d, items: d.items.filter(showItem) })).filter((d) => d.items.length);
-  const empty = days.length === 0;
-  const formOpen = !empty || writing;
-
-  useEffect(() => {
-    if (writing) textRef.current?.focus({ preventScroll: false });
-  }, [writing]);
-
-  return (
-    <div className="journal">
-      {book.quotes.length > 0 && (
-        <div className="quote-filter" role="radiogroup" aria-label="Filtrar citas por significado">
-          <button type="button" role="radio" aria-checked={filter === 'all'} onClick={() => setFilter('all')}>
-            Todo · {days.reduce((n, d) => n + d.items.length, 0)}
-          </button>
-          {[...COLOR_IDS, ...(counts.unknown ? ['unknown'] : [])]
-            .filter((id) => counts[id])
-            .map((id) => {
-              const m = meaningOf(meanings, id === 'unknown' ? null : id);
-              return (
-                <button key={id} type="button" role="radio" aria-checked={filter === id} style={{ '--marker': m.hex }} onClick={() => setFilter(id)}>
-                  <span className="quote-filter__dot" aria-hidden="true" />
-                  {m.label} · {counts[id]}
-                </button>
-              );
-            })}
-        </div>
-      )}
-
-      {empty ? (
-        <div className="journal__empty">
-          <p>¿Qué te gustaría recordar de esta historia?</p>
-          {!writing && (
-            <button type="button" className="sheet-btn sheet-btn--primary" onClick={() => setWriting(true)}>
-              <NotebookPen aria-hidden="true" />
-              Escribir mi primera anotación
-            </button>
-          )}
-        </div>
-      ) : (
-        <ol className="journal__days">
-          {visibleDays.map((d) => (
-            <li key={d.key ?? 'sin-fecha'} className="journal-day">
-              <h4 className="journal-day__date">{dateLabel(d.key)}</h4>
-              <ul className="journal-day__items">
-                {d.items.map((item) => {
-                  if (item.kind === 'session') {
-                    return (
-                      <li key={item.id} className="journal-entry journal-entry--session">
-                        <span className="journal-entry__kind">Lectura</span>
-                        <p>{entryText(item.entry)}</p>
-                      </li>
-                    );
-                  }
-                  if (item.kind === 'review') {
-                    return (
-                      <li key="review" className="journal-entry journal-entry--review">
-                        <span className="journal-entry__kind">Reseña al terminar</span>
-                        {book.rating > 0 && <RatingStars value={book.rating} />}
-                        <p>{book.review}</p>
-                      </li>
-                    );
-                  }
-                  const q = item.quote;
-                  const m = meaningOf(meanings, q.color);
-                  return (
-                    <li key={q.id} className="journal-entry quote" data-color={q.color} style={{ '--marker': m.hex, '--marker-ink': m.ink }}>
-                      <blockquote>
-                        <mark>{q.text}</mark>
-                      </blockquote>
-                      <footer>
-                        <span className="quote__tag" title={m.description || undefined}>
-                          {m.label}
-                        </span>
-                        {q.page ? <span className="quote__page">pág. {q.page}</span> : null}
-                        <button type="button" className="icon-btn icon-btn--tiny" onClick={() => onShow(q)} aria-label="Ver esta cita como carta de algodón y lacre" title="Ver como carta">
-                          <Feather aria-hidden="true" />
-                        </button>
-                        <button type="button" className="icon-btn icon-btn--tiny" onClick={() => onRemove(q.id)} aria-label="Borrar esta cita">
-                          <X aria-hidden="true" />
-                        </button>
-                      </footer>
-                    </li>
-                  );
-                })}
-              </ul>
-            </li>
-          ))}
-          {!visibleDays.length && <li className="journal__none">No hay citas con este significado.</li>}
-        </ol>
-      )}
-
-      {formOpen && (
-        <form
-          className="quote-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!text.trim()) return;
-            onAdd({ text: text.trim(), page: Number(page) || null, color });
-            setText('');
-            playUiSound('save');
-          }}
-        >
-          <h4 className="quote-form__title">Nueva anotación</h4>
-          <textarea ref={textRef} value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="Copia aquí la frase que te ha atrapado…" aria-label="Nueva cita" />
-          <div className="quote-form__row">
-            <label className="quote-form__page">
-              pág.
-              <input type="number" min="0" value={page} onChange={(e) => setPage(e.target.value)} className="ink-input ink-input--tiny" aria-label="Página de la cita" />
-            </label>
-            <div className="markers" role="radiogroup" aria-label="Color del marcador">
-              {COLOR_IDS.map((key) => {
-                const m = meaningOf(meanings, key);
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    role="radio"
-                    aria-checked={color === key}
-                    className="marker"
-                    style={{ '--marker': m.hex }}
-                    onClick={() => {
-                      if (color !== key) playUiSound('pencil');
-                      setColor(key);
-                    }}
-                    title={m.label}
-                  >
-                    <span className="sr-only-focus">{m.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button type="submit" className="sheet-btn sheet-btn--primary" disabled={!text.trim()}>
-              Subrayar
-            </button>
-          </div>
-          <p className="quote-form__legend">
-            <span>{current.label}</span>
-            <button type="button" className="link-btn quote-form__customize" aria-expanded={editing} onClick={() => setEditing((v) => !v)}>
-              Personalizar colores
-            </button>
-          </p>
-          {notice && (
-            <p className="quote-form__notice" role="status">
-              {notice}
-            </p>
-          )}
-        </form>
-      )}
-      {editing && (
-        <QuoteMeaningsEditor
-          onClose={(saved) => {
-            setEditing(false);
-            setNotice(saved ? 'Significados guardados.' : '');
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
 const TABS = [
   { id: 'left', label: 'Ficha' },
   { id: 'right', label: 'Diario' },
   { id: 'readers', label: 'Lectores' },
 ];
 
-export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile, onOpenReader, onComplete }) {
+export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpenProfile, onOpenReader, onComplete }) {
   const { state, actions } = useLibrary();
   const book = state.books.find((b) => b.id === bookId);
-  const [page, setPage] = useState('left');
+  const [page, setPage] = useState(() => (TABS.some((t) => t.id === initialPage) ? initialPage : 'left'));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [review, setReview] = useState(book?.review ?? '');
   const [shownQuote, setShownQuote] = useState(null);
@@ -464,7 +280,7 @@ export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile, onOp
 
   return (
     <PanelShell onClose={onClose} label={`${book.title}, de ${book.author}`} variant="sheet">
-      <div className="book-sheet" data-page={page} data-edition={book.editionType}>
+      <NotebookShell className="book-sheet" data-page={page} data-edition={book.editionType}>
         <div className="book-sheet__bar">
           <div className="book-sheet__tabs" role="tablist" aria-label="Páginas del libro">
             {TABS.map((t) => (
@@ -545,7 +361,6 @@ export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile, onOp
 
             <ProgressBlock
               book={book}
-              pagesPerHour={settings.pagesPerHour}
               onPage={(p) => {
                 actions.setPage(book.id, p);
                 if (p > book.currentPage) pageRustle(0.6);
@@ -627,24 +442,30 @@ export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile, onOp
 
           <section className="sheet-page sheet-page--journal" aria-label="Diario de lectura" hidden={page !== 'right'}>
             <h3 className="sheet-title">Diario de lectura</h3>
-            <Journal
-              book={book}
-              log={state.progress.readingLog}
-              meanings={settings.quoteMeanings}
-              onAdd={(q) => actions.addQuote(book.id, q)}
-              onRemove={(qid) => actions.removeQuote(book.id, qid)}
-              onShow={setShownQuote}
-            />
-            <h3 className="sheet-title sheet-title--small">Mi reseña</h3>
-            <textarea
-              className="review"
-              value={review}
-              onChange={(e) => setReview(e.target.value)}
-              onBlur={() => review !== book.review && update({ review })}
-              placeholder="Lo que sentí al leerlo…"
-              aria-label="Tu reseña"
-              rows={5}
-            />
+            <p className="sheet-private">
+              <Lock aria-hidden="true" /> Solo para ti
+            </p>
+            <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} onShow={setShownQuote} />
+            <h3 className="sheet-title sheet-title--small" id="my-review-title">
+              Mi reseña
+            </h3>
+            <p className="sheet-subtitle">Tu impresión de esta historia.</p>
+            <ReviewLetter className="my-review" aria-labelledby="my-review-title">
+              <div className="my-review__rating">
+                <RatingInput value={book.rating} onChange={(rating) => update({ rating })} />
+              </div>
+              <textarea
+                className="review"
+                value={review}
+                onChange={(e) => setReview(e.target.value)}
+                onBlur={() => review !== book.review && update({ review })}
+                placeholder="Lo que sentí al leerlo…"
+                aria-label="Tu reseña"
+                rows={5}
+              />
+              <p className="my-review__signature">{settings.owner || 'Lectora'}</p>
+            </ReviewLetter>
+            <ReviewState book={book} draft={review} />
             <PublishControls book={book} onUpdate={update} onOpenProfile={onOpenProfile} />
           </section>
 
@@ -657,7 +478,7 @@ export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile, onOp
             </section>
           )}
         </div>
-      </div>
+      </NotebookShell>
       {shownQuote && (
         <QuoteViewer
           quote={shownQuote}
@@ -672,6 +493,25 @@ export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile, onOp
         />
       )}
     </PanelShell>
+  );
+}
+
+/**
+ * Estado inequívoco de la reseña (SPEC §28.8): privada, cambios sin publicar o publicada. Se deriva de los datos
+ * reales (la copia pública guardada) y nunca cambia la visibilidad por sí sola.
+ */
+function ReviewState({ book, draft }) {
+  const pub = book.publicReview;
+  const published = pub?.status === 'published';
+  const changed = published && draftDiffers({ ...book, review: draft });
+  const saved = draft === book.review;
+  const label = !published ? 'Privada · solo la ves tú' : changed ? 'Publicada · con cambios sin publicar' : 'Publicada · al día';
+  return (
+    <p className="review-state" data-state={!published ? 'private' : changed ? 'draft' : 'published'} role="status">
+      {published && !changed ? <WaxSeal size={28} /> : <Lock aria-hidden="true" />}
+      <span>{label}</span>
+      <small>{saved ? 'Guardada en este dispositivo' : 'Guardando…'}</small>
+    </p>
   );
 }
 

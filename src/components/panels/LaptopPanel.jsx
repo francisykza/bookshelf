@@ -14,13 +14,14 @@ import { useFigureCatalog } from '../figures/figureCatalog';
 import { DailyQuote, dailyQuoteReady } from './DailyQuote';
 import { cropStyle } from '../shelf/ShelfView';
 import { PanelShell } from './PanelShell';
-import { CalendarApp, SessionsApp } from './ReadingCalendar';
+import { SessionsApp } from './ReadingCalendar';
+import { DiaryApp } from './DiaryApp';
 
 /** Fondo de pantalla: la bahía de la propia ilustración. */
 const WALLPAPER = { x: 500, y: 395, w: 400, h: 330 };
 
 const TABS = [
-  { id: 'calendar', label: 'Calendario', icon: CalendarDays, color: '#e7909f' },
+  { id: 'calendar', label: 'Mi diario', icon: CalendarDays, color: '#e7909f' },
   { id: 'stats', label: 'Estadísticas', icon: BarChart3, color: '#d9784d' },
   { id: 'sessions', label: 'Sesiones', icon: Clock, color: '#86ad55' },
   { id: 'goal', label: 'Reto anual', icon: Target, color: '#e2a94f' },
@@ -222,7 +223,7 @@ function Ring({ value, max }) {
   );
 }
 
-export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault }) {
+export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook }) {
   const figCatalog = useFigureCatalog();
   const { state, actions } = useLibrary();
   const [tab, setTab] = useState(initialTab);
@@ -282,7 +283,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
                 </span>
               </header>
               <div className="window__body" role="tabpanel">
-            {tab === 'calendar' && <CalendarApp selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} />}
+            {tab === 'calendar' && <DiaryApp selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />}
             {tab === 'sessions' && <SessionsApp />}
             {tab === 'stats' && (
               <>

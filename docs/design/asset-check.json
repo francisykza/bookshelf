@@ -1,0 +1,211 @@
+{
+  "generated": "2026-10-25T13:53:57.522Z",
+  "alignment": {
+    "lluvia": 0.972,
+    "noche": 0.803
+  },
+  "report": [
+    {
+      "from": "Biblioteca mediterránea en madera y gouache.png",
+      "to": "docs/design/references/biblioteca-mediterranea-maqueta.png",
+      "copied": true,
+      "format": "png",
+      "width": 851,
+      "height": 1848,
+      "bytes": 2403379,
+      "md5": "388ab51eae21b9a77bd8b49142593109",
+      "alpha": null,
+      "derivatives": []
+    },
+    {
+      "from": "Placas de latón suspendidas en biblioteca-1.png",
+      "to": "docs/design/references/habitacion-senales-maqueta.png",
+      "copied": true,
+      "format": "png",
+      "width": 851,
+      "height": 1848,
+      "bytes": 2390593,
+      "md5": "80e9a74b46530aa8c68fa456a659cbf7",
+      "alpha": null,
+      "derivatives": []
+    },
+    {
+      "from": "Diario de lectura entre páginas.png",
+      "to": "docs/design/references/diario-general-hoy-maqueta.png",
+      "copied": true,
+      "format": "png",
+      "width": 862,
+      "height": 1825,
+      "bytes": 2641234,
+      "md5": "998feeb026a8f996dfdcd81512ac9bf9",
+      "alpha": null,
+      "derivatives": []
+    },
+    {
+      "from": "Tríptico de diario y voces lectoras.png",
+      "to": "docs/design/references/ficha-diario-resena-lectores-maqueta.png",
+      "copied": true,
+      "format": "png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2642227,
+      "md5": "6ac83dde4a3005a330813e7021317c61",
+      "alpha": null,
+      "derivatives": []
+    },
+    {
+      "from": "BookShelf_ tres pantallas del salón literario.png",
+      "to": "docs/design/references/salon-rincon-voces-maqueta.png",
+      "copied": true,
+      "format": "png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2753283,
+      "md5": "6334fad1546ce3b52796a8f4a2a69a7a",
+      "alpha": null,
+      "derivatives": []
+    },
+    {
+      "from": "BookShelf_ tres pantallas del salón literario (1).png",
+      "duplicateOf": "BookShelf_ tres pantallas del salón literario.png",
+      "identical": true,
+      "format": "png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2753283,
+      "md5": "6334fad1546ce3b52796a8f4a2a69a7a",
+      "alpha": null
+    },
+    {
+      "from": "Alba y las huellas botánicas-2.png",
+      "to": "docs/design/references/perfil-rincon-huellas-maqueta.png",
+      "copied": true,
+      "format": "png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2700413,
+      "md5": "7a04357fedb1f78375d5c6b6c0a60bba",
+      "alpha": null,
+      "derivatives": []
+    },
+    {
+      "from": "Huellas de lector_ tres retratos botánicos.png",
+      "to": "docs/design/references/huellas-adornos-avatar-maqueta.png",
+      "copied": true,
+      "format": "png",
+      "width": 1983,
+      "height": 793,
+      "bytes": 2336636,
+      "md5": "96bc38429734e9edae7dc9c530abe20d",
+      "alpha": null,
+      "derivatives": []
+    },
+    {
+      "from": "Rincón mediterráneo junto al mar.png",
+      "to": "public/assets/profile/rincon-dia.png",
+      "copied": true,
+      "format": "png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2402661,
+      "md5": "4ce13497381c90cbbf31dfa06b4435d5",
+      "alpha": null,
+      "derivatives": [
+        {
+          "file": "public/assets/profile/rincon-dia-1536.webp",
+          "width": 1536,
+          "height": 1024,
+          "bytes": 125826,
+          "alpha": null
+        },
+        {
+          "file": "public/assets/profile/rincon-dia-768.webp",
+          "width": 768,
+          "height": 512,
+          "bytes": 41180,
+          "alpha": null
+        }
+      ]
+    },
+    {
+      "from": "Rincón mediterráneo bajo la lluvia.png",
+      "to": "public/assets/profile/rincon-lluvia.png",
+      "copied": true,
+      "format": "png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2234642,
+      "md5": "8d29abb2a3266df73e6416321e08af31",
+      "alpha": null,
+      "derivatives": [
+        {
+          "file": "public/assets/profile/rincon-lluvia-1536.webp",
+          "width": 1536,
+          "height": 1024,
+          "bytes": 113634,
+          "alpha": null
+        },
+        {
+          "file": "public/assets/profile/rincon-lluvia-768.webp",
+          "width": 768,
+          "height": 512,
+          "bytes": 38630,
+          "alpha": null
+        }
+      ]
+    },
+    {
+      "from": "Rincón de lectura ante la bahía nocturna.png",
+      "to": "public/assets/profile/rincon-noche.png",
+      "copied": true,
+      "format": "png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 2150619,
+      "md5": "b3147065a0ba9f50d04cc3ea44e934c7",
+      "alpha": null,
+      "derivatives": [
+        {
+          "file": "public/assets/profile/rincon-noche-1536.webp",
+          "width": 1536,
+          "height": 1024,
+          "bytes": 115646,
+          "alpha": null
+        },
+        {
+          "file": "public/assets/profile/rincon-noche-768.webp",
+          "width": 768,
+          "height": 512,
+          "bytes": 39770,
+          "alpha": null
+        }
+      ]
+    },
+    {
+      "from": "Farol artesanal de latón envejecido.png",
+      "to": "public/assets/memories/farol.png",
+      "copied": true,
+      "format": "png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 777564,
+      "md5": "dccac9d9132c75972f0f9c438b7bfd33",
+      "alpha": {
+        "transparent": 0.803,
+        "soft": 0.1968
+      },
+      "derivatives": [
+        {
+          "file": "public/assets/memories/farol-256.webp",
+          "width": 256,
+          "height": 498,
+          "bytes": 46010,
+          "alpha": {
+            "transparent": 0.314,
+            "soft": 0.6793
+          }
+        }
+      ]
+    }
+  ]
+}

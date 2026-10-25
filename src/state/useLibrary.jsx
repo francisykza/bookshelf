@@ -234,6 +234,16 @@ export function reducer(state, action) {
             : b,
         ),
       };
+    // Editar una anotación: texto, página y color (SPEC §28.7). No toca el progreso ni el registro de lectura.
+    case 'updateQuote': {
+      const pick = ({ text, page, color }) => ({ text, page, color });
+      return {
+        ...state,
+        books: state.books.map((b) =>
+          b.id === action.id ? { ...b, quotes: b.quotes.map((q) => (q.id === action.quoteId ? { ...q, ...pick(action.patch), editedAt: new Date().toISOString() } : q)) } : b,
+        ),
+      };
+    }
     case 'removeQuote':
       return {
         ...state,
@@ -372,6 +382,7 @@ export function LibraryProvider({ children }) {
       removeBook: (id) => dispatch({ type: 'removeBook', id }),
       moveBook: (id, status, beforeId) => dispatch({ type: 'moveBook', id, status, beforeId }),
       addQuote: (id, quote) => dispatch({ type: 'addQuote', id, quote }),
+      updateQuote: (id, quoteId, patch) => dispatch({ type: 'updateQuote', id, quoteId, patch }),
       removeQuote: (id, quoteId) => dispatch({ type: 'removeQuote', id, quoteId }),
       setSettings: (patch) => dispatch({ type: 'settings', patch }),
       logPomodoro: (minutes, drink) => dispatch({ type: 'pomodoro', minutes, drink }),

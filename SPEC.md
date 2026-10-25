@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.34.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.35.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2535,3 +2535,190 @@ escala y número de respuestas). Cada reseña es una carta con `letter.webp` en 
 Con cualquier panel abierto las flechas de habitación no se montan (estado central `panel`) y las de las baldas se
 ocultan. Botón de cierre en pestaña de papel ≥ 44 × 44 dentro de las zonas seguras, nombre «Cerrar». Panel de
 100dvh como máximo con zonas seguras, un único scroll y sin scroll horizontal.
+
+## 28. Biblioteca mediterránea artesanal: profundidad, cuaderno, diario, señales y huellas (1.35.0)
+
+Dirección visual de las maquetas de `docs/design/references/` (gouache editorial 2D mate, madera cálida, papel
+crema, cintas de tela, latón envejecido). Jerarquía: requisitos del encargo → maquetas → capturas actuales (funciones
+que conservar) → código histórico (perspectiva). Las maquetas traen datos ilustrativos: no se copian sus cifras,
+textos, portadas ni retratos. El ZIP 1.15.0 es solo referencia histórica; no sustituye código.
+
+### 28.0 Estado verificado antes de empezar
+
+- Git limpio en `a1468a5` (1.34.0 desplegada); sin versionar: `art-inbox/`, `assets-source/`, `material-diseno/`.
+  No existe `AGENTS.md`; las reglas viven en este SPEC y en la memoria del proyecto.
+- Puntos de entrada del ZIP y su equivalente actual: `ShelfView.jsx`, `BookItem.jsx`, `AddBookCard.jsx` (mismos
+  archivos en `src/components/shelf/`), `BookDetailModal.jsx` (`src/components/book/`, raíz `.book-sheet`),
+  `ReadingCalendar.jsx` (`src/components/panels/`, `CalendarApp` dentro del portátil), `RoomHotspots.jsx`
+  (`src/components/room/`, montado por `CozyRoom.jsx`), `useLibrary.jsx` (`src/state/`), `shelf.css`, `book.css`,
+  `stationery.css`, `typography.css` (`src/styles/`, sobrescritos al final por `library-refresh.css` y
+  `library-sheet.css`).
+- Persistencia real: `localStorage` `bookshelf:v1` (estado versionado en `useLibrary.jsx`) + copia en Supabase
+  (`libraries`) con `state/cloudSync.jsx`. Comunidad real en Supabase (migraciones de §25: `profiles`, `works`,
+  `public_reviews`, `blocks`, `reports`, `moderators`, `follows`, `corners`, `reading_presence`, `clubs`…), con RLS
+  probada con PGlite (`src/features/social/__tests__/`). No hay roles de equipo ni premios en el servidor: el único
+  rol con permisos es `moderators` (asignado desde el SQL Editor).
+- Geometría anterior a 1.34.0 (commit `1004f10`, `shelf.css` y `editions.css`): `.book3d { perspective: 900px;
+  perspective-origin: 50% 30% }`, `.book3d__body { rotateY(-24deg) rotateX(6deg) }`, al pasar
+  `rotateY(-8deg) rotateX(4deg) translateY(-8px) translateZ(14px)`; cantos pintados `rotateY(-36deg) rotateX(6deg)`
+  (al pasar `-44deg / 4deg`); e-reader y audiolibro usan la misma caja con sus propias caras; sombra interior de
+  la tabla de arriba `inset 0 22px 28px -10px rgb(15 8 0 / .75)`; tabla de 26 px con luz superior y sombra
+  `0 12px 16px -6px rgb(0 0 0 / .65)`. La 1.34.0 lo aplanó a `perspective: 1000px` y `rotateY(-5deg)`.
+
+### 28.1 Recursos
+
+`npm run art:design` (`scripts/organize-design-assets.mjs`) copia de `material-diseno/` sin mover ni sobrescribir,
+comprueba formato real, dimensiones, alfa y duplicados (md5), mide la alineación de las variantes del rincón y genera
+WebP de producción. Inventario y estados en `docs/design/asset-manifest.md`; faltantes en
+`docs/design/pending/README.md`. Rutas de la app: `/assets/profile/rincon-{dia,lluvia,noche}-{768,1536}.webp`,
+`/assets/memories/farol-256.webp`. Los PNG originales se conservan junto a sus derivados.
+
+### 28.2 Matriz de funciones (ninguna desaparece)
+
+| Función | Antes (1.34.0) | Después (1.35.0) |
+| --- | --- | --- |
+| Volver a la habitación | Cabecera, «Volver» | Igual |
+| Nombre de la biblioteca y propietario | «La biblioteca junto al mar · de X» | «Mi biblioteca · de X» |
+| Buscar y Añadir libro | Fila de búsqueda | Igual |
+| Filtrar por estado | Pestañas Todos/Leyendo/Pendientes/Terminados | Cintas de tela Todos/Leyendo/Pendientes/Leídos |
+| Escaparate / Lomos | Interruptor | Igual |
+| Libro al azar, recomendación, Vitrina | «Herramientas» | Igual |
+| Ordenar arrastrando, menú de edición (clic derecho) | Baldas | Igual |
+| Placa de balda (filtrar por esa balda) | Rótulo de papel | Placa de latón colgada de dos anillas, con contador |
+| Recuerdos (último terminado, cita clavada, más) | Banda crema tras la 1.ª balda | Tablón dentro del mueble, plegable |
+| Mini-figuras de saga | Canto de la tabla | Igual |
+| Ficha: progreso, registrar, valoración, favorito, edición, sinopsis, quitar | `.book-sheet` | Igual, dentro de `NotebookShell` |
+| Diario del libro: sesiones, citas, reseña al terminar | Pestaña Diario | Igual + editar/borrar con confirmación, menú de opciones y borrador |
+| Personalizar colores de cita | `QuoteMeaningsEditor` | Igual |
+| Mi reseña y publicar/retirar | Diario + `PublishControls` | Hoja de carta con clip, firma y estado |
+| Voces de lectores, filtros, spoilers, denunciar, bloquear | Pestaña Lectores | Igual |
+| Calendario, sesiones, estadísticas, reto, cita del día, misiones | Portátil | Igual; «Calendario» pasa a «Mi diario» (Hoy · Calendario · Notas) |
+| Acceso a cada objeto de la habitación | Hotspots + «Mostrar guías» | Igual + señales físicas permanentes |
+| Perfil de otro lector | `ReaderProfile` (lista) | Rincón ilustrado + lecturas + destacados + colecciones |
+
+### 28.3 Sistema visual compartido
+
+Tokens en `library-refresh.css` (`--paper #F8F1E1`, `--paper-shade #E8D8B9`, `--ink #2C1E14`, `--ink-muted
+#6B5948`, `--terracotta #A84F34`, `--sage #78866B`, `--bay #6F8793`, `--brass #B69758`, `--wood #B78049`,
+`--wood-deep #49301F`); los `--lib-*` de 1.34.0 pasan a ser alias para no duplicar sistemas. Contraste medido en
+§28.12. Primitivas reutilizables (`src/components/primitives/`): `PaperSurface`, `NotebookShell`, `FabricTab`,
+`HangingPlaque`, `WaxSeal`, `AnnotationCard`, `ReviewLetter`, `ReaderAdornment`. Textos, fechas, cifras, estrellas e
+iniciales en HTML/SVG. Movimiento: placas `transform-origin: 50% 0` con balanceo 0 → −2° → 1° → 0 en 420 ms al
+interactuar; botones `translateY(1px)` 120 ms; notas `opacity 0→1, translateY(4px→0)` 180 ms; nada continuo;
+`prefers-reduced-motion` lo anula. Cinta en V con `clip-path: polygon(0 0,100% 0,100% 100%,50% 88%,0 100%)` solo en
+la capa visual.
+
+### 28.4 Librería con profundidad
+
+Cámara frontal (sin `rotateX/rotateY` del mueble). Se recupera la geometría de §28.0 en cada libro (perspectiva
+900 px, origen 50 % 30 %, −24°/6°, cantos −36°; e-reader y audiolibro conservan su caja) y la profundidad del hueco:
+fondo más oscuro, laterales interiores, sombra de la tabla superior, superficie superior de la tabla donde apoyan las
+bases, canto frontal pintado (`plank.webp`) y sombra de contacto. Cabecera compacta con cintas de tela; recuerdos en
+un tablón dentro del mueble (nota, postal, «Ver más recuerdos»), plegable y recordado por dispositivo; placas de
+latón mate colgadas de dos anillas en el canto, con espacio reservado bajo la tabla para no tapar libros ni la balda
+siguiente.
+
+### 28.5 Cuaderno y ficha
+
+`NotebookShell`: una página en móvil, encuadernación discreta a la izquierda, cantos de hojas a la derecha, papel
+limpio en el centro (sin marcos por párrafo). Pestañas Ficha · Diario · Lectores. La ficha mantiene todo lo de
+§27.6.
+
+### 28.6 Diario general (Hoy · Calendario · Notas)
+
+En el portátil, la app «Calendario» pasa a «Mi diario». Hoy: fecha editorial, selector si hay varias lecturas
+activas, portada pequeña, progreso y «Registrar lectura» (el mismo `ReadingEntryForm`), «Lo que me llevo de estas
+páginas» (se guarda como anotación del libro, sin sumar páginas), «Mi semana entre páginas» (días con registros
+reales) y últimas anotaciones. Calendario: el `CalendarApp` existente. Notas: todas las anotaciones (las citas de
+los libros) con búsqueda, filtro por libro y por color/categoría, abrir en su ficha (pestaña Diario), editar y
+borrar con confirmación. Una sola fuente de datos (`readingLog` y `book.quotes`).
+
+### 28.7 Anotaciones
+
+Cronología por fecha; registros compactos; anotaciones como recortes con marca de color + etiqueta del usuario;
+página, categoría, editar y menú (ver como carta, borrar con confirmación). Nueva anotación: texto, página (sin
+límite por el progreso y sin sumar páginas), colores con etiqueta e indicador de selección, «Personalizar
+colores», «Guardar anotación». Borrador por libro en `sessionStorage`; «Guardado» solo tras confirmar que el estado
+incluye la nota; si falla, se conserva el texto y se ofrece reintentar.
+
+### 28.8 Mi reseña y lectores
+
+Hoja de carta con clip pequeño, valoración, texto, firma (nombre del ex-libris), «Contiene spoilers» y estado
+inequívoco: «Privada», «Cambios sin publicar» o «Publicada». Sello animado solo tras un guardado o publicación
+confirmados. Lectores: como §27.8; con pocas valoraciones «Primeras valoraciones».
+
+### 28.9 Señales de la habitación
+
+Placas permanentes (HTML sobre la escena, ancladas a coordenadas de la imagen): «Mi biblioteca», «Colección»,
+«Mi lectura», «Calendario», «Tiempo de lectura», «Ambiente», «Mis sagas». Son `aria-hidden` y sin eventos de
+puntero: el control es el objeto (hotspot) entero, que queda debajo y recibe el toque. No tapan libros ni figuras. «Lectores» no se añade: el salón social no
+tiene objeto en esta habitación. Ayuda inicial breve, descartable, recuperable desde «Guías», que destaca solo la
+biblioteca.
+
+### 28.10 Perfil social, recuerdos, colecciones y distinciones
+
+Migración aditiva `20261025150000_huellas_rincon.sql`: `corners` gana `memories` (≤ 3 expuestos, objeto del
+catálogo, libro y dedicatoria), `last_book`, `next_book` (elegida explícitamente) y `signature_books` (≤ 5 con
+frase opcional); `profiles` gana `adornment_id` (preferencia estética, lista cerrada, sin permisos); tablas
+`collections` (individuales; lectura de comunidad solo si `visible`; escritura del dueño) y `distinctions`
+(premios y roles visibles; SIN políticas de escritura: solo desde el SQL Editor; lectura de comunidad). Moderación
+se muestra a partir de `moderators` mediante una función de solo lectura. No hay umbrales de antigüedad, ganadores
+ni desafíos: ningún premio aparece hasta que se asigne de verdad. Guardar una colección no añade sus libros a
+pendientes; «Añadir a pendientes» es por libro y guarda en privado la procedencia (`book.savedFrom`). Sin feeds,
+avisos, postales ni mensajes automáticos.
+
+### 28.11 Criterios de aceptación y pruebas
+
+- Capturas reales a 360 × 800, 390 × 844, 430 × 932 y 1440 × 900 de librería, ficha, diario, habitación y perfil.
+- Libros apoyados y sin recortes, placas sin solapes, nada fuera de pantalla, sin scroll horizontal.
+- Registrar lectura una sola vez; notas crear/editar/filtrar/borrar; valoración y favoritos; publicar/editar/
+  retirar; spoilers, bloquear, denunciar; permisos de perfil entre dos cuentas y anónimo (PGlite); recarga sin
+  pérdida ni duplicados; teclado, foco y movimiento reducido; WebKit de Playwright (no iPhone real).
+- `npm run lint`, `npm run build`, `npm test`, Playwright (local y comunidad).
+
+### 28.12 Contraste medido (WCAG 2.x)
+
+| Combinación | Ratio | Uso permitido |
+| --- | --- | --- |
+| `--ink` sobre `--paper` / `--paper-shade` | 14,32 / 11,48 | texto |
+| `--ink-muted` sobre `--paper` / `--paper-shade` | 5,93 / 4,75 | texto secundario |
+| `--paper` sobre `--terracotta` | 4,87 | texto de botón primario (≥ 4,5) |
+| `--paper` sobre `--wood-deep` | 10,81 | texto sobre madera oscura |
+| `--ink` sobre `--brass` | 5,80 | texto de placa de latón |
+| `--ink` sobre `--wood` | 4,76 | solo texto ≥ 18 px |
+| `--sage`, `--bay`, `--wood`, `--brass` sobre papel | 3,44 / 3,35 / 3,01 / 2,47 | decorativos; nunca texto |
+| `--sage-ink #4F5A43` / `--brass-ink #6E5524` sobre papel | 6,49 / 6,25 | variantes de texto de esos tonos |
+
+### 28.13 Estado de la entrega 1.35.0
+
+Terminado y probado:
+- Recursos organizados (§28.1) con manifiesto y comprobaciones; derivados WebP (≈ 524 KB en total, solo se piden
+  al abrir un perfil) y el service worker los guarda al pedirlos.
+- Tokens y primitivas (§28.3): `PaperSurface`, `NotebookShell`, `FabricTab`, `HangingPlaque`, `WaxSeal`,
+  `AnnotationCard`, `ReviewLetter`, `ReaderAdornment` en `components/primitives/` + `styles/primitives.css`.
+- Librería (§28.4) en `styles/library-depth.css`: geometría de §28.0 recuperada en cada edición, laterales,
+  sombra de la tabla superior, superficie y canto, placas de latón con dos anillas bajo la tabla (espacio
+  reservado), cintas Todos · Leyendo · Pendientes · Leídos, tablón de recuerdos plegable (recordado por dispositivo
+  en `bookshelf:memories-folded`).
+- Ficha como cuaderno (§28.5), estimación y velocidad dentro de «Detalles de mi edición».
+- Anotaciones (§28.7) en `book/Annotations.jsx`: editar (`updateQuote`), menú, borrar con confirmación, borrador en
+  `sessionStorage` (`bookshelf:note-draft:<id>`), «Guardado en este dispositivo» solo tras `persistNow()`, reintento
+  que no duplica.
+- Mi reseña como carta (§28.8) con clip, firma y estado («Privada», «Publicada · con cambios sin publicar»,
+  «Publicada en tu rincón»).
+- «Mi diario» (§28.6) en `panels/DiaryApp.jsx` (`domain/diary.js`).
+- Señales de la habitación (§28.9) en `room/RoomSigns.jsx`, con desplazamiento automático para no quedar fuera del
+  encuadre y ayuda inicial (`bookshelf:signs-hint-done`, vuelve a aparecer al terminar «Guías»).
+- Perfil (§28.10): `CornerScene`, `ReaderProfile` reordenado, `HuellasEditor` y `CollectionsEditor`; servicio
+  tolerante a la falta de migración (`services/huellas.js`); lógica pura en `features/social/huellas.js`.
+
+Pendiente o fuera de alcance (declarado, no simulado):
+- La migración `20261025150000_huellas_rincon.sql` está preparada y probada con PGlite, pero NO aplicada en
+  ningún Supabase: hasta aplicarla, el perfil muestra lo de la entrega 3 y el editor explica que no puede guardar.
+- Ilustraciones de barquito, planta, tintero y mapa, de los cinco adornos y de las seis distinciones: hoy son SVG
+  provisionales (ver `docs/design/pending/README.md`). No se declara fidelidad visual final con ellos.
+- Roles «Creadora» y «Equipo» y premios semanal/mensual: sin reglas ni umbrales en el servidor; se asignan a mano
+  en `distinctions` desde el SQL Editor. Ningún premio se muestra hasta asignarlo.
+- «Mes de lectura» del perfil: no hay un resumen mensual público en el servidor; no se muestra.
+- Doble página del cuaderno en escritorio: se mantiene una página (no mejora la lectura con el contenido actual).
+- Pruebas en WebKit de Playwright; no en un iPhone real.

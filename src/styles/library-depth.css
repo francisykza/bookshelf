@@ -1,0 +1,601 @@
+/* ── 1.35.0 · Librería mediterránea con profundidad (SPEC §28.4) ─────────────────────────────────────────────
+   Se carga después de library-refresh.css. Cámara general frontal (el mueble no gira); cada libro recupera la
+   geometría anterior a la 1.34.0 (commit 1004f10): perspectiva 900 px con origen 50 % 30 %, −24°/6°, y los
+   cantos pintados −36°. Cada hueco: fondo más oscuro, laterales interiores, sombra de la tabla superior,
+   superficie superior de la tabla, canto frontal pintado y sombra de contacto. */
+
+/* ── Cabecera sobre madera ── */
+.lib-head {
+  background:
+    linear-gradient(rgb(40 24 12 / 0.5), rgb(40 24 12 / 0.62)),
+    var(--wood-deep) url('/art/library-refresh/panel.webp') center 30% / cover no-repeat;
+  color: var(--paper);
+  box-shadow:
+    inset 0 -1px 0 rgb(255 236 200 / 0.12),
+    0 5px 10px rgb(28 16 8 / 0.35);
+}
+
+.lib-head .library__title span {
+  color: var(--paper);
+  font-style: normal;
+  font-size: 24px;
+  text-shadow: 0 1px 2px rgb(20 10 4 / 0.5);
+}
+
+.lib-head .library__title small {
+  color: #e8d8b9;
+  font-size: 19px;
+}
+
+/* Cintas de tela: Todos · Leyendo · Pendientes · Leídos */
+.lib-tabs {
+  gap: 6px;
+  padding-top: 2px;
+  border-bottom: 0;
+  overflow: visible;
+}
+
+.lib-tabs .fabric-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 6px 6px;
+}
+
+@media (max-width: 360px) {
+  .lib-tabs .fabric-tab {
+    font-size: 14px;
+    padding-inline: 3px;
+  }
+}
+
+@media (min-width: 900px) {
+  .lib-tabs .fabric-tab {
+    flex: 0 0 auto;
+    min-width: 108px;
+  }
+}
+
+/* ── Huecos del mueble ── */
+.library__shelves {
+  background: var(--wood-deep);
+}
+
+.shelf-row {
+  --cubby-side: 12px;
+  --plank-h: 36px;
+  --plate-zone: 44px;
+  padding-top: 14px;
+  padding-bottom: var(--plate-zone);
+  background-color: #5a3d26;
+  background-image:
+    /* sombra que proyecta la tabla de arriba */
+    linear-gradient(rgb(18 9 3 / 0.62), rgb(18 9 3 / 0.18) 24px, transparent 64px),
+    /* fondo del hueco más oscuro que los libros */
+    linear-gradient(rgb(38 22 10 / 0.34), rgb(38 22 10 / 0.34)),
+    url('/art/library-refresh/panel.webp');
+  background-repeat: no-repeat;
+  background-size:
+    100% 100%,
+    100% 100%,
+    cover;
+  background-position:
+    0 0,
+    0 0,
+    center 18%;
+  box-shadow: none;
+}
+
+.shelf-row[data-panel-slice='1'] {
+  background-position:
+    0 0,
+    0 0,
+    center 52%;
+}
+
+.shelf-row[data-panel-slice='2'] {
+  background-position:
+    0 0,
+    0 0,
+    center 86%;
+}
+
+/* Laterales interiores: dos trapecios que convergen hacia el fondo (cámara frontal centrada) */
+.shelf-row__side {
+  position: absolute;
+  top: 0;
+  bottom: calc(var(--plate-zone) + var(--plank-h) - 14px);
+  z-index: 1;
+  width: var(--cubby-side);
+  pointer-events: none;
+}
+
+.shelf-row__side--left {
+  left: 0;
+  background: linear-gradient(90deg, #8a6140, #6b4a30);
+  clip-path: polygon(0 0, 100% 14px, 100% calc(100% - 6px), 0 100%);
+  box-shadow: inset -2px 0 3px rgb(20 10 4 / 0.3);
+}
+
+.shelf-row__side--right {
+  right: 0;
+  background: linear-gradient(270deg, #5e3f27, #44301d);
+  clip-path: polygon(0 14px, 100% 0, 100% 100%, 0 calc(100% - 6px));
+}
+
+/* La tabla: superficie superior (donde apoyan las bases) + canto frontal pintado */
+.shelf-row__plank {
+  bottom: var(--plate-zone);
+  height: var(--plank-h);
+  border-width: 0 9px;
+  box-shadow:
+    0 6px 10px -2px rgb(18 9 3 / 0.5),
+    0 1px 0 rgb(18 9 3 / 0.4);
+}
+
+/* Unión del fondo con la superficie: línea de contacto oscura detrás de los libros */
+.shelf-row__plank::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: -5px;
+  left: var(--cubby-side);
+  right: var(--cubby-side);
+  height: 6px;
+  background: linear-gradient(rgb(18 9 3 / 0), rgb(18 9 3 / 0.55));
+  pointer-events: none;
+}
+
+/* Libros: base sobre la superficie de la tabla (≈ 9 px por debajo de su borde superior) */
+.shelf-row__scroller {
+  padding-top: 18px;
+  padding-bottom: calc(var(--plank-h) - 9px);
+  padding-inline: calc(var(--cubby-side) + 12px);
+}
+
+@media (min-width: 900px) {
+  .shelf-row {
+    --cubby-side: 18px;
+    --plank-h: 40px;
+  }
+
+  .shelf-row__plank {
+    height: var(--plank-h);
+    bottom: var(--plate-zone);
+  }
+
+  .shelf-row__scroller {
+    padding-inline: calc(var(--cubby-side) + 22px);
+  }
+}
+
+/* ── Libros: geometría recuperada ── */
+.library .book3d {
+  perspective: 900px;
+  perspective-origin: 50% 30%;
+}
+
+.library .book3d__body,
+.library .book3d[data-edition] .book3d__body {
+  transform: rotateY(-24deg) rotateX(6deg);
+}
+
+.library .book3d:hover .book3d__body,
+.library .book3d:focus-visible .book3d__body,
+.library .book3d[data-edition]:hover .book3d__body,
+.library .book3d[data-edition]:focus-visible .book3d__body {
+  transform: rotateY(-8deg) rotateX(4deg) translateY(-8px) translateZ(14px);
+}
+
+.library .book3d[data-edition='sprayed_edges'] .book3d__body {
+  transform: rotateY(-36deg) rotateX(6deg);
+}
+
+.library .book3d[data-edition='sprayed_edges']:hover .book3d__body,
+.library .book3d[data-edition='sprayed_edges']:focus-visible .book3d__body {
+  transform: rotateY(-44deg) rotateX(4deg) translateY(-8px) translateZ(14px);
+}
+
+/* Sombra de contacto suave bajo la base, sobre la superficie de la tabla */
+.library .book3d__shadow {
+  bottom: -5px;
+  left: -2px;
+  width: calc(var(--w) + 10px);
+  height: 9px;
+  background: radial-gradient(ellipse, rgb(18 9 3 / 0.42), transparent 70%);
+}
+
+.library .spine {
+  box-shadow: 2px 3px 4px rgb(18 9 3 / 0.32);
+}
+
+/* ── Placa de latón colgada del canto ── */
+.shelf-row__head {
+  position: absolute;
+  right: 0;
+  bottom: 8px;
+  left: 0;
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  pointer-events: none;
+}
+
+.shelf-row__head .hanging-plaque {
+  width: auto;
+  min-width: 150px;
+  min-height: 44px;
+  margin-top: -6px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.shelf-row__head .hanging-plaque__rings {
+  width: calc(100% - 28px);
+  height: 12px;
+}
+
+.shelf-row__head .hanging-plaque__plate {
+  min-height: 30px;
+  text-transform: uppercase;
+}
+
+.shelf-row__head .hanging-plaque[aria-pressed='true'] .hanging-plaque__plate {
+  box-shadow:
+    inset 0 1px 0 rgb(255 244 214 / 0.55),
+    inset 0 -1px 0 rgb(80 58 20 / 0.45),
+    0 0 0 2px var(--paper),
+    0 0 0 4px var(--ink);
+}
+
+.shelf-row__head .hanging-plaque:focus-visible {
+  outline: none;
+}
+
+.shelf-row__head .hanging-plaque:focus-visible .hanging-plaque__plate {
+  box-shadow: var(--focus-ring);
+}
+
+.shelf-row__head .shelf-row__count {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+/* Las placas antiguas en papel no se pintan dentro de la librería */
+.shelf-row__head .shelf-row__plaque::after {
+  display: none;
+}
+
+/* Las mini-figuras se quedan en el canto, por encima de la zona de la placa */
+.shelf-row .saga-pin {
+  bottom: calc(-1 * var(--plank-h) + 2px);
+}
+
+.shelf-row > .scroll-chevron {
+  top: calc(18px + 14px + var(--row-h) / 2 - 22px);
+}
+
+.shelf-row > .scroll-chevron--left {
+  left: var(--cubby-side);
+}
+
+.shelf-row > .scroll-chevron--right {
+  right: var(--cubby-side);
+}
+
+/* ── Tablón de recuerdos dentro del mueble ── */
+.keepsake-board {
+  position: relative;
+  z-index: 2;
+  padding: 10px calc(var(--cubby-side, 12px) + 8px) 0;
+  background:
+    linear-gradient(rgb(18 9 3 / 0.55), rgb(18 9 3 / 0.12) 20px, transparent 48px),
+    linear-gradient(rgb(38 22 10 / 0.3), rgb(38 22 10 / 0.3)),
+    #5a3d26 url('/art/library-refresh/panel.webp') center 70% / cover no-repeat;
+  color: var(--ink);
+  font-family: var(--lib-body);
+}
+
+.keepsake-board__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.keepsake-board__title {
+  margin: 0;
+  color: var(--paper);
+  font: 500 20px/1 var(--lib-hand);
+  text-shadow: 0 1px 2px rgb(20 10 4 / 0.6);
+}
+
+.keepsake-board__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: rgb(20 10 4 / 0.28);
+  color: var(--paper);
+  font: 500 14px/1 var(--lib-body);
+  cursor: pointer;
+}
+
+.keepsake-board__toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 160ms ease;
+}
+
+.keepsake-board[data-folded='true'] .keepsake-board__toggle svg {
+  transform: rotate(-90deg);
+}
+
+.keepsake-board__toggle:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+}
+
+.keepsake-board__pins {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding: 6px 2px 14px;
+  scrollbar-width: none;
+}
+
+.keepsake-board__pins::-webkit-scrollbar {
+  display: none;
+}
+
+/* Nota de papel clavada con una chincheta */
+.keepsake-note,
+.keepsake-postcard {
+  position: relative;
+  flex: none;
+  box-shadow: 0 3px 8px rgb(18 9 3 / 0.4);
+}
+
+.keepsake-note::before,
+.keepsake-postcard::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #e6cf8f, #9c7f45 60%, #5c4521);
+  box-shadow: 0 1px 2px rgb(18 9 3 / 0.5);
+  pointer-events: none;
+}
+
+.keepsake-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(78vw, 300px);
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--paper) url('/art/library-refresh/journal.webp') 0 0 / 384px repeat;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.keepsake-note__cover {
+  display: block;
+  flex: none;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgb(44 30 20 / 0.24);
+  width: 36px;
+}
+
+.keepsake-note b {
+  display: block;
+  overflow: hidden;
+  font: 600 17px/1.2 var(--lib-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.keepsake-note small {
+  display: block;
+  color: var(--ink-muted);
+  font: 500 17px/1.1 var(--lib-hand);
+}
+
+.keepsake-note:focus-visible,
+.keepsake-postcard button:focus-visible,
+.keepsake-board__more summary:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+}
+
+/* Postal: la cita clavada por el usuario */
+.keepsake-postcard {
+  max-width: min(78vw, 280px);
+  margin: 0;
+  padding: 10px 12px 8px;
+  border-radius: 2px;
+  background: #fffaf0;
+}
+
+.keepsake-postcard blockquote {
+  margin: 0;
+  font: italic 15px/1.45 var(--lib-body);
+}
+
+.keepsake-postcard figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.keepsake-postcard__unpin {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  margin: -8px -10px -8px 0;
+}
+
+.keepsake-board__more {
+  flex: none;
+  align-self: center;
+}
+
+.keepsake-board__more summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: rgb(250 245 232 / 0.94);
+  color: var(--ink);
+  font: 500 15px/1.2 var(--lib-body);
+  list-style: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(18 9 3 / 0.35);
+}
+
+.keepsake-board__more summary::-webkit-details-marker {
+  display: none;
+}
+
+.keepsake-board__more[open] {
+  flex-basis: 100%;
+}
+
+.keepsake-board__more ul {
+  margin: 8px 0 0;
+  padding: 4px 12px;
+  list-style: none;
+  border-radius: 6px;
+  background: var(--lib-paper);
+  box-shadow: 0 4px 12px rgb(18 9 3 / 0.35);
+}
+
+.keepsake-board__more li + li {
+  border-top: 1px solid var(--lib-rule);
+}
+
+.keepsake-board__more li button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 16px/1.3 var(--lib-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.keepsake-board__more li small {
+  flex: none;
+  color: var(--ink-muted);
+  font: 13px/1.3 var(--lib-mono);
+}
+
+.keepsake-board[data-folded='true'] {
+  padding-bottom: 4px;
+}
+
+/* La tabla bajo el tablón, como las de las baldas */
+.keepsake-board__plank {
+  height: 16px;
+  margin: 0 calc(-1 * (var(--cubby-side, 12px) + 8px));
+  border-style: solid;
+  border-width: 0 9px;
+  border-image: url('/art/library-refresh/plank.webp') 0 44 fill / 0 9px stretch;
+  box-shadow: 0 5px 8px -2px rgb(18 9 3 / 0.5);
+}
+
+@media (min-width: 900px) {
+  .keepsake-board {
+    padding-inline: 40px;
+  }
+
+  .keepsake-board__plank {
+    margin-inline: -40px;
+  }
+
+  .keepsake-board__pins {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .keepsake-board__more[open] {
+    flex-basis: auto;
+    position: relative;
+  }
+
+  .keepsake-board__more[open] ul {
+    position: absolute;
+    z-index: 6;
+    width: 320px;
+  }
+}
+
+.keepsake-note__cover img,
+.keepsake-note__cover .gen-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.keepsake-postcard__unpin svg {
+  width: 16px;
+  height: 16px;
+}
+
+.keepsake-board__pins {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+/* Herramientas sobre la madera de la cabecera: papel claro, no tinta */
+.lib-head .lib-btn--ghost {
+  border-color: rgb(248 241 225 / 0.35);
+  color: var(--paper);
+}
+
+.lib-head .lib-btn--ghost:hover,
+.lib-head .lib-btn--ghost[aria-expanded='true'] {
+  background: rgb(248 241 225 / 0.12);
+}
+
+.lib-head .lib-btn--ghost:focus-visible {
+  outline-color: var(--paper);
+}
+
+/* Sobre la madera, el anillo de foco es de papel (la tinta no se vería) */
+.lib-head :is(.lib-btn, .fabric-tab, .lib-toggle button, .shelf-search__input):focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+}
+
+.lib-head .lib-tools__list button:focus-visible {
+  outline: 2px solid var(--ink);
+}

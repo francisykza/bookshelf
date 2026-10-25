@@ -11,6 +11,7 @@ import { fetchProfiles } from '../services/community';
 import { fetchActivity, fetchCorner, saveCorner } from '../services/connections';
 import { sitDownNow, standUpNow, usePresence } from '../hooks/usePresence';
 import { ReaderProfileView } from './ReaderProfile';
+import { CollectionsEditor, HuellasEditor } from './HuellasEditor';
 
 function Gate({ community, children }) {
   if (community.status !== 'ready') return <p className="social-note">Abre «Mi Perfil & Avatar» para empezar.</p>;
@@ -71,6 +72,7 @@ export function CornerTab() {
   const ownedFigures = catalog.filter((f) => owned[f.id]);
 
   return (
+    <>
     <form className="profile-form" onSubmit={save} noValidate>
       <p className="social-note">Elige qué pueden ver otras personas. Tu biblioteca, tus notas y tus avances siguen siendo privados.</p>
       <label className="social-check">
@@ -127,6 +129,9 @@ export function CornerTab() {
         <span role="status">{message}</span>
       </div>
     </form>
+    <HuellasEditor />
+    <CollectionsEditor />
+    </>
   );
 }
 

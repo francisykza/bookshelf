@@ -18,6 +18,7 @@ import { RefreshBase, RefreshLayers } from './RoomRefresh';
 import { BaySailboats } from './BaySailboats';
 import { LaptopScreen, OpenBookPages } from './RoomSurfaces';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
+import { RoomSigns } from './RoomSigns';
 import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
 import { SceneBase } from './SceneBase';
@@ -251,6 +252,9 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           <Hotspot id="lamp" spot={lit('lamp')} guides={guides} hint={13} onHover={onHover} onActivate={toggleLamp} label={{ title: 'Lámpara de latón', text: settings.lampOn ? 'Encendida · tocar para apagar' : 'Apagada · tocar para encender' }} />
           <Hotspot id="lantern" spot={lit('lantern')} guides={guides} hint={15} onHover={onHover} onActivate={toggleCandle} label={{ title: 'Vela de la mesita', text: settings.candleOn ? 'Encendida · tocar para soplar' : 'Apagada · tocar para encenderla' }} />
           <TimeDial timeOfDay={settings.timeOfDay} onOpen={onOpenAtlas} onHover={onHover} spot={lit('sun')} />
+          {/* Señales físicas permanentes (SPEC §28.9): decorativas; el toque llega al objeto de debajo. Con un panel
+              encima (o fuera de la habitación) no se montan: no se ven y no cuestan fotogramas */}
+          {live && <RoomSigns timeOfDay={settings.timeOfDay} guideActive={Boolean(guide?.active)} />}
         </div>
 
       </div>

@@ -243,7 +243,7 @@ function Sanctuary() {
         }}
       />
 
-      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />}
+      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} initialPage={panel.tab} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />}
       {panel?.type === 'laptop' && (
         <LaptopPanel
           onClose={close}
@@ -252,6 +252,7 @@ function Sanctuary() {
           // Una lectura terminada desde el calendario abre su reseña EN LUGAR del calendario (un solo panel)
           onComplete={(bookId, date) => switchPanel({ type: 'review', id: bookId, select: date })}
           onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
+          onOpenBook={(id, tab) => switchPanel({ type: 'book', id, tab })}
           onOpenVault={() => {
             playUiSound('atticOpen');
             openPanel({ type: 'vault' });

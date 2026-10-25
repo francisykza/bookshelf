@@ -95,7 +95,7 @@
 .readers__feel summary:focus-visible,
 .lib-memory__more summary:focus-visible,
 .rating-input__adjust:focus-visible {
-  outline: 2px solid var(--lib-brass);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 

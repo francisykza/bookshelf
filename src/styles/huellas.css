@@ -1,0 +1,439 @@
+/* ── 1.35.0 · Perfil: rincón ilustrado, recuerdos, colecciones y distinciones (SPEC §28.10) ─────────────────── */
+
+/* Escena 3:2 completa (sin recortar); las capas usan porcentajes calibrados sobre el recurso */
+.corner-scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  margin: 0 0 14px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #d9c6a3;
+  box-shadow: 0 6px 18px rgb(44 30 20 / 0.22);
+}
+
+.corner-scene__base {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.corner-scene__shelf,
+.corner-scene__table {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.corner-scene__shelf li,
+.corner-scene__table li {
+  position: absolute;
+  display: flex;
+  align-items: flex-end;
+}
+
+.corner-scene__book {
+  display: block;
+  height: 100%;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 1px 3px 3px 1px;
+  box-shadow:
+    -1px 0 0 rgb(44 30 20 / 0.35),
+    2px 3px 5px rgb(44 30 20 / 0.4);
+}
+
+.corner-scene__book img,
+.corner-scene__book .gen-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.corner-scene__niche {
+  position: absolute;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  aspect-ratio: 2 / 3;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 4px 4px rgb(20 10 4 / 0.4));
+}
+
+.corner-scene__niche .fig-art {
+  width: 100%;
+  height: 100%;
+}
+
+.corner-scene__table li {
+  transform: translateX(-50%);
+}
+
+.corner-scene__memory {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 3px rgb(20 10 4 / 0.45));
+}
+
+.corner-scene__memory:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.memory-object__art,
+.memory-glyph {
+  display: block;
+  height: 100%;
+  width: auto;
+}
+
+/* Hoja de un recuerdo */
+.huella-sheet {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 14px;
+  margin: 0 0 14px;
+  padding: 14px 48px 14px 14px;
+  border-radius: 6px;
+  background: var(--paper) url('/art/library-refresh/journal.webp') 0 0 / 384px repeat;
+  color: var(--ink);
+  box-shadow: 0 4px 14px rgb(44 30 20 / 0.2);
+}
+
+.huella-sheet__object {
+  height: 96px;
+  display: flex;
+  justify-content: center;
+}
+
+.huella-sheet__text h4 {
+  margin: 0 0 4px;
+  font: 600 20px/1.2 var(--lib-display);
+}
+
+.huella-sheet__book {
+  margin: 0 0 6px;
+}
+
+.huella-sheet blockquote {
+  margin: 0 0 10px;
+  font: italic 16px/1.5 var(--lib-body);
+}
+
+.huella-sheet__close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.huella-sheet__close svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Avatar con su adorno debajo */
+.huella-avatar {
+  position: relative;
+  display: inline-grid;
+  justify-items: center;
+}
+
+.huella-avatar .reader-adornment {
+  width: 120%;
+  margin-top: -18px;
+}
+
+.huella-who h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.huella-roles,
+.huella-awards {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.huella-badge-wrap {
+  position: relative;
+}
+
+.huella-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgb(110 78 46 / 0.35);
+  border-radius: 999px;
+  background: var(--lib-paper);
+  color: var(--ink);
+  font: 600 13px/1 var(--lib-body);
+  cursor: pointer;
+}
+
+/* Área táctil de 44 px sin agrandar la insignia */
+.huella-badge::after {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
+}
+
+.huella-badge::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--brass);
+}
+
+.huella-badge[data-mark='sage-lantern']::before {
+  background: var(--sage);
+}
+
+.huella-badge[data-mark='old-key']::before {
+  background: #7b3f61;
+}
+
+.huella-badge[data-mark='sealed-letter']::before {
+  background: #9b3328;
+}
+
+.huella-badge:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.huella-badge__info {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 5;
+  width: min(260px, 70vw);
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--lib-paper);
+  color: var(--ink);
+  font: 14px/1.4 var(--lib-body);
+  box-shadow: 0 6px 16px rgb(44 30 20 / 0.25);
+}
+
+/* Última · Actual · Próxima */
+.huella-trio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+  text-align: center;
+}
+
+.huella-trio__item {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.huella-trio__item figcaption {
+  color: var(--ink-muted);
+  font: 600 14px/1 var(--lib-body);
+}
+
+.huella-trio__item p {
+  display: grid;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.huella-trio__item small {
+  color: var(--ink-muted);
+}
+
+.huella-cover {
+  display: block;
+  width: 64px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 0 3px 8px rgb(44 30 20 / 0.3);
+}
+
+.huella-cover img,
+.huella-cover .gen-cover,
+.huella-collection__covers img,
+.huella-collection__covers .gen-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.huella-signature,
+.huella-collection__books {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.huella-signature li,
+.huella-collection__books li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.huella-signature li > span:nth-child(2),
+.huella-collection__books li > span {
+  display: grid;
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.huella-signature em,
+.huella-collection__books em {
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+
+.huella-added {
+  color: var(--sage-ink);
+  font: 500 14px/1.3 var(--lib-body);
+}
+
+.huella-collection {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: var(--lib-paper);
+  box-shadow: 0 3px 10px rgb(44 30 20 / 0.14);
+}
+
+.huella-collection h5 {
+  margin: 0;
+  font: 600 20px/1.2 var(--lib-display);
+}
+
+.huella-collection header p {
+  margin: 0 0 8px;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+.huella-collection__covers {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.huella-collection__covers li {
+  width: 64px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 0 3px 8px rgb(44 30 20 / 0.3);
+}
+
+.huella-collection__dedication {
+  margin: 0 0 8px;
+  font: italic 15px/1.45 var(--lib-body);
+}
+
+/* Editor */
+.huellas-editor {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgb(110 78 46 / 0.2);
+}
+
+.huellas-editor h4 {
+  margin: 0 0 8px;
+  font: 600 20px/1.2 var(--lib-display);
+}
+
+.huellas-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.huellas-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-bottom: 8px;
+}
+
+.huellas-item .social-input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.huellas-collections {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.huellas-collections li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+/* La explicación de una insignia ocupa su propia línea (nunca se sale de la pantalla) */
+.huella-badge-wrap:has(.huella-badge__info) {
+  flex-basis: 100%;
+}
+
+.huella-badge__info {
+  position: static;
+  display: block;
+  width: auto;
+  margin-top: 6px;
+}
+
+.huella-trio {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.huella-trio .huella-cover {
+  width: min(64px, 100%);
+}
+
+.huella-trio__item p {
+  overflow-wrap: anywhere;
+}

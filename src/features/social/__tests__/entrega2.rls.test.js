@@ -46,7 +46,8 @@ describe('perfiles', () => {
     expect(seenByA.map((r) => r.alias)).toEqual(['Ana lectora', 'Bruno']);
     // Los perfiles no tienen correo ni nada privado que filtrar
     const cols = await db.query("select column_name from information_schema.columns where table_name = 'profiles'");
-    expect(cols.rows.map((r) => r.column_name).sort()).toEqual(['alias', 'avatar_id', 'community_enabled', 'created_at', 'updated_at', 'user_id']);
+    // 1.35.0 añade `adornment_id`: una preferencia estética (sin datos personales ni permisos)
+    expect(cols.rows.map((r) => r.column_name).sort()).toEqual(['adornment_id', 'alias', 'avatar_id', 'community_enabled', 'created_at', 'updated_at', 'user_id']);
   });
 });
 
