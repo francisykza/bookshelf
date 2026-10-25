@@ -110,8 +110,8 @@ test('librería: parte de toda la biblioteca y busca con o sin tildes, conservan
   await page.waitForFunction(() => localStorage.getItem('bookshelf:v1'));
   const st = await stored(page);
   await openLibrary(page);
-  // «Todas» por defecto y los tres estados juntos
-  await expect(page.getByRole('radio', { name: 'Todas' })).toHaveAttribute('aria-checked', 'true');
+  // «Todos» por defecto y los tres estados juntos
+  await expect(page.getByRole('radio', { name: 'Todos' })).toHaveAttribute('aria-checked', 'true');
   const counts = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.shelf-row')].map((r) => [r.dataset.row, r.querySelectorAll('[data-book-id]').length])));
   const expected = { reading: 0, want: 0, read: 0 };
   st.books.forEach((b) => (expected[b.status] += 1));
@@ -139,13 +139,12 @@ test('librería: parte de toda la biblioteca y busca con o sin tildes, conservan
   await page.getByRole('radio', { name: 'Escaparate' }).click();
   // Filtro + búsqueda a la vez; estados vacíos diferenciados
   const other = ['reading', 'want', 'read'].find((s) => s !== target.status);
-  const label = { reading: 'Leyendo', want: 'Pendientes', read: 'Leídos' }[other];
-  // Las cintas se balancean (nunca están «quietas» para Playwright): se pulsan como lo haría un dedo
-  await page.getByRole('radio', { name: label }).click({ force: true });
+  const label = { reading: 'Leyendo', want: 'Pendientes', read: 'Terminados' }[other];
+  await page.getByRole('radio', { name: label }).click();
   await expect(page.locator('.library__empty')).toHaveText('No encontramos ese libro en tu biblioteca');
   await input.fill('');
   await page.getByRole('button', { name: 'Limpiar búsqueda' }).count();
-  await page.getByRole('radio', { name: 'Todas' }).click({ force: true });
+  await page.getByRole('radio', { name: 'Todos' }).click();
   await input.fill('xyz no existe');
   await expect(page.locator('.library__empty')).toHaveText('No encontramos ese libro en tu biblioteca');
   await page.getByRole('button', { name: 'Limpiar búsqueda' }).click();
@@ -225,7 +224,7 @@ test('reseña: 3,75 se guarda y se vuelve a cargar; no concede sellos ni recompe
   // (el libro ya no es la lectura actual: se abre su ficha desde la librería)
   await openLibrary(page);
   await page.locator('.library [data-book-id="hail-mary"]').first().evaluate((el) => (el.querySelector('button') ?? el).click());
-  await expect(page.locator('.open-book .rating-input__value').first()).toHaveText('3,75 / 5');
+  await expect(page.locator('.book-sheet .rating-input__value').first()).toHaveText('3,75 / 5');
 });
 
 test('fallo al guardar: conserva lo escrito, no termina el libro y no abre la reseña; reintentar sí', async ({ page }) => {

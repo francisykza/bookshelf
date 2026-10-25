@@ -13,6 +13,8 @@
 @import './styles/account.css';
 @import './styles/typography.css';
 @import './styles/social.css';
+@import './styles/library-refresh.css';
+@import './styles/library-sheet.css';
 
 /* Sistema "Mediterranean Cozy": papel crema, roble miel, terracota, azul bahía y verde hiedra */
 @theme {

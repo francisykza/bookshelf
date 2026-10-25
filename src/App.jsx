@@ -243,7 +243,7 @@ function Sanctuary() {
         }}
       />
 
-      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} />}
+      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />}
       {panel?.type === 'laptop' && (
         <LaptopPanel
           onClose={close}
@@ -258,7 +258,7 @@ function Sanctuary() {
           }}
         />
       )}
-      {panel?.type === 'review' && <ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel({ type: 'laptop', tab: 'calendar', select: panel.select })} />}
+      {panel?.type === 'review' && <ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel(panel.tab === 'book' ? { type: 'book', id: panel.id } : { type: 'laptop', tab: 'calendar', select: panel.select })} />}
       {panel?.type === 'vault' && (
         <FiguresVaultModal
           onClose={close}

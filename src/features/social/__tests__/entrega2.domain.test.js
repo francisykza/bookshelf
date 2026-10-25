@@ -79,7 +79,7 @@ describe('estadísticas', () => {
     expect(statsView(null).headline).toBe('Esta historia todavía espera su primera opinión');
     expect(statsView({ reviews: 3, ratings: 3, average: '3.833333' }).headline).toBe('Primeras valoraciones: 3 lectores');
     expect(statsView({ reviews: 2, ratings: 0, average: null }).headline).toBe('Todavía nadie la ha puntuado');
-    expect(statsView({ reviews: 1, ratings: 1, average: '4' }).headline).toBe('Primeras valoraciones: 1 lector');
+    expect(statsView({ reviews: 1, ratings: 1, average: '4' }).headline).toBe('Una primera voz para esta historia');
     const v = statsView({ reviews: 7, ratings: 7, average: '3.6785714', band_4: 5, band_3: 2, pace_n: 2, pace_avg: '3.5' });
     expect(v.averageText).toBe('3,7');
     expect(v.average).toBeCloseTo(3.6785714);

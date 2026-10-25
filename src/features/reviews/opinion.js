@@ -80,7 +80,9 @@ export function statsView(stats) {
       ? 'Esta historia todavía espera su primera opinión'
       : ratings === 0
         ? 'Todavía nadie la ha puntuado'
-        : ratings < 5
+        : ratings === 1
+          ? 'Una primera voz para esta historia'
+          : ratings < 5
           ? `Primeras valoraciones: ${ratings} ${ratings === 1 ? 'lector' : 'lectores'}`
           : `${ratings} lectores han puntuado`;
   return {

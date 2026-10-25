@@ -73,6 +73,7 @@ test('recomendación local sin conexión, sin IA remota y sin tocar los datos', 
     if (['fetch', 'xhr', 'websocket', 'eventsource'].includes(req.resourceType())) requests.push(req.url());
   });
   await context.setOffline(true);
+  await page.getByRole('button', { name: 'Herramientas' }).click();
   await page.getByRole('button', { name: 'Pedir una recomendación' }).click();
   const input = page.getByLabel('¿Qué te apetece leer?');
   await expect(input).toBeVisible();
@@ -92,7 +93,7 @@ test('recomendación local sin conexión, sin IA remota y sin tocar los datos', 
   await shot(page, info, 'ia1-recomendacion');
   // Abrir la ficha desde el resultado
   await result.locator('.librarian__books li button').first().click();
-  await expect(page.locator('.open-book')).toBeVisible();
+  await expect(page.locator('.book-sheet')).toBeVisible();
   await context.setOffline(false);
   // Sin pérdida ni reinicio de datos
   const after = await page.evaluate(() => localStorage.getItem('bookshelf:v1'));
@@ -103,6 +104,7 @@ test('recomendación local sin conexión, sin IA remota y sin tocar los datos', 
 
 test('el panel de recomendaciones es usable en móvil y con teclado', async ({ page }) => {
   await openShelf(page);
+  await page.getByRole('button', { name: 'Herramientas' }).click();
   await page.getByRole('button', { name: 'Pedir una recomendación' }).click();
   const input = page.getByLabel('¿Qué te apetece leer?');
   const metrics = await page.evaluate(() => {

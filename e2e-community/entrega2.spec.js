@@ -45,7 +45,7 @@ async function saveProfile(page, alias, avatarLabel) {
 async function openCurrentBook(page) {
   await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.open-book')).toBeVisible();
+  await expect(page.locator('.book-sheet')).toBeVisible();
 }
 
 test('perfil: alias elegido y avatar; nunca el correo; persiste al recargar', async ({ page }, info) => {
@@ -146,7 +146,7 @@ test('cambiar el avatar actualiza las reseñas sin tocar libros ni opiniones', a
   const card = page.getByLabel('Voces de lectores').locator('.review-card');
   await expect(card).toContainText('Bruno');
   await expect(card.locator('.reader-avatar img')).toHaveAttribute('src', /lector-farol\.webp$/);
-  await expect(page.getByLabel('Voces de lectores')).toContainText('Primeras valoraciones: 1 lector');
+  await expect(page.getByLabel('Voces de lectores')).toContainText('Una primera voz para esta historia');
   await expect(page.locator('.readers__average')).toHaveText('3,8');
   const before = JSON.stringify(mock.db.public_reviews);
   // Bruno cambia de avatar (otro dispositivo): al volver a abrir Lectores, su reseña lo refleja
@@ -202,7 +202,7 @@ test('dos cuentas con el mismo libro (mismo ISBN, añadido distinto) ven la mism
     await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
     await expect(page.locator('.library[data-open="true"]')).toBeVisible();
     await page.locator('.library [data-book-id="circe"]').first().evaluate((el) => (el.querySelector('button') ?? el).click());
-    await expect(page.locator('.open-book')).toBeVisible();
+    await expect(page.locator('.book-sheet')).toBeVisible();
   };
   // A publica (sin referencia de obra guardada: se resuelve por ISBN al publicar)
   const a = await (await browser.newContext()).newPage();

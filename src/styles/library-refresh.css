@@ -1,0 +1,895 @@
+/* ── 1.34.0 · Librería, ficha, diario y reseñas con texturas gouache (SPEC §27) ─────────────────────────
+   Se carga la última: sustituye la presentación de la librería y de la ficha sin tocar la habitación, el
+   salón ni el Ático. Texturas en /art/library-refresh/ (derivados de `npm run art:library`). */
+:root {
+  --lib-paper: #faf5e8;
+  --lib-paper-2: #f8f1e1;
+  --lib-ink: #2c1e14;
+  --lib-ink-soft: #6a5847;
+  --lib-brass: #c59b27;
+  --lib-terracotta: #b86343;
+  --lib-sage: #69764f;
+  --lib-wood: #79583d;
+  --lib-wood-dark: #59432f;
+  --lib-line: rgb(110 78 46 / 0.28);
+  --lib-rule: rgb(110 78 46 / 0.18);
+  --lib-display: 'Cormorant Garamond', 'Cormorant', Georgia, serif;
+  --lib-body: 'Lora', Georgia, serif;
+  --lib-hand: 'Caveat', 'Segoe Print', cursive;
+  --lib-mono: 'JetBrains Mono', 'Courier Prime', monospace;
+}
+
+/* ── Mueble ── */
+.library {
+  padding: 0;
+  background: var(--lib-wood-dark);
+}
+
+.library::after {
+  display: none;
+}
+
+.library__case {
+  width: 100%;
+  max-width: 1180px;
+  min-height: 0;
+  margin: 0 auto;
+  border-radius: 0;
+  background: var(--lib-wood-dark);
+  box-shadow: none;
+}
+
+@media (min-width: 900px) {
+  .library {
+    padding: 16px 24px;
+  }
+
+  .library__case {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgb(44 30 20 / 0.24);
+  }
+}
+
+/* ── Cabecera compacta ── */
+.lib-head {
+  position: relative;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+  background: var(--lib-paper) url('/art/library-refresh/journal.webp') 0 0 / 384px repeat;
+  color: var(--lib-ink);
+  box-shadow: 0 5px 10px rgb(44 30 20 / 0.2);
+  font-family: var(--lib-body);
+}
+
+.lib-head__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lib-head .library__title {
+  order: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+  line-height: 1.05;
+}
+
+.lib-head .library__title span {
+  display: block;
+  overflow: hidden;
+  color: var(--lib-ink);
+  font: italic 600 22px/1.05 var(--lib-display);
+  text-overflow: ellipsis;
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+.lib-head .library__title small {
+  display: block;
+  margin-top: 1px;
+  color: var(--lib-ink-soft);
+  font: 500 18px/1 var(--lib-hand);
+}
+
+.lib-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--lib-line);
+  border-radius: 8px;
+  background: var(--lib-paper);
+  color: var(--lib-ink);
+  font: 500 15px/1.2 var(--lib-body);
+  box-shadow: 0 2px 6px rgb(44 30 20 / 0.12);
+  cursor: pointer;
+}
+
+.lib-btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.lib-btn:hover {
+  background: #fffaf0;
+}
+
+.lib-btn:focus-visible,
+.lib-tab:focus-visible,
+.lib-toggle button:focus-visible,
+.lib-tools__list button:focus-visible,
+.shelf-row__plate:focus-visible {
+  outline: 2px solid var(--lib-brass);
+  outline-offset: 2px;
+}
+
+.lib-btn--back {
+  padding: 0 12px 0 10px;
+}
+
+.lib-btn--accent {
+  border-color: transparent;
+  background: var(--lib-terracotta);
+  color: #fffaf0;
+}
+
+.lib-btn--accent:hover {
+  background: #a9573a;
+}
+
+.lib-btn--ghost {
+  background: transparent;
+  box-shadow: none;
+}
+
+.lib-head .shelf-search {
+  flex: 1 1 160px;
+  order: 0;
+  max-width: none;
+  min-width: 0;
+}
+
+.lib-head__row--search {
+  flex-wrap: wrap;
+}
+
+/* Pestañas de papel, texto horizontal */
+.lib-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--lib-line);
+}
+
+.lib-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.lib-tab {
+  --tab: var(--lib-ink-soft);
+  position: relative;
+  flex: 1 0 auto;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--lib-line);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--lib-paper-2);
+  color: var(--lib-ink-soft);
+  font: 500 15px/1.2 var(--lib-body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lib-tab[data-status='reading'] {
+  --tab: var(--lib-terracotta);
+}
+
+.lib-tab[data-status='want'] {
+  --tab: var(--lib-brass);
+}
+
+.lib-tab[data-status='read'] {
+  --tab: var(--lib-sage);
+}
+
+.lib-tab::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 10px;
+  right: 10px;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: var(--tab);
+  opacity: 0.45;
+}
+
+.lib-tab[aria-checked='true'] {
+  background: var(--lib-paper);
+  color: var(--lib-ink);
+  font-weight: 600;
+  box-shadow: 0 -2px 6px rgb(44 30 20 / 0.08);
+}
+
+.lib-tab[aria-checked='true']::before {
+  left: 0;
+  right: 0;
+  opacity: 1;
+}
+
+@media (max-width: 440px) {
+  .lib-tab {
+    padding: 0 6px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 340px) {
+  .lib-tabs {
+    gap: 4px;
+  }
+
+  .lib-tab {
+    padding: 0 4px;
+    font-size: 13.5px;
+  }
+}
+
+/* Vista y herramientas */
+.lib-toggle {
+  display: inline-flex;
+  padding: 0;
+  border: 1px solid var(--lib-line);
+  border-radius: 8px;
+  background: var(--lib-paper-2);
+}
+
+.lib-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--lib-ink-soft);
+  font: 500 14px/1 var(--lib-body);
+  cursor: pointer;
+}
+
+.lib-toggle button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.lib-toggle button[aria-checked='true'] {
+  background: var(--lib-paper);
+  color: var(--lib-ink);
+  box-shadow: 0 1px 3px rgb(44 30 20 / 0.16);
+}
+
+.lib-tools {
+  position: relative;
+  margin-left: auto;
+}
+
+.lib-tools__caret {
+  width: 14px !important;
+  height: 14px !important;
+  transition: transform 160ms ease;
+}
+
+.lib-tools [aria-expanded='true'] .lib-tools__caret {
+  transform: rotate(180deg);
+}
+
+.lib-tools__list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: max-content;
+  min-width: 230px;
+  max-width: calc(100vw - 24px);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--lib-line);
+  border-radius: 8px;
+  background: var(--lib-paper);
+  box-shadow: 0 10px 28px rgb(44 30 20 / 0.24);
+}
+
+.lib-tools__list button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--lib-ink);
+  font: 500 15px/1.2 var(--lib-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lib-tools__list button:hover {
+  background: var(--lib-paper-2);
+}
+
+.lib-tools__list svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--lib-wood);
+}
+
+/* El dado vive dentro del menú: sin halo, sin giro de reposo */
+.lib-tools__list .shelf-die {
+  width: 100%;
+  height: auto;
+  filter: none;
+  transform: none;
+}
+
+.lib-tools__list .shelf-die::before {
+  display: none;
+}
+
+.lib-tools__list .shelf-die svg {
+  width: 22px;
+  height: 22px;
+}
+
+.lib-tools__list .shelf-die:hover,
+.lib-tools__list .shelf-die:focus-visible {
+  transform: none;
+}
+
+@media (min-width: 900px) {
+  .lib-head {
+    flex-flow: row wrap;
+    align-items: center;
+    column-gap: 12px;
+    padding: 12px 20px 10px;
+  }
+
+  .lib-head__row--title {
+    flex: 1 1 360px;
+  }
+
+  .lib-head__row--tools {
+    flex: 0 0 auto;
+  }
+
+  .lib-head__row--search {
+    flex: 1 1 420px;
+    max-width: 560px;
+    order: 3;
+  }
+
+  .lib-tabs {
+    order: 4;
+    flex: 0 1 auto;
+    margin-left: auto;
+    border-bottom: 0;
+  }
+
+  .lib-tab {
+    border-bottom: 1px solid var(--lib-line);
+    border-radius: 8px;
+  }
+}
+
+/* ── Baldas modulares ── */
+.library__shelves {
+  display: block;
+  padding: 0 0 max(16px, env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+.library__module + .library__module {
+  margin-top: 0;
+}
+
+.shelf-row {
+  position: relative;
+  isolation: isolate;
+  margin: 0;
+  padding-top: 8px;
+  background-color: var(--lib-wood);
+  background-image: url('/art/library-refresh/panel.webp');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center 18%;
+  box-shadow: inset 0 12px 22px rgb(44 30 20 / 0.2);
+}
+
+.shelf-row[data-panel-slice='1'] {
+  background-position: center 52%;
+}
+
+.shelf-row[data-panel-slice='2'] {
+  background-position: center 86%;
+}
+
+.shelf-row::before {
+  display: none;
+}
+
+.shelf-row__head {
+  position: relative;
+  z-index: 3;
+  padding: 0 max(12px, env(safe-area-inset-left));
+}
+
+.library[data-open] .shelf-row__plate,
+.shelf-row__plate {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--lib-line);
+  border-radius: 6px;
+  background: var(--lib-paper);
+  color: var(--lib-ink);
+  font: 600 15px/1 var(--lib-body);
+  letter-spacing: 0;
+  text-transform: none;
+  transform: none;
+  box-shadow: 0 2px 6px rgb(44 30 20 / 0.18);
+}
+
+.shelf-row__plate::before {
+  display: none;
+}
+
+.shelf-row__plate:hover {
+  transform: none;
+  background: #fffaf0;
+}
+
+.shelf-row__plate[aria-pressed='true'] {
+  background: var(--lib-paper);
+  box-shadow:
+    0 0 0 2px var(--lib-brass),
+    0 2px 6px rgb(44 30 20 / 0.18);
+}
+
+/* El rótulo se amplía con un área táctil de 44 px sin crecer a la vista */
+.shelf-row__plate {
+  position: relative;
+}
+
+.shelf-row__plate::after {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: -6px 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.shelf-row__count {
+  font: 500 13px/1 var(--lib-mono);
+  color: var(--lib-ink-soft);
+}
+
+.shelf-row__scroller {
+  position: relative;
+  z-index: 2;
+  padding: 14px max(16px, env(safe-area-inset-left)) 34px;
+  scroll-padding-inline: 16px;
+}
+
+.shelf-row__track {
+  gap: 16px;
+}
+
+.library[data-open] .shelf-row__track:has(.spine) {
+  gap: 3px;
+}
+
+/* Tabla: tres cortes con remates de 44 px del original; 30 px de grosor en móvil, 34 en escritorio.
+   Los libros apoyan a 7 px de su borde superior (línea base medida: 34 de 142). */
+.shelf-row__plank {
+  position: absolute;
+  right: 0;
+  bottom: 11px;
+  left: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  height: 30px;
+  border-style: solid;
+  border-width: 0 9px;
+  border-image: url('/art/library-refresh/plank.webp') 0 44 fill / 0 9px stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: 0 5px 10px rgb(44 30 20 / 0.2);
+}
+
+.shelf-row__plank::before {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .shelf-row__plank {
+    height: 34px;
+    border-width: 0 11px;
+    border-image-width: 0 11px;
+    bottom: 7px;
+  }
+
+  .shelf-row__scroller {
+    padding-inline: 28px;
+  }
+
+  .shelf-row__head {
+    padding-inline: 28px;
+  }
+}
+
+.shelf-row__empty {
+  align-self: center;
+  margin: 0 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgb(250 245 232 / 0.92);
+  color: var(--lib-ink-soft);
+  font: italic 16px/1.4 var(--lib-body);
+}
+
+.add-slot {
+  width: clamp(88px, 24vw, 112px);
+  border: 2px dashed rgb(250 245 232 / 0.7);
+  border-radius: 6px;
+  background: rgb(44 30 20 / 0.18);
+  color: var(--lib-paper);
+  font: 500 15px/1.2 var(--lib-body);
+}
+
+.shelf-row > .scroll-chevron {
+  top: calc(8px + 32px + 14px + var(--row-h) / 2 - 22px);
+  color: var(--lib-paper);
+  opacity: 0.6;
+}
+
+.shelf-row > .scroll-chevron--left {
+  left: 0;
+}
+
+.shelf-row > .scroll-chevron--right {
+  right: 0;
+}
+
+/* Mini-figuras de 34 × 34 en el canto de la tabla */
+.shelf-row .saga-pin {
+  bottom: -32px;
+  box-shadow:
+    0 0 0 1px rgb(60 35 5 / 0.6),
+    0 2px 4px rgb(44 30 20 / 0.35);
+}
+
+/* ── Libros ── */
+.book3d {
+  perspective: 1000px;
+  perspective-origin: 50% 50%;
+}
+
+.library .book3d__body,
+.library .book3d[data-edition] .book3d__body {
+  transform: rotateY(-5deg);
+}
+
+.library .book3d:hover .book3d__body,
+.library .book3d:focus-visible .book3d__body,
+.library .book3d[data-edition]:hover .book3d__body,
+.library .book3d[data-edition]:focus-visible .book3d__body {
+  transform: rotateY(-5deg) translateY(-4px);
+}
+
+.library .book3d__shadow {
+  bottom: -4px;
+  left: 0;
+  width: calc(var(--w) + 4px);
+  height: 8px;
+  background: radial-gradient(ellipse, rgb(44 30 20 / 0.24), transparent 70%);
+}
+
+/* Menos adornos repetidos: sin brillo de barniz ni pestañas de citas en cada libro */
+.library .book3d__sheen,
+.library .book-tabs {
+  display: none;
+}
+
+.library .cover-img,
+.lib-memory .cover-img {
+  filter: none;
+}
+
+.library .book3d:focus-visible {
+  outline: 2px solid var(--lib-brass);
+  outline-offset: 4px;
+}
+
+/* ── Recuerdo destacado ── */
+.lib-memory {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 12px max(12px, env(safe-area-inset-left));
+  background: var(--lib-paper) url('/art/library-refresh/journal.webp') 0 0 / 384px repeat;
+  color: var(--lib-ink);
+  box-shadow: 0 5px 10px rgb(44 30 20 / 0.2);
+  font-family: var(--lib-body);
+}
+
+.lib-memory__title {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--lib-ink-soft);
+  font: 600 13px/1 var(--lib-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lib-memory__book {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lib-memory__cover {
+  display: block;
+  flex: none;
+  width: 44px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgb(44 30 20 / 0.24);
+}
+
+.lib-memory__cover img,
+.lib-memory__cover .gen-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lib-memory__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lib-memory__text b {
+  font: 600 18px/1.2 var(--lib-display);
+}
+
+.lib-memory__text small {
+  color: var(--lib-ink-soft);
+  font-size: 14px;
+}
+
+.lib-memory__quote {
+  flex: 1 1 240px;
+  margin: 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--lib-brass);
+}
+
+.lib-memory__quote blockquote {
+  margin: 0;
+  font: italic 16px/1.5 var(--lib-body);
+}
+
+.lib-memory__quote figcaption {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--lib-ink-soft);
+  font-size: 14px;
+}
+
+.lib-memory__unpin {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px 0;
+  border: 0;
+  background: none;
+  color: var(--lib-ink-soft);
+  cursor: pointer;
+}
+
+.lib-memory__unpin svg {
+  width: 16px;
+  height: 16px;
+}
+
+.lib-memory__more {
+  flex-basis: 100%;
+}
+
+.lib-memory__more summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--lib-ink);
+  font: 500 15px/1.2 var(--lib-body);
+  cursor: pointer;
+}
+
+.lib-memory__more ul {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lib-memory__more li + li {
+  border-top: 1px solid var(--lib-rule);
+}
+
+.lib-memory__more button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lib-ink);
+  font: 16px/1.3 var(--lib-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lib-memory__more small {
+  flex: none;
+  color: var(--lib-ink-soft);
+  font: 13px/1.3 var(--lib-mono);
+}
+
+@media (min-width: 900px) {
+  .lib-memory {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 24px;
+    padding: 10px 28px;
+  }
+
+  .lib-memory__title {
+    flex: none;
+  }
+
+  .lib-memory__more {
+    flex: none;
+    position: relative;
+    margin-left: auto;
+  }
+
+  .lib-memory__more[open] ul {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 5;
+    width: 320px;
+    padding: 4px 12px;
+    border: 1px solid var(--lib-line);
+    border-radius: 8px;
+    background: var(--lib-paper);
+    box-shadow: 0 10px 28px rgb(44 30 20 / 0.24);
+  }
+}
+
+/* ── Hiedra: detrás de los libros, nunca sobre controles ── */
+.lib-ivy {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  width: clamp(88px, 24vw, 120px);
+  aspect-ratio: 336 / 512;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+
+.lib-ivy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/art/library-refresh/ivy.webp') 0 0 / 100% 100% no-repeat;
+}
+
+.lib-ivy[data-side='left'] {
+  left: 0;
+}
+
+.lib-ivy[data-side='right'] {
+  right: 0;
+  transform-origin: 100% 0;
+}
+
+.lib-ivy[data-side='right']::before {
+  transform: scaleX(-1);
+}
+
+@keyframes lib-ivy-sway {
+  0%,
+  100% {
+    rotate: 0deg;
+    translate: 0 0;
+  }
+  50% {
+    rotate: 0.8deg;
+    translate: 0 2px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .library[data-phase='shelf'] .lib-ivy {
+    animation: lib-ivy-sway 16s ease-in-out infinite;
+    animation-play-state: paused;
+  }
+
+  .library[data-phase='shelf'] .lib-ivy[data-visible='true'] {
+    animation-play-state: running;
+  }
+}
+
+html[data-motion='reduced'] .lib-ivy {
+  animation: none !important;
+}
+
+/* El estado vacío vive dentro del scroll de las baldas */
+.library__shelves > .library__empty {
+  margin: 12px auto;
+}
+
+/* En 320–360 px la vista se queda en iconos (cada botón conserva su nombre accesible) */
+@media (max-width: 360px) {
+  .lib-toggle button span {
+    display: none;
+  }
+}

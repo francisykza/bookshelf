@@ -236,7 +236,7 @@ test('libro: portadilla editorial de la lectura actual, sin portada pegada', asy
   // Tocar el libro abre su ficha (donde sí está la portada original)
   await page.locator('.hotspot[data-id="book"]').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.open-book')).toBeVisible();
+  await expect(page.locator('.book-sheet')).toBeVisible();
 });
 
 test('libro: título largo, sin portada, sin total de páginas y sin lectura', async ({ page }) => {

@@ -1,20 +1,19 @@
-// `SHELF_VIEW` (SPEC §3.3): el mueble de roble de la ilustración visto de cerca, con la textura de madera
-// recortada de la propia imagen, postales clavadas, macetas y hiedra. Tres baldas (Leyendo ahora con el
-// la mini-figura de su saga bajo cada libro, Pendientes y Leídos) y controles como placas de latón.
+// `SHELF_VIEW` (SPEC §27.3–27.5): la librería como un mueble modular de madera gouache. Cabecera compacta
+// (volver, buscador, pestañas de estado, vista y herramientas), una balda por estado con su tramo de panel y su
+// tabla, un único recuerdo destacado tras la primera balda y, como mucho, dos ramas de hiedra detrás de los libros.
 import { RatingStars } from '../book/Rating';
-import { ArrowLeft, BookOpen, Library, Plus, Search, Sparkles, Trophy, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronDown, Library, Plus, Search, Sparkles, Trophy, Wrench, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
 import { ratingText, shelfSort } from '../../domain/books';
 import { EMPTY_TEXT, filterLibrary, libraryEmptyState } from '../../domain/library';
 import { PRESET_SAGAS } from '../../domain/sagas';
-import { SCENE_H, SCENE_SRC, SCENE_W, WOOD_PLANK, WOOD_SIDE } from '../../scene/sceneMap';
+import { SCENE_H, SCENE_SRC, SCENE_W } from '../../scene/sceneMap';
 import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
 import { MiniFigurePin } from '../figures/MiniFigurePin';
 import { figureForBook, useFigureCatalog } from '../figures/figureCatalog';
 import { EditionMenu } from '../book/EditionPicker';
-import { ElegantQuoteCard } from '../quotes/ElegantQuoteCard';
 import { BookItem, Cover } from './BookItem';
 import { ScrollChevron } from './ScrollChevron';
 
@@ -30,17 +29,8 @@ export function cropStyle(region) {
 const ROWS = [
   { id: 'reading', label: 'Leyendo ahora', empty: 'Ningún libro abierto: elige uno de Pendientes' },
   { id: 'want', label: 'Pendientes', empty: 'Tu lista de deseos está vacía' },
-  { id: 'read', label: 'Leídos', empty: 'Aquí irán los libros terminados' },
+  { id: 'read', label: 'Terminados', empty: 'Aquí irán los libros terminados' },
 ];
-
-/** Sombras de hojas de hiedra sobre el mueble, más densas hacia el balcón (derecha). */
-const SHELF_LEAVES = Array.from({ length: 22 }, (_, i) => {
-  const r = (n) => {
-    const v = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
-    return v - Math.floor(v);
-  };
-  return [520 + r(1) * 480, r(2) * 700, 18 + r(3) * 30, 8 + r(4) * 12, r(5) * 180];
-});
 
 /** Baldas por estado, cada una en su orden de estantería. */
 function groupByStatus(list) {
@@ -51,10 +41,10 @@ function groupByStatus(list) {
 }
 
 const FILTERS = [
-  { id: 'all', label: 'Todas', color: '#f3e3c2' },
-  { id: 'reading', label: 'Leyendo', color: '#c4623a' },
-  { id: 'want', label: 'Pendientes', color: '#d9a441' },
-  { id: 'read', label: 'Leídos', color: '#5d8a3c' },
+  { id: 'all', label: 'Todos' },
+  { id: 'reading', label: 'Leyendo' },
+  { id: 'want', label: 'Pendientes' },
+  { id: 'read', label: 'Terminados' },
 ];
 
 const DIE_DOTS = {
@@ -66,103 +56,83 @@ const DIE_DOTS = {
   6: [[12, 11], [28, 11], [12, 20], [28, 20], [12, 29], [28, 29]],
 };
 
-/** Hiedra que cuelga del copete sobre la primera balda. */
-const IVY_STRANDS = [0.1, 0.46, 0.82];
+const validDate = (iso) => Boolean(iso) && !Number.isNaN(new Date(iso).getTime());
+const longDate = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
-function IvyStrand({ length, delay }) {
-  const leaves = Math.round(length / 14);
+/**
+ * Recuerdo destacado (SPEC §27.5): el último libro terminado con fecha fiable, su valoración y la cita solo si
+ * la clavó el usuario. Los demás terminados, plegados. Sin nada que recordar no se pinta nada.
+ */
+function MemoryHighlight({ books, onOpenBook, pinned, onUnpin }) {
+  const dated = books.filter((b) => validDate(b.finishedAt)).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
+  const [last, ...rest] = dated;
+  if (!last && !pinned) return null;
   return (
-    <svg className="ivy-strand" viewBox={`0 0 40 ${length}`} style={{ height: length, animationDelay: `${delay}s` }} aria-hidden="true">
-      <path d={`M20 0 C14 ${length * 0.3} 26 ${length * 0.6} 19 ${length}`} stroke="#4a6b2c" strokeWidth="1.6" fill="none" />
-      {Array.from({ length: leaves }, (_, i) => {
-        const y = 8 + i * 14;
-        const side = i % 2 ? 1 : -1;
-        const x = 20 + Math.sin(i * 1.7) * 3;
-        return (
-          <path
-            key={i}
-            d={`M${x} ${y} c${side * 6} -6 ${side * 14} -2 ${side * 13} 5 c${-side * 4} 4 ${-side * 10} 3 ${-side * 13} -5 Z`}
-            fill={i % 3 === 0 ? '#9cc15a' : i % 3 === 1 ? '#6f9a3c' : '#577f30'}
-            stroke="#2f4a1a"
-            strokeWidth="0.6"
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-function Plant({ variant }) {
-  return (
-    <svg className={`plant plant--${variant}`} viewBox="0 0 80 90" aria-hidden="true">
-      <g className="plant__leaves">
-        {variant === 'fern'
-          ? [-58, -34, -12, 10, 32, 56].map((r) => (
-              <path key={r} d="M40 58 C36 40 38 22 40 6 C44 22 46 40 40 58 Z" fill="#6f9a3c" stroke="#2f4a1a" strokeWidth="0.7" transform={`rotate(${r} 40 58)`} />
-            ))
-          : [
-              [24, 30, -30],
-              [52, 26, 28],
-              [38, 18, 0],
-              [18, 44, -60],
-              [60, 42, 58],
-            ].map(([x, y, r]) => (
-              <ellipse key={x} cx={x} cy={y} rx="10" ry="15" fill="#4f7a3a" stroke="#2a4519" strokeWidth="0.8" transform={`rotate(${r} ${x} ${y})`} />
-            ))}
-      </g>
-      <path d="M20 58 H60 L55 86 H25 Z" fill="#c4623a" stroke="#6b2e16" strokeWidth="1.2" />
-      <path d="M18 56 H62 V63 H18 Z" fill="#d97a4e" stroke="#6b2e16" strokeWidth="1.2" />
-      <path d="M26 70 Q40 74 54 70" stroke="#f0b48a" strokeWidth="1" fill="none" opacity="0.6" />
-    </svg>
-  );
-}
-
-/** Muro de recuerdos: polaroids clavadas de los libros que has terminado, con fecha y estrellas. */
-function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
-  const recent = [...books].sort((a, b) => (b.finishedAt || '').localeCompare(a.finishedAt || '')).slice(0, 8);
-  return (
-    <aside className="memory-board" aria-label="Muro de recuerdos: libros leídos">
-      <span className="memory-board__title">Recuerdos</span>
-      {/* La cita que dejaste clavada en la estantería */}
-      {pinned && (
-        <div className="pinned-quote">
-          <span className="memory-polaroid__pin" aria-hidden="true" />
-          <ElegantQuoteCard text={pinned.text} author={pinned.author} work={pinned.work} compact animate={false} />
-          <button type="button" className="pinned-quote__off" onClick={onUnpin} aria-label="Desclavar la cita de la estantería" title="Desclavar">
-            ×
-          </button>
-        </div>
-      )}
-      {recent.length === 0 && <p className="memory-board__empty">Aquí irán las fotos de los libros que termines.</p>}
-      {recent.map((b, i) => (
-        <button
-          key={b.id}
-          type="button"
-          className="memory-polaroid"
-          style={{ '--tilt': `${((i * 37) % 9) - 4}deg` }}
-          onClick={() => onOpenBook(b)}
-          aria-label={`${b.title}, leído el ${b.finishedAt ? new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) : ''}${b.rating ? `, ${ratingText(b.rating)}` : ''}`}
-        >
-          <span className="memory-polaroid__pin" aria-hidden="true" />
-          <span className="memory-polaroid__photo">
-            <Cover book={b} />
+    <aside className="lib-memory" aria-label="Recuerdos">
+      <h2 className="lib-memory__title">Recuerdos</h2>
+      {last && (
+        <button type="button" className="lib-memory__book" onClick={() => onOpenBook(last)} aria-label={`${last.title}, terminado el ${longDate(last.finishedAt)}${last.rating ? `, ${ratingText(last.rating)}` : ''}`}>
+          <span className="lib-memory__cover" aria-hidden="true">
+            <Cover book={last} />
           </span>
-          <span className="memory-polaroid__date">
-            {b.finishedAt ? new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
+          <span className="lib-memory__text" aria-hidden="true">
+            <b>{last.title}</b>
+            <small>Terminado el {longDate(last.finishedAt)}</small>
+            {last.rating > 0 && <RatingStars value={last.rating} />}
           </span>
-          {b.rating > 0 && (
-            <span className="memory-polaroid__stars" aria-hidden="true">
-              <RatingStars value={b.rating} />
-            </span>
-          )}
         </button>
-      ))}
+      )}
+      {pinned && (
+        <figure className="lib-memory__quote">
+          <blockquote>{pinned.text}</blockquote>
+          <figcaption>
+            {[pinned.author, pinned.work].filter(Boolean).join(' · ')}
+            <button type="button" className="lib-memory__unpin" onClick={onUnpin} aria-label="Desclavar la cita de la estantería" title="Desclavar">
+              <X aria-hidden="true" />
+            </button>
+          </figcaption>
+        </figure>
+      )}
+      {rest.length > 0 && (
+        <details className="lib-memory__more">
+          <summary>Ver más recuerdos · {rest.length}</summary>
+          <ul>
+            {rest.slice(0, 11).map((b) => (
+              <li key={b.id}>
+                <button type="button" onClick={() => onOpenBook(b)}>
+                  <span>{b.title}</span>
+                  <small>{new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</small>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </aside>
   );
 }
 
+/** Rama de hiedra pintada detrás de los libros; se mece solo mientras se ve. */
+function Ivy({ side }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver(([entry]) => {
+      el.dataset.visible = entry.isIntersecting ? 'true' : 'false';
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return <span ref={ref} className="lib-ivy" data-side={side} aria-hidden="true" />;
+}
+
 function useRowHeight() {
-  const get = () => Math.round(Math.max(118, Math.min(186, window.innerHeight * 0.2)));
+  // Móvil: portada de clamp(96px, 28vw, 140px) de ancho (proporción 0,66); escritorio, según el alto
+  const get = () => {
+    if (window.innerWidth <= 760) return Math.round(Math.max(96, Math.min(140, window.innerWidth * 0.28)) / 0.66);
+    return Math.round(Math.max(150, Math.min(196, window.innerHeight * 0.21)));
+  };
   const [h, setH] = useState(get);
   useEffect(() => {
     const onResize = () => setH(get());
@@ -170,57 +140,6 @@ function useRowHeight() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
   return h;
-}
-
-/**
- * El rótulo de estado no pisa ninguna mini-figura del listón (SPEC §11.7): se queda en el centro si está
- * libre y, si no, se desliza al hueco más cercano; se recalcula al desplazar la balda o cambiar su tamaño.
- */
-function usePlateClearOfPins(sectionRef, deps) {
-  const [offset, setOffset] = useState(0);
-  useEffect(() => {
-    const section = sectionRef.current;
-    const scroller = section?.querySelector('.shelf-row__scroller');
-    if (!section || !scroller) return undefined;
-    let frame = 0;
-    const place = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const plank = section.querySelector('.shelf-row__plank')?.getBoundingClientRect();
-        const plate = section.querySelector('.shelf-row__plate');
-        if (!plank || !plate) return;
-        const w = plate.offsetWidth + 12;
-        const pins = [...section.querySelectorAll('.saga-pin')].map((n) => n.getBoundingClientRect()).filter((r) => r.right > plank.left && r.left < plank.right);
-        const clear = (center) => {
-          const l = plank.left + plank.width / 2 + center - w / 2;
-          return l >= plank.left && l + w <= plank.right && pins.every((r) => r.right < l || r.left > l + w);
-        };
-        let best = 0;
-        for (let step = 0; step <= plank.width / 2; step += 6) {
-          if (clear(step)) {
-            best = step;
-            break;
-          }
-          if (clear(-step)) {
-            best = -step;
-            break;
-          }
-        }
-        setOffset((o) => (o === best ? o : best));
-      });
-    };
-    place();
-    scroller.addEventListener('scroll', place, { passive: true });
-    const observer = new ResizeObserver(place);
-    observer.observe(section);
-    return () => {
-      cancelAnimationFrame(frame);
-      scroller.removeEventListener('scroll', place);
-      observer.disconnect();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-  return offset;
 }
 
 /** ¿Queda balda por ver a cada lado? Se recalcula con el scroll y el tamaño, una sola vez por fotograma. */
@@ -257,7 +176,7 @@ function useScrollEdges(ref, deps) {
 
 const smooth = () => (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 
-function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, focused, onPlate, pickedId, onMove, emptyText }) {
+function ShelfRow({ row, index, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, focused, onPlate, pickedId, onMove, emptyText, ivy }) {
   const scrollerRef = useRef(null);
   const edges = useScrollEdges(scrollerRef, [books, mode, rowH]);
   const page = (dir) => {
@@ -265,9 +184,7 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
     if (el) el.scrollBy({ left: dir * el.clientWidth * 0.7, behavior: smooth() });
   };
   const trackRef = useRef(null);
-  const sectionRef = useRef(null);
   const [drop, setDrop] = useState(null);
-  const plateOffset = usePlateClearOfPins(sectionRef, [books, mode, rowH]);
 
   /** Dónde caería el libro: delante del primer libro cuyo centro queda a la derecha del cursor. */
   const dropTarget = (event) => {
@@ -284,9 +201,20 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
     return { beforeId: before?.dataset.bookId ?? null, x };
   };
 
-
   return (
-    <section ref={sectionRef} className="shelf-row" data-row={row.id} style={{ '--row-h': `${rowH}px` }} aria-label={`${row.label}: ${books.length} libros`}>
+    <section className="shelf-row" data-row={row.id} data-panel-slice={index % 3} style={{ '--row-h': `${rowH}px` }} aria-label={`${row.label}: ${books.length} libros`}>
+      {ivy && <Ivy side={ivy} />}
+      <div className="shelf-row__head">
+        <button
+          type="button"
+          className="shelf-row__plate"
+          aria-pressed={focused}
+          onClick={onPlate}
+          title={focused ? 'Volver a ver todas las baldas' : `Ver solo ${row.label.toLowerCase()}`}
+        >
+          {row.label} <span className="shelf-row__count">{books.length}</span>
+        </button>
+      </div>
       <div ref={scrollerRef} className="shelf-row__scroller">
         <div
           ref={trackRef}
@@ -312,7 +240,7 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
         >
           {drop && <span className="drop-marker" style={{ left: drop.x }} aria-hidden="true" />}
           {books.map((book) => (
-            // Cada libro con, si es de una saga del catálogo, su mini-figura engarzada en el listón de debajo
+            // Cada libro con, si es de una saga del catálogo, su mini-figura engarzada en el canto de la tabla
             <span key={book.id} className="book-slot">
               <BookItem book={book} mode={mode} rowHeight={rowH} onOpen={onOpenBook} onEdition={onEdition} picked={book.id === pickedId} draggable />
               {pins(book)}
@@ -329,19 +257,76 @@ function ShelfRow({ row, books, mode, rowH, onOpenBook, onEdition, onAdd, pins, 
       </div>
       <ScrollChevron dir="left" available={edges.left} onClick={() => page(-1)} />
       <ScrollChevron dir="right" available={edges.right} onClick={() => page(1)} />
-      {/* Listón de madera bajo los libros (detrás del scroller) y su rótulo de estado, aparte */}
-      <div className="shelf-row__plank" style={cropStyle(WOOD_PLANK)} aria-hidden="true" />
-      <button
-        type="button"
-        className="shelf-row__plate"
-        style={plateOffset ? { '--plate-dx': `${plateOffset}px` } : undefined}
-        aria-pressed={focused}
-        onClick={onPlate}
-        title={focused ? 'Volver a ver todas las baldas' : `Ver solo ${row.label.toLowerCase()}`}
-      >
-        {row.label} · {books.length}
-      </button>
+      {/* Tabla de madera en tres cortes: los libros apoyan en su superficie superior */}
+      <div className="shelf-row__plank" aria-hidden="true" />
     </section>
+  );
+}
+
+/** «Herramientas»: las acciones secundarias de la librería, plegadas en una hoja de papel. */
+function ToolsMenu({ dieFace, rolling, onRoll, onAskLibrarian, onOpenVault }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const buttonRef = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (event) => {
+      if (!wrapRef.current?.contains(event.target)) setOpen(false);
+    };
+    const onKey = (event) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setOpen(false);
+      buttonRef.current?.focus({ preventScroll: true });
+    };
+    document.addEventListener('pointerdown', onDown);
+    window.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('keydown', onKey, true);
+    };
+  }, [open]);
+  const pick = (fn) => () => {
+    setOpen(false);
+    fn();
+  };
+  return (
+    <div ref={wrapRef} className="lib-tools">
+      <button ref={buttonRef} type="button" className="lib-btn lib-btn--ghost" aria-expanded={open} aria-controls="lib-tools-list" onClick={() => setOpen((v) => !v)}>
+        <Wrench aria-hidden="true" />
+        <span>Herramientas</span>
+        <ChevronDown aria-hidden="true" className="lib-tools__caret" />
+      </button>
+      {open && (
+        <ul id="lib-tools-list" className="lib-tools__list">
+          <li>
+            <button type="button" className="shelf-die" data-rolling={rolling} onClick={pick(onRoll)}>
+              <svg viewBox="0 0 40 40" aria-hidden="true">
+                <rect x="3" y="3" width="34" height="34" rx="8" className="shelf-die__face" />
+                {DIE_DOTS[dieFace].map(([cx, cy]) => (
+                  <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="3.4" className="shelf-die__dot" />
+                ))}
+              </svg>
+              <span>Libro al azar</span>
+            </button>
+          </li>
+          {onAskLibrarian && (
+            <li>
+              <button type="button" onClick={pick(onAskLibrarian)}>
+                <Sparkles aria-hidden="true" />
+                <span>Pedir una recomendación</span>
+              </button>
+            </li>
+          )}
+          <li>
+            <button type="button" onClick={pick(() => onOpenVault())}>
+              <Trophy aria-hidden="true" />
+              <span>Vitrina de Figuras</span>
+            </button>
+          </li>
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -363,7 +348,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   const mode = settings.viewMode;
   const backRef = useRef(null);
 
-  // Al salir se deja lista para la próxima visita desde la habitación: «Todas» y sin búsqueda (el foco al
+  // Al salir se deja lista para la próxima visita desde la habitación: «Todos» y sin búsqueda (el foco al
   // abrir va a «Volver», nunca al buscador)
   useEffect(() => {
     if (open) backRef.current?.focus({ preventScroll: true });
@@ -375,7 +360,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
     }
   }, [open]);
 
-  // Biblioteca completa por estado (dado, muro de recuerdos) y la misma con la búsqueda aplicada (baldas)
+  // Biblioteca completa por estado (dado, recuerdos) y la misma con la búsqueda aplicada (baldas)
   const grouped = useMemo(() => groupByStatus(books), [books]);
   const found = useMemo(() => groupByStatus(filterLibrary(books, { query })), [books, query]);
 
@@ -434,7 +419,6 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   // Ningún estado vacío mientras la cuenta trae la biblioteca de la nube
   const empty = libraryEmptyState({ total: books.length, shown: shownCount, status: filter, query, loading: cloudStatus === 'loading' && books.length === 0 });
   const rowEmpty = empty === 'loading' ? EMPTY_TEXT.loading : query ? EMPTY_TEXT.search : filter !== 'all' ? EMPTY_TEXT.filter : undefined;
-  const shownRowH = filter === 'all' ? rowH : Math.round(rowH * 1.3);
 
   // Mini-figuras de saga bajo los libros, y los libros de cada saga para la sinergia ×2 de pity
   const figCatalog = useFigureCatalog();
@@ -455,38 +439,62 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
     if (JSON.stringify(map) !== JSON.stringify(figs.placements ?? {})) actions.syncFigureBooks(map);
   }, [figCatalog, books, figs, actions, sagas]);
 
+  const memory = <MemoryHighlight books={grouped.read} onOpenBook={onOpenBook} pinned={settings.pinnedQuote} onUnpin={() => actions.setSettings({ pinnedQuote: null })} />;
+
   return (
     <div className="library" data-open={showing} data-phase={phase} aria-hidden={!open} inert={!open ? true : undefined} onTransitionEnd={onTransitionEnd}>
       <div className="library__case">
-        {/* Haz de sol diagonal y sombras de hiedra que entran desde el balcón */}
-        <span className="library__sun" aria-hidden="true" />
-        <svg className="library__leaves" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <filter id="f-shelf-leaves" x="-10%" y="-10%" width="120%" height="120%">
-              <feGaussianBlur stdDeviation="9" />
-            </filter>
-          </defs>
-          <g filter="url(#f-shelf-leaves)">
-            {SHELF_LEAVES.map(([x, y, rx, ry, r], i) => (
-              <ellipse key={i} cx={x} cy={y} rx={rx} ry={ry} transform={`rotate(${r} ${x} ${y})`} />
+        <header className="lib-head">
+          <div className="lib-head__row lib-head__row--title">
+            <button ref={backRef} type="button" className="lib-btn lib-btn--back" onClick={onBack} aria-label="Volver a la cama">
+              <ArrowLeft aria-hidden="true" />
+              <span>Volver</span>
+            </button>
+            <h1 className="library__title">
+              <span>La biblioteca junto al mar</span>
+              <small>de {settings.owner}</small>
+            </h1>
+          </div>
+          <div className="lib-head__row lib-head__row--search">
+            {/* Ficha de búsqueda en la biblioteca personal (sin Google Books ni Open Library) */}
+            <div className="shelf-search" role="search">
+              <label className="shelf-search__label" htmlFor="shelf-search-input">
+                <Search aria-hidden="true" />
+                <span className="sr-only-focus">Buscar en mi biblioteca</span>
+              </label>
+              <input
+                key="shelf-search"
+                id="shelf-search-input"
+                className="shelf-search__input"
+                type="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                aria-label="Buscar en mi biblioteca"
+                placeholder="Título o autor…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              {query && (
+                <button type="button" className="shelf-search__clear" onClick={() => setQuery('')} aria-label="Limpiar búsqueda" title="Limpiar búsqueda">
+                  <X aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            <button type="button" className="lib-btn lib-btn--accent" onClick={onAddBook}>
+              <Plus aria-hidden="true" />
+              <span>Añadir libro</span>
+            </button>
+          </div>
+          {/* Pestañas de papel: qué baldas ver */}
+          <div className="lib-tabs" role="radiogroup" aria-label="Qué baldas ver">
+            {FILTERS.map((f) => (
+              <button key={f.id} type="button" role="radio" aria-checked={filter === f.id} className="lib-tab" data-status={f.id} onClick={() => setFilter(f.id)}>
+                {f.label}
+              </button>
             ))}
-          </g>
-        </svg>
-        <span className="library__side library__side--left" style={cropStyle(WOOD_SIDE)} />
-        <span className="library__side library__side--right" style={cropStyle(WOOD_SIDE)} />
-
-        <header className="library__crown">
-          <Plant variant="fern" />
-          <button ref={backRef} type="button" className="brass-btn brass-btn--back" onClick={onBack}>
-            <ArrowLeft aria-hidden="true" />
-            <span>Volver a la cama</span>
-          </button>
-          <h1 className="library__title">
-            <span>La biblioteca junto al mar</span>
-            <small>de {settings.owner}</small>
-          </h1>
-          <div className="library__tools">
-            <div className="brass-toggle" role="radiogroup" aria-label="Vista de la librería">
+          </div>
+          <div className="lib-head__row lib-head__row--tools">
+            <div className="lib-toggle" role="radiogroup" aria-label="Vista de la librería">
               <button type="button" role="radio" aria-checked={mode === 'cover'} aria-label="Escaparate" onClick={() => actions.setSettings({ viewMode: 'cover' })}>
                 <BookOpen aria-hidden="true" />
                 <span>Escaparate</span>
@@ -496,83 +504,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
                 <span>Lomos</span>
               </button>
             </div>
-
-          {/* Dado de madera apoyado en el copete: tira y te propone un libro pendiente al azar */}
-          <span className="shelf-die-wrap">
-            <span className="shelf-die__tag">¿Al azar?</span>
-            <button type="button" className="shelf-die" data-rolling={rolling} onClick={roll} aria-label="Elegir un libro al azar" title="Libro al azar">
-            <svg viewBox="0 0 40 40" aria-hidden="true">
-              <rect x="3" y="3" width="34" height="34" rx="8" className="shelf-die__face" />
-              {DIE_DOTS[dieFace].map(([cx, cy]) => (
-                <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="3.4" className="shelf-die__dot" />
-              ))}
-            </svg>
-                      </button>
-          </span>
-            {/* Bibliotecario local (IA-1): reglas sobre tu biblioteca, sin red */}
-            {onAskLibrarian && (
-              <button type="button" className="brass-btn" onClick={onAskLibrarian} aria-label="Pedir una recomendación" title="Pedir una recomendación">
-                <Sparkles aria-hidden="true" />
-                <span>Pedir una recomendación</span>
-              </button>
-            )}
-            <button type="button" className="brass-btn brass-btn--vault" onClick={() => onOpenVault()}>
-              <Trophy aria-hidden="true" />
-              <span>🏆 Vitrina de Figuras</span>
-            </button>
-            <button type="button" className="brass-btn brass-btn--accent" onClick={onAddBook}>
-              <Plus aria-hidden="true" />
-              <span>Añadir libro</span>
-            </button>
-          </div>
-          {/* Ficha de búsqueda en la biblioteca personal (sin Google Books ni Open Library) */}
-          <div className="shelf-search" role="search">
-            <label className="shelf-search__label" htmlFor="shelf-search-input">
-              <Search aria-hidden="true" />
-              <span className="sr-only-focus">Buscar en mi biblioteca</span>
-            </label>
-            <input
-              key="shelf-search"
-              id="shelf-search-input"
-              className="shelf-search__input"
-              type="search"
-              enterKeyHint="search"
-              autoComplete="off"
-              aria-label="Buscar en mi biblioteca"
-              placeholder="Título o autor…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            {query && (
-              <button type="button" className="shelf-search__clear" onClick={() => setQuery('')} aria-label="Limpiar búsqueda" title="Limpiar búsqueda">
-                <X aria-hidden="true" />
-              </button>
-            )}
-          </div>
-          <Plant variant="leafy" />
-          {/* Cintas marcapáginas que cuelgan del copete: eligen qué baldas ver */}
-          <div className="shelf-ribbons" role="radiogroup" aria-label="Qué baldas ver">
-            {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                role="radio"
-                aria-checked={filter === f.id}
-                className="shelf-ribbon"
-                data-light={f.id === 'all' || undefined}
-                style={{ '--ribbon': f.color }}
-                onClick={() => setFilter(f.id)}
-              >
-                <span>{f.label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="library__ivy" aria-hidden="true">
-            {IVY_STRANDS.map((f, i) => (
-              <span key={f} style={{ left: `${f * 100}%` }}>
-                <IvyStrand length={60 + i * 22} delay={-i * 1.4} />
-              </span>
-            ))}
+            <ToolsMenu dieFace={dieFace} rolling={rolling} onRoll={roll} onAskLibrarian={onAskLibrarian} onOpenVault={onOpenVault} />
           </div>
         </header>
 
@@ -597,8 +529,6 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
           </div>
         )}
 
-        <MemoryBoard books={grouped.read} onOpenBook={onOpenBook} pinned={settings.pinnedQuote} onUnpin={() => actions.setSettings({ pinnedQuote: null })} />
-
         {editionMenu && books.some((b) => b.id === editionMenu.id) && (
           <EditionMenu
             book={books.find((b) => b.id === editionMenu.id)}
@@ -615,34 +545,38 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
           />
         )}
 
-        {empty && (
-          <p className="library__empty" role="status">
-            {EMPTY_TEXT[empty]}
-          </p>
-        )}
         <div className="library__shelves">
-          {visibleRows.map((row) => (
-            <ShelfRow
-              key={row.id}
-              row={row}
-              books={found[row.id]}
-              emptyText={rowEmpty}
-              mode={mode}
-              rowH={shownRowH}
-              focused={filter === row.id}
-              onPlate={() => setFilter((f) => (f === row.id ? 'all' : row.id))}
-              onOpenBook={onOpenBook}
-              onEdition={(book, event) => {
-                // Con teclado (tecla de menú) no hay coordenadas: se abre junto al libro
-                const r = event.currentTarget.getBoundingClientRect();
-                const fromKey = event.clientX === 0 && event.clientY === 0;
-                setEditionMenu({ id: book.id, x: fromKey ? r.right + 6 : event.clientX + 4, y: fromKey ? r.top : event.clientY + 4, from: event.currentTarget });
-              }}
-              onAdd={row.id === 'want' ? onAddBook : null}
-              pickedId={pick}
-              onMove={actions.moveBook}
-              pins={pins}
-            />
+          {empty && (
+            <p className="library__empty" role="status">
+              {EMPTY_TEXT[empty]}
+            </p>
+          )}
+          {visibleRows.map((row, i) => (
+            <div key={row.id} className="library__module">
+              <ShelfRow
+                row={row}
+                index={i}
+                books={found[row.id]}
+                emptyText={rowEmpty}
+                mode={mode}
+                rowH={rowH}
+                focused={filter === row.id}
+                onPlate={() => setFilter((f) => (f === row.id ? 'all' : row.id))}
+                onOpenBook={onOpenBook}
+                onEdition={(book, event) => {
+                  // Con teclado (tecla de menú) no hay coordenadas: se abre junto al libro
+                  const r = event.currentTarget.getBoundingClientRect();
+                  const fromKey = event.clientX === 0 && event.clientY === 0;
+                  setEditionMenu({ id: book.id, x: fromKey ? r.right + 6 : event.clientX + 4, y: fromKey ? r.top : event.clientY + 4, from: event.currentTarget });
+                }}
+                onAdd={row.id === 'want' ? onAddBook : null}
+                pickedId={pick}
+                onMove={actions.moveBook}
+                pins={pins}
+                ivy={i === 0 ? 'right' : i === visibleRows.length - 1 && i > 0 ? 'left' : null}
+              />
+              {i === 0 && memory}
+            </div>
           ))}
         </div>
       </div>

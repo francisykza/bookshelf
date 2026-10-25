@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.33.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.34.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2451,3 +2451,87 @@ movimiento en esta entrega) o con su limitación.
 - Grabaciones de ~15 s en `qa-report/videos-movimiento/` (390 Chromium y WebKit, 1440).
 - Limitaciones: con el encuadre actual (que no se ha tocado) la bahía no se ve en escritorio a 1440 × 900 en
   ninguna de las dos habitaciones; no hay medición de fps ni prueba en iPhone físico.
+
+## 27. Librería, ficha, diario y reseñas con texturas gouache (1.34.0)
+
+Solo presentación: no cambian esquemas de Supabase, ids, estados, valoraciones, fechas ni progreso; no hay
+importación de Goodreads ni EPUB. La habitación, el salón, la cámara, el mar, las cortinas y el Ático no se tocan.
+
+### 27.1 Texturas
+
+- Originales en `art-inbox/library-refresh/` (no se modifican, no se publican ni se precargan). Derivados WebP en
+  `public/art/library-refresh/` con `npm run art:library` (`scripts/prepare-library-art.mjs`, sharp como
+  dependencia de desarrollo), que escribe también `manifest.json` (archivo, tamaño original, recorte, tamaño final,
+  escala, alfa, bytes y medidas de la balda y de la carta). Nunca se amplía.
+- `panel.webp` 1024² (fondo de madera; las costuras no son continuas, así que se usa un tramo por balda, sin
+  repetir, con la transición tapada por la balda), `plank.webp` 1536 × 142 (recortada; superficie superior hasta la
+  línea de luz en y = 52, base de los libros en y ≈ 34, tres cortes con remates de 44 px), `ivy.webp` 336 × 512,
+  `journal.webp` 768² (casi continua: se repite) y `letter.webp` 820 × 1024 (bordes de barba; nueve cortes de
+  40 px). El cuerpo con alfa 224–254 se vuelve opaco; los bordes conservan su alfa. Total ≈ 192 KB.
+- Se cargan solo con la librería o la ficha abiertas (fondos CSS), y el service worker las guarda al pedirlas, no
+  al instalar. Si falta una, queda el color de respaldo del token.
+
+### 27.2 Tokens
+
+`--lib-paper #FAF5E8`, `--lib-paper-2 #F8F1E1`, `--lib-ink #2C1E14`, `--lib-ink-soft #6A5847`, `--lib-brass
+#C59B27`, `--lib-terracotta #B86343`, `--lib-sage #69764F`, `--lib-wood #79583D`, `--lib-wood-dark #59432F`.
+Cormorant (títulos), Lora (texto, 16 px / 1,55), Caveat (solo notas breves), JetBrains Mono (contadores). Campos
+≥ 16 px; títulos de panel `clamp(26px, 6vw, 36px)`. Sombras mates, sin marcos apilados, sin filtros sobre
+portadas, sin texto girado. Capas decorativas con `pointer-events: none` y `aria-hidden`.
+
+### 27.3 Cabecera compacta
+
+Filas: «Volver» + nombre de la biblioteca / buscador («Título o autor…», sin autofocus) + «Añadir libro» /
+pestañas de papel Todos · Leyendo · Pendientes · Terminados (texto horizontal) / Escaparate–Lomos + «Herramientas»
+(menú con «Libro al azar», «Pedir una recomendación» y «Vitrina de Figuras»). Separación 8 px, margen 12 px en
+móvil, controles ≥ 44 px, sin altura fija (≈ 190–220 px a 390 px; en 320 px el buscador y el botón pueden ir en
+dos filas). En escritorio las filas se agrupan en dos. Los filtros nunca quedan encima de los recuerdos. Sin cita
+genérica en la cabecera.
+
+### 27.4 Estantería modular
+
+Cada balda es un módulo con su tramo de panel de madera (sombra interior `inset 0 12px 22px rgb(44 30 20 / .2)`)
+y su tabla (`border-image` en tres cortes, 30 px de grosor en móvil, sombra `0 5px 10px rgb(44 30 20 / .2)`);
+los libros apoyan en la superficie superior. Las baldas crecen con su contenido; no hay una textura estirada.
+Libros: las 8 ediciones y las portadas originales, menos adornos repetidos; `perspective: 1000px` y como mucho
+`rotateY(-5deg)` en Escaparate; portada de `clamp(96px, 28vw, 140px)` de ancho en móvil, separación ≥ 16 px,
+alineados abajo; sombra de contacto ≤ 0,24; scroll horizontal nativo; mini-figuras de 34 × 34 en el canto.
+
+### 27.5 Recuerdos y hiedra
+
+Tras la primera balda, un único recuerdo destacado: el último libro terminado con fecha fiable, su valoración y la
+cita solo si el usuario la clavó; «Ver más recuerdos» despliega los demás. Sin libros terminados ni cita, no se
+muestra nada (nada inventado ni bloques vacíos). Hiedra como mucho dos veces (88–120 px), nunca sobre controles;
+balanceo ≤ 0,8° y ≤ 2 px en 16 s desde el tallo, solo cuando la librería está abierta y visible; sin movimiento
+con movimiento reducido.
+
+### 27.6 Ficha del libro
+
+Orden: ex-libris compacto (sello de 48 px, nombre editable) → portada 72–96 px + título y autor → estado →
+progreso → «Registrar lectura» (el mismo `ReadingEntryForm`; si termina el libro, abre la misma reseña de
+terminar, que al cerrar vuelve a la ficha) → valoración y favorito. «Detalles de mi edición» (plegado): total de
+páginas, total desconocido, seguir por páginas o porcentaje, velocidad y edición. Valoración: estrellas + número,
+cuartos, ajuste fino al activarlo, teclado de 0,25 en 0,25. Papel `journal.webp` con sombra
+`0 10px 28px rgb(44 30 20 / .24)`, sin marcos apilados.
+
+### 27.7 Diario
+
+Cuaderno de entradas fechadas construido con lo que ya existe: sesiones del registro de lectura, citas subrayadas
+y la reseña al terminar. Fechas en Caveat 20 px, texto Lora 16 px / 1,6, 20 px entre entradas, separadores de
+1 px. Las citas conservan su id de color, muestran el significado del usuario y una marca lateral (nunca solo
+color), en un papel algo distinto, seleccionables, con página solo si existe. Vacío: «¿Qué te gustaría recordar
+de esta historia?» con «Escribir mi primera anotación».
+
+### 27.8 Reseñas como cartas
+
+Cabecera «Voces de lectores» con la media a un decimal y estrella; con una sola valoración, «Una primera voz para
+esta historia». Desglose e impresiones dentro de «Cómo se ha sentido esta lectura» (nombre, valor, extremos de la
+escala y número de respuestas). Cada reseña es una carta con `letter.webp` en nueve cortes (sin
+`background-size: 100% 100%`), 18 px de relleno en móvil y 24 px en escritorio, sombra `0 3px 10px rgb(44 30 20 /
+.12)`, sin giro, altura natural.
+
+### 27.9 Paneles
+
+Con cualquier panel abierto las flechas de habitación no se montan (estado central `panel`) y las de las baldas se
+ocultan. Botón de cierre en pestaña de papel ≥ 44 × 44 dentro de las zonas seguras, nombre «Cerrar». Panel de
+100dvh como máximo con zonas seguras, un único scroll y sin scroll horizontal.

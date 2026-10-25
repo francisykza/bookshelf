@@ -153,7 +153,6 @@ export function ReadersPanel({ book, onUpdate, onOpenReader }) {
   const [failure, setFailure] = useState('');
   const [more, setMore] = useState(false);
   const [onlyFollowing, setOnlyFollowing] = useState(false);
-  const [showBands, setShowBands] = useState(false);
   const [notice, setNotice] = useState('');
 
   const ready = community.status === 'ready';
@@ -195,20 +194,25 @@ export function ReadersPanel({ book, onUpdate, onOpenReader }) {
   return (
     <section className="readers" aria-label="Voces de lectores">
       <div className="readers__summary">
-        {view.average != null && <span className="readers__average">{view.averageText}</span>}
+        {view.average != null && (
+          <span className="readers__average" aria-label={`Media ${view.averageText} de 5`}>
+            {view.averageText}
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37L2.74 9.33l6.4-.93z" />
+            </svg>
+          </span>
+        )}
         <p className="readers__headline">{workId ? view.headline : 'Esta historia todavía espera su primera opinión'}</p>
       </div>
-      {view.ratings > 0 && (
-        <div>
-          <button type="button" className="spoiler-toggle" aria-expanded={showBands} onClick={() => setShowBands((v) => !v)}>
-            {showBands ? 'Ocultar el desglose' : 'Ver el desglose de puntuaciones'}
-          </button>
-          {showBands && (
+      {(view.ratings > 0 || view.impressions.some((d) => d.n > 0)) && (
+        <details className="readers__feel">
+          <summary>Cómo se ha sentido esta lectura</summary>
+          {view.ratings > 0 && (
             <ul className="readers__bands" aria-label="Puntuaciones por intervalos de cuartos de estrella">
               {view.bands.map((b) => (
                 <li key={b.id}>
                   <span>{b.label}</span>
-                  <span className="readers__bar">
+                  <span className="readers__bar" aria-hidden="true">
                     <i style={{ width: `${(b.count / maxBand) * 100}%` }} />
                   </span>
                   <span className="readers__count">{b.count}</span>
@@ -216,20 +220,31 @@ export function ReadersPanel({ book, onUpdate, onOpenReader }) {
               ))}
             </ul>
           )}
-        </div>
-      )}
-      {view.impressions.some((d) => d.n > 0) && (
-        <ul className="readers__impressions" aria-label="Impresiones de los lectores">
-          {view.impressions.map((d) => (
-            <li key={d.id}>
-              <span>{d.label}</span>
-              <span className="readers__bar" title={`${d.low} → ${d.high}`}>
-                <i style={{ width: d.average == null ? 0 : `${((d.average - 1) / 4) * 100}%` }} />
-              </span>
-              <span className="readers__count">{d.n} {d.n === 1 ? 'respuesta' : 'respuestas'}</span>
-            </li>
-          ))}
-        </ul>
+          {view.impressions.some((d) => d.n > 0) && (
+            <ul className="readers__impressions" aria-label="Impresiones de los lectores">
+              {view.impressions
+                .filter((d) => d.n > 0)
+                .map((d) => (
+                  <li key={d.id}>
+                    <span className="readers__dim">
+                      <b>{d.label}</b>
+                      <span>{d.average == null ? '—' : d.average.toLocaleString('es-ES', { maximumFractionDigits: 1 })} de 5</span>
+                    </span>
+                    <span className="readers__scale">
+                      <small>{d.low}</small>
+                      <span className="readers__bar" aria-hidden="true">
+                        <i style={{ width: d.average == null ? 0 : `${((d.average - 1) / 4) * 100}%` }} />
+                      </span>
+                      <small>{d.high}</small>
+                    </span>
+                    <span className="readers__count">
+                      {d.n} {d.n === 1 ? 'respuesta' : 'respuestas'}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </details>
       )}
       {workId && <TropesSummary workId={workId} />}
       <div className="readers__filters" role="group" aria-label="Qué opiniones ver">

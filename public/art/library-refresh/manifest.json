@@ -1,0 +1,117 @@
+{
+  "generatedBy": "scripts/prepare-library-art.mjs",
+  "assets": {
+    "panel": {
+      "file": "panel.webp",
+      "source": "shelf-back-panel.png",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "crop": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "size": [
+        1024,
+        1024
+      ],
+      "scale": 0.8166,
+      "alpha": false,
+      "bytes": 100396
+    },
+    "plank": {
+      "file": "plank.webp",
+      "source": "shelf-plank.png",
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "crop": [
+        39,
+        268,
+        2094,
+        193
+      ],
+      "size": [
+        1536,
+        142
+      ],
+      "scale": 0.7335,
+      "alpha": true,
+      "bytes": 28970,
+      "surfaceTop": 0,
+      "edgeLight": 52,
+      "baseline": 34,
+      "baselineRatio": 0.239,
+      "capSlice": 44
+    },
+    "ivy": {
+      "file": "ivy.webp",
+      "source": "shelf-ivy-corner.png",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "crop": [
+        89,
+        71,
+        724,
+        1102
+      ],
+      "size": [
+        336,
+        512
+      ],
+      "scale": 0.4646,
+      "alpha": true,
+      "bytes": 30766
+    },
+    "journal": {
+      "file": "journal.webp",
+      "source": "journal-paper.png",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "crop": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "size": [
+        768,
+        768
+      ],
+      "scale": 0.6124,
+      "alpha": false,
+      "bytes": 9844
+    },
+    "letter": {
+      "file": "letter.webp",
+      "source": "review-letter-paper.png",
+      "sourceSize": [
+        1122,
+        1402
+      ],
+      "crop": [
+        50,
+        73,
+        1024,
+        1278
+      ],
+      "size": [
+        820,
+        1024
+      ],
+      "scale": 0.8013,
+      "alpha": true,
+      "bytes": 26972,
+      "slice": 40
+    }
+  },
+  "totalBytes": 196948
+}

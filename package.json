@@ -1,7 +1,7 @@
 {
   "name": "bookshelf",
   "private": true,
-  "version": "1.33.0",
+  "version": "1.34.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,8 @@
     "test": "vitest run",
     "qa:install": "playwright install chromium webkit",
     "qa:e2e": "playwright test",
-    "qa:full": "vitest run && playwright test"
+    "qa:full": "vitest run && playwright test",
+    "art:library": "node scripts/prepare-library-art.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
@@ -29,6 +30,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.88.0",
+    "sharp": "^0.34.4",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.4",
     "vitest": "^3.2.7"
