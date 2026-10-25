@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.37.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.38.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2832,3 +2832,16 @@ historia que se quedó» con el primer recuerdo real.
 Conversación como mensajes (autor, hora y burbuja; los propios en salvia) y compositor redondeado. Capítulos,
 Encuentros, aviso de encuentro, avance por capítulo, reacciones y «mensajes nuevos» siguen sin datos en el servidor:
 no se muestran.
+
+### 30.7 Corrección visual acotada (1.38.0, `styles/fix-138.css`)
+
+- Habitación: el texto de cada placa ilustrada va en un contenedor común con la imagen, centrado en la superficie
+  útil medida sobre la silueta visible (colgante 54–90 % del alto; correas 15–85 % del ancho; marcapáginas 12–61 %
+  del alto, en vertical). Las placas ya no se desplazan para caber: siguen ancladas en px de la ilustración (que
+  escala y recorta con el escenario). «Mi lectura» sale del canto de la página izquierda.
+- Biblioteca: «Volver al rincón» en su propia fila y el cartel debajo; filtros compactos (sin icono ≤ 400 px); el alto
+  de balda en móvil se calcula para que quepan tres libros con sus etiquetas en el hueco útil del módulo.
+- Ficha: el carrusel «Leyendo ahora» deja de estar posicionado sobre la antigua doble página (`position: absolute`
+  + `translateX(-50%)` de la 1.2x): ocupa el ancho del contenido y se desplaza dentro de sí mismo.
+- Mi diario: menos relleno en la ventana y marco más fino; «Volver» en su fila; mes en una línea con controles de
+  44 px; calendario de siete columnas `minmax(0, 1fr)` con celdas 4:5; reserva inferior para el dock.

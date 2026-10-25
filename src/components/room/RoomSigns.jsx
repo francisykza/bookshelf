@@ -4,7 +4,7 @@
 // vaso y una cinta que sale del libro—. Se anclan en px de la ilustración (rejilla sobre `cozy-book-room.jpg`) y son
 // decorativas (`aria-hidden`, sin eventos de puntero): el control es siempre el hotspot del objeto entero, que queda
 // debajo y recibe el toque. No tapan libros, figuras ni controles.
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SUN_DIAL } from '../../scene/sceneMap';
 import { HangingPlaque } from '../primitives';
@@ -12,16 +12,16 @@ import { HangingPlaque } from '../primitives';
 // Punto de sujeción de cada señal en px de la escena 941 × 1672
 export const SIGNS = {
   // 1.37.0 (SPEC §30.3): placas de latón ilustradas de /assets/ui, como en habitacion-senales-2-maqueta.png
-  figures: { x: 226, y: 150, kind: 'brass', text: 'Colección' },
-  shelf: { x: 228, y: 508, kind: 'brass', text: 'Mi biblioteca' },
+  figures: { x: 228, y: 168, kind: 'brass', text: 'Colección' },
+  shelf: { x: 228, y: 512, kind: 'brass', text: 'Mi biblioteca' },
   // Marcapáginas de cuero y latón que sale del canto izquierdo del libro abierto
-  book: { x: 336, y: 1398, kind: 'bookmark', text: 'Mi lectura' },
+  book: { x: 372, y: 1396, kind: 'bookmark', text: 'Mi lectura' },
   // Placa con escuadras apoyada en el borde frontal del portátil
-  laptop: { x: 668, y: 1140, kind: 'bracket', text: 'Mi diario' },
+  laptop: { x: 700, y: 1146, kind: 'bracket', text: 'Mi diario' },
   // Etiqueta de latón colgada del vaso con un cordel
   tray: { x: 846, y: 1098, kind: 'teabag', text: 'Tiempo de lectura' },
   // Placa con correas de cuero sobre la diadema de los auriculares
-  headphones: { x: 150, y: 1276, kind: 'strap', text: 'Ambiente' },
+  headphones: { x: 160, y: 1284, kind: 'strap', text: 'Ambiente' },
 };
 
 const HINT_KEY = 'bookshelf:signs-hint-done';
@@ -66,7 +66,10 @@ function Sign({ id, sign, highlight }) {
   if (['brass', 'bracket', 'strap', 'bookmark', 'hanging'].includes(sign.kind))
     return (
       <span {...common}>
-        <span className="room-sign__plate">{sign.text}</span>
+        {/* Contenedor común: la imagen es el fondo de la placa y el texto se coloca en su superficie útil */}
+        <span className="room-sign__plate">
+          <span className="room-sign__text">{sign.text}</span>
+        </span>
       </span>
     );
   if (sign.kind === 'chain')
@@ -88,51 +91,10 @@ function Sign({ id, sign, highlight }) {
   );
 }
 
-/**
- * Mantiene cada señal dentro de la vista del panel: si el encuadre la corta, se desliza lo justo (como mucho
- * media señal) hacia dentro, sin separarse de su objeto. Se recalcula al cambiar el encuadre o el tamaño.
- */
-function useKeepInView(ref, deps) {
-  useLayoutEffect(() => {
-    const root = ref.current;
-    const panel = root?.closest('[data-panel]');
-    const world = root?.closest('.scene-world');
-    if (!root || !panel) return undefined;
-    let frame = 0;
-    const fit = () => {
-      frame = 0;
-      const box = panel.getBoundingClientRect();
-      root.querySelectorAll('.room-sign').forEach((el) => {
-        el.style.setProperty('--nudge', '0px');
-        const r = el.getBoundingClientRect();
-        const k = parseFloat(getComputedStyle(el).getPropertyValue('--k')) || 1;
-        let dx = 0;
-        if (r.right > box.right - 6) dx = box.right - 6 - r.right;
-        else if (r.left < box.left + 6) dx = box.left + 6 - r.left;
-        dx = Math.max(-r.width / 2, Math.min(r.width / 2, dx));
-        el.style.setProperty('--nudge', `${(dx / k).toFixed(1)}px`);
-      });
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(fit);
-    };
-    schedule();
-    const mo = new MutationObserver(schedule);
-    if (world) mo.observe(world, { attributes: true, attributeFilter: ['style'] });
-    window.addEventListener('resize', schedule);
-    return () => {
-      cancelAnimationFrame(frame);
-      mo.disconnect();
-      window.removeEventListener('resize', schedule);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-}
-
 export function RoomSigns({ timeOfDay, guideActive }) {
   const hint = useSignsHint(guideActive);
   const ref = useRef(null);
-  useKeepInView(ref, [timeOfDay]);
+  // Las placas no se desplazan para caber: siguen ancladas a su objeto (los anclajes están dentro de cada objeto)
   const dial = SUN_DIAL[timeOfDay] ?? SUN_DIAL.morning;
   return (
     <>

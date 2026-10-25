@@ -1,0 +1,228 @@
+/* ── 1.38.0 · Corrección visual acotada (SPEC §30.7): habitación, biblioteca, ficha y calendario ─────────────── */
+
+/* Biblioteca · «Volver al rincón» en su propia fila; el cartel empieza debajo y nunca se cruzan */
+.lib-hero {
+  min-height: 160px;
+}
+
+.lib-hero__back {
+  top: max(4px, env(safe-area-inset-top));
+  left: max(6px, env(safe-area-inset-left));
+}
+
+.lib-hero__sign {
+  top: calc(max(4px, env(safe-area-inset-top)) + 46px);
+}
+
+.lib-hero__plaque .hanging-plaque__rings {
+  height: 8px;
+}
+
+@media (min-width: 700px) {
+  .lib-hero__sign {
+    top: calc(max(4px, env(safe-area-inset-top)) + 40px);
+  }
+
+  .lib-hero__plaque .hanging-plaque__rings {
+    height: 14px;
+  }
+}
+
+@media (max-height: 520px) {
+  .lib-hero {
+    min-height: 0;
+  }
+
+  .lib-hero__sign {
+    top: 4px;
+    left: 58%;
+  }
+}
+
+/* Filtros: icono y texto compactos para que las cuatro etiquetas quepan sin tocarse */
+.lib-tabs {
+  gap: 5px;
+}
+
+.lib-tabs .fabric-tab {
+  padding: 0 4px 2px;
+  font-size: 13.5px;
+}
+
+.lib-tabs .fabric-tab .fabric-tab__label {
+  gap: 4px;
+  min-width: 0;
+}
+
+.fabric-tab__icon {
+  width: 15px;
+  height: 15px;
+}
+
+@media (max-width: 400px) {
+  .lib-tabs .fabric-tab .fabric-tab__icon {
+    display: none;
+  }
+}
+
+/* Ficha · el carrusel «Leyendo ahora» ocupa el ancho del contenido y se desplaza dentro de sí mismo */
+.book-sheet .reading-switch {
+  left: auto;
+  bottom: auto;
+  z-index: auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 2px 2px 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  transform: none;
+  box-sizing: border-box;
+}
+
+.book-sheet .reading-switch__label {
+  flex: none;
+  align-self: center;
+  writing-mode: horizontal-tb;
+  transform: none;
+  color: var(--ink-muted);
+  font: 500 13px/1.2 var(--lib-body);
+}
+
+.book-sheet .reading-switch__book {
+  flex: none;
+}
+
+/* Habitación · placas: el texto ocupa solo la superficie útil de cada recurso (medida sobre su silueta visible) */
+.room-sign {
+  font-size: max(9px, calc(10px / var(--k, 1)));
+}
+
+.room-sign__plate {
+  position: relative;
+}
+
+.room-sign__text {
+  display: block;
+}
+
+/* Placa colgante (Mis sagas): superficie lisa de 54 % a 92 % del alto y de 12 % a 88 % del ancho */
+.room-sign--hanging .room-sign__plate {
+  padding: 0;
+}
+
+.room-sign--hanging .room-sign__text {
+  position: absolute;
+  top: 54%;
+  right: 12%;
+  bottom: 10%;
+  left: 12%;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+
+/* Placa con correas (Ambiente): la placa va de 14 % a 86 % del ancho */
+.room-sign--strap .room-sign__plate {
+  padding: 0;
+  line-height: normal;
+}
+
+.room-sign--strap .room-sign__text {
+  position: absolute;
+  inset: 8% 15%;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+
+/* Marcapáginas (Mi lectura): la placa de latón va de 11 % a 62 % del alto; el texto, en vertical y centrado en ella */
+.room-sign--bookmark .room-sign__plate {
+  padding: 0;
+  writing-mode: horizontal-tb;
+}
+
+.room-sign--bookmark .room-sign__text {
+  position: absolute;
+  top: 12%;
+  bottom: 39%;
+  left: 18%;
+  right: 18%;
+  display: grid;
+  place-items: center;
+  writing-mode: vertical-rl;
+  font-size: 0.95em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Cuelga desde la página izquierda hacia fuera del libro (giro desde su extremo superior) */
+.room-sign--bookmark {
+  transform: translateX(-50%) rotate(38deg);
+  transform-origin: 50% 0;
+}
+
+/* Mi diario · menos marcos: la ventana del portátil no añade relleno y el marco del cuaderno es más fino; la franja
+   de anillas queda limitada a la izquierda y el contenido aprovecha el ancho restante */
+.window[data-app='calendar'] .window__body {
+  padding: 4px 2px 8px;
+}
+
+.diary.notebook-shell {
+  --nb: 0.3;
+}
+
+.diary .notebook-shell__page {
+  padding: 4px 4px 12px 2px;
+}
+
+/* Cabecera: «Volver» en su propia fila, título y subtítulo debajo */
+.diary__head {
+  padding-top: 40px;
+}
+
+.diary__back {
+  top: 0;
+}
+
+/* Mes en una línea con controles compactos */
+.diary .cal__head {
+  gap: 4px;
+}
+
+.diary .cal__head h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 1.15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diary .cal__head .icon-btn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+
+/* Siete columnas iguales y celdas proporcionadas (algo más altas que anchas, sin columnas estrechísimas) */
+.diary .cal__grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.diary .cal__cell {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 4 / 5;
+}
+
+.diary .cal__covers {
+  inset: 18px 3px 16px;
+}
+
+/* El último bloque no queda tapado por el dock del portátil */
+.diary .diary__view {
+  padding-bottom: 96px;
+}

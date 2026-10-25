@@ -185,9 +185,16 @@ function Ivy({ side }) {
 }
 
 function useRowHeight() {
-  // Móvil: portada de clamp(96px, 28vw, 140px) de ancho (proporción 0,66); escritorio, según el alto
+  // Móvil (SPEC §30.7): tres libros completos en el hueco útil del módulo. Ancho interior = ancho − laterales del
+  // módulo (212 px del recurso × escala, la de library-module.css) − relleno y dos separaciones (40 px); cada hueco
+  // resta ≈ 6 px de canto y la portada mide ≈ 0,7 × alto. Escritorio, según el alto de la ventana.
   const get = () => {
-    if (window.innerWidth <= 760) return Math.round(Math.max(96, Math.min(140, window.innerWidth * 0.28)) / 0.66);
+    const vw = window.innerWidth;
+    if (vw <= 760) {
+      const scale = vw >= 600 ? 0.32 : vw >= 420 ? 0.26 : 0.235;
+      const slot = (vw - 212 * scale - 40) / 3 - 6;
+      return Math.round(Math.max(110, Math.min(200, slot / 0.7)));
+    }
     return Math.round(Math.max(150, Math.min(196, window.innerHeight * 0.21)));
   };
   const [h, setH] = useState(get);
