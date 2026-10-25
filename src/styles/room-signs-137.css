@@ -1,0 +1,138 @@
+/* ── 1.37.0 · Señales con las placas de latón ilustradas (SPEC §30.3) ─────────────────────────────────────────
+   Referencia: docs/design/references/habitacion-senales-2-maqueta.png. Recursos en /assets/ui/ (derivados de
+   «Placa de latón con cadenas», «…colgante… antiguo», «…envejecido sin texto», «…para estantería» y el
+   marcapáginas). Medidas en em sobre la letra de la señal (que compensa la escala del mundo). */
+.room-sign__plate {
+  display: block;
+  color: #2c1e14;
+  font: 600 1em/1 var(--lib-display);
+  font-size: 1.12em;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-shadow: 0 1px 0 rgb(255 240 200 / 0.55);
+  white-space: nowrap;
+}
+
+/* Colección / Mi biblioteca: placa con cadenas cortas, tres cortes (los extremos no se estiran) */
+.room-sign--brass .room-sign__plate {
+  box-sizing: border-box;
+  height: 3.3em;
+  padding: 1.05em 0.3em 0;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 0 2em;
+  border-image: url('/assets/ui/plaque-chains.webp') 0 92 fill / 0 2em stretch;
+  line-height: 2.1em;
+  filter: drop-shadow(0 0.15em 0.2em rgb(20 10 4 / 0.45));
+}
+
+/* Mis sagas: la placa ornamentada cuelga con sus cadenas del aro del astrolabio (proporción del recurso) */
+.room-sign--hanging .room-sign__plate {
+  width: 9.6em;
+  height: calc(9.6em * 230 / 560);
+  padding-top: 2.05em;
+  background: url('/assets/ui/plaque-hanging.webp') center / 100% 100% no-repeat;
+  font-size: 1.15em;
+  filter: drop-shadow(0 0.15em 0.25em rgb(20 10 4 / 0.45));
+}
+
+/* Mi diario: placa con escuadras en el borde del portátil */
+.room-sign--bracket .room-sign__plate {
+  box-sizing: border-box;
+  height: 2.5em;
+  padding: 0 0.2em;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 0 1.35em;
+  border-image: url('/assets/ui/plaque-brackets.webp') 0 86 fill / 0 1.35em stretch;
+  line-height: 2.5em;
+  filter: drop-shadow(0 0.15em 0.2em rgb(20 10 4 / 0.45));
+}
+
+/* Ambiente: placa con correas de cuero sobre la diadema (proporción del recurso) */
+.room-sign--strap .room-sign__plate {
+  width: 7.6em;
+  height: calc(7.6em * 119 / 560);
+  padding-top: 0.1em;
+  background: url('/assets/ui/plaque-strap.webp') center / 100% 100% no-repeat;
+  line-height: calc(7.6em * 119 / 560);
+  font-size: 1.05em;
+  filter: drop-shadow(0 0.12em 0.2em rgb(20 10 4 / 0.45));
+}
+
+/* Mi lectura: marcapáginas de cuero oliva y latón que sale del libro, en diagonal */
+.room-sign--bookmark {
+  transform: translateX(calc(-50% + var(--nudge, 0px))) rotate(-32deg);
+  transform-origin: 50% 100%;
+}
+
+.room-sign--bookmark .room-sign__plate {
+  position: relative;
+  width: 2.5em;
+  height: calc(2.5em * 925 / 160);
+  background: url('/assets/ui/bookmark-olive.webp') center / 100% 100% no-repeat;
+  filter: drop-shadow(0.1em 0.2em 0.2em rgb(20 10 4 / 0.45));
+  font-size: 1em;
+}
+
+/* El texto va en la placa de latón (de ≈ 9 % a 47 % del alto), en vertical */
+.room-sign--bookmark .room-sign__plate {
+  writing-mode: vertical-rl;
+  transform: none;
+  line-height: 2.5em;
+  padding-top: 1.1em;
+  text-align: start;
+}
+
+/* Tiempo de lectura: etiqueta de latón con escuadras colgada del vaso por un cordel */
+.room-sign--teabag .room-sign__label {
+  padding: 0.35em 1.15em;
+  color: #2c1e14;
+  font: 600 1em/1.1 var(--lib-display);
+  font-size: 1.05em;
+}
+
+.room-sign--teabag .room-sign__label::before {
+  border-radius: 0;
+  background: none;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 0 1.1em;
+  border-image: url('/assets/ui/plaque-brackets.webp') 0 86 fill / 0 1.1em stretch;
+  box-shadow: none;
+  clip-path: none;
+  filter: drop-shadow(0 0.15em 0.2em rgb(20 10 4 / 0.45));
+}
+
+.room-sign--teabag .room-sign__string {
+  height: 1.6em;
+  background: #e8dcc0;
+}
+
+/* Ajustes tras comparar con la maqueta: el marcapáginas cuelga desde la página hacia fuera del libro y la etiqueta
+   del té cae por debajo de la placa del portátil */
+.room-sign--bookmark {
+  transform: translateX(calc(-50% + var(--nudge, 0px))) rotate(34deg);
+  transform-origin: 50% 0;
+}
+
+.room-sign--teabag .room-sign__string {
+  height: 4.4em;
+}
+
+/* Ayuda inicial fuera del mundo escalado: tarjeta fija abajo, centrada, por encima de la escena */
+.room-signs-hint {
+  position: fixed;
+  left: 50%;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 40;
+  width: min(320px, calc(100vw - 32px));
+  font-size: 15px;
+  transform: translateX(-50%);
+}
+
+/* Arriba, bajo los controles de la esquina: no tapa el libro de la cama ni otros objetos */
+.room-signs-hint {
+  top: calc(max(12px, env(safe-area-inset-top)) + 64px);
+  bottom: auto;
+}

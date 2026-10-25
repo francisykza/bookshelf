@@ -86,12 +86,13 @@ test('librería: perspectiva recuperada, huecos con profundidad y placas sin sol
   expect(m.overflowX).toBeLessThanOrEqual(0);
   // Cámara general frontal: el mueble no gira
   expect(m.cam).toBe('none');
-  // Cada edición conserva su transformación: −24° en general y −36° para los cantos pintados
+  // Cada edición conserva su transformación propia (casi frontal; los cantos pintados giran algo más)
   for (const b of m.bodies) {
     expect(b.persp).toBe('900px');
     const a = angle(b.t);
-    if (b.edition === 'sprayed_edges') expect(a).toBeGreaterThan(30);
-    else expect(a).toBeGreaterThan(20);
+    // 1.37.0: casi frontales (−12°; cantos pintados −18°), como en la maqueta aprobada
+    if (b.edition === 'sprayed_edges') expect(a).toBeGreaterThan(15);
+    else expect(a).toBeGreaterThan(8);
   }
   for (const row of m.rows) {
     expect(row.rings).toBe(2);
@@ -180,7 +181,7 @@ test('mi reseña: carta con firma y estado privado inequívoco', async ({ page }
   await expect(letter).toBeVisible();
   const style = await letter.evaluate((el) => getComputedStyle(el).borderImageSource);
   expect(style).toContain('/art/library-refresh/letter.webp');
-  await expect(letter.locator('.review-letter__clip')).toHaveCount(1);
+  await expect(letter.locator('.binder-clip')).toHaveCount(1);
   await expect(page.locator('.review-state')).toContainText('Privada');
 });
 
@@ -246,7 +247,7 @@ test('señales de la habitación: decorativas, sin interceptar toques; tocar don
   await expect(signs).toHaveCount(7);
   await expect(page.locator('.room-signs')).toHaveAttribute('aria-hidden', 'true');
   const meta = await signs.evaluateAll((els) => els.map((el) => ({ id: el.dataset.sign, pe: getComputedStyle(el).pointerEvents, focusable: el.matches('button, a, [tabindex]'), text: el.textContent })));
-  expect(meta.map((s) => s.text)).toEqual(['Colección', 'Mi biblioteca', 'Mi lectura', 'Calendario', 'Tiempo de lectura', 'Ambiente', 'Mis sagas']);
+  expect(meta.map((s) => s.text)).toEqual(['Colección', 'Mi biblioteca', 'Mi lectura', 'Mi diario', 'Tiempo de lectura', 'Ambiente', 'Mis sagas']);
   meta.forEach((s) => {
     expect(s.pe).toBe('none');
     expect(s.focusable).toBe(false);

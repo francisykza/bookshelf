@@ -556,3 +556,71 @@
 .club-notebook .review-card + .review-card {
   margin-top: 8px;
 }
+
+/* ── 1.37.0 · Club según «cuaderno-club-maqueta.png» (SPEC §30.6): conversación como mensajes ── */
+.club-notebook .social-title {
+  font-size: 26px;
+}
+
+.club-notebook .club-msg {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 10px;
+  padding: 4px 0;
+  background: none;
+  box-shadow: none;
+}
+
+.club-notebook .club-msg .review-card__head {
+  display: contents;
+}
+
+.club-notebook .club-msg .reader-avatar {
+  grid-row: span 3;
+  align-self: start;
+}
+
+.club-notebook .club-msg .review-card__who {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.club-notebook .club-msg .review-card__who b {
+  color: #2f4b6e;
+  font: 500 15px/1.2 var(--lib-body);
+}
+
+.club-notebook .club-msg .review-card__who small {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.club-notebook .club-msg .review-card__body {
+  justify-self: start;
+  margin: 2px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #ece2cc;
+  font-size: 15.5px;
+  line-height: 1.35;
+}
+
+.club-notebook .club-msg[data-mine] .review-card__body {
+  background: #d9e2c8;
+}
+
+/* Compositor: campo redondeado y botón de envío terracota */
+.club-notebook .club-text {
+  min-height: 48px;
+  border-radius: 24px;
+  padding: 12px 16px;
+  resize: none;
+}
+
+.club-notebook form .social-btn--primary {
+  border-radius: 999px;
+  background: var(--terracotta);
+  border-color: var(--terracotta);
+  color: var(--paper);
+}

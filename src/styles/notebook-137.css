@@ -1,0 +1,289 @@
+/* ── 1.37.0 · Cuaderno del libro según «cuaderno-libro-tres-vistas-maqueta.png» (SPEC §30.4) ─────────────────── */
+
+/* Títulos de página con ramita a tinta en la esquina */
+.sheet-page {
+  position: relative;
+}
+
+.sheet-sprig {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: auto;
+  pointer-events: none;
+}
+
+.sheet-page--journal > .sheet-title,
+.sheet-page--readers > .sheet-title {
+  padding-right: 44px;
+  font-size: clamp(26px, 7vw, 32px);
+}
+
+.sheet-title--review {
+  position: relative;
+  margin-top: 28px;
+  padding-right: 44px;
+  font: 600 clamp(26px, 7vw, 32px)/1.1 var(--lib-display);
+}
+
+.sheet-title--review .sheet-sprig {
+  top: -4px;
+}
+
+/* Filtros como píldoras: «Todo» en latón; cada categoría en su color suave */
+.book-sheet .quote-filter button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid rgb(110 78 46 / 0.25);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--marker, #e9c85e) 28%, #fbf3e0);
+  color: var(--ink);
+  font: 500 15px/1 var(--lib-body);
+}
+
+.book-sheet .quote-filter button:first-child {
+  --marker: #e9c85e;
+}
+
+.book-sheet .quote-filter button[aria-checked='true'] {
+  border-color: #b8913e;
+  box-shadow: inset 0 0 0 1px #b8913e;
+  font-weight: 600;
+}
+
+/* Fecha del día con una línea fina que se prolonga a la derecha */
+.journal-day__date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.journal-day__date::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid rgb(110 78 46 / 0.25);
+}
+
+/* Anotación: banda de color gruesa a la izquierda, clip en la esquina, texto a mano */
+.journal-entry.quote.annotation-card {
+  padding-left: 22px;
+  background: #fbf4e2;
+}
+
+.journal-entry.quote .annotation-card__mark {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  border-radius: 2px 0 0 2px;
+}
+
+.journal-entry.quote blockquote p {
+  font: 500 20px/1.3 var(--lib-hand);
+  font-style: normal;
+}
+
+/* Mi reseña: carta con pinza de latón y doble filete rojizo interior */
+.my-review {
+  position: relative;
+  margin-top: 30px;
+}
+
+.binder-clip {
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  width: 52px;
+  height: 36px;
+  margin-left: -26px;
+  filter: drop-shadow(0 2px 2px rgb(44 30 20 / 0.35));
+  pointer-events: none;
+}
+
+.my-review::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1px solid rgb(168 79 52 / 0.35);
+  box-shadow: inset 0 0 0 3px transparent, inset 0 0 0 4px rgb(168 79 52 / 0.25);
+  pointer-events: none;
+}
+
+.my-review__signature {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.my-review__signature::before {
+  content: none;
+}
+
+.my-review__signature svg {
+  width: 18px;
+  height: 18px;
+  color: #8a6a44;
+}
+
+/* Nota final en tira de papel con su sello */
+.my-review__note {
+  position: relative;
+  margin: 22px 0 6px;
+  padding: 10px 56px 10px 16px;
+  background: #f1e5c8;
+  color: var(--ink-muted);
+  font: italic 500 16px/1.3 var(--lib-display);
+  transform: rotate(-1.5deg);
+  box-shadow: 0 2px 6px rgb(44 30 20 / 0.15);
+}
+
+.my-review__seal {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Voces de lectores: media, estrella y titular en una línea; «Cómo se ha sentido» como fila con flecha */
+.book-sheet .readers__summary {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.book-sheet .readers__headline {
+  font-size: 15px;
+}
+
+.book-sheet .readers__feel {
+  border: 1px solid rgb(110 78 46 / 0.3);
+  border-radius: 8px;
+  background: rgb(255 250 240 / 0.6);
+}
+
+.book-sheet .readers__feel > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 14px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.book-sheet .readers__feel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.book-sheet .readers__feel > summary::after {
+  content: '›';
+  font-size: 22px;
+  transition: transform 160ms ease;
+}
+
+.book-sheet .readers__feel[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+/* Clip de la carta en la esquina superior derecha */
+.review-card__clip {
+  left: auto;
+  right: 26px;
+}
+
+/* Spoilers: franja de papel con ojo tachado */
+.spoiler-band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% + 16px);
+  min-height: 44px;
+  margin: 6px -8px 0;
+  padding: 0 12px;
+  border: 0;
+  background: #efe2c3;
+  color: var(--ink);
+  font: italic 500 16px/1.2 var(--lib-display);
+  text-decoration: none;
+  transform: rotate(-0.8deg);
+  box-shadow: 0 1px 4px rgb(44 30 20 / 0.18);
+  cursor: pointer;
+}
+
+.spoiler-band svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.spoiler-band u {
+  font-style: normal;
+  text-underline-offset: 3px;
+}
+
+/* «Leyendo ahora» de la ficha va en el flujo (la regla antigua lo posicionaba sobre la doble página de la 1.2x) */
+.book-sheet .reading-switch {
+  position: static;
+}
+
+/* Ajustes tras comparar con la lámina: anotación en cursiva serif, estrellas junto al nombre, titular en línea */
+.journal-entry.quote.annotation-card blockquote p {
+  font: italic 500 20px/1.3 var(--lib-display);
+}
+
+.book-sheet .review-card__head {
+  flex-wrap: nowrap;
+}
+
+.book-sheet .review-card__who {
+  flex: 1 1 0;
+}
+
+.book-sheet .review-card__head .rating-stars {
+  flex: none;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.book-sheet .readers__summary {
+  flex-wrap: nowrap;
+  align-items: baseline;
+}
+
+.book-sheet .readers__headline {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* En la carta de la reseña solo se ven las estrellas (el valor sigue anunciándose a lectores de pantalla) */
+.my-review .rating-input__value {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.my-review .rating-input {
+  justify-content: center;
+}
+
+/* En pantallas estrechas las estrellas bajan bajo el nombre: nunca lo tapan */
+@media (max-width: 380px) {
+  .book-sheet .review-card__head {
+    flex-wrap: wrap;
+  }
+
+  .book-sheet .review-card__who {
+    flex: 1 1 140px;
+  }
+}
+
+.book-sheet .review-card__author {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

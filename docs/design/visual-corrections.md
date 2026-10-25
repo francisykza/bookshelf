@@ -111,3 +111,17 @@ anterior y no tiene cabecera ilustrada). Diario general: `diario-general-hoy-maq
 | Mi reseña | Carta con pinza, valoración, firma, spoilers y estado (1.35) dentro del marco | `letter.webp` | — |
 | Lectores | Hojas con clip; «Denunciar / Bloquear» en el menú de opciones | `letter.webp` | — |
 | Club | Vista del club dentro del cuaderno; mensajes como filas ligeras | marco | **Capítulos, Encuentros, aviso de encuentro y avance por capítulo no existen en los datos**; no se simulan |
+
+# 1.37.0 · Comparación con las maquetas aprobadas (SPEC §30)
+
+Capturas lado a lado en `qa-report/capturas-137/` (`cmp-shelf.png`, `cmp-room.png`,
+`chromium-390x844/cmp-libro.png`, `perfil.png`, `club.png`), a 390 × 844 contra la maqueta escalada a la misma altura.
+
+| Pantalla | Coincide | Diferencias que quedan |
+|---|---|---|
+| Biblioteca | Estructura (cabecera, franja, filtros, recuerdos, baldas, placas, etiquetas, tarjeta de añadir), materiales y escala | La ilustración de la polaroid es la portada real; las mini-figuras de saga siguen sobre las portadas; el foco inicial enmarca «Volver al rincón» |
+| Habitación | Placas de latón ilustradas en su objeto, «Mi diario» | El encuadre de la cámara no es el de la maqueta; el texto del marcapáginas es pequeño |
+| Cuaderno del libro | Títulos con ramita, píldoras, anotación, pinza, firma, tira con sello, cabecera de lectores, cartas con clip, franja de spoilers | Las filas de lectura no tienen menú «…» (no hay acciones nuevas); faltan las cintas marcapáginas bajo el cuaderno |
+| Perfil | Escena, placa de la mesa, avatar solapado, trío con separadores, historia que se quedó | Título del panel «Rincón de lector» (no «El rincón de …»); sin adorno de olivo (falta su ilustración); sin porcentaje de la lectura actual (no se publica) |
+| Club | Cuaderno, mensajes con burbuja, compositor | Capítulos, Encuentros, aviso de encuentro, avance, reacciones: sin datos en el servidor |
+| Salón (`salon-rincon-voces-2`) | — | No se ha rehecho en esta pasada |

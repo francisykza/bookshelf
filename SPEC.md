@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.36.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.37.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2785,3 +2785,50 @@ menú de opciones (cerrado hasta que se pide).
 Club: el modelo de datos actual NO tiene capítulos, encuentros ni avance por capítulo (tablas `clubs`,
 `club_members`, `club_invites`, `club_messages`). Las pestañas Conversación/Capítulos/Encuentros, el aviso del
 próximo encuentro y la protección por capítulo de la lámina 157124 no se implementan: no se inventan datos.
+
+## 30. Fidelidad con las maquetas aprobadas (1.37.0)
+
+Referencias definitivas (copias en `docs/design/references/`): `biblioteca-junto-al-mar-maqueta.png`,
+`habitacion-senales-2-maqueta.png`, `cuaderno-libro-tres-vistas-maqueta.png`, `diario-general-hoy-2-maqueta.png`,
+`perfil-rincon-huellas-2-maqueta.png`, `salon-rincon-voces-2-maqueta.png` y `cuaderno-club-maqueta.png`.
+Solo presentación; los datos, permisos y la lógica no cambian.
+
+### 30.1 Recursos
+
+`npm run art:mediterranean` genera además (de `material-diseno/`): `plaque-chains.webp` (placa con cadenas cortas,
+tres cortes de 92 px), `plaque-hanging.webp` (placa ornamentada con cadenas largas), `plaque-brackets.webp` (placa con
+escuadras, cortes de 86 px), `plaque-strap.webp` (placa con correas de cuero) y `bookmark-olive.webp`
+(marcapáginas de cuero oliva y latón), en `/assets/ui/`.
+
+### 30.2 Biblioteca
+
+Cartel de papel con marco de latón y ramitas, subtítulo «La biblioteca junto al mar» con ola, «Volver al rincón»
+como texto. Herramientas como baldosas de icono (Escaparate, Lomos, Libro al azar, Pedir una recomendación,
+Vitrina de Figuras; nombres accesibles), «Añadir libro» terracota, buscador a todo el ancho, filtros como etiquetas
+rectas con icono y color (Leyendo terracota, Leídos salvia). Recuerdos: etiqueta con chincheta y «Ver más · N»,
+papel con la cita y sello, polaroid con la fecha a mano. Libros casi frontales (−12°, cantos pintados −18°).
+Placas de sección con el latón de cadenas y ramitas; la balda de pendientes se titula «Tus próximas historias».
+
+### 30.3 Habitación
+
+Colección y Mi biblioteca: placa con cadenas; Mis sagas: placa ornamentada colgada del astrolabio; Mi diario (antes
+«Calendario»): placa con escuadras en el portátil; Tiempo de lectura: etiqueta de latón con cordel; Ambiente: placa
+con correas sobre la diadema; Mi lectura: marcapáginas de cuero que sale del libro.
+
+### 30.4 Cuaderno del libro
+
+«Mi diario de lectura» con ramita, filtros en píldora, fecha con filete, anotaciones con banda de color y clip.
+Mi reseña: pinza de latón, doble filete, estrellas (el valor queda para lectores de pantalla), firma con pluma y
+tira final «Tu reseña, con tu propia voz.» con sello. Lectores: media y titular en línea, «Cómo se ha sentido esta
+lectura» como fila con flecha, cartas con clip a la derecha, estrellas junto al nombre, franja de spoilers.
+
+### 30.5 Perfil
+
+Avatar solapado con la escena, placa «Recuerdos de lectura» en la mesa, trío con separadores y la tarjeta «Una
+historia que se quedó» con el primer recuerdo real.
+
+### 30.6 Club
+
+Conversación como mensajes (autor, hora y burbuja; los propios en salvia) y compositor redondeado. Capítulos,
+Encuentros, aviso de encuentro, avance por capítulo, reacciones y «mensajes nuevos» siguen sin datos en el servidor:
+no se muestran.

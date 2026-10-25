@@ -5,21 +5,23 @@
 // decorativas (`aria-hidden`, sin eventos de puntero): el control es siempre el hotspot del objeto entero, que queda
 // debajo y recibe el toque. No tapan libros, figuras ni controles.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { SUN_DIAL } from '../../scene/sceneMap';
 import { HangingPlaque } from '../primitives';
 
 // Punto de sujeción de cada señal en px de la escena 941 × 1672
 export const SIGNS = {
-  figures: { x: 226, y: 122, kind: 'plaque', text: 'Colección' },
-  shelf: { x: 232, y: 858, kind: 'plaque', text: 'Mi biblioteca' },
-  // La cinta nace del canto inferior del libro abierto y cae sobre la colcha
-  book: { x: 344, y: 1506, kind: 'ribbon', text: 'Mi lectura' },
-  // Pestaña apoyada en el borde frontal de la base del portátil
-  laptop: { x: 662, y: 1166, kind: 'tab', text: 'Calendario' },
-  // Etiqueta de infusión: el cordel sale del borde del vaso
+  // 1.37.0 (SPEC §30.3): placas de latón ilustradas de /assets/ui, como en habitacion-senales-2-maqueta.png
+  figures: { x: 226, y: 150, kind: 'brass', text: 'Colección' },
+  shelf: { x: 228, y: 508, kind: 'brass', text: 'Mi biblioteca' },
+  // Marcapáginas de cuero y latón que sale del canto izquierdo del libro abierto
+  book: { x: 336, y: 1398, kind: 'bookmark', text: 'Mi lectura' },
+  // Placa con escuadras apoyada en el borde frontal del portátil
+  laptop: { x: 668, y: 1140, kind: 'bracket', text: 'Mi diario' },
+  // Etiqueta de latón colgada del vaso con un cordel
   tray: { x: 846, y: 1098, kind: 'teabag', text: 'Tiempo de lectura' },
-  // Etiqueta de tela cosida, a la derecha de la diadema
-  headphones: { x: 196, y: 1296, kind: 'fabric', text: 'Ambiente' },
+  // Placa con correas de cuero sobre la diadema de los auriculares
+  headphones: { x: 150, y: 1276, kind: 'strap', text: 'Ambiente' },
 };
 
 const HINT_KEY = 'bookshelf:signs-hint-done';
@@ -60,6 +62,13 @@ function useSignsHint(guideActive) {
 function Sign({ id, sign, highlight }) {
   const common = { className: `room-sign room-sign--${sign.kind}`, 'data-sign': id, 'data-highlight': highlight || undefined, style: { left: sign.x, top: sign.y } };
   if (sign.kind === 'plaque') return <HangingPlaque {...common}>{sign.text}</HangingPlaque>;
+  // Placas ilustradas: la imagen es el fondo y el texto es HTML sobre su zona lisa
+  if (['brass', 'bracket', 'strap', 'bookmark', 'hanging'].includes(sign.kind))
+    return (
+      <span {...common}>
+        <span className="room-sign__plate">{sign.text}</span>
+      </span>
+    );
   if (sign.kind === 'chain')
     return (
       <span {...common}>
@@ -132,16 +141,19 @@ export function RoomSigns({ timeOfDay, guideActive }) {
           <Sign key={id} id={id} sign={sign} highlight={hint.show && id === 'shelf'} />
         ))}
         {/* «Mis sagas» cuelga del aro del astrolabio (sigue al astro en cada hora del día) */}
-        <Sign id="sagas" sign={{ x: dial.x, y: dial.y, kind: 'chain', text: 'Mis sagas' }} />
+        <Sign id="sagas" sign={{ x: dial.x, y: dial.y + 30, kind: 'hanging', text: 'Mis sagas' }} />
       </div>
-      {hint.show && (
-        <div className="room-signs-hint" role="note" style={{ left: SIGNS.shelf.x, top: SIGNS.shelf.y + 56 }}>
-          <p>Las placas señalan lo que puedes tocar. Empieza por tu biblioteca.</p>
-          <button type="button" onClick={hint.dismiss}>
-            Entendido
-          </button>
-        </div>
-      )}
+      {/* La ayuda va fuera del mundo escalado (portal): siempre a la vista, sea cual sea el encuadre */}
+      {hint.show &&
+        createPortal(
+          <div className="room-signs-hint" role="note">
+            <p>Las placas señalan lo que puedes tocar. Empieza por tu biblioteca.</p>
+            <button type="button" onClick={hint.dismiss}>
+              Entendido
+            </button>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

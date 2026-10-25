@@ -92,3 +92,26 @@ manifest.notebook.bytes = await size(path.join(UI, 'notebook-frame.webp'));
 manifest.shelf.bytes = { module: await size(path.join(LIB, 'shelf-module.webp')), crossbar: await size(path.join(LIB, 'shelf-crossbar.webp')), woodLight: await size(path.join(LIB, 'wood-light.webp')) };
 await writeFile(path.join(LIB, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(JSON.stringify(manifest, null, 1));
+
+// ── 1.37.0 · Placas de latón y marcapáginas (SPEC §30.1). Recorte a la caja con alfa medida; las placas sencillas
+// se pintan en tres cortes horizontales (los extremos con cadenas o escuadras no se estiran). ──
+{
+  const OUT = path.join(ROOT, 'public', 'assets', 'ui');
+  const items = [
+    // id, archivo, caja (left, top, width, height), ancho final, cortes laterales en px del derivado
+    ['plaque-hanging', 'Placa colgante de estantería en latón antiguo-1 (1).png', [102, 19, 1785, 733], 560, null],
+    ['plaque-chains', 'Placa de latón con cadenas-4 (1).png', [54, 290, 1875, 421], 640, 92],
+    ['plaque-brackets', 'Placa de latón envejecido sin texto-2 (1).png', [70, 170, 1844, 436], 640, 86],
+    ['plaque-strap', 'Placa de latón para estantería-3 (1).png', [74, 127, 2025, 431], 560, null],
+    ['bookmark-olive', 'Marcapáginas de cuero oliva y latón.png', [259, 130, 290, 1676], 160, null],
+  ];
+  manifest.plaques = {};
+  for (const [id, file, [left, top, width, height], w, side] of items) {
+    const out = path.join(OUT, `${id}.webp`);
+    const img = sharp(path.join(SRC, file)).extract({ left, top, width, height }).resize({ width: w });
+    await img.webp({ quality: 84, alphaQuality: 92, effort: 6 }).toFile(out);
+    const m = await sharp(out).metadata();
+    manifest.plaques[id] = { source: file, file: `${id}.webp`, width: m.width, height: m.height, side, bytes: await size(out) };
+  }
+  await writeFile(path.join(LIB, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+}

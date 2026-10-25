@@ -12,6 +12,8 @@ test.beforeEach(async ({ page }, info) => {
   await page.addInitScript(() => {
     try {
       localStorage.setItem('bookshelf_onboarding_done', 'true');
+      // 1.37.0: la ayuda de las señales (descartable, probada en v135) se da por vista para medir la escena despejada
+      localStorage.setItem('bookshelf:signs-hint-done', 'true');
     } catch {
       // sin almacenamiento
     }

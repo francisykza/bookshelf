@@ -64,5 +64,47 @@
       "crossbar": 9264,
       "woodLight": 16728
     }
+  },
+  "plaques": {
+    "plaque-hanging": {
+      "source": "Placa colgante de estantería en latón antiguo-1 (1).png",
+      "file": "plaque-hanging.webp",
+      "width": 560,
+      "height": 230,
+      "side": null,
+      "bytes": 20184
+    },
+    "plaque-chains": {
+      "source": "Placa de latón con cadenas-4 (1).png",
+      "file": "plaque-chains.webp",
+      "width": 640,
+      "height": 144,
+      "side": 92,
+      "bytes": 15530
+    },
+    "plaque-brackets": {
+      "source": "Placa de latón envejecido sin texto-2 (1).png",
+      "file": "plaque-brackets.webp",
+      "width": 640,
+      "height": 151,
+      "side": 86,
+      "bytes": 15478
+    },
+    "plaque-strap": {
+      "source": "Placa de latón para estantería-3 (1).png",
+      "file": "plaque-strap.webp",
+      "width": 560,
+      "height": 119,
+      "side": null,
+      "bytes": 16442
+    },
+    "bookmark-olive": {
+      "source": "Marcapáginas de cuero oliva y latón.png",
+      "file": "bookmark-olive.webp",
+      "width": 160,
+      "height": 925,
+      "side": null,
+      "bytes": 32234
+    }
   }
 }

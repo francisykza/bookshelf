@@ -27,7 +27,7 @@ function Message({ msg, author, mine, owner, onChanged, onRemoved }) {
     }
   };
   return (
-    <article className="review-card">
+    <article className="review-card club-msg" data-mine={mine || undefined}>
       <div className="review-card__head">
         <ReaderAvatar avatarId={author?.avatar_id} alias={author?.alias ?? ''} size="review" />
         <div className="review-card__who">

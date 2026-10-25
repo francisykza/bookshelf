@@ -314,6 +314,19 @@ export function ReaderProfileView({ userId, onClose }) {
           {/* 3 · Última, actual y próxima (solo lo que eligió mostrar) */}
           <BookTrio last={corner.last_book} current={current} next={corner.next_book} />
 
+          {/* «Una historia que se quedó»: el primer recuerdo expuesto, con su dedicatoria (si la tiene) */}
+          {corner.memories?.[0] && (
+            <button type="button" className="huella-story" onClick={() => setMemory(corner.memories[0])}>
+              <span className="huella-story__object" aria-hidden="true">
+                <MemoryObject object={corner.memories[0].object} />
+              </span>
+              <span className="huella-story__text">
+                <b>Una historia que se quedó</b>
+                {corner.memories[0].dedication ? <em>«{corner.memories[0].dedication}»</em> : <em>{corner.memories[0].book?.title}</em>}
+              </span>
+            </button>
+          )}
+
           {/* 4 · Libros que le representan */}
           {corner.signature_books?.length > 0 && (
             <section aria-label="Libros que le representan">

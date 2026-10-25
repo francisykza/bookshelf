@@ -1,0 +1,524 @@
+/* ── 1.37.0 · Biblioteca según «Biblioteca junto al mar» (SPEC §30.2) ──────────────────────────────────────────
+   Referencia: docs/design/references/biblioteca-junto-al-mar-maqueta.png (862 × 1824, móvil a ≈ 2,2×). */
+
+/* Cabecera: «Volver al rincón» como texto sobre la pared */
+.lib-hero__back {
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font: 500 15px/1 var(--lib-body);
+  text-shadow: 0 1px 0 rgb(255 248 230 / 0.8);
+}
+
+.lib-hero__back svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Cartel de papel crema con marco de latón, colgado de dos anillas, con ramitas a los lados */
+.lib-hero__sign {
+  left: 50%;
+  top: 6%;
+}
+
+.lib-hero__plaque .hanging-plaque__rings {
+  height: clamp(12px, 3.6vw, 22px);
+  width: calc(100% - 40px);
+}
+
+.lib-hero__plaque .hanging-plaque__plate {
+  position: relative;
+  padding: 6px clamp(30px, 9vw, 52px);
+  border: 2px solid #b69758;
+  border-radius: 3px;
+  background:
+    url('/art/library-refresh/journal.webp') 0 0 / 300px repeat,
+    #f6ecd6;
+  box-shadow:
+    inset 0 0 0 2px #f6ecd6,
+    inset 0 0 0 3px rgb(140 108 56 / 0.6),
+    0 4px 10px rgb(44 30 20 / 0.3);
+}
+
+.lib-hero__plaque .hanging-plaque__plate::before,
+.lib-hero__plaque .hanging-plaque__plate::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: clamp(16px, 5vw, 26px);
+  height: clamp(16px, 5vw, 26px);
+  transform: translateY(-50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%2378866b'%3E%3Cpath d='M4 20C9 15 14 10 20 4' fill='none' stroke='%2378866b' stroke-width='1.4' stroke-linecap='round'/%3E%3Cellipse cx='8' cy='12' rx='3.4' ry='1.5' transform='rotate(-60 8 12)'/%3E%3Cellipse cx='12' cy='15' rx='3.4' ry='1.5' transform='rotate(-20 12 15)'/%3E%3Cellipse cx='12' cy='8' rx='3.4' ry='1.5' transform='rotate(-60 12 8)'/%3E%3Cellipse cx='16' cy='11' rx='3.4' ry='1.5' transform='rotate(-20 16 11)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+
+.lib-hero__plaque .hanging-plaque__plate::before {
+  left: clamp(6px, 2vw, 14px);
+}
+
+.lib-hero__plaque .hanging-plaque__plate::after {
+  right: clamp(6px, 2vw, 14px);
+  transform: translateY(-50%) scaleX(-1);
+}
+
+.lib-head .lib-hero .library__title .hanging-plaque__plate span {
+  font-size: clamp(24px, 7vw, 40px);
+}
+
+.lib-head .lib-hero .library__title small {
+  color: var(--ink);
+  font: italic 500 clamp(15px, 4.2vw, 22px)/1.2 var(--lib-display);
+}
+
+.lib-hero__wave {
+  width: clamp(36px, 10vw, 60px);
+  height: auto;
+  fill: none;
+  stroke: #6f8793;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* Franja: baldosas de madera clara con icono; la vista activa en latón */
+.lib-strip .lib-head__row--tools {
+  gap: 8px;
+}
+
+.lib-strip .lib-toggle {
+  display: contents;
+}
+
+.lib-strip .lib-toggle button,
+.lib-tile {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  min-width: 44px;
+  padding: 0;
+  border: 1px solid rgb(110 78 46 / 0.4);
+  border-radius: 6px;
+  background: linear-gradient(#f3e7cf, #e3d1ae);
+  color: #3d2817;
+  box-shadow:
+    inset 0 1px 0 rgb(255 250 240 / 0.7),
+    0 2px 3px rgb(44 30 20 / 0.3);
+  cursor: pointer;
+}
+
+.lib-strip .lib-toggle button[aria-checked='true'] {
+  border-color: #9c7f45;
+  background: linear-gradient(#e8cf8f, #c9a85e);
+  color: #2c1e14;
+}
+
+.lib-strip .lib-toggle button svg,
+.lib-tile svg {
+  width: 22px;
+  height: 22px;
+}
+
+.lib-tiles {
+  display: contents;
+}
+
+.lib-tile.shelf-die {
+  filter: none;
+  transform: none;
+}
+
+.lib-tile.shelf-die::before {
+  display: none;
+}
+
+.lib-tile .shelf-die__face {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+}
+
+.lib-tile .shelf-die__dot {
+  fill: currentColor;
+}
+
+.lib-strip .lib-toggle button:focus-visible,
+.lib-tile:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.lib-strip__add {
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+@media (max-width: 400px) {
+  .lib-strip .lib-toggle button,
+  .lib-tile {
+    width: 44px;
+    height: 44px;
+  }
+
+  .lib-strip .lib-head__row--tools {
+    gap: 5px;
+  }
+
+  .lib-strip__add {
+    padding: 0 10px;
+    font-size: 14px;
+  }
+
+  .lib-strip__add svg {
+    display: none;
+  }
+}
+
+/* Cintas de tela con icono y su color: Leyendo terracota, Leídos salvia, Todos y Pendientes lino */
+.lib-tabs .fabric-tab {
+  gap: 6px;
+  font-size: 15px;
+}
+
+.fabric-tab__icon {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+
+.lib-tabs .fabric-tab[data-tone='reading'] {
+  --tab-color: #b3613f;
+  --tab-band: #8f4529;
+  color: #fff6ea;
+}
+
+.lib-tabs .fabric-tab[data-tone='read'] {
+  --tab-color: #8f9a74;
+  --tab-band: #6f7b57;
+  color: #1f2a17;
+}
+
+.lib-tabs .fabric-tab[data-tone='all'],
+.lib-tabs .fabric-tab[data-tone='want'] {
+  --tab-color: #ece0c6;
+  --tab-band: #c9b38a;
+  color: #3d2817;
+}
+
+.lib-tabs .fabric-tab[aria-checked='true'] {
+  font-weight: 700;
+}
+
+.lib-tabs .fabric-tab[aria-checked='true'] .fabric-tab__label {
+  text-decoration-color: currentColor;
+}
+
+.lib-tabs .fabric-tab .fabric-tab__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+@media (max-width: 400px) {
+  .fabric-tab__icon {
+    display: none;
+  }
+}
+
+/* Recuerdos: etiqueta con chincheta, papel con cita y sello, polaroid clavada con su fecha */
+.keepsake-board__toggle {
+  position: relative;
+  padding: 10px 12px 12px;
+  font-size: 19px;
+  transform: rotate(-6deg);
+}
+
+.keepsake-board__toggle::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #e6cf8f, #9c7f45 60%, #5c4521);
+}
+
+.keepsake-paper {
+  text-align: center;
+  padding: 10px 14px 34px;
+}
+
+.keepsake-paper .keepsake-postcard__quote blockquote {
+  padding-right: 0;
+}
+
+.keepsake-paper__seal {
+  top: auto;
+  right: auto;
+  bottom: 4px;
+  left: 50%;
+  margin-left: -15px;
+}
+
+.keepsake-paper .keepsake-postcard figcaption {
+  justify-content: center;
+}
+
+.keepsake-photo {
+  position: relative;
+  padding-bottom: 6px;
+}
+
+.keepsake-photo::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #e6cf8f, #9c7f45 60%, #5c4521);
+}
+
+.keepsake-photo__caption small {
+  font-size: 15px;
+}
+
+/* Placas de sección: latón con cadenas (recurso), en tres cortes; ramitas a los lados del texto */
+.shelf-row__head .hanging-plaque {
+  display: block;
+  min-width: 0;
+  margin-top: -2px;
+}
+
+.shelf-row__head .hanging-plaque__rings {
+  display: none;
+}
+
+.shelf-row__head .hanging-plaque__plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  height: 44px;
+  padding: 12px 6px 0;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 0 28px;
+  border-image: url('/assets/ui/plaque-chains.webp') 0 92 fill / 0 28px stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #2c1e14;
+  font: 600 12.5px/1 var(--lib-body);
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 0 rgb(255 240 200 / 0.6);
+  filter: drop-shadow(0 2px 2px rgb(20 10 4 / 0.45));
+}
+
+.shelf-row__head .hanging-plaque__plate::before,
+.shelf-row__head .hanging-plaque__plate::after {
+  content: '';
+  width: 13px;
+  height: 13px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%235c4521'%3E%3Cpath d='M4 20C9 15 14 10 20 4' fill='none' stroke='%235c4521' stroke-width='1.6' stroke-linecap='round'/%3E%3Cellipse cx='8' cy='12' rx='3.4' ry='1.5' transform='rotate(-60 8 12)'/%3E%3Cellipse cx='12' cy='15' rx='3.4' ry='1.5' transform='rotate(-20 12 15)'/%3E%3Cellipse cx='12' cy='8' rx='3.4' ry='1.5' transform='rotate(-60 12 8)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.shelf-row__head .hanging-plaque__plate::after {
+  transform: scaleX(-1);
+}
+
+.shelf-row__head .hanging-plaque[aria-pressed='true'] .hanging-plaque__plate {
+  box-shadow: none;
+  text-decoration: underline 2px #2c1e14;
+  text-underline-offset: 3px;
+}
+
+.shelf-row__head .hanging-plaque:focus-visible .hanging-plaque__plate {
+  box-shadow: none;
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+}
+
+/* Etiquetas de papel bajo cada libro: hasta dos líneas, del ancho de la portada */
+.book-label {
+  display: -webkit-box;
+  width: calc(100% + 4px);
+  min-width: 0;
+  max-width: none;
+  padding: 2px 5px 3px;
+  background: #f1e5c8;
+  font-size: 11.5px;
+  line-height: 1.15;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* «Añadir un libro»: tarjeta de papel con borde discontinuo, cruz grande y ramita */
+.add-slot {
+  position: relative;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px;
+  background: #f4ead2 url('/art/library-refresh/journal.webp') 0 0 / 300px repeat;
+  outline: 1.5px dashed rgb(110 78 46 / 0.55);
+  outline-offset: -8px;
+  font: 500 16px/1.2 var(--lib-body);
+  text-align: center;
+}
+
+.add-slot > svg:first-child {
+  width: 30px;
+  height: 30px;
+  color: #3d2817;
+  stroke-width: 1.6;
+}
+
+.add-slot__sprig {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 18px;
+  height: 18px;
+  color: #78866b;
+}
+
+/* ── Ajustes tras comparar con la maqueta a 390 × 844 ── */
+.lib-hero__sign {
+  top: 24%;
+}
+
+.lib-strip .lib-toggle button,
+.lib-tile {
+  width: 44px;
+  height: 44px;
+}
+
+@media (min-width: 381px) {
+  .lib-strip__add svg {
+    display: inline;
+  }
+
+  .fabric-tab__icon {
+    display: inline;
+  }
+}
+
+/* Filtros: etiquetas rectas de tela (no en V), letra 14 px */
+.lib-tabs .fabric-tab::before {
+  clip-path: none;
+  border-radius: 2px;
+}
+
+.lib-tabs .fabric-tab {
+  min-height: 40px;
+  padding: 0 6px 2px;
+  font-size: 14px;
+}
+
+.lib-strip .lib-tabs {
+  margin-bottom: -4px;
+}
+
+/* Recuerdos poco profundos: etiqueta + «Ver más», papel de una línea con sello, polaroid pequeña */
+.keepsake-board__tag {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+
+.keepsake-board__tag .keepsake-board__more-btn {
+  min-height: 32px;
+  padding: 0 4px;
+  background: none;
+  color: var(--paper);
+  font: 500 13px/1 var(--lib-body);
+  text-decoration: underline 1px rgb(248 241 225 / 0.6);
+  text-underline-offset: 3px;
+}
+
+.keepsake-board__tag .keepsake-board__more-btn::after {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
+}
+
+.keepsake-board__tag .keepsake-board__more-btn {
+  position: relative;
+}
+
+.keepsake-paper {
+  padding: 8px 10px 30px;
+}
+
+.keepsake-paper .keepsake-postcard__quote {
+  min-height: 0;
+}
+
+.keepsake-paper .keepsake-postcard__quote blockquote {
+  -webkit-line-clamp: 2;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.keepsake-paper .keepsake-postcard figcaption {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.keepsake-paper .keepsake-postcard figcaption span:empty {
+  display: none;
+}
+
+.keepsake-paper__seal {
+  margin-left: -13px;
+}
+
+.keepsake-paper::after {
+  content: '';
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  width: 22px;
+  margin-left: -11px;
+  border-top: 1px solid rgb(110 78 46 / 0.4);
+}
+
+.keepsake-photo {
+  width: clamp(64px, 19vw, 92px);
+  transform: rotate(3deg);
+}
+
+/* Libros casi frontales, como en la maqueta (se ve un poco del canto y del lomo) */
+.library .book3d__body,
+.library .book3d[data-edition] .book3d__body {
+  transform: rotateY(-12deg) rotateX(2deg);
+}
+
+.library .book3d[data-edition='sprayed_edges'] .book3d__body {
+  transform: rotateY(-18deg) rotateX(2deg);
+}
+
+.library .book3d:hover .book3d__body,
+.library .book3d:focus-visible .book3d__body,
+.library .book3d[data-edition]:hover .book3d__body,
+.library .book3d[data-edition]:focus-visible .book3d__body {
+  transform: rotateY(-4deg) rotateX(2deg) translateY(-6px) translateZ(10px);
+}
+
+/* Objetivo táctil de 44 px en las etiquetas de filtro (la tela visible sigue siendo baja) */
+.lib-tabs .fabric-tab {
+  min-height: 44px;
+}

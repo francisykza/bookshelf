@@ -105,10 +105,10 @@ test('librería: cabecera compacta, baldas modulares y libros visibles al abrir'
     // Los libros se ven en el primer encuadre
     expect(m.bookBottom).toBeLessThanOrEqual(m.viewport);
   }
-  // 1.35.0 (SPEC §28.4): se recupera la geometría anterior a la 1.34.0, rotateY(-24deg) rotateX(6deg)
+  // 1.37.0 (SPEC §30.2): libros casi frontales como en la maqueta aprobada, rotateY(-12deg)
   if (m.bodyTransform && m.bodyTransform !== 'none') {
     const v = m.bodyTransform.match(/matrix3d\(([^)]+)\)/)?.[1].split(',').map(Number);
-    if (v) expect(Math.abs((Math.acos(Math.min(1, v[0])) * 180) / Math.PI)).toBeGreaterThan(20);
+    if (v) expect(Math.abs((Math.acos(Math.min(1, v[0])) * 180) / Math.PI)).toBeGreaterThan(8);
   }
   await shot(page, info, 'v134-libreria');
 });
@@ -133,16 +133,12 @@ test('librería: filtros, búsqueda y vistas se conservan; herramientas plegadas
   await page.getByRole('radio', { name: 'Escaparate' }).click();
   await expect(input).toHaveValue(st.books[0].author.split(' ').at(-1));
   await input.fill('');
-  // Herramientas: el dado, el bibliotecario y la vitrina, plegados; Escape cierra
-  const tools = page.getByRole('button', { name: 'Herramientas' });
-  await tools.click();
-  await expect(tools).toHaveAttribute('aria-expanded', 'true');
-  const list = page.locator('.lib-tools__list');
-  await expect(list.getByRole('button', { name: 'Libro al azar' })).toBeVisible();
-  await expect(list.getByRole('button', { name: 'Vitrina de Figuras' })).toBeVisible();
+  // 1.37.0: herramientas como baldosas con icono y nombre accesible (dado, bibliotecario y vitrina)
+  const tools = page.getByRole('group', { name: 'Herramientas' });
+  await expect(tools.getByRole('button', { name: 'Libro al azar' })).toBeVisible();
+  await expect(tools.getByRole('button', { name: 'Pedir una recomendación' })).toBeVisible();
+  await expect(tools.getByRole('button', { name: 'Vitrina de Figuras' })).toBeVisible();
   await shot(page, info, 'v134-herramientas');
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: 'Libro al azar' })).toHaveCount(0);
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
   // Nada cambia de estado
   expect((await stored(page)).books.map((b) => [b.id, b.status])).toEqual(st.books.map((b) => [b.id, b.status]));
@@ -154,7 +150,7 @@ test('recuerdos: uno destacado con fecha fiable; sin terminados ni cita, nada', 
   const st = await stored(page);
   await openLibrary(page);
   const dated = st.books.filter((b) => b.status === 'read' && b.finishedAt).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
-  if (dated.length) await expect(page.locator('.keepsake-note')).toContainText(dated[0].title);
+  if (dated.length) await expect(page.locator('.keepsake-note')).toHaveAttribute('aria-label', new RegExp(dated[0].title));
   // Hiedra: como mucho dos, decorativa
   const ivy = await page.evaluate(() => [...document.querySelectorAll('.lib-ivy')].map((el) => ({ pe: getComputedStyle(el).pointerEvents, hidden: el.getAttribute('aria-hidden'), w: el.getBoundingClientRect().width })));
   expect(ivy.length).toBeLessThanOrEqual(2);

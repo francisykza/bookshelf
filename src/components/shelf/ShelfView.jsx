@@ -1,7 +1,7 @@
 // `SHELF_VIEW` (SPEC §27.3–27.5, §28.4): la librería como un mueble de madera gouache con profundidad. Cabecera
 // compacta (volver, buscador, cintas de estado, vista y herramientas), un tablón de recuerdos plegable dentro del
 // mueble, una balda por estado con laterales, tabla y placa de latón colgada, y como mucho dos ramas de hiedra.
-import { ArrowLeft, BookOpen, ChevronDown, Library, Plus, Search, Sparkles, Trophy, Wrench, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronDown, CircleCheck, Hourglass, Library, Plus, Search, Sparkles, Trophy, X } from 'lucide-react';
 import { FabricTab, HangingPlaque, WaxSeal } from '../primitives';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
@@ -28,7 +28,7 @@ export function cropStyle(region) {
 
 const ROWS = [
   { id: 'reading', label: 'Leyendo ahora', empty: 'Ningún libro abierto: elige uno de Pendientes' },
-  { id: 'want', label: 'Pendientes', empty: 'Tu lista de deseos está vacía' },
+  { id: 'want', label: 'Tus próximas historias', empty: 'Tu lista de deseos está vacía' },
   { id: 'read', label: 'Leídos', empty: 'Aquí irán los libros terminados' },
 ];
 
@@ -46,6 +46,17 @@ const FILTERS = [
   { id: 'want', label: 'Pendientes' },
   { id: 'read', label: 'Leídos' },
 ];
+
+/** Ramita para «Todos» (los demás usan iconos de lucide). */
+function Sprig(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" {...props}>
+      <path d="M4 20C9 15 14 10 20 4" />
+      <path d="M8 16c-2 0-3-1-4-3M11 13c0-2 1-4 3-5M12 12c-2 0-4-1-5-3M15 9c1-2 2-3 4-3" />
+    </svg>
+  );
+}
+const FILTER_ICONS = { all: Sprig, reading: BookOpen, want: Hourglass, read: CircleCheck };
 
 const DIE_DOTS = {
   1: [[20, 20]],
@@ -99,6 +110,11 @@ function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
           <ChevronDown aria-hidden="true" />
           <span className="sr-only-focus">{folded ? 'Mostrar' : 'Plegar'}</span>
         </button>
+        {!folded && rest.length > 0 && (
+          <button type="button" className="keepsake-board__more-btn" aria-expanded={moreOpen} aria-controls="keepsake-more" onClick={() => setMoreOpen((v) => !v)}>
+            Ver más · {rest.length}
+          </button>
+        )}
       </h2>
       {!folded && (
         <div id="keepsake-board-pins" className="keepsake-board__pins">
@@ -122,12 +138,7 @@ function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
                 <b>{last.title}</b>
               </p>
             )}
-            <WaxSeal className="keepsake-paper__seal" size={34} />
-            {rest.length > 0 && (
-              <button type="button" className="keepsake-board__more-btn" aria-expanded={moreOpen} aria-controls="keepsake-more" onClick={() => setMoreOpen((v) => !v)}>
-                Ver más recuerdos · {rest.length}
-              </button>
-            )}
+            <WaxSeal className="keepsake-paper__seal" size={26} />
           </div>
           {/* Fotografía: la portada del último libro terminado, con su fecha */}
           {last && (
@@ -136,7 +147,6 @@ function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
                 <Cover book={last} />
               </span>
               <span className="keepsake-photo__caption" aria-hidden="true">
-                <b>{last.title}</b>
                 <small>{shortDate(last.finishedAt)}</small>
               </span>
             </button>
@@ -304,9 +314,10 @@ function ShelfRow({ row, index, books, mode, rowH, onOpenBook, onEdition, onAdd,
           ))}
           {!books.length && <p className="shelf-row__empty">{emptyText ?? row.empty}</p>}
           {onAdd && (
-            <button type="button" className="add-slot" onClick={onAdd} style={{ height: Math.round(rowH * 0.82) }}>
+            <button type="button" className="add-slot" onClick={onAdd} style={{ height: Math.round(rowH * 0.92) }}>
               <Plus aria-hidden="true" />
               <span>Añadir un libro</span>
+              <Sprig aria-hidden="true" className="add-slot__sprig" />
             </button>
           )}
         </div>
@@ -319,69 +330,26 @@ function ShelfRow({ row, index, books, mode, rowH, onOpenBook, onEdition, onAdd,
   );
 }
 
-/** «Herramientas»: las acciones secundarias de la librería, plegadas en una hoja de papel. */
-function ToolsMenu({ dieFace, rolling, onRoll, onAskLibrarian, onOpenVault }) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-  const buttonRef = useRef(null);
-  useEffect(() => {
-    if (!open) return undefined;
-    const onDown = (event) => {
-      if (!wrapRef.current?.contains(event.target)) setOpen(false);
-    };
-    const onKey = (event) => {
-      if (event.key !== 'Escape') return;
-      event.stopPropagation();
-      setOpen(false);
-      buttonRef.current?.focus({ preventScroll: true });
-    };
-    document.addEventListener('pointerdown', onDown);
-    window.addEventListener('keydown', onKey, true);
-    return () => {
-      document.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('keydown', onKey, true);
-    };
-  }, [open]);
-  const pick = (fn) => () => {
-    setOpen(false);
-    fn();
-  };
+/** Herramientas como baldosas de madera con icono (SPEC §30.2): libro al azar, recomendación y vitrina. */
+function ToolTiles({ dieFace, rolling, onRoll, onAskLibrarian, onOpenVault }) {
   return (
-    <div ref={wrapRef} className="lib-tools">
-      <button ref={buttonRef} type="button" className="lib-btn lib-btn--ghost" aria-label="Herramientas" title="Herramientas" aria-expanded={open} aria-controls="lib-tools-list" onClick={() => setOpen((v) => !v)}>
-        <Wrench aria-hidden="true" />
-        <span className="sr-only-focus">Herramientas</span>
-        <ChevronDown aria-hidden="true" className="lib-tools__caret" />
+    <div className="lib-tiles" role="group" aria-label="Herramientas">
+      <button type="button" className="lib-tile shelf-die" data-rolling={rolling} onClick={onRoll} aria-label="Libro al azar" title="Libro al azar">
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="5" y="5" width="30" height="30" rx="7" className="shelf-die__face" />
+          {DIE_DOTS[dieFace].map(([cx, cy]) => (
+            <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="3" className="shelf-die__dot" />
+          ))}
+        </svg>
       </button>
-      {open && (
-        <ul id="lib-tools-list" className="lib-tools__list">
-          <li>
-            <button type="button" className="shelf-die" data-rolling={rolling} onClick={pick(onRoll)}>
-              <svg viewBox="0 0 40 40" aria-hidden="true">
-                <rect x="3" y="3" width="34" height="34" rx="8" className="shelf-die__face" />
-                {DIE_DOTS[dieFace].map(([cx, cy]) => (
-                  <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="3.4" className="shelf-die__dot" />
-                ))}
-              </svg>
-              <span>Libro al azar</span>
-            </button>
-          </li>
-          {onAskLibrarian && (
-            <li>
-              <button type="button" onClick={pick(onAskLibrarian)}>
-                <Sparkles aria-hidden="true" />
-                <span>Pedir una recomendación</span>
-              </button>
-            </li>
-          )}
-          <li>
-            <button type="button" onClick={pick(() => onOpenVault())}>
-              <Trophy aria-hidden="true" />
-              <span>Vitrina de Figuras</span>
-            </button>
-          </li>
-        </ul>
+      {onAskLibrarian && (
+        <button type="button" className="lib-tile" onClick={onAskLibrarian} aria-label="Pedir una recomendación" title="Pedir una recomendación">
+          <Sparkles aria-hidden="true" />
+        </button>
       )}
+      <button type="button" className="lib-tile" onClick={() => onOpenVault()} aria-label="Vitrina de Figuras" title="Vitrina de Figuras">
+        <Trophy aria-hidden="true" />
+      </button>
     </div>
   );
 }
@@ -512,7 +480,12 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
                 <HangingPlaque className="lib-hero__plaque">
                   <span>Mi biblioteca</span>
                 </HangingPlaque>
-                <small>La biblioteca de {settings.owner}</small>
+                <small>
+                  La biblioteca junto al mar <span className="sr-only-focus">de {settings.owner}</span>
+                </small>
+                <svg className="lib-hero__wave" viewBox="0 0 80 10" aria-hidden="true">
+                  <path d="M2 6c10-6 18 4 28 0s16-6 26-1 14 4 22-1" />
+                </svg>
               </h1>
             </div>
           </div>
@@ -527,7 +500,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
                   <Library aria-hidden="true" />
                 </button>
               </div>
-              <ToolsMenu dieFace={dieFace} rolling={rolling} onRoll={roll} onAskLibrarian={onAskLibrarian} onOpenVault={onOpenVault} />
+              <ToolTiles dieFace={dieFace} rolling={rolling} onRoll={roll} onAskLibrarian={onAskLibrarian} onOpenVault={onOpenVault} />
               <button type="button" className="lib-btn lib-btn--accent lib-strip__add" onClick={onAddBook}>
                 <Plus aria-hidden="true" />
                 <span>Añadir libro</span>
@@ -561,11 +534,15 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
             </div>
             {/* Cintas de tela: qué baldas ver */}
             <div className="lib-tabs" role="radiogroup" aria-label="Qué baldas ver">
-              {FILTERS.map((f) => (
-                <FabricTab key={f.id} selected={filter === f.id} tone={f.id} data-status={f.id} onClick={() => setFilter(f.id)}>
-                  {f.label}
-                </FabricTab>
-              ))}
+              {FILTERS.map((f) => {
+                const Icon = FILTER_ICONS[f.id];
+                return (
+                  <FabricTab key={f.id} selected={filter === f.id} tone={f.id} data-status={f.id} onClick={() => setFilter(f.id)}>
+                    <Icon aria-hidden="true" className="fabric-tab__icon" />
+                    {f.label}
+                  </FabricTab>
+                );
+              })}
             </div>
           </div>
         </header>

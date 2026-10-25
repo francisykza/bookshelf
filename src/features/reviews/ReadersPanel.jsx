@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { RatingStars } from '../../components/book/Rating';
 import { OptionsMenu } from '../../components/book/Annotations';
-import { Ban, Flag } from 'lucide-react';
+import { Ban, EyeOff, Flag } from 'lucide-react';
 import { CommunityGate } from '../social/components/SocialHub';
 import { useCommunity } from '../social/hooks/useCommunity';
 import { PAGE_SIZE, blockUser, fetchProfiles, fetchReviews, fetchStats, reportContent } from '../social/services/community';
@@ -102,8 +102,9 @@ export function ReviewCard({ review, author, mine, onBlock, onReport, onOpenAuth
         (open ? (
           <p className="review-card__body">{review.body}</p>
         ) : (
-          <button type="button" className="spoiler-toggle" onClick={() => setOpen(true)}>
-            Contiene spoilers · Mostrar la reseña
+          <button type="button" className="spoiler-toggle spoiler-band" onClick={() => setOpen(true)}>
+            <EyeOff aria-hidden="true" />
+            Contiene spoilers · <u>Mostrar</u>
           </button>
         ))}
       {confirming && (

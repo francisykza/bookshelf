@@ -2,7 +2,7 @@
 // portada y título, estado, progreso, «Registrar lectura», valoración y favorito, y los detalles de la edición
 // plegados. Diario: cuaderno de entradas fechadas con lo que ya existe (sesiones, citas subrayadas y la reseña).
 // Lectores: las opiniones de la comunidad. Solo presentación: los datos y operaciones son los de siempre.
-import { BookMarked, ChevronDown, Heart, Lock, Minus, NotebookPen, PenLine, Plus, Trash2, X } from 'lucide-react';
+import { BookMarked, ChevronDown, Feather, Heart, Lock, Minus, NotebookPen, PenLine, Plus, Trash2, X } from 'lucide-react';
 import { Suspense, lazy, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
@@ -444,16 +444,19 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
           </section>
 
           <section className="sheet-page sheet-page--journal" aria-label="Diario de lectura" hidden={page !== 'right'}>
-            <h3 className="sheet-title">Diario de lectura</h3>
+            <SheetSprig />
+            <h3 className="sheet-title">Mi diario de lectura</h3>
             <p className="sheet-private">
               <Lock aria-hidden="true" /> Solo para ti
             </p>
             <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} onShow={setShownQuote} />
-            <h3 className="sheet-title sheet-title--small" id="my-review-title">
+            <h3 className="sheet-title sheet-title--review" id="my-review-title">
+              <SheetSprig />
               Mi reseña
             </h3>
             <p className="sheet-subtitle">Tu impresión de esta historia.</p>
-            <ReviewLetter className="my-review" aria-labelledby="my-review-title">
+            <ReviewLetter className="my-review" clip={false} aria-labelledby="my-review-title">
+              <BinderClip />
               <div className="my-review__rating">
                 <RatingInput value={book.rating} onChange={(rating) => update({ rating })} />
               </div>
@@ -466,10 +469,17 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
                 aria-label="Tu reseña"
                 rows={5}
               />
-              <p className="my-review__signature">{settings.owner || 'Lectora'}</p>
+              <p className="my-review__signature">
+                <Feather aria-hidden="true" />
+                {settings.owner || 'Lectora'}
+              </p>
             </ReviewLetter>
             <ReviewState book={book} draft={review} />
             <PublishControls book={book} onUpdate={update} onOpenProfile={onOpenProfile} />
+            <p className="my-review__note" aria-hidden="true">
+              Tu reseña, con tu propia voz.
+              <WaxSeal size={36} className="my-review__seal" />
+            </p>
           </section>
 
           {page === 'readers' && (
@@ -496,6 +506,36 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
         />
       )}
     </PanelShell>
+  );
+}
+
+/** Ramita a tinta en la esquina de los títulos del cuaderno (decoración). */
+function SheetSprig() {
+  return (
+    <svg className="sheet-sprig" viewBox="0 0 48 64" aria-hidden="true">
+      <g fill="none" stroke="#8a6a44" strokeWidth="1.2" strokeLinecap="round">
+        <path d="M10 62C18 44 26 28 40 4" />
+        <path d="M18 46c-6-2-9-6-10-11M22 38c6-1 10-5 11-10M26 30c-5-3-7-7-7-12M31 22c5-2 8-5 9-10" />
+      </g>
+      <g fill="#c98a6a">
+        <circle cx="8" cy="34" r="2" />
+        <circle cx="33" cy="27" r="2" />
+        <circle cx="19" cy="17" r="1.8" />
+        <circle cx="40" cy="11" r="1.8" />
+      </g>
+    </svg>
+  );
+}
+
+/** Pinza de latón que sujeta la carta de la reseña (decoración). */
+function BinderClip() {
+  return (
+    <svg className="binder-clip" viewBox="0 0 64 44" aria-hidden="true">
+      <path d="M23 22V12a9 9 0 0 1 18 0v10" fill="none" stroke="#7a5f30" strokeWidth="3.2" strokeLinecap="round" />
+      <rect x="10" y="20" width="44" height="20" rx="4" fill="#c2a15b" stroke="#6e5524" strokeWidth="1.5" />
+      <rect x="14" y="23" width="36" height="4" rx="2" fill="#ecd9a0" opacity="0.8" />
+      <path d="M10 34h44" stroke="#8a6f3e" strokeWidth="1.2" />
+    </svg>
   );
 }
 
