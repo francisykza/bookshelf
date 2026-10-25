@@ -4,7 +4,7 @@
 // vaso y una cinta que sale del libro—. Se anclan en px de la ilustración (rejilla sobre `cozy-book-room.jpg`) y son
 // decorativas (`aria-hidden`, sin eventos de puntero): el control es siempre el hotspot del objeto entero, que queda
 // debajo y recibe el toque. No tapan libros, figuras ni controles.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SUN_DIAL } from '../../scene/sceneMap';
 import { HangingPlaque } from '../primitives';
@@ -91,10 +91,52 @@ function Sign({ id, sign, highlight }) {
   );
 }
 
+/**
+ * Placas junto al borde del encuadre (SPEC §30.8): si el recorte de la escena deja una placa en parte fuera, se desliza
+ * hacia dentro lo justo para leerla y pulsarla (la silueta visible, 8 px de margen). Solo en horizontal y sobre la
+ * parte visible de su objeto: el punto de sujeción sigue en él. Se recalcula al mover la cámara o cambiar el tamaño.
+ */
+function useKeepInView(ref, deps) {
+  useLayoutEffect(() => {
+    const root = ref.current;
+    const panel = root?.closest('[data-panel]');
+    const world = root?.closest('.scene-world');
+    if (!root || !panel) return undefined;
+    let frame = 0;
+    const fit = () => {
+      frame = 0;
+      const box = panel.getBoundingClientRect();
+      const left = Math.max(box.left, 0) + 8;
+      const right = Math.min(box.right, window.innerWidth) - 8;
+      root.querySelectorAll('.room-sign:not(.room-sign--bookmark)').forEach((el) => {
+        el.style.setProperty('--nudge', '0px');
+        const visible = el.querySelector('.room-sign__plate, .room-sign__label') ?? el;
+        const r = visible.getBoundingClientRect();
+        const k = parseFloat(getComputedStyle(el).getPropertyValue('--k')) || 1;
+        const dx = r.left < left ? left - r.left : r.right > right ? right - r.right : 0;
+        if (dx) el.style.setProperty('--nudge', `${(dx / k).toFixed(1)}px`);
+      });
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(fit);
+    };
+    schedule();
+    const mo = new MutationObserver(schedule);
+    if (world) mo.observe(world, { attributes: true, attributeFilter: ['style'] });
+    window.addEventListener('resize', schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      mo.disconnect();
+      window.removeEventListener('resize', schedule);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
 export function RoomSigns({ timeOfDay, guideActive }) {
   const hint = useSignsHint(guideActive);
   const ref = useRef(null);
-  // Las placas no se desplazan para caber: siguen ancladas a su objeto (los anclajes están dentro de cada objeto)
+  useKeepInView(ref, [timeOfDay]);
   const dial = SUN_DIAL[timeOfDay] ?? SUN_DIAL.morning;
   return (
     <>

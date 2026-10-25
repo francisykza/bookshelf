@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.38.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.38.1 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2845,3 +2845,13 @@ no se muestran.
   + `translateX(-50%)` de la 1.2x): ocupa el ancho del contenido y se desplaza dentro de sí mismo.
 - Mi diario: menos relleno en la ventana y marco más fino; «Volver» en su fila; mes en una línea con controles de
   44 px; calendario de siete columnas `minmax(0, 1fr)` con celdas 4:5; reserva inferior para el dock.
+
+### 30.8 Diario sin desbordes y placas legibles (1.38.1)
+
+- Diario: en Safari/WebKit el `<select>` de la lectura con un título largo y las palabras sin espacios ensanchaban el
+  cuaderno y el portátil (906 px a 390). El desplegable ocupa el ancho disponible, el texto se parte y los
+  contenedores permiten encoger; el título del libro en Notas parte línea. Verificado en WebKit y Chromium (Hoy,
+  Calendario y Notas a 360/390/430, sin elementos más anchos que la pantalla).
+- Placas: «Mi lectura» centrada en la zona lisa del latón (16–59 % del alto) y a lo largo del marcapáginas. Las
+  placas que el recorte deja en el borde se deslizan hacia dentro lo justo para leerse y pulsarse (8 px de margen),
+  sobre la parte visible de su objeto; se recalcula al mover la cámara.

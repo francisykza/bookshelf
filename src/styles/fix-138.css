@@ -226,3 +226,76 @@
 .diary .diary__view {
   padding-bottom: 96px;
 }
+
+/* ── 1.38.1 · Diario sin desbordes en Safari (SPEC §30.8) ──
+   Causa: en WebKit un <select> mide lo que su opción más larga y las palabras sin espacios no se parten; dentro de
+   rejillas y flex con min-width automático, eso ensanchaba el cuaderno y, con él, el portátil entero (906 px a 390).
+   Se corrige en el origen: el desplegable ocupa el ancho disponible y el texto se parte; los contenedores permiten
+   encoger (min-width: 0). */
+.diary-picker {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.diary-picker select {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+
+.diary,
+.diary .notebook-shell__page,
+.diary__view,
+.diary-today,
+.diary-notes,
+.diary-section,
+.diary-book__text,
+.diary-notes__filters,
+.window[data-app='calendar'],
+.window[data-app='calendar'] .window__body {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.diary :is(p, b, small, span, blockquote, h3, h4),
+.diary .diary-reflection__text,
+.diary-notes .journal-entry.quote blockquote p {
+  overflow-wrap: anywhere;
+}
+
+.diary-search {
+  min-width: 0;
+}
+
+.diary-search input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* El título del libro de cada nota parte línea (con nowrap, su ancho intrínseco ensanchaba la lista) */
+.diary-notes__book {
+  display: inline;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+
+.diary-notes__list,
+.diary-notes__list > li {
+  min-width: 0;
+}
+
+/* «Mi lectura»: zona lisa del latón medida en el recurso (y 150–545 de 925 → 16–59 %; x 18–82 %); el texto sigue
+   el eje largo del marcapáginas (vertical dentro de la placa, que gira con él) */
+.room-sign--bookmark .room-sign__text {
+  top: 17%;
+  bottom: 42%;
+  left: 18%;
+  right: 18%;
+  font-size: 1em;
+  letter-spacing: 0.03em;
+  text-orientation: mixed;
+}
