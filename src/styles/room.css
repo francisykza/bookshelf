@@ -3713,13 +3713,37 @@ html[data-motion='reduced'] .tod__glow::after {
 }
 
 /* Vida ambiental: destellos del mar, llama de la vela y motas de polvo (transform y opacity) */
+/* Agua en movimiento (SPEC §26.2): el canvas ocupa la caja de la bahía, debajo de reflejos y veleros */
+.sea-ripple {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+/* Reflejos pintados (SPEC §26.3): elipses alargadas de borde suave que aparecen, derivan y se desvanecen */
+.bay {
+  --glint: #d9e5dc;
+  --glint-max: 0.38;
+}
+
+.bay[data-tod='sunset'] {
+  --glint: #e8c88e;
+  --glint-max: 0.36;
+}
+
+.bay[data-tod='night'] {
+  --glint: #a7bdc7;
+  --glint-max: 0.22;
+}
+
 .sea-glint {
   position: absolute;
-  height: 1.6px;
+  height: 3.2px;
+  margin-top: -1.6px;
   border-radius: 50%;
-  background: #fff8e8;
+  background: radial-gradient(ellipse at 50% 50%, var(--glint) 0%, rgb(255 255 255 / 0) 70%);
   opacity: 0;
-  animation: sea-glint 4s ease-in-out infinite;
+  animation: sea-glint 9s ease-in-out infinite;
   animation-play-state: paused;
 }
 
@@ -3731,11 +3755,15 @@ html[data-motion='reduced'] .tod__glow::after {
   0%,
   100% {
     opacity: 0;
-    transform: scaleX(0.6);
+    transform: translateX(-3px) scaleX(0.7);
   }
-  50% {
-    opacity: 0.18;
-    transform: scaleX(1);
+  45% {
+    opacity: var(--glint-max);
+    transform: translateX(0) scaleX(1);
+  }
+  70% {
+    opacity: calc(var(--glint-max) * 0.6);
+    transform: translateX(2px) scaleX(1.05);
   }
 }
 
@@ -3978,18 +4006,26 @@ html[data-motion='reduced'] .tod__glow::after {
   user-select: none;
 }
 
-/* Guirnaldas: giro mínimo sobre su anclaje en la viga o el arco (≈ 2 px en la punta más lejana) y 1 px de
-   desplazamiento; ciclo de 17 s con ≈ 62 % de reposo; cada grupo con su desfase */
-.room-refresh__layer[data-motion='sway'] {
-  animation: refresh-sway 17s ease-in-out infinite;
+/* Brisa (SPEC §26.1): la amplitud se fija en px CSS de la punta más lejana (`--tip`) y se convierte a ángulo con su
+   distancia al anclaje (`--reach`, px de escena) y la escala de la escena (`--k`): el mismo recorrido visible en
+   móvil y escritorio (≈ 1,1° en un móvil de 390 px). Una ráfaga de 10 s: sube, oscila amortiguada y vuelve a
+   reposo durante ~3 s; las dos guirnaldas, desfasadas 0,8 s. Sin saltos: empieza y acaba en 0. */
+.room-refresh__layer[data-motion] {
+  --a: calc(var(--tip) / var(--reach) * 57.2958deg / var(--k, 1));
   animation-play-state: paused;
 }
 
-/* Cortina: solo la tela libre bajo el recogido; su borde superior (bajo el nudo) no se mueve y el bajo se
-   desplaza ≈ 3 px. No gira la cortina entera */
+.room-refresh__layer[data-motion='sway'] {
+  animation: refresh-sway 10s ease-in-out infinite;
+  /* después del atajo `animation`, que la reiniciaría a «running» */
+  animation-play-state: paused;
+}
+
+/* Cortina: solo la tela libre bajo el recogido, inclinada desde su borde superior (bajo el nudo, que no se mueve):
+   el bajo recorre ≈ 6 px CSS. 8,5 s, empieza 1,4 s después de la vegetación. No gira ni se traslada entera */
 .room-refresh__layer[data-motion='drape'] {
   transform-origin: 50% 0;
-  animation: refresh-drape 19s ease-in-out infinite;
+  animation: refresh-drape 8.5s ease-in-out infinite;
   animation-play-state: paused;
 }
 
@@ -4000,29 +4036,38 @@ html[data-motion='reduced'] .tod__glow::after {
 
 @keyframes refresh-sway {
   0%,
-  38%,
+  72%,
   100% {
-    transform: translate(0, 0) rotate(0deg);
+    transform: rotate(0deg);
   }
-  12% {
-    transform: translate(1px, -0.5px) rotate(0.2deg);
+  14% {
+    transform: rotate(var(--a));
   }
-  24% {
-    transform: translate(-0.5px, 0.3px) rotate(-0.12deg);
+  30% {
+    transform: rotate(calc(var(--a) * -0.55));
+  }
+  46% {
+    transform: rotate(calc(var(--a) * 0.35));
+  }
+  60% {
+    transform: rotate(calc(var(--a) * -0.15));
   }
 }
 
 @keyframes refresh-drape {
   0%,
-  40%,
+  75%,
   100% {
     transform: skewX(0deg);
   }
-  14% {
-    transform: skewX(-0.55deg);
+  18% {
+    transform: skewX(calc(var(--a) * -1));
   }
-  27% {
-    transform: skewX(0.3deg);
+  38% {
+    transform: skewX(calc(var(--a) * 0.5));
+  }
+  56% {
+    transform: skewX(calc(var(--a) * -0.2));
   }
 }
 

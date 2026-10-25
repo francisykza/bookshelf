@@ -25,7 +25,7 @@ export function SocialRoom({ status, onRetry, attempt = 0, active = false, reduc
     >
       {status !== 'error' && <SceneBase room={ROOMS.SOCIAL_ROOM} attempt={attempt} priority="low" />}
       {/* Veleros ambientales de la bahía del ventanal (Anexo A), en pausa cuando el salón no está a la vista */}
-      {status === 'ok' && <BaySailboats roomId="SOCIAL_ROOM" sea={ROOMS.SOCIAL_ROOM.sea} active={active} reducedMotion={reducedMotion} />}
+      {status === 'ok' && <BaySailboats roomId="SOCIAL_ROOM" sea={ROOMS.SOCIAL_ROOM.sea} active={active} reducedMotion={reducedMotion} src={ROOMS.SOCIAL_ROOM.src} />}
       {status === 'ok' && onOpenHub && <SocialSeats active={active} timer={timer} onOpenHub={onOpenHub} onOpenReader={onOpenReader} onOpenGuardian={onOpenGuardian} />}
     </SceneStage>
   );

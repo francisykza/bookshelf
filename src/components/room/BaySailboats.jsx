@@ -7,13 +7,16 @@
 // ningún velero reclama atención ni es interactivo; en la Fase 2 solo el velero `sea.interactive` lo será.
 import { useEffect, useState } from 'react';
 import { boatPhase, insidePolygon, staticPoint } from '../../scene/sea';
+import { useLibrary } from '../../state/useLibrary';
+import { SeaRipple } from './SeaRipple';
 
 /** Polígonos → `clip-path: path()` en px del lienzo (el contenedor empieza en el origen de la imagen). */
 const clipPath = (polys) => `path('${polys.map((p) => `M${p.map(([x, y]) => `${x} ${y}`).join(' L')} Z`).join(' ')}')`;
 
 /**
- * Destellos del agua (SPEC §19.6): puntos deterministas DENTRO de las regiones de agua (y la máscara los recorta de
- * todos modos); ciclos desfasados de 3–6 s y opacidad máxima 0,18. Nunca sobre tierra, marcos ni montes.
+ * Reflejos pintados del agua (SPEC §26.3): pocas formas alargadas de bordes suaves, en puntos deterministas DENTRO
+ * del agua (y la máscara los recorta de todos modos), que aparecen, derivan despacio y se desvanecen (7–11 s). El
+ * color sigue la hora: crema azulado de día, dorado apagado al atardecer y azul plateado de noche.
  */
 function glintsFor(roomId, sea, count) {
   const out = [];
@@ -23,7 +26,7 @@ function glintsFor(roomId, sea, count) {
     const ys = poly.map((p) => p[1]);
     const x = Math.min(...xs) + boatPhase(`${roomId}-gx`, i) * (Math.max(...xs) - Math.min(...xs));
     const y = Math.min(...ys) + boatPhase(`${roomId}-gy`, i) * (Math.max(...ys) - Math.min(...ys));
-    if (insidePolygon([x, y], poly) && insidePolygon([x - 5, y], poly) && insidePolygon([x + 5, y], poly)) out.push({ x, y, d: 3 + boatPhase(`${roomId}-gd`, i) * 3, w: 6 + (i % 3) * 2 });
+    if (insidePolygon([x, y], poly) && insidePolygon([x - 9, y], poly) && insidePolygon([x + 9, y], poly)) out.push({ x, y, d: 7 + boatPhase(`${roomId}-gd`, i) * 4, w: 14 + (i % 3) * 5 });
   }
   return out;
 }
@@ -43,7 +46,8 @@ function Sailboat({ size }) {
   );
 }
 
-export function BaySailboats({ roomId, sea, active = true, reducedMotion = false, quote = null, onOpenQuote = null, count = 2 }) {
+export function BaySailboats({ roomId, sea, active = true, reducedMotion = false, quote = null, onOpenQuote = null, count = 2, src = null }) {
+  const timeOfDay = useLibrary().state.settings.timeOfDay;
   // Pestaña oculta → pausa (además de la habitación inactiva o tapada por un modal)
   const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
   useEffect(() => {
@@ -53,13 +57,15 @@ export function BaySailboats({ roomId, sea, active = true, reducedMotion = false
   }, []);
   if (!sea?.lanes?.length) return null;
   const lanes = sea.lanes.slice(0, Math.min(3, Math.max(1, count)));
-  const glints = glintsFor(roomId, sea, 10);
+  const glints = glintsFor(roomId, sea, 7);
   const running = active && visible && !reducedMotion;
   // Fase 1: sin cita navegante no hay velero interactivo (se conserva el contrato para la Fase 2)
   const interactive = Boolean(quote && onOpenQuote);
 
   return (
-    <div className="bay" data-room={roomId} data-running={running || undefined} data-reduced={reducedMotion || undefined} style={{ clipPath: clipPath(sea.water) }} aria-hidden={interactive ? undefined : 'true'}>
+    <div className="bay" data-room={roomId} data-tod={timeOfDay} data-running={running || undefined} data-reduced={reducedMotion || undefined} style={{ clipPath: clipPath(sea.water) }} aria-hidden={interactive ? undefined : 'true'}>
+      {/* Agua en movimiento: la textura del mar de la ilustración, ondulada dentro de la máscara */}
+      {src && !reducedMotion && <SeaRipple src={src} sea={sea} running={running} />}
       {glints.map((g, i) => (
         <span key={`g${i}`} className="sea-glint" style={{ left: g.x - g.w / 2, top: g.y, width: g.w, animationDuration: `${g.d.toFixed(2)}s`, animationDelay: `${(-g.d * boatPhase(roomId, i + 7)).toFixed(2)}s` }} />
       ))}

@@ -360,3 +360,31 @@ test('escena recompuesta: si falla un recurso se queda la ilustración original,
   expect(await page.locator('.room-shelf-lips image').getAttribute('href')).toMatch(/cozy-book-room\.jpg$/);
   expect(await page.locator('.laptop-foreground').getAttribute('src')).toMatch(/laptop-foreground\.png$/);
 });
+
+test('mar vivo (1.33.0): el agua ondula dentro de la máscara, no intercepta toques y se detiene con un panel', async ({ page }, info) => {
+  await load(page);
+  await expect(page.locator('.scene-refresh-base')).toHaveCount(1, { timeout: 15000 });
+  const reduced = info.project.name.includes('reduced');
+  const ripple = page.locator('[data-panel="MAIN_ROOM"] .sea-ripple');
+  if (reduced) {
+    // Movimiento reducido: composición estática (sin canvas)
+    await expect(ripple).toHaveCount(0);
+    return;
+  }
+  await expect(ripple).toHaveCount(1);
+  expect(await ripple.evaluate((el) => [getComputedStyle(el).pointerEvents, el.closest('.bay') !== null])).toEqual(['none', true]);
+  // Dos lecturas del canvas separadas en el tiempo: cambia mientras anima y no cambia con un panel delante
+  const pixels = () => ripple.evaluate((c) => Array.from(c.getContext('2d').getImageData(0, 0, c.width, c.height).data.filter((_, i) => i % 97 === 0)));
+  const changed = (x, y) => x.reduce((n, v, i) => n + (v !== y[i] ? 1 : 0), 0);
+  await page.waitForTimeout(800);
+  const a = await pixels();
+  await page.waitForTimeout(900);
+  expect(changed(a, await pixels())).toBeGreaterThan(0);
+  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="laptop"]').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.panel-veil')).toHaveCount(1);
+  await page.waitForTimeout(300);
+  const p1 = await pixels();
+  await page.waitForTimeout(900);
+  expect(changed(p1, await pixels())).toBe(0);
+});

@@ -180,7 +180,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         {art.ready && <RefreshBase />}
 
         {/* 5 · veleros de la bahía, recortados por la máscara del agua (detrás de la luz del día) */}
-        <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} />
+        <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} src={art.src} />
         <AmbientLife active={live} reducedMotion={reducedMotion} candleOn={settings.candleOn} timeOfDay={settings.timeOfDay} />
         {/* La vegetación ilustrada sustituye a las hojas SVG: nunca las dos a la vez */}
         {art.ready ? <RefreshLayers active={live} reducedMotion={reducedMotion} /> : <BreezeLeaves active={live} reducedMotion={reducedMotion} />}

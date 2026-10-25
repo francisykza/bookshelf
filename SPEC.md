@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.32.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.33.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2407,3 +2407,47 @@ Servicio `features/social/services/connections.js`; reglas puras en `features/so
 - Requieren dispositivo o servidor real: suspensión y reapertura en Safari de iPhone (la caducidad está probada en
   el servidor y la reconciliación al volver, en código), teclado móvil abierto y la prueba con dos cuentas en el
   proyecto de Supabase tras aplicar la migración.
+
+## 26. Brisa visible y mar vivo (1.33.0)
+
+Solo animaciones: fondo, recursos, colocación, lomos y funciones sin cambios. Estados: **VERIFICADO** (medido en
+movimiento en esta entrega) o con su limitación.
+
+### 26.1 Brisa · VERIFICADO
+
+- La amplitud se fija en px CSS de la punta más lejana (`motion.tip` en `SCENE_REFRESH`) y se convierte a ángulo
+  con la distancia al anclaje (`motion.reach`) y la escala de la escena (`--k`): el mismo recorrido visible en
+  todas las pantallas. Guirnaldas 5 y 5,5 px (≈ 1,1° en un móvil de 390 px; 0,36° en escritorio); son los dos
+  únicos grupos separables (no hay grupos pequeños de hojas sueltas). Ráfaga de 10 s: sube, oscila amortiguada y
+  reposa ~3 s; la derecha va 0,8 s detrás. Empieza y acaba en 0 (sin saltos). Anclajes fijos.
+- Cortina: solo la tela bajo el recogido, inclinada desde su borde superior; el bajo recorre ≈ 6 px CSS, 8,5 s,
+  1,4 s después de la vegetación. La parte superior y el nudo no se mueven.
+
+### 26.2 Mar vivo · VERIFICADO
+
+- `SeaRipple` (canvas 2D dentro de `.bay`, en ambas habitaciones): redibuja el agua de la ilustración activa
+  (`art.src` / salón) con desplazamiento horizontal de 1–2,5 px CSS (menos al fondo, más en primer término), dos
+  ondas de 6,4 s y 10,8 s, muestreo bilineal. Reemplaza el agua dentro de la máscara (no es una copia encima).
+- El peso de la deformación es 0 fuera del agua, crece en los 7 px de escena junto al borde y se anula alrededor
+  de los veleros pintados (`sea.paintedBoats`): costa, pueblo, montes, marcos y veleros pintados no se mueven.
+- Textura y máscara se preparan una vez por resolución (DPR máx. 1,5); cada fotograma solo recorre los píxeles de
+  agua a ~30 fps, sin estado de React. En pausa con la pestaña oculta, fuera de la habitación o con un panel; sin
+  canvas con movimiento reducido; si algo falla, no se pinta (queda la ilustración). Sin eventos.
+- Máscaras de MAIN_ROOM algo ampliadas siguiendo el agua visible (arriba y a la derecha), sin invadir tierra.
+
+### 26.3 Reflejos pintados · VERIFICADO
+
+- Los destellos pasan a ser 7 reflejos alargados de borde suave (elipses con degradado, sin filtros) que aparecen,
+  derivan 5 px y se desvanecen en 7–11 s. Color según la hora: `#D9E5DC` (día), `#E8C88E` (atardecer) y
+  `#A7BDC7` (noche, con menos opacidad para que el agua no parezca luminosa). Un único sistema de veleros y reflejos.
+
+### 26.4 Verificación
+
+- Medido en movimiento (fotogramas separados 1,7 s): en el agua cambia (diferencia media 3,7–5,7 en 390 Chromium
+  y WebKit) y en el pueblo y el velero pintado de la habitación, 0; en el salón, el entorno del velero pintado se
+  queda en 0,25–0,30 (borde de la zona protegida y reflejos que pasan). Prueba `mar vivo` en `e2e/v128.spec.js`:
+  el canvas cambia mientras anima, no cambia con un panel, no existe con movimiento reducido y no intercepta toques.
+  Brisa: duración, ángulo y pausa con panel u otra habitación (prueba de la escena recompuesta).
+- Grabaciones de ~15 s en `qa-report/videos-movimiento/` (390 Chromium y WebKit, 1440).
+- Limitaciones: con el encuadre actual (que no se ha tocado) la bahía no se ve en escritorio a 1440 × 900 en
+  ninguna de las dos habitaciones; no hay medición de fps ni prueba en iPhone físico.

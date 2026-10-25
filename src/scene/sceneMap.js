@@ -19,8 +19,14 @@ export const ROOMS = {
     // (pueblo, montes, cipreses, hiedra y carpintería quedan fuera de la máscara)
     sea: {
       water: [
-        [[800, 642], [880, 622], [880, 742], [845, 746], [806, 736], [798, 700]],
-        [[770, 772], [868, 770], [875, 800], [870, 862], [800, 876], [770, 862]],
+        // 1.33.0: algo más de agua visible arriba y a la derecha (sin tocar costa, árboles ni hiedra)
+        [[798, 642], [884, 616], [884, 748], [845, 750], [806, 738], [798, 700]],
+        [[770, 770], [868, 766], [878, 800], [870, 862], [800, 876], [770, 862]],
+      ],
+      // Veleros pintados en la ilustración (con su reflejo): la ondulación del agua no los toca (cx, cy, rx, ry)
+      paintedBoats: [
+        [777, 800, 10, 20],
+        [804, 826, 13, 30],
       ],
       // Veleros pintados en (775, 792) y (805, 820): los carriles van por encima del pueblo y al pie de la bahía
       lanes: [
@@ -49,6 +55,10 @@ export const ROOMS = {
     // Bahía vista por el ventanal izquierdo (dentro del cristal: el marco queda fuera del agua)
     sea: {
       water: [[[45, 640], [150, 615], [190, 620], [180, 660], [165, 700], [195, 720], [230, 735], [225, 760], [150, 775], [100, 770], [70, 740], [45, 700]]],
+      paintedBoats: [
+        [94, 692, 10, 18],
+        [162, 758, 12, 22],
+      ],
       // Veleros pintados en (94, 688) y (162, 754): los carriles pasan lejos de ellos
       lanes: [
         { from: [64, 662], to: [166, 646], size: 14 },
@@ -81,10 +91,13 @@ export const SCENE_REFRESH = {
   foreground: refresh('portatil-primer-plano'),
   layers: [
     { id: 'cortina-alta', x: 476, y: 0, w: 159, h: 495 },
-    { id: 'cortina-caida', x: 476, y: 495, w: 159, h: 303, motion: { kind: 'drape', delay: '-3.6s' } },
+    // `tip`: recorrido objetivo en px CSS de la punta más lejana (igual en todas las pantallas: se divide por la
+    // escala de la escena); `reach`: distancia en px de la escena del anclaje a esa punta. `delay`: retardo de la
+    // misma ráfaga (la cortina responde después de la vegetación)
+    { id: 'cortina-caida', x: 476, y: 495, w: 159, h: 303, motion: { kind: 'drape', tip: 6, reach: 303, delay: '1.4s' } },
     { id: 'enredadera-poste', x: 340, y: 80, w: 129, h: 660 },
-    { id: 'hiedra-izquierda', x: 0, y: 0, w: 443, h: 358, motion: { kind: 'sway', origin: [60, 10], delay: '0s' } },
-    { id: 'hiedra-derecha', x: 437, y: 0, w: 504, h: 476, motion: { kind: 'sway', origin: [253, 0], delay: '-5.1s' } },
+    { id: 'hiedra-izquierda', x: 0, y: 0, w: 443, h: 358, motion: { kind: 'sway', origin: [60, 10], tip: 5, reach: 517, delay: '0s' } },
+    { id: 'hiedra-derecha', x: 437, y: 0, w: 504, h: 476, motion: { kind: 'sway', origin: [253, 0], tip: 5.5, reach: 538, delay: '0.8s' } },
   ].map((l) => ({ ...l, src: refresh(l.id) })),
 };
 

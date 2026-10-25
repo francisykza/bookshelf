@@ -36,7 +36,7 @@ export function RefreshLayers({ active, reducedMotion }) {
           style={{
             left: l.x,
             top: l.y,
-            ...(l.motion ? { animationDelay: l.motion.delay, transformOrigin: l.motion.origin ? `${l.motion.origin[0]}px ${l.motion.origin[1]}px` : '50% 0' } : null),
+            ...(l.motion ? { animationDelay: l.motion.delay, transformOrigin: l.motion.origin ? `${l.motion.origin[0]}px ${l.motion.origin[1]}px` : '50% 0', '--tip': l.motion.tip, '--reach': l.motion.reach } : null),
           }}
         />
       ))}
