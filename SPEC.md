@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.31.1 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.31.2 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2314,6 +2314,11 @@ entrega), **PENDIENTE DE DESPLIEGUE** (código y migración listos; falta aplica
   cuenta creaba una obra local propia y B no veía la reseña de A. Una opinión publicada en una obra local se mueve
   a la compartida con «Actualizar publicación» (se retira de la local). Con un panel abierto se ocultan las flechas
   de las baldas y del panorama, que asomaban por encima del velo en iPhone.
+
+- 1.31.2: bloquear y denunciar piden confirmación en la propia tarjeta; «Mi Perfil & Avatar» lista las personas
+  bloqueadas (función `my_blocked_profiles`, migración `20261025110000_entrega2_lista_bloqueos.sql`, porque las
+  políticas ocultan el perfil de quien está bloqueado) y permite desbloquear, también con confirmación. Sin esa
+  migración aplicada la lista muestra «Lector bloqueado» y desbloquear funciona igual.
 
 ### 25.3 Reseñas privadas y publicación explícita · VERIFICADO
 

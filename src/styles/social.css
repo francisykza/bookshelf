@@ -516,3 +516,49 @@ body:has(#modal-root .panel-veil) .scroll-chevron,
 body:has(#modal-root .panel-veil) .panorama-nav {
   visibility: hidden;
 }
+
+/* Confirmaciones en línea (bloquear, desbloquear, denunciar) y lista de personas bloqueadas */
+.social-confirm {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(110, 78, 46, 0.3);
+  border-radius: 8px;
+  background: #fffdf6;
+}
+
+.social-confirm p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.blocked-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--social-line);
+}
+
+.blocked-list h3 {
+  margin: 0;
+  font-family: 'Cormorant Garamond', var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.blocked-list__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.blocked-list__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

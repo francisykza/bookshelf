@@ -157,3 +157,19 @@ describe('bloqueos, denuncias y moderación', () => {
     expect(await rejects(as(db, null, (q) => q('select * from public_reviews')))).toMatch(/permission denied/);
   });
 });
+
+describe('lista de bloqueos', () => {
+  it('cada persona ve solo a quien ella ha bloqueado, con alias y avatar; desbloquear lo quita', async () => {
+    await as(db, A, (q) => q('insert into blocks (blocked) values ($1)', [B]));
+    const mine = await as(db, A, (q) => q('select user_id, alias, avatar_id from my_blocked_profiles()'));
+    expect(mine).toEqual([{ user_id: B, alias: 'Bruno', avatar_id: 'gato-lector' }]);
+    // B no ve la lista de A (la suya está vacía) y sin sesión no se puede llamar
+    expect(await as(db, B, (q) => q('select * from my_blocked_profiles()'))).toEqual([]);
+    expect(await rejects(as(db, null, (q) => q('select * from my_blocked_profiles()')))).toMatch(/permission denied/);
+    // B no puede borrar el bloqueo de A
+    expect(await as(db, B, (q) => q('delete from blocks where blocker = $1 returning blocked', [A]))).toEqual([]);
+    await as(db, A, (q) => q('delete from blocks where blocked = $1', [B]));
+    expect(await as(db, A, (q) => q('select * from my_blocked_profiles()'))).toEqual([]);
+    expect(await as(db, A, (q) => q('select alias from profiles where user_id = $1', [B]))).toEqual([{ alias: 'Bruno' }]);
+  });
+});

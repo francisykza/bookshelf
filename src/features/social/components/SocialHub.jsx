@@ -6,6 +6,7 @@ import { AVATARS } from '../../../domain/avatars';
 import { PanelShell } from '../../../components/panels/PanelShell';
 import { ALIAS_MAX, aliasError } from '../../reviews/opinion';
 import { useCommunity } from '../hooks/useCommunity';
+import { fetchMyBlocks, unblockUser } from '../services/community';
 
 /** Mensaje para cada estado en el que la comunidad aún no se puede usar. */
 export function CommunityGate({ status, error, onRetry }) {
@@ -102,7 +103,77 @@ function ProfileTab() {
         </button>
         <span role="status">{message}</span>
       </div>
+      {profile && <BlockedList />}
     </form>
+  );
+}
+
+/** Personas bloqueadas, con confirmación antes de desbloquear. */
+function BlockedList() {
+  const [list, setList] = useState(null);
+  const [failure, setFailure] = useState('');
+  const [confirming, setConfirming] = useState(null);
+  const [notice, setNotice] = useState('');
+  useEffect(() => {
+    let alive = true;
+    fetchMyBlocks()
+      .then((rows) => alive && setList(rows))
+      .catch((e) => alive && setFailure(e.message));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const unblock = async (person) => {
+    setConfirming(null);
+    setFailure('');
+    try {
+      await unblockUser(person.user_id);
+      setList((rows) => rows.filter((r) => r.user_id !== person.user_id));
+      setNotice(`Has desbloqueado a ${person.alias ?? 'esta persona'}.`);
+    } catch (e) {
+      setFailure(e.message);
+    }
+  };
+  return (
+    <section className="blocked-list" aria-label="Personas bloqueadas">
+      <h3>Personas bloqueadas</h3>
+      {failure && (
+        <p className="social-error" role="alert">
+          {failure}
+        </p>
+      )}
+      {notice && (
+        <p className="social-note" role="status">
+          {notice}
+        </p>
+      )}
+      {list === null && !failure && <p className="social-note">Cargando…</p>}
+      {list?.length === 0 && <p className="social-note">No has bloqueado a nadie.</p>}
+      {list?.map((person) => {
+        const name = person.alias ?? 'Lector bloqueado';
+        return (
+          <div key={person.user_id} className="blocked-list__row">
+            <ReaderAvatar avatarId={person.avatar_id} alias={name} size="list" />
+            <b className="blocked-list__name">{name}</b>
+            {confirming === person.user_id ? (
+              <span className="social-actions" role="alertdialog" aria-label={`Desbloquear a ${name}`}>
+                <span>¿Desbloquear? Volveréis a ver vuestras aportaciones.</span>
+                <button type="button" className="social-btn social-btn--primary" onClick={() => unblock(person)}>
+                  Sí, desbloquear
+                </button>
+                <button type="button" className="social-btn" onClick={() => setConfirming(null)}>
+                  Cancelar
+                </button>
+              </span>
+            ) : (
+              <button type="button" className="social-btn" onClick={() => setConfirming(person.user_id)}>
+                Desbloquear
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </section>
   );
 }
 

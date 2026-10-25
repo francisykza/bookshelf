@@ -143,6 +143,26 @@ export async function blockUser(userId) {
   cache.stats.clear();
 }
 
+/** Personas que he bloqueado (con alias y avatar si la función del servidor está disponible). */
+export async function fetchMyBlocks() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('my_blocked_profiles');
+  if (!error) return data ?? [];
+  if (!['PGRST202', '42883'].includes(error.code)) fail(error);
+  // Sin la segunda migración: solo los ids (las políticas ocultan el perfil de quien está bloqueado)
+  const res = await sb.from('blocks').select('blocked, created_at').order('created_at', { ascending: false });
+  fail(res.error);
+  return (res.data ?? []).map((b) => ({ user_id: b.blocked, alias: null, avatar_id: null, blocked_at: b.created_at }));
+}
+
+export async function unblockUser(userId) {
+  const sb = await client();
+  const { error } = await sb.from('blocks').delete().eq('blocked', userId);
+  fail(error);
+  cache.profiles.delete(userId);
+  cache.stats.clear();
+}
+
 export async function reportContent(targetType, targetId, reason) {
   const sb = await client();
   const { error } = await sb.from('reports').upsert({ target_type: targetType, target_id: targetId, reason: reason.slice(0, 500) }, { onConflict: 'reporter,target_type,target_id', ignoreDuplicates: true });

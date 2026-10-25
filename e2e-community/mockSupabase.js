@@ -73,6 +73,13 @@ export function createMockSupabase(db = { profiles: [], works: [], public_review
     const url = new URL(req.url());
     if (url.pathname.startsWith('/auth/v1/')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: userId }) });
     const table = url.pathname.replace('/rest/v1/', '');
+    if (table === 'rpc/my_blocked_profiles') {
+      const rows = db.blocks.filter((b) => b.blocker === userId).map((b) => {
+        const p = db.profiles.find((x) => x.user_id === b.blocked);
+        return { user_id: b.blocked, alias: p?.alias ?? null, avatar_id: p?.avatar_id ?? null, blocked_at: b.created_at };
+      });
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) });
+    }
     const params = [...url.searchParams.entries()];
     const single = (req.headers().accept ?? '').includes('vnd.pgrst.object');
     const prefer = req.headers().prefer ?? '';
@@ -113,6 +120,11 @@ export function createMockSupabase(db = { profiles: [], works: [], public_review
         }
       }
       return send(out);
+    }
+    if (req.method() === 'DELETE') {
+      const gone = db[table].filter((r) => r[OWNER[table]] === userId && matches(r, params));
+      db[table] = db[table].filter((r) => !gone.includes(r));
+      return route.fulfill({ status: 204, body: '' });
     }
     if (req.method() === 'PATCH') {
       const rows = db[table].filter((r) => r[OWNER[table]] === userId && matches(r, params));

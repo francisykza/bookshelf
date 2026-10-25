@@ -14,6 +14,8 @@ const fmtDate = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numer
 
 export function ReviewCard({ review, author, mine, onBlock, onReport }) {
   const [open, setOpen] = useState(!review.has_spoilers);
+  // Acción pendiente de confirmar: 'block' | 'report' | null
+  const [confirming, setConfirming] = useState(null);
   const rating = fromQuarters(review.rating_quarters);
   const alias = author?.alias ?? 'Lector';
   return (
@@ -34,18 +36,44 @@ export function ReviewCard({ review, author, mine, onBlock, onReport }) {
             Contiene spoilers · Mostrar la reseña
           </button>
         ))}
-      {!mine && (onBlock || onReport) && (
+      {!mine && (onBlock || onReport) && !confirming && (
         <div className="review-card__menu">
           {onReport && (
-            <button type="button" onClick={() => onReport(review)}>
+            <button type="button" onClick={() => setConfirming('report')}>
               Denunciar
             </button>
           )}
           {onBlock && (
-            <button type="button" onClick={() => onBlock(review.user_id)}>
+            <button type="button" onClick={() => setConfirming('block')}>
               Bloquear a {alias}
             </button>
           )}
+        </div>
+      )}
+      {confirming && (
+        <div className="social-confirm" role="alertdialog" aria-label={confirming === 'block' ? `Bloquear a ${alias}` : 'Denunciar esta reseña'}>
+          <p>
+            {confirming === 'block'
+              ? `¿Bloquear a ${alias}? Dejaréis de ver vuestras aportaciones. Puedes deshacerlo en «Mi Perfil & Avatar» → Personas bloqueadas.`
+              : '¿Denunciar esta reseña? Solo la verá moderación; la otra persona no sabrá quién la ha denunciado.'}
+          </p>
+          <div className="social-actions">
+            <button
+              type="button"
+              className="social-btn social-btn--primary"
+              onClick={() => {
+                const action = confirming;
+                setConfirming(null);
+                if (action === 'block') onBlock(review.user_id);
+                else onReport(review);
+              }}
+            >
+              {confirming === 'block' ? 'Sí, bloquear' : 'Sí, denunciar'}
+            </button>
+            <button type="button" className="social-btn" onClick={() => setConfirming(null)}>
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
     </article>

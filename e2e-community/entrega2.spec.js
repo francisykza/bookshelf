@@ -252,3 +252,41 @@ test('una opinión publicada antes en una obra local se mueve a la obra comparti
   expect(mock.db.public_reviews.find((r) => r.work_id === ext.id)).toMatchObject({ status: 'published', body: 'Muy fiel' });
   expect(mock.db.public_reviews.find((r) => r.work_id === local.id).status).toBe('withdrawn');
 });
+
+test('bloquear pide confirmación y se puede deshacer desde «Personas bloqueadas»', async ({ page }) => {
+  const mock = createMockSupabase();
+  const work = { id: '77777777-7777-4777-8777-777777777777', kind: 'local', title: 'Circe', author: 'Madeline Miller' };
+  mock.db.works.push(work);
+  mock.db.profiles.push({ user_id: ANA.id, alias: 'Ana lectora', avatar_id: 'gato-lector', community_enabled: true }, { user_id: BRUNO.id, alias: 'Bruno', avatar_id: 'lector-farol', community_enabled: true });
+  mock.db.public_reviews.push({ id: '88888888-8888-4888-8888-888888888888', work_id: work.id, user_id: BRUNO.id, rating_quarters: 12, body: 'Interesante', has_spoilers: false, status: 'published', published_at: new Date().toISOString() });
+  await mock.attach(page, ANA);
+  await page.addInitScript(`(() => { try { const st = JSON.parse(localStorage.getItem('bookshelf:v1')); if (!st) return; const b = st.books.find((x) => x.id === st.settings.currentBookId) ?? st.books.find((x) => x.status === 'reading'); b.workId = '${work.id}'; b.isbn = ''; localStorage.setItem('bookshelf:v1', JSON.stringify(st)); } catch (e) {} })()`);
+  await ready(page);
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await openCurrentBook(page);
+  await page.getByRole('tab', { name: 'Lectores' }).click();
+  const readers = page.getByLabel('Voces de lectores');
+  await readers.getByRole('button', { name: 'Bloquear a Bruno' }).click();
+  // Primero se pide confirmación; cancelar no bloquea
+  await expect(readers.getByRole('alertdialog', { name: 'Bloquear a Bruno' })).toBeVisible();
+  await readers.getByRole('button', { name: 'Cancelar' }).click();
+  expect(mock.db.blocks).toEqual([]);
+  await readers.getByRole('button', { name: 'Bloquear a Bruno' }).click();
+  await readers.getByRole('button', { name: 'Sí, bloquear' }).click();
+  await expect(readers.locator('.review-card')).toHaveCount(0);
+  expect(mock.db.blocks).toEqual([expect.objectContaining({ blocker: ANA.id, blocked: BRUNO.id })]);
+  // Desbloquear desde el perfil, también con confirmación
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.panel-veil')).toHaveCount(0);
+  await openProfile(page);
+  const blocked = page.getByLabel('Personas bloqueadas');
+  await expect(blocked).toContainText('Bruno');
+  await blocked.getByRole('button', { name: 'Desbloquear' }).click();
+  await blocked.getByRole('button', { name: 'Cancelar' }).click();
+  expect(mock.db.blocks).toHaveLength(1);
+  await blocked.getByRole('button', { name: 'Desbloquear' }).click();
+  await blocked.getByRole('button', { name: 'Sí, desbloquear' }).click();
+  await expect(blocked).toContainText('Has desbloqueado a Bruno');
+  expect(mock.db.blocks).toEqual([]);
+});
