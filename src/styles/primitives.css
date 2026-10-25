@@ -521,3 +521,159 @@
   white-space: normal;
   text-align: center;
 }
+
+/* ── 1.35.1 · Señales sujetas a su objeto (docs/design/visual-corrections.md) ──────────────────────────────
+   Escala contenida (≈ 11 px en pantalla), papel cálido en vez de blanco, una sola línea, sin polígonos grandes. */
+.room-sign {
+  font-size: max(10px, calc(11px / var(--k, 1)));
+}
+
+/* Latón mate: menos brillo y menos saturación */
+.room-sign .hanging-plaque__plate {
+  padding: 0.18em 0.8em;
+  background:
+    radial-gradient(circle at 0.55em 50%, #6f5a30 0 0.11em, transparent 0.14em),
+    radial-gradient(circle at calc(100% - 0.55em) 50%, #6f5a30 0 0.11em, transparent 0.14em),
+    linear-gradient(#c4ad7e, #ad9461 60%, #957c4c);
+  box-shadow:
+    inset 0 1px 0 rgb(255 244 214 / 0.35),
+    0 0.15em 0.3em rgb(44 30 20 / 0.4);
+  color: #2c1e14;
+  font-weight: 600;
+}
+
+.room-sign .hanging-plaque__rings {
+  height: 0.8em;
+}
+
+/* «Mis sagas»: cadena en V desde un punto del aro del astrolabio */
+.room-sign--chain {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 1.35em;
+}
+
+.room-sign__chain {
+  display: block;
+  width: 5.2em;
+  height: 1.7em;
+  margin-bottom: -0.15em;
+  overflow: visible;
+  fill: none;
+  stroke: #8a6f3e;
+  stroke-width: 1.4;
+  stroke-dasharray: 2.2 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.room-sign__chain circle {
+  fill: #8a6f3e;
+  stroke: none;
+}
+
+/* Pestaña de papel apoyada en el borde del portátil: tira estrecha, papel cálido, una línea */
+.room-sign--tab .room-sign__label {
+  padding: 0.25em 0.7em 0.35em;
+}
+
+.room-sign--tab .room-sign__label::before {
+  border-radius: 0 0 0.3em 0.3em;
+  background:
+    linear-gradient(var(--terracotta), var(--terracotta)) 0 0 / 100% 0.18em no-repeat,
+    #efe2c4;
+  box-shadow: 0 0.12em 0.25em rgb(20 10 4 / 0.35);
+}
+
+/* Etiqueta de tela cosida junto a los auriculares */
+.room-sign--fabric .room-sign__label {
+  position: relative;
+  isolation: isolate;
+  padding: 0.25em 0.75em;
+  color: #2c1e14;
+}
+
+.room-sign--fabric .room-sign__label::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 0.15em;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 3px),
+    #d9cdb0;
+  box-shadow:
+    inset 0 0 0 0.18em #d9cdb0,
+    inset 0 0 0 0.24em rgb(110 78 46 / 0.45),
+    0 0.12em 0.25em rgb(20 10 4 / 0.35);
+}
+
+/* Etiqueta de infusión: cordel desde el borde del vaso y una etiqueta pequeña de papel kraft */
+.room-sign--teabag {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.room-sign__string {
+  display: block;
+  width: 1px;
+  height: 2.6em;
+  background: #f0e6d0;
+  box-shadow: 0 0 0 0.5px rgb(110 78 46 / 0.5);
+}
+
+.room-sign--teabag .room-sign__label {
+  position: relative;
+  isolation: isolate;
+  padding: 0.25em 0.6em;
+  white-space: nowrap;
+}
+
+.room-sign--teabag .room-sign__label::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 0.12em;
+  background: #e4cfa3;
+  box-shadow:
+    inset 0 0 0 0.12em rgb(110 78 46 / 0.35),
+    0 0.12em 0.25em rgb(20 10 4 / 0.35);
+}
+
+.room-sign[data-sign='tray'] .room-sign__label {
+  width: auto;
+  white-space: nowrap;
+}
+
+/* «Mi lectura»: cinta de tela que sale del canto del libro y cae, sin girar el texto */
+.room-sign--ribbon {
+  transform: translateX(calc(-50% + var(--nudge, 0px)));
+}
+
+.room-sign--ribbon .room-sign__label {
+  padding: 0.55em 0.7em 0.95em;
+}
+
+/* La etiqueta de infusión cabe junto al borde del encuadre: dos líneas cortas como mucho */
+.room-sign[data-sign='tray'] .room-sign__label {
+  max-width: 7.4em;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+}
+
+/* El cordel cae por el vaso: la etiqueta queda por debajo de la pestaña del portátil aunque se desplace */
+.room-sign--teabag .room-sign__string {
+  height: 5.2em;
+}
+
+/* Ancho propio (no el que queda hasta el borde del mundo): sin cortes de línea por estar cerca del borde */
+.room-sign {
+  width: max-content;
+}
+
+.room-sign[data-sign='tray'] .room-sign__label {
+  width: max-content;
+}

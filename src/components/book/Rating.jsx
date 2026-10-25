@@ -8,13 +8,19 @@ import { formatRating, normalizeRating, ratingText } from '../../domain/books';
 
 const STAR = 'M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37L2.74 9.33l6.4-.93z';
 
+/**
+ * Ancho visible del relleno: la estrella no reparte su superficie de forma uniforme a lo ancho (el 25 % izquierdo
+ * solo contiene la punta de un brazo). Se ajusta para que un cuarto, media y tres cuartos se lean como tales.
+ */
+export const visualFill = (f) => (f <= 0 ? 0 : f >= 1 ? 1 : 0.2 + f * 0.6);
+
 function Star({ fill }) {
   return (
     <span className="rstar" aria-hidden="true">
       <svg viewBox="0 0 24 24" className="rstar__base">
         <path d={STAR} />
       </svg>
-      <span className="rstar__fill" style={{ width: `${fill * 100}%` }}>
+      <span className="rstar__fill" style={{ width: `${visualFill(fill) * 100}%` }} data-fill={fill}>
         <svg viewBox="0 0 24 24">
           <path d={STAR} />
         </svg>

@@ -97,15 +97,10 @@ function ProgressBlock({ book, onPage }) {
   }
   return (
     <div className="sheet-progress">
+      {/* Valor actual / total en su propia línea; los ajustes rápidos, en una fila equilibrada aparte */}
       <div className="sheet-progress__pages">
-        <button type="button" className="round-btn" onClick={() => onPage(book.currentPage - 10)} aria-label="Retroceder 10 páginas">
-          −10
-        </button>
-        <button type="button" className="round-btn" onClick={() => onPage(book.currentPage - 1)} aria-label="Retroceder una página">
-          <Minus aria-hidden="true" />
-        </button>
         <label className="sheet-progress__current">
-          <span className="sr-only-focus">Página actual</span>
+          <span className="sheet-progress__label">Página</span>
           <input
             type="number"
             className="ink-input ink-input--num"
@@ -117,6 +112,14 @@ function ProgressBlock({ book, onPage }) {
           />
         </label>
         <span className="sheet-progress__of">de {book.pageCount}</span>
+      </div>
+      <div className="sheet-progress__steps">
+        <button type="button" className="round-btn" onClick={() => onPage(book.currentPage - 10)} aria-label="Retroceder 10 páginas">
+          −10
+        </button>
+        <button type="button" className="round-btn" onClick={() => onPage(book.currentPage - 1)} aria-label="Retroceder una página">
+          <Minus aria-hidden="true" />
+        </button>
         <button type="button" className="round-btn" onClick={() => onPage(book.currentPage + 1)} aria-label="Avanzar una página">
           <Plus aria-hidden="true" />
         </button>
@@ -136,7 +139,7 @@ function ProgressBlock({ book, onPage }) {
       />
       <p className="sheet-progress__line">
         <strong>{formatPercent(pct)} leído</strong>
-        <span>{book.currentPage >= book.pageCount ? '¡Terminado!' : `Página ${book.currentPage} de ${book.pageCount}`}</span>
+        {book.currentPage >= book.pageCount && <span>¡Terminado!</span>}
       </p>
     </div>
   );

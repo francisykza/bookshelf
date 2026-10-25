@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.35.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.35.1 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2712,9 +2712,10 @@ Terminado y probado:
 - Perfil (§28.10): `CornerScene`, `ReaderProfile` reordenado, `HuellasEditor` y `CollectionsEditor`; servicio
   tolerante a la falta de migración (`services/huellas.js`); lógica pura en `features/social/huellas.js`.
 
+Migración: `20261025150000_huellas_rincon.sql` probada con PGlite y aplicada en producción por el usuario
+(SQL Editor, 2026-10-25).
+
 Pendiente o fuera de alcance (declarado, no simulado):
-- La migración `20261025150000_huellas_rincon.sql` está preparada y probada con PGlite, pero NO aplicada en
-  ningún Supabase: hasta aplicarla, el perfil muestra lo de la entrega 3 y el editor explica que no puede guardar.
 - Ilustraciones de barquito, planta, tintero y mapa, de los cinco adornos y de las seis distinciones: hoy son SVG
   provisionales (ver `docs/design/pending/README.md`). No se declara fidelidad visual final con ellos.
 - Roles «Creadora» y «Equipo» y premios semanal/mensual: sin reglas ni umbrales en el servidor; se asignan a mano
@@ -2722,3 +2723,22 @@ Pendiente o fuera de alcance (declarado, no simulado):
 - «Mes de lectura» del perfil: no hay un resumen mensual público en el servidor; no se muestra.
 - Doble página del cuaderno en escritorio: se mantiene una página (no mejora la lectura con el contenido actual).
 - Pruebas en WebKit de Playwright; no en un iPhone real.
+
+### 28.14 Corrección de fidelidad visual (1.35.1)
+
+Pasada solo visual y responsive sobre la 1.35.0, sin cambios en funciones, datos ni permisos. Detalle por pantalla
+(referencia, diferencia, corrección y resultado) en `docs/design/visual-corrections.md`.
+- Perfil: avatar de 96 px con nombre y «Seguir/Siguiendo» compacto al lado; bloquear dentro de «Más opciones». El
+  adorno no se pinta hasta tener su ilustración: el hueco ya está preparado (120 % del avatar, solape de 12 px,
+  altura reservada). Última/actual/próxima con tres huecos de portada 2:3 idénticos (`Cover`, cubierta tipográfica
+  de respaldo; en el perfil propio, la lectura actual sale del libro local).
+- Estrellas: relleno perceptual (`visualFill`) para que un cuarto se vea como un cuarto.
+- Librería: veladura mate sobre `panel.webp`, cabecera sin desbordes, recuerdos en una fila compacta (nota + postal,
+  «Ver más · N»), placas más pequeñas.
+- Ficha: ex-libris y cabecera compactos, estado en tres columnas, «Página N de T» y −10 · −1 · +1 · +10 en filas
+  separadas, costura de hilo en la encuadernación.
+- Habitación: señales sujetas a su objeto (cadena del astrolabio, pestaña en el portátil, etiqueta de infusión con
+  cordel, tela junto a los auriculares, cinta desde el libro), papel cálido, sin tres líneas. No se montan con un
+  panel abierto.
+- Comunidad: tipo «Club de lectura» separado del nombre del club; actividad en cartas con portada, obra, autor,
+  persona, estrellas y extracto; filas de lectores compactas.

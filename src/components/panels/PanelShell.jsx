@@ -24,6 +24,8 @@ export function PanelShell({ onClose, label, variant, children }) {
     if (!node?.contains(document.activeElement)) (node?.querySelector(FOCUSABLE) ?? node)?.focus({ preventScroll: true });
     const onKey = (event) => {
       if (event.key === 'Escape') {
+        // Un menú desplegable abierto dentro del panel (p. ej. «Más opciones») atiende su propio Escape
+        if (node?.querySelector('[data-escape-local="open"]')) return;
         event.stopPropagation();
         closeRef.current();
       } else if (event.key === 'Tab' && node) {

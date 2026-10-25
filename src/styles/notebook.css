@@ -771,3 +771,104 @@
   min-width: 0;
   max-width: 100%;
 }
+
+/* ── 1.35.1 · Ficha compacta (docs/design/visual-corrections.md) ───────────────────────────────────────────── */
+/* Encuadernación cosida: tapa de cuero con una costura de hilo crema, no una barra de puntos */
+.notebook-shell__binding {
+  background:
+    repeating-linear-gradient(180deg, #e9dcc0 0 7px, transparent 7px 13px) 6px 0 / 1.5px 100% no-repeat,
+    linear-gradient(90deg, #3f2a1a, #6b4b30 55%, #553a24);
+  box-shadow: inset -1px 0 0 rgb(20 10 4 / 0.4);
+}
+
+/* Ex-libris en una sola línea discreta */
+.book-sheet .ex-libris {
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.book-sheet .ex-libris__stamp {
+  width: 40px;
+  height: 40px;
+}
+
+.book-sheet .ex-libris p {
+  font-size: 14px;
+}
+
+/* Cabecera del libro: título que se adapta sin empujar los controles */
+.sheet-head {
+  gap: 12px;
+}
+
+.sheet-head__cover {
+  width: clamp(64px, 18vw, 88px);
+}
+
+.sheet-head h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: clamp(22px, 5.6vw, 30px);
+  line-height: 1.12;
+}
+
+.sheet-head p {
+  font-size: 15px;
+}
+
+.sheet-head .chips {
+  margin-top: 6px;
+}
+
+/* Estado: tres opciones en una fila equilibrada (ninguna se queda sola en otra línea) */
+.sheet-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.sheet-status .paper-chip {
+  padding: 4px 6px;
+  font-size: 14.5px;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+}
+
+/* Progreso: «Página N de T» en su línea; −10 · −1 · +1 · +10 en una fila de cuatro */
+.sheet-progress__pages {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.sheet-progress__current {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-progress__label {
+  color: var(--ink-muted);
+  font: 500 15px/1 var(--lib-body);
+}
+
+.sheet-progress__steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(44px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.sheet-progress__steps .round-btn {
+  width: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 999px;
+}
+
+/* «Registrar lectura» pegado al progreso */
+.book-sheet .sheet-log {
+  margin-top: -6px;
+}

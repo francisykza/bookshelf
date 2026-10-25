@@ -3,12 +3,12 @@
 // reseña destacada, 6) historial de opiniones. Vista de SOLO LECTURA: nada se carga solo en la biblioteca del
 // visitante; «Añadir a pendientes» es una acción explícita por libro que guarda en privado su procedencia.
 // Seguir, dejar de seguir y bloquear (con confirmación). Nada se inventa para rellenar huecos.
-import { X } from 'lucide-react';
+import { Ban, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../../components/panels/PanelShell';
 import { useFigureCatalog } from '../../../components/figures/figureCatalog';
-import { ReaderAdornment } from '../../../components/primitives';
+import { OptionsMenu } from '../../../components/book/Annotations';
 import { Cover } from '../../../components/shelf/BookItem';
 import { createBook } from '../../../domain/books';
 import { useLibrary } from '../../../state/useLibrary';
@@ -81,6 +81,11 @@ function MemorySheet({ memory, ownerAlias, onClose }) {
   );
 }
 
+/**
+ * Última · Actual · Próxima: tres huecos de portada con la misma proporción y bases alineadas; el título va debajo.
+ * La portada sale del resolvedor de siempre (`Cover`): si no hay imagen o falla, cubierta tipográfica con título
+ * y autor. Solo se muestran los huecos que la persona eligió (nada se rellena).
+ */
 function BookTrio({ last, current, next }) {
   const slots = [
     ['Última', last],
@@ -89,15 +94,13 @@ function BookTrio({ last, current, next }) {
   ].filter(([, b]) => b);
   if (!slots.length) return null;
   return (
-    <section className="huella-trio" aria-label="Sus lecturas">
+    <section className="huella-trio" aria-label="Sus lecturas" data-count={slots.length}>
       {slots.map(([label, b]) => (
         <figure key={label} className="huella-trio__item">
           <figcaption>{label}</figcaption>
-          {b.cover !== undefined ? (
-            <span className="huella-cover" aria-hidden="true">
-              <Cover book={b} />
-            </span>
-          ) : null}
+          <span className="huella-cover" aria-hidden="true">
+            <Cover book={{ id: b.id ?? `${label}-${b.title}`, title: b.title, author: b.author ?? '', cover: b.cover ?? '' }} />
+          </span>
           <p>
             <b>{b.title}</b>
             {b.author && <small>{b.author}</small>}
@@ -193,6 +196,7 @@ function DistinctionBadges({ items, roles }) {
 
 export function ReaderProfileView({ userId, onClose }) {
   const community = useCommunity({ autoload: true });
+  const { state } = useLibrary();
   const [data, setData] = useState(null);
   const [failure, setFailure] = useState('');
   const [busy, setBusy] = useState(false);
@@ -239,7 +243,10 @@ export function ReaderProfileView({ userId, onClose }) {
   const alias = data.profile.alias;
   const figureId = corner?.figure_ids?.[0] ?? corner?.guardian_id ?? null;
   const figure = figureId ? catalog.find((f) => f.id === figureId) : null;
-  const current = corner?.show_current && corner.current_title ? { title: corner.current_title } : null;
+  // La lectura actual publicada solo trae su título: en tu propio perfil se completa con tu libro (portada y
+  // autor); en el de otra persona, el resolvedor de portadas pinta la cubierta tipográfica del título
+  const ownCurrent = mine && corner?.current_title ? state.books.find((b) => b.title === corner.current_title) : null;
+  const current = corner?.show_current && corner.current_title ? (ownCurrent ? { id: ownCurrent.id, title: ownCurrent.title, author: ownCurrent.author, cover: ownCurrent.cover } : { title: corner.current_title }) : null;
   const featuredReview = data.reviews[0] ?? null;
   const toggle = async () => {
     setBusy(true);
@@ -259,27 +266,24 @@ export function ReaderProfileView({ userId, onClose }) {
       {corner ? <CornerScene corner={corner} figure={figure} ownerAlias={alias} onOpenMemory={setMemory} /> : <p className="social-note">Su rincón no está a la vista.</p>}
       {memory && <MemorySheet memory={memory} ownerAlias={alias} onClose={() => setMemory(null)} />}
 
-      {/* 2 · Avatar con su adorno, nombre, rol y seguir */}
-      <div className="profile-form__me huella-who">
-        <span className="huella-avatar">
+      {/* 2 · Avatar (con su adorno cuando exista el arte aprobado), nombre, rol y seguir */}
+      <div className="huella-who">
+        {/* El adorno es una preferencia guardada (data-adornment); su ilustración aún no existe y no se pinta una rama
+            provisional (docs/design/pending). El avatar va solo, sin desplazar el nombre. */}
+        <span className="huella-avatar" data-adornment={data.adornment ?? undefined}>
           <ReaderAvatar avatarId={data.profile.avatar_id} alias={alias} size="profile" />
-          {data.adornment && <ReaderAdornment id={data.adornment} />}
         </span>
-        <div className="reader-profile__who">
-          <h3>
-            {alias} <DistinctionBadges items={data.distinctions} roles />
+        <div className="huella-who__text">
+          <h3 className="huella-who__name">
+            <span>{alias}</span> <DistinctionBadges items={data.distinctions} roles />
           </h3>
           <DistinctionBadges items={data.distinctions} roles={false} />
           {!mine && (
-            <div className="social-actions">
-              <button type="button" className={`social-btn ${isFollowing ? '' : 'social-btn--primary'}`} aria-pressed={isFollowing} onClick={toggle} disabled={busy || following === null}>
-                {isFollowing ? 'Dejar de seguir' : 'Seguir'}
+            <div className="huella-who__actions">
+              <button type="button" className={`huella-follow ${isFollowing ? '' : 'huella-follow--primary'}`} aria-pressed={isFollowing} onClick={toggle} disabled={busy || following === null}>
+                {isFollowing ? 'Siguiendo' : 'Seguir'}
               </button>
-              {!confirmBlock && (
-                <button type="button" className="social-btn" onClick={() => setConfirmBlock(true)}>
-                  Bloquear
-                </button>
-              )}
+              <OptionsMenu label={`Más opciones sobre ${alias}`} items={[{ label: isFollowing ? 'Dejar de seguir' : 'Seguir', icon: null, onSelect: toggle }, { label: `Bloquear a ${alias}`, icon: <Ban aria-hidden="true" />, danger: true, onSelect: () => setConfirmBlock(true) }]} />
             </div>
           )}
         </div>

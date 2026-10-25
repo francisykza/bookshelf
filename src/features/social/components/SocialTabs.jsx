@@ -1,6 +1,9 @@
 // Pestañas de la comunidad de la entrega 3 (SPEC §25.8–25.10): mi rincón compartido, lectores seguidos con su
 // actividad y «En la sala» (leer en compañía). Todo dentro del mismo panel «Comunidad» (un solo perfil).
+import { ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { RatingStars } from '../../../components/book/Rating';
+import { Cover } from '../../../components/shelf/BookItem';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { useFigureCatalog } from '../../../components/figures/figureCatalog';
 import { currentBook } from '../../../domain/books';
@@ -138,6 +141,7 @@ export function CornerTab() {
 /** Lectores que sigo y su actividad: reseñas publicadas por ellos y novedades de mis clubes. */
 export function ReadersTab() {
   const community = useCommunity({ autoload: true });
+  const { state } = useLibrary();
   const { following, loadFollowing } = community;
   const [profiles, setProfiles] = useState({});
   const [activity, setActivity] = useState(null);
@@ -186,34 +190,62 @@ export function ReadersTab() {
       <section aria-label="Lectores que sigo" className="readers">
         <h3 className="social-title">Lectores que sigo</h3>
         {following?.length === 0 && <p className="social-note">Aún no sigues a nadie. Abre el perfil de quien escribe una reseña para seguirle.</p>}
-        {(following ?? []).map((id) => (
-          <button key={id} type="button" className="follow-row" onClick={() => setViewing(id)}>
-            <ReaderAvatar avatarId={profiles[id]?.avatar_id} alias={profiles[id]?.alias ?? ''} size="list" />
-            <b>{profiles[id]?.alias ?? 'Lector'}</b>
-          </button>
-        ))}
+        <ul className="reader-rows">
+          {(following ?? []).map((id) => (
+            <li key={id}>
+              <button type="button" className="follow-row" onClick={() => setViewing(id)}>
+                <ReaderAvatar avatarId={profiles[id]?.avatar_id} alias={profiles[id]?.alias ?? ''} size="list" decorative />
+                <span className="follow-row__name">{profiles[id]?.alias ?? 'Lector'}</span>
+                <span className="follow-row__go">Ver su rincón</span>
+                <ChevronRight aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>
       <section aria-label="Actividad" className="readers">
         <h3 className="social-title">Actividad</h3>
         {activity === null && <p className="social-note">Cargando…</p>}
         {activity && activity.reviews.length === 0 && activity.clubs.length === 0 && <p className="social-note">Nada nuevo por aquí.</p>}
-        {activity?.reviews.map((r) => (
-          <button key={r.id} type="button" className="activity-row" onClick={() => setViewing(r.user_id)}>
-            <ReaderAvatar avatarId={profiles[r.user_id]?.avatar_id} alias={profiles[r.user_id]?.alias ?? ''} size="review" decorative />
-            <span>
-              <b>{profiles[r.user_id]?.alias ?? 'Lector'}</b> ha publicado una opinión{r.work ? ` sobre «${r.work.title}»` : ''}
-              {r.has_spoilers ? ' (con spoilers)' : ''}
-            </span>
-          </button>
-        ))}
-        {activity?.clubs.map((c) => (
-          <p key={c.id} className="activity-row">
-            <span>
-              Club <b>{c.name}</b>
-              {c.status === 'archived' ? ' · archivado' : c.discussion_point ? ` · ${c.discussion_point}` : ''}
-            </span>
-          </p>
-        ))}
+        <ul className="reader-rows">
+          {activity?.reviews.map((r) => {
+            const alias = profiles[r.user_id]?.alias ?? 'Lector';
+            // Portada: la de tu ejemplar si es la misma obra; si no, la cubierta tipográfica del resolvedor de siempre
+            const mineCopy = r.work ? state.books.find((b) => b.workId === r.work.id) : null;
+            const cover = { id: r.work?.id ?? r.id, title: r.work?.title ?? 'Obra', author: r.work?.author ?? '', cover: mineCopy?.cover ?? '' };
+            return (
+              <li key={r.id}>
+                <button type="button" className="activity-card" onClick={() => setViewing(r.user_id)} aria-label={`Opinión de ${alias}${r.work ? ` sobre «${r.work.title}»` : ''}. Abrir su rincón`}>
+                  <span className="activity-card__cover" aria-hidden="true">
+                    <Cover book={cover} />
+                  </span>
+                  <span className="activity-card__text" aria-hidden="true">
+                    {r.work && (
+                      <b className="activity-card__title">
+                        {r.work.title}
+                        {r.work.author && <small> · {r.work.author}</small>}
+                      </b>
+                    )}
+                    <span className="activity-card__who">
+                      <ReaderAvatar avatarId={profiles[r.user_id]?.avatar_id} alias={alias} size="review" decorative />
+                      <span className="activity-card__alias">{alias}</span>
+                      {r.rating_quarters != null && <RatingStars value={r.rating_quarters / 4} />}
+                    </span>
+                    {r.has_spoilers ? <em>Contiene spoilers</em> : r.body && <span className="activity-card__excerpt">{r.body}</span>}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+          {/* Clubes: el tipo («Club de lectura») va aparte del nombre que puso su creador, sin tocarlo */}
+          {activity?.clubs.map((c) => (
+            <li key={c.id} className="activity-club">
+              <span className="activity-club__kind">Club de lectura</span>
+              <b>{c.name}</b>
+              {c.status === 'archived' ? <small>Archivado</small> : c.discussion_point ? <small>{c.discussion_point}</small> : null}
+            </li>
+          ))}
+        </ul>
       </section>
     </Gate>
   );

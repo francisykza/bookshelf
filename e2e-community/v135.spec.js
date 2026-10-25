@@ -92,7 +92,17 @@ test('rincón ilustrado: escena 3:2 entera, tres libros, recuerdo con su histori
   }
   // Nombre, avatar y botones fuera de la escena; adorno estético bajo el avatar; distinción solo si existe
   await expect(scene.getByRole('button', { name: 'Seguir' })).toHaveCount(0);
-  await expect(page.locator('.huella-avatar .reader-adornment')).toHaveAttribute('data-adornment', 'constelaciones');
+  // El adorno elegido se conserva como preferencia, pero sin su ilustración aprobada no se pinta ninguna rama provisional
+  await expect(page.locator('.huella-avatar')).toHaveAttribute('data-adornment', 'constelaciones');
+  await expect(page.locator('.huella-avatar .reader-adornment')).toHaveCount(0);
+  // Seguir compacto; bloquear dentro del menú de opciones
+  await expect(page.locator('.huella-who').getByRole('button', { name: 'Bloquear', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Más opciones sobre Bruno' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Bloquear a Bruno' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  // La lectura actual (solo título publicado) también tiene su hueco de portada
+  await expect(page.locator('.huella-trio__item')).toHaveCount(3);
+  await expect(page.locator('.huella-trio__item .huella-cover')).toHaveCount(3);
   await page.getByRole('button', { name: 'Comunidad fundadora' }).click();
   await expect(page.locator('.huella-badge__info')).toContainText('25 de octubre de 2026');
   // Última / actual / próxima, libros que le representan, colección y reseña destacada

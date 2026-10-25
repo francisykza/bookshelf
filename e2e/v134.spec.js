@@ -197,11 +197,12 @@ test('ficha: orden, detalles plegados, valoración con teclado y cierre «Cerrar
   });
   expect([...order].sort((a, b) => a - b)).toEqual(order);
   const stamp = await page.locator('.ex-libris__stamp').boundingBox();
-  expect(stamp.width).toBeGreaterThanOrEqual(44);
+  // 1.35.1: ex-libris compacto; el sello es decorativo (el control es el nombre, de 44 px)
+  expect(stamp.width).toBeGreaterThanOrEqual(36);
   expect(stamp.width).toBeLessThanOrEqual(56);
   const cover = await page.locator('.sheet-head__cover').boundingBox();
-  expect(cover.width).toBeGreaterThanOrEqual(71);
-  expect(cover.width).toBeLessThanOrEqual(97);
+  expect(cover.width).toBeGreaterThanOrEqual(63);
+  expect(cover.width).toBeLessThanOrEqual(89);
   // Detalles de mi edición: plegado, con total, desconocido, unidad, velocidad y edición
   const details = page.locator('.sheet-details').first();
   await expect(details.getByLabel('Total de páginas', { exact: true })).toBeHidden();

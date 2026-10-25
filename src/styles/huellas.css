@@ -437,3 +437,342 @@
 .huella-trio__item p {
   overflow-wrap: anywhere;
 }
+
+/* ── 1.35.1 · Identidad compacta (corrección de fidelidad, docs/design/visual-corrections.md) ──
+   Avatar de 96 px y, a su lado, nombre + «Seguir» compacto + menú de opciones (bloquear). El adorno se dimensiona
+   respecto al avatar cuando exista su ilustración (110–135 % del avatar, solapando 8–16 px su borde inferior y
+   con la altura reservada en el flujo); hasta entonces no se pinta. */
+.reader-profile {
+  gap: 12px;
+}
+
+.corner-scene {
+  margin-bottom: 0;
+}
+
+.huella-who {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 14px;
+}
+
+.huella-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+}
+
+.huella-avatar .reader-adornment {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  width: 120%;
+  margin: 0;
+  transform: translateX(-50%);
+}
+
+.huella-avatar:has(.reader-adornment) {
+  margin-bottom: 14px;
+}
+
+.huella-who__text {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.huella-who__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  font: 600 24px/1.15 var(--lib-display);
+  overflow-wrap: anywhere;
+}
+
+.huella-who__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.huella-follow {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgb(79 90 67 / 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--sage-ink);
+  font: 600 15px/1 var(--lib-body);
+  cursor: pointer;
+}
+
+.huella-follow--primary {
+  border-color: var(--sage-ink);
+  background: var(--sage-ink);
+  color: var(--paper);
+}
+
+.huella-follow:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.huella-who .options-menu__list {
+  top: calc(100% + 4px);
+  bottom: auto;
+  left: 0;
+  right: auto;
+}
+
+/* Última · Actual · Próxima: huecos idénticos (2:3), bases alineadas, título debajo en dos líneas como mucho */
+.huella-trio {
+  align-items: start;
+  margin: 4px 0 0;
+}
+
+.huella-trio__item {
+  grid-template-rows: auto auto auto;
+  align-content: start;
+}
+
+.huella-trio .huella-cover {
+  width: min(72px, 100%);
+}
+
+.huella-trio__item p b {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.huella-trio__item p small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  font-size: 13px;
+}
+
+.huella-trio .gen-cover {
+  font-size: 9px;
+}
+
+/* Cabecera de las cartas: en pantallas estrechas las estrellas bajan bajo el nombre (sin truncarlo a 6 letras) */
+.review-card__head {
+  flex-wrap: wrap;
+}
+
+.review-card__who {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.review-card__head .rating-stars {
+  margin-left: auto;
+}
+
+/* ── 1.35.1 · Comunidad: filas de lectores y actividad editorial ── */
+.reader-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.follow-row {
+  gap: 12px;
+  padding: 6px 4px;
+  border-bottom: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+}
+
+.follow-row:hover {
+  background: rgb(110 78 46 / 0.06);
+}
+
+.follow-row__name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  font: 600 17px/1.2 var(--lib-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.follow-row__go {
+  flex: none;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.follow-row svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--ink-muted);
+}
+
+/* Actividad: una carta pequeña con portada, obra y autor, quién la escribió y un extracto de dos líneas */
+.activity-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--lib-paper) url('/art/library-refresh/journal.webp') 0 0 / 384px repeat;
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 0 2px 8px rgb(44 30 20 / 0.12);
+  cursor: pointer;
+}
+
+.activity-card:focus-visible,
+.follow-row:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.activity-card__cover {
+  display: block;
+  width: 52px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 0 2px 6px rgb(44 30 20 / 0.28);
+}
+
+.activity-card__cover img,
+.activity-card__cover .gen-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  font-size: 7px;
+}
+
+.activity-card__text {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.activity-card__title {
+  font: 600 17px/1.2 var(--lib-display);
+}
+
+.activity-card__title small {
+  color: var(--ink-muted);
+  font: 400 14px/1.2 var(--lib-body);
+}
+
+.activity-card__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  color: var(--ink);
+  font: 600 14px/1.2 var(--lib-body);
+}
+
+.activity-card__who .reader-avatar {
+  width: 24px;
+}
+
+.activity-card__excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--ink-muted);
+  font: italic 15px/1.4 var(--lib-body);
+}
+
+.activity-card__text em {
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+.activity-club {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--lib-line);
+  border-radius: 6px;
+}
+
+.activity-club__kind {
+  color: var(--ink-muted);
+  font: 600 12px/1.2 var(--lib-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.activity-club b {
+  font: 600 17px/1.2 var(--lib-display);
+}
+
+.activity-club small {
+  color: var(--ink-muted);
+}
+
+.follow-row {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.follow-row .reader-avatar,
+.activity-card__who .reader-avatar {
+  flex: none;
+}
+
+.activity-card__who {
+  flex-wrap: nowrap;
+}
+
+.activity-card__alias {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-card__who .rating-stars {
+  flex: none;
+}
+
+@media (max-width: 430px) {
+  .follow-row__go {
+    display: none;
+  }
+
+  .activity-card__who {
+    flex-wrap: wrap;
+  }
+}
+
+/* Las filas nunca son más anchas que el panel (botones con rejilla interna: min-width 0 explícito) */
+.reader-rows {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.reader-rows > li,
+.activity-card,
+.follow-row {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.activity-card__text > * {
+  min-width: 0;
+}

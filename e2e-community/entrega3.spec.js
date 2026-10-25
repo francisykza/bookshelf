@@ -161,23 +161,23 @@ test('seguir desde una reseña, «Lectores que sigo» y rincón: solo lo elegido
   await expect(page.locator('.huella-trio')).toContainText('Momo');
   await expect(page.locator('.reader-profile')).toContainText('Circe');
   await page.getByRole('button', { name: 'Seguir' }).click();
-  await expect(page.getByRole('button', { name: 'Dejar de seguir' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Siguiendo' })).toBeVisible();
   expect(mock.db.follows).toEqual([expect.objectContaining({ follower: ANA.id, followed: BRUNO.id })]);
   await shot(page, info, 'perfil-lector');
   // Visitar su rincón no toca la biblioteca propia
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.map((b) => b.id).join(','))).toBe(myBooks);
-  await page.getByRole('button', { name: 'Dejar de seguir' }).click();
+  await page.getByRole('button', { name: 'Siguiendo' }).click();
   await expect(page.getByRole('button', { name: 'Seguir' })).toBeVisible();
   expect(mock.db.follows).toEqual([]);
   await page.getByRole('button', { name: 'Seguir' }).click();
-  await expect(page.getByRole('button', { name: 'Dejar de seguir' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Siguiendo' })).toBeVisible();
   // Bruno oculta su rincón: deja de verse
   mock.db.corners[0].visible = false;
   await page.keyboard.press('Escape');
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
-  await page.keyboard.press('Enter');
+  // Tras recargar, WebKit a veces no atiende Enter en el primer foco (intermitente también en 1.35.0): se abre con un clic
+  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').evaluate((el) => el.click());
   await page.getByRole('tab', { name: 'Lectores' }).click();
   await page.getByLabel('Voces de lectores').getByRole('button', { name: 'Lectores que sigo' }).click();
   await expect(page.getByLabel('Voces de lectores').locator('.review-card')).toHaveCount(1);

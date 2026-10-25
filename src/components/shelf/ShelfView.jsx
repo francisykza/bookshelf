@@ -1,7 +1,6 @@
 // `SHELF_VIEW` (SPEC §27.3–27.5, §28.4): la librería como un mueble de madera gouache con profundidad. Cabecera
 // compacta (volver, buscador, cintas de estado, vista y herramientas), un tablón de recuerdos plegable dentro del
 // mueble, una balda por estado con laterales, tabla y placa de latón colgada, y como mucho dos ramas de hiedra.
-import { RatingStars } from '../book/Rating';
 import { ArrowLeft, BookOpen, ChevronDown, Library, Plus, Search, Sparkles, Trophy, Wrench, X } from 'lucide-react';
 import { FabricTab, HangingPlaque } from '../primitives';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -59,6 +58,7 @@ const DIE_DOTS = {
 
 const validDate = (iso) => Boolean(iso) && !Number.isNaN(new Date(iso).getTime());
 const longDate = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+const shortDate = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
 const FOLD_KEY = 'bookshelf:memories-folded';
 const readFolded = () => {
@@ -76,6 +76,8 @@ const readFolded = () => {
  */
 function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
   const [folded, setFolded] = useState(readFolded);
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const dated = books.filter((b) => validDate(b.finishedAt)).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
   const [last, ...rest] = dated;
   if (!last && !pinned) return null;
@@ -92,28 +94,35 @@ function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
     <aside className="keepsake-board" aria-label="Recuerdos" data-folded={folded}>
       <div className="keepsake-board__bar">
         <h2 className="keepsake-board__title">Recuerdos</h2>
+        {!folded && rest.length > 0 && (
+          <button type="button" className="keepsake-board__more-btn" aria-expanded={moreOpen} aria-controls="keepsake-more" onClick={() => setMoreOpen((v) => !v)}>
+            Ver más · {rest.length}
+          </button>
+        )}
         <button type="button" className="keepsake-board__toggle" aria-expanded={!folded} aria-controls="keepsake-board-pins" onClick={toggle}>
           <ChevronDown aria-hidden="true" />
           {folded ? 'Mostrar' : 'Plegar'}
         </button>
       </div>
       {!folded && (
-        <div id="keepsake-board-pins" className="keepsake-board__pins">
+        <div id="keepsake-board-pins" className="keepsake-board__pins" data-single={!last || !pinned || undefined}>
           {last && (
             <button type="button" className="keepsake-note" onClick={() => onOpenBook(last)} aria-label={`${last.title}, terminado el ${longDate(last.finishedAt)}${last.rating ? `, ${ratingText(last.rating)}` : ''}`}>
               <span className="keepsake-note__cover" aria-hidden="true">
                 <Cover book={last} />
               </span>
-              <span aria-hidden="true">
+              <span className="keepsake-note__text" aria-hidden="true">
                 <b>{last.title}</b>
-                <small>Terminado el {longDate(last.finishedAt)}</small>
-                {last.rating > 0 && <RatingStars value={last.rating} />}
+                <small>Terminado el {shortDate(last.finishedAt)}</small>
               </span>
             </button>
           )}
           {pinned && (
-            <figure className="keepsake-postcard">
-              <blockquote>{pinned.text}</blockquote>
+            <figure className="keepsake-postcard" data-open={quoteOpen || undefined}>
+              {/* Resumen de dos líneas; al abrirla se lee entera */}
+              <button type="button" className="keepsake-postcard__quote" aria-expanded={quoteOpen} onClick={() => setQuoteOpen((v) => !v)}>
+                <blockquote>{pinned.text}</blockquote>
+              </button>
               <figcaption>
                 <span>{[pinned.author, pinned.work].filter(Boolean).join(' · ')}</span>
                 <button type="button" className="keepsake-postcard__unpin" onClick={onUnpin} aria-label="Desclavar la cita de la estantería" title="Desclavar">
@@ -122,22 +131,19 @@ function MemoryBoard({ books, onOpenBook, pinned, onUnpin }) {
               </figcaption>
             </figure>
           )}
-          {rest.length > 0 && (
-            <details className="keepsake-board__more">
-              <summary>Ver más recuerdos · {rest.length}</summary>
-              <ul>
-                {rest.slice(0, 11).map((b) => (
-                  <li key={b.id}>
-                    <button type="button" onClick={() => onOpenBook(b)}>
-                      <span>{b.title}</span>
-                      <small>{new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</small>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
         </div>
+      )}
+      {!folded && moreOpen && rest.length > 0 && (
+        <ul id="keepsake-more" className="keepsake-board__list">
+          {rest.slice(0, 11).map((b) => (
+            <li key={b.id}>
+              <button type="button" onClick={() => onOpenBook(b)}>
+                <span>{b.title}</span>
+                <small>{new Date(b.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</small>
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
       <div className="keepsake-board__plank" aria-hidden="true" />
     </aside>
