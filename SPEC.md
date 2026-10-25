@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.31.2 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.32.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2356,3 +2356,54 @@ entrega), **PENDIENTE DE DESPLIEGUE** (código y migración listos; falta aplica
   en reseñas, servidor sin migración y cambio de cuenta; en 320, 390, 430, 1440 y WebKit.
 - `npm run qa:full` (suite existente) y `npm run build` en verde. Pendiente: prueba con dos cuentas reales en la
   versión desplegada (requiere crear las cuentas el usuario).
+
+### 25.7 Entrega 3 · conexiones y rincones compartidos (1.32.0) · VERIFICADO · MIGRACIÓN APLICADA
+
+Migración `20261025120000_entrega3_conexiones_clubes.sql` (aditiva; añade columnas opcionales a `public_reviews`),
+aplicada en producción por el usuario el 2026-10-25 junto con `20261025110000_entrega2_lista_bloqueos.sql`.
+Servicio `features/social/services/connections.js`; reglas puras en `features/social/connections.js`.
+
+- **Seguir** (`follows`): relación única por pareja, nunca a uno mismo, idempotente; solo entre miembros sin
+  bloqueo; bloquear corta el seguimiento en ambos sentidos (trigger). Seguir no abre ningún dato privado. Se sigue
+  desde el perfil autorizado de un lector (`ReaderProfile`), que se abre con el nombre del autor de una reseña o
+  con su medallón en el salón. «Lectores que sigo» en Voces de lectores ya funciona.
+- **Actividad** (pestaña «Lectores»): solo reseñas publicadas por personas seguidas (las 20 más recientes) y
+  novedades de mis clubes; nada de sesiones, horarios ni avances; sin feed infinito.
+- **Rincón compartido** (`corners`, pestaña «Mi rincón»): selección voluntaria —hasta 3 libros (solo id, título,
+  autor y portada), hasta 3 figuras desbloqueadas, Guardián y lectura actual solo con la opción activada—. El
+  servidor comprueba contra la biblioteca de su dueño que los libros existen y que las figuras están en
+  `progress.figures.owned`. Ocultarlo revoca la exposición. Visitar un rincón es de solo lectura: no toca la
+  biblioteca del visitante ni permite acciones sobre la cuenta visitada.
+- **Salón Social** (`scene/socialMap.js`, `SocialSeats.jsx`): botones con la forma de los objetos pintados —tablet
+  (Lectores), cuadro «Recomendación de la semana» (Club; el salón no tiene atril y no se añaden muebles) y los dos
+  sillones—. Medallones anclados al mapa con la cámara (44–64 px en pantalla dividiendo por `--k`), con alias,
+  libro solo si se compartió y tiempo de la sesión; sillones vacíos, vacíos; «+N lectores» si no caben. El
+  Guardián expuesto va aparte, sobre el reposabrazos, y abre su ficha informativa (`GuardianCard`).
+- **Leer en compañía** (`reading_presence`, pestaña «En la sala», `hooks/usePresence.js`): «Sentarme a leer» con
+  «Compartir el libro actual» o «Mostrar solo mi avatar y mi alias». La hora la pone el servidor; se renueva cada
+  minuto con la app visible y caduca a los 3 minutos (suspensión, desconexión); se reconcilia al volver. No
+  registra páginas ni concede sellos; con el temporizador en marcha muestra su estado (no crea otra cuenta). Sin
+  Realtime: se consulta cada 45 s solo mientras alguien mira el salón o la pestaña.
+- **Club** (`clubs`, `club_members`, `club_invites`, `club_messages`, pestaña «Club»): crear, obra por título (no
+  entra en la biblioteca ni cambia estados), punto de debate textual, invitación por enlace `/#club=<token>` (64
+  hex aleatorios, 14 días, revocable, aceptada en el servidor; antes de aceptar no se ve nada del club), miembros,
+  mensajes ≤ 2.000 de 20 en 20 con spoilers plegados, editar y borrar los propios, el propietario solo retira,
+  denunciar y bloquear, salir, retirar miembros y archivar. Privado: solo miembros.
+- **Tropos** (`public_reviews.tropes`, `tropes_none`, vista `work_trope_stats`): catálogo curado de 6 con marca de
+  spoiler (los de romance); `null` = no respondió, `{}` con «ninguna encaja» y la selección. Porcentaje =
+  seleccionaron / respondieron × 100, siempre con «N de M lectores» y sin porcentaje antes de 5 respuestas; los
+  sensibles, ocultos hasta pedirlos.
+
+### 25.8 Verificación de la entrega 3
+
+- Autorización (`entrega3.rls.test.js`, 11 pruebas en Postgres real): seguir sin duplicar ni seguirse, bloqueo que
+  corta, rincón solo con libros propios y figuras desbloqueadas y sin campos privados, lectura actual solo con la
+  opción, ocultar revoca, presencia con hora del servidor y caducidad, club privado, invitación revocada inútil,
+  propietario que solo retira, mensajes ≤ 2.000, archivado sin mensajes, tropos con catálogo y denominadores.
+- Dominio (`entrega3.domain.test.js`): tropos, sillones (vacíos, «+N», caducidad), tiempo, rincón y enlaces.
+- Interfaz (`e2e-community/entrega3.spec.js`, 320/390/430/1440/WebKit): sillones con 0, 1 y varios participantes;
+  sentarse y levantarse sin premios; seguir y dejar de seguir; rincón y su ocultación; tropos; club con enlace,
+  revocación y spoilers plegados.
+- Requieren dispositivo o servidor real: suspensión y reapertura en Safari de iPhone (la caducidad está probada en
+  el servidor y la reconciliación al volver, en código), teclado móvil abierto y la prueba con dos cuentas en el
+  proyecto de Supabase tras aplicar la migración.

@@ -9,10 +9,58 @@ import { useCommunity } from '../social/hooks/useCommunity';
 import { PAGE_SIZE, blockUser, fetchProfiles, fetchReviews, fetchStats, reportContent } from '../social/services/community';
 import { fromQuarters, statsView } from './opinion';
 import { useWorkIdentity } from './useWorkIdentity';
+import { tropeView } from '../social/connections';
+import { fetchTropeStats } from '../social/services/connections';
+
+/**
+ * Tropos votados por quienes respondieron al apartado (SPEC §25.12): plegado, siempre con el denominador y con
+ * porcentaje solo desde 5 respuestas. Los que pueden revelar la trama quedan ocultos hasta que se pide verlos.
+ */
+function TropesSummary({ workId }) {
+  const [rows, setRows] = useState(null);
+  const [showSensitive, setShowSensitive] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetchTropeStats(workId)
+      .then((r) => alive && setRows(r))
+      .catch(() => alive && setRows([]));
+    return () => {
+      alive = false;
+    };
+  }, [workId]);
+  if (!rows) return null;
+  const view = tropeView(rows);
+  if (!view.respondents) return null;
+  const hidden = view.items.filter((t) => t.spoiler).length;
+  return (
+    <details className="tropes">
+      <summary className="spoiler-toggle">Etiquetas narrativas · {view.respondents} {view.respondents === 1 ? 'lector ha respondido' : 'lectores han respondido'}</summary>
+      {!view.consensus && <p className="social-hand">Aún son pocas respuestas para hablar de consenso.</p>}
+      <ul>
+        {view.items
+          .filter((t) => !t.spoiler || showSensitive)
+          .map((t) => (
+            <li key={t.id}>
+              <span>{t.label}</span>
+              <span className="readers__count">
+                {t.text}
+                {t.percent != null ? ` · ${t.percent} %` : ''}
+              </span>
+            </li>
+          ))}
+      </ul>
+      {hidden > 0 && !showSensitive && (
+        <button type="button" className="spoiler-toggle" onClick={() => setShowSensitive(true)}>
+          Mostrar {hidden} {hidden === 1 ? 'etiqueta que puede' : 'etiquetas que pueden'} revelar la trama
+        </button>
+      )}
+    </details>
+  );
+}
 
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
-export function ReviewCard({ review, author, mine, onBlock, onReport }) {
+export function ReviewCard({ review, author, mine, onBlock, onReport, onOpenAuthor }) {
   const [open, setOpen] = useState(!review.has_spoilers);
   // Acción pendiente de confirmar: 'block' | 'report' | null
   const [confirming, setConfirming] = useState(null);
@@ -23,7 +71,13 @@ export function ReviewCard({ review, author, mine, onBlock, onReport }) {
       <div className="review-card__head">
         <ReaderAvatar avatarId={author?.avatar_id} alias={alias} size="review" />
         <div className="review-card__who">
-          <b>{alias}</b>
+          {onOpenAuthor ? (
+            <button type="button" className="review-card__author" onClick={() => onOpenAuthor(review.user_id)}>
+              {alias}
+            </button>
+          ) : (
+            <b>{alias}</b>
+          )}
           <small>{fmtDate(review.published_at)}</small>
         </div>
         {rating != null && <RatingStars value={rating} />}
@@ -82,10 +136,14 @@ export function ReviewCard({ review, author, mine, onBlock, onReport }) {
 
 /**
  * Opiniones de la obra de `book` (resuelta con `useWorkIdentity`: la obra externa compartida o la local del libro).
- * `following`: ids seguidos (entrega 3) o null si la función no está disponible.
+ * El filtro «Lectores que sigo» usa las personas seguidas (entrega 3); `onOpenReader` abre el perfil del autor.
  */
-export function ReadersPanel({ book, onUpdate, following = null }) {
+export function ReadersPanel({ book, onUpdate, onOpenReader }) {
   const community = useCommunity({ autoload: true });
+  const { following, loadFollowing } = community;
+  useEffect(() => {
+    if (community.status === 'ready' && community.member && following === null) loadFollowing().catch(() => {});
+  }, [community.status, community.member, following, loadFollowing]);
   const work = useWorkIdentity(book, onUpdate, { lookup: community.status === 'ready' });
   const workId = work.workId;
   const [stats, setStats] = useState(null);
@@ -173,6 +231,7 @@ export function ReadersPanel({ book, onUpdate, following = null }) {
           ))}
         </ul>
       )}
+      {workId && <TropesSummary workId={workId} />}
       <div className="readers__filters" role="group" aria-label="Qué opiniones ver">
         <button type="button" aria-pressed={!onlyFollowing} onClick={() => setOnlyFollowing(false)}>
           Todas
@@ -195,6 +254,7 @@ export function ReadersPanel({ book, onUpdate, following = null }) {
           review={r}
           author={authors[r.user_id]}
           mine={r.user_id === community.userId}
+          onOpenAuthor={onOpenReader}
           onReport={async (rev) => {
             await reportContent('review', rev.id, 'Denuncia desde Voces de lectores');
             setNotice('Gracias: la denuncia llega solo a moderación.');

@@ -4,6 +4,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useCloud } from '../../../state/cloudSync';
 import { clearSocialCache, fetchMyProfile, probeCommunity, saveMyProfile } from '../services/community';
+import { fetchFollowing, follow, unfollow } from '../services/connections';
+import { resetPresence } from './usePresence';
 
 const CommunityContext = createContext(null);
 
@@ -15,6 +17,8 @@ export function CommunityProvider({ children }) {
   const cloud = useCloud();
   const userId = cloud.user?.id ?? null;
   const [state, setState] = useState({ status: 'idle', profile: null, error: '' });
+  // Personas que sigo (entrega 3): null hasta que alguna vista lo pide
+  const [following, setFollowing] = useState(null);
   const wanted = useRef(false);
   const seq = useRef(0);
 
@@ -23,6 +27,8 @@ export function CommunityProvider({ children }) {
     clearSocialCache(userId);
     seq.current += 1;
     setState({ status: 'idle', profile: null, error: '' });
+    setFollowing(null);
+    resetPresence();
     if (userId && wanted.current) setTimeout(() => load(), 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
@@ -50,10 +56,26 @@ export function CommunityProvider({ children }) {
     [userId],
   );
 
+  const loadFollowing = useCallback(async () => {
+    if (!userId) return;
+    const ids = await fetchFollowing(userId);
+    setFollowing(ids);
+  }, [userId]);
+
+  /** Seguir o dejar de seguir (idempotente en el servidor). */
+  const setFollow = useCallback(async (otherId, on) => {
+    if (on) await follow(otherId);
+    else await unfollow(otherId);
+    setFollowing((list) => {
+      const base = list ?? [];
+      return on ? [...new Set([...base, otherId])] : base.filter((id) => id !== otherId);
+    });
+  }, []);
+
   const value = useMemo(() => {
     const status = !cloud.enabled ? 'off' : !userId ? (cloud.status === 'loading' ? 'loading' : 'signed-out') : state.status;
-    return { status, userId, profile: state.profile, error: state.error, load, saveProfile, member: Boolean(state.profile?.community_enabled) };
-  }, [cloud.enabled, cloud.status, userId, state, load, saveProfile]);
+    return { status, userId, profile: state.profile, error: state.error, load, saveProfile, member: Boolean(state.profile?.community_enabled), following, loadFollowing, setFollow };
+  }, [cloud.enabled, cloud.status, userId, state, load, saveProfile, following, loadFollowing, setFollow]);
 
   return <CommunityContext.Provider value={value}>{children}</CommunityContext.Provider>;
 }

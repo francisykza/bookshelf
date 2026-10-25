@@ -7,6 +7,8 @@ import { PanelShell } from '../../../components/panels/PanelShell';
 import { ALIAS_MAX, aliasError } from '../../reviews/opinion';
 import { useCommunity } from '../hooks/useCommunity';
 import { fetchMyBlocks, unblockUser } from '../services/community';
+import { ClubTab } from './ClubTab';
+import { CornerTab, ReadersTab, RoomTab } from './SocialTabs';
 
 /** Mensaje para cada estado en el que la comunidad aún no se puede usar. */
 export function CommunityGate({ status, error, onRetry }) {
@@ -177,10 +179,16 @@ function BlockedList() {
   );
 }
 
-const TABS = [{ id: 'perfil', label: 'Mi Perfil & Avatar', Panel: ProfileTab }];
+const TABS = [
+  { id: 'perfil', label: 'Mi Perfil & Avatar', Panel: ProfileTab },
+  { id: 'rincon', label: 'Mi rincón', Panel: CornerTab },
+  { id: 'lectores', label: 'Lectores', Panel: ReadersTab },
+  { id: 'sala', label: 'En la sala', Panel: RoomTab },
+  { id: 'club', label: 'Club', Panel: ClubTab },
+];
 
-export function SocialHub({ onClose, initialTab = 'perfil', extraTabs = [] }) {
-  const tabs = [...TABS, ...extraTabs];
+export function SocialHub({ onClose, initialTab = 'perfil', timer = null, openClubId = null }) {
+  const tabs = TABS;
   const [tab, setTab] = useState(tabs.some((t) => t.id === initialTab) ? initialTab : 'perfil');
   const Current = tabs.find((t) => t.id === tab).Panel;
   return (
@@ -200,7 +208,7 @@ export function SocialHub({ onClose, initialTab = 'perfil', extraTabs = [] }) {
           ))}
         </div>
         <div className="social-hub__body">
-          <Current />
+          <Current timer={timer} openClubId={openClubId} />
         </div>
       </div>
     </PanelShell>

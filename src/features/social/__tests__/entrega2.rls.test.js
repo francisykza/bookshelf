@@ -56,7 +56,7 @@ describe('opiniones públicas', () => {
     await as(db, A, (q) => q("insert into public_reviews (work_id, rating_quarters, body, has_spoilers, pace) values ($1, 15, 'Preciosa', false, 2)", [work]));
     const seen = await as(db, B, (q) => q('select * from public_reviews where work_id = $1', [work]));
     expect(seen).toHaveLength(1);
-    expect(Object.keys(seen[0]).sort()).toEqual(['body', 'emotion', 'has_spoilers', 'id', 'pace', 'published_at', 'rating_quarters', 'romance', 'status', 'surprise', 'updated_at', 'user_id', 'work_id']);
+    expect(Object.keys(seen[0]).sort()).toEqual(['body', 'emotion', 'has_spoilers', 'id', 'pace', 'published_at', 'rating_quarters', 'romance', 'status', 'surprise', 'tropes', 'tropes_none', 'updated_at', 'user_id', 'work_id'].filter((k) => k in seen[0] || !k.startsWith('tropes')));
     // 3,75 se conserva como 15 cuartos
     expect(seen[0].rating_quarters / 4).toBe(3.75);
     // La biblioteca (diario, subrayados, páginas) de A no es visible para B

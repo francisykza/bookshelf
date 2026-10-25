@@ -27,10 +27,13 @@ import { useReducedMotion } from './hooks/useReducedMotion';
 import { ENTERING, ROOM, SHELF, useShelfTransition } from './hooks/useShelfTransition';
 import { CloudProvider } from './state/cloudSync';
 import { CommunityProvider } from './features/social/hooks/useCommunity';
+import { GuardianCard } from './features/social/components/GuardianCard';
+import { InviteHandler } from './features/social/components/InviteHandler';
 import { LibraryProvider, useLibrary } from './state/useLibrary';
 
 // La comunidad se descarga solo al abrirla (SPEC §25.13)
 const SocialHub = lazy(() => import('./features/social/components/SocialHub').then((m) => ({ default: m.SocialHub })));
+const ReaderProfile = lazy(() => import('./features/social/components/ReaderProfile').then((m) => ({ default: m.ReaderProfile })));
 
 /** Un día local `YYYY-MM-DD` (el `select` de la navegación del calendario). */
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -213,9 +216,20 @@ function Sanctuary() {
           />
         )}
         renderSocial={(active, social) => (
-          <SocialRoom status={social.status} attempt={social.attempt} onRetry={social.retry} active={active && !panel && phase === ROOM} reducedMotion={reducedMotion} />
+          <SocialRoom
+            status={social.status}
+            attempt={social.attempt}
+            onRetry={social.retry}
+            active={active && !panel && phase === ROOM}
+            reducedMotion={reducedMotion}
+            timer={timer}
+            onOpenHub={(tab) => openPanel({ type: 'social', tab })}
+            onOpenReader={(id) => openPanel({ type: 'reader', id })}
+            onOpenGuardian={(id) => openPanel({ type: 'guardian', id })}
+          />
         )}
       />
+      <InviteHandler onJoined={(clubId) => openPanel({ type: 'social', tab: 'club', id: clubId })} />
       <ShelfView
         phase={phase}
         onTransitionEnd={onTransitionEnd}
@@ -229,7 +243,7 @@ function Sanctuary() {
         }}
       />
 
-      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
+      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} />}
       {panel?.type === 'laptop' && (
         <LaptopPanel
           onClose={close}
@@ -271,9 +285,15 @@ function Sanctuary() {
       )}
       {panel?.type === 'atlas' && <SagaMapModal onClose={close} onOpenBook={openBook} />}
       {panel?.type === 'account' && <AccountPanel onClose={close} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
+      {panel?.type === 'reader' && (
+        <Suspense fallback={null}>
+          <ReaderProfile userId={panel.id} onClose={close} />
+        </Suspense>
+      )}
+      {panel?.type === 'guardian' && <GuardianCard figureId={panel.id} onClose={close} />}
       {panel?.type === 'social' && (
         <Suspense fallback={null}>
-          <SocialHub onClose={close} initialTab={panel.tab} />
+          <SocialHub onClose={close} initialTab={panel.tab} timer={timer} openClubId={panel.id ?? null} />
         </Suspense>
       )}
       {panel?.type === 'librarian' && <LibrarianPanel onClose={close} onOpenBook={(book) => switchPanel({ type: 'book', id: book.id })} />}

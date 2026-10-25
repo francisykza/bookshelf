@@ -343,7 +343,7 @@ const EDITION_NOTES = {
   audiobook: 'Estuche acrílico de colección con sus cascos.',
 };
 
-export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile }) {
+export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile, onOpenReader }) {
   const { state, actions } = useLibrary();
   const book = state.books.find((b) => b.id === bookId);
   const [opened, setOpened] = useState(false);
@@ -609,7 +609,7 @@ export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile }) {
           <section className="open-book__readers" aria-label="Lectores">
             <h3 className="diary-title">Voces de lectores</h3>
             <Suspense fallback={<p className="social-note">Abriendo…</p>}>
-              <ReadersPanel book={book} onUpdate={update} />
+              <ReadersPanel book={book} onUpdate={update} onOpenReader={onOpenReader} />
             </Suspense>
           </section>
         )}

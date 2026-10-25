@@ -15,13 +15,13 @@ export function clearSocialCache(userId = null) {
   cache.stats.clear();
 }
 
-async function client() {
+export async function client() {
   const sb = await getClient();
   if (!sb) throw Object.assign(new Error('La nube no está configurada en esta versión.'), { code: 'off' });
   return sb;
 }
 
-const fail = (error) => {
+export const fail = (error) => {
   // Tabla o función inexistente: la migración social aún no está aplicada en este proyecto
   if (error && ['42P01', 'PGRST205', 'PGRST202', '42883'].includes(error.code)) throw Object.assign(new Error('La comunidad aún no está disponible en este servidor.'), { code: 'unavailable' });
   if (error) throw Object.assign(new Error(error.message), { code: error.code });

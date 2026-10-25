@@ -102,7 +102,9 @@ test('publicar: previsualización con solo los campos visibles, Voces de lectore
   await expect(page.getByText('Publicada en tu rincón')).toBeVisible();
   expect(mock.db.public_reviews).toHaveLength(1);
   // Solo los campos de la copia pública (nada de citas, páginas ni estado del libro)
-  expect(Object.keys(mock.db.public_reviews[0]).sort()).toEqual(['body', 'emotion', 'has_spoilers', 'id', 'pace', 'published_at', 'rating_quarters', 'romance', 'status', 'surprise', 'updated_at', 'user_id', 'work_id']);
+  expect(Object.keys(mock.db.public_reviews[0]).sort()).toEqual(['body', 'emotion', 'has_spoilers', 'id', 'pace', 'published_at', 'rating_quarters', 'romance', 'status', 'surprise', 'tropes', 'tropes_none', 'updated_at', 'user_id', 'work_id']);
+  // Sin responder al apartado de tropos: null (no es lo mismo que «ninguna encaja»)
+  expect(mock.db.public_reviews[0]).toMatchObject({ tropes: null, tropes_none: false });
   expect(mock.db.works).toEqual([expect.objectContaining({ kind: 'local' })]);
   // Lectores: la propia opinión con alias y avatar, spoiler plegado
   await page.getByRole('tab', { name: 'Lectores' }).click();

@@ -9,6 +9,7 @@ import { useCommunity } from '../social/hooks/useCommunity';
 import { ensureWork, publishReview, withdrawReview } from '../social/services/community';
 import { BODY_MAX, IMPRESSIONS, draftDiffers, publicCopy } from './opinion';
 import { resolveIsbn, useWorkIdentity } from './useWorkIdentity';
+import { TROPES, tropeAnswer } from '../social/connections';
 
 function ImpressionInput({ dim, value, onChange }) {
   return (
@@ -34,6 +35,8 @@ export function PublishControls({ book, onUpdate, onOpenProfile }) {
   const pub = book.publicReview && book.publicReview.userId === community.userId ? book.publicReview : null;
   const [preview, setPreview] = useState(false);
   const [impressions, setImpressions] = useState(() => pub?.impressions ?? {});
+  // Tropos opcionales: sin responder, «ninguna encaja» o una selección del catálogo curado
+  const [tropes, setTropes] = useState(() => ({ answered: pub?.tropes != null, none: Boolean(pub?.tropesNone), selected: pub?.tropes ?? [] }));
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState('');
   const copy = publicCopy({ rating: book.rating, body: book.review, spoilers: book.reviewSpoilers, impressions });
@@ -77,10 +80,11 @@ export function PublishControls({ book, onUpdate, onOpenProfile }) {
       const isbn = String(book.isbn ?? '').replace(/[^0-9Xx]/g, '');
       const ref = work.ref ?? (isbn ? ((await resolveIsbn(isbn)) ?? null) : null);
       const workId = ref ? await ensureWork({ externalId: ref, title: book.title, author: book.author }) : (book.workId ?? (await ensureWork({ externalId: null, title: book.title, author: book.author })));
-      const saved = await publishReview(workId, copy);
+      const answer = tropeAnswer(tropes);
+      const saved = await publishReview(workId, { ...copy, ...answer });
       // Si la publicación anterior estaba en otra obra (local), se retira de allí: una sola opinión vigente
       if (pub?.status === 'published' && pub.workId && pub.workId !== workId) await withdrawReview(pub.workId, community.userId);
-      onUpdate({ workId, ...(ref ? { workRef: { source: 'openlibrary', id: ref } } : null), publicReview: { status: 'published', userId: community.userId, workId, ref, copy, impressions, publishedAt: saved.published_at } });
+      onUpdate({ workId, ...(ref ? { workRef: { source: 'openlibrary', id: ref } } : null), publicReview: { status: 'published', userId: community.userId, workId, ref, copy, impressions, tropes: answer.tropes, tropesNone: answer.tropes_none, publishedAt: saved.published_at } });
       setPreview(false);
     } catch (e) {
       setFailure(e.message);
@@ -144,6 +148,27 @@ export function PublishControls({ book, onUpdate, onOpenProfile }) {
             {IMPRESSIONS.map((d) => (
               <ImpressionInput key={d.id} dim={d} value={impressions[d.id] ?? null} onChange={(v) => setImpressions((s) => ({ ...s, [d.id]: v }))} />
             ))}
+          </details>
+          <details>
+            <summary className="spoiler-toggle">Etiquetas narrativas (opcional)</summary>
+            <p className="social-hand">Las marcadas con * pueden revelar la trama: se mostrarán ocultas.</p>
+            {TROPES.map((t) => (
+              <label key={t.id} className="social-check">
+                <input
+                  type="checkbox"
+                  checked={tropes.answered && !tropes.none && tropes.selected.includes(t.id)}
+                  onChange={(e) => setTropes((s) => ({ answered: true, none: false, selected: e.target.checked ? [...s.selected.filter((x) => x !== t.id), t.id] : s.selected.filter((x) => x !== t.id) }))}
+                />
+                <span>
+                  {t.label}
+                  {t.spoiler ? ' *' : ''}
+                </span>
+              </label>
+            ))}
+            <label className="social-check">
+              <input type="checkbox" checked={tropes.answered && tropes.none} onChange={(e) => setTropes({ answered: e.target.checked, none: e.target.checked, selected: [] })} />
+              <span>Ninguna de estas encaja</span>
+            </label>
           </details>
           {failure && (
             <p className="social-error" role="alert">
