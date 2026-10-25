@@ -133,3 +133,16 @@ export async function fetchDetails(result, { signal } = {}) {
     return result;
   }
 }
+
+/**
+ * Obra de Open Library a la que pertenece una edición por su ISBN (SPEC §25.2): una referencia verificada (la
+ * que da el propio catálogo para ese ISBN), no una coincidencia de título. Devuelve `/works/OL…W` o null.
+ */
+export async function workKeyForIsbn(isbn, { signal } = {}) {
+  const clean = String(isbn ?? '').replace(/[^0-9Xx]/g, '');
+  if (clean.length !== 10 && clean.length !== 13) return null;
+  const res = await fetch(`${OPEN_LIBRARY}/isbn/${clean}.json`, { signal });
+  if (!res.ok) return null;
+  const key = (await res.json())?.works?.[0]?.key;
+  return /^\/works\/OL\d+W$/.test(key ?? '') ? key : null;
+}

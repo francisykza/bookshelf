@@ -609,7 +609,7 @@ export function BookDetailModal({ bookId, onClose, onSwitch, onOpenProfile }) {
           <section className="open-book__readers" aria-label="Lectores">
             <h3 className="diary-title">Voces de lectores</h3>
             <Suspense fallback={<p className="social-note">Abriendo…</p>}>
-              <ReadersPanel workId={book.workId ?? null} />
+              <ReadersPanel book={book} onUpdate={update} />
             </Suspense>
           </section>
         )}

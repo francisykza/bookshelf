@@ -84,6 +84,14 @@ export async function ensureWork({ externalId, title, author }) {
   return data.id;
 }
 
+/** Obra externa ya registrada en la comunidad (solo lectura; no crea nada). */
+export async function findWork(externalId) {
+  const sb = await client();
+  const { data, error } = await sb.from('works').select('id').eq('source', 'openlibrary').eq('external_id', externalId).maybeSingle();
+  fail(error);
+  return data?.id ?? null;
+}
+
 // ── Opiniones ──────────────────────────────────────────────────────────────────────────────────────────────
 const REVIEW_COLUMNS = 'id, user_id, work_id, rating_quarters, body, has_spoilers, pace, emotion, surprise, romance, status, published_at';
 

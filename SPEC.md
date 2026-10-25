@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.31.0 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.31.1 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2307,6 +2307,13 @@ entrega), **PENDIENTE DE DESPLIEGUE** (código y migración listos; falta aplica
 - `works`: obra externa solo con referencia verificada de Open Library (`/works/OL…W`, guardada al añadir un
   libro desde Open Library como `book.workRef`) o local con identificador propio. Nunca se fusiona por título; los
   ejemplares conservan sus ids. Al publicar, el libro guarda `workId`.
+
+- 1.31.1 (corrección tras la prueba con dos cuentas): un libro sin referencia de Open Library pero con ISBN pregunta
+  una vez a Open Library a qué obra pertenece ese ISBN (`workKeyForIsbn`, `useWorkIdentity`; guarda `workRef` y
+  `workRefIsbn`), así dos ejemplares del mismo libro añadidos de forma distinta comparten opiniones. Antes cada
+  cuenta creaba una obra local propia y B no veía la reseña de A. Una opinión publicada en una obra local se mueve
+  a la compartida con «Actualizar publicación» (se retira de la local). Con un panel abierto se ocultan las flechas
+  de las baldas y del panorama, que asomaban por encima del velo en iPhone.
 
 ### 25.3 Reseñas privadas y publicación explícita · VERIFICADO
 

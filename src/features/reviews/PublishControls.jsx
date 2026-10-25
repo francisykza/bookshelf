@@ -7,7 +7,8 @@ import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { formatRating } from '../../domain/books';
 import { useCommunity } from '../social/hooks/useCommunity';
 import { ensureWork, publishReview, withdrawReview } from '../social/services/community';
-import { BODY_MAX, IMPRESSIONS, draftDiffers, externalWorkRef, publicCopy } from './opinion';
+import { BODY_MAX, IMPRESSIONS, draftDiffers, publicCopy } from './opinion';
+import { resolveIsbn, useWorkIdentity } from './useWorkIdentity';
 
 function ImpressionInput({ dim, value, onChange }) {
   return (
@@ -36,8 +37,11 @@ export function PublishControls({ book, onUpdate, onOpenProfile }) {
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState('');
   const copy = publicCopy({ rating: book.rating, body: book.review, spoilers: book.reviewSpoilers, impressions });
+  const work = useWorkIdentity(book, onUpdate);
   const published = pub?.status === 'published';
-  const changed = draftDiffers(book, community.userId);
+  // Publicada antes en una obra local y ahora el libro tiene obra compartida: se ofrece actualizar (se mueve)
+  const moved = published && Boolean(work.ref) && pub.ref !== work.ref;
+  const changed = draftDiffers(book, community.userId) || moved;
   const tooLong = (book.review ?? '').length > BODY_MAX;
 
   const spoilerBox = (
@@ -69,9 +73,14 @@ export function PublishControls({ book, onUpdate, onOpenProfile }) {
     setBusy(true);
     setFailure('');
     try {
-      const workId = book.workId ?? (await ensureWork({ externalId: externalWorkRef(book), title: book.title, author: book.author }));
+      // Obra compartida si la hay (también resolviendo el ISBN en el momento); si no, la local del libro
+      const isbn = String(book.isbn ?? '').replace(/[^0-9Xx]/g, '');
+      const ref = work.ref ?? (isbn ? ((await resolveIsbn(isbn)) ?? null) : null);
+      const workId = ref ? await ensureWork({ externalId: ref, title: book.title, author: book.author }) : (book.workId ?? (await ensureWork({ externalId: null, title: book.title, author: book.author })));
       const saved = await publishReview(workId, copy);
-      onUpdate({ workId, publicReview: { status: 'published', userId: community.userId, workId, copy, impressions, publishedAt: saved.published_at } });
+      // Si la publicación anterior estaba en otra obra (local), se retira de allí: una sola opinión vigente
+      if (pub?.status === 'published' && pub.workId && pub.workId !== workId) await withdrawReview(pub.workId, community.userId);
+      onUpdate({ workId, ...(ref ? { workRef: { source: 'openlibrary', id: ref } } : null), publicReview: { status: 'published', userId: community.userId, workId, ref, copy, impressions, publishedAt: saved.published_at } });
       setPreview(false);
     } catch (e) {
       setFailure(e.message);
@@ -96,7 +105,7 @@ export function PublishControls({ book, onUpdate, onOpenProfile }) {
   return (
     <div className="publish">
       {spoilerBox}
-      {published && <p className="social-note">Publicada en tu rincón{changed ? ' · has cambiado la reseña desde entonces' : ''}.</p>}
+      {published && <p className="social-note">Publicada en tu rincón{moved ? ' · actualízala para que la vean quienes tienen este libro' : changed ? ' · has cambiado la reseña desde entonces' : ''}.</p>}
       {pub?.status === 'withdrawn' && <p className="social-note">Retiraste la publicación; tu reseña privada sigue aquí.</p>}
       {!preview && (
         <div className="social-actions">

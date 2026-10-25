@@ -509,3 +509,10 @@
 .open-book__readers {
   padding-top: 52px;
 }
+
+/* Con un panel abierto, las flechas de desplazamiento de las baldas no deben asomar por encima (iPhone
+   compone las capas de los scrollers aparte y las dejaba visibles sobre el velo) */
+body:has(#modal-root .panel-veil) .scroll-chevron,
+body:has(#modal-root .panel-veil) .panorama-nav {
+  visibility: hidden;
+}

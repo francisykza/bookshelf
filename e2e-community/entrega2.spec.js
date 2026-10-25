@@ -69,7 +69,7 @@ test('perfil: alias elegido y avatar; nunca el correo; persiste al recargar', as
   const geometry = await page.evaluate(() => {
     const hub = document.querySelector('.social-hub');
     const body = document.querySelector('.social-hub__body');
-    const small = [...hub.querySelectorAll('button, input')].filter((el) => el.offsetParent && el.getBoundingClientRect().height < 43.5 && el.type !== 'checkbox').map((el) => el.textContent || el.getAttribute('aria-label'));
+    const small = [...hub.querySelectorAll('button, input')].filter((el) => el.offsetParent && el.offsetHeight < 43.5 && el.type !== 'checkbox').map((el) => el.textContent || el.getAttribute('aria-label'));
     return { scrollers: [...hub.querySelectorAll('*')].filter((el) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight).length, bodyScrolls: getComputedStyle(body).overflowY, small, inputFont: getComputedStyle(document.querySelector('#profile-alias')).fontSize, hOverflow: document.documentElement.scrollWidth > innerWidth };
   });
   expect(geometry.scrollers).toBeLessThanOrEqual(1);
@@ -190,4 +190,65 @@ test('cambiar de cuenta no deja ver el perfil ni la caché social de la anterior
   await openProfile(page);
   await expect(page.getByLabel('Alias público')).toHaveValue('');
   await expect(page.locator('.social-hub')).not.toContainText('Ana lectora');
+});
+
+test('dos cuentas con el mismo libro (mismo ISBN, añadido distinto) ven la misma opinión', async ({ browser }) => {
+  const CIRCE_WORK = '/works/OL17301948W';
+  const mock = createMockSupabase(undefined, { isbnWorks: { 9780316556347: CIRCE_WORK } });
+  mock.db.profiles.push({ user_id: ANA.id, alias: 'Ana lectora', avatar_id: 'gato-lector', community_enabled: true }, { user_id: BRUNO.id, alias: 'Bruno', avatar_id: 'lector-farol', community_enabled: true });
+  const openCirce = async (page) => {
+    await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+    await expect(page.locator('.library[data-open="true"]')).toBeVisible();
+    await page.locator('.library [data-book-id="circe"]').first().evaluate((el) => (el.querySelector('button') ?? el).click());
+    await expect(page.locator('.open-book')).toBeVisible();
+  };
+  // A publica (sin referencia de obra guardada: se resuelve por ISBN al publicar)
+  const a = await (await browser.newContext()).newPage();
+  await mock.attach(a, ANA);
+  await ready(a);
+  await openCirce(a);
+  const diary = a.getByRole('tab', { name: 'Diario' });
+  if (await diary.isVisible()) await diary.click();
+  await a.getByLabel('Tu reseña').fill('Divina y humana a la vez.');
+  await a.getByLabel('Tu reseña').blur();
+  await a.getByRole('button', { name: 'Publicar en mi rincón' }).click();
+  await a.getByLabel('Lo que verán otras personas').getByRole('button', { name: 'Publicar' }).click();
+  await expect(a.getByText('Publicada en tu rincón')).toBeVisible();
+  expect(mock.db.works).toEqual([expect.objectContaining({ kind: 'external', source: 'openlibrary', external_id: CIRCE_WORK })]);
+  // B, con su propio ejemplar de Circe, la ve en Lectores
+  const b = await (await browser.newContext()).newPage();
+  await mock.attach(b, BRUNO);
+  await ready(b);
+  await openCirce(b);
+  await b.getByRole('tab', { name: 'Lectores' }).click();
+  await expect(b.getByLabel('Voces de lectores').locator('.review-card')).toContainText('Divina y humana a la vez.');
+  await expect(b.getByLabel('Voces de lectores').locator('.review-card')).toContainText('Ana lectora');
+  await a.context().close();
+  await b.context().close();
+});
+
+test('una opinión publicada antes en una obra local se mueve a la obra compartida al actualizar', async ({ page }) => {
+  const CIRCE_WORK = '/works/OL17301948W';
+  const mock = createMockSupabase(undefined, { isbnWorks: { 9780316556347: CIRCE_WORK } });
+  const local = { id: '55555555-5555-4555-8555-555555555555', kind: 'local', title: 'Circe', author: 'Madeline Miller', created_by: ANA.id };
+  mock.db.works.push(local);
+  mock.db.profiles.push({ user_id: ANA.id, alias: 'Ana lectora', avatar_id: 'gato-lector', community_enabled: true });
+  mock.db.public_reviews.push({ id: '66666666-6666-4666-8666-666666666666', work_id: local.id, user_id: ANA.id, rating_quarters: 16, body: 'Muy fiel', has_spoilers: false, status: 'published', published_at: new Date().toISOString() });
+  await mock.attach(page, ANA);
+  // Como quedó tras la 1.31.0: publicada en la obra local, sin referencia compartida
+  await page.addInitScript(`(() => { try { const st = JSON.parse(localStorage.getItem('bookshelf:v1')); if (!st) return; const b = st.books.find((x) => x.id === 'circe'); b.review = 'Muy fiel'; b.rating = 4; b.workId = '${local.id}'; b.publicReview = { status: 'published', userId: '${ANA.id}', workId: '${local.id}', copy: { rating_quarters: 16, body: 'Muy fiel', has_spoilers: false, pace: null, emotion: null, surprise: null, romance: null }, impressions: {} }; localStorage.setItem('bookshelf:v1', JSON.stringify(st)); } catch (e) {} })()`);
+  await ready(page);
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await page.locator('.library [data-book-id="circe"]').first().evaluate((el) => (el.querySelector('button') ?? el).click());
+  const diary = page.getByRole('tab', { name: 'Diario' });
+  if (await diary.isVisible()) await diary.click();
+  await page.getByRole('button', { name: 'Actualizar publicación' }).click();
+  await page.getByLabel('Lo que verán otras personas').getByRole('button', { name: 'Actualizar' }).click();
+  await expect(page.getByText(/Publicada en tu rincón\.$/)).toBeVisible();
+  const ext = mock.db.works.find((w) => w.kind === 'external');
+  expect(ext.external_id).toBe(CIRCE_WORK);
+  expect(mock.db.public_reviews.find((r) => r.work_id === ext.id)).toMatchObject({ status: 'published', body: 'Muy fiel' });
+  expect(mock.db.public_reviews.find((r) => r.work_id === local.id).status).toBe('withdrawn');
 });

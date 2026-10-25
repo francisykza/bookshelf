@@ -41,7 +41,7 @@ function matches(row, params) {
 }
 
 /** Crea el simulador. `db` es el estado compartido entre páginas de la misma prueba. */
-export function createMockSupabase(db = { profiles: [], works: [], public_reviews: [], libraries: [], blocks: [], reports: [] }) {
+export function createMockSupabase(db = { profiles: [], works: [], public_reviews: [], libraries: [], blocks: [], reports: [] }, { isbnWorks = {} } = {}) {
   const stats = (userId) =>
     Object.values(
       db.public_reviews
@@ -128,6 +128,12 @@ export function createMockSupabase(db = { profiles: [], works: [], public_review
     async attach(page, user) {
       await page.addInitScript(sessionScript(user));
       await page.route(`${SUPABASE}/**`, (route) => handle(route, user.id));
+      // Catálogo de Open Library (ISBN → obra): solo los ISBN indicados; el resto, sin obra
+      await page.route('https://openlibrary.org/isbn/**', (route) => {
+        const isbn = new URL(route.request().url()).pathname.split('/').pop().replace('.json', '');
+        const key = isbnWorks[isbn];
+        return key ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ key: `/books/X`, works: [{ key }] }) }) : route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+      });
     },
   };
 }

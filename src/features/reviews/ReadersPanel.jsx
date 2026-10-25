@@ -8,6 +8,7 @@ import { CommunityGate } from '../social/components/SocialHub';
 import { useCommunity } from '../social/hooks/useCommunity';
 import { PAGE_SIZE, blockUser, fetchProfiles, fetchReviews, fetchStats, reportContent } from '../social/services/community';
 import { fromQuarters, statsView } from './opinion';
+import { useWorkIdentity } from './useWorkIdentity';
 
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -52,11 +53,13 @@ export function ReviewCard({ review, author, mine, onBlock, onReport }) {
 }
 
 /**
- * `workId`: obra de la comunidad (null si el libro aún no se ha publicado nunca y no tiene referencia externa
- * resuelta). `following`: ids seguidos (entrega 3) o null si la función no está disponible.
+ * Opiniones de la obra de `book` (resuelta con `useWorkIdentity`: la obra externa compartida o la local del libro).
+ * `following`: ids seguidos (entrega 3) o null si la función no está disponible.
  */
-export function ReadersPanel({ workId, following = null }) {
+export function ReadersPanel({ book, onUpdate, following = null }) {
   const community = useCommunity({ autoload: true });
+  const work = useWorkIdentity(book, onUpdate, { lookup: community.status === 'ready' });
+  const workId = work.workId;
   const [stats, setStats] = useState(null);
   const [items, setItems] = useState([]);
   const [authors, setAuthors] = useState({});
@@ -80,7 +83,13 @@ export function ReadersPanel({ workId, following = null }) {
   );
 
   useEffect(() => {
-    if (!ready || !workId) return undefined;
+    if (!ready || !work.ready) return undefined;
+    if (!workId) {
+      setStats(null);
+      setItems([]);
+      setPhase('ok');
+      return undefined;
+    }
     let alive = true;
     setPhase((p) => (p === 'ok' ? 'refreshing' : 'loading'));
     setFailure('');
@@ -90,9 +99,10 @@ export function ReadersPanel({ workId, following = null }) {
     return () => {
       alive = false;
     };
-  }, [ready, workId, loadPage]);
+  }, [ready, work.ready, workId, loadPage]);
 
   if (!ready) return <CommunityGate status={community.status} error={community.error} onRetry={community.load} />;
+  if (!work.ready) return <p className="social-note">Buscando esta historia en la comunidad…</p>;
   const view = statsView(stats);
   const maxBand = Math.max(1, ...view.bands.map((b) => b.count));
 
