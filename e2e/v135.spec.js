@@ -46,7 +46,7 @@ async function openBookDiary(page) {
 async function openDiary(page, view) {
   await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="laptop"]').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.diary')).toBeVisible();
+  await expect(page.locator('.pc-diary')).toBeVisible();
   if (view) await page.locator('.diary__tabs').getByRole('tab', { name: view }).click();
 }
 
@@ -189,9 +189,9 @@ test('mi diario: Hoy registra una sola vez y la nota no suma páginas; Notas fil
   await load(page);
   const before = await stored(page);
   await openDiary(page, 'Hoy');
-  const today = page.locator('.diary-today');
-  await expect(today.locator('.diary-date h3')).toBeVisible();
-  await expect(today.getByRole('heading', { name: 'Mi semana entre páginas' })).toBeVisible();
+  const today = page.locator('.pcd-today');
+  await expect(today.locator('.pcd-date h3')).toBeVisible();
+  await expect(today.getByRole('heading', { name: 'Mi semana lectora' })).toBeVisible();
   await shot(page, info, 'v135-diario-hoy');
   // Nota «Lo que me llevo de estas páginas»
   await today.getByRole('button', { name: 'Escribir una nota' }).click();
@@ -204,7 +204,7 @@ test('mi diario: Hoy registra una sola vez y la nota no suma páginas; Notas fil
   expect(mid.books.flatMap((b) => b.quotes).filter((x) => x.text === 'A veces una historia te encuentra')).toHaveLength(1);
   // Registrar lectura: el mismo formulario; una sola entrada nueva
   await today.getByRole('button', { name: 'Registrar lectura' }).click();
-  const entry = page.locator('.diary-today .reading-form');
+  const entry = page.locator('.pcd-today .reading-form');
   await expect(entry).toBeVisible();
   const reading = mid.books.find((b) => b.status === 'reading' && b.id === (mid.settings.currentBookId ?? b.id));
   await entry.getByRole('radio', { name: 'Voy por la página' }).click();
@@ -218,7 +218,7 @@ test('mi diario: Hoy registra una sola vez y la nota no suma páginas; Notas fil
   expect(end.books.find((b) => b.id === reading.id).currentPage).toBe(reading.currentPage + 7);
   // Notas: búsqueda, filtro por libro, edición y borrado con confirmación
   await page.locator('.diary__tabs').getByRole('tab', { name: 'Notas' }).click();
-  const notes = page.locator('.diary-notes');
+  const notes = page.locator('.pcd-notes');
   await notes.getByLabel('Buscar en mis notas').fill('historia te encuentra');
   await expect(notes.locator('.annotation-card')).toHaveCount(1);
   await notes.getByLabel('Buscar en mis notas').fill('');
@@ -233,7 +233,7 @@ test('mi diario: Hoy registra una sola vez y la nota no suma páginas; Notas fil
   await edited.getByRole('button', { name: 'Sí, borrar' }).click();
   await expect.poll(async () => (await stored(page)).books.flatMap((b) => b.quotes).some((x) => x.text.includes('justo a tiempo'))).toBe(false);
   // Abrir una nota en su contexto (la ficha del libro, pestaña Diario)
-  const any = notes.locator('.diary-notes__book').first();
+  const any = notes.locator('.pcd-notes__book').first();
   if (await any.count()) {
     await any.click();
     await expect(page.locator('.book-sheet')).toBeVisible();

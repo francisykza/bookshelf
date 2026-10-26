@@ -10,31 +10,7 @@ import { PRESET_SAGAS, customSaga, sagaDone, sagaRoute } from '../../domain/saga
 import { useLibrary } from '../../state/useLibrary';
 import { Cover } from '../shelf/BookItem';
 import { PanelShell } from './PanelShell';
-
-/** Rosa de los vientos de latón. */
-function CompassRose({ className = '' }) {
-  return (
-    <svg className={`compass-rose ${className}`} viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.6" strokeDasharray="1.5 3" />
-      {[0, 45, 90, 135, 180, 225, 270, 315].map((a, i) => (
-        <path
-          key={a}
-          d={i % 2 ? 'M50 50 L54 50 L50 22 L46 50 Z' : 'M50 50 L56 50 L50 6 L44 50 Z'}
-          fill={i % 2 ? 'currentColor' : 'none'}
-          stroke="currentColor"
-          strokeWidth="1"
-          transform={`rotate(${a} 50 50)`}
-          opacity={i % 2 ? 0.6 : 1}
-        />
-      ))}
-      <text x="50" y="5" textAnchor="middle" fontSize="7" fill="currentColor" fontFamily="serif">
-        N
-      </text>
-      <circle cx="50" cy="50" r="3" fill="currentColor" />
-    </svg>
-  );
-}
+import { SectionIcon } from '../SectionIcon';
 
 /** Brújula dorada animada de la parada «Leer ahora». */
 function LiveCompass() {
@@ -158,7 +134,7 @@ export function SagaMapModal({ onClose, onOpenBook }) {
           <X aria-hidden="true" />
         </button>
         <header className="atlas__head">
-          <CompassRose className="atlas__rose" />
+          <SectionIcon name="sagas" size={40} className="atlas__icon" />
           <div>
             <h2>Atlas de Sagas</h2>
             <p>Cartografía de tus lecturas · lo recorrido en gris, el rumbo en color</p>

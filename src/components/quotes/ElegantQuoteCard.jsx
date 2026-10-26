@@ -100,7 +100,8 @@ function WaxSeal({ initials, seed }) {
   );
 }
 
-export function ElegantQuoteCard({ text, author, work, onSave, saved = false, saveLabel = 'Guardar en mi Diario', onPin, pinned = false, compact = false, animate = true }) {
+/** `short`: rótulos breves de las acciones (Guardar · Compartir · Fijar), con el nombre completo como nombre accesible. */
+export function ElegantQuoteCard({ text, author, work, onSave, saved = false, saveLabel = 'Guardar en mi Diario', onPin, pinned = false, compact = false, animate = true, short = false }) {
   const seed = hash(`${text}${author}`) % 100000 || 7;
   const clip = useMemo(() => deckle(seed), [seed]);
   const words = text.split(/\s+/);
@@ -151,20 +152,20 @@ export function ElegantQuoteCard({ text, author, work, onSave, saved = false, sa
       {!compact && (
         <div className="equote__actions">
           {onSave && (
-            <button type="button" className="equote__btn" onClick={onSave} disabled={saved}>
+            <button type="button" className="equote__btn" onClick={onSave} disabled={saved} aria-label={short ? (saved ? 'Guardada en tu Diario' : saveLabel) : undefined}>
               {saved ? <Check aria-hidden="true" /> : <BookmarkPlus aria-hidden="true" />}
-              {saved ? 'Guardada en tu Diario' : saveLabel}
+              {saved ? (short ? 'Guardada' : 'Guardada en tu Diario') : short ? 'Guardar' : saveLabel}
             </button>
           )}
           {onPin && (
-            <button type="button" className="equote__btn" onClick={onPin} aria-pressed={pinned}>
+            <button type="button" className="equote__btn" onClick={onPin} aria-pressed={pinned} aria-label={short ? (pinned ? 'Clavada en tu estantería' : 'Dejar clavada en la estantería') : undefined}>
               <Pin aria-hidden="true" />
-              {pinned ? 'Clavada en tu estantería' : 'Dejar clavada en la estantería'}
+              {pinned ? (short ? 'Fijada' : 'Clavada en tu estantería') : short ? 'Fijar' : 'Dejar clavada en la estantería'}
             </button>
           )}
-          <button type="button" className="equote__btn" onClick={share}>
+          <button type="button" className="equote__btn" onClick={share} aria-label={short && !shared ? 'Compartir tarjeta' : undefined}>
             <Share2 aria-hidden="true" />
-            {shared ?? 'Compartir tarjeta'}
+            {shared ?? (short ? 'Compartir' : 'Compartir tarjeta')}
           </button>
         </div>
       )}

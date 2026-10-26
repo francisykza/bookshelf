@@ -17,6 +17,7 @@ const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const WEEKDAYS_LONG = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 const fmtDay = (key, opts) => cap(parseDay(key).toLocaleDateString('es-ES', opts));
+const validTime = (iso) => Boolean(iso) && !Number.isNaN(new Date(iso).getTime());
 
 /** Sesiones del temporizador por día: { [date]: { count, minutes } }. */
 function usePomodoros(state) {
@@ -90,6 +91,7 @@ function EntryRow({ entry, book }) {
   return (
     <li className="entry-row" data-kind={entry.kind}>
       <span className="entry-row__text">{label}</span>
+      {validTime(entry.createdAt) && <time className="entry-row__time">{new Date(entry.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</time>}
       <button
         type="button"
         className="icon-btn icon-btn--tiny"
@@ -247,7 +249,8 @@ function CalendarScene({ today = dayKey() }) {
   );
 }
 
-function CalendarFull({ selectDay = null, onComplete, onOpenLibrary }) {
+/** `inline`: dentro del ordenador el detalle del día va siempre bajo la cuadrícula, a cualquier ancho. */
+function CalendarFull({ selectDay = null, onComplete, onOpenLibrary, inline = false }) {
   const { state } = useLibrary();
   const days = useDays(state);
   const pomos = usePomodoros(state);
@@ -257,12 +260,12 @@ function CalendarFull({ selectDay = null, onComplete, onOpenLibrary }) {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [open, setOpen] = useState(selectDay);
-  const narrow = useNarrow();
+  const narrow = useNarrow() || inline;
   const panelRef = useRef(null);
   // Al abrir un día en móvil, su panel entra en la zona visible de la ventana (solo se desplaza esa zona)
   useEffect(() => {
     const panel = panelRef.current;
-    const scroller = panel?.closest('.window__body');
+    const scroller = panel?.closest('.pc-win__body, .window__body');
     if (!narrow || !open || !panel || !scroller) return;
     const over = panel.getBoundingClientRect().bottom - scroller.getBoundingClientRect().bottom;
     if (over > 0) scroller.scrollTop += over + 8;
@@ -353,10 +356,10 @@ function CalendarFull({ selectDay = null, onComplete, onOpenLibrary }) {
                 onClick={() => setOpen(open === date ? null : date)}
               >
                 <span className="cal__num">{parseDay(date).getDate()}</span>
-                {groups.length > 2 && <span className="cal__more">+{groups.length - 2}</span>}
+                {groups.length > 1 && <span className="cal__more">+{groups.length - 1}</span>}
                 {groups.length > 0 && (
-                  <span className="cal__covers" data-count={Math.min(2, groups.length)}>
-                    {groups.slice(0, 2).map((g, k) => (
+                  <span className="cal__covers" data-count={1}>
+                    {groups.slice(0, 1).map((g, k) => (
                       <span key={g.book.id} className="cal__cover" data-k={k}>
                         <CalCover book={g.book} />
                       </span>
@@ -410,15 +413,23 @@ export function SessionsApp() {
   const dates = Object.keys(days).sort().reverse();
   const pomodoros = state.progress.pomodoros;
   const [adding, setAdding] = useState(false);
+  const today = dayKey();
+  const yesterday = dayKey(new Date(Date.now() - 86400000));
+  const dayTitle = (date) => {
+    const label = fmtDay(date, { day: 'numeric', month: 'long' });
+    if (date === today) return `Hoy, ${label}`;
+    if (date === yesterday) return `Ayer, ${label}`;
+    return fmtDay(date, { weekday: 'long', day: 'numeric', month: 'long' });
+  };
   return (
     <div className="sessions">
       <div className="sessions__top">
+        <button type="button" className="pc-btn pc-btn--primary sessions__add" onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
+          <Plus aria-hidden="true" /> Registrar lectura
+        </button>
         <p>
           {dates.length} días con lectura · {pomodoros.length} sesiones cozy con temporizador
         </p>
-        <button type="button" className="stamp-btn stamp-btn--small" onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
-          <Plus aria-hidden="true" /> Apuntar lectura de hoy
-        </button>
       </div>
       {adding && (
         <div className="sessions__form">
@@ -430,7 +441,7 @@ export function SessionsApp() {
         {dates.map((date) => (
           <li key={date}>
             <h4>
-              {fmtDay(date, { weekday: 'long', day: 'numeric', month: 'long' })}
+              {dayTitle(date)}
               <span>{summarize(days[date].flatMap((g) => g.entries), state.books).text}</span>
             </h4>
             <ul>

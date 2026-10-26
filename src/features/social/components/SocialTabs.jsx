@@ -14,6 +14,7 @@ import { fetchProfiles } from '../services/community';
 import { fetchActivity, fetchCorner, saveCorner } from '../services/connections';
 import { sitDownNow, standUpNow, usePresence } from '../hooks/usePresence';
 import { ReaderProfileView } from './ReaderProfile';
+import { SectionIcon } from '../../../components/SectionIcon';
 import { CollectionsEditor, HuellasEditor } from './HuellasEditor';
 
 function Gate({ community, children }) {
@@ -240,6 +241,7 @@ export function ReadersTab() {
           {/* Clubes: el tipo («Club de lectura») va aparte del nombre que puso su creador, sin tocarlo */}
           {activity?.clubs.map((c) => (
             <li key={c.id} className="activity-club">
+              <SectionIcon name="club" size={32} className="activity-club__icon" />
               <span className="activity-club__kind">Club de lectura</span>
               <b>{c.name}</b>
               {c.status === 'archived' ? <small>Archivado</small> : c.discussion_point ? <small>{c.discussion_point}</small> : null}

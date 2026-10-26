@@ -1,7 +1,8 @@
 // `SHELF_VIEW` (SPEC §27.3–27.5, §28.4): la librería como un mueble de madera gouache con profundidad. Cabecera
 // compacta (volver, buscador, cintas de estado, vista y herramientas), un tablón de recuerdos plegable dentro del
 // mueble, una balda por estado con laterales, tabla y placa de latón colgada, y como mucho dos ramas de hiedra.
-import { ArrowLeft, BookOpen, ChevronDown, CircleCheck, Hourglass, Library, Plus, Search, Sparkles, Trophy, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronDown, CircleCheck, Hourglass, Library, Plus, Search, Sparkles, X } from 'lucide-react';
+import { SectionIcon } from '../SectionIcon';
 import { FabricTab, HangingPlaque, WaxSeal } from '../primitives';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
@@ -354,8 +355,9 @@ function ToolTiles({ dieFace, rolling, onRoll, onAskLibrarian, onOpenVault }) {
           <Sparkles aria-hidden="true" />
         </button>
       )}
-      <button type="button" className="lib-tile" onClick={() => onOpenVault()} aria-label="Vitrina de Figuras" title="Vitrina de Figuras">
-        <Trophy aria-hidden="true" />
+      {/* Acceso a la colección con su icono ilustrado (ya trae baldosa marfil: sin la de madera) */}
+      <button type="button" className="lib-tile lib-tile--art" onClick={() => onOpenVault()} aria-label="Vitrina de Figuras" title="Vitrina de Figuras">
+        <SectionIcon name="coleccion" size={40} />
       </button>
     </div>
   );

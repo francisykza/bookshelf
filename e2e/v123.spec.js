@@ -165,10 +165,10 @@ test('formulario: una sola zona de scroll, acciones sticky y borrador estable co
   // Sticky donde hay sitio; en ventanas bajas (≤ 480 px) la fila vuelve al flujo para no tapar el formulario
   expect(state.sticky).toBe(page.viewportSize().height <= 480 ? 'static' : 'sticky');
   expect(state.popOverflow).toBe('visible');
-  expect(state.scrollers.every((c) => c === 'window__body')).toBe(true);
+  expect(state.scrollers.every((c) => c === 'pc-win__body')).toBe(true);
   expect(state.inputFont).toBeGreaterThanOrEqual(16);
   // Cambiar a porcentaje y volver no pierde la instancia ni fuerza el scroll
-  const body = page.locator('.window__body');
+  const body = page.locator('.pc-win:not([hidden]) .pc-win__body');
   const pct = form.getByRole('radio', { name: 'Voy por el porcentaje' });
   await pct.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   const top0 = await body.evaluate((el) => el.scrollTop);

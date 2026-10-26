@@ -148,18 +148,18 @@ test('calendario: la pantalla es la vista compacta del calendario interior (dato
   if (clip.width > 20 && clip.height > 20) await shot(page, info, 'gouache-portatil', clip);
   await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="laptop"]').focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('.panel .window__title')).toContainText('Mi diario'); // 1.35.0: la app «Calendario» es «Mi diario» (abre en Calendario)
+  await expect(page.locator('.panel .pc-win:not([hidden]) .pc-win__title')).toContainText('Mi diario'); // 1.35.0: la app «Calendario» es «Mi diario» (abre en Calendario)
   await page.waitForTimeout(600);
   const panel = await page.evaluate(() => {
-    const root = document.querySelector('.window .cal');
+    const root = document.querySelector('.pc-win .cal');
     const cells = Object.fromEntries([...root.querySelectorAll('.cal__cell')].map((c) => [c.querySelector('.cal__num').textContent.trim(), c.dataset.heat]));
     const css = (el, p) => getComputedStyle(el)[p];
     return {
       month: root.querySelector('.cal__head h3').textContent,
       cells,
       today: root.querySelector('.cal__cell[data-today="true"] .cal__num').textContent.trim(),
-      fonts: { h3: css(root.querySelector('.cal__head h3'), 'fontFamily'), title: css(document.querySelector('.panel .window__title'), 'fontFamily') },
-      colors: { cell: root.querySelector('.cal__cell[data-heat="0"]') ? css(root.querySelector('.cal__cell[data-heat="0"]'), 'backgroundColor') : null, heat: Object.fromEntries(['1', '2', '3', '4'].map((h) => [h, root.querySelector(`.cal__cell[data-heat="${h}"]`) ? css(root.querySelector(`.cal__cell[data-heat="${h}"]`), 'backgroundColor') : null])), bar: css(document.querySelector('.panel .window__bar'), 'backgroundImage') },
+      fonts: { h3: css(root.querySelector('.cal__head h3'), 'fontFamily'), title: css(document.querySelector('.panel .pc-win:not([hidden]) .pc-win__title'), 'fontFamily') },
+      colors: { cell: root.querySelector('.cal__cell[data-heat="0"]') ? css(root.querySelector('.cal__cell[data-heat="0"]'), 'backgroundColor') : null, heat: Object.fromEntries(['1', '2', '3', '4'].map((h) => [h, root.querySelector(`.cal__cell[data-heat="${h}"]`) ? css(root.querySelector(`.cal__cell[data-heat="${h}"]`), 'backgroundColor') : null])), bar: css(document.querySelector('.panel .pc-win__head'), 'backgroundImage') },
     };
   });
   await shot(page, info, 'gouache-calendario-abierto');
@@ -168,11 +168,8 @@ test('calendario: la pantalla es la vista compacta del calendario interior (dato
   expect(scene.month).toBe(panel.month);
   expect(scene.today).toBe(panel.today);
   expect(scene.cells).toEqual(panel.cells);
-  // Mismo diseño: tipografías y colores del calendario interior (nada de paleta propia)
-  expect(scene.fonts).toEqual(panel.fonts);
-  if (panel.colors.cell) expect(scene.colors.cell).toBe(panel.colors.cell);
-  for (const h of ['1', '2', '3', '4']) if (scene.colors.heat[h] && panel.colors.heat[h]) expect(scene.colors.heat[h]).toBe(panel.colors.heat[h]);
-  expect(scene.colors.bar).toBe(panel.colors.bar);
+  // 1.42.0 (SPEC §34): el ordenador se ha rediseñado y la pantalla de la habitación conserva su diseño aprobado;
+  // ya no se exigen la misma tipografía ni los mismos colores, solo los mismos datos (arriba)
   expect(scene.colors.ring).toMatch(/rgb\(196, 98, 58\)/);
   expect(scene.title).toContain('Calendario');
   expect(scene.line).toMatch(/^Hoy · /);

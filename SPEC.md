@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.41.1 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.42.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2954,3 +2954,48 @@ escritorio). Solo con Guías desactivadas; con Guías, los siete iconos y nombre
 - Sin eventos de puntero: los hotspots siguen siendo las zonas pulsables; un toque abre la sección directamente.
 - Mis sagas no tiene máscara: un aro tenue en el borde del astro real, más visible con hover o foco.
 - Pendiente: sobre superficies claras (páginas, auriculares) el reflejo en reposo apenas se distingue.
+
+## 34. Ordenador: escritorio digital mediterráneo (1.42.0)
+
+Referencia: `docs/design/references/ordenador-seis-apps-maqueta.png`. Recursos y su uso:
+`docs/design/ordenador-recursos.md`. Sustituye al cuaderno de cuero de §32 dentro del ordenador (anillas, cuero,
+pestañas de tela, clips y lacres como estructura) y a los iconos genéricos de sus apps. Estilos: `styles/computer.css`,
+todo bajo `.pc` y con tokens propios (ventana #F8F3E8, tinta #352C23 / #706457, salvia #879477, terracota #B65F40,
+azul bruma #8DA7AD, bordes #D9CFBC).
+
+### 34.1 Estructura común
+
+Fondo de la bahía, marco fino, barra superior (Salir · BookShelf · hora), ventana marfil con icono, título y ✕, cuerpo
+con scroll propio y dock de seis apps (Diario · Datos · Sesiones · Reto · Misiones · Citas; icono de 32 px, rótulo de
+11 px, botones de 48 × 56 como mínimo, activo con fondo salvia tenue e indicador). Una app a la vez, sin ventanas
+arrastrables ni botones de minimizar o maximizar. ✕ cierra la app y deja el escritorio con el dock; «Salir» vuelve a
+la habitación. Las apps se conservan ocultas al cambiar de una a otra (un formulario a medias no se pierde) y salir
+con algo escrito en un formulario abierto pide confirmación. Atrás del navegador sigue cerrando el ordenador.
+
+### 34.2 Apps
+
+- Mi diario: pestañas Hoy · Calendario · Notas como control segmentado; sin marco de cuaderno. El calendario muestra
+  una portada por día con contador «+n» si hay más lecturas, y el detalle del día va siempre bajo la cuadrícula.
+- Estadísticas: cuatro indicadores 2 × 2 (páginas de los últimos 7 días, racha, total, valoración media), gráfico de
+  los últimos 14 días con eje, géneros y más números; las fórmulas son las de siempre. Los libros con olivo, como
+  acento pequeño junto a los géneros (se omiten por debajo de 375 px).
+- Sesiones: «Registrar lectura» arriba, resumen, historial por días (Hoy / Ayer) con totales, y filas con portada,
+  título, autor, registros, hora si existe, editar y borrar. Las correcciones siguen sin sumar páginas.
+- Reto anual: anillo salvia «X de Y libros», mensaje según el ritmo, «Editar objetivo», torre real de leídos,
+  libros completados (portada, autor, estrellas, fecha) y páginas por mes.
+- Misiones y Guardián: la figura real del Guardián contenida, cajas por abrir, estrellas, sellos, «Abrir el Ático» y
+  misiones con progreso y «Reclamar».
+- Citas: la cita real con autor y obra, el sobre como ilustración pequeña encima, Guardar · Fijar · Compartir, hojas
+  doradas y acceso al diario de citas.
+
+### 34.3 Iconos de sección fuera del ordenador
+
+Solo donde ya había uno: «Vitrina de Figuras» de la biblioteca (colección), cabecera del Atlas de Sagas (sagas) y la
+fila de club de la actividad de Lectores (club, como en su maqueta). Biblioteca, comunidad, reseñas y notas no tenían
+icono de sección y no se les añade; encuentros espera a su función (§32.3). La habitación (guías y reflejos) no cambia.
+
+### 34.4 Diferencias conocidas con la maqueta
+
+La barra de ventana y la cabecera de la app van en una sola fila (sin semáforos decorativos). Sin «…» de opciones, sin
+selector de periodo en Estadísticas ni de año en el Reto, sin filtros Todas / En curso / Completadas en Misiones y sin
+colecciones de citas inventadas: no existen esas funciones. Los géneros se muestran con su recuento, no en %.

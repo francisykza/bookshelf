@@ -183,7 +183,7 @@ test('calendario → 419/420 no termina; 420/420 abre la reseña una sola vez; �
   // «Ahora no»: conserva la finalización y vuelve al mismo día del calendario
   await page.getByRole('button', { name: 'Ahora no' }).click();
   await expect(page.locator('.review-sheet')).toHaveCount(0);
-  await expect(page.locator('.panel .window__title')).toContainText('Mi diario'); // 1.35.0: la app «Calendario» es «Mi diario» (abre en Calendario)
+  await expect(page.locator('.panel .pc-win:not([hidden]) .pc-win__title')).toContainText('Mi diario'); // 1.35.0: la app «Calendario» es «Mi diario» (abre en Calendario)
   await expect(page.locator('.cal-pop')).toBeVisible();
   expect((await stored(page)).books.find((b) => b.id === 'hail-mary').status).toBe('read');
   // El selector ya no ofrece el libro terminado; el historial del día sí lo conserva
@@ -217,7 +217,7 @@ test('reseña: 3,75 se guarda y se vuelve a cargar; no concede sellos ni recompe
   // La ficha del libro (mismo almacenamiento) muestra la misma valoración y la reseña
   // (la ida y vuelta por el almacenamiento la cubre la prueba de dominio v128 · 11)
   // Al guardar se vuelve al calendario de ese día; se cierra cuando ya está en pantalla
-  await expect(page.locator('.panel .window__title')).toContainText('Mi diario'); // 1.35.0: la app «Calendario» es «Mi diario» (abre en Calendario)
+  await expect(page.locator('.panel .pc-win:not([hidden]) .pc-win__title')).toContainText('Mi diario'); // 1.35.0: la app «Calendario» es «Mi diario» (abre en Calendario)
   await page.waitForTimeout(600);
   await page.keyboard.press('Escape');
   await expect(page.locator('.panel-veil')).toHaveCount(0);
