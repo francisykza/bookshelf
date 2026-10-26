@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="941" height="1672" viewBox="0 0 941 1672">
+<defs><filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter></defs>
+<g fill="none" stroke="white" stroke-linecap="round" filter="url(#soft)"><path d="M 730,1111 L 763,1001 L 871,1017" stroke-width="9"/><path d="M 626,1147 Q 690,1178 758,1189" stroke-width="9"/></g>
+</svg>

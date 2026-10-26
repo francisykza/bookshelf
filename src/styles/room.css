@@ -4080,3 +4080,75 @@ html[data-motion='reduced'] .tod__glow::after {
     animation: none;
   }
 }
+
+/* Reflejos suaves sin guías (RoomReflections): encima de la ilustración y su vegetación, debajo de las superficies
+   (lomos, pantalla, páginas) y de las figuras, que los tapan; la luz del día los tiñe como al resto. El contenedor no
+   crea contexto de apilamiento: cada reflejo se ordena con las capas de la escena */
+.room-reflections {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.room-reflection {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: #ffe4ac;
+  mask-image: var(--reflection-mask);
+  -webkit-mask-image: var(--reflection-mask);
+  mask-mode: alpha;
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  opacity: 0.24;
+  transition: opacity 240ms ease;
+}
+
+/* El vaso está redibujado en el primer plano del portátil (superficies, z 2): su reflejo va encima de él */
+.room-reflection[data-reflection='tray'] {
+  z-index: 3;
+}
+
+.room-reflection[data-active] {
+  opacity: 0.5;
+}
+
+.room-reflections[data-intro] .room-reflection {
+  animation: reflection-intro 1200ms ease-in-out 600ms 1;
+}
+
+@keyframes reflection-intro {
+  50% {
+    opacity: 0.46;
+  }
+}
+
+/* Mis sagas: acento en el borde del astro real (no hay luna dibujada en el fondo) */
+.room-camera[data-guides='false'] .time-dial::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid rgb(255 228 172 / 0.28);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: border-color 240ms ease;
+}
+
+.room-camera[data-guides='false'] .time-dial:hover::after,
+.room-camera[data-guides='false'] .time-dial:focus-visible::after {
+  border-color: rgb(255 228 172 / 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-reflection,
+  .room-camera .time-dial::after {
+    transition: none;
+    animation: none;
+  }
+}

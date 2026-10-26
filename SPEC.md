@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.40.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.41.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2934,3 +2934,18 @@ izquierda, filas de registro con editar y borrar, y «Apuntar otra lectura» con
    frente a spoilers por capítulo). No se descartan por no existir aún las tablas.
 3. Máscaras de los reflejos de la habitación sobre el fondo original
    (`public/images/room-refresh/escena/fondo-limpio.webp`, 941 × 1672).
+
+## 33. Reflejos suaves de la habitación sin guías (1.41.0)
+
+Paquete `material-diseno/bookshelf-reflejos` (manifiesto y seis máscaras SVG de 941 × 1672, lienzo completo), copiado a
+`public/images/room-refresh/reflejos/`. `RoomReflections` pinta cada máscara como máscara alfa de una capa color crema
+dentro del mismo mundo escalado que el fondo (mismo rectángulo, escala, recorte y cámara; comprobado a 360, 390, 430 y
+escritorio). Solo con Guías desactivadas; con Guías, los siete iconos y nombres de §31.
+
+- Reposo 0,24; el objeto bajo el puntero o el foco, 0,5 (un lomo aviva la librería; una figura, la colección). Una
+  única subida y bajada de 1200 ms por sesión; nada con movimiento reducido.
+- Orden: encima de la ilustración y su vegetación, debajo de lomos, pantalla, páginas y figuras, que los tapan. El del
+  vaso va sobre el primer plano del portátil, donde está redibujado el vaso.
+- Sin eventos de puntero: los hotspots siguen siendo las zonas pulsables; un toque abre la sección directamente.
+- Mis sagas no tiene máscara: un aro tenue en el borde del astro real, más visible con hover o foco.
+- Pendiente: sobre superficies claras (páginas, auriculares) el reflejo en reposo apenas se distingue.

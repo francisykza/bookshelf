@@ -21,6 +21,7 @@ import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
 import { RoomSigns } from './RoomSigns';
 import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
+import { RoomReflections } from './RoomReflections';
 import { SceneBase } from './SceneBase';
 import { SceneStage } from './SceneStage';
 import { TeaDrain } from './TeaDrain';
@@ -91,6 +92,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   const guideSpots = guide?.visible ? [guide.stop.anchor, ...guide.stop.secondary] : [];
   const spot = guide?.visible ? null : tourSpot;
   const lit = (id) => spot === id || guideSpots.includes(id);
+  // Reflejo avivado: el objeto bajo el puntero o el foco (un lomo aviva la librería; una figura, la colección)
+  const hoverId = label?.id?.startsWith('spine') ? 'shelf' : label?.id?.startsWith('fig-') ? 'figures' : label?.id;
 
   // Lista para la guía: ilustración decodificada (la geometría ya está medida por el escenario)
   const readyRef = useRef(onReady);
@@ -185,6 +188,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         <AmbientLife active={live} reducedMotion={reducedMotion} candleOn={settings.candleOn} timeOfDay={settings.timeOfDay} />
         {/* La vegetación ilustrada sustituye a las hojas SVG: nunca las dos a la vez */}
         {art.ready ? <RefreshLayers active={live} reducedMotion={reducedMotion} /> : <BreezeLeaves active={live} reducedMotion={reducedMotion} />}
+        {/* Sin guías, reflejos suaves sobre los bordes de cada objeto (con guías, sus iconos y nombres) */}
+        {!guides && base.status === 'ok' && <RoomReflections activeId={hoverId ?? guideSpots[0]} reducedMotion={reducedMotion} />}
 
         {/* 8 · superficies integradas en la ilustración (lomos, pantalla y su primer plano, páginas del libro):
             debajo de la luz y la atmósfera, que las tiñen igual que al resto de la habitación (SPEC §21.1) */}

@@ -1,8 +1,7 @@
 // Nombres de los objetos de la habitación (SPEC §31.2). Decisión del usuario posterior al prompt de recursos: las
 // placas de navegación de la habitación se sustituyen por un icono y un nombre que solo se muestran con «Guías»
-// activadas; con las guías desactivadas, la escena queda limpia (los reflejos suaves sobre cada objeto están
-// pendientes de sus máscaras, que se prepararán sobre el fondo original). Las placas siguen en otras secciones (baldas
-// de la biblioteca). Los nombres son decorativos (`aria-hidden`, sin eventos de puntero): el control es el hotspot del
+// activadas; con las guías desactivadas, reflejos suaves sobre el borde de cada objeto (RoomReflections, SPEC §33). Las
+// placas siguen en otras secciones (baldas de la biblioteca). Los nombres son decorativos (`aria-hidden`, sin eventos de puntero): el control es el hotspot del
 // objeto entero, que tiene su nombre accesible y recibe el toque. Anclados en px de la ilustración 941 × 1672.
 import { BookOpen, CalendarDays, CupSoda, Headphones, Library, Moon, Trophy } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
