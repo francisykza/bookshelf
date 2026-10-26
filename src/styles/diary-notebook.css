@@ -16,7 +16,7 @@
     width: 100vw;
     max-width: 100vw;
     height: 100dvh;
-    padding: max(8px, env(safe-area-inset-top)) 8px max(6px, env(safe-area-inset-bottom));
+    padding: max(6px, env(safe-area-inset-top)) 4px max(6px, env(safe-area-inset-bottom));
     box-sizing: border-box;
   }
 
@@ -78,7 +78,7 @@
   .laptop[data-app='calendar'] .diary .notebook-shell__page {
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 6px 12px 18px 6px;
+    padding: 4px 4px 18px 0;
   }
 
   .laptop[data-app='calendar'] .diary .diary__view {
@@ -171,21 +171,25 @@
 
 /* ── Cabecera común del cuaderno: «Volver» a la izquierda, título y subtítulo centrados, pestañas de tela ── */
 .diary__head {
-  padding-top: 6px;
+  padding-top: 0;
 }
 
 .diary__back {
-  top: 6px;
+  position: static;
+  justify-self: start;
+  min-height: 40px;
+  margin: 0 0 2px -2px;
+  font-size: 14.5px;
 }
 
 .diary__title {
   margin-top: 0;
-  font-size: clamp(28px, 8vw, 34px);
+  font-size: clamp(25px, 7.2vw, 29px);
 }
 
 .diary__subtitle {
   font-style: normal;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .diary .diary__tabs {
@@ -194,7 +198,8 @@
 
 .diary .diary__tabs button {
   flex: 0 1 112px;
-  min-height: 44px;
+  min-height: 42px;
+  font-size: 14.5px;
 }
 
 /* ── Hoy (maqueta diario-general-hoy-2) ── */
@@ -204,25 +209,25 @@
 }
 
 .diary-date h3 {
-  font-size: clamp(32px, 9.4vw, 40px);
+  font-size: clamp(27px, 7.8vw, 31px);
   line-height: 1;
 }
 
 .diary-date p {
   margin-top: 4px;
-  font-size: 18px;
+  font-size: 15px;
 }
 
 .diary-date__vignette {
-  width: clamp(96px, 30vw, 124px);
+  width: clamp(92px, 27vw, 112px);
 }
 
 .diary-section h4 {
-  font-size: 21px;
+  font-size: 17.5px;
 }
 
 .diary-book {
-  grid-template-columns: clamp(98px, 27vw, 118px) minmax(0, 1fr);
+  grid-template-columns: clamp(90px, 25vw, 104px) minmax(0, 1fr);
   gap: 14px;
 }
 
@@ -233,11 +238,11 @@
 }
 
 .diary-book__text b {
-  font: 600 18px/1.2 var(--lib-display);
+  font: 600 16px/1.2 var(--lib-display);
 }
 
 .diary-book__text > span:not(.diary-chip):not(.diary-bar):not(.diary-book__pct):not(.diary-book__progress) {
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .diary-chip {
@@ -246,7 +251,7 @@
   border-radius: 3px;
   background: #8f9a74;
   color: #fbf6ea;
-  font-size: 14px;
+  font-size: 12.5px;
 }
 
 .diary-book__pos {
@@ -260,11 +265,11 @@
 }
 
 .diary-book__text .diary-btn {
-  min-height: 46px;
+  min-height: 44px;
   margin-top: 10px;
   border-radius: 8px;
   background: #b3613f;
-  font-size: 15px;
+  font-size: 14.5px;
 }
 
 .diary-reflection {
@@ -276,38 +281,38 @@
 }
 
 .diary-reflection__text {
-  font-size: 23px;
+  font-size: 20px;
   line-height: 1.25;
 }
 
 .diary-week li {
-  font-size: 15px;
+  font-size: 13.5px;
 }
 
 .diary-week i {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
 }
 
 .diary-latest button {
-  min-height: 52px;
+  min-height: 46px;
 }
 
 .diary-latest__text > span {
-  font-size: 15.5px;
+  font-size: 14px;
 }
 
 /* ── Calendario (maqueta calendario-detalle-dia) ── */
 .diary .cal__head {
   justify-content: center;
-  gap: 18px;
-  margin: 2px 0 10px;
+  gap: 10px;
+  margin: 4px 0 6px;
 }
 
 .diary .cal__head h3 {
   flex: 0 1 auto;
   min-width: 0;
-  font: 500 22px/1.1 var(--lib-display);
+  font: 500 18px/1.1 var(--lib-display);
   text-transform: lowercase;
 }
 
@@ -349,13 +354,14 @@
 }
 
 .diary .cal__grid {
-  gap: 5px;
+  grid-auto-rows: auto;
+  gap: 4px;
 }
 
 .diary .cal__weekday {
   padding-bottom: 4px;
   color: var(--ink-muted);
-  font: 500 14px/1 var(--lib-display);
+  font: 500 12.5px/1 var(--lib-display);
   text-align: center;
 }
 
@@ -363,11 +369,17 @@
 .diary .cal__blank--prev {
   position: relative;
   aspect-ratio: auto;
-  height: clamp(64px, 18vw, 84px);
+  height: auto;
+  min-height: clamp(40px, 11vw, 48px);
   border: 0;
   border-radius: 5px;
   background: #f7efdd;
   box-shadow: inset 0 0 0 1px rgb(110 78 46 / 0.2);
+}
+
+/* Las filas con lecturas crecen para la portada; las vacías quedan bajas, como en la maqueta */
+.diary .cal__cell:has(.cal__covers) {
+  min-height: clamp(68px, 19vw, 80px);
 }
 
 .diary .cal__blank--prev {
@@ -388,8 +400,8 @@
 .diary .cal__blank--prev .cal__num {
   position: absolute;
   top: 4px;
-  left: 6px;
-  font: 500 15px/1 var(--lib-display);
+  left: 5px;
+  font: 500 13.5px/1 var(--lib-display);
 }
 
 .diary .cal__cell .cal__tab,
@@ -398,7 +410,7 @@
 }
 
 .diary .cal__covers {
-  inset: 20px 20% 19px;
+  inset: 19px 16% 18px;
 }
 
 .diary .cal__cover > .cal-cover {
@@ -417,7 +429,7 @@
   padding: 0;
   background: none;
   color: var(--ink);
-  font: 500 12.5px/1 var(--lib-body);
+  font: 500 12px/1 var(--lib-body);
 }
 
 .diary .cal__pages svg {
@@ -464,12 +476,12 @@
 
 /* Ficha del día: papel sujeto con pinza, cabecera en serif, portada a la izquierda */
 .diary .cal__daypanel {
-  margin-top: 26px;
+  margin: 26px -4px 0;
 }
 
 .diary .cal-pop {
   position: relative;
-  padding: 18px 14px 14px;
+  padding: 18px 14px 12px;
   border: 0;
   border-radius: 4px;
   background: #fbf5e7 url('/art/library-refresh/journal.webp') 0 0 / 300px repeat;
@@ -489,26 +501,29 @@
 }
 
 .diary .cal-pop__head strong {
-  font: 500 20px/1.2 var(--lib-display);
+  font: 500 17.5px/1.2 var(--lib-display);
 }
 
 .diary .cal-pop__cozy {
   color: #8a6a44;
-  font: 500 15px/1.3 var(--lib-display);
+  font: 500 14px/1.3 var(--lib-display);
 }
 
 .diary .day-group {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-columns: 68px minmax(0, 1fr);
   gap: 12px;
 }
 
 .diary .cal-pop__cover {
-  width: 76px;
+  align-self: start;
+  width: 68px;
+  height: auto;
+  aspect-ratio: 2 / 3;
 }
 
 .diary .cal-pop__text b {
-  font: 500 17px/1.2 var(--lib-display);
+  font: 500 15px/1.2 var(--lib-display);
 }
 
 .diary .entry-row {
@@ -518,7 +533,7 @@
 }
 
 .diary .entry-row__text {
-  font: 14px/1.35 var(--lib-mono);
+  font: 12.5px/1.35 var(--lib-mono);
 }
 
 .diary .entry-row .icon-btn--tiny {
@@ -531,13 +546,13 @@
 
 .diary .cal-pop__add {
   width: 100%;
-  min-height: 48px;
+  min-height: 46px;
   margin-top: 12px;
   border: 1.5px dashed rgb(168 79 52 / 0.6);
   border-radius: 8px;
   background: none;
   color: var(--terracotta);
-  font: 500 17px/1 var(--lib-display);
+  font: 500 15.5px/1 var(--lib-display);
 }
 
 /* El sello de lacre cierra el contenido (al final de la página), sin tapar acciones */

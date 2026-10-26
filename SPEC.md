@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.41.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.41.1 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2910,6 +2910,11 @@ completo queda como nombre accesible). Escritorio conserva el portátil.
 Ambigüedad documentada: la cabecera de las dos maquetas no coincide (Hoy: «Volver» + «Mi diario» + subtítulo +
 pestañas; Calendario: «BookShelf» + ✕ + pestañas + «Mi diario»). Se usa una sola cabecera (la de Hoy) en las tres
 vistas para que las pestañas no cambien de sitio; «Volver» cierra el portátil.
+
+Ajuste posterior (1.41.1): «Volver» va en su propia línea, sobre el título; el cuaderno y su página reducen márgenes para que
+la cuadrícula del calendario use casi todo el ancho (≈ 324 px a 390). Las filas del calendario sin lecturas son bajas
+y las que tienen portada crecen; la tipografía de Hoy y del calendario se acerca a la de las maquetas sin bajar de
+12 px en textos de lectura.
 
 ### 32.2 Hoy y Calendario
 
