@@ -72,10 +72,10 @@ test('librería: cabecera compacta, baldas modulares y libros visibles al abrir'
     const head = document.querySelector('.lib-head');
     const book = document.querySelector('.library [data-book-id]');
     const controls = [...head.querySelectorAll('button, input')].filter((el) => el.offsetParent).map((el) => ({ name: el.getAttribute('aria-label') || el.textContent.trim(), h: r(el).height, w: r(el).width }));
-    // 1.36.0: cada balda es el módulo de madera en nueve regiones; su canto frontal son 135 de los 208 px inferiores
-    const row0 = getComputedStyle(document.querySelector('.shelf-row'));
-    const body = document.querySelector('.library .book3d__body');
-    const rows = [...document.querySelectorAll('.shelf-row')].map((row) => getComputedStyle(row).borderImageSource);
+    // 1.43.0: cada fila de libros es el módulo de madera en nueve regiones; su canto frontal son 135 de los 208 px
+    const row0 = getComputedStyle(document.querySelector('.lib-shelf'));
+    const body = null;
+    const rows = [...document.querySelectorAll('.lib-shelf')].map((row) => getComputedStyle(row).borderImageSource);
     return {
       header: Math.round(r(head).height),
       bookBottom: Math.round(r(book).bottom),
@@ -98,10 +98,11 @@ test('librería: cabecera compacta, baldas modulares y libros visibles al abrir'
   expect(m.plankImage).toContain('/assets/library/shelf-module.webp');
   expect(m.rows.every((bg) => bg.includes('/assets/library/shelf-module.webp'))).toBe(true);
   if (mobile(info)) {
-    expect(m.plankHeight).toBeGreaterThanOrEqual(26);
-    expect(m.plankHeight).toBeLessThanOrEqual(36);
-    // 1.36.0: cabecera ilustrada (2,6:1) + franja de herramientas ≈ 300 px a 390
-    expect(m.header).toBeLessThanOrEqual(330);
+    // 1.43.0: canto más fino (módulo a menor escala) para que quepan tres libros completos
+    expect(m.plankHeight).toBeGreaterThanOrEqual(14);
+    expect(m.plankHeight).toBeLessThanOrEqual(30);
+    // Cabecera baja (título sin placa) + barra con buscador, acciones y filtros
+    expect(m.header).toBeLessThanOrEqual(380);
     // Los libros se ven en el primer encuadre
     expect(m.bookBottom).toBeLessThanOrEqual(m.viewport);
   }
@@ -127,13 +128,16 @@ test('librería: filtros, búsqueda y vistas se conservan; herramientas plegadas
   }
   await page.getByRole('radio', { name: 'Todos' }).click();
   await input.fill(st.books[0].author.split(' ').at(-1));
+  // 1.43.0: vista y herramientas, plegadas en su panel
+  await expect(page.getByRole('radio', { name: 'Lomos' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Vista y herramientas' }).click();
   await page.getByRole('radio', { name: 'Lomos' }).click();
   await expect(input).toHaveValue(st.books[0].author.split(' ').at(-1));
   await expect(page.locator('.library .spine').first()).toBeVisible();
   await page.getByRole('radio', { name: 'Escaparate' }).click();
   await expect(input).toHaveValue(st.books[0].author.split(' ').at(-1));
   await input.fill('');
-  // 1.37.0: herramientas como baldosas con icono y nombre accesible (dado, bibliotecario y vitrina)
+  // Herramientas con icono y nombre (dado, bibliotecario y vitrina)
   const tools = page.getByRole('group', { name: 'Herramientas' });
   await expect(tools.getByRole('button', { name: 'Libro al azar' })).toBeVisible();
   await expect(tools.getByRole('button', { name: 'Pedir una recomendación' })).toBeVisible();

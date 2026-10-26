@@ -120,7 +120,7 @@ test('librería: parte de toda la biblioteca y busca con o sin tildes, conservan
   // El buscador no se enfoca solo al abrir
   expect(await page.evaluate(() => document.activeElement?.id)).not.toBe('shelf-search-input');
   const input = page.getByRole('searchbox', { name: 'Buscar en mi biblioteca' });
-  await expect(input).toHaveAttribute('placeholder', 'Título o autor…');
+  await expect(input).toHaveAttribute('placeholder', 'Buscar título o autor');
   expect(await input.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
   expect((await page.locator('.shelf-search').boundingBox()).height).toBeGreaterThanOrEqual(44);
   // Sin tildes ni mayúsculas
@@ -131,7 +131,8 @@ test('librería: parte de toda la biblioteca y busca con o sin tildes, conservan
   const shown = await page.locator('.library__shelves [data-book-id]').count();
   expect(shown).toBeLessThan(st.books.length);
   await shot(page, info, 'v128-libreria-escaparate');
-  // Lomos: la búsqueda se conserva y el campo sigue montado
+  // Lomos (1.43.0: dentro de «Vista y herramientas»): la búsqueda se conserva y el campo sigue montado
+  await page.getByRole('button', { name: 'Vista y herramientas' }).click();
   await page.getByRole('radio', { name: 'Lomos' }).click();
   await expect(input).toHaveValue(`  ${plain}  `);
   await expect(page.locator(`.library [data-book-id="${target.id}"]`)).toHaveCount(1);

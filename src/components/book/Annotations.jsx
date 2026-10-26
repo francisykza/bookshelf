@@ -363,7 +363,7 @@ export function Journal({ book, log, meanings, onShow }) {
       () => {
         done();
         setFreshId(id);
-        playUiSound('save');
+        playUiSound('noteSave');
       },
     );
   };
@@ -447,7 +447,7 @@ export function Journal({ book, log, meanings, onShow }) {
                               { id: q.id, ...patch },
                               () => {
                                 setEditId(null);
-                                playUiSound('save');
+                                playUiSound('noteSave');
                               },
                             )
                           }

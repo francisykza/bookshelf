@@ -70,17 +70,20 @@ function Sanctuary() {
     [nav],
   );
   const hadPanel = useRef(false);
+  // Tipo del último panel abierto: al cerrar un libro suena su cubierta (más suave que el resto)
+  const lastPanel = useRef(null);
   useEffect(() => {
     if (panel) {
       hadPanel.current = true;
+      lastPanel.current = panel.type;
       return undefined;
     }
     if (!hadPanel.current) return undefined;
     hadPanel.current = false;
     const el = opener.current;
     opener.current = null;
-    // Un solo sonido al cerrar cualquier panel (papel amortiguado)
-    playUiSound('close');
+    // Un solo sonido al cerrar cualquier panel: la cubierta del libro o papel amortiguado
+    playUiSound(lastPanel.current === 'book' ? 'bookClose' : 'close');
     const id = requestAnimationFrame(() => {
       if (el?.isConnected && !el.closest('[inert]')) el.focus({ preventScroll: true });
     });
@@ -201,7 +204,10 @@ function Sanctuary() {
             timer={timer}
             onOpenShelf={openShelf}
             onOpenBook={openBook}
-            onOpenLaptop={() => openPanel({ type: 'laptop', select: 'today' })}
+            onOpenLaptop={() => {
+              playUiSound('computerOn');
+              openPanel({ type: 'laptop', select: 'today' });
+            }}
             onOpenTray={() => openPanel({ type: 'tray' })}
             onToggleSound={toggleSound}
             onOpenAtlas={() => openPanel({ type: 'atlas' })}
@@ -223,8 +229,14 @@ function Sanctuary() {
             active={active && !panel && phase === ROOM}
             reducedMotion={reducedMotion}
             timer={timer}
-            onOpenHub={(tab) => openPanel({ type: 'social', tab })}
-            onOpenReader={(id) => openPanel({ type: 'reader', id })}
+            onOpenHub={(tab) => {
+              playUiSound('visit');
+              openPanel({ type: 'social', tab });
+            }}
+            onOpenReader={(id) => {
+              playUiSound('visit');
+              openPanel({ type: 'reader', id });
+            }}
             onOpenGuardian={(id) => openPanel({ type: 'guardian', id })}
           />
         )}
@@ -280,6 +292,7 @@ function Sanctuary() {
           onPagesDone={() => setAskPages(false)}
           onOpenCalendar={() => {
             setAskPages(false);
+            playUiSound('computerOn');
             switchPanel({ type: 'laptop', tab: 'calendar' });
           }}
         />

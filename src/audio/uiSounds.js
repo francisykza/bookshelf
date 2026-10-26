@@ -92,12 +92,49 @@ function tone(ctx, t, { freq, peak, attack = 0.003, release, type = 'sine', glid
   osc.stop(t + attack + release + 0.02);
 }
 
-/** Recetas por evento: material, nivel normalizado y duración objetivo (ms). */
+/** Hojas que pasan: varios golpes breves de papel, cada uno más suave (el carácter del papel, no su volumen). */
+function pages(ctx, t, count, { freq = 3200, peak = 0.26, step = 0.07 } = {}) {
+  for (let i = 0; i < count; i += 1) {
+    noise(ctx, t + i * step + (i % 2) * 0.012, { freq: freq * (1 - i * 0.06), q: 0.8, peak: peak * (1 - i * 0.2), attack: 0.008, release: 0.06, sweep: 0.55 });
+  }
+}
+
+/** Recetas por evento (SPEC §17.5, §35.4): material, nivel normalizado y duración objetivo (ms). */
 const RECIPES = {
-  // Roce de madera y libro
-  libraryOpen: { ms: 180, play: (c, t) => (noise(c, t, { freq: 900, q: 0.9, peak: 0.5, release: 0.16, sweep: 0.7 }), tone(c, t, { freq: 160, peak: 0.25, release: 0.12, glide: 0.8 })) },
-  // Cubierta y papel
-  bookOpen: { ms: 200, play: (c, t) => (tone(c, t, { freq: 120, peak: 0.22, release: 0.09 }), noise(c, t + 0.04, { type: 'highpass', freq: 2400, q: 0.7, peak: 0.32, release: 0.15, sweep: 0.6 })) },
+  // C · Libro que se desliza sobre la madera y se asienta (fricción grave, sin papel)
+  libraryOpen: {
+    ms: 340,
+    play: (c, t) => {
+      noise(c, t, { freq: 520, q: 1.3, peak: 0.36, attack: 0.04, release: 0.24, sweep: 0.75 });
+      tone(c, t + 0.27, { freq: 150, peak: 0.2, release: 0.07, glide: 0.85 });
+    },
+  },
+  // A · Cubierta que se abre (golpe blando) y hojas que se desplazan: el papel predomina
+  bookOpen: {
+    ms: 420,
+    play: (c, t) => {
+      tone(c, t, { freq: 95, peak: 0.16, release: 0.08, glide: 0.8 });
+      noise(c, t, { type: 'lowpass', freq: 700, q: 0.6, peak: 0.12, release: 0.05 });
+      pages(c, t + 0.06, 4);
+      noise(c, t + 0.06, { type: 'highpass', freq: 2500, q: 0.5, peak: 0.07, attack: 0.03, release: 0.26 });
+    },
+  },
+  // A · Cerrar el libro: cubierta suave, más baja
+  bookClose: { ms: 160, play: (c, t) => (tone(c, t, { freq: 82, peak: 0.12, release: 0.09, glide: 0.85 }), noise(c, t, { type: 'lowpass', freq: 900, q: 0.6, peak: 0.1, release: 0.08 })) },
+  // B · Arranque del ordenador: un clic pequeño y tres notas suaves ascendentes (sin pitidos)
+  computerOn: {
+    ms: 760,
+    play: (c, t) => {
+      noise(c, t, { freq: 3400, q: 6, peak: 0.1, attack: 0.002, release: 0.015 });
+      tone(c, t, { freq: 1700, peak: 0.03, attack: 0.002, release: 0.02 });
+      [523.25, 659.25, 783.99].forEach((freq, i) => {
+        tone(c, t + 0.09 + i * 0.13, { freq, peak: 0.075, attack: 0.025, release: 0.42, type: 'triangle' });
+        tone(c, t + 0.09 + i * 0.13, { freq: freq / 2, peak: 0.03, attack: 0.03, release: 0.36 });
+      });
+    },
+  },
+  // B · Cambiar de app: el clic, sin el arranque
+  appSwitch: { ms: 50, play: (c, t) => (noise(c, t, { freq: 2800, q: 5, peak: 0.13, attack: 0.002, release: 0.02 }), tone(c, t, { freq: 1200, peak: 0.025, attack: 0.002, release: 0.02 })) },
   // Hoja de algodón
   diaryTab: { ms: 95, play: (c, t) => noise(c, t, { type: 'lowpass', freq: 2000, q: 0.5, peak: 0.3, release: 0.085 }) },
   // Paso de página breve
@@ -106,20 +143,45 @@ const RECIPES = {
   select: { ms: 60, play: (c, t) => (tone(c, t, { freq: 420, peak: 0.3, release: 0.05, glide: 0.9 }), noise(c, t, { freq: 1300, q: 2, peak: 0.12, release: 0.03 })) },
   // Contacto de lápiz
   pencil: { ms: 55, play: (c, t) => noise(c, t, { freq: 4200, q: 3, peak: 0.22, attack: 0.004, release: 0.045 }) },
+  // D · Guardar una nota: dos trazos breves de lápiz sobre papel
+  noteSave: {
+    ms: 230,
+    play: (c, t) => {
+      noise(c, t, { freq: 5000, q: 2.4, peak: 0.2, attack: 0.012, release: 0.09, sweep: 1.25 });
+      noise(c, t + 0.13, { freq: 5600, q: 2.4, peak: 0.15, attack: 0.01, release: 0.06, sweep: 0.85 });
+    },
+  },
+  // E · Rincón y comunidad: llamada cálida de dos notas, como una visita
+  visit: {
+    ms: 640,
+    play: (c, t) => {
+      tone(c, t, { freq: 392, peak: 0.085, attack: 0.015, release: 0.42, type: 'triangle' });
+      tone(c, t, { freq: 784, peak: 0.018, attack: 0.015, release: 0.2 });
+      tone(c, t + 0.19, { freq: 523.25, peak: 0.08, attack: 0.015, release: 0.45, type: 'triangle' });
+      tone(c, t + 0.19, { freq: 1046.5, peak: 0.016, attack: 0.015, release: 0.22 });
+    },
+  },
+  // F · Sobre que se abre: solapa de papel grueso y la hoja que sale (sin golpe de cubierta ni hojas sueltas)
+  envelope: {
+    ms: 320,
+    play: (c, t) => {
+      noise(c, t, { type: 'lowpass', freq: 1800, q: 0.7, peak: 0.22, attack: 0.02, release: 0.12, sweep: 0.6 });
+      noise(c, t + 0.11, { freq: 1500, q: 0.6, peak: 0.16, attack: 0.04, release: 0.17, sweep: 1.4 });
+    },
+  },
   // Sello sobre papel
   save: { ms: 130, play: (c, t) => (tone(c, t, { freq: 110, peak: 0.42, release: 0.11, glide: 0.7 }), noise(c, t, { type: 'lowpass', freq: 1400, q: 0.7, peak: 0.26, release: 0.08 })) },
   // Papel amortiguado
   close: { ms: 95, play: (c, t) => noise(c, t, { type: 'lowpass', freq: 1100, q: 0.5, peak: 0.3, release: 0.085, sweep: 0.6 }) },
   // Cerámica suave
   timer: { ms: 120, play: (c, t) => (tone(c, t, { freq: 2350, peak: 0.12, release: 0.11 }), tone(c, t, { freq: 6100, peak: 0.03, release: 0.06 })) },
-  // Pestillo de latón: dos contactos metálicos
+  // G · Entrar en la colección: una pieza de cerámica que se apoya en la madera (sin fanfarria)
   atticOpen: {
-    ms: 160,
+    ms: 220,
     play: (c, t) => {
-      tone(c, t, { freq: 3100, peak: 0.07, release: 0.04, type: 'triangle' });
-      noise(c, t, { freq: 2600, q: 4, peak: 0.16, release: 0.03 });
-      tone(c, t + 0.08, { freq: 2500, peak: 0.06, release: 0.07, type: 'triangle' });
-      noise(c, t + 0.08, { freq: 2100, q: 4, peak: 0.12, release: 0.05 });
+      tone(c, t, { freq: 240, peak: 0.14, release: 0.05, glide: 0.9 });
+      tone(c, t + 0.01, { freq: 660, peak: 0.08, release: 0.18 });
+      tone(c, t + 0.01, { freq: 1650, peak: 0.025, release: 0.1 });
     },
   },
   // Contacto discreto sobre madera

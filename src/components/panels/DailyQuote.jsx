@@ -2,7 +2,7 @@
 // abrirlo revela una cita literaria célebre como carta de algodón y lacre y da hojas doradas (doble si hoy
 // ya has leído; cada 5 hojas, una Caja Sorpresa para el Ático). Las citas se guardan en tu Diario.
 import { useState } from 'react';
-import { pageRustle } from '../../audio/ambientAudio';
+import { playUiSound } from '../../audio/uiSounds';
 import { LEAVES_PER_PIECE, QUOTE_CARDS, cardById, treasureFor, treasureReady } from '../../domain/companion';
 import { dayKey } from '../../domain/dates';
 import { useLibrary } from '../../state/useLibrary';
@@ -57,7 +57,7 @@ export function DailyQuote() {
             disabled={opening}
             onClick={() => {
               setOpening(true);
-              pageRustle(0.5);
+              playUiSound('envelope');
               window.setTimeout(() => actions.claimTreasure({ date: today, ...treasureFor(c, todayPages) }), 650);
             }}
           >

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.42.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.43.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2999,3 +2999,62 @@ icono de sección y no se les añade; encuentros espera a su función (§32.3). 
 La barra de ventana y la cabecera de la app van en una sola fila (sin semáforos decorativos). Sin «…» de opciones, sin
 selector de periodo en Estadísticas ni de año en el Reto, sin filtros Todas / En curso / Completadas en Misiones y sin
 colecciones de citas inventadas: no existen esas funciones. Los géneros se muestran con su recuento, no en %.
+
+## 35. Biblioteca, libro físico, rincón del lector y mapa sonoro (1.43.0)
+
+Referencias: `docs/design/references/biblioteca-maqueta.png` (la última, sin títulos bajo las portadas) y
+`rincon-lector-maqueta.png` (jerarquía y distribución; la escena, el avatar y los objetos son los reales). Estilos:
+`styles/library-143.css`.
+
+### 35.1 Biblioteca
+
+Cabecera baja: «Volver al rincón» en su propia línea, «Mi biblioteca» sin placa colgante y el subtítulo; el paisaje
+del recurso, sin deformar. Barra crema: buscador, «Añadir libro», «Vista y herramientas» (panel plegable con
+Escaparate / Lomos, Libro al azar, Pedir una recomendación y Vitrina de Figuras; Escape lo cierra) y los filtros
+Todos · Leyendo · Pendientes · Leídos con un único estado seleccionado. En el escaparate, cada grupo lleva un
+encabezado ligero con su cantidad real («Leyendo · 3»; pulsarlo deja solo esa balda) y sus libros van de tres en tres
+en móvil (de 4 a 7 en pantallas anchas) en filas verticales, cada fila en su compartimento de madera
+(`shelf-module.webp`); sin carrusel, sin cuarto libro cortado y sin etiquetas de título o autor bajo los libros (el
+nombre completo sigue en el nombre accesible y en la ficha). El tablón de recuerdos pasa al final. La vista de lomos
+conserva su balda horizontal.
+
+### 35.2 Libro físico
+
+`PhysicalBook` (en `BookItem.jsx`): la portada real, completa y sin estirar, como cara principal; lomo estrecho del
+color de la cubierta y sin letras; bloque de páginas en marfil asomando por el corte (o con sus cantos pintados);
+sombra de contacto; pequeñas diferencias estables de tamaño según la edición. Solo los acabados propios de cada
+edición: cantoneras en cuero, post-its en la anotada, marco mate en el e-reader y una marca pequeña de cascos en el
+audiolibro. Sin cinta, barra de progreso ni post-its de citas sobre la portada (eso está en la ficha); la mini-figura
+de saga, pequeña y sin brillo, en el canto de la balda. Variante «corner», más contenida, en el rincón. Las
+miniaturas del calendario y las listas siguen con su portada plana.
+
+### 35.3 Rincón del lector
+
+`ReaderProfileView` carga los datos y `ReaderProfileContent` los presenta (sin consultas propias: lo que no llega
+filtrado por su visibilidad no se pinta). Escena ilustrada sin la placa «Recuerdos de lectura» sobre la mesa; avatar
+de 96 px con su adorno junto al alias; «Está leyendo» destacada en horizontal y, debajo, «Última lectura» y «Próxima
+lectura» como dos piezas secundarias con títulos en varias líneas; «Recuerdos que se quedan» compactos (objeto, frase
+y libro; cada uno abre su historia); figuras expuestas con su ilustración pequeña.
+
+### 35.4 Sonidos
+
+Un evento por acción en `audio/uiSounds.js` (sintetizados con Web Audio; respetan «Sonidos táctiles», el volumen y
+la puerta de repeticiones y voces; un fallo de audio no bloquea nada):
+
+| Acción | Evento | Carácter |
+| --- | --- | --- |
+| Abrir un libro o su ficha | `bookOpen` | golpe blando de cubierta y cuatro hojas que pasan (predomina el papel) |
+| Cambiar de pestaña en la ficha o en Mi diario | `diaryTab` | una hoja breve |
+| Cerrar un libro | `bookClose` | cubierta suave, más baja |
+| Cerrar otro panel | `close` | papel amortiguado |
+| Encender el ordenador | `computerOn` | clic pequeño y tres notas suaves ascendentes |
+| Cambiar de app del ordenador | `appSwitch` | solo el clic |
+| Entrar en la biblioteca | `libraryOpen` | libro que se desliza sobre madera y se asienta |
+| Guardar una nota | `noteSave` | dos trazos de lápiz |
+| Guardar una lectura u otro dato | `save` | sello sobre papel |
+| Rincón de lector y comunidad | `visit` | llamada cálida de dos notas |
+| Abrir el sobre de la cita | `envelope` | solapa de papel grueso y la hoja que sale |
+| Entrar en la colección | `atticOpen` | pieza de cerámica sobre madera |
+| Recompensas reales | `chime` (al revelar una figura) y la campana del fin de sesión | se conservan |
+
+Pendiente: grabaciones reales de papel, cubierta, madera y sobre (con licencia registrada) para sustituir la síntesis.

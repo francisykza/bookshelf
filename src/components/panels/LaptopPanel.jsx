@@ -4,6 +4,7 @@
 // a otra: un formulario a medias no se pierde, y salir con uno escrito pide confirmación.
 import { LogOut, X } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { playUiSound } from '../../audio/uiSounds';
 import { dayKey } from '../../domain/dates';
 import { summarize } from '../../domain/reading';
 import { useNow } from '../../hooks/useReducedMotion';
@@ -40,6 +41,8 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
 
   const pending = (id) => touched.current.has(id) && Boolean(screenRef.current?.querySelector(`[data-pc-app="${id}"] form`));
   const open = (id) => {
+    // Cambiar de app: un clic breve (el arranque completo solo suena al encender el ordenador)
+    if (id !== app) playUiSound('appSwitch');
     setConfirmExit(false);
     setApp(id);
     setAlive((list) => (list.includes(id) ? list : [...list, id]));

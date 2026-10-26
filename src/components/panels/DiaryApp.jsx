@@ -134,7 +134,7 @@ function TodayView({ onComplete, onOpenBook }) {
                   id,
                   () => {
                     done();
-                    playUiSound('save');
+                    playUiSound('noteSave');
                   },
                 );
               }}
@@ -274,7 +274,7 @@ function NotesView({ onOpenBook }) {
                     { bookId: book.id, id: quote.id, ...patch },
                     () => {
                       setEditId(null);
-                      playUiSound('save');
+                      playUiSound('noteSave');
                     },
                   )
                 }
@@ -312,7 +312,19 @@ export function DiaryApp({ initialView = 'calendar', selectDay, onComplete, onOp
     <div className="pc-diary" data-view={view}>
       <div className="diary__tabs pc-seg" role="tablist" aria-label="Mi diario">
         {VIEWS.map((v) => (
-          <button key={v.id} type="button" role="tab" id={`diary-tab-${v.id}`} aria-selected={view === v.id} aria-controls={`diary-view-${v.id}`} data-view={v.id} onClick={() => setView(v.id)}>
+          <button
+            key={v.id}
+            type="button"
+            role="tab"
+            id={`diary-tab-${v.id}`}
+            aria-selected={view === v.id}
+            aria-controls={`diary-view-${v.id}`}
+            data-view={v.id}
+            onClick={() => {
+              if (v.id !== view) playUiSound('diaryTab');
+              setView(v.id);
+            }}
+          >
             {v.label}
           </button>
         ))}

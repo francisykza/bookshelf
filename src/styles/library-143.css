@@ -1,0 +1,1036 @@
+/* ── 1.43.0 · Biblioteca según su última maqueta y libro físico sobre la portada real (SPEC §35) ──────────────────
+   Referencia: docs/design/references/biblioteca-maqueta.png. Cabecera baja sin placa, barra crema con buscador,
+   «Añadir libro», «Vista y herramientas» y filtros; cada fila de libros (tres en móvil) en su compartimento de madera
+   (shelf-module.webp en nueve regiones, a escala --ls), sin etiquetas bajo las portadas. */
+
+.library {
+  --ls: 0.16;
+  --ls-px: calc(var(--ls) * 1px);
+  --lib-cream: #f6efe0;
+  --lib-ink-2: #706457;
+  --lib-sage-ui: #879477;
+  --lib-terra-ui: #b65f40;
+  --lib-line-ui: #d9cfbc;
+}
+
+@media (min-width: 600px) {
+  .library {
+    --ls: 0.2;
+  }
+}
+
+@media (min-width: 900px) {
+  .library {
+    --ls: 0.24;
+  }
+}
+
+/* ── Cabecera ── */
+.lib-head--compact {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.lib-head--compact .lib-hero {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  aspect-ratio: auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  padding: max(6px, env(safe-area-inset-top)) 12px 14px;
+  background: #ead9b8 url('/assets/library/header-800.webp') 50% 30% / cover no-repeat;
+}
+
+@media (min-width: 700px) {
+  .lib-head--compact .lib-hero {
+    background-image: url('/assets/library/header-1600.webp');
+    padding-bottom: 18px;
+  }
+}
+
+.lib-head--compact .lib-hero__back {
+  position: static;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px 0 4px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font: 500 15px/1 var(--lib-body);
+  text-shadow: 0 0 6px rgb(250 243 228 / 0.9);
+}
+
+.lib-head--compact .lib-hero__back svg {
+  width: 18px;
+  height: 18px;
+}
+
+.lib-head--compact .library__title {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  color: var(--ink);
+  text-align: center;
+}
+
+.lib-head--compact .library__title > span {
+  font: 600 clamp(32px, 9vw, 42px)/1.05 var(--lib-display);
+  text-shadow: 0 0 10px rgb(250 243 228 / 0.85);
+}
+
+.lib-head--compact .library__title small {
+  color: #4f4234;
+  font: 400 15px/1.3 var(--lib-body);
+  text-shadow: 0 0 8px rgb(250 243 228 / 0.9);
+}
+
+/* ── Barra crema ── */
+.lib-head--compact .lib-strip {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 16px 12px;
+  border: 0;
+  border-radius: 14px 14px 0 0;
+  background: var(--lib-cream);
+  box-shadow: 0 -2px 8px rgb(60 40 20 / 0.08);
+}
+
+.lib-head--compact .shelf-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 8px 0 14px;
+  border: 1px solid var(--lib-line-ui);
+  border-radius: 10px;
+  background: #fbf7ee;
+  box-shadow: none;
+}
+
+.lib-head--compact .shelf-search__label {
+  display: grid;
+  place-items: center;
+  color: var(--lib-ink-2);
+}
+
+.lib-head--compact .shelf-search__label svg {
+  width: 20px;
+  height: 20px;
+}
+
+.lib-head--compact .shelf-search__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 400 16px/1 var(--lib-body);
+}
+
+.lib-head--compact .shelf-search__input:focus {
+  outline: none;
+}
+
+.lib-head--compact .shelf-search:focus-within {
+  border-color: var(--lib-sage-ui);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lib-sage-ui) 30%, transparent);
+}
+
+.lib-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.lib-head--compact .lib-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font: 500 16px/1.1 var(--lib-body);
+}
+
+.lib-head--compact .lib-btn svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.lib-head--compact .lib-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lib-head--compact .lib-strip__add {
+  border: 0;
+  background: var(--lib-terra-ui);
+  color: #fff;
+  box-shadow: 0 1px 2px rgb(60 30 15 / 0.25);
+}
+
+.lib-head--compact .lib-strip__add svg {
+  display: inline;
+}
+
+.lib-head--compact .lib-tools-btn {
+  border: 1px solid #9a8a74;
+  background: #fbf7ee;
+  box-shadow: none;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.lib-tools-btn__chev {
+  width: 16px !important;
+  height: 16px !important;
+  transition: transform 160ms ease;
+}
+
+.lib-tools-btn[aria-expanded='true'] .lib-tools-btn__chev {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 374px) {
+  .lib-head--compact .lib-tools-btn {
+    font-size: 14px;
+  }
+
+  .lib-tools-btn__chev {
+    display: none;
+  }
+}
+
+/* Panel «Vista y herramientas» */
+.lib-tools {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--lib-line-ui);
+  border-radius: 12px;
+  background: #fbf7ee;
+}
+
+.lib-tools .lib-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--lib-line-ui) 55%, transparent);
+}
+
+.lib-tools .lib-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font: 500 15px/1 var(--lib-body);
+}
+
+.lib-tools .lib-toggle button[aria-checked='true'] {
+  border: 0;
+  background: color-mix(in srgb, var(--lib-sage-ui) 30%, #fbf7ee);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.lib-tools .lib-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.lib-tools .lib-tiles {
+  display: grid;
+  gap: 4px;
+}
+
+.lib-tool {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font: 500 15px/1.2 var(--lib-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lib-tool:hover {
+  background: color-mix(in srgb, var(--lib-line-ui) 35%, transparent);
+}
+
+.lib-tool > svg {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  color: var(--lib-ink-2);
+}
+
+.lib-tool--die > svg {
+  width: 28px;
+  height: 28px;
+}
+
+.lib-tool--art .section-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+
+.lib-tool:focus-visible,
+.lib-tools .lib-toggle button:focus-visible,
+.lib-filters button:focus-visible,
+.lib-head--compact .lib-btn:focus-visible,
+.lib-head--compact .lib-hero__back:focus-visible {
+  outline: 2px solid var(--lib-terra-ui);
+  outline-offset: 2px;
+}
+
+/* Filtros: un único estado seleccionado (salvia lleno) */
+.lib-head--compact .lib-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.lib-filters button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font: 500 16px/1 var(--lib-body);
+  cursor: pointer;
+}
+
+.lib-filters button[aria-checked='true'] {
+  background: var(--lib-sage-ui);
+  color: #fff;
+}
+
+@media (max-width: 374px) {
+  .lib-filters button {
+    font-size: 15px;
+  }
+}
+
+/* ── Baldas ── */
+.library .library__shelves {
+  padding: 0 0 32px;
+  background: #3d2817;
+}
+
+.library .library__shelves::before {
+  content: none;
+}
+
+.library .library__module {
+  margin: 0;
+}
+
+/* El grupo ya no es un módulo: lo es cada fila de libros */
+.library .shelf-row:has(.lib-shelves) {
+  padding: 0;
+  border: 0;
+  border-image: none;
+  background: none;
+}
+
+.library .shelf-row__head {
+  position: static;
+  margin: 0;
+  padding: 0;
+}
+
+.library .shelf-row:has(.lib-shelves) .shelf-row__head {
+  position: relative;
+  z-index: 2;
+  height: 0;
+}
+
+.library .shelf-row__title {
+  position: absolute;
+  top: calc(30 * var(--ls-px) + 4px);
+  left: calc(105 * var(--ls-px) + 8px);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #fbf3e2;
+  font: 600 19px/1 var(--lib-display);
+  text-shadow: 0 1px 3px rgb(20 10 4 / 0.6);
+  cursor: pointer;
+}
+
+.library .shelf-row__title[aria-pressed='true'] {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.library .shelf-row__title:focus-visible {
+  outline: 2px solid #fbf3e2;
+}
+
+.library .shelf-row__count {
+  font: inherit;
+}
+
+.lib-shelves {
+  position: relative;
+}
+
+.lib-shelf {
+  position: relative;
+  box-sizing: border-box;
+  border-style: solid;
+  border-color: transparent;
+  border-width: calc(30 * var(--ls-px)) calc(107 * var(--ls-px)) calc(208 * var(--ls-px)) calc(105 * var(--ls-px));
+  border-image-source: url('/assets/library/shelf-module.webp');
+  border-image-slice: 30 107 208 105 fill;
+  border-image-width: calc(30 * var(--ls-px)) calc(107 * var(--ls-px)) calc(208 * var(--ls-px)) calc(105 * var(--ls-px));
+  border-image-repeat: round stretch;
+}
+
+/* La primera fila de cada grupo deja sitio a su encabezado */
+.lib-shelf:first-of-type .lib-shelf__books {
+  padding-top: 48px;
+}
+
+.lib-shelf__books {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  align-items: end;
+  gap: 0 12px;
+  /* Los libros apoyan en la superficie de la tabla (43 px del recurso bajo el borde del canto) */
+  margin-bottom: calc(-43 * var(--ls-px));
+  padding: 16px 8px 0;
+}
+
+@media (min-width: 600px) {
+  .lib-shelf__books {
+    gap: 0 18px;
+    padding-inline: 14px;
+  }
+}
+
+.library .lib-shelf .book-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+}
+
+.library .lib-shelf .add-slot {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  min-height: 0;
+}
+
+/* Mini-figura de saga: pequeña, en el canto de la tabla bajo su libro (sin brillo ni tapar la portada) */
+.library .lib-shelf .saga-pin {
+  bottom: calc(-1 * (43 + 135 * 0.5) * var(--ls-px) - 11px);
+  width: 24px;
+  height: 24px;
+  padding: 1px;
+  box-shadow:
+    0 0 0 1px rgb(60 35 5 / 0.5),
+    0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.library .lib-shelf .saga-pin__lock {
+  width: 11px;
+  height: 11px;
+}
+
+.library .lib-shelves .drop-marker {
+  position: absolute;
+  height: 120px;
+}
+
+.library .shelf-row__empty {
+  margin: 0;
+  padding: 56px 16px 24px;
+  color: #f3e8d2;
+  font-size: 15px;
+}
+
+.library .lib-shelves > .shelf-row__empty {
+  border-style: solid;
+  border-color: transparent;
+  border-width: calc(30 * var(--ls-px)) calc(107 * var(--ls-px)) calc(208 * var(--ls-px)) calc(105 * var(--ls-px));
+  border-image-source: url('/assets/library/shelf-module.webp');
+  border-image-slice: 30 107 208 105 fill;
+  border-image-width: calc(30 * var(--ls-px)) calc(107 * var(--ls-px)) calc(208 * var(--ls-px)) calc(105 * var(--ls-px));
+  border-image-repeat: round stretch;
+}
+
+/* Recuerdos al final, en su propio compartimento */
+.library .library__shelves > .keepsake-board {
+  margin-top: 0;
+}
+
+/* ── Libro físico (SPEC §35.2) ── */
+.pbook {
+  --spine-w: 5px;
+  --pages-w: 4px;
+  position: relative;
+  display: block;
+  width: calc(100% * var(--scale, 1));
+  margin: 0;
+  padding: 0 var(--pages-w) 0 var(--spine-w);
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 180ms ease;
+}
+
+.pbook[data-variant='corner'] {
+  --spine-w: 3px;
+  --pages-w: 3px;
+  cursor: default;
+}
+
+.pbook__body {
+  position: relative;
+  display: block;
+}
+
+.pbook__cover {
+  position: relative;
+  z-index: 2;
+  display: block;
+  overflow: hidden;
+  border-radius: 1px 3px 3px 1px;
+  box-shadow:
+    1px 2px 4px rgb(40 24 12 / 0.28),
+    0 0 0 0.5px rgb(40 24 12 / 0.25);
+}
+
+.pbook__cover .cover-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pbook__cover .gen-cover {
+  aspect-ratio: 2 / 3;
+  height: auto;
+}
+
+/* Bisagra de la cubierta: una línea apenas marcada cerca del lomo */
+.pbook__cover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5%;
+  width: 2px;
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.14), rgb(255 255 255 / 0.1));
+  pointer-events: none;
+}
+
+/* Lomo estrecho a la izquierda, del color de la cubierta, sin letras */
+.pbook__spine {
+  position: absolute;
+  z-index: 1;
+  top: 1px;
+  bottom: 1px;
+  left: calc(-1 * var(--spine-w));
+  width: calc(var(--spine-w) + 2px);
+  border-radius: 2px 0 0 2px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--spine) 62%, #1c120a), var(--spine) 70%, color-mix(in srgb, var(--spine) 85%, #1c120a));
+}
+
+/* Bloque de páginas en marfil cálido asomando por el corte, un poco más bajo que la cubierta */
+.pbook__pages {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  right: calc(-1 * var(--pages-w));
+  bottom: 2px;
+  width: calc(var(--pages-w) + 3px);
+  border-radius: 0 2px 2px 0;
+  background: repeating-linear-gradient(90deg, #f3ead6 0 1px, #e0d3b8 1px 2px);
+  box-shadow: inset -1px 0 0 rgb(120 90 50 / 0.25);
+}
+
+/* Sombra de contacto sobre la balda */
+.pbook__shadow {
+  position: absolute;
+  z-index: 0;
+  right: -6%;
+  bottom: -5px;
+  left: -2%;
+  height: 10px;
+  background: radial-gradient(ellipse 50% 50% at 50% 40%, rgb(30 16 6 / 0.45), transparent 75%);
+  pointer-events: none;
+}
+
+.pbook[data-variant='corner'] .pbook__shadow {
+  opacity: 0.6;
+}
+
+.pbook[data-variant='shelf']:hover,
+.pbook[data-variant='shelf']:focus-visible {
+  transform: translateY(-3px);
+}
+
+.pbook[data-variant='shelf']:focus-visible {
+  outline: 2px solid #fbf3e2;
+  outline-offset: 3px;
+}
+
+.pbook[data-picked] .pbook__cover {
+  box-shadow:
+    0 0 0 3px #f1d68a,
+    1px 2px 4px rgb(40 24 12 / 0.28);
+}
+
+.pbook[data-scanning='true'] .pbook__cover {
+  box-shadow:
+    0 0 0 3px #fbf3e2,
+    1px 2px 4px rgb(40 24 12 / 0.28);
+}
+
+/* Cuero y oro: cantoneras discretas (solo esa edición) */
+.pbook__corner {
+  position: absolute;
+  right: 0;
+  width: 14%;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, transparent 50%, #b69758 50%, #8a6d34);
+  opacity: 0.9;
+}
+
+.pbook__corner--top {
+  top: 0;
+  transform: scaleY(-1);
+}
+
+.pbook__corner--bottom {
+  bottom: 0;
+}
+
+/* Edición anotada: tres post-its asomando por el corte */
+.pbook__notes span {
+  position: absolute;
+  z-index: 0;
+  right: calc(-1 * var(--pages-w) - 4px);
+  width: 9px;
+  height: 6px;
+  border-radius: 0 2px 2px 0;
+  background: var(--note);
+}
+
+/* Audiolibro: marca pequeña */
+.pbook__audio {
+  position: absolute;
+  z-index: 3;
+  bottom: 4px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgb(248 243 232 / 0.92);
+  color: #352c23;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
+.pbook__audio svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* E-reader: la portada en su pantalla, dentro del marco (negro o salvia mate) */
+.pbook[data-device] {
+  padding: 0;
+}
+
+.pbook[data-device] .pbook__cover {
+  padding: 7% 7% 14%;
+  border-radius: 8px;
+  background: #2b2723;
+}
+
+.pbook[data-device][data-bezel='sage'] .pbook__cover {
+  background: #6f7d64;
+}
+
+.pbook[data-device] .pbook__cover .cover-img {
+  border-radius: 2px;
+}
+
+.pbook[data-device] .pbook__cover::after {
+  content: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pbook {
+    transition: none;
+  }
+}
+
+/* Ajustes tras la primera captura */
+.lib-head--compact .library__title > span {
+  color: var(--ink);
+}
+
+.library .shelf-row__count {
+  color: inherit;
+  text-shadow: inherit;
+}
+
+.lib-head--compact .lib-strip__add,
+.lib-head--compact .lib-tools-btn {
+  width: 100%;
+  margin: 0;
+}
+
+.lib-head--compact .lib-tools-btn {
+  gap: 6px;
+  padding: 0 8px;
+  font-size: 14.5px;
+}
+
+@media (max-width: 400px) {
+  .lib-tools-btn__chev {
+    display: none;
+  }
+}
+
+/* Sin hiedra en las baldas del escaparate: la madera basta */
+.library .shelf-row:has(.lib-shelves) .lib-ivy {
+  display: none;
+}
+
+.lib-shelf__books {
+  gap: 0 10px;
+  padding-inline: 6px;
+}
+
+/* «Vista y herramientas» cabe entera: más ancho para su columna */
+.lib-actions {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+}
+
+@media (max-width: 379px) {
+  .lib-head--compact .lib-tools-btn > svg:first-child {
+    display: none;
+  }
+
+  .lib-head--compact .lib-btn {
+    font-size: 15px;
+  }
+}
+
+.lib-head--compact .lib-hero {
+  background-position: 50% 18%;
+}
+
+@media (max-width: 599px) {
+  .library {
+    --ls: 0.13;
+  }
+}
+
+@media (max-width: 379px) {
+  .lib-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .lib-head--compact .lib-btn {
+    gap: 6px;
+    padding: 0 6px;
+    font-size: 14.5px;
+  }
+}
+
+/* ── Rincón del lector (SPEC §35.3, maqueta docs/design/references/rincon-lector-maqueta.png) ── */
+.huella-readings {
+  display: grid;
+  gap: 16px;
+  padding: 16px 0 4px;
+  border-top: 1px solid var(--lib-line);
+}
+
+.huella-read {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
+.huella-read[data-kind='current'] {
+  grid-template-columns: clamp(96px, 30vw, 128px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.huella-read__book {
+  display: block;
+}
+
+.huella-read__book .pbook {
+  width: 100%;
+}
+
+.huella-read figcaption {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.huella-read__label {
+  color: var(--ink-muted);
+  font: 600 13px/1.3 var(--lib-body);
+}
+
+.huella-read b {
+  color: var(--ink);
+  font: 600 17px/1.2 var(--lib-display);
+  overflow-wrap: anywhere;
+}
+
+.huella-read[data-kind='current'] .huella-read__label {
+  font: 600 20px/1.2 var(--lib-display);
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.huella-read[data-kind='current'] b {
+  font-size: 22px;
+}
+
+.huella-read small {
+  color: var(--ink-muted);
+  font: 400 15px/1.3 var(--lib-body);
+}
+
+.huella-readings__pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--lib-line);
+}
+
+.huella-memories {
+  padding-top: 16px;
+  border-top: 1px solid var(--lib-line);
+}
+
+.huella-memories h4,
+.huella-figures h4 {
+  margin: 0 0 8px;
+  font: 600 20px/1.2 var(--lib-display);
+}
+
+.huella-memories ul,
+.huella-figures ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.huella-memory {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.huella-memory__object {
+  display: grid;
+  place-items: center;
+  height: 52px;
+}
+
+.huella-memory__object :is(img, svg) {
+  max-width: 100%;
+  max-height: 52px;
+  object-fit: contain;
+}
+
+.huella-memory__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.huella-memory__text em {
+  font: 500 19px/1.25 var(--lib-hand);
+}
+
+.huella-memory__text span {
+  color: var(--ink-muted);
+  font: 400 14px/1.3 var(--lib-body);
+}
+
+.huella-memory:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.huella-figures {
+  padding-top: 16px;
+  border-top: 1px solid var(--lib-line);
+}
+
+.huella-figures ul {
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 12px;
+}
+
+.huella-figures li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+  font: 400 13px/1.25 var(--lib-body);
+}
+
+.huella-figures__art {
+  display: grid;
+  place-items: center;
+  height: 88px;
+}
+
+.huella-figures__art > * {
+  max-height: 88px;
+}
+
+/* «Está leyendo» como encabezado de su tarjeta, encima de portada y título */
+.huella-read[data-kind='current'] {
+  grid-template-areas:
+    'label label'
+    'book text';
+  row-gap: 12px;
+}
+
+.huella-read[data-kind='current'] figcaption {
+  display: contents;
+}
+
+.huella-read[data-kind='current'] .huella-read__label {
+  grid-area: label;
+  margin: 0;
+}
+
+.huella-read[data-kind='current'] .huella-read__book {
+  grid-area: book;
+}
+
+.huella-read[data-kind='current'] b,
+.huella-read[data-kind='current'] small {
+  grid-column: 2;
+}
+
+.huella-read[data-kind='current'] b {
+  grid-row: 2;
+  align-self: end;
+}
+
+.huella-read[data-kind='current'] small {
+  grid-row: 3;
+  align-self: start;
+}
+
+.huella-read[data-kind='current'] {
+  grid-template-rows: auto auto auto;
+}
+
+.huella-read[data-kind='current'] .huella-read__book {
+  grid-row: 2 / span 2;
+}
+
+.huella-readings__pair .huella-read {
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: start;
+}
+
+.huella-readings__pair .huella-read b {
+  font-size: 16px;
+}
+
+.huella-readings__pair .huella-read small {
+  font-size: 14px;
+}
+
+/* El dado gira solo mientras rueda; los nombres de la vista siempre a la vista */
+.lib-tool--die[data-rolling='true'] .lib-tool__die {
+  animation: die-roll 1s cubic-bezier(0.3, 0.7, 0.4, 1) infinite;
+}
+
+.lib-tools .lib-toggle button span {
+  display: inline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lib-tool--die[data-rolling='true'] .lib-tool__die {
+    animation: none;
+  }
+}

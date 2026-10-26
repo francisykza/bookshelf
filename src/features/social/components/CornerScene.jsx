@@ -98,12 +98,6 @@ export function CornerScene({ corner, figure, onOpenMemory, ownerAlias }) {
           </li>
         ))}
       </ul>
-      {/* Placa de latón en el canto de la mesa, como en la maqueta (solo si hay recuerdos expuestos) */}
-      {memories.length > 0 && (
-        <span className="corner-scene__plaque" aria-hidden="true">
-          Recuerdos de lectura
-        </span>
-      )}
     </figure>
   );
 }

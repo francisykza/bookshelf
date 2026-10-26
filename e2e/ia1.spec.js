@@ -54,9 +54,9 @@ test('la estantería se ve con sus colores deterministas antes de analizar porta
   });
   const t0 = Date.now();
   await openShelf(page);
-  await expect(page.locator('.book3d, .spine').first()).toBeVisible();
+  await expect(page.locator('.pbook, .spine').first()).toBeVisible();
   const elapsed = Date.now() - t0;
-  const spines = await page.locator('.book3d, .spine').evaluateAll((els) => els.slice(0, 6).map((el) => ({ spine: el.style.getPropertyValue('--spine'), material: el.dataset.material })));
+  const spines = await page.locator('.pbook, .spine').evaluateAll((els) => els.slice(0, 6).map((el) => ({ spine: el.style.getPropertyValue('--spine'), material: el.dataset.material })));
   run.data.shelf = { elapsed, spines };
   expect(spines.every((s) => /^#[0-9a-f]{6}$/i.test(s.spine))).toBe(true);
   expect(spines.every((s) => ['leather', 'cloth', 'paper', 'metallic'].includes(s.material))).toBe(true);
@@ -73,6 +73,8 @@ test('recomendación local sin conexión, sin IA remota y sin tocar los datos', 
     if (['fetch', 'xhr', 'websocket', 'eventsource'].includes(req.resourceType())) requests.push(req.url());
   });
   await context.setOffline(true);
+  // 1.43.0: las herramientas secundarias van dentro de «Vista y herramientas»
+  await page.getByRole('button', { name: 'Vista y herramientas' }).click();
   await page.getByRole('button', { name: 'Pedir una recomendación' }).click();
   const input = page.getByLabel('¿Qué te apetece leer?');
   await expect(input).toBeVisible();
@@ -103,6 +105,7 @@ test('recomendación local sin conexión, sin IA remota y sin tocar los datos', 
 
 test('el panel de recomendaciones es usable en móvil y con teclado', async ({ page }) => {
   await openShelf(page);
+  await page.getByRole('button', { name: 'Vista y herramientas' }).click();
   await page.getByRole('button', { name: 'Pedir una recomendación' }).click();
   const input = page.getByLabel('¿Qué te apetece leer?');
   const metrics = await page.evaluate(() => {

@@ -50,60 +50,54 @@ async function openDiary(page, view) {
   if (view) await page.locator('.diary__tabs').getByRole('tab', { name: view }).click();
 }
 
-const angle = (t) => {
-  const v = t.match(/matrix3d\(([^)]+)\)/)?.[1].split(',').map(Number);
-  return v ? (Math.acos(Math.min(1, v[0])) * 180) / Math.PI : 0;
-};
-
-test('librería: perspectiva recuperada, huecos con profundidad y placas sin solapes', async ({ page }, info) => {
+test('librería (1.43.0): libros completos de tres en tres sobre su balda, sin etiquetas y con su acabado', async ({ page }, info) => {
   await load(page);
   await openLibrary(page);
   const m = await page.evaluate(() => {
     const r = (el) => el.getBoundingClientRect();
-    const bodies = [...document.querySelectorAll('.library .book3d')].map((b) => ({ edition: b.dataset.edition, t: getComputedStyle(b.querySelector('.book3d__body')).transform, persp: getComputedStyle(b).perspective }));
-    const rows = [...document.querySelectorAll('.shelf-row')].map((row) => {
-      // 1.36.0: módulo en nueve regiones. Superficie = los 208·s px inferiores del borde; canto = los últimos 135·s
+    const vw = innerWidth;
+    const shelves = [...document.querySelectorAll('.lib-shelf')].map((row) => {
+      // Módulo en nueve regiones: superficie = los 208·s px inferiores del borde; canto = los últimos 135·s
       const cs = getComputedStyle(row);
       const bb = parseFloat(cs.borderBottomWidth);
       const plank = { top: r(row).bottom - bb, bottom: r(row).bottom - bb * (135 / 208) + 2 };
-      const plate = r(row.querySelector('.hanging-plaque__plate'));
       const books = [...row.querySelectorAll('[data-book-id]')].map((b) => r(b));
-      const sides = [parseFloat(cs.borderLeftWidth), parseFloat(cs.borderRightWidth)];
       return {
-        rings: row.querySelectorAll('.hanging-plaque__rings circle').length,
-        plateBelowPlank: plate.top >= plank.top,
-        // 1.36.0: el cartel cuelga del frente de la balda, sobre el techo del módulo siguiente, sin tapar sus libros
-        plateInsideRow: (() => { const next = row.closest('.library__module')?.nextElementSibling?.querySelector('[data-book-id]'); return !next || plate.bottom <= r(next).top + 0.5; })(),
-        booksAbovePlate: books.every((b) => b.bottom <= plate.top + 0.5),
-        booksOnPlank: books.every((b) => b.bottom <= plank.bottom && b.bottom >= plank.top - 2),
-        sides,
-        label: row.querySelector('.hanging-plaque__plate').textContent,
         count: books.length,
+        booksOnPlank: books.every((b) => b.bottom <= plank.bottom && b.bottom >= plank.top - 2),
+        inside: books.every((b) => b.left >= 0 && b.right <= vw),
+        sides: [parseFloat(cs.borderLeftWidth), parseFloat(cs.borderRightWidth)],
       };
     });
-    return { bodies, rows, overflowX: document.documentElement.scrollWidth - innerWidth, cam: getComputedStyle(document.querySelector('.library__case')).transform };
+    const heads = [...document.querySelectorAll('.shelf-row')].map((row) => ({ text: row.querySelector('.shelf-row__title')?.textContent ?? '', count: row.querySelectorAll('[data-book-id]').length }));
+    const book = document.querySelector('.library .pbook');
+    return {
+      shelves,
+      heads,
+      labels: document.querySelectorAll('.library .book-label').length,
+      plaques: document.querySelectorAll('.library .hanging-plaque').length,
+      parts: book ? ['.pbook__cover img, .pbook__cover .gen-cover', '.pbook__shadow'].map((s) => Boolean(book.querySelector(s))) : [],
+      named: [...document.querySelectorAll('.library [data-book-id]')].every((b) => (b.getAttribute('aria-label') ?? '').includes(', de ')),
+      overflowX: document.documentElement.scrollWidth - vw,
+      cam: getComputedStyle(document.querySelector('.library__case')).transform,
+    };
   });
   expect(m.overflowX).toBeLessThanOrEqual(0);
-  // Cámara general frontal: el mueble no gira
   expect(m.cam).toBe('none');
-  // Cada edición conserva su transformación propia (casi frontal; los cantos pintados giran algo más)
-  for (const b of m.bodies) {
-    expect(b.persp).toBe('900px');
-    const a = angle(b.t);
-    // 1.37.0: casi frontales (−12°; cantos pintados −18°), como en la maqueta aprobada
-    if (b.edition === 'sprayed_edges') expect(a).toBeGreaterThan(15);
-    else expect(a).toBeGreaterThan(8);
+  // Sin etiquetas bajo las portadas ni placas colgantes; cada libro conserva su nombre accesible
+  expect(m.labels).toBe(0);
+  expect(m.plaques).toBe(0);
+  expect(m.named).toBe(true);
+  expect(m.parts).toEqual([true, true]);
+  const perRow = info.project.name.includes('1440') || info.project.name.includes('844x390') ? 7 : 3;
+  for (const s of m.shelves) {
+    expect(s.count).toBeLessThanOrEqual(perRow);
+    expect(s.booksOnPlank).toBe(true);
+    expect(s.inside).toBe(true);
+    expect(s.sides.every((w) => w >= 10)).toBe(true);
   }
-  for (const row of m.rows) {
-    expect(row.rings).toBe(2);
-    expect(row.plateBelowPlank).toBe(true);
-    expect(row.plateInsideRow).toBe(true);
-    expect(row.booksAbovePlate).toBe(true);
-    expect(row.booksOnPlank).toBe(true);
-    expect(row.sides.every((w) => w >= 10)).toBe(true);
-    // Etiqueta y contador con datos reales
-    expect(row.label).toMatch(new RegExp(`· ${row.count}$`));
-  }
+  // Encabezados con cantidades reales
+  for (const h of m.heads) expect(h.text).toMatch(new RegExp(`· ${h.count}$`));
   await shot(page, info, 'v135-libreria');
   // Recuerdos plegables, recordado en el dispositivo
   const board = page.locator('.keepsake-board');

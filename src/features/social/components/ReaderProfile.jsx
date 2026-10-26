@@ -1,6 +1,6 @@
-// Perfil autorizado de otro lector (SPEC §25.8, §28.10): 1) rincón ilustrado, 2) avatar con su adorno, nombre,
-// rol oficial y seguir, 3) última, actual y próxima lectura, 4) libros que le representan, 5) colecciones y
-// reseña destacada, 6) historial de opiniones. Vista de SOLO LECTURA: nada se carga solo en la biblioteca del
+// Perfil autorizado de otro lector (SPEC §25.8, §28.10, §35.3): 1) rincón ilustrado, 2) avatar con su adorno,
+// nombre, rol oficial y seguir, 3) lo que está leyendo y, debajo, última y próxima lectura, 4) recuerdos, libros que
+// le representan y figuras, 5) colecciones y reseña destacada, 6) historial de opiniones. Vista de SOLO LECTURA: nada se carga solo en la biblioteca del
 // visitante; «Añadir a pendientes» es una acción explícita por libro que guarda en privado su procedencia.
 // Seguir, dejar de seguir y bloquear (con confirmación). Nada se inventa para rellenar huecos.
 import { Ban, X } from 'lucide-react';
@@ -10,7 +10,8 @@ import { PanelShell } from '../../../components/panels/PanelShell';
 import { useFigureCatalog } from '../../../components/figures/figureCatalog';
 import { OptionsMenu } from '../../../components/book/Annotations';
 import { ReaderAdornment } from '../../../components/primitives';
-import { Cover } from '../../../components/shelf/BookItem';
+import { Cover, PhysicalBook } from '../../../components/shelf/BookItem';
+import { FigureArt } from '../../../components/figures/FigureArt';
 import { createBook } from '../../../domain/books';
 import { useLibrary } from '../../../state/useLibrary';
 import { ReviewCard } from '../../reviews/ReadersPanel';
@@ -82,32 +83,36 @@ function MemorySheet({ memory, ownerAlias, onClose }) {
   );
 }
 
+/** Libro publicado (solo título, autor y portada) como objeto físico contenido; si no hay imagen, cubierta tipográfica. */
+const asBook = (b, key) => ({ id: b.id ?? key, title: b.title, author: b.author ?? '', cover: b.cover ?? '', editionType: 'hardcover' });
+
 /**
- * Última · Actual · Próxima: tres huecos de portada con la misma proporción y bases alineadas; el título va debajo.
- * La portada sale del resolvedor de siempre (`Cover`): si no hay imagen o falla, cubierta tipográfica con título
- * y autor. Solo se muestran los huecos que la persona eligió (nada se rellena).
+ * Lecturas (SPEC §35.3): «Está leyendo» destacada en horizontal y, debajo, «Última lectura» y «Próxima lectura»
+ * como dos piezas secundarias. Los títulos pueden ocupar varias líneas. Solo lo que la persona eligió mostrar.
  */
-function BookTrio({ last, current, next }) {
-  const slots = [
-    ['Última', last],
-    ['Actual', current],
-    ['Próxima', next],
-  ].filter(([, b]) => b);
-  if (!slots.length) return null;
+function Readings({ last, current, next }) {
+  if (!last && !current && !next) return null;
+  const item = (label, b, key) => (
+    <figure className="huella-read" data-kind={key}>
+      <span className="huella-read__book">
+        <PhysicalBook book={asBook(b, key)} variant="corner" />
+      </span>
+      <figcaption>
+        <span className="huella-read__label">{label}</span>
+        <b>{b.title}</b>
+        {b.author && <small>{b.author}</small>}
+      </figcaption>
+    </figure>
+  );
   return (
-    <section className="huella-trio" aria-label="Sus lecturas" data-count={slots.length}>
-      {slots.map(([label, b]) => (
-        <figure key={label} className="huella-trio__item">
-          <figcaption>{label}</figcaption>
-          <span className="huella-cover" aria-hidden="true">
-            <Cover book={{ id: b.id ?? `${label}-${b.title}`, title: b.title, author: b.author ?? '', cover: b.cover ?? '' }} />
-          </span>
-          <p>
-            <b>{b.title}</b>
-            {b.author && <small>{b.author}</small>}
-          </p>
-        </figure>
-      ))}
+    <section className="huella-readings" aria-label="Sus lecturas">
+      {current && item('Está leyendo', current, 'current')}
+      {(last || next) && (
+        <div className="huella-readings__pair">
+          {last && item('Última lectura', last, 'last')}
+          {next && item('Próxima lectura', next, 'next')}
+        </div>
+      )}
     </section>
   );
 }
@@ -197,17 +202,10 @@ function DistinctionBadges({ items, roles }) {
 
 export function ReaderProfileView({ userId, onClose }) {
   const community = useCommunity({ autoload: true });
-  const { state } = useLibrary();
   const [data, setData] = useState(null);
   const [failure, setFailure] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [confirmBlock, setConfirmBlock] = useState(false);
-  const [memory, setMemory] = useState(null);
   const ready = community.status === 'ready';
   const { following, loadFollowing } = community;
-  // Nombres de las figuras del catálogo público (las expuestas son de la colección de su dueño)
-  const catalog = useFigureCatalog();
-  const figureName = (id) => catalog.find((f) => f.id === id)?.name ?? 'Figura de coleccionista';
 
   useEffect(() => {
     if (ready && following === null) loadFollowing().catch(() => {});
@@ -237,13 +235,41 @@ export function ReaderProfileView({ userId, onClose }) {
     );
   if (!data) return <p className="social-note">Abriendo su rincón…</p>;
   if (!data.profile) return <p className="social-note">Este perfil no está disponible.</p>;
+  return (
+    <ReaderProfileContent
+      data={data}
+      userId={userId}
+      mine={userId === community.userId}
+      following={following}
+      onToggleFollow={(next) => community.setFollow(userId, next)}
+      onBlock={async () => {
+        await blockUser(userId);
+        onClose?.();
+      }}
+    />
+  );
+}
 
-  const mine = userId === community.userId;
+/**
+ * Presentación del rincón con los datos ya cargados (y ya filtrados por su visibilidad en el servidor). No consulta
+ * nada: lo que no viene en `data` no se pinta.
+ */
+export function ReaderProfileContent({ data, userId, mine, following, onToggleFollow, onBlock }) {
+  const { state } = useLibrary();
+  const [failure, setFailure] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
+  const [memory, setMemory] = useState(null);
+  // Nombres de las figuras del catálogo público (las expuestas son de la colección de su dueño)
+  const catalog = useFigureCatalog();
+  const figureOf = (id) => catalog.find((f) => f.id === id) ?? null;
+  const figureName = (id) => figureOf(id)?.name ?? 'Figura de coleccionista';
+
   const isFollowing = following?.includes(userId) ?? false;
   const corner = data.corner?.visible || mine ? data.corner : null;
   const alias = data.profile.alias;
   const figureId = corner?.figure_ids?.[0] ?? corner?.guardian_id ?? null;
-  const figure = figureId ? catalog.find((f) => f.id === figureId) : null;
+  const figure = figureId ? figureOf(figureId) : null;
   // La lectura actual publicada solo trae su título: en tu propio perfil se completa con tu libro (portada y
   // autor); en el de otra persona, el resolvedor de portadas pinta la cubierta tipográfica del título
   const ownCurrent = mine && corner?.current_title ? state.books.find((b) => b.title === corner.current_title) : null;
@@ -253,23 +279,23 @@ export function ReaderProfileView({ userId, onClose }) {
     setBusy(true);
     setFailure('');
     try {
-      await community.setFollow(userId, !isFollowing);
+      await onToggleFollow(!isFollowing);
     } catch (e) {
       setFailure(e.message);
     } finally {
       setBusy(false);
     }
   };
+  const shownFigures = (corner?.figure_ids ?? []).map(figureOf).filter(Boolean);
 
   return (
     <div className="reader-profile">
-      {/* 1 · Rincón ilustrado */}
+      {/* 1 · Rincón ilustrado (sin placa encima de la mesa: los recuerdos tienen su sección más abajo) */}
       {corner ? <CornerScene corner={corner} figure={figure} ownerAlias={alias} onOpenMemory={setMemory} /> : <p className="social-note">Su rincón no está a la vista.</p>}
       {memory && <MemorySheet memory={memory} ownerAlias={alias} onClose={() => setMemory(null)} />}
 
-      {/* 2 · Avatar (con su adorno cuando exista el arte aprobado), nombre, rol y seguir */}
+      {/* 2 · Avatar (con su adorno cuando exista el arte aprobado) junto al nombre, rol y seguir */}
       <div className="huella-who">
-        {/* Avatar y adorno en un mismo contenedor: el arco se dimensiona respecto al retrato y reserva su altura */}
         <span className="huella-avatar" data-adornment={data.adornment ?? undefined}>
           <ReaderAvatar avatarId={data.profile.avatar_id} alias={alias} size="profile" />
           {data.adornment && <ReaderAdornment id={data.adornment} />}
@@ -289,18 +315,16 @@ export function ReaderProfileView({ userId, onClose }) {
           )}
         </div>
       </div>
+      {failure && (
+        <p className="social-error" role="alert">
+          {failure}
+        </p>
+      )}
       {confirmBlock && (
         <div className="social-confirm" role="alertdialog" aria-label={`Bloquear a ${alias}`}>
           <p>¿Bloquear a {alias}? Dejaréis de veros y de seguiros. Puedes deshacerlo en «Mi Perfil & Avatar».</p>
           <div className="social-actions">
-            <button
-              type="button"
-              className="social-btn social-btn--primary"
-              onClick={async () => {
-                await blockUser(userId);
-                onClose?.();
-              }}
-            >
+            <button type="button" className="social-btn social-btn--primary" onClick={onBlock}>
               Sí, bloquear
             </button>
             <button type="button" className="social-btn" onClick={() => setConfirmBlock(false)}>
@@ -312,23 +336,31 @@ export function ReaderProfileView({ userId, onClose }) {
 
       {corner && (
         <>
-          {/* 3 · Última, actual y próxima (solo lo que eligió mostrar) */}
-          <BookTrio last={corner.last_book} current={current} next={corner.next_book} />
+          {/* 3 · Está leyendo y, debajo, última y próxima (solo lo que eligió mostrar) */}
+          <Readings last={corner.last_book} current={current} next={corner.next_book} />
 
-          {/* «Una historia que se quedó»: el primer recuerdo expuesto, con su dedicatoria (si la tiene) */}
-          {corner.memories?.[0] && (
-            <button type="button" className="huella-story" onClick={() => setMemory(corner.memories[0])}>
-              <span className="huella-story__object" aria-hidden="true">
-                <MemoryObject object={corner.memories[0].object} />
-              </span>
-              <span className="huella-story__text">
-                <b>Una historia que se quedó</b>
-                {corner.memories[0].dedication ? <em>«{corner.memories[0].dedication}»</em> : <em>{corner.memories[0].book?.title}</em>}
-              </span>
-            </button>
+          {/* 4 · Recuerdos: objeto, frase y libro, compactos; cada uno abre su historia */}
+          {corner.memories?.length > 0 && (
+            <section className="huella-memories" aria-label="Recuerdos que se quedan">
+              <h4>Recuerdos que se quedan</h4>
+              <ul>
+                {corner.memories.map((m) => (
+                  <li key={m.id}>
+                    <button type="button" className="huella-memory" onClick={() => setMemory(m)}>
+                      <span className="huella-memory__object" aria-hidden="true">
+                        <MemoryObject object={m.object} />
+                      </span>
+                      <span className="huella-memory__text">
+                        {m.dedication && <em>«{m.dedication}»</em>}
+                        <span>{m.book?.title ?? MEMORY_OBJECTS[m.object]?.name}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
-          {/* 4 · Libros que le representan */}
           {corner.signature_books?.length > 0 && (
             <section aria-label="Libros que le representan">
               <h4>Libros que me representan</h4>
@@ -348,12 +380,17 @@ export function ReaderProfileView({ userId, onClose }) {
               </ul>
             </section>
           )}
-          {corner.figure_ids?.length > 1 && (
-            <section aria-label="Figuras expuestas">
+          {shownFigures.length > 1 && (
+            <section className="huella-figures" aria-label="Figuras expuestas">
               <h4>Figuras expuestas</h4>
-              <ul className="reader-profile__list">
-                {corner.figure_ids.map((id) => (
-                  <li key={id}>{figureName(id)}</li>
+              <ul>
+                {shownFigures.map((fig) => (
+                  <li key={fig.id}>
+                    <span className="huella-figures__art" aria-hidden="true">
+                      <FigureArt fig={fig} display="box" />
+                    </span>
+                    <span>{fig.name}</span>
+                  </li>
                 ))}
               </ul>
             </section>

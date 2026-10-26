@@ -68,16 +68,6 @@ export function annotatedNotes(book) {
   });
 }
 
-function Notes({ book }) {
-  return (
-    <span className="edition-notes" aria-hidden="true">
-      {annotatedNotes(book).map((n, i) => (
-        <span key={i} data-side={n.side} style={{ '--at': `${n.at}%`, '--out': `${n.out}px`, '--note': n.color, '--z': (i % 4) / 4 }} />
-      ))}
-    </span>
-  );
-}
-
 /** Batería decorativa del e-reader, distinta (y estable) en cada libro. */
 const battery = (book) => 38 + (hash(book.id) % 58);
 
@@ -149,6 +139,61 @@ function spineW(book) {
 }
 
 const NERVES = [0.2, 0.36, 0.52, 0.68];
+
+/**
+ * Libro físico reutilizable (SPEC §35.2): la portada REAL como cara principal, completa y sin estirar; un lomo
+ * estrecho del color de la cubierta, el bloque de páginas en marfil asomando por el corte y una sombra de contacto.
+ * Sin letras falsas en el lomo ni insignias encima: los acabados solo cuando son de esa edición (cuero, cantos
+ * pintados, post-its de la anotada); el e-reader va en su marco y el audiolibro lleva una marca pequeña.
+ * `variant`: «shelf» (apoyado en la balda, botón) o «corner» (más contenido, decorativo).
+ */
+export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdge(book), scale = 1, className = '', ...rest }) {
+  const edition = book.editionType;
+  const device = edition === 'kindle';
+  const Tag = variant === 'shelf' ? 'button' : 'span';
+  return (
+    <Tag
+      {...rest}
+      className={`pbook ${className}`.trim()}
+      data-variant={variant}
+      data-edition={edition}
+      data-device={device || undefined}
+      data-bezel={device ? bezel(book) : undefined}
+      aria-hidden={variant === 'shelf' ? undefined : 'true'}
+      style={{ '--spine': spine ?? spineColor(book), '--scale': scale }}
+    >
+      <span className="pbook__body">
+        {!device && <span className="pbook__spine" />}
+        {!device && <span className={`pbook__pages${edge ? ` edge--${edge}` : ''}`} />}
+        <span className="pbook__cover">
+          <Cover book={book} />
+          {edition === 'leatherbound' && (
+            <>
+              <span className="pbook__corner pbook__corner--top" />
+              <span className="pbook__corner pbook__corner--bottom" />
+            </>
+          )}
+        </span>
+        {edition === 'annotated' && (
+          <span className="pbook__notes">
+            {annotatedNotes(book)
+              .filter((n) => n.side === 'right')
+              .slice(0, 3)
+              .map((n, i) => (
+                <span key={i} style={{ top: `${n.at}%`, '--note': n.color }} />
+              ))}
+          </span>
+        )}
+        {edition === 'audiobook' && (
+          <span className="pbook__audio" title={`Audiolibro · ${audioHours(book)} h`}>
+            <Headphones />
+          </span>
+        )}
+      </span>
+      <span className="pbook__shadow" />
+    </Tag>
+  );
+}
 
 export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, onOpen, onEdition, picked = false, draggable = false }, ref) {
   const edition = book.editionType;
@@ -234,65 +279,6 @@ export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, on
     );
   }
 
-  const device = edition === 'kindle' || edition === 'audiobook';
-  const w = Math.round(h * (edition === 'kindle' ? 0.7 : edition === 'audiobook' ? 0.86 : 0.66));
-  const d = edition === 'kindle' ? 4 : edition === 'audiobook' ? 12 : Math.max(10, Math.round(spineWidth(book.pageCount) * (edition === 'paperback' ? 0.66 : 0.75)));
-  const edgeClass = edge ? ` edge--${edge}` : '';
-  return (
-    <button
-      {...common}
-      className="book3d"
-      data-status={book.status}
-      data-device={device || undefined}
-      style={{ width: w + d * 0.4, height: h, '--w': `${w}px`, '--h': `${h}px`, '--d': `${d}px`, '--spine': coverSpine }}
-    >
-      <span className="book3d__body">
-        <span className="book3d__face book3d__front">
-          {edition === 'kindle' ? (
-            <EReaderScreen book={book} />
-          ) : edition === 'audiobook' ? (
-            <>
-              <span className="audio-case__cover">
-                <Cover book={book} />
-              </span>
-              <AudioStrip book={book} />
-            </>
-          ) : (
-            <Cover book={book} />
-          )}
-          {/* Herrajes y acabados de la edición sobre la cubierta */}
-          {(edition === 'clothbound' || edition === 'sprayed_edges') && <span className="book3d__foil" />}
-          {edition === 'leatherbound' && (
-            <>
-              <span className="book3d__leather" />
-              <span className="book3d__corner book3d__corner--top" />
-              <span className="book3d__corner book3d__corner--bottom" />
-              <span className="book3d__ridges">
-                {NERVES.map((y) => (
-                  <span key={y} style={{ top: `${y * 100}%` }} />
-                ))}
-              </span>
-            </>
-          )}
-          {edition === 'annotated' && <span className="book3d__belly">Edición Anotada</span>}
-          <span className="book3d__sheen" />
-        </span>
-        <span className="book3d__face book3d__spine">
-          {edition === 'leatherbound' &&
-            NERVES.map((y) => <span key={y} className="book3d__nerve" style={{ top: `${y * 100}%` }} />)}
-          <span>{book.title}</span>
-        </span>
-        <span className={`book3d__face book3d__pages${edgeClass}`} />
-        <span className={`book3d__face book3d__top${edgeClass}`} />
-        <span className="book3d__face book3d__back" />
-        <Tabs quotes={book.quotes} />
-        {edition === 'annotated' && <Notes book={book} />}
-      </span>
-      {(reading || silkRibbon) && !device && (
-        <span className="ribbon ribbon--3d" data-silk={silkRibbon || undefined} style={{ '--ribbon-h': `${Math.min(28, 12 + progress(book) / 5)}px` }} />
-      )}
-      {reading && <span className="book3d__progress" style={{ '--p': `${progress(book)}%` }} />}
-      <span className="book3d__shadow" />
-    </button>
-  );
+  // Escaparate (SPEC §35.2): el libro físico sobre la portada real (cubierta, lomo estrecho, cantos y sombra)
+  return <PhysicalBook {...common} book={book} variant="shelf" spine={coverSpine} edge={edge} scale={Math.min(1, 0.9 + (spineHeight(book) - 0.89) * 0.6)} />;
 });
