@@ -879,3 +879,61 @@
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
+
+/* ── 1.39.0 · Adorno ilustrado y distinciones (SPEC §31.3) ──
+   El arco mide el 125 % del avatar (96 px), solapa 12 px su borde inferior y reserva su altura en el flujo; nunca
+   ocupa el ancho de la ficha ni separa el nombre del retrato. */
+.huella-avatar .reader-adornment {
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  width: 125%;
+  height: auto;
+  margin: 0;
+  object-fit: contain;
+  transform: translateX(-50%);
+}
+
+.huella-avatar:has(.reader-adornment) {
+  margin-bottom: 18px;
+}
+
+/* Insignias: la ilustración a 28 px con nombre accesible; el detalle al pulsar */
+.huella-badge {
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.huella-badge::before {
+  display: none;
+}
+
+.huella-badge img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgb(44 30 20 / 0.3));
+}
+
+/* El retrato queda arriba, solapando la escena, aunque el nombre ocupe varias líneas; las insignias, en una fila */
+.huella-who {
+  align-items: start;
+}
+
+.huella-who__text {
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+
+.huella-who__name .huella-roles {
+  display: inline-flex;
+}
+
+.huella-roles,
+.huella-awards {
+  gap: 0;
+}

@@ -312,6 +312,10 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
                   </div>
                 </div>
                 <PagesChart days={stats.days} />
+                <p className="stats-motto">
+                  <img src="/assets/bookshelf/notebook/open-book-decoration.webp" alt="" width="360" height="157" aria-hidden="true" />
+                  <span>Cada página cuenta.</span>
+                </p>
                 <div className="mini-cols">
                   <div>
                     <h3>Géneros en tu librería</h3>
@@ -345,6 +349,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
 
             {tab === 'goal' && (
               <div className="goal">
+                <img className="goal__stack" src="/assets/bookshelf/notebook/book-stack-decoration.webp" alt="" width="320" height="236" aria-hidden="true" />
                 <Ring value={stats.readYear.length} max={yearGoal} />
                 <div className="goal__text">
                   <h3>Reto {year}</h3>
@@ -394,7 +399,9 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
                 <div className="missions__guardian">
                   {guardian ? (
                     <>
-                      <span className="missions__fig">
+                      {/* La figura real apoyada en la base de la hornacina de madera (decoración detrás) */}
+                      <span className="missions__fig missions__fig--niche">
+                        <img className="missions__niche" src="/assets/bookshelf/reading-corner/guardian-niche-empty.webp" alt="" width="720" height="462" aria-hidden="true" />
                         <FigureArt fig={guardian} display={figs.owned[guardian.id]?.display} />
                       </span>
                       <b>{guardian.name}</b>

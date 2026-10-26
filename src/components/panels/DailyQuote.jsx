@@ -68,7 +68,11 @@ export function DailyQuote() {
       ) : pending ? (
         <>
           <span className="daily-quote__kicker">La cita literaria del día</span>
+          {/* Sobre salvia abierto (decoración); la cita y su atribución son texto real encima de la hoja */}
+          <div className="daily-quote__envelope">
+            <img className="daily-quote__envelope-art" src="/assets/bookshelf/notebook/envelope-sage-open.webp" alt="" width="720" height="707" aria-hidden="true" />
           <ElegantQuoteCard text={pending.text} author={pending.author} work={pending.work} onSave={actions.saveCard} onPin={() => pin(pending)} pinned={pinned?.text === pending.text} />
+          </div>
           <p className="daily-quote__reward">
             {c.lastPieceUp ? '✨ ¡Tus hojas doradas se han convertido en una Caja Sorpresa para el Ático!' : `🍂 +${c.lastLeaves ?? 1} ${c.lastLeaves === 2 ? 'hojas doradas' : 'hoja dorada'} para tu próxima Caja Sorpresa`}
           </p>

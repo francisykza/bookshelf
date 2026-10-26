@@ -299,3 +299,197 @@
   letter-spacing: 0.03em;
   text-orientation: mixed;
 }
+
+/* ── 1.39.0 · Nombres de la habitación con «Guías» (SPEC §31.2): icono + nombre en una etiqueta de papel, sin placas.
+   Sustituyen a las insignias de icono de las guías (que no repiten el mismo objeto). ── */
+.room-camera[data-guides='true'] .hotspot-badge {
+  display: none;
+}
+
+.room-sign--chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.35em 0.75em 0.35em 0.55em;
+  border-radius: 999px;
+  background: rgb(250 245 232 / 0.94);
+  color: #2c1e14;
+  font: 600 1.1em/1 var(--lib-body);
+  box-shadow:
+    0 0 0 1px rgb(110 78 46 / 0.35),
+    0 0.2em 0.5em rgb(20 10 4 / 0.35);
+  transform: translate(calc(-50% + var(--nudge, 0px)), -50%);
+}
+
+.room-sign--chip .room-sign__icon {
+  width: 1.15em;
+  height: 1.15em;
+  color: #8a4a2e;
+  flex: none;
+}
+
+.room-sign--chip .room-sign__text {
+  position: static;
+  display: inline;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .room-sign--chip {
+    animation: chip-in 220ms ease-out;
+  }
+}
+
+@keyframes chip-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── 1.39.0 · Piezas decorativas (SPEC §31.4). Ninguna intercepta toques ni fija valores. ── */
+.daily-quote__envelope-art,
+.missions__niche,
+.goal__stack,
+.stats-motto img,
+.sheet-sprig,
+.binder-clip {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Sobre del día: el sobre abierto detrás; la tarjeta de la cita, sobre su hoja (zona 6–62 % del alto) */
+.daily-quote__envelope {
+  position: relative;
+  display: grid;
+  width: min(100%, 420px);
+  margin: 0 auto;
+}
+
+.daily-quote__envelope-art {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.daily-quote__envelope > :not(img) {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: center;
+  width: 78%;
+  margin-top: 7%;
+  z-index: 1;
+}
+
+/* Hornacina del Guardián: la figura de pie sobre la base (12 % inferior del recurso) */
+.missions__fig--niche {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  width: min(100%, 300px);
+  aspect-ratio: 720 / 462;
+  margin: 0 auto;
+}
+
+.missions__fig--niche .missions__niche {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.missions__fig--niche > :not(.missions__niche) {
+  position: relative;
+  z-index: 1;
+  height: 72%;
+  margin-bottom: 11%;
+}
+
+/* Reto anual: la pila de libros acompaña al anillo de progreso real */
+.goal {
+  position: relative;
+}
+
+.goal__stack {
+  width: clamp(96px, 30vw, 150px);
+  height: auto;
+  align-self: end;
+}
+
+/* Estadísticas: libro abierto con el lema, bajo la gráfica */
+.stats-motto {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin: 10px 0 4px;
+  color: var(--ink-muted);
+  font: italic 15px/1.3 var(--lib-display);
+}
+
+.stats-motto img {
+  width: min(160px, 46%);
+  height: auto;
+}
+
+/* Cuaderno: ramita ilustrada y pinza de latón */
+.sheet-sprig {
+  width: 30px;
+  height: auto;
+  object-fit: contain;
+}
+
+.binder-clip {
+  top: -30px;
+  width: 54px;
+  height: auto;
+  margin-left: -27px;
+  filter: drop-shadow(0 2px 2px rgb(44 30 20 / 0.35));
+}
+
+/* Pestaña textil salvia: marcapáginas que asoma bajo el cuaderno del libro (como en la lámina de tres vistas) */
+.book-sheet.notebook-shell::after {
+  content: '';
+  position: absolute;
+  bottom: -26px;
+  left: 18%;
+  z-index: -1;
+  width: 22px;
+  height: 62px;
+  background: url('/assets/bookshelf/notebook/textile-tab-sage.webp') center bottom / contain no-repeat;
+  pointer-events: none;
+}
+
+.book-sheet.notebook-shell {
+  position: relative;
+}
+
+/* Ajustes tras la captura a 390 */
+.room-sign--chip {
+  font-size: 1.35em;
+}
+
+.missions__fig--niche > :not(.missions__niche) {
+  height: 64%;
+  margin-bottom: 12%;
+}
+
+@media (max-width: 760px) {
+  .goal__stack {
+    position: absolute;
+    top: 120px;
+    left: 4px;
+    width: 92px;
+  }
+}
+
+/* La ayuda inicial no bloquea la esquina de controles ni sus menús: va por debajo de ellos y solo «Entendido»
+   recibe toques */
+.room-signs-hint {
+  z-index: 12;
+  pointer-events: none;
+}
+
+.room-signs-hint button {
+  pointer-events: auto;
+}

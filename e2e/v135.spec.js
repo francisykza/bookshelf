@@ -241,28 +241,39 @@ test('mi diario: Hoy registra una sola vez y la nota no suma páginas; Notas fil
   }
 });
 
-test('señales de la habitación: decorativas, sin interceptar toques; tocar donde están abre su objeto', async ({ page }, info) => {
+test('nombres de la habitación: solo con «Guías», decorativos, y el toque llega a su objeto', async ({ page }, info) => {
   await load(page);
+  // 1.39.0 (SPEC §31.2): sin guías la escena queda limpia; la ayuda inicial se muestra y se descarta
+  await expect(page.locator('.room-signs')).toHaveCount(0);
+  const hint = page.locator('.room-signs-hint');
+  await expect(hint).toBeVisible();
+  await hint.getByRole('button', { name: 'Entendido' }).click();
+  await expect(hint).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('bookshelf:signs-hint-done'))).toBe('true');
+  // Con guías: icono + nombre por objeto, sin placas
+  // (antes de cargar: al recargar, la app vuelca su estado en «pagehide» y pisaría un cambio hecho a mano)
+  await page.addInitScript(() => {
+    const st = JSON.parse(localStorage.getItem('bookshelf:v1'));
+    if (st) {
+      st.settings.showGuides = true;
+      localStorage.setItem('bookshelf:v1', JSON.stringify(st));
+    }
+  });
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
   const signs = page.locator('.room-signs .room-sign');
   await expect(signs).toHaveCount(7);
   await expect(page.locator('.room-signs')).toHaveAttribute('aria-hidden', 'true');
-  const meta = await signs.evaluateAll((els) => els.map((el) => ({ id: el.dataset.sign, pe: getComputedStyle(el).pointerEvents, focusable: el.matches('button, a, [tabindex]'), text: el.textContent })));
+  const meta = await signs.evaluateAll((els) => els.map((el) => ({ pe: getComputedStyle(el).pointerEvents, focusable: el.matches('button, a, [tabindex]'), text: el.textContent, icon: Boolean(el.querySelector('svg')), plate: Boolean(el.querySelector('.room-sign__plate')) })));
   expect(meta.map((s) => s.text)).toEqual(['Colección', 'Mi biblioteca', 'Mi lectura', 'Mi diario', 'Tiempo de lectura', 'Ambiente', 'Mis sagas']);
   meta.forEach((s) => {
     expect(s.pe).toBe('none');
     expect(s.focusable).toBe(false);
+    expect(s.icon).toBe(true);
+    expect(s.plate).toBe(false);
   });
-  // Ayuda inicial breve: solo destaca la biblioteca; se descarta
-  const hint = page.locator('.room-signs-hint');
-  await expect(hint).toBeVisible();
-  await expect(page.locator('.room-sign[data-highlight]')).toHaveCount(1);
-  await expect(page.locator('.room-sign[data-highlight]')).toHaveAttribute('data-sign', 'shelf');
-  await shot(page, info, 'v135-senales');
-  await hint.getByRole('button', { name: 'Entendido' }).click();
-  await expect(hint).toHaveCount(0);
-  expect(await page.evaluate(() => localStorage.getItem('bookshelf:signs-hint-done'))).toBe('true');
-  // La placa actúa como el objeto
-  // Ninguna señal visible recibe el toque: lo recibe el objeto de debajo
+  await shot(page, info, 'v139-nombres');
+  // Ningún nombre visible recibe el toque: lo recibe el objeto de debajo
   const hits = await page.evaluate(() =>
     [...document.querySelectorAll('.room-sign')]
       .map((el) => {
@@ -270,21 +281,12 @@ test('señales de la habitación: decorativas, sin interceptar toques; tocar don
         const x = r.left + r.width / 2;
         const y = r.top + r.height / 2;
         if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return null;
-        return { id: el.dataset.sign, onSign: Boolean(document.elementFromPoint(x, y)?.closest('.room-sign')) };
+        return { onSign: Boolean(document.elementFromPoint(x, y)?.closest('.room-sign')) };
       })
       .filter(Boolean),
   );
   expect(hits.length).toBeGreaterThan(0);
   expect(hits.filter((h) => h.onSign)).toEqual([]);
-  // Un toque real en la placa de la biblioteca lo recibe el objeto de debajo (si el encuadre inicial la muestra;
-  // en apaisado puede quedar fuera hasta mover la cámara)
-  const box = await page.locator('.room-sign[data-sign="shelf"]').boundingBox();
-  const cx = box.x + box.width / 2;
-  const cy = box.y + box.height / 2;
-  if (cx > 0 && cy > 0 && cx < page.viewportSize().width && cy < page.viewportSize().height) {
-    await page.mouse.click(cx, cy);
-    await expect(page.locator('.library[data-open="true"]')).toBeVisible();
-  }
 });
 
 test('movimiento reducido: las señales no se animan', async ({ page }, info) => {

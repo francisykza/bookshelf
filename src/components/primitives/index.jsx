@@ -102,44 +102,21 @@ export function ReviewLetter({ clip = true, className = '', children, ...rest })
 }
 
 /**
- * Adorno estético elegido bajo el avatar (SPEC §28.10). Es una preferencia visual: no concede permisos ni
- * significa un premio. SVG propio hasta tener las piezas ilustradas (docs/design/pending).
+ * Adorno estético elegido bajo el avatar (SPEC §28.10, §31.3). Es una preferencia visual: no concede permisos ni
+ * significa un premio. Ilustración de /assets/bookshelf/profile/adornments: un arco que se dimensiona respecto al
+ * avatar (lo coloca su contenedor), nunca al ancho de la ficha.
  */
 export const ADORNMENTS = {
-  cerezo: { name: 'Cerezo en flor', leaf: '#8E9B6B', accent: '#E3A7A9' },
-  'dark-academia': { name: 'Dark Academia', leaf: '#5E4A35', accent: '#8C2F39' },
-  constelaciones: { name: 'Entre constelaciones', leaf: '#4D5E7A', accent: '#C9A65A' },
-  'jardin-cartas': { name: 'Jardín de cartas', leaf: '#7C8B62', accent: '#D99A8F' },
-  'bosque-tinta': { name: 'Bosque de tinta', leaf: '#56684A', accent: '#A9824F' },
+  cerezo: { name: 'Cerezo en flor', art: '/assets/bookshelf/profile/adornments/avatar-adornment-cherry.webp', ratio: 480 / 202 },
+  'dark-academia': { name: 'Dark Academia', art: '/assets/bookshelf/profile/adornments/avatar-adornment-dark-academia.webp', ratio: 480 / 217 },
+  constelaciones: { name: 'Entre constelaciones', art: '/assets/bookshelf/profile/adornments/avatar-adornment-constellations.webp', ratio: 480 / 183 },
+  'jardin-cartas': { name: 'Jardín de cartas', art: '/assets/bookshelf/profile/adornments/avatar-adornment-letter-garden.webp', ratio: 480 / 237 },
+  'bosque-tinta': { name: 'Bosque de tinta', art: '/assets/bookshelf/profile/adornments/avatar-adornment-ink-forest.webp', ratio: 480 / 208 },
 };
 export const ADORNMENT_IDS = Object.keys(ADORNMENTS);
 
 export function ReaderAdornment({ id, className = '' }) {
   const a = ADORNMENTS[id];
   if (!a) return null;
-  const leaves = [-62, -44, -26, 26, 44, 62];
-  return (
-    <svg className={`reader-adornment ${className}`} data-adornment={id} viewBox="0 0 120 44" aria-hidden="true">
-      <path d="M10 6 Q60 52 110 6" fill="none" stroke={a.leaf} strokeWidth="2" strokeLinecap="round" />
-      {leaves.map((deg) => {
-        const x = 60 + deg * 0.78;
-        const y = 6 + (1 - Math.abs(deg) / 70) * 24 + 4;
-        // Hoja apuntada (dos curvas), girada siguiendo la rama
-        return <path key={deg} d={`M${x - 7} ${y}q7 -5.5 14 0q-7 5.5 -14 0z`} fill={a.leaf} opacity="0.9" transform={`rotate(${deg > 0 ? -28 : 28} ${x} ${y})`} />;
-      })}
-      {id === 'constelaciones' ? (
-        <path d="M60 30a7 7 0 1 0 6 10 6 6 0 1 1-6-10z" fill={a.accent} />
-      ) : id === 'dark-academia' ? (
-        <path d="M54 30h12v10H54z M54 30l6 4 6-4" fill="none" stroke={a.accent} strokeWidth="1.8" />
-      ) : id === 'bosque-tinta' ? (
-        <path d="M60 30c-6-6-12 0-6 4-6 2-2 8 6 4 8 4 12-2 6-4 6-4 0-10-6-4z" fill={a.accent} />
-      ) : (
-        <g fill={a.accent}>
-          {[0, 72, 144, 216, 288].map((r) => (
-            <ellipse key={r} cx="60" cy="31" rx="3" ry="5" transform={`rotate(${r} 60 36)`} />
-          ))}
-        </g>
-      )}
-    </svg>
-  );
+  return <img className={`reader-adornment ${className}`} data-adornment={id} src={a.art} alt="" width="480" height={Math.round(480 / a.ratio)} decoding="async" draggable={false} />;
 }

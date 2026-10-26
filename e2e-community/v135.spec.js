@@ -92,9 +92,9 @@ test('rincón ilustrado: escena 3:2 entera, tres libros, recuerdo con su histori
   }
   // Nombre, avatar y botones fuera de la escena; adorno estético bajo el avatar; distinción solo si existe
   await expect(scene.getByRole('button', { name: 'Seguir' })).toHaveCount(0);
-  // El adorno elegido se conserva como preferencia, pero sin su ilustración aprobada no se pinta ninguna rama provisional
+  // 1.39.0: el adorno elegido se pinta con su ilustración, dentro del contenedor del avatar
   await expect(page.locator('.huella-avatar')).toHaveAttribute('data-adornment', 'constelaciones');
-  await expect(page.locator('.huella-avatar .reader-adornment')).toHaveCount(0);
+  await expect(page.locator('.huella-avatar .reader-adornment')).toHaveAttribute('src', /avatar-adornment-constellations/);
   // Seguir compacto; bloquear dentro del menú de opciones
   await expect(page.locator('.huella-who').getByRole('button', { name: 'Bloquear', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Más opciones sobre Bruno' }).click();

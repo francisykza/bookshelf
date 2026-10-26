@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.38.1 · 2026-10-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.39.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2855,3 +2855,42 @@ no se muestran.
 - Placas: «Mi lectura» centrada en la zona lisa del latón (16–59 % del alto) y a lo largo del marcapáginas. Las
   placas que el recorte deja en el borde se deslizan hacia dentro lo justo para leerse y pulsarse (8 px de margen),
   sobre la parte visible de su objeto; se recalcula al mover la cámara.
+
+## 31. Piezas sueltas, nombres de la habitación y recursos del perfil (1.39.0)
+
+Ampliación del prompt maestro de recursos (`BookShelf-ampliacion-prompt-maestro-recursos`), sobre lo ya hecho.
+Inventario y referencias: `docs/design/asset-map.md` (y `asset-manifest.md` para lo anterior).
+
+### 31.1 Recursos
+
+`npm run art:pieces` (`scripts/prepare-bookshelf-pieces.mjs`) recorta a la silueta visible (alfa < 10 → 0, margen 2 px)
+y escribe WebP en `public/assets/bookshelf/{notebook,reading-corner,profile/adornments,profile/badges}/` con
+`manifest.json`. Siete piezas nuevas, cuatro recuerdos, cinco adornos y seis distinciones; los originales no se tocan.
+
+### 31.2 Habitación: nombres con «Guías» (decisión posterior que prevalece sobre el documento)
+
+Las placas de navegación de la habitación se sustituyen por un icono y un nombre en una etiqueta de papel que solo
+aparecen con «Guías» activadas (y reemplazan a las insignias de icono de las guías). Con las guías desactivadas la
+escena queda limpia; los reflejos suaves sobre cada objeto están PENDIENTES de sus máscaras, que se prepararán sobre
+el fondo original actual. Los nombres son `aria-hidden` y sin eventos de puntero; se deslizan hacia dentro si el
+encuadre los corta. Las placas siguen en otras secciones (rótulos de balda de la biblioteca).
+
+### 31.3 Perfil
+
+Los recuerdos barquito, planta, tintero y mapa usan sus ilustraciones (límite de tres y vínculos sin cambios). El
+adorno (`ReaderAdornment`) es la ilustración elegida, al 125 % del avatar, solapando 12 px su borde y con altura
+reservada. Las distinciones se muestran con su ilustración a 28 px y nombre accesible; solo las asignadas en el
+servidor (`distinctions`, `moderators`), nunca seleccionables.
+
+### 31.4 Piezas decorativas
+
+Sobre salvia en el Sobre del día (la cita real encima de la hoja), hornacina de madera en Misiones y Guardián (la
+figura real apoyada en su base), pila de libros en el Reto anual, libro abierto con «Cada página cuenta.» en
+Estadísticas, ramita botánica en los títulos del cuaderno, pinza de latón en Mi reseña y pestaña textil salvia bajo
+el cuaderno del libro. Ninguna intercepta toques ni fija valores.
+
+### 31.5 Pendiente
+
+Máscaras de reflejos de la habitación; las diez pantallas recientes del portátil y del perfil (calendario con detalle,
+sesiones, perfil y avatar, lectores, Mi rincón) solo reciben las piezas decorativas, no una recomposición completa;
+salón; capítulos y encuentros del club (sin datos en el servidor).

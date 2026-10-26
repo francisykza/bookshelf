@@ -254,7 +254,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           <TimeDial timeOfDay={settings.timeOfDay} onOpen={onOpenAtlas} onHover={onHover} spot={lit('sun')} />
           {/* Señales físicas permanentes (SPEC §28.9): decorativas; el toque llega al objeto de debajo. Con un panel
               encima (o fuera de la habitación) no se montan: no se ven y no cuestan fotogramas */}
-          {live && <RoomSigns timeOfDay={settings.timeOfDay} guideActive={Boolean(guide?.active)} />}
+          {live && <RoomSigns timeOfDay={settings.timeOfDay} guideActive={Boolean(guide?.active)} guides={guides} />}
         </div>
 
       </div>

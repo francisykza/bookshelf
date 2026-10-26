@@ -509,34 +509,14 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
   );
 }
 
-/** Ramita a tinta en la esquina de los títulos del cuaderno (decoración). */
+/** Ramita botánica en la esquina de los títulos del cuaderno (recurso ilustrado, decoración). */
 function SheetSprig() {
-  return (
-    <svg className="sheet-sprig" viewBox="0 0 48 64" aria-hidden="true">
-      <g fill="none" stroke="#8a6a44" strokeWidth="1.2" strokeLinecap="round">
-        <path d="M10 62C18 44 26 28 40 4" />
-        <path d="M18 46c-6-2-9-6-10-11M22 38c6-1 10-5 11-10M26 30c-5-3-7-7-7-12M31 22c5-2 8-5 9-10" />
-      </g>
-      <g fill="#c98a6a">
-        <circle cx="8" cy="34" r="2" />
-        <circle cx="33" cy="27" r="2" />
-        <circle cx="19" cy="17" r="1.8" />
-        <circle cx="40" cy="11" r="1.8" />
-      </g>
-    </svg>
-  );
+  return <img className="sheet-sprig" src="/assets/bookshelf/notebook/botanical-sprig.webp" alt="" width="160" height="249" aria-hidden="true" />;
 }
 
-/** Pinza de latón que sujeta la carta de la reseña (decoración). */
+/** Pinza de latón ilustrada que sujeta la carta de la reseña (decoración, no intercepta toques). */
 function BinderClip() {
-  return (
-    <svg className="binder-clip" viewBox="0 0 64 44" aria-hidden="true">
-      <path d="M23 22V12a9 9 0 0 1 18 0v10" fill="none" stroke="#7a5f30" strokeWidth="3.2" strokeLinecap="round" />
-      <rect x="10" y="20" width="44" height="20" rx="4" fill="#c2a15b" stroke="#6e5524" strokeWidth="1.5" />
-      <rect x="14" y="23" width="36" height="4" rx="2" fill="#ecd9a0" opacity="0.8" />
-      <path d="M10 34h44" stroke="#8a6f3e" strokeWidth="1.2" />
-    </svg>
-  );
+  return <img className="binder-clip" src="/assets/bookshelf/notebook/brass-paper-clip.webp" alt="" width="160" height="128" aria-hidden="true" />;
 }
 
 /**

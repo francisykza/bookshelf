@@ -2,7 +2,7 @@
 // versión cargada y lo que el teléfono declara de su pantalla y su gráfica, para capturarla y compararla.
 import { LITE_SCENE } from './scene/renderMode';
 
-export const APP_VERSION = '1.38.1';
+export const APP_VERSION = '1.39.0';
 
 function gpuInfo() {
   try {

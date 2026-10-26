@@ -22,10 +22,11 @@ export const CORNER_LAYOUT = {
 /** Recuerdos que se pueden exponer en la mesa (los que no tienen ilustración usan un SVG provisional). */
 export const MEMORY_OBJECTS = {
   farol: { name: 'Farol', art: '/assets/memories/farol-256.webp', ratio: 256 / 498 },
-  barquito: { name: 'Barquito', art: null, ratio: 1 },
-  planta: { name: 'Planta', art: null, ratio: 0.8 },
-  tintero: { name: 'Tintero', art: null, ratio: 1 },
-  mapa: { name: 'Mapa', art: null, ratio: 1.4 },
+  // 1.39.0: ilustraciones de /assets/bookshelf/reading-corner (scripts/prepare-bookshelf-pieces.mjs)
+  barquito: { name: 'Barquito', art: '/assets/bookshelf/reading-corner/memory-sailboat.webp', ratio: 256 / 296 },
+  planta: { name: 'Planta', art: '/assets/bookshelf/reading-corner/memory-potted-plant.webp', ratio: 256 / 274 },
+  tintero: { name: 'Tintero', art: '/assets/bookshelf/reading-corner/memory-inkwell-feather.webp', ratio: 256 / 376 },
+  mapa: { name: 'Mapa', art: '/assets/bookshelf/reading-corner/memory-rolled-map.webp', ratio: 320 / 194 },
 };
 export const MEMORY_IDS = Object.keys(MEMORY_OBJECTS);
 export const MEMORY_MAX = 3;
@@ -40,12 +41,12 @@ export const COLLECTION_MAX = 12;
  * en la app: los permisos los da el servidor.
  */
 export const DISTINCTIONS = {
-  semanal: { name: 'Lectura de la semana', mark: 'star-ribbon', meaning: 'Una reseña elegida por el equipo esa semana.' },
-  mensual: { name: 'Lectura del mes', mark: 'book-moon', meaning: 'Una reseña elegida por el equipo ese mes.' },
-  moderacion: { name: 'Moderación', mark: 'sage-lantern', meaning: 'Cuida la convivencia: revisa denuncias y puede retirar contenido.', role: true },
-  creadora: { name: 'Creadora', mark: 'old-key', meaning: 'Persona creadora de BookShelf.', role: true },
-  equipo: { name: 'Equipo', mark: 'house-nib', meaning: 'Forma parte del equipo de BookShelf.', role: true },
-  fundadora: { name: 'Comunidad fundadora', mark: 'sealed-letter', meaning: 'Estuvo en la comunidad desde sus primeros días.' },
+  semanal: { name: 'Lectura de la semana', mark: 'star-ribbon', art: '/assets/bookshelf/profile/badges/badge-weekly-star.webp', meaning: 'Una reseña elegida por el equipo esa semana.' },
+  mensual: { name: 'Lectura del mes', mark: 'book-moon', art: '/assets/bookshelf/profile/badges/badge-monthly-book-moon.webp', meaning: 'Una reseña elegida por el equipo ese mes.' },
+  moderacion: { name: 'Moderación', mark: 'sage-lantern', art: '/assets/bookshelf/profile/badges/badge-moderator-lantern.webp', meaning: 'Cuida la convivencia: revisa denuncias y puede retirar contenido.', role: true },
+  creadora: { name: 'Creadora', mark: 'old-key', art: '/assets/bookshelf/profile/badges/badge-creator-key.webp', meaning: 'Persona creadora de BookShelf.', role: true },
+  equipo: { name: 'Equipo', mark: 'house-nib', art: '/assets/bookshelf/profile/badges/badge-team-house-nib.webp', meaning: 'Forma parte del equipo de BookShelf.', role: true },
+  fundadora: { name: 'Comunidad fundadora', mark: 'sealed-letter', art: '/assets/bookshelf/profile/badges/badge-founder-letter.webp', meaning: 'Estuvo en la comunidad desde sus primeros días.' },
 };
 
 const clip = (text, max) => String(text ?? '').trim().slice(0, max);

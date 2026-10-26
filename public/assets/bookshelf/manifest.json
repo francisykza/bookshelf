@@ -1,0 +1,376 @@
+{
+  "envelope-sage-open": {
+    "path": "/assets/bookshelf/notebook/envelope-sage-open.webp",
+    "source": "Sobre salvia con papel marfil-1.png",
+    "md5": "f32553692cf182d500fb6a6d14dd22cf",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 52,
+      "top": 63,
+      "width": 1151,
+      "height": 1131
+    },
+    "width": 720,
+    "height": 707,
+    "ratio": 1.0184,
+    "bytes": 77730
+  },
+  "guardian-niche-empty": {
+    "path": "/assets/bookshelf/reading-corner/guardian-niche-empty.webp",
+    "source": "Nicho arqueado de madera vacío-4.png",
+    "md5": "568826f4056e46d204e15c82ce37e8e2",
+    "original": "1536x1024",
+    "alpha": true,
+    "crop": {
+      "left": 57,
+      "top": 55,
+      "width": 1422,
+      "height": 912
+    },
+    "width": 720,
+    "height": 462,
+    "ratio": 1.5584,
+    "bytes": 64322
+  },
+  "open-book-decoration": {
+    "path": "/assets/bookshelf/notebook/open-book-decoration.webp",
+    "source": "Pequeño libro abierto en gouache mediterráneo-3.png",
+    "md5": "b747820fcd4e66d04c21c9550969ead9",
+    "original": "1536x1024",
+    "alpha": true,
+    "crop": {
+      "left": 129,
+      "top": 227,
+      "width": 1278,
+      "height": 558
+    },
+    "width": 360,
+    "height": 157,
+    "ratio": 2.293,
+    "bytes": 18030
+  },
+  "book-stack-decoration": {
+    "path": "/assets/bookshelf/notebook/book-stack-decoration.webp",
+    "source": "Pila de tres libros antiguos-2.png",
+    "md5": "30c48640812dad361f34c6d2ab72b8f3",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 91,
+      "top": 298,
+      "width": 1094,
+      "height": 807
+    },
+    "width": 320,
+    "height": 236,
+    "ratio": 1.3559,
+    "bytes": 29402
+  },
+  "botanical-sprig": {
+    "path": "/assets/bookshelf/notebook/botanical-sprig.webp",
+    "source": "Ramita botánica mediterránea en gouache-5.png",
+    "md5": "28f49bf215df263e992668372e480f46",
+    "original": "1024x1536",
+    "alpha": true,
+    "crop": {
+      "left": 67,
+      "top": 90,
+      "width": 893,
+      "height": 1388
+    },
+    "width": 160,
+    "height": 249,
+    "ratio": 0.6426,
+    "bytes": 14560
+  },
+  "brass-paper-clip": {
+    "path": "/assets/bookshelf/notebook/brass-paper-clip.webp",
+    "source": "Clip bulldog de latón envejecido-6.png",
+    "md5": "6f9773ac779bc86411ec122ddfa18764",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 236,
+      "top": 318,
+      "width": 782,
+      "height": 624
+    },
+    "width": 160,
+    "height": 128,
+    "ratio": 1.25,
+    "bytes": 7762
+  },
+  "textile-tab-sage": {
+    "path": "/assets/bookshelf/notebook/textile-tab-sage.webp",
+    "source": "Marcapáginas de lino salvia-7.png",
+    "md5": "10af99506bb73a522ea7735f66a29ef6",
+    "original": "1024x1536",
+    "alpha": true,
+    "crop": {
+      "left": 268,
+      "top": 94,
+      "width": 487,
+      "height": 1372
+    },
+    "width": 120,
+    "height": 338,
+    "ratio": 0.355,
+    "bytes": 20730
+  },
+  "memory-sailboat": {
+    "path": "/assets/bookshelf/reading-corner/memory-sailboat.webp",
+    "source": "Velero artesanal de madera-1.png",
+    "md5": "b63d35dccc04c4df4c02b29c3601c7e3",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 170,
+      "top": 65,
+      "width": 970,
+      "height": 1123
+    },
+    "width": 256,
+    "height": 296,
+    "ratio": 0.8649,
+    "bytes": 21300
+  },
+  "memory-potted-plant": {
+    "path": "/assets/bookshelf/reading-corner/memory-potted-plant.webp",
+    "source": "Maceta terracota con hojas de salvia-2.png",
+    "md5": "508038a9db3b4eb9a7e175449ed2a417",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 161,
+      "top": 121,
+      "width": 952,
+      "height": 1018
+    },
+    "width": 256,
+    "height": 274,
+    "ratio": 0.9343,
+    "bytes": 24966
+  },
+  "memory-inkwell-feather": {
+    "path": "/assets/bookshelf/reading-corner/memory-inkwell-feather.webp",
+    "source": "Tintero azul con pluma crema-3.png",
+    "md5": "a1dd2cc94867c1930807ee08e3b67f9c",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 358,
+      "top": 96,
+      "width": 714,
+      "height": 1048
+    },
+    "width": 256,
+    "height": 376,
+    "ratio": 0.6809,
+    "bytes": 26538
+  },
+  "memory-rolled-map": {
+    "path": "/assets/bookshelf/reading-corner/memory-rolled-map.webp",
+    "source": "Mapa imaginario enrollado con cinta salvia-4.png",
+    "md5": "6f0771a2857edca92fdb90135e5416cd",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 25,
+      "top": 289,
+      "width": 1219,
+      "height": 740
+    },
+    "width": 320,
+    "height": 194,
+    "ratio": 1.6495,
+    "bytes": 20236
+  },
+  "avatar-adornment-constellations": {
+    "path": "/assets/bookshelf/profile/adornments/avatar-adornment-constellations.webp",
+    "source": "Adorno azul con luna y estrellas-5.png",
+    "md5": "f3cfb18195429d43242cbb4f609606df",
+    "original": "1536x1024",
+    "alpha": true,
+    "crop": {
+      "left": 68,
+      "top": 315,
+      "width": 1401,
+      "height": 534
+    },
+    "width": 480,
+    "height": 183,
+    "ratio": 2.623,
+    "bytes": 22232
+  },
+  "avatar-adornment-dark-academia": {
+    "path": "/assets/bookshelf/profile/adornments/avatar-adornment-dark-academia.webp",
+    "source": "Arco de hiedra y llave antigua-6.png",
+    "md5": "80cbc81d9c45a53ed0f3848b8217ab08",
+    "original": "1536x1024",
+    "alpha": true,
+    "crop": {
+      "left": 61,
+      "top": 243,
+      "width": 1414,
+      "height": 638
+    },
+    "width": 480,
+    "height": 217,
+    "ratio": 2.212,
+    "bytes": 36402
+  },
+  "avatar-adornment-letter-garden": {
+    "path": "/assets/bookshelf/profile/adornments/avatar-adornment-letter-garden.webp",
+    "source": "Arco botánico con flores y lazo-7.png",
+    "md5": "6efb39ce5201f0a3140ba460152f5525",
+    "original": "1536x1024",
+    "alpha": true,
+    "crop": {
+      "left": 74,
+      "top": 179,
+      "width": 1411,
+      "height": 697
+    },
+    "width": 480,
+    "height": 237,
+    "ratio": 2.0253,
+    "bytes": 35504
+  },
+  "avatar-adornment-cherry": {
+    "path": "/assets/bookshelf/profile/adornments/avatar-adornment-cherry.webp",
+    "source": "Arco floral de cerezos y salvia-8.png",
+    "md5": "39025174c88957d7ac266ebdf3ab388b",
+    "original": "1536x1024",
+    "alpha": true,
+    "crop": {
+      "left": 49,
+      "top": 266,
+      "width": 1429,
+      "height": 601
+    },
+    "width": 480,
+    "height": 202,
+    "ratio": 2.3762,
+    "bytes": 28452
+  },
+  "avatar-adornment-ink-forest": {
+    "path": "/assets/bookshelf/profile/adornments/avatar-adornment-ink-forest.webp",
+    "source": "Arco de helechos con setas y polilla-9.png",
+    "md5": "68e3888795fee98f678b890f668f897f",
+    "original": "1536x1024",
+    "alpha": true,
+    "crop": {
+      "left": 23,
+      "top": 198,
+      "width": 1497,
+      "height": 648
+    },
+    "width": 480,
+    "height": 208,
+    "ratio": 2.3077,
+    "bytes": 41136
+  },
+  "badge-monthly-book-moon": {
+    "path": "/assets/bookshelf/profile/badges/badge-monthly-book-moon.webp",
+    "source": "Libro abierto, cinta azul y media luna-10.png",
+    "md5": "4e83085218b1dc0566639a3be52a8206",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 123,
+      "top": 222,
+      "width": 1011,
+      "height": 829
+    },
+    "width": 128,
+    "height": 105,
+    "ratio": 1.219,
+    "bytes": 7344
+  },
+  "badge-moderator-lantern": {
+    "path": "/assets/bookshelf/profile/badges/badge-moderator-lantern.webp",
+    "source": "Linterna literaria de salvia y ámbar-11.png",
+    "md5": "e4fc7ad1596e5f42814a27a06b317e1a",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 310,
+      "top": 32,
+      "width": 633,
+      "height": 1179
+    },
+    "width": 128,
+    "height": 238,
+    "ratio": 0.5378,
+    "bytes": 10926
+  },
+  "badge-weekly-star": {
+    "path": "/assets/bookshelf/profile/badges/badge-weekly-star.webp",
+    "source": "Lazo terracota con estrella de latón-12.png",
+    "md5": "54252c3a72cadd48eb90e0af9402c28b",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 60,
+      "top": 156,
+      "width": 1134,
+      "height": 942
+    },
+    "width": 128,
+    "height": 106,
+    "ratio": 1.2075,
+    "bytes": 7996
+  },
+  "badge-creator-key": {
+    "path": "/assets/bookshelf/profile/badges/badge-creator-key.webp",
+    "source": "Llave antigua sobre lazo de terciopelo-13.png",
+    "md5": "18a165684ce9ce28f39dc4b2dcc25da3",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 68,
+      "top": 271,
+      "width": 1120,
+      "height": 774
+    },
+    "width": 128,
+    "height": 88,
+    "ratio": 1.4545,
+    "bytes": 7044
+  },
+  "badge-team-house-nib": {
+    "path": "/assets/bookshelf/profile/badges/badge-team-house-nib.webp",
+    "source": "Casita de papel con pluma dorada-14.png",
+    "md5": "7bb8b17893471af0301269421b474a14",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 279,
+      "top": 82,
+      "width": 696,
+      "height": 1077
+    },
+    "width": 128,
+    "height": 198,
+    "ratio": 0.6465,
+    "bytes": 9166
+  },
+  "badge-founder-letter": {
+    "path": "/assets/bookshelf/profile/badges/badge-founder-letter.webp",
+    "source": "Sobre con sello de libro abierto-15.png",
+    "md5": "48d9bb7f3b4eb8fef59fa007ada0e730",
+    "original": "1254x1254",
+    "alpha": true,
+    "crop": {
+      "left": 196,
+      "top": 276,
+      "width": 860,
+      "height": 713
+    },
+    "width": 128,
+    "height": 106,
+    "ratio": 1.2075,
+    "bytes": 6408
+  }
+}

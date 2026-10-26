@@ -9,6 +9,7 @@ import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../../components/panels/PanelShell';
 import { useFigureCatalog } from '../../../components/figures/figureCatalog';
 import { OptionsMenu } from '../../../components/book/Annotations';
+import { ReaderAdornment } from '../../../components/primitives';
 import { Cover } from '../../../components/shelf/BookItem';
 import { createBook } from '../../../domain/books';
 import { useLibrary } from '../../../state/useLibrary';
@@ -176,12 +177,12 @@ function DistinctionBadges({ items, roles }) {
         const key = `${d.kind}-${d.awarded_on ?? ''}`;
         return (
           <span key={key} className="huella-badge-wrap">
-            <button type="button" className="huella-badge" data-mark={info.mark} aria-expanded={shown === key} onClick={() => setShown((s) => (s === key ? null : key))}>
-              {info.name}
+            <button type="button" className="huella-badge" data-mark={info.mark} aria-expanded={shown === key} aria-label={info.name} title={info.name} onClick={() => setShown((s) => (s === key ? null : key))}>
+              <img src={info.art} alt="" width="28" height="28" decoding="async" />
             </button>
             {shown === key && (
               <span className="huella-badge__info" role="note">
-                {info.meaning}
+                <b>{info.name}</b> · {info.meaning}
                 {d.note && <> · {d.note}</>}
                 {d.awarded_on && <> · {longDate(d.awarded_on)}</>}
                 {roles ? ' · Rol con permisos asignado por el servidor.' : ' · Asignada por el equipo.'}
@@ -268,10 +269,10 @@ export function ReaderProfileView({ userId, onClose }) {
 
       {/* 2 · Avatar (con su adorno cuando exista el arte aprobado), nombre, rol y seguir */}
       <div className="huella-who">
-        {/* El adorno es una preferencia guardada (data-adornment); su ilustración aún no existe y no se pinta una rama
-            provisional (docs/design/pending). El avatar va solo, sin desplazar el nombre. */}
+        {/* Avatar y adorno en un mismo contenedor: el arco se dimensiona respecto al retrato y reserva su altura */}
         <span className="huella-avatar" data-adornment={data.adornment ?? undefined}>
           <ReaderAvatar avatarId={data.profile.avatar_id} alias={alias} size="profile" />
+          {data.adornment && <ReaderAdornment id={data.adornment} />}
         </span>
         <div className="huella-who__text">
           <h3 className="huella-who__name">

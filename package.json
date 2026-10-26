@@ -1,7 +1,7 @@
 {
   "name": "bookshelf",
   "private": true,
-  "version": "1.38.1",
+  "version": "1.39.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,7 +16,8 @@
     "qa:full": "vitest run && playwright test",
     "art:library": "node scripts/prepare-library-art.mjs",
     "art:design": "node scripts/organize-design-assets.mjs",
-    "art:mediterranean": "node scripts/prepare-mediterranean-art.mjs"
+    "art:mediterranean": "node scripts/prepare-mediterranean-art.mjs",
+    "art:pieces": "node scripts/prepare-bookshelf-pieces.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
