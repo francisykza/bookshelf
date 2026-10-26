@@ -386,12 +386,10 @@
   color: var(--ink-muted);
 }
 
-/* Sello de lacre en la esquina inferior derecha (decoración, sin tapar contenido) */
+/* Sello de lacre al final del contenido (decoración, sin tapar acciones) */
 .diary__seal {
-  position: absolute;
-  right: 6px;
-  bottom: 2px;
-  z-index: 2;
+  display: block;
+  margin: -8px 4px 4px auto;
   pointer-events: none;
 }
 

@@ -105,7 +105,7 @@ function TodayView({ onComplete, onOpenBook }) {
               <div className="diary-book__text">
                 <b>{book.title}</b>
                 <span>{book.author}</span>
-                <span className="diary-chip">{STATUS[book.status]}</span>
+                <span className="diary-chip">{book.status === 'reading' ? 'Leyendo' : STATUS[book.status]}</span>
                 <p className="diary-book__pos">{book.trackBy === 'pages' && book.pageCount ? `Página ${book.currentPage} de ${book.pageCount}` : `${formatPercent(percentRead(book))} leído`}</p>
                 <span className="diary-book__progress">
                   <span className="diary-bar" style={{ '--p': `${percentRead(book)}%` }} aria-hidden="true" />
@@ -177,7 +177,8 @@ function TodayView({ onComplete, onOpenBook }) {
             </li>
           ))}
         </ol>
-        <p className="diary-note diary-note--center">{readDays ? `${readDays} ${readDays === 1 ? 'día' : 'días'} con lectura esta semana.` : 'Aún no has registrado lectura esta semana.'}</p>
+        {/* El recuento va en el nombre accesible de la semana; a la vista, el lema de la maqueta */}
+        <p className="diary-note diary-note--center">Cada momento de lectura cuenta.</p>
       </section>
 
       <section className="diary-section" aria-labelledby="diary-latest-title">
@@ -188,7 +189,7 @@ function TodayView({ onComplete, onOpenBook }) {
           <ul className="diary-latest">
             {latest.map((it) => (
               <li key={it.kind === 'note' ? it.quote.id : it.entry.id}>
-                <button type="button" onClick={() => onOpenBook(it.book.id, 'right')}>
+                <button type="button" onClick={() => onOpenBook(it.book.id, 'right')} title={it.book.title}>
                   <span className="diary-latest__icon" aria-hidden="true">
                     {it.kind === 'note' ? <Pencil /> : <BookOpen />}
                   </span>
@@ -196,7 +197,7 @@ function TodayView({ onComplete, onOpenBook }) {
                     <span>
                       {shortDate(it.kind === 'note' ? it.at : `${it.date}T12:00:00`)} · {it.kind === 'note' ? it.quote.text : entryText(it.entry)}
                     </span>
-                    <small>{it.book.title}</small>
+                    <small className="sr-only-focus">{it.book.title}</small>
                   </span>
                   <ChevronRight aria-hidden="true" className="diary-latest__go" />
                 </button>

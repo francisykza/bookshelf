@@ -21,12 +21,13 @@ import { DiaryApp } from './DiaryApp';
 const WALLPAPER = { x: 500, y: 395, w: 400, h: 330 };
 
 const TABS = [
-  { id: 'calendar', label: 'Mi diario', icon: CalendarDays, color: '#e7909f' },
-  { id: 'stats', label: 'Estadísticas', icon: BarChart3, color: '#d9784d' },
-  { id: 'sessions', label: 'Sesiones', icon: Clock, color: '#86ad55' },
-  { id: 'goal', label: 'Reto anual', icon: Target, color: '#e2a94f' },
-  { id: 'missions', label: 'Misiones y Guardián', icon: Gift, color: '#5b8fc4' },
-  { id: 'quote', label: 'Sobre del día', icon: Mail, color: '#b3261e' },
+  // `short`: rótulo de la pestaña inferior del cuaderno (SPEC §32.1)
+  { id: 'calendar', label: 'Mi diario', short: 'Calendario', icon: CalendarDays, color: '#e7909f' },
+  { id: 'stats', label: 'Estadísticas', short: 'Estadísticas', icon: BarChart3, color: '#d9784d' },
+  { id: 'sessions', label: 'Sesiones', short: 'Sesiones', icon: Clock, color: '#86ad55' },
+  { id: 'goal', label: 'Reto anual', short: 'Reto', icon: Target, color: '#e2a94f' },
+  { id: 'missions', label: 'Misiones y Guardián', short: 'Misiones', icon: Gift, color: '#5b8fc4' },
+  { id: 'quote', label: 'Sobre del día', short: 'Citas', icon: Mail, color: '#b3261e' },
 ];
 
 function useStats(state) {
@@ -247,7 +248,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
 
   return (
     <PanelShell onClose={onClose} label="Portátil: estadísticas de lectura" variant="laptop">
-      <div className="laptop">
+      <div className="laptop" data-app={tab}>
         <button type="button" className="laptop__exit" onClick={onClose} aria-label="Salir del ordenador" title="Salir del ordenador">
           <X aria-hidden="true" />
         </button>
@@ -460,13 +461,15 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
               </div>
             </section>
             <nav className="dock" role="tablist" aria-label="Apps del portátil">
-              {TABS.map(({ id, label, icon: Icon, color }) => (
-                <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} title={label} style={{ '--app': color }}>
+              {TABS.map(({ id, label, short, icon: Icon, color }) => (
+                <button key={id} type="button" role="tab" aria-selected={tab === id} aria-label={label} data-app={id} onClick={() => setTab(id)} title={label} style={{ '--app': color }}>
                   <span className="dock__icon">
                     <Icon aria-hidden="true" />
                     {id === 'quote' && dailyQuoteReady(state) && <i className="dock__badge" aria-label="(sobre por abrir)" />}
                   </span>
-                  <span className="dock__label">{label}</span>
+                  <span className="dock__label" aria-hidden="true">
+                    {short}
+                  </span>
                 </button>
               ))}
             </nav>

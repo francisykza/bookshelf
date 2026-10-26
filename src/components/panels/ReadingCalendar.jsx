@@ -13,6 +13,8 @@ import { playUiSound } from '../../audio/uiSounds';
 import { ReadingEntryForm } from './ReadingEntryForm';
 
 const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+// Cabecera del calendario completo (SPEC §32.2): nombre abreviado, como en la maqueta
+const WEEKDAYS_LONG = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 const fmtDay = (key, opts) => cap(parseDay(key).toLocaleDateString('es-ES', opts));
 
@@ -134,6 +136,8 @@ function DayPopover({ date, groups, pomodoro, onClose, onComplete, onOpenLibrary
   const future = date > dayKey();
   return (
     <div className="cal-pop" role="dialog" aria-label={`Lectura del ${fmtDay(date, { day: 'numeric', month: 'long' })}`}>
+      {/* Pinza de latón que sujeta la ficha del día (decoración) */}
+      <img className="cal-pop__clip" src="/assets/bookshelf/notebook/brass-paper-clip.webp" alt="" width="160" height="128" aria-hidden="true" />
       <div className="cal-pop__head">
         <strong>
           {fmtDay(date, { weekday: 'long', day: 'numeric', month: 'short' })}
@@ -315,13 +319,23 @@ function CalendarFull({ selectDay = null, onComplete, onOpenLibrary }) {
         )}
       </div>
       <div className="cal__grid" role="grid" aria-label="Calendario de lectura">
-        {WEEKDAYS.map((w) => (
+        {WEEKDAYS_LONG.map((w) => (
           <span key={w} className="cal__weekday" role="columnheader">
             {w}
           </span>
         ))}
         {cells.map((date, i) => {
-          if (!date) return <span key={`e${i}`} className="cal__blank" />;
+          // Días del mes anterior (gris, sin datos ni acción), como en la maqueta
+          if (!date) {
+            const prev = new Date(month.getFullYear(), month.getMonth(), 1 - (cells.findIndex(Boolean) - i));
+            return i < cells.findIndex(Boolean) ? (
+              <span key={`e${i}`} className="cal__blank cal__blank--prev" aria-hidden="true">
+                <span className="cal__num">{prev.getDate()}</span>
+              </span>
+            ) : (
+              <span key={`e${i}`} className="cal__blank" />
+            );
+          }
           const groups = days[date] ?? [];
           const datum = dayDatum(groups);
           const level = heat(groups);

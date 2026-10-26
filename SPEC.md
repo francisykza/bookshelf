@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.39.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.40.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -2894,3 +2894,43 @@ el cuaderno del libro. Ninguna intercepta toques ni fija valores.
 Máscaras de reflejos de la habitación; las diez pantallas recientes del portátil y del perfil (calendario con detalle,
 sesiones, perfil y avatar, lectores, Mi rincón) solo reciben las piezas decorativas, no una recomposición completa;
 salón; capítulos y encuentros del club (sin datos en el servidor).
+
+## 32. Mi diario según sus maquetas: Hoy y Calendario (1.40.0)
+
+Referencias: `docs/design/references/diario-general-hoy-2-maqueta.png` (Hoy) y `calendario-detalle-dia-maqueta.png`
+(Calendario con el detalle del día; copia de la lámina aprobada). Estilos en `styles/diary-notebook.css`.
+
+### 32.1 Armazón (móvil ≤ 760 px)
+
+Con la app «Mi diario» abierta, el portátil no se pinta (barra de menú, ventana, base): el cuaderno de cuero ocupa la
+pantalla sobre la madera de la estantería, con la página como única zona de scroll, y la navegación entre apps es una
+fila de seis pestañas de papel bajo el cuaderno (Calendario, Estadísticas, Sesiones, Reto, Misiones, Citas; el nombre
+completo queda como nombre accesible). Escritorio conserva el portátil.
+
+Ambigüedad documentada: la cabecera de las dos maquetas no coincide (Hoy: «Volver» + «Mi diario» + subtítulo +
+pestañas; Calendario: «BookShelf» + ✕ + pestañas + «Mi diario»). Se usa una sola cabecera (la de Hoy) en las tres
+vistas para que las pestañas no cambien de sitio; «Volver» cierra el portátil.
+
+### 32.2 Hoy y Calendario
+
+Hoy: fecha grande con apunte a tinta, lectura de hoy (portada, título, autor, «Leyendo», página, barra, «Registrar
+lectura»), «Lo que me llevo de estas páginas» (última nota real o vacío + «Escribir una nota», que abre el formulario),
+semana con el lema «Cada momento de lectura cuenta.» (el recuento va en el nombre accesible), últimas anotaciones en
+una línea (el libro, en el nombre accesible) y sello al final.
+
+Calendario: mes en una línea con flechas sin marco, días de la semana abreviados (Lun…Dom), días del mes anterior en
+gris, celdas de papel con número, portada y páginas con llama, hoy en terracota; el resumen del mes, en una línea bajo
+la cuadrícula; la leyenda de calor no se pinta. Detalle del día como ficha de papel con pinza de latón, portada a la
+izquierda, filas de registro con editar y borrar, y «Apuntar otra lectura» con borde discontinuo.
+
+### 32.3 Siguientes bloques (registrados, no hechos)
+
+1. Las otras ocho pantallas recientes según sus maquetas: Estadísticas, Sesiones, Reto anual, Misiones y Guardián,
+   Sobre del día (Citas), Mi Perfil y Avatar, Lectores y actividad, y Mi rincón (privacidad, libros y figuras;
+   ambiente, lecturas, libros representativos y recuerdos), con la misma fila de pestañas de papel donde corresponda.
+2. Salón y club. Capítulos y encuentros requieren preparar migraciones aditivas de Supabase (tablas de capítulos,
+   avance por miembro, encuentros y su confirmación, con RLS: miembros leen, dueño gestiona, cada miembro su avance) y
+   sus pruebas PGlite, además de la interfaz (Conversación / Capítulos / Encuentros, aviso de encuentro, protección
+   frente a spoilers por capítulo). No se descartan por no existir aún las tablas.
+3. Máscaras de los reflejos de la habitación sobre el fondo original
+   (`public/images/room-refresh/escena/fondo-limpio.webp`, 941 × 1672).
