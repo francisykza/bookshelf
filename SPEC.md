@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.44.0 · 2026-10-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.45.0 · 2026-10-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3078,3 +3078,46 @@ uso, en `docs/design/materiales-controles.md`. Estilos: `styles/craft-144.css` (
   lecturas, no aparece); progreso integrado bajo «Tu lugar en esta historia» con página editable, total real, pasos,
   barra, porcentaje y «Te quedan N páginas» (terminado: «¡Terminado!»; sin paginación, solo el porcentaje); la
   cinta cuelga entera bajo el cuaderno.
+
+## 37. Figuras expuestas en la habitación y pantalla del portátil (1.45.0)
+
+Referencias: `docs/design/references/habitacion-figuras-maqueta.png` (distribución y presencia),
+`habitacion-portatil-maqueta.png` (solo la pantalla del portátil) y `figura-detalle-maqueta.png` (detalle).
+Estilos: `styles/figures-145.css`.
+
+### 37.1 Recursos
+
+Dos figuras nuevas en el catálogo, al final (la Dama sigue siendo la de los libros de su saga): «El Guardián de los
+Clavos» (épica) y «El Maestro y el Superviviente» (legendaria), de Nacidos de la Bruma, con 5 sellos y 5 piezas
+recortadas de su caja. Originales en `material-diseno/figuras/`; en la app, `public/figures/*-caja.webp` y
+`*-figura.webp`, recortados solo de su margen transparente. Campo nuevo del catálogo: `boxAlpha` (la caja ya es su
+propio recorte en tres cuartos: se pinta tal cual, sin contorno ni cantos). Entran en el reparto de las Cajas
+Sorpresa con las reglas, pesos y pity de siempre.
+
+### 37.2 Baldas
+
+Las dos baldas superiores tienen cuatro posiciones (dos por balda) en `progress.figures.shelf`: `{ id, display }`
+por posición (`display`: «box» o «unboxed»), o `null` (vacía). Sin elección guardada (`shelf: null`), se exponen
+automáticamente las figuras que tienes con recurso para la habitación, el Guardián primero. Solo se exponen figuras
+obtenidas con caja recortada o figura suelta con transparencia: las cajas fotografiadas antiguas y los personajes
+planos (SVG) ya no se pintan en la habitación (siguen en el Ático). Sin el roble oscuro de antes: los objetos se
+apoyan en la madera del fondo, en px de la ilustración (mismo mundo que el fondo), con su proporción, un reparto del
+ancho según su forma, el canto delante de su base (recorte por la línea del canto), una inclinación suave (la mitad
+de la pendiente de la balda) y sombra hacia el fondo. Tocar un objeto abre su detalle; la madera de alrededor sigue
+abriendo el Ático.
+
+### 37.3 Detalle
+
+Panel de papel crema: nombre, imagen completa, «Figura / Caja» (solo previsualiza; «Exponer…» lo aplica), piezas con
+su estado real, «Cambiar de balda» (posición libre, o intercambiar / sustituir si está ocupada: la otra vuelve al
+Ático) y «Guardar en el ático». En el Ático, «Exponer en la habitación» abre el mismo detalle.
+
+### 37.4 Portátil
+
+La ventana del calendario ocupa la parte derecha del escritorio y deja ver la bahía; marfil cálido, contraste
+moderado, reflejo tenue y borde en sombra. Datos reales; la planta y el vaso siguen delante.
+
+### 37.5 Pendiente
+
+La maqueta muestra una estantería más ancha y frontal: con las baldas actuales del fondo (≈ 195 px de la
+ilustración por balda y en perspectiva) los objetos se ven más pequeños. Hace falta un fondo con esas baldas.

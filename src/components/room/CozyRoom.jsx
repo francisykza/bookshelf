@@ -53,7 +53,7 @@ function OffscreenReporter({ fit, actionsRef, onChange }) {
   return null;
 }
 
-export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
+export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenFigure, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
   const { state, actions } = useLibrary();
   const { settings, books, progress } = state;
   const reducedMotion = useReducedMotion();
@@ -205,7 +205,6 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
 
         {/* 20 · objetos dinámicos integrados en la ilustración */}
         <div className="room-objects">
-          <RoomFigureShelves figures={progress.figures} onOpenVault={onOpenVault} onHover={onHover} />
           <TeaDrain level={teaLevel} />
           <DrinkSteam drink={settings.drink} active={timer.running} />
           <SoundWaves on={settings.sound && live} />
@@ -256,6 +255,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           <Hotspot id="tray" spot={lit('tray')} guides={guides} hint={7} onHover={onHover} onActivate={onOpenTray} label={{ title: 'Temporizador cozy', text: timerText ?? 'Té helado · elige tu bebida' }} />
           <Hotspot id="lamp" spot={lit('lamp')} guides={guides} hint={13} onHover={onHover} onActivate={toggleLamp} label={{ title: 'Lámpara de latón', text: settings.lampOn ? 'Encendida · tocar para apagar' : 'Apagada · tocar para encender' }} />
           <Hotspot id="lantern" spot={lit('lantern')} guides={guides} hint={15} onHover={onHover} onActivate={toggleCandle} label={{ title: 'Vela de la mesita', text: settings.candleOn ? 'Encendida · tocar para soplar' : 'Apagada · tocar para encenderla' }} />
+          {/* Figuras expuestas: por encima del hotspot de la vitrina (la madera de alrededor sigue abriendo el Ático) */}
+          <RoomFigureShelves figures={progress.figures} onOpenFigure={onOpenFigure ?? ((id) => onOpenVault(id))} onHover={onHover} />
           <TimeDial timeOfDay={settings.timeOfDay} onOpen={onOpenAtlas} onHover={onHover} spot={lit('sun')} />
           {/* Señales físicas permanentes (SPEC §28.9): decorativas; el toque llega al objeto de debajo. Con un panel
               encima (o fuera de la habitación) no se montan: no se ven y no cuestan fotogramas */}

@@ -106,7 +106,8 @@ describe('normalización del catálogo', () => {
   it('el catálogo real es válido y mantiene sus IDs', () => {
     const { figures, errors } = normalizeCatalog(realCatalog);
     expect(errors).toEqual([]);
-    expect(figures.map((f) => f.id)).toEqual(['dama_ceniza', 'jinete_dragones', 'viajero_asteroide', 'bardo_viento', 'hechicera_eea']);
+    // 1.45.0: dos figuras nuevas al final (la Dama sigue primera para los libros de su saga)
+    expect(figures.map((f) => f.id)).toEqual(['dama_ceniza', 'jinete_dragones', 'viajero_asteroide', 'bardo_viento', 'hechicera_eea', 'guardian_clavos', 'maestro_superviviente']);
   });
 });
 
@@ -168,7 +169,7 @@ describe('carga del catálogo', () => {
     expect(loader.get()).toBeNull();
     expect(await loader.load()).toBeNull();
     const list = await loader.load();
-    expect(list).toHaveLength(5);
+    expect(list).toHaveLength(7);
     expect(loader.get()).toBe(list);
     expect(fetchFn).toHaveBeenCalledTimes(3);
   });

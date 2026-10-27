@@ -99,6 +99,8 @@ export function normalizeFigure(entry, { imageSize, base = '/figures/' } = {}) {
     particlePreset: preset,
     boxImage: assetUrl(base, entry.boxImage),
     boxSize,
+    // 1.45.0: la caja es su propio recorte con transparencia (ya en tres cuartos): sin contorno ni cantos dibujados
+    boxAlpha: entry.boxAlpha === true,
     boxOutline,
     boxWindow,
     unboxedAvailable: ownUnboxed,

@@ -13,6 +13,7 @@ import { PomodoroTray } from './components/panels/PomodoroTray';
 import { ReviewSheet } from './components/panels/ReviewSheet';
 import { dayKey } from './domain/dates';
 import { SagaMapModal } from './components/panels/SagaMapModal';
+import { FigureDetail } from './components/figures/FigureDetail';
 import { FiguresVaultModal } from './components/figures/FiguresVaultModal';
 import { CozyRoom, ROOM_VIEW, SHELF_VIEW } from './components/room/CozyRoom';
 import { PanoramicRoom } from './components/room/PanoramicRoom';
@@ -215,6 +216,10 @@ function Sanctuary() {
               playUiSound('atticOpen');
               openPanel({ type: 'vault', id });
             }}
+            onOpenFigure={(id) => {
+              playUiSound('figureSelect');
+              openPanel({ type: 'figure', id });
+            }}
             modalOpen={Boolean(panel)}
             guide={guide}
             onReady={setMainReady}
@@ -279,8 +284,10 @@ function Sanctuary() {
           section={panel.section === 'unbox' ? 'unbox' : 'inspect'}
           // Vitrina ↔ Cámara de Unboxing es un paso de navegación: Atrás desde la cámara vuelve a la vitrina
           onSection={(section, id) => openPanel({ type: 'vault', id: id ?? panel.id, ...(section === 'unbox' ? { section } : null) })}
+          onShowInRoom={(id) => switchPanel({ type: 'figure', id })}
         />
       )}
+      {panel?.type === 'figure' && <FigureDetail key={panel.id} id={panel.id} onClose={close} />}
       {panel?.type === 'tray' && (
         <PomodoroTray
           onClose={() => {

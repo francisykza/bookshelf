@@ -6,7 +6,7 @@
 // Fase 1: sin la oclusión de hiedra heredada (recortaba la ilustración anterior).
 import { useEffect, useMemo, useState } from 'react';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
-import { rankOf } from '../../domain/figures';
+import { shelfSlots } from '../../domain/figures';
 import { EDITIONS, isDevice, sprayedEdge } from '../../domain/books';
 import { spineArtSize } from '../../domain/spineArt';
 import { projectPoint, rectToQuad } from '../../scene/homography';
@@ -14,8 +14,7 @@ import { useSceneArt } from '../../hooks/useSceneArt';
 import { ROOM_SHELVES, SCENE_H, SCENE_W, SHELF_LIPS, asset, pts } from '../../scene/sceneMap';
 import { useSvgIds } from '../../hooks/useSvgIds';
 import { calculateBookPhysics, stableHash } from '../../utils/vibeEngine';
-import { FigureArt, figureAspect } from '../figures/FigureArt';
-import { canUnbox, shownDisplay } from '../figures/figureDisplay';
+import { FigureArt } from '../figures/FigureArt';
 import { useFigureCatalog } from '../figures/figureCatalog';
 
 /** Separación entre lomos en px de la ilustración (≈ 1–2 px CSS en móvil). */
@@ -62,12 +61,6 @@ function spinesFor(books, currentId) {
 }
 
 /** Hasta 3 figuras por balda; con pocas, se reparten entre las dos baldas. */
-const PER_SHELF = 3;
-function layoutFigures(figs) {
-  const topCount = Math.min(PER_SHELF, Math.ceil(figs.length / 2));
-  const groups = { top: figs.slice(0, topCount), middle: figs.slice(topCount, topCount + PER_SHELF) };
-  return groups;
-}
 
 /** Cada pocos segundos un libro asoma un poco de la balda, como si alguien lo hubiera rozado. */
 const PEEK_MS = 2600;
@@ -206,66 +199,107 @@ export function RoomShelfBooks({ books, currentId, onOpenShelf, onHover, awake =
   );
 }
 
-/** La vitrina: las dos baldas superiores, forradas de roble en penumbra, con tus figuras (tocar → El Ático). */
-export function RoomFigureShelves({ figures, onOpenVault, onHover }) {
-  const catalog = useFigureCatalog();
-  // El Guardián primero, luego el resto por orden de llegada
-  const groups = useMemo(() => {
-    const owned = catalog.filter((f) => figures.owned[f.id]);
-    owned.sort((a, b) => (a.id === figures.guardian ? -1 : b.id === figures.guardian ? 1 : (figures.owned[a.id].obtainedAt || '').localeCompare(figures.owned[b.id].obtainedAt || '')));
-    return layoutFigures(owned);
-  }, [catalog, figures]);
+/**
+ * Las dos baldas superiores (SPEC §37): cuatro posiciones, dos por balda, ancladas a la ilustración (px de 941 ×
+ * 1672, el mismo mundo escalado que el fondo). Cada objeto conserva su proporción y cabe en el hueco por sus
+ * límites visibles (los recursos ya vienen sin márgenes transparentes); se apoya detrás del canto, que tapa su base
+ * (recorte por la línea del canto), con una inclinación suave que acompaña la balda sin doblar la perspectiva de las
+ * cajas dibujadas en tres cuartos. Tocar un objeto abre su detalle; la madera de alrededor sigue abriendo el Ático.
+ */
+const lineY = (a, b, x) => a[1] + ((b[1] - a[1]) * (x - a[0])) / (b[0] - a[0]);
+/** Parte de la pendiente de la balda que se aplica a los objetos (el resto lo cubre el canto). */
+const SKEW_SHARE = 0.5;
+// El hueco empieza algo dentro del poste izquierdo: a 360 px el encuadre corta los primeros píxeles de la balda
+const SLOT_INSET = { left: 144, right: 326, gap: 6 };
 
+/**
+ * Reparto de una balda: con dos objetos, el ancho se reparte según la forma de cada uno (una caja horizontal
+ * necesita más que una vertical) y, si no caben a la altura máxima, los dos se reducen por igual; con uno solo,
+ * se queda en su mitad con algo más de margen. Devuelve { x, w, h } por posición (px de la ilustración).
+ */
+function shelfLayout(shelfId, ratios) {
+  const { quad } = shelfOf(shelfId);
+  const [tl, tr, br, bl] = quad;
+  const slope = (br[1] - bl[1]) / (br[0] - bl[0]);
+  const avail = SLOT_INSET.right - SLOT_INSET.left;
+  const maxH = br[1] - tr[1] - 8;
+  const present = ratios.filter(Boolean);
+  let items;
+  if (present.length === 2) {
+    const natural = ratios.map((r) => r * maxH);
+    const k = Math.min(1, (avail - SLOT_INSET.gap) / (natural[0] + natural[1]));
+    const ws = natural.map((w) => w * k);
+    const used = ws[0] + ws[1] + SLOT_INSET.gap;
+    const x0 = SLOT_INSET.left + (avail - used) / 2;
+    items = [{ x: x0, w: ws[0] }, { x: x0 + ws[0] + SLOT_INSET.gap, w: ws[1] }];
+  } else {
+    items = ratios.map((r, i) => {
+      if (!r) return null;
+      const w = Math.min(avail * 0.62, r * maxH);
+      const cx = SLOT_INSET.left + avail * (i === 0 ? 0.27 : 0.73);
+      return { x: Math.max(SLOT_INSET.left, Math.min(SLOT_INSET.right - w, cx - w / 2)), w };
+    });
+  }
+  return {
+    slope,
+    clip: quad,
+    items: items.map((it, i) => {
+      if (!it || !ratios[i]) return null;
+      const h = it.w / ratios[i];
+      const cx = it.x + it.w / 2;
+      return { ...it, h, cx, lip: lineY(bl, br, cx), ceiling: lineY(tl, tr, cx) };
+    }),
+  };
+}
+
+export function RoomFigureShelves({ figures, onOpenFigure, onHover }) {
+  const catalog = useFigureCatalog();
+  const slots = useMemo(() => shelfSlots(figures, catalog), [catalog, figures]);
+  const byId = useMemo(() => new Map(catalog.map((fig) => [fig.id, fig])), [catalog]);
   return (
-    <div className="room-figures" aria-label="Vitrina de tus figuras de coleccionista">
-      {['top', 'middle'].map((id) => {
-        const shelf = shelfOf(id);
-        const list = groups[id];
-        const cell = shelf.width / Math.max(1, list.length);
+    <div className="room-figures" aria-label="Figuras expuestas en las baldas">
+      {['top', 'middle'].map((shelfId, si) => {
+        const pair = [slots[si * 2], slots[si * 2 + 1]].map((slot) => {
+          const fig = slot && byId.get(slot.id);
+          if (!fig) return null;
+          const size = slot.display === 'unboxed' ? fig.unboxedSize : fig.boxSize;
+          return { fig, slot, ratio: size.w / size.h };
+        });
+        const layout = shelfLayout(shelfId, pair.map((p) => p?.ratio ?? null));
+        const clip = `polygon(${layout.clip.map(([x, y]) => `${x}px ${y}px`).join(', ')})`;
         return (
-          <div
-            key={id}
-            className="room-shelf room-shelf--figures"
-            data-shelf={id}
-            style={{ width: shelf.width, height: shelf.height, transform: rectToQuad(shelf.width, shelf.height, shelf.quad) }}
-            onClick={() => onOpenVault()}
-          >
-            {/* Roble en penumbra cálida con luz lateral del balcón: tapa los libros y el cuadro pintados */}
-            <span className="room-shelf__oak" aria-hidden="true" />
-            {list.map((fig, i) => {
-              const entry = figures.owned[fig.id];
-              const rank = rankOf(fig.parts.length, entry);
-              // En la habitación se ve la figura desprecintada cuando tiene recurso con transparencia
-              const display = canUnbox(fig) ? 'unboxed' : shownDisplay(fig, entry.display);
-              const h = shelf.height * (display === 'unboxed' ? 0.86 : 0.84);
-              const w = Math.min(cell - 8, h * figureAspect(fig, display));
-              const x = cell * (i + 0.5) - w / 2;
-              const anchor = projectPoint(shelf.width, shelf.height, shelf.quad, x + w / 2, shelf.height - h);
-              const label = { id: `fig-${fig.id}`, x: anchor.x, y: anchor.y - 4, title: fig.name, text: `${fig.sagaTitle} · ${'★'.repeat(rank)}`, meta: 'Toca: El Ático del Coleccionista' };
+          <div key={shelfId} className="room-figures__shelf" data-shelf={shelfId} style={{ clipPath: clip }}>
+            {pair.map((item, k) => {
+              const box = layout.items[k];
+              if (!item || !box) return null;
+              const { fig, slot } = item;
+              const { w, h } = box;
+              const skew = Math.atan(layout.slope * SKEW_SHARE);
+              // Lo que el canto tapa de la base: lo justo para que ninguna esquina quede en el aire
+              const sink = (layout.slope * (1 - SKEW_SHARE) * w) / 2 + 3;
+              const top = box.lip + sink - h;
+              const label = { id: `fig-${fig.id}`, x: box.cx, y: top - 4, title: fig.name, text: fig.sagaTitle, meta: 'Toca para verla de cerca' };
               return (
                 <button
                   key={fig.id}
                   type="button"
                   className="room-figure"
-                  data-display={display}
-                  style={{ left: x, width: w, height: h }}
+                  data-display={slot.display}
+                  style={{ left: box.x, top, width: w, height: h, '--skew': `${skew}rad` }}
                   onClick={(event) => {
                     event.stopPropagation();
-                    onOpenVault(fig.id);
+                    onOpenFigure(fig.id);
                   }}
                   onPointerEnter={() => onHover(label)}
                   onPointerLeave={() => onHover(null)}
                   onFocus={() => onHover(label)}
                   onBlur={() => onHover(null)}
-                  aria-label={`${fig.name}: abrir El Ático del Coleccionista`}
+                  aria-label={`${fig.name}, ${slot.display === 'unboxed' ? 'figura suelta' : 'en su caja'}: ver de cerca`}
                 >
-                  <span className="room-figure__contact" aria-hidden="true" />
-                  <FigureArt fig={fig} display={display} />
+                  <FigureArt fig={fig} display={slot.display} />
                 </button>
               );
             })}
-            {/* Sombra interior del tablón de encima */}
-            <span className="room-shelf__inset" aria-hidden="true" />
           </div>
         );
       })}

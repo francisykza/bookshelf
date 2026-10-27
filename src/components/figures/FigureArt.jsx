@@ -42,6 +42,14 @@ export function CroppedImg({ src, img, crop, clip, className = '', round = false
 /** La caja recortada por su contorno real, con sus cantos oscuros dibujados encima. */
 export function BoxArt({ fig, children }) {
   const size = fig.boxSize ?? fig.img;
+  if (fig.boxAlpha) {
+    return (
+      <span className="fig-box fig-box--alpha" style={{ aspectRatio: `${size.w} / ${size.h}` }}>
+        <img className="fig-box__alpha" src={fig.boxImage} width={size.w} height={size.h} alt="" loading="lazy" decoding="async" draggable="false" />
+        {children}
+      </span>
+    );
+  }
   const outline = fig.boxOutline ?? [[0, 0], [size.w, 0], [size.w, size.h], [0, size.h]];
   const c = bbox(outline);
   const edges = outline.map(([x, y]) => `${x - c.x},${y - c.y}`).join(' ');

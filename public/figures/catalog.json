@@ -898,6 +898,200 @@
         "w": 766,
         "h": 876
       }
+    },
+    {
+      "id": "guardian_clavos",
+      "name": "El Guardián de los Clavos",
+      "sagaTitle": "Nacidos de la Bruma",
+      "subtitle": "",
+      "sagaId": "mistborn",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "unlockedByDefault": false,
+      "since": 2,
+      "boxAlpha": true,
+      "particlePreset": "mist",
+      "matchKeywords": [
+        "mistborn",
+        "bruma",
+        "imperio final"
+      ],
+      "rarity": "epic",
+      "accentColor": "#c9d2dc",
+      "secondaryColor": "#C59B27",
+      "boxImage": "guardian-clavos-caja.webp",
+      "boxSize": {
+        "w": 617,
+        "h": 900
+      },
+      "unboxedImage": "guardian-clavos-figura.webp",
+      "unboxedSize": {
+        "w": 590,
+        "h": 900
+      },
+      "pinCrop": {
+        "x": 190,
+        "y": 0,
+        "w": 210,
+        "h": 210
+      },
+      "loreSeals": [
+        "BRUMA",
+        "ACERO",
+        "CENIZA",
+        "VOLUNTAD",
+        "RESISTENCIA"
+      ],
+      "blisterParts": [
+        {
+          "name": "Rostro Impasible",
+          "kind": "face",
+          "crop": {
+            "x": 490,
+            "y": 208,
+            "w": 88,
+            "h": 85
+          }
+        },
+        {
+          "name": "Hacha de Acero",
+          "kind": "weapon",
+          "crop": {
+            "x": 452,
+            "y": 478,
+            "w": 72,
+            "h": 245
+          }
+        },
+        {
+          "name": "Espiral de Bruma",
+          "kind": "effect",
+          "crop": {
+            "x": 522,
+            "y": 486,
+            "w": 56,
+            "h": 142
+          }
+        },
+        {
+          "name": "Libro de los Clavos",
+          "kind": "relic",
+          "crop": {
+            "x": 502,
+            "y": 636,
+            "w": 80,
+            "h": 92
+          }
+        },
+        {
+          "name": "Rostro Furioso",
+          "kind": "face",
+          "crop": {
+            "x": 490,
+            "y": 390,
+            "w": 88,
+            "h": 86
+          }
+        }
+      ]
+    },
+    {
+      "id": "maestro_superviviente",
+      "name": "El Maestro y el Superviviente",
+      "sagaTitle": "Nacidos de la Bruma",
+      "subtitle": "",
+      "sagaId": "mistborn",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "unlockedByDefault": false,
+      "since": 2,
+      "boxAlpha": true,
+      "particlePreset": "mist",
+      "matchKeywords": [
+        "mistborn",
+        "bruma",
+        "imperio final"
+      ],
+      "rarity": "legendary",
+      "accentColor": "#e8c46a",
+      "secondaryColor": "#C59B27",
+      "boxImage": "maestro-superviviente-caja.webp",
+      "boxSize": {
+        "w": 791,
+        "h": 640
+      },
+      "unboxedImage": "maestro-superviviente-figura.webp",
+      "unboxedSize": {
+        "w": 798,
+        "h": 640
+      },
+      "pinCrop": {
+        "x": 120,
+        "y": 10,
+        "w": 220,
+        "h": 220
+      },
+      "loreSeals": [
+        "BRUMA",
+        "ACERO",
+        "APRENDIZAJE",
+        "INSTINTO",
+        "LEGADO"
+      ],
+      "blisterParts": [
+        {
+          "name": "Rostro Decidido",
+          "kind": "face",
+          "crop": {
+            "x": 630,
+            "y": 93,
+            "w": 94,
+            "h": 80
+          }
+        },
+        {
+          "name": "Rostro Sereno",
+          "kind": "face",
+          "crop": {
+            "x": 630,
+            "y": 176,
+            "w": 94,
+            "h": 80
+          }
+        },
+        {
+          "name": "Rostro en Calma",
+          "kind": "face",
+          "crop": {
+            "x": 630,
+            "y": 258,
+            "w": 94,
+            "h": 80
+          }
+        },
+        {
+          "name": "Dagas de Obsidiana",
+          "kind": "weapon",
+          "crop": {
+            "x": 630,
+            "y": 338,
+            "w": 94,
+            "h": 80
+          }
+        },
+        {
+          "name": "Libro del Legado",
+          "kind": "relic",
+          "crop": {
+            "x": 632,
+            "y": 418,
+            "w": 92,
+            "h": 110
+          }
+        }
+      ]
     }
   ]
 }

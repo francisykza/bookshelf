@@ -3,11 +3,11 @@
 // 2) el Guardián de Lectura y sus 5 sellos dorados (uno por día leído; el 5.º da una Caja Sorpresa);
 // 3) el blíster de reliquias y expresiones que sube el rango de ★ a ★★★★★;
 // 4) la Cámara de Unboxing (`UnboxChamber`, 1.19.0): ceremonia separada de la entrega idempotente del premio.
-import { Package, Shield, Sparkles, X } from 'lucide-react';
+import { Library, Package, Shield, Sparkles, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
 import { playUiSound } from '../../audio/uiSounds';
-import { RARITY, SEALS_PER_BOX, rankOf } from '../../domain/figures';
+import { RARITY, SEALS_PER_BOX, rankOf, roomDisplay } from '../../domain/figures';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { useLibrary } from '../../state/useLibrary';
 import { PanelShell } from '../panels/PanelShell';
@@ -85,7 +85,7 @@ function Seals({ fig, lit, active }) {
   );
 }
 
-function Inspect({ fig, catalogLen }) {
+function Inspect({ fig, catalogLen, onShowInRoom }) {
   const { state, actions } = useLibrary();
   const fs = state.progress.figures;
   const entry = fs.owned[fig.id];
@@ -124,6 +124,12 @@ function Inspect({ fig, catalogLen }) {
             ✨ Exponer Fuera de Caja (En Peana)
           </button>
         </div>
+        {/* 1.45.0: exponerla en una balda de la habitación (o cambiarla de sitio) desde su detalle */}
+        {onShowInRoom && roomDisplay(fig, 'box') && (
+          <button type="button" className="stamp-btn stamp-btn--small vault-room" onClick={() => onShowInRoom(fig.id)}>
+            <Library aria-hidden="true" /> Exponer en la habitación
+          </button>
+        )}
         {/* Sin foto de la figura con fondo transparente no se inventa un recorte: se expone en su caja */}
         {!canUnbox(fig) && (
           <p className="vault-hint" id={`unbox-${fig.id}`}>
@@ -202,7 +208,7 @@ function MysterySilhouette() {
   );
 }
 
-export function FiguresVaultModal({ onClose, initialId, section = 'inspect', onSection = () => {} }) {
+export function FiguresVaultModal({ onClose, initialId, section = 'inspect', onSection = () => {}, onShowInRoom }) {
   const { state, actions } = useLibrary();
   const catalog = useFigureCatalog();
   const fs = state.progress.figures;
@@ -288,7 +294,7 @@ export function FiguresVaultModal({ onClose, initialId, section = 'inspect', onS
         </ul>
         )}
 
-        {tab === 'inspect' && fig && <Inspect key={fig.id} fig={fig} catalogLen={catalog.length} />}
+        {tab === 'inspect' && fig && <Inspect key={fig.id} fig={fig} catalogLen={catalog.length} onShowInRoom={onShowInRoom} />}
         {tab === 'inspect' && !fig && <p className="vault-empty">Cargando tu vitrina…</p>}
         {tab === 'unbox' && (
           <UnboxChamber

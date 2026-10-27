@@ -48,7 +48,87 @@ export const EMPTY_FIGURES = {
   sealBox: false,
   // Último intento de apertura confirmado (SPEC §13.6): { id, reward, at, seen }
   unbox: null,
+  // 1.45.0 (SPEC §37): lo expuesto en las baldas de la habitación, cuatro posiciones { id, display } o null.
+  // Sin elegir nada todavía (null), se expone lo de siempre de forma automática.
+  shelf: null,
 };
+
+/** Las cuatro posiciones: dos por balda (superior y central), de izquierda a derecha. */
+export const SHELF_SLOTS = 4;
+export const SLOT_NAMES = ['Balda superior, izquierda', 'Balda superior, derecha', 'Balda central, izquierda', 'Balda central, derecha'];
+
+/**
+ * Presentaciones que admite la habitación: solo con recursos de verdad (caja recortada con transparencia y figura
+ * suelta en imagen con transparencia). Las cajas fotografiadas antiguas y los personajes planos (SVG) no se exponen.
+ */
+export function roomPresentations(fig) {
+  return {
+    box: Boolean(fig?.boxAlpha && fig.boxImage),
+    unboxed: Boolean(fig?.unboxedAvailable && fig.unboxedImage && !/\.svg(\?|$)/i.test(fig.unboxedImage)),
+  };
+}
+
+/** Presentación válida para la habitación: la pedida si existe; si no, la otra; null si no hay ninguna. */
+export function roomDisplay(fig, wanted) {
+  const p = roomPresentations(fig);
+  if (wanted === 'unboxed' && p.unboxed) return 'unboxed';
+  if (wanted === 'box' && p.box) return 'box';
+  return p.unboxed ? 'unboxed' : p.box ? 'box' : null;
+}
+
+/**
+ * Las cuatro posiciones tal y como se ven: lo elegido (solo figuras que tienes y con recurso para la habitación)
+ * o, sin elección, las que tienes con recurso, el Guardián primero y luego por orden de llegada.
+ */
+export function shelfSlots(fs, catalog) {
+  const byId = new Map(catalog.map((f) => [f.id, f]));
+  const valid = (slot) => {
+    const fig = slot && byId.get(slot.id);
+    if (!fig || !fs.owned?.[slot.id]) return null;
+    const display = roomDisplay(fig, slot.display);
+    return display ? { id: slot.id, display } : null;
+  };
+  if (Array.isArray(fs.shelf)) {
+    const seen = new Set();
+    return Array.from({ length: SHELF_SLOTS }, (_, i) => {
+      const slot = valid(fs.shelf[i]);
+      if (!slot || seen.has(slot.id)) return null;
+      seen.add(slot.id);
+      return slot;
+    });
+  }
+  const owned = catalog.filter((f) => fs.owned?.[f.id] && roomDisplay(f, 'box'));
+  owned.sort((a, b) => (a.id === fs.guardian ? -1 : b.id === fs.guardian ? 1 : (fs.owned[a.id].obtainedAt || '').localeCompare(fs.owned[b.id].obtainedAt || '')));
+  const list = owned.slice(0, SHELF_SLOTS).map((f) => ({ id: f.id, display: roomDisplay(f, 'box') }));
+  return Array.from({ length: SHELF_SLOTS }, (_, i) => list[i] ?? null);
+}
+
+/** Dónde está expuesta una figura (índice de posición) o -1. */
+export const slotOf = (slots, id) => slots.findIndex((s) => s?.id === id);
+
+/**
+ * Coloca una figura en una posición. Si estaba en otra, se mueve; si la de destino está ocupada, `mode` decide:
+ * «swap» intercambia las dos y «replace» devuelve la otra al Ático (sigue siendo tuya). Devuelve las posiciones.
+ */
+export function placeOnShelf(slots, id, display, target, mode = 'swap') {
+  const next = [...slots];
+  const from = slotOf(next, id);
+  const current = from >= 0 ? next[from] : null;
+  const occupant = next[target] && next[target].id !== id ? next[target] : null;
+  next[target] = { id, display: display ?? current?.display ?? 'box' };
+  if (from >= 0 && from !== target) next[from] = occupant && mode === 'swap' ? occupant : null;
+  return next;
+}
+
+/** Cambia la presentación expuesta en su posición (sin moverla). */
+export function setSlotDisplay(slots, id, display) {
+  return slots.map((s) => (s?.id === id ? { ...s, display } : s));
+}
+
+/** «Guardar en el ático»: deja su posición vacía (la figura, sus piezas y su progreso no cambian). */
+export function removeFromShelf(slots, id) {
+  return slots.map((s) => (s?.id === id ? null : s));
+}
 
 /** Estado inicial: las dos figuras de partida, la Dama como Guardián y una caja de bienvenida. */
 export function initialFigures(books, extraBoxes = 0, now = new Date().toISOString()) {

@@ -302,6 +302,8 @@ export function reducer(state, action) {
       if (action.op === 'ack') next = { ...fs, lastReward: null, sealBox: false };
       // Libros de la saga de cada figura que tienes (la sinergia ×2 sale de aquí)
       if (action.op === 'sync') next = { ...fs, placements: action.map };
+      // Lo expuesto en las baldas de la habitación (SPEC §37): cuatro posiciones { id, display } o null
+      if (action.op === 'shelf' && Array.isArray(action.shelf)) next = { ...fs, shelf: action.shelf.slice(0, 4).map((s) => (s && fs.owned[s.id] ? { id: s.id, display: s.display === 'unboxed' ? 'unboxed' : 'box' } : null)) };
       // Reclamar el sello de hoy si ya has leído (p. ej. si elegiste Guardián después de leer)
       if (action.op === 'today') {
         const today = dayKey();
@@ -399,6 +401,7 @@ export function LibraryProvider({ children }) {
       markUnboxSeen: (attemptId) => dispatch({ type: 'figures', op: 'seen', attemptId }),
       ackFigureReward: () => dispatch({ type: 'figures', op: 'ack' }),
       syncFigureBooks: (map) => dispatch({ type: 'figures', op: 'sync', map }),
+      setFigureShelf: (shelf) => dispatch({ type: 'figures', op: 'shelf', shelf }),
       claimTodaySeal: () => dispatch({ type: 'figures', op: 'today' }),
       claimTreasure: (treasure) => dispatch({ type: 'companionTreasure', treasure }),
       saveCard: () => dispatch({ type: 'companionSaveCard' }),
