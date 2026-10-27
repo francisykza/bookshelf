@@ -157,3 +157,10 @@
     transition: none;
   }
 }
+
+/* Detalle de figura: el anillo de foco del botón de cerrar va por dentro (por fuera lo cortaba el borde del panel) */
+.fig-detail__close:focus-visible {
+  outline: 2px solid #8a3f26;
+  outline-offset: -6px;
+  border-radius: 10px;
+}

@@ -3219,3 +3219,26 @@ nada, Open Library. Reglas puras en `src/domain/bookSearch.js` (pruebas en `__te
   respuestas de consultas anteriores se cancelan o se descartan. Atribución: «Datos de Google Books / Open Library».
 - **Escaneo de códigos**: no existe en el proyecto y no se ha añadido.
 - Pruebas e2e con los proveedores simulados en `e2e/v146.spec.js`.
+
+## 41. Figuras de dos por balda: revisión y límites (1.46.0)
+
+Revisión del sistema de la 1.45 (§37) contra el encargo; se mantiene y se corrige lo que fallaba.
+
+- **Corregido**: el acceso «Mi biblioteca» (§38.3) tapaba la balda central de figuras. Ahora va en el hueco libre
+  bajo la balda de los libros (`HOTSPOTS.shelf.plaque` y = 700). El anillo de foco del botón de cerrar del detalle
+  ya no sale cortado por el borde del panel.
+- **Comprobado** (prueba `e2e/v146.spec.js`, pantallas verticales): cada pieza conserva la proporción de su recurso
+  (la caja doble del Maestro sale ≈ 1,8 veces más ancha que la del Guardián, sin comprimirse); los recursos ya vienen
+  recortados a su silueta visible; ningún acceso tapa una figura; previsualizar «Figura» no cambia la habitación
+  hasta «Exponer…»; cambiar a una posición ocupada intercambia sin perder la otra; «Guardar en el ático» vacía la
+  posición y conserva figura y piezas; posición y variante persisten al recargar.
+- **Perspectiva y sombra**: las cajas son recortes en tres cuartos sin sombra propia; en la habitación llevan solo la
+  mitad de la pendiente de la balda y una sombra de contacto: no se dobla ninguna de las dos.
+- **Recursos**: solo «El Guardián de los Clavos» y «El Maestro y el Superviviente» tienen caja y figura recortadas.
+  La Dama de la Ceniza y la Jinete de Dragones (cajas fotografiadas en JPG) y las tres figuras en SVG plano no se
+  exponen: faltan sus recortes con transparencia de caja y de figura.
+- **Límite del fondo**: con las baldas actuales (≈ 182 px útiles de la ilustración por balda y en perspectiva) las
+  dos piezas de una balda caben a ≈ 45–60 px de pantalla a 390 px; en `habitacion-figuras-maqueta.png` se ven unas
+  2,5 veces mayores porque esa estantería es más ancha y frontal. **Para igualarla hace falta un fondo con baldas
+  superiores más anchas**; no se deforman las figuras para disimularlo. En horizontal y escritorio el encuadre no
+  muestra estas baldas (la vitrina se ofrece en «Guías › Fuera de vista»).

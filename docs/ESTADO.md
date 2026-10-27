@@ -7,7 +7,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 ## Estado actual
 
 - **Versión publicada**: 1.45.0 (commit `eff8031`, 2026-10-27), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: 1.46.0 con commit en `main` local, **sin subir** (no está en producción). Fuera de git
+- **Árbol de trabajo**: 1.46.0 con commit en `main` local, **sin subir** (no está en producción), con la revisión de
+  figuras (§41) en un segundo commit, también sin subir. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -25,8 +26,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-0. **Resto del encargo de la 1.46**: figuras de dos por balda con caja/sin caja (sigue pendiente el fondo
-   de baldas anchas, punto 1); repaso de la pantalla del portátil (punto 5). El escaneo de códigos no existe en el proyecto.
+0. **Resto del encargo de la 1.46**: repaso de la pantalla del portátil (punto 5). Figuras revisadas (§41): sin el
+   fondo de baldas anchas (punto 1) no pueden igualar el tamaño de la maqueta; faltan recortes con transparencia de
+   la Dama, la Jinete y las tres figuras SVG. El escaneo de códigos no existe en el proyecto.
    En calendario y ficha el formulario de registro conserva su fila de guardado fija (lo exige `e2e/v123`): decidir
    con Francisco si se quita también ahí. Pruebas `e2e/ia1.spec.js` de recomendaciones fallan en 844×390 ya en 1.45.
 1. **Fondo con baldas más anchas y frontales** para las figuras: con las baldas actuales del fondo (≈ 195 px de la
@@ -85,6 +87,8 @@ Formato de cada entrada (la más reciente arriba):
   durante las pruebas: la app pasa a Open Library. Pruebas con proveedores simulados en `e2e/v146.spec.js`.
 - Commit de la 1.46.0 pedido por Francisco, **sin subir** a GitHub (no desplegado). Queda el resto del encargo
   (ver «Pendiente» 0): figuras (punto 4) y ordenador (punto 5).
+- Después, punto 4 (§41), en su propio commit (sin subir): placa «Mi biblioteca» bajada (tapaba la balda central de
+  figuras), foco del cierre del detalle y pruebas de figuras en `e2e/v146.spec.js`. El resto ya cumplía desde 1.45.
 
 ### 2026-10-27 · cuenta principal · 1.45.0 (documentación)
 - Protocolo de traspaso automático en el apartado 0 de `CLAUDE.md`: leer este documento y git al empezar, anotar

@@ -177,8 +177,9 @@ export const HOTSPOTS = {
     shape: [[0, 60], [118, 120], [118, 492], [342, 552], [342, 1000], [200, 1040], [0, 960]],
     label: { x: 200, y: 840 },
     badge: { x: 60, y: 760 },
-    // Esquina superior izquierda del acceso «Mi biblioteca» (1.46): delante de la balda, justo encima de los libros
-    plaque: { x: 122, y: 452 },
+    // Esquina superior izquierda del acceso «Mi biblioteca» (1.46): en el hueco libre bajo la balda de los libros
+    // (más arriba taparía la balda central de figuras)
+    plaque: { x: 122, y: 700 },
   },
   laptop: {
     shape: [[757, 988], [908, 1010], [895, 1140], [860, 1175], [760, 1200], [606, 1150], [640, 1130], [722, 1118]],
