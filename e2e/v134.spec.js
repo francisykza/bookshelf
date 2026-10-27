@@ -101,8 +101,8 @@ test('librería: cabecera compacta, baldas modulares y libros visibles al abrir'
     // 1.43.0: canto más fino (módulo a menor escala) para que quepan tres libros completos
     expect(m.plankHeight).toBeGreaterThanOrEqual(14);
     expect(m.plankHeight).toBeLessThanOrEqual(30);
-    // Cabecera baja (título sin placa) + barra con buscador, acciones y filtros
-    expect(m.header).toBeLessThanOrEqual(380);
+    // 1.44.0: cabecera con su balda y la barra de papel encajada en la madera (la maqueta llega a ≈ 365 px)
+    expect(m.header).toBeLessThanOrEqual(400);
     // Los libros se ven en el primer encuadre
     expect(m.bookBottom).toBeLessThanOrEqual(m.viewport);
   }
@@ -202,8 +202,9 @@ test('ficha: orden, detalles plegados, valoración con teclado y cierre «Cerrar
   expect(stamp.width).toBeGreaterThanOrEqual(36);
   expect(stamp.width).toBeLessThanOrEqual(56);
   const cover = await page.locator('.sheet-head__cover').boundingBox();
-  expect(cover.width).toBeGreaterThanOrEqual(63);
-  expect(cover.width).toBeLessThanOrEqual(89);
+  // 1.44.0 (maqueta de la ficha): portada con volumen, más protagonista (≈ 130 px a 390)
+  expect(cover.width).toBeGreaterThanOrEqual(90);
+  expect(cover.width).toBeLessThanOrEqual(150);
   // Detalles de mi edición: plegado, con total, desconocido, unidad, velocidad y edición
   const details = page.locator('.sheet-details').first();
   await expect(details.getByLabel('Total de páginas', { exact: true })).toBeHidden();

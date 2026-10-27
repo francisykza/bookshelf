@@ -1,0 +1,628 @@
+/* ── 1.44.0 · Materiales artesanales en biblioteca y ficha (SPEC §36) ──────────────────────────────────────────
+   Referencias: docs/design/references/biblioteca-materiales-maqueta.png y ficha-libro-maqueta.png. Tres bases
+   vacías (public/assets/ui/controls/control-{terracota,lino-salvia,papel-crema}.webp) escaladas por nueve zonas:
+   esquinas y bordes con el mismo grosor en cualquier tamaño, centro repetido (no estirado). El texto y los iconos
+   son HTML encima; la base es solo fondo. Solo se aplica en la biblioteca y en la ficha del libro. */
+
+/* El atajo `border` de las capas anteriores reinicia la imagen del borde: el material se fija con !important */
+.craft {
+  --craft-edge: 10px;
+  position: relative;
+  box-sizing: border-box;
+  border-style: solid !important;
+  border-color: transparent !important;
+  border-width: var(--craft-edge) !important;
+  border-image-slice: 56 fill !important;
+  border-image-width: var(--craft-edge) !important;
+  border-image-repeat: round !important;
+  border-image-outset: 0 !important;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  transition: transform 120ms ease;
+}
+
+.craft--terra {
+  border-image-source: url('/assets/ui/controls/control-terracota.webp') !important;
+  color: #fbf3e2;
+}
+
+.craft--paper,
+.craft--choice {
+  border-image-source: url('/assets/ui/controls/control-papel-crema.webp') !important;
+  color: #3d2817;
+}
+
+.craft--sage,
+.craft--choice:is([aria-checked='true'], [aria-pressed='true']) {
+  border-image-source: url('/assets/ui/controls/control-lino-salvia.webp') !important;
+  color: #f6efdf;
+}
+
+.craft:is(button):active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.craft:focus-visible {
+  outline: 2px solid #8a3f26;
+  outline-offset: 2px;
+}
+
+.craft--sage:focus-visible,
+.craft--choice[aria-checked='true']:focus-visible,
+.craft--terra:focus-visible {
+  outline-color: #3d2817;
+}
+
+.craft:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Buscador: el papel apenas se intuye detrás del texto */
+.craft--soft input {
+  background: rgb(251 247 238 / 0.55);
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .craft {
+    transition: none;
+  }
+
+  .craft:is(button):active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ── Biblioteca ── */
+/* La cabecera ilustrada termina en su balda de madera */
+.lib-head--compact .lib-hero {
+  min-height: clamp(168px, 46vw, 220px);
+  padding-bottom: 28px;
+  background-position: 50% 100%;
+}
+
+/* La barra se encaja en la madera: compartimento del mueble con un panel de papel dentro */
+.lib-head--compact .lib-strip {
+  display: block;
+  padding: 0;
+  border-style: solid;
+  border-color: transparent;
+  border-width: calc(30 * var(--ls-px)) calc(107 * var(--ls-px)) calc(208 * var(--ls-px)) calc(105 * var(--ls-px));
+  border-image-source: url('/assets/library/shelf-module.webp');
+  border-image-slice: 30 107 208 105 fill;
+  border-image-width: calc(30 * var(--ls-px)) calc(107 * var(--ls-px)) calc(208 * var(--ls-px)) calc(105 * var(--ls-px));
+  border-image-repeat: round stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.lib-strip__panel {
+  display: grid;
+  gap: 8px;
+  margin: 6px 4px calc(-43 * var(--ls-px));
+  padding: 12px 10px;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 14px;
+  border-image: url('/assets/ui/controls/control-papel-crema.webp') 56 fill / 14px round;
+}
+
+.lib-head--compact .shelf-search {
+  min-height: 52px;
+  padding: 0 4px 0 6px;
+  border-radius: 0;
+}
+
+.lib-head--compact .shelf-search:focus-within {
+  box-shadow: none;
+  outline: 2px solid #8a3f26;
+  outline-offset: 2px;
+}
+
+.lib-head--compact .shelf-search__label {
+  color: #3d2817;
+}
+
+.lib-head--compact .shelf-search__input {
+  font: 500 17px/1 var(--lib-display);
+  color: #3d2817;
+}
+
+.lib-head--compact .shelf-search__input::placeholder {
+  color: #7a6a58;
+}
+
+.lib-head--compact .lib-btn.craft {
+  min-height: 54px;
+  padding: 0 8px;
+  border-radius: 0;
+  font: 600 18px/1.1 var(--lib-display);
+  letter-spacing: 0.01em;
+  box-shadow: none;
+}
+
+.lib-head--compact .lib-strip__add.craft {
+  background: none;
+  color: #fbf3e2;
+}
+
+.lib-head--compact .lib-tools-btn.craft {
+  border-color: transparent;
+  background: none;
+  font-size: 17px;
+}
+
+.lib-head--compact .lib-tools-btn.craft span {
+  white-space: normal;
+  text-align: left;
+  line-height: 1.05;
+}
+
+.lib-head--compact .lib-filters {
+  gap: 6px;
+}
+
+.lib-filters button.craft {
+  min-height: 48px;
+  padding: 0 2px;
+  border-radius: 0;
+  font: 600 16.5px/1 var(--lib-display);
+}
+
+.lib-filters button.craft[aria-checked='true'] {
+  background: none;
+  color: #f6efdf;
+}
+
+@media (max-width: 379px) {
+  .lib-filters button.craft {
+    font-size: 15.5px;
+  }
+
+  .lib-head--compact .lib-btn.craft {
+    font-size: 16.5px;
+  }
+}
+
+.lib-tools {
+  border: 1px solid rgb(110 78 46 / 0.25);
+  background: rgb(251 247 238 / 0.7);
+}
+
+/* ── Libro físico con volumen (CSS 3D, perspectiva moderada) ── */
+.pbook {
+  --d: 10px;
+  --rx: -7deg;
+  --ry: 17deg;
+  padding: 0;
+  perspective: 760px;
+  perspective-origin: 40% 0%;
+}
+
+.pbook[data-variant='corner'],
+.pbook[data-variant='sheet'] {
+  --rx: -5deg;
+  --ry: 13deg;
+}
+
+.pbook__body {
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transform-origin: 50% 100%;
+}
+
+.pbook__cover {
+  transform: translateZ(0);
+  box-shadow:
+    4px 4px 9px rgb(30 18 8 / 0.3),
+    0 0 0 0.5px rgb(30 18 8 / 0.3);
+}
+
+/* Lomo estrecho: gira hacia atrás desde el borde izquierdo de la cubierta */
+.pbook__spine {
+  position: absolute;
+  z-index: auto;
+  top: 0;
+  bottom: auto;
+  left: 0;
+  width: var(--d);
+  height: 100%;
+  border-radius: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--spine) 70%, #1c120a), color-mix(in srgb, var(--spine) 88%, #1c120a) 45%, color-mix(in srgb, var(--spine) 64%, #1c120a));
+  transform-origin: 0 50%;
+  transform: rotateY(90deg);
+}
+
+/* Canto superior: el borde de la tapa y, detrás, el bloque de páginas en marfil, algo separado */
+.pbook__top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--d);
+  background:
+    linear-gradient(color-mix(in srgb, var(--spine) 80%, #1c120a) 0 1.5px, transparent 1.5px calc(100% - 1.5px), color-mix(in srgb, var(--spine) 80%, #1c120a) calc(100% - 1.5px)),
+    linear-gradient(90deg, transparent 0 2px, #e9dcc0 2px 3px, transparent 3px),
+    repeating-linear-gradient(0deg, #f4ead6 0 1px, #e2d4b8 1px 2px);
+  transform-origin: 50% 0;
+  transform: rotateX(-90deg);
+}
+
+.pbook__top[class*='edge--'] {
+  background-size: auto;
+}
+
+/* E-reader: lámina con su marco (sin cantos de papel) */
+.pbook[data-device] .pbook__spine,
+.pbook[data-device] .pbook__top {
+  background: #2b2723;
+}
+
+.pbook[data-device][data-bezel='sage'] .pbook__spine,
+.pbook[data-device][data-bezel='sage'] .pbook__top {
+  background: #5d6a54;
+}
+
+/* Audiolibro: estuche (sin cantos de papel) */
+.pbook[data-edition='audiobook'] .pbook__spine,
+.pbook[data-edition='audiobook'] .pbook__top {
+  background: color-mix(in srgb, var(--spine) 55%, #2b2723);
+}
+
+.pbook__pages {
+  display: none;
+}
+
+/* Sombra de contacto sobre la balda, desplazada hacia el fondo como la luz de la maqueta */
+.pbook__shadow {
+  right: -12%;
+  bottom: -4px;
+  left: 4%;
+  height: 12px;
+  background: radial-gradient(ellipse 52% 50% at 50% 45%, rgb(30 16 6 / 0.42), transparent 75%);
+}
+
+.pbook[data-variant='shelf']:hover .pbook__body,
+.pbook[data-variant='shelf']:focus-visible .pbook__body {
+  transform: rotateX(var(--rx)) rotateY(calc(var(--ry) - 4deg)) translateY(-3px);
+}
+
+.pbook[data-variant='shelf']:hover,
+.pbook[data-variant='shelf']:focus-visible {
+  transform: none;
+}
+
+.pbook__body {
+  transition: transform 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pbook__body {
+    transition: none;
+  }
+}
+
+/* ── Ficha del libro ── */
+.book-sheet .sheet-head {
+  display: grid;
+  grid-template-columns: clamp(118px, 36vw, 150px) minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.book-sheet .sheet-head__cover {
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+  overflow: visible;
+}
+
+.book-sheet .sheet-head__cover .pbook {
+  width: 100%;
+}
+
+.book-sheet .sheet-head h2 {
+  font-size: clamp(26px, 7.6vw, 32px);
+}
+
+.book-sheet .sheet-status {
+  gap: 6px;
+}
+
+.book-sheet .sheet-status .paper-chip.craft {
+  min-height: 50px;
+  padding: 0 4px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font: 600 17px/1.05 var(--lib-display);
+}
+
+.book-sheet .sheet-status .paper-chip.craft[aria-checked='true'] {
+  background: none;
+  color: #f6efdf;
+}
+
+/* Otras lecturas abiertas · Ver (despliega el selector de siempre) */
+.reading-others {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  margin: 0;
+  border-top: 1px solid rgb(110 78 46 / 0.25);
+  border-bottom: 1px solid rgb(110 78 46 / 0.25);
+}
+
+.reading-others__label {
+  color: #4f4234;
+  font: 500 17px/1.2 var(--lib-display);
+}
+
+.reading-others__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 2px 0 8px;
+  border: 0;
+  background: none;
+  color: #a84f34;
+  font: 600 17px/1 var(--lib-display);
+  cursor: pointer;
+}
+
+.reading-others__toggle svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 160ms ease;
+}
+
+.reading-others__toggle[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+
+/* Progreso integrado en la página: separadores finos, sin recuadro */
+.book-sheet .sheet-progress {
+  padding: 4px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.sheet-progress__title {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font: 600 22px/1.2 var(--lib-display);
+}
+
+.book-sheet .sheet-progress__steps {
+  gap: 6px;
+}
+
+.book-sheet .sheet-progress__steps .round-btn.craft {
+  width: auto;
+  height: auto;
+  min-width: 44px;
+  min-height: 48px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font: 600 17px/1 var(--lib-display);
+}
+
+.book-sheet .sheet-progress__line strong {
+  color: #a84f34;
+  font: 600 20px/1.2 var(--lib-display);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.sheet-progress__left {
+  margin: 0;
+  color: #4f4234;
+  font: italic 500 18px/1.3 var(--lib-display);
+}
+
+.book-sheet .sheet-btn--primary.craft {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font: 600 19px/1 var(--lib-display);
+}
+
+.book-sheet .sheet-btn--primary.craft svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* La cinta sale del borde inferior del cuaderno, sin entrar en el contenido */
+.book-sheet.notebook-shell::after {
+  bottom: -46px;
+  height: 56px;
+}
+
+/* ── Ajustes tras la primera captura a 390 ── */
+.lib-head--compact .lib-hero {
+  min-height: clamp(150px, 40vw, 200px);
+}
+
+.lib-strip__panel {
+  margin-inline: 2px;
+  padding: 8px 4px;
+  border-width: 12px;
+  border-image-width: 12px;
+}
+
+.lib-head--compact .lib-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.lib-head--compact .lib-btn.craft {
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.lib-head--compact .lib-btn.craft span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+/* Filtros con el ancho de su palabra: «Pendientes» cabe sin cortarse ni encoger la letra */
+.lib-head--compact .lib-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.lib-filters button.craft {
+  --craft-edge: 8px;
+  flex: 1 1 auto;
+  padding: 0 4px;
+}
+
+.book-sheet .sheet-status {
+  display: flex;
+}
+
+.book-sheet .sheet-status .paper-chip.craft {
+  flex: 1 1 auto;
+  padding: 0 8px;
+}
+
+.book-sheet .sheet-head h2 {
+  font-size: clamp(24px, 7vw, 30px);
+}
+
+/* Volumen algo más visible en la balda (lomo y canto superior), sin exagerar */
+.pbook[data-variant='shelf'] {
+  --rx: -9deg;
+  --ry: 25deg;
+}
+
+/* La cinta cuelga entera bajo el cuaderno */
+.book-sheet.notebook-shell::after {
+  bottom: -50px;
+  height: 54px;
+}
+
+.book-sheet .sheet-status {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.book-sheet .sheet-status .paper-chip.craft {
+  --craft-edge: 8px;
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 16.5px;
+}
+
+.book-sheet .sheet-head {
+  grid-template-columns: clamp(104px, 31vw, 140px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.book-sheet .sheet-head h2 {
+  font-size: clamp(24px, 6.6vw, 30px);
+  overflow-wrap: normal;
+}
+
+/* Cifras de forma moderna (las antiguas de Cormorant se leen pequeñas en los controles) */
+.craft,
+.book-sheet .sheet-progress {
+  font-variant-numeric: lining-nums;
+}
+
+.book-sheet.notebook-shell::after {
+  bottom: -56px;
+}
+
+.pbook[data-variant='shelf'] {
+  --rx: -13deg;
+  --ry: 24deg;
+}
+
+.pbook[data-variant='sheet'] {
+  --rx: -10deg;
+  --ry: 20deg;
+}
+
+.pbook[data-variant='corner'] {
+  --rx: -8deg;
+  --ry: 16deg;
+}
+
+/* El atajo \`font\` reinicia las cifras: se fijan aquí, después de él */
+.library .craft,
+.book-sheet .craft,
+.book-sheet .sheet-progress,
+.book-sheet .sheet-progress * {
+  font-variant-numeric: lining-nums !important;
+}
+
+/* Cabecera algo más baja: los libros asoman antes (la maqueta deja la primera balda a ≈ 45 % del alto) */
+.lib-head--compact .lib-hero {
+  min-height: clamp(136px, 36vw, 190px);
+  padding-bottom: 22px;
+}
+
+.lib-strip__panel {
+  gap: 6px;
+  padding-block: 6px;
+}
+
+.lib-head--compact .shelf-search {
+  min-height: 48px;
+}
+
+.lib-head--compact .lib-btn.craft {
+  min-height: 50px;
+}
+
+.lib-filters button.craft {
+  min-height: 46px;
+}
+
+@media (max-width: 599px) {
+  .lib-head--compact .lib-hero {
+    min-height: clamp(136px, 36vw, 146px);
+  }
+}
+
+/* Escritorio: el compartimento ocupa todo el mueble y el panel de papel se centra con un ancho de lectura */
+.lib-head--compact .lib-strip {
+  width: auto;
+  max-width: none;
+  margin: 0;
+}
+
+@media (min-width: 761px) {
+  .lib-strip__panel {
+    width: min(100%, 720px);
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 761px) {
+  .lib-head.lib-head--compact {
+    display: block;
+  }
+
+  .lib-head--compact .lib-strip {
+    display: block;
+    width: 100%;
+  }
+}

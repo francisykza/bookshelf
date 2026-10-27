@@ -543,9 +543,10 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
               </small>
             </h1>
           </div>
-          {/* B · Barra: buscador, «Añadir libro», «Vista y herramientas» y filtros */}
+          {/* B · Barra en un panel de papel encajado en la madera: buscador, acciones y filtros */}
           <div className="lib-strip">
-            <div className="shelf-search" role="search">
+            <div className="lib-strip__panel">
+            <div className="shelf-search craft craft--paper craft--soft" role="search">
               <label className="shelf-search__label" htmlFor="shelf-search-input">
                 <Search aria-hidden="true" />
                 <span className="sr-only-focus">Buscar en mi biblioteca</span>
@@ -569,11 +570,11 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
               )}
             </div>
             <div className="lib-actions">
-              <button type="button" className="lib-btn lib-btn--accent lib-strip__add" onClick={onAddBook}>
+              <button type="button" className="lib-btn lib-btn--accent lib-strip__add craft craft--terra" onClick={onAddBook}>
                 <Plus aria-hidden="true" />
                 <span>Añadir libro</span>
               </button>
-              <button ref={toolsBtn} type="button" className="lib-btn lib-tools-btn" aria-expanded={toolsOpen} aria-controls="lib-tools" onClick={() => setToolsOpen((v) => !v)}>
+              <button ref={toolsBtn} type="button" className="lib-btn lib-tools-btn craft craft--paper" aria-expanded={toolsOpen} aria-controls="lib-tools" onClick={() => setToolsOpen((v) => !v)}>
                 <SlidersHorizontal aria-hidden="true" />
                 <span>Vista y herramientas</span>
                 <ChevronDown aria-hidden="true" className="lib-tools-btn__chev" />
@@ -606,10 +607,11 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
             {/* Filtros: un único estado seleccionado */}
             <div className="lib-tabs lib-filters" role="radiogroup" aria-label="Qué baldas ver">
               {FILTERS.map((f) => (
-                <button key={f.id} type="button" role="radio" aria-checked={filter === f.id} data-status={f.id} onClick={() => setFilter(f.id)}>
+                <button key={f.id} type="button" role="radio" aria-checked={filter === f.id} data-status={f.id} className="craft craft--choice" onClick={() => setFilter(f.id)}>
                   {f.label}
                 </button>
               ))}
+            </div>
             </div>
           </div>
         </header>

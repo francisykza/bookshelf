@@ -2,7 +2,7 @@
 // portada y título, estado, progreso, «Registrar lectura», valoración y favorito, y los detalles de la edición
 // plegados. Diario: cuaderno de entradas fechadas con lo que ya existe (sesiones, citas subrayadas y la reseña).
 // Lectores: las opiniones de la comunidad. Solo presentación: los datos y operaciones son los de siempre.
-import { BookMarked, ChevronDown, Feather, Heart, Lock, Minus, NotebookPen, PenLine, Plus, Trash2, X } from 'lucide-react';
+import { BookMarked, ChevronDown, ChevronRight, Feather, Heart, Lock, Minus, PenLine, Plus, Trash2, X } from 'lucide-react';
 import { Suspense, lazy, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
@@ -17,7 +17,7 @@ import { draftDiffers } from '../../features/reviews/opinion';
 import { useLibrary } from '../../state/useLibrary';
 import { modalRoot } from '../panels/modalRoot';
 import { PanelShell } from '../panels/PanelShell';
-import { Cover } from '../shelf/BookItem';
+import { Cover, PhysicalBook } from '../shelf/BookItem';
 import { EdgePicker } from './EditionPicker';
 import { ElegantQuoteCard } from '../quotes/ElegantQuoteCard';
 import { PublishControls } from '../../features/reviews/PublishControls';
@@ -95,8 +95,10 @@ function ProgressBlock({ book, onPage }) {
       </div>
     );
   }
+  const left = Math.max(0, (book.pageCount || 0) - book.currentPage);
   return (
     <div className="sheet-progress">
+      <h3 className="sheet-progress__title">Tu lugar en esta historia</h3>
       {/* Valor actual / total en su propia línea; los ajustes rápidos, en una fila equilibrada aparte */}
       <div className="sheet-progress__pages">
         <label className="sheet-progress__current">
@@ -114,16 +116,16 @@ function ProgressBlock({ book, onPage }) {
         <span className="sheet-progress__of">de {book.pageCount}</span>
       </div>
       <div className="sheet-progress__steps">
-        <button type="button" className="round-btn" onClick={() => onPage(book.currentPage - 10)} aria-label="Retroceder 10 páginas">
+        <button type="button" className="round-btn craft craft--paper" onClick={() => onPage(book.currentPage - 10)} aria-label="Retroceder 10 páginas">
           −10
         </button>
-        <button type="button" className="round-btn" onClick={() => onPage(book.currentPage - 1)} aria-label="Retroceder una página">
+        <button type="button" className="round-btn craft craft--paper" onClick={() => onPage(book.currentPage - 1)} aria-label="Retroceder una página">
           <Minus aria-hidden="true" />
         </button>
-        <button type="button" className="round-btn" onClick={() => onPage(book.currentPage + 1)} aria-label="Avanzar una página">
+        <button type="button" className="round-btn craft craft--paper" onClick={() => onPage(book.currentPage + 1)} aria-label="Avanzar una página">
           <Plus aria-hidden="true" />
         </button>
-        <button type="button" className="round-btn" onClick={() => onPage(book.currentPage + 10)} aria-label="Avanzar 10 páginas">
+        <button type="button" className="round-btn craft craft--paper" onClick={() => onPage(book.currentPage + 10)} aria-label="Avanzar 10 páginas">
           +10
         </button>
       </div>
@@ -139,8 +141,9 @@ function ProgressBlock({ book, onPage }) {
       />
       <p className="sheet-progress__line">
         <strong>{formatPercent(pct)} leído</strong>
-        {book.currentPage >= book.pageCount && <span>¡Terminado!</span>}
       </p>
+      {/* Lo que queda, con los datos reales; terminado, sin cuentas negativas */}
+      <p className="sheet-progress__left">{left > 0 ? `Te quedan ${left.toLocaleString('es-ES')} ${left === 1 ? 'página' : 'páginas'}` : '¡Terminado!'}</p>
     </div>
   );
 }
@@ -257,6 +260,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
   const [review, setReview] = useState(book?.review ?? '');
   const [shownQuote, setShownQuote] = useState(null);
   const [logging, setLogging] = useState(false);
+  const [othersOpen, setOthersOpen] = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -302,7 +306,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
             <ExLibris owner={settings.owner} onRename={(owner) => actions.setSettings({ owner })} />
             <header className="sheet-head">
               <span className="sheet-head__cover" aria-hidden="true">
-                <Cover book={book} />
+                <PhysicalBook book={book} variant="sheet" />
               </span>
               <div className="sheet-head__text">
                 <h2>{book.title}</h2>
@@ -322,7 +326,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
 
             <div className="sheet-status" role="radiogroup" aria-label="Balda">
               {Object.entries(STATUS).map(([k, v]) => (
-                <button key={k} type="button" role="radio" aria-checked={book.status === k} className="paper-chip" onClick={() => update({ status: k })}>
+                <button key={k} type="button" role="radio" aria-checked={book.status === k} className="paper-chip craft craft--choice" onClick={() => update({ status: k })}>
                   {v}
                 </button>
               ))}
@@ -333,9 +337,19 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
                 {isMain ? 'Es el libro abierto sobre tu cama' : 'Dejarlo abierto sobre la cama'}
               </button>
             )}
-            {/* Los libros que estás leyendo: toca otro para abrirlo en la cama */}
+            {/* Otras lecturas abiertas: una línea con «Ver», que despliega el selector de siempre (toca otro para
+                abrirlo en la cama); sin otras lecturas, no se pinta */}
             {book.status === 'reading' && readingNow.length > 1 && onSwitch && (
-              <nav className="reading-switch" aria-label="Libros que estás leyendo">
+              <div className="reading-others">
+                <span className="reading-others__label">Otras lecturas abiertas</span>
+                <button type="button" className="reading-others__toggle" aria-expanded={othersOpen} aria-controls="reading-switch" onClick={() => setOthersOpen((v) => !v)}>
+                  {othersOpen ? 'Ocultar' : 'Ver'}
+                  <ChevronRight aria-hidden="true" />
+                </button>
+              </div>
+            )}
+            {book.status === 'reading' && readingNow.length > 1 && onSwitch && othersOpen && (
+              <nav id="reading-switch" className="reading-switch" aria-label="Libros que estás leyendo">
                 <span className="reading-switch__label">Leyendo ahora</span>
                 {readingNow.map((b) => (
                   <button
@@ -372,8 +386,8 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
 
             {/* El mismo formulario de registro del calendario; si termina el libro, abre la reseña de terminar */}
             <div className="sheet-log">
-              <button type="button" className="sheet-btn sheet-btn--primary" aria-expanded={logging} onClick={() => setLogging((v) => !v)}>
-                <NotebookPen aria-hidden="true" />
+              <button type="button" className="sheet-btn sheet-btn--primary craft craft--terra" aria-expanded={logging} onClick={() => setLogging((v) => !v)}>
+                <Plus aria-hidden="true" />
                 Registrar lectura
               </button>
               {logging && (

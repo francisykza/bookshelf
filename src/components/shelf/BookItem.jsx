@@ -150,6 +150,8 @@ const NERVES = [0.2, 0.36, 0.52, 0.68];
 export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdge(book), scale = 1, className = '', ...rest }) {
   const edition = book.editionType;
   const device = edition === 'kindle';
+  // Grosor (px a la escala del escaparate): el de las páginas reales; el e-reader es una lámina y el estuche, fijo
+  const depth = device ? 5 : edition === 'audiobook' ? 12 : Math.round(Math.max(11, Math.min(22, 9 + (book.pageCount || 250) / 55)));
   const Tag = variant === 'shelf' ? 'button' : 'span';
   return (
     <Tag
@@ -160,11 +162,12 @@ export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdg
       data-device={device || undefined}
       data-bezel={device ? bezel(book) : undefined}
       aria-hidden={variant === 'shelf' ? undefined : 'true'}
-      style={{ '--spine': spine ?? spineColor(book), '--scale': scale }}
+      style={{ '--spine': spine ?? spineColor(book), '--scale': scale, '--d': `${depth}px` }}
     >
       <span className="pbook__body">
-        {!device && <span className="pbook__spine" />}
-        {!device && <span className={`pbook__pages${edge ? ` edge--${edge}` : ''}`} />}
+        {/* Caras del volumen (CSS 3D): lomo a la izquierda y canto superior; el e-reader, solo su marco */}
+        <span className="pbook__spine" />
+        <span className={`pbook__top${!device && edge ? ` edge--${edge}` : ''}`} />
         <span className="pbook__cover">
           <Cover book={book} />
           {edition === 'leatherbound' && (

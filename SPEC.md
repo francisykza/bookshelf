@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.43.0 · 2026-10-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.44.0 · 2026-10-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3058,3 +3058,23 @@ la puerta de repeticiones y voces; un fallo de audio no bloquea nada):
 | Recompensas reales | `chime` (al revelar una figura) y la campana del fin de sesión | se conservan |
 
 Pendiente: grabaciones reales de papel, cubierta, madera y sobre (con licencia registrada) para sustituir la síntesis.
+
+## 36. Materiales artesanales en biblioteca y ficha (1.44.0)
+
+Referencias: `docs/design/references/biblioteca-materiales-maqueta.png` y `ficha-libro-maqueta.png`; recursos y
+uso, en `docs/design/materiales-controles.md`. Estilos: `styles/craft-144.css` (solo biblioteca y ficha).
+
+- Controles `.craft` con tres bases vacías escaladas por nueve zonas: terracota (acciones principales), lino salvia
+  (lo seleccionado, siguiendo el estado real) y papel crema (buscador, herramientas, filtros y estados sin
+  seleccionar, pasos de página). Serif editorial (Cormorant Garamond) a 16,5–19 px con cifras modernas, marfil sobre
+  terracota y salvia, sepia sobre crema; foco visible, pulsación de 1 px (sin ella con movimiento reducido).
+- Biblioteca: la cabecera ilustrada termina en su balda; la barra es un panel de papel encajado en un compartimento
+  del mueble; los filtros toman el ancho de su palabra. Se conservan los encabezados «Leyendo · N», las tres portadas
+  por fila sin etiquetas y todas las herramientas.
+- Libro físico en CSS 3D (perspectiva moderada): cubierta real, lomo estrecho y canto superior con el bloque de
+  páginas marfil algo separado de la tapa; grosor según las páginas; sombra detrás y de contacto. El e-reader y el
+  estuche del audiolibro no tienen cantos de papel. La portada de la ficha usa el mismo libro con menos giro.
+- Ficha: estados en lino / papel; «Otras lecturas abiertas · Ver» despliega el selector de siempre (sin otras
+  lecturas, no aparece); progreso integrado bajo «Tu lugar en esta historia» con página editable, total real, pasos,
+  barra, porcentaje y «Te quedan N páginas» (terminado: «¡Terminado!»; sin paginación, solo el porcentaje); la
+  cinta cuelga entera bajo el cuaderno.
