@@ -119,8 +119,8 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
       setTexts({});
       setTouched(false);
       setConfirmCorrection(false);
-      if (!keepOpen) onDone?.(saved);
-      else onDone?.(saved, { keepOpen: true });
+      // Con el libro y los sellos de antes, quien lo abrió puede ofrecer «Deshacer» de la operación completa
+      onDone?.(saved, { keepOpen, before, figuresBefore, completes });
       // Solo tras el guardado confirmado y una vez por operación (el id del intento ya ha cambiado)
       if (completes) onComplete?.(before.id, saved);
     }, 0);

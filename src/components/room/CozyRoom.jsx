@@ -19,6 +19,7 @@ import { BaySailboats } from './BaySailboats';
 import { LaptopScreen, OpenBookPages } from './RoomSurfaces';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
 import { RoomSigns } from './RoomSigns';
+import { BED_BOOK_MIN_H, BedBook, RoomHeader, RoomNavPlaques, bedBookWidth } from './BedBook';
 import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
 import { RoomReflections } from './RoomReflections';
@@ -53,7 +54,7 @@ function OffscreenReporter({ fit, actionsRef, onChange }) {
   return null;
 }
 
-export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenFigure, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
+export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenFigure, onLogReading, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
   const { state, actions } = useLibrary();
   const { settings, books, progress } = state;
   const reducedMotion = useReducedMotion();
@@ -61,6 +62,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   const [label, setLabel] = useState(null);
   const [spotIndex, setSpotIndex] = useState(0);
   const reading = currentBook(books, settings);
+  // Lectura recién terminada: el libro de la cama la muestra terminada hasta que eliges otra (sin inventar datos)
+  const finished = reading ? null : books.find((b) => b.id === settings.currentBookId && b.status === 'read');
   // Ambiente del libro: solo el de la lectura actual (elegida por ti o la automática de siempre), nunca al
   // pasar por encima de otro libro; desactivable en «Tu cuenta»
   const vibe = settings.bookVibe !== false && reading ? getDeterministicVibe(reading) : null;
@@ -166,6 +169,15 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
               </button>
             </div>
           )}
+          {/* Primer plano (SPEC §38): cabecera, accesos y el libro grande de la cama, en píxeles de pantalla */}
+          <RoomHeader />
+          {fit.panelH >= BED_BOOK_MIN_H && (
+            <>
+              <RoomNavPlaques fit={fit} bookTop={fit.panelH - Math.round(bedBookWidth(fit) / (1200 / 595)) + 8} onOpenShelf={onOpenShelf} onOpenDiary={onOpenLaptop} />
+              <BedBook book={reading ?? finished} fit={fit} onOpenBook={onOpenBook} onLog={(book) => onLogReading?.(book)} onChoose={onOpenShelf} hidden={modalOpen} />
+            </>
+          )}
+          {fit.panelH < BED_BOOK_MIN_H && <RoomNavPlaques fit={fit} onOpenShelf={onOpenShelf} onOpenDiary={onOpenLaptop} />}
           {guide?.visible && inRoom && <OnboardingGuide guide={guide} fit={fit} reducedMotion={reducedMotion} />}
           {/* Etiqueta informativa: interfaz en píxeles de pantalla, nunca dentro del lienzo escalado (ni durante
               el cambio de habitación, ni con la guía o un panel abiertos) */}
@@ -196,7 +208,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         <div className="room-surfaces">
           <RoomShelfBooks books={books} currentId={reading?.id} onOpenShelf={onOpenShelf} onHover={onHover} active={live} scale={fit.scale} awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))} />
           <LaptopScreen today={today} running={live && !reducedMotion} />
-          <OpenBookPages book={reading} />
+          {/* Con el libro grande de la cama, el libro pintado de la escena no repite los datos */}
+          {fit.panelH < BED_BOOK_MIN_H && <OpenBookPages book={reading} />}
         </div>
 
         {/* 10 · luz y atmósfera (sin geometría heredada) */}

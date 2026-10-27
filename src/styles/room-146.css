@@ -1,0 +1,737 @@
+/* ── 1.46.0 · Habitación con el libro abierto en primer plano (SPEC §38) ──────────────────────────────────────
+   Referencia: docs/design/references/habitacion-libro-abierto-maqueta.png. Recursos: libro abierto en blanco
+   (assets/room/libro-abierto.webp), placa de papel marfil con ramita (assets/room/placa-papel-ramita.webp) y
+   botón terracota cosido (assets/room/boton-terracota-cosido.webp). El texto siempre es HTML encima. Acotado a la
+   habitación (cabecera, esquina, accesos, libro de la cama, aviso de «Deshacer») y a la vista de registro. */
+
+/* Cabecera discreta: sin placa ni barra de estado, dentro del área segura */
+.room-header {
+  position: absolute;
+  z-index: 6;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  max-width: 46%;
+  color: #fff8ea;
+  text-shadow:
+    0 1px 2px rgb(40 22 8 / 0.55),
+    0 0 14px rgb(40 22 8 / 0.35);
+  pointer-events: none;
+}
+
+.room-header h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 8vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.room-header p {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.2;
+}
+
+/* Esquina: «Ambiente» y «Guías» en papel marfil (sustituyen a las pestañas de madera y latón) */
+.room-corner[data-146] {
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.room-corner[data-146] .corner-paper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 6px;
+  --craft-edge: 9px;
+  color: #3d2817;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow: none;
+  box-shadow: none !important;
+  filter: drop-shadow(0 2px 3px rgb(40 22 8 / 0.28));
+}
+
+.room-corner[data-146] .corner-paper svg {
+  width: 18px;
+  height: 18px;
+  color: #6b4423;
+  stroke-width: 1.7;
+}
+
+.room-corner[data-146] .corner-paper[aria-expanded='true'] {
+  transform: translateY(1px);
+  filter: drop-shadow(0 1px 1px rgb(40 22 8 / 0.3));
+}
+
+.room-corner[data-146] .corner-paper::after {
+  display: none;
+}
+
+.ambient-menu {
+  position: relative;
+}
+
+/* Hojas de los dos menús: papel marfil con contorno sepia */
+.corner-sheet {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(272px, calc(100vw - 24px));
+  max-height: calc(100dvh - 90px);
+  overflow-y: auto;
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 1.5px solid #9a7146;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fdf7ea, #f7ecd6);
+  color: #3d2817;
+  box-shadow: 0 10px 26px rgb(40 22 8 / 0.3);
+  list-style: none;
+  animation: corner-sheet-in 140ms ease-out;
+}
+
+@keyframes corner-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.ambient-menu .corner-sheet {
+  right: auto;
+  left: 0;
+  transform-origin: top left;
+}
+
+@media (max-width: 420px) {
+  .ambient-menu .corner-sheet {
+    left: auto;
+    right: -80px;
+  }
+}
+
+.corner-sheet__heading {
+  margin: 10px 2px 4px;
+  color: #7a5534;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.corner-sheet__heading:first-child {
+  margin-top: 2px;
+}
+
+.ambient-menu__times {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.ambient-menu__times button {
+  min-height: 40px;
+  padding: 0 2px;
+  --craft-edge: 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.ambient-menu__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 1px dashed rgb(154 113 70 / 0.4);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.ambient-menu__toggle i {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 22px;
+  border: 1.5px solid #9a7146;
+  border-radius: 999px;
+  background: #efe0c2;
+  transition: background 140ms ease;
+}
+
+.ambient-menu__toggle i::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fffaf0;
+  box-shadow: 0 1px 2px rgb(40 22 8 / 0.35);
+  transition: transform 140ms ease;
+}
+
+.ambient-menu__toggle[aria-checked='true'] i {
+  background: #7d9473;
+}
+
+.ambient-menu__toggle[aria-checked='true'] i::after {
+  transform: translateX(16px);
+}
+
+.ambient-menu__toggle:focus-visible,
+.corner-sheet__link:focus-visible,
+.corner-sheet button:focus-visible {
+  outline: 2px solid #8a3f26;
+  outline-offset: 2px;
+}
+
+.corner-sheet__more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 10px;
+}
+
+.corner-sheet__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #6b4423;
+  font: inherit;
+  font-size: 0.88rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.corner-sheet__link svg {
+  width: 16px;
+  height: 16px;
+}
+
+.corner-sheet__link.corner-btn--cloud::after {
+  top: 8px;
+  left: 10px;
+}
+
+.guides-menu__list.corner-sheet button {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  border-bottom: 1px dashed rgb(154 113 70 / 0.4);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+/* Accesos de papel marfil con ramita: «Mi biblioteca», «Mi diario» y «Rincón social» */
+.room-plaque,
+.panorama-nav .panorama-nav__btn--next {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 16px 2px 12px;
+  border: 0;
+  border-radius: 0;
+  background: url('/assets/room/placa-papel-ramita.webp') center / 100% 100% no-repeat;
+  color: #3d2817;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: none;
+  filter: drop-shadow(0 2px 3px rgb(40 22 8 / 0.3));
+  transition:
+    transform 110ms ease,
+    filter 110ms ease;
+}
+
+.room-plaque {
+  position: absolute;
+  z-index: 6;
+}
+
+.room-plaque svg,
+.panorama-nav__btn--next .panorama-nav__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: #6b4423;
+  fill: none;
+  stroke-width: 1.7;
+}
+
+.room-plaque i {
+  color: #6b4423;
+  font-style: normal;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.room-plaque:active,
+.panorama-nav .panorama-nav__btn--next:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: drop-shadow(0 1px 1px rgb(40 22 8 / 0.3));
+}
+
+.room-plaque:focus-visible,
+.panorama-nav .panorama-nav__btn--next:focus-visible {
+  outline: 2px solid #fff8ea;
+  outline-offset: 2px;
+}
+
+.panorama-nav .panorama-nav__btn--next {
+  right: max(8px, env(safe-area-inset-right));
+  top: 47%;
+}
+
+.panorama-nav .panorama-nav__btn--next .panorama-nav__label {
+  position: static;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: inherit;
+  font-weight: inherit;
+  opacity: 1;
+  transform: none;
+}
+
+.panorama-nav .panorama-nav__btn--next > svg:last-child {
+  width: 13px;
+  height: 13px;
+  color: #6b4423;
+  stroke-width: 2.4;
+}
+
+/* El libro abierto de la cama: ilustración de fondo, contenido real encima */
+.bed-book {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: max(-10px, calc(env(safe-area-inset-bottom) - 22px));
+  transform: translateX(-51%);
+  background: center / 100% 100% no-repeat;
+  filter: drop-shadow(0 -2px 10px rgb(40 22 8 / 0.22));
+  color: #3a2616;
+  /* Solo las páginas y el botón reciben toques: lo transparente del recurso deja pasar a los auriculares */
+  pointer-events: none;
+  font-family: var(--font-display);
+}
+
+.bed-book__page {
+  pointer-events: auto;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+/* Medidas sobre el recurso (1200 × 595): página izquierda 190–570 × 60–400; derecha 640–1060 × 50–470 */
+.bed-book__page--left {
+  left: 16.5%;
+  top: 12%;
+  width: 30%;
+  height: 54%;
+  justify-content: flex-start;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.bed-book__page--right {
+  left: 54.5%;
+  top: 10%;
+  width: 33.5%;
+  height: 70%;
+  align-items: flex-start;
+}
+
+.bed-book__page--left:focus-visible {
+  outline: 2px solid #8a3f26;
+  outline-offset: 2px;
+}
+
+.bed-book__kicker {
+  margin-bottom: calc(var(--bw) * 0.012);
+  color: #6b5442;
+  font-family: var(--font-sans);
+  font-size: max(9px, calc(var(--bw) * 0.021));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.bed-book__title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  font-size: max(15px, calc(var(--bw) * 0.042));
+  font-weight: 600;
+  line-height: 1.06;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.bed-book__title[data-size='medium'] {
+  font-size: max(14px, calc(var(--bw) * 0.037));
+}
+
+.bed-book__title[data-size='long'] {
+  -webkit-line-clamp: 5;
+  font-size: max(13px, calc(var(--bw) * 0.031));
+}
+
+.bed-book__author {
+  margin-top: calc(var(--bw) * 0.012);
+  color: #5a4130;
+  font-size: max(12px, calc(var(--bw) * 0.03));
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.bed-book__progress {
+  font-size: max(18px, calc(var(--bw) * 0.05));
+  font-weight: 600;
+  line-height: 1.05;
+  font-variant-numeric: lining-nums;
+}
+
+.bed-book__secondary {
+  color: #4a3424;
+  font-size: max(12px, calc(var(--bw) * 0.031));
+  font-variant-numeric: lining-nums;
+}
+
+.bed-book__meter {
+  display: block;
+  width: 92%;
+  height: max(5px, calc(var(--bw) * 0.013));
+  margin: calc(var(--bw) * 0.012) 0 calc(var(--bw) * 0.008);
+  border-radius: 999px;
+  background: rgb(154 132 104 / 0.3);
+  overflow: hidden;
+}
+
+.bed-book__meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #7d9473;
+}
+
+.bed-book__rest {
+  color: #4a3424;
+  font-size: max(11.5px, calc(var(--bw) * 0.028));
+  font-style: italic;
+}
+
+.bed-book__action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  margin-top: auto;
+  padding: 0 10px 2px;
+  border: 0;
+  background: url('/assets/room/boton-terracota-cosido.webp') center / 100% 100% no-repeat;
+  color: #fff6e6;
+  font-family: var(--font-display);
+  font-size: max(15px, calc(var(--bw) * 0.038));
+  font-weight: 600;
+  white-space: nowrap;
+  text-shadow: 0 1px 1px rgb(60 20 8 / 0.45);
+  filter: drop-shadow(0 2px 2px rgb(40 22 8 / 0.3));
+  transition:
+    transform 110ms ease,
+    filter 110ms ease;
+}
+
+/* Superficie de pulsación cómoda (≥ 44 px) aunque el botón dibujado sea más bajo */
+.bed-book__action::before {
+  content: '';
+  position: absolute;
+  inset: -6px -4px;
+}
+
+.bed-book__action svg {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  stroke-width: 2.4;
+}
+
+.bed-book__action:active {
+  transform: translateY(1px);
+  filter: drop-shadow(0 1px 1px rgb(40 22 8 / 0.3));
+}
+
+.bed-book__action:focus-visible {
+  outline: 2px solid #3d2817;
+  outline-offset: 3px;
+}
+
+/* La habitación con un panel delante no ofrece el libro (queda bajo el velo) */
+.room-camera[data-modal='true'] .bed-book,
+.room-camera[data-modal='true'] .room-plaque {
+  pointer-events: none;
+}
+
+/* Vista «Registrar lectura» */
+.panel--log {
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  scroll-padding-bottom: 96px;
+  padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
+  border: 1.5px solid #9a7146;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fdf7ea, #f7ecd6);
+  color: #3d2817;
+  box-shadow: 0 18px 40px rgb(40 22 8 / 0.35);
+}
+
+.panel-veil[data-variant='log'] {
+  align-items: start;
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+
+.log-sheet__head {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.log-sheet__cover {
+  display: block;
+  width: 58px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow:
+    inset 3px 0 4px rgb(0 0 0 / 0.18),
+    0 3px 6px rgb(40 22 8 / 0.3);
+}
+
+.log-sheet__cover img,
+.log-sheet__cover > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.log-sheet__kicker {
+  margin: 0;
+  color: #7a5534;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.log-sheet__title {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.log-sheet__author,
+.log-sheet__now {
+  margin: 2px 0 0;
+  color: #5a4130;
+  font-size: 0.9rem;
+}
+
+.log-sheet__author {
+  font-style: italic;
+}
+
+.log-sheet__date {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.log-sheet__date input {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1.5px solid #b08d57;
+  border-radius: 10px;
+  background: #fffaf0;
+  color: #3d2817;
+  font: inherit;
+}
+
+/* El formulario dentro de la vista: modos de papel/lino y acciones en el flujo (nunca encima de los campos) */
+.panel--log .reading-form {
+  position: static;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.panel--log .reading-form__actions {
+  position: static;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.panel--log .reading-form__modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.panel--log .reading-form__modes button {
+  min-height: 44px;
+  padding: 0 4px;
+  border-radius: 10px;
+  border: 1.5px solid #b08d57;
+  background: #fffaf0;
+  color: #3d2817;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.panel--log .reading-form__modes button[aria-checked='true'] {
+  border-color: #5f7656;
+  background: #7d9473;
+  color: #fbf6ec;
+}
+
+.panel--log .reading-form__save {
+  min-height: 46px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 0;
+  background: url('/assets/room/boton-terracota-cosido.webp') center / 100% 100% no-repeat;
+  color: #fff6e6;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  box-shadow: none;
+  text-shadow: 0 1px 1px rgb(60 20 8 / 0.45);
+}
+
+.panel--log .reading-form__save:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Aviso tras guardar, sobre el libro y dentro del área segura */
+.log-toast {
+  position: fixed;
+  z-index: 900;
+  left: 50%;
+  top: calc(max(14px, env(safe-area-inset-top)) + 64px);
+  width: max-content;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 8px 8px 14px;
+  border: 1.5px solid #9a7146;
+  border-radius: 12px;
+  background: #fbf3e2;
+  color: #3d2817;
+  box-shadow: 0 8px 20px rgb(40 22 8 / 0.3);
+  font-size: 0.92rem;
+  transform: translateX(-50%);
+  animation: corner-sheet-in 160ms ease-out;
+}
+
+.log-toast button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1.5px solid #8a3f26;
+  border-radius: 10px;
+  background: #fffaf0;
+  color: #8a3f26;
+  font: inherit;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corner-sheet,
+  .log-toast {
+    animation: none;
+  }
+
+  .room-plaque,
+  .bed-book__action {
+    transition: none;
+  }
+}
+
+.room-corner[data-146] .guides-toggle__dot {
+  top: 3px;
+  right: 3px;
+}
+
+/* En horizontal el acceso social baja al pie (en el centro taparía la mesita): sin estirarse entre arriba y abajo */
+@media (min-aspect-ratio: 1/1) {
+  .panorama-nav .panorama-nav__btn--next {
+    top: auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .room-header h2 {
+    font-size: 1.6rem;
+  }
+
+  .room-header p {
+    font-size: 0.82rem;
+  }
+
+  .room-corner[data-146] .corner-paper {
+    font-size: 0.95rem;
+    padding: 0 3px;
+  }
+}

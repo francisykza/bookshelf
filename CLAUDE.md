@@ -49,6 +49,11 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
 - **Fidelidad con maquetas**: comparar capturas al mismo tamaño (390 px; revisar 360, 430 y escritorio) y declarar
   las diferencias que queden. No usar una maqueta como fondo ni recortar botones con texto de ella. Si falta un
   recurso imprescindible, decirlo y pedirlo en vez de improvisarlo.
+- **Maquetas como guía, no como relleno**: no inventar funciones, datos, iconos ni adornos para llenar huecos de una
+  maqueta; no implementar controles (p. ej. escaneo) solo porque aparezcan en ella. Separar ilustración, recursos,
+  contenido dinámico y controles reales.
+- **Efectos**: solo respuestas discretas (presión, sonido breve por acción); respetar silencio, volumen y movimiento
+  reducido; nada de sonido antes de una interacción.
 - **Al terminar un bloque**: subir la versión en `src/diag.js`, `package.json`, `public/sw.js` (constante `VERSION`)
   y la cabecera de `SPEC.md`; añadir su sección a `SPEC.md`; y anotarlo en `docs/ESTADO.md` (apartado 0).
 

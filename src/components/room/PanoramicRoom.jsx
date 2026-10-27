@@ -3,6 +3,7 @@
 // Un único controlador de gesto en el viewport (swipe horizontal ≥ 50 px y |dx| > |dy| × 1,3), controles
 // laterales accesibles y flechas del teclado solo con el foco en el panorama. La habitación activa es estado de
 // interfaz: cambiarla no toca la biblioteca, el temporizador, el audio ni la sesión.
+import { Users } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MAIN_ROOM, SOCIAL_ROOM, SWIPE_MIN, SWIPE_RATIO, swipeTarget } from '../../scene/panorama';
 import { ROOMS } from '../../scene/sceneMap';
@@ -198,14 +199,16 @@ export function PanoramicRoom({ locked = false, reducedMotion = false, renderMai
               className="panorama-nav__btn panorama-nav__btn--next"
               onClick={() => go(SOCIAL_ROOM)}
               disabled={social.status === 'loading'}
-              aria-label={social.status === 'loading' ? 'Ir al Salón Social (cargando…)' : 'Ir al Salón Social'}
+              aria-label={social.status === 'loading' ? 'Ir al Rincón social (cargando…)' : 'Ir al Rincón social'}
             >
+              {/* 1.46: acceso de papel siempre legible, también sin guías */}
+              <Users className="panorama-nav__icon" aria-hidden="true" />
+              <span className="panorama-nav__label" aria-hidden="true">
+                Rincón social
+              </span>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M7.5 3.5 L13.5 10 L7.5 16.5" />
               </svg>
-              <span className="panorama-nav__label" aria-hidden="true">
-                Salón Social
-              </span>
             </button>
           ) : (
             <button ref={toMainRef} type="button" className="panorama-nav__btn panorama-nav__btn--prev" onClick={() => go(MAIN_ROOM)} aria-label="Volver a Mi Habitación">

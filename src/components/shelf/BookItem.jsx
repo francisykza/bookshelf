@@ -150,8 +150,13 @@ const NERVES = [0.2, 0.36, 0.52, 0.68];
 export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdge(book), scale = 1, className = '', ...rest }) {
   const edition = book.editionType;
   const device = edition === 'kindle';
-  // Grosor (px a la escala del escaparate): el de las páginas reales; el e-reader es una lámina y el estuche, fijo
-  const depth = device ? 5 : edition === 'audiobook' ? 12 : Math.round(Math.max(11, Math.min(22, 9 + (book.pageCount || 250) / 55)));
+  // Encuadernación (1.46, SPEC §39) según la edición guardada: tapas rígidas (grosor de tapa ≥ 0,4 cm), rústica
+  // (bolsillo), lector electrónico o estuche de audiolibro. Solo cambia el material, nunca la portada.
+  const binding = device ? 'device' : edition === 'audiobook' ? 'case' : (EDITIONS[edition]?.cm ?? 0.12) >= 0.4 ? 'hard' : 'soft';
+  // Grosor (px a la escala del escaparate): el de las páginas reales más las tapas; el e-reader es una lámina y el
+  // estuche, fijo. La rústica es más ligera que la tapa dura con las mismas páginas
+  const pages = Math.max(7, Math.min(20, 6 + (book.pageCount || 250) / 55));
+  const depth = device ? 5 : binding === 'case' ? 12 : Math.round(binding === 'hard' ? pages + 3 : pages * 0.85);
   const Tag = variant === 'shelf' ? 'button' : 'span';
   return (
     <Tag
@@ -159,6 +164,7 @@ export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdg
       className={`pbook ${className}`.trim()}
       data-variant={variant}
       data-edition={edition}
+      data-binding={binding}
       data-device={device || undefined}
       data-bezel={device ? bezel(book) : undefined}
       aria-hidden={variant === 'shelf' ? undefined : 'true'}
@@ -170,6 +176,8 @@ export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdg
         <span className={`pbook__top${!device && edge ? ` edge--${edge}` : ''}`} />
         <span className="pbook__cover">
           <Cover book={book} />
+          {/* Luz en los bordes y grano del material: capa encima de la portada original, sin redibujarla */}
+          <span className="pbook__finish" aria-hidden="true" />
           {edition === 'leatherbound' && (
             <>
               <span className="pbook__corner pbook__corner--top" />

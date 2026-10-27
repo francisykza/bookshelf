@@ -115,7 +115,8 @@ async function geometry(page) {
           const owner = el?.closest('[data-id], button, a, [role="button"]');
           return { sx: Math.round(sx), sy: Math.round(sy), hit: owner?.dataset?.id ?? owner?.className?.toString().split(' ')[0] ?? el?.tagName };
         });
-        hotspots.push({ id, onScreen: pts.length > 0, points: results, ok: pts.length === 0 || results.some((p) => p.hit === id) });
+        hotspots.push({ id, onScreen: pts.length > 0, points: results, // 1.46: con el libro grande de la cama delante, el libro pintado se abre desde él (su página izquierda)
+        ok: pts.length === 0 || results.some((p) => p.hit === id || (id === 'book' && p.hit?.startsWith('bed-book'))) });
       }
     }
     const m = new DOMMatrixReadOnly(getComputedStyle(track).transform);
@@ -405,11 +406,14 @@ test('15 · ir y volver varias veces no duplica capas ni controles', async ({ pa
 });
 
 test('16 · estados de iluminación', async ({ page }, info) => {
-  for (let i = 0; i < 3; i++) {
-    const tod = await page.locator('.tod').getAttribute('data-tod');
+  // 1.46: la hora del día se elige en «Ambiente» (mañana, atardecer, noche)
+  for (const [name, tod] of [['Mañana', 'morning'], ['Atardecer', 'sunset'], ['Noche', 'night']]) {
+    await page.getByRole('button', { name: 'Ambiente' }).click();
+    await page.getByRole('radio', { name: new RegExp(name) }).click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.tod')).toHaveAttribute('data-tod', tod);
     await page.waitForTimeout(500);
     await shot(page, info, `luz-${tod}`);
-    await page.locator('.corner-btn[data-id="time"]').click();
   }
 });
 

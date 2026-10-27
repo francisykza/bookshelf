@@ -198,6 +198,32 @@ test('libro: portadilla editorial de la lectura actual, sin portada pegada', asy
     const st = JSON.parse(localStorage.getItem('bookshelf:v1'));
     return st.books.find((b) => b.id === st.settings.currentBookId);
   });
+  if (page.viewportSize().height >= 520) {
+    // 1.46 (SPEC §38): libro grande de la cama con contenido real, sin ornamentos añadidos ni portada pegada
+    const book = page.locator('.bed-book');
+    await expect(book).toHaveAttribute('data-state', 'reading');
+    await expect(book.locator('.bed-book__page--left .bed-book__kicker')).toHaveText('Tu lectura actual');
+    await expect(book.locator('.bed-book__title')).toHaveText(current.title);
+    await expect(book.locator('.bed-book__author')).toHaveText(current.author);
+    await expect(book.locator('.bed-book__page--right .bed-book__kicker')).toHaveText('Por donde vas');
+    await expect(book.locator('.bed-book__progress')).toHaveText('Página 61');
+    await expect(book.locator('.bed-book__secondary')).toHaveText(/^de 496 · 12,3\s%$/);
+    await expect(book.locator('.bed-book__rest')).toHaveText('Te quedan 435 páginas');
+    await expect(book.locator('[role="progressbar"]')).toHaveAttribute('aria-valuenow', '12');
+    await expect(book.locator('img, .gen-cover')).toHaveCount(0);
+    // Sin duplicar los datos en el libro pintado de la escena
+    await expect(page.locator('.open-pages')).toHaveCount(0);
+    // «Registrar lectura» con superficie de pulsación cómoda, dentro de la pantalla
+    const btn = await book.getByRole('button', { name: 'Registrar lectura' }).boundingBox();
+    expect(btn.height).toBeGreaterThanOrEqual(36);
+    expect(btn.y + btn.height).toBeLessThanOrEqual(page.viewportSize().height);
+    // La página izquierda abre la ficha; abrirla no cambia el progreso
+    await book.locator('.bed-book__page--left').click();
+    await expect(page.locator('.book-sheet')).toBeVisible();
+    const after = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.id === 'hail-mary').currentPage);
+    expect(after).toBe(61);
+    return;
+  }
   const left = page.locator('.open-pages__page--left');
   const right = page.locator('.open-pages__page--right');
   await expect(left.locator('.open-pages__kicker')).toHaveText('Lectura actual');
@@ -249,15 +275,21 @@ test('libro: título largo, sin portada, sin total de páginas y sin lectura', a
     b.trackBy = 'percent';
     b.currentPercent = 37.5;
   });
-  await expect(page.locator('.open-pages__title')).toContainText('Un título larguísimo');
-  const t = await page.locator('.open-pages__title').evaluate((el) => ({ clamped: el.scrollHeight > el.clientHeight + 1, overflowPage: el.closest('.open-pages__page').scrollWidth > el.closest('.open-pages__page').clientWidth + 1, size: parseFloat(getComputedStyle(el).fontSize) }));
-  expect(t.clamped).toBe(true);
+  const big = page.viewportSize().height >= 520;
+  const P = big ? '.bed-book' : '.open-pages';
+  await expect(page.locator(`${P}__title`)).toContainText('Un título larguísimo');
+  const t = await page.locator(`${P}__title`).evaluate((el) => ({ clamped: el.scrollHeight > el.clientHeight + 1, overflowPage: el.parentElement.scrollWidth > el.parentElement.clientWidth + 1, size: parseFloat(getComputedStyle(el).fontSize) }));
+  // En el libro de la escena se recorta con puntos; en el grande cabe en varias líneas sin salirse de la página
+  if (!big) expect(t.clamped).toBe(true);
   expect(t.overflowPage).toBe(false);
+  if (big) expect(await page.locator('.bed-book__page--left').evaluate((p) => p.scrollHeight <= p.clientHeight + 1)).toBe(true);
   // Reflujo con un tamaño mínimo, no reducción ilimitada
-  expect(t.size).toBeGreaterThanOrEqual(28);
+  // (en el libro grande, 13 px de pantalla como mínimo; en el de la escena, 28 px de la ilustración)
+  expect(t.size).toBeGreaterThanOrEqual(big ? 13 : 28);
   // Sin total: el porcentaje como dato, sin «Página» inventada
-  await expect(page.locator('.open-pages__progress')).toHaveText(/^37,5\s%$/);
-  await expect(page.locator('.open-pages__secondary')).toHaveText('leído');
+  await expect(page.locator(`${P}__progress`)).toHaveText(/^37,5\s%$/);
+  await expect(page.locator(`${P}__secondary`)).toHaveText('leído');
+  if (big) await expect(page.locator('.bed-book__rest')).toHaveCount(0);
   // Sin ninguna lectura en curso
   await page.addInitScript(
     setStored((st) => {
@@ -269,6 +301,14 @@ test('libro: título largo, sin portada, sin total de páginas y sin lectura', a
   );
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  if (big) {
+    // Sin lectura activa: se ofrece elegir un libro (sin cifras)
+    await expect(page.locator('.bed-book')).toHaveAttribute('data-state', 'empty');
+    await expect(page.locator('.bed-book__progress')).toHaveCount(0);
+    await page.locator('.bed-book').getByRole('button', { name: 'Elegir un libro' }).click();
+    await expect(page.locator('.library[data-open="true"]')).toBeVisible();
+    return;
+  }
   await expect(page.locator('.open-pages__title')).toHaveText('Tu próxima historia empieza aquí');
   await expect(page.locator('.open-pages__page--right')).toContainText('Elige un libro en tu librería');
 });
@@ -308,17 +348,18 @@ test('lomos: apoyados en la balda, sin cruzarse, deterministas, dorado no genera
   if (clip.width > 20 && clip.height > 20) await shot(page, info, 'diegetic-lomos', clip);
 });
 
-test('navegación discreta: chevrón accesible y «Fuera de vista» dentro de Guías', async ({ page }, info) => {
+test('navegación: acceso «Rincón social» legible y «Fuera de vista» dentro de Guías', async ({ page }, info) => {
   await load(page);
   const next = page.locator('.panorama-nav__btn--next');
-  await expect(next).toHaveAttribute('aria-label', 'Ir al Salón Social');
+  await expect(next).toHaveAttribute('aria-label', 'Ir al Rincón social');
   const box = await next.boundingBox();
   expect(box.width).toBeGreaterThanOrEqual(44);
   expect(box.height).toBeGreaterThanOrEqual(44);
-  expect(box.width).toBeLessThanOrEqual(60);
-  const glyph = await next.locator('svg').boundingBox();
-  expect(glyph.width).toBeGreaterThanOrEqual(16);
-  expect(glyph.width).toBeLessThanOrEqual(24);
+  // 1.46: placa de papel con icono y nombre siempre visibles (también sin guías), dentro de la pantalla
+  await expect(next.locator('.panorama-nav__label')).toBeVisible();
+  await expect(next.locator('.panorama-nav__label')).toHaveText('Rincón social');
+  expect(box.height).toBeLessThanOrEqual(60);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize().width);
   await expect(page.locator('.offscreen')).toHaveCount(0);
   await page.locator('.guides-toggle').click();
   await expect(page.getByRole('button', { name: 'Repetir la guía de la habitación' })).toBeVisible();

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.45.0 · 2026-10-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.46.0 · 2026-10-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3121,3 +3121,101 @@ moderado, reflejo tenue y borde en sombra. Datos reales; la planta y el vaso sig
 
 La maqueta muestra una estantería más ancha y frontal: con las baldas actuales del fondo (≈ 195 px de la
 ilustración por balda y en perspectiva) los objetos se ven más pequeños. Hace falta un fondo con esas baldas.
+
+## 38. Habitación con el libro abierto en primer plano y registro enfocado (1.46.0)
+
+Referencia: `docs/design/references/habitacion-libro-abierto-maqueta.png` (sustituye a las versiones con tarjeta de
+lectura flotante). Recursos entregados (originales en `art-inbox/maqueta-146/`, fuera de git): libro abierto en
+blanco con cinta verde, botón terracota cosido, placa de papel marfil con ramita y un fondo de habitación para móvil.
+Derivados en `public/assets/room/` (`libro-abierto.webp` 1200 × 595, `boton-terracota-cosido.webp`,
+`placa-papel-ramita.webp`): recorte del margen transparente y WebP; nada se redibuja.
+
+### 38.1 Composición
+- Se conserva la ilustración de la habitación (941 × 1672) con todas sus capas, figuras, té, vela y lámpara. El
+  fondo para móvil entregado **no** se ha adoptado: no tiene vaso de té, vela ni lámpara completa (funciones del
+  temporizador y la iluminación) y obligaría a recalibrar hotspots, baldas de figuras, agua y pantalla. Queda en
+  `art-inbox/maqueta-146/habitacion-fondo-movil.webp` por si se decide migrar.
+- Cabecera «Mi rincón» / «La biblioteca junto al mar» (texto HTML, sin placa, dentro del área segura superior).
+
+### 38.2 «Ambiente» y «Guías»
+- Las cinco pestañas de madera y latón se sustituyen por dos botones de papel marfil (`.craft--paper`).
+- «Ambiente» agrupa: hora del día (Mañana, Atardecer, Noche y «Seguir el reloj» = `timeAuto`), iluminación
+  (lámpara y vela, con sus sonidos) y sonido (ambiente del mar y sonidos al tocar). Al final, «Tu cuenta y copias»
+  (con el estado de la nube) y «Pantalla completa», para no perder funciones. Mismas preferencias de siempre.
+- «Guías» mantiene su menú (repetir guía, insignias, «Fuera de vista»).
+
+### 38.3 Accesos y libro de la cama
+- «Mi biblioteca» (anclado a la balda), «Mi diario» (canto de la mesa; abre el portátil) y «Rincón social» (el
+  control del panorama, ahora placa legible a la derecha) son botones reales siempre visibles, con o sin guías.
+  Las anclas viven en `HOTSPOTS.shelf.plaque` y `HOTSPOTS.laptop.plaque` y se acotan al panel.
+- `BedBook` (en la capa de pantalla del escenario, paneles de ≥ 520 px de alto): página izquierda «Tu lectura
+  actual», título (hasta 4–5 líneas, mínimo 13 px) y autoría, y abre la ficha; página derecha «Por donde vas»,
+  página y total, porcentaje con barra (`progressbar`), páginas restantes y «Registrar lectura» (terracota cosido,
+  área táctil ≥ 44 px). Estados: sin total (sin porcentaje ni restantes), por porcentaje, terminada (la última
+  lectura elegida pasada a leída: «Elegir otra lectura») y sin lectura («Elegir un libro» → biblioteca).
+- Con el libro grande, el libro pintado de la escena no repite los datos. En horizontal bajo (< 520 px) sigue el de
+  la escena (§21.2). Lo transparente del recurso no intercepta toques (los auriculares siguen accesibles).
+
+### 38.4 Registrar lectura
+- Panel `log` (`ReadingLogSheet`): portada compacta, título, autoría y «Ahora: …», fecha (hasta hoy) y el mismo
+  `ReadingEntryForm` (modos «He leído», «Voy por la página» y «Porcentaje», un solo campo, vista previa con
+  posición final y avance, validación, correcciones hacia atrás y guardado idempotente). En esta vista las acciones
+  van en el flujo, no fijas sobre los campos; el campo enfocado se recoloca al cambiar el visor (teclado).
+- Al guardar: sonido de hojas (`pageLeaves`), se cierra y aparece «Lectura registrada · +N páginas · Deshacer»
+  durante 8 s. «Deshacer» usa `revertLog` (registro, posición del libro y sellos) y guarda. Si el registro termina
+  el libro, se abre su reseña como en la ficha (sin aviso de deshacer).
+- El modelo de registro no tiene nota por sesión: no se ha añadido.
+
+### 38.5 Otros
+- Buscador: se quita «(respaldo automático)»; queda la atribución «Resultados de …».
+- Sonidos: abrir el registro reutiliza `monthTurn` (paso de página); confirmar usa `pageLeaves` (nuevo, sintetizado).
+
+## 39. Acabado físico de los libros calibrado con una portada real (1.46.0)
+
+Calibrado con *The Ballad of Songbirds and Snakes* (portada original entregada por Francisco; en la app, la misma
+ilustración de Open Library `b/id/14421833`, la que devuelve el buscador). La portada de Open Library **por ISBN**
+(9781338635171) es un escaneo de biblioteca con pegatina: no sirve como referencia ni debería preferirse.
+
+- Un solo componente, `PhysicalBook` (biblioteca, ficha y rincón): portada original sin redibujar ni recortar y,
+  encima, `.pbook__finish` (luz rasante, bordes algo apagados y grano de papel muy tenue en `soft-light`).
+- Giro 3D reducido (`rotateY` 17° → 10°, `rotateX` −7° → −4°; ficha y rincón 8° / −3°): volumen visible sin acortar
+  ni deformar el título.
+- `data-binding` según la edición guardada (sin datos nuevos): `hard` si el grosor de tapa de `EDITIONS` es
+  ≥ 0,4 cm (tapa dura, cantos pintados, cuero, tela) → cartón visible, bisagra marcada, lomo con nervios, canto con
+  las dos tapas y +3 px de grosor; `soft` (bolsillo, anotada) → cubierta fina sin bisagra y 85 % del grosor;
+  `device` (lector) → lámina de 5 px con reflejo mate; `case` (audiolibro) → estuche de acrílico translúcido con el
+  indicador en la esquina, fuera de la portada.
+- Cantoneras doradas solo en «Cuero y oro», como antes; ningún borde dorado general.
+- El lomo toma el color de la portada (`useCoverColor`, ya existente); mientras se analiza, el determinista.
+- Prueba: `e2e/v146.spec.js`.
+
+## 40. Buscador por título, autor o ISBN y elección de edición (1.46.0)
+
+Proveedores reales del proyecto, sin clave: Google Books y, si no responde (p. ej. 429 por cuota) o no encuentra
+nada, Open Library. Reglas puras en `src/domain/bookSearch.js` (pruebas en `__tests__/bookSearch.test.js`).
+
+- **ISBN**: un ISBN-10 o -13 válido (guiones y espacios permitidos, dígito de control comprobado) se busca como tal
+  (`isbn:` en Google; `search.json?isbn=` y `/isbn/X.json` en Open Library, que da la edición exacta) y su
+  coincidencia va la primera con la etiqueta «Coincide el ISBN». Un número cualquiera no se trata como ISBN.
+- **Texto**: mayúsculas, tildes y puntuación no cuentan (`normalizeText`) para ordenar, detectar duplicados ni para
+  la memoria de consultas (30 últimas: repetir una búsqueda no vuelve a pedirla).
+- **Orden** estable sin quitar nada: ISBN exacto, título que coincide (exacto, empieza o contiene) e idioma del
+  navegador del usuario. Ya no se agrupa por «título|autor» (ocultaba ediciones): solo se quitan duplicados reales
+  (mismo ISBN o misma obra). Las obras de Open Library que el propio catálogo tiene repetidas no se fusionan
+  (no hay identificador fiable que lo permita).
+- **Edición**: un resultado de Google ya es una edición. Una obra de Open Library abre «Elige tu edición»
+  (`/works/…/editions.json`, hasta 60, las del idioma del usuario primero): cada fila con su portada, editorial,
+  fecha, idioma, páginas, formato e ISBN. Nada se completa con otra edición; la obra solo aporta autoría, sinopsis,
+  temas y año de primera publicación. «No sé cuál es» sigue solo con los datos de la obra (sin páginas).
+- **Fechas**: `publishedDate` del libro es la de la edición; `firstPublished`, la de la obra. Se guardan también
+  `publisher`, `language` y, si existe, `editionRef` (Open Library).
+- **Ya en la biblioteca**: mismo ISBN → «Ya está en tu biblioteca» (no se puede volver a añadir esa edición);
+  mismo título y autoría → «Ya tienes este título» (se permite: puede ser otra edición).
+- **Confirmación**: portada compacta, resumen de la edición elegida, campos en dos columnas (título, autoría,
+  páginas o «Sin total», editorial, fecha de la edición, idioma, ISBN, balda y formato) y sinopsis desplegable.
+  Las páginas ya no se inventan (antes 300 por defecto): hay que escribirlas o marcar «Sin total». El formato del
+  proveedor solo fija la edición física si es inequívoco (Hardcover → tapa dura…).
+- **Estados**: «Buscando…», número de resultados, error con «Reintentar» y «No hay resultados para…»; las
+  respuestas de consultas anteriores se cancelan o se descartan. Atribución: «Datos de Google Books / Open Library».
+- **Escaneo de códigos**: no existe en el proyecto y no se ha añadido.
+- Pruebas e2e con los proveedores simulados en `e2e/v146.spec.js`.

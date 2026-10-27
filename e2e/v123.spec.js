@@ -169,7 +169,7 @@ test('formulario: una sola zona de scroll, acciones sticky y borrador estable co
   expect(state.inputFont).toBeGreaterThanOrEqual(16);
   // Cambiar a porcentaje y volver no pierde la instancia ni fuerza el scroll
   const body = page.locator('.pc-win:not([hidden]) .pc-win__body');
-  const pct = form.getByRole('radio', { name: 'Voy por el porcentaje' });
+  const pct = form.getByRole('radio', { name: 'Porcentaje' });
   await pct.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   const top0 = await body.evaluate((el) => el.scrollTop);
   await pct.click();

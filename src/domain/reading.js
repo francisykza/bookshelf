@@ -8,7 +8,7 @@ import { addDays, dayKey } from './dates';
 export const MODES = {
   added: { label: 'He leído', help: 'Páginas que has leído en esta sesión.' },
   page: { label: 'Voy por la página', help: 'La página por la que vas ahora.' },
-  percent: { label: 'Voy por el porcentaje', help: 'El porcentaje que marca tu lector (de 0 a 100, un decimal).' },
+  percent: { label: 'Porcentaje', help: 'El porcentaje que marca tu lector (de 0 a 100, un decimal).' },
 };
 
 /** Modalidades posibles para un libro: «He leído» solo con seguimiento por páginas. */

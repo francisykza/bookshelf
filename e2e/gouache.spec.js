@@ -237,7 +237,8 @@ test('elementos sueltos: nada invisible intercepta toques y no quedan etiquetas 
         ].filter(([x, y]) => x > 0 && y > 0 && x < innerWidth && y < innerHeight);
         const ok = pts.some(([x, y]) => {
           const el = document.elementFromPoint(x, y);
-          return el === h || h.contains(el) || el?.closest('.hotspot-badge, .room-spine, .time-dial, .panorama-nav, .room-corner, .guides-menu');
+          // 1.46: el libro pintado queda bajo el libro grande de la cama, que hace su función
+          return el === h || h.contains(el) || el?.closest('.hotspot-badge, .room-spine, .time-dial, .panorama-nav, .room-corner, .guides-menu') || (h.dataset.id === 'book' && el?.closest('.bed-book__page'));
         });
         return { id: h.dataset.id, tested: pts.length > 0, ok, top: pts.length ? document.elementFromPoint(...pts[0])?.className : null };
       })

@@ -1,0 +1,254 @@
+/* ── 1.46.0 · Buscador y elección de edición (SPEC §40) ───────────────────────────────────────────────────────
+   Acotado a la ficha de alta (`.index-card[data-146]`). Títulos completos en varias líneas, datos de edición en
+   una línea secundaria, etiquetas discretas (ISBN, ya en la biblioteca) y confirmación con portada compacta,
+   campos alineados en dos columnas y sinopsis desplegable. */
+
+.index-card[data-146] .index-card__status {
+  min-height: 1.2em;
+  margin: 6px 2px 0;
+  color: var(--color-ink-soft);
+  font-size: 0.82rem;
+}
+
+.index-card[data-146] .index-card__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.index-card[data-146] .index-card__error .link-btn svg,
+.index-card[data-146] .link-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.index-card[data-146] .result {
+  align-items: flex-start;
+  min-height: 72px;
+}
+
+.index-card[data-146] .result__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Títulos completos: varias líneas, sin puntos suspensivos */
+.index-card[data-146] .result__text strong {
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  -webkit-line-clamp: unset;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.index-card[data-146] .result__text > span:not(.result__tags),
+.index-card[data-146] .result__text em,
+.index-card[data-146] .result__text small {
+  overflow: visible;
+  white-space: normal;
+  color: var(--color-ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.index-card[data-146] .result__text small {
+  font-size: 0.78rem;
+  font-variant-numeric: lining-nums;
+}
+
+.result__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.result__tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid #7d9473;
+  border-radius: 999px;
+  background: rgb(125 148 115 / 0.14);
+  color: #3f5636;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.result__tag--owned {
+  border-color: #b08d57;
+  background: rgb(176 141 87 / 0.14);
+  color: #6b4423;
+}
+
+.edition-step__title {
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.edition-step__sub {
+  margin: 2px 0 0;
+  color: var(--color-ink-soft);
+  font-size: 0.9rem;
+}
+
+/* Confirmación */
+.index-card[data-146] .confirm-book {
+  display: block;
+}
+
+.confirm-book__summary {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.index-card[data-146] .confirm-book__preview {
+  display: block;
+  width: 64px;
+  height: 96px;
+  max-width: none;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 0 3px 6px rgb(40 22 8 / 0.3);
+}
+
+.index-card[data-146] .confirm-book__preview img,
+.index-card[data-146] .confirm-book__preview > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.confirm-book__summary > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.confirm-book__kicker {
+  margin: 0;
+  color: #7a5534;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.confirm-book__name {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.confirm-book__line {
+  color: var(--color-ink-soft);
+  font-size: 0.86rem;
+}
+
+.confirm-book__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: end;
+}
+
+.confirm-book__grid > label {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+}
+
+.confirm-book__grid input:not([type='checkbox']),
+.confirm-book__grid select {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1.5px solid #b08d57;
+  border-radius: 10px;
+  background: #fffaf0;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.confirm-book__grid input[aria-invalid='true'] {
+  border-color: #8a3f26;
+  box-shadow: 0 0 0 2px rgb(138 63 38 / 0.18);
+}
+
+.confirm-book__grid input:disabled {
+  opacity: 0.55;
+}
+
+.confirm-book__wide {
+  grid-column: 1 / -1;
+}
+
+.index-card[data-146] .confirm-book__check {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: 600;
+}
+
+.confirm-book__check input {
+  width: 20px;
+  height: 20px;
+}
+
+.confirm-book__error {
+  color: #8a3420;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.confirm-book__more {
+  margin-top: 12px;
+  border-top: 1px dashed rgb(154 113 70 / 0.4);
+  padding-top: 8px;
+}
+
+.confirm-book__more summary {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #6b4423;
+  font-weight: 700;
+}
+
+.index-card[data-146] .confirm-book__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+@media (max-width: 360px) {
+  .confirm-book__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

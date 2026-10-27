@@ -10,6 +10,8 @@ import { AccountPanel } from './components/panels/AccountPanel';
 import { LibrarianPanel } from './components/panels/LibrarianPanel';
 import { LaptopPanel } from './components/panels/LaptopPanel';
 import { PomodoroTray } from './components/panels/PomodoroTray';
+import { LogUndoToast, ReadingLogSheet } from './components/panels/ReadingLogSheet';
+import { describeEntry } from './domain/reading';
 import { ReviewSheet } from './components/panels/ReviewSheet';
 import { dayKey } from './domain/dates';
 import { SagaMapModal } from './components/panels/SagaMapModal';
@@ -97,6 +99,15 @@ function Sanctuary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [askPages, setAskPages] = useState(false);
+  // Último registro hecho desde el libro de la cama: «Deshacer» lo revierte entero (registro, posición y sellos)
+  const [undoLog, setUndoLog] = useState(null);
+  const dismissUndo = useCallback(() => setUndoLog(null), []);
+  const undoLastLog = () => {
+    if (!undoLog) return;
+    actions.revertLog(undoLog.entry.id, undoLog.before, undoLog.figuresBefore);
+    setTimeout(() => actions.persistNow(), 0);
+    setUndoLog(null);
+  };
   // Guía diegética (Anexo B): arranca con MAIN_ROOM decodificada y medida, quieta y sin nada prioritario abierto
   const [mainReady, setMainReady] = useState(false);
   // Objetos que el encuadre deja fuera: se ofrecen en el menú de «Guías» (SPEC §19.5)
@@ -197,7 +208,7 @@ function Sanctuary() {
         reducedMotion={reducedMotion}
         forceMain={guide.active}
         onSettled={setSettledRoom}
-        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} onStartGuide={guide.start} guideActive={guide.active} offscreen={offscreen} /> : null}
+        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} onStartGuide={guide.start} onToggleSound={toggleSound} guideActive={guide.active} offscreen={offscreen} /> : null}
         renderMain={(active) => (
           <CozyRoom
             active={active}
@@ -210,6 +221,11 @@ function Sanctuary() {
               openPanel({ type: 'laptop', select: 'today' });
             }}
             onOpenTray={() => openPanel({ type: 'tray' })}
+            onLogReading={(book) => {
+              playUiSound('monthTurn');
+              setUndoLog(null);
+              openPanel({ type: 'log', id: book.id });
+            }}
             onToggleSound={toggleSound}
             onOpenAtlas={() => openPanel({ type: 'atlas' })}
             onOpenVault={(id) => {
@@ -276,7 +292,25 @@ function Sanctuary() {
           }}
         />
       )}
-      {panel?.type === 'review' && <ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel(panel.tab === 'book' ? { type: 'book', id: panel.id } : { type: 'laptop', tab: 'calendar', select: panel.select })} />}
+      {panel?.type === 'log' && (
+        <ReadingLogSheet
+          key={panel.id}
+          bookId={panel.id}
+          onClose={close}
+          onSaved={(entry, meta) => {
+            playUiSound('pageLeaves');
+            // Si termina el libro, su reseña sustituye a esta vista (onComplete): no se cierra aquí
+            if (meta.completes) return;
+            const d = describeEntry(entry);
+            setUndoLog({ entry, before: meta.before, figuresBefore: meta.figuresBefore, text: d.advance ?? d.position ?? 'guardada' });
+            close();
+          }}
+          // Si el registro termina el libro, su reseña sustituye a la vista de registro (como en la ficha)
+          onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })}
+        />
+      )}
+      {!panel && <LogUndoToast item={undoLog} onUndo={undoLastLog} onDismiss={dismissUndo} />}
+      {panel?.type === 'review' &&<ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel(panel.tab === 'book' ? { type: 'book', id: panel.id } : { type: 'laptop', tab: 'calendar', select: panel.select })} />}
       {panel?.type === 'vault' && (
         <FiguresVaultModal
           onClose={close}

@@ -139,6 +139,8 @@ const RECIPES = {
   diaryTab: { ms: 95, play: (c, t) => noise(c, t, { type: 'lowpass', freq: 2000, q: 0.5, peak: 0.3, release: 0.085 }) },
   // Paso de página breve
   monthTurn: { ms: 90, play: (c, t) => noise(c, t, { type: 'highpass', freq: 3000, q: 0.6, peak: 0.28, release: 0.08, sweep: 0.55 }) },
+  // Hojas que se asientan al confirmar una lectura (1.46): tres pasos de papel suaves, sin campana
+  pageLeaves: { ms: 260, play: (c, t) => pages(c, t, 3, { freq: 2900, peak: 0.22, step: 0.06 }) },
   // Toque suave de madera
   select: { ms: 60, play: (c, t) => (tone(c, t, { freq: 420, peak: 0.3, release: 0.05, glide: 0.9 }), noise(c, t, { freq: 1300, q: 2, peak: 0.12, release: 0.03 })) },
   // Contacto de lápiz

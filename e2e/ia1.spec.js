@@ -134,6 +134,8 @@ test('el ambiente sigue al libro actual y se puede desactivar', async ({ page })
   await expect(page.locator('.tod')).toHaveAttribute('data-vibe', 'fantasy');
   expect(await page.locator('.tod').evaluate((el) => el.style.getPropertyValue('--vibe-light'))).toBe('#E7BD79');
   // Preferencia manual: desactivado, sin tono
+  // 1.46: la cuenta está al final del menú «Ambiente»
+  await page.getByRole('button', { name: 'Ambiente' }).click();
   await page.locator('.corner-btn--cloud').click();
   await page.getByLabel(/Teñir la luz de la habitación/).uncheck();
   await page.keyboard.press('Escape');
