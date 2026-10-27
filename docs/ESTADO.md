@@ -63,6 +63,11 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-10-27 · cuenta principal · 1.45.0 (documentación)
+- Protocolo de traspaso automático en el apartado 0 de `CLAUDE.md`: leer este documento y git al empezar, anotar
+  aquí en cada commit y escribir las reglas nuevas en `CLAUDE.md`. Puntero en `Claude/CLAUDE.md` (fuera de git).
+- Las dos cuentas trabajan solo en este ordenador; `docs/TRASPASO.md` simplificado.
+
 ### 2026-10-27 · cuenta principal · 1.45.0
 - Preparado el traspaso entre cuentas: `CLAUDE.md` (reglas y mapa), este documento y `docs/TRASPASO.md`.
 - Publicadas 1.42.0 a 1.45.0 (último commit `eff8031`). Todo subido; nada a medias.

@@ -1,10 +1,34 @@
 # BookShelf · guía para trabajar en el proyecto
 
-Este archivo lo lee Claude Code al empezar cada sesión en esta carpeta. Lo comparten todas las cuentas que trabajen
-aquí: si una regla cambia, se cambia aquí (y se anota en `docs/ESTADO.md`).
-
-**Antes de nada, lee `docs/ESTADO.md`**: versión actual, lo pendiente y la bitácora de las últimas sesiones.
+Este archivo lo lee Claude Code al empezar cada sesión en esta carpeta. Lo comparten **dos cuentas de Claude** que
+trabajan por turnos en este mismo ordenador y en esta misma carpeta, sin ver la conversación de la otra. Todo lo que
+una cuenta sepa, decida o deje a medias solo llega a la otra a través de este archivo, `docs/ESTADO.md` y git.
 La especificación completa está en `SPEC.md` (una sección por versión; la cabecera dice la versión vigente).
+
+## 0. Traspaso entre cuentas (obligatorio, sin que Francisco tenga que pedirlo)
+
+**Al empezar una sesión**, antes del primer cambio:
+1. Leer `docs/ESTADO.md` entero (estado, pendientes y la bitácora, la entrada más reciente arriba).
+2. Ejecutar `git log --oneline -15` y `git status`. Si hay commits posteriores a la última entrada de la bitácora,
+   o cambios sin commit, los hizo la otra cuenta: revisarlos (`git show`, `git diff`) y no deshacerlos.
+3. Si Francisco empieza con un encargo, hacerlo; si hay algo a medias de la otra cuenta que le afecte, decírselo.
+
+**En cada commit** (cuando Francisco lo pida):
+1. Añadir en `docs/ESTADO.md` una entrada arriba de la bitácora con el formato de ese documento (fecha, cuenta,
+   versión, qué se hizo, qué queda a medias o sin verificar, decisiones nuevas de Francisco) y actualizar «Estado
+   actual» y «Pendiente».
+2. Incluir `docs/ESTADO.md` (y `CLAUDE.md` si cambió) **en ese mismo commit**. El hash no hace falta escribirlo:
+   ya está en `git log`.
+
+**Reglas nuevas**: si Francisco da una instrucción que deba valer más allá de la tarea («a partir de ahora…»,
+«nunca…», «siempre…», una preferencia de diseño o de trabajo), escribirla en el apartado que toque de este archivo
+en ese momento, aunque no haya commit todavía. Lo que no esté aquí, la otra cuenta no lo sabe.
+
+**Sesión sin commit**: si se trabaja y Francisco no pide commit, antes de terminar anotar igualmente en la bitácora
+lo que queda sin commit y por qué (el archivo se queda en disco y la otra cuenta lo leerá).
+
+**Nunca a la vez**: si al empezar hay cambios sin commit que no están descritos en la bitácora, preguntar a
+Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese momento).
 
 ## 1. Reglas de trabajo (las pone Francisco, el dueño del proyecto)
 
@@ -26,7 +50,7 @@ La especificación completa está en `SPEC.md` (una sección por versión; la ca
   las diferencias que queden. No usar una maqueta como fondo ni recortar botones con texto de ella. Si falta un
   recurso imprescindible, decirlo y pedirlo en vez de improvisarlo.
 - **Al terminar un bloque**: subir la versión en `src/diag.js`, `package.json`, `public/sw.js` (constante `VERSION`)
-  y la cabecera de `SPEC.md`; añadir su sección a `SPEC.md`; y **anotar la sesión en `docs/ESTADO.md`**.
+  y la cabecera de `SPEC.md`; añadir su sección a `SPEC.md`; y anotarlo en `docs/ESTADO.md` (apartado 0).
 
 ## 2. Comandos
 
