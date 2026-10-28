@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.50.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.51.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3405,3 +3405,42 @@ Decisión de Francisco: escribir la lectura sobre el libro pintado del fondo. Es
 - **«Social ›»**: más suave (solo el papel interior es algo translúcido; tinta y sombra más tenues, letra menor).
   Sin `opacity` ni `filter` en el propio botón: creaban una capa que en WebKit y a 430 px dejaba que la escena se
   quedara el toque.
+
+## 49. Habitación nocturna de la maqueta (1.51.0)
+
+Referencia: `docs/design/references/habitacion-noche-maqueta.png`. Recursos entregados por Francisco (originales en
+`material-diseno/`): «Dormitorio nocturno bajo la luna-1» (851 × 1848, la composición de la maqueta sin libro, sin
+carteles ni controles y con la pantalla apagada) y «Libro abierto de cuero con cinta botánica-2» (con
+transparencia). Derivados: `public/images/room-night/dormitorio-noche.webp` y `libro-abierto-noche.webp` (recorte
+del margen transparente, 1697 × 768). No llegaron las versiones de día y atardecer del mismo cuadro.
+
+- **Escena propia**: con la hora «Noche» (por reloj de 21 a 7 h o elegida en «Ambiente») la habitación es
+  `NightRoom.jsx` con su mapa `scene/nightMap.js` (otra ilustración, otras coordenadas). Mañana y atardecer siguen con
+  la escena de siempre. Durante la guía de primera visita se ve el cuarto de día (sus anclas son de ese mapa).
+- **Capas** (todas con la cámara de la escena): fondo; luz apagada localizada (lámpara y vela, solo alrededor de su
+  objeto); pantalla del portátil con el calendario real proyectado en sus cuatro esquinas, brillo de noche; zonas
+  tocables de los objetos pintados (librería, figuras → Ático, lámpara, portátil, vela, cascos); libro (recurso aparte,
+  escala uniforme 0,515 y giro 5°, sin estirar, con sombra de contacto bajo la cubierta); carteles.
+- **Libro**: zonas útiles por página en px del recurso, lejos del pliegue, la cinta y los ramitos pintados; texto
+  real que acompaña moderadamente la página (6° y 4,5°). Izquierda: «Estás leyendo», título (hasta tres o cuatro
+  líneas, sin cortes) y autor. Derecha: «Página X», «de Y · Z %», barra con el porcentaje real y «Registrar lectura»
+  (terracota cosido; zona táctil ≥ 44 px). El resto del libro abre la ficha. Estados de siempre (sin total,
+  terminado, abandonado y sin lectura).
+- **Carteles**: «Mi biblioteca» en el frente plano de la balda bajo los libros y «Mi diario» en el frente de la mesa
+  (12°), dentro de la escena con transformación plana; «Social ›» junto al ventanal (posición calculada por la
+  escena; si el encuadre deja fuera el ventanal, en el borde derecho). Los dos de la escena ya reciben el toque
+  (también de día: heredaban `pointer-events: none` y lo recogía la estantería).
+- **Controles superiores** (de día y de noche): papel de ≈ 30 px como en la maqueta, zona de toque de 44 px; la fila
+  ya no se parte. Sin título visible (queda el nombre accesible). El punto de «Guías» solo avisa de objetos que
+  existen y el encuadre recorta: el té no está pintado de noche y se ofrece en «Guías» sin punto.
+- **Pruebas**: `playwright.config.js` fija el reloj del navegador a mediodía del mismo día de Madrid (las escenas
+  dependen de la hora); `e2e/v151.spec.js` elige la noche en «Ambiente».
+
+### Diferencias con la maqueta
+- Baldas: los libros y las cajas de figuras están pintados en el fondo; no son tus libros ni tus figuras (de noche no
+  se pintan lomos ni figuras reales). Para eso haría falta el fondo con las baldas vacías.
+- Libro: el recurso entregado es algo más oblicuo que el de la maqueta; con escala uniforme queda ≈ 10 px (a 390)
+  más arriba y con el canto inferior menos inclinado.
+- Escritorio y horizontal: la ilustración es vertical; en pantallas anchas se ve ampliada la parte inferior (libro,
+  cascos y mesa). Falta una versión ancha del mismo cuadro.
+- Día y atardecer siguen siendo la otra ilustración: al cambiar de hora cambia la composición.

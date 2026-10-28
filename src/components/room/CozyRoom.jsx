@@ -28,6 +28,7 @@ import { SceneBase } from './SceneBase';
 import { SceneStage } from './SceneStage';
 import { TeaDrain } from './TeaDrain';
 import { TimeOfDayLayers } from './TimeOfDayLayers';
+import { NightRoom } from './NightRoom';
 
 export const ROOM_VIEW = 'ROOM_VIEW';
 export const SHELF_VIEW = 'SHELF_VIEW';
@@ -152,6 +153,32 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
     actionsRef.current = ACTIONS;
   });
 
+  // De noche, la ilustración nocturna con su propio mapa (SPEC §49). La guía de primera visita usa las anclas del
+  // cuarto de día, así que mientras se ve, se muestra ese cuarto
+  if (settings.timeOfDay === 'night' && !guide?.visible) {
+    return (
+      <NightRoom
+        book={bedBook}
+        settings={settings}
+        live={live}
+        attempt={base.attempt}
+        onStatus={(status) => setBase((b) => (b.status === status ? b : { ...b, status }))}
+        onOpenBook={onOpenBook}
+        onLog={(b) => onLogReading?.(b)}
+        onOpenShelf={onOpenShelf}
+        onOpenLaptop={onOpenLaptop}
+        onOpenVault={onOpenVault}
+        onToggleSound={onToggleSound}
+        onToggleLamp={toggleLamp}
+        onToggleCandle={toggleCandle}
+        onOffscreen={onOffscreen}
+        actions={ACTIONS}
+        today={today}
+        modalOpen={modalOpen}
+      />
+    );
+  }
+
   return (
     <SceneArtContext.Provider value={art}>
     <SceneStage
@@ -250,7 +277,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           {/* «Mi biblioteca» en el frente de la balda, en la perspectiva del mueble (coordenadas de la escena) */}
           <ShelfPlaqueInScene fit={fit} onOpenShelf={onOpenShelf} />
           {/* Botón real de «Registrar lectura», en el mismo lugar que el dibujado y por encima del hotspot del libro */}
-          <BookOnBedActions book={bedBook} scale={fit.scale} onLog={(book) => onLogReading?.(book)} onChoose={onOpenShelf} />
+          <BookOnBedActions book={bedBook} scale={fit.scale} onLog={(book) => onLogReading?.(book)} onChoose={onOpenShelf} hidden={modalOpen} />
           <Hotspot id="laptop" spot={lit('laptop')} guides={guides} hint={3} onHover={onHover} onActivate={onOpenLaptop} label={{ title: 'Estadísticas y reto anual', text: `${readThisYear} de ${settings.yearGoal} libros este año`, meta: 'Calendario · Misiones del Booknook' }} />
           <Hotspot
             id="headphones"

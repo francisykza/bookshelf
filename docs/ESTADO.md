@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.50.0 (2026-10-28), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.50.0. Fuera de git
+- **Versión publicada**: 1.51.0 (2026-10-28), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.51.0. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.51.0 | Habitación nocturna de la maqueta con su propio mapa, libro con la lectura real y controles compactos | §49 |
 | 1.50.0 | Texto del libro sin cizalla, botón integrado en la página, «Mi biblioteca» en la perspectiva del mueble y «Social» más suave | §48 |
 | 1.49.0 | Lectura sobre el libro pintado (sin libro superpuesto), cascos en el encuadre, «Mi biblioteca» en la balda inferior e indicadores anclados | §47 |
 | 1.48.0 | Cabecera de biblioteca sin solapes, cinco filtros sin scroll, material de libros, habitación sin título, cascos visibles, carteles orientados y selector de lectura | §46 |
@@ -30,6 +31,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+00. **Noche (§49)**: hecha con los recursos entregados. Faltan, si se quieren: fondo nocturno con baldas vacías (para
+   pintar tus libros y figuras), versiones de día y atardecer del mismo cuadro y una versión ancha para escritorio.
 0. **Encargo de la 1.46 terminado** (portátil, §42, publicado en la 1.46.1). Figuras revisadas (§41): sin el
    fondo de baldas anchas (punto 1) no pueden igualar el tamaño de la maqueta; faltan recortes con transparencia de
    la Dama, la Jinete y las tres figuras SVG. El escaneo de códigos no existe en el proyecto.
@@ -55,6 +58,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Decisiones vigentes que no deben deshacerse
 
+- (1.51) La noche es otra ilustración con su propio mapa (`NightRoom.jsx`, `nightMap.js`); las pruebas e2e corren con
+  el reloj a mediodía (`playwright.config.js`) y eligen la noche en «Ambiente» cuando la necesitan.
 - (1.49, decisión de Francisco) La lectura se escribe sobre el libro **pintado** de la cama en coordenadas de la escena;
   no volver a poner un libro superpuesto en píxeles de pantalla. Encuadre vertical `x: 0.29` para ver los cascos (§47).
 - (1.48) Los cinco filtros siempre a la vista sin desplazamiento horizontal (dos filas 3 + 2 si no caben); la
@@ -83,6 +88,11 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-28 · cuenta principal · 1.51.0 (publicada)
+- Habitación nocturna de la maqueta con los dos recursos que entregó Francisco (fondo y libro). Ver §49 y
+  `docs/design/recursos-noche-maqueta.md`.
+- Commit y subida a producción pedidos por Francisco. Sin comprobar aún en su móvil real.
 
 ### 2026-10-28 · cuenta principal · 1.50.0 (publicada)
 - Ajustes pedidos por Francisco sobre la 1.49: botón del libro que se salía, texto torcido en la página izquierda,

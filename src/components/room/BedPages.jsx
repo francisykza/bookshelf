@@ -85,13 +85,14 @@ export function BookOnBed({ book }) {
  * Capa tocable: el botón real, proyectado en el mismo lugar que el dibujado (y con superficie de pulsación de al
  * menos 44 px de pantalla). Va por encima del hotspot del libro, que abre la ficha desde el resto de las páginas.
  */
-export function BookOnBedActions({ book, scale, onLog, onChoose }) {
+export function BookOnBedActions({ book, scale, onLog, onChoose, hidden = false }) {
   const state = stateOf(book);
   const label = state === 'reading' ? `Registrar lectura de ${book.title}` : state === 'empty' ? 'Elegir un libro' : 'Elegir otra lectura';
   // Alto mínimo de la zona táctil en px de la ilustración: 44 px de pantalla a la escala actual
   const minH = Math.ceil(44 / Math.max(0.1, scale));
   return (
-    <div className="bed-pages bed-pages--actions" data-state={state}>
+    // Con un panel delante, el botón de la habitación no se anuncia ni recibe el foco
+    <div className="bed-pages bed-pages--actions" data-state={state} inert={hidden || undefined} aria-hidden={hidden || undefined}>
       <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT)}>
         <button type="button" className="bed-pages__hit" style={{ '--hit': `${minH}px` }} aria-label={label} onClick={() => (state === 'reading' ? onLog(book) : onChoose())} />
       </div>

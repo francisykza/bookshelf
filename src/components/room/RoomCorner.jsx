@@ -187,11 +187,12 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, guideAc
             disabled={guideActive}
             onClick={() => setMenu((v) => !v)}
             title="Guías"
-            aria-label={offscreen.length ? `Guías (${offscreen.length} objetos fuera de vista)` : 'Guías'}
+            aria-label={offscreen.some((o) => !o.absent) ? `Guías (${offscreen.filter((o) => !o.absent).length} objetos fuera de vista)` : 'Guías'}
           >
             <MapIcon aria-hidden="true" />
             <span>Guías</span>
-            {offscreen.length > 0 && <i className="guides-toggle__dot" aria-hidden="true" />}
+            {/* Solo objetos que existen y el encuadre recorta (no los que esa ilustración no tiene, como el té de noche) */}
+            {offscreen.some((o) => !o.absent) && <i className="guides-toggle__dot" aria-hidden="true" />}
           </button>
           {menu && (
             <ul className="guides-menu__list corner-sheet">

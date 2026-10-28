@@ -4,6 +4,18 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5195;
+
+/**
+ * Reloj de las pruebas a mediodía del mismo día de Madrid (1.51): la habitación cambia de ilustración de noche, así que
+ * las pruebas no deben depender de la hora a la que se lanzan. Se elige la zona Etc/GMT que pone el reloj del
+ * navegador en las 12 h del mismo día de calendario que en Madrid (las que prueban la noche la eligen a mano).
+ */
+function middayZone(now = new Date()) {
+  const madridH = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Madrid', hour: '2-digit', hourCycle: 'h23' }).format(now));
+  const madridOffset = ((madridH - now.getUTCHours() + 36) % 24) - 12;
+  const k = madridOffset + (12 - madridH);
+  return k >= 0 ? `Etc/GMT-${k}` : `Etc/GMT+${-k}`;
+}
 const mobile = (width, height) => ({ viewport: { width, height }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
 
 export default defineConfig({
@@ -19,7 +31,7 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     locale: 'es-ES',
-    timezoneId: 'Europe/Madrid',
+    timezoneId: middayZone(),
     trace: 'off',
   },
   webServer: {
