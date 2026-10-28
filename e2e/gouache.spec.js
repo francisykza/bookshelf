@@ -91,7 +91,15 @@ test('etiquetas: fuera del lienzo escalado y siempre dentro del viewport (tambi�
 test('toque: abre la función y no deja una tarjeta encima de la escena', async ({ page }, info) => {
   test.skip(!info.project.use.hasTouch, 'solo con pantalla táctil');
   await load(page);
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="tray"]').tap();
+  // 1.49: con el encuadre vertical que deja ver los cascos, el vaso queda fuera de pantalla y se abre desde
+  // «Guías › Fuera de vista»; si está a la vista, tocándolo
+  const tray = page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="tray"]');
+  const tb = await tray.boundingBox();
+  if (tb && tb.x + tb.width / 2 < page.viewportSize().width) await tray.tap();
+  else {
+    await page.locator('.guides-toggle').tap();
+    await page.locator('.guides-menu__list').getByRole('button', { name: /Té helado/ }).tap();
+  }
   await expect(page.locator('.panel .tray')).toBeVisible();
   // En un móvil se cierra tocando «Cerrar» (con Escape, que es teclado, el foco devuelto sí muestra la etiqueta)
   await page.getByRole('button', { name: 'Cerrar la bandeja' }).tap();
@@ -238,7 +246,7 @@ test('elementos sueltos: nada invisible intercepta toques y no quedan etiquetas 
         const ok = pts.some(([x, y]) => {
           const el = document.elementFromPoint(x, y);
           // 1.46: el libro pintado queda bajo el libro grande de la cama, que hace su función
-          return el === h || h.contains(el) || el?.closest('.hotspot-badge, .room-spine, .time-dial, .panorama-nav, .room-corner, .guides-menu') || (h.dataset.id === 'book' && el?.closest('.bed-book__page'));
+          return el === h || h.contains(el) || el?.closest('.hotspot-badge, .room-spine, .time-dial, .panorama-nav, .room-corner, .guides-menu') || (h.dataset.id === 'book' && el?.closest('.bed-pages__hit'));
         });
         return { id: h.dataset.id, tested: pts.length > 0, ok, top: pts.length ? document.elementFromPoint(...pts[0])?.className : null };
       })
@@ -247,7 +255,7 @@ test('elementos sueltos: nada invisible intercepta toques y no quedan etiquetas 
   run.data.hits = hits;
   for (const h of hits) expect.soft(h.ok, `${h.id} → ${h.top}`).toBe(true);
   // Las capas decorativas nuevas no reciben toques
-  const pe = await page.evaluate(() => ['.laptop-foreground', '.laptop-screen', '.open-pages', '.ambient-life', '.room-shelf-lips'].map((s) => [s, document.querySelector(s) ? getComputedStyle(document.querySelector(s)).pointerEvents : 'none']));
+  const pe = await page.evaluate(() => ['.laptop-foreground', '.laptop-screen', '.bed-pages:not(.bed-pages--actions)', '.ambient-life', '.room-shelf-lips'].map((s) => [s, document.querySelector(s) ? getComputedStyle(document.querySelector(s)).pointerEvents : 'none']));
   for (const [sel, value] of pe) expect.soft(value, sel).toBe('none');
   // Etiqueta abierta y cambio de habitación: se retira y la habitación inactiva queda inerte
   await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="laptop"]').focus();

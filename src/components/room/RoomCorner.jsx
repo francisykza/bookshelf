@@ -102,7 +102,7 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, guideAc
     <>
       <div ref={cornerRef} className="room-corner" data-146="">
         {/* Cuenta y copias: acceso propio y pequeño (no depende de abrir Ambiente) */}
-        <button type="button" className="corner-paper corner-account craft craft--paper" data-status={cloud.status} onClick={onOpenAccount} aria-label="Tu cuenta y copias" aria-description={SYNC_TEXT[cloud.status]} title={cloud.user ? `Tu cuenta: ${cloud.user.email}` : 'Tu cuenta y copias'}>
+        <button type="button" className="corner-paper corner-account craft craft--paper" data-status={cloud.status} onClick={onOpenAccount} aria-label={SYNC_TEXT[cloud.status] ? `Tu cuenta y copias. ${SYNC_TEXT[cloud.status]}` : "Tu cuenta y copias"} data-dot={SYNC_TEXT[cloud.status] ? "" : undefined} title={cloud.user ? `Tu cuenta: ${cloud.user.email}` : 'Tu cuenta y copias'}>
           <CircleUser aria-hidden="true" />
         </button>
         {/* «Ambiente»: clima de la escena, iluminación y sonido */}

@@ -91,17 +91,18 @@ test('habitación: sin título visible (con nombre accesible), cascos a la vista
     const oy = parseFloat(stage.dataset.offsetY);
     const sr = stage.getBoundingClientRect();
     const pts = HOTSPOTS.headphones.shape.map(([x, y]) => [sr.left + ox + x * k, sr.top + oy + y * k]).filter(([x, y]) => x > 2 && y > 2 && x < innerWidth - 2 && y < innerHeight - 2);
-    const covered = pts.filter(([x, y]) => document.elementFromPoint(x, y)?.closest('.bed-book'));
-    return { total: pts.length, covered: covered.length };
+    // 1.49: los cascos son parte de la ilustración; lo que importa es que el encuadre no los recorte
+    const all = HOTSPOTS.headphones.shape.length;
+    return { total: all, covered: all - pts.length };
   });
   expect(free.total).toBeGreaterThan(3);
   expect(free.covered / free.total).toBeLessThanOrEqual(0.25);
   // El libro sigue siendo usable y lejos del borde inferior
-  const btn = await rect(page, '.bed-book__action');
-  expect(btn.height).toBeGreaterThanOrEqual(36);
+  const btn = await rect(page, '.bed-pages__hit');
+  expect(btn.height).toBeGreaterThanOrEqual(43);
   expect(page.viewportSize().height - btn.bottom).toBeGreaterThanOrEqual(10);
   // El texto del botón cabe dentro del botón (se mide el texto: el área de toque ampliada sobresale a propósito)
-  const label = await page.locator('.bed-book__action').evaluate((el) => {
+  const label = await page.locator('.bed-pages__action').first().evaluate((el) => {
     const r = document.createRange();
     r.selectNodeContents(el);
     const t = r.getBoundingClientRect();
@@ -116,7 +117,8 @@ test('habitación: sin título visible (con nombre accesible), cascos a la vista
       return Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI);
     }),
   );
-  expect(angles).toEqual([8, 12]);
+  // 1.49: «Mi biblioteca» en el frente plano de la balda inferior (0°); «Mi diario» en el borde de la mesa (12°)
+  expect(angles).toEqual([0, 12]);
   const social = page.locator('.panorama-nav__btn--next');
   await expect(social).toHaveAttribute('aria-label', 'Abrir rincón social');
   await expect(social.locator('.panorama-nav__label')).toHaveText('Social');
@@ -136,7 +138,7 @@ test('registro: selector de lectura, borradores por libro y guardado solo en el 
   const circe = before.books.find((b) => b.title === 'Circe');
   const other = before.books.find((b) => b.status === 'reading' && b.id !== circe.id && b.pageCount && b.pageCount !== circe.pageCount && b.trackBy !== 'percent');
   expect(other).toBeTruthy();
-  await page.locator('.bed-book').getByRole('button', { name: 'Registrar lectura' }).click();
+  await page.getByRole('button', { name: /^Registrar lectura de / }).click();
   const trigger = page.locator('.log-pick__trigger');
   await expect(trigger).toContainText('Circe');
   await expect(trigger).toContainText(`${circe.pageCount}`);
@@ -178,7 +180,7 @@ test('registro: selector de lectura, borradores por libro y guardado solo en el 
 test('registro: «Elegir otro libro» muestra el resto sin saturar la lista inicial', async ({ page }) => {
   test.skip(!portrait(page), 'el registro se abre desde el libro grande de la cama');
   await load(page);
-  await page.locator('.bed-book').getByRole('button', { name: 'Registrar lectura' }).click();
+  await page.getByRole('button', { name: /^Registrar lectura de / }).click();
   await page.locator('.log-pick__trigger').click();
   const list = page.getByRole('listbox', { name: 'Lecturas' });
   const s = await stored(page);

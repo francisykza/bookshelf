@@ -530,3 +530,33 @@
   font-size: max(13px, calc(var(--bw) * 0.037));
   letter-spacing: -0.005em;
 }
+
+/* ── 1.49 · Indicadores de la esquina (SPEC §47) ──
+   El punto del acceso a la cuenta es el estado de la copia en la nube (verde: al día; ámbar: subiendo o pendiente;
+   rojo: error o conflicto; gris: sin conexión) y solo aparece con un estado real. El dorado de «Guías» indica
+   objetos fuera de vista. Los dos van en la esquina exterior de su botón, separados del icono y del texto por un
+   aro del color del papel. */
+.room-corner[data-146] .corner-account::after {
+  display: none !important;
+}
+
+.room-corner[data-146] .corner-account[data-dot]::after {
+  display: block !important;
+  top: -6px;
+  right: -6px;
+  width: 10px;
+  height: 10px;
+  box-shadow: 0 0 0 2px #fbf3e2, 0 1px 2px rgb(40 22 8 / 0.35);
+}
+
+.room-corner[data-146] .corner-account[data-status='offline']::after {
+  background: #8a8178;
+}
+
+.room-corner[data-146] .guides-toggle__dot {
+  top: -6px;
+  right: -6px;
+  width: 10px;
+  height: 10px;
+  box-shadow: 0 0 0 2px #fbf3e2, 0 1px 2px rgb(40 22 8 / 0.35);
+}

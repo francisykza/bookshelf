@@ -116,7 +116,7 @@ async function geometry(page) {
           return { sx: Math.round(sx), sy: Math.round(sy), hit: owner?.dataset?.id ?? owner?.className?.toString().split(' ')[0] ?? el?.tagName };
         });
         hotspots.push({ id, onScreen: pts.length > 0, points: results, // 1.46: con el libro grande de la cama delante, el libro pintado se abre desde él (su página izquierda)
-        ok: pts.length === 0 || results.some((p) => p.hit === id || (id === 'book' && p.hit?.startsWith('bed-book'))) });
+        ok: pts.length === 0 || results.some((p) => p.hit === id || (id === 'book' && p.hit?.startsWith('bed-pages'))) });
       }
     }
     const m = new DOMMatrixReadOnly(getComputedStyle(track).transform);

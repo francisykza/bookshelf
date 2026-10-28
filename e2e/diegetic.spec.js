@@ -184,8 +184,8 @@ test('encuadre: la escena cubre todo el viewport (sin franja superior propia de 
   expect(r.baseRight).toBeGreaterThanOrEqual(r.w - 0.5);
 });
 
-test('libro: portadilla editorial de la lectura actual, sin portada pegada', async ({ page }, info) => {
-  // El ejemplo de la especificación: «Proyecto Hail Mary», de Andy Weir, página 61 de 496
+test('libro: la lectura escrita en el libro pintado de la cama, sin libro superpuesto', async ({ page }, info) => {
+  // 1.49 (SPEC §47): «Proyecto Hail Mary», de Andy Weir, página 61 de 496
   await load(page, (st) => {
     const b = st.books.find((x) => x.id === 'hail-mary');
     st.settings.currentBookId = 'hail-mary';
@@ -198,71 +198,48 @@ test('libro: portadilla editorial de la lectura actual, sin portada pegada', asy
     const st = JSON.parse(localStorage.getItem('bookshelf:v1'));
     return st.books.find((b) => b.id === st.settings.currentBookId);
   });
-  if (page.viewportSize().height >= 520) {
-    // 1.46 (SPEC §38): libro grande de la cama con contenido real, sin ornamentos añadidos ni portada pegada
-    const book = page.locator('.bed-book');
-    await expect(book).toHaveAttribute('data-state', 'reading');
-    await expect(book.locator('.bed-book__page--left .bed-book__kicker')).toHaveText('Tu lectura actual');
-    await expect(book.locator('.bed-book__title')).toHaveText(current.title);
-    await expect(book.locator('.bed-book__author')).toHaveText(current.author);
-    await expect(book.locator('.bed-book__page--right .bed-book__kicker')).toHaveText('Por donde vas');
-    await expect(book.locator('.bed-book__progress')).toHaveText('Página 61');
-    await expect(book.locator('.bed-book__secondary')).toHaveText(/^de 496 · 12,3\s%$/);
-    await expect(book.locator('.bed-book__rest')).toHaveText('Te quedan 435 páginas');
-    await expect(book.locator('[role="progressbar"]')).toHaveAttribute('aria-valuenow', '12');
-    await expect(book.locator('img, .gen-cover')).toHaveCount(0);
-    // Sin duplicar los datos en el libro pintado de la escena
-    await expect(page.locator('.open-pages')).toHaveCount(0);
-    // «Registrar lectura» con superficie de pulsación cómoda, dentro de la pantalla
-    const btn = await book.getByRole('button', { name: 'Registrar lectura' }).boundingBox();
-    expect(btn.height).toBeGreaterThanOrEqual(36);
-    expect(btn.y + btn.height).toBeLessThanOrEqual(page.viewportSize().height);
-    // La página izquierda abre la ficha; abrirla no cambia el progreso
-    await book.locator('.bed-book__page--left').click();
-    await expect(page.locator('.book-sheet')).toBeVisible();
-    const after = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.id === 'hail-mary').currentPage);
-    expect(after).toBe(61);
-    return;
-  }
-  const left = page.locator('.open-pages__page--left');
-  const right = page.locator('.open-pages__page--right');
-  await expect(left.locator('.open-pages__kicker')).toHaveText('Lectura actual');
-  await expect(left.locator('.open-pages__title')).toHaveText(current.title);
-  await expect(left.locator('.open-pages__author')).toHaveText(current.author);
-  await expect(left.locator('svg.open-pages__ornament')).toHaveCount(1);
-  await expect(right.locator('.open-pages__kicker')).toHaveText('Por donde vas');
-  await expect(right.locator('.open-pages__progress')).toHaveText('Página 61');
-  await expect(right.locator('.open-pages__secondary')).toHaveText(/^de 496 · 12,3\s%$/);
-  await expect(right.locator('.open-pages__meter')).toHaveCount(1);
-  // Sin portada rectangular, imágenes, tarjetas ni el título repetido en la página derecha
-  await expect(page.locator('.open-pages img, .open-pages .gen-cover, .open-pages__plate')).toHaveCount(0);
+  const pages = page.locator('.bed-pages').first();
+  await expect(pages).toHaveAttribute('data-state', 'reading');
+  const left = pages.locator('.bed-pages__page--left');
+  const right = pages.locator('.bed-pages__page--right');
+  await expect(left.locator('.bed-pages__kicker')).toHaveText('Tu lectura');
+  await expect(left.locator('.bed-pages__title')).toHaveText(current.title);
+  await expect(left.locator('.bed-pages__author')).toHaveText(current.author);
+  await expect(right.locator('.bed-pages__kicker')).toHaveText('Por donde vas');
+  await expect(right.locator('.bed-pages__progress')).toHaveText('Página 61');
+  await expect(right.locator('.bed-pages__secondary')).toHaveText(/^de 496 · 12,3\s%$/);
+  await expect(right.locator('.bed-pages__meter')).toHaveCount(1);
+  // Sin el libro superpuesto ni portadas pegadas: el papel es el pintado
+  await expect(page.locator('.bed-book')).toHaveCount(0);
+  await expect(page.locator('.bed-pages img, .bed-pages .gen-cover')).toHaveCount(0);
   await expect(right).not.toContainText(current.title);
-  await expect(page.locator('.open-pages')).not.toContainText('toca para');
-  const look = await page.evaluate(() => {
-    const page = document.querySelector('.open-pages__page--left');
-    const title = document.querySelector('.open-pages__title');
-    const cs = getComputedStyle(title);
-    return { bg: getComputedStyle(page).backgroundColor, weight: cs.fontWeight, family: cs.fontFamily, blend: cs.mixBlendMode, color: cs.color, shadow: cs.textShadow };
-  });
-  run.data.bookLook = look;
-  expect(look.bg).toBe('rgba(0, 0, 0, 0)');
-  expect(look.weight).toBe('500');
-  expect(look.family).toMatch(/Cormorant Garamond/);
-  expect(look.blend).toBe('multiply');
-  expect(look.color).toBe('rgb(73, 55, 39)');
-  expect(look.shadow).toBe('none');
-  // Las dos páginas son superficies separadas que no cruzan el pliegue (cada una con su quad)
+  // Cada página es su propia superficie, en coordenadas de la ilustración, sin cruzar el pliegue
   const crossing = await page.evaluate(async () => {
     const { BOOK_LEFT_PAGE } = await import('/src/scene/sceneMap.js');
     return Math.max(...BOOK_LEFT_PAGE.map((p) => p[0]));
   });
   expect(crossing).toBeLessThan(548);
+  const inWorld = await page.evaluate(() => Boolean(document.querySelector('.bed-pages')?.closest('.scene-world')));
+  expect(inWorld).toBe(true);
   const clip = await clipOf(page, 220, 1330, 900, 1672);
   if (clip.width > 20 && clip.height > 20) await shot(page, info, 'diegetic-libro', clip);
-  // Tocar el libro abre su ficha (donde sí está la portada original)
+  // «Registrar lectura»: botón real con al menos 44 px de pantalla, dentro de la pantalla
+  const btn = page.getByRole('button', { name: `Registrar lectura de ${current.title}` });
+  const box = await btn.boundingBox();
+  // Solo si el encuadre deja el libro a la vista (en horizontal y escritorio puede quedar fuera)
+  if (box && box.y + box.height <= page.viewportSize().height && box.x >= 0 && box.x + box.width <= page.viewportSize().width) {
+    expect(box.height).toBeGreaterThanOrEqual(43);
+    await btn.click();
+    await expect(page.locator('.panel--log')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.panel--log')).toHaveCount(0);
+  }
+  // Tocar el libro abre su ficha (donde sí está la portada original); abrirla no cambia el progreso
   await page.locator('.hotspot[data-id="book"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.book-sheet')).toBeVisible();
+  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.id === 'hail-mary').currentPage);
+  expect(after).toBe(61);
 });
 
 test('libro: título largo, sin portada, sin total de páginas y sin lectura', async ({ page }) => {
@@ -275,22 +252,17 @@ test('libro: título largo, sin portada, sin total de páginas y sin lectura', a
     b.trackBy = 'percent';
     b.currentPercent = 37.5;
   });
-  const big = page.viewportSize().height >= 520;
-  const P = big ? '.bed-book' : '.open-pages';
-  await expect(page.locator(`${P}__title`)).toContainText('Un título larguísimo');
-  const t = await page.locator(`${P}__title`).evaluate((el) => ({ clamped: el.scrollHeight > el.clientHeight + 1, overflowPage: el.parentElement.scrollWidth > el.parentElement.clientWidth + 1, size: parseFloat(getComputedStyle(el).fontSize) }));
-  // En el libro de la escena se recorta con puntos; en el grande cabe en varias líneas sin salirse de la página
-  if (!big) expect(t.clamped).toBe(true);
+  const title = page.locator('.bed-pages__title').first();
+  await expect(title).toContainText('Un título larguísimo');
+  const t = await title.evaluate((el) => ({ overflowPage: el.parentElement.scrollWidth > el.parentElement.clientWidth + 1, overflowDown: el.parentElement.scrollHeight > el.parentElement.clientHeight + 1, size: parseFloat(getComputedStyle(el).fontSize) }));
+  // Varias líneas dentro de la página, con un tamaño mínimo (px de la ilustración: ≈ 12 px de pantalla a 390)
   expect(t.overflowPage).toBe(false);
-  if (big) expect(await page.locator('.bed-book__page--left').evaluate((p) => p.scrollHeight <= p.clientHeight + 1)).toBe(true);
-  // Reflujo con un tamaño mínimo, no reducción ilimitada
-  // (en el libro grande, 13 px de pantalla como mínimo; en el de la escena, 28 px de la ilustración)
-  expect(t.size).toBeGreaterThanOrEqual(big ? 13 : 28);
+  expect(t.overflowDown).toBe(false);
+  expect(t.size).toBeGreaterThanOrEqual(24);
   // Sin total: el porcentaje como dato, sin «Página» inventada
-  await expect(page.locator(`${P}__progress`)).toHaveText(/^37,5\s%$/);
-  await expect(page.locator(`${P}__secondary`)).toHaveText('leído');
-  if (big) await expect(page.locator('.bed-book__rest')).toHaveCount(0);
-  // Sin ninguna lectura en curso
+  await expect(page.locator('.bed-pages__progress').first()).toHaveText(/^37,5\s%$/);
+  await expect(page.locator('.bed-pages__secondary').first()).toHaveText('leído');
+  // Sin ninguna lectura en curso: se ofrece elegir un libro (sin cifras)
   await page.addInitScript(
     setStored((st) => {
       st.books.forEach((b) => {
@@ -301,16 +273,14 @@ test('libro: título largo, sin portada, sin total de páginas y sin lectura', a
   );
   await page.reload();
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  if (big) {
-    // Sin lectura activa: se ofrece elegir un libro (sin cifras)
-    await expect(page.locator('.bed-book')).toHaveAttribute('data-state', 'empty');
-    await expect(page.locator('.bed-book__progress')).toHaveCount(0);
-    await page.locator('.bed-book').getByRole('button', { name: 'Elegir un libro' }).click();
+  await expect(page.locator('.bed-pages').first()).toHaveAttribute('data-state', 'empty');
+  await expect(page.locator('.bed-pages__progress')).toHaveCount(0);
+  const choose = page.getByRole('button', { name: 'Elegir un libro' });
+  const cb = await choose.boundingBox();
+  if (cb && cb.y + cb.height <= page.viewportSize().height && cb.x + cb.width <= page.viewportSize().width) {
+    await choose.click();
     await expect(page.locator('.library[data-open="true"]')).toBeVisible();
-    return;
   }
-  await expect(page.locator('.open-pages__title')).toHaveText('Tu próxima historia empieza aquí');
-  await expect(page.locator('.open-pages__page--right')).toContainText('Elige un libro en tu librería');
 });
 
 test('lomos: apoyados en la balda, sin cruzarse, deterministas, dorado no generalizado', async ({ page }, info) => {

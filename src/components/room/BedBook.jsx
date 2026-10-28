@@ -174,7 +174,10 @@ export function RoomNavPlaques({ fit, bookTop, onOpenShelf, onOpenDiary }) {
   // Si el encuadre recorta el mueble (escritorio, horizontal), el acceso se queda en el borde visible más cercano
   const clampY = (y) => Math.max(60, Math.min(fit.panelH - 110, y));
   const place = (id, w, maxTop) => {
-    const p = HOTSPOTS[id].plaque;
+    // Ancla en su superficie; si el encuadre la deja fuera, la superficie alternativa del mismo mueble (sin flotar)
+    const first = HOTSPOTS[id].plaque;
+    const alt = HOTSPOTS[id].plaqueAlt;
+    const p = alt && toScreen(fit, first.x, first.y).y < 60 ? alt : first;
     const at = toScreen(fit, p.x, p.y);
     return { left: clampX(at.x, w), top: Math.min(clampY(at.y), maxTop ?? Infinity), transform: `rotate(${p.angle ?? 0}deg)` };
   };

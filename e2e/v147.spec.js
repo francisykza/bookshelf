@@ -45,9 +45,9 @@ test('habitación: encabezado sin solaparse, accesos de 44 px, título sin guion
     expect(r.height, sel).toBeGreaterThanOrEqual(44);
     expect(r.right, sel).toBeLessThanOrEqual(page.viewportSize().width);
   }
-  const title = await page.locator('.bed-book__title').evaluate((el) => getComputedStyle(el).hyphens);
+  const title = await page.locator('.bed-pages__title').first().evaluate((el) => getComputedStyle(el).hyphens);
   expect(title).toBe('manual');
-  const btn = await rect(page, '.bed-book__action');
+  const btn = await rect(page, '.bed-pages__hit');
   expect(page.viewportSize().height - btn.bottom).toBeGreaterThanOrEqual(12);
   await shot(page, info, 'v147-habitacion');
 });
@@ -55,7 +55,7 @@ test('habitación: encabezado sin solaparse, accesos de 44 px, título sin guion
 test('registro: «He leído 20» y «Voy por la página» dan la misma vista previa; cerrar con algo escrito pregunta', async ({ page }, info) => {
   test.skip(!portrait(page), 'el registro se abre desde el libro grande de la cama');
   await load(page);
-  await page.locator('.bed-book').getByRole('button', { name: 'Registrar lectura' }).click();
+  await page.getByRole('button', { name: /^Registrar lectura de / }).click();
   const input = page.locator('.panel--log input[inputmode]');
   await page.getByRole('radio', { name: 'He leído' }).click();
   await expect(input).toHaveAttribute('placeholder', 'Ej. 20');
@@ -207,11 +207,11 @@ test('abandonado: si era el libro de la cama, se dice y se ofrece elegir otro si
   });
   await page.addInitScript((v) => localStorage.setItem('bookshelf:v1', v), seeded);
   await page.reload();
-  await page.waitForSelector('.bed-book');
-  await expect(page.locator('.bed-book')).toHaveAttribute('data-state', 'abandoned');
-  await expect(page.locator('.bed-book__kicker').first()).toHaveText('Lectura abandonada');
-  await expect(page.locator('.bed-book__title')).toHaveText('Circe');
-  await expect(page.locator('.bed-book').getByRole('button', { name: 'Registrar lectura' })).toHaveCount(0);
-  await page.locator('.bed-book').getByRole('button', { name: 'Elegir otra lectura' }).click();
+  await page.waitForSelector('.bed-pages');
+  await expect(page.locator('.bed-pages').first()).toHaveAttribute('data-state', 'abandoned');
+  await expect(page.locator('.bed-pages__kicker').first()).toHaveText('Lectura abandonada');
+  await expect(page.locator('.bed-pages__title').first()).toHaveText('Circe');
+  await expect(page.getByRole('button', { name: /^Registrar lectura de / })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Elegir otra lectura' }).click();
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
 });

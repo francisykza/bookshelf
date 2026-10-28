@@ -16,10 +16,11 @@ import { useSceneArtLoader, SceneArtContext } from '../../hooks/useSceneArt';
 import { AmbientLife, BreezeLeaves } from './AmbientLife';
 import { RefreshBase, RefreshLayers } from './RoomRefresh';
 import { BaySailboats } from './BaySailboats';
-import { LaptopScreen, OpenBookPages } from './RoomSurfaces';
+import { LaptopScreen } from './RoomSurfaces';
+import { BookOnBed, BookOnBedActions } from './BedPages';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
 import { RoomSigns } from './RoomSigns';
-import { BED_BOOK_MIN_H, BedBook, RoomHeader, RoomNavPlaques, bedBookTop } from './BedBook';
+import { RoomHeader, RoomNavPlaques } from './BedBook';
 import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
 import { RoomReflections } from './RoomReflections';
@@ -173,15 +174,9 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
               </button>
             </div>
           )}
-          {/* Primer plano (SPEC §38): cabecera, accesos y el libro grande de la cama, en píxeles de pantalla */}
+          {/* Nombre accesible de la pantalla (sin título visible) y accesos anclados a sus muebles (SPEC §46–47) */}
           <RoomHeader panelW={fit.panelW} />
-          {fit.panelH >= BED_BOOK_MIN_H && (
-            <>
-              <RoomNavPlaques fit={fit} bookTop={bedBookTop(fit)} onOpenShelf={onOpenShelf} onOpenDiary={onOpenLaptop} />
-              <BedBook book={bedBook} fit={fit} onOpenBook={onOpenBook} onLog={(book) => onLogReading?.(book)} onChoose={onOpenShelf} hidden={modalOpen} />
-            </>
-          )}
-          {fit.panelH < BED_BOOK_MIN_H && <RoomNavPlaques fit={fit} onOpenShelf={onOpenShelf} onOpenDiary={onOpenLaptop} />}
+          <RoomNavPlaques fit={fit} onOpenShelf={onOpenShelf} onOpenDiary={onOpenLaptop} />
           {guide?.visible && inRoom && <OnboardingGuide guide={guide} fit={fit} reducedMotion={reducedMotion} />}
           {/* Etiqueta informativa: interfaz en píxeles de pantalla, nunca dentro del lienzo escalado (ni durante
               el cambio de habitación, ni con la guía o un panel abiertos) */}
@@ -212,8 +207,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         <div className="room-surfaces">
           <RoomShelfBooks books={books} currentId={reading?.id} onOpenShelf={onOpenShelf} onHover={onHover} active={live} scale={fit.scale} awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))} />
           <LaptopScreen today={today} running={live && !reducedMotion} />
-          {/* Con el libro grande de la cama, el libro pintado de la escena no repite los datos */}
-          {fit.panelH < BED_BOOK_MIN_H && <OpenBookPages book={reading} />}
+          {/* La lectura escrita en el libro pintado de la cama, en coordenadas de la ilustración (SPEC §47) */}
+          <BookOnBed book={bedBook} />
         </div>
 
         {/* 10 · luz y atmósfera (sin geometría heredada) */}
@@ -252,6 +247,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
                 : { title: 'Ningún libro abierto', text: 'Elige uno en tu librería' }
             }
           />
+          {/* Botón real de «Registrar lectura», en el mismo lugar que el dibujado y por encima del hotspot del libro */}
+          <BookOnBedActions book={bedBook} scale={fit.scale} onLog={(book) => onLogReading?.(book)} onChoose={onOpenShelf} />
           <Hotspot id="laptop" spot={lit('laptop')} guides={guides} hint={3} onHover={onHover} onActivate={onOpenLaptop} label={{ title: 'Estadísticas y reto anual', text: `${readThisYear} de ${settings.yearGoal} libros este año`, meta: 'Calendario · Misiones del Booknook' }} />
           <Hotspot
             id="headphones"

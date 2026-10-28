@@ -99,7 +99,7 @@ de biblioteca y ficha), `figures-145.css` (figuras en baldas, su detalle y la pa
 cama, registro y pantalla del portátil), `books-146.css` (acabado del libro físico por edición) y `search-146.css`
 (buscador y confirmación del alta); desde la 1.47: `library-147.css` (cabecera compacta y fila textil de la
 biblioteca) y `room-147.css` (encabezado, accesos, registro y Ambiente); desde la 1.48: `ui-148.css` (correcciones de integración y
-selector de lectura). **Ojo**: `fix-138.css` aún da `top`/`left` con el área segura a `.lib-hero__back`; en un móvil real
+selector de lectura); desde la 1.49: `room-149.css` (lectura sobre el libro pintado, `BedPages.jsx`). **Ojo**: `fix-138.css` aún da `top`/`left` con el área segura a `.lib-hero__back`; en un móvil real
 eso desplaza el botón (en emulación el área segura es 0). Las hojas antiguas siguen cargadas: antes de crear una clase nueva,
 buscar si ya existe con otro uso.
 

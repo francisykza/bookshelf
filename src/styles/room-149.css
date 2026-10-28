@@ -1,0 +1,260 @@
+/* ── 1.49.0 · Lectura sobre el libro pintado y accesos fijados a sus muebles (SPEC §47) ──────────────────────────
+   El contenido del libro va en coordenadas de la ilustración sobre las páginas pintadas (lienzo = px de la escena,
+   con las proporciones de cada zona útil): las medidas de letra son px de la ilustración (a 390 px de pantalla, ×0,5).
+   Tinta sin sombras ni fondos: el papel es el pintado. */
+
+.bed-pages {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bed-pages__page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  overflow: hidden;
+  transform-origin: 0 0;
+  color: #47362a;
+  font-family: var(--font-display);
+  /* La tinta se asienta en el papel pintado */
+  mix-blend-mode: multiply;
+}
+
+.bed-pages__kicker {
+  margin-bottom: 4px;
+  color: #6f5a46;
+  font-family: var(--font-sans);
+  font-size: 19px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.bed-pages__title {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.04;
+  hyphens: manual;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.bed-pages__title[data-size='medium'] {
+  font-size: 30px;
+}
+
+.bed-pages__title[data-size='long'] {
+  -webkit-line-clamp: 4;
+  font-size: 27px;
+}
+
+.bed-pages__author {
+  max-width: 100%;
+  margin-top: 6px;
+  overflow: hidden;
+  color: #5a4434;
+  font-size: 24px;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bed-pages__progress {
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1.02;
+  font-variant-numeric: lining-nums;
+}
+
+.bed-pages__secondary {
+  margin-top: 2px;
+  color: #4f3b2c;
+  font-size: 24px;
+  font-variant-numeric: lining-nums;
+}
+
+.bed-pages__meter {
+  display: block;
+  flex: none;
+  width: 70%;
+  height: 8px;
+  margin-top: 8px;
+  border-radius: 99px;
+  background: rgb(125 148 115 / 0.25);
+  box-shadow: inset 0 0 0 1px rgb(110 90 60 / 0.2);
+  overflow: hidden;
+}
+
+.bed-pages__meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #6f8a65;
+}
+
+/* Botón dibujado: terracota cosido, contenido y discreto (el toque lo recoge el botón real de la capa superior) */
+.bed-pages__action,
+.bed-pages__hit {
+  position: absolute;
+  left: 4px;
+  bottom: 8px;
+  width: min(74%, 200px);
+  height: 40px;
+}
+
+.bed-pages__action {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 0 10px 2px;
+  background: url('/assets/room/boton-terracota-cosido.webp') center / 100% 100% no-repeat;
+  color: #fff3e2;
+  font-size: 23px;
+  font-weight: 600;
+  white-space: nowrap;
+  mix-blend-mode: normal;
+  opacity: 0.94;
+}
+
+.bed-pages__page:has(.bed-pages__action) {
+  mix-blend-mode: normal;
+}
+
+.bed-pages__page:has(.bed-pages__action) > :not(.bed-pages__action) {
+  mix-blend-mode: multiply;
+}
+
+/* Capa tocable: transparente, con al menos 44 px de pantalla de alto, centrada en el botón dibujado */
+.bed-pages--actions {
+  z-index: 6;
+}
+
+.bed-pages--actions .bed-pages__page {
+  overflow: visible;
+  mix-blend-mode: normal;
+}
+
+.bed-pages__hit {
+  bottom: calc(8px + 20px - var(--hit, 88px) / 2);
+  left: 0;
+  width: calc(min(74%, 200px) + 8px);
+  height: var(--hit, 88px);
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.bed-pages__hit:focus-visible {
+  outline: 4px solid #8a3f26;
+  outline-offset: -4px;
+}
+
+/* Sin el libro superpuesto de la 1.46–1.48 */
+.bed-book {
+  display: none !important;
+}
+
+/* «Mi biblioteca»: placa pequeña fijada al frente plano de la balda inferior; el papel visible es bajo (como una
+   etiqueta de mueble) y la superficie de pulsación sigue siendo de 44 px */
+.room-plaque[data-id='shelf'] {
+  gap: 4px;
+  padding: 0 10px 0 8px;
+  font-size: 0.84rem;
+}
+
+.room-plaque[data-id='shelf']::before {
+  inset: 9px 0;
+}
+
+.room-plaque[data-id='shelf'] svg {
+  width: 13px;
+  height: 13px;
+}
+
+.room-plaque[data-id='shelf'] i {
+  font-size: 0.9rem;
+}
+
+/* Ajuste tras la captura: la barra de progreso queda por encima del botón, sin taparse */
+.bed-pages__page--right .bed-pages__kicker {
+  margin-bottom: 1px;
+  line-height: 1.2;
+}
+
+.bed-pages__secondary {
+  margin-top: 0;
+  line-height: 1.15;
+}
+
+.bed-pages__meter {
+  margin-top: 6px;
+}
+
+.bed-pages__action,
+.bed-pages__hit {
+  bottom: 2px;
+  height: 36px;
+}
+
+.bed-pages__hit {
+  bottom: calc(2px + 18px - var(--hit, 88px) / 2);
+  height: var(--hit, 88px);
+}
+
+/* Títulos largos completos: hasta cuatro líneas con una letra algo menor (nunca diminuta) y el autor en una línea */
+.bed-pages__page--left .bed-pages__kicker {
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.bed-pages__title[data-size='medium'] {
+  -webkit-line-clamp: 4;
+  font-size: 27px;
+}
+
+.bed-pages__title[data-size='long'] {
+  -webkit-line-clamp: 4;
+  font-size: 24px;
+}
+
+.bed-pages__author {
+  margin-top: 4px;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+/* El botón real va por encima del hotspot del libro (z-index 7), que abre la ficha desde el resto de las páginas */
+.room-hotspots .bed-pages--actions {
+  z-index: 8;
+}
+
+/* «Mi biblioteca» cabe en el frente de la balda también a 360 px (≈ 113 px de madera visibles) */
+.room-plaque[data-id='shelf'] {
+  gap: 3px;
+  padding: 0 7px 0 6px;
+  font-size: 0.8rem;
+}
+
+.room-plaque[data-id='shelf'] svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* «Volver al rincón» recupera su superficie de 44 px en todos los tamaños */
+.lib-head--147 .lib-hero__back {
+  min-height: 44px;
+}

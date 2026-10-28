@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.48.0 (2026-10-28), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.48.0. Fuera de git
+- **Versión publicada**: 1.49.0 (2026-10-28), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.49.0. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.49.0 | Lectura sobre el libro pintado (sin libro superpuesto), cascos en el encuadre, «Mi biblioteca» en la balda inferior e indicadores anclados | §47 |
 | 1.48.0 | Cabecera de biblioteca sin solapes, cinco filtros sin scroll, material de libros, habitación sin título, cascos visibles, carteles orientados y selector de lectura | §46 |
 | 1.47.0 | Estado «Abandonado», biblioteca compacta con fila textil y herramientas en un icono, pulido de habitación, registro y Ambiente | §43–45 |
 | 1.46.1 | Ventana del calendario del portátil centrada en la zona visible | §42 |
@@ -53,6 +54,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Decisiones vigentes que no deben deshacerse
 
+- (1.49, decisión de Francisco) La lectura se escribe sobre el libro **pintado** de la cama en coordenadas de la escena;
+  no volver a poner un libro superpuesto en píxeles de pantalla. Encuadre vertical `x: 0.29` para ver los cascos (§47).
 - (1.48) Los cinco filtros siempre a la vista sin desplazamiento horizontal (dos filas 3 + 2 si no caben); la
   habitación no muestra «Mi rincón» ni su subtítulo; los carteles se orientan según su superficie (§46).
 - Biblioteca (1.47, sustituye a lo anterior): buscador y cinco filtros textiles siempre visibles; el resto de
@@ -79,6 +82,13 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-28 · cuenta principal · 1.49.0 (publicada)
+- Encargo «Corrige la integración visual de la pantalla principal»: diagnóstico y cambios en §47. Francisco eligió
+  escribir sobre el libro pintado (frente a usar el fondo móvil o esperar recursos).
+- El componente `BedBook` sigue en el código para `bedProgress`, `RoomHeader` y `RoomNavPlaques`; el libro
+  superpuesto ya no se monta (`BedPages.jsx` lo sustituye).
+- Commit y subida a producción pedidos por Francisco. Sin comprobar aún en su móvil real.
 
 ### 2026-10-28 · cuenta principal · 1.48.0 (publicada)
 - Encargo «Corrección de integración visual y selector de lectura» con capturas de su móvil: ver §46. Causa del

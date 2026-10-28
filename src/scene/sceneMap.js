@@ -38,7 +38,9 @@ export const ROOMS = {
     framing: [
       // Móvil vertical: la imagen sobra a los lados; algo más de recorte a la izquierda para que el té y el
       // portátil no se corten (la lámpara, si queda fuera, pasa al control «Fuera de vista»)
-      { maxAspect: 0.62, x: 0.62, y: 0.5 },
+      // 1.49 (SPEC §47): menos recorte a la izquierda para que los cascos se vean casi enteros (≈ 88 % a 390 px);
+      // el portátil queda más cortado por la derecha y el té, fuera (sigue en «Guías › Fuera de vista»)
+      { maxAspect: 0.62, x: 0.29, y: 0.5 },
       // Tableta y ventanas casi cuadradas: un poco hacia la cama y la mesita
       { maxAspect: 1, x: 0.5, y: 0.62 },
       // Horizontal: franja de la mesita, el portátil, el té, los auriculares y el borde del libro
@@ -177,8 +179,11 @@ export const HOTSPOTS = {
     shape: [[0, 60], [118, 120], [118, 492], [342, 552], [342, 1000], [200, 1040], [0, 960]],
     label: { x: 200, y: 840 },
     badge: { x: 60, y: 760 },
-    // Acceso «Mi biblioteca» (1.48): colgado del frente de la balda de los libros, que baja de (126, 648) a (328, 678)
-    plaque: { x: 128, y: 653, angle: 8.4 },
+    // Acceso «Mi biblioteca» (1.49): fijado al frente plano de la balda inferior (y ≈ 805–825), bajo la última fila de
+    // libros: no tapa lomos y queda dentro del mueble (de x 106 a 342)
+    plaque: { x: 112, y: 803, angle: 0 },
+    // Si el encuadre deja esa balda fuera (escritorio, horizontal), la siguiente: frente del hueco derecho, que sube ≈ 5°
+    plaqueAlt: { x: 198, y: 928, angle: -5 },
   },
   laptop: {
     shape: [[757, 988], [908, 1010], [895, 1140], [860, 1175], [760, 1200], [606, 1150], [640, 1130], [722, 1118]],

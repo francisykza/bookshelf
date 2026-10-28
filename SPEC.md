@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.48.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.49.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3344,3 +3344,47 @@ desplazar los filtros en horizontal y mantenían el título de la habitación. E
   mientras la vista está abierta; cambiar la fecha no los recrea. El guardado usa el libro de su formulario; el
   selector se bloquea mientras se guarda. Elegir aquí no cambia el libro de la cama ni su estado.
 - Pruebas: `e2e/v148.spec.js`.
+
+## 47. Pantalla principal integrada en la escena (1.49.0)
+
+Decisión de Francisco: escribir la lectura sobre el libro pintado del fondo. Estilos: `styles/room-149.css`.
+
+### 47.1 Diagnóstico
+- **Pintado en el fondo** (`fondo-limpio.webp` / `cozy-book-room.jpg`, 941 × 1672): estantería, libro abierto sobre la
+  cama, cascos, mesa con portátil, vaso de té, vela, ventana y mar. **Imágenes aparte**: hiedra y cortina (capas
+  de la escena), primer plano del portátil, lomos y figuras de las baldas, y (1.46–1.48) el libro `libro-abierto.webp`.
+- **Escalado y recorte**: `SceneStage` escala el fondo para cubrir el panel (cover) y lo recorta según `framing`.
+  A 390 × 844 se ven 773 de los 941 px de ancho; con `x: 0.62` se recortaban 104 px por la izquierda y con ellos
+  parte de los cascos (x 22–248): **el recorte venía del encuadre, no del recurso** (que los tiene enteros).
+- **Anclajes**: hotspots, lomos, figuras, pantalla y páginas del libro van en coordenadas de la escena (mismo
+  lienzo escalado). El libro grande de la 1.46–1.48 y los carteles iban en píxeles de pantalla sobre la capa de
+  interfaz; el libro, además, con una perspectiva casi cenital ajena a la cama y encima del libro pintado (silueta
+  duplicada). **El recurso `libro-abierto.webp` no es compatible con la perspectiva de la cama.**
+- **Indicador verde**: era el estado de la copia en la nube de la cuenta (no hay indicador social). El dorado de
+  «Guías» indica objetos fuera de vista.
+
+### 47.2 Cambios
+- **Libro**: se retira el libro superpuesto. La lectura se proyecta con la homografía del escenario sobre las zonas
+  útiles de las páginas pintadas (`BOOK_LEFT_PAGE` y `BOOK_RIGHT_PAGE`, ya separadas del pliegue y los bordes), con
+  un lienzo de las proporciones de cada zona (perspectiva del papel sin aplastar el texto) y tinta en `multiply`; la
+  luz del día y la noche la tiñen como al resto. Izquierda: «Tu lectura», título (hasta 4 líneas, letra mínima
+  ≈ 12 px de pantalla a 390), autor. Derecha: «Por donde vas», página, total y porcentaje, barra exacta y un botón
+  terracota pequeño; el toque lo recoge un botón real en la capa de objetos (≥ 44 px de pantalla), encima del
+  hotspot del libro, que sigue abriendo la ficha. Estados: lectura, sin total, terminada, abandonada y sin lectura.
+- **Encuadre vertical**: `framing` `x: 0.62 → 0.29`. Cascos ≥ 85 % visibles de 360 a 430 px; el portátil se
+  recorta más por la derecha y el vaso de té queda fuera (su acción sigue en «Guías › Fuera de vista»).
+- **«Mi biblioteca»**: fijado al frente plano de la balda inferior (y ≈ 805), sin giro, bajo la última fila de
+  libros (no tapa lomos) y dentro del mueble; papel bajo (≈ 26 px) con superficie de 44 px. Si el encuadre deja esa balda
+  fuera (escritorio, horizontal), pasa al frente de la balda siguiente (`plaqueAlt`), sin flotar. «Mi diario» sigue en el
+  borde de la mesa (12°) y «Social ›», junto al marco derecho de la ventana.
+- **Indicadores**: el de la cuenta solo aparece con un estado real de sincronización, en la esquina exterior del
+  botón con un aro del color del papel (sin pisar el icono) y con el estado en el nombre accesible. El de «Guías»,
+  igual, fuera del texto.
+
+### 47.3 Recursos
+- Si se quisiera el libro de la maqueta (más grande que el pintado) sobre esta habitación, harían falta: el fondo
+  actual **sin** el libro pintado (mismo encuadre y luz) y un libro abierto dibujado **en la perspectiva del
+  edredón** (girado ≈ 14° y visto en oblicuo como el pintado), con fondo transparente y sombra propia aparte.
+- Para ver a la vez los cascos enteros y el portátil completo a 390 px haría falta un fondo vertical con esos
+  objetos más juntos (como el fondo para móvil entregado, que no tiene té, vela ni lámpara).
+- Pruebas: `e2e/v149.spec.js`; adaptadas `diegetic`, `gouache`, `panorama`, `v147` y `v148`.
