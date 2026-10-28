@@ -15,10 +15,17 @@ const BOOK_RATIO = 1200 / 595;
 /** Por debajo de esta altura de panel (móvil en horizontal) el libro grande no cabe legible: se usa el de la escena. */
 export const BED_BOOK_MIN_H = 520;
 
-/** Ancho del libro en pantalla: algo más ancho que el móvil (sangra por los lados como en la maqueta), con tope. */
+/**
+ * Ancho del libro en pantalla (1.48, SPEC §46): ≈ 90 % del panel, anclado a la derecha y apoyado en el edredón, para
+ * que los cascos pintados a la izquierda sigan viéndose; con tope por altura y en escritorio.
+ */
 export function bedBookWidth(fit) {
-  return Math.round(Math.min(fit.panelW * 1.06, 660, fit.panelH * 0.34 * BOOK_RATIO));
+  return Math.round(Math.min(fit.panelW * 0.9, 600, fit.panelH * 0.3 * BOOK_RATIO));
 }
+
+/** Alto del libro y su borde superior en pantalla (para que «Mi diario» no lo pise). */
+export const bedBookHeight = (fit) => Math.round(bedBookWidth(fit) / BOOK_RATIO);
+export const bedBookTop = (fit) => fit.panelH - bedBookHeight(fit) - 4;
 
 /** Datos de «Por donde vas» sin inventar cifras: sin total no hay porcentaje, barra ni páginas restantes. */
 export function bedProgress(book) {
@@ -46,10 +53,18 @@ export function bedProgress(book) {
 
 export function BedBook({ book, fit, onOpenBook, onLog, onChoose, pressed = false, hidden = false }) {
   const w = bedBookWidth(fit);
-  const style = { width: w, height: Math.round(w / BOOK_RATIO), '--bw': `${w}px`, backgroundImage: `url(${BOOK_ART})` };
+  // Anclado a la derecha con una pequeña sangría (como apoyado en la cama, no flotando delante)
+  const style = { width: w, height: Math.round(w / BOOK_RATIO), left: Math.round(fit.panelW - w * 0.97), '--bw': `${w}px` };
+  const art = (
+    <>
+      <span className="bed-book__contact" aria-hidden="true" />
+      <span className="bed-book__art" style={{ backgroundImage: `url(${BOOK_ART})` }} aria-hidden="true" />
+    </>
+  );
   if (!book) {
     return (
-      <section className="bed-book" data-state="empty" style={style} aria-label="Tu lectura actual" inert={hidden || undefined} aria-hidden={hidden || undefined}>
+      <section className="bed-book" data-state="empty" style={style} data-compact={w < 360 || undefined} aria-label="Tu lectura actual" inert={hidden || undefined} aria-hidden={hidden || undefined}>
+        {art}
         <div className="bed-book__page bed-book__page--left">
           <span className="bed-book__kicker">Tu lectura actual</span>
           <b className="bed-book__title" data-size="medium">
@@ -73,7 +88,8 @@ export function BedBook({ book, fit, onOpenBook, onLog, onChoose, pressed = fals
   const finished = book.status === 'read' || book.status === 'abandoned';
   const kicker = book.status === 'abandoned' ? 'Lectura abandonada' : 'Tu lectura actual';
   return (
-    <section key={book.id} className="bed-book" data-state={book.status === 'abandoned' ? 'abandoned' : finished ? 'finished' : 'reading'} data-pressed={pressed || undefined} style={style} aria-label="Tu lectura actual" inert={hidden || undefined} aria-hidden={hidden || undefined}>
+    <section key={book.id} className="bed-book" data-state={book.status === 'abandoned' ? 'abandoned' : finished ? 'finished' : 'reading'} data-pressed={pressed || undefined} style={style} data-compact={w < 360 || undefined} aria-label="Tu lectura actual" inert={hidden || undefined} aria-hidden={hidden || undefined}>
+        {art}
       {/* Página izquierda: abre la ficha del libro (toda la página es el objetivo táctil) */}
       <button type="button" className="bed-book__page bed-book__page--left" onClick={() => onOpenBook(book)} aria-label={`${kicker}: ${title}${book.author ? `, de ${book.author}` : ''}. Abrir su ficha`}>
         <span className="bed-book__kicker" aria-hidden="true">
@@ -147,26 +163,31 @@ export function RoomHeader({ panelW }) {
 }
 
 /**
- * Accesos legibles y siempre visibles (con o sin guías): «Mi biblioteca» sobre la estantería y «Mi diario» junto a
- * la mesa del portátil. Cada uno se ancla a su mueble con la cámara del escenario y se mantiene dentro del panel.
+ * Accesos legibles y siempre visibles (con o sin guías), cada uno colgado del borde de su mueble y orientado como
+ * esa superficie (1.48, SPEC §46): «Mi biblioteca» del frente de la balda de los libros (que baja ≈ 8° hacia la
+ * derecha) y «Mi diario» del borde de la mesa junto al portátil (≈ 12°). Ancla y ángulo salen de `HOTSPOTS.*.plaque`;
+ * la posición se proyecta con la cámara del escenario y se mantiene dentro del panel.
  */
-const PLAQUE_W = { shelf: 132, diary: 112 };
+const PLAQUE_W = { shelf: 124, diary: 104 };
 export function RoomNavPlaques({ fit, bookTop, onOpenShelf, onOpenDiary }) {
   const clampX = (x, w) => Math.max(8, Math.min(fit.panelW - w - 8, x));
   // Si el encuadre recorta el mueble (escritorio, horizontal), el acceso se queda en el borde visible más cercano
-  const clampY = (y) => Math.max(88, Math.min(fit.panelH - 110, y));
-  const shelf = toScreen(fit, HOTSPOTS.shelf.plaque.x, HOTSPOTS.shelf.plaque.y);
-  const laptop = toScreen(fit, HOTSPOTS.laptop.plaque.x, HOTSPOTS.laptop.plaque.y);
-  // El diario se apoya en la mesa sin taparse con el libro de la cama
-  const diaryTop = clampY(Math.min(laptop.y, (bookTop ?? fit.panelH) - 52));
+  const clampY = (y) => Math.max(60, Math.min(fit.panelH - 110, y));
+  const place = (id, w, maxTop) => {
+    const p = HOTSPOTS[id].plaque;
+    const at = toScreen(fit, p.x, p.y);
+    return { left: clampX(at.x, w), top: Math.min(clampY(at.y), maxTop ?? Infinity), transform: `rotate(${p.angle ?? 0}deg)` };
+  };
+  // El diario no pisa el libro de la cama (su esquina derecha baja con el giro)
+  const diaryMax = (bookTop ?? fit.panelH) - 44 - Math.sin(((HOTSPOTS.laptop.plaque.angle ?? 0) * Math.PI) / 180) * PLAQUE_W.diary - 4;
   return (
     <>
-      <button type="button" className="room-plaque" data-id="shelf" style={{ left: clampX(shelf.x, PLAQUE_W.shelf), top: clampY(shelf.y) }} onClick={onOpenShelf}>
+      <button type="button" className="room-plaque" data-id="shelf" style={place('shelf', PLAQUE_W.shelf)} onClick={onOpenShelf}>
         <BookOpen aria-hidden="true" />
         <span>Mi biblioteca</span>
         <i aria-hidden="true">›</i>
       </button>
-      <button type="button" className="room-plaque" data-id="diary" style={{ left: clampX(laptop.x - PLAQUE_W.diary, PLAQUE_W.diary), top: diaryTop }} onClick={onOpenDiary}>
+      <button type="button" className="room-plaque" data-id="diary" style={place('laptop', PLAQUE_W.diary, diaryMax)} onClick={onOpenDiary}>
         <PenLine aria-hidden="true" />
         <span>Mi diario</span>
         <i aria-hidden="true">›</i>

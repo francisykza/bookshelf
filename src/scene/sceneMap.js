@@ -177,16 +177,15 @@ export const HOTSPOTS = {
     shape: [[0, 60], [118, 120], [118, 492], [342, 552], [342, 1000], [200, 1040], [0, 960]],
     label: { x: 200, y: 840 },
     badge: { x: 60, y: 760 },
-    // Esquina superior izquierda del acceso «Mi biblioteca» (1.46): en el hueco libre bajo la balda de los libros
-    // (más arriba taparía la balda central de figuras)
-    plaque: { x: 122, y: 700 },
+    // Acceso «Mi biblioteca» (1.48): colgado del frente de la balda de los libros, que baja de (126, 648) a (328, 678)
+    plaque: { x: 128, y: 653, angle: 8.4 },
   },
   laptop: {
     shape: [[757, 988], [908, 1010], [895, 1140], [860, 1175], [760, 1200], [606, 1150], [640, 1130], [722, 1118]],
     label: { x: 800, y: 975 },
     badge: { x: 760, y: 1060 },
-    // Esquina superior DERECHA del acceso «Mi diario» (1.46): en el canto de la mesa, bajo el portátil
-    plaque: { x: 768, y: 1178 },
+    // Acceso «Mi diario» (1.48): colgado del borde de la mesa junto al portátil, que baja ≈ 12° hacia la derecha
+    plaque: { x: 628, y: 1222, angle: 12 },
   },
   headphones: {
     shape: [[22, 1330], [60, 1295], [140, 1280], [200, 1290], [235, 1320], [248, 1370], [235, 1415], [180, 1428], [140, 1410], [80, 1400], [25, 1385]],

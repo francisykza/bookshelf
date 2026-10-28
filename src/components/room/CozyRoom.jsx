@@ -19,7 +19,7 @@ import { BaySailboats } from './BaySailboats';
 import { LaptopScreen, OpenBookPages } from './RoomSurfaces';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
 import { RoomSigns } from './RoomSigns';
-import { BED_BOOK_MIN_H, BedBook, RoomHeader, RoomNavPlaques, bedBookWidth } from './BedBook';
+import { BED_BOOK_MIN_H, BedBook, RoomHeader, RoomNavPlaques, bedBookTop } from './BedBook';
 import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
 import { RoomReflections } from './RoomReflections';
@@ -177,7 +177,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           <RoomHeader panelW={fit.panelW} />
           {fit.panelH >= BED_BOOK_MIN_H && (
             <>
-              <RoomNavPlaques fit={fit} bookTop={fit.panelH - Math.round(bedBookWidth(fit) / (1200 / 595)) + 8} onOpenShelf={onOpenShelf} onOpenDiary={onOpenLaptop} />
+              <RoomNavPlaques fit={fit} bookTop={bedBookTop(fit)} onOpenShelf={onOpenShelf} onOpenDiary={onOpenLaptop} />
               <BedBook book={bedBook} fit={fit} onOpenBook={onOpenBook} onLog={(book) => onLogReading?.(book)} onChoose={onOpenShelf} hidden={modalOpen} />
             </>
           )}

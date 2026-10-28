@@ -558,7 +558,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
               <button
                 ref={toolsBtn}
                 type="button"
-                className="lib-tools-icon craft craft--paper"
+                className="lib-tools-icon"
                 aria-label="Vista y herramientas"
                 title="Vista y herramientas"
                 aria-expanded={toolsOpen}

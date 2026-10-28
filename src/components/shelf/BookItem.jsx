@@ -168,7 +168,9 @@ export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdg
       data-device={device || undefined}
       data-bezel={device ? bezel(book) : undefined}
       aria-hidden={variant === 'shelf' ? undefined : 'true'}
-      style={{ '--spine': spine ?? spineColor(book), '--scale': scale, '--d': `${depth}px` }}
+      data-cover-spine={!device && book.cover ? '' : undefined}
+      // El lomo continúa la cubierta con su propio borde izquierdo (1.48): no depende de leer los píxeles (CORS)
+      style={{ '--spine': spine ?? spineColor(book), '--scale': scale, '--d': `${depth}px`, ...(!device && book.cover ? { '--cover-url': `url("${String(book.cover).replace(/["\\]/g, '')}")` } : null) }}
     >
       <span className="pbook__body">
         {/* Caras del volumen (CSS 3D): lomo a la izquierda y canto superior; el e-reader, solo su marco */}

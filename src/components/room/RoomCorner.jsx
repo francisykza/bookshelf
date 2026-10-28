@@ -9,6 +9,9 @@ import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
 import { TOD_ORDER } from './RoomHotspots';
 
+/** Qué indica el punto de color del acceso a la cuenta (solo con estados reales de la sincronización). */
+const SYNC_TEXT = { synced: 'Copia en la nube al día', pending: 'Hay cambios por subir', syncing: 'Sincronizando', error: 'La sincronización ha fallado', conflict: 'Hay un conflicto por resolver', offline: 'Sin conexión' };
+
 /** Horas del día con nombre corto e icono (1.47). */
 const TIMES = { morning: { label: 'Mañana', Icon: Sun }, sunset: { label: 'Atardecer', Icon: Sunset }, night: { label: 'Noche', Icon: Moon } };
 
@@ -99,7 +102,7 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, guideAc
     <>
       <div ref={cornerRef} className="room-corner" data-146="">
         {/* Cuenta y copias: acceso propio y pequeño (no depende de abrir Ambiente) */}
-        <button type="button" className="corner-paper corner-account craft craft--paper" data-status={cloud.status} onClick={onOpenAccount} aria-label="Tu cuenta y copias" title={cloud.user ? `Tu cuenta: ${cloud.user.email}` : 'Tu cuenta y copias'}>
+        <button type="button" className="corner-paper corner-account craft craft--paper" data-status={cloud.status} onClick={onOpenAccount} aria-label="Tu cuenta y copias" aria-description={SYNC_TEXT[cloud.status]} title={cloud.user ? `Tu cuenta: ${cloud.user.email}` : 'Tu cuenta y copias'}>
           <CircleUser aria-hidden="true" />
         </button>
         {/* «Ambiente»: clima de la escena, iluminación y sonido */}

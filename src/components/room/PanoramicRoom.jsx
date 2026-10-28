@@ -199,12 +199,12 @@ export function PanoramicRoom({ locked = false, reducedMotion = false, renderMai
               className="panorama-nav__btn panorama-nav__btn--next"
               onClick={() => go(SOCIAL_ROOM)}
               disabled={social.status === 'loading'}
-              aria-label={social.status === 'loading' ? 'Ir al Rincón social (cargando…)' : 'Ir al Rincón social'}
+              aria-label={social.status === 'loading' ? 'Abrir rincón social (cargando…)' : 'Abrir rincón social'}
             >
               {/* 1.46: acceso de papel siempre legible, también sin guías */}
               <Users className="panorama-nav__icon" aria-hidden="true" />
               <span className="panorama-nav__label" aria-hidden="true">
-                Rincón social
+                Social
               </span>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M7.5 3.5 L13.5 10 L7.5 16.5" />

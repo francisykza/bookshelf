@@ -351,13 +351,13 @@ test('lomos: apoyados en la balda, sin cruzarse, deterministas, dorado no genera
 test('navegación: acceso «Rincón social» legible y «Fuera de vista» dentro de Guías', async ({ page }, info) => {
   await load(page);
   const next = page.locator('.panorama-nav__btn--next');
-  await expect(next).toHaveAttribute('aria-label', 'Ir al Rincón social');
+  await expect(next).toHaveAttribute('aria-label', 'Abrir rincón social');
   const box = await next.boundingBox();
   expect(box.width).toBeGreaterThanOrEqual(44);
   expect(box.height).toBeGreaterThanOrEqual(44);
   // 1.46: placa de papel con icono y nombre siempre visibles (también sin guías), dentro de la pantalla
   await expect(next.locator('.panorama-nav__label')).toBeVisible();
-  await expect(next.locator('.panorama-nav__label')).toHaveText('Rincón social');
+  await expect(next.locator('.panorama-nav__label')).toHaveText('Social');
   expect(box.height).toBeLessThanOrEqual(60);
   expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize().width);
   await expect(page.locator('.offscreen')).toHaveCount(0);

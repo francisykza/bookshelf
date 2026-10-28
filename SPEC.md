@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.47.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.48.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3311,3 +3311,36 @@ Estilos: `styles/room-147.css`.
   con desplazamiento; alineado al borde derecho de la esquina en todos los anchos. El aviso de bienvenida se oculta
   mientras hay un menú de la esquina abierto (lo tapaba).
 - Pruebas: `e2e/v147.spec.js` y `src/domain/__tests__/v147.test.js`.
+
+## 46. Integración visual y selector de lectura (1.48.0)
+
+Corrige lo que mostraban las capturas de un móvil real. Sustituye las instrucciones anteriores que permitían
+desplazar los filtros en horizontal y mantenían el título de la habitación. Estilos: `styles/ui-148.css`.
+
+- **Cabecera de la biblioteca**: `fix-138.css` daba a «Volver» `top: env(safe-area-inset-top)`; con
+  `position: relative` (1.47) lo bajaba tanto como el área segura del móvil (0 en emulación) y lo metía en el
+  buscador. Ahora la cabecera es un layout real sin desplazamientos: fila (volver | herramientas), buscador en su
+  fila y filtros. Franja ilustrada más baja por encuadre. Herramientas: solo el icono sobre un círculo translúcido
+  pequeño (46 px de superficie), sin placa.
+- **Filtros**: los cinco a la vista sin desplazamiento horizontal: una fila de cinco desde 540 px; por debajo, dos
+  filas de tres y dos (rejilla de seis columnas), con su nombre entero. La elegida se marca con un ribete interior
+  cosido (ya no con una línea de guiones debajo).
+- **Libros**: canto de páginas marfil apagado con líneas finas (no blanco); lomo con el borde izquierdo de la propia
+  portada oscurecido (continúa la cubierta y no depende de leer sus píxeles); sombra en la bisagra; sombra de contacto
+  más corta y densa. Calibrado con tapa dura, tapa blanda y lector (*Songbirds and Snakes*) y con *Guerra y paz*.
+- **Habitación**: «Mi rincón» y el subtítulo ya no se ven (siguen como nombre accesible). Libro de la cama al ≈ 90 %
+  del ancho, anclado a la derecha y apoyado en el edredón: los cascos pintados quedan a la vista (≤ 25 % de su forma
+  bajo el libro). La ilustración del libro va en su propia capa con temperatura y luz moderadas y una sombra de
+  contacto localizada (sin halo). Con libro estrecho (< 360 px), el botón sin «+» y con menos relleno.
+- **Carteles**: cada uno colgado de su superficie y con su ángulo (`HOTSPOTS.*.plaque`): «Mi biblioteca» del frente
+  de la balda de los libros (8,4°), «Mi diario» del borde de la mesa junto al portátil (12°). «Social ›» compacto
+  (nombre accesible «Abrir rincón social»), junto al lateral derecho del ventanal, por encima de la vista al mar.
+- **Indicadores**: en la habitación no hay ningún indicador del apartado social. El punto verde es el de la cuenta
+  (copia en la nube al día) y el dorado, el de «Guías» (objetos fuera de vista); ambos van dentro de su botón, en su
+  esquina, y la cuenta describe su estado (`aria-description`). No se ha inventado indicador social.
+- **Registro**: selector «Lectura» al principio (portada, título, progreso y flecha). Lista con las lecturas en curso
+  primero (marcada la elegida), buscador si hay más de seis, y «Elegir otro libro» para pendientes y abandonados.
+  Empieza en el libro de la cama o en «Elige una lectura». Cada libro visitado mantiene su formulario y su borrador
+  mientras la vista está abierta; cambiar la fecha no los recrea. El guardado usa el libro de su formulario; el
+  selector se bloquea mientras se guarda. Elegir aquí no cambia el libro de la cama ni su estado.
+- Pruebas: `e2e/v148.spec.js`.

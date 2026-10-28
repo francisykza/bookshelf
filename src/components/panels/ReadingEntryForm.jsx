@@ -17,7 +17,7 @@ import { useLibrary } from '../../state/useLibrary';
 
 const fmtDate = (key) => parseDay(key).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
 
-export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDone, onCancel, keepOpen = false, onComplete, onOpenLibrary, onDirtyChange }) {
+export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDone, onCancel, keepOpen = false, onComplete, onOpenLibrary, onDirtyChange, onBusyChange }) {
   const { state, actions } = useLibrary();
   const uid = useId();
   const log = state.progress.readingLog;
@@ -54,6 +54,10 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
+  // Mientras se guarda, quien contiene el formulario bloquea cambios (p. ej. el selector de lectura)
+  useEffect(() => {
+    onBusyChange?.(saving);
+  }, [saving, onBusyChange]);
 
   // «Guardado» se ve ≈ 1200 ms y se anuncia una vez
   useEffect(() => {
