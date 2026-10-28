@@ -95,7 +95,9 @@ npx oxlint src                             # lint
 **Estilos**: `src/index.css` importa las hojas en orden y **las últimas mandan**. Las capas recientes (cada una
 acotada a su zona) son: `library-143.css` (biblioteca y libro físico), `craft-144.css` (materiales de los controles
 de biblioteca y ficha), `figures-145.css` (figuras en baldas, su detalle y la pantalla del portátil) y
-`computer.css` (ordenador, todo bajo `.pc`). Las hojas antiguas siguen cargadas: antes de crear una clase nueva,
+`computer.css` (ordenador, todo bajo `.pc`), y desde la 1.46: `room-146.css` (cabecera, «Ambiente», accesos, libro de la
+cama, registro y pantalla del portátil), `books-146.css` (acabado del libro físico por edición) y `search-146.css`
+(buscador y confirmación del alta). Las hojas antiguas siguen cargadas: antes de crear una clase nueva,
 buscar si ya existe con otro uso.
 
 **Recursos**: los originales de diseño están en `material-diseno/`, `art-inbox/` y `assets-source/` (**no están en

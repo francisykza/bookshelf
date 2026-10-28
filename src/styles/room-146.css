@@ -735,3 +735,51 @@
     padding: 0 3px;
   }
 }
+
+/* ── Pantalla del portátil (SPEC §42): la ventana del calendario centrada en la parte visible del escritorio ──
+   El primer plano pintado tapa el borde derecho (la planta, x ≥ 250 del lienzo 300 × 248) y la esquina inferior
+   derecha (el vaso, x ≥ 180 e y ≥ 165). La ventana va arriba y centrada en lo que queda a la vista
+   (x 14–244, y 12–164): nada del calendario queda detrás del vaso y la bahía del fondo se ve debajo. */
+.laptop-screen .cal[data-variant='scene'] {
+  inset: 12px 56px 84px 14px;
+  grid-template-rows: 20px 1fr;
+  border-radius: 5px;
+}
+
+.laptop-screen .cal[data-variant='scene'] .window__bar {
+  height: 20px;
+}
+
+.laptop-screen .cal[data-variant='scene'] .window__title {
+  font-size: 12px;
+}
+
+.laptop-screen .cal[data-variant='scene'] .window__title svg {
+  width: 11px;
+  height: 11px;
+}
+
+.laptop-screen .cal__scene-body {
+  gap: 3px;
+  padding: 5px 7px 6px;
+}
+
+.laptop-screen .cal[data-variant='scene'] .cal__head h3 {
+  font-size: 13px;
+}
+
+.laptop-screen .cal[data-variant='scene'] .cal__weekday {
+  font-size: 7.5px;
+}
+
+.laptop-screen .cal[data-variant='scene'] .cal__grid {
+  gap: 1.5px;
+}
+
+.laptop-screen .cal[data-variant='scene'] .cal__num {
+  font-size: 7.5px;
+}
+
+.laptop-screen .cal__today-line {
+  font-size: 9.5px;
+}

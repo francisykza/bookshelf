@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.46.0 · 2026-10-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.46.1 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3242,3 +3242,17 @@ Revisión del sistema de la 1.45 (§37) contra el encargo; se mantiene y se corr
   2,5 veces mayores porque esa estantería es más ancha y frontal. **Para igualarla hace falta un fondo con baldas
   superiores más anchas**; no se deforman las figuras para disimularlo. En horizontal y escritorio el encuadre no
   muestra estas baldas (la vitrina se ofrece en «Guías › Fuera de vista»).
+
+## 42. Pantalla del portátil centrada en la zona visible (1.46.1)
+
+- La ventana del calendario de la escena ocupaba la parte derecha e inferior de la pantalla, justo detrás del
+  primer plano pintado (la planta tapa x ≥ 250 del lienzo 300 × 248; el vaso, x ≥ 180 con y ≥ 165): se veían
+  cortadas las últimas filas y la línea de hoy. Ahora va arriba y centrada en la parte visible (x 14–244,
+  y 12–164), algo más compacta; debajo se ve la bahía del fondo de escritorio.
+- Se mantiene todo lo demás: proyección en las cuatro esquinas interiores del monitor, bisel pintado y primer plano
+  por encima, reflejo y viñeta tenues, brillo moderado (de noche toma el tono de la habitación), datos reales del
+  mismo calendario del panel y el diseño de apps del interior. Sonidos: `computerOn` al abrir (también desde
+  «Mi diario») y `appSwitch` al cambiar de app.
+- A 360–390 px el encuadre deja fuera el borde derecho de la pantalla, como en la maqueta; con la ventana a la
+  izquierda, el mes queda casi entero a la vista.
+- Prueba: `e2e/v146.spec.js` («portátil…»).

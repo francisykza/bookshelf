@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.46.0 (2026-10-27; commits de la 1.46 y este de estado), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.46.0. Fuera de git
+- **Versión publicada**: 1.46.1 (2026-10-28), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.46.1. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.46.1 | Ventana del calendario del portátil centrada en la zona visible | §42 |
 | 1.46.0 | Buscador por ISBN y elección de edición (§40), acabado físico de libros por edición (§39) y libro abierto grande en la cama con la lectura actual, «Ambiente» y «Guías» de papel, accesos «Mi biblioteca», «Mi diario» y «Rincón social», registro enfocado con «Deshacer» | §38–40 |
 | 1.45.0 | Cuatro posiciones de figuras en las baldas de la habitación, detalle de figura, dos figuras nuevas («El Guardián de los Clavos», «El Maestro y el Superviviente») y pantalla del portátil | §37 |
 | 1.44.0 | Materiales artesanales (terracota, lino salvia, papel crema) en biblioteca y ficha; libro con volumen 3D | §36 |
@@ -25,7 +26,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-0. **Resto del encargo de la 1.46**: repaso de la pantalla del portátil (punto 5). Figuras revisadas (§41): sin el
+0. **Encargo de la 1.46 terminado** (portátil, §42, publicado en la 1.46.1). Figuras revisadas (§41): sin el
    fondo de baldas anchas (punto 1) no pueden igualar el tamaño de la maqueta; faltan recortes con transparencia de
    la Dama, la Jinete y las tres figuras SVG. El escaneo de códigos no existe en el proyecto.
    En calendario y ficha el formulario de registro conserva su fila de guardado fija (lo exige `e2e/v123`): decidir
@@ -84,7 +85,9 @@ Formato de cada entrada (la más reciente arriba):
   Ojo: la portada de Open Library por ISBN de ese libro es un escaneo con pegatina. Prueba nueva `e2e/v146.spec.js`.
 - Después, punto 8: buscador por ISBN y elección de edición (§40). Google Books devolvía 429 (cuota sin clave)
   durante las pruebas: la app pasa a Open Library. Pruebas con proveedores simulados en `e2e/v146.spec.js`.
-- Commit de la 1.46.0 pedido por Francisco y después subido a producción a petición suya. Queda el resto del encargo
+- Commit de la 1.46.0 pedido por Francisco y después subido a producción a petición suya.
+- 2026-10-28 · 1.46.1, punto 5 (§42), con commit y subida a petición de Francisco: ventana del calendario de la pantalla del portátil centrada en la zona
+  que no tapan la planta y el vaso pintados. Prueba en `e2e/v146.spec.js`. Queda el resto del encargo
   (ver «Pendiente» 0): figuras (punto 4) y ordenador (punto 5).
 - Después, punto 4 (§41), en su propio commit, también publicado: placa «Mi biblioteca» bajada (tapaba la balda central de
   figuras), foco del cierre del detalle y pruebas de figuras en `e2e/v146.spec.js`. El resto ya cumplía desde 1.45.

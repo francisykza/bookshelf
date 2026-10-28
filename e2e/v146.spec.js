@@ -269,3 +269,40 @@ test('figuras: cambiar a una posición ocupada intercambia sin perder piezas y t
   await expect(page.locator('.room-figure')).toHaveCount(1);
   await expect(page.locator('.room-figure')).toHaveAttribute('data-display', 'box');
 });
+
+// ── Pantalla del portátil (SPEC §42) ──
+test('portátil: la ventana del calendario cabe en la pantalla, fuera de lo que tapan la planta y el vaso', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('bookshelf_onboarding_done', 'true');
+    localStorage.setItem('bookshelf:signs-hint-done', 'true');
+  });
+  await page.goto('/');
+  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .laptop-screen .cal')?.offsetWidth > 0);
+  const m = await page.evaluate(() => {
+    const screen = document.querySelector('[data-panel="MAIN_ROOM"] .laptop-screen');
+    const win = screen.querySelector('.cal[data-variant="scene"]');
+    const line = win.querySelector('.cal__today-line');
+    const body = win.querySelector('.cal__scene-body');
+    // Medidas en el lienzo de la pantalla (300 × 248), antes de proyectarlo sobre el monitor
+    return {
+      screen: [screen.offsetWidth, screen.offsetHeight],
+      win: { l: win.offsetLeft, t: win.offsetTop, r: win.offsetLeft + win.offsetWidth, b: win.offsetTop + win.offsetHeight },
+      lineCut: line.scrollWidth > line.clientWidth + 1,
+      bodyCut: body.scrollHeight > body.clientHeight + 1,
+      cells: win.querySelectorAll('.cal__cell').length,
+      today: win.querySelectorAll('.cal__cell[data-today="true"]').length,
+    };
+  });
+  expect(m.screen).toEqual([300, 248]);
+  expect(m.win.l).toBeGreaterThanOrEqual(8);
+  expect(m.win.t).toBeGreaterThanOrEqual(8);
+  // La planta pintada tapa x ≥ 250 y el vaso x ≥ 180 con y ≥ 165: la ventana queda a la izquierda y por encima
+  expect(m.win.r).toBeLessThanOrEqual(248);
+  expect(m.win.b).toBeLessThanOrEqual(165);
+  // Centrada en la zona visible (0–250), con el mes entero y la línea de hoy sin cortar
+  expect(Math.abs((m.win.l + m.win.r) / 2 - 125)).toBeLessThanOrEqual(8);
+  expect(m.lineCut).toBe(false);
+  expect(m.bodyCut).toBe(false);
+  expect(m.cells).toBeGreaterThanOrEqual(28);
+  expect(m.today).toBe(1);
+});
