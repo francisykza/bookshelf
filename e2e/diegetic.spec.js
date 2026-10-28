@@ -258,7 +258,8 @@ test('libro: título largo, sin portada, sin total de páginas y sin lectura', a
   // Varias líneas dentro de la página, con un tamaño mínimo (px de la ilustración: ≈ 12 px de pantalla a 390)
   expect(t.overflowPage).toBe(false);
   expect(t.overflowDown).toBe(false);
-  expect(t.size).toBeGreaterThanOrEqual(24);
+  // 1.50: títulos largos a 22 px de la ilustración (≈ 11 px de pantalla a 390), en cuatro líneas sin cortes
+  expect(t.size).toBeGreaterThanOrEqual(22);
   // Sin total: el porcentaje como dato, sin «Página» inventada
   await expect(page.locator('.bed-pages__progress').first()).toHaveText(/^37,5\s%$/);
   await expect(page.locator('.bed-pages__secondary').first()).toHaveText('leído');

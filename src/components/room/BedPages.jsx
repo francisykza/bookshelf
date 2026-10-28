@@ -5,19 +5,28 @@
 // escenario. El lienzo de cada página tiene las proporciones reales de su zona, así que la perspectiva es la del
 // papel sin aplastar el texto. La capa visible va con las superficies (la luz del día y de la noche la tiñen igual que
 // a la habitación); el botón real de «Registrar lectura» va en la capa de los objetos tocables, en el mismo sitio.
-import { rectToQuad } from '../../scene/homography';
 import { BOOK_LEFT_PAGE, BOOK_RIGHT_PAGE } from '../../scene/sceneMap';
 import { bedProgress } from './BedBook';
 
 const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
-/** Lienzo de una página con las proporciones de su zona (px de la ilustración, sin escala adicional). */
-function canvasOf(quad) {
+const angleOf = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]);
+/**
+ * Colocación de una página (1.50): un rectángulo centrado en su zona útil y girado con la orientación media de sus
+ * bordes superior e inferior, sin la cizalla de la homografía (que inclinaba las letras). El tamaño es un poco menor
+ * que la zona para que las esquinas no se salgan del papel.
+ */
+function settle(quad, kw, kh) {
   const [tl, tr, br, bl] = quad;
-  return { w: Math.round((dist(tl, tr) + dist(bl, br)) / 2), h: Math.round((dist(tl, bl) + dist(tr, br)) / 2) };
+  const w = Math.round(((dist(tl, tr) + dist(bl, br)) / 2) * kw);
+  const h = Math.round(((dist(tl, bl) + dist(tr, br)) / 2) * kh);
+  const cx = (tl[0] + tr[0] + br[0] + bl[0]) / 4;
+  const cy = (tl[1] + tr[1] + br[1] + bl[1]) / 4;
+  const a = (angleOf(tl, tr) + angleOf(bl, br)) / 2;
+  return { w, h, transform: `translate(${(cx - w / 2).toFixed(1)}px, ${(cy - h / 2).toFixed(1)}px) rotate(${a.toFixed(4)}rad)` };
 }
-export const LEFT = canvasOf(BOOK_LEFT_PAGE);
-export const RIGHT = canvasOf(BOOK_RIGHT_PAGE);
-const place = (c, quad) => ({ width: c.w, height: c.h, transform: rectToQuad(c.w, c.h, quad) });
+export const LEFT = settle(BOOK_LEFT_PAGE, 0.98, 0.92);
+export const RIGHT = settle(BOOK_RIGHT_PAGE, 0.86, 0.86);
+const place = (c) => ({ width: c.w, height: c.h, transform: c.transform, transformOrigin: '50% 50%' });
 
 /** Estado del libro de la cama: lectura, terminada, abandonada o ninguna. */
 const stateOf = (book) => (!book ? 'empty' : book.status === 'abandoned' ? 'abandoned' : book.status === 'read' ? 'finished' : 'reading');
@@ -28,13 +37,13 @@ export function BookOnBed({ book }) {
   if (!book) {
     return (
       <div className="bed-pages" data-state="empty" aria-hidden="true">
-        <div className="bed-pages__page bed-pages__page--left" style={place(LEFT, BOOK_LEFT_PAGE)}>
+        <div className="bed-pages__page bed-pages__page--left" style={place(LEFT)}>
           <span className="bed-pages__kicker">Tu lectura</span>
           <b className="bed-pages__title" data-size="medium">
             Ningún libro abierto
           </b>
         </div>
-        <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT, BOOK_RIGHT_PAGE)}>
+        <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT)}>
           <span className="bed-pages__kicker">Por donde vas</span>
           <span className="bed-pages__secondary">Elige qué quieres leer</span>
           <span className="bed-pages__action">Elegir un libro</span>
@@ -48,14 +57,14 @@ export function BookOnBed({ book }) {
   const size = title.length > 46 ? 'long' : title.length > 22 ? 'medium' : 'short';
   return (
     <div key={book.id} className="bed-pages" data-state={state} aria-hidden="true">
-      <div className="bed-pages__page bed-pages__page--left" style={place(LEFT, BOOK_LEFT_PAGE)}>
+      <div className="bed-pages__page bed-pages__page--left" style={place(LEFT)}>
         <span className="bed-pages__kicker">{state === 'abandoned' ? 'Lectura abandonada' : 'Tu lectura'}</span>
         <b className="bed-pages__title" data-size={size}>
           {title}
         </b>
         {book.author && <span className="bed-pages__author">{book.author}</span>}
       </div>
-      <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT, BOOK_RIGHT_PAGE)}>
+      <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT)}>
         <span className="bed-pages__kicker">Por donde vas</span>
         <span className="bed-pages__progress">{progress.main}</span>
         {progress.secondary && <span className="bed-pages__secondary">{progress.secondary}</span>}
@@ -83,7 +92,7 @@ export function BookOnBedActions({ book, scale, onLog, onChoose }) {
   const minH = Math.ceil(44 / Math.max(0.1, scale));
   return (
     <div className="bed-pages bed-pages--actions" data-state={state}>
-      <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT, BOOK_RIGHT_PAGE)}>
+      <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT)}>
         <button type="button" className="bed-pages__hit" style={{ '--hit': `${minH}px` }} aria-label={label} onClick={() => (state === 'reading' ? onLog(book) : onChoose())} />
       </div>
     </div>

@@ -40,7 +40,14 @@ test('habitación: encabezado sin solaparse, accesos de 44 px, título sin guion
   const header = await rect(page, '.room-header');
   const corner = await rect(page, '.room-corner');
   expect(overlap(header, corner)).toBe(false);
-  for (const sel of ['.room-plaque[data-id="shelf"]', '.room-plaque[data-id="diary"]', '.panorama-nav__btn--next']) {
+  // 1.50: «Mi biblioteca» va proyectado en el frente de la balda; su zona de toque se amplía con ::after (abajo)
+  // Dentro de la escena: alto de la zona de toque (::after) en px de la ilustración × escala del escenario
+  const shelfHit = await page.locator('.room-plaque[data-id="shelf"]').evaluate((el) => {
+    const k = parseFloat(el.closest('.scene-stage')?.dataset.scale ?? '1');
+    return parseFloat(getComputedStyle(el, '::after').height) * (el.classList.contains('room-plaque--scene') ? k : 1);
+  });
+  expect(shelfHit).toBeGreaterThanOrEqual(44);
+  for (const sel of ['.room-plaque[data-id="diary"]', '.panorama-nav__btn--next']) {
     const r = await rect(page, sel);
     expect(r.height, sel).toBeGreaterThanOrEqual(44);
     expect(r.right, sel).toBeLessThanOrEqual(page.viewportSize().width);

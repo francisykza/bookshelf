@@ -163,6 +163,38 @@ export function RoomHeader({ panelW }) {
 }
 
 /**
+ * «Mi biblioteca» en la perspectiva del frente de la balda (1.50, SPEC §48), DENTRO de la escena (mismas coordenadas
+ * que el mueble). Se aplica una transformación plana (`matrix`) que lleva el rectángulo al paralelogramo medio del
+ * trapecio: borde superior del frente y caída media de sus lados. Da casi la misma forma que la homografía y se
+ * dibuja igual en todos los motores (el WebKit de Windows no pinta bien `matrix3d`). Solo se monta si esa balda está
+ * a la vista; si no, el acceso va en la capa de interfaz con su ancla alternativa (`RoomNavPlaques`).
+ */
+export function ShelfPlaqueInScene({ fit, onOpenShelf }) {
+  const quad = HOTSPOTS.shelf.plaqueQuad;
+  if (!quad || toScreen(fit, HOTSPOTS.shelf.plaque.x, HOTSPOTS.shelf.plaque.y).y < 60) return null;
+  const [tl, tr, br, bl] = quad;
+  const u = [tr[0] - tl[0], tr[1] - tl[1]];
+  const v = [(bl[0] - tl[0] + br[0] - tr[0]) / 2, (bl[1] - tl[1] + br[1] - tr[1]) / 2];
+  const w = Math.round(Math.hypot(u[0], u[1]));
+  const h = Math.round(Math.hypot(v[0], v[1]));
+  const m = [u[0] / w, u[1] / w, v[0] / h, v[1] / h, tl[0], tl[1]].map((n) => +n.toFixed(5));
+  return (
+    <button
+      type="button"
+      className="room-plaque room-plaque--scene"
+      data-id="shelf"
+      data-projected="true"
+      style={{ width: w, height: h, fontSize: Math.round(h * 0.46), '--hit': `${Math.ceil(46 / Math.max(0.1, fit.scale))}px`, transform: `matrix(${m.join(',')})` }}
+      onClick={onOpenShelf}
+    >
+      <BookOpen aria-hidden="true" />
+      <span>Mi biblioteca</span>
+      <i aria-hidden="true">›</i>
+    </button>
+  );
+}
+
+/**
  * Accesos legibles y siempre visibles (con o sin guías), cada uno colgado del borde de su mueble y orientado como
  * esa superficie (1.48, SPEC §46): «Mi biblioteca» del frente de la balda de los libros (que baja ≈ 8° hacia la
  * derecha) y «Mi diario» del borde de la mesa junto al portátil (≈ 12°). Ancla y ángulo salen de `HOTSPOTS.*.plaque`;
@@ -177,19 +209,25 @@ export function RoomNavPlaques({ fit, bookTop, onOpenShelf, onOpenDiary }) {
     // Ancla en su superficie; si el encuadre la deja fuera, la superficie alternativa del mismo mueble (sin flotar)
     const first = HOTSPOTS[id].plaque;
     const alt = HOTSPOTS[id].plaqueAlt;
-    const p = alt && toScreen(fit, first.x, first.y).y < 60 ? alt : first;
+    const useAlt = alt && toScreen(fit, first.x, first.y).y < 60;
+    const p = useAlt ? alt : first;
+    // Con un trapecio medido (1.50) el cartel va dentro de la escena (`ShelfPlaqueInScene`): aquí no se pinta
+    if (!useAlt && HOTSPOTS[id].plaqueQuad) return null;
     const at = toScreen(fit, p.x, p.y);
     return { left: clampX(at.x, w), top: Math.min(clampY(at.y), maxTop ?? Infinity), transform: `rotate(${p.angle ?? 0}deg)` };
   };
   // El diario no pisa el libro de la cama (su esquina derecha baja con el giro)
   const diaryMax = (bookTop ?? fit.panelH) - 44 - Math.sin(((HOTSPOTS.laptop.plaque.angle ?? 0) * Math.PI) / 180) * PLAQUE_W.diary - 4;
+  const shelfStyle = place('shelf', PLAQUE_W.shelf);
   return (
     <>
-      <button type="button" className="room-plaque" data-id="shelf" style={place('shelf', PLAQUE_W.shelf)} onClick={onOpenShelf}>
-        <BookOpen aria-hidden="true" />
-        <span>Mi biblioteca</span>
-        <i aria-hidden="true">›</i>
-      </button>
+      {shelfStyle && (
+        <button type="button" className="room-plaque" data-id="shelf" style={shelfStyle} onClick={onOpenShelf}>
+          <BookOpen aria-hidden="true" />
+          <span>Mi biblioteca</span>
+          <i aria-hidden="true">›</i>
+        </button>
+      )}
       <button type="button" className="room-plaque" data-id="diary" style={place('laptop', PLAQUE_W.diary, diaryMax)} onClick={onOpenDiary}>
         <PenLine aria-hidden="true" />
         <span>Mi diario</span>

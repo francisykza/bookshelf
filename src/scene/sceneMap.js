@@ -182,6 +182,9 @@ export const HOTSPOTS = {
     // Acceso «Mi biblioteca» (1.49): fijado al frente plano de la balda inferior (y ≈ 805–825), bajo la última fila de
     // libros: no tapa lomos y queda dentro del mueble (de x 106 a 342)
     plaque: { x: 112, y: 803, angle: 0 },
+    // 1.50: el cartel se proyecta sobre el frente de la balda en la perspectiva del mueble. Las baldas convergen hacia
+    // un punto de fuga ≈ (983, 788): justo bajo el horizonte, el lado derecho se estrecha y sube un poco
+    plaqueQuad: [[112, 803], [338, 800], [338, 843], [112, 858]],
     // Si el encuadre deja esa balda fuera (escritorio, horizontal), la siguiente: frente del hueco derecho, que sube ≈ 5°
     plaqueAlt: { x: 198, y: 928, angle: -5 },
   },

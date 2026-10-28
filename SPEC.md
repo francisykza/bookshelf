@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.49.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.50.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3388,3 +3388,20 @@ Decisión de Francisco: escribir la lectura sobre el libro pintado del fondo. Es
 - Para ver a la vez los cascos enteros y el portátil completo a 390 px haría falta un fondo vertical con esos
   objetos más juntos (como el fondo para móvil entregado, que no tiene té, vela ni lámpara).
 - Pruebas: `e2e/v149.spec.js`; adaptadas `diegetic`, `gouache`, `panorama`, `v147` y `v148`.
+
+## 48. Ajustes del libro, del cartel de la biblioteca y de «Social» (1.50.0)
+
+- **Texto de las páginas**: sin la cizalla de la homografía (que inclinaba las letras). Cada página es un rectángulo
+  centrado en su zona útil y girado con la orientación media de sus bordes superior e inferior (izquierda ≈ 17°,
+  derecha ≈ 4°): las letras van derechas sobre su línea y siguen la orientación del papel. Títulos medianos en tres
+  líneas y largos en cuatro, sin cortes a mitad de línea.
+- **«Registrar lectura»**: más pequeño, dentro de la página y lejos de su borde; la base terracota se funde con el
+  papel pintado (`multiply`) y el texto queda nítido encima. El botón real sigue centrado en el dibujado (≥ 44 px).
+- **«Mi biblioteca»**: dentro de la escena, sobre el frente de la balda inferior medido como trapecio
+  (112, 803)–(338, 800)–(338, 843)–(112, 858) (punto de fuga de las baldas ≈ (983, 788)). Se aplica una transformación
+  plana al paralelogramo medio de ese trapecio (borde superior y caída media de los lados): sigue la inclinación del
+  mueble y se dibuja igual en todos los motores (el WebKit de Windows de Playwright no pinta bien `matrix3d`; la
+  pantalla del portátil, que lo usa desde antes, también sale mal solo en ese emulador). Área de pulsación ≥ 44 px.
+- **«Social ›»**: más suave (solo el papel interior es algo translúcido; tinta y sombra más tenues, letra menor).
+  Sin `opacity` ni `filter` en el propio botón: creaban una capa que en WebKit y a 430 px dejaba que la escena se
+  quedara el toque.

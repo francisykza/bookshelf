@@ -20,7 +20,7 @@ import { LaptopScreen } from './RoomSurfaces';
 import { BookOnBed, BookOnBedActions } from './BedPages';
 import { Hotspot, RoomLabel, TimeDial } from './RoomHotspots';
 import { RoomSigns } from './RoomSigns';
-import { RoomHeader, RoomNavPlaques } from './BedBook';
+import { RoomHeader, RoomNavPlaques, ShelfPlaqueInScene } from './BedBook';
 import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
 import { RoomReflections } from './RoomReflections';
@@ -247,6 +247,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
                 : { title: 'Ningún libro abierto', text: 'Elige uno en tu librería' }
             }
           />
+          {/* «Mi biblioteca» en el frente de la balda, en la perspectiva del mueble (coordenadas de la escena) */}
+          <ShelfPlaqueInScene fit={fit} onOpenShelf={onOpenShelf} />
           {/* Botón real de «Registrar lectura», en el mismo lugar que el dibujado y por encima del hotspot del libro */}
           <BookOnBedActions book={bedBook} scale={fit.scale} onLog={(book) => onLogReading?.(book)} onChoose={onOpenShelf} />
           <Hotspot id="laptop" spot={lit('laptop')} guides={guides} hint={3} onHover={onHover} onActivate={onOpenLaptop} label={{ title: 'Estadísticas y reto anual', text: `${readThisYear} de ${settings.yearGoal} libros este año`, meta: 'Calendario · Misiones del Booknook' }} />

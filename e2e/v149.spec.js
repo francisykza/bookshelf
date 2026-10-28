@@ -49,6 +49,7 @@ test('escena: libro pintado con la lectura, cascos enteros casi del todo y carte
     const ox = parseFloat(stage.dataset.offsetX);
     const sr = stage.getBoundingClientRect();
     const plaque = document.querySelector('.room-plaque[data-id="shelf"]');
+    // El cartel va dentro de la escena: su transformación es la propia (la escala la pone el lienzo)
     const visible = getComputedStyle(plaque, '::before');
     const r = plaque.getBoundingClientRect();
     // Papel visible (el botón es más alto para la pulsación)
@@ -58,7 +59,10 @@ test('escena: libro pintado con la lectura, cascos enteros casi del todo y carte
     const shelfRight = sr.left + ox + 342 * k;
     return { paper, spines, shelfRight, transform: getComputedStyle(plaque).transform, anchorX: sr.left + ox + HOTSPOTS.shelf.plaque.x * k };
   });
-  expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(m.transform);
+  // 1.50: proyectado en la perspectiva del frente de la balda (no girado ni plano)
+  // 1.50: en la perspectiva del frente de la balda (transformación con cizalla, no plana ni solo girada)
+  expect(m.transform.startsWith('matrix(')).toBe(true);
+  expect(m.transform).not.toBe('matrix(1, 0, 0, 1, 0, 0)');
   for (const s of m.spines) expect(overlap(m.paper, s)).toBe(false);
   expect(m.paper.right).toBeLessThanOrEqual(m.shelfRight + 2);
   await shot(page, info, 'v149-habitacion');

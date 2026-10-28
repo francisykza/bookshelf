@@ -258,3 +258,148 @@
 .lib-head--147 .lib-hero__back {
   min-height: 44px;
 }
+
+/* ── 1.50 · Botón del libro integrado en el papel ──
+   Más pequeño y dentro de la página (lejos de su borde inferior); la base terracota se funde con el papel pintado
+   (multiply) y el texto queda nítido encima. El toque lo sigue recogiendo el botón real, centrado en el dibujado. */
+.bed-pages__action,
+.bed-pages__hit {
+  left: 6px;
+  bottom: 12px;
+  width: 66%;
+  height: 30px;
+}
+
+.bed-pages__action {
+  isolation: isolate;
+  padding: 0 8px 1px;
+  background: none;
+  font-size: 17.5px;
+  letter-spacing: 0.01em;
+  opacity: 1;
+  text-shadow: 0 1px 0 rgb(80 30 12 / 0.35);
+}
+
+.bed-pages__action::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url('/assets/room/boton-terracota-cosido.webp') center / 100% 100% no-repeat;
+  mix-blend-mode: multiply;
+  filter: saturate(0.88) sepia(0.12);
+  opacity: 0.92;
+}
+
+.bed-pages__hit {
+  left: 2px;
+  width: calc(66% + 8px);
+  bottom: calc(12px + 15px - var(--hit, 88px) / 2);
+  height: var(--hit, 88px);
+}
+
+/* «Mi biblioteca» proyectado en la perspectiva del frente de la balda (1.50): la etiqueta ocupa el trapecio entero,
+   con una sombra de contacto mínima; la superficie de pulsación se amplía por arriba y por abajo (≥ 44 px) */
+.room-plaque[data-id='shelf'][data-projected] {
+  justify-content: center;
+  gap: 0.3em;
+  min-height: 0;
+  padding: 0 0.5em;
+  filter: drop-shadow(0 1px 0.5px rgb(40 22 8 / 0.4));
+}
+
+.room-plaque[data-id='shelf'][data-projected]::before {
+  inset: 0;
+}
+
+.room-plaque[data-id='shelf'][data-projected]::after {
+  content: '';
+  position: absolute;
+  inset: -9px -2px;
+}
+
+.room-plaque[data-id='shelf'][data-projected] svg {
+  width: 0.95em;
+  height: 0.95em;
+}
+
+/* «Social ›» más suave: papel algo translúcido, tinta y sombra más tenues, sin peso de cartel */
+.panorama-nav .panorama-nav__btn--next {
+  color: #6b5442;
+  font-size: 0.86rem;
+  font-weight: 500;
+  /* Sin opacity ni filter en el botón: crean una capa que, en WebKit, deja que la escena reciba el toque */
+  filter: none;
+}
+
+.panorama-nav .panorama-nav__btn--next::before {
+  inset: 7px 0;
+  opacity: 0.82;
+  filter: drop-shadow(0 1px 1px rgb(40 22 8 / 0.16));
+}
+
+.panorama-nav .panorama-nav__btn--next:hover::before,
+.panorama-nav .panorama-nav__btn--next:focus-visible::before {
+  opacity: 1;
+}
+
+.panorama-nav .panorama-nav__btn--next .panorama-nav__icon,
+.panorama-nav .panorama-nav__btn--next > svg:last-child {
+  width: 14px;
+  height: 14px;
+  color: #7a5f48;
+}
+
+
+/* La barra queda separada del botón: bloque de progreso algo más compacto en la zona útil (1.50) */
+.bed-pages__page--right .bed-pages__progress {
+  font-size: 34px;
+}
+
+.bed-pages__page--right .bed-pages__secondary {
+  font-size: 21px;
+}
+
+.bed-pages__page--right .bed-pages__meter {
+  margin-top: 5px;
+  height: 7px;
+}
+
+.bed-pages__action {
+  bottom: 6px;
+}
+
+.bed-pages__hit {
+  bottom: calc(6px + 15px - var(--hit, 88px) / 2);
+}
+
+/* Página izquierda (1.50): sin cizalla la zona es algo más estrecha; los títulos medianos caben en tres líneas y los
+   largos en cuatro, sin cortes a mitad de línea */
+.bed-pages__title[data-size='medium'] {
+  -webkit-line-clamp: 3;
+  font-size: 25px;
+  line-height: 1.06;
+}
+
+.bed-pages__title[data-size='long'] {
+  -webkit-line-clamp: 4;
+  font-size: 22px;
+  line-height: 1.06;
+}
+
+/* «Mi biblioteca» dentro de la escena (px de la ilustración): por encima del hotspot de la librería y de los lomos */
+.room-hotspots .room-plaque--scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9;
+  min-height: 0;
+  margin: 0;
+  transform-origin: 0 0;
+}
+
+.room-plaque--scene[data-projected]::after {
+  inset: auto -2px;
+  top: calc((100% - var(--hit, 88px)) / 2);
+  height: var(--hit, 88px);
+}

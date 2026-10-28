@@ -111,14 +111,16 @@ test('habitación: sin título visible (con nombre accesible), cascos a la vista
   });
   expect(label).toBe(true);
   // Carteles: cada uno con el ángulo de su superficie
+  // 1.50: «Mi biblioteca» va proyectado sobre el frente de la balda (perspectiva del mueble, no un giro)
+  await expect(page.locator('.room-plaque[data-id="shelf"]')).toHaveAttribute('data-projected', 'true');
   const angles = await page.evaluate(() =>
-    ['shelf', 'diary'].map((id) => {
+    ['diary'].map((id) => {
       const m = new DOMMatrixReadOnly(getComputedStyle(document.querySelector(`.room-plaque[data-id="${id}"]`)).transform);
       return Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI);
     }),
   );
   // 1.49: «Mi biblioteca» en el frente plano de la balda inferior (0°); «Mi diario» en el borde de la mesa (12°)
-  expect(angles).toEqual([0, 12]);
+  expect(angles).toEqual([12]);
   const social = page.locator('.panorama-nav__btn--next');
   await expect(social).toHaveAttribute('aria-label', 'Abrir rincón social');
   await expect(social.locator('.panorama-nav__label')).toHaveText('Social');
