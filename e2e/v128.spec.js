@@ -120,7 +120,7 @@ test('librería: parte de toda la biblioteca y busca con o sin tildes, conservan
   // El buscador no se enfoca solo al abrir
   expect(await page.evaluate(() => document.activeElement?.id)).not.toBe('shelf-search-input');
   const input = page.getByRole('searchbox', { name: 'Buscar en mi biblioteca' });
-  await expect(input).toHaveAttribute('placeholder', 'Buscar título o autor');
+  await expect(input).toHaveAttribute('placeholder', 'Buscar título o autor…');
   expect(await input.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
   expect((await page.locator('.shelf-search').boundingBox()).height).toBeGreaterThanOrEqual(44);
   // Sin tildes ni mayúsculas

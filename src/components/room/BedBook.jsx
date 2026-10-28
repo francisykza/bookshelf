@@ -4,6 +4,7 @@
 // páginas en blanco) y el texto, el progreso y «Registrar lectura» son interfaz real encima. El libro no altera el
 // progreso al abrirse: solo lee el libro y sus datos.
 import { BookOpen, PenLine, Plus } from 'lucide-react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { formatPercent, percentRead, trackUnit } from '../../domain/books';
 import { asset, HOTSPOTS } from '../../scene/sceneMap';
 import { toScreen } from '../../scene/stageFit';
@@ -21,6 +22,11 @@ export function bedBookWidth(fit) {
 
 /** Datos de «Por donde vas» sin inventar cifras: sin total no hay porcentaje, barra ni páginas restantes. */
 export function bedProgress(book) {
+  if (book.status === 'abandoned') {
+    // Se conserva y se muestra dónde se dejó; sin barra que lo presente como una lectura en curso
+    const at = trackUnit(book) === 'percent' ? formatPercent(percentRead(book)) : `Página ${Number.isFinite(book.currentPage) ? book.currentPage : 0}`;
+    return { main: at, secondary: book.pageCount && trackUnit(book) !== 'percent' ? `de ${book.pageCount}` : '', fraction: null, rest: 'Lo dejaste a medias' };
+  }
   if (book.status === 'read') return { main: 'Terminado', secondary: book.pageCount ? `${book.pageCount} páginas` : '', fraction: 1, rest: 'Lectura terminada' };
   if (trackUnit(book) === 'percent') {
     const pct = percentRead(book);
@@ -63,13 +69,15 @@ export function BedBook({ book, fit, onOpenBook, onLog, onChoose, pressed = fals
   const title = book.title || 'Sin título';
   const progress = bedProgress(book);
   const size = title.length > 52 ? 'long' : title.length > 24 ? 'medium' : 'short';
-  const finished = book.status === 'read';
+  // Terminada o abandonada: se ofrece elegir otra lectura (sin escoger una por su cuenta)
+  const finished = book.status === 'read' || book.status === 'abandoned';
+  const kicker = book.status === 'abandoned' ? 'Lectura abandonada' : 'Tu lectura actual';
   return (
-    <section key={book.id} className="bed-book" data-state={finished ? 'finished' : 'reading'} data-pressed={pressed || undefined} style={style} aria-label="Tu lectura actual" inert={hidden || undefined} aria-hidden={hidden || undefined}>
+    <section key={book.id} className="bed-book" data-state={book.status === 'abandoned' ? 'abandoned' : finished ? 'finished' : 'reading'} data-pressed={pressed || undefined} style={style} aria-label="Tu lectura actual" inert={hidden || undefined} aria-hidden={hidden || undefined}>
       {/* Página izquierda: abre la ficha del libro (toda la página es el objetivo táctil) */}
-      <button type="button" className="bed-book__page bed-book__page--left" onClick={() => onOpenBook(book)} aria-label={`Tu lectura actual: ${title}${book.author ? `, de ${book.author}` : ''}. Abrir su ficha`}>
+      <button type="button" className="bed-book__page bed-book__page--left" onClick={() => onOpenBook(book)} aria-label={`${kicker}: ${title}${book.author ? `, de ${book.author}` : ''}. Abrir su ficha`}>
         <span className="bed-book__kicker" aria-hidden="true">
-          Tu lectura actual
+          {kicker}
         </span>
         <b className="bed-book__title" data-size={size} aria-hidden="true">
           {title}
@@ -105,9 +113,33 @@ export function BedBook({ book, fit, onOpenBook, onLog, onChoose, pressed = fals
 }
 
 /** Cabecera discreta de la habitación (sin barra de estado falsa: respeta el área segura superior). */
-export function RoomHeader() {
+export function RoomHeader({ panelW }) {
+  // Si el título no cabe a la izquierda de la esquina (Ambiente, Guías, cuenta), pasa a una segunda fila: así el
+  // subtítulo nunca queda debajo de los controles, también con el texto ampliado
+  const ref = useRef(null);
+  const [layout, setLayout] = useState({ rows: 1, max: null });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const measure = () => {
+      const corner = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--room-corner-w')) || 0;
+      const free = panelW - corner - 16 - 12 - 14;
+      const h2 = el.querySelector('h2');
+      const need = h2 ? h2.scrollWidth : 0;
+      setLayout((prev) => {
+        const next = need > free ? { rows: 2, max: null } : { rows: 1, max: Math.floor(free) };
+        return prev.rows === next.rows && prev.max === next.max ? prev : next;
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    const corner = document.querySelector('.room-corner');
+    if (corner) ro.observe(corner);
+    return () => ro.disconnect();
+  }, [panelW]);
   return (
-    <header className="room-header">
+    <header ref={ref} className="room-header" data-rows={layout.rows} style={layout.max ? { '--room-header-max': `${layout.max}px` } : undefined}>
       <h2>Mi rincón</h2>
       <p>La biblioteca junto al mar</p>
     </header>

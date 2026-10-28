@@ -151,6 +151,8 @@ export function reducer(state, action) {
           }
           if (action.patch.status === 'reading' && !b.startedAt) next.startedAt = now;
           if (action.patch.status && action.patch.status !== 'read') next.finishedAt = null;
+          // Abandonar conserva página, sesiones, notas y valoración (SPEC §43); solo se anota cuándo
+          if (action.patch.status && action.patch.status !== b.status) next.abandonedAt = action.patch.status === 'abandoned' ? now : null;
           if ('rating' in action.patch) next.rating = normalizeRating(action.patch.rating);
           // Total desconocido → seguimiento por porcentaje conservando lo leído; total nuevo → página ajustada
           if ('pageCount' in action.patch) {

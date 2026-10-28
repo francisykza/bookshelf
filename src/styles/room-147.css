@@ -1,0 +1,424 @@
+/* ── 1.47.0 · Pulido de la habitación, Ambiente y registro (SPEC §45) ─────────────────────────────────────────
+   Sobre room-146.css: encabezado más contenido (dos filas si no cabe), accesos ≈ 12 % más pequeños a la vista con
+   la misma superficie de pulsación (44 px), títulos del libro sin guiones automáticos, botón del libro con más
+   aire, registro con lino salvia y papel marfil y Ambiente compacto con cierre. */
+
+/* Encabezado: título algo menor; con poco ancho baja a una segunda fila, bajo los controles (nunca debajo de ellos) */
+.room-header h2 {
+  font-size: clamp(1.55rem, 7vw, 1.95rem);
+}
+
+.room-header p {
+  font-size: 0.88rem;
+}
+
+.room-header {
+  max-width: var(--room-header-max, 46%);
+}
+
+.room-header[data-rows='2'] {
+  top: calc(max(12px, env(safe-area-inset-top)) + var(--room-corner-h, 44px) + 8px);
+  max-width: calc(100% - 32px);
+}
+
+/* Esquina: la cuenta como icono pequeño, Ambiente y Guías algo más contenidos para no competir con el título */
+.room-corner[data-146] {
+  gap: 6px;
+}
+
+.room-corner[data-146] .corner-paper {
+  font-size: 0.95rem;
+  padding: 0 4px;
+}
+
+.room-corner[data-146] .corner-paper svg {
+  width: 16px;
+  height: 16px;
+}
+
+.room-corner[data-146] .corner-account {
+  justify-content: center;
+  width: 44px;
+  padding: 0;
+}
+
+.room-corner[data-146] .corner-account::after {
+  display: block !important;
+  content: '';
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.room-corner[data-146] .corner-account[data-status='synced']::after {
+  background: #7d9473;
+}
+
+.room-corner[data-146] .corner-account:is([data-status='pending'], [data-status='syncing'])::after {
+  background: #d9a441;
+}
+
+.room-corner[data-146] .corner-account:is([data-status='error'], [data-status='conflict'])::after {
+  background: #b3261e;
+}
+
+/* Accesos: el papel se dibuja algo más pequeño que el botón (superficie de 44 px intacta) */
+.room-plaque,
+.panorama-nav .panorama-nav__btn--next {
+  isolation: isolate;
+  gap: 5px;
+  padding: 0 13px 1px 10px;
+  background: none;
+  font-size: 0.94rem;
+}
+
+.room-plaque::before,
+.panorama-nav .panorama-nav__btn--next::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 4px 0;
+  background: url('/assets/room/placa-papel-ramita.webp') center / 100% 100% no-repeat;
+}
+
+.panorama-nav .panorama-nav__btn--next {
+  position: absolute;
+}
+
+.room-plaque svg,
+.panorama-nav__btn--next .panorama-nav__icon {
+  width: 16px;
+  height: 16px;
+}
+
+.room-plaque i {
+  font-size: 1rem;
+}
+
+/* «Rincón social» junto al marco del ventanal, algo más arriba que el centro (en horizontal sigue al pie) */
+.panorama-nav .panorama-nav__btn--next {
+  right: max(6px, env(safe-area-inset-right));
+}
+
+@media (max-aspect-ratio: 1/1) {
+  .panorama-nav .panorama-nav__btn--next {
+    top: 44%;
+  }
+}
+
+/* Libro de la cama: saltos entre palabras, sin guiones automáticos; solo una palabra imposible se parte */
+.bed-book__title,
+.bed-book__author {
+  hyphens: manual;
+  -webkit-hyphens: manual;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.bed-book__action {
+  padding: 0 16px 2px 14px;
+}
+
+/* Separación con el área de gestos: el libro sube lo justo para que el botón no quede pegado al borde */
+.bed-book {
+  bottom: max(2px, calc(env(safe-area-inset-bottom) - 6px));
+}
+
+/* Barra de progreso: la pista entera en tono tenue y el relleno exacto (sin mínimo que exagere poco avance) */
+.bed-book__meter {
+  background: rgb(125 148 115 / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(110 90 60 / 0.18);
+}
+
+/* ── Registro ── */
+.log-sheet {
+  position: relative;
+}
+
+.log-sheet__close {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #3d2817;
+}
+
+.log-sheet__close svg {
+  width: 22px;
+  height: 22px;
+}
+
+.log-sheet__close:focus-visible {
+  outline: 2px solid #8a3f26;
+  outline-offset: -4px;
+}
+
+.log-sheet__head {
+  grid-template-columns: 42px 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-right: 34px;
+}
+
+.log-sheet__cover {
+  width: 42px;
+}
+
+.log-sheet__title {
+  font-size: 1.18rem;
+}
+
+.log-sheet__now {
+  font-size: 0.84rem;
+}
+
+.log-sheet__author {
+  font-style: italic;
+}
+
+/* Fecha en una sola línea */
+.log-sheet__date {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.log-sheet__date input,
+.panel--log .reading-form input[type='text'],
+.panel--log .reading-form select {
+  min-height: 44px;
+  border: 1.5px solid #b08d57;
+  border-radius: 8px;
+  background: #fffaf0 url('/assets/ui/controls/control-papel-crema.webp') center / cover;
+  color: #2c1e14;
+}
+
+/* Sin el marco interior del formulario: la hoja ya es el papel */
+.panel--log .reading-form {
+  gap: 10px;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Modos: papel marfil inactivo, lino salvia el elegido (además del estado marcado) */
+.panel--log .reading-form__modes button {
+  min-height: 44px;
+  border: 0 !important;
+  border-radius: 0;
+  border-style: solid !important;
+  border-color: transparent !important;
+  border-width: 8px !important;
+  border-image: url('/assets/ui/controls/control-papel-crema.webp') 56 fill / 8px round !important;
+  background: none;
+  color: #3d2817;
+  padding: 0 2px;
+}
+
+.panel--log .reading-form__modes button[aria-checked='true'] {
+  border-image-source: url('/assets/ui/controls/control-lino-salvia.webp') !important;
+  background: none;
+  color: #fbf6ea;
+}
+
+/* Vista previa: una banda suave, sin caja ni borde */
+.panel--log .reading-form__preview {
+  gap: 2px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 0.88rem;
+}
+
+.panel--log .reading-form__preview-main {
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.panel--log .reading-form__preview[data-correction] .reading-form__preview-main {
+  color: #8a3420;
+}
+
+.panel--log .reading-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel--log .reading-form__save {
+  padding: 0 24px 2px;
+}
+
+.log-sheet__confirm {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-left: 3px solid #b65a3c;
+  background: rgb(182 90 60 / 0.1);
+  font-size: 0.9rem;
+}
+
+.log-sheet__confirm p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.log-sheet__confirm div {
+  display: flex;
+  gap: 18px;
+}
+
+.log-sheet__confirm .link-btn {
+  min-height: 40px;
+}
+
+.log-sheet__discard {
+  color: #8a3420;
+}
+
+/* ── Ambiente compacto ── */
+.ambient-menu__panel {
+  padding: 6px 10px 10px;
+  max-height: calc(100dvh - max(12px, env(safe-area-inset-top)) - 70px - env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.ambient-menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 -4px 0 0;
+}
+
+.ambient-menu__head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.ambient-menu__close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: #3d2817;
+}
+
+.ambient-menu__close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ambient-menu__panel .corner-sheet__heading {
+  margin: 6px 2px 3px;
+}
+
+.ambient-menu__times button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+  font-size: 0.88rem;
+}
+
+.ambient-menu__times button svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.ambient-menu__times button[aria-checked='true'] {
+  font-weight: 700;
+}
+
+.ambient-menu__clock {
+  margin: 0 2px;
+  color: #6b5442;
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.ambient-menu__toggle {
+  min-height: 44px;
+}
+
+.room-header h2 {
+  white-space: nowrap;
+}
+
+/* Ajustes tras la primera captura: las tres horas caben en el panel y los campos son papel liso (sin doble borde) */
+.ambient-menu .ambient-menu__panel {
+  width: min(292px, calc(100vw - 24px));
+}
+
+.ambient-menu__times {
+  gap: 4px;
+}
+
+.ambient-menu__times button {
+  gap: 3px;
+  padding: 0;
+  --craft-edge: 7px;
+  font-size: 0.82rem;
+  letter-spacing: -0.01em;
+}
+
+.ambient-menu__times button svg {
+  width: 13px;
+  height: 13px;
+}
+
+.log-sheet__date input,
+.panel--log .reading-form input[type='text'],
+.panel--log .reading-form select {
+  background: #fffaf0;
+  box-shadow: inset 0 1px 2px rgb(110 78 46 / 0.12);
+}
+
+/* El panel se alinea con el borde derecho de la esquina (nunca se sale de la pantalla, en ningún ancho) */
+.room-corner[data-146] .ambient-menu {
+  position: static;
+}
+
+.room-corner[data-146] .ambient-menu .ambient-menu__panel {
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+}
+
+/* Ficha: con «Abandonado» son cuatro estados; se reparten en dos filas en vez de desbordar */
+.book-sheet .sheet-status {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (min-width: 560px) {
+  .book-sheet .sheet-status {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* El aviso de bienvenida no tapa los menús de la esquina mientras están abiertos */
+body:has(.room-corner .corner-sheet) .room-signs-hint {
+  display: none;
+}

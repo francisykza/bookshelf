@@ -6,6 +6,9 @@ export const STATUS = {
   reading: 'Leyendo ahora',
   want: 'Pendiente',
   read: 'Leído',
+  // 1.47 (SPEC §43): dejado a medias a propósito. Conserva su página, sesiones, notas y valoración; no cuenta como
+  // terminado ni da recompensas de terminar, y se puede retomar como «Leyendo» desde donde se dejó
+  abandoned: 'Abandonado',
 };
 
 /**
@@ -293,6 +296,7 @@ const SHELF_BASE = {
   reading: (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''),
   want: (a, b) => (a.addedAt || '').localeCompare(b.addedAt || ''),
   read: (a, b) => (b.finishedAt || '').localeCompare(a.finishedAt || ''),
+  abandoned: (a, b) => (b.abandonedAt || b.updatedAt || '').localeCompare(a.abandonedAt || a.updatedAt || ''),
 };
 
 export function shelfSort(status) {
@@ -320,5 +324,7 @@ export function withStatus(book, status, now = new Date().toISOString()) {
     if (book.status === 'read' && status === 'want') Object.assign(next, { currentPage: 0, currentPercent: 0 });
   }
   if (status === 'reading' && !book.startedAt) next.startedAt = now;
+  // Abandonar no toca la posición; la fecha se guarda solo mientras siga abandonado
+  next.abandonedAt = status === 'abandoned' ? now : null;
   return next;
 }

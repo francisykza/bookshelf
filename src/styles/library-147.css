@@ -1,0 +1,319 @@
+/* ── 1.47.0 · Biblioteca con cabecera compacta (SPEC §44) ─────────────────────────────────────────────────────
+   Referencia: docs/design/references/biblioteca-compacta-maqueta.png. Estructura: franja ilustrada baja (volver,
+   herramientas y buscador siempre visible), fila de cinco etiquetas de lino sobre la madera y las baldas justo
+   debajo. Sin título grande (queda un h1 accesible), sin alturas mínimas heredadas del encabezado anterior. Las
+   etiquetas son bases de lino recoloreadas (assets/ui/textile/etiqueta-*.webp, mismo tejido, trama y costuras) con
+   el texto y el icono como HTML. Todo acotado a `.lib-head--147`. */
+
+.lib-head.lib-head--147 {
+  position: relative;
+  z-index: 8;
+  display: block;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink, #2c1e14);
+}
+
+/* Franja de la ilustración mediterránea: se recorta por encuadre (cover), no se aplasta */
+.lib-head--147 .lib-head__strip {
+  display: grid;
+  gap: 6px;
+  padding: max(6px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+  background: #ead9b8 url('/assets/library/header-800.webp') 50% 32% / cover no-repeat;
+}
+
+@media (min-width: 700px) {
+  .lib-head--147 .lib-head__strip {
+    background-image: url('/assets/library/header-1600.webp');
+    padding-inline: max(24px, calc((100% - 760px) / 2));
+  }
+}
+
+.lib-head--147 .lib-head__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lib-head--147 .lib-hero__back {
+  /* relativo: el área de toque ampliada de las hojas antiguas (::after) no debe cubrir la barra entera */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px 0 2px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: #2c1e14;
+  font: 500 16px/1 var(--lib-body, 'Lora', serif);
+  text-shadow: 0 0 6px rgb(250 243 228 / 0.95);
+}
+
+.lib-head--147 .lib-hero__back svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* Herramientas: un icono artesanal discreto */
+.lib-head--147 .lib-tools-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  --craft-edge: 8px;
+  color: #3d2817;
+}
+
+.lib-head--147 .lib-tools-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.lib-head--147 .lib-tools-icon[aria-expanded='true'] {
+  border-image-source: url('/assets/ui/controls/control-lino-salvia.webp') !important;
+  color: #f6efdf;
+}
+
+/* Buscador de papel, siempre visible */
+.lib-head--147 .shelf-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  margin: 0;
+  padding: 0 4px 0 6px;
+  --craft-edge: 10px;
+}
+
+.lib-head--147 .shelf-search__label {
+  display: grid;
+  place-items: center;
+  color: #4a3424;
+}
+
+.lib-head--147 .shelf-search__label svg {
+  width: 19px;
+  height: 19px;
+}
+
+.lib-head--147 .shelf-search__input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: #2c1e14;
+  font: 400 17px/1.2 var(--lib-display, 'Cormorant Garamond', serif);
+}
+
+.lib-head--147 .shelf-search__input::placeholder {
+  color: #6b5442;
+  opacity: 1;
+}
+
+.lib-head--147 .shelf-search__input:focus {
+  outline: none;
+}
+
+.lib-head--147 .shelf-search:focus-within {
+  outline: 2px solid #8a3f26;
+  outline-offset: 1px;
+}
+
+.lib-head--147 .shelf-search__clear {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: none;
+  color: #6b4423;
+}
+
+/* Desplegable de herramientas: debajo del buscador, en el flujo (empuja las baldas, no tapa portadas) */
+.lib-head--147 .lib-tools--147 {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left));
+  border: 0;
+  border-top: 1px solid rgb(110 78 46 / 0.3);
+  background: #f4ead6;
+  box-shadow: inset 0 -1px 0 rgb(110 78 46 / 0.25);
+  animation: lib-tools-in 140ms ease-out;
+}
+
+@keyframes lib-tools-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (min-width: 700px) {
+  .lib-head--147 .lib-tools--147 {
+    padding-inline: max(24px, calc((100% - 760px) / 2));
+  }
+}
+
+.lib-head--147 .lib-tools--147 .lib-strip__add {
+  justify-content: center;
+  min-height: 46px;
+}
+
+/* Fila textil sobre la madera: se desplaza en horizontal si no caben las cinco (nunca la página entera) */
+.lib-head--147 .lib-cloths {
+  position: relative;
+  padding: 8px 0 10px;
+  background:
+    linear-gradient(rgb(40 22 8 / 0.08), rgb(40 22 8 / 0.18)),
+    #9a6a3d url('/assets/library/wood-light.webp') center / 420px auto;
+  box-shadow:
+    inset 0 2px 0 rgb(255 230 190 / 0.25),
+    inset 0 -3px 4px rgb(40 22 8 / 0.35),
+    0 3px 6px rgb(40 22 8 / 0.3);
+}
+
+/* Pista de que hay más etiquetas a la derecha */
+.lib-head--147 .lib-cloths::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 26px;
+  background: linear-gradient(90deg, transparent, rgb(80 50 24 / 0.55));
+  pointer-events: none;
+}
+
+.lib-head--147 .lib-cloths__row {
+  display: flex;
+  gap: 7px;
+  margin: 0;
+  padding: 2px max(12px, env(safe-area-inset-left)) 4px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 12px;
+  scrollbar-width: none;
+  border: 0;
+  background: none;
+}
+
+.lib-head--147 .lib-cloths__row::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 700px) {
+  .lib-head--147 .lib-cloths__row {
+    justify-content: center;
+  }
+
+  .lib-head--147 .lib-cloths::after {
+    display: none;
+  }
+}
+
+/* Etiqueta de lino: rectangular, trama y costuras del recurso; texto e icono reales */
+.lib-cloth {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 14px 1px 11px;
+  border: 0;
+  border-radius: 0;
+  background: center / 100% 100% no-repeat;
+  color: #3d2817;
+  font: 500 16px/1 var(--lib-display, 'Cormorant Garamond', serif);
+  white-space: nowrap;
+  filter: drop-shadow(0 2px 2px rgb(30 16 6 / 0.35));
+  transition:
+    transform 110ms ease,
+    filter 110ms ease;
+}
+
+.lib-cloth__icon {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.8;
+}
+
+.lib-cloth[data-cloth='marfil'] {
+  background-image: url('/assets/ui/textile/etiqueta-marfil.webp');
+}
+
+.lib-cloth[data-cloth='terracota'] {
+  background-image: url('/assets/ui/textile/etiqueta-terracota.webp');
+  color: #fff3e3;
+}
+
+.lib-cloth[data-cloth='crema'] {
+  background-image: url('/assets/ui/textile/etiqueta-crema.webp');
+}
+
+.lib-cloth[data-cloth='salvia'] {
+  background-image: url('/assets/ui/textile/etiqueta-salvia.webp');
+  color: #fbf6ea;
+}
+
+.lib-cloth[data-cloth='malva'] {
+  background-image: url('/assets/ui/textile/etiqueta-malva.webp');
+  color: #fbf4f2;
+}
+
+/* Seleccionada: además del color, una cinta de costura bajo la etiqueta y algo más de relieve */
+.lib-cloth[aria-checked='true'] {
+  font-weight: 700;
+  transform: translateY(-1px);
+  filter: drop-shadow(0 3px 2px rgb(30 16 6 / 0.45));
+}
+
+.lib-cloth[aria-checked='true']::after {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -5px;
+  height: 3px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, #fbe9c8 0 6px, transparent 6px 9px), #6b4423;
+  box-shadow: 0 1px 1px rgb(30 16 6 / 0.4);
+}
+
+.lib-cloth:active {
+  transform: translateY(1px);
+  filter: drop-shadow(0 1px 1px rgb(30 16 6 / 0.35));
+}
+
+.lib-cloth:focus-visible {
+  outline: 2px solid #fbf3e2;
+  outline-offset: 2px;
+}
+
+/* Las baldas empiezan justo debajo (sin el margen del encabezado anterior) */
+.library:has(.lib-head--147) .library__shelves {
+  margin-top: 0;
+  padding-top: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lib-cloth,
+  .lib-head--147 .lib-tools--147 {
+    transition: none;
+    animation: none;
+  }
+}

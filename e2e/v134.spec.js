@@ -86,12 +86,13 @@ test('librería: cabecera compacta, baldas modulares y libros visibles al abrir'
       plankHeight: parseFloat(row0.borderBottomWidth) * (135 / 208),
       bodyTransform: body ? getComputedStyle(body).transform : null,
       rows,
-      tabs: [...document.querySelectorAll('.lib-tabs [role="radio"]')].map((t) => t.textContent),
+      tabs: [...document.querySelectorAll('[aria-label="Qué baldas ver"] [role="radio"]')].map((t) => t.textContent),
       quoteInHeader: Boolean(head.querySelector('.pinned-quote, blockquote')),
     };
   });
   run.data.library = m;
-  expect(m.tabs).toEqual(['Todos', 'Leyendo', 'Pendientes', 'Leídos']);
+  // 1.47: cinco etiquetas, con «Abandonados»
+  expect(m.tabs).toEqual(['Todos', 'Leyendo', 'Pendientes', 'Leídos', 'Abandonados']);
   expect(m.overflowX).toBeLessThanOrEqual(0);
   expect(m.small).toEqual([]);
   expect(m.quoteInHeader).toBe(false);

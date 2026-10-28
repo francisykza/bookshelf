@@ -237,6 +237,31 @@ export function describeEntry(e, { compact = false } = {}) {
   return { position, advance };
 }
 
+/**
+ * Vista previa del formulario (1.47, SPEC §45): frases cortas con lo que se registrará y cómo queda el libro.
+ * Libro de 528 págs. en la 25 y «He leído 20» (o «Voy por la página 45») → «Registrarás 20 páginas», «Pasarás de
+ * la página 25 a la 45», «8,5 % leído». Una corrección hacia atrás se dice como tal y no suma páginas.
+ */
+export function previewLines(e) {
+  const pct = e.unit === 'percent';
+  const at = (v) => (pct ? `el ${fmtNum(v)} %` : `la página ${v}`);
+  if (e.kind === 'correction') return [`Corregirás tu posición: de ${at(e.from)} a ${at(e.to)}`, 'No suma páginas ni cuenta para la racha'];
+  const lines = [];
+  if (pct) {
+    if (e.delta > 0) lines.push(`Registrarás ${formatPP(e.delta)} puntos de avance`);
+    if (e.from != null && e.to != null) lines.push(`Pasarás del ${fmtNum(e.from)} % al ${fmtNum(e.to)} %`);
+    else if (e.to != null) lines.push(`Quedarás en el ${fmtNum(e.to)} %`);
+    return lines;
+  }
+  const n = e.delta > 0 ? e.delta : e.pages;
+  if (n > 0) lines.push(`Registrarás ${n} ${n === 1 ? 'página' : 'páginas'}`);
+  if (e.from != null && e.to != null && e.to !== e.from) lines.push(`Pasarás de la página ${e.from} a la ${e.to}`);
+  else if (e.to != null && e.from == null) lines.push(`Quedarás en la página ${e.to}`);
+  else if (e.to != null) lines.push(`Sigues en la página ${e.to}`);
+  if (e.to != null && e.total) lines.push(`${fmtNum(roundTo((e.to / e.total) * 100, 1))} % leído`);
+  return lines;
+}
+
 export const entryText = (e, opts) => {
   const { position, advance } = describeEntry(e, opts);
   return [position, advance].filter(Boolean).join(' · ');

@@ -97,7 +97,8 @@ acotada a su zona) son: `library-143.css` (biblioteca y libro físico), `craft-1
 de biblioteca y ficha), `figures-145.css` (figuras en baldas, su detalle y la pantalla del portátil) y
 `computer.css` (ordenador, todo bajo `.pc`), y desde la 1.46: `room-146.css` (cabecera, «Ambiente», accesos, libro de la
 cama, registro y pantalla del portátil), `books-146.css` (acabado del libro físico por edición) y `search-146.css`
-(buscador y confirmación del alta). Las hojas antiguas siguen cargadas: antes de crear una clase nueva,
+(buscador y confirmación del alta); desde la 1.47: `library-147.css` (cabecera compacta y fila textil de la
+biblioteca) y `room-147.css` (encabezado, accesos, registro y Ambiente). Las hojas antiguas siguen cargadas: antes de crear una clase nueva,
 buscar si ya existe con otro uso.
 
 **Recursos**: los originales de diseño están en `material-diseno/`, `art-inbox/` y `assets-source/` (**no están en

@@ -64,6 +64,10 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   const reading = currentBook(books, settings);
   // Lectura recién terminada: el libro de la cama la muestra terminada hasta que eliges otra (sin inventar datos)
   const finished = reading ? null : books.find((b) => b.id === settings.currentBookId && b.status === 'read');
+  // Si el libro elegido para la cama se ha abandonado, se dice así y se ofrece elegir otro: no se sustituye por
+  // otra lectura escogida por su cuenta (SPEC §43)
+  const chosen = books.find((b) => b.id === settings.currentBookId);
+  const bedBook = chosen?.status === 'abandoned' ? chosen : (reading ?? finished);
   // Ambiente del libro: solo el de la lectura actual (elegida por ti o la automática de siempre), nunca al
   // pasar por encima de otro libro; desactivable en «Tu cuenta»
   const vibe = settings.bookVibe !== false && reading ? getDeterministicVibe(reading) : null;
@@ -170,11 +174,11 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
             </div>
           )}
           {/* Primer plano (SPEC §38): cabecera, accesos y el libro grande de la cama, en píxeles de pantalla */}
-          <RoomHeader />
+          <RoomHeader panelW={fit.panelW} />
           {fit.panelH >= BED_BOOK_MIN_H && (
             <>
               <RoomNavPlaques fit={fit} bookTop={fit.panelH - Math.round(bedBookWidth(fit) / (1200 / 595)) + 8} onOpenShelf={onOpenShelf} onOpenDiary={onOpenLaptop} />
-              <BedBook book={reading ?? finished} fit={fit} onOpenBook={onOpenBook} onLog={(book) => onLogReading?.(book)} onChoose={onOpenShelf} hidden={modalOpen} />
+              <BedBook book={bedBook} fit={fit} onOpenBook={onOpenBook} onLog={(book) => onLogReading?.(book)} onChoose={onOpenShelf} hidden={modalOpen} />
             </>
           )}
           {fit.panelH < BED_BOOK_MIN_H && <RoomNavPlaques fit={fit} onOpenShelf={onOpenShelf} onOpenDiary={onOpenLaptop} />}

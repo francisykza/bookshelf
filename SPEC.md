@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.46.1 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.47.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3256,3 +3256,58 @@ Revisión del sistema de la 1.45 (§37) contra el encargo; se mantiene y se corr
 - A 360–390 px el encuadre deja fuera el borde derecho de la pantalla, como en la maqueta; con la ventana a la
   izquierda, el mes queda casi entero a la vista.
 - Prueba: `e2e/v146.spec.js` («portátil…»).
+
+## 43. Estado «Abandonado» (1.47.0)
+
+- Nuevo estado `abandoned` («Abandonado») en `STATUS` y `LIBRARY_STATUSES`; no existía ninguno equivalente.
+  Aditivo: misma clave `bookshelf:v1`, sin migración (los libros existentes no cambian); la nube guarda el estado
+  completo en JSON, sin restricciones de valores. Campo nuevo `abandonedAt` (cuándo se dejó; vuelve a `null` al
+  salir de ese estado).
+- Abandonar conserva página o porcentaje, sesiones, notas, reseña y valoración; no pone el 100 %, no fija
+  `finishedAt`, no cuenta como leído en estadísticas, misiones ni reto anual y no concede recompensas de terminar.
+- Se retoma desde la ficha («Leyendo ahora») con su progreso intacto. Nunca se abandona solo por inactividad.
+- Las lecturas activas (selectores del registro) son solo las de «Leyendo», así que un abandonado sale de ellas.
+- Si era el libro elegido para la cama, el libro grande dice «Lectura abandonada», muestra dónde se dejó y ofrece
+  «Elegir otra lectura» (biblioteca) sin escoger otro por su cuenta.
+- Biblioteca: balda «Abandonados» (en «Todos» solo si tiene libros) y su etiqueta en la fila de filtros.
+
+## 44. Biblioteca compacta (1.47.0)
+
+Referencia: `docs/design/references/biblioteca-compacta-maqueta.png` (las portadas de la maqueta son ilustrativas).
+Sustituye a las instrucciones anteriores que ocultaban el buscador y los filtros. Estilos: `styles/library-147.css`.
+
+- Cabecera: franja baja de la ilustración (recortada por encuadre) con «Volver al rincón» y un icono de
+  herramientas; debajo el buscador siempre visible («Buscar título o autor…», etiqueta accesible propia, botón de
+  limpiar, filtra solo la biblioteca personal y se combina con el filtro); después la fila textil y las baldas. Sin
+  título grande ni subtítulo visibles: queda un `h1` accesible. El teclado no se abre al entrar.
+- Fila textil: Todos (lino marfil, ramita), Leyendo (terracota, libro abierto), Pendientes (crema, reloj de arena),
+  Leídos (salvia, completado) y Abandonados (malva #967F88, libro cerrado). Bases en
+  `public/assets/ui/textile/etiqueta-*.webp`, derivadas del lino salvia existente recoloreando solo la tela (trama
+  y costuras intactas). Texto e iconos en HTML. La elegida lleva además una cinta cosida debajo. En móvil, si no
+  caben, la fila se desplaza en horizontal (con sombra de pista al borde) sin desplazar la página, y la elegida se
+  trae a la vista.
+- Herramientas (icono, cerradas por defecto): «Añadir libro», Escaparate / Lomos, libro al azar, recomendación y
+  Vitrina de Figuras. No hay ordenación en el proyecto: no se ha añadido. El desplegable empuja las baldas.
+- Sin hueco «Añadir un libro» dentro de las baldas. Los libros conservan su tamaño: el espacio ganado deja ver más
+  estantería (a 390 px la primera balda empieza ≈ 200 px más arriba que en la 1.46).
+
+## 45. Habitación, registro y Ambiente pulidos (1.47.0)
+
+Estilos: `styles/room-147.css`.
+
+- Encabezado: «Mi rincón» algo menor; si no cabe a la izquierda de la esquina, baja a una segunda fila (se mide con
+  la anchura real de la esquina, también con texto ampliado). Accesos ≈ 12 % menores a la vista (papel dibujado
+  4 px dentro del botón, que sigue midiendo 44 px); «Rincón social» algo más arriba, junto al ventanal.
+- Cuenta y copias: icono propio en la esquina (con punto de estado de la sincronización); ya no está en Ambiente.
+- Libro de la cama: títulos sin guiones automáticos (solo se parte una palabra que no quepa), botón con más margen
+  interior, pista de progreso completa en tono tenue y relleno exacto, y algo más de separación del borde inferior.
+- Registro: modos en papel marfil y el elegido en lino salvia; campos de papel liso; sin el marco interior; portada
+  y fecha compactas; «×» de cierre; «Guardar lectura» y «Cancelar». Placeholder «Ej. 20» (el campo empieza vacío).
+  Vista previa con `previewLines` (dominio): «Registrarás 20 páginas», «Pasarás de la página 25 a la 45», «8,5 %
+  leído»; una corrección hacia atrás se anuncia como tal. Cerrar con algo escrito (×, Cancelar, Escape o fuera)
+  pide «Seguir editando» o «Descartar».
+- Ambiente: título y «×», horas «Mañana / Atardecer / Noche» con icono; la hora que se ve está siempre marcada y una
+  línea dice si sigue el reloj o si se eligió a mano (elegir una hora desactiva «Seguir el reloj»); alto limitado
+  con desplazamiento; alineado al borde derecho de la esquina en todos los anchos. El aviso de bienvenida se oculta
+  mientras hay un menú de la esquina abierto (lo tapaba).
+- Pruebas: `e2e/v147.spec.js` y `src/domain/__tests__/v147.test.js`.

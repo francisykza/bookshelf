@@ -3,8 +3,8 @@
 // parte de la biblioteca completa; el formulario para registrar lectura, de las lecturas activas.
 import { normalize } from './bookPicker';
 
-/** Estados existentes (sin nombres nuevos): leyendo, pendiente y terminado. */
-export const LIBRARY_STATUSES = ['reading', 'want', 'read'];
+/** Estados: leyendo, pendiente, terminado y (1.47) abandonado. */
+export const LIBRARY_STATUSES = ['reading', 'want', 'read', 'abandoned'];
 
 /** Biblioteca completa: todos los ejemplares guardados. */
 export const libraryBooks = (books) => books ?? [];
@@ -12,6 +12,7 @@ export const libraryBooks = (books) => books ?? [];
 export const activeReadings = (books) => libraryBooks(books).filter((b) => b.status === 'reading');
 export const pendingBooks = (books) => libraryBooks(books).filter((b) => b.status === 'want');
 export const finishedBooks = (books) => libraryBooks(books).filter((b) => b.status === 'read');
+export const abandonedBooks = (books) => libraryBooks(books).filter((b) => b.status === 'abandoned');
 
 /** Texto en el que se busca: título, autor e ISBN guardado (sin mayúsculas, tildes ni espacios sobrantes). */
 const searchText = (book) => normalize(`${book.title ?? ''} ${book.author ?? ''} ${book.isbn ?? ''}`);
@@ -40,6 +41,7 @@ export function libraryEmptyState({ total, shown, status = 'all', query = '', lo
 export const EMPTY_TEXT = {
   library: 'Tu estantería espera su primera historia',
   filter: 'Todavía no tienes libros en este apartado',
+  abandoned: 'No has dejado ningún libro a medias',
   search: 'No encontramos ese libro en tu biblioteca',
   loading: 'Abriendo tu biblioteca…',
 };

@@ -107,6 +107,8 @@ async function openAdd(page) {
   await page.goto('/');
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
   await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  // 1.47: «Añadir libro» está en las herramientas de la cabecera
+  await page.getByRole('button', { name: 'Vista y herramientas' }).click();
   await page.getByRole('button', { name: 'Añadir libro' }).click();
   return page.getByRole('searchbox', { name: /Buscar libros/ });
 }

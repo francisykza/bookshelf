@@ -12,12 +12,12 @@ import { playUiSound } from '../../audio/uiSounds';
 import { choiceLabels, initialReadingOrder, readingChoices } from '../../domain/bookPicker';
 import { completesReading, formatPercent, newId, trackUnit } from '../../domain/books';
 import { parseDay } from '../../domain/dates';
-import { MODES, buildEntry, defaultMode, describeEntry, modesFor } from '../../domain/reading';
+import { MODES, buildEntry, defaultMode, modesFor, previewLines } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
 
 const fmtDate = (key) => parseDay(key).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
 
-export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDone, onCancel, keepOpen = false, onComplete, onOpenLibrary }) {
+export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDone, onCancel, keepOpen = false, onComplete, onOpenLibrary, onDirtyChange }) {
   const { state, actions } = useLibrary();
   const uid = useId();
   const log = state.progress.readingLog;
@@ -49,6 +49,12 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
   // La vista previa y el guardado son el mismo registro (cálculo puro y barato en cada render)
   const draft = book && text.trim() ? buildEntry(book, log, { date, mode: activeMode, text, declared, id: attemptId, source }) : null;
 
+  // Hay algo escrito sin guardar: quien abrió el formulario puede pedir confirmación antes de cerrarlo
+  const dirty = Object.values(texts).some((t) => String(t).trim());
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
   // «Guardado» se ve ≈ 1200 ms y se anuncia una vez
   useEffect(() => {
     if (!savedAt) return undefined;
@@ -60,7 +66,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
   const fieldId = `${uid}-value`;
   const errorId = `${uid}-error`;
   const error = draft?.error ?? (touched && !text.trim() ? 'Escribe un número.' : '');
-  const preview = draft?.entry ? describeEntry(draft.entry) : null;
+  const preview = draft?.entry ? true : null;
   const unknownAdvance = draft?.entry && draft.entry.kind === 'read' && !(draft.entry.delta > 0);
 
   // Si el libro elegido deja de estar activo (p. ej. se acaba de terminar), la selección pasa a otra lectura
@@ -215,7 +221,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
             inputMode={activeMode === 'percent' ? 'decimal' : 'numeric'}
             autoComplete="off"
             value={text}
-            placeholder={activeMode === 'percent' ? '42,5' : activeMode === 'page' ? String(book.currentPage || 1) : '20'}
+            placeholder={activeMode === 'percent' ? 'Ej. 42,5' : activeMode === 'page' ? `Ej. ${Math.min(book.pageCount || Infinity, (book.currentPage || 0) + 20)}` : 'Ej. 20'}
             onChange={(e) => {
               setText(e.target.value);
               setConfirmCorrection(false);
@@ -235,28 +241,22 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
         {conversion && !error && <small className="reading-form__help reading-form__num">{conversion}</small>}
       </div>
 
-      {!preview && (
+      {/* Sin nada escrito, una pista; con un valor inválido manda su error (nunca «Escribe un valor») */}
+      {!preview && !text.trim() && (
         <div className="reading-form__preview reading-form__preview--empty">
           <span className="reading-form__preview-label">Se guardará · {fmtDate(date)}</span>
           <span>Escribe un valor para ver cómo quedará.</span>
         </div>
       )}
       {preview && (
-        <div className="reading-form__preview" aria-live="polite">
+        <div className="reading-form__preview" data-correction={draft.correction || undefined} aria-live="polite">
           <span className="reading-form__preview-label">Se guardará · {fmtDate(date)}</span>
-          {preview.position && (
-            <span>
-              Posición final: <b className="reading-form__num">{preview.position}</b>
+          {previewLines(draft.entry).map((line, i) => (
+            <span key={i} className={i === 0 ? 'reading-form__preview-main' : undefined}>
+              {line}
             </span>
-          )}
-          <span>
-            Avance: <b className="reading-form__num">{preview.advance ?? (draft.correction ? 'ninguno (corrección)' : 'sin posición anterior conocida')}</b>
-          </span>
-          {draft.correction && (
-            <span className="reading-form__warn">
-              Es menor que la posición anterior ({unit === 'percent' ? `${draft.entry.from} %` : `página ${draft.entry.from}`}). Se guardará como corrección: no suma páginas ni cuenta para la racha.
-            </span>
-          )}
+          ))}
+          {!draft.correction && draft.entry.from == null && draft.entry.kind === 'read' && !(draft.entry.delta > 0) && <span>Sin posición anterior conocida</span>}
           {draft.conflict && (
             <span className="reading-form__warn">
               El {fmtDate(draft.conflict.date)} registraste {unit === 'percent' ? `el ${draft.conflict.to} %` : `la página ${draft.conflict.to}`}, menos que esto. Revisa ese registro si no es correcto.

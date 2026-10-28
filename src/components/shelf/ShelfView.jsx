@@ -1,7 +1,7 @@
 // `SHELF_VIEW` (SPEC §27.3–27.5, §28.4, §35): la librería como un mueble de madera gouache. Cabecera compacta
 // (volver, título, buscador, «Añadir libro», «Vista y herramientas» y filtros), una balda por estado con los libros
 // de tres en tres en móvil y su encabezado ligero, y el tablón de recuerdos plegable al final.
-import { ArrowLeft, BookOpen, ChevronDown, Library, Plus, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Book, BookOpen, ChevronDown, CircleCheck, Hourglass, Library, Plus, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import { SectionIcon } from '../SectionIcon';
 import { WaxSeal } from '../primitives';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -31,22 +31,27 @@ const ROWS = [
   { id: 'reading', label: 'Leyendo', empty: 'Ningún libro abierto: elige uno de Pendientes' },
   { id: 'want', label: 'Pendientes', empty: 'Tu lista de deseos está vacía' },
   { id: 'read', label: 'Leídos', empty: 'Aquí irán los libros terminados' },
+  // 1.47 (SPEC §43): en «Todos» solo aparece si tiene algún libro
+  { id: 'abandoned', label: 'Abandonados', empty: 'No has dejado ningún libro a medias' },
 ];
 
 /** Baldas por estado, cada una en su orden de estantería. */
 function groupByStatus(list) {
-  const g = { reading: [], want: [], read: [] };
+  const g = { reading: [], want: [], read: [], abandoned: [] };
   list.forEach((b) => g[b.status]?.push(b));
   Object.keys(g).forEach((k) => g[k].sort(shelfSort(k)));
   return g;
 }
 
+/** Fila textil de la cabecera (SPEC §44): cada etiqueta con su tela, su icono y su nombre como texto real. */
 const FILTERS = [
-  { id: 'all', label: 'Todos' },
-  { id: 'reading', label: 'Leyendo' },
-  { id: 'want', label: 'Pendientes' },
-  { id: 'read', label: 'Leídos' },
+  { id: 'all', label: 'Todos', cloth: 'marfil' },
+  { id: 'reading', label: 'Leyendo', cloth: 'terracota' },
+  { id: 'want', label: 'Pendientes', cloth: 'crema' },
+  { id: 'read', label: 'Leídos', cloth: 'salvia' },
+  { id: 'abandoned', label: 'Abandonados', cloth: 'malva' },
 ];
+const FILTER_ICON = { all: Sprig, reading: BookOpen, want: Hourglass, read: CircleCheck, abandoned: Book };
 
 /** Ramita del hueco «Añadir un libro». */
 function Sprig(props) {
@@ -431,11 +436,21 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   // «Vista y herramientas»: panel plegable bajo la barra (Escape lo cierra y devuelve el foco)
   const [toolsOpen, setToolsOpen] = useState(false);
   const toolsBtn = useRef(null);
+  // La etiqueta elegida siempre a la vista en la fila textil (que puede desplazarse en horizontal)
+  const filtersRef = useRef(null);
+  useEffect(() => {
+    const row = filtersRef.current;
+    const el = row?.querySelector('[aria-checked="true"]');
+    if (!row || !el) return;
+    if (el.offsetLeft < row.scrollLeft) row.scrollLeft = el.offsetLeft - 8;
+    else if (el.offsetLeft + el.offsetWidth > row.scrollLeft + row.clientWidth) row.scrollLeft = el.offsetLeft + el.offsetWidth - row.clientWidth + 8;
+  }, [filter]);
 
   // Al salir se deja lista para la próxima visita desde la habitación: «Todos» y sin búsqueda (el foco al
   // abrir va a «Volver», nunca al buscador)
   useEffect(() => {
-    if (open) backRef.current?.focus({ preventScroll: true });
+    // El foco va a «Volver» sin anillo visible si no se ha usado el teclado (focusVisible donde se admite)
+    if (open) backRef.current?.focus({ preventScroll: true, focusVisible: false });
     else {
       setPick(null);
       setEditionMenu(null);
@@ -499,7 +514,8 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
     });
   };
 
-  const visibleRows = filter === 'all' ? ROWS : ROWS.filter((r) => r.id === filter);
+  // En «Todos» la balda de abandonados solo aparece si tiene libros (con la búsqueda, si alguno coincide)
+  const visibleRows = filter === 'all' ? ROWS.filter((r) => r.id !== 'abandoned' || found.abandoned.length) : ROWS.filter((r) => r.id === filter);
   const shownCount = visibleRows.reduce((n, r) => n + found[r.id].length, 0);
   // Ningún estado vacío mientras la cuenta trae la biblioteca de la nube
   const empty = libraryEmptyState({ total: books.length, shown: shownCount, status: filter, query, loading: cloudStatus === 'loading' && books.length === 0 });
@@ -529,24 +545,30 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   return (
     <div className="library" data-mode={mode} data-open={showing} data-phase={phase} aria-hidden={!open} inert={!open ? true : undefined} onTransitionEnd={onTransitionEnd}>
       <div className="library__case">
-        <header className="lib-head lib-head--compact">
-          {/* A · Cabecera ilustrada baja: volver en su propia línea, título y subtítulo sin placa */}
-          <div className="lib-hero">
-            <button ref={backRef} type="button" className="lib-hero__back" onClick={onBack} aria-label="Volver a la cama">
-              <ArrowLeft aria-hidden="true" />
-              <span>Volver al rincón</span>
-            </button>
-            <h1 className="library__title">
-              <span>Mi biblioteca</span>
-              <small>
-                La biblioteca junto al mar <span className="sr-only-focus">de {settings.owner}</span>
-              </small>
-            </h1>
-          </div>
-          {/* B · Barra en un panel de papel encajado en la madera: buscador, acciones y filtros */}
-          <div className="lib-strip">
-            <div className="lib-strip__panel">
-            <div className="shelf-search craft craft--paper craft--soft" role="search">
+        <header className="lib-head lib-head--147">
+          {/* Encabezado semántico de la pantalla (el título grande ya no se pinta: los libros suben) */}
+          <h1 className="sr-only-focus">Mi biblioteca, la biblioteca junto al mar de {settings.owner}</h1>
+          {/* Franja ilustrada compacta: volver, herramientas y el buscador siempre visible */}
+          <div className="lib-head__strip">
+            <div className="lib-head__bar">
+              <button ref={backRef} type="button" className="lib-hero__back" onClick={onBack} aria-label="Volver a la cama">
+                <ArrowLeft aria-hidden="true" />
+                <span>Volver al rincón</span>
+              </button>
+              <button
+                ref={toolsBtn}
+                type="button"
+                className="lib-tools-icon craft craft--paper"
+                aria-label="Vista y herramientas"
+                title="Vista y herramientas"
+                aria-expanded={toolsOpen}
+                aria-controls="lib-tools"
+                onClick={() => setToolsOpen((v) => !v)}
+              >
+                <SlidersHorizontal aria-hidden="true" />
+              </button>
+            </div>
+            <div className="shelf-search craft craft--paper" role="search">
               <label className="shelf-search__label" htmlFor="shelf-search-input">
                 <Search aria-hidden="true" />
                 <span className="sr-only-focus">Buscar en mi biblioteca</span>
@@ -559,7 +581,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
                 enterKeyHint="search"
                 autoComplete="off"
                 aria-label="Buscar en mi biblioteca"
-                placeholder="Buscar título o autor"
+                placeholder="Buscar título o autor…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -569,49 +591,50 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
                 </button>
               )}
             </div>
-            <div className="lib-actions">
-              <button type="button" className="lib-btn lib-btn--accent lib-strip__add craft craft--terra" onClick={onAddBook}>
+          </div>
+          {/* Herramientas: nacen de la cabecera y empujan las baldas (no tapan portadas). Cerradas por defecto */}
+          {toolsOpen && (
+            <div
+              id="lib-tools"
+              className="lib-tools lib-tools--147"
+              role="group"
+              aria-label="Vista y herramientas"
+              onKeyDown={(e) => {
+                if (e.key !== 'Escape') return;
+                e.stopPropagation();
+                setToolsOpen(false);
+                toolsBtn.current?.focus();
+              }}
+            >
+              <button type="button" className="lib-btn lib-strip__add craft craft--terra" onClick={onAddBook}>
                 <Plus aria-hidden="true" />
                 <span>Añadir libro</span>
               </button>
-              <button ref={toolsBtn} type="button" className="lib-btn lib-tools-btn craft craft--paper" aria-expanded={toolsOpen} aria-controls="lib-tools" onClick={() => setToolsOpen((v) => !v)}>
-                <SlidersHorizontal aria-hidden="true" />
-                <span>Vista y herramientas</span>
-                <ChevronDown aria-hidden="true" className="lib-tools-btn__chev" />
-              </button>
-            </div>
-            {toolsOpen && (
-              <div
-                id="lib-tools"
-                className="lib-tools"
-                onKeyDown={(e) => {
-                  if (e.key !== 'Escape') return;
-                  e.stopPropagation();
-                  setToolsOpen(false);
-                  toolsBtn.current?.focus();
-                }}
-              >
-                <div className="lib-toggle" role="radiogroup" aria-label="Vista de la librería">
-                  <button type="button" role="radio" aria-checked={mode === 'cover'} onClick={() => actions.setSettings({ viewMode: 'cover' })}>
-                    <BookOpen aria-hidden="true" />
-                    <span>Escaparate</span>
-                  </button>
-                  <button type="button" role="radio" aria-checked={mode === 'spine'} onClick={() => actions.setSettings({ viewMode: 'spine' })}>
-                    <Library aria-hidden="true" />
-                    <span>Lomos</span>
-                  </button>
-                </div>
-                <ToolTiles dieFace={dieFace} rolling={rolling} onRoll={roll} onAskLibrarian={onAskLibrarian} onOpenVault={onOpenVault} />
-              </div>
-            )}
-            {/* Filtros: un único estado seleccionado */}
-            <div className="lib-tabs lib-filters" role="radiogroup" aria-label="Qué baldas ver">
-              {FILTERS.map((f) => (
-                <button key={f.id} type="button" role="radio" aria-checked={filter === f.id} data-status={f.id} className="craft craft--choice" onClick={() => setFilter(f.id)}>
-                  {f.label}
+              <div className="lib-toggle" role="radiogroup" aria-label="Vista de la librería">
+                <button type="button" role="radio" aria-checked={mode === 'cover'} onClick={() => actions.setSettings({ viewMode: 'cover' })}>
+                  <BookOpen aria-hidden="true" />
+                  <span>Escaparate</span>
                 </button>
-              ))}
+                <button type="button" role="radio" aria-checked={mode === 'spine'} onClick={() => actions.setSettings({ viewMode: 'spine' })}>
+                  <Library aria-hidden="true" />
+                  <span>Lomos</span>
+                </button>
+              </div>
+              <ToolTiles dieFace={dieFace} rolling={rolling} onRoll={roll} onAskLibrarian={onAskLibrarian} onOpenVault={onOpenVault} />
             </div>
+          )}
+          {/* Fila textil de estados: un único filtro; se desplaza en horizontal si no caben las cinco */}
+          <div className="lib-cloths">
+            <div ref={filtersRef} className="lib-cloths__row" role="radiogroup" aria-label="Qué baldas ver">
+              {FILTERS.map((f) => {
+                const Icon = FILTER_ICON[f.id];
+                return (
+                  <button key={f.id} type="button" role="radio" aria-checked={filter === f.id} data-status={f.id} data-cloth={f.cloth} className="lib-cloth" onClick={() => setFilter(f.id)}>
+                    <Icon aria-hidden="true" className="lib-cloth__icon" />
+                    <span>{f.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </header>
@@ -679,7 +702,8 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
                   const fromKey = event.clientX === 0 && event.clientY === 0;
                   setEditionMenu({ id: book.id, x: fromKey ? r.right + 6 : event.clientX + 4, y: fromKey ? r.top : event.clientY + 4, from: event.currentTarget });
                 }}
-                onAdd={row.id === 'want' ? onAddBook : null}
+                // 1.47: sin hueco de «Añadir libro» en la estantería (está en las herramientas de la cabecera)
+                onAdd={null}
                 pickedId={pick}
                 onMove={actions.moveBook}
                 pins={pins}

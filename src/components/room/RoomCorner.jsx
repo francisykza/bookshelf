@@ -2,12 +2,15 @@
 // la hora del día (clima de la escena), la iluminación (lámpara y vela) y el sonido (ambiente y sonidos táctiles),
 // con las mismas preferencias de antes; al final, cuenta y pantalla completa para no perder ninguna función.
 // Viven fuera del track del panorama (no se desplazan con la habitación) y respetan el área segura.
-import { Cloud, CloudOff, Map as MapIcon, Sun } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { CircleUser, Map as MapIcon, Moon, Sun, Sunset, X } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chime, lampClick, matchStrike } from '../../audio/ambientAudio';
 import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
-import { TOD_ORDER, todName } from './RoomHotspots';
+import { TOD_ORDER } from './RoomHotspots';
+
+/** Horas del día con nombre corto e icono (1.47). */
+const TIMES = { morning: { label: 'Mañana', Icon: Sun }, sunset: { label: 'Atardecer', Icon: Sunset }, night: { label: 'Noche', Icon: Moon } };
 
 /** Menú desplegable que se cierra al tocar fuera o con Escape. */
 function useMenu() {
@@ -45,6 +48,21 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, guideAc
   const guides = Boolean(settings.showGuides);
   const [menu, setMenu, menuRef] = useMenu();
   const [ambient, setAmbient, ambientRef] = useMenu();
+  // Tamaño de la esquina para que el encabezado de la habitación no quede debajo (SPEC §45)
+  const cornerRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = cornerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const root = document.documentElement;
+    const write = () => {
+      root.style.setProperty('--room-corner-w', `${Math.round(el.offsetWidth)}px`);
+      root.style.setProperty('--room-corner-h', `${Math.round(el.offsetHeight)}px`);
+    };
+    write();
+    const ro = new ResizeObserver(write);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Tres casos (SPEC §12.3): app instalada a pantalla completa, API de pantalla completa o ninguna
   const installedFullscreen = window.matchMedia?.('(display-mode: fullscreen)').matches ?? false;
@@ -79,7 +97,11 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, guideAc
 
   return (
     <>
-      <div className="room-corner" data-146="">
+      <div ref={cornerRef} className="room-corner" data-146="">
+        {/* Cuenta y copias: acceso propio y pequeño (no depende de abrir Ambiente) */}
+        <button type="button" className="corner-paper corner-account craft craft--paper" data-status={cloud.status} onClick={onOpenAccount} aria-label="Tu cuenta y copias" title={cloud.user ? `Tu cuenta: ${cloud.user.email}` : 'Tu cuenta y copias'}>
+          <CircleUser aria-hidden="true" />
+        </button>
         {/* «Ambiente»: clima de la escena, iluminación y sonido */}
         <div className="ambient-menu" ref={ambientRef} data-no-room-swipe>
           <button type="button" className="corner-paper craft craft--paper" aria-expanded={ambient} aria-haspopup="true" onClick={() => setAmbient((v) => !v)}>
@@ -88,19 +110,33 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, guideAc
           </button>
           {ambient && (
             <div className="ambient-menu__panel corner-sheet" role="group" aria-label="Ambiente">
+              <div className="ambient-menu__head">
+                <h3>Ambiente</h3>
+                <button type="button" className="ambient-menu__close" onClick={() => setAmbient(false)} aria-label="Cerrar Ambiente">
+                  <X aria-hidden="true" />
+                </button>
+              </div>
               <p className="corner-sheet__heading" id="amb-time">
                 Hora del día
               </p>
               <div className="ambient-menu__times" role="radiogroup" aria-labelledby="amb-time">
-                {TOD_ORDER.map((t) => (
-                  <button key={t} type="button" role="radio" className="craft craft--choice" aria-checked={!settings.timeAuto && settings.timeOfDay === t} onClick={() => setTime(t)}>
-                    {todName(t)}
-                  </button>
-                ))}
+                {TOD_ORDER.map((t) => {
+                  const { label, Icon } = TIMES[t];
+                  // La hora que se ve está marcada siempre; si sigue el reloj, lo dice la línea de debajo
+                  return (
+                    <button key={t} type="button" role="radio" className="craft craft--choice" aria-checked={settings.timeOfDay === t} onClick={() => setTime(t)}>
+                      <Icon aria-hidden="true" />
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
               <Toggle on={settings.timeAuto} onChange={() => actions.setSettings({ timeAuto: !settings.timeAuto })}>
                 Seguir el reloj
               </Toggle>
+              <p className="ambient-menu__clock" aria-live="polite">
+                {settings.timeAuto ? 'La luz cambia sola con la hora.' : 'Hora elegida a mano: ya no sigue el reloj.'}
+              </p>
               <p className="corner-sheet__heading">Iluminación</p>
               <Toggle
                 on={settings.lampOn}
@@ -128,18 +164,6 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, guideAc
                 Sonidos al tocar
               </Toggle>
               <div className="corner-sheet__more">
-                <button
-                  type="button"
-                  className="corner-sheet__link corner-btn--cloud"
-                  data-status={cloud.status}
-                  onClick={() => {
-                    setAmbient(false);
-                    onOpenAccount();
-                  }}
-                >
-                  {cloud.status === 'offline' || cloud.status === 'off' ? <CloudOff aria-hidden="true" /> : <Cloud aria-hidden="true" />}
-                  Tu cuenta y copias
-                </button>
                 {!installedFullscreen && (
                   <button type="button" className="corner-sheet__link" aria-pressed={fullscreenApi ? fullscreen : undefined} onClick={toggleFullscreen}>
                     {fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
