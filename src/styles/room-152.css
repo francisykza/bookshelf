@@ -1,0 +1,192 @@
+/* ── 1.52.0 · Libro de la cama: contenido integrado en las páginas pintadas (SPEC §50) ───────────────────────────
+   Una sola habitación de día y de noche: el libro es el pintado del fondo de día y su contenido vive en el sistema
+   de coordenadas de cada página (lienzo en px de la ilustración, girado con la orientación media del papel; la
+   perspectiva ya la trae el dibujo, no se aplica otra). Valores definitivos: sustituyen a los de room-149.css.
+   A 390 px de pantalla, 1 px de la ilustración ≈ 0,5 px de pantalla. */
+
+/* Página izquierda: rótulo, caja del título de altura fija (tres líneas) y autor en una posición estable */
+.bed-pages__page--left {
+  justify-content: flex-start;
+  padding: 0 4px;
+}
+
+.bed-pages__page--left .bed-pages__kicker {
+  margin: 0 0 3px;
+  font-size: 15px;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+}
+
+.bed-pages__titlebox {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  width: 100%;
+  height: 96px;
+}
+
+.bed-pages__title,
+.bed-pages__title[data-size='medium'],
+.bed-pages__title[data-size='long'] {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: #3e2c1f;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.02;
+  hyphens: manual;
+  word-break: normal;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+.bed-pages__title[data-size='short'] {
+  font-size: 34px;
+}
+
+.bed-pages__title[data-size='medium'] {
+  font-size: 30px;
+}
+
+/* Títulos excepcionalmente largos: tres líneas con puntos suspensivos (el completo, en la ficha y en el nombre
+   accesible del libro); la letra no baja de 26 px de la ilustración (≈ 13 px de pantalla) */
+.bed-pages__title[data-size='long'] {
+  font-size: 26px;
+}
+
+.bed-pages__page--left .bed-pages__author {
+  margin-top: 4px;
+  color: #4f3b2c;
+  font-size: 21px;
+  line-height: 1.15;
+}
+
+/* Página derecha: página actual como dato principal, total y porcentaje, barra y la acción, sin rótulo */
+.bed-pages__page--right {
+  justify-content: flex-start;
+  padding: 2px 6px 0;
+}
+
+.bed-pages__page--right .bed-pages__progress {
+  margin: 0;
+  color: #3e2c1f;
+  font-size: 37px;
+  line-height: 1;
+}
+
+.bed-pages__page--right .bed-pages__secondary {
+  margin-top: 2px;
+  color: #4f3b2c;
+  font-size: 21px;
+  line-height: 1.15;
+}
+
+.bed-pages__page--right .bed-pages__meter {
+  width: 88%;
+  height: 7px;
+  margin: 8px 0 0;
+}
+
+/* «Registrar lectura»: una pieza de tela terracota apagada con su costura, apoyada en la página con su misma
+   orientación, separada del progreso y del borde inferior; texto crema legible y sombra pequeña */
+.bed-pages__action {
+  position: absolute;
+  left: 6px;
+  bottom: 14px;
+  width: 80%;
+  height: 42px;
+  padding: 0 10px 2px;
+  background: none;
+  color: #fbf1e1;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 0 rgb(60 22 10 / 0.4);
+  opacity: 1;
+  mix-blend-mode: normal;
+  filter: drop-shadow(0 1.5px 1px rgb(40 22 8 / 0.32));
+}
+
+.bed-pages__action::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url('/assets/room/boton-terracota-cosido.webp') center / 100% 100% no-repeat;
+  filter: saturate(0.78) brightness(0.96);
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
+/* Botón real: mismo sitio que la pieza dibujada; zona de toque ≥ 44 px de pantalla, sin invadir el progreso */
+.bed-pages__hit {
+  left: 2px;
+  width: calc(80% + 8px);
+  bottom: calc(14px + 21px - var(--hit, 88px) / 2);
+  height: var(--hit, 88px);
+}
+
+/* Noche: el velo nocturno deja pasar más luz sobre el libro (luz cálida de lectura) y no apaga el texto */
+.tod[data-tod='night'] .tod__night {
+  -webkit-mask-image: radial-gradient(ellipse 330px 210px at 540px 1470px, rgb(0 0 0 / 0.25) 0, rgb(0 0 0 / 0.6) 55%, #000 100%);
+  mask-image: radial-gradient(ellipse 330px 210px at 540px 1470px, rgb(0 0 0 / 0.25) 0, rgb(0 0 0 / 0.6) 55%, #000 100%);
+}
+
+.tod[data-tod='night']::after {
+  content: '';
+  position: absolute;
+  left: 210px;
+  top: 1290px;
+  width: 660px;
+  height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgb(255 196 120 / 0.2), rgb(255 196 120 / 0.08) 55%, transparent 75%);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+/* Fondo nocturno pintado con la misma geometría (cuando exista: `SCENE_REFRESH.night`): sustituye al velo */
+.scene-night-base {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+.room-camera[data-night-base] .tod__night,
+.room-camera[data-night-base] .tod__night-sky {
+  display: none;
+}
+
+/* Página izquierda centrada, como la portadilla de la maqueta: ni el rótulo ni el título tocan los bordes */
+.bed-pages__page--left {
+  align-items: center;
+  text-align: center;
+  padding: 2px 6px 0;
+}
+
+.bed-pages__page--left .bed-pages__titlebox {
+  justify-content: center;
+}
+
+.bed-pages__page--left .bed-pages__author {
+  max-width: 100%;
+}
+
+/* Ancho útil casi completo de la página (el libro pintado es pequeño): los títulos medios caben en tres líneas
+   largas en vez de en muchas cortas */
+.bed-pages__title[data-size='medium'] {
+  font-size: 26px;
+}
+
+.bed-pages__title[data-size='long'] {
+  font-size: 24px;
+}
+
+.bed-pages__page--left {
+  padding: 2px 2px 0;
+}

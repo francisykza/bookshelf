@@ -202,10 +202,11 @@ test('libro: la lectura escrita en el libro pintado de la cama, sin libro superp
   await expect(pages).toHaveAttribute('data-state', 'reading');
   const left = pages.locator('.bed-pages__page--left');
   const right = pages.locator('.bed-pages__page--right');
-  await expect(left.locator('.bed-pages__kicker')).toHaveText('Tu lectura');
+  // 1.52 (SPEC §50): «Estás leyendo» y sin rótulo en la página derecha
+  await expect(left.locator('.bed-pages__kicker')).toHaveText('Estás leyendo');
   await expect(left.locator('.bed-pages__title')).toHaveText(current.title);
   await expect(left.locator('.bed-pages__author')).toHaveText(current.author);
-  await expect(right.locator('.bed-pages__kicker')).toHaveText('Por donde vas');
+  await expect(right.locator('.bed-pages__kicker')).toHaveCount(0);
   await expect(right.locator('.bed-pages__progress')).toHaveText('Página 61');
   await expect(right.locator('.bed-pages__secondary')).toHaveText(/^de 496 · 12,3\s%$/);
   await expect(right.locator('.bed-pages__meter')).toHaveCount(1);

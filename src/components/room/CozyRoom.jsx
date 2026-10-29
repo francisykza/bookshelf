@@ -7,7 +7,7 @@ import { lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook, progressLabel } from '../../domain/books';
 import { getDeterministicVibe } from '../../utils/vibeEngine';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
-import { HOTSPOTS, ROOMS } from '../../scene/sceneMap';
+import { HOTSPOTS, ROOMS, SCENE_REFRESH } from '../../scene/sceneMap';
 import { visibleFraction } from '../../scene/stageFit';
 import { useLibrary } from '../../state/useLibrary';
 import { OnboardingGuide } from '../onboarding/OnboardingGuide';
@@ -28,7 +28,6 @@ import { SceneBase } from './SceneBase';
 import { SceneStage } from './SceneStage';
 import { TeaDrain } from './TeaDrain';
 import { TimeOfDayLayers } from './TimeOfDayLayers';
-import { NightRoom } from './NightRoom';
 
 export const ROOM_VIEW = 'ROOM_VIEW';
 export const SHELF_VIEW = 'SHELF_VIEW';
@@ -78,6 +77,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   const live = inRoom && !modalOpen;
   const [base, setBase] = useState({ status: 'loading', attempt: 0 });
   const guides = Boolean(settings.showGuides);
+  const nightBase = settings.timeOfDay === 'night' && Boolean(SCENE_REFRESH.night);
 
   // Animaciones SVG: en pausa fuera de pantalla, con un modal delante, con la pestaña oculta o con movimiento reducido
   useEffect(() => {
@@ -153,32 +153,6 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
     actionsRef.current = ACTIONS;
   });
 
-  // De noche, la ilustración nocturna con su propio mapa (SPEC §49). La guía de primera visita usa las anclas del
-  // cuarto de día, así que mientras se ve, se muestra ese cuarto
-  if (settings.timeOfDay === 'night' && !guide?.visible) {
-    return (
-      <NightRoom
-        book={bedBook}
-        settings={settings}
-        live={live}
-        attempt={base.attempt}
-        onStatus={(status) => setBase((b) => (b.status === status ? b : { ...b, status }))}
-        onOpenBook={onOpenBook}
-        onLog={(b) => onLogReading?.(b)}
-        onOpenShelf={onOpenShelf}
-        onOpenLaptop={onOpenLaptop}
-        onOpenVault={onOpenVault}
-        onToggleSound={onToggleSound}
-        onToggleLamp={toggleLamp}
-        onToggleCandle={toggleCandle}
-        onOffscreen={onOffscreen}
-        actions={ACTIONS}
-        today={today}
-        modalOpen={modalOpen}
-      />
-    );
-  }
-
   return (
     <SceneArtContext.Provider value={art}>
     <SceneStage
@@ -188,6 +162,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
       data-modal={modalOpen || undefined}
       data-pointing={pointing}
       data-guides={guides}
+      data-night-base={nightBase || undefined}
       data-live={live || undefined}
       data-shelf-awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))}
       overlay={(fit) => (
@@ -220,6 +195,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         <SceneBase room={ROOMS.MAIN_ROOM} attempt={base.attempt} onStatus={(status) => setBase((b) => (b.status === status ? b : { ...b, status }))} />
         {/* Escena recompuesta (SPEC §24) encima, solo cuando todos sus recursos han cargado */}
         {art.ready && <RefreshBase />}
+        {/* Noche con su fondo pintado equivalente, si existe (misma geometría: nada se mueve al cambiar de hora) */}
+        {art.ready && nightBase && <img className="scene-night-base" src={SCENE_REFRESH.night} width={ROOMS.MAIN_ROOM.width} height={ROOMS.MAIN_ROOM.height} alt="" draggable="false" />}
 
         {/* 5 · veleros de la bahía, recortados por la máscara del agua (detrás de la luz del día) */}
         <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} src={art.src} />

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.51.0 · 2026-10-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.52.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3444,3 +3444,25 @@ del margen transparente, 1697 × 768). No llegaron las versiones de día y atard
 - Escritorio y horizontal: la ilustración es vertical; en pantallas anchas se ve ampliada la parte inferior (libro,
   cascos y mesa). Falta una versión ancha del mismo cuadro.
 - Día y atardecer siguen siendo la otra ilustración: al cambiar de hora cambia la composición.
+
+## 50. Una sola habitación de día y de noche y libro integrado (1.52.0)
+
+Decisión de Francisco: la composición de día es la definitiva y la noche es la misma habitación con otra luz. Se
+retira la escena nocturna de la 1.51 (§49: `NightRoom`, `nightMap.js`, su fondo y su libro) porque cambiaba los muebles.
+Recurso pendiente: `docs/design/recursos-noche-misma-habitacion.md`.
+
+- **Continuidad**: a cualquier hora, el mismo fondo, encuadre, baldas con tus libros y figuras, libro pintado,
+  carteles y zonas. De noche, de momento, el velo azul de siempre (las manchas de sol siguen pintadas: **la luz
+  nocturna aprobada no está resuelta**) con más luz sobre el libro (el velo se aclara sobre él y una luz cálida
+  suave), para que se lea. Lámpara y vela siguen sus controles.
+- **Preparado para el fondo nocturno equivalente**: `SCENE_REFRESH.night` (hoy `null`). Con una ruta, de noche se pinta
+  encima del de día con la misma geometría y se quita el velo (`data-night-base`).
+- **Libro** (`BedPages.jsx`, estilos en `room-152.css`, que sustituyen a los de `room-149.css`): página izquierda
+  centrada con «Estás leyendo», título en una caja fija de tres líneas (34 / 26 / 24 px de la ilustración según la
+  longitud, sin guiones ni cortes de palabra; los muy largos acaban en «…» y el completo está en la ficha y en el nombre
+  accesible) y el autor siempre en el mismo sitio. Página derecha sin «Por donde vas»: «Página X» como dato principal,
+  «de Y · Z %», barra real y «Registrar lectura» (terracota apagado con costura, texto crema de 22 px ≈ 11 px de
+  pantalla, sombra pequeña, separado del progreso y del borde; zona táctil ≥ 44 px de pantalla). Todo en el sistema
+  de coordenadas de cada página, girado con su papel; la perspectiva es la del dibujo.
+- Se conservan de la 1.51 las correcciones generales (`room-151.css`): controles compactos, «Guías» sin
+  desplazamientos, carteles que reciben el toque, puntos de estado en su esquina.

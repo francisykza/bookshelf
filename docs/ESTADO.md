@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.51.0 (2026-10-28), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.51.0. Fuera de git
+- **Versión publicada**: 1.52.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.52.0. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.52.0 | Una sola habitación de día y de noche (se retira la escena nocturna de la 1.51) y libro con el contenido integrado | §50 |
 | 1.51.0 | Habitación nocturna de la maqueta con su propio mapa, libro con la lectura real y controles compactos | §49 |
 | 1.50.0 | Texto del libro sin cizalla, botón integrado en la página, «Mi biblioteca» en la perspectiva del mueble y «Social» más suave | §48 |
 | 1.49.0 | Lectura sobre el libro pintado (sin libro superpuesto), cascos en el encuadre, «Mi biblioteca» en la balda inferior e indicadores anclados | §47 |
@@ -31,8 +32,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-00. **Noche (§49)**: hecha con los recursos entregados. Faltan, si se quieren: fondo nocturno con baldas vacías (para
-   pintar tus libros y figuras), versiones de día y atardecer del mismo cuadro y una versión ancha para escritorio.
+00. **Noche de la misma habitación (§50)**: falta el fondo nocturno con la misma geometría que el de día (y, mejor,
+   las luces de lámpara y vela por separado). Especificación en `docs/design/recursos-noche-misma-habitacion.md`.
+   Mientras, la noche es el velo azul de siempre: las manchas de sol siguen visibles.
 0. **Encargo de la 1.46 terminado** (portátil, §42, publicado en la 1.46.1). Figuras revisadas (§41): sin el
    fondo de baldas anchas (punto 1) no pueden igualar el tamaño de la maqueta; faltan recortes con transparencia de
    la Dama, la Jinete y las tres figuras SVG. El escaneo de códigos no existe en el proyecto.
@@ -58,8 +60,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Decisiones vigentes que no deben deshacerse
 
-- (1.51) La noche es otra ilustración con su propio mapa (`NightRoom.jsx`, `nightMap.js`); las pruebas e2e corren con
-  el reloj a mediodía (`playwright.config.js`) y eligen la noche en «Ambiente» cuando la necesitan.
+- (1.52, decisión de Francisco) Día y noche son **la misma habitación**: la composición de día manda y de la noche solo
+  se toma la luz. No usar otra ilustración para la noche. El libro es el pintado del día. Las pruebas e2e corren con el
+  reloj a mediodía (`playwright.config.js`).
 - (1.49, decisión de Francisco) La lectura se escribe sobre el libro **pintado** de la cama en coordenadas de la escena;
   no volver a poner un libro superpuesto en píxeles de pantalla. Encuadre vertical `x: 0.29` para ver los cascos (§47).
 - (1.48) Los cinco filtros siempre a la vista sin desplazamiento horizontal (dos filas 3 + 2 si no caben); la
@@ -88,6 +91,11 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-29 · cuenta principal · 1.52.0 (publicada)
+- Encargo «Continuidad entre día y noche e integración del libro»: se retira la escena nocturna de la 1.51 y se
+  rehace el contenido del libro pintado (ver §50). Falta el fondo nocturno equivalente (recurso pedido).
+- Commit y subida a producción pedidos por Francisco. Sin comprobar aún en su móvil real.
 
 ### 2026-10-28 · cuenta principal · 1.51.0 (publicada)
 - Habitación nocturna de la maqueta con los dos recursos que entregó Francisco (fondo y libro). Ver §49 y

@@ -90,6 +90,10 @@ export const SCENE_SRC = ROOMS.MAIN_ROOM.src;
 const refresh = (name) => asset(`images/room-refresh/escena/${name}.webp`);
 export const SCENE_REFRESH = {
   base: refresh('fondo-limpio'),
+  // 1.52 (SPEC §50): fondo nocturno pintado con la MISMA geometría que `fondo-limpio` (941 × 1672), aún no entregado.
+  // Cuando llegue, poner aquí su ruta (p. ej. refresh('fondo-limpio-noche')): de noche se pinta encima del de día y
+  // sustituye al velo oscuro; todo lo demás (libro, carteles, baldas, zonas) sigue igual
+  night: null,
   foreground: refresh('portatil-primer-plano'),
   layers: [
     { id: 'cortina-alta', x: 476, y: 0, w: 159, h: 495 },

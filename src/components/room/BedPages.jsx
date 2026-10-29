@@ -24,7 +24,7 @@ function settle(quad, kw, kh) {
   const a = (angleOf(tl, tr) + angleOf(bl, br)) / 2;
   return { w, h, transform: `translate(${(cx - w / 2).toFixed(1)}px, ${(cy - h / 2).toFixed(1)}px) rotate(${a.toFixed(4)}rad)` };
 }
-export const LEFT = settle(BOOK_LEFT_PAGE, 0.98, 0.92);
+export const LEFT = settle(BOOK_LEFT_PAGE, 0.97, 0.92);
 export const RIGHT = settle(BOOK_RIGHT_PAGE, 0.86, 0.86);
 const place = (c) => ({ width: c.w, height: c.h, transform: c.transform, transformOrigin: '50% 50%' });
 
@@ -39,12 +39,13 @@ export function BookOnBed({ book }) {
       <div className="bed-pages" data-state="empty" aria-hidden="true">
         <div className="bed-pages__page bed-pages__page--left" style={place(LEFT)}>
           <span className="bed-pages__kicker">Tu lectura</span>
-          <b className="bed-pages__title" data-size="medium">
-            Ningún libro abierto
-          </b>
+          <span className="bed-pages__titlebox">
+            <b className="bed-pages__title" data-size="medium">
+              Ningún libro abierto
+            </b>
+          </span>
         </div>
         <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT)}>
-          <span className="bed-pages__kicker">Por donde vas</span>
           <span className="bed-pages__secondary">Elige qué quieres leer</span>
           <span className="bed-pages__action">Elegir un libro</span>
         </div>
@@ -54,18 +55,20 @@ export function BookOnBed({ book }) {
   const title = book.title || 'Sin título';
   const progress = bedProgress(book);
   // Tres tamaños según la longitud: los largos ocupan más líneas con una letra algo menor, nunca diminuta
-  const size = title.length > 46 ? 'long' : title.length > 22 ? 'medium' : 'short';
+  const size = title.length > 40 ? 'long' : title.length > 16 ? 'medium' : 'short';
   return (
     <div key={book.id} className="bed-pages" data-state={state} aria-hidden="true">
       <div className="bed-pages__page bed-pages__page--left" style={place(LEFT)}>
-        <span className="bed-pages__kicker">{state === 'abandoned' ? 'Lectura abandonada' : 'Tu lectura'}</span>
-        <b className="bed-pages__title" data-size={size}>
-          {title}
-        </b>
+        <span className="bed-pages__kicker">{state === 'abandoned' ? 'Lectura abandonada' : state === 'finished' ? 'Lectura terminada' : 'Estás leyendo'}</span>
+        {/* Caja de altura fija (tres líneas): el autor no se mueve aunque cambie la longitud del título */}
+        <span className="bed-pages__titlebox">
+          <b className="bed-pages__title" data-size={size}>
+            {title}
+          </b>
+        </span>
         {book.author && <span className="bed-pages__author">{book.author}</span>}
       </div>
       <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT)}>
-        <span className="bed-pages__kicker">Por donde vas</span>
         <span className="bed-pages__progress">{progress.main}</span>
         {progress.secondary && <span className="bed-pages__secondary">{progress.secondary}</span>}
         {progress.fraction != null && (
