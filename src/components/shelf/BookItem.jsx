@@ -6,7 +6,7 @@ import { AudioLines, Headphones } from 'lucide-react';
 import { forwardRef, useCallback, useState } from 'react';
 import { useCoverColor } from '../../hooks/useCoverColor';
 import { calculateBookPhysics } from '../../utils/vibeEngine';
-import { EDGE_NAMES, EDITIONS, QUOTE_COLORS, audioHours, formatPercent, hash, percentRead, progress, ratingText, spineColor, spineHeight, spineWidth, sprayedEdge } from '../../domain/books';
+import { EDGE_NAMES, EDITIONS, QUOTE_COLORS, audioHours, formatPercent, hash, percentRead, progress, ratingText, spineColor, spineHeight, spineWidth, sprayedEdge, visualEdition } from '../../domain/books';
 
 /** Portada tipográfica para libros sin imagen (o con la imagen rota). */
 export function GeneratedCover({ book }) {
@@ -68,28 +68,6 @@ export function annotatedNotes(book) {
   });
 }
 
-/** Batería decorativa del e-reader, distinta (y estable) en cada libro. */
-const battery = (book) => 38 + (hash(book.id) % 58);
-
-/** Marco del e-reader: negro mate o salvia mate. */
-export const bezel = (book) => (hash(book.title) % 2 ? 'sage' : 'black');
-
-/** Pantalla de tinta electrónica con la portada y la micro-barra de batería y progreso. */
-export function EReaderScreen({ book }) {
-  const level = battery(book);
-  return (
-    <>
-      <span className="ereader__screen">
-        <Cover book={book} />
-      </span>
-      <span className="ereader__bar">
-        <span className="ereader__battery" style={{ '--b': `${level}%` }} title={`Batería ${level} %`} />
-        <span>{formatPercent(percentRead(book))}</span>
-      </span>
-    </>
-  );
-}
-
 /** Franja del estuche acrílico: ondas de voz doradas, cascos y duración. */
 export function AudioStrip({ book }) {
   return (
@@ -102,8 +80,8 @@ export function AudioStrip({ book }) {
 }
 
 function describe(book) {
-  const parts = [`${book.title}, de ${book.author}`, EDITIONS[book.editionType]?.short];
-  if (book.editionType === 'audiobook') parts.push(`${audioHours(book)} horas`);
+  const parts = [`${book.title}, de ${book.author}`, EDITIONS[visualEdition(book)].short];
+  if (visualEdition(book) === 'audiobook') parts.push(`${audioHours(book)} horas`);
   else parts.push(book.pageCount ? `${book.pageCount} páginas` : 'sin paginación');
   if (book.status === 'reading') parts.push(`leyendo, ${formatPercent(percentRead(book))}`);
   if (book.rating) parts.push(ratingText(book.rating));
@@ -130,12 +108,12 @@ function dragProps(book, draggable) {
   };
 }
 
-/** Grosor del lomo según la edición: el e-reader es una lámina y el estuche tiene medida fija. */
+/** Grosor del lomo según la edición visual: el estuche del audiolibro tiene medida fija. */
 function spineW(book) {
-  if (book.editionType === 'kindle') return 8;
-  if (book.editionType === 'audiobook') return 18;
+  const ed = visualEdition(book);
+  if (ed === 'audiobook') return 18;
   const w = spineWidth(book.pageCount);
-  return book.editionType === 'paperback' ? Math.max(9, w * 0.92) : w;
+  return ed === 'paperback' ? Math.max(9, w * 0.92) : w;
 }
 
 const NERVES = [0.2, 0.36, 0.52, 0.68];
@@ -144,19 +122,19 @@ const NERVES = [0.2, 0.36, 0.52, 0.68];
  * Libro físico reutilizable (SPEC §35.2): la portada REAL como cara principal, completa y sin estirar; un lomo
  * estrecho del color de la cubierta, el bloque de páginas en marfil asomando por el corte y una sombra de contacto.
  * Sin letras falsas en el lomo ni insignias encima: los acabados solo cuando son de esa edición (cuero, cantos
- * pintados, post-its de la anotada); el e-reader va en su marco y el audiolibro lleva una marca pequeña.
+ * pintados, post-its de la anotada); el audiolibro lleva una marca pequeña. Se dibuja con `visualEdition`: un
+ * e-reader antiguo (edición retirada en la 1.54) se ve como bolsillo, con su portada.
  * `variant`: «shelf» (apoyado en la balda, botón) o «corner» (más contenido, decorativo).
  */
 export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdge(book), scale = 1, className = '', ...rest }) {
-  const edition = book.editionType;
-  const device = edition === 'kindle';
-  // Encuadernación (1.46, SPEC §39) según la edición guardada: tapas rígidas (grosor de tapa ≥ 0,4 cm), rústica
-  // (bolsillo), lector electrónico o estuche de audiolibro. Solo cambia el material, nunca la portada.
-  const binding = device ? 'device' : edition === 'audiobook' ? 'case' : (EDITIONS[edition]?.cm ?? 0.12) >= 0.4 ? 'hard' : 'soft';
-  // Grosor (px a la escala del escaparate): el de las páginas reales más las tapas; el e-reader es una lámina y el
-  // estuche, fijo. La rústica es más ligera que la tapa dura con las mismas páginas
+  const edition = visualEdition(book);
+  // Encuadernación (1.46, SPEC §39) según la edición: tapas rígidas (grosor de tapa ≥ 0,4 cm), rústica (bolsillo) o
+  // estuche de audiolibro. Solo cambia el material, nunca la portada.
+  const binding = edition === 'audiobook' ? 'case' : EDITIONS[edition].cm >= 0.4 ? 'hard' : 'soft';
+  // Grosor (px a la escala del escaparate): el de las páginas reales más las tapas; el estuche, fijo. La rústica es
+  // más ligera que la tapa dura con las mismas páginas
   const pages = Math.max(7, Math.min(20, 6 + (book.pageCount || 250) / 55));
-  const depth = device ? 5 : binding === 'case' ? 12 : Math.round(binding === 'hard' ? pages + 3 : pages * 0.85);
+  const depth = binding === 'case' ? 12 : Math.round(binding === 'hard' ? pages + 3 : pages * 0.85);
   const Tag = variant === 'shelf' ? 'button' : 'span';
   return (
     <Tag
@@ -165,17 +143,15 @@ export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdg
       data-variant={variant}
       data-edition={edition}
       data-binding={binding}
-      data-device={device || undefined}
-      data-bezel={device ? bezel(book) : undefined}
       aria-hidden={variant === 'shelf' ? undefined : 'true'}
-      data-cover-spine={!device && book.cover ? '' : undefined}
+      data-cover-spine={book.cover ? '' : undefined}
       // El lomo continúa la cubierta con su propio borde izquierdo (1.48): no depende de leer los píxeles (CORS)
-      style={{ '--spine': spine ?? spineColor(book), '--scale': scale, '--d': `${depth}px`, ...(!device && book.cover ? { '--cover-url': `url("${String(book.cover).replace(/["\\]/g, '')}")` } : null) }}
+      style={{ '--spine': spine ?? spineColor(book), '--scale': scale, '--d': `${depth}px`, ...(book.cover ? { '--cover-url': `url("${String(book.cover).replace(/["\\]/g, '')}")` } : null) }}
     >
       <span className="pbook__body">
-        {/* Caras del volumen (CSS 3D): lomo a la izquierda y canto superior; el e-reader, solo su marco */}
+        {/* Caras del volumen (CSS 3D): lomo a la izquierda y canto superior */}
         <span className="pbook__spine" />
-        <span className={`pbook__top${!device && edge ? ` edge--${edge}` : ''}`} />
+        <span className={`pbook__top${edge ? ` edge--${edge}` : ''}`} />
         <span className="pbook__cover">
           <Cover book={book} />
           {/* Luz en los bordes y grano del material: capa encima de la portada original, sin redibujarla */}
@@ -209,7 +185,7 @@ export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdg
 }
 
 export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, onOpen, onEdition, picked = false, draggable = false }, ref) {
-  const edition = book.editionType;
+  const edition = visualEdition(book);
   // Color determinista al momento; el de la portada llega después, solo si está visible y lo permite CORS
   const [coverSpine, observe] = useCoverColor(book);
   const physics = calculateBookPhysics(book);
@@ -236,7 +212,6 @@ export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, on
     'data-picked': picked || undefined,
     'data-edition': edition,
     'data-edge': edge || undefined,
-    'data-bezel': edition === 'kindle' ? bezel(book) : undefined,
     onClick: () => onOpen(book),
     onContextMenu: onEdition
       ? (event) => {
@@ -250,7 +225,7 @@ export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, on
 
   if (mode === 'spine') {
     const w = spineW(book);
-    const device = edition === 'kindle' || edition === 'audiobook';
+    const device = edition === 'audiobook';
     return (
       <button {...common} className="spine" style={{ width: w, height: h, '--spine': coverSpine }}>
         {edge && <span className={`spine__top edge--${edge}`} title={`Cantos: ${EDGE_NAMES[edge]}`} />}
@@ -272,7 +247,6 @@ export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, on
           </span>
         )}
         {edition === 'clothbound' && <span className="spine__stamp" aria-hidden="true" />}
-        {edition === 'kindle' && <span className="spine__button" aria-hidden="true" />}
         {!device && <span className="spine__band spine__band--top" />}
         {edition === 'audiobook' ? (
           <span className="spine__audio" aria-hidden="true">
@@ -280,7 +254,7 @@ export const BookItem = forwardRef(function BookItem({ book, mode, rowHeight, on
             <b>{audioHours(book)}h</b>
           </span>
         ) : (
-          edition !== 'kindle' && <span className="spine__title">{book.title}</span>
+          <span className="spine__title">{book.title}</span>
         )}
         {!device && <span className="spine__author">{book.author.split(',')[0].split(' ').slice(-1)[0]}</span>}
         {!device && <span className="spine__band spine__band--bottom" />}

@@ -140,7 +140,8 @@ export function editionFromFormat(format) {
   if (!f) return null;
   if (/hardcover|hardback|tapa dura|cartone/.test(f)) return 'hardcover';
   if (/paperback|mass market|bolsillo|rustica|tapa blanda|softcover/.test(f)) return 'paperback';
-  if (/ebook|e book|kindle|epub|electronic/.test(f)) return 'kindle';
+  // 1.54: el formato digital ya no deduce edición visual (el e-reader se retiró): queda la predeterminada
+  if (/ebook|e book|kindle|epub|electronic/.test(f)) return null;
   if (/audio/.test(f)) return 'audiobook';
   return null;
 }

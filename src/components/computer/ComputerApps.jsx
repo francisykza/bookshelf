@@ -4,7 +4,7 @@
 import { BookOpen, Check, Flame, Gift, Star } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { daysLeftInYear, lastDays, parseDay } from '../../domain/dates';
-import { EDITIONS, formatRating, hash, isDevice, spineColor } from '../../domain/books';
+import { EDITIONS, formatRating, hash, isDevice, spineColor, visualEdition } from '../../domain/books';
 import { SEALS_PER_BOX, rankOf } from '../../domain/figures';
 import { missionStatus } from '../../domain/missions';
 import { isActive, readingStreak, summarize } from '../../domain/reading';
@@ -171,7 +171,7 @@ export function StatsApp() {
 }
 
 /** Grosor real aproximado de un libro: ~0,067 mm por página más las tapas. */
-const bookCm = (b) => (isDevice(b) ? 0.9 : (b.pageCount || 0) * 0.0067 + (EDITIONS[b.editionType]?.cm ?? 0.15));
+const bookCm = (b) => (isDevice(b) ? 0.9 : (b.pageCount || 0) * 0.0067 + EDITIONS[visualEdition(b)].cm);
 
 const TOWER_MARKS = [
   { cm: 9, text: 'más alta que una taza de té' },
@@ -217,7 +217,7 @@ function BookTower({ books }) {
                 key={b.id}
                 role="listitem"
                 className="tower__book"
-                data-edition={b.editionType}
+                data-edition={visualEdition(b)}
                 style={{ height: h, width: `${w}%`, '--spine': spineColor(b), '--shift': `${((hash(b.title) % 9) - 4) * 2}px`, '--tilt': `${((hash(b.author) % 5) - 2) * 0.4}deg`, animationDelay: `${(sorted.length - i) * 70}ms` }}
                 title={b.pageCount ? `${b.title} · ${b.pageCount} págs.` : `${b.title} · sin paginación`}
               >

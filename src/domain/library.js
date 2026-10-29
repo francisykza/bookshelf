@@ -1,6 +1,7 @@
 // Selectores de la biblioteca (SPEC §22.4–22.6), sin React ni red. La biblioteca completa son todos los libros
 // guardados (los borrados salen del array); las lecturas activas son solo los de estado «leyendo». La librería
 // parte de la biblioteca completa; el formulario para registrar lectura, de las lecturas activas.
+import { shelfSort } from './books';
 import { normalize } from './bookPicker';
 
 /** Estados: leyendo, pendiente, terminado y (1.47) abandonado. */
@@ -45,3 +46,17 @@ export const EMPTY_TEXT = {
   search: 'No encontramos ese libro en tu biblioteca',
   loading: 'Abriendo tu biblioteca…',
 };
+
+const SHELF_STATES = ['reading', 'read', 'want', 'abandoned'];
+
+/**
+ * Orden estable de los lomos con TODA la biblioteca (1.54, SPEC §52.2): el libro de la cama primero y después los
+ * estados alternados (leyendo, leído, pendiente, abandonado), cada uno en el orden de su balda de la librería (y el id como desempate). Así,
+ * aunque no quepan todos, en las baldas hay libros de cada estado; nada se baraja al pintar.
+ */
+export function roomShelfQueue(books, currentId) {
+  const lists = SHELF_STATES.map((s) => books.filter((b) => b.status === s && b.id !== currentId).sort((x, y) => shelfSort(s)(x, y) || String(x.id).localeCompare(String(y.id))));
+  const queue = books.filter((b) => b.id === currentId);
+  for (let i = 0; lists.some((l) => i < l.length); i++) for (const l of lists) if (i < l.length) queue.push(l[i]);
+  return queue;
+}

@@ -2,7 +2,7 @@
 // libro EN ESE MOMENTO. Distingue tres cosas que antes iban en un solo número: la posición alcanzada (`to`),
 // el avance respecto a la anterior (`delta`) y las páginas leídas que cuentan para estadísticas (`pages`).
 // Todo es puro: la vista previa del formulario y el guardado usan las mismas funciones.
-import { clampPage, clampPercent, fmtNum, isDevice, newId, positionOf, roundTo, trackUnit } from './books';
+import { clampPage, clampPercent, fmtNum, isDigital, newId, positionOf, roundTo, trackUnit } from './books';
 import { addDays, dayKey } from './dates';
 
 export const MODES = {
@@ -276,7 +276,7 @@ export function summarize(entries, books) {
   const parts = [];
   if (pages > 0) parts.push(`${pages.toLocaleString('es-ES')} ${pages === 1 ? 'página' : 'páginas'}`);
   if (pctBooks.length) {
-    const ebooks = pctBooks.every((b) => isDevice(b));
+    const ebooks = pctBooks.every((b) => isDigital(b));
     const noun = ebooks ? (pctBooks.length === 1 ? 'ebook' : 'ebooks') : pctBooks.length === 1 ? 'libro' : 'libros';
     parts.push(`avance registrado en ${pctBooks.length} ${noun}`);
   }

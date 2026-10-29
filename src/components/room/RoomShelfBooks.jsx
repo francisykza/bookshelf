@@ -7,7 +7,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { shelfSlots } from '../../domain/figures';
-import { EDITIONS, isDevice, sprayedEdge } from '../../domain/books';
+import { EDITIONS, isDevice, sprayedEdge, visualEdition } from '../../domain/books';
+import { roomShelfQueue } from '../../domain/library';
 import { spineArtSize } from '../../domain/spineArt';
 import { projectPoint, rectToQuad } from '../../scene/homography';
 import { useSceneArt } from '../../hooks/useSceneArt';
@@ -31,21 +32,19 @@ const BOOK_SHELVES = ['cabinet', 'cabinet2'];
 const PX_PER_CM = 130 / 28;
 function spineSize(book, shelfHeight) {
   const physics = calculateBookPhysics(book);
-  const edition = EDITIONS[book.editionType] ?? EDITIONS.paperback;
-  const cm = isDevice(book) ? (book.editionType === 'kindle' ? 1 : 2.6) : 0.5 + 2.4 * physics.thickness + edition.cm;
+  const edition = EDITIONS[visualEdition(book)];
+  const cm = isDevice(book) ? 2.6 : 0.5 + 2.4 * physics.thickness + edition.cm;
   const heightCm = 21.5 * edition.height * (isDevice(book) ? 1 : physics.height);
   return { w: Math.round(cm * PX_PER_CM * 10) / 10, h: Math.min(shelfHeight - 8, Math.round(heightCm * PX_PER_CM)), physics };
 }
 
 /**
- * Lomos de las dos baldas bajas: primero lo que estás leyendo, luego tus favoritos; lo que no cabe pasa a la
- * siguiente y, si tampoco, se queda fuera (subconjunto estable: el mismo orden siempre; la librería completa
- * sigue a un toque). No se inventan libros para rellenar huecos.
+ * Lomos de las dos baldas bajas: la cola estable de `roomShelfQueue`; lo que no cabe en una pasa a la siguiente y,
+ * si tampoco, se queda fuera (la librería completa sigue a un toque, en «Todos»). Los lomos nunca se encogen para que
+ * quepan más y no se inventan libros para rellenar huecos.
  */
 function spinesFor(books, currentId) {
-  const reading = books.filter((b) => b.status === 'reading').sort((a, b) => (a.id === currentId ? -1 : b.id === currentId ? 1 : 0));
-  const favorites = books.filter((b) => b.favorite && b.status !== 'reading');
-  const queue = [...reading, ...favorites];
+  const queue = roomShelfQueue(books, currentId);
   return BOOK_SHELVES.map((id) => {
     const shelf = shelfOf(id);
     const items = [];
@@ -104,7 +103,7 @@ function RoomSpine({ book, physics, x, w, h, index, lean, peek, scale, onOpenShe
       type="button"
       className="room-spine"
       data-status={book.status}
-      data-edition={book.editionType}
+      data-edition={visualEdition(book)}
       data-material={physics.material}
       data-art={art ? SPINE_ART.indexOf(art) + 1 : undefined}
       data-ink={art?.ink ?? 'light'}

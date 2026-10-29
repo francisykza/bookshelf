@@ -28,8 +28,24 @@ export const EDITIONS = {
 
 export const EDITION_IDS = Object.keys(EDITIONS);
 
-/** Etiquetas para los selectores. */
-export const FORMATS = Object.fromEntries(EDITION_IDS.map((k) => [k, EDITIONS[k].label]));
+/**
+ * Ediciones visuales retiradas (1.54, SPEC §52.1): el e-reader rompía la coherencia de la estantería. El valor sigue
+ * siendo legible en los libros antiguos (no se reescriben), pero ya no se elige ni se dibuja como dispositivo.
+ */
+export const RETIRED_EDITIONS = ['kindle'];
+export const SELECTABLE_EDITION_IDS = EDITION_IDS.filter((k) => !RETIRED_EDITIONS.includes(k));
+
+/** Etiquetas para los selectores (solo las ediciones que se pueden elegir). */
+export const FORMATS = Object.fromEntries(SELECTABLE_EDITION_IDS.map((k) => [k, EDITIONS[k].label]));
+
+/**
+ * Apariencia con la que se dibuja un libro: la edición retirada se ve como bolsillo; una desconocida, también (el
+ * fallback de siempre); el resto, la suya. Solo cambia el dibujo, nunca el dato guardado.
+ */
+export const visualEdition = (book) => {
+  const ed = book?.editionType;
+  return EDITIONS[ed] && !RETIRED_EDITIONS.includes(ed) ? ed : 'paperback';
+};
 
 /** Diseños del canto para la edición de cantos pintados. */
 export const EDGE_STYLES = {
@@ -42,8 +58,11 @@ export const EDGE_STYLES = {
 /** Formatos de versiones anteriores (campo `format`) → edición actual. */
 const LEGACY_FORMATS = { hardcover: 'hardcover', paperback: 'paperback', special: 'sprayed_edges', kindle: 'kindle' };
 
-/** Libros sin páginas de papel: el e-reader y el estuche del audiolibro. */
-export const isDevice = (book) => book.editionType === 'kindle' || book.editionType === 'audiobook';
+/** Objetos fabricados en la balda (sin páginas de papel): hoy solo el estuche del audiolibro. */
+export const isDevice = (book) => visualEdition(book) === 'audiobook';
+
+/** Formato de origen digital (libro electrónico o audiolibro): para el lenguaje de los resúmenes, no para el dibujo. */
+export const isDigital = (book) => book.editionType === 'kindle' || book.editionType === 'audiobook';
 
 /** Duración estimada del audiolibro (≈ 1,9 min por página) si no se ha indicado. */
 export const audioHours = (book) => book.audioHours || Math.max(1, Math.round((book.pageCount || 300) * 0.032));
@@ -180,7 +199,7 @@ export function spineWidth(pages, factor = 0.07, min = 10) {
 
 /** Alto relativo por edición con una pequeña variación por libro, como en una balda real. */
 export function spineHeight(book) {
-  const base = EDITIONS[book.editionType]?.height ?? 0.94;
+  const base = EDITIONS[visualEdition(book)].height;
   // Los e-readers y los estuches son objetos fabricados: todos iguales
   if (isDevice(book)) return base;
   return base * (0.95 + (hash(book.title) % 9) / 100);
@@ -191,8 +210,9 @@ export function spineHeight(book) {
  * ediciones de cuero y tela, o `null` (papel) en el resto.
  */
 export function sprayedEdge(book) {
-  if (book.editionType === 'sprayed_edges') return EDGE_STYLES[book.sprayedEdgeStyle] ? book.sprayedEdgeStyle : 'constellations';
-  if (book.editionType === 'leatherbound' || book.editionType === 'clothbound') return 'gilded';
+  const ed = visualEdition(book);
+  if (ed === 'sprayed_edges') return EDGE_STYLES[book.sprayedEdgeStyle] ? book.sprayedEdgeStyle : 'constellations';
+  if (ed === 'leatherbound' || ed === 'clothbound') return 'gilded';
   return null;
 }
 

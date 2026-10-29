@@ -5,6 +5,7 @@ import { clampPage, createBook, newId, normalizeRating, normalizeTotal, percentR
 import { appendEntry, bookLog, editEntry, isActive, normalizeLog, quickUpdate } from '../domain/reading';
 import { dayKey, timeOfDayByClock, weekKey } from '../domain/dates';
 import { EMPTY_COMPANION, applyTreasure } from '../domain/companion';
+import { applyImportBatch, setImportStatus, startImport, undoImport } from '../features/imports/importService';
 import { EMPTY_FIGURES, grantSeal, initialFigures, markUnboxSeen, openBoxAttempt, openMysteryBox } from '../domain/figures';
 
 export const STORAGE_KEY = 'bookshelf:v1';
@@ -133,7 +134,8 @@ function withQuick(state, id, target, source = 'quick') {
 export function reducer(state, action) {
   switch (action.type) {
     case 'addBook': {
-      const book = createBook({ ...action.book, addedAt: new Date().toISOString() });
+      // 1.54 (SPEC §52.1): un libro nuevo no puede estrenar la edición visual retirada
+      const book = createBook({ ...action.book, ...(action.book.editionType === 'kindle' ? { editionType: 'paperback' } : null), addedAt: new Date().toISOString() });
       return { ...state, books: [...state.books, book] };
     }
     case 'updateBook': {
@@ -314,6 +316,15 @@ export function reducer(state, action) {
       }
       return next === fs ? state : { ...state, progress: { ...state.progress, figures: next } };
     }
+    // Importación de Goodreads (SPEC §52.3): por lotes, idempotente y sin tocar registros, sellos ni recompensas
+    case 'importStart':
+      return startImport(state, action.record);
+    case 'importBatch':
+      return applyImportBatch(state, action.id, action.keys);
+    case 'importStatus':
+      return setImportStatus(state, action.id, action.status, action.error);
+    case 'importUndo':
+      return undoImport(state, action.id);
     case 'reset':
       return initialState();
     // Estado completo llegado de la nube o de una copia (ya migrado); se conservan los ajustes del dispositivo
@@ -367,6 +378,10 @@ export function LibraryProvider({ children }) {
   const actions = useMemo(
     () => ({
       addBook: (book) => dispatch({ type: 'addBook', book }),
+      importStart: (record) => dispatch({ type: 'importStart', record }),
+      importBatch: (id, keys) => dispatch({ type: 'importBatch', id, keys }),
+      importStatus: (id, status, error) => dispatch({ type: 'importStatus', id, status, error }),
+      importUndo: (id) => dispatch({ type: 'importUndo', id }),
       updateBook: (id, patch) => dispatch({ type: 'updateBook', id, patch }),
       setPage: (id, page, source) => dispatch({ type: 'setPage', id, page, source }),
       setTracking: (id, unit) => dispatch({ type: 'setTracking', id, unit }),

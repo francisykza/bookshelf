@@ -4,7 +4,7 @@
 // queda el alta manual. Las búsquedas viejas se cancelan y sus respuestas no pisan a las nuevas.
 import { ChevronLeft, Loader2, PenLine, RotateCcw, Search, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { EDITIONS, STATUS } from '../../domain/books';
+import { EDITIONS, SELECTABLE_EDITION_IDS, STATUS } from '../../domain/books';
 import { LANG_NAMES, editionFromFormat, langCode, languageName, ownedMatch, userLanguage, yearOf } from '../../domain/bookSearch';
 import { EdgePicker } from '../book/EditionPicker';
 import { fetchDetails, fetchEditions, searchBooks } from '../../services/bookApi';
@@ -381,7 +381,7 @@ function ConfirmBook({ initial, manual, books, onBack, onSave }) {
         <label>
           <span>Formato</span>
           <select value={draft.editionType} onChange={(e) => set({ editionType: e.target.value })}>
-            {Object.entries(EDITIONS).map(([k, v]) => (
+            {SELECTABLE_EDITION_IDS.map((k) => [k, EDITIONS[k]]).map(([k, v]) => (
               <option key={k} value={k}>
                 {v.short}
               </option>

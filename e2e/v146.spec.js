@@ -56,14 +56,15 @@ test('libros: encuadernación según la edición, portada intacta e indicador de
   }, Object.keys(EDITIONS));
   for (const [id] of Object.entries(EDITIONS)) {
     expect(m[id], `ejemplar ${id}`).toBeTruthy();
-    expect(m[id].binding).toBe(id);
+    // 1.54 (SPEC §52.1): la edición ebook retirada se dibuja como rústica (bolsillo)
+    expect(m[id].binding).toBe(id === 'device' ? 'soft' : id);
     expect(m[id].finish).toBe(true);
     expect(m[id].corners).toBe(0);
     expect(m[id].ratioOk).toBe(true);
   }
-  // Mismas páginas: la tapa dura es más gruesa que la rústica; el lector es una lámina
+  // Mismas páginas: la tapa dura es más gruesa que la rústica; el antiguo lector, igual que la rústica
   expect(m.hard.depth).toBeGreaterThan(m.soft.depth);
-  expect(m.device.depth).toBeLessThan(m.soft.depth);
+  expect(m.device.depth).toBe(m.soft.depth);
   // El indicador del audiolibro no tapa la portada (va en la esquina del estuche)
   expect(m.case.audioCoversArt).toBe(false);
 });

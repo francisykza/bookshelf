@@ -36,6 +36,7 @@ import { LibraryProvider, useLibrary } from './state/useLibrary';
 
 // La comunidad se descarga solo al abrirla (SPEC §25.13)
 const SocialHub = lazy(() => import('./features/social/components/SocialHub').then((m) => ({ default: m.SocialHub })));
+const GoodreadsImportPanel = lazy(() => import('./features/imports/GoodreadsImportPanel').then((m) => ({ default: m.GoodreadsImportPanel })));
 const ReaderProfile = lazy(() => import('./features/social/components/ReaderProfile').then((m) => ({ default: m.ReaderProfile })));
 
 /** Un día local `YYYY-MM-DD` (el `select` de la navegación del calendario). */
@@ -270,6 +271,7 @@ function Sanctuary() {
         onOpenBook={openBook}
         onAddBook={() => openPanel({ type: 'add' })}
         onAskLibrarian={() => openPanel({ type: 'librarian' })}
+        onImport={() => openPanel({ type: 'import' })}
         onOpenVault={(id) => {
           playUiSound('atticOpen');
           openPanel({ type: 'vault', id });
@@ -346,6 +348,11 @@ function Sanctuary() {
         </Suspense>
       )}
       {panel?.type === 'guardian' && <GuardianCard figureId={panel.id} onClose={close} />}
+      {panel?.type === 'import' && (
+        <Suspense fallback={null}>
+          <GoodreadsImportPanel onClose={close} />
+        </Suspense>
+      )}
       {panel?.type === 'social' && (
         <Suspense fallback={null}>
           <SocialHub onClose={close} initialTab={panel.tab} timer={timer} openClubId={panel.id ?? null} />

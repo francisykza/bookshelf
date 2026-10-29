@@ -8,7 +8,7 @@ import { Suspense, lazy, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
 import { playUiSound } from '../../audio/uiSounds';
-import { EDGE_NAMES, FORMATS, STATUS, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, sprayedEdge, trackUnit } from '../../domain/books';
+import { EDGE_NAMES, FORMATS, STATUS, visualEdition, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, sprayedEdge, trackUnit } from '../../domain/books';
 import { dayKey } from '../../domain/dates';
 import { ReadingEntryForm } from '../panels/ReadingEntryForm';
 import { RatingInput } from './Rating';
@@ -157,7 +157,6 @@ const EDITION_NOTES = {
   leatherbound: 'Piel envejecida, cuatro nervios en el lomo y cantoneras de latón.',
   clothbound: 'Lino tejido con marco de foil dorado y cinta de seda.',
   annotated: 'Llena de post-its de colores y con su faja «Edición Anotada».',
-  kindle: 'Tinta electrónica con luz cálida, ligera como una libreta.',
   audiobook: 'Estuche acrílico de colección con sus cascos.',
 };
 
@@ -214,7 +213,9 @@ function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed }) {
         {left > 0 && <p className="edition-note">A este ritmo: ≈ {formatHours(left)} restantes</p>}
         <label className="sheet-field">
           <span>Edición</span>
-          <select value={book.editionType} onChange={(e) => onUpdate({ editionType: e.target.value })}>
+          {/* Un libro con la edición retirada (e-reader) se ve y aparece aquí como bolsillo; su dato no cambia hasta
+              que se elige una edición */}
+          <select value={visualEdition(book)} onChange={(e) => onUpdate({ editionType: e.target.value })}>
             {Object.entries(FORMATS).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
@@ -222,8 +223,8 @@ function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed }) {
             ))}
           </select>
         </label>
-        {book.editionType === 'sprayed_edges' && <EdgePicker value={book.sprayedEdgeStyle} onChange={(sprayedEdgeStyle) => onUpdate({ sprayedEdgeStyle })} />}
-        {book.editionType === 'audiobook' && (
+        {visualEdition(book) === 'sprayed_edges' && <EdgePicker value={book.sprayedEdgeStyle} onChange={(sprayedEdgeStyle) => onUpdate({ sprayedEdgeStyle })} />}
+        {visualEdition(book) === 'audiobook' && (
           <label className="sheet-field">
             <span>Duración</span>
             <input
@@ -239,7 +240,8 @@ function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed }) {
           </label>
         )}
         <p className="edition-note">
-          {EDITION_NOTES[book.editionType]}
+          {EDITION_NOTES[visualEdition(book)]}
+          {book.editionType === 'kindle' ? ' Libro digital: sigues registrándolo como siempre.' : ''}
           {edge === 'gilded' ? ` · cantos en ${EDGE_NAMES.gilded.toLowerCase()}` : ''}
         </p>
       </div>
@@ -324,7 +326,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
 
   return (
     <PanelShell onClose={onClose} label={`${book.title}, de ${book.author}`} variant="sheet">
-      <NotebookShell className="book-sheet" data-page={page} data-edition={book.editionType}>
+      <NotebookShell className="book-sheet" data-page={page} data-edition={visualEdition(book)}>
         <div className="book-sheet__bar">
           <div className="book-sheet__tabs" role="tablist" aria-label="Páginas del libro">
             {TABS.map((t) => (

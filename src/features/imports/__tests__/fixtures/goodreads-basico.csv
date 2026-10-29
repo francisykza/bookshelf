@@ -1,0 +1,10 @@
+Book Id,Title,Author,Author l-f,Additional Authors,ISBN,ISBN13,My Rating,Average Rating,Publisher,Binding,Number of Pages,Year Published,Original Publication Year,Date Read,Date Added,Bookshelves,Bookshelves with positions,Exclusive Shelf,My Review,Spoiler,Private Notes,Read Count,Owned Copies
+1001,La casa de las mareas,Autora Ficticia,"Ficticia, Autora",,"=""0306406152""","=""9780306406157""",4,3.98,Editorial Prueba,Paperback,352,2019,2019,2023/05/14,2023/01/02,"favoritos, mar","favoritos (#3), mar (#1)",read,"Me encantó, de verdad.<br/><br/>Un ""clásico""
+multilínea",,,2,0
+1002,Ficción sintética,Autor Inventado,"Inventado, Autor",,"=""""","=""""",0,4.10,,Kindle Edition,,2020,2020,,2024/02/30,,,to-read,,,,0,0
+1003,Lectura en curso,Autora Uno,"Uno, Autora",,,,0,3.50,,Hardcover,0,2021,2021,,2024/03/01,,,currently-reading,,,,1,0
+1004,El que dejé,Autor Dos,"Dos, Autor",,,,2,3.20,,Paperback,210,2018,2018,,2022/11/11,dnf,dnf (#1),dnf,,,,0,0
+1001,La casa de las mareas,Autora Ficticia,"Ficticia, Autora",,"=""0306406152""","=""9780306406157""",4,3.98,Editorial Prueba,Paperback,352,2019,2019,2023/05/14,2023/01/02,,,read,,,,1,0
+1005,Fecha dudosa,Autora Tres,"Tres, Autora",,"=""1234567890""",,5,4.50,,Paperback,180,2017,2017,03/04/2020,2020/01/05,,,read,,,,1,0
+1006,,Autor Sin Libro,,,,,0,0,,,,,,,2021/01/01,,,to-read,,,,0,0
+1007,La casa de las mareas,Autora Ficticia,"Ficticia, Autora",,,"=""9788420412146""",0,3.98,Otra Editorial,Hardcover,400,2021,2019,,2024/05/05,,,to-read,,,,0,0

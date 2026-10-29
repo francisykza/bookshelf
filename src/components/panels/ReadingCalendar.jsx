@@ -45,7 +45,7 @@ function useDays(state) {
 export function CalCover({ book }) {
   const tilt = ((hash(book.id) % 41) - 20) / 10;
   return (
-    <span className="cal-cover" data-device={book.editionType === 'kindle' || undefined} style={{ '--tilt': `${tilt}deg` }}>
+    <span className="cal-cover" style={{ '--tilt': `${tilt}deg` }}>
       <Cover book={book} />
     </span>
   );

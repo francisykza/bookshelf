@@ -1,0 +1,400 @@
+/* ── 1.54.0 · «Traer mis libros de Goodreads» (SPEC §52.3) ───────────────────────────────────────────────────────
+   Papel crema de la ficha (journal.webp), tinta sepia, acento terracota y latón. Un único scroll principal. */
+.panel-veil[data-variant='import'] {
+  place-items: center;
+  padding: 12px;
+  overflow: clip;
+}
+
+.panel--import {
+  display: flex;
+  width: min(680px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: 0;
+  transform: none;
+  mix-blend-mode: normal;
+}
+
+.gr-import {
+  --gr-paper: #faf5e8;
+  --gr-ink: #2c1e14;
+  --gr-soft: #6a5847;
+  --gr-terra: #b86343;
+  --gr-brass: #c59b27;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  border-radius: 10px;
+  background: var(--gr-paper) url('/art/library-refresh/journal.webp') 0 0 / 512px repeat;
+  box-shadow: 0 10px 28px rgba(44, 30, 20, 0.24);
+  color: var(--gr-ink);
+  font: 16px/1.5 'Lora', Georgia, serif;
+  transform: none;
+  mix-blend-mode: normal;
+}
+
+.gr-import__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 4px;
+}
+
+.gr-import__head h2,
+.gr-title,
+.gr-card h3 {
+  margin: 0;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
+  color: var(--gr-ink);
+}
+
+.gr-import__head h2 {
+  font-size: clamp(26px, 7vw, 32px);
+  line-height: 1.1;
+}
+
+.gr-import__head p {
+  margin: 4px 0 0;
+  color: var(--gr-soft);
+  font-style: italic;
+}
+
+.gr-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 6px 16px 10px;
+  border-bottom: 1px solid rgb(106 88 71 / 0.25);
+  list-style: none;
+  color: var(--gr-soft);
+  font-size: 13px;
+}
+
+.gr-steps li[aria-current='step'] {
+  color: var(--gr-ink);
+  font-weight: 600;
+}
+
+.gr-steps li[data-done] .gr-mono {
+  background: var(--gr-brass);
+  color: #fff8e6;
+}
+
+.gr-steps .gr-mono {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--gr-brass);
+  font-size: 11px;
+}
+
+.gr-import__scroll {
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 700px) {
+  .gr-import__head,
+  .gr-steps,
+  .gr-import__scroll {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .gr-import__scroll {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+}
+
+.gr-mono {
+  font-family: 'JetBrains Mono', 'Courier Prime', monospace;
+}
+
+.gr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 14px;
+  border: 1px solid rgb(106 88 71 / 0.25);
+  border-radius: 8px;
+  background: rgb(255 252 244 / 0.7);
+}
+
+.gr-card h3,
+.gr-title {
+  font-size: 22px;
+}
+
+.gr-card p {
+  margin: 0;
+}
+
+.gr-lead {
+  margin: 6px 0 10px;
+  font-size: 17px;
+}
+
+.gr-small {
+  margin: 4px 0;
+  color: var(--gr-soft);
+  font-size: 14px;
+}
+
+.gr-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--gr-brass);
+  background: rgb(197 155 39 / 0.1);
+}
+
+.gr-error {
+  margin: 4px 0 0;
+  color: #8a2d1c;
+  font-weight: 600;
+}
+
+.gr-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gr-btn,
+.gr-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgb(106 88 71 / 0.45);
+  border-radius: 8px;
+  background: #fffaf0;
+  color: var(--gr-ink);
+  font: 600 16px/1.2 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.gr-icon-btn {
+  flex: none;
+  width: 44px;
+  padding: 0;
+}
+
+.gr-btn svg,
+.gr-icon-btn svg,
+.gr-link svg {
+  width: 18px;
+  height: 18px;
+}
+
+.gr-btn--primary {
+  border-color: #8f4529;
+  background: var(--gr-terra);
+  color: #fdf6ea;
+}
+
+.gr-btn--danger {
+  border-color: #8a2d1c;
+  color: #8a2d1c;
+}
+
+.gr-btn:disabled,
+.gr-btn[data-disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.gr-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: #8f4529;
+  font-weight: 600;
+  text-decoration: underline 1px;
+  text-underline-offset: 4px;
+}
+
+.gr-link--btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gr-import :is(button, a, select, input, label.gr-btn):focus-visible,
+.gr-file:focus-visible + label {
+  outline: 2px solid #c59b27;
+  outline-offset: 2px;
+}
+
+.gr-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.gr-counts div {
+  padding: 8px 10px;
+  border: 1px solid rgb(197 155 39 / 0.45);
+  border-radius: 8px;
+  background: rgb(255 252 244 / 0.75);
+}
+
+.gr-counts dt {
+  color: var(--gr-soft);
+  font-size: 13px;
+}
+
+.gr-counts dd {
+  margin: 2px 0 0;
+  font-size: 20px;
+  color: var(--gr-ink);
+}
+
+.gr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gr-row {
+  padding: 10px 12px;
+  border: 1px solid rgb(106 88 71 / 0.22);
+  border-left: 4px solid rgb(106 88 71 / 0.35);
+  border-radius: 6px;
+  background: rgb(255 252 244 / 0.8);
+}
+
+.gr-row[data-kind='new'][data-resolved] {
+  border-left-color: #6f8a5b;
+}
+
+.gr-row:not([data-resolved]) {
+  border-left-color: var(--gr-terra);
+}
+
+.gr-row[data-kind='invalid'] {
+  opacity: 0.75;
+}
+
+.gr-row__book {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.gr-row__book b {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 19px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.gr-row__book span,
+.gr-row__meta {
+  color: var(--gr-soft);
+  font-size: 14px;
+}
+
+.gr-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin: 4px 0 0;
+}
+
+.gr-row__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.gr-row__controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--gr-soft);
+}
+
+.gr-row__controls select {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid rgb(106 88 71 / 0.45);
+  border-radius: 8px;
+  background: #fffdf7;
+  color: var(--gr-ink);
+  font: 16px 'Lora', Georgia, serif;
+}
+
+.gr-row__issues {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: #8a4a26;
+  font-size: 13px;
+}
+
+.gr-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 14px;
+  font-size: 13px;
+}
+
+.gr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+
+.gr-actions .gr-small {
+  flex-basis: 100%;
+}
+
+.gr-card progress {
+  width: 100%;
+  height: 10px;
+  accent-color: var(--gr-terra);
+}
+
+.gr-issues {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.gr-issues li {
+  margin: 4px 0;
+}
+
+.gr-undo {
+  margin-top: 8px;
+}

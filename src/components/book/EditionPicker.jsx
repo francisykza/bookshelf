@@ -4,7 +4,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { modalRoot } from '../panels/modalRoot';
-import { EDGE_STYLES, EDITIONS, EDITION_IDS } from '../../domain/books';
+import { EDGE_STYLES, EDITIONS, SELECTABLE_EDITION_IDS, visualEdition } from '../../domain/books';
 
 export function EdgePicker({ value, onChange }) {
   return (
@@ -69,12 +69,12 @@ export function EditionMenu({ book, x, y, onChange, onClose }) {
     <div ref={ref} className="edition-menu" role="dialog" aria-label={`Edición de ${book.title}`} style={pos} onKeyDown={onKeyDown}>
       <p className="edition-menu__title">Edición · {book.title}</p>
       <ul role="radiogroup" aria-label="Edición">
-        {EDITION_IDS.map((k) => (
+        {SELECTABLE_EDITION_IDS.map((k) => (
           <li key={k}>
             <button
               type="button"
               role="radio"
-              aria-checked={book.editionType === k}
+              aria-checked={visualEdition(book) === k}
               className="edition-menu__item"
               onClick={() => onChange({ editionType: k })}
             >
@@ -84,7 +84,7 @@ export function EditionMenu({ book, x, y, onChange, onClose }) {
           </li>
         ))}
       </ul>
-      {book.editionType === 'sprayed_edges' && (
+      {visualEdition(book) === 'sprayed_edges' && (
         <EdgePicker value={book.sprayedEdgeStyle} onChange={(sprayedEdgeStyle) => onChange({ sprayedEdgeStyle })} />
       )}
     </div>,

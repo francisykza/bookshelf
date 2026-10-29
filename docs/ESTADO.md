@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.53.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.53.0. Fuera de git
+- **Versión publicada**: 1.54.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.54.0. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.54.0 | Sin edición visual ebook, baldas de la habitación con toda la biblioteca e importación de Goodreads por CSV | §52 |
 | 1.53.0 | «Mi diario» del libro en tres secciones (Reseña con guardado explícito y borrador, Notas, Historial) y noche con su fondo pintado | §51 |
 | 1.52.0 | Una sola habitación de día y de noche (se retira la escena nocturna de la 1.51) y libro con el contenido integrado | §50 |
 | 1.51.0 | Habitación nocturna de la maqueta con su propio mapa, libro con la lectura real y controles compactos | §49 |
@@ -95,6 +96,15 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-29 · cuenta principal · 1.54.0 (publicada)
+- Encargo «Baldas con toda la biblioteca» + «Retirar ebook e importar de Goodreads» (§52). Nueva dependencia
+  `papaparse` (5.5.3), cargada solo en el panel y su worker. Sin migraciones: el registro de importaciones viaja en
+  la biblioteca privada (`state.imports`). Pruebas: `src/features/imports/__tests__/goodreads.test.js` (15 casos con
+  fixtures sintéticos) y `e2e/v154.spec.js` (390 y 1440); ajustada `e2e/v146` (el e-reader ahora es bolsillo).
+- Quedan en las hojas antiguas reglas CSS del e-reader sin uso (`.ereader__*`, `[data-device]`): inofensivas.
+- Visto de paso, no corregido: con un libro terminado en la cama, «Lectura terminada» se corta en el libro pintado.
+- Commit y subida a producción pedidos por Francisco. Sin comprobar aún en su móvil real.
 
 ### 2026-10-29 · cuenta principal · 1.53.0 (publicada)
 - Encargo «11. Rediseñar el diario según la maqueta adjunta»: «Mi diario» con Reseña, Notas e Historial (§51).

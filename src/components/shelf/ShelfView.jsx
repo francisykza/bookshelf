@@ -1,7 +1,7 @@
 // `SHELF_VIEW` (SPEC §27.3–27.5, §28.4, §35): la librería como un mueble de madera gouache. Cabecera compacta
 // (volver, título, buscador, «Añadir libro», «Vista y herramientas» y filtros), una balda por estado con los libros
 // de tres en tres en móvil y su encabezado ligero, y el tablón de recuerdos plegable al final.
-import { ArrowLeft, Book, BookOpen, ChevronDown, CircleCheck, Hourglass, Library, Plus, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Book, BookOpen, ChevronDown, CircleCheck, FileUp, Hourglass, Library, Plus, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import { SectionIcon } from '../SectionIcon';
 import { WaxSeal } from '../primitives';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -372,7 +372,7 @@ function ShelfRow({ row, index, books, mode, rowH, cols, onOpenBook, onEdition, 
 }
 
 /** Herramientas (SPEC §30.2, §35.1): libro al azar, recomendación y vitrina, con su nombre a la vista. */
-function ToolTiles({ dieFace, rolling, onRoll, onAskLibrarian, onOpenVault }) {
+function ToolTiles({ dieFace, rolling, onRoll, onAskLibrarian, onOpenVault, onImport }) {
   return (
     <div className="lib-tiles" role="group" aria-label="Herramientas">
       <button type="button" className="lib-tool lib-tool--die" data-rolling={rolling} onClick={onRoll}>
@@ -395,6 +395,13 @@ function ToolTiles({ dieFace, rolling, onRoll, onAskLibrarian, onOpenVault }) {
         <SectionIcon name="coleccion" size={32} />
         <span>Vitrina de Figuras</span>
       </button>
+      {/* 1.54 (SPEC §52.3): importar de Goodreads, dentro de las herramientas (sin otro botón en la cabecera) */}
+      {onImport && (
+        <button type="button" className="lib-tool" onClick={onImport}>
+          <FileUp aria-hidden="true" />
+          <span>Importar biblioteca</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -415,7 +422,7 @@ function useColumns() {
   return n;
 }
 
-export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook, onAddBook, onOpenVault, onAskLibrarian }) {
+export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook, onAddBook, onOpenVault, onAskLibrarian, onImport }) {
   // Interactiva solo cuando ya ha entrado; visible (opaca o entrando/saliendo) en cualquier fase salvo «room»
   const open = phase === 'shelf';
   const showing = phase === 'enteringShelf' || phase === 'shelf';
@@ -620,7 +627,7 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
                   <span>Lomos</span>
                 </button>
               </div>
-              <ToolTiles dieFace={dieFace} rolling={rolling} onRoll={roll} onAskLibrarian={onAskLibrarian} onOpenVault={onOpenVault} />
+              <ToolTiles dieFace={dieFace} rolling={rolling} onRoll={roll} onAskLibrarian={onAskLibrarian} onOpenVault={onOpenVault} onImport={onImport} />
             </div>
           )}
           {/* Fila textil de estados: un único filtro; se desplaza en horizontal si no caben las cinco */}

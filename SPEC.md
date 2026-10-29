@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.53.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.54.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3511,3 +3511,78 @@ Referencia: `docs/design/references/diario-resena-maqueta.webp` (cuaderno artesa
   capas recortadas de día (hiedras, enredadera, cortina) se tiñen (`filter`) y el disco de la luna de la app no se pinta
   (queda el astrolabio, ahora sobre la luna del fondo). El fondo trae la lámpara y la vela pintadas encendidas: apagarlas
   no las apaga en la ilustración.
+
+## 52. Sin edición visual ebook, baldas con toda la biblioteca e importación de Goodreads (1.54.0)
+
+### 52.1 Retirada de la edición visual «Kindle / E-Reader»
+
+- La edición visual `kindle` (la única de dispositivo de tinta electrónica en el repositorio) se retira de los selectores
+  (ficha, alta de libro y menú de edición de la librería): `SELECTABLE_EDITION_IDS`. El audiolibro no cambia.
+- Resolución visual compartida `visualEdition(book)` (`domain/books.js`): `kindle` → `paperback`; edición conocida →
+  la suya; desconocida → `paperback` (el fallback de siempre). La usan el libro físico y los lomos de la librería, las
+  baldas de la habitación, el calendario y el ordenador. Nada se dibuja ya como lector: sin marco, botón ni batería.
+- Los datos no se tocan: `editionType: 'kindle'` sigue siendo un valor legible (no se reescriben los registros), el
+  libro conserva su seguimiento por porcentaje, sus páginas desconocidas, progreso, sesiones, reseñas y fechas.
+  `isDigital(book)` mantiene el sentido de formato digital («ebook» en los resúmenes). Si el usuario elige otra edición
+  para un libro antiguo, se guarda con la operación normal. Los libros nuevos no pueden elegir `kindle`; un formato de
+  proveedor «ebook» ya no deduce edición (queda la predeterminada).
+
+### 52.2 Baldas de la habitación con toda la biblioteca
+
+- `RoomShelfBooks` toma los lomos de **toda** la biblioteca (Leyendo, Pendientes, Leídos y Abandonados, incluidos los
+  importados), no solo de las lecturas. Selección estable: primero el libro abierto sobre la cama; después se alternan
+  los estados (leyendo, leído, pendiente, abandonado) en el orden de cada balda de la librería (`shelfSort`), con el id
+  como clave. Se llenan las dos baldas bajas (`cabinet`, `cabinet2`) con la geometría y el grosor físico de siempre
+  (nunca se encogen); lo que no cabe no se dibuja, y la librería completa sigue a un toque, abierta en «Todos».
+  Pocos libros: solo los que hay. Las baldas de arriba siguen siendo de las figuras.
+- No cambian el selector del calendario (lecturas activas) ni el libro de la cama (`currentBook`).
+
+### 52.3 Importar de Goodreads (CSV)
+
+- **Entrada**: «Importar biblioteca» en el menú de herramientas de la librería. Panel «Traer mis libros de Goodreads»
+  (`features/imports/GoodreadsImportPanel.jsx`, estilos `imports-154.css`) en cinco pasos: conseguir el archivo
+  (instrucciones y enlace a https://www.goodreads.com/review/import), elegir CSV (selector del dispositivo; arrastrar es
+  un extra), revisar, importar y resultado. Copia única: no se sincroniza después. Nunca se pide contraseña, cookies ni
+  acceso a la cuenta; nada de scraping ni APIs privadas.
+- **Lectura** (`goodreadsParser.js`): local, con PapaParse cargado bajo demanda (no al iniciar la habitación). UTF-8 con
+  o sin BOM, CRLF/LF, comillas, comillas escapadas, reseñas multilínea, columnas extra y celdas vacías; delimitador
+  detectado (`,`, `;` o tabulador) solo si la cabecera reconoce columnas de Goodreads. Límites: 20 MiB y 10.000 filas;
+  si se superan, se explica antes de guardar. Un archivo ilegible o sin columnas de Goodreads da un error comprensible,
+  nunca una importación vacía. El CSV no se sube a ninguna parte.
+- **Mapeo**: `Exclusive Shelf` to-read → Pendiente, currently-reading → Leyendo, read → Leído; cualquier otro → «Estado
+  por revisar» (se elige en la revisión). Estanterías como `dnf`/`abandoned` sugieren «Abandonado», sin aplicarlo
+  solas. ISBN como texto (quita `="…"`, guiones y espacios; valida longitud y dígito de control; el inválido se guarda en
+  la procedencia y no sirve para unir). `My Rating` 0 → sin valorar; 1–5 → valoración (nunca `Average Rating`).
+  `Number of Pages` entero positivo o desconocido (seguimiento por porcentaje). Fechas `AAAA/MM/DD`, `AAAA-MM-DD` y
+  `AAAA/MM` como fecha de calendario (sin desplazar por zona horaria); formatos ambiguos (`03/04/2020`) no se adivinan
+  y se avisa. `Date Read` → terminado; `Date Added` → solo procedencia (no es inicio de lectura). Reseña privada como
+  texto (las etiquetas HTML de Goodreads `<br>` pasan a saltos de línea; nada se ejecuta ni se publica). Estanterías
+  personalizadas y `Read Count` se guardan en la procedencia (`book.importRef`); no son filtros activos ni generan
+  sesiones. Leyendo sin progreso en el archivo: empieza sin posición registrada (se avisa).
+- **Revisión** (`importPlanner.js`): se analiza todo el archivo antes de escribir. Coincidencias por orden: referencia de
+  Goodreads ya importada (fiable → omitir), ISBN válido igual (fiable → omitir), título y autor normalizados (dudosa →
+  pendiente de decisión; nunca se fusiona sola) y duplicados dentro del propio archivo (la segunda fila, omitir).
+  Recuentos reales (nuevos, ya presentes, posibles coincidencias, por revisar, no válidas), lista paginada de 25 con
+  título, autor, estado, puntuación, coincidencia y acción (Añadir · Omitir · Completar datos vacíos, que enseña qué
+  campos cambian y nunca toca valores no vacíos, reseñas ni puntuaciones existentes). Se confirman las filas resueltas
+  aunque queden dudosas.
+- **Guardado** (`importService.js` + acciones `importStart`, `importBatch`, `importCancel`, `importUndo`): no reemplaza la
+  biblioteca; cada fila es una operación con clave idempotente `importId:fila` y se aplica por lotes de 50, de uno en
+  uno (el estado local es secuencial), confirmando cada lote con la escritura en el dispositivo (`persistNow`). El
+  registro de la importación (`state.imports`: id, propietario, huella SHA-256 del archivo, estado, progreso, resultado
+  por operación y referencias creadas/completadas) viaja con la biblioteca privada del usuario (la tabla de siempre, RLS
+  del propietario): **no hace falta migración**. La nube sube el cambio como cualquier otro (cola persistente existente:
+  `bookshelf:sync` con `dirty`); por eso se puede confirmar sin conexión. Reintentar aplica solo lo pendiente o fallido;
+  repetir un lote ya aplicado no duplica (clave y referencia de Goodreads). Cancelar detiene los lotes siguientes y
+  dice qué se guardó, sin fingir un rollback. Si cambia la cuenta, la revisión se invalida.
+- **Recompensas**: importar no crea registros de lectura, sellos, rachas, pity, figuras ni reseñas al terminar; los
+  libros leídos con fecha cuentan en las estadísticas históricas que ya usan `finishedAt`. Procedencia en
+  `book.source = 'goodreads'` e `importRef`.
+- **Portadas**: el CSV no trae portada; los libros importados usan la portada de Open Library por ISBN (la del proveedor
+  ya integrado, cargada por la imagen solo cuando se pinta y cacheada por el navegador) y, si no hay, la portada
+  tipográfica con título y autor. No se bloquea nada por la portada ni se tocan metadatos elegidos. Edición visual: la
+  predeterminada (bolsillo), sin deducir materiales.
+- **Resultado y deshacer**: añadidos, omitidos, completados y no importados con su motivo; «Ver mis libros» y «Revisar
+  incidencias». «Deshacer importación» quita solo los libros creados por ese lote que siguen exactamente como se
+  importaron (sin cambios, notas, sesiones ni reseña nueva) y devuelve los campos completados que conservan el valor
+  escrito; lo demás se conserva y se informa. Es idempotente.
