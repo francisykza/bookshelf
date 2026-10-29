@@ -1,5 +1,6 @@
-// Archivos EPUB en este dispositivo (SPEC §53): IndexedDB `bookshelf-files`, almacén `epubs`, uno por libro. El contenido
-// nunca sale de aquí; con la cuenta solo viajan los metadatos (`book.epub`) y la posición de lectura.
+// Archivos EPUB en este dispositivo (SPEC §53, §54.2): IndexedDB `bookshelf-files`, almacén `epubs`, uno por libro y
+// cuenta (clave `usuario:libro`). El contenido nunca sale de aquí; con la cuenta solo viajan los metadatos (`book.epub`)
+// y la posición. Las claves de la 1.55 (solo el id del libro) se leen una vez y se trasladan a la cuenta actual.
 const DB = 'bookshelf-files';
 const STORE = 'epubs';
 
@@ -18,11 +19,10 @@ async function run(mode, fn) {
   try {
     return await new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, mode);
-      const req = fn(tx.objectStore(STORE));
       let value;
-      req.onsuccess = () => {
-        value = req.result;
-      };
+      fn(tx.objectStore(STORE), (v) => {
+        value = v;
+      });
       tx.oncomplete = () => resolve(value);
       tx.onerror = () => reject(tx.error ?? new Error('No se ha podido guardar el archivo.'));
       tx.onabort = () => reject(tx.error ?? new Error('No hay espacio para guardar el archivo en este dispositivo.'));
@@ -32,11 +32,41 @@ async function run(mode, fn) {
   }
 }
 
+const keyOf = (userId, bookId) => `${userId || 'local'}:${bookId}`;
+
 /**
- * Guarda el archivo (ArrayBuffer: algunos WebKit no guardan Blob en IndexedDB) con su huella; resuelve solo cuando la
- * transacción se ha confirmado.
+ * Guarda el archivo (ArrayBuffer: algunos WebKit no guardan Blob en IndexedDB) con su huella. Sustituye al anterior del
+ * mismo libro en una sola transacción: si falla, el anterior sigue intacto. Resuelve cuando se ha confirmado.
  */
-export const putEpub = (bookId, { data, hash, name, size }) => run('readwrite', (s) => s.put({ data, hash, name, size, savedAt: new Date().toISOString() }, bookId));
-/** `{ data, hash, name, size }` o `undefined` si en este dispositivo no está. */
-export const getEpub = (bookId) => run('readonly', (s) => s.get(bookId));
-export const deleteEpub = (bookId) => run('readwrite', (s) => s.delete(bookId));
+export const putEpub = (userId, bookId, { data, hash, name, size }) =>
+  run('readwrite', (s) => {
+    s.put({ data, hash, name, size, savedAt: new Date().toISOString() }, keyOf(userId, bookId));
+    s.delete(bookId);
+  });
+
+/** `{ data, hash, name, size }` o `undefined` si en este dispositivo no está (para esta cuenta). */
+export async function getEpub(userId, bookId) {
+  const own = await run('readonly', (s, done) => {
+    const req = s.get(keyOf(userId, bookId));
+    req.onsuccess = () => done(req.result);
+  });
+  if (own) return own;
+  const legacy = await run('readonly', (s, done) => {
+    const req = s.get(bookId);
+    req.onsuccess = () => done(req.result);
+  });
+  if (!legacy) return undefined;
+  // Archivo de la 1.55: pasa a la cuenta que lo abre ahora
+  await run('readwrite', (s) => {
+    s.put(legacy, keyOf(userId, bookId));
+    s.delete(bookId);
+  });
+  return legacy;
+}
+
+/** Quita el archivo de este dispositivo (no toca el libro, sus notas ni su posición sincronizada). */
+export const deleteEpub = (userId, bookId) =>
+  run('readwrite', (s) => {
+    s.delete(keyOf(userId, bookId));
+    s.delete(bookId);
+  });

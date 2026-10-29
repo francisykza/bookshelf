@@ -103,7 +103,8 @@ selector de lectura); desde la 1.49: `room-149.css` (lectura sobre el libro pint
 `room-151.css` (controles compactos y correcciones generales) y desde la 1.52 `room-152.css` (contenido del libro
 pintado y luz del libro de noche) y desde la 1.53 `diary-153.css` («Mi diario» del libro: Reseña, Notas,
 Historial) y desde la 1.54 `imports-154.css` (importación de Goodreads, `src/features/imports/`). Desde la 1.55
-`epub-155.css` (lector EPUB, `src/features/epub/`: el archivo vive solo en IndexedDB del dispositivo). La edición visual
+`epub-155.css` (vinculación y lector EPUB, `src/features/epub/`: el archivo vive solo en IndexedDB del dispositivo, por
+cuenta; la posición del archivo y el progreso registrado son cosas distintas, §54). La edición visual
 `kindle` está retirada: dibujar siempre con `visualEdition(book)`, nunca con `book.editionType` directamente. **Día y noche son la misma habitación** (decisión de Francisco, §50). **Ojo**: `fix-138.css` aún da `top`/`left` con el área segura a `.lib-hero__back`; en un móvil real
 eso desplaza el botón (en emulación el área segura es 0). Las hojas antiguas siguen cargadas: antes de crear una clase nueva,
 buscar si ya existe con otro uso.

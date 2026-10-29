@@ -284,6 +284,9 @@ export function AnnotationItem({ quote, meanings, book, onEdit, onShow, onDelete
       <blockquote>
         <p>{quote.text}</p>
       </blockquote>
+      {quote.comment && <p className="quote__comment">{quote.comment}</p>}
+      {/* 1.56 (SPEC §54.6): procedencia de las notas tomadas en el lector EPUB */}
+      {quote.epub && <p className="quote__origin">{quote.epub.section ? 'Nota de una sección' : 'Fragmento'} del EPUB{quote.epub.name ? ` «${quote.epub.name}»` : ''}</p>}
       <footer>
         <span className="quote__tag" title={m.description || undefined}>
           <span className="quote__swatch" aria-hidden="true" />

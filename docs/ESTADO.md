@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.55.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.55.0. Fuera de git
+- **Versión publicada**: 1.56.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.56.0. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.56.0 | Vincular un EPUB a tu ejemplar con confirmación, posición anclada (local y sincronizada), notas con comentario, «Una pausa junto al mar» y lector con la identidad de BookShelf | §54 |
 | 1.55.0 | Leer EPUB en la app: archivo solo en el dispositivo, posición y notas con la cuenta, lector diferido y límites | §53 |
 | 1.54.0 | Sin edición visual ebook, baldas de la habitación con toda la biblioteca e importación de Goodreads por CSV | §52 |
 | 1.53.0 | «Mi diario» del libro en tres secciones (Reseña con guardado explícito y borrador, Notas, Historial) y noche con su fondo pintado | §51 |
@@ -97,6 +98,18 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-29 · cuenta principal · 1.56.0 (publicada)
+- Encargo «Vinculación explícita del EPUB e interfaz del lector según la maqueta» (§54). Se conserva el motor de la 1.55.
+  Nuevos: `src/domain/bookMatch.js`, `src/features/epub/epubPosition.js`; rehechos `EpubSection.jsx` y `EpubReader.jsx`;
+  `epubStore` guarda por cuenta (`usuario:libro`, traslada las claves de la 1.55); `epub-155.css` reescrita.
+  `e2e/v155.spec.js` se sustituye por `e2e/v156.spec.js` (360, 390, 320, 1440 y WebKit 390).
+- Hallazgo: en un iframe `srcdoc`, un enlace `#x` se resolvía contra la dirección de la app y el iframe cargaba la app
+  (sin scripts). Se fija con `<base href="about:srcdoc">`; la prueba comprueba que el iframe no sale de su capítulo.
+- Sin probar: iPhone real; cambio de cuenta de extremo a extremo (necesita Supabase simulado; cubierto por pruebas de
+  dominio y por el cierre del lector al cambiar de usuario); EPUB comerciales o de dominio público reales (no había
+  ninguno en el equipo y descargarlo requiere permiso: la prueba usa uno sintético representativo).
+- Commit y subida a producción pedidos por Francisco. Sin comprobar aún en su móvil real.
 
 ### 2026-10-29 · cuenta principal · 1.55.0 (publicada)
 - Encargo «EPUB local, progreso y notas con la cuenta, lector al pulsar Leer, límites» (§53). Nueva dependencia

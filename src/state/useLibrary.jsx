@@ -230,6 +230,8 @@ export function reducer(state, action) {
         settings: state.settings.currentBookId === action.id ? { ...state.settings, currentBookId: null } : state.settings,
       };
     case 'addQuote':
+      // 1.56: un id que ya existe es un reintento del mismo guardado (no se duplica)
+      if (action.quote.id && state.books.some((b) => b.id === action.id && b.quotes.some((q) => q.id === action.quote.id))) return state;
       return {
         ...state,
         books: state.books.map((b) =>

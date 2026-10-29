@@ -8,6 +8,12 @@ export const MAX_CHAPTER = 4 * 1024 * 1024;
 export const LITE_IMAGES = 300;
 export const LITE_IMAGE_BYTES = 40 * 1024 * 1024;
 export const LITE_PER_CHAPTER = 30;
+/** Una sola imagen por encima de esto no se muestra (se explica): protege la memoria del dispositivo. */
+export const MAX_IMAGE = 12 * 1024 * 1024;
+/** Versión del formato de anclajes (1.56, SPEC §54.2): bloque de texto + fracción, con la fracción del capítulo. */
+export const ANCHOR_VERSION = 2;
+/** Bloques de texto que sirven de ancla, en orden de documento (deterministas para un mismo archivo). */
+export const BLOCKS = 'p, h1, h2, h3, h4, h5, h6, li, pre, dt, dd, figure, table, hr, img';
 
 export class EpubError extends Error {
   friendly = true;
@@ -40,13 +46,48 @@ export function resolvePath(base, href) {
 }
 const dirOf = (path) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
 
-/** Porcentaje del libro en una posición: capítulos anteriores enteros + fracción del actual, ponderado por tamaño. */
+/**
+ * Caracteres de texto legible de un documento (sin etiquetas, comentarios, `head`, estilos ni espacios repetidos):
+ * el peso de cada documento en el porcentaje, independiente de la letra, la pantalla y del tamaño del archivo.
+ */
+export function textLength(html) {
+  return String(html ?? '')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<(head|style|script)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z#0-9]+;/gi, 'x')
+    .replace(/\s+/g, ' ')
+    .trim().length;
+}
+
+const weightOf = (c) => Math.max(1, c.weight ?? c.size ?? 0);
+
+/**
+ * Porcentaje del archivo en una posición: documentos anteriores enteros + fracción del actual, ponderado por su texto
+ * legible (`weight`; los de la 1.55, por tamaño). Ubicación aproximada, no prueba de lectura.
+ */
 export function positionPercent(chapters, { chapter = 0, frac = 0 } = {}) {
-  const total = chapters.reduce((s, c) => s + Math.max(1, c.size), 0);
+  const total = chapters.reduce((s, c) => s + weightOf(c), 0);
   if (!total) return 0;
-  const before = chapters.slice(0, chapter).reduce((s, c) => s + Math.max(1, c.size), 0);
-  const here = Math.max(1, chapters[chapter]?.size ?? 0) * Math.min(1, Math.max(0, frac));
+  const before = chapters.slice(0, chapter).reduce((s, c) => s + weightOf(c), 0);
+  const here = (chapters[chapter] ? weightOf(chapters[chapter]) : 0) * Math.min(1, Math.max(0, frac));
   return Math.round(((before + here) / total) * 1000) / 10;
+}
+
+/** Enlace del capítulo reescrito por el lector: `#bs-go-N-fragmento` (otro documento) o `#bs-img-K` (cargar imagen). */
+export function parseReaderHash(hash) {
+  const raw = String(hash ?? '').replace(/^#/, '');
+  let h = raw;
+  try {
+    h = decodeURIComponent(raw);
+  } catch {
+    // fragmento mal codificado: se usa tal cual
+  }
+  let m = /^bs-go-(\d+)(?:-(.*))?$/.exec(h);
+  if (m) return { kind: 'go', chapter: Number(m[1]), fragment: m[2] || '' };
+  m = /^bs-img-(\d+)$/.exec(h);
+  if (m) return { kind: 'img', index: Number(m[1]) };
+  return h ? { kind: 'fragment', fragment: h } : null;
 }
 
 const FONT_OBFUSCATION = ['http://www.idpf.org/2008/embedding', 'http://ns.adobe.com/pdf/enc#RC'];
@@ -89,6 +130,10 @@ export async function openEpub(JSZip, data) {
   const base = dirOf(rootfile);
   const manifest = new Map(byLocal(opf, 'item').map((it) => [it.getAttribute('id'), { href: resolvePath(base, it.getAttribute('href')), type: it.getAttribute('media-type') ?? '', props: it.getAttribute('properties') ?? '' }]));
   const meta = (name) => byLocal(opf, name)[0]?.textContent?.trim() ?? '';
+  // ISBN declarado en los identificadores (evidencia para la vinculación, nunca la única)
+  const isbn = byLocal(opf, 'identifier')
+    .map((el) => el.textContent.replace(/^urn:isbn:/i, '').replace(/[\s-]/g, ''))
+    .find((v) => /^(97[89])?\d{9}[\dX]$/i.test(v)) ?? '';
   const spine = byLocal(opf, 'itemref')
     .filter((r) => r.getAttribute('linear') !== 'no')
     .map((r) => manifest.get(r.getAttribute('idref')))
@@ -97,8 +142,14 @@ export async function openEpub(JSZip, data) {
   const images = [...manifest.values()].filter((it) => IMAGE.test(it.type));
   const imageInfo = { count: images.length, bytes: images.reduce((s, it) => s + uncompressed(zip.file(it.href)), 0) };
   const titles = await tocTitles(zip, manifest, opf);
-  const chapters = spine.map((it, i) => ({ href: it.href, size: uncompressed(zip.file(it.href)), title: titles.get(it.href) || `Capítulo ${i + 1}` }));
-  return { zip, title: meta('title'), author: meta('creator'), chapters, images: imageInfo, lite: isLite(imageInfo) };
+  const chapters = [];
+  for (const [i, it] of spine.entries()) {
+    const size = uncompressed(zip.file(it.href));
+    // El peso es el texto legible; un documento enorme no se lee entero solo para pesarlo
+    const weight = size > MAX_CHAPTER ? size : textLength(await zip.file(it.href).async('string'));
+    chapters.push({ href: it.href, size, weight, title: titles.get(it.href) || `Sección ${i + 1}` });
+  }
+  return { zip, title: meta('title'), author: meta('creator'), isbn, chapters, images: imageInfo, lite: isLite(imageInfo) };
 }
 
 /** Títulos del índice (EPUB 3 `nav` o EPUB 2 `toc.ncx`) por ruta de capítulo. */
@@ -134,36 +185,61 @@ async function tocTitles(zip, manifest, opf) {
 const DROP = 'script, iframe, object, embed, form, input, button, select, textarea, link, style, meta, base, audio, video, source';
 
 /**
- * Un capítulo listo para el iframe sin scripts: cuerpo sin elementos activos ni estilos del archivo, imágenes como
- * `blob:` (en modo ligero, solo las primeras LITE_PER_CHAPTER; el resto, su texto alternativo) y enlaces internos
- * marcados con `data-epub-href` y sin `href`. Devuelve `{ body, urls }`; quien lo use revoca las URL al cambiar de capítulo.
+ * Un documento listo para el iframe sin scripts: cuerpo sin elementos activos ni estilos del archivo; bloques de texto
+ * numerados (`data-bs-block`, el ancla de la posición); imágenes como `blob:` (en modo ligero, solo las primeras
+ * LITE_PER_CHAPTER y las que se pidan en `allow`; el resto, su descripción y «Cargar imagen»); enlaces del mismo documento
+ * tal cual, a otro documento como `#bs-go-N-fragmento` y externos sin enlace. Devuelve `{ body, urls, deferred }`; quien
+ * lo use revoca las URL al cambiar de documento.
  */
-export async function chapterBody(book, index) {
+export async function chapterBody(book, index, { allow = new Set() } = {}) {
   const ch = book.chapters[index];
   const file = book.zip.file(ch.href);
-  if (!file) throw new EpubError('Falta este capítulo dentro del EPUB.');
-  if (ch.size > MAX_CHAPTER) return { body: `<p class="epub-note">Este capítulo es demasiado grande para mostrarlo (${mib(ch.size)}).</p>`, urls: [], skippedImages: 0 };
+  if (!file) throw new EpubError('Falta esta sección dentro del EPUB.');
+  if (ch.size > MAX_CHAPTER) return { body: `<p class="epub-note">Esta sección es demasiado grande para mostrarla (${mib(ch.size)}).</p>`, urls: [], deferred: 0 };
   const text = await file.async('string');
   let doc = new DOMParser().parseFromString(text, 'application/xhtml+xml');
   if (doc.getElementsByTagName('parsererror').length) doc = new DOMParser().parseFromString(text, 'text/html');
   const body = doc.body ?? doc.getElementsByTagName('body')[0] ?? doc.documentElement;
   body.querySelectorAll(DROP).forEach((el) => el.remove());
   for (const el of body.querySelectorAll('*')) {
-    for (const attr of [...el.attributes]) if (/^on/i.test(attr.name) || attr.name === 'style') el.removeAttribute(attr.name);
+    for (const attr of [...el.attributes]) if (/^on/i.test(attr.name) || attr.name === 'style' || attr.name === 'srcdoc' || attr.name === 'formaction') el.removeAttribute(attr.name);
   }
   const dir = dirOf(ch.href);
   const urls = [];
   let loaded = 0;
-  let skippedImages = 0;
-  for (const img of [...body.querySelectorAll('img, image')]) {
+  let deferred = 0;
+  const altFor = (img, extra) => {
+    const span = doc.createElement('span');
+    span.setAttribute('class', 'epub-alt');
+    span.textContent = img.getAttribute('alt') || 'Imagen';
+    if (extra) span.appendChild(extra);
+    return span;
+  };
+  for (const [k, img] of [...body.querySelectorAll('img, image')].entries()) {
     const src = img.getAttribute('src') ?? img.getAttribute('href') ?? img.getAttribute('xlink:href');
     const entry = src && book.zip.file(resolvePath(dir, src));
-    if (!entry || (book.lite && loaded >= LITE_PER_CHAPTER)) {
-      if (book.lite && entry) skippedImages++;
-      const alt = doc.createElement('span');
-      alt.className = 'epub-alt';
-      alt.textContent = img.getAttribute('alt') || '[imagen]';
-      img.replaceWith(alt);
+    if (!entry) {
+      img.replaceWith(altFor(img));
+      continue;
+    }
+    const bytes = uncompressed(entry);
+    if (bytes > MAX_IMAGE) {
+      const note = doc.createElement('span');
+      note.textContent = ` · demasiado grande para mostrarla (${mib(bytes)})`;
+      img.replaceWith(altFor(img, note));
+      continue;
+    }
+    if (book.lite && loaded >= LITE_PER_CHAPTER && !allow.has(k)) {
+      deferred++;
+      const link = doc.createElement('a');
+      link.setAttribute('href', `#bs-img-${k}`);
+      link.setAttribute('class', 'epub-load');
+      link.textContent = 'Cargar imagen';
+      const sep = doc.createTextNode(' · ');
+      const span = altFor(img);
+      span.appendChild(sep);
+      span.appendChild(link);
+      img.replaceWith(span);
       continue;
     }
     const url = URL.createObjectURL(await entry.async('blob'));
@@ -177,15 +253,25 @@ export async function chapterBody(book, index) {
   }
   for (const a of body.querySelectorAll('a[href]')) {
     const href = a.getAttribute('href');
-    if (/^[a-z][a-z0-9+.-]*:/i.test(href)) a.removeAttribute('href');
-    else {
-      // Sin `href`: un enlace interno nunca navega el iframe por sí mismo (el lector decide el salto)
-      a.setAttribute('data-epub-href', resolvePath(dir, href));
+    if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
       a.removeAttribute('href');
-      a.setAttribute('class', 'epub-link');
+      continue;
     }
+    const [path, frag = ''] = href.split('#');
+    const target = path ? resolvePath(dir, path) : ch.href;
+    if (target === ch.href) {
+      // Mismo documento (notas al pie): el navegador salta solo, sin scripts
+      if (frag) a.setAttribute('href', `#${frag}`);
+      else a.removeAttribute('href');
+      continue;
+    }
+    const n = book.chapters.findIndex((c) => c.href === target);
+    if (n >= 0) a.setAttribute('href', `#bs-go-${n}${frag ? `-${encodeURIComponent(frag)}` : ''}`);
+    else a.removeAttribute('href');
   }
-  return { body: body.innerHTML, urls, skippedImages };
+  // Bloques del ancla, en orden de documento
+  [...body.querySelectorAll(BLOCKS)].forEach((el, i) => el.setAttribute('data-bs-block', String(i)));
+  return { body: body.innerHTML, urls, deferred };
 }
 
 /** Huella SHA-256 del archivo: reconoce el mismo EPUB en otro dispositivo sin subirlo. */

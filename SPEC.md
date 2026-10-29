@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.55.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.56.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3619,3 +3619,115 @@ Encargo: EPUB local, sin subir el contenido; progreso y notas sincronizados con 
 - **Notas**: seleccionar texto y «Guardar como nota» crea una anotación normal del libro (`addQuote`, con su color) con
   su posición (`epub: { chapter, href, frac }`): aparece en «Mi diario» → Notas y viaja con la cuenta. Desde el lector,
   la lista de notas del libro permite ir a cada una.
+
+## 54. Vincular un EPUB a tu ejemplar y lector con la identidad de BookShelf (1.56.0)
+
+Referencia visual: `docs/design/references/epub-vincular-leer-maqueta.webp` (dirección de arte, no
+datos: ni su portada, ni sus páginas, ni sus porcentajes, ni su texto aparecen en la app). Se conserva el motor de la 1.55
+(JSZip + iframe sin scripts); no se añade otra biblioteca de lectura.
+
+### 54.1 Inspección (cómo estaba en la 1.55)
+
+Vinculación implícita: elegir un archivo lo guardaba y lo enlazaba en el acto (`book.epub`, IndexedDB por id de libro).
+Huella SHA-256 del contenido. Posición `book.epubPosition` = capítulo + fracción de desplazamiento, sincronizada al pasar
+de capítulo y como mucho cada 5 s. Notas = anotaciones normales con `epub: { chapter, href, frac }`, sin archivo de
+origen. Registro por `setPage` (operación normal). Datos locales: el archivo; sincronizados: la biblioteca entera (RLS del
+propietario). Temporizador y sonido viven en `App` (uno solo de cada).
+
+### 54.2 Modelo
+
+- **Ejemplar** (el libro de siempre): id, título, autor, portada, edición, páginas, estado, progreso confirmado, diario.
+  Vincular un EPUB nunca los cambia ni crea otro libro, ni reintroduce la apariencia de e-reader.
+- **Archivo** (`book.epub`, sincronizado sin contenido): `hash`, `name`, `size`, `title` y `author` extraídos, `chapters`,
+  `lite`, `anchors: 2` (versión de anclajes), `linkedAt`. Un archivo activo por ejemplar. Disponibilidad local: IndexedDB
+  `bookshelf-files/epubs`, clave `usuario:libro` (las claves antiguas, solo por libro, se leen y se trasladan).
+- **Posición** (`book.epubPosition`, sincronizada): `{ v: 2, hash, href, chapter, block, offset, frac, percent, rev, at }`.
+  Ancla estructural: índice del bloque de texto visible arriba (párrafo, encabezado, elemento de lista…) y fracción dentro
+  de él, más la fracción del capítulo como respaldo (las posiciones de la 1.55, sin `block`, siguen valiendo). Resiste
+  cambios de letra, interlineado, márgenes, orientación y ancho. Pertenece a un archivo (`hash`): nunca se aplica a otro.
+- **Notas**: anotación normal del libro con `id` estable (se crea al abrir la hoja: reintentar no duplica), `text`,
+  `comment` opcional, color/categoría del usuario y `epub: { v: 2, hash, name, href, chapter, block, frac }`.
+- **Porcentaje del archivo**: proporcional a los caracteres de texto legible de cada documento del orden de lectura
+  (`linear="no"` excluido), no al número de documentos ni a sus bytes; independiente de letra y pantalla. Es una
+  ubicación aproximada, no una prueba de lectura.
+
+### 54.3 Vincular desde la ficha («Leer aquí»)
+
+- Sin archivo: «Vincula un EPUB a este ejemplar.», «Elegir EPUB» (icono de documento) y «Tu portada y edición se
+  conservarán.». Con archivo: «Continuar lectura» y un menú discreto («Cambiar archivo», «Quitar de este dispositivo»).
+  Con el archivo en otro dispositivo: «Selecciona el mismo EPUB para continuar en este dispositivo.».
+- Elegir un archivo solo lo analiza y abre la confirmación: Tu ejemplar (portada real, título, autor, edición y páginas
+  si existen); Archivo seleccionado (nombre y título/autor extraídos, o que faltan); «El avance del EPUB se registrará por
+  porcentaje. Tu portada y edición no cambian.» y «El archivo se guarda en este dispositivo.». Acciones: «Vincular y
+  leer», «Elegir otro libro» (buscar otro ejemplar de la biblioteca por título o autor) y «Cancelar». Cancelar no toca
+  nada; la vinculación se guarda solo al confirmar y el archivo anterior se sustituye en la misma transacción (si falla,
+  queda el anterior y un error recuperable).
+- Coincidencias (`domain/bookMatch.js`, sin red ni IA): título y autor normalizados (mayúsculas, espacios, diacríticos,
+  puntuación superficial; los números de volumen se conservan) e ISBN como evidencia. Mensajes: «El título y el autor
+  parecen coincidir.», «¿Este archivo corresponde a este libro?» (datos insuficientes) y «El archivo parece corresponder
+  a otro libro. Revisa la vinculación.» (discrepancia: la acción pasa a «Vincular de todos modos»). Un ISBN distinto no
+  impide vincular otra edición («Puedes leer otra edición conservando tu ejemplar.» si el título coincide).
+- Cambiar a un archivo distinto pide confirmación; la posición del anterior no se aplica al nuevo (empieza en el índice);
+  las notas antiguas se conservan con su procedencia.
+
+### 54.4 Posición automática y progreso confirmado
+
+- Posición: se guarda en el dispositivo 750 ms después de moverse (`localStorage`, clave por usuario y libro), en el
+  libro sincronizado como mucho cada 60 s mientras haya cambios, al salir por la app y al ocultarse la pestaña
+  (oportunista). No crea sesiones, recompensas ni cambios de estado. `rev` sube en cada escritura sincronizada; si al
+  abrir hay una posición de este dispositivo y otra distinta de otro dispositivo hecha desde la misma `rev`, se pregunta
+  dónde seguir (nunca se elige «la más avanzada» sin preguntar).
+- Progreso confirmado: solo con el registro de siempre. Al cerrar, si la posición supera lo registrado, hoja «Una pausa
+  junto al mar»: portada y título reales, «Registrado: X %» (si hay base fiable), «Has llegado al: Y %», la diferencia en
+  puntos, «Corregir progreso» (0–100, sin vacíos ni NaN; no mueve el lector), el estado real de la posición («Posición
+  guardada en este dispositivo», «Pendiente de sincronizar» o «Posición sincronizada», según la cola de la cuenta),
+  «Registrar en el calendario» y «Volver sin registrar». Registrar usa `setPage` con origen «epub»: un intento bloqueado
+  mientras se guarda y que no se repite; si lo confirmado ya llega a ese punto (otro dispositivo) no suma nada y se dice.
+  Un libro por páginas pasa a porcentaje (`setTracking`) avisando de que sus sesiones anteriores no cambian; nunca se
+  convierten porcentajes en páginas. Llegar al 100 % al registrar usa el flujo de terminado (reseña con cuartos de
+  estrella, que se puede omitir); navegar al final no termina nada. Un libro leído no cambia de estado al leerlo.
+
+### 54.5 Lector
+
+- Rejilla `auto minmax(0, 1fr) auto` en `100dvh` (con `100vh` de respaldo) y áreas seguras; un único propietario del
+  desplazamiento (el contenedor del capítulo; el iframe mide lo que su contenido). Cabecera de 56 px: volver, título,
+  «Aa». Pie: Índice, Ambiente, Diario y «Posición en el archivo · N %»; «Sección anterior» / «Siguiente sección».
+  «Ocultar herramientas» deja un botón discreto «Mostrar herramientas».
+- «Aa»: letra 16–28 px (pasos de 1), interlineado 1,45/1,65/1,85, márgenes 16/24/32 px y tema claro o nocturno
+  (`#211D19` / `#EADFCB`, solo el lector). Preferencias del dispositivo; cambiarlas no pierde la posición.
+- Papel `#FAF5E8`, tinta `#2C1E14`, Lora 18/1,65, ancho máximo 68ch, alineación izquierda; se respetan cursivas, poesía,
+  listas, notas al pie e imágenes. Cinta marcador decorativa de 12 × 48 px en el margen. Nada de transformaciones,
+  filtros ni mezclas sobre el texto.
+- Índice y Diario: hoja a todo el ancho en móvil y panel lateral de 360 px en escritorio, con cabecera, cierre, foco
+  controlado y lo de detrás inerte.
+- Enlaces: los de un mismo documento funcionan tal cual (notas al pie, con «Volver al texto»); los que llevan a otro
+  documento se reescriben como `#bs-go-N-fragmento` y el lector, al ver ese fragmento, salta allí. Externos, sin enlace.
+- Por qué hay sondeo: WebKit no ejecuta los escuchadores de la app dentro de un iframe con `allow-same-origin` y sin
+  `allow-scripts` (comprobado en la 1.55: los eventos registrados desde la app no se disparan), y permitir scripts
+  rompería el aislamiento. Mientras el lector está visible consulta cada 400 ms la selección, el fragmento y el alto del
+  iframe; sin red; se detiene al ocultarse la pestaña o cerrar. En Chromium los eventos llegan antes y el sondeo solo
+  confirma.
+- Modo ligero: las imágenes diferidas muestran su descripción y «Cargar imagen» (enlace `#bs-img-N`) y se cargan bajo
+  demanda sin perder la posición; una imagen que excede los límites lo explica sin bloquear el lector.
+
+### 54.6 Notas, ambiente y habitación
+
+- Seleccionar y «Guardar en mi diario» abre una hoja (papel, borde `rgba(114,91,70,.22)`, sombra suave, radio 16 px) con
+  el fragmento, un comentario opcional y los colores y nombres personales del usuario; «Guardar nota» / «Cancelar». Sin
+  selección: «Nota de esta sección» (sin fragmento inventado). Las notas no se publican. En «Mi diario» las notas de EPUB
+  muestran su procedencia; si su archivo no está o es otro, se explica por qué no se puede abrir el fragmento.
+- Ambiente: el mismo sonido de la habitación (el control de siempre) y el mismo temporizador de `App` (consultar, empezar
+  o pausar; no pertenece a ningún libro, así que no hay conflicto). No se muestran duraciones que no se hayan medido.
+- Libro de la habitación: su ficha muestra «Leer aquí» justo bajo el progreso, con «Continuar lectura» si hay archivo (o
+  la petición del archivo). «Registrar lectura» manual sigue igual. La escena no cambia.
+
+### 54.7 Criterios de aceptación
+
+Vincular otra edición no cambia id, portada, páginas ni edición; cancelar conserva el archivo anterior; una discrepancia
+exige «Vincular de todos modos»; la posición vuelve tras cambiar letra u orientación; el mismo archivo en otro
+dispositivo recupera la posición; otro archivo no recibe anclajes; las notas sobreviven a quitar o cambiar el archivo y
+usan las categorías personales; registrar porcentaje no inventa páginas; doble clic y reintento no duplican sesiones;
+volver sin registrar no añade lectura; terminar abre la reseña; sin conexión o al cambiar de cuenta no se mezclan datos
+(archivos y posiciones por usuario; el lector se cierra si cambia la cuenta); índice, enlaces, selección y guardado
+funcionan en Chromium y en el WebKit de Playwright; el teclado no oculta «Guardar nota»; lector y parser no se cargan con
+la habitación; ninguna petición transmite el archivo. Sin iPhone real: WebKit automatizado no equivale a Safari iOS.

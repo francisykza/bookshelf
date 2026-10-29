@@ -264,7 +264,7 @@ const SECTIONS = [
 ];
 const DIARY_ENTRY = { right: 'review', review: 'review', notes: 'notes', history: 'history' };
 
-export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpenProfile, onOpenReader, onComplete }) {
+export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpenProfile, onOpenReader, onComplete, timer, soundOn, onToggleSound }) {
   const { state, actions } = useLibrary();
   const book = state.books.find((b) => b.id === bookId);
   const [page, setPage] = useState(() => (DIARY_ENTRY[initialPage] ? 'right' : TABS.some((t) => t.id === initialPage) ? initialPage : 'left'));
@@ -424,6 +424,18 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
               }}
             />
 
+            {/* 1.56 (SPEC §54.3): «Leer aquí», el EPUB vinculado a este ejemplar (solo en este dispositivo), bajo el
+                progreso; `tab: 'epub'` llega con la intención de leer */}
+            <EpubSection
+              book={book}
+              autoRead={initialPage === 'epub'}
+              onOpenBook={(id) => onSwitch?.(id, 'epub')}
+              onComplete={onComplete}
+              timer={timer}
+              soundOn={soundOn}
+              onToggleSound={onToggleSound}
+            />
+
             {/* El mismo formulario de registro del calendario; si termina el libro, abre la reseña de terminar */}
             <div className="sheet-log">
               <button type="button" className="sheet-btn sheet-btn--primary craft craft--terra" aria-expanded={logging} onClick={() => setLogging((v) => !v)}>
@@ -454,9 +466,6 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
                 <span>Favorito</span>
               </button>
             </div>
-
-            {/* 1.55 (SPEC §53): el EPUB de este libro, guardado solo en este dispositivo */}
-            <EpubSection book={book} onUpdate={update} />
 
             <EditionDetails
               book={book}

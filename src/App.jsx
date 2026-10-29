@@ -278,7 +278,7 @@ function Sanctuary() {
         }}
       />
 
-      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} initialPage={panel.tab} onClose={close} onSwitch={(id) => switchPanel({ type: 'book', id })} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />}
+      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} initialPage={panel.tab} onClose={close} onSwitch={(id, tab) => switchPanel({ type: 'book', id, ...(tab ? { tab } : null) })} timer={timer} soundOn={settings.sound} onToggleSound={toggleSound} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />}
       {panel?.type === 'laptop' && (
         <LaptopPanel
           onClose={close}
