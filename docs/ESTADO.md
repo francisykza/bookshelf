@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.54.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.54.0. Fuera de git
+- **Versión publicada**: 1.55.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.55.0. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.55.0 | Leer EPUB en la app: archivo solo en el dispositivo, posición y notas con la cuenta, lector diferido y límites | §53 |
 | 1.54.0 | Sin edición visual ebook, baldas de la habitación con toda la biblioteca e importación de Goodreads por CSV | §52 |
 | 1.53.0 | «Mi diario» del libro en tres secciones (Reseña con guardado explícito y borrador, Notas, Historial) y noche con su fondo pintado | §51 |
 | 1.52.0 | Una sola habitación de día y de noche (se retira la escena nocturna de la 1.51) y libro con el contenido integrado | §50 |
@@ -96,6 +97,17 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-29 · cuenta principal · 1.55.0 (publicada)
+- Encargo «EPUB local, progreso y notas con la cuenta, lector al pulsar Leer, límites» (§53). Nueva dependencia
+  `jszip` (3.10.1); lector propio (`src/features/epub/`) en lugar de epub.js (sin versiones desde 2023). Pruebas:
+  `src/features/epub/__tests__/epub.test.js` y `e2e/v155.spec.js` (390, 1440 y WebKit 390, EPUB sintéticos).
+- Hallazgos de WebKit (Playwright en Windows): no guarda `Blob` en IndexedDB (se guarda `ArrayBuffer`) y no ejecuta
+  escuchadores dentro de un iframe sin scripts (por eso se desplaza el contenedor, la selección se sondea y los enlaces
+  internos no llevan `href`: el salto con un toque solo funciona donde el navegador lo permite; el índice siempre).
+- `PanelShell` ya no atiende el teclado si queda inerte bajo otra capa (el lector).
+- Sin probar en un iPhone real ni con EPUB comerciales (con DRM no se pueden abrir: no se intenta).
+- Commit y subida a producción pedidos por Francisco. Sin comprobar aún en su móvil real.
 
 ### 2026-10-29 · cuenta principal · 1.54.0 (publicada)
 - Encargo «Baldas con toda la biblioteca» + «Retirar ebook e importar de Goodreads» (§52). Nueva dependencia

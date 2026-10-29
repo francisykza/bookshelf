@@ -23,6 +23,8 @@ export function PanelShell({ onClose, label, variant, children }) {
     // Si no hay nada enfocable, el propio diálogo recibe el foco
     if (!node?.contains(document.activeElement)) (node?.querySelector(FOCUSABLE) ?? node)?.focus({ preventScroll: true });
     const onKey = (event) => {
+      // Con otra capa encima (p. ej. el lector EPUB), este panel queda inerte y no atiende el teclado
+      if (node?.closest('[inert]')) return;
       if (event.key === 'Escape') {
         // Un menú desplegable abierto dentro del panel (p. ej. «Más opciones») atiende su propio Escape
         if (node?.querySelector('[data-escape-local="open"]')) return;

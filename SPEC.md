@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.54.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.55.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3586,3 +3586,36 @@ Referencia: `docs/design/references/diario-resena-maqueta.webp` (cuaderno artesa
   incidencias». «Deshacer importación» quita solo los libros creados por ese lote que siguen exactamente como se
   importaron (sin cambios, notas, sesiones ni reseña nueva) y devuelve los campos completados que conservan el valor
   escrito; lo demás se conserva y se informa. Es idempotente.
+
+## 53. Leer EPUB en la app (1.55.0)
+
+Encargo: EPUB local, sin subir el contenido; progreso y notas sincronizados con la cuenta; lector cargado solo al pulsar
+«Leer»; límites para archivos muy grandes y libros con muchas imágenes.
+
+- **Dónde**: en la Ficha del libro, «Libro digital»: «Añadir EPUB» (selector del dispositivo), y con el archivo en este
+  dispositivo, «Leer» y «Quitar de este dispositivo». Si el libro tiene un EPUB guardado en otro dispositivo, se dice y se
+  pide el mismo archivo (se reconoce por su huella SHA-256).
+- **Local**: el archivo se guarda solo en este dispositivo (IndexedDB `bookshelf-files`, almacén `epubs`, por libro).
+  Con la cuenta viajan únicamente sus metadatos (`book.epub`: nombre, tamaño, huella, capítulos y fecha) y la posición
+  de lectura; el contenido nunca se sube.
+- **Carga diferida**: JSZip y el lector (`features/epub/EpubReader.jsx`) se cargan al pulsar «Leer» (y JSZip también al
+  elegir un archivo, para comprobarlo); nada al abrir la habitación ni la librería.
+- **Lector propio** (sin dependencias antiguas): lee `container.xml`, el OPF y el orden de lectura (`spine`); cada
+  capítulo se pinta en un `iframe` con `sandbox` sin scripts (el EPUB no puede ejecutar nada), con estilos de lectura de
+  la app (Lora, papel crema, 18 px, tamaño ajustable), imágenes como `blob:` y enlaces externos desactivados. Capítulo
+  anterior/siguiente, índice de capítulos y desplazamiento vertical (el iframe mide su capítulo y se desplaza su
+  contenedor). Los enlaces internos no llevan `href` (nunca navegan solos); saltar con un toque funciona donde el navegador
+  deja escuchar dentro del iframe (no en WebKit), y la selección se sondea cada 400 ms.
+- **Límites**: archivo de hasta 60 MiB; contenido descomprimido de hasta 250 MiB (protege de archivos «bomba»); capítulo
+  de hasta 4 MiB de texto. Con muchas imágenes (más de 300 o más de 40 MiB en imágenes) el libro se abre en «modo
+  ligero»: cada capítulo carga como mucho 30 imágenes y las demás se sustituyen por su texto alternativo; se avisa.
+  Un EPUB con DRM (contenido cifrado en `encryption.xml`, salvo la ofuscación de fuentes) no se abre: se explica. Fuera
+  de los límites se explica el motivo y no se guarda nada.
+- **Progreso**: posición = capítulo + fracción desplazada; porcentaje ponderado por el tamaño de cada capítulo. Se guarda
+  en `book.epubPosition` (sincronizado) al pasar de capítulo, al cerrar y como mucho cada 5 s al desplazarse, sin tocar el
+  registro de lectura. Al cerrar, si el porcentaje supera el progreso del libro, se ofrece «Registrar hasta el N %»:
+  usa la operación normal (`setPage`, origen «epub»), así que las reglas de sesiones y sellos no cambian. Al reabrir, se
+  vuelve a la posición guardada (también en otro dispositivo con el mismo archivo).
+- **Notas**: seleccionar texto y «Guardar como nota» crea una anotación normal del libro (`addQuote`, con su color) con
+  su posición (`epub: { chapter, href, frac }`): aparece en «Mi diario» → Notas y viaja con la cuenta. Desde el lector,
+  la lista de notas del libro permite ir a cada una.

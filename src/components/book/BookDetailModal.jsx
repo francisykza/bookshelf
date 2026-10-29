@@ -22,6 +22,7 @@ import { Cover, PhysicalBook } from '../shelf/BookItem';
 import { EdgePicker } from './EditionPicker';
 import { ElegantQuoteCard } from '../quotes/ElegantQuoteCard';
 import { PublishControls } from '../../features/reviews/PublishControls';
+import { EpubSection } from '../../features/epub/EpubSection';
 
 // Las opiniones de la comunidad se cargan solo al abrirlas
 const ReadersPanel = lazy(() => import('../../features/reviews/ReadersPanel').then((m) => ({ default: m.ReadersPanel })));
@@ -453,6 +454,9 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
                 <span>Favorito</span>
               </button>
             </div>
+
+            {/* 1.55 (SPEC §53): el EPUB de este libro, guardado solo en este dispositivo */}
+            <EpubSection book={book} onUpdate={update} />
 
             <EditionDetails
               book={book}
