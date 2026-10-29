@@ -1,14 +1,15 @@
-// Lector EPUB (SPEC §53–54), cargado solo al abrirlo. Cada sección se pinta en un iframe con `sandbox` sin scripts; el
-// iframe mide lo que su contenido y se desplaza el contenedor (un solo dueño del desplazamiento). La posición se ancla a
-// un bloque de texto (resiste cambios de letra y pantalla), se guarda en el dispositivo a los 750 ms y en el libro
-// sincronizado como mucho cada 60 s; nunca toca el registro de lectura. Al salir, «Una pausa junto al mar» ofrece
-// registrar lo avanzado con la operación de siempre.
+// Lector EPUB (SPEC §53–55), cargado solo al abrirlo. Cada sección se pinta en un iframe con `sandbox` sin scripts.
+// Dos formas de leer: desplazamiento continuo (el iframe mide lo que su documento y se desplaza su contenedor) o página a
+// página (columnas CSS dentro del iframe, `epubLayout.js`). La posición se ancla a un bloque de texto (resiste cambios de
+// letra, pantalla y forma de leer), se guarda en el dispositivo a los 750 ms y en el libro como mucho cada 60 s; nunca
+// toca el registro de lectura. Los subrayados son las notas con fragmento (`epubHighlights.js`). Al salir, «Una pausa
+// junto al mar» ofrece registrar lo avanzado con la operación de siempre.
 //
-// Por qué hay un sondeo de 400 ms: WebKit no ejecuta los escuchadores de la app dentro de un iframe con
-// `allow-same-origin` y sin `allow-scripts`, y permitir scripts rompería el aislamiento. Mientras el lector está visible
-// se consultan la selección, el fragmento (enlaces `#bs-…`) y el alto del documento; sin red, y se detiene al ocultarse.
+// Por qué hay un sondeo (300–400 ms, solo con el lector visible y sin red): WebKit no ejecuta los escuchadores de la app
+// dentro de un iframe con `allow-same-origin` y sin `allow-scripts`, y permitir scripts rompería el aislamiento. Se
+// consultan la selección, el fragmento de los enlaces (`#bs-…`), la página actual y el alto del documento.
 import JSZip from 'jszip';
-import { ArrowLeft, BookmarkCheck, ChevronLeft, ChevronRight, Eye, EyeOff, List, Minus, NotebookPen, Plus, Trees, X } from 'lucide-react';
+import { ArrowLeft, BookmarkCheck, ChevronLeft, ChevronRight, Eye, EyeOff, List, Minus, NotebookPen, Plus, Trees } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { newId, percentRead, trackUnit } from '../../domain/books';
@@ -19,14 +20,17 @@ import { Cover } from '../../components/shelf/BookItem';
 import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
 import { ANCHOR_VERSION, chapterBody, openEpub, parseReaderHash, positionPercent } from './epubFile';
+import { highlightAt, paintHighlights, rangeAnchor, resolveRange, tint } from './epubHighlights';
+import { applyPaged, currentPage, goToPage, pageCount, pageOfBlock, removePaged, turns, visibleBlock } from './epubLayout';
 import { LOCAL_DELAY, SYNC_EVERY, readLocal, startPosition, syncedPosition, writeLocal } from './epubPosition';
 import { getEpub } from './epubStore';
 
-const POLL = 400;
 const PREFS_KEY = 'bookshelf:epub-prefs';
 const LEADINGS = [1.45, 1.65, 1.85];
 const MARGINS = [16, 24, 32];
-const DEFAULT_PREFS = { font: 18, leading: 1.65, margin: 24, theme: 'light' };
+const DEFAULT_PREFS = { font: 18, leading: 1.65, margin: 24, theme: 'light', mode: 'scroll' };
+const RELAYOUT_WAIT = 120;
+const PANEL_TITLES = { toc: 'Índice', notes: 'Mi diario', aa: 'Letra y forma de leer', ambient: 'Ambiente' };
 
 function readPrefs() {
   try {
@@ -36,6 +40,7 @@ function readPrefs() {
       leading: LEADINGS.includes(p.leading) ? p.leading : 1.65,
       margin: MARGINS.includes(p.margin) ? p.margin : 24,
       theme: p.theme === 'night' ? 'night' : 'light',
+      mode: p.mode === 'paged' ? 'paged' : 'scroll',
     };
   } catch {
     return { ...DEFAULT_PREFS };
@@ -47,31 +52,39 @@ const THEMES = {
   night: { bg: '#211D19', ink: '#EADFCB', soft: '#C5B69F', accent: '#D6B56D', rule: 'rgba(214, 181, 109, 0.25)', select: '#5B4A2A' },
 };
 
-/** Estilos del documento: tipografía editorial sin forzar la jerarquía ni la semántica del EPUB. */
-const pageCss = ({ font, leading, margin, theme }) => {
+/** Las fuentes de la app también en el documento (el iframe no hereda las de la página). */
+const fontsHref = () => document.querySelector('link[rel="stylesheet"][href*="fonts.googleapis.com"]')?.getAttribute('href') ?? '';
+
+/** Estilos del documento: tipografía editorial sin forzar su jerarquía; todo lo ancho cabe o se desplaza en su caja. */
+const pageCss = ({ font, leading, margin, theme }, narrow) => {
   const t = THEMES[theme];
+  const m = narrow && margin === 24 ? 20 : margin;
   return `
-  html { background: ${t.bg}; overflow: hidden; }
-  body { box-sizing: border-box; max-width: calc(68ch + ${margin * 2}px); margin: 0 auto; padding: 24px ${margin}px 40px;
+  html { background: ${t.bg}; overflow: hidden; -webkit-text-size-adjust: 100%; }
+  html, body { max-width: 100%; }
+  body { box-sizing: border-box; max-width: calc(68ch + ${m * 2}px); margin: 0 auto; padding: 16px ${m}px 32px;
     color: ${t.ink}; background: ${t.bg}; font: ${font}px/${leading} Lora, Georgia, serif; text-align: left;
-    overflow-wrap: break-word; -webkit-text-size-adjust: 100%; }
-  h1, h2, h3, h4, h5, h6 { font-family: 'Cormorant Garamond', Georgia, serif; line-height: 1.2; color: ${t.ink}; }
-  h1 { font-size: 1.9em; } h2 { font-size: 1.55em; } h3 { font-size: 1.3em; }
+    overflow-wrap: break-word; }
+  * { box-sizing: border-box; }
+  img, svg, image, video, pre, table, figure, iframe { max-width: 100%; }
+  h1, h2, h3, h4, h5, h6 { font-family: 'Cormorant Garamond', Georgia, serif; line-height: 1.2; color: ${t.ink}; margin: 0.4em 0 0.6em; }
+  h1 { font-size: clamp(26px, 6vw, 36px); } h2 { font-size: clamp(22px, 5vw, 30px); } h3 { font-size: 1.25em; }
   p { margin: 0 0 0.9em; }
-  img, svg, image { max-width: 100%; height: auto; }
+  img, svg, image, video { max-width: 100%; height: auto; }
   figure { margin: 1em 0; }
   hr { border: 0; border-top: 1px solid ${t.rule}; margin: 1.6em auto; width: 40%; }
   blockquote { margin: 1em 0 1em 1.2em; }
-  pre { white-space: pre-wrap; }
-  a { color: ${t.accent}; }
+  pre, code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  a { color: ${t.accent}; overflow-wrap: anywhere; }
   ::selection { background: ${t.select}; }
   .epub-alt { display: inline-block; padding: 2px 6px; border: 1px dashed ${t.soft}; border-radius: 4px; color: ${t.soft}; font-size: .85em; }
   .epub-note { color: ${t.soft}; font-style: italic; }
-  table { max-width: 100%; display: block; overflow-x: auto; }
+  table { display: block; max-width: 100%; overflow-x: auto; }
   `;
 };
 
 const fmt = (n) => n.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+const editable = (el) => el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 
 /** Estado real de la posición frente a la cuenta (sin anunciar una sincronización que no se ha confirmado). */
 function positionStatus(cloud) {
@@ -100,9 +113,12 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
   const [doc, setDoc] = useState(null);
   const [prefs, setPrefs] = useState(readPrefs);
   const [percent, setPercent] = useState(0);
+  const [pages, setPages] = useState(null);
   const [panel, setPanel] = useState(null);
   const [selection, setSelection] = useState(null);
   const [note, setNote] = useState(null);
+  const [hlMenu, setHlMenu] = useState(null);
+  const [lost, setLost] = useState(() => new Set());
   const [notice, setNotice] = useState('');
   const [toolsHidden, setToolsHidden] = useState(false);
   const [pause, setPause] = useState(null);
@@ -120,12 +136,21 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
   const posRef = useRef(null);
   const pending = useRef(null);
   const restoredKey = useRef('');
-  /** Ancla pendiente con su hora: caduca a los 2 s para que nunca bloquee el guardado de la posición. */
-  const stamp = (a) => (a ? { ...a, pendingSince: Date.now() } : null);
-  const pendingActive = () => Boolean(pending.current && Date.now() - pending.current.pendingSince < 2000);
   const localTimer = useRef(0);
   const baseRev = useRef(0);
   const dirty = useRef(false);
+  const hlItems = useRef([]);
+  /** Paginado: el ancla lógica restaurada se conserva mientras no se pase de página (si no, cada recolocación iría
+   *  retrocediendo al primer párrafo de la página). */
+  const logical = useRef(null);
+  const lastCaret = useRef(null);
+  const relayoutTimer = useRef(0);
+  const paged = prefs.mode === 'paged';
+  const pagedRef = useRef(paged);
+  pagedRef.current = paged;
+  /** Ancla pendiente con su hora: caduca a los 2 s para que nunca bloquee el guardado de la posición. */
+  const stamp = (a) => (a ? { ...a, pendingSince: Date.now() } : null);
+  const pendingActive = () => Boolean(pending.current && Date.now() - pending.current.pendingSince < 2000);
 
   // ── Abrir el archivo y decidir dónde empezar ───────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -162,12 +187,8 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
     const ch = idx >= 0 ? idx : Math.min(pos?.chapter ?? 0, opened.chapters.length - 1);
     pending.current = stamp(pos && idx >= 0 ? { block: pos.block, offset: pos.offset, frac: pos.frac } : { frac: 0 });
     restoredKey.current = '';
-    if (ch === shownRef.current && frameRef.current) {
-      const a = pending.current;
-      pending.current = null;
-      applyAnchor(a);
-      track();
-    } else setChapter(ch);
+    if (ch === shownRef.current && frameRef.current) restorePending();
+    else setChapter(ch);
   }
 
   // ── Documento de la sección ─────────────────────────────────────────────────────────────────────────────────────
@@ -191,28 +212,61 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
 
   const shown = doc?.chapter ?? chapter;
   shownRef.current = shown;
-  const prefsKey = `${prefs.font}-${prefs.leading}-${prefs.margin}-${prefs.theme}`;
-  const srcDoc = useMemo(
-    () => (doc == null ? null : `<!doctype html><html lang="es"><head><meta charset="utf-8"><base href="about:srcdoc"><meta name="viewport" content="width=device-width, initial-scale=1"><style>${pageCss(prefs)}</style></head><body data-epub-chapter="">${doc.body}</body></html>`),
+  const narrow = typeof window !== 'undefined' && window.innerWidth < 360;
+  const prefsKey = `${prefs.font}-${prefs.leading}-${prefs.margin}-${prefs.theme}-${prefs.mode}-${narrow}`;
+  const rtl = epub?.rtl ?? false;
+  const srcDoc = useMemo(() => {
+    if (doc == null) return null;
+    const fonts = fontsHref();
+    return `<!doctype html><html lang="es"${rtl ? ' dir="rtl"' : ''}><head><meta charset="utf-8"><base href="about:srcdoc"><meta name="viewport" content="width=device-width, initial-scale=1">${fonts ? `<link rel="stylesheet" href="${fonts}">` : ''}<style>${pageCss(prefs, narrow)}</style></head><body data-epub-chapter="">${doc.body}</body></html>`;
     // prefsKey resume las preferencias
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [doc, prefsKey],
-  );
+  }, [doc, prefsKey, rtl]);
 
-  // ── Ancla: bloque de texto visible arriba ──────────────────────────────────────────────────────────────────────
-  const readAnchor = useCallback(() => {
-    const el = pageRef.current;
+  const frameDoc = () => {
     const d = frameRef.current?.contentDocument;
-    if (!el || !epub || !d?.querySelector('[data-epub-chapter]')) return null;
-    const top = el.scrollTop;
-    const frac = el.scrollHeight > el.clientHeight ? top / (el.scrollHeight - el.clientHeight) : 0;
-    let block = null;
-    for (const b of d.querySelectorAll('[data-bs-block]')) {
-      if (b.offsetTop > top + 8) break;
-      block = b;
-    }
-    const offset = block?.offsetHeight ? Math.min(1, Math.max(0, (top - block.offsetTop) / block.offsetHeight)) : 0;
+    return d?.querySelector('[data-epub-chapter]') ? d : null;
+  };
+  const pageWidth = () => frameRef.current?.clientWidth || 1;
+
+  // ── Ancla: bloque de texto visible (arriba en continuo; primero de la página en paginado) ───────────────────────
+  const readAnchor = useCallback(() => {
+    const d = frameDoc();
+    const el = pageRef.current;
+    if (!el || !epub || !d) return null;
     const ch = shownRef.current;
+    let block = null;
+    let offset = 0;
+    let frac = 0;
+    if (pagedRef.current) {
+      const w = pageWidth();
+      const t = turns(d);
+      const total = pageCount(d, w);
+      const first = t.prev ? 1 : 0;
+      const last = total - 1 - (t.next ? 1 : 0);
+      const p = currentPage(d, w);
+      frac = last > first ? Math.min(1, Math.max(0, (p - first) / (last - first))) : 0;
+      const keep = logical.current && logical.current.chapter === ch && logical.current.page === p ? d.querySelector(`[data-bs-block="${logical.current.block}"]`) : null;
+      if (keep) {
+        block = keep;
+        offset = logical.current.offset ?? 0;
+      } else {
+        logical.current = null;
+        const v = visibleBlock(d, w);
+        if (v) {
+          block = v.block;
+          offset = v.offset;
+        }
+      }
+    } else {
+      const top = el.scrollTop;
+      frac = el.scrollHeight > el.clientHeight ? top / (el.scrollHeight - el.clientHeight) : 0;
+      for (const b of d.querySelectorAll('[data-bs-block]')) {
+        if (b.offsetTop > top + 8) break;
+        block = b;
+      }
+      offset = block?.offsetHeight ? Math.min(1, Math.max(0, (top - block.offsetTop) / block.offsetHeight)) : 0;
+    }
     return {
       v: ANCHOR_VERSION,
       hash: epub.hash,
@@ -224,21 +278,34 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
       percent: positionPercent(epub.chapters, { chapter: ch, frac }),
       at: new Date().toISOString(),
     };
+    // frameDoc y pageWidth leen referencias
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [epub]);
 
+  /** Lleva la lectura a un ancla (bloque, fragmento, fracción o «última página»). */
   function applyAnchor(a) {
     const el = pageRef.current;
-    if (!el || !a) return;
-    const d = frameRef.current?.contentDocument;
-    if (a.fragment) {
-      const target = d?.getElementById(a.fragment) ?? d?.querySelector(`[name="${CSS.escape(a.fragment)}"]`);
-      if (target) {
-        el.scrollTop = Math.max(0, target.offsetTop - 16);
-        return;
-      }
+    const d = frameDoc();
+    if (!el || !a || !d) return;
+    const target = a.fragment ? (d.getElementById(a.fragment) ?? d.querySelector(`[name="${CSS.escape(a.fragment)}"]`)) : null;
+    const block = !target && a.block != null ? d.querySelector(`[data-bs-block="${a.block}"]`) : null;
+    if (pagedRef.current) {
+      const w = pageWidth();
+      const t = turns(d);
+      const total = pageCount(d, w);
+      const first = t.prev ? 1 : 0;
+      const last = total - 1 - (t.next ? 1 : 0);
+      let p = first;
+      if (a.last) p = last;
+      else if (target) p = pageOfBlock(d, w, target) ?? first;
+      else if (block) p = pageOfBlock(d, w, block, a.offset) ?? first;
+      else if (a.frac) p = first + Math.round(a.frac * Math.max(0, last - first));
+      goToPage(d, w, Math.min(last, Math.max(first, p)));
+      return;
     }
-    const b = a.block != null ? d?.querySelector(`[data-bs-block="${a.block}"]`) : null;
-    if (b) el.scrollTop = b.offsetTop + (a.offset ?? 0) * b.offsetHeight;
+    if (a.last) el.scrollTop = el.scrollHeight;
+    else if (target) el.scrollTop = Math.max(0, target.offsetTop - 16);
+    else if (block) el.scrollTop = block.offsetTop + (a.offset ?? 0) * block.offsetHeight;
     else el.scrollTop = (a.frac ?? 0) * Math.max(0, el.scrollHeight - el.clientHeight);
   }
 
@@ -258,8 +325,11 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
     if (pendingActive()) return;
     const pos = readAnchor();
     if (!pos) return;
+    if (pagedRef.current) updatePages();
+    const same = posRef.current && posRef.current.href === pos.href && posRef.current.block === pos.block && posRef.current.frac === pos.frac;
     posRef.current = pos;
     setPercent(pos.percent);
+    if (same) return;
     dirty.current = true;
     clearTimeout(localTimer.current);
     localTimer.current = setTimeout(() => writeLocal(userId, bookRef.current.id, { pos, baseRev: baseRev.current, dirty: true }), LOCAL_DELAY);
@@ -276,7 +346,11 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
     return () => {
       clearInterval(every);
       clearTimeout(localTimer.current);
+      clearTimeout(relayoutTimer.current);
       document.removeEventListener('visibilitychange', onHide);
+      // Salida por otra vía (Atrás del sistema): la posición queda guardada aunque no se registre lectura
+      if (posRef.current) writeLocal(userId, bookRef.current.id, { pos: posRef.current, baseRev: baseRev.current, dirty: dirty.current });
+      syncNow();
     };
   }, [syncNow, userId]);
 
@@ -285,42 +359,82 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
     if ((cloud.user?.id ?? null) !== userId) onClose();
   }, [cloud.user, userId, onClose]);
 
-  // ── Documento cargado: medir y volver a la posición; donde el navegador deja, escuchar la selección ─────────────
+  // ── Maquetación del documento (continuo: alto del contenido; paginado: columnas) ───────────────────────────────
+  function updatePages() {
+    const d = frameDoc();
+    if (!d || !pagedRef.current) return setPages(null);
+    const w = pageWidth();
+    const t = turns(d);
+    const total = pageCount(d, w);
+    const first = t.prev ? 1 : 0;
+    const count = Math.max(1, total - first - (t.next ? 1 : 0));
+    const page = Math.min(count, Math.max(1, currentPage(d, w) - first + 1));
+    setPages((p) => (p?.page === page && p?.count === count ? p : { page, count }));
+  }
+  function layout() {
+    const d = frameDoc();
+    if (!d || !epub) return;
+    if (pagedRef.current) {
+      const f = frameRef.current;
+      const ch = shownRef.current;
+      applyPaged(d, { width: f.clientWidth, height: f.clientHeight, rtl, prev: ch > 0 ? epub.chapters[ch - 1].title : null, next: ch < epub.chapters.length - 1 ? epub.chapters[ch + 1].title : null });
+    } else {
+      removePaged(d);
+      const h = Math.ceil(d.documentElement.scrollHeight);
+      setFrameH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+    }
+  }
   function measure() {
-    const d = frameRef.current?.contentDocument;
-    if (!d?.querySelector('[data-epub-chapter]')) return;
+    if (pagedRef.current) return;
+    const d = frameDoc();
+    if (!d) return;
     const h = Math.ceil(d.documentElement.scrollHeight);
     setFrameH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
   }
-  function wire() {
-    const d = frameRef.current?.contentWindow?.document;
-    if (!d || !d.querySelector('[data-epub-chapter]') || d.documentElement.dataset.wired) return false;
-    d.documentElement.dataset.wired = '1';
-    const key = `${shownRef.current}-${prefsKey}-${allowImgs.size}`;
-    if (restoredKey.current !== key) {
-      restoredKey.current = key;
-      if (!pending.current) pending.current = stamp(posRef.current && posRef.current.href === epub?.chapters[shownRef.current]?.href ? posRef.current : { frac: 0 });
-      setFrameH(0);
-    }
-    requestAnimationFrame(measure);
-    // La restauración no depende de que cambie el alto medido (dos documentos pueden medir lo mismo)
-    requestAnimationFrame(() => requestAnimationFrame(() => restorePending()));
-    d.addEventListener('selectionchange', readSelection);
-    return true;
-  }
-  /** Aplica el ancla pendiente cuando el iframe ya tiene el alto de su documento (si no, lo reintenta). */
+  /** Aplica el ancla pendiente cuando el documento ya tiene su maquetación (si no, lo reintenta). */
   function restorePending(tries = 0) {
     const a = pending.current;
     const f = frameRef.current;
-    const d = f?.contentDocument;
-    if (!a || !d?.querySelector('[data-epub-chapter]')) return;
-    if (f.offsetHeight < d.documentElement.scrollHeight - 2 && tries < 30) {
+    const d = frameDoc();
+    if (!a || !d) return;
+    if (!pagedRef.current && f.offsetHeight < d.documentElement.scrollHeight - 2 && tries < 30) {
       requestAnimationFrame(() => restorePending(tries + 1));
       return;
     }
     pending.current = null;
     applyAnchor(a);
+    if (pagedRef.current && a.block != null && !a.last) logical.current = { chapter: shownRef.current, page: currentPage(d, pageWidth()), block: a.block, offset: a.offset ?? 0 };
+    else logical.current = null;
     track();
+    repaint();
+  }
+  /** Recolocar tras un cambio de tamaño, fuentes o imágenes sin perder el sitio. */
+  function relayout() {
+    clearTimeout(relayoutTimer.current);
+    relayoutTimer.current = setTimeout(() => {
+      const anchor = pendingActive() ? pending.current : (readAnchor() ?? posRef.current);
+      pending.current = stamp(anchor);
+      layout();
+      requestAnimationFrame(() => requestAnimationFrame(() => restorePending()));
+    }, RELAYOUT_WAIT);
+  }
+
+  function wire() {
+    const d = frameDoc();
+    if (!d || d.documentElement.dataset.wired) return false;
+    d.documentElement.dataset.wired = '1';
+    const key = `${shownRef.current}-${prefsKey}-${allowImgs.size}`;
+    if (restoredKey.current !== key) {
+      restoredKey.current = key;
+      if (!pending.current) pending.current = stamp(posRef.current && posRef.current.href === epub?.chapters[shownRef.current]?.href ? posRef.current : { frac: 0 });
+      if (!pagedRef.current) setFrameH(0);
+    }
+    layout();
+    // Las fuentes del documento cambian la maquetación al llegar: se recoloca una vez, sin perder el sitio
+    d.fonts?.ready?.then(() => frameDoc() === d && relayout());
+    requestAnimationFrame(() => requestAnimationFrame(() => restorePending()));
+    d.addEventListener('selectionchange', readSelection);
+    return true;
   }
   useEffect(() => {
     if (frameH && pending.current) requestAnimationFrame(() => restorePending());
@@ -340,20 +454,73 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
     // wire se rehace en cada render; se reintenta al cambiar el documento
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [srcDoc]);
+  // Cambios de tamaño (rotación, herramientas, ventana): recolocar con espera
+  useEffect(() => {
+    const el = pageRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    let w = el.clientWidth;
+    let h = el.clientHeight;
+    const ro = new ResizeObserver(() => {
+      if (Math.abs(el.clientWidth - w) < 2 && Math.abs(el.clientHeight - h) < 2) return;
+      w = el.clientWidth;
+      h = el.clientHeight;
+      relayout();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+    // relayout lee referencias
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [epub]);
 
-  // ── Selección ──────────────────────────────────────────────────────────────────────────────────────────────────
+  // ── Subrayados: las notas con fragmento de este archivo y esta sección ─────────────────────────────────────────
+  const quotesKey = book.quotes.map((q) => `${q.id}:${q.color}:${q.epub?.mark === false ? 0 : 1}`).join('|');
+  function repaint() {
+    const d = frameDoc();
+    if (!d || !epub) return;
+    const href = epub.chapters[shownRef.current].href;
+    const night = prefs.theme === 'night';
+    const items = [];
+    const missing = new Set();
+    for (const q of bookRef.current.quotes) {
+      const ep = q.epub;
+      if (!ep || ep.section || ep.mark === false || ep.href !== href || (ep.hash && ep.hash !== epub.hash) || (!ep.hash && fileHash !== bookRef.current.epub?.hash)) continue;
+      const { range, status } = resolveRange(d, q);
+      if (range) items.push({ id: q.id, range, color: tint(meaningOf(meanings, q.color).hex, night) });
+      else if (status === 'ambiguous') missing.add(q.id);
+    }
+    hlItems.current = paintHighlights(d, items);
+    setLost((s) => (s.size === missing.size && [...missing].every((x) => s.has(x)) ? s : missing));
+  }
+  useEffect(() => {
+    repaint();
+    // repaint lee referencias; basta con que cambien las notas o el tema
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotesKey, prefs.theme]);
+
+  // ── Selección y toques sobre subrayados ────────────────────────────────────────────────────────────────────────
   function readSelection() {
     const sel = frameRef.current?.contentWindow?.getSelection?.();
-    const text = sel?.toString().trim().slice(0, 2000) ?? '';
-    if (!text) return setSelection((s) => (s ? null : s));
+    if (!sel) return;
+    const text = sel.toString().trim().slice(0, 2000);
+    if (!text) {
+      setSelection((s) => (s ? null : s));
+      // Un toque deja la selección contraída en ese punto: si cae en un subrayado, se abre su menú
+      if (sel.isCollapsed && sel.anchorNode) {
+        const key = `${sel.anchorOffset}`;
+        if (lastCaret.current?.node !== sel.anchorNode || lastCaret.current?.key !== key) {
+          lastCaret.current = { node: sel.anchorNode, key };
+          const id = highlightAt(hlItems.current, sel.anchorNode, sel.anchorOffset);
+          if (id) setHlMenu((m) => (m?.id === id ? m : { id }));
+        }
+      }
+      return;
+    }
     const node = sel.anchorNode?.nodeType === 1 ? sel.anchorNode : sel.anchorNode?.parentElement;
     const block = node?.closest?.('[data-bs-block]')?.getAttribute('data-bs-block');
-    setSelection((s) => (s?.text === text ? s : { text, block: block != null ? Number(block) : null }));
+    setSelection((s) => (s?.text === text ? s : { text, block: block != null ? Number(block) : null, range: sel.rangeCount ? rangeAnchor(sel.getRangeAt(0)) : null }));
   }
 
   // ── Enlaces del documento: `#bs-go-…` (otra sección), `#bs-img-…` (cargar imagen) y notas al pie ──────────────
-  // (`<base href="about:srcdoc">` hace que un fragmento se quede en el documento: sin ella, un srcdoc resuelve `#x`
-  // contra la dirección de la app y el iframe navegaría fuera del capítulo)
   function followHash() {
     const win = frameRef.current?.contentWindow;
     if (!win || !epub) return;
@@ -389,22 +556,35 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
     track();
   }
 
+  // ── Paginado: páginas de paso → sección contigua ──────────────────────────────────────────────────────────────
+  function followTurn() {
+    const d = frameDoc();
+    if (!d || !pagedRef.current || pendingActive()) return;
+    const w = pageWidth();
+    const t = turns(d);
+    const total = pageCount(d, w);
+    const p = currentPage(d, w);
+    if (t.prev && p === 0) goSection(shownRef.current - 1, { last: true });
+    else if (t.next && p === total - 1) goSection(shownRef.current + 1, { frac: 0 });
+    else track();
+  }
+
   // ── Sondeo de respaldo, solo con el lector visible ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    const id = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      readSelection();
-      followHash();
-      measure();
-    }, POLL);
+    const id = setInterval(
+      () => {
+        if (document.visibilityState !== 'visible') return;
+        readSelection();
+        followHash();
+        if (pagedRef.current) followTurn();
+        else measure();
+      },
+      paged ? 300 : 400,
+    );
     return () => clearInterval(id);
   });
 
-  // ── Navegación y paneles ───────────────────────────────────────────────────────────────────────────────────────
-  const closePanel = () => {
-    setPanel(null);
-    requestAnimationFrame(() => triggerRef.current?.focus?.({ preventScroll: true }));
-  };
+  // ── Navegación ─────────────────────────────────────────────────────────────────────────────────────────────────
   const goSection = (next, at = { frac: 0 }) => {
     if (!epub || next < 0 || next >= epub.chapters.length) return;
     syncNow();
@@ -412,17 +592,43 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
     setBack(null);
     if (panel) closePanel();
     if (next === shownRef.current) {
-      applyAnchor(at);
-      track();
+      pending.current = stamp(at);
+      restorePending();
       return;
     }
     pending.current = stamp(at);
     restoredKey.current = '';
     setChapter(next);
   };
+  /** Página anterior/siguiente (paginado); al pasar del borde de la sección, la contigua. */
+  const turnPage = (dir) => {
+    const d = frameDoc();
+    if (!d) return;
+    const w = pageWidth();
+    const t = turns(d);
+    const total = pageCount(d, w);
+    const first = t.prev ? 1 : 0;
+    const last = total - 1 - (t.next ? 1 : 0);
+    const p = currentPage(d, w) + dir;
+    if (p < first) goSection(shownRef.current - 1, { last: true });
+    else if (p > last) goSection(shownRef.current + 1, { frac: 0 });
+    else {
+      goToPage(d, w, p);
+      track();
+    }
+  };
+  const step = (dir) => (paged ? turnPage(dir) : goSection(shown + dir));
+
+  // ── Paneles: uno a la vez, con vuelta a la lectura ─────────────────────────────────────────────────────────────
+  const closePanel = () => {
+    setPanel(null);
+    requestAnimationFrame(() => triggerRef.current?.focus?.({ preventScroll: true }));
+  };
   const openPanel = (name, e) => {
-    triggerRef.current = e?.currentTarget ?? null;
-    setPanel((p) => (p === name ? null : name));
+    if (panel === name) return closePanel();
+    if (!panel) triggerRef.current = e?.currentTarget ?? null;
+    setHlMenu(null);
+    setPanel(name);
   };
 
   const setPref = (patch) => {
@@ -440,10 +646,11 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
     });
   };
 
-  // ── Notas ──────────────────────────────────────────────────────────────────────────────────────────────────────
+  // ── Notas y subrayados ─────────────────────────────────────────────────────────────────────────────────────────
   const startNote = (fromSelection) => {
+    if (!fromSelection && note && note.section) return setNote((n) => ({ ...n, hidden: false }));
     const here = readAnchor();
-    setNote({ id: newId('q'), text: fromSelection ? selection.text : '', block: fromSelection ? selection.block : here?.block, section: !fromSelection, anchor: here, comment: '', color: 'yellow' });
+    setNote({ id: newId('q'), text: fromSelection ? selection.text : '', block: fromSelection ? selection.block : here?.block, range: fromSelection ? selection.range : null, section: !fromSelection, anchor: here, comment: '', color: 'yellow', hidden: false });
     if (panel) setPanel(null);
   };
   const saveNote = () => {
@@ -457,13 +664,24 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
       comment: note.section ? '' : note.comment.trim(),
       color: note.color,
       page: null,
-      epub: { v: ANCHOR_VERSION, hash: epub.hash, name: epub.name, href: a?.href ?? epub.chapters[shownRef.current].href, chapter: a?.chapter ?? shownRef.current, block: note.block ?? null, frac: a?.frac ?? 0, ...(note.section ? { section: true } : null) },
+      epub: {
+        v: ANCHOR_VERSION,
+        hash: epub.hash,
+        name: epub.name,
+        href: a?.href ?? epub.chapters[shownRef.current].href,
+        chapter: a?.chapter ?? shownRef.current,
+        block: note.block ?? null,
+        frac: a?.frac ?? 0,
+        ...(note.section ? { section: true } : null),
+        ...(note.range ? { range: note.range } : null),
+      },
     });
     frameRef.current?.contentWindow?.getSelection()?.removeAllRanges();
     setSelection(null);
     setNote(null);
     setNotice(`Nota guardada en «Mi diario» · ${meaningOf(meanings, note.color).label}`);
   };
+  const quoteById = (id) => book.quotes.find((q) => q.id === id);
 
   // ── Salida ─────────────────────────────────────────────────────────────────────────────────────────────────────
   const close = () => {
@@ -479,19 +697,71 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
     else onClose();
   };
 
-  // ── Modal: Escape y lo de detrás inerte ────────────────────────────────────────────────────────────────────────
+  /** Cerrar la capa de arriba: menú o nota (la nota conserva su borrador) → panel → salir. */
+  const closeTop = () => {
+    if (hlMenu) return setHlMenu(null);
+    if (note && !note.hidden) return setNote((n) => ({ ...n, hidden: true }));
+    if (pause) return setPause(null);
+    if (panel) return closePanel();
+    return close();
+  };
+  const closeTopRef = useRef(closeTop);
+  closeTopRef.current = closeTop;
+
+  // ── Teclado: Escape cierra por capas; flechas pasan página en el paginado ──────────────────────────────────────
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      if (note) setNote(null);
-      else if (pause) setPause(null);
-      else if (panel) closePanel();
-      else close();
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        closeTopRef.current();
+        return;
+      }
+      if (!pagedRef.current || panel || hlMenu || (note && !note.hidden) || pause || editable(e.target)) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        turnPage((e.key === 'ArrowRight') !== rtl ? 1 : -1);
+      }
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   });
+
+  // ── Historial: una sola entrada mientras haya una capa abierta (Atrás la cierra; nada se apila al leer) ─────────
+  const layerOpen = Boolean(panel || hlMenu || (note && !note.hidden));
+  const hist = useRef({ pushed: false, ignore: 0 });
+  useEffect(() => {
+    const h = hist.current;
+    if (layerOpen && !h.pushed) {
+      window.history.pushState({ ...(window.history.state ?? {}), bsReaderLayer: true }, '');
+      h.pushed = true;
+    } else if (!layerOpen && h.pushed) {
+      h.pushed = false;
+      h.ignore += 1;
+      window.history.back();
+    }
+  }, [layerOpen]);
+  useEffect(() => {
+    const h = hist.current;
+    const onPop = () => {
+      if (h.ignore > 0) {
+        h.ignore -= 1;
+        return;
+      }
+      if (h.pushed) {
+        h.pushed = false;
+        closeTopRef.current();
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      if (h.pushed) {
+        h.pushed = false;
+        window.history.back();
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const behind = [...modalRoot().children].filter((el) => el !== rootRef.current && !el.hasAttribute('inert'));
     behind.forEach((el) => el.setAttribute('inert', ''));
@@ -502,19 +772,19 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
   const title = epub?.chapters[shown]?.title ?? '';
   const sameFile = (q) => q.epub && (q.epub.hash ? q.epub.hash === epub?.hash : fileHash === book.epub?.hash);
   const notes = book.quotes.filter((q) => q.epub);
-  const covered = Boolean(panel || note || pause || conflict);
+  const covered = Boolean(panel || (note && !note.hidden) || pause || conflict || hlMenu);
   const backTo = () => {
     const b = back;
     setBack(null);
     const i = epub.chapters.findIndex((c) => c.href === b.href);
-    if (i === shownRef.current) {
-      applyAnchor(b);
-      track();
-    } else goSection(i, b);
+    goSection(i, b);
   };
+  const atStart = paged ? shown === 0 && pages?.page === 1 : shown === 0;
+  const atEnd = paged ? shown >= (epub?.chapters.length ?? 1) - 1 && pages?.page === pages?.count : shown >= (epub?.chapters.length ?? 1) - 1;
+  const hlQuote = hlMenu ? quoteById(hlMenu.id) : null;
 
   return createPortal(
-    <div ref={rootRef} className="epub-reader" data-theme={prefs.theme} data-tools={toolsHidden ? 'hidden' : 'shown'} role="dialog" aria-modal="true" aria-label={`Leer ${book.title}`}>
+    <div ref={rootRef} className="epub-reader" data-theme={prefs.theme} data-mode={prefs.mode} data-tools={toolsHidden ? 'hidden' : 'shown'} style={{ '--rd-margin': `${narrow && prefs.margin === 24 ? 20 : prefs.margin}px` }} role="dialog" aria-modal="true" aria-label={`Leer ${book.title}`}>
       {!toolsHidden && (
         <header className="epub-reader__bar" inert={covered ? true : undefined}>
           <button type="button" className="epub-icon" onClick={close} aria-label="Volver a la ficha">
@@ -524,18 +794,20 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
             <b>{book.title}</b>
             <span className="epub-reader__chapter">{title}</span>
           </p>
-          <button type="button" className="epub-icon epub-icon--aa" aria-expanded={panel === 'aa'} onClick={(e) => openPanel('aa', e)} aria-label="Letra y tema">
-            Aa
-          </button>
-          <button type="button" className="epub-icon" onClick={() => setToolsHidden(true)} aria-label="Ocultar herramientas">
-            <EyeOff aria-hidden="true" />
-          </button>
+          <span className="epub-reader__actions">
+            <button type="button" className="epub-icon epub-icon--aa" aria-expanded={panel === 'aa'} onClick={(e) => openPanel('aa', e)} aria-label="Letra y forma de leer">
+              Aa
+            </button>
+            <button type="button" className="epub-icon" onClick={() => setToolsHidden(true)} aria-label="Ocultar herramientas">
+              <EyeOff aria-hidden="true" />
+            </button>
+          </span>
           <span className="epub-reader__ribbon" aria-hidden="true" />
         </header>
       )}
 
       <div className="epub-reader__body">
-        <div ref={pageRef} className="epub-reader__page" onScroll={track} inert={covered ? true : undefined}>
+        <div ref={pageRef} className="epub-reader__page" onScroll={paged ? undefined : track} inert={covered ? true : undefined}>
           {error ? (
             <p className="epub-reader__error" role="alert">
               {error}
@@ -543,7 +815,7 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
           ) : srcDoc == null ? (
             <p className="epub-reader__loading">Abriendo el libro…</p>
           ) : (
-            <iframe key={`${shown}-${prefsKey}`} ref={frameRef} title={title || 'Sección'} className="epub-reader__frame" sandbox="allow-same-origin" scrolling="no" style={{ height: frameH || '100%' }} srcDoc={srcDoc} onLoad={wire} />
+            <iframe key={`${shown}-${prefsKey}`} ref={frameRef} title={title || 'Sección'} className="epub-reader__frame" sandbox="allow-same-origin" scrolling="no" style={paged ? undefined : { height: frameH || '100%' }} srcDoc={srcDoc} onLoad={wire} />
           )}
         </div>
 
@@ -557,6 +829,11 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
             Volver al texto
           </button>
         )}
+        {note?.hidden && !covered && (
+          <button type="button" className="epub-reader__resume sheet-btn" onClick={() => setNote((n) => ({ ...n, hidden: false }))}>
+            Seguir con la nota
+          </button>
+        )}
         {selection && !covered && (
           <button type="button" className="epub-reader__select sheet-btn sheet-btn--primary craft craft--terra" onClick={() => startNote(true)}>
             <NotebookPen aria-hidden="true" /> Guardar en mi diario
@@ -566,10 +843,10 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
         {panel && (
           <aside className="epub-sheet" role="dialog" aria-modal="true" aria-labelledby="epub-sheet-title" data-panel={panel}>
             <header className="epub-sheet__head">
-              <h3 id="epub-sheet-title">{{ toc: 'Índice', notes: 'Mi diario', aa: 'Letra y tema', ambient: 'Ambiente' }[panel]}</h3>
-              <button type="button" className="epub-icon" onClick={closePanel} aria-label="Cerrar">
-                <X aria-hidden="true" />
+              <button type="button" className="epub-icon" onClick={closePanel} aria-label="Volver a la lectura">
+                <ArrowLeft aria-hidden="true" />
               </button>
+              <h3 id="epub-sheet-title">{PANEL_TITLES[panel]}</h3>
             </header>
             <div className="epub-sheet__body">
               {panel === 'toc' && epub && (
@@ -586,21 +863,28 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
               {panel === 'notes' && epub && (
                 <>
                   <button type="button" className="sheet-btn epub-sheet__new" onClick={() => startNote(false)}>
-                    <NotebookPen aria-hidden="true" /> Nota de esta sección
+                    <NotebookPen aria-hidden="true" /> {note?.section ? 'Seguir con la nota de esta sección' : 'Nota de esta sección'}
                   </button>
-                  <p className="epub-sheet__hint">Para guardar un fragmento, selecciónalo en el texto.</p>
+                  <p className="epub-sheet__hint">Para subrayar un fragmento, selecciónalo en el texto.</p>
                   {notes.length > 0 && (
                     <ul className="epub-sheet__list epub-sheet__notes">
                       {notes.map((q) =>
                         sameFile(q) ? (
-                          <li key={q.id}>
-                            <button type="button" onClick={() => goSection(Math.max(0, epub.chapters.findIndex((c) => c.href === q.epub.href)), { block: q.epub.block, offset: 0, frac: q.epub.frac ?? 0 })}>
+                          <li key={q.id} className="epub-sheet__note">
+                            <button type="button" onClick={() => goSection(Math.max(0, epub.chapters.findIndex((c) => c.href === q.epub.href)), { block: q.epub.range?.start.block ?? q.epub.block, offset: 0, frac: q.epub.frac ?? 0 })}>
                               <span className="epub-reader__swatch" style={{ '--marker': meaningOf(meanings, q.color).hex }} aria-hidden="true" />
                               <span>
                                 {q.text}
                                 {q.comment && <em className="epub-sheet__comment">{q.comment}</em>}
+                                {lost.has(q.id) && <small>Ubicación por recuperar: el fragmento aparece varias veces y no se marca al azar.</small>}
+                                {q.epub.mark === false && !q.epub.section && <small>Sin subrayado en el texto.</small>}
                               </span>
                             </button>
+                            {!q.epub.section && (
+                              <button type="button" className="epub-icon epub-sheet__opts" aria-label={`Opciones del subrayado «${q.text.slice(0, 30)}»`} onClick={() => setHlMenu({ id: q.id })}>
+                                ···
+                              </button>
+                            )}
                           </li>
                         ) : (
                           <li key={q.id} className="epub-sheet__other">
@@ -618,6 +902,7 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
               )}
               {panel === 'aa' && (
                 <div className="epub-aa">
+                  <Choice label="Forma de leer" value={prefs.mode} options={[['scroll', 'Desplazamiento continuo'], ['paged', 'Página a página']]} onChange={(mode) => setPref({ mode })} />
                   <div className="epub-aa__row" role="group" aria-label="Tamaño de letra">
                     <span>Letra</span>
                     <button type="button" className="epub-icon" onClick={() => setPref({ font: Math.max(16, prefs.font - 1) })} disabled={prefs.font <= 16} aria-label="Letra más pequeña">
@@ -639,36 +924,64 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
             </div>
           </aside>
         )}
+
+        {hlQuote && (
+          <HighlightMenu
+            quote={hlQuote}
+            meanings={meanings}
+            onClose={() => setHlMenu(null)}
+            onView={() => {
+              setHlMenu(null);
+              setPanel('notes');
+            }}
+            onColor={(color) => actions.updateQuote(book.id, hlQuote.id, { color })}
+            onToggleMark={(on) => {
+              actions.updateQuote(book.id, hlQuote.id, { epub: { ...hlQuote.epub, mark: on } });
+              setHlMenu(null);
+            }}
+            onDelete={() => {
+              actions.removeQuote(book.id, hlQuote.id);
+              setHlMenu(null);
+            }}
+          />
+        )}
       </div>
 
       {!toolsHidden && (
         <footer className="epub-reader__foot" inert={covered ? true : undefined}>
           <div className="epub-reader__progress">
-            <button type="button" className="epub-icon" onClick={() => goSection(shown - 1)} disabled={!epub || shown === 0} aria-label="Sección anterior">
+            <button type="button" className="epub-icon" onClick={() => step(-1)} disabled={!epub || atStart} aria-label={paged ? 'Página anterior' : 'Sección anterior'}>
               <ChevronLeft aria-hidden="true" />
             </button>
             <div className="epub-reader__meter">
               <span className="epub-reader__label">
-                Posición en el archivo · <span className="epub-reader__pct">{fmt(percent)} %</span>
+                {paged && pages ? (
+                  <>
+                    Página <span className="epub-mono">{pages.page}</span> de <span className="epub-mono">{pages.count}</span> · esta sección ·{' '}
+                  </>
+                ) : (
+                  'Posición en el archivo · '
+                )}
+                <span className="epub-reader__pct">{fmt(percent)} %</span>
               </span>
               <span className="epub-reader__track" aria-hidden="true">
                 <span style={{ width: `${percent}%` }} />
               </span>
             </div>
-            <button type="button" className="epub-icon" onClick={() => goSection(shown + 1)} disabled={!epub || shown >= (epub?.chapters.length ?? 1) - 1} aria-label="Siguiente sección">
+            <button type="button" className="epub-icon" onClick={() => step(1)} disabled={!epub || atEnd} aria-label={paged ? 'Página siguiente' : 'Siguiente sección'}>
               <ChevronRight aria-hidden="true" />
             </button>
           </div>
           <nav className="epub-reader__tools" aria-label="Herramientas del lector">
-            <button type="button" aria-expanded={panel === 'toc'} onClick={(e) => openPanel('toc', e)} disabled={!epub}>
+            <button type="button" aria-pressed={panel === 'toc'} onClick={(e) => openPanel('toc', e)} disabled={!epub}>
               <List aria-hidden="true" />
               Índice
             </button>
-            <button type="button" aria-expanded={panel === 'ambient'} onClick={(e) => openPanel('ambient', e)}>
+            <button type="button" aria-pressed={panel === 'ambient'} onClick={(e) => openPanel('ambient', e)}>
               <Trees aria-hidden="true" />
               Ambiente
             </button>
-            <button type="button" aria-expanded={panel === 'notes'} onClick={(e) => openPanel('notes', e)} disabled={!epub}>
+            <button type="button" aria-pressed={panel === 'notes'} onClick={(e) => openPanel('notes', e)} disabled={!epub}>
               <BookmarkCheck aria-hidden="true" />
               Diario
             </button>
@@ -713,7 +1026,7 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
         </div>
       )}
 
-      {note && <NoteSheet note={note} meanings={meanings} onChange={(patch) => setNote((n) => ({ ...n, ...patch }))} onSave={saveNote} onCancel={() => setNote(null)} />}
+      {note && !note.hidden && <NoteSheet note={note} meanings={meanings} onChange={(patch) => setNote((n) => ({ ...n, ...patch }))} onSave={saveNote} onCancel={() => setNote(null)} />}
 
       {pause && (
         <PauseSheet
@@ -751,11 +1064,12 @@ function Choice({ label, value, options, onChange }) {
   );
 }
 
-/** Ambiente: el sonido y el temporizador de siempre (no se crea otro motor ni otro contador). */
+/** Ambiente: el sonido y el temporizador de siempre (abrir o cerrar esta hoja no los toca). */
 function AmbientPanel({ timer, soundOn, onToggleSound }) {
   const mm = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, '0')}`;
   return (
     <div className="epub-ambient">
+      <p className="epub-sheet__hint">Tu ambiente te acompaña mientras lees.</p>
       {onToggleSound && (
         <button type="button" role="switch" aria-checked={Boolean(soundOn)} className="sheet-btn" onClick={onToggleSound}>
           {soundOn ? 'Sonido del mar: activado' : 'Sonido del mar: apagado'}
@@ -777,7 +1091,65 @@ function AmbientPanel({ timer, soundOn, onToggleSound }) {
           )}
         </div>
       )}
-      <p className="epub-sheet__hint">Es el mismo temporizador y el mismo sonido de tu habitación.</p>
+    </div>
+  );
+}
+
+/** Menú de un subrayado: categoría, ver nota, cambiar color, quitar la marca o borrar la nota (con aviso). */
+function HighlightMenu({ quote, meanings, onClose, onView, onColor, onToggleMark, onDelete }) {
+  const [confirm, setConfirm] = useState(false);
+  const marked = quote.epub?.mark !== false;
+  const headRef = useRef(null);
+  useEffect(() => {
+    headRef.current?.focus({ preventScroll: true });
+  }, []);
+  return (
+    <div className="epub-hl" role="dialog" aria-modal="true" aria-labelledby="epub-hl-title">
+      <div className="epub-hl__sheet">
+        <header className="epub-sheet__head">
+          <button type="button" className="epub-icon" onClick={onClose} aria-label="Volver a la lectura">
+            <ArrowLeft aria-hidden="true" />
+          </button>
+          <h3 id="epub-hl-title" ref={headRef} tabIndex={-1}>
+            Subrayado · {meaningOf(meanings, quote.color).label}
+          </h3>
+        </header>
+        <blockquote className="epub-note__quote">{quote.text}</blockquote>
+        {quote.comment && <p className="epub-sheet__comment">{quote.comment}</p>}
+        <span id="epub-hl-color" className="sr-only-focus">
+          Cambiar color
+        </span>
+        <MarkerPicker meanings={meanings} value={quote.color} onChange={onColor} legendId="epub-hl-color" />
+        <div className="epub-hl__actions">
+          <button type="button" className="sheet-btn" onClick={onView}>
+            Ver nota
+          </button>
+          {marked ? (
+            <button type="button" className="sheet-btn" onClick={() => setConfirm(true)}>
+              Eliminar subrayado
+            </button>
+          ) : (
+            <button type="button" className="sheet-btn" onClick={() => onToggleMark(true)}>
+              Volver a subrayar
+            </button>
+          )}
+        </div>
+        {confirm && (
+          <div className="epub-hl__confirm" role="alertdialog" aria-label="Eliminar subrayado">
+            <p>Se quita la marca del texto; la nota sigue en tu diario.</p>
+            <button type="button" className="sheet-btn" onClick={() => onToggleMark(false)}>
+              Quitar solo el subrayado
+            </button>
+            <p>{quote.comment ? 'Borrar también la nota elimina tu comentario escrito. No se puede deshacer.' : 'También puedes borrar la nota del diario. No se puede deshacer.'}</p>
+            <button type="button" className="link-btn link-btn--danger" onClick={onDelete}>
+              {quote.comment ? 'Borrar la nota y su comentario' : 'Borrar también la nota'}
+            </button>
+            <button type="button" className="link-btn" onClick={() => setConfirm(false)}>
+              Cancelar
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

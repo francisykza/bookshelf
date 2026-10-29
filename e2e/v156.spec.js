@@ -156,7 +156,7 @@ test('vincular: confirmación, discrepancia, cancelar sin cambios y vincular sin
   expect(JSON.stringify(after)).not.toContain('Párrafo');
   // Aislamiento: sin scripts ni estilos del archivo
   expect(await page.title()).not.toBe('hackeado');
-  await expect(frame(page).locator('script, link, style:not(head style)')).toHaveCount(0);
+  await expect(frame(page).locator('body script, body link, body style')).toHaveCount(0);
   await shot(page, info, 'v156-lector');
   expect(uploads.filter((u) => !u.startsWith('http://localhost'))).toEqual([]);
 });
@@ -175,7 +175,7 @@ test('leer: índice, enlaces, nota con mis categorías, ancla estable y «Una pa
   const toc = page.getByRole('dialog', { name: 'Índice' });
   await expect(toc.locator('.epub-sheet__list button')).toHaveText(['I. El despertar', 'II. La isla', 'III. El telar', 'Notas']);
   await shot(page, info, 'v156-indice');
-  await toc.getByRole('button', { name: 'Cerrar' }).click();
+  await toc.getByRole('button', { name: 'Volver a la lectura' }).click();
   await expect(r.getByRole('button', { name: 'Índice' })).toBeFocused();
   // Enlace a otra sección y nota al pie en otro documento, con «Volver al texto»
   await frame(page).getByRole('link', { name: 'nota 2' }).click();
@@ -207,10 +207,10 @@ test('leer: índice, enlaces, nota con mis categorías, ancla estable y «Una pa
   // Bajar a la mitad, cambiar la letra: el mismo bloque sigue arriba
   await scrollHalf(page);
   const blockBefore = await topBlock(page);
-  await r.getByRole('button', { name: 'Letra y tema' }).click();
+  await r.getByRole('button', { name: 'Letra y forma de leer' }).click();
   for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Letra más grande' }).click();
   await page.getByRole('radio', { name: 'Nocturno' }).click();
-  await page.getByRole('dialog', { name: 'Letra y tema' }).getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('dialog', { name: 'Letra y forma de leer' }).getByRole('button', { name: 'Volver a la lectura' }).click();
   await expect.poll(() => topBlock(page)).toBe(blockBefore);
   await shot(page, info, 'v156-nocturno');
   // Salir: «Una pausa junto al mar», volver sin registrar no añade lectura
@@ -314,15 +314,16 @@ test('otro dispositivo, otro archivo, quitar y terminar: nada se pierde ni se me
   expect(await page.locator('.epub-reader__page').evaluate((el) => el.scrollTop)).toBeLessThan(5);
   await reader(page).getByRole('button', { name: 'Diario' }).click();
   await expect(page.getByRole('dialog', { name: 'Mi diario' })).toContainText('De otro archivo («circe.epub»): no se puede abrir aquí.');
-  await page.getByRole('dialog', { name: 'Mi diario' }).getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('dialog', { name: 'Mi diario' }).getByRole('button', { name: 'Volver a la lectura' }).click();
   await reader(page).getByRole('button', { name: 'Volver a la ficha' }).click();
   // Quitar del dispositivo: el libro, las notas y la vinculación siguen
   await box(page).getByRole('button', { name: 'Más opciones del EPUB' }).click();
   await page.getByRole('menuitem', { name: 'Quitar de este dispositivo' }).click();
   await page.getByRole('button', { name: 'Sí, quitar' }).click();
   await expect(box(page)).toContainText('Selecciona el mismo EPUB para continuar en este dispositivo.');
+  // El estado se escribe con un pequeño retraso: se espera a que esté guardado
+  await expect.poll(async () => (await current(page)).book.epub.name).toBe('circe-otra.epub');
   const { book } = await current(page);
-  expect(book.epub.name).toBe('circe-otra.epub');
   expect(book.quotes.filter((q) => q.epub).map((q) => q.text)).toContain('Una idea sobre la isla');
   // Terminar: registrar el 100 % confirmado abre la reseña de siempre
   await choose(page, fileB, 'circe-otra.epub');

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.56.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.57.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3731,3 +3731,91 @@ volver sin registrar no añade lectura; terminar abre la reseña; sin conexión 
 (archivos y posiciones por usuario; el lector se cierra si cambia la cuenta); índice, enlaces, selección y guardado
 funcionan en Chromium y en el WebKit de Playwright; el teclado no oculta «Guardar nota»; lector y parser no se cargan con
 la habitación; ninguna petición transmite el archivo. Sin iPhone real: WebKit automatizado no equivale a Safari iOS.
+
+## 55. Lector EPUB: estructura responsive, paneles con vuelta, lectura paginada y subrayados (1.57.0)
+
+### 55.1 Inspección y causa del desbordamiento
+
+- Estado en la 1.56: lectura solo por desplazamiento (el iframe mide lo que su documento y se desplaza el contenedor);
+  cambio de sección por documento; paneles como capas `absolute` sin vuelta propia; posición anclada a un bloque de
+  texto; notas con `epub: { hash, href, block, frac }`, sin rango ni marca en el texto.
+- Reproducción (Chromium y WebKit de Playwright, 320 y 390 px, EPUB con URL y palabras larguísimas, tabla de 900 px,
+  `pre`, imagen y SVG de ancho fijo y versos): el lector cabe; solo la tabla se desplaza dentro de su caja. **No se
+  reproduce** el desbordamiento de las capturas en estos motores.
+- Debilidades estructurales que lo explican y se corrigen: (1) el iframe tenía `width: 100%` sin tope; Safari de iOS
+  dimensiona los iframes según el ancho de su contenido (comportamiento propio de iOS que el WebKit de escritorio no
+  imita), así que un elemento ancho del EPUB ensancha el iframe y la capa de lectura lo recorta; se fija con
+  `width: 1px; min-width: 100%; max-width: 100%` y todo lo ancho del documento se contiene (imágenes, SVG, tablas en su
+  caja desplazable, `pre` y cadenas largas que se cortan). (2) La rejilla del lector no tenía columna explícita: un hijo
+  ancho podía ensancharla y sacar flechas y cierres de la pantalla; ahora `grid-template-columns: minmax(0, 1fr)`,
+  `min-width: 0` en cada nivel y `box-sizing: border-box`. Sin `overflow-x: hidden` como único remedio.
+- Cabecera `44px minmax(0, 1fr) auto` (52 px de alto útil); pie con `44px minmax(0, 1fr) 44px` y una fila de
+  herramientas de 46 px. Solo se truncan los metadatos de la cabecera, nunca el texto del libro.
+
+### 55.2 Paneles
+
+- Un único panel activo: ninguno (lectura), Índice, Ambiente, Diario o Ajustes. Cada uno con cabecera propia, título y
+  «Volver a la lectura» (flecha visible con ese nombre); tocar otra vez su herramienta lo cierra; cerrar devuelve el foco
+  a la herramienta y el texto queda exactamente donde estaba (el panel es una capa encima: no se recarga nada).
+- Ambiente es una hoja compacta (abrirla no toca el temporizador ni el sonido; cerrarla tampoco). Diario e Índice usan
+  el alto disponible con desplazamiento interno. Con un panel abierto, la lectura y sus flechas quedan inertes.
+- Orden de vuelta (Escape y el botón Atrás del sistema): editor de nota o menú de subrayado → panel → salir del lector
+  con el flujo de siempre. Una nota en edición que se cierra con Atrás conserva su borrador («Seguir con la nota»);
+  «Cancelar» la descarta. Historial: al abrir la primera capa se añade **una** entrada (copia de la actual, para que la
+  app no cambie de pantalla); cerrar la última capa por la interfaz la consume. Nada se apila por desplazamiento o página.
+
+### 55.3 Forma de leer
+
+- En «Aa», «Forma de leer»: «Desplazamiento continuo» (por defecto) o «Página a página»; se guarda en las preferencias
+  del lector. Cambiar de forma (o de letra, interlineado, márgenes, orientación o herramientas) captura el ancla visible
+  y la restaura; nunca registra progreso.
+- Continuo: como en la 1.56 (un solo contenedor con desplazamiento vertical); «Sección anterior/siguiente».
+- Página a página (`features/epub/epubLayout.js`): el iframe ocupa el área de lectura con los márgenes fuera de él (se
+  aplican una sola vez) y su documento usa columnas CSS: `column-width` = ancho útil medido del iframe, `column-gap: 0`,
+  `column-fill: auto`, alto = alto medido. Se pasa de página desplazando exactamente un ancho de iframe (sin escalar).
+  El documento se desplaza en horizontal con `scroll-snap` nativo: deslizar el dedo pasa página sin capas encima del
+  texto, sin `touch-action: none` y sin romper la selección ni los enlaces; botones «Página anterior/siguiente» y flechas
+  del teclado (fuera de campos y paneles) hacen lo mismo. Al principio y al final de cada sección hay una página de
+  paso («Sección anterior/siguiente: título»): llegar a ella abre la sección contigua (la siguiente por su primera página,
+  la anterior por la última), así la lectura sigue sin saltos de capítulo. Contador: «Página 3 de 12 · esta sección»
+  (páginas de pantalla, no de la edición física; el porcentaje global sigue aparte). Recalculado con 120 ms de espera
+  tras cambios de tamaño, fuentes o imágenes; sin páginas vacías por redondeo. Libros RTL (`page-progression-direction`)
+  se paginan en su sentido.
+- Por qué el gesto es nativo: WebKit no ejecuta los escuchadores de la app dentro del iframe sin scripts, y permitir
+  scripts rompería el aislamiento; el desplazamiento con `scroll-snap` funciona igual en todos los motores y el sondeo de
+  la 1.56 (300–400 ms, solo con el lector visible) lee la página actual.
+
+### 55.4 Subrayados
+
+- Una nota con fragmento es un subrayado: el mismo registro (sin duplicarlo) gana un ancla de rango
+  `epub.range = { v: 3, start: { block, offset }, end: { block, offset }, prefix, suffix }` (desplazamientos sobre el
+  texto canónico de cada bloque, que las marcas no alteran) además de `hash`, `href`, `text` y color. Se pinta al cargar
+  cada sección, al cambiar de página o de forma de leer, y al reabrir; refleja cambios de color o borrado hechos desde el
+  diario. Las notas sin fragmento siguen sin marca.
+- Resolución: primero el rango estructural (verificando que el texto coincide); si no, el fragmento con su contexto en
+  la sección; si hay varias coincidencias posibles no se marca ninguna y la nota indica «Ubicación por recuperar».
+  Notas de la 1.56 (sin rango): se buscan dentro de su bloque y solo se marcan si la coincidencia es única. Cambiar de
+  archivo no traslada subrayados (cada uno lleva la huella de su EPUB).
+- Pintado: CSS Custom Highlight API cuando el documento la ofrece (detección de capacidad); si no, `<mark>` creados con
+  rangos del DOM (sin cadenas HTML, uno por nodo de texto, sin anidar al repetir, conservando enlaces y cursivas). Color
+  de la categoría del usuario, translúcido (más opaco de noche), sin cambiar color, grosor, tamaño ni interlineado.
+- Al tocar un subrayado (o desde su nota en el panel Diario): menú con su categoría, «Ver nota», «Cambiar color» y
+  «Eliminar subrayado». Eliminar quita la marca y deja la nota en el diario; «Borrar también la nota» pide confirmación
+  y avisa si se pierde un comentario escrito.
+
+### 55.5 Aspecto
+
+Cabecera de 52 px (volver, título, sección en segunda línea solo si cabe, «Aa»), pie compacto (anterior · posición ·
+siguiente y herramientas de 46 px con estado activo por línea fina), paneles en papel `#FAF5E8` con borde
+`rgba(114,91,70,.22)`, sombra `0 8px 24px rgba(44,30,20,.12)` y radio 16 px. Cuerpo 18/1,65; márgenes 24 px (20 px en
+pantallas estrechas); escritorio en 68ch; capítulo `clamp(26px, 6vw, 36px)` sin grandes huecos antes. Ambiente sin
+texto técnico («Tu ambiente te acompaña mientras lees.»). «Leer aquí» muestra el título y autor que trae el archivo.
+
+### 55.6 Criterios
+
+Todo cabe a 320, 390 y escritorio sin desplazamiento horizontal de la página; anterior/siguiente en las dos formas;
+el modo paginado recorre todo el contenido y pasa de sección sin perder texto (y vuelve a la última página de la
+anterior); los paneles siempre se cierran y devuelven el ancla; deslizar no impide seleccionar ni usar enlaces; tamaño,
+orientación y forma mantienen la ubicación; un subrayado que cruza líneas y cursivas persiste al reabrir y refleja color y
+borrado; un fragmento repetido no se ancla al azar; paginar y subrayar no crean sesiones ni recompensas; cerrar y abrir
+no acumula marcas ni tareas. Sin iPhone real: WebKit automatizado no es Safari de iOS.

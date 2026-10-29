@@ -242,7 +242,8 @@ export function reducer(state, action) {
       };
     // Editar una anotación: texto, página y color (SPEC §28.7). No toca el progreso ni el registro de lectura.
     case 'updateQuote': {
-      const pick = ({ text, page, color }) => ({ text, page, color });
+      // Solo los campos que llegan (1.57: cambiar el color o la marca de un subrayado no toca su texto)
+      const pick = (p) => Object.fromEntries(['text', 'page', 'color', 'comment', 'epub'].filter((k) => k in p).map((k) => [k, p[k]]));
       return {
         ...state,
         books: state.books.map((b) =>

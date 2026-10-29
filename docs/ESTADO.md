@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.56.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.56.0. Fuera de git
+- **Versión publicada**: 1.57.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.57.0. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.57.0 | Lector EPUB: estructura sin desbordes, paneles con «Volver a la lectura» y Atrás, lectura página a página con paso entre secciones, subrayados persistentes | §55 |
 | 1.56.0 | Vincular un EPUB a tu ejemplar con confirmación, posición anclada (local y sincronizada), notas con comentario, «Una pausa junto al mar» y lector con la identidad de BookShelf | §54 |
 | 1.55.0 | Leer EPUB en la app: archivo solo en el dispositivo, posición y notas con la cuenta, lector diferido y límites | §53 |
 | 1.54.0 | Sin edición visual ebook, baldas de la habitación con toda la biblioteca e importación de Goodreads por CSV | §52 |
@@ -98,6 +99,18 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-29 · cuenta principal · 1.57.0 (publicada)
+- Encargo «El lector EPUB desborda…» (§55). Nuevos `src/features/epub/epubLayout.js` (paginado) y `epubHighlights.js`
+  (subrayados); `EpubReader.jsx` y `epub-155.css` rehechos; `updateQuote` ya solo aplica los campos que llegan (antes un
+  parche de solo color dejaba el texto en `undefined`). Pruebas: `e2e/v157.spec.js` (320, 390, 1440 y WebKit 390) y
+  `e2e/v156` ajustada (nombres de paneles, espera de guardado).
+- Desbordamiento de las capturas: **no reproducido** en Chromium ni en WebKit de Playwright con contenido ancho. Causa
+  probable: Safari de iOS ensancha los iframes con su contenido y la rejilla no tenía columna explícita; ambas cosas
+  corregidas en origen. Falta confirmarlo en el iPhone de Francisco.
+- Página a página: el gesto es el desplazamiento nativo con `scroll-snap` (WebKit no deja escuchar dentro del iframe sin
+  scripts); umbrales del gesto = los del sistema, no los 48 px del encargo. Sin probar con el dedo en un iPhone real.
+- Commit y subida a producción pedidos por Francisco. Sin comprobar aún en su móvil real.
 
 ### 2026-10-29 · cuenta principal · 1.56.0 (publicada)
 - Encargo «Vinculación explícita del EPUB e interfaz del lector según la maqueta» (§54). Se conserva el motor de la 1.55.

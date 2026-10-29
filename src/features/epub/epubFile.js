@@ -134,6 +134,8 @@ export async function openEpub(JSZip, data) {
   const isbn = byLocal(opf, 'identifier')
     .map((el) => el.textContent.replace(/^urn:isbn:/i, '').replace(/[\s-]/g, ''))
     .find((v) => /^(97[89])?\d{9}[\dX]$/i.test(v)) ?? '';
+  // Sentido de las páginas declarado por el EPUB (libros de derecha a izquierda)
+  const rtl = byLocal(opf, 'spine')[0]?.getAttribute('page-progression-direction') === 'rtl';
   const spine = byLocal(opf, 'itemref')
     .filter((r) => r.getAttribute('linear') !== 'no')
     .map((r) => manifest.get(r.getAttribute('idref')))
@@ -149,7 +151,7 @@ export async function openEpub(JSZip, data) {
     const weight = size > MAX_CHAPTER ? size : textLength(await zip.file(it.href).async('string'));
     chapters.push({ href: it.href, size, weight, title: titles.get(it.href) || `Sección ${i + 1}` });
   }
-  return { zip, title: meta('title'), author: meta('creator'), isbn, chapters, images: imageInfo, lite: isLite(imageInfo) };
+  return { zip, title: meta('title'), author: meta('creator'), isbn, rtl, chapters, images: imageInfo, lite: isLite(imageInfo) };
 }
 
 /** Títulos del índice (EPUB 3 `nav` o EPUB 2 `toc.ncx`) por ruta de capítulo. */

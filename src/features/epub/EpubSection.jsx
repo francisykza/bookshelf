@@ -152,7 +152,7 @@ export function EpubSection({ book, autoRead = false, onOpenBook, onComplete, ti
             {local === undefined
               ? ' '
               : local
-                ? `${local.name} · ${mib(local.size)}${book.epub?.lite ? ' · modo ligero' : ''}`
+                ? `${local.name} · ${mib(local.size)}${book.epub?.lite ? ' · modo ligero' : ''}${book.epub?.title || book.epub?.author ? ` · Del archivo: ${[book.epub.title && `«${book.epub.title}»`, book.epub.author].filter(Boolean).join(', ')}` : ''}`
                 : book.epub
                   ? 'Selecciona el mismo EPUB para continuar en este dispositivo.'
                   : 'Vincula un EPUB a este ejemplar.'}
