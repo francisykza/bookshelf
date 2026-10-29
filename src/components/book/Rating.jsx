@@ -45,8 +45,11 @@ export function RatingStars({ value, className = '' }) {
  * Control de valoración (SPEC §27.6): estrellas + número. Cada estrella da esa nota entera; con el foco en las
  * estrellas, las flechas suben o bajan 0,25. El ajuste fino (−/rango/+ de 0,25 en 0,25) aparece al activar la
  * valoración —al tocar una estrella o «Ajustar»— y «Quitar valoración» vuelve a «sin valorar» (`null`).
+ * `variant="sheet"` (hoja de la reseña del diario, 1.53): estrellas centradas, el valor debajo y el ajuste fino solo
+ * con «Ajustar puntuación»; tocar una estrella no lo despliega.
  */
-export function RatingInput({ value, onChange }) {
+export function RatingInput({ value, onChange, variant, labelledBy }) {
+  const sheet = variant === 'sheet';
   const rating = normalizeRating(value);
   const [fine, setFine] = useState(false);
   const set = (v) => onChange(normalizeRating(v));
@@ -62,7 +65,7 @@ export function RatingInput({ value, onChange }) {
     set(Math.min(5, Math.max(0.25, (rating || 0) + dir * 0.25)));
   };
   return (
-    <div className="rating-input" role="group" aria-label="Valoración">
+    <div className={`rating-input${sheet ? ' rating-input--sheet' : ''}`} role="group" aria-label={labelledBy ? undefined : 'Valoración'} aria-labelledby={labelledBy} aria-describedby={sheet ? `${labelledBy}-value` : undefined}>
       <div className="rating-input__stars" onKeyDown={onKeyDown}>
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -71,20 +74,34 @@ export function RatingInput({ value, onChange }) {
             className="rating-input__star"
             onClick={() => {
               confirm(n);
-              setFine(true);
+              if (!sheet) setFine(true);
             }}
             aria-label={`Valorar con ${n} ${n === 1 ? 'estrella' : 'estrellas'}`}
           >
             <Star fill={Math.min(1, Math.max(0, rating - (n - 1)))} />
           </button>
         ))}
-        <span className="rating-input__value" data-empty={!rating || undefined} aria-live="polite">
-          {rating ? `${formatRating(rating)} / 5` : 'Sin valorar'}
-        </span>
-        <button type="button" className="rating-input__adjust" aria-expanded={fine} onClick={() => setFine((v) => !v)} aria-label="Ajustar la valoración en cuartos de estrella" title="Ajuste fino">
-          <SlidersHorizontal aria-hidden="true" />
-        </button>
+        {!sheet && (
+          <>
+            <span className="rating-input__value" data-empty={!rating || undefined} aria-live="polite">
+              {rating ? `${formatRating(rating)} / 5` : 'Sin valorar'}
+            </span>
+            <button type="button" className="rating-input__adjust" aria-expanded={fine} onClick={() => setFine((v) => !v)} aria-label="Ajustar la valoración en cuartos de estrella" title="Ajuste fino">
+              <SlidersHorizontal aria-hidden="true" />
+            </button>
+          </>
+        )}
       </div>
+      {sheet && (
+        <>
+          <span id={`${labelledBy}-value`} className="rating-input__value" data-empty={!rating || undefined} aria-live="polite">
+            {rating ? `${formatRating(rating)} de 5` : 'Sin valorar'}
+          </span>
+          <button type="button" className="link-btn rating-input__adjust-link" aria-expanded={fine} onClick={() => setFine((v) => !v)}>
+            Ajustar puntuación
+          </button>
+        </>
+      )}
       {fine && (
         <div className="rating-input__fine">
           <button type="button" className="rating-input__step" onClick={() => confirm(Math.max(0.25, rating - 0.25))} disabled={rating <= 0.25} aria-label="Restar un cuarto de estrella">

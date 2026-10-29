@@ -90,10 +90,10 @@ export const SCENE_SRC = ROOMS.MAIN_ROOM.src;
 const refresh = (name) => asset(`images/room-refresh/escena/${name}.webp`);
 export const SCENE_REFRESH = {
   base: refresh('fondo-limpio'),
-  // 1.52 (SPEC §50): fondo nocturno pintado con la MISMA geometría que `fondo-limpio` (941 × 1672), aún no entregado.
-  // Cuando llegue, poner aquí su ruta (p. ej. refresh('fondo-limpio-noche')): de noche se pinta encima del de día y
-  // sustituye al velo oscuro; todo lo demás (libro, carteles, baldas, zonas) sigue igual
-  night: null,
+  // Fondo nocturno pintado con la MISMA geometría que `fondo-limpio` (941 × 1672; SPEC §50, entregado en la 1.53):
+  // de noche se pinta encima del de día y sustituye al velo oscuro; todo lo demás (libro, carteles, baldas, zonas)
+  // sigue igual. Trae la lámpara y la vela pintadas encendidas.
+  night: refresh('fondo-limpio-noche'),
   foreground: refresh('portatil-primer-plano'),
   layers: [
     { id: 'cortina-alta', x: 476, y: 0, w: 159, h: 495 },
@@ -122,7 +122,7 @@ export const EXTERIOR = [
 ];
 
 /** El astro sobre el cielo libre de la puerta-ventana: sol alto, sol poniente sobre los montes y luna. */
-export const SUN_DIAL = { morning: { x: 800, y: 345 }, sunset: { x: 836, y: 470 }, night: { x: 790, y: 352 } };
+export const SUN_DIAL = { morning: { x: 800, y: 345 }, sunset: { x: 836, y: 470 }, night: { x: 828, y: 383 } }; // noche: sobre la luna pintada del fondo nocturno (1.53)
 
 /** Lámpara de latón del estante izquierdo: bombilla (ancla de la luz) y pantalla. */
 export const LAMP = { x: 75, y: 578, shade: { x: 23, y: 497, w: 105, h: 96 } };

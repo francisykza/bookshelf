@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.52.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.52.0. Fuera de git
+- **Versión publicada**: 1.53.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.53.0. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.53.0 | «Mi diario» del libro en tres secciones (Reseña con guardado explícito y borrador, Notas, Historial) y noche con su fondo pintado | §51 |
 | 1.52.0 | Una sola habitación de día y de noche (se retira la escena nocturna de la 1.51) y libro con el contenido integrado | §50 |
 | 1.51.0 | Habitación nocturna de la maqueta con su propio mapa, libro con la lectura real y controles compactos | §49 |
 | 1.50.0 | Texto del libro sin cizalla, botón integrado en la página, «Mi biblioteca» en la perspectiva del mueble y «Social» más suave | §48 |
@@ -32,9 +33,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-00. **Noche de la misma habitación (§50)**: falta el fondo nocturno con la misma geometría que el de día (y, mejor,
-   las luces de lámpara y vela por separado). Especificación en `docs/design/recursos-noche-misma-habitacion.md`.
-   Mientras, la noche es el velo azul de siempre: las manchas de sol siguen visibles.
+00. **Noche de la misma habitación (§50–51)**: el fondo nocturno ya está (1.53). Falta, si se quiere, la lámpara y
+   la vela pintadas apagadas o sus luces por separado (`docs/design/recursos-noche-misma-habitacion.md`): hoy, de
+   noche, apagarlas no las apaga en la ilustración. Las capas recortadas de día (hiedras, cortina) se tiñen por CSS.
 0. **Encargo de la 1.46 terminado** (portátil, §42, publicado en la 1.46.1). Figuras revisadas (§41): sin el
    fondo de baldas anchas (punto 1) no pueden igualar el tamaño de la maqueta; faltan recortes con transparencia de
    la Dama, la Jinete y las tres figuras SVG. El escaneo de códigos no existe en el proyecto.
@@ -46,6 +47,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 2. **Prueba que falla desde antes de la 1.45**: `e2e/panorama.spec.js` «9 · un panel abierto bloquea el panorama y
    Cerrar devuelve el foco» en `chromium-1440x900` (tras arrastrar con el portátil abierto, Escape no cierra el
    panel). Ya fallaba en la 1.44 publicada. Sin investigar.
+2b. **Pruebas de comunidad desfasadas desde la 1.46**: 4 de `e2e-community/entrega2.spec.js` (perfil y alias, bloquear,
+   cambiar de cuenta, sin la migración) buscan el botón «Tu cuenta y copias de tus datos», que en la 1.46 pasó a
+   llamarse «Tu cuenta y copias». Fallan en los 5 tamaños; no es un fallo de la app. Sin corregir (decidir con Francisco).
 3. **Prueba intermitente**: `e2e/v123.spec.js` «pulsación…» en `chromium-1440x900` falla a veces, también en
    versiones anteriores.
 4. **Sonidos**: todos sintetizados (mapa en SPEC §35.4). Faltan grabaciones reales de papel, cubierta, madera y
@@ -91,6 +95,15 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-29 · cuenta principal · 1.53.0 (publicada)
+- Encargo «11. Rediseñar el diario según la maqueta adjunta»: «Mi diario» con Reseña, Notas e Historial (§51).
+  Desaparece el guardado automático de la reseña: ahora es «Guardar reseña» con confirmación real, error y reintento,
+  y borrador por libro. Publicar en el rincón exige guardar antes. Pruebas: `e2e/v153.spec.js` (360, 390, 430, 1440
+  y WebKit 390); ajustadas `v134`, `v135` y `e2e-community/entrega2` al nuevo diario.
+- Con el encargo vino el fondo nocturno con la misma geometría (comprobado): integrado como `SCENE_REFRESH.night`.
+- Teclado del móvil comprobado solo en emulación (visor más bajo); sin probar en un teléfono real.
+- Commit y subida a producción pedidos por Francisco. Sin comprobar aún en su móvil real.
 
 ### 2026-10-29 · cuenta principal · 1.52.0 (publicada)
 - Encargo «Continuidad entre día y noche e integración del libro»: se retira la escena nocturna de la 1.51 y se

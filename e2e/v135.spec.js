@@ -36,11 +36,13 @@ async function openLibrary(page) {
   await page.waitForTimeout(500);
 }
 
-async function openBookDiary(page) {
+async function openBookDiary(page, section) {
   await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.book-sheet')).toBeVisible();
   await page.getByRole('tab', { name: 'Diario' }).click();
+  // 1.53: el diario abre en «Reseña»; las anotaciones están en «Notas»
+  if (section) await page.getByRole('tab', { name: section }).click();
 }
 
 async function openDiary(page, view) {
@@ -117,9 +119,12 @@ test('anotaciones: crear, editar, filtrar y borrar con confirmación; borrador; 
   await load(page);
   const before = await stored(page);
   const book = before.books.find((b) => b.id === before.settings.currentBookId);
-  await openBookDiary(page);
+  await openBookDiary(page, 'Notas');
   const sheet = page.locator('.book-sheet');
   await expect(sheet.getByText('Solo para ti')).toBeVisible();
+  // 1.53: «Notas» solo cuenta anotaciones; sin ninguna, el formulario se abre con «Escribir mi primera anotación»
+  const first = sheet.getByRole('button', { name: 'Escribir mi primera anotación' });
+  if (await first.isVisible()) await first.click();
   const form = sheet.locator('.annotation-form').last();
   // Borrador: se conserva al cambiar de pestaña y al recargar
   await form.getByLabel('Nueva anotación').fill('Una frase a medias');
@@ -153,7 +158,7 @@ test('anotaciones: crear, editar, filtrar y borrar con confirmación; borrador; 
   // Filtrar por categoría: color + etiqueta
   const filter = sheet.locator('.quote-filter');
   await filter.getByRole('radio').nth(1).click();
-  await expect(sheet.locator('.journal-entry--session')).toHaveCount(0);
+  await expect(sheet.locator('.diary-panel:not([hidden]) .journal-entry--session')).toHaveCount(0);
   await filter.getByRole('radio').first().click();
   // Borrar: el menú pide confirmación; cancelar no borra
   const target = sheet.locator('.annotation-card', { hasText: 'despacio' });
@@ -168,14 +173,11 @@ test('anotaciones: crear, editar, filtrar y borrar con confirmación; borrador; 
   await expect.poll(async () => (await stored(page)).books.find((b) => b.id === book.id).quotes.some((x) => x.id === q.id)).toBe(false);
 });
 
-test('mi reseña: carta con firma y estado privado inequívoco', async ({ page }) => {
+test('mi reseña: hoja con firma y estado privado inequívoco', async ({ page }) => {
   await load(page);
   await openBookDiary(page);
-  const letter = page.locator('.my-review');
-  await expect(letter).toBeVisible();
-  const style = await letter.evaluate((el) => getComputedStyle(el).borderImageSource);
-  expect(style).toContain('/art/library-refresh/letter.webp');
-  await expect(letter.locator('.binder-clip')).toHaveCount(1);
+  // 1.53 (SPEC §51): la carta con pinza es ahora la hoja de borde doble terracota de «Reseña»
+  await expect(page.locator('.diary-sheet')).toBeVisible();
   await expect(page.locator('.review-state')).toContainText('Privada');
 });
 

@@ -249,6 +249,7 @@ test('diario: entradas fechadas y vacío con «Escribir mi primera anotación»'
     },
   });
   await page.getByRole('tab', { name: 'Diario' }).click();
+  await page.getByRole('tab', { name: 'Notas' }).click(); // 1.53: las anotaciones viven en «Notas»
   await expect(page.getByText('¿Qué te gustaría recordar de esta historia?')).toBeVisible();
   await expect(page.getByLabel('Nueva anotación', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Escribir mi primera anotación' }).click();

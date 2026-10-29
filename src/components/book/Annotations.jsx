@@ -13,7 +13,6 @@ import { entryText } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
 import { AnnotationCard } from '../primitives';
 import { QuoteMeaningsEditor } from './QuoteMeaningsEditor';
-import { RatingStars } from './Rating';
 
 const dateLabel = (key) =>
   key
@@ -332,14 +331,28 @@ export function AnnotationItem({ quote, meanings, book, onEdit, onShow, onDelete
   );
 }
 
-/** Diario del libro: cronología por fecha con registros compactos y anotaciones, y la nueva anotación. */
-export function Journal({ book, log, meanings, onShow }) {
+/** Días que se pintan de una vez en «Historial»; el resto, con «Ver registros anteriores». */
+const HISTORY_PAGE = 20;
+
+/**
+ * Diario del libro: cronología por fecha. `mode` (1.53, SPEC §51): «notes» solo las anotaciones con su filtro y la
+ * nueva anotación; «history» solo las sesiones del registro, de la más reciente a la más antigua y por tandas.
+ */
+export function Journal({ book, log, meanings, onShow, mode = 'notes' }) {
   const { actions } = useLibrary();
+  const history = mode === 'history';
   const [filter, setFilter] = useState('all');
   const [writing, setWriting] = useState(() => Boolean(readDraft(book.id)));
   const [editId, setEditId] = useState(null);
   const [freshId, setFreshId] = useState(null);
-  const days = useMemo(() => journalDays(book, log), [book, log]);
+  const [shownDays, setShownDays] = useState(HISTORY_PAGE);
+  const days = useMemo(
+    () =>
+      journalDays(book, log)
+        .map((d) => ({ ...d, items: d.items.filter((it) => (history ? it.kind === 'session' : it.kind === 'quote')) }))
+        .filter((d) => d.items.length),
+    [book, log, history],
+  );
   const hasQuote = (id) => book.quotes.some((q) => q.id === id);
   const sameQuote = ({ id, text, page, color }) => book.quotes.some((q) => q.id === id && q.text === text && (q.page ?? null) === page && q.color === color);
   const adding = useConfirmedSave(hasQuote);
@@ -351,9 +364,10 @@ export function Journal({ book, log, meanings, onShow }) {
     return acc;
   }, {});
   const showItem = (item) => filter === 'all' || (item.kind === 'quote' && (meaningOf(meanings, item.quote.color).id ?? 'unknown') === filter);
-  const visibleDays = days.map((d) => ({ ...d, items: d.items.filter(showItem) })).filter((d) => d.items.length);
+  const filtered = days.map((d) => ({ ...d, items: d.items.filter(showItem) })).filter((d) => d.items.length);
+  const visibleDays = history ? filtered.slice(0, shownDays) : filtered;
   const empty = days.length === 0;
-  const formOpen = !empty || writing;
+  const formOpen = !history && (!empty || writing);
 
   const add = (quote, done) => {
     const id = newId('q');
@@ -370,7 +384,7 @@ export function Journal({ book, log, meanings, onShow }) {
 
   return (
     <div className="journal">
-      {book.quotes.length > 0 && (
+      {!history && book.quotes.length > 0 && (
         <div className="quote-filter" role="radiogroup" aria-label="Filtrar anotaciones por categoría">
           <button type="button" role="radio" aria-checked={filter === 'all'} onClick={() => setFilter('all')}>
             Todo · {days.reduce((n, d) => n + d.items.length, 0)}
@@ -389,7 +403,9 @@ export function Journal({ book, log, meanings, onShow }) {
         </div>
       )}
 
-      {empty ? (
+      {empty && history ? (
+        <p className="journal__empty journal__empty--history">Todavía no has registrado ninguna sesión de este libro.</p>
+      ) : empty ? (
         <div className="journal__empty">
           <p>¿Qué te gustaría recordar de esta historia?</p>
           {!writing && (
@@ -412,15 +428,6 @@ export function Journal({ book, log, meanings, onShow }) {
                         <BookOpen aria-hidden="true" className="journal-entry__icon" />
                         <span className="journal-entry__kind">Lectura</span>
                         <p>{entryText(item.entry)}</p>
-                      </li>
-                    );
-                  }
-                  if (item.kind === 'review') {
-                    return (
-                      <li key="review" className="journal-entry journal-entry--review">
-                        <span className="journal-entry__kind">Reseña al terminar</span>
-                        {book.rating > 0 && <RatingStars value={book.rating} />}
-                        <p>{book.review}</p>
                       </li>
                     );
                   }
@@ -476,6 +483,11 @@ export function Journal({ book, log, meanings, onShow }) {
           ))}
           {!visibleDays.length && <li className="journal__none">No hay anotaciones con esta categoría.</li>}
         </ol>
+      )}
+      {history && filtered.length > visibleDays.length && (
+        <button type="button" className="link-btn journal__more" onClick={() => setShownDays((n) => n + HISTORY_PAGE)}>
+          Ver registros anteriores · {filtered.length - visibleDays.length} {filtered.length - visibleDays.length === 1 ? 'día' : 'días'}
+        </button>
       )}
 
       {formOpen && <AnnotationForm book={book} meanings={meanings} draftable autoFocus={empty && writing} status={adding.status} onRetry={adding.retry} onSubmit={add} />}

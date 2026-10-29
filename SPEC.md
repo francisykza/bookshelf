@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.52.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.53.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3466,3 +3466,48 @@ Recurso pendiente: `docs/design/recursos-noche-misma-habitacion.md`.
   de coordenadas de cada página, girado con su papel; la perspectiva es la del dibujo.
 - Se conservan de la 1.51 las correcciones generales (`room-151.css`): controles compactos, «Guías» sin
   desplazamientos, carteles que reciben el toque, puntos de estado en su esquina.
+
+## 51. «Mi diario» del libro en tres secciones y noche con su fondo pintado (1.53.0)
+
+Referencia: `docs/design/references/diario-resena-maqueta.webp` (cuaderno artesanal, sección «Reseña»). Se añade a
+§50; no lo sustituye.
+
+- **Estructura**: la ficha conserva Ficha · Diario · Lectores · Cerrar. «Diario» muestra «Mi diario», la privacidad
+  («Solo para ti»; si la reseña está publicada, «Solo para ti, salvo tu reseña publicada») y una fila de tres
+  pestañas —Reseña, Notas, Historial— con contenido independiente, pegada arriba al desplazarse (con fondo de papel,
+  no transparenta). Entrar al diario abre «Reseña»; los accesos del ordenador abren su sección (`tab` «notes» desde
+  una nota, «history» desde una sesión). Las tres secciones siguen montadas: cambiar no pierde borradores. Flechas
+  izquierda/derecha entre pestañas.
+- **Reseña** (`MyReview` en `BookDetailModal.jsx`): «Mi reseña», «Lo que esta historia te está dejando.», «Puedes
+  escribirla mientras lees.» y una hoja de borde doble terracota con «Tu valoración» (cinco estrellas, el valor
+  —«3,75 de 5»— o «Sin valorar» y «Ajustar puntuación», que abre el ajuste en cuartos y «Quitar valoración»), el
+  campo («¿Qué te está haciendo sentir este libro?», 17 px, crece con el texto: un solo desplazamiento, el de la hoja)
+  y la firma con el nombre del ex-libris (`settings.owner`; el valor de fábrica «Lectora» no firma) y la ramita, debajo
+  del campo. Después, el estado de privacidad real, «Guardar reseña» (cuero terracota con costura fina), los controles
+  de publicación de siempre y «Volver a la ficha». Se puede escribir sin haber terminado el libro.
+- **Valoración**: la misma de la Ficha y de Lectores (`book.rating`), con cuartos; se guarda al tocarla, como en la
+  Ficha. `RatingInput variant="sheet"`: tocar una estrella no despliega el ajuste fino.
+- **Guardado**: ya no hay guardado automático de la reseña. «Guardar reseña» escribe en el dispositivo
+  (`useConfirmedSave` + `persistNow`) y solo entonces dice «Reseña guardada en este dispositivo»; mientras, «Guardando…»
+  y el botón bloqueado (no hay envíos dobles). Si falla, «No se ha podido guardar… Tu texto sigue aquí» con
+  «Reintentar». Sin cambios, pulsar solo confirma que lo guardado está escrito. Guardar nunca publica; «Publicar en mi
+  rincón» publica lo guardado, así que con un borrador pendiente pide guardarlo antes.
+- **Borrador** por libro en `sessionStorage` (`bookshelf:review-draft:<id>`): sobrevive a cambiar de sección, cerrar la
+  ficha y recargar; se descarta al confirmar el guardado. Si la reseña guardada cambia por otra vía y el campo no se ha
+  tocado, se adopta; si hay borrador, se respeta (no se sustituye por un campo vacío).
+- **Notas**: las anotaciones con sus filtros, colores personalizados, edición, borrado y borrador de siempre (`Journal
+  mode="notes"`), sin sesiones.
+- **Historial**: solo las sesiones del registro, agrupadas por día, recientes primero, de 20 en 20 días («Ver registros
+  anteriores · N días»). La «reseña al terminar» deja de aparecer en la cronología: la reseña vive solo en «Reseña».
+- **Teclado del móvil**: mientras la ficha está abierta, si el visor visual encoge (teclado), la hoja se ajusta a la
+  parte visible (`--sheet-vv-h`, `--sheet-vv-top`) y el campo enfocado se mantiene a la vista. En «Diario» el cuaderno
+  ocupa todo el alto disponible y no cambia de tamaño entre secciones. Comprobado solo en emulación.
+- **Estilos** en `diary-153.css` (clases `diary-head`, `diary-sections`, `diary-panel`, `my-review-page`, `diary-sheet`,
+  `review-save`), con los recursos aprobados: marco de cuero con anillas (`notebook-frame.webp`, nueve zonas),
+  `control-lino-salvia.webp` (pestaña elegida), `control-papel-crema.webp` (inactivas), `control-terracota.webp`
+  (botón) y `botanical-sprig.webp`.
+- **Noche (§50)**: Francisco entregó el fondo nocturno con la misma geometría (941 × 1672, comprobado superponiendo
+  bordes): `SCENE_REFRESH.night = fondo-limpio-noche.webp`. De noche se pinta sobre el de día y se quita el velo; las
+  capas recortadas de día (hiedras, enredadera, cortina) se tiñen (`filter`) y el disco de la luna de la app no se pinta
+  (queda el astrolabio, ahora sobre la luna del fondo). El fondo trae la lámpara y la vela pintadas encendidas: apagarlas
+  no las apaga en la ilustración.

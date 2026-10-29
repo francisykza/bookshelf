@@ -42,3 +42,8 @@ Las capas que hoy se pintan encima del fondo de día, en versión nocturna y con
 En `src/scene/sceneMap.js`, `SCENE_REFRESH.night` pasa de `null` a la ruta del recurso. Entonces, de noche, se pinta
 encima del fondo de día (misma geometría) y se quita el velo oscuro; el libro, su contenido, los carteles, las baldas,
 la pantalla y las zonas tocables no cambian de sitio.
+
+## Estado (1.53.0)
+
+Entregado e integrado `fondo-limpio-noche.webp` (941 × 1672, misma geometría comprobada superponiendo bordes). Trae
+la lámpara y la vela encendidas: siguen pendientes, si se quieren, sus versiones apagadas o las luces por separado.

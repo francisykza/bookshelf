@@ -190,3 +190,14 @@
 .bed-pages__page--left {
   padding: 2px 2px 0;
 }
+
+/* 1.53 · Fondo nocturno entregado (misma geometría): las capas recortadas de día (hiedras, enredadera y cortina)
+   se tiñen de noche para no verse soleadas, y la luna ya está pintada: el astrolabio queda, el disco no se duplica */
+.room-camera[data-night-base] .room-refresh__layer {
+  filter: brightness(0.5) saturate(0.78) hue-rotate(-6deg);
+}
+
+.room-camera[data-night-base] .time-dial[data-tod='night'] .time-dial__body {
+  background: none;
+  box-shadow: none;
+}

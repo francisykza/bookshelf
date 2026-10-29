@@ -169,7 +169,7 @@ function TodayView({ onComplete, onOpenBook }) {
           <ul className="pcd-latest">
             {latest.map((it) => (
               <li key={it.kind === 'note' ? it.quote.id : it.entry.id}>
-                <button type="button" onClick={() => onOpenBook(it.book.id, 'right')} title={it.book.title}>
+                <button type="button" onClick={() => onOpenBook(it.book.id, it.kind === 'note' ? 'notes' : 'history')} title={it.book.title}>
                   <span className="pcd-latest__icon" aria-hidden="true">
                     {it.kind === 'note' ? <Pencil /> : <BookOpen />}
                   </span>
@@ -287,7 +287,7 @@ function NotesView({ onOpenBook }) {
               book={book}
               meanings={meanings}
               context={
-                <button type="button" className="pcd-notes__book" onClick={() => onOpenBook(book.id, 'right')}>
+                <button type="button" className="pcd-notes__book" onClick={() => onOpenBook(book.id, 'notes')}>
                   {book.title}
                   {validIso(quote.createdAt) && <small> · {shortDate(quote.createdAt)}</small>}
                 </button>

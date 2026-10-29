@@ -2,6 +2,7 @@
 // enseña antes exactamente qué se verá (puntuación, texto, spoilers, impresiones opcionales, alias y avatar) y
 // solo entonces envía una copia pública. Editar la reseña privada no cambia lo publicado: se ofrece «Actualizar
 // publicación». Retirar no borra la reseña privada. Se reutiliza en la ficha del libro y al terminar una lectura.
+// `unsaved` (diario, 1.53): hay un borrador sin guardar; se publica lo guardado, así que primero se pide guardarlo.
 import { useState } from 'react';
 import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { formatRating } from '../../domain/books';
@@ -28,7 +29,7 @@ function ImpressionInput({ dim, value, onChange }) {
   );
 }
 
-export function PublishControls({ book, onUpdate, onOpenProfile }) {
+export function PublishControls({ book, onUpdate, onOpenProfile, unsaved = false }) {
   // Se pide al abrir la ficha (acción del usuario), nunca al abrir la habitación
   const community = useCommunity({ autoload: true });
   // Solo cuenta la publicación hecha con ESTA cuenta (la biblioteca del dispositivo puede venir de otra)
@@ -114,7 +115,7 @@ export function PublishControls({ book, onUpdate, onOpenProfile }) {
       {!preview && (
         <div className="social-actions">
           {(!published || changed) && (
-            <button type="button" className="social-btn social-btn--primary" onClick={() => setPreview(true)} disabled={busy || tooLong}>
+            <button type="button" className="social-btn social-btn--primary" onClick={() => setPreview(true)} disabled={busy || tooLong || unsaved}>
               {published ? 'Actualizar publicación' : 'Publicar en mi rincón'}
             </button>
           )}
@@ -125,6 +126,7 @@ export function PublishControls({ book, onUpdate, onOpenProfile }) {
           )}
         </div>
       )}
+      {unsaved && !preview && (!published || changed) && <p className="social-note">Guarda la reseña para poder publicarla.</p>}
       {tooLong && <p className="social-error">La reseña pública admite hasta {BODY_MAX.toLocaleString('es-ES')} caracteres.</p>}
       {preview && (
         <div className="publish__preview" aria-label="Lo que verán otras personas">

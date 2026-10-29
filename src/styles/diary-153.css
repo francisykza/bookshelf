@@ -1,0 +1,335 @@
+/* ── 1.53.0 · «Mi diario» del libro según docs/design/references/diario-resena-maqueta.webp (SPEC §51) ──────────────
+   Tres secciones independientes (Reseña, Notas, Historial) dentro del mismo cuaderno de cuero con anillas
+   (notebook-frame.css, nueve zonas: las anillas se repiten enteras y no se estiran). Pestaña elegida en lino salvia
+   con costura (control-lino-salvia.webp), inactivas en papel, hoja de la reseña con borde doble terracota y botón de
+   cuero terracota (control-terracota.webp) con costura fina. Todo el texto y los controles son HTML. */
+
+/* Pestaña principal elegida: sin subrayado, la cinta terracota de arriba ya la marca (como en la maqueta) */
+.book-sheet .book-sheet__tabs button[aria-selected='true'] {
+  text-decoration: none;
+}
+
+/* Cabecera: «Mi diario», privacidad y la ramita en la esquina */
+.book-sheet .diary-head {
+  position: relative;
+  padding-right: 64px;
+}
+
+.book-sheet .diary-head .sheet-title {
+  margin: 0;
+  padding: 0;
+  font: 600 clamp(30px, 8.4vw, 38px)/1.05 var(--lib-display);
+  color: #2a1a10;
+}
+
+.book-sheet .diary-head .sheet-private {
+  margin: 6px 0 0;
+  font-size: 16px;
+  color: #5b4433;
+}
+
+.book-sheet .diary-head .sheet-sprig {
+  top: -2px;
+  right: 0;
+  width: 54px;
+}
+
+/* Fila de secciones: siempre a mano al desplazarse (pegada arriba del scroll), con fondo de papel para no
+   transparentar el texto que pasa por debajo */
+.book-sheet .diary-sections {
+  position: sticky;
+  top: -16px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 4px -4px 0;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: #f3ead6 url('/art/library-refresh/journal.webp') 0 0 / 512px repeat;
+  box-shadow: 0 6px 8px -8px rgb(60 40 20 / 0.35);
+}
+
+.book-sheet .diary-sections button {
+  --craft-edge: 9px;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 4px;
+  border: 9px solid transparent;
+  border-image: url('/assets/ui/controls/control-papel-crema.webp') 56 fill / 9px round;
+  background: none;
+  color: #3d2817;
+  font: 500 clamp(17px, 4.9vw, 20px)/1 var(--lib-display);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.book-sheet .diary-sections button[aria-selected='true'] {
+  border-image-source: url('/assets/ui/controls/control-lino-salvia.webp');
+  color: #f8f1e2;
+  text-shadow: 0 1px 1px rgb(30 40 20 / 0.45);
+}
+
+.book-sheet .diary-sections button:focus-visible {
+  outline: 2px solid #3d2817;
+  outline-offset: 2px;
+}
+
+@media (min-width: 700px) {
+  .book-sheet .diary-sections {
+    top: -22px;
+  }
+}
+
+.book-sheet .diary-panel[hidden] {
+  display: none;
+}
+
+.book-sheet .diary-panel {
+  min-width: 0;
+}
+
+/* ── Reseña ─────────────────────────────────────────────────────────────────────────────────────────────────── */
+.my-review-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 10px;
+}
+
+.my-review-page__title {
+  margin: 0;
+  font: 600 clamp(26px, 7.4vw, 32px)/1.1 var(--lib-display);
+  color: #2a1a10;
+}
+
+.my-review-page__lead {
+  margin: 6px 0 0;
+  font: italic 500 clamp(18px, 5vw, 20px)/1.3 var(--lib-display);
+  color: #3f2c1e;
+}
+
+.my-review-page__hint {
+  margin: 2px 0 14px;
+  font: 15px/1.35 var(--lib-body);
+  color: #5b4433;
+}
+
+/* Hoja artesanal: papel algo más claro con doble filete terracota (fino por fuera, grueso por dentro) */
+.diary-sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 18px 16px 10px;
+  border: 1.5px solid rgb(176 104 82 / 0.55);
+  border-radius: 6px;
+  background: #fbf5ea;
+  box-shadow:
+    inset 0 0 0 4px #fbf5ea,
+    inset 0 0 0 6.5px rgb(176 104 82 / 0.62),
+    0 1px 3px rgb(60 40 20 / 0.12);
+}
+
+.diary-sheet__label {
+  align-self: flex-start;
+  margin: 0 0 6px 4px;
+  font: 600 18px/1.2 var(--lib-display);
+  color: #2a1a10;
+}
+
+/* Valoración centrada: cinco estrellas de contorno dorado, el valor y «Ajustar puntuación» */
+.rating-input--sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.rating-input--sheet .rating-input__stars {
+  justify-content: center;
+  gap: 4px;
+}
+
+.rating-input--sheet .rating-input__star {
+  width: 46px;
+  height: 46px;
+  padding: 4px;
+}
+
+.rating-input--sheet .rating-input__star .rstar {
+  width: 36px;
+  height: 36px;
+}
+
+.rating-input--sheet .rating-input__value {
+  margin: 0;
+  min-width: 0;
+  font: 15px/1.3 var(--lib-body);
+  color: #5b4433;
+  text-align: center;
+}
+
+.rating-input--sheet .rating-input__adjust-link {
+  min-height: 36px;
+  padding: 4px 8px;
+  color: #6b3b26;
+  font: 500 17px/1.2 var(--lib-display);
+  font-weight: 600;
+  text-decoration: underline 1px rgb(150 80 50 / 0.7);
+  text-underline-offset: 4px;
+}
+
+.rating-input--sheet .rating-input__fine {
+  justify-content: center;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.rating-input--sheet .rating-input__clear {
+  align-self: center;
+}
+
+/* Campo de escritura: cómodo, letra legible, crece con el texto (sin scroll propio) */
+.diary-sheet__field {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 200px;
+  margin-top: 12px;
+  padding: 14px 14px;
+  border: 1px solid rgb(110 78 46 / 0.28);
+  border-radius: 8px;
+  background: #fdfaf3;
+  color: #2a1a10;
+  font: 17px/1.6 var(--lib-body);
+  overflow: hidden;
+  resize: none;
+  scroll-margin: 90px 0 120px;
+}
+
+.diary-sheet__field::placeholder {
+  color: #9a8572;
+}
+
+.diary-sheet__field:focus-visible {
+  outline: 2px solid #8a3f26;
+  outline-offset: 1px;
+}
+
+/* Firma y ramita debajo del campo: nunca invaden el área de escritura */
+.diary-sheet__sign {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 4px;
+  width: 100%;
+  min-height: 46px;
+  margin: 4px 0 0;
+}
+
+.diary-sheet__name {
+  padding-bottom: 4px;
+  font: 500 26px/1 var(--lib-hand);
+  color: #3f2c1e;
+  overflow-wrap: anywhere;
+}
+
+.diary-sheet__sprig {
+  flex: none;
+  width: 30px;
+  height: auto;
+  margin: -14px -6px 0 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Privacidad, guardar y volver */
+.my-review-page .review-state {
+  margin: 14px 0 10px;
+  font-size: 16px;
+}
+
+.book-sheet .review-save.sheet-btn--primary.craft {
+  position: relative;
+  width: 100%;
+  min-height: 54px;
+  margin: 0;
+  font: 600 clamp(20px, 5.6vw, 23px)/1 var(--lib-display);
+  letter-spacing: 0.01em;
+}
+
+/* Costura fina del cuero (el recurso terracota no la trae) */
+.book-sheet .review-save.craft::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 1.3px dashed rgb(250 236 214 / 0.55);
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+.book-sheet .review-save:disabled {
+  opacity: 0.8;
+}
+
+.review-save__status {
+  min-height: 1.4em;
+  margin: 6px 0 0;
+  font: 14px/1.4 var(--lib-body);
+  color: #5b4433;
+  text-align: center;
+}
+
+.review-save__status[data-status='error'] {
+  color: #8a2d1c;
+}
+
+.my-review-page .publish {
+  margin-top: 8px;
+}
+
+.my-review-page .review-back {
+  align-self: center;
+  min-height: 44px;
+  margin-top: 6px;
+  color: #3f2c1e;
+  font: 600 18px/1 var(--lib-display);
+  text-decoration: underline 1px rgb(150 80 50 / 0.7);
+  text-underline-offset: 5px;
+}
+
+/* ── Notas e historial ──────────────────────────────────────────────────────────────────────────────────────── */
+.book-sheet .diary-panel .journal {
+  padding-top: 12px;
+}
+
+.book-sheet .journal__empty--history {
+  margin: 12px 0;
+  color: #5b4433;
+  font: italic 17px/1.5 var(--lib-display);
+}
+
+.book-sheet .journal__more {
+  align-self: center;
+  min-height: 44px;
+  margin: 8px auto 0;
+  display: block;
+}
+
+/* Teclado del móvil: la hoja ocupa solo la parte visible (variables que pone la ficha mientras está abierto) */
+.panel-veil[data-variant='sheet'] {
+  top: var(--sheet-vv-top, 0);
+  height: var(--sheet-vv-h, auto);
+}
+
+.panel-veil[data-variant='sheet'] .panel--sheet {
+  max-height: calc(var(--sheet-vv-h, 100dvh) - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+}
+
+/* El cuaderno no cambia de tamaño al pasar de una sección a otra: en «Diario» ocupa todo el alto disponible */
+.panel-veil[data-variant='sheet'] .panel--sheet:has(> .book-sheet[data-page='right']) {
+  height: calc(var(--sheet-vv-h, 100dvh) - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+}

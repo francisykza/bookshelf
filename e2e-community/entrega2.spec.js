@@ -87,7 +87,7 @@ test('publicar: previsualización con solo los campos visibles, Voces de lectore
   const diaryTab = page.getByRole('tab', { name: 'Diario' });
   if (await diaryTab.isVisible()) await diaryTab.click();
   await page.getByLabel('Tu reseña').fill('Una historia que se lee como un susurro.');
-  await page.getByLabel('Tu reseña').blur();
+  await page.getByRole('button', { name: 'Guardar reseña' }).click(); // 1.53: guardar es explícito
   // Guardar no publica nada
   await page.waitForTimeout(800);
   expect(mock.db.public_reviews).toEqual([]);
@@ -212,7 +212,7 @@ test('dos cuentas con el mismo libro (mismo ISBN, añadido distinto) ven la mism
   const diary = a.getByRole('tab', { name: 'Diario' });
   if (await diary.isVisible()) await diary.click();
   await a.getByLabel('Tu reseña').fill('Divina y humana a la vez.');
-  await a.getByLabel('Tu reseña').blur();
+  await a.getByRole('button', { name: 'Guardar reseña' }).click(); // 1.53: guardar es explícito
   await a.getByRole('button', { name: 'Publicar en mi rincón' }).click();
   await a.getByLabel('Lo que verán otras personas').getByRole('button', { name: 'Publicar' }).click();
   await expect(a.getByText('Publicada en tu rincón')).toBeVisible();

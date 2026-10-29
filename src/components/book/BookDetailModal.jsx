@@ -1,8 +1,9 @@
 // Ficha del libro (SPEC §27.6–27.8, §28.5–28.8): un cuaderno de una página con tres pestañas. Ficha: ex-libris compacto,
 // portada y título, estado, progreso, «Registrar lectura», valoración y favorito, y los detalles de la edición
-// plegados. Diario: cuaderno de entradas fechadas con lo que ya existe (sesiones, citas subrayadas y la reseña).
+// plegados. Diario (1.53, SPEC §51): «Mi diario» con tres secciones independientes —Reseña (valoración y opinión, con
+// guardado explícito y borrador por libro), Notas (las anotaciones) e Historial (las sesiones del registro)—.
 // Lectores: las opiniones de la comunidad. Solo presentación: los datos y operaciones son los de siempre.
-import { BookMarked, ChevronDown, ChevronRight, Feather, Heart, Lock, Minus, PenLine, Plus, Trash2, X } from 'lucide-react';
+import { BookMarked, ChevronDown, ChevronRight, Heart, Lock, Minus, PenLine, Plus, Trash2, X } from 'lucide-react';
 import { Suspense, lazy, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
@@ -11,8 +12,8 @@ import { EDGE_NAMES, FORMATS, STATUS, audioHours, formatHours, formatPercent, ho
 import { dayKey } from '../../domain/dates';
 import { ReadingEntryForm } from '../panels/ReadingEntryForm';
 import { RatingInput } from './Rating';
-import { Journal } from './Annotations';
-import { NotebookShell, ReviewLetter, WaxSeal } from '../primitives';
+import { Journal, useConfirmedSave } from './Annotations';
+import { NotebookShell, WaxSeal } from '../primitives';
 import { draftDiffers } from '../../features/reviews/opinion';
 import { useLibrary } from '../../state/useLibrary';
 import { modalRoot } from '../panels/modalRoot';
@@ -252,27 +253,57 @@ const TABS = [
   { id: 'readers', label: 'Lectores' },
 ];
 
+/** Secciones de «Mi diario». Los accesos directos abren la suya: `tab` «notes» o «history»; «right» abre la reseña. */
+const SECTIONS = [
+  { id: 'review', label: 'Reseña' },
+  { id: 'notes', label: 'Notas' },
+  { id: 'history', label: 'Historial' },
+];
+const DIARY_ENTRY = { right: 'review', review: 'review', notes: 'notes', history: 'history' };
+
 export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpenProfile, onOpenReader, onComplete }) {
   const { state, actions } = useLibrary();
   const book = state.books.find((b) => b.id === bookId);
-  const [page, setPage] = useState(() => (TABS.some((t) => t.id === initialPage) ? initialPage : 'left'));
+  const [page, setPage] = useState(() => (DIARY_ENTRY[initialPage] ? 'right' : TABS.some((t) => t.id === initialPage) ? initialPage : 'left'));
+  const [section, setSection] = useState(() => DIARY_ENTRY[initialPage] ?? 'review');
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [review, setReview] = useState(book?.review ?? '');
   const [shownQuote, setShownQuote] = useState(null);
   const [logging, setLogging] = useState(false);
   const [othersOpen, setOthersOpen] = useState(false);
   const scrollRef = useRef(null);
+  const uid = useId();
 
   useEffect(() => {
     playUiSound('bookOpen');
   }, []);
 
+  // Teclado del móvil: la hoja se ajusta a la parte visible del visor (el visor visual encoge; el de diseño, no), así
+  // el campo activo y «Guardar reseña» no quedan debajo del teclado
   useEffect(() => {
-    if (!book) return undefined;
-    if (review === book.review) return undefined;
-    const id = setTimeout(() => actions.updateBook(book.id, { review }), 600);
-    return () => clearTimeout(id);
-  }, [review, book, actions]);
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    const root = document.documentElement.style;
+    const fit = () => {
+      const covered = window.innerHeight - vv.height > 80;
+      if (covered) {
+        root.setProperty('--sheet-vv-h', `${Math.round(vv.height)}px`);
+        root.setProperty('--sheet-vv-top', `${Math.round(vv.offsetTop)}px`);
+      } else {
+        root.removeProperty('--sheet-vv-h');
+        root.removeProperty('--sheet-vv-top');
+      }
+      const el = document.activeElement;
+      if (covered && el instanceof HTMLElement && el.matches('.book-sheet textarea, .book-sheet input')) requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest' }));
+    };
+    vv.addEventListener('resize', fit);
+    vv.addEventListener('scroll', fit);
+    return () => {
+      vv.removeEventListener('resize', fit);
+      vv.removeEventListener('scroll', fit);
+      root.removeProperty('--sheet-vv-h');
+      root.removeProperty('--sheet-vv-top');
+    };
+  }, []);
 
   if (!book) return null;
   const { settings } = state;
@@ -284,6 +315,12 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
     setPage(id);
     scrollRef.current?.scrollTo({ top: 0 });
   };
+  const goSection = (id) => {
+    if (id !== section) playUiSound('diaryTab');
+    setSection(id);
+    scrollRef.current?.scrollTo({ top: 0 });
+  };
+  const reviewPublished = book.publicReview?.status === 'published';
 
   return (
     <PanelShell onClose={onClose} label={`${book.title}, de ${book.author}`} variant="sheet">
@@ -457,43 +494,48 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
             </div>
           </section>
 
-          <section className="sheet-page sheet-page--journal" aria-label="Diario de lectura" hidden={page !== 'right'}>
-            <SheetSprig />
-            <h3 className="sheet-title">Mi diario de lectura</h3>
-            <p className="sheet-private">
-              <Lock aria-hidden="true" /> Solo para ti
-            </p>
-            <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} onShow={setShownQuote} />
-            <h3 className="sheet-title sheet-title--review" id="my-review-title">
-              <SheetSprig />
-              Mi reseña
-            </h3>
-            <p className="sheet-subtitle">Tu impresión de esta historia.</p>
-            <ReviewLetter className="my-review" clip={false} aria-labelledby="my-review-title">
-              <BinderClip />
-              <div className="my-review__rating">
-                <RatingInput value={book.rating} onChange={(rating) => update({ rating })} />
-              </div>
-              <textarea
-                className="review"
-                value={review}
-                onChange={(e) => setReview(e.target.value)}
-                onBlur={() => review !== book.review && update({ review })}
-                placeholder="Lo que sentí al leerlo…"
-                aria-label="Tu reseña"
-                rows={5}
-              />
-              <p className="my-review__signature">
-                <Feather aria-hidden="true" />
-                {settings.owner || 'Lectora'}
+          <section className="sheet-page sheet-page--journal" aria-label="Mi diario" hidden={page !== 'right'}>
+            <header className="diary-head">
+              <h3 className="sheet-title">Mi diario</h3>
+              <p className="sheet-private">
+                <Lock aria-hidden="true" /> {reviewPublished ? 'Solo para ti, salvo tu reseña publicada' : 'Solo para ti'}
               </p>
-            </ReviewLetter>
-            <ReviewState book={book} draft={review} />
-            <PublishControls book={book} onUpdate={update} onOpenProfile={onOpenProfile} />
-            <p className="my-review__note" aria-hidden="true">
-              Tu reseña, con tu propia voz.
-              <WaxSeal size={36} className="my-review__seal" />
-            </p>
+              <SheetSprig />
+            </header>
+            <div className="diary-sections" role="tablist" aria-label="Secciones del diario">
+              {SECTIONS.map((t, i) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  id={`${uid}-tab-${t.id}`}
+                  aria-controls={`${uid}-panel-${t.id}`}
+                  aria-selected={section === t.id}
+                  tabIndex={section === t.id ? 0 : -1}
+                  onClick={() => goSection(t.id)}
+                  onKeyDown={(e) => {
+                    const dir = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+                    if (!dir) return;
+                    e.preventDefault();
+                    const next = (i + dir + SECTIONS.length) % SECTIONS.length;
+                    goSection(SECTIONS[next].id);
+                    e.currentTarget.parentElement.querySelectorAll('[role="tab"]')[next]?.focus();
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {/* Las tres secciones siguen montadas: el borrador de la reseña o de una nota no se pierde al cambiar */}
+            <div className="diary-panel" role="tabpanel" id={`${uid}-panel-review`} aria-labelledby={`${uid}-tab-review`} hidden={section !== 'review'}>
+              <MyReview book={book} owner={settings.owner} onUpdate={update} onOpenProfile={onOpenProfile} onBack={() => goTo('left')} />
+            </div>
+            <div className="diary-panel" role="tabpanel" id={`${uid}-panel-notes`} aria-labelledby={`${uid}-tab-notes`} hidden={section !== 'notes'}>
+              <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} onShow={setShownQuote} mode="notes" />
+            </div>
+            <div className="diary-panel" role="tabpanel" id={`${uid}-panel-history`} aria-labelledby={`${uid}-tab-history`} hidden={section !== 'history'}>
+              <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} mode="history" />
+            </div>
           </section>
 
           {page === 'readers' && (
@@ -528,10 +570,6 @@ function SheetSprig() {
   return <img className="sheet-sprig" src="/assets/bookshelf/notebook/botanical-sprig.webp" alt="" width="160" height="249" aria-hidden="true" />;
 }
 
-/** Pinza de latón ilustrada que sujeta la carta de la reseña (decoración, no intercepta toques). */
-function BinderClip() {
-  return <img className="binder-clip" src="/assets/bookshelf/notebook/brass-paper-clip.webp" alt="" width="160" height="128" aria-hidden="true" />;
-}
 
 /**
  * Estado inequívoco de la reseña (SPEC §28.8): privada, cambios sin publicar o publicada. Se deriva de los datos
@@ -541,14 +579,135 @@ function ReviewState({ book, draft }) {
   const pub = book.publicReview;
   const published = pub?.status === 'published';
   const changed = published && draftDiffers({ ...book, review: draft });
-  const saved = draft === book.review;
   const label = !published ? 'Privada · solo la ves tú' : changed ? 'Publicada · con cambios sin publicar' : 'Publicada · al día';
   return (
-    <p className="review-state" data-state={!published ? 'private' : changed ? 'draft' : 'published'} role="status">
+    <p className="review-state" data-state={!published ? 'private' : changed ? 'draft' : 'published'}>
       {published && !changed ? <WaxSeal size={28} /> : <Lock aria-hidden="true" />}
       <span>{label}</span>
-      <small>{saved ? 'Guardada en este dispositivo' : 'Guardando…'}</small>
     </p>
+  );
+}
+
+// Borrador de la reseña por libro (sessionStorage, como las notas): sobrevive a cambiar de sección, cerrar la ficha o
+// recargar, y se descarta solo cuando el guardado se confirma
+const reviewDraftKey = (bookId) => `bookshelf:review-draft:${bookId}`;
+function readReviewDraft(bookId) {
+  try {
+    return sessionStorage.getItem(reviewDraftKey(bookId));
+  } catch {
+    return null;
+  }
+}
+function writeReviewDraft(bookId, text) {
+  try {
+    if (text == null) sessionStorage.removeItem(reviewDraftKey(bookId));
+    else sessionStorage.setItem(reviewDraftKey(bookId), text);
+  } catch {
+    // sin almacenamiento de sesión: el borrador vive mientras la ficha siga abierta
+  }
+}
+
+/**
+ * «Mi reseña» (SPEC §51): valoración (la misma de la Ficha; se guarda al tocarla) y opinión con «Guardar reseña».
+ * Guardar escribe en el dispositivo y lo confirma; nunca publica. Si falla, el texto sigue y se puede reintentar.
+ */
+function MyReview({ book, owner, onUpdate, onOpenProfile, onBack }) {
+  const uid = useId();
+  const saved = book.review ?? '';
+  const [text, setText] = useState(() => readReviewDraft(book.id) ?? saved);
+  const base = useRef(saved);
+  const fieldRef = useRef(null);
+  const saving = useConfirmedSave((t) => (book.review ?? '') === t);
+  const dirty = text !== saved;
+
+  // La reseña guardada cambia por otra vía (la nube, la reseña al terminar): si el campo no se ha tocado, se adopta;
+  // si hay un borrador, se respeta
+  useEffect(() => {
+    if (saved === base.current) return;
+    setText((t) => (t === base.current ? saved : t));
+    base.current = saved;
+  }, [saved]);
+  useEffect(() => {
+    writeReviewDraft(book.id, dirty || saving.status === 'error' ? text : null);
+  }, [book.id, text, dirty, saving.status]);
+  // El campo crece con el texto: un solo desplazamiento, el de la hoja
+  useEffect(() => {
+    const el = fieldRef.current;
+    if (!el || !el.offsetParent) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + 2}px`;
+  });
+
+  const submit = () => {
+    if (saving.status === 'saving') return;
+    // Sin cambios: solo se confirma que lo guardado está escrito en el dispositivo (no se duplica nada)
+    if (!dirty) return saving.retry();
+    const value = text;
+    saving.save(
+      () => onUpdate({ review: value }),
+      value,
+      () => {
+        base.current = value;
+        writeReviewDraft(book.id, null);
+        playUiSound('noteSave');
+      },
+    );
+  };
+  // Firma con el nombre del ex-libris; el valor de fábrica («Lectora») no es un nombre y no se firma con él
+  const name = owner?.trim() && owner.trim() !== 'Lectora' ? owner.trim() : '';
+
+  return (
+    <div className="my-review-page" role="group" aria-labelledby={`${uid}-title`}>
+      <h4 className="my-review-page__title" id={`${uid}-title`}>
+        Mi reseña
+      </h4>
+      <p className="my-review-page__lead">Lo que esta historia te está dejando.</p>
+      <p className="my-review-page__hint">Puedes escribirla mientras lees.</p>
+      <div className="diary-sheet">
+        <h5 className="diary-sheet__label" id={`${uid}-rating`}>
+          Tu valoración
+        </h5>
+        <RatingInput variant="sheet" labelledBy={`${uid}-rating`} value={book.rating} onChange={(rating) => onUpdate({ rating })} />
+        <textarea
+          ref={fieldRef}
+          className="diary-sheet__field"
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            if (saving.status === 'saved') saving.setStatus('idle');
+          }}
+          placeholder="¿Qué te está haciendo sentir este libro?"
+          aria-label="Tu reseña"
+          rows={6}
+        />
+        <p className="diary-sheet__sign">
+          {name && <span className="diary-sheet__name">— {name}</span>}
+          <img className="diary-sheet__sprig" src="/assets/bookshelf/notebook/botanical-sprig.webp" alt="" width="160" height="249" aria-hidden="true" />
+        </p>
+      </div>
+      <ReviewState book={book} draft={text} />
+      <button type="button" className="sheet-btn sheet-btn--primary craft craft--terra review-save" disabled={saving.status === 'saving'} aria-busy={saving.status === 'saving' || undefined} aria-describedby={`${uid}-status`} onClick={submit}>
+        {saving.status === 'saving' ? 'Guardando…' : 'Guardar reseña'}
+      </button>
+      <p id={`${uid}-status`} className="review-save__status" data-status={saving.status} role={saving.status === 'error' ? 'alert' : 'status'}>
+        {saving.status === 'error' ? (
+          <>
+            No se ha podido guardar en este dispositivo. Tu texto sigue aquí.{' '}
+            <button type="button" className="link-btn" onClick={saving.retry}>
+              Reintentar
+            </button>
+          </>
+        ) : saving.status === 'saved' && !dirty ? (
+          'Reseña guardada en este dispositivo'
+        ) : dirty ? (
+          'Cambios sin guardar'
+        ) : null}
+      </p>
+      <PublishControls book={book} onUpdate={onUpdate} onOpenProfile={onOpenProfile} unsaved={dirty} />
+      <button type="button" className="link-btn review-back" onClick={onBack}>
+        Volver a la ficha
+      </button>
+    </div>
   );
 }
 
