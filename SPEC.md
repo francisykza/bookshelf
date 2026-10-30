@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.57.0 · 2026-10-29 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.58.0 · 2026-10-30 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3819,3 +3819,54 @@ anterior); los paneles siempre se cierran y devuelven el ancla; deslizar no impi
 orientación y forma mantienen la ubicación; un subrayado que cruza líneas y cursivas persiste al reabrir y refleja color y
 borrado; un fragmento repetido no se ancla al azar; paginar y subrayar no crean sesiones ni recompensas; cerrar y abrir
 no acumula marcas ni tareas. Sin iPhone real: WebKit automatizado no es Safari de iOS.
+
+## 56. Visita a un rincón compartido (1.58.0)
+
+### 56.1 Recorrido
+
+- En «Social → Lectores», junto a cada lector que sigues (con perfil visible), el botón «Visitar rincón». El perfil de
+  siempre sigue abriéndose al tocar la fila.
+- Casa ilustrada (`casa-v1.webp`) con el alias y la ventana inferior derecha como único acceso. Al tocarla se reproduce
+  una vez `entrada-v1.mp4` y se llega a la habitación (`habitacion-v1.webp`). «Saltar», «Entrar sin animación» y
+  «Ver perfil» siempre a mano; casilla «Entrar siempre sin animación» (`localStorage` `bookshelf:visit-skip`).
+- Habitación: hasta tres lomos destacados sobre la balda (SVG decorativo), botón de la balda «Libros · N» y pie con
+  «Está leyendo «título»» (solo el título y solo si lo enseña), «Libros compartidos» y «Ver perfil». Sin libros: baldas
+  vacías y un aviso. Sin figuras en este fondo.
+- «Libros compartidos por X»: nota «no es su biblioteca completa», rejilla de tres con `PhysicalBook` y sus reseñas
+  con `ReviewCard` (spoilers plegados). Ficha de cada libro con sus orígenes, la frase si la tiene, «Añadir a
+  pendientes» explícito (`AddToPending`, extraído del perfil) y las reseñas de esa obra.
+
+### 56.2 Datos (sin ampliar la visibilidad, sin tablas ni migraciones)
+
+- `src/features/social/visit.js`: `sharedBooks` compone destacados (máx. 3, en su orden), los que le representan,
+  última y próxima lectura y recuerdos si el rincón es visible, más las colecciones visibles. Claves
+  `propietario:id`; sin id no se fusiona por título. Cada libro guarda sus orígenes, frase y `work_id`.
+- Reseñas solo por `work_id` (`reviewsFor`), nunca por título. Nunca se lee la biblioteca sincronizada de otra persona.
+- `useReaderCorner(userId)`: carga con número de secuencia y clave `espectador:usuario`; una respuesta tardía de otra
+  persona se descarta y nunca se pintan los datos de la anterior. Lo usa también `ReaderProfileView` (antes podía
+  enseñar un instante el perfil anterior). Un bloqueo en cualquier sentido oculta perfil, rincón y colecciones (RLS
+  `is_blocked_pair`); el simulador de comunidad ahora lo imita.
+
+### 56.3 Vídeo, historial y encuadre
+
+- Estados casa → preparando → entrando → habitación, y error. El `<video>` no existe ni tiene `src` hasta tocar la
+  ventana; `preload="none"`, `muted`, `playsInline`, sin bucle. Se ve solo con su primer fotograma. Si falla, si
+  `play()` se rechaza o si tarda más de 6 s, se entra en la habitación con un aviso. Al ocultar la pestaña se pausa.
+  Al entrar o desmontar se libera (`removeAttribute('src')` + `load()`). Movimiento reducido o la preferencia: se
+  entra sin vídeo.
+- Panel `{ type: 'visit', id, section: 'habitacion', select }`. Atrás: ficha/lista → habitación → casa → «Lectores».
+  Al recargar en la habitación no se repite la entrada (`safeParent` reconstruye la vuelta sin historial).
+- Marco 9:16 común a los tres recursos (720 × 1280), contenido y centrado; el sobrante es superficie de la paleta.
+  Zonas en coordenadas normalizadas (`visitScene.js`: `HOUSE_WINDOW`, `ROOM_SHELF`, `shelfSpines`).
+- Service worker: `/media/` y toda petición con `Range` quedan fuera (ni caché ni 206 guardados); sin precarga.
+  Recursos en `public/media/social-visit/`; inventario e integridad en `docs/design/visita-social-*`.
+
+### 56.4 Pruebas
+
+- Vitest: `src/features/social/__tests__/visit.domain.test.js` (composición, claves, visibilidad, reseñas, escena,
+  vuelta sin historial).
+- `e2e-community/v158.spec.js` (Chromium y WebKit 390): recorrido completo con pendientes y Atrás paso a paso; cero
+  peticiones del MP4 antes de tocar la ventana; recarga en la habitación; «Saltar»; cambio de persona durante la carga;
+  lector bloqueado; lectura actual oculta; movimiento reducido y preferencia; encuadre a 360, 430 y 1440.
+- Límites: el Chromium de Playwright no decodifica H.264 (allí se prueba el camino de error); WebKit sí reproduce el
+  vídeo pero no expone su descarga al registro de peticiones. Sin iPhone ni Safari reales.

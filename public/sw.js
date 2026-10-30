@@ -6,7 +6,7 @@
 // - Portadas de Open Library / Google Books: caché y refresco por detrás.
 // - Nada de Supabase ni de otros orígenes; nunca se guardan respuestas fallidas.
 const PREFIX = 'bookshelf-';
-const VERSION = `${PREFIX}v1.57.0`;
+const VERSION = `${PREFIX}v1.58.0`;
 const COVERS = `${VERSION}-covers`;
 // Fase 1 (1.21.0): las dos ilustraciones nuevas del panorama. `/cozy-book-room.jpg` sigue publicado para una
 // sesión abierta con la versión anterior, pero ya no se precarga.
@@ -99,6 +99,10 @@ self.addEventListener('fetch', (event) => {
 
   // Otros orígenes (Supabase, fuentes, APIs de libros): directo a la red, sin guardar nada
   if (url.origin !== self.location.origin) return;
+
+  // 1.58 (SPEC §56): vídeo y fondos de la visita social (/media/): siempre la red y la caché HTTP del navegador. Nunca
+  // la caché propia (las peticiones de vídeo llegan por rangos y una respuesta parcial 206 no es el archivo entero)
+  if (url.pathname.startsWith('/media/') || request.headers.has('range')) return;
 
   if (url.pathname === '/figures/catalog.json') {
     event.respondWith(catalogFirstNetwork(request));

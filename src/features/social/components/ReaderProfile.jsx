@@ -12,43 +12,17 @@ import { OptionsMenu } from '../../../components/book/Annotations';
 import { ReaderAdornment } from '../../../components/primitives';
 import { Cover, PhysicalBook } from '../../../components/shelf/BookItem';
 import { FigureArt } from '../../../components/figures/FigureArt';
-import { createBook } from '../../../domain/books';
 import { useLibrary } from '../../../state/useLibrary';
 import { ReviewCard } from '../../reviews/ReadersPanel';
-import { DISTINCTIONS, MEMORY_OBJECTS, inLibrary, pendingFromRef, savedCollection, visibleDistinctions } from '../huellas';
+import { DISTINCTIONS, MEMORY_OBJECTS, savedCollection } from '../huellas';
+import { AddToPending } from './AddToPending';
 import { useCommunity } from '../hooks/useCommunity';
-import { blockUser, fetchProfiles } from '../services/community';
-import { fetchCorner, fetchReviewsBy } from '../services/connections';
-import { fetchAdornments, fetchCollections, fetchCornerExtras, fetchDistinctions } from '../services/huellas';
+import { useReaderCorner } from '../hooks/useReaderCorner';
+import { blockUser } from '../services/community';
 import { CornerScene, MemoryObject } from './CornerScene';
 import { CommunityGate } from './SocialHub';
 
 const longDate = (d) => (d ? new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : null);
-
-/** «Añadir a pendientes»: acción separada por libro; si ya está en tu biblioteca, lo dice. */
-function AddToPending({ book, from }) {
-  const { state, actions } = useLibrary();
-  const [done, setDone] = useState(false);
-  const already = inLibrary(state.books, book);
-  if (already || done)
-    return (
-      <span className="huella-added" role="status">
-        {done ? 'Añadido a Pendientes' : 'Ya está en tu biblioteca'}
-      </span>
-    );
-  return (
-    <button
-      type="button"
-      className="social-btn"
-      onClick={() => {
-        actions.addBook(createBook(pendingFromRef(book, from)));
-        setDone(true);
-      }}
-    >
-      Añadir a pendientes
-    </button>
-  );
-}
 
 /** Hoja de un recuerdo: su historia (libro y dedicatoria) y añadir el libro a pendientes. */
 function MemorySheet({ memory, ownerAlias, onClose }) {
@@ -202,29 +176,14 @@ function DistinctionBadges({ items, roles }) {
 
 export function ReaderProfileView({ userId, onClose }) {
   const community = useCommunity({ autoload: true });
-  const [data, setData] = useState(null);
-  const [failure, setFailure] = useState('');
   const ready = community.status === 'ready';
   const { following, loadFollowing } = community;
+  // 1.58 (§56): la carga autorizada es la misma que usa la visita; al cambiar de persona no queda nada de la anterior
+  const { data, failure } = useReaderCorner(userId, community);
 
   useEffect(() => {
     if (ready && following === null) loadFollowing().catch(() => {});
   }, [ready, following, loadFollowing]);
-
-  useEffect(() => {
-    if (!ready) return undefined;
-    let alive = true;
-    // Lo de la 1.35.0 es opcional: si el servidor aún no lo tiene, el perfil de siempre sigue funcionando
-    const soft = (p, fallback) => p.catch(() => fallback);
-    Promise.all([fetchProfiles([userId]), fetchCorner(userId), fetchReviewsBy(userId), soft(fetchCornerExtras(userId), null), soft(fetchAdornments([userId]), {}), soft(fetchCollections(userId), { items: [] }), soft(fetchDistinctions(userId), { rows: [], moderator: false })])
-      .then(([profiles, corner, reviews, extras, adornments, collections, distinctions]) =>
-        alive && setData({ profile: profiles[userId], corner: corner && extras && !extras.unavailable ? { ...corner, ...extras } : corner, reviews, adornment: adornments[userId] ?? null, collections: collections.items.filter((c) => c.visible || userId === community.userId), distinctions: visibleDistinctions(distinctions.rows, distinctions.moderator) }),
-      )
-      .catch((e) => alive && setFailure(e.message));
-    return () => {
-      alive = false;
-    };
-  }, [ready, userId, community.userId]);
 
   if (!ready) return <CommunityGate status={community.status} error={community.error} onRetry={community.load} />;
   if (failure)

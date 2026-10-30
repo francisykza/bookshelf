@@ -1,0 +1,14 @@
+{
+  "casa-v1.webp": {
+    "bytes": 286840,
+    "sha256": "888ded66e1441fb9092aa0740c8bfe2079904798b6f9a260e226ece4aa7ba2aa"
+  },
+  "habitacion-v1.webp": {
+    "bytes": 207156,
+    "sha256": "db8a211b3ece2bae11420451f4741f560c1658e95a998beeba06c50a3e56cc73"
+  },
+  "entrada-v1.mp4": {
+    "bytes": 4424855,
+    "sha256": "13bc01d50140c6996a24a138e1af8551c70a8e79bd4c909436c4a22b33022307"
+  }
+}

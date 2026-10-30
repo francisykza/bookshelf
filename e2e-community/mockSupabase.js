@@ -127,10 +127,14 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     };
     if (req.method() === 'GET') {
       let rows = table === 'work_review_stats' ? stats(userId) : (db[table] ?? []).filter((r) => table !== 'public_reviews' || r.user_id === userId || (r.status === 'published' && !db.blocks.some((b) => (b.blocker === userId && b.blocked === r.user_id) || (b.blocker === r.user_id && b.blocked === userId))));
-      if (table === 'profiles') rows = rows.filter((p) => p.user_id === userId || p.community_enabled);
+      // Como la RLS real (is_blocked_pair): con un bloqueo en cualquier sentido, ni perfil, ni rincón, ni colecciones
+      const blockedPair = (other) => other !== userId && db.blocks.some((b) => (b.blocker === userId && b.blocked === other) || (b.blocker === other && b.blocked === userId));
+      if (table === 'profiles') rows = rows.filter((p) => p.user_id === userId || (p.community_enabled && !blockedPair(p.user_id)));
       if (table === 'follows') rows = rows.filter((f) => f.follower === userId || f.followed === userId);
-      if (table === 'corners') rows = rows.filter((c) => c.user_id === userId || c.visible);
-      if (table === 'collections') rows = rows.filter((c) => c.owner === userId || c.visible);
+      if (table === 'corners') rows = rows.filter((c) => c.user_id === userId || (c.visible && !blockedPair(c.user_id)));
+      if (table === 'collections') rows = rows.filter((c) => c.owner === userId || (c.visible && !blockedPair(c.owner)));
+      // La biblioteca sincronizada solo la ve su dueño
+      if (table === 'libraries') rows = rows.filter((l) => l.user_id === userId);
       if (table === 'reading_presence') rows = rows.filter((r) => r.user_id === userId || fresh(r));
       if (table === 'clubs') rows = rows.filter((c) => memberOf(c.id, userId));
       if (table === 'club_members') rows = rows.filter((m) => memberOf(m.club_id, userId));

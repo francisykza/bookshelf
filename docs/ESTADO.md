@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.57.0 (2026-10-29), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.57.0. Fuera de git
+- **Versión publicada**: 1.58.0 (2026-10-30), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.58.0. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.58.0 | Visita a un rincón compartido: casa, entrada en vídeo bajo demanda, habitación con los libros que comparte, pendientes y vuelta paso a paso | §56 |
 | 1.57.0 | Lector EPUB: estructura sin desbordes, paneles con «Volver a la lectura» y Atrás, lectura página a página con paso entre secciones, subrayados persistentes | §55 |
 | 1.56.0 | Vincular un EPUB a tu ejemplar con confirmación, posición anclada (local y sincronizada), notas con comentario, «Una pausa junto al mar» y lector con la identidad de BookShelf | §54 |
 | 1.55.0 | Leer EPUB en la app: archivo solo en el dispositivo, posición y notas con la cuenta, lector diferido y límites | §53 |
@@ -99,6 +100,19 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-30 · cuenta principal · 1.58.0 (publicada)
+- Encargo `material-diseno/visita-social/PROMPT-CLAUDE.md` (§56). Recursos copiados a `public/media/social-visit/`
+  (4 918 851 B en total; huellas SHA-256 comprobadas) y su inventario a `docs/design/visita-social-*`.
+- Nuevos: `src/features/social/visit.js`, `visitScene.js`, `hooks/useReaderCorner.js`, `components/ReaderVisit.jsx`,
+  `VisitBookSheet.jsx`, `AddToPending.jsx`, `src/styles/social-visit.css`. Tocados: `App.jsx` (panel `visit`),
+  `navigation.js` (`safeParent`), `SocialHub`/`SocialTabs` (botón «Visitar rincón»), `ReaderProfile.jsx` (usa el hook
+  nuevo), `public/sw.js` (excluye `/media/` y `Range`), `e2e-community/mockSupabase.js` (bloqueos y bibliotecas como la RLS).
+- Pruebas ejecutadas: vitest de la visita y navegación, `e2e-community/v158` en chromium-390x844 y webkit-390x844,
+  `oxlint` y `npm run build`. Chromium de Playwright no reproduce H.264; WebKit sí. Sin iPhone real.
+- `e2e-community/v135` (chromium-390x844): 1 en verde y 2 fallos **previos a esta versión**: buscan `.huella-trio`, que
+  desde la 1.43 se llama `.huella-readings` («Sus lecturas» sí sale con los tres libros). Sin corregir la prueba.
+- Commit y subida a producción pedidos por Francisco. Sin comprobar aún en su móvil real.
 
 ### 2026-10-29 · cuenta principal · 1.57.0 (publicada)
 - Encargo «El lector EPUB desborda…» (§55). Nuevos `src/features/epub/epubLayout.js` (paginado) y `epubHighlights.js`

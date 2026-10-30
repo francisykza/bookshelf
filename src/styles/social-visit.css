@@ -1,0 +1,448 @@
+/* ── 1.58.0 · Visita a un rincón compartido (SPEC §56), todo bajo .reader-visit ───────────────────────────────────
+   Casa, vídeo y habitación comparten un marco 9:16 contenido y centrado (sin estirar ni recortar); el espacio que sobra
+   es una superficie discreta de la paleta, donde viven la cabecera y el pie. Sin brillos ni animaciones continuas. */
+.panel-veil[data-variant='visit'] {
+  padding: 0;
+  place-items: stretch;
+  background: #2c1e14;
+}
+
+.panel--visit {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.reader-visit {
+  --rv-paper: #faf5e8;
+  --rv-ink: #2c1e14;
+  --rv-soft: #725b46;
+  --rv-surface: #e9dcc2;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--rv-surface);
+  color: var(--rv-ink);
+  font: 16px/1.4 'Lora', Georgia, serif;
+}
+
+.reader-visit *,
+.reader-visit *::before,
+.reader-visit *::after {
+  box-sizing: border-box;
+}
+
+.reader-visit__stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Contener 9:16: el lado que manda es el que no cabe */
+.reader-visit__frame {
+  position: relative;
+  width: min(100%, calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 9 / 16));
+  max-height: 100%;
+  overflow: hidden;
+  background: #d9c7a5;
+  box-shadow: 0 0 0 1px rgb(44 30 20 / 0.08);
+}
+
+.reader-visit__bg,
+.reader-visit__video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* El vídeo no se ve hasta tener un fotograma: hasta entonces queda la casa */
+.reader-visit__video {
+  opacity: 0;
+}
+
+.reader-visit__video[data-shown] {
+  opacity: 1;
+}
+
+.reader-visit__window,
+.reader-visit__shelf {
+  position: absolute;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+
+.reader-visit__window:disabled {
+  cursor: default;
+}
+
+.reader-visit__shelf {
+  align-items: flex-end;
+}
+
+.reader-visit :is(button, input):focus-visible {
+  outline: 2px solid #c59b27;
+  outline-offset: 2px;
+}
+
+/* Indicación discreta; con «Guías», además el contorno de la zona */
+.reader-visit__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 9px;
+  border: 1px solid rgb(114 91 70 / 0.3);
+  border-radius: 999px;
+  background: rgb(250 245 232 / 0.86);
+  color: var(--rv-ink);
+  font: 600 13px/1.2 'Lora', Georgia, serif;
+  white-space: nowrap;
+}
+
+.reader-visit__tag svg {
+  width: 14px;
+  height: 14px;
+}
+
+.reader-visit__window:disabled .reader-visit__tag {
+  opacity: 0.6;
+}
+
+.reader-visit[data-guides='on'] .reader-visit__window,
+.reader-visit[data-guides='on'] .reader-visit__shelf {
+  outline: 1.5px dashed rgb(250 245 232 / 0.85);
+  outline-offset: -3px;
+}
+
+/* La balda es estrecha (23 % del ancho): rótulo en una línea, sin icono, dentro del mueble */
+.reader-visit__shelf {
+  padding: 0 4px 6px;
+}
+
+.reader-visit__shelf .reader-visit__tag {
+  padding: 3px 8px;
+  font-size: 12.5px;
+}
+
+.reader-visit__shelf .reader-visit__tag svg {
+  display: none;
+}
+
+/* Lomos destacados: aparecen breve y discretamente cuando la habitación ya está quieta */
+.reader-visit__spines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  pointer-events: none;
+}
+
+.reader-visit__spines[data-shown] {
+  opacity: 0.94;
+}
+
+.reader-visit[data-reduced] .reader-visit__spines {
+  transition: none;
+}
+
+/* Cabecera y pie: sobre las bandas libres (o sobre el borde de la ilustración en pantallas más anchas que 9:16) */
+.reader-visit__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: calc(env(safe-area-inset-top) + 4px) 8px 4px;
+  background: linear-gradient(rgb(250 245 232 / 0.94), rgb(250 245 232 / 0.78));
+  border-bottom: 1px solid rgb(114 91 70 / 0.18);
+}
+
+.reader-visit__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--rv-ink);
+  cursor: pointer;
+}
+
+.reader-visit__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.reader-visit__who {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reader-visit__who b {
+  overflow: hidden;
+  font: 600 20px/1.1 'Cormorant Garamond', Georgia, serif;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.reader-visit__foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px calc(env(safe-area-inset-bottom) + 12px);
+  background: linear-gradient(rgb(250 245 232 / 0.8), rgb(250 245 232 / 0.95));
+  border-top: 1px solid rgb(114 91 70 / 0.18);
+  text-align: center;
+}
+
+.reader-visit__foot[data-phase='preparando'],
+.reader-visit__foot[data-phase='entrando'] {
+  background: none;
+  border-top: 0;
+}
+
+.reader-visit__lead,
+.reader-visit__hint,
+.reader-visit__note {
+  margin: 0;
+}
+
+.reader-visit__lead b {
+  font-weight: 600;
+}
+
+.reader-visit__hint,
+.reader-visit__note {
+  color: var(--rv-soft);
+  font-size: 14px;
+}
+
+.reader-visit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.reader-visit__actions .sheet-btn,
+.reader-visit__foot > .sheet-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  background: var(--rv-paper);
+}
+
+.reader-visit__actions svg {
+  width: 17px;
+  height: 17px;
+}
+
+.reader-visit__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--rv-soft);
+  font-size: 14px;
+}
+
+.reader-visit__check input {
+  width: 20px;
+  height: 20px;
+}
+
+.reader-visit__status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.reader-visit__status p {
+  margin: 0;
+}
+
+/* Hojas: libros compartidos y ficha de un libro compartido */
+.reader-visit__sheet {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: 88%;
+  translate: -50% 0;
+  overflow: hidden;
+  border: 1px solid rgba(114, 91, 70, 0.22);
+  border-radius: 16px 16px 0 0;
+  background: var(--rv-paper);
+  box-shadow: 0 8px 24px rgba(44, 30, 20, 0.16);
+}
+
+.reader-visit__sheet-head {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  padding: 4px 12px 4px 4px;
+  border-bottom: 1px solid rgba(114, 91, 70, 0.22);
+}
+
+.reader-visit__sheet-head h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font: 600 21px/1.15 'Cormorant Garamond', Georgia, serif;
+}
+
+.reader-visit__sheet-head h3:focus {
+  outline: none;
+}
+
+.reader-visit__sheet-body {
+  flex: 1;
+  min-height: 0;
+  padding: 12px 14px calc(env(safe-area-inset-bottom) + 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.reader-visit__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 12px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reader-visit__book {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.reader-visit__cover {
+  display: block;
+  width: 100%;
+  max-width: 120px;
+}
+
+.reader-visit__book-title {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 13px;
+  text-align: center;
+}
+
+.reader-visit__detail {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.reader-visit__detail-cover {
+  display: block;
+  width: 110px;
+}
+
+.reader-visit__detail-title {
+  margin: 0;
+  font: 600 22px/1.15 'Cormorant Garamond', Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.reader-visit__detail-author {
+  margin: 2px 0 8px;
+  color: var(--rv-soft);
+}
+
+.reader-visit__origins {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--rv-soft);
+  font-size: 13px;
+}
+
+.reader-visit__phrase {
+  margin: 0 0 12px;
+  padding-left: 12px;
+  border-left: 3px solid #b96545;
+  font-style: italic;
+}
+
+.reader-visit__reviews h4 {
+  margin: 16px 0 8px;
+  font: 600 19px/1.2 'Cormorant Garamond', Georgia, serif;
+}
+
+/* «Visitar rincón» junto a cada lector seguido (el acceso de siempre al perfil sigue igual) */
+.reader-rows li:has(.follow-row__visit) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.follow-row__visit {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgb(114 91 70 / 0.35);
+  border-radius: 10px;
+  background: #fffaf0;
+  color: #2c1e14;
+  font: 600 14px/1.1 'Lora', Georgia, serif;
+  cursor: pointer;
+}

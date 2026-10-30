@@ -187,7 +187,7 @@ const TABS = [
   { id: 'club', label: 'Club', Panel: ClubTab },
 ];
 
-export function SocialHub({ onClose, initialTab = 'perfil', timer = null, openClubId = null }) {
+export function SocialHub({ onClose, initialTab = 'perfil', timer = null, openClubId = null, onVisit = null }) {
   const tabs = TABS;
   const [tab, setTab] = useState(tabs.some((t) => t.id === initialTab) ? initialTab : 'perfil');
   const Current = tabs.find((t) => t.id === tab).Panel;
@@ -208,7 +208,7 @@ export function SocialHub({ onClose, initialTab = 'perfil', timer = null, openCl
           ))}
         </div>
         <div className="social-hub__body">
-          <Current timer={timer} openClubId={openClubId} />
+          <Current timer={timer} openClubId={openClubId} onVisit={onVisit} />
         </div>
       </div>
     </PanelShell>

@@ -25,6 +25,10 @@ export const sameLocation = (a, b) => JSON.stringify(normalizeLocation(a)) === J
 export function safeParent(loc) {
   const l = normalizeLocation(loc);
   if (l.panel?.type === 'vault' && l.panel.section === 'unbox') return { view: l.view, panel: { type: 'vault', id: l.panel.id } };
+  // Visita a un rincón (SPEC §56): libro → habitación → casa → «Lectores» (también tras recargar)
+  if (l.panel?.type === 'visit' && l.panel.select) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion' } };
+  if (l.panel?.type === 'visit' && l.panel.section === 'habitacion') return { view: l.view, panel: { type: 'visit', id: l.panel.id } };
+  if (l.panel?.type === 'visit') return { view: l.view, panel: { type: 'social', tab: 'lectores' } };
   if (l.panel) return { view: l.view, panel: null };
   if (l.view === 'shelf') return ROOT;
   return null;

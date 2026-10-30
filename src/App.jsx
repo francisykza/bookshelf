@@ -37,6 +37,8 @@ import { LibraryProvider, useLibrary } from './state/useLibrary';
 // La comunidad se descarga solo al abrirla (SPEC §25.13)
 const SocialHub = lazy(() => import('./features/social/components/SocialHub').then((m) => ({ default: m.SocialHub })));
 const GoodreadsImportPanel = lazy(() => import('./features/imports/GoodreadsImportPanel').then((m) => ({ default: m.GoodreadsImportPanel })));
+// 1.58 (SPEC §56): la visita a un rincón se carga solo al abrirla (y el vídeo, solo al tocar la ventana)
+const ReaderVisit = lazy(() => import('./features/social/components/ReaderVisit').then((m) => ({ default: m.ReaderVisit })));
 const ReaderProfile = lazy(() => import('./features/social/components/ReaderProfile').then((m) => ({ default: m.ReaderProfile })));
 
 /** Un día local `YYYY-MM-DD` (el `select` de la navegación del calendario). */
@@ -342,6 +344,20 @@ function Sanctuary() {
       )}
       {panel?.type === 'atlas' && <SagaMapModal onClose={close} onOpenBook={openBook} />}
       {panel?.type === 'account' && <AccountPanel onClose={close} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
+      {panel?.type === 'visit' && (
+        <Suspense fallback={null}>
+          <ReaderVisit
+            key={panel.id}
+            userId={panel.id}
+            stage={panel.section === 'habitacion' ? 'habitacion' : 'casa'}
+            select={panel.select ?? null}
+            onEnter={() => openPanel({ type: 'visit', id: panel.id, section: 'habitacion' })}
+            onSelect={(select) => openPanel({ type: 'visit', id: panel.id, section: 'habitacion', select })}
+            onBack={close}
+            onProfile={() => openPanel({ type: 'reader', id: panel.id })}
+          />
+        </Suspense>
+      )}
       {panel?.type === 'reader' && (
         <Suspense fallback={null}>
           <ReaderProfile userId={panel.id} onClose={close} />
@@ -355,7 +371,17 @@ function Sanctuary() {
       )}
       {panel?.type === 'social' && (
         <Suspense fallback={null}>
-          <SocialHub onClose={close} initialTab={panel.tab} timer={timer} openClubId={panel.id ?? null} />
+          <SocialHub
+            onClose={close}
+            initialTab={panel.tab}
+            timer={timer}
+            openClubId={panel.id ?? null}
+            onVisit={(id) => {
+              // Al volver de la visita se regresa a «Lectores» (la pestaña del panel social queda registrada)
+              switchPanel({ type: 'social', tab: 'lectores' });
+              openPanel({ type: 'visit', id });
+            }}
+          />
         </Suspense>
       )}
       {panel?.type === 'librarian' && <LibrarianPanel onClose={close} onOpenBook={(book) => switchPanel({ type: 'book', id: book.id })} />}

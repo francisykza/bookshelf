@@ -140,7 +140,7 @@ export function CornerTab() {
 }
 
 /** Lectores que sigo y su actividad: reseñas publicadas por ellos y novedades de mis clubes. */
-export function ReadersTab() {
+export function ReadersTab({ onVisit = null }) {
   const community = useCommunity({ autoload: true });
   const { state } = useLibrary();
   const { following, loadFollowing } = community;
@@ -200,6 +200,12 @@ export function ReadersTab() {
                 <span className="follow-row__go">Ver su rincón</span>
                 <ChevronRight aria-hidden="true" />
               </button>
+              {/* 1.58 (SPEC §56): visita opcional a su casa; el perfil de siempre sigue en el botón de arriba */}
+              {onVisit && profiles[id] && (
+                <button type="button" className="follow-row__visit" onClick={() => onVisit(id)} aria-label={`Visitar el rincón de ${profiles[id].alias}`}>
+                  Visitar rincón
+                </button>
+              )}
             </li>
           ))}
         </ul>
