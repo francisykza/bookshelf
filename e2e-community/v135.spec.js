@@ -101,14 +101,15 @@ test('rincón ilustrado: escena 3:2 entera, tres libros, recuerdo con su histori
   await expect(page.getByRole('menuitem', { name: 'Bloquear a Bruno' })).toBeVisible();
   await page.keyboard.press('Escape');
   // La lectura actual (solo título publicado) también tiene su hueco de portada
-  await expect(page.locator('.huella-trio__item')).toHaveCount(3);
-  await expect(page.locator('.huella-trio__item .huella-cover')).toHaveCount(3);
+  // Desde la 1.43 «Sus lecturas» (.huella-readings): cada lectura es un libro físico (.huella-read__book)
+  await expect(page.locator('.huella-read')).toHaveCount(3);
+  await expect(page.locator('.huella-read .huella-read__book')).toHaveCount(3);
   await page.getByRole('button', { name: 'Comunidad fundadora' }).click();
   await expect(page.locator('.huella-badge__info')).toContainText('25 de octubre de 2026');
   // Última / actual / próxima, libros que le representan, colección y reseña destacada
-  await expect(page.locator('.huella-trio')).toContainText('Circe');
-  await expect(page.locator('.huella-trio')).toContainText('Alas de hierro');
-  await expect(page.locator('.huella-trio')).toContainText('El principito');
+  await expect(page.locator('.huella-readings')).toContainText('Circe');
+  await expect(page.locator('.huella-readings')).toContainText('Alas de hierro');
+  await expect(page.locator('.huella-readings')).toContainText('El principito');
   await expect(page.locator('.huella-signature')).toContainText('El libro que me hizo lectora');
   await expect(page.getByLabel('Reseña destacada')).toContainText('sin respirar');
   await shot(page, info, 'v135-rincon');
@@ -155,5 +156,5 @@ test('sin la migración 1.35.0 en el servidor el perfil de siempre sigue funcion
   await expect(page.locator('.corner-scene__table li')).toHaveCount(0);
   await expect(page.locator('.huella-badge')).toHaveCount(0);
   await expect(page.locator('.huella-collection')).toHaveCount(0);
-  await expect(page.locator('.huella-trio')).toContainText('Alas de hierro');
+  await expect(page.locator('.huella-readings')).toContainText('Alas de hierro');
 });

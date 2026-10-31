@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.58.1 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.58.2 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3902,3 +3902,18 @@ Detalle, causas comprobadas y aceptación en `docs/qa/video-hotfix.md`; capturas
 - Biblioteca instalada como app: sin relleno superior en `.library` (la franja de la cabecera ya aplica el área segura).
 - Reseñas: cabecera en rejilla; alias completo y fecha en una línea (`hotfix-1581.css`).
 - EPUB: sin defecto de código; la vinculación de las capturas queda como discrepancia de datos pendiente de confirmar.
+
+## 58. Pruebas al día y flecha del salón al pulsar (1.58.2)
+
+- **Fallo real corregido**: la flecha «Abrir rincón social» se centra con `translateY(-50%)`, pero su estado pulsado
+  (`room-146.css`) lo sustituía por `translateY(1px)`: al pulsar saltaba ≈ 23 px y el dedo se soltaba sobre la escena.
+  Con movimiento reducido (sin transición) no llegaba a navegar nunca; ahora `translateY(calc(-50% + 1px))`.
+- **Pruebas desfasadas actualizadas** (sin cambiar lo que comprueban): «Mi diario» por secciones (1.53) en
+  `v123 colores`; «Sus lecturas» (1.43) en `v135` y `entrega3`; «Tu cuenta y copias» (1.46) en `entrega2`; la hoja
+  «Vista y herramientas» se cierra antes de usar los filtros en apaisado (`v128`); el aviso de carteles se da por visto en
+  `entrega3`.
+- **Comprobaciones más precisas**: `v123 formulario` distingue un desplazamiento forzado del recorte natural del
+  navegador cuando el formulario encoge al fondo; `panorama 9` cierra de dentro afuera (lista nativa del selector,
+  desplegable, panel); esperas por estado en lugar de tiempos fijos en `v123 pulsación`, `v128 reseña` y `panorama 14`.
+- **Limitación del entorno**: `v149` en `webkit-390x844` falla porque el WebKit de Playwright en Windows no dibuja bien
+  `matrix3d` (las baldas salen inclinadas). Ya documentado en `BedBook.jsx`; no se desactiva la comprobación.

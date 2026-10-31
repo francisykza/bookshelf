@@ -137,5 +137,6 @@ Maquetas de referencia: `docs/design/references/`.
   `@media (display-mode: …)` (así se reprodujo la franja de la biblioteca, §57.3).
 - Atajos `border` y `font` de las hojas antiguas reinician `border-image` y las cifras: por eso algunas reglas de
   `craft-144.css` llevan `!important`.
-- Dos pruebas fallan a ratos o siempre **desde antes de la 1.45** (ver `docs/ESTADO.md`): no ocultarlas cambiando
+- Desde la 1.58.2 la única prueba que falla es `e2e/v149` en WebKit (Windows no dibuja bien `matrix3d`, ver
+  `docs/ESTADO.md`). Si aparece otra, investigar antes de tocarla: no ocultarlas cambiando
   la prueba sin investigar.

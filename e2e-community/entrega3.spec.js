@@ -19,6 +19,8 @@ async function shot(page, info, name) {
 }
 
 async function ready(page) {
+  // El aviso de primera visita de los carteles tiene su propia prueba; aquí se da por visto (a 320 tapa la flecha)
+  await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   await page.goto('/');
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
   await page.waitForFunction(() => localStorage.getItem('bookshelf:v1'));
@@ -157,8 +159,8 @@ test('seguir desde una reseña, «Lectores que sigo» y rincón: solo lo elegido
   await expect(readers.locator('.tropes')).toContainText('Romance a fuego lento');
   // Abrir el perfil de Bruno desde su reseña y seguirle (dos veces: no duplica)
   await readers.getByRole('button', { name: 'Bruno', exact: true }).click();
-  await expect(page.locator('.huella-trio')).toContainText('Actual');
-  await expect(page.locator('.huella-trio')).toContainText('Momo');
+  await expect(page.locator('.huella-readings')).toContainText('Está leyendo');
+  await expect(page.locator('.huella-readings')).toContainText('Momo');
   await expect(page.locator('.reader-profile')).toContainText('Circe');
   await page.getByRole('button', { name: 'Seguir' }).click();
   await expect(page.getByRole('button', { name: 'Siguiendo' })).toBeVisible();

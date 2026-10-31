@@ -297,8 +297,10 @@
 }
 
 .room-plaque:active,
+/* 1.58.2: la presión baja 1 px SIN perder el centrado (translateY(-50%)); antes la flecha saltaba ~23 px al pulsar y el
+   dedo se soltaba sobre la escena (con movimiento reducido no llegaba a navegar nunca) */
 .panorama-nav .panorama-nav__btn--next:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(calc(-50% + 1px));
   filter: drop-shadow(0 1px 1px rgb(40 22 8 / 0.3));
 }
 

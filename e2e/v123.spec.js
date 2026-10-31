@@ -177,7 +177,10 @@ test('formulario: una sola zona de scroll, acciones sticky y borrador estable co
   const top0 = await body.evaluate((el) => el.scrollTop);
   await pct.click();
   await expect(form.locator('input[inputmode="decimal"]')).toBeVisible();
-  expect(Math.abs((await body.evaluate((el) => el.scrollTop)) - top0)).toBeLessThanOrEqual(6);
+  // La app no desplaza nada (≤ 6 px). Única excepción: si estaba al fondo y el formulario encoge (sin valor no hay vista
+  // previa), el navegador recorta el scroll a su nuevo máximo; eso no es un desplazamiento forzado (1.58.2)
+  const after = await body.evaluate((el) => ({ top: el.scrollTop, max: el.scrollHeight - el.clientHeight }));
+  if (Math.abs(after.top - top0) > 6) expect(after.top).toBe(after.max);
   await tap(form.getByRole('radio', { name: 'Voy por la página' }));
   // El valor de cada modalidad se conserva al ir y volver
   expect(await input.inputValue()).toBe('205');
@@ -297,6 +300,10 @@ test('pulsación: sin cambio de layout ni de transform; sin desplazamiento con m
   await page.mouse.move(box0.x + box0.width / 2, box0.y + box0.height / 2);
   await page.mouse.down();
   await page.waitForTimeout(120);
+  // Con la escena pesada (1440) la transición de 70 ms puede tardar unos fotogramas en empezar: se espera, pulsado, a
+  // que el desplazamiento de la presión se aplique (como mucho 1 s; con movimiento reducido no llega y no se espera)
+  if (!info.project.name.includes('reduced') && !info.project.name.startsWith('webkit'))
+    await save.evaluate((el) => new Promise((ok) => { const t0 = performance.now(); const tick = () => (!/^(none|0px)$/.test(getComputedStyle(el).translate) || performance.now() - t0 > 1000 ? ok() : requestAnimationFrame(tick)); tick(); }));
   const pressed = await save.evaluate((el) => ({ translate: getComputedStyle(el).translate, scale: getComputedStyle(el).scale, transform: getComputedStyle(el).transform }));
   // Se suelta fuera del botón: no se guarda nada
   await page.mouse.move(5, 5);

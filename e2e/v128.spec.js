@@ -138,6 +138,9 @@ test('librería: parte de toda la biblioteca y busca con o sin tildes, conservan
   await expect(page.locator(`.library [data-book-id="${target.id}"]`)).toHaveCount(1);
   await shot(page, info, 'v128-libreria-lomos');
   await page.getByRole('radio', { name: 'Escaparate' }).click();
+  // Se cierra «Vista y herramientas» (en apaisado ocupa toda la altura y tapa los filtros, como lo haría una persona)
+  await page.getByRole('radio', { name: 'Escaparate' }).press('Escape');
+  await expect(page.getByRole('radio', { name: 'Escaparate' })).toBeHidden();
   // Filtro + búsqueda a la vez; estados vacíos diferenciados
   const other = ['reading', 'want', 'read'].find((s) => s !== target.status);
   const label = { reading: 'Leyendo', want: 'Pendientes', read: 'Leídos' }[other];
@@ -205,7 +208,11 @@ test('reseña: 3,75 se guarda y se vuelve a cargar; no concede sellos ni recompe
   await tap(form.getByRole('button', { name: 'Guardar lectura' }));
   await expect(page.locator('.review-sheet')).toBeVisible();
   const figuresBefore = JSON.stringify((await stored(page)).progress.figures);
+  // La hoja acaba de abrirse: se valora cuando su entrada ha terminado (con la máquina cargada, a veces el toque se
+  // perdía durante la animación y la puntuación seguía «Sin valorar») (1.58.2)
+  await page.locator('.review-sheet').evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {}))));
   await page.getByRole('button', { name: 'Valorar con 4 estrellas' }).click();
+  await expect(page.locator('.review-sheet .rating-input__value')).not.toHaveText('Sin valorar');
   await page.getByRole('button', { name: 'Restar un cuarto de estrella' }).click();
   await page.locator('.review-sheet__text').fill('Una amistad inolvidable.');
   await page.getByRole('button', { name: 'Guardar reseña' }).click();

@@ -301,7 +301,13 @@ test('9 · un panel abierto bloquea el panorama y Cerrar devuelve el foco', asyn
   await swipe(page, -150);
   await settle(page, info);
   expect(await roomOf(page)).toBe('MAIN_ROOM');
-  await page.keyboard.press('Escape');
+  // En escritorio el arrastre cae dentro del portátil, sobre el calendario: puede abrir el desplegable de un día y hasta la
+  // lista nativa del selector «Libro» (mientras está abierta, el navegador se queda el Escape). Se cierra de dentro
+  // afuera —lista nativa, desplegable, panel—: nunca hacen falta más de tres Escape (1.58.2)
+  for (let i = 0; i < 3 && (await page.locator('.panel-veil').count()); i++) {
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
+  }
   await expect(page.locator('.panel-veil')).toHaveCount(0);
   if (via === 'hotspot') {
     await expect.poll(() => page.evaluate(() => document.activeElement?.dataset?.id)).toBe('laptop');
@@ -388,6 +394,8 @@ test('14 · redimensionar mantiene panel y anclas alineados', async ({ page }) =
   assertGeometry(g);
   await page.setViewportSize(vp);
   await page.waitForTimeout(600);
+  // Con la máquina cargada, al girar la escena puede tardar en volver a montarse: se mide cuando ya está (1.58.2)
+  await page.waitForFunction(() => document.querySelector('.panorama-viewport [data-panel="MAIN_ROOM"] .scene-base')?.complete);
   assertGeometry(await geometry(page));
 });
 

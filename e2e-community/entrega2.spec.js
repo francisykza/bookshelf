@@ -28,7 +28,8 @@ async function openProfile(page) {
     .then(() => true)
     .catch(() => false);
   if (restored) return;
-  await page.getByRole('button', { name: 'Tu cuenta y copias de tus datos' }).click();
+  // 1.46: el acceso se llama «Tu cuenta y copias» (con el estado de la copia detrás si lo hay)
+  await page.getByRole('button', { name: /^Tu cuenta y copias/ }).click();
   await page.getByRole('button', { name: 'Abrir mi perfil' }).click();
   await expect(page.getByRole('tab', { name: 'Mi Perfil & Avatar' })).toBeVisible();
 }

@@ -6,7 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.58.1 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
+- **Versión publicada**: 1.58.2 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
 - **Árbol de trabajo**: 1.58.1 (hotfix de la auditoría del vídeo, §57) publicada; sin cambios pendientes de código. Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.58.2 | Flecha del salón que saltaba al pulsar (con movimiento reducido no navegaba) y pruebas antiguas al día | §58 |
 | 1.58.1 | Hotfix de la auditoría del vídeo: figuras SVG retiradas, visita a pantalla completa sin opciones de animación, libros en las baldas, franja de la biblioteca instalada, alias en reseñas, simular sellos solo en desarrollo | §57 |
 | 1.58.0 | Visita a un rincón compartido: casa, entrada en vídeo bajo demanda, habitación con los libros que comparte, pendientes y vuelta paso a paso | §56 |
 | 1.57.0 | Lector EPUB: estructura sin desbordes, paneles con «Volver a la lectura» y Atrás, lectura página a página con paso entre secciones, subrayados persistentes | §55 |
@@ -50,14 +51,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 1. **Fondo con baldas más anchas y frontales** para las figuras: con las baldas actuales del fondo (≈ 195 px de la
    ilustración por balda y en perspectiva) se ven más pequeñas que en `docs/design/references/habitacion-figuras-maqueta.png`.
    Hace falta que Francisco entregue ese recurso; no improvisarlo.
-2. **Prueba que falla desde antes de la 1.45**: `e2e/panorama.spec.js` «9 · un panel abierto bloquea el panorama y
-   Cerrar devuelve el foco» en `chromium-1440x900` (tras arrastrar con el portátil abierto, Escape no cierra el
-   panel). Ya fallaba en la 1.44 publicada. Sin investigar.
-2b. **Pruebas de comunidad desfasadas desde la 1.46**: 4 de `e2e-community/entrega2.spec.js` (perfil y alias, bloquear,
-   cambiar de cuenta, sin la migración) buscan el botón «Tu cuenta y copias de tus datos», que en la 1.46 pasó a
-   llamarse «Tu cuenta y copias». Fallan en los 5 tamaños; no es un fallo de la app. Sin corregir (decidir con Francisco).
-3. **Prueba intermitente**: `e2e/v123.spec.js` «pulsación…» en `chromium-1440x900` falla a veces, también en
-   versiones anteriores.
+2. **`e2e/v149` en `webkit-390x844`**: falla por una limitación del entorno (el WebKit de Playwright en Windows no
+   dibuja bien `matrix3d`; las baldas de la habitación salen inclinadas). Confirmar en un iPhone real que las baldas
+   se ven rectas. Las demás pruebas antiguas (panorama 9, entrega2, v123 pulsación…) se resolvieron en la 1.58.2 (§58).
 4. **Sonidos**: todos sintetizados (mapa en SPEC §35.4). Faltan grabaciones reales de papel, cubierta, madera y
    sobre, con licencia registrada; descargar algo requiere permiso de Francisco.
 5. **Bloques registrados y no hechos** (SPEC §32.3): las demás pantallas según sus maquetas (Perfil y Avatar,
@@ -103,6 +99,15 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-31 · cuenta principal · 1.58.2 (publicada)
+- «Haz lo que falte» tras la 1.58.1: dejar las pruebas en verde (§58). Fallo real corregido: la flecha «Abrir rincón
+  social» perdía su centrado al pulsar (`room-146.css`) y con movimiento reducido no navegaba. Actualizadas las pruebas
+  desfasadas (v123 colores, formulario y pulsación; v128 librería y reseña; panorama 9 y 14; v135, entrega2, entrega3).
+- Verificación por partes: los 8 de movimiento reducido, cada prueba corregida en todos sus proyectos (intermitentes con
+  repetición) y toda la comunidad en verde; build correcto. `qa:full` final **parado** a petición de Francisco (vuelve
+  a valer `CLAUDE.md`: pruebas acotadas). Queda `v149` en WebKit (limitación de `matrix3d` en el WebKit de Windows).
+- Rama `qa/fallos-previos` fusionada en `main` y subida por petición de Francisco («paralo y súbelo»).
 
 ### 2026-10-31 · cuenta principal · 1.58.1 (publicada)
 - Encargo «Hotfix SDD de la auditoría del vídeo» (`BookShelf-fotogramas-QA/`, §57). Detalle, causas y aceptación en
