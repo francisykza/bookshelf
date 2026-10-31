@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { chime, lampClick } from '../../audio/ambientAudio';
 import { dayKey } from '../../domain/dates';
-import { FIGURE_PITY, RARITY, RELIC_PITY, SEALS_PER_BOX } from '../../domain/figures';
+import { FIGURE_PITY, RARITY, RELIC_PITY, SEALS_PER_BOX, boxHasPrize } from '../../domain/figures';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { useLibrary } from '../../state/useLibrary';
 import { FigureArt, PartArt, RANK_STARS } from './FigureArt';
@@ -92,6 +92,8 @@ export function UnboxChamber({ catalog, onShowFigure }) {
   const [show, setShow] = useState(() => (fs.unbox && !fs.unbox.seen ? { phase: 'result', id: fs.unbox.id } : { phase: 'idle', id: null }));
   const lock = useRef(false);
   const confirmed = show.id && fs.unbox?.id === show.id ? fs.unbox : null;
+  // Sin premio posible (todo completo y sin Guardián) la caja no se abre ni se gasta
+  const hasPrize = boxHasPrize(fs, forRules(catalog));
   const reward = confirmed?.reward ?? null;
   const rFig = reward?.id ? catalog.find((f) => f.id === reward.id) : null;
   const rarity = reward?.type === 'figure' && rFig ? rFig.rarity : reward?.type === 'part' && rFig ? rFig.rarity : 'rare';
@@ -133,7 +135,7 @@ export function UnboxChamber({ catalog, onShowFigure }) {
 
   const start = () => {
     // Bloqueo síncrono además del estado visual: un doble toque no abre dos cajas
-    if (lock.current || fs.boxes <= 0 || !catalog.length) return;
+    if (lock.current || fs.boxes <= 0 || !hasPrize) return;
     lock.current = true;
     if (fs.unbox && !fs.unbox.seen) actions.markUnboxSeen(fs.unbox.id);
     const id = newAttemptId();
@@ -240,8 +242,8 @@ export function UnboxChamber({ catalog, onShowFigure }) {
 
         <div className="unbox-actions">
           {phase === 'idle' && (
-            <button type="button" className="stamp-btn unbox-actions__main" disabled={fs.boxes <= 0} onClick={start}>
-              {fs.boxes > 0 ? `Abrir una Caja Sorpresa (${fs.boxes})` : 'Sin cajas por abrir'}
+            <button type="button" className="stamp-btn unbox-actions__main" disabled={fs.boxes <= 0 || !hasPrize} onClick={start}>
+              {fs.boxes <= 0 ? 'Sin cajas por abrir' : hasPrize ? `Abrir una Caja Sorpresa (${fs.boxes})` : 'Caja guardada'}
             </button>
           )}
           {phase === 'requesting' && (
@@ -274,7 +276,7 @@ export function UnboxChamber({ catalog, onShowFigure }) {
                   Ver en mi colección
                 </button>
               )}
-              {fs.boxes > 0 ? (
+              {fs.boxes > 0 && hasPrize ? (
                 <button
                   type="button"
                   className="link-btn"
@@ -296,8 +298,10 @@ export function UnboxChamber({ catalog, onShowFigure }) {
 
         {phase === 'idle' && (
           <>
-            <p className="vault-hint">
-              {fs.boxes > 0
+            <p className="vault-hint" role={fs.boxes > 0 && !hasPrize ? 'status' : undefined}>
+              {fs.boxes > 0 && !hasPrize
+                ? 'Ahora mismo no hay ningún premio que pueda salir: elige un Guardián de Lectura para recibir sellos. Tus cajas siguen guardadas.'
+                : fs.boxes > 0
                 ? `${fs.boxes} ${fs.boxes === 1 ? 'caja' : 'cajas'} por abrir`
                 : `Sin cajas por abrir: los ${SEALS_PER_BOX} sellos de tu Guardián, las misiones del portátil y las hojas doradas del sobre del día te dan más.`}
             </p>

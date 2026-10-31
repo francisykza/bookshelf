@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.58.0 · 2026-10-30 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.58.1 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3870,3 +3870,35 @@ no acumula marcas ni tareas. Sin iPhone real: WebKit automatizado no es Safari d
   lector bloqueado; lectura actual oculta; movimiento reducido y preferencia; encuadre a 360, 430 y 1440.
 - Límites: el Chromium de Playwright no decodifica H.264 (allí se prueba el camino de error); WebKit sí reproduce el
   vídeo pero no expone su descarga al registro de peticiones. Sin iPhone ni Safari reales.
+
+## 57. Hotfix de la auditoría del vídeo (1.58.1)
+
+Detalle, causas comprobadas y aceptación en `docs/qa/video-hotfix.md`; capturas en `docs/qa/video-hotfix/`.
+
+### 57.1 Figuras SVG provisionales retiradas (decisión de Francisco)
+
+- `viajero_asteroide`, `bardo_viento` y `hechicera_eea` ya no existen como coleccionables: fuera del catálogo, de
+  premios, sorteos, unboxing, detalle, exposición y rincones. Sus SVG se han borrado. No se redibujan ni se sustituyen.
+- Cuentas antiguas: `owned` se conserva tal cual; `withoutRetired` (en `hydrate`) quita las retiradas de Guardián,
+  Senda, baldas, sinergias, último premio y unboxing pendiente. Nada se convierte en otro premio.
+- `boxHasPrize`: sin premio posible la caja no se abre ni se gasta («Caja guardada» y un aviso). Pesos, rarezas y
+  pity sin cambios.
+- «Simular lectura diaria (+1 Sello)» solo en desarrollo (botón y acción).
+
+### 57.2 Visita social (sustituye en parte a §56.1 y §56.3)
+
+- Sin opciones de animación: fuera «Entrar sin animación», «Entrar siempre sin animación» (`bookshelf:visit-skip`),
+  «Saltar» y tocar la ventana. La entrada empieza sola al abrir la visita; después, la habitación. Una flecha discreta
+  para volver. Error, `play()` rechazado, 6 s sin empezar o 4 s parado: habitación. Movimiento reducido: habitación sin
+  vídeo.
+- Pantalla completa: escena a sangre (cubre en vertical con recorte lateral 10/90; en pantallas anchas, recorte vertical
+  ≤ 11 % y después contenida sobre la escena desenfocada); escena en `100lvh`; área segura solo en los controles
+  flotantes. Casa, vídeo y habitación en una sola escena sin desmontar; fundido de 220 ms del último fotograma.
+- Historial: la entrada sustituye su paso (`switchPanel`); Atrás desde la habitación vuelve a «Lectores».
+- Un lomo por libro compartido en cuatro baldas (`SHELF_ROWS`, hasta `SHELF_CAPACITY` = 24).
+
+### 57.3 Otros
+
+- Biblioteca instalada como app: sin relleno superior en `.library` (la franja de la cabecera ya aplica el área segura).
+- Reseñas: cabecera en rejilla; alias completo y fecha en una línea (`hotfix-1581.css`).
+- EPUB: sin defecto de código; la vinculación de las capturas queda como discrepancia de datos pendiente de confirmar.

@@ -19,29 +19,46 @@ export const HOUSE_WINDOW = { x0: 0.48, x1: 0.73, y0: 0.46, y1: 0.64 };
 export const ROOM_SHELF = { x0: 0, x1: 0.23, y0: 0.08, y1: 0.83 };
 
 /**
- * Hueco de la balda superior útil (px de la imagen). La estantería está en la pared izquierda y en perspectiva: el borde
- * cercano está en x ≈ 14 y el fondo en x ≈ 144; la base sube hacia el espectador (no es horizontal en pantalla).
+ * Huecos útiles de la estantería (px de la imagen), de arriba abajo. La estantería está en la pared izquierda y en
+ * perspectiva: el borde cercano está en x ≈ 14 y el fondo en x ≈ 144; cada base baja hacia el fondo (no es horizontal en
+ * pantalla). `top` es la cara inferior de la balda de encima y `base`, la superficie donde se apoyan los libros.
+ * Medido sobre habitacion-v1.webp a resolución nativa (1.58.1).
  */
-export const SHELF_GAP = { near: 14, far: 144, top: [230, 307], base: [371, 435] };
+export const SHELF_NEAR = 14;
+export const SHELF_FAR = 144;
+export const SHELF_ROWS = [
+  { top: [230, 307], base: [371, 435] },
+  { top: [400, 468], base: [543, 585] },
+  { top: [570, 603], base: [717, 739] },
+  { top: [745, 758], base: [863, 879] },
+];
+/** Lomos por balda: con más libros compartidos, la lista completa sigue en «Libros compartidos». */
+export const SPINES_PER_ROW = 6;
+export const SHELF_CAPACITY = SHELF_ROWS.length * SPINES_PER_ROW;
 
 const lerp = (a, b, t) => a + (b - a) * t;
-const at = ([n, f], x) => lerp(n, f, (x - SHELF_GAP.near) / (SHELF_GAP.far - SHELF_GAP.near));
+const at = ([n, f], x) => lerp(n, f, (x - SHELF_NEAR) / (SHELF_FAR - SHELF_NEAR));
+const HEIGHTS = [0.8, 0.72, 0.86, 0.76, 0.82, 0.7];
 
 /**
- * Lomos de hasta tres libros destacados, apoyados en la base inclinada de la balda: polígonos en px de la imagen y su
- * caja (en fracciones) para el botón accesible. Más estrechos hacia el fondo, sin invadir la pared ni la balda superior.
+ * Lomos de los libros compartidos, balda a balda y de cerca a lejos, apoyados en cada base inclinada: polígonos en px
+ * de la imagen y su caja (en fracciones). Más estrechos hacia el fondo, sin invadir la pared ni la balda de encima.
+ * Nunca más de los que caben (SHELF_CAPACITY); sin libros, ninguno (las baldas se quedan vacías, sin rellenos).
  */
 export function shelfSpines(count) {
-  const slots = [0.16, 0.44, 0.7];
-  return slots.slice(0, Math.min(3, count)).map((t, i) => {
-    const x0 = lerp(SHELF_GAP.near + 8, SHELF_GAP.far - 14, t);
-    const w = lerp(22, 13, t);
-    const x1 = x0 + w;
-    const height = [0.82, 0.74, 0.86][i];
-    const top = (x) => at(SHELF_GAP.base, x) - (at(SHELF_GAP.base, x) - at(SHELF_GAP.top, x) - 6) * height;
+  const n = Math.max(0, Math.min(SHELF_CAPACITY, Math.floor(count) || 0));
+  return Array.from({ length: n }, (_, k) => {
+    const row = SHELF_ROWS[Math.floor(k / SPINES_PER_ROW)];
+    const j = k % SPINES_PER_ROW;
+    // Juntos, como en una balda de verdad: anchos que se estrechan hacia el fondo, uno al lado del otro
+    const width = (i) => lerp(18, 12, i / (SPINES_PER_ROW - 1));
+    const x0 = SHELF_NEAR + 6 + Array.from({ length: j }, (_, i) => width(i) + 1).reduce((acc, v) => acc + v, 0);
+    const x1 = x0 + width(j);
+    const height = HEIGHTS[(k * 5 + j) % HEIGHTS.length];
+    const top = (x) => at(row.base, x) - (at(row.base, x) - at(row.top, x) - 6) * height;
     const points = [
-      [x0, at(SHELF_GAP.base, x0)],
-      [x1, at(SHELF_GAP.base, x1)],
+      [x0, at(row.base, x0)],
+      [x1, at(row.base, x1)],
       [x1, top(x1)],
       [x0, top(x0)],
     ];

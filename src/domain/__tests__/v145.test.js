@@ -25,7 +25,6 @@ describe('catálogo 1.45', () => {
 
   it('las cajas fotografiadas antiguas y los personajes planos no se exponen en la habitación', () => {
     expect(roomDisplay(fig('dama_ceniza'), 'box')).toBe(null);
-    expect(roomDisplay(fig('viajero_asteroide'), 'unboxed')).toBe(null);
   });
 
   it('la Dama sigue siendo la figura de su saga para los libros de Mistborn (las nuevas van detrás)', () => {

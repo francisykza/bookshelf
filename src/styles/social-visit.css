@@ -1,9 +1,19 @@
-/* ── 1.58.0 · Visita a un rincón compartido (SPEC §56), todo bajo .reader-visit ───────────────────────────────────
-   Casa, vídeo y habitación comparten un marco 9:16 contenido y centrado (sin estirar ni recortar); el espacio que sobra
-   es una superficie discreta de la paleta, donde viven la cabecera y el pie. Sin brillos ni animaciones continuas. */
+/* ── 1.58.0 · Visita a un rincón compartido (SPEC §56), todo bajo .reader-visit; 1.58.1: a pantalla completa ─────────
+   Casa, vídeo y habitación son capas de una sola escena con el mismo encuadre (720 × 1280). La escena llega a los bordes:
+   en vertical cubre la pantalla (recorte lateral sesgado a la izquierda para no perder el mueble de libros) y en
+   pantallas anchas se contiene sobre la misma ilustración desenfocada. Sin bandas claras: el área segura se aplica a los
+   controles, que flotan sobre la escena. Sin brillos ni animaciones continuas. */
 .panel-veil[data-variant='visit'] {
   padding: 0;
   place-items: stretch;
+  background: #2c1e14;
+}
+
+/* Mientras llega el código de la visita: el mismo fondo oscuro, nunca un destello claro */
+.reader-visit-wait {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
   background: #2c1e14;
 }
 
@@ -26,13 +36,14 @@
   --rv-paper: #faf5e8;
   --rv-ink: #2c1e14;
   --rv-soft: #725b46;
-  --rv-surface: #e9dcc2;
+  --rv-chip: rgb(250 245 232 / 0.86);
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: var(--rv-surface);
+  background: #2c1e14;
   color: var(--rv-ink);
   font: 16px/1.4 'Lora', Georgia, serif;
+  overscroll-behavior: none;
 }
 
 .reader-visit *,
@@ -41,22 +52,53 @@
   box-sizing: border-box;
 }
 
+/* La escena mide la pantalla grande (100lvh): mostrar u ocultar las barras del navegador no la reescala ni la mueve */
 .reader-visit__stage {
   position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
+  overflow: hidden;
+  container-type: size;
 }
 
-/* Contener 9:16: el lado que manda es el que no cabe */
+/* Fondo desenfocado (solo se ve donde la escena no cubre: pantallas anchas) */
+.reader-visit__backdrop,
+.reader-visit__backdrop img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.reader-visit__backdrop img {
+  object-fit: cover;
+  filter: blur(26px) brightness(0.7) saturate(1.05);
+  transform: scale(1.12);
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.reader-visit__backdrop img[data-on] {
+  opacity: 1;
+}
+
+/*
+ * Caja común: --rv-w es el ancho de la ilustración. Cubre (como mucho un 11 % de recorte vertical en pantallas algo más
+ * anchas que 9:16) y, más allá, se contiene. Horizontalmente, el recorte se reparte 10/90 (el mueble está a la izquierda);
+ * si sobra espacio, se centra.
+ */
 .reader-visit__frame {
-  position: relative;
-  width: min(100%, calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 9 / 16));
-  max-height: 100%;
+  --rv-w: min(max(100cqw, 100cqh * 9 / 16), 100cqh * 0.63);
+  position: absolute;
+  left: calc(min(0px, (100cqw - var(--rv-w)) * 0.1) + max(0px, (100cqw - var(--rv-w)) * 0.5));
+  top: calc((100cqh - var(--rv-w) * 16 / 9) * 0.5);
+  width: var(--rv-w);
+  height: calc(var(--rv-w) * 16 / 9);
   overflow: hidden;
-  background: #d9c7a5;
-  box-shadow: 0 0 0 1px rgb(44 30 20 / 0.08);
+  background: #2c1e14;
 }
 
 .reader-visit__bg,
@@ -66,37 +108,34 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
-/* El vídeo no se ve hasta tener un fotograma: hasta entonces queda la casa */
-.reader-visit__video {
+/* Capas: la casa siempre debajo; la habitación, preparada y oculta hasta el relevo; el vídeo, con su primer fotograma */
+.reader-visit__bg:not([data-on]),
+.reader-visit__video:not([data-on]) {
   opacity: 0;
 }
 
-.reader-visit__video[data-shown] {
-  opacity: 1;
+/* Relevo: el último fotograma se funde con la habitación (inmediato con movimiento reducido) */
+.reader-visit[data-phase='saliendo'] .reader-visit__video {
+  transition: opacity 220ms ease;
 }
 
-.reader-visit__window,
+.reader-visit[data-reduced] .reader-visit__video {
+  transition: none;
+}
+
 .reader-visit__shelf {
   position: absolute;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 0 0 6px;
+  padding: 0 4px 6px;
   border: 0;
   border-radius: 8px;
   background: none;
   cursor: pointer;
-}
-
-.reader-visit__window:disabled {
-  cursor: default;
-}
-
-.reader-visit__shelf {
-  align-items: flex-end;
 }
 
 .reader-visit :is(button, input):focus-visible {
@@ -110,45 +149,21 @@
   align-items: center;
   gap: 4px;
   max-width: 100%;
-  padding: 3px 9px;
+  padding: 3px 8px;
   border: 1px solid rgb(114 91 70 / 0.3);
   border-radius: 999px;
-  background: rgb(250 245 232 / 0.86);
+  background: var(--rv-chip);
   color: var(--rv-ink);
-  font: 600 13px/1.2 'Lora', Georgia, serif;
+  font: 600 12.5px/1.2 'Lora', Georgia, serif;
   white-space: nowrap;
 }
 
-.reader-visit__tag svg {
-  width: 14px;
-  height: 14px;
-}
-
-.reader-visit__window:disabled .reader-visit__tag {
-  opacity: 0.6;
-}
-
-.reader-visit[data-guides='on'] .reader-visit__window,
 .reader-visit[data-guides='on'] .reader-visit__shelf {
   outline: 1.5px dashed rgb(250 245 232 / 0.85);
   outline-offset: -3px;
 }
 
-/* La balda es estrecha (23 % del ancho): rótulo en una línea, sin icono, dentro del mueble */
-.reader-visit__shelf {
-  padding: 0 4px 6px;
-}
-
-.reader-visit__shelf .reader-visit__tag {
-  padding: 3px 8px;
-  font-size: 12.5px;
-}
-
-.reader-visit__shelf .reader-visit__tag svg {
-  display: none;
-}
-
-/* Lomos destacados: aparecen breve y discretamente cuando la habitación ya está quieta */
+/* Lomos compartidos: aparecen breve y discretamente cuando la habitación ya está quieta */
 .reader-visit__spines {
   position: absolute;
   inset: 0;
@@ -167,19 +182,22 @@
   transition: none;
 }
 
-/* Cabecera y pie: sobre las bandas libres (o sobre el borde de la ilustración en pantallas más anchas que 9:16) */
+/* Cabecera flotante: solo los controles llevan el área segura; detrás, la escena */
 .reader-visit__bar {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 52px;
-  padding: calc(env(safe-area-inset-top) + 4px) 8px 4px;
-  background: linear-gradient(rgb(250 245 232 / 0.94), rgb(250 245 232 / 0.78));
-  border-bottom: 1px solid rgb(114 91 70 / 0.18);
+  padding: calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 10px) 0 calc(env(safe-area-inset-left) + 10px);
+  pointer-events: none;
+}
+
+.reader-visit__bar > * {
+  pointer-events: auto;
 }
 
 .reader-visit__icon {
@@ -188,11 +206,16 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border: 0;
-  border-radius: 10px;
-  background: none;
+  border: 1px solid rgb(114 91 70 / 0.22);
+  border-radius: 999px;
+  background: var(--rv-chip);
+  box-shadow: 0 2px 8px rgb(44 30 20 / 0.18);
   color: var(--rv-ink);
   cursor: pointer;
+}
+
+.reader-visit__icon:last-child:not(:first-child) {
+  margin-left: auto;
 }
 
 .reader-visit__icon svg {
@@ -202,44 +225,72 @@
 
 .reader-visit__who {
   display: flex;
-  flex: 1;
   align-items: center;
   gap: 8px;
   min-width: 0;
+  max-width: calc(100% - 112px);
+  padding: 3px 14px 3px 3px;
+  border: 1px solid rgb(114 91 70 / 0.22);
+  border-radius: 999px;
+  background: var(--rv-chip);
+  box-shadow: 0 2px 8px rgb(44 30 20 / 0.18);
+}
+
+.reader-visit__who .reader-avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
 }
 
 .reader-visit__who b {
   overflow: hidden;
-  font: 600 20px/1.1 'Cormorant Garamond', Georgia, serif;
+  font: 600 19px/1.1 'Cormorant Garamond', Georgia, serif;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
+/* Pie flotante de la habitación: sin banda; lo que hay que leer va en papel */
 .reader-visit__foot {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px calc(env(safe-area-inset-bottom) + 12px);
-  background: linear-gradient(rgb(250 245 232 / 0.8), rgb(250 245 232 / 0.95));
-  border-top: 1px solid rgb(114 91 70 / 0.18);
+  padding: 0 calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 12px);
   text-align: center;
+  pointer-events: none;
 }
 
-.reader-visit__foot[data-phase='preparando'],
-.reader-visit__foot[data-phase='entrando'] {
-  background: none;
-  border-top: 0;
+.reader-visit__foot > * {
+  pointer-events: auto;
+}
+
+.reader-visit[data-stage='habitacion'] :is(.reader-visit__foot, .reader-visit__who, .reader-visit__bar .reader-visit__icon:not(:first-child)) {
+  animation: rv-controls 240ms ease both;
+}
+
+.reader-visit[data-reduced] :is(.reader-visit__foot, .reader-visit__who, .reader-visit__icon) {
+  animation: none;
+}
+
+@keyframes rv-controls {
+  from {
+    opacity: 0;
+  }
 }
 
 .reader-visit__lead,
 .reader-visit__hint,
 .reader-visit__note {
   margin: 0;
+  max-width: 100%;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--rv-chip);
 }
 
 .reader-visit__lead b {
@@ -260,12 +311,13 @@
 }
 
 .reader-visit__actions .sheet-btn,
-.reader-visit__foot > .sheet-btn {
+.reader-visit__foot .sheet-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 44px;
   background: var(--rv-paper);
+  box-shadow: 0 2px 8px rgb(44 30 20 / 0.18);
 }
 
 .reader-visit__actions svg {
@@ -273,25 +325,14 @@
   height: 17px;
 }
 
-.reader-visit__check {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  color: var(--rv-soft);
-  font-size: 14px;
-}
-
-.reader-visit__check input {
-  width: 20px;
-  height: 20px;
-}
-
 .reader-visit__status {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--rv-chip);
 }
 
 .reader-visit__status p {

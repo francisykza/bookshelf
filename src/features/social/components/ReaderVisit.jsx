@@ -1,8 +1,11 @@
-// Visita al rincón de una persona que sigues (SPEC §56). Casa ilustrada con su alias y la ventana inferior derecha como
-// acceso; al tocarla, el vídeo de entrada (único y común a todas las visitas) y la habitación del último fotograma, con
-// los libros que esa persona ha decidido compartir. Etapas en el historial de la app: casa → habitación → libros/libro
-// (Atrás y Escape cierran de uno en uno). Los estados del vídeo (preparando, entrando) no son entradas de historial y
-// nunca bloquean la salida. El vídeo no se pide hasta tocar la ventana; recargar la habitación no lo repite.
+// Visita al rincón de una persona que sigues (SPEC §56, revisada en la 1.58.1). Al abrirla empieza directamente la
+// entrada en vídeo (casa → ventana → habitación) y, al terminar, la habitación interactiva con los libros que esa persona
+// ha decidido compartir. Sin preguntas previas ni opciones de animación: solo una flecha discreta para volver. Con
+// movimiento reducido, o si el vídeo falla, no arranca o se queda parado, se entra directamente en la habitación.
+// Casa, vídeo y habitación son capas de UNA sola escena que no se desmonta entre etapas (mismo encuadre, sin parpadeos):
+// el último fotograma se queda a la vista hasta que la habitación está decodificada. Etapas en el historial:
+// habitación → libros/libro (Atrás y Escape cierran de uno en uno); la entrada sustituye su entrada de historial, así que
+// volver desde la habitación lleva al origen y recargar no repite el vídeo.
 import { ArrowLeft, BookOpen, UserRound } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
@@ -12,15 +15,23 @@ import { useReducedMotion } from '../../../hooks/useReducedMotion';
 import { useLibrary } from '../../../state/useLibrary';
 import { useCommunity } from '../hooks/useCommunity';
 import { useReaderCorner } from '../hooks/useReaderCorner';
-import { currentTitle, readSkip, sharedBooks, writeSkip } from '../visit';
-import { HOUSE_WINDOW, ROOM_SHELF, VISIT_H, VISIT_MEDIA, VISIT_W, shelfSpines } from '../visitScene';
+import { currentTitle, sharedBooks } from '../visit';
+import { ROOM_SHELF, VISIT_H, VISIT_MEDIA, VISIT_W, shelfSpines } from '../visitScene';
 import { SharedBooksSheet, VisitBookSheet } from './VisitBookSheet';
 
-/** Espera máxima a que el vídeo tenga un fotograma: después se entra en la habitación sin animación. */
-const PREPARE_LIMIT = 6000;
+/** Espera máxima a que el vídeo empiece a moverse; y a que avance si se queda parado. Después, la habitación. */
+const START_LIMIT = 6000;
+const STALL_LIMIT = 4000;
 
 const pct = (v) => `${(v * 100).toFixed(3)}%`;
 const zone = (z) => ({ left: pct(z.x0), top: pct(z.y0), width: pct(z.x1 - z.x0), height: pct(z.y1 - z.y0) });
+
+/** Decodifica una imagen antes de mostrarla (sin bloquear si el navegador no sabe decodificar por adelantado). */
+function decodeImage(src) {
+  const img = new Image();
+  img.src = src;
+  return (img.decode ? img.decode() : Promise.resolve()).catch(() => {});
+}
 
 export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, onProfile }) {
   const community = useCommunity({ autoload: true });
@@ -30,26 +41,182 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
   const data = corner.data;
   const alias = data?.profile?.alias ?? '';
   const shared = useMemo(() => (data ? sharedBooks({ ownerId: userId, corner: data.corner, collections: data.collections }) : { featured: [], all: [] }), [data, userId]);
-  const label = (text) => (alias ? `${text} de ${alias}` : text);
+  const ready = corner.status === 'ready' && Boolean(data?.profile);
+  // Fase de la entrada (solo en la etapa «casa»): espera (o preparando, si ya hay vídeo) → entrando → fin
+  const [phase, setPhase] = useState('espera');
+  const [roomShown, setRoomShown] = useState(stage === 'habitacion');
+  const videoRef = useRef(null);
+  const done = useRef(stage === 'habitacion');
+  // Montada de verdad (StrictMode monta, desmonta y vuelve a montar: no basta con marcar «hecho» al desmontar)
+  const alive = useRef(false);
+
+  /**
+   * Mostrar la habitación (una sola vez) cuando su imagen ya está lista. El último fotograma se funde con ella (220 ms;
+   * el vídeo y la ilustración solo difieren en tono y compresión) y después se suelta el vídeo.
+   */
+  const finish = () => {
+    if (done.current) return;
+    done.current = true;
+    decodeImage(VISIT_MEDIA.room).then(() => {
+      if (!alive.current) return;
+      setRoomShown(true);
+      // Sin vídeo montado (movimiento reducido) no hay fundido: nunca se monta ni se pide el vídeo por llegar aquí
+      const fading = Boolean(videoRef.current);
+      setPhase(fading ? 'saliendo' : 'fin');
+      onEnter();
+      if (!fading) return;
+      setTimeout(() => {
+        const v = videoRef.current;
+        if (v) {
+          v.pause();
+          v.removeAttribute('src');
+          v.load();
+        }
+        if (alive.current) setPhase('fin');
+      }, 260);
+    });
+  };
+
+  // Movimiento reducido: directamente a la habitación (también si el perfil aún carga: la habitación lo indica)
+  useEffect(() => {
+    if (stage === 'casa' && reduced) finish();
+    // finish es estable para esta visita
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, reduced]);
+
+  // La entrada empieza sola en cuanto se sabe que el rincón existe; nunca antes de abrir la visita
+  const play = stage === 'casa' && !reduced && ready && phase === 'espera';
+  const playing = play || phase === 'entrando' || phase === 'saliendo';
+  // Depende solo de que la entrada haya empezado: pasar de «preparando» a «entrando» no suelta los escuchadores
+  useEffect(() => {
+    if (!playing) return undefined;
+    const v = videoRef.current;
+    if (!v) return undefined;
+    decodeImage(VISIT_MEDIA.room);
+    let over = false;
+    let stall = null;
+    const fallback = () => {
+      if (over) return;
+      over = true;
+      finish();
+    };
+    const start = setTimeout(fallback, START_LIMIT);
+    // Si deja de avanzar (red, decodificador), no se espera indefinidamente
+    const watch = () => {
+      clearTimeout(stall);
+      stall = setTimeout(fallback, STALL_LIMIT);
+    };
+    const onPlaying = () => {
+      clearTimeout(start);
+      setPhase('entrando');
+      watch();
+    };
+    const onEnded = () => {
+      over = true;
+      clearTimeout(start);
+      clearTimeout(stall);
+      finish();
+    };
+    v.addEventListener('playing', onPlaying);
+    v.addEventListener('timeupdate', watch);
+    v.addEventListener('ended', onEnded);
+    v.addEventListener('error', fallback);
+    v.src = VISIT_MEDIA.video;
+    const p = v.play();
+    if (p?.catch) p.catch(fallback);
+    // Pestaña oculta: se pausa; al volver sigue, sin repetir la entrada
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        clearTimeout(stall);
+        v.pause();
+      } else if (!over) {
+        watch();
+        v.play().catch(fallback);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      over = true;
+      clearTimeout(start);
+      clearTimeout(stall);
+      v.removeEventListener('playing', onPlaying);
+      v.removeEventListener('timeupdate', watch);
+      v.removeEventListener('ended', onEnded);
+      v.removeEventListener('error', fallback);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+    // finish es estable para esta visita
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
+
+  // Al salir (Atrás, Escape, otra pantalla): el vídeo se suelta
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      const v = videoRef.current;
+      if (!v) return;
+      v.pause();
+      v.removeAttribute('src');
+      v.load();
+    };
+  }, []);
+
+  const inRoom = stage === 'habitacion' && roomShown;
+  const backLabel = inRoom ? 'Volver' : 'Salir de la visita';
 
   return (
     <PanelShell onClose={onBack} label={alias ? `Visita al rincón de ${alias}` : 'Visita a un rincón'} variant="visit">
-      <div className="reader-visit" data-stage={stage} data-guides={state.settings.showGuides ? 'on' : 'off'} data-reduced={reduced || undefined}>
-        {stage === 'casa' ? (
-          <House userId={userId} alias={alias} data={data} status={corner.status} reduced={reduced} onEnter={onEnter} onBack={onBack} onProfile={onProfile} label={label} />
+      <div className="reader-visit" data-stage={inRoom ? 'habitacion' : 'casa'} data-phase={play ? 'preparando' : phase} data-guides={state.settings.showGuides ? 'on' : 'off'} data-reduced={reduced || undefined}>
+        <Scene layer={roomShown || reduced ? 'room' : phase === 'entrando' ? 'video' : 'house'} playing={playing} videoRef={videoRef}>
+          {inRoom && ready && <Shelf alias={alias} shared={shared} reduced={reduced} onSelect={onSelect} />}
+        </Scene>
+        <header className="reader-visit__bar">
+          <button type="button" className="reader-visit__icon" onClick={onBack} aria-label={backLabel}>
+            <ArrowLeft aria-hidden="true" />
+          </button>
+          {inRoom && <Who data={data} alias={alias} />}
+          {inRoom && ready && (
+            <button type="button" className="reader-visit__icon" onClick={onProfile} aria-label={`Ver el perfil de ${alias}`}>
+              <UserRound aria-hidden="true" />
+            </button>
+          )}
+        </header>
+        {inRoom ? (
+          <RoomFoot data={data} status={corner.status} failure={corner.failure} reload={corner.reload} shared={shared} onSelect={onSelect} onBack={onBack} onProfile={onProfile} />
         ) : (
-          <Room alias={alias} data={data} status={corner.status} failure={corner.failure} reload={corner.reload} shared={shared} select={select} reduced={reduced} onSelect={onSelect} onBack={onBack} onProfile={onProfile} />
+          (corner.status === 'error' || (corner.status === 'ready' && !data?.profile)) && (
+            <footer className="reader-visit__foot">
+              <VisitStatus status={corner.status} data={data} failure={corner.failure} reload={corner.reload} onBack={onBack} />
+            </footer>
+          )
+        )}
+        {inRoom && ready && select === 'libros' && <SharedBooksSheet items={shared.all} alias={alias} profile={data.profile} reviews={data.reviews} onOpenBook={(key) => onSelect(key)} onBack={onBack} />}
+        {inRoom && ready && select && select !== 'libros' && (
+          <VisitBookSheet item={shared.all.find((it) => it.key === select) ?? null} alias={alias} profile={data.profile} reviews={data.reviews} onBack={onBack} />
         )}
       </div>
     </PanelShell>
   );
 }
 
-/** Marco 9:16 común a la casa, el vídeo y la habitación: contener y centrar, sin estirar ni recortar. */
-function Frame({ children, className = '' }) {
+/**
+ * Escena a sangre: los tres recursos comparten encuadre (720 × 1280) y la misma caja, que cubre la pantalla en vertical
+ * (recorte lateral con el mueble de libros a la vista) y se contiene sobre un fondo desenfocado en pantallas anchas.
+ * Las capas no se desmontan entre etapas: solo cambian de visibilidad.
+ */
+function Scene({ layer, playing, videoRef, children }) {
   return (
-    <div className={`reader-visit__stage ${className}`}>
-      <div className="reader-visit__frame" style={{ aspectRatio: `${VISIT_W} / ${VISIT_H}` }}>
+    <div className="reader-visit__stage" data-layer={layer}>
+      <div className="reader-visit__backdrop" aria-hidden="true">
+        <img src={VISIT_MEDIA.house} alt="" data-on={layer !== 'room' || undefined} />
+        <img src={VISIT_MEDIA.room} alt="" data-on={layer === 'room' || undefined} loading="lazy" />
+      </div>
+      <div className="reader-visit__frame">
+        <img className="reader-visit__bg" data-on src={VISIT_MEDIA.house} alt="" width={VISIT_W} height={VISIT_H} decoding="async" />
+        {/* La habitación se prepara bajo el vídeo: en el relevo ya está pintada y sustituye al último fotograma sin hueco */}
+        {(playing || layer === 'room') && <img className="reader-visit__bg" data-on={layer === 'room' || undefined} src={VISIT_MEDIA.room} alt="" width={VISIT_W} height={VISIT_H} decoding="async" />}
+        {playing && <video ref={videoRef} className="reader-visit__video" data-on={layer === 'video' || undefined} preload="none" muted playsInline disablePictureInPicture disableRemotePlayback aria-hidden="true" tabIndex={-1} />}
         {children}
       </div>
     </div>
@@ -63,168 +230,6 @@ function Who({ data, alias }) {
       <ReaderAvatar avatarId={data.profile.avatar_id} alias={alias} size="list" decorative />
       <b>{alias}</b>
     </span>
-  );
-}
-
-// ── Casa y entrada ────────────────────────────────────────────────────────────────────────────────────────────────
-function House({ alias, data, status, reduced, onEnter, onBack, onProfile, label }) {
-  // casa | preparando | entrando (solo en esta pantalla; no son entradas de historial)
-  const [phase, setPhase] = useState('casa');
-  const [skip, setSkip] = useState(readSkip);
-  const [note, setNote] = useState('');
-  const videoRef = useRef(null);
-  const done = useRef(false);
-
-  /** Entrar en la habitación (una sola vez), sin dejar el vídeo cargando detrás. */
-  const enter = () => {
-    if (done.current) return;
-    done.current = true;
-    const v = videoRef.current;
-    if (v) {
-      v.pause();
-      v.removeAttribute('src');
-      v.load();
-    }
-    onEnter();
-  };
-
-  const start = () => {
-    if (phase !== 'casa' || done.current) return;
-    if (reduced || skip) return enter();
-    setPhase('preparando');
-  };
-
-  const playing = phase !== 'casa';
-  // Preparar: el vídeo recibe su fuente AHORA (nunca antes de tocar la ventana) y el fondo final se decodifica a la vez.
-  // Depende solo de que la visita haya empezado: pasar de «preparando» a «entrando» no debe soltar sus escuchadores
-  useEffect(() => {
-    if (!playing) return undefined;
-    const v = videoRef.current;
-    if (!v) return undefined;
-    const room = new Image();
-    room.src = VISIT_MEDIA.room;
-    room.decode?.().catch(() => {});
-    let finished = false;
-    const fallback = () => {
-      if (finished) return;
-      finished = true;
-      setNote('La entrada no se ha podido reproducir: pasas directamente.');
-      enter();
-    };
-    const timer = setTimeout(fallback, PREPARE_LIMIT);
-    const onPlaying = () => {
-      clearTimeout(timer);
-      setPhase('entrando');
-    };
-    const onEnded = () => {
-      finished = true;
-      clearTimeout(timer);
-      enter();
-    };
-    v.addEventListener('playing', onPlaying);
-    v.addEventListener('ended', onEnded);
-    v.addEventListener('error', fallback);
-    v.src = VISIT_MEDIA.video;
-    const p = v.play();
-    if (p?.catch) p.catch(fallback);
-    // Pestaña oculta: se pausa (sin sonido que reanudar); al volver sigue, sin repetir la entrada
-    const onVis = () => {
-      if (document.visibilityState === 'hidden') v.pause();
-      else if (!finished) v.play().catch(fallback);
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => {
-      finished = true;
-      clearTimeout(timer);
-      v.removeEventListener('playing', onPlaying);
-      v.removeEventListener('ended', onEnded);
-      v.removeEventListener('error', fallback);
-      document.removeEventListener('visibilitychange', onVis);
-    };
-    // enter es estable para esta pantalla
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing]);
-
-  // Al salir (Atrás, Escape, otra pantalla): el vídeo se suelta
-  useEffect(
-    () => () => {
-      const v = videoRef.current;
-      if (!v) return;
-      v.pause();
-      v.removeAttribute('src');
-      v.load();
-    },
-    [],
-  );
-
-  return (
-    <>
-      <Frame className="reader-visit__stage--house">
-        <img className="reader-visit__bg" src={VISIT_MEDIA.house} alt="" width={VISIT_W} height={VISIT_H} decoding="async" />
-        {playing && (
-          <video
-            ref={videoRef}
-            className="reader-visit__video"
-            data-shown={phase === 'entrando' || undefined}
-            preload="none"
-            muted
-            playsInline
-            disablePictureInPicture
-            disableRemotePlayback
-            aria-hidden="true"
-            tabIndex={-1}
-          />
-        )}
-        {!playing && (
-          <button type="button" className="reader-visit__window" style={zone(HOUSE_WINDOW)} onClick={start} disabled={status !== 'ready' || !data?.profile} aria-label={label('Entrar por la ventana en el rincón')}>
-            <span className="reader-visit__tag">Entrar</span>
-          </button>
-        )}
-      </Frame>
-      <header className="reader-visit__bar">
-        <button type="button" className="reader-visit__icon" onClick={onBack} aria-label="Volver">
-          <ArrowLeft aria-hidden="true" />
-        </button>
-        <Who data={data} alias={alias} />
-      </header>
-      <footer className="reader-visit__foot" data-phase={phase}>
-        {playing ? (
-          <button type="button" className="sheet-btn" onClick={enter}>
-            Saltar
-          </button>
-        ) : status === 'ready' && data?.profile ? (
-          <>
-            <p className="reader-visit__lead">Toca la ventana para entrar en el rincón de {alias}.</p>
-            <div className="reader-visit__actions">
-              <button type="button" className="sheet-btn" onClick={enter}>
-                Entrar sin animación
-              </button>
-              <button type="button" className="sheet-btn" onClick={onProfile}>
-                <UserRound aria-hidden="true" /> Ver perfil
-              </button>
-            </div>
-            <label className="reader-visit__check">
-              <input
-                type="checkbox"
-                checked={skip}
-                onChange={(e) => {
-                  setSkip(e.target.checked);
-                  writeSkip(e.target.checked);
-                }}
-              />
-              Entrar siempre sin animación
-            </label>
-          </>
-        ) : (
-          <VisitStatus status={status} data={data} onBack={onBack} />
-        )}
-        {note && (
-          <p className="reader-visit__note" role="status">
-            {note}
-          </p>
-        )}
-      </footer>
-    </>
   );
 }
 
@@ -259,89 +264,71 @@ function VisitStatus({ status, data, failure, reload, onBack }) {
 }
 
 // ── Habitación ───────────────────────────────────────────────────────────────────────────────────────────────────
-function Room({ alias, data, status, failure, reload, shared, select, reduced, onSelect, onBack, onProfile }) {
-  const [bgFailed, setBgFailed] = useState(false);
+/** Lomos de lo compartido sobre las baldas pintadas (decorativos) y la zona tocable del mueble. */
+function Shelf({ alias, shared, reduced, onSelect }) {
   const [settled, setSettled] = useState(reduced);
-  const reading = currentTitle(data?.corner);
-  const privateCorner = data?.profile && !data.corner?.visible;
-  const spines = shelfSpines(shared.featured.length);
+  const spines = shelfSpines(shared.all.length);
   // Los libros aparecen cuando la habitación ya está quieta: breve y discreto (inmediato con movimiento reducido)
   useEffect(() => {
     if (reduced) return undefined;
     const id = setTimeout(() => setSettled(true), 60);
     return () => clearTimeout(id);
   }, [reduced]);
-  const ready = status === 'ready' && data?.profile;
-  const item = select && select !== 'libros' ? (shared.all.find((it) => it.key === select) ?? null) : null;
-
   return (
     <>
-      <Frame>
-        {!bgFailed && <img className="reader-visit__bg" src={VISIT_MEDIA.room} alt="" width={VISIT_W} height={VISIT_H} decoding="async" onError={() => setBgFailed(true)} />}
-        {ready && spines.length > 0 && (
-          <svg className="reader-visit__spines" data-shown={settled || undefined} viewBox={`0 0 ${VISIT_W} ${VISIT_H}`} preserveAspectRatio="none" aria-hidden="true">
-            {spines.map((s, i) => {
-              const b = shared.featured[i].ref;
-              const [p0, p1, p2, p3] = s.points;
-              // Lomo con su canto y una banda alta discreta (nada de brillos): un libro, no una tarjeta
-              const band = (k) => [p3[0], p3[1] + (p0[1] - p3[1]) * k, p2[0], p2[1] + (p1[1] - p2[1]) * k];
-              const [a1, b1, c1, d1] = band(0.12);
-              const [a2, b2, c2, d2] = band(0.16);
-              return (
-                <g key={shared.featured[i].key}>
-                  <polygon points={s.points.map((p) => p.join(',')).join(' ')} fill={spineColor({ title: b.title, author: b.author })} stroke="rgba(44, 30, 20, 0.45)" strokeWidth="1.2" />
-                  <polygon points={`${a1},${b1} ${c1},${d1} ${c2},${d2} ${a2},${b2}`} fill="rgba(250, 236, 200, 0.55)" />
-                  <line x1={p0[0] + 1} y1={p0[1] - 2} x2={p3[0] + 1} y2={p3[1] + 2} stroke="rgba(255, 245, 220, 0.25)" strokeWidth="1" />
-                </g>
-              );
-            })}
-          </svg>
-        )}
-        {ready && (
-          <button type="button" className="reader-visit__shelf" style={zone(ROOM_SHELF)} onClick={() => onSelect('libros')} aria-label={`Libros compartidos por ${alias} (${shared.all.length})`}>
-            <span className="reader-visit__tag">
-              <BookOpen aria-hidden="true" /> Libros{shared.all.length ? ` · ${shared.all.length}` : ''}
-            </span>
-          </button>
-        )}
-      </Frame>
-      <header className="reader-visit__bar">
-        <button type="button" className="reader-visit__icon" onClick={onBack} aria-label="Volver a la casa">
-          <ArrowLeft aria-hidden="true" />
-        </button>
-        <Who data={data} alias={alias} />
-        {ready && (
-          <button type="button" className="reader-visit__icon" onClick={onProfile} aria-label={`Ver el perfil de ${alias}`}>
-            <UserRound aria-hidden="true" />
-          </button>
-        )}
-      </header>
-      <footer className="reader-visit__foot">
-        {ready ? (
-          <>
-            {reading && (
-              <p className="reader-visit__lead">
-                Está leyendo <b>«{reading}»</b>
-              </p>
-            )}
-            {privateCorner && <p className="reader-visit__hint">Su rincón es privado: aquí solo se ve lo que comparte en colecciones visibles.</p>}
-            {!privateCorner && !shared.all.length && <p className="reader-visit__hint">Aún no ha compartido libros. Las baldas esperan.</p>}
-            {bgFailed && <p className="reader-visit__hint">La ilustración de la habitación no se ha podido cargar.</p>}
-            <div className="reader-visit__actions">
-              <button type="button" className="sheet-btn" onClick={() => onSelect('libros')}>
-                <BookOpen aria-hidden="true" /> Libros compartidos
-              </button>
-              <button type="button" className="sheet-btn" onClick={onProfile}>
-                <UserRound aria-hidden="true" /> Ver perfil
-              </button>
-            </div>
-          </>
-        ) : (
-          <VisitStatus status={status} data={data} failure={failure} reload={reload} onBack={onBack} />
-        )}
-      </footer>
-      {ready && select === 'libros' && <SharedBooksSheet items={shared.all} alias={alias} profile={data.profile} reviews={data.reviews} onOpenBook={(key) => onSelect(key)} onBack={onBack} />}
-      {ready && select && select !== 'libros' && <VisitBookSheet item={item} alias={alias} profile={data.profile} reviews={data.reviews} onBack={onBack} />}
+      {spines.length > 0 && (
+        <svg className="reader-visit__spines" data-shown={settled || undefined} viewBox={`0 0 ${VISIT_W} ${VISIT_H}`} preserveAspectRatio="none" aria-hidden="true">
+          {spines.map((s, i) => {
+            const b = shared.all[i].ref;
+            const [p0, p1, p2, p3] = s.points;
+            // Lomo con su canto y una banda alta discreta (nada de brillos): un libro, no una tarjeta
+            const band = (k) => [p3[0], p3[1] + (p0[1] - p3[1]) * k, p2[0], p2[1] + (p1[1] - p2[1]) * k];
+            const [a1, b1, c1, d1] = band(0.12);
+            const [a2, b2, c2, d2] = band(0.16);
+            return (
+              <g key={shared.all[i].key}>
+                <polygon points={s.points.map((p) => p.join(',')).join(' ')} fill={spineColor({ title: b.title, author: b.author })} stroke="rgba(44, 30, 20, 0.45)" strokeWidth="1.2" />
+                <polygon points={`${a1},${b1} ${c1},${d1} ${c2},${d2} ${a2},${b2}`} fill="rgba(250, 236, 200, 0.55)" />
+                <line x1={p0[0] + 1} y1={p0[1] - 2} x2={p3[0] + 1} y2={p3[1] + 2} stroke="rgba(255, 245, 220, 0.25)" strokeWidth="1" />
+              </g>
+            );
+          })}
+        </svg>
+      )}
+      <button type="button" className="reader-visit__shelf" style={zone(ROOM_SHELF)} onClick={() => onSelect('libros')} aria-label={`Libros compartidos por ${alias} (${shared.all.length})`}>
+        <span className="reader-visit__tag">Libros{shared.all.length ? ` · ${shared.all.length}` : ''}</span>
+      </button>
     </>
+  );
+}
+
+function RoomFoot({ data, status, failure, reload, shared, onSelect, onBack, onProfile }) {
+  const ready = status === 'ready' && data?.profile;
+  const reading = currentTitle(data?.corner);
+  const privateCorner = data?.profile && !data.corner?.visible;
+  return (
+    <footer className="reader-visit__foot">
+      {ready ? (
+        <>
+          {reading && (
+            <p className="reader-visit__lead">
+              Está leyendo <b>«{reading}»</b>
+            </p>
+          )}
+          {privateCorner && <p className="reader-visit__hint">Su rincón es privado: aquí solo se ve lo que comparte en colecciones visibles.</p>}
+          {!privateCorner && !shared.all.length && <p className="reader-visit__hint">Aún no ha compartido libros. Las baldas esperan.</p>}
+          <div className="reader-visit__actions">
+            <button type="button" className="sheet-btn" onClick={() => onSelect('libros')}>
+              <BookOpen aria-hidden="true" /> Libros compartidos
+            </button>
+            <button type="button" className="sheet-btn" onClick={onProfile}>
+              <UserRound aria-hidden="true" /> Ver perfil
+            </button>
+          </div>
+        </>
+      ) : (
+        <VisitStatus status={status} data={data} failure={failure} reload={reload} onBack={onBack} />
+      )}
+    </footer>
   );
 }

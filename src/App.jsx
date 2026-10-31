@@ -37,7 +37,7 @@ import { LibraryProvider, useLibrary } from './state/useLibrary';
 // La comunidad se descarga solo al abrirla (SPEC §25.13)
 const SocialHub = lazy(() => import('./features/social/components/SocialHub').then((m) => ({ default: m.SocialHub })));
 const GoodreadsImportPanel = lazy(() => import('./features/imports/GoodreadsImportPanel').then((m) => ({ default: m.GoodreadsImportPanel })));
-// 1.58 (SPEC §56): la visita a un rincón se carga solo al abrirla (y el vídeo, solo al tocar la ventana)
+// 1.58 (SPEC §56): la visita a un rincón se carga solo al abrirla (y el vídeo, solo cuando empieza la entrada)
 const ReaderVisit = lazy(() => import('./features/social/components/ReaderVisit').then((m) => ({ default: m.ReaderVisit })));
 const ReaderProfile = lazy(() => import('./features/social/components/ReaderProfile').then((m) => ({ default: m.ReaderProfile })));
 
@@ -345,13 +345,14 @@ function Sanctuary() {
       {panel?.type === 'atlas' && <SagaMapModal onClose={close} onOpenBook={openBook} />}
       {panel?.type === 'account' && <AccountPanel onClose={close} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
       {panel?.type === 'visit' && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<div className="reader-visit-wait" aria-hidden="true" />}>
           <ReaderVisit
             key={panel.id}
             userId={panel.id}
             stage={panel.section === 'habitacion' ? 'habitacion' : 'casa'}
             select={panel.select ?? null}
-            onEnter={() => openPanel({ type: 'visit', id: panel.id, section: 'habitacion' })}
+            // La entrada sustituye su paso en el historial: volver desde la habitación lleva al origen (1.58.1)
+            onEnter={() => switchPanel({ type: 'visit', id: panel.id, section: 'habitacion' })}
             onSelect={(select) => openPanel({ type: 'visit', id: panel.id, section: 'habitacion', select })}
             onBack={close}
             onProfile={() => openPanel({ type: 'reader', id: panel.id })}

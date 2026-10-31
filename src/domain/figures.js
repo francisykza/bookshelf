@@ -19,6 +19,33 @@ export const STARTERS = [
   { id: 'jinete_dragones', keywords: ['fourth wing', 'alas de sangre'] },
 ];
 
+/**
+ * Figuras provisionales dibujadas en SVG, retiradas en la 1.58.1 (decisión de Francisco): ya no existen como
+ * coleccionables. Una cuenta antigua puede tenerlas en `owned`; ese inventario histórico se conserva tal cual, pero
+ * no se muestran, no se sortean y no pueden ser Guardián, Senda ni estar expuestas.
+ */
+export const RETIRED_FIGURES = ['viajero_asteroide', 'bardo_viento', 'hechicera_eea'];
+export const isRetired = (id) => RETIRED_FIGURES.includes(id);
+/** Figuras que se cuentan como tuyas (el inventario histórico de figuras retiradas no suma). */
+export const activeOwnedCount = (fs) => Object.keys(fs?.owned ?? {}).filter((id) => !isRetired(id)).length;
+
+/** Quita las figuras retiradas de las selecciones activas sin tocar el inventario (`owned`) ni el resto. */
+export function withoutRetired(fs) {
+  if (!fs) return fs;
+  const placements = Object.fromEntries(Object.entries(fs.placements ?? {}).filter(([id]) => !isRetired(id)));
+  const hiddenUnbox = fs.unbox && isRetired(fs.unbox.reward?.id);
+  return {
+    ...fs,
+    guardian: isRetired(fs.guardian) ? null : fs.guardian,
+    path: isRetired(fs.path) ? null : fs.path,
+    placements,
+    shelf: Array.isArray(fs.shelf) ? fs.shelf.map((s) => (s && isRetired(s.id) ? null : s)) : fs.shelf,
+    lastReward: fs.lastReward && isRetired(fs.lastReward.id) ? null : fs.lastReward,
+    // Un premio ya entregado de una figura retirada no se vuelve a presentar
+    unbox: hiddenUnbox ? { ...fs.unbox, seen: true } : fs.unbox,
+  };
+}
+
 /** Sin acentos ni mayúsculas, para comparar títulos. */
 export function fold(text) {
   return String(text ?? '')
@@ -173,8 +200,20 @@ const missingParts = (fig, entry) => fig.parts.map((_, i) => i).filter((i) => !(
  * Abre una Caja Sorpresa. `figs` es el catálogo (id, rarity, parts) y `rnd` una lista de números al azar
  * (así la regla es pura y se puede probar). Devuelve el estado nuevo y la recompensa.
  */
-export function openMysteryBox(fs, figs, rnd) {
-  if (!fs || fs.boxes <= 0 || !figs.length) return { fs, reward: null };
+/**
+ * ¿Hay algún premio posible? Una figura que no tienes, una pieza que te falta o un sello para tu Guardián. Si no,
+ * la caja no se abre (no se gasta) y nunca se entrega un premio vacío.
+ */
+export function boxHasPrize(fs, figs) {
+  const list = (figs ?? []).filter((f) => !isRetired(f.id));
+  if (!fs || !list.length) return false;
+  const known = new Set(list.map((f) => f.id));
+  return list.some((f) => !fs.owned?.[f.id] || missingParts(f, fs.owned[f.id]).length > 0) || Boolean(fs.guardian && known.has(fs.guardian));
+}
+
+export function openMysteryBox(fs, rawFigs, rnd) {
+  const figs = (rawFigs ?? []).filter((f) => !isRetired(f.id));
+  if (!fs || fs.boxes <= 0 || !boxHasPrize(fs, figs)) return { fs, reward: null };
   const r = [...rnd];
   const next = () => (r.length ? r.shift() : Math.random());
   const inc = fs.synergy > 0 ? 2 : 1;
@@ -238,7 +277,7 @@ export function openMysteryBox(fs, figs, rnd) {
 export function openBoxAttempt(fs, figs, rnd, attemptId, at = new Date().toISOString()) {
   if (!fs || !attemptId) return fs;
   if (fs.unbox?.id === attemptId) return fs;
-  if (fs.boxes <= 0 || !figs.length) return fs;
+  if (fs.boxes <= 0 || !boxHasPrize(fs, figs)) return fs;
   const { fs: next, reward } = openMysteryBox(fs, figs, rnd);
   if (!reward) return fs;
   let rank = null;

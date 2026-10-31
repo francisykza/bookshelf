@@ -154,9 +154,12 @@ function Inspect({ fig, catalogLen, onShowInRoom }) {
             ? `Cada día que registras páginas o completas una sesión se enciende un sello. Al ${SEALS_PER_BOX}.º, Caja Sorpresa.`
             : 'Los sellos solo se cargan en tu Guardián de Lectura.'}
         </p>
-        <button type="button" className="link-btn vault-simulate" onClick={actions.simulateSeal} disabled={!fs.guardian}>
-          Simular lectura diaria (+1 Sello)
-        </button>
+        {/* Herramienta de prueba (1.58.1): solo en desarrollo, nunca en la app publicada */}
+        {import.meta.env.DEV && (
+          <button type="button" className="link-btn vault-simulate" onClick={actions.simulateSeal} disabled={!fs.guardian}>
+            Simular lectura diaria (+1 Sello)
+          </button>
+        )}
       </section>
 
       {/* El blíster: expresiones, armas y reliquias de esta figura */}

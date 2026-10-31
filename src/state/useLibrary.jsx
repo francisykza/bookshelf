@@ -6,7 +6,7 @@ import { appendEntry, bookLog, editEntry, isActive, normalizeLog, quickUpdate } 
 import { dayKey, timeOfDayByClock, weekKey } from '../domain/dates';
 import { EMPTY_COMPANION, applyTreasure } from '../domain/companion';
 import { applyImportBatch, setImportStatus, startImport, undoImport } from '../features/imports/importService';
-import { EMPTY_FIGURES, grantSeal, initialFigures, markUnboxSeen, openBoxAttempt, openMysteryBox } from '../domain/figures';
+import { EMPTY_FIGURES, grantSeal, initialFigures, isRetired, markUnboxSeen, openBoxAttempt, openMysteryBox, withoutRetired } from '../domain/figures';
 
 export const STORAGE_KEY = 'bookshelf:v1';
 
@@ -81,9 +81,12 @@ export function hydrate(saved) {
   // v4: Booknooks de sagas; llega «Nacidos de la bruma» para estrenar su diorama emparejado
   if (v < 4 && saved.books && !books.some((b) => b.id === 'mistborn')) books.push(sampleBook('mistborn'));
   // v5: los Booknooks dejan paso a las Figuras de Coleccionista; cada pieza por encima de 3 es una caja más
-  const figures = saved.progress?.figures
-    ? { ...EMPTY_FIGURES, ...saved.progress.figures, pity: { ...EMPTY_FIGURES.pity, ...saved.progress.figures.pity } }
-    : initialFigures(books, Math.max(0, (saved.progress?.pieces ?? 3) - 3));
+  // 1.58.1: las figuras SVG provisionales salen de las selecciones activas; el inventario guardado no se toca
+  const figures = withoutRetired(
+    saved.progress?.figures
+      ? { ...EMPTY_FIGURES, ...saved.progress.figures, pity: { ...EMPTY_FIGURES.pity, ...saved.progress.figures.pity } }
+      : initialFigures(books, Math.max(0, (saved.progress?.pieces ?? 3) - 3)),
+  );
   return {
     ...base,
     ...saved,
@@ -294,9 +297,9 @@ export function reducer(state, action) {
       const fs = state.progress.figures;
       let next = fs;
       if (action.op === 'display' && fs.owned[action.id]) next = { ...fs, owned: { ...fs.owned, [action.id]: { ...fs.owned[action.id], display: action.display } } };
-      if (action.op === 'guardian' && fs.owned[action.id]) next = { ...fs, guardian: action.id };
-      if (action.op === 'seal') next = grantSeal(fs, dayKey(), { force: true });
-      if (action.op === 'path') next = { ...fs, path: action.id };
+      if (action.op === 'guardian' && fs.owned[action.id] && !isRetired(action.id)) next = { ...fs, guardian: action.id };
+      if (action.op === 'seal' && import.meta.env.DEV) next = grantSeal(fs, dayKey(), { force: true });
+      if (action.op === 'path' && !isRetired(action.id)) next = { ...fs, path: action.id };
       if (action.op === 'place') {
         const placements = { ...fs.placements };
         if (action.bookId) placements[action.id] = action.bookId;
@@ -310,7 +313,7 @@ export function reducer(state, action) {
       // Libros de la saga de cada figura que tienes (la sinergia ×2 sale de aquí)
       if (action.op === 'sync') next = { ...fs, placements: action.map };
       // Lo expuesto en las baldas de la habitación (SPEC §37): cuatro posiciones { id, display } o null
-      if (action.op === 'shelf' && Array.isArray(action.shelf)) next = { ...fs, shelf: action.shelf.slice(0, 4).map((s) => (s && fs.owned[s.id] ? { id: s.id, display: s.display === 'unboxed' ? 'unboxed' : 'box' } : null)) };
+      if (action.op === 'shelf' && Array.isArray(action.shelf)) next = { ...fs, shelf: action.shelf.slice(0, 4).map((s) => (s && fs.owned[s.id] && !isRetired(s.id) ? { id: s.id, display: s.display === 'unboxed' ? 'unboxed' : 'box' } : null)) };
       // Reclamar el sello de hoy si ya has leído (p. ej. si elegiste Guardián después de leer)
       if (action.op === 'today') {
         const today = dayKey();

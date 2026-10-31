@@ -227,8 +227,8 @@ export function ReaderProfileContent({ data, userId, mine, following, onToggleFo
   const isFollowing = following?.includes(userId) ?? false;
   const corner = data.corner?.visible || mine ? data.corner : null;
   const alias = data.profile.alias;
-  const figureId = corner?.figure_ids?.[0] ?? corner?.guardian_id ?? null;
-  const figure = figureId ? figureOf(figureId) : null;
+  // Solo figuras del catálogo vigente (las retiradas de un rincón antiguo no se muestran)
+  const figure = [...(corner?.figure_ids ?? []), corner?.guardian_id].map((id) => (id ? figureOf(id) : null)).find(Boolean) ?? null;
   // La lectura actual publicada solo trae su título: en tu propio perfil se completa con tu libro (portada y
   // autor); en el de otra persona, el resolvedor de portadas pinta la cubierta tipográfica del título
   const ownCurrent = mine && corner?.current_title ? state.books.find((b) => b.title === corner.current_title) : null;
@@ -354,7 +354,7 @@ export function ReaderProfileContent({ data, userId, mine, following, onToggleFo
               </ul>
             </section>
           )}
-          {corner.guardian_id && (
+          {corner.guardian_id && figureOf(corner.guardian_id) && (
             <p className="social-note">
               Guardián: <b>{figureName(corner.guardian_id)}</b>
             </p>

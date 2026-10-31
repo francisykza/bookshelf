@@ -1,0 +1,55 @@
+/* ── 1.58.1 · Correcciones de la auditoría del vídeo (docs/qa/video-hotfix.md) ─────────────────────────────────────
+   Acotadas a lo que se corrige; las hojas anteriores siguen cargadas. */
+
+/* Reseñas: el alias tiene prioridad y se lee entero (salta de línea si hace falta, nunca «book…»); la fecha va debajo
+   en una sola línea; estrellas en su propia fila; el menú de opciones no le roba ancho al nombre (el club tiene su
+   propia disposición y no se toca).
+   Avatar | alias (+ fecha) | menú
+   Avatar | estrellas */
+.review-card:not(.club-msg) > .review-card__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'avatar who menu'
+    'avatar rate rate';
+  column-gap: 10px;
+  row-gap: 4px;
+  align-items: center;
+}
+
+.review-card:not(.club-msg) > .review-card__head > .reader-avatar {
+  grid-area: avatar;
+  align-self: start;
+}
+
+.review-card:not(.club-msg) > .review-card__head > .review-card__who {
+  grid-area: who;
+  min-width: 0;
+}
+
+.review-card:not(.club-msg) > .review-card__head > .rating-stars {
+  grid-area: rate;
+  justify-self: start;
+  margin: 0;
+}
+
+.review-card:not(.club-msg) > .review-card__head > .options-menu {
+  grid-area: menu;
+  align-self: start;
+  /* separado del nombre: sus puntos no deben leerse como un corte del alias */
+  margin: 0 0 0 12px;
+}
+
+.review-card:not(.club-msg) > .review-card__head .review-card__author,
+.review-card:not(.club-msg) > .review-card__head .review-card__who b {
+  max-width: 100%;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.review-card:not(.club-msg) > .review-card__head .review-card__who small {
+  white-space: nowrap;
+}

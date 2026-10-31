@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { safeParent } from '../../../domain/navigation';
 import { currentTitle, reviewsFor, sharedBooks } from '../visit';
-import { HOUSE_WINDOW, ROOM_SHELF, shelfSpines } from '../visitScene';
+import { HOUSE_WINDOW, ROOM_SHELF, SHELF_CAPACITY, shelfSpines } from '../visitScene';
 
 const ref = (id, title, author = 'Autora', extra = {}) => ({ id, title, author, cover: '', ...extra });
 const OWNER = 'bruno';
@@ -70,22 +70,25 @@ describe('libros compartidos de una visita', () => {
 });
 
 describe('escena y navegación', () => {
-  it('zonas normalizadas dentro de la imagen y como mucho tres lomos sobre la balda', () => {
+  it('zonas normalizadas dentro de la imagen y un lomo por libro compartido, hasta llenar las baldas', () => {
     for (const z of [HOUSE_WINDOW, ROOM_SHELF]) {
       expect(z.x0).toBeGreaterThanOrEqual(0);
       expect(z.x1).toBeLessThanOrEqual(1);
       expect(z.y1).toBeLessThanOrEqual(1);
     }
     expect(shelfSpines(0)).toEqual([]);
-    expect(shelfSpines(5)).toHaveLength(3);
-    // Los lomos quedan dentro del mueble (x ≤ 0,23 del ancho)
-    for (const s of shelfSpines(3)) expect(s.box.left + s.box.width).toBeLessThan(ROOM_SHELF.x1);
+    expect(shelfSpines(5)).toHaveLength(5);
+    expect(shelfSpines(500)).toHaveLength(SHELF_CAPACITY);
+    // Los lomos quedan dentro del mueble (x ≤ 0,23 del ancho) y no se pisan en la misma balda
+    const all = shelfSpines(SHELF_CAPACITY);
+    for (const s of all) expect(s.box.left + s.box.width).toBeLessThan(ROOM_SHELF.x1);
+    for (let i = 1; i < all.length; i++) if (all[i].box.top + all[i].box.height > all[i - 1].box.top && Math.abs(all[i].box.top - all[i - 1].box.top) < 0.05) expect(all[i].box.left).toBeGreaterThanOrEqual(all[i - 1].box.left + all[i - 1].box.width);
   });
 
-  it('Atrás sin historial (recarga): libro → habitación → casa → «Lectores»', () => {
+  it('Atrás sin historial (recarga): libro → habitación → «Lectores» (la entrada no se repite)', () => {
     const book = { view: 'room', panel: { type: 'visit', id: 'u', section: 'habitacion', select: 'u:b1' } };
     expect(safeParent(book)).toEqual({ view: 'room', panel: { type: 'visit', id: 'u', section: 'habitacion' } });
-    expect(safeParent(safeParent(book))).toEqual({ view: 'room', panel: { type: 'visit', id: 'u' } });
+    expect(safeParent(safeParent(book))).toEqual({ view: 'room', panel: { type: 'social', tab: 'lectores' } });
     expect(safeParent({ view: 'room', panel: { type: 'visit', id: 'u' } })).toEqual({ view: 'room', panel: { type: 'social', tab: 'lectores' } });
   });
 });

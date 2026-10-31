@@ -68,6 +68,9 @@ async function openTodayForm(page) {
 async function openDiary(page) {
   const tab = page.getByRole('tab', { name: /Diario/ });
   if (await tab.isVisible()) await tab.click();
+  // Desde la 1.53 «Mi diario» abre en «Reseña»; las anotaciones (y «Personalizar colores») están en «Notas»
+  const notes = page.getByRole('tablist', { name: 'Secciones del diario' }).getByRole('tab', { name: 'Notas' });
+  await notes.waitFor({ timeout: 5000 }).then(() => notes.click()).catch(() => {});
 }
 
 /** Centra el control en su zona de scroll y lo pulsa (como un dedo tras desplazarse; la fila sticky no lo tapa). */

@@ -60,21 +60,3 @@ export function visitState({ status, data }) {
   if (!data?.profile) return 'unavailable';
   return 'ready';
 }
-
-const SKIP_KEY = 'bookshelf:visit-skip';
-/** Preferencia de este dispositivo: entrar sin animación en próximas visitas (no toca el ambiente ni el sonido). */
-export function readSkip() {
-  try {
-    return localStorage.getItem(SKIP_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-export function writeSkip(on) {
-  try {
-    if (on) localStorage.setItem(SKIP_KEY, '1');
-    else localStorage.removeItem(SKIP_KEY);
-  } catch {
-    // preferencia opcional
-  }
-}

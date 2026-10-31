@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook, progressLabel } from '../../domain/books';
+import { activeOwnedCount } from '../../domain/figures';
 import { getDeterministicVibe } from '../../utils/vibeEngine';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { HOTSPOTS, ROOMS, SCENE_REFRESH } from '../../scene/sceneMap';
@@ -236,7 +237,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
             hint={2}
             onHover={onHover}
             onActivate={() => onOpenVault()}
-            label={{ title: 'Vitrina de figuras', text: `${Object.keys(progress.figures?.owned ?? {}).length} figuras · toca para subir al Ático`, meta: progress.figures?.boxes ? `🎁 ${progress.figures.boxes} Caja${progress.figures.boxes === 1 ? '' : 's'} Sorpresa por abrir` : undefined }}
+            label={{ title: 'Vitrina de figuras', text: `${activeOwnedCount(progress.figures)} figuras · toca para subir al Ático`, meta: progress.figures?.boxes ? `🎁 ${progress.figures.boxes} Caja${progress.figures.boxes === 1 ? '' : 's'} Sorpresa por abrir` : undefined }}
           />
           <Hotspot
             id="book"

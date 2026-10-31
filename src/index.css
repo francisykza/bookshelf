@@ -42,6 +42,7 @@
 @import './styles/imports-154.css';
 @import './styles/epub-155.css';
 @import './styles/social-visit.css';
+@import './styles/hotfix-1581.css';
 
 /* Sistema "Mediterranean Cozy": papel crema, roble miel, terracota, azul bahía y verde hiedra */
 @theme {
@@ -160,10 +161,10 @@ select {
   user-select: text;
 }
 
-/* Abierta como app: respeta la muesca y la barra de gestos */
+/* Abierta como app: respeta la barra de gestos. Arriba no hay relleno: la franja ilustrada de la cabecera ya aplica
+   el área segura a sus controles y su fondo debe llegar al borde (1.58.1; antes quedaba una franja del color del mueble) */
 @media (display-mode: fullscreen), (display-mode: standalone) {
   .library {
-    padding-top: max(10px, env(safe-area-inset-top));
     padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 }

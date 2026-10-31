@@ -1,4 +1,5 @@
 // Reglas de la entrega 3 sin React ni red (SPEC §25.8–25.12): tropos, presencia en los sillones, rincón y club.
+import { isRetired } from '../../domain/figures';
 
 /** Catálogo curado de tropos (los mismos ids que la restricción del servidor). `spoiler`: puede revelar la trama. */
 export const TROPES = [
@@ -60,8 +61,8 @@ export function sessionMinutes(startedAt, now = Date.now()) {
 export function cornerSelection({ books = [], figures = [], owned = {}, guardian = null, showCurrent = false, currentTitle = '' }) {
   return {
     featured_books: books.slice(0, 3).map((b) => ({ id: b.id, title: b.title, author: b.author ?? '', cover: b.cover ?? '' })),
-    figure_ids: figures.filter((id) => owned[id]).slice(0, 3),
-    guardian_id: guardian && owned[guardian] ? guardian : null,
+    figure_ids: figures.filter((id) => owned[id] && !isRetired(id)).slice(0, 3),
+    guardian_id: guardian && owned[guardian] && !isRetired(guardian) ? guardian : null,
     show_current: Boolean(showCurrent && currentTitle),
     current_title: showCurrent && currentTitle ? currentTitle.slice(0, 300) : null,
   };

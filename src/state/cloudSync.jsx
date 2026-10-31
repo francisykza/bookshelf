@@ -2,6 +2,7 @@
 // app funciona sin conexión; esto sube cada cambio a Supabase unos segundos después, baja lo que otro
 // dispositivo haya guardado al volver a la app y, si hay dos versiones distintas, pregunta cuál quedarse.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { activeOwnedCount } from '../domain/figures';
 import { cloudEnabled, fetchLibrary, getClient, saveLibrary, signOut as cloudSignOut } from '../services/cloud';
 import { DEVICE_SETTINGS, hydrate, useLibrary } from './useLibrary';
 
@@ -47,7 +48,7 @@ function summarize(data, updatedAt) {
   return {
     books: books.length,
     read: books.filter((b) => b.status === 'read').length,
-    figures: Object.keys(data?.progress?.figures?.owned ?? {}).length,
+    figures: activeOwnedCount(data?.progress?.figures),
     updatedAt,
   };
 }

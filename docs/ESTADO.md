@@ -7,7 +7,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 ## Estado actual
 
 - **Versión publicada**: 1.58.0 (2026-10-30), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: sin cambios pendientes de código tras publicar la 1.58.0. Fuera de git
+- **Árbol de trabajo**: 1.58.1 (hotfix de la auditoría del vídeo, §57) en la rama `hotfix/auditoria-video` con su PR abierto; **sin desplegar** (producción en 1.58.0). Fuera de git
   solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
@@ -16,6 +16,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.58.1 (PR abierto, sin desplegar) | Hotfix de la auditoría del vídeo: figuras SVG retiradas, visita a pantalla completa sin opciones de animación, libros en las baldas, franja de la biblioteca instalada, alias en reseñas, simular sellos solo en desarrollo | §57 |
 | 1.58.0 | Visita a un rincón compartido: casa, entrada en vídeo bajo demanda, habitación con los libros que comparte, pendientes y vuelta paso a paso | §56 |
 | 1.57.0 | Lector EPUB: estructura sin desbordes, paneles con «Volver a la lectura» y Atrás, lectura página a página con paso entre secciones, subrayados persistentes | §55 |
 | 1.56.0 | Vincular un EPUB a tu ejemplar con confirmación, posición anclada (local y sincronizada), notas con comentario, «Una pausa junto al mar» y lector con la identidad de BookShelf | §54 |
@@ -64,8 +65,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
    y pruebas PGlite, más la interfaz); el icono `encuentros` espera a esa función.
 6. Iconos de sección sin ubicación todavía: biblioteca, comunidad, reseñas y notas (no se añaden donde la maqueta no
    los pone).
-7. Figuras antiguas (Dama de la Ceniza, Jinete de Dragones y las tres en SVG) no tienen imágenes con transparencia
-   para exponerse en la habitación: siguen en el Ático.
+7. Figuras antiguas (Dama de la Ceniza y Jinete de Dragones) no tienen imágenes con transparencia para exponerse en la
+   habitación: siguen en el Ático. Las tres en SVG se retiraron en la 1.58.1 (§57).
+8. **EPUB de otra obra** (§57.3): «The Ballad of Songbirds and Snakes» tiene vinculado «El árbol de la ciencia» en el
+   móvil de Francisco. Sin defecto de código; confirmar con él si fue a propósito. No tocar sus datos.
 
 ### Decisiones vigentes que no deben deshacerse
 
@@ -100,6 +103,18 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-31 · cuenta principal · 1.58.1 (commit en la rama `hotfix/auditoria-video`, PR abierto, sin desplegar)
+- Encargo «Hotfix SDD de la auditoría del vídeo» (`BookShelf-fotogramas-QA/`, §57). Detalle, causas y aceptación en
+  `docs/qa/video-hotfix.md`; capturas en `docs/qa/video-hotfix/`.
+- Hecho: figuras SVG retiradas con compatibilidad para cuentas antiguas; visita social a pantalla completa, sin opciones
+  de animación y con escena única; un lomo por libro compartido; franja de la biblioteca instalada (relleno superior
+  duplicado en `src/index.css`); alias completo en reseñas; simular sellos solo en desarrollo. EPUB de otra obra: sin
+  defecto de código (pendiente de confirmar con Francisco).
+- `qa:full`: no llega a 0 fallos. 15 fallos anteriores comprobados contra `main` (lista en el documento), 2
+  intermitentes; corregidas la prueba desfasada `v123 colores` y las del hotfix. Build correcto.
+- Commit en la rama y Pull Request a `main` (Francisco dejó elegir; se eligió PR para no desplegar sin revisión).
+  Producción sigue en la 1.58.0 hasta fusionar el PR. Pendiente: investigar los fallos del proyecto `chromium-390x844-reduced`.
 
 ### 2026-10-30 · cuenta principal · 1.58.0 (publicada)
 - Encargo `material-diseno/visita-social/PROMPT-CLAUDE.md` (§56). Recursos copiados a `public/media/social-visit/`

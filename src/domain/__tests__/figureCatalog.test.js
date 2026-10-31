@@ -106,8 +106,10 @@ describe('normalización del catálogo', () => {
   it('el catálogo real es válido y mantiene sus IDs', () => {
     const { figures, errors } = normalizeCatalog(realCatalog);
     expect(errors).toEqual([]);
-    // 1.45.0: dos figuras nuevas al final (la Dama sigue primera para los libros de su saga)
-    expect(figures.map((f) => f.id)).toEqual(['dama_ceniza', 'jinete_dragones', 'viajero_asteroide', 'bardo_viento', 'hechicera_eea', 'guardian_clavos', 'maestro_superviviente']);
+    // 1.45.0: dos figuras nuevas al final (la Dama sigue primera para los libros de su saga).
+    // 1.58.1: las tres figuras SVG provisionales ya no existen como coleccionables
+    expect(figures.map((f) => f.id)).toEqual(['dama_ceniza', 'jinete_dragones', 'guardian_clavos', 'maestro_superviviente']);
+    expect(figures.some((f) => /\.svg$/.test(f.boxImage ?? '') || /\.svg$/.test(f.unboxedImage ?? ''))).toBe(false);
   });
 });
 
@@ -132,8 +134,9 @@ describe('vinculación libro ↔ figura', () => {
 
   it('el autor desambigua títulos parecidos de otros autores', () => {
     expect(find('La bruma del puerto', 'Otra Autora')).toBeNull();
-    expect(find('Circe', 'Madeline Miller')).toBe('hechicera_eea');
-    expect(find('Circe', '')).toBe('hechicera_eea');
+    expect(find('Alas de sangre', 'Otra Autora')).toBeNull();
+    // 1.58.1: la figura provisional de Circe ya no existe; su libro no se vincula a otra
+    expect(find('Circe', 'Madeline Miller')).toBeNull();
   });
 
   it('compara palabras completas, no trozos', () => {
@@ -169,7 +172,7 @@ describe('carga del catálogo', () => {
     expect(loader.get()).toBeNull();
     expect(await loader.load()).toBeNull();
     const list = await loader.load();
-    expect(list).toHaveLength(7);
+    expect(list).toHaveLength(4);
     expect(loader.get()).toBe(list);
     expect(fetchFn).toHaveBeenCalledTimes(3);
   });

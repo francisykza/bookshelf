@@ -1,9 +1,10 @@
-// QA de la 1.58.0 (SPEC §56): visita a un rincón compartido contra el simulador de Supabase. Dos lectores seguidos
-// (Bruno con rincón y colecciones, Carla con otros libros) y Dani, que ha bloqueado a Ana. Lo privado no aparece; nada
-// se pide del vídeo hasta tocar la ventana; Atrás cierra libro → habitación → casa → «Lectores»; recargar la habitación
-// no repite la entrada; añadir a pendientes una sola vez; spoilers plegados; respuestas tardías de otra persona nunca se
-// ven. Sin datos personales. WebKit de Playwright decodifica el MP4 (entrada real); el Chromium de Playwright no
-// tiene H.264 y valida la entrada estática con su aviso. Nada de esto equivale a un iPhone real.
+// QA de la visita a un rincón compartido (SPEC §56; revisada en la 1.58.1 tras la auditoría del vídeo) contra el
+// simulador de Supabase. Lectores seguidos: Bruno (rincón y colecciones), Carla (un libro), Eva (rincón visible sin
+// libros) y Dani, que ha bloqueado a Ana. La entrada empieza sola al abrir la visita, sin opciones de animación ni
+// «Saltar»; la escena llega a los bordes; Atrás cierra libro → libros → habitación → «Lectores»; recargar la habitación
+// no repite la entrada; el vídeo que falla lleva a la habitación; lo privado no aparece. Sin datos personales.
+// WebKit de Playwright decodifica el MP4 (entrada real); el Chromium de Playwright no tiene H.264 y valida el camino de
+// fallo. Nada de esto equivale a un iPhone real.
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,8 +12,10 @@ import { SUPABASE, createMockSupabase } from './mockSupabase';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 const BRUNO = { id: '22222222-2222-4222-8222-222222222222', email: 'bruno@ejemplo.test' };
+const BRUNO_ID = BRUNO.id;
 const CARLA = { id: '33333333-3333-4333-8333-333333333333', email: 'carla@ejemplo.test' };
 const DANI = { id: '44444444-4444-4444-8444-444444444444', email: 'dani@ejemplo.test' };
+const EVA = { id: '66666666-6666-4666-8666-666666666666', email: 'eva@ejemplo.test' };
 const WORK = { id: '55555555-5555-4555-8555-555555555555', kind: 'local', title: 'Circe', author: 'Madeline Miller' };
 const ref = (id, title, author, extra = {}) => ({ id, title, author, cover: '', ...extra });
 
@@ -30,8 +33,9 @@ function seed() {
     { user_id: BRUNO.id, alias: 'Bruno', avatar_id: 'lector-farol', community_enabled: true },
     { user_id: CARLA.id, alias: 'Carla', avatar_id: 'gato-lector', community_enabled: true },
     { user_id: DANI.id, alias: 'Dani', avatar_id: 'lector-farol', community_enabled: true },
+    { user_id: EVA.id, alias: 'Eva Montesinos de la Torre', avatar_id: 'gato-lector', community_enabled: true },
   );
-  mock.db.follows.push({ follower: ANA.id, followed: BRUNO.id }, { follower: ANA.id, followed: CARLA.id }, { follower: ANA.id, followed: DANI.id });
+  mock.db.follows.push({ follower: ANA.id, followed: BRUNO.id }, { follower: ANA.id, followed: CARLA.id }, { follower: ANA.id, followed: DANI.id }, { follower: ANA.id, followed: EVA.id });
   mock.db.blocks.push({ blocker: DANI.id, blocked: ANA.id });
   mock.db.public_reviews.push({ id: '70000000-0000-4000-8000-000000000001', work_id: WORK.id, user_id: BRUNO.id, rating_quarters: 16, body: 'El final cambia todo lo anterior.', has_spoilers: true, status: 'published', published_at: new Date().toISOString() });
   mock.db.corners.push(
@@ -51,6 +55,7 @@ function seed() {
     },
     { user_id: CARLA.id, visible: true, featured_books: [ref('b1', 'Momo', 'Michael Ende')], figure_ids: [], guardian_id: null, show_current: false, current_title: 'No debería verse', signature_books: [], memories: [], last_book: null, next_book: null },
     { user_id: DANI.id, visible: true, featured_books: [ref('d1', 'Libro de Dani', 'Autora')], figure_ids: [], guardian_id: null, show_current: false, current_title: null },
+    { user_id: EVA.id, visible: true, featured_books: [], figure_ids: [], guardian_id: null, show_current: false, current_title: null, signature_books: [], memories: [], last_book: null, next_book: null },
   );
   mock.db.collections.push(
     { id: '80000000-0000-4000-8000-000000000001', owner: BRUNO.id, title: 'Días de lluvia', dedication: null, visible: true, books: [ref('c1', 'Rebeca', 'Daphne du Maurier')] },
@@ -76,9 +81,41 @@ async function openReaders(page, mock, { reduced = false } = {}) {
 }
 
 const videoRequests = (log) => log.filter((u) => u.includes('/media/social-visit/entrada-v1.mp4'));
+const ROOM_BUTTON = /Libros compartidos por Bruno/;
 
-test('visita: casa, entrada, habitación con lo compartido, libro, pendientes y vuelta paso a paso', async ({ page }, info) => {
+/** Errores de página y de consola (los avisos de red del simulador no cuentan). */
+function watchErrors(page) {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(`console: ${m.text()}`);
+  });
+  return errors;
+}
+
+/** Nada de opciones de animación en el recorrido (1.58.1). */
+async function noAnimationOptions(visit) {
+  await expect(visit.getByRole('button', { name: /Saltar|sin animación/i })).toHaveCount(0);
+  await expect(visit.getByRole('checkbox')).toHaveCount(0);
+  await expect(visit).not.toContainText(/sin animación|Saltar/);
+}
+
+/** La escena cubre la pantalla de borde a borde (sin franjas) y los controles flotan sin banda propia. */
+async function edgeToEdge(page, visit) {
+  const vp = page.viewportSize();
+  const r = await visit.locator('.reader-visit__frame').boundingBox();
+  expect(r.x).toBeLessThanOrEqual(0.5);
+  expect(r.y).toBeLessThanOrEqual(0.5);
+  expect(r.x + r.width).toBeGreaterThanOrEqual(vp.width - 0.5);
+  expect(r.y + r.height).toBeGreaterThanOrEqual(vp.height - 0.5);
+  expect(Math.abs(r.width / r.height - 9 / 16)).toBeLessThan(0.01);
+  const bands = await visit.evaluate((el) => ['.reader-visit__bar', '.reader-visit__foot'].map((sel) => (el.querySelector(sel) ? getComputedStyle(el.querySelector(sel)).backgroundColor : 'rgba(0, 0, 0, 0)')));
+  expect(bands).toEqual(['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0)']);
+}
+
+test('visita: la entrada empieza sola, sin opciones; habitación con lo compartido, libro, pendientes y vuelta', async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), '390 en Chromium y WebKit');
+  const errors = watchErrors(page);
   const mock = seed();
   const log = [];
   page.on('request', (r) => log.push(r.url()));
@@ -89,96 +126,106 @@ test('visita: casa, entrada, habitación con lo compartido, libro, pendientes y 
   await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
   const visit = page.getByRole('dialog', { name: 'Visita al rincón de Bruno' });
   await expect(visit).toBeVisible();
-  await expect(visit.locator('.reader-visit__who')).toContainText('Bruno');
-  const win = visit.getByRole('button', { name: 'Entrar por la ventana en el rincón de Bruno' });
-  await expect(win).toBeEnabled();
-  await page.waitForTimeout(400);
-  expect(videoRequests(log)).toEqual([]);
-  expect(await visit.locator('video').count()).toBe(0);
-  await shot(page, info, 'v158-casa');
-  // Tocar la ventana (dos veces seguidas: una sola entrada)
-  await win.dblclick({ force: true }).catch(() => {});
+  await noAnimationOptions(visit);
+  // Una sola flecha discreta para volver (se llama «Salir de la visita» durante la entrada y «Volver» en la habitación)
+  await expect(visit.getByRole('button', { name: /^(Salir de la visita|Volver)$/ })).toHaveCount(1);
+  await edgeToEdge(page, visit);
   if (info.project.name.startsWith('webkit')) {
-    // WebKit decodifica el MP4: hay un fotograma visible antes de llegar
-    await expect(visit.locator('video[data-shown]')).toHaveCount(1, { timeout: 8000 });
-    await shot(page, info, 'v158-entrando');
+    // WebKit decodifica el MP4: la entrada empieza sin tocar nada y se ve un fotograma
+    await expect(visit.locator('video[data-on]')).toHaveCount(1, { timeout: 8000 });
+    await noAnimationOptions(visit);
+    await edgeToEdge(page, visit);
+    await shot(page, info, 'v1581-entrando');
   }
-  await expect(visit.getByRole('button', { name: /Libros compartidos por Bruno/ })).toBeVisible({ timeout: 15000 });
-  // Chromium informa de la petición del vídeo; WebKit la hace desde su motor multimedia sin exponerla a Playwright (allí
-  // la prueba es el fotograma visible de arriba)
+  await expect(visit.getByRole('button', { name: ROOM_BUTTON })).toBeVisible({ timeout: 15000 });
+  // Chromium informa de la petición del vídeo (y como no decodifica H.264, entra por el camino de fallo); WebKit la hace
+  // desde su motor multimedia sin exponerla a Playwright (allí la prueba es el fotograma visible de arriba)
   if (!info.project.name.startsWith('webkit')) expect(videoRequests(log).length).toBeGreaterThan(0);
-  expect(await page.evaluate(() => history.state.bookshelf.loc.panel)).toEqual({ type: 'visit', id: '22222222-2222-4222-8222-222222222222', section: 'habitacion' });
-  // Habitación: tres lomos destacados, lo que lee (solo el título) y nada privado
-  await expect(visit.locator('.reader-visit__spines > g')).toHaveCount(3);
+  expect(await page.evaluate(() => history.state.bookshelf.loc.panel)).toEqual({ type: 'visit', id: BRUNO_ID, section: 'habitacion' });
+  await expect(visit.locator('video')).toHaveCount(0);
+  await edgeToEdge(page, visit);
+  // Habitación: un lomo por libro compartido sobre las baldas, lo que lee (solo el título) y nada privado
+  await expect(visit.locator('.reader-visit__spines > g')).toHaveCount(5);
   await expect(visit).toContainText('Está leyendo «Alas de hierro»');
   await expect(visit.locator('.reader-visit__shelf')).toContainText('Libros · 5');
   await page.waitForTimeout(400);
-  await shot(page, info, 'v158-habitacion');
+  await shot(page, info, 'v1581-habitacion');
   // Libros compartidos (tres por fila) → un libro → añadir a pendientes una sola vez
-  await visit.getByRole('button', { name: /Libros compartidos por Bruno/ }).click();
+  await visit.getByRole('button', { name: ROOM_BUTTON }).click();
   const sheet = page.getByRole('dialog', { name: 'Libros compartidos por Bruno' });
   await expect(sheet).toContainText('no es su biblioteca completa');
   await expect(sheet.locator('.reader-visit__book')).toHaveCount(5);
   await expect(sheet).not.toContainText('Diario secreto');
   await expect(sheet).not.toContainText('Biblioteca privada');
-  // Reseña con spoilers: plegada
   await expect(sheet.locator('.review-card')).toContainText('Contiene spoilers');
   await expect(sheet.locator('.review-card')).not.toContainText('El final cambia');
-  await shot(page, info, 'v158-libros');
+  await shot(page, info, 'v1581-libros');
   await sheet.getByRole('button', { name: /Rebeca/ }).click();
   const book = page.getByRole('dialog', { name: 'Rebeca' });
   await expect(book).toContainText('En su colección «Días de lluvia»');
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.length);
-  // Un toque; después el botón deja de existir (no se puede añadir dos veces)
   await book.getByRole('button', { name: 'Añadir a pendientes' }).click();
   await expect(book.getByRole('button', { name: 'Añadir a pendientes' })).toHaveCount(0);
   await expect(book.getByText('Añadido a Pendientes')).toBeVisible();
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.filter((b) => b.title === 'Rebeca' && b.source === 'community').length)).toBe(1);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.length)).toBe(before + 1);
-  // Ninguna ficha propia se abrió por error
   await expect(page.locator('.book-sheet')).toHaveCount(0);
-  // Atrás: libro → libros → habitación → casa → «Lectores»
+  // Atrás: libro → libros → habitación → «Lectores» (la entrada no es un paso al que volver)
   await page.goBack();
   await expect(sheet).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
-  await expect(visit.getByRole('button', { name: 'Volver a la casa' })).toBeVisible();
+  await expect(visit.getByRole('button', { name: 'Volver', exact: true })).toBeVisible();
   await page.goBack();
-  await expect(visit.getByRole('button', { name: 'Entrar por la ventana en el rincón de Bruno' })).toBeVisible();
-  await page.goBack();
+  await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
+  // Segunda visita: vuelve a empezar sola y llega igual
+  await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
+  await noAnimationOptions(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }));
+  await expect(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }).getByRole('button', { name: ROOM_BUTTON })).toBeVisible({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Volver', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
   // Ni una petición a la biblioteca sincronizada de otra persona
   expect(log.filter((u) => u.includes('/rest/v1/libraries') && u.includes(BRUNO.id))).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
-test('recargar en la habitación no repite la entrada; «Ver perfil» y vuelta; saltar el vídeo', async ({ page }, info) => {
+test('salir durante la entrada suelta el vídeo; si el vídeo falla se entra igualmente; recargar no repite', async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), '390 en Chromium y WebKit');
+  const errors = watchErrors(page);
   const mock = seed();
   const log = [];
   page.on('request', (r) => log.push(r.url()));
   await openReaders(page, mock);
+  // Salir en plena entrada: vuelve a «Lectores» y no queda vídeo ni temporizador que luego empuje a la habitación
+  await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
+  // (en Chromium el vídeo falla enseguida y la flecha ya puede llamarse «Volver»: es la misma)
+  await page.getByRole('button', { name: /^(Salir de la visita|Volver)$/ }).click();
+  await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
+  await page.waitForTimeout(1500);
+  await expect(page.locator('.reader-visit')).toHaveCount(0);
+  expect(await page.evaluate(() => history.state.bookshelf.loc.panel.type)).toBe('social');
+  // Vídeo roto: se entra en la habitación sin preguntar
+  await page.route('**/media/social-visit/entrada-v1.mp4', (route) => route.abort());
   await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
   const visit = page.getByRole('dialog', { name: 'Visita al rincón de Bruno' });
-  await visit.getByRole('button', { name: 'Entrar por la ventana en el rincón de Bruno' }).click();
-  // «Saltar» siempre disponible mientras se prepara o reproduce
-  const skip = visit.getByRole('button', { name: 'Saltar' });
-  if (await skip.isVisible().catch(() => false)) await skip.click({ timeout: 2000 }).catch(() => {});
-  await expect(visit.getByRole('button', { name: /Libros compartidos por Bruno/ })).toBeVisible({ timeout: 15000 });
+  await expect(visit.getByRole('button', { name: ROOM_BUTTON })).toBeVisible({ timeout: 10000 });
+  await noAnimationOptions(visit);
   // Recargar: la habitación vuelve sin vídeo
   log.length = 0;
   await page.reload();
-  await expect(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }).getByRole('button', { name: /Libros compartidos por Bruno/ })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }).getByRole('button', { name: ROOM_BUTTON })).toBeVisible();
   await page.waitForTimeout(500);
   expect(videoRequests(log)).toEqual([]);
   expect(await page.locator('.reader-visit video').count()).toBe(0);
   // Ver perfil (la vista de siempre) y volver a la habitación
-  await page.getByRole('button', { name: 'Ver el perfil de Bruno' }).click();
+  await page.getByRole('button', { name: 'Ver el perfil de Bruno' }).first().click();
   await expect(page.locator('.reader-profile')).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }).getByRole('button', { name: /Libros compartidos por Bruno/ })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }).getByRole('button', { name: ROOM_BUTTON })).toBeVisible();
+  expect(errors).toEqual([]);
 });
 
-test('otra persona mientras carga: nunca se ven los libros de la anterior; bloqueado y lectura actual oculta', async ({ page }, info) => {
+test('otra persona mientras carga: nunca se ven los libros de la anterior; sin libros; bloqueado; lectura oculta', async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), '390 en Chromium y WebKit');
   const mock = seed();
   await openReaders(page, mock);
@@ -191,16 +238,27 @@ test('otra persona mientras carga: nunca se ven los libros de la anterior; bloqu
   await page.goBack();
   await page.getByRole('button', { name: 'Visitar el rincón de Carla' }).click();
   const visit = page.getByRole('dialog', { name: 'Visita al rincón de Carla' });
-  await visit.getByRole('button', { name: 'Entrar sin animación' }).click();
-  await expect(visit.getByRole('button', { name: /Libros compartidos por Carla \(1\)/ })).toBeVisible();
+  await expect(visit.getByRole('button', { name: /Libros compartidos por Carla \(1\)/ })).toBeVisible({ timeout: 15000 });
   await page.waitForTimeout(1800);
+  await expect(visit.locator('.reader-visit__spines > g')).toHaveCount(1);
   await visit.getByRole('button', { name: /Libros compartidos por Carla/ }).click();
   const sheet = page.getByRole('dialog', { name: 'Libros compartidos por Carla' });
   await expect(sheet.locator('.reader-visit__book')).toHaveCount(1);
   await expect(sheet).toContainText('Momo');
   await expect(sheet).not.toContainText('Cuarta ala');
-  // Carla no enseña su lectura actual: no aparece
   await expect(page.locator('.reader-visit')).not.toContainText('No debería verse');
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+  await visit.getByRole('button', { name: 'Volver', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
+  // Eva comparte su rincón pero ningún libro: baldas vacías y un aviso honesto, sin libros inventados
+  await page.getByRole('button', { name: /Visitar el rincón de Eva/ }).click();
+  const eva = page.getByRole('dialog', { name: /Visita al rincón de Eva/ });
+  await expect(eva).toContainText('Aún no ha compartido libros', { timeout: 15000 });
+  await expect(eva.locator('.reader-visit__spines')).toHaveCount(0);
+  await expect(eva.locator('.reader-visit__shelf')).toHaveText('Libros');
+  // Alias largo: legible entero para lectores de pantalla aunque se abrevie
+  await expect(eva.locator('.reader-visit__who')).toContainText('Eva Montesinos de la Torre');
   // Dani bloquea a Ana: su visita (abierta a mano) dice que no está disponible y no enseña nada suyo
   await page.evaluate((id) => {
     history.pushState({ bookshelf: { loc: { view: 'room', panel: { type: 'visit', id } }, depth: 5, parent: { view: 'room', panel: { type: 'social', tab: 'lectores' } } } }, '');
@@ -210,7 +268,7 @@ test('otra persona mientras carga: nunca se ven los libros de la anterior; bloqu
   await expect(page.locator('.reader-visit')).not.toContainText('Libro de Dani');
 });
 
-test('movimiento reducido y preferencia: se entra sin vídeo; encuadre 9:16 contenido en 360, 430 y escritorio', async ({ page }, info) => {
+test('movimiento reducido: directamente a la habitación, sin vídeo; encuadre a sangre en 360, 430 y escritorio', async ({ page }, info) => {
   test.skip(!/390x844$/.test(info.project.name) || info.project.name.startsWith('webkit'), 'una vez, en Chromium');
   const mock = seed();
   const log = [];
@@ -218,11 +276,9 @@ test('movimiento reducido y preferencia: se entra sin vídeo; encuadre 9:16 cont
   await openReaders(page, mock, { reduced: true });
   await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
   const visit = page.getByRole('dialog', { name: 'Visita al rincón de Bruno' });
-  await visit.getByRole('button', { name: 'Entrar por la ventana en el rincón de Bruno' }).click();
-  await expect(visit.getByRole('button', { name: /Libros compartidos por Bruno/ })).toBeVisible();
+  await expect(visit.getByRole('button', { name: ROOM_BUTTON })).toBeVisible();
+  await noAnimationOptions(visit);
   expect(videoRequests(log)).toEqual([]);
-  // Los lomos aparecen sin transición con movimiento reducido
-  // (la regla global de movimiento reducido deja 0,000001 s: en la práctica, inmediato)
   expect(parseFloat(await visit.locator('.reader-visit__spines').evaluate((el) => getComputedStyle(el).transitionDuration))).toBeLessThan(0.01);
   for (const [w, h] of [
     [360, 800],
@@ -232,17 +288,25 @@ test('movimiento reducido y preferencia: se entra sin vídeo; encuadre 9:16 cont
     await page.setViewportSize({ width: w, height: h });
     await page.waitForTimeout(300);
     const r = await visit.locator('.reader-visit__frame').boundingBox();
-    // Proporción 9:16 exacta, entera dentro de la pantalla y centrada
     expect(Math.abs(r.width / r.height - 9 / 16)).toBeLessThan(0.01);
-    expect(r.x).toBeGreaterThanOrEqual(-1);
-    expect(r.y).toBeGreaterThanOrEqual(-1);
-    expect(r.x + r.width).toBeLessThanOrEqual(w + 1);
-    expect(r.y + r.height).toBeLessThanOrEqual(h + 1);
-    expect(Math.abs(r.x + r.width / 2 - w / 2)).toBeLessThan(2);
-    // La balda tocable queda dentro del marco (anclada a la imagen, no a la pantalla)
+    if (w < h) {
+      // Vertical: cubre de borde a borde
+      await edgeToEdge(page, visit);
+    } else {
+      // Escritorio: la ilustración casi entera en alto (recorte vertical ≤ 12 %), centrada, y a los lados la misma escena
+      // desenfocada (no una banda)
+      expect(r.height).toBeGreaterThanOrEqual(h - 1);
+      expect(r.height).toBeLessThanOrEqual(h * 1.13);
+      expect(r.y + r.height / 2 - h / 2).toBeLessThan(1);
+      expect(Math.abs(r.x + r.width / 2 - w / 2)).toBeLessThan(2);
+      await expect(visit.locator('.reader-visit__backdrop img[data-on]')).toHaveCount(1);
+    }
+    // La balda tocable queda dentro de la ilustración y los libros, a la vista (el recorte lateral no se los come)
     const s = await visit.locator('.reader-visit__shelf').boundingBox();
     expect(s.x).toBeGreaterThanOrEqual(r.x - 1);
     expect(s.x + s.width).toBeLessThanOrEqual(r.x + r.width * 0.24);
-    await shot(page, info, `v158-encuadre-${w}`);
+    const first = await visit.locator('.reader-visit__spines > g').first().boundingBox();
+    expect(first.x).toBeGreaterThanOrEqual(0);
+    await shot(page, info, `v1581-encuadre-${w}`);
   }
 });

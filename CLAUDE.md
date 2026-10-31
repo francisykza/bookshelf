@@ -43,6 +43,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   `localStorage`), no sus datos reales. Si algo no cuadra con lo esperado, puede ser que él esté usando la app:
   no «arreglar» sus datos.
 - **No cambiar** la paleta del Ático ni las reglas de recompensas, piezas, cajas y pity.
+- **Figuras SVG provisionales retiradas** (1.58.1, decisión de Francisco): el Pequeño Viajero, el Bardo del Viento y la
+  Hechicera de Eea no deben volver como coleccionables ni sustituirse por otro marcador. Las cuentas antiguas conservan
+  su inventario; se filtran con `RETIRED_FIGURES` (`src/domain/figures.js`).
+- **Visita social sin opciones de animación** (1.58.1, decisión de Francisco): ni «Saltar», ni «Entrar sin animación»,
+  ni preguntas previas; la entrada empieza sola, a pantalla completa y sin franjas; solo una flecha para volver.
+- Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.
 - **Pruebas acotadas** a lo que se cambia: build + pruebas relevantes. **Nada de `npm run qa:full`** ni auditorías
   globales salvo que lo pida.
 - **No afirmar pruebas en iPhone o Safari reales**: aquí solo hay emulación (Chromium y WebKit de Playwright).
@@ -106,7 +112,8 @@ Historial) y desde la 1.54 `imports-154.css` (importación de Goodreads, `src/fe
 `epub-155.css` (vinculación y lector EPUB, `src/features/epub/`: el archivo vive solo en IndexedDB del dispositivo, por
 cuenta; la posición del archivo y el progreso registrado son cosas distintas, §54; paginado en `epubLayout.js` y
 subrayados en `epubHighlights.js`, §55) y desde la 1.58 `social-visit.css` (visita a un rincón compartido, todo bajo
-`.reader-visit`; lógica en `src/features/social/visit.js` y `visitScene.js`, §56). La edición visual
+`.reader-visit`; lógica en `src/features/social/visit.js` y `visitScene.js`, §56) y desde la 1.58.1 `hotfix-1581.css`
+(correcciones de la auditoría del vídeo, §57: cabecera de las reseñas). La edición visual
 `kindle` está retirada: dibujar siempre con `visualEdition(book)`, nunca con `book.editionType` directamente. **Día y noche son la misma habitación** (decisión de Francisco, §50). **Ojo**: `fix-138.css` aún da `top`/`left` con el área segura a `.lib-hero__back`; en un móvil real
 eso desplaza el botón (en emulación el área segura es 0). Las hojas antiguas siguen cargadas: antes de crear una clase nueva,
 buscar si ya existe con otro uso.
@@ -125,6 +132,9 @@ Maquetas de referencia: `docs/design/references/`.
 - Un `cat > archivo` sin heredoc se queda esperando la entrada y bloquea la orden: no hacerlo.
 - Capturas: Playwright con `isMobile`, `deviceScaleFactor: 2`, y esperar a que las imágenes estén `complete`.
   La app guarda el estado con retraso: para sembrar datos de prueba usar `page.addInitScript` antes de recargar.
+- Área segura en Chromium: `Emulation.setSafeAreaInsetsOverride` por CDP (p. ej. `top: 45`, como el móvil de
+  Francisco). El CDP **no** emula `display-mode`: para ver la app instalada, activar a mano las reglas de
+  `@media (display-mode: …)` (así se reprodujo la franja de la biblioteca, §57.3).
 - Atajos `border` y `font` de las hojas antiguas reinician `border-image` y las cifras: por eso algunas reglas de
   `craft-144.css` llevan `!important`.
 - Dos pruebas fallan a ratos o siempre **desde antes de la 1.45** (ver `docs/ESTADO.md`): no ocultarlas cambiando
