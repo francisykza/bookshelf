@@ -7,7 +7,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 ## Estado actual
 
 - **Versión publicada**: 1.60.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: 1.59.0 (biblioteca grande en el móvil y errores del vídeo del iPhone, §59) publicada; sin cambios
+- **Árbol de trabajo**: 1.60.0 (comunidad en el cuaderno, avatares nuevos y libro de la cama, §60) publicada; sin cambios
   pendientes de código. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
   (incluye `maqueta-146/`), `assets-source/` y `BookShelf-fotogramas-QA/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
