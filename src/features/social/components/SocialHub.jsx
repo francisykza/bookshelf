@@ -1,6 +1,10 @@
 // Panel de la comunidad (SPEC §25.3): «Mi Perfil & Avatar». Es el único perfil y el único selector de avatar:
 // se abre desde «Tu cuenta» y lo reutiliza la tablet de la sala social. Carga bajo demanda.
+// 1.60 (SPEC §60): todo el panel va en el cuaderno de cuero con anillas (el mismo recurso que la ficha del libro), con
+// pestañas de papel y un título por sección como en las maquetas («Tu perfil lector», «Comunidad», «Entre lectores»).
+import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { NotebookShell } from '../../../components/primitives';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { AVATARS } from '../../../domain/avatars';
 import { PanelShell } from '../../../components/panels/PanelShell';
@@ -66,41 +70,58 @@ function ProfileTab() {
   };
 
   return (
-    <form className="profile-form" onSubmit={save} noValidate>
-      <div className="profile-form__me">
+    <form className="profile-form profile-sheet" onSubmit={save} noValidate>
+      {/* Así te verán: avatar grande, alias y la promesa de privacidad */}
+      <div className="profile-hero">
         <ReaderAvatar avatarId={avatarId} alias={alias} size="profile" />
-        <div>
-          <p className="social-note">Así te verán otras personas de la comunidad: solo tu alias, tu avatar y lo que tú decidas publicar.</p>
-          <p className="social-hand">Tu correo nunca se muestra.</p>
-        </div>
+        <b className="profile-hero__name">{alias.trim() || 'Tu alias'}</b>
+        <p className="profile-hero__note">
+          Solo compartes lo que tú eliges.
+          <br />
+          Tu correo nunca se muestra.
+        </p>
       </div>
-      <div>
-        <label htmlFor="profile-alias">Alias público</label>
+      <div className="profile-field">
+        <label className="profile-heading" htmlFor="profile-alias">
+          Alias público
+        </label>
         <input id="profile-alias" className="social-input" value={alias} maxLength={ALIAS_MAX} autoComplete="off" onChange={(e) => setAlias(e.target.value)} aria-invalid={Boolean(alias) && Boolean(error)} aria-describedby="profile-alias-help" />
         <small id="profile-alias-help" className="social-note">
           {alias && error ? error : `Entre 2 y ${ALIAS_MAX} caracteres. Elígelo tú: no usamos tu nombre de cuenta.`}
         </small>
       </div>
       <fieldset className="avatar-picker" role="radiogroup" aria-label="Avatar">
-        <legend>Avatar</legend>
+        <legend className="profile-heading">Elige tu avatar</legend>
+        <div className="avatar-picker__grid">
         {AVATARS.map((a) => (
           <button key={a.id} type="button" role="radio" aria-checked={avatarId === a.id} onClick={() => setAvatarId(a.id)} aria-label={a.label}>
-            <ReaderAvatar avatarId={a.id} size="list" decorative />
+            <span className="avatar-picker__art">
+              <ReaderAvatar avatarId={a.id} size="pick" decorative />
+              {avatarId === a.id && (
+                <span className="avatar-picker__check" aria-hidden="true">
+                  <Check />
+                </span>
+              )}
+            </span>
             <span>{a.label}</span>
           </button>
         ))}
+        </div>
       </fieldset>
-      <label className="social-check">
+      <label className="social-check profile-join">
         <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-        <span>Participar en la comunidad: otras personas con sesión iniciada podrán ver mi alias, mi avatar y las opiniones que yo publique.</span>
+        <span>
+          <b>Participar en la comunidad</b>
+          <small>Otras personas con sesión iniciada podrán ver tu alias, tu avatar y las opiniones que publiques.</small>
+        </span>
       </label>
       {failure && (
         <p className="social-error" role="alert">
           {failure}
         </p>
       )}
-      <div className="social-actions">
-        <button type="submit" className="social-btn social-btn--primary" disabled={saving || Boolean(error)}>
+      <div className="profile-save">
+        <button type="submit" className="profile-save__btn" disabled={saving || Boolean(error)}>
           {saving ? 'Guardando…' : 'Guardar perfil'}
         </button>
         <span role="status">{message}</span>
@@ -179,23 +200,31 @@ function BlockedList() {
   );
 }
 
+// Título de cada hoja del cuaderno (maquetas de la 1.60); las que no tienen maqueta propia conservan «Comunidad»
 const TABS = [
-  { id: 'perfil', label: 'Mi Perfil & Avatar', Panel: ProfileTab },
-  { id: 'rincon', label: 'Mi rincón', Panel: CornerTab },
-  { id: 'lectores', label: 'Lectores', Panel: ReadersTab },
-  { id: 'sala', label: 'En la sala', Panel: RoomTab },
-  { id: 'club', label: 'Club', Panel: ClubTab },
+  { id: 'perfil', label: 'Mi Perfil & Avatar', title: 'Tu perfil lector', Panel: ProfileTab },
+  { id: 'rincon', label: 'Mi rincón', title: 'Comunidad', Panel: CornerTab },
+  { id: 'lectores', label: 'Lectores', title: 'Entre lectores', Panel: ReadersTab },
+  { id: 'sala', label: 'En la sala', title: 'Comunidad', Panel: RoomTab },
+  { id: 'club', label: 'Club', title: 'Comunidad', Panel: ClubTab },
 ];
 
 export function SocialHub({ onClose, initialTab = 'perfil', timer = null, openClubId = null, onVisit = null }) {
   const tabs = TABS;
   const [tab, setTab] = useState(tabs.some((t) => t.id === initialTab) ? initialTab : 'perfil');
-  const Current = tabs.find((t) => t.id === tab).Panel;
+  // Un club abierto desde «Lectores» (su tarjeta «Entrar») o desde un enlace
+  const [clubId, setClubId] = useState(openClubId);
+  const current = tabs.find((t) => t.id === tab);
+  const Current = current.Panel;
+  const openClub = (id) => {
+    setClubId(id);
+    setTab('club');
+  };
   return (
     <PanelShell onClose={onClose} label="Comunidad" variant="social">
-      <div className="social-hub">
+      <NotebookShell className="social-hub social-notebook" data-tab={tab}>
         <div className="social-hub__head">
-          <h2>Comunidad</h2>
+          <h2>{current.title}</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar">
             ×
           </button>
@@ -208,9 +237,9 @@ export function SocialHub({ onClose, initialTab = 'perfil', timer = null, openCl
           ))}
         </div>
         <div className="social-hub__body">
-          <Current timer={timer} openClubId={openClubId} onVisit={onVisit} />
+          <Current timer={timer} openClubId={clubId} onVisit={onVisit} onOpenClub={openClub} />
         </div>
-      </div>
+      </NotebookShell>
     </PanelShell>
   );
 }

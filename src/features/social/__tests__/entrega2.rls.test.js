@@ -36,6 +36,10 @@ describe('perfiles', () => {
 
   it('el avatar debe ser del catálogo; el alias, de 2 a 40 caracteres', async () => {
     expect(await rejects(as(db, A, (q) => q("update profiles set avatar_id = 'data:image/png;base64,AAA' where user_id = $1", [A])))).toMatch(/check/);
+    // 1.60: los avatares nuevos se admiten (migración 20261031120000_avatares_nuevos.sql)
+    await as(db, A, (q) => q("update profiles set avatar_id = 'zorro-lector' where user_id = $1", [A]));
+    expect((await as(db, A, (q) => q('select avatar_id from profiles where user_id = $1', [A])))[0].avatar_id).toBe('zorro-lector');
+    await as(db, A, (q) => q("update profiles set avatar_id = 'vidente-estrellas' where user_id = $1", [A]));
     expect(await rejects(as(db, A, (q) => q("update profiles set alias = 'x' where user_id = $1", [A])))).toMatch(/check/);
     expect(await rejects(as(db, A, (q) => q('update profiles set alias = $2 where user_id = $1', [A, 'x'.repeat(41)])))).toMatch(/check/);
   });

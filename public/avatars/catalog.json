@@ -1,12 +1,91 @@
 {
-  "version": 2,
+  "version": 3,
   "source": "Retratos acogedores de fantasía y lectura.png",
   "avatars": [
-    { "id": "lectora-cafe", "label": "Lectora con café", "image": "/avatars/lectora-cafe.webp", "original": "/avatars/lectora-cafe.png", "alt": "Retrato gouache de una lectora con gafas redondas y una taza humeante junto a la ventana" },
-    { "id": "lector-chaleco", "label": "Lector del chaleco", "image": "/avatars/lector-chaleco.webp", "original": "/avatars/lector-chaleco.png", "alt": "Retrato gouache de un lector de pelo rizado con chaleco marrón y un libro abierto" },
-    { "id": "viajera-pelirroja", "label": "Viajera pelirroja", "image": "/avatars/viajera-pelirroja.webp", "original": "/avatars/viajera-pelirroja.png", "alt": "Retrato gouache de una viajera pelirroja con trenza, pañuelo y auriculares" },
-    { "id": "lector-farol", "label": "Lector del farol", "image": "/avatars/lector-farol.webp", "original": "/avatars/lector-farol.png", "alt": "Retrato gouache de un lector con barba y chaqueta de punto junto a un farol encendido" },
-    { "id": "gato-lector", "label": "Gato lector", "image": "/avatars/gato-lector.webp", "original": "/avatars/gato-lector.png", "alt": "Retrato gouache de un gato atigrado con gafas apoyado sobre una pila de libros" },
-    { "id": "vidente-estrellas", "label": "Vidente de las estrellas", "image": "/avatars/vidente-estrellas.webp", "original": "/avatars/vidente-estrellas.png", "alt": "Retrato gouache de una figura con capa azul estrellada que sostiene una carta con una luna" }
-  ]
+    {
+      "id": "lectora-cafe",
+      "label": "Lectora con café",
+      "image": "/avatars/lectora-cafe.webp",
+      "original": "/avatars/lectora-cafe.png",
+      "alt": "Retrato gouache de una lectora con gafas redondas y una taza humeante junto a la ventana"
+    },
+    {
+      "id": "lector-chaleco",
+      "label": "Lector del chaleco",
+      "image": "/avatars/lector-chaleco.webp",
+      "original": "/avatars/lector-chaleco.png",
+      "alt": "Retrato gouache de un lector de pelo rizado con chaleco marrón y un libro abierto"
+    },
+    {
+      "id": "viajera-pelirroja",
+      "label": "Viajera pelirroja",
+      "image": "/avatars/viajera-pelirroja.webp",
+      "original": "/avatars/viajera-pelirroja.png",
+      "alt": "Retrato gouache de una viajera pelirroja con trenza, pañuelo y auriculares"
+    },
+    {
+      "id": "lector-farol",
+      "label": "Lector del farol",
+      "image": "/avatars/lector-farol.webp",
+      "original": "/avatars/lector-farol.png",
+      "alt": "Retrato gouache de un lector con barba y chaqueta de punto junto a un farol encendido"
+    },
+    {
+      "id": "gato-lector",
+      "label": "Gato lector",
+      "image": "/avatars/gato-lector.webp",
+      "original": "/avatars/gato-lector.png",
+      "alt": "Retrato gouache de un gato atigrado con gafas apoyado sobre una pila de libros"
+    },
+    {
+      "id": "vidente-estrellas",
+      "label": "Vidente de las estrellas",
+      "image": "/avatars/vidente-estrellas.webp",
+      "original": "/avatars/vidente-estrellas.png",
+      "alt": "Retrato gouache de una figura con capa azul estrellada que sostiene una carta con una luna"
+    },
+    {
+      "id": "guardiana-farol",
+      "label": "Guardiana del farol",
+      "image": "/avatars/guardiana-farol.webp",
+      "original": "/avatars/guardiana-farol.png",
+      "alt": "Retrato gouache de una lectora de pelo rizado con bufanda mostaza y un farol encendido entre la bruma"
+    },
+    {
+      "id": "lectora-botanica",
+      "label": "Lectora botánica",
+      "image": "/avatars/lectora-botanica.webp",
+      "original": "/avatars/lectora-botanica.png",
+      "alt": "Retrato gouache de una lectora de pelo rizado con un libro rojo y una rama de olivo; un dragón lejano sobre la bahía"
+    },
+    {
+      "id": "encuadernador-bruma",
+      "label": "Encuadernador de bruma",
+      "image": "/avatars/encuadernador-bruma.webp",
+      "original": "/avatars/encuadernador-bruma.png",
+      "alt": "Retrato gouache de un encuadernador con barba, delantal de cuero y un libro verde junto al mar"
+    },
+    {
+      "id": "lectora-mapas",
+      "label": "Lectora de mapas",
+      "image": "/avatars/lectora-mapas.webp",
+      "original": "/avatars/lectora-mapas.png",
+      "alt": "Retrato gouache de una persona con gafas redondas y chaleco que sostiene un mapa con la ruta de un dragón"
+    },
+    {
+      "id": "zorro-lector",
+      "label": "Zorro lector",
+      "image": "/avatars/zorro-lector.webp",
+      "original": "/avatars/zorro-lector.png",
+      "alt": "Retrato gouache de un zorro con bufanda remendada que lee un libro abierto"
+    },
+    {
+      "id": "lectora-marina",
+      "label": "Lectora marina",
+      "image": "/avatars/lectora-marina.webp",
+      "original": "/avatars/lectora-marina.png",
+      "alt": "Retrato gouache de una lectora de pelo gris con capa azul estrellada y un libro abierto entre la niebla"
+    }
+  ],
+  "source2": "material-diseno: retratos mediterráneos 1–6 (1.60)"
 }

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.59.0 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.60.0 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3953,3 +3953,32 @@ criterios en `docs/qa/iphone-large-library.md`; script de medición `scripts/per
 9. **Perfil social** (§59.9): «Libros · N» en mitad del mueble (no bajo «Está leyendo…»); los nombres de quien sigues
    llegan sin esperar a la actividad y, mientras, un trazo de papel (no «Lector»); el rincón cargado en la visita se
    reutiliza un minuto en el perfil (sin repetir sus siete consultas) y la visita adelanta su escena y su avatar.
+
+## 60. Comunidad en el cuaderno, avatares nuevos y libro de la cama (1.60.0)
+
+Maquetas de Francisco: «Tu perfil lector», «Comunidad · Mi rincón», «Ambiente y recuerdos» y «Entre lectores».
+
+1. **Marco** (decisión de Francisco): el panel de la comunidad va en el cuaderno de cuero con anillas (`NotebookShell`, el
+   mismo recurso que la ficha del libro), con pestañas de papel (la elegida, clara y subrayada en latón) y un título por
+   hoja: «Tu perfil lector», «Comunidad» (Mi rincón, En la sala, Club) y «Entre lectores». Se conservan las cinco
+   pestañas y «Visitar rincón» (decisión de Francisco: no se quitan funciones). Estilos en `social-160.css`.
+2. **Tu perfil lector**: avatar grande con el alias y «Solo compartes lo que tú eliges. Tu correo nunca se muestra»;
+   alias; «Elige tu avatar» en tres columnas con la marca verde del elegido; «Participar en la comunidad»; «Guardar
+   perfil» terracota entre dos ramitas; personas bloqueadas debajo.
+3. **Avatares**: seis nuevos de `material-diseno` (Guardiana del farol, Lectora botánica, Encuadernador de bruma, Lectora
+   de mapas, Zorro lector, Lectora marina), en `public/avatars` (webp 256 y png 462). El servidor solo admite los del
+   catálogo: **migración `20261031120000_avatares_nuevos.sql`** (la aplica Francisco; hasta entonces, guardar un perfil
+   con un avatar nuevo lo rechaza el servidor).
+4. **Mi rincón** (`CornerEditor.jsx`, un solo formulario y un solo «Guardar mi rincón» para lo que antes eran dos):
+   hoja principal con la escena de muestra (lo elegido, aunque no esté guardado), «Libros destacados · n/3» con portadas,
+   «Cambiar libros» con buscador, «Figuras expuestas · n/3» con su caja, «Guardián expuesto» con miniatura y
+   «Personalizar ambiente y recuerdos →»; hoja «Ambiente y recuerdos» con la escena, la luz (Día, Lluvia, Noche), la
+   lectura actual, última y próxima, libros que te representan, recuerdos en tarjetas (hasta 3, cada uno con su libro
+   y dedicatoria) y el adorno. Las colecciones siguen debajo de la hoja principal. La Hechicera de Eea de la maqueta
+   **no** vuelve (sigue retirada, §57; confirmado por Francisco).
+5. **Entre lectores**: «Lectores que sigo» en tarjetas (avatar, nombre y flecha; «Visitar rincón» bajo el nombre); «Lo
+   que comparten» (antes «Actividad») con cada opinión sujeta por su clip de latón, portada, obra, autoría, quién y su
+   valoración, el extracto y «…» (ver su rincón o denunciar con confirmación); los clubes en tarjeta salvia con «Entrar»,
+   que abre ese club en su pestaña.
+6. **Libro de la cama** (`room-160.css`): el progreso queda centrado en el hueco libre sobre el botón y «Registrar
+   lectura» va a lo ancho de su texto, alineado con la columna, sin sombra flotante y con la luz rasante de la página.

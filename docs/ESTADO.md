@@ -6,17 +6,19 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.59.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
+- **Versión publicada**: 1.60.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
 - **Árbol de trabajo**: 1.59.0 (biblioteca grande en el móvil y errores del vídeo del iPhone, §59) publicada; sin cambios
   pendientes de código. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
   (incluye `maqueta-146/`), `assets-source/` y `BookShelf-fotogramas-QA/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
-  `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
+  `20261025150000_huellas_rincon.sql`. **Pendiente de aplicar (1.60)**: `20261031120000_avatares_nuevos.sql` (amplía la
+  lista de avatares admitidos; sin ella, el servidor rechaza un perfil con uno de los seis nuevos).
 
 ### Últimos bloques (detalle en `SPEC.md`)
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.60.0 | Comunidad en el cuaderno de cuero según las maquetas (perfil, Mi rincón con «Ambiente y recuerdos», Entre lectores), seis avatares nuevos (migración pendiente) y libro de la cama más asentado | §60 |
 | 1.59.0 | Biblioteca grande en el móvil: nada montado con la biblioteca cerrada, filas y lomos virtuales, portadas 2:3 con una descarga por URL, figuras del perfil en WebKit, nube con comprobación de fecha, visita sin pantalla oscura, aviso con caducidad real, registro con teclado, perfil social sin solapes | §59 |
 | 1.58.2 | Flecha del salón que saltaba al pulsar (con movimiento reducido no navegaba) y pruebas antiguas al día | §58 |
 | 1.58.1 | Hotfix de la auditoría del vídeo: figuras SVG retiradas, visita a pantalla completa sin opciones de animación, libros en las baldas, franja de la biblioteca instalada, alias en reseñas, simular sellos solo en desarrollo | §57 |
@@ -106,6 +108,18 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-31 · cuenta principal · 1.60.0 (publicada)
+- Encargo: secciones de la comunidad como en las maquetas, avatares nuevos de `material-diseno`, «Entre lectores» y
+  seguir ajustando el libro de la cama (§60).
+- Decisiones de Francisco: cuaderno con anillas para las tres pestañas (no la tarjeta lisa); la Hechicera de Eea de la
+  maqueta sigue retirada; se conservan «En la sala», «Club» y «Visitar rincón».
+- Migración nueva **pendiente de aplicar por Francisco**: `supabase/migrations/20261031120000_avatares_nuevos.sql`.
+- QA: Vitest 273/273 (incluida RLS con el avatar nuevo); comunidad completa en verde tras corregir un segundo scroll de
+  las pestañas; libro de la cama y biblioteca (diegetic, gouache, v147–v152, v159) en 360/390/430 y WebKit: todo en verde
+  salvo `v149` en WebKit (fallo conocido; comprobado que falla igual sin el cambio). Build correcto.
+- Sin verificar en el móvil real. Commit en `main` y subido a producción por petición de Francisco («Commit y súbelo»);
+  la migración de avatares sigue pendiente de aplicar.
 
 ### 2026-10-31 · cuenta principal · 1.59.0 (publicada)
 - Encargo «Rendimiento y errores visuales en iPhone con más de 1.000 libros» (§59). Vídeo inspeccionado

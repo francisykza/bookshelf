@@ -10,10 +10,11 @@ const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 
 describe('catálogo de avatares', () => {
   const json = JSON.parse(readFileSync(join(ROOT, 'public', 'avatars', 'catalog.json'), 'utf8'));
-  const sql = readFileSync(join(ROOT, 'supabase', 'migrations', '20261025090000_entrega2_identidad_opiniones.sql'), 'utf8');
+  // 1.60: la restricción vigente es la de la migración de los avatares nuevos (amplía la de la entrega 2)
+  const sql = readFileSync(join(ROOT, 'supabase', 'migrations', '20261031120000_avatares_nuevos.sql'), 'utf8');
 
-  it('seis avatares con id estable, label, image y alt; rutas públicas en /avatars/', () => {
-    expect(json.avatars).toHaveLength(6);
+  it('doce avatares con id estable, label, image y alt; rutas públicas en /avatars/', () => {
+    expect(json.avatars).toHaveLength(12);
     for (const a of json.avatars) {
       expect(a).toMatchObject({ id: expect.stringMatching(/^[a-z-]+$/), label: expect.any(String), alt: expect.any(String) });
       expect(a.image).toBe(`/avatars/${a.id}.webp`);
@@ -24,7 +25,7 @@ describe('catálogo de avatares', () => {
   it('los mismos ids en el catálogo público, en la app y en la restricción del servidor', () => {
     const ids = json.avatars.map((a) => a.id);
     expect(AVATARS.map((a) => a.id)).toEqual(ids);
-    const check = /avatar_id\s+text check \(avatar_id in \(([^)]*)\)\)/.exec(sql)[1];
+    const check = /avatar_id in \(([^)]*)\)/.exec(sql)[1];
     expect(check.split(',').map((s) => s.trim().replace(/'/g, ''))).toEqual(ids);
     expect(isAvatarId('gato-lector')).toBe(true);
     expect(isAvatarId('data:image/png;base64,AAA')).toBe(false);
