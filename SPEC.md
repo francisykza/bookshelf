@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.60.0 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.61.0 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3982,3 +3982,41 @@ Maquetas de Francisco: «Tu perfil lector», «Comunidad · Mi rincón», «Ambi
    que abre ese club en su pestaña.
 6. **Libro de la cama** (`room-160.css`): el progreso queda centrado en el hueco libre sobre el botón y «Registrar
    lectura» va a lo ancho de su texto, alineado con la columna, sin sombra flotante y con la luz rasante de la página.
+
+## 61. Visita: habitación de llegada y «Los libros de X» (1.61.0)
+
+Referencia: `docs/design/references/visita-rincon-libros-maqueta.png` (distribución y controles; el fondo de llegada y
+las portadas son los reales). Estilos en `social-161.css`. Sustituye en parte a §56.1 y §57.2 (lo demás sigue igual:
+entrada sin opciones de animación, fallos del vídeo, vídeo solo al abrir la visita).
+
+### 61.1 Habitación de llegada (un acceso por cosa)
+
+- Cabecera: la flecha para volver y un único acceso al perfil (avatar, alias y `›`). Fuera el icono de perfil aparte,
+  la botonera inferior «Libros compartidos / Ver perfil» y el cartel grande «Está leyendo…».
+- Estantería: los lomos de lo compartido siguen anclados a las baldas (`shelfSpines`, mismo tope de 24 y los destacados
+  primero). La etiqueta de papel «Libros compartidos ›» (`SHELF_TAG`) cuelga del borde del mueble y va **dentro** del
+  mismo botón que la zona (un solo control). Con Guías, además el contorno de la zona.
+- Mesita: si la persona enseña su lectura actual, un libro pequeño de pie con cubierta tipográfica neutra (solo el
+  título publicado) y la etiqueta «Está leyendo» (`TABLE_BOOK`, `TABLE_TAG`). Límite del fondo real: el único hueco
+  libre es el extremo izquierdo del tablero (x ≈ 171–198, 26 × 39 px); la etiqueta cuelga del canto delantero, como en
+  la maqueta, porque no cabe en otra parte sin tapar la planta, la taza o el mueble. Zona táctil ≥ 44 px invisible.
+  Abre una ficha con el título y «Está leyendo»; sin reseña (no hay obra inequívoca).
+- Al pie solo quedan estados honestos (cargando, error, rincón privado, sin libros).
+- Lo interactivo aparece con un fundido de 240 ms al llegar; inmediato con movimiento reducido.
+
+### 61.2 «Los libros de X»
+
+- Vista frontal con las baldas de la biblioteca (`.lib-shelf`) y `PhysicalBook`: cabecera con «Volver al rincón»,
+  avatar, «Los libros de X», número real («N libros compartidos»: todo lo compartido llega en una consulta, sin
+  paginar) y buscador por título y autor sin tildes ni signos. Tres por fila en móvil (cinco en anchos). Sin títulos
+  bajo las portadas, sin añadir ni herramientas. Estados vacío y sin resultados. Reseñas publicadas al final.
+- Colecciones grandes: desde 12 filas solo se montan las cercanas a la vista; las demás son la balda vacía con su alto.
+- Navegación: `select: 'libros'` y, al abrir un libro, `'libros/clave'`; la vista sigue montada bajo la ficha, así que
+  al cerrarla vuelven la búsqueda, la posición y el foco. `safeParent`: libro → «Sus libros» → habitación → «Lectores».
+
+### 61.3 Pruebas
+
+`e2e-community/v161.spec.js` (320, 390, 430, 1440 y WebKit 390): accesos únicos y zonas táctiles, etiqueta y libro de
+la mesita, búsqueda, posición y foco al cerrar la ficha, pendientes sin duplicar, reseña solo con obra inequívoca,
+colección de 360 libros sin montarlos todos, sin lectura, rincón privado, cambio de persona, vídeo no pedido al
+arrancar y roto, y el camino «Social» → tableta → «Lectores» → visita. `v158` y `v159` al día con los accesos nuevos.

@@ -1,0 +1,392 @@
+/* ── 1.61 · Visita: habitación de llegada y «Los libros de X» (SPEC §61) ──────────────────────────────────────────
+   Referencia: docs/design/references/visita-rincon-libros-maqueta.png (distribución y controles; el fondo y las
+   portadas son los reales). Todo bajo .reader-visit. Madera, papel marfil, lino salvia y tinta sepia de la app. */
+
+/* Cabecera: la flecha y un único acceso al perfil (avatar, alias y una flecha discreta) */
+.reader-visit__bar {
+  gap: 10px;
+}
+
+button.reader-visit__who {
+  min-height: 44px;
+  padding: 3px 10px 3px 3px;
+  color: var(--rv-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.reader-visit__who-go {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-left: -2px;
+  color: var(--rv-soft);
+}
+
+/* Etiqueta artesanal de la estantería: papel crema por nueve zonas, dentro del botón del mueble (un solo control) */
+.reader-visit__shelf {
+  overflow: visible;
+}
+
+.reader-visit .reader-visit__shelf .reader-visit__tag {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  max-width: none;
+  padding: 2px 6px 2px 8px;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 7px;
+  border-image: url('/assets/ui/controls/control-papel-crema.webp') 56 fill / 7px round;
+  border-radius: 0;
+  background: none;
+  box-shadow: 0 2px 4px rgb(44 30 20 / 0.28);
+  color: #3d2817;
+  font: 600 15px/1.1 'Cormorant Garamond', Georgia, serif;
+  white-space: nowrap;
+  transform: rotate(-2deg);
+  transform-origin: 0 50%;
+}
+
+.reader-visit__tag svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: #725b46;
+}
+
+/* Con «Guías»: además el contorno discreto de la zona (como antes) */
+.reader-visit[data-guides='on'] .reader-visit__shelf {
+  outline-offset: -3px;
+}
+
+/* Lo que está leyendo: libro pequeño de pie sobre la mesita y su etiqueta colgada del canto */
+.reader-visit__table {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+/* Zona táctil de al menos 44 × 44 px centrada en el libro (invisible) */
+.reader-visit__table::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 48px);
+  height: max(100%, 52px);
+  transform: translate(-50%, -42%);
+}
+
+.reader-visit__table-book {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.reader-visit__table-book .pbook {
+  --rx: -4deg;
+  --ry: 18deg;
+  width: 100%;
+}
+
+.reader-visit__table-book .pbook__shadow {
+  bottom: -3px;
+  height: 7px;
+  opacity: 0.8;
+}
+
+.reader-visit__table-tag {
+  position: absolute;
+  display: block;
+  width: max-content;
+  padding: 1px 5px 2px;
+  border: 1px solid rgb(114 91 70 / 0.35);
+  border-radius: 2px;
+  background: #faf3e2;
+  box-shadow: 0 1px 2px rgb(44 30 20 / 0.3);
+  color: #3d2817;
+  font: 600 11px/1.15 'Cormorant Garamond', Georgia, serif;
+  white-space: nowrap;
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+
+.reader-visit__table:focus-visible {
+  outline: 2px solid #c59b27;
+  outline-offset: 3px;
+}
+
+/* Aparición breve de lo interactivo al llegar (inmediata con movimiento reducido) */
+.reader-visit[data-stage='habitacion'] :is(.reader-visit__tag, .reader-visit__table) {
+  animation: rv-controls 240ms ease both;
+}
+
+.reader-visit[data-reduced] :is(.reader-visit__tag, .reader-visit__table, .reader-visit__who) {
+  animation: none;
+}
+
+/* ── «Los libros de X»: biblioteca frontal con las baldas de la biblioteca propia ── */
+.reader-visit__library {
+  --ls: 0.13;
+  --ls-px: calc(var(--ls) * 1px);
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  background: #4a3020;
+}
+
+@media (min-width: 600px) {
+  .reader-visit__library {
+    --ls: 0.2;
+  }
+}
+
+.reader-visit__library-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 0 calc(env(safe-area-inset-bottom) + 24px);
+}
+
+.reader-visit__library-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  margin: 0 6px;
+  padding: calc(env(safe-area-inset-top) + 10px) 12px 12px;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 0 12px 12px;
+  border-image: url('/assets/ui/controls/control-papel-crema.webp') 0 56 56 fill / 0 12px 12px round;
+  box-shadow: 0 6px 12px rgb(20 10 4 / 0.28);
+}
+
+.reader-visit__library-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reader-visit__back {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 8px 0 4px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--rv-ink);
+  font: 500 15px/1.1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.reader-visit__back svg {
+  width: 20px;
+  height: 20px;
+}
+
+.reader-visit__library-who {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reader-visit__library-who .reader-avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+
+.reader-visit__library-who > span {
+  display: grid;
+  min-width: 0;
+}
+
+.reader-visit__library-who h3 {
+  margin: 0;
+  overflow: hidden;
+  font: 600 19px/1.15 'Cormorant Garamond', Georgia, serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-visit__library-who h3:focus {
+  outline: none;
+}
+
+.reader-visit__library-who small {
+  color: var(--rv-soft);
+  font: 400 13.5px/1.25 'Lora', Georgia, serif;
+}
+
+.reader-visit__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 4px 0 12px;
+  border: 1px solid rgb(114 91 70 / 0.35);
+  border-radius: 10px;
+  background: rgb(255 252 244 / 0.75);
+}
+
+.reader-visit__search:focus-within {
+  outline: 2px solid #c59b27;
+  outline-offset: 1px;
+}
+
+.reader-visit__search > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--rv-soft);
+}
+
+.reader-visit__search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--rv-ink);
+  font: 400 16px/1 'Lora', Georgia, serif;
+}
+
+.reader-visit__search input:focus {
+  outline: none;
+}
+
+.reader-visit__search button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--rv-soft);
+  cursor: pointer;
+}
+
+.reader-visit__search button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.reader-visit__shelves {
+  margin-top: 10px;
+}
+
+.reader-visit__shelves .lib-shelf__books {
+  gap: 0 10px;
+  padding: 18px 6px 0;
+}
+
+.reader-visit__shelves .lib-shelf:first-of-type .lib-shelf__books {
+  padding-top: 18px;
+}
+
+.reader-visit__slot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+  aspect-ratio: 2 / 3;
+}
+
+.reader-visit__slot .pbook {
+  width: 92%;
+}
+
+.reader-visit__slot .pbook:focus-visible {
+  outline: 2px solid #fbf3e2;
+  outline-offset: 3px;
+}
+
+/* Estados honestos sobre la madera */
+.reader-visit__empty {
+  margin: 18px 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--rv-chip);
+  color: var(--rv-ink);
+  text-align: center;
+}
+
+.reader-visit__library .reader-visit__reviews {
+  margin: 16px 10px 0;
+  padding: 4px 14px 14px;
+  border-radius: 12px;
+  background: var(--rv-paper);
+}
+
+/* La ficha de un libro, encima de «Sus libros» */
+.reader-visit__sheet {
+  z-index: 3;
+}
+
+/* Ajustes tras la captura a 390: etiqueta en dos líneas colgada del canto (como en la maqueta) */
+.reader-visit .reader-visit__shelf .reader-visit__tag {
+  align-items: flex-end;
+  padding: 1px 4px 1px 6px;
+  font-size: 14px;
+  line-height: 1.05;
+  text-align: left;
+  white-space: normal;
+}
+
+/* Cabecera de «Sus libros»: el título puede ocupar dos líneas antes que cortarse */
+.reader-visit__back {
+  font-size: 14px;
+}
+
+.reader-visit__library-who h3 {
+  display: -webkit-box;
+  font-size: 18px;
+  line-height: 1.1;
+  white-space: normal;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.reader-visit__library-who small {
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+@media (max-width: 380px) {
+  .reader-visit__back span {
+    font-size: 13.5px;
+  }
+
+  .reader-visit__library-who .reader-avatar {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+/* Una sola tarjeta crema con esquinas redondeadas (la base de papel por nueve zonas parecía dos piezas) */
+.reader-visit__library-head {
+  margin: calc(env(safe-area-inset-top) + 8px) 8px 0;
+  padding: 8px 10px 10px;
+  border: 1px solid rgb(114 91 70 / 0.28);
+  border-image: none;
+  border-radius: 14px;
+  background: #f6efdf;
+}

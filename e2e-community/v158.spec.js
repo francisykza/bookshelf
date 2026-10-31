@@ -146,15 +146,16 @@ test('visita: la entrada empieza sola, sin opciones; habitación con lo comparti
   await edgeToEdge(page, visit);
   // Habitación: un lomo por libro compartido sobre las baldas, lo que lee (solo el título) y nada privado
   await expect(visit.locator('.reader-visit__spines > g')).toHaveCount(5);
-  await expect(visit).toContainText('Está leyendo «Alas de hierro»');
-  await expect(visit.locator('.reader-visit__shelf')).toContainText('Libros · 5');
+  // 1.61: lo que lee es un libro sobre la mesita; la estantería lleva su etiqueta y el número en su nombre
+  await expect(visit.getByRole('button', { name: 'Está leyendo «Alas de hierro»' })).toBeVisible();
+  await expect(visit.getByRole('button', { name: /Libros compartidos por Bruno \(5\)/ })).toBeVisible();
   await page.waitForTimeout(400);
   await shot(page, info, 'v1581-habitacion');
   // Libros compartidos (tres por fila) → un libro → añadir a pendientes una sola vez
   await visit.getByRole('button', { name: ROOM_BUTTON }).click();
   const sheet = page.getByRole('dialog', { name: 'Libros compartidos por Bruno' });
-  await expect(sheet).toContainText('no es su biblioteca completa');
-  await expect(sheet.locator('.reader-visit__book')).toHaveCount(5);
+  await expect(sheet).toContainText('5 libros compartidos');
+  await expect(sheet.locator('.pbook')).toHaveCount(5);
   await expect(sheet).not.toContainText('Diario secreto');
   await expect(sheet).not.toContainText('Biblioteca privada');
   await expect(sheet.locator('.review-card')).toContainText('Contiene spoilers');
@@ -243,7 +244,7 @@ test('otra persona mientras carga: nunca se ven los libros de la anterior; sin l
   await expect(visit.locator('.reader-visit__spines > g')).toHaveCount(1);
   await visit.getByRole('button', { name: /Libros compartidos por Carla/ }).click();
   const sheet = page.getByRole('dialog', { name: 'Libros compartidos por Carla' });
-  await expect(sheet.locator('.reader-visit__book')).toHaveCount(1);
+  await expect(sheet.locator('.pbook')).toHaveCount(1);
   await expect(sheet).toContainText('Momo');
   await expect(sheet).not.toContainText('Cuarta ala');
   await expect(page.locator('.reader-visit')).not.toContainText('No debería verse');
@@ -256,7 +257,7 @@ test('otra persona mientras carga: nunca se ven los libros de la anterior; sin l
   const eva = page.getByRole('dialog', { name: /Visita al rincón de Eva/ });
   await expect(eva).toContainText('Aún no ha compartido libros', { timeout: 15000 });
   await expect(eva.locator('.reader-visit__spines')).toHaveCount(0);
-  await expect(eva.locator('.reader-visit__shelf')).toHaveText('Libros');
+  await expect(eva.getByRole('button', { name: /Libros compartidos por Eva Montesinos de la Torre \(0\)/ })).toBeVisible();
   // Alias largo: legible entero para lectores de pantalla aunque se abrevie
   await expect(eva.locator('.reader-visit__who')).toContainText('Eva Montesinos de la Torre');
   // Dani bloquea a Ana: su visita (abierta a mano) dice que no está disponible y no enseña nada suyo

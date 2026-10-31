@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.60.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: 1.60.0 (comunidad en el cuaderno, avatares nuevos y libro de la cama, §60) publicada; sin cambios
+- **Versión publicada**: 1.61.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: 1.61.0 (visita: habitación de llegada y «Los libros de X», §61) publicada; sin cambios
   pendientes de código. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
   (incluye `maqueta-146/`), `assets-source/` y `BookShelf-fotogramas-QA/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
@@ -18,6 +18,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.61.0 | Visita: un acceso por cosa en la habitación de llegada, etiqueta «Libros compartidos ›» en la estantería, lectura actual como libro en la mesita y «Los libros de X» como biblioteca frontal con buscador | §61 |
 | 1.60.0 | Comunidad en el cuaderno de cuero según las maquetas (perfil, Mi rincón con «Ambiente y recuerdos», Entre lectores), seis avatares nuevos (migración pendiente) y libro de la cama más asentado | §60 |
 | 1.59.0 | Biblioteca grande en el móvil: nada montado con la biblioteca cerrada, filas y lomos virtuales, portadas 2:3 con una descarga por URL, figuras del perfil en WebKit, nube con comprobación de fecha, visita sin pantalla oscura, aviso con caducidad real, registro con teclado, perfil social sin solapes | §59 |
 | 1.58.2 | Flecha del salón que saltaba al pulsar (con movimiento reducido no navegaba) y pruebas antiguas al día | §58 |
@@ -108,6 +109,18 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-31 · cuenta principal · 1.61.0 (publicada)
+- Encargo «Pulir la visita social ya implementada» con maqueta (`docs/design/references/visita-rincon-libros-maqueta.png`).
+  Detalle en §61. Tocados: `ReaderVisit.jsx`, `VisitBookSheet.jsx` (nueva `SharedLibrary`), `visitScene.js`,
+  `navigation.js` (`libros/clave`), `social-161.css` (nueva, importada al final). Pruebas: nueva
+  `e2e-community/v161.spec.js`; `v158` y `v159` al día; `visit.domain.test.js` con la vuelta nueva.
+- QA: Vitest 274/274; `v158` + `v159` + `v161` de la comunidad en 320, 390, 430, 1440 y WebKit 390: 29 pasan (las
+  omitidas son por tamaño). Build y oxlint correctos. Sin iPhone real.
+- Límite del fondo real: en la mesita solo cabe un libro pequeño en el extremo izquierdo; la etiqueta cuelga del canto
+  (no cabe en otra parte sin tapar planta, taza o mueble).
+- Primero sin commit por indicación de Francisco; después commit en `main` y subida a producción a petición suya
+  («hazlo y súbelo»). Sin comprobar aún en su móvil real.
 
 ### 2026-10-31 · cuenta principal · 1.60.0 (publicada)
 - Encargo: secciones de la comunidad como en las maquetas, avatares nuevos de `material-diseno`, «Entre lectores» y

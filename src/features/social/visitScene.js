@@ -19,6 +19,22 @@ export const HOUSE_WINDOW = { x0: 0.48, x1: 0.73, y0: 0.46, y1: 0.64 };
 export const ROOM_SHELF = { x0: 0, x1: 0.23, y0: 0.08, y1: 0.83 };
 
 /**
+ * 1.61 (SPEC §61): etiqueta «Libros compartidos ›» colgada del borde derecho de la estantería, a media altura (px de la
+ * imagen: esquina superior izquierda). Va dentro del mismo botón que la zona del mueble: un solo control, un solo toque.
+ */
+export const SHELF_TAG = { x: 104, y: 505 };
+
+/**
+ * 1.61 (SPEC §61): lo que está leyendo, como un libro pequeño de pie sobre la mesita. Medido sobre habitacion-v1.webp:
+ * el tablero va de x ≈ 168 a 370 con su superficie en y ≈ 795–806; el jarrón ocupa x ≈ 200–250 y el plato de la taza
+ * x ≈ 260–335. El único hueco que no tapa jarrón, taza, sillón ni bordes es el extremo izquierdo (x ≈ 171–198): allí
+ * cabe un libro de 26 × 39 px apoyado en y = 801. La etiqueta «Está leyendo» cuelga del canto delantero, como en la
+ * maqueta (no cabe en ninguna otra parte sin tapar la planta, la taza o el mueble).
+ */
+export const TABLE_BOOK = { x: 172, base: 801, w: 26, h: 39 };
+export const TABLE_TAG = { x: 166, y: 809 };
+
+/**
  * Huecos útiles de la estantería (px de la imagen), de arriba abajo. La estantería está en la pared izquierda y en
  * perspectiva: el borde cercano está en x ≈ 14 y el fondo en x ≈ 144; cada base baja hacia el fondo (no es horizontal en
  * pantalla). `top` es la cara inferior de la balda de encima y `base`, la superficie donde se apoyan los libros.

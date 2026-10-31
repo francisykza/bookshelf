@@ -91,4 +91,11 @@ describe('escena y navegación', () => {
     expect(safeParent(safeParent(book))).toEqual({ view: 'room', panel: { type: 'social', tab: 'lectores' } });
     expect(safeParent({ view: 'room', panel: { type: 'visit', id: 'u' } })).toEqual({ view: 'room', panel: { type: 'social', tab: 'lectores' } });
   });
+
+  it('1.61: un libro abierto desde «Sus libros» vuelve a «Sus libros», luego a la habitación y a «Lectores»', () => {
+    const book = { view: 'room', panel: { type: 'visit', id: 'u', section: 'habitacion', select: 'libros/u:b1' } };
+    expect(safeParent(book)).toEqual({ view: 'room', panel: { type: 'visit', id: 'u', section: 'habitacion', select: 'libros' } });
+    expect(safeParent(safeParent(book))).toEqual({ view: 'room', panel: { type: 'visit', id: 'u', section: 'habitacion' } });
+    expect(safeParent(safeParent(safeParent(book)))).toEqual({ view: 'room', panel: { type: 'social', tab: 'lectores' } });
+  });
 });

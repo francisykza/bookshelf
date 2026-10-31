@@ -9,20 +9,24 @@
 // 1.59 (SPEC §59.6): nunca una pantalla oscura. Hasta que la primera imagen (casa o habitación) está decodificada, la
 // visita no tapa lo que había (la escena anterior sigue a la vista); el vídeo lleva la casa como póster y solo se
 // muestra cuando el navegador ha presentado su primer fotograma.
-import { ArrowLeft, BookOpen, UserRound } from 'lucide-react';
+// 1.61 (SPEC §61): un solo acceso a cada cosa. La flecha para volver, el avatar con el alias (abre el perfil), la
+// estantería con su etiqueta «Libros compartidos ›» (abre «Los libros de X») y, si lo enseña, lo que está leyendo como un
+// libro pequeño sobre la mesita. Sin botonera inferior ni cartel grande con el título.
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../../components/panels/PanelShell';
 import { avatarById } from '../../../domain/avatars';
 import { spineColor } from '../../../domain/books';
+import { PhysicalBook } from '../../../components/shelf/BookItem';
 import { useReducedMotion } from '../../../hooks/useReducedMotion';
 import { useLibrary } from '../../../state/useLibrary';
 import { useCommunity } from '../hooks/useCommunity';
 import { useReaderCorner } from '../hooks/useReaderCorner';
 import { SCENES, sceneOf } from '../huellas';
 import { currentTitle, sharedBooks } from '../visit';
-import { ROOM_SHELF, VISIT_H, VISIT_MEDIA, VISIT_W, shelfSpines } from '../visitScene';
-import { SharedBooksSheet, VisitBookSheet } from './VisitBookSheet';
+import { ROOM_SHELF, SHELF_TAG, TABLE_BOOK, TABLE_TAG, VISIT_H, VISIT_MEDIA, VISIT_W, shelfSpines } from '../visitScene';
+import { SharedLibrary, VisitBookSheet } from './VisitBookSheet';
 
 /** Espera máxima a que el vídeo empiece a moverse; y a que avance si se queda parado. Después, la habitación. */
 const START_LIMIT = 6000;
@@ -196,26 +200,27 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
 
   const inRoom = stage === 'habitacion' && roomShown;
   const backLabel = inRoom ? 'Volver' : 'Salir de la visita';
+  const reading = ready ? currentTitle(data.corner) : null;
+  // Qué hay abierto encima de la habitación: «libros», «libros/clave» (un libro desde sus libros), «leyendo» o una clave
+  const inLibrary = select === 'libros' || (typeof select === 'string' && select.startsWith('libros/'));
+  const bookKey = inLibrary && select !== 'libros' ? select.slice('libros/'.length) : null;
+  const readingItem = reading ? { key: 'leyendo', ref: { id: null, title: reading, author: '', cover: '' }, origins: ['Está leyendo'], phrase: '' } : null;
 
   return (
     <PanelShell onClose={onBack} label={alias ? `Visita al rincón de ${alias}` : 'Visita a un rincón'} variant="visit">
       <div className="reader-visit" data-shown={shown || undefined} data-stage={inRoom ? 'habitacion' : 'casa'} data-phase={play ? 'preparando' : phase} data-guides={state.settings.showGuides ? 'on' : 'off'} data-reduced={reduced || undefined}>
         <Scene layer={roomShown || reduced ? 'room' : phase === 'entrando' ? 'video' : 'house'} playing={playing} videoRef={videoRef}>
           {inRoom && ready && <Shelf alias={alias} shared={shared} reduced={reduced} onSelect={onSelect} />}
+          {inRoom && ready && reading && <TableBook title={reading} onOpen={() => onSelect('leyendo')} />}
         </Scene>
         <header className="reader-visit__bar">
           <button type="button" className="reader-visit__icon" onClick={onBack} aria-label={backLabel}>
             <ArrowLeft aria-hidden="true" />
           </button>
-          {inRoom && <Who data={data} alias={alias} />}
-          {inRoom && ready && (
-            <button type="button" className="reader-visit__icon" onClick={onProfile} aria-label={`Ver el perfil de ${alias}`}>
-              <UserRound aria-hidden="true" />
-            </button>
-          )}
+          {inRoom && <Who data={data} alias={alias} onProfile={ready ? onProfile : null} />}
         </header>
         {inRoom ? (
-          <RoomFoot data={data} status={corner.status} failure={corner.failure} reload={corner.reload} shared={shared} onSelect={onSelect} onBack={onBack} onProfile={onProfile} />
+          <RoomFoot data={data} status={corner.status} failure={corner.failure} reload={corner.reload} shared={shared} onBack={onBack} />
         ) : (
           (corner.status === 'error' || (corner.status === 'ready' && !data?.profile)) && (
             <footer className="reader-visit__foot">
@@ -223,9 +228,12 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
             </footer>
           )
         )}
-        {inRoom && ready && select === 'libros' && <SharedBooksSheet items={shared.all} alias={alias} profile={data.profile} reviews={data.reviews} onOpenBook={(key) => onSelect(key)} onBack={onBack} />}
-        {inRoom && ready && select && select !== 'libros' && (
-          <VisitBookSheet item={shared.all.find((it) => it.key === select) ?? null} alias={alias} profile={data.profile} reviews={data.reviews} onBack={onBack} />
+        {/* «Los libros de X» sigue montada bajo la ficha de un libro: al cerrarla, la búsqueda y la posición siguen ahí */}
+        {inRoom && ready && inLibrary && <SharedLibrary items={shared.all} alias={alias} profile={data.profile} reviews={data.reviews} openKey={bookKey} onOpenBook={(key) => onSelect(`libros/${key}`)} onBack={onBack} />}
+        {inRoom && ready && bookKey && <VisitBookSheet item={shared.all.find((it) => it.key === bookKey) ?? null} alias={alias} profile={data.profile} reviews={data.reviews} onBack={onBack} />}
+        {inRoom && ready && select === 'leyendo' && <VisitBookSheet item={readingItem} alias={alias} profile={data.profile} reviews={data.reviews} onBack={onBack} backLabel="Volver a su rincón" />}
+        {inRoom && ready && select && !inLibrary && select !== 'leyendo' && (
+          <VisitBookSheet item={shared.all.find((it) => it.key === select) ?? null} alias={alias} profile={data.profile} reviews={data.reviews} onBack={onBack} backLabel="Volver a su rincón" />
         )}
       </div>
     </PanelShell>
@@ -255,13 +263,40 @@ function Scene({ layer, playing, videoRef, children }) {
   );
 }
 
-function Who({ data, alias }) {
+/** El único acceso al perfil: avatar, alias y una flecha discreta (mientras carga, solo se ve, no se pulsa). */
+function Who({ data, alias, onProfile }) {
   if (!data?.profile) return null;
-  return (
-    <span className="reader-visit__who">
+  const inner = (
+    <>
       <ReaderAvatar avatarId={data.profile.avatar_id} alias={alias} size="list" decorative />
       <b>{alias}</b>
-    </span>
+      {onProfile && <ChevronRight aria-hidden="true" className="reader-visit__who-go" />}
+    </>
+  );
+  return onProfile ? (
+    <button type="button" className="reader-visit__who" onClick={onProfile} aria-label={`Ver el perfil de ${alias}`}>
+      {inner}
+    </button>
+  ) : (
+    <span className="reader-visit__who">{inner}</span>
+  );
+}
+
+/**
+ * Lo que está leyendo, como un libro pequeño de pie sobre la mesita (solo el título publicado: cubierta tipográfica
+ * neutra, sin edición, páginas ni porcentaje). Libro, etiqueta y zona táctil (≥ 44 px) en las coordenadas de la escena.
+ */
+function TableBook({ title, onOpen }) {
+  const at = (x, y) => ({ left: pct(x / VISIT_W), top: pct(y / VISIT_H) });
+  return (
+    <button type="button" className="reader-visit__table" style={{ ...at(TABLE_BOOK.x, TABLE_BOOK.base - TABLE_BOOK.h), width: pct(TABLE_BOOK.w / VISIT_W), height: pct(TABLE_BOOK.h / VISIT_H) }} onClick={onOpen} aria-label={`Está leyendo «${title}»`}>
+      <span className="reader-visit__table-book" aria-hidden="true">
+        <PhysicalBook book={{ id: `leyendo:${title}`, title, author: '', cover: '', editionType: 'hardcover' }} variant="corner" />
+      </span>
+      <span className="reader-visit__table-tag" style={{ left: pct((TABLE_TAG.x - TABLE_BOOK.x) / TABLE_BOOK.w), top: pct((TABLE_TAG.y - TABLE_BOOK.base + TABLE_BOOK.h) / TABLE_BOOK.h) }} aria-hidden="true">
+        Está leyendo
+      </span>
+    </button>
   );
 }
 
@@ -327,36 +362,32 @@ function Shelf({ alias, shared, reduced, onSelect }) {
           })}
         </svg>
       )}
+      {/* Un solo control: la zona del mueble y su etiqueta (colgada del borde derecho, como en la maqueta) */}
       <button type="button" className="reader-visit__shelf" style={zone(ROOM_SHELF)} onClick={() => onSelect('libros')} aria-label={`Libros compartidos por ${alias} (${shared.all.length})`}>
-        <span className="reader-visit__tag">Libros{shared.all.length ? ` · ${shared.all.length}` : ''}</span>
+        <span className="reader-visit__tag" style={{ left: pct((SHELF_TAG.x - ROOM_SHELF.x0 * VISIT_W) / ((ROOM_SHELF.x1 - ROOM_SHELF.x0) * VISIT_W)), top: pct((SHELF_TAG.y - ROOM_SHELF.y0 * VISIT_H) / ((ROOM_SHELF.y1 - ROOM_SHELF.y0) * VISIT_H)) }} aria-hidden="true">
+          <span>
+            Libros
+            <br />
+            compartidos
+          </span>
+          <ChevronRight aria-hidden="true" />
+        </span>
       </button>
     </>
   );
 }
 
-function RoomFoot({ data, status, failure, reload, shared, onSelect, onBack, onProfile }) {
+/** Solo estados honestos: cargando, error, rincón privado o sin libros (los accesos están en la escena y la cabecera). */
+function RoomFoot({ data, status, failure, reload, shared, onBack }) {
   const ready = status === 'ready' && data?.profile;
-  const reading = currentTitle(data?.corner);
   const privateCorner = data?.profile && !data.corner?.visible;
+  if (ready && !privateCorner && shared.all.length) return null;
   return (
     <footer className="reader-visit__foot">
       {ready ? (
         <>
-          {reading && (
-            <p className="reader-visit__lead">
-              Está leyendo <b>«{reading}»</b>
-            </p>
-          )}
           {privateCorner && <p className="reader-visit__hint">Su rincón es privado: aquí solo se ve lo que comparte en colecciones visibles.</p>}
           {!privateCorner && !shared.all.length && <p className="reader-visit__hint">Aún no ha compartido libros. Las baldas esperan.</p>}
-          <div className="reader-visit__actions">
-            <button type="button" className="sheet-btn" onClick={() => onSelect('libros')}>
-              <BookOpen aria-hidden="true" /> Libros compartidos
-            </button>
-            <button type="button" className="sheet-btn" onClick={onProfile}>
-              <UserRound aria-hidden="true" /> Ver perfil
-            </button>
-          </div>
         </>
       ) : (
         <VisitStatus status={status} data={data} failure={failure} reload={reload} onBack={onBack} />

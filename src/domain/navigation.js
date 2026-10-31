@@ -26,6 +26,8 @@ export function safeParent(loc) {
   const l = normalizeLocation(loc);
   if (l.panel?.type === 'vault' && l.panel.section === 'unbox') return { view: l.view, panel: { type: 'vault', id: l.panel.id } };
   // Visita a un rincón (SPEC §56, 1.58.1): libro → habitación → «Lectores» (también tras recargar; la entrada no se repite)
+  // 1.61 (SPEC §61): un libro abierto desde «Sus libros» vuelve a «Sus libros» (`libros/clave`), no a la habitación
+  if (l.panel?.type === 'visit' && typeof l.panel.select === 'string' && l.panel.select.startsWith('libros/')) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion', select: 'libros' } };
   if (l.panel?.type === 'visit' && l.panel.select) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion' } };
   if (l.panel?.type === 'visit') return { view: l.view, panel: { type: 'social', tab: 'lectores' } };
   if (l.panel) return { view: l.view, panel: null };

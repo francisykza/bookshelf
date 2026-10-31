@@ -128,18 +128,18 @@ test('visita: sin pantalla oscura mientras llega la casa; «Libros · N» no se 
   await expect(page.locator('.reader-visit[data-shown]')).toHaveCount(1, { timeout: 5000 });
   await expect(visit.getByRole('button', { name: /Libros compartidos por Bruno/ })).toBeVisible({ timeout: 15000 });
   await page.waitForTimeout(500);
-  // «Libros · N» en el mueble, sin cruzarse con «Está leyendo…» ni con los botones del pie
+  // 1.61: la etiqueta de la estantería no se cruza con la cabecera ni con el libro de la mesita (ya no hay pie)
   const tag = await visit.locator('.reader-visit__tag').boundingBox();
-  const lead = await visit.locator('.reader-visit__lead').boundingBox();
-  const actions = await visit.locator('.reader-visit__actions').boundingBox();
-  expect(await visit.locator('.reader-visit__tag').textContent()).toMatch(/^Libros · \d+$/);
-  expect(overlap(tag, lead)).toBe(false);
-  expect(overlap(tag, actions)).toBe(false);
+  const head = await visit.locator('.reader-visit__bar').boundingBox();
+  const table = await visit.locator('.reader-visit__table').boundingBox();
+  expect(overlap(tag, head)).toBe(false);
+  if (table) expect(overlap(tag, table)).toBe(false);
+  await expect(visit.locator('.reader-visit__actions, .reader-visit__lead')).toHaveCount(0);
   await shot(page, info, 'v159-visita-habitacion');
   // «Ver perfil»: el rincón ya cargado se reutiliza (ni una consulta más a su rincón) y se pinta sin «Abriendo…»
   const corners = [];
   page.on('request', (r) => r.url().includes('/rest/v1/corners') && corners.push(r.url()));
-  await visit.getByRole('button', { name: 'Ver perfil' }).click();
+  await visit.getByRole('button', { name: 'Ver el perfil de Bruno' }).click();
   await expect(page.locator('.reader-profile')).toBeVisible();
   await expect(page.getByText('Abriendo su rincón…')).toHaveCount(0);
   expect(corners).toEqual([]);
