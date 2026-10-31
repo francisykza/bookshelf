@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.61.0 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.62.0 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4020,3 +4020,93 @@ entrada sin opciones de animación, fallos del vídeo, vídeo solo al abrir la v
 la mesita, búsqueda, posición y foco al cerrar la ficha, pendientes sin duplicar, reseña solo con obra inequívoca,
 colección de 360 libros sin montarlos todos, sin lectura, rincón privado, cambio de persona, vídeo no pedido al
 arrancar y roto, y el camino «Social» → tableta → «Lectores» → visita. `v158` y `v159` al día con los accesos nuevos.
+
+## 62. Salón social y radio (1.62.0, por bloques)
+
+Paquete `material-diseno/social-radio/BookShelf-social-radio/` (LEEME, PROMPT-CLAUDE, ESPECIFICACION, cuatro maquetas,
+radio en gouache y pista piloto). Decisiones de Francisco: se sigue el paquete aunque cambie dos reglas anteriores
+(visita con fachada, «Entrar» y «Saltar»; tres pestañas en la comunidad) y se trabaja por bloques, enseñando capturas
+al terminar cada uno. Estilos en `social-162.css`.
+
+### 62.1 Bloque 1 · Comunidad y tarjetas públicas (hecho)
+
+- Tres pestañas principales: Lectores / Salón / Clubes (ids `lectores`, `sala`, `club`), que reparten el ancho y caben
+  a 320 px sin desplazamiento. «Tu perfil lector» y «Mi rincón» (ids `perfil`, `rincon`) se abren desde tu avatar en la
+  cabecera (menú pequeño; Escape lo cierra sin cerrar el panel) y tienen «← Entre lectores». La pestaña vive en la
+  ubicación: cambiar de pestaña sustituye la entrada; abrir lo tuyo la apila (Atrás vuelve a la pestaña).
+- Lectores (`ReadersSection.jsx`): buscador de la comunidad por alias (servicio `searchProfiles`: a partir de dos
+  letras, máximo 20, la RLS solo deja ver perfiles públicos sin bloqueo); «A quienes sigues» con avatar (abre su perfil
+  como panel `reader`) y «Visitar rincón»; «Lo que comparten»: opiniones compactas (quién, obra, valoración, extracto),
+  con spoilers como franja «Contiene spoilers». La portada y «Leer reseña» abren la ficha pública del libro en lugar de
+  la lista (la reseña entera con su protección de spoilers y «Añadir a pendientes»), nunca la ficha de un libro propio;
+  al cerrarla vuelven la posición y el foco. Opiniones por páginas («Ver más opiniones», `fetchMoreActivity`).
+- «Añadir a pendientes» detecta duplicados por la obra de la comunidad (`work_id` frente a `workId`) y, si no hay, por
+  título y autor exactos; el libro nuevo guarda su `workId`.
+- Pruebas: `e2e-community/v162.spec.js` (320, 390, 430, 1440 y WebKit 390); `entrega2` y `v159` al día.
+
+### 62.2 Bloque 2 · Sillones del salón y visita con fachada (hecho)
+
+- Sillón libre (`SocialSeats.jsx`): una etiqueta «Sentarme» sobre el cojín (pintada, no es un control: el toque pasa al
+  sillón) y, al tocarlo, la elección aquí mismo en una tarjeta anclada (`SeatCard.jsx`) con `SeatChoice.jsx`: «Mi alias y
+  mi lectura actual» (selector visible de tus libros en curso, la actual primero; el `<select>` nativo cubre la tarjeta con
+  la portada) o «Solo mi alias» (el título no sale del dispositivo); «Sentarme a leer» y «Sentarte no registra páginas».
+  Sin comunidad activa o ya sentado/a, el sillón libre abre la pestaña «Salón», que lo explica.
+- Avatar sentado: tarjeta anclada junto al asiento con avatar, alias, su lectura solo si la comparte, tiempo, «Ver
+  perfil» y «Visitar su rincón». La tuya lleva «Levantarme». La tarjeta va fuera de la escena (portal, encima de todo):
+  arriba del asiento si cabe, si no debajo y, si tampoco, pegada al borde con su propio scroll (`placeCard`, probada);
+  se recoloca si cambia su contenido. Escape, tocar fuera o la X la cierran y el foco vuelve al asiento. Se deja de
+  enseñar si esa persona se levanta o caduca, si el salón sale de la vista o si cambia la cuenta.
+- Solo presencia real con su caducidad de servidor (3 min sin renovar); sentarse no es estar conectado. Con más lectores
+  que sillones, «+N lectores» abre la pestaña «Salón», que los lista a todos (sin amontonar retratos). El cuadro sigue
+  abriendo los clubes.
+- Pestaña «Salón» (maqueta 04, centro): «Tu lugar en el salón» con la misma elección (o, sentado/a, cómo te ven y
+  «Levantarme») y «Leyendo en compañía» con todos los demás, su lectura si la comparten y «Ver rincón».
+- Visita (`ReaderVisit.jsx`, regla de Francisco en CLAUDE.md): ya no arranca sola. Fachada con «El rincón de X» (avatar y
+  alias) y «Puedes saltar la animación»; se entra tocando la ventana inferior derecha (`HOUSE_WINDOW`, atajo de puntero)
+  o «Entrar al rincón» (el control accesible, deshabilitado mientras el rincón carga). Durante el vídeo, «Salir» (arriba)
+  y «Saltar» (abajo, lleva a la habitación sin esperar); al terminar no se repite. Movimiento reducido o ahorro de datos
+  (`navigator.connection.saveData`): directo a la habitación; un error del vídeo, también. El vídeo no se monta ni se pide
+  hasta decidir entrar.
+- Origen: la visita guarda `from` en la ubicación (`salon` desde la escena o la pestaña «Salón»; `lectores` desde
+  Lectores). El botón dice «Volver al salón» o «Volver a lectores» y Atrás/Escape llevan allí; `safeParent` conserva el
+  origen en la habitación y, sin padre (recarga), vuelve al salón o a «Lectores».
+- Pruebas: `v162.spec.js` (sentarse con la lectura elegida, tarjetas, visita desde el salón y vuelta, pestaña «Salón»,
+  más lectores que sillones; 320, 390, 430, 1440 y WebKit 390), `v158`/`v159`/`v161`/`entrega3` al día (fachada,
+  «Entrar», «Salir», «Saltar», ventana) y Vitest `seats162.domain.test.js` y `navigation.test.js`.
+- Diferencias con la maqueta 01 que quedan: el tiempo sentado sigue bajo el alias en la escena (la maqueta solo pone el
+  nombre) y la ilustración de sillones de la pestaña «Salón» no se ha añadido (no hay recurso).
+
+### 62.3 Bloque 3 · La radio del rincón (hecho)
+
+- Recursos: `public/media/social-radio/brisa-de-papel-demo.mp3` (pista técnica de demostración del paquete) y
+  `radio-v1.webp` (la radio en gouache recortada a 360 × 221, 32 kB). El catálogo es
+  `src/features/radio/catalogo-radio.json`; `catalog.js` solo ofrece sintonías con pistas de fuente local, título,
+  autoría y créditos (hoy, «Sintonía de prueba»): las sintonías de la maqueta sin audio no aparecen. El service worker ya
+  deja `/media/` y las peticiones con rango a la red (nada de precachear el catálogo).
+- Un solo reproductor para toda la app (`radioPlayer.js`, fuera de los componentes): un único `Audio`, creado con el
+  primer «Reproducir»; nada suena ni se descarga antes. La interfaz enseña el estado real (cargando, sonando, en pausa,
+  error) a partir de los eventos y de la promesa de `play()`. Cerrar el panel, ir al lector o al diario no lo para. La
+  música pasa por una ganancia de Web Audio (iOS no deja cambiar el volumen del elemento). Volumen del ambiente aparte
+  (`setAmbienceVolume` en `ambientAudio.js`). Sintonía y volúmenes en `bookshelf:radio` (sin historial); al recargar,
+  en pausa. Temporizador 15/30/60/No por hora límite, comprobado también al volver del segundo plano: pausa la música y
+  deja el ambiente como esté. MediaSession solo si existe (no se promete reproducción en segundo plano).
+- Salón: la radio está en el único hueco libre de la mesa (`SOCIAL_SPOTS.radio`), delante a la izquierda, sin tapar la
+  tableta, las tazas, la tetera ni las hojas; sombra de contacto CSS bajo las patas y zona táctil ampliada. Abre el panel
+  `radio` (hoja de papel inferior en el móvil): sintonías, pista y autoría, reproducir/pausar (anterior y siguiente solo
+  con más de una pista), Música y Ambiente, «Apagar la música en» y créditos. En pantallas anchas el encuadre deja la
+  mesa fuera de la vista (también la tableta): por eso «Ambiente» (arriba) tiene «Música: la radio del rincón».
+- Lector EPUB: «Ambiente» lleva a la hoja «La radio del rincón» (los mismos controles con los colores del tema del
+  lector) y, si ya has puesto música, un control compacto en el pie de herramientas (pista, estado, pausa y abrir la
+  radio): nunca sobre el texto ni en los gestos de página; abrir y cerrar la radio no mueve la lectura.
+- «Mostrar mi sintonía»: el servidor no tenía el campo. Migración preparada, **sin aplicar**:
+  `20261031200000_radio_sintonia.sql` (`profiles.radio_station`, solo el id público). La opción no se enseña hasta que
+  esté aplicada; la prueba de RLS ya cuenta con la columna.
+- Pruebas: `e2e/v162-radio.spec.js` (un solo reproductor, nada antes de pulsar, sigue al cerrar, recarga en pausa,
+  volúmenes recordados, temporizador al volver del segundo plano, error dicho, EPUB) en 360, 390, 430, 1440 y WebKit 390;
+  Vitest `radio/__tests__/catalog.test.js`. Sin iPhone real: ni volumen ni reproducción en segundo plano comprobados
+  allí.
+- Pendiente de Francisco: escuchar la pista piloto y decidir si se queda; las sintonías de la maqueta no tienen música.
+
+### 62.4 Pendiente
+
+Bloque 4 (clubes).

@@ -1,0 +1,1024 @@
+/* ── 1.62 · Comunidad: tres pestañas, tu avatar y «Lectores» (SPEC §62) ───────────────────────────────────────────
+   Maqueta: material-diseno/social-radio/maquetas/04-comunidad.png (izquierda). Cuaderno de cuero de la 1.60; papel
+   crema, salvia, terracota y latón. Todo bajo `.social-notebook`. */
+
+/* Cabecera: tu avatar (abre «Tu perfil lector» y «Mi rincón»), el título y cerrar */
+.social-notebook .social-hub__head {
+  gap: 10px;
+}
+
+.social-notebook .social-hub__head h2 {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.social-own {
+  position: relative;
+  flex: none;
+}
+
+.social-own__btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgb(110 78 46 / 0.45);
+  border-radius: 50%;
+  background: rgb(255 250 238 / 0.7);
+  cursor: pointer;
+}
+
+.social-own__btn .reader-avatar {
+  width: 38px;
+  height: 38px;
+}
+
+.social-own__btn:focus-visible,
+.social-own__menu button:focus-visible {
+  outline: 2px solid #b7894a;
+  outline-offset: 2px;
+}
+
+.social-own__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 5;
+  display: grid;
+  min-width: 200px;
+  padding: 6px;
+  border: 1px solid rgb(110 78 46 / 0.35);
+  border-radius: 12px;
+  background: #fbf6ea;
+  box-shadow: 0 8px 20px rgb(44 30 20 / 0.22);
+}
+
+.social-own__menu button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--social-ink);
+  font: 600 1.08rem/1.1 'Cormorant Garamond', var(--font-display);
+  text-align: left;
+  cursor: pointer;
+}
+
+.social-own__menu button:hover {
+  background: rgb(110 78 46 / 0.08);
+}
+
+.social-own__crumb {
+  margin: 6px 14px 0;
+}
+
+/* Tres pestañas que caben a 360 px sin desplazamiento: reparten el ancho */
+.social-notebook .social-hub__tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: visible;
+}
+
+.social-notebook .social-hub__tabs button {
+  min-width: 0;
+  padding: 0 6px;
+  font-size: 1.12rem;
+}
+
+.social-notebook .social-hub__tabs button[aria-selected='true'] {
+  background: linear-gradient(180deg, #6b7a55, #5c6a48);
+  color: #fbf6ea;
+}
+
+/* Buscador */
+.readers-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  margin: 2px 0 14px;
+  padding: 0 4px 0 12px;
+  border: 1px solid rgb(110 78 46 / 0.35);
+  border-radius: 12px;
+  background: rgb(255 252 244 / 0.8);
+}
+
+.readers-search:focus-within {
+  outline: 2px solid #b7894a;
+  outline-offset: 1px;
+}
+
+.readers-search > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--social-soft, #725b46);
+}
+
+.readers-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--social-ink);
+  font: 400 16px/1 'Lora', Georgia, serif;
+}
+
+.readers-search input:focus {
+  outline: none;
+}
+
+.readers-search button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--social-soft, #725b46);
+  cursor: pointer;
+}
+
+.readers-search button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Personas: avatar grande (abre su perfil), alias y «Visitar rincón» */
+.reader-people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 12px 8px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.reader-person {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.reader-person__open {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: 4px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--social-ink);
+  cursor: pointer;
+}
+
+.reader-person__open .reader-avatar {
+  width: 76px;
+  height: 76px;
+}
+
+.reader-person__name {
+  max-width: 100%;
+  overflow: hidden;
+  font: 600 1.15rem/1.1 'Cormorant Garamond', var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-person__visit {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgb(110 78 46 / 0.32);
+  border-radius: 10px;
+  background: #efe3c8;
+  color: var(--social-ink);
+  font: 500 1rem/1.1 'Cormorant Garamond', var(--font-display);
+  cursor: pointer;
+}
+
+.reader-person :is(button):focus-visible,
+.share-card :is(button):focus-visible {
+  outline: 2px solid #b7894a;
+  outline-offset: 2px;
+}
+
+/* Opiniones compactas */
+.share-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgb(110 78 46 / 0.22);
+  border-radius: 12px;
+  background: #fbf6ea;
+  box-shadow: 0 2px 6px rgb(44 30 20 / 0.08);
+}
+
+.share-card__head {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.share-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.share-card__avatar .reader-avatar {
+  width: 42px;
+  height: 42px;
+}
+
+.share-card__who {
+  display: grid;
+  min-width: 0;
+}
+
+.share-card__who b {
+  overflow: hidden;
+  font: 600 1.12rem/1.15 'Cormorant Garamond', var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-card__who small {
+  color: var(--social-soft, #725b46);
+  font-size: 0.86rem;
+}
+
+.share-card__book {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.share-card__cover {
+  display: block;
+  width: 82px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.share-card__cover :is(img, .gen-cover) {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 2px 3px 8px rgb(44 30 20 / 0.28);
+}
+
+.share-card__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.share-card__text b {
+  font: 600 1.25rem/1.15 'Cormorant Garamond', var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+.share-card__author {
+  color: var(--social-soft, #725b46);
+  font-size: 0.95rem;
+}
+
+.share-card__excerpt {
+  display: -webkit-box;
+  margin: 6px 0 0;
+  overflow: hidden;
+  font: italic 500 1.02rem/1.35 'Cormorant Garamond', var(--font-display);
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.share-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(110 78 46 / 0.18);
+}
+
+.share-card__actions :is(.share-card__action, .social-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--social-ink);
+  font: 500 1rem/1.1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.share-card__actions svg {
+  width: 20px;
+  height: 20px;
+}
+
+.share-card__actions .huella-added {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  color: #4f5a3e;
+  font-size: 0.95rem;
+}
+
+.share-card__spoiler {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 1px solid rgb(110 78 46 / 0.22);
+  border-radius: 10px;
+  background: #f1e7d2;
+  color: var(--social-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.share-card__spoiler svg {
+  width: 22px;
+  height: 22px;
+}
+
+.share-card__spoiler span {
+  display: grid;
+}
+
+.share-card__spoiler b {
+  font: 600 1.08rem/1.15 'Cormorant Garamond', var(--font-display);
+}
+
+.share-card__spoiler small {
+  color: var(--social-soft, #725b46);
+  font-size: 0.88rem;
+}
+
+.readers-more {
+  display: block;
+  margin: 10px auto 0;
+  min-height: 44px;
+}
+
+/* Ficha pública de un libro reseñado (encima de la sección; la lista queda inerte debajo) */
+.social-notebook .social-hub__body:has(.public-book) {
+  position: relative;
+}
+
+.public-book {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  background: #fbf6ea;
+}
+
+.public-book__head {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  padding: 4px 8px 4px 2px;
+  border-bottom: 1px solid rgb(110 78 46 / 0.22);
+}
+
+.public-book__head h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font: 600 1.35rem/1.15 'Cormorant Garamond', var(--font-display);
+}
+
+.public-book__head h3:focus {
+  outline: none;
+}
+
+.public-book__close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--social-ink);
+  cursor: pointer;
+}
+
+.public-book__close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.public-book__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 12px 4px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.public-book__card {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.public-book__cover {
+  display: block;
+  width: 96px;
+}
+
+.public-book__title {
+  margin: 0;
+  font: 600 1.4rem/1.15 'Cormorant Garamond', var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+.public-book__author {
+  margin: 2px 0 8px;
+  color: var(--social-soft, #725b46);
+}
+
+.public-book__who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--social-ink);
+  font: 500 0.98rem/1.2 'Lora', Georgia, serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.public-book__who:disabled {
+  cursor: default;
+}
+
+.social-own__crumb .link-btn {
+  min-height: 44px;
+  padding: 0 4px;
+}
+
+/* La ficha pública ocupa el sitio de la lista (que queda oculta) dentro del mismo scroll del cuaderno */
+.public-book {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  min-height: 100%;
+  background: none;
+}
+
+.public-book__body {
+  overflow: visible;
+}
+
+.readers-section[hidden] {
+  display: none;
+}
+
+/* Móviles estrechos: dos personas por fila y avatar algo menor */
+@media (max-width: 360px) {
+  .reader-people {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reader-person__open .reader-avatar {
+    width: 62px;
+    height: 62px;
+  }
+
+  .reader-person__visit {
+    padding: 0 10px;
+    font-size: 0.95rem;
+  }
+}
+
+/* ── 1.62 · Bloque 2: sillones del salón (SPEC §62.2; maqueta 01-salon) ─────────────────────────────────────────────
+   Etiqueta «Sentarme» sobre el cojín del sillón libre (no es un control: el toque pasa al sillón) y tarjeta anclada
+   junto al asiento, fuera de la escena (no se recorta detrás de muebles). */
+.seat-free {
+  position: absolute;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2px / var(--k));
+  padding: calc(6px / var(--k)) calc(12px / var(--k));
+  border: calc(1px / var(--k)) solid rgb(110 78 46 / 0.28);
+  border-radius: calc(8px / var(--k));
+  background: rgb(251 246 234 / 0.88);
+  color: #4a3626;
+  font: 500 calc(14px / var(--k)) / 1 'Cormorant Garamond', var(--font-display);
+  box-shadow: 0 calc(2px / var(--k)) calc(6px / var(--k)) rgb(44 30 20 / 0.18);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.seat-free svg {
+  width: calc(18px / var(--k));
+  height: calc(18px / var(--k));
+}
+
+.seat-card {
+  position: fixed;
+  z-index: 1100;
+  display: grid;
+  gap: 10px;
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  padding: 16px 16px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgb(110 78 46 / 0.35);
+  border-radius: 16px;
+  background: #fbf6ea;
+  color: #2c1e14;
+  box-shadow: 0 12px 30px rgb(44 30 20 / 0.3);
+  font: 400 1rem/1.35 'Lora', Georgia, serif;
+}
+
+.seat-card[data-wide] {
+  width: 340px;
+}
+
+.seat-card:focus {
+  outline: none;
+}
+
+.seat-card:focus-visible {
+  outline: 2px solid #b7894a;
+}
+
+.seat-card__close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #4a3626;
+  cursor: pointer;
+}
+
+.seat-card__close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.seat-card__title {
+  margin: 0;
+  padding-right: 36px;
+  font: 600 1.45rem/1.1 'Cormorant Garamond', var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+.seat-card__who {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.seat-card__who .reader-avatar {
+  width: 72px;
+  height: 72px;
+}
+
+.seat-card__reading,
+.seat-card__time {
+  margin: 2px 0 0;
+}
+
+.seat-card__reading {
+  font: 500 1.12rem/1.2 'Cormorant Garamond', var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+.seat-card__time {
+  color: #725b46;
+  font-size: 0.88rem;
+}
+
+.seat-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: #2c1e14;
+  font: 500 1rem/1 'Lora', Georgia, serif;
+  text-decoration: underline;
+  text-decoration-color: rgb(110 78 46 / 0.4);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.seat-card__link svg,
+.seat-card__primary svg {
+  width: 18px;
+  height: 18px;
+}
+
+.seat-card__primary,
+.seat-choice__sit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid #9c513c;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c97b64, #b4644d);
+  color: #fff8ee;
+  font: 500 1.12rem/1 'Lora', Georgia, serif;
+  box-shadow:
+    inset 0 1px 0 rgb(255 225 205 / 0.45),
+    0 3px 8px rgb(110 50 30 / 0.22);
+  cursor: pointer;
+}
+
+.seat-card__primary:disabled,
+.seat-choice__sit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+:is(.seat-card, .seat-choice, .room-tab) :is(button, select, input):focus-visible {
+  outline: 2px solid #b7894a;
+  outline-offset: 2px;
+}
+
+/* Elección al sentarse (la misma en la escena y en la pestaña «Salón») */
+.seat-choice {
+  display: grid;
+  gap: 12px;
+}
+
+.seat-choice__options {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.seat-choice__options legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font: 500 1.12rem/1.25 'Cormorant Garamond', var(--font-display);
+}
+
+.seat-choice__radio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font: 500 1.15rem/1.2 'Cormorant Garamond', var(--font-display);
+  cursor: pointer;
+}
+
+.seat-choice__radio input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: #a8573f;
+}
+
+.seat-choice__radio:has(input:disabled) {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.seat-choice__book {
+  display: grid;
+  gap: 6px;
+}
+
+.seat-choice__book-label {
+  color: #5c4836;
+  font: 500 1.02rem/1.2 'Cormorant Garamond', var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+.seat-choice__book-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 74px;
+  padding: 8px 12px;
+  border: 1px solid rgb(110 78 46 / 0.3);
+  border-radius: 12px;
+  background: rgb(255 252 244 / 0.85);
+}
+
+.seat-choice__book-card:focus-within {
+  outline: 2px solid #b7894a;
+  outline-offset: 1px;
+}
+
+.seat-choice__cover {
+  display: block;
+  width: 46px;
+}
+
+.seat-choice__book-text {
+  display: grid;
+  min-width: 0;
+}
+
+.seat-choice__book-text b {
+  overflow: hidden;
+  font: 600 1.18rem/1.15 'Cormorant Garamond', var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat-choice__book-text small {
+  overflow: hidden;
+  color: #725b46;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat-choice__chevron {
+  width: 20px;
+  height: 20px;
+  color: #5c4836;
+}
+
+/* El selector nativo cubre toda la tarjeta (invisible): se toca la tarjeta y se elige con el control del sistema */
+.seat-choice__select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.seat-choice__select:disabled {
+  cursor: default;
+}
+
+.seat-choice__note {
+  margin: 0;
+  color: #5c4836;
+  font-size: 0.95rem;
+}
+
+.seat-choice__foot {
+  margin: -4px 0 0;
+  color: #725b46;
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+/* Pestaña «Salón»: tu lugar y quien lee en compañía (maqueta 04, centro) */
+.room-tab,
+.room-tab__company {
+  display: grid;
+  gap: 12px;
+}
+
+.room-tab__company {
+  margin-top: 22px;
+}
+
+.room-tab__title {
+  margin: 0;
+  font: 600 1.6rem/1.1 'Cormorant Garamond', var(--font-display);
+}
+
+.room-tab > .room-tab__title {
+  text-align: center;
+}
+
+.room-tab__me {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.room-tab__me p {
+  display: grid;
+  margin: 0;
+}
+
+.room-tab__me b {
+  font: 600 1.2rem/1.15 'Cormorant Garamond', var(--font-display);
+}
+
+.room-tab__me small,
+.room-tab__who small {
+  color: #725b46;
+  font-size: 0.86rem;
+}
+
+.room-tab__me .seat-choice__sit {
+  grid-column: 1 / -1;
+}
+
+.room-tab__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.room-tab__reader {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.room-tab__reader .reader-avatar {
+  width: 52px;
+  height: 52px;
+}
+
+.room-tab__who {
+  display: grid;
+  min-width: 0;
+}
+
+.room-tab__who b {
+  font: 600 1.2rem/1.15 'Cormorant Garamond', var(--font-display);
+}
+
+.room-tab__who span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #5c4836;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.room-tab__who svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+/* ── 1.62 · Bloque 2: visita con fachada (SPEC §62.2; maqueta 03-visita, izquierda) ───────────────────────────────
+   «← Volver al salón» con texto, «El rincón de X» a la derecha, la ventana inferior derecha tocable con «Entrar al
+   rincón» debajo y, durante el vídeo, «Salir» (arriba) y «Saltar» (abajo). */
+.reader-visit .reader-visit__leave {
+  display: inline-flex;
+  gap: 8px;
+  width: auto;
+  padding: 0 16px 0 12px;
+  font: 500 17px/1 'Lora', Georgia, serif;
+  white-space: nowrap;
+}
+
+.reader-visit .reader-visit__bar .reader-visit__who {
+  flex: 0 1 auto;
+  max-width: none;
+  margin-left: auto;
+}
+
+.reader-visit__window {
+  position: absolute;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.reader-visit__window:disabled {
+  cursor: progress;
+}
+
+.reader-visit__enter {
+  position: absolute;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgb(114 91 70 / 0.28);
+  border-radius: 10px;
+  background: var(--rv-chip);
+  box-shadow: 0 3px 10px rgb(44 30 20 / 0.22);
+  color: var(--rv-ink);
+  font: 500 17px/1 'Lora', Georgia, serif;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+
+.reader-visit__enter svg {
+  width: 18px;
+  height: 18px;
+}
+
+.reader-visit__enter:disabled {
+  color: var(--rv-soft);
+  cursor: progress;
+}
+
+.reader-visit__skip {
+  min-height: 44px;
+  padding: 0 26px;
+  border: 1px solid rgb(114 91 70 / 0.28);
+  border-radius: 999px;
+  background: var(--rv-chip);
+  box-shadow: 0 3px 10px rgb(44 30 20 / 0.22);
+  color: var(--rv-ink);
+  font: 500 17px/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.reader-visit :is(.reader-visit__leave, .reader-visit__enter, .reader-visit__skip):focus-visible {
+  outline: 2px solid #b7894a;
+  outline-offset: 2px;
+}
+
+/* Móviles estrechos: el texto de volver no empuja el avatar fuera */
+@media (max-width: 360px) {
+  .reader-visit .reader-visit__leave {
+    padding: 0 12px 0 10px;
+    font-size: 15px;
+  }
+
+  .reader-visit .reader-visit__who b {
+    font-size: 17px;
+  }
+}
+
+/* «El rincón / de X» en dos líneas ante la casa (como la maqueta): el alias largo se abrevia sin empujar «Volver» */
+.reader-visit .reader-visit__who .reader-visit__who-house {
+  display: grid;
+  min-width: 0;
+  font-size: 17px;
+  line-height: 1.08;
+  white-space: normal;
+}
+
+.reader-visit__who-house span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-visit .reader-visit__bar .reader-visit__who:has(.reader-visit__who-house) {
+  padding-right: 14px;
+}

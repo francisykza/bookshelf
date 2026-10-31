@@ -48,9 +48,17 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   su inventario; se filtran con `RETIRED_FIGURES` (`src/domain/figures.js`).
 - **Comunidad en el cuaderno de cuero** (1.60, decisión de Francisco): el panel de la comunidad usa el cuaderno con
   anillas (`NotebookShell`) y pestañas de papel en todas sus hojas, según sus maquetas; no volver a la tarjeta lisa. Se
-  conservan las cinco pestañas y «Visitar rincón». Una maqueta con una figura retirada no la recupera.
-- **Visita social sin opciones de animación** (1.58.1, decisión de Francisco): ni «Saltar», ni «Entrar sin animación»,
-  ni preguntas previas; la entrada empieza sola, a pantalla completa y sin franjas; solo una flecha para volver.
+  conserva «Visitar rincón». Una maqueta con una figura retirada no la recupera.
+  **Desde la 1.62 (decisión de Francisco, paquete `material-diseno/social-radio/`)**: tres pestañas principales,
+  Lectores / Salón / Clubes, visibles a 360 px sin desplazamiento; Perfil y Mi rincón se abren desde el avatar propio
+  (no se pierde ninguna función). Sustituye a «se conservan las cinco pestañas» de la 1.60.
+- **Visita social** (sustituye a la regla de la 1.58.1 desde la 1.62, decisión de Francisco): fachada con el nombre y el
+  avatar de la persona; se entra tocando la ventana inferior derecha o «Entrar al rincón»; durante el vídeo, «Salir» y
+  «Saltar»; al terminar no se repite. Movimiento reducido, error o ahorro de datos: directo a la habitación. Solo la
+  ventana inferior derecha es interactiva (es la única trayectoria del vídeo). Volver lleva al origen (salón o lectores).
+- **Paquete `material-diseno/social-radio/`** (1.62): se implementa por bloques, enseñando capturas al terminar cada uno
+  antes de seguir (decisión de Francisco). Orden: 1) comunidad y tarjetas públicas, 2) asientos del salón y visita,
+  3) radio y continuidad en el EPUB, 4) clubes.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.
 - **Biblioteca grande** (1.59, §59): la biblioteca cerrada no monta libros; el escaparate y los lomos solo montan lo
   cercano a la vista (no medir ni buscar libros en el DOM: puede no estar montado). Las portadas se piden una vez por URL
@@ -123,7 +131,7 @@ subrayados en `epubHighlights.js`, §55) y desde la 1.58 `social-visit.css` (vis
 (correcciones de la auditoría del vídeo, §57: cabecera de las reseñas) y desde la 1.59 `perf-159.css` (biblioteca grande:
 filas virtuales, portadas 2:3 estables, figuras del perfil, visita sin pantalla oscura, registro con teclado, §59) y desde
 la 1.60 `social-160.css` (comunidad en el cuaderno: perfil, Mi rincón, Entre lectores) y `room-160.css` (libro de la cama, §60) y desde la 1.61 `social-161.css` (habitación de llegada y «Los libros de X» de la
-visita, §61; la vista de libros abiertos usa `select: 'libros'` y `'libros/clave'`). La edición visual
+visita, §61; la vista de libros abiertos usa `select: 'libros'` y `'libros/clave'`) y desde la 1.62 `social-162.css` (comunidad en tres pestañas, sillones con tarjeta anclada y fachada de la visita; el volver de la visita es `.reader-visit__leave`, porque `.reader-visit__back` ya era de «Sus libros») y `radio-162.css` (la radio del rincón: objeto del salón, panel y control compacto del EPUB; reproductor único en `src/features/radio/radioPlayer.js`, §62). La edición visual
 `kindle` está retirada: dibujar siempre con `visualEdition(book)`, nunca con `book.editionType` directamente. **Día y noche son la misma habitación** (decisión de Francisco, §50). **Ojo**: `fix-138.css` aún da `top`/`left` con el área segura a `.lib-hero__back`; en un móvil real
 eso desplaza el botón (en emulación el área segura es 0). Las hojas antiguas siguen cargadas: antes de crear una clase nueva,
 buscar si ya existe con otro uso.

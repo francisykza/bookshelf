@@ -81,7 +81,12 @@ const visitOf = (page, alias) => page.getByRole('dialog', { name: `Visita al rin
 async function enter(page, alias) {
   await page.getByRole('button', { name: `Visitar el rincón de ${alias}` }).click();
   const visit = visitOf(page, alias);
-  await expect(visit.getByRole('button', { name: new RegExp(`Libros compartidos por ${alias}`) })).toBeVisible({ timeout: 15000 });
+  const room = visit.getByRole('button', { name: new RegExp(`Libros compartidos por ${alias}`) });
+  // 1.62: con animación, se entra desde la fachada; con movimiento reducido se llega directamente
+  const door = visit.getByRole('button', { name: `Entrar al rincón de ${alias}` });
+  await expect(room.or(door)).toBeVisible({ timeout: 15000 });
+  if (await door.isVisible()) await door.click();
+  await expect(room).toBeVisible({ timeout: 15000 });
   await page.waitForTimeout(400);
   return visit;
 }
@@ -197,7 +202,7 @@ test('sus libros: buscador, ficha, vuelta a la misma posición, pendientes sin d
   await expect(page.locator('.reader-profile')).toBeVisible();
   await page.goBack();
   await expect(visitOf(page, 'Bruno').getByRole('button', { name: 'Ver el perfil de Bruno' })).toBeVisible();
-  await page.getByRole('button', { name: 'Volver', exact: true }).click();
+  await page.getByRole('button', { name: 'Volver a lectores', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
 });
 
@@ -219,12 +224,12 @@ test('colección grande: sin montar todos los libros; sin portada, sin lectura, 
   await lib.getByRole('searchbox', { name: 'Buscar en sus libros' }).fill('número 7');
   await expect(lib).toContainText('de 360 libros compartidos');
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Volver', exact: true }).click();
+  await page.getByRole('button', { name: 'Volver a lectores', exact: true }).click();
   // Carla: sin lectura publicada, ningún libro en la mesita ni su título oculto
   visit = await enter(page, 'Carla');
   await expect(visit.locator('.reader-visit__table')).toHaveCount(0);
   await expect(page.locator('.reader-visit')).not.toContainText('No debería verse');
-  await page.getByRole('button', { name: 'Volver', exact: true }).click();
+  await page.getByRole('button', { name: 'Volver a lectores', exact: true }).click();
   // Eva: rincón privado y nada en colecciones visibles
   await page.getByRole('button', { name: 'Visitar el rincón de Eva' }).click();
   const eva = visitOf(page, 'Eva');
@@ -235,7 +240,7 @@ test('colección grande: sin montar todos los libros; sin portada, sin lectura, 
   await expect(page.getByRole('dialog', { name: 'Libros compartidos por Eva' })).toContainText('Eva aún no ha compartido libros');
   await expect(page.getByRole('searchbox', { name: 'Buscar en sus libros' })).toHaveCount(0);
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Volver', exact: true }).click();
+  await page.getByRole('button', { name: 'Volver a lectores', exact: true }).click();
   // Cambio de persona mientras carga: nunca se ven los libros de la anterior
   await page.route(`${SUPABASE}/rest/v1/corners*`, async (route) => {
     if (route.request().url().includes(BRUNO.id)) await new Promise((r) => setTimeout(r, 1500));
@@ -280,6 +285,6 @@ test('desde la habitación: «Social» → tableta → «Lectores» → visitar,
   await expect(page.locator('.account-panel')).toHaveCount(0);
   await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
   await expect(visitOf(page, 'Bruno').getByRole('button', { name: 'Ver el perfil de Bruno' })).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: 'Volver', exact: true }).click();
+  await page.getByRole('button', { name: 'Volver a lectores', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
 });

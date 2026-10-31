@@ -12,7 +12,12 @@
 // 1.61 (SPEC §61): un solo acceso a cada cosa. La flecha para volver, el avatar con el alias (abre el perfil), la
 // estantería con su etiqueta «Libros compartidos ›» (abre «Los libros de X») y, si lo enseña, lo que está leyendo como un
 // libro pequeño sobre la mesita. Sin botonera inferior ni cartel grande con el título.
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+// 1.62 (SPEC §62.2, decisión de Francisco): ya no arranca sola. Primero la fachada con el nombre y el avatar de la persona;
+// se entra tocando la ventana inferior derecha (la única que recorre el vídeo) o «Entrar al rincón». Durante el vídeo,
+// «Salir» y «Saltar»; al terminar no se repite. Movimiento reducido o ahorro de datos: directo a la habitación (y un
+// error del vídeo también lleva dentro). Volver lleva al origen: «Volver al salón» o «Volver a lectores». El vídeo no se
+// pide hasta que se decide entrar.
+import { ArrowLeft, ArrowRight, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../../components/panels/PanelShell';
@@ -25,7 +30,7 @@ import { useCommunity } from '../hooks/useCommunity';
 import { useReaderCorner } from '../hooks/useReaderCorner';
 import { SCENES, sceneOf } from '../huellas';
 import { currentTitle, sharedBooks } from '../visit';
-import { ROOM_SHELF, SHELF_TAG, TABLE_BOOK, TABLE_TAG, VISIT_H, VISIT_MEDIA, VISIT_W, shelfSpines } from '../visitScene';
+import { HOUSE_WINDOW, ROOM_SHELF, SHELF_TAG, TABLE_BOOK, TABLE_TAG, VISIT_H, VISIT_MEDIA, VISIT_W, shelfSpines } from '../visitScene';
 import { SharedLibrary, VisitBookSheet } from './VisitBookSheet';
 
 /** Espera máxima a que el vídeo empiece a moverse; y a que avance si se queda parado. Después, la habitación. */
@@ -44,10 +49,16 @@ function decodeImage(src) {
   return (img.decode ? img.decode() : Promise.resolve()).catch(() => {});
 }
 
-export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, onProfile }) {
+/** Texto de volver según de dónde se abrió la visita. */
+const backText = (from) => (from === 'salon' ? 'Volver al salón' : from === 'lectores' ? 'Volver a lectores' : 'Volver');
+
+export function ReaderVisit({ userId, stage, select, from = null, onEnter, onSelect, onBack, onProfile }) {
   const community = useCommunity({ autoload: true });
   const { state } = useLibrary();
   const reduced = useReducedMotion();
+  // Ahorro de datos del navegador: sin vídeo, directo a la habitación (como con movimiento reducido)
+  const [saveData] = useState(() => typeof navigator !== 'undefined' && navigator.connection?.saveData === true);
+  const direct = reduced || saveData;
   const corner = useReaderCorner(userId, community);
   const data = corner.data;
   const alias = data?.profile?.alias ?? '';
@@ -73,7 +84,7 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
     let alive = true;
     const show = () => alive && setShown(true);
     const limit = setTimeout(show, SHOW_LIMIT);
-    decodeImage(stage === 'habitacion' || reduced ? VISIT_MEDIA.room : VISIT_MEDIA.house).then(show);
+    decodeImage(stage === 'habitacion' || direct ? VISIT_MEDIA.room : VISIT_MEDIA.house).then(show);
     return () => {
       alive = false;
       clearTimeout(limit);
@@ -111,15 +122,17 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
     });
   };
 
-  // Movimiento reducido: directamente a la habitación (también si el perfil aún carga: la habitación lo indica)
+  // Movimiento reducido o ahorro de datos: directamente a la habitación (también si el perfil aún carga: allí se indica)
   useEffect(() => {
-    if (stage === 'casa' && reduced) finish();
+    if (stage === 'casa' && direct) finish();
     // finish es estable para esta visita
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, reduced]);
+  }, [stage, direct]);
 
-  // La entrada empieza sola en cuanto se sabe que el rincón existe; nunca antes de abrir la visita
-  const play = stage === 'casa' && !reduced && ready && phase === 'espera';
+  // La entrada empieza cuando se decide entrar (ventana o «Entrar al rincón») y se sabe que el rincón existe
+  const [entering, setEntering] = useState(false);
+  const play = stage === 'casa' && !direct && ready && entering && phase === 'espera';
+  const facade = stage === 'casa' && !direct && !entering && phase === 'espera';
   const playing = play || phase === 'entrando' || phase === 'saliendo';
   // Depende solo de que la entrada haya empezado: pasar de «preparando» a «entrando» no suelta los escuchadores
   useEffect(() => {
@@ -199,7 +212,8 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
   }, []);
 
   const inRoom = stage === 'habitacion' && roomShown;
-  const backLabel = inRoom ? 'Volver' : 'Salir de la visita';
+  // Durante el vídeo, «Salir»; antes y después, volver a donde se estaba
+  const backLabel = playing ? 'Salir' : backText(from);
   const reading = ready ? currentTitle(data.corner) : null;
   // Qué hay abierto encima de la habitación: «libros», «libros/clave» (un libro desde sus libros), «leyendo» o una clave
   const inLibrary = select === 'libros' || (typeof select === 'string' && select.startsWith('libros/'));
@@ -208,23 +222,37 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
 
   return (
     <PanelShell onClose={onBack} label={alias ? `Visita al rincón de ${alias}` : 'Visita a un rincón'} variant="visit">
-      <div className="reader-visit" data-shown={shown || undefined} data-stage={inRoom ? 'habitacion' : 'casa'} data-phase={play ? 'preparando' : phase} data-guides={state.settings.showGuides ? 'on' : 'off'} data-reduced={reduced || undefined}>
-        <Scene layer={roomShown || reduced ? 'room' : phase === 'entrando' ? 'video' : 'house'} playing={playing} videoRef={videoRef}>
+      <div className="reader-visit" data-shown={shown || undefined} data-stage={inRoom ? 'habitacion' : 'casa'} data-phase={facade ? 'fachada' : play ? 'preparando' : phase} data-guides={state.settings.showGuides ? 'on' : 'off'} data-reduced={reduced || undefined}>
+        <Scene layer={roomShown || direct ? 'room' : phase === 'entrando' ? 'video' : 'house'} playing={playing} videoRef={videoRef}>
+          {facade && <Window alias={alias} ready={ready} onEnter={() => setEntering(true)} />}
           {inRoom && ready && <Shelf alias={alias} shared={shared} reduced={reduced} onSelect={onSelect} />}
           {inRoom && ready && reading && <TableBook title={reading} onOpen={() => onSelect('leyendo')} />}
         </Scene>
         <header className="reader-visit__bar">
-          <button type="button" className="reader-visit__icon" onClick={onBack} aria-label={backLabel}>
+          <button type="button" className="reader-visit__icon reader-visit__leave" onClick={onBack}>
             <ArrowLeft aria-hidden="true" />
+            <span>{backLabel}</span>
           </button>
           {inRoom && <Who data={data} alias={alias} onProfile={ready ? onProfile : null} />}
+          {!inRoom && <Who data={data} alias={alias} house />}
         </header>
         {inRoom ? (
           <RoomFoot data={data} status={corner.status} failure={corner.failure} reload={corner.reload} shared={shared} onBack={onBack} />
+        ) : corner.status === 'error' || (corner.status === 'ready' && !data?.profile) ? (
+          <footer className="reader-visit__foot">
+            <VisitStatus status={corner.status} data={data} failure={corner.failure} reload={corner.reload} onBack={onBack} />
+          </footer>
         ) : (
-          (corner.status === 'error' || (corner.status === 'ready' && !data?.profile)) && (
+          // Durante el vídeo, «Saltar» lleva directo a la habitación; en la fachada solo se avisa de que se podrá
+          (facade || playing) && (
             <footer className="reader-visit__foot">
-              <VisitStatus status={corner.status} data={data} failure={corner.failure} reload={corner.reload} onBack={onBack} />
+              {playing ? (
+                <button type="button" className="reader-visit__skip" onClick={finish}>
+                  Saltar
+                </button>
+              ) : (
+                <p className="reader-visit__hint">Puedes saltar la animación</p>
+              )}
             </footer>
           )
         )}
@@ -263,13 +291,22 @@ function Scene({ layer, playing, videoRef, children }) {
   );
 }
 
-/** El único acceso al perfil: avatar, alias y una flecha discreta (mientras carga, solo se ve, no se pulsa). */
-function Who({ data, alias, onProfile }) {
+/**
+ * El único acceso al perfil: avatar, alias y una flecha discreta (mientras carga, solo se ve, no se pulsa). Ante la casa,
+ * solo identifica de quién es: «El rincón de X».
+ */
+function Who({ data, alias, onProfile = null, house = false }) {
   if (!data?.profile) return null;
   const inner = (
     <>
       <ReaderAvatar avatarId={data.profile.avatar_id} alias={alias} size="list" decorative />
-      <b>{alias}</b>
+      {house ? (
+        <b className="reader-visit__who-house">
+          El rincón <span>de {alias}</span>
+        </b>
+      ) : (
+        <b>{alias}</b>
+      )}
       {onProfile && <ChevronRight aria-hidden="true" className="reader-visit__who-go" />}
     </>
   );
@@ -279,6 +316,23 @@ function Who({ data, alias, onProfile }) {
     </button>
   ) : (
     <span className="reader-visit__who">{inner}</span>
+  );
+}
+
+/**
+ * La ventana inferior derecha de la casa (la única que recorre el vídeo) y «Entrar al rincón» justo debajo. Tocar la
+ * ventana es un atajo de puntero; el control accesible es el botón. Mientras el rincón carga, se espera sin vídeo.
+ */
+function Window({ alias, ready, onEnter }) {
+  const cx = (HOUSE_WINDOW.x0 + HOUSE_WINDOW.x1) / 2;
+  return (
+    <>
+      <button type="button" className="reader-visit__window" style={zone(HOUSE_WINDOW)} onClick={onEnter} disabled={!ready} tabIndex={-1} aria-hidden="true" />
+      <button type="button" className="reader-visit__enter" style={{ left: pct(cx), top: pct(HOUSE_WINDOW.y1 + 0.018) }} onClick={onEnter} disabled={!ready} aria-label={alias ? `Entrar al rincón de ${alias}` : 'Entrar al rincón'}>
+        {ready ? 'Entrar al rincón' : 'Abriendo su rincón…'}
+        {ready && <ArrowRight aria-hidden="true" />}
+      </button>
+    </>
   );
 }
 

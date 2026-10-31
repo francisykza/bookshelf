@@ -173,3 +173,12 @@ describe('transiciones interrumpidas', () => {
     expect(request(SHELF, ROOM, true)).toBe(ROOM);
   });
 });
+
+describe('origen de la visita (1.62)', () => {
+  it('la habitación conserva de dónde se vino y, sin padre, se vuelve allí', () => {
+    expect(safeParent({ view: 'room', panel: { type: 'visit', id: 'u', section: 'habitacion', select: 'libros/k', from: 'salon' } }).panel).toEqual({ type: 'visit', id: 'u', section: 'habitacion', select: 'libros', from: 'salon' });
+    expect(safeParent({ view: 'room', panel: { type: 'visit', id: 'u', section: 'habitacion', select: 'leyendo', from: 'lectores' } }).panel).toEqual({ type: 'visit', id: 'u', section: 'habitacion', from: 'lectores' });
+    expect(safeParent({ view: 'room', panel: { type: 'visit', id: 'u', from: 'salon' } }).panel).toBeNull();
+    expect(safeParent({ view: 'room', panel: { type: 'visit', id: 'u', from: 'lectores' } }).panel).toEqual({ type: 'social', tab: 'lectores' });
+  });
+});

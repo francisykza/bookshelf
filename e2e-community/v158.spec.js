@@ -93,11 +93,18 @@ function watchErrors(page) {
   return errors;
 }
 
-/** Nada de opciones de animación en el recorrido (1.58.1). */
+/** Nada de opciones de animación (1.58.1); desde la 1.62 solo «Saltar», y solo mientras suena el vídeo. */
 async function noAnimationOptions(visit) {
   await expect(visit.getByRole('button', { name: /Saltar|sin animación/i })).toHaveCount(0);
   await expect(visit.getByRole('checkbox')).toHaveCount(0);
-  await expect(visit).not.toContainText(/sin animación|Saltar/);
+  await expect(visit).not.toContainText(/sin animación/);
+}
+
+/** 1.62 (SPEC §62.2): la fachada identifica a la persona y se entra con «Entrar al rincón» (o tocando la ventana). */
+async function enter(visit, alias = 'Bruno', { window = false } = {}) {
+  await expect(visit.locator('.reader-visit__who')).toContainText(`El rincón de ${alias}`);
+  if (window) await visit.locator('.reader-visit__window').click();
+  else await visit.getByRole('button', { name: `Entrar al rincón de ${alias}` }).click();
 }
 
 /** La escena cubre la pantalla de borde a borde (sin franjas) y los controles flotan sin banda propia. */
@@ -113,7 +120,7 @@ async function edgeToEdge(page, visit) {
   expect(bands).toEqual(['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0)']);
 }
 
-test('visita: la entrada empieza sola, sin opciones; habitación con lo compartido, libro, pendientes y vuelta', async ({ page }, info) => {
+test('visita: fachada, «Entrar al rincón», habitación con lo compartido, libro, pendientes y vuelta a lectores', async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), '390 en Chromium y WebKit');
   const errors = watchErrors(page);
   const mock = seed();
@@ -127,13 +134,19 @@ test('visita: la entrada empieza sola, sin opciones; habitación con lo comparti
   const visit = page.getByRole('dialog', { name: 'Visita al rincón de Bruno' });
   await expect(visit).toBeVisible();
   await noAnimationOptions(visit);
-  // Una sola flecha discreta para volver (se llama «Salir de la visita» durante la entrada y «Volver» en la habitación)
-  await expect(visit.getByRole('button', { name: /^(Salir de la visita|Volver)$/ })).toHaveCount(1);
+  // Fachada: un solo volver, con su origen; el vídeo no se pide hasta decidir entrar
+  await expect(visit.getByRole('button', { name: 'Volver a lectores' })).toHaveCount(1);
+  await expect(visit).toContainText('Puedes saltar la animación');
   await edgeToEdge(page, visit);
+  await page.waitForTimeout(500);
+  expect(videoRequests(log)).toEqual([]);
+  await expect(visit.locator('video')).toHaveCount(0);
+  await enter(visit);
   if (info.project.name.startsWith('webkit')) {
-    // WebKit decodifica el MP4: la entrada empieza sin tocar nada y se ve un fotograma
+    // WebKit decodifica el MP4: durante el vídeo, «Salir» arriba y «Saltar» abajo
     await expect(visit.locator('video[data-on]')).toHaveCount(1, { timeout: 8000 });
-    await noAnimationOptions(visit);
+    await expect(visit.getByRole('button', { name: 'Salir', exact: true })).toBeVisible();
+    await expect(visit.getByRole('button', { name: 'Saltar', exact: true })).toBeVisible();
     await edgeToEdge(page, visit);
     await shot(page, info, 'v1581-entrando');
   }
@@ -141,7 +154,7 @@ test('visita: la entrada empieza sola, sin opciones; habitación con lo comparti
   // Chromium informa de la petición del vídeo (y como no decodifica H.264, entra por el camino de fallo); WebKit la hace
   // desde su motor multimedia sin exponerla a Playwright (allí la prueba es el fotograma visible de arriba)
   if (!info.project.name.startsWith('webkit')) expect(videoRequests(log).length).toBeGreaterThan(0);
-  expect(await page.evaluate(() => history.state.bookshelf.loc.panel)).toEqual({ type: 'visit', id: BRUNO_ID, section: 'habitacion' });
+  expect(await page.evaluate(() => history.state.bookshelf.loc.panel)).toEqual({ type: 'visit', id: BRUNO_ID, section: 'habitacion', from: 'lectores' });
   await expect(visit.locator('video')).toHaveCount(0);
   await edgeToEdge(page, visit);
   // Habitación: un lomo por libro compartido sobre las baldas, lo que lee (solo el título) y nada privado
@@ -176,21 +189,21 @@ test('visita: la entrada empieza sola, sin opciones; habitación con lo comparti
   await expect(sheet).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
-  await expect(visit.getByRole('button', { name: 'Volver', exact: true })).toBeVisible();
+  await expect(visit.getByRole('button', { name: 'Volver a lectores', exact: true })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
-  // Segunda visita: vuelve a empezar sola y llega igual
+  // Segunda visita: esta vez tocando la ventana inferior derecha, y llega igual
   await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
-  await noAnimationOptions(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }));
+  await enter(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }), 'Bruno', { window: true });
   await expect(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }).getByRole('button', { name: ROOM_BUTTON })).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: 'Volver', exact: true }).click();
+  await page.getByRole('button', { name: 'Volver a lectores', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
   // Ni una petición a la biblioteca sincronizada de otra persona
   expect(log.filter((u) => u.includes('/rest/v1/libraries') && u.includes(BRUNO.id))).toEqual([]);
   expect(errors).toEqual([]);
 });
 
-test('salir durante la entrada suelta el vídeo; si el vídeo falla se entra igualmente; recargar no repite', async ({ page }, info) => {
+test('salir y saltar durante la entrada; si el vídeo falla se entra igualmente; recargar no repite', async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), '390 en Chromium y WebKit');
   const errors = watchErrors(page);
   const mock = seed();
@@ -199,16 +212,30 @@ test('salir durante la entrada suelta el vídeo; si el vídeo falla se entra igu
   await openReaders(page, mock);
   // Salir en plena entrada: vuelve a «Lectores» y no queda vídeo ni temporizador que luego empuje a la habitación
   await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
-  // (en Chromium el vídeo falla enseguida y la flecha ya puede llamarse «Volver»: es la misma)
-  await page.getByRole('button', { name: /^(Salir de la visita|Volver)$/ }).click();
+  await enter(page.getByRole('dialog', { name: 'Visita al rincón de Bruno' }));
+  // (en Chromium el vídeo falla enseguida y el botón ya puede llamarse «Volver a lectores»: es el mismo)
+  await page.getByRole('button', { name: /^(Salir|Volver a lectores)$/ }).click();
   await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
   await page.waitForTimeout(1500);
   await expect(page.locator('.reader-visit')).toHaveCount(0);
   expect(await page.evaluate(() => history.state.bookshelf.loc.panel.type)).toBe('social');
+  // Vídeo que no llega: «Saltar» lleva a la habitación en el acto (sin esperar al límite)
+  await page.route('**/media/social-visit/entrada-v1.mp4', () => {});
+  await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
+  let visit = page.getByRole('dialog', { name: 'Visita al rincón de Bruno' });
+  await enter(visit);
+  await expect(visit.getByRole('button', { name: 'Salir', exact: true })).toBeVisible();
+  await visit.getByRole('button', { name: 'Saltar', exact: true }).click();
+  await expect(visit.getByRole('button', { name: ROOM_BUTTON })).toBeVisible({ timeout: 3000 });
+  await expect(visit.getByRole('button', { name: 'Saltar', exact: true })).toHaveCount(0);
+  await expect(visit.locator('video')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Volver a lectores', exact: true }).click();
+  await page.unroute('**/media/social-visit/entrada-v1.mp4');
   // Vídeo roto: se entra en la habitación sin preguntar
   await page.route('**/media/social-visit/entrada-v1.mp4', (route) => route.abort());
   await page.getByRole('button', { name: 'Visitar el rincón de Bruno' }).click();
-  const visit = page.getByRole('dialog', { name: 'Visita al rincón de Bruno' });
+  visit = page.getByRole('dialog', { name: 'Visita al rincón de Bruno' });
+  await enter(visit);
   await expect(visit.getByRole('button', { name: ROOM_BUTTON })).toBeVisible({ timeout: 10000 });
   await noAnimationOptions(visit);
   // Recargar: la habitación vuelve sin vídeo
@@ -239,6 +266,7 @@ test('otra persona mientras carga: nunca se ven los libros de la anterior; sin l
   await page.goBack();
   await page.getByRole('button', { name: 'Visitar el rincón de Carla' }).click();
   const visit = page.getByRole('dialog', { name: 'Visita al rincón de Carla' });
+  await enter(visit, 'Carla');
   await expect(visit.getByRole('button', { name: /Libros compartidos por Carla \(1\)/ })).toBeVisible({ timeout: 15000 });
   await page.waitForTimeout(1800);
   await expect(visit.locator('.reader-visit__spines > g')).toHaveCount(1);
@@ -250,11 +278,12 @@ test('otra persona mientras carga: nunca se ven los libros de la anterior; sin l
   await expect(page.locator('.reader-visit')).not.toContainText('No debería verse');
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
-  await visit.getByRole('button', { name: 'Volver', exact: true }).click();
+  await visit.getByRole('button', { name: 'Volver a lectores', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Lectores que sigo' })).toBeVisible();
   // Eva comparte su rincón pero ningún libro: baldas vacías y un aviso honesto, sin libros inventados
   await page.getByRole('button', { name: /Visitar el rincón de Eva/ }).click();
   const eva = page.getByRole('dialog', { name: /Visita al rincón de Eva/ });
+  await enter(eva, 'Eva Montesinos de la Torre');
   await expect(eva).toContainText('Aún no ha compartido libros', { timeout: 15000 });
   await expect(eva.locator('.reader-visit__spines')).toHaveCount(0);
   await expect(eva.getByRole('button', { name: /Libros compartidos por Eva Montesinos de la Torre \(0\)/ })).toBeVisible();

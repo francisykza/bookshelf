@@ -64,6 +64,21 @@ export async function fetchProfiles(ids) {
   return Object.fromEntries(ids.map((id) => [id, cache.profiles.get(id) ?? null]));
 }
 
+/**
+ * 1.62 (SPEC §62): buscar lectoras y lectores por alias. La RLS solo deja ver perfiles con la comunidad activada y sin
+ * bloqueo en ningún sentido; aquí además se quita el propio. Como mucho 20 resultados (nunca toda la comunidad).
+ */
+export async function searchProfiles(term, selfId) {
+  const clean = String(term ?? '').trim().replace(/[%_,()]/g, ' ').trim();
+  if (clean.length < 2) return [];
+  const sb = await client();
+  const { data, error } = await sb.from('profiles').select('user_id, alias, avatar_id').ilike('alias', `%${clean}%`).order('alias').limit(20);
+  fail(error);
+  const rows = (data ?? []).filter((p) => p.user_id !== selfId);
+  for (const p of rows) cache.profiles.set(p.user_id, p);
+  return rows;
+}
+
 // ── Obras ──────────────────────────────────────────────────────────────────────────────────────────────────
 /**
  * Identidad de obra para publicar: la obra externa verificada (Open Library) se comparte por su referencia; si no

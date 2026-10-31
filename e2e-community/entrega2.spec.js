@@ -31,7 +31,8 @@ async function openProfile(page) {
   // 1.46: el acceso se llama «Tu cuenta y copias» (con el estado de la copia detrás si lo hay)
   await page.getByRole('button', { name: /^Tu cuenta y copias/ }).click();
   await page.getByRole('button', { name: 'Abrir mi perfil' }).click();
-  await expect(page.getByRole('tab', { name: 'Mi Perfil & Avatar' })).toBeVisible();
+  // 1.62: el perfil ya no es una pestaña; se abre desde el avatar propio (aquí, desde «Tu cuenta»)
+  await expect(page.getByRole('heading', { name: 'Tu perfil lector' })).toBeVisible();
 }
 
 async function saveProfile(page, alias, avatarLabel) {

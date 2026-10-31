@@ -107,8 +107,16 @@ const norm = (s) =>
     .toLocaleLowerCase('es')
     .trim();
 
-/** ¿Está ya ese libro en mi biblioteca? (mismo título y autor, sin tildes ni mayúsculas) */
-export const inLibrary = (books, ref) => books.some((b) => norm(b.title) === norm(ref.title) && norm(b.author) === norm(ref.author));
+/**
+ * ¿Está ya ese libro en mi biblioteca? Primero por la obra de la comunidad (identificador real: `work_id` de la
+ * referencia frente al `workId` de mis libros); si no hay, por el mismo título y autor exactos (sin tildes ni
+ * mayúsculas), nunca por parecido.
+ */
+export const inLibrary = (books, ref) => {
+  const workId = ref?.work_id ?? ref?.workId ?? null;
+  if (workId && books.some((b) => b.workId === workId)) return true;
+  return books.some((b) => norm(b.title) === norm(ref.title) && norm(b.author) === norm(ref.author));
+};
 
 /**
  * Libro nuevo en Pendientes a partir de una referencia pública, con su procedencia guardada en privado (de qué
@@ -123,6 +131,8 @@ export function pendingFromRef(ref, from, now = new Date().toISOString()) {
     pageCount: null,
     status: 'want',
     source: 'community',
+    // La obra de la comunidad, si se conoce: así la próxima vez se reconoce por su identificador (1.62)
+    ...(ref.work_id || ref.workId ? { workId: ref.work_id ?? ref.workId } : null),
     savedFrom: { kind: from.kind, ownerAlias: from.ownerAlias ?? null, collectionTitle: from.collectionTitle ?? null, id: from.id ?? null, at: now },
   };
 }

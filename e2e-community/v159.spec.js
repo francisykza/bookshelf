@@ -76,7 +76,8 @@ test('perfil de otra persona: las figuras expuestas se ven con su imagen (no sol
   test.skip(!/390x844|1440x900/.test(info.project.name), '390 en Chromium y WebKit, y escritorio');
   const mock = seed();
   await openReaders(page, mock);
-  await page.locator('.follow-row').first().click();
+  // 1.62: el avatar de quien sigues abre su perfil
+  await page.locator('.reader-person__open').first().click();
   const figures = page.getByRole('region', { name: 'Figuras expuestas' });
   await expect(figures).toBeVisible();
   await figures.scrollIntoViewIfNeeded();
@@ -122,10 +123,12 @@ test('visita: sin pantalla oscura mientras llega la casa; «Libros · N» no se 
     };
   });
   expect(waiting).toEqual({ shown: false, veil: 'rgba(0, 0, 0, 0)', own: 'rgba(0, 0, 0, 0)', stage: '0' });
-  // La flecha para volver está desde el primer momento
-  await expect(visit.getByRole('button', { name: /^(Salir de la visita|Volver)$/ })).toBeVisible();
+  // Volver está desde el primer momento
+  await expect(visit.getByRole('button', { name: 'Volver a lectores' })).toBeVisible();
   release();
   await expect(page.locator('.reader-visit[data-shown]')).toHaveCount(1, { timeout: 5000 });
+  // 1.62: se entra desde la fachada
+  await visit.getByRole('button', { name: 'Entrar al rincón de Bruno' }).click();
   await expect(visit.getByRole('button', { name: /Libros compartidos por Bruno/ })).toBeVisible({ timeout: 15000 });
   await page.waitForTimeout(500);
   // 1.61: la etiqueta de la estantería no se cruza con la cabecera ni con el libro de la mesita (ya no hay pie)
@@ -167,6 +170,6 @@ test('lectores que sigo: mientras llega el nombre no aparece un «Lector» gené
   await expect(readers.locator('.follow-row__name--loading')).toHaveCount(1);
   await expect(readers.getByText('Lector', { exact: true })).toHaveCount(0);
   release();
-  await expect(readers.locator('.follow-row__name')).toHaveText('Bruno');
+  await expect(readers.locator('.reader-person__name')).toHaveText('Bruno');
   await expect(readers.locator('.follow-row__name--loading')).toHaveCount(0);
 });

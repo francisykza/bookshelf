@@ -1,0 +1,487 @@
+/* ── 1.62 · La radio del rincón (SPEC §62.3; maqueta 02-radio) ──────────────────────────────────────────────────────
+   Objeto sobre la mesa del salón (.social-radio), panel de papel (.panel--radio con .radio), y control compacto en el pie
+   del lector EPUB (.radio-mini). Papel crema, salvia, terracota y latón de la app; nada de brillos ni insignias. */
+
+/* Objeto de la escena: tamaño en px de la ilustración (escala con el lienzo); sombra de contacto bajo las patas */
+.social-radio {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Zona táctil de al menos 44 px de alto aunque la radio se vea más pequeña */
+.social-radio::before {
+  content: '';
+  position: absolute;
+  inset: calc(-8px / var(--k)) calc(-4px / var(--k));
+}
+
+.social-radio::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 6%;
+  right: 4%;
+  bottom: -3%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(44 24 10 / 0.55), rgb(44 24 10 / 0));
+}
+
+.social-radio img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* El objeto toma la luz cálida de la tarde del salón */
+  filter: sepia(0.12) saturate(0.95) brightness(0.97);
+}
+
+.social-radio:focus-visible {
+  outline: calc(2px / var(--k)) solid #c59b27;
+  outline-offset: calc(3px / var(--k));
+  border-radius: calc(6px / var(--k));
+}
+
+/* Panel: hoja inferior en el móvil, tarjeta centrada en pantallas anchas */
+.panel-veil[data-variant='radio'] {
+  align-items: end;
+  padding: 0;
+}
+
+.panel--radio {
+  width: min(100%, 440px);
+  max-height: min(92dvh, 860px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 18px calc(16px + env(safe-area-inset-bottom));
+  border: 1px solid rgb(110 78 46 / 0.3);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: #fbf6ea;
+  color: #2c1e14;
+  box-shadow: 0 -10px 30px rgb(44 30 20 / 0.3);
+}
+
+@media (min-width: 700px) {
+  .panel-veil[data-variant='radio'] {
+    align-items: center;
+    padding: 16px;
+  }
+
+  .panel--radio {
+    border-bottom: 1px solid rgb(110 78 46 / 0.3);
+    border-radius: 22px;
+  }
+}
+
+.radio-panel__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #4a3626;
+  cursor: pointer;
+}
+
+.radio-panel__close svg {
+  width: 22px;
+  height: 22px;
+}
+
+.radio {
+  display: grid;
+  gap: 16px;
+  color: inherit;
+  font: 400 1rem/1.35 'Lora', Georgia, serif;
+}
+
+.radio__head {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.radio__art {
+  width: 150px;
+  height: auto;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 6px 6px rgb(44 24 10 / 0.25));
+}
+
+.radio__head h2 {
+  margin: 0;
+  font: 600 1.75rem/1.1 'Cormorant Garamond', var(--font-display);
+}
+
+.radio__head p {
+  margin: 2px 0 0;
+  color: #725b46;
+  font: italic 500 1.08rem/1.2 'Cormorant Garamond', var(--font-display);
+}
+
+.radio fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.radio legend {
+  margin-bottom: 6px;
+  padding: 0;
+  color: #725b46;
+  font: 600 0.78rem/1.2 'Lora', Georgia, serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.radio__stations {
+  display: grid;
+  gap: 8px;
+}
+
+.radio__station {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 14px;
+  border: 1px solid rgb(110 78 46 / 0.25);
+  border-radius: 12px;
+  background: #f1e7d2;
+  cursor: pointer;
+}
+
+.radio__station[data-on] {
+  border-color: #4f5d3e;
+  background: linear-gradient(180deg, #6b7a55, #5c6a48);
+  color: #fbf6ea;
+}
+
+.radio__station input,
+.radio__chip input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: #5c6a48;
+}
+
+.radio__station[data-on] input {
+  accent-color: #fbf6ea;
+}
+
+.radio__station span {
+  display: grid;
+  font: 600 1.2rem/1.15 'Cormorant Garamond', var(--font-display);
+}
+
+.radio__station small {
+  font: 400 0.82rem/1.2 'Lora', Georgia, serif;
+  opacity: 0.85;
+}
+
+.radio__now {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(110 78 46 / 0.2);
+  text-align: center;
+}
+
+.radio__track {
+  display: grid;
+  margin: 0;
+}
+
+.radio__track b {
+  font: 600 1.25rem/1.15 'Cormorant Garamond', var(--font-display);
+}
+
+.radio__track span {
+  color: #725b46;
+  font-size: 0.9rem;
+}
+
+.radio__buttons {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.radio__skip {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #2c1e14;
+  cursor: pointer;
+}
+
+.radio__play {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid #4f5d3e;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #6b7a55, #56643f);
+  color: #fbf6ea;
+  box-shadow: 0 3px 8px rgb(44 30 20 / 0.25);
+  cursor: pointer;
+}
+
+.radio__play svg {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+}
+
+.radio__skip svg {
+  width: 24px;
+  height: 24px;
+}
+
+.radio__status {
+  min-height: 1.3em;
+  margin: 0;
+  color: #725b46;
+  font-size: 0.9rem;
+}
+
+.radio__status[data-status='error'] {
+  color: #8f3a22;
+}
+
+/* La raya va bajo los volúmenes: en el fieldset siguiente cruzaría su leyenda */
+.radio__volumes {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgb(110 78 46 / 0.2);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.radio__volumes label {
+  font: 500 1.08rem/1 'Cormorant Garamond', var(--font-display);
+}
+
+.radio__slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: #725b46;
+}
+
+.radio__slider svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.radio__slider input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  accent-color: #5c6a48;
+}
+
+.radio__volumes .radio__note {
+  grid-column: 1 / -1;
+}
+
+.radio__note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  color: #725b46;
+  font-size: 0.88rem;
+}
+
+.radio__note .link-btn {
+  min-height: 44px;
+}
+
+.radio__sleep {
+  display: grid;
+  gap: 8px;
+}
+
+.radio__chips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.radio__chip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border: 1px solid rgb(110 78 46 / 0.25);
+  border-radius: 999px;
+  background: #f1e7d2;
+  font: 500 1rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+/* El círculo nativo queda para el teclado y los lectores de pantalla; la elección se ve en la píldora */
+.radio__chip input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.radio__chip[data-on] {
+  border-color: #4f5d3e;
+  background: linear-gradient(180deg, #6b7a55, #5c6a48);
+  color: #fbf6ea;
+}
+
+.radio__chip:has(input:focus-visible),
+.radio__station:has(input:focus-visible) {
+  outline: 2px solid #b7894a;
+  outline-offset: 2px;
+}
+
+.radio__credits summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #2c1e14;
+  text-decoration: underline;
+  text-decoration-color: rgb(110 78 46 / 0.4);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.radio__credits ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #5c4836;
+  font-size: 0.88rem;
+}
+
+.radio :is(button, summary):focus-visible,
+.radio-panel__close:focus-visible {
+  outline: 2px solid #b7894a;
+  outline-offset: 2px;
+}
+
+/* En la hoja del lector EPUB: los colores del tema del lector (también el oscuro) */
+.epub-sheet[data-panel='radio'] .radio {
+  color: var(--rd-ink);
+}
+
+.epub-sheet[data-panel='radio'] :is(.radio legend, .radio__track span, .radio__status, .radio__note, .radio__slider, .radio__credits ul) {
+  color: var(--rd-soft);
+}
+
+.epub-sheet[data-panel='radio'] :is(.radio__station:not([data-on]), .radio__chip:not([data-on])) {
+  border-color: var(--ep-rule);
+  background: transparent;
+  color: var(--rd-ink);
+}
+
+.epub-sheet[data-panel='radio'] :is(.radio__skip, .radio__credits summary) {
+  color: var(--rd-ink);
+}
+
+/* Control compacto en el pie del lector EPUB */
+.radio-mini {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 44px 44px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 2px 4px 8px;
+  border-bottom: 1px solid var(--ep-rule);
+  color: var(--rd-ink);
+}
+
+.radio-mini__art {
+  width: 40px;
+  height: auto;
+}
+
+.radio-mini__track {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+}
+
+.radio-mini__track b {
+  overflow: hidden;
+  font: 600 1.02rem/1.15 'Cormorant Garamond', var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.radio-mini__track span {
+  overflow: hidden;
+  color: var(--rd-soft);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.radio-mini__play,
+.radio-mini__open {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--rd-ink);
+  cursor: pointer;
+}
+
+.radio-mini__play {
+  width: 40px;
+  height: 40px;
+  margin: 2px;
+  background: var(--rd-accent);
+  color: var(--rd-bg);
+}
+
+.radio-mini__play svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.radio-mini__open svg {
+  width: 20px;
+  height: 20px;
+}
+
+.radio-mini :is(button):focus-visible {
+  outline: 2px solid var(--rd-accent);
+  outline-offset: 2px;
+}

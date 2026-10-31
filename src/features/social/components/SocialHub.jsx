@@ -3,7 +3,7 @@
 // 1.60 (SPEC §60): todo el panel va en el cuaderno de cuero con anillas (el mismo recurso que la ficha del libro), con
 // pestañas de papel y un título por sección como en las maquetas («Tu perfil lector», «Comunidad», «Entre lectores»).
 import { Check } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NotebookShell } from '../../../components/primitives';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { AVATARS } from '../../../domain/avatars';
@@ -200,44 +200,131 @@ function BlockedList() {
   );
 }
 
-// Título de cada hoja del cuaderno (maquetas de la 1.60); las que no tienen maqueta propia conservan «Comunidad»
+// 1.62 (SPEC §62, decisión de Francisco): tres pestañas principales (Lectores, Salón, Clubes); «Tu perfil lector» y
+// «Mi rincón» son hojas propias que se abren desde tu avatar, sin perder ninguna función. Los ids de siempre se
+// conservan (enlaces, historial, «Tu cuenta» → perfil).
 const TABS = [
-  { id: 'perfil', label: 'Mi Perfil & Avatar', title: 'Tu perfil lector', Panel: ProfileTab },
-  { id: 'rincon', label: 'Mi rincón', title: 'Comunidad', Panel: CornerTab },
   { id: 'lectores', label: 'Lectores', title: 'Entre lectores', Panel: ReadersTab },
-  { id: 'sala', label: 'En la sala', title: 'Comunidad', Panel: RoomTab },
-  { id: 'club', label: 'Club', title: 'Comunidad', Panel: ClubTab },
+  { id: 'sala', label: 'Salón', title: 'Entre lectores', Panel: RoomTab },
+  { id: 'club', label: 'Clubes', title: 'Entre lectores', Panel: ClubTab },
+];
+const OWN = [
+  { id: 'perfil', label: 'Mi perfil y avatar', title: 'Tu perfil lector', Panel: ProfileTab },
+  { id: 'rincon', label: 'Mi rincón', title: 'Comunidad', Panel: CornerTab },
 ];
 
-export function SocialHub({ onClose, initialTab = 'perfil', timer = null, openClubId = null, onVisit = null }) {
-  const tabs = TABS;
-  const [tab, setTab] = useState(tabs.some((t) => t.id === initialTab) ? initialTab : 'perfil');
+/** Tu avatar en la cabecera: abre «Tu perfil lector» y «Mi rincón» (un menú pequeño; Escape lo cierra). */
+function OwnMenu({ onOpen }) {
+  const community = useCommunity({ autoload: true });
+  const [open, setOpen] = useState(false);
+  const btn = useRef(null);
+  const profile = community.profile;
+  // Escape cierra el menú esté donde esté el foco (WebKit no enfoca el botón al tocarlo); el panel no se cierra
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      setOpen(false);
+      btn.current?.focus();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [open]);
+  return (
+    <div className="social-own" data-escape-local={open ? 'open' : undefined}>
+      <button
+        ref={btn}
+        type="button"
+        className="social-own__btn"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label="Tu perfil y tu rincón"
+        onClick={() => setOpen((v) => !v)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && open) {
+            e.stopPropagation();
+            setOpen(false);
+          }
+        }}
+      >
+        <ReaderAvatar avatarId={profile?.avatar_id ?? null} alias={profile?.alias ?? ''} size="list" decorative />
+      </button>
+      {open && (
+        <div
+          className="social-own__menu"
+          role="menu"
+          aria-label="Lo tuyo"
+          onKeyDown={(e) => {
+            if (e.key !== 'Escape') return;
+            e.stopPropagation();
+            setOpen(false);
+            btn.current?.focus();
+          }}
+        >
+          {OWN.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onOpen(o.id);
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * `tab` viene de la ubicación (historial): cambiar de pestaña sustituye la entrada; abrir lo tuyo (perfil, rincón) añade
+ * una, así Atrás vuelve a la pestaña de la que venías. Sin `onTab`, la pestaña vive solo aquí (compatibilidad).
+ */
+export function SocialHub({ onClose, initialTab = 'lectores', timer = null, openClubId = null, onVisit = null, onTab = null, onOpenReader = null }) {
+  const valid = (id) => [...TABS, ...OWN].some((t) => t.id === id);
+  const [localTab, setLocalTab] = useState(valid(initialTab) ? initialTab : 'lectores');
+  const tab = onTab ? (valid(initialTab) ? initialTab : 'lectores') : localTab;
+  const go = (id, push = false) => (onTab ? onTab(id, push) : setLocalTab(id));
   // Un club abierto desde «Lectores» (su tarjeta «Entrar») o desde un enlace
   const [clubId, setClubId] = useState(openClubId);
-  const current = tabs.find((t) => t.id === tab);
+  const current = [...TABS, ...OWN].find((t) => t.id === tab);
+  const own = OWN.some((o) => o.id === tab);
   const Current = current.Panel;
   const openClub = (id) => {
     setClubId(id);
-    setTab('club');
+    go('club');
   };
   return (
     <PanelShell onClose={onClose} label="Comunidad" variant="social">
       <NotebookShell className="social-hub social-notebook" data-tab={tab}>
         <div className="social-hub__head">
+          <OwnMenu onOpen={(id) => go(id, true)} />
           <h2>{current.title}</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar">
             ×
           </button>
         </div>
         <div className="social-hub__tabs" role="tablist" aria-label="Secciones de la comunidad">
-          {tabs.map((t) => (
-            <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
+          {TABS.map((t) => (
+            <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => go(t.id)}>
               {t.label}
             </button>
           ))}
         </div>
+        {own && (
+          <p className="social-own__crumb">
+            <button type="button" className="link-btn" onClick={() => go('lectores')}>
+              ← Entre lectores
+            </button>
+          </p>
+        )}
         <div className="social-hub__body">
-          <Current timer={timer} openClubId={clubId} onVisit={onVisit} onOpenClub={openClub} />
+          <Current timer={timer} openClubId={clubId} onVisit={onVisit} onOpenClub={openClub} onOpenReader={onOpenReader} />
         </div>
       </NotebookShell>
     </PanelShell>

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "stations": [
+    {
+      "id": "piloto",
+      "title": "Sintonía de prueba",
+      "tracks": [
+        {
+          "id": "brisa-de-papel-demo",
+          "title": "Brisa de papel · demo",
+          "artist": "Síntesis instrumental creada para BookShelf",
+          "src": "/media/social-radio/brisa-de-papel-demo.mp3",
+          "durationSeconds": 90,
+          "credits": "Generada mediante síntesis matemática para esta entrega; sin samples externos. Pista técnica de demostración, no catálogo editorial definitivo.",
+          "demo": true
+        }
+      ]
+    }
+  ]
+}

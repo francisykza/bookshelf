@@ -7,17 +7,21 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 ## Estado actual
 
 - **Versión publicada**: 1.61.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: 1.61.0 (visita: habitación de llegada y «Los libros de X», §61) publicada; sin cambios
-  pendientes de código. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
+- **Árbol de trabajo**: **1.62.0, bloques 1 a 3 de 4 en un commit local de `main` sin subir** del paquete «salón social y radio» (§62): comunidad
+  con tres pestañas y «Lectores» nuevo; sillones del salón y visita con fachada; radio del rincón. Publicada sigue la 1.61.0. Falta el bloque 4 (clubes); Francisco quiere ver
+  capturas de cada bloque antes de seguir. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
   (incluye `maqueta-146/`), `assets-source/` y `BookShelf-fotogramas-QA/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. **Pendiente de aplicar (1.60)**: `20261031120000_avatares_nuevos.sql` (amplía la
-  lista de avatares admitidos; sin ella, el servidor rechaza un perfil con uno de los seis nuevos).
+  lista de avatares admitidos; sin ella, el servidor rechaza un perfil con uno de los seis nuevos). **Preparada (1.62,
+  no aplicar aún sin decidirlo con Francisco)**: `20261031200000_radio_sintonia.sql` (`profiles.radio_station` para
+  «Mostrar mi sintonía», opción que la app todavía no enseña).
 
 ### Últimos bloques (detalle en `SPEC.md`)
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.62.0 (sin commit, bloques 1–3 de 4) | Comunidad: tres pestañas, lo tuyo desde el avatar, buscador, opiniones compactas con ficha pública y pendientes por la obra; sillones con elección y tarjeta anclada, pestaña «Salón» y visita con fachada, «Entrar», «Saltar» y vuelta al origen; radio del rincón (un reproductor, temporizador, EPUB) | §62 |
 | 1.61.0 | Visita: un acceso por cosa en la habitación de llegada, etiqueta «Libros compartidos ›» en la estantería, lectura actual como libro en la mesita y «Los libros de X» como biblioteca frontal con buscador | §61 |
 | 1.60.0 | Comunidad en el cuaderno de cuero según las maquetas (perfil, Mi rincón con «Ambiente y recuerdos», Entre lectores), seis avatares nuevos (migración pendiente) y libro de la cama más asentado | §60 |
 | 1.59.0 | Biblioteca grande en el móvil: nada montado con la biblioteca cerrada, filas y lomos virtuales, portadas 2:3 con una descarga por URL, figuras del perfil en WebKit, nube con comprobación de fecha, visita sin pantalla oscura, aviso con caducidad real, registro con teclado, perfil social sin solapes | §59 |
@@ -44,6 +48,17 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 | 1.41.x | Reflejos de la habitación sin guías; ajustes de Mi diario | §32–33 |
 
 ### Pendiente (por orden de prioridad aproximada)
+
+000. **Paquete «salón social y radio» (1.62, §62), a medias y sin commit.** Hechos los bloques 1–3; falta el **bloque 4,
+   clubes**. Encargo completo en `material-diseno/social-radio/BookShelf-social-radio/` (fuera de git, en este
+   ordenador): `PROMPT-CLAUDE.md` apartado 5 y la maqueta `maquetas/04-comunidad.png` (columna derecha). Resumen:
+   dentro de un club, pestañas Lectura / Conversación / Miembros conservando lo que ya hay (`ClubTab.jsx`,
+   en `src/features/social/components/`); administrar y archivar en un menú del propietario con confirmación (no entre mensajes); redactor
+   accesible por encima del teclado con «Contiene spoilers» y mensajes con spoiler plegados; paginar mensajes; nada de
+   adjuntos ni chat privado; no prometer bloqueo por capítulo. Autorizaciones en el servidor (RLS), no solo ocultas.
+   Forma de trabajo (CLAUDE.md): enseñar capturas a Francisco al terminar el bloque. Al acabar: §62.4 en SPEC, entrada
+   en la bitácora y, solo si lo pide, commit. Quedan además: Francisco debe escuchar la pista piloto de la radio y
+   decidir si se queda; la migración de la sintonía está preparada, sin aplicar.
 
 00. **Noche de la misma habitación (§50–51)**: el fondo nocturno ya está (1.53). Falta, si se quiere, la lámpara y
    la vela pintadas apagadas o sus luces por separado (`docs/design/recursos-noche-misma-habitacion.md`): hoy, de
@@ -109,6 +124,48 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-31 · cuenta principal · 1.62.0, bloques 1–3 (commit local, sin subir)
+- A petición de Francisco, commit local en `main` con los bloques 1, 2 y 3 tal como estaban (descritos abajo), **sin
+  push**: producción sigue en la 1.61.0. Fuera del commit, las carpetas de recursos que no están en git. Siguiente: bloque 4
+  (clubes), también sin commit hasta que lo pida.
+
+### 2026-10-31 · cuenta principal · 1.62.0, bloque 3 (sin commit)
+- Hecho el bloque 3 (§62.3): `src/features/radio/` (nuevo: `catalog.js`, `catalogo-radio.json`, `radioPlayer.js`,
+  `RadioControls.jsx`, `RadioPanel.jsx`, `RadioMini.jsx`), `radio-162.css` (nueva, importada al final),
+  `ambientAudio.js` (`setAmbienceVolume`), `SocialSeats.jsx` y `socialMap.js` (la radio en la mesa), `RoomCorner.jsx`
+  («Música» en Ambiente), `EpubReader.jsx` (hoja y control compacto), `App.jsx` (panel `radio`). Recursos en
+  `public/media/social-radio/`.
+- **Migración preparada, sin aplicar**: `supabase/migrations/20261031200000_radio_sintonia.sql` (para «Mostrar mi
+  sintonía», que no se enseña hasta aplicarla). `entrega2.rls.test.js` ya espera la columna `radio_station`.
+- QA: `v162-radio`, `v147`, `v152`, `v156`, `v157` en 360/390/430/1440/WebKit 390 pasan; `v162` y `entrega3` de
+  comunidad en 320 y 390 pasan; Vitest 280/280; build y oxlint correctos. `v156` falló una vez en 1440 con la máquina
+  cargada y pasó al repetirlo solo. Sin iPhone real (volumen y segundo plano sin comprobar allí).
+- En escritorio la mesa del salón queda fuera del encuadre: a la radio se llega desde «Ambiente».
+- **Sin commit**. Siguiente: bloque 4 (clubes), tras enseñar capturas a Francisco. Él tiene que escuchar la pista piloto.
+
+### 2026-10-31 · cuenta principal · 1.62.0, bloque 2 (sin commit)
+- Hecho el bloque 2 (§62.2): `SocialSeats.jsx` (etiqueta «Sentarme», tarjetas ancladas), `SeatCard.jsx` y
+  `SeatChoice.jsx` (nuevos), `SocialTabs.jsx` (pestaña «Salón» nueva), `usePresence.js` (sentarse/levantarse
+  devuelven si salió bien), `ReaderVisit.jsx` (fachada, «Entrar al rincón», ventana, «Salir»/«Saltar», ahorro de datos),
+  `navigation.js` (campo `from` de la visita), `App.jsx`, `SocialRoom.jsx` y `social-162.css`.
+- Ojo: `.reader-visit__back` ya existía en `social-161.css` (cabecera de «Sus libros»); el botón de volver de la
+  visita usa `.reader-visit__leave`.
+- QA: `v162`, `v158`, `v159`, `v161` y `entrega3` en 320/390/430/1440/WebKit 390: 77 pasan (las omitidas son
+  por tamaño); comunidad completa en Chromium y WebKit 390: 71 pasan y 1 falló por tiempo con la máquina cargada (le
+  di más margen y pasa en la tanda posterior); Vitest 278/278; build y oxlint correctos. Sin iPhone real.
+- **Sin commit**. Siguiente: bloque 3 (radio y control en el EPUB), tras enseñar capturas a Francisco.
+
+### 2026-10-31 · cuenta principal · 1.62.0, bloque 1 (sin commit)
+- Encargo: paquete `material-diseno/social-radio/BookShelf-social-radio/` (salón, visita, radio, clubes). Francisco
+  decidió: seguir el paquete en la visita (fachada, «Entrar», «Saltar») y en las tres pestañas, y hacerlo **por
+  bloques** enseñando capturas. Reglas actualizadas en `CLAUDE.md`.
+- Hecho el bloque 1 (§62.1): `SocialHub.jsx`, `ReadersSection.jsx` (nuevo), `SocialTabs.jsx`, `AddToPending.jsx`,
+  `huellas.js` (duplicados por obra), `services/community.js` (`searchProfiles`), `services/connections.js`
+  (`fetchMoreActivity`), `App.jsx` (pestaña en la ubicación), `social-162.css`. Simulador: `ilike` y `lt`.
+- QA: `v162` en 320/390/430/1440/WebKit 390 (8 pasan); comunidad completa en Chromium y WebKit 390: 64 pasan;
+  Vitest 274/274; build correcto. Sin iPhone real.
+- **Sin commit**: el encargo dice no hacer commit sin petición explícita. Siguiente: bloque 2 (asientos y visita).
 
 ### 2026-10-31 · cuenta principal · 1.61.0 (publicada)
 - Encargo «Pulir la visita social ya implementada» con maqueta (`docs/design/references/visita-rincon-libros-maqueta.png`).

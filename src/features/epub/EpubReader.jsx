@@ -24,13 +24,15 @@ import { highlightAt, paintHighlights, rangeAnchor, resolveRange, tint } from '.
 import { applyPaged, currentPage, goToPage, pageCount, pageOfBlock, removePaged, turns, visibleBlock } from './epubLayout';
 import { LOCAL_DELAY, SYNC_EVERY, readLocal, startPosition, syncedPosition, writeLocal } from './epubPosition';
 import { getEpub } from './epubStore';
+import { RadioControls } from '../radio/RadioControls';
+import { RadioMini } from '../radio/RadioMini';
 
 const PREFS_KEY = 'bookshelf:epub-prefs';
 const LEADINGS = [1.45, 1.65, 1.85];
 const MARGINS = [16, 24, 32];
 const DEFAULT_PREFS = { font: 18, leading: 1.65, margin: 24, theme: 'light', mode: 'scroll' };
 const RELAYOUT_WAIT = 120;
-const PANEL_TITLES = { toc: 'Índice', notes: 'Mi diario', aa: 'Letra y forma de leer', ambient: 'Ambiente' };
+const PANEL_TITLES = { toc: 'Índice', notes: 'Mi diario', aa: 'Letra y forma de leer', ambient: 'Ambiente', radio: 'La radio del rincón' };
 
 function readPrefs() {
   try {
@@ -920,7 +922,8 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
                   <Choice label="Tema" value={prefs.theme} options={[['light', 'Claro'], ['night', 'Nocturno']]} onChange={(theme) => setPref({ theme })} />
                 </div>
               )}
-              {panel === 'ambient' && <AmbientPanel timer={timer} soundOn={soundOn} onToggleSound={onToggleSound} />}
+              {panel === 'ambient' && <AmbientPanel timer={timer} soundOn={soundOn} onToggleSound={onToggleSound} onOpenRadio={(e) => openPanel('radio', e)} />}
+              {panel === 'radio' && <RadioControls head={false} soundOn={soundOn} onToggleSound={onToggleSound} />}
             </div>
           </aside>
         )}
@@ -949,6 +952,8 @@ export function EpubReader({ book: initial, fileHash, onClose, onComplete, timer
 
       {!toolsHidden && (
         <footer className="epub-reader__foot" inert={covered ? true : undefined}>
+          {/* 1.62: la música que ya suena (o está en pausa) sigue aquí, en el pie de herramientas: nunca sobre el texto */}
+          <RadioMini onOpen={(e) => openPanel('radio', e)} />
           <div className="epub-reader__progress">
             <button type="button" className="epub-icon" onClick={() => step(-1)} disabled={!epub || atStart} aria-label={paged ? 'Página anterior' : 'Sección anterior'}>
               <ChevronLeft aria-hidden="true" />
@@ -1065,7 +1070,7 @@ function Choice({ label, value, options, onChange }) {
 }
 
 /** Ambiente: el sonido y el temporizador de siempre (abrir o cerrar esta hoja no los toca). */
-function AmbientPanel({ timer, soundOn, onToggleSound }) {
+function AmbientPanel({ timer, soundOn, onToggleSound, onOpenRadio }) {
   const mm = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, '0')}`;
   return (
     <div className="epub-ambient">
@@ -1075,6 +1080,10 @@ function AmbientPanel({ timer, soundOn, onToggleSound }) {
           {soundOn ? 'Sonido del mar: activado' : 'Sonido del mar: apagado'}
         </button>
       )}
+      {/* 1.62: la música es aparte y opcional (nunca empieza sola) */}
+      <button type="button" className="sheet-btn" onClick={onOpenRadio}>
+        Música: la radio del rincón
+      </button>
       {timer && (
         <div className="epub-ambient__timer">
           <p>

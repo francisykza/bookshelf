@@ -110,20 +110,23 @@ test('sentarse a leer: explícito, sin compartir el libro si no se elige, y sin 
   // Entrar al salón no sienta a nadie
   await page.waitForTimeout(600);
   expect(mock.db.reading_presence).toEqual([]);
+  // 1.62 (SPEC §62.2): el sillón libre abre aquí mismo la elección, sin salir del salón
   await (await visibleSeat(page)).click();
-  await page.locator('.social-hub').getByRole('radio', { name: 'Mostrar solo mi avatar y mi alias' }).check();
-  await page.locator('.social-hub').getByRole('button', { name: 'Sentarme a leer' }).click();
-  await expect(page.locator('.social-hub').getByRole('button', { name: 'Levantarme' })).toBeVisible();
+  const card = page.getByRole('dialog', { name: 'Sentarme a leer' });
+  await card.getByRole('radio', { name: 'Solo mi alias' }).check();
+  await card.getByRole('button', { name: 'Sentarme a leer' }).click();
+  await expect(card).toHaveCount(0);
+  await expect(page.locator('.social-hub')).toHaveCount(0);
   expect(mock.db.reading_presence).toEqual([expect.objectContaining({ user_id: ANA.id, share_book: false, book_title: null })]);
-  await page.keyboard.press('Escape');
   await expect(page.locator('.seat-medallion')).toHaveCount(1);
   await expect(page.locator('.seat-medallion')).toContainText('Ana lectora');
   // Ni sellos ni figuras ni páginas
   expect(await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem('bookshelf:v1')).progress.figures))).toBe(figuresBefore);
-  // Mi medallón abre «En la sala» (donde levantarme)
+  // Mi medallón abre mi tarjeta junto al sillón, con «Levantarme»
   await page.locator('.seat-medallion').click();
-  await page.locator('.social-hub').getByRole('button', { name: 'Levantarme' }).click();
-  await expect(page.locator('.social-hub').getByRole('button', { name: 'Sentarme a leer' })).toBeVisible();
+  await page.getByRole('dialog', { name: 'Tu sitio en el salón' }).getByRole('button', { name: 'Levantarme' }).click();
+  await expect(page.locator('.seat-medallion')).toHaveCount(0);
+  await expect(page.locator('.seat-free')).toHaveCount(2);
   expect(mock.db.reading_presence).toEqual([]);
 });
 

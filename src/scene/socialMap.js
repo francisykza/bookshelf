@@ -11,4 +11,8 @@ export const SOCIAL_SPOTS = {
   ],
   // «+N lectores», entre los dos sillones (sobre la mesita del jarrón)
   more: [462, 905],
+  // 1.62 (SPEC §62.3): la radio del rincón (radio-v1.webp, 360 × 221) en el único hueco libre de la mesa: delante a la
+  // izquierda, bajo la esquina de la tableta pintada, sin tapar tableta, tazas, tetera ni las hojas. Esquina superior
+  // izquierda y ancho en px de la ilustración; la base (patas) queda en y ≈ 1377, dentro del tablero.
+  radio: { x: 314, y: 1306, w: 116 },
 };

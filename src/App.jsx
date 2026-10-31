@@ -21,6 +21,7 @@ import { CozyRoom, ROOM_VIEW, SHELF_VIEW } from './components/room/CozyRoom';
 import { PanoramicRoom } from './components/room/PanoramicRoom';
 import { RoomCorner } from './components/room/RoomCorner';
 import { SocialRoom } from './components/room/SocialRoom';
+import { RadioPanel } from './features/radio/RadioPanel';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { PerfProfiler } from './perf/PerfProfiler';
@@ -218,7 +219,7 @@ function Sanctuary() {
         reducedMotion={reducedMotion}
         forceMain={guide.active}
         onSettled={setSettledRoom}
-        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} onStartGuide={guide.start} onToggleSound={toggleSound} guideActive={guide.active} offscreen={offscreen} /> : null}
+        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} onStartGuide={guide.start} onToggleSound={toggleSound} onOpenRadio={() => openPanel({ type: 'radio' })} guideActive={guide.active} offscreen={offscreen} /> : null}
         renderMain={(active) => (
           <CozyRoom
             active={active}
@@ -268,6 +269,12 @@ function Sanctuary() {
               playUiSound('visit');
               openPanel({ type: 'reader', id });
             }}
+            // 1.62 (SPEC §62.2): la visita sabe que viene del salón para volver allí
+            onVisit={(id) => {
+              playUiSound('visit');
+              openPanel({ type: 'visit', id, from: 'salon' });
+            }}
+            onOpenRadio={() => openPanel({ type: 'radio' })}
             onOpenGuardian={(id) => openPanel({ type: 'guardian', id })}
           />
         )}
@@ -361,8 +368,9 @@ function Sanctuary() {
             stage={panel.section === 'habitacion' ? 'habitacion' : 'casa'}
             select={panel.select ?? null}
             // La entrada sustituye su paso en el historial: volver desde la habitación lleva al origen (1.58.1)
-            onEnter={() => switchPanel({ type: 'visit', id: panel.id, section: 'habitacion' })}
-            onSelect={(select) => openPanel({ type: 'visit', id: panel.id, section: 'habitacion', select })}
+            onEnter={() => switchPanel({ type: 'visit', id: panel.id, section: 'habitacion', from: panel.from })}
+            onSelect={(select) => openPanel({ type: 'visit', id: panel.id, section: 'habitacion', select, from: panel.from })}
+            from={panel.from ?? null}
             onBack={close}
             onProfile={() => openPanel({ type: 'reader', id: panel.id })}
           />
@@ -373,6 +381,7 @@ function Sanctuary() {
           <ReaderProfile userId={panel.id} onClose={close} />
         </Suspense>
       )}
+      {panel?.type === 'radio' && <RadioPanel onClose={close} soundOn={settings.sound} onToggleSound={toggleSound} />}
       {panel?.type === 'guardian' && <GuardianCard figureId={panel.id} onClose={close} />}
       {panel?.type === 'import' && (
         <Suspense fallback={null}>
@@ -383,14 +392,14 @@ function Sanctuary() {
         <Suspense fallback={null}>
           <SocialHub
             onClose={close}
-            initialTab={panel.tab}
+            initialTab={panel.tab ?? 'lectores'}
             timer={timer}
             openClubId={panel.id ?? null}
-            onVisit={(id) => {
-              // Al volver de la visita se regresa a «Lectores» (la pestaña del panel social queda registrada)
-              switchPanel({ type: 'social', tab: 'lectores' });
-              openPanel({ type: 'visit', id });
-            }}
+            // 1.62 (SPEC §62): la pestaña vive en la ubicación; lo tuyo (perfil, rincón) se apila para volver con Atrás
+            onTab={(tab, push) => (push ? openPanel : switchPanel)({ type: 'social', tab })}
+            onOpenReader={(id) => openPanel({ type: 'reader', id })}
+            // 1.62 (SPEC §62.2): Atrás desde la visita vuelve a la pestaña de la que se salió (Lectores o Salón)
+            onVisit={(id) => openPanel({ type: 'visit', id, from: (panel.tab ?? 'lectores') === 'sala' ? 'salon' : 'lectores' })}
           />
         </Suspense>
       )}

@@ -43,7 +43,17 @@ export async function fetchActivity(following) {
   }
   const clubs = await sb.from('clubs').select('id, name, discussion_point, status, updated_at').order('updated_at', { ascending: false }).limit(10);
   fail(clubs.error);
-  return { reviews, clubs: clubs.data ?? [] };
+  return { reviews, clubs: clubs.data ?? [], more: reviews.length === PAGE_SIZE };
+}
+
+/** 1.62 (SPEC §62): la página siguiente de opiniones de quien sigues (más antiguas que `before`). */
+export async function fetchMoreActivity(following, before) {
+  if (!following.length || !before) return { reviews: [], more: false };
+  const sb = await client();
+  const res = await sb.from('public_reviews').select('id, user_id, work_id, rating_quarters, body, has_spoilers, published_at').in('user_id', following).eq('status', 'published').lt('published_at', before).order('published_at', { ascending: false }).limit(PAGE_SIZE);
+  fail(res.error);
+  const reviews = await titlesFor(sb, res.data ?? []);
+  return { reviews, more: reviews.length === PAGE_SIZE };
 }
 
 // ── Rincón compartido ──────────────────────────────────────────────────────────────────────────────────────

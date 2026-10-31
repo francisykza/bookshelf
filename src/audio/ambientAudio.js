@@ -534,12 +534,19 @@ export function setTimeOfDay(next) {
 /** ¿Está sonando ya el ambiente? (hasta el primer gesto del usuario el navegador no deja). */
 export const isAmbiencePlaying = () => Boolean(ambience);
 
+/** 1.62 (SPEC §62.3): volumen del ambiente (0–1) elegido en la radio, aparte de la música; 1 = el nivel de siempre. */
+let ambienceVolume = 1;
+export function setAmbienceVolume(v) {
+  ambienceVolume = Math.min(1, Math.max(0, Number(v) || 0));
+  if (ambience && ctx) ambience.out.gain.setTargetAtTime(AMBIENCE_LEVEL * ambienceVolume, ctx.currentTime, 0.25);
+}
+
 export function setAmbience(on) {
   if (!audio()) return;
   if (on && !ambience) {
     ambience = buildAmbience();
     // Volumen de fondo bajito: un murmullo de bahía, no un temporal
-    ambience.out.gain.setTargetAtTime(AMBIENCE_LEVEL, ctx.currentTime, 1.6);
+    ambience.out.gain.setTargetAtTime(AMBIENCE_LEVEL * ambienceVolume, ctx.currentTime, 1.6);
   } else if (!on && ambience) {
     ambience.stop();
     ambience = null;

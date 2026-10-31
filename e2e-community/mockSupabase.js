@@ -45,6 +45,9 @@ function matches(row, params) {
     if (op === 'eq' && cell !== val) return false;
     if (op === 'neq' && cell === val) return false;
     if (op === 'in' && !val.replace(/^\(|\)$/g, '').split(',').map((s) => s.replace(/^"|"$/g, '')).includes(cell)) return false;
+    // 1.62: búsqueda por alias y página siguiente de opiniones
+    if (op === 'ilike' && !(cell ?? '').toLowerCase().includes(val.replace(/[%*]/g, '').toLowerCase())) return false;
+    if (op === 'lt' && !(cell != null && cell < val)) return false;
   }
   return true;
 }

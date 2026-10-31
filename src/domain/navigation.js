@@ -1,5 +1,5 @@
 // Navegación con historial real (SPEC §13.3, 1.19.0). Cada ubicación es un estado serializable
-// `{ view: 'room' | 'shelf', panel: null | { type, id?, tab?, section?, select? } }`. La lógica es pura y recibe el
+// `{ view: 'room' | 'shelf', panel: null | { type, id?, tab?, section?, select?, from? } }`. La lógica es pura y recibe el
 // objeto `history`, así que se prueba sin navegador: la entrada inicial se registra con replaceState, cada
 // destino interno añade una entrada, `popstate` restaura sin volver a apilar, y Atrás desde la raíz es del
 // navegador (no hay entradas trampa).
@@ -7,7 +7,8 @@
 export const ROOT = Object.freeze({ view: 'room', panel: null });
 const KEY = 'bookshelf';
 
-const PANEL_FIELDS = ['type', 'id', 'tab', 'section', 'select'];
+// `from` (1.62): de dónde se abrió una visita («salon» o «lectores»), para volver allí
+const PANEL_FIELDS = ['type', 'id', 'tab', 'section', 'select', 'from'];
 
 /** Solo los campos serializables y conocidos (nada de objetos de libros ni funciones). */
 export function normalizeLocation(loc) {
@@ -27,8 +28,11 @@ export function safeParent(loc) {
   if (l.panel?.type === 'vault' && l.panel.section === 'unbox') return { view: l.view, panel: { type: 'vault', id: l.panel.id } };
   // Visita a un rincón (SPEC §56, 1.58.1): libro → habitación → «Lectores» (también tras recargar; la entrada no se repite)
   // 1.61 (SPEC §61): un libro abierto desde «Sus libros» vuelve a «Sus libros» (`libros/clave`), no a la habitación
-  if (l.panel?.type === 'visit' && typeof l.panel.select === 'string' && l.panel.select.startsWith('libros/')) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion', select: 'libros' } };
-  if (l.panel?.type === 'visit' && l.panel.select) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion' } };
+  // 1.62 (SPEC §62.2): la habitación conserva su origen y, sin padre conocido, se vuelve al salón o a «Lectores»
+  const from = l.panel?.from ? { from: l.panel.from } : null;
+  if (l.panel?.type === 'visit' && typeof l.panel.select === 'string' && l.panel.select.startsWith('libros/')) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion', select: 'libros', ...from } };
+  if (l.panel?.type === 'visit' && l.panel.select) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion', ...from } };
+  if (l.panel?.type === 'visit' && l.panel.from === 'salon') return { view: l.view, panel: null };
   if (l.panel?.type === 'visit') return { view: l.view, panel: { type: 'social', tab: 'lectores' } };
   if (l.panel) return { view: l.view, panel: null };
   if (l.view === 'shelf') return ROOT;

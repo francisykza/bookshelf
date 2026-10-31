@@ -44,7 +44,7 @@ function Toggle({ on, onChange, children }) {
   );
 }
 
-export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, guideActive = false, offscreen = [] }) {
+export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, onOpenRadio = null, guideActive = false, offscreen = [] }) {
   const cloud = useCloud();
   const { state, actions } = useLibrary();
   const { settings } = state;
@@ -166,6 +166,19 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, guideAc
               <Toggle on={settings.sfx !== false} onChange={() => actions.setSettings({ sfx: settings.sfx === false })}>
                 Sonidos al tocar
               </Toggle>
+              {onOpenRadio && (
+                // 1.62 (SPEC §62.3): la radio del rincón también desde aquí (en pantallas anchas la mesa del salón no se ve)
+                <button
+                  type="button"
+                  className="corner-sheet__link"
+                  onClick={() => {
+                    setAmbient(false);
+                    onOpenRadio();
+                  }}
+                >
+                  Música: la radio del rincón
+                </button>
+              )}
               <div className="corner-sheet__more">
                 {!installedFullscreen && (
                   <button type="button" className="corner-sheet__link" aria-pressed={fullscreenApi ? fullscreen : undefined} onClick={toggleFullscreen}>

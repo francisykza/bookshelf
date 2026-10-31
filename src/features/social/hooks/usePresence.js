@@ -61,14 +61,17 @@ export function resetPresence() {
   listeners.forEach((l) => l());
 }
 
+/** Devuelve si salió bien (el error queda en `failure`). */
 export async function sitDownNow(choice) {
   try {
     await sitDown(choice);
     set({ seat: choice, failure: '' });
     syncTimers();
     await refresh();
+    return true;
   } catch (e) {
     set({ failure: e.message });
+    return false;
   }
 }
 
@@ -77,8 +80,10 @@ export async function standUpNow(userId) {
     await standUp(userId);
     set({ seat: null, rows: snapshot.rows.filter((r) => r.user_id !== userId), failure: '' });
     syncTimers();
+    return true;
   } catch (e) {
     set({ failure: e.message });
+    return false;
   }
 }
 
