@@ -4107,6 +4107,32 @@ al terminar cada uno. Estilos en `social-162.css`.
   allí.
 - Pendiente de Francisco: escuchar la pista piloto y decidir si se queda; las sintonías de la maqueta no tienen música.
 
-### 62.4 Pendiente
+### 62.4 Bloque 4 · Clubes (hecho)
 
-Bloque 4 (clubes).
+Encargo: apartado 5 de `PROMPT-CLAUDE.md` y columna derecha de `maquetas/04-comunidad.png`. Código en
+`src/features/social/components/ClubTab.jsx` (reescrito `ClubView` y `Message`; la lista de clubes, igual) y
+`src/styles/club-162.css` (nueva, importada al final).
+
+- **Dentro del club**: «‹ Mis clubes», el nombre con su «…» y tres pestañas (`role="tablist"`), fijas arriba al leer:
+  **Lectura** (obra, descripción y punto de debate), **Conversación** (se abre por defecto y por el final) y
+  **Miembros** (avatar, nombre, «Propietario» o «Tú»; el propietario puede retirar a alguien, con confirmación). El club
+  ya no lleva un segundo cuaderno dentro del de la comunidad.
+- **Menú del propietario** («Opciones del propietario del club»): «Administrar el club» (punto de debate e invitaciones
+  revocables, con «Volver al club») y «Archivar el club», con confirmación y el foco en «Cancelar». Quien no es
+  propietario solo ve «Salir del club», también con confirmación. Nada de esto va entre los mensajes.
+- **Conversación**: contexto «Debate: …» y «Los mensajes con spoilers se ocultan hasta que decides verlos». El punto de
+  debate es una guía, **no** un bloqueo por capítulo (no hay datos para prometerlo). Mensajes de 20 en 20 (paginación por
+  cursor del servidor) en **orden de lectura**: «Ver mensajes anteriores» arriba, lo último abajo. Cada mensaje: avatar,
+  nombre, fecha y su bocadillo; con spoilers, plegado al recibirlo (ojo tachado y texto, no solo color) hasta que quien
+  lee lo abre. Sus acciones (editar, borrar; retirar si eres propietario; denunciar, bloquear) van en su «…».
+- **Redactor**: fijo al pie de la hoja, con el campo, el envío terracota («Publicar») y «Contiene spoilers»; sin adjuntos
+  ni mensajes privados (la maqueta dibuja un icono de imagen: no se añade). Por encima del teclado: el velo de la
+  comunidad sigue a `visualViewport` (`--vv-top`, `--vv-h`, como el registro de la 1.59; `PanelShell` lo activa
+  también para `social`).
+- **Autorización en el servidor**: sin cambios de esquema; la RLS de la entrega 3 ya limita editar, archivar, invitar y
+  retirar al propietario, y leer y escribir a los miembros (nunca en un club archivado). `entrega3.rls.test.js` comprueba
+  además que un miembro no puede archivar aunque lo intente sin la interfaz.
+- Pruebas: `e2e-community/v162-clubes.spec.js` (propietaria, miembro y teclado simulado) en 320, 390, 430, 1440 y
+  WebKit 390; `entrega3` al día. El simulador entiende ahora el `or` de la paginación por cursor (antes repetía la
+  primera página). Sin iPhone real: el teclado se ha simulado.
+- No se ha usado la acuarela de la cabecera de la maqueta (no hay recurso): no se improvisa.

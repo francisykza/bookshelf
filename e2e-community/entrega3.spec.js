@@ -210,9 +210,14 @@ test('club: crear, invitar, aceptar con el enlace, revocar y debate con spoilers
   await a.locator('.social-hub').getByLabel('Descripción breve', { exact: true }).fill('Leemos despacio');
   await a.locator('.social-hub').getByLabel('Obra que leeréis', { exact: true }).fill('Kafka en la orilla');
   await a.getByRole('button', { name: 'Crear club' }).click();
-  await expect(a.locator('.club-view')).toContainText('Leemos: Kafka en la orilla');
+  // 1.62 (§62.4): la obra está en la pestaña «Lectura»
+  await a.locator('.club-view').getByRole('tab', { name: 'Lectura' }).click();
+  await expect(a.locator('.club-reading__work')).toContainText('Kafka en la orilla');
   // El libro del club no entra en la biblioteca ni cambia estados
   expect(await a.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.map((b) => `${b.id}:${b.status}`).join(','))).toBe(libraryBefore);
+  // Administrar (punto de debate e invitaciones) está en el menú del propietario
+  await a.getByRole('button', { name: 'Opciones del propietario del club' }).click();
+  await a.getByRole('menuitem', { name: 'Administrar el club' }).click();
   await a.getByLabel('Punto de debate').fill('Hasta el capítulo 8');
   await a.locator('.club-view').getByRole('button', { name: 'Guardar' }).click();
   await a.getByRole('button', { name: 'Crear enlace de invitación' }).click();
@@ -224,12 +229,12 @@ test('club: crear, invitar, aceptar con el enlace, revocar y debate con spoilers
   await mock.attach(b, BRUNO);
   await b.goto(`/${link.slice(link.indexOf('#'))}`);
   await expect(b.locator('.club-view')).toContainText('Club del mar', { timeout: 15000 });
-  await expect(b.locator('.club-view')).toContainText('Debatimos: Hasta el capítulo 8');
+  await expect(b.locator('.club-view')).toContainText('Debate: Hasta el capítulo 8');
   expect(await b.evaluate(() => location.hash)).toBe('');
   await b.getByLabel('Mensaje para el club').fill('El capítulo 3 me ha roto');
   await b.locator('.club-view').getByRole('checkbox', { name: 'Contiene spoilers' }).check();
   await b.getByRole('button', { name: 'Publicar' }).click();
-  await expect(b.locator('.club-view .review-card')).toHaveCount(1);
+  await expect(b.locator('.club-view .club-msg')).toHaveCount(1);
   // Ana revoca la invitación: Carla ya no puede usarla
   await a.getByRole('button', { name: 'Revocar' }).click();
   await expect(a.locator('.club-view')).toContainText('Invitación revocada');
@@ -239,9 +244,9 @@ test('club: crear, invitar, aceptar con el enlace, revocar y debate con spoilers
   await expect(c.locator('.invite-toast')).toContainText('no es válida', { timeout: 15000 });
   expect(mock.db.club_members.filter((m) => m.user_id === CARLA.id)).toEqual([]);
   // En el club de Ana, el mensaje de Bruno aparece plegado
-  await a.locator('.club-view').getByRole('button', { name: '← Mis clubes' }).click();
+  await a.locator('.club-view').getByRole('button', { name: 'Mis clubes' }).click();
   await a.getByRole('button', { name: /Club del mar/ }).click();
-  await expect(a.locator('.club-view .review-card')).toContainText('Contiene spoilers');
-  await expect(a.locator('.club-view .review-card')).not.toContainText('me ha roto');
+  await expect(a.locator('.club-view .club-msg')).toContainText('Contiene spoilers');
+  await expect(a.locator('.club-view .club-msg')).not.toContainText('me ha roto');
   for (const p of [a, b, c]) await p.context().close();
 });

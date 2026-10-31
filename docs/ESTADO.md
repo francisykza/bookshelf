@@ -6,10 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.61.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: **1.62.0, bloques 1 a 3 de 4 en un commit local de `main` sin subir** del paquete «salón social y radio» (§62): comunidad
-  con tres pestañas y «Lectores» nuevo; sillones del salón y visita con fachada; radio del rincón. Publicada sigue la 1.61.0. Falta el bloque 4 (clubes); Francisco quiere ver
-  capturas de cada bloque antes de seguir. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
+- **Versión publicada**: 1.62.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: **1.62.0 completa (bloques 1 a 4), publicada** del paquete «salón social y radio» (§62): comunidad
+  con tres pestañas y «Lectores» nuevo; sillones del salón y visita con fachada; radio del rincón; clubes con Lectura / Conversación / Miembros. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
   (incluye `maqueta-146/`), `assets-source/` y `BookShelf-fotogramas-QA/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. **Pendiente de aplicar (1.60)**: `20261031120000_avatares_nuevos.sql` (amplía la
@@ -49,8 +48,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-000. **Paquete «salón social y radio» (1.62, §62), a medias y sin commit.** Hechos los bloques 1–3; falta el **bloque 4,
-   clubes**. Encargo completo en `material-diseno/social-radio/BookShelf-social-radio/` (fuera de git, en este
+000. **Paquete «salón social y radio» (1.62, §62): publicado completo.** Lo que sigue es el resumen del encargo del bloque 4,
+   ya cumplido: Encargo completo en `material-diseno/social-radio/BookShelf-social-radio/` (fuera de git, en este
    ordenador): `PROMPT-CLAUDE.md` apartado 5 y la maqueta `maquetas/04-comunidad.png` (columna derecha). Resumen:
    dentro de un club, pestañas Lectura / Conversación / Miembros conservando lo que ya hay (`ClubTab.jsx`,
    en `src/features/social/components/`); administrar y archivar en un menú del propietario con confirmación (no entre mensajes); redactor
@@ -124,6 +123,19 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-31 · cuenta principal · 1.62.0, bloque 4 (publicada)
+- Hecho el bloque 4, clubes (§62.4): `ClubTab.jsx` (dentro del club, pestañas Lectura / Conversación / Miembros;
+  administrar y archivar en el menú del propietario con confirmación; salir en el de los miembros; conversación en orden
+  de lectura con «Ver mensajes anteriores» arriba, spoilers plegados y redactor fijo abajo; sin adjuntos), `club-162.css`
+  (nueva, importada al final), `PanelShell.jsx` (el velo de la comunidad sigue a `visualViewport` para que el redactor
+  quede por encima del teclado), `mockSupabase.js` (entiende el `or` de la paginación por cursor).
+- Sin migración: la RLS de la entrega 3 ya autoriza en el servidor (solo el propietario archiva, invita y retira).
+- QA: `v162-clubes` (nueva) y la comunidad completa en 320, 390, 430, 1440 y WebKit 390: 155 pasan (las omitidas son
+  por tamaño); tras el último ajuste de estilos, `v162-clubes` y `entrega3` otra vez en los cinco: 30 pasan; Vitest
+  280/280 (con un caso nuevo de RLS: un miembro no archiva); build y oxlint correctos. Teclado simulado, sin iPhone real.
+- Commit del bloque 4 en `main` y subida de los dos commits (bloques 1–3 y 4) a producción a petición de Francisco
+  («súbelo»). Sin aplicar siguen las migraciones de avatares (1.60) y de la sintonía (1.62, preparada).
 
 ### 2026-10-31 · cuenta principal · 1.62.0, bloques 1–3 (commit local, sin subir)
 - A petición de Francisco, commit local en `main` con los bloques 1, 2 y 3 tal como estaban (descritos abajo), **sin

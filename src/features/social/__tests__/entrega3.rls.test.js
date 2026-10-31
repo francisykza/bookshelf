@@ -129,6 +129,9 @@ describe('club de lectura', () => {
 
   it('salir, retirar miembros y archivar', async () => {
     expect(await rejects(as(db, B, (q) => q("update clubs set name = 'mío' where id = $1 returning id", [club])))).toBeNull();
+    // 1.62 (§62.4): archivar es solo del propietario, aunque un miembro lo intente sin pasar por la interfaz
+    expect(await as(db, B, (q) => q("update clubs set status = 'archived' where id = $1 returning id", [club]))).toEqual([]);
+    expect((await as(db, A, (q) => q('select status from clubs where id = $1', [club])))[0].status).toBe('active');
     expect((await as(db, A, (q) => q('select name from clubs where id = $1', [club])))[0].name).toBe('Club del mar');
     // El propietario no puede ser expulsado ni salir como si fuera un miembro
     expect(await as(db, B, (q) => q('delete from club_members where club_id = $1 and user_id = $2 returning user_id', [club, A]))).toEqual([]);

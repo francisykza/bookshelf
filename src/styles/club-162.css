@@ -1,0 +1,460 @@
+/* ── 1.62 · Clubes dentro del cuaderno (SPEC §62.4) ─────────────────────────────────────────────────────────────
+   Maqueta: columna derecha de material-diseno/social-radio/BookShelf-social-radio/maquetas/04-comunidad.png. Dentro de
+   un club: «‹ Mis clubes», nombre con su «…», pestañas Lectura / Conversación / Miembros, mensajes en bocadillos de
+   papel con los spoilers plegados y el redactor fijo abajo (por encima del teclado: el velo social sigue a
+   visualViewport, --vv-top y --vv-h). Sin adjuntos. Paleta de siempre: papel, salvia, terracota y latón. */
+
+/* Con el teclado abierto, el cuaderno cabe en la parte visible y el redactor queda a la vista */
+.panel-veil[data-variant='social'] {
+  top: var(--vv-top, 0px);
+  bottom: auto;
+  height: var(--vv-h, 100dvh);
+}
+
+.panel-veil[data-variant='social'] .social-notebook > .notebook-shell__page {
+  max-height: calc(var(--vv-h, 100dvh) - 20px - 118px * var(--nb) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+/* El club ya está dentro del cuaderno de la comunidad: sin un segundo marco */
+.club-view {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.club-back {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: #5c4836;
+  font: 500 1.05rem/1 'Lora', var(--font-sans);
+  cursor: pointer;
+}
+
+.club-back svg {
+  width: 18px;
+  height: 18px;
+}
+
+.club-view__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -4px;
+}
+
+.club-view__name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #5a2a1e;
+  font: 600 clamp(1.7rem, 7vw, 2.1rem) / 1.1 'Cormorant Garamond', var(--font-display);
+}
+
+.club-view__head .options-menu__toggle,
+.club-msg .options-menu__toggle {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.club-archived {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px dashed rgb(110 78 46 / 0.4);
+  border-radius: 8px;
+}
+
+/* Pestañas del club: tres que reparten el ancho, la elegida en salvia con su costura */
+.club-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid rgb(110 78 46 / 0.32);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f3e9d4, #ebdfc4);
+}
+
+.club-tabs button {
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 4px;
+  border: 0;
+  border-left: 1px solid rgb(110 78 46 / 0.2);
+  background: none;
+  color: var(--social-ink);
+  font: 500 1.12rem/1.1 'Cormorant Garamond', var(--font-display);
+  cursor: pointer;
+}
+
+.club-tabs button:first-child {
+  border-left: 0;
+}
+
+.club-tabs button[aria-selected='true'] {
+  border-radius: 10px;
+  background: linear-gradient(180deg, #6b7a55, #5c6a48);
+  color: #fbf6ea;
+  font-weight: 700;
+  outline: 1.5px dashed rgb(251 246 234 / 0.65);
+  outline-offset: -5px;
+}
+
+.club-tabs button:focus-visible {
+  outline: 2px solid var(--social-brass);
+  outline-offset: -3px;
+}
+
+.club-heading {
+  margin: 0;
+  color: #5a2a1e;
+  font: 600 1.4rem/1.2 'Cormorant Garamond', var(--font-display);
+}
+
+.club-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Lectura */
+.club-reading__work {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgb(110 78 46 / 0.22);
+  border-radius: 10px;
+  background: #fbf6ea;
+}
+
+.club-reading__work span {
+  color: #725b46;
+  font: 600 0.78rem/1.2 'JetBrains Mono', var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.club-reading__work b {
+  font: 600 1.4rem/1.2 'Cormorant Garamond', var(--font-display);
+}
+
+.club-reading__desc {
+  margin: 0;
+  color: #4f3b2c;
+  line-height: 1.45;
+}
+
+.club-reading__point {
+  display: grid;
+  gap: 4px;
+}
+
+.club-reading__point p {
+  margin: 0;
+}
+
+/* Conversación */
+.club-talk__context {
+  display: grid;
+  gap: 2px;
+}
+
+.club-talk__context p {
+  margin: 0;
+  color: #725b46;
+  font: 400 1.05rem/1.3 'Cormorant Garamond', var(--font-display);
+}
+
+.club-older {
+  justify-self: center;
+}
+
+.club-msgs {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.club-msg {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.club-msg .reader-avatar {
+  width: 48px;
+}
+
+.club-msg__main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.club-msg__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin: 0;
+}
+
+.club-msg__who b {
+  font: 600 1.15rem/1.2 'Cormorant Garamond', var(--font-display);
+}
+
+.club-msg__who time,
+.club-msg__who small {
+  color: #8a7a66;
+  font-size: 0.85rem;
+}
+
+.club-msg__bubble {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #efe6d4;
+  color: var(--social-ink);
+  font: 400 1rem/1.45 'Lora', var(--font-sans);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.club-msg[data-mine] .club-msg__bubble {
+  background: #e6e9d6;
+}
+
+/* Spoiler plegado: el bocadillo con un ojo tachado y la acción en texto (no solo un color) */
+.club-msg__spoiler {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  color: #6b2f1f;
+  text-align: left;
+  cursor: pointer;
+}
+
+.club-msg__spoiler svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.club-msg__edit {
+  display: grid;
+  gap: 8px;
+}
+
+/* Redactor fijo al pie de la hoja: el campo, el envío terracota y «Contiene spoilers» */
+.club-composer {
+  position: sticky;
+  z-index: 2;
+  bottom: calc(-1 * max(18px, env(safe-area-inset-bottom)));
+  display: grid;
+  gap: 4px;
+  margin: 8px -14px calc(-1 * max(18px, env(safe-area-inset-bottom)));
+  padding: 10px 14px max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgb(110 78 46 / 0.25);
+  background: #f7efdf;
+  box-shadow: 0 -4px 12px rgb(44 30 20 / 0.08);
+}
+
+.club-composer__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.club-composer__text {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  max-height: 140px;
+  padding: 12px 16px;
+  border-radius: 24px;
+  font-size: 16px;
+  line-height: 1.35;
+  resize: none;
+  field-sizing: content;
+}
+
+.club-composer__send {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #c97b64, #b4644d);
+  color: #fff8ee;
+  box-shadow: 0 3px 8px rgb(110 50 30 / 0.25);
+  cursor: pointer;
+}
+
+.club-composer__send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.club-composer__send svg {
+  width: 22px;
+  height: 22px;
+}
+
+.club-composer__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.club-composer__foot .social-check {
+  align-items: center;
+  font-size: 1rem;
+}
+
+.club-composer__foot input {
+  width: 22px;
+  height: 22px;
+  accent-color: #4f6a3f;
+}
+
+/* Miembros */
+.club-members {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.club-member {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid rgb(110 78 46 / 0.22);
+  border-radius: 10px;
+  background: #fbf6ea;
+}
+
+.club-member__name {
+  display: grid;
+  min-width: 0;
+}
+
+.club-member__name b {
+  overflow: hidden;
+  font: 600 1.2rem/1.2 'Cormorant Garamond', var(--font-display);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.club-member__name small {
+  color: #725b46;
+}
+
+/* Administrar */
+.club-admin {
+  display: grid;
+  gap: 14px;
+}
+
+.club-admin__row {
+  display: flex;
+  gap: 8px;
+}
+
+.club-admin__row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.club-invites {
+  display: grid;
+  gap: 8px;
+}
+
+/* Menús «…» del club: se abren hacia abajo, dentro de la hoja (hacia arriba quedarían bajo las pestañas) */
+.club-view .options-menu {
+  position: relative;
+}
+
+.club-view .options-menu__list {
+  top: calc(100% + 4px);
+  right: 0;
+  bottom: auto;
+  min-width: 220px;
+}
+
+/* Las pestañas del club se quedan arriba mientras se lee la conversación (como en la maqueta) */
+.club-tabs {
+  position: sticky;
+  z-index: 3;
+  top: -16px;
+  box-shadow: 0 6px 10px -8px rgb(44 30 20 / 0.35);
+}
+
+/* «Conversación» entera a 320–430 px */
+.club-tabs button {
+  font-size: clamp(0.98rem, 4.2vw, 1.12rem);
+}
+
+/* El «…» de cada mensaje, discreto (sin borde ni fondo): la conversación manda; el área táctil sigue siendo de 44 px */
+.club-msg .options-menu__toggle {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: #8a7a66;
+}
+
+/* El «…» va en la esquina de la línea del nombre, no en una columna propia: el bocadillo usa todo el ancho (320 px) */
+.club-msg {
+  position: relative;
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+
+.club-msg .reader-avatar {
+  width: 44px;
+}
+
+.club-msg > .options-menu {
+  position: absolute;
+  top: -12px;
+  right: -10px;
+}
+
+.club-msg__who {
+  padding-right: 34px;
+}
+
+.club-tabs button {
+  padding: 0 2px;
+  font-size: clamp(0.9rem, 2.4vw + 0.42rem, 1.12rem);
+}
+
+@media (max-width: 340px) {
+  .club-msg {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .club-msg .reader-avatar {
+    width: 36px;
+  }
+}

@@ -11,7 +11,7 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
 /**
  * 1.59 (SPEC §59.8): parte visible de la pantalla (con el teclado abierto en iOS es menor que la ventana y puede estar
  * desplazada). Se escribe como --vv-top y --vv-h en el propio velo (no en :root, que obligaría a recalcular el estilo de
- * toda la página); solo en los paneles con escritura que lo necesitan (`variant` «log»).
+ * toda la página); solo en los paneles con escritura que lo necesitan (`variant` «log» y, desde la 1.62, «social»).
  */
 function useVisualViewportVars(veilRef, enabled) {
   useEffect(() => {
@@ -35,7 +35,8 @@ function useVisualViewportVars(veilRef, enabled) {
 export function PanelShell({ onClose, label, variant, children }) {
   const ref = useRef(null);
   const veilRef = useRef(null);
-  useVisualViewportVars(veilRef, variant === 'log');
+  // 1.62 (§62.4): también la comunidad, para que el redactor del club quede por encima del teclado
+  useVisualViewportVars(veilRef, variant === 'log' || variant === 'social');
   // El cierre se guarda en una referencia: si el padre re-renderiza (p. ej. el reloj del temporizador cada
   // medio segundo) el efecto no se repite, así no se roba el foco ni se cierran los desplegables abiertos.
   const closeRef = useRef(onClose);

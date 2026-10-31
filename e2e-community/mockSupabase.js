@@ -36,9 +36,44 @@ const DEFAULTS = {
 };
 const OWNER = { profiles: 'user_id', works: 'created_by', public_reviews: 'user_id', libraries: 'user_id', blocks: 'blocker', reports: 'reporter', follows: 'follower', corners: 'user_id', reading_presence: 'user_id', clubs: 'owner', club_members: 'user_id', club_invites: 'created_by', club_messages: 'user_id', collections: 'owner', distinctions: '__admin__' };
 
+/** Parte una lista PostgREST por las comas de primer nivel (respetando los paréntesis de `and(...)`). */
+function splitTop(text) {
+  const out = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of text) {
+    if (ch === '(') depth += 1;
+    if (ch === ')') depth -= 1;
+    if (ch === ',' && depth === 0) {
+      out.push(cur);
+      cur = '';
+    } else cur += ch;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
+/**
+ * 1.62 (§62.4): una condición de `or=(…)`: `col.op.valor` o `and(…)`. Solo `eq` y `lt`, lo que usa la paginación por
+ * cursor de los mensajes del club (las fechas llevan puntos: el valor es todo lo que sigue al operador).
+ */
+function orCondition(row, cond) {
+  if (cond.startsWith('and(')) return splitTop(cond.slice(4, -1)).every((c) => orCondition(row, c));
+  const [col, op, ...rest] = cond.split('.');
+  const val = rest.join('.');
+  const cell = row[col] == null ? null : String(row[col]);
+  if (op === 'eq') return cell === val;
+  if (op === 'lt') return cell != null && cell < val;
+  return true;
+}
+
 function matches(row, params) {
   for (const [k, v] of params) {
-    if (['select', 'order', 'limit', 'on_conflict', 'or', 'columns'].includes(k)) continue;
+    if (k === 'or') {
+      if (!splitTop(v.replace(/^\(|\)$/g, '')).some((c) => orCondition(row, c))) return false;
+      continue;
+    }
+    if (['select', 'order', 'limit', 'on_conflict', 'columns'].includes(k)) continue;
     const [op, ...rest] = v.split('.');
     const val = rest.join('.');
     const cell = row[k] == null ? null : String(row[k]);
