@@ -70,3 +70,17 @@ export function shelfSpines(count) {
     };
   });
 }
+
+let warmed = false;
+/**
+ * 1.59 (SPEC §59.6): al tocar «Visitar rincón» se adelanta lo que la visita necesita primero (su código y la casa ya
+ * decodificada), para que al abrirse no haya ni un instante de pantalla vacía. Una sola vez por sesión.
+ */
+export function warmVisit() {
+  if (warmed || typeof Image === 'undefined') return;
+  warmed = true;
+  import('./components/ReaderVisit').catch(() => {});
+  const img = new Image();
+  img.src = VISIT_MEDIA.house;
+  img.decode?.().catch(() => {});
+}

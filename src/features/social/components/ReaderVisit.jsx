@@ -6,15 +6,20 @@
 // el último fotograma se queda a la vista hasta que la habitación está decodificada. Etapas en el historial:
 // habitación → libros/libro (Atrás y Escape cierran de uno en uno); la entrada sustituye su entrada de historial, así que
 // volver desde la habitación lleva al origen y recargar no repite el vídeo.
+// 1.59 (SPEC §59.6): nunca una pantalla oscura. Hasta que la primera imagen (casa o habitación) está decodificada, la
+// visita no tapa lo que había (la escena anterior sigue a la vista); el vídeo lleva la casa como póster y solo se
+// muestra cuando el navegador ha presentado su primer fotograma.
 import { ArrowLeft, BookOpen, UserRound } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../../components/panels/PanelShell';
+import { avatarById } from '../../../domain/avatars';
 import { spineColor } from '../../../domain/books';
 import { useReducedMotion } from '../../../hooks/useReducedMotion';
 import { useLibrary } from '../../../state/useLibrary';
 import { useCommunity } from '../hooks/useCommunity';
 import { useReaderCorner } from '../hooks/useReaderCorner';
+import { SCENES, sceneOf } from '../huellas';
 import { currentTitle, sharedBooks } from '../visit';
 import { ROOM_SHELF, VISIT_H, VISIT_MEDIA, VISIT_W, shelfSpines } from '../visitScene';
 import { SharedBooksSheet, VisitBookSheet } from './VisitBookSheet';
@@ -22,6 +27,8 @@ import { SharedBooksSheet, VisitBookSheet } from './VisitBookSheet';
 /** Espera máxima a que el vídeo empiece a moverse; y a que avance si se queda parado. Después, la habitación. */
 const START_LIMIT = 6000;
 const STALL_LIMIT = 4000;
+/** Si la primera imagen tarda más, la visita se muestra igualmente (con su fondo): nunca se espera indefinidamente. */
+const SHOW_LIMIT = 1500;
 
 const pct = (v) => `${(v * 100).toFixed(3)}%`;
 const zone = (z) => ({ left: pct(z.x0), top: pct(z.y0), width: pct(z.x1 - z.x0), height: pct(z.y1 - z.y0) });
@@ -42,11 +49,34 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
   const alias = data?.profile?.alias ?? '';
   const shared = useMemo(() => (data ? sharedBooks({ ownerId: userId, corner: data.corner, collections: data.collections }) : { featured: [], all: [] }), [data, userId]);
   const ready = corner.status === 'ready' && Boolean(data?.profile);
+  // Lo que «Ver perfil» pintará primero (su rincón ilustrado y su avatar) se adelanta: el perfil no llega por fases
+  useEffect(() => {
+    if (!ready) return;
+    const art = [avatarById(data.profile.avatar_id)?.image, data.corner?.visible ? `${SCENES[sceneOf(data.corner.scene)].src}-768.webp` : null];
+    for (const src of art.filter(Boolean)) {
+      const img = new Image();
+      img.src = src;
+    }
+  }, [ready, data]);
   // Fase de la entrada (solo en la etapa «casa»): espera (o preparando, si ya hay vídeo) → entrando → fin
   const [phase, setPhase] = useState('espera');
   const [roomShown, setRoomShown] = useState(stage === 'habitacion');
   const videoRef = useRef(null);
   const done = useRef(stage === 'habitacion');
+  // La visita se pinta cuando su primera imagen ya está decodificada (antes, se ve la escena de la que se viene)
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const show = () => alive && setShown(true);
+    const limit = setTimeout(show, SHOW_LIMIT);
+    decodeImage(stage === 'habitacion' || reduced ? VISIT_MEDIA.room : VISIT_MEDIA.house).then(show);
+    return () => {
+      alive = false;
+      clearTimeout(limit);
+    };
+    // Solo la primera imagen de esta visita
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Montada de verdad (StrictMode monta, desmonta y vuelve a montar: no basta con marcar «hecho» al desmontar)
   const alive = useRef(false);
 
@@ -106,10 +136,12 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
       clearTimeout(stall);
       stall = setTimeout(fallback, STALL_LIMIT);
     };
+    // El vídeo se enseña con su primer fotograma ya presentado (antes, la casa: también es su póster)
     const onPlaying = () => {
       clearTimeout(start);
-      setPhase('entrando');
       watch();
+      if (typeof v.requestVideoFrameCallback === 'function') v.requestVideoFrameCallback(() => !over && setPhase('entrando'));
+      else setPhase('entrando');
     };
     const onEnded = () => {
       over = true;
@@ -167,7 +199,7 @@ export function ReaderVisit({ userId, stage, select, onEnter, onSelect, onBack, 
 
   return (
     <PanelShell onClose={onBack} label={alias ? `Visita al rincón de ${alias}` : 'Visita a un rincón'} variant="visit">
-      <div className="reader-visit" data-stage={inRoom ? 'habitacion' : 'casa'} data-phase={play ? 'preparando' : phase} data-guides={state.settings.showGuides ? 'on' : 'off'} data-reduced={reduced || undefined}>
+      <div className="reader-visit" data-shown={shown || undefined} data-stage={inRoom ? 'habitacion' : 'casa'} data-phase={play ? 'preparando' : phase} data-guides={state.settings.showGuides ? 'on' : 'off'} data-reduced={reduced || undefined}>
         <Scene layer={roomShown || reduced ? 'room' : phase === 'entrando' ? 'video' : 'house'} playing={playing} videoRef={videoRef}>
           {inRoom && ready && <Shelf alias={alias} shared={shared} reduced={reduced} onSelect={onSelect} />}
         </Scene>
@@ -216,7 +248,7 @@ function Scene({ layer, playing, videoRef, children }) {
         <img className="reader-visit__bg" data-on src={VISIT_MEDIA.house} alt="" width={VISIT_W} height={VISIT_H} decoding="async" />
         {/* La habitación se prepara bajo el vídeo: en el relevo ya está pintada y sustituye al último fotograma sin hueco */}
         {(playing || layer === 'room') && <img className="reader-visit__bg" data-on={layer === 'room' || undefined} src={VISIT_MEDIA.room} alt="" width={VISIT_W} height={VISIT_H} decoding="async" />}
-        {playing && <video ref={videoRef} className="reader-visit__video" data-on={layer === 'video' || undefined} preload="none" muted playsInline disablePictureInPicture disableRemotePlayback aria-hidden="true" tabIndex={-1} />}
+        {playing && <video ref={videoRef} className="reader-visit__video" data-on={layer === 'video' || undefined} poster={VISIT_MEDIA.house} preload="none" muted playsInline disablePictureInPicture disableRemotePlayback aria-hidden="true" tabIndex={-1} />}
         {children}
       </div>
     </div>

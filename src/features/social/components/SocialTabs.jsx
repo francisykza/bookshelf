@@ -14,6 +14,7 @@ import { fetchProfiles } from '../services/community';
 import { fetchActivity, fetchCorner, saveCorner } from '../services/connections';
 import { sitDownNow, standUpNow, usePresence } from '../hooks/usePresence';
 import { ReaderProfileView } from './ReaderProfile';
+import { warmVisit } from '../visitScene';
 import { SectionIcon } from '../../../components/SectionIcon';
 import { CollectionsEditor, HuellasEditor } from './HuellasEditor';
 
@@ -154,18 +155,24 @@ export function ReadersTab({ onVisit = null }) {
     if (ready && following === null) loadFollowing().catch((e) => setFailure(e.message));
   }, [ready, following, loadFollowing]);
 
+  // 1.59 (SPEC §59.9): los nombres de quien sigues llegan en cuanto están (sin esperar a la actividad), en paralelo con
+  // la actividad; de sus autores solo se piden los que faltan (los perfiles ya cargados vienen de la caché)
   useEffect(() => {
     if (!ready || following === null) return undefined;
     let alive = true;
-    Promise.all([fetchProfiles(following), fetchActivity(following)])
-      .then(async ([p, a]) => {
+    const fail = (e) => alive && setFailure(e.message);
+    fetchProfiles(following)
+      .then((p) => alive && setProfiles((prev) => ({ ...prev, ...p })))
+      .catch(fail);
+    fetchActivity(following)
+      .then(async (a) => {
         const authors = await fetchProfiles(a.reviews.map((r) => r.user_id));
         if (alive) {
-          setProfiles({ ...p, ...authors });
+          setProfiles((prev) => ({ ...prev, ...authors }));
           setActivity(a);
         }
       })
-      .catch((e) => alive && setFailure(e.message));
+      .catch(fail);
     return () => {
       alive = false;
     };
@@ -196,13 +203,20 @@ export function ReadersTab({ onVisit = null }) {
             <li key={id}>
               <button type="button" className="follow-row" onClick={() => setViewing(id)}>
                 <ReaderAvatar avatarId={profiles[id]?.avatar_id} alias={profiles[id]?.alias ?? ''} size="list" decorative />
-                <span className="follow-row__name">{profiles[id]?.alias ?? 'Lector'}</span>
+                {/* Mientras llega su nombre, un hueco discreto (nunca un «Lector» genérico que parezca otra persona) */}
+                {id in profiles ? (
+                  <span className="follow-row__name">{profiles[id]?.alias ?? 'Perfil no disponible'}</span>
+                ) : (
+                  <span className="follow-row__name follow-row__name--loading">
+                    <span className="sr-only-focus">Cargando su nombre…</span>
+                  </span>
+                )}
                 <span className="follow-row__go">Ver su rincón</span>
                 <ChevronRight aria-hidden="true" />
               </button>
               {/* 1.58 (SPEC §56): visita opcional a su casa; el perfil de siempre sigue en el botón de arriba */}
               {onVisit && profiles[id] && (
-                <button type="button" className="follow-row__visit" onClick={() => onVisit(id)} aria-label={`Visitar el rincón de ${profiles[id].alias}`}>
+                <button type="button" className="follow-row__visit" onPointerDown={warmVisit} onFocus={warmVisit} onClick={() => onVisit(id)} aria-label={`Visitar el rincón de ${profiles[id].alias}`}>
                   Visitar rincón
                 </button>
               )}
@@ -212,7 +226,11 @@ export function ReadersTab({ onVisit = null }) {
       </section>
       <section aria-label="Actividad" className="readers">
         <h3 className="social-title">Actividad</h3>
-        {activity === null && <p className="social-note">Cargando…</p>}
+        {activity === null && !failure && (
+          <p className="social-note" role="status">
+            Cargando su actividad…
+          </p>
+        )}
         {activity && activity.reviews.length === 0 && activity.clubs.length === 0 && <p className="social-note">Nada nuevo por aquí.</p>}
         <ul className="reader-rows">
           {activity?.reviews.map((r) => {

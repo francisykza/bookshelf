@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.58.2 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.59.0 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -3917,3 +3917,39 @@ Detalle, causas comprobadas y aceptación en `docs/qa/video-hotfix.md`; capturas
   desplegable, panel); esperas por estado en lugar de tiempos fijos en `v123 pulsación`, `v128 reseña` y `panorama 14`.
 - **Limitación del entorno**: `v149` en `webkit-390x844` falla porque el WebKit de Playwright en Windows no dibuja bien
   `matrix3d` (las baldas salen inclinadas). Ya documentado en `BedBook.jsx`; no se desactiva la comprobación.
+
+## 59. Biblioteca grande en el móvil y errores visuales del vídeo del iPhone (1.59.0)
+
+Origen: grabación `VID-20261031-WA0014` (iPhone, 384 × 832, 231,7 s) con más de 1.000 libros. Causas, mediciones y
+criterios en `docs/qa/iphone-large-library.md`; script de medición `scripts/perf-large-library.mjs`.
+
+1. **Medir** (§59.1): `src/perf/PerfProfiler.jsx` (React Profiler solo en desarrollo, `window.__bsPerf`) y el script de
+   medición con 100, 1.000 y 1.500 libros sintéticos (con portada, sin portada y con URL rota), Chromium 390 × 844, CPU
+   ×4, mismas condiciones antes y después.
+2. **Biblioteca** (§59.2): con la biblioteca cerrada no se monta ningún libro (antes, los 1.500 y sus portadas desde el
+   arranque). Escaparate con **filas virtuales** (`CoverShelves`, desde 25 filas por balda): se montan las filas a 1,25
+   pantallas de la vista y las dos primeras de cada balda (miden la fila con encabezado y una normal); las demás son la
+   misma balda pintada, vacía y con su alto exacto (`.lib-shelf--ghost`). El hueco de cada libro es 2:3 de su columna:
+   el alto de una fila no depende de las imágenes. Lomos con **ventana horizontal** (`useSpineWindow`, desde 120 lomos):
+   anchos deterministas (`spineW`) y dos huecos con su ancho exacto. Búsqueda con `useDeferredValue`. Posición al volver
+   de una ficha y al volver a entrar desde la habitación. El dado lleva a la vista un libro aún no montado.
+3. **Portadas** (§59.3): una sola descarga por URL en la sesión (`watchCover`, fuera del ciclo de vida de los
+   componentes): una URL que falla no se vuelve a pedir y una que llegó se pinta al momento al remontarse. Mientras
+   llega, la tapa lisa del color del lomo (`.cover-img--wait`) con la geometría de la portada; si tarda más de 6 s o
+   falla, la cubierta tipográfica. La portada ocupa siempre 2:3 (`contain`: completa, sin estirar). El lomo repite la
+   portada solo cuando ya llegó (antes, cada lomo la pedía como fondo CSS, sin carga diferida). El color del lomo a
+   partir de la portada (otra descarga con CORS) solo en la vista de lomos.
+4. **Figuras** (§59.4): en el perfil de otra persona, la caja de cada figura tiene ancho y alto definidos; en WebKit
+   quedaba con ancho 0 (nombre sin imagen). Una imagen de figura que no carga muestra su silueta de papel.
+5. **Nube** (§59.5): la biblioteca es un documento por cuenta (sin paginación posible ni límite de filas); se pide antes
+   solo `updated_at` y el documento entero únicamente si cambió; una copia sin lista de libros se rechaza; un cambio local
+   hecho mientras se descargaba cuenta como pendiente (nunca se pisa en silencio).
+6. **Visita** (§59.6): hasta que su primera imagen está decodificada, la visita no tapa la escena anterior (velo y fondo
+   transparentes, escena a opacidad 0; como mucho 1,5 s); el vídeo lleva la casa como póster y se muestra con su primer
+   fotograma presentado (`requestVideoFrameCallback`). «Visitar rincón» adelanta el código y la casa al tocarlo.
+7. **Aviso de lectura** (§59.7): «Deshacer» caduca 8 s después del registro (`at`), aunque un panel lo oculte.
+8. **Registro con teclado** (§59.8): el velo del registro sigue a `visualViewport` (`--vv-top`, `--vv-h`); el campo se
+   coloca desplazando el panel por dentro, no la página.
+9. **Perfil social** (§59.9): «Libros · N» en mitad del mueble (no bajo «Está leyendo…»); los nombres de quien sigues
+   llegan sin esperar a la actividad y, mientras, un trazo de papel (no «Lector»); el rincón cargado en la visita se
+   reutiliza un minuto en el perfil (sin repetir sus siete consultas) y la visita adelanta su escena y su avatar.

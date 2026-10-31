@@ -1,0 +1,133 @@
+/* ── 1.59 · Biblioteca grande en el móvil (SPEC §59) ───────────────────────────────────────────────────────────
+   Geometría fija antes de que lleguen las portadas: cada hueco del escaparate mide 2:3 de su columna y la portada
+   ocupa siempre 2:3 de su libro (completa, sin estirar: `contain` sobre el color de su lomo). Así una fila mide lo
+   mismo cargando, cargada o con la imagen rota, y la virtualización por filas puede contar con ese alto. */
+
+.library .lib-shelf .book-slot {
+  height: auto;
+  aspect-ratio: 2 / 3;
+}
+
+.pbook__cover .cover-img {
+  aspect-ratio: 2 / 3;
+  height: auto;
+  object-fit: contain;
+  background: var(--spine);
+}
+
+/* Fila aún no montada: la misma balda pintada, vacía y con su alto exacto (nunca un hueco sin pintar) */
+.lib-shelf--ghost {
+  pointer-events: none;
+}
+
+/* ── Figuras expuestas en el perfil de otra persona (§59.4): la caja necesita un ancho y un alto definidos. Dentro de
+   un elemento centrado sin ancho propio, el 100 % de alto y la proporción no bastan en WebKit (la caja quedaba con ancho
+   0 y la imagen sin dibujar: se veía el nombre sin figura). */
+.huella-figures__art {
+  width: 100%;
+}
+
+.huella-figures__art > .fig-art {
+  width: 100%;
+  height: 88px;
+}
+
+/* Una imagen de figura que no carga no deja un hueco vacío: su silueta de papel con un ornamento */
+.crop-img[data-failed] {
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  border: 1px solid rgb(114 91 70 / 0.35);
+  border-radius: 6px;
+  background: #efe3c9;
+  color: #8a6a45;
+}
+
+.crop-img[data-failed]::before {
+  content: '❖';
+  font-size: 22px;
+}
+
+.crop-img[data-failed] > img {
+  display: none;
+}
+
+/* ── Visita (§59.6): mientras se decodifica su primera imagen, la visita no tapa la escena de la que se viene ── */
+.panel-veil[data-variant='visit'] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.reader-visit-wait,
+.panel-veil[data-variant='visit']:has(.reader-visit:not([data-shown])),
+.reader-visit:not([data-shown]) {
+  background: transparent;
+}
+
+.reader-visit:not([data-shown]) .reader-visit__stage {
+  opacity: 0;
+}
+
+.reader-visit[data-shown] .reader-visit__stage {
+  animation: rv-show 180ms ease both;
+}
+
+.reader-visit[data-reduced] .reader-visit__stage {
+  animation: none;
+}
+
+@keyframes rv-show {
+  from {
+    opacity: 0;
+  }
+}
+
+/* «Libros · N» en mitad del mueble: nunca bajo «Está leyendo…» ni los botones del pie (§59.9) */
+.reader-visit__shelf {
+  align-items: center;
+  padding: 0 4px;
+}
+
+/* ── Lectores que sigo (§59.9): mientras llega el nombre, un trazo de papel (no «Lector») ── */
+.follow-row__name--loading {
+  display: inline-block;
+  width: 7.5em;
+  max-width: 60%;
+  height: 0.85em;
+  border-radius: 6px;
+  background: rgb(114 91 70 / 0.16);
+}
+
+/* ── Registrar lectura con el teclado abierto (§59.8): el velo sigue a la parte visible de la pantalla (visualViewport)
+   en vez de a la ventana entera; el panel cabe en ella y se desplaza por dentro. Sin medidas fijas de un móvil. */
+.panel-veil[data-variant='log'] {
+  top: var(--vv-top, 0px);
+  bottom: auto;
+  height: var(--vv-h, 100dvh);
+}
+
+.panel--log {
+  max-height: calc(var(--vv-h, 100dvh) - max(16px, env(safe-area-inset-top)) - 12px);
+  overscroll-behavior: contain;
+}
+
+/* Portada aún en camino: la tapa lisa del color de su lomo, con la geometría de la portada (§59.3) */
+.cover-img--wait {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  background: var(--spine, #cdb791);
+}
+
+/* Indicador del audiolibro en la esquina del estuche, fuera del arte, ahora que la portada tiene su alto real (§59.3) */
+.pbook[data-binding='case'] .pbook__audio {
+  right: -10px;
+  bottom: -10px;
+}
+
+/* Lomos aún no montados de una balda larga: hueco con su ancho exacto (§59.2) */
+.spine-gap {
+  flex: none;
+  align-self: stretch;
+  pointer-events: none;
+}

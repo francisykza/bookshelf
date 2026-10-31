@@ -78,7 +78,8 @@ test('librería (1.43.0): libros completos de tres en tres sobre su balda, sin e
       heads,
       labels: document.querySelectorAll('.library .book-label').length,
       plaques: document.querySelectorAll('.library .hanging-plaque').length,
-      parts: book ? ['.pbook__cover img, .pbook__cover .gen-cover', '.pbook__shadow'].map((s) => Boolean(book.querySelector(s))) : [],
+      // 1.59: mientras llega la imagen, la tapa en espera (.cover-img--wait) con la misma geometría
+      parts: book ? ['.pbook__cover .cover-img, .pbook__cover .gen-cover', '.pbook__shadow'].map((s) => Boolean(book.querySelector(s))) : [],
       named: [...document.querySelectorAll('.library [data-book-id]')].every((b) => (b.getAttribute('aria-label') ?? '').includes(', de ')),
       overflowX: document.documentElement.scrollWidth - vw,
       cam: getComputedStyle(document.querySelector('.library__case')).transform,

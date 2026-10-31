@@ -10,7 +10,7 @@ import { AccountPanel } from './components/panels/AccountPanel';
 import { LibrarianPanel } from './components/panels/LibrarianPanel';
 import { LaptopPanel } from './components/panels/LaptopPanel';
 import { PomodoroTray } from './components/panels/PomodoroTray';
-import { LogUndoToast, ReadingLogSheet } from './components/panels/ReadingLogSheet';
+import { LogUndoToast, ReadingLogSheet, UNDO_MS } from './components/panels/ReadingLogSheet';
 import { describeEntry } from './domain/reading';
 import { ReviewSheet } from './components/panels/ReviewSheet';
 import { dayKey } from './domain/dates';
@@ -23,6 +23,7 @@ import { RoomCorner } from './components/room/RoomCorner';
 import { SocialRoom } from './components/room/SocialRoom';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
+import { PerfProfiler } from './perf/PerfProfiler';
 import { useReadingTimer } from './hooks/useReadingTimer';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import { useOnboarding } from './hooks/useOnboarding';
@@ -104,7 +105,13 @@ function Sanctuary() {
   const [askPages, setAskPages] = useState(false);
   // Último registro hecho desde el libro de la cama: «Deshacer» lo revierte entero (registro, posición y sellos)
   const [undoLog, setUndoLog] = useState(null);
-  const dismissUndo = useCallback(() => setUndoLog(null), []);
+  // 1.59 (SPEC §59.7): la caducidad cuenta desde el registro (`at`), no desde que el aviso se monta: abrir y cerrar un
+  // panel (que lo oculta) ya no lo hace reaparecer ni reinicia sus 8 s
+  useEffect(() => {
+    if (!undoLog) return undefined;
+    const id = setTimeout(() => setUndoLog((u) => (u === undoLog ? null : u)), Math.max(0, undoLog.at + UNDO_MS - Date.now()));
+    return () => clearTimeout(id);
+  }, [undoLog]);
   const undoLastLog = () => {
     if (!undoLog) return;
     actions.revertLog(undoLog.entry.id, undoLog.before, undoLog.figuresBefore);
@@ -266,6 +273,7 @@ function Sanctuary() {
         )}
       />
       <InviteHandler onJoined={(clubId) => openPanel({ type: 'social', tab: 'club', id: clubId })} />
+      <PerfProfiler id="library">
       <ShelfView
         phase={phase}
         onTransitionEnd={onTransitionEnd}
@@ -279,8 +287,9 @@ function Sanctuary() {
           openPanel({ type: 'vault', id });
         }}
       />
+      </PerfProfiler>
 
-      {panel?.type === 'book' && <BookDetailModal key={panel.id} bookId={panel.id} initialPage={panel.tab} onClose={close} onSwitch={(id, tab) => switchPanel({ type: 'book', id, ...(tab ? { tab } : null) })} timer={timer} soundOn={settings.sound} onToggleSound={toggleSound} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />}
+      {panel?.type === 'book' && <PerfProfiler id="book"><BookDetailModal key={panel.id} bookId={panel.id} initialPage={panel.tab} onClose={close} onSwitch={(id, tab) => switchPanel({ type: 'book', id, ...(tab ? { tab } : null) })} timer={timer} soundOn={settings.sound} onToggleSound={toggleSound} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} /></PerfProfiler>}
       {panel?.type === 'laptop' && (
         <LaptopPanel
           onClose={close}
@@ -306,14 +315,14 @@ function Sanctuary() {
             // Si termina el libro, su reseña sustituye a esta vista (onComplete): no se cierra aquí
             if (meta.completes) return;
             const d = describeEntry(entry);
-            setUndoLog({ entry, before: meta.before, figuresBefore: meta.figuresBefore, text: d.advance ?? d.position ?? 'guardada' });
+            setUndoLog({ entry, before: meta.before, figuresBefore: meta.figuresBefore, text: d.advance ?? d.position ?? 'guardada', at: Date.now() });
             close();
           }}
           // Si el registro termina el libro, su reseña sustituye a la vista de registro (como en la ficha)
           onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })}
         />
       )}
-      {!panel && <LogUndoToast item={undoLog} onUndo={undoLastLog} onDismiss={dismissUndo} />}
+      {!panel && <LogUndoToast item={undoLog} onUndo={undoLastLog} />}
       {panel?.type === 'review' &&<ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel(panel.tab === 'book' ? { type: 'book', id: panel.id } : { type: 'laptop', tab: 'calendar', select: panel.select })} />}
       {panel?.type === 'vault' && (
         <FiguresVaultModal
@@ -396,7 +405,9 @@ export default function App() {
     <LibraryProvider>
       <CloudProvider>
         <CommunityProvider>
-          <Sanctuary />
+          <PerfProfiler id="app">
+            <Sanctuary />
+          </PerfProfiler>
         </CommunityProvider>
       </CloudProvider>
     </LibraryProvider>

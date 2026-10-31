@@ -17,7 +17,7 @@ import { ReviewCard } from '../../reviews/ReadersPanel';
 import { DISTINCTIONS, MEMORY_OBJECTS, savedCollection } from '../huellas';
 import { AddToPending } from './AddToPending';
 import { useCommunity } from '../hooks/useCommunity';
-import { useReaderCorner } from '../hooks/useReaderCorner';
+import { forgetReaderCorner, useReaderCorner } from '../hooks/useReaderCorner';
 import { blockUser } from '../services/community';
 import { CornerScene, MemoryObject } from './CornerScene';
 import { CommunityGate } from './SocialHub';
@@ -203,6 +203,7 @@ export function ReaderProfileView({ userId, onClose }) {
       onToggleFollow={(next) => community.setFollow(userId, next)}
       onBlock={async () => {
         await blockUser(userId);
+        forgetReaderCorner(userId);
         onClose?.();
       }}
     />

@@ -2,7 +2,7 @@
 // la caja recortada por los vértices reales de su contorno (sin la mesa ni el fondo de la foto), la figura
 // desprecintada solo si existe un asset propio con transparencia (entero, sin máscaras), las piezas del
 // blíster y la mini-figura del pin. Sin asset transparente se muestra la caja (ruta legacy).
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { shownDisplay } from './figureDisplay';
 
 /** Rectángulo que envuelve una lista de puntos. */
@@ -20,14 +20,17 @@ const pct = (pts, c) => pts.map(([x, y]) => `${(((x - c.x) / c.w) * 100).toFixed
  */
 export function CroppedImg({ src, img, crop, clip, className = '', round = false }) {
   const c = crop ?? { x: 0, y: 0, ...img };
+  // 1.59 (SPEC §59.4): si la imagen no llega, su silueta de papel en vez de un hueco vacío
+  const [failed, setFailed] = useState(null);
   const style = useMemo(() => {
     const st = { aspectRatio: `${c.w} / ${c.h}` };
     if (clip) st.clipPath = `polygon(${pct(clip, c)})`;
     return st;
   }, [c, clip]);
   return (
-    <span className={`crop-img ${round ? 'crop-img--round' : ''} ${className}`} style={style}>
+    <span className={`crop-img ${round ? 'crop-img--round' : ''} ${className}`} style={style} data-failed={failed === src || undefined}>
       <img
+        onError={() => setFailed(src)}
         src={src}
         alt=""
         loading="lazy"

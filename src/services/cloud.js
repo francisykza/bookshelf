@@ -38,12 +38,25 @@ export async function signOut() {
   await sb?.auth.signOut({ scope: 'local' });
 }
 
-/** La fila del usuario: { data, updated_at } o null si aún no hay nada guardado. */
+/**
+ * La fila del usuario: { data, updated_at } o null si aún no hay nada guardado. La biblioteca es UN documento (una fila
+ * por cuenta), así que el límite de filas por respuesta de la API no la recorta; aun así, una copia sin su lista de
+ * libros se rechaza (nunca se toma una respuesta incompleta por una biblioteca vacía).
+ */
 export async function fetchLibrary(userId) {
   const sb = await getClient();
   const { data, error } = await sb.from(TABLE).select('data, updated_at').eq('user_id', userId).maybeSingle();
   if (error) throw error;
+  if (data && !Array.isArray(data.data?.books)) throw new Error('La copia de la nube ha llegado incompleta; no se ha aplicado.');
   return data;
+}
+
+/** Solo la fecha de la última escritura (unos bytes): para saber si hace falta bajar la biblioteca entera. */
+export async function fetchLibraryStamp(userId) {
+  const sb = await getClient();
+  const { data, error } = await sb.from(TABLE).select('updated_at').eq('user_id', userId).maybeSingle();
+  if (error) throw error;
+  return data?.updated_at ?? null;
 }
 
 /**

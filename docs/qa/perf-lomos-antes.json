@@ -1,0 +1,112 @@
+{
+  "at": "2026-10-31T15:03:07.720Z",
+  "cpuThrottle": 4,
+  "viewport": "390x844@2",
+  "results": [
+    {
+      "books": 1500,
+      "loadToRoomMs": 4160,
+      "room": {
+        "mountedBooks": 0,
+        "coverRequests": 0,
+        "renders": {
+          "library": {
+            "commits": 4,
+            "ms": 61.59999990463257
+          },
+          "app": {
+            "commits": 6,
+            "ms": 610.0000009536743
+          }
+        }
+      },
+      "openLibraryMs": 6749,
+      "library": {
+        "mountedBooks": 1500,
+        "coverRequestsOnOpen": 30,
+        "renders": {
+          "library": {
+            "commits": 19,
+            "ms": 3538.6999974250793
+          },
+          "app": {
+            "commits": 19,
+            "ms": 3726.6999974250793
+          }
+        }
+      },
+      "filterReadMs": 1221,
+      "filterAllMs": 3946,
+      "filterRenders": {
+        "library": {
+          "commits": 4,
+          "ms": 2898
+        },
+        "app": {
+          "commits": 4,
+          "ms": 2898
+        }
+      },
+      "searchKeyMs": {
+        "avg": 1511,
+        "max": 2099
+      },
+      "searchRenders": {
+        "library": {
+          "commits": 15,
+          "ms": 4445
+        },
+        "app": {
+          "commits": 15,
+          "ms": 4445
+        }
+      },
+      "searchMountedBooks": 125,
+      "scroll": {
+        "steps": 1,
+        "totalMs": 14,
+        "worstFrameMs": 4,
+        "framesWithoutShelf": 1,
+        "mountedAtEnd": 125
+      },
+      "openBookMs": 837,
+      "openBookRenders": {
+        "library": {
+          "commits": 1,
+          "ms": 218
+        },
+        "app": {
+          "commits": 1,
+          "ms": 406
+        },
+        "book": {
+          "commits": 1,
+          "ms": 115
+        }
+      },
+      "openDiaryMs": 222,
+      "closeBookMs": 490,
+      "closeBookRenders": {
+        "library": {
+          "commits": 1,
+          "ms": 224
+        },
+        "app": {
+          "commits": 1,
+          "ms": 294
+        },
+        "book": {
+          "commits": 0,
+          "ms": 0
+        }
+      },
+      "backToRoomMs": 3482,
+      "coverRequestsTotal": {
+        "ok": 47,
+        "fail": 17
+      },
+      "storageBytes": 795373,
+      "stringifyMs": 3.2
+    }
+  ]
+}

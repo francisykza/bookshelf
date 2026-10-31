@@ -6,7 +6,7 @@
 // - Portadas de Open Library / Google Books: caché y refresco por detrás.
 // - Nada de Supabase ni de otros orígenes; nunca se guardan respuestas fallidas.
 const PREFIX = 'bookshelf-';
-const VERSION = `${PREFIX}v1.58.2`;
+const VERSION = `${PREFIX}v1.59.0`;
 const COVERS = `${VERSION}-covers`;
 // Fase 1 (1.21.0): las dos ilustraciones nuevas del panorama. `/cozy-book-room.jpg` sigue publicado para una
 // sesión abierta con la versión anterior, pero ya no se precarga.

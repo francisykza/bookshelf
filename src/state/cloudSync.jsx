@@ -3,7 +3,7 @@
 // dispositivo haya guardado al volver a la app y, si hay dos versiones distintas, pregunta cuál quedarse.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { activeOwnedCount } from '../domain/figures';
-import { cloudEnabled, fetchLibrary, getClient, saveLibrary, signOut as cloudSignOut } from '../services/cloud';
+import { cloudEnabled, fetchLibrary, fetchLibraryStamp, getClient, saveLibrary, signOut as cloudSignOut } from '../services/cloud';
 import { DEVICE_SETTINGS, hydrate, useLibrary } from './useLibrary';
 
 const META_KEY = 'bookshelf:sync';
@@ -128,6 +128,14 @@ export function CloudProvider({ children }) {
 
   const runSync = useCallback(
     async (u) => {
+      // 1.59 (SPEC §59.5): con una cuenta ya sincronizada aquí, primero solo la fecha; la biblioteca entera (con más de
+      // 1.000 libros, cientos de kB) se baja únicamente si otro dispositivo ha guardado algo desde entonces
+      const known = metaRef.current;
+      if (known.userId === u.id && known.syncedAt && (await fetchLibraryStamp(u.id)) === known.syncedAt) {
+        if (metaRef.current.dirty || snapshot(stateRef.current) !== snapRef.current) return upload(u, known.syncedAt);
+        setStatus('synced');
+        return undefined;
+      }
       const remote = await fetchLibrary(u.id);
       const meta = metaRef.current;
       if (meta.userId !== u.id) {
@@ -139,7 +147,8 @@ export function CloudProvider({ children }) {
       }
       if (!remote) return upload(u, null);
       if (remote.updated_at !== meta.syncedAt) {
-        if (meta.dirty) {
+        // También es un cambio local el que se hizo MIENTRAS se descargaba (aún sin marcar): nunca se pisa en silencio
+        if (meta.dirty || snapshot(stateRef.current) !== snapRef.current) {
           setConflict({ remote, reason: 'both' });
           setStatus('conflict');
           return undefined;

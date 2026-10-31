@@ -1,0 +1,322 @@
+{
+  "at": "2026-10-31T15:38:01.696Z",
+  "cpuThrottle": 4,
+  "viewport": "390x844@2",
+  "results": [
+    {
+      "books": 100,
+      "loadToRoomMs": 4197,
+      "room": {
+        "mountedBooks": 0,
+        "coverRequests": 0,
+        "renders": {
+          "library": {
+            "commits": 4,
+            "ms": 62.80000019073486
+          },
+          "app": {
+            "commits": 6,
+            "ms": 634.100001335144
+          }
+        }
+      },
+      "openLibraryMs": 1476,
+      "library": {
+        "mountedBooks": 100,
+        "coverRequestsOnOpen": 23,
+        "renders": {
+          "library": {
+            "commits": 5,
+            "ms": 555.0000004768372
+          },
+          "app": {
+            "commits": 5,
+            "ms": 731.7000002861023
+          }
+        }
+      },
+      "filterReadMs": 222,
+      "filterAllMs": 522,
+      "filterRenders": {
+        "library": {
+          "commits": 5,
+          "ms": 437
+        },
+        "app": {
+          "commits": 5,
+          "ms": 437
+        }
+      },
+      "searchKeyMs": {
+        "avg": 166,
+        "max": 221
+      },
+      "searchRenders": {
+        "library": {
+          "commits": 5,
+          "ms": 111
+        },
+        "app": {
+          "commits": 5,
+          "ms": 111
+        }
+      },
+      "searchMountedBooks": 100,
+      "scroll": {
+        "steps": 12,
+        "totalMs": 860,
+        "worstFrameMs": 181,
+        "framesWithoutShelf": 0,
+        "mountedAtEnd": 100
+      },
+      "openBookMs": 805,
+      "openBookRenders": {
+        "library": {
+          "commits": 2,
+          "ms": 250
+        },
+        "app": {
+          "commits": 2,
+          "ms": 439
+        },
+        "book": {
+          "commits": 2,
+          "ms": 120
+        }
+      },
+      "openDiaryMs": 203,
+      "closeBookMs": 516,
+      "closeBookRenders": {
+        "library": {
+          "commits": 1,
+          "ms": 237
+        },
+        "app": {
+          "commits": 1,
+          "ms": 302
+        },
+        "book": {
+          "commits": 0,
+          "ms": 0
+        }
+      },
+      "backToRoomMs": 1223,
+      "coverRequestsTotal": {
+        "ok": 140,
+        "fail": 15
+      },
+      "storageBytes": 55950,
+      "stringifyMs": 0.2
+    },
+    {
+      "books": 1000,
+      "loadToRoomMs": 3308,
+      "room": {
+        "mountedBooks": 0,
+        "coverRequests": 0,
+        "renders": {
+          "library": {
+            "commits": 4,
+            "ms": 63.099997997283936
+          },
+          "app": {
+            "commits": 6,
+            "ms": 625.0999979972839
+          }
+        }
+      },
+      "openLibraryMs": 1273,
+      "library": {
+        "mountedBooks": 39,
+        "coverRequestsOnOpen": 24,
+        "renders": {
+          "library": {
+            "commits": 6,
+            "ms": 625.4999985694885
+          },
+          "app": {
+            "commits": 7,
+            "ms": 813.5
+          }
+        }
+      },
+      "filterReadMs": 296,
+      "filterAllMs": 710,
+      "filterRenders": {
+        "library": {
+          "commits": 7,
+          "ms": 564
+        },
+        "app": {
+          "commits": 7,
+          "ms": 564
+        }
+      },
+      "searchKeyMs": {
+        "avg": 152,
+        "max": 218
+      },
+      "searchRenders": {
+        "library": {
+          "commits": 5,
+          "ms": 123
+        },
+        "app": {
+          "commits": 5,
+          "ms": 124
+        }
+      },
+      "searchMountedBooks": 39,
+      "scroll": {
+        "steps": 115,
+        "totalMs": 22407,
+        "worstFrameMs": 474,
+        "framesWithoutShelf": 0,
+        "mountedAtEnd": 46
+      },
+      "openBookMs": 575,
+      "openBookRenders": {
+        "library": {
+          "commits": 2,
+          "ms": 143
+        },
+        "app": {
+          "commits": 2,
+          "ms": 316
+        },
+        "book": {
+          "commits": 2,
+          "ms": 106
+        }
+      },
+      "openDiaryMs": 215,
+      "closeBookMs": 384,
+      "closeBookRenders": {
+        "library": {
+          "commits": 1,
+          "ms": 176
+        },
+        "app": {
+          "commits": 1,
+          "ms": 244
+        },
+        "book": {
+          "commits": 0,
+          "ms": 0
+        }
+      },
+      "backToRoomMs": 963,
+      "coverRequestsTotal": {
+        "ok": 179,
+        "fail": 24
+      },
+      "storageBytes": 530581,
+      "stringifyMs": 2.4
+    },
+    {
+      "books": 1500,
+      "loadToRoomMs": 3256,
+      "room": {
+        "mountedBooks": 0,
+        "coverRequests": 0,
+        "renders": {
+          "library": {
+            "commits": 4,
+            "ms": 70.7000002861023
+          },
+          "app": {
+            "commits": 6,
+            "ms": 606.6000018119812
+          }
+        }
+      },
+      "openLibraryMs": 1495,
+      "library": {
+        "mountedBooks": 39,
+        "coverRequestsOnOpen": 24,
+        "renders": {
+          "library": {
+            "commits": 6,
+            "ms": 728.6000003814697
+          },
+          "app": {
+            "commits": 7,
+            "ms": 944.7999997138977
+          }
+        }
+      },
+      "filterReadMs": 309,
+      "filterAllMs": 734,
+      "filterRenders": {
+        "library": {
+          "commits": 7,
+          "ms": 594
+        },
+        "app": {
+          "commits": 7,
+          "ms": 594
+        }
+      },
+      "searchKeyMs": {
+        "avg": 160,
+        "max": 226
+      },
+      "searchRenders": {
+        "library": {
+          "commits": 5,
+          "ms": 124
+        },
+        "app": {
+          "commits": 5,
+          "ms": 125
+        }
+      },
+      "searchMountedBooks": 39,
+      "scroll": {
+        "steps": 173,
+        "totalMs": 36115,
+        "worstFrameMs": 494,
+        "framesWithoutShelf": 0,
+        "mountedAtEnd": 45
+      },
+      "openBookMs": 651,
+      "openBookRenders": {
+        "library": {
+          "commits": 2,
+          "ms": 172
+        },
+        "app": {
+          "commits": 2,
+          "ms": 346
+        },
+        "book": {
+          "commits": 1,
+          "ms": 109
+        }
+      },
+      "openDiaryMs": 226,
+      "closeBookMs": 396,
+      "closeBookRenders": {
+        "library": {
+          "commits": 1,
+          "ms": 176
+        },
+        "app": {
+          "commits": 1,
+          "ms": 241
+        },
+        "book": {
+          "commits": 0,
+          "ms": 0
+        }
+      },
+      "backToRoomMs": 995,
+      "coverRequestsTotal": {
+        "ok": 230,
+        "fail": 36
+      },
+      "storageBytes": 795373,
+      "stringifyMs": 3.2
+    }
+  ]
+}

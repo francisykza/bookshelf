@@ -6,9 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.58.2 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: 1.58.1 (hotfix de la auditoría del vídeo, §57) publicada; sin cambios pendientes de código. Fuera de git
-  solo quedan las carpetas de recursos: `material-diseno/`, `art-inbox/` (incluye `maqueta-146/`), `assets-source/`.
+- **Versión publicada**: 1.59.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: 1.59.0 (biblioteca grande en el móvil y errores del vídeo del iPhone, §59) publicada; sin cambios
+  pendientes de código. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
+  (incluye `maqueta-146/`), `assets-source/` y `BookShelf-fotogramas-QA/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. No hay ninguna migración pendiente de aplicar.
 
@@ -16,6 +17,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.59.0 | Biblioteca grande en el móvil: nada montado con la biblioteca cerrada, filas y lomos virtuales, portadas 2:3 con una descarga por URL, figuras del perfil en WebKit, nube con comprobación de fecha, visita sin pantalla oscura, aviso con caducidad real, registro con teclado, perfil social sin solapes | §59 |
 | 1.58.2 | Flecha del salón que saltaba al pulsar (con movimiento reducido no navegaba) y pruebas antiguas al día | §58 |
 | 1.58.1 | Hotfix de la auditoría del vídeo: figuras SVG retiradas, visita a pantalla completa sin opciones de animación, libros en las baldas, franja de la biblioteca instalada, alias en reseñas, simular sellos solo en desarrollo | §57 |
 | 1.58.0 | Visita a un rincón compartido: casa, entrada en vídeo bajo demanda, habitación con los libros que comparte, pendientes y vuelta paso a paso | §56 |
@@ -63,6 +65,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
    los pone).
 7. Figuras antiguas (Dama de la Ceniza y Jinete de Dragones) no tienen imágenes con transparencia para exponerse en la
    habitación: siguen en el Ático. Las tres en SVG se retiraron en la 1.58.1 (§57).
+7b. **Rendimiento en el iPhone real (1.59, §59)**: todo lo medido es emulación (Chromium y WebKit de Playwright). Grabar
+   otra vez en el iPhone con más de 1.000 libros: desplazamiento rápido de la biblioteca (sin bloques marrones), lomos,
+   «Libros compartidos», figuras del perfil, entrada a una visita y registro con el teclado abierto.
+7c. **Nube por libro (propuesta, §59.5)**: la biblioteca sigue siendo un documento por cuenta (cada cambio sube el
+   documento entero, con control de versión). Pasar a una fila por libro exige migración y RLS: decidir con Francisco.
 8. **EPUB de otra obra** (§57.3): «The Ballad of Songbirds and Snakes» tiene vinculado «El árbol de la ciencia» en el
    móvil de Francisco. Sin defecto de código; confirmar con él si fue a propósito. No tocar sus datos.
 
@@ -99,6 +106,23 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-10-31 · cuenta principal · 1.59.0 (publicada)
+- Encargo «Rendimiento y errores visuales en iPhone con más de 1.000 libros» (§59). Vídeo inspeccionado
+  (`Descargas/WhatsApp Video 2026-10-31 at 15.03.57.mp4`, 231,665 s, 384 × 832). Causas, mediciones antes/después y
+  criterios en `docs/qa/iphone-large-library.md`; capturas en `docs/qa/iphone-large-library/`.
+- Medición: `scripts/perf-large-library.mjs` (100/1.000/1.500 libros sintéticos, CPU ×4) y `src/perf/PerfProfiler.jsx`
+  (solo en desarrollo). Telemetría: `scripts/analyze-telemetry.py` sobre los estados que audita `e2e/audit159.js`.
+- Pruebas nuevas: `e2e/v159.spec.js` y `e2e-community/v159.spec.js`. Ajustadas: `v135` (tapa en espera de la portada).
+- QA: `qa:full` **parado a petición de Francisco**. Resultados hasta ahí: Vitest 273/273 y 666 de Playwright.
+  - Falló solo `v128` «busca con o sin tildes», por la búsqueda diferida; prueba ajustada con `expect.poll`.
+  - Afectadas en los proyectos que faltaban: 72/72.
+  - Comunidad: 104 pasan y 21 omitidas.
+  - Build correcto.
+  - Telemetría: 0 desbordes, 0 fondos sin pintar, 0 imágenes rotas y 0 errores de consola o de página. Solo hay
+    solapes intencionados anteriores.
+- Sin verificar en el iPhone real (pendiente 7b). Commit en `main` y subido a producción por petición de Francisco
+  («Commit y súbelo»).
 
 ### 2026-10-31 · cuenta principal · 1.58.2 (publicada)
 - «Haz lo que falte» tras la 1.58.1: dejar las pruebas en verde (§58). Fallo real corregido: la flecha «Abrir rincón

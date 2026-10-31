@@ -15,8 +15,19 @@ export const pendingBooks = (books) => libraryBooks(books).filter((b) => b.statu
 export const finishedBooks = (books) => libraryBooks(books).filter((b) => b.status === 'read');
 export const abandonedBooks = (books) => libraryBooks(books).filter((b) => b.status === 'abandoned');
 
-/** Texto en el que se busca: título, autor e ISBN guardado (sin mayúsculas, tildes ni espacios sobrantes). */
-const searchText = (book) => normalize(`${book.title ?? ''} ${book.author ?? ''} ${book.isbn ?? ''}`);
+/**
+ * Texto en el que se busca: título, autor e ISBN guardado (sin mayúsculas, tildes ni espacios sobrantes). 1.59 (§59.2):
+ * se calcula una vez por libro (los libros no se modifican: un cambio crea otro objeto), no en cada tecla.
+ */
+const searchCache = new WeakMap();
+const searchText = (book) => {
+  let text = searchCache.get(book);
+  if (text === undefined) {
+    text = normalize(`${book.title ?? ''} ${book.author ?? ''} ${book.isbn ?? ''}`);
+    searchCache.set(book, text);
+  }
+  return text;
+};
 
 /**
  * Búsqueda y filtro de estado a la vez sobre TODA la biblioteca (no solo lo pintado). `status`: 'all' o uno

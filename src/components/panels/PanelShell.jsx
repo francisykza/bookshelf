@@ -8,8 +8,34 @@ import { modalRoot } from './modalRoot';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
 
+/**
+ * 1.59 (SPEC §59.8): parte visible de la pantalla (con el teclado abierto en iOS es menor que la ventana y puede estar
+ * desplazada). Se escribe como --vv-top y --vv-h en el propio velo (no en :root, que obligaría a recalcular el estilo de
+ * toda la página); solo en los paneles con escritura que lo necesitan (`variant` «log»).
+ */
+function useVisualViewportVars(veilRef, enabled) {
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const root = veilRef.current;
+    if (!enabled || !vv || !root) return undefined;
+    const write = () => {
+      root.style.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`);
+      root.style.setProperty('--vv-h', `${Math.round(vv.height)}px`);
+    };
+    write();
+    vv.addEventListener('resize', write);
+    vv.addEventListener('scroll', write);
+    return () => {
+      vv.removeEventListener('resize', write);
+      vv.removeEventListener('scroll', write);
+    };
+  }, [veilRef, enabled]);
+}
+
 export function PanelShell({ onClose, label, variant, children }) {
   const ref = useRef(null);
+  const veilRef = useRef(null);
+  useVisualViewportVars(veilRef, variant === 'log');
   // El cierre se guarda en una referencia: si el padre re-renderiza (p. ej. el reloj del temporizador cada
   // medio segundo) el efecto no se repite, así no se roba el foco ni se cierran los desplegables abiertos.
   const closeRef = useRef(onClose);
@@ -56,6 +82,7 @@ export function PanelShell({ onClose, label, variant, children }) {
 
   return createPortal(
     <div
+      ref={veilRef}
       className="panel-veil"
       data-variant={variant}
       onPointerDown={(event) => {

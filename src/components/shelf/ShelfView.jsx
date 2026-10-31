@@ -1,10 +1,13 @@
 // `SHELF_VIEW` (SPEC §27.3–27.5, §28.4, §35): la librería como un mueble de madera gouache. Cabecera compacta
 // (volver, título, buscador, «Añadir libro», «Vista y herramientas» y filtros), una balda por estado con los libros
 // de tres en tres en móvil y su encabezado ligero, y el tablón de recuerdos plegable al final.
+// 1.59 (SPEC §59.2): con la biblioteca cerrada no se monta ningún libro; abierta, el escaparate monta solo las filas
+// cercanas a la vista (las demás son baldas vacías con su alto exacto). La búsqueda se aplica un paso por detrás de lo
+// escrito: la tecla se pinta al momento y las baldas (memorizadas) se recalculan después.
 import { ArrowLeft, Book, BookOpen, ChevronDown, CircleCheck, FileUp, Hourglass, Library, Plus, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import { SectionIcon } from '../SectionIcon';
 import { WaxSeal } from '../primitives';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { pageRustle } from '../../audio/ambientAudio';
 import { ratingText, shelfSort } from '../../domain/books';
 import { EMPTY_TEXT, filterLibrary, libraryEmptyState } from '../../domain/library';
@@ -15,7 +18,7 @@ import { useLibrary } from '../../state/useLibrary';
 import { MiniFigurePin } from '../figures/MiniFigurePin';
 import { figureForBook, useFigureCatalog } from '../figures/figureCatalog';
 import { EditionMenu } from '../book/EditionPicker';
-import { BookItem, Cover } from './BookItem';
+import { BookItem, Cover, spineW } from './BookItem';
 import { ScrollChevron } from './ScrollChevron';
 
 /** Recorte de la ilustración como fondo CSS que llena el elemento. */
@@ -245,42 +248,181 @@ function useScrollEdges(ref, deps) {
 
 const smooth = () => (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 
-/** Escaparate (SPEC §35.1): los libros de tres en tres (móvil), cada fila sobre su balda; sin carrusel ni recortes. */
-function CoverShelves({ books, cols, onOpenBook, onEdition, pins, pickedId, onAdd, emptyText, trackRef, dropProps, drop }) {
+/** Filas que se montan por encima y por debajo de la vista: 1,25 alturas de pantalla a cada lado. */
+const OVERSCAN = 1.25;
+/** Con pocas filas (hasta ≈ 72 libros por balda en móvil) no se virtualiza: se montan todas, como siempre. */
+const VIRTUAL_FROM = 24;
+
+/**
+ * Qué filas montar. Las dos primeras siempre (miden la fila con encabezado y una normal); del resto, las que caen en
+ * la vista más el margen. `size`: altos medidos; `top`: dónde empieza la balda dentro del contenido desplazable.
+ */
+function lineWindow({ count, size, top, view }) {
+  // Sin medidas todavía (primer render, antes de pintar): solo las dos filas de medida
+  if (!size || !view) return { first: 0, last: Math.min(count, 2) - 1 };
+  const margin = view.height * OVERSCAN;
+  const lo = view.top - margin - top;
+  const hi = view.top + view.height + margin - top;
+  const at = (y) => (y < size.first ? 0 : 1 + Math.floor((y - size.first) / size.line));
+  const first = Math.max(0, Math.min(count - 1, at(Math.max(0, lo))));
+  const last = Math.max(first, Math.min(count - 1, at(Math.max(0, hi))));
+  return { first, last };
+}
+
+/** Desplazamiento (px) de la fila `i` dentro de su balda. */
+const lineOffset = (size, i) => (i === 0 ? 0 : size.first + (i - 1) * size.line);
+
+/**
+ * Escaparate (SPEC §35.1): los libros de tres en tres (móvil), cada fila sobre su balda; sin carrusel ni recortes.
+ * 1.59 (SPEC §59): con muchas filas solo se montan las cercanas a la vista; las demás son la misma balda pintada, vacía
+ * y con su alto exacto (todas las filas miden igual: el hueco del libro es 2:3 y no depende de las portadas).
+ */
+function CoverShelves({ books, cols, onOpenBook, onEdition, pins, pickedId, onAdd, emptyText, trackRef, dropProps, drop, view, scrollerRef, jump }) {
   const cells = [...books.map((book) => ({ book })), ...(onAdd ? [{ add: true }] : [])];
   const lines = [];
   for (let i = 0; i < cells.length; i += cols) lines.push(cells.slice(i, i + cols));
+  const virtual = lines.length > VIRTUAL_FROM;
+  // Altos medidos (fila con encabezado y fila normal) y dónde empieza esta balda dentro del contenido desplazable
+  const [size, setSize] = useState(null);
+  const [top, setTop] = useState(0);
+
+  // Tras cada render: dónde empieza esta balda y cuánto miden sus filas (las dos primeras siempre están montadas). Solo
+  // cambia el estado si algo se ha movido, así que no hay bucle
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    const scroller = scrollerRef.current;
+    if (!virtual || !track || !scroller) return;
+    const at = track.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    const rows = track.querySelectorAll(':scope > .lib-shelf');
+    const first = rows[0]?.offsetHeight ?? 0;
+    const line = rows[1]?.offsetHeight ?? 0;
+    if (Math.abs(at - top) > 1) setTop(at);
+    if (first && line && (!size || Math.abs(size.first - first) > 0.5 || Math.abs(size.line - line) > 0.5)) setSize({ first, line });
+  });
+
+  // El dado elige un libro que aún no está montado: se lleva su fila a la vista
+  useLayoutEffect(() => {
+    if (!jump || !size) return;
+    const i = books.findIndex((b) => b.id === jump.id);
+    if (i < 0) return;
+    const scroller = scrollerRef.current;
+    scroller?.scrollTo({ top: Math.max(0, top + lineOffset(size, Math.floor(i / cols)) - scroller.clientHeight / 3), behavior: 'auto' });
+    // Solo cuando el dado pide un libro nuevo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jump]);
+
+  const win = virtual ? lineWindow({ count: lines.length, size, top, view }) : { first: 0, last: lines.length - 1 };
+  const mounted = (li) => !virtual || li < 2 || (li >= win.first && li <= win.last);
   return (
     <div ref={trackRef} className="lib-shelves" data-dropping={drop ? 'true' : undefined} style={{ '--cols': cols }} {...dropProps}>
       {drop && <span className="drop-marker" style={{ left: drop.x, top: drop.y }} aria-hidden="true" />}
       {!books.length && <p className="shelf-row__empty">{emptyText}</p>}
-      {lines.map((line, li) => (
-        <div key={li} className="lib-shelf">
-          <div className="lib-shelf__books">
-            {line.map((cell) =>
-              cell.add ? (
-                <span key="add" className="book-slot book-slot--add">
-                  <button type="button" className="add-slot" onClick={onAdd}>
-                    <Plus aria-hidden="true" />
-                    <span>Añadir un libro</span>
-                    <Sprig aria-hidden="true" className="add-slot__sprig" />
-                  </button>
-                </span>
-              ) : (
-                <span key={cell.book.id} className="book-slot">
-                  <BookItem book={cell.book} mode="cover" rowHeight={0} onOpen={onOpenBook} onEdition={onEdition} picked={cell.book.id === pickedId} draggable />
-                  {pins(cell.book)}
-                </span>
-              ),
-            )}
+      {lines.map((line, li) =>
+        mounted(li) ? (
+          <div key={li} className="lib-shelf">
+            <div className="lib-shelf__books">
+              {line.map((cell) =>
+                cell.add ? (
+                  <span key="add" className="book-slot book-slot--add">
+                    <button type="button" className="add-slot" onClick={onAdd}>
+                      <Plus aria-hidden="true" />
+                      <span>Añadir un libro</span>
+                      <Sprig aria-hidden="true" className="add-slot__sprig" />
+                    </button>
+                  </span>
+                ) : (
+                  <span key={cell.book.id} className="book-slot">
+                    <BookItem book={cell.book} mode="cover" rowHeight={0} onOpen={onOpenBook} onEdition={onEdition} picked={cell.book.id === pickedId} draggable />
+                    {pins(cell.book)}
+                  </span>
+                ),
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ) : (
+          <div key={li} className="lib-shelf lib-shelf--ghost" style={{ height: size ? (li === 0 ? size.first : size.line) : undefined }} aria-hidden="true" />
+        ),
+      )}
     </div>
   );
 }
 
-function ShelfRow({ row, index, books, mode, rowH, cols, onOpenBook, onEdition, onAdd, pins, focused, onPlate, pickedId, onMove, emptyText, ivy }) {
+/** Lomos por balda a partir de los cuales solo se montan los cercanos a la vista. */
+const SPINE_VIRTUAL_FROM = 120;
+
+/**
+ * 1.59 (SPEC §59.2): lomos virtuales en horizontal. El ancho de cada lomo sale de sus páginas y su edición (no de una
+ * imagen), así que su posición se conoce sin montarlo; se montan los que caen en la vista más pantalla y media a cada lado
+ * y el resto lo ocupan dos huecos con su ancho exacto (el desplazamiento y su barra no cambian).
+ */
+function useSpineWindow({ books, active, scrollerRef, trackRef, jump }) {
+  const virtual = active && books.length > SPINE_VIRTUAL_FROM;
+  const [gap, setGap] = useState(3);
+  const [hview, setHView] = useState(null);
+  // Posición de cada lomo dentro de la pista (lomo + separación, acumulado)
+  const xs = useMemo(() => {
+    const out = [0];
+    for (const b of books) out.push(out[out.length - 1] + spineW(b) + gap);
+    return out;
+  }, [books, gap]);
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    const track = trackRef.current;
+    if (!virtual || !el || !track) return undefined;
+    const g = parseFloat(getComputedStyle(track).columnGap) || 0;
+    if (g !== gap) setGap(g);
+    let frame = 0;
+    const read = () => {
+      const width = el.clientWidth;
+      const step = Math.max(40, width / 4);
+      const left = Math.round((el.scrollLeft - track.offsetLeft) / step) * step;
+      setHView((v) => (v && v.left === left && v.width === width ? v : { left, width }));
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(read);
+    };
+    read();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener('scroll', onScroll);
+    };
+  }, [virtual, gap, scrollerRef, trackRef]);
+  // El dado elige un lomo aún no montado: se lleva a la vista
+  useLayoutEffect(() => {
+    if (!virtual || !jump) return;
+    const i = books.findIndex((b) => b.id === jump.id);
+    const el = scrollerRef.current;
+    if (i < 0 || !el) return;
+    el.scrollTo({ left: Math.max(0, (trackRef.current?.offsetLeft ?? 0) + xs[i] - el.clientWidth / 2), behavior: 'auto' });
+    el.closest('.shelf-row')?.scrollIntoView({ block: 'nearest' });
+    // Solo cuando el dado pide un libro nuevo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jump]);
+  if (!virtual) return { first: 0, last: books.length - 1, before: 0, after: 0 };
+  const width = hview?.width ?? 600;
+  // Pantalla y media a cada lado: los lomos son ligeros y así un desplazamiento rápido no alcanza el borde
+  const lo = (hview?.left ?? 0) - width * 1.5;
+  const hi = (hview?.left ?? 0) + width * 2.5;
+  // Búsqueda binaria del primer lomo que acaba después de `lo` y del último que empieza antes de `hi`
+  const find = (x) => {
+    let a = 0;
+    let b = books.length;
+    while (a < b) {
+      const m = (a + b) >> 1;
+      if (xs[m + 1] <= x) a = m + 1;
+      else b = m;
+    }
+    return Math.min(a, books.length - 1);
+  };
+  const first = find(Math.max(0, lo));
+  const last = Math.max(first, find(Math.max(0, hi)));
+  return { first, last, before: first > 0 ? xs[first] - gap : 0, after: last < books.length - 1 ? xs[books.length] - xs[last + 1] - gap : 0 };
+}
+
+function ShelfRow({ row, index, books, mode, rowH, cols, onOpenBook, onEdition, onAdd, pins, focused, onPlate, pickedId, onMove, emptyText, ivy, view, scrollerRef: shelvesRef, jump }) {
   const scrollerRef = useRef(null);
   const edges = useScrollEdges(scrollerRef, [books, mode, rowH]);
   const page = (dir) => {
@@ -289,6 +431,7 @@ function ShelfRow({ row, index, books, mode, rowH, cols, onOpenBook, onEdition, 
   };
   const trackRef = useRef(null);
   const [drop, setDrop] = useState(null);
+  const spines = useSpineWindow({ books, active: mode !== 'cover', scrollerRef, trackRef, jump });
 
   /** Dónde caería el libro: delante del primer libro (en orden de lectura) que queda tras el cursor. */
   const dropTarget = (event) => {
@@ -338,19 +481,21 @@ function ShelfRow({ row, index, books, mode, rowH, cols, onOpenBook, onEdition, 
         </button>
       </h2>
       {mode === 'cover' ? (
-        <CoverShelves books={books} cols={cols} onOpenBook={onOpenBook} onEdition={onEdition} pins={pins} pickedId={pickedId} onAdd={onAdd} emptyText={emptyText ?? row.empty} trackRef={trackRef} dropProps={dropProps} drop={drop} />
+        <CoverShelves books={books} cols={cols} onOpenBook={onOpenBook} onEdition={onEdition} pins={pins} pickedId={pickedId} onAdd={onAdd} emptyText={emptyText ?? row.empty} trackRef={trackRef} dropProps={dropProps} drop={drop} view={view} scrollerRef={shelvesRef} jump={jump} />
       ) : (
         <>
       <div ref={scrollerRef} className="shelf-row__scroller">
         <div ref={trackRef} className="shelf-row__track" data-dropping={drop ? 'true' : undefined} {...dropProps}>
           {drop && <span className="drop-marker" style={{ left: drop.x }} aria-hidden="true" />}
-          {books.map((book) => (
+          {spines.before > 0 && <span className="spine-gap" style={{ width: spines.before }} aria-hidden="true" />}
+          {books.slice(spines.first, spines.last + 1).map((book) => (
             // Cada libro con, si es de una saga del catálogo, su mini-figura engarzada en el canto de la tabla
             <span key={book.id} className="book-slot">
               <BookItem book={book} mode={mode} rowHeight={rowH} onOpen={onOpenBook} onEdition={onEdition} picked={book.id === pickedId} draggable />
               {pins(book)}
             </span>
           ))}
+          {spines.after > 0 && <span className="spine-gap" style={{ width: spines.after }} aria-hidden="true" />}
           {!books.length && <p className="shelf-row__empty">{emptyText ?? row.empty}</p>}
           {onAdd && (
             <button type="button" className="add-slot" onClick={onAdd} style={{ height: Math.round(rowH * 0.92) }}>
@@ -426,6 +571,8 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   // Interactiva solo cuando ya ha entrado; visible (opaca o entrando/saliendo) en cualquier fase salvo «room»
   const open = phase === 'shelf';
   const showing = phase === 'enteringShelf' || phase === 'shelf';
+  // Con la biblioteca cerrada (habitación) no se monta ni un libro ni se pide ninguna portada
+  const live = phase !== 'room';
   const { state, actions } = useLibrary();
   const { books, settings, progress } = state;
   const [pick, setPick] = useState(null);
@@ -467,9 +614,60 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
     }
   }, [open]);
 
-  // Biblioteca completa por estado (dado, recuerdos) y la misma con la búsqueda aplicada (baldas)
+  // Biblioteca completa por estado (dado, recuerdos) y la misma con la búsqueda aplicada (baldas). `searched` es lo
+  // escrito con un paso de retraso: escribir no espera a que se monten los libros que coinciden
+  const searched = useDeferredValue(query);
   const grouped = useMemo(() => groupByStatus(books), [books]);
-  const found = useMemo(() => groupByStatus(filterLibrary(books, { query })), [books, query]);
+  const found = useMemo(() => groupByStatus(filterLibrary(books, { query: searched })), [books, searched]);
+
+  // Parte visible del mueble (en saltos de un cuarto de pantalla) para las filas virtuales, y posición al volver
+  const shelvesRef = useRef(null);
+  const [view, setView] = useState(null);
+  const lastTop = useRef(0);
+  const restore = useRef(null);
+  const [jump, setJump] = useState(null);
+  // Solo hace falta seguir la vista si alguna balda del escaparate es virtual (si no, desplazarse no re-renderiza nada)
+  const needsView = mode === 'cover' && Object.values(found).some((list) => Math.ceil(list.length / cols) > VIRTUAL_FROM);
+  useLayoutEffect(() => {
+    const el = shelvesRef.current;
+    if (!live || !el) return undefined;
+    restore.current = lastTop.current;
+    let frame = 0;
+    const read = () => {
+      const height = el.clientHeight;
+      const step = Math.max(40, height / 4);
+      const top = Math.round(el.scrollTop / step) * step;
+      if (restore.current === null) lastTop.current = el.scrollTop;
+      if (needsView) setView((v) => (v && v.top === top && v.height === height ? v : { top, height }));
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(read);
+    };
+    read();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    const observer = new ResizeObserver(onScroll);
+    observer.observe(el);
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener('scroll', onScroll);
+      observer.disconnect();
+    };
+  }, [live, needsView]);
+  // Al volver a abrirla, la misma posición en cuanto las filas tienen su alto (sin un fotograma arriba del todo)
+  useLayoutEffect(() => {
+    const el = shelvesRef.current;
+    if (restore.current === null || !el) return;
+    const top = restore.current;
+    if (top > 0 && el.scrollHeight < top + el.clientHeight) return;
+    restore.current = null;
+    if (top > 0) {
+      el.scrollTop = top;
+      const height = el.clientHeight;
+      const step = Math.max(40, height / 4);
+      setView({ top: Math.round(el.scrollTop / step) * step, height });
+    }
+  });
 
   // Libro al azar: entre los pendientes (o, si no hay, entre los que no has terminado)
   const pool = grouped.want.length ? grouped.want : [...grouped.reading, ...grouped.want];
@@ -515,7 +713,9 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
           nodes.forEach((n) => delete n.dataset.scanning);
           setPick(next.id);
           setRolling(false);
-          target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          // Si su fila aún no está montada (biblioteca grande), se lleva a la vista
+          if (target?.isConnected) target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          else setJump({ id: next.id });
         }, at + 380),
       );
     });
@@ -525,18 +725,64 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   const visibleRows = filter === 'all' ? ROWS.filter((r) => r.id !== 'abandoned' || found.abandoned.length) : ROWS.filter((r) => r.id === filter);
   const shownCount = visibleRows.reduce((n, r) => n + found[r.id].length, 0);
   // Ningún estado vacío mientras la cuenta trae la biblioteca de la nube
-  const empty = libraryEmptyState({ total: books.length, shown: shownCount, status: filter, query, loading: cloudStatus === 'loading' && books.length === 0 });
-  const rowEmpty = empty === 'loading' ? EMPTY_TEXT.loading : query ? EMPTY_TEXT.search : filter !== 'all' ? EMPTY_TEXT.filter : undefined;
+  const empty = libraryEmptyState({ total: books.length, shown: shownCount, status: filter, query: searched, loading: cloudStatus === 'loading' && books.length === 0 });
+  const rowEmpty = empty === 'loading' ? EMPTY_TEXT.loading : searched ? EMPTY_TEXT.search : filter !== 'all' ? EMPTY_TEXT.filter : undefined;
 
   // Mini-figuras de saga bajo los libros, y los libros de cada saga para la sinergia ×2 de pity
   const figCatalog = useFigureCatalog();
   const figs = progress.figures;
   // Sagas explícitas (las preconfiguradas y las tuyas) para vincular cada libro con su figura
   const sagas = useMemo(() => [...PRESET_SAGAS, ...(settings.customSagas ?? [])], [settings.customSagas]);
-  const pins = (book) => {
-    const fig = figureForBook(figCatalog, book, sagas);
-    return fig ? <MiniFigurePin fig={fig} owned={Boolean(figs?.owned[fig.id])} onOpen={onOpenVault} /> : null;
-  };
+  const owned = figs?.owned;
+  const pins = useCallback(
+    (book) => {
+      const fig = figureForBook(figCatalog, book, sagas);
+      return fig ? <MiniFigurePin fig={fig} owned={Boolean(owned?.[fig.id])} onOpen={onOpenVault} /> : null;
+    },
+    [figCatalog, sagas, owned, onOpenVault],
+  );
+  // Menú rápido de edición; con teclado (tecla de menú) no hay coordenadas: se abre junto al libro
+  const onEdition = useCallback((book, event) => {
+    const r = event.currentTarget.getBoundingClientRect();
+    const fromKey = event.clientX === 0 && event.clientY === 0;
+    setEditionMenu({ id: book.id, x: fromKey ? r.right + 6 : event.clientX + 4, y: fromKey ? r.top : event.clientY + 4, from: event.currentTarget });
+  }, []);
+
+  // Las baldas, memorizadas: al escribir, el render urgente (solo el campo) no las recorre; se recalculan cuando
+  // cambia lo buscado ya aplicado, la vista desplazada o cualquier otra cosa que pinten
+  const shelves = useMemo(
+    () =>
+      live &&
+      visibleRows.map((row, i) => (
+        <div key={row.id} className="library__module">
+          <ShelfRow
+            row={row}
+            index={i}
+            books={found[row.id]}
+            emptyText={rowEmpty}
+            mode={mode}
+            rowH={rowH}
+            cols={cols}
+            focused={filter === row.id}
+            onPlate={() => setFilter((f) => (f === row.id ? 'all' : row.id))}
+            onOpenBook={onOpenBook}
+            onEdition={onEdition}
+            // 1.47: sin hueco de «Añadir libro» en la estantería (está en las herramientas de la cabecera)
+            onAdd={null}
+            pickedId={pick}
+            onMove={actions.moveBook}
+            pins={pins}
+            ivy={i === 0 ? 'right' : i === visibleRows.length - 1 && i > 0 ? 'left' : null}
+            view={view}
+            scrollerRef={shelvesRef}
+            jump={jump}
+          />
+        </div>
+      )),
+    // visibleRows sale de filter y found
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [live, filter, found, rowEmpty, mode, rowH, cols, onOpenBook, onEdition, pick, actions.moveBook, pins, view, jump],
+  );
   useEffect(() => {
     if (!figCatalog.length || !figs) return;
     const map = {};
@@ -684,42 +930,15 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
           />
         )}
 
-        <div className="library__shelves">
+        <div ref={shelvesRef} className="library__shelves">
           {empty && (
             <p className="library__empty" role="status">
               {EMPTY_TEXT[empty]}
             </p>
           )}
-          {visibleRows.map((row, i) => (
-            <div key={row.id} className="library__module">
-              <ShelfRow
-                row={row}
-                index={i}
-                books={found[row.id]}
-                emptyText={rowEmpty}
-                mode={mode}
-                rowH={rowH}
-                cols={cols}
-                focused={filter === row.id}
-                onPlate={() => setFilter((f) => (f === row.id ? 'all' : row.id))}
-                onOpenBook={onOpenBook}
-                onEdition={(book, event) => {
-                  // Con teclado (tecla de menú) no hay coordenadas: se abre junto al libro
-                  const r = event.currentTarget.getBoundingClientRect();
-                  const fromKey = event.clientX === 0 && event.clientY === 0;
-                  setEditionMenu({ id: book.id, x: fromKey ? r.right + 6 : event.clientX + 4, y: fromKey ? r.top : event.clientY + 4, from: event.currentTarget });
-                }}
-                // 1.47: sin hueco de «Añadir libro» en la estantería (está en las herramientas de la cabecera)
-                onAdd={null}
-                pickedId={pick}
-                onMove={actions.moveBook}
-                pins={pins}
-                ivy={i === 0 ? 'right' : i === visibleRows.length - 1 && i > 0 ? 'left' : null}
-              />
-            </div>
-          ))}
+          {shelves}
           {/* Recuerdos al final: los libros aparecen antes */}
-          {memory}
+          {live && memory}
         </div>
       </div>
     </div>

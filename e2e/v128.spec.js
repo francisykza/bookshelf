@@ -128,8 +128,8 @@ test('librería: parte de toda la biblioteca y busca con o sin tildes, conservan
   const plain = target.title.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
   await input.fill(`  ${plain}  `);
   await expect(page.locator(`.library [data-book-id="${target.id}"]`)).toHaveCount(1);
-  const shown = await page.locator('.library__shelves [data-book-id]').count();
-  expect(shown).toBeLessThan(st.books.length);
+  // 1.59: la búsqueda se aplica un paso por detrás de lo escrito (useDeferredValue): se espera a que filtre
+  await expect.poll(() => page.locator('.library__shelves [data-book-id]').count()).toBeLessThan(st.books.length);
   await shot(page, info, 'v128-libreria-escaparate');
   // Lomos (1.43.0: dentro de «Vista y herramientas»): la búsqueda se conserva y el campo sigue montado
   await page.getByRole('button', { name: 'Vista y herramientas' }).click();
