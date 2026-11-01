@@ -1,0 +1,526 @@
+/* «El edificio del puerto» (1.63, SPEC §63). El piso es pixel art en un lienzo; todo lo demás es HTML
+   legible con la paleta de BookShelf: papel crema, salvia, terracota y latón. Solo se carga al abrir el edificio. */
+.ep {
+  --ep-paper: #f3ead6;
+  --ep-card: #fbf5e6;
+  --ep-ink: #2c1e14;
+  --ep-soft: #6b5440;
+  --ep-line: rgb(110 78 46 / 0.35);
+  --ep-sage: #5c6a48;
+  --ep-terra: #b4644d;
+  --ep-brass: #b98b2f;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  color: var(--ep-ink);
+  font-family: 'Lora', Georgia, serif;
+}
+
+.ep-stage {
+  width: 100%;
+}
+
+/* Mirando se puede desplazar la página por encima del dibujo; decorando, el lienzo se queda los gestos */
+.ep-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+}
+
+.ep.is-decorating .ep-canvas {
+  touch-action: none;
+  cursor: grab;
+}
+
+.ep-canvas:focus-visible {
+  outline: 3px solid var(--ep-brass);
+  outline-offset: 3px;
+}
+
+.ep-status {
+  min-height: 2.7em;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.ep-bar,
+.ep-tools__row,
+.ep-action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ep-action[hidden],
+.ep-tools[hidden],
+.ep-panel[hidden] {
+  display: none;
+}
+
+.ep-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--ep-line);
+  border-radius: 999px;
+  background: var(--ep-card);
+  color: var(--ep-ink);
+  font: 600 0.98rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.ep-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ep-btn--primary {
+  border-color: var(--ep-sage);
+  background: var(--ep-sage);
+  color: #fbf5e6;
+}
+
+.ep-btn--ghost[aria-pressed='true'] {
+  border-color: var(--ep-brass);
+  background: #f5e2b4;
+}
+
+.ep-btn:focus-visible,
+.ep-chip:focus-visible,
+.ep-item:focus-visible,
+.ep-swatch:focus-visible,
+.ep-list__btn:focus-visible {
+  outline: 3px solid var(--ep-brass);
+  outline-offset: 2px;
+}
+
+.ep-tools {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--ep-line);
+  border-radius: 12px;
+  background: var(--ep-card);
+}
+
+.ep-tools__name {
+  margin: 0;
+  font: 600 1.05rem/1.2 'Cormorant Garamond', Georgia, serif;
+  text-align: center;
+}
+
+.ep-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--ep-line);
+  border-radius: 12px;
+  background: var(--ep-card);
+}
+
+.ep-panel__title {
+  margin: 4px 0 0;
+  font: 600 1.1rem/1.2 'Cormorant Garamond', Georgia, serif;
+}
+
+.ep-cats {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.ep-chip {
+  flex: none;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--ep-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ep-ink);
+  font: 600 0.9rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.ep-chip[aria-pressed='true'] {
+  border-color: var(--ep-terra);
+  background: var(--ep-terra);
+  color: #fff8ee;
+}
+
+.ep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 6px;
+}
+
+.ep-item {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 88px;
+  padding: 6px 4px;
+  border: 1px solid var(--ep-line);
+  border-radius: 10px;
+  background: var(--ep-paper);
+  color: var(--ep-ink);
+  font: 600 0.82rem/1.2 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.ep-item img {
+  width: 44px;
+  height: 44px;
+  image-rendering: pixelated;
+}
+
+.ep-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ep-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px 0 8px;
+  border: 1px solid var(--ep-line);
+  border-radius: 999px;
+  background: var(--ep-paper);
+  color: var(--ep-ink);
+  font: 600 0.88rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.ep-swatch::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--ep-line);
+  background: var(--sw, #c69c70);
+}
+
+.ep-swatch--floor[data-suelo='tablas'] {
+  --sw: repeating-linear-gradient(0deg, #c69c70 0 6px, #a87c52 6px 7px);
+}
+
+.ep-swatch--floor[data-suelo='damero'] {
+  --sw: conic-gradient(#e8dcc4 25%, #a85c46 0 50%, #e8dcc4 0 75%, #a85c46 0) 0 0 / 11px 11px;
+}
+
+.ep-swatch--floor[data-suelo='barro'] {
+  --sw: #c47854;
+}
+
+.ep-swatch[aria-pressed='true'] {
+  border-color: var(--ep-sage);
+  box-shadow: inset 0 0 0 2px var(--ep-sage);
+}
+
+.ep-list {
+  padding: 8px 12px;
+  border: 1px dashed var(--ep-line);
+  border-radius: 10px;
+}
+
+.ep-list summary {
+  min-height: 32px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ep-list ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ep-list li {
+  font-size: 0.92rem;
+}
+
+.ep-list__btn {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--ep-line);
+  border-radius: 8px;
+  background: var(--ep-paper);
+  color: var(--ep-ink);
+  font: 0.9rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.ep-list__btn[aria-pressed='true'] {
+  border-color: var(--ep-sage);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ep * {
+    transition: none !important;
+  }
+}
+
+/* ── Panel de la app (1.63): hoja inferior en el móvil, tarjeta centrada en pantallas anchas ── */
+.panel-veil[data-variant='edificio'] {
+  align-items: end;
+  padding: 0;
+}
+
+.panel--edificio {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  width: min(100%, 600px);
+  max-height: min(94dvh, 980px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 14px calc(18px + env(safe-area-inset-bottom));
+  border: 1px solid rgb(110 78 46 / 0.3);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  background: #f3ead6;
+  color: #2c1e14;
+  font-family: 'Lora', Georgia, serif;
+  box-shadow: 0 -10px 30px rgb(44 30 20 / 0.3);
+}
+
+@media (min-width: 700px) {
+  .panel-veil[data-variant='edificio'] {
+    align-items: center;
+    padding: 16px;
+  }
+
+  .panel--edificio {
+    border-bottom: 1px solid rgb(110 78 46 / 0.3);
+    border-radius: 22px;
+  }
+}
+
+.ed-bar {
+  position: sticky;
+  top: -10px;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  margin: -10px -14px 0;
+  padding: 6px 8px;
+  background: linear-gradient(#f3ead6 70%, rgb(243 234 214 / 0));
+}
+
+.ed-bar:has(.ed-bar__back) {
+  justify-content: flex-start;
+}
+
+.ed-bar__back,
+.ed-bar__close {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #4a3626;
+  font: 600 0.95rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.ed-bar__close {
+  justify-content: center;
+  padding: 0;
+}
+
+.ed-bar__back svg,
+.ed-bar__close svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ed-bar button:focus-visible,
+.ed-btn:focus-visible,
+.ed-door:focus-visible,
+.ed-sello:focus-visible {
+  outline: 3px solid #b98b2f;
+  outline-offset: 2px;
+}
+
+.ed-title {
+  margin: 0;
+  font: 600 1.55rem/1.15 'Cormorant Garamond', Georgia, serif;
+}
+
+.ed-sub,
+.ed-saving {
+  margin: 0;
+  color: #6b5440;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.ed-saving {
+  min-height: 1.4em;
+  text-align: center;
+}
+
+.ed-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ed-note {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  margin: 8px 0;
+  line-height: 1.45;
+}
+
+.ed-note p {
+  margin: 0;
+}
+
+.ed-btn,
+.ed-sello {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgb(110 78 46 / 0.35);
+  border-radius: 999px;
+  background: #fbf5e6;
+  color: #2c1e14;
+  font: 600 0.95rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.ed-btn--primary,
+.ed-sello[aria-pressed='true'] {
+  border-color: #5c6a48;
+  background: #5c6a48;
+  color: #fbf5e6;
+}
+
+/* Portal: los buzones de las tres plantas, dos puertas por planta */
+.ed-doors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 12px;
+  list-style: none;
+  border-radius: 14px;
+  background: linear-gradient(#b98b6a, #a4765a);
+  box-shadow: inset 0 0 0 3px #8a5e44;
+}
+
+.ed-door {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 6px 6px 8px;
+  border: 2px solid #6e4a34;
+  border-radius: 10px;
+  background: #fbf5e6;
+  color: #2c1e14;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ed-door--mine {
+  border-color: #5c6a48;
+  box-shadow: 0 0 0 3px #e7dcbc;
+}
+
+.ed-door--free {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.ed-door img,
+.ed-door__empty {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 249 / 200;
+  border-radius: 6px;
+  image-rendering: pixelated;
+}
+
+.ed-door__empty {
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(135deg, #e9dcc0 0 8px, #e2d3b4 8px 16px);
+  color: #6b5440;
+  font-size: 0.85rem;
+}
+
+.ed-door__label {
+  display: grid;
+  gap: 1px;
+  padding: 0 2px;
+  font-size: 0.86rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ed-door__label strong {
+  font: 600 1.05rem/1.1 'Cormorant Garamond', Georgia, serif;
+}
+
+.ed-inbox,
+.ed-sellos {
+  padding: 12px;
+  border: 1px solid rgb(110 78 46 / 0.35);
+  border-radius: 12px;
+  background: #fbf5e6;
+}
+
+.ed-inbox h3,
+.ed-sellos h3 {
+  margin: 0 0 6px;
+  font: 600 1.2rem/1.2 'Cormorant Garamond', Georgia, serif;
+}
+
+.ed-inbox ul {
+  margin: 0;
+  padding-left: 1.1em;
+  line-height: 1.5;
+}
+
+.ed-inbox p {
+  margin: 0;
+  color: #6b5440;
+  font-size: 0.92rem;
+}
+
+.ed-sellos__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ed-sellos__msg {
+  min-height: 1.4em;
+  margin: 8px 0 0;
+  font-size: 0.92rem;
+}

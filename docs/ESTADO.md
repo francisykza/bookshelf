@@ -6,21 +6,24 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.62.0 (2026-10-31), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: **1.62.0 completa (bloques 1 a 4), publicada** del paquete «salón social y radio» (§62): comunidad
+- **Versión publicada**: 1.63.0 (2026-11-01), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: **1.63.0 publicada**: «El edificio del puerto» en la app (§63), con su migración **ya aplicada en
+  producción** (1-11-2026; ver la bitácora). Antes, **1.62.0 completa (bloques 1 a 4), publicada** del paquete «salón social y radio» (§62): comunidad
   con tres pestañas y «Lectores» nuevo; sillones del salón y visita con fachada; radio del rincón; clubes con Lectura / Conversación / Miembros. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
   (incluye `maqueta-146/`), `assets-source/` y `BookShelf-fotogramas-QA/`.
 - **Supabase**: aplicadas en producción las migraciones de `supabase/migrations/` hasta
   `20261025150000_huellas_rincon.sql`. **Pendiente de aplicar (1.60)**: `20261031120000_avatares_nuevos.sql` (amplía la
   lista de avatares admitidos; sin ella, el servidor rechaza un perfil con uno de los seis nuevos). **Preparada (1.62,
   no aplicar aún sin decidirlo con Francisco)**: `20261031200000_radio_sintonia.sql` (`profiles.radio_station` para
-  «Mostrar mi sintonía», opción que la app todavía no enseña).
+  «Mostrar mi sintonía», opción que la app todavía no enseña). **Aplicada (1.63, 1-11-2026)**:
+  `20261101120000_edificio_puerto.sql` (pisos, reparto en edificios, sellos). La 1.63 ya la usa.
 
 ### Últimos bloques (detalle en `SPEC.md`)
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.62.0 (sin commit, bloques 1–3 de 4) | Comunidad: tres pestañas, lo tuyo desde el avatar, buscador, opiniones compactas con ficha pública y pendientes por la obra; sillones con elección y tarjeta anclada, pestaña «Salón» y visita con fachada, «Entrar», «Saltar» y vuelta al origen; radio del rincón (un reproductor, temporizador, EPUB) | §62 |
+| 1.63.0 | «El edificio del puerto»: la tablet del Salón pregunta entre la comunidad y el edificio; portal con seis puertas, tu piso que se decora y se guarda solo, visita a los vecinos con sellos; reparto al azar en el servidor y RLS (migración aplicada) | §63 |
+| 1.62.0 | Comunidad: tres pestañas, lo tuyo desde el avatar, buscador, opiniones compactas con ficha pública y pendientes por la obra; sillones con elección y tarjeta anclada, pestaña «Salón» y visita con fachada, «Entrar», «Saltar» y vuelta al origen; radio del rincón (un reproductor, temporizador, EPUB) | §62 |
 | 1.61.0 | Visita: un acceso por cosa en la habitación de llegada, etiqueta «Libros compartidos ›» en la estantería, lectura actual como libro en la mesita y «Los libros de X» como biblioteca frontal con buscador | §61 |
 | 1.60.0 | Comunidad en el cuaderno de cuero según las maquetas (perfil, Mi rincón con «Ambiente y recuerdos», Entre lectores), seis avatares nuevos (migración pendiente) y libro de la cama más asentado | §60 |
 | 1.59.0 | Biblioteca grande en el móvil: nada montado con la biblioteca cerrada, filas y lomos virtuales, portadas 2:3 con una descarga por URL, figuras del perfil en WebKit, nube con comprobación de fecha, visita sin pantalla oscura, aviso con caducidad real, registro con teclado, perfil social sin solapes | §59 |
@@ -123,6 +126,113 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-01 · cuenta principal · 1.63.0 «El edificio del puerto» en la app (publicada, migración aplicada)
+- **Qué:** Francisco aprobó pasar el prototipo a la app («Sí, prepárala») y eligió:
+  - La tablet del Salón pregunta entre «Comunidad» y «El edificio del puerto»; no se quita nada.
+  - El reparto al azar tal cual se propuso: solo con la comunidad activada, primero edificios con hueco, puerta al
+    azar, lo decide el servidor.
+- **Hecho** (detalle en SPEC §63):
+  - Migración `supabase/migrations/20261101120000_edificio_puerto.sql`.
+  - El código pasa de `src/features/minigames/edificio-puerto/` a `src/features/edificio/`.
+  - `service.js`, `EdificioPanel.jsx`, la tarjeta «La tablet» en `SocialSeats.jsx` y el panel `edificio` en
+    `App.jsx` y `navigation.js`.
+  - El simulador de `e2e-community` entiende el edificio solo si la prueba siembra `edificio_vecinos` (las pruebas
+    antiguas siguen viendo la tablet de siempre).
+- **QA:**
+  - Vitest completo y build (ver abajo), oxlint.
+  - `edificio.rls.test.js` con la migración en PGlite, incluida la paridad de validación cliente/servidor.
+  - e2e-community v161, v162 y v163-edificio: 33 pasan en Chromium 390, WebKit 390 y 1440.
+  - `e2e/edificio-puerto.spec.js`.
+  - Sin iPhone real.
+- **Pendiente:**
+  - **Migración aplicada en producción** (proyecto `bookshelf`, 1-11-2026): la pegó Claude en el SQL Editor (SHA-256
+    igual al archivo) y Francisco pulsó «Run» («Success»). Comprobado con la clave pública: las cinco tablas y las dos
+    funciones existen y niegan el acceso anónimo. Falta probarlo con una cuenta real tras subir la 1.63.
+  - Commit y subida a producción el 1-11-2026, a petición de Francisco («Commit y súbelo»). Con el edificio entran en git
+    también los prototipos de solo desarrollo: `src/features/minigames/libreria-puerto/` (el edificio usa su
+    `raster.js` y su `audio.js`), las páginas `dev/` y sus pruebas y documentos de QA. La librería sigue fuera de la app.
+  - Probar el edificio con una cuenta real (dos cuentas, para la visita y el sello).
+  - Decidir qué pasa con la puerta de quien deja la app.
+  - Ilustraciones de muebles, si hacen falta, e icono del edificio.
+
+### 2026-11-01 · cuenta principal · prototipo «El edificio del puerto»: pisos cozy con vecinos (sin commit)
+- **Qué es:** idea de Francisco, a partir de un devblog de un juego de pixel art en el que se decora una casa.
+  - Tu piso es una habitación isométrica de 9 × 9 que se decora con un catálogo de 24 muebles.
+  - Está en un edificio de seis pisos con vecinos que se visitan y en cuyo buzón se deja un sello.
+  - Solo de desarrollo: `dev/edificio-puerto.html` y `dev/edificio-puerto-app.html` (cómo se entraría desde la tablet
+    del Salón Social). El código está en `src/features/minigames/edificio-puerto/`.
+  - Reutiliza el motor de píxeles de la librería. A `raster.js` se le ha añadido un búfer de identificadores, para tocar
+    sobre el dibujo, y la proyección inversa sobre paredes y superficies. Ese cambio no afecta a la librería: sus pruebas
+    siguen pasando.
+- **Decisiones de Francisco (aceptó la propuesta entera):**
+  - El piso no sustituye al rincón ilustrado.
+  - Edificio de 3 plantas × 2 pisos.
+  - Visitas en diferido; el directo, más adelante.
+  - Catálogo gratis, sin tocar recompensas, cajas ni pity.
+  - Sin texto libre: solo sellos de frase cerrada.
+  - Prototipo aislado antes que nada.
+  - Cambiar a qué lleva la tablet (hoy, Lectores) necesita su aprobación.
+- **Datos:** inventados (cinco vecinos y sus sellos). Tu piso solo se guarda en este navegador. No se ha tocado la app,
+  Supabase ni la biblioteca.
+- **QA:**
+  - Vitest del minijuego 42/42 (12 del piso).
+  - e2e `edificio-puerto.spec.js` y `libreria-puerto.spec.js`: 43 pasan y 0 fallan, en Chromium 360/390/430/1440,
+    WebKit 390 y movimiento reducido.
+  - Sin iPhone real.
+- **Pendiente:**
+  - Que Francisco apruebe el plan del servidor de `docs/qa/edificio-puerto.md`.
+  - Confirmar el detalle del reparto en edificios. Francisco decidió **al azar**; la propuesta concreta está en el
+    documento de QA.
+  - Ilustraciones de muebles, si el estilo de cajas no basta, e icono del edificio.
+- **Sin commit**: Francisco no lo ha pedido.
+
+### 2026-10-31 · cuenta principal · «La librería del puerto»: más acogedora, con más juego y vista en la app (sin commit)
+- A petición de Francisco («más cozy», «más chicha», «cómo se vería en la app del móvil»). Todo sigue aislado en el
+  prototipo; la app, su navegación y el build no cambian (`dist/` sin rastro, comprobado).
+- Escena: pared de yeso con zócalo, ventana al mar de tarde, cuadro de un barco, alfombra bajo la caja y una gata dormida
+  sobre la estantería. Al terminar se enciende la lámpara y la luz pasa a ser de tarde («la librería abre»), sin bucles
+  continuos (solo dibuja mientras algo cambia) y sin animación con movimiento reducido.
+- Juego: botón «Pista» (siguiente paso de la solución) y dos niveles nuevos con solución comprobada: n4 «Tres baldas» y
+  n5 «Sin un hueco».
+- **Decisiones de Francisco (misma sesión):**
+  - **Fuera los encargos**: los libros no se distinguen.
+  - **Estrellas por movimientos**: ★ terminar; ★★ mínimo + 2; ★★★ mínimo exacto sin pistas. El mínimo es un movimiento
+    por libro.
+  - **Ranking con un nivel nuevo cada semana**, generado automáticamente (`weekly.js`, semilla = semana ISO, siempre
+    resoluble). El mes suma las semanas.
+  - **Distinción en el perfil para el top 3 semanal y mensual.**
+- Ranking y distinción, **solo de demostración**:
+  - Lectores inventados y tu resultado en este navegador.
+  - Panel «Ranking» con Semana y Mes, y vista previa de la distinción.
+  - La partida guarda sus jugadas y `replay` las repite para validar, como debería hacer el servidor.
+- **Plan del servidor, pendiente de aprobación:** tablas, RPC con validación por repetición, cierre de periodo que
+  inserta en `distinctions`, app «Librería» en el ordenador, y las insignias ilustradas que faltan. Está en
+  `docs/qa/libreria-puerto.md` §9; no se ha tocado Supabase ni la app.
+- Vista en la app: `dev/libreria-puerto-app.html`. **Decisión de Francisco: el juego se abre como una app más del
+  ordenador**, una séptima en el dock. El recorrido es habitación → portátil → app «Librería» → ventana con el juego
+  (`?vista=pc`). Usa capturas de la app con un perfil de prueba vacío y los iconos reales del dock.
+- Falta el icono ilustrado de «Librería»: ahora lleva uno provisional recortado del juego. `?vista=app` (pantalla
+  completa con «Volver al rincón») sigue disponible.
+- Arreglos: el ResizeObserver ya no reajusta ni cancela un arrastre cuando solo cambia el alto del juego; la página de
+  desarrollo no se desborda a 360 px.
+- QA: Vitest del minijuego 30/30; e2e del minijuego 20/20 (Chromium 360/390/430/1440, WebKit 390, reducido). Sin
+  iPhone real. **Sin commit ni subida**: Francisco no lo ha pedido.
+- Pendiente:
+  - Que Francisco apruebe el plan del servidor.
+  - El icono ilustrado de la app «Librería» y las insignias de podio.
+  - Nada de esto está en la app real.
+
+### 2026-10-31 · cuenta principal · prototipo «La librería del puerto» (sin commit)
+- Encargo: minijuego jugable inspirado en Pixel Plays (MIT), aislado y solo de desarrollo. Abre en
+  `http://localhost:5190/dev/libreria-puerto.html` con el servidor de siempre. Código en
+  `src/features/minigames/libreria-puerto/` y `dev/libreria-puerto.html`; Vite no lo construye (comprobado en `dist/`)
+  y la app no lo importa. Detalle, licencia, capturas y lo que falta para tickets y figura: `docs/qa/libreria-puerto.md`.
+- Tres niveles hechos a mano con solución comprobada; arrastre, tocar y tocar, «Girar» y teclado. Datos ficticios «Demo»:
+  no consume tickets, no concede figuras, no toca Supabase, biblioteca, misiones, pity ni sincronización.
+- QA: Vitest 292/292 (12 del puzle); `e2e/libreria-puerto.spec.js` en Chromium 360/390/430/1440, WebKit 390 y movimiento
+  reducido: 15 pasan. Build correcto. Sin iPhone real. Sin versión nueva de la app (no cambia nada publicado).
+- **Sin commit ni subida**: Francisco no lo ha pedido.
 
 ### 2026-10-31 · cuenta principal · 1.62.0, bloque 4 (publicada)
 - Hecho el bloque 4, clubes (§62.4): `ClubTab.jsx` (dentro del club, pestañas Lectura / Conversación / Miembros;

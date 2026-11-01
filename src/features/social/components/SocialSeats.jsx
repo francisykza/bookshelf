@@ -6,7 +6,7 @@
 // 1.62 (SPEC §62.2): el sillón libre abre aquí mismo la elección para sentarte (con una etiqueta «Sentarme» sobre el
 // cojín) y el avatar de quien lee abre su tarjeta junto al asiento: su lectura solo si la comparte, «Ver perfil» y
 // «Visitar su rincón». Tu propio avatar abre la tuya, con «Levantarme».
-import { ArrowRight, BookOpen, Armchair } from 'lucide-react';
+import { ArrowRight, BookOpen, Armchair, Building2, Users } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { PinArt } from '../../../components/figures/FigureArt';
@@ -18,6 +18,7 @@ import { useCommunity } from '../hooks/useCommunity';
 import { sitDownNow, standUpNow, usePresence } from '../hooks/usePresence';
 import { fetchProfiles } from '../services/community';
 import { fetchCorners } from '../services/connections';
+import { edificioAvailable } from '../../edificio/service';
 import { RADIO_ART } from '../../radio/RadioControls';
 import { useRadio } from '../../radio/radioPlayer';
 import { SeatCard } from './SeatCard';
@@ -37,7 +38,7 @@ function Spot({ spot, label, onActivate, ...rest }) {
   return <button type="button" className="social-spot" data-id={spot.id} style={{ ...b, clipPath: clipPolygon(local) }} aria-label={label} title={label} onClick={onActivate} {...rest} />;
 }
 
-export function SocialSeats({ active, timer, onOpenHub, onOpenReader, onVisit, onOpenGuardian, onOpenRadio = null }) {
+export function SocialSeats({ active, timer, onOpenHub, onOpenReader, onVisit, onOpenGuardian, onOpenRadio = null, onOpenEdificio = null }) {
   const radio = useRadio();
   const community = useCommunity({ autoload: active });
   const enabled = community.status === 'ready' && community.member;
@@ -52,6 +53,18 @@ export function SocialSeats({ active, timer, onOpenHub, onOpenReader, onVisit, o
   const { seated, extra } = seatParticipants(rows, community.userId, SOCIAL_SPOTS.seats.length, now);
   const ids = seated.map((r) => r.user_id).join(',');
   const close = useCallback(() => setCard(null), []);
+  // 1.63 (SPEC §63): la tablet pregunta entre la comunidad y el edificio, solo si el edificio está en el servidor (si no,
+  // abre la comunidad, como siempre)
+  const [edificio, setEdificio] = useState(false);
+  useEffect(() => {
+    if (!active || !enabled || !onOpenEdificio) return undefined;
+    let alive = true;
+    edificioAvailable().then((ok) => alive && setEdificio(ok));
+    return () => {
+      alive = false;
+    };
+  }, [active, enabled, onOpenEdificio]);
+  const tabletChoice = enabled && edificio && onOpenEdificio;
   const titleId = useId();
 
   // El tiempo visible se recalcula cada 30 s a partir de la marca de inicio (nada se escribe por segundo)
@@ -96,7 +109,13 @@ export function SocialSeats({ active, timer, onOpenHub, onOpenReader, onVisit, o
 
   return (
     <div className="social-objects">
-      <Spot spot={SOCIAL_SPOTS.tablet} label="Tablet: perfiles, lectores que sigues y opiniones" onActivate={() => onOpenHub('lectores')} />
+      <Spot
+        spot={SOCIAL_SPOTS.tablet}
+        label={tabletChoice ? 'Tablet: la comunidad y El edificio del puerto' : 'Tablet: perfiles, lectores que sigues y opiniones'}
+        aria-haspopup={tabletChoice ? 'dialog' : undefined}
+        aria-expanded={tabletChoice ? card?.kind === 'tablet' : undefined}
+        onActivate={(e) => (tabletChoice ? setCard(card?.kind === 'tablet' ? null : { kind: 'tablet', anchor: e.currentTarget }) : onOpenHub('lectores'))}
+      />
       {onOpenRadio && (
         // La radio del rincón: objeto físico sobre la mesa (sombra de contacto bajo las patas) que abre su panel
         <button type="button" className="social-radio" style={{ left: SOCIAL_SPOTS.radio.x, top: SOCIAL_SPOTS.radio.y, width: SOCIAL_SPOTS.radio.w }} onClick={onOpenRadio} aria-label={radio.status === 'playing' ? 'Radio del rincón: sonando. Abrir sus controles' : 'Radio del rincón: música para leer'}>
@@ -168,6 +187,19 @@ export function SocialSeats({ active, timer, onOpenHub, onOpenReader, onVisit, o
         <button type="button" className="seat-more" style={{ left: SOCIAL_SPOTS.more[0], top: SOCIAL_SPOTS.more[1] }} onClick={() => onOpenHub('sala')}>
           +{extra} {extra === 1 ? 'lector' : 'lectores'}
         </button>
+      )}
+      {shown?.kind === 'tablet' && (
+        <SeatCard anchor={card.anchor} label="La tablet" onClose={close}>
+          <h3 className="seat-card__title">La tablet</h3>
+          <button type="button" className="seat-card__link" onClick={() => (setCard(null), onOpenHub('lectores'))}>
+            <Users aria-hidden="true" />
+            Comunidad
+          </button>
+          <button type="button" className="seat-card__primary" onClick={() => (setCard(null), onOpenEdificio())}>
+            <Building2 aria-hidden="true" />
+            El edificio del puerto
+          </button>
+        </SeatCard>
       )}
       {shown?.kind === 'sentarse' && (
         <SeatCard anchor={card.anchor} label="Sentarme a leer" onClose={close} wide>

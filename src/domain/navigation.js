@@ -34,6 +34,8 @@ export function safeParent(loc) {
   if (l.panel?.type === 'visit' && l.panel.select) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion', ...from } };
   if (l.panel?.type === 'visit' && l.panel.from === 'salon') return { view: l.view, panel: null };
   if (l.panel?.type === 'visit') return { view: l.view, panel: { type: 'social', tab: 'lectores' } };
+  // 1.63 (SPEC §63): un piso del edificio vuelve al portal
+  if (l.panel?.type === 'edificio' && l.panel.id) return { view: l.view, panel: { type: 'edificio' } };
   if (l.panel) return { view: l.view, panel: null };
   if (l.view === 'shelf') return ROOT;
   return null;

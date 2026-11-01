@@ -37,7 +37,10 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   (Vercel). Nunca forzar el push ni reescribir historia publicada.
 - **Sin líneas `Co-Authored-By`** ni firmas de IA en commits ni PR.
 - **Supabase**: nunca exponer claves de servicio ni secretas; no desactivar RLS. Las migraciones nuevas van en
-  `supabase/migrations/` y **las aplica Francisco** en el SQL Editor (se le entregan, no se ejecutan desde aquí).
+  `supabase/migrations/` y **las aplica Francisco** en el SQL Editor. Desde el 1-11-2026, si él lo pide («hazlo tú»):
+  abrir el SQL Editor del proyecto en el panel del navegador (él inicia sesión), pegar la migración comprobando su
+  SHA-256 con el archivo, y que él pulse «Run» (el control de permisos no deja ejecutar en producción desde aquí);
+  después, comprobarlo con la clave pública (las tablas nuevas deben dar «permission denied» al anónimo, no «not found»).
 - **No manejar contraseñas** ni iniciar sesión en cuentas.
 - **No borrar datos del usuario.** Al probar en el navegador, usar perfiles de prueba (Playwright con su propio
   `localStorage`), no sus datos reales. Si algo no cuadra con lo esperado, puede ser que él esté usando la app:
@@ -59,6 +62,29 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
 - **Paquete `material-diseno/social-radio/`** (1.62): se implementa por bloques, enseñando capturas al terminar cada uno
   antes de seguir (decisión de Francisco). Orden: 1) comunidad y tarjetas públicas, 2) asientos del salón y visita,
   3) radio y continuidad en el EPUB, 4) clubes.
+- **Minijuego «La librería del puerto»** (prototipo, decisiones de Francisco del 31-10-2026):
+  - Se entra desde una 7.ª app del ordenador.
+  - Sin encargos: los libros no se distinguen.
+  - Estrellas por movimientos: terminar, mínimo + 2, y mínimo sin pistas.
+  - El ranking usa un nivel generado cada semana; el mes suma las semanas; en caso de empate gana quien llegó antes.
+  - Distinción en el perfil para el top 3 semanal y el mensual.
+  - Nada pasa a la app ni a Supabase sin su aprobación (plan en `docs/qa/libreria-puerto.md` §9).
+- **Prototipo «El edificio del puerto»** (decisiones de Francisco del 1-11-2026):
+  - Tu piso es una habitación isométrica que se decora y está en un edificio de 3 plantas × 2 pisos.
+  - **No sustituye** al rincón ilustrado ni a su visita.
+  - Visitas en diferido; el directo, más adelante.
+  - Reparto en edificios **al azar** (confirmado el 1-11-2026):
+    - Solo entran los perfiles con la comunidad activada.
+    - Se llenan primero los edificios con hueco y la puerta se elige al azar.
+    - Lo decide el servidor.
+  - **Entrada en la app:** la tablet del Salón pregunta entre «Comunidad» (lo de antes) y «El edificio del puerto»; no se
+    quita nada.
+  - Catálogo gratis: no toca recompensas, cajas ni pity.
+  - Sin texto libre: solo sellos de frase cerrada.
+  - Otros cambios en a qué lleva la tablet del Salón Social necesitan su aprobación.
+  - Del vídeo de referencia se toma el género, nunca su arte.
+  - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración
+    `20261101120000_edificio_puerto.sql` la aplica Francisco; sin ella, la tablet hace lo de siempre.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.
 - **Biblioteca grande** (1.59, §59): la biblioteca cerrada no monta libros; el escaparate y los lomos solo montan lo
   cercano a la vista (no medir ni buscar libros en el DOM: puede no estar montado). Las portadas se piden una vez por URL
@@ -112,6 +138,8 @@ npx oxlint src                             # lint
 | Comunidad, rincón del lector, club | `src/features/social/`, `src/features/reviews/` |
 | Sonido (sintetizado con Web Audio, un evento por acción) | `src/audio/uiSounds.js`, `src/audio/ambientAudio.js` |
 | Iconos ilustrados de sección | `src/components/SectionIcon.jsx`, `public/assets/icons/sections/` |
+| Prototipo de minijuego (solo desarrollo, fuera del build y de la app) | `src/features/minigames/libreria-puerto/`, `dev/libreria-puerto.html` (y `dev/libreria-puerto-app.html`, vista en el móvil de la app), `docs/qa/libreria-puerto.md` |
+| «El edificio del puerto» (pisos con vecinos, en la app desde la 1.63) | `src/features/edificio/` (panel, servicio, reglas, dibujo; usa `raster.js` y `audio.js` de `minigames/libreria-puerto/`), estilos en su `edificio.css` (se carga con el panel), páginas `dev/edificio-puerto.html` y `dev/edificio-puerto-app.html`, `docs/qa/edificio-puerto.md` |
 
 **Estilos**: `src/index.css` importa las hojas en orden y **las últimas mandan**. Las capas recientes (cada una
 acotada a su zona) son: `library-143.css` (biblioteca y libro físico), `craft-144.css` (materiales de los controles

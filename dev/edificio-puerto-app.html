@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>El edificio del puerto en la app · vista previa (desarrollo)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=JetBrains+Mono:wght@600&family=Lora:wght@400;600&display=swap" rel="stylesheet" />
+    <!--
+      Vista previa de cómo se entraría al edificio desde la tablet del Salón Social, en un móvil de 390 × 844. Solo
+      desarrollo: no está en el build ni en la app. El salón es la ilustración de la app (images/cozy-social-room.jpg) sin
+      su interfaz encima (sillones, radio, cabecera); la zona de la tablet es la misma de src/scene/socialMap.js, pasada a
+      esta pantalla. El edificio es el prototipo real, cargado en un marco con ?vista=app.
+    -->
+    <style>
+      :root {
+        color-scheme: light;
+        --scale: 1;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #2a211b;
+        color: #f3ead6;
+        font-family: 'Lora', Georgia, serif;
+      }
+      .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px 16px;
+        box-sizing: border-box;
+      }
+      .phone-box {
+        width: calc(414px * var(--scale));
+        height: calc(868px * var(--scale));
+      }
+      .phone {
+        position: relative;
+        width: 390px;
+        height: 844px;
+        overflow: hidden;
+        border: 12px solid #120e0b;
+        border-radius: 52px;
+        background: #000;
+        box-shadow: 0 30px 60px rgb(0 0 0 / 0.45);
+        transform: scale(var(--scale));
+        transform-origin: top left;
+      }
+      .screen {
+        position: absolute;
+        inset: 0;
+      }
+      .shot {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      button {
+        font: inherit;
+      }
+      :focus-visible {
+        outline: 3px solid #d9a441;
+        outline-offset: 2px;
+      }
+      /* La tablet de la mesita (polígono de socialMap.js escalado a 390 × 844, recorte centrado) */
+      .tablet {
+        position: absolute;
+        top: 604px;
+        left: 150px;
+        width: 124px;
+        height: 88px;
+        border: 0;
+        padding: 0;
+        background: rgb(255 236 196 / 0.18);
+        clip-path: polygon(23px 5px, 116px 16px, 120px 76px, 4px 84px);
+        cursor: pointer;
+      }
+      .tablet-glow {
+        position: absolute;
+        top: 604px;
+        left: 150px;
+        width: 124px;
+        height: 88px;
+        overflow: visible;
+        pointer-events: none;
+        filter: drop-shadow(0 0 6px rgb(255 214 150 / 0.9));
+      }
+      .tag {
+        position: absolute;
+        top: 700px;
+        left: 140px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #b4644d;
+        color: #fff8ee;
+        font: 600 0.68rem/1.5 'JetBrains Mono', monospace;
+        pointer-events: none;
+      }
+      /* La tablet abierta: ocupa la pantalla, con su marco y un botón para cerrarla */
+      .sheet {
+        position: absolute;
+        inset: 44px 8px 22px;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        overflow: hidden;
+        border: 10px solid #3b3029;
+        border-radius: 26px;
+        background: #f3ead6;
+        box-shadow: 0 18px 40px rgb(0 0 0 / 0.5);
+      }
+      .sheet[hidden] {
+        display: none;
+      }
+      .sheet__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 6px 6px 14px;
+        border-bottom: 1px solid #d9cfbc;
+        background: #f8f3e8;
+        color: #352c23;
+      }
+      .sheet__head h2 {
+        margin: 0;
+        font: 600 1.15rem/1.1 'Cormorant Garamond', Georgia, serif;
+      }
+      .sheet__close {
+        width: 44px;
+        height: 44px;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: #352c23;
+        font-size: 1.4rem;
+        cursor: pointer;
+      }
+      .sheet iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #f3ead6;
+      }
+      .notes {
+        max-width: 360px;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+      .notes h1 {
+        margin: 0 0 8px;
+        font: 600 1.5rem/1.15 'Cormorant Garamond', Georgia, serif;
+      }
+      .notes li {
+        margin-bottom: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="phone-box">
+        <div class="phone" aria-label="Móvil de 390 × 844 (vista previa)">
+          <section class="screen" aria-label="Salón Social de BookShelf (ilustración)">
+            <img class="shot" src="/images/cozy-social-room.jpg" alt="El Salón Social: dos sillones, una mesita con tazas y una tablet" />
+            <svg class="tablet-glow" viewBox="0 0 124 88" aria-hidden="true">
+              <polygon points="23,5 116,16 120,76 4,84" fill="none" stroke="rgb(255 236 196)" stroke-width="2.5" />
+            </svg>
+            <button type="button" class="tablet" id="open-tablet" aria-label="Abrir la tablet: El edificio del puerto"></button>
+            <span class="tag">Propuesta</span>
+            <section class="sheet" id="sheet" aria-labelledby="sheet-title" hidden>
+              <div class="sheet__head">
+                <h2 id="sheet-title">El edificio del puerto</h2>
+                <button type="button" class="sheet__close" id="close-tablet" aria-label="Cerrar la tablet">×</button>
+              </div>
+              <iframe id="frame" title="El edificio del puerto (prototipo)"></iframe>
+            </section>
+          </section>
+        </div>
+      </div>
+      <section class="notes">
+        <h1>Vista previa: la tablet del Salón</h1>
+        <ul>
+          <li>Toca la tablet de la mesita para abrir el edificio.</li>
+          <li>Hoy la tablet abre la comunidad (Lectores). Si se aprueba, abriría el edificio, y la comunidad seguiría en «Tu cuenta» y en el avatar: no se pierde nada.</li>
+          <li>El salón es la ilustración sin la interfaz de la app encima. Vecinos y pisos, inventados.</li>
+        </ul>
+      </section>
+    </div>
+    <script type="module">
+      const sheet = document.getElementById('sheet');
+      const frame = document.getElementById('frame');
+      const opener = document.getElementById('open-tablet');
+      const fit = () => document.documentElement.style.setProperty('--scale', String(Math.min(1, (innerHeight - 40) / 868, (innerWidth - 32) / 414)));
+      fit();
+      addEventListener('resize', fit);
+      opener.addEventListener('click', () => {
+        frame.src = '/dev/edificio-puerto.html?vista=app';
+        sheet.hidden = false;
+        document.getElementById('close-tablet').focus();
+      });
+      const close = () => {
+        if (sheet.hidden) return;
+        sheet.hidden = true;
+        frame.src = 'about:blank';
+        opener.focus();
+      };
+      document.getElementById('close-tablet').addEventListener('click', close);
+      document.addEventListener('keydown', (e) => e.key === 'Escape' && close());
+    </script>
+  </body>
+</html>

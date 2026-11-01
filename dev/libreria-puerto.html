@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <title>La librería del puerto · prototipo (desarrollo)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=JetBrains+Mono:wght@600&family=Lora:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        background: #f3ead6;
+        color: #2c1e14;
+        font-family: 'Lora', Georgia, serif;
+      }
+      .dev {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        max-width: 780px;
+        margin: 0 auto;
+        padding: max(12px, env(safe-area-inset-top)) 8px max(24px, env(safe-area-inset-bottom));
+      }
+      .dev-bar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px dashed rgb(110 78 46 / 0.5);
+        border-radius: 10px;
+        background: #fbf5e6;
+      }
+      .dev-bar h1 {
+        margin: 0;
+        font: 600 1.15rem/1.2 'Cormorant Garamond', Georgia, serif;
+      }
+      .dev-badge {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 1px 8px;
+        border-radius: 999px;
+        background: #b4644d;
+        color: #fff8ee;
+        font: 600 0.75rem/1.5 'JetBrains Mono', monospace;
+        vertical-align: middle;
+      }
+      .dev-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .dev-row label,
+      .dev-row button,
+      .dev-row select {
+        min-height: 44px;
+        font: inherit;
+      }
+      .dev-row button,
+      .dev-row select {
+        padding: 0 12px;
+        border: 1px solid rgb(110 78 46 / 0.45);
+        border-radius: 8px;
+        background: #fffaf0;
+        color: inherit;
+      }
+      .dev-row select {
+        max-width: min(100%, 62vw);
+        min-width: 0;
+      }
+      .dev-row label {
+        max-width: 100%;
+        min-width: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dev-note {
+        margin: 0;
+        color: #6b5440;
+        font-size: 0.92rem;
+      }
+      .dev-log {
+        margin: 0;
+        padding-left: 1.2em;
+        color: #6b5440;
+        font-size: 0.85rem;
+      }
+      .dev-reward {
+        margin: 0;
+        padding: 8px 12px;
+        border: 1px solid #b98b2f;
+        border-radius: 8px;
+        background: #f6ecd2;
+      }
+      .dev-reward[hidden] {
+        display: none;
+      }
+      /* Vista «app»: como se vería dentro de BookShelf (cabecera de los paneles, sin barra de desarrollo) */
+      .app-head {
+        display: none;
+      }
+      .app-levels {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+      }
+      body.is-app {
+        background: linear-gradient(180deg, #e9dcc0 0, #f3ead6 180px);
+      }
+      body.is-app .dev-bar,
+      body.is-app footer {
+        display: none;
+      }
+      body.is-app .dev {
+        padding-top: max(8px, env(safe-area-inset-top));
+        gap: 8px;
+      }
+      body.is-app .app-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      body.is-pc {
+        background: #f8f3e8;
+      }
+      body.is-pc .app-head {
+        display: none;
+      }
+      body.is-pc .dev {
+        padding-top: 10px;
+      }
+      .app-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 0 6px;
+        border: 0;
+        background: none;
+        color: #2c1e14;
+        font: 600 1.35rem/1 'Cormorant Garamond', Georgia, serif;
+        cursor: pointer;
+      }
+      .app-chip {
+        padding: 3px 10px;
+        border: 1px dashed rgb(110 78 46 / 0.5);
+        border-radius: 999px;
+        color: #6b5440;
+        font: 600 0.72rem/1.4 'JetBrains Mono', monospace;
+      }
+      .app-level {
+        display: grid;
+        justify-items: center;
+        min-width: 46px;
+        min-height: 48px;
+        padding: 4px 6px;
+        border: 1.5px solid rgb(110 78 46 / 0.35);
+        border-radius: 10px;
+        background: #fffaf0;
+        color: #2c1e14;
+        font: inherit;
+        cursor: pointer;
+      }
+      .app-level[aria-pressed='true'] {
+        border-color: #b4644d;
+        background: #f6e3d6;
+      }
+      .app-level__n {
+        font: 600 1.1rem/1.1 'Cormorant Garamond', Georgia, serif;
+      }
+      .app-level--week,
+      .app-level--rank {
+        padding: 4px 10px;
+        border-color: #b98b2f;
+        background: #fbf0d6;
+      }
+      .app-level--week[aria-pressed='true'] {
+        border-color: #b4644d;
+        background: #f6e3d6;
+      }
+      /* Ranking (demostración): una hoja que tapa el juego, como un panel de la app */
+      .rank {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        overflow-y: auto;
+        background: #f8f3e8;
+        color: #2c1e14;
+      }
+      .rank[hidden] {
+        display: none;
+      }
+      .rank__inner {
+        display: grid;
+        gap: 10px;
+        max-width: 520px;
+        margin: 0 auto;
+        padding: max(12px, env(safe-area-inset-top)) 16px 24px;
+      }
+      .rank__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .rank__head h2 {
+        margin: 0;
+        font: 600 1.6rem/1.1 'Cormorant Garamond', Georgia, serif;
+      }
+      .rank__close {
+        width: 44px;
+        height: 44px;
+        border: 0;
+        border-radius: 8px;
+        background: none;
+        color: #6b5440;
+        font-size: 1.3rem;
+        cursor: pointer;
+      }
+      .rank__tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid #d9cfbc;
+        border-radius: 12px;
+        background: #fffaf0;
+      }
+      .rank__tabs button {
+        min-height: 44px;
+        border: 0;
+        border-radius: 9px;
+        background: none;
+        color: inherit;
+        font: 600 1rem/1 'Lora', Georgia, serif;
+        cursor: pointer;
+      }
+      .rank__tabs button[aria-selected='true'] {
+        background: #e6ead9;
+        box-shadow: inset 0 -2px 0 #879477;
+      }
+      .rank__rule,
+      .rank__me {
+        margin: 0;
+        color: #6b5440;
+        font-size: 0.92rem;
+        line-height: 1.4;
+      }
+      .rank__me {
+        color: #2c1e14;
+        font-weight: 600;
+      }
+      .rank__list {
+        display: grid;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .rank-row {
+        display: grid;
+        grid-template-columns: 3ch 1fr auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 40px;
+        padding: 0 12px;
+        border: 1px solid #e3d9c6;
+        border-radius: 10px;
+        background: #fffaf0;
+      }
+      .rank-row.is-podium {
+        border-color: #d9b56b;
+        background: #fbf0d6;
+      }
+      .rank-row.is-me {
+        border: 2px solid #b4644d;
+      }
+      .rank-row__pos {
+        font: 600 1.05rem/1 'Cormorant Garamond', Georgia, serif;
+      }
+      .rank-row__name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .rank-row__score {
+        color: #6b5440;
+        font: 600 0.8rem/1 'JetBrains Mono', monospace;
+      }
+      .rank__badge {
+        display: grid;
+        grid-template-columns: 52px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border: 1px dashed rgb(110 78 46 / 0.45);
+        border-radius: 12px;
+        background: #fffaf0;
+      }
+      .rank__badge img {
+        width: 52px;
+        height: 52px;
+        border: 2px solid #d9b56b;
+        border-radius: 50%;
+        image-rendering: pixelated;
+        object-fit: cover;
+      }
+      .rank__badge p,
+      .rank__badge small {
+        margin: 2px 0 0;
+        color: #6b5440;
+        font-size: 0.85rem;
+        line-height: 1.35;
+      }
+      .app-level__stars {
+        color: #b98b2f;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+      }
+      footer {
+        color: #6b5440;
+        font-size: 0.8rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="dev">
+      <header class="app-head">
+        <button type="button" class="app-back" id="app-back"><span aria-hidden="true">←</span> Volver al rincón</button>
+        <span class="app-chip">Demo</span>
+      </header>
+      <nav class="app-levels" id="app-levels" aria-label="Niveles"></nav>
+      <section class="dev-bar" aria-label="Opciones de la demostración">
+        <h1>BookShelf · La librería del puerto <span class="dev-badge">Demo</span></h1>
+        <p class="dev-note">Prototipo de desarrollo con datos ficticios. No consume tickets, no concede figuras ni toca tu biblioteca, Supabase, misiones o recompensas.</p>
+        <div class="dev-row" role="radiogroup" aria-label="Modo">
+          <label><input type="radio" name="mode" value="practica" checked /> Práctica</label>
+          <label><input type="radio" name="mode" value="reto" /> Reto mensual (demo)</label>
+        </div>
+        <div class="dev-row">
+          <label>Nivel <select id="level"></select></label>
+          <button type="button" id="save">Guardar partida</button>
+          <button type="button" id="load">Restaurar</button>
+          <button type="button" id="remount">Salir y volver</button>
+        </div>
+        <div class="dev-row" id="ticket-row" hidden>
+          <span id="ticket-text"></span>
+          <button type="button" id="unlock">Usar ticket dorado (demo)</button>
+        </div>
+        <p class="dev-reward" id="reward" hidden></p>
+        <details>
+          <summary>Registro de eventos (inicio, salida, victoria)</summary>
+          <ol class="dev-log" id="log"></ol>
+        </details>
+      </section>
+      <div id="game"></div>
+      <section class="rank" id="ranking" role="dialog" aria-labelledby="rank-title" hidden>
+        <div class="rank__inner">
+          <header class="rank__head">
+            <h2 id="rank-title">Ranking <span class="dev-badge">Demo</span></h2>
+            <button type="button" class="rank__close" id="rank-close" aria-label="Cerrar el ranking">✕</button>
+          </header>
+          <div class="rank__tabs" role="tablist" aria-label="Periodo">
+            <button type="button" role="tab" data-rank-tab="semana" aria-selected="true">Semana</button>
+            <button type="button" role="tab" data-rank-tab="mes" aria-selected="false">Mes</button>
+          </div>
+          <p class="rank__rule" id="rank-rule"></p>
+          <ol class="rank__list" id="rank-list"></ol>
+          <p class="rank__rule" id="rank-empty" hidden>Nadie ha jugado aún en este periodo.</p>
+          <p class="rank__me" id="rank-me"></p>
+          <div class="rank__badge">
+            <img src="/docs/qa/libreria-puerto/icono-provisional.webp" alt="" />
+            <div>
+              <b id="badge-name"></b>
+              <p id="badge-text"></p>
+              <small>Los tres primeros la reciben en su perfil, con la fecha, como las demás distinciones. Icono provisional.</small>
+            </div>
+          </div>
+          <p class="dev-note">Los demás lectores son inventados y tu resultado solo se guarda en este navegador. En la app, el servidor comprobaría cada partida y concedería la distinción.</p>
+        </div>
+      </section>
+      <footer>Motor de píxeles adaptado de Pixel Plays (Amir Mushich, licencia MIT). Sin música de terceros.</footer>
+    </main>
+    <script type="module" src="/src/features/minigames/libreria-puerto/devPage.js"></script>
+  </body>
+</html>

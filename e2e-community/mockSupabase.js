@@ -34,7 +34,7 @@ const DEFAULTS = {
   club_invites: () => ({ id: randomUUID(), token: (randomUUID() + randomUUID()).replace(/-/g, ''), revoked: false, expires_at: new Date(Date.now() + 14 * 864e5).toISOString(), created_at: new Date().toISOString() }),
   club_messages: () => ({ id: randomUUID(), has_spoilers: false, status: 'visible', created_at: new Date().toISOString(), edited_at: null }),
 };
-const OWNER = { profiles: 'user_id', works: 'created_by', public_reviews: 'user_id', libraries: 'user_id', blocks: 'blocker', reports: 'reporter', follows: 'follower', corners: 'user_id', reading_presence: 'user_id', clubs: 'owner', club_members: 'user_id', club_invites: 'created_by', club_messages: 'user_id', collections: 'owner', distinctions: '__admin__' };
+const OWNER = { pisos: 'user_id', piso_sellos: 'de', profiles: 'user_id', works: 'created_by', public_reviews: 'user_id', libraries: 'user_id', blocks: 'blocker', reports: 'reporter', follows: 'follower', corners: 'user_id', reading_presence: 'user_id', clubs: 'owner', club_members: 'user_id', club_invites: 'created_by', club_messages: 'user_id', collections: 'owner', distinctions: '__admin__' };
 
 /** Parte una lista PostgREST por las comas de primer nivel (respetando los paréntesis de `and(...)`). */
 function splitTop(text) {
@@ -89,7 +89,9 @@ function matches(row, params) {
 
 /** Crea el simulador. `db` es el estado compartido entre páginas de la misma prueba. */
 export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
-  for (const t of Object.keys(OWNER)) db[t] ??= [];
+  // 1.63: el edificio solo existe si la prueba lo pide (`db.edificio_vecinos`); si no, como sin la migración aplicada
+  const EDIFICIO = ['pisos', 'piso_sellos'];
+  for (const t of Object.keys(OWNER)) if (!EDIFICIO.includes(t) || db.edificio_vecinos) db[t] ??= [];
   const memberOf = (clubId, userId) => db.club_members.some((m) => m.club_id === clubId && m.user_id === userId);
   const ownerOf = (clubId, userId) => db.clubs.some((c) => c.id === clubId && c.owner === userId);
   const fresh = (r) => Date.now() - new Date(r.last_seen).getTime() < 180000;
@@ -124,6 +126,41 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     const url = new URL(req.url());
     if (url.pathname.startsWith('/auth/v1/')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: userId }) });
     const table = url.pathname.replace('/rest/v1/', '');
+    // 1.63 (SPEC §63): el edificio del puerto, como la migración (reparto, portal y RLS de pisos y sellos)
+    if (['pisos', 'piso_sellos', 'rpc/asignar_edificio', 'rpc/edificio_portal'].includes(table) && !db.edificio_vecinos) {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST205', message: 'Could not find the table in the schema cache' }) });
+    }
+    const json = (body) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    const blockedWith = (other) => db.blocks.some((b) => (b.blocker === userId && b.blocked === other) || (b.blocker === other && b.blocked === userId));
+    if (table === 'rpc/asignar_edificio') {
+      let mine = db.edificio_vecinos.find((v) => v.user_id === userId);
+      if (!mine) {
+        const ed = 'edificio-1';
+        const free = ['1A', '1B', '2A', '2B', '3A', '3B'].find((p) => !db.edificio_vecinos.some((v) => v.edificio === ed && v.puerta === p));
+        mine = { user_id: userId, edificio: ed, puerta: free };
+        db.edificio_vecinos.push(mine);
+      }
+      return json({ edificio: mine.edificio, puerta: mine.puerta });
+    }
+    if (table === 'rpc/edificio_portal') {
+      const mine = db.edificio_vecinos.find((v) => v.user_id === userId);
+      if (!mine) return json(null);
+      const vecinos = db.edificio_vecinos
+        .filter((v) => v.edificio === mine.edificio)
+        .map((v) => ({ v, p: db.profiles.find((x) => x.user_id === v.user_id) }))
+        .filter(({ v, p }) => v.user_id === userId || (p?.community_enabled && !blockedWith(v.user_id)))
+        .map(({ v, p }) => ({
+          user_id: v.user_id,
+          puerta: v.puerta,
+          alias: p?.alias ?? null,
+          avatar_id: p?.avatar_id ?? null,
+          yo: v.user_id === userId,
+          layout: db.pisos.find((x) => x.user_id === v.user_id)?.layout ?? null,
+          sello_dado: db.piso_sellos.find((x) => x.de === userId && x.para === v.user_id)?.sello ?? null,
+          sello_recibido: db.piso_sellos.find((x) => x.de === v.user_id && x.para === userId)?.sello ?? null,
+        }));
+      return json({ edificio: mine.edificio, puerta: mine.puerta, vecinos });
+    }
     if (table === 'rpc/accept_club_invite') {
       const { invite_token } = req.postDataJSON();
       const inv = db.club_invites.find((i) => i.token === invite_token && !i.revoked);
@@ -173,6 +210,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       if (table === 'collections') rows = rows.filter((c) => c.owner === userId || (c.visible && !blockedPair(c.owner)));
       // La biblioteca sincronizada solo la ve su dueño
       if (table === 'libraries') rows = rows.filter((l) => l.user_id === userId);
+      if (table === 'piso_sellos') rows = rows.filter((x) => x.de === userId || x.para === userId);
       if (table === 'reading_presence') rows = rows.filter((r) => r.user_id === userId || fresh(r));
       if (table === 'clubs') rows = rows.filter((c) => memberOf(c.id, userId));
       if (table === 'club_members') rows = rows.filter((m) => memberOf(m.club_id, userId));

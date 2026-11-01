@@ -41,6 +41,7 @@ const SocialHub = lazy(() => import('./features/social/components/SocialHub').th
 const GoodreadsImportPanel = lazy(() => import('./features/imports/GoodreadsImportPanel').then((m) => ({ default: m.GoodreadsImportPanel })));
 // 1.58 (SPEC §56): la visita a un rincón se carga solo al abrirla (y el vídeo, solo cuando empieza la entrada)
 const ReaderVisit = lazy(() => import('./features/social/components/ReaderVisit').then((m) => ({ default: m.ReaderVisit })));
+const EdificioPanel = lazy(() => import('./features/edificio/EdificioPanel').then((m) => ({ default: m.EdificioPanel })));
 const ReaderProfile = lazy(() => import('./features/social/components/ReaderProfile').then((m) => ({ default: m.ReaderProfile })));
 
 /** Un día local `YYYY-MM-DD` (el `select` de la navegación del calendario). */
@@ -276,6 +277,7 @@ function Sanctuary() {
             }}
             onOpenRadio={() => openPanel({ type: 'radio' })}
             onOpenGuardian={(id) => openPanel({ type: 'guardian', id })}
+            onOpenEdificio={() => openPanel({ type: 'edificio' })}
           />
         )}
       />
@@ -379,6 +381,17 @@ function Sanctuary() {
       {panel?.type === 'reader' && (
         <Suspense fallback={null}>
           <ReaderProfile userId={panel.id} onClose={close} />
+        </Suspense>
+      )}
+      {panel?.type === 'edificio' && (
+        <Suspense fallback={null}>
+          <EdificioPanel
+            pisoId={panel.id ?? null}
+            soundOn={settings.sound}
+            onOpenPiso={(id) => openPanel({ type: 'edificio', id })}
+            onClose={close}
+            onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })}
+          />
         </Suspense>
       )}
       {panel?.type === 'radio' && <RadioPanel onClose={close} soundOn={settings.sound} onToggleSound={toggleSound} />}

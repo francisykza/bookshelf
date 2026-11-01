@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <title>La librería del puerto en la app · vista previa (desarrollo)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=JetBrains+Mono:wght@600&family=Lora:wght@400;500;600&display=swap" rel="stylesheet" />
+    <!--
+      Vista previa de cómo se vería el minijuego dentro de BookShelf en un móvil de 390 × 844, entrando como una app más
+      del ordenador (decisión de Francisco). Solo desarrollo: no está en el build ni en la app.
+      - La habitación y el escritorio del ordenador son capturas de la app con un perfil de prueba vacío.
+      - El dock se rehace aquí con los iconos reales de la app (public/assets/icons/sections/) más una séptima app,
+        «Librería», con un icono PROVISIONAL recortado del propio juego: falta su icono ilustrado.
+      - El juego es el prototipo real, cargado en un marco con ?vista=pc dentro de una ventana como las del ordenador.
+    -->
+    <style>
+      :root {
+        color-scheme: light;
+        --scale: 1;
+        --pc-window: #f8f3e8;
+        --pc-ink: #352c23;
+        --pc-ink-2: #6b5d4f;
+        --pc-sage: #879477;
+        --pc-sage-soft: color-mix(in srgb, #879477 22%, transparent);
+        --pc-line: #d9cfbc;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #2a211b;
+        color: #f3ead6;
+        font-family: 'Lora', Georgia, serif;
+      }
+      .wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px 16px;
+        box-sizing: border-box;
+      }
+      .phone-box {
+        width: calc(414px * var(--scale));
+        height: calc(868px * var(--scale));
+      }
+      .phone {
+        position: relative;
+        width: 390px;
+        height: 844px;
+        overflow: hidden;
+        border: 12px solid #120e0b;
+        border-radius: 52px;
+        background: #000;
+        box-shadow: 0 30px 60px rgb(0 0 0 / 0.45);
+        transform: scale(var(--scale));
+        transform-origin: top left;
+      }
+      .screen {
+        position: absolute;
+        inset: 0;
+      }
+      .screen[hidden] {
+        display: none;
+      }
+      .shot {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      button {
+        font: inherit;
+      }
+      :focus-visible {
+        outline: 3px solid #d9a441;
+        outline-offset: 2px;
+      }
+      /* Habitación: el portátil ya abre el ordenador en la app (su zona real, recortada a la pantalla) */
+      .laptop {
+        position: absolute;
+        top: 499px;
+        left: 281px;
+        width: 109px;
+        height: 107px;
+        border: 0;
+        border-radius: 14px;
+        background: none;
+        box-shadow: 0 0 0 2px rgb(255 236 196 / 0.9), 0 0 18px 4px rgb(255 214 150 / 0.55);
+        cursor: pointer;
+      }
+      .tag {
+        position: absolute;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #b4644d;
+        color: #fff8ee;
+        font: 600 0.68rem/1.5 'JetBrains Mono', monospace;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+      /* Ordenador: barra superior de la captura; «Salir» vuelve a la habitación */
+      .pc-exit {
+        position: absolute;
+        top: 4px;
+        left: 8px;
+        width: 92px;
+        height: 44px;
+        border: 0;
+        background: none;
+        cursor: pointer;
+      }
+      .pc-win {
+        position: absolute;
+        top: 56px;
+        right: 12px;
+        bottom: 88px;
+        left: 12px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--pc-line);
+        border-radius: 12px;
+        background: var(--pc-window);
+        box-shadow: 0 2px 4px rgb(53 44 35 / 0.08), 0 14px 34px rgb(20 12 6 / 0.28);
+      }
+      .pc-win[hidden] {
+        display: none;
+      }
+      .pc-win__head {
+        display: flex;
+        flex: none;
+        align-items: center;
+        gap: 12px;
+        min-height: 60px;
+        padding: 8px 4px 8px 16px;
+        border-bottom: 1px solid var(--pc-line);
+      }
+      .pc-win__icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        image-rendering: pixelated;
+      }
+      .pc-win__title {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        overflow: hidden;
+        color: var(--pc-ink);
+        font: 600 23px/1.15 'Cormorant Garamond', Georgia, serif;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pc-win__close {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border: 0;
+        border-radius: 8px;
+        background: none;
+        color: var(--pc-ink-2);
+        cursor: pointer;
+      }
+      .pc-win iframe {
+        flex: 1;
+        width: 100%;
+        min-height: 0;
+        border: 0;
+      }
+      /* El dock, rehecho con los iconos reales y una séptima app (tapa el de la captura) */
+      .pc-dock {
+        position: absolute;
+        right: 12px;
+        bottom: 10px;
+        left: 12px;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(44px, 1fr));
+        gap: 2px;
+        padding: 4px;
+        border: 1px solid color-mix(in srgb, var(--pc-line) 80%, transparent);
+        border-radius: 16px;
+        background: var(--pc-window);
+        box-shadow: 0 6px 20px rgb(20 12 6 / 0.25);
+      }
+      .pc-dock > * {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 56px;
+        padding: 4px 0 6px;
+        border: 0;
+        border-radius: 10px;
+        background: none;
+        color: var(--pc-ink);
+      }
+      .pc-dock img {
+        width: 32px;
+        height: 32px;
+      }
+      .pc-dock .is-new img {
+        border-radius: 7px;
+        box-shadow: 0 0 0 1px rgb(110 78 46 / 0.35);
+        image-rendering: pixelated;
+      }
+      .pc-dock span {
+        max-width: 100%;
+        overflow: hidden;
+        font: 500 11px/1 'Lora', Georgia, serif;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pc-dock button {
+        cursor: pointer;
+      }
+      .pc-dock button[aria-selected='true'] {
+        background: var(--pc-sage-soft);
+      }
+      .pc-dock button[aria-selected='true']::after {
+        content: '';
+        position: absolute;
+        bottom: 2px;
+        left: 30%;
+        right: 30%;
+        height: 2px;
+        border-radius: 1px;
+        background: var(--pc-sage);
+      }
+      .pc-dock .tag {
+        top: -22px;
+        right: 0;
+        max-width: none;
+        overflow: visible;
+        font: 600 0.68rem/1.5 'JetBrains Mono', monospace;
+        white-space: nowrap;
+      }
+      .notes {
+        max-width: 440px;
+        line-height: 1.5;
+      }
+      .notes h1 {
+        margin: 0 0 6px;
+        font: 600 1.8rem/1.15 'Cormorant Garamond', Georgia, serif;
+      }
+      .notes .badge {
+        display: inline-block;
+        padding: 1px 8px;
+        border-radius: 999px;
+        background: #b4644d;
+        color: #fff8ee;
+        font: 600 0.75rem/1.5 'JetBrains Mono', monospace;
+        vertical-align: middle;
+      }
+      .notes ol,
+      .notes ul {
+        padding-left: 1.2em;
+      }
+      .notes li {
+        margin-bottom: 6px;
+      }
+      .notes a {
+        color: #e9c27a;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="phone-box">
+        <div class="phone" aria-label="Móvil de 390 × 844 (vista previa)">
+          <section class="screen" id="room" aria-label="Habitación de BookShelf (captura)">
+            <img class="shot" src="/docs/qa/libreria-puerto/app-habitacion.webp" alt="La habitación de BookShelf; el portátil está en la mesita, abajo a la derecha" />
+            <button type="button" class="laptop" id="open-pc" aria-label="Abrir el ordenador"></button>
+            <span class="tag" style="top: 470px; right: 8px">Toca el portátil</span>
+          </section>
+          <section class="screen" id="pc" aria-label="Ordenador de BookShelf" hidden>
+            <img class="shot" src="/docs/qa/libreria-puerto/app-ordenador.webp" alt="" />
+            <button type="button" class="pc-exit" id="exit-pc" aria-label="Salir del ordenador"></button>
+            <section class="pc-win" id="win" aria-labelledby="win-title" hidden>
+              <header class="pc-win__head">
+                <img class="pc-win__icon" src="/docs/qa/libreria-puerto/icono-provisional.webp" alt="" />
+                <h2 class="pc-win__title" id="win-title">La librería del puerto</h2>
+                <button type="button" class="pc-win__close" id="close-win" aria-label="Cerrar La librería del puerto">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </button>
+              </header>
+              <iframe id="frame" title="La librería del puerto (prototipo)"></iframe>
+            </section>
+            <nav class="pc-dock" aria-label="Aplicaciones del ordenador (vista previa)">
+              <div aria-hidden="true"><img src="/assets/icons/sections/diario.webp" alt="" /><span>Diario</span></div>
+              <div aria-hidden="true"><img src="/assets/icons/sections/datos.webp" alt="" /><span>Datos</span></div>
+              <div aria-hidden="true"><img src="/assets/icons/sections/sesiones.webp" alt="" /><span>Sesiones</span></div>
+              <div aria-hidden="true"><img src="/assets/icons/sections/reto.webp" alt="" /><span>Reto</span></div>
+              <div aria-hidden="true"><img src="/assets/icons/sections/misiones.webp" alt="" /><span>Misiones</span></div>
+              <div aria-hidden="true"><img src="/assets/icons/sections/citas.webp" alt="" /><span>Citas</span></div>
+              <button type="button" class="is-new" id="open-game" aria-selected="false" aria-label="La librería del puerto">
+                <span class="tag">Propuesta</span>
+                <img src="/docs/qa/libreria-puerto/icono-provisional.webp" alt="" /><span>Librería</span>
+              </button>
+            </nav>
+          </section>
+        </div>
+      </div>
+      <section class="notes">
+        <h1>La librería del puerto, en el ordenador <span class="badge">Vista previa</span></h1>
+        <p>Así se vería en un móvil de 390 × 844, como una app más del portátil:</p>
+        <ol>
+          <li>En la habitación, el portátil de la mesita abre el ordenador (eso ya existe en la app).</li>
+          <li>En el dock aparece una séptima app, «Librería». Es la parte nueva.</li>
+          <li>El juego se abre en una ventana como las demás apps, con su ✕ para cerrarla. «Salir» vuelve a la habitación.</li>
+        </ol>
+        <ul>
+          <li><strong>Qué es real:</strong> el juego entero (cinco niveles, encargos, estrellas, pistas) y los seis iconos del dock. La habitación y el escritorio son capturas de la app con un perfil de prueba vacío.</li>
+          <li><strong>Provisional:</strong> el icono de «Librería» es un recorte del propio juego. Haría falta un icono ilustrado como los otros seis.</li>
+          <li><strong>Qué no:</strong> las otras seis apps no se abren aquí. No hay tickets ni figuras reales, ni nada en tu biblioteca o en Supabase. Las estrellas se guardan solo en este navegador, con una clave de la demo.</li>
+        </ul>
+        <p><a href="/dev/libreria-puerto.html">Abrir el prototipo con las opciones de desarrollo</a></p>
+      </section>
+    </main>
+    <script type="module">
+      const root = document.documentElement;
+      const fit = () => root.style.setProperty('--scale', String(Math.max(0.5, Math.min(1, (window.innerHeight - 40) / 868, (window.innerWidth - 32) / 414))));
+      fit();
+      window.addEventListener('resize', fit);
+
+      const $ = (id) => document.getElementById(id);
+      const room = $('room');
+      const pc = $('pc');
+      const win = $('win');
+      const frame = $('frame');
+      const gameBtn = $('open-game');
+
+      function closeGame() {
+        win.hidden = true;
+        gameBtn.setAttribute('aria-selected', 'false');
+        // Al cerrar se desmonta: el marco se vacía y el juego libera sus bucles y su audio
+        frame.src = 'about:blank';
+      }
+      $('open-pc').addEventListener('click', () => {
+        room.hidden = true;
+        pc.hidden = false;
+        gameBtn.focus();
+      });
+      gameBtn.addEventListener('click', () => {
+        if (!win.hidden) return;
+        // Se carga al abrir la app (como un módulo diferido)
+        frame.src = '/dev/libreria-puerto.html?vista=pc&nivel=semana';
+        win.hidden = false;
+        gameBtn.setAttribute('aria-selected', 'true');
+      });
+      $('close-win').addEventListener('click', () => {
+        closeGame();
+        gameBtn.focus();
+      });
+      $('exit-pc').addEventListener('click', () => {
+        closeGame();
+        pc.hidden = true;
+        room.hidden = false;
+        $('open-pc').focus();
+      });
+    </script>
+  </body>
+</html>

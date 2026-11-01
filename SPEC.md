@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.62.0 · 2026-10-31 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.63.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4136,3 +4136,44 @@ Encargo: apartado 5 de `PROMPT-CLAUDE.md` y columna derecha de `maquetas/04-comu
   WebKit 390; `entrega3` al día. El simulador entiende ahora el `or` de la paginación por cursor (antes repetía la
   primera página). Sin iPhone real: el teclado se ha simulado.
 - No se ha usado la acuarela de la cabecera de la maqueta (no hay recurso): no se improvisa.
+
+## 63. «El edificio del puerto» en la app (1.63.0)
+
+Idea de Francisco (1-11-2026), a partir del devblog de un juego de pixel art en el que se decora una casa: tu piso
+cozy en un edificio con vecinos que se visitan. Del vídeo se toma el género, nunca su arte. **No sustituye** al rincón
+ilustrado ni a su visita. Código en `src/features/edificio/`; usa el rasterizador y el audio de
+`src/features/minigames/libreria-puerto/`. Plan y capturas del prototipo: `docs/qa/edificio-puerto.md`.
+
+- **Entrada**: la tablet del Salón Social pregunta, en una tarjeta «La tablet», entre «Comunidad» (lo de siempre) y
+  «El edificio del puerto». Mientras la migración no esté aplicada (o sin sesión, o sin comunidad activada) la tablet
+  hace lo de antes: abrir la comunidad (`edificioAvailable()` prueba la tabla `pisos` y solo recuerda un «sí» o un «no»
+  claros).
+- **Panel** (`EdificioPanel.jsx`, cargado bajo demanda, `PanelShell` con `variant="edificio"`: hoja inferior en el
+  móvil y tarjeta centrada desde 700 px). Paneles `{ type: 'edificio' }` (portal) y `{ type: 'edificio', id }` (un piso);
+  Atrás del sistema vuelve del piso al portal y del portal al salón (`safeParent`).
+  - **Portal**: seis puertas (3.º B … 1.º A) con la miniatura de cada piso a la luz de tarde, «Tu piso» resaltado,
+    «Puerta libre» en las vacías y «Tu buzón» con los sellos recibidos.
+  - **Tu piso**: «Decorar» con catálogo, girar, color, quitar, arrastrar o tocar para mover y teclado; se guarda solo
+    (900 ms después del último cambio, «Guardando…» / «Guardado.», y al salir si quedaba algo). La primera vez se crea
+    con unos pocos muebles y se guarda. Escape suelta el mueble elegido sin cerrar el panel (`data-escape-local`).
+  - **Piso de un vecino**: solo mirar, «Luz de tarde» y cuatro sellos de frase cerrada (sin texto libre); tocar el
+    mismo otra vez lo quita.
+  - Sin comunidad activada: lo explica y lleva a «Activar la comunidad en mi perfil».
+- **Reglas del piso**: cuadrícula 9 × 9, capas alfombra / suelo / encima / pared, máximo 40 muebles, catálogo gratis de
+  24 (no toca recompensas, cajas ni pity).
+- **Servidor** (`supabase/migrations/20261101120000_edificio_puerto.sql`, aplicada en producción el 1-11-2026):
+  - `piso_catalogo` y `piso_valido(layout)`: la misma validación que `validateRoom` (un fuzz de 300 pisos en
+    `edificio.rls.test.js` comprueba que coinciden).
+  - `edificios` y `edificio_vecinos` (sin acceso directo). `asignar_edificio()` reparte **al azar** (decisión de
+    Francisco): solo perfiles con la comunidad activada, primero edificios con hueco (hasta seis), puerta libre al
+    azar, con un candado para que dos altas a la vez no choquen; si ya tienes puerta, la devuelve.
+  - `pisos`: escribe solo el dueño, y solo un piso válido (disparador); lo leen los vecinos del mismo edificio con la
+    comunidad activada y sin bloqueo entre ambos.
+  - `piso_sellos`: uno por pareja, solo entre vecinos, a tu nombre; lo ven quien lo da y quien lo recibe.
+  - `edificio_portal()`: tu edificio en una consulta. Quien te bloquea, a quien bloqueas o quien desactivó la comunidad
+    no sale (su puerta se ve como cualquier puerta libre: no se delata un bloqueo).
+- Pruebas: `src/features/edificio/__tests__/` (reglas y RLS con PGlite), `e2e/edificio-puerto.spec.js` (página de
+  desarrollo) y `e2e-community/v163-edificio.spec.js` (tablet, portal, guardado, visita con sello, Atrás y sin
+  comunidad) en 390 Chromium y WebKit y en 1440. Sin iPhone real.
+- Pendiente de decidir: qué pasa con la puerta de quien deja la app; ilustraciones de muebles si las cajas no bastan e
+  icono del edificio; el directo (presencia) más adelante.
