@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.67.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.68.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4330,3 +4330,37 @@ tickets solo se ganan leyendo (nunca con dinero).
   `e2e-community/v167-tienda.spec.js` (pared, dependienta, coleccionista; 320, 390,
   1440 y WebKit 390; el simulador sortea lo que la prueba pone en `db.piso_sorteo`). Las pruebas antiguas de figuras se
   saltan con `FIGURES_ENABLED` (y dicen por qué); `v166` elige comunes porque el sofá ya no lo es.
+
+## 68. La tienda por dentro, con el motor de los pisos y las secciones en la escena (1.68.0, maquetas de Francisco)
+
+- **Encargo**: dos imágenes de referencia de Francisco (una tienda acogedora ilustrada y un primer plano del mostrador
+  con la dependienta). Se toman solo el género y las ideas, nunca su arte. Tras una primera ronda en 2D («muy plano»),
+  pidió que se pareciera a las habitaciones, con más detalle y profundidad, y que Sobres/Muebles/Reciclar estuvieran
+  integrados de forma orgánica, sin quitarle protagonismo a la tienda.
+- **El local** (`src/features/edificio/shopRoom.js`, `renderShopRoom()`): se dibuja con el mismo motor que los pisos
+  (`raster.js`, damero de `floorColor`, sombras, oclusión, bordes y luz de tarde con las lámparas). Es un antiguo
+  videoclub con:
+  - estanterías y el cartel «VIDEOCLUB» con letra propia de píxeles (guiño, nunca un logotipo);
+  - un ventanal al puerto de noche con hiedra, guirnalda, cuadro y baldas con tarros;
+  - la dependienta (personaje propio, de vóxeles) en su mostrador con caja, timbre y planta;
+  - lámparas colgadas.
+- **Las secciones son objetos de la tienda**:
+  - el expositor con los sobres de pie (Sobres);
+  - el rincón del sillón con alfombra, lámpara y mesilla (Muebles);
+  - la caja de reciclaje (Reciclar).
+
+  Cada uno lleva un letrero de papel con muesca (`role=tab`, el elegido en salvia). También se puede tocar el objeto:
+  `hit()` mira el búfer de ids del dibujo, con 2 px de margen. El contorno de la sección elegida se enciende en dorado
+  (`outlines`, un latido suave que se para con movimiento reducido). Ya no hay fila de pestañas grandes.
+- **Sobres**: los cuatro de la temporada van en fila bajo la escena (en el expositor serían demasiado pequeños para el
+  dedo), con precio y esquinas de latón en el elegido. Después vienen la ficha, «Abrir 1 / Abrir 5», la nota (con
+  «Ver misiones» si faltan tickets) y «Probabilidades y garantías».
+- **Abrir un sobre** (`renderShopCounter(mood)`): el mismo local visto de cerca y casi de frente (yaw 0,2, S 44), sin la
+  lamparita del mostrador ni lo que taparía el encuadre. Al terminar, la dependienta sonríe (`happy`). El sobre, las
+  cartas y el papel de abajo se colocan sobre el tablero. Durante la apertura, el «Volver» del panel dice «Volver a la
+  tienda» y cierra el sobre.
+- `shopCozy.js` (los dibujos 2D de la primera ronda) se ha borrado. `dev/tienda-dibujos.html` enseña los dos dibujos
+  grandes (solo en desarrollo).
+- **Pruebas**: `e2e-community/v167-tienda.spec.js` cubre la fila de sobres, los letreros como pestañas y la caja de
+  reciclaje tocada en el dibujo. También comprueba que, sin tickets, se ofrece ir a las misiones, y que «Mostrar todos»
+  salta la animación. Se ejecuta en Chromium 320, 390 y 1440 y en WebKit 390. Vitest de `edificio`.

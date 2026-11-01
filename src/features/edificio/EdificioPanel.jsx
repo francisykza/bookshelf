@@ -96,7 +96,7 @@ function PisoView({ room, editable, label, soundOn, inside, inventory, onChange 
   return <div ref={ref} className="ed-piso" />;
 }
 
-export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onClose, onOpenProfile }) {
+export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions = null }) {
   const community = useCommunity({ autoload: true });
   const ready = community.status === 'ready' && community.member;
   const [data, setData] = useState(null);
@@ -108,6 +108,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   // Mis copias de cada mueble (1.66, §66); null: sin la migración del inventario, todo libre como antes
   const [inventory, setInventory] = useState(null);
   const [choosing, setChoosing] = useState(false);
+  // En la tienda, con un sobre abierto, el «Volver» de la barra vuelve a la tienda (1.68)
+  const [revealing, setRevealing] = useState(false);
+  const [closeReveal, setCloseReveal] = useState(0);
   const inside = view === 'dentro';
   const pending = useRef(null);
   const timer = useRef(0);
@@ -212,7 +215,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     body = <p className="ed-note">Buscando tu puerta…</p>;
   } else if (inShop) {
     body = inventory?.tienda ? (
-      <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={() => me && onOpenPiso(me.user_id)} />
+      <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={() => me && onOpenPiso(me.user_id)} onOpenMissions={onOpenMissions} onReveal={setRevealing} closeReveal={closeReveal} />
     ) : (
       <p className="ed-note">{inventory ? 'La tienda del bajo abre muy pronto.' : 'Abriendo la tienda…'}</p>
     );
@@ -288,9 +291,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     <PanelShell onClose={onClose} label={inShop ? 'La tienda del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
       <div className="ed-bar">
         {pisoId ? (
-          <button type="button" className="ed-bar__back" onClick={onClose}>
+          <button type="button" className="ed-bar__back" onClick={inShop && revealing ? () => setCloseReveal((n) => n + 1) : onClose}>
             <ArrowLeft aria-hidden="true" />
-            Volver al portal
+            {inShop && revealing ? 'Volver a la tienda' : 'Volver al portal'}
           </button>
         ) : (
           <button type="button" className="ed-bar__close" onClick={onClose} aria-label="Cerrar el edificio">

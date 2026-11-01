@@ -106,7 +106,7 @@ function rugColor(r, item, x, y, ix, iy) {
   return ramp[level(0)];
 }
 
-function floorColor(r, suelo, x, y, ix, iy) {
+export function floorColor(r, suelo, x, y, ix, iy) {
   const dither = (r.bayerAt(ix, iy) - 0.5) * 0.4;
   if (suelo === 'damero') {
     const odd = (Math.floor(x) + Math.floor(y)) % 2;

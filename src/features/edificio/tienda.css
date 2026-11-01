@@ -43,21 +43,6 @@
   image-rendering: pixelated;
 }
 
-.ts-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.ts-tabs .px-btn {
-  min-height: 44px;
-}
-
-.ts-tabs .px-btn[aria-selected='true'] {
-  border-image-source: var(--px-sage);
-  color: #fbf5e6;
-}
-
 /* Sobre fondos oscuros (madera, trastienda) los botones de papel conservan su tinta */
 .gacha .px-btn:not(.px-btn--sage),
 .ts-ask .px-btn:not(.px-btn--sage) {
@@ -83,16 +68,19 @@
   gap: 12px;
 }
 
-/* El antiguo videoclub por dentro (shopScene.js), con los sobres de la pared como botones encima de sus huecos */
+/* La tienda isométrica (shopRoom.js). Las secciones son sus objetos: se tocan (o su letrero) y se enciende su contorno */
 .ts-scene {
   position: relative;
   width: calc(100% + 28px);
   margin: 0 -14px;
   overflow: hidden;
-  background: #2a1d17;
+  background: #2e2226;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.ts-scene__art {
+.ts-scene__art,
+.ts-scene__outline {
   display: block;
   width: 100%;
   height: 100%;
@@ -100,89 +88,136 @@
   user-select: none;
 }
 
-.ts-clerk {
+.ts-scene__outline {
   position: absolute;
-  image-rendering: pixelated;
+  inset: 0;
   pointer-events: none;
-  opacity: 0;
+  animation: ts-glow 2.6s ease-in-out infinite;
 }
 
-/* Parpadea de vez en cuando */
-.ts-clerk--blink {
-  animation: ts-blink 5.2s steps(1, end) infinite;
-}
-
-@keyframes ts-blink {
-  0%,
-  95% {
-    opacity: 0;
-  }
-  96%,
-  98% {
-    opacity: 1;
+@keyframes ts-glow {
+  50% {
+    opacity: 0.55;
   }
 }
 
-/* Mueve la boca un momento cuando dice algo nuevo, y la cierra */
-.ts-clerk--talk {
-  animation: ts-talk 0.9s steps(1, end);
-}
-
-@keyframes ts-talk {
-  0%,
-  30%,
-  60% {
-    opacity: 1;
-  }
-  15%,
-  45%,
-  75%,
-  100% {
-    opacity: 0;
-  }
-}
-
-.ts-wall {
+.ts-spots {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.ts-wallpack {
+/* El letrero de cada sección: una tablilla de papel colgada sobre su objeto, con una muesca que lo señala */
+.ts-spot {
   position: absolute;
-  padding: 0;
-  border: 0;
+  min-height: 28px;
+  padding: 2px 8px 3px;
+  border: 4px solid transparent;
+  border-image: var(--px-paper) 6 fill / 4px stretch;
   background: none;
+  color: #2c1e14;
+  font: 600 0.8rem/1 'Lora', Georgia, serif;
+  white-space: nowrap;
   cursor: pointer;
   pointer-events: auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 0 rgb(30 18 10 / 0.5));
+  transform: translate(-50%, -100%);
   transition: transform 0.12s ease-out;
+}
+
+.ts-spot::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 0;
+  height: 0;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-top-color: #f6ead0;
+}
+
+/* Más sitio para el dedo que lo que se ve */
+.ts-spot::after {
+  content: '';
+  position: absolute;
+  inset: -8px -6px;
+}
+
+.ts-spot:hover {
+  transform: translate(-50%, calc(-100% - 2px));
+}
+
+.ts-spot[aria-selected='true'] {
+  border-image-source: var(--px-sage);
+  color: #fbf5e6;
+}
+
+.ts-spot[aria-selected='true']::before {
+  border-top-color: #7d9a6c;
+}
+
+.ts-spot:focus-visible {
+  outline: 2px solid #ffd75a;
+  outline-offset: 3px;
+}
+
+/* Los sobres de la temporada, en fila (en el expositor del dibujo serían demasiado pequeños para el dedo) */
+.ts-packs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ts-pack {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 6px 0 2px;
+  border: 0;
+  background: none;
+  color: #6b5440;
+  font: 600 0.85rem/1 'Lora', Georgia, serif;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-.ts-wallpack img {
-  display: block;
-  width: 100%;
-  height: 100%;
+.ts-pack img {
+  width: min(100%, 52px);
+  height: auto;
   image-rendering: pixelated;
-  filter: drop-shadow(1px 2px 0 rgb(30 18 10 / 0.45));
+  filter: drop-shadow(1px 2px 0 rgb(30 18 10 / 0.35));
+  transition: transform 0.12s ease-out;
 }
 
-.ts-wallpack:hover {
-  transform: translateY(-2%);
+.ts-pack .ts-ticket {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
 }
 
-/* El elegido se descuelga un poco y lo marcan cuatro esquinas de latón */
-.ts-wallpack[aria-pressed='true'] {
-  z-index: 1;
-  transform: translateY(-5%) scale(1.06);
+.ts-pack:hover img {
+  transform: translateY(-2px);
 }
 
-.ts-wallpack[aria-pressed='true']::before {
+.ts-pack[aria-pressed='true'] {
+  color: #2c1e14;
+}
+
+.ts-pack[aria-pressed='true'] img {
+  transform: translateY(-4px) scale(1.06);
+}
+
+/* El elegido: cuatro esquinas de latón */
+.ts-pack[aria-pressed='true']::before {
   content: '';
   position: absolute;
-  inset: -10%;
-  --c: #ffd75a;
-  --l: 32%;
+  inset: 0 6% 18px;
+  --c: #c9962e;
+  --l: 26%;
   background:
     linear-gradient(var(--c), var(--c)) 0 0 / var(--l) 3px,
     linear-gradient(var(--c), var(--c)) 0 0 / 3px var(--l),
@@ -193,76 +228,114 @@
     linear-gradient(var(--c), var(--c)) 100% 100% / var(--l) 3px,
     linear-gradient(var(--c), var(--c)) 100% 100% / 3px var(--l);
   background-repeat: no-repeat;
-  filter: drop-shadow(1px 1px 0 #3b2618);
-  animation: ts-bracket 1.4s ease-in-out infinite;
+  pointer-events: none;
 }
 
-@keyframes ts-bracket {
-  50% {
-    inset: -14%;
-  }
-}
-
-/* El de coleccionista brilla un poco por su cuenta */
-.ts-wallpack.is-gold img {
+.ts-pack.is-gold img {
   animation: ts-gold 3s ease-in-out infinite;
 }
 
 @keyframes ts-gold {
   50% {
-    filter: drop-shadow(1px 2px 0 rgb(30 18 10 / 0.45)) brightness(1.15);
+    filter: drop-shadow(1px 2px 0 rgb(30 18 10 / 0.35)) brightness(1.15);
   }
 }
 
-/* El bocadillo del dependiente: barra de nombre y precio, y el papel con lo que dice */
-.ts-talk {
+/* La ficha del sobre elegido: el sobre, su nombre, lo que trae y el precio */
+.ts-card {
   display: grid;
-  margin-top: -6px;
-}
-
-.ts-talk__bar {
-  display: flex;
-  flex-wrap: wrap;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 2px 10px;
-  padding: 6px 12px;
-  border: 4px solid #3b2618;
-  border-bottom: 0;
-  background: linear-gradient(#8a2f24, #6e2219);
-  color: #fbf5e6;
-  font: 600 1rem/1.2 'Lora', Georgia, serif;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  image-rendering: pixelated;
 }
 
-.ts-talk__name {
-  font: 600 1.2rem/1.1 'Cormorant Garamond', Georgia, serif;
+.ts-card.is-gold {
+  border-image-source: var(--px-rimGold);
 }
 
-.ts-talk__price {
+.ts-card__pack {
+  width: 72px;
+  height: 108px;
+  padding-right: 12px;
+  border-right: 1px solid #d6c39e;
+  image-rendering: pixelated;
+  filter: drop-shadow(2px 3px 0 rgb(59 38 24 / 0.3));
+  transform: rotate(-6deg);
+}
+
+.ts-card__text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ts-card h3 {
+  margin: 0;
+  font: 600 1.55rem/1.05 'Cormorant Garamond', Georgia, serif;
+}
+
+.ts-card p {
+  margin: 0;
+  color: #6b5440;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.ts-card .ts-card__price {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: #ffe2a8;
-  font-size: 0.9rem;
+  justify-self: start;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 3px 8px;
+  background: #f1e2c2;
+  color: var(--ep-ink, #2c1e14);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.ts-talk__price .ts-ticket {
+.ts-card__price .ts-ticket {
   width: 18px;
   height: 18px;
   vertical-align: 0;
 }
 
-.ts-talk__text {
-  min-height: 3.9em;
-  margin: 0;
+/* Lo que falta o lo último que pasó, en un papel claro; con el atajo a las misiones */
+.ts-note {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
   padding: 8px 12px;
-  border: 6px solid transparent;
-  border-image: var(--px-paper) 6 fill / 6px stretch;
-  color: var(--ep-ink, #2c1e14);
-  font-size: 0.95rem;
-  line-height: 1.35;
-  image-rendering: pixelated;
+  border: 2px solid #eadbbb;
+  background: #fbf3df;
+  text-align: center;
+}
+
+.ts-note:empty {
+  display: none;
+}
+
+.ts-note p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.ts-link,
+.gacha__link {
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: #46523a;
+  font: 600 1rem/1 'Lora', Georgia, serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
 .ts-open {
@@ -291,6 +364,13 @@
   min-height: 32px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.ts-odds summary small {
+  display: block;
+  margin-left: 1.2em;
+  color: #6b5440;
+  font-weight: 500;
 }
 
 .ts-odds p {
@@ -445,22 +525,29 @@
   outline-offset: 2px;
 }
 
-/* ── El sobre (GachaReveal): de noche en la trastienda, para que la luz se vea ── */
+/* ── El sobre (GachaReveal): en el mostrador visto de cerca (renderCounter); todo medido en anchos del dibujo ── */
 .gacha {
   --rar: #d98b6a;
+  container-type: inline-size;
   position: relative;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 14px;
-  min-height: min(78dvh, 640px);
-  margin: 0 -14px;
-  padding: 20px 12px 24px;
+  display: block;
+  width: calc(100% + 28px);
+  max-width: 460px;
+  aspect-ratio: var(--cw) / var(--ch);
+  margin: -8px -14px 0;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 42%, rgb(255 214 150 / 0.16), transparent 55%),
-    repeating-linear-gradient(90deg, #2a1d17 0 22px, #2f2019 22px 24px);
+  background-color: #3a2618;
+  background-position: top center;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
   color: #fbf5e6;
+  image-rendering: pixelated;
+}
+
+@media (min-width: 520px) {
+  .gacha {
+    margin: 0 auto;
+  }
 }
 
 .gacha--poco-comun {
@@ -472,13 +559,16 @@
 }
 
 .gacha__stage {
+  position: absolute;
+  top: 92cqw;
+  left: 0;
+  right: 0;
   display: grid;
   justify-items: center;
-  gap: 18px;
 }
 
 .gacha__env {
-  --u: 5px;
+  --u: 1cqw;
   position: relative;
   width: calc(var(--ew) * var(--u));
   height: calc(var(--eh) * var(--u));
@@ -488,6 +578,17 @@
   color: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Sombra del sobre en el tablero */
+.gacha__shadow {
+  position: absolute;
+  left: 8%;
+  right: -6%;
+  bottom: -4%;
+  height: 10%;
+  background: rgb(60 30 10 / 0.35);
+  transform: skewX(-30deg);
 }
 
 .gacha__env:disabled {
@@ -859,50 +960,98 @@
   transform: rotate(6deg);
 }
 
-.gacha__all {
-  margin-top: 4px;
+/* Las cartas, repartidas sobre el tablero */
+.gacha__cards {
+  position: absolute;
+  top: 87cqw;
+  left: 4cqw;
+  right: 4cqw;
+  max-width: none;
+  gap: 2.4cqw;
 }
 
-.gacha__done {
+.gacha .gacha__card {
+  --cw: 25.5cqw;
+  height: calc(var(--cw) * 1.25);
+}
+
+.gacha .gacha__cards--n1 .gacha__card {
+  --cw: 36cqw;
+}
+
+.gacha .gacha__face img {
+  width: 16cqw;
+  height: 16cqw;
+}
+
+.gacha .gacha__cards--n1 .gacha__face img {
+  width: 24cqw;
+  height: 24cqw;
+}
+
+.gacha .gacha__face {
+  font-size: min(0.82rem, 3.4cqw);
+}
+
+/* El papel de abajo: qué hacer y, al final, cuántos son nuevos */
+.gacha__paper {
+  position: absolute;
+  left: 7cqw;
+  right: 7cqw;
+  top: 153cqw;
   display: grid;
   justify-items: center;
-  gap: 10px;
-  max-width: 420px;
+  gap: 6px;
+  padding: 12px 14px 10px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  color: var(--ep-ink, #2c1e14);
   text-align: center;
-  animation: gacha-deal 0.35s ease-out both;
+  filter: drop-shadow(0 4px 0 rgb(30 16 8 / 0.35));
 }
 
-.gacha__done p {
+.gacha__title {
   margin: 0;
-  color: #f6e8cc;
-  line-height: 1.4;
+  font: 600 min(1.75rem, 7.2cqw)/1.05 'Cormorant Garamond', Georgia, serif;
 }
 
-.gacha__actions {
+.gacha__orn {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  align-items: center;
   gap: 8px;
+  width: 70%;
+  color: #b98b2f;
+  font-size: 0.8rem;
 }
 
-@media (max-width: 360px) {
-  .gacha__card {
-    --cw: 88px;
-  }
+.gacha__orn i {
+  flex: 1;
+  height: 2px;
+  background: #d6b46a;
+}
 
-  .gacha__env {
-    --u: 4px;
-  }
+.gacha__paper .gacha__hint {
+  min-height: 0;
+  margin: 0;
+  color: var(--ep-ink, #2c1e14);
+}
+
+.gacha__tally {
+  margin: 0;
+  font-size: min(1.02rem, 4.4cqw);
+}
+
+.gacha__go {
+  width: 100%;
+  font-size: 1.15rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ts-clerk,
-  .ts-wallpack[aria-pressed="true"]::before,
-  .ts-wallpack.is-gold img,
+  .ts-scene__outline,
+  .ts-pack.is-gold img,
   .gacha__glow,
   .gacha__rays,
   .gacha__cards li,
-  .gacha__done,
   .gacha__card.is-raro.is-shown,
   .gacha__card.is-raro.is-shown::after {
     animation: none;

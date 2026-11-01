@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex" />
+    <title>Dibujos de la tienda del bajo (desarrollo)</title>
+    <!-- Solo desarrollo: los dos dibujos de la tienda (shopRoom.js) a tamaño grande, para revisarlos sin la interfaz. -->
+    <style>
+      body { margin: 0; padding: 16px; display: flex; gap: 16px; align-items: flex-start; background: #2a211b; }
+      img { image-rendering: pixelated; }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import { renderShopRoom, renderShopCounter, SHOP_ROOM_W, COUNTER_W } from '/src/features/edificio/shopRoom.js';
+      const add = (src, w) => {
+        const i = new Image();
+        i.src = src;
+        i.width = w;
+        document.body.append(i);
+      };
+      add(renderShopRoom().scene, SHOP_ROOM_W * 3);
+      add(renderShopCounter('base').scene, COUNTER_W * 3);
+      add(renderShopCounter('happy').scene, COUNTER_W * 3);
+      document.body.dataset.ready = '1';
+    </script>
+  </body>
+</html>

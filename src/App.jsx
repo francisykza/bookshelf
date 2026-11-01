@@ -403,6 +403,7 @@ function Sanctuary() {
             onOpenPiso={(id) => openPanel({ type: 'edificio', id })}
             onClose={close}
             onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })}
+            onOpenMissions={() => openPanel({ type: 'laptop', tab: 'missions' })}
           />
         </Suspense>
       )}

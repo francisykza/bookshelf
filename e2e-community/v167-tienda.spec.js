@@ -62,19 +62,19 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   const wall = shop.getByRole('group', { name: /Sobres de la temporada 1/ });
   await expect(wall.getByRole('button')).toHaveCount(4);
   await expect(wall.getByRole('button', { name: /^Sala de estar/ })).toHaveAttribute('aria-pressed', 'true');
-  await expect(shop.locator('.ts-talk__name')).toHaveText('Sala de estar');
-  await expect(shop.getByText(/Llevas 3 muebles seguidos sin nada raro. Como mucho en 12 más/)).toBeVisible();
+  await expect(shop.locator('.ts-card h3')).toHaveText('Sala de estar');
+  await expect(shop.getByText('Raro garantizado en un máximo de 12 muebles.')).toBeVisible();
   // Las probabilidades del sobre elegido, a la vista (el gato no viene en este: sale de fuera)
-  await shop.getByText('Probabilidades de «Sala de estar»').click();
+  await shop.getByText('Probabilidades y garantías').click();
   await expect(shop.getByRole('heading', { name: /^Raro · 6 %/ })).toContainText('de fuera del sobre');
   await expect(shop.locator('.ts-odds__row.is-raro li', { hasText: 'Gato dormido' })).toContainText('6 %');
   await page.waitForTimeout(900);
   await shot(page, info, 'v167-tienda-sobres');
-  await shop.getByText('Probabilidades de «Sala de estar»').click();
+  await shop.getByText('Probabilidades y garantías').click();
 
   // El de coleccionista, más caro y con más suerte: el dependiente lo explica
   await wall.getByRole('button', { name: /^Edición coleccionista: 25 tickets el de 1, 110 el de 5/ }).click();
-  await expect(shop.locator('.ts-talk__name')).toHaveText('Edición coleccionista');
+  await expect(shop.locator('.ts-card h3')).toHaveText('Edición coleccionista');
   await expect(shop.getByRole('button', { name: /^Abrir 5 · 110/ })).toBeDisabled();
   await page.waitForTimeout(900);
   await shot(page, info, 'v167-tienda-coleccionista');
@@ -97,9 +97,9 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   await shot(page, info, 'v167-sobre-raro');
   await gacha.getByRole('button', { name: 'Volver a la tienda' }).click();
   await expect(wallet(shop)).toHaveText('65');
-  await expect(shop.getByText(/Llevas 0 muebles seguidos/)).toBeVisible();
+  await expect(shop.getByText('Raro garantizado en un máximo de 15 muebles.')).toBeVisible();
 
-  // Paquete de cinco: cartas boca abajo, «Revelar todo» las vuelve una a una
+  // Paquete de cinco: cartas boca abajo, «Mostrar todos» las vuelve una a una
   mock.db.piso_sorteo = ['libros', 'tetera', 'radio', 'libros', 'planta-pequena'];
   await shop.getByRole('button', { name: /^Abrir 5 · 45/ }).click();
   await expect(gacha).toHaveClass(/gacha--poco-comun/);
@@ -109,7 +109,7 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   await shot(page, info, 'v167-paquete-boca-abajo');
   await gacha.getByRole('button', { name: 'Dar la vuelta a la carta 3' }).click();
   await expect(gacha.getByRole('button', { name: 'Radio, poco común, nuevo' })).toBeVisible();
-  await gacha.getByRole('button', { name: 'Revelar todo' }).click();
+  await gacha.getByRole('button', { name: 'Mostrar todos' }).click();
   await expect(gacha.getByRole('status')).toContainText('Te llevas 5 muebles: pila de libros, tetera, radio, pila de libros, planta pequeña.', { timeout: 5000 });
   await page.waitForTimeout(700);
   await shot(page, info, 'v167-paquete-revelado');
@@ -124,12 +124,14 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   await shot(page, info, 'v167-tienda-muebles');
   await shop.getByRole('button', { name: /^Silla, común, 20 tickets/ }).click();
   await shop.getByRole('button', { name: 'Comprar' }).click();
-  await expect(shop.locator('.ts-talk .px-sr')).toContainText('Silla: ya es tuyo.');
+  await expect(shop.locator('.ts-note')).toContainText('Silla: ya es tuyo.');
   await expect(wallet(shop)).toHaveText('0');
   expect(mock.db.piso_inventario[ANA.id].silla).toBe(3);
 
-  // Reciclar: solo lo que no está colocado
-  await shop.getByRole('tab', { name: 'Reciclar' }).click();
+  // Reciclar: solo lo que no está colocado. Se llega tocando la caja de reciclaje del dibujo (no su letrero)
+  const scene = await shop.locator('.ts-scene').boundingBox();
+  await shop.locator('.ts-scene').click({ position: { x: scene.width * 0.474, y: scene.height * 0.72 } });
+  await expect(shop.getByRole('tab', { name: 'Reciclar' })).toHaveAttribute('aria-selected', 'true');
   await shop.getByRole('button', { name: /^Gato dormido: 1 sin colocar; reciclar por 20 tickets/ }).click();
   await shot(page, info, 'v167-tienda-reciclar');
   await shop.getByRole('button', { name: 'Reciclar', exact: true }).click();
@@ -156,6 +158,37 @@ test('con movimiento reducido, el sobre enseña lo que trae sin animación', asy
   await expect(gacha.getByRole('button', { name: 'Cuadro del barco, común, nuevo' })).toBeVisible();
   await expect(gacha.getByRole('button', { name: /^Rasgar el sobre/ })).toHaveCount(0);
   await shot(page, info, 'v167-sobre-reducido');
+});
+
+test('sin tickets suficientes lo dice y lleva a las misiones; «Mostrar todos» salta la animación', async ({ page }, info) => {
+  test.skip(!/320x640|390x844/.test(info.project.name), '320 y 390');
+  const mock = mockWith({ tickets: 15, sin_raro: 1 });
+  const portal = await openPortal(page, mock);
+  await portal.getByRole('button', { name: 'Entrar en la tienda del bajo' }).click();
+  const shop = page.getByRole('dialog', { name: 'La tienda del bajo' });
+  // Con el de 1 sí llega; «Mostrar todos» sin rasgar enseña la carta directamente
+  mock.db.piso_sorteo = ['sofa'];
+  await shop.getByRole('button', { name: /^Abrir 1 · 10/ }).click();
+  const gacha = page.locator('.gacha');
+  await expect(gacha.getByText('Una sorpresa para tu rincón')).toBeVisible();
+  // El «Volver» de la barra vuelve a la tienda mientras el sobre está abierto
+  await expect(page.locator('.ed-bar__back')).toHaveText('Volver a la tienda');
+  await page.waitForTimeout(400);
+  await shot(page, info, 'v168-sobre-mostrador');
+  await gacha.getByRole('button', { name: 'Mostrar todos' }).click();
+  await expect(gacha.getByRole('button', { name: 'Sofá, poco común, nuevo' })).toBeVisible();
+  await expect(gacha.getByText('Un mueble para tu piso · nuevo')).toBeVisible();
+  await page.waitForTimeout(500);
+  await shot(page, info, 'v168-sobre-uno');
+  await page.locator('.ed-bar__back').click();
+  await expect(page.locator('.ed-bar__back')).toHaveText('Volver al portal');
+  // Ahora quedan 5: lo dice y ofrece las misiones
+  await expect(shop.locator('.ts-note')).toContainText('Te faltan 5 tickets.');
+  await expect(shop.getByRole('button', { name: /^Abrir 1 · 10/ })).toBeDisabled();
+  await page.waitForTimeout(300);
+  await shot(page, info, 'v168-tienda-sin-tickets');
+  await shop.getByRole('button', { name: /Ver misiones/ }).click();
+  await expect(page.getByRole('tab', { name: /Misiones/ })).toHaveAttribute('aria-selected', 'true', { timeout: 15000 });
 });
 
 test('las misiones del ordenador se cobran en tickets y las figuras no aparecen', async ({ page }, info) => {

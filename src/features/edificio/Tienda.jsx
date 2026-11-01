@@ -1,9 +1,11 @@
 // «La tienda del bajo» (1.67, SPEC §67; fases 2 y 4 de docs/qa/economia-muebles.md): se entra por el escaparate de la
-// planta baja. Por dentro es el antiguo videoclub (shopScene.js): la pared de sobres de la temporada colgados de sus
-// ganchos, el dependiente detrás del mostrador y su bocadillo abajo, que cuenta qué trae cada sobre. Los tickets solo se
-// ganan leyendo (misiones semanales) y aquí se gastan: sobres por tipo, de 1 o de 5, con las probabilidades a la vista y
-// el pity contado; muebles sueltos a precio fijo (lo raro solo sale en sobres); y reciclar lo que no está colocado.
-// Todo lo decide el servidor; esto enseña y pide confirmación antes de gastar.
+// planta baja. Desde la 1.68 (maquetas de Francisco) es un local isométrico dibujado con el mismo motor que los pisos
+// (shopRoom.js): el antiguo videoclub con estanterías, el ventanal al puerto y la dependienta en su mostrador. Las tres
+// secciones son objetos de la tienda: el expositor (Sobres), el rincón del sillón (Muebles) y la caja de reciclaje
+// (Reciclar); se tocan, o su letrero, y se les enciende el contorno. Debajo, lo de la sección: los sobres de la
+// temporada, la ficha del elegido, abrir de 1 o de 5, lo que falta si no llega (con un atajo a las misiones) y las
+// probabilidades y garantías. Los tickets solo se ganan leyendo; muebles sueltos a precio fijo (lo raro solo sale en
+// sobres) y reciclar lo que no está colocado. Todo lo decide el servidor; esto enseña y pide confirmación antes de gastar.
 import { useEffect, useMemo, useState } from 'react';
 import { CATALOG, catalogItem } from './catalog';
 import { MISION_TICKETS, PITY, SOBRES, TEMPORADA, TIENDA, costeDe, oddsTable, precioDe, rarezaInfo, rarezaOf, sobreOf, sobresHastaRaro, ticketsText } from './economy';
@@ -14,7 +16,7 @@ import { renderThumb } from './render';
 import { abrirSobre, comprar, reciclar } from './service';
 import { packArt } from './shopArt';
 import { createShopSfx } from './shopAudio';
-import { SHOP_H, SHOP_W, renderShop } from './shopScene';
+import { SHOP_ROOM_H, SHOP_ROOM_W, renderShopRoom } from './shopRoom';
 import './tienda.css';
 
 const TABS = [
@@ -22,15 +24,12 @@ const TABS = [
   { id: 'muebles', nombre: 'Muebles' },
   { id: 'reciclar', nombre: 'Reciclar' },
 ];
-const TYPE_MS = 16;
 const pctText = (p) => `${(p * 100).toLocaleString('es-ES', { maximumFractionDigits: 1 })} %`;
 const nameOf = (id) => catalogItem(id)?.nombre ?? id;
 const pct = (v) => `${(v * 100).toFixed(3)}%`;
-const box = (r) => ({ left: pct(r.left), top: pct(r.top), width: pct(r.width), height: pct(r.height) });
-const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function Ticket() {
-  return <img className="px-icon ts-ticket" src={pixelIconSrc('ticket')} alt="" width={22} height={22} />;
+function Ticket({ size = 22 }) {
+  return <img className="px-icon ts-ticket" src={pixelIconSrc('ticket')} alt="" width={size} height={size} />;
 }
 
 /** Un mueble de la tienda: miniatura, nombre, rareza y lo que tienes. */
@@ -47,44 +46,29 @@ function ItemCard({ id, thumb, owned, children, onClick, label, pressed }) {
   );
 }
 
-/** Lo que dice el dependiente, letra a letra (con movimiento reducido, de golpe). Se anuncia entero una sola vez. */
-function Said({ text }) {
-  const still = useMemo(() => reducedMotion(), []);
-  const [shown, setShown] = useState({ text, n: still ? text.length : 0 });
-  useEffect(() => {
-    if (still) return undefined;
-    let n = 0;
-    const id = setInterval(() => {
-      n = Math.min(text.length, n + 2);
-      setShown({ text, n });
-      if (n >= text.length) clearInterval(id);
-    }, TYPE_MS);
-    return () => clearInterval(id);
-  }, [text, still]);
-  const visible = still ? text : shown.text === text ? text.slice(0, shown.n) : '';
-  return (
-    <p className="ts-talk__text">
-      <span aria-hidden="true">{visible}</span>
-      <span className="px-sr" aria-live="polite">
-        {text}
-      </span>
-    </p>
-  );
-}
-
-export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso }) {
+/**
+ * `onReveal(abierto)`: avisa al panel cuando se abre o se cierra un sobre (para que su «Volver» vuelva a la tienda).
+ * `closeReveal`: un número que, al cambiar, cierra el sobre abierto (lo sube el panel con su «Volver a la tienda»).
+ */
+export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso, onOpenMissions = null, onReveal = null, closeReveal = 0 }) {
   const [tab, setTab] = useState('sobres');
   const [pick, setPick] = useState(SOBRES[0].id);
   const [ask, setAsk] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [reveal, setReveal] = useState(null);
-  const [talk, setTalk] = useState(0);
+  const [closed, setClosed] = useState(closeReveal);
   const [sfx] = useState(() => createShopSfx({ muted: !soundOn }));
   useEffect(() => sfx.setMuted(!soundOn), [sfx, soundOn]);
   useEffect(() => () => sfx.destroy(), [sfx]);
+  useEffect(() => onReveal?.(Boolean(reveal)), [onReveal, reveal]);
+  // El «Volver a la tienda» de la barra del panel cierra el sobre
+  if (closeReveal !== closed) {
+    setClosed(closeReveal);
+    setReveal(null);
+  }
 
-  const shop = useMemo(() => renderShop(), []);
+  const shop = useMemo(() => renderShopRoom(), []);
   const packs = useMemo(() => Object.fromEntries(SOBRES.map((s) => [s.id, packArt(s)])), []);
   // Todo lo que puede salir o venderse (lo de las sagas no se cuenta ni se recicla)
   const thumbs = useMemo(() => Object.fromEntries(CATALOG.filter((c) => !c.set).map((c) => [c.id, renderThumb(c.id, 0, 44).toDataURL()])), []);
@@ -95,18 +79,6 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
     .filter((id) => isCounted(id) && freeCopies(inventory, room, id) > 0)
     .sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'es'));
 
-  // El dependiente mueve la boca un momento cada vez que dice algo nuevo
-  const say = (fn) => {
-    fn();
-    setTalk((k) => k + 1);
-  };
-
-  let line;
-  if (msg) line = msg;
-  else if (tab === 'sobres') line = tickets < sobre.coste1 ? `${sobre.nombre}: te faltan ${ticketsText(sobre.coste1 - tickets)}. Cada misión de la semana da ${MISION_TICKETS}.` : sobre.dice;
-  else if (tab === 'muebles') line = 'Aquí, precio fijo y sin sorpresas. Lo raro solo sale en sobres.';
-  else line = spare.length ? '¿Te sobra algo? Lo que no tengas puesto en tu piso te lo cambio por tickets.' : 'Cuando te salga un repetido, tráemelo y te lo cambio por tickets.';
-
   const run = async (job, ok) => {
     setBusy(true);
     setMsg('');
@@ -114,7 +86,7 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
       await job();
       ok?.();
     } catch (e) {
-      say(() => setMsg(`Uy, no ha podido ser: ${e.message}`));
+      setMsg(`Uy, no ha podido ser: ${e.message}`);
     } finally {
       setBusy(false);
       setAsk(null);
@@ -134,21 +106,82 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
     if (ask.kind === 'buy')
       run(
         async () => onInventory(await comprar(ask.id)),
-        () => (sfx.play('buy'), say(() => setMsg(`${nameOf(ask.id)}: ya es tuyo. Lo tienes en la balda de tu piso.`))),
+        () => (sfx.play('buy'), setMsg(`${nameOf(ask.id)}: ya es tuyo. Lo tienes en la balda de tu piso.`)),
       );
     else
       run(
         async () => onInventory(await reciclar(ask.id)),
-        () => (sfx.play('recycle'), say(() => setMsg(`Has reciclado ${nameOf(ask.id).toLowerCase()}: +${ticketsText(rarezaInfo(rarezaOf(catalogItem(ask.id))).reciclar)}.`))),
+        () => (sfx.play('recycle'), setMsg(`Has reciclado ${nameOf(ask.id).toLowerCase()}: +${ticketsText(rarezaInfo(rarezaOf(catalogItem(ask.id))).reciclar)}.`)),
       );
   };
 
+  const goTab = (id) => {
+    if (id !== tab) sfx.play('tap');
+    setTab(id);
+    setAsk(null);
+    setMsg('');
+  };
+  // Tocar la tienda: si hay una sección bajo el dedo, se abre esa
+  const onScene = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const id = shop.hit((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height);
+    if (id) goTab(id);
+  };
+
   if (reveal) return <GachaReveal premios={reveal.premios} sobre={reveal.sobre} sfx={sfx} onClose={() => setReveal(null)} onGoPiso={onGoPiso} />;
+
+  const falta = sobre.coste1 - tickets;
+  // Lo que dice la nota de debajo: el aviso de lo último que pasó o, si no, lo que falta o una pista
+  const note =
+    msg ||
+    (tab === 'sobres'
+      ? falta > 0
+        ? `Te faltan ${ticketsText(falta)}.`
+        : ''
+      : tab === 'muebles'
+        ? 'Aquí, precio fijo y sin sorpresas. Lo raro solo sale en sobres.'
+        : spare.length
+          ? 'Lo que no tengas puesto en tu piso te lo cambio por tickets.'
+          : 'Cuando te salga un repetido, tráemelo y te lo cambio por tickets.');
+  const showMissions = !msg && tab === 'sobres' && falta > 0 && onOpenMissions;
 
   let content = null;
   if (tab === 'sobres') {
     content = (
       <>
+        <div className="ts-packs" role="group" aria-label={`Sobres de la ${TEMPORADA.corto.toLowerCase()}, «${TEMPORADA.nombre}»`}>
+          {SOBRES.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className={`ts-pack${s.id === 'coleccion' ? ' is-gold' : ''}`}
+              aria-pressed={pick === s.id}
+              aria-label={`${s.nombre}: ${ticketsText(s.coste1)} el de 1, ${s.coste5} el de 5`}
+              onClick={() => {
+                sfx.play('tap');
+                setAsk(null);
+                setPick(s.id);
+                setMsg('');
+              }}
+            >
+              <img src={packs[s.id].full} alt="" draggable="false" />
+              <span aria-hidden="true">
+                {s.coste1} <Ticket size={14} />
+              </span>
+            </button>
+          ))}
+        </div>
+        <section className={`ts-card${sobre.id === 'coleccion' ? ' is-gold' : ''}`} aria-labelledby="ts-card-title">
+          <img className="ts-card__pack" src={packs[sobre.id].full} alt="" />
+          <div className="ts-card__text">
+            <h3 id="ts-card-title">{sobre.nombre}</h3>
+            <p>{sobre.dice}</p>
+            <p className="ts-card__price">
+              <Ticket size={18} />
+              <span>1 sobre · {ticketsText(sobre.coste1)}</span>
+            </p>
+          </div>
+        </section>
         <div className="ts-open">
           {[1, 5].map((n) => (
             <button key={n} type="button" className="px-btn px-btn--sage" disabled={busy || tickets < costeDe(sobre, n)} onClick={() => openSobre(n)}>
@@ -157,28 +190,6 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
             </button>
           ))}
         </div>
-        <p className="ts-pity">
-          Llevas {inventory.sinRaro} {inventory.sinRaro === 1 ? 'mueble seguido' : 'muebles seguidos'} sin nada raro. Como mucho en {sobresHastaRaro(inventory.sinRaro)} más sale uno seguro (cada {PITY}, en cualquier sobre). El de 5 trae al menos un poco común.
-        </p>
-        <details className="ts-odds">
-          <summary>Probabilidades de «{sobre.nombre}»</summary>
-          <p>Cada mueble se sortea así, en el servidor. Si el sobre no trae nada de una rareza, ese mueble sale de todo el catálogo.</p>
-          {odds.map((r) => (
-            <section key={r.id} className={`ts-odds__row is-${r.id}`}>
-              <h4>
-                {r.nombre} · {pctText(r.prob)}
-                {r.fuera && r.items.length > 0 && <small> (de fuera del sobre)</small>}
-              </h4>
-              <ul>
-                {r.items.map((c) => (
-                  <li key={c.id}>
-                    {c.nombre} <span>{pctText(r.cada)}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </details>
       </>
     );
   } else if (tab === 'muebles') {
@@ -212,7 +223,6 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
   }
 
   const price = ask ? (ask.kind === 'buy' ? precioDe(ask.id) : rarezaInfo(rarezaOf(catalogItem(ask.id))).reciclar) : 0;
-  const bar = tab === 'sobres' ? sobre.nombre : tab === 'muebles' ? 'Muebles sueltos' : 'Reciclar';
   return (
     <section className="ts" aria-labelledby="ts-title">
       <header className="ts-head">
@@ -224,52 +234,54 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
           <strong>{tickets}</strong>
         </p>
       </header>
-      <div className="ts-scene" style={{ aspectRatio: `${SHOP_W} / ${SHOP_H}` }}>
-        <img className="ts-scene__art" src={shop.scene} alt="Por dentro, el antiguo videoclub del bajo: un cartel de «Videoclub» tachado con un papel que dice «Muebles», estanterías de cintas, la pared de sobres y el dependiente detrás del mostrador." />
-        <img className="ts-clerk ts-clerk--blink" src={shop.blink} alt="" aria-hidden="true" style={box(shop.face)} />
-        {talk > 0 && <img key={talk} className="ts-clerk ts-clerk--talk" src={shop.talk} alt="" aria-hidden="true" style={box(shop.face)} />}
-        <div className="ts-wall" role="group" aria-label={`Sobres de la ${TEMPORADA.corto.toLowerCase()}, «${TEMPORADA.nombre}»`}>
-          {SOBRES.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`ts-wallpack${s.id === 'coleccion' ? ' is-gold' : ''}`}
-              style={box(shop.slots[i])}
-              aria-pressed={tab === 'sobres' && pick === s.id}
-              aria-label={`${s.nombre}: ${ticketsText(s.coste1)} el de 1, ${s.coste5} el de 5`}
-              onClick={() => {
-                sfx.play('tap');
-                setAsk(null);
-                say(() => (setPick(s.id), setTab('sobres'), setMsg('')));
-              }}
-            >
-              <img src={packs[s.id].full} alt="" draggable="false" />
+      {/* Las secciones están en la propia tienda: se toca el objeto (o su letrero) y se le enciende el contorno */}
+      <div className="ts-scene" style={{ aspectRatio: `${SHOP_ROOM_W} / ${SHOP_ROOM_H}` }} onClick={onScene}>
+        <img className="ts-scene__art" src={shop.scene} alt="La tienda del bajo al atardecer: un antiguo videoclub con estanterías de libros, un ventanal al puerto, el rincón de un sillón con su lámpara, una caja de reciclaje, el expositor de sobres y la dependienta en su mostrador." draggable="false" />
+        <img className="ts-scene__outline" src={shop.outlines[tab]} alt="" aria-hidden="true" draggable="false" />
+        <div className="ts-spots" role="tablist" aria-label="Secciones de la tienda">
+          {TABS.map((t) => (
+            <button key={t.id} type="button" role="tab" id={`ts-tab-${t.id}`} aria-controls="ts-panel" className={`ts-spot is-${t.id}`} aria-selected={tab === t.id} style={{ left: pct(shop.tags[t.id].left), top: pct(shop.tags[t.id].top) }} onClick={(e) => (e.stopPropagation(), goTab(t.id))}>
+              {t.nombre}
             </button>
           ))}
         </div>
       </div>
-      <div className="ts-talk">
-        <div className="ts-talk__bar">
-          <span className="ts-talk__name">{bar}</span>
-          {tab === 'sobres' ? (
-            <span className="ts-talk__price">
-              {sobre.coste1} <Ticket /> · ×5 {sobre.coste5} <Ticket />
-            </span>
-          ) : (
-            <span className="ts-talk__price">{TEMPORADA.corto}</span>
+      <div className="ts-body" role="tabpanel" id="ts-panel" aria-labelledby={`ts-tab-${tab}`}>
+        {content}
+        <div className="ts-note" role="status" aria-live="polite">
+          {note && <p>{note}</p>}
+          {showMissions && (
+            <button type="button" className="ts-link" onClick={onOpenMissions}>
+              Ver misiones <span aria-hidden="true">→</span>
+            </button>
           )}
         </div>
-        <Said text={line} />
-      </div>
-      <div className="ts-tabs" role="tablist" aria-label="Secciones de la tienda">
-        {TABS.map((t) => (
-          <button key={t.id} type="button" role="tab" className="px-btn" aria-selected={tab === t.id} onClick={() => say(() => (setTab(t.id), setAsk(null), setMsg('')))}>
-            {t.nombre}
-          </button>
-        ))}
-      </div>
-      <div className="ts-body" role="tabpanel">
-        {content}
+        {tab === 'sobres' && (
+          <details className="ts-odds">
+            <summary>
+              <span>Probabilidades y garantías</span>
+              <small>Raro garantizado en un máximo de {sobresHastaRaro(inventory.sinRaro)} muebles.</small>
+            </summary>
+            <p>
+              Cada mueble de «{sobre.nombre}» se sortea así, en el servidor. Si el sobre no trae nada de una rareza, ese mueble sale de todo el catálogo. Llevas {inventory.sinRaro} {inventory.sinRaro === 1 ? 'mueble seguido' : 'muebles seguidos'} sin nada raro: cada {PITY}, uno raro seguro (en cualquier sobre). El de 5 trae al menos un poco común. Cada misión de la semana da {MISION_TICKETS} tickets.
+            </p>
+            {odds.map((r) => (
+              <section key={r.id} className={`ts-odds__row is-${r.id}`}>
+                <h4>
+                  {r.nombre} · {pctText(r.prob)}
+                  {r.fuera && r.items.length > 0 && <small> (de fuera del sobre)</small>}
+                </h4>
+                <ul>
+                  {r.items.map((c) => (
+                    <li key={c.id}>
+                      {c.nombre} <span>{pctText(r.cada)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </details>
+        )}
       </div>
       {ask && (
         <div className="ts-ask" role="group" aria-label="Confirmar">

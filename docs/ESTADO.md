@@ -6,10 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.66.0 (2026-11-01), en https://bookshelf-wine-iota.vercel.app
-- **Sin commit (1.67.0)**: la tienda del bajo (el antiguo videoclub con su dependienta), sus sobres por tipo y
-  misiones con tickets (§67), y las figuras ocultas. Su migración `20261104120000_edificio_tienda.sql` **ya está
-  aplicada en producción** (1-11-2026): la versión publicada (1.66) no la usa, así que nada cambia hasta subir la 1.67.
+- **Versión publicada**: 1.67.0 (2026-11-01, a448a48), en https://bookshelf-wine-iota.vercel.app
+- **Preparada, sin commit (1.68.0)**: la tienda por dentro con el motor de los pisos y las secciones como objetos de
+  la escena, y el mostrador de cerca para abrir sobres (§68, aprobada por Francisco). No necesita migración.
+- **1.67.0**: la tienda del bajo (el antiguo videoclub con su dependienta), sus sobres por tipo y misiones con tickets
+  (§67), y las figuras ocultas. Su migración `20261104120000_edificio_tienda.sql` está aplicada en producción.
 - **Árbol de trabajo**: **1.65.0 y 1.66.0 publicadas** (§65 portal con vida y balda corregida; §66 inventario de
   muebles, fase 1 de `docs/qa/economia-muebles.md`, con su migración **ya aplicada en producción**). Antes, 1.64.0 publicada (sets de
   sagas) y 1.63.0: «El edificio del puerto» en la app (§63), con su migración **ya aplicada en
@@ -29,6 +30,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.68.0 | La tienda por dentro con el motor isométrico de los pisos; Sobres, Muebles y Reciclar como objetos de la escena (expositor, rincón del sillón, caja de reciclaje) con letrero y contorno; mostrador de cerca, casi de frente, para abrir sobres | §68 |
 | 1.67.0 | La tienda del bajo (por dentro, el antiguo videoclub con su dependienta): tickets por las misiones, muebles a precio fijo, sobres por tipo de la temporada 1 (y uno de coleccionista más caro con más suerte), de 1 y de 5, con animación, probabilidades y pity, reciclar; figuras ocultas sin borrar datos (migración aplicada) | §67 |
 | 1.66.0 | Inventario de muebles: copias por mueble, lo colocado pasa a ser tuyo, diez de inicio y «Tu mudanza» con seis comunes; la balda enseña «×N» y apaga lo agotado | §66 |
 | 1.65.0 | Portal del edificio con cielo de borde a borde, llegada animada, estrellas, luces, agua y gaviota; balda sin desplazamiento de más y «En el piso» con dibujos | §65 |
@@ -136,6 +138,26 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-01 · cuenta principal · 1.68.0 la tienda con el motor de los pisos y secciones en la escena (preparada, sin commit)
+- **Encargo de Francisco**: tomar como referencia dos imágenes (una tienda acogedora ilustrada y un primer plano del
+  mostrador con la dependienta) y enseñar maquetas. Tras la 1.ª ronda (dibujos 2D planos, ya borrados): «muy plano», que
+  se parezca a las habitaciones, con más detalle y profundidad, y que el menú Sobres/Muebles/Reciclar esté integrado
+  de forma orgánica y no le quite protagonismo a la tienda.
+- **Hecho, sin commit** (la 1.67 sí está publicada, a448a48):
+  - `src/features/edificio/shopRoom.js` (nuevo): la tienda con el motor de los pisos (`raster.js`, damero, sombras,
+    oclusión y luz de tarde) y el mostrador de cerca, casi de frente, para abrir sobres.
+  - Las secciones son objetos de la escena: expositor (Sobres), rincón del sillón (Muebles) y caja de reciclaje
+    (Reciclar). Llevan un letrero de papel (`role=tab`) y se toca el objeto; el contorno de la elegida se enciende. Los
+    cuatro sobres, en fila debajo.
+  - Además: `Tienda.jsx`, `GachaReveal.jsx`, `tienda.css`, `EdificioPanel.jsx` («Volver a la tienda» durante la
+    apertura), `App.jsx` (atajo a misiones), `render.js` (exporta `floorColor`), `dev/tienda-dibujos.html` y
+    `e2e-community/v167-tienda.spec.js`.
+- **Pruebas**: e2e de la tienda en Chromium 320/390/1440 y WebKit 390, más Vitest de `edificio`: todo pasa.
+- **Aprobada** por Francisco («Sí, prepárala»). Versión 1.68.0 en los cuatro sitios, SPEC §68 y regla nueva en
+  CLAUDE.md (la tienda usa el motor de los pisos y sus secciones son objetos de la escena, sin pestañas grandes).
+- **Pendiente**: el commit y la subida, cuando Francisco los pida. No hace falta migración. El cartel «VIDEOCLUB» se lee
+  regular a ese tamaño. Siguen pendientes los sonidos cozy del edificio y la prueba con una cuenta real.
 
 ### 2026-11-01 · cuenta principal · 1.67.0 la tienda del bajo, sobres y figuras ocultas (sin commit, migración aplicada)
 - **Encargo de Francisco**: «vamos con la siguiente fase» y un sistema de sobres tipo gacha con animaciones propias en

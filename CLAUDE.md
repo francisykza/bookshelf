@@ -127,6 +127,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     cartas (pared de sobres, uno marcado, bocadillo con precio) con el videoclub de «Aquí no hay quien viva», en
     nuestro pixel art y con perspectiva. Tiene dependienta propia. Solo guiños y género: nunca arte, logos, decorado ni
     personajes (ni su parecido) de esas obras.
+    **Desde la 1.68** (maquetas de Francisco, «muy plano» la versión 2D):
+    - la tienda y su mostrador de cerca se dibujan con el mismo motor isométrico que los pisos (`shopRoom.js`), con
+      profundidad, sombras y luz de tarde;
+    - Sobres, Muebles y Reciclar son objetos de la escena (expositor, rincón del sillón, caja de reciclaje) con un
+      letrero y su contorno encendido;
+    - no volver a una fila de pestañas grandes que le quite protagonismo a la tienda.
   - **Sonidos cozy propios del edificio** (1-11-2026): sintetizados, por material y por acción (§6 del plan).
   - **Sintonía de «Aquí no hay quien viva»**: a Francisco le encantaría en versión chiptune cozy. Sin licencia no se usa
     ni se recrea esa melodía (tampoco de oído). En la app, solo un tema original con guiño.
