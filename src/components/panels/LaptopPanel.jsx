@@ -6,6 +6,7 @@ import { LogOut, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { playUiSound } from '../../audio/uiSounds';
 import { dayKey } from '../../domain/dates';
+import { FIGURES_ENABLED } from '../../domain/figures';
 import { summarize } from '../../domain/reading';
 import { useNow } from '../../hooks/useReducedMotion';
 import { useLibrary } from '../../state/useLibrary';
@@ -22,7 +23,7 @@ const TABS = [
   { id: 'stats', label: 'Estadísticas', short: 'Datos', icon: 'datos' },
   { id: 'sessions', label: 'Sesiones', short: 'Sesiones', icon: 'sesiones' },
   { id: 'goal', label: 'Reto anual', short: 'Reto', icon: 'reto' },
-  { id: 'missions', label: 'Misiones y Guardián', short: 'Misiones', icon: 'misiones' },
+  { id: 'missions', label: FIGURES_ENABLED ? 'Misiones y Guardián' : 'Misiones de la semana', short: 'Misiones', icon: 'misiones' },
   { id: 'quote', label: 'Citas', short: 'Citas', icon: 'citas' },
 ];
 

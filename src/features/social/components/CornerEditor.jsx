@@ -6,6 +6,7 @@
 import { ArrowLeft, ArrowRight, BookOpen, Check, CloudRain, Moon, Plus, Search, Sun, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { FigureArt } from '../../../components/figures/FigureArt';
+import { FIGURES_ENABLED } from '../../../domain/figures';
 import { useFigureCatalog } from '../../../components/figures/figureCatalog';
 import { ADORNMENTS, ADORNMENT_IDS } from '../../../components/primitives';
 import { Cover } from '../../../components/shelf/BookItem';
@@ -265,6 +266,8 @@ export function CornerEditor({ Gate, children = null }) {
         </div>
         {picking && <BookPicker books={books} selected={form.books} max={BOOKS_MAX} onToggle={(id) => toggleIn('books', id, BOOKS_MAX)} />}
       </section>
+      {/* 1.67: con las figuras ocultas no se eligen (lo ya guardado se conserva al guardar) */}
+      {FIGURES_ENABLED && (
       <section className="corner-section" aria-labelledby="corner-figures-title">
         <h4 id="corner-figures-title" className="corner-heading">
           Figuras expuestas · {form.figures.filter((id) => owned[id]).length}/{FIGURES_MAX}
@@ -290,7 +293,8 @@ export function CornerEditor({ Gate, children = null }) {
           </ul>
         )}
       </section>
-      {ownedFigures.length > 0 && (
+      )}
+      {FIGURES_ENABLED && ownedFigures.length > 0 && (
         <section className="corner-section" aria-labelledby="corner-guardian-title">
           <h4 id="corner-guardian-title" className="corner-heading">
             Guardián expuesto

@@ -29,6 +29,9 @@ const FRAMES = {
   sage: ['.ooooo.', 'oGGGGgo', 'oGgggDo', 'oGgggDo', 'oGgggDo', 'ogDDDDo', '.ooooo.'],
   wood: ['.ooooo.', 'olllllo', 'olwwwWo', 'olwwwWo', 'olwwwWo', 'oWWWWWo', '.ooooo.'],
   tag: ['.ooooo.', 'ohhhhpo', 'ohppppo', 'ohpppso', 'ohpppso', 'opsssso', '.ooooo.'],
+  // 1.67: cartas de la tienda, con el canto del color de su rareza (poco común, salvia; raro, latón)
+  rimSage: ['.ooooo.', 'oGGGGGo', 'oGpppgo', 'oGpppgo', 'oGpppgo', 'ogggggo', '.ooooo.'],
+  rimGold: ['.ooooo.', 'oYYYYYo', 'oYpppyo', 'oYpppyo', 'oYpppyo', 'oyyyyyo', '.ooooo.'],
 };
 
 // Iconos de 11 × 11 (contorno oscuro y algún color)
@@ -43,6 +46,9 @@ const ICONS = {
   dentro: ['ooo.....ooo', 'o.........o', 'o.........o', '...........', '...........', '...........', '...........', '...........', 'o.........o', 'o.........o', 'ooo.....ooo'],
   ficha: ['.ooooooooo.', '.opppppppo.', '.opooooopo.', '.opppppppo.', '.opooooopo.', '.opppppppo.', '.opooooppo.', '.opppppppo.', '.opppppppo.', '.ooooooooo.', '...........'],
   luna: ['...........', '....yyy....', '..yyYy.....', '.yYYy......', '.yYy.......', '.yYy.......', '.yYYy......', '..yYYyy..y.', '...yyYYYy..', '....yyyy...', '...........'],
+  // 1.67: el ticket (con muescas y su línea troquelada) y el sobre lacrado de la tienda
+  ticket: ['...........', '...........', 'ooooooooooo', 'oYYYYYyYYYo', 'oYyyYYyYYYo', '.oYYYYyYYo.', 'oYyyYYyYYYo', 'oYYYYYyYYYo', 'ooooooooooo', '...........', '...........'],
+  sobre: ['...........', '...........', 'ooooooooooo', 'oopppppppoo', 'opopppppopo', 'oppopppoppo', 'opppoRopppo', 'opppppppppo', 'ossssssssso', 'ooooooooooo', '...........'],
 };
 
 function paint(rows, scale = PX) {

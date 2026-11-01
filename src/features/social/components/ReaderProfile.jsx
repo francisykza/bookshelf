@@ -12,6 +12,7 @@ import { OptionsMenu } from '../../../components/book/Annotations';
 import { ReaderAdornment } from '../../../components/primitives';
 import { Cover, PhysicalBook } from '../../../components/shelf/BookItem';
 import { FigureArt } from '../../../components/figures/FigureArt';
+import { FIGURES_ENABLED } from '../../../domain/figures';
 import { useLibrary } from '../../../state/useLibrary';
 import { ReviewCard } from '../../reviews/ReadersPanel';
 import { DISTINCTIONS, MEMORY_OBJECTS, savedCollection } from '../huellas';
@@ -340,7 +341,7 @@ export function ReaderProfileContent({ data, userId, mine, following, onToggleFo
               </ul>
             </section>
           )}
-          {shownFigures.length > 1 && (
+          {FIGURES_ENABLED && shownFigures.length > 1 && (
             <section className="huella-figures" aria-label="Figuras expuestas">
               <h4>Figuras expuestas</h4>
               <ul>

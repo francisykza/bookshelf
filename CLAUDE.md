@@ -46,6 +46,10 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   `localStorage`), no sus datos reales. Si algo no cuadra con lo esperado, puede ser que él esté usando la app:
   no «arreglar» sus datos.
 - **No cambiar** la paleta del Ático ni las reglas de recompensas, piezas, cajas y pity.
+- **Figuras ocultas desde la 1.67** (decisión de Francisco del 1-11-2026, «Ocultarlas, sin borrar»): las figuras, el
+  Ático, las Cajas Sorpresa, el Guardián y sus sellos no se ven en la app (`FIGURES_ENABLED = false` en
+  `src/domain/figures.js`) mientras él decide cómo integrarlas; su lugar lo ocupan los tickets y la tienda del bajo.
+  No se borra ningún dato de figuras. No volver a mostrarlas sin que lo pida.
 - **Figuras SVG provisionales retiradas** (1.58.1, decisión de Francisco): el Pequeño Viajero, el Bardo del Viento y la
   Hechicera de Eea no deben volver como coleccionables ni sustituirse por otro marcador. Las cuentas antiguas conservan
   su inventario; se filtran con `RETIRED_FIGURES` (`src/domain/figures.js`).
@@ -112,6 +116,17 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     - primero regalar y cambiar entre vecinos, y el mercado abierto solo después.
     - Lo colocado hoy pasa a ser de cada uno. Inventario y tickets, en el servidor.
     - Se hace por fases, con capturas entre una y otra. Hasta que cada fase esté hecha sigue valiendo «catálogo gratis».
+  - **Sobres de la tienda** (1.67, «tipo gacha», decisión de Francisco del 1-11-2026): sobres de 1 y de 5 (el de 5
+    con al menos un poco común), probabilidades visibles, pity y sorteo en el servidor. Animaciones con emoción pero
+    honestas: sin falsos «casi», sin cuentas atrás, sin presión para seguir abriendo; con movimiento reducido, directo
+    al resultado. Las misiones semanales pagan en tickets.
+    **Sobres por tipo y temporada** (mismo día): cada sobre trae un grupo de muebles y hay sobres más caros con más
+    probabilidad de lo mejor (`piso_sobre` en la migración y `SOBRES` en `economy.js`, siempre iguales). Aspecto de
+    sobre de cartas, colgados en una pared.
+  - **Tienda por dentro: el antiguo videoclub** (1-11-2026): mezcla de la idea de una tienda de sobres de un juego de
+    cartas (pared de sobres, uno marcado, bocadillo con precio) con el videoclub de «Aquí no hay quien viva», en
+    nuestro pixel art y con perspectiva. Tiene dependienta propia. Solo guiños y género: nunca arte, logos, decorado ni
+    personajes (ni su parecido) de esas obras.
   - **Sonidos cozy propios del edificio** (1-11-2026): sintetizados, por material y por acción (§6 del plan).
   - **Sintonía de «Aquí no hay quien viva»**: a Francisco le encantaría en versión chiptune cozy. Sin licencia no se usa
     ni se recrea esa melodía (tampoco de oído). En la app, solo un tema original con guiño.

@@ -1,6 +1,7 @@
 // QA de la 1.34.0 (SPEC §27): librería modular con texturas gouache, cabecera compacta, recuerdo destacado e
 // hiedra; ficha reordenada con «Registrar lectura» y detalles plegados; diario como cuaderno; paneles.
 import { expect, test } from '@playwright/test';
+import { FIGURES_ENABLED } from '../src/domain/figures.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -142,7 +143,7 @@ test('librería: filtros, búsqueda y vistas se conservan; herramientas plegadas
   const tools = page.getByRole('group', { name: 'Herramientas' });
   await expect(tools.getByRole('button', { name: 'Libro al azar' })).toBeVisible();
   await expect(tools.getByRole('button', { name: 'Pedir una recomendación' })).toBeVisible();
-  await expect(tools.getByRole('button', { name: 'Vitrina de Figuras' })).toBeVisible();
+  await expect(tools.getByRole('button', { name: 'Vitrina de Figuras' })).toHaveCount(FIGURES_ENABLED ? 1 : 0);
   await shot(page, info, 'v134-herramientas');
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
   // Nada cambia de estado

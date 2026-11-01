@@ -47,13 +47,14 @@ test('la balda con tus copias, lo agotado apagado y «Tu mudanza» con seis comu
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.layout.items.filter((i) => i.id === 'sillon').length).toBe(1);
   await shot(page, info, 'v166-balda-agotado');
 
-  // Tu mudanza: seis comunes (dos sillas), una sola vez
+  // Tu mudanza: seis comunes (dos sillas), una sola vez; el sofá es poco común desde la 1.67 y no se ofrece
   await mine.getByRole('button', { name: 'Elige tus 6 muebles' }).click();
   const start = page.getByRole('region', { name: 'Tu mudanza' });
   await expect(start).toBeVisible();
   const llevar = start.getByRole('button', { name: 'Llevármelos' });
   await expect(llevar).toBeDisabled();
-  for (const name of ['Silla', 'Silla', 'Sofá', 'Banco', 'Sillón', 'Sillón']) await start.getByRole('button', { name: new RegExp(`^${name}`) }).first().click();
+  await expect(start.getByRole('button', { name: /^Sofá/ })).toHaveCount(0);
+  for (const name of ['Silla', 'Silla', 'Mesa baja', 'Banco', 'Sillón', 'Sillón']) await start.getByRole('button', { name: new RegExp(`^${name}`) }).first().click();
   await expect(start.getByText('La caja está llena.')).toBeVisible();
   await shot(page, info, 'v166-mudanza');
   // Se puede quitar uno de la caja y cambiarlo
@@ -62,11 +63,11 @@ test('la balda con tus copias, lo agotado apagado y «Tu mudanza» con seis comu
   await llevar.click();
   await expect(start).toHaveCount(0);
   await expect(mine.getByRole('button', { name: 'Elige tus 6 muebles' })).toHaveCount(0);
-  expect(mock.db.piso_inventario[ANA.id]).toMatchObject({ silla: 2, sofa: 1, sillon: 3, 'mesa-baja': 2 });
+  expect(mock.db.piso_inventario[ANA.id]).toMatchObject({ silla: 2, sillon: 3, 'mesa-baja': 3 });
 
   // Ya en la balda: dos sillones libres; al poner uno, queda uno
   await mine.locator('.ep-chip', { hasText: 'Para sentarse' }).click();
-  await expect(mine.getByRole('button', { name: 'Añadir sofá (te quedan 1)' })).toBeVisible();
+  await expect(mine.getByRole('button', { name: 'Añadir silla (te quedan 2)' })).toBeVisible();
   await mine.getByRole('button', { name: 'Añadir sillón (te quedan 2)' }).click();
   await expect(mine.getByRole('button', { name: 'Añadir sillón (te quedan 1)' })).toBeVisible();
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.layout.items.filter((i) => i.id === 'sillon').length, { timeout: 8000 }).toBe(2);

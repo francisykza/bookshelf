@@ -2,6 +2,7 @@
 // libro importado), baldas de la habitación con toda la biblioteca y libros con la edición ebook retirada dibujados
 // como bolsillo. Perfiles de prueba de Playwright (su propio localStorage) con fixtures sintéticos.
 import { expect, test } from '@playwright/test';
+import { FIGURES_ENABLED } from '../src/domain/figures.js';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -127,7 +128,9 @@ test('baldas de la habitación: toda la biblioteca, figuras en su sitio y toque 
   expect(new Set(statuses)).toEqual(new Set(['want', 'read']));
   // Las figuras siguen en las baldas de arriba
   const figs = await page.locator('[data-panel="MAIN_ROOM"] .room-figures, [data-panel="MAIN_ROOM"] [data-shelf="top"], [data-panel="MAIN_ROOM"] [data-shelf="middle"]').count();
-  expect(figs).toBeGreaterThan(0);
+  // 1.67: con las figuras ocultas, las baldas no llevan ninguna
+  if (FIGURES_ENABLED) expect(figs).toBeGreaterThan(0);
+  else expect(await page.locator('[data-panel="MAIN_ROOM"] .room-figures').count()).toBe(0);
   await shot(page, info, 'v154-baldas');
   // Tocar un lomo abre la librería en «Todos»
   await page.locator('[data-panel="MAIN_ROOM"] .room-spine').first().evaluate((el) => el.click());

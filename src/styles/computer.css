@@ -1759,6 +1759,34 @@
   font-size: 13px;
 }
 
+/* 1.67: sin figuras, la cabecera de las misiones es el saldo de tickets de la tienda del bajo */
+.pc-tickets {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--pc-line);
+  border-radius: var(--pc-radius);
+  background: var(--pc-card);
+  box-shadow: var(--pc-shadow);
+}
+
+.pc-tickets > svg {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  color: #c98a1c;
+}
+
+.pc-tickets p {
+  margin: 0;
+}
+
+.pc-tickets b {
+  font-size: 1.3em;
+}
+
 /* ── Misiones y Guardián ── */
 .pc-guardian {
   position: relative;

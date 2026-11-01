@@ -16,6 +16,7 @@ import { ReviewSheet } from './components/panels/ReviewSheet';
 import { dayKey } from './domain/dates';
 import { SagaMapModal } from './components/panels/SagaMapModal';
 import { FigureDetail } from './components/figures/FigureDetail';
+import { FIGURES_ENABLED } from './domain/figures';
 import { FiguresVaultModal } from './components/figures/FiguresVaultModal';
 import { CozyRoom, ROOM_VIEW, SHELF_VIEW } from './components/room/CozyRoom';
 import { PanoramicRoom } from './components/room/PanoramicRoom';
@@ -62,6 +63,8 @@ function Sanctuary() {
     if (!p) return null;
     // Un libro que ya no existe (recarga tras borrarlo) cae al destino seguro
     if (p.type === 'book' && !state.books.some((b) => b.id === p.id)) return null;
+    // 1.67: con las figuras ocultas, una URL antigua del Ático, una figura o un Guardián no abre nada
+    if (!FIGURES_ENABLED && ['vault', 'figure', 'guardian'].includes(p.type)) return null;
     return p;
   }, [location.panel, state.books]);
   const locRef = useRef(location);
@@ -248,6 +251,7 @@ function Sanctuary() {
               playUiSound('figureSelect');
               openPanel({ type: 'figure', id });
             }}
+            showFigures={FIGURES_ENABLED}
             modalOpen={Boolean(panel)}
             guide={guide}
             onReady={setMainReady}
@@ -276,7 +280,7 @@ function Sanctuary() {
               openPanel({ type: 'visit', id, from: 'salon' });
             }}
             onOpenRadio={() => openPanel({ type: 'radio' })}
-            onOpenGuardian={(id) => openPanel({ type: 'guardian', id })}
+            onOpenGuardian={FIGURES_ENABLED ? (id) => openPanel({ type: 'guardian', id }) : null}
             onOpenEdificio={() => openPanel({ type: 'edificio' })}
           />
         )}
@@ -291,10 +295,14 @@ function Sanctuary() {
         onAddBook={() => openPanel({ type: 'add' })}
         onAskLibrarian={() => openPanel({ type: 'librarian' })}
         onImport={() => openPanel({ type: 'import' })}
-        onOpenVault={(id) => {
-          playUiSound('atticOpen');
-          openPanel({ type: 'vault', id });
-        }}
+        onOpenVault={
+          FIGURES_ENABLED
+            ? (id) => {
+                playUiSound('atticOpen');
+                openPanel({ type: 'vault', id });
+              }
+            : null
+        }
       />
       </PerfProfiler>
 
@@ -308,10 +316,14 @@ function Sanctuary() {
           onComplete={(bookId, date) => switchPanel({ type: 'review', id: bookId, select: date })}
           onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
           onOpenBook={(id, tab) => switchPanel({ type: 'book', id, tab })}
-          onOpenVault={() => {
-            playUiSound('atticOpen');
-            openPanel({ type: 'vault' });
-          }}
+          onOpenVault={
+            FIGURES_ENABLED
+              ? () => {
+                  playUiSound('atticOpen');
+                  openPanel({ type: 'vault' });
+                }
+              : null
+          }
         />
       )}
       {panel?.type === 'log' && (

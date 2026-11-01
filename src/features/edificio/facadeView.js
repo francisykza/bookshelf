@@ -102,11 +102,11 @@ function ambientLayer(canvas, { panes, shore }) {
 
 /**
  * `flats`: [{ puerta, room, label (aria), name (placa), mine, badge, onOpen }] de las puertas ocupadas. Devuelve
- * { destroy }.
+ * { destroy }. `onOpenShop` (opcional) hace tocable la tienda del bajo, con `shopBadge` en su placa (p. ej. el saldo).
  */
-export function mountFacade(container, { flats }) {
+export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '' }) {
   const byDoor = Object.fromEntries(flats.map((f) => [f.puerta, { room: f.room }]));
-  const { canvas, windows, panes, shore, sign } = renderFacade(byDoor);
+  const { canvas, windows, panes, shore, shop, sign } = renderFacade(byDoor);
   const root = document.createElement('div');
   root.className = 'ed-facade';
   root.style.aspectRatio = `${FACADE_W} / ${FACADE_H}`;
@@ -169,10 +169,45 @@ export function mountFacade(container, { flats }) {
     li.append(el);
     list.append(li);
   }
+  // La tienda del bajo (1.67, §67): se entra igual que en un piso, asomándose a su escaparate
+  if (onOpenShop) {
+    const li = document.createElement('li');
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'ed-window ed-shop';
+    el.setAttribute('aria-label', 'Entrar en la tienda del bajo');
+    box(el, shop);
+    const plate = document.createElement('span');
+    plate.className = 'ed-window__plate';
+    const name = document.createElement('strong');
+    name.textContent = 'Tienda';
+    plate.append(name);
+    if (shopBadge) {
+      const who = document.createElement('span');
+      who.textContent = shopBadge;
+      plate.append(who);
+    }
+    el.append(plate);
+    el.addEventListener('click', () => {
+      if (busy) return;
+      lastPeek = { shop: true, at: Date.now() };
+      if (reducedMotion() || typeof stage.animate !== 'function') {
+        onOpenShop();
+        return;
+      }
+      busy = true;
+      root.classList.add('is-peeking');
+      stage.style.transformOrigin = centerOf(shop);
+      const run = stage.animate([{ transform: 'scale(1)' }, { transform: `scale(${ZOOM})` }], { duration: ZOOM_MS, easing: 'cubic-bezier(0.55, 0, 0.75, 0.2)', fill: 'forwards' });
+      run.finished.then(onOpenShop, onOpenShop);
+    });
+    li.append(el);
+    list.append(li);
+  }
   stage.append(list);
   container.replaceChildren(root);
   // Vuelves de un piso: la vista se aleja desde su ventana
-  const back = lastPeek && Date.now() - lastPeek.at < 10 * 60 * 1000 ? windows.find((x) => x.puerta === lastPeek.puerta) : null;
+  const back = lastPeek && Date.now() - lastPeek.at < 10 * 60 * 1000 ? (lastPeek.shop ? shop : windows.find((x) => x.puerta === lastPeek.puerta)) : null;
   lastPeek = null;
   if (back && !reducedMotion() && typeof stage.animate === 'function') {
     stage.style.transformOrigin = centerOf(back);

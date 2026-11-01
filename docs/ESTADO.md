@@ -7,6 +7,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 ## Estado actual
 
 - **Versión publicada**: 1.66.0 (2026-11-01), en https://bookshelf-wine-iota.vercel.app
+- **Sin commit (1.67.0)**: la tienda del bajo (el antiguo videoclub con su dependienta), sus sobres por tipo y
+  misiones con tickets (§67), y las figuras ocultas. Su migración `20261104120000_edificio_tienda.sql` **ya está
+  aplicada en producción** (1-11-2026): la versión publicada (1.66) no la usa, así que nada cambia hasta subir la 1.67.
 - **Árbol de trabajo**: **1.65.0 y 1.66.0 publicadas** (§65 portal con vida y balda corregida; §66 inventario de
   muebles, fase 1 de `docs/qa/economia-muebles.md`, con su migración **ya aplicada en producción**). Antes, 1.64.0 publicada (sets de
   sagas) y 1.63.0: «El edificio del puerto» en la app (§63), con su migración **ya aplicada en
@@ -19,12 +22,14 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   no aplicar aún sin decidirlo con Francisco)**: `20261031200000_radio_sintonia.sql` (`profiles.radio_station` para
   «Mostrar mi sintonía», opción que la app todavía no enseña). **Aplicada (1.63, 1-11-2026)**:
   `20261101120000_edificio_puerto.sql` (pisos, reparto en edificios, sellos). La 1.63 ya la usa. **Aplicada (1.66, 1-11-2026)**:
-  `20261103120000_edificio_inventario.sql` (copias de muebles). La 1.66 ya la usa.
+  `20261103120000_edificio_inventario.sql` (copias de muebles). La 1.66 ya la usa. **Aplicada (1.67, 1-11-2026)**:
+  `20261104120000_edificio_tienda.sql` (tickets, tienda, sobres por tipo, reciclar).
 
 ### Últimos bloques (detalle en `SPEC.md`)
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.67.0 | La tienda del bajo (por dentro, el antiguo videoclub con su dependienta): tickets por las misiones, muebles a precio fijo, sobres por tipo de la temporada 1 (y uno de coleccionista más caro con más suerte), de 1 y de 5, con animación, probabilidades y pity, reciclar; figuras ocultas sin borrar datos (migración aplicada) | §67 |
 | 1.66.0 | Inventario de muebles: copias por mueble, lo colocado pasa a ser tuyo, diez de inicio y «Tu mudanza» con seis comunes; la balda enseña «×N» y apaga lo agotado | §66 |
 | 1.65.0 | Portal del edificio con cielo de borde a borde, llegada animada, estrellas, luces, agua y gaviota; balda sin desplazamiento de más y «En el piso» con dibujos | §65 |
 | 1.63.0 | «El edificio del puerto»: la tablet del Salón pregunta entre la comunidad y el edificio; portal con seis puertas, tu piso que se decora y se guarda solo, visita a los vecinos con sellos; reparto al azar en el servidor y RLS (migración aplicada) | §63 |
@@ -131,6 +136,38 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-01 · cuenta principal · 1.67.0 la tienda del bajo, sobres y figuras ocultas (sin commit, migración aplicada)
+- **Encargo de Francisco**: «vamos con la siguiente fase» y un sistema de sobres tipo gacha con animaciones propias en
+  el mismo estilo, que sustituya a las figuras. Respuestas suyas: **ocultar las figuras sin borrar** y **sobres de 1 y
+  de 5**. Le dije que las animaciones tendrían emoción pero sin trucos (sin falsos «casi», cuentas atrás ni presión) y
+  con probabilidades visibles y pity: está escrito en CLAUDE.md.
+- Servidor: `supabase/migrations/20261104120000_edificio_tienda.sql` (**sin aplicar**): rarezas, tickets (30 de
+  bienvenida), reclamos por misión y semana, comprar, sobres con pity y reciclar; detalle en SPEC §67.
+- App: tienda en el escaparate del bajo (`Tienda.jsx`, `GachaReveal.jsx`, `shopArt.js`, `shopAudio.js`,
+  `tienda.css`, `economy.js`), misiones del ordenador que cobran tickets (`useMissionTickets.js`) y figuras ocultas con
+  `FIGURES_ENABLED = false` (habitación, biblioteca, portátil, salón, rincón y perfil). Versión 1.67.0 en los cuatro sitios.
+- QA: Vitest del edificio y dominio (223) con `tienda.rls.test.js`; `v167-tienda`, `v166` y `v163` en 320/390/1440/WebKit
+  390 (16 pasan); e2e antiguas de figuras en 390: pasan o se saltan con su motivo (`hotfix1581`, `panorama`,
+  `v134`, `v146`, `v154`, `v159`, `entrega3`); oxlint sin avisos nuevos; build correcto. Capturas:
+  `qa-report/screenshots-community/<proyecto>/v167-*.png`.
+- **Segunda vuelta (mismo día, con una captura de una tienda de sobres de un juego de cartas)**: Francisco pidió que
+  la tienda por dentro mezcle esa idea, con más perspectiva, con el videoclub de «Aquí no hay quien viva», con su
+  dependiente y en nuestra estética; sobres por tipo o temporada, alguno más caro con más suerte, y con aspecto de
+  sobre de cartas. Hecho: escena del videoclub (`shopScene.js`, dependienta propia, cartel «VIDEOCLUB» tachado), pared
+  de sobres y bocadillo (`Tienda.jsx`), cuatro sobres de la temporada 1 (tres temáticos de 10/45 y «Edición
+  coleccionista» de 25/110 con 15 % raro y 35 % poco común) en la migración (`piso_sobre`, aún sin aplicar) y en
+  `economy.js`, sobres metalizados (`packArt`) y rasgado de la tira de arriba. Solo el género y la idea: ningún arte,
+  logo ni personaje ajenos. QA: Vitest del edificio 39/39, e2e de la comunidad del edificio 67 pasan (v163, v166,
+  v167 en 320/390/430/1440/WebKit), oxlint y build correctos.
+- **Migración aplicada en producción** (1-11-2026, «hazlo tú»): la pegó Claude en el SQL Editor (14016 bytes, SHA-256
+  `137d8ee0…18eae9c8`, igual al archivo) y Francisco pulsó «Run» («Success»). Comprobado con la clave pública: el
+  anónimo recibe «permission denied» en `piso_reclamos`, `piso_abrir_sobre`, `piso_mi_inventario`,
+  `piso_reclamar_mision` y `piso_al_azar`; `piso_sobre` responde (solo las tarifas públicas, las mismas que enseña la
+  tienda).
+- **Pendiente**: commit y subida cuando lo pida, probar con
+  una cuenta real; los sonidos propios del piso (§6 del plan) siguen sin hacer; la tetera y otros muebles pequeños se
+  ven pequeños en las cartas.
 
 ### 2026-11-01 · cuenta principal · 1.66.0 inventario de muebles, fase 1 (publicada, migración aplicada)
 - **Encargo de Francisco**: «Sí, fase 1» del plan `docs/qa/economia-muebles.md` (aprobado con «Sí a todo»).

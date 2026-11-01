@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.66.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.67.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4256,3 +4256,77 @@ añade copias: no hay tickets, tienda ni sorteo todavía, y nada toca figuras, C
   pisos «de antes» y la aplica), `e2e-community/v166-inventario.spec.js` (320, 390, 1440 y WebKit 390) y el simulador
   (`mockSupabase.js`, solo con `db.piso_cuentas`).
 - Pendiente: los sonidos propios del edificio (§6 del plan) no están en esta fase.
+
+## 67. La tienda del bajo, sus sobres y misiones que pagan en tickets (1.67.0, fases 2 y 4 de la economía de muebles)
+
+Encargo de Francisco (1-11-2026): «vamos con la siguiente fase» y, además, un sistema de sobres «tipo gacha» con
+animaciones propias en el mismo estilo, que ocupe el lugar de las figuras («retirar por ahora el tema de las figuras»).
+Respuestas suyas: **ocultar las figuras sin borrar nada** y **sobres de 1 y de 5** (el de 5 con algo mejor asegurado).
+Límites que se mantienen: las probabilidades se ven, hay pity, no hay falsos «casi», cuentas atrás ni prisas, y los
+tickets solo se ganan leyendo (nunca con dinero).
+
+- **Servidor** (`supabase/migrations/20261104120000_edificio_tienda.sql`, **aplicada en producción el 1-11-2026**; aditiva):
+  - Rarezas: poco común sofá, cama, estufa, radio, reloj y guirnalda; raro el gato dormido. Lo demás, común.
+  - `piso_cuentas` gana `tickets` (30 de bienvenida) y `sin_raro` (para el pity). `piso_reclamos`: una fila por
+    misión y semana, sin acceso directo.
+  - `piso_mi_inventario()` devuelve también `tickets`, `sin_raro` y `reclamadas` (claves `mision:<id>:<lunes>`).
+  - `piso_reclamar_mision(mision, semana)`: 12 tickets, una vez por misión y semana, solo misiones conocidas y el
+    lunes de esta semana o de la anterior. La app sigue calculando si está cumplida (como siempre).
+  - `piso_comprar(mueble)`: común 20, poco común 40; lo raro y lo de sagas no se vende.
+  - **Sobres por tipo y temporada** (segunda vuelta del mismo día, ver abajo). `piso_sobre(id)` define cada sobre y
+    tiene su copia exacta en `SOBRES` de `economy.js` (la prueba de paridad lo exige). Temporada 1, «Otoño en el
+    puerto»:
+
+    | Sobre | Muebles | De 1 / de 5 | Raro / poco común |
+    | --- | --- | --- | --- |
+    | Sala de estar (`salon`) | asientos, mesas, estantería y cama | 10 / 45 | 6 % / 24 % |
+    | Luces del puerto (`luces`) | lámparas, estufa, ventana, cuadro, reloj y guirnalda | 10 / 45 | 6 % / 24 % |
+    | Balcón y detalles (`balcon`) | plantas, libros, radio, tetera, gato y alfombras | 10 / 45 | 6 % / 24 % |
+    | Edición coleccionista (`coleccion`) | todo el catálogo | 25 / 110 | 15 % / 35 % |
+
+  - `piso_abrir_sobre(sobre, 1 | 5)`: dentro de cada rareza, todos los muebles del sobre igual; si el sobre no trae
+    nada de esa rareza (p. ej. el gato solo está en el balcón), ese mueble sale de todo el catálogo y la tienda lo dice
+    («de fuera del sobre»). Pity: el 15.º seguido sin nada raro es raro, en cualquier sobre. En el de 5, si los cuatro
+    primeros son comunes, el quinto es poco común. Devuelve `{ premios: [{ mueble, rareza, nuevo }], inventario }`. El
+    sorteo es del servidor; un sobre que no existe se rechaza.
+  - `piso_reciclar(mueble)`: una copia que no está colocada en tu piso guardado, por 3, 8 o 20 tickets.
+- **App**:
+  - Fachada: el café de la planta baja es ahora «la tienda del bajo» (escaparate con muebles, toldo y un cartel con un
+    sobre lacrado); su placa enseña el saldo y al tocarla la vista se asoma, como en las ventanas. Ruta:
+    `{ type: 'edificio', id: 'tienda' }` (Atrás vuelve al portal). Sin la migración, el escaparate es solo dibujo.
+  - **Por dentro, el antiguo videoclub** (`shopScene.js`, encargo de Francisco con una captura de una tienda de sobres
+    de un juego de cartas y el videoclub de «Aquí no hay quien viva»: se toma el género y la idea, nunca su arte, sus
+    logos ni sus personajes). Perspectiva de un punto: tubos fluorescentes, suelo de baldosas en damero, estanterías de
+    cintas, un cartel «VIDEOCLUB» tachado con un papel que dice «MUEBLES», y la **pared de sobres** colgados de sus
+    ganchos. Detrás del mostrador, **la dependienta** (personaje propio: moño, gafas redondas y rebeca mostaza) con
+    caja registradora y timbre; parpadea a ratos y mueve la boca al decir algo nuevo.
+  - `Tienda.jsx`: saldo; los sobres de la pared son botones encima de su hueco (el elegido se descuelga y lo marcan
+    cuatro esquinas de latón); debajo, el bocadillo: barra granate con el nombre y los precios y un papel donde la
+    dependienta dice qué trae ese sobre, lo que falta si no llega, y los avisos de compra, reciclado o error (letra a
+    letra; con movimiento reducido, de golpe; se anuncia entero una vez). Pestañas Sobres / Muebles / Reciclar,
+    «Abrir 1» y «Abrir 5» del sobre elegido, contador del pity, probabilidades de ese sobre (desplegable) y
+    confirmación antes de gastar («Te faltan N» si no llega).
+  - Sobres con aspecto de sobre de cartas (`packArt` en `shopArt.js`): metalizados del color de su tipo, dientes
+    plateados arriba y abajo, banda con un ancla y el «1» de la temporada, ventana con rayos y el mueble de portada; el
+    de coleccionista, dorado y con destellos.
+  - `GachaReveal.jsx`: el sobre elegido tiembla a ratos con un halo del color de lo mejor que trae (lo único que se
+    adelanta, y es verdad); se toca para rasgarlo: la tira de arriba sale volando, salen rayos en escalones y el sobre
+    se apaga; las cartas se
+    reparten boca abajo y se dan la vuelta tocándolas o con «Revelar todo»; poco común con rayos de salvia y raro con
+    latón, salto y aro. «Nuevo» si no tenías ninguna. Con movimiento reducido, directo al resultado.
+  - Sonidos (`shopAudio.js`, sintetizados, solo tras tocar y con el sonido de la app): papel, rasgado, carta, una nota
+    por rareza (más notas cuanto más rara), compra y reciclado.
+  - Dibujos en el mismo pixel art (`shopArt.js`, iconos `ticket` y `sobre` y marcos con canto de rareza en
+    `pixelUi.js`). Estilos en `tienda.css`.
+  - **Misiones del ordenador**: cada misión cumplida se cobra en 12 tickets (`useMissionTickets.js`); sin comunidad o
+    sin la migración lo explica y no se cobra (la misión no se gasta). La misión cobrada se apunta también en la
+    biblioteca, como antes.
+- **Figuras ocultas** (`FIGURES_ENABLED = false` en `src/domain/figures.js`): sin vitrina en la habitación ni en
+  su recorrido, sin figuras en las baldas ni mini-figuras en la biblioteca, sin Ático, detalle ni Guardián (una URL
+  antigua no abre nada), sin Guardián en los sillones del salón y sin figuras en el rincón ni en el perfil. No se borra
+  nada: inventario, Cajas, sellos y pity siguen guardados, y lo elegido en «Mi rincón» se conserva al guardar.
+- Pruebas: `src/features/edificio/__tests__/tienda.rls.test.js` (PGlite: paridad de números con `economy.js`,
+  tickets, tienda, sobres por tipo con lo que trae cada uno, pity, «nuevo», reciclar y permisos),
+  `e2e-community/v167-tienda.spec.js` (pared, dependienta, coleccionista; 320, 390,
+  1440 y WebKit 390; el simulador sortea lo que la prueba pone en `db.piso_sorteo`). Las pruebas antiguas de figuras se
+  saltan con `FIGURES_ENABLED` (y dicen por qué); `v166` elige comunes porque el sofá ya no lo es.

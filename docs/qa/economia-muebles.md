@@ -51,9 +51,9 @@ o concretaría esto:
 | Fase | Qué | Necesita |
 | --- | --- | --- |
 | 1 | **Inventario.** Copias por mueble; set inicial; lo colocado hoy pasa a ser tuyo; la balda enseña «×2» y deja de ofrecer lo que no tienes libre (sale atenuado, «0 libres»). | Migración (inventario + `piso_valido` con copias) |
-| 2 | **Tickets y tienda.** Misiones del edificio (3 a la semana, ligadas a leer) que dan tickets; tienda pixel art en el bajo del edificio (el local del toldo) con precios fijos por rareza; saldo visible. | Migración (saldo, compras por función) |
+| 2 | **Hecha en la 1.67 (§67)**, junto con la 4: tickets por las misiones semanales del ordenador (no misiones nuevas), tienda en el bajo y saldo. Antes: **Tickets y tienda.** Misiones del edificio (3 a la semana, ligadas a leer) que dan tickets; tienda pixel art en el bajo del edificio (el local del toldo) con precios fijos por rareza; saldo visible. | Migración (saldo, compras por función) |
 | 3 | **Rarezas animadas.** Primeros muebles especiales: chimenea, tele antigua, tocadiscos, lámpara de lava… al tocarlos fuera de «Decorar» se encienden. | Arte nuevo en `furniture.js`; filas en `piso_catalogo` |
-| 4 | **Sorteo.** «Un mueble al azar» por tickets, probabilidades visibles, pity, reciclar copias. | Migración (sorteo en el servidor, nunca en el cliente) |
+| 4 | **Hecha en la 1.67 (§67)** como sobres de 1 y de 5 (decisión de Francisco), por tipo y temporada (tres temáticos y uno de coleccionista más caro con más suerte), con reciclar. Antes: **Sorteo.** «Un mueble al azar» por tickets, probabilidades visibles, pity, reciclar copias. | Migración (sorteo en el servidor, nunca en el cliente) |
 | 5 | **Sagas por lectura.** Cada set se desbloquea al terminar su libro. | Decidir si los ya colocados se conservan |
 | 6 | **Regalar y cambiar entre vecinos.** Ofrecer un mueble a un vecino; él acepta o no; solo sellos de frase cerrada. | Migración (ofertas atómicas) |
 | 7 | **Mercado abierto** (si la 6 funciona). Ofertas por tickets o por otro mueble, con límites. | Topes de tickets en el servidor, moderación |

@@ -173,7 +173,7 @@ export function SocialSeats({ active, timer, onOpenHub, onOpenReader, onVisit, o
                 <span>{time}</span>
               </span>
             </button>
-            {guardian && (
+            {guardian && onOpenGuardian && (
               // El Guardián, aparte del avatar (nunca en su marco), sobre el reposabrazos
               <button type="button" className="seat-guardian saga-pin" data-owned style={{ left: seat.armrest[0], top: seat.armrest[1] }} onClick={() => onOpenGuardian(guardian.id)} aria-label={`Guardián de ${alias}: ${guardian.name}`}>
                 <PinArt fig={guardian} />

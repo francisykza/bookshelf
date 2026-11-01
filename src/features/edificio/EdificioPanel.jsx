@@ -16,6 +16,10 @@ import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
 import { doorLabel, elegirInicio, loadEdificio, loadInventario, savePiso, setSello } from './service';
 import { StarterPicker } from './StarterPicker';
+import { Tienda } from './Tienda';
+
+/** La tienda del bajo se abre como un «piso» más del portal (1.67, §67). */
+const TIENDA_ID = 'tienda';
 
 const SAVE_MS = 900;
 // Cómo se ve un piso: «dentro» de la habitación (a pantalla completa, con la balda o los sellos abajo; por defecto) o
@@ -38,7 +42,7 @@ const saveView = (v) => {
 const selloText = (id) => SELLOS.find((s) => s.id === id)?.texto ?? '';
 
 /** La fachada del edificio (la dibuja facade.js fuera de React); cada ventana ocupada es un botón. */
-function Facade({ vecinos, onOpenPiso }) {
+function Facade({ vecinos, onOpenPiso, shopBadge }) {
   const ref = useRef(null);
   const open = useRef(onOpenPiso);
   useEffect(() => {
@@ -54,9 +58,12 @@ function Facade({ vecinos, onOpenPiso }) {
         label: v.yo ? `Entrar en tu piso, ${doorLabel(v.puerta)}` : `Llamar y entrar en el piso de ${v.alias}, ${doorLabel(v.puerta)}`,
         onOpen: () => open.current(v.user_id),
       })),
+      // Sin la migración de la tienda (o sin inventario aún), el escaparate es solo dibujo
+      onOpenShop: shopBadge == null ? null : () => open.current(TIENDA_ID),
+      shopBadge: shopBadge ?? '',
     });
     return () => view.destroy();
-  }, [vecinos]);
+  }, [vecinos, shopBadge]);
   return <div ref={ref} className="ed-facade-mount" />;
 }
 
@@ -139,7 +146,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     [],
   );
 
-  const open = pisoId ? (data?.vecinos.find((v) => v.user_id === pisoId) ?? null) : null;
+  const inShop = pisoId === TIENDA_ID;
+  const open = pisoId && !inShop ? (data?.vecinos.find((v) => v.user_id === pisoId) ?? null) : null;
+  const me = data?.vecinos.find((v) => v.yo) ?? null;
   const mine = open?.yo;
 
   const onMyChange = (room) => {
@@ -201,6 +210,12 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     );
   } else if (!data) {
     body = <p className="ed-note">Buscando tu puerta…</p>;
+  } else if (inShop) {
+    body = inventory?.tienda ? (
+      <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={() => me && onOpenPiso(me.user_id)} />
+    ) : (
+      <p className="ed-note">{inventory ? 'La tienda del bajo abre muy pronto.' : 'Abriendo la tienda…'}</p>
+    );
   } else if (pisoId && !open) {
     body = <p className="ed-note">Este piso ya no está en tu edificio.</p>;
   } else if (open && mine && choosing) {
@@ -250,7 +265,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
           El edificio del puerto
         </h2>
         <p className="ed-sub">Tu puerta: {doorLabel(data.puerta)}. Toca una puerta para entrar.</p>
-        <Facade vecinos={data.vecinos} onOpenPiso={onOpenPiso} />
+        <Facade vecinos={data.vecinos} onOpenPiso={onOpenPiso} shopBadge={inventory?.tienda ? `${inventory.tickets} tickets` : null} />
         <section className="ed-inbox" aria-labelledby="ed-inbox-title">
           <h3 id="ed-inbox-title">Tu buzón</h3>
           {inbox.length ? (
@@ -270,7 +285,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   }
 
   return (
-    <PanelShell onClose={onClose} label={pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
+    <PanelShell onClose={onClose} label={inShop ? 'La tienda del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
       <div className="ed-bar">
         {pisoId ? (
           <button type="button" className="ed-bar__back" onClick={onClose}>

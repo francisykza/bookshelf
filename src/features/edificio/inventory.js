@@ -51,10 +51,15 @@ export function validStart(ids) {
   return Array.isArray(ids) && ids.length === START_PICKS && ids.every((id) => STARTER_CHOICES.some((c) => c.id === id));
 }
 
-/** Lo que llega del servidor, limpio: { inicioElegido, copias: { id: n } } (solo ids del catálogo y enteros). */
+/** Lo que llega del servidor, limpio: { inicioElegido, copias: { id: n }, tickets, sinRaro } (solo ids del catálogo y enteros). */
 export function normalizeInventory(data) {
   if (!data || typeof data !== 'object') return null;
   const copias = {};
   for (const [id, n] of Object.entries(data.copias ?? {})) if (catalogItem(id) && Number.isInteger(n) && n > 0) copias[id] = Math.min(99, n);
-  return { inicioElegido: data.inicio_elegido === true, copias };
+  // 1.67: saldo de tickets y sobres seguidos sin nada raro (para el pity)
+  const n = (v) => (Number.isInteger(v) && v >= 0 ? v : 0);
+  // `tienda`: el servidor ya tiene la migración de la tienda (si no, el escaparate no se abre)
+  // `reclamadas`: claves `mision:<id>:<lunes>` de las misiones ya cobradas en tickets
+  const reclamadas = (Array.isArray(data.reclamadas) ? data.reclamadas : []).filter((k) => typeof k === 'string' && /^mision:[a-z]{2,20}:\d{4}-\d{2}-\d{2}$/.test(k));
+  return { inicioElegido: data.inicio_elegido === true, copias, tickets: n(data.tickets), sinRaro: n(data.sin_raro), tienda: Number.isInteger(data.tickets), reclamadas };
 }

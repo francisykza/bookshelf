@@ -24,6 +24,14 @@ export const STARTERS = [
  * coleccionables. Una cuenta antigua puede tenerlas en `owned`; ese inventario histórico se conserva tal cual, pero
  * no se muestran, no se sortean y no pueden ser Guardián, Senda ni estar expuestas.
  */
+/**
+ * 1.67 (SPEC §67, decisión de Francisco del 1-11-2026): las figuras, el Ático, las Cajas Sorpresa, el Guardián y sus
+ * sellos se ocultan en toda la app mientras se piensa cómo integrarlas; su lugar lo ocupan los tickets y la tienda del
+ * bajo del edificio. No se borra nada: el inventario, las cajas y el pity siguen guardados, y las misiones siguen
+ * apuntándose como siempre. Volver a mostrarlas es poner esto a true.
+ */
+export const FIGURES_ENABLED = false;
+
 export const RETIRED_FIGURES = ['viajero_asteroide', 'bardo_viento', 'hechicera_eea'];
 export const isRetired = (id) => RETIRED_FIGURES.includes(id);
 /** Figuras que se cuentan como tuyas (el inventario histórico de figuras retiradas no suma). */

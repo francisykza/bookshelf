@@ -2,6 +2,7 @@
 // gestos, accesibilidad y regresiones de la habitación. Cada proyecto escribe su telemetría y sus capturas en
 // `qa-report/`. Se usa un perfil vacío (datos de ejemplo): nunca la biblioteca real.
 import { expect, test } from '@playwright/test';
+import { FIGURES_ENABLED } from '../src/domain/figures.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -93,6 +94,8 @@ async function geometry(page) {
     if (room === 'MAIN_ROOM') {
       for (const [id, spot] of Object.entries(HOTSPOTS)) {
         const btn = document.querySelector(`.hotspot[data-id="${id}"]`);
+        // 1.67: la vitrina de figuras puede estar oculta (FIGURES_ENABLED)
+        if (!btn) continue;
         const xs = spot.shape.map((p) => p[0]);
         const ys = spot.shape.map((p) => p[1]);
         const box = { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
@@ -360,9 +363,13 @@ test('12 · libro, té, auriculares y Ático conservan su acción', async ({ pag
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
   used.headphones = await activate(page, 'headphones');
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1') ?? '{}').settings?.sound)).toBe(true);
-  used.figures = await activate(page, 'figures');
-  await expect(page.locator('.panel-veil')).toHaveCount(1);
-  await page.keyboard.press('Escape');
+  if (FIGURES_ENABLED) {
+    used.figures = await activate(page, 'figures');
+    await expect(page.locator('.panel-veil')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+  } else {
+    await expect(page.locator('.hotspot[data-id="figures"]')).toHaveCount(0);
+  }
   run.tests.activation = used;
 });
 

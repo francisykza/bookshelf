@@ -536,10 +536,12 @@ function ToolTiles({ dieFace, rolling, onRoll, onAskLibrarian, onOpenVault, onIm
         </button>
       )}
       {/* Acceso a la colección con su icono ilustrado (ya trae baldosa marfil: sin otra baldosa) */}
-      <button type="button" className="lib-tool lib-tool--art" onClick={() => onOpenVault()}>
-        <SectionIcon name="coleccion" size={32} />
-        <span>Vitrina de Figuras</span>
-      </button>
+      {onOpenVault && (
+        <button type="button" className="lib-tool lib-tool--art" onClick={() => onOpenVault()}>
+          <SectionIcon name="coleccion" size={32} />
+          <span>Vitrina de Figuras</span>
+        </button>
+      )}
       {/* 1.54 (SPEC §52.3): importar de Goodreads, dentro de las herramientas (sin otro botón en la cabecera) */}
       {onImport && (
         <button type="button" className="lib-tool" onClick={onImport}>
@@ -736,6 +738,8 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   const owned = figs?.owned;
   const pins = useCallback(
     (book) => {
+      // 1.67: sin figuras a la vista (`onOpenVault` null), los libros no llevan su mini-figura
+      if (!onOpenVault) return null;
       const fig = figureForBook(figCatalog, book, sagas);
       return fig ? <MiniFigurePin fig={fig} owned={Boolean(owned?.[fig.id])} onOpen={onOpenVault} /> : null;
     },

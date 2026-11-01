@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { auditState } from '../e2e/audit159';
+import { FIGURES_ENABLED } from '../src/domain/figures.js';
 import { SUPABASE, createMockSupabase } from './mockSupabase';
 
 // Telemetría de los estados capturados (se une a qa-report/qa-telemetry.json con la del resto de la QA)
@@ -73,6 +74,7 @@ async function openReaders(page, mock) {
 const overlap = (a, b) => a && b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
 test('perfil de otra persona: las figuras expuestas se ven con su imagen (no solo el nombre)', async ({ page }, info) => {
+  test.skip(!FIGURES_ENABLED, 'Figuras ocultas desde la 1.67 (SPEC §67, decisión de Francisco del 1-11-2026): vuelve con FIGURES_ENABLED');
   test.skip(!/390x844|1440x900/.test(info.project.name), '390 en Chromium y WebKit, y escritorio');
   const mock = seed();
   await openReaders(page, mock);

@@ -3,6 +3,7 @@
 // errores, conserva su inventario guardado y no las ve, no las obtiene y no las expone. Sin premio posible, la caja no se
 // abre ni se gasta. Perfiles de prueba de Playwright, nunca datos reales.
 import { expect, test } from '@playwright/test';
+import { FIGURES_ENABLED } from '../src/domain/figures.js';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -48,6 +49,7 @@ async function loadOldAccount(page, patch) {
 const t = '2026-09-01T10:00:00.000Z';
 
 test('cuenta antigua con figuras retiradas: carga, conserva el inventario y no las muestra ni las sortea', async ({ page }, info) => {
+  test.skip(!FIGURES_ENABLED, 'Figuras ocultas desde la 1.67 (SPEC §67, decisión de Francisco del 1-11-2026): vuelve con FIGURES_ENABLED');
   const errors = await loadOldAccount(page, {
     owned: {
       dama_ceniza: { display: 'box', parts: [0], obtainedAt: t },
@@ -98,6 +100,7 @@ test('cuenta antigua con figuras retiradas: carga, conserva el inventario y no l
 });
 
 test('sin premio posible la caja no se abre ni se gasta, con un aviso claro', async ({ page }) => {
+  test.skip(!FIGURES_ENABLED, 'Figuras ocultas desde la 1.67 (SPEC §67, decisión de Francisco del 1-11-2026): vuelve con FIGURES_ENABLED');
   // Todas las piezas de cada figura vigente (índices de sobra no estorban)
   const full = { display: 'box', parts: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], obtainedAt: t };
   await loadOldAccount(page, {

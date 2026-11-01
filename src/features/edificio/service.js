@@ -3,6 +3,8 @@
 // (`asignar_edificio`), y el portal llega en una sola consulta (`edificio_portal`). Los pisos que llegan se vuelven a
 // validar aquí antes de dibujarlos; el que se guarda va siempre limpio (`validateRoom`).
 import { client, fail } from '../social/services/community';
+import { catalogItem } from './catalog';
+import { rarezaOf } from './economy';
 import { normalizeInventory } from './inventory';
 import { validateRoom } from './room';
 
@@ -71,6 +73,41 @@ export async function loadInventario() {
 export async function elegirInicio(ids) {
   const sb = await client();
   const { data, error } = await sb.rpc('piso_elegir_inicio', { muebles: ids });
+  fail(error);
+  return normalizeInventory(data);
+}
+
+/** 1.67 (§67): cobra los tickets de una misión cumplida (una vez por semana; `semana`: el lunes, AAAA-MM-DD). */
+export async function reclamarMision(mision, semana) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_reclamar_mision', { mision, semana });
+  fail(error);
+  return normalizeInventory(data);
+}
+
+/** Compra un mueble en la tienda del bajo. Devuelve el inventario nuevo. */
+export async function comprar(mueble) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_comprar', { mueble });
+  fail(error);
+  return normalizeInventory(data);
+}
+
+/** Abre un sobre de la pared, de 1 o de 5 (sorteo en el servidor): { premios: [{ mueble, rareza, nuevo }], inventario }. */
+export async function abrirSobre(sobre, cuantos) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_abrir_sobre', { sobre, cuantos });
+  fail(error);
+  const premios = (Array.isArray(data?.premios) ? data.premios : [])
+    .filter((p) => catalogItem(p?.mueble))
+    .map((p) => ({ mueble: p.mueble, rareza: rarezaOf(catalogItem(p.mueble)), nuevo: p.nuevo === true }));
+  return { premios, inventario: normalizeInventory(data?.inventario) };
+}
+
+/** Recicla una copia libre (no colocada) a cambio de tickets. */
+export async function reciclar(mueble) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_reciclar', { mueble });
   fail(error);
   return normalizeInventory(data);
 }

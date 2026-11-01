@@ -281,12 +281,24 @@ export function renderFacade(flats = {}) {
     for (let a = 0.65; a < 2.55; a += 0.1) if (hash(a * 9, row) > 0.25) r.box(a, BD + 0.16, z, a + 0.08, BD + 0.22, z + 0.22 + hash(a, row) * 0.1, spines[Math.floor(hash(row, a * 7) * 5)], { grain: 0 });
   }
   r.box(0.4, BD, 1.92, 2.8, BD + 0.45, 2.05, [96, 124, 92], { grain: 0 });
-  // Café: ventana iluminada, toldo a rayas y una maceta
+  // La tienda del bajo (1.67, §67; antes, un café): escaparate iluminado con muebles, toldo a rayas, un cartel colgado
+  // con un sobre lacrado y una maceta. Se toca para entrar (`shop`).
   r.box(5.3, BD, 0.35, 7.5, BD + 0.08, 1.85, FRAME_WOOD, { grain: 0 });
   r.setId(GLOW_BIT);
   r.box(5.4, BD + 0.08, 0.45, 7.4, BD + 0.16, 1.75, [240, 196, 124], { grain: 0 });
   r.setId(0);
   r.box(6.35, BD + 0.16, 0.45, 6.45, BD + 0.24, 1.75, FRAME_WOOD, { grain: 0 });
+  // En el escaparate: una lámpara de pie y un sillón a la izquierda, una estantería a la derecha
+  r.box(5.62, BD + 0.16, 0.45, 5.67, BD + 0.22, 1.25, IRON, { grain: 0 });
+  r.box(5.5, BD + 0.16, 1.25, 5.8, BD + 0.24, 1.48, [214, 120, 88], { grain: 0 });
+  r.box(5.85, BD + 0.16, 0.45, 6.28, BD + 0.24, 0.85, [118, 138, 104], { grain: 0 });
+  r.box(5.85, BD + 0.16, 0.85, 5.95, BD + 0.24, 1.1, [118, 138, 104], { grain: 0 });
+  r.box(6.6, BD + 0.16, 0.45, 7.2, BD + 0.22, 1.5, FRAME_WOOD, { grain: 0 });
+  for (const z of [0.75, 1.1]) for (let a = 6.66; a < 7.12; a += 0.09) r.box(a, BD + 0.22, z, a + 0.07, BD + 0.25, z + 0.24, spines[Math.floor(hash(a * 11, z) * 5)], { grain: 0 });
+  // Cartel colgado de una barra: un sobre con su lacre rojo
+  r.box(7.62, BD, 1.62, 7.66, BD + 0.7, 1.66, IRON, { grain: 0 });
+  r.box(7.5, BD + 0.38, 1.1, 7.6, BD + 0.98, 1.62, WHITE, { grain: 0 });
+  r.box(7.6, BD + 0.6, 1.3, 7.63, BD + 0.76, 1.44, [168, 70, 52], { grain: 0 });
   r.box(5.2, BD, 1.92, 7.6, BD + 0.5, 2.05, [168, 70, 52], { grain: 0, face: (f, a) => (Math.floor(a * 4) % 2 ? r.rampOf(WHITE)[3] : undefined) });
   r.box(7.65, BD + 0.1, 0, 7.95, BD + 0.4, 0.3, POT, { grain: 0 });
   for (let k = 0; k < 4; k += 1) r.box(7.62 + k * 0.08, BD + 0.15, 0.3, 7.74 + k * 0.08, BD + 0.35, 0.6 + hash(k, 5) * 0.3, LEAF, { grain: 0 });
@@ -470,5 +482,9 @@ export function renderFacade(flats = {}) {
   ctx.putImageData(image, 0, 0);
   // Dónde empieza el agua (la orilla es una recta en la pantalla): para el brillo que corre por ella
   const shore = [r.project(-8, BD + 2.6, 0), r.project(BW + 8, BD + 2.6, 0)].map((p) => ({ x: p.sx / W, y: p.sy / H }));
-  return { canvas, windows, panes, shore, sign: SIGN_LINES.join(' ') };
+  // La tienda del bajo: el escaparate con su toldo y su cartel (para el botón)
+  const s0 = r.project(5.15, BD + 0.5, 0.2);
+  const s1 = r.project(7.8, BD, 2.15);
+  const shop = { left: Math.min(s0.sx, s1.sx) / W, top: Math.min(s0.sy, s1.sy) / H, width: Math.abs(s1.sx - s0.sx) / W, height: Math.abs(s1.sy - s0.sy) / H };
+  return { canvas, windows, panes, shore, shop, sign: SIGN_LINES.join(' ') };
 }

@@ -1,6 +1,7 @@
 // QA de la 1.46.0 (SPEC §39): libro físico con la portada original intacta y el material según la edición
 // guardada (tapas rígidas, rústica, lector electrónico y estuche de audiolibro), sin dorados generales.
 import { expect, test } from '@playwright/test';
+import { FIGURES_ENABLED } from '../src/domain/figures.js';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -230,6 +231,7 @@ async function loadWithFigures(page, shelf) {
 }
 
 test('figuras: proporciones propias, sin taparse con los accesos y previsualizar no cambia lo expuesto', async ({ page }) => {
+  test.skip(!FIGURES_ENABLED, 'Figuras ocultas desde la 1.67 (SPEC §67, decisión de Francisco del 1-11-2026): vuelve con FIGURES_ENABLED');
   await loadWithFigures(page, [{ id: 'guardian_clavos', display: 'box' }, { id: 'maestro_superviviente', display: 'box' }, null, null]);
   const figs = await page.evaluate(() =>
     [...document.querySelectorAll('.room-figure')].map((b) => {
@@ -255,6 +257,7 @@ test('figuras: proporciones propias, sin taparse con los accesos y previsualizar
 });
 
 test('figuras: cambiar a una posición ocupada intercambia sin perder piezas y todo persiste al recargar', async ({ page }) => {
+  test.skip(!FIGURES_ENABLED, 'Figuras ocultas desde la 1.67 (SPEC §67, decisión de Francisco del 1-11-2026): vuelve con FIGURES_ENABLED');
   await loadWithFigures(page, [{ id: 'guardian_clavos', display: 'unboxed' }, null, { id: 'maestro_superviviente', display: 'box' }, null]);
   await page.locator('.room-figure').first().evaluate((el) => el.click());
   await page.getByRole('button', { name: 'Cambiar de balda' }).click();

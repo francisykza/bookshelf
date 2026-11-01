@@ -1,13 +1,15 @@
 // Apps del ordenador (SPEC §34): Estadísticas, Reto anual y Misiones y Guardián, recompuestas según la maqueta
 // `docs/design/references/ordenador-seis-apps-maqueta.png`. Las fórmulas, la torre de leídos y las misiones son las
 // de siempre (antes en LaptopPanel); aquí cambia solo la composición.
-import { BookOpen, Check, Flame, Gift, Star } from 'lucide-react';
+import { BookOpen, Check, Flame, Gift, Star, Ticket } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { daysLeftInYear, lastDays, parseDay } from '../../domain/dates';
 import { EDITIONS, formatRating, hash, isDevice, spineColor, visualEdition } from '../../domain/books';
-import { SEALS_PER_BOX, rankOf } from '../../domain/figures';
+import { FIGURES_ENABLED, SEALS_PER_BOX, rankOf } from '../../domain/figures';
 import { missionStatus } from '../../domain/missions';
 import { isActive, readingStreak, summarize } from '../../domain/reading';
+import { MISION_TICKETS } from '../../features/edificio/economy';
+import { useMissionTickets } from '../../features/edificio/useMissionTickets';
 import { useLibrary } from '../../state/useLibrary';
 import { FigureArt, RANK_STARS } from '../figures/FigureArt';
 import { useFigureCatalog } from '../figures/figureCatalog';
@@ -358,7 +360,95 @@ export function GoalApp() {
   );
 }
 
-export function MissionsApp({ onOpenVault }) {
+/** Misiones de la semana: con figuras, cajas para el Ático; sin ellas (1.67, §67), tickets para la tienda del bajo. */
+export function MissionsApp(props) {
+  return FIGURES_ENABLED ? <GuardianMissionsApp {...props} /> : <TicketMissionsApp />;
+}
+
+const TICKET_NOTE = {
+  loading: 'Comprobando tus tickets…',
+  'signed-out': 'Inicia sesión en «Tu cuenta» y activa la comunidad para cobrar tus misiones en tickets.',
+  'no-community': 'Activa la comunidad en tu perfil para cobrar tus misiones en tickets de la tienda del bajo.',
+  soon: 'La tienda del bajo abre muy pronto: entonces podrás cobrar aquí tus misiones.',
+};
+
+/** 1.67: cada misión cumplida se cobra en tickets (una vez por semana; lo decide el servidor). */
+function TicketMissionsApp() {
+  const { state, actions } = useLibrary();
+  const missions = missionStatus(state);
+  const t = useMissionTickets();
+  const [busy, setBusy] = useState('');
+  const [msg, setMsg] = useState('');
+  const cobrar = async (m) => {
+    setBusy(m.id);
+    setMsg('');
+    try {
+      await t.cobrar(m.id);
+      // La misión queda también apuntada en tu biblioteca, como siempre
+      if (!m.claimed) actions.claimMission(m.id);
+      setMsg(`+${MISION_TICKETS} tickets por «${m.title}». Gástalos en la tienda del bajo del edificio.`);
+    } catch (e) {
+      setMsg(`No se ha podido cobrar: ${e.message}`);
+    } finally {
+      setBusy('');
+    }
+  };
+  return (
+    <div className="pc-missions">
+      <section className="pc-tickets">
+        <Ticket aria-hidden="true" />
+        {t.status === 'ready' ? (
+          <p>
+            <b>{t.tickets}</b> tickets para la tienda del bajo
+          </p>
+        ) : (
+          <p className="pc-muted">{TICKET_NOTE[t.status]}</p>
+        )}
+      </section>
+
+      <section>
+        <h3 className="pc-section-title">Misiones de esta semana</h3>
+        <p className="pc-muted pc-missions__hint">Se reinician cada lunes. Cada misión cumplida vale {MISION_TICKETS} tickets para muebles y sobres del edificio del puerto.</p>
+        <ul className="pc-mission-list">
+          {missions.map((m) => {
+            const cobrada = t.cobrada(m.id);
+            return (
+              <li key={m.id} className="pc-mission" data-done={m.done || undefined} data-claimed={cobrada || undefined}>
+                <div className="pc-mission__text">
+                  <strong>{m.title}</strong>
+                  <span className="pc-mission__progress">
+                    <span className="pc-mission__bar" style={{ '--p': `${(m.value / m.target) * 100}%` }} aria-hidden="true" />
+                    <em>
+                      {m.value} / {m.target}
+                    </em>
+                  </span>
+                </div>
+                {cobrada ? (
+                  <span className="pc-mission__ok">
+                    <Check aria-hidden="true" /> Cobrada
+                  </span>
+                ) : t.status === 'ready' ? (
+                  <button type="button" className="pc-btn pc-btn--primary pc-btn--small" disabled={!m.done || Boolean(busy)} onClick={() => cobrar(m)}>
+                    <Ticket aria-hidden="true" /> {busy === m.id ? 'Cobrando…' : `Cobrar ${MISION_TICKETS}`}
+                  </button>
+                ) : m.done ? (
+                  <span className="pc-mission__ok">
+                    <Check aria-hidden="true" /> Cumplida
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="pc-muted" role="status" aria-live="polite">
+          {msg}
+        </p>
+      </section>
+    </div>
+  );
+}
+
+function GuardianMissionsApp({ onOpenVault }) {
   const { state, actions } = useLibrary();
   const figCatalog = useFigureCatalog();
   const missions = missionStatus(state);

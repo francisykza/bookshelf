@@ -3,6 +3,7 @@
 // coordenadas relativas calibradas sobre el recurso (CORNER_LAYOUT). Nombre, avatar y botones van fuera.
 import { Cover } from '../../../components/shelf/BookItem';
 import { FigureArt } from '../../../components/figures/FigureArt';
+import { FIGURES_ENABLED } from '../../../domain/figures';
 import { CORNER_LAYOUT, MEMORY_OBJECTS, SCENES, sceneOf } from '../huellas';
 
 const pct = (v) => `${(v * 100).toFixed(3)}%`;
@@ -82,7 +83,7 @@ export function CornerScene({ corner, figure, onOpenMemory, ownerAlias }) {
           </li>
         ))}
       </ul>
-      {figure && (
+      {FIGURES_ENABLED && figure && (
         <div className="corner-scene__niche" style={{ left: pct((niche.left + niche.right) / 2), bottom: pct(1 - niche.base), height: pct(niche.maxH) }}>
           <FigureArt fig={figure} display="box" />
           <span className="sr-only-focus">Figura expuesta: {figure.name}</span>

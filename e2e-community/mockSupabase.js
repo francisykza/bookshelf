@@ -5,6 +5,7 @@
 // límite, objeto único, upsert con conflicto y la vista de estadísticas.
 import { randomUUID } from 'node:crypto';
 import { CATALOG } from '../src/features/edificio/catalog.js';
+import { SOBRES } from '../src/features/edificio/economy.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
 
 export const SUPABASE = 'http://supabase.test';
@@ -164,12 +165,13 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       return json({ edificio: mine.edificio, puerta: mine.puerta, vecinos });
     }
     // 1.66 (SPEC §66): inventario de muebles, como la migración (solo si la prueba lo pide con `db.piso_cuentas`)
-    if (['rpc/piso_mi_inventario', 'rpc/piso_elegir_inicio'].includes(table)) {
+    // 1.67 (SPEC §67): tickets, tienda y sobres. El sorteo del mock es fijo: la prueba pone los premios en `db.piso_sorteo`.
+    if (['rpc/piso_mi_inventario', 'rpc/piso_elegir_inicio', 'rpc/piso_reclamar_mision', 'rpc/piso_comprar', 'rpc/piso_abrir_sobre', 'rpc/piso_reciclar'].includes(table)) {
       if (!db.piso_cuentas) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
       const counted = (id) => CATALOG.some((c) => c.id === id && !c.set);
       db.piso_inventario ??= {};
       if (!db.piso_cuentas[userId]) {
-        db.piso_cuentas[userId] = { inicio_elegido: false };
+        db.piso_cuentas[userId] = { inicio_elegido: false, tickets: 30, sin_raro: 0 };
         const count = (items) => items.filter((i) => counted(i.id)).reduce((m, i) => ({ ...m, [i.id]: (m[i.id] ?? 0) + 1 }), {});
         const placed = count(db.pisos.find((p) => p.user_id === userId)?.layout.items ?? []);
         const start = count(starterRoom().items);
@@ -177,13 +179,67 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         for (const id of new Set([...Object.keys(placed), ...Object.keys(start)])) inv[id] = Math.max(placed[id] ?? 0, start[id] ?? 0);
         db.piso_inventario[userId] = inv;
       }
-      const mine = () => ({ inicio_elegido: db.piso_cuentas[userId].inicio_elegido, copias: db.piso_inventario[userId] });
+      const cuenta = db.piso_cuentas[userId];
+      cuenta.tickets ??= 30;
+      cuenta.sin_raro ??= 0;
+      const reclamadas = () => (db.piso_reclamos ?? []).filter((k) => k.startsWith(`${userId}:`)).map((k) => `mision:${k.split(':').slice(1).join(':')}`).sort();
+      const mine = () => ({ inicio_elegido: cuenta.inicio_elegido, tickets: cuenta.tickets, sin_raro: cuenta.sin_raro, reclamadas: reclamadas(), copias: db.piso_inventario[userId] });
+      const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
+      const cat = (id) => CATALOG.find((c) => c.id === id && !c.set);
+      const rareza = (id) => cat(id)?.rareza ?? 'comun';
+      const precio = (id) => ({ comun: 20, 'poco-comun': 40 })[rareza(id)] ?? null;
+      const sumar = (id, n) => (db.piso_inventario[userId][id] = Math.max(0, (db.piso_inventario[userId][id] ?? 0) + n));
+      if (table === 'rpc/piso_reclamar_mision') {
+        const { mision, semana } = req.postDataJSON();
+        db.piso_reclamos ??= [];
+        const clave = `${userId}:${mision}:${semana}`;
+        if (!db.piso_reclamos.includes(clave)) {
+          db.piso_reclamos.push(clave);
+          cuenta.tickets += 12;
+        }
+        return json(mine());
+      }
+      if (table === 'rpc/piso_comprar') {
+        const { mueble } = req.postDataJSON();
+        if (!cat(mueble) || precio(mueble) == null) return fail('Eso no se vende en la tienda.');
+        if (cuenta.tickets < precio(mueble)) return fail('No tienes tickets suficientes.');
+        cuenta.tickets -= precio(mueble);
+        sumar(mueble, 1);
+        return json(mine());
+      }
+      if (table === 'rpc/piso_abrir_sobre') {
+        const { sobre, cuantos } = req.postDataJSON();
+        const def = SOBRES.find((s) => s.id === sobre);
+        if (!def) return fail('Ese sobre no está a la venta.');
+        const coste = { 1: def.coste1, 5: def.coste5 }[cuantos];
+        if (!coste) return fail('Los sobres son de 1 o de 5.');
+        if (cuenta.tickets < coste) return fail('No tienes tickets suficientes.');
+        db.piso_sorteo ??= [];
+        const premios = [];
+        for (let i = 0; i < cuantos; i += 1) {
+          const mueble = db.piso_sorteo.shift() ?? 'silla';
+          const nuevo = !(db.piso_inventario[userId][mueble] > 0);
+          sumar(mueble, 1);
+          cuenta.sin_raro = rareza(mueble) === 'raro' ? 0 : cuenta.sin_raro + 1;
+          premios.push({ mueble, rareza: rareza(mueble), nuevo });
+        }
+        cuenta.tickets -= coste;
+        return json({ premios, inventario: mine() });
+      }
+      if (table === 'rpc/piso_reciclar') {
+        const { mueble } = req.postDataJSON();
+        if (!cat(mueble)) return fail('Eso no se puede reciclar.');
+        const puestos = (db.pisos.find((p) => p.user_id === userId)?.layout.items ?? []).filter((i) => i.id === mueble).length;
+        if ((db.piso_inventario[userId][mueble] ?? 0) - puestos < 1) return fail('No tienes copias libres de ese mueble: guárdalo antes de reciclarlo.');
+        sumar(mueble, -1);
+        cuenta.tickets += { comun: 3, 'poco-comun': 8, raro: 20 }[rareza(mueble)];
+        return json(mine());
+      }
       if (table === 'rpc/piso_elegir_inicio') {
         const { muebles } = req.postDataJSON();
-        const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
         if (db.piso_cuentas[userId].inicio_elegido) return fail('Ya elegiste tus muebles de inicio.');
         if (muebles?.length !== 6) return fail('Elige seis muebles.');
-        if (!muebles.every(counted)) return fail('Solo se eligen muebles comunes del catálogo.');
+        if (!muebles.every((id) => counted(id) && rareza(id) === 'comun')) return fail('Solo se eligen muebles comunes del catálogo.');
         for (const id of muebles) db.piso_inventario[userId][id] = (db.piso_inventario[userId][id] ?? 0) + 1;
         db.piso_cuentas[userId].inicio_elegido = true;
       }

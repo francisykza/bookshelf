@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { lampClick, matchStrike } from '../../audio/ambientAudio';
 import { currentBook, progressLabel } from '../../domain/books';
-import { activeOwnedCount } from '../../domain/figures';
+import { activeOwnedCount, FIGURES_ENABLED } from '../../domain/figures';
 import { getDeterministicVibe } from '../../utils/vibeEngine';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { HOTSPOTS, ROOMS, SCENE_REFRESH } from '../../scene/sceneMap';
@@ -34,7 +34,8 @@ export const ROOM_VIEW = 'ROOM_VIEW';
 export const SHELF_VIEW = 'SHELF_VIEW';
 
 /** Recorrido de pistas (solo con «Mostrar guías»): un objeto tras otro se aviva para enseñarte qué tocar. */
-const SPOT_ORDER = ['book', 'laptop', 'tray', 'headphones', 'figures', 'shelf', 'lamp', 'lantern', 'sun'];
+// 1.67: con las figuras ocultas, el recorrido no se para en la vitrina
+const SPOT_ORDER = ['book', 'laptop', 'tray', 'headphones', 'figures', 'shelf', 'lamp', 'lantern', 'sun'].filter((id) => FIGURES_ENABLED || id !== 'figures');
 const SPOT_MS = 2600;
 /** Objetos que deben poder alcanzarse aunque el encuadre los recorte (alternativa en un solo control). */
 const ESSENTIAL = ['book', 'laptop', 'tray', 'headphones', 'figures', 'shelf', 'lamp', 'lantern'];
@@ -56,7 +57,7 @@ function OffscreenReporter({ fit, actionsRef, onChange }) {
   return null;
 }
 
-export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenFigure, onLogReading, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
+export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenFigure, showFigures = true, onLogReading, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
   const { state, actions } = useLibrary();
   const { settings, books, progress } = state;
   const reducedMotion = useReducedMotion();
@@ -230,6 +231,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         {/* 30 · hotspots (la librería general primero: los objetos concretos van por encima) */}
         <div className="room-hotspots">
           <Hotspot id="shelf" spot={lit('shelf')} guides={guides} hint={1} onHover={onHover} onActivate={onOpenShelf} label={{ title: 'Mi librería de roble', text: `${books.length} libros · toca para acercarte` }} />
+          {showFigures && (
           <Hotspot
             id="figures"
             spot={lit('figures')}
@@ -239,6 +241,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
             onActivate={() => onOpenVault()}
             label={{ title: 'Vitrina de figuras', text: `${activeOwnedCount(progress.figures)} figuras · toca para subir al Ático`, meta: progress.figures?.boxes ? `🎁 ${progress.figures.boxes} Caja${progress.figures.boxes === 1 ? '' : 's'} Sorpresa por abrir` : undefined }}
           />
+          )}
           <Hotspot
             id="book"
             spot={lit('book')}
@@ -277,7 +280,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           <Hotspot id="lamp" spot={lit('lamp')} guides={guides} hint={13} onHover={onHover} onActivate={toggleLamp} label={{ title: 'Lámpara de latón', text: settings.lampOn ? 'Encendida · tocar para apagar' : 'Apagada · tocar para encender' }} />
           <Hotspot id="lantern" spot={lit('lantern')} guides={guides} hint={15} onHover={onHover} onActivate={toggleCandle} label={{ title: 'Vela de la mesita', text: settings.candleOn ? 'Encendida · tocar para soplar' : 'Apagada · tocar para encenderla' }} />
           {/* Figuras expuestas: por encima del hotspot de la vitrina (la madera de alrededor sigue abriendo el Ático) */}
-          <RoomFigureShelves figures={progress.figures} onOpenFigure={onOpenFigure ?? ((id) => onOpenVault(id))} onHover={onHover} />
+          {showFigures && <RoomFigureShelves figures={progress.figures} onOpenFigure={onOpenFigure ?? ((id) => onOpenVault(id))} onHover={onHover} />}
           <TimeDial timeOfDay={settings.timeOfDay} onOpen={onOpenAtlas} onHover={onHover} spot={lit('sun')} />
           {/* Señales físicas permanentes (SPEC §28.9): decorativas; el toque llega al objeto de debajo. Con un panel
               encima (o fuera de la habitación) no se montan: no se ven y no cuestan fotogramas */}
