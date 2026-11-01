@@ -11,9 +11,11 @@ import { SELLOS } from './catalog';
 import { starterRoom } from './demo';
 import './edificio.css';
 import { mountFacade } from './facadeView';
+import { START_PICKS } from './inventory';
 import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
-import { doorLabel, loadEdificio, savePiso, setSello } from './service';
+import { doorLabel, elegirInicio, loadEdificio, loadInventario, savePiso, setSello } from './service';
+import { StarterPicker } from './StarterPicker';
 
 const SAVE_MS = 900;
 // Cómo se ve un piso: «dentro» de la habitación (a pantalla completa, con la balda o los sellos abajo; por defecto) o
@@ -59,7 +61,7 @@ function Facade({ vecinos, onOpenPiso }) {
 }
 
 /** El piso montado en un contenedor (lo dibuja el motor de píxeles, fuera de React). */
-function PisoView({ room, editable, label, soundOn, inside, onChange }) {
+function PisoView({ room, editable, label, soundOn, inside, inventory, onChange }) {
   const ref = useRef(null);
   const api = useRef(null);
   const changed = useRef(onChange);
@@ -68,7 +70,7 @@ function PisoView({ room, editable, label, soundOn, inside, onChange }) {
   }, [onChange]);
   useEffect(() => {
     // En la vista «dentro», tu piso se abre ya decorando, con la balda abajo
-    const piso = mountPiso(ref.current, { room, editable, label, inside, decorate: inside && editable, muted: !soundOn, onChange: (r) => changed.current?.(r) });
+    const piso = mountPiso(ref.current, { room, editable, label, inside, inventory, decorate: inside && editable, muted: !soundOn, onChange: (r) => changed.current?.(r) });
     api.current = piso;
     return () => piso.destroy();
     // El piso se monta una vez: los cambios los lleva él (y avisa con onChange)
@@ -80,6 +82,10 @@ function PisoView({ room, editable, label, soundOn, inside, onChange }) {
   useEffect(() => {
     api.current?.setInside(inside);
   }, [inside]);
+  // El inventario llega después del piso (y cambia al elegir los muebles de inicio)
+  useEffect(() => {
+    api.current?.setInventory(inventory);
+  }, [inventory]);
   return <div ref={ref} className="ed-piso" />;
 }
 
@@ -92,6 +98,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const [saving, setSaving] = useState('');
   const [selloMsg, setSelloMsg] = useState('');
   const [view, setView] = useState(readView);
+  // Mis copias de cada mueble (1.66, §66); null: sin la migración del inventario, todo libre como antes
+  const [inventory, setInventory] = useState(null);
+  const [choosing, setChoosing] = useState(false);
   const inside = view === 'dentro';
   const pending = useRef(null);
   const timer = useRef(0);
@@ -112,6 +121,8 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
           savePiso(community.userId, me.room).catch(() => {});
         }
         setData(d);
+        // Si no llega, la balda ofrece todo y el servidor sigue siendo quien decide al guardar
+        return loadInventario().then((inv) => alive && setInventory(inv), () => {});
       })
       .catch((e) => alive && setError(e.message));
     return () => {
@@ -144,6 +155,13 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
         .catch((e) => setSaving(`No se ha podido guardar: ${e.message}`));
     }, SAVE_MS);
   };
+
+  const pickStart = async (ids) => {
+    const inv = await elegirInicio(ids);
+    setInventory(inv);
+    setChoosing(false);
+  };
+  const startPending = Boolean(mine && inventory && !inventory.inicioElegido);
 
   const leaveSello = async (vecino, sello) => {
     const next = vecino.sello_dado === sello ? null : sello;
@@ -185,6 +203,8 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     body = <p className="ed-note">Buscando tu puerta…</p>;
   } else if (pisoId && !open) {
     body = <p className="ed-note">Este piso ya no está en tu edificio.</p>;
+  } else if (open && mine && choosing) {
+    body = <StarterPicker onPick={pickStart} onLater={() => setChoosing(false)} />;
   } else if (open) {
     const label = mine ? `Tu piso, ${doorLabel(open.puerta)}` : `Piso de ${open.alias}, ${doorLabel(open.puerta)}`;
     body = (
@@ -198,7 +218,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : 'Puedes mirar, pero no tocar nada.'}</p>
           </div>
         </div>
-        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} onChange={mine ? onMyChange : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
+        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} inventory={mine ? inventory : null} onChange={mine ? onMyChange : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
             {saving}
@@ -223,8 +243,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     );
   } else {
     const inbox = data.vecinos.filter((v) => !v.yo && v.sello_recibido);
+    // El portal (1.65): el cielo del dibujo sigue detrás del título y el edificio llega de borde a borde
     body = (
-      <>
+      <div className="ed-portal">
         <h2 className="ed-title" id="ed-title">
           El edificio del puerto
         </h2>
@@ -244,7 +265,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             <p>Todavía no tienes sellos. Cuando un vecino visite tu piso, podrá dejarte uno.</p>
           )}
         </section>
-      </>
+      </div>
     );
   }
 
@@ -261,7 +282,12 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             <X aria-hidden="true" />
           </button>
         )}
-        {pisoId && open && (
+        {startPending && !choosing && (
+          <button type="button" className="px-btn ed-bar__start" onClick={() => setChoosing(true)}>
+            Elige tus {START_PICKS} muebles
+          </button>
+        )}
+        {pisoId && open && !choosing && (
           <button
             type="button"
             className="px-btn px-btn--icon ed-bar__view"

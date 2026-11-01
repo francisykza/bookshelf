@@ -4,6 +4,8 @@
 // recorrer las pantallas con una sesión iniciada. Imita lo que la app necesita: filtros eq/neq/in, orden,
 // límite, objeto único, upsert con conflicto y la vista de estadísticas.
 import { randomUUID } from 'node:crypto';
+import { CATALOG } from '../src/features/edificio/catalog.js';
+import { starterRoom } from '../src/features/edificio/demo.js';
 
 export const SUPABASE = 'http://supabase.test';
 
@@ -160,6 +162,32 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
           sello_recibido: db.piso_sellos.find((x) => x.de === v.user_id && x.para === userId)?.sello ?? null,
         }));
       return json({ edificio: mine.edificio, puerta: mine.puerta, vecinos });
+    }
+    // 1.66 (SPEC §66): inventario de muebles, como la migración (solo si la prueba lo pide con `db.piso_cuentas`)
+    if (['rpc/piso_mi_inventario', 'rpc/piso_elegir_inicio'].includes(table)) {
+      if (!db.piso_cuentas) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
+      const counted = (id) => CATALOG.some((c) => c.id === id && !c.set);
+      db.piso_inventario ??= {};
+      if (!db.piso_cuentas[userId]) {
+        db.piso_cuentas[userId] = { inicio_elegido: false };
+        const count = (items) => items.filter((i) => counted(i.id)).reduce((m, i) => ({ ...m, [i.id]: (m[i.id] ?? 0) + 1 }), {});
+        const placed = count(db.pisos.find((p) => p.user_id === userId)?.layout.items ?? []);
+        const start = count(starterRoom().items);
+        const inv = {};
+        for (const id of new Set([...Object.keys(placed), ...Object.keys(start)])) inv[id] = Math.max(placed[id] ?? 0, start[id] ?? 0);
+        db.piso_inventario[userId] = inv;
+      }
+      const mine = () => ({ inicio_elegido: db.piso_cuentas[userId].inicio_elegido, copias: db.piso_inventario[userId] });
+      if (table === 'rpc/piso_elegir_inicio') {
+        const { muebles } = req.postDataJSON();
+        const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
+        if (db.piso_cuentas[userId].inicio_elegido) return fail('Ya elegiste tus muebles de inicio.');
+        if (muebles?.length !== 6) return fail('Elige seis muebles.');
+        if (!muebles.every(counted)) return fail('Solo se eligen muebles comunes del catálogo.');
+        for (const id of muebles) db.piso_inventario[userId][id] = (db.piso_inventario[userId][id] ?? 0) + 1;
+        db.piso_cuentas[userId].inicio_elegido = true;
+      }
+      return json(mine());
     }
     if (table === 'rpc/accept_club_invite') {
       const { invite_token } = req.postDataJSON();

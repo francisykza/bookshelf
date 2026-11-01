@@ -6,8 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.63.0 (2026-11-01), en https://bookshelf-wine-iota.vercel.app
-- **Árbol de trabajo**: **1.63.0 publicada**: «El edificio del puerto» en la app (§63), con su migración **ya aplicada en
+- **Versión publicada**: 1.66.0 (2026-11-01), en https://bookshelf-wine-iota.vercel.app
+- **Árbol de trabajo**: **1.65.0 y 1.66.0 publicadas** (§65 portal con vida y balda corregida; §66 inventario de
+  muebles, fase 1 de `docs/qa/economia-muebles.md`, con su migración **ya aplicada en producción**). Antes, 1.64.0 publicada (sets de
+  sagas) y 1.63.0: «El edificio del puerto» en la app (§63), con su migración **ya aplicada en
   producción** (1-11-2026; ver la bitácora). Antes, **1.62.0 completa (bloques 1 a 4), publicada** del paquete «salón social y radio» (§62): comunidad
   con tres pestañas y «Lectores» nuevo; sillones del salón y visita con fachada; radio del rincón; clubes con Lectura / Conversación / Miembros. Fuera de git quedan las carpetas de recursos: `material-diseno/`, `art-inbox/`
   (incluye `maqueta-146/`), `assets-source/` y `BookShelf-fotogramas-QA/`.
@@ -16,12 +18,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   lista de avatares admitidos; sin ella, el servidor rechaza un perfil con uno de los seis nuevos). **Preparada (1.62,
   no aplicar aún sin decidirlo con Francisco)**: `20261031200000_radio_sintonia.sql` (`profiles.radio_station` para
   «Mostrar mi sintonía», opción que la app todavía no enseña). **Aplicada (1.63, 1-11-2026)**:
-  `20261101120000_edificio_puerto.sql` (pisos, reparto en edificios, sellos). La 1.63 ya la usa.
+  `20261101120000_edificio_puerto.sql` (pisos, reparto en edificios, sellos). La 1.63 ya la usa. **Aplicada (1.66, 1-11-2026)**:
+  `20261103120000_edificio_inventario.sql` (copias de muebles). La 1.66 ya la usa.
 
 ### Últimos bloques (detalle en `SPEC.md`)
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.66.0 | Inventario de muebles: copias por mueble, lo colocado pasa a ser tuyo, diez de inicio y «Tu mudanza» con seis comunes; la balda enseña «×N» y apaga lo agotado | §66 |
+| 1.65.0 | Portal del edificio con cielo de borde a borde, llegada animada, estrellas, luces, agua y gaviota; balda sin desplazamiento de más y «En el piso» con dibujos | §65 |
 | 1.63.0 | «El edificio del puerto»: la tablet del Salón pregunta entre la comunidad y el edificio; portal con seis puertas, tu piso que se decora y se guarda solo, visita a los vecinos con sellos; reparto al azar en el servidor y RLS (migración aplicada) | §63 |
 | 1.62.0 | Comunidad: tres pestañas, lo tuyo desde el avatar, buscador, opiniones compactas con ficha pública y pendientes por la obra; sillones con elección y tarjeta anclada, pestaña «Salón» y visita con fachada, «Entrar», «Saltar» y vuelta al origen; radio del rincón (un reproductor, temporizador, EPUB) | §62 |
 | 1.61.0 | Visita: un acceso por cosa en la habitación de llegada, etiqueta «Libros compartidos ›» en la estantería, lectura actual como libro en la mesita y «Los libros de X» como biblioteca frontal con buscador | §61 |
@@ -127,7 +132,50 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
-### 2026-11-01 · cuenta principal · 1.64.0 «El edificio del puerto» con más personalidad, bloques 1 a 3 (sin commit, migración aplicada)
+### 2026-11-01 · cuenta principal · 1.66.0 inventario de muebles, fase 1 (publicada, migración aplicada)
+- **Encargo de Francisco**: «Sí, fase 1» del plan `docs/qa/economia-muebles.md` (aprobado con «Sí a todo»).
+- Servidor: `supabase/migrations/20261103120000_edificio_inventario.sql` (**aplicada en producción** el 1-11-2026, ver abajo).
+  `piso_catalogo` con `rareza` y `saga`; tablas `piso_inventario` y `piso_cuentas` sin acceso directo; inventario que
+  se crea solo la primera vez (lo colocado + los diez de `starterRoom`); `piso_mi_inventario()`, `piso_elegir_inicio()`
+  (seis comunes, una vez); `pisos_validate` comprueba las copias. Los muebles de sagas no cuentan hasta la fase 5.
+- App: `inventory.js` (reglas puras), `StarterPicker.jsx` («Tu mudanza»), balda con «×N» y agotados apagados
+  (`piso.js`), `EdificioPanel.jsx` (carga el inventario; botón «Elige tus 6 muebles»), `service.js`. Sin la
+  migración, todo libre como en la 1.65.
+- QA: Vitest `inventario.rls.test.js` (6) + resto del edificio y `entrega2.rls` (44 en total); `v166-inventario` y
+  `v163-edificio` en 320/390/1440/WebKit 390 (8 pasan); `e2e/edificio-puerto` en 390 y WebKit 390 (13 pasan); oxlint y
+  build correctos. Capturas: `qa-report/screenshots-community/<proyecto>/v166-*.png`.
+- **Migración aplicada en producción** (proyecto `bookshelf`, 1-11-2026, Francisco: «Hazlo tú»): la pegó Claude en el
+  SQL Editor (9450 bytes, SHA-256 `bb0472fb…8cb06d4f`, igual al archivo) y Francisco pulsó «Run» («Success»).
+  Comprobado con la clave pública: `piso_inventario` y `piso_cuentas` dan «permission denied» al anónimo, y
+  `piso_mi_inventario`, `piso_elegir_inicio` y `piso_inventario_asegurar` también (no «not found»).
+- **Publicadas 1.65 y 1.66** el 1-11-2026 a petición de Francisco («Commit y súbelo»), en un solo commit en `main`;
+  Vitest completo 339/339 y build antes de subir. Entre aplicar la migración y la subida, la 1.64 publicada no sabía
+  de copias (un piso con más de las que se tienen no se habría guardado).
+- **Pendiente**: probar con una cuenta real el inventario y «Tu mudanza»; los sonidos propios del edificio
+  (§6 del plan) siguen sin hacer; siguiente fase: tickets y tienda (fase 2).
+
+### 2026-11-01 · cuenta principal · 1.65.0 edificio: portal con más vida y arreglos de la balda (publicada con la 1.66)
+- **Encargo de Francisco («bloque 0»)**: entrar al edificio con más impacto y más orgánico, alguna animación pequeña; la
+  balda se desplazaba más allá de los muebles; no le gustaba cómo se veía «En el piso».
+- Balda: los textos ocultos de las pestañas (`.px-sr`, absolutos) se salían de su fila y ensanchaban toda la balda
+  160 px. `.ep-chip` y `.ep-set` con `position: relative` y `.ep-shelf` con `overflow-x: clip`.
+- «En el piso»: cada mueble de pie en la balda con su dibujo y su color (`.ep-inroom__item`, mismo aspecto que el
+  catálogo); el elegido se levanta y su nombre va en papel.
+- Portal (`.ed-portal` en `EdificioPanel.jsx`): fondo de cielo y agua, título sobre el cielo, fachada de borde a borde.
+  `facadeView.js`: llegada (la vista sube desde el muelle; las placas salen al final) y capa `.ed-ambient`: estrellas
+  ya pintadas que titilan, luz que respira en los cristales de los pisos ocupados (`panes` de `facade.js`), destellos
+  de píxel en el agua (bajo la orilla, `shore`) y una gaviota que cruza. Con movimiento reducido, nada de esto.
+- `e2e-community/v163-edificio` espera a que acabe la llegada antes de la captura. QA: `e2e/edificio-puerto` en
+  360/390/1440/WebKit 390 (24 pasan) y `v163-edificio` en 390/1440/WebKit 390 (4 pasan); oxlint y build correctos.
+  Capturas: `qa-report/v165-portal-390.png`, `v165-portal-1440.png`, `v165-en-el-piso.png`.
+- Francisco aprobó las capturas («Me convence»): versión 1.65.0 y SPEC §65. **Sin commit** hasta que lo pida. También preguntó por una economía de muebles
+  (copias, tickets por misiones, tienda, rarezas con animación, mercado). Plan en `docs/qa/economia-muebles.md`,
+  **aprobado** («Sí a todo»: tickets aparte de las Cajas, lo colocado pasa a ser suyo, 10 + 6 muebles de inicio, sagas
+  al terminar el libro, primero regalar entre vecinos). Añadió sonidos cozy propios del edificio (§6 del plan) y, para
+  el futuro, la sintonía de «Aquí no hay quien viva» en chiptune: sin licencia no se puede (ver el plan). **Nada
+  implementado**; siguiente: fase 1 (inventario), con migración que aplica él.
+
+### 2026-11-01 · cuenta principal · 1.64.0 «El edificio del puerto» con más personalidad, bloques 1 a 3 (publicada, migración aplicada)
 - **Encargo de Francisco** (por bloques, con capturas entre uno y otro):
   1. Fachada que se vea como un edificio de verdad.
   2. Piso y personalización más integrados, con un catálogo intuitivo y orgánico.
@@ -234,8 +282,10 @@ Formato de cada entrada (la más reciente arriba):
 - **Migración de sagas aplicada en producción** (proyecto `bookshelf`, rama `main`, 1-11-2026, Francisco: «Hazlo
   tú»): la pegó Claude en el SQL Editor (1776 bytes, SHA-256 `e9e589b5…cfcbd0af`, igual al archivo) y Francisco pulsó
   «Run» («Success. No rows returned»). Solo añade filas a `piso_catalogo`; no cambia permisos ni RLS.
+- **Publicada** el 1-11-2026, a petición de Francisco («Commit y súbelo»): commit `837599b` en `main`, Vitest completo
+  333/333 y build antes de subir; producción sirve `sw.js` con la v1.64.0. Las carpetas sueltas de material
+  (`BookShelf-fotogramas-QA/`, `art-inbox/`, `assets-source/`, `material-diseno/`) siguen fuera de git.
 - **Pendiente:**
-  - Commit y push cuando lo pida (hasta entonces, en producción nadie ve los muebles de sagas).
   - Probar con una cuenta real que un piso con muebles de sagas se guarda.
   - Opcional: que las ventanas de la fachada (`windowView.js`) dibujen también piezas de sagas.
 

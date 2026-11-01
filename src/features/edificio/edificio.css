@@ -228,6 +228,8 @@
   /* En pantallas bajas (el móvil tumbado) la balda no tapa la habitación entera: lo que no quepa se desplaza dentro */
   max-height: 58dvh;
   overflow-y: auto;
+  /* De lado solo se recorren sus filas, nunca la balda entera (1.65: se iba más allá de los muebles) */
+  overflow-x: clip;
   overscroll-behavior: contain;
 }
 
@@ -253,6 +255,7 @@
 
 /* Pestaña: un cuadrito de papel con el dibujo de un mueble de su tipo; la elegida se levanta */
 .ep-chip {
+  position: relative;
   flex: none;
   display: grid;
   place-items: center;
@@ -472,15 +475,39 @@
   display: none;
 }
 
+/* Lo que hay en tu piso, de pie en la balda como el catálogo: se recorre de lado y se toca para elegirlo */
 .ep-inroom__list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-height: 156px;
+  align-items: flex-end;
+  gap: 2px;
   margin: 0;
-  padding: 2px 2px 8px;
-  overflow-y: auto;
+  padding: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
   list-style: none;
+}
+
+.ep-inroom__list::-webkit-scrollbar {
+  display: none;
+}
+
+.ep-inroom__item {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* El elegido se levanta de la tabla, con un marco de papel bajo el nombre */
+.ep-inroom__item[aria-pressed='true'] img {
+  transform: translateY(-6px);
+}
+
+.ep-inroom__item[aria-pressed='true'] span {
+  padding: 0 4px;
+  background: #fbf3df;
+  color: #3b2618;
+  text-shadow: none;
 }
 
 /* «En el piso» al mirar un piso ajeno: lista de papel plegada */
@@ -1126,6 +1153,7 @@
 }
 
 .ep-set {
+  position: relative;
   flex: none;
   padding: 1px 6px;
   border: 6px solid transparent;
@@ -1145,4 +1173,373 @@
 .ep-set:focus-visible {
   outline: 2px solid #fbf3df;
   outline-offset: 1px;
+}
+
+/* ── 1.65 · El portal con más impacto: el cielo del dibujo detrás del título, el edificio de borde a borde y vida ── */
+.panel--edificio:has(.ed-portal) {
+  /* El cielo de arriba del dibujo, el atardecer y, abajo, el agua del puerto (se ve en los lados en pantallas anchas) */
+  background: linear-gradient(180deg, #2e2850 0, #362e5c 14%, #6c4a72 42%, #3b3448 62%, #2b4b5f 76%, #23404f 100%);
+  background-attachment: local;
+  color: #fbf3df;
+}
+
+.panel--edificio:has(.ed-portal) .ed-bar {
+  background: linear-gradient(#2e2850 60%, rgb(46 40 80 / 0));
+}
+
+.panel--edificio:has(.ed-portal) .ed-bar__close {
+  color: #fbf3df;
+}
+
+.ed-portal {
+  display: grid;
+  gap: 10px;
+}
+
+.ed-portal .ed-title {
+  font-size: 1.9rem;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-shadow: 0 2px 0 rgb(20 14 40 / 0.5);
+}
+
+.ed-portal .ed-sub {
+  margin-top: -6px;
+  color: rgb(251 243 223 / 0.82);
+  text-align: center;
+}
+
+.ed-portal .ed-facade-mount {
+  margin-inline: calc(-1 * var(--ep-bleed, 14px));
+}
+
+.ed-portal .ed-facade {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* En pantallas anchas el dibujo no llega a los bordes: sus lados se funden con el fondo */
+@media (min-width: 520px) {
+  .ed-portal .ed-facade {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  }
+}
+
+.ed-portal .ed-inbox {
+  color: #2c1e14;
+}
+
+/* La llegada: las placas aparecen cuando la vista ya ha subido */
+.ed-facade.is-arriving .ed-window__plate,
+.ed-facade.is-arriving .ed-window__badge {
+  opacity: 0;
+}
+
+.ed-facade .ed-window__plate {
+  transition: opacity 0.35s 0.05s;
+}
+
+.ed-facade {
+  container-type: inline-size;
+}
+
+.ed-ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ed-star {
+  position: absolute;
+  background: #fff6dc;
+  box-shadow: 0 0 3px 1px rgb(255 240 200 / 0.6);
+  animation: ed-twinkle 4s ease-in-out infinite;
+}
+
+@keyframes ed-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* La luz de dentro, que respira despacio (una lámpara, alguien que pasa) */
+.ed-glow {
+  position: absolute;
+  background: radial-gradient(closest-side, rgb(255 214 140 / 0.9), rgb(255 214 140 / 0));
+  mix-blend-mode: screen;
+  animation: ed-breathe 7s ease-in-out infinite;
+}
+
+@keyframes ed-breathe {
+  0%,
+  100% {
+    opacity: 0.05;
+  }
+
+  45% {
+    opacity: 0.4;
+  }
+
+  55% {
+    opacity: 0.32;
+  }
+}
+
+/* Destellos del atardecer que corren por el agua, a saltos de píxel */
+.ed-water {
+  position: absolute;
+  inset: 0;
+  background-size: calc(40 * var(--px)) calc(12 * var(--px));
+  image-rendering: pixelated;
+  opacity: 0.75;
+  animation:
+    ed-ripple 12s steps(40) infinite,
+    ed-shimmer 5s ease-in-out infinite;
+}
+
+@keyframes ed-ripple {
+  to {
+    background-position: calc(40 * var(--px)) 0;
+  }
+}
+
+@keyframes ed-shimmer {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Una gaviota que cruza el cielo de vez en cuando, batiendo las alas */
+.ed-gull {
+  position: absolute;
+  top: 9%;
+  left: 0;
+  width: calc(9 * var(--px));
+  height: calc(4 * var(--px));
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  transform: translateX(-12cqw);
+  animation:
+    ed-flap 0.55s steps(1) infinite,
+    ed-fly 19s linear 2s infinite;
+}
+
+@keyframes ed-flap {
+  0% {
+    background-position: 0 0;
+  }
+
+  50% {
+    background-position: 100% 0;
+  }
+}
+
+@keyframes ed-fly {
+  0% {
+    transform: translate(-12cqw, 0);
+  }
+
+  45% {
+    transform: translate(112cqw, -6cqw);
+  }
+
+  100% {
+    transform: translate(112cqw, -6cqw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-ambient {
+    display: none;
+  }
+}
+
+/* ── 1.66 · Inventario (§66): copias libres en la balda, agotados apagados y la elección de inicio ── */
+/* Las copias que te quedan, en una etiqueta de papel colgada del mueble */
+.ep-item__count {
+  position: absolute;
+  bottom: 8px;
+  right: 2px;
+  z-index: 1;
+  min-width: 22px;
+  padding: 0 3px;
+  background: #fbf3df;
+  box-shadow: 0 2px 0 rgb(59 38 24 / 0.35);
+  color: #3b2618;
+  font: 700 0.72rem/1.35 'Lora', Georgia, serif;
+  text-align: center;
+  text-shadow: none;
+}
+
+.ep-item__count[hidden] {
+  display: none;
+}
+
+/* Agotado: el mueble se queda en la balda, apagado (se ve que lo tienes, pero ya está en tu piso) */
+.ep-item.is-out img {
+  filter: grayscale(0.8) brightness(0.7) drop-shadow(0 3px 0 rgb(30 18 10 / 0.4));
+  opacity: 0.6;
+}
+
+.ep-item.is-out {
+  cursor: not-allowed;
+}
+
+.ep-item.is-out .ep-item__count {
+  background: #d9c9a6;
+  color: #6b5440;
+}
+
+.ep-shelf__empty {
+  margin: 0;
+  padding: 26px 8px;
+  color: rgb(251 243 223 / 0.85);
+  font: italic 500 1rem/1.3 'Cormorant Garamond', Georgia, serif;
+  text-align: center;
+}
+
+/* «Elige tus 6 muebles», en la barra mientras no los hayas elegido */
+.ed-bar__start {
+  margin-left: auto;
+  min-height: 44px;
+  font-size: 0.86rem;
+}
+
+.ed-bar__start + .ed-bar__view {
+  margin-left: 6px;
+}
+
+/* «Tu mudanza»: una caja de seis huecos y, debajo, los comunes por tipo */
+.ed-start {
+  display: grid;
+  gap: 10px;
+}
+
+.ed-start h2 {
+  margin: 0;
+  font: 600 1.7rem/1.1 'Cormorant Garamond', Georgia, serif;
+}
+
+.ed-start__lead,
+.ed-start__left {
+  margin: 0;
+  color: #6b5440;
+  font-size: 0.95rem;
+}
+
+/* La caja: madera con seis huecos de papel */
+.ed-start__box {
+  position: sticky;
+  top: 44px;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 6px solid transparent;
+  border-image: var(--px-wood) 6 fill / 6px stretch;
+}
+
+.ed-start__slot {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 4px solid transparent;
+  border-image: var(--px-paper) 6 fill / 4px stretch;
+  background: none;
+  cursor: pointer;
+}
+
+.ed-start__slot--empty {
+  border-image-source: var(--px-pressed);
+  opacity: 0.55;
+  cursor: default;
+}
+
+.ed-start__slot img,
+.ed-start__item img {
+  width: 100%;
+  max-width: 44px;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.ed-start__group h3 {
+  margin: 4px 0;
+  font: 600 1.15rem/1.2 'Cormorant Garamond', Georgia, serif;
+}
+
+.ed-start__items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 6px;
+}
+
+.ed-start__item {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 92px;
+  padding: 4px 2px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  background: none;
+  color: var(--ep-ink, #2c1e14);
+  font: 600 0.78rem/1.15 'Lora', Georgia, serif;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ed-start__item[aria-pressed='true'] {
+  border-image-source: var(--px-sage);
+}
+
+.ed-start__item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ed-start__item b {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  padding: 0 4px;
+  background: #5c6a48;
+  color: #fbf5e6;
+  font-size: 0.75rem;
+}
+
+.ed-start__error {
+  margin: 0;
+  color: #8f3a22;
+}
+
+.ed-start__actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 0 4px;
+  background: linear-gradient(rgb(243 234 214 / 0), #f3ead6 30%);
+}
+
+.ed-start :is(button):focus-visible {
+  outline: 3px solid #b98b2f;
+  outline-offset: 2px;
 }

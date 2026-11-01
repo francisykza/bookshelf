@@ -104,6 +104,17 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   - **Sets de sagas en la balda** (1.64, §64): pestaña «Sagas» con un set cada vez (`SETS` en `catalog.js`). Cada
     mueble nuevo del catálogo necesita su fila en `piso_catalogo` con una migración nueva (la prueba de paridad lo
     exige); la de las sagas es `20261102120000_edificio_sagas.sql` y la aplica Francisco.
+  - **Economía de muebles** (aprobada el 1-11-2026, «Sí a todo»; plan y fases en `docs/qa/economia-muebles.md`):
+    - inventario con copias;
+    - tickets, una moneda aparte de las Cajas de figuras, que solo se ganan leyendo (nunca con dinero);
+    - tienda, rarezas que se animan al tocarlas y sorteo con probabilidades visibles y pity;
+    - sagas que se desbloquean al terminar su libro;
+    - primero regalar y cambiar entre vecinos, y el mercado abierto solo después.
+    - Lo colocado hoy pasa a ser de cada uno. Inventario y tickets, en el servidor.
+    - Se hace por fases, con capturas entre una y otra. Hasta que cada fase esté hecha sigue valiendo «catálogo gratis».
+  - **Sonidos cozy propios del edificio** (1-11-2026): sintetizados, por material y por acción (§6 del plan).
+  - **Sintonía de «Aquí no hay quien viva»**: a Francisco le encantaría en versión chiptune cozy. Sin licencia no se usa
+    ni se recrea esa melodía (tampoco de oído). En la app, solo un tema original con guiño.
   - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración
     `20261101120000_edificio_puerto.sql` la aplica Francisco; sin ella, la tablet hace lo de siempre.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.

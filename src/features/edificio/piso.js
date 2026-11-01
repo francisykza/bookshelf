@@ -14,6 +14,7 @@
 import './edificio.css';
 import { createSfx } from '../minigames/libreria-puerto/audio';
 import { CATALOG, CATEGORIES, PAREDES, SETS, SUELOS, catalogItem } from './catalog';
+import { freeCopies, ownedCopies } from './inventory';
 import { houseSwatch, pixelIcon, pixelVars } from './pixelUi';
 import { ART_H, ART_W, backdropImage, createRoomRenderer, renderThumb } from './render';
 import { ROOM, addItem, check, heightOf, itemsOn, moveItem, reasonText, recolorItem, rectOf, removeItem, rotateItem, setFloor, setWall, wallLength } from './room';
@@ -51,10 +52,12 @@ const nameOf = (item) => catalogItem(item.id).nombre;
  * `inside`: vista «dentro de la habitación» (§64): el dibujo llena el sitio que haya y el aviso va sobre él; quien lo
  * monta pone el contenedor a pantalla completa. `decorate`: empezar ya decorando (con la balda abierta).
  */
-export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, onChange = () => {}, onAction = null } = {}) {
+export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, onChange = () => {}, onAction = null } = {}) {
   const sfx = createSfx({ muted });
   const renderer = createRoomRenderer();
   let room = initial;
+  // Copias de cada mueble (1.66, §66); null: todo libre (sin la migración del inventario, o en el prototipo)
+  let inv = inventory;
   let selected = null; // uid del objeto elegido
   let drag = null; // { uid, pointerId, x0, y0, moved, grab, preview: { room, item, ok, reason, con } }
   let fresh = null; // mueble que llega de la balda: { id, pointerId, x0, y0, moved, base: { room, item }, preview, over }
@@ -176,8 +179,10 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     grid.replaceChildren();
     if (isHouse || isList) return;
     for (const cat of CATALOG.filter((c) => c.cat === category && (!set || c.set === set.id))) {
+      // Lo que no tienes no está en tu balda (llegará con la tienda)
+      if (ownedCopies(inv, cat.id) === 0) continue;
       if (!thumbs.has(cat.id)) thumbs.set(cat.id, renderThumb(cat.id).toDataURL());
-      const b = el('button', { type: 'button', class: 'ep-item', 'aria-label': `Añadir ${cat.nombre.toLowerCase()}`, 'data-id': cat.id, draggable: 'false' }, el('img', { src: thumbs.get(cat.id), alt: '', width: 44, height: 44, draggable: 'false' }), el('span', { text: cat.nombre }));
+      const b = el('button', { type: 'button', class: 'ep-item', 'aria-label': `Añadir ${cat.nombre.toLowerCase()}`, 'data-id': cat.id, draggable: 'false' }, el('img', { src: thumbs.get(cat.id), alt: '', width: 44, height: 44, draggable: 'false' }), el('span', { text: cat.nombre }), el('b', { class: 'ep-item__count', 'aria-hidden': 'true' }));
       b.addEventListener('click', (e) => {
         // Si acaba de soltarse un arrastre desde este botón, el clic que lo sigue no añade otro
         if (b.dataset.dragged) {
@@ -190,7 +195,23 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       b.addEventListener('pointerdown', (e) => onShelfDown(e, cat.id, b));
       grid.append(b);
     }
+    if (!grid.children.length) grid.append(el('p', { class: 'ep-shelf__empty', text: 'Aún no tienes nada de esto.' }));
     grid.scrollLeft = 0;
+    refreshCounts();
+  }
+
+  /** Cuántas copias te quedan de cada mueble de la balda; lo agotado se ve apagado (y no se puede sacar). */
+  function refreshCounts() {
+    for (const b of grid.querySelectorAll('.ep-item[data-id]')) {
+      const id = b.dataset.id;
+      const free = freeCopies(inv, room, id);
+      const name = catalogItem(id).nombre.toLowerCase();
+      const count = b.querySelector('.ep-item__count');
+      count.hidden = free === Infinity;
+      count.textContent = free === Infinity ? '' : `×${free}`;
+      b.classList.toggle('is-out', free === 0);
+      b.setAttribute('aria-label', free === Infinity ? `Añadir ${name}` : free ? `Añadir ${name} (te quedan ${free})` : `Añadir ${name} (no te quedan)`);
+    }
   }
 
   // ── Estado y dibujo ──
@@ -276,6 +297,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   }
 
   function refreshUi() {
+    if (editable) refreshCounts();
     const item = selected ? room.items.find((i) => i.uid === selected) : null;
     tools.hidden = !item;
     // Dentro de un panel de la app, Escape suelta lo elegido en vez de cerrar el panel (PanelShell lo respeta)
@@ -306,7 +328,10 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       ...room.items.map((i) => {
         const text = `${nameOf(i)}${i.uid === selected ? ' (elegido)' : ''}`;
         if (!editable) return el('li', { text });
-        const b = el('button', { type: 'button', class: 'ep-list__btn', 'aria-pressed': String(i.uid === selected) }, text);
+        // Al decorar, cada cosa de pie en la balda con su dibujo (y su color), como en el catálogo
+        const key = i.id + ':' + i.tono;
+        if (!thumbs.has(key)) thumbs.set(key, renderThumb(i.id, i.tono).toDataURL());
+        const b = el('button', { type: 'button', class: 'ep-item ep-inroom__item', 'aria-pressed': String(i.uid === selected), 'aria-label': text }, el('img', { src: thumbs.get(key), alt: '', width: 44, height: 44, draggable: 'false' }), el('span', { text: nameOf(i) }));
         b.addEventListener('click', () => {
           if (!decorating) setDecorating(true);
           select(i.uid);
@@ -346,7 +371,13 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   const addError = (id, error) => (error === 'sitio' && catalogItem(id).capa === 'encima' ? 'apoyo' : error);
 
+  function noCopies(id) {
+    sfx.play('invalid');
+    say(`No te quedan más: ${catalogItem(id).nombre.toLowerCase()} ya está en tu piso. Guárdalo para ponerlo en otro sitio.`);
+  }
+
   function add(id) {
+    if (freeCopies(inv, room, id) <= 0) return noCopies(id);
     const res = addItem(room, id, { near: { x: ROOM.w / 2, y: ROOM.d / 2 } });
     if (res.error) return fail(addError(id, res.error));
     sfx.play('place');
@@ -521,6 +552,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   // En la balda, deslizar de lado la recorre; tirar hacia arriba (hacia la habitación) saca el mueble.
   function onShelfDown(e, id, btn) {
     if (e.button !== undefined && e.button !== 0) return;
+    // Sin copias libres no se saca (el clic lo explica)
+    if (freeCopies(inv, room, id) <= 0) return;
     fresh = { id, btn, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false, base: null, preview: null, over: false };
     window.addEventListener('pointermove', onShelfMove);
     window.addEventListener('pointerup', onShelfUp);
@@ -742,6 +775,11 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       sfx.setMuted(v);
     },
     setInside,
+    /** Cambia el inventario (llega del servidor, o tras elegir los de inicio) y rehace la balda. */
+    setInventory(next) {
+      inv = next;
+      if (editable) fillGrid();
+    },
     /** Para las pruebas: punto de la pantalla donde se ve un objeto (el centro de sus píxeles) o un punto del mundo. */
     screenOfItem(uid) {
       const ids = renderer.raster.ids;

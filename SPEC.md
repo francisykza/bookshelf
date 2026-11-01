@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.64.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.66.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4214,3 +4214,45 @@ Encargo de Francisco (1-11-2026), en tres bloques con capturas entre uno y otro.
 - **Peso**: el panel se carga al abrirlo, 70 KB de JS (26,6 KB comprimido) y 15,3 KB de CSS (3,9 KB).
 - Pruebas: `e2e/edificio-puerto.spec.js` (con «la balda» y «sagas») y `e2e-community/v163-edificio.spec.js` (vista
   «dentro» y cambio a ficha), en Chromium 360/390/1440, WebKit 390 y movimiento reducido. Sin iPhone real.
+
+## 65. Portal del edificio con más vida y balda corregida (1.65.0)
+
+- **Portal** (`.ed-portal` en `EdificioPanel.jsx`): el panel toma el cielo del dibujo arriba y el agua del puerto abajo;
+  el título va sobre el cielo y la fachada llega de borde a borde (en pantallas anchas sus lados se funden con el fondo).
+- **Llegada** (`facadeView.js`): al abrir el portal, la vista sube desde el muelle (1,1 s) y las placas aparecen al
+  final. Al volver de un piso sigue alejándose desde su ventana, como en la 1.64.
+- **Vida** (capa `.ed-ambient`, solo CSS sobre el dibujo, sin sonido): las estrellas ya pintadas titilan; los cristales
+  de los pisos ocupados (`panes` de `facade.js`) tienen una luz que respira; destellos de píxel corren por el agua bajo
+  la orilla (`shore`); una gaviota de píxeles cruza el cielo cada ~19 s. Con movimiento reducido no hay nada de esto.
+- **Balda**: los textos para lector de pantalla de las pestañas (`.px-sr`, absolutos) se salían de su fila y dejaban
+  desplazar la balda entera 160 px más allá de los muebles; ahora `.ep-chip` y `.ep-set` los contienen y `.ep-shelf`
+  recorta de lado (`overflow-x: clip`).
+- **«En el piso»**: cada mueble de tu piso, de pie en la balda con su dibujo y su color, como el catálogo
+  (`.ep-inroom__item`); se recorre de lado y el elegido se levanta con su nombre en papel. Tocarlo lo elige como antes.
+- Pruebas: `e2e/edificio-puerto` y `e2e-community/v163-edificio` (la captura del portal espera al final de la llegada).
+
+## 66. Inventario de muebles del edificio (1.66.0, fase 1 de la economía de muebles)
+
+Plan completo y decisiones de Francisco (1-11-2026, «Sí a todo») en `docs/qa/economia-muebles.md`. Esta fase solo
+añade copias: no hay tickets, tienda ni sorteo todavía, y nada toca figuras, Cajas Sorpresa ni pity.
+
+- **Servidor** (`supabase/migrations/20261103120000_edificio_inventario.sql`, aplicada en producción el 1-11-2026):
+  - `piso_catalogo` gana `rareza` (todo `comun` hasta la fase 3) y `saga`.
+  - `piso_inventario` (copias por mueble) y `piso_cuentas` (si ya eligió los de inicio), sin acceso directo desde la app.
+  - La primera vez que se pide o se guarda, `piso_inventario_asegurar` da una copia por cada mueble colocado en el piso
+    guardado (las que haya) y, como mínimo, los diez del piso inicial (`starterRoom`). Nadie pierde nada.
+  - `piso_mi_inventario()` devuelve `{ inicio_elegido, copias }`; `piso_elegir_inicio(muebles)` da seis comunes, una
+    sola vez (se pueden repetir).
+  - Al guardar un piso (`pisos_validate`), además de `piso_valido`, no puede haber más copias colocadas que las tuyas
+    (`piso_falta_copia`). Los muebles de sagas no cuentan: siguen libres hasta la fase 5.
+- **App** (`inventory.js`, `StarterPicker.jsx`, `piso.js`, `EdificioPanel.jsx`, `service.js`):
+  - La balda solo enseña lo que tienes, con una etiqueta «×N» de copias libres; lo agotado se queda apagado, no se
+    arrastra y al tocarlo explica que ya está en tu piso (guardarlo lo libera). Una categoría sin nada lo dice.
+  - Mientras no hayas elegido, «Elige tus 6 muebles» en la barra abre «Tu mudanza»: una caja de seis huecos y los
+    comunes por tipo; se quitan desde la caja; «Llevármelos» los pide al servidor y llegan a la balda. «Más tarde» la
+    cierra.
+  - Sin la migración aplicada (la función no existe), la app sigue como en la 1.65: todo libre.
+- Pruebas: `src/features/edificio/__tests__/inventario.rls.test.js` (PGlite; monta la base sin la migración, guarda
+  pisos «de antes» y la aplica), `e2e-community/v166-inventario.spec.js` (320, 390, 1440 y WebKit 390) y el simulador
+  (`mockSupabase.js`, solo con `db.piso_cuentas`).
+- Pendiente: los sonidos propios del edificio (§6 del plan) no están en esta fase.

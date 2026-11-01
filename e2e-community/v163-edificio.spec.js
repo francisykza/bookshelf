@@ -79,6 +79,9 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   // Tu piso inicial ya está guardado y validado
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.layout.items.length).toBeGreaterThan(5);
   await expect(panel.locator('.ed-facade__art')).toBeVisible();
+  // 1.65: la llegada (la vista sube desde el muelle) termina antes de la captura
+  await expect(panel.locator('.ed-facade')).not.toHaveClass(/is-arriving/);
+  await page.waitForTimeout(400);
   await shot(page, info, 'v163-portal');
 
   // Tu piso: decorar y se guarda solo

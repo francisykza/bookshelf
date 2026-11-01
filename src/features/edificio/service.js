@@ -3,6 +3,7 @@
 // (`asignar_edificio`), y el portal llega en una sola consulta (`edificio_portal`). Los pisos que llegan se vuelven a
 // validar aquí antes de dibujarlos; el que se guarda va siempre limpio (`validateRoom`).
 import { client, fail } from '../social/services/community';
+import { normalizeInventory } from './inventory';
 import { validateRoom } from './room';
 
 const DOORS = ['3B', '3A', '2B', '2A', '1B', '1A'];
@@ -51,6 +52,27 @@ export async function savePiso(userId, room) {
   const sb = await client();
   const { error } = await sb.from('pisos').upsert({ user_id: userId, layout }, { onConflict: 'user_id' });
   fail(error);
+}
+
+/**
+ * Mi inventario de muebles (1.66, §66): { inicioElegido, copias }. Si la migración del inventario no está aplicada,
+ * null (y la balda ofrece todo como antes).
+ */
+export async function loadInventario() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_mi_inventario');
+  // Función que no existe: la migración aún no está aplicada en este servidor
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
+  fail(error);
+  return normalizeInventory(data);
+}
+
+/** Los seis muebles comunes de inicio (una sola vez). Devuelve el inventario nuevo. */
+export async function elegirInicio(ids) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_elegir_inicio', { muebles: ids });
+  fail(error);
+  return normalizeInventory(data);
 }
 
 /** Deja (o cambia) mi sello en el buzón de un vecino; `sello` null lo quita. */

@@ -319,6 +319,8 @@ export function renderFacade(flats = {}) {
   // Los seis pisos
   const windows = [];
   const lights = [];
+  // Cristales de los pisos ocupados (en fracciones del dibujo): la vista les pone una luz que respira (facadeView.js)
+  const panes = [];
   for (const [k, f] of FLATS.entries()) {
     const flat = flats[f.puerta] ?? null;
     const room = flat?.room ?? null;
@@ -356,6 +358,12 @@ export function renderFacade(flats = {}) {
     const p0 = r.project(f.x0 - 0.05, BD + 0.45, f.z0 + 0.25);
     const p1 = r.project(f.x1 + 0.05, BD, f.gz1 + 0.36);
     windows.push({ puerta: f.puerta, left: Math.min(p0.sx, p1.sx) / W, top: Math.min(p0.sy, p1.sy) / H, width: Math.abs(p1.sx - p0.sx) / W, height: Math.abs(p1.sy - p0.sy) / H });
+    if (flat)
+      for (const [w0, w1] of f.wins) {
+        const a = r.project(w0, BD, f.gz1);
+        const b = r.project(w1, BD, f.gz0);
+        panes.push({ left: Math.min(a.sx, b.sx) / W, top: Math.min(a.sy, b.sy) / H, width: Math.abs(b.sx - a.sx) / W, height: Math.abs(b.sy - a.sy) / H });
+      }
     if (flat) for (const [w0, w1] of f.wins) lights.push(r.project((w0 + w1) / 2, BD + 0.3, (f.gz0 + f.gz1) / 2));
   }
   for (let k = 0; k < 3; k += 1) lights.push(r.project(4, BD + 0.3, GROUND_H + k * FLOOR_H + 1.2));
@@ -460,5 +468,7 @@ export function renderFacade(flats = {}) {
   const image = ctx.createImageData(W, H);
   image.data.set(new Uint8ClampedArray(r.pix.buffer));
   ctx.putImageData(image, 0, 0);
-  return { canvas, windows, sign: SIGN_LINES.join(' ') };
+  // Dónde empieza el agua (la orilla es una recta en la pantalla): para el brillo que corre por ella
+  const shore = [r.project(-8, BD + 2.6, 0), r.project(BW + 8, BD + 2.6, 0)].map((p) => ({ x: p.sx / W, y: p.sy / H }));
+  return { canvas, windows, panes, shore, sign: SIGN_LINES.join(' ') };
 }
