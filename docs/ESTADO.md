@@ -127,6 +127,118 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-01 · cuenta principal · 1.64.0 «El edificio del puerto» con más personalidad, bloques 1 a 3 (sin commit, migración aplicada)
+- **Encargo de Francisco** (por bloques, con capturas entre uno y otro):
+  1. Fachada que se vea como un edificio de verdad.
+  2. Piso y personalización más integrados, con un catálogo intuitivo y orgánico.
+  3. Sets de sagas: Alas de sangre, Mistborn, El nombre del viento, Una corte de rosas y espinas y El archivo de las
+     tormentas. Llevan nombre propio y un guiño «Para quien leyó …», con muebles originales y nada oficial.
+  - Las reglas están en CLAUDE.md.
+- **Bloque 1 hecho** (sin subir versión todavía; será la 1.64 al acabar los tres):
+  - `facade.js` dibuja el edificio en pixel art con el mismo motor:
+    - Planta baja de piedra con portal, rótulo, farol, buzones y ventanuco.
+    - Tres plantas de estuco con balcones de hierro; tejado de teja con chimenea.
+    - Muelle con bolardo y agua; atardecer con colinas y luces lejanas.
+  - Por cada ventana se ve el interior real del piso, recortado de su miniatura de tarde.
+  - Las contraventanas toman el color de la pared del piso; las de las puertas libres están cerradas.
+  - El balcón muestra macetas, guirnalda o el gato si el piso los tiene.
+  - `facadeView.js` pone un botón por ventana con su placa (puerta y nombre). Las etiquetas accesibles son las de
+    siempre. La usan el panel y la página de desarrollo.
+  - Sustituye a la cuadrícula de miniaturas.
+  - **Rehecha según una foto de referencia de Francisco** (un edificio clásico mostaza; se toma el estilo, no se copia):
+    - Estuco mostaza con pilastras e impostas; cada piso es un cuerpo de dos ventanas altas con recerco del color de
+      su pared y un balconcito de hierro por ventana.
+    - Escalera central con ventanas pequeñas encendidas.
+    - Cornisa con dentículos, antepecho de balaustres, dos torreones y el rótulo «El edificio del puerto» en la azotea.
+    - Planta baja con librería, portal y café; vecinos rosados a los lados.
+    - Las puertas libres tienen la persiana bajada.
+  - **Siluetas y asomarse** (Francisco eligió las dos):
+    - Por las ventanas ya no se ve la miniatura encogida (era una mancha). `windowView.js` dibuja de frente, a
+      14 × 22 píxeles, la pared del color del piso y sus piezas más reconocibles: estantería con lomos, lámpara con
+      halo, planta, sofá, cuadro, reloj, guirnalda…
+    - Al tocar una ventana la vista se acerca a ella y entras; al volver al portal se aleja desde esa misma ventana.
+      Con movimiento reducido no hay animación.
+  - **Cartel de la azotea: «AQUÍ NO HAY QUIEN LEA»**, guiño de Francisco a «Aquí no hay quien viva». La letra es
+    propia, en píxeles, roja con sombra y algo saltarina; no copia el logotipo de la serie (es una marca registrada).
+- **Bloque 2 hecho** (Francisco dio el visto bueno al 1 con «Sí, bloque 2»):
+  - La habitación ocupa todo el ancho del panel, sobre un escenario con luz cálida. El fondo del dibujo ya es
+    transparente (`BG = 0` en `render.js`), así que el piso flota sin el recuadro crema.
+  - «Decorar»/«Terminar» y «Luz de tarde» van en la esquina de arriba de la habitación. Mientras hay un mueble elegido
+    se apartan.
+  - Las herramientas (Girar, Color, Guardar, Listo) flotan encima del mueble elegido, o debajo si arriba no caben.
+    Se esconden mientras arrastras.
+  - El catálogo es una balda de madera pegada abajo, con los muebles de pie sobre la tabla:
+    - de lado se recorre;
+    - tirando hacia arriba se saca un mueble y se arrastra al piso: se ve ya colocado bajo el dedo (en rojo si no cabe)
+      y cae donde se suelta;
+    - soltado fuera de la habitación, vuelve a la balda;
+    - tocarlo sigue poniéndolo en el centro.
+  - Paredes y suelo pasan a la última pestaña de la balda, «Paredes y suelo».
+  - Los nombres accesibles de los botones son los de siempre.
+- **Otra vuelta al entorno del piso** (Francisco: las habitaciones le encantan, pero los menús y la forma de poner
+  muebles «desentonan» y no se ven orgánicos):
+  - Todo lo que rodea al piso pasa al mismo pixel art:
+    - `pixelUi.js` genera marcos de papel, madera y salvia con esquinas escalonadas, e iconos propios (girar, color,
+      guardar, listo, decorar, sol, luna, lista);
+    - cada píxel mide 3 px y las imágenes se generan ya a ese tamaño, para que se vean nítidas en cualquier navegador.
+  - El telón de detrás del piso se pinta en el propio dibujo (`render.js`): un degradado tramado con la sombra de
+    contacto del piso, crema de día y malva de tarde.
+  - Botones del piso:
+    - «Decorar»/«Terminar» y la luz (sol o luna) están en los huecos de las esquinas de abajo de la habitación;
+    - las herramientas del mueble son una etiqueta de papel con cuatro iconos (su nombre accesible es el de siempre).
+  - La balda es un mueble de madera:
+    - pestañas de papel con el dibujo de un mueble de cada tipo;
+    - «Paredes y suelo» con muestras que enseñan cómo quedaría tu piso;
+    - «En el piso» es otra pestaña al decorar (antes era una caja suelta que la balda tapaba).
+  - Más baja con el móvil tumbado.
+  - Buzón y sellos con los mismos marcos.
+- **Vista «dentro de la habitación»** (Francisco: que se pueda elegir y que sea la de por defecto, con el selector
+  abajo):
+  - Al abrir un piso en la app, el panel ocupa la pantalla y no se desplaza. La habitación es tan grande como quepa y
+    el resto es telón tramado, con píxeles del mismo tamaño: `backdropImage` en `render.js`, y el lienzo deja
+    transparente todo menos la sombra.
+  - Abajo, en tu piso, la balda ya abierta (empiezas decorando); en el de un vecino, los sellos en una fila.
+  - El nombre del piso es una etiqueta de papel arriba y el aviso va sobre la habitación.
+  - El botón de la barra («Ver como ficha» / «Entrar en la habitación») cambia a la vista de antes. Se recuerda en el
+    dispositivo (`bookshelf:edificio:vista`, en `localStorage` con try/catch).
+  - La página de desarrollo sigue en la vista de ficha.
+- **Peso** (Francisco preguntó; medido en este ordenador):
+  - El panel del edificio se carga solo al abrirlo: 61 KB de JS (24 KB comprimido) y 12,5 KB de CSS (3,4 KB).
+  - Cada mueble es una línea de catálogo y su forma en código, unos 350 bytes; no hay imágenes.
+  - Un piso lleno (40 cosas) son unos 2,8 KB en Supabase.
+  - Dibujarlo entero cuesta unos 32 ms al colocar o elegir; un fotograma al arrastrar, unos 2,5 ms. Un móvil irá más
+    lento: no está medido en el iPhone.
+- **QA:**
+  - e2e del prototipo (con una prueba nueva de arrastre desde la balda): 24 pasan en Chromium 360, 390 y 1440, WebKit
+    390 y movimiento reducido.
+  - Los ayudantes de la prueba descuentan el desplazamiento de la vista visible de la emulación de móvil (con él, el
+    ratón caía 50 px más abajo de lo calculado).
+  - v163-edificio: 4 pasan.
+  - Vitest del edificio 23/23, lint y build.
+- **Bloque 3 hecho** (Francisco: «Sí, sagas»):
+  - Pestaña «Sagas» en la balda con una fila de etiquetas, una por set; el título es el nombre del set y debajo va el
+    guiño «Para quien leyó …».
+  - Cinco sets de cuatro muebles (veinte en total, detalle en SPEC §64): Nido de jinetes, Bruma y ceniza, La posada del
+    camino, Corte de rosas y estrellas y Luz de tormenta. Objetos corrientes que evocan la saga, nada oficial.
+  - Lo de «encima» (huevo, viales, monedas, esferas) necesita una superficie: la barra y el barril de la posada sirven.
+  - La balda tenía un fallo: las filas que se recorren de lado la ensanchaban (el texto centrado salía cortado). Ahora
+    es una sola columna `minmax(0, 1fr)`.
+  - Migración `supabase/migrations/20261102120000_edificio_sagas.sql`, generada desde `catalog.js`. **Por aplicar**:
+    hasta entonces, guardar un piso con un mueble de sagas falla en el servidor.
+- **QA final:**
+  - Vitest del edificio 23/23 (con la paridad cliente/servidor y las dos migraciones), oxlint y build (panel: 70 KB de
+    JS, 26,6 KB comprimido).
+  - e2e del prototipo: 30 pasan (prueba nueva «sagas»: los cinco sets, los veinte muebles caben y capturas
+    `ep-sagas-balda`, `ep-sagas-piso`, `ep-sagas-tarde`). v163-edificio: 4 pasan. Sin iPhone real.
+- **Hecho al cierre:** versión 1.64.0 (`src/diag.js`, `package.json`, `public/sw.js`, SPEC) y SPEC §64.
+- **Migración de sagas aplicada en producción** (proyecto `bookshelf`, rama `main`, 1-11-2026, Francisco: «Hazlo
+  tú»): la pegó Claude en el SQL Editor (1776 bytes, SHA-256 `e9e589b5…cfcbd0af`, igual al archivo) y Francisco pulsó
+  «Run» («Success. No rows returned»). Solo añade filas a `piso_catalogo`; no cambia permisos ni RLS.
+- **Pendiente:**
+  - Commit y push cuando lo pida (hasta entonces, en producción nadie ve los muebles de sagas).
+  - Probar con una cuenta real que un piso con muebles de sagas se guarda.
+  - Opcional: que las ventanas de la fachada (`windowView.js`) dibujen también piezas de sagas.
+
 ### 2026-11-01 · cuenta principal · 1.63.0 «El edificio del puerto» en la app (publicada, migración aplicada)
 - **Qué:** Francisco aprobó pasar el prototipo a la app («Sí, prepárala») y eligió:
   - La tablet del Salón pregunta entre «Comunidad» y «El edificio del puerto»; no se quita nada.

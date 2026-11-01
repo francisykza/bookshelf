@@ -78,14 +78,22 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   await expect(panel.getByText('Bruno (1.º A) te dejó «Qué acogedor».')).toBeVisible();
   // Tu piso inicial ya está guardado y validado
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.layout.items.length).toBeGreaterThan(5);
-  await page.waitForFunction(() => [...document.querySelectorAll('.ed-door img')].every((i) => i.complete && i.naturalWidth > 0));
+  await expect(panel.locator('.ed-facade__art')).toBeVisible();
   await shot(page, info, 'v163-portal');
 
   // Tu piso: decorar y se guarda solo
   await panel.getByRole('button', { name: 'Entrar en tu piso, 2.º B' }).click();
   const mine = page.getByRole('dialog', { name: 'Tu piso' });
   await expect(mine.getByRole('heading', { name: 'Tu piso · 2.º B' })).toBeVisible();
-  await mine.getByRole('button', { name: 'Decorar' }).click();
+  // Por defecto, «dentro de la habitación»: a pantalla completa y ya decorando, con la balda abajo
+  await expect(mine.locator('.ed-inside .ep--inside')).toBeVisible();
+  await expect(mine.locator('.ep-shelf')).toBeVisible();
+  await expect(mine.getByRole('button', { name: 'Terminar' })).toBeVisible();
+  const stage = await mine.locator('.ep-stage').boundingBox();
+  const shelf = await mine.locator('.ep-shelf').boundingBox();
+  expect(stage.y + stage.height).toBeLessThanOrEqual(shelf.y + 1);
+  expect(shelf.y + shelf.height).toBeLessThanOrEqual((page.viewportSize().height) + 1);
+  await shot(page, info, 'v164-dentro');
   await mine.locator('.ep-chip', { hasText: 'Plantas' }).click();
   await mine.getByRole('button', { name: 'Añadir planta grande' }).click();
   await expect(mine.locator('.ed-saving')).toHaveText('Guardado.', { timeout: 8000 });
@@ -96,6 +104,13 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   await expect(mine.locator('.ep-tools')).toBeHidden();
   await expect(mine).toBeVisible();
   await shot(page, info, 'v163-mi-piso');
+  // Se puede pasar a la vista de ficha (y se recuerda); luego se vuelve a «dentro»
+  await mine.getByRole('button', { name: 'Ver como ficha' }).click();
+  await expect(mine.locator('.ed-inside')).toHaveCount(0);
+  await expect(mine.locator('.ep-shelf')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('bookshelf:edificio:vista'))).toBe('ficha');
+  await mine.getByRole('button', { name: 'Entrar en la habitación' }).click();
+  await expect(mine.locator('.ed-inside')).toBeVisible();
   await mine.getByRole('button', { name: 'Volver al portal' }).click();
   await expect(panel.getByText('Tu puerta: 2.º B.')).toBeVisible();
 
@@ -108,6 +123,9 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   await expect(bruno.getByText('Has dejado «Menuda estantería» en el buzón de Bruno.')).toBeVisible();
   expect(mock.db.piso_sellos.find((s) => s.de === ANA.id && s.para === BRUNO.id)?.sello).toBe('estanteria');
   await bruno.getByRole('button', { name: 'Luz de tarde' }).click();
+  // Dentro de su piso, los sellos quedan abajo, a la vista
+  const sellos = await bruno.locator('.ed-sellos').boundingBox();
+  expect(sellos.y + sellos.height).toBeLessThanOrEqual(page.viewportSize().height + 1);
   await shot(page, info, 'v163-visita');
   // Atrás del sistema vuelve al portal, y otra vez, al salón
   await page.goBack();

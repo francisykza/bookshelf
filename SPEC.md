@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.63.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.64.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4177,3 +4177,40 @@ ilustrado ni a su visita. Código en `src/features/edificio/`; usa el rasterizad
   comunidad) en 390 Chromium y WebKit y en 1440. Sin iPhone real.
 - Pendiente de decidir: qué pasa con la puerta de quien deja la app; ilustraciones de muebles si las cajas no bastan e
   icono del edificio; el directo (presencia) más adelante.
+
+## 64. «El edificio del puerto» con más personalidad (1.64.0, por bloques)
+
+Encargo de Francisco (1-11-2026), en tres bloques con capturas entre uno y otro. Reglas en CLAUDE.md (edificio).
+
+- **Fachada** (`facade.js`, `facadeView.js`, `windowView.js`): el edificio en pixel art con el mismo motor, en el estilo
+  de una foto de referencia de Francisco (se toma el estilo, no se copia): estuco mostaza, pilastras, un cuerpo de dos
+  ventanas por piso con recerco del color de su pared y balconcitos de hierro, escalera central, cornisa, torreones,
+  planta baja con librería, portal y café. En la azotea, el cartel **«AQUÍ NO HAY QUIEN LEA»** con letra propia en
+  píxeles (guiño a «Aquí no hay quien viva»; nunca su logotipo). Por cada ventana se ven, de frente, las piezas más
+  reconocibles del piso (siluetas); las puertas libres tienen la persiana bajada. Al tocar una ventana la vista se
+  acerca y entras; al volver se aleja desde ella (sin animación con movimiento reducido).
+- **Piso integrado** (`piso.js`, `pixelUi.js`, `render.js`): todo lo que rodea a la habitación usa el mismo pixel art
+  (marcos de papel, madera y salvia; iconos propios a 3 px por píxel). La habitación ocupa el ancho, con «Decorar» y la
+  luz en las esquinas y las herramientas del mueble elegido flotando junto a él. El catálogo es una **balda** de madera
+  abajo, con pestañas que llevan el dibujo de un mueble; un mueble se arrastra de la balda al piso (se ve colocado bajo
+  el dedo y cae donde se suelta; fuera de la habitación vuelve) o se toca para ponerlo en el centro. «Paredes y suelo»
+  y «En el piso» son pestañas de la balda.
+- **Vista «dentro de la habitación»** (por defecto en la app): el panel ocupa la pantalla, la habitación es tan grande
+  como quepa sobre un telón tramado (`backdropImage`), la balda ya abierta abajo en tu piso y los sellos abajo en el de
+  un vecino. «Ver como ficha» / «Entrar en la habitación» cambia de vista y se recuerda en el dispositivo
+  (`bookshelf:edificio:vista`).
+- **Sets de sagas**: pestaña «Sagas» en la balda con una fila de sets; cada set lleva **nombre propio** y el guiño
+  «Para quien leyó …» debajo de sus muebles. Son objetos corrientes que evocan cada saga, sin portadas, logos, emblemas
+  ni diseños oficiales (`SETS` y `cat: 'sagas'` en `catalog.js`, formas en `furniture.js`):
+  - *Nido de jinetes* (Alas de sangre): brasero, silla de montar, huevo de dragón, dagas en la pared.
+  - *Bruma y ceniza* (Mistborn): farol de bruma, viales de metal, monedas, ventana de ceniza.
+  - *La posada del camino* (El nombre del viento): barra de posada, barril, laúd, espada en la pared.
+  - *Corte de rosas y estrellas* (Una corte de rosas y espinas): rosal, arco de rosas, máscara, ventana de estrellas.
+  - *Luz de tormenta* (El archivo de las tormentas): esferas de gemas, lámpara de gemas, atril, cuadro de tormenta.
+  - El catálogo pasa de 24 a 44 muebles, todos gratis (no toca recompensas, cajas ni pity).
+- **Servidor**: `supabase/migrations/20261102120000_edificio_sagas.sql` (aditiva y re-ejecutable) añade los veinte a
+  `piso_catalogo`. **Sin aplicarla, guardar un piso con un mueble de sagas lo rechaza `piso_valido`**. La prueba de
+  paridad de `edificio.rls.test.js` carga todas las migraciones.
+- **Peso**: el panel se carga al abrirlo, 70 KB de JS (26,6 KB comprimido) y 15,3 KB de CSS (3,9 KB).
+- Pruebas: `e2e/edificio-puerto.spec.js` (con «la balda» y «sagas») y `e2e-community/v163-edificio.spec.js` (vista
+  «dentro» y cambio a ficha), en Chromium 360/390/1440, WebKit 390 y movimiento reducido. Sin iPhone real.

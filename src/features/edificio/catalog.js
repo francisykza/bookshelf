@@ -13,6 +13,18 @@ export const CATEGORIES = [
   { id: 'detalles', nombre: 'Detalles' },
   { id: 'pared', nombre: 'Pared' },
   { id: 'alfombras', nombre: 'Alfombras' },
+  { id: 'sagas', nombre: 'Sagas' },
+];
+
+// Sets de sagas (1.64, SPEC §64, encargo de Francisco): cada uno con nombre propio y un guiño a la saga que evoca.
+// Los muebles son originales: evocan la saga con objetos corrientes (un brasero, un laúd, unas esferas de luz), nunca
+// con portadas, logos, escudos ni diseños oficiales.
+export const SETS = [
+  { id: 'jinetes', nombre: 'Nido de jinetes', guino: 'Para quien leyó «Alas de sangre»' },
+  { id: 'bruma', nombre: 'Bruma y ceniza', guino: 'Para quien leyó «Mistborn»' },
+  { id: 'posada', nombre: 'La posada del camino', guino: 'Para quien leyó «El nombre del viento»' },
+  { id: 'rosas', nombre: 'Corte de rosas y estrellas', guino: 'Para quien leyó «Una corte de rosas y espinas»' },
+  { id: 'tormenta', nombre: 'Luz de tormenta', guino: 'Para quien leyó «El archivo de las tormentas»' },
 ];
 
 const SALVIA = [128, 150, 112];
@@ -24,6 +36,18 @@ const CREMA = [232, 218, 190];
 const MADERA = [150, 98, 60];
 const MADERA_CLARA = [190, 142, 96];
 const NOGAL = [110, 70, 46];
+const HIERRO = [64, 60, 66];
+const BRONCE = [150, 104, 70];
+const CUERO = [120, 70, 44];
+const NEGRO = [58, 50, 56];
+const GRANATE = [130, 50, 46];
+const OBSIDIANA = [62, 54, 68];
+const MUSGO = [74, 98, 80];
+const PIZARRA = [72, 78, 92];
+const ORO = [204, 170, 90];
+const PLATA = [180, 184, 190];
+const COBRE = [184, 120, 80];
+const CRISTAL = [200, 214, 222];
 
 export const CATALOG = [
   { id: 'sillon', nombre: 'Sillón', cat: 'asientos', capa: 'suelo', w: 2, d: 2, tonos: [SALVIA, TERRACOTA, MOSTAZA, AZUL, ROSA] },
@@ -51,9 +75,37 @@ export const CATALOG = [
   { id: 'guirnalda', nombre: 'Guirnalda de luces', cat: 'pared', capa: 'pared', w: 3, luz: [1.5, 0.3, 3.55], tonos: [MOSTAZA, ROSA, CREMA] },
   { id: 'alfombra', nombre: 'Alfombra de lana', cat: 'alfombras', capa: 'alfombra', w: 3, d: 2, tonos: [TERRACOTA, SALVIA, AZUL] },
   { id: 'alfombra-redonda', nombre: 'Alfombra trenzada', cat: 'alfombras', capa: 'alfombra', w: 3, d: 3, tonos: [MOSTAZA, ROSA, SALVIA] },
+
+  // ── Sagas ──
+  // Nido de jinetes
+  { id: 'brasero', nombre: 'Brasero', cat: 'sagas', set: 'jinetes', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 1.15], tonos: [HIERRO, BRONCE] },
+  { id: 'silla-montar', nombre: 'Silla de montar', cat: 'sagas', set: 'jinetes', capa: 'suelo', w: 1, d: 1, tonos: [CUERO, NEGRO, GRANATE] },
+  { id: 'huevo-dragon', nombre: 'Huevo de dragón', cat: 'sagas', set: 'jinetes', capa: 'encima', w: 1, d: 1, luz: [0.5, 0.7, 0.4], tonos: [OBSIDIANA, BRONCE, MUSGO] },
+  { id: 'dagas-pared', nombre: 'Dagas en la pared', cat: 'sagas', set: 'jinetes', capa: 'pared', w: 1, tonos: [NOGAL, MADERA, OBSIDIANA] },
+  // Bruma y ceniza
+  { id: 'farol-bruma', nombre: 'Farol de la bruma', cat: 'sagas', set: 'bruma', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 2.8], tonos: [HIERRO, PIZARRA, BRONCE] },
+  { id: 'viales', nombre: 'Viales de metal', cat: 'sagas', set: 'bruma', capa: 'encima', w: 1, d: 1, tonos: [MADERA, NOGAL] },
+  { id: 'monedas', nombre: 'Montones de monedas', cat: 'sagas', set: 'bruma', capa: 'encima', w: 1, d: 1, tonos: [ORO, PLATA, COBRE] },
+  { id: 'ventana-ceniza', nombre: 'Ventana de ceniza', cat: 'sagas', set: 'bruma', capa: 'pared', w: 2, tonos: [NOGAL, HIERRO, CREMA] },
+  // La posada del camino
+  { id: 'barra-posada', nombre: 'Barra de posada', cat: 'sagas', set: 'posada', capa: 'suelo', w: 3, d: 1, sup: 1.3, tonos: [MADERA, NOGAL, MADERA_CLARA] },
+  { id: 'barril', nombre: 'Barril', cat: 'sagas', set: 'posada', capa: 'suelo', w: 1, d: 1, sup: 1, tonos: [MADERA, NOGAL, MADERA_CLARA] },
+  { id: 'laud', nombre: 'Laúd', cat: 'sagas', set: 'posada', capa: 'pared', w: 1, tonos: [MADERA_CLARA, MADERA, NOGAL] },
+  { id: 'espada-pared', nombre: 'Espada sobre la barra', cat: 'sagas', set: 'posada', capa: 'pared', w: 2, tonos: [NOGAL, MADERA, PIZARRA] },
+  // Corte de rosas y estrellas
+  { id: 'rosal', nombre: 'Rosal', cat: 'sagas', set: 'rosas', capa: 'suelo', w: 1, d: 1, tonos: [TERRACOTA, CREMA, PIZARRA] },
+  { id: 'arco-rosas', nombre: 'Arco de rosas', cat: 'sagas', set: 'rosas', capa: 'suelo', w: 2, d: 1, tonos: [CREMA, MADERA, HIERRO] },
+  { id: 'mascara', nombre: 'Máscara de baile', cat: 'sagas', set: 'rosas', capa: 'pared', w: 1, tonos: [ORO, NEGRO, PLATA] },
+  { id: 'ventana-estrellas', nombre: 'Ventana de estrellas', cat: 'sagas', set: 'rosas', capa: 'pared', w: 2, luz: [1, 0.3, 2.6], tonos: [NOGAL, CREMA, PIZARRA] },
+  // Luz de tormenta
+  { id: 'esferas', nombre: 'Cuenco de esferas', cat: 'sagas', set: 'tormenta', capa: 'encima', w: 1, d: 1, luz: [0.5, 0.5, 0.3], tonos: [CRISTAL, ORO, HIERRO] },
+  { id: 'lampara-gemas', nombre: 'Lámpara de gemas', cat: 'sagas', set: 'tormenta', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 1.9], tonos: [HIERRO, BRONCE, MUSGO] },
+  { id: 'atril', nombre: 'Atril de estudio', cat: 'sagas', set: 'tormenta', capa: 'suelo', w: 1, d: 1, tonos: [MADERA, NOGAL, MADERA_CLARA] },
+  { id: 'cuadro-tormenta', nombre: 'Cuadro de la tormenta', cat: 'sagas', set: 'tormenta', capa: 'pared', w: 2, tonos: [NOGAL, MOSTAZA, MADERA] },
 ];
 
 export const catalogItem = (id) => CATALOG.find((c) => c.id === id) ?? null;
+export const setOf = (id) => SETS.find((s) => s.id === id) ?? null;
 
 /** Colores de pared y suelo que se pueden elegir. */
 export const PAREDES = [

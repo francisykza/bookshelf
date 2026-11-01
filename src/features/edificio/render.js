@@ -12,7 +12,13 @@ const S = 18;
 const YAW = Math.PI / 4;
 const WALL_T = 0.3;
 const GLOW_BIT = 0x8000;
-const BG = rgb(243, 234, 214);
+// Fuera de la habitación, al hornear, nada (0); al dibujar se rellena con el telón tramado de backdrop() (§64)
+const BG = 0;
+// El telón detrás del piso: tres tonos de arriba abajo y la sombra que el piso deja debajo, de día y de tarde
+const BACKDROP = {
+  day: { tones: [[244, 232, 206], [236, 219, 186], [225, 203, 165]], shadow: [204, 178, 140] },
+  evening: { tones: [[104, 84, 98], [88, 70, 86], [72, 58, 74]], shadow: [52, 42, 56] },
+};
 const WOOD = [150, 98, 60];
 const WAINSCOT = [132, 112, 84];
 const FLOOR_WOOD = [198, 156, 112];
@@ -191,6 +197,25 @@ function drawWalls(r, room) {
 }
 
 /** Una instancia de dibujo para un lienzo. */
+/** El telón tramado a `w` × `h` píxeles del dibujo, para el fondo de la página en la vista «dentro» (data URL). */
+export function backdropImage(w, h, evening = false) {
+  const { tones } = BACKDROP[evening ? 'evening' : 'day'];
+  const probe = createRaster({ W: 1, H: 1, S: 1, yaw: YAW, ox: 0, oy: 0 });
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  const image = ctx.createImageData(w, h);
+  const pix = new Uint32Array(image.data.buffer);
+  for (let iy = 0; iy < h; iy += 1) {
+    const t = (iy / Math.max(1, h - 1)) * (tones.length - 1);
+    const band = Math.min(tones.length - 2, Math.floor(t));
+    for (let ix = 0; ix < w; ix += 1) pix[iy * w + ix] = rgb(...tones[t - band > probe.bayerAt(ix, iy) ? band + 1 : band]);
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas.toDataURL();
+}
+
 export function createRoomRenderer() {
   const r = createRaster({ W: ART_W, H: ART_H, S, yaw: YAW, ox: FRAME.ox, oy: FRAME.oy });
   const baked = new Uint32Array(ART_W * ART_H);
@@ -198,6 +223,33 @@ export function createRoomRenderer() {
   const bakedIds = new Uint16Array(ART_W * ART_H);
   let bakedRoom = null;
   let excluded = new Set();
+  const backdrops = {};
+
+  /**
+   * El telón tramado (se calcula una vez por luz: la silueta del piso no cambia). Con `clear`, solo la sombra: el
+   * telón lo pone la página detrás (vista «dentro», backdropImage), para que no se note dónde acaba el lienzo.
+   */
+  function backdrop(kind, clear = false) {
+    const key = `${kind}:${clear}`;
+    if (backdrops[key]) return backdrops[key];
+    const { tones, shadow } = BACKDROP[kind];
+    const out = new Uint32Array(ART_W * ART_H);
+    // Dónde acaba el piso en cada columna, para su sombra
+    const bottom = new Int32Array(ART_W).fill(-1);
+    for (let i = 0; i < bakedZ.length; i += 1) if (bakedZ[i] > -1e8) bottom[i % ART_W] = Math.max(bottom[i % ART_W], (i / ART_W) | 0);
+    for (let iy = 0; iy < ART_H; iy += 1) {
+      const t = (iy / (ART_H - 1)) * (tones.length - 1);
+      const band = Math.min(tones.length - 2, Math.floor(t));
+      for (let ix = 0; ix < ART_W; ix += 1) {
+        const d = r.bayerAt(ix, iy);
+        const below = bottom[ix] < 0 ? 99 : iy - bottom[ix];
+        if (below > 0 && below <= 7 && (8 - below) / 9 > d) out[iy * ART_W + ix] = rgb(...shadow);
+        else if (!clear) out[iy * ART_W + ix] = rgb(...tones[t - band > d ? band + 1 : band]);
+      }
+    }
+    backdrops[key] = out;
+    return out;
+  }
 
   function bake(room, exclude = []) {
     bakedRoom = room;
@@ -309,7 +361,7 @@ export function createRoomRenderer() {
    * Un fotograma. `held`: { items: [objetos en la mano, ya con su posición], room: el piso con ellos dentro, ok } o null.
    * `selected`: objeto elegido (se dibuja su contorno). `evening`: luz de tarde.
    */
-  function draw(ctx, image, { held = null, selected = null, ok = true, evening: isEvening = false } = {}) {
+  function draw(ctx, image, { held = null, selected = null, ok = true, evening: isEvening = false, inside = false } = {}) {
     r.pix.set(baked);
     r.zb.set(bakedZ);
     r.ids.set(bakedIds);
@@ -324,6 +376,9 @@ export function createRoomRenderer() {
     r.shadeEdges();
     if (selected) outline(room, selected, ok);
     if (isEvening) evening(room);
+    const back = backdrop(isEvening ? 'evening' : 'day', inside);
+    const { pix } = r;
+    for (let i = 0; i < pix.length; i += 1) if (pix[i] === 0) pix[i] = back[i];
     image.data.set(new Uint8ClampedArray(r.pix.buffer));
     ctx.putImageData(image, 0, 0);
   }

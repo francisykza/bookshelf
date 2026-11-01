@@ -83,6 +83,27 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   - Sin texto libre: solo sellos de frase cerrada.
   - Otros cambios en a qué lleva la tablet del Salón Social necesitan su aprobación.
   - Del vídeo de referencia se toma el género, nunca su arte.
+  - **Más personalidad** (encargo del 1-11-2026, por bloques con capturas entre uno y otro: 1) fachada que se vea como
+    un edificio de verdad, 2) piso y personalización más integrados, con un catálogo lo más intuitivo y orgánico
+    posible, 3) sets de sagas). **Sets de sagas**: nombre propio y un guiño («Para quien leyó …»); muebles originales
+    que evocan la saga, nunca portadas, logos ni diseños oficiales. Primera tanda: Alas de sangre, Mistborn, El nombre
+    del viento, Una corte de rosas y espinas y El archivo de las tormentas.
+  - **Fachada** (1-11-2026): según una foto de un edificio clásico mostaza que pasó Francisco (estilo, no copia). En
+    la azotea, el cartel «AQUÍ NO HAY QUIEN LEA» (guiño a «Aquí no hay quien viva»), con letra propia de píxeles:
+    nunca el logotipo de la serie. Por las ventanas, siluetas de frente (`windowView.js`); al tocar una, la vista se
+    asoma y entras.
+  - **Controles del piso en el mismo pixel art** (1-11-2026, a Francisco las píldoras HTML le desentonaban):
+    - marcos de píxel e iconos propios (`pixelUi.js`);
+    - telón tramado dentro del dibujo;
+    - «Decorar» y la luz en las esquinas de la habitación, y las herramientas flotando junto al mueble;
+    - el catálogo es una balda de madera de la que se arrastran los muebles.
+    - No volver a botones redondeados sueltos alrededor del piso.
+  - **Vista «dentro de la habitación» por defecto** (1-11-2026):
+    - el piso, a pantalla completa, con la balda (o los sellos) abajo;
+    - se puede cambiar a la vista de ficha y queda recordado en el dispositivo.
+  - **Sets de sagas en la balda** (1.64, §64): pestaña «Sagas» con un set cada vez (`SETS` en `catalog.js`). Cada
+    mueble nuevo del catálogo necesita su fila en `piso_catalogo` con una migración nueva (la prueba de paridad lo
+    exige); la de las sagas es `20261102120000_edificio_sagas.sql` y la aplica Francisco.
   - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración
     `20261101120000_edificio_puerto.sql` la aplica Francisco; sin ella, la tablet hace lo de siempre.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.

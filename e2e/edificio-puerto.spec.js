@@ -23,17 +23,27 @@ async function open(page, query = '') {
 }
 
 const room = (page) => page.evaluate(() => window.__edificio.piso.room);
-const itemPoint = (page, uid) => page.evaluate((u) => window.__edificio.piso.screenOfItem(u), uid);
-const cellPoint = (page, x, y) => page.evaluate(([a, b]) => window.__edificio.piso.screenOf(a, b, 0), [x, y]);
+// Playwright mueve el ratón respecto a la vista visible; en la emulación de móvil puede estar desplazada respecto a la
+// del diseño (getBoundingClientRect), así que se descuenta
+const itemPoint = (page, uid) =>
+  page.evaluate((u) => {
+    const p = window.__edificio.piso.screenOfItem(u);
+    return p && { x: p.x - visualViewport.offsetLeft, y: p.y - visualViewport.offsetTop };
+  }, uid);
+const cellPoint = (page, x, y) =>
+  page.evaluate(([a, b]) => {
+    const p = window.__edificio.piso.screenOf(a, b, 0);
+    return { x: p.x - visualViewport.offsetLeft, y: p.y - visualViewport.offsetTop };
+  }, [x, y]);
 
-test('portal: seis puertas, podios de prueba y tu buzón', async ({ page }, info) => {
+test('portal: la fachada con seis ventanas, podios de prueba y tu buzón', async ({ page }, info) => {
   test.skip(!PROJECTS.test(info.project.name), 'tamaños del prototipo');
   const errors = await open(page);
-  await expect(page.locator('.door')).toHaveCount(6);
+  await expect(page.locator('.ed-window')).toHaveCount(6);
+  await expect(page.locator('.ed-facade__art')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Entrar en tu piso, 2.º B' })).toBeVisible();
-  await expect(page.locator('.door__badge')).toHaveText(['Podio de la semana', 'Podio del mes']);
+  await expect(page.locator('.ed-window__badge')).toHaveText(['Podio de la semana', 'Podio del mes']);
   await expect(page.locator('#inbox li')).toHaveCount(2);
-  await page.waitForFunction(() => [...document.querySelectorAll('.door img')].every((i) => i.complete && i.naturalWidth > 0));
   // Sin desbordes horizontales
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await shot(page, info, 'ep-portal');
@@ -81,7 +91,15 @@ test('tu piso: decorar con el catálogo, arrastrar, girar, color, guardar y se c
   await page.getByRole('button', { name: 'Color' }).click();
   expect((await room(page)).items.find((i) => i.uid === chair.uid).tono).toBe(1);
 
-  // Paredes y suelo
+  // Las herramientas flotan dentro de la habitación, junto al mueble elegido
+  const stageBox = await page.locator('.ep-stage').boundingBox();
+  const toolsBox = await page.locator('.ep-tools').boundingBox();
+  expect(toolsBox.y).toBeGreaterThanOrEqual(stageBox.y);
+  expect(toolsBox.y + toolsBox.height).toBeLessThanOrEqual(stageBox.y + stageBox.height + 1);
+  expect(toolsBox.x + toolsBox.width).toBeLessThanOrEqual(stageBox.x + stageBox.width + 1);
+
+  // Paredes y suelo, en la última pestaña de la balda
+  await page.locator('.ep-chip', { hasText: 'Paredes y suelo' }).click();
   await page.getByRole('button', { name: 'Salvia' }).click();
   await page.getByRole('button', { name: 'Baldosa en damero' }).click();
   r = await room(page);
@@ -90,7 +108,7 @@ test('tu piso: decorar con el catálogo, arrastrar, girar, color, guardar y se c
   await shot(page, info, 'ep-decorando');
 
   // Guardar la lámpara
-  await page.locator('.ep-list summary').click();
+  await page.locator('.ep-chip', { hasText: 'En el piso' }).click();
   await page.getByRole('button', { name: 'Lámpara de mesa', exact: true }).click();
   await page.getByRole('button', { name: 'Guardar' }).click();
   await expect(page.locator('.ep-status')).toHaveText('Lámpara de mesa guardado.');
@@ -112,11 +130,122 @@ test('tu piso: decorar con el catálogo, arrastrar, girar, color, guardar y se c
   expect(errors).toEqual([]);
 });
 
+test('la balda: un mueble se arrastra hasta el piso y cae donde se suelta; fuera de la habitación vuelve', async ({ page }, info) => {
+  test.skip(!/chromium-(360x800|390x844|1440x900)$|webkit-390x844$/.test(info.project.name), 'arrastre');
+  const errors = await open(page, '?piso=2b');
+  await page.getByRole('button', { name: 'Decorar' }).click();
+  await page.locator('.ep-chip', { hasText: 'Plantas' }).click();
+  const before = (await room(page)).items.length;
+  const plant = page.getByRole('button', { name: 'Añadir planta grande' });
+  await plant.scrollIntoViewIfNeeded();
+  // Soltarla en un hueco libre lejos del centro (donde la pondría un toque)
+  await page.locator('.ep-canvas').evaluate((c) => c.scrollIntoView({ block: 'start' }));
+  const cell = await page.evaluate(() => {
+    const free = [];
+    for (let y = 0; y < 9; y += 1) for (let x = 0; x < 9; x += 1) if (window.__edificio.piso.check({ uid: -1, id: 'planta-grande', x, y, rot: 0, tono: 0 }).ok) free.push({ x, y });
+    return free.sort((a, b) => Math.hypot(b.x - 4, b.y - 4) - Math.hypot(a.x - 4, a.y - 4) || a.y - b.y)[0];
+  });
+  const drop = await cellPoint(page, cell.x + 0.5, cell.y + 0.5);
+  const from = await plant.boundingBox();
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2, from.y - 20, { steps: 4 });
+  await page.mouse.move(drop.x, drop.y, { steps: 8 });
+  await expect(page.locator('.ep-status')).toContainText('suéltalo en tu piso');
+  await shot(page, info, 'ep-balda-arrastrando', false);
+  await page.mouse.up();
+  await expect(page.locator('.ep-status')).toHaveText('Planta grande en tu piso.');
+  let r = await room(page);
+  expect(r.items).toHaveLength(before + 1);
+  const added = r.items.at(-1);
+  expect(added.id).toBe('planta-grande');
+  expect({ x: added.x, y: added.y }).toEqual(cell);
+  await expect(page.locator('.ep-tools')).toBeVisible();
+  await shot(page, info, 'ep-balda-soltada', false);
+
+  // Soltada fuera de la habitación, vuelve a la balda
+  const again = await plant.boundingBox();
+  await page.mouse.move(again.x + again.width / 2, again.y + again.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(again.x + again.width / 2, again.y - 30, { steps: 4 });
+  await page.mouse.up();
+  await expect(page.locator('.ep-status')).toHaveText('Planta grande vuelve a la balda.');
+  r = await room(page);
+  expect(r.items).toHaveLength(before + 1);
+  expect(errors).toEqual([]);
+});
+
+test('sagas: cada set con su nombre y su guiño, y sus muebles caben en el piso', async ({ page }, info) => {
+  test.skip(!/chromium-(390x844|1440x900)$|webkit-390x844$/.test(info.project.name), 'sagas');
+  const errors = await open(page, '?piso=2b');
+  // Se vacía el piso (en el almacén del prototipo) para que quepan todos los de las sagas
+  await page.evaluate(() => localStorage.setItem('bookshelf:dev:edificio-puerto:piso', JSON.stringify({ ...window.__edificio.piso.room, items: [] })));
+  await page.reload();
+  await page.waitForFunction(() => window.__edificio?.piso);
+  expect((await room(page)).items).toHaveLength(0);
+  await page.getByRole('button', { name: 'Decorar' }).click();
+  await page.locator('.ep-chip', { hasText: 'Sagas' }).click();
+  const sets = page.getByRole('group', { name: 'Sets de sagas' });
+  await expect(sets.locator('.ep-set')).toHaveCount(5);
+  await expect(page.locator('.ep-shelf__title')).toHaveText('Nido de jinetes');
+  await expect(page.locator('.ep-shelf__hint')).toHaveText('Para quien leyó «Alas de sangre»');
+  await expect(page.locator('.ep-grid .ep-item')).toHaveCount(4);
+  await shot(page, info, 'ep-sagas-balda', false);
+
+  // Los veinte, set a set
+  let added = 0;
+  for (const [name, guino] of [
+    // La posada primero: la barra y el barril son la superficie de lo que va «encima» (el huevo, los viales…)
+    ['La posada del camino', 'El nombre del viento'],
+    ['Nido de jinetes', 'Alas de sangre'],
+    ['Bruma y ceniza', 'Mistborn'],
+    ['Corte de rosas y estrellas', 'Una corte de rosas y espinas'],
+    ['Luz de tormenta', 'El archivo de las tormentas'],
+  ]) {
+    await sets.getByRole('button', { name }).click();
+    await expect(sets.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.ep-shelf__title')).toHaveText(name);
+    await expect(page.locator('.ep-shelf__hint')).toHaveText(`Para quien leyó «${guino}»`);
+    const items = page.locator('.ep-grid .ep-item');
+    await expect(items).toHaveCount(4);
+    for (let k = 0; k < 4; k += 1) {
+      const n = (await room(page)).items.length;
+      await items.nth(k).click();
+      if ((await room(page)).items.length > n) added += 1;
+    }
+  }
+  expect(added).toBe(20);
+  expect((await room(page)).items).toHaveLength(20);
+  await page.getByRole('button', { name: 'Listo' }).click();
+  await page.getByRole('button', { name: 'Terminar' }).click();
+  await expect(page.locator('.ep-shelf')).toBeHidden();
+
+  // Para la captura, los veinte repartidos por la habitación (con las mismas reglas de room.js)
+  await page.evaluate(async () => {
+    const { addItem } = await import('/src/features/edificio/room.js');
+    let r = { ...window.__edificio.piso.room, items: [] };
+    for (const [id, x, y] of [
+      ['barra-posada', 1, 0], ['barril', 4.5, 0], ['laud', 3, 0], ['espada-pared', 1, 0], ['brasero', 8, 2], ['silla-montar', 8, 4],
+      ['dagas-pared', 0, 4], ['huevo-dragon', 4.5, 0], ['farol-bruma', 0, 8], ['viales', 1, 0], ['monedas', 2, 0], ['ventana-ceniza', 6, 0],
+      ['rosal', 0, 3], ['arco-rosas', 1, 6], ['mascara', 0, 2], ['ventana-estrellas', 0, 6], ['esferas', 3, 0], ['lampara-gemas', 8, 8],
+      ['atril', 5, 5], ['cuadro-tormenta', 8, 0],
+    ]) r = addItem(r, id, { near: { x, y } }).room ?? r;
+    localStorage.setItem('bookshelf:dev:edificio-puerto:piso', JSON.stringify(r));
+  });
+  await page.reload();
+  await page.waitForFunction(() => window.__edificio?.piso);
+  expect((await room(page)).items).toHaveLength(20);
+  await shot(page, info, 'ep-sagas-piso', false);
+  await page.getByRole('button', { name: 'Luz de tarde' }).click();
+  await shot(page, info, 'ep-sagas-tarde', false);
+  expect(errors).toEqual([]);
+});
+
 test('teclado: elegir desde la lista, mover con flechas, girar y soltar', async ({ page }, info) => {
   test.skip(!/chromium-(390x844|1440x900)$/.test(info.project.name), 'teclado');
   const errors = await open(page, '?piso=2b');
   await page.getByRole('button', { name: 'Decorar' }).click();
-  await page.locator('.ep-list summary').click();
+  await page.locator('.ep-chip', { hasText: 'En el piso' }).click();
   await page.getByRole('button', { name: 'Mesa baja', exact: true }).click();
   await expect(page.locator('.ep-canvas')).toBeFocused();
   const before = (await room(page)).items.find((i) => i.id === 'mesa-baja');
@@ -184,7 +313,7 @@ test('vista previa en la app: la tablet del Salón Social abre el edificio', asy
   await shot(page, info, 'ep-app-salon', false);
   await page.getByRole('button', { name: 'Abrir la tablet: El edificio del puerto' }).click();
   const frame = page.frameLocator('#frame');
-  await expect(frame.locator('.door')).toHaveCount(6);
+  await expect(frame.locator('.ed-window')).toHaveCount(6);
   await expect(frame.locator('.dev-bar')).toBeHidden();
   await page.waitForTimeout(300);
   await shot(page, info, 'ep-app-tablet', false);

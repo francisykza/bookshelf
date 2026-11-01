@@ -2,8 +2,8 @@
 // el portal del edificio, tu piso (se decora y se guarda solo en este navegador) y los pisos de cinco vecinos inventados,
 // que se visitan y en cuyo buzón se puede dejar un sello. Nada toca la biblioteca, la nube ni las recompensas.
 import { DEMO_INBOX, NEIGHBOURS, SELLOS, starterRoom } from './demo';
+import { mountFacade } from './facadeView';
 import { mountPiso } from './piso';
-import { ART_H, ART_W, createRoomRenderer } from './render';
 import { exportRoom, importRoom } from './room';
 
 const ROOM_KEY = 'bookshelf:dev:edificio-puerto:piso';
@@ -53,53 +53,21 @@ const rooms = new Map(NEIGHBOURS.filter((n) => !n.propio).map((n) => [n.id, n.ro
 const roomOf = (n) => (n.propio ? myRoom : rooms.get(n.id));
 let current = null;
 
-// ── Portal ──
-const thumbRenderer = createRoomRenderer();
-const thumbCanvas = document.createElement('canvas');
-thumbCanvas.width = ART_W;
-thumbCanvas.height = ART_H;
-const thumbCtx = thumbCanvas.getContext('2d');
-const thumbImage = thumbCtx.createImageData(ART_W, ART_H);
-
-function thumbOf(room) {
-  thumbRenderer.bake(room);
-  thumbRenderer.draw(thumbCtx, thumbImage, { evening: true });
-  return thumbCanvas.toDataURL();
-}
-
+// ── Portal: la fachada del edificio ──
 const PODIO = { semana: 'Podio de la semana', mes: 'Podio del mes' };
 
 function renderPortal() {
-  doors.replaceChildren();
-  for (const n of NEIGHBOURS) {
-    const li = document.createElement('li');
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = `door${n.propio ? ' door--mine' : ''}`;
-    b.setAttribute('aria-label', n.propio ? `Entrar en tu piso, ${n.puerta}` : `Llamar y entrar en el piso de ${n.nombre}, ${n.puerta}`);
-    const img = document.createElement('img');
-    img.src = thumbOf(roomOf(n));
-    img.alt = '';
-    img.width = ART_W;
-    img.height = ART_H;
-    const label = document.createElement('span');
-    label.className = 'door__label';
-    const door = document.createElement('strong');
-    door.textContent = n.puerta;
-    const who = document.createElement('span');
-    who.textContent = n.propio ? 'Tu piso' : `${n.nombre} · de prueba`;
-    label.append(door, who);
-    b.append(img, label);
-    if (n.podio) {
-      const badge = document.createElement('span');
-      badge.className = 'door__badge';
-      badge.textContent = PODIO[n.podio];
-      b.append(badge);
-    }
-    b.addEventListener('click', () => open(n.id, true));
-    li.append(b);
-    doors.append(li);
-  }
+  mountFacade(doors, {
+    flats: NEIGHBOURS.map((n) => ({
+      puerta: n.id.toUpperCase(),
+      room: roomOf(n),
+      mine: !!n.propio,
+      name: n.propio ? 'Tu piso' : n.nombre,
+      label: n.propio ? `Entrar en tu piso, ${n.puerta}` : `Llamar y entrar en el piso de ${n.nombre}, ${n.puerta}`,
+      badge: n.podio ? PODIO[n.podio] : '',
+      onOpen: () => open(n.id, true),
+    })),
+  });
   inbox.replaceChildren(
     ...DEMO_INBOX.map((s) => {
       const li = document.createElement('li');

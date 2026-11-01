@@ -18,8 +18,15 @@
   font-family: 'Lora', Georgia, serif;
 }
 
+/* La habitación y sus controles, en el mismo pixel art (§64). El lienzo ocupa todo el ancho y ya trae su telón
+   tramado; los botones son marcos de píxel (pixelUi.js genera las imágenes y las deja en variables `--px-…` de la raíz
+   del piso). `--ep-bleed` es cuánto se salen la habitación y la balda por los lados para llegar al borde del panel. */
 .ep-stage {
-  width: 100%;
+  position: relative;
+  width: calc(100% + 2 * var(--ep-bleed, 0px));
+  margin-inline: calc(-1 * var(--ep-bleed, 0px));
+  background: #f4e8ce;
+  overflow: hidden;
 }
 
 /* Mirando se puede desplazar la página por encima del dibujo; decorando, el lienzo se queda los gestos */
@@ -28,7 +35,6 @@
   width: 100%;
   height: auto;
   image-rendering: pixelated;
-  border-radius: 8px;
   outline: none;
   cursor: pointer;
 }
@@ -38,9 +44,13 @@
   cursor: grab;
 }
 
+.ep.is-dragging .ep-canvas {
+  cursor: grabbing;
+}
+
 .ep-canvas:focus-visible {
   outline: 3px solid var(--ep-brass);
-  outline-offset: 3px;
+  outline-offset: -3px;
 }
 
 .ep-status {
@@ -51,8 +61,6 @@
   text-align: center;
 }
 
-.ep-bar,
-.ep-tools__row,
 .ep-action {
   display: flex;
   flex-wrap: wrap;
@@ -62,191 +70,438 @@
 
 .ep-action[hidden],
 .ep-tools[hidden],
-.ep-panel[hidden] {
+.ep-panel[hidden],
+.ep-house[hidden],
+.ep-grid[hidden],
+.ep-shelf__hint[hidden],
+.ep-ghost[hidden] {
   display: none;
 }
 
-.ep-btn {
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--ep-line);
-  border-radius: 999px;
-  background: var(--ep-card);
+/* ── Botones de píxel ── */
+.px-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 48px;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  border-radius: 0;
+  background: none;
   color: var(--ep-ink);
-  font: 600 0.98rem/1 'Lora', Georgia, serif;
+  font: 600 0.92rem/1 'Lora', Georgia, serif;
+  image-rendering: pixelated;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.ep-btn:disabled {
-  opacity: 0.45;
-  cursor: default;
+.px-btn[aria-pressed='true'],
+.px-btn:active:not(:disabled) {
+  border-image-source: var(--px-pressed);
 }
 
-.ep-btn--primary {
-  border-color: var(--ep-sage);
-  background: var(--ep-sage);
+.px-btn:active:not(:disabled) .px-icon {
+  transform: translateY(1px);
+}
+
+.px-btn--sage,
+.px-btn--sage:active:not(:disabled) {
+  border-image-source: var(--px-sage);
   color: #fbf5e6;
 }
 
-.ep-btn--ghost[aria-pressed='true'] {
-  border-color: var(--ep-brass);
-  background: #f5e2b4;
+.px-btn--icon {
+  width: 48px;
+  height: 48px;
+  padding: 0;
 }
 
-.ep-btn:focus-visible,
+.px-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.px-btn:focus-visible,
 .ep-chip:focus-visible,
 .ep-item:focus-visible,
 .ep-swatch:focus-visible,
 .ep-list__btn:focus-visible {
   outline: 3px solid var(--ep-brass);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
+.px-icon {
+  flex: none;
+  width: 33px;
+  height: 33px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.px-btn__text {
+  white-space: nowrap;
+}
+
+.px-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* «Decorar» y la luz, en los huecos de las esquinas de abajo */
+.ep-corner {
+  position: absolute;
+  bottom: 8px;
+  z-index: 2;
+}
+
+.ep-corner--left {
+  left: 8px;
+}
+
+.ep-corner--right {
+  right: 8px;
+}
+
+/* Con un mueble elegido, se apartan: la habitación es para el mueble y sus herramientas */
+.ep.has-tools .ep-corner {
+  visibility: hidden;
+}
+
+/* Las herramientas del mueble elegido: una etiqueta de papel que flota junto a él (piso.js la coloca) */
 .ep-tools {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
   display: grid;
-  gap: 6px;
-  padding: 10px;
-  border: 1px solid var(--ep-line);
-  border-radius: 12px;
-  background: var(--ep-card);
+  gap: 2px;
+  max-width: calc(100% - 8px);
+  box-sizing: border-box;
+  padding: 0 2px 2px;
+  border: 6px solid transparent;
+  border-image: var(--px-tag) 6 fill / 6px stretch;
+  filter: drop-shadow(0 3px 0 rgb(59 38 24 / 0.28));
+  transition: opacity 0.12s;
+}
+
+.ep-tools.is-away {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .ep-tools__name {
   margin: 0;
-  font: 600 1.05rem/1.2 'Cormorant Garamond', Georgia, serif;
+  font: 600 0.92rem/1.15 'Cormorant Garamond', Georgia, serif;
   text-align: center;
 }
 
-.ep-panel {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--ep-line);
-  border-radius: 12px;
-  background: var(--ep-card);
+.ep-tools__row {
+  display: flex;
+  gap: 4px;
 }
 
-.ep-panel__title {
-  margin: 4px 0 0;
-  font: 600 1.1rem/1.2 'Cormorant Garamond', Georgia, serif;
+/* ── La balda: un mueble de madera pegado abajo, con pestañas de papel y los muebles de pie en la tabla ── */
+.ep-shelf {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  /* Una sola columna del ancho de la balda: las filas que se recorren de lado no la ensanchan */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  width: calc(100% + 2 * var(--ep-bleed, 0px));
+  margin-inline: calc(-1 * var(--ep-bleed, 0px));
+  box-sizing: border-box;
+  padding: 2px 4px calc(4px + env(safe-area-inset-bottom));
+  border: 6px solid transparent;
+  border-image: var(--px-wood) 6 fill / 6px stretch;
+  color: #fbf3df;
+  filter: drop-shadow(0 -4px 0 rgb(59 38 24 / 0.18));
+  /* En pantallas bajas (el móvil tumbado) la balda no tapa la habitación entera: lo que no quepa se desplaza dentro */
+  max-height: 58dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ep-shelf__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
 }
 
 .ep-cats {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
+  padding: 4px 2px 2px;
+  scrollbar-width: none;
 }
 
+.ep-cats::-webkit-scrollbar,
+.ep-grid::-webkit-scrollbar,
+.ep-swatches::-webkit-scrollbar {
+  display: none;
+}
+
+/* Pestaña: un cuadrito de papel con el dibujo de un mueble de su tipo; la elegida se levanta */
 .ep-chip {
   flex: none;
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--ep-line);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ep-ink);
-  font: 600 0.9rem/1 'Lora', Georgia, serif;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  box-sizing: border-box;
+  padding: 0;
+  border: 6px solid transparent;
+  border-image: var(--px-pressed) 6 fill / 6px stretch;
+  background: none;
+  opacity: 0.78;
   cursor: pointer;
+  transition:
+    transform 0.1s,
+    opacity 0.1s;
 }
 
 .ep-chip[aria-pressed='true'] {
-  border-color: var(--ep-terra);
-  background: var(--ep-terra);
-  color: #fff8ee;
+  border-image-source: var(--px-paper);
+  opacity: 1;
+  transform: translateY(-3px);
+}
+
+.ep-chip__img {
+  width: 33px;
+  height: 33px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.ep-shelf__title {
+  margin: 0 4px;
+  font: 600 1.05rem/1.2 'Cormorant Garamond', Georgia, serif;
+}
+
+.ep-shelf__board {
+  position: relative;
+  padding-bottom: 12px;
+}
+
+/* La tabla: tres bandas de madera, como las vigas del dibujo */
+.ep-shelf__board::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  bottom: 0;
+  height: 12px;
+  background: linear-gradient(#c8946a 0 3px, #a8744a 3px 9px, #3b2618 9px 12px);
+  pointer-events: none;
 }
 
 .ep-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
-  gap: 6px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
 }
 
+/* Cada mueble, de pie sobre la tabla. De lado se recorre la balda; hacia arriba se saca */
 .ep-item {
+  position: relative;
+  z-index: 1;
+  flex: none;
   display: grid;
   justify-items: center;
+  align-content: end;
   gap: 2px;
-  min-height: 88px;
-  padding: 6px 4px;
-  border: 1px solid var(--ep-line);
-  border-radius: 10px;
-  background: var(--ep-paper);
-  color: var(--ep-ink);
-  font: 600 0.82rem/1.2 'Lora', Georgia, serif;
-  cursor: pointer;
+  width: 80px;
+  min-height: 92px;
+  padding: 2px 2px 0;
+  border: 0;
+  background: transparent;
+  color: #fbf3df;
+  font: 600 0.78rem/1.15 'Lora', Georgia, serif;
+  scroll-snap-align: start;
+  cursor: grab;
+  touch-action: pan-x;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .ep-item img {
-  width: 44px;
-  height: 44px;
+  order: 2;
+  width: 66px;
+  height: 66px;
+  margin-bottom: -3px;
   image-rendering: pixelated;
+  filter: drop-shadow(0 3px 0 rgb(30 18 10 / 0.4));
+  transition: transform 0.12s ease-out;
+  pointer-events: none;
+}
+
+.ep-item span {
+  order: 1;
+  max-width: 100%;
+  text-align: center;
+  text-shadow: 0 1px 0 #3b2618;
+}
+
+.ep-item:hover img,
+.ep-item:active img {
+  transform: translateY(-3px);
+}
+
+.ep-shelf__hint {
+  margin: 0;
+  color: rgb(251 243 223 / 0.82);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* Paredes y suelo: muestras de papel con cómo quedaría tu piso */
+.ep-house {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 14px;
+  scrollbar-width: none;
+}
+
+.ep-house::-webkit-scrollbar {
+  display: none;
+}
+
+.ep-house__group {
+  flex: none;
+  display: grid;
+  gap: 2px;
+}
+
+.ep-house__label {
+  margin: 0 4px;
+  font: 600 0.95rem/1.2 'Cormorant Garamond', Georgia, serif;
 }
 
 .ep-swatches {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
+  padding: 2px;
 }
 
 .ep-swatch {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 12px 0 8px;
-  border: 1px solid var(--ep-line);
-  border-radius: 999px;
-  background: var(--ep-paper);
+  flex: none;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 76px;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  background: none;
   color: var(--ep-ink);
-  font: 600 0.88rem/1 'Lora', Georgia, serif;
+  font: 600 0.74rem/1.15 'Lora', Georgia, serif;
   cursor: pointer;
 }
 
-.ep-swatch::before {
-  content: '';
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid var(--ep-line);
-  background: var(--sw, #c69c70);
-}
-
-.ep-swatch--floor[data-suelo='tablas'] {
-  --sw: repeating-linear-gradient(0deg, #c69c70 0 6px, #a87c52 6px 7px);
-}
-
-.ep-swatch--floor[data-suelo='damero'] {
-  --sw: conic-gradient(#e8dcc4 25%, #a85c46 0 50%, #e8dcc4 0 75%, #a85c46 0) 0 0 / 11px 11px;
-}
-
-.ep-swatch--floor[data-suelo='barro'] {
-  --sw: #c47854;
-}
-
 .ep-swatch[aria-pressed='true'] {
-  border-color: var(--ep-sage);
-  box-shadow: inset 0 0 0 2px var(--ep-sage);
+  border-image-source: var(--px-sage);
+  color: #fbf5e6;
 }
 
+.ep-swatch__img {
+  width: 33px;
+  height: 33px;
+  image-rendering: pixelated;
+}
+
+/* El mueble que sale de la balda, bajo el dedo; sobre la habitación se esconde (ya se ve dibujado en su sitio) */
+.ep-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  width: 66px;
+  height: 66px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 6px 0 rgb(30 18 10 / 0.3));
+  pointer-events: none;
+  transition: opacity 0.1s;
+}
+
+.ep-ghost.is-over {
+  opacity: 0;
+}
+
+/* Móvil tumbado: la balda, más baja, para que se vea la habitación */
+@media (max-height: 500px) {
+  .ep-shelf {
+    max-height: 46dvh;
+  }
+
+  .ep-shelf__title,
+  .ep-shelf__hint {
+    display: none;
+  }
+
+  .ep-item {
+    min-height: 74px;
+  }
+
+  .ep-item img {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+/* «En el piso», dentro de la balda al decorar */
+.ep-inroom[hidden] {
+  display: none;
+}
+
+.ep-inroom__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 156px;
+  margin: 0;
+  padding: 2px 2px 8px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* «En el piso» al mirar un piso ajeno: lista de papel plegada */
 .ep-list {
-  padding: 8px 12px;
-  border: 1px dashed var(--ep-line);
-  border-radius: 10px;
+  padding: 2px 6px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
 }
 
 .ep-list summary {
   min-height: 32px;
   font-weight: 600;
+  line-height: 32px;
   cursor: pointer;
 }
 
 .ep-list ul {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin: 6px 0 0;
+  gap: 4px;
+  margin: 4px 0 4px;
   padding: 0;
   list-style: none;
 }
@@ -257,17 +512,17 @@
 
 .ep-list__btn {
   min-height: 40px;
-  padding: 0 10px;
-  border: 1px solid var(--ep-line);
-  border-radius: 8px;
-  background: var(--ep-paper);
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 3px solid #e3cfa6;
+  background: #fffaf0;
   color: var(--ep-ink);
   font: 0.9rem/1 'Lora', Georgia, serif;
   cursor: pointer;
 }
 
 .ep-list__btn[aria-pressed='true'] {
-  border-color: var(--ep-sage);
+  border-bottom-color: var(--ep-sage);
   font-weight: 600;
 }
 
@@ -284,6 +539,7 @@
 }
 
 .panel--edificio {
+  --ep-bleed: 14px;
   display: grid;
   align-content: start;
   gap: 10px;
@@ -523,4 +779,370 @@
   min-height: 1.4em;
   margin: 8px 0 0;
   font-size: 0.92rem;
+}
+
+/* Fachada (§64): el edificio dibujado y, encima, una zona tocable por ventana con su placa */
+.ed-facade {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  margin: 4px auto 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px -14px rgb(44 30 20 / 0.6);
+}
+
+.ed-facade__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.ed-facade__stage {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+/* Al asomarse, las placas se apartan para que se vea la ventana */
+.ed-facade.is-peeking .ed-window__plate,
+.ed-facade.is-peeking .ed-window__badge {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ed-facade__flats {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ed-window {
+  position: absolute;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 2px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ed-window:not(.ed-window--free):hover,
+.ed-window:focus-visible {
+  outline: 2px solid #f6deb0;
+  outline-offset: 1px;
+  background: rgb(255 228 170 / 0.12);
+}
+
+.ed-window:active:not(.ed-window--free) {
+  transform: translateY(1px);
+}
+
+.ed-window--free {
+  cursor: default;
+}
+
+.ed-window__plate {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  max-width: 100%;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgb(251 245 230 / 0.92);
+  color: #2c1e14;
+  font-size: clamp(0.62rem, 2.5vw, 0.78rem);
+  line-height: 1.3;
+  box-shadow: 0 1px 0 rgb(44 30 20 / 0.35);
+  transform: translateY(35%);
+}
+
+.ed-window__plate strong {
+  flex: none;
+  font: 700 1em/1.3 'Cormorant Garamond', Georgia, serif;
+}
+
+.ed-window__plate span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ed-window--mine .ed-window__plate {
+  background: #5c6a48;
+  color: #fbf5e6;
+}
+
+.ed-window--free .ed-window__plate {
+  background: #e6dcc6;
+  color: #5a4634;
+}
+
+.ed-window__badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: #c9a14e;
+  color: #2c1e14;
+  font: 700 0.52rem/1.3 'Lora', Georgia, serif;
+  max-width: 70%;
+  text-align: center;
+}
+
+/* §64: el buzón y los sellos, con los mismos marcos de píxel que los controles del piso (pixelUi.js) */
+.ed-inbox,
+.ed-sellos {
+  padding: 4px 8px 6px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  border-radius: 0;
+  background: none;
+}
+
+.ed-sello {
+  min-height: 48px;
+  padding: 0 10px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  border-radius: 0;
+  background: none;
+  image-rendering: pixelated;
+}
+
+.ed-sello:active {
+  border-image-source: var(--px-pressed);
+}
+
+.ed-sello[aria-pressed='true'] {
+  border-image-source: var(--px-sage);
+  background: none;
+}
+
+/* ── §64: «Dentro de la habitación» (la vista por defecto de un piso) ──
+   El panel ocupa la pantalla y no se desplaza: arriba la barra, en medio la habitación tan grande como quepa (lo que
+   sobra es telón) y abajo la balda al decorar, o los sellos en casa de un vecino. El nombre del piso y el aviso van
+   sobre la habitación. En la vista de ficha, todo sigue como antes (el dibujo arriba y lo demás debajo). */
+.ed-bar__view {
+  margin-left: auto;
+}
+
+.panel--edificio:has(.ed-inside) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  height: min(94dvh, 980px);
+  overflow: hidden;
+  padding: 0;
+}
+
+.panel--edificio:has(.ed-inside) .ed-bar {
+  position: relative;
+  top: 0;
+  margin: 0;
+  padding: 6px 8px;
+  background: #f3ead6;
+  box-shadow: 0 1px 0 rgb(110 78 46 / 0.25);
+}
+
+.ed-inside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* El contenedor del piso (PisoView) estira para que la habitación llene el hueco */
+.ed-inside .ed-piso {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* El nombre del piso, en una etiqueta de papel en la esquina de arriba */
+.ed-inside .ed-head {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  max-width: calc(100% - 16px);
+  box-sizing: border-box;
+  padding: 0 8px 0 2px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  pointer-events: none;
+}
+
+.ed-inside .ed-head .ed-title {
+  font-size: 1.12rem;
+}
+
+.ed-inside .ed-head .ed-sub {
+  font-size: 0.8rem;
+}
+
+.ed-inside .ed-saving {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  z-index: 3;
+  min-height: 0;
+  font-size: 0.8rem;
+}
+
+.ed-inside .ep {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+}
+
+.ed-inside .ep-stage {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  /* piso.js pone encima el telón tramado (backdropImage); estos colores son solo mientras llega */
+  background: #ecdcb9 no-repeat 0 0 / 100% 100%;
+  image-rendering: pixelated;
+}
+
+.ed-inside .ep.is-evening .ep-stage {
+  background-color: #584656;
+}
+
+/* Los botones de las esquinas siguen en las esquinas del escenario, no del dibujo */
+.ed-inside .ep-corner {
+  bottom: 10px;
+}
+
+/* El aviso, sobre la habitación, justo encima de los dos botones de abajo */
+.ep-overlay {
+  display: none;
+}
+
+.ep--inside .ep-overlay {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 66px;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.ep--inside .ep-overlay > * {
+  pointer-events: auto;
+}
+
+.ep--inside .ep-status {
+  min-height: 0;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 0;
+  background: rgb(251 243 223 / 0.88);
+  box-shadow: 0 2px 0 rgb(59 38 24 / 0.25);
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.ep--inside .ep-status:empty {
+  display: none;
+}
+
+.ed-inside .ep-shelf {
+  position: relative;
+  flex: none;
+  width: 100%;
+  max-height: 46%;
+  margin: 0;
+}
+
+/* En casa de un vecino: los sellos, abajo, en una fila que se recorre de lado */
+.ed-inside .ep-list {
+  display: none;
+}
+
+.ed-inside .ed-sellos {
+  flex: none;
+  margin: 0;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
+}
+
+.ed-inside .ed-sellos h3 {
+  font-size: 1.05rem;
+}
+
+.ed-inside .ed-sellos__row {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ed-inside .ed-sello {
+  flex: none;
+}
+
+.ed-inside .ed-sellos__msg {
+  min-height: 1.2em;
+  margin-top: 4px;
+  font-size: 0.82rem;
+}
+
+.ed-inside .ed-note {
+  margin: 60px 16px;
+}
+
+/* Sagas (§64): etiquetas de papel con el nombre de cada set, en una fila que se recorre de lado */
+.ep-sets {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;
+}
+
+.ep-sets[hidden] {
+  display: none;
+}
+
+.ep-set {
+  flex: none;
+  padding: 1px 6px;
+  border: 6px solid transparent;
+  border-image: var(--px-pressed) 6 fill / 6px stretch;
+  background: none;
+  color: var(--ep-ink);
+  font: 600 0.76rem/1.15 'Lora', Georgia, serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ep-set[aria-pressed='true'] {
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  transform: translateY(-2px);
+}
+
+.ep-set:focus-visible {
+  outline: 2px solid #fbf3df;
+  outline-offset: 1px;
 }

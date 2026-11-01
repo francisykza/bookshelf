@@ -3,43 +3,63 @@
 // piso (se decora y se guarda solo) y el de cada vecino (solo se mira, y se le puede dejar un sello). Hace falta la
 // comunidad activada. Se carga bajo demanda: nada de esto pesa en la habitación.
 import { ArrowLeft, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../components/panels/PanelShell';
 import { useCommunity } from '../social/hooks/useCommunity';
 import { SELLOS } from './catalog';
 import { starterRoom } from './demo';
 import './edificio.css';
+import { mountFacade } from './facadeView';
 import { mountPiso } from './piso';
-import { ART_H, ART_W, createRoomRenderer } from './render';
-import { doorLabel, doorsOf, loadEdificio, savePiso, setSello } from './service';
+import { installPixelVars, pixelIconSrc } from './pixelUi';
+import { doorLabel, loadEdificio, savePiso, setSello } from './service';
 
 const SAVE_MS = 900;
+// Cómo se ve un piso: «dentro» de la habitación (a pantalla completa, con la balda o los sellos abajo; por defecto) o
+// como ficha (el dibujo arriba y lo demás debajo). Es una preferencia de este dispositivo.
+const VIEW_KEY = 'bookshelf:edificio:vista';
+const readView = () => {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'ficha' ? 'ficha' : 'dentro';
+  } catch {
+    return 'dentro';
+  }
+};
+const saveView = (v) => {
+  try {
+    localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    // Sin almacenamiento, la vista vale solo mientras está abierto
+  }
+};
 const selloText = (id) => SELLOS.find((s) => s.id === id)?.texto ?? '';
 
-/** Miniaturas de los pisos, de tarde, con un solo dibujante para todas. */
-function useThumbs(vecinos, enabled) {
-  return useMemo(() => {
-    if (!enabled || !vecinos) return {};
-    const renderer = createRoomRenderer();
-    const canvas = document.createElement('canvas');
-    canvas.width = ART_W;
-    canvas.height = ART_H;
-    const ctx = canvas.getContext('2d');
-    const image = ctx.createImageData(ART_W, ART_H);
-    const out = {};
-    for (const v of vecinos) {
-      if (!v.room) continue;
-      renderer.bake(v.room);
-      renderer.draw(ctx, image, { evening: true });
-      out[v.user_id] = canvas.toDataURL();
-    }
-    return out;
-  }, [vecinos, enabled]);
+/** La fachada del edificio (la dibuja facade.js fuera de React); cada ventana ocupada es un botón. */
+function Facade({ vecinos, onOpenPiso }) {
+  const ref = useRef(null);
+  const open = useRef(onOpenPiso);
+  useEffect(() => {
+    open.current = onOpenPiso;
+  }, [onOpenPiso]);
+  useEffect(() => {
+    const view = mountFacade(ref.current, {
+      flats: vecinos.map((v) => ({
+        puerta: v.puerta,
+        room: v.room,
+        mine: v.yo,
+        name: v.yo ? 'Tu piso' : v.alias,
+        label: v.yo ? `Entrar en tu piso, ${doorLabel(v.puerta)}` : `Llamar y entrar en el piso de ${v.alias}, ${doorLabel(v.puerta)}`,
+        onOpen: () => open.current(v.user_id),
+      })),
+    });
+    return () => view.destroy();
+  }, [vecinos]);
+  return <div ref={ref} className="ed-facade-mount" />;
 }
 
 /** El piso montado en un contenedor (lo dibuja el motor de píxeles, fuera de React). */
-function PisoView({ room, editable, label, soundOn, onChange }) {
+function PisoView({ room, editable, label, soundOn, inside, onChange }) {
   const ref = useRef(null);
   const api = useRef(null);
   const changed = useRef(onChange);
@@ -47,7 +67,8 @@ function PisoView({ room, editable, label, soundOn, onChange }) {
     changed.current = onChange;
   }, [onChange]);
   useEffect(() => {
-    const piso = mountPiso(ref.current, { room, editable, label, muted: !soundOn, onChange: (r) => changed.current?.(r) });
+    // En la vista «dentro», tu piso se abre ya decorando, con la balda abajo
+    const piso = mountPiso(ref.current, { room, editable, label, inside, decorate: inside && editable, muted: !soundOn, onChange: (r) => changed.current?.(r) });
     api.current = piso;
     return () => piso.destroy();
     // El piso se monta una vez: los cambios los lleva él (y avisa con onChange)
@@ -56,6 +77,9 @@ function PisoView({ room, editable, label, soundOn, onChange }) {
   useEffect(() => {
     api.current?.setMuted(!soundOn);
   }, [soundOn]);
+  useEffect(() => {
+    api.current?.setInside(inside);
+  }, [inside]);
   return <div ref={ref} className="ed-piso" />;
 }
 
@@ -67,8 +91,13 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const [attempt, setAttempt] = useState(0);
   const [saving, setSaving] = useState('');
   const [selloMsg, setSelloMsg] = useState('');
+  const [view, setView] = useState(readView);
+  const inside = view === 'dentro';
   const pending = useRef(null);
   const timer = useRef(0);
+
+  // Marcos de píxel para los sellos y el buzón (los mismos que los controles del piso)
+  useEffect(() => installPixelVars(), []);
 
   useEffect(() => {
     if (!ready) return undefined;
@@ -99,7 +128,6 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     [],
   );
 
-  const thumbs = useThumbs(data?.vecinos, !pisoId);
   const open = pisoId ? (data?.vecinos.find((v) => v.user_id === pisoId) ?? null) : null;
   const mine = open?.yo;
 
@@ -160,7 +188,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   } else if (open) {
     const label = mine ? `Tu piso, ${doorLabel(open.puerta)}` : `Piso de ${open.alias}, ${doorLabel(open.puerta)}`;
     body = (
-      <>
+      <div className={inside ? 'ed-room ed-inside' : 'ed-room'}>
         <div className="ed-head">
           <ReaderAvatar avatarId={open.avatar_id} alias={open.alias ?? ''} size="list" decorative />
           <div>
@@ -170,7 +198,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : 'Puedes mirar, pero no tocar nada.'}</p>
           </div>
         </div>
-        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} onChange={mine ? onMyChange : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
+        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} onChange={mine ? onMyChange : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
             {saving}
@@ -191,7 +219,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             </p>
           </section>
         )}
-      </>
+      </div>
     );
   } else {
     const inbox = data.vecinos.filter((v) => !v.yo && v.sello_recibido);
@@ -201,29 +229,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
           El edificio del puerto
         </h2>
         <p className="ed-sub">Tu puerta: {doorLabel(data.puerta)}. Toca una puerta para entrar.</p>
-        <ul className="ed-doors">
-          {doorsOf(data.vecinos).map(({ puerta, vecino }) => (
-            <li key={puerta}>
-              {vecino ? (
-                <button type="button" className={`ed-door${vecino.yo ? ' ed-door--mine' : ''}`} onClick={() => onOpenPiso(vecino.user_id)} aria-label={vecino.yo ? `Entrar en tu piso, ${doorLabel(puerta)}` : `Llamar y entrar en el piso de ${vecino.alias}, ${doorLabel(puerta)}`}>
-                  {thumbs[vecino.user_id] ? <img src={thumbs[vecino.user_id]} alt="" width={ART_W} height={ART_H} /> : <span className="ed-door__empty">Sin decorar</span>}
-                  <span className="ed-door__label">
-                    <strong>{doorLabel(puerta)}</strong>
-                    <span>{vecino.yo ? 'Tu piso' : vecino.alias}</span>
-                  </span>
-                </button>
-              ) : (
-                <div className="ed-door ed-door--free">
-                  <span className="ed-door__empty">Puerta libre</span>
-                  <span className="ed-door__label">
-                    <strong>{doorLabel(puerta)}</strong>
-                    <span>Llegará alguien</span>
-                  </span>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+        <Facade vecinos={data.vecinos} onOpenPiso={onOpenPiso} />
         <section className="ed-inbox" aria-labelledby="ed-inbox-title">
           <h3 id="ed-inbox-title">Tu buzón</h3>
           {inbox.length ? (
@@ -253,6 +259,21 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
         ) : (
           <button type="button" className="ed-bar__close" onClick={onClose} aria-label="Cerrar el edificio">
             <X aria-hidden="true" />
+          </button>
+        )}
+        {pisoId && open && (
+          <button
+            type="button"
+            className="px-btn px-btn--icon ed-bar__view"
+            title={inside ? 'Ver como ficha' : 'Entrar en la habitación'}
+            onClick={() => {
+              const next = inside ? 'ficha' : 'dentro';
+              saveView(next);
+              setView(next);
+            }}
+          >
+            <img className="px-icon" src={pixelIconSrc(inside ? 'ficha' : 'dentro')} alt="" width={33} height={33} />
+            <span className="px-sr">{inside ? 'Ver como ficha' : 'Entrar en la habitación'}</span>
           </button>
         )}
       </div>
