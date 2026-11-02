@@ -3,7 +3,8 @@
 // Los legendarios te siguen; los demás se colocan en el piso. Se dibujan con el pintor de pixelfx
 // (src/vendor/pixelfx, MIT) en el mismo tamaño de píxel que la habitación (render.js, S = 18): el personaje mide unos
 // 26 píxeles. Cada uno es draw(p, t, o) con el origen en el suelo, bajo el ser; mira a la derecha (quien lo coloca
-// lo voltea con p.place(x, y, flip)). o: { moving } (si va andando detrás de alguien).
+// lo voltea con p.place(x, y, flip)). o: { moving } (si va andando detrás de alguien), { perch } (posado junto a ti, en
+// el armario, 1.77).
 import { FIRE_RAMP, composite, createFrame, hex, mix, painterFor, sparkle } from '../../vendor/pixelfx/core/index.js';
 
 const H = (s) => hex(s);
@@ -74,11 +75,15 @@ function dragonWing(p, x, y, flap, far) {
 }
 
 export function drawDragon(p, t, o = {}) {
-  const bob = Math.sin(t * 3.2) * 1.6;
-  const lift = 14;
+  // Posado (en el armario): en el suelo, a la altura de la cintura de tu personaje, con las alas a medio abrir y, de
+  // vez en cuando, un batido corto; volando, bate sin parar
+  const perch = !!o.perch && !o.moving;
+  const bob = perch ? 0 : Math.sin(t * 3.2) * 1.6;
+  const lift = perch ? 3 : 14;
   shadow(p, 8, lift);
   const by = -lift - 6 + bob;
-  const flap = Math.floor(((t * (o.moving ? 9 : 6)) % 4 + 4) % 4);
+  const beat = t % 3.4;
+  const flap = perch ? (beat < 0.6 ? Math.floor((beat / 0.6) * 8) % 4 : 1) : Math.floor(((t * (o.moving ? 9 : 6)) % 4 + 4) % 4);
   // Ala del fondo
   dragonWing(p, 1, by + 1, (flap + 1) % 4, true);
   // Cola con su punta de pica, ondulando
@@ -86,7 +91,9 @@ export function drawDragon(p, t, o = {}) {
   let py = by + 3;
   for (let i = 1; i <= 9; i += 1) {
     const x = -7 - i * 1.5;
-    const y = by + 3 + i * 0.7 + Math.sin(t * 4 - i * 0.7) * 1.4 * (i / 9);
+    const wave = Math.sin(t * (perch ? 2 : 4) - i * 0.7) * 1.4 * (i / 9);
+    // Posado, la cola descansa en el suelo
+    const y = perch ? Math.min(-1, by + 3 + i * 0.7 + wave) : by + 3 + i * 0.7 + wave;
     p.beam(px, py, x, y, 2.4 - i * 0.18, H(i < 5 ? DR.r : DR.d));
     px = x;
     py = y;

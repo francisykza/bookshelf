@@ -94,11 +94,11 @@ test('el vestíbulo: encargos en la recepción, la botonera del ascensor y salir
   await expect(hotel.getByRole('region', { name: 'El vestíbulo' })).toHaveCount(0);
   await expect(hotel).toBeVisible();
 
-  // «A la calle» en la barra; después, «Volver en limusina» vuelve al portal
+  // «A la calle» en la barra; después, «Al puerto» vuelve al portal
   await enterLobby(page, hotel);
   await hotel.getByRole('button', { name: 'A la calle' }).click();
   await expect(hotel.locator('canvas.hotel-canvas')).toBeVisible();
-  await hotel.getByRole('button', { name: 'Volver en limusina' }).click();
+  await hotel.getByRole('button', { name: 'Al puerto' }).click();
   await expect(page.getByRole('dialog', { name: 'El edificio del puerto' })).toBeVisible();
   expect(errors).toEqual([]);
 });

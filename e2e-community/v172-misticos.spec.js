@@ -71,12 +71,14 @@ test('en tu piso: colocar un místico y elegir quién te acompaña (se guarda)',
   await mine.locator('.ep-item[data-id="farol-azul"]').click();
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id).layout.items.some((i) => i.id === 'farol-azul'), { timeout: 10000 }).toBe(true);
 
-  // El armario: la fila «Te acompaña» con «Nadie» y el dragón
+  // El armario (1.77): la pestaña «Compañía» con «Sin compañía» y el dragón; se guarda con «Listo»
   await tapActor(page);
-  const pal = mine.getByRole('group', { name: 'Te acompaña' });
-  await expect(pal.getByRole('button')).toHaveText(['Nadie', 'Dragoncillo de escamas rojas']);
+  await mine.getByRole('tab', { name: 'Compañía' }).click();
+  const pal = mine.getByRole('group', { name: 'Compañía' });
+  await expect(pal.getByRole('button')).toHaveText(['Sin compañía', 'Dragoncillo de escamas rojas']);
   await pal.getByRole('button', { name: 'Dragoncillo de escamas rojas' }).click();
   await expect(pal.getByRole('button', { name: 'Dragoncillo de escamas rojas' })).toHaveAttribute('aria-pressed', 'true');
+  await mine.getByRole('button', { name: 'Listo' }).click();
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id).companero).toBe('dragoncillo');
   await shot(page, info, 'v172-misticos-armario');
   expect(errors).toEqual([]);
@@ -97,7 +99,7 @@ test('de visita: el piso del vecino con su compañero detrás', async ({ page },
   expect(errors).toEqual([]);
 });
 
-test('sin ningún místico: ni pestaña en la balda ni fila en el armario', async ({ page }, info) => {
+test('sin ningún místico: ni pestaña en la balda ni compañeros en el armario', async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), '390 (Chromium y WebKit)');
   const mock = seed({ misticos: false });
   const errors = [];
@@ -108,7 +110,9 @@ test('sin ningún místico: ni pestaña en la balda ni fila en el armario', asyn
   await expect(mine.locator('canvas.ep-canvas')).toBeVisible();
   await expect(mine.getByRole('button', { name: 'Místicos' })).toBeHidden();
   await tapActor(page);
+  await mine.getByRole('tab', { name: 'Aspecto' }).click();
   await expect(mine.getByRole('group', { name: 'Piel' })).toBeVisible();
-  await expect(mine.getByRole('group', { name: 'Te acompaña' })).toHaveCount(0);
+  await mine.getByRole('tab', { name: 'Compañía' }).click();
+  await expect(mine.getByRole('group', { name: 'Compañía' }).getByRole('button')).toHaveText(['Sin compañía']);
   expect(errors).toEqual([]);
 });

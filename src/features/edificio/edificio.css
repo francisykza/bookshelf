@@ -1986,178 +1986,6 @@
   font: italic 500 0.86rem/1.2 'Cormorant Garamond', Georgia, serif;
 }
 
-/* El armario es una cabina: tu personaje en grande, con quien te acompaña; al lado, qué cambiar y sus muestras */
-.ep-wardrobe {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  align-items: start;
-  gap: 8px;
-  padding: 4px 0 16px;
-}
-
-.ep-wardrobe[hidden] {
-  display: none;
-}
-
-.ep-cabin {
-  position: relative;
-  display: grid;
-  place-items: end center;
-  height: 176px;
-  box-sizing: border-box;
-  overflow: hidden;
-  border: 6px solid transparent;
-  border-image: var(--px-rimGold) 6 / 6px stretch;
-  /* Al fondo, un espejo de luz cálida; alrededor, la madera oscura de la cabina */
-  background:
-    radial-gradient(ellipse 34% 40% at 50% 46%, #fbf0d4 0 82%, #e8d2a4 83% 100%, transparent 101%),
-    linear-gradient(#4a2e3e, #3a2432);
-  background-origin: padding-box;
-  background-clip: padding-box;
-}
-
-/* Las cortinas a los lados y la barra de arriba, de terciopelo */
-.ep-cabin::before,
-.ep-cabin::after {
-  content: '';
-  position: absolute;
-  top: 10px;
-  bottom: 14px;
-  width: 14px;
-  background: repeating-linear-gradient(90deg, #8e2f3a 0 4px, #6e2230 4px 6px, #a8434c 6px 9px);
-  pointer-events: none;
-}
-
-.ep-cabin::before {
-  left: 0;
-}
-
-.ep-cabin::after {
-  right: 0;
-}
-
-.ep-cabin__curtain {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 12px;
-  background: repeating-linear-gradient(90deg, #a8434c 0 5px, #8e2f3a 5px 8px), #8e2f3a;
-  box-shadow: 0 3px 0 #b98b2f;
-}
-
-.ep-cabin__me {
-  position: relative;
-  z-index: 1;
-  width: 96px;
-  height: 96px;
-  margin-bottom: 10px;
-  image-rendering: pixelated;
-}
-
-.ep-cabin__pal {
-  position: absolute;
-  z-index: 2;
-  top: 22px;
-  right: 12px;
-  width: 48px;
-  height: 48px;
-  image-rendering: pixelated;
-  filter: drop-shadow(0 2px 0 rgb(30 18 10 / 0.45));
-}
-
-.ep-cabin__rug {
-  position: absolute;
-  left: 18%;
-  right: 18%;
-  bottom: 6px;
-  height: 10px;
-  background: linear-gradient(#c8605a 0 3px, #a8434c 3px 7px, #6e2230 7px);
-}
-
-.ep-wardrobe__side {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.ep-wardrobe__tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-}
-
-/* Las clases de cosas: etiquetas de papel; la elegida, levantada */
-.ep-wtab {
-  min-height: 34px;
-  padding: 0 6px;
-  border: 6px solid transparent;
-  border-image: var(--px-pressed) 6 fill / 6px stretch;
-  background: none;
-  color: var(--ep-ink);
-  font: 600 0.74rem/1 'Lora', Georgia, serif;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.ep-wtab[aria-selected='true'] {
-  border-image-source: var(--px-sage);
-  color: #fbf5e6;
-  transform: translateY(-2px);
-}
-
-.ep-wtab:focus-visible {
-  outline: 2px solid #fbf3df;
-  outline-offset: 1px;
-}
-
-/* Sus muestras, en una cuadrícula que baja (sin cortes a los lados) */
-.ep-wardrobe__opts {
-  max-height: 136px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: #c8946a transparent;
-}
-
-.ep-wardrobe .ep-swatches {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-  gap: 3px;
-  padding: 0;
-}
-
-.ep-wardrobe .ep-swatch {
-  min-width: 0;
-  font-size: 0.7rem;
-}
-
-.ep-wardrobe .ep-swatch span {
-  max-width: 100%;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  text-align: center;
-}
-
-.ep-wardrobe .ep-swatch__img {
-  width: 40px;
-  height: 40px;
-}
-
-/* En el móvil tumbado, la cabina más baja */
-@media (max-height: 500px) {
-  .ep-cabin {
-    height: 132px;
-  }
-
-  .ep-cabin__me {
-    width: 72px;
-    height: 72px;
-  }
-
-  .ep-wardrobe__opts {
-    max-height: 96px;
-  }
-}
-
 /* La mesita del vecino, como la balda: un mueble de madera con pestañas de papel; las frases, en dos columnas que se
    leen enteras (antes se cortaban a los lados) */
 .ed-inside .ed-desk {
@@ -2210,26 +2038,240 @@
   font: italic 500 0.9rem/1.25 'Cormorant Garamond', Georgia, serif;
 }
 
-/* Quien te acompaña flota un poco en la cabina (quieto si se pide menos movimiento) */
-.ep-cabin__pal {
-  animation: ep-pal-float 1.8s steps(2, jump-none) infinite;
-}
-
-@keyframes ep-pal-float {
-  50% {
-    transform: translateY(-3px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ep-cabin__pal {
-    animation: none;
-  }
-}
-
 /* La limusina en el portal del edificio: su placa, negra con letras doradas, bajo el coche */
 .ed-limo .ed-window__plate {
   background: #1c1a24;
   color: #f0c468;
   transform: translateY(70%);
+}
+
+/* ── 1.77 · El armario, un modo propio de tu piso (maqueta de Francisco). Arriba, el piso de verdad encuadrado en tu
+   personaje y en quien te acompaña (piso.js, frameDressing); abajo, Ropa, Aspecto y Compañía, y «Listo». La barra del
+   panel dice «← Al piso» y «Armario». ── */
+.ed-room.is-dressing .ed-head,
+.ed-room.is-dressing .ed-saving {
+  display: none;
+}
+
+.ed-bar:has(.ed-bar__title) {
+  position: sticky;
+}
+
+.ed-bar__title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  color: var(--ep-ink, #3b2618);
+  font:
+    600 1.2rem/1 'Lora',
+    Georgia,
+    serif;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.ep.is-dressing {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: var(--ep-dress-h, 640px);
+  min-height: 0;
+}
+
+.ep.is-dressing .ep-stage {
+  flex: 0 0 45%;
+  display: block;
+  position: relative;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  background: #ecdcb9;
+}
+
+.ep.is-dressing .ep-canvas {
+  position: absolute;
+  max-width: none;
+  cursor: default;
+}
+
+.ep.is-dressing .ep-corner,
+.ep.is-dressing .ep-today,
+.ep.is-dressing .ep-tools,
+.ep.is-dressing .ep-shelf,
+.ep.is-dressing .ep-action {
+  display: none !important;
+}
+
+/* El aviso sigue para los lectores de pantalla, sin tapar el piso */
+.ep.is-dressing .ep-overlay,
+.ep.is-dressing > .ep-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* La parte de abajo: la madera de la balda, con sus pestañas de papel, lo que se elige y «Listo» al pie */
+.ep-dress {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  border: 6px solid transparent;
+  border-image: var(--px-wood) 6 fill / 6px stretch;
+  color: #fbf3df;
+}
+
+.ep-dress[hidden] {
+  display: none;
+}
+
+.ep-dress__tabs {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.ep-dress__tab {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 6px solid transparent;
+  border-image: var(--px-pressed) 6 fill / 6px stretch;
+  background: none;
+  color: var(--ep-ink);
+  font:
+    600 0.95rem/1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+
+.ep-dress__tab[aria-selected='false'] {
+  filter: sepia(0.45) brightness(0.8);
+}
+
+.ep-dress__tab[aria-selected='true'] {
+  border-image-source: var(--px-paper);
+  transform: translateY(-2px);
+  filter: drop-shadow(0 2px 0 rgb(30 18 10 / 0.35));
+}
+
+.ep-dress__tab:focus-visible,
+.ep-pal:focus-visible {
+  outline: 3px solid var(--ep-brass);
+  outline-offset: 1px;
+}
+
+.ep-dress__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #c8946a transparent;
+}
+
+.ep-dress__row + .ep-dress__row {
+  margin-top: 6px;
+}
+
+.ep-dress__label {
+  margin: 0 0 2px 2px;
+  color: #fbf3df;
+  font: italic 600 0.95rem/1.2 'Cormorant Garamond', Georgia, serif;
+}
+
+.ep-dress .ep-swatches {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* Compañía: dos tarjetas por fila, el ser en grande y su nombre entero debajo (sin partir palabras) */
+.ep-pals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 4px;
+}
+
+.ep-pal {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 6px 8px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  background: none;
+  color: var(--ep-ink);
+  font:
+    600 0.92rem/1.2 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ep-pal__img {
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+}
+
+.ep-pal__name {
+  max-width: 100%;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+
+/* La elegida: borde verde oliva y su marca en la esquina */
+.ep-pal[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 3px #6b7a2e,
+    inset 0 0 0 3px #6b7a2e;
+}
+
+.ep-pal__check {
+  display: none;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 26px;
+  height: 26px;
+  background: #6b7a2e;
+  box-shadow: 0 0 0 2px #3b2618;
+}
+
+.ep-pal__check .px-icon {
+  width: 22px;
+  height: 22px;
+  margin: 2px;
+  filter: brightness(0) invert(96%);
+}
+
+.ep-pal[aria-pressed='true'] .ep-pal__check {
+  display: block;
+}
+
+.ep-dress__ready {
+  flex: none;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
 }

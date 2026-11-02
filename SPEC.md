@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.76.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.77.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4684,3 +4684,54 @@ vuelve a cobrar ni a sortear. Un legendario no se coloca (te acompaña).
   reparto calculado, salida del encuadre píxel a píxel, elección del gato y el editor con esa pieza, movimiento
   reducido) y `v176-rasgado.spec.js` (graba los tres gestos a 360), con `sobreShop.js` común; v167 y v173 ajustadas.
   Pasan en Chromium 360/390/1440 y WebKit 390 (emulación; nada probado en un iPhone real).
+
+## 77. La fachada del Gran Hotel con su Directorio y el armario con «Compañía» (1.77.0)
+
+Francisco pasó una maqueta de dos paneles con dos textos: a la izquierda, la fachada del hotel con la planta
+«Café-biblioteca» elegida; a la derecha, el armario de «Tu piso» con la pestaña «Compañía» y el dragón rojo. Se toma de
+la maqueta la composición; el dibujo es el de la app (`raster.js`, `pixelUi.js`, los místicos de pixelfx).
+
+### 77.1 La fachada del hotel
+
+- **Barra compacta**: «← Al puerto» (antes «Volver en limusina»; vuelve al portal) y, a la derecha, «Directorio».
+- **El hotel entero** se centra y cabe de alto entre la barra y una **cartela crema al pie**: la aguja, el letrero
+  «Gran Hotel del Puerto», la marquesina y la limusina se ven a la vez. `hotelArt.js` devuelve `entryY` (hasta dónde
+  baja la entrada, limusina incluida) y `GranHotel.jsx` mide el alto disponible y el de la cartela (`--gh-h`,
+  `--gh-foot`, `--gh-entry`). La limusina lleva un filo de luz en su perfil (`bodyId` de `drawLimo`) para leerse sobre
+  el empedrado de noche, y la gente que la tapaba se ha apartado.
+- **La planta elegida**: un filete fino de latón por fuera de su banda y un rombo de latón unido a su izquierda por una
+  raya, dibujados en el propio lienzo (`brass` en `hotelView.js`), así van con la planta a cualquier tamaño de pantalla.
+  Con movimiento reducido, la elección se entiende por el filete, el rombo y la cartela.
+- **La cartela** sustituye a la nota flotante: el nombre corto de la planta, «Próxima apertura» (o «Abierto») entre dos
+  filetes y su lema; sin elegir, «Toca una planta». Con una planta elegida, Escape la deja sin elegir y no cierra el
+  hotel.
+- **Directorio**: una lista HTML (un diálogo no modal) con las siete plantas de arriba abajo y su estado; elegir una ahí
+  es exactamente lo mismo que tocarla (mismos píxeles, misma cartela), el vestíbulo se entra (es la única abierta) y
+  Escape lo cierra.
+- La animación solo corre mientras la fachada se ve (IntersectionObserver y `visibilitychange`).
+
+### 77.2 El armario, un modo propio del piso
+
+- Ya no va dentro de la balda: **se abre tocando a tu personaje** o la pestaña «Armario» de la balda. La barra del panel
+  dice **«← Al piso»** y **«Armario»**; la cabecera del piso se oculta.
+- **Arriba, tu piso de verdad** (con sus muebles y su profundidad: lo que está delante tapa), encuadrado en tu personaje
+  con sitio a su derecha para quien te acompaña (`frameDressing`). Si junto a él no cabe, el personaje se pone en el
+  hueco libre más cercano. Quien te acompaña se posa a su lado, mirándolo.
+- **Abajo, tres pestañas**: **Ropa** (jersey, pantalón, gafas y complemento), **Aspecto** (piel, pelo y color del pelo)
+  y **Compañía**: dos tarjetas por fila, cada una con el ser en grande y su nombre entero debajo (sin partir palabras),
+  «Sin compañía» la primera; la elegida, con **borde verde oliva y una marca en la esquina**. Si hay más, se desplaza.
+  «Listo», a todo lo ancho al pie.
+- **Vista previa**: lo que se toca se ve al momento en el piso, pero **solo se guarda con «Listo»** (por el flujo de
+  siempre: `onAvatarChange`, `onCompanionChange`; la misión «armario» cuenta al darle). «← Al piso» o Escape lo dejan
+  todo como estaba. Al cerrar, el piso vuelve a como estaba (decorando o no). El armario se abre siempre en «Ropa».
+- **El dragón, posado** (`perch` en `drawDragon`): en el suelo, le llega a la cintura al personaje, con cabeza, alas y
+  cola reconocibles; alas a medio abrir y, cada 3,4 s, un batido corto. El zorro mueve la cola como siempre. Con
+  movimiento reducido, quietos en una postura expresiva.
+- Se retira la cabina de la 1.74.
+
+- **Pruebas**: `e2e-community/v177-hotel-directorio.spec.js` (360 y 390: todo el hotel sobre la cartela; tocar y elegir
+  en el Directorio dan los mismos píxeles; Escape; el vestíbulo se entra) y `v177-armario.spec.js` (390: el dragón
+  marcado y a tu lado, dragón → zorro → «Sin compañía» → volver deja lo de antes, Escape, el zorro con «Listo» se guarda y
+  sigue al volver a entrar; 360 con movimiento reducido: tarjetas legibles, «Listo» a mano y el dibujo quieto); v169,
+  v170, v172, v174 y v175 ajustadas. Pasan en Chromium (emulación; WebKit no se pasó en este bloque y nada se ha probado
+  en un iPhone real).

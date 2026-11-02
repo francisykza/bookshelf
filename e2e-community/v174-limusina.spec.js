@@ -78,10 +78,11 @@ test('la limusina del portal lleva al Gran Hotel, y Atrás vuelve', async ({ pag
   await page.keyboard.press('Enter');
   const card = hotel.getByRole('region', { name: 'El café-biblioteca' });
   await expect(card).toBeVisible();
-  await expect(card.getByText('Abre pronto')).toBeVisible();
+  // 1.77: la cartela del pie dice la planta y «Próxima apertura»
+  await expect(card.getByText('Próxima apertura')).toBeVisible();
   await page.mouse.move(0, 0);
   await shot(page, info, 'v174-hotel-planta');
-  await card.getByRole('button', { name: 'Cerrar' }).click();
+  await page.keyboard.press('Escape');
   await expect(card).toHaveCount(0);
   // Tocar en el dibujo: el vestíbulo, a la altura de la marquesina
   const at = await page.evaluate(() => {
@@ -95,8 +96,8 @@ test('la limusina del portal lleva al Gran Hotel, y Atrás vuelve', async ({ pag
   await page.keyboard.press('Escape');
   await expect(hotel.getByRole('region', { name: 'El vestíbulo' })).toHaveCount(0);
 
-  // Volver en limusina: al portal
-  await hotel.getByRole('button', { name: 'Volver en limusina' }).click();
+  // «Al puerto» (1.77; antes «Volver en limusina»): al portal
+  await hotel.getByRole('button', { name: 'Al puerto' }).click();
   await expect(page.getByRole('dialog', { name: 'El edificio del puerto' }).getByRole('button', { name: 'Coger la limusina al Gran Hotel' })).toBeVisible();
   expect(errors).toEqual([]);
 });

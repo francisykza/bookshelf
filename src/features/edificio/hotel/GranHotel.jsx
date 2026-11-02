@@ -4,8 +4,12 @@
 // planta a planta (Francisco: «el gran hotel tiene demasiados menús y se empequeñece»: sin fila de botones; para el
 // teclado, cada planta tiene un botón invisible sobre el dibujo que se ve al enfocarlo). Aún no se entra en ninguna
 // sala salvo el vestíbulo (1.75, Vestibulo.jsx): tocarlo es entrar; las demás plantas dicen qué habrá y «Abre pronto».
-import { useEffect, useRef, useState } from 'react';
-import { mountHotel, ZONES } from './hotelView';
+// 1.77 (maqueta de Francisco): el hotel entero cabe en la pantalla, de la aguja a la limusina, por encima de una cartela
+// crema al pie que dice qué es la planta elegida («Café-biblioteca», «Próxima apertura» y su lema); la planta elegida
+// lleva un filete de latón con un rombo a su izquierda (hotelView.js). «Directorio», en la barra, abre la lista de las
+// plantas con su estado: elegir una ahí es lo mismo que tocarla en la fachada.
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { FLOOR_ORDER, mountHotel, ZONES } from './hotelView';
 import { mountRide } from './ride';
 import { Vestibulo } from './Vestibulo';
 import './hotel.css';
@@ -43,9 +47,44 @@ function LimoRide({ onDone }) {
   );
 }
 
-/** La fachada viva del hotel; al tocar una planta, una nota pequeña arriba dice qué habrá. */
-function HotelFacade({ onEnter }) {
+/** El Directorio: las plantas reales de arriba abajo, con su estado. Elegir una es lo mismo que tocarla en la fachada. */
+function Directory({ zone, onPick, onClose }) {
+  const first = useRef(null);
+  useEffect(() => {
+    first.current?.focus();
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <section className="gh-dir" role="dialog" aria-modal="false" aria-labelledby="gh-dir-title" data-escape-local="open">
+      <h3 id="gh-dir-title">Directorio</h3>
+      <ul>
+        {FLOOR_ORDER.map((id, k) => (
+          <li key={id}>
+            <button type="button" ref={k === 0 ? first : null} className="gh-dir__floor" aria-current={zone === id ? 'true' : undefined} onClick={() => onPick(id)}>
+              <span className="gh-dir__name">{ZONES[id].corto}</span>
+              <span className={ZONES[id].abierta ? 'gh-dir__state is-open' : 'gh-dir__state'}>{ZONES[id].abierta ? 'Abierto · entrar' : 'Próxima apertura'}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="gh-dir__close" onClick={onClose}>
+        Cerrar
+      </button>
+    </section>
+  );
+}
+
+/** La fachada viva del hotel; la planta elegida se dice en la cartela del pie. */
+function HotelFacade({ onEnter, directory, onDirectory }) {
+  const box = useRef(null);
   const host = useRef(null);
+  const foot = useRef(null);
   const view = useRef(null);
   const [zones, setZones] = useState([]);
   const [zone, setZone] = useState(null);
@@ -53,32 +92,56 @@ function HotelFacade({ onEnter }) {
   useEffect(() => {
     enter.current = onEnter;
   }, [onEnter]);
+  // Una planta abierta (el vestíbulo) se entra; las demás se señalan y se dicen en la cartela
+  const choose = useRef((id) => {
+    if (id && ZONES[id].abierta) return enter.current(id);
+    view.current?.select(id);
+    setZone(id);
+  });
   useEffect(() => {
-    const v = mountHotel(host.current, { still: reducedMotion(), t0: 3, onPick: (id) => (id === 'vestibulo' ? enter.current(id) : setZone(id)) });
+    const v = mountHotel(host.current, { still: reducedMotion(), t0: 3, onPick: (id) => choose.current(id) });
     view.current = v;
-    // Que quepa entero de alto (sin pasar de la pantalla) y, si no, de borde a borde
     host.current.style.setProperty('--gh-ratio', String(v.canvas.width / v.canvas.height));
+    box.current.style.setProperty('--gh-entry', String(v.entry));
     setZones(v.zones);
     if (import.meta.env.DEV) window.__granHotel = v;
     return () => v.destroy();
   }, []);
-  const pick = (id) => {
-    if (id === 'vestibulo') return onEnter(id);
-    view.current?.select(id);
-    setZone(id);
-  };
+  // El alto que hay (de la barra al pie de la pantalla) y el de la cartela: el hotel cabe entre los dos
+  useLayoutEffect(() => {
+    const fit = () => {
+      const el = box.current;
+      if (!el) return;
+      el.style.setProperty('--gh-h', `${Math.max(320, window.innerHeight - el.getBoundingClientRect().top)}px`);
+      el.style.setProperty('--gh-foot', `${foot.current?.offsetHeight ?? 0}px`);
+    };
+    fit();
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(fit) : null;
+    if (foot.current) ro?.observe(foot.current);
+    window.addEventListener('resize', fit);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', fit);
+    };
+  }, []);
+  const pick = (id) => choose.current(id);
   useEffect(() => {
     if (!zone) return undefined;
     const onKey = (e) => {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' || directory) return;
       view.current?.select(null);
       setZone(null);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [zone]);
+  }, [zone, directory]);
+  const closeDirectory = () => {
+    onDirectory(false);
+    document.querySelector('.ed-bar__dir')?.focus();
+  };
+  const info = zone ? ZONES[zone] : null;
   return (
-    <div className="gh">
+    <div className="gh" ref={box}>
       <div className="gh-art" ref={host}>
         <ul className="gh-zones" aria-label="Plantas del hotel">
           {zones.map((z) => (
@@ -95,31 +158,45 @@ function HotelFacade({ onEnter }) {
             </li>
           ))}
         </ul>
-        {zone && (
-          // Con la nota abierta, Escape la cierra a ella y no al panel (PanelShell lo respeta)
-          <section className="gh-card" aria-live="polite" aria-label={ZONES[zone].nombre} data-escape-local="open">
-            <h3>{ZONES[zone].nombre}</h3>
-            <p>{ZONES[zone].texto}</p>
-            <span className="gh-card__soon">Abre pronto</span>
-            <button type="button" className="gh-card__close" onClick={() => pick(null)} aria-label="Cerrar">
-              ×
-            </button>
-          </section>
-        )}
       </div>
+      {/* La cartela del pie: con una planta elegida, Escape la deja sin elegir y no cierra el hotel (PanelShell lo respeta) */}
+      <section className="gh-plaque" ref={foot} aria-live="polite" aria-label={info ? info.nombre : 'El Gran Hotel del Puerto'} data-escape-local={zone ? 'open' : undefined}>
+        <h3>{info ? info.corto : 'Gran Hotel del Puerto'}</h3>
+        <p className="gh-plaque__state">
+          <i aria-hidden="true" />
+          {info ? (info.abierta ? 'Abierto' : 'Próxima apertura') : 'Toca una planta'}
+          <i aria-hidden="true" />
+        </p>
+        <p className="gh-plaque__text">{info ? info.lema : 'O abre el Directorio para ver qué hay en cada una.'}</p>
+      </section>
+      {directory && (
+        <Directory
+          zone={zone}
+          onClose={closeDirectory}
+          onPick={(id) => {
+            onDirectory(false);
+            pick(id);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-/** `room`: la sala en la que estás (null, la fachada); `onRoom(sala)` entra en ella o sale a la calle. */
-export function GranHotel({ room = null, onRoom = () => {} }) {
+/**
+ * `room`: la sala en la que estás (null, la fachada); `onRoom(sala)` entra en ella o sale a la calle. `directory`:
+ * el Directorio abierto (lo abre la barra del panel); `onDirectory(abierto)`.
+ */
+export function GranHotel({ room = null, onRoom = () => {}, directory = false, onDirectory = () => {} }) {
   const [riding, setRiding] = useState(() => !reducedMotion());
+  // Abrir el Directorio durante el viaje es llegar ya
+  if (directory && riding) setRiding(false);
   return (
     <div className="gh-wrap">
       <h2 className="px-sr" id="ed-title">
         El Gran Hotel del Puerto
       </h2>
-      {riding ? <LimoRide onDone={() => setRiding(false)} /> : room === 'vestibulo' ? <Vestibulo onStreet={() => onRoom(null)} /> : <HotelFacade onEnter={onRoom} />}
+      {riding ? <LimoRide onDone={() => setRiding(false)} /> : room === 'vestibulo' ? <Vestibulo onStreet={() => onRoom(null)} /> : <HotelFacade onEnter={onRoom} directory={directory} onDirectory={onDirectory} />}
     </div>
   );
 }

@@ -6,7 +6,7 @@
 // con gente. Delante, el agua refleja las luces. `renderHotel` hace el dibujo quieto y devuelve lo que la vista
 // (hotelView.js) anima encima: ventanas, aguja, bombillas, neón, cielo, agua, gente y las zonas que se tocan.
 import { createRaster, hash, noise, rgb } from '../../minigames/libreria-puerto/raster.js';
-import { drawLimo } from '../limo.js';
+import { drawLimo, LIMO_D, LIMO_L } from '../limo.js';
 
 const S = 6;
 const YAW = 0.3;
@@ -15,6 +15,7 @@ const GLOW = 0x8000;
 const TAG_WIN = 0x1000; // + número de ventana encendida
 const TAG_SPIRE = 0x0f01;
 const TAG_BULB = 0x0f02;
+const TAG_LIMO = 0x0f03; // la carrocería de la limusina, para perfilarla
 const TD = 6; // fondo de la torre
 const QUAY = TD + 4.6; // donde acaba la plaza y empieza el agua
 const SPIRE = 53;
@@ -303,8 +304,8 @@ export function renderHotel() {
   }
   for (const x of [0.6, 8.5]) r.box(x, TD + 3.0, 0, x + 1.0, TD + 3.35, 0.38, [104, 72, 52], { grain: 0, step: 0.04 });
   const crowd = [
-    [3.0, TD + 2.6],
-    [3.35, TD + 2.85],
+    [2.5, TD + 2.5],
+    [2.85, TD + 2.7],
     [6.6, TD + 2.4],
     [6.95, TD + 2.55],
     [1.0, TD + 3.6],
@@ -312,7 +313,7 @@ export function renderHotel() {
     [-1.5, TD + 3.0],
     [11.3, TD + 2.9],
     [11.6, TD + 3.1],
-    [2.2, TD + 4.1],
+    [1.4, TD + 4.3],
     [8.3, TD + 4.0],
     [-3.2, TD + 4.0],
     [13.4, TD + 4.2],
@@ -348,7 +349,13 @@ export function renderHotel() {
   // Bolardos del muelle
   for (const x of [-1, 3, 7, 11]) r.box(x, QUAY - 0.3, 0, x + 0.3, QUAY, 0.4, IRON, { grain: 0, step: 0.03 });
   // La limusina negra que te ha traído (1.74, §74), esperando delante de la alfombra roja
-  drawLimo(r, 3.35, TD + 3.2, { glowId: GLOW });
+  drawLimo(r, 3.35, TD + 3.2, { glowId: GLOW, bodyId: TAG_LIMO });
+  r.setId(0);
+  // Un charco de luz cálida a su alrededor, para que el coche negro se lea sobre el empedrado
+  light(5, TD + 4.4, 0.1, 30, [255, 214, 160]);
+  light(5, TD + 3.6, 1.2, 22, [255, 226, 190]);
+  // Hasta dónde baja la entrada (la limusina incluida): por encima de esa línea va todo lo que tiene que verse
+  const entryY = Math.max(...[3.35, 3.35 + LIMO_L].flatMap((x) => [TD + 3.2, TD + 3.2 + LIMO_D].map((y) => r.project(x, y, 0).sy))) + 3;
 
   r.applyShadows();
   r.bakeOcclusion();
@@ -458,6 +465,12 @@ export function renderHotel() {
     const G = (p >> 8) & 255;
     const B = (p >> 16) & 255;
     r.pix[i] = rgb(R * (0.42 + Math.min(0.75, g[0] * 0.75)), G * (0.44 + Math.min(0.62, g[1] * 0.62)), B * (0.7 + Math.min(0.3, g[2] * 0.3)));
+  }
+  // La limusina, negra sobre el empedrado de noche: un filo de luz de la marquesina en su perfil de arriba y de los lados
+  for (let i = W; i < r.pix.length - W; i += 1) {
+    if (r.ids[i] !== TAG_LIMO) continue;
+    if (r.ids[i - W] !== TAG_LIMO) r.pix[i] = rgb(214, 196, 178);
+    else if (r.ids[i - 1] !== TAG_LIMO || r.ids[i + 1] !== TAG_LIMO) r.pix[i] = rgb(120, 110, 118);
   }
 
   // Reflejos en el agua: lo de arriba, al revés, ondulado y oscuro; las luces, en estelas verticales
@@ -603,5 +616,5 @@ export function renderHotel() {
   });
   const walk = [r.project(-4, TD + 4.25, 0), r.project(14, TD + 4.25, 0)].map((p) => ({ x: p.sx, y: p.sy }));
 
-  return { W, H, pix: r.pix.slice(), sky, water, windows, spire, bulbs, neonPink, beamFrom: r.project(5, 3, 29 + U), shoreY, zones: ZONES.map(({ id, label }) => ({ id, label })), zoneMap, people, walk };
+  return { W, H, pix: r.pix.slice(), sky, water, windows, spire, bulbs, neonPink, beamFrom: r.project(5, 3, 29 + U), shoreY, entryY, zones: ZONES.map(({ id, label }) => ({ id, label })), zoneMap, people, walk };
 }

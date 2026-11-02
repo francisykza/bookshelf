@@ -79,7 +79,7 @@ const nameOf = (item) => catalogItem(item.id).nombre;
  * `placeId` (1.76): un mueble recién sacado de un sobre; el piso se abre decorando con él ya puesto y elegido, para
  * arrastrarlo a su sitio. «Guardar» lo devuelve al inventario y el piso queda como estaba.
  */
-export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null, companion = null, onCompanionChange = () => {}, placeId = null } = {}) {
+export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null, companion = null, onCompanionChange = () => {}, onDressing = () => {}, placeId = null } = {}) {
   const sfx = createSfx({ muted });
   const renderer = createRoomRenderer();
   let room = initial;
@@ -171,8 +171,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   const list = el('ul', { class: 'ep-inroom__list' });
   const listSummary = el('summary', {});
   const listBox = editable ? el('div', { class: 'ep-inroom', hidden: true }, list) : el('details', { class: 'ep-list' }, listSummary, list);
-  // El armario del personaje: una fila por cosa que se cambia, con su muestra dibujada como quedaría
-  const wardrobe = el('div', { class: 'ep-wardrobe', hidden: true });
+  // La pestaña del armario en la balda (lo abre: el armario es un modo propio del piso, 1.77)
   const outfitTab = el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33 });
   const CATS = [...CATEGORIES, { id: OUTFIT, nombre: 'Tu personaje' }, { id: HOUSE, nombre: 'Paredes y suelo' }, { id: INROOM, nombre: 'En el piso' }];
   // Cada pestaña lleva el dibujo de un mueble de su tipo; la de paredes y suelo, una muestra de los de tu piso
@@ -192,6 +191,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       const img = c.id === HOUSE ? houseTab : c.id === OUTFIT ? outfitTab : c.id === INROOM ? pixelIcon('lista') : el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33, src: renderThumb(TAB_ICON[c.id], 0, 33).toDataURL() });
       const b = el('button', { type: 'button', class: 'ep-chip', 'data-cat': c.id, 'aria-pressed': String(c.id === category), 'aria-label': c.nombre, title: c.nombre }, img, el('span', { class: 'ep-chip__name', 'aria-hidden': 'true', text: TAB_SHORT[c.id] ?? c.nombre }));
       b.addEventListener('click', () => {
+        if (c.id === OUTFIT) return openWardrobe();
         category = c.id;
         for (const x of catRow.children) x.setAttribute('aria-pressed', String(x.dataset.cat === category));
         fillGrid();
@@ -218,7 +218,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       b.addEventListener('click', () => commit(setFloor(room, s.id), `Suelo: ${s.nombre.toLowerCase()}.`));
       floorRow.append(b);
     }
-    panel.append(el('div', { class: 'ep-shelf__head' }, catRow, catTitle), el('div', { class: 'ep-shelf__board' }, setRow, grid, house, wardrobe, listBox), hint);
+    panel.append(el('div', { class: 'ep-shelf__head' }, catRow, catTitle), el('div', { class: 'ep-shelf__board' }, setRow, grid, house, listBox), hint);
     root.append(panel, actionRow);
     // Fuera del panel: un antepasado con transform haría que «fixed» no siguiera al dedo
     document.body.append(ghost);
@@ -231,19 +231,16 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   function fillGrid() {
     const isHouse = category === HOUSE;
     const isList = category === INROOM;
-    const isOutfit = category === OUTFIT;
     const set = category === SAGAS ? SETS.find((x) => x.id === sagaSet) : null;
     catTitle.textContent = isList ? `En el piso (${room.items.length})` : set ? set.nombre : CATS.find((c) => c.id === category).nombre;
     hint.textContent = set ? set.guino : HINT;
     setRow.hidden = !set;
     house.hidden = !isHouse;
-    wardrobe.hidden = !isOutfit;
     listBox.hidden = !isList;
-    grid.hidden = isHouse || isList || isOutfit;
-    hint.hidden = isHouse || isList || isOutfit;
+    grid.hidden = isHouse || isList;
+    hint.hidden = isHouse || isList;
     grid.replaceChildren();
-    if (isOutfit) fillWardrobe();
-    if (isHouse || isList || isOutfit) return;
+    if (isHouse || isList) return;
     for (const cat of CATALOG.filter((c) => c.cat === category && (!set || c.set === set.id))) {
       // Lo que no tienes no está en tu balda (llegará con la tienda)
       if (ownedCopies(inv, cat.id) === 0 || cat.compania) continue;
@@ -288,33 +285,31 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     return actorThumbs.get(key);
   }
 
-  // La cabina (1.74): tu personaje en grande, con quien te acompaña; al lado, una pestaña por cosa que se cambia
-  const PAL_TAB = 'acompana';
-  let wardrobeTab = null;
+  // El armario (1.77, maqueta de Francisco): un modo propio del piso. Arriba, tu piso de verdad encuadrado en tu
+  // personaje, con sitio a un lado para quien te acompaña; abajo, tres pestañas (Ropa, Aspecto y Compañía). Lo que se
+  // toca se ve al momento en el piso, pero solo se guarda con «Listo»; volver antes deja lo de antes. La barra del
+  // panel («← Al piso» y «Armario») la pone EdificioPanel al avisarle con onDressing.
+  const ROPA = ['jersey', 'pantalon', 'gafas', 'complemento'];
+  const ASPECTO = ['piel', 'pelo', 'colorPelo'];
+  const WTABS = [
+    { id: 'ropa', nombre: 'Ropa' },
+    { id: 'aspecto', nombre: 'Aspecto' },
+    { id: 'compania', nombre: 'Compañía' },
+  ];
+  let wardrobeTab = 'ropa';
+  let dressing = null; // con el armario abierto: { look, pal, decorating } de antes de abrirlo
   const myCompanions = () => COMPANEROS.filter((c) => ownedCopies(inv, c.id) > 0);
+  const palThumbs = new Map();
+  const palThumb = (id) => {
+    if (!palThumbs.has(id)) palThumbs.set(id, misticoThumb(id, 96).toDataURL());
+    return palThumbs.get(id);
+  };
+  const dressTabs = el('div', { class: 'ep-dress__tabs', role: 'tablist', 'aria-label': 'Armario' });
+  const dressBody = el('div', { class: 'ep-dress__body', id: 'ep-dress-body', role: 'tabpanel' });
+  const readyBtn = pxButton('Listo', 'listo', { cls: 'px-btn--sage ep-dress__ready' });
+  const dock = el('section', { class: 'ep-dress', hidden: true, 'aria-label': 'Armario' }, dressTabs, dressBody, readyBtn);
 
-  function wardrobeTabs() {
-    const tabs = WARDROBE.map((row) => ({ id: row.key, nombre: row.nombre, corto: row.corto ?? row.nombre }));
-    return editable && myCompanions().length ? [{ id: PAL_TAB, nombre: 'Te acompaña', corto: 'Te acompaña' }, ...tabs] : tabs;
-  }
-
-  function cabin() {
-    const figure = el('img', { class: 'ep-cabin__me', alt: '', width: 96, height: 96, src: renderActorThumb(look, { frame: 'all', size: 96 }).toDataURL() });
-    const buddyImg = pal ? el('img', { class: 'ep-cabin__pal', alt: '', width: 48, height: 48, src: misticoThumb(pal, 48).toDataURL() }) : null;
-    const said = pal ? `Tu personaje, con ${catalogItem(pal).nombre.toLowerCase()}` : 'Tu personaje';
-    return el('div', { class: 'ep-cabin', role: 'img', 'aria-label': said }, el('span', { class: 'ep-cabin__curtain', 'aria-hidden': 'true' }), figure, buddyImg, el('span', { class: 'ep-cabin__rug', 'aria-hidden': 'true' }));
-  }
-
-  function wardrobeOptions(tab) {
-    if (tab === PAL_TAB) {
-      const opts = [{ id: null, nombre: 'Nadie', src: actorThumb(look, 'head') }, ...myCompanions().map((c) => ({ id: c.id, nombre: c.nombre, src: misticoThumb(c.id, 44).toDataURL() }))];
-      return opts.map((o) => {
-        const b = el('button', { type: 'button', class: 'ep-swatch', 'data-pal': o.id ?? 'nadie', 'aria-pressed': String(pal === o.id) }, el('img', { class: 'ep-swatch__img', alt: '', width: 44, height: 44, src: o.src }), el('span', { text: o.nombre }));
-        b.addEventListener('click', () => setPal(o.id));
-        return b;
-      });
-    }
-    const row = WARDROBE.find((r) => r.key === tab);
+  function rowOptions(row) {
     return (
       row.options
         // Lo que se gana con las misiones solo sale si el servidor las tiene
@@ -333,57 +328,209 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     );
   }
 
-  function fillWardrobe() {
-    const tabs = wardrobeTabs();
-    if (!tabs.some((t) => t.id === wardrobeTab)) wardrobeTab = tabs[0].id;
-    const current = tabs.find((t) => t.id === wardrobeTab);
-    const keep = wardrobe.querySelector('.ep-wardrobe__opts')?.scrollTop ?? 0;
-    const tabRow = el(
+  /** Compañía: dos tarjetas por fila, con el ser en grande y su nombre entero; la elegida, con borde oliva y su marca. */
+  function companionCards() {
+    const opts = [{ id: null, nombre: 'Sin compañía', src: actorThumb(look, 'all', 96) }, ...myCompanions().map((c) => ({ id: c.id, nombre: c.nombre, src: palThumb(c.id) }))];
+    return el(
       'div',
-      { class: 'ep-wardrobe__tabs', role: 'tablist', 'aria-label': 'Qué cambiar' },
-      ...tabs.map((t) => {
-        const b = el('button', { type: 'button', class: 'ep-wtab', role: 'tab', id: `ep-wtab-${t.id}`, 'aria-selected': String(t.id === wardrobeTab), 'aria-controls': 'ep-wardrobe-opts', tabindex: t.id === wardrobeTab ? '0' : '-1', text: t.corto, 'aria-label': t.corto === t.nombre ? null : t.nombre });
+      { class: 'ep-pals', role: 'group', 'aria-label': 'Compañía' },
+      ...opts.map((o) => {
+        const b = el('button', { type: 'button', class: 'ep-pal', 'data-pal': o.id ?? 'nadie', 'aria-pressed': String(pal === o.id) }, el('img', { class: 'ep-pal__img', alt: '', width: 96, height: 96, src: o.src }), el('span', { class: 'ep-pal__name', text: o.nombre }), el('i', { class: 'ep-pal__check', 'aria-hidden': 'true' }, pixelIcon('listo')));
+        b.addEventListener('click', () => setPal(o.id));
+        return b;
+      }),
+    );
+  }
+
+  function fillWardrobe() {
+    if (!dressing) return;
+    dressTabs.replaceChildren(
+      ...WTABS.map((t, k) => {
+        const on = t.id === wardrobeTab;
+        const b = el('button', { type: 'button', class: 'ep-dress__tab', role: 'tab', id: `ep-dress-${t.id}`, 'aria-selected': String(on), 'aria-controls': 'ep-dress-body', tabindex: on ? '0' : '-1', text: t.nombre });
         b.addEventListener('click', () => {
           if (wardrobeTab === t.id) return;
           wardrobeTab = t.id;
           sfx.play('lift');
           fillWardrobe();
-          wardrobe.querySelector('.ep-wardrobe__opts').scrollTop = 0;
-          wardrobe.querySelector(`#ep-wtab-${t.id}`)?.focus();
+          dressBody.scrollTop = 0;
+          dressTabs.querySelector(`#ep-dress-${t.id}`)?.focus();
         });
         b.addEventListener('keydown', (e) => {
           if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
           e.preventDefault();
-          const k = tabs.findIndex((x) => x.id === t.id);
-          wardrobe.querySelectorAll('.ep-wtab')[(k + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length].click();
+          dressTabs.children[(k + (e.key === 'ArrowRight' ? 1 : WTABS.length - 1)) % WTABS.length].click();
         });
         return b;
       }),
     );
-    const opts = el('div', { class: 'ep-wardrobe__opts', id: 'ep-wardrobe-opts', role: 'tabpanel', 'aria-labelledby': `ep-wtab-${current.id}` }, el('div', { class: 'ep-swatches', role: 'group', 'aria-label': current.nombre }, ...wardrobeOptions(current.id)));
-    wardrobe.replaceChildren(cabin(), el('div', { class: 'ep-wardrobe__side' }, tabRow, opts));
-    opts.scrollTop = keep;
+    dressBody.setAttribute('aria-labelledby', `ep-dress-${wardrobeTab}`);
+    const keep = dressBody.scrollTop;
+    if (wardrobeTab === 'compania') dressBody.replaceChildren(companionCards());
+    else {
+      const keys = wardrobeTab === 'ropa' ? ROPA : ASPECTO;
+      dressBody.replaceChildren(...WARDROBE.filter((row) => keys.includes(row.key)).map((row) => el('div', { class: 'ep-dress__row' }, el('h3', { class: 'ep-dress__label', text: row.nombre }), el('div', { class: 'ep-swatches', role: 'group', 'aria-label': row.nombre }, ...rowOptions(row)))));
+    }
+    dressBody.scrollTop = keep;
   }
 
   function setPal(id) {
+    if (pal === id) return;
     pal = id;
     if (me && pal) buddy.update(me, 1);
-    if (category === OUTFIT) fillWardrobe();
+    fillWardrobe();
     sfx.play('lift');
-    say(pal ? `Te acompaña: ${catalogItem(pal).nombre.toLowerCase()}.` : 'Ya no te acompaña nadie.');
+    say(pal ? `Te acompaña: ${catalogItem(pal).nombre.toLowerCase()}.` : 'Sin compañía.');
     requestDraw();
-    onCompanionChange(pal);
+    if (!dressing) onCompanionChange(pal);
   }
 
   function setLook(next, message) {
     look = next;
-    outfitTab.src = actorThumb(look, 'head');
-    if (category === OUTFIT) fillWardrobe();
+    fillWardrobe();
     sfx.play('lift');
     say(message);
     requestDraw();
+    if (dressing) return;
+    outfitTab.src = actorThumb(look, 'head');
     onAvatarChange(look);
     onEvent('armario');
+  }
+
+  /** Abre el armario: se apunta cómo vas (para volver a ello si no le das a «Listo»). */
+  function openWardrobe() {
+    if (!editable || dressing || !look) return;
+    const wasDecorating = decorating;
+    if (decorating) setDecorating(false);
+    dressing = { look, pal, decorating: wasDecorating };
+    wardrobeTab = 'ropa';
+    // Quieto y mirando hacia donde se pone quien te acompaña
+    if (me) {
+      me.path = [];
+      me.goal = null;
+      if (me.pose === 'walk') me.pose = 'stand';
+      if (me.pose === 'stand') me.facing = 3;
+    }
+    dressingSpot();
+    clearTimeout(wanderTimer);
+    root.classList.add('is-dressing');
+    dock.hidden = false;
+    dock.setAttribute('data-escape-local', 'open');
+    document.addEventListener('keydown', onDressKey);
+    window.addEventListener('resize', measureDressing);
+    fillWardrobe();
+    onDressing(true);
+    measureDressing();
+    fit();
+    // La barra del panel cambia al avisarle: se vuelve a medir cuando ya está
+    requestAnimationFrame(() => {
+      measureDressing();
+      fit();
+      requestDraw();
+    });
+    requestDraw();
+    say('Tu armario: lo que toques se ve ya; «Listo» lo guarda.');
+    requestAnimationFrame(() => dressTabs.querySelector('[aria-selected="true"]')?.focus());
+  }
+
+  /** Cierra el armario: con «Listo» (`save`) se guarda lo elegido; si no, todo vuelve a como estaba. */
+  function closeWardrobe(save) {
+    if (!dressing) return;
+    const before = dressing;
+    dressing = null;
+    if (save) {
+      if (JSON.stringify(look) !== JSON.stringify(before.look)) {
+        onAvatarChange(look);
+        onEvent('armario');
+      }
+      if (pal !== before.pal) onCompanionChange(pal);
+      sfx.play('place');
+    } else {
+      look = before.look;
+      pal = before.pal;
+    }
+    if (me && pal) buddy.update(me, 1);
+    outfitTab.src = actorThumb(look, 'head');
+    root.classList.remove('is-dressing');
+    dock.hidden = true;
+    dock.removeAttribute('data-escape-local');
+    document.removeEventListener('keydown', onDressKey);
+    window.removeEventListener('resize', measureDressing);
+    canvas.style.left = '';
+    canvas.style.top = '';
+    onDressing(false);
+    fit();
+    if (before.decorating) setDecorating(true);
+    requestDraw();
+    scheduleWander();
+    say(save ? 'Listo: así vas.' : 'El armario, como estaba.');
+    canvas.focus({ preventScroll: true });
+  }
+
+  /** El alto que queda de aquí al pie de la pantalla: arriba el piso, abajo el armario. */
+  function measureDressing() {
+    if (!dressing) return;
+    root.style.setProperty('--ep-dress-h', `${Math.max(420, Math.round(window.innerHeight - root.getBoundingClientRect().top))}px`);
+  }
+
+  /**
+   * Un sitio despejado para probarse la ropa: si a su lado no cabe quien te acompaña, el personaje se pone en el hueco
+   * libre más cercano que tenga sitio a su derecha y delante.
+   */
+  function dressingSpot() {
+    if (!me || me.pose !== 'stand') return;
+    const grid = blockedCells(room);
+    const open = (x, y) => x >= 0 && y >= 0 && x < ROOM.w && y < ROOM.d && !grid[y * ROOM.w + x];
+    const roomy = (x, y) => open(x, y) && open(x + 1, y) && open(x, y - 1) && open(x + 1, y - 1) && open(x, y + 1);
+    const here = cellOf(me);
+    if (roomy(here.x, here.y)) return;
+    let best = null;
+    for (let y = 0; y < ROOM.d; y += 1)
+      for (let x = 0; x < ROOM.w; x += 1) {
+        if (!roomy(x, y)) continue;
+        const d = Math.hypot(x - here.x, y - here.y);
+        if (!best || d < best.d) best = { x, y, d };
+      }
+    if (!best) return;
+    me.x = best.x + 0.5;
+    me.y = best.y + 0.5;
+  }
+
+  function onDressKey(e) {
+    if (e.key !== 'Escape' || !dressing) return;
+    e.preventDefault();
+    closeWardrobe(false);
+  }
+
+  /** Con el armario abierto, el piso se encuadra en tu personaje y en quien te acompaña (y se queda así al girar). */
+  function frameDressing() {
+    const w = stage.clientWidth;
+    const h = stage.clientHeight;
+    if (!w || !h || !me) return;
+    const feet = renderer.project(me.x, me.y, 0);
+    const side = palSpot();
+    const buddyAt = side ? renderer.project(side.x, side.y, 0) : null;
+    const x0 = Math.min(feet.sx - 8, buddyAt ? buddyAt.sx - 12 : Infinity);
+    const x1 = Math.max(feet.sx + 8, buddyAt ? buddyAt.sx + 12 : -Infinity);
+    // El personaje mide unos 40 píxeles del dibujo: que ocupe algo menos de la mitad del alto (y se vea el piso)
+    const k = Math.max(2, Math.min((h * 0.46) / 40, (w * 0.6) / (x1 - x0)));
+    canvas.style.width = `${Math.round(ART_W * k)}px`;
+    canvas.style.height = `${Math.round(ART_H * k)}px`;
+    canvas.style.left = `${Math.round(w / 2 - ((x0 + x1) / 2) * k)}px`;
+    canvas.style.top = `${Math.round(h * 0.78 - feet.sy * k)}px`;
+  }
+
+  /**
+   * Dónde se pone quien te acompaña con el armario abierto: a un lado de tu personaje, en un hueco libre del suelo
+   * (primero a su derecha en la pantalla, a su misma altura; si no, delante o a la izquierda).
+   */
+  function palSpot() {
+    if (!pal || !me) return null;
+    const grid = blockedCells(room);
+    const free = (x, y) => x > 0.2 && y > 0.2 && x < ROOM.w - 0.2 && y < ROOM.d - 0.2 && !grid[Math.floor(y) * ROOM.w + Math.floor(x)];
+    const tries = [[0.6, -0.6], [0.9, 0], [0, -0.9], [0.7, 0.7], [-0.6, 0.6]];
+    const [dx, dy] = tries.find(([a, b]) => free(me.x + a, me.y + b)) ?? tries[0];
+    return { x: Math.min(ROOM.w - 0.3, Math.max(0.3, me.x + dx)), y: Math.min(ROOM.d - 0.3, Math.max(0.3, me.y + dy)) };
   }
 
   // ── Misiones del día ──
@@ -601,15 +748,6 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     return walkTo({ item: base ?? item }) || walkToGround(a);
   }
 
-  function openWardrobe() {
-    if (!editable) return;
-    if (!decorating) setDecorating(true);
-    category = OUTFIT;
-    for (const x of catRow.children) x.setAttribute('aria-pressed', String(x.dataset.cat === category));
-    fillGrid();
-    say('Tu personaje: elige cómo va.');
-  }
-
   /** De vez en cuando pasea solo (nunca con movimiento reducido, ni mientras mueves algo). */
   function scheduleWander() {
     clearTimeout(wanderTimer);
@@ -619,7 +757,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   function wander() {
     if (destroyed) return;
-    const busy = drag || fresh || me.path.length || (typeof document !== 'undefined' && document.hidden);
+    const busy = dressing || drag || fresh || me.path.length || (typeof document !== 'undefined' && document.hidden);
     if (!busy && (!me.seat || Math.random() < 0.35)) {
       const grid = blockedCells(room);
       const spots = [];
@@ -713,7 +851,10 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       const rc = rectOf(it);
       out.push({ id: it.id, uid: it.uid, x: (rc.x0 + rc.x1) / 2, y: (rc.y0 + rc.y1) / 2, z: heightOf(room, it) + 0.22 });
     }
-    if (pal && me) {
+    // Con el armario abierto, posado a un lado de tu personaje y mirándolo
+    const spot = dressing && palSpot();
+    if (spot) out.push({ id: pal, x: spot.x, y: spot.y, z: 0, flip: spot.x - spot.y > me.x - me.y, moving: false, perch: true });
+    else if (pal && me) {
       if (reducedMotion() || buddy.state.x === null) buddy.update(me, 1);
       const s = buddy.state;
       out.push({ id: pal, x: Math.min(ROOM.w - 0.3, Math.max(0.3, s.x)), y: Math.min(ROOM.d - 0.3, Math.max(0.3, s.y)), z: 0, flip: s.flip, moving: s.moving });
@@ -948,6 +1089,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   function onPointerDown(e) {
     if (e.button !== undefined && e.button !== 0) return;
+    if (dressing) return;
     const a = toArt(e);
     const uid = renderer.pick(a.x, a.y);
     // Tocar a tu personaje abre su armario en la balda
@@ -1218,6 +1360,12 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   // En la vista «dentro», el dibujo llena el escenario sin deformarse (el resto es telón); en la normal, todo el ancho
   function fit() {
+    if (dressing) {
+      stage.style.backgroundImage = '';
+      stageBack = '';
+      frameDressing();
+      return;
+    }
     if (!isInside) {
       canvas.style.width = '';
       canvas.style.height = '';
@@ -1261,6 +1409,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   colorBtn.addEventListener('click', recolor);
   storeBtn.addEventListener('click', store);
   doneBtn.addEventListener('click', onDone);
+  readyBtn.addEventListener('click', () => closeWardrobe(true));
+  if (editable) root.append(dock);
 
   spawnActor();
   fillToday();
@@ -1298,6 +1448,12 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       sfx.setMuted(v);
     },
     setInside,
+    /** El armario (1.77): abrirlo, y cerrarlo guardando («Listo») o dejándolo como estaba. */
+    openWardrobe,
+    closeWardrobe,
+    get dressing() {
+      return !!dressing;
+    },
     /** Cambia el inventario (llega del servidor, o tras elegir los de inicio) y rehace la balda. */
     /** Las prendas ganadas (llegan del servidor, o al ganar una) y rehace el armario. */
     /** Un aviso en la línea de estado de la habitación (p. ej., una misión hecha). */
@@ -1306,7 +1462,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     },
     setPrendas(next) {
       owned = next;
-      if (editable && category === OUTFIT) fillWardrobe();
+      fillWardrobe();
     },
     /** Los «me gusta» del piso (llegan del servidor, o tras darle a uno). */
     setLikes(next) {
@@ -1334,7 +1490,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     setCompanion(id) {
       pal = COMPANEROS.some((c) => c.id === id) ? id : null;
       if (me && pal) buddy.update(me, 1);
-      if (editable && category === OUTFIT) fillWardrobe();
+      fillWardrobe();
       requestDraw();
     },
     /** Para las pruebas: punto de la pantalla donde se ve un objeto (el centro de sus píxeles) o un punto del mundo. */
@@ -1367,6 +1523,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       if (anim) cancelAnimationFrame(anim);
       if (life) cancelAnimationFrame(life);
       clearTimeout(wanderTimer);
+      document.removeEventListener('keydown', onDressKey);
+      window.removeEventListener('resize', measureDressing);
       endShelf();
       resize?.disconnect();
       canvas.removeEventListener('pointerdown', onPointerDown);

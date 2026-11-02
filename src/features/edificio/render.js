@@ -386,7 +386,7 @@ export function createRoomRenderer() {
       clearFrame(fxFrame);
       const p = painterFor(fxFrame);
       p.place(Math.round(at.sx), Math.round(at.sy), !!b.flip);
-      m.draw(p, t, { moving: !!b.moving });
+      m.draw(p, t, { moving: !!b.moving, perch: !!b.perch });
       const d = at.d + 0.15;
       for (let i = 0; i < C.length; i += 1) {
         const c = C[i];

@@ -80,7 +80,7 @@ function Facade({ vecinos, onOpenPiso, shopBadge, mail = null }) {
 }
 
 /** El piso montado en un contenedor (lo dibuja el motor de píxeles, fuera de React). */
-function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, companion = null, prendas = null, missions = null, notice = null, likes = null, placeId = null, onPlaced = null, onChange, onAvatarChange, onCompanionChange = null, onEvent, onLike }) {
+function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, companion = null, prendas = null, missions = null, notice = null, likes = null, placeId = null, onPlaced = null, onChange, onAvatarChange, onCompanionChange = null, onEvent, onLike, onDressing = null, closeDressing = 0 }) {
   const ref = useRef(null);
   const api = useRef(null);
   const changed = useRef(onChange);
@@ -88,28 +88,37 @@ function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, c
   const evented = useRef(onEvent);
   const likedRef = useRef(onLike);
   const palChanged = useRef(onCompanionChange);
+  const dressed = useRef(onDressing);
   useEffect(() => {
+    dressed.current = onDressing;
     palChanged.current = onCompanionChange;
     changed.current = onChange;
     avatarChanged.current = onAvatarChange;
     evented.current = onEvent;
     likedRef.current = onLike;
-  }, [onChange, onAvatarChange, onCompanionChange, onEvent, onLike]);
+  }, [onChange, onAvatarChange, onCompanionChange, onEvent, onLike, onDressing]);
   useEffect(() => {
     // En la vista «dentro», tu piso se abre ya decorando, con la balda abajo
-    const piso = mountPiso(ref.current, { room, editable, label, inside, inventory, decorate: inside && editable, muted: !soundOn, avatar, companion, prendas, missions, onCompanionChange: (id) => palChanged.current?.(id), onChange: (r) => changed.current?.(r), onAvatarChange: (a) => avatarChanged.current?.(a), onEvent: (t) => evented.current?.(t), likes, onLike: onLike ? (uid, si) => likedRef.current?.(uid, si) : null, placeId });
+    const piso = mountPiso(ref.current, { room, editable, label, inside, inventory, decorate: inside && editable, muted: !soundOn, avatar, companion, prendas, missions, onCompanionChange: (id) => palChanged.current?.(id), onDressing: (on) => dressed.current?.(on), onChange: (r) => changed.current?.(r), onAvatarChange: (a) => avatarChanged.current?.(a), onEvent: (t) => evented.current?.(t), likes, onLike: onLike ? (uid, si) => likedRef.current?.(uid, si) : null, placeId });
     api.current = piso;
     // El mueble que venía de la tienda ya está puesto: no se vuelve a poner si el piso se monta otra vez
     if (placeId) onPlaced?.();
     // Solo en desarrollo: las pruebas buscan los muebles en el dibujo (screenOfItem) y miran al personaje
     if (import.meta.env.DEV) window.__edificioPiso = piso;
-    return () => piso.destroy();
+    return () => {
+      piso.destroy();
+      dressed.current?.(false);
+    };
     // El piso se monta una vez: los cambios los lleva él (y avisa con onChange)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [label, editable]);
   useEffect(() => {
     api.current?.setMuted(!soundOn);
   }, [soundOn]);
+  // «← Al piso» de la barra con el armario abierto: se cierra sin guardar (1.77)
+  useEffect(() => {
+    if (closeDressing) api.current?.closeWardrobe(false);
+  }, [closeDressing]);
   useEffect(() => {
     api.current?.setInside(inside);
   }, [inside]);
@@ -161,6 +170,10 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const [toPlace, setToPlace] = useState(null);
   // Dentro del hotel, la sala en la que estás (1.75): null es la fachada; el «Volver» de la barra sale a la calle
   const [hotelRoom, setHotelRoom] = useState(null);
+  const [hotelDir, setHotelDir] = useState(false);
+  // El armario de tu piso abierto (1.77): la barra dice «← Al piso» y «Armario»
+  const [dressing, setDressing] = useState(false);
+  const [closeDressing, setCloseDressing] = useState(0);
   const [wasHotel, setWasHotel] = useState(false);
   const inside = view === 'dentro';
   const pending = useRef(null);
@@ -225,7 +238,10 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   // Al salir del hotel se olvida la sala: la próxima vez se llega otra vez a la fachada
   if (wasHotel !== inHotel) {
     setWasHotel(inHotel);
-    if (!inHotel) setHotelRoom(null);
+    if (!inHotel) {
+      setHotelRoom(null);
+      setHotelDir(false);
+    }
   }
 
   const onMyChange = (room) => {
@@ -353,7 +369,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   } else if (!data) {
     body = <p className="ed-note">Buscando tu puerta…</p>;
   } else if (inHotel) {
-    body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} />;
+    body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} />;
   } else if (inShop) {
     body = inventory?.tienda ? (
       <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={(id) => {
@@ -371,7 +387,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   } else if (open) {
     const label = mine ? `Tu piso, ${doorLabel(open.puerta)}` : `Piso de ${open.alias}, ${doorLabel(open.puerta)}`;
     body = (
-      <div className={inside ? 'ed-room ed-inside' : 'ed-room'}>
+      <div className={`${inside ? 'ed-room ed-inside' : 'ed-room'}${dressing ? ' is-dressing' : ''}`}>
         <div className="ed-head">
           <ReaderAvatar avatarId={open.avatar_id} alias={open.alias ?? ''} size="list" decorative />
           <div>
@@ -381,7 +397,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : likes ? 'Toca un mueble para darle un «me gusta».' : 'Puedes mirar, pero no tocar nada.'}</p>
           </div>
         </div>
-        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
+        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
             {saving}
@@ -412,13 +428,20 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     <PanelShell onClose={onClose} label={inHotel ? 'El Gran Hotel del Puerto' : inShop ? 'La tienda del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
       <div className="ed-bar">
         {pisoId ? (
-          <button type="button" className="ed-bar__back" onClick={inShop && revealing ? () => setCloseReveal((n) => n + 1) : inHotel && hotelRoom ? () => setHotelRoom(null) : onClose}>
+          <button type="button" className="ed-bar__back" onClick={dressing ? () => setCloseDressing((n) => n + 1) : inShop && revealing ? () => setCloseReveal((n) => n + 1) : inHotel && hotelRoom ? () => setHotelRoom(null) : onClose}>
             <ArrowLeft aria-hidden="true" />
-            {inShop && revealing ? 'Volver a la tienda' : inHotel ? (hotelRoom ? 'A la calle' : 'Volver en limusina') : 'Volver al portal'}
+            {dressing ? 'Al piso' : inShop && revealing ? 'Volver a la tienda' : inHotel ? (hotelRoom ? 'A la calle' : 'Al puerto') : 'Volver al portal'}
           </button>
         ) : (
           <button type="button" className="ed-bar__close" onClick={onClose} aria-label="Cerrar el edificio">
             <X aria-hidden="true" />
+          </button>
+        )}
+        {dressing && <p className="ed-bar__title">Armario</p>}
+        {/* En la fachada del hotel, el Directorio de las plantas (1.77) */}
+        {inHotel && !hotelRoom && (
+          <button type="button" className="px-btn ed-bar__dir" aria-expanded={hotelDir} onClick={() => setHotelDir((d) => !d)}>
+            Directorio
           </button>
         )}
         {startPending && !choosing && (
@@ -426,7 +449,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             Elige tus {START_PICKS} muebles
           </button>
         )}
-        {pisoId && open && !choosing && (
+        {pisoId && open && !choosing && !dressing && (
           <button
             type="button"
             className="px-btn px-btn--icon ed-bar__view"

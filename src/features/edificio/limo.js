@@ -21,14 +21,16 @@ const SKIN = [214, 164, 124];
 /**
  * La dibuja en un dibujo ya empezado (`r`, de createRaster), entre x … x + LIMO_L e y … y + LIMO_D, del suelo hacia
  * arriba. `glowId`: el id con el que ese dibujo enciende las luces (los faros). `shadow`: si deja su sombra en el suelo
- * (hay que llamar luego a r.applyShadows, como hace la fachada). Devuelve dónde cae en la pantalla (en píxeles).
+ * (hay que llamar luego a r.applyShadows, como hace la fachada). `bodyId`: el id del resto del coche (el hotel lo
+ * usa para perfilarlo). Devuelve dónde cae en la pantalla (en píxeles).
  */
-export function drawLimo(r, x, y, { glowId = 0, chauffeur = true, shadow = true } = {}) {
+export function drawLimo(r, x, y, { glowId = 0, bodyId = 0, chauffeur = true, shadow = true } = {}) {
   const L = LIMO_L;
   const D = LIMO_D;
   const chrome = r.rampOf(CHROME);
   const tint = r.rampOf(TINT);
   const tail = r.rampOf(TAIL);
+  r.setId(bodyId);
   if (shadow) for (let k = 0; k <= 4; k += 1) r.castShadow(x + 0.3 + (k * (L - 0.6)) / 4, y + D / 2, 0.15, 0.62);
   // Ruedas, con su tapacubos cromado
   for (const a of [0.55, L - 0.6]) {
@@ -76,7 +78,7 @@ export function drawLimo(r, x, y, { glowId = 0, chauffeur = true, shadow = true 
       grain: 0,
       step: 0.02,
     });
-  r.setId(0);
+  r.setId(bodyId);
   // La figurita del capó
   r.box(x + L - 0.12, y + D / 2 - 0.03, 0.53, x + L - 0.06, y + D / 2 + 0.03, 0.62, CHROME, { grain: 0, step: 0.02 });
   // El habitáculo: largo y bajo, con los cristales tintados y un reflejo

@@ -53,23 +53,21 @@ test('tu personaje: armario, se guarda, anda y se sienta', async ({ page }, info
   const canvas = mine.locator('canvas.ep-canvas');
   await expect(canvas).toHaveAttribute('data-actor', 'stand');
 
-  // Tocarlo abre el armario en la balda
+  // Tocarlo abre el armario (1.77: un modo propio del piso, con Ropa, Aspecto y Compañía; se guarda con «Listo»)
   await tapActor(page, canvas);
-  await expect(mine.locator('.ep-chip[data-cat="personaje"]')).toHaveAttribute('aria-pressed', 'true');
-  const wardrobe = mine.locator('.ep-wardrobe');
+  const wardrobe = mine.locator('.ep-dress');
   await expect(wardrobe).toBeVisible();
-  // 1.74: la cabina, con tu personaje en grande y una pestaña por clase de cosa
-  await expect(wardrobe.locator('.ep-cabin__me')).toBeVisible();
-  await expect(wardrobe.getByRole('tab', { name: 'Piel' })).toHaveAttribute('aria-selected', 'true');
-  await wardrobe.getByRole('tab', { name: 'Pelo', exact: true }).click();
-  await wardrobe.getByRole('group', { name: 'Pelo' }).getByRole('button', { name: 'Rizos' }).click();
-  await wardrobe.getByRole('tab', { name: 'Jersey' }).click();
+  await expect(mine.getByRole('button', { name: 'Al piso' })).toBeVisible();
+  await expect(wardrobe.getByRole('tab', { name: 'Ropa' })).toHaveAttribute('aria-selected', 'true');
   await wardrobe.getByRole('group', { name: 'Jersey' }).getByRole('button', { name: 'Ciruela' }).click();
-  await wardrobe.getByRole('tab', { name: 'Gafas' }).click();
   await wardrobe.getByRole('group', { name: 'Gafas' }).getByRole('button', { name: 'Con gafas' }).click();
   await expect(wardrobe.getByRole('group', { name: 'Gafas' }).getByRole('button', { name: 'Con gafas' })).toHaveAttribute('aria-pressed', 'true');
-  await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.personaje, { timeout: 8000 }).toMatchObject({ pelo: 'rizos', jersey: 6, gafas: true });
+  await wardrobe.getByRole('tab', { name: 'Aspecto' }).click();
+  await wardrobe.getByRole('group', { name: 'Pelo' }).getByRole('button', { name: 'Rizos' }).click();
   await shot(page, info, 'v169-armario');
+  await wardrobe.getByRole('button', { name: 'Listo' }).click();
+  await expect(wardrobe).toBeHidden();
+  await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.personaje, { timeout: 8000 }).toMatchObject({ pelo: 'rizos', jersey: 6, gafas: true });
 
   // Al terminar de decorar, tocar el sillón lo lleva hasta él y se sienta
   await mine.getByRole('button', { name: 'Terminar' }).click();
@@ -101,8 +99,9 @@ test('sin la migración, el personaje se queda en el dispositivo', async ({ page
   const canvas = mine.locator('canvas.ep-canvas');
   await expect(canvas).toHaveAttribute('data-actor', 'stand');
   await tapActor(page, canvas);
-  await mine.locator('.ep-wardrobe').getByRole('tab', { name: 'Pelo', exact: true }).click();
-  await mine.locator('.ep-wardrobe').getByRole('group', { name: 'Pelo' }).getByRole('button', { name: 'Moño' }).click();
+  await mine.locator('.ep-dress').getByRole('tab', { name: 'Aspecto' }).click();
+  await mine.locator('.ep-dress').getByRole('group', { name: 'Pelo' }).getByRole('button', { name: 'Moño' }).click();
+  await mine.locator('.ep-dress').getByRole('button', { name: 'Listo' }).click();
   await expect(page.getByText('Guardado en este dispositivo.')).toBeVisible({ timeout: 8000 });
   expect(await page.evaluate((id) => JSON.parse(localStorage.getItem(`bookshelf:edificio:personaje:${id}`)).pelo, ANA.id)).toBe('mono');
 });
@@ -134,7 +133,7 @@ test('en el piso de un vecino se ve su personaje, pero no se le manda', async ({
   const before = await page.evaluate(() => window.__edificioPiso.actor);
   await tapActor(page, canvas);
   await expect(bruno.locator('.ep-status')).toHaveText('Vive aquí.');
-  await expect(bruno.locator('.ep-wardrobe')).toHaveCount(0);
+  await expect(bruno.locator('.ep-dress')).toHaveCount(0);
   // Tocar el suelo no lo mueve
   const floor = await page.evaluate(() => window.__edificioPiso.screenOf(7.5, 7.5, 0));
   await page.mouse.click(floor.x, floor.y);

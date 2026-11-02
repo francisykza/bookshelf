@@ -536,3 +536,207 @@
 .gh-lift__note h4 {
   margin-top: 0;
 }
+
+/* ── 1.77 (maqueta de Francisco): el hotel entero, de la aguja a la limusina, por encima de una cartela crema al pie; en
+   la barra, «Al puerto» y «Directorio». El alto disponible (--gh-h) y el de la cartela (--gh-foot) los mide
+   GranHotel.jsx; --gh-entry es hasta dónde baja la entrada en el dibujo (hotelArt.js) ── */
+.panel--edificio:has(.gh-wrap) .ed-bar__dir {
+  margin-left: auto;
+  min-height: 40px;
+  padding-inline: 14px;
+  font:
+    600 1.05rem/1 'Lora',
+    Georgia,
+    serif;
+  color: #2c1e14;
+}
+
+.gh {
+  position: relative;
+  height: var(--gh-h, calc(100dvh - 60px));
+  overflow: hidden;
+}
+
+.gh-art {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: auto;
+  max-width: none;
+  height: calc((var(--gh-h, 640px) - var(--gh-foot, 150px) - 14px - env(safe-area-inset-bottom)) / var(--gh-entry, 0.9));
+  aspect-ratio: var(--gh-ratio, 0.59);
+  transform: translateX(-50%);
+}
+
+@media (min-width: 520px) {
+  .gh-art {
+    width: auto;
+  }
+}
+
+.gh-art .hotel-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* La cartela: papel crema con marco de píxel, rombos de latón a los lados, el nombre, el estado y el lema */
+.gh-plaque {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  width: min(440px, calc(100% - 20px));
+  box-sizing: border-box;
+  padding: 6px 30px 8px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  color: #2c1e14;
+  text-align: center;
+  filter: drop-shadow(0 3px 0 rgb(10 8 20 / 0.55));
+  transform: translateX(-50%);
+}
+
+.gh-plaque::before,
+.gh-plaque::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border: 2px solid #8a5a14;
+  background: #f0c35a;
+  box-shadow: inset 2px 2px 0 #ffe9a0;
+  transform: rotate(45deg);
+}
+
+.gh-plaque::before {
+  left: 6px;
+}
+
+.gh-plaque::after {
+  right: 6px;
+}
+
+.gh-plaque h3 {
+  margin: 0;
+  font:
+    600 min(1.7rem, 7.4vw) / 1.1 'Cormorant Garamond',
+    Georgia,
+    serif;
+}
+
+.gh-plaque__state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 4px;
+  color: #a8434c;
+  font:
+    italic 600 1rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+
+.gh-plaque__state i {
+  flex: 1;
+  height: 2px;
+  background: #c9a868;
+}
+
+.gh-plaque__text {
+  margin: 0;
+  font:
+    500 0.92rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+/* El Directorio: una lista de papel bajo la barra, con cada planta y su estado */
+.gh-dir {
+  position: absolute;
+  z-index: 5;
+  top: 6px;
+  right: 8px;
+  width: min(320px, calc(100% - 16px));
+  box-sizing: border-box;
+  max-height: calc(100% - var(--gh-foot, 150px) - 20px);
+  overflow: auto;
+  padding: 4px 10px 8px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  color: #2c1e14;
+  filter: drop-shadow(0 3px 0 rgb(10 8 20 / 0.55));
+}
+
+.gh-dir h3 {
+  margin: 0 0 2px;
+  font:
+    600 1.25rem/1.2 'Cormorant Garamond',
+    Georgia,
+    serif;
+}
+
+.gh-dir ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gh-dir__floor {
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  padding: 5px 6px 5px 10px;
+  border: 0;
+  border-top: 2px dotted #d8c4a0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gh-dir__floor[aria-current='true'] {
+  box-shadow: inset 4px 0 0 #c98a1c;
+  background: #f6e7c4;
+}
+
+.gh-dir__floor:focus-visible {
+  outline: 2px solid #b98b2f;
+  outline-offset: -2px;
+}
+
+.gh-dir__name {
+  font:
+    600 1rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+
+.gh-dir__state {
+  color: #a8434c;
+  font:
+    italic 500 0.85rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+
+.gh-dir__state.is-open {
+  color: #4f6b3f;
+}
+
+.gh-dir__close {
+  display: block;
+  margin: 6px auto 0;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: #6b4a2a;
+  font:
+    600 0.95rem/1 'Lora',
+    Georgia,
+    serif;
+  text-decoration: underline;
+  cursor: pointer;
+}

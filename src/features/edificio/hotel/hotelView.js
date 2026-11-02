@@ -2,22 +2,27 @@
 // barren el cielo, la aguja parpadea, las bombillas de la marquesina corren, el neón rosa titila de vez en cuando,
 // alguna ventana se apaga o se enciende, el agua ondula, cruzan estrellas fugaces y estallan fuegos artificiales detrás
 // de la torre (efectos de pixelfx, src/vendor/pixelfx), la gente pasea y charla con bocadillos. Como en la fachada del
-// edificio, se toca: cada planta se ilumina al pasar por encima y al tocarla se abre su tarjeta. Con movimiento
-// reducido, el dibujo se queda quieto (pero se sigue tocando).
+// edificio, se toca: cada planta se ilumina al pasar por encima y, al elegirla (tocándola o desde el Directorio), un
+// filete fino de latón la rodea con un rombo a su izquierda, dibujados en el propio lienzo (van con la planta a
+// cualquier tamaño de pantalla). Con movimiento reducido, el dibujo se queda quieto (pero se sigue tocando). La
+// animación se para cuando la fachada no se ve (otra pestaña o fuera de la pantalla).
 import { clearFrame, createFrame, createFx } from '../../../vendor/pixelfx/core/index.js';
 import * as fireworkBurst from '../../../vendor/pixelfx/fx/explosions/firework-burst.js';
 import * as shootingStars from '../../../vendor/pixelfx/fx/weather/shooting-stars.js';
 import { renderHotel } from './hotelArt.js';
 
+// Cada planta: su nombre, el de la cartela (`corto`) con su lema, y si ya se puede entrar (`abierta`)
 export const ZONES = {
-  plaza: { nombre: 'La plaza del muelle', texto: 'Donde se llega. Aquí ves quién ha entrado hoy y te paras a saludar.' },
-  vestibulo: { nombre: 'El vestíbulo', texto: 'La recepción: el conserje te orienta y el tablón «Busco quien lea…» junta a quien lee lo mismo.' },
-  cafe: { nombre: 'El café-biblioteca', texto: 'Mesas para sentarte con tu personaje junto a alguien que lee lo mismo. Cada mesa dice qué libro se lee en ella.' },
-  baile: { nombre: 'El salón de baile', texto: 'La sala grande, para los eventos con fecha: la lectura conjunta de la semana o la presentación de un club.' },
-  suites: { nombre: 'Las suites de los clubes', texto: 'Cada club tiene su habitación, decorada entre sus miembros. Por la ventana se ve si hay alguien dentro.' },
-  terraza: { nombre: 'La terraza', texto: 'Guirnaldas, la radio del rincón sonando para todos y el puerto a tus pies.' },
-  mirador: { nombre: 'El mirador de la corona', texto: 'El bar de arriba, con las mejores vistas, el ranking y las distinciones.' },
+  plaza: { nombre: 'La plaza del muelle', corto: 'La plaza del muelle', lema: 'Donde se llega y se saluda a quien ha entrado hoy.', texto: 'Donde se llega. Aquí ves quién ha entrado hoy y te paras a saludar.' },
+  vestibulo: { nombre: 'El vestíbulo', corto: 'Vestíbulo', lema: 'La recepción con los encargos de la semana y el ascensor.', abierta: true, texto: 'La recepción: el conserje te orienta y el tablón «Busco quien lea…» junta a quien lee lo mismo.' },
+  cafe: { nombre: 'El café-biblioteca', corto: 'Café-biblioteca', lema: 'Mesas para quienes leen el mismo libro.', texto: 'Mesas para sentarte con tu personaje junto a alguien que lee lo mismo. Cada mesa dice qué libro se lee en ella.' },
+  baile: { nombre: 'El salón de baile', corto: 'Salón de baile', lema: 'Lecturas conjuntas y presentaciones de los clubes.', texto: 'La sala grande, para los eventos con fecha: la lectura conjunta de la semana o la presentación de un club.' },
+  suites: { nombre: 'Las suites de los clubes', corto: 'Suites de los clubes', lema: 'Una habitación por club, decorada entre sus miembros.', texto: 'Cada club tiene su habitación, decorada entre sus miembros. Por la ventana se ve si hay alguien dentro.' },
+  terraza: { nombre: 'La terraza', corto: 'La terraza', lema: 'La radio del rincón, sonando para todos sobre el puerto.', texto: 'Guirnaldas, la radio del rincón sonando para todos y el puerto a tus pies.' },
+  mirador: { nombre: 'El mirador de la corona', corto: 'Mirador de la corona', lema: 'Las mejores vistas, el ranking y las distinciones.', texto: 'El bar de arriba, con las mejores vistas, el ranking y las distinciones.' },
 };
+/** Las plantas de arriba abajo, como las lee el Directorio. */
+export const FLOOR_ORDER = ['mirador', 'terraza', 'suites', 'baile', 'cafe', 'vestibulo', 'plaza'];
 
 const rgb = (r, g, b) => ((255 << 24) | (Math.min(255, Math.max(0, b | 0)) << 16) | (Math.min(255, Math.max(0, g | 0)) << 8) | Math.min(255, Math.max(0, r | 0))) >>> 0;
 const scale = (p, k, add = 0) => rgb((p & 255) * k + add, ((p >> 8) & 255) * k + add, ((p >> 16) & 255) * k + add);
@@ -161,16 +166,61 @@ export function mountHotel(host, { onPick = () => {}, still = false, t0 = 0 } = 
       const who = h.people[Math.floor(hash(slot, k) * h.people.length)];
       bubble(who.x, who.y, ['dots', 'heart', 'note', 'book'][Math.floor(hash(k, slot + 9) * 4)], age < 0.15);
     }
-    // La planta señalada se enciende, con su contorno dorado
-    for (const z of [hover, selected]) {
-      if (!z) continue;
+    // Bajo el dedo, la planta se enciende un poco con su contorno claro
+    if (hover && hover !== selected)
       for (let i = W; i < W * H - W; i += 1) {
-        if (h.zoneMap[i] !== z) continue;
-        const edge = h.zoneMap[i - 1] !== z || h.zoneMap[i + 1] !== z || h.zoneMap[i - W] !== z || h.zoneMap[i + W] !== z;
-        out[i] = edge ? rgb(255, 214, 128) : scale(out[i], z === selected ? 1.22 : 1.12, 6);
+        if (h.zoneMap[i] !== hover) continue;
+        const edge = h.zoneMap[i - 1] !== hover || h.zoneMap[i + 1] !== hover || h.zoneMap[i - W] !== hover || h.zoneMap[i + W] !== hover;
+        out[i] = edge ? rgb(255, 214, 128) : scale(out[i], 1.12, 6);
       }
-    }
+    if (selected) brass(selected);
     ctx.putImageData(image, 0, 0);
+  }
+
+  // La planta elegida: un filete fino de latón alrededor (por fuera de la planta) y, a su izquierda, un rombo de latón
+  // unido a él por una raya
+  const BRASS = rgb(240, 195, 90);
+  const BRASS_DARK = rgb(138, 90, 20);
+  const INK = rgb(28, 22, 34);
+  const rims = new Map();
+  function rimOf(z) {
+    if (rims.has(z)) return rims.get(z);
+    const ring = [];
+    let left = { x: W, y: 0 };
+    let ys = [];
+    for (let i = W; i < W * H - W; i += 1) {
+      if (h.zoneMap[i] === z) {
+        const x = i % W;
+        if (x < left.x) ys = [];
+        if (x <= left.x) {
+          left = { x, y: (i / W) | 0 };
+          ys.push(left.y);
+        }
+        continue;
+      }
+      if (h.zoneMap[i - 1] === z || h.zoneMap[i + 1] === z || h.zoneMap[i - W] === z || h.zoneMap[i + W] === z) ring.push(i);
+    }
+    const rim = { ring, x: left.x - 1, y: ys.length ? ys[(ys.length / 2) | 0] : left.y };
+    rims.set(z, rim);
+    return rim;
+  }
+  function brass(z) {
+    const { ring, x, y } = rimOf(z);
+    for (const i of ring) out[i] = BRASS;
+    // La raya y el rombo (radio 3), con su contorno oscuro para que se lea sobre el cielo y sobre la fachada
+    const cx = x - 7;
+    const dot = (px, py, c) => px >= 0 && px < W && py >= 0 && py < H && (out[py * W + px] = c);
+    for (let px = cx + 3; px <= x; px += 1) {
+      dot(px, y - 1, INK);
+      dot(px, y, BRASS);
+      dot(px, y + 1, INK);
+    }
+    for (let dy = -4; dy <= 4; dy += 1)
+      for (let dx = -4; dx <= 4; dx += 1) {
+        const d = Math.abs(dx) + Math.abs(dy);
+        if (d > 4) continue;
+        dot(cx + dx, y + dy, d === 4 ? INK : d === 3 ? BRASS_DARK : d === 0 ? rgb(255, 236, 170) : BRASS);
+      }
   }
 
   function bubble(px, py, kind, pop) {
@@ -255,7 +305,29 @@ export function mountHotel(host, { onPick = () => {}, still = false, t0 = 0 } = 
     bursts[0].fx.update(0.9);
     stars.update(t0 % 10);
     frame();
-  } else raf = requestAnimationFrame(step);
+  }
+  // Solo se anima mientras se ve: con la pestaña oculta o la fachada fuera de la pantalla, se para (y no salta al volver)
+  let onScreen = true;
+  const run = () => {
+    const go = !still && onScreen && document.visibilityState !== 'hidden';
+    if (go && !raf) {
+      last = 0;
+      raf = requestAnimationFrame(step);
+    } else if (!go && raf) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+  };
+  const io =
+    typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver(([e]) => {
+          onScreen = e.isIntersecting;
+          run();
+        })
+      : null;
+  io?.observe(canvas);
+  document.addEventListener('visibilitychange', run);
+  run();
 
   // El centro de cada planta en el dibujo (en fracciones), para poner encima su botón
   const centers = zoneIds.map((id, k) => {
@@ -275,8 +347,12 @@ export function mountHotel(host, { onPick = () => {}, still = false, t0 = 0 } = 
     canvas,
     zones: h.zones.map((z, k) => ({ ...z, center: centers[k] })),
     select,
+    entry: h.entryY / H,
     destroy() {
       cancelAnimationFrame(raf);
+      raf = 0;
+      io?.disconnect();
+      document.removeEventListener('visibilitychange', run);
       canvas.remove();
     },
   };

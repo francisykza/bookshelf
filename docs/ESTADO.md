@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **1.77.0 (2026-11-02), en un PR a `main`, aún sin publicar**: la fachada del Gran Hotel con la cartela al pie y el
+  Directorio, y el armario como modo propio del piso con Ropa / Aspecto / Compañía y «Listo» (§77). Sin migraciones.
+  Se publica al fusionar el PR (subir `main` despliega en Vercel).
 - **Versión publicada**: 1.76.0 (2026-11-02): la apertura de sobres sobre el mostrador (§76): un sobre por colección,
   de frente e inclinado en la madera, tres gestos («1 de 5» con 2 × 2), 3 + 2, y «Colocar [nombre]» al editor del
   piso. Sin migraciones. Fusionada desde el PR #1 (rama `1.76-sobres-mostrador`); `/sw.js` ya trae la 1.76.0.
@@ -43,6 +46,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.77.0 | La fachada del Gran Hotel entera sobre una cartela crema, planta elegida con filete y rombo de latón y el Directorio de las plantas; el armario como modo propio del piso («← Al piso» / «Armario»), Ropa, Aspecto y Compañía con vista previa que se guarda con «Listo», y el dragón posado a tu lado (en PR) | §77 |
 | 1.76.0 | La apertura de sobres sobre el mostrador: un sobre por colección (expositor, selector y mostrador), de frente e inclinado en la madera, tres gestos (tira, carta que asoma con 2 × 2, 3 + 2), el sobre sale del encuadre, elegir con ✓ y «Colocar [nombre]» al editor del piso (publicada) | §76 |
 | 1.75.0 | El vestíbulo del Gran Hotel por dentro: recepción con los encargos de la semana, ascensor de latón con la botonera de plantas, tablón y guardarropa (publicada) | §75 |
 | 1.74.0 | Los menús de debajo de las habitaciones (balda con nombres, armario-cabina, mesita del vecino de madera) y la limusina negra delante del portal que lleva, con un viaje corto, a la fachada viva del Gran Hotel (publicada) | §74 |
@@ -82,6 +86,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Fusionar el PR de la 1.77.0** cuando Francisco lo apruebe; al subir `main`, comprobar que `/sw.js` trae la 1.77.0.
 - **Cartel de la tienda (1.76)**: el local dice VIDEOCLUB y la maqueta de Francisco «LA TIENDA DEL BAJO»; preguntarle
   antes de cambiarlo.
 000. **Paquete «salón social y radio» (1.62, §62): publicado completo.** Lo que sigue es el resumen del encargo del bloque 4,
@@ -159,6 +164,32 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-02 · cuenta principal · 1.77.0: fachada del Gran Hotel y armario «Compañía» (en un PR a `main`)
+- Encargo de Francisco (dos textos y una maqueta de dos paneles): la fachada del hotel con su Directorio (panel
+  izquierdo) y el armario de «Tu piso» con la pestaña «Compañía» (panel derecho). Cerrado como 1.77.0 («Sí, cierra
+  1.77.0»): versión subida, SPEC §77 y PR desde la rama `1.77-hotel-armario`.
+- Hotel (`hotel/GranHotel.jsx`, `hotelView.js`, `hotelArt.js`, `hotel.css`, barra de `EdificioPanel.jsx`): barra
+  «← Al puerto» (antes «Volver en limusina») y «Directorio»; el hotel entero, de la aguja a la limusina, por encima de
+  una cartela crema al pie (nombre corto, «Próxima apertura» o «Abierto», lema). La planta elegida lleva un filete de
+  latón y un rombo unido a su izquierda, dibujados en el propio lienzo (van con la planta a cualquier tamaño). El
+  Directorio es una lista HTML con las siete plantas y su estado; elegir una ahí da exactamente lo mismo que tocarla
+  (la prueba compara los píxeles); el vestíbulo se entra. La animación se para cuando la fachada no se ve. La limusina
+  lleva un filo de luz en su perfil (`bodyId` en `drawLimo`) para leerse sobre el empedrado, y la gente que la tapaba
+  se ha apartado. Se quitó la nota flotante (`gh-card`).
+- Armario (`piso.js`, `misticos.js`, `render.js`, `edificio.css`, barra de `EdificioPanel.jsx`): ya no va dentro de la
+  balda: es un modo propio del piso (se abre tocando a tu personaje o la pestaña «Armario»). Barra «← Al piso» y
+  «Armario»; arriba, el piso de verdad encuadrado en tu personaje (si no hay sitio a su lado, se coloca en el hueco
+  libre más cercano) con quien te acompaña posado a su derecha, mirándolo; abajo, Ropa (jersey, pantalón, gafas,
+  complemento), Aspecto (piel, pelo, color) y Compañía (dos tarjetas por fila, borde oliva y marca en la elegida,
+  «Sin compañía» primero). Todo se ve al momento y **solo se guarda con «Listo»** (la misión «armario» cuenta al darle);
+  «← Al piso» o Escape lo dejan como estaba. El dragón, posado, llega a la cintura, con las alas a medio abrir y un
+  batido corto cada 3,4 s; el zorro mueve la cola como antes; con movimiento reducido, quietos. Se quitó la cabina 1.74.
+- Pruebas: nuevas `e2e-community/v177-hotel-directorio.spec.js` (360/390) y `v177-armario.spec.js` (390 y 360 con
+  movimiento reducido); ajustadas v169, v170, v172, v174 y v175. Pasan en Chromium; WebKit no se ha pasado esta vez
+  (emulación; nada probado en un iPhone real). Build, Vitest (377) y lint sin errores nuevos.
+- Queda: fusionar el PR cuando Francisco lo apruebe (al subir `main`, comprobar que `/sw.js` trae la 1.77.0); el
+  cartel VIDEOCLUB / «LA TIENDA DEL BAJO» sigue pendiente de su respuesta.
 
 ### 2026-11-02 · cuenta principal · 1.76.0: apertura de sobres sobre el mostrador (publicada)
 - Encargo de Francisco (dos documentos y una maqueta de tres pantallas: tienda, sobre cerrado y apertura de cinco), luego
