@@ -76,8 +76,10 @@ const nameOf = (item) => catalogItem(item.id).nombre;
  * misión ('sentarse', 'mover', 'color', 'tarde', 'pasear', 'nuevo', 'armario').
  * Vecinos (§71): `likes` ({ megusta: { uid: n }, mios: [uid] } o null) y `onLike(uid, si)`: en el piso de un vecino,
  * al tocar un mueble sale «Me gusta»; en el tuyo, el aviso dice cuántos tiene.
+ * `placeId` (1.76): un mueble recién sacado de un sobre; el piso se abre decorando con él ya puesto y elegido, para
+ * arrastrarlo a su sitio. «Guardar» lo devuelve al inventario y el piso queda como estaba.
  */
-export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null, companion = null, onCompanionChange = () => {} } = {}) {
+export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null, companion = null, onCompanionChange = () => {}, placeId = null } = {}) {
   const sfx = createSfx({ muted });
   const renderer = createRoomRenderer();
   let room = initial;
@@ -1270,6 +1272,12 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   render();
   say(editable ? 'Tu piso. Toca «Decorar» para colocar muebles.' : `${label}. Puedes mirar, pero no tocar nada.`);
   if (editable && decorate) setDecorating(true);
+  if (editable && placeId && catalogItem(placeId)) {
+    if (!decorating) setDecorating(true);
+    const before = room;
+    add(placeId);
+    if (room !== before) say(`Ya está en tu piso: arrastra ${catalogItem(placeId).nombre.toLowerCase()} a su sitio. «Guardar» devuelve el mueble a tu inventario.`);
+  }
   scheduleWander();
 
   return {

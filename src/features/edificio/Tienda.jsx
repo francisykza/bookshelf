@@ -165,10 +165,8 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
                 setMsg('');
               }}
             >
+              {/* Sin precio debajo (como en la maqueta): el precio está en «Abrir 1 · …» y en el nombre del botón */}
               <img src={packs[s.id].full} alt="" draggable="false" />
-              <span aria-hidden="true">
-                {s.coste1} <Ticket size={14} />
-              </span>
             </button>
           ))}
         </div>
@@ -177,10 +175,6 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
           <div className="ts-card__text">
             <h3 id="ts-card-title">{sobre.nombre}</h3>
             <p>{sobre.dice}</p>
-            <p className="ts-card__price">
-              <Ticket size={18} />
-              <span>1 sobre · {ticketsText(sobre.coste1)}</span>
-            </p>
           </div>
         </section>
         <div className="ts-open">

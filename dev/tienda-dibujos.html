@@ -13,6 +13,8 @@
   <body>
     <script type="module">
       import { renderShopRoom, renderShopCounter, SHOP_ROOM_W, COUNTER_W } from '/src/features/edificio/shopRoom.js';
+      import { packArt, cardBackArt, PACK_W, PACK_NEAR_W } from '/src/features/edificio/shopArt.js';
+      import { SOBRES } from '/src/features/edificio/economy.js';
       const add = (src, w) => {
         const i = new Image();
         i.src = src;
@@ -22,6 +24,13 @@
       add(renderShopRoom().scene, SHOP_ROOM_W * 3);
       add(renderShopCounter('base').scene, COUNTER_W * 3);
       add(renderShopCounter('happy').scene, COUNTER_W * 3);
+      // Cada sobre: la miniatura, el primer plano y el reverso de sus cartas (1.76)
+      for (const sb of SOBRES) {
+        const a = packArt(sb);
+        add(a.full, PACK_W * 4);
+        add(a.near.full, PACK_NEAR_W * 4);
+        add(cardBackArt(sb), 24 * 4);
+      }
       document.body.dataset.ready = '1';
     </script>
   </body>

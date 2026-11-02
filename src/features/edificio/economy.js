@@ -51,7 +51,7 @@ export const SOBRES = [
   {
     id: 'luces',
     nombre: 'Luces del puerto',
-    portada: 'guirnalda',
+    portada: 'lampara-mesa',
     color: [214, 140, 60],
     coste1: 10,
     coste5: 45,

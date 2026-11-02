@@ -80,7 +80,7 @@ function Facade({ vecinos, onOpenPiso, shopBadge, mail = null }) {
 }
 
 /** El piso montado en un contenedor (lo dibuja el motor de píxeles, fuera de React). */
-function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, companion = null, prendas = null, missions = null, notice = null, likes = null, onChange, onAvatarChange, onCompanionChange = null, onEvent, onLike }) {
+function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, companion = null, prendas = null, missions = null, notice = null, likes = null, placeId = null, onPlaced = null, onChange, onAvatarChange, onCompanionChange = null, onEvent, onLike }) {
   const ref = useRef(null);
   const api = useRef(null);
   const changed = useRef(onChange);
@@ -97,8 +97,10 @@ function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, c
   }, [onChange, onAvatarChange, onCompanionChange, onEvent, onLike]);
   useEffect(() => {
     // En la vista «dentro», tu piso se abre ya decorando, con la balda abajo
-    const piso = mountPiso(ref.current, { room, editable, label, inside, inventory, decorate: inside && editable, muted: !soundOn, avatar, companion, prendas, missions, onCompanionChange: (id) => palChanged.current?.(id), onChange: (r) => changed.current?.(r), onAvatarChange: (a) => avatarChanged.current?.(a), onEvent: (t) => evented.current?.(t), likes, onLike: onLike ? (uid, si) => likedRef.current?.(uid, si) : null });
+    const piso = mountPiso(ref.current, { room, editable, label, inside, inventory, decorate: inside && editable, muted: !soundOn, avatar, companion, prendas, missions, onCompanionChange: (id) => palChanged.current?.(id), onChange: (r) => changed.current?.(r), onAvatarChange: (a) => avatarChanged.current?.(a), onEvent: (t) => evented.current?.(t), likes, onLike: onLike ? (uid, si) => likedRef.current?.(uid, si) : null, placeId });
     api.current = piso;
+    // El mueble que venía de la tienda ya está puesto: no se vuelve a poner si el piso se monta otra vez
+    if (placeId) onPlaced?.();
     // Solo en desarrollo: las pruebas buscan los muebles en el dibujo (screenOfItem) y miran al personaje
     if (import.meta.env.DEV) window.__edificioPiso = piso;
     return () => piso.destroy();
@@ -155,6 +157,8 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   // En la tienda, con un sobre abierto, el «Volver» de la barra vuelve a la tienda (1.68)
   const [revealing, setRevealing] = useState(false);
   const [closeReveal, setCloseReveal] = useState(0);
+  // El mueble elegido en un sobre para colocarlo (1.76): el piso se abre con él listo para arrastrar
+  const [toPlace, setToPlace] = useState(null);
   // Dentro del hotel, la sala en la que estás (1.75): null es la fachada; el «Volver» de la barra sale a la calle
   const [hotelRoom, setHotelRoom] = useState(null);
   const [wasHotel, setWasHotel] = useState(false);
@@ -352,7 +356,11 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} />;
   } else if (inShop) {
     body = inventory?.tienda ? (
-      <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={() => me && onOpenPiso(me.user_id)} onOpenMissions={onOpenMissions} onReveal={setRevealing} closeReveal={closeReveal} />
+      <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={(id) => {
+          if (!me) return;
+          setToPlace(id ?? null);
+          onOpenPiso(me.user_id);
+        }} onOpenMissions={onOpenMissions} onReveal={setRevealing} closeReveal={closeReveal} />
     ) : (
       <p className="ed-note">{inventory ? 'La tienda del bajo abre muy pronto.' : 'Abriendo la tienda…'}</p>
     );
@@ -373,7 +381,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : likes ? 'Toca un mueble para darle un «me gusta».' : 'Puedes mirar, pero no tocar nada.'}</p>
           </div>
         </div>
-        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
+        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
             {saving}

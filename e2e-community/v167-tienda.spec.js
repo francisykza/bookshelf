@@ -100,17 +100,17 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   await expect(wallet(shop)).toHaveText('65');
   await expect(shop.getByText('Raro garantizado en un máximo de 15 muebles.')).toBeVisible();
 
-  // Paquete de cinco: cartas boca abajo, «Mostrar todos» las vuelve una a una
+  // Paquete de cinco: cartas boca abajo, «Revelar todas» las vuelve una a una
   mock.db.piso_sorteo = ['libros', 'tetera', 'radio', 'libros', 'planta-pequena'];
   await shop.getByRole('button', { name: /^Abrir 5 · 45/ }).click();
   await expect(gacha).toHaveClass(/gacha--poco-comun/);
   await gacha.getByRole('button', { name: /^Rasgar el sobre/ }).click();
-  await expect(gacha.getByRole('button', { name: /^Dar la vuelta a la carta/ })).toHaveCount(5, { timeout: 5000 });
+  await expect(gacha.getByRole('button', { name: /^Revelar carta \d de 5$/ })).toHaveCount(4, { timeout: 5000 });
   await page.waitForTimeout(600);
   await shot(page, info, 'v167-paquete-boca-abajo');
-  await gacha.getByRole('button', { name: 'Dar la vuelta a la carta 3' }).click();
+  await gacha.getByRole('button', { name: 'Revelar carta 3 de 5' }).click();
   await expect(gacha.getByRole('button', { name: 'Radio, poco común, nuevo' })).toBeVisible();
-  await gacha.getByRole('button', { name: 'Mostrar todos' }).click();
+  await gacha.getByRole('button', { name: 'Revelar todas' }).click();
   await expect(gacha.getByRole('status')).toContainText('Te llevas 5 muebles: pila de libros, tetera, radio, pila de libros, planta pequeña.', { timeout: 5000 });
   await page.waitForTimeout(700);
   await shot(page, info, 'v167-paquete-revelado');
@@ -161,23 +161,24 @@ test('con movimiento reducido, el sobre enseña lo que trae sin animación', asy
   await shot(page, info, 'v167-sobre-reducido');
 });
 
-test('sin tickets suficientes lo dice y lleva a las misiones; «Mostrar todos» salta la animación', async ({ page }, info) => {
+test('sin tickets suficientes lo dice y lleva a las misiones; abajo, el nombre del sobre y qué hacer', async ({ page }, info) => {
   test.skip(!/320x640|390x844/.test(info.project.name), '320 y 390');
   const mock = mockWith({ tickets: 15, sin_raro: 1 });
   const portal = await openPortal(page, mock);
   await portal.getByRole('button', { name: 'Entrar en la tienda del bajo' }).click();
   const shop = page.getByRole('dialog', { name: 'La tienda del bajo' });
-  // Con el de 1 sí llega; «Mostrar todos» sin rasgar enseña la carta directamente
+  // Con el de 1 sí llega; abajo, el nombre del sobre y «Toca para rasgar el precinto.»
   mock.db.piso_sorteo = ['sofa'];
   await shop.getByRole('button', { name: /^Abrir 1 · 10/ }).click();
   const gacha = page.locator('.gacha');
-  await expect(gacha.getByText('Una sorpresa para tu rincón')).toBeVisible();
+  await expect(gacha.getByRole('heading', { name: 'Sala de estar', exact: true })).toBeVisible();
+  await expect(gacha.getByText('Toca para rasgar el precinto.')).toBeVisible();
   // El «Volver» de la barra vuelve a la tienda mientras el sobre está abierto
   await expect(page.locator('.ed-bar__back')).toHaveText('Volver a la tienda');
   await page.waitForTimeout(400);
   await shot(page, info, 'v168-sobre-mostrador');
-  await gacha.getByRole('button', { name: 'Mostrar todos' }).click();
-  await expect(gacha.getByRole('button', { name: 'Sofá, poco común, nuevo' })).toBeVisible();
+  await gacha.getByRole('button', { name: 'Rasgar el sobre «Sala de estar»' }).click();
+  await expect(gacha.getByRole('button', { name: 'Sofá, poco común, nuevo' })).toBeVisible({ timeout: 5000 });
   await expect(gacha.getByText('Un mueble para tu piso · nuevo')).toBeVisible();
   await page.waitForTimeout(500);
   await shot(page, info, 'v168-sobre-uno');

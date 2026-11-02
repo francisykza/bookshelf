@@ -30,6 +30,7 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium-320x640', use: { ...devices['Desktop Chrome'], ...mobile(320, 640) } },
+    { name: 'chromium-360x800', use: { ...devices['Desktop Chrome'], ...mobile(360, 800) } },
     { name: 'chromium-390x844', use: { ...devices['Desktop Chrome'], ...mobile(390, 844) } },
     { name: 'chromium-430x932', use: { ...devices['Desktop Chrome'], ...mobile(430, 932) } },
     { name: 'chromium-1440x900', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },

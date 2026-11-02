@@ -10,6 +10,7 @@
 import { createRaster, hash, noise, rgb } from '../minigames/libreria-puerto/raster';
 import { catalogItem } from './catalog';
 import { SOBRES } from './economy';
+import { PACK_H, PACK_NEAR_H, PACK_NEAR_TAB, PACK_NEAR_TEAR, PACK_NEAR_W, PACK_W, packArt } from './shopArt';
 import { shapeOf } from './furniture';
 import { floorColor } from './render';
 
@@ -22,7 +23,7 @@ const GLOW = 0x8000;
 // Lo que se toca en el local (identificadores en el búfer de toques)
 const ID = { sobres: 1, muebles: 2, reciclar: 3 };
 // Dónde cuelga el letrero de cada sección (un punto del mundo, encima de su objeto)
-const TAG_AT = { sobres: [2.5, 5.95, 2.15], muebles: [2.9, 2.45, 2.05], reciclar: [5.85, 5.35, 1.75] };
+const TAG_AT = { sobres: [2.5, 5.6, 2.75], muebles: [2.9, 2.45, 2.05], reciclar: [5.85, 5.35, 1.75] };
 
 const WOOD = [150, 98, 60];
 const WOOD_D = [104, 66, 42];
@@ -266,8 +267,12 @@ function buildShop(r, mood, near = false) {
     if (f < 0.12 || f > 0.88 || b < 0.24 || b > 1.13) return rgb(...shade(WOOD, 1.08));
     return null;
   };
-  box(6.4, 2.55, 0, 9.9, 3.25, 1.35, WOOD, { face: (f, a, b) => (f === 'front' ? panels(a, b, 6.4, 9.9) : null) });
-  box(6.3, 2.45, 1.35, 10, 3.38, 1.46, WOOD_L, { seed: 21 });
+  // De cerca (la apertura de sobres, 1.76) el tablero es más hondo, para que el sobre y las cartas se apoyen en él:
+  // tablas a lo largo con su veta y la misma madera, rampa y luz de tarde
+  const front = near ? COUNTER_FRONT_NEAR : 3.38;
+  const plank = (f, a) => (f === 'top' && near && (a - 6.3) % 0.62 < 0.025 ? rgb(...shade(WOOD, 0.62)) : null);
+  box(6.4, 2.55, 0, 9.9, front - 0.13, 1.35, WOOD, { face: (f, a, b) => (f === 'front' ? panels(a, b, 6.4, 9.9) : null) });
+  box(6.3, 2.45, 1.35, 10, front, 1.46, WOOD_L, { seed: 21, face: plank });
   box(7.0, 2.6, 1.46, 7.75, 3.15, 1.86, GREEN, { face: (f, a, b) => (f === 'front' && b > 1.66 && b < 1.8 && a > 7.12 && a < 7.63 ? rgb(150, 214, 160) : f === 'top' && (Math.floor(a * 12) + Math.floor(b * 12)) % 2 === 0 ? rgb(...shade(GREEN, 1.2)) : null) });
   box(7.15, 3.15, 1.5, 7.6, 3.2, 1.6, BRASS, { grain: 0 });
   if (!near) item('lampara-mesa', { x: 9.0, y: 2.5 }, 1, 0, 1.46);
@@ -277,7 +282,7 @@ function buildShop(r, mood, near = false) {
   r.castShadow(8.15, 2.9, 0.4, 1.9, 1, 0.5);
 
   // ── La caja de reciclaje (sección «Reciclar»): listones, cosas asomando y su cartelito con flechas ──
-  const RX = 5.3;
+  const RX = near ? -20 : 5.3;
   const RY = 4.9;
   box(RX, RY, 0, RX + 1.1, RY + 0.9, 0.85, [176, 132, 86], {
     id: ID.reciclar,
@@ -307,36 +312,38 @@ function buildShop(r, mood, near = false) {
   r.castShadow(RX + 0.55, RY + 0.45, 0.25, 0.7, 1, 0.5);
 
   // ── El expositor de sobres (sección «Sobres»): gradas de madera con un tapete y los sobres de pie ──
-  const EX = 0.7;
+  // 1.76: más ancho y con los sobres más grandes (maqueta), que se reconozcan desde la puerta
+  const EX = 0.45;
   const EY = 5.35;
-  box(EX, EY, 0, EX + 3.6, EY + 1.25, 0.45, WOOD, { id: ID.sobres, face: (f, a, b) => (f === 'front' && b > 0.12 && b < 0.36 && Math.floor(a * 8) % 2 === 0 ? rgb(...shade(RED, 1.05)) : f === 'front' && b > 0.1 && b < 0.38 ? rgb(...RED) : null) });
-  box(EX, EY, 0.45, EX + 3.6, EY + 0.65, 0.9, WOOD_D, { id: ID.sobres });
-  box(EX, EY, 0.9, EX + 3.6, EY + 0.12, 1.65, WOOD_D, { id: ID.sobres });
-  const packFace = (sobre, x0, x1, z0, z1) => (f, a, b) => {
-    if (f !== 'front') return null;
-    const u = (a - x0) / (x1 - x0);
-    const v = (z1 - b) / (z1 - z0);
-    if (v < 0.07 || v > 0.93) return Math.floor(u * 10) % 2 ? rgb(176, 168, 160) : rgb(226, 220, 210);
-    if (v < 0.22) return u > 0.12 && u < 0.24 && v > 0.11 && v < 0.19 ? rgb(240, 195, 90) : rgb(...shade(sobre.color, 0.55));
-    if (u > 0.14 && u < 0.86 && v > 0.27 && v < 0.74) return Math.hypot(u - 0.5, v - 0.5) < 0.14 ? rgb(...shade(sobre.color, 1.15)) : rgb(251, 243, 223);
-    if (v > 0.78 && v < 0.88 && Math.abs(u - 0.5) < 0.3 && Math.floor(u * 9) % 3 === 1) return rgb(240, 220, 160);
-    return null;
+  const EW = 4.1;
+  box(EX, EY, 0, EX + EW, EY + 1.25, 0.45, WOOD, { id: ID.sobres, face: (f, a, b) => (f === 'front' && b > 0.12 && b < 0.36 && Math.floor(a * 8) % 2 === 0 ? rgb(...shade(RED, 1.05)) : f === 'front' && b > 0.1 && b < 0.38 ? rgb(...RED) : null) });
+  box(EX, EY, 0.45, EX + EW, EY + 0.65, 0.9, WOOD_D, { id: ID.sobres });
+  box(EX, EY, 0.9, EX + EW, EY + 0.12, 2.0, WOOD_D, { id: ID.sobres });
+  // La cara de cada sobre es el mismo dibujo del selector y del mostrador (packArt de shopArt.js), muestreado
+  const packFace = (sobre, x0, x1, z0, z1) => {
+    const { pixels } = packArt(sobre);
+    return (f, a, b) => {
+      if (f !== 'front') return null;
+      const ix = Math.min(PACK_W - 1, Math.max(0, Math.floor(((a - x0) / (x1 - x0)) * PACK_W)));
+      const iy = Math.min(PACK_H - 1, Math.max(0, Math.floor(((z1 - b) / (z1 - z0)) * PACK_H)));
+      const i = (iy * PACK_W + ix) * 4;
+      return pixels[i + 3] ? rgb(pixels[i], pixels[i + 1], pixels[i + 2]) : null;
+    };
   };
   const packs = [];
   SOBRES.forEach((s, i) => {
-    // Dos filas: delante, en la grada baja; detrás, en la alta (de pie y algo inclinados)
-    const row = i % 2;
-    const x0 = EX + 0.25 + Math.floor(i / 2) * 1.75 + row * 0.4;
-    const x1 = x0 + 0.62;
-    const y = row ? EY + 0.2 : EY + 0.75;
-    const z0 = row ? 0.9 : 0.45;
-    const z1 = z0 + 0.92;
-    box(x0, y, z0, x1, y + 0.08, z1, s.color, { id: ID.sobres, grain: 0, step: 0.025, face: packFace(s, x0, x1, z0, z1) });
+    // En fila en la grada baja, de pie, cada uno con su taco detrás
+    const x0 = EX + 0.12 + i * 0.98;
+    const x1 = x0 + 0.9;
+    const y = EY + 0.75;
+    const z0 = 0.45;
+    const z1 = z0 + 1.35;
+    box(x0, y, z0, x1, y + 0.06, z1, [74, 112, 76], { id: ID.sobres, grain: 0, step: 0.02, face: packFace(s, x0, x1, z0, z1) });
     // Los de detrás de cada sobre (un taco)
-    box(x0 + 0.04, y - 0.08, z0, x1 - 0.04, y, z1 - 0.06, shade(s.color, 0.7), { id: ID.sobres, grain: 0 });
-    packs.push([x0, y, z0, x1, y + 0.08, z1]);
+    box(x0 + 0.04, y - 0.08, z0, x1 - 0.04, y, z1 - 0.06, shade([74, 112, 76], 0.7), { id: ID.sobres, grain: 0 });
+    packs.push([x0, y, z0, x1, y + 0.06, z1]);
   });
-  r.castShadow(EX + 1.8, EY + 0.6, 0.3, 1.8, 1, 0.5);
+  r.castShadow(EX + EW / 2, EY + 0.6, 0.3, EW / 2, 1, 0.5);
 
   // ── Plantas y lámparas colgadas ──
   if (!near) item('planta-grande', { x: 9.0, y: 6.8 }, 0);
@@ -359,6 +366,8 @@ export function evening(r, lights, radius) {
   for (let i = 0; i < pix.length; i += 1) {
     if (r.zb[i] < -1e8) continue;
     const p = pix[i];
+    // Un píxel vacío (0) es transparente: el sobre tumbado tiene huecos entre los dientes
+    if (!p) continue;
     if (ids[i] & GLOW) {
       const lum = ((p & 255) + ((p >> 8) & 255) + ((p >> 16) & 255)) / 765;
       pix[i] = lit[lum > 0.75 ? 4 : lum > 0.5 ? 3 : 2];
@@ -500,29 +509,261 @@ export const COUNTER_H = 262;
 const S_NEAR = 44;
 const YAW_NEAR = 0.2;
 const NEAR_K = 1;
+// Hasta dónde llega el tablero hacia la cámara en el plano de cerca (1.76), y dónde queda su fondo en la imagen
+// El encuadre (1.76) baja la cámara: la dependienta queda arriba, con la cara libre, y el tablero se ve entero, con
+// madera detrás de la primera fila de cartas y delante de la segunda
+const COUNTER_FRONT_NEAR = 8.05;
+const COUNTER_Z = 1.46;
+const ANCHOR_Y = 0.344;
+// Las dos filas de cartas (3 + 2): el fondo del tablero donde apoya cada una, y su ancho en fracciones de la imagen
+const ROW_BACK = 5.05;
+const ROW_FRONT = 7.65;
+export const CARD_W = 0.26;
+export const CARD_W1 = 0.34;
 const counterCache = {};
 
 /**
  * El mostrador de cerca (fondo de la apertura de sobres): la misma tienda con la cámara junto a la caja. `mood`: 'base'
- * o 'happy' (la dependienta sonríe con los ojos cerrados). Devuelve { scene, top, edge }: la imagen y dónde empieza y
- * acaba el tablero (fracciones de la altura), para dejar encima el sobre y las cartas.
+ * o 'happy' (la dependienta sonríe con los ojos cerrados). Devuelve { scene, top, edge, at }: la imagen, dónde empieza y
+ * acaba el tablero (fracciones de la altura) y `at(x, y)`, el punto del tablero (x, y del mundo, a la altura del tablero)
+ * en fracciones del ancho y del alto de la imagen: ahí se apoyan el sobre y las cartas (1.76).
  */
-export function renderShopCounter(mood = 'base') {
-  if (counterCache[mood]) return counterCache[mood];
+/** La cámara del mostrador de cerca: el mismo encuadre para la escena, el sobre tumbado y los puntos del tablero. */
+function counterCamera() {
   const probe = createRaster({ W: 1, H: 1, S: S_NEAR, yaw: YAW_NEAR, ox: 0, oy: 0 });
   // Casi centrada en la dependienta (algo a la izquierda, para que no se vea dónde acaba el local)
   const anchor = { sx: probe.project(7.85, 1.75, 1.46).sx, sy: probe.project(8.35, 2.9, 1.46).sy };
   const w = COUNTER_W / NEAR_K;
   const h = Math.round(COUNTER_H / NEAR_K);
-  const r = createRaster({ W: w, H: h, S: S_NEAR, yaw: YAW_NEAR, ox: Math.round(w / 2 - anchor.sx), oy: Math.round(h * 0.5 - anchor.sy) });
+  const ox = Math.round(w / 2 - anchor.sx);
+  const oy = Math.round(h * ANCHOR_Y - anchor.sy);
+  const raster = () => createRaster({ W: w, H: h, S: S_NEAR, yaw: YAW_NEAR, ox, oy });
+  // Un punto del mundo (por defecto, a la altura del tablero) en fracciones del ancho y del alto de la imagen
+  const at = (x, y, z = COUNTER_Z) => {
+    const p = probe.project(x, y, z);
+    return { left: (p.sx + ox) / w, top: (p.sy + oy) / h };
+  };
+  // Y al revés: el punto del tablero bajo un punto de la imagen (fracciones)
+  const onBoard = (left, top) => probe.unprojectAtHeight(left * w - ox, top * h - oy, COUNTER_Z);
+  return { w, h, raster, at, onBoard };
+}
+
+// El centro de la imagen, a cada fondo del tablero (la cámara está algo girada)
+const centerX = (y) => 7.85 + (y - 1.75) * Math.tan(YAW_NEAR);
+
+export function renderShopCounter(mood = 'base') {
+  if (counterCache[mood]) return counterCache[mood];
+  const { h, raster, at } = counterCamera();
+  const r = raster();
   r.clear(0);
   const { lights } = buildShop(r, mood, true);
   r.applyShadows();
   r.bakeOcclusion();
   r.shadeEdges();
   evening(r, lights, 190);
-  const top = r.project(8.35, 2.45, 1.46).sy / h;
-  const edge = r.project(8.35, 3.38, 1.46).sy / h;
-  counterCache[mood] = { scene: toDataURL(r, () => rgb(58, 42, 46), NEAR_K), top, edge };
+  const top = r.project(8.35, 2.45, COUNTER_Z).sy / h;
+  const edge = r.project(8.35, COUNTER_FRONT_NEAR, COUNTER_Z).sy / h;
+  counterCache[mood] = { scene: toDataURL(r, () => rgb(58, 42, 46), NEAR_K), top, edge, at, lights };
   return counterCache[mood];
+}
+
+// El sobre en el tablero (1.76, maqueta de Francisco): de frente a la cámara, un tercio del ancho de la imagen y con la
+// base apoyada en la madera; se inclina (la parte de arriba levantada) lo justo para que su alto visible sea 1,4 veces
+// su ancho, así la faja enseña el mueble en su proporción. Su base, en fracciones de la imagen: cerrado, en el centro
+// del tablero; abierto (cinco cartas), a la izquierda, con las otras cuatro en 2 × 2 a la derecha
+const PACK_SW = 1 / 3;
+const PACK_W_WORLD = (PACK_SW * COUNTER_W) / S_NEAR;
+const PACK_L_WORLD = (PACK_W_WORLD * PACK_NEAR_H) / PACK_NEAR_W;
+// Alto en la imagen por unidad a lo largo del sobre: 0,5·cos θ + 0,866·sen θ (la proyección); se despeja θ
+const PACK_TILT = Math.PI / 3 - Math.acos((1.4 * PACK_W_WORLD) / PACK_L_WORLD);
+const PACK_BASE = { left: 0.5, top: 0.676 };
+const PACK_SIDE = { left: 0.227, top: 0.7 };
+// Cuánto se hunde en el sobre la carta que asoma (fracción del alto de la imagen) y su giro
+const PEEK_DEPTH = 0.034;
+export const PEEK_TURN = -7;
+// Los cuatro dorsos que esperan, en 2 × 2 a la derecha: centros de columna, bases de fila y ancho
+const WAIT_COLS = [0.575, 0.825];
+const WAIT_ROWS = [0.55, 0.75];
+export const WAIT_W = 0.22;
+// La tira rasgada, en la madera justo encima del sobre abierto: cuánto se aparta (fracciones de la imagen) y su giro
+const STRIP_REST = { left: 0.1, top: -0.1 };
+export const STRIP_TURN = 9;
+// Lo que se abomba el sobre por el centro (unidades del mundo)
+const PUFF = 0.15;
+const packCache = new Map();
+
+/**
+ * La geometría del sobre en el tablero, sin dibujarlo: `point(u, v, lift)` es el punto del mundo en (u, v) del dibujo
+ * (u de izquierda a derecha, v de abajo arriba, 0…1) levantado `lift` sobre su cara, y `normal` la de la cara.
+ */
+function packFrame() {
+  const { at, onBoard } = counterCamera();
+  const ca = Math.cos(YAW_NEAR);
+  const sa = Math.sin(YAW_NEAR);
+  const c = Math.cos(PACK_TILT);
+  const sn = Math.sin(PACK_TILT);
+  const base = onBoard(PACK_BASE.left, PACK_BASE.top);
+  // A lo ancho, recto en la pantalla; a lo largo, hacia el fondo y hacia arriba
+  const U = [ca, -sa, 0];
+  const V = [-sa * c, -ca * c, sn];
+  const N = [sa * sn, ca * sn, c];
+  const point = (u, v, lift = 0) => [0, 1, 2].map((k) => [base.x, base.y, COUNTER_Z][k] + (u - 0.5) * PACK_W_WORLD * U[k] + v * PACK_L_WORLD * V[k] + lift * N[k]);
+  const screen = (p) => at(p[0], p[1], p[2]);
+  return { U, V, N, point, screen, at };
+}
+
+/** El abombado del sobre en (u, v): nada en los bordes ni en los sellados de arriba y abajo, lleno en el centro. */
+function puffAt(u, v) {
+  const crimp = Math.max(3, Math.round(PACK_NEAR_H * 0.0625)) / PACK_NEAR_H;
+  const lip = 2 / PACK_NEAR_H;
+  const t = (v - crimp) / (1 - lip - 2 * crimp);
+  if (t <= 0 || t >= 1 || u <= 0 || u >= 1) return 0;
+  return PUFF * Math.sin(Math.PI * u) ** 0.55 * Math.sin(Math.PI * t) ** 0.4;
+}
+
+/**
+ * El sobre de `sobre` en el tablero del mostrador de cerca, dibujado con su misma cámara (raster.js) y de frente: la
+ * tira de arriba (con la pestaña, levantada, y su sombra) y el cuerpo, cada uno en una imagen transparente del tamaño de
+ * la escena, que se pone encima tal cual. Se abomba por el centro y la luz (del fondo a la izquierda) lo modela; en la
+ * madera deja su sombra hacia delante a la derecha. Devuelve también, en fracciones de la imagen: `box` (su recuadro,
+ * para tocarlo), `side` (cuánto se desliza a la izquierda al abrirse un sobre de cinco), `rest` y `stripAt` (dónde
+ * queda la tira rasgada, girada `STRIP_TURN` grados alrededor de su centro), y `exit` / `stripExit`: cuánto se
+ * desplazan a la izquierda, al terminar el reparto, hasta quedar fuera del encuadre (medido con sus píxeles dibujados,
+ * sombra y giro incluidos, así no asoman ni en una pantalla estrecha).
+ */
+export function counterPack(sobre) {
+  if (packCache.has(sobre.id)) return packCache.get(sobre.id);
+  const { lights } = renderShopCounter('base');
+  const { raster } = counterCamera();
+  const { U, V, N, point } = packFrame();
+  const px = packArt(sobre).near.pixels;
+  const len = (a) => Math.hypot(...a);
+  const unit = (a) => a.map((k) => k / len(a));
+  // La luz llega del fondo a la izquierda y desde arriba
+  const LIGHT = unit([-0.5, -0.6, 0.9]);
+  const flat = N.reduce((acc, k, i) => acc + k * LIGHT[i], 0);
+  const tab = PACK_NEAR_TAB;
+  // Sombra en la madera, hacia delante y a la derecha según la altura
+  const SHADOW = ((0x78 << 24) | (10 << 16) | (20 << 8) | 40) >>> 0;
+  const part = (rows0, rows1) => {
+    const r = raster();
+    r.clear(0);
+    const STEP = 3;
+    const write = (p, color, d) => {
+      const q = r.project(p[0], p[1], p[2]);
+      const ix = q.sx | 0;
+      const iy = q.sy | 0;
+      if (ix < 0 || iy < 0 || ix >= r.W || iy >= r.H) return;
+      const i = iy * r.W + ix;
+      if ((d ?? q.d) <= r.zb[i]) return;
+      r.zb[i] = d ?? q.d;
+      r.pix[i] = color;
+    };
+    for (let iy = rows0 * STEP; iy < rows1 * STEP; iy += 1)
+      for (let ix = 0; ix < PACK_NEAR_W * STEP; ix += 1) {
+        const ax = Math.floor(ix / STEP);
+        const ay = Math.floor(iy / STEP);
+        const k = (ay * PACK_NEAR_W + ax) * 4;
+        if (!px[k + 3]) continue;
+        const u = (ix + 0.5) / (PACK_NEAR_W * STEP);
+        const v = 1 - (iy + 0.5) / (PACK_NEAR_H * STEP);
+        // La pestaña, levantada: se separa del sobre más cuanto más arriba
+        const onTab = ax >= tab.x0 && ax <= tab.x1 && ay <= tab.y1;
+        const lift = puffAt(u, v) + (onTab ? 0.03 + 0.06 * (1 - ay / tab.y1) : 0);
+        // Normal del abombado (diferencias finitas) para la luz
+        const e = 0.01;
+        const du = (puffAt(u + e, v) - puffAt(u - e, v)) / (2 * e * PACK_W_WORLD);
+        const dv = (puffAt(u, v + e) - puffAt(u, v - e)) / (2 * e * PACK_L_WORLD);
+        const n = unit(N.map((c, i) => c - du * U[i] - dv * V[i]));
+        const lit = n.reduce((acc, c, i) => acc + c * LIGHT[i], 0);
+        const shade = Math.min(1.3, Math.max(0.62, 1 + 2.4 * (lit - flat)));
+        write(point(u, v, lift), rgb(px[k] * shade, px[k + 1] * shade, px[k + 2] * shade));
+      }
+    evening(r, lights, 190);
+    // La sombra en la madera: lo que queda a la vista a la derecha y delante del sobre
+    for (let iy = rows0 * STEP; iy < rows1 * STEP; iy += 1)
+      for (let ix = 0; ix < PACK_NEAR_W * STEP; ix += 1) {
+        const k = (Math.floor(iy / STEP) * PACK_NEAR_W + Math.floor(ix / STEP)) * 4;
+        if (!px[k + 3]) continue;
+        const p = point((ix + 0.5) / (PACK_NEAR_W * STEP), 1 - (iy + 0.5) / (PACK_NEAR_H * STEP));
+        const hgt = p[2] - COUNTER_Z;
+        write([p[0] + 0.07 + hgt * 0.42, p[1] + 0.05 + hgt * 0.2, COUNTER_Z], SHADOW, -1e8 + 1);
+      }
+    // Lo dibujado de verdad (sobre y sombra), para saber cuánto hay que moverlo para que salga del encuadre
+    const drawn = [];
+    for (let i = 0; i < r.pix.length; i += 1) if (r.pix[i]) drawn.push([(i % r.W) + 1, ((i / r.W) | 0) + 0.5]);
+    return { url: toDataURL(r, () => 0), drawn, W: r.W, H: r.H };
+  };
+  const strip = part(0, PACK_NEAR_TEAR);
+  const body = part(PACK_NEAR_TEAR, PACK_NEAR_H);
+  const geo = packGeometry();
+  const MARGIN = 0.03;
+  const bodyRight = Math.max(...body.drawn.map(([x]) => x)) / body.W;
+  // La tira, ya en la madera: apartada `rest` y girada alrededor de su centro (la imagen se escala igual a lo ancho
+  // y a lo alto, así que el giro en píxeles de la imagen es el mismo que en la pantalla)
+  const turn = (STRIP_TURN * Math.PI) / 180;
+  const o = [geo.stripAt.left * strip.W, geo.stripAt.top * strip.H];
+  const stripRight = Math.max(...strip.drawn.map(([x, y]) => o[0] + (x - o[0]) * Math.cos(turn) - (y - o[1]) * Math.sin(turn))) / strip.W + STRIP_REST.left;
+  const art = {
+    strip: strip.url,
+    body: body.url,
+    ...geo,
+    rest: STRIP_REST,
+    exit: { left: -bodyRight - MARGIN, top: 0 },
+    stripExit: { left: -stripRight - MARGIN, top: 0 },
+  };
+  packCache.set(sobre.id, art);
+  return art;
+}
+
+/** Lo que no depende del dibujo: el recuadro del sobre, la boca, el centro de la tira y el deslizamiento a un lado. */
+function packGeometry() {
+  const { point, screen } = packFrame();
+  const corners = [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [1, 1],
+  ].map(([u, v]) => screen(point(u, v, 0)));
+  const vTear = 1 - PACK_NEAR_TEAR / PACK_NEAR_H;
+  return {
+    box: {
+      left: Math.min(...corners.map((c) => c.left)),
+      right: Math.max(...corners.map((c) => c.left)),
+      top: Math.min(...corners.map((c) => c.top)),
+      bottom: Math.max(...corners.map((c) => c.top)),
+    },
+    mouth: screen(point(0.5, vTear, puffAt(0.5, vTear))),
+    stripAt: screen(point(0.5, (1 + vTear) / 2, 0)),
+    side: { left: PACK_SIDE.left - PACK_BASE.left, top: PACK_SIDE.top - PACK_BASE.top },
+  };
+}
+
+/**
+ * Dónde se apoyan las cartas en el tablero de cerca (1.76), en fracciones de la imagen del mostrador: la base de cada
+ * una (abajo en el centro) y su ancho. `cards`: las posiciones definitivas (una centrada, o cinco en 3 + 2 dentro de
+ * la madera), las mismas para revelarlas, elegirlas y tocarlas. `peek`: al abrir el sobre, la primera asoma por su
+ * boca (girada `PEEK_TURN` grados) y, si son cinco, el sobre se ha deslizado a la izquierda y las otras cuatro
+ * esperan boca abajo en 2 × 2 a la derecha, algo más pequeñas.
+ */
+export function counterLayout(n) {
+  const { at } = counterCamera();
+  const geo = packGeometry();
+  const row = (y) => at(centerX(y), y);
+  const shift = n === 1 ? { left: 0, top: 0 } : geo.side;
+  const mouth = { left: geo.mouth.left + shift.left, top: geo.mouth.top + shift.top + PEEK_DEPTH, w: CARD_W };
+  if (n === 1) {
+    const one = row(5.25);
+    return { side: shift, cards: [{ ...one, w: CARD_W1 }], peek: [mouth] };
+  }
+  // Cada fila, recta en la pantalla (el tablero está algo girado): su centro en el tablero y las cartas a los lados
+  const back = row(ROW_BACK);
+  const front = row(ROW_FRONT);
+  const step = CARD_W + 0.05;
+  const cards = [
+    ...[-step, 0, step].map((dx) => ({ left: back.left + dx, top: back.top, w: CARD_W })),
+    ...[-step / 2, step / 2].map((dx) => ({ left: front.left + dx, top: front.top, w: CARD_W })),
+  ].slice(0, n);
+  const waiting = WAIT_ROWS.flatMap((top) => WAIT_COLS.map((left) => ({ left, top, w: WAIT_W })));
+  return { side: shift, cards, peek: [mouth, ...waiting].slice(0, n) };
 }

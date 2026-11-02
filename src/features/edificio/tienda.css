@@ -1224,3 +1224,493 @@
     display: none;
   }
 }
+
+/* ── 1.76 (§76): el sobre y las cartas se apoyan en el tablero del mostrador de cerca, cada uno en su punto
+   (counterLayout de shopRoom.js: --x, --y son la base, en fracciones de la imagen), con una sombra corta ── */
+.gacha {
+  --ratio: calc(var(--ch) / var(--cw));
+}
+
+.gacha .gacha__stage {
+  top: calc(var(--y) * var(--ratio) * 100cqw);
+  left: calc(var(--x) * 100cqw);
+  right: auto;
+  translate: -50% -100%;
+}
+
+/* El sobre de cerca: el dibujo del primer plano, a tres cuartos de píxel del ancho por píxel */
+.gacha .gacha__env {
+  --u: 0.75cqw;
+}
+
+.gacha .gacha__shadow {
+  left: 4%;
+  right: -8%;
+  bottom: -1.5cqw;
+  height: 3cqw;
+  background: rgb(46 22 8 / 0.42);
+  transform: skewX(-24deg);
+}
+
+.gacha .gacha__cards {
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.gacha .gacha__cards li {
+  position: absolute;
+  top: calc(var(--y) * var(--ratio) * 100cqw);
+  left: calc(var(--x) * 100cqw);
+  translate: -50% -100%;
+  pointer-events: auto;
+}
+
+/* Sombra de contacto: una franja corta y oscura bajo la base de la carta, sobre la madera */
+.gacha .gacha__cards li::before {
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: -4%;
+  bottom: -1.4cqw;
+  height: 2.2cqw;
+  background: rgb(46 22 8 / 0.45);
+  transform: skewX(-24deg);
+}
+
+.gacha .gacha__card {
+  --cw: 28.5cqw;
+}
+
+.gacha .gacha__cards--n1 .gacha__card {
+  --cw: 34cqw;
+}
+
+/* ── 1.76, más cerca de las maquetas: al rasgarlo, el sobre se aparta a la izquierda y la tira queda en el tablero;
+   la primera carta asoma por la abertura y las demás esperan boca abajo en 2 × 2; al final, todas en 3 + 2. El sobre
+   y la tira, más abajo (tumbados en la madera) ── */
+.gacha {
+  padding-bottom: 0;
+}
+
+.gacha.is-cards .gacha__glow {
+  opacity: 0;
+  animation: none;
+}
+
+.gacha .gacha__cards {
+  z-index: 2;
+}
+
+.gacha .gacha__cards li {
+  transition:
+    left 0.5s cubic-bezier(0.3, 0.7, 0.3, 1),
+    top 0.5s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+/* Un solo tamaño de carta, el del reparto (CARD_W de shopRoom.js): igual boca abajo, revelada y elegida */
+.gacha .gacha__cards .gacha__card {
+  --cw: var(--card-w);
+}
+
+/* La que asoma sale de dentro del sobre: sin sombra en el tablero */
+.gacha .gacha__cards li.is-peeking::before {
+  display: none;
+}
+
+/* Destellos amarillos sobre la carta que asoma */
+.gacha__peek {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: -7cqw;
+  width: 14cqw;
+  height: 6cqw;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.gacha__peek i {
+  position: absolute;
+  bottom: 0;
+  left: calc(50% - 0.6cqw);
+  width: 1.2cqw;
+  height: 4cqw;
+  background: #ffe08a;
+  transform-origin: 50% 100%;
+  animation: gacha-twinkle 1.2s steps(2, end) infinite;
+}
+
+.gacha__peek i:nth-child(1) {
+  transform: translateX(-4.5cqw) rotate(-38deg);
+}
+
+.gacha__peek i:nth-child(3) {
+  transform: translateX(4.5cqw) rotate(38deg);
+  animation-delay: -0.6s;
+}
+
+@keyframes gacha-twinkle {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Abajo, una franja de papel de borde a borde (maqueta): el nombre del sobre, un adorno y qué hacer */
+.gacha .gacha__paper {
+  z-index: 4;
+  margin: 153cqw 0 0;
+  gap: 8px;
+  padding: 14px 18px calc(16px + env(safe-area-inset-bottom, 0px));
+  border: 0;
+  border-top: 4px solid #2a1a0f;
+  border-image: none;
+  background: #f4e7c9;
+  box-shadow: inset 0 3px 0 #fffaf0;
+  filter: none;
+}
+
+.gacha .gacha__orn {
+  width: 58%;
+}
+
+.gacha .gacha__paper .gacha__hint {
+  font: italic 500 min(1.05rem, 4.6cqw) / 1.3 'Lora', Georgia, serif;
+}
+
+.gacha .gacha__paper .gacha__hint:empty {
+  display: none;
+}
+
+/* «1 de 5 reveladas», entre dos rayas */
+.gacha__count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  color: #5b4630;
+  font: 600 min(1rem, 4.4cqw) / 1.2 'Lora', Georgia, serif;
+}
+
+.gacha__count i {
+  flex: 1;
+  height: 2px;
+  background: #c9a868;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gacha .gacha__cards li,
+  .gacha .gacha__card {
+    transition: none;
+  }
+
+  .gacha .gacha__cards li.is-peeking,
+  .gacha__peek i {
+    animation: none;
+  }
+}
+
+/* ── 1.76, selector como en la maqueta: sobres grandes, sin precio debajo, el elegido entre esquinas de latón ── */
+.ts-packs {
+  gap: 4px;
+}
+
+.ts-pack {
+  padding: 8px 0;
+}
+
+.ts-pack img {
+  width: min(86%, 76px);
+}
+
+.ts-pack[aria-pressed='true']::before {
+  inset: 0 2%;
+}
+
+/* ── 1.76, el sobre tumbado en la madera (counterPack de shopRoom.js): la tira y el cuerpo son dos capas del tamaño de
+   la escena, dibujadas con su misma cámara; la zona que se toca es el recuadro del sobre en esa misma proyección ── */
+.gacha__lie {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  pointer-events: none;
+  translate: calc(var(--ax) * 100cqw) calc(var(--ay) * var(--ratio) * 100cqw);
+  transform-origin: calc(var(--sx) * 100%) calc(var(--sy) * 100%);
+  /* Salen por la izquierda cuando las cartas ya han llegado a su sitio */
+  transition: translate 0.8s 0.5s cubic-bezier(0.5, 0, 0.75, 0.4);
+}
+
+.gacha__lie--strip {
+  z-index: 1;
+}
+
+.gacha__lie--body {
+  z-index: 3;
+}
+
+/* Apartado, el sobre queda por debajo de las cartas */
+.gacha.is-cards .gacha__lie--body,
+.gacha.is-done .gacha__lie--body {
+  z-index: 0;
+}
+
+/* El recuadro del sobre (para tocarlo y para el halo), en fracciones de la escena */
+.gacha .gacha__env,
+.gacha__fx {
+  position: absolute;
+  top: calc(var(--t) * var(--ratio) * 100cqw);
+  left: calc(var(--l) * 100cqw);
+  width: calc((var(--r) - var(--l)) * 100cqw);
+  height: calc((var(--b) - var(--t)) * var(--ratio) * 100cqw);
+  translate: none;
+}
+
+.gacha .gacha__env {
+  z-index: 5;
+  animation: none;
+}
+
+.gacha__fx {
+  z-index: 0;
+  pointer-events: none;
+  translate: calc(var(--ax) * 100cqw) calc(var(--ay) * var(--ratio) * 100cqw);
+}
+
+/* Cerrado, el sobre da un saltito de vez en cuando (más a menudo cuanto mejor es lo de dentro) */
+.gacha.is-sealed .gacha__lie {
+  animation: gacha-hop 1.6s steps(1, end) infinite;
+}
+
+.gacha--poco-comun.is-sealed .gacha__lie {
+  animation-duration: 1.3s;
+}
+
+.gacha--raro.is-sealed .gacha__lie,
+.gacha--mistico.is-sealed .gacha__lie,
+.gacha--legendario.is-sealed .gacha__lie {
+  animation-duration: 1s;
+}
+
+@keyframes gacha-hop {
+  0%,
+  60%,
+  84%,
+  100% {
+    transform: none;
+  }
+  66% {
+    transform: translateY(-0.9cqw);
+  }
+  72% {
+    transform: translateY(0);
+  }
+  78% {
+    transform: translateY(-0.45cqw);
+  }
+}
+
+/* Al rasgar, la tira entera (con su pestaña) se levanta por la perforación y cae tumbada en la madera, junto al
+   sobre; al terminar el reparto, los dos salen del encuadre */
+.gacha.is-opening .gacha__lie--strip {
+  animation: gacha-tear 0.75s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+
+.gacha.is-cards .gacha__lie--strip,
+.gacha.is-done .gacha__lie--strip {
+  transform: translate(calc(var(--rx) * 100cqw), calc(var(--ry) * var(--ratio) * 100cqw)) rotate(var(--turn));
+}
+
+@keyframes gacha-tear {
+  0% {
+    transform: none;
+  }
+  18% {
+    transform: translate(1cqw, -1.5cqw) rotate(-4deg);
+  }
+  45% {
+    transform: translate(calc(var(--rx) * 50cqw), calc(var(--ry) * var(--ratio) * 50cqw - 9cqw)) rotate(8deg);
+  }
+  100% {
+    transform: translate(calc(var(--rx) * 100cqw), calc(var(--ry) * var(--ratio) * 100cqw)) rotate(var(--turn));
+  }
+}
+
+/* La primera carta sale por la abertura: se recorta en la boca del sobre y sube desde dentro */
+.gacha .gacha__cards li.is-peeking {
+  animation: none;
+  clip-path: inset(-80% -80% 0 -80%);
+}
+
+.gacha .gacha__cards li.is-peeking .gacha__card {
+  animation: gacha-emerge 0.6s 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes gacha-emerge {
+  from {
+    translate: 0 102%;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+/* Las otras cuatro se reparten en su sitio cuando sale la primera; la primera va de la abertura a su sitio */
+.gacha .gacha__cards li:not(.is-peeking) {
+  animation-delay: calc(0.95s + var(--i) * 90ms);
+}
+
+.gacha .gacha__cards li:first-child {
+  animation: none;
+}
+
+.gacha.is-done .gacha__cards li {
+  animation: none;
+}
+
+/* La rareza: su nombre y un filo fino de su color dentro del marco de papel (común, sin filo) */
+.gacha .gacha__card.is-poco-comun .gacha__face,
+.gacha .gacha__card.is-raro .gacha__face {
+  border-image-source: var(--px-paper);
+}
+
+.gacha .gacha__face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--rb, transparent);
+  pointer-events: none;
+}
+
+.gacha .gacha__card.is-poco-comun {
+  --rb: #8fa772;
+}
+
+.gacha .gacha__card.is-raro {
+  --rb: #d4a33c;
+}
+
+.gacha .gacha__face strong {
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+/* La elegida para colocar: un ✓ pequeño dentro, arriba a la izquierda (el filo es la rareza; «Nuevo», a la derecha) */
+.gacha__pick {
+  position: absolute;
+  z-index: 2;
+  top: 2.2cqw;
+  left: 2.2cqw;
+  display: grid;
+  place-items: center;
+  width: 5.4cqw;
+  height: 5.4cqw;
+  border: 1px solid #2a1a0f;
+  background: #4f7a46;
+  color: #fbf5e6;
+  font: 700 min(0.8rem, 3.4cqw) / 1 'Lora', Georgia, serif;
+}
+
+/* El pie tiene desde el principio el alto que tendrá al final (resumen y acción): el tablero no salta */
+.gacha .gacha__paper {
+  min-height: 13.2rem;
+  align-content: start;
+}
+
+.gacha .gacha__hint--pick {
+  font-size: min(0.92rem, 4cqw);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gacha__lie,
+  .gacha.is-sealed .gacha__lie,
+  .gacha.is-opening .gacha__lie--strip,
+  .gacha .gacha__cards li.is-peeking .gacha__card {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ── 1.76, el sobre inclinado y «1 de 5» (maqueta de Francisco): tres gestos breves. Se desprende la tira y el sobre se
+   desliza a su sitio (a la izquierda en el de cinco); asoma la primera carta por la boca, girada, y las otras cuatro se
+   reparten boca abajo en 2 × 2; al continuar, las cartas van a su sitio (3 + 2) y el sobre y la tira salen ── */
+/* Primero se levanta la tira; luego el sobre se desliza a su sitio */
+.gacha.is-opening .gacha__lie,
+.gacha.is-opening .gacha__fx,
+.gacha.is-peek .gacha__lie,
+.gacha.is-peek .gacha__fx {
+  transition: translate 0.5s 0.25s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+.gacha.is-peek .gacha__glow {
+  opacity: 0;
+  animation: none;
+}
+
+.gacha.is-peek .gacha__lie--strip {
+  transform: translate(calc(var(--rx) * 100cqw), calc(var(--ry) * var(--ratio) * 100cqw)) rotate(var(--turn));
+}
+
+/* La carta que asoma está dentro del sobre: el cuerpo del sobre va delante y tapa su parte de abajo. Al continuar, el
+   sobre pasa detrás un instante después, cuando la carta ya ha empezado a salir */
+.gacha.is-cards .gacha__lie--body {
+  transition:
+    translate 0.8s 0.5s cubic-bezier(0.5, 0, 0.75, 0.4),
+    z-index 0s 0.1s;
+}
+
+.gacha .gacha__cards li.is-peeking {
+  clip-path: none;
+}
+
+.gacha .gacha__cards li.is-peeking .gacha__card {
+  rotate: var(--peek-turn);
+  animation: gacha-emerge 0.5s 0.75s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.gacha .gacha__cards .gacha__card {
+  transform-origin: 50% 100%;
+  transition:
+    rotate 0.5s cubic-bezier(0.3, 0.7, 0.3, 1),
+    width 0.5s cubic-bezier(0.3, 0.7, 0.3, 1),
+    height 0.5s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+@keyframes gacha-emerge {
+  0% {
+    opacity: 0;
+    translate: 0 88%;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* Los cuatro dorsos se reparten cuando el sobre ya está en su sitio */
+.gacha .gacha__cards li:not(.is-peeking) {
+  animation-delay: calc(0.8s + var(--i) * 90ms);
+}
+
+.gacha .gacha__cards li:first-child {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gacha .gacha__cards .gacha__card,
+  .gacha.is-opening .gacha__lie,
+  .gacha.is-peek .gacha__lie {
+    transition: none;
+  }
+}
+
+/* Dentro del sobre solo se ve hasta el nombre: la rareza (y el filo) asoman al salir del todo */
+.gacha .gacha__cards li.is-peeking .gacha__face small {
+  visibility: hidden;
+}

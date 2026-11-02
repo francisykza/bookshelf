@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **1.76.0 (2026-11-02), en un PR a `main`, aún sin publicar**: la apertura de sobres sobre el mostrador (§76): un
+  sobre por colección, de frente e inclinado en la madera, tres gestos («1 de 5» con 2 × 2), 3 + 2, y «Colocar
+  [nombre]» al editor del piso. Sin migraciones. Se publica al fusionar el PR (subir `main` despliega en Vercel).
 - **Versión publicada**: 1.75.0 (2026-11-02): el vestíbulo del Gran Hotel con el ascensor de latón (§75; plan de
   salas en `docs/qa/gran-hotel.md` §9). Sin migraciones.
 - **Antes, 1.74.0** (2026-11-02), en https://bookshelf-wine-iota.vercel.app: los menús de debajo de las
@@ -40,6 +43,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.76.0 | La apertura de sobres sobre el mostrador: un sobre por colección (expositor, selector y mostrador), de frente e inclinado en la madera, tres gestos (tira, carta que asoma con 2 × 2, 3 + 2), el sobre sale del encuadre, elegir con ✓ y «Colocar [nombre]» al editor del piso (en PR) | §76 |
 | 1.75.0 | El vestíbulo del Gran Hotel por dentro: recepción con los encargos de la semana, ascensor de latón con la botonera de plantas, tablón y guardarropa (publicada) | §75 |
 | 1.74.0 | Los menús de debajo de las habitaciones (balda con nombres, armario-cabina, mesita del vecino de madera) y la limusina negra delante del portal que lleva, con un viaje corto, a la fachada viva del Gran Hotel (publicada) | §74 |
 | 1.73.0 | Místicos en el sobre de coleccionista (1 %, ¼ legendario, sin pity propio) con su aparición; la melodía «Dos balcones» en bucle en el edificio; el edificio a pantalla completa en el móvil; el buzón en la fachada (publicada; migración aplicada) | §73 |
@@ -78,6 +82,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Cartel de la tienda (1.76)**: el local dice VIDEOCLUB y la maqueta de Francisco «LA TIENDA DEL BAJO»; preguntarle
+  antes de cambiarlo. Y fusionar el PR de la 1.76.0 cuando él lo apruebe.
 000. **Paquete «salón social y radio» (1.62, §62): publicado completo.** Lo que sigue es el resumen del encargo del bloque 4,
    ya cumplido: Encargo completo en `material-diseno/social-radio/BookShelf-social-radio/` (fuera de git, en este
    ordenador): `PROMPT-CLAUDE.md` apartado 5 y la maqueta `maquetas/04-comunidad.png` (columna derecha). Resumen:
@@ -153,6 +159,35 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-02 · cuenta principal · 1.76.0: apertura de sobres sobre el mostrador (en un PR a `main`)
+- Encargo de Francisco (dos documentos y una maqueta de tres pantallas: tienda, sobre cerrado y apertura de cinco), luego
+  «haz que se parezca más a las maquetas», varias listas de correcciones y la maqueta del sobre cerrado y «1 de 5».
+  Cerrado como 1.76.0 («Sí, cierra 1.76.0»): versión subida, SPEC §76 y PR.
+- Hecho: una definición del sobre por colección (`shopArt.js`: faja crema alta con el mueble de portada con margen,
+  borde del color de la colección, tira dentada con la pestaña roja de una pieza que asoma por arriba) usada en el
+  expositor, el selector (sobres grandes, sin precio) y el mostrador. En el mostrador de cerca el sobre está **de frente
+  e inclinado** en el centro de la madera (`counterPack` en `shopRoom.js`, misma cámara): un tercio del ancho y un alto
+  visible 1,4 veces el ancho (la inclinación se despeja de la proyección), abombado y modelado por la luz, con sombra en
+  cuña; sellados crema con estrías, tres pliegues, línea de rasgado discontinua y la pestaña roja levantada con sombra.
+  La zona que se toca es su recuadro proyectado. Tres gestos: la tira se desprende entera y queda justo encima; el sobre
+  se desliza a la izquierda y la primera carta asoma boca arriba por su boca (nombre legible) mientras las otras cuatro
+  esperan en 2 × 2 a la derecha (dorsos con filete dorado): «1 de 5 reveladas» (`layout.peek` en `counterLayout`); al
+  continuar (tocar un dorso o «Revelar todas»), las cartas van a **un solo reparto 3 + 2**, el mismo para la revelación
+  y la elección, y el sobre vacío y la tira se deslizan hasta quedar **fuera del encuadre** (`exit` / `stripExit`,
+  medidos con sus píxeles dibujados, sombra y giro incluidos, para que no asomen ni a 360 px); al final ya no se montan.
+  Encuadre
+  más bajo (ANCHOR_Y 0,344, tablero hasta 8,05): la cara de la dependienta libre y madera detrás de la primera fila y
+  delante de la segunda. El pie tiene su alto reservado desde el principio. Con movimiento reducido, la misma
+  composición final, sin sobre ni tira. Abajo, la franja crema de la maqueta («Sala de estar» /
+  «Toca para rasgar el precinto.», luego «N de 5 reveladas» y «Revelar todas»). Rareza con texto y filo fino; «Nuevo»
+  terracota; la carta elegida lleva un ✓ pequeño dentro, arriba a la izquierda, y la acción dice «Colocar [nombre]»: abre tu piso decorando con ese mueble puesto
+  y elegido (`placeId` en `mountPiso`); «Guardar» lo devuelve al inventario y el piso queda como estaba. Nada se vuelve
+  a cobrar ni a sortear.
+- Pruebas: `e2e-community/v176-sobre-mostrador.spec.js` y `v176-rasgado.spec.js` (graba el rasgado a 360), v167 y v173
+  ajustadas; pasan en Chromium 360/390/1440 y WebKit 390 (emulación; nada probado en un iPhone real).
+- Queda: el cartel del local dice VIDEOCLUB y la maqueta «LA TIENDA DEL BAJO» (no se ha cambiado sin preguntar); fusionar
+  el PR (al subir `main`, comprobar que `/sw.js` trae la 1.76.0).
 
 ### 2026-11-02 · cuenta principal · 1.75.0: el vestíbulo del Gran Hotel con el ascensor de latón (publicada)
 

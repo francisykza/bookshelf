@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.75.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.76.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4624,3 +4624,63 @@ va en un papel debajo del dibujo.
 
 - **Pruebas**: `e2e-community/v175-vestibulo.spec.js` (entrar, encargos, botonera, la «P», teclado y Escape, «A la
   calle» y vuelta al portal) en Chromium 320/390/1440 y WebKit 390; `v174-limusina.spec.js` sigue pasando.
+
+## 76. La apertura de sobres sobre el mostrador (1.76.0)
+
+Francisco pasó dos documentos y una maqueta de tres pantallas (la tienda con el selector, el sobre cerrado en el
+mostrador y la apertura de cinco con «1 de 5 reveladas»), y después varias rondas de correcciones sobre capturas a
+360 × 800. Se toma de la maqueta la composición; el dibujo es el de la app (`raster.js`, la tendera, los muebles, los
+colores y los marcos de `pixelUi.js`).
+
+### 76.1 Un solo sobre por colección
+
+`shopArt.js` define **un sobre por colección** que se usa en los tres sitios: el expositor de la tienda (muestreado
+píxel a píxel), el selector y el primer plano del mostrador. El cuerpo verde de la casa; la faja crema alta con el
+mueble de portada en su proporción y con margen; la tira de arriba del color de la colección, con la **línea de rasgado
+discontinua**; la **pestaña roja** de una sola pieza con la tira, que asoma por encima; los **sellados de arriba y abajo
+en crema con estrías**; y la casita del edificio abajo. En el primer plano, además, **tres pliegues** en el verde, la
+costura de la faja y la sombra de la pestaña. El reverso de las cartas lleva el color de la colección, un **filete
+dorado** y la casita en crema. El selector enseña los sobres grandes y sin precio debajo (el precio va en «Abrir 1 · 10»
+y «Abrir 5 · 45»). La portada de «Luces del puerto» pasa a ser la lámpara de mesa.
+
+### 76.2 El sobre en el mostrador
+
+`counterPack` (`shopRoom.js`) dibuja el sobre con la misma cámara que el mostrador de cerca, **de frente** y con la base
+apoyada en la madera: **un tercio del ancho de la imagen** y un alto visible de **1,4 veces el ancho**. La inclinación
+se despeja de la proyección (alto por unidad a lo largo del sobre: 0,5·cos θ + 0,866·sen θ), así la faja enseña el
+mueble sin aplastarlo. Se abomba por el centro (nada en los bordes ni en los sellados) y la luz, del fondo a la
+izquierda, lo modela; la pestaña está levantada y en la madera deja una sombra en cuña que crece con la altura. La tira
+(con la pestaña) y el cuerpo son dos capas transparentes del tamaño de la escena. Lo que se toca es su recuadro
+proyectado. Cerrado, da un saltito de vez en cuando (más a menudo cuanto mejor es lo de dentro, que es verdad).
+
+El encuadre de cerca baja la cámara (ANCHOR_Y 0,344, tablero hasta 8,05): la cara de la dependienta queda libre y hay
+madera detrás de la primera fila de cartas y delante de la segunda.
+
+### 76.3 Tres gestos breves
+
+1. Al tocarlo, **la tira se desprende entera** y queda en la madera justo encima del sobre, algo girada.
+2. El sobre de cinco **se desliza a la izquierda** y la primera carta **asoma boca arriba por su boca**, girada, con el
+   nombre por encima del sobre (la rareza queda dentro); las otras cuatro se reparten **boca abajo en 2 × 2 a la
+   derecha**. Es la composición «1 de 5 reveladas», con «Revelar todas» en el pie (`layout.peek` de `counterLayout`).
+   En el de una carta, el sobre se queda en el centro y la carta sigue sola.
+3. **Al continuar** (tocar un dorso, «Revelar todas» o la carta que asoma), las cartas van a su **sitio definitivo,
+   3 + 2** (`layout.cards`), el mismo para revelarlas, elegirlas y tocarlas; «Revelar todas» las gira en su sitio. El
+   sobre vacío y la tira se deslizan a la izquierda hasta quedar **fuera del encuadre**: cuánto, se mide con sus píxeles
+   dibujados (sombra y giro de la tira incluidos), así no asoman ni a 360 px. Al terminar ya no se montan: sobre la
+   madera solo quedan las cinco recompensas.
+
+El pie tiene desde el principio el alto que tendrá al final, así el tablero no salta. Con movimiento reducido se va
+directo a la composición final, sin sobre ni tira.
+
+### 76.4 Elegir y colocar
+
+Las cartas llevan la rareza con su nombre y un filo fino de su color, y «Nuevo» en terracota. Tocar una carta revelada
+la **elige**: solo ella lleva un ✓ pequeño dentro, arriba a la izquierda, y la acción dice **«Colocar [nombre]»** (sin
+elegir, «Colocar en mi piso»). Abre tu piso decorando con ese mueble ya puesto y elegido (`placeId` en `mountPiso`);
+«Guardar» lo devuelve al inventario y el piso queda como estaba. Son las recompensas que ya confirmó la compra: nada se
+vuelve a cobrar ni a sortear. Un legendario no se coloca (te acompaña).
+
+- **Pruebas**: `e2e-community/v176-sobre-mostrador.spec.js` (silueta del sobre cerrado, «1 de 5», posiciones contra el
+  reparto calculado, salida del encuadre píxel a píxel, elección del gato y el editor con esa pieza, movimiento
+  reducido) y `v176-rasgado.spec.js` (graba los tres gestos a 360), con `sobreShop.js` común; v167 y v173 ajustadas.
+  Pasan en Chromium 360/390/1440 y WebKit 390 (emulación; nada probado en un iPhone real).

@@ -84,8 +84,8 @@ test('un legendario en el sobre de coleccionista: sus probabilidades, su carta y
   await shop.getByRole('button', { name: /^Abrir 5 · 110/ }).click();
   await expect(gacha).toHaveClass(/gacha--mistico/);
   await gacha.getByRole('button', { name: /^Rasgar el sobre/ }).click();
-  await expect(gacha.getByRole('button', { name: /^Dar la vuelta a la carta/ })).toHaveCount(5, { timeout: 5000 });
-  await gacha.getByRole('button', { name: 'Mostrar todos' }).click();
+  await expect(gacha.getByRole('button', { name: /^Revelar carta \d de 5$/ })).toHaveCount(4, { timeout: 5000 });
+  await gacha.getByRole('button', { name: 'Revelar todas' }).click();
   await expect(gacha.getByRole('button', { name: 'Farol de llama azul, místico, nuevo' })).toBeVisible();
   await expect(gacha.locator('.gacha__mnote')).toHaveText('Farol de llama azul se coloca en tu piso sobre su peana, en la pestaña «Místicos».', { timeout: 5000 });
   await page.waitForTimeout(700);
