@@ -1,13 +1,13 @@
-// La fachada del Gran Hotel, viva (concepto, solo desarrollo): sobre el dibujo quieto de hotel-concepto.js, los focos
+// La fachada del Gran Hotel, viva (en la app desde la 1.74 con GranHotel.jsx; también en dev/hotel-concepto.html): sobre el dibujo quieto de hotelArt.js, los focos
 // barren el cielo, la aguja parpadea, las bombillas de la marquesina corren, el neón rosa titila de vez en cuando,
 // alguna ventana se apaga o se enciende, el agua ondula, cruzan estrellas fugaces y estallan fuegos artificiales detrás
 // de la torre (efectos de pixelfx, src/vendor/pixelfx), la gente pasea y charla con bocadillos. Como en la fachada del
 // edificio, se toca: cada planta se ilumina al pasar por encima y al tocarla se abre su tarjeta. Con movimiento
 // reducido, el dibujo se queda quieto (pero se sigue tocando).
-import { clearFrame, createFrame, createFx } from '../src/vendor/pixelfx/core/index.js';
-import * as fireworkBurst from '../src/vendor/pixelfx/fx/explosions/firework-burst.js';
-import * as shootingStars from '../src/vendor/pixelfx/fx/weather/shooting-stars.js';
-import { renderHotel } from './hotel-concepto.js';
+import { clearFrame, createFrame, createFx } from '../../../vendor/pixelfx/core/index.js';
+import * as fireworkBurst from '../../../vendor/pixelfx/fx/explosions/firework-burst.js';
+import * as shootingStars from '../../../vendor/pixelfx/fx/weather/shooting-stars.js';
+import { renderHotel } from './hotelArt.js';
 
 export const ZONES = {
   plaza: { nombre: 'La plaza del muelle', texto: 'Donde se llega. Aquí ves quién ha entrado hoy y te paras a saludar.' },
@@ -257,9 +257,23 @@ export function mountHotel(host, { onPick = () => {}, still = false, t0 = 0 } = 
     frame();
   } else raf = requestAnimationFrame(step);
 
+  // El centro de cada planta en el dibujo (en fracciones), para poner encima su botón
+  const centers = zoneIds.map((id, k) => {
+    let sx = 0;
+    let sy = 0;
+    let n = 0;
+    for (let i = 0; i < W * H; i += 1) {
+      if (h.zoneMap[i] !== k + 1) continue;
+      sx += i % W;
+      sy += (i / W) | 0;
+      n += 1;
+    }
+    return { id, x: n ? sx / n / W : 0.5, y: n ? sy / n / H : 0.5 };
+  });
+
   return {
     canvas,
-    zones: h.zones,
+    zones: h.zones.map((z, k) => ({ ...z, center: centers[k] })),
     select,
     destroy() {
       cancelAnimationFrame(raf);

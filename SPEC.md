@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.73.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.74.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4522,3 +4522,61 @@ repetirlo no cambia nada.
 - **Pruebas**: `misticos.rls.test.js` (PGlite, 8: cifras, que los otros sobres no los den, el reparto de
   legendarios y el pity), `tienda.rls.test.js` con la paridad de las cifras nuevas,
   `e2e-community/v173-misticos-sobre.spec.js` y `v173-musica.spec.js`.
+
+## 74. Los menús de debajo de las habitaciones, la cabina del armario y la limusina al Gran Hotel (1.74.0)
+
+Encargo de Francisco del 2-11-2026: «mejorar la interfaz de cómo se ven los menús que están debajo de las
+habitaciones»; para el armario, «una cabina, que se vea tu personaje en grande y que puedas ir cambiando los tipos de
+accesorios, más organizado».
+
+### 74.1 La balda
+
+- Cada pestaña lleva, bajo su dibujo, su **nombre corto a la vista** (Asientos, Mesas, Luz… Armario, Paredes, En el
+  piso); el nombre completo sigue siendo el nombre accesible. La fila se recorre de lado con imán y se **difumina por
+  la derecha** donde sigue.
+- Fuera la línea de título (ya lo dice la pestaña): ese sitio es para los muebles. La pista va en cursiva, más discreta.
+
+### 74.2 La cabina del armario (`piso.js`, `fillWardrobe`)
+
+- A la izquierda, **la cabina**: marco dorado, cortinas de terciopelo, un espejo de luz cálida y una alfombrilla; dentro,
+  **tu personaje de cuerpo entero en grande** (96 px) y, si tienes uno, quien te acompaña flotando a su lado (quieto con
+  movimiento reducido). Se redibuja con cada cambio.
+- A la derecha, **una pestaña por clase de cosa** (Te acompaña, Piel, Pelo, Color, Jersey, Pantalón, Gafas, Extras;
+  `role="tablist"`, flechas para pasar), que se reparten en filas sin cortarse; debajo, **las muestras de esa clase en
+  cuadrícula** (bajan, no se cortan a los lados). La pestaña elegida se recuerda mientras estés en el piso; la primera
+  vez, «Te acompaña» si tienes un legendario, si no «Piel».
+- Las reglas no cambian: lo que se gana con las misiones sale apagado hasta ganarlo.
+
+### 74.3 La mesita del vecino
+
+- En la vista «dentro», el mismo mueble de madera que la balda, con sus pestañas de papel (la elegida, verde y
+  levantada).
+- Las frases del buzón y del libro de visitas, en **dos columnas que se leen enteras** (antes, una fila que se cortaba
+  a los lados); lo de regalar, en cuadrícula de muestras de tamaño fijo.
+
+### 74.4 La limusina negra al Gran Hotel (bloque 1 de `docs/qa/gran-hotel.md`)
+
+Francisco: «para llegar al gran hotel, tengas que coger una limusina lujosa negra»; dónde se coge, aprobado con
+«Sí, a la limusina».
+
+- **La limusina** (`edificio/limo.js`, dibujo propio con el rasterizador de las fachadas): larga y negra, con filo
+  cromado, brillo de charol arriba, cristales tintados, tapacubos, pilotos rojos, faros encendidos y su chófer de gorra
+  esperando detrás. Está **aparcada en el muelle, delante de la tienda**, y es un botón de la fachada («Coger la
+  limusina al Gran Hotel», placa negra «Al Gran Hotel»).
+- **El viaje** (`hotel/ride.js`; Francisco: «el camino se ve muy simple y plano»): la calle del puerto de noche, dibujada
+  con el mismo rasterizador: casas de colores con ventanas encendidas y tiendas con toldo, farolas en la acera, la
+  calzada con su raya dorada, el paseo con bolardos y cadenas, y el agua con el reflejo de cada farola. La limusina la
+  recorre (3,4 s, con los faros alumbrando la calzada) y la cámara la sigue, ampliada en píxeles; al llegar se funde con
+  el hotel. Se salta tocándolo. Con movimiento reducido no hay viaje.
+- **El Gran Hotel**: la fachada viva del concepto (`hotel/hotelArt.js` y `hotel/hotelView.js`, antes en `dev/`), con
+  la limusina esperando ante la alfombra roja. Francisco: «tiene demasiados menús y se empequeñece»: **sin fila de
+  botones** y **a todo lo que da la pantalla** (en el móvil llena el alto y recorta un poco los lados). Cada planta se
+  toca en el dibujo y una nota pequeña de papel arriba dice qué habrá, con el sello «Abre pronto» (se cierra con la ×,
+  tocando fuera o con Escape): aún no se entra en ninguna sala. Para el teclado, cada planta tiene un botón sobre el
+  dibujo que solo se ve al enfocarlo. Con movimiento reducido, el dibujo queda quieto.
+- Se abre como un «piso» más del portal (`panel.id = 'hotel'`): **«Volver en limusina»** y Atrás vuelven al portal.
+
+- **Pruebas**: `e2e-community/v174-limusina.spec.js` (portal → viaje → hotel → planta → vuelta; y con movimiento
+  reducido, sin viaje y quieto), `v169-personaje`, `v170-diarias` (eligen la pestaña antes de cada clase), `v172-misticos`,
+  `v171-vecinos`, `v163-edificio`, `v166-inventario` y `e2e/edificio-puerto.spec.js` (las pestañas de la balda se
+  buscan por `data-cat`).

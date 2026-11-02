@@ -71,6 +71,7 @@ async function doMission(page, mine, id) {
   } else if (id === 'armario') {
     await decorating(mine, true);
     await mine.locator('.ep-chip[data-cat="personaje"]').click();
+    await mine.locator('.ep-wardrobe').getByRole('tab', { name: 'Pelo', exact: true }).click();
     await mine.locator('.ep-wardrobe').getByRole('group', { name: 'Pelo' }).getByRole('button', { name: 'Rizos' }).click();
   } else if (id === 'color') {
     await pick(mine, 'Sillón');
@@ -111,6 +112,7 @@ test('misiones del día: la hoja, las tres hechas y la prenda en el armario', as
   // En el armario, lo que se gana se ve apagado y no se pone
   await decorating(mine, true);
   await mine.locator('.ep-chip[data-cat="personaje"]').click();
+  await mine.locator('.ep-wardrobe').getByRole('tab', { name: 'Complemento' }).click();
   const extras = mine.locator('.ep-wardrobe').getByRole('group', { name: 'Complemento' });
   await expect(extras.getByRole('button', { name: 'Bufanda (se gana con las misiones del día)' })).toHaveClass(/is-locked/);
   await extras.getByRole('button', { name: /^Bufanda/ }).click();
@@ -133,6 +135,7 @@ test('misiones del día: la hoja, las tres hechas y la prenda en el armario', as
   // La bufanda ya se puede poner (y se guarda); el gorro, todavía no
   await decorating(mine, true);
   await mine.locator('.ep-chip[data-cat="personaje"]').click();
+  await mine.locator('.ep-wardrobe').getByRole('tab', { name: 'Complemento' }).click();
   await extras.getByRole('button', { name: 'Bufanda', exact: true }).click();
   await expect(extras.getByRole('button', { name: 'Gorro de lana (se gana con las misiones del día)' })).toBeVisible();
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.personaje?.complemento, { timeout: 8000 }).toBe('bufanda');
@@ -149,6 +152,8 @@ test('sin la migración de las misiones, ni hoja ni prendas por ganar', async ({
   await expect(mine.locator('canvas.ep-canvas')).toHaveAttribute('data-actor', 'stand');
   await expect(mine.getByRole('button', { name: /^Hoy en tu piso/ })).toBeHidden();
   await mine.locator('.ep-chip[data-cat="personaje"]').click();
+  await mine.locator('.ep-wardrobe').getByRole('tab', { name: 'Complemento' }).click();
   await expect(mine.locator('.ep-wardrobe').getByRole('group', { name: 'Complemento' }).getByRole('button')).toHaveCount(1);
+  await mine.locator('.ep-wardrobe').getByRole('tab', { name: 'Jersey' }).click();
   await expect(mine.locator('.ep-wardrobe').getByRole('group', { name: 'Jersey' }).getByRole('button')).toHaveCount(8);
 });

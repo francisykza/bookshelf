@@ -1941,3 +1941,295 @@
     animation: none;
   }
 }
+
+/* ── 1.74 (§74; Francisco: «mejorar cómo se ven los menús de debajo de las habitaciones»; para el armario, «una cabina
+   con tu personaje en grande y las clases de accesorios, más organizado») ── */
+/* Balda: cada pestaña dice qué es, bajo su dibujo; la fila se recorre de lado y se difumina donde sigue */
+.ep-cats {
+  gap: 3px;
+  padding-right: 28px;
+  scroll-snap-type: x proximity;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+
+.ep-chip {
+  grid-template-rows: 28px auto;
+  align-content: center;
+  gap: 1px;
+  width: 62px;
+  height: 58px;
+  scroll-snap-align: start;
+}
+
+.ep-chip .ep-chip__img,
+.ep-chip .px-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.ep-chip__name {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ep-ink);
+  font: 700 0.62rem/1.05 'Lora', Georgia, serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* El nombre ya está en la pestaña: sin la línea de título, el sitio es para los muebles */
+.ep-shelf__title {
+  display: none;
+}
+
+.ep-shelf__hint {
+  font: italic 500 0.86rem/1.2 'Cormorant Garamond', Georgia, serif;
+}
+
+/* El armario es una cabina: tu personaje en grande, con quien te acompaña; al lado, qué cambiar y sus muestras */
+.ep-wardrobe {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 4px 0 16px;
+}
+
+.ep-wardrobe[hidden] {
+  display: none;
+}
+
+.ep-cabin {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  height: 176px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 6px solid transparent;
+  border-image: var(--px-rimGold) 6 / 6px stretch;
+  /* Al fondo, un espejo de luz cálida; alrededor, la madera oscura de la cabina */
+  background:
+    radial-gradient(ellipse 34% 40% at 50% 46%, #fbf0d4 0 82%, #e8d2a4 83% 100%, transparent 101%),
+    linear-gradient(#4a2e3e, #3a2432);
+  background-origin: padding-box;
+  background-clip: padding-box;
+}
+
+/* Las cortinas a los lados y la barra de arriba, de terciopelo */
+.ep-cabin::before,
+.ep-cabin::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 14px;
+  width: 14px;
+  background: repeating-linear-gradient(90deg, #8e2f3a 0 4px, #6e2230 4px 6px, #a8434c 6px 9px);
+  pointer-events: none;
+}
+
+.ep-cabin::before {
+  left: 0;
+}
+
+.ep-cabin::after {
+  right: 0;
+}
+
+.ep-cabin__curtain {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 12px;
+  background: repeating-linear-gradient(90deg, #a8434c 0 5px, #8e2f3a 5px 8px), #8e2f3a;
+  box-shadow: 0 3px 0 #b98b2f;
+}
+
+.ep-cabin__me {
+  position: relative;
+  z-index: 1;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 10px;
+  image-rendering: pixelated;
+}
+
+.ep-cabin__pal {
+  position: absolute;
+  z-index: 2;
+  top: 22px;
+  right: 12px;
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 0 rgb(30 18 10 / 0.45));
+}
+
+.ep-cabin__rug {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 6px;
+  height: 10px;
+  background: linear-gradient(#c8605a 0 3px, #a8434c 3px 7px, #6e2230 7px);
+}
+
+.ep-wardrobe__side {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ep-wardrobe__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* Las clases de cosas: etiquetas de papel; la elegida, levantada */
+.ep-wtab {
+  min-height: 34px;
+  padding: 0 6px;
+  border: 6px solid transparent;
+  border-image: var(--px-pressed) 6 fill / 6px stretch;
+  background: none;
+  color: var(--ep-ink);
+  font: 600 0.74rem/1 'Lora', Georgia, serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ep-wtab[aria-selected='true'] {
+  border-image-source: var(--px-sage);
+  color: #fbf5e6;
+  transform: translateY(-2px);
+}
+
+.ep-wtab:focus-visible {
+  outline: 2px solid #fbf3df;
+  outline-offset: 1px;
+}
+
+/* Sus muestras, en una cuadrícula que baja (sin cortes a los lados) */
+.ep-wardrobe__opts {
+  max-height: 136px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #c8946a transparent;
+}
+
+.ep-wardrobe .ep-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 3px;
+  padding: 0;
+}
+
+.ep-wardrobe .ep-swatch {
+  min-width: 0;
+  font-size: 0.7rem;
+}
+
+.ep-wardrobe .ep-swatch span {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  text-align: center;
+}
+
+.ep-wardrobe .ep-swatch__img {
+  width: 40px;
+  height: 40px;
+}
+
+/* En el móvil tumbado, la cabina más baja */
+@media (max-height: 500px) {
+  .ep-cabin {
+    height: 132px;
+  }
+
+  .ep-cabin__me {
+    width: 72px;
+    height: 72px;
+  }
+
+  .ep-wardrobe__opts {
+    max-height: 96px;
+  }
+}
+
+/* La mesita del vecino, como la balda: un mueble de madera con pestañas de papel; las frases, en dos columnas que se
+   leen enteras (antes se cortaban a los lados) */
+.ed-inside .ed-desk {
+  padding: 2px 6px calc(6px + env(safe-area-inset-bottom));
+  border-image: var(--px-wood) 6 fill / 6px stretch;
+  color: #fbf3df;
+}
+
+.ed-inside .ed-desk h3 {
+  color: #fbf3df;
+}
+
+.ed-desk__tabs {
+  padding-top: 4px;
+}
+
+.ed-desk__tab[aria-selected='true'] {
+  transform: translateY(-2px);
+}
+
+.ed-inside .ed-desk .ed-sellos__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  overflow: visible;
+}
+
+.ed-inside .ed-desk .ed-sello {
+  min-height: 44px;
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.ed-inside .ed-desk .ed-sellos__row.ed-gifts {
+  grid-template-columns: repeat(auto-fill, 84px);
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.ed-inside .ed-desk .ed-gift {
+  min-width: 0;
+  width: 84px;
+}
+
+.ed-inside .ed-desk .ed-sellos__msg,
+.ed-inside .ed-desk .ed-sellos__empty {
+  color: rgb(251 243 223 / 0.88);
+  font: italic 500 0.9rem/1.25 'Cormorant Garamond', Georgia, serif;
+}
+
+/* Quien te acompaña flota un poco en la cabina (quieto si se pide menos movimiento) */
+.ep-cabin__pal {
+  animation: ep-pal-float 1.8s steps(2, jump-none) infinite;
+}
+
+@keyframes ep-pal-float {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ep-cabin__pal {
+    animation: none;
+  }
+}
+
+/* La limusina en el portal del edificio: su placa, negra con letras doradas, bajo el coche */
+.ed-limo .ed-window__plate {
+  background: #1c1a24;
+  color: #f0c468;
+  transform: translateY(70%);
+}

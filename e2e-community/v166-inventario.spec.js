@@ -66,7 +66,7 @@ test('la balda con tus copias, lo agotado apagado y «Tu mudanza» con seis comu
   expect(mock.db.piso_inventario[ANA.id]).toMatchObject({ silla: 2, sillon: 3, 'mesa-baja': 3 });
 
   // Ya en la balda: dos sillones libres; al poner uno, queda uno
-  await mine.locator('.ep-chip', { hasText: 'Para sentarse' }).click();
+  await mine.locator('.ep-chip[data-cat="asientos"]').click();
   await expect(mine.getByRole('button', { name: 'Añadir silla (te quedan 2)' })).toBeVisible();
   await mine.getByRole('button', { name: 'Añadir sillón (te quedan 2)' }).click();
   await expect(mine.getByRole('button', { name: 'Añadir sillón (te quedan 1)' })).toBeVisible();

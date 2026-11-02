@@ -7,6 +7,7 @@
 // balcón cuenta algo de quien vive dentro (macetas, guirnalda, el gato). Las puertas libres tienen la persiana bajada.
 // Devuelve el dibujo y dónde cae cada piso (para los botones).
 import { createRaster, hash, noise, rgb } from '../minigames/libreria-puerto/raster';
+import { drawLimo } from './limo';
 import { windowPictures } from './windowView';
 
 const S = 18;
@@ -315,6 +316,8 @@ export function renderFacade(flats = {}) {
   r.box(0.6, BD + 1.7, 0, 0.95, BD + 2.05, 0.45, IRON, { grain: 0 });
   r.box(0.55, BD + 1.65, 0.45, 1.0, BD + 2.1, 0.52, IRON, { grain: 0 });
   r.castShadow(0.8, BD + 1.9, 0.4, 0.25);
+  // La limusina negra (1.74, §74), aparcada delante de la tienda con su chófer: se toca para ir al Gran Hotel
+  const limoAt = drawLimo(r, 4.85, BD + 0.95, { glowId: GLOW_BIT });
 
   // La escalera: dos ventanas pequeñas por planta en el cuerpo central, con cortinas amarillas encendidas
   for (let k = 0; k < 3; k += 1) {
@@ -493,5 +496,7 @@ export function renderFacade(flats = {}) {
   const m0 = r.project(2.88, BD + 0.24, 0.8);
   const m1 = r.project(3.28, BD, 1.36);
   const mailbox = { left: Math.min(m0.sx, m1.sx) / W, top: Math.min(m0.sy, m1.sy) / H, width: Math.abs(m1.sx - m0.sx) / W, height: Math.abs(m1.sy - m0.sy) / H };
-  return { canvas, windows, panes, shore, shop, mailbox, sign: SIGN_LINES.join(' ') };
+  // La limusina (para el botón)
+  const limo = { left: limoAt.x0 / W, top: limoAt.y0 / H, width: (limoAt.x1 - limoAt.x0) / W, height: (limoAt.y1 - limoAt.y0) / H };
+  return { canvas, windows, panes, shore, shop, mailbox, limo, sign: SIGN_LINES.join(' ') };
 }

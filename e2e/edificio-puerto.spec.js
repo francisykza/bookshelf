@@ -68,7 +68,7 @@ test('tu piso: decorar con el catálogo, arrastrar, girar, color, guardar y se c
   expect(lamp.id).toBe('lampara-mesa');
 
   // Un sillón nuevo y se arrastra a un hueco libre
-  await page.locator('.ep-chip', { hasText: 'Para sentarse' }).click();
+  await page.locator('.ep-chip[data-cat="asientos"]').click();
   await page.getByRole('button', { name: 'Añadir sillón' }).click();
   r = await room(page);
   const chair = r.items.at(-1);
@@ -99,7 +99,7 @@ test('tu piso: decorar con el catálogo, arrastrar, girar, color, guardar y se c
   expect(toolsBox.x + toolsBox.width).toBeLessThanOrEqual(stageBox.x + stageBox.width + 1);
 
   // Paredes y suelo, en la última pestaña de la balda
-  await page.locator('.ep-chip', { hasText: 'Paredes y suelo' }).click();
+  await page.locator('.ep-chip[data-cat="casa"]').click();
   await page.getByRole('button', { name: 'Salvia' }).click();
   await page.getByRole('button', { name: 'Baldosa en damero' }).click();
   r = await room(page);

@@ -1,13 +1,13 @@
 # «El Gran Hotel del Puerto» · plan (sin decidir)
 
-Estado: **propuesta, nada aprobado ni implementado.** El concepto está dibujado en `dev/hotel-concepto.html` (solo
+Estado: **bloque 1 en la app (1.74, §74.4): la limusina y la fachada del hotel; aún sin salas.** El resto, propuesta. El concepto está dibujado en `dev/hotel-concepto.html` (solo
 desarrollo; captura en `qa-report/hotel-concepto.png`). Cada bloque se enseña con capturas y necesita el «sí» de Francisco
 antes del siguiente, como en el edificio.
 
 ## 0. Hecho hasta ahora (solo desarrollo)
 
 - **Fachada viva y que se toca** (2-11-2026, Francisco: «más espectacular aún» y «que de lugar a interacción desde la
-  propia fachada»): `dev/hotel-vista.js` sobre el dibujo de `dev/hotel-concepto.js`. Focos que barren el cielo, aguja
+  propia fachada»): `src/features/edificio/hotel/hotelView.js` sobre el dibujo de `hotelArt.js` (antes en `dev/`). Focos que barren el cielo, aguja
   que parpadea, bombillas de la marquesina que corren, neón que titila, ventanas que se apagan y encienden, agua que
   ondula, paseantes y bocadillos de frase cerrada; estrellas fugaces y fuegos artificiales de pixelfx
   (`src/vendor/pixelfx`) detrás de la torre. Cada planta se ilumina con su contorno dorado al pasar por encima y al
@@ -23,8 +23,9 @@ compartidas con tu personaje, gente moviéndose a la vez); nada de su arte, nomb
 ## 1b. La llegada: en limusina (decisión de Francisco del 2-11-2026)
 
 Para ir al hotel **hay que coger una limusina negra de lujo**: original, en nuestro pixel art. Responde en parte a §7.1
-(por dónde se entra): la limusina espera en la calle y te lleva al hotel. Falta que Francisco diga dónde se coge
-(propuesta: aparcada delante del portal del edificio, junto al muelle) y si también se llega desde la tablet del Salón.
+(por dónde se entra): la limusina espera en la calle y te lleva al hotel. **Hecho en la 1.74 (§74.4)**: aparcada delante del
+portal del edificio, en el muelle, con su chófer; al tocarla, un viaje corto de noche y la fachada del hotel. Falta
+decidir si también se llega desde la tablet del Salón.
 
 ## 2. Cómo encaja con lo que ya hay
 

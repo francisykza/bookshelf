@@ -1,0 +1,222 @@
+/* «El Gran Hotel del Puerto» (1.74, §74): de noche, con el viaje en limusina y la fachada viva */
+.panel--edificio:has(.gh-wrap) {
+  background: linear-gradient(180deg, #0a0c22 0, #14163a 40%, #1c1a3a 70%, #182a3c 100%);
+  color: #f6ecd8;
+}
+
+.panel--edificio:has(.gh-wrap) .ed-bar {
+  background: linear-gradient(#0a0c22 60%, rgb(10 12 34 / 0));
+}
+
+.panel--edificio:has(.gh-wrap) .ed-bar__back {
+  color: #f6ecd8;
+}
+
+/* De borde a borde, como el portal del edificio */
+.gh-wrap {
+  margin-inline: calc(-1 * var(--ep-bleed, 14px));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* El viaje: la calle del puerto de noche (ride.js), ampliada en píxeles; la cámara sigue a la limusina */
+.gh-ride {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: calc(100dvh - 72px - env(safe-area-inset-top));
+  max-height: 760px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: #0a0c22;
+  color: #f6ecd8;
+  cursor: pointer;
+  transition: opacity 0.35s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gh-ride.is-leaving {
+  opacity: 0;
+}
+
+.gh-ride:focus-visible {
+  outline: 3px solid #f0c468;
+  outline-offset: -3px;
+}
+
+.gh-ride__view {
+  position: absolute;
+  inset: 0;
+}
+
+.gh-ride__layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.gh-ride__scene,
+.gh-ride__car {
+  position: absolute;
+  top: 0;
+  left: 0;
+  image-rendering: pixelated;
+}
+
+/* La luz de los faros sobre la calzada */
+.gh-ride__beam {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 46px;
+  height: 22px;
+  background: linear-gradient(90deg, rgb(255 236 180 / 0.42), rgb(255 236 180 / 0));
+  clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 70%);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+.gh-ride__note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  font:
+    italic 500 1.15rem/1.2 'Cormorant Garamond',
+    Georgia,
+    serif;
+  text-align: center;
+  text-shadow: 0 2px 0 rgb(10 12 34 / 0.8);
+  opacity: 0.92;
+}
+
+/* La fachada del hotel: lo más grande que quepa de alto; en el móvil llena la pantalla y recorta un poco los lados */
+.gh {
+  overflow: hidden;
+}
+
+.gh-art {
+  position: relative;
+  left: 50%;
+  width: max(100%, calc((100dvh - 60px - env(safe-area-inset-top)) * var(--gh-ratio, 0.55)));
+  max-width: calc((100dvh - 60px - env(safe-area-inset-top)) * var(--gh-ratio, 0.55));
+  transform: translateX(-50%);
+}
+
+@media (min-width: 520px) {
+  .gh-art {
+    width: min(100%, calc((100dvh - 60px - env(safe-area-inset-top)) * var(--gh-ratio, 0.55)));
+  }
+}
+
+.gh-art .hotel-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  touch-action: manipulation;
+}
+
+/* En pantallas anchas, los lados se funden con la noche */
+@media (min-width: 520px) {
+  .gh-art .hotel-canvas {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+}
+
+/* Un botón por planta sobre el dibujo, para el teclado y los lectores de pantalla: no se ve hasta que se enfoca */
+.gh-zones {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gh-zone {
+  position: absolute;
+  z-index: 2;
+  padding: 2px 8px;
+  border: 0;
+  background: #1c1a24;
+  color: #f0c468;
+  font:
+    700 0.85rem/1.3 'Cormorant Garamond',
+    Georgia,
+    serif;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gh-zone:focus-visible {
+  outline: 2px solid #f0c468;
+  outline-offset: 1px;
+  opacity: 1;
+}
+
+/* La nota de una planta: papel de píxel pequeño, arriba, sobre el cielo */
+.gh-card {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  left: 50%;
+  width: min(300px, calc(100% - 24px));
+  box-sizing: border-box;
+  padding: 2px 30px 4px 8px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  color: #2c1e14;
+  transform: translateX(-50%);
+}
+
+.gh-card h3 {
+  margin: 0;
+  font:
+    600 1.1rem/1.2 'Cormorant Garamond',
+    Georgia,
+    serif;
+}
+
+.gh-card p {
+  margin: 2px 0 4px;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+/* «Abre pronto», como un sello */
+.gh-card__soon {
+  display: inline-block;
+  padding: 0 6px;
+  border: 2px solid #a8434c;
+  color: #a8434c;
+  font:
+    700 0.72rem/1.4 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transform: rotate(-3deg);
+}
+
+.gh-card__close {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none;
+  color: #2c1e14;
+  font:
+    700 1.3rem/1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+
+.gh-card__close:focus-visible {
+  outline: 2px solid #b98b2f;
+}

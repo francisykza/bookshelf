@@ -176,7 +176,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     **No son moneda**: no se compran, no se reciclan ni se regalan. Solo un legendario te acompaña a la vez.
   - **El Gran Hotel del Puerto** (2-11-2026, plan en `docs/qa/gran-hotel.md`): más espectacular y, como la fachada del
     edificio, **que se pueda interactuar desde la propia fachada**. **Se llega en una limusina negra de lujo**
-    (2-11-2026): para ir al hotel hay que coger la limusina (en nuestro pixel art, original).
+    (2-11-2026): para ir al hotel hay que coger la limusina (en nuestro pixel art, original). **Se coge delante del portal
+    del edificio**, aparcada en el muelle con su chófer (aprobado «Sí, a la limusina», 2-11-2026; 1.74, §74.4).
   - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración
     `20261101120000_edificio_puerto.sql` la aplica Francisco; sin ella, la tablet hace lo de siempre.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.

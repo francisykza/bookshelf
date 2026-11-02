@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
     <title>Concepto: el Gran Hotel del Puerto (desarrollo)</title>
-    <!-- Solo desarrollo: la fachada viva del Gran Hotel (hotel-vista.js sobre hotel-concepto.js). ?quieto=1 para capturas. -->
+    <!-- Solo desarrollo: la fachada viva del Gran Hotel (src/features/edificio/hotel/hotelView.js sobre hotelArt.js). ?quieto=1 para capturas. -->
     <style>
       body { margin: 0; background: #0a0c22; color: #f6ecd8; font-family: Georgia, serif; }
       .hotel { position: relative; max-width: 600px; margin: 0 auto; }
@@ -43,7 +43,7 @@
     </div>
     <nav class="hotel-floors" aria-label="Plantas del hotel" id="floors"></nav>
     <script type="module">
-      import { mountHotel, ZONES } from './hotel-vista.js';
+      import { mountHotel, ZONES } from '../src/features/edificio/hotel/hotelView.js';
       const q = new URLSearchParams(location.search);
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const host = document.getElementById('hotel');

@@ -1,11 +1,12 @@
-// Concepto (solo desarrollo, fuera de la app): «El Gran Hotel del Puerto», un rascacielos de hotel, de noche, como edificio
+// «El Gran Hotel del Puerto» (concepto en dev/hotel-concepto.html; en la app desde la 1.74, §74), un rascacielos de hotel, de noche, como edificio
 // principal de la parte social abierta (conocer gente, en la línea de los hoteles sociales en píxeles; solo el género,
 // nada de su arte). Mismo rasterizador y paleta que la fachada del edificio del puerto (facade.js): estuco crema con
 // pilastras y filos de luz dorada al estilo art déco, retranqueos, una corona escalonada con aguja, terraza con
 // guirnaldas en la azotea, salón de baile acristalado a media altura, marquesina con bombillas y la plaza del muelle
 // con gente. Delante, el agua refleja las luces. `renderHotel` hace el dibujo quieto y devuelve lo que la vista
-// (hotel-vista.js) anima encima: ventanas, aguja, bombillas, neón, cielo, agua, gente y las zonas que se tocan.
-import { createRaster, hash, noise, rgb } from '../src/features/minigames/libreria-puerto/raster.js';
+// (hotelView.js) anima encima: ventanas, aguja, bombillas, neón, cielo, agua, gente y las zonas que se tocan.
+import { createRaster, hash, noise, rgb } from '../../minigames/libreria-puerto/raster.js';
+import { drawLimo } from '../limo.js';
 
 const S = 6;
 const YAW = 0.3;
@@ -311,8 +312,8 @@ export function renderHotel() {
     [-1.5, TD + 3.0],
     [11.3, TD + 2.9],
     [11.6, TD + 3.1],
-    [4.5, TD + 4.1],
-    [5.4, TD + 4.0],
+    [2.2, TD + 4.1],
+    [8.3, TD + 4.0],
     [-3.2, TD + 4.0],
     [13.4, TD + 4.2],
     [5.0, TD + 2.25],
@@ -346,6 +347,8 @@ export function renderHotel() {
   });
   // Bolardos del muelle
   for (const x of [-1, 3, 7, 11]) r.box(x, QUAY - 0.3, 0, x + 0.3, QUAY, 0.4, IRON, { grain: 0, step: 0.03 });
+  // La limusina negra que te ha traído (1.74, §74), esperando delante de la alfombra roja
+  drawLimo(r, 3.35, TD + 3.2, { glowId: GLOW });
 
   r.applyShadows();
   r.bakeOcclusion();

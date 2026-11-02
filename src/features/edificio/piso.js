@@ -30,11 +30,11 @@ const FRAME_MS = 70; // el personaje se redibuja a unos 14 fotogramas por segund
 const WARDROBE = [
   { key: 'piel', nombre: 'Piel', frame: 'head', options: PIELES.map((p) => ({ value: p.id, nombre: p.nombre })) },
   { key: 'pelo', nombre: 'Pelo', frame: 'head', options: PELOS.map((p) => ({ value: p.id, nombre: p.nombre })) },
-  { key: 'colorPelo', nombre: 'Color del pelo', frame: 'head', options: COLORES_PELO.map((p) => ({ value: p.id, nombre: p.nombre })) },
+  { key: 'colorPelo', nombre: 'Color del pelo', corto: 'Color', frame: 'head', options: COLORES_PELO.map((p) => ({ value: p.id, nombre: p.nombre })) },
   { key: 'jersey', nombre: 'Jersey', frame: 'torso', options: JERSEYS.map((p) => ({ value: p.id, nombre: p.nombre })) },
   { key: 'pantalon', nombre: 'Pantalón', frame: 'legs', options: PANTALONES.map((p) => ({ value: p.id, nombre: p.nombre })) },
   { key: 'gafas', nombre: 'Gafas', frame: 'head', options: [{ value: false, nombre: 'Sin gafas' }, { value: true, nombre: 'Con gafas' }] },
-  { key: 'complemento', nombre: 'Complemento', frame: 'head', options: COMPLEMENTOS.map((p) => ({ value: p.id, nombre: p.nombre })) },
+  { key: 'complemento', nombre: 'Complemento', corto: 'Extras', frame: 'head', options: COMPLEMENTOS.map((p) => ({ value: p.id, nombre: p.nombre })) },
 ];
 const PASEO = 6; // celdas andadas tocando el suelo para la misión «Da un paseo»
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -170,10 +170,12 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   const listSummary = el('summary', {});
   const listBox = editable ? el('div', { class: 'ep-inroom', hidden: true }, list) : el('details', { class: 'ep-list' }, listSummary, list);
   // El armario del personaje: una fila por cosa que se cambia, con su muestra dibujada como quedaría
-  const wardrobe = el('div', { class: 'ep-house ep-wardrobe', hidden: true });
+  const wardrobe = el('div', { class: 'ep-wardrobe', hidden: true });
   const outfitTab = el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33 });
   const CATS = [...CATEGORIES, { id: OUTFIT, nombre: 'Tu personaje' }, { id: HOUSE, nombre: 'Paredes y suelo' }, { id: INROOM, nombre: 'En el piso' }];
   // Cada pestaña lleva el dibujo de un mueble de su tipo; la de paredes y suelo, una muestra de los de tu piso
+  // 1.74: el nombre corto, a la vista bajo el dibujo de cada pestaña
+  const TAB_SHORT = { asientos: 'Asientos', mesas: 'Mesas', [OUTFIT]: 'Armario', [HOUSE]: 'Paredes', [INROOM]: 'En el piso' };
   const TAB_ICON = { asientos: 'sillon', mesas: 'mesa', luz: 'lampara-pie', plantas: 'planta-grande', detalles: 'tetera', pared: 'cuadro', alfombras: 'alfombra', sagas: 'esferas', misticos: 'farol-azul' };
   const hasMisticos = () => CATALOG.some((c) => c.cat === 'misticos' && !c.compania && ownedCopies(inv, c.id) > 0);
   function syncMisticTab() {
@@ -186,7 +188,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   if (editable) {
     for (const c of CATS) {
       const img = c.id === HOUSE ? houseTab : c.id === OUTFIT ? outfitTab : c.id === INROOM ? pixelIcon('lista') : el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33, src: renderThumb(TAB_ICON[c.id], 0, 33).toDataURL() });
-      const b = el('button', { type: 'button', class: 'ep-chip', 'data-cat': c.id, 'aria-pressed': String(c.id === category), title: c.nombre }, img, el('span', { class: 'px-sr', text: c.nombre }));
+      const b = el('button', { type: 'button', class: 'ep-chip', 'data-cat': c.id, 'aria-pressed': String(c.id === category), 'aria-label': c.nombre, title: c.nombre }, img, el('span', { class: 'ep-chip__name', 'aria-hidden': 'true', text: TAB_SHORT[c.id] ?? c.nombre }));
       b.addEventListener('click', () => {
         category = c.id;
         for (const x of catRow.children) x.setAttribute('aria-pressed', String(x.dataset.cat === category));
@@ -278,82 +280,103 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   // ── El armario ──
   const actorThumbs = new Map();
-  function actorThumb(a, frame) {
-    const key = JSON.stringify(a) + frame;
-    if (!actorThumbs.has(key)) actorThumbs.set(key, renderActorThumb(a, { frame }).toDataURL());
+  function actorThumb(a, frame, size = 33) {
+    const key = JSON.stringify(a) + frame + size;
+    if (!actorThumbs.has(key)) actorThumbs.set(key, renderActorThumb(a, { frame, size }).toDataURL());
     return actorThumbs.get(key);
   }
 
-  function companionRow() {
-    const mine = COMPANEROS.filter((c) => ownedCopies(inv, c.id) > 0);
-    if (!mine.length) return null;
-    const opts = [{ id: null, nombre: 'Nadie', src: actorThumb(look, 'head') }, ...mine.map((c) => ({ id: c.id, nombre: c.nombre, src: misticoThumb(c.id, 33).toDataURL() }))];
-    return el(
-      'div',
-      { class: 'ep-house__group ep-wardrobe__pal' },
-      el('span', { class: 'ep-house__label', text: 'Te acompaña' }),
-      el(
-        'div',
-        { class: 'ep-swatches', role: 'group', 'aria-label': 'Te acompaña' },
-        ...opts.map((o) => {
-          const b = el('button', { type: 'button', class: 'ep-swatch', 'data-pal': o.id ?? 'nadie', 'aria-pressed': String(pal === o.id) }, el('img', { class: 'ep-swatch__img', alt: '', width: 33, height: 33, src: o.src }), el('span', { text: o.nombre }));
-          b.addEventListener('click', () => setPal(o.id));
+  // La cabina (1.74): tu personaje en grande, con quien te acompaña; al lado, una pestaña por cosa que se cambia
+  const PAL_TAB = 'acompana';
+  let wardrobeTab = null;
+  const myCompanions = () => COMPANEROS.filter((c) => ownedCopies(inv, c.id) > 0);
+
+  function wardrobeTabs() {
+    const tabs = WARDROBE.map((row) => ({ id: row.key, nombre: row.nombre, corto: row.corto ?? row.nombre }));
+    return editable && myCompanions().length ? [{ id: PAL_TAB, nombre: 'Te acompaña', corto: 'Te acompaña' }, ...tabs] : tabs;
+  }
+
+  function cabin() {
+    const figure = el('img', { class: 'ep-cabin__me', alt: '', width: 96, height: 96, src: renderActorThumb(look, { frame: 'all', size: 96 }).toDataURL() });
+    const buddyImg = pal ? el('img', { class: 'ep-cabin__pal', alt: '', width: 48, height: 48, src: misticoThumb(pal, 48).toDataURL() }) : null;
+    const said = pal ? `Tu personaje, con ${catalogItem(pal).nombre.toLowerCase()}` : 'Tu personaje';
+    return el('div', { class: 'ep-cabin', role: 'img', 'aria-label': said }, el('span', { class: 'ep-cabin__curtain', 'aria-hidden': 'true' }), figure, buddyImg, el('span', { class: 'ep-cabin__rug', 'aria-hidden': 'true' }));
+  }
+
+  function wardrobeOptions(tab) {
+    if (tab === PAL_TAB) {
+      const opts = [{ id: null, nombre: 'Nadie', src: actorThumb(look, 'head') }, ...myCompanions().map((c) => ({ id: c.id, nombre: c.nombre, src: misticoThumb(c.id, 44).toDataURL() }))];
+      return opts.map((o) => {
+        const b = el('button', { type: 'button', class: 'ep-swatch', 'data-pal': o.id ?? 'nadie', 'aria-pressed': String(pal === o.id) }, el('img', { class: 'ep-swatch__img', alt: '', width: 44, height: 44, src: o.src }), el('span', { text: o.nombre }));
+        b.addEventListener('click', () => setPal(o.id));
+        return b;
+      });
+    }
+    const row = WARDROBE.find((r) => r.key === tab);
+    return (
+      row.options
+        // Lo que se gana con las misiones solo sale si el servidor las tiene
+        .filter((o) => !isPrenda(row.key, o.value) || owned)
+        .map((o) => {
+          const next = { ...look, [row.key]: o.value };
+          const locked = isPrenda(row.key, o.value) && !owned.includes(prendaKey(row.key, o.value));
+          const b = el('button', { type: 'button', class: locked ? 'ep-swatch is-locked' : 'ep-swatch', 'data-outfit': prendaKey(row.key, o.value), 'aria-pressed': String(look[row.key] === o.value), 'aria-label': locked ? `${o.nombre} (se gana con las misiones del día)` : null }, el('img', { class: 'ep-swatch__img', alt: '', width: 44, height: 44, src: actorThumb(next, row.frame, 44) }), el('span', { text: o.nombre }));
+          b.addEventListener('click', () => {
+            if (!locked) return setLook(next, `${row.nombre}: ${o.nombre.toLowerCase()}.`);
+            sfx.play('invalid');
+            say(`${o.nombre}: se gana con las misiones del día.`);
+          });
           return b;
-        }),
-      ),
+        })
     );
   }
 
+  function fillWardrobe() {
+    const tabs = wardrobeTabs();
+    if (!tabs.some((t) => t.id === wardrobeTab)) wardrobeTab = tabs[0].id;
+    const current = tabs.find((t) => t.id === wardrobeTab);
+    const keep = wardrobe.querySelector('.ep-wardrobe__opts')?.scrollTop ?? 0;
+    const tabRow = el(
+      'div',
+      { class: 'ep-wardrobe__tabs', role: 'tablist', 'aria-label': 'Qué cambiar' },
+      ...tabs.map((t) => {
+        const b = el('button', { type: 'button', class: 'ep-wtab', role: 'tab', id: `ep-wtab-${t.id}`, 'aria-selected': String(t.id === wardrobeTab), 'aria-controls': 'ep-wardrobe-opts', tabindex: t.id === wardrobeTab ? '0' : '-1', text: t.corto, 'aria-label': t.corto === t.nombre ? null : t.nombre });
+        b.addEventListener('click', () => {
+          if (wardrobeTab === t.id) return;
+          wardrobeTab = t.id;
+          sfx.play('lift');
+          fillWardrobe();
+          wardrobe.querySelector('.ep-wardrobe__opts').scrollTop = 0;
+          wardrobe.querySelector(`#ep-wtab-${t.id}`)?.focus();
+        });
+        b.addEventListener('keydown', (e) => {
+          if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+          e.preventDefault();
+          const k = tabs.findIndex((x) => x.id === t.id);
+          wardrobe.querySelectorAll('.ep-wtab')[(k + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length].click();
+        });
+        return b;
+      }),
+    );
+    const opts = el('div', { class: 'ep-wardrobe__opts', id: 'ep-wardrobe-opts', role: 'tabpanel', 'aria-labelledby': `ep-wtab-${current.id}` }, el('div', { class: 'ep-swatches', role: 'group', 'aria-label': current.nombre }, ...wardrobeOptions(current.id)));
+    wardrobe.replaceChildren(cabin(), el('div', { class: 'ep-wardrobe__side' }, tabRow, opts));
+    opts.scrollTop = keep;
+  }
+
   function setPal(id) {
-    const scroll = wardrobe.scrollLeft;
     pal = id;
     if (me && pal) buddy.update(me, 1);
     if (category === OUTFIT) fillWardrobe();
-    wardrobe.scrollLeft = scroll;
     sfx.play('lift');
     say(pal ? `Te acompaña: ${catalogItem(pal).nombre.toLowerCase()}.` : 'Ya no te acompaña nadie.');
     requestDraw();
     onCompanionChange(pal);
   }
 
-  function fillWardrobe() {
-    const palRow = editable ? companionRow() : null;
-    wardrobe.replaceChildren(
-      ...(palRow ? [palRow] : []),
-      ...WARDROBE.map((row) =>
-        el(
-          'div',
-          { class: 'ep-house__group' },
-          el('span', { class: 'ep-house__label', text: row.nombre }),
-          el(
-            'div',
-            { class: 'ep-swatches', role: 'group', 'aria-label': row.nombre },
-            ...row.options
-              // Lo que se gana con las misiones solo sale si el servidor las tiene
-              .filter((o) => !isPrenda(row.key, o.value) || owned)
-              .map((o) => {
-                const next = { ...look, [row.key]: o.value };
-                const locked = isPrenda(row.key, o.value) && !owned.includes(prendaKey(row.key, o.value));
-                const b = el('button', { type: 'button', class: locked ? 'ep-swatch is-locked' : 'ep-swatch', 'data-outfit': prendaKey(row.key, o.value), 'aria-pressed': String(look[row.key] === o.value), 'aria-label': locked ? `${o.nombre} (se gana con las misiones del día)` : null }, el('img', { class: 'ep-swatch__img', alt: '', width: 33, height: 33, src: actorThumb(next, row.frame) }), el('span', { text: o.nombre }));
-                b.addEventListener('click', () => {
-                  if (!locked) return setLook(next, `${row.nombre}: ${o.nombre.toLowerCase()}.`);
-                  sfx.play('invalid');
-                  say(`${o.nombre}: se gana con las misiones del día.`);
-                });
-                return b;
-              }),
-          ),
-        ),
-      ),
-    );
-  }
-
   function setLook(next, message) {
-    const scroll = wardrobe.scrollLeft;
     look = next;
     outfitTab.src = actorThumb(look, 'head');
     if (category === OUTFIT) fillWardrobe();
-    wardrobe.scrollLeft = scroll;
     sfx.play('lift');
     say(message);
     requestDraw();

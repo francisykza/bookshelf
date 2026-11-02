@@ -104,10 +104,11 @@ function ambientLayer(canvas, { panes, shore }) {
  * `flats`: [{ puerta, room, label (aria), name (placa), mine, badge, onOpen }] de las puertas ocupadas. Devuelve
  * { destroy }. `onOpenShop` (opcional) hace tocable la tienda del bajo, con `shopBadge` en su placa (p. ej. el saldo).
  * `mail` (opcional, 1.73): { lines: [texto] } con el correo del buzón dibujado junto al portal (sellos, regalos y firmas).
+ * `onOpenLimo` (opcional, 1.74): hace tocable la limusina negra aparcada en el muelle, que lleva al Gran Hotel.
  */
-export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '', mail = null }) {
+export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '', mail = null, onOpenLimo = null }) {
   const byDoor = Object.fromEntries(flats.map((f) => [f.puerta, { room: f.room }]));
-  const { canvas, windows, panes, shore, shop, mailbox, sign } = renderFacade(byDoor);
+  const { canvas, windows, panes, shore, shop, mailbox, limo, sign } = renderFacade(byDoor);
   const root = document.createElement('div');
   root.className = 'ed-facade';
   root.style.aspectRatio = `${FACADE_W} / ${FACADE_H}`;
@@ -201,6 +202,27 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
       stage.style.transformOrigin = centerOf(shop);
       const run = stage.animate([{ transform: 'scale(1)' }, { transform: `scale(${ZOOM})` }], { duration: ZOOM_MS, easing: 'cubic-bezier(0.55, 0, 0.75, 0.2)', fill: 'forwards' });
       run.finished.then(onOpenShop, onOpenShop);
+    });
+    li.append(el);
+    list.append(li);
+  }
+  // La limusina negra (1.74, §74): el chófer espera; al tocarla, al Gran Hotel
+  if (onOpenLimo) {
+    const li = document.createElement('li');
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'ed-window ed-limo';
+    el.setAttribute('aria-label', 'Coger la limusina al Gran Hotel');
+    box(el, limo);
+    const plate = document.createElement('span');
+    plate.className = 'ed-window__plate';
+    const name = document.createElement('strong');
+    name.textContent = 'Al Gran Hotel';
+    plate.append(name);
+    el.append(plate);
+    el.addEventListener('click', () => {
+      if (busy) return;
+      onOpenLimo();
     });
     li.append(el);
     list.append(li);

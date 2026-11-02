@@ -6,9 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.72.0 (2026-11-02), en https://bookshelf-wine-iota.vercel.app: místicos en tu piso y el
-  compañero (§72). **Sin commit (1.73.0)**: místicos en los sobres, melodía del edificio y pantalla completa (§73);
-  su migración `20261107120000_edificio_misticos_sobres.sql` ya está aplicada en producción.
+- **Versión publicada**: 1.74.0 (2026-11-02), en https://bookshelf-wine-iota.vercel.app: los menús de debajo de las
+  habitaciones y la cabina del armario (§74) y la limusina negra al Gran Hotel, con el viaje por la calle del puerto y
+  la fachada viva del hotel, aún sin salas (§74.4, bloque 1 del hotel). Sin migraciones nuevas.
+- **Antes (1.73.0, publicada en `01585c3`)**: místicos en los sobres, melodía del edificio, pantalla completa y el
+  buzón en la fachada (§73); su migración `20261107120000_edificio_misticos_sobres.sql` está aplicada en producción.
 - **Antes (1.71.0, publicada)**: «más vida en el edificio», los cuatro bloques: diecisiete muebles nuevos y el arreglo del
   sobre cortado en el móvil (§69), tu personaje en el piso (§69), las misiones del día que dan ropa (§70) y vecinos con
   «me gusta» por mueble, libro de visitas y regalos (§71). **Sus cuatro migraciones ya están aplicadas en producción**
@@ -36,7 +38,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.73.0 | Místicos en el sobre de coleccionista (1 %, ¼ legendario, sin pity propio) con su aparición; la melodía «Dos balcones» en bucle en el edificio; el edificio a pantalla completa en el móvil (sin commit; migración sin aplicar) | §73 |
+| 1.74.0 | Los menús de debajo de las habitaciones (balda con nombres, armario-cabina, mesita del vecino de madera) y la limusina negra delante del portal que lleva, con un viaje corto, a la fachada viva del Gran Hotel (publicada) | §74 |
+| 1.73.0 | Místicos en el sobre de coleccionista (1 %, ¼ legendario, sin pity propio) con su aparición; la melodía «Dos balcones» en bucle en el edificio; el edificio a pantalla completa en el móvil; el buzón en la fachada (publicada; migración aplicada) | §73 |
 | 1.72.0 | Místicos (publicada): cinco seres animados con pixelfx, dos se colocan sobre su peana y tres legendarios te acompañan detrás de tu personaje (armario «Te acompaña»); no se reciclan ni regalan; migración aplicada | §72 |
 | 1.71.0 | «Más vida en el edificio» (publicada): muebles nuevos, personaje que anda y se viste, misiones del día que dan ropa, y vecinos con «me gusta» por mueble, libro de visitas y regalos | §69–71 |
 | 1.68.0 | La tienda por dentro con el motor isométrico de los pisos; Sobres, Muebles y Reciclar como objetos de la escena (expositor, rincón del sillón, caja de reciclaje) con letrero y contorno; mostrador de cerca, casi de frente, para abrir sobres | §68 |
@@ -148,7 +151,28 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
-### 2026-11-02 · cuenta principal · 1.73.0: místicos en los sobres, melodía y pantalla completa (sin commit; migración aplicada)
+### 2026-11-02 · cuenta principal · 1.74.0: los menús de debajo de las habitaciones, la cabina del armario y la limusina al Gran Hotel (publicada)
+
+- Francisco: «mejorar la interfaz de cómo se ven los menús que están debajo de las habitaciones», y para el armario
+  «una cabina, que se vea tu personaje en grande y que puedas ir cambiando los tipos de accesorios, más organizado».
+  SPEC §74.
+- Balda: pestañas con su nombre a la vista y la fila difuminada donde sigue; sin la línea de título. Armario: cabina
+  con el personaje en grande (y el compañero flotando) y una pestaña por clase con sus muestras en cuadrícula. Mesita
+  del vecino: de madera, con las frases en dos columnas enteras.
+- Probado en Chromium 320/390/1440 y WebKit 390 (e2e del edificio y `e2e/edificio-puerto.spec.js`), Vitest del
+  edificio 67/67, build y oxlint. Francisco dio el visto bueno («Commit y súbelo») y se publicó.
+- Francisco aprobó los menús («Sí, a la limusina»). **Limusina** (§74.4): dibujada en `edificio/limo.js`, aparcada en
+  el muelle delante de la tienda con su chófer; al tocarla, el viaje (2,4 s, se salta tocando; sin él con movimiento
+  reducido) y la fachada viva del Gran Hotel (movida de `dev/` a `src/features/edificio/hotel/`), con plantas que se
+  tocan y «Abre pronto». «Volver en limusina» vuelve al portal. Prueba `v174-limusina.spec.js` en Chromium
+  320/390/1440 y WebKit 390.
+- Francisco: «el camino al gran hotel se ve muy simple y plano, y el gran hotel tiene demasiados menús y se
+  empequeñece». El viaje es ahora una escena de pixel art (`hotel/ride.js`: la calle del puerto de noche con casas,
+  farolas, paseo y agua con reflejos; la cámara sigue a la limusina) y el hotel va sin fila de botones, a toda la
+  pantalla, con una nota pequeña por planta.
+- Pendiente: decidir si al hotel también se llega desde la tablet del Salón (`docs/qa/gran-hotel.md` §7.1).
+
+### 2026-11-02 · cuenta principal · 1.73.0: místicos en los sobres, melodía y pantalla completa (publicada en `01585c3`; migración aplicada)
 
 - Francisco: «continúa» (bloque 3 de los místicos), «no oigo la melodía que te pasé», «que la app ocupe toda la
   pantalla sin dejar un borde encima» y sus instrucciones para el audio. SPEC §73.

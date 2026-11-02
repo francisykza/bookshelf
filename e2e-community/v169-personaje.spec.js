@@ -58,8 +58,14 @@ test('tu personaje: armario, se guarda, anda y se sienta', async ({ page }, info
   await expect(mine.locator('.ep-chip[data-cat="personaje"]')).toHaveAttribute('aria-pressed', 'true');
   const wardrobe = mine.locator('.ep-wardrobe');
   await expect(wardrobe).toBeVisible();
+  // 1.74: la cabina, con tu personaje en grande y una pestaña por clase de cosa
+  await expect(wardrobe.locator('.ep-cabin__me')).toBeVisible();
+  await expect(wardrobe.getByRole('tab', { name: 'Piel' })).toHaveAttribute('aria-selected', 'true');
+  await wardrobe.getByRole('tab', { name: 'Pelo', exact: true }).click();
   await wardrobe.getByRole('group', { name: 'Pelo' }).getByRole('button', { name: 'Rizos' }).click();
+  await wardrobe.getByRole('tab', { name: 'Jersey' }).click();
   await wardrobe.getByRole('group', { name: 'Jersey' }).getByRole('button', { name: 'Ciruela' }).click();
+  await wardrobe.getByRole('tab', { name: 'Gafas' }).click();
   await wardrobe.getByRole('group', { name: 'Gafas' }).getByRole('button', { name: 'Con gafas' }).click();
   await expect(wardrobe.getByRole('group', { name: 'Gafas' }).getByRole('button', { name: 'Con gafas' })).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.personaje, { timeout: 8000 }).toMatchObject({ pelo: 'rizos', jersey: 6, gafas: true });
@@ -95,6 +101,7 @@ test('sin la migración, el personaje se queda en el dispositivo', async ({ page
   const canvas = mine.locator('canvas.ep-canvas');
   await expect(canvas).toHaveAttribute('data-actor', 'stand');
   await tapActor(page, canvas);
+  await mine.locator('.ep-wardrobe').getByRole('tab', { name: 'Pelo', exact: true }).click();
   await mine.locator('.ep-wardrobe').getByRole('group', { name: 'Pelo' }).getByRole('button', { name: 'Moño' }).click();
   await expect(page.getByText('Guardado en este dispositivo.')).toBeVisible({ timeout: 8000 });
   expect(await page.evaluate((id) => JSON.parse(localStorage.getItem(`bookshelf:edificio:personaje:${id}`)).pelo, ANA.id)).toBe('mono');

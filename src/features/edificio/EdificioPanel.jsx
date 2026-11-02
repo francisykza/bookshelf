@@ -19,11 +19,14 @@ import { PRENDAS, prendaNombre } from './actor';
 import { missionsOf, todayKey } from './dailyMissions';
 import { contarDiaria, doorLabel, elegirInicio, firmar, loadArmario, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje, savePiso, setSello } from './service';
 import { VecinoMesa } from './VecinoMesa';
+import { GranHotel } from './hotel/GranHotel';
 import { StarterPicker } from './StarterPicker';
 import { Tienda } from './Tienda';
 
 /** La tienda del bajo se abre como un «piso» más del portal (1.67, §67). */
 const TIENDA_ID = 'tienda';
+/** El Gran Hotel, adonde lleva la limusina (1.74, §74), también se abre como un «piso» más (Atrás vuelve al portal). */
+const HOTEL_ID = 'hotel';
 
 const SAVE_MS = 900;
 // Cómo se ve un piso: «dentro» de la habitación (a pantalla completa, con la balda o los sellos abajo; por defecto) o
@@ -67,6 +70,7 @@ function Facade({ vecinos, onOpenPiso, shopBadge, mail = null }) {
       onOpenShop: shopBadge == null ? null : () => open.current(TIENDA_ID),
       shopBadge: shopBadge ?? '',
       mail: mail && { lines: mail },
+      onOpenLimo: () => open.current(HOTEL_ID),
     });
     return () => view.destroy();
     // El correo llega como lista nueva en cada render: se compara por su texto
@@ -204,11 +208,12 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   );
 
   const inShop = pisoId === TIENDA_ID;
-  const open = pisoId && !inShop ? (data?.vecinos.find((v) => v.user_id === pisoId) ?? null) : null;
+  const inHotel = pisoId === HOTEL_ID;
+  const open = pisoId && !inShop && !inHotel ? (data?.vecinos.find((v) => v.user_id === pisoId) ?? null) : null;
   const me = data?.vecinos.find((v) => v.yo) ?? null;
   const mine = open?.yo;
   // Dentro de un piso, la melodía baja; en la fachada y en la tienda, a su volumen
-  const inPiso = Boolean(pisoId && !inShop);
+  const inPiso = Boolean(pisoId && !inShop && !inHotel);
   useEffect(() => setEdificioMusicInside(inPiso), [inPiso]);
 
   const onMyChange = (room) => {
@@ -335,6 +340,8 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     );
   } else if (!data) {
     body = <p className="ed-note">Buscando tu puerta…</p>;
+  } else if (inHotel) {
+    body = <GranHotel />;
   } else if (inShop) {
     body = inventory?.tienda ? (
       <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={() => me && onOpenPiso(me.user_id)} onOpenMissions={onOpenMissions} onReveal={setRevealing} closeReveal={closeReveal} />
@@ -386,12 +393,12 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   }
 
   return (
-    <PanelShell onClose={onClose} label={inShop ? 'La tienda del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
+    <PanelShell onClose={onClose} label={inHotel ? 'El Gran Hotel del Puerto' : inShop ? 'La tienda del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
       <div className="ed-bar">
         {pisoId ? (
           <button type="button" className="ed-bar__back" onClick={inShop && revealing ? () => setCloseReveal((n) => n + 1) : onClose}>
             <ArrowLeft aria-hidden="true" />
-            {inShop && revealing ? 'Volver a la tienda' : 'Volver al portal'}
+            {inShop && revealing ? 'Volver a la tienda' : inHotel ? 'Volver en limusina' : 'Volver al portal'}
           </button>
         ) : (
           <button type="button" className="ed-bar__close" onClick={onClose} aria-label="Cerrar el edificio">
