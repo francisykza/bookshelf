@@ -6,7 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.74.0 (2026-11-02), en https://bookshelf-wine-iota.vercel.app: los menús de debajo de las
+- **Versión publicada**: 1.75.0 (2026-11-02): el vestíbulo del Gran Hotel con el ascensor de latón (§75; plan de
+  salas en `docs/qa/gran-hotel.md` §9). Sin migraciones.
+- **Antes, 1.74.0** (2026-11-02), en https://bookshelf-wine-iota.vercel.app: los menús de debajo de las
   habitaciones y la cabina del armario (§74) y la limusina negra al Gran Hotel, con el viaje por la calle del puerto y
   la fachada viva del hotel, aún sin salas (§74.4, bloque 1 del hotel). Sin migraciones nuevas.
 - **Antes (1.73.0, publicada en `01585c3`)**: místicos en los sobres, melodía del edificio, pantalla completa y el
@@ -38,6 +40,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.75.0 | El vestíbulo del Gran Hotel por dentro: recepción con los encargos de la semana, ascensor de latón con la botonera de plantas, tablón y guardarropa (publicada) | §75 |
 | 1.74.0 | Los menús de debajo de las habitaciones (balda con nombres, armario-cabina, mesita del vecino de madera) y la limusina negra delante del portal que lleva, con un viaje corto, a la fachada viva del Gran Hotel (publicada) | §74 |
 | 1.73.0 | Místicos en el sobre de coleccionista (1 %, ¼ legendario, sin pity propio) con su aparición; la melodía «Dos balcones» en bucle en el edificio; el edificio a pantalla completa en el móvil; el buzón en la fachada (publicada; migración aplicada) | §73 |
 | 1.72.0 | Místicos (publicada): cinco seres animados con pixelfx, dos se colocan sobre su peana y tres legendarios te acompañan detrás de tu personaje (armario «Te acompaña»); no se reciclan ni regalan; migración aplicada | §72 |
@@ -150,6 +153,21 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-02 · cuenta principal · 1.75.0: el vestíbulo del Gran Hotel con el ascensor de latón (publicada)
+
+- Francisco pidió para el hotel la Lonja (intercambio de muebles), la habitación de la semana, un casino con moneda
+  propia, ropa exclusiva y una mascota cara de casino, y «otras salas» que unan las funciones de la app. Plan en
+  `docs/qa/gran-hotel.md` §9. **Decisiones** (§9.7, también en CLAUDE.md): minijuego «Las 21 páginas»; casino sin
+  apostar y solo si ese día has leído; suite de la semana en dos pasos y voluntaria; empezar por el vestíbulo.
+- Hecho el paso A (SPEC §75): al tocar el vestíbulo en la fachada se entra; recepción con los encargos de la semana
+  (las misiones, cobrables en tickets), ascensor con la botonera de plantas («P» sale a la plaza), tablón y
+  guardarropa con «Abre pronto». «A la calle» y Escape vuelven a la fachada. Sin migraciones.
+- Probado: `v175-vestibulo` y `v174-limusina` en Chromium 320/390/1440 y WebKit 390, build y oxlint del edificio.
+  No probado en un iPhone real.
+- Francisco: «me gusta mucho la habitación, no me gusta cómo se ve esto» (la botonera con degradado): rehecha en
+  pixel art (placa de latón, esfera con aguja que gira, botones de píxel). Después, «Commit y súbelo».
+- Siguiente paso del plan: B, la suite de la semana (necesita migración).
 
 ### 2026-11-02 · cuenta principal · 1.74.0: los menús de debajo de las habitaciones, la cabina del armario y la limusina al Gran Hotel (publicada)
 

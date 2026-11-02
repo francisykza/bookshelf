@@ -19,6 +19,9 @@ const INK = {
   R: '#d98b6a',
   y: '#c98a1c', // latón
   Y: '#f0c35a',
+  b: '#8a5a14', // latón en sombra
+  a: '#ffb43c', // luz ámbar (1.75: el botón encendido del ascensor)
+  A: '#ffe9a0',
   c: '#fbf3df',
 };
 
@@ -32,6 +35,8 @@ const FRAMES = {
   // 1.67: cartas de la tienda, con el canto del color de su rareza (poco común, salvia; raro, latón)
   rimSage: ['.ooooo.', 'oGGGGGo', 'oGpppgo', 'oGpppgo', 'oGpppgo', 'ogggggo', '.ooooo.'],
   rimGold: ['.ooooo.', 'oYYYYYo', 'oYpppyo', 'oYpppyo', 'oYpppyo', 'oyyyyyo', '.ooooo.'],
+  // 1.75: la placa de latón del ascensor del hotel
+  brass: ['.ooooo.', 'oYYYYbo', 'oYyyybo', 'oYyyybo', 'oYyyybo', 'obbbbbo', '.ooooo.'],
 };
 
 // Iconos de 11 × 11 (contorno oscuro y algún color)
@@ -52,6 +57,9 @@ const ICONS = {
   luna: ['...........', '....yyy....', '..yyYy.....', '.yYYy......', '.yYy.......', '.yYy.......', '.yYYy......', '..yYYyy..y.', '...yyYYYy..', '....yyyy...', '...........'],
   // 1.67: el ticket (con muescas y su línea troquelada) y el sobre lacrado de la tienda
   ticket: ['...........', '...........', 'ooooooooooo', 'oYYYYYyYYYo', 'oYyyYYyYYYo', '.oYYYYyYYo.', 'oYyyYYyYYYo', 'oYYYYYyYYYo', 'ooooooooooo', '...........', '...........'],
+  // 1.75: los botones del ascensor del hotel, de latón y encendido
+  boton: ['...ooooo...', '.ooYYYYyoo.', '.oYYyyyyyo.', 'oYyyyyyyybo', 'oYyyyyyyybo', 'oYyyyyyyybo', 'oyyyyyyyybo', 'oyyyyyyybbo', '.obyyyybbo.', '.oobbbbboo.', '...ooooo...'],
+  botonLuz: ['...ooooo...', '.ooAAAAaoo.', '.oAAaaaaao.', 'oAaaaaaaayo', 'oAaaaaaaayo', 'oAaaaaaaayo', 'oaaaaaaaayo', 'oaaaaaaayyo', '.oyaaaayyo.', '.ooyyyyyoo.', '...ooooo...'],
   sobre: ['...........', '...........', 'ooooooooooo', 'oopppppppoo', 'opopppppopo', 'oppopppoppo', 'opppoRopppo', 'opppppppppo', 'ossssssssso', 'ooooooooooo', '...........'],
 };
 

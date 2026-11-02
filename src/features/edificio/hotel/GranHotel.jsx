@@ -3,10 +3,11 @@
 // tocándolo; sin él, con movimiento reducido) y la fachada viva del hotel, a todo lo que da la pantalla, que se toca
 // planta a planta (Francisco: «el gran hotel tiene demasiados menús y se empequeñece»: sin fila de botones; para el
 // teclado, cada planta tiene un botón invisible sobre el dibujo que se ve al enfocarlo). Aún no se entra en ninguna
-// sala: cada planta dice qué habrá y «Abre pronto».
+// sala salvo el vestíbulo (1.75, Vestibulo.jsx): tocarlo es entrar; las demás plantas dicen qué habrá y «Abre pronto».
 import { useEffect, useRef, useState } from 'react';
 import { mountHotel, ZONES } from './hotelView';
 import { mountRide } from './ride';
+import { Vestibulo } from './Vestibulo';
 import './hotel.css';
 
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -43,13 +44,17 @@ function LimoRide({ onDone }) {
 }
 
 /** La fachada viva del hotel; al tocar una planta, una nota pequeña arriba dice qué habrá. */
-function HotelFacade() {
+function HotelFacade({ onEnter }) {
   const host = useRef(null);
   const view = useRef(null);
   const [zones, setZones] = useState([]);
   const [zone, setZone] = useState(null);
+  const enter = useRef(onEnter);
   useEffect(() => {
-    const v = mountHotel(host.current, { still: reducedMotion(), t0: 3, onPick: setZone });
+    enter.current = onEnter;
+  }, [onEnter]);
+  useEffect(() => {
+    const v = mountHotel(host.current, { still: reducedMotion(), t0: 3, onPick: (id) => (id === 'vestibulo' ? enter.current(id) : setZone(id)) });
     view.current = v;
     // Que quepa entero de alto (sin pasar de la pantalla) y, si no, de borde a borde
     host.current.style.setProperty('--gh-ratio', String(v.canvas.width / v.canvas.height));
@@ -58,6 +63,7 @@ function HotelFacade() {
     return () => v.destroy();
   }, []);
   const pick = (id) => {
+    if (id === 'vestibulo') return onEnter(id);
     view.current?.select(id);
     setZone(id);
   };
@@ -105,14 +111,15 @@ function HotelFacade() {
   );
 }
 
-export function GranHotel() {
+/** `room`: la sala en la que estás (null, la fachada); `onRoom(sala)` entra en ella o sale a la calle. */
+export function GranHotel({ room = null, onRoom = () => {} }) {
   const [riding, setRiding] = useState(() => !reducedMotion());
   return (
     <div className="gh-wrap">
       <h2 className="px-sr" id="ed-title">
         El Gran Hotel del Puerto
       </h2>
-      {riding ? <LimoRide onDone={() => setRiding(false)} /> : <HotelFacade />}
+      {riding ? <LimoRide onDone={() => setRiding(false)} /> : room === 'vestibulo' ? <Vestibulo onStreet={() => onRoom(null)} /> : <HotelFacade onEnter={onRoom} />}
     </div>
   );
 }

@@ -178,6 +178,13 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     edificio, **que se pueda interactuar desde la propia fachada**. **Se llega en una limusina negra de lujo**
     (2-11-2026): para ir al hotel hay que coger la limusina (en nuestro pixel art, original). **Se coge delante del portal
     del edificio**, aparcada en el muelle con su chófer (aprobado «Sí, a la limusina», 2-11-2026; 1.74, §74.4).
+    **Salas del hotel** (2-11-2026, `gran-hotel.md` §9): cada sala es la versión física de una función de la app y se
+    navega con **un ascensor de latón**, no con menús. La Lonja (intercambio de muebles; nunca místicos ni sagas), la
+    suite de la semana (en dos pasos y voluntaria: candidato por edificio, vota todo el hotel, gana el lunes; premio sin
+    moneda) y **el casino del sótano**: minijuego «Las 21 páginas», **sin apostar** (partida diaria gratis, nunca se
+    pierde nada, sin falsos «casi»), **solo se abre si has registrado lectura ese día**; las fichas nunca se compran y
+    se canjean por sobres, ropa de casino y la mascota «el conejo de la chistera» (ocupa el sitio del legendario).
+    Orden: vestíbulo con ascensor, suite, casino, sala de lectura y quiosco, Lonja, vitrinas y mirador.
   - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración
     `20261101120000_edificio_puerto.sql` la aplica Francisco; sin ella, la tablet hace lo de siempre.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.

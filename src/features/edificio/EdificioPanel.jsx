@@ -155,6 +155,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   // En la tienda, con un sobre abierto, el «Volver» de la barra vuelve a la tienda (1.68)
   const [revealing, setRevealing] = useState(false);
   const [closeReveal, setCloseReveal] = useState(0);
+  // Dentro del hotel, la sala en la que estás (1.75): null es la fachada; el «Volver» de la barra sale a la calle
+  const [hotelRoom, setHotelRoom] = useState(null);
+  const [wasHotel, setWasHotel] = useState(false);
   const inside = view === 'dentro';
   const pending = useRef(null);
   // Armario del personaje y misiones del día (1.70): undefined mientras llega; null sin la migración
@@ -215,6 +218,11 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   // Dentro de un piso, la melodía baja; en la fachada y en la tienda, a su volumen
   const inPiso = Boolean(pisoId && !inShop && !inHotel);
   useEffect(() => setEdificioMusicInside(inPiso), [inPiso]);
+  // Al salir del hotel se olvida la sala: la próxima vez se llega otra vez a la fachada
+  if (wasHotel !== inHotel) {
+    setWasHotel(inHotel);
+    if (!inHotel) setHotelRoom(null);
+  }
 
   const onMyChange = (room) => {
     setData((d) => d && { ...d, vecinos: d.vecinos.map((v) => (v.yo ? { ...v, room } : v)) });
@@ -341,7 +349,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   } else if (!data) {
     body = <p className="ed-note">Buscando tu puerta…</p>;
   } else if (inHotel) {
-    body = <GranHotel />;
+    body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} />;
   } else if (inShop) {
     body = inventory?.tienda ? (
       <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={() => me && onOpenPiso(me.user_id)} onOpenMissions={onOpenMissions} onReveal={setRevealing} closeReveal={closeReveal} />
@@ -396,9 +404,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     <PanelShell onClose={onClose} label={inHotel ? 'El Gran Hotel del Puerto' : inShop ? 'La tienda del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
       <div className="ed-bar">
         {pisoId ? (
-          <button type="button" className="ed-bar__back" onClick={inShop && revealing ? () => setCloseReveal((n) => n + 1) : onClose}>
+          <button type="button" className="ed-bar__back" onClick={inShop && revealing ? () => setCloseReveal((n) => n + 1) : inHotel && hotelRoom ? () => setHotelRoom(null) : onClose}>
             <ArrowLeft aria-hidden="true" />
-            {inShop && revealing ? 'Volver a la tienda' : inHotel ? 'Volver en limusina' : 'Volver al portal'}
+            {inShop && revealing ? 'Volver a la tienda' : inHotel ? (hotelRoom ? 'A la calle' : 'Volver en limusina') : 'Volver al portal'}
           </button>
         ) : (
           <button type="button" className="ed-bar__close" onClick={onClose} aria-label="Cerrar el edificio">

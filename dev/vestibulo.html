@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>El vestíbulo del Gran Hotel (desarrollo)</title>
+    <!-- Solo desarrollo: el dibujo del vestíbulo (src/features/edificio/hotel/lobbyArt.js) con sus contornos. -->
+    <style>
+      body { margin: 0; background: #141222; }
+      .wrap { position: relative; max-width: 900px; margin: 0 auto; }
+      img { display: block; width: 100%; image-rendering: pixelated; }
+      .ol { position: absolute; inset: 0; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap" id="wrap"></div>
+    <script type="module">
+      import { renderLobby } from '../src/features/edificio/hotel/lobbyArt.js';
+      const l = renderLobby();
+      const wrap = document.getElementById('wrap');
+      const img = new Image();
+      img.src = l.scene;
+      wrap.append(img);
+      const which = new URLSearchParams(location.search).get('ol');
+      if (which) {
+        const o = new Image();
+        o.src = l.outlines[which];
+        o.className = 'ol';
+        wrap.append(o);
+      }
+      window.__lobby = l;
+    </script>
+  </body>
+</html>

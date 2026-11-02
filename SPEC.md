@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.74.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.75.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4580,3 +4580,47 @@ Francisco: «para llegar al gran hotel, tengas que coger una limusina lujosa neg
   reducido, sin viaje y quieto), `v169-personaje`, `v170-diarias` (eligen la pestaña antes de cada clase), `v172-misticos`,
   `v171-vecinos`, `v163-edificio`, `v166-inventario` y `e2e/edificio-puerto.spec.js` (las pestañas de la balda se
   buscan por `data-cat`).
+
+## 75. El vestíbulo del Gran Hotel por dentro, con el ascensor de latón (1.75.0)
+
+Francisco pidió para el hotel la zona de intercambio de muebles, la habitación de la semana, un casino con su moneda y
+«otras salas en las que podamos intercalar otras funciones de la app para que todo esté bien relacionado y orgánico».
+El plan está en `docs/qa/gran-hotel.md` §9 y sus decisiones en §9.7 («Las 21 páginas», casino sin apostar y tras
+leer, suite de la semana en dos pasos y voluntaria). Se empieza por el paso A: el vestíbulo con el ascensor.
+
+### 75.1 Se entra tocando el vestíbulo
+
+- En la fachada del hotel, tocar el vestíbulo (o su botón para el teclado) **entra en él**; el resto de plantas siguen
+  con su nota y «Abre pronto».
+- Dentro, el «Volver» de la barra dice **«A la calle»** y vuelve a la fachada, igual que Escape (que ya no cierra el
+  hotel). Desde la fachada, «Volver en limusina» vuelve al portal. Al salir del hotel se olvida la sala.
+
+### 75.2 El dibujo
+
+`hotel/lobbyArt.js`, con el mismo motor isométrico que la tienda y los pisos (reutiliza `evening`, `toDataURL` y
+`outlineOf` de `shopRoom.js`), de noche y art déco: suelo de mármol crema y verde en damero con filete dorado, estuco
+crema con pilastras doradas y zócalo de nogal, apliques, la lámpara de araña sobre el diván redondo con su palmera,
+palmeras en macetas de latón, el carrito de equipajes, una huésped esperando el ascensor y la alfombra roja hasta él.
+Página de desarrollo: `dev/vestibulo.html` (`?ol=ascensor` enseña un contorno).
+
+### 75.3 Lo que se toca (`hotel/Vestibulo.jsx`)
+
+Como en la tienda: cada cosa tiene su letrero de papel colgado encima y, al elegirla, su contorno dorado; lo que dice
+va en un papel debajo del dibujo.
+
+- **Recepción** (de entrada): el conserje (uniforme granate, gorra con galón y bigote) y su casillero de llaves dan los
+  **encargos de la semana**, que son las misiones de siempre con su progreso. Se cobran en tickets como en el ordenador
+  (`useMissionTickets`, una vez por misión y semana, lo decide el servidor) y quedan apuntadas en la biblioteca.
+- **Ascensor**: la **botonera de latón** es la navegación del hotel (sin menús), con un botón redondo por planta, de
+  arriba abajo por columnas: C mirador, Á suite de la semana, T terraza, B salón de baile, 3 suites de los clubes,
+  1 café-biblioteca, E La Lonja, **V vestíbulo** (encendido, `aria-current="location"`), S casino del sótano y P la
+  plaza. Una planta que aún no abre dice qué habrá, con «Abre pronto»; la «P» sale a la plaza. La galería de vitrinas
+  no está en la botonera mientras las figuras sigan ocultas.
+  Francisco: «me gusta mucho la habitación, no me gusta cómo se ve esto» (la primera botonera, una placa con degradado):
+  ahora va en el pixel art de la habitación, con la placa de latón con marco de píxel (`--px-brass`), la esfera de
+  plantas dibujada en píxeles cuya aguja gira hasta la planta pulsada (de golpe con movimiento reducido), la placa
+  grabada con su nombre y botones redondos de píxel (`boton` y `botonLuz` en `pixelUi.js`).
+- **Tablón «Busco quien lea…»** y **guardarropa**: dicen qué habrá y «Abre pronto».
+
+- **Pruebas**: `e2e-community/v175-vestibulo.spec.js` (entrar, encargos, botonera, la «P», teclado y Escape, «A la
+  calle» y vuelta al portal) en Chromium 320/390/1440 y WebKit 390; `v174-limusina.spec.js` sigue pasando.

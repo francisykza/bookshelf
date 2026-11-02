@@ -220,3 +220,319 @@
 .gh-card__close:focus-visible {
   outline: 2px solid #b98b2f;
 }
+
+/* El vestíbulo por dentro (1.75, §75): el dibujo de borde a borde y, debajo, lo que dice lo que se toca */
+.gh-lobby {
+  scroll-margin-top: 60px;
+}
+
+.gh-lobby__scene {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #141222;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gh-lobby__art,
+.gh-lobby__outline {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  user-select: none;
+}
+
+.gh-lobby__outline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: gh-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes gh-glow {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gh-lobby__outline {
+    animation: none;
+  }
+}
+
+.gh-lobby__spots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* El letrero de cada cosa: una tablilla de papel colgada encima, con una muesca que la señala (como en la tienda) */
+.gh-spot {
+  position: absolute;
+  min-height: 28px;
+  padding: 2px 8px 3px;
+  border: 4px solid transparent;
+  border-image: var(--px-paper) 6 fill / 4px stretch;
+  background: none;
+  color: #2c1e14;
+  font:
+    600 0.8rem/1 'Lora',
+    Georgia,
+    serif;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  filter: drop-shadow(0 2px 0 rgb(10 8 20 / 0.6));
+  transform: translate(-50%, -100%);
+  transition: transform 0.12s ease-out;
+}
+
+.gh-spot::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-top-color: #f6ead0;
+}
+
+.gh-spot::after {
+  content: '';
+  position: absolute;
+  inset: -8px -6px;
+}
+
+.gh-spot:hover {
+  transform: translate(-50%, calc(-100% - 2px));
+}
+
+.gh-spot[aria-selected='true'] {
+  border-image-source: var(--px-sage);
+  color: #fbf5e6;
+}
+
+.gh-spot[aria-selected='true']::before {
+  border-top-color: #7d9a6c;
+}
+
+.gh-spot:focus-visible {
+  outline: 2px solid #ffd75a;
+  outline-offset: 3px;
+}
+
+/* Lo que dice lo que se toca: papel sobre la noche */
+.gh-desk {
+  margin: 10px 12px 16px;
+  padding: 6px 10px 10px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  color: #2c1e14;
+}
+
+.gh-desk h4 {
+  margin: 0 0 2px;
+  font:
+    600 1.1rem/1.2 'Cormorant Garamond',
+    Georgia,
+    serif;
+}
+
+.gh-desk p {
+  margin: 2px 0 6px;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.gh-desk .gh-say {
+  font:
+    italic 500 1.02rem/1.3 'Cormorant Garamond',
+    Georgia,
+    serif;
+}
+
+.gh-say--small:empty {
+  display: none;
+}
+
+.gh-wallet {
+  color: #6b4a2a;
+}
+
+.gh-tasks {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gh-task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 2px dotted #d8c4a0;
+}
+
+.gh-task__text {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.gh-task__text strong {
+  font-weight: 600;
+}
+
+.gh-task__text small {
+  color: #6b4a2a;
+  font-size: 0.75rem;
+}
+
+.gh-task__bar {
+  height: 6px;
+  background: linear-gradient(90deg, #c98a1c var(--p), #e3cfa6 var(--p));
+  box-shadow: 0 0 0 2px #3b2618;
+}
+
+.gh-task[data-done] .gh-task__bar {
+  background: #83946a;
+}
+
+.gh-task__btn {
+  flex: none;
+  min-height: 36px;
+  font-size: 0.8rem;
+}
+
+.gh-task__ok {
+  flex: none;
+  color: #46523a;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* La botonera del ascensor, en el mismo pixel art que la habitación: placa de latón con marco de píxel, la esfera de
+   plantas arriba y un botón redondo de píxel por planta (encendido el de donde estás y el pulsado) */
+.gh-desk--lift {
+  padding: 0;
+  border: 0;
+  border-image: none;
+}
+
+.gh-lift {
+  display: grid;
+  gap: 10px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.gh-lift__box {
+  display: grid;
+  justify-items: center;
+  padding: 10px 10px 12px;
+  border: 6px solid transparent;
+  border-image: var(--px-brass) 6 fill / 6px stretch;
+  filter: drop-shadow(0 3px 0 rgb(10 8 20 / 0.6));
+}
+
+.gh-lift__dial {
+  width: 123px;
+  height: 69px;
+  image-rendering: pixelated;
+}
+
+/* La placa grabada con el nombre de la planta, bajo la esfera */
+.gh-lift__readout {
+  margin: 8px 0 10px;
+  padding: 1px 10px 2px;
+  background: #3b2618;
+  box-shadow:
+    0 0 0 2px #8a5a14,
+    0 0 0 4px #3b2618;
+  color: #ffd36a;
+  font:
+    700 0.78rem/1.3 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.gh-lift__panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* De arriba abajo por columnas, como en un ascensor */
+  grid-template-rows: repeat(5, auto);
+  grid-auto-flow: column;
+  gap: 2px 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gh-lift__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 40px;
+  padding: 2px;
+  border: 0;
+  background: none;
+  color: #2c1608;
+  font:
+    700 0.76rem/1.15 'Lora',
+    Georgia,
+    serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gh-lift__lamp {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 33px;
+  height: 33px;
+  background: var(--px-i-boton) center / 33px 33px no-repeat;
+  image-rendering: pixelated;
+  color: #3b2618;
+  font:
+    700 0.85rem/1 'Lora',
+    Georgia,
+    serif;
+}
+
+.gh-lift__btn:active .gh-lift__lamp {
+  transform: translateY(1px);
+}
+
+.gh-lift__btn[aria-pressed='true'] .gh-lift__lamp {
+  background-image: var(--px-i-botonLuz);
+  filter: drop-shadow(0 0 4px rgb(255 190 80 / 0.9));
+  color: #6a2a10;
+}
+
+.gh-lift__btn:focus-visible {
+  outline: 2px solid #3b2618;
+  outline-offset: 1px;
+}
+
+/* Lo que habrá en la planta pulsada: un papel aparte, bajo la placa */
+.gh-lift__note {
+  padding: 4px 8px 8px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+}
+
+.gh-lift__note h4 {
+  margin-top: 0;
+}

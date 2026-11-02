@@ -352,7 +352,7 @@ function buildShop(r, mood, near = false) {
 }
 
 /** Luz de tarde, como en los pisos: todo un poco más oscuro y tintado, y cada luz alumbra a su alrededor. */
-function evening(r, lights, radius) {
+export function evening(r, lights, radius) {
   const pts = lights.map(([x, y, z]) => r.project(x, y, z));
   const lit = r.rampOf(LIT);
   const { pix, ids, W } = r;
@@ -376,7 +376,7 @@ function evening(r, lights, radius) {
   }
 }
 
-function toDataURL(r, fill, k = 1) {
+export function toDataURL(r, fill, k = 1) {
   const c = document.createElement('canvas');
   c.width = r.W;
   c.height = r.H;
@@ -415,7 +415,7 @@ export const SHOP_ROOM_H = FRAME.H;
 let roomCache = null;
 
 /** El contorno de una sección: los píxeles de fuera que tocan a los suyos, en dorado (se enciende el de la elegida). */
-function outlineOf(r, id) {
+export function outlineOf(r, id) {
   const { W, H, ids } = r;
   const c = document.createElement('canvas');
   c.width = W;
