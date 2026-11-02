@@ -83,6 +83,13 @@ export async function savePersonaje(userId, avatar) {
   return { local: false };
 }
 
+/** El místico legendario que te acompaña (docs/qa/misticos.md), o null. El servidor comprueba que lo tienes. */
+export async function saveCompanero(userId, companero) {
+  const sb = await client();
+  const { error } = await sb.from('pisos').update({ companero }).eq('user_id', userId);
+  fail(error);
+}
+
 /**
  * Mi inventario de muebles (1.66, §66): { inicioElegido, copias }. Si la migración del inventario no está aplicada,
  * null (y la balda ofrece todo como antes).

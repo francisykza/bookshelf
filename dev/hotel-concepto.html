@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Concepto: el Gran Hotel del Puerto (desarrollo)</title>
+    <!-- Solo desarrollo: la fachada viva del Gran Hotel (hotel-vista.js sobre hotel-concepto.js). ?quieto=1 para capturas. -->
+    <style>
+      body { margin: 0; background: #0a0c22; color: #f6ecd8; font-family: Georgia, serif; }
+      .hotel { position: relative; max-width: 600px; margin: 0 auto; }
+      .hotel-canvas { display: block; width: 100%; image-rendering: pixelated; touch-action: manipulation; }
+      .hotel-card {
+        position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 12px 14px 14px;
+        background: #f6ecd8; color: #3a2a24; border: 3px solid #3a2a24;
+        box-shadow: inset -3px -3px 0 #d8c4a0, inset 3px 3px 0 #fffaf0, 0 4px 0 #1a1220;
+      }
+      .hotel-card[hidden] { display: none; }
+      .hotel-card h2 { margin: 0 0 4px; font-size: 1.1rem; }
+      .hotel-card p { margin: 0 0 10px; font-size: 0.92rem; line-height: 1.35; }
+      .hotel-card .row { display: flex; gap: 8px; justify-content: flex-end; }
+      .hotel-card button {
+        font: inherit; font-size: 0.9rem; padding: 6px 12px; border: 3px solid #3a2a24; background: #e9dcc0; color: #3a2a24; cursor: pointer;
+        box-shadow: inset -2px -2px 0 #c8b490, inset 2px 2px 0 #fff8e8;
+      }
+      .hotel-card button.go { background: #5f7a58; color: #fff8e8; box-shadow: inset -2px -2px 0 #41583c, inset 2px 2px 0 #87a07e; }
+      .hotel-card button:disabled { opacity: 0.7; cursor: default; }
+      .hotel-floors { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 10px 12px 16px; max-width: 600px; margin: 0 auto; }
+      .hotel-floors button { font: inherit; font-size: 0.8rem; padding: 4px 8px; background: #1c1a3a; color: #f6ecd8; border: 2px solid #f0c468; cursor: pointer; }
+      .hotel-floors button[aria-pressed='true'] { background: #f0c468; color: #1c1a3a; }
+    </style>
+  </head>
+  <body>
+    <div class="hotel" id="hotel">
+      <section class="hotel-card" id="card" hidden aria-live="polite">
+        <h2 id="card-title"></h2>
+        <p id="card-text"></p>
+        <div class="row">
+          <button type="button" id="card-close">Cerrar</button>
+          <button type="button" class="go" disabled title="Concepto: aún no se entra">Entrar · pronto</button>
+        </div>
+      </section>
+    </div>
+    <nav class="hotel-floors" aria-label="Plantas del hotel" id="floors"></nav>
+    <script type="module">
+      import { mountHotel, ZONES } from './hotel-vista.js';
+      const q = new URLSearchParams(location.search);
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const host = document.getElementById('hotel');
+      const card = document.getElementById('card');
+      const floors = document.getElementById('floors');
+      let view;
+      const show = (id) => {
+        view.select(id);
+        for (const b of floors.children) b.setAttribute('aria-pressed', String(b.dataset.zone === id));
+        if (!id) return (card.hidden = true);
+        card.hidden = false;
+        document.getElementById('card-title').textContent = ZONES[id].nombre;
+        document.getElementById('card-text').textContent = ZONES[id].texto;
+      };
+      view = mountHotel(host, { still: q.has('quieto') || reduced, t0: Number(q.get('t') ?? 3), onPick: show });
+      host.prepend(view.canvas);
+      for (const id of ['mirador', 'terraza', 'suites', 'baile', 'cafe', 'vestibulo', 'plaza']) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.zone = id;
+        b.textContent = ZONES[id].nombre;
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', () => show(id));
+        floors.append(b);
+      }
+      document.getElementById('card-close').addEventListener('click', () => show(null));
+      if (q.get('zona')) show(q.get('zona'));
+      document.body.dataset.ready = '1';
+    </script>
+  </body>
+</html>

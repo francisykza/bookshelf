@@ -16,7 +16,7 @@ import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
 import { PRENDAS, prendaNombre } from './actor';
 import { missionsOf, todayKey } from './dailyMissions';
-import { contarDiaria, doorLabel, elegirInicio, firmar, loadArmario, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, savePersonaje, savePiso, setSello } from './service';
+import { contarDiaria, doorLabel, elegirInicio, firmar, loadArmario, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje, savePiso, setSello } from './service';
 import { VecinoMesa } from './VecinoMesa';
 import { StarterPicker } from './StarterPicker';
 import { Tienda } from './Tienda';
@@ -72,22 +72,24 @@ function Facade({ vecinos, onOpenPiso, shopBadge }) {
 }
 
 /** El piso montado en un contenedor (lo dibuja el motor de píxeles, fuera de React). */
-function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, prendas = null, missions = null, notice = null, likes = null, onChange, onAvatarChange, onEvent, onLike }) {
+function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, companion = null, prendas = null, missions = null, notice = null, likes = null, onChange, onAvatarChange, onCompanionChange = null, onEvent, onLike }) {
   const ref = useRef(null);
   const api = useRef(null);
   const changed = useRef(onChange);
   const avatarChanged = useRef(onAvatarChange);
   const evented = useRef(onEvent);
   const likedRef = useRef(onLike);
+  const palChanged = useRef(onCompanionChange);
   useEffect(() => {
+    palChanged.current = onCompanionChange;
     changed.current = onChange;
     avatarChanged.current = onAvatarChange;
     evented.current = onEvent;
     likedRef.current = onLike;
-  }, [onChange, onAvatarChange, onEvent, onLike]);
+  }, [onChange, onAvatarChange, onCompanionChange, onEvent, onLike]);
   useEffect(() => {
     // En la vista «dentro», tu piso se abre ya decorando, con la balda abajo
-    const piso = mountPiso(ref.current, { room, editable, label, inside, inventory, decorate: inside && editable, muted: !soundOn, avatar, prendas, missions, onChange: (r) => changed.current?.(r), onAvatarChange: (a) => avatarChanged.current?.(a), onEvent: (t) => evented.current?.(t), likes, onLike: onLike ? (uid, si) => likedRef.current?.(uid, si) : null });
+    const piso = mountPiso(ref.current, { room, editable, label, inside, inventory, decorate: inside && editable, muted: !soundOn, avatar, companion, prendas, missions, onCompanionChange: (id) => palChanged.current?.(id), onChange: (r) => changed.current?.(r), onAvatarChange: (a) => avatarChanged.current?.(a), onEvent: (t) => evented.current?.(t), likes, onLike: onLike ? (uid, si) => likedRef.current?.(uid, si) : null });
     api.current = piso;
     // Solo en desarrollo: las pruebas buscan los muebles en el dibujo (screenOfItem) y miran al personaje
     if (import.meta.env.DEV) window.__edificioPiso = piso;
@@ -115,6 +117,10 @@ function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, p
   useEffect(() => {
     api.current?.setLikes(likes);
   }, [likes]);
+  // El místico que te acompaña (o al vecino)
+  useEffect(() => {
+    api.current?.setCompanion(companion);
+  }, [companion]);
   useEffect(() => {
     if (notice) api.current?.notify(notice.text);
   }, [notice]);
@@ -237,6 +243,15 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     }, SAVE_MS);
   };
 
+  // El místico legendario que te acompaña: se guarda al momento (el servidor comprueba que lo tienes)
+  const onMyCompanion = (companero) => {
+    setData((d) => d && { ...d, vecinos: d.vecinos.map((v) => (v.yo ? { ...v, companero } : v)) });
+    setSaving('Guardando…');
+    saveCompanero(community.userId, companero)
+      .then(() => setSaving('Guardado.'))
+      .catch((e) => setSaving(`No se ha podido guardar: ${e.message}`));
+  };
+
   const pickStart = async (ids) => {
     const inv = await elegirInicio(ids);
     setInventory(inv);
@@ -331,7 +346,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : likes ? 'Toca un mueble para darle un «me gusta».' : 'Puedes mirar, pero no tocar nada.'}</p>
           </div>
         </div>
-        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
+        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
             {saving}

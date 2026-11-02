@@ -163,6 +163,8 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
           layout: db.pisos.find((x) => x.user_id === v.user_id)?.layout ?? null,
           // 1.69 (SPEC §69): el personaje, si la prueba simula la migración (db.personajes = true)
           ...(db.personajes ? { personaje: db.pisos.find((x) => x.user_id === v.user_id)?.personaje ?? null } : {}),
+          // Místicos, bloque 2: el legendario que acompaña, si la prueba simula la migración (db.misticos = true)
+          ...(db.misticos ? { companero: db.pisos.find((x) => x.user_id === v.user_id)?.companero ?? null } : {}),
           sello_dado: db.piso_sellos.find((x) => x.de === userId && x.para === v.user_id)?.sello ?? null,
           sello_recibido: db.piso_sellos.find((x) => x.de === v.user_id && x.para === userId)?.sello ?? null,
         }));
@@ -415,6 +417,12 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     if (req.method() === 'PATCH') {
       // Sin la migración del personaje (1.69), la columna no existe
       if (table === 'pisos' && 'personaje' in body && !db.personajes) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST204', message: "Could not find the 'personaje' column of 'pisos' in the schema cache" }) });
+      // Sin la migración de los místicos, la columna no existe; con ella, solo un legendario que tienes
+      if (table === 'pisos' && 'companero' in body) {
+        if (!db.misticos) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST204', message: "Could not find the 'companero' column of 'pisos' in the schema cache" }) });
+        const legendario = CATALOG.some((c) => c.id === body.companero && c.rareza === 'legendario');
+        if (body.companero !== null && (!legendario || !(db.piso_inventario?.[userId]?.[body.companero] > 0))) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message: 'Aún no tienes ese místico.' }) });
+      }
       const rows = db[table].filter((r) => (r[OWNER[table]] === userId || (['club_invites', 'club_messages'].includes(table) && ownerOf(r.club_id, userId))) && matches(r, params));
       if (table === 'reading_presence') rows.forEach((r) => (r.last_seen = new Date().toISOString()));
       for (const r of rows) Object.assign(r, body, { updated_at: new Date().toISOString() });

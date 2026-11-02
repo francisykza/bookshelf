@@ -6,7 +6,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
-import { CATALOG } from '../catalog';
+import { CATALOG, isMistico } from '../catalog';
 import { starterRoom } from '../demo';
 import { addItem } from '../room';
 
@@ -43,9 +43,9 @@ beforeAll(async () => {
 describe('catálogo del servidor', () => {
   it('sabe qué muebles son de un set de saga y todos son comunes por ahora', async () => {
     const { rows } = await db.query('select id, saga, rareza from piso_catalogo order by id');
-    // Lo que había en la 1.66 (la tanda 2 de la 1.69 llega en una migración posterior)
+    // Lo que había en la 1.66 (la tanda 2 de la 1.69 y los místicos llegan en migraciones posteriores)
     const tanda2 = new Set(['puf', 'mecedora', 'escritorio', 'comoda', 'baul', 'velas', 'farol', 'cactus', 'monstera', 'pecera', 'globo', 'tocadiscos', 'taza', 'estante-pared', 'espejo', 'mapa', 'alfombra-rayas']);
-    expect(Object.fromEntries(rows.map((r) => [r.id, r.saga]))).toEqual(Object.fromEntries(CATALOG.filter((c) => !tanda2.has(c.id)).map((c) => [c.id, c.set ?? null])));
+    expect(Object.fromEntries(rows.map((r) => [r.id, r.saga]))).toEqual(Object.fromEntries(CATALOG.filter((c) => !tanda2.has(c.id) && !isMistico(c)).map((c) => [c.id, c.set ?? null])));
     expect(new Set(rows.map((r) => r.rareza))).toEqual(new Set(['comun']));
   });
 });

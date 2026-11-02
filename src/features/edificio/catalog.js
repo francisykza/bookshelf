@@ -6,6 +6,8 @@
 // el prototipo: no hay monedas, piezas ni cajas (decisión de Francisco: no se tocan esas reglas).
 //
 // Rareza (1.67, §67): 'comun' si no se dice; 'poco-comun' y 'raro' salen en los sobres de la tienda (economy.js).
+// Místicos (docs/qa/misticos.md): rareza 'mistico' (se colocan sobre su peana y se mueven solos) o 'legendario' (no se
+// colocan: te acompañan, `compania: true`). Su dibujo animado está en misticos.js; la peana, en furniture.js.
 
 export const CATEGORIES = [
   { id: 'asientos', nombre: 'Para sentarse' },
@@ -16,6 +18,7 @@ export const CATEGORIES = [
   { id: 'pared', nombre: 'Pared' },
   { id: 'alfombras', nombre: 'Alfombras' },
   { id: 'sagas', nombre: 'Sagas' },
+  { id: 'misticos', nombre: 'Místicos' },
 ];
 
 // Sets de sagas (1.64, SPEC §64, encargo de Francisco): cada uno con nombre propio y un guiño a la saga que evoca.
@@ -123,7 +126,19 @@ export const CATALOG = [
   { id: 'lampara-gemas', nombre: 'Lámpara de gemas', cat: 'sagas', set: 'tormenta', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 1.9], tonos: [HIERRO, BRONCE, MUSGO] },
   { id: 'atril', nombre: 'Atril de estudio', cat: 'sagas', set: 'tormenta', capa: 'suelo', w: 1, d: 1, tonos: [MADERA, NOGAL, MADERA_CLARA] },
   { id: 'cuadro-tormenta', nombre: 'Cuadro de la tormenta', cat: 'sagas', set: 'tormenta', capa: 'pared', w: 2, tonos: [NOGAL, MOSTAZA, MADERA] },
+
+  // ── Místicos (primera tanda, decisión de Francisco del 2-11-2026) ──
+  { id: 'farol-azul', rareza: 'mistico', nombre: 'Farol de llama azul', cat: 'misticos', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 0.75], tonos: [OBSIDIANA], guino: 'Para quien leyó «El nombre del viento»' },
+  { id: 'rosa-estrellas', rareza: 'mistico', nombre: 'Rosa bajo la lluvia de estrellas', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien leyó «Una corte de rosas y espinas»' },
+  { id: 'dragoncillo', rareza: 'legendario', compania: true, nombre: 'Dragoncillo de escamas rojas', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien leyó «Alas de sangre»' },
+  { id: 'zorro-bruma', rareza: 'legendario', compania: true, nombre: 'Zorro de bruma y ceniza', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien leyó «Mistborn»' },
+  { id: 'cinta-tormenta', rareza: 'legendario', compania: true, nombre: 'Cinta de luz de tormenta', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien leyó «El archivo de las tormentas»' },
 ];
+
+/** Si un mueble es místico (de los que se colocan o de los que acompañan). */
+export const isMistico = (c) => c?.rareza === 'mistico' || c?.rareza === 'legendario';
+/** Los legendarios: te acompañan, no se colocan. */
+export const COMPANEROS = CATALOG.filter((c) => c.compania);
 
 export const catalogItem = (id) => CATALOG.find((c) => c.id === id) ?? null;
 export const setOf = (id) => SETS.find((s) => s.id === id) ?? null;

@@ -7,7 +7,7 @@
 // probabilidades y garantías. Los tickets solo se ganan leyendo; muebles sueltos a precio fijo (lo raro solo sale en
 // sobres) y reciclar lo que no está colocado. Todo lo decide el servidor; esto enseña y pide confirmación antes de gastar.
 import { useEffect, useMemo, useState } from 'react';
-import { CATALOG, catalogItem } from './catalog';
+import { CATALOG, catalogItem, isMistico } from './catalog';
 import { MISION_TICKETS, PITY, SOBRES, TEMPORADA, TIENDA, costeDe, oddsTable, precioDe, rarezaInfo, rarezaOf, sobreOf, sobresHastaRaro, ticketsText } from './economy';
 import { GachaReveal } from './GachaReveal';
 import { freeCopies, isCounted } from './inventory';
@@ -76,7 +76,7 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
   const odds = useMemo(() => oddsTable(sobre), [sobre]);
   const tickets = inventory.tickets;
   const spare = Object.keys(inventory.copias)
-    .filter((id) => isCounted(id) && freeCopies(inventory, room, id) > 0)
+    .filter((id) => isCounted(id) && !isMistico(catalogItem(id)) && freeCopies(inventory, room, id) > 0)
     .sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'es'));
 
   const run = async (job, ok) => {

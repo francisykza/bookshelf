@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Los místicos (desarrollo)</title>
+    <!-- Solo desarrollo: los primeros místicos (src/features/edificio/misticos.js) y un piso donde el legendario elegido
+         sigue a tu personaje. Toca el suelo para andar. ?quieto=1&t=2 para capturas. -->
+    <style>
+      body { margin: 0; background: #14122a; color: #f6ecd8; font-family: Georgia, serif; }
+      main { max-width: 720px; margin: 0 auto; padding: 16px; }
+      h1 { font-size: 1.3rem; margin: 0 0 4px; }
+      h2 { font-size: 1.05rem; margin: 24px 0 8px; }
+      p.sub { margin: 0 0 14px; opacity: 0.8; font-size: 0.92rem; }
+      .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+      .card { background: #1f1c3a; border: 3px solid #3a3466; padding: 8px; }
+      .card.leg { border-color: #f0c468; box-shadow: 0 0 0 2px #1a1220, 0 0 18px rgba(240, 196, 104, 0.25); }
+      .card canvas { display: block; width: 100%; image-rendering: pixelated; background: #191630; }
+      .card b { display: block; margin-top: 6px; font-size: 0.95rem; }
+      .card small { display: block; opacity: 0.75; font-style: italic; }
+      .tag { display: inline-block; font-size: 0.72rem; padding: 1px 6px; margin-top: 4px; background: #3a3466; }
+      .card.leg .tag { background: #f0c468; color: #1a1220; }
+      .pick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+      .pick button { font: inherit; font-size: 0.85rem; padding: 4px 10px; background: #1c1a3a; color: #f6ecd8; border: 2px solid #f0c468; cursor: pointer; }
+      .pick button[aria-pressed='true'] { background: #f0c468; color: #1c1a3a; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Los místicos</h1>
+      <p class="sub">Primera tanda de diseños. Los legendarios (borde dorado) te siguen; los demás se colocan en el piso.</p>
+      <div class="gallery" id="gallery"></div>
+      <h2>Te sigue a todas partes</h2>
+      <p class="sub">Toca el suelo del piso para que tu personaje ande; el legendario elegido va detrás. También se elige en el armario (toca a tu personaje).</p>
+      <div class="pick" id="pick" role="group" aria-label="Qué legendario te acompaña"></div>
+      <div class="stage" id="stage"></div>
+    </main>
+    <script type="module">
+      import { MISTICOS } from '/src/features/edificio/misticos.js';
+      import { mountPiso } from '/src/features/edificio/piso.js';
+      import { starterRoom } from '/src/features/edificio/demo.js';
+      import { DEFAULT_AVATAR } from '/src/features/edificio/actor.js';
+      import { addItem } from '/src/features/edificio/room.js';
+      import { CATALOG } from '/src/features/edificio/catalog.js';
+      import { clearFrame, composite, createFrame, painterFor } from '/src/vendor/pixelfx/core/index.js';
+
+      const q = new URLSearchParams(location.search);
+      const still = q.get('quieto') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const t0 = Number(q.get('t') ?? 2);
+
+      // Galería: cada ser en su lienzo pequeño, sobre el fondo de noche del piso
+      const GW = 72;
+      const GH = 52;
+      const BG = 0xff301619; // #191630 en ABGR
+      const cells = MISTICOS.map((m) => {
+        const card = document.createElement('div');
+        card.className = `card${m.legendario ? ' leg' : ''}`;
+        const cv = document.createElement('canvas');
+        cv.width = GW;
+        cv.height = GH;
+        cv.setAttribute('role', 'img');
+        cv.setAttribute('aria-label', m.nombre);
+        card.append(cv);
+        card.insertAdjacentHTML('beforeend', `<b>${m.nombre}</b><small>${m.guino}</small><span class="tag">${m.legendario ? 'Místico legendario · te sigue' : 'Místico · se coloca'}</span>`);
+        document.getElementById('gallery').append(card);
+        const frame = createFrame(GW, GH);
+        const ctx = cv.getContext('2d');
+        const img = ctx.createImageData(GW, GH);
+        return { m, frame, ctx, img };
+      });
+      function drawGallery(t) {
+        for (const c of cells) {
+          clearFrame(c.frame);
+          const p = painterFor(c.frame);
+          p.place(GW / 2, GH - 8, false);
+          c.m.draw(p, t, {});
+          composite(c.frame, c.img.data, BG);
+          c.ctx.putImageData(c.img, 0, 0);
+        }
+      }
+
+      // El piso de verdad (piso.js): los dos místicos que se colocan, sobre su peana, y el legendario elegido detrás de
+      // tu personaje. Sin inventario (desarrollo): todo es tuyo, y en el armario sale la fila «Te acompaña».
+      const stage = document.getElementById('stage');
+      let room = starterRoom();
+      room = addItem(room, 'farol-azul', { near: { x: 7, y: 1 } }).room ?? room;
+      room = addItem(room, 'rosa-estrellas', { near: { x: 1, y: 6 } }).room ?? room;
+      const legend = MISTICOS.filter((m) => m.legendario);
+      let chosen = legend.find((m) => m.id === q.get('ser')) ?? legend[0];
+      // Inventario de prueba: varias copias de todo, místicos incluidos (sin inventario, los místicos no son de nadie)
+      const inventory = { inicioElegido: true, tickets: 0, copias: Object.fromEntries(CATALOG.filter((c) => !c.set).map((c) => [c.id, 3])) };
+      const api = mountPiso(stage, { room, inventory, editable: true, avatar: DEFAULT_AVATAR, label: 'Piso de prueba', muted: true, evening: q.get('dia') !== '1', companion: chosen.id, onCompanionChange: (id) => { chosen = legend.find((m) => m.id === id) ?? null; syncPick(); } });
+      const pick = document.getElementById('pick');
+      for (const m of legend) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = m.nombre;
+        b.dataset.id = m.id;
+        b.addEventListener('click', () => {
+          chosen = m;
+          api.setCompanion(m.id);
+          syncPick();
+        });
+        pick.append(b);
+      }
+      const syncPick = () => { for (const b of pick.children) b.setAttribute('aria-pressed', String(b.dataset.id === chosen?.id)); };
+      syncPick();
+
+      if (still) {
+        requestAnimationFrame(() => {
+          drawGallery(t0);
+          document.body.dataset.ready = '1';
+        });
+      } else {
+        const start = performance.now();
+        const loop = (now) => {
+          drawGallery(t0 + (now - start) / 1000);
+          requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
+        document.body.dataset.ready = '1';
+      }
+      window.__misticos = { api };
+    </script>
+  </body>
+</html>

@@ -3,7 +3,7 @@
 // «Buzón» (los sellos de siempre), «Libro de visitas» (firmar con una frase cerrada) y «Regalar» (una copia libre de
 // un mueble tuyo). Sin texto libre en ningún caso. El «me gusta» de cada mueble va en la habitación (piso.js).
 import { useMemo, useState } from 'react';
-import { CATALOG, FIRMAS, SELLOS } from './catalog';
+import { CATALOG, FIRMAS, SELLOS, isMistico } from './catalog';
 import { freeCopies } from './inventory';
 import { renderThumb } from './render';
 
@@ -19,8 +19,8 @@ export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, sel
   const [msg, setMsg] = useState('');
   const canGift = Boolean(social && inventory && myRoom);
   const tabs = [{ id: 'buzon', nombre: 'Buzón' }, ...(social ? [{ id: 'libro', nombre: 'Libro de visitas' }] : []), ...(canGift ? [{ id: 'regalar', nombre: 'Regalar' }] : [])];
-  // Lo que puedes regalar: copias libres (no puestas en tu piso) de muebles que no son de sagas
-  const free = useMemo(() => (canGift ? CATALOG.filter((c) => !c.set).map((c) => ({ c, n: freeCopies(inventory, myRoom, c.id) })).filter((x) => x.n > 0 && x.n !== Infinity) : []), [canGift, inventory, myRoom]);
+  // Lo que puedes regalar: copias libres (no puestas en tu piso) de muebles que no son de sagas ni místicos
+  const free = useMemo(() => (canGift ? CATALOG.filter((c) => !c.set && !isMistico(c)).map((c) => ({ c, n: freeCopies(inventory, myRoom, c.id) })).filter((x) => x.n > 0 && x.n !== Infinity) : []), [canGift, inventory, myRoom]);
   const thumbs = useMemo(() => Object.fromEntries(free.map(({ c }) => [c.id, renderThumb(c.id).toDataURL()])), [free]);
   const mineToday = social?.visitas.find((v) => v.de === myId && v.dia === today)?.frase ?? null;
   const others = social?.visitas.filter((v) => v.de !== myId).slice(0, 2) ?? [];

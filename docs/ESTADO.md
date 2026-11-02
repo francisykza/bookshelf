@@ -35,7 +35,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.71.0 | «Más vida en el edificio» (sin publicar): muebles nuevos, personaje que anda y se viste, misiones del día que dan ropa, y vecinos con «me gusta» por mueble, libro de visitas y regalos | §69–71 |
+| 1.72.0 | Místicos (sin commit): cinco seres animados con pixelfx, dos se colocan sobre su peana y tres legendarios te acompañan detrás de tu personaje (armario «Te acompaña»); no se reciclan ni regalan; migración aplicada | §72 |
+| 1.71.0 | «Más vida en el edificio» (publicada): muebles nuevos, personaje que anda y se viste, misiones del día que dan ropa, y vecinos con «me gusta» por mueble, libro de visitas y regalos | §69–71 |
 | 1.68.0 | La tienda por dentro con el motor isométrico de los pisos; Sobres, Muebles y Reciclar como objetos de la escena (expositor, rincón del sillón, caja de reciclaje) con letrero y contorno; mostrador de cerca, casi de frente, para abrir sobres | §68 |
 | 1.67.0 | La tienda del bajo (por dentro, el antiguo videoclub con su dependienta): tickets por las misiones, muebles a precio fijo, sobres por tipo de la temporada 1 (y uno de coleccionista más caro con más suerte), de 1 y de 5, con animación, probabilidades y pity, reciclar; figuras ocultas sin borrar datos (migración aplicada) | §67 |
 | 1.66.0 | Inventario de muebles: copias por mueble, lo colocado pasa a ser tuyo, diez de inicio y «Tu mudanza» con seis comunes; la balda enseña «×N» y apaga lo agotado | §66 |
@@ -145,7 +146,47 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
-### 2026-11-02 · cuenta principal · 1.71.0 «más vida en el edificio», bloque 4 (vecinos) (commit, sin publicar)
+### 2026-11-02 · cuenta principal · 1.72.0: místicos en tu piso y el compañero (sin commit; migración aplicada)
+
+- Francisco aprobó las cifras («Sí, esas cifras»: 1 % en «Edición coleccionista», ¼ legendario, sin pity propio) y
+  pidió empezar el bloque 2 («Sí, empieza»). SPEC §72.
+- Hecho: los místicos en el catálogo (peana + dibujo animado con pixelfx mezclado con la profundidad), la fila «Te
+  acompaña» del armario, el compañero que sigue a tu personaje y que ven los vecinos, y que no se reciclen ni regalen.
+- **Migración aplicada en producción** (2-11-2026, pegada con SHA-256 `03724c9b…`, 9805 bytes; Francisco pulsó Run: «Success»): `supabase/migrations/20261106120000_edificio_misticos.sql`. Anónimo recibe 42501 en `pisos`, `edificio_portal` y `piso_reciclar`.
+  Sin ella, nadie tiene místicos y todo sigue como en la 1.71.
+- Pruebas: `misticos.rls.test.js` (7), las de inventario y tienda ajustadas, todas las del edificio en verde (PGlite);
+  e2e `v172-misticos` en Chromium 390 y 1440 y WebKit 390, y las de edificio y vecinos en Chromium 390. Compila. Sin probar en un iPhone real.
+- Siguiente: bloque 3 (que salgan en los sobres y su animación), cuando Francisco lo diga.
+
+### 2026-11-02 · cuenta principal · místicos, bloque 1: diseños y seguir (sin commit, fuera de la app)
+
+- `src/features/edificio/misticos.js` (no se importa en la app): cinco seres dibujados con el pintor de pixelfx
+  (dragoncillo, zorro de bruma, cinta de luz de tormenta, farol de llama azul, rosa bajo estrellas) y `createFollower()`.
+- `dev/misticos.html`: galería animada y un piso de prueba donde el legendario elegido sigue al personaje (lienzo
+  encima, leyendo `data-actor-at`). 60 fps y sin errores en Chromium. Capturas `qa-report/misticos-*.png`.
+- Falta que Francisco apruebe diseños y cifras (1 % en «Edición coleccionista», ¼ legendario, sin pity propio) antes
+  de los bloques 2 y 3. Plan en `docs/qa/misticos.md`.
+
+### 2026-11-02 · cuenta principal · hotel vivo y que se toca, pixelfx y reglas nuevas (sin commit, fuera de la app)
+
+- Fachada del Gran Hotel animada e interactiva (`dev/hotel-vista.js`, ver `docs/qa/gran-hotel.md` §0).
+- pixelfx (MIT) copiado en `src/vendor/pixelfx/` (núcleo + estrellas fugaces y fuegos artificiales; `LEEME.md` con la
+  revisión). Sin la fuente «Patch Pixel». oxlint da avisos en su `rig.js` (no se toca el código ajeno).
+- Reglas nuevas en CLAUDE.md: nunca en inglés, pixelfx sí, no usar `material-diseno/barrio-v2/`, rareza «místicos»,
+  melodía «Dos balcones» y sonidos estilo Stardew Valley (más adelante), hotel que se toca desde la fachada.
+- `material-diseno/barrio-v2/`: Francisco pidió borrarla; mandarla a la Papelera falló (Windows: un archivo en uso).
+  Sigue en disco, sin tocar.
+- Pendiente de Francisco: cómo se consiguen los místicos, de dónde es la melodía y las decisiones del hotel (§7).
+
+### 2026-11-02 · cuenta principal · concepto «Gran Hotel del Puerto» (sin commit, fuera de la app)
+
+- Francisco pidió imaginar un gran hotel rascacielos, de noche y espectacular, como edificio principal de la parte
+  social más abierta (conocer gente, «un poco como Habbo»: solo el género, nunca su arte). Concepto dibujado con el
+  motor de la fachada: `dev/hotel-concepto.js` y `dev/hotel-concepto.html` (solo desarrollo; la captura sale en
+  `qa-report/hotel-concepto.png`). No toca la app ni Supabase. Plan por plantas y bloques en `docs/qa/gran-hotel.md`
+  (sin aprobar): pendiente de que Francisco decida la entrada, el directo, quién entra, el nombre y las plantas (§7).
+
+### 2026-11-02 · cuenta principal · 1.71.0 «más vida en el edificio», bloque 4 (vecinos) (publicada)
 
 - §71: «me gusta» por mueble en la habitación del vecino (`piso.js`, botón con corazón; en tu piso el aviso da la
   cuenta), `VecinoMesa.jsx` con pestañas Buzón / Libro de visitas / Regalar en la franja de abajo, y el buzón del

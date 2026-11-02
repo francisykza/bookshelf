@@ -7,6 +7,8 @@ import { createRaster, hash, noise, rgb } from '../minigames/libreria-puerto/ras
 import { actorBoxes } from './actor';
 import { PAREDES, catalogItem } from './catalog';
 import { shapeOf } from './furniture';
+import { misticoOf, misticoThumb } from './misticos';
+import { clearFrame, createFrame, painterFor } from '../../vendor/pixelfx/core/index.js';
 import { ROOM, heightOf, rectOf } from './room';
 
 const S = 18;
@@ -369,11 +371,50 @@ export function createRoomRenderer() {
     }
   }
 
+  // Los místicos (docs/qa/misticos.md): cada uno se pinta con pixelfx en su propio lienzo y se mezcla con el piso
+  // respetando la profundidad (lo que está delante lo tapa); su luz se suma encima. Sus píxeles llevan el uid del
+  // mueble, para poder tocarlo.
+  const fxFrame = createFrame(ART_W, ART_H);
+  function drawBeings(beings, t) {
+    const { pix, zb, ids } = r;
+    const C = fxFrame.color;
+    const L = fxFrame.light;
+    for (const b of beings) {
+      const m = misticoOf(b.id);
+      if (!m) continue;
+      const at = r.project(b.x, b.y, b.z ?? 0);
+      clearFrame(fxFrame);
+      const p = painterFor(fxFrame);
+      p.place(Math.round(at.sx), Math.round(at.sy), !!b.flip);
+      m.draw(p, t, { moving: !!b.moving });
+      const d = at.d + 0.15;
+      for (let i = 0; i < C.length; i += 1) {
+        const c = C[i];
+        const l = L[i] & 0xffffff;
+        if (!c && !l) continue;
+        if (zb[i] > d) continue;
+        let o = pix[i];
+        const a = (c >>> 24) / 255;
+        if (a > 0) {
+          if (!o) o = c | 0xff000000;
+          const mixc = (s) => (((c >>> s) & 255) * a + ((o >>> s) & 255) * (1 - a)) & 255;
+          o = (0xff000000 | (mixc(16) << 16) | (mixc(8) << 8) | mixc(0)) >>> 0;
+          if (a > 0.5 && b.uid) ids[i] = b.uid;
+        }
+        if (l && o) {
+          const add = (s) => Math.min(255, ((o >>> s) & 255) + ((l >>> s) & 255));
+          o = (0xff000000 | (add(16) << 16) | (add(8) << 8) | add(0)) >>> 0;
+        }
+        pix[i] = o;
+      }
+    }
+  }
+
   /**
    * Un fotograma. `held`: { items: [objetos en la mano, ya con su posición], room: el piso con ellos dentro, ok } o null.
    * `selected`: objeto elegido (se dibuja su contorno). `evening`: luz de tarde.
    */
-  function draw(ctx, image, { held = null, selected = null, ok = true, evening: isEvening = false, inside = false, actor = null } = {}) {
+  function draw(ctx, image, { held = null, selected = null, ok = true, evening: isEvening = false, inside = false, actor = null, beings = null, t = 0 } = {}) {
     r.pix.set(baked);
     r.zb.set(bakedZ);
     r.ids.set(bakedIds);
@@ -398,6 +439,7 @@ export function createRoomRenderer() {
     r.shadeEdges();
     if (selected) outline(room, selected, ok);
     if (isEvening) evening(room);
+    if (beings?.length) drawBeings(beings, t);
     const back = backdrop(isEvening ? 'evening' : 'day', inside);
     const { pix } = r;
     for (let i = 0; i < pix.length; i += 1) if (pix[i] === 0) pix[i] = back[i];
@@ -435,6 +477,7 @@ export function createRoomRenderer() {
 
 /** Miniatura de un mueble del catálogo (para los botones), dibujada con el mismo motor. */
 export function renderThumb(id, tonoIndex = 0, size = 44) {
+  if (misticoOf(id)) return misticoThumb(id, size);
   const cat = catalogItem(id);
   const item = cat.capa === 'pared' ? { uid: 1, id, pared: 'fondo', a: 0, tono: tonoIndex } : { uid: 1, id, x: 0, y: 0, rot: 0, tono: tonoIndex };
   const boxes = cat.capa === 'alfombra' ? [{ b: [0, 0, 0, cat.w, cat.d, 0.05] }] : shapeOf(id, cat.tonos[tonoIndex]);

@@ -32,7 +32,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
 
 ## 1. Reglas de trabajo (las pone Francisco, el dueño del proyecto)
 
-- **Todo en español**: respuestas, resúmenes, botones, mensajes de commit y comentarios de código.
+- **Todo en español**: respuestas, resúmenes, botones, mensajes de commit y comentarios de código. **Nunca en inglés**,
+  ni una frase suelta ni en el cuadro final (Francisco lo recordó el 2-11-2026).
 - **Commits y subidas, solo cuando se pidan** («haz el commit», «súbelo»). Subir `main` **despliega en producción**
   (Vercel). Nunca forzar el push ni reescribir historia publicada.
 - **Sin líneas `Co-Authored-By`** ni firmas de IA en commits ni PR.
@@ -146,6 +147,25 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   - **Sonidos cozy propios del edificio** (1-11-2026): sintetizados, por material y por acción (§6 del plan).
   - **Sintonía de «Aquí no hay quien viva»**: a Francisco le encantaría en versión chiptune cozy. Sin licencia no se usa
     ni se recrea esa melodía (tampoco de oído). En la app, solo un tema original con guiño.
+  - **Melodía «Dos balcones»** (2-11-2026): Francisco pasó un audio (WhatsApp, título ID3 «Dos balcones») para usarlo
+    **más adelante** como música del edificio. La generó él con ChatGPT y descartó la sintonía de la serie (confirmado
+    el 2-11-2026): se puede usar. Y **sonidos de acciones estilo Stardew Valley**, muy satisfactorios: solo el estilo, sonidos
+    propios sintetizados (nunca muestras del juego).
+  - **pixelfx** (2-11-2026, «adelante»): se puede usar https://github.com/patch-gg/pixelfx (MIT) para los efectos de
+    muebles y diseños de aquí en adelante. Copiar solo el núcleo y los efectos que se usen, con su `LICENSE` y su
+    `NOTICE.md`; **nunca su fuente «Patch Pixel»** (no es MIT).
+  - **No usar `material-diseno/barrio-v2/`** (2-11-2026): Francisco pidió no usarla y borrarla (a la Papelera; el
+    primer intento falló porque Windows tenía un archivo abierto).
+  - **Rareza «místicos»** (2-11-2026, plan en `docs/qa/misticos.md`): dragones y otros seres con movimiento, de
+    **diseño espectacular** y, si se puede, **con guiños a sagas** (originales que evocan, nunca personajes, nombres
+    propios, logos ni diseños oficiales). Salen con **una probabilidad muy baja** en los sobres (Francisco lo eligió
+    frente a un sobre propio o a premios por leer). Dentro de los místicos, **los más raros te siguen a todas partes**
+    (tu piso, las visitas, el hotel). **Cifras aprobadas** («Sí, esas cifras», 2-11-2026): solo en el sobre «Edición
+    coleccionista», **1 %** místico y, de esos, **1 de cada 4 legendario** (0,25 %); se resta de «raro», el resto de
+    probabilidades y el pity actual no cambian; **sin pity propio**. Diseños de la primera tanda en `dev/misticos.html`.
+    **No son moneda**: no se compran, no se reciclan ni se regalan. Solo un legendario te acompaña a la vez.
+  - **El Gran Hotel del Puerto** (2-11-2026, plan en `docs/qa/gran-hotel.md`): más espectacular y, como la fachada del
+    edificio, **que se pueda interactuar desde la propia fachada**.
   - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración
     `20261101120000_edificio_puerto.sql` la aplica Francisco; sin ella, la tablet hace lo de siempre.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.

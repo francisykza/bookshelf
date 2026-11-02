@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.71.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.72.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4433,3 +4433,30 @@ Bloque 4 de «más vida en el edificio». Sin texto libre en ningún caso. Visit
 - Sin la migración, el piso del vecino se queda como en la 1.70 (solo sellos) y no sale «Me gusta».
 - **Pruebas**: `vecinos.rls.test.js` (PGlite, 8) y `e2e-community/v171-vecinos.spec.js` («me gusta», libro, regalo,
   buzón del portal, tu piso y sin la migración) en Chromium 320, 390 y 1440 y WebKit 390.
+
+## 72. Místicos en tu piso y el legendario que te acompaña (1.72.0)
+
+Bloque 2 de los místicos (`docs/qa/misticos.md`; decisiones de Francisco del 2-11-2026: una rareza por encima de
+«raro», de diseño espectacular, con guiños a sagas, muy poco probable, y los más raros te siguen a todas partes).
+
+- **Catálogo**: cinco seres originales (`catalog.js`, categoría «Místicos»), dibujados y animados con el pintor de
+  pixelfx (`misticos.js`, MIT, en `src/vendor/pixelfx`). Rareza `mistico` (se colocan): farol de llama azul y rosa
+  bajo la lluvia de estrellas. Rareza `legendario` (te acompañan, no se colocan): dragoncillo de escamas rojas, zorro
+  de bruma y ceniza y cinta de luz de tormenta. Cada uno con su «Para quien leyó…».
+- **En el piso**: el místico se pone sobre una peana de piedra con filo dorado (`furniture.js`) y encima se mueve
+  solo. `render.js` los mezcla con la habitación respetando la profundidad (lo que está delante los tapa) y suma su
+  luz; sus píxeles llevan el uid del mueble, así que se tocan y se mueven como cualquier otro.
+- **El compañero**: en el armario de tu personaje, la fila «Te acompaña» (solo si tienes algún legendario) con
+  «Nadie» y los tuyos. Va detrás de tu personaje, un poco a un lado, y llega con retraso (`createCompanion`); los
+  vecinos lo ven al visitarte. La pestaña «Místicos» de la balda solo sale si tienes alguno que se coloque.
+- **Movimiento**: un bucle propio a unos 30 fotogramas por segundo, solo mientras hay místicos a la vista; con
+  movimiento reducido, quietos (el compañero aparece ya a tu lado). Sin sonido.
+- **No son moneda**: no se compran, no se reciclan ni se regalan (ni en la tienda ni en la mesa del vecino). Aún no
+  salen en ningún sobre: eso es el bloque 3 (1 % en «Edición coleccionista», 1 de cada 4 legendario, sin pity
+  propio; cifras aprobadas por Francisco), con su animación al salir.
+- **Servidor** (`20261106120000_edificio_misticos.sql`, la aplica Francisco): las rarezas nuevas y las cinco filas
+  del catálogo, `pisos.companero` y un trigger que rechaza colocar un legendario y llevar uno que no tienes;
+  `piso_reciclar` y `piso_regalar` rechazan los místicos; `edificio_portal` devuelve el compañero.
+- Sin la migración no hay místicos de nadie (sin inventario, ninguno cuenta como tuyo) y la app se queda como en la 1.71.
+- **Pruebas**: `misticos.rls.test.js` (PGlite, 7) y `e2e-community/v172-misticos.spec.js` (colocar, elegir
+  compañero y guardarlo, la visita y sin místicos). Página de desarrollo: `dev/misticos.html`.

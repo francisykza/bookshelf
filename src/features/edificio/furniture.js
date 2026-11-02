@@ -526,6 +526,14 @@ const SHAPES = {
   },
 };
 
+// La peana de los místicos: piedra oscura con un filo dorado. El ser se dibuja encima, animado (misticos.js)
+const peana = (T) => [
+  B(0.2, 0.2, 0, 0.8, 0.8, 0.08, shade(T, 0.8)),
+  B(0.26, 0.26, 0.08, 0.74, 0.74, 0.18, T),
+  B(0.24, 0.24, 0.18, 0.76, 0.76, 0.22, [204, 170, 90], { grain: 0 }),
+];
+for (const id of ['farol-azul', 'rosa-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta']) SHAPES[id] = peana;
+
 /** Cajas de un mueble en coordenadas locales (sin girar). */
 export function shapeOf(id, tono) {
   const fn = SHAPES[id];

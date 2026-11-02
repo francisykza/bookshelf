@@ -3,7 +3,7 @@
 // (supabase/migrations/20261103120000_edificio_inventario.sql); esto solo sirve para que la balda no ofrezca lo que el
 // servidor rechazaría. Sin inventario (`null`: la migración no está aplicada, o el prototipo de desarrollo), todo es
 // libre como antes.
-import { CATALOG, catalogItem } from './catalog';
+import { CATALOG, catalogItem, isMistico } from './catalog';
 
 /** Muebles comunes que se eligen de inicio (una sola vez). */
 export const START_PICKS = 6;
@@ -26,8 +26,9 @@ export function placedCounts(room) {
   return out;
 }
 
-/** Copias que tienes de un mueble (Infinity si no cuenta o no hay inventario). */
+/** Copias que tienes de un mueble (Infinity si no cuenta o no hay inventario; los místicos, sin inventario, ninguna). */
 export function ownedCopies(inventory, id) {
+  if (!inventory && isMistico(catalogItem(id))) return 0;
   if (!inventory || !isCounted(id)) return Infinity;
   return inventory.copias?.[id] ?? 0;
 }

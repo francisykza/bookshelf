@@ -13,7 +13,8 @@
 // lista «En el piso» elige cualquier cosa sin tocar el dibujo.
 import './edificio.css';
 import { createSfx } from '../minigames/libreria-puerto/audio';
-import { CATALOG, CATEGORIES, PAREDES, SETS, SUELOS, catalogItem } from './catalog';
+import { CATALOG, CATEGORIES, COMPANEROS, PAREDES, SETS, SUELOS, catalogItem } from './catalog';
+import { createCompanion, misticoThumb } from './misticos';
 import { freeCopies, ownedCopies } from './inventory';
 import { houseSwatch, pixelIcon, pixelVars } from './pixelUi';
 import { COLORES_PELO, COMPLEMENTOS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
@@ -76,7 +77,7 @@ const nameOf = (item) => catalogItem(item.id).nombre;
  * Vecinos (§71): `likes` ({ megusta: { uid: n }, mios: [uid] } o null) y `onLike(uid, si)`: en el piso de un vecino,
  * al tocar un mueble sale «Me gusta»; en el tuyo, el aviso dice cuántos tiene.
  */
-export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null } = {}) {
+export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null, companion = null, onCompanionChange = () => {} } = {}) {
   const sfx = createSfx({ muted });
   const renderer = createRoomRenderer();
   let room = initial;
@@ -100,6 +101,14 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   let lastFrame = 0;
   let wanderTimer = 0;
   let owned = prendas;
+  // El místico legendario que te acompaña (docs/qa/misticos.md): su id o null. Los místicos que se colocan y el
+  // compañero se mueven solos: un bucle propio («life») mientras haya alguno y no se pida menos movimiento.
+  let pal = COMPANEROS.some((c) => c.id === companion) ? companion : null;
+  const buddy = createCompanion();
+  let life = 0;
+  let lifeLast = 0;
+  let lifeDrawn = 0;
+  let lifeT = 1.3;
   let liked = likes;
   let likeShown = null; // uid del mueble con su «Me gusta» a la vista
   let today = missions;
@@ -165,7 +174,13 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   const outfitTab = el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33 });
   const CATS = [...CATEGORIES, { id: OUTFIT, nombre: 'Tu personaje' }, { id: HOUSE, nombre: 'Paredes y suelo' }, { id: INROOM, nombre: 'En el piso' }];
   // Cada pestaña lleva el dibujo de un mueble de su tipo; la de paredes y suelo, una muestra de los de tu piso
-  const TAB_ICON = { asientos: 'sillon', mesas: 'mesa', luz: 'lampara-pie', plantas: 'planta-grande', detalles: 'tetera', pared: 'cuadro', alfombras: 'alfombra', sagas: 'esferas' };
+  const TAB_ICON = { asientos: 'sillon', mesas: 'mesa', luz: 'lampara-pie', plantas: 'planta-grande', detalles: 'tetera', pared: 'cuadro', alfombras: 'alfombra', sagas: 'esferas', misticos: 'farol-azul' };
+  const hasMisticos = () => CATALOG.some((c) => c.cat === 'misticos' && !c.compania && ownedCopies(inv, c.id) > 0);
+  function syncMisticTab() {
+    const b = catRow.querySelector('[data-cat="misticos"]');
+    if (b) b.hidden = !hasMisticos();
+    if (category === 'misticos' && b?.hidden) category = CATS[0].id;
+  }
   const houseTab = el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33 });
 
   if (editable) {
@@ -179,6 +194,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       });
       catRow.append(b);
     }
+    syncMisticTab();
     for (const set of SETS) {
       const b = el('button', { type: 'button', class: 'ep-set', 'data-set': set.id, 'aria-pressed': String(set.id === sagaSet), text: set.nombre });
       b.addEventListener('click', () => {
@@ -226,7 +242,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (isHouse || isList || isOutfit) return;
     for (const cat of CATALOG.filter((c) => c.cat === category && (!set || c.set === set.id))) {
       // Lo que no tienes no está en tu balda (llegará con la tienda)
-      if (ownedCopies(inv, cat.id) === 0) continue;
+      if (ownedCopies(inv, cat.id) === 0 || cat.compania) continue;
       if (!thumbs.has(cat.id)) thumbs.set(cat.id, renderThumb(cat.id).toDataURL());
       const b = el('button', { type: 'button', class: 'ep-item', 'aria-label': `Añadir ${cat.nombre.toLowerCase()}`, 'data-id': cat.id, draggable: 'false' }, el('img', { src: thumbs.get(cat.id), alt: '', width: 44, height: 44, draggable: 'false' }), el('span', { text: cat.nombre }), el('b', { class: 'ep-item__count', 'aria-hidden': 'true' }));
       b.addEventListener('click', (e) => {
@@ -268,8 +284,42 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     return actorThumbs.get(key);
   }
 
+  function companionRow() {
+    const mine = COMPANEROS.filter((c) => ownedCopies(inv, c.id) > 0);
+    if (!mine.length) return null;
+    const opts = [{ id: null, nombre: 'Nadie', src: actorThumb(look, 'head') }, ...mine.map((c) => ({ id: c.id, nombre: c.nombre, src: misticoThumb(c.id, 33).toDataURL() }))];
+    return el(
+      'div',
+      { class: 'ep-house__group ep-wardrobe__pal' },
+      el('span', { class: 'ep-house__label', text: 'Te acompaña' }),
+      el(
+        'div',
+        { class: 'ep-swatches', role: 'group', 'aria-label': 'Te acompaña' },
+        ...opts.map((o) => {
+          const b = el('button', { type: 'button', class: 'ep-swatch', 'data-pal': o.id ?? 'nadie', 'aria-pressed': String(pal === o.id) }, el('img', { class: 'ep-swatch__img', alt: '', width: 33, height: 33, src: o.src }), el('span', { text: o.nombre }));
+          b.addEventListener('click', () => setPal(o.id));
+          return b;
+        }),
+      ),
+    );
+  }
+
+  function setPal(id) {
+    const scroll = wardrobe.scrollLeft;
+    pal = id;
+    if (me && pal) buddy.update(me, 1);
+    if (category === OUTFIT) fillWardrobe();
+    wardrobe.scrollLeft = scroll;
+    sfx.play('lift');
+    say(pal ? `Te acompaña: ${catalogItem(pal).nombre.toLowerCase()}.` : 'Ya no te acompaña nadie.');
+    requestDraw();
+    onCompanionChange(pal);
+  }
+
   function fillWardrobe() {
+    const palRow = editable ? companionRow() : null;
     wardrobe.replaceChildren(
+      ...(palRow ? [palRow] : []),
       ...WARDROBE.map((row) =>
         el(
           'div',
@@ -583,26 +633,70 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (fresh?.preview && fresh.over) {
       // Un mueble nuevo bajo el dedo: se ve ya en la habitación, en el sitio donde caería
       const p = fresh.preview;
-      renderer.draw(ctx, image, { held: { room: p.room, items: [p.item] }, selected: p.item, ok: p.ok, evening: isEvening, inside: isInside, actor: actorFrame() });
+      renderer.draw(ctx, image, { held: { room: p.room, items: [p.item] }, selected: p.item, ok: p.ok, evening: isEvening, inside: isInside, actor: actorFrame(), ...fxNow() });
       placeTools(null);
       return;
     }
     const item = selected ? room.items.find((i) => i.uid === selected) : null;
     if (!item) {
-      renderer.draw(ctx, image, { evening: isEvening, inside: isInside, actor: actorFrame() });
+      renderer.draw(ctx, image, { evening: isEvening, inside: isInside, actor: actorFrame(), ...fxNow() });
       placeTools(null);
       return;
     }
     const p = drag?.moved ? drag.preview : null;
     const shown = p ? p.room : room;
     const ids = new Set(group(selected));
-    renderer.draw(ctx, image, { held: { room: shown, items: shown.items.filter((i) => ids.has(i.uid)) }, selected: p ? p.item : item, ok: p ? p.ok : true, evening: isEvening, inside: isInside, actor: actorFrame() });
+    renderer.draw(ctx, image, { held: { room: shown, items: shown.items.filter((i) => ids.has(i.uid)) }, selected: p ? p.item : item, ok: p ? p.ok : true, evening: isEvening, inside: isInside, actor: actorFrame(), ...fxNow(p ? ids : null) });
     placeTools(drag?.moved ? null : item);
   }
 
   function requestDraw() {
     if (!raf && !destroyed) raf = requestAnimationFrame(render);
+    startLife();
   }
+
+  const hasPlacedMisticos = () => room.items.some((i) => catalogItem(i.id)?.rareza === 'mistico');
+  const alive = () => !destroyed && !reducedMotion() && ((pal && me) || hasPlacedMisticos());
+
+  function startLife() {
+    if (!life && alive()) life = requestAnimationFrame(lifeTick);
+  }
+
+  function lifeTick(now) {
+    life = 0;
+    if (!alive()) {
+      lifeLast = 0;
+      return;
+    }
+    const dt = lifeLast ? Math.min(0.1, (now - lifeLast) / 1000) : 0;
+    lifeLast = now;
+    lifeT += dt;
+    if (pal && me) buddy.update(me, dt);
+    life = requestAnimationFrame(lifeTick);
+    // Unos 30 fotogramas por segundo bastan para el pixel art
+    if (now - lifeDrawn >= 32 && !raf) {
+      lifeDrawn = now;
+      raf = requestAnimationFrame(render);
+    }
+  }
+
+  /** Los místicos que se ven ahora: los colocados (encima de su peana) y el compañero. `skip`: uids que van en la mano. */
+  function beingsNow(skip = null) {
+    const out = [];
+    for (const it of room.items) {
+      if (skip?.has(it.uid) || catalogItem(it.id)?.rareza !== 'mistico') continue;
+      const rc = rectOf(it);
+      out.push({ id: it.id, uid: it.uid, x: (rc.x0 + rc.x1) / 2, y: (rc.y0 + rc.y1) / 2, z: heightOf(room, it) + 0.22 });
+    }
+    if (pal && me) {
+      if (reducedMotion() || buddy.state.x === null) buddy.update(me, 1);
+      const s = buddy.state;
+      out.push({ id: pal, x: Math.min(ROOM.w - 0.3, Math.max(0.3, s.x)), y: Math.min(ROOM.d - 0.3, Math.max(0.3, s.y)), z: 0, flip: s.flip, moving: s.moving });
+    }
+    return out;
+  }
+
+  const fxNow = (skip) => ({ beings: beingsNow(skip), t: reducedMotion() ? 1.3 : lifeT });
 
   /** Rectángulo (en píxeles del dibujo) que ocupa un mueble y lo que lleva encima. */
   function boxOf(uid) {
@@ -1201,7 +1295,16 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     },
     setInventory(next) {
       inv = next;
-      if (editable) fillGrid();
+      if (!editable) return;
+      syncMisticTab();
+      fillGrid();
+    },
+    /** El legendario que te acompaña (llega del servidor; null: nadie). */
+    setCompanion(id) {
+      pal = COMPANEROS.some((c) => c.id === id) ? id : null;
+      if (me && pal) buddy.update(me, 1);
+      if (editable && category === OUTFIT) fillWardrobe();
+      requestDraw();
     },
     /** Para las pruebas: punto de la pantalla donde se ve un objeto (el centro de sus píxeles) o un punto del mundo. */
     screenOfItem(uid) {
@@ -1231,6 +1334,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       destroyed = true;
       if (raf) cancelAnimationFrame(raf);
       if (anim) cancelAnimationFrame(anim);
+      if (life) cancelAnimationFrame(life);
       clearTimeout(wanderTimer);
       endShelf();
       resize?.disconnect();
