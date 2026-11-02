@@ -68,14 +68,19 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
 
   // Portal: el servidor le da a Ana la primera puerta libre (2.º B); Dani (bloqueo) y Elena (sin comunidad) no salen
   const panel = page.getByRole('dialog', { name: 'El edificio del puerto' });
-  await expect(panel.getByText('Tu puerta: 2.º B.')).toBeVisible({ timeout: 15000 });
+  await expect(panel.getByRole('button', { name: 'Entrar en tu piso, 2.º B' })).toBeVisible({ timeout: 15000 });
   await expect(panel.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' })).toBeVisible();
   await expect(panel.getByRole('button', { name: 'Llamar y entrar en el piso de Carla, 3.º B' })).toBeVisible();
   await expect(panel.getByText('Dani Bruma')).toHaveCount(0);
   await expect(panel.getByText('Elena Bruma')).toHaveCount(0);
   // 3.º A está libre; las puertas de Dani y Elena se ven como cualquier puerta libre (no se delata un bloqueo)
   await expect(panel.locator('.ed-door--free')).toHaveCount(3);
-  await expect(panel.getByText('Bruno (1.º A) te dejó «Qué acogedor».')).toBeVisible();
+  // 1.73: el sello está en el buzón de la fachada (asoma una carta); al tocarlo se lee, y al tocarlo otra vez se cierra
+  const buzon = panel.getByRole('button', { name: 'Tu buzón: una cosa nueva' });
+  await buzon.click();
+  await expect(panel.getByRole('region', { name: 'Tu buzón' }).getByText('Bruno (1.º A) te dejó «Qué acogedor».')).toBeVisible();
+  await buzon.click();
+  await expect(panel.getByRole('region', { name: 'Tu buzón' })).toBeHidden();
   // Tu piso inicial ya está guardado y validado
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.layout.items.length).toBeGreaterThan(5);
   await expect(panel.locator('.ed-facade__art')).toBeVisible();
@@ -115,7 +120,7 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   await mine.getByRole('button', { name: 'Entrar en la habitación' }).click();
   await expect(mine.locator('.ed-inside')).toBeVisible();
   await mine.getByRole('button', { name: 'Volver al portal' }).click();
-  await expect(panel.getByText('Tu puerta: 2.º B.')).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Entrar en tu piso, 2.º B' })).toBeVisible();
 
   // Visita a Bruno: solo mirar y dejar un sello
   await panel.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click();
@@ -132,7 +137,7 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   await shot(page, info, 'v163-visita');
   // Atrás del sistema vuelve al portal, y otra vez, al salón
   await page.goBack();
-  await expect(panel.getByText('Tu puerta: 2.º B.')).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Entrar en tu piso, 2.º B' })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(errors).toEqual([]);

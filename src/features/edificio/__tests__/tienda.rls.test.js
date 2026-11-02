@@ -43,12 +43,12 @@ describe('las reglas del servidor coinciden con economy.js', () => {
   });
 
   it('los sobres de la pared: precios, probabilidades y muebles', async () => {
-    // «Todo el catálogo» en el servidor es por rareza: los místicos no salen (aún) en ningún sobre
+    // «Todo el catálogo» en el servidor es por rareza: los místicos se sortean aparte (solo en el de coleccionista)
     const todos = CATALOG.filter((c) => !c.set && !isMistico(c)).map((c) => c.id);
     for (const s of SOBRES) {
       const { rows } = await db.query('select piso_sobre($1) as d', [s.id]);
       const d = rows[0].d;
-      expect([d.coste1, d.coste5, d.raro, d.poco], s.id).toEqual([s.coste1, s.coste5, s.prob.raro, s.prob['poco-comun']]);
+      expect([d.coste1, d.coste5, d.raro, d.poco, d.mistico ?? null, d.legendario ?? null], s.id).toEqual([s.coste1, s.coste5, s.prob.raro, s.prob['poco-comun'], s.prob.mistico ?? null, s.legendario ?? null]);
       expect([...(d.muebles ?? todos)].sort(), s.id).toEqual([...s.muebles].sort());
       // Lo que enseña la tienda suma 1
       expect(oddsTable(s).reduce((t, r) => t + r.cada * r.items.length, 0)).toBeCloseTo(1);

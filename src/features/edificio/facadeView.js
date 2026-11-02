@@ -103,10 +103,11 @@ function ambientLayer(canvas, { panes, shore }) {
 /**
  * `flats`: [{ puerta, room, label (aria), name (placa), mine, badge, onOpen }] de las puertas ocupadas. Devuelve
  * { destroy }. `onOpenShop` (opcional) hace tocable la tienda del bajo, con `shopBadge` en su placa (p. ej. el saldo).
+ * `mail` (opcional, 1.73): { lines: [texto] } con el correo del buzón dibujado junto al portal (sellos, regalos y firmas).
  */
-export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '' }) {
+export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '', mail = null }) {
   const byDoor = Object.fromEntries(flats.map((f) => [f.puerta, { room: f.room }]));
-  const { canvas, windows, panes, shore, shop, sign } = renderFacade(byDoor);
+  const { canvas, windows, panes, shore, shop, mailbox, sign } = renderFacade(byDoor);
   const root = document.createElement('div');
   root.className = 'ed-facade';
   root.style.aspectRatio = `${FACADE_W} / ${FACADE_H}`;
@@ -205,6 +206,64 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
     list.append(li);
   }
   stage.append(list);
+  // El buzón (1.73, en lugar de la tarjeta «Tu buzón»): si hay algo, asoma una carta con cuántas son; al tocarlo, una
+  // nota de papel encima del buzón dice qué hay. Se cierra tocando otra vez o fuera.
+  let offOutside = null;
+  if (mail) {
+    const n = mail.lines.length;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `ed-mailbox${n ? ' has-mail' : ''}`;
+    btn.setAttribute('aria-label', n ? `Tu buzón: ${n === 1 ? 'una cosa nueva' : `${n} cosas`}` : 'Tu buzón, vacío');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-controls', 'ed-mailnote');
+    // Un poco más grande que el dibujo, para el dedo
+    box(btn, { left: mailbox.left - mailbox.width * 0.5, top: mailbox.top - mailbox.height * 0.7, width: mailbox.width * 2, height: mailbox.height * 1.9 });
+    if (n) {
+      const letter = document.createElement('span');
+      letter.className = 'ed-mailbox__letter';
+      letter.setAttribute('aria-hidden', 'true');
+      const count = document.createElement('b');
+      count.textContent = n > 9 ? '9+' : String(n);
+      letter.append(count);
+      btn.append(letter);
+    }
+    const note = document.createElement('div');
+    note.className = 'ed-mailnote';
+    note.id = 'ed-mailnote';
+    note.hidden = true;
+    note.setAttribute('role', 'region');
+    note.setAttribute('aria-label', 'Tu buzón');
+    if (n) {
+      const ul = document.createElement('ul');
+      for (const line of mail.lines) {
+        const li = document.createElement('li');
+        li.textContent = line;
+        ul.append(li);
+      }
+      note.append(ul);
+    } else {
+      const p = document.createElement('p');
+      p.textContent = 'Nada por ahora. Cuando un vecino te visite, podrá dejarte un sello.';
+      note.append(p);
+    }
+    note.style.left = pct(Math.min(0.62, Math.max(0.04, mailbox.left - 0.18)));
+    note.style.bottom = pct(1 - mailbox.top + 0.02);
+    const show = (open) => {
+      note.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      root.classList.toggle('is-reading-mail', open);
+    };
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      show(note.hidden);
+    });
+    note.addEventListener('click', (e) => e.stopPropagation());
+    const outside = () => show(false);
+    document.addEventListener('click', outside);
+    offOutside = () => document.removeEventListener('click', outside);
+    root.append(btn, note);
+  }
   container.replaceChildren(root);
   // Vuelves de un piso: la vista se aleja desde su ventana
   const back = lastPeek && Date.now() - lastPeek.at < 10 * 60 * 1000 ? (lastPeek.shop ? shop : windows.find((x) => x.puerta === lastPeek.puerta)) : null;
@@ -230,6 +289,7 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
   }
   return {
     destroy() {
+      offOutside?.();
       root.remove();
     },
   };

@@ -20,6 +20,12 @@ Un gran hotel rascacielos, de noche y espectacular, con nuestra estética, como 
 gente «un poco como Habbo» y donde viva **la parte social más abierta** de la app. Del género se toma la idea (salas
 compartidas con tu personaje, gente moviéndose a la vez); nada de su arte, nombres ni interfaz.
 
+## 1b. La llegada: en limusina (decisión de Francisco del 2-11-2026)
+
+Para ir al hotel **hay que coger una limusina negra de lujo**: original, en nuestro pixel art. Responde en parte a §7.1
+(por dónde se entra): la limusina espera en la calle y te lleva al hotel. Falta que Francisco diga dónde se coge
+(propuesta: aparcada delante del portal del edificio, junto al muelle) y si también se llega desde la tablet del Salón.
+
 ## 2. Cómo encaja con lo que ya hay
 
 | Hoy | Qué es | Con el hotel |

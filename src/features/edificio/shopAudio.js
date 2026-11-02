@@ -74,6 +74,16 @@ export function createShopSfx({ muted = false } = {}) {
       [523.25, 659.25, 783.99, 1046.5].forEach((f, k) => tone('triangle', f, 0.028, 0.7, k * 0.09));
       tone('sine', 2093, 0.008, 1.1, 0.36);
     },
+    // Místicos (1.73): una escalera más alta y un brillo que se queda; el legendario, además, un acorde de campana
+    'reveal-mistico': () => {
+      [587.33, 739.99, 880, 1174.66, 1479.98].forEach((f, k) => tone('triangle', f, 0.026, 0.8, k * 0.08));
+      [2349.32, 2959.96].forEach((f, k) => tone('sine', f, 0.007, 1.4, 0.42 + k * 0.12));
+    },
+    'reveal-legendario': () => {
+      [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98].forEach((f, k) => tone('triangle', f, 0.026, 0.9, k * 0.08));
+      [1046.5, 1318.51, 1567.98].forEach((f) => tone('sine', f, 0.012, 1.8, 0.55));
+      [3135.96, 2637.02, 3520].forEach((f, k) => tone('sine', f, 0.006, 1.2, 0.7 + k * 0.15));
+    },
     buy: () => {
       tone('sine', 880, 0.025, 0.12);
       tone('sine', 1174.66, 0.022, 0.2, 0.07);

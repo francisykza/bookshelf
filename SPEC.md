@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.72.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.73.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4460,3 +4460,65 @@ Bloque 2 de los místicos (`docs/qa/misticos.md`; decisiones de Francisco del 2-
 - Sin la migración no hay místicos de nadie (sin inventario, ninguno cuenta como tuyo) y la app se queda como en la 1.71.
 - **Pruebas**: `misticos.rls.test.js` (PGlite, 7) y `e2e-community/v172-misticos.spec.js` (colocar, elegir
   compañero y guardarlo, la visita y sin místicos). Página de desarrollo: `dev/misticos.html`.
+
+## 73. Místicos en los sobres, la melodía del edificio y el edificio a pantalla completa (1.73.0)
+
+Encargo de Francisco del 2-11-2026 («continúa», la melodía que no se oía y «que la app ocupe toda la pantalla sin
+dejar un borde encima»).
+
+### 73.1 Místicos en los sobres (bloque 3 de `docs/qa/misticos.md`)
+
+- **Cifras aprobadas** («Sí, esas cifras»): solo en «Edición coleccionista», **1 %** por mueble es un místico y, de
+  esos, **1 de cada 4 legendario**. Ese 1 % se resta de lo raro (del 15 % al 14 %); lo poco común, lo común y el pity
+  no cambian. **Sin pity propio**: el pity sigue asegurando un raro, nunca un místico, y un místico cuenta como algo
+  raro (lo reinicia). Los demás sobres no los dan nunca.
+- **Tienda**: «Probabilidades y garantías» enseña «Místico · 0,75 %» y «Místico legendario · 0,25 %» con cada ser
+  (lo muy poco probable, con dos decimales para no redondear hacia arriba) y explica que no tienen garantía ni se
+  compran, reciclan o regalan.
+- **Al salir** (`GachaReveal.jsx`): el sobre cerrado brilla azul (místico) o rosa (legendario) solo si lo trae de
+  verdad; la carta es una noche con marco dorado, el ser se mueve dentro (`misticoThumb` a unos 12 fotogramas por
+  segundo), con rayos y destellos de píxel; nota propia (`shopAudio.js`: `reveal-mistico`, `reveal-legendario`).
+  El papel dice dónde ponerlo: el legendario, en el armario de tu personaje; el místico, en la pestaña «Místicos».
+  Con movimiento reducido: directo al resultado, el ser quieto.
+- **Servidor**: `20261107120000_edificio_misticos_sobres.sql` (redefine `piso_sobre` y `piso_abrir_sobre`; la
+  aplica Francisco). Sin ella, la tienda enseñaría el 14 % y el 1 % pero el servidor seguiría sorteando como antes
+  (15 % raro, sin místicos).
+
+### 73.2 La melodía «Dos balcones» (`edificio/music.js`)
+
+Con las instrucciones de Francisco del 2-11-2026:
+
+- La pista (`public/media/edificio/dos-balcones.mp3`, 45 s, la suya) se carga al entrar en el edificio y, con el
+  sonido de la app activado, empieza desde el mismo toque de la tablet que abre el portal.
+- **Un único bucle** por Web Audio (no un `<audio>`, que en Safari deja un hueco al repetir), sin el silencio del
+  codificador al principio y al final. Ir a un piso, decorar o entrar en la tienda no la corta ni la reinicia; entrar
+  dos veces no la duplica.
+- En los pisos baja suavemente (×0,55); en la fachada y la tienda, a su volumen. Por debajo de la radio y con su
+  volumen de música; si suena la radio, la melodía calla y espera en su punto. Al salir del edificio se desvanece.
+- **Sin probar en un iPhone real** (el bucle sin huecos y que no se superpongan dos, en Safari): el WebKit de
+  Playwright en Windows no trae Web Audio. En Chromium, `e2e-community/v173-musica.spec.js`.
+
+### 73.3 El edificio a pantalla completa
+
+En el móvil (menos de 700 px) el edificio (portal, piso y tienda) ya no es una hoja del 94 % de alto con la
+habitación asomando por encima: llena la pantalla y su color sube bajo la barra de estado (la barra de botones guarda
+el área segura). En pantallas anchas sigue siendo la tarjeta centrada.
+
+### 73.4 El portal sin carteles y el buzón en la fachada
+
+- Francisco (2-11-2026): fuera el título «El edificio del puerto» y «Tu puerta: 2.º B. Toca una puerta para entrar»
+  (quedan en un encabezado solo para lectores de pantalla) y fuera la tarjeta «Tu buzón».
+- En su lugar, un **buzón rojo** dibujado en la pared entre la librería y el portal (`facade.js`). Si hay sellos,
+  regalos o firmas, asoma una carta con el número que se mece de vez en cuando (quieta con movimiento reducido); al
+  tocarlo, una nota de papel encima dice qué hay (`facadeView.js`, opción `mail`). Se cierra tocándolo otra vez o
+  fuera. Sin correo, el buzón dice que aún no hay nada.
+
+### 73.5 La cuenta del fundador
+
+`supabase/scripts/cuenta_fundador.sql` (no es una migración; lo ejecuta Francisco a mano): a su cuenta, 10.000
+tickets (o los que tenga, si son más) y una copia de los cinco místicos. Probado en PGlite: solo toca esa cuenta y
+repetirlo no cambia nada.
+
+- **Pruebas**: `misticos.rls.test.js` (PGlite, 8: cifras, que los otros sobres no los den, el reparto de
+  legendarios y el pity), `tienda.rls.test.js` con la paridad de las cifras nuevas,
+  `e2e-community/v173-misticos-sobre.spec.js` y `v173-musica.spec.js`.

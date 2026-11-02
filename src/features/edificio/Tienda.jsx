@@ -24,7 +24,8 @@ const TABS = [
   { id: 'muebles', nombre: 'Muebles' },
   { id: 'reciclar', nombre: 'Reciclar' },
 ];
-const pctText = (p) => `${(p * 100).toLocaleString('es-ES', { maximumFractionDigits: 1 })} %`;
+// Lo muy poco probable (los místicos) con dos decimales, para no redondear hacia arriba
+const pctText = (p) => `${(p * 100).toLocaleString('es-ES', { maximumFractionDigits: p < 0.01 ? 2 : 1 })} %`;
 const nameOf = (id) => catalogItem(id)?.nombre ?? id;
 const pct = (v) => `${(v * 100).toFixed(3)}%`;
 
@@ -263,7 +264,7 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
               <small>Raro garantizado en un máximo de {sobresHastaRaro(inventory.sinRaro)} muebles.</small>
             </summary>
             <p>
-              Cada mueble de «{sobre.nombre}» se sortea así, en el servidor. Si el sobre no trae nada de una rareza, ese mueble sale de todo el catálogo. Llevas {inventory.sinRaro} {inventory.sinRaro === 1 ? 'mueble seguido' : 'muebles seguidos'} sin nada raro: cada {PITY}, uno raro seguro (en cualquier sobre). El de 5 trae al menos un poco común. Cada misión de la semana da {MISION_TICKETS} tickets.
+              Cada mueble de «{sobre.nombre}» se sortea así, en el servidor. Si el sobre no trae nada de una rareza, ese mueble sale de todo el catálogo. Llevas {inventory.sinRaro} {inventory.sinRaro === 1 ? 'mueble seguido' : 'muebles seguidos'} sin nada raro: cada {PITY}, uno raro seguro (en cualquier sobre). El de 5 trae al menos un poco común.{sobre.prob.mistico ? ' Los místicos solo salen en este sobre, sin garantía ni pity propio: un místico cuenta como algo raro. No se compran, no se reciclan ni se regalan.' : ''} Cada misión de la semana da {MISION_TICKETS} tickets.
             </p>
             {odds.map((r) => (
               <section key={r.id} className={`ts-odds__row is-${r.id}`}>

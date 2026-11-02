@@ -282,7 +282,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
           const mueble = db.piso_sorteo.shift() ?? 'silla';
           const nuevo = !(db.piso_inventario[userId][mueble] > 0);
           sumar(mueble, 1);
-          cuenta.sin_raro = rareza(mueble) === 'raro' ? 0 : cuenta.sin_raro + 1;
+          cuenta.sin_raro = ['raro', 'mistico', 'legendario'].includes(rareza(mueble)) ? 0 : cuenta.sin_raro + 1;
           premios.push({ mueble, rareza: rareza(mueble), nuevo });
         }
         cuenta.tickets -= coste;

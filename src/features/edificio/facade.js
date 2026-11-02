@@ -308,6 +308,9 @@ export function renderFacade(flats = {}) {
   r.setId(GLOW_BIT);
   r.box(4.95, BD + 0.25, 1.18, 5.15, BD + 0.45, 1.42, LIT, { grain: 0 });
   r.setId(0);
+  // El buzón (1.73): rojo, con su ranura de latón, en la pared entre la librería y el portal. Se toca para ver el correo
+  r.box(2.9, BD, 0.8, 3.26, BD + 0.2, 1.3, [168, 70, 52], { seed: 5, face: (f, a, b) => (f === 'front' && b > 1.12 && b < 1.17 && a > 2.96 && a < 3.2 ? r.rampOf(BRASS)[1] : undefined) });
+  r.box(2.88, BD, 1.3, 3.28, BD + 0.24, 1.36, [120, 48, 40], { grain: 0 });
   // Bolardo en el muelle, para que se lea «puerto»
   r.box(0.6, BD + 1.7, 0, 0.95, BD + 2.05, 0.45, IRON, { grain: 0 });
   r.box(0.55, BD + 1.65, 0.45, 1.0, BD + 2.1, 0.52, IRON, { grain: 0 });
@@ -486,5 +489,9 @@ export function renderFacade(flats = {}) {
   const s0 = r.project(5.15, BD + 0.5, 0.2);
   const s1 = r.project(7.8, BD, 2.15);
   const shop = { left: Math.min(s0.sx, s1.sx) / W, top: Math.min(s0.sy, s1.sy) / H, width: Math.abs(s1.sx - s0.sx) / W, height: Math.abs(s1.sy - s0.sy) / H };
-  return { canvas, windows, panes, shore, shop, sign: SIGN_LINES.join(' ') };
+  // El buzón (para el botón y la carta que asoma)
+  const m0 = r.project(2.88, BD + 0.24, 0.8);
+  const m1 = r.project(3.28, BD, 1.36);
+  const mailbox = { left: Math.min(m0.sx, m1.sx) / W, top: Math.min(m0.sy, m1.sy) / H, width: Math.abs(m1.sx - m0.sx) / W, height: Math.abs(m1.sy - m0.sy) / H };
+  return { canvas, windows, panes, shore, shop, mailbox, sign: SIGN_LINES.join(' ') };
 }

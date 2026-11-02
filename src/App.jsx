@@ -23,6 +23,7 @@ import { PanoramicRoom } from './components/room/PanoramicRoom';
 import { RoomCorner } from './components/room/RoomCorner';
 import { SocialRoom } from './components/room/SocialRoom';
 import { RadioPanel } from './features/radio/RadioPanel';
+import { setEdificioMusic } from './features/edificio/music';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { PerfProfiler } from './perf/PerfProfiler';
@@ -281,7 +282,8 @@ function Sanctuary() {
             }}
             onOpenRadio={() => openPanel({ type: 'radio' })}
             onOpenGuardian={FIGURES_ENABLED ? (id) => openPanel({ type: 'guardian', id }) : null}
-            onOpenEdificio={() => openPanel({ type: 'edificio' })}
+            // La música del edificio empieza en este mismo toque (en iOS, fuera de un toque no suena)
+            onOpenEdificio={() => (setEdificioMusic(settings.sound), openPanel({ type: 'edificio' }))}
           />
         )}
       />

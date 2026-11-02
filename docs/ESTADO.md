@@ -6,9 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.68.0 (2026-11-01, d6df876), en https://bookshelf-wine-iota.vercel.app: la tienda por
-  dentro con el motor de los pisos (§68).
-- **En commit, sin publicar (1.71.0)**: «más vida en el edificio», los cuatro bloques: diecisiete muebles nuevos y el arreglo del
+- **Versión publicada**: 1.72.0 (2026-11-02), en https://bookshelf-wine-iota.vercel.app: místicos en tu piso y el
+  compañero (§72). **Sin commit (1.73.0)**: místicos en los sobres, melodía del edificio y pantalla completa (§73);
+  su migración `20261107120000_edificio_misticos_sobres.sql` ya está aplicada en producción.
+- **Antes (1.71.0, publicada)**: «más vida en el edificio», los cuatro bloques: diecisiete muebles nuevos y el arreglo del
   sobre cortado en el móvil (§69), tu personaje en el piso (§69), las misiones del día que dan ropa (§70) y vecinos con
   «me gusta» por mueble, libro de visitas y regalos (§71). **Sus cuatro migraciones ya están aplicadas en producción**
   (2-11-2026): `20261105120000_edificio_muebles_tanda2.sql`, `20261105130000_edificio_personaje.sql`,
@@ -35,7 +36,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.72.0 | Místicos (sin commit): cinco seres animados con pixelfx, dos se colocan sobre su peana y tres legendarios te acompañan detrás de tu personaje (armario «Te acompaña»); no se reciclan ni regalan; migración aplicada | §72 |
+| 1.73.0 | Místicos en el sobre de coleccionista (1 %, ¼ legendario, sin pity propio) con su aparición; la melodía «Dos balcones» en bucle en el edificio; el edificio a pantalla completa en el móvil (sin commit; migración sin aplicar) | §73 |
+| 1.72.0 | Místicos (publicada): cinco seres animados con pixelfx, dos se colocan sobre su peana y tres legendarios te acompañan detrás de tu personaje (armario «Te acompaña»); no se reciclan ni regalan; migración aplicada | §72 |
 | 1.71.0 | «Más vida en el edificio» (publicada): muebles nuevos, personaje que anda y se viste, misiones del día que dan ropa, y vecinos con «me gusta» por mueble, libro de visitas y regalos | §69–71 |
 | 1.68.0 | La tienda por dentro con el motor isométrico de los pisos; Sobres, Muebles y Reciclar como objetos de la escena (expositor, rincón del sillón, caja de reciclaje) con letrero y contorno; mostrador de cerca, casi de frente, para abrir sobres | §68 |
 | 1.67.0 | La tienda del bajo (por dentro, el antiguo videoclub con su dependienta): tickets por las misiones, muebles a precio fijo, sobres por tipo de la temporada 1 (y uno de coleccionista más caro con más suerte), de 1 y de 5, con animación, probabilidades y pity, reciclar; figuras ocultas sin borrar datos (migración aplicada) | §67 |
@@ -146,7 +148,27 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
-### 2026-11-02 · cuenta principal · 1.72.0: místicos en tu piso y el compañero (sin commit; migración aplicada)
+### 2026-11-02 · cuenta principal · 1.73.0: místicos en los sobres, melodía y pantalla completa (sin commit; migración aplicada)
+
+- Francisco: «continúa» (bloque 3 de los místicos), «no oigo la melodía que te pasé», «que la app ocupe toda la
+  pantalla sin dejar un borde encima» y sus instrucciones para el audio. SPEC §73.
+- **Místicos en los sobres**: 1 % en «Edición coleccionista» (¼ legendario), restado de lo raro, sin pity propio;
+  probabilidades a la vista y aparición propia en el sobre. **Migración aplicada en producción** (2-11-2026, «hazlo tú»: pegada con su SHA-256 y Francisco pulsó Run, «Success»; el anónimo recibe 42501 en `piso_abrir_sobre`, y `piso_sobre` ya devuelve raro 0,14 y místico 0,01):
+  `supabase/migrations/20261107120000_edificio_misticos_sobres.sql` (5358 bytes, SHA-256 `8571fdc8…`).
+- **Melodía**: no sonaba porque se quedó en «más adelante» y nunca se metió. Ahora `public/media/edificio/dos-balcones.mp3`
+  (copiada del audio de WhatsApp de Francisco) suena en bucle en el edificio con `edificio/music.js` (Web Audio).
+  Sin probar en un iPhone real; el WebKit de Playwright en Windows no tiene Web Audio.
+- **Pantalla completa**: el edificio en el móvil ya no deja la franja de arriba (`edificio.css`, al final).
+- **Portal sin carteles** (pedido después): sin título ni «Tu puerta…» y sin la tarjeta «Tu buzón»; el correo es un
+  buzón dibujado junto al portal con una carta que asoma y una nota al tocarlo (§73.4).
+- **Cuenta del fundador**: `supabase/scripts/cuenta_fundador.sql` (10.000 tickets y los cinco místicos para la cuenta
+  la cuenta de Francisco, con su correo de BookShelf, que no se guarda en el repositorio porque es público). **Ejecutado** el 2-11-2026 (Run de Francisco): 10000 tickets y los cinco místicos. Probado antes en PGlite.
+- **Decisión nueva**: al Gran Hotel se llega en una **limusina negra de lujo** (CLAUDE.md y `docs/qa/gran-hotel.md`).
+  Es el siguiente bloque, tras las capturas de este.
+- Pruebas: Vitest del edificio 67/67; e2e v163, v167, v169–v173 en Chromium 390 y WebKit 390 (la de música, solo
+  Chromium); v167, v172 y v173 en 320 y 1440. Compila; oxlint limpio.
+
+### 2026-11-02 · cuenta principal · 1.72.0: místicos en tu piso y el compañero (publicada; migración aplicada)
 
 - Francisco aprobó las cifras («Sí, esas cifras»: 1 % en «Edición coleccionista», ¼ legendario, sin pity propio) y
   pidió empezar el bloque 2 («Sí, empieza»). SPEC §72.

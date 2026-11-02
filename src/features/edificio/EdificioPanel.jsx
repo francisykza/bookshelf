@@ -12,6 +12,7 @@ import { starterRoom } from './demo';
 import './edificio.css';
 import { mountFacade } from './facadeView';
 import { START_PICKS } from './inventory';
+import { setEdificioMusic, setEdificioMusicInside } from './music';
 import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
 import { PRENDAS, prendaNombre } from './actor';
@@ -46,7 +47,7 @@ const selloText = (id) => SELLOS.find((s) => s.id === id)?.texto ?? '';
 const firmaText = (id) => FIRMAS.find((x) => x.id === id)?.texto ?? '';
 
 /** La fachada del edificio (la dibuja facade.js fuera de React); cada ventana ocupada es un botón. */
-function Facade({ vecinos, onOpenPiso, shopBadge }) {
+function Facade({ vecinos, onOpenPiso, shopBadge, mail = null }) {
   const ref = useRef(null);
   const open = useRef(onOpenPiso);
   useEffect(() => {
@@ -65,9 +66,12 @@ function Facade({ vecinos, onOpenPiso, shopBadge }) {
       // Sin la migración de la tienda (o sin inventario aún), el escaparate es solo dibujo
       onOpenShop: shopBadge == null ? null : () => open.current(TIENDA_ID),
       shopBadge: shopBadge ?? '',
+      mail: mail && { lines: mail },
     });
     return () => view.destroy();
-  }, [vecinos, shopBadge]);
+    // El correo llega como lista nueva en cada render: se compara por su texto
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vecinos, shopBadge, mail?.join('|')]);
   return <div ref={ref} className="ed-facade-mount" />;
 }
 
@@ -129,6 +133,11 @@ function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, c
 
 export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions = null }) {
   const community = useCommunity({ autoload: true });
+  // La melodía «Dos balcones» mientras estás en el edificio (1.73), si el sonido de la app está activado
+  useEffect(() => {
+    setEdificioMusic(soundOn);
+    return () => setEdificioMusic(false);
+  }, [soundOn]);
   const ready = community.status === 'ready' && community.member;
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -198,6 +207,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const open = pisoId && !inShop ? (data?.vecinos.find((v) => v.user_id === pisoId) ?? null) : null;
   const me = data?.vecinos.find((v) => v.yo) ?? null;
   const mine = open?.yo;
+  // Dentro de un piso, la melodía baja; en la fachada y en la tienda, a su volumen
+  const inPiso = Boolean(pisoId && !inShop);
+  useEffect(() => setEdificioMusicInside(inPiso), [inPiso]);
 
   const onMyChange = (room) => {
     setData((d) => d && { ...d, vecinos: d.vecinos.map((v) => (v.yo ? { ...v, room } : v)) });
@@ -356,39 +368,19 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
       </div>
     );
   } else {
-    const inbox = data.vecinos.filter((v) => !v.yo && v.sello_recibido);
-    // El portal (1.65): el cielo del dibujo sigue detrás del título y el edificio llega de borde a borde
+    // El correo del buzón dibujado en la fachada (1.73: sin la tarjeta «Tu buzón» ni el título, a petición de Francisco)
+    const mail = [
+      ...(social?.regalos.slice(0, 5).map((r) => `${r.alias ?? 'Un vecino'} te regaló: ${catalogItem(r.mueble).nombre.toLowerCase()}.`) ?? []),
+      ...data.vecinos.filter((v) => !v.yo && v.sello_recibido).map((v) => `${v.alias} (${doorLabel(v.puerta)}) te dejó «${selloText(v.sello_recibido)}».`),
+      ...(social?.visitas.slice(0, 5).map((v) => `${v.alias ?? 'Un vecino'} firmó en tu libro de visitas: «${firmaText(v.frase)}».`) ?? []),
+    ];
+    // El portal (1.65): el edificio de borde a borde; el nombre queda para los lectores de pantalla
     body = (
       <div className="ed-portal">
-        <h2 className="ed-title" id="ed-title">
-          El edificio del puerto
+        <h2 className="px-sr" id="ed-title">
+          El edificio del puerto. Tu puerta: {doorLabel(data.puerta)}.
         </h2>
-        <p className="ed-sub">Tu puerta: {doorLabel(data.puerta)}. Toca una puerta para entrar.</p>
-        <Facade vecinos={data.vecinos} onOpenPiso={onOpenPiso} shopBadge={inventory?.tienda ? `${inventory.tickets} tickets` : null} />
-        <section className="ed-inbox" aria-labelledby="ed-inbox-title">
-          <h3 id="ed-inbox-title">Tu buzón</h3>
-          {inbox.length || social?.visitas.length || social?.regalos.length ? (
-            <ul>
-              {social?.regalos.slice(0, 5).map((r) => (
-                <li key={`r-${r.de}-${r.creado}`}>
-                  {r.alias ?? 'Un vecino'} te regaló: {catalogItem(r.mueble).nombre.toLowerCase()}.
-                </li>
-              ))}
-              {inbox.map((v) => (
-                <li key={v.user_id}>
-                  {v.alias} ({doorLabel(v.puerta)}) te dejó «{selloText(v.sello_recibido)}».
-                </li>
-              ))}
-              {social?.visitas.slice(0, 5).map((v) => (
-                <li key={`v-${v.de}-${v.dia}`}>
-                  {v.alias ?? 'Un vecino'} firmó en tu libro de visitas: «{firmaText(v.frase)}».
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>Todavía no tienes sellos. Cuando un vecino visite tu piso, podrá dejarte uno.</p>
-          )}
-        </section>
+        <Facade vecinos={data.vecinos} onOpenPiso={onOpenPiso} shopBadge={inventory?.tienda ? `${inventory.tickets} tickets` : null} mail={mail} />
       </div>
     );
   }

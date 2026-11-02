@@ -196,6 +196,11 @@ const subscribe = (l) => {
   return () => listeners.delete(l);
 };
 
+/** 1.73: para la música del edificio (`edificio/music.js`), que calla mientras suena la radio y usa su volumen. */
+export const onRadioChange = subscribe;
+export const isRadioOn = () => snapshot.status === 'playing' || snapshot.status === 'loading';
+export const musicVolume = () => snapshot.musicVolume;
+
 /** Estado de la radio para la interfaz (se re-renderiza solo cuando cambia). */
 export function useRadio() {
   const state = useSyncExternalStore(subscribe, () => snapshot);

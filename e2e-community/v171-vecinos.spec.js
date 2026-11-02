@@ -97,10 +97,18 @@ test('en tu piso: el buzón enseña regalos y firmas, y tus muebles sus «me gus
   mock.db.piso_visitas = [{ piso: BRUNO.id, de: ANA.id, dia: new Date().toISOString().slice(0, 10), frase: 'cafe', creado: new Date().toISOString() }];
   mock.db.piso_megusta = [{ piso: BRUNO.id, de: ANA.id, uid: 1, mueble: 'sofa' }];
   const panel = await toPortal(page, mock, BRUNO);
+  // 1.73: el buzón está dibujado en la fachada; asoma una carta con cuántas cosas hay y se abre al tocarlo
+  await expect(panel.getByRole('button', { name: 'Tu buzón: 2 cosas' })).toBeVisible({ timeout: 15000 });
+  await expect(panel.locator('.ed-facade')).not.toHaveClass(/is-arriving/, { timeout: 5000 });
+  await shot(page, info, 'v173-buzon-carta');
+  await panel.getByRole('button', { name: 'Tu buzón: 2 cosas' }).click();
   const inbox = panel.getByRole('region', { name: 'Tu buzón' });
   await expect(inbox.getByText('Ana lectora te regaló: puf.')).toBeVisible({ timeout: 15000 });
   await expect(inbox.getByText('Ana lectora firmó en tu libro de visitas: «Otro día traigo café».')).toBeVisible();
   await shot(page, info, 'v171-buzon');
+  // Tocar fuera cierra la nota
+  await panel.locator('.ed-facade__art').click({ position: { x: 20, y: 20 } });
+  await expect(inbox).toBeHidden();
   await panel.getByRole('button', { name: /^Entrar en tu piso/ }).click();
   const mine = page.getByRole('dialog', { name: 'Tu piso' });
   await mine.getByRole('button', { name: 'Terminar' }).click();

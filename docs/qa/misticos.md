@@ -41,5 +41,5 @@ con capturas y necesita su «sí» antes del siguiente.
 | --- | --- | --- |
 | 1 | Diseños animados y el seguir (página de desarrollo, capturas) | Nada |
 | 2 | En tu piso: colocar los místicos y llevar un legendario (armario), visto por los vecinos | Migración (rareza nueva en el catálogo, compañero en `pisos`) |
-| 3 | En los sobres: la probabilidad muy baja y su animación al salir | Las cifras aprobadas por Francisco; migración (`piso_sobre`) |
+| 3 | En los sobres: la probabilidad muy baja y su animación al salir (**hecho, 1.73**, SPEC §73.1) | Migración `20261107120000_edificio_misticos_sobres.sql` (la aplica Francisco) |
 | 4 | En el hotel, cuando exista | El hotel en la app |

@@ -103,6 +103,15 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     - «Decorar» y la luz en las esquinas de la habitación, y las herramientas flotando junto al mueble;
     - el catálogo es una balda de madera de la que se arrastran los muebles.
     - No volver a botones redondeados sueltos alrededor del piso.
+  - **Pantalla completa** (2-11-2026, «que la app ocupe toda la pantalla sin dejar un borde encima»): en el móvil, el
+    edificio (portal, piso, tienda) llena la pantalla hasta arriba, con su color bajo la barra de estado; nada de hojas
+    con un hueco encima.
+  - **Portal sin carteles** (2-11-2026): sin el título «El edificio del puerto» ni «Tu puerta… Toca una puerta para
+    entrar» (queda solo para lectores de pantalla), y sin la tarjeta «Tu buzón»: el correo (sellos, regalos y firmas)
+    es un **buzón dibujado junto al portal** del que asoma una carta con el número; al tocarlo, una nota de papel.
+  - **Cuenta del fundador** (2-11-2026): la cuenta de Francisco tiene muchos más tickets y los místicos para probar,
+    con el script `supabase/scripts/cuenta_fundador.sql` (a mano, solo su cuenta). Es la única excepción a «los
+    tickets solo se ganan leyendo»; no se extiende a nadie más sin que lo pida.
   - **Vista «dentro de la habitación» por defecto** (1-11-2026):
     - el piso, a pantalla completa, con la balda (o los sellos) abajo;
     - se puede cambiar a la vista de ficha y queda recordado en el dispositivo.
@@ -149,7 +158,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     ni se recrea esa melodía (tampoco de oído). En la app, solo un tema original con guiño.
   - **Melodía «Dos balcones»** (2-11-2026): Francisco pasó un audio (WhatsApp, título ID3 «Dos balcones») para usarlo
     **más adelante** como música del edificio. La generó él con ChatGPT y descartó la sintonía de la serie (confirmado
-    el 2-11-2026): se puede usar. Y **sonidos de acciones estilo Stardew Valley**, muy satisfactorios: solo el estilo, sonidos
+    el 2-11-2026): se puede usar. **Desde la 1.73 suena en el edificio** (`public/media/edificio/dos-balcones.mp3`,
+    `edificio/music.js`): en bucle, bajita, solo con el sonido activado y callada mientras suena la radio. Y **sonidos de acciones estilo Stardew Valley**, muy satisfactorios: solo el estilo, sonidos
     propios sintetizados (nunca muestras del juego).
   - **pixelfx** (2-11-2026, «adelante»): se puede usar https://github.com/patch-gg/pixelfx (MIT) para los efectos de
     muebles y diseños de aquí en adelante. Copiar solo el núcleo y los efectos que se usen, con su `LICENSE` y su
@@ -165,7 +175,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     probabilidades y el pity actual no cambian; **sin pity propio**. Diseños de la primera tanda en `dev/misticos.html`.
     **No son moneda**: no se compran, no se reciclan ni se regalan. Solo un legendario te acompaña a la vez.
   - **El Gran Hotel del Puerto** (2-11-2026, plan en `docs/qa/gran-hotel.md`): más espectacular y, como la fachada del
-    edificio, **que se pueda interactuar desde la propia fachada**.
+    edificio, **que se pueda interactuar desde la propia fachada**. **Se llega en una limusina negra de lujo**
+    (2-11-2026): para ir al hotel hay que coger la limusina (en nuestro pixel art, original).
   - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración
     `20261101120000_edificio_puerto.sql` la aplica Francisco; sin ella, la tablet hace lo de siempre.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.

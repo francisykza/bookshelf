@@ -6,14 +6,19 @@
 // tira de arriba, sale la luz y las cartas se reparten boca abajo; se dan la vuelta tocándolas o con «Mostrar todos».
 // Abajo, un papel dice qué hacer y al final cuántos son nuevos. Sin falsos «casi», sin cuentas atrás ni prisas. Con
 // movimiento reducido, directo al resultado.
+// 1.73 (místicos, bloque 3): un místico o un legendario sale con su propia carta: el ser se mueve dentro (misticos.js),
+// con un halo y destellos del color de su escalón, y su nota. Igual de honesto: el halo del sobre solo dice lo que de
+// verdad trae.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { catalogItem } from './catalog';
+import { catalogItem, isMistico } from './catalog';
+import { misticoThumb } from './misticos';
 import { rarezaInfo } from './economy';
 import { renderThumb } from './render';
 import { PACK_H, PACK_TEAR, PACK_W, cardBackArt, packArt } from './shopArt';
 import { COUNTER_H, COUNTER_W, renderShopCounter } from './shopRoom';
 
-const ORDER = ['comun', 'poco-comun', 'raro'];
+const ORDER = ['comun', 'poco-comun', 'raro', 'mistico', 'legendario'];
+const ALTO = ['raro', 'mistico', 'legendario'];
 const OPEN_MS = 950;
 const STAGGER_MS = 280;
 const bestOf = (premios) => premios.reduce((b, p) => (ORDER.indexOf(p.rareza) > ORDER.indexOf(b) ? p.rareza : b), 'comun');
@@ -47,6 +52,35 @@ function cardThumb(id, size = 64) {
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(src, x0, y0, w, h, Math.floor((size - w * k) / 2), Math.floor((size - h * k) / 2), w * k, h * k);
   return out.toDataURL();
+}
+
+/** La cara de un místico: el ser, vivo, a unos 12 fotogramas por segundo mientras la carta está boca arriba. */
+function MisticoFace({ id, size, live }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return undefined;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const paint = (t) => {
+      ctx.clearRect(0, 0, size, size);
+      ctx.drawImage(misticoThumb(id, size, t), 0, 0);
+    };
+    paint(1.3);
+    if (!live) return undefined;
+    let raf = 0;
+    let last = 0;
+    const t0 = performance.now();
+    const tick = (now) => {
+      raf = requestAnimationFrame(tick);
+      if (now - last < 80) return;
+      last = now;
+      paint(1.3 + (now - t0) / 1000);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [id, size, live]);
+  return <canvas ref={ref} className="gacha__mistico" width={size} height={size} aria-hidden="true" />;
 }
 
 /** El adorno del papel: dos rayas y una flor de lis pequeña en medio. */
@@ -127,6 +161,13 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
   const summary = `${premios.length === 1 ? 'Te llevas' : `Te llevas ${premios.length} muebles:`} ${premios.map((p) => nameOf(p.mueble).toLowerCase()).join(', ')}.${nuevos ? ` ${nuevos === 1 ? 'Uno es nuevo' : `${nuevos} son nuevos`} para ti.` : ''}`;
   const tally = `${premios.length === 1 ? 'Un mueble' : `${premios.length} muebles`} para tu piso${nuevos ? ` · ${nuevos === 1 ? (premios.length === 1 ? 'nuevo' : '1 nuevo') : `${nuevos} nuevos`}` : ''}`;
   const sealed = phase === 'sealed' || phase === 'opening';
+  const legendario = premios.find((p) => p.rareza === 'legendario');
+  const mistico = premios.find((p) => p.rareza === 'mistico');
+  const misticoNote = legendario
+    ? `${nameOf(legendario.mueble)} puede acompañarte: elígelo en el armario de tu personaje.`
+    : mistico
+      ? `${nameOf(mistico.mueble)} se coloca en tu piso sobre su peana, en la pestaña «Místicos».`
+      : '';
 
   return (
     <div className={`gacha gacha--${best} is-${phase}`} role="dialog" aria-modal="true" aria-labelledby="gacha-title" style={{ '--cw': COUNTER_W, '--ch': COUNTER_H, backgroundImage: `url(${phase === 'done' ? scene.happy : scene.base})` }}>
@@ -141,7 +182,7 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
             <span className="gacha__shadow" aria-hidden="true" />
             <img className="gacha__body" src={art.body} alt="" draggable="false" />
             <img className="gacha__flap" src={art.top} alt="" draggable="false" />
-            {best === 'raro' && (
+            {ALTO.includes(best) && (
               <span className="gacha__motes" aria-hidden="true">
                 {Array.from({ length: 8 }, (_, k) => (
                   <i key={k} style={{ '--k': k, '--t': (k * 37) % 60 }} />
@@ -167,7 +208,18 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
                   <img className="gacha__back" src={back} alt="" draggable="false" />
                   <span className="gacha__face">
                     {p.rareza !== 'comun' && <span className="gacha__rays" aria-hidden="true" />}
-                    <img src={thumbs[i]} alt="" width={64} height={64} draggable="false" />
+                    {isMistico(catalogItem(p.mueble)) ? (
+                      <>
+                        <MisticoFace id={p.mueble} size={premios.length === 1 ? 96 : 64} live={shown[i] && !still} />
+                        <span className="gacha__sparks" aria-hidden="true">
+                          {Array.from({ length: 6 }, (_, k) => (
+                            <i key={k} style={{ '--k': k }} />
+                          ))}
+                        </span>
+                      </>
+                    ) : (
+                      <img src={thumbs[i]} alt="" width={64} height={64} draggable="false" />
+                    )}
                     <strong>{nameOf(p.mueble)}</strong>
                     <small>{info.nombre}</small>
                     {p.nuevo && <b className="gacha__new">Nuevo</b>}
@@ -185,6 +237,7 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
               <span aria-hidden="true">{tally}</span>
               <span className="px-sr">{summary}</span>
             </p>
+            {misticoNote && <p className="gacha__mnote">{misticoNote}</p>}
             <Ornament />
             <button type="button" className="px-btn px-btn--sage gacha__go" onClick={onGoPiso}>
               Colocar en mi piso

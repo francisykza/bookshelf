@@ -1,6 +1,7 @@
 // Místicos, bloque 2 (docs/qa/misticos.md): en un Postgres real (PGlite) con todas las migraciones. El catálogo
 // coincide con el del cliente; los místicos se colocan solo si los tienes; los legendarios no se colocan, acompañan
-// (solo el que tienes) y el portal lo enseña a los vecinos; no se compran, reciclan ni regalan, ni salen aún en sobres.
+// (solo el que tienes) y el portal lo enseña a los vecinos; no se compran, reciclan ni regalan; desde la 1.73 salen en
+// el sobre de coleccionista (bloque 3).
 import { beforeAll, describe, expect, it } from 'vitest';
 import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
 import { CATALOG, COMPANEROS, isMistico } from '../catalog';
@@ -74,12 +75,38 @@ describe('místicos en el servidor', () => {
     expect((await call(A, "select piso_reciclar('silla')")).copias.silla).toBe(2);
   });
 
-  it('aún no salen en ningún sobre', async () => {
+  it('solo salen en «Edición coleccionista», con las cifras aprobadas', async () => {
+    const def = (id) => db.query('select piso_sobre($1) as d', [id]).then((r) => r.rows[0].d);
+    const col = await def('coleccion');
+    expect([col.mistico, col.legendario, col.raro, col.poco]).toEqual([0.01, 0.25, 0.14, 0.35]);
+    for (const id of ['salon', 'luces', 'balcon']) expect((await def(id)).mistico ?? 0).toBe(0);
+    // Los demás sobres no los dan nunca
     await db.query('update piso_cuentas set tickets = 100000 where user_id = $1', [B]);
-    for (let k = 0; k < 6; k += 1) {
-      const r = await call(B, "select piso_abrir_sobre('coleccion', 5)");
-      for (const p of r.premios) expect(['mistico', 'legendario']).not.toContain(p.rareza);
+    for (const id of ['salon', 'luces', 'balcon']) {
+      for (let k = 0; k < 4; k += 1) {
+        const r = await call(B, 'select piso_abrir_sobre($1, 5)', [id]);
+        for (const p of r.premios) expect(['mistico', 'legendario']).not.toContain(p.rareza);
+      }
     }
+  });
+
+  // Cambia el sobre de coleccionista de esta base de pruebas para que siempre toque místico (las de después no lo usan)
+  it('el sorteo del místico: uno de cada cuatro legendario, y cuenta como raro para el pity', async () => {
+    await db.query("create or replace function public.piso_sobre(sobre text) returns jsonb language sql immutable set search_path = '' as $$ select case sobre when 'coleccion' then jsonb_build_object('coste1', 25, 'coste5', 110, 'raro', 0, 'poco', 0, 'mistico', 1, 'legendario', 0.25, 'muebles', null) else null end $$");
+    await db.query('update piso_cuentas set tickets = 100000, sin_raro = 9 where user_id = $1', [B]);
+    const premios = [];
+    for (let k = 0; k < 40; k += 1) premios.push(...(await call(B, "select piso_abrir_sobre('coleccion', 5)")).premios);
+    const ids = Object.fromEntries(CATALOG.filter(isMistico).map((c) => [c.id, c.rareza]));
+    for (const p of premios) expect(ids[p.mueble], p.mueble).toBe(p.rareza);
+    const leg = premios.filter((p) => p.rareza === 'legendario').length / premios.length;
+    expect(leg).toBeGreaterThan(0.12);
+    expect(leg).toBeLessThan(0.4);
+    // Un místico reinicia el pity como lo raro
+    expect((await db.query('select sin_raro from piso_cuentas where user_id = $1', [B])).rows[0].sin_raro).toBe(0);
+    // El nuevo legendario puede acompañarte
+    const pal = premios.find((p) => p.rareza === 'legendario').mueble;
+    await as(db, B, (q) => q('update pisos set companero = $1', [pal]));
+    expect((await portal(A)).vecinos.find((v) => v.user_id === B).companero).toBe(pal);
   });
 
   it('nadie lee ni cambia el compañero sin sesión', async () => {

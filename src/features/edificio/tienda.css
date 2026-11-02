@@ -402,6 +402,7 @@
 .ts-odds li span {
   color: #6b5440;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .ts-odds__row.is-poco-comun h4 {
@@ -1064,5 +1065,162 @@
   .gacha__face,
   .gacha__back {
     transition: none !important;
+  }
+}
+
+/* ── Místicos en el sobre (1.73, bloque 3 de docs/qa/misticos.md) ──
+   Místico: azul de llama fría. Legendario: rosa aurora con filo dorado. El halo del sobre cerrado solo adelanta lo que
+   de verdad trae, como con lo raro. */
+.gacha--mistico {
+  --rar: #9fd8ff;
+}
+
+.gacha--legendario {
+  --rar: #ffb0e6;
+}
+
+.gacha--mistico.is-sealed .gacha__env,
+.gacha--legendario.is-sealed .gacha__env {
+  animation-duration: 0.9s;
+}
+
+.gacha--mistico .gacha__motes i {
+  background: #bfe6ff;
+  box-shadow: 0 0 0 2px rgb(159 216 255 / 0.3);
+}
+
+.gacha--legendario .gacha__motes i {
+  background: #ffd1f1;
+  box-shadow: 0 0 0 2px rgb(255 224 138 / 0.4);
+}
+
+.ts-odds__row.is-mistico h4 {
+  color: #2f5f86;
+}
+
+.ts-odds__row.is-legendario h4 {
+  color: #8a2f6e;
+}
+
+/* El marco dorado sin relleno (el papel claro lo taparía todo): dentro, una noche azul o violeta */
+.gacha__card.is-mistico .gacha__face,
+.gacha__card.is-legendario .gacha__face {
+  border-image: var(--px-rimGold) 6 / 6px stretch;
+  background: radial-gradient(circle at 50% 40%, #34407a 0, #1c1d38 72%) padding-box;
+  color: #fbf3df;
+}
+
+.gacha__card.is-legendario .gacha__face {
+  background: radial-gradient(circle at 50% 40%, #6a2f6c 0, #24163a 72%) padding-box;
+}
+
+.gacha__card.is-mistico small,
+.gacha__card.is-legendario small {
+  color: #bfe6ff;
+}
+
+.gacha__card.is-legendario small {
+  color: #ffd1f1;
+}
+
+.gacha__card.is-mistico .gacha__rays {
+  background: repeating-conic-gradient(from 0deg, rgb(159 216 255 / 0.32) 0deg 8deg, transparent 8deg 22deg);
+  animation-duration: 7s;
+}
+
+.gacha__card.is-legendario .gacha__rays {
+  background: repeating-conic-gradient(from 0deg, rgb(255 176 230 / 0.36) 0deg 8deg, rgb(255 224 138 / 0.18) 8deg 12deg, transparent 12deg 22deg);
+  animation-duration: 5s;
+}
+
+.gacha__mistico {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+
+.gacha__cards--n1 .gacha__mistico {
+  width: 96px;
+  height: 96px;
+}
+
+/* Destellos de píxel que suben alrededor del ser, a pasos (como las motas del sobre) */
+.gacha__sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.gacha__sparks i {
+  position: absolute;
+  left: calc(12% + var(--k) * 14%);
+  bottom: 30%;
+  width: 4px;
+  height: 4px;
+  background: #bfe6ff;
+  opacity: 0;
+  animation: gacha-spark 2.2s steps(6, end) infinite;
+  animation-delay: calc(var(--k) * -0.37s);
+}
+
+.gacha__card.is-legendario .gacha__sparks i {
+  background: #ffe08a;
+}
+
+.gacha__card:not(.is-shown) .gacha__sparks {
+  display: none;
+}
+
+@keyframes gacha-spark {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-46px);
+  }
+}
+
+.gacha__card.is-mistico.is-shown,
+.gacha__card.is-legendario.is-shown {
+  animation: gacha-pop 0.6s 0.25s ease-out;
+}
+
+.gacha__card.is-mistico.is-shown::after,
+.gacha__card.is-legendario.is-shown::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 3px solid #9fd8ff;
+  opacity: 0;
+  animation: gacha-ring 0.9s 0.25s ease-out 2;
+  pointer-events: none;
+}
+
+.gacha__card.is-legendario.is-shown::after {
+  border-color: #ffb0e6;
+}
+
+.gacha__mnote {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gacha__card.is-mistico.is-shown,
+  .gacha__card.is-legendario.is-shown,
+  .gacha__card.is-mistico.is-shown::after,
+  .gacha__card.is-legendario.is-shown::after {
+    animation: none;
+  }
+
+  .gacha__sparks {
+    display: none;
   }
 }

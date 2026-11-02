@@ -77,15 +77,17 @@ export const SOBRES = [
     color: [201, 138, 28],
     coste1: 25,
     coste5: 110,
-    prob: { raro: 0.15, 'poco-comun': 0.35 },
+    // Místicos (1.73, cifras aprobadas por Francisco): 1 % por mueble, restado de lo raro; 1 de cada 4, legendario
+    prob: { raro: 0.14, 'poco-comun': 0.35, mistico: 0.01 },
+    legendario: 0.25,
     muebles: sinSaga.map((c) => c.id),
-    dice: 'El caro de la casa: de todo un poco y bastantes más papeletas para lo poco común y lo raro.',
+    dice: 'El caro de la casa: de todo un poco, bastantes más papeletas para lo poco común y lo raro... y, muy de vez en cuando, algo que no es de este mundo.',
   },
 ];
 
 export const sobreOf = (id) => SOBRES.find((s) => s.id === id) ?? null;
 export const costeDe = (sobre, cuantos) => (cuantos === 5 ? sobre.coste5 : sobre.coste1);
-const probDe = (sobre, rareza) => (rareza === 'comun' ? 1 - sobre.prob.raro - sobre.prob['poco-comun'] : sobre.prob[rareza]);
+const probDe = (sobre, rareza) => (rareza === 'comun' ? 1 - sobre.prob.raro - sobre.prob['poco-comun'] - (sobre.prob.mistico ?? 0) : sobre.prob[rareza]);
 
 /** Lo que se vende en la tienda: todo lo que no es de sagas y tiene precio (lo raro solo sale en sobres). */
 export const TIENDA = sinSaga.filter((c) => rarezaInfo(rarezaOf(c)).precio != null);
@@ -96,13 +98,21 @@ export const precioDe = (id) => {
 
 /** Qué puede salir en un sobre, por rareza, con su probabilidad por mueble (para enseñarla en la tienda). */
 export function oddsTable(sobre) {
-  return RAREZAS.map((r) => {
+  const misticos = sobre.prob.mistico
+    ? RAREZAS_MISTICAS.map((r) => {
+        const prob = sobre.prob.mistico * (r.id === 'legendario' ? sobre.legendario : 1 - sobre.legendario);
+        const items = CATALOG.filter((c) => c.rareza === r.id);
+        return { ...r, prob, items, fuera: false, cada: items.length ? prob / items.length : 0 };
+      })
+    : [];
+  const normales = RAREZAS.map((r) => {
     const propios = sinSaga.filter((c) => sobre.muebles.includes(c.id) && rarezaOf(c) === r.id);
     const fuera = !propios.length;
     const items = fuera ? sinSaga.filter((c) => rarezaOf(c) === r.id) : propios;
     const prob = probDe(sobre, r.id);
     return { ...r, prob, items, fuera, cada: items.length ? prob / items.length : 0 };
   });
+  return [...normales, ...misticos];
 }
 
 /** Cuántos muebles faltan, como mucho, para algo raro seguro. */
