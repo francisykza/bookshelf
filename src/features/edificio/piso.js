@@ -16,10 +16,27 @@ import { createSfx } from '../minigames/libreria-puerto/audio';
 import { CATALOG, CATEGORIES, PAREDES, SETS, SUELOS, catalogItem } from './catalog';
 import { freeCopies, ownedCopies } from './inventory';
 import { houseSwatch, pixelIcon, pixelVars } from './pixelUi';
-import { ART_H, ART_W, backdropImage, createRoomRenderer, renderThumb } from './render';
+import { COLORES_PELO, COMPLEMENTOS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
+import { ACTOR_ID, ART_H, ART_W, backdropImage, createRoomRenderer, renderActorThumb, renderThumb } from './render';
 import { ROOM, addItem, check, heightOf, itemsOn, moveItem, reasonText, recolorItem, rectOf, removeItem, rotateItem, setFloor, setWall, wallLength } from './room';
 
 const DRAG_PX = 6;
+const OUTFIT = 'personaje'; // pestaña de la balda con el armario de tu personaje (§69)
+const WALK_SPEED = 2.4; // celdas por segundo
+const STEP_S = 0.16; // cada zancada
+const FRAME_MS = 70; // el personaje se redibuja a unos 14 fotogramas por segundo
+// Las filas del armario: qué se cambia, cómo se llama cada opción y qué parte enseña la muestra
+const WARDROBE = [
+  { key: 'piel', nombre: 'Piel', frame: 'head', options: PIELES.map((p) => ({ value: p.id, nombre: p.nombre })) },
+  { key: 'pelo', nombre: 'Pelo', frame: 'head', options: PELOS.map((p) => ({ value: p.id, nombre: p.nombre })) },
+  { key: 'colorPelo', nombre: 'Color del pelo', frame: 'head', options: COLORES_PELO.map((p) => ({ value: p.id, nombre: p.nombre })) },
+  { key: 'jersey', nombre: 'Jersey', frame: 'torso', options: JERSEYS.map((p) => ({ value: p.id, nombre: p.nombre })) },
+  { key: 'pantalon', nombre: 'Pantalón', frame: 'legs', options: PANTALONES.map((p) => ({ value: p.id, nombre: p.nombre })) },
+  { key: 'gafas', nombre: 'Gafas', frame: 'head', options: [{ value: false, nombre: 'Sin gafas' }, { value: true, nombre: 'Con gafas' }] },
+  { key: 'complemento', nombre: 'Complemento', frame: 'head', options: COMPLEMENTOS.map((p) => ({ value: p.id, nombre: p.nombre })) },
+];
+const PASEO = 6; // celdas andadas tocando el suelo para la misión «Da un paseo»
+const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TONE_NAMES = ['tono 1', 'tono 2', 'tono 3', 'tono 4', 'tono 5'];
 const HOUSE = 'casa'; // pestaña de la balda con paredes y suelo
 const INROOM = 'lista'; // pestaña de la balda con lo que hay en tu piso
@@ -51,8 +68,15 @@ const nameOf = (item) => catalogItem(item.id).nombre;
  * tras cada cambio (para guardarlo); `onAction(item)`: al tocar un mueble con acción (la estantería) sin decorar.
  * `inside`: vista «dentro de la habitación» (§64): el dibujo llena el sitio que haya y el aviso va sobre él; quien lo
  * monta pone el contenedor a pantalla completa. `decorate`: empezar ya decorando (con la balda abierta).
+ * `avatar`: el aspecto del personaje (§69). En tu piso siempre hay uno (el de serie si aún no lo has cambiado) y
+ * `onAvatarChange(avatar)` avisa al cambiarlo; en el de un vecino solo aparece si lo tiene guardado.
+ * Misiones del día (§70): `prendas` (las ganadas; null: sin la migración, y lo que se gana no sale en el armario),
+ * `missions` ({ items: [{ id, texto, hecha }], proxima } o null) y `onEvent(tipo)` al hacer algo que puede ser una
+ * misión ('sentarse', 'mover', 'color', 'tarde', 'pasear', 'nuevo', 'armario').
+ * Vecinos (§71): `likes` ({ megusta: { uid: n }, mios: [uid] } o null) y `onLike(uid, si)`: en el piso de un vecino,
+ * al tocar un mueble sale «Me gusta»; en el tuyo, el aviso dice cuántos tiene.
  */
-export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, onChange = () => {}, onAction = null } = {}) {
+export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null } = {}) {
   const sfx = createSfx({ muted });
   const renderer = createRoomRenderer();
   let room = initial;
@@ -67,6 +91,19 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   let stageBack = ''; // telón de la página en la vista «dentro» (tamaño y luz con que se pintó)
   let raf = 0;
   let destroyed = false;
+  // El personaje: su aspecto y dónde está. `path`: puntos del mundo que le quedan por recorrer; `seat`: el uid del
+  // asiento en el que está (o al que va, en `goal`); `lookAt`: hacia dónde mirar al llegar
+  let look = validateAvatar(avatar) ?? (editable ? DEFAULT_AVATAR : null);
+  let me = null;
+  let anim = 0;
+  let lastT = 0;
+  let lastFrame = 0;
+  let wanderTimer = 0;
+  let owned = prendas;
+  let liked = likes;
+  let likeShown = null; // uid del mueble con su «Me gusta» a la vista
+  let today = missions;
+  let walked = 0; // celdas andadas a mano (misión «Da un paseo»)
 
   const canvas = el('canvas', { class: 'ep-canvas', width: ART_W, height: ART_H, tabindex: 0, role: 'application', 'aria-roledescription': 'habitación', 'aria-label': label });
   const ctx = canvas.getContext('2d');
@@ -96,8 +133,11 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   // «Decorar» y la luz, en las esquinas de abajo de la habitación (el dibujo deja ahí dos huecos)
   const decorateBtn = pxButton('Decorar', 'decorar', { cls: 'px-btn--sage ep-corner ep-corner--right', attrs: { 'aria-expanded': 'false' } });
   lightBtn.classList.add('ep-corner', 'ep-corner--left');
+  // «Hoy en tu piso»: las tres misiones del día en una nota de papel, junto a la luz
+  const todayBtn = pxButton('Hoy en tu piso', 'hoy', { cls: 'px-btn--icon ep-corner ep-corner--left2', label: false, attrs: { 'aria-expanded': 'false', hidden: true } });
+  const todayCard = el('section', { class: 'ep-today', hidden: true, 'aria-label': 'Hoy en tu piso' });
   const overlay = el('div', { class: 'ep-overlay' });
-  const stage = el('div', { class: 'ep-stage' }, canvas, lightBtn, editable ? decorateBtn : null, tools, overlay);
+  const stage = el('div', { class: 'ep-stage' }, canvas, lightBtn, editable ? todayBtn : null, editable ? decorateBtn : null, todayCard, tools, overlay);
   const root = el('div', { class: 'ep' }, stage, status);
   for (const [k, v] of Object.entries(pixelVars())) root.style.setProperty(k, v);
 
@@ -120,14 +160,17 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   const list = el('ul', { class: 'ep-inroom__list' });
   const listSummary = el('summary', {});
   const listBox = editable ? el('div', { class: 'ep-inroom', hidden: true }, list) : el('details', { class: 'ep-list' }, listSummary, list);
-  const CATS = [...CATEGORIES, { id: HOUSE, nombre: 'Paredes y suelo' }, { id: INROOM, nombre: 'En el piso' }];
+  // El armario del personaje: una fila por cosa que se cambia, con su muestra dibujada como quedaría
+  const wardrobe = el('div', { class: 'ep-house ep-wardrobe', hidden: true });
+  const outfitTab = el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33 });
+  const CATS = [...CATEGORIES, { id: OUTFIT, nombre: 'Tu personaje' }, { id: HOUSE, nombre: 'Paredes y suelo' }, { id: INROOM, nombre: 'En el piso' }];
   // Cada pestaña lleva el dibujo de un mueble de su tipo; la de paredes y suelo, una muestra de los de tu piso
   const TAB_ICON = { asientos: 'sillon', mesas: 'mesa', luz: 'lampara-pie', plantas: 'planta-grande', detalles: 'tetera', pared: 'cuadro', alfombras: 'alfombra', sagas: 'esferas' };
   const houseTab = el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33 });
 
   if (editable) {
     for (const c of CATS) {
-      const img = c.id === HOUSE ? houseTab : c.id === INROOM ? pixelIcon('lista') : el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33, src: renderThumb(TAB_ICON[c.id], 0, 33).toDataURL() });
+      const img = c.id === HOUSE ? houseTab : c.id === OUTFIT ? outfitTab : c.id === INROOM ? pixelIcon('lista') : el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33, src: renderThumb(TAB_ICON[c.id], 0, 33).toDataURL() });
       const b = el('button', { type: 'button', class: 'ep-chip', 'data-cat': c.id, 'aria-pressed': String(c.id === category), title: c.nombre }, img, el('span', { class: 'px-sr', text: c.nombre }));
       b.addEventListener('click', () => {
         category = c.id;
@@ -155,7 +198,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       b.addEventListener('click', () => commit(setFloor(room, s.id), `Suelo: ${s.nombre.toLowerCase()}.`));
       floorRow.append(b);
     }
-    panel.append(el('div', { class: 'ep-shelf__head' }, catRow, catTitle), el('div', { class: 'ep-shelf__board' }, setRow, grid, house, listBox), hint);
+    panel.append(el('div', { class: 'ep-shelf__head' }, catRow, catTitle), el('div', { class: 'ep-shelf__board' }, setRow, grid, house, wardrobe, listBox), hint);
     root.append(panel, actionRow);
     // Fuera del panel: un antepasado con transform haría que «fixed» no siguiera al dedo
     document.body.append(ghost);
@@ -168,16 +211,19 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   function fillGrid() {
     const isHouse = category === HOUSE;
     const isList = category === INROOM;
+    const isOutfit = category === OUTFIT;
     const set = category === SAGAS ? SETS.find((x) => x.id === sagaSet) : null;
     catTitle.textContent = isList ? `En el piso (${room.items.length})` : set ? set.nombre : CATS.find((c) => c.id === category).nombre;
     hint.textContent = set ? set.guino : HINT;
     setRow.hidden = !set;
     house.hidden = !isHouse;
+    wardrobe.hidden = !isOutfit;
     listBox.hidden = !isList;
-    grid.hidden = isHouse || isList;
-    hint.hidden = isHouse || isList;
+    grid.hidden = isHouse || isList || isOutfit;
+    hint.hidden = isHouse || isList || isOutfit;
     grid.replaceChildren();
-    if (isHouse || isList) return;
+    if (isOutfit) fillWardrobe();
+    if (isHouse || isList || isOutfit) return;
     for (const cat of CATALOG.filter((c) => c.cat === category && (!set || c.set === set.id))) {
       // Lo que no tienes no está en tu balda (llegará con la tienda)
       if (ownedCopies(inv, cat.id) === 0) continue;
@@ -214,6 +260,304 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     }
   }
 
+  // ── El armario ──
+  const actorThumbs = new Map();
+  function actorThumb(a, frame) {
+    const key = JSON.stringify(a) + frame;
+    if (!actorThumbs.has(key)) actorThumbs.set(key, renderActorThumb(a, { frame }).toDataURL());
+    return actorThumbs.get(key);
+  }
+
+  function fillWardrobe() {
+    wardrobe.replaceChildren(
+      ...WARDROBE.map((row) =>
+        el(
+          'div',
+          { class: 'ep-house__group' },
+          el('span', { class: 'ep-house__label', text: row.nombre }),
+          el(
+            'div',
+            { class: 'ep-swatches', role: 'group', 'aria-label': row.nombre },
+            ...row.options
+              // Lo que se gana con las misiones solo sale si el servidor las tiene
+              .filter((o) => !isPrenda(row.key, o.value) || owned)
+              .map((o) => {
+                const next = { ...look, [row.key]: o.value };
+                const locked = isPrenda(row.key, o.value) && !owned.includes(prendaKey(row.key, o.value));
+                const b = el('button', { type: 'button', class: locked ? 'ep-swatch is-locked' : 'ep-swatch', 'data-outfit': prendaKey(row.key, o.value), 'aria-pressed': String(look[row.key] === o.value), 'aria-label': locked ? `${o.nombre} (se gana con las misiones del día)` : null }, el('img', { class: 'ep-swatch__img', alt: '', width: 33, height: 33, src: actorThumb(next, row.frame) }), el('span', { text: o.nombre }));
+                b.addEventListener('click', () => {
+                  if (!locked) return setLook(next, `${row.nombre}: ${o.nombre.toLowerCase()}.`);
+                  sfx.play('invalid');
+                  say(`${o.nombre}: se gana con las misiones del día.`);
+                });
+                return b;
+              }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  function setLook(next, message) {
+    const scroll = wardrobe.scrollLeft;
+    look = next;
+    outfitTab.src = actorThumb(look, 'head');
+    if (category === OUTFIT) fillWardrobe();
+    wardrobe.scrollLeft = scroll;
+    sfx.play('lift');
+    say(message);
+    requestDraw();
+    onAvatarChange(look);
+    onEvent('armario');
+  }
+
+  // ── Misiones del día ──
+  function fillToday() {
+    todayBtn.hidden = !today || !editable;
+    if (!today) {
+      todayCard.hidden = true;
+      return;
+    }
+    const done = today.items.filter((m) => m.hecha).length;
+    todayBtn.classList.toggle('is-done', done === today.items.length);
+    todayBtn.querySelector('.px-sr').textContent = `Hoy en tu piso (${done} de ${today.items.length})`;
+    const foot = today.proxima
+      ? el('p', { class: 'ep-today__prize' }, el('span', { text: done === today.items.length ? 'Hecho. Mañana, más.' : 'Premio:' }), done === today.items.length ? null : el('b', { text: prendaNombre(today.proxima) }))
+      : el('p', { class: 'ep-today__prize', text: done === today.items.length ? 'Hecho. Ya tienes todo el armario.' : 'Ya tienes todo el armario.' });
+    // Recién ganada: la prenda, bien a la vista (y la hoja se abre sola)
+    const won = today.ganada ? el('p', { class: 'ep-today__won' }, el('img', { class: 'ep-today__won-img', alt: '', width: 33, height: 33, src: actorThumb(wearing(today.ganada), 'head') }), el('span', { text: `Nueva: ${prendaNombre(today.ganada)}` })) : null;
+    todayCard.replaceChildren(
+      el('h3', { class: 'ep-today__title', text: 'Hoy' }),
+      el('ul', { class: 'ep-today__list' }, ...today.items.map((m) => el('li', { class: m.hecha ? 'is-done' : null }, el('span', { class: 'ep-today__check', 'aria-hidden': 'true' }), el('span', { text: m.texto }), el('span', { class: 'px-sr', text: m.hecha ? ' (hecha)' : ' (pendiente)' })))),
+      won ?? foot,
+    );
+  }
+
+  /** El botón «Me gusta» de un mueble ajeno, con su cuenta (pulsado si ya es tuyo). */
+  function likeButton(uid) {
+    const mine = liked.mios.includes(uid);
+    const n = liked.megusta[uid] ?? 0;
+    const item = room.items.find((i) => i.uid === uid);
+    const b = el('button', { type: 'button', class: 'px-btn ep-like', 'aria-pressed': String(mine), 'aria-label': `Me gusta: ${item ? nameOf(item).toLowerCase() : 'mueble'} (${n})` }, pixelIcon('corazon'), el('span', { class: 'px-btn__text', text: n ? `Me gusta · ${n}` : 'Me gusta' }));
+    b.addEventListener('click', () => {
+      sfx.play(mine ? 'back' : 'place');
+      onLike(uid, !mine);
+    });
+    return b;
+  }
+
+  /** El personaje con una prenda puesta (para su muestra). */
+  function wearing(prenda) {
+    const [key, raw] = prenda.split(':');
+    return { ...(look ?? DEFAULT_AVATAR), [key]: key === 'complemento' ? raw : Number(raw) };
+  }
+
+  function toggleToday(open = todayCard.hidden) {
+    todayCard.hidden = !open;
+    root.classList.toggle('has-today', open);
+    todayBtn.setAttribute('aria-expanded', String(open));
+  }
+
+  // ── El personaje en la habitación ──
+  const cellOf = (p) => ({ x: Math.max(0, Math.min(ROOM.w - 1, Math.floor(p.x))), y: Math.max(0, Math.min(ROOM.d - 1, Math.floor(p.y))) });
+
+  function spawnActor() {
+    if (!look) return;
+    const free = nearestFree(blockedCells(room), ROOM.w / 2, ROOM.d / 2 + 1);
+    if (!free) return;
+    me = { x: free.x + 0.5, y: free.y + 0.5, facing: 0, pose: 'stand', step: 0, stepT: 0, h: 0, path: [], seat: null, goal: null, lookAt: null };
+  }
+
+  function actorFrame() {
+    if (!me || !look) return null;
+    const onFloor = me.pose === 'stand' || me.pose === 'walk';
+    return { boxes: actorBoxes(look, me), shadow: onFloor ? { x: me.x, y: me.y } : null };
+  }
+
+  /** Se baja del asiento (o sale de una celda que ahora ocupa un mueble) a la celda libre más cercana. */
+  function standUp(grid = blockedCells(room)) {
+    const cell = cellOf(me);
+    if (!me.seat && me.pose !== 'sit' && me.pose !== 'lie' && !grid[cell.y * ROOM.w + cell.x]) return cell;
+    const free = nearestFree(grid, me.x, me.y);
+    if (!free) return null;
+    Object.assign(me, { x: free.x + 0.5, y: free.y + 0.5, pose: 'stand', seat: null, h: 0 });
+    return free;
+  }
+
+  /**
+   * Echa a andar hacia una celda (`to`), o hacia un mueble (`item`): si es un asiento libre, se sienta en él; si no, se
+   * queda delante mirándolo. Devuelve false si no hay camino.
+   */
+  function walkTo({ to = null, item = null }) {
+    if (!me) return false;
+    const grid = blockedCells(room);
+    const from = standUp(grid);
+    if (!from) return false;
+    let path = null;
+    let seat = null;
+    if (item) {
+      const sitHere = isSeat(item.id) && !itemsOn(room, item.uid).length ? seatOf(item) : null;
+      for (const c of approachCell(grid, item, from)) {
+        path = c.x === from.x && c.y === from.y ? [] : findPath(grid, from, c);
+        if (path) break;
+      }
+      if (!path) return false;
+      seat = sitHere ? { uid: item.uid, ...sitHere } : null;
+      const r = rectOf(item);
+      me.lookAt = { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 };
+    } else {
+      const target = grid[to.y * ROOM.w + to.x] ? nearestFree(grid, to.x + 0.5, to.y + 0.5) : to;
+      if (!target) return false;
+      path = target.x === from.x && target.y === from.y ? [] : findPath(grid, from, target);
+      if (!path) return false;
+      me.lookAt = null;
+    }
+    me.path = path.map((c) => ({ x: c.x + 0.5, y: c.y + 0.5 }));
+    if (seat) me.path.push({ x: seat.x, y: seat.y });
+    me.goal = seat;
+    if (!me.path.length) return arrive();
+    if (reducedMotion()) {
+      // Sin animación: aparece ya donde iba
+      const end = me.path[me.path.length - 1];
+      me.facing = facingOf(end.x - me.x, end.y - me.y, me.facing);
+      Object.assign(me, { x: end.x, y: end.y, path: [] });
+      return arrive();
+    }
+    me.pose = 'walk';
+    startAnim();
+    return true;
+  }
+
+  function arrive() {
+    const seat = me.goal;
+    me.goal = null;
+    me.path = [];
+    if (seat) {
+      Object.assign(me, { x: seat.x, y: seat.y, h: seat.h, facing: seat.facing, pose: seat.pose, seat: seat.uid });
+      onEvent('sentarse');
+    } else {
+      me.pose = 'stand';
+      if (me.lookAt) me.facing = facingOf(me.lookAt.x - me.x, me.lookAt.y - me.y, me.facing);
+    }
+    me.lookAt = null;
+    requestDraw();
+    return true;
+  }
+
+  function startAnim() {
+    if (!anim && !destroyed) anim = requestAnimationFrame(tick);
+  }
+
+  function tick(t) {
+    anim = 0;
+    if (destroyed || !me || !me.path.length) return;
+    const dt = lastT ? Math.min(0.1, (t - lastT) / 1000) : 0;
+    lastT = t;
+    let left = WALK_SPEED * dt;
+    while (left > 0 && me.path.length) {
+      const p = me.path[0];
+      const dx = p.x - me.x;
+      const dy = p.y - me.y;
+      const d = Math.hypot(dx, dy);
+      me.facing = facingOf(dx, dy, me.facing);
+      if (d <= left) {
+        me.x = p.x;
+        me.y = p.y;
+        me.path.shift();
+        left -= d;
+      } else {
+        me.x += (dx / d) * left;
+        me.y += (dy / d) * left;
+        left = 0;
+      }
+    }
+    me.stepT += dt;
+    me.step = 1 + (Math.floor(me.stepT / STEP_S) % 2);
+    if (!me.path.length) {
+      lastT = 0;
+      arrive();
+      return;
+    }
+    if (t - lastFrame >= FRAME_MS) {
+      lastFrame = t;
+      requestDraw();
+    }
+    anim = requestAnimationFrame(tick);
+  }
+
+  /** Tras cambiar los muebles: si el asiento ya no está (o se movió) o su celda se ocupó, se aparta. */
+  function settleActor() {
+    if (!me) return;
+    if (me.seat) {
+      const item = room.items.find((i) => i.uid === me.seat);
+      const s = item ? seatOf(item) : null;
+      if (s && s.x === me.x && s.y === me.y && !itemsOn(room, item.uid).length) return;
+      me.seat = null;
+    }
+    me.path = [];
+    me.goal = null;
+    if (me.pose === 'walk') me.pose = 'stand';
+    standUp();
+  }
+
+  /** Andar hasta el punto del suelo bajo el dedo (si cae dentro de la habitación). */
+  function walkToGround(a) {
+    const g = renderer.groundAt(a.x, a.y);
+    if (!me || g.x < 0 || g.y < 0 || g.x >= ROOM.w || g.y >= ROOM.d) return false;
+    const ok = walkTo({ to: cellOf(g) });
+    if (ok) {
+      const before = walked;
+      walked += Math.max(1, me.path.length);
+      if (before < PASEO && walked >= PASEO) onEvent('pasear');
+    }
+    return ok;
+  }
+
+  /** Andar hacia un mueble: a su lado (o a sentarse); a lo de la pared, hasta la pared; sobre una alfombra, encima. */
+  function walkToItem(item, a) {
+    const cat = catalogItem(item.id);
+    if (cat.capa === 'alfombra') return walkToGround(a);
+    if (cat.capa === 'pared') {
+      const mid = item.a + cat.w / 2;
+      return walkTo({ to: cellOf(item.pared === 'fondo' ? { x: mid, y: 0.5 } : { x: 0.5, y: mid }) });
+    }
+    // Lo de encima de una mesa: hacia la mesa
+    const base = cat.capa === 'encima' ? room.items.find((o) => o.uid !== item.uid && catalogItem(o.id).capa === 'suelo' && itemsOn(room, o.uid).some((i) => i.uid === item.uid)) : item;
+    return walkTo({ item: base ?? item }) || walkToGround(a);
+  }
+
+  function openWardrobe() {
+    if (!editable) return;
+    if (!decorating) setDecorating(true);
+    category = OUTFIT;
+    for (const x of catRow.children) x.setAttribute('aria-pressed', String(x.dataset.cat === category));
+    fillGrid();
+    say('Tu personaje: elige cómo va.');
+  }
+
+  /** De vez en cuando pasea solo (nunca con movimiento reducido, ni mientras mueves algo). */
+  function scheduleWander() {
+    clearTimeout(wanderTimer);
+    if (!me || reducedMotion()) return;
+    wanderTimer = setTimeout(wander, 6000 + Math.random() * 8000);
+  }
+
+  function wander() {
+    if (destroyed) return;
+    const busy = drag || fresh || me.path.length || (typeof document !== 'undefined' && document.hidden);
+    if (!busy && (!me.seat || Math.random() < 0.35)) {
+      const grid = blockedCells(room);
+      const spots = [];
+      for (let y = 0; y < ROOM.d; y += 1)
+        for (let x = 0; x < ROOM.w; x += 1) {
+          const d = Math.hypot(x + 0.5 - me.x, y + 0.5 - me.y);
+          if (!grid[y * ROOM.w + x] && d >= 1 && d <= 3.5) spots.push({ x, y });
+        }
+      if (spots.length) walkTo({ to: spots[Math.floor(Math.random() * spots.length)] });
+    }
+    scheduleWander();
+  }
+
   // ── Estado y dibujo ──
   function say(text) {
     status.textContent = text;
@@ -230,23 +574,29 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   function render() {
     raf = 0;
     if (destroyed) return;
+    // Qué hace el personaje y dónde se ve (en píxeles del dibujo), para las pruebas y las herramientas del navegador
+    if (me) {
+      const p = renderer.project(me.x, me.y, me.pose === 'stand' || me.pose === 'walk' ? 1 : me.h + 0.6);
+      canvas.dataset.actor = me.pose;
+      canvas.dataset.actorAt = `${Math.round(p.sx)},${Math.round(p.sy)}`;
+    }
     if (fresh?.preview && fresh.over) {
       // Un mueble nuevo bajo el dedo: se ve ya en la habitación, en el sitio donde caería
       const p = fresh.preview;
-      renderer.draw(ctx, image, { held: { room: p.room, items: [p.item] }, selected: p.item, ok: p.ok, evening: isEvening, inside: isInside });
+      renderer.draw(ctx, image, { held: { room: p.room, items: [p.item] }, selected: p.item, ok: p.ok, evening: isEvening, inside: isInside, actor: actorFrame() });
       placeTools(null);
       return;
     }
     const item = selected ? room.items.find((i) => i.uid === selected) : null;
     if (!item) {
-      renderer.draw(ctx, image, { evening: isEvening, inside: isInside });
+      renderer.draw(ctx, image, { evening: isEvening, inside: isInside, actor: actorFrame() });
       placeTools(null);
       return;
     }
     const p = drag?.moved ? drag.preview : null;
     const shown = p ? p.room : room;
     const ids = new Set(group(selected));
-    renderer.draw(ctx, image, { held: { room: shown, items: shown.items.filter((i) => ids.has(i.uid)) }, selected: p ? p.item : item, ok: p ? p.ok : true, evening: isEvening, inside: isInside });
+    renderer.draw(ctx, image, { held: { room: shown, items: shown.items.filter((i) => ids.has(i.uid)) }, selected: p ? p.item : item, ok: p ? p.ok : true, evening: isEvening, inside: isInside, actor: actorFrame() });
     placeTools(drag?.moved ? null : item);
   }
 
@@ -344,6 +694,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   function commit(next, message) {
     room = next;
+    settleActor();
     rebake();
     refreshUi();
     requestDraw();
@@ -383,6 +734,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     sfx.play('place');
     selected = res.item.uid;
     commit(res.room, `${catalogItem(id).nombre} en tu piso. Arrástralo a su sitio.`);
+    onEvent('nuevo');
   }
 
   function apply(res, message, sound = 'place') {
@@ -479,22 +831,48 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (e.button !== undefined && e.button !== 0) return;
     const a = toArt(e);
     const uid = renderer.pick(a.x, a.y);
+    // Tocar a tu personaje abre su armario en la balda
+    if (uid === ACTOR_ID) {
+      if (!editable) return say('Vive aquí.');
+      e.preventDefault();
+      openWardrobe();
+      return;
+    }
     if (!editable || !decorating) {
-      if (!uid) return;
+      if (!uid) {
+        // En tu piso, tocar el suelo lo lleva andando hasta allí
+        if (editable) walkToGround(a);
+        return;
+      }
       const item = room.items.find((i) => i.uid === uid);
       const cat = catalogItem(item.id);
-      say(cat.accion === 'libreria' && onAction ? `${cat.nombre}: toca «Ordenar la estantería» para jugar.` : cat.nombre);
+      const n = liked?.megusta?.[uid] ?? 0;
+      const hearts = n ? ` · ${n === 1 ? '1 me gusta' : `${n} me gusta`}` : '';
+      say(cat.accion === 'libreria' && onAction ? `${cat.nombre}: toca «Ordenar la estantería» para jugar.` : `${cat.nombre}${hearts}`);
       actionRow.replaceChildren();
       actionRow.hidden = true;
+      // En el piso de un vecino: «Me gusta» a ese mueble (si los «me gusta» aún no han llegado, sale al llegar)
+      likeShown = !editable && onLike ? uid : null;
+      if (likeShown && liked) {
+        actionRow.append(likeButton(uid));
+        actionRow.hidden = false;
+      }
       if (cat.accion === 'libreria' && onAction) {
         const go = el('button', { type: 'button', class: 'px-btn px-btn--sage' }, el('span', { class: 'px-btn__text', text: 'Ordenar la estantería' }));
         go.addEventListener('click', () => onAction(item));
         actionRow.append(go);
         actionRow.hidden = false;
       }
+      // Y en tu piso va hacia el mueble (en un asiento, se sienta o se tumba)
+      if (editable) walkToItem(item, a);
       return;
     }
     e.preventDefault();
+    if (!uid && !selected && me) {
+      // Decorando sin nada elegido, tocar un hueco también lo lleva andando
+      walkToGround(a);
+      return;
+    }
     if (uid && uid !== selected) {
       // Si se toca algo de encima del elegido, se elige eso (para poder quitar la lámpara de la mesa)
       select(uid);
@@ -505,6 +883,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       if (p.ok) {
         sfx.play('place');
         commit(p.room, `${nameOf(item)} en su sitio nuevo.`);
+        onEvent('mover');
       } else fail(p.reason, p.con);
       return;
     } else if (!uid) {
@@ -535,6 +914,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (d.preview?.ok) {
       sfx.play('place');
       commit(d.preview.room, `${nameOf(item)} en su sitio nuevo.`);
+      onEvent('mover');
     } else {
       sfx.play('back');
       say(`${reasonText(d.preview?.reason ?? 'fuera', d.preview?.con)} ${nameOf(item)} vuelve a su sitio.`);
@@ -611,6 +991,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       sfx.play('place');
       selected = f.preview.item.uid;
       commit(f.preview.room, `${name} en tu piso.`);
+      onEvent('nuevo');
     } else if (f.over && f.preview) {
       fail(f.preview.reason, f.preview.con);
       say(`${reasonText(f.preview.reason, f.preview.con)} ${name} vuelve a la balda.`);
@@ -647,7 +1028,9 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       if (!step) return;
       target = { a: item.a + step };
     } else target = { x: item.x + dx, y: item.y + dy };
-    apply(moveItem(room, item.uid, target), `${nameOf(item)} movido.`, 'lift');
+    const res = moveItem(room, item.uid, target);
+    apply(res, `${nameOf(item)} movido.`, 'lift');
+    if (!res.error) onEvent('mover');
   }
 
   function onKey(e) {
@@ -675,6 +1058,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   function recolor() {
     const res = recolorItem(room, selected);
     apply(res, res.room ? `${nameOf(res.room.items.find((i) => i.uid === selected))}: ${TONE_NAMES[res.room.items.find((i) => i.uid === selected).tono]}.` : '', 'lift');
+    if (!res.error) onEvent('color');
   }
   function store() {
     const item = room.items.find((i) => i.uid === selected);
@@ -693,7 +1077,9 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     fit();
     say(isEvening ? 'Luz de tarde: se encienden las lámparas.' : 'Luz de día.');
     requestDraw();
+    if (isEvening && editable) onEvent('tarde');
   };
+  const onToday = () => toggleToday();
   const onDecorate = () => setDecorating(!decorating);
   const onDone = () => {
     select(null);
@@ -750,12 +1136,16 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   canvas.addEventListener('pointercancel', onPointerCancel);
   canvas.addEventListener('keydown', onKey);
   lightBtn.addEventListener('click', onLight);
+  todayBtn.addEventListener('click', onToday);
   decorateBtn.addEventListener('click', onDecorate);
   rotateBtn.addEventListener('click', rotate);
   colorBtn.addEventListener('click', recolor);
   storeBtn.addEventListener('click', store);
   doneBtn.addEventListener('click', onDone);
 
+  spawnActor();
+  fillToday();
+  if (look) outfitTab.src = actorThumb(look, 'head');
   rebake();
   refreshUi();
   root.classList.toggle('is-evening', isEvening);
@@ -763,6 +1153,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   render();
   say(editable ? 'Tu piso. Toca «Decorar» para colocar muebles.' : `${label}. Puedes mirar, pero no tocar nada.`);
   if (editable && decorate) setDecorating(true);
+  scheduleWander();
 
   return {
     get room() {
@@ -771,11 +1162,43 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     get selected() {
       return selected;
     },
+    /** Dónde está el personaje y qué hace (para las pruebas): { x, y, pose, facing, seat } o null. */
+    get actor() {
+      return me ? { x: me.x, y: me.y, pose: me.pose, facing: me.facing, seat: me.seat } : null;
+    },
+    get avatar() {
+      return look;
+    },
     setMuted(v) {
       sfx.setMuted(v);
     },
     setInside,
     /** Cambia el inventario (llega del servidor, o tras elegir los de inicio) y rehace la balda. */
+    /** Las prendas ganadas (llegan del servidor, o al ganar una) y rehace el armario. */
+    /** Un aviso en la línea de estado de la habitación (p. ej., una misión hecha). */
+    notify(text) {
+      say(text);
+    },
+    setPrendas(next) {
+      owned = next;
+      if (editable && category === OUTFIT) fillWardrobe();
+    },
+    /** Los «me gusta» del piso (llegan del servidor, o tras darle a uno). */
+    setLikes(next) {
+      liked = next;
+      if (!likeShown || !liked || !room.items.some((i) => i.uid === likeShown)) return;
+      const old = actionRow.querySelector('.ep-like');
+      if (old) old.replaceWith(likeButton(likeShown));
+      else actionRow.prepend(likeButton(likeShown));
+      actionRow.hidden = false;
+    },
+    /** Las misiones del día (o null) y la próxima prenda. */
+    setMissions(next) {
+      const won = next?.ganada && next.ganada !== today?.ganada;
+      today = next;
+      fillToday();
+      if (won) toggleToday(true);
+    },
     setInventory(next) {
       inv = next;
       if (editable) fillGrid();
@@ -807,6 +1230,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     destroy() {
       destroyed = true;
       if (raf) cancelAnimationFrame(raf);
+      if (anim) cancelAnimationFrame(anim);
+      clearTimeout(wanderTimer);
       endShelf();
       resize?.disconnect();
       canvas.removeEventListener('pointerdown', onPointerDown);

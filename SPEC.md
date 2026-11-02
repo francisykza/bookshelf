@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.68.0 · 2026-11-01 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.71.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4364,3 +4364,72 @@ tickets solo se ganan leyendo (nunca con dinero).
 - **Pruebas**: `e2e-community/v167-tienda.spec.js` cubre la fila de sobres, los letreros como pestañas y la caja de
   reciclaje tocada en el dibujo. También comprueba que, sin tickets, se ofrece ir a las misiones, y que «Mostrar todos»
   salta la animación. Se ejecuta en Chromium 320, 390 y 1440 y en WebKit 390. Vitest de `edificio`.
+
+## 69. Más muebles y tu personaje en el piso (1.69, encargo de Francisco «más vida en el edificio»)
+
+- **Encargo** (1-11-2026): más muebles, un personaje propio que se mueve por las habitaciones y se personaliza,
+  misiones diarias ligadas a la habitación (§70) y un cambio en lo que se puede hacer con los vecinos (bloque 4,
+  pendiente). Se hace por bloques, con capturas entre uno y otro.
+- **Bloque 1, muebles** (`catalog.js`, «Tanda 2»): diecisiete muebles nuevos (puf, mecedora, escritorio, cómoda, baúl,
+  velas, farol, cactus, monstera, pecera, globo, tocadiscos, taza, estante de pared, espejo, mapa y alfombra de rayas),
+  con su forma en `furniture.js` y sus filas en `piso_catalogo` y en los sobres
+  (`20261105120000_edificio_muebles_tanda2.sql`, la aplica Francisco). La pecera es rara; no cambian precios,
+  probabilidades ni el pity.
+- **Arreglo del sobre abierto**: en el móvil de Francisco el papel de abajo se cortaba y no se veía «Colocar en mi piso».
+  `.gacha` ya no tiene `aspect-ratio` y el papel va en el flujo normal (WebKit no deja crecer una caja con proporción y
+  desbordamiento recortado).
+- **Bloque 2, el personaje** (`actor.js`): de cajas, como los muebles, dibujado por el mismo motor (`render.js`,
+  `ACTOR_ID`). Aspecto: piel, peinado (6), color del pelo, jersey, pantalón, gafas y complemento, de listas cerradas.
+  - **Andar**: tocar el suelo lo lleva andando (camino por celdas que rodea los muebles de suelo, sin cortar
+    esquinas). Al tocar un mueble va hasta él; en silla, sillón, sofá, banco, puf y mecedora se sienta mirando hacia
+    donde mira el asiento, y en la cama se tumba. Si no se le toca, pasea solo cada 6-14 s. Con movimiento reducido no
+    hay animación: aparece donde iba y no pasea. Se redibuja a unos 14 fotogramas por segundo solo mientras anda.
+  - Si un mueble ocupa su celda o se quita su asiento, se aparta a la celda libre más cercana.
+  - **Armario**: tocarlo (o la pestaña «Tu personaje» de la balda) abre una fila por cosa que se cambia; cada muestra es
+    el personaje dibujado con esa opción (`renderActorThumb`, encuadrado en cabeza, torso o piernas).
+  - **Se guarda** en `pisos.personaje` (`20261105130000_edificio_personaje.sql`, la aplica Francisco), con la misma
+    validación en el cliente y en el servidor, y el portal lo devuelve con cada vecino. Sin la migración se recuerda en
+    el dispositivo («Guardado en este dispositivo»).
+  - **En el piso de un vecino** se ve su personaje paseando, pero no se le manda: tocarlo dice «Vive aquí.».
+- **Pruebas**: `actor.test.js`, `personaje.rls.test.js` (PGlite) y `e2e-community/v169-personaje.spec.js` (armario,
+  guardado, sentarse, levantarse, el piso de un vecino y sin la migración), en Chromium 390 y 1440 y WebKit 390.
+
+## 70. Misiones del día en tu piso (1.70.0)
+
+- **Qué son** (`dailyMissions.js`): cada día, tres cosas pequeñas de entre siete (sentarse, mover un mueble, cambiar
+  un color, encender la luz de tarde, dar un paseo, poner algo de la balda y cambiar la ropa del personaje). Son las
+  mismas para todos y salen de la fecha; el servidor las calcula igual (`piso_diarias_del_dia`, una prueba compara
+  ochocientos días).
+- **Premio**: hechas las tres, la siguiente prenda de una lista fija (`PRENDAS`: bufanda, jersey verde bosque, gorro de
+  lana, pantalón teja, pelo rosa pastel…, trece en total). **Nunca tickets**: los tickets se ganan solo leyendo.
+- **En el piso**: una nota pequeña «Hoy» encima de su botón, junto a la luz (`ep-today`), con las tres casillas en
+  textos cortos y la prenda que llega; no tapa la habitación (Francisco: la primera versión «le quitaba protagonismo»). Cada misión se marca sola al hacerla (`onEvent` de `piso.js`). Al ganar una prenda, la hoja se abre y la
+  enseña con su muestra. En el armario, lo que aún no tienes se ve apagado, con candado, y no se pone.
+- **Servidor** (`20261105140000_edificio_misiones_diarias.sql`, la aplica Francisco): `piso_prendas` y `piso_diarias`
+  (solo lectura de lo propio; se escriben con `piso_mision_diaria`, una vez por misión y día, para hoy, ayer o mañana
+  por las zonas horarias) y un trigger que impide guardar un personaje con una prenda que no tienes. Como las
+  misiones semanales, la app dice qué se ha hecho y el servidor lo cuenta; el premio es solo de aspecto.
+- Sin la migración no hay hoja ni prendas por ganar; el armario enseña solo lo de siempre.
+- **Pruebas**: `diarias.rls.test.js` (PGlite) y `e2e-community/v170-diarias.spec.js` (hoja, las tres de hoy sean las
+  que sean, prenda ganada, armario con candados y sin la migración), en Chromium 390 y 1440 y WebKit 390.
+
+## 71. Vecinos: «me gusta», libro de visitas y regalos (1.71.0)
+
+Bloque 4 de «más vida en el edificio». Sin texto libre en ningún caso. Visitar con tu personaje queda fuera por ahora.
+
+- **«Me gusta» por mueble**: en el piso de un vecino, al tocar un mueble sale «Me gusta» (botón de píxel con corazón y
+  la cuenta); se quita tocándolo otra vez. En tu piso, al tocar un mueble el aviso dice «Sofá · 2 me gusta». El
+  «me gusta» es del mueble concreto (`uid`) y del tipo que era: si el vecino lo cambia o lo guarda, deja de contar.
+- **Mesa del vecino** (`VecinoMesa.jsx`): la franja de abajo, que antes solo tenía los sellos, tiene tres pestañas de
+  papel: «Buzón» (los sellos de siempre), «Libro de visitas» (una frase cerrada de seis, `FIRMAS` en `catalog.js`,
+  una firma por día que se puede cambiar; enseña las dos últimas de otros) y «Regalar».
+- **Regalar**: solo copias libres (no puestas en tu piso) de muebles que no son de sagas; se elige y se confirma
+  («Regalar puf a Bruno»). La copia pasa de tu balda a la suya. Como mucho cinco regalos al día.
+- **Tu buzón del portal**: además de los sellos, «X te regaló: puf.» y «X firmó en tu libro de visitas: «…»».
+- **Servidor** (`20261105150000_edificio_vecinos.sql`, la aplica Francisco): `piso_regalos`, `piso_visitas` y
+  `piso_megusta` con RLS y sin acceso directo; todo pasa por `piso_regalar`, `piso_firmar`, `piso_megusta` y
+  `piso_social`, que comprueban que el otro es un vecino visible de tu edificio (comunidad activa, sin bloqueo).
+  `piso_social` solo enseña firmas de autores visibles y los regalos solo a quien los recibe.
+- Sin la migración, el piso del vecino se queda como en la 1.70 (solo sellos) y no sale «Me gusta».
+- **Pruebas**: `vecinos.rls.test.js` (PGlite, 8) y `e2e-community/v171-vecinos.spec.js` («me gusta», libro, regalo,
+  buzón del portal, tu piso y sin la migración) en Chromium 320, 390 y 1440 y WebKit 390.

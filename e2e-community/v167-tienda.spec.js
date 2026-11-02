@@ -64,10 +64,11 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   await expect(wall.getByRole('button', { name: /^Sala de estar/ })).toHaveAttribute('aria-pressed', 'true');
   await expect(shop.locator('.ts-card h3')).toHaveText('Sala de estar');
   await expect(shop.getByText('Raro garantizado en un máximo de 12 muebles.')).toBeVisible();
-  // Las probabilidades del sobre elegido, a la vista (el gato no viene en este: sale de fuera)
+  // Las probabilidades del sobre elegido, a la vista (lo raro no viene en este: sale de fuera, el gato o la pecera)
   await shop.getByText('Probabilidades y garantías').click();
   await expect(shop.getByRole('heading', { name: /^Raro · 6 %/ })).toContainText('de fuera del sobre');
-  await expect(shop.locator('.ts-odds__row.is-raro li', { hasText: 'Gato dormido' })).toContainText('6 %');
+  await expect(shop.locator('.ts-odds__row.is-raro li', { hasText: 'Gato dormido' })).toContainText('3 %');
+  await expect(shop.locator('.ts-odds__row.is-raro li', { hasText: 'Pecera' })).toContainText('3 %');
   await page.waitForTimeout(900);
   await shot(page, info, 'v167-tienda-sobres');
   await shop.getByText('Probabilidades y garantías').click();
@@ -180,6 +181,14 @@ test('sin tickets suficientes lo dice y lleva a las misiones; «Mostrar todos» 
   await expect(gacha.getByText('Un mueble para tu piso · nuevo')).toBeVisible();
   await page.waitForTimeout(500);
   await shot(page, info, 'v168-sobre-uno');
+  // El papel de abajo cabe entero aunque la letra sea grande (en un móvil real se cortaba «Colocar en mi piso»)
+  await page.addStyleTag({ content: '.gacha__paper { font-size: 1.3em; }' });
+  const go = gacha.getByRole('button', { name: 'Colocar en mi piso' });
+  const back = gacha.getByRole('button', { name: 'Volver a la tienda' });
+  await back.scrollIntoViewIfNeeded();
+  const [g, b] = [await gacha.boundingBox(), await back.boundingBox()];
+  expect(b.y + b.height).toBeLessThanOrEqual(g.y + g.height);
+  await expect(go).toBeInViewport();
   await page.locator('.ed-bar__back').click();
   await expect(page.locator('.ed-bar__back')).toHaveText('Volver al portal');
   // Ahora quedan 5: lo dice y ofrece las misiones

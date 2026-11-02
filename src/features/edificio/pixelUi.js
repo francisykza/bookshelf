@@ -45,6 +45,10 @@ const ICONS = {
   lista: ['...........', '.ll.ooooooo', '.ll........', '...........', '.ll.ooooooo', '.ll........', '...........', '.ll.ooooooo', '.ll........', '...........', '...........'],
   dentro: ['ooo.....ooo', 'o.........o', 'o.........o', '...........', '...........', '...........', '...........', '...........', 'o.........o', 'o.........o', 'ooo.....ooo'],
   ficha: ['.ooooooooo.', '.opppppppo.', '.opooooopo.', '.opppppppo.', '.opooooopo.', '.opppppppo.', '.opooooppo.', '.opppppppo.', '.opppppppo.', '.ooooooooo.', '...........'],
+  // Misiones del día (§70): una hoja con dos marcas
+  hoy: ['...oyyyo...', '.ooooooooo.', '.opppppppo.', '.opgpooopo.', '.oggpppppo.', '.opppppppo.', '.opgpooopo.', '.oggpppppo.', '.opppppppo.', '.ooooooooo.', '...........'],
+  // «Me gusta» de un mueble (§71)
+  corazon: ['...........', '..ooo.ooo..', '.orrrorrro.', 'orRrrrrrrro', 'orrrrrrrrro', 'orrrrrrrrro', '.orrrrrrro.', '..orrrrro..', '...orrro...', '....oro....', '.....o.....'],
   luna: ['...........', '....yyy....', '..yyYy.....', '.yYYy......', '.yYy.......', '.yYy.......', '.yYYy......', '..yYYyy..y.', '...yyYYYy..', '....yyyy...', '...........'],
   // 1.67: el ticket (con muescas y su línea troquelada) y el sobre lacrado de la tienda
   ticket: ['...........', '...........', 'ooooooooooo', 'oYYYYYyYYYo', 'oYyyYYyYYYo', '.oYYYYyYYo.', 'oYyyYYyYYYo', 'oYYYYYyYYYo', 'ooooooooooo', '...........', '...........'],

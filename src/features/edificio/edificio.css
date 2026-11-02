@@ -1543,3 +1543,256 @@
   outline: 3px solid #b98b2f;
   outline-offset: 2px;
 }
+
+/* ── 1.70 (§70): misiones del día y prendas que se ganan ── */
+.ep-corner--left2 {
+  left: 62px;
+}
+
+/* Con las tres hechas, la hoja lleva un punto salvia */
+.ep-corner--left2.is-done::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 10px;
+  height: 10px;
+  background: #5c6a48;
+  box-shadow: 0 0 0 2px #fbf3df;
+}
+
+/* La nota de papel con las tres misiones: pequeña, justo encima de su botón, para no tapar la habitación */
+.ep-today {
+  position: absolute;
+  bottom: 62px;
+  left: 8px;
+  z-index: 3;
+  width: max-content;
+  max-width: min(176px, calc(100% - 62px));
+  box-sizing: border-box;
+  padding: 2px 6px 4px;
+  border: 5px solid transparent;
+  border-image: var(--px-paper) 6 fill / 5px stretch;
+  color: var(--ep-ink);
+  font: 500 0.7rem/1.25 'Lora', Georgia, serif;
+}
+
+.ep-today[hidden] {
+  display: none;
+}
+
+.ep-today__title {
+  margin: 0 0 2px;
+  font: 700 0.72rem/1.2 'Lora', Georgia, serif;
+}
+
+.ep-today__list {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ep-today__list li {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  align-items: start;
+  gap: 4px;
+}
+
+/* La casilla, de píxeles: vacía o marcada en salvia */
+.ep-today__check {
+  width: 6px;
+  height: 6px;
+  margin-top: 3px;
+  border: 2px solid #3b2618;
+  background: #fffaf0;
+}
+
+.ep-today__list li.is-done .ep-today__check {
+  border-color: #5c6a48;
+  background: #5c6a48;
+}
+
+.ep-today__list li.is-done {
+  color: #6b5440;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.ep-today__prize {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 3px 0 0;
+  padding-top: 2px;
+  border-top: 2px dotted #c8946a;
+}
+
+/* Lo que aún no tienes del armario: se ve, apagado, con un candado de píxel */
+.ep-swatch.is-locked {
+  position: relative;
+  cursor: not-allowed;
+}
+
+.ep-swatch.is-locked .ep-swatch__img {
+  filter: grayscale(0.7) brightness(0.75);
+  opacity: 0.7;
+}
+
+.ep-swatch.is-locked::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 8px;
+  height: 7px;
+  background: #c98a1c;
+  box-shadow: 0 0 0 2px #3b2618;
+}
+
+.ep-swatch.is-locked::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: 8px;
+  width: 4px;
+  height: 4px;
+  border: 2px solid #3b2618;
+  border-bottom: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ep-today {
+    animation: ep-today-in 160ms steps(3) both;
+  }
+
+  @keyframes ep-today-in {
+    from {
+      transform: translateY(-6px);
+      opacity: 0;
+    }
+  }
+}
+
+/* La prenda recién ganada, al pie de la hoja */
+.ep-today__won {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 0 0;
+  padding: 2px 4px;
+  background: #e7edd9;
+  box-shadow: inset 0 0 0 2px #5c6a48;
+  font-weight: 700;
+}
+
+.ep-today__won-img {
+  width: 22px;
+  height: 22px;
+  background-color: #584656;
+}
+
+/* Con la hoja abierta, el aviso de la habitación se aparta a la derecha para no pisarla */
+.ep--inside.has-today .ep-overlay {
+  left: 196px;
+  justify-items: end;
+}
+
+/* ── 1.71 (§71): la mesita del vecino (Buzón, Libro de visitas, Regalar) y el «me gusta» ── */
+.ed-desk__tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* Pestañas de papel pequeñas, como las etiquetas de las sagas: no le quitan sitio a la habitación */
+.ed-desk__tab {
+  flex: none;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 5px solid transparent;
+  border-image: var(--px-tag) 6 fill / 5px stretch;
+  background: none;
+  color: #2c1e14;
+  font: 600 0.82rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.ed-desk__tab[aria-selected='true'] {
+  border-image-source: var(--px-sage);
+  color: #fbf5e6;
+}
+
+.ed-desk__tab:focus-visible {
+  outline: 3px solid #b98b2f;
+  outline-offset: 2px;
+}
+
+/* Regalar: tus copias libres, con su dibujo y cuántas te quedan */
+.ed-gifts {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ed-gift {
+  flex: none;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  min-width: 72px;
+  padding: 2px 4px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  background: none;
+  color: #2c1e14;
+  font: 600 0.72rem/1.1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.ed-gift img {
+  width: 36px;
+  height: 36px;
+  image-rendering: pixelated;
+}
+
+.ed-gift b {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  padding: 0 3px;
+  background: #3b2618;
+  color: #fbf3df;
+  font-size: 0.68rem;
+}
+
+.ed-gift[aria-pressed='true'] {
+  border-image-source: var(--px-sage);
+  color: #fbf5e6;
+}
+
+.ed-gift:focus-visible {
+  outline: 3px solid #b98b2f;
+  outline-offset: 2px;
+}
+
+.ed-gift__go {
+  min-height: 40px;
+}
+
+.ed-sellos__empty {
+  margin: 4px 0;
+  font-size: 0.86rem;
+}
+
+/* «Me gusta» de un mueble, en la habitación de un vecino: el corazón de píxel y la cuenta */
+.ep-like[aria-pressed='true'] {
+  border-image-source: var(--px-sage);
+  color: #fbf5e6;
+}

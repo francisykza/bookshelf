@@ -3,13 +3,16 @@
 // reciclar solo lo que no está colocado. Nada se escribe directamente.
 import { beforeAll, describe, expect, it } from 'vitest';
 import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
-import { CATALOG } from '../catalog';
+import { CATALOG, catalogItem } from '../catalog';
 import { starterRoom } from '../demo';
 import { BIENVENIDA, MISION_TICKETS, PITY, RAREZAS, SOBRES, oddsTable, precioDe, rarezaOf, sobreOf } from '../economy';
 import { normalizeInventory } from '../inventory';
 
 let db;
 let A, B, H;
+// Los raros del sobre «Balcón y detalles» (desde la 1.69, más de uno) y el que le sale a B
+const RAROS_BALCON = sobreOf('balcon').muebles.filter((id) => rarezaOf(catalogItem(id)) === 'raro');
+let raroDeB;
 
 const call = (u, sql, params) => as(db, u, (q) => q(sql, params)).then((r) => Object.values(r[0])[0]);
 const inv = (u) => call(u, 'select piso_mi_inventario()');
@@ -129,18 +132,23 @@ describe('sobres', () => {
     await inv(B);
     await setTickets(B, 10, PITY - 1);
     const r = await call(B, "select piso_abrir_sobre('balcon', 1)");
-    expect(r.premios[0]).toMatchObject({ mueble: 'gato', rareza: 'raro', nuevo: true });
+    expect(r.premios[0]).toMatchObject({ rareza: 'raro', nuevo: true });
+    expect(RAROS_BALCON).toContain(r.premios[0].mueble);
+    raroDeB = r.premios[0].mueble;
+    // Con una copia de cada raro del sobre, el siguiente ya no es nuevo
+    for (const id of RAROS_BALCON) if (id !== raroDeB) await db.query('insert into piso_inventario (user_id, mueble, copias) values ($1, $2, 1)', [B, id]);
     await setTickets(B, 10, PITY - 1);
-    expect((await call(B, "select piso_abrir_sobre('balcon', 1)")).premios[0]).toMatchObject({ mueble: 'gato', nuevo: false });
+    expect((await call(B, "select piso_abrir_sobre('balcon', 1)")).premios[0]).toMatchObject({ rareza: 'raro', nuevo: false });
   });
 });
 
 describe('reciclar', () => {
   it('solo copias que no están colocadas, y da lo que vale su rareza', async () => {
     await setTickets(B, 0);
-    const r = await call(B, "select piso_reciclar('gato')");
+    await db.query('update piso_inventario set copias = 2 where user_id = $1 and mueble = $2', [B, raroDeB]);
+    const r = await call(B, 'select piso_reciclar($1)', [raroDeB]);
     expect(r.tickets).toBe(RAREZAS.find((x) => x.id === 'raro').reciclar);
-    expect(r.copias.gato).toBe(1);
+    expect(r.copias[raroDeB]).toBe(1);
     // El sillón del piso inicial de A está colocado y es su única copia: no se recicla
     await db.query("update piso_inventario set copias = 1 where user_id = $1 and mueble = 'sillon'", [A]);
     expect(await rejects(call(A, "select piso_reciclar('sillon')"))).toMatch(/copias libres/);

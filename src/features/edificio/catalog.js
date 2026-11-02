@@ -78,6 +78,25 @@ export const CATALOG = [
   { id: 'alfombra', nombre: 'Alfombra de lana', cat: 'alfombras', capa: 'alfombra', w: 3, d: 2, tonos: [TERRACOTA, SALVIA, AZUL] },
   { id: 'alfombra-redonda', nombre: 'Alfombra trenzada', cat: 'alfombras', capa: 'alfombra', w: 3, d: 3, tonos: [MOSTAZA, ROSA, SALVIA] },
 
+  // ── Tanda 2 (1.69, SPEC §69: «más muebles», encargo de Francisco del 1-11-2026) ──
+  { id: 'puf', nombre: 'Puf', cat: 'asientos', capa: 'suelo', w: 1, d: 1, tonos: [MOSTAZA, ROSA, SALVIA, TERRACOTA] },
+  { id: 'mecedora', rareza: 'poco-comun', nombre: 'Mecedora', cat: 'asientos', capa: 'suelo', w: 1, d: 1, tonos: [MADERA, NOGAL, MADERA_CLARA] },
+  { id: 'escritorio', nombre: 'Escritorio', cat: 'mesas', capa: 'suelo', w: 2, d: 1, sup: 1.22, tonos: [MADERA_CLARA, MADERA, NOGAL] },
+  { id: 'comoda', nombre: 'Cómoda', cat: 'mesas', capa: 'suelo', w: 2, d: 1, sup: 1.3, tonos: [MADERA, CREMA, SALVIA] },
+  { id: 'baul', nombre: 'Baúl', cat: 'mesas', capa: 'suelo', w: 2, d: 1, sup: 0.86, tonos: [MADERA, NOGAL, GRANATE] },
+  { id: 'velas', nombre: 'Velas', cat: 'luz', capa: 'encima', w: 1, d: 1, luz: [0.5, 0.5, 0.55], tonos: [CREMA, ROSA, MOSTAZA] },
+  { id: 'farol', rareza: 'poco-comun', nombre: 'Farol', cat: 'luz', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 0.7], tonos: [HIERRO, BRONCE, MUSGO] },
+  { id: 'cactus', nombre: 'Cactus', cat: 'plantas', capa: 'encima', w: 1, d: 1, tonos: [TERRACOTA, CREMA, AZUL] },
+  { id: 'monstera', nombre: 'Costilla de Adán', cat: 'plantas', capa: 'suelo', w: 1, d: 1, tonos: [[196, 164, 112], CREMA, TERRACOTA] },
+  { id: 'pecera', rareza: 'raro', nombre: 'Pecera', cat: 'detalles', capa: 'encima', w: 1, d: 1, luz: [0.5, 0.5, 0.3], tonos: [NEGRO, ORO, MADERA] },
+  { id: 'globo', rareza: 'poco-comun', nombre: 'Bola del mundo', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [NOGAL, MADERA_CLARA, ORO] },
+  { id: 'tocadiscos', rareza: 'poco-comun', nombre: 'Tocadiscos', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [MADERA, CREMA, AZUL] },
+  { id: 'taza', nombre: 'Taza de té', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [CREMA, AZUL, TERRACOTA, MOSTAZA] },
+  { id: 'estante-pared', nombre: 'Balda de pared', cat: 'pared', capa: 'pared', w: 2, tonos: [MADERA, NOGAL, MADERA_CLARA] },
+  { id: 'espejo', nombre: 'Espejo', cat: 'pared', capa: 'pared', w: 1, tonos: [ORO, MADERA, NOGAL] },
+  { id: 'mapa', rareza: 'poco-comun', nombre: 'Mapa del puerto', cat: 'pared', capa: 'pared', w: 2, tonos: [SALVIA, TERRACOTA, MOSTAZA] },
+  { id: 'alfombra-rayas', nombre: 'Alfombra de rayas', cat: 'alfombras', capa: 'alfombra', w: 2, d: 3, tonos: [AZUL, TERRACOTA, SALVIA] },
+
   // ── Sagas ──
   // Nido de jinetes
   { id: 'brasero', nombre: 'Brasero', cat: 'sagas', set: 'jinetes', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 1.15], tonos: [HIERRO, BRONCE] },
@@ -129,4 +148,14 @@ export const SELLOS = [
   { id: 'estanteria', texto: 'Menuda estantería' },
   { id: 'plantas', texto: 'Me encantan tus plantas' },
   { id: 'luz', texto: 'Qué buena luz' },
+];
+
+// Las frases del libro de visitas (1.71, §71): sin texto libre; las mismas que piso_firmas() en el servidor
+export const FIRMAS = [
+  { id: 'saludo', texto: 'Pasé a saludar' },
+  { id: 'leer', texto: 'Me quedaría aquí a leer' },
+  { id: 'luz', texto: 'Qué luz tan bonita' },
+  { id: 'cafe', texto: 'Otro día traigo café' },
+  { id: 'pronto', texto: 'Vuelvo pronto' },
+  { id: 'gracias', texto: 'Gracias por abrirme' },
 ];

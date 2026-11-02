@@ -6,9 +6,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada**: 1.67.0 (2026-11-01, a448a48), en https://bookshelf-wine-iota.vercel.app
-- **Preparada, sin commit (1.68.0)**: la tienda por dentro con el motor de los pisos y las secciones como objetos de
-  la escena, y el mostrador de cerca para abrir sobres (§68, aprobada por Francisco). No necesita migración.
+- **Versión publicada**: 1.68.0 (2026-11-01, d6df876), en https://bookshelf-wine-iota.vercel.app: la tienda por
+  dentro con el motor de los pisos (§68).
+- **En commit, sin publicar (1.71.0)**: «más vida en el edificio», los cuatro bloques: diecisiete muebles nuevos y el arreglo del
+  sobre cortado en el móvil (§69), tu personaje en el piso (§69), las misiones del día que dan ropa (§70) y vecinos con
+  «me gusta» por mueble, libro de visitas y regalos (§71). **Cuatro migraciones sin aplicar**, en este orden:
+  `20261105120000_edificio_muebles_tanda2.sql`, `20261105130000_edificio_personaje.sql`,
+  `20261105140000_edificio_misiones_diarias.sql` y `20261105150000_edificio_vecinos.sql` (las aplica Francisco).
+  Sin ellas la app funciona: los muebles nuevos no se pueden guardar, el personaje se queda en el dispositivo, no hay
+  hoja de misiones y el piso del vecino solo tiene sellos.
 - **1.67.0**: la tienda del bajo (el antiguo videoclub con su dependienta), sus sobres por tipo y misiones con tickets
   (§67), y las figuras ocultas. Su migración `20261104120000_edificio_tienda.sql` está aplicada en producción.
 - **Árbol de trabajo**: **1.65.0 y 1.66.0 publicadas** (§65 portal con vida y balda corregida; §66 inventario de
@@ -30,6 +36,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.71.0 | «Más vida en el edificio» (sin publicar): muebles nuevos, personaje que anda y se viste, misiones del día que dan ropa, y vecinos con «me gusta» por mueble, libro de visitas y regalos | §69–71 |
 | 1.68.0 | La tienda por dentro con el motor isométrico de los pisos; Sobres, Muebles y Reciclar como objetos de la escena (expositor, rincón del sillón, caja de reciclaje) con letrero y contorno; mostrador de cerca, casi de frente, para abrir sobres | §68 |
 | 1.67.0 | La tienda del bajo (por dentro, el antiguo videoclub con su dependienta): tickets por las misiones, muebles a precio fijo, sobres por tipo de la temporada 1 (y uno de coleccionista más caro con más suerte), de 1 y de 5, con animación, probabilidades y pity, reciclar; figuras ocultas sin borrar datos (migración aplicada) | §67 |
 | 1.66.0 | Inventario de muebles: copias por mueble, lo colocado pasa a ser tuyo, diez de inicio y «Tu mudanza» con seis comunes; la balda enseña «×N» y apaga lo agotado | §66 |
@@ -138,6 +145,50 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-02 · cuenta principal · 1.71.0 «más vida en el edificio», bloque 4 (vecinos) (commit, sin publicar)
+
+- §71: «me gusta» por mueble en la habitación del vecino (`piso.js`, botón con corazón; en tu piso el aviso da la
+  cuenta), `VecinoMesa.jsx` con pestañas Buzón / Libro de visitas / Regalar en la franja de abajo, y el buzón del
+  portal con regalos y firmas. Frases del libro en `FIRMAS` (`catalog.js`). Servidor:
+  `20261105150000_edificio_vecinos.sql` (sin aplicar). El simulado de Supabase lo activa con `db.vecinosSocial`.
+- Pruebas: Vitest edificio 59/59 (nueva `vecinos.rls`); e2e v163, v169, v170 y v171 en verde en Chromium 390 y 1440
+  y WebKit 390 (v171 también en 320); build y oxlint limpios.
+- Francisco vio las capturas y pidió el commit (los bloques 1 a 4 van juntos en él). Queda: aplicar las cuatro
+  migraciones en orden y subirlo cuando lo pida.
+
+### 2026-11-02 · cuenta principal · 1.70.0 «más vida en el edificio», bloques 2 (personaje) y 3 (misiones del día) (en el commit de la 1.71)
+
+- **Bloque 2** (§69): `actor.js` (aspecto, cajas por pose, caminos por celdas, asientos), dibujado en `render.js`
+  (`ACTOR_ID`, `renderActorThumb`); andar, sentarse, tumbarse y pasear, y la pestaña «Tu personaje» (armario) en
+  `piso.js`; guardado con `savePersonaje` (copia en el dispositivo) desde `EdificioPanel.jsx`
+  (`window.__edificioPiso` solo en desarrollo, para las pruebas). Francisco vio las capturas y dijo «Sí, sigue».
+- **Bloque 3** (§70): `dailyMissions.js` (tres de siete al día, por la fecha), complementos y colores nuevos que se
+  ganan (`PRENDAS` en `actor.js`), hoja «Hoy en tu piso», candados en el armario. Servidor:
+  `20261105140000_edificio_misiones_diarias.sql`. La migración del personaje (`…130000`, aún sin aplicar) se amplió
+  para admitir el complemento y las prendas nuevas.
+- Versión 1.70.0 en los cuatro sitios y SPEC §69-§70 (la 1.69 no se publicó sola: va dentro de la 1.70).
+- Pruebas: Vitest edificio 51/51 (nuevas `actor`, `personaje.rls`, `diarias.rls`); e2e v163, v166, v167, v169 y v170
+  en verde en Chromium 390 y 1440 y WebKit 390; build y oxlint limpios.
+- **Decisión de Francisco** (ya en CLAUDE.md): las misiones diarias dan ropa del personaje, nunca tickets.
+- Francisco: «se ven demasiado grandes las misiones, le quita protagonismo a la habitación». La hoja es ahora una nota
+  pequeña encima de su botón (abajo a la izquierda), con textos cortos («Da un paseo», «Mueve un mueble»…); con ella
+  abierta, el aviso de la habitación se aparta a la derecha.
+- Queda: bloque 4 (vecinos), aplicar las tres migraciones, commit cuando lo pida.
+
+### 2026-11-01 · cuenta principal · «más vida en el edificio», bloque 1 (muebles) y arreglo del sobre (en el commit de la 1.71)
+- **Encargo de Francisco**: más muebles; personaje que se mueve por el piso y se personaliza; misiones diarias
+  ligadas a la habitación; rework de las interacciones con los vecinos. Sus decisiones, en CLAUDE.md («Más vida en el
+  edificio»). Se hace por bloques, con capturas entre uno y otro.
+- **Arreglo** (lo vio en su móvil): al abrir un sobre, el papel de abajo se cortaba y no se veía «Colocar en mi
+  piso». `.gacha` ya no tiene proporción fija: el alto lo da el papel. Se reproducía en WebKit; la prueba de la tienda
+  ahora comprueba que el papel cabe entero con la letra grande.
+- **Bloque 1, hecho y sin commit**: 17 muebles nuevos (`catalog.js`, `furniture.js` y la alfombra de rayas en
+  `render.js`). Cinco poco comunes y uno raro, la pecera. Entran en los sobres según su tipo; precios,
+  probabilidades y pity no cambian. Migración nueva `20261105120000_edificio_muebles_tanda2.sql`, **sin aplicar**:
+  sin ella, el servidor rechaza guardar un piso con un mueble nuevo y los sobres no los sortean. Vitest de
+  `edificio` y e2e v166/v167 en verde.
+- **Pendiente**: que Francisco vea las capturas, aplicar la migración y seguir con el bloque 2 (personaje).
 
 ### 2026-11-01 · cuenta principal · 1.68.0 la tienda con el motor de los pisos y secciones en la escena (preparada, sin commit)
 - **Encargo de Francisco**: tomar como referencia dos imágenes (una tienda acogedora ilustrada y un primer plano del

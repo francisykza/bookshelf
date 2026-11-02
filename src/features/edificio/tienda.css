@@ -530,11 +530,13 @@
   --rar: #d98b6a;
   container-type: inline-size;
   position: relative;
-  display: block;
+  /* Sin proporción fija: el alto lo da el papel de abajo (en el flujo), así nunca se corta «Colocar en mi piso»
+     aunque la letra sea grande; WebKit no deja crecer una caja con aspect-ratio y overflow recortado */
+  display: flow-root;
   width: calc(100% + 28px);
   max-width: 460px;
-  aspect-ratio: var(--cw) / var(--ch);
   margin: -8px -14px 0;
+  padding-bottom: 5cqw;
   overflow: hidden;
   background-color: #3a2618;
   background-position: top center;
@@ -995,10 +997,8 @@
 
 /* El papel de abajo: qué hacer y, al final, cuántos son nuevos */
 .gacha__paper {
-  position: absolute;
-  left: 7cqw;
-  right: 7cqw;
-  top: 153cqw;
+  position: relative;
+  margin: 153cqw 7cqw 0;
   display: grid;
   justify-items: center;
   gap: 6px;

@@ -7,14 +7,17 @@ import { useEffect, useRef, useState } from 'react';
 import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../components/panels/PanelShell';
 import { useCommunity } from '../social/hooks/useCommunity';
-import { SELLOS } from './catalog';
+import { FIRMAS, SELLOS, catalogItem } from './catalog';
 import { starterRoom } from './demo';
 import './edificio.css';
 import { mountFacade } from './facadeView';
 import { START_PICKS } from './inventory';
 import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
-import { doorLabel, elegirInicio, loadEdificio, loadInventario, savePiso, setSello } from './service';
+import { PRENDAS, prendaNombre } from './actor';
+import { missionsOf, todayKey } from './dailyMissions';
+import { contarDiaria, doorLabel, elegirInicio, firmar, loadArmario, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, savePersonaje, savePiso, setSello } from './service';
+import { VecinoMesa } from './VecinoMesa';
 import { StarterPicker } from './StarterPicker';
 import { Tienda } from './Tienda';
 
@@ -40,6 +43,7 @@ const saveView = (v) => {
   }
 };
 const selloText = (id) => SELLOS.find((s) => s.id === id)?.texto ?? '';
+const firmaText = (id) => FIRMAS.find((x) => x.id === id)?.texto ?? '';
 
 /** La fachada del edificio (la dibuja facade.js fuera de React); cada ventana ocupada es un botón. */
 function Facade({ vecinos, onOpenPiso, shopBadge }) {
@@ -68,17 +72,25 @@ function Facade({ vecinos, onOpenPiso, shopBadge }) {
 }
 
 /** El piso montado en un contenedor (lo dibuja el motor de píxeles, fuera de React). */
-function PisoView({ room, editable, label, soundOn, inside, inventory, onChange }) {
+function PisoView({ room, editable, label, soundOn, inside, inventory, avatar, prendas = null, missions = null, notice = null, likes = null, onChange, onAvatarChange, onEvent, onLike }) {
   const ref = useRef(null);
   const api = useRef(null);
   const changed = useRef(onChange);
+  const avatarChanged = useRef(onAvatarChange);
+  const evented = useRef(onEvent);
+  const likedRef = useRef(onLike);
   useEffect(() => {
     changed.current = onChange;
-  }, [onChange]);
+    avatarChanged.current = onAvatarChange;
+    evented.current = onEvent;
+    likedRef.current = onLike;
+  }, [onChange, onAvatarChange, onEvent, onLike]);
   useEffect(() => {
     // En la vista «dentro», tu piso se abre ya decorando, con la balda abajo
-    const piso = mountPiso(ref.current, { room, editable, label, inside, inventory, decorate: inside && editable, muted: !soundOn, onChange: (r) => changed.current?.(r) });
+    const piso = mountPiso(ref.current, { room, editable, label, inside, inventory, decorate: inside && editable, muted: !soundOn, avatar, prendas, missions, onChange: (r) => changed.current?.(r), onAvatarChange: (a) => avatarChanged.current?.(a), onEvent: (t) => evented.current?.(t), likes, onLike: onLike ? (uid, si) => likedRef.current?.(uid, si) : null });
     api.current = piso;
+    // Solo en desarrollo: las pruebas buscan los muebles en el dibujo (screenOfItem) y miran al personaje
+    if (import.meta.env.DEV) window.__edificioPiso = piso;
     return () => piso.destroy();
     // El piso se monta una vez: los cambios los lleva él (y avisa con onChange)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,6 +105,19 @@ function PisoView({ room, editable, label, soundOn, inside, inventory, onChange 
   useEffect(() => {
     api.current?.setInventory(inventory);
   }, [inventory]);
+  // El armario y las misiones del día llegan del servidor (y cambian al hacer una)
+  useEffect(() => {
+    api.current?.setPrendas(prendas);
+  }, [prendas]);
+  useEffect(() => {
+    api.current?.setMissions(missions);
+  }, [missions]);
+  useEffect(() => {
+    api.current?.setLikes(likes);
+  }, [likes]);
+  useEffect(() => {
+    if (notice) api.current?.notify(notice.text);
+  }, [notice]);
   return <div ref={ref} className="ed-piso" />;
 }
 
@@ -113,7 +138,17 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const [closeReveal, setCloseReveal] = useState(0);
   const inside = view === 'dentro';
   const pending = useRef(null);
+  // Armario del personaje y misiones del día (1.70): undefined mientras llega; null sin la migración
+  const [armario, setArmario] = useState(undefined);
+  const [notice, setNotice] = useState(null);
+  const counting = useRef(new Set());
+  const [won, setWon] = useState(null);
+  // Vecinos (1.71): libro de visitas, «me gusta» y regalos de cada piso abierto; null sin la migración
+  const [socialOf, setSocialOf] = useState({});
+  const [day] = useState(todayKey);
   const timer = useRef(0);
+  const avatarTimer = useRef(0);
+  const pendingAvatar = useRef(null);
 
   // Marcos de píxel para los sellos y el buzón (los mismos que los controles del piso)
   useEffect(() => installPixelVars(), []);
@@ -131,6 +166,8 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
           savePiso(community.userId, me.room).catch(() => {});
         }
         setData(d);
+        // El armario y las misiones del día (1.70); sin su migración, null y no se enseñan
+        loadArmario(day).then((a) => alive && setArmario(a), () => alive && setArmario(null));
         // Si no llega, la balda ofrece todo y el servidor sigue siendo quien decide al guardar
         return loadInventario().then((inv) => alive && setInventory(inv), () => {});
       })
@@ -138,12 +175,14 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     return () => {
       alive = false;
     };
-  }, [ready, community.userId, attempt]);
+  }, [ready, community.userId, attempt, day]);
 
   // Al salir con un guardado pendiente, se guarda ya
   useEffect(
     () => () => {
       clearTimeout(timer.current);
+      clearTimeout(avatarTimer.current);
+      if (pendingAvatar.current) savePersonaje(pendingAvatar.current.userId, pendingAvatar.current.personaje).catch(() => {});
       if (pending.current) savePiso(pending.current.userId, pending.current.room).catch(() => {});
     },
     [],
@@ -168,12 +207,68 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     }, SAVE_MS);
   };
 
+  // Tu personaje (§69): se guarda un poco después del último cambio, como el piso
+  // Misiones del día (§70): las tres de hoy con lo hecho, y la prenda que llega al hacerlas
+  const missions = armario ? { items: missionsOf(day).map((m) => ({ ...m, hecha: armario.hechas.includes(m.id) })), proxima: PRENDAS.find((p) => !armario.prendas.includes(p)) ?? null, ganada: won } : null;
+  const onMyEvent = (tipo) => {
+    const m = missionsOf(day).find((x) => x.id === tipo);
+    if (!armario || !m || armario.hechas.includes(tipo) || counting.current.has(tipo)) return;
+    counting.current.add(tipo);
+    contarDiaria(tipo, day)
+      .then((a) => {
+        setArmario(a);
+        if (a.nueva) setWon(a.nueva);
+        setNotice({ text: a.nueva ? `¡Las tres misiones de hoy! Prenda nueva en tu armario: ${prendaNombre(a.nueva)}.` : `Misión del día hecha: ${m.texto.toLowerCase()}.` });
+      })
+      .catch(() => {})
+      .finally(() => counting.current.delete(tipo));
+  };
+
+  const onMyAvatar = (personaje) => {
+    setData((d) => d && { ...d, vecinos: d.vecinos.map((v) => (v.yo ? { ...v, personaje } : v)) });
+    setSaving('Guardando…');
+    clearTimeout(avatarTimer.current);
+    pendingAvatar.current = { userId: community.userId, personaje };
+    avatarTimer.current = setTimeout(() => {
+      pendingAvatar.current = null;
+      savePersonaje(community.userId, personaje)
+        .then((r) => setSaving(r.local ? 'Guardado en este dispositivo.' : 'Guardado.'))
+        .catch((e) => setSaving(`No se ha podido guardar: ${e.message}`));
+    }, SAVE_MS);
+  };
+
   const pickStart = async (ids) => {
     const inv = await elegirInicio(ids);
     setInventory(inv);
     setChoosing(false);
   };
   const startPending = Boolean(mine && inventory && !inventory.inicioElegido);
+
+  // Lo social del piso abierto (o el tuyo, en el portal, para tu buzón)
+  const socialId = open ? open.user_id : !pisoId && me ? me.user_id : null;
+  useEffect(() => {
+    if (!socialId) return undefined;
+    let alive = true;
+    loadSocial(socialId).then(
+      (sx) => alive && setSocialOf((m) => ({ ...m, [socialId]: sx })),
+      () => alive && setSocialOf((m) => ({ ...m, [socialId]: null })),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [socialId]);
+  const social = socialId ? socialOf[socialId] : undefined;
+  const likes = social ? { megusta: social.megusta, mios: social.mios } : null;
+  const setSocial = (id, sx) => setSocialOf((m) => ({ ...m, [id]: sx }));
+  const onLike = (uid, si) => {
+    const id = open.user_id;
+    meGusta(id, uid, si).then(
+      (sx) => setSocial(id, sx),
+      () => {},
+    );
+  };
+  const onFirmar = async (frase) => setSocial(open.user_id, await firmar(open.user_id, frase));
+  const onRegalar = async (mueble) => setInventory(await regalar(open.user_id, mueble));
 
   const leaveSello = async (vecino, sello) => {
     const next = vecino.sello_dado === sello ? null : sello;
@@ -233,30 +328,16 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             <h2 className="ed-title" id="ed-title">
               {mine ? 'Tu piso' : `Piso de ${open.alias}`} · {doorLabel(open.puerta)}
             </h2>
-            <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : 'Puedes mirar, pero no tocar nada.'}</p>
+            <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : likes ? 'Toca un mueble para darle un «me gusta».' : 'Puedes mirar, pero no tocar nada.'}</p>
           </div>
         </div>
-        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} inventory={mine ? inventory : null} onChange={mine ? onMyChange : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
+        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
             {saving}
           </p>
         )}
-        {!mine && (
-          <section className="ed-sellos" aria-labelledby="ed-sellos-title">
-            <h3 id="ed-sellos-title">Dejar un sello en su buzón</h3>
-            <div className="ed-sellos__row" role="group" aria-labelledby="ed-sellos-title">
-              {SELLOS.map((s) => (
-                <button key={s.id} type="button" className="ed-sello" aria-pressed={open.sello_dado === s.id} onClick={() => leaveSello(open, s.id)}>
-                  {s.texto}
-                </button>
-              ))}
-            </div>
-            <p className="ed-sellos__msg" role="status" aria-live="polite">
-              {selloMsg || (open.sello_dado ? `Ya le dejaste «${selloText(open.sello_dado)}». Tócalo otra vez para quitarlo.` : '')}
-            </p>
-          </section>
-        )}
+        {!mine && <VecinoMesa vecino={open} social={social ?? null} inventory={inventory} myRoom={me?.room ?? null} myId={community.userId} today={day} selloMsg={selloMsg} onSello={(sello) => leaveSello(open, sello)} onFirmar={onFirmar} onRegalar={onRegalar} />}
       </div>
     );
   } else {
@@ -271,11 +352,21 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
         <Facade vecinos={data.vecinos} onOpenPiso={onOpenPiso} shopBadge={inventory?.tienda ? `${inventory.tickets} tickets` : null} />
         <section className="ed-inbox" aria-labelledby="ed-inbox-title">
           <h3 id="ed-inbox-title">Tu buzón</h3>
-          {inbox.length ? (
+          {inbox.length || social?.visitas.length || social?.regalos.length ? (
             <ul>
+              {social?.regalos.slice(0, 5).map((r) => (
+                <li key={`r-${r.de}-${r.creado}`}>
+                  {r.alias ?? 'Un vecino'} te regaló: {catalogItem(r.mueble).nombre.toLowerCase()}.
+                </li>
+              ))}
               {inbox.map((v) => (
                 <li key={v.user_id}>
                   {v.alias} ({doorLabel(v.puerta)}) te dejó «{selloText(v.sello_recibido)}».
+                </li>
+              ))}
+              {social?.visitas.slice(0, 5).map((v) => (
+                <li key={`v-${v.de}-${v.dia}`}>
+                  {v.alias ?? 'Un vecino'} firmó en tu libro de visitas: «{firmaText(v.frase)}».
                 </li>
               ))}
             </ul>

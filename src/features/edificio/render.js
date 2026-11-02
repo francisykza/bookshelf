@@ -4,6 +4,7 @@
 // cambio; en cada fotograma solo se dibuja lo que se lleva en la mano y su contorno. Cada píxel guarda qué objeto lo
 // pinta (para tocar sobre el dibujo) y si es una parte que se enciende de tarde.
 import { createRaster, hash, noise, rgb } from '../minigames/libreria-puerto/raster';
+import { actorBoxes } from './actor';
 import { PAREDES, catalogItem } from './catalog';
 import { shapeOf } from './furniture';
 import { ROOM, heightOf, rectOf } from './room';
@@ -32,6 +33,8 @@ const OK_LINE = rgb(62, 92, 56);
 const OK_FILL = [120, 150, 96];
 const BAD_LINE = rgb(168, 60, 40);
 const LIT = [255, 228, 164];
+// Identificador del personaje en el búfer de toques (los muebles usan uids pequeños)
+export const ACTOR_ID = 0x7ffe;
 
 /** Encuadre: el tamaño del lienzo se calcula una vez para que quepan el suelo y las dos paredes enteras. */
 function frame(s) {
@@ -98,6 +101,15 @@ function rugColor(r, item, x, y, ix, iy) {
   }
   const e = Math.max(Math.abs(ex), Math.abs(ey));
   if (e > 1) return 0;
+  if (item.id === 'alfombra-rayas') {
+    // Rayas a lo largo del lado corto (en su tono, crema y un tono más oscuro) y un fleco claro en los extremos
+    const long = rc.x1 - rc.x0 > rc.y1 - rc.y0;
+    const along = long ? Math.abs(ex) : Math.abs(ey);
+    if (along > 0.93) return r.rampOf(CREAM)[level(0.4)];
+    const t = long ? x - rc.x0 : y - rc.y0;
+    const k = Math.floor(t * 2.6) % 3;
+    return r.rampOf(k === 1 ? CREAM : T)[level(k === 2 ? -0.9 : 0)];
+  }
   // De lana: ribete en su tono, franja crema y rombos salvia (o crema, si la alfombra ya es salvia)
   const band = 1 - e;
   let ramp = r.rampOf(T);
@@ -361,7 +373,7 @@ export function createRoomRenderer() {
    * Un fotograma. `held`: { items: [objetos en la mano, ya con su posición], room: el piso con ellos dentro, ok } o null.
    * `selected`: objeto elegido (se dibuja su contorno). `evening`: luz de tarde.
    */
-  function draw(ctx, image, { held = null, selected = null, ok = true, evening: isEvening = false, inside = false } = {}) {
+  function draw(ctx, image, { held = null, selected = null, ok = true, evening: isEvening = false, inside = false, actor = null } = {}) {
     r.pix.set(baked);
     r.zb.set(bakedZ);
     r.ids.set(bakedIds);
@@ -371,8 +383,18 @@ export function createRoomRenderer() {
         if (catalogItem(item.id).capa === 'alfombra') drawFlatRug(r, item);
         else drawItem(r, room, item);
       }
-      r.applyShadows();
     }
+    // El personaje (§69): sus cajas, con su identificador para poder tocarlo, y su sombra si está de pie en el suelo
+    if (actor) {
+      r.setId(ACTOR_ID);
+      actor.boxes.forEach((bx, k) => {
+        const [x0, y0, z0, x1, y1, z1] = bx.b;
+        r.box(x0, y0, z0, x1, y1, z1, bx.c, { seed: 501 + k, grain: bx.grain ?? 0.6, step: bx.step ?? 0.03 });
+      });
+      r.setId(0);
+      if (actor.shadow) r.castShadow(actor.shadow.x, actor.shadow.y, 0.2, 0.3, 1, 0.5);
+    }
+    if (held || actor) r.applyShadows();
     r.shadeEdges();
     if (selected) outline(room, selected, ok);
     if (isEvening) evening(room);
@@ -438,6 +460,39 @@ export function renderThumb(id, tonoIndex = 0, size = 44) {
     });
     r.shadeEdges();
   }
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const image = ctx.createImageData(size, size);
+  image.data.set(new Uint8ClampedArray(r.pix.buffer));
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}
+
+/**
+ * Miniatura del personaje (§69) para el armario de la balda, encuadrada en una parte (`frame`: 'head', 'torso',
+ * 'legs' o 'all'; lo demás queda fuera). Mira hacia delante, un poco girado, como en la habitación.
+ */
+const THUMB_FRAMES = { head: (b) => b[2] >= 1.3, torso: (b) => b[2] >= 0.6 && b[5] <= 1.5, legs: (b) => b[5] <= 0.75, all: () => true };
+export function renderActorThumb(avatar, { frame = 'all', size = 33 } = {}) {
+  const boxes = actorBoxes(avatar, { x: 0, y: 0, facing: 0, pose: 'stand' });
+  const framed = boxes.filter((bx) => THUMB_FRAMES[frame](bx.b));
+  const probe = createRaster({ W: 1, H: 1, S: 1, yaw: YAW, ox: 0, oy: 0 });
+  const pts = [];
+  for (const { b } of framed) for (const x of [b[0], b[3]]) for (const y of [b[1], b[4]]) for (const z of [b[2], b[5]]) pts.push(probe.project(x, y, z));
+  const minX = Math.min(...pts.map((p) => p.sx));
+  const maxX = Math.max(...pts.map((p) => p.sx));
+  const minY = Math.min(...pts.map((p) => p.sy));
+  const maxY = Math.max(...pts.map((p) => p.sy));
+  const s = Math.min((size - 4) / (maxX - minX), (size - 4) / (maxY - minY));
+  const r = createRaster({ W: size, H: size, S: s, yaw: YAW, ox: Math.round((size - (maxX - minX) * s) / 2 - minX * s), oy: Math.round((size - (maxY - minY) * s) / 2 - minY * s) });
+  r.clear(0);
+  boxes.forEach((bx, k) => {
+    const [x0, y0, z0, x1, y1, z1] = bx.b;
+    r.box(x0, y0, z0, x1, y1, z1, bx.c, { seed: 501 + k, grain: bx.grain ?? 0.6, step: Math.min(bx.step ?? 0.03, 0.5 / s) });
+  });
+  r.shadeEdges();
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;

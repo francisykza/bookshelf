@@ -7,6 +7,8 @@ import { randomUUID } from 'node:crypto';
 import { CATALOG } from '../src/features/edificio/catalog.js';
 import { SOBRES } from '../src/features/edificio/economy.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
+import { PRENDAS } from '../src/features/edificio/actor.js';
+import { missionsOf } from '../src/features/edificio/dailyMissions.js';
 
 export const SUPABASE = 'http://supabase.test';
 
@@ -159,14 +161,72 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
           avatar_id: p?.avatar_id ?? null,
           yo: v.user_id === userId,
           layout: db.pisos.find((x) => x.user_id === v.user_id)?.layout ?? null,
+          // 1.69 (SPEC §69): el personaje, si la prueba simula la migración (db.personajes = true)
+          ...(db.personajes ? { personaje: db.pisos.find((x) => x.user_id === v.user_id)?.personaje ?? null } : {}),
           sello_dado: db.piso_sellos.find((x) => x.de === userId && x.para === v.user_id)?.sello ?? null,
           sello_recibido: db.piso_sellos.find((x) => x.de === v.user_id && x.para === userId)?.sello ?? null,
         }));
       return json({ edificio: mine.edificio, puerta: mine.puerta, vecinos });
     }
+    // 1.71 (SPEC §71): libro de visitas y «me gusta» por mueble (solo si la prueba lo pide con db.vecinosSocial)
+    if (['rpc/piso_social', 'rpc/piso_firmar', 'rpc/piso_megusta'].includes(table)) {
+      if (!db.vecinosSocial) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
+      const body = req.postDataJSON();
+      const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
+      const piso = body.piso;
+      const mio = db.edificio_vecinos.find((v) => v.user_id === userId);
+      const visibleUser = (u) => u !== userId && mio && db.edificio_vecinos.find((v) => v.user_id === u)?.edificio === mio.edificio && db.profiles.find((p) => p.user_id === u)?.community_enabled && !blockedWith(u);
+      if (piso !== userId && !visibleUser(piso)) return fail('Ese piso no está en tu edificio.');
+      db.piso_visitas ??= [];
+      db.piso_megusta ??= [];
+      const items = db.pisos.find((p) => p.user_id === piso)?.layout.items ?? [];
+      const alias = (u) => db.profiles.find((p) => p.user_id === u)?.alias ?? null;
+      const social = () => ({
+        visitas: db.piso_visitas.filter((v) => v.piso === piso && (v.de === userId || visibleUser(v.de))).sort((a, b) => b.creado.localeCompare(a.creado)).slice(0, 20).map((v) => ({ de: v.de, alias: alias(v.de), avatar_id: null, frase: v.frase, dia: v.dia })),
+        megusta: db.piso_megusta.filter((m) => m.piso === piso && items.some((i) => i.uid === m.uid && i.id === m.mueble)).reduce((acc, m) => ({ ...acc, [m.uid]: (acc[m.uid] ?? 0) + 1 }), {}),
+        mios: db.piso_megusta.filter((m) => m.piso === piso && m.de === userId).map((m) => m.uid),
+        regalos: piso === userId ? (db.piso_regalos ?? []).filter((r) => r.para === userId).map((r) => ({ ...r, alias: alias(r.de) })).reverse() : [],
+      });
+      if (table === 'rpc/piso_social') return json(social());
+      if (piso === userId) return fail('Solo se puede en el piso de un vecino de tu edificio.');
+      if (table === 'rpc/piso_firmar') {
+        if (!['saludo', 'leer', 'luz', 'cafe', 'pronto', 'gracias'].includes(body.frase)) return fail('Esa frase no está en el libro de visitas.');
+        const dia = new Date().toISOString().slice(0, 10);
+        const hoy = db.piso_visitas.find((v) => v.piso === piso && v.de === userId && v.dia === dia);
+        if (hoy) Object.assign(hoy, { frase: body.frase, creado: new Date().toISOString() });
+        else db.piso_visitas.push({ piso, de: userId, dia, frase: body.frase, creado: new Date().toISOString() });
+        return json(social());
+      }
+      const item = items.find((i) => i.uid === body.uid);
+      if (!item) return fail('Ese mueble ya no está en su piso.');
+      db.piso_megusta = db.piso_megusta.filter((m) => !(m.piso === piso && m.de === userId && m.uid === body.uid));
+      if (body.si) db.piso_megusta.push({ piso, de: userId, uid: body.uid, mueble: item.id });
+      return json(social());
+    }
+    // 1.70 (SPEC §70): armario y misiones del día, como la migración (solo si la prueba lo pide con db.diarias)
+    if (['rpc/piso_mi_armario', 'rpc/piso_mision_diaria'].includes(table)) {
+      if (!db.diarias) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
+      const body = req.postDataJSON();
+      const mine = (db.diarias[userId] ??= { prendas: [], dias: {} });
+      const armario = (dia, nueva = null) => ({ prendas: [...mine.prendas], hechas: [...(mine.dias[dia] ?? [])], nueva });
+      if (table === 'rpc/piso_mi_armario') return json(armario(body.dia));
+      const hoy = missionsOf(body.dia).map((m) => m.id);
+      if (!hoy.includes(body.mision)) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message: 'Esa no es una misión de ese día.' }) });
+      const hechas = (mine.dias[body.dia] ??= []);
+      let nueva = null;
+      if (!hechas.includes(body.mision)) {
+        hechas.push(body.mision);
+        if (hoy.every((m) => hechas.includes(m))) {
+          nueva = PRENDAS.find((p) => !mine.prendas.includes(p)) ?? null;
+          if (nueva) mine.prendas.push(nueva);
+        }
+      }
+      return json(armario(body.dia, nueva));
+    }
     // 1.66 (SPEC §66): inventario de muebles, como la migración (solo si la prueba lo pide con `db.piso_cuentas`)
     // 1.67 (SPEC §67): tickets, tienda y sobres. El sorteo del mock es fijo: la prueba pone los premios en `db.piso_sorteo`.
-    if (['rpc/piso_mi_inventario', 'rpc/piso_elegir_inicio', 'rpc/piso_reclamar_mision', 'rpc/piso_comprar', 'rpc/piso_abrir_sobre', 'rpc/piso_reciclar'].includes(table)) {
+    if (['rpc/piso_mi_inventario', 'rpc/piso_elegir_inicio', 'rpc/piso_reclamar_mision', 'rpc/piso_comprar', 'rpc/piso_abrir_sobre', 'rpc/piso_reciclar', 'rpc/piso_regalar'].includes(table)) {
+      if (table === 'rpc/piso_regalar' && !db.vecinosSocial) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
       if (!db.piso_cuentas) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
       const counted = (id) => CATALOG.some((c) => c.id === id && !c.set);
       db.piso_inventario ??= {};
@@ -225,6 +285,22 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         }
         cuenta.tickets -= coste;
         return json({ premios, inventario: mine() });
+      }
+      // 1.71 (SPEC §71): regalar una copia libre a un vecino visible
+      if (table === 'rpc/piso_regalar') {
+        const { para, mueble } = req.postDataJSON();
+        const mio = db.edificio_vecinos.find((v) => v.user_id === userId);
+        const suyo = db.edificio_vecinos.find((v) => v.user_id === para);
+        const visible = para !== userId && mio && suyo && mio.edificio === suyo.edificio && db.profiles.find((p) => p.user_id === para)?.community_enabled && !blockedWith(para);
+        if (!visible) return fail('Solo se puede regalar a un vecino de tu edificio.');
+        if (!cat(mueble)) return fail('Ese mueble no se puede regalar.');
+        const puestos = (db.pisos.find((p) => p.user_id === userId)?.layout.items ?? []).filter((i) => i.id === mueble).length;
+        if ((db.piso_inventario[userId][mueble] ?? 0) - puestos < 1) return fail('No tienes copias libres de ese mueble: guárdalo antes de regalarlo.');
+        sumar(mueble, -1);
+        db.piso_inventario[para] ??= {};
+        db.piso_inventario[para][mueble] = (db.piso_inventario[para][mueble] ?? 0) + 1;
+        (db.piso_regalos ??= []).push({ de: userId, para, mueble, creado: new Date().toISOString() });
+        return json(mine());
       }
       if (table === 'rpc/piso_reciclar') {
         const { mueble } = req.postDataJSON();
@@ -337,6 +413,8 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       return route.fulfill({ status: 204, body: '' });
     }
     if (req.method() === 'PATCH') {
+      // Sin la migración del personaje (1.69), la columna no existe
+      if (table === 'pisos' && 'personaje' in body && !db.personajes) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST204', message: "Could not find the 'personaje' column of 'pisos' in the schema cache" }) });
       const rows = db[table].filter((r) => (r[OWNER[table]] === userId || (['club_invites', 'club_messages'].includes(table) && ownerOf(r.club_id, userId))) && matches(r, params));
       if (table === 'reading_presence') rows.forEach((r) => (r.last_seen = new Date().toISOString()));
       for (const r of rows) Object.assign(r, body, { updated_at: new Date().toISOString() });

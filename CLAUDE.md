@@ -133,6 +133,16 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     - Sobres, Muebles y Reciclar son objetos de la escena (expositor, rincón del sillón, caja de reciclaje) con un
       letrero y su contorno encendido;
     - no volver a una fila de pestañas grandes que le quite protagonismo a la tienda.
+  - **Más vida en el edificio** (encargo del 1-11-2026, por bloques con capturas entre uno y otro: 1) más muebles,
+    2) personaje, 3) misiones diarias, 4) vecinos). Decisiones de Francisco:
+    - **Personaje propio y personalizable** en tu piso: tocas el suelo o un mueble y va andando hasta allí. En sillas,
+      sillones y camas se sienta o se tumba; si no lo tocas, pasea solo de vez en cuando.
+    - Su aspecto se guarda en el servidor y **los vecinos lo ven** al visitar tu piso (migración nueva, la aplica
+      Francisco).
+    - **Misiones diarias de la habitación**: dan **ropa y colores del personaje**, nunca tickets (los tickets siguen
+      ganándose solo leyendo).
+    - **Vecinos**, sin texto libre: regalar copias de muebles, libro de visitas con sellos de frase cerrada y «me
+      gusta» por mueble. Visitar con tu personaje queda fuera por ahora.
   - **Sonidos cozy propios del edificio** (1-11-2026): sintetizados, por material y por acción (§6 del plan).
   - **Sintonía de «Aquí no hay quien viva»**: a Francisco le encantaría en versión chiptune cozy. Sin licencia no se usa
     ni se recrea esa melodía (tampoco de oído). En la app, solo un tema original con guiño.
