@@ -6,10 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **1.76.0 (2026-11-02), en un PR a `main`, aún sin publicar**: la apertura de sobres sobre el mostrador (§76): un
-  sobre por colección, de frente e inclinado en la madera, tres gestos («1 de 5» con 2 × 2), 3 + 2, y «Colocar
-  [nombre]» al editor del piso. Sin migraciones. Se publica al fusionar el PR (subir `main` despliega en Vercel).
-- **Versión publicada**: 1.75.0 (2026-11-02): el vestíbulo del Gran Hotel con el ascensor de latón (§75; plan de
+- **Versión publicada**: 1.76.0 (2026-11-02): la apertura de sobres sobre el mostrador (§76): un sobre por colección,
+  de frente e inclinado en la madera, tres gestos («1 de 5» con 2 × 2), 3 + 2, y «Colocar [nombre]» al editor del
+  piso. Sin migraciones. Fusionada desde el PR #1 (rama `1.76-sobres-mostrador`); `/sw.js` ya trae la 1.76.0.
+- **Antes, 1.75.0** (2026-11-02): el vestíbulo del Gran Hotel con el ascensor de latón (§75; plan de
   salas en `docs/qa/gran-hotel.md` §9). Sin migraciones.
 - **Antes, 1.74.0** (2026-11-02), en https://bookshelf-wine-iota.vercel.app: los menús de debajo de las
   habitaciones y la cabina del armario (§74) y la limusina negra al Gran Hotel, con el viaje por la calle del puerto y
@@ -43,7 +43,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.76.0 | La apertura de sobres sobre el mostrador: un sobre por colección (expositor, selector y mostrador), de frente e inclinado en la madera, tres gestos (tira, carta que asoma con 2 × 2, 3 + 2), el sobre sale del encuadre, elegir con ✓ y «Colocar [nombre]» al editor del piso (en PR) | §76 |
+| 1.76.0 | La apertura de sobres sobre el mostrador: un sobre por colección (expositor, selector y mostrador), de frente e inclinado en la madera, tres gestos (tira, carta que asoma con 2 × 2, 3 + 2), el sobre sale del encuadre, elegir con ✓ y «Colocar [nombre]» al editor del piso (publicada) | §76 |
 | 1.75.0 | El vestíbulo del Gran Hotel por dentro: recepción con los encargos de la semana, ascensor de latón con la botonera de plantas, tablón y guardarropa (publicada) | §75 |
 | 1.74.0 | Los menús de debajo de las habitaciones (balda con nombres, armario-cabina, mesita del vecino de madera) y la limusina negra delante del portal que lleva, con un viaje corto, a la fachada viva del Gran Hotel (publicada) | §74 |
 | 1.73.0 | Místicos en el sobre de coleccionista (1 %, ¼ legendario, sin pity propio) con su aparición; la melodía «Dos balcones» en bucle en el edificio; el edificio a pantalla completa en el móvil; el buzón en la fachada (publicada; migración aplicada) | §73 |
@@ -83,7 +83,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 ### Pendiente (por orden de prioridad aproximada)
 
 - **Cartel de la tienda (1.76)**: el local dice VIDEOCLUB y la maqueta de Francisco «LA TIENDA DEL BAJO»; preguntarle
-  antes de cambiarlo. Y fusionar el PR de la 1.76.0 cuando él lo apruebe.
+  antes de cambiarlo.
 000. **Paquete «salón social y radio» (1.62, §62): publicado completo.** Lo que sigue es el resumen del encargo del bloque 4,
    ya cumplido: Encargo completo en `material-diseno/social-radio/BookShelf-social-radio/` (fuera de git, en este
    ordenador): `PROMPT-CLAUDE.md` apartado 5 y la maqueta `maquetas/04-comunidad.png` (columna derecha). Resumen:
@@ -160,10 +160,11 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
-### 2026-11-02 · cuenta principal · 1.76.0: apertura de sobres sobre el mostrador (en un PR a `main`)
+### 2026-11-02 · cuenta principal · 1.76.0: apertura de sobres sobre el mostrador (publicada)
 - Encargo de Francisco (dos documentos y una maqueta de tres pantallas: tienda, sobre cerrado y apertura de cinco), luego
   «haz que se parezca más a las maquetas», varias listas de correcciones y la maqueta del sobre cerrado y «1 de 5».
-  Cerrado como 1.76.0 («Sí, cierra 1.76.0»): versión subida, SPEC §76 y PR.
+  Cerrado como 1.76.0 («Sí, cierra 1.76.0»): versión subida, SPEC §76 y PR #1; publicada con «súbelo» (avance
+  rápido de `main`; Vercel sirve la 1.76.0).
 - Hecho: una definición del sobre por colección (`shopArt.js`: faja crema alta con el mueble de portada con margen,
   borde del color de la colección, tira dentada con la pestaña roja de una pieza que asoma por arriba) usada en el
   expositor, el selector (sobres grandes, sin precio) y el mostrador. En el mostrador de cerca el sobre está **de frente
@@ -186,8 +187,8 @@ Formato de cada entrada (la más reciente arriba):
   a cobrar ni a sortear.
 - Pruebas: `e2e-community/v176-sobre-mostrador.spec.js` y `v176-rasgado.spec.js` (graba el rasgado a 360), v167 y v173
   ajustadas; pasan en Chromium 360/390/1440 y WebKit 390 (emulación; nada probado en un iPhone real).
-- Queda: el cartel del local dice VIDEOCLUB y la maqueta «LA TIENDA DEL BAJO» (no se ha cambiado sin preguntar); fusionar
-  el PR (al subir `main`, comprobar que `/sw.js` trae la 1.76.0).
+- Queda: el cartel del local dice VIDEOCLUB y la maqueta «LA TIENDA DEL BAJO» (no se ha cambiado sin preguntar); nada más
+  de este bloque.
 
 ### 2026-11-02 · cuenta principal · 1.75.0: el vestíbulo del Gran Hotel con el ascensor de latón (publicada)
 
