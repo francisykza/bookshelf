@@ -10,11 +10,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   dentro con el motor de los pisos (§68).
 - **En commit, sin publicar (1.71.0)**: «más vida en el edificio», los cuatro bloques: diecisiete muebles nuevos y el arreglo del
   sobre cortado en el móvil (§69), tu personaje en el piso (§69), las misiones del día que dan ropa (§70) y vecinos con
-  «me gusta» por mueble, libro de visitas y regalos (§71). **Cuatro migraciones sin aplicar**, en este orden:
-  `20261105120000_edificio_muebles_tanda2.sql`, `20261105130000_edificio_personaje.sql`,
-  `20261105140000_edificio_misiones_diarias.sql` y `20261105150000_edificio_vecinos.sql` (las aplica Francisco).
-  Sin ellas la app funciona: los muebles nuevos no se pueden guardar, el personaje se queda en el dispositivo, no hay
-  hoja de misiones y el piso del vecino solo tiene sellos.
+  «me gusta» por mueble, libro de visitas y regalos (§71). **Sus cuatro migraciones ya están aplicadas en producción**
+  (2-11-2026): `20261105120000_edificio_muebles_tanda2.sql`, `20261105130000_edificio_personaje.sql`,
+  `20261105140000_edificio_misiones_diarias.sql` y `20261105150000_edificio_vecinos.sql`. La 1.68 publicada no las usa
+  y sigue funcionando; falta subir la 1.71.
 - **1.67.0**: la tienda del bajo (el antiguo videoclub con su dependienta), sus sobres por tipo y misiones con tickets
   (§67), y las figuras ocultas. Su migración `20261104120000_edificio_tienda.sql` está aplicada en producción.
 - **Árbol de trabajo**: **1.65.0 y 1.66.0 publicadas** (§65 portal con vida y balda corregida; §66 inventario de
@@ -154,8 +153,14 @@ Formato de cada entrada (la más reciente arriba):
   `20261105150000_edificio_vecinos.sql` (sin aplicar). El simulado de Supabase lo activa con `db.vecinosSocial`.
 - Pruebas: Vitest edificio 59/59 (nueva `vecinos.rls`); e2e v163, v169, v170 y v171 en verde en Chromium 390 y 1440
   y WebKit 390 (v171 también en 320); build y oxlint limpios.
-- Francisco vio las capturas y pidió el commit (los bloques 1 a 4 van juntos en él). Queda: aplicar las cuatro
-  migraciones en orden y subirlo cuando lo pida.
+- Francisco vio las capturas y pidió el commit (los bloques 1 a 4 van juntos en él).
+- **Migraciones aplicadas en producción** (2-11-2026, Francisco eligió aplicarlas): las pegó Claude en el SQL Editor
+  del proyecto `bookshelf`, una a una y en orden, comprobando bytes y SHA-256 contra el archivo (tanda2 3135 B
+  `747c2388…`, personaje 3999 B `e66a0a18…`, misiones 6868 B `7d523600…`, vecinos 10181 B `8d6d5483…`), y Francisco
+  pulsó «Run» en cada una («Success. No rows returned»). Comprobado con la clave pública: el anónimo recibe
+  «permission denied» (42501) en `piso_prendas`, `piso_diarias`, `piso_regalos`, `piso_visitas`, `piso_megusta` y
+  en `piso_mi_armario`, `piso_mision_diaria`, `piso_social`, `piso_firmar`, `piso_megusta`, `piso_regalar` y
+  `piso_vecino_visible`. Queda: subir la 1.71 cuando lo pida (esta nota de ESTADO va sin commit).
 
 ### 2026-11-02 · cuenta principal · 1.70.0 «más vida en el edificio», bloques 2 (personaje) y 3 (misiones del día) (en el commit de la 1.71)
 
