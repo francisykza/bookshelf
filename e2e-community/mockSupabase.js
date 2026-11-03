@@ -8,6 +8,7 @@ import { CATALOG } from '../src/features/edificio/catalog.js';
 import { SOBRES } from '../src/features/edificio/economy.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
 import { PRENDAS } from '../src/features/edificio/actor.js';
+import { check } from '../src/features/edificio/room.js';
 import { missionsOf } from '../src/features/edificio/dailyMissions.js';
 
 export const SUPABASE = 'http://supabase.test';
@@ -205,25 +206,77 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       if (body.si) db.piso_megusta.push({ piso, de: userId, uid: body.uid, mueble: item.id });
       return json(social());
     }
+    // 1.79: la suite de la semana del Gran Hotel, decorada entre todos, como 20261109130000_hotel_suite_semana.sql
+    // (solo si la prueba lo pide con db.suite = { pared, suelo, aportes: [{ user_id, item }], semanas: { id: n }, placas: [ids] }).
+    // Lo que tiene cada cual sale de db.piso_inventario (o, sin él, de su piso)
+    if (['rpc/piso_suite', 'rpc/piso_suite_llevar', 'rpc/piso_suite_retirar'].includes(table)) {
+      if (!db.suite) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
+      const su = db.suite;
+      su.aportes ??= [];
+      su.semanas ??= {};
+      su.placas ??= [];
+      const body = req.postDataJSON?.() ?? {};
+      const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
+      const perfil = (id) => db.profiles.find((x) => x.user_id === id) ?? {};
+      const lunes = (() => {
+        const d = new Date();
+        d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+        return d.toISOString().slice(0, 10);
+      })();
+      const layout = (fuera = null) => ({ v: 1, pared: su.pared ?? 'noche', suelo: su.suelo ?? 'damero', items: su.aportes.filter((a) => a.user_id !== fuera).map((a, k) => ({ ...a.item, uid: k + 1 })) });
+      const mias = () => (su.semanas[userId] ?? 0) + (su.aportes.some((a) => a.user_id === userId) ? 1 : 0);
+      const estado = () => ({
+        semana: lunes,
+        layout: layout(),
+        aportes: su.aportes.map((a, k) => ({ uid: k + 1, alias: perfil(a.user_id).alias, avatar_id: perfil(a.user_id).avatar_id, mueble: a.item.id, yo: a.user_id === userId })),
+        mio: su.aportes.find((a) => a.user_id === userId)?.item ?? null,
+        semanas: mias(),
+        placa: su.placas.includes(userId),
+        meta: 4,
+      });
+      if (table === 'rpc/piso_suite') return json(estado());
+      if (table === 'rpc/piso_suite_retirar') {
+        su.aportes = su.aportes.filter((a) => a.user_id !== userId);
+        return json(estado());
+      }
+      const item = body.item;
+      const tiene = db.piso_inventario?.[userId] ? (db.piso_inventario[userId][item?.id] ?? 0) > 0 : (db.pisos.find((p) => p.user_id === userId)?.layout.items ?? starterRoom().items).some((i) => i.id === item?.id);
+      if (!tiene) return fail('Solo se lleva un mueble que tengas.');
+      const room = layout(userId);
+      const nuevo = { ...item, uid: room.items.length + 1 };
+      if (!check(room, nuevo).ok) return fail('Ahí no cabe: elige otro sitio.');
+      const k = su.aportes.findIndex((a) => a.user_id === userId);
+      if (k >= 0) su.aportes[k] = { user_id: userId, item };
+      else su.aportes.push({ user_id: userId, item });
+      if (mias() >= 4 && !su.placas.includes(userId)) su.placas.push(userId);
+      return json(estado());
+    }
     // 1.70 (SPEC §70): armario y misiones del día, como la migración (solo si la prueba lo pide con db.diarias)
     if (['rpc/piso_mi_armario', 'rpc/piso_mision_diaria'].includes(table)) {
       if (!db.diarias) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
       const body = req.postDataJSON();
       const mine = (db.diarias[userId] ??= { prendas: [], dias: {} });
-      const armario = (dia, nueva = null) => ({ prendas: [...mine.prendas], hechas: [...(mine.dias[dia] ?? [])], nueva });
+      const armario = (dia, nueva = null, tickets = 0) => ({ prendas: [...mine.prendas], hechas: [...(mine.dias[dia] ?? [])], nueva, tickets });
       if (table === 'rpc/piso_mi_armario') return json(armario(body.dia));
       const hoy = missionsOf(body.dia).map((m) => m.id);
       if (!hoy.includes(body.mision)) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message: 'Esa no es una misión de ese día.' }) });
       const hechas = (mine.dias[body.dia] ??= []);
       let nueva = null;
+      let tickets = 0;
       if (!hechas.includes(body.mision)) {
         hechas.push(body.mision);
         if (hoy.every((m) => hechas.includes(m))) {
           nueva = PRENDAS.find((p) => !mine.prendas.includes(p)) ?? null;
           if (nueva) mine.prendas.push(nueva);
+          // 1.79: con todo el armario, 5 tickets (como 20261109120000_edificio_diarias_tickets.sql)
+          else {
+            tickets = 5;
+            db.diarias_tickets = (db.diarias_tickets ?? 0) + tickets;
+            if (db.piso_cuentas?.[userId]) db.piso_cuentas[userId].tickets += tickets;
+          }
         }
       }
-      return json(armario(body.dia, nueva));
+      return json(armario(body.dia, nueva, tickets));
     }
     // 1.66 (SPEC §66): inventario de muebles, como la migración (solo si la prueba lo pide con `db.piso_cuentas`)
     // 1.67 (SPEC §67): tickets, tienda y sobres. El sorteo del mock es fijo: la prueba pone los premios en `db.piso_sorteo`.

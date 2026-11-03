@@ -9,6 +9,8 @@
 // Místicos (docs/qa/misticos.md): rareza 'mistico' (se colocan sobre su peana y se mueven solos) o 'legendario' (no se
 // colocan: te acompañan, `compania: true`). Su dibujo animado está en misticos.js; la peana, en furniture.js.
 // Mascotas (1.78): `mascota: true`, un mueble de los de siempre (su cojín) con un animal animado encima (misticos.js).
+// Especiales (1.79): rareza 'especial', premios que no se compran, no salen en sobres y no se regalan ni se reciclan (la
+// «Placa de la suite», por llevar muebles cuatro semanas a la suite del Gran Hotel).
 
 export const CATEGORIES = [
   { id: 'asientos', nombre: 'Para sentarse' },
@@ -147,7 +149,13 @@ export const CATALOG = [
   // 1.78: el búho no lleva guiño a ninguna saga: es de quien lee hasta tarde
   { id: 'buho-estrellas', rareza: 'mistico', nombre: 'Búho de las constelaciones', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien lee hasta tarde' },
   { id: 'cinta-tormenta', rareza: 'legendario', compania: true, nombre: 'Cinta de luz de tormenta', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien leyó «El archivo de las tormentas»' },
+
+  // ── Premios (1.79): la placa de quien ha decorado la suite de la semana del Gran Hotel ──
+  { id: 'placa-suite', rareza: 'especial', nombre: 'Placa de la suite', cat: 'pared', capa: 'pared', w: 1, tonos: [ORO], guino: 'Por decorar cuatro semanas la suite del Gran Hotel' },
 ];
+
+/** Los premios (rareza 'especial'): no se compran, no salen en sobres y no se regalan ni se reciclan. */
+export const isEspecial = (c) => c?.rareza === 'especial';
 
 /** Si un mueble es místico (de los que se colocan o de los que acompañan). */
 export const isMistico = (c) => c?.rareza === 'mistico' || c?.rareza === 'legendario';

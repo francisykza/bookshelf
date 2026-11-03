@@ -1,7 +1,11 @@
 // Misiones del día en tu piso (1.70, SPEC §70; decisión de Francisco del 1-11-2026): tres cosas pequeñas que hacer
-// en la habitación cada día. Hechas las tres, llega una prenda nueva para tu personaje (nunca tickets: los tickets se
-// ganan solo leyendo). Las tres del día son las mismas para todo el mundo y salen de la fecha; el servidor las calcula
-// igual (`piso_diarias_del_dia`) y solo cuenta esas, una vez cada una.
+// en la habitación cada día. Hechas las tres, llega una prenda nueva para tu personaje. Desde la 1.79 (decisión de
+// Francisco del 3-11-2026), con toda la ropa ya ganada, las tres dan `DIARIA_TICKETS` tickets en su lugar. Las tres del
+// día son las mismas para todo el mundo y salen de la fecha; el servidor las calcula igual (`piso_diarias_del_dia`) y
+// solo cuenta esas, una vez cada una.
+
+/** Los tickets de las tres del día cuando ya tienes todo el armario (los mismos que en `piso_mision_diaria`). */
+export const DIARIA_TICKETS = 5;
 
 export const DAILY = [
   { id: 'sentarse', texto: 'Siéntate un rato' },

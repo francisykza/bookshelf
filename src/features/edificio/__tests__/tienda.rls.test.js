@@ -3,7 +3,7 @@
 // reciclar solo lo que no está colocado. Nada se escribe directamente.
 import { beforeAll, describe, expect, it } from 'vitest';
 import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
-import { CATALOG, catalogItem, isMistico } from '../catalog';
+import { CATALOG, catalogItem, isEspecial, isMistico } from '../catalog';
 import { starterRoom } from '../demo';
 import { BIENVENIDA, MISION_TICKETS, PITY, RAREZAS, SOBRES, oddsTable, precioDe, rarezaOf, sobreOf } from '../economy';
 import { normalizeInventory } from '../inventory';
@@ -43,8 +43,9 @@ describe('las reglas del servidor coinciden con economy.js', () => {
   });
 
   it('los sobres de la pared: precios, probabilidades y muebles', async () => {
-    // «Todo el catálogo» en el servidor es por rareza: los místicos se sortean aparte (solo en el de coleccionista)
-    const todos = CATALOG.filter((c) => !c.set && !isMistico(c)).map((c) => c.id);
+    // «Todo el catálogo» en el servidor es por rareza: los místicos se sortean aparte (solo en el de coleccionista) y
+    // los premios (1.79) no salen nunca
+    const todos = CATALOG.filter((c) => !c.set && !isMistico(c) && !isEspecial(c)).map((c) => c.id);
     for (const s of SOBRES) {
       const { rows } = await db.query('select piso_sobre($1) as d', [s.id]);
       const d = rows[0].d;

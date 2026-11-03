@@ -18,11 +18,12 @@ export const ZONES = {
   cafe: { nombre: 'El café-biblioteca', corto: 'Café-biblioteca', lema: 'Mesas para quienes leen el mismo libro.', texto: 'Mesas para sentarte con tu personaje junto a alguien que lee lo mismo. Cada mesa dice qué libro se lee en ella.' },
   baile: { nombre: 'El salón de baile', corto: 'Salón de baile', lema: 'Lecturas conjuntas y presentaciones de los clubes.', texto: 'La sala grande, para los eventos con fecha: la lectura conjunta de la semana o la presentación de un club.' },
   suites: { nombre: 'Las suites de los clubes', corto: 'Suites de los clubes', lema: 'Una habitación por club, decorada entre sus miembros.', texto: 'Cada club tiene su habitación, decorada entre sus miembros. Por la ventana se ve si hay alguien dentro.' },
+  suite: { nombre: 'La suite de la semana', corto: 'Suite de la semana', lema: 'Una habitación que decoran entre todos los huéspedes.', abierta: true, texto: 'Empieza vacía cada lunes: cada huésped lleva un mueble suyo y la decoran entre todos.' },
   terraza: { nombre: 'La terraza', corto: 'La terraza', lema: 'La radio del rincón, sonando para todos sobre el puerto.', texto: 'Guirnaldas, la radio del rincón sonando para todos y el puerto a tus pies.' },
   mirador: { nombre: 'El mirador de la corona', corto: 'Mirador de la corona', lema: 'Las mejores vistas, el ranking y las distinciones.', texto: 'El bar de arriba, con las mejores vistas, el ranking y las distinciones.' },
 };
 /** Las plantas de arriba abajo, como las lee el Directorio. */
-export const FLOOR_ORDER = ['mirador', 'terraza', 'suites', 'baile', 'cafe', 'vestibulo', 'plaza'];
+export const FLOOR_ORDER = ['mirador', 'suite', 'terraza', 'suites', 'baile', 'cafe', 'vestibulo', 'plaza'];
 
 const rgb = (r, g, b) => ((255 << 24) | (Math.min(255, Math.max(0, b | 0)) << 16) | (Math.min(255, Math.max(0, g | 0)) << 8) | Math.min(255, Math.max(0, r | 0))) >>> 0;
 const scale = (p, k, add = 0) => rgb((p & 255) * k + add, ((p >> 8) & 255) * k + add, ((p >> 16) & 255) * k + add);

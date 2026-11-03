@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { missionsOf, todayKey } from '../src/features/edificio/dailyMissions.js';
+import { PRENDAS } from '../src/features/edificio/actor.js';
 import { createMockSupabase } from './mockSupabase';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
@@ -142,6 +143,33 @@ test('misiones del día: la hoja, las tres hechas y la prenda en el armario', as
   await mine.locator('.ep-dress').getByRole('button', { name: 'Listo' }).click();
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.personaje?.complemento, { timeout: 8000 }).toBe('bufanda');
   await shot(page, info, 'v170-bufanda');
+  expect(errors).toEqual([]);
+});
+
+// 1.79: con todo el armario ya ganado, las tres del día dan 5 tickets en su lugar
+test('misiones del día con toda la ropa: 5 tickets', async ({ page }, info) => {
+  test.skip(!/chromium-(390x844|1440x900)$/.test(info.project.name), '390 y escritorio en Chromium');
+  const mock = createMockSupabase({ edificio_vecinos: [] });
+  mock.db.personajes = true;
+  mock.db.diarias = { [ANA.id]: { prendas: [...PRENDAS], dias: {} } };
+  mock.db.profiles.push({ user_id: ANA.id, alias: 'Ana lectora', avatar_id: 'gato-lector', community_enabled: true });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  const mine = await openMyFlat(page, mock);
+  const today = missionsOf(todayKey());
+  const hoy = mine.getByRole('button', { name: /^Hoy en tu piso \(0 de 3\)/ });
+  await hoy.click();
+  const card = mine.getByRole('region', { name: 'Hoy en tu piso' });
+  await expect(card.getByText('5 tickets')).toBeVisible();
+  await shot(page, info, 'v179-hoja-tickets');
+  await hoy.click();
+  for (const [k, m] of today.entries()) {
+    await doMission(page, mine, m.id);
+    await expect(mine.getByRole('button', { name: new RegExp(`^Hoy en tu piso \\(${k + 1} de 3\\)`) })).toBeAttached({ timeout: 8000 });
+  }
+  await expect(card.getByText(/Hecho: \+5 tickets/)).toBeVisible();
+  expect(mock.db.diarias_tickets).toBe(5);
+  await shot(page, info, 'v179-hecho-tickets');
   expect(errors).toEqual([]);
 });
 

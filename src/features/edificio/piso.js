@@ -13,6 +13,7 @@
 // lista «En el piso» elige cualquier cosa sin tocar el dibujo.
 import './edificio.css';
 import { createSfx } from '../minigames/libreria-puerto/audio';
+import { DIARIA_TICKETS } from './dailyMissions';
 import { CATALOG, CATEGORIES, COMPANEROS, PAREDES, SETS, SUELOS, catalogItem } from './catalog';
 import { createCompanion, misticoThumb } from './misticos';
 import { freeCopies, ownedCopies } from './inventory';
@@ -558,7 +559,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     todayBtn.querySelector('.px-sr').textContent = `Hoy en tu piso (${done} de ${today.items.length})`;
     const foot = today.proxima
       ? el('p', { class: 'ep-today__prize' }, el('span', { text: done === today.items.length ? 'Hecho. Mañana, más.' : 'Premio:' }), done === today.items.length ? null : el('b', { text: prendaNombre(today.proxima) }))
-      : el('p', { class: 'ep-today__prize', text: done === today.items.length ? 'Hecho. Ya tienes todo el armario.' : 'Ya tienes todo el armario.' });
+      : // Con todo el armario, las tres dan tickets (1.79)
+        el('p', { class: 'ep-today__prize' }, el('span', { text: done === today.items.length ? `Hecho: +${DIARIA_TICKETS} tickets. Mañana, más.` : 'Premio:' }), done === today.items.length ? null : el('b', { text: `${DIARIA_TICKETS} tickets` }));
     // Recién ganada: la prenda, bien a la vista (y la hoja se abre sola)
     const won = today.ganada ? el('p', { class: 'ep-today__won' }, el('img', { class: 'ep-today__won-img', alt: '', width: 33, height: 33, src: actorThumb(wearing(today.ganada), 'head') }), el('span', { text: `Nueva: ${prendaNombre(today.ganada)}` })) : null;
     todayCard.replaceChildren(
@@ -1520,7 +1522,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     },
     /** Las misiones del día (o null) y la próxima prenda. */
     setMissions(next) {
-      const won = next?.ganada && next.ganada !== today?.ganada;
+      // La hoja se abre sola con lo recién ganado: la prenda o, con todo el armario, los tickets (1.79)
+      const won = (next?.ganada && next.ganada !== today?.ganada) || (next?.tickets > 0 && !(today?.tickets > 0));
       today = next;
       fillToday();
       if (won) toggleToday(true);

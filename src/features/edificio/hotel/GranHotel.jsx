@@ -3,7 +3,8 @@
 // tocándolo; sin él, con movimiento reducido) y la fachada viva del hotel, a todo lo que da la pantalla, que se toca
 // planta a planta (Francisco: «el gran hotel tiene demasiados menús y se empequeñece»: sin fila de botones; para el
 // teclado, cada planta tiene un botón invisible sobre el dibujo que se ve al enfocarlo). Aún no se entra en ninguna
-// sala salvo el vestíbulo (1.75, Vestibulo.jsx): tocarlo es entrar; las demás plantas dicen qué habrá y «Abre pronto».
+// sala salvo el vestíbulo (1.75, Vestibulo.jsx) y la suite de la semana del ático (1.79, SuiteSemana.jsx): tocarlas es
+// entrar; las demás plantas dicen qué habrá y «Abre pronto».
 // 1.77 (maqueta de Francisco): el hotel entero cabe en la pantalla, de la aguja a la limusina, por encima de una cartela
 // crema al pie que dice qué es la planta elegida («Café-biblioteca», «Próxima apertura» y su lema); la planta elegida
 // lleva un filete de latón con un rombo a su izquierda (hotelView.js). «Directorio», en la barra, abre la lista de las
@@ -11,6 +12,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FLOOR_ORDER, mountHotel, ZONES } from './hotelView';
 import { mountRide } from './ride';
+import { SuiteSemana } from './SuiteSemana';
 import { Vestibulo } from './Vestibulo';
 import './hotel.css';
 
@@ -160,14 +162,15 @@ function HotelFacade({ onEnter, directory, onDirectory }) {
         </ul>
       </div>
       {/* La cartela del pie: con una planta elegida, Escape la deja sin elegir y no cierra el hotel (PanelShell lo respeta) */}
-      <section className="gh-plaque" ref={foot} aria-live="polite" aria-label={info ? info.nombre : 'El Gran Hotel del Puerto'} data-escape-local={zone ? 'open' : undefined}>
+      {/* 1.79 (encargo de Francisco): sin planta elegida, la cartela es pequeña y deja ver el hotel; el resto lo dice el Directorio */}
+      <section className={info ? 'gh-plaque' : 'gh-plaque gh-plaque--small'} ref={foot} aria-live="polite" aria-label={info ? info.nombre : 'El Gran Hotel del Puerto'} data-escape-local={zone ? 'open' : undefined}>
         <h3>{info ? info.corto : 'Gran Hotel del Puerto'}</h3>
         <p className="gh-plaque__state">
           <i aria-hidden="true" />
           {info ? (info.abierta ? 'Abierto' : 'Próxima apertura') : 'Toca una planta'}
           <i aria-hidden="true" />
         </p>
-        <p className="gh-plaque__text">{info ? info.lema : 'O abre el Directorio para ver qué hay en cada una.'}</p>
+        <p className={info ? 'gh-plaque__text' : 'px-sr'}>{info ? info.lema : 'O abre el Directorio para ver qué hay en cada una.'}</p>
       </section>
       {directory && (
         <Directory
@@ -196,7 +199,15 @@ export function GranHotel({ room = null, onRoom = () => {}, directory = false, o
       <h2 className="px-sr" id="ed-title">
         El Gran Hotel del Puerto
       </h2>
-      {riding ? <LimoRide onDone={() => setRiding(false)} /> : room === 'vestibulo' ? <Vestibulo onStreet={() => onRoom(null)} /> : <HotelFacade onEnter={onRoom} directory={directory} onDirectory={onDirectory} />}
+      {riding ? (
+        <LimoRide onDone={() => setRiding(false)} />
+      ) : room === 'vestibulo' ? (
+        <Vestibulo onStreet={() => onRoom(null)} onFloor={onRoom} />
+      ) : room === 'suite' ? (
+        <SuiteSemana onStreet={() => onRoom(null)} />
+      ) : (
+        <HotelFacade onEnter={onRoom} directory={directory} onDirectory={onDirectory} />
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 // - la recepción: el conserje da los encargos de la semana, que son las misiones de siempre (se cobran en tickets
 //   igual que en el ordenador, una vez por misión y semana, lo decide el servidor);
 // - el ascensor: la botonera de latón con una luz por planta es la navegación del hotel; las plantas que aún no abren
-//   dicen qué habrá, y la «P» sale a la plaza;
+//   dicen qué habrá, y la «P» sale a la plaza (1.79: la «Á» sube a la suite de la semana);
 // - el tablón «Busco quien lea…» y el guardarropa: dicen qué habrá y «Abre pronto».
 // 1.78 (encargo del 3-11-2026: «que los menús no tengan tanto protagonismo»): al entrar no hay nada abierto, solo el
 // dibujo con letreros pequeños; lo de cada cosa sale en un papel más compacto al tocarla, y se cierra con «×», tocándola
@@ -30,7 +30,7 @@ const FLOORS = [
     nombre: 'El mirador de la corona',
     texto: 'El bar de arriba, con las mejores vistas: el ranking del minijuego, las distinciones y tu año de lectura en un calendario de pared.',
   },
-  { id: 'suite', boton: 'Á', nombre: 'La suite de la semana', texto: 'El piso más querido de la semana, para visitarlo. Cada edificio presenta un candidato y vota todo el hotel.' },
+  { id: 'suite', boton: 'Á', nombre: 'La suite de la semana', abierta: true, texto: 'Una habitación que empieza vacía cada lunes y decoran entre todos: cada huésped lleva un mueble suyo.' },
   { id: 'terraza', boton: 'T', nombre: 'La terraza', texto: 'Guirnaldas, la radio del rincón sonando para todos y el puerto a tus pies.' },
   { id: 'baile', boton: 'B', nombre: 'El salón de baile', texto: 'La sala grande, para las lecturas conjuntas y las presentaciones de los clubes.' },
   { id: 'suites', boton: '3', nombre: 'Las suites de los clubes', texto: 'Cada club tiene su habitación, decorada entre sus miembros.' },
@@ -164,7 +164,7 @@ function drawDial(canvas, ang) {
 }
 
 /** La botonera de latón del ascensor, con la esfera de plantas encima (en el pixel art de la habitación). */
-function Ascensor({ onStreet }) {
+function Ascensor({ onStreet, onFloor }) {
   const [floor, setFloor] = useState(null);
   const dial = useRef(null);
   const shown = useRef(dialAngle('vestibulo'));
@@ -200,7 +200,7 @@ function Ascensor({ onStreet }) {
                 className="gh-lift__btn"
                 aria-pressed={x.aqui || floor === x.id}
                 aria-current={x.aqui ? 'location' : undefined}
-                onClick={() => (x.calle ? onStreet() : setFloor(x.aqui ? null : x.id))}
+                onClick={() => (x.calle ? onStreet() : x.abierta ? onFloor(x.id) : setFloor(x.aqui ? null : x.id))}
               >
                 <span className="gh-lift__lamp" aria-hidden="true">
                   {x.boton}
@@ -226,7 +226,7 @@ function Ascensor({ onStreet }) {
   );
 }
 
-export function Vestibulo({ onStreet }) {
+export function Vestibulo({ onStreet, onFloor = () => {} }) {
   const lobby = renderLobby();
   const root = useRef(null);
   const [spot, setSpot] = useState(null);
@@ -298,7 +298,7 @@ export function Vestibulo({ onStreet }) {
           </button>
         )}
         {spot === 'recepcion' && <Encargos />}
-        {spot === 'ascensor' && <Ascensor onStreet={onStreet} />}
+        {spot === 'ascensor' && <Ascensor onStreet={onStreet} onFloor={onFloor} />}
         {info && (
           <>
             <h4>{info.nombre}</h4>

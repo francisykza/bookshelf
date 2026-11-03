@@ -2,7 +2,7 @@
 // Solo números y textos: la regla de verdad (cobrar, sortear, dar copias) está en el servidor
 // (supabase/migrations/20261104120000_edificio_tienda.sql), y una prueba comprueba que estos números coinciden con los
 // suyos. Los tickets solo se ganan leyendo y nunca se compran con dinero.
-import { CATALOG, isMistico } from './catalog';
+import { CATALOG, isEspecial, isMistico } from './catalog';
 
 export const RAREZAS = [
   { id: 'comun', nombre: 'Común', precio: 20, reciclar: 3 },
@@ -16,15 +16,18 @@ export const RAREZAS_MISTICAS = [
   { id: 'legendario', nombre: 'Místico legendario', precio: null, reciclar: null },
 ];
 
+// Los premios (1.79, la placa de la suite de la semana): tampoco son moneda
+export const RAREZAS_ESPECIALES = [{ id: 'especial', nombre: 'Premio', precio: null, reciclar: null }];
+
 export const MISION_TICKETS = 12;
 export const BIENVENIDA = 30;
 /** El mueble número PITY seguido sin nada raro es raro seguro (se cuenta entre todos los sobres). */
 export const PITY = 15;
 
 export const rarezaOf = (cat) => cat?.rareza ?? 'comun';
-export const rarezaInfo = (id) => RAREZAS.find((r) => r.id === id) ?? RAREZAS_MISTICAS.find((r) => r.id === id) ?? RAREZAS[0];
+export const rarezaInfo = (id) => RAREZAS.find((r) => r.id === id) ?? RAREZAS_MISTICAS.find((r) => r.id === id) ?? RAREZAS_ESPECIALES.find((r) => r.id === id) ?? RAREZAS[0];
 
-const sinSaga = CATALOG.filter((c) => !c.set && !isMistico(c));
+const sinSaga = CATALOG.filter((c) => !c.set && !isMistico(c) && !isEspecial(c));
 const deCategorias = (...cats) => sinSaga.filter((c) => cats.includes(c.cat)).map((c) => c.id);
 
 /** La temporada de sobres a la venta (cada temporada trae sus sobres; los de antes pueden volver o no). */

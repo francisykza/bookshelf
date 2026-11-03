@@ -150,6 +150,15 @@ const SHAPES = {
     B(0.72, 0, 2.46, 0.96, 0.12, 2.72, CREAM, { grain: 0 }),
   ],
   reloj: (T) => [B(0.2, 0, 2.35, 0.8, 0.1, 3.15, T), B(0.3, 0, 2.6, 0.7, 0.13, 3.0, CREAM, { grain: 0 }), B(0.48, 0, 2.78, 0.52, 0.15, 2.96, IRON, { grain: 0 }), B(0.5, 0, 2.78, 0.64, 0.15, 2.82, IRON, { grain: 0 }), B(0.45, 0, 2.38, 0.55, 0.12, 2.55, LATON)],
+  // 1.79 · La placa de la suite: tabla de nogal con su chapa dorada grabada y una estrella encima
+  'placa-suite': (T) => [
+    B(0.1, 0, 2.2, 0.9, 0.07, 2.92, WOOD_DARK),
+    B(0.17, 0, 2.27, 0.83, 0.1, 2.85, T, { grain: 0 }),
+    B(0.28, 0, 2.66, 0.72, 0.12, 2.7, WOOD_DARK, { grain: 0 }),
+    B(0.33, 0, 2.53, 0.67, 0.12, 2.56, WOOD_DARK, { grain: 0 }),
+    B(0.28, 0, 2.4, 0.72, 0.12, 2.43, WOOD_DARK, { grain: 0 }),
+    B(0.43, 0, 2.92, 0.57, 0.09, 3.06, T, { glow: true, grain: 0 }),
+  ],
   guirnalda: (T) => {
     const out = [];
     for (let k = 0; k < 9; k += 1) {

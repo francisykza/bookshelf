@@ -200,6 +200,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const [notice, setNotice] = useState(null);
   const counting = useRef(new Set());
   const [won, setWon] = useState(null);
+  const [wonTickets, setWonTickets] = useState(0);
   // Vecinos (1.71): libro de visitas, «me gusta» y regalos de cada piso abierto; null sin la migración
   const [socialOf, setSocialOf] = useState({});
   const [day] = useState(todayKey);
@@ -278,7 +279,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
 
   // Tu personaje (§69): se guarda un poco después del último cambio, como el piso
   // Misiones del día (§70): las tres de hoy con lo hecho, y la prenda que llega al hacerlas
-  const missions = armario ? { items: missionsOf(day).map((m) => ({ ...m, hecha: armario.hechas.includes(m.id) })), proxima: PRENDAS.find((p) => !armario.prendas.includes(p)) ?? null, ganada: won } : null;
+  const missions = armario ? { items: missionsOf(day).map((m) => ({ ...m, hecha: armario.hechas.includes(m.id) })), proxima: PRENDAS.find((p) => !armario.prendas.includes(p)) ?? null, ganada: won, tickets: wonTickets } : null;
   const onMyEvent = (tipo) => {
     const m = missionsOf(day).find((x) => x.id === tipo);
     if (!armario || !m || armario.hechas.includes(tipo) || counting.current.has(tipo)) return;
@@ -287,7 +288,12 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
       .then((a) => {
         setArmario(a);
         if (a.nueva) setWon(a.nueva);
-        setNotice({ text: a.nueva ? `¡Las tres misiones de hoy! Prenda nueva en tu armario: ${prendaNombre(a.nueva)}.` : `Misión del día hecha: ${m.texto.toLowerCase()}.` });
+        // Con todo el armario ya tuyo, las tres dan tickets (1.79): se suman a tu saldo sin esperar a recargar
+        if (a.tickets) {
+          setWonTickets(a.tickets);
+          setInventory((inv) => inv && { ...inv, tickets: inv.tickets + a.tickets });
+        }
+        setNotice({ text: a.nueva ? `¡Las tres misiones de hoy! Prenda nueva en tu armario: ${prendaNombre(a.nueva)}.` : a.tickets ? `¡Las tres misiones de hoy! Ya tienes toda la ropa: +${a.tickets} tickets.` : `Misión del día hecha: ${m.texto.toLowerCase()}.` });
       })
       .catch(() => {})
       .finally(() => counting.current.delete(tipo));

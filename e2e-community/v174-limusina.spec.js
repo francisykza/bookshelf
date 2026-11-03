@@ -84,7 +84,10 @@ test('la limusina del portal lleva al Gran Hotel, y Atrás vuelve', async ({ pag
   await shot(page, info, 'v174-hotel-planta');
   await page.keyboard.press('Escape');
   await expect(card).toHaveCount(0);
-  // Tocar en el dibujo: el vestíbulo, a la altura de la marquesina
+  // Tocar en el dibujo: el vestíbulo, a la altura de la marquesina (1.79: cuando el hotel se ha ajustado a la cartela pequeña)
+  const canvasBox = () => page.evaluate(() => JSON.stringify(window.__granHotel.canvas.getBoundingClientRect()));
+  let last = '';
+  await expect.poll(async () => last === (last = await canvasBox()), { intervals: [150, 150, 150, 150] }).toBe(true);
   const at = await page.evaluate(() => {
     const v = window.__granHotel;
     const z = v.zones.find((x) => x.id === 'vestibulo');

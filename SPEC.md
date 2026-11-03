@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.78.0 · 2026-11-03 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.79.0 · 2026-11-03 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4797,3 +4797,55 @@ hizo en seis bloques, con capturas entre uno y otro. **Dos migraciones nuevas, l
   v166, v167, v169, v170, v171, v172, v175 y `e2e/edificio-puerto`; RLS de vecinos (regalos), personaje e inventario.
   Pasan Vitest del edificio (68) y las e2e del edificio en Chromium 320, 360, 390 y escritorio (emulación). WebKit no se
   pasó en este cierre y nada se ha probado en un iPhone real.
+
+## 79. Misiones con el armario completo, la cartela del hotel y la suite de la semana (1.79.0)
+
+Francisco pidió seguir con el plan del Gran Hotel y dos cambios pequeños. **Dos migraciones nuevas, las aplica
+Francisco**: `20261109120000_edificio_diarias_tickets.sql` y `20261109130000_hotel_suite_semana.sql`.
+
+### 79.1 Misiones del día con toda la ropa
+
+- Cuando ya tienes **toda la ropa** que se gana con las misiones del día, las tres de un día dan **5 tickets**
+  (`DIARIA_TICKETS`) en lugar de una prenda. Lo cuenta el servidor (`piso_mision_diaria`, que devuelve `tickets`), una
+  vez al día. Es la segunda excepción a «los tickets solo se ganan leyendo», anotada en CLAUDE.md.
+- La hoja «Hoy» dice el premio («5 tickets») y, hechas las tres, «Hecho: +5 tickets». Se abre sola al ganarlos, como con
+  una prenda, y el saldo se suma sin recargar.
+
+### 79.2 La cartela del hotel, más pequeña
+
+- Sin planta elegida, la cartela del pie de la fachada solo dice «Gran Hotel del Puerto» y «Toca una planta» (la pista
+  del Directorio queda para el lector de pantalla), así que el hotel se ve más grande.
+- Al elegir una planta crece con su lema. El hotel se ajusta con una transición corta, sin ella con movimiento reducido.
+
+### 79.3 La suite de la semana, decorada entre todos
+
+- **Decisión de Francisco del 3-11-2026**: el hotel es lo social y el edificio lo personal, para amigos y conocidos.
+  Ningún piso se enseña fuera de su edificio y no se vota. Sustituye a la propuesta de candidatos y votación de
+  `docs/qa/gran-hotel.md` §9.3.
+- **El ático** es una zona nueva de la fachada, el bloque estrecho de encima de la terraza. Está abierta en el
+  Directorio y con la «Á» del ascensor del vestíbulo (`hotel/SuiteSemana.jsx`).
+- **Cómo funciona**:
+  - Es una habitación común que **empieza vacía cada lunes**, con una pared y un suelo distintos cada semana.
+  - Cada persona de la comunidad lleva **un mueble suyo** a la semana y **no lo pierde**: es una copia de exposición.
+    Vale lo corriente de suelo, alfombra o pared; no valen sagas, místicos, premios ni cosas de «encima».
+  - Lo puede poner en otro sitio, cambiarlo por otro o retirarlo. Tiene que caber como en un piso: lo comprueba
+    `piso_valido` en el servidor.
+  - Se ve quién trajo cada cosa (el alias, nunca su piso), y lo de quien tiene un bloqueo contigo no se enseña.
+- **Premio**: con **4 semanas distintas** aportando llega, una sola vez, la **«Placa de la suite»**. Es un mueble de
+  pared de la rareza nueva `especial`: no se compra, ni sale en sobres, ni se regala, ni se recicla (`piso_reciclar` lo
+  rechaza). Ni tickets ni fichas.
+- `20261109130000_hotel_suite_semana.sql`:
+  - tablas `piso_suite_semanas`, `piso_suite_aportes` y `piso_suite_placas`, solo accesibles desde funciones;
+  - funciones `piso_suite()`, `piso_suite_llevar(item)` y `piso_suite_retirar()`;
+  - la placa en el catálogo y `piso_reciclar` rehecha.
+
+### 79.4 Pruebas
+
+- PGlite: `diarias.rls.test.js` (5 tickets con el armario completo) y `suite.rls.test.js` (10). Se ajustaron
+  `inventario` y `tienda`, porque la placa no sale en sobres.
+- e2e (en emulación):
+  - `v170-diarias` (390 y escritorio);
+  - `v174-limusina` y `v177-hotel-directorio` (con nueve plantas);
+  - `v175-vestibulo`;
+  - `v179-suite` (320, 390, escritorio y WebKit 390).
+

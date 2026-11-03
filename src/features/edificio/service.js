@@ -103,8 +103,9 @@ export async function loadInventario() {
   return normalizeInventory(data);
 }
 
-// Armario del personaje y misiones del día (1.70, §70): { prendas: [«clave:valor»], hechas: [misiones del día], nueva }
-const normalizeArmario = (d) => ({ prendas: Array.isArray(d?.prendas) ? d.prendas.filter((p) => PRENDAS.includes(p)) : [], hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null });
+// Armario del personaje y misiones del día (1.70, §70): { prendas: [«clave:valor»], hechas: [misiones del día], nueva,
+// tickets } (`tickets`, desde la 1.79: los ganados al completar las tres con todo el armario ya tuyo)
+const normalizeArmario = (d) => ({ prendas: Array.isArray(d?.prendas) ? d.prendas.filter((p) => PRENDAS.includes(p)) : [], hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null, tickets: Number.isInteger(d?.tickets) && d.tickets > 0 ? d.tickets : 0 });
 
 /** Mi armario y lo hecho hoy (`dia`: «AAAA-MM-DD» del dispositivo). Sin la migración de las misiones, null. */
 export async function loadArmario(dia) {
@@ -115,7 +116,7 @@ export async function loadArmario(dia) {
   return normalizeArmario(data);
 }
 
-/** Cuenta una misión del día. Si con ella están las tres, `nueva` trae la prenda ganada. */
+/** Cuenta una misión del día. Si con ella están las tres, `nueva` trae la prenda ganada (o `tickets`, sin ropa por ganar). */
 export async function contarDiaria(mision, dia) {
   const sb = await client();
   const { data, error } = await sb.rpc('piso_mision_diaria', { mision, dia });
@@ -217,4 +218,44 @@ export async function regalar(para, mueble) {
   const { data, error } = await sb.rpc('piso_regalar', { para, mueble });
   fail(error);
   return normalizeInventory(data);
+}
+
+// ── La suite de la semana del Gran Hotel, decorada entre todos (1.79, supabase/migrations/20261109130000_hotel_suite_semana.sql) ──
+const normalizeSuite = (d) => {
+  const room = d?.layout ? validateRoom(d.layout) : null;
+  const uids = new Set(room?.items.map((i) => i.uid) ?? []);
+  return {
+    semana: typeof d?.semana === 'string' ? d.semana : null,
+    room,
+    aportes: Array.isArray(d?.aportes) ? d.aportes.filter((a) => uids.has(a?.uid) && catalogItem(a.mueble)).map((a) => ({ uid: a.uid, alias: String(a.alias ?? ''), avatarId: a.avatar_id ?? null, mueble: a.mueble, yo: a.yo === true })) : [],
+    mio: d?.mio && catalogItem(d.mio.id) ? d.mio : null,
+    semanas: Number.isInteger(d?.semanas) ? d.semanas : 0,
+    placa: d?.placa === true,
+    meta: Number.isInteger(d?.meta) ? d.meta : 4,
+  };
+};
+
+/** La suite de esta semana y lo que ha traído cada cual. Sin la migración de la suite, null. */
+export async function loadSuite() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_suite');
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
+  fail(error);
+  return normalizeSuite(data);
+}
+
+/** Lleva un mueble tuyo a la suite (o cambia el tuyo de sitio o por otro). `item`: sin uid, como en un piso. */
+export async function llevarASuite(item) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_suite_llevar', { item });
+  fail(error);
+  return normalizeSuite(data);
+}
+
+/** Retira lo que llevaste a la suite esta semana. */
+export async function retirarDeSuite() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_suite_retirar');
+  fail(error);
+  return normalizeSuite(data);
 }

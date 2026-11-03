@@ -149,8 +149,10 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       sillones y camas se sienta o se tumba; si no lo tocas, pasea solo de vez en cuando.
     - Su aspecto se guarda en el servidor y **los vecinos lo ven** al visitar tu piso (migración nueva, la aplica
       Francisco).
-    - **Misiones diarias de la habitación**: dan **ropa y colores del personaje**, nunca tickets (los tickets siguen
-      ganándose solo leyendo).
+    - **Misiones diarias de la habitación**: dan **ropa y colores del personaje**. **Desde la 1.79** (decisión de
+      Francisco del 3-11-2026): cuando ya tienes **toda la ropa** que se gana con ellas, las tres del día dan **5
+      tickets** en su lugar (lo cuenta el servidor). Es la segunda excepción a «los tickets solo se ganan leyendo»,
+      junto a la cuenta del fundador; no se extiende a más sin que lo pida.
     - **Vecinos**, sin texto libre: regalar copias de muebles, libro de visitas con sellos de frase cerrada y «me
       gusta» por mueble. Visitar con tu personaje queda fuera por ahora.
   - **Sonidos cozy propios del edificio** (1-11-2026): sintetizados, por material y por acción (§6 del plan).

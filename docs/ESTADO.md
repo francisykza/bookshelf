@@ -6,6 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Cerrada, sin publicar**: 1.79.0 (2026-11-03, §79). Las misiones del día dan 5 tickets cuando ya tienes toda la
+  ropa, la cartela de la fachada del hotel es más pequeña y está la suite de la semana del ático, decorada entre todos
+  (sin votos ni pisos ajenos: decisión de Francisco). Rama `1.79-suite-semana`, en su PR. **Dos migraciones sin
+  aplicar**: `20261109120000_edificio_diarias_tickets.sql` y `20261109130000_hotel_suite_semana.sql`.
 - **Versión publicada**: 1.78.0 (2026-11-03): el encargo del 3-11-2026 entero (§78): revelación del sobre
   que cabe en el iPhone, sin sellos de frase, correo que se lee, regalos uno al día hasta «raro» y con copias de sobra,
   vestíbulo discreto, sobres con más impacto, tanda 3 (muebles con el perrito y el búho, ropa «Noche estrellada»,
@@ -53,6 +57,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.79.0 | Misiones del día que dan 5 tickets con el armario completo, cartela del hotel más pequeña y la suite de la semana decorada entre todos en el ático (en el PR; migraciones sin aplicar) | §79 |
 | 1.78.0 | El encargo del 3-11-2026: arreglos (sobre en el iPhone, sin sellos, correo leído, regalos uno al día hasta «raro»), vestíbulo discreto, sobres con más impacto, tanda 3 con mascota y conjunto «Noche estrellada», paseo hasta la tienda y la limusina, mantener pulsado para mover y la habitación primero con iconos (publicada; migraciones aplicadas) | §78 |
 | 1.77.0 | La fachada del Gran Hotel entera sobre una cartela crema, planta elegida con filete y rombo de latón y el Directorio de las plantas; el armario como modo propio del piso («← Al piso» / «Armario»), Ropa, Aspecto y Compañía con vista previa que se guarda con «Listo», y el dragón posado a tu lado (publicada) | §77 |
 | 1.76.0 | La apertura de sobres sobre el mostrador: un sobre por colección (expositor, selector y mostrador), de frente e inclinado en la madera, tres gestos (tira, carta que asoma con 2 × 2, 3 + 2), el sobre sale del encuadre, elegir con ✓ y «Colocar [nombre]» al editor del piso (publicada) | §76 |
@@ -171,6 +176,33 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-03 · cuenta principal · 1.79.0 cerrada
+- Francisco pidió «cierra 1.79.0»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC, y
+  §79 escrito. Commit en la rama `1.79-suite-semana`, subida, y PR desde el navegador. **Sin publicar** y **las dos
+  migraciones sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
+
+### 2026-11-03 · cuenta principal · 1.79.0: misiones con el armario completo, cartela y suite (bloques)
+- **Misiones del día con el armario completo**: decisión de Francisco. Con toda la ropa ya ganada, las tres del día dan
+  **5 tickets** (`DIARIA_TICKETS`), contados en el servidor. La migración nueva
+  `supabase/migrations/20261109120000_edificio_diarias_tickets.sql` está **sin aplicar**. La hoja «Hoy» lo dice y se
+  abre sola al ganarlos. Es la segunda excepción a «los tickets solo se ganan leyendo» (anotada en CLAUDE.md).
+- **Cartela de la fachada del hotel más pequeña** sin planta elegida: solo el nombre y «Toca una planta», con lo demás
+  para el lector de pantalla. El hotel se ve más grande y se ajusta con una transición corta (sin ella con movimiento
+  reducido).
+- Pruebas: PGlite diarias (5), e2e v170 (390, escritorio) y v174/v177 (320, 390, escritorio, WebKit 390).
+- **Paso B del hotel, «La suite de la semana»** (`hotel/SuiteSemana.jsx`, `hotel/suite.js`). Primero lo hice con
+  candidatos por edificio y votación de todo el hotel, como decía el plan, pero Francisco lo rechazó el 3-11-2026: **el
+  hotel es lo social y el edificio lo personal**. Ningún piso sale de su edificio y no se vota.
+  - Ahora es una habitación común que empieza vacía cada lunes. Cada huésped lleva **un mueble suyo**, sin perderlo:
+    corriente, de suelo, alfombra o pared.
+  - Lo puede mover («Otro sitio»), cambiar o retirar, y se ve quién trajo cada cosa.
+  - Con 4 semanas distintas aportando gana la «Placa de la suite», una vez. Es de rareza `especial`: no se compra, ni
+    sale en sobres, ni se regala, ni se recicla. Ni tickets ni fichas.
+  - El ático de la fachada es una zona nueva, abierta en el Directorio y con la «Á» del ascensor.
+  - Migración `20261109130000_hotel_suite_semana.sql`, **sin aplicar**.
+  - Pruebas: PGlite `suite.rls.test.js` (10) y e2e `v179-suite` (320, 390, escritorio, WebKit 390).
+  - La placa colgada en un piso aún no se ha mirado en una captura.
 
 ### 2026-11-03 · cuenta principal · migraciones de la 1.78.0 aplicadas
 - Francisco preguntó por qué no se habían hecho las migraciones «como siempre» y dijo «Sí, hazlo tú». Él inició sesión

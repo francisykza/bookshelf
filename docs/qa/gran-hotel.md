@@ -154,6 +154,12 @@ persona.
 
 ### 9.3 La suite de la semana
 
+> **1.79 (decisión de Francisco del 3-11-2026): lo de abajo ya no vale.** La suite es una habitación común del ático
+> que empieza vacía cada lunes. Cada huésped lleva un mueble suyo, sin perderlo (corriente, de suelo, alfombra o
+> pared), lo puede mover, cambiar o retirar, y se ve quién trajo cada cosa. Con 4 semanas aportando, la «Placa de la
+> suite» (una vez). Ni pisos de nadie, ni votos, ni tickets. Ver `hotel/SuiteSemana.jsx` y
+> `20261109130000_hotel_suite_semana.sql`.
+
 Arriba del todo, en el ático, se ve **el piso con más «me gusta» de la semana**, con el alias de quien vive en él y
 una placa dorada. Se entra a mirarlo (solo mirar, como la visita a un vecino).
 
@@ -238,6 +244,8 @@ nada**.
 - **Minijuego del casino**: «Las 21 páginas» (veintiuno contra el crupier con cartas-página, 3 manos al día).
 - **Casino**: sin apostar y tras leer. Partida diaria gratis, nunca se pierde nada, la puerta solo se abre si has
   registrado lectura ese día; las fichas se canjean por sobres, ropa y el conejo de la chistera.
-- **Suite de la semana**: en dos pasos (candidato por edificio, vota todo el hotel, gana el lunes) y voluntaria
-  («Presentar mi piso», desactivado de serie).
+- ~~**Suite de la semana**: en dos pasos (candidato por edificio, vota todo el hotel, gana el lunes) y voluntaria
+  («Presentar mi piso», desactivado de serie).~~ **Cambiado el 3-11-2026**: el hotel es lo social, lejos del
+  edificio, que es lo personal (amigos y conocidos); no se enseñan pisos fuera de su edificio ni se vota. La suite es
+  una habitación común que decoran entre todos cada semana (hecha en la 1.79, ver la nota de §9.3).
 - **Por dónde empezar**: el vestíbulo con el ascensor (paso A).

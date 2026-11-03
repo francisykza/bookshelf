@@ -589,7 +589,9 @@ export function renderHotel() {
     { id: 'terraza', boxes: [[-0.3, TD - 1.3, 22 + U - 0.1, 10.3, TD + 0.2, 23.6 + U]] },
     { id: 'mirador', boxes: [[2.8, 1.7, 29 + U - 0.2, 7.2, TD - 1.8, SPIRE]] },
     { id: 'baile', boxes: [[-0.3, TD - 0.1, 13.3 + 3, 10.3, TD + 0.75, 16.6 + 3]] },
-    { id: 'suites', boxes: [[0, 0, 16.6 + 3, 10, TD, 22 + U], [1.4, 0.8, 22 + U, 8.6, TD - 1, 29 + U]] },
+    // 1.79: el bloque estrecho de encima de la terraza es el ático, la suite de la semana
+    { id: 'suite', boxes: [[1.4, 0.8, 22 + U + 0.25, 8.6, TD - 1, 29 + U]] },
+    { id: 'suites', boxes: [[0, 0, 16.6 + 3, 10, TD, 22 + U]] },
     { id: 'cafe', boxes: [[0, 0, 5.15, 10, TD, 13.3 + 3]] },
     { id: 'vestibulo', boxes: [[-0.8, -0.3, 0, 10.8, TD + 2.1, 5.2]] },
     { id: 'plaza', boxes: [[-4.5, TD + 0.3, 0, 14.5, QUAY, 1.2]] },
