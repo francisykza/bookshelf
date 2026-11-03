@@ -6,10 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **1.77.0 (2026-11-02), en un PR a `main`, aún sin publicar**: la fachada del Gran Hotel con la cartela al pie y el
-  Directorio, y el armario como modo propio del piso con Ropa / Aspecto / Compañía y «Listo» (§77). Sin migraciones.
-  Se publica al fusionar el PR (subir `main` despliega en Vercel).
-- **Versión publicada**: 1.76.0 (2026-11-02): la apertura de sobres sobre el mostrador (§76): un sobre por colección,
+- **Versión publicada**: 1.77.0 (2026-11-02): la fachada del Gran Hotel con la cartela al pie y el Directorio, y el
+  armario como modo propio del piso con Ropa / Aspecto / Compañía y «Listo» (§77). Sin migraciones. Fusionada desde
+  el PR #2 (rama `1.77-hotel-armario`); `/sw.js` ya trae la 1.77.0.
+- **Antes, 1.76.0** (2026-11-02): la apertura de sobres sobre el mostrador (§76): un sobre por colección,
   de frente e inclinado en la madera, tres gestos («1 de 5» con 2 × 2), 3 + 2, y «Colocar [nombre]» al editor del
   piso. Sin migraciones. Fusionada desde el PR #1 (rama `1.76-sobres-mostrador`); `/sw.js` ya trae la 1.76.0.
 - **Antes, 1.75.0** (2026-11-02): el vestíbulo del Gran Hotel con el ascensor de latón (§75; plan de
@@ -46,7 +46,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.77.0 | La fachada del Gran Hotel entera sobre una cartela crema, planta elegida con filete y rombo de latón y el Directorio de las plantas; el armario como modo propio del piso («← Al piso» / «Armario»), Ropa, Aspecto y Compañía con vista previa que se guarda con «Listo», y el dragón posado a tu lado (en PR) | §77 |
+| 1.77.0 | La fachada del Gran Hotel entera sobre una cartela crema, planta elegida con filete y rombo de latón y el Directorio de las plantas; el armario como modo propio del piso («← Al piso» / «Armario»), Ropa, Aspecto y Compañía con vista previa que se guarda con «Listo», y el dragón posado a tu lado (publicada) | §77 |
 | 1.76.0 | La apertura de sobres sobre el mostrador: un sobre por colección (expositor, selector y mostrador), de frente e inclinado en la madera, tres gestos (tira, carta que asoma con 2 × 2, 3 + 2), el sobre sale del encuadre, elegir con ✓ y «Colocar [nombre]» al editor del piso (publicada) | §76 |
 | 1.75.0 | El vestíbulo del Gran Hotel por dentro: recepción con los encargos de la semana, ascensor de latón con la botonera de plantas, tablón y guardarropa (publicada) | §75 |
 | 1.74.0 | Los menús de debajo de las habitaciones (balda con nombres, armario-cabina, mesita del vecino de madera) y la limusina negra delante del portal que lleva, con un viaje corto, a la fachada viva del Gran Hotel (publicada) | §74 |
@@ -86,7 +86,6 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Fusionar el PR de la 1.77.0** cuando Francisco lo apruebe; al subir `main`, comprobar que `/sw.js` trae la 1.77.0.
 - **Cartel de la tienda (1.76)**: el local dice VIDEOCLUB y la maqueta de Francisco «LA TIENDA DEL BAJO»; preguntarle
   antes de cambiarlo.
 000. **Paquete «salón social y radio» (1.62, §62): publicado completo.** Lo que sigue es el resumen del encargo del bloque 4,
@@ -165,10 +164,11 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
-### 2026-11-02 · cuenta principal · 1.77.0: fachada del Gran Hotel y armario «Compañía» (en un PR a `main`)
+### 2026-11-02 · cuenta principal · 1.77.0: fachada del Gran Hotel y armario «Compañía» (publicada)
 - Encargo de Francisco (dos textos y una maqueta de dos paneles): la fachada del hotel con su Directorio (panel
   izquierdo) y el armario de «Tu piso» con la pestaña «Compañía» (panel derecho). Cerrado como 1.77.0 («Sí, cierra
-  1.77.0»): versión subida, SPEC §77 y PR desde la rama `1.77-hotel-armario`.
+  1.77.0»): versión subida, SPEC §77 y PR #2 desde la rama `1.77-hotel-armario`; publicada con «súbela» (avance
+  rápido de `main`; Vercel sirve la 1.77.0).
 - Hotel (`hotel/GranHotel.jsx`, `hotelView.js`, `hotelArt.js`, `hotel.css`, barra de `EdificioPanel.jsx`): barra
   «← Al puerto» (antes «Volver en limusina») y «Directorio»; el hotel entero, de la aguja a la limusina, por encima de
   una cartela crema al pie (nombre corto, «Próxima apertura» o «Abierto», lema). La planta elegida lleva un filete de
@@ -188,7 +188,7 @@ Formato de cada entrada (la más reciente arriba):
 - Pruebas: nuevas `e2e-community/v177-hotel-directorio.spec.js` (360/390) y `v177-armario.spec.js` (390 y 360 con
   movimiento reducido); ajustadas v169, v170, v172, v174 y v175. Pasan en Chromium; WebKit no se ha pasado esta vez
   (emulación; nada probado en un iPhone real). Build, Vitest (377) y lint sin errores nuevos.
-- Queda: fusionar el PR cuando Francisco lo apruebe (al subir `main`, comprobar que `/sw.js` trae la 1.77.0); el
+- Queda: el
   cartel VIDEOCLUB / «LA TIENDA DEL BAJO» sigue pendiente de su respuesta.
 
 ### 2026-11-02 · cuenta principal · 1.76.0: apertura de sobres sobre el mostrador (publicada)
