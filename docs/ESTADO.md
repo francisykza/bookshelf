@@ -11,8 +11,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   - la mesa para dos con un amigo, en diferido, con fichas y garbanzos;
   - la caja, donde las fichas se cambian por ropa, muebles con efectos, el sobre del casino y el conejo de la chistera.
 
-  Está en la rama `1.80-casino` (PR #5). **Su migración `20261110120000_hotel_casino.sql` está sin aplicar**: antes de
-  «súbelo», ofrecer el flujo del SQL Editor.
+  Está en la rama `1.80-casino` (PR #5). **Su migración `20261110120000_hotel_casino.sql` está aplicada en
+  producción** (3-11-2026).
 - **Versión publicada**: 1.79.0 (2026-11-03, §79). Las misiones del día dan 5 tickets cuando ya tienes toda la
   ropa, la cartela de la fachada del hotel es más pequeña y está la suite de la semana del ático, decorada entre todos
   (sin votos ni pisos ajenos: decisión de Francisco). Desde la rama `1.79-suite-semana` (PR #4), con avance rápido de `main`; `/sw.js` ya trae la 1.79.0. **Sus dos migraciones
@@ -107,8 +107,6 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Migración de la 1.80.0 sin aplicar** (`20261110120000_hotel_casino.sql`): Francisco la aplica (o «hazlo tú» con el
-  SQL Editor) antes de publicar. Sin ella, el casino dice que abre pronto.
 - **Reciclar solo lo repetido en los sobres** (idea de Francisco del 3-11-2026, para más adelante): un ajuste en la tienda
   del tipo «si ya tengo N copias de un mueble, recicla las que salgan de más en los sobres» (N lo elige la persona).
   Al abrir el sobre, lo que pase de N se recicla solo por sus tickets (las mismas cifras de `piso_reciclar`), y la
@@ -191,6 +189,13 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-03 · cuenta principal · migración de la 1.80.0 aplicada
+- Francisco dijo «Sí, hazlo tú». Claude pegó `20261110120000_hotel_casino.sql` en el SQL Editor del proyecto
+  `bookshelf` y su SHA-256 coincidía con el de git (`0eb0abf9…1539`). Francisco pulsó «Run» y salió «Success».
+- Comprobado con la clave pública: las ocho funciones del casino y las tablas `piso_casino_cuentas`, `_mesas` y `_manos`
+  dan 42501 («permission denied») al anónimo, no «not found».
+- La 1.80.0 sigue sin publicar: falta «súbelo».
 
 ### 2026-11-03 · cuenta principal · 1.80.0 cerrada
 - Francisco dijo «Cierra la 1.80»:
