@@ -11,9 +11,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   vestíbulo discreto, sobres con más impacto, tanda 3 (muebles con el perrito y el búho, ropa «Noche estrellada»,
   efectos en la fachada), tu personaje (y tu compañero) andando a la tienda y a la limusina, mantener pulsado para
   mover un mueble y tu piso sin decorar al entrar con iconos claros. Desde la rama `1.78-encargo-3-11` (PR #3), con avance rápido de `main`; `/sw.js` ya trae la 1.78.0.
-  **Dos migraciones por aplicar (las aplica Francisco)**: `20261108120000_edificio_regalos_diarios.sql` y
-  `20261108130000_edificio_tanda3.sql`; sin ellas, los regalos siguen con las reglas de antes en el servidor y los
-  muebles nuevos no salen en los sobres.
+  **Sus dos migraciones están aplicadas en producción** (3-11-2026): `20261108120000_edificio_regalos_diarios.sql` y
+  `20261108130000_edificio_tanda3.sql`.
 - **Antes, 1.77.0** (2026-11-02): la fachada del Gran Hotel con la cartela al pie y el Directorio, y el
   armario como modo propio del piso con Ropa / Aspecto / Compañía y «Listo» (§77). Sin migraciones. Fusionada desde
   el PR #2 (rama `1.77-hotel-armario`); `/sw.js` ya trae la 1.77.0.
@@ -54,7 +53,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.78.0 | El encargo del 3-11-2026: arreglos (sobre en el iPhone, sin sellos, correo leído, regalos uno al día hasta «raro»), vestíbulo discreto, sobres con más impacto, tanda 3 con mascota y conjunto «Noche estrellada», paseo hasta la tienda y la limusina, mantener pulsado para mover y la habitación primero con iconos (publicada; dos migraciones por aplicar) | §78 |
+| 1.78.0 | El encargo del 3-11-2026: arreglos (sobre en el iPhone, sin sellos, correo leído, regalos uno al día hasta «raro»), vestíbulo discreto, sobres con más impacto, tanda 3 con mascota y conjunto «Noche estrellada», paseo hasta la tienda y la limusina, mantener pulsado para mover y la habitación primero con iconos (publicada; migraciones aplicadas) | §78 |
 | 1.77.0 | La fachada del Gran Hotel entera sobre una cartela crema, planta elegida con filete y rombo de latón y el Directorio de las plantas; el armario como modo propio del piso («← Al piso» / «Armario»), Ropa, Aspecto y Compañía con vista previa que se guarda con «Listo», y el dragón posado a tu lado (publicada) | §77 |
 | 1.76.0 | La apertura de sobres sobre el mostrador: un sobre por colección (expositor, selector y mostrador), de frente e inclinado en la madera, tres gestos (tira, carta que asoma con 2 × 2, 3 + 2), el sobre sale del encuadre, elegir con ✓ y «Colocar [nombre]» al editor del piso (publicada) | §76 |
 | 1.75.0 | El vestíbulo del Gran Hotel por dentro: recepción con los encargos de la semana, ascensor de latón con la botonera de plantas, tablón y guardarropa (publicada) | §75 |
@@ -172,6 +171,16 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-03 · cuenta principal · migraciones de la 1.78.0 aplicadas
+- Francisco preguntó por qué no se habían hecho las migraciones «como siempre» y dijo «Sí, hazlo tú». Él inició sesión
+  en Supabase en el panel; las pegó Claude en el SQL Editor del proyecto `bookshelf`, una a una y en orden, comprobando
+  bytes y SHA-256 contra el archivo de git (regalos 2405 B `7d0c52c8…`, tanda 3 5415 B `0413ee58…`), y Francisco
+  pulsó «Run» en cada una («Success»).
+- Comprobado con la clave pública: `piso_sobre('balcon')` ya trae el telescopio y el perrito; `piso_prendas_orden`
+  llega hasta la capa; `piso_personaje_valido` acepta el conjunto «Noche estrellada»; el anónimo recibe 42501 en
+  `piso_regalar`.
+- **Para la próxima**: al cerrar o subir una versión con migraciones, ofrecer este paso antes de publicar.
 
 ### 2026-11-03 · cuenta principal · 1.78.0 publicada
 - Francisco dijo «Súbela»: avance rápido de `main` hasta la rama `1.78-encargo-3-11` (PR #3), push y Vercel; `/sw.js`
