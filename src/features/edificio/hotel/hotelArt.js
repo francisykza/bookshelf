@@ -259,7 +259,7 @@ export function renderHotel() {
   lit(() => {
     for (const [x0, x1] of [
       [0.2, 3.1],
-      [6.9, 9.8],
+      [6.9, 8.2],
     ])
       r.box(x0, TD + 0.3, 0.5, x1, TD + 0.36, 2.0, [252, 210, 150], {
         grain: 0,
@@ -283,6 +283,20 @@ export function renderHotel() {
   }
   r.setId(0);
   r.box(4.3, TD + 0.3, 0, 5.7, TD + 3.2, 0.02, RED, { grain: 0, step: 0.05 });
+  // 1.80: la puerta del casino del sótano, a la derecha de la marquesina: un marco de latón, la puerta verde entornada
+  // con luz roja dentro y los escalones que bajan (el naipe de neón de encima va al final, con el rótulo)
+  lit(() => r.box(8.35, TD + 0.28, 0, 9.85, TD + 0.34, 2.15, [255, 150, 170], { grain: 0, step: 0.04 }));
+  r.box(8.5, TD + 0.34, 0, 9.7, TD + 0.38, 2.0, [34, 30, 38], {
+    grain: 0,
+    step: 0.03,
+    face: (f, a, b) => {
+      if (f !== 'front') return undefined;
+      if (b < 0.5) return (b * 10) % 1 < 0.3 ? rgb(70, 60, 64) : rgb(110, 100, 96);
+      if (a > 9.25) return (b * 5) % 1 < 0.12 ? rgb(30, 70, 52) : rgb(46, 104, 76);
+      return b < 1.7 ? rgb(196, 62, 72) : rgb(120, 36, 48);
+    },
+  });
+  light(9.1, TD + 0.6, 1.2, 14, [255, 120, 140]);
   // El rótulo: tablero oscuro (las letras van al final, en neón)
   r.box(1.5, TD + 0.3, 2.45, 8.5, TD + 0.38, 4.8, [42, 30, 44], { grain: 0, step: 0.05 });
   light(5, TD + 1.5, 1.4, 34, [255, 196, 130]);
@@ -297,7 +311,7 @@ export function renderHotel() {
     r.box(x - 0.14, TD + 3.56, 2.55, x + 0.24, TD + 3.94, 2.62, IRON, { grain: 0, step: 0.03 });
     light(x, TD + 3.75, 2.4, 26);
   }
-  for (const x of [-0.6, 10.2]) {
+  for (const x of [-0.6, 11.0]) {
     r.box(x - 0.5, TD + 1.4, 0, x + 0.5, TD + 2.4, 0.5, STONE, { grain: 0, step: 0.05 });
     r.box(x - 0.05, TD + 1.85, 0.5, x + 0.05, TD + 1.95, 1.3, [96, 70, 52], { grain: 0, step: 0.03 });
     r.box(x - 0.55, TD + 1.35, 1.3, x + 0.55, TD + 2.45, 2.5, LEAF, { grain: 1, step: 0.05, seed: x });
@@ -378,6 +392,21 @@ export function renderHotel() {
     if (c === neonPinkC) neonPink.push(sy * W + sx);
   };
   const widthOf = (line) => [...line].reduce((w, ch) => w + (ch === ' ' ? 2 : GLYPHS[ch][0].length + 1), -1);
+  // El naipe de neón rosa del casino, encima de su puerta (parpadea con el resto del neón rosa)
+  {
+    const c = r.project(9.1, TD + 0.36, 2.75);
+    const SPADE = ['..#..', '.###.', '#####', '#####', '..#..'];
+    SPADE.forEach((row, gy) =>
+      [...row].forEach((bit, gx) => {
+        if (bit !== '#') return;
+        const sx = Math.round(c.sx - 2 + gx);
+        const sy = Math.round(c.sy - 2 + gy);
+        r.pix[sy * W + sx] = neonPinkC;
+        glow[sy * W + sx] = 1;
+        neonPink.push(sy * W + sx);
+      }),
+    );
+  }
   ['GRAN HOTEL', 'DEL PUERTO'].forEach((line, row) => {
     let x = Math.round((boardW - widthOf(line)) / 2);
     const y0 = 2 + row * 6;
@@ -593,6 +622,8 @@ export function renderHotel() {
     { id: 'suite', boxes: [[1.4, 0.8, 22 + U + 0.25, 8.6, TD - 1, 29 + U]] },
     { id: 'suites', boxes: [[0, 0, 16.6 + 3, 10, TD, 22 + U]] },
     { id: 'cafe', boxes: [[0, 0, 5.15, 10, TD, 13.3 + 3]] },
+    // 1.80: la puerta del casino del sótano, a la derecha de la marquesina (antes que el vestíbulo, que la rodea)
+    { id: 'casino', boxes: [[8.3, TD + 0.2, 0, 9.9, TD + 0.6, 3.1]] },
     { id: 'vestibulo', boxes: [[-0.8, -0.3, 0, 10.8, TD + 2.1, 5.2]] },
     { id: 'plaza', boxes: [[-4.5, TD + 0.3, 0, 14.5, QUAY, 1.2]] },
   ];

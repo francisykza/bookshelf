@@ -94,10 +94,10 @@ test('el hotel cabe entero sobre la cartela, y tocar una planta o elegirla en el
   await expect(plaque.getByRole('heading', { name: 'Gran Hotel del Puerto' })).toBeVisible();
   expect((await canvasState(page)).brass).toBe(0);
 
-  // El Directorio: las ocho plantas con su estado (1.79: con la suite de la semana); elegir el café da lo mismo que tocarlo
+  // El Directorio: las ocho plantas con su estado (1.79: con la suite de la semana; 1.80: con el casino del sótano); elegir el café da lo mismo que tocarlo
   await dir.click();
   const list = hotel.getByRole('dialog', { name: 'Directorio' });
-  await expect(list.getByRole('button')).toHaveCount(9);
+  await expect(list.getByRole('button')).toHaveCount(10);
   await expect(list.getByRole('button', { name: /Vestíbulo/ })).toContainText('Abierto · entrar');
   await expect(list.getByRole('button', { name: /Café-biblioteca/ })).toContainText('Próxima apertura');
   await shot(page, info, 'v177-hotel-directorio');

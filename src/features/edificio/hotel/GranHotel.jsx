@@ -3,7 +3,8 @@
 // tocándolo; sin él, con movimiento reducido) y la fachada viva del hotel, a todo lo que da la pantalla, que se toca
 // planta a planta (Francisco: «el gran hotel tiene demasiados menús y se empequeñece»: sin fila de botones; para el
 // teclado, cada planta tiene un botón invisible sobre el dibujo que se ve al enfocarlo). Aún no se entra en ninguna
-// sala salvo el vestíbulo (1.75, Vestibulo.jsx) y la suite de la semana del ático (1.79, SuiteSemana.jsx): tocarlas es
+// sala salvo el vestíbulo (1.75, Vestibulo.jsx), la suite de la semana del ático (1.79, SuiteSemana.jsx) y el casino del
+// sótano (1.80, Casino.jsx): tocarlas es
 // entrar; las demás plantas dicen qué habrá y «Abre pronto».
 // 1.77 (maqueta de Francisco): el hotel entero cabe en la pantalla, de la aguja a la limusina, por encima de una cartela
 // crema al pie que dice qué es la planta elegida («Café-biblioteca», «Próxima apertura» y su lema); la planta elegida
@@ -11,6 +12,7 @@
 // plantas con su estado: elegir una ahí es lo mismo que tocarla en la fachada.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FLOOR_ORDER, mountHotel, ZONES } from './hotelView';
+import { Casino } from './Casino';
 import { mountRide } from './ride';
 import { SuiteSemana } from './SuiteSemana';
 import { Vestibulo } from './Vestibulo';
@@ -188,9 +190,9 @@ function HotelFacade({ onEnter, directory, onDirectory }) {
 
 /**
  * `room`: la sala en la que estás (null, la fachada); `onRoom(sala)` entra en ella o sale a la calle. `directory`:
- * el Directorio abierto (lo abre la barra del panel); `onDirectory(abierto)`.
+ * el Directorio abierto (lo abre la barra del panel); `onDirectory(abierto)`. `soundOn`: el sonido de la app (el casino lo usa).
  */
-export function GranHotel({ room = null, onRoom = () => {}, directory = false, onDirectory = () => {} }) {
+export function GranHotel({ room = null, onRoom = () => {}, directory = false, onDirectory = () => {}, soundOn = false }) {
   const [riding, setRiding] = useState(() => !reducedMotion());
   // Abrir el Directorio durante el viaje es llegar ya
   if (directory && riding) setRiding(false);
@@ -203,6 +205,8 @@ export function GranHotel({ room = null, onRoom = () => {}, directory = false, o
         <LimoRide onDone={() => setRiding(false)} />
       ) : room === 'vestibulo' ? (
         <Vestibulo onStreet={() => onRoom(null)} onFloor={onRoom} />
+      ) : room === 'casino' ? (
+        <Casino onStreet={() => onRoom(null)} soundOn={soundOn} />
       ) : room === 'suite' ? (
         <SuiteSemana onStreet={() => onRoom(null)} />
       ) : (

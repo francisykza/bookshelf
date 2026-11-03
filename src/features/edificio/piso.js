@@ -18,7 +18,7 @@ import { CATALOG, CATEGORIES, COMPANEROS, PAREDES, SETS, SUELOS, catalogItem } f
 import { createCompanion, misticoThumb } from './misticos';
 import { freeCopies, ownedCopies } from './inventory';
 import { houseSwatch, pixelIcon, pixelVars } from './pixelUi';
-import { COLORES_PELO, COMPLEMENTOS, CONJUNTO_ESTRELLAS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
+import { COLORES_PELO, COMPLEMENTOS, CONJUNTO_ESTRELLAS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, prendaOrigen, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
 import { ACTOR_ID, ART_H, ART_W, backdropImage, createRoomRenderer, renderActorThumb, renderThumb } from './render';
 import { ROOM, addItem, check, heightOf, itemsOn, moveItem, reasonText, recolorItem, rectOf, removeItem, rotateItem, setFloor, setWall, wallLength } from './room';
 
@@ -331,11 +331,11 @@ export function mountPiso(container, { room: initial, editable = false, evening 
         .map((o) => {
           const next = { ...look, [row.key]: o.value };
           const locked = isPrenda(row.key, o.value) && !owned.includes(prendaKey(row.key, o.value));
-          const b = el('button', { type: 'button', class: locked ? 'ep-swatch is-locked' : 'ep-swatch', 'data-outfit': prendaKey(row.key, o.value), 'aria-pressed': String(look[row.key] === o.value), 'aria-label': locked ? `${o.nombre} (se gana con las misiones del día)` : null }, el('img', { class: 'ep-swatch__img', alt: '', width: 44, height: 44, src: actorThumb(next, row.frame, 44) }), el('span', { text: o.nombre }));
+          const b = el('button', { type: 'button', class: locked ? 'ep-swatch is-locked' : 'ep-swatch', 'data-outfit': prendaKey(row.key, o.value), 'aria-pressed': String(look[row.key] === o.value), 'aria-label': locked ? `${o.nombre} (${prendaOrigen(row.key, o.value)})` : null }, el('img', { class: 'ep-swatch__img', alt: '', width: 44, height: 44, src: actorThumb(next, row.frame, 44) }), el('span', { text: o.nombre }));
           b.addEventListener('click', () => {
             if (!locked) return setLook(next, `${row.nombre}: ${o.nombre.toLowerCase()}.`);
             sfx.play('invalid');
-            say(`${o.nombre}: se gana con las misiones del día.`);
+            say(`${o.nombre}: ${prendaOrigen(row.key, o.value)}.`);
           });
           return b;
         })
@@ -833,10 +833,12 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     startLife();
   }
 
-  // 1.78: también se mueven solas las mascotas y el polvo de estrellas de la capa
-  const hasPlacedMisticos = () => room.items.some((i) => catalogItem(i.id)?.rareza === 'mistico' || catalogItem(i.id)?.mascota);
+  // 1.78: también se mueven solas las mascotas y el polvo de estrellas de la capa (1.80: y los muebles vivos de la caja
+  // del casino y los destellos del vestido de lentejuelas)
+  const hasPlacedMisticos = () => room.items.some((i) => catalogItem(i.id)?.rareza === 'mistico' || catalogItem(i.id)?.mascota || catalogItem(i.id)?.vivo);
   const starry = () => Boolean(me && look?.complemento === 'capa');
-  const alive = () => !destroyed && !reducedMotion() && ((pal && me) || hasPlacedMisticos() || starry());
+  const sequined = () => Boolean(me && look?.jersey === 16);
+  const alive = () => !destroyed && !reducedMotion() && ((pal && me) || hasPlacedMisticos() || starry() || sequined());
 
   function startLife() {
     if (!life && alive()) life = requestAnimationFrame(lifeTick);
@@ -865,11 +867,15 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     const out = [];
     for (const it of room.items) {
       const cat = catalogItem(it.id);
-      if (skip?.has(it.uid) || (cat?.rareza !== 'mistico' && !cat?.mascota)) continue;
+      if (skip?.has(it.uid) || (cat?.rareza !== 'mistico' && !cat?.mascota && !cat?.vivo)) continue;
       const rc = rectOf(it);
-      // La mascota, sobre su cojín (más bajo que la peana); mira hacia donde mira el mueble
-      out.push({ id: it.id, uid: it.uid, x: (rc.x0 + rc.x1) / 2, y: (rc.y0 + rc.y1) / 2, z: heightOf(room, it) + (cat.mascota ? 0.2 : 0.22), tono: it.tono, flip: cat.mascota ? it.rot === 1 || it.rot === 2 : false });
+      // La mascota, sobre su cojín (más bajo que la peana); mira hacia donde mira el mueble. Lo vivo de la caja, desde
+      // el suelo del mueble (su dibujo sabe a qué altura va)
+      const lift = cat.vivo ? 0 : cat.mascota ? 0.2 : 0.22;
+      out.push({ id: it.id, uid: it.uid, x: (rc.x0 + rc.x1) / 2, y: (rc.y0 + rc.y1) / 2, z: heightOf(room, it) + lift, tono: it.tono, flip: cat.mascota || cat.vivo ? it.rot === 1 || it.rot === 2 : false });
     }
+    // Los destellos del vestido de lentejuelas, en tu personaje
+    if (sequined()) out.push({ id: 'destellos', x: me.x, y: me.y, z: me.h ?? 0, moving: me.pose === 'walk', flip: me.facing === 1 || me.facing === 2 });
     // El polvo de estrellas de la capa, alrededor de tu personaje (y de quien te visita, si la lleva)
     // (con el conjunto entero, «Noche estrellada», hay más y brillan más)
     if (starry()) out.push({ id: 'polvo-estrellas', x: me.x, y: me.y, z: me.h ?? 0, moving: me.pose === 'walk', flip: me.facing === 1 || me.facing === 2, full: Object.entries(CONJUNTO_ESTRELLAS).every(([k, v]) => look[k] === v) });

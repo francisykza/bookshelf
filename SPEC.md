@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.79.0 · 2026-11-03 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.80.0 · 2026-11-03 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4849,3 +4849,85 @@ Francisco**: `20261109120000_edificio_diarias_tickets.sql` y `20261109130000_hot
   - `v175-vestibulo`;
   - `v179-suite` (320, 390, escritorio y WebKit 390).
 
+## 80. El casino del sótano: «Las 21 páginas», la mesa para dos y la caja (1.80.0)
+
+Paso C del plan del Gran Hotel (`docs/qa/gran-hotel.md` §9.4). **Una migración nueva, la aplica Francisco**:
+`20261110120000_hotel_casino.sql`. Sin ella, la planta del casino dice que abre pronto.
+
+### 80.1 La sala y «Las 21 páginas»
+
+- Se baja desde el Directorio o con la «S» del ascensor del vestíbulo. La puerta de neón rosa está a la derecha de la
+  marquesina. **Solo abre el día que has registrado lectura** (páginas o una sesión); si no, la puerta está apagada.
+- La sala se dibuja con el motor isométrico (`hotel/casinoArt.js`): moqueta roja, mesa de tapete, crupier con visera,
+  neón «21» y la ventanilla de la caja. El crupier habla en un bocadillo con frases cerradas y nunca empuja a jugar.
+- Hay **tres manos al día sin apostar**: nunca se pierde nada. Las fichas son:
+
+  | Resultado | Fichas |
+  | --- | --- |
+  | Veintiuna servida | 12 |
+  | Ganar | 8 |
+  | Empate | 4 |
+  | Perder | 2 |
+
+  El tope es de 150 fichas a la semana. El mazo vive en el servidor, que solo enseña la primera carta del crupier; el
+  crupier pide hasta 17.
+- Aspecto de videojuego: un tapete verde de cerca con marco de latón y un marcador oscuro (fichas en cifras de píxel que
+  suben, la barra de la semana y las tres manos). Las cartas entran deslizándose; hay placas con los totales, el cartel
+  del resultado y botones gruesos («Pedir carta», «Plantarse»). Los sonidos son breves y solo suenan con el sonido de la
+  app. Con movimiento reducido no hay animaciones.
+- Funciones: `piso_casino(dia)`, `piso_casino_repartir(dia)` y `piso_casino_jugar(dia, accion)`.
+
+### 80.2 La mesa para dos
+
+- **Decisión de Francisco del 3-11-2026**: «Fichas y garbanzos», «Os seguís los dos», «En diferido». La regla está en
+  CLAUDE.md.
+- Se juega con un **amigo**, es decir, con **seguimiento mutuo**, en la comunidad y sin bloqueo. Los dos juegan contra
+  el mismo mazo y el mismo crupier, cada uno cuando quiere.
+- Las manos de la mesa cuentan entre las tres del día y dan **+2 fichas de compañía**, dentro del tope semanal.
+- Entre los dos se puede apostar (es la única excepción a «sin apostar»):
+  - hasta **10 fichas**, una vez al día por pareja;
+  - hasta **50 garbanzos**, una moneda imaginaria sin ningún valor: empiezas con 100 y ganas +20 cada día que lees.
+- Lo apostado se aparta al aceptar. Gana quien acaba más cerca de 21 sin pasarse; con empate, o si se pasan los dos, se
+  devuelve. El bote no cuenta para el tope.
+- Las cartas del amigo se ven boca abajo hasta que se resuelve. Una invitación de hace más de un día se retira sola, y
+  una partida a medias se resuelve plantando a quien faltaba.
+- Funciones: `piso_casino_invitar`, `piso_casino_aceptar`, `piso_casino_rechazar` y `piso_casino_mesa_jugar`.
+- En el cliente hay pestañas «A solas» / «Con un amigo» / «La caja», con un aviso cuando una mesa te espera
+  (`hotel/MesaParaDos.jsx`). Las cantidades son fijas: 0, 2, 5 o 10 fichas y 0, 10, 25 o 50 garbanzos.
+
+### 80.3 La caja
+
+- **Decisión de Francisco del 3-11-2026**: «muy atractiva con recompensas muy llamativas», con sus precios.
+- La caja se abre con la tercera pestaña o tocando la ventanilla de la sala (`hotel/CajaCasino.jsx`):
+
+  | Artículo | Fichas |
+  | --- | --- |
+  | Visera verde de crupier | 60 |
+  | Pantalón de raya diplomática | 80 |
+  | Chaleco de crupier | 100 |
+  | Sobre del casino | 120 |
+  | Fedora de ala corta | 140 |
+  | Vestido de lentejuelas, con destellos | 200 |
+  | Rótulo de neón «21» | 250 |
+  | Mesa de tapete verde, animada | 300 |
+  | Gramola, con luces y notas | 400 |
+  | **Conejo de la chistera**, compañero legendario | 1500 |
+
+- **El sobre del casino** es una tirada del «Edición coleccionista» con sus mismas probabilidades y su pity, y no toca los
+  tickets. Lo demás se tiene una sola vez.
+- **Los muebles y el conejo son exclusivos**: no salen en sobres, no se compran con tickets, no se reciclan ni se
+  regalan.
+- La ropa del casino no entra en las misiones del día, así que la regla de «toda la ropa → 5 tickets» sigue igual.
+- Presentación:
+  - El conejo va arriba, vivo, con rayos dorados, la cinta «Legendario · con efectos» y la barra de lo que falta.
+  - Cada artículo tiene su tarjeta con el dibujo de verdad, el precio y «Cambiar» o «Faltan N». Se confirma en el
+    propio sitio y lo que ya es tuyo lleva el sello «Ya es tuyo».
+  - Al cambiar aparece «¡Es tuyo!» o «¡Sobre abierto!», con lo que trae y dónde encontrarlo.
+  - No hay cuentas atrás ni ofertas. Con movimiento reducido, todo está quieto.
+- Funciones: `piso_casino_canjear(dia, articulo)` y `piso_casino` devuelve `caja`.
+
+### 80.4 Pruebas
+
+- PGlite: `casino.rls.test.js` (10), `casino-mesa.rls.test.js` (11) y `casino-caja.rls.test.js` (7).
+- e2e en emulación: `v180-casino.spec.js` (8) en 320, 390, escritorio y WebKit 390.
+- Regresión: v170, v172, v173, v175, v177 y v179, y `v178-tanda3`.

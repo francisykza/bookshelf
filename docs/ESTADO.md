@@ -6,6 +6,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Cerrada, sin publicar: 1.80.0** (2026-11-03, §80). El casino del sótano del Gran Hotel tiene:
+  - «Las 21 páginas»: tres manos al día sin apostar, que solo abren el día que lees;
+  - la mesa para dos con un amigo, en diferido, con fichas y garbanzos;
+  - la caja, donde las fichas se cambian por ropa, muebles con efectos, el sobre del casino y el conejo de la chistera.
+
+  Está en la rama `1.80-casino`. **Su migración `20261110120000_hotel_casino.sql` está sin aplicar**: antes de
+  «súbelo», ofrecer el flujo del SQL Editor.
 - **Versión publicada**: 1.79.0 (2026-11-03, §79). Las misiones del día dan 5 tickets cuando ya tienes toda la
   ropa, la cartela de la fachada del hotel es más pequeña y está la suite de la semana del ático, decorada entre todos
   (sin votos ni pisos ajenos: decisión de Francisco). Desde la rama `1.79-suite-semana` (PR #4), con avance rápido de `main`; `/sw.js` ya trae la 1.79.0. **Sus dos migraciones
@@ -100,6 +107,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Migración de la 1.80.0 sin aplicar** (`20261110120000_hotel_casino.sql`): Francisco la aplica (o «hazlo tú» con el
+  SQL Editor) antes de publicar. Sin ella, el casino dice que abre pronto.
+- **Reciclar solo lo repetido en los sobres** (idea de Francisco del 3-11-2026, para más adelante): un ajuste en la tienda
+  del tipo «si ya tengo N copias de un mueble, recicla las que salgan de más en los sobres» (N lo elige la persona).
+  Al abrir el sobre, lo que pase de N se recicla solo por sus tickets (las mismas cifras de `piso_reciclar`), y la
+  revelación lo dice («Reciclado: +3 tickets»). Lo decide el servidor dentro de `piso_abrir_sobre` (migración nueva):
+  nunca místicos, legendarios, sagas ni lo especial. Sin tocar probabilidades ni pity.
 - **Cartel de la tienda (1.76)**: el local dice VIDEOCLUB y la maqueta de Francisco «LA TIENDA DEL BAJO»; preguntarle
   antes de cambiarlo.
 000. **Paquete «salón social y radio» (1.62, §62): publicado completo.** Lo que sigue es el resumen del encargo del bloque 4,
@@ -177,6 +191,82 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-03 · cuenta principal · 1.80.0 cerrada
+- Francisco dijo «Cierra la 1.80»:
+  - versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC;
+  - §80 escrito;
+  - commit en la rama `1.80-casino`, subida y PR desde el navegador.
+- **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
+- Las tres entradas de abajo (bloque 1, mesa y caja) van en ese commit.
+
+### 2026-11-03 · cuenta principal · casino del sótano: «Las 21 páginas», la mesa para dos y la caja (en la 1.80.0)
+- Francisco dijo «vale continua» tras publicar la 1.79.0: paso C del plan del hotel (`docs/qa/gran-hotel.md` §9.4,
+  decisiones del 2-11-2026). Bloque 1 de 2, **sin commit y sin subir versión** (se cerrará como 1.80.0):
+  - Migración `supabase/migrations/20261110120000_hotel_casino.sql` (**sin aplicar**): fichas aparte
+    (`piso_casino_cuentas`), manos del día con el mazo guardado en el servidor (`piso_casino_manos`),
+    `piso_casino(dia)`, `piso_casino_repartir(dia)`, `piso_casino_jugar(dia, 'pedir' | 'plantarse')`. Tres manos al
+    día, sin apostar: veintiuna servida 12 fichas, ganar 8, empate 4, perder 2; tope de 150 a la semana. El crupier pide
+    hasta 17. Mientras se juega solo se ve la primera carta del crupier. Pruebas PGlite en
+    `src/features/edificio/__tests__/casino.rls.test.js` (10).
+  - Cliente: `hotel/Casino.jsx` (sala), `hotel/casinoArt.js` (dibujo isométrico: moqueta roja, mesa de tapete,
+    crupier con visera, neón «21», ventanilla de la caja), `hotel/veintiuna.js` (reglas, cartas y «¿has leído hoy?»; no
+    se llama `casino.js` porque en Windows choca con `Casino.jsx`). Servicio en `service.js`. Puerta de neón rosa a
+    la derecha de la marquesina (`hotelArt.js`, zona `casino`; el macetero de la derecha pasa a x = 11), planta en el
+    Directorio y «S» del ascensor abierta.
+  - **La lectura del día la sabe la app** (páginas registradas hoy o una sesión, como la caja del Ático): el servidor
+    no puede comprobarlo; el límite real es el tope semanal. Como las misiones del día, acepta ayer, hoy y mañana.
+  - e2e `e2e-community/v180-casino.spec.js` (4; capturas `v180-*`); `v175` usa ahora la terraza como planta cerrada
+    y `v177` cuenta 10 plantas.
+- **Más presencia y más videojuego** (Francisco, mismo día: «que el menú de fichas y el propio juego vaya acorde a los
+  colores de la sala y sea más videojuego, que dé pie a jugar»): la mesa pasa a ser un tapete verde de cerca con marco
+  de latón y nogal, marcador oscuro (fichas en cifras de píxel que suben al ganar, barra de la semana y las tres manos
+  como fichas de colores), cartas grandes que se reparten deslizándose, totales en placas, cartel del resultado, botones
+  gruesos que se hunden y el crupier que habla en un bocadillo con frases cerradas (nunca empuja a jugar otra). Sonidos
+  breves (`deal`, `chips`, `mano-*` en `shopAudio.js`) solo con el sonido de la app; `GranHotel` recibe `soundOn`.
+  Con movimiento reducido, sin animaciones. El botón de pedir dice «Pedir carta».
+- **La mesa para dos** (Francisco, mismo día; respuestas «Fichas y garbanzos», «Os seguís los dos», «En diferido»;
+  regla en CLAUDE.md). En la misma migración: `piso_casino_mesas` (una al día por pareja, índice único sobre la pareja
+  sin contar las rechazadas), columnas `garbanzos`/`garbanzos_dia` en las cuentas y `mesa` en las manos (estado nuevo
+  `esperando`). RPC `piso_casino_invitar(dia, amigo, fichas, garbanzos)`, `piso_casino_aceptar(mesa)`,
+  `piso_casino_rechazar(mesa)` (también retira quien invita), `piso_casino_mesa_jugar(mesa, accion)`; internas
+  `piso_casino_amigo` (seguimiento mutuo, comunidad, sin bloqueo), `piso_casino_llegar` (+20 garbanzos el primer juego
+  del día), `piso_casino_mesa_resolver` y `piso_casino_mesas_vencer` (invitaciones de hace más de un día se retiran;
+  partidas a medias se resuelven plantando a quien faltaba). `piso_casino(dia)` devuelve además `garbanzos`, `mesas` y
+  `amigos`. Lo apostado (≤ 10 fichas, ≤ 50 garbanzos cada uno) se aparta al aceptar; gana quien acabe más cerca de 21
+  sin pasarse, el empate (o pasarse los dos) devuelve. Cada mano de mesa da +2 de compañía dentro del tope semanal; el
+  bote no cuenta para el tope. Las cartas del amigo no se ven hasta resolver. Pruebas `casino-mesa.rls.test.js` (11).
+  - Cliente: pestañas «A solas» / «Con un amigo» (con aviso de lo que te espera), `hotel/MesaParaDos.jsx`
+    (invitaciones, mesas en curso, invitar con cantidades fijas 0/2/5/10 fichas y 0/10/25/50 garbanzos, la mesa con el
+    amigo y sus cartas boca abajo, el bote y el resultado), piezas comunes en `hotel/cartas21.jsx` y
+    `hotel/useCountUp.js`. Garbanzos en el marcador. Simulado y e2e ampliados (`v180-casino.spec.js`, 7; capturas
+    `v180-mesa-*`).
+- **La caja** (Francisco, mismo día: «Sí, la caja», «muy atractiva con recompensas muy llamativas»; precios suyos). En la
+  misma migración: `piso_casino_caja_precios()`, `piso_casino_exclusivos()` y `piso_casino_ropa()`; `piso_casino`
+  devuelve `caja` ([{ id, tipo, precio, tienes }]) y `piso_casino_canjear(dia, articulo)` cobra y da. Visera 60, raya
+  diplomática 80, chaleco de crupier 100, **sobre del casino 120** (una tirada del «Edición coleccionista» con sus
+  probabilidades y su pity; los tickets no se tocan: se suman y se restan alrededor de `piso_abrir_sobre`), fedora 140,
+  vestido de lentejuelas 200 (con destellos), neón «21» 250, mesa de tapete 300, gramola 400 y el **conejo de la
+  chistera 1500** (legendario, compañero). Lo que no es el sobre se tiene una vez («Eso ya lo tienes» antes que las
+  fichas). Los cuatro muebles son `especial`/`legendario` y exclusivos: no salen en sobres (`piso_al_azar` y
+  `oddsTable` los excluyen), no se compran con tickets, no se reciclan ni se regalan. La ropa del casino no entra en el
+  orden de las misiones del día (`piso_prendas_orden`), así que no cambia la regla de «toda la ropa → 5 tickets»;
+  `piso_personaje_valido` y `pisos_personaje_prendas` la aceptan (paridad con `validateAvatar`). Pruebas
+  `casino-caja.rls.test.js` (7).
+  - Dibujos nuevos: ropa en `actor.js` (JERSEYS 15 y 16, PANTALONES 9, visera y fedora; `ROPA_CASINO`,
+    `prendaOrigen`), muebles en `furniture.js` y `catalog.js` (`casino: true`), lo animado en `misticos.js`
+    (conejo, gramola, tapete y los destellos del vestido); `piso.js` anima los muebles `vivo`.
+  - Cliente: tercera pestaña «La caja» (y la ventanilla de la sala), `hotel/CajaCasino.jsx`: el conejo arriba, vivo,
+    con rayos, cinta «Legendario · con efectos» y barra de lo que falta; tarjetas con su dibujo de verdad (recortado y
+    ampliado), precio en cifras de píxel, «Cambiar» / «Faltan N», confirmación en el sitio y sello «Ya es tuyo»; al
+    cambiar, «¡Es tuyo!» o «¡Sobre abierto!» con lo que trae y dónde encontrarlo. Sin cuentas atrás ni ofertas; con
+    movimiento reducido, quieto. Estilos al final de `hotel.css`.
+  - Simulado (`piso_casino_canjear`, `db.casino.caja` y `sobre`) y e2e `v180-casino.spec.js` (8; capturas
+    `v180-caja*` en 320, 390, 1440 y WebKit). Regresión: v170, v172, v173, v175, v177, v178-tanda3 y v179, en verde.
+  - **A tener en cuenta**: un mueble que sale del sobre del casino se puede reciclar por tickets como cualquier otro
+    del sorteo (es el mismo sobre). El casino solo abre el día que lees y las fichas tienen tope semanal.
+  - **Sin verificar**: la ropa y los muebles nuevos dentro del piso y del armario solo se ven en las pruebas de dibujo,
+    no con capturas propias.
 
 ### 2026-11-03 · cuenta principal · 1.79.0 publicada
 - Francisco dijo «Súbelo»: avance rápido de `main` hasta la rama `1.79-suite-semana` (PR #4), push y Vercel; `/sw.js`

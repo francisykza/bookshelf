@@ -10,6 +10,7 @@ import { starterRoom } from '../src/features/edificio/demo.js';
 import { PRENDAS } from '../src/features/edificio/actor.js';
 import { check } from '../src/features/edificio/room.js';
 import { missionsOf } from '../src/features/edificio/dailyMissions.js';
+import { CAJA, CASINO, valor } from '../src/features/edificio/hotel/veintiuna.js';
 
 export const SUPABASE = 'http://supabase.test';
 
@@ -249,6 +250,204 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       if (k >= 0) su.aportes[k] = { user_id: userId, item };
       else su.aportes.push({ user_id: userId, item });
       if (mias() >= 4 && !su.placas.includes(userId)) su.placas.push(userId);
+      return json(estado());
+    }
+    // 1.80: el casino del sótano, como 20261110120000_hotel_casino.sql (solo si la prueba lo pide con db.casino =
+    // { fichas, semana, manos: [], barajas: [[cartas…], …] }). Cada reparto usa la siguiente baraja de `barajas` (sin
+    // ellas, una fija): así la prueba sabe qué sale. La mesa para dos, con `amigos` y `mesas` (el amigo es simulado:
+    // la prueba mueve su mano a mano en mock.db.casino.mesas[i].suya). La caja, con `caja` (los ids que ya tienes) y
+    // `sobre` (los premios que trae el sobre del casino; sin él, uno fijo)
+    if (
+      [
+        'rpc/piso_casino',
+        'rpc/piso_casino_repartir',
+        'rpc/piso_casino_jugar',
+        'rpc/piso_casino_invitar',
+        'rpc/piso_casino_aceptar',
+        'rpc/piso_casino_rechazar',
+        'rpc/piso_casino_mesa_jugar',
+        'rpc/piso_casino_canjear',
+      ].includes(table)
+    ) {
+      if (!db.casino) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
+      const ca = db.casino;
+      ca.fichas ??= 0;
+      ca.semana ??= 0;
+      ca.manos ??= [];
+      ca.barajas ??= [];
+      ca.garbanzos ??= CASINO.garbanzosInicio;
+      ca.amigos ??= [];
+      ca.mesas ??= [];
+      ca.caja ??= [];
+      const body = req.postDataJSON?.() ?? {};
+      const mesa = body.mesa ? ca.mesas.find((m) => m.id === body.mesa) : null;
+      if (mesa) body.dia = mesa.dia;
+      const llegar = () => {
+        if (ca.garbanzosDia !== body.dia) ca.garbanzos += CASINO.garbanzosDia;
+        ca.garbanzosDia = body.dia;
+      };
+      const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
+      const hoy = ca.manos.filter((m) => m.dia === body.dia);
+      const abierta = hoy.find((m) => m.estado === 'jugando' && !m.mesa);
+      const cerrar = (m, fin, extra = 0) => {
+        const premio = Math.min(CASINO[fin] + extra, Math.max(0, CASINO.tope - ca.semana));
+        m.estado = fin;
+        m.fichas = premio;
+        ca.semana += premio;
+        ca.fichas += premio;
+      };
+      const estado = () => ({
+        dia: body.dia,
+        fichas: ca.fichas,
+        semana: ca.semana,
+        tope: CASINO.tope,
+        manos: ca.manos
+          .filter((m) => m.dia === body.dia)
+          .map((m) => ({
+            mano: m.mano,
+            mesa: m.mesa ?? null,
+            tuyas: m.tuyas,
+            crupier: ['jugando', 'esperando'].includes(m.estado) ? m.crupier.slice(0, 1) : m.crupier,
+            tu: valor(m.tuyas),
+            suyo: ['jugando', 'esperando'].includes(m.estado) ? null : valor(m.crupier),
+            estado: m.estado,
+            fichas: m.fichas,
+          })),
+        quedan: Math.max(0, CASINO.manos - ca.manos.filter((m) => m.dia === body.dia).length),
+        jugando: ca.manos.some((m) => m.dia === body.dia && m.estado === 'jugando' && !m.mesa),
+        garbanzos: ca.garbanzos,
+        amigos: ca.amigos,
+        mesas: ca.mesas
+          .filter((m) => ['invitada', 'jugando'].includes(m.estado) || m.dia === body.dia)
+          .map((m) => {
+            const mia = ca.manos.find((h) => h.mesa === m.id);
+            const cerrada = m.estado === 'cerrada';
+            return {
+              id: m.id,
+              dia: m.dia,
+              anfitrion: m.anfitrion,
+              amigo: m.amigo,
+              estado: m.estado,
+              fichas: m.fichas,
+              garbanzos: m.garbanzos,
+              crupier: cerrada ? m.crupier : m.estado === 'jugando' ? m.crupier.slice(0, 1) : [],
+              suyo: cerrada ? valor(m.crupier) : null,
+              mia: mia ? { mano: mia.mano, tuyas: mia.tuyas, tu: valor(mia.tuyas), estado: mia.estado, fichas: mia.fichas } : null,
+              suya: m.suya ? { estado: m.suya.estado, cartas: m.suya.tuyas.length, tuyas: cerrada ? m.suya.tuyas : null, tu: cerrada ? valor(m.suya.tuyas) : null } : null,
+              apuesta: cerrada ? m.apuesta : null,
+            };
+          }),
+        caja: CAJA.map((a) => ({ id: a.id, tipo: a.tipo, precio: a.precio, tienes: ca.caja.includes(a.id) })),
+      });
+      const final = (tuyas, crupier) => {
+        const tu = valor(tuyas);
+        const suyo = valor(crupier);
+        if (tu > 21) return 'perdida';
+        if (tu === 21 && tuyas.length === 2) return suyo === 21 && crupier.length === 2 ? 'empate' : 'veintiuna';
+        return suyo > 21 || tu > suyo ? 'ganada' : tu === suyo ? 'empate' : 'perdida';
+      };
+      // Con los dos terminados, el crupier destapa y pide hasta 17; la apuesta, a quien quede más cerca de 21
+      const resolver = (m) => {
+        const mia = ca.manos.find((h) => h.mesa === m.id);
+        if (m.estado !== 'jugando' || mia.estado === 'jugando' || m.suya.estado === 'jugando') return;
+        while (valor(m.crupier) < 17) m.crupier.push(m.mazo.shift());
+        mia.crupier = m.crupier;
+        cerrar(mia, final(mia.tuyas, m.crupier), CASINO.compania);
+        const puntos = (t) => (valor(t) > 21 ? -1 : valor(t));
+        const yo = puntos(mia.tuyas);
+        const otro = puntos(m.suya.tuyas);
+        m.apuesta = yo > otro ? 'ganas' : yo < otro ? 'pierdes' : 'empate';
+        if (m.apuesta === 'ganas') {
+          ca.fichas += 2 * m.fichas;
+          ca.garbanzos += 2 * m.garbanzos;
+        } else if (m.apuesta === 'empate') {
+          ca.fichas += m.fichas;
+          ca.garbanzos += m.garbanzos;
+        }
+        m.estado = 'cerrada';
+      };
+      if (table === 'rpc/piso_casino_invitar') {
+        const amigo = ca.amigos.find((a) => a.uid === body.amigo);
+        if (!amigo) return fail('Solo se juega en pareja con un amigo: alguien a quien sigues y te sigue.');
+        if (body.fichas > CASINO.apuestaFichas || body.garbanzos > CASINO.apuestaGarbanzos) return fail('Se apuestan como mucho 10 fichas y 50 garbanzos.');
+        llegar();
+        if (ca.fichas < body.fichas || ca.garbanzos < body.garbanzos) return fail('No tienes tanto para apostar.');
+        if (hoy.length >= CASINO.manos) return fail('Hoy ya has jugado tus tres manos: vuelve mañana.');
+        if (ca.mesas.some((m) => m.amigo.uid === amigo.uid && m.dia === body.dia && m.estado !== 'rechazada')) return fail('Hoy ya tenéis una mesa los dos: una al día por pareja.');
+        ca.mesas.unshift({ id: `mesa-${ca.mesas.length + 1}`, dia: body.dia, anfitrion: true, amigo, estado: 'invitada', fichas: body.fichas, garbanzos: body.garbanzos });
+        return json(estado());
+      }
+      if (table === 'rpc/piso_casino_canjear') {
+        const a = CAJA.find((x) => x.id === body.articulo);
+        if (!a) return fail('Eso no está en la caja.');
+        if (a.tipo !== 'sobre' && ca.caja.includes(a.id)) return fail('Eso ya lo tienes.');
+        if (ca.fichas < a.precio) return fail('Te faltan fichas para eso.');
+        ca.fichas -= a.precio;
+        if (a.tipo !== 'sobre') {
+          ca.caja.push(a.id);
+          return json(estado());
+        }
+        return json({ ...estado(), premios: ca.sobre ?? [{ mueble: 'sofa', rareza: 'poco-comun', nuevo: true }] });
+      }
+      if (table === 'rpc/piso_casino_rechazar') {
+        if (!mesa || mesa.estado !== 'invitada') return fail('Esa mesa ya no se puede retirar.');
+        mesa.estado = 'rechazada';
+        return json(estado());
+      }
+      if (table === 'rpc/piso_casino_aceptar') {
+        if (!mesa || mesa.anfitrion || mesa.estado !== 'invitada') return fail('Esa mesa ya no te espera.');
+        llegar();
+        if (hoy.length >= CASINO.manos) return fail('Alguno de los dos ya ha jugado sus tres manos de hoy.');
+        if (ca.fichas < mesa.fichas || ca.garbanzos < mesa.garbanzos) return fail('Alguno de los dos ya no tiene lo que se apostaba.');
+        ca.fichas -= mesa.fichas;
+        ca.garbanzos -= mesa.garbanzos;
+        const mazo = ca.barajas.shift() ?? [9, 8, 6, 5, 22, 12, 1, 2, 3, 4, 7, 10, 11];
+        // Como el servidor: anfitrión [1, 3], invitado [2, 4], crupier [5, 6]; aquí, el invitado eres tú
+        ca.manos.push({ dia: body.dia, mano: hoy.length + 1, mesa: mesa.id, tuyas: [mazo[1], mazo[3]], crupier: [mazo[4], mazo[5]], mazo: [], estado: 'jugando', fichas: 0 });
+        mesa.suya = { tuyas: [mazo[0], mazo[2]], estado: 'jugando' };
+        mesa.crupier = [mazo[4], mazo[5]];
+        mesa.mazo = mazo.slice(6);
+        mesa.estado = 'jugando';
+        return json(estado());
+      }
+      if (table === 'rpc/piso_casino_mesa_jugar') {
+        const mia = mesa && ca.manos.find((h) => h.mesa === mesa.id && h.estado === 'jugando');
+        if (!mesa || mesa.estado !== 'jugando' || !mia) return fail('No tienes ninguna mano abierta en esa mesa.');
+        if (body.accion === 'pedir') {
+          mia.tuyas.push(mesa.mazo.shift());
+          if (valor(mia.tuyas) >= 21) mia.estado = 'esperando';
+        } else mia.estado = 'esperando';
+        resolver(mesa);
+        return json(estado());
+      }
+      if (table === 'rpc/piso_casino') {
+        // El amigo simulado juega «por su cuenta» (la prueba mueve su mano): su jugada resuelve la mesa, como en el servidor
+        ca.mesas.forEach(resolver);
+        return json(estado());
+      }
+      if (table === 'rpc/piso_casino_repartir') {
+        llegar();
+        if (abierta) return fail('Termina antes la mano que tienes.');
+        if (hoy.length >= CASINO.manos) return fail('Hoy ya has jugado tus tres manos: vuelve mañana.');
+        const mazo = ca.barajas.shift() ?? [9, 8, 6, 5, 12, 1, 2, 3, 4, 7, 10, 11];
+        const m = { dia: body.dia, mano: hoy.length + 1, tuyas: [mazo[0], mazo[2]], crupier: [mazo[1], mazo[3]], mazo: mazo.slice(4), estado: 'jugando', fichas: 0 };
+        ca.manos.push(m);
+        if (valor(m.tuyas) === 21) cerrar(m, valor(m.crupier) === 21 ? 'empate' : 'veintiuna');
+        return json(estado());
+      }
+      if (!abierta) return fail('No tienes ninguna mano abierta.');
+      if (body.accion === 'pedir') {
+        abierta.tuyas.push(abierta.mazo.shift());
+        if (valor(abierta.tuyas) > 21) {
+          cerrar(abierta, 'perdida');
+          return json(estado());
+        }
+        if (valor(abierta.tuyas) < 21) return json(estado());
+      }
+      while (valor(abierta.crupier) < 17) abierta.crupier.push(abierta.mazo.shift());
+      const tu = valor(abierta.tuyas);
+      const suyo = valor(abierta.crupier);
+      cerrar(abierta, suyo > 21 || tu > suyo ? 'ganada' : tu === suyo ? 'empate' : 'perdida');
       return json(estado());
     }
     // 1.70 (SPEC §70): armario y misiones del día, como la migración (solo si la prueba lo pide con db.diarias)

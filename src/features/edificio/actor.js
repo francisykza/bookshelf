@@ -50,6 +50,9 @@ export const JERSEYS = [
   { id: 12, nombre: 'Coral', color: [222, 124, 104] },
   { id: 13, nombre: 'Turquesa', color: [72, 160, 156] },
   { id: 14, nombre: 'Noche estrellada', color: [42, 50, 92] },
+  // 1.80: de la caja del casino (ROPA_CASINO): el chaleco con camisa y pajarita, y el vestido de lentejuelas
+  { id: 15, nombre: 'Chaleco de crupier', color: [128, 34, 48] },
+  { id: 16, nombre: 'Vestido de lentejuelas', color: [176, 44, 98] },
 ];
 export const PANTALONES = [
   { id: 0, nombre: 'Vaquero', color: [72, 88, 116] },
@@ -63,6 +66,8 @@ export const PANTALONES = [
   // 1.78: el 8 es del conjunto «Noche estrellada»
   { id: 7, nombre: 'Burdeos', color: [112, 44, 56] },
   { id: 8, nombre: 'Medianoche', color: [34, 38, 66] },
+  // 1.80: de la caja del casino
+  { id: 9, nombre: 'Raya diplomática', color: [64, 66, 78] },
 ];
 // Complementos (§70): todos menos «ninguno» se ganan con las misiones del día
 export const COMPLEMENTOS = [
@@ -76,6 +81,9 @@ export const COMPLEMENTOS = [
   { id: 'sombrero', nombre: 'Sombrero de paja' },
   { id: 'gorra', nombre: 'Gorra marinera' },
   { id: 'capa', nombre: 'Capa de estrellas' },
+  // 1.80: de la caja del casino
+  { id: 'visera', nombre: 'Visera de crupier' },
+  { id: 'fedora', nombre: 'Fedora' },
 ];
 
 /**
@@ -89,9 +97,16 @@ export const PRENDAS = [
 ];
 /** El conjunto con efectos (1.78): con las tres piezas puestas, las estrellas del jersey y la capa brillan más. */
 export const CONJUNTO_ESTRELLAS = { jersey: 14, pantalon: 8, complemento: 'capa' };
+/**
+ * La ropa de la caja del casino (1.80): se cambia por fichas (CAJA en hotel/veintiuna.js, con su precio) y no entra en
+ * el orden de las misiones. Como la de las misiones, solo se lleva si se tiene.
+ */
+export const ROPA_CASINO = ['complemento:visera', 'pantalon:9', 'jersey:15', 'complemento:fedora', 'jersey:16'];
 const LISTS = { colorPelo: () => COLORES_PELO, jersey: () => JERSEYS, pantalon: () => PANTALONES, complemento: () => COMPLEMENTOS };
 export const prendaKey = (key, value) => `${key}:${value}`;
-export const isPrenda = (key, value) => PRENDAS.includes(prendaKey(key, value));
+export const isPrenda = (key, value) => PRENDAS.includes(prendaKey(key, value)) || ROPA_CASINO.includes(prendaKey(key, value));
+/** De dónde sale una prenda que no tienes (para el aviso del armario). */
+export const prendaOrigen = (key, value) => (ROPA_CASINO.includes(prendaKey(key, value)) ? 'se cambia por fichas en la caja del casino' : 'se gana con las misiones del día');
 /** El nombre de una prenda que se gana (para los avisos). */
 export function prendaNombre(prenda) {
   const [key, raw] = prenda.split(':');
@@ -164,7 +179,7 @@ function hair(style, H) {
 function standing(a, step = 0) {
   const skin = PIELES[a.piel].color;
   const top = JERSEYS[a.jersey].color;
-  const legs = PANTALONES[a.pantalon].color;
+  const { legs, sleeve, collar } = cut(a, skin, top);
   const H = COLORES_PELO[a.colorPelo].color;
   const s = step === 1 ? 0.09 : step === 2 ? -0.09 : 0;
   const out = [
@@ -175,15 +190,51 @@ function standing(a, step = 0) {
     B(0.02, -0.09 - s, 0, 0.21, 0.14 - s, 0.12, SHOES, { grain: 0 }),
     // Jersey de punto, con el cuello vuelto en un tono más claro
     B(-0.26, -0.14, 0.7, 0.26, 0.14, 1.42, top),
-    B(-0.2, -0.1, 1.38, 0.2, 0.12, 1.47, shade(top, 1.12), { grain: 0 }),
+    B(-0.2, -0.1, 1.38, 0.2, 0.12, 1.47, collar, { grain: 0 }),
     // Brazos (se balancean al revés que las piernas) y manos
-    B(-0.37, -0.09 - s, 0.86, -0.26, 0.09 - s, 1.4, top),
-    B(0.26, -0.09 + s, 0.86, 0.37, 0.09 + s, 1.4, top),
+    B(-0.37, -0.09 - s, 0.86, -0.26, 0.09 - s, 1.4, sleeve),
+    B(0.26, -0.09 + s, 0.86, 0.37, 0.09 + s, 1.4, sleeve),
     B(-0.36, -0.07 - s, 0.74, -0.27, 0.07 - s, 0.86, skin, { grain: 0 }),
     B(0.27, -0.07 + s, 0.74, 0.36, 0.07 + s, 0.86, skin, { grain: 0 }),
     ...starryTop(a, s),
+    ...casinoTop(a, top),
+    // El vestido: la falda de vuelo, hasta las rodillas
+    ...(a.jersey === 16 ? [B(-0.3, -0.18, 0.42, 0.3, 0.18, 0.74, top), B(-0.31, -0.19, 0.42, 0.31, 0.19, 0.47, shade(top, 0.84)), ...sequins(0.19, [[-0.2, 0.6], [0.05, 0.52], [0.22, 0.64], [-0.06, 0.68]])] : []),
   ];
   return out.concat(head(a, skin, H));
+}
+
+const SHIRT = [240, 236, 226];
+const SEQUIN = [[255, 226, 150], [255, 190, 200], [255, 246, 220]];
+
+/**
+ * Lo que cambia según la prenda (1.80): con el chaleco, mangas y cuello de camisa blanca; con el vestido, sin mangas,
+ * escote y piernas al aire (el pantalón no se ve).
+ */
+function cut(a, skin, top) {
+  if (a.jersey === 15) return { legs: PANTALONES[a.pantalon].color, sleeve: SHIRT, collar: SHIRT };
+  if (a.jersey === 16) return { legs: shade(skin, 0.96), sleeve: skin, collar: skin };
+  return { legs: PANTALONES[a.pantalon].color, sleeve: top, collar: shade(top, 1.12) };
+}
+
+/** Lentejuelas que se encienden de tarde, en el frente (a la profundidad `y`) y en los puntos `[x, z]`. */
+const sequins = (y, at) => at.map(([x, z], k) => B(x - 0.025, y, z - 0.025, x + 0.025, y + 0.015, z + 0.025, SEQUIN[k % 3], { grain: 0, glow: true }));
+
+/** El chaleco de crupier (camisa, pajarita y botones dorados) y el cuerpo del vestido, con sus lentejuelas. */
+function casinoTop(a, top) {
+  const f = { grain: 0 };
+  if (a.jersey === 15)
+    return [
+      B(-0.08, 0.14, 1.1, 0.08, 0.152, 1.44, SHIRT, f),
+      B(-0.11, 0.152, 1.33, -0.02, 0.17, 1.41, [36, 30, 36], f),
+      B(0.02, 0.152, 1.33, 0.11, 0.17, 1.41, [36, 30, 36], f),
+      B(-0.025, 0.152, 1.35, 0.025, 0.175, 1.39, [60, 50, 58], f),
+      ...[1.0, 0.86].map((z) => B(-0.02, 0.14, z, 0.02, 0.158, z + 0.04, [232, 188, 90], f)),
+      B(-0.26, 0.14, 0.7, 0.26, 0.15, 0.76, shade(top, 0.78), f),
+    ];
+  if (a.jersey === 16)
+    return sequins(0.14, [[-0.17, 1.28], [0.12, 1.32], [-0.03, 1.16], [0.18, 1.06], [-0.2, 0.98], [0.04, 0.92], [-0.1, 0.8], [0.2, 0.78]]);
+  return [];
 }
 
 const STAR = [255, 226, 140];
@@ -242,6 +293,21 @@ function extra(id) {
       const c = [236, 232, 222];
       return [B(-0.28, -0.26, 1.88, 0.28, 0.27, 2.08, c), B(-0.29, -0.27, 1.86, 0.29, 0.28, 1.92, [44, 52, 80]), B(-0.2, 0.27, 1.86, 0.2, 0.42, 1.9, [44, 52, 80], f), B(-0.04, 0.27, 1.96, 0.04, 0.29, 2.02, [214, 178, 80], f)];
     }
+    case 'visera': {
+      // La visera verde de celuloide de los crupieres, con su cinta
+      const c = [52, 140, 92];
+      return [B(-0.27, -0.25, 1.86, 0.27, 0.26, 1.93, shade(c, 0.8), f), B(-0.24, 0.24, 1.84, 0.24, 0.48, 1.88, c, f), B(-0.2, 0.44, 1.84, 0.2, 0.5, 1.87, shade(c, 1.25), f)];
+    }
+    case 'fedora': {
+      const c = [38, 34, 40];
+      return [
+        B(-0.42, -0.4, 1.9, 0.42, 0.42, 1.96, shade(c, 0.85)),
+        B(-0.26, -0.24, 1.96, 0.26, 0.26, 2.13, c),
+        B(-0.2, -0.18, 2.13, 0.2, 0.2, 2.16, shade(c, 1.15), f),
+        B(-0.265, -0.245, 1.96, 0.265, 0.265, 2.03, [150, 40, 54], f),
+        B(0.22, -0.02, 1.98, 0.29, 0.05, 2.12, [228, 186, 84], f),
+      ];
+    }
     case 'capa': {
       // A la espalda, de los hombros a las rodillas, con el cierre dorado y estrellas que se encienden de tarde
       const c = [36, 42, 82];
@@ -262,7 +328,7 @@ function extra(id) {
 function sitting(a, h) {
   const skin = PIELES[a.piel].color;
   const top = JERSEYS[a.jersey].color;
-  const legs = PANTALONES[a.pantalon].color;
+  const { legs, sleeve, collar } = cut(a, skin, top);
   const H = COLORES_PELO[a.colorPelo].color;
   const dz = h - 0.7;
   const up = (bx) => ({ ...bx, b: [bx.b[0], bx.b[1], bx.b[2] + dz, bx.b[3], bx.b[4], bx.b[5] + dz] });
@@ -271,16 +337,19 @@ function sitting(a, h) {
   const feet = [B(-0.21, 0.3, Math.max(0, h - 0.7), -0.02, 0.56, Math.max(0.12, h - 0.58), SHOES, { grain: 0 }), B(0.02, 0.3, Math.max(0, h - 0.7), 0.21, 0.56, Math.max(0.12, h - 0.58), SHOES, { grain: 0 })];
   const body = [
     B(-0.26, -0.14, 0.7, 0.26, 0.14, 1.42, top),
-    B(-0.2, -0.1, 1.38, 0.2, 0.12, 1.47, shade(top, 1.12), { grain: 0 }),
+    B(-0.2, -0.1, 1.38, 0.2, 0.12, 1.47, collar, { grain: 0 }),
     // Brazos hacia las rodillas, con las manos encima
-    B(-0.37, -0.09, 0.9, -0.26, 0.2, 1.4, top),
-    B(0.26, -0.09, 0.9, 0.37, 0.2, 1.4, top),
+    B(-0.37, -0.09, 0.9, -0.26, 0.2, 1.4, sleeve),
+    B(0.26, -0.09, 0.9, 0.37, 0.2, 1.4, sleeve),
     B(-0.34, 0.18, 0.86, -0.24, 0.32, 0.96, skin, { grain: 0 }),
     B(0.24, 0.18, 0.86, 0.34, 0.32, 0.96, skin, { grain: 0 }),
     ...starryTop(a),
+    ...casinoTop(a, top),
     ...head(a, skin, H),
   ].map(up);
-  return [...feet, ...shins, ...thighs, ...body];
+  // Sentada con el vestido, la falda cubre los muslos
+  const skirt = a.jersey === 16 ? [B(-0.27, -0.1, h, 0.27, 0.36, h + 0.22, top), ...sequins(0.36, [[-0.14, h + 0.12], [0.12, h + 0.08]])] : [];
+  return [...feet, ...shins, ...thighs, ...skirt, ...body];
 }
 
 /** Tumbado boca arriba (en la cama, a la altura `h`): la figura de pie, acostada con la cabeza hacia -y. */

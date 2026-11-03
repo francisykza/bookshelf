@@ -433,6 +433,124 @@ export function drawStardust(p, t, o = {}) {
     });
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// La caja del casino (1.80). El conejo de la chistera (legendario): un conejo blanco que se asoma de una chistera del
+// revés y baraja un naipe en el aire, con palos de la baraja que suben y titilan. Al seguirte, la chistera va dando
+// saltitos.
+const HAT_PAL = { o: '#0e0a10', k: '#241c28', K: '#463a4c', i: '#050306', r: '#a8283a', R: '#e05866' };
+const HAT_ROWS = [
+  '.oooooooooooo.',
+  'oKkiiiiiiiikKo',
+  '.oooooooooooo.',
+  '..okkkkkkkKo..',
+  '..orrrrrrrRo..',
+  '..okkkkkkkKo..',
+  '..okkkkkkkKo..',
+  '..okkkkkkkKo..',
+  '..oooooooooo..',
+];
+const BUN_PAL = { o: '#3a2e34', w: '#f6f2ec', W: '#ffffff', p: '#f2a0b0', e: '#1a1218', n: '#e0607a', g: '#d8ccc8' };
+const BUN_ROWS = [
+  '.oo...oo.',
+  'owwo.owwo',
+  'owpo.owpo',
+  'owpo.owpo',
+  'owwo.owwo',
+  '.owwowwo.',
+  'owwwwwwwo',
+  'owewwwewo',
+  'owWwnwWwo',
+  'opwwwwwpo',
+  '.owwwwwo.',
+  'owgwwwgwo',
+];
+// Los cuatro palos, en 3 × 3
+const SUITS = [
+  { rows: ['.o.', 'ooo', 'o.o'], c: '#2a2230' },
+  { rows: ['o.o', 'ooo', '.o.'], c: '#ff4a62' },
+  { rows: ['.o.', 'o.o', 'ooo'], c: '#2a2230' },
+  { rows: ['.o.', 'ooo', '.o.'], c: '#ff4a62' },
+];
+
+export function drawRabbit(p, t, o = {}) {
+  const hop = o.moving ? Math.abs(Math.sin(t * 7)) * 3 : 0;
+  shadow(p, 7, hop);
+  const top = -9 - hop;
+  // Se asoma y se esconde un poco, sin prisa (y al andar va asomado del todo)
+  const cycle = (t % 5) / 5;
+  const pop = o.moving ? BUN_ROWS.length : Math.round(BUN_ROWS.length * (cycle < 0.08 ? 0.55 + cycle * 5.6 : 1));
+  p.sprite(HAT_ROWS.slice(0, 2), HAT_PAL, -7, top);
+  p.sprite(BUN_ROWS.slice(0, pop), BUN_PAL, -4.5, top + 1.5 - pop);
+  p.sprite(HAT_ROWS.slice(2), HAT_PAL, -7, top + 2);
+  // El naipe, que gira sobre sí mismo encima de sus orejas
+  const cx = Math.sin(t * 1.6) * 3;
+  const cy = top - pop - 6 + Math.sin(t * 3.2) * 1.2;
+  const turn = Math.cos(t * 3);
+  const w = Math.max(1, Math.round(Math.abs(turn) * 4));
+  p.rect(cx - w / 2 - 0.5, cy - 3.5, w + 1, 7, H('#2a1a22'));
+  p.rect(cx - w / 2, cy - 3, w, 6, turn > 0 ? H('#fff4dc') : H('#a8283a'));
+  if (turn > 0.5) p.px(cx, cy, H('#ff4a62'));
+  p.glow(cx, cy, 6, H('#ffe39a'), 0.18 + 0.08 * Math.sin(t * 4));
+  // Los palos, que suben y se apagan
+  drift(t, 4, 2.6, (u, i) => {
+    const x = (hash(i, 2) - 0.5) * 18 + Math.sin(u * 5 + i) * 1.5;
+    const y = top - 4 - u * 16;
+    const suit = SUITS[i % 4];
+    if (u > 0.8) return;
+    p.sprite(suit.rows, { o: suit.c }, x - 1, y - 1);
+    if (hash(i, 9) > 0.5 && u > 0.4 && u < 0.5) sparkle(p, x, y - 2, 1, H('#fff6d8'), H('#ffd27a'), 0.3);
+  });
+}
+
+// La gramola: el arco cambia de color despacio, suben burbujas de luz por los tubos y salen notas por arriba
+const JUKE = [H('#ff5a8a'), H('#ffb347'), H('#6fe0ff'), H('#9b7bff')];
+const NOTE = ['.oo', '.o.', 'oo.', 'oo.'];
+export function drawJukebox(p, t) {
+  const k = (t / 2.2) % JUKE.length;
+  const c = mix(JUKE[Math.floor(k)], JUKE[(Math.floor(k) + 1) % JUKE.length], k % 1);
+  p.glow(0, -14, 11, c, 0.32 + 0.06 * Math.sin(t * 3));
+  for (const side of [-5, 5])
+    drift(t, 3, 1.6, (u, i) => {
+      p.dot(side + (side < 0 ? 0 : 0), -3 - u * 13, JUKE[(i + (side < 0 ? 0 : 2)) % JUKE.length], 0.9 - u * 0.4);
+    });
+  drift(t, 3, 2.4, (u, i) => {
+    const x = 2 + u * 9 + Math.sin(u * 7 + i) * 1.5;
+    const y = -22 - u * 12;
+    p.sprite(NOTE, { o: '#fff0c8' }, x, y);
+    p.glow(x + 1, y + 2, 3, JUKE[i % JUKE.length], 0.25 * (1 - u));
+  });
+}
+
+// La mesa de tapete: la lámpara de encima, un naipe que se reparte solo de un lado a otro y un brillo en las fichas
+export function drawFeltTable(p, t) {
+  p.glow(0, -20, 16, H('#ffe39a'), 0.12 + 0.03 * Math.sin(t * 1.3));
+  const u = (t % 3.2) / 3.2;
+  if (u < 0.7) {
+    const k = u / 0.7;
+    const x = -9 + k * 15;
+    const y = -16 - Math.sin(k * Math.PI) * 5;
+    const w = Math.max(1, Math.round(Math.abs(Math.cos(k * Math.PI * 2)) * 3));
+    p.rect(x - w / 2, y - 2, w, 4, k < 0.25 || k > 0.75 ? H('#fff4dc') : H('#a8283a'));
+  }
+  const g = (t % 2.6) / 2.6;
+  if (g < 0.12) sparkle(p, -8, -17, 1, H('#fff6d8'), H('#ffd27a'), 0.35);
+}
+
+// Los destellos del vestido de lentejuelas: brillos que saltan por el vestido y, al andar, una estela dorada
+export function drawSequins(p, t, o = {}) {
+  for (let i = 0; i < 6; i += 1) {
+    const tw = (t * (1.3 + hash(i, 4)) + hash(i, 5) * 4) % 2.2;
+    if (tw > 0.28) continue;
+    const x = (hash(i, 1) - 0.5) * 9;
+    const y = -6 - hash(i, 2) * 14;
+    sparkle(p, x, y, tw < 0.14 ? 1 : 2, H('#fff6e8'), i % 2 ? H('#ffb8c8') : H('#ffd27a'), 0.32);
+  }
+  if (o.moving)
+    drift(t, 5, 0.8, (u, i) => {
+      p.dot(-3 - u * 9 + (hash(i, 6) - 0.5) * 3, -5 - hash(i, 7) * 12 + u * 2, i % 2 ? H('#ffc8d4') : H('#ffe2a0'), (1 - u) * 0.85);
+    });
+}
+
 export const MISTICOS = [
   { id: 'dragoncillo', nombre: 'Dragoncillo de escamas rojas', guino: 'Para quien leyó «Alas de sangre»', legendario: true, draw: drawDragon },
   { id: 'zorro-bruma', nombre: 'Zorro de bruma y ceniza', guino: 'Para quien leyó «Mistborn»', legendario: true, draw: drawFox },
@@ -443,6 +561,11 @@ export const MISTICOS = [
   // 1.78: no son místicos, pero se dibujan igual (vivos, con el pintor de pixelfx): la mascota y el polvo de estrellas
   { id: 'perrito', nombre: 'Perrito en su cojín', mascota: true, draw: drawPuppy },
   { id: 'polvo-estrellas', nombre: 'Polvo de estrellas', efecto: true, draw: drawStardust },
+  // 1.80: la caja del casino (el conejo te acompaña; la gramola y la mesa son muebles vivos; los destellos, del vestido)
+  { id: 'conejo-chistera', nombre: 'Conejo de la chistera', guino: 'De la caja del casino del Gran Hotel', legendario: true, draw: drawRabbit },
+  { id: 'gramola', nombre: 'Gramola', vivo: true, draw: drawJukebox },
+  { id: 'mesa-tapete', nombre: 'Mesa de tapete verde', vivo: true, draw: drawFeltTable },
+  { id: 'destellos', nombre: 'Destellos de lentejuelas', efecto: true, draw: drawSequins },
 ];
 
 export const misticoOf = (id) => MISTICOS.find((m) => m.id === id) ?? null;

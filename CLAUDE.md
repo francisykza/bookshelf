@@ -112,6 +112,10 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   - **Cuenta del fundador** (2-11-2026): la cuenta de Francisco tiene muchos más tickets y los místicos para probar,
     con el script `supabase/scripts/cuenta_fundador.sql` (a mano, solo su cuenta). Es la única excepción a «los
     tickets solo se ganan leyendo»; no se extiende a nadie más sin que lo pida.
+  - **Regalo a la pareja de Francisco** (3-11-2026, lo pidió él: le ayuda a probar en iPhone): 200 tickets y un
+    compañero legendario, el dragoncillo de escamas rojas, una sola vez. Se dio a mano en el SQL Editor con un script
+    fuera del repositorio (el correo nunca va a git). Es una excepción puntual: no se repite ni se amplía a nadie más
+    sin que Francisco lo pida.
   - **Vista «dentro de la habitación» por defecto** (1-11-2026):
     - el piso, a pantalla completa, con la balda (o los sellos) abajo;
     - se puede cambiar a la vista de ficha y queda recordado en el dispositivo.
@@ -187,6 +191,13 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     pierde nada, sin falsos «casi»), **solo se abre si has registrado lectura ese día**; las fichas nunca se compran y
     se canjean por sobres, ropa de casino y la mascota «el conejo de la chistera» (ocupa el sitio del legendario).
     Orden: vestíbulo con ascensor, suite, casino, sala de lectura y quiosco, Lonja, vitrinas y mirador.
+    **La mesa para dos del casino** (3-11-2026, «Fichas y garbanzos», «Os seguís los dos», «En diferido»): con un
+    amigo (**seguimiento mutuo**) se juega contra el mismo crupier, cada uno cuando quiere; esas manos son de las 3 del
+    día y dan **2 fichas de compañía** más a cada uno (el tope semanal de 150 sigue). **Única excepción a «sin
+    apostar»**: entre los dos se pueden apostar **fichas, una vez al día por pareja y hasta 10**, y **garbanzos** (una
+    moneda imaginaria sin ningún valor: empiezas con 100, +20 cada día que lees, hasta 50 por mano). Gana la apuesta quien
+    acaba más cerca de 21 sin pasarse; empate, se devuelve. Solo con un amigo y aceptándolo los dos; nunca con
+    desconocidos del hotel, nunca más de lo que se tiene. No se amplía sin que Francisco lo pida.
   - **Encargo del 3-11-2026** (antes de seguir con el plan del rascacielos; por bloques con capturas):
     - **Sin «dejar una frase»** (los sellos de frase al vecino): sobra junto al libro de visitas. Se quita de la app;
       no se borran los datos.

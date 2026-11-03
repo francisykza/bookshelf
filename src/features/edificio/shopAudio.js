@@ -1,6 +1,7 @@
 // Sonidos de la tienda del bajo (1.67, SPEC §67): sintetizados con Web Audio, suaves y breves, uno por acción, y solo
 // después de que la persona toque algo (el contexto se crea con su gesto). Respetan el sonido de la app (`setMuted`).
 // Papel que cruje, la solapa que se rasga, la carta que se da la vuelta y una nota por rareza (más notas cuanto más rara).
+// Desde la 1.80, también los del casino del sótano.
 
 export function createShopSfx({ muted = false } = {}) {
   let ctx = null;
@@ -92,6 +93,16 @@ export function createShopSfx({ muted = false } = {}) {
       paper(0.04, 0.12, 1800, 900);
       tone('triangle', 440, 0.022, 0.3, 0.08);
     },
+    // El casino del sótano (1.80): la carta que se reparte, las fichas que caen y cómo acaba la mano (sin fanfarrias)
+    deal: () => paper(0.05, 0.07, 3600, 2200),
+    chips: () => [2093, 2349.32, 1975.53].forEach((f, k) => tone('sine', f, 0.012, 0.07, k * 0.05)),
+    'mano-ganada': () => [523.25, 659.25, 783.99].forEach((f, k) => tone('triangle', f, 0.026, 0.35, k * 0.08)),
+    'mano-veintiuna': () => {
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, k) => tone('triangle', f, 0.026, 0.45, k * 0.08));
+      tone('sine', 2093, 0.008, 0.9, 0.34);
+    },
+    'mano-empate': () => [587.33, 587.33].forEach((f, k) => tone('triangle', f, 0.022, 0.22, k * 0.14)),
+    'mano-perdida': () => tone('triangle', 392, 0.02, 0.4),
   };
 
   return {

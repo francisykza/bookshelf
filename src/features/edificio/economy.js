@@ -104,7 +104,8 @@ export function oddsTable(sobre) {
   const misticos = sobre.prob.mistico
     ? RAREZAS_MISTICAS.map((r) => {
         const prob = sobre.prob.mistico * (r.id === 'legendario' ? sobre.legendario : 1 - sobre.legendario);
-        const items = CATALOG.filter((c) => c.rareza === r.id);
+        // Lo de la caja del casino (el conejo) no sale en sobres
+        const items = CATALOG.filter((c) => c.rareza === r.id && !c.casino);
         return { ...r, prob, items, fuera: false, cada: items.length ? prob / items.length : 0 };
       })
     : [];

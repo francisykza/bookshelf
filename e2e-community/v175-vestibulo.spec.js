@@ -87,8 +87,8 @@ test('el vestíbulo: encargos en la recepción, la botonera del ascensor y salir
   await lobby.getByRole('tab', { name: 'Ascensor' }).click();
   const panel = lobby.getByRole('list', { name: 'Botonera del ascensor' });
   await expect(panel.getByRole('button', { name: /El vestíbulo/ })).toHaveAttribute('aria-current', 'location');
-  await panel.getByRole('button', { name: /El casino del sótano/ }).click();
-  await expect(lobby.getByRole('status').filter({ hasText: 'Las 21 páginas' })).toBeVisible();
+  await panel.getByRole('button', { name: /La terraza/ }).click();
+  await expect(lobby.getByRole('status').filter({ hasText: 'la radio del rincón' })).toBeVisible();
   await expect(lobby.getByText('Abre pronto')).toBeVisible();
   await lobby.locator('.gh-lift').scrollIntoViewIfNeeded();
   await shot(page, info, 'v175-ascensor');

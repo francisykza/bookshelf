@@ -3,7 +3,7 @@
 // (`asignar_edificio`), y el portal llega en una sola consulta (`edificio_portal`). Los pisos que llegan se vuelven a
 // validar aquí antes de dibujarlos; el que se guarda va siempre limpio (`validateRoom`).
 import { client, fail } from '../social/services/community';
-import { PRENDAS, validateAvatar } from './actor';
+import { PRENDAS, ROPA_CASINO, validateAvatar } from './actor';
 import { FIRMAS, catalogItem } from './catalog';
 import { rarezaOf } from './economy';
 import { normalizeInventory } from './inventory';
@@ -105,7 +105,7 @@ export async function loadInventario() {
 
 // Armario del personaje y misiones del día (1.70, §70): { prendas: [«clave:valor»], hechas: [misiones del día], nueva,
 // tickets } (`tickets`, desde la 1.79: los ganados al completar las tres con todo el armario ya tuyo)
-const normalizeArmario = (d) => ({ prendas: Array.isArray(d?.prendas) ? d.prendas.filter((p) => PRENDAS.includes(p)) : [], hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null, tickets: Number.isInteger(d?.tickets) && d.tickets > 0 ? d.tickets : 0 });
+const normalizeArmario = (d) => ({ prendas: Array.isArray(d?.prendas) ? d.prendas.filter((p) => PRENDAS.includes(p) || ROPA_CASINO.includes(p)) : [], hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null, tickets: Number.isInteger(d?.tickets) && d.tickets > 0 ? d.tickets : 0 });
 
 /** Mi armario y lo hecho hoy (`dia`: «AAAA-MM-DD» del dispositivo). Sin la migración de las misiones, null. */
 export async function loadArmario(dia) {
@@ -258,4 +258,87 @@ export async function retirarDeSuite() {
   const { data, error } = await sb.rpc('piso_suite_retirar');
   fail(error);
   return normalizeSuite(data);
+}
+
+// ── El casino del sótano del Gran Hotel (1.80, supabase/migrations/20261110120000_hotel_casino.sql) ──
+const normalizeCasino = (d) => ({
+  dia: d.dia,
+  fichas: d.fichas ?? 0,
+  semana: d.semana ?? 0,
+  tope: d.tope ?? 150,
+  manos: (d.manos ?? []).map((m) => ({ ...m, tuyas: m.tuyas ?? [], crupier: m.crupier ?? [] })),
+  quedan: d.quedan ?? 0,
+  jugando: Boolean(d.jugando),
+  garbanzos: d.garbanzos ?? 0,
+  // La mesa para dos: las invitaciones y las mesas (las cartas del amigo, solo al resolverse) y los amigos con quien jugar
+  mesas: (d.mesas ?? []).map((m) => ({ ...m, crupier: m.crupier ?? [], mia: m.mia ? { ...m.mia, tuyas: m.mia.tuyas ?? [] } : null })),
+  amigos: d.amigos ?? [],
+  // La caja: [{ id, tipo, precio, tienes }]; al cambiar el sobre, sus premios
+  caja: d.caja ?? [],
+  ...(d.premios ? { premios: d.premios } : {}),
+});
+
+/** Las fichas y las manos del día `dia` (AAAA-MM-DD). Sin la migración del casino, null. */
+export async function loadCasino(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino', { dia });
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
+  fail(error);
+  return normalizeCasino(data);
+}
+
+/** Reparte la siguiente mano del día. */
+export async function repartirCasino(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_repartir', { dia });
+  fail(error);
+  return normalizeCasino(data);
+}
+
+/** Juega la mano abierta a solas: 'pedir' o 'plantarse'. */
+export async function jugarCasino(dia, accion) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_jugar', { dia, accion });
+  fail(error);
+  return normalizeCasino(data);
+}
+
+/** Cambia fichas en la caja por `articulo` (un id de CAJA). Con el sobre, trae `premios`. */
+export async function canjearCaja(dia, articulo) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_canjear', { dia, articulo });
+  fail(error);
+  return normalizeCasino(data);
+}
+
+/** Invita a un amigo a la mesa para dos del día, con lo que se apuesta (0 si nada). */
+export async function invitarMesa(dia, amigo, fichas, garbanzos) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_invitar', { dia, amigo, fichas, garbanzos });
+  fail(error);
+  return normalizeCasino(data);
+}
+
+/** Acepta una invitación: se aparta lo apostado y se reparte. */
+export async function aceptarMesa(mesa) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_aceptar', { mesa });
+  fail(error);
+  return normalizeCasino(data);
+}
+
+/** No acepta una invitación (o la retira quien invitó). */
+export async function rechazarMesa(mesa) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_rechazar', { mesa });
+  fail(error);
+  return normalizeCasino(data);
+}
+
+/** Juega tu mano de una mesa para dos: 'pedir' o 'plantarse'. */
+export async function jugarMesa(mesa, accion) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_mesa_jugar', { mesa, accion });
+  fail(error);
+  return normalizeCasino(data);
 }

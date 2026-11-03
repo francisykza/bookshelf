@@ -477,7 +477,8 @@ export function createRoomRenderer() {
 
 /** Miniatura de un mueble del catálogo (para los botones), dibujada con el mismo motor. */
 export function renderThumb(id, tonoIndex = 0, size = 44) {
-  if (misticoOf(id)) return misticoThumb(id, size);
+  // Los muebles vivos de la caja del casino (1.80) se ven como mueble: lo animado va encima
+  if (misticoOf(id) && !misticoOf(id).vivo) return misticoThumb(id, size);
   const cat = catalogItem(id);
   const item = cat.capa === 'pared' ? { uid: 1, id, pared: 'fondo', a: 0, tono: tonoIndex } : { uid: 1, id, x: 0, y: 0, rot: 0, tono: tonoIndex };
   const boxes = cat.capa === 'alfombra' ? [{ b: [0, 0, 0, cat.w, cat.d, 0.05] }] : shapeOf(id, cat.tonos[tonoIndex]);

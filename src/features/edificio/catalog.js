@@ -152,6 +152,14 @@ export const CATALOG = [
 
   // ── Premios (1.79): la placa de quien ha decorado la suite de la semana del Gran Hotel ──
   { id: 'placa-suite', rareza: 'especial', nombre: 'Placa de la suite', cat: 'pared', capa: 'pared', w: 1, tonos: [ORO], guino: 'Por decorar cuatro semanas la suite del Gran Hotel' },
+
+  // ── La caja del casino (1.80, `casino: true`): se cambian por fichas, se tienen una vez y no salen en sobres. Los
+  // muebles son premios (rareza 'especial') con efectos; los `vivo` llevan encima algo animado (misticos.js). El conejo
+  // es un legendario que te acompaña ──
+  { id: 'neon-veintiuna', rareza: 'especial', casino: true, nombre: 'Rótulo de neón «21»', cat: 'pared', capa: 'pared', w: 2, luz: [1, 0.3, 2.95], tonos: [[255, 112, 170]], guino: 'De la caja del casino del Gran Hotel' },
+  { id: 'mesa-tapete', rareza: 'especial', casino: true, vivo: true, nombre: 'Mesa de tapete verde', cat: 'mesas', capa: 'suelo', w: 2, d: 1, sup: 0.95, tonos: [[44, 122, 78]], guino: 'De la caja del casino del Gran Hotel' },
+  { id: 'gramola', rareza: 'especial', casino: true, vivo: true, nombre: 'Gramola', cat: 'detalles', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.6, 1.2], tonos: [[110, 58, 40]], guino: 'De la caja del casino del Gran Hotel' },
+  { id: 'conejo-chistera', rareza: 'legendario', compania: true, casino: true, nombre: 'Conejo de la chistera', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'De la caja del casino del Gran Hotel' },
 ];
 
 /** Los premios (rareza 'especial'): no se compran, no salen en sobres y no se regalan ni se reciclan. */

@@ -621,13 +621,64 @@ const SHAPES = {
   },
 };
 
+// ── La caja del casino (1.80): premios con efectos. Lo animado (la baraja de la mesa, las luces y las notas de la
+// gramola) va encima, en misticos.js; el neón se enciende de tarde ──
+const FELT_CHIP = [[168, 40, 58], [30, 28, 36], [230, 184, 90]];
+SHAPES['mesa-tapete'] = (T) => [
+  ...legs(2, 1, 0.78, WOOD_DARK, 0.12, 0.12),
+  B(0.04, 0.04, 0.78, 1.96, 0.96, 0.87, WOOD),
+  B(0, 0, 0.86, 2, 1, 0.9, LATON, { grain: 0 }),
+  B(0.08, 0.08, 0.89, 1.92, 0.92, 0.95, T, { grain: 0 }),
+  // Montones de fichas y unos naipes sobre el paño
+  B(0.26, 0.3, 0.95, 0.38, 0.42, 1.05, FELT_CHIP[0], { grain: 0 }),
+  B(0.26, 0.3, 1.05, 0.38, 0.42, 1.07, CREAM, { grain: 0 }),
+  B(0.42, 0.26, 0.95, 0.54, 0.38, 1.01, FELT_CHIP[1], { grain: 0 }),
+  B(1.58, 0.56, 0.95, 1.7, 0.68, 1.09, FELT_CHIP[2], { grain: 0 }),
+  B(0.9, 0.4, 0.95, 1.08, 0.66, 0.96, CREAM, { grain: 0 }),
+  B(1.0, 0.45, 0.96, 1.18, 0.71, 0.97, CREAM, { grain: 0 }),
+  B(1.16, 0.18, 0.95, 1.34, 0.44, 0.965, [110, 22, 36], { grain: 0 }),
+];
+SHAPES.gramola = (T) => [
+  B(0.12, 0.22, 0, 0.88, 0.82, 0.1, shade(T, 0.7)),
+  B(0.14, 0.24, 0.1, 0.86, 0.8, 0.95, T),
+  B(0.2, 0.26, 0.95, 0.8, 0.8, 1.2, T),
+  B(0.3, 0.3, 1.2, 0.7, 0.8, 1.36, shade(T, 1.12)),
+  // Los tubos de luz del arco, la ventanita de los discos y la rejilla del altavoz
+  B(0.14, 0.8, 0.2, 0.22, 0.85, 1.15, [255, 120, 170], { glow: true, grain: 0 }),
+  B(0.78, 0.8, 0.2, 0.86, 0.85, 1.15, [120, 220, 255], { glow: true, grain: 0 }),
+  B(0.22, 0.8, 1.15, 0.78, 0.85, 1.24, [255, 200, 110], { glow: true, grain: 0 }),
+  B(0.3, 0.8, 0.62, 0.7, 0.83, 0.9, [236, 210, 150], { glow: true, grain: 0 }),
+  B(0.3, 0.8, 0.22, 0.7, 0.82, 0.52, [60, 40, 34], { grain: 0 }),
+  ...[0.28, 0.36, 0.44].map((z) => B(0.32, 0.82, z, 0.68, 0.835, z + 0.03, LATON, { grain: 0 })),
+];
+SHAPES['neon-veintiuna'] = (T) => {
+  // Cada trazo: el tubo de color y, delante, su alma que se enciende de tarde
+  const tube = (x0, z0, x1, z1) => [B(x0, 0.06, z0, x1, 0.13, z1, T, { grain: 0 }), B(x0 + 0.02, 0.13, z0 + 0.02, x1 - 0.02, 0.145, z1 - 0.02, [255, 222, 236], { glow: true, grain: 0 })];
+  return [
+    B(0.2, 0, 2.3, 1.8, 0.05, 3.3, [36, 20, 32]),
+    B(0.2, 0, 2.3, 1.8, 0.055, 2.34, LATON, { grain: 0 }),
+    B(0.2, 0, 3.26, 1.8, 0.055, 3.3, LATON, { grain: 0 }),
+    // El 2
+    ...tube(0.48, 3.04, 0.98, 3.13),
+    ...tube(0.89, 2.78, 0.98, 3.13),
+    ...tube(0.48, 2.74, 0.98, 2.83),
+    ...tube(0.48, 2.46, 0.57, 2.83),
+    ...tube(0.48, 2.42, 0.98, 2.51),
+    // El 1, con su banderita
+    ...tube(1.27, 2.42, 1.36, 3.13),
+    ...tube(1.14, 3.0, 1.36, 3.09),
+    // Una pica dorada en la esquina
+    B(1.56, 0.06, 2.48, 1.66, 0.1, 2.6, [232, 184, 90], { glow: true, grain: 0 }),
+  ];
+};
+
 // La peana de los místicos: piedra oscura con un filo dorado. El ser se dibuja encima, animado (misticos.js)
 const peana = (T) => [
   B(0.2, 0.2, 0, 0.8, 0.8, 0.08, shade(T, 0.8)),
   B(0.26, 0.26, 0.08, 0.74, 0.74, 0.18, T),
   B(0.24, 0.24, 0.18, 0.76, 0.76, 0.22, [204, 170, 90], { grain: 0 }),
 ];
-for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta']) SHAPES[id] = peana;
+for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta', 'conejo-chistera']) SHAPES[id] = peana;
 
 /** Cajas de un mueble en coordenadas locales (sin girar). */
 export function shapeOf(id, tono) {
