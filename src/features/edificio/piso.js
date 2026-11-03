@@ -17,11 +17,15 @@ import { CATALOG, CATEGORIES, COMPANEROS, PAREDES, SETS, SUELOS, catalogItem } f
 import { createCompanion, misticoThumb } from './misticos';
 import { freeCopies, ownedCopies } from './inventory';
 import { houseSwatch, pixelIcon, pixelVars } from './pixelUi';
-import { COLORES_PELO, COMPLEMENTOS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
+import { COLORES_PELO, COMPLEMENTOS, CONJUNTO_ESTRELLAS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
 import { ACTOR_ID, ART_H, ART_W, backdropImage, createRoomRenderer, renderActorThumb, renderThumb } from './render';
 import { ROOM, addItem, check, heightOf, itemsOn, moveItem, reasonText, recolorItem, rectOf, removeItem, rotateItem, setFloor, setWall, wallLength } from './room';
 
 const DRAG_PX = 6;
+// 1.78 (encargo del 3-11-2026, «más difícil mover un mueble sin querer»): un mueble del piso solo se levanta si se
+// mantiene pulsado un momento sin mover el dedo; un toque lo elige y un deslizamiento rápido no lo mueve
+const HOLD_MS = 320;
+const HOLD_SLOP_PX = 10; // lo que puede temblar el dedo mientras se mantiene
 const OUTFIT = 'personaje'; // pestaña de la balda con el armario de tu personaje (§69)
 const WALK_SPEED = 2.4; // celdas por segundo
 const STEP_S = 0.16; // cada zancada
@@ -86,7 +90,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   // Copias de cada mueble (1.66, §66); null: todo libre (sin la migración del inventario, o en el prototipo)
   let inv = inventory;
   let selected = null; // uid del objeto elegido
-  let drag = null; // { uid, pointerId, x0, y0, moved, grab, preview: { room, item, ok, reason, con } }
+  let drag = null; // { uid, pointerId, x0, y0, armed, timer, moved, grab, preview: { room, item, ok, reason, con } }
   let fresh = null; // mueble que llega de la balda: { id, pointerId, x0, y0, moved, base: { room, item }, preview, over }
   let isEvening = evening;
   let decorating = false;
@@ -147,8 +151,17 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   // «Hoy en tu piso»: las tres misiones del día en una nota de papel, junto a la luz
   const todayBtn = pxButton('Hoy en tu piso', 'hoy', { cls: 'px-btn--icon ep-corner ep-corner--left2', label: false, attrs: { 'aria-expanded': 'false', hidden: true } });
   const todayCard = el('section', { class: 'ep-today', hidden: true, 'aria-label': 'Hoy en tu piso' });
+  // 1.78 (encargo del 3-11-2026, «que la habitación sea la protagonista y con iconos claros se llegue a los menús»):
+  // el armario, que antes solo se abría tocando a tu personaje, tiene su icono; y en la vista «dentro», sin decorar,
+  // los cuatro (Decorar, Armario, Hoy y Luz) van juntos en una fila abajo, cada uno con su nombre debajo
+  const wardrobeBtn = pxButton('Armario', 'armario', { cls: 'px-btn--icon ep-corner ep-corner--left3', label: false });
+  const caption = (b, text) => b.append(el('span', { class: 'ep-menu__cap', 'aria-hidden': 'true', text }));
+  caption(lightBtn, 'Luz');
+  caption(todayBtn, 'Hoy');
+  caption(wardrobeBtn, 'Armario');
+  const menu = el('div', { class: 'ep-menu' }, lightBtn, editable ? todayBtn : null, editable ? wardrobeBtn : null, editable ? decorateBtn : null);
   const overlay = el('div', { class: 'ep-overlay' });
-  const stage = el('div', { class: 'ep-stage' }, canvas, lightBtn, editable ? todayBtn : null, editable ? decorateBtn : null, todayCard, tools, overlay);
+  const stage = el('div', { class: 'ep-stage' }, canvas, menu, todayCard, tools, overlay);
   const root = el('div', { class: 'ep' }, stage, status);
   for (const [k, v] of Object.entries(pixelVars())) root.style.setProperty(k, v);
 
@@ -806,11 +819,11 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       placeTools(null);
       return;
     }
-    const p = drag?.moved ? drag.preview : null;
+    const p = drag?.armed ? drag.preview : null;
     const shown = p ? p.room : room;
     const ids = new Set(group(selected));
     renderer.draw(ctx, image, { held: { room: shown, items: shown.items.filter((i) => ids.has(i.uid)) }, selected: p ? p.item : item, ok: p ? p.ok : true, evening: isEvening, inside: isInside, actor: actorFrame(), ...fxNow(p ? ids : null) });
-    placeTools(drag?.moved ? null : item);
+    placeTools(drag?.armed ? null : item);
   }
 
   function requestDraw() {
@@ -818,8 +831,10 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     startLife();
   }
 
-  const hasPlacedMisticos = () => room.items.some((i) => catalogItem(i.id)?.rareza === 'mistico');
-  const alive = () => !destroyed && !reducedMotion() && ((pal && me) || hasPlacedMisticos());
+  // 1.78: también se mueven solas las mascotas y el polvo de estrellas de la capa
+  const hasPlacedMisticos = () => room.items.some((i) => catalogItem(i.id)?.rareza === 'mistico' || catalogItem(i.id)?.mascota);
+  const starry = () => Boolean(me && look?.complemento === 'capa');
+  const alive = () => !destroyed && !reducedMotion() && ((pal && me) || hasPlacedMisticos() || starry());
 
   function startLife() {
     if (!life && alive()) life = requestAnimationFrame(lifeTick);
@@ -847,10 +862,15 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   function beingsNow(skip = null) {
     const out = [];
     for (const it of room.items) {
-      if (skip?.has(it.uid) || catalogItem(it.id)?.rareza !== 'mistico') continue;
+      const cat = catalogItem(it.id);
+      if (skip?.has(it.uid) || (cat?.rareza !== 'mistico' && !cat?.mascota)) continue;
       const rc = rectOf(it);
-      out.push({ id: it.id, uid: it.uid, x: (rc.x0 + rc.x1) / 2, y: (rc.y0 + rc.y1) / 2, z: heightOf(room, it) + 0.22 });
+      // La mascota, sobre su cojín (más bajo que la peana); mira hacia donde mira el mueble
+      out.push({ id: it.id, uid: it.uid, x: (rc.x0 + rc.x1) / 2, y: (rc.y0 + rc.y1) / 2, z: heightOf(room, it) + (cat.mascota ? 0.2 : 0.22), tono: it.tono, flip: cat.mascota ? it.rot === 1 || it.rot === 2 : false });
     }
+    // El polvo de estrellas de la capa, alrededor de tu personaje (y de quien te visita, si la lleva)
+    // (con el conjunto entero, «Noche estrellada», hay más y brillan más)
+    if (starry()) out.push({ id: 'polvo-estrellas', x: me.x, y: me.y, z: me.h ?? 0, moving: me.pose === 'walk', flip: me.facing === 1 || me.facing === 2, full: Object.entries(CONJUNTO_ESTRELLAS).every(([k, v]) => look[k] === v) });
     // Con el armario abierto, posado a un lado de tu personaje y mirándolo
     const spot = dressing && palSpot();
     if (spot) out.push({ id: pal, x: spot.x, y: spot.y, z: 0, flip: spot.x - spot.y > me.x - me.y, moving: false, perch: true });
@@ -971,7 +991,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (uid) {
       const item = room.items.find((i) => i.uid === uid);
       sfx.play('lift');
-      say(`${nameOf(item)}: arrástralo o toca un hueco para moverlo.`);
+      say(`${nameOf(item)}: mantenlo pulsado y arrástralo para moverlo.`);
     }
   }
 
@@ -1138,26 +1158,48 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       // Si se toca algo de encima del elegido, se elige eso (para poder quitar la lámpara de la mesa)
       select(uid);
     } else if (!uid && selected) {
-      // Tocar un hueco con algo elegido lo lleva allí
-      const item = room.items.find((i) => i.uid === selected);
-      const p = previewAt(item, targetAt(item, a, null));
-      if (p.ok) {
-        sfx.play('place');
-        commit(p.room, `${nameOf(item)} en su sitio nuevo.`);
-        onEvent('mover');
-      } else fail(p.reason, p.con);
+      // Tocar un hueco con algo elegido lo suelta (desde la 1.78 ya no lo lleva allí: era fácil moverlo sin querer)
+      select(null);
+      say('Toca un mueble para elegirlo; para moverlo, mantenlo pulsado y arrástralo.');
       return;
     } else if (!uid) {
       return;
     }
     const item = room.items.find((i) => i.uid === selected);
-    drag = { uid: selected, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false, grab: grabOf(item, a), preview: null };
+    const d = { uid: selected, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, armed: false, timer: 0, moved: false, grab: grabOf(item, a), preview: null };
+    // Se levanta al rato de mantenerlo pulsado: entonces se ve en la mano, en su sitio, y ya se puede arrastrar
+    d.timer = setTimeout(() => {
+      if (drag !== d) return;
+      d.armed = true;
+      d.preview = previewAt(item, targetAt(item, a, d.grab));
+      root.classList.add('is-lifting');
+      sfx.play('lift');
+      say(`${nameOf(item)} en la mano: arrástralo a su sitio nuevo.`);
+      requestDraw();
+    }, HOLD_MS);
+    drag = d;
     canvas.setPointerCapture?.(e.pointerId);
+  }
+
+  function endDrag() {
+    if (drag) clearTimeout(drag.timer);
+    drag = null;
+    root.classList.remove('is-dragging', 'is-lifting');
   }
 
   function onPointerMove(e) {
     if (!drag || e.pointerId !== drag.pointerId) return;
-    if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < DRAG_PX) return;
+    const far = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0);
+    if (!drag.armed) {
+      // Se ha movido antes de levantarlo: no era para moverlo
+      if (far > HOLD_SLOP_PX) {
+        const item = room.items.find((i) => i.uid === drag.uid);
+        endDrag();
+        say(`Para mover ${nameOf(item).toLowerCase()}, mantenlo pulsado un momento y luego arrástralo.`);
+      }
+      return;
+    }
+    if (!drag.moved && far < DRAG_PX) return;
     drag.moved = true;
     root.classList.add('is-dragging');
     const item = room.items.find((i) => i.uid === drag.uid);
@@ -1168,9 +1210,12 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   function onPointerUp(e) {
     if (!drag || e.pointerId !== drag.pointerId) return;
     const d = drag;
-    drag = null;
-    root.classList.remove('is-dragging');
-    if (!d.moved) return;
+    endDrag();
+    if (!d.moved) {
+      // Levantado y soltado sin moverlo: se queda donde estaba
+      if (d.armed) requestDraw();
+      return;
+    }
     const item = room.items.find((i) => i.uid === d.uid);
     if (d.preview?.ok) {
       sfx.play('place');
@@ -1184,8 +1229,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   }
 
   function onPointerCancel() {
-    drag = null;
-    root.classList.remove('is-dragging');
+    endDrag();
     requestDraw();
   }
 
@@ -1405,6 +1449,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   lightBtn.addEventListener('click', onLight);
   todayBtn.addEventListener('click', onToday);
   decorateBtn.addEventListener('click', onDecorate);
+  wardrobeBtn.addEventListener('click', () => openWardrobe());
   rotateBtn.addEventListener('click', rotate);
   colorBtn.addEventListener('click', recolor);
   storeBtn.addEventListener('click', store);

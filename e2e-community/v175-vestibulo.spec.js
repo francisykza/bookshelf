@@ -62,14 +62,26 @@ test('el vestíbulo: encargos en la recepción, la botonera del ascensor y salir
   const hotel = await toHotel(page);
   const lobby = await enterLobby(page, hotel);
 
-  // La recepción, de entrada: los cinco encargos de la semana
+  // 1.78: de entrada no hay nada abierto, solo el dibujo con sus letreros pequeños
+  await expect(lobby.getByRole('tab', { selected: true })).toHaveCount(0);
+  await expect(lobby.locator('.gh-desk')).toBeHidden();
+  await expect(lobby.getByText('Toca la recepción, el ascensor, el tablón o el guardarropa.')).toBeVisible();
+  await page.mouse.move(0, 0);
+  await shot(page, info, 'v175-vestibulo');
+  // La recepción: los cinco encargos de la semana, en un papel que se cierra con «×»
+  await lobby.getByRole('tab', { name: 'Recepción' }).click();
   await expect(lobby.getByRole('tab', { name: 'Recepción' })).toHaveAttribute('aria-selected', 'true');
   await expect(lobby.locator('.gh-task')).toHaveCount(5);
   await expect(lobby.getByText(/Buenas noches/)).toBeVisible();
   await page.mouse.move(0, 0);
-  await shot(page, info, 'v175-vestibulo');
-  await lobby.locator('.gh-desk').scrollIntoViewIfNeeded();
   await shot(page, info, 'v175-encargos');
+  await lobby.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(lobby.locator('.gh-desk')).toBeHidden();
+  // Tocar el letrero abierto también lo cierra
+  await lobby.getByRole('tab', { name: 'Tablón' }).click();
+  await expect(lobby.getByText('Abre pronto')).toBeVisible();
+  await lobby.getByRole('tab', { name: 'Tablón' }).click();
+  await expect(lobby.locator('.gh-desk')).toBeHidden();
 
   // El ascensor: la botonera, con el vestíbulo encendido; una planta que aún no abre dice qué habrá
   await lobby.getByRole('tab', { name: 'Ascensor' }).click();
@@ -86,9 +98,14 @@ test('el vestíbulo: encargos en la recepción, la botonera del ascensor y salir
   await expect(lobby).toHaveCount(0);
   await expect(hotel.locator('canvas.hotel-canvas')).toBeVisible();
 
-  // Con el teclado: el botón de la planta entra; Escape vuelve a la fachada, no cierra el hotel
+  // Con el teclado: el botón de la planta entra; Escape cierra primero el papel abierto y luego vuelve a la fachada, no
+  // cierra el hotel
   await hotel.getByRole('list', { name: 'Plantas del hotel' }).getByRole('button', { name: 'El vestíbulo' }).focus();
   await page.keyboard.press('Enter');
+  await expect(hotel.getByRole('region', { name: 'El vestíbulo' })).toBeVisible();
+  await hotel.getByRole('tab', { name: 'Guardarropa' }).click();
+  await page.keyboard.press('Escape');
+  await expect(hotel.locator('.gh-desk')).toBeHidden();
   await expect(hotel.getByRole('region', { name: 'El vestíbulo' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(hotel.getByRole('region', { name: 'El vestíbulo' })).toHaveCount(0);

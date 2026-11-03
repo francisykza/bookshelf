@@ -15,6 +15,7 @@ const YAW = 0.3;
 const W = 180;
 const GLOW_BIT = 0x8000;
 const GLASS_ID = 100;
+const LIMO_ID = 120; // la limusina y su chófer: lo que tapa a tu personaje cuando pasa por detrás (1.78)
 
 // Medidas del edificio (unidades del mundo)
 const BW = 8;
@@ -317,7 +318,7 @@ export function renderFacade(flats = {}) {
   r.box(0.55, BD + 1.65, 0.45, 1.0, BD + 2.1, 0.52, IRON, { grain: 0 });
   r.castShadow(0.8, BD + 1.9, 0.4, 0.25);
   // La limusina negra (1.74, §74), aparcada delante de la tienda con su chófer: se toca para ir al Gran Hotel
-  const limoAt = drawLimo(r, 4.85, BD + 0.95, { glowId: GLOW_BIT });
+  const limoAt = drawLimo(r, 4.85, BD + 0.95, { glowId: GLOW_BIT, bodyId: LIMO_ID });
 
   // La escalera: dos ventanas pequeñas por planta en el cuerpo central, con cortinas amarillas encendidas
   for (let k = 0; k < 3; k += 1) {
@@ -498,5 +499,32 @@ export function renderFacade(flats = {}) {
   const mailbox = { left: Math.min(m0.sx, m1.sx) / W, top: Math.min(m0.sy, m1.sy) / H, width: Math.abs(m1.sx - m0.sx) / W, height: Math.abs(m1.sy - m0.sy) / H };
   // La limusina (para el botón)
   const limo = { left: limoAt.x0 / W, top: limoAt.y0 / H, width: (limoAt.x1 - limoAt.x0) / W, height: (limoAt.y1 - limoAt.y0) / H };
-  return { canvas, windows, panes, shore, shop, mailbox, limo, sign: SIGN_LINES.join(' ') };
+  // El camino de tu personaje por el muelle (1.78): sale del portal y va hasta la puerta de la tienda o hasta la trasera
+  // de la limusina. Puntos del suelo en fracciones del dibujo, con la escala y el giro para dibujarlo encima
+  const foot = (x, y) => {
+    const p = r.project(x, y, 0);
+    return { x: p.sx / W, y: p.sy / H };
+  };
+  // `front`: solo la limusina y el chófer, en un dibujo aparte, para ponerlo encima del personaje (va por detrás)
+  const front = document.createElement('canvas');
+  front.width = W;
+  front.height = H;
+  const fctx = front.getContext('2d');
+  const fimg = fctx.createImageData(W, H);
+  const all = ctx.getImageData(0, 0, W, H).data;
+  for (let i = 0; i < r.ids.length; i += 1) {
+    if ((r.ids[i] & ~GLOW_BIT) !== LIMO_ID) continue;
+    for (let c = 0; c < 4; c += 1) fimg.data[i * 4 + c] = all[i * 4 + c];
+  }
+  fctx.putImageData(fimg, 0, 0);
+  const walk = {
+    S: S * 0.66,
+    yaw: YAW,
+    front,
+    door: foot(4.0, BD + 0.3),
+    // A la tienda, por la acera pegada a la pared; a la limusina, hasta su puerta de atrás, del lado de la acera
+    shop: [foot(4.0, BD + 0.55), foot(5.95, BD + 0.55), foot(5.95, BD + 0.32)],
+    limo: [foot(4.0, BD + 0.6), foot(5.45, BD + 0.8)],
+  };
+  return { canvas, windows, panes, shore, shop, mailbox, limo, walk, sign: SIGN_LINES.join(' ') };
 }

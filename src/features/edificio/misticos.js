@@ -307,12 +307,142 @@ export function drawRose(p, t) {
   }
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// 1.78 (encargo de Francisco del 3-11-2026). El perrito de la mascota (raro: no es místico; vive encima de su cojín,
+// furniture.js): sentado, mueve la cola, parpadea, mueve una oreja y, a ratos, se tumba a dormir un poco. `o.tono`: el
+// color del pelo (el tono del mueble).
+const PUP_TONOS = [
+  [H('#c48c5c'), H('#e0b484'), H('#8a5a38')],
+  [H('#ece2ce'), H('#fff8ea'), H('#b8ab94')],
+  [H('#463e3c'), H('#6a605c'), H('#2a2422')],
+];
+export function drawPuppy(p, t, o = {}) {
+  const [fur, light, dark] = PUP_TONOS[o.tono ?? 0] ?? PUP_TONOS[0];
+  const nose = H('#2a1c18');
+  // Cada 14 s se tumba unos 4 s (con movimiento reducido, t fijo: sentado)
+  const cyc = t % 14;
+  const lying = cyc > 9 && cyc < 13;
+  shadow(p, 7, 0);
+  if (lying) {
+    // Hecho un ovillo: cuerpo largo y bajo, la cabeza apoyada en las patas, ojos cerrados y una «z» que sube
+    p.ellipse(0, -3, 7, 3.2, (d) => (d < 0.55 ? light : fur));
+    p.disc(5.5, -3.2, 3, (d) => (d < 0.5 ? light : fur), 1);
+    p.ellipse(4, -2.2, 1.6, 2.4, dark);
+    p.px(8, -3, nose);
+    p.line(5, -4, 6.5, -4, dark);
+    const tail = Math.sin(t * 1.5) * 0.6;
+    p.line(-7, -3, -9, -4 + tail, fur);
+    const zz = ((t - 9) % 1.4) / 1.4;
+    p.dot(7 + zz * 3, -9 - zz * 6, H('#fff8ea'), 1 - zz);
+    return;
+  }
+  // La cola: barre a un lado y a otro (más deprisa de vez en cuando, como si te viera llegar)
+  const happy = Math.sin(t * 0.4) > 0.3 ? 3 : 1;
+  const wag = Math.sin(t * 9 * happy) * 2.2;
+  p.line(-4, -5, -8, -9 + wag * 0.4, fur);
+  p.line(-8, -9 + wag * 0.4, -8 + wag * 0.5, -12 + wag * 0.3, light);
+  // Cuerpo sentado y patas delanteras
+  p.ellipse(-1, -5, 4.6, 4.4, (d, a) => (d < 0.6 && Math.cos(a) > 0 ? light : d > 0.85 && Math.sin(a) > 0.2 ? dark : fur));
+  p.rect(1, -4, 1.5, 4, fur);
+  p.rect(3, -4, 1.5, 4, light);
+  p.px(1, -1, dark);
+  p.px(3, -1, dark);
+  // Cabeza, hocico y orejas caídas (una se levanta a ratos)
+  const bob = Math.sin(t * 1.7) * 0.5;
+  const hy = -11 + bob;
+  p.disc(2.5, hy, 3.6, (d, a) => (d < 0.55 && Math.cos(a) > 0.2 ? light : fur), 1);
+  p.ellipse(5.4, hy + 1.2, 2.1, 1.5, light);
+  p.px(7, hy + 0.6, nose);
+  p.px(4.5, hy + 2.4, H('#c45a5a'));
+  const ear = t % 6 < 0.35 ? -2 : 0;
+  p.tri(-0.6, hy - 2.4, 1.6, hy - 2.8, -0.4, hy + 2 + ear, dark);
+  p.tri(2.6, hy - 3.2, 4.4, hy - 2.6, 3.6, hy + 0.6, dark);
+  // Ojos que parpadean
+  if (t % 4.2 > 0.14) {
+    p.px(3.6, hy - 0.6, H('#1c1412'));
+    p.px(3.6, hy - 1.4, H('#fff8ea'));
+  } else p.line(3.2, hy - 0.6, 4.2, hy - 0.6, dark);
+  // El collar con su chapita
+  p.line(0.4, hy + 3.2, 4, hy + 3.4, H('#3f6a8a'));
+  p.dot(2.6, hy + 4.2, H('#f0c35a'));
+}
+
+// Búho de las constelaciones (místico, 1.78): un búho de plumas de noche con ojos de ámbar que gira la cabeza y
+// parpadea; a su alrededor, una constelación pequeña se va encendiendo estrella a estrella y se une con hilos de luz.
+const OWL = [H('#2c2a44'), H('#4a4670'), H('#7a74a8'), H('#c8c2e6')];
+const AMBER = H('#ffb84a');
+export function drawOwl(p, t) {
+  shadow(p, 6, 0);
+  const sway = Math.sin(t * 0.8) * 0.4;
+  // Cuerpo, alas y vientre moteado
+  p.ellipse(sway, -8, 5.2, 7, (d, a) => (d < 0.55 && Math.cos(a - Math.PI / 2) < 0.2 ? OWL[2] : d > 0.82 ? OWL[0] : OWL[1]));
+  for (const [x, y] of [[-1, -7], [1, -5], [0.5, -9], [-1.5, -4]]) p.px(sway + x, y, OWL[3]);
+  // Garras sobre la peana
+  p.px(-1.5, -1, AMBER);
+  p.px(1.5, -1, AMBER);
+  // Cabeza: gira a un lado y al otro cada pocos segundos
+  const look = Math.max(-1, Math.min(1, Math.sin(t * 0.55) * 2)) * 1.4;
+  const hx = sway + look * 0.4;
+  p.disc(hx, -16, 4.6, (d) => (d > 0.85 ? OWL[0] : OWL[1]), 1);
+  p.tri(hx - 4.2, -18, hx - 3.2, -23, hx - 1.6, -19, OWL[0]);
+  p.tri(hx + 4.2, -18, hx + 3.2, -23, hx + 1.6, -19, OWL[0]);
+  const blink = t % 5.3 < 0.16;
+  for (const sx of [-1.9, 1.9]) {
+    const ex = hx + sx + look * 0.5;
+    p.disc(ex, -16.4, 1.8, OWL[3], 1);
+    if (!blink) {
+      p.disc(ex, -16.4, 1.1, AMBER, 1);
+      p.px(ex, -16.4, H('#1a1208'));
+    } else p.line(ex - 1.5, -16.4, ex + 1.5, -16.4, OWL[0]);
+  }
+  if (!blink) p.glow(hx, -16.4, 7, AMBER, 0.22);
+  p.tri(hx + look * 0.5 - 0.8, -14.8, hx + look * 0.5 + 0.8, -14.8, hx + look * 0.5, -13.2, H('#d8a040'));
+  // La constelación: cinco estrellas que se encienden por turnos y se unen
+  const STARS = [[-12, -26], [-6, -31], [2, -29], [9, -33], [13, -25]];
+  const lit = (t * 0.9) % (STARS.length + 3);
+  for (let i = 0; i < STARS.length; i += 1) {
+    const [x, y] = STARS[i];
+    const on = Math.max(0, Math.min(1, lit - i)) * (lit > STARS.length + 1.5 ? Math.max(0, STARS.length + 3 - lit) / 1.5 : 1);
+    if (i > 0 && on > 0) p.line(STARS[i - 1][0], STARS[i - 1][1], x, y, H('#9fb8ff'), 0.45 * on);
+    if (on > 0.8) sparkle(p, x, y, 1, H('#ffffff'), H('#9fd8ff'), 0.3);
+    else p.dot(x, y, H('#cfe0ff'), 0.25 + on * 0.6);
+  }
+  drift(t, 4, 3.6, (u, i) => {
+    const x = (hash(i, 9) - 0.5) * 18;
+    p.dot(x, -6 - u * 20, H('#c8c2e6'), Math.sin(Math.PI * u) * 0.7);
+  });
+}
+
+// El polvo de estrellas del conjunto «Noche estrellada» (1.78; se lleva con la capa de estrellas, actor.js): motas
+// que titilan alrededor de tu personaje y, al andar, una estela que se queda atrás y se apaga.
+export function drawStardust(p, t, o = {}) {
+  if (o.full) p.glow(0, -14, 18, H('#ffd27a'), 0.08 + 0.04 * Math.sin(t * 1.6));
+  for (let i = 0; i < (o.full ? 12 : 7); i += 1) {
+    const a = t * (0.6 + hash(i, 3) * 0.5) + i * 0.9;
+    const x = Math.cos(a) * (7 + hash(i, 1) * 4);
+    const y = -16 + Math.sin(a * 1.3) * 9 - hash(i, 2) * 6;
+    const tw = 0.5 + 0.5 * Math.sin(t * (2 + hash(i) * 2) + i);
+    if (tw > 0.9) sparkle(p, x, y, 1, H('#fff6d8'), H('#ffd27a'), 0.28);
+    else p.dot(x, y, H('#ffe9a8'), tw * 0.8);
+  }
+  if (o.moving)
+    drift(t, 6, 0.9, (u, i) => {
+      const x = -4 - u * 10 + (hash(i, 5) - 0.5) * 3;
+      const y = -4 - hash(i, 6) * 14 + u * 3;
+      p.dot(x, y, i % 2 ? H('#9fd8ff') : H('#ffe9a8'), (1 - u) * 0.9);
+    });
+}
+
 export const MISTICOS = [
   { id: 'dragoncillo', nombre: 'Dragoncillo de escamas rojas', guino: 'Para quien leyó «Alas de sangre»', legendario: true, draw: drawDragon },
   { id: 'zorro-bruma', nombre: 'Zorro de bruma y ceniza', guino: 'Para quien leyó «Mistborn»', legendario: true, draw: drawFox },
   { id: 'cinta-tormenta', nombre: 'Cinta de luz de tormenta', guino: 'Para quien leyó «El archivo de las tormentas»', legendario: true, draw: drawRibbon },
   { id: 'farol-azul', nombre: 'Farol de llama azul', guino: 'Para quien leyó «El nombre del viento»', legendario: false, draw: drawLantern },
   { id: 'rosa-estrellas', nombre: 'Rosa bajo la lluvia de estrellas', guino: 'Para quien leyó «Una corte de rosas y espinas»', legendario: false, draw: drawRose },
+  { id: 'buho-estrellas', nombre: 'Búho de las constelaciones', guino: 'Para quien lee hasta tarde', legendario: false, draw: drawOwl },
+  // 1.78: no son místicos, pero se dibujan igual (vivos, con el pintor de pixelfx): la mascota y el polvo de estrellas
+  { id: 'perrito', nombre: 'Perrito en su cojín', mascota: true, draw: drawPuppy },
+  { id: 'polvo-estrellas', nombre: 'Polvo de estrellas', efecto: true, draw: drawStardust },
 ];
 
 export const misticoOf = (id) => MISTICOS.find((m) => m.id === id) ?? null;
@@ -358,6 +488,32 @@ export function misticoThumb(id, size = 44, t = 1.3) {
   const cy = (y0 + y1 + 1) / 2;
   ctx.drawImage(src, cx - side / 2, cy - side / 2, side, side, Math.round((size - w) / 2), Math.round((size - w) / 2), w, w);
   return out;
+}
+
+/**
+ * Un místico animado fuera del piso (1.78: tu compañero, detrás de ti por el muelle de la fachada). Devuelve
+ * { canvas, ax, ay, paint(t, { moving, flip }) }: `ax`, `ay` es dónde caen sus pies dentro del dibujo.
+ */
+export function misticoSprite(id) {
+  const m = misticoOf(id);
+  const N = 72;
+  const frame = createFrame(N, N);
+  const canvas = document.createElement('canvas');
+  canvas.width = N;
+  canvas.height = N;
+  const ctx = canvas.getContext('2d');
+  const img = new ImageData(N, N);
+  const paint = (t, { moving = false, flip = false } = {}) => {
+    frame.color.fill(0);
+    frame.light.fill(0);
+    const p = painterFor(frame);
+    p.place(N / 2, N - 10, flip);
+    m.draw(p, t, { moving });
+    img.data.fill(0);
+    composite(frame, img.data, null);
+    ctx.putImageData(img, 0, 0);
+  };
+  return { canvas, ax: N / 2, ay: N - 10, paint };
 }
 
 /**

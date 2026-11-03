@@ -8,6 +8,7 @@
 // Rareza (1.67, §67): 'comun' si no se dice; 'poco-comun' y 'raro' salen en los sobres de la tienda (economy.js).
 // Místicos (docs/qa/misticos.md): rareza 'mistico' (se colocan sobre su peana y se mueven solos) o 'legendario' (no se
 // colocan: te acompañan, `compania: true`). Su dibujo animado está en misticos.js; la peana, en furniture.js.
+// Mascotas (1.78): `mascota: true`, un mueble de los de siempre (su cojín) con un animal animado encima (misticos.js).
 
 export const CATEGORIES = [
   { id: 'asientos', nombre: 'Para sentarse' },
@@ -100,6 +101,17 @@ export const CATALOG = [
   { id: 'mapa', rareza: 'poco-comun', nombre: 'Mapa del puerto', cat: 'pared', capa: 'pared', w: 2, tonos: [SALVIA, TERRACOTA, MOSTAZA] },
   { id: 'alfombra-rayas', nombre: 'Alfombra de rayas', cat: 'alfombras', capa: 'alfombra', w: 2, d: 3, tonos: [AZUL, TERRACOTA, SALVIA] },
 
+  // ── Tanda 3 (1.78, encargo de Francisco del 3-11-2026: «otra tanda de muebles de todas las rarezas, incluida una
+  // mascota»). La mascota (`mascota: true`) es un mueble raro, su cojín, y encima vive un perrito animado (misticos.js) ──
+  { id: 'perchero', nombre: 'Perchero', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [MADERA, NOGAL, MADERA_CLARA] },
+  { id: 'cesto-mantas', nombre: 'Cesto de mantas', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [TERRACOTA, SALVIA, AZUL] },
+  { id: 'jarron', nombre: 'Jarrón de flores', cat: 'plantas', capa: 'encima', w: 1, d: 1, tonos: [AZUL, CREMA, TERRACOTA] },
+  { id: 'chimenea', rareza: 'poco-comun', nombre: 'Chimenea', cat: 'luz', capa: 'suelo', w: 2, d: 1, sup: 1.3, luz: [1, 0.85, 0.5], tonos: [CREMA, TERRACOTA, PIZARRA] },
+  { id: 'piano', rareza: 'poco-comun', nombre: 'Piano de pared', cat: 'mesas', capa: 'suelo', w: 2, d: 1, sup: 1.4, tonos: [NOGAL, NEGRO, MADERA] },
+  { id: 'tapiz', rareza: 'poco-comun', nombre: 'Tapiz de olas', cat: 'pared', capa: 'pared', w: 2, tonos: [AZUL, SALVIA, TERRACOTA] },
+  { id: 'telescopio', rareza: 'raro', nombre: 'Telescopio de latón', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [ORO, COBRE, PLATA] },
+  { id: 'perrito', rareza: 'raro', mascota: true, nombre: 'Perrito en su cojín', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [[196, 140, 92], [236, 226, 206], [70, 62, 60]] },
+
   // ── Sagas ──
   // Nido de jinetes
   { id: 'brasero', nombre: 'Brasero', cat: 'sagas', set: 'jinetes', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 1.15], tonos: [HIERRO, BRONCE] },
@@ -132,6 +144,8 @@ export const CATALOG = [
   { id: 'rosa-estrellas', rareza: 'mistico', nombre: 'Rosa bajo la lluvia de estrellas', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien leyó «Una corte de rosas y espinas»' },
   { id: 'dragoncillo', rareza: 'legendario', compania: true, nombre: 'Dragoncillo de escamas rojas', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien leyó «Alas de sangre»' },
   { id: 'zorro-bruma', rareza: 'legendario', compania: true, nombre: 'Zorro de bruma y ceniza', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien leyó «Mistborn»' },
+  // 1.78: el búho no lleva guiño a ninguna saga: es de quien lee hasta tarde
+  { id: 'buho-estrellas', rareza: 'mistico', nombre: 'Búho de las constelaciones', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien lee hasta tarde' },
   { id: 'cinta-tormenta', rareza: 'legendario', compania: true, nombre: 'Cinta de luz de tormenta', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'Para quien leyó «El archivo de las tormentas»' },
 ];
 

@@ -314,6 +314,92 @@ const SHAPES = {
     return out;
   },
 
+  // ── Tanda 3 (1.78) ──
+  perchero: (T) => [
+    B(0.3, 0.3, 0, 0.7, 0.7, 0.08, shade(T, 0.85)),
+    B(0.46, 0.46, 0.08, 0.54, 0.54, 2.55, T, { grain: 0 }),
+    B(0.36, 0.46, 2.4, 0.64, 0.54, 2.46, T, { grain: 0 }),
+    B(0.46, 0.36, 2.25, 0.54, 0.64, 2.31, T, { grain: 0 }),
+    // Un abrigo y una bufanda colgados
+    B(0.26, 0.54, 1.25, 0.74, 0.72, 2.36, [120, 70, 44]),
+    B(0.3, 0.72, 1.9, 0.7, 0.74, 2.3, shade([120, 70, 44], 1.15), { grain: 0 }),
+    B(0.54, 0.26, 1.7, 0.62, 0.46, 2.26, [184, 98, 70], { grain: 0 }),
+    B(0.46, 0.45, 2.55, 0.54, 0.55, 2.62, LATON, { grain: 0 }),
+  ],
+  'cesto-mantas': (T) => [
+    B(0.14, 0.14, 0, 0.86, 0.86, 0.62, [176, 136, 86]),
+    B(0.14, 0.84, 0.12, 0.86, 0.87, 0.16, [140, 104, 62], { grain: 0 }),
+    B(0.14, 0.84, 0.38, 0.86, 0.87, 0.42, [140, 104, 62], { grain: 0 }),
+    B(0.2, 0.2, 0.62, 0.8, 0.8, 0.82, T),
+    B(0.22, 0.3, 0.82, 0.62, 0.7, 0.92, shade(T, 1.15)),
+    B(0.55, 0.55, 0.62, 0.92, 0.95, 0.74, CREAM),
+  ],
+  jarron: (T) => [
+    B(0.36, 0.36, 0, 0.64, 0.64, 0.32, T),
+    B(0.4, 0.4, 0.32, 0.6, 0.6, 0.42, shade(T, 1.12)),
+    ...[[0.5, 0.5, 0.7, [226, 120, 120]], [0.36, 0.56, 0.62, [244, 204, 86]], [0.62, 0.42, 0.66, [236, 226, 200]], [0.44, 0.38, 0.58, [196, 140, 200]]].flatMap(([x, y, z, c]) => [
+      B(x - 0.015, y - 0.015, 0.42, x + 0.015, y + 0.015, z, [80, 112, 70], { grain: 0 }),
+      B(x - 0.08, y - 0.08, z, x + 0.08, y + 0.08, z + 0.12, c, { step: 0.05 }),
+    ]),
+  ],
+  chimenea: (T) => [
+    // Dos jambas, el dintel y, dentro del hueco, el fondo oscuro con los troncos y la lumbre (se enciende de tarde)
+    B(0, 0, 0, 0.4, 0.95, 1.2, T),
+    B(1.6, 0, 0, 2, 0.95, 1.2, T),
+    B(0.4, 0, 0.85, 1.6, 0.95, 1.2, T),
+    B(0.4, 0, 0, 1.6, 0.45, 0.85, [40, 30, 32], { grain: 0 }),
+    B(0.5, 0.45, 0.04, 1.5, 0.75, 0.18, [110, 70, 46]),
+    B(0.6, 0.5, 0.18, 1.4, 0.7, 0.48, FIRE, { glow: true, grain: 0 }),
+    B(0.8, 0.55, 0.48, 1.2, 0.68, 0.7, [255, 214, 130], { glow: true, grain: 0 }),
+    B(-0.06, -0.04, 1.2, 2.06, 1.05, 1.3, shade(T, 0.82)),
+    B(0.25, 0, 1.3, 1.75, 0.3, 3.2, shade(T, 0.95)),
+    B(0.4, 0.45, 0, 1.6, 0.95, 0.04, IRON, { grain: 0 }),
+  ],
+  piano: (T) => [
+    B(0.05, 0, 0, 1.95, 0.7, 1.4, T),
+    B(0.1, 0.7, 0.7, 1.9, 1.0, 0.86, T),
+    B(0.14, 0.7, 0.86, 1.86, 0.96, 0.9, CREAM, { grain: 0 }),
+    ...Array.from({ length: 10 }, (_, k) => B(0.22 + k * 0.17, 0.74, 0.9, 0.3 + k * 0.17, 0.86, 0.93, [40, 36, 40], { grain: 0 })),
+    B(0.15, 0.7, 0, 0.25, 0.95, 0.7, shade(T, 0.85)),
+    B(1.75, 0.7, 0, 1.85, 0.95, 0.7, shade(T, 0.85)),
+    B(0.7, 0.72, 0.95, 1.3, 0.76, 1.3, [236, 226, 200], { grain: 0 }),
+    B(0.8, 0.88, 0.06, 0.9, 0.98, 0.12, LATON, { grain: 0 }),
+    B(1.1, 0.88, 0.06, 1.2, 0.98, 0.12, LATON, { grain: 0 }),
+  ],
+  tapiz: (T) => {
+    const out = [B(0.1, 0, 3.12, 1.9, 0.1, 3.2, WOOD_DARK), B(0.2, 0, 1.6, 1.8, 0.05, 3.1, CREAM, { grain: 0 })];
+    // Tres olas en escalera y un sol
+    for (let k = 0; k < 3; k += 1) {
+      const z = 1.75 + k * 0.38;
+      for (let x = 0.2; x < 1.8; x += 0.32) out.push(B(x, 0, z, x + 0.2, 0.07, z + 0.12, k === 1 ? shade(T, 1.2) : T, { grain: 0 }), B(x + 0.12, 0, z + 0.12, x + 0.26, 0.07, z + 0.2, CREAM, { grain: 0 }));
+    }
+    out.push(B(1.3, 0, 2.75, 1.58, 0.08, 3.0, [226, 150, 80], { grain: 0 }));
+    for (const x of [0.3, 0.6, 0.9, 1.2, 1.5]) out.push(B(x, 0, 1.45, x + 0.06, 0.05, 1.6, shade(T, 0.85), { grain: 0 }));
+    return out;
+  },
+  telescopio: (T) => [
+    // Trípode de madera y el tubo de latón, inclinado hacia arriba en escalones, mirando a la ventana del fondo
+    B(0.16, 0.5, 0, 0.26, 0.6, 1.2, WOOD, { grain: 0 }),
+    B(0.74, 0.5, 0, 0.84, 0.6, 1.2, WOOD, { grain: 0 }),
+    B(0.45, 0.82, 0, 0.55, 0.92, 1.2, WOOD, { grain: 0 }),
+    B(0.34, 0.5, 1.15, 0.66, 0.8, 1.3, WOOD_DARK),
+    B(0.36, 0.62, 1.3, 0.64, 0.98, 1.56, shade(T, 0.85)),
+    B(0.36, 0.34, 1.42, 0.64, 0.66, 1.72, T),
+    B(0.37, 0.06, 1.56, 0.63, 0.36, 1.86, T),
+    B(0.34, 0.02, 1.62, 0.66, 0.1, 1.92, shade(T, 1.18)),
+    B(0.39, 0.0, 1.66, 0.61, 0.03, 1.88, [200, 226, 236], { grain: 0 }),
+    B(0.4, 0.98, 1.38, 0.6, 1.0, 1.5, [40, 36, 40], { grain: 0 }),
+  ],
+  // El cojín de la mascota; el perrito se dibuja encima, vivo (misticos.js). El tono es el del perro: el cojín no cambia
+  perrito: () => [
+    B(0.08, 0.1, 0, 0.92, 0.9, 0.12, [150, 58, 52]),
+    B(0.12, 0.14, 0.12, 0.88, 0.86, 0.2, [184, 82, 70]),
+    B(0.08, 0.1, 0.12, 0.92, 0.22, 0.3, [150, 58, 52]),
+    B(0.08, 0.1, 0.12, 0.2, 0.9, 0.26, [150, 58, 52]),
+    B(0.8, 0.1, 0.12, 0.92, 0.9, 0.26, [150, 58, 52]),
+    B(0.44, 0.86, 0.04, 0.56, 0.92, 0.1, LATON, { grain: 0 }),
+  ],
+
   // ── Sets de sagas (§64): objetos corrientes que evocan cada saga, sin nada oficial ──
   // Nido de jinetes
   brasero: (T) => [
@@ -532,7 +618,7 @@ const peana = (T) => [
   B(0.26, 0.26, 0.08, 0.74, 0.74, 0.18, T),
   B(0.24, 0.24, 0.18, 0.76, 0.76, 0.22, [204, 170, 90], { grain: 0 }),
 ];
-for (const id of ['farol-azul', 'rosa-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta']) SHAPES[id] = peana;
+for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta']) SHAPES[id] = peana;
 
 /** Cajas de un mueble en coordenadas locales (sin girar). */
 export function shapeOf(id, tono) {

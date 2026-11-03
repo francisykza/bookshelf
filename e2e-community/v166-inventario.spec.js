@@ -25,7 +25,10 @@ async function openMyFlat(page, mock) {
   await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
   const panel = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await panel.getByRole('button', { name: /^Entrar en tu piso/ }).click({ timeout: 15000 });
-  return page.getByRole('dialog', { name: 'Tu piso' });
+  // Desde la 1.78 se entra sin decorar: la balda sale con «Decorar»
+  const mine = page.getByRole('dialog', { name: 'Tu piso' });
+  await mine.getByRole('button', { name: 'Decorar' }).click();
+  return mine;
 }
 
 test('la balda con tus copias, lo agotado apagado y «Tu mudanza» con seis comunes', async ({ page }, info) => {

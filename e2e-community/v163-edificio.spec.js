@@ -1,6 +1,6 @@
 // 1.63 (SPEC §63) · «El edificio del puerto» en la app, con Supabase simulado: la tablet del Salón pregunta entre la
-// comunidad y el edificio; el servidor te da puerta; tu piso se decora y se guarda solo; el de un vecino solo se mira y
-// se le deja un sello. Quien bloquea o no participa no aparece. La autorización real está en
+// comunidad y el edificio; el servidor te da puerta; tu piso se decora y se guarda solo; el de un vecino se mira (los
+// sellos se quitaron en la 1.78). Quien bloquea o no participa no aparece. La autorización real está en
 // src/features/edificio/__tests__/edificio.rls.test.js (Postgres con la migración).
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -52,7 +52,7 @@ async function toSalon(page, mock) {
   await page.waitForFunction(() => document.querySelector('[data-panel="SOCIAL_ROOM"] .scene-base')?.naturalWidth > 0);
 }
 
-test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita con sello', async ({ page }, info) => {
+test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita', async ({ page }, info) => {
   test.skip(!/390x844|1440x900/.test(info.project.name), '390 (Chromium y WebKit) y escritorio');
   const mock = seed();
   const errors = [];
@@ -75,10 +75,12 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   await expect(panel.getByText('Elena Bruma')).toHaveCount(0);
   // 3.º A está libre; las puertas de Dani y Elena se ven como cualquier puerta libre (no se delata un bloqueo)
   await expect(panel.locator('.ed-door--free')).toHaveCount(3);
-  // 1.73: el sello está en el buzón de la fachada (asoma una carta); al tocarlo se lee, y al tocarlo otra vez se cierra
-  const buzon = panel.getByRole('button', { name: 'Tu buzón: una cosa nueva' });
+  // 1.73: el buzón de la fachada se abre al tocarlo, y al tocarlo otra vez se cierra. 1.78: los sellos ya no llegan
+  // (sin la migración de vecinos, el buzón está vacío)
+  const buzon = panel.getByRole('button', { name: 'Tu buzón, vacío' });
   await buzon.click();
-  await expect(panel.getByRole('region', { name: 'Tu buzón' }).getByText('Bruno (1.º A) te dejó «Qué acogedor».')).toBeVisible();
+  await expect(panel.getByRole('region', { name: 'Tu buzón' }).getByText(/^Nada por ahora/)).toBeVisible();
+  await expect(panel.getByText(/te dejó «Qué acogedor»/)).toHaveCount(0);
   await buzon.click();
   await expect(panel.getByRole('region', { name: 'Tu buzón' })).toBeHidden();
   // Tu piso inicial ya está guardado y validado
@@ -93,8 +95,12 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   await panel.getByRole('button', { name: 'Entrar en tu piso, 2.º B' }).click();
   const mine = page.getByRole('dialog', { name: 'Tu piso' });
   await expect(mine.getByRole('heading', { name: 'Tu piso · 2.º B' })).toBeVisible();
-  // Por defecto, «dentro de la habitación»: a pantalla completa y ya decorando, con la balda abajo
+  // Por defecto, «dentro de la habitación», a pantalla completa y (desde la 1.78) sin decorar: la habitación manda y
+  // los menús van en una fila de iconos con su nombre; «Decorar» saca la balda abajo
   await expect(mine.locator('.ed-inside .ep--inside')).toBeVisible();
+  await expect(mine.locator('.ep-shelf')).toBeHidden();
+  for (const name of ['Luz de tarde', 'Armario', 'Decorar']) await expect(mine.locator('.ep-menu').getByRole('button', { name })).toBeVisible();
+  await mine.getByRole('button', { name: 'Decorar' }).click();
   await expect(mine.locator('.ep-shelf')).toBeVisible();
   await expect(mine.getByRole('button', { name: 'Terminar' })).toBeVisible();
   const stage = await mine.locator('.ep-stage').boundingBox();
@@ -122,18 +128,13 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   await mine.getByRole('button', { name: 'Volver al portal' }).click();
   await expect(panel.getByRole('button', { name: 'Entrar en tu piso, 2.º B' })).toBeVisible();
 
-  // Visita a Bruno: solo mirar y dejar un sello
+  // Visita a Bruno: sin la migración de vecinos, solo mirar (1.78: ya no hay sellos)
   await panel.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click();
   const bruno = page.getByRole('dialog', { name: 'Piso de Bruno' });
   await expect(bruno.getByRole('heading', { name: 'Piso de Bruno · 1.º A' })).toBeVisible();
   await expect(bruno.getByRole('button', { name: 'Decorar' })).toHaveCount(0);
-  await bruno.getByRole('button', { name: 'Menuda estantería' }).click();
-  await expect(bruno.getByText('Has dejado «Menuda estantería» en el buzón de Bruno.')).toBeVisible();
-  expect(mock.db.piso_sellos.find((s) => s.de === ANA.id && s.para === BRUNO.id)?.sello).toBe('estanteria');
-  await bruno.getByRole('button', { name: 'Luz de tarde' }).click();
-  // Dentro de su piso, los sellos quedan abajo, a la vista
-  const sellos = await bruno.locator('.ed-sellos').boundingBox();
-  expect(sellos.y + sellos.height).toBeLessThanOrEqual(page.viewportSize().height + 1);
+  await expect(bruno.getByRole('button', { name: 'Menuda estantería' })).toHaveCount(0);
+  await expect(bruno.locator('canvas.ep-canvas')).toBeVisible();
   await shot(page, info, 'v163-visita');
   // Atrás del sistema vuelve al portal, y otra vez, al salón
   await page.goBack();

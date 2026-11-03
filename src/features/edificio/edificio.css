@@ -44,7 +44,8 @@
   cursor: grab;
 }
 
-.ep.is-dragging .ep-canvas {
+.ep.is-dragging .ep-canvas,
+.ep.is-lifting .ep-canvas {
   cursor: grabbing;
 }
 
@@ -1361,6 +1362,96 @@
   }
 }
 
+/* 1.78: la segunda gaviota, más pequeña (más lejos), cruza al revés y más despacio */
+.ed-gull--far {
+  top: 15%;
+  scale: -0.7 0.7;
+  opacity: 0.8;
+  animation:
+    ed-flap 0.7s steps(1) infinite,
+    ed-fly-back 27s linear 9s infinite;
+}
+
+@keyframes ed-fly-back {
+  0% {
+    transform: translate(112cqw, 0);
+  }
+
+  50% {
+    transform: translate(-12cqw, 3cqw);
+  }
+
+  100% {
+    transform: translate(-12cqw, 3cqw);
+  }
+}
+
+/* Una estrella fugaz, de tarde en tarde: una raya de luz que cruza en un instante y se apaga */
+.ed-shoot {
+  position: absolute;
+  top: 5%;
+  left: 62%;
+  width: 9cqw;
+  height: calc(1 * var(--px));
+  background: linear-gradient(90deg, rgb(255 246 220 / 0), #fff6dc);
+  opacity: 0;
+  transform: rotate(-24deg);
+  transform-origin: 100% 50%;
+  animation: ed-shoot 17s ease-out 6s infinite;
+}
+
+@keyframes ed-shoot {
+  0% {
+    opacity: 0;
+    translate: 0 0;
+  }
+
+  1% {
+    opacity: 1;
+  }
+
+  5% {
+    opacity: 0;
+    translate: -22cqw 9cqw;
+  }
+
+  100% {
+    opacity: 0;
+    translate: -22cqw 9cqw;
+  }
+}
+
+/* Luciérnagas sobre el muelle: puntitos cálidos que se encienden y flotan un poco */
+.ed-firefly {
+  position: absolute;
+  width: calc(1 * var(--px));
+  height: calc(1 * var(--px));
+  background: #ffe9a0;
+  box-shadow: 0 0 4px 2px rgb(255 220 120 / 0.55);
+  opacity: 0;
+  animation:
+    ed-firefly 6s ease-in-out infinite,
+    ed-float 3s ease-in-out infinite alternate;
+}
+
+@keyframes ed-firefly {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  35%,
+  55% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes ed-float {
+  to {
+    translate: 1.2cqw -1.6cqw;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ed-ambient {
     display: none;
@@ -1930,6 +2021,16 @@
   color: #6b5440;
 }
 
+/* 1.78: lo que ya habías leído queda más apagado; lo nuevo, con su tinta de siempre */
+.ed-mailnote li {
+  color: #6b5440;
+}
+
+.ed-mailnote li.is-new {
+  color: #2c1e14;
+  font-weight: 600;
+}
+
 .ed-facade.is-arriving .ed-mailbox,
 .ed-facade.is-peeking .ed-mailbox,
 .ed-facade.is-peeking .ed-mailnote {
@@ -2274,4 +2375,129 @@
   justify-content: center;
   width: 100%;
   min-height: 52px;
+}
+
+/* 1.78 · Tu personaje andando por el muelle hasta la tienda o la limusina (facadeView.js, walkAlong) */
+.ed-walker {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ed-walker::after {
+  content: '';
+  position: absolute;
+  inset: auto 25% 0;
+  height: calc(var(--px) * 2);
+  border-radius: 50%;
+  background: rgb(20 16 28 / 0.35);
+}
+
+.ed-walker--pal::after {
+  display: none;
+}
+
+.ed-walker__pal {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.ed-walker__front {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.ed-walker__strip {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 400%;
+  height: 100%;
+  max-width: none;
+  image-rendering: pixelated;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-walker,
+  .ed-walker__front {
+    display: none;
+  }
+}
+
+/* 1.78 · Tu habitación, la protagonista (encargo del 3-11-2026): al entrar no se decora; los menús que ya había
+   (Luz, Hoy, Armario y Decorar) van juntos en una fila abajo, cada icono con su nombre. Decorando, o en la vista de
+   ficha, siguen en las esquinas como antes (`.ep-menu` no cuenta). */
+.ep-menu {
+  display: contents;
+}
+
+.ep-menu__cap {
+  display: none;
+}
+
+.ep-corner--left3 {
+  left: 116px;
+}
+
+.ep.is-decorating .ep-corner--left3 {
+  display: none;
+}
+
+.ep--inside:not(.is-decorating) .ep-menu {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+.ep--inside:not(.is-decorating) .ep-menu .ep-corner {
+  position: static;
+}
+
+.ep--inside:not(.is-decorating) .ep-menu .px-btn {
+  flex-direction: column;
+  gap: 1px;
+  width: 66px;
+  height: 64px;
+  padding: 0 2px;
+  font-size: 0.74rem;
+}
+
+.ep--inside:not(.is-decorating) .ep-menu .px-btn__text,
+.ep--inside:not(.is-decorating) .ep-menu__cap {
+  display: block;
+  font: 600 0.74rem/1 'Lora', Georgia, serif;
+  white-space: nowrap;
+}
+
+.ep--inside:not(.is-decorating) .ep-menu .px-btn--sage .ep-menu__cap {
+  color: #fbf5e6;
+}
+
+/* La nota de «Hoy» y el aviso, por encima de la fila */
+.ep--inside:not(.is-decorating) .ep-today {
+  bottom: 82px;
+}
+
+.ep--inside:not(.is-decorating) .ep-overlay {
+  bottom: 84px;
+}
+
+/* Dentro de tu piso, el nombre del piso pequeño, sin quitarle sitio a la habitación */
+.ed-inside .ed-head:not(:has(.ed-sub)) {
+  padding-right: 6px;
+}
+
+.ed-inside .ed-head:not(:has(.ed-sub)) .ed-title {
+  font-size: 0.95rem;
 }

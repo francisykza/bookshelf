@@ -67,8 +67,9 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   // Las probabilidades del sobre elegido, a la vista (lo raro no viene en este: sale de fuera, el gato o la pecera)
   await shop.getByText('Probabilidades y garantías').click();
   await expect(shop.getByRole('heading', { name: /^Raro · 6 %/ })).toContainText('de fuera del sobre');
-  await expect(shop.locator('.ts-odds__row.is-raro li', { hasText: 'Gato dormido' })).toContainText('3 %');
-  await expect(shop.locator('.ts-odds__row.is-raro li', { hasText: 'Pecera' })).toContainText('3 %');
+  // 1.78: con la tanda 3, el balcón trae cuatro raros (gato, pecera, telescopio y perrito): 6 % entre cuatro
+  await expect(shop.locator('.ts-odds__row.is-raro li', { hasText: 'Gato dormido' })).toContainText('1,5 %');
+  await expect(shop.locator('.ts-odds__row.is-raro li', { hasText: 'Pecera' })).toContainText('1,5 %');
   await page.waitForTimeout(900);
   await shot(page, info, 'v167-tienda-sobres');
   await shop.getByText('Probabilidades y garantías').click();

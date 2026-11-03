@@ -288,16 +288,20 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         cuenta.tickets -= coste;
         return json({ premios, inventario: mine() });
       }
-      // 1.71 (SPEC §71): regalar una copia libre a un vecino visible
+      // 1.71 (SPEC §71): regalar una copia libre a un vecino visible (1.78: con las reglas de 20261108120000)
       if (table === 'rpc/piso_regalar') {
         const { para, mueble } = req.postDataJSON();
         const mio = db.edificio_vecinos.find((v) => v.user_id === userId);
         const suyo = db.edificio_vecinos.find((v) => v.user_id === para);
         const visible = para !== userId && mio && suyo && mio.edificio === suyo.edificio && db.profiles.find((p) => p.user_id === para)?.community_enabled && !blockedWith(para);
         if (!visible) return fail('Solo se puede regalar a un vecino de tu edificio.');
-        if (!cat(mueble)) return fail('Ese mueble no se puede regalar.');
+        // 1.78: solo hasta «raro», uno al día y solo si tienes más de uno
+        if (!cat(mueble) || !['comun', 'poco-comun', 'raro'].includes(rareza(mueble))) return fail('Ese mueble no se puede regalar: solo hasta «raro».');
+        if ((db.piso_regalos ?? []).some((r) => r.de === userId && Date.now() - Date.parse(r.creado) < 864e5)) return fail('Ya has hecho tu regalo de hoy; mañana, otro.');
+        const tengo = db.piso_inventario[userId][mueble] ?? 0;
+        if (tengo < 2) return fail('Solo se regala un mueble del que tengas más de uno.');
         const puestos = (db.pisos.find((p) => p.user_id === userId)?.layout.items ?? []).filter((i) => i.id === mueble).length;
-        if ((db.piso_inventario[userId][mueble] ?? 0) - puestos < 1) return fail('No tienes copias libres de ese mueble: guárdalo antes de regalarlo.');
+        if (tengo - puestos < 1) return fail('No tienes copias libres de ese mueble: guárdalo antes de regalarlo.');
         sumar(mueble, -1);
         db.piso_inventario[para] ??= {};
         db.piso_inventario[para][mueble] = (db.piso_inventario[para][mueble] ?? 0) + 1;

@@ -185,6 +185,21 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     pierde nada, sin falsos «casi»), **solo se abre si has registrado lectura ese día**; las fichas nunca se compran y
     se canjean por sobres, ropa de casino y la mascota «el conejo de la chistera» (ocupa el sitio del legendario).
     Orden: vestíbulo con ascensor, suite, casino, sala de lectura y quiosco, Lonja, vitrinas y mirador.
+  - **Encargo del 3-11-2026** (antes de seguir con el plan del rascacielos; por bloques con capturas):
+    - **Sin «dejar una frase»** (los sellos de frase al vecino): sobra junto al libro de visitas. Se quita de la app;
+      no se borran los datos.
+    - **Regalos**: **un mueble al día**, solo de rareza **hasta «raro»** (común, poco común y raro) y solo si tienes
+      **más de una copia** de ese mueble. Lo comprueba el servidor (migración nueva, la aplica Francisco).
+    - El aviso del correo se va al leerlo y no se queda fijo al salir y entrar de una habitación.
+    - En el vestíbulo, los menús con **menos protagonismo** que la escena.
+    - Más impacto en los sobres y las recompensas (colores y efectos), siempre honestos (§ «Sobres de la tienda»).
+    - Más efectos en el edificio; **una tanda de ropa** con **un conjunto aparte con efectos**; **una tanda de muebles
+      de todas las rarezas**, con una mascota.
+    - **El personaje va andando de verdad** a donde le mandas (p. ej., a la limusina o a la puerta de una tienda) antes
+      de cambiar de sitio; con movimiento reducido, directo.
+    - **Más difícil mover un mueble sin querer**.
+    - **Al entrar en tu piso, la habitación es la protagonista**: sin la balda abierta; los menús que ya hay, detrás de
+      **iconos claros** en la pantalla.
   - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración
     `20261101120000_edificio_puerto.sql` la aplica Francisco; sin ella, la tablet hace lo de siempre.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.

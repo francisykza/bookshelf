@@ -69,8 +69,7 @@ test('tu personaje: armario, se guarda, anda y se sienta', async ({ page }, info
   await expect(wardrobe).toBeHidden();
   await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id)?.personaje, { timeout: 8000 }).toMatchObject({ pelo: 'rizos', jersey: 6, gafas: true });
 
-  // Al terminar de decorar, tocar el sillón lo lleva hasta él y se sienta
-  await mine.getByRole('button', { name: 'Terminar' }).click();
+  // Sin decorar (desde la 1.78 se entra así), tocar el sillón lo lleva hasta él y se sienta
   const sillon = mock.db.pisos.find((p) => p.user_id === ANA.id).layout.items.find((i) => i.id === 'sillon');
   expect(sillon).toBeTruthy();
   const at = await page.evaluate((uid) => window.__edificioPiso.screenOfItem(uid), sillon.uid);

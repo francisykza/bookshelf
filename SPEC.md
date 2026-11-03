@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.77.0 · 2026-11-02 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.78.0 · 2026-11-03 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4735,3 +4735,65 @@ la maqueta la composición; el dibujo es el de la app (`raster.js`, `pixelUi.js`
   sigue al volver a entrar; 360 con movimiento reducido: tarjetas legibles, «Listo» a mano y el dibujo quieto); v169,
   v170, v172, v174 y v175 ajustadas. Pasan en Chromium (emulación; WebKit no se pasó en este bloque y nada se ha probado
   en un iPhone real).
+
+## 78. El encargo del 3-11-2026: arreglos, sobres con más impacto, tanda 3, paseo, mover con cuidado y tu habitación primero (1.78.0)
+
+Francisco pidió varias cosas antes de seguir con el plan del rascacielos (CLAUDE.md, «Encargo del 3-11-2026»). Se
+hizo en seis bloques, con capturas entre uno y otro. **Dos migraciones nuevas, las aplica Francisco**:
+`20261108120000_edificio_regalos_diarios.sql` y `20261108130000_edificio_tanda3.sql`.
+
+### 78.1 Arreglos
+
+- **La revelación del sobre en el iPhone** ya no se corta: se ajusta al alto disponible (`--gacha-max`), con el ajuste
+  aplicado en `requestAnimationFrame` y solo si cambia (sin avisos de ResizeObserver).
+- **Fuera «dejarle una frase»** (los sellos al vecino): sobraba junto al libro de visitas. En su piso quedan dos
+  pestañas, «Libro de visitas» y «Regalar». No se borran datos.
+- **El correo**: la carta del buzón cuenta solo lo no leído y se va al abrir la nota; lo leído se recuerda en el
+  dispositivo (`bookshelf:edificio:correo-leido:<uid>`) y no vuelve al salir y entrar de una habitación.
+- **Regalos**: uno al día, solo de rareza común, poco común o raro, y solo si tienes más de una copia (y alguna sin
+  colocar). Lo comprueba el servidor (`piso_regalar` en `20261108120000_edificio_regalos_diarios.sql`) y la app lo
+  dice antes («Ya has hecho tu regalo de hoy; mañana, otro.»).
+
+### 78.2 Vestíbulo discreto y sobres con más impacto
+
+- **Vestíbulo**: al entrar no hay nada abierto, solo el dibujo con plaquitas pequeñas y una pista; al tocar algo sale
+  su papel, compacto y con «×». Escape cierra el papel y, otra vez, sale a la plaza.
+- **Sobres**: cada carta lleva el color de su rareza (fondo, cinta y rayos desde poco común); lo raro o mejor tiñe la
+  escena un instante y suelta confeti de píxel; el sobre cerrado lleva un brillo igual en todos (no adelanta nada); al
+  final, un recuento por rarezas. Con movimiento reducido, colores y recuento, sin brillo, destello ni confeti.
+
+### 78.3 Tanda 3: muebles, ropa y efectos en el edificio
+
+- **Nueve muebles**: perchero, cesto de mantas y jarrón (comunes); chimenea con lumbre, piano y tapiz (poco comunes);
+  telescopio y **el perrito**, la mascota (raros; en su cojín, se mueve solo); y el **búho de las constelaciones**
+  (místico, solo en «Edición coleccionista»). Van en los sobres de su tipo; con cuatro raros en el balcón, cada uno
+  sale con el 1,5 % (el 6 % de raro no cambia).
+- **Ropa**: tres jerseys, dos pantalones y tres complementos más, que se ganan con las misiones del día después de lo
+  de antes. **Conjunto «Noche estrellada»** (jersey, pantalón y capa): estrellitas en el jersey, polvo de estrellas con
+  la capa (con estela al andar) y, con el conjunto entero, más motas y un halo.
+- **Fachada**: una segunda gaviota lejana, una estrella fugaz de vez en cuando y luciérnagas en la orilla.
+- `20261108130000_edificio_tanda3.sql`: filas del catálogo, sobres, aspecto válido y orden de las prendas.
+
+### 78.4 Tu personaje va andando
+
+- Al tocar **la tienda** o **la limusina** en la fachada, tu personaje (con su ropa) sale del portal, cruza el muelle y
+  entra; luego, lo de siempre. Si te acompaña un legendario, va detrás, a su manera. La limusina y su chófer, en una
+  capa aparte, lo tapan cuando pasa por detrás. Tocar otra vez lo salta; con movimiento reducido, directo. Sin aspecto
+  guardado, usa el de siempre.
+
+### 78.5 Más difícil mover un mueble sin querer
+
+- Decorando, un mueble se levanta solo si se **mantiene pulsado** (320 ms) sin mover el dedo; entonces se ve en la
+  mano y se arrastra. Un toque lo elige; un deslizamiento rápido no lo mueve y lo explica. **Tocar un hueco ya no lo
+  lleva allí**: lo suelta.
+
+### 78.6 Tu habitación, la protagonista
+
+- Tu piso se abre **sin decorar**: la habitación a pantalla completa, sin la balda, con el nombre pequeño. Abajo, una
+  fila de iconos con su nombre: **Luz**, **Hoy**, **Armario** (icono nuevo) y **Decorar**. Decorando, vuelven a las
+  esquinas. Se abre decorando al venir de la tienda a poner un mueble o tras elegir «Tu mudanza».
+
+- **Pruebas**: nuevas `e2e-community/v178-sobre-impacto`, `v178-tanda3`, `v178-paseo` y `v178-mover`; ajustadas v163,
+  v166, v167, v169, v170, v171, v172, v175 y `e2e/edificio-puerto`; RLS de vecinos (regalos), personaje e inventario.
+  Pasan Vitest del edificio (68) y las e2e del edificio en Chromium 320, 360, 390 y escritorio (emulación). WebKit no se
+  pasó en este cierre y nada se ha probado en un iPhone real.

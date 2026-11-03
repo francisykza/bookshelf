@@ -64,6 +64,7 @@ test('en tu piso: colocar un místico y elegir quién te acompaña (se guarda)',
   await panel.getByRole('button', { name: /^Entrar en tu piso/ }).click({ timeout: 15000 });
   const mine = page.getByRole('dialog', { name: 'Tu piso' });
   await expect(mine.locator('canvas.ep-canvas')).toBeVisible();
+  await mine.getByRole('button', { name: 'Decorar' }).click();
 
   // La pestaña «Místicos» de la balda trae el farol (el dragón no: acompaña, no se coloca)
   await mine.getByRole('button', { name: 'Místicos' }).click();

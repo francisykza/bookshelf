@@ -51,6 +51,8 @@ const ICONS = {
   dentro: ['ooo.....ooo', 'o.........o', 'o.........o', '...........', '...........', '...........', '...........', '...........', 'o.........o', 'o.........o', 'ooo.....ooo'],
   ficha: ['.ooooooooo.', '.opppppppo.', '.opooooopo.', '.opppppppo.', '.opooooopo.', '.opppppppo.', '.opooooppo.', '.opppppppo.', '.opppppppo.', '.ooooooooo.', '...........'],
   // Misiones del día (§70): una hoja con dos marcas
+  // 1.78: el armario de tu personaje (un jersey), para el icono del piso
+  armario: ['...........', '..ooo.ooo..', '.oRRoooRRo.', 'oRrRRRRRrRo', 'oRroRRRorRo', 'ooooRRRoooo', '...oRrRo...', '...oRrRo...', '...oRrRo...', '...ooooo...', '...........'],
   hoy: ['...oyyyo...', '.ooooooooo.', '.opppppppo.', '.opgpooopo.', '.oggpppppo.', '.opppppppo.', '.opgpooopo.', '.oggpppppo.', '.opppppppo.', '.ooooooooo.', '...........'],
   // «Me gusta» de un mueble (§71)
   corazon: ['...........', '..ooo.ooo..', '.orrrorrro.', 'orRrrrrrrro', 'orrrrrrrrro', 'orrrrrrrrro', '.orrrrrrro.', '..orrrrro..', '...orrro...', '....oro....', '.....o.....'],

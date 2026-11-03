@@ -1,5 +1,5 @@
-// 1.71 · Vecinos (SPEC §71): regalar copias libres de muebles, libro de visitas con frases cerradas y «me gusta» por
-// mueble, solo entre vecinos visibles. Postgres real (PGlite) con todas las migraciones.
+// 1.71 · Vecinos (SPEC §71): regalar copias libres de muebles (1.78: una al día, hasta «raro» y teniendo más de una),
+// libro de visitas con frases cerradas y «me gusta» por mueble, solo entre vecinos visibles. Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, describe, expect, it } from 'vitest';
 import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
 import { FIRMAS } from '../catalog';
@@ -40,8 +40,17 @@ describe('regalar muebles', () => {
     expect((await social(A, B)).regalos).toEqual([]);
   });
 
+  // Los regalos de A pasan a ser de anteayer: así cada prueba empieza con su regalo del día por hacer
+  const ayer = () => db.query("update piso_regalos set creado = creado - interval '2 days' where de = $1", [A]);
+
   it('no se regala lo que está puesto, ni de sagas, ni a quien no es vecino visible', async () => {
-    // El sillón del piso inicial está colocado: no hay copia libre
+    await ayer();
+    // Dos sillones, los dos colocados: no hay copia libre
+    await db.query("insert into piso_inventario (user_id, mueble, copias) values ($1, 'sillon', 2) on conflict (user_id, mueble) do update set copias = 2", [A]);
+    // (el segundo, encima del primero: la validación del piso se salta solo para esta prueba)
+    await db.query('set session_replication_role = replica');
+    await db.query("update pisos set layout = jsonb_set(layout, '{items}', (layout -> 'items') || (select jsonb_agg(e) from jsonb_array_elements(layout -> 'items') e where e ->> 'id' = 'sillon')) where user_id = $1", [A]);
+    await db.query('set session_replication_role = origin');
     expect(await rejects(call(A, "select piso_regalar($1, 'sillon')", [B]))).toMatch(/copias libres/);
     expect(await rejects(call(A, "select piso_regalar($1, 'puf')", [C]))).toMatch(/vecino de tu edificio/);
     expect(await rejects(call(A, "select piso_regalar($1, 'puf')", [Z]))).toMatch(/vecino de tu edificio/);
@@ -51,10 +60,30 @@ describe('regalar muebles', () => {
     expect(await rejects(call(A, 'select piso_regalar($1, $2)', [B, saga]))).toMatch(/no se puede regalar/);
   });
 
-  it('como mucho cinco al día', async () => {
+  it('1.78: solo si tienes más de uno, y nada por encima de «raro»', async () => {
+    await ayer();
+    // De la taza solo hay una (y sin colocar): no se regala
+    await db.query("insert into piso_inventario (user_id, mueble, copias) values ($1, 'taza', 1) on conflict (user_id, mueble) do update set copias = 1", [A]);
+    expect(await rejects(call(A, "select piso_regalar($1, 'taza')", [B]))).toMatch(/más de uno/);
+    for (const rareza of ['especial', 'mistico', 'legendario']) {
+      const id = (await db.query('select id from piso_catalogo where rareza = $1 and saga is null limit 1', [rareza])).rows[0]?.id;
+      if (!id) continue;
+      await db.query('insert into piso_inventario (user_id, mueble, copias) values ($1, $2, 3) on conflict (user_id, mueble) do update set copias = 3', [A, id]);
+      expect(await rejects(call(A, 'select piso_regalar($1, $2)', [B, id]))).toMatch(/solo hasta «raro»/);
+    }
+    const raro = (await db.query("select id from piso_catalogo where rareza = 'raro' and saga is null limit 1")).rows[0].id;
+    await db.query('insert into piso_inventario (user_id, mueble, copias) values ($1, $2, 2) on conflict (user_id, mueble) do update set copias = 2', [A, raro]);
+    expect((await call(A, 'select piso_regalar($1, $2)', [B, raro])).copias[raro]).toBe(1);
+  });
+
+  it('1.78: uno al día', async () => {
+    await ayer();
     await db.query("insert into piso_inventario (user_id, mueble, copias) values ($1, 'taza', 9) on conflict (user_id, mueble) do update set copias = 9", [A]);
-    for (let k = 0; k < 4; k += 1) await call(A, "select piso_regalar($1, 'taza')", [B]);
-    expect(await rejects(call(A, "select piso_regalar($1, 'taza')", [B]))).toMatch(/cinco regalos/);
+    await call(A, "select piso_regalar($1, 'taza')", [B]);
+    expect(await rejects(call(A, "select piso_regalar($1, 'taza')", [B]))).toMatch(/regalo de hoy/);
+    // Pasado el día, otro
+    await ayer();
+    expect((await call(A, "select piso_regalar($1, 'taza')", [B])).copias.taza).toBe(7);
   });
 });
 

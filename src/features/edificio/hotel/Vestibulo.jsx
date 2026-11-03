@@ -5,6 +5,9 @@
 // - el ascensor: la botonera de latón con una luz por planta es la navegación del hotel; las plantas que aún no abren
 //   dicen qué habrá, y la «P» sale a la plaza;
 // - el tablón «Busco quien lea…» y el guardarropa: dicen qué habrá y «Abre pronto».
+// 1.78 (encargo del 3-11-2026: «que los menús no tengan tanto protagonismo»): al entrar no hay nada abierto, solo el
+// dibujo con letreros pequeños; lo de cada cosa sale en un papel más compacto al tocarla, y se cierra con «×», tocándola
+// otra vez o con Escape (un segundo Escape sale a la plaza).
 import { useEffect, useRef, useState } from 'react';
 import { missionStatus } from '../../../domain/missions';
 import { useLibrary } from '../../../state/useLibrary';
@@ -226,22 +229,34 @@ function Ascensor({ onStreet }) {
 export function Vestibulo({ onStreet }) {
   const lobby = renderLobby();
   const root = useRef(null);
-  const [spot, setSpot] = useState('recepcion');
+  const [spot, setSpot] = useState(null);
+  const spotRef = useRef(null);
+  useEffect(() => {
+    spotRef.current = spot;
+  }, [spot]);
+  const desk = useRef(null);
   useEffect(() => {
     root.current?.scrollIntoView({ block: 'start' });
   }, []);
-  // Escape sale a la plaza, no cierra el hotel (PanelShell respeta data-escape-local)
+  // Escape cierra el papel abierto; sin papel, sale a la plaza (no cierra el hotel: PanelShell respeta data-escape-local)
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape') onStreet();
+      if (e.key !== 'Escape') return;
+      if (spotRef.current) setSpot(null);
+      else onStreet();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onStreet]);
+  // Tocar lo que ya está abierto lo cierra
+  const choose = (id) => setSpot((cur) => (cur === id ? null : id));
+  useEffect(() => {
+    if (spot) desk.current?.scrollIntoView({ block: 'nearest' });
+  }, [spot]);
   const onScene = (e) => {
     const r = e.currentTarget.getBoundingClientRect();
     const hit = lobby.hit((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
-    if (hit) setSpot(hit);
+    if (hit) choose(hit);
   };
   const info = INFO[spot];
   return (
@@ -256,7 +271,7 @@ export function Vestibulo({ onStreet }) {
           alt="El vestíbulo del Gran Hotel de noche: suelo de mármol en damero, la recepción con el conserje y el casillero de llaves, el ascensor de latón con su esfera, el tablón de corcho, el guardarropa con los abrigos, un diván redondo con una palmera bajo la lámpara de araña y una huésped esperando el ascensor."
           draggable="false"
         />
-        <img className="gh-lobby__outline" src={lobby.outlines[spot]} alt="" aria-hidden="true" draggable="false" />
+        {spot && <img className="gh-lobby__outline" src={lobby.outlines[spot]} alt="" aria-hidden="true" draggable="false" />}
         <div className="gh-lobby__spots" role="tablist" aria-label="El vestíbulo">
           {SPOTS.map((s) => (
             <button
@@ -268,14 +283,20 @@ export function Vestibulo({ onStreet }) {
               aria-selected={spot === s.id}
               className={`gh-spot is-${s.id}`}
               style={{ left: `${lobby.tags[s.id].left * 100}%`, top: `${lobby.tags[s.id].top * 100}%` }}
-              onClick={(e) => (e.stopPropagation(), setSpot(s.id))}
+              onClick={(e) => (e.stopPropagation(), choose(s.id))}
             >
               {s.nombre}
             </button>
           ))}
         </div>
       </div>
-      <div className={spot === 'ascensor' ? 'gh-desk gh-desk--lift' : 'gh-desk'} role="tabpanel" id="gh-lobby-panel" aria-labelledby={`gh-tab-${spot}`}>
+      {!spot && <p className="gh-lobby__hint">Toca la recepción, el ascensor, el tablón o el guardarropa.</p>}
+      <div ref={desk} className={spot === 'ascensor' ? 'gh-desk gh-desk--lift' : 'gh-desk'} role="tabpanel" id="gh-lobby-panel" aria-labelledby={spot ? `gh-tab-${spot}` : undefined} hidden={!spot}>
+        {spot && (
+          <button type="button" className="gh-desk__close" aria-label="Cerrar" onClick={() => setSpot(null)}>
+            ×
+          </button>
+        )}
         {spot === 'recepcion' && <Encargos />}
         {spot === 'ascensor' && <Ascensor onStreet={onStreet} />}
         {info && (

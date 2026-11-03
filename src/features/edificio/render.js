@@ -386,7 +386,7 @@ export function createRoomRenderer() {
       clearFrame(fxFrame);
       const p = painterFor(fxFrame);
       p.place(Math.round(at.sx), Math.round(at.sy), !!b.flip);
-      m.draw(p, t, { moving: !!b.moving, perch: !!b.perch });
+      m.draw(p, t, { moving: !!b.moving, perch: !!b.perch, tono: b.tono, full: !!b.full });
       const d = at.d + 0.15;
       for (let i = 0; i < C.length; i += 1) {
         const c = C[i];
@@ -544,6 +544,40 @@ export function renderActorThumb(avatar, { frame = 'all', size = 33 } = {}) {
   image.data.set(new Uint8ClampedArray(r.pix.buffer));
   ctx.putImageData(image, 0, 0);
   return canvas;
+}
+
+/**
+ * El personaje andando (1.78, encargo del 3-11-2026: «que se vea yendo a los sitios»), para dibujos que no son la
+ * habitación (la fachada): una tira de cuatro fotogramas (pierna adelante, juntas, la otra, juntas) mirando hacia
+ * `facing`, con la escala `S` y el giro de cámara `yaw` de ese dibujo. Devuelve { canvas, w, h, ax, ay }: el tamaño
+ * de cada fotograma y dónde caen los pies (el punto 0, 0, 0) dentro de él.
+ */
+export function renderActorWalk(avatar, { facing = 0, S: scale = 16, yaw = YAW } = {}) {
+  const frames = [1, 0, 2, 0].map((step) => actorBoxes(avatar, { x: 0, y: 0, facing, pose: 'walk', step }));
+  const probe = createRaster({ W: 1, H: 1, S: scale, yaw, ox: 0, oy: 0 });
+  const pts = [];
+  for (const boxes of frames) for (const { b } of boxes) for (const x of [b[0], b[3]]) for (const y of [b[1], b[4]]) for (const z of [b[2], b[5]]) pts.push(probe.project(x, y, z));
+  const minX = Math.floor(Math.min(...pts.map((p) => p.sx))) - 1;
+  const minY = Math.floor(Math.min(...pts.map((p) => p.sy))) - 1;
+  const w = Math.ceil(Math.max(...pts.map((p) => p.sx))) - minX + 2;
+  const h = Math.ceil(Math.max(...pts.map((p) => p.sy))) - minY + 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = w * frames.length;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  frames.forEach((boxes, f) => {
+    const r = createRaster({ W: w, H: h, S: scale, yaw, ox: -minX, oy: -minY });
+    r.clear(0);
+    boxes.forEach((bx, k) => {
+      const [x0, y0, z0, x1, y1, z1] = bx.b;
+      r.box(x0, y0, z0, x1, y1, z1, bx.c, { seed: 501 + k, grain: bx.grain ?? 0.6, step: Math.min(bx.step ?? 0.03, 0.5 / scale) });
+    });
+    r.shadeEdges();
+    const image = ctx.createImageData(w, h);
+    image.data.set(new Uint8ClampedArray(r.pix.buffer));
+    ctx.putImageData(image, f * w, 0);
+  });
+  return { canvas, w, h, ax: -minX, ay: -minY };
 }
 
 export const ROOM_SCALE = S;

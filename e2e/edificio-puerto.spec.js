@@ -78,6 +78,8 @@ test('tu piso: decorar con el catálogo, arrastrar, girar, color, guardar y se c
   const to = await cellPoint(page, 1.5 + (chair.x <= 2 ? 5 : 0), 7.5);
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
+  // 1.78: se mantiene pulsado un momento para levantarlo
+  await page.waitForTimeout(450);
   await page.mouse.move((from.x + to.x) / 2, (from.y + to.y) / 2, { steps: 4 });
   await page.mouse.move(to.x, to.y, { steps: 6 });
   await shot(page, info, 'ep-arrastrando', false);

@@ -1,6 +1,7 @@
 // 1.71 (SPEC §71) · Vecinos, con Supabase simulado: en el piso de un vecino, «me gusta» a un mueble tocándolo, firmar
 // su libro de visitas con una frase cerrada y regalarle una copia libre; en el tuyo, el buzón del portal enseña
-// regalos y firmas, y tus muebles dicen cuántos «me gusta» tienen. La autorización real está en
+// regalos y firmas, y tus muebles dicen cuántos «me gusta» tienen. 1.78: sin sellos; un regalo al día, solo hasta
+// «raro» y de lo que tengas más de uno; lo leído del buzón deja de avisar. La autorización real está en
 // src/features/edificio/__tests__/vecinos.rls.test.js.
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -28,6 +29,9 @@ function seed() {
   const inv = {};
   for (const i of starterRoom().items) inv[i.id] = (inv[i.id] ?? 0) + 1;
   inv.puf = 2;
+  // Un gato dormido (raro, solo uno) y dos rosas de estrellas (místico): ninguno se puede regalar
+  inv.gato = 1;
+  inv['rosa-estrellas'] = 2;
   mock.db.piso_cuentas = { [ANA.id]: { inicio_elegido: true, tickets: 30, sin_raro: 0 }, [BRUNO.id]: { inicio_elegido: true, tickets: 30, sin_raro: 0 } };
   mock.db.piso_inventario = { [ANA.id]: inv, [BRUNO.id]: { sofa: 1, 'mesa-baja': 1 } };
   return mock;
@@ -54,9 +58,9 @@ test('en el piso de un vecino: me gusta, libro de visitas y regalo', async ({ pa
   await panel.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click({ timeout: 15000 });
   const bruno = page.getByRole('dialog', { name: 'Piso de Bruno' });
   const tabs = bruno.getByRole('tablist', { name: 'Qué hacer' });
-  await expect(tabs.getByRole('tab')).toHaveText(['Buzón', 'Libro de visitas', 'Regalar']);
-  // El buzón de siempre sigue a mano
-  await expect(bruno.getByRole('button', { name: 'Menuda estantería' })).toBeVisible();
+  await expect(tabs.getByRole('tab')).toHaveText(['Libro de visitas', 'Regalar']);
+  // 1.78: ya no hay sellos
+  await expect(bruno.getByRole('button', { name: 'Menuda estantería' })).toHaveCount(0);
 
   // «Me gusta» al sofá, tocándolo en la habitación
   await expect(bruno.locator('canvas.ep-canvas')).toBeVisible();
@@ -77,16 +81,21 @@ test('en el piso de un vecino: me gusta, libro de visitas y regalo', async ({ pa
   expect(mock.db.piso_visitas).toEqual([expect.objectContaining({ piso: BRUNO.id, de: ANA.id, frase: 'pronto' })]);
   await shot(page, info, 'v171-libro');
 
-  // Regalar: solo lo libre (los pufs); se elige y se confirma
+  // Regalar: solo lo que te sobra (los pufs; del gato y del sillón tienes uno, y lo místico no se regala); se elige y se confirma
   await tabs.getByRole('tab', { name: 'Regalar' }).click();
-  await expect(bruno.getByRole('button', { name: /^Sillón/ })).toHaveCount(0);
+  await expect(bruno.getByRole('group', { name: 'Elige qué regalarle' }).getByRole('button')).toHaveText(['Puf×2']);
   await bruno.getByRole('button', { name: 'Puf (tienes 2 libres)' }).click();
   await shot(page, info, 'v171-regalar');
   await bruno.getByRole('button', { name: 'Regalar puf a Bruno' }).click();
-  await expect(bruno.getByText('Le has regalado: puf. Le aparecerá en su balda.')).toBeVisible();
-  await expect(bruno.getByRole('button', { name: 'Puf (tienes 1 libre)' })).toBeVisible();
+  await expect(bruno.getByText('Le has regalado: puf. Le aparecerá en su balda. Mañana podrás regalar otro.')).toBeVisible();
+  await expect(bruno.getByRole('group', { name: 'Elige qué regalarle' })).toHaveCount(0);
   expect(mock.db.piso_inventario[BRUNO.id].puf).toBe(1);
   expect(mock.db.piso_inventario[ANA.id].puf).toBe(1);
+  // Uno al día: al volver a la pestaña lo dice, sin nada que elegir
+  await tabs.getByRole('tab', { name: 'Libro de visitas' }).click();
+  await tabs.getByRole('tab', { name: 'Regalar' }).click();
+  await expect(bruno.getByText('Ya has hecho tu regalo de hoy; mañana, otro.')).toBeVisible();
+  await shot(page, info, 'v178-regalo-hecho');
   expect(errors).toEqual([]);
 });
 
@@ -98,28 +107,37 @@ test('en tu piso: el buzón enseña regalos y firmas, y tus muebles sus «me gus
   mock.db.piso_megusta = [{ piso: BRUNO.id, de: ANA.id, uid: 1, mueble: 'sofa' }];
   const panel = await toPortal(page, mock, BRUNO);
   // 1.73: el buzón está dibujado en la fachada; asoma una carta con cuántas cosas hay y se abre al tocarlo
-  await expect(panel.getByRole('button', { name: 'Tu buzón: 2 cosas' })).toBeVisible({ timeout: 15000 });
+  await expect(panel.getByRole('button', { name: 'Tu buzón: 2 cosas nuevas' })).toBeVisible({ timeout: 15000 });
   await expect(panel.locator('.ed-facade')).not.toHaveClass(/is-arriving/, { timeout: 5000 });
   await shot(page, info, 'v173-buzon-carta');
-  await panel.getByRole('button', { name: 'Tu buzón: 2 cosas' }).click();
+  await panel.getByRole('button', { name: 'Tu buzón: 2 cosas nuevas' }).click();
   const inbox = panel.getByRole('region', { name: 'Tu buzón' });
   await expect(inbox.getByText('Ana lectora te regaló: puf.')).toBeVisible({ timeout: 15000 });
   await expect(inbox.getByText('Ana lectora firmó en tu libro de visitas: «Otro día traigo café».')).toBeVisible();
   await shot(page, info, 'v171-buzon');
+  // 1.78: leído, la carta se va (la nota sigue abierta hasta tocar fuera)
+  await expect(panel.getByRole('button', { name: 'Tu buzón, ya leído' })).toBeVisible();
+  await expect(panel.locator('.ed-mailbox__letter')).toHaveCount(0);
   // Tocar fuera cierra la nota
   await panel.locator('.ed-facade__art').click({ position: { x: 20, y: 20 } });
   await expect(inbox).toBeHidden();
   await panel.getByRole('button', { name: /^Entrar en tu piso/ }).click();
   const mine = page.getByRole('dialog', { name: 'Tu piso' });
-  await mine.getByRole('button', { name: 'Terminar' }).click();
+  await expect(mine.getByRole('button', { name: 'Decorar' })).toBeVisible();
   const at = await page.evaluate(() => window.__edificioPiso.screenOfItem(1));
   await page.mouse.click(at.x, at.y);
   await expect(mine.locator('.ep-status')).toHaveText('Sofá · 1 me gusta');
   // En tu piso no hay «Me gusta» que dar
   await expect(mine.getByRole('button', { name: /^Me gusta/ })).toHaveCount(0);
+  // Al salir al portal, el buzón no vuelve a avisar de lo ya leído, ni se queda abierta la nota
+  await mine.getByRole('button', { name: 'Volver al portal' }).click();
+  await expect(panel.getByRole('button', { name: 'Tu buzón, ya leído' })).toBeVisible({ timeout: 15000 });
+  await expect(panel.getByRole('region', { name: 'Tu buzón' })).toBeHidden();
+  await expect(panel.locator('.ed-mailbox__letter')).toHaveCount(0);
+  await shot(page, info, 'v178-buzon-leido');
 });
 
-test('sin la migración de vecinos: el piso del vecino se queda con los sellos de siempre', async ({ page }, info) => {
+test('sin la migración de vecinos: el piso del vecino solo se mira', async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), '390 (Chromium y WebKit)');
   const mock = seed();
   mock.db.vecinosSocial = false;
@@ -128,7 +146,8 @@ test('sin la migración de vecinos: el piso del vecino se queda con los sellos d
   const panel = await toPortal(page, mock, ANA);
   await panel.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click({ timeout: 15000 });
   const bruno = page.getByRole('dialog', { name: 'Piso de Bruno' });
-  await expect(bruno.getByRole('heading', { name: 'Dejar un sello en su buzón' })).toBeVisible();
+  await expect(bruno.locator('canvas.ep-canvas')).toBeVisible();
+  await expect(bruno.locator('.ed-sellos')).toHaveCount(0);
   await expect(bruno.getByRole('tablist')).toHaveCount(0);
   const at = await page.evaluate(() => window.__edificioPiso.screenOfItem(1));
   await page.mouse.click(at.x, at.y);

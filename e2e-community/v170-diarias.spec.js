@@ -153,7 +153,8 @@ test('sin la migración de las misiones, ni hoja ni prendas por ganar', async ({
   const mine = await openMyFlat(page, mock);
   await expect(mine.locator('canvas.ep-canvas')).toHaveAttribute('data-actor', 'stand');
   await expect(mine.getByRole('button', { name: /^Hoy en tu piso/ })).toBeHidden();
-  await mine.locator('.ep-chip[data-cat="personaje"]').click();
+  // El armario, desde su icono (1.78)
+  await mine.getByRole('button', { name: 'Armario' }).click();
   await expect(mine.locator('.ep-dress').getByRole('group', { name: 'Complemento' }).getByRole('button')).toHaveCount(1);
   await expect(mine.locator('.ep-dress').getByRole('group', { name: 'Jersey' }).getByRole('button')).toHaveCount(8);
 });

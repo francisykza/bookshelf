@@ -19,7 +19,11 @@
 // 1.73 (místicos, bloque 3): un místico o un legendario sale con su propia carta: el ser se mueve dentro (misticos.js),
 // con un halo y destellos del color de su escalón, y su nota. Igual de honesto: el halo del sobre solo dice lo que de
 // verdad trae.
-import { useEffect, useMemo, useRef, useState } from 'react';
+// 1.78 (encargo del 3-11-2026, «más impacto»): cada carta lleva el color de su rareza (fondo, cinta y rayos desde poco
+// común); lo raro o mejor, al darse la vuelta, tiñe un instante la escena de su color y suelta confeti de píxel; el
+// sobre cerrado lleva un brillo que lo cruza; al final se cuenta cuántos hay de cada rareza. Todo dice la verdad: el
+// color solo sale con lo que de verdad ha tocado. Con movimiento reducido, los colores sí y los efectos no.
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { catalogItem, isMistico } from './catalog';
 import { misticoThumb } from './misticos';
 import { rarezaInfo } from './economy';
@@ -29,6 +33,7 @@ import { COUNTER_H, COUNTER_W, PEEK_TURN, STRIP_TURN, counterLayout, counterPack
 
 const ORDER = ['comun', 'poco-comun', 'raro', 'mistico', 'legendario'];
 const ALTO = ['raro', 'mistico', 'legendario'];
+const PLURAL = { comun: 'comunes', 'poco-comun': 'poco comunes', raro: 'raros', mistico: 'místicos', legendario: 'legendarios' };
 const OPEN_MS = 1400;
 // Lo que tardan las cartas en llegar a su sitio definitivo al continuar
 const SETTLE_MS = 520;
@@ -115,6 +120,8 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
   const shownRef = useRef(shown);
   const timers = useRef([]);
   const going = useRef(false);
+  // El destello de la escena al revelar algo raro o mejor (cambia de clave para volver a sonar)
+  const [flash, setFlash] = useState(null);
   const pack = useMemo(() => counterPack(sobre), [sobre]);
   const back = useMemo(() => cardBackArt(sobre), [sobre]);
   const layout = useMemo(() => counterLayout(premios.length), [premios.length]);
@@ -124,6 +131,7 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
   const allShown = shown.every(Boolean);
   const focusRef = useRef(null);
   const cardRef = useRef(null);
+  const box = useRef(null);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   // Con movimiento reducido no hay animación, pero sí la nota de lo mejor (la persona acaba de tocar «Abrir»)
@@ -139,6 +147,7 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
     shownRef.current = shownRef.current.map((v, k) => v || k === i);
     sfx.play('flip');
     later(() => sfx.play(`reveal-${premios[i].rareza}`), 140);
+    if (!still && ALTO.includes(premios[i].rareza)) later(() => setFlash({ k: i, r: premios[i].rareza }), 200);
     setShown(shownRef.current);
   };
 
@@ -198,6 +207,11 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
   const nuevos = premios.filter((p) => p.nuevo).length;
   const reveladas = shown.filter(Boolean).length;
   const summary = `${n === 1 ? 'Te llevas' : `Te llevas ${n} muebles:`} ${premios.map((p) => nameOf(p.mueble).toLowerCase()).join(', ')}.${nuevos ? ` ${nuevos === 1 ? 'Uno es nuevo' : `${nuevos} son nuevos`} para ti.` : ''}`;
+  // Cuántas de cada rareza, de la mejor a la peor
+  const byRareza = ORDER.slice()
+    .reverse()
+    .map((r) => ({ r, n: premios.filter((p) => p.rareza === r).length }))
+    .filter((x) => x.n);
   const tally = `${n === 1 ? 'Un mueble' : `${n} muebles`} para tu piso${nuevos ? ` · ${nuevos === 1 ? (n === 1 ? 'nuevo' : '1 nuevo') : `${nuevos} nuevos`}` : ''}`;
   const sealed = phase === 'sealed';
   const final = phase === 'done';
@@ -227,11 +241,42 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
   const stripAt = to(layout.side, pack.stripExit);
   const packVars = { '--ax': packAt.left, '--ay': packAt.top };
   const stripVars = { '--ax': stripAt.left, '--ay': stripAt.top, '--turn': `${STRIP_TURN}deg` };
+  // Que quepa entera en la pantalla (1.78; en el iPhone, con sus barras, se cortaba el pie): la escena mide 1,53 veces
+  // su ancho hasta el papel de abajo; si con todo el ancho no cabe, se estrecha lo justo (y se centra)
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return undefined;
+    const fit = () => {
+      const paper = el.querySelector('.gacha__paper');
+      const panel = el.offsetParent ?? el.parentElement;
+      if (!paper || !panel) return;
+      const top = el.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
+      const room = Math.min(panel.clientHeight, window.innerHeight) - top - paper.offsetHeight;
+      const w = `${Math.max(280, Math.floor(room / 1.53))}px`;
+      if (el.style.getPropertyValue('--gacha-max') !== w) el.style.setProperty('--gacha-max', w);
+    };
+    fit();
+    // Lo que avisa el observador se aplica en el siguiente fotograma (si no, cambiar el ancho dentro del aviso lo encadena)
+    let raf = 0;
+    const later = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(fit);
+    };
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(later) : null;
+    ro?.observe(el.querySelector('.gacha__paper') ?? el);
+    window.addEventListener('resize', later);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+      window.removeEventListener('resize', later);
+    };
+  }, [final]);
   // Solo en desarrollo: las pruebas comparan lo que se toca con el reparto calculado
   if (import.meta.env.DEV) window.__gacha = { layout, pack, board: { top: renderShopCounter('base').top, edge: renderShopCounter('base').edge } };
 
   return (
     <div
+      ref={box}
       className={`gacha gacha--${best} is-${phase}`}
       role="dialog"
       aria-modal="true"
@@ -241,6 +286,7 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
       <h2 id="gacha-title" className="px-sr">
         {n === 1 ? `Abriendo un sobre «${sobre.nombre}»` : `Abriendo cinco sobres «${sobre.nombre}»`}
       </h2>
+      {flash && <span key={flash.k} className={`gacha__flash is-${flash.r}`} aria-hidden="true" />}
       {!final && (
         <>
           {/* El sobre tumbado en el tablero, dibujado con la cámara del mostrador (counterPack): la tira con la pestaña
@@ -264,6 +310,7 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
             style={{ ...stripVars, '--sx': pack.stripAt.left, '--sy': pack.stripAt.top, '--rx': pack.rest.left, '--ry': pack.rest.top }}
           />
           <img className="gacha__lie gacha__lie--body" src={pack.body} alt="" draggable="false" style={{ ...packVars, '--sx': pack.stripAt.left, '--sy': pack.stripAt.top }} />
+          {sealed && <span className="gacha__shine" aria-hidden="true" style={{ '--l': pack.box.left, '--r': pack.box.right, '--t': pack.box.top, '--b': pack.box.bottom }} />}
           {/* La zona que se toca es el recuadro del sobre en la misma proyección del dibujo */}
           {sealed && (
             <button
@@ -303,7 +350,7 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
                 >
                   <img className="gacha__back" src={back} alt="" draggable="false" />
                   <span className="gacha__face">
-                    {(p.rareza === 'mistico' || p.rareza === 'legendario') && <span className="gacha__rays" aria-hidden="true" />}
+                    {p.rareza !== 'comun' && <span className="gacha__rays" aria-hidden="true" />}
                     {isMistico(catalogItem(p.mueble)) ? (
                       <>
                         <MisticoFace id={p.mueble} size={n === 1 ? 96 : 64} live={shown[i] && !still} />
@@ -320,6 +367,13 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
                     <small>{info.nombre}</small>
                     {p.nuevo && <b className="gacha__new">Nuevo</b>}
                   </span>
+                  {shown[i] && !still && ALTO.includes(p.rareza) && (
+                    <span className="gacha__confetti" aria-hidden="true">
+                      {Array.from({ length: 12 }, (_, k) => (
+                        <i key={k} style={{ '--a': `${k * 30 + (k % 3) * 7}deg`, '--d': `${14 + (k % 4) * 5}cqw` }} />
+                      ))}
+                    </span>
+                  )}
                   {isPicked && (
                     <b className="gacha__pick" aria-hidden="true">
                       ✓
@@ -339,6 +393,14 @@ export function GachaReveal({ premios, sobre, sfx, onClose, onGoPiso }) {
               <span aria-hidden="true">{tally}</span>
               <span className="px-sr">{summary}</span>
             </p>
+            <ul className="gacha__pips" aria-hidden="true">
+              {byRareza.map(({ r, n: k }) => (
+                <li key={r} className={`is-${r}`}>
+                  <i />
+                  {k} {k === 1 ? rarezaInfo(r).nombre.toLowerCase() : PLURAL[r]}
+                </li>
+              ))}
+            </ul>
             {misticoNote && <p className="gacha__mnote">{misticoNote}</p>}
             <button type="button" className="px-btn px-btn--sage gacha__go" onClick={goPiso}>
               {choice ? `Colocar ${nameOf(choice.mueble).toLowerCase()}` : 'Colocar en mi piso'}

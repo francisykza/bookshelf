@@ -6,6 +6,14 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Versión cerrada, sin publicar**: 1.78.0 (2026-11-03): el encargo del 3-11-2026 entero (§78): revelación del sobre
+  que cabe en el iPhone, sin sellos de frase, correo que se lee, regalos uno al día hasta «raro» y con copias de sobra,
+  vestíbulo discreto, sobres con más impacto, tanda 3 (muebles con el perrito y el búho, ropa «Noche estrellada»,
+  efectos en la fachada), tu personaje (y tu compañero) andando a la tienda y a la limusina, mantener pulsado para
+  mover un mueble y tu piso sin decorar al entrar con iconos claros. En la rama `1.78-encargo-3-11`, con su PR.
+  **Dos migraciones por aplicar (las aplica Francisco)**: `20261108120000_edificio_regalos_diarios.sql` y
+  `20261108130000_edificio_tanda3.sql`; sin ellas, los regalos siguen con las reglas de antes en el servidor y los
+  muebles nuevos no salen en los sobres.
 - **Versión publicada**: 1.77.0 (2026-11-02): la fachada del Gran Hotel con la cartela al pie y el Directorio, y el
   armario como modo propio del piso con Ropa / Aspecto / Compañía y «Listo» (§77). Sin migraciones. Fusionada desde
   el PR #2 (rama `1.77-hotel-armario`); `/sw.js` ya trae la 1.77.0.
@@ -46,6 +54,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.78.0 | El encargo del 3-11-2026: arreglos (sobre en el iPhone, sin sellos, correo leído, regalos uno al día hasta «raro»), vestíbulo discreto, sobres con más impacto, tanda 3 con mascota y conjunto «Noche estrellada», paseo hasta la tienda y la limusina, mantener pulsado para mover y la habitación primero con iconos (cerrada; dos migraciones por aplicar) | §78 |
 | 1.77.0 | La fachada del Gran Hotel entera sobre una cartela crema, planta elegida con filete y rombo de latón y el Directorio de las plantas; el armario como modo propio del piso («← Al piso» / «Armario»), Ropa, Aspecto y Compañía con vista previa que se guarda con «Listo», y el dragón posado a tu lado (publicada) | §77 |
 | 1.76.0 | La apertura de sobres sobre el mostrador: un sobre por colección (expositor, selector y mostrador), de frente e inclinado en la madera, tres gestos (tira, carta que asoma con 2 × 2, 3 + 2), el sobre sale del encuadre, elegir con ✓ y «Colocar [nombre]» al editor del piso (publicada) | §76 |
 | 1.75.0 | El vestíbulo del Gran Hotel por dentro: recepción con los encargos de la semana, ascensor de latón con la botonera de plantas, tablón y guardarropa (publicada) | §75 |
@@ -163,6 +172,109 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-03 · cuenta principal · 1.78.0 cerrada
+- Francisco pidió «cierra 1.78.0»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC;
+  §78 en `SPEC.md` con los seis bloques; commit en la rama `1.78-encargo-3-11`, push de la rama y PR a `main` desde el
+  navegador integrado. Sin publicar (no se ha subido `main`).
+- Las entradas de abajo (bloques 1 a 6) van todas en este commit.
+- Queda: que Francisco aplique las dos migraciones y, cuando lo diga («súbelo»), fusionar y comprobar `/sw.js`. WebKit
+  no pasado; nada probado en un iPhone real. Sigue pendiente su respuesta sobre el cartel VIDEOCLUB.
+
+### 2026-11-03 · cuenta principal · encargo del 3-11-2026, bloque 6: tu habitación, la protagonista (en la 1.78.0)
+- Al entrar en tu piso ya **no se decora**: la habitación a pantalla completa, sin la balda, con el nombre del piso
+  pequeño (sin «Tus vecinos lo ven…»). Abajo, una fila de **iconos con su nombre**: Luz, Hoy (si hay misiones),
+  **Armario** (icono nuevo de jersey en `pixelUi.js`; antes solo se abría tocando a tu personaje, que sigue valiendo)
+  y Decorar, que saca la balda. Decorando, los botones vuelven a las esquinas como antes (sin el armario, para que
+  quepa a 320). En la vista de ficha y en casa de un vecino no cambia nada.
+- Se sigue abriendo decorando cuando vienes de la tienda a poner un mueble y justo después de elegir «Tu mudanza»
+  (prop `decorate` de `PisoView`), para colocar lo nuevo.
+- Pruebas ajustadas a la entrada sin decorar: v163 (comprueba la fila de iconos), v166, v169, v170, v171, v172 y
+  v178-mover. Pasan v163, v166, v169, v170, v171, v172, v173, v176, v177-armario, v178-mover y v178-tanda3 en Chromium
+  320, 360, 390 y escritorio, y `e2e/edificio-puerto` a 390. WebKit no pasado.
+- Con esto, el encargo del 3-11-2026 está entero. Falta cerrarlo como 1.78.0 (versión, SPEC, ESTADO y commit) cuando
+  Francisco lo pida, y que aplique las dos migraciones (`20261108120000_edificio_regalos_diarios.sql` y
+  `20261108130000_edificio_tanda3.sql`).
+
+### 2026-11-03 · cuenta principal · encargo del 3-11-2026, bloque 5: más difícil mover un mueble sin querer (en la 1.78.0)
+- En tu piso, decorando (`piso.js`): un mueble solo se levanta si se **mantiene pulsado** un momento (`HOLD_MS`,
+  320 ms) sin mover el dedo; entonces suena, se ve «en la mano» con su contorno y ya se arrastra. Un toque lo elige
+  (con sus herramientas); un deslizamiento rápido no lo mueve y lo explica («mantenlo pulsado un momento y luego
+  arrástralo»). **Tocar un hueco con un mueble elegido ya no lo lleva allí**: lo suelta. Lo levantado y soltado sin
+  moverlo se queda donde estaba. La balda (sacar muebles) y el teclado no cambian.
+- Pruebas: nueva `e2e-community/v178-mover.spec.js`; ajustada la de arrastrar de `e2e/edificio-puerto.spec.js`
+  (mantiene pulsado antes de mover). Pasan v169, v170, v171, v172, v177-armario, v178-tanda3 y v178-mover en Chromium
+  360, 390 y escritorio, y `e2e/edificio-puerto` a 390. WebKit no pasado.
+
+### 2026-11-03 · cuenta principal · encargo del 3-11-2026, bloque 4: tu personaje va andando a la tienda y a la limusina (en la 1.78.0)
+- En la fachada (`facadeView.js`, `walkAlong`), al tocar la tienda o la limusina, tu personaje (con su ropa) sale del
+  portal, cruza el muelle y entra; luego, lo de siempre (te asomas al escaparate, o el viaje en limusina). Tocar otra
+  vez mientras anda lo salta. Con movimiento reducido, directo como antes. Las ventanas de los pisos siguen igual.
+- Si te acompaña un legendario (el dragoncillo, el zorro o la cinta), sale detrás de ti con un poco de retraso y se
+  mueve a su manera (`misticoSprite` en `misticos.js`), mirando hacia donde va. El perrito no: es un mueble del piso.
+- Arreglado durante la prueba: sin aspecto guardado, el paseo fallaba y la limusina no hacía nada; ahora usa el aspecto
+  de siempre y, si algo falla al dibujar, se entra directamente.
+- Dibujo: `renderActorWalk` (`render.js`) hace una tira de cuatro pasos mirando hacia donde va, con la escala y el giro
+  de la fachada; `facade.js` da el camino (`walk`) y la limusina con el chófer en una capa aparte, que se pone encima
+  para que el coche lo tape cuando pasa por detrás (por debajo de las placas).
+- Pruebas: nueva `e2e-community/v178-paseo.spec.js` (anda hacia la tienda y la tienda se abre al llegar; la limusina,
+  también con el compañero; saltar tocando; movimiento reducido). Pasan v163, v167, v174 y v178-paseo en Chromium 360, 390 y escritorio. Lint
+  sin avisos en el edificio. WebKit no pasado. En el hotel no hay paseo (no hay personaje en sus salas todavía).
+
+### 2026-11-03 · cuenta principal · encargo del 3-11-2026, bloque 3: tanda de muebles con mascota, ropa «Noche estrellada» y efectos en la fachada (en la 1.78.0)
+- Muebles (`catalog.js`, `furniture.js`): perchero, cesto de mantas y jarrón (comunes); chimenea con lumbre, piano y
+  tapiz (poco comunes); telescopio y **el perrito**, la mascota (raros; en su cojín, con tres pelajes); y un místico,
+  el búho de las constelaciones (solo en «Edición coleccionista», como los demás). El perrito y el búho se mueven
+  (`misticos.js`: el perrito mueve la cola, parpadea y a ratos se tumba con una «z»; el búho gira la cabeza).
+  Van en los sobres de su tipo: salón (piano), luces (chimenea y tapiz) y balcón (el resto). Con 4 raros en el balcón,
+  cada uno queda a 1,5 % (el 6 % de raro no cambia); ajustada v167.
+- Ropa (`actor.js`): jerseys Coral, Turquesa y Noche estrellada; pantalones Burdeos y Medianoche; sombrero de paja,
+  gorra marinera y capa de estrellas. Se ganan con las misiones del día, después de lo de antes. **Conjunto «Noche
+  estrellada»** (jersey 14 + pantalón 8 + capa): el jersey lleva estrellitas que brillan; con la capa, polvo de
+  estrellas a tu alrededor y una estela al andar; con el conjunto entero, más motas y un halo (`piso.js`).
+- Fachada (`facadeView.js`, `edificio.css`): una gaviota lejana, una estrella fugaz de vez en cuando y luciérnagas a lo
+  largo de la orilla. Con movimiento reducido, nada de esto se mueve.
+- **Migración nueva `supabase/migrations/20261108130000_edificio_tanda3.sql`** (la aplica Francisco, después de
+  `20261108120000_edificio_regalos_diarios.sql`): filas del catálogo, sobres con los muebles nuevos, ropa válida y su
+  orden. Sin ella, los muebles nuevos no salen en los sobres del servidor.
+- Pruebas: nueva `e2e-community/v178-tanda3.spec.js`; ajustadas `personaje.rls.test.js`, `inventario.rls.test.js` y
+  v167. Pasan Vitest del edificio (68), v163, v167, v169, v170, v172, v173, v177 y v178 en Chromium. Build correcto y
+  lint sin avisos en el edificio. WebKit no pasado.
+
+### 2026-11-03 · cuenta principal · encargo del 3-11-2026, bloque 2: vestíbulo discreto y sobres con más impacto (en la 1.78.0)
+- Vestíbulo (`hotel/Vestibulo.jsx`, `hotel/hotel.css`): al entrar no hay nada abierto, solo el dibujo con letreros
+  pequeños (plaquitas oscuras con filo de latón, la zona para el dedo sigue grande) y una línea «Toca la recepción…».
+  Al tocar algo sale su papel, más compacto (encargos en una línea con barra fina), con «×»; tocar el mismo letrero o
+  Escape lo cierra, y un segundo Escape sale a la plaza. Probé a acercar el dibujo en el móvil y cortaba el
+  guardarropa: descartado.
+- Sobres (`GachaReveal.jsx`, `tienda.css`): cada carta lleva el color de su rareza (fondo, cinta con el nombre y rayos
+  desde poco común); lo raro o mejor, al darse la vuelta, tiñe la escena un instante y suelta confeti de píxel; el
+  sobre cerrado lleva un brillo que lo cruza cada pocos segundos (igual en todos: no adelanta nada); al final, un
+  recuento por rarezas con su color («1 raro · 2 poco comunes · 2 comunes»). Con movimiento reducido, colores y
+  recuento sí; brillo, destello y confeti no. Arreglado además un aviso «ResizeObserver loop» del ajuste del bloque 1.
+- Pruebas: nueva `e2e-community/v178-sobre-impacto.spec.js` (360/390 y movimiento reducido); ajustada v175. Pasan
+  v167, v173, v174, v175, v176, v177 y v178 en Chromium (320/360/390/escritorio según cada una). Build y lint sin
+  avisos en lo tocado. WebKit no pasado.
+
+### 2026-11-03 · cuenta principal · encargo del 3-11-2026, bloque 1: arreglos (en la 1.78.0)
+- Encargo de Francisco (captura de iPhone y lista de diez cosas, antes de seguir con el plan del rascacielos); las
+  reglas están en `CLAUDE.md` («Encargo del 3-11-2026»). Este bloque hace las cuatro primeras:
+  - Revelación del sobre cortada en el iPhone (`GachaReveal.jsx`, `tienda.css`): el panel es una rejilla y la escena,
+    con su `overflow` recortado, se encogía y se comía el pie. Ahora no se encoge y su ancho se ajusta para que quepan
+    la escena, «Colocar en mi piso» y «Volver a la tienda» (comprobado a 414×896 con zona segura de iPhone, emulado).
+  - Sin sellos (`VecinoMesa.jsx`, `EdificioPanel.jsx`): la mesa del vecino tiene «Libro de visitas» y «Regalar»; sin la
+    migración de vecinos no se enseña nada. El correo ya no lista sellos. Los datos de `piso_sellos` no se borran.
+  - Buzón de la fachada (`facadeView.js`, `edificio.css`): la carta y su número solo cuentan lo no leído; al abrir la
+    nota se marca leído (guardado por usuario en este aparato, `bookshelf:edificio:correo-leido:<uid>`) y la carta se
+    va; al salir de un piso y volver no reaparece ni la nota se queda abierta. Lo nuevo va en negrita.
+  - Regalos: uno al día (24 h), solo hasta «raro», solo si tienes más de una copia y alguna sin colocar. Lo comprueba
+    `supabase/migrations/20261108120000_edificio_regalos_diarios.sql` (**Francisco tiene que aplicarla**; hasta
+    entonces el servidor deja los cinco al día de antes, aunque la app ya solo ofrece lo permitido). La app recuerda
+    en el aparato cuándo regalaste y, si el servidor dice que ya regalaste hoy, lo dice.
+- Pruebas: Vitest RLS de vecinos (9, con las reglas nuevas) y místicos; e2e v163, v171 (ajustadas) y v176. Lint sin
+  avisos en lo tocado.
+- Queda: los bloques siguientes del encargo (vestíbulo, impacto de sobres, efectos y tandas de ropa y muebles con
+  mascota, el personaje que camina, mover muebles sin querer, la habitación protagonista). Sin cerrar versión.
 
 ### 2026-11-02 · cuenta principal · 1.77.0: fachada del Gran Hotel y armario «Compañía» (publicada)
 - Encargo de Francisco (dos textos y una maqueta de dos paneles): la fachada del hotel con su Directorio (panel

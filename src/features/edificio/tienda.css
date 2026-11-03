@@ -1714,3 +1714,242 @@
 .gacha .gacha__cards li.is-peeking .gacha__face small {
   visibility: hidden;
 }
+
+/* ── 1.78: en el iPhone el pie se cortaba. El panel es una columna flexible y la escena, con su overflow recortado, se
+   encogía hasta caber; ahora nunca se encoge, y si con todo el ancho no cabe en la pantalla, GachaReveal la estrecha lo
+   justo (--gacha-max) y se centra. ── */
+.gacha {
+  flex: none;
+  min-height: max-content;
+  max-width: min(460px, var(--gacha-max, 460px));
+  margin-inline: max(-14px, calc((100% - min(460px, var(--gacha-max, 460px))) / 2));
+}
+
+/* ── 1.78 (encargo del 3-11-2026, «más impacto en los sobres»): el color de cada rareza en su carta, un destello y
+   confeti de píxel con lo raro o mejor, un brillo que cruza el sobre cerrado y el recuento por rarezas. Solo sale el
+   color de lo que de verdad ha tocado. ── */
+.gacha--comun {
+  --rar: #f6e3b4;
+}
+
+.gacha__face::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--face, transparent);
+}
+
+.gacha__card.is-poco-comun .gacha__face {
+  --face: linear-gradient(180deg, #e9efd9 0, #fbf5e6 70%);
+}
+
+.gacha__card.is-raro .gacha__face {
+  --face: radial-gradient(circle at 50% 38%, #fff3c4 0, #f6dc8e 58%, #e9c066 100%);
+}
+
+/* La rareza, en una cinta de su color al pie */
+.gacha__card .gacha__face small {
+  padding: 1px 6px;
+  font-weight: 700;
+}
+
+.gacha__card.is-poco-comun .gacha__face small {
+  background: #83946a;
+  color: #fbf5e6;
+}
+
+.gacha__card.is-raro .gacha__face small {
+  background: #8a5a10;
+  color: #ffe9a8;
+}
+
+.gacha__card.is-mistico .gacha__face small {
+  background: #2f5f86;
+  color: #e4f4ff;
+}
+
+.gacha__card.is-legendario .gacha__face small {
+  background: #8a2f6e;
+  color: #ffe6f6;
+}
+
+/* Lo raro o mejor, ya boca arriba, brilla con su color (boca abajo todas son iguales: nada se adelanta carta a carta) */
+.gacha__card.is-raro.is-shown .gacha__face,
+.gacha__card.is-mistico.is-shown .gacha__face,
+.gacha__card.is-legendario.is-shown .gacha__face {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rc, #ffe08a) 70%, transparent));
+}
+
+.gacha__card.is-mistico {
+  --rc: #9fd8ff;
+}
+
+.gacha__card.is-legendario {
+  --rc: #ffb0e6;
+}
+
+/* El destello: la escena se tiñe un instante del color de lo que ha salido */
+.gacha__flash {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: radial-gradient(circle at 50% 62%, var(--fc, #ffe08a) 0, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  animation: gacha-tint 0.9s ease-out;
+}
+
+.gacha__flash.is-mistico {
+  --fc: #9fd8ff;
+}
+
+.gacha__flash.is-legendario {
+  --fc: #ffb0e6;
+  animation-duration: 1.3s;
+}
+
+@keyframes gacha-tint {
+  15% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Confeti de píxel que sale de la carta en todas direcciones y cae */
+.gacha__confetti {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.gacha__confetti i {
+  position: absolute;
+  width: 1.4cqw;
+  height: 1.4cqw;
+  background: var(--rc, #ffe08a);
+  opacity: 0;
+  animation: gacha-confetti 0.95s 0.25s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+
+.gacha__confetti i:nth-child(3n) {
+  background: #fbf5e6;
+}
+
+.gacha__confetti i:nth-child(4n) {
+  background: #e07b5f;
+}
+
+@keyframes gacha-confetti {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(0);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) rotate(90deg);
+  }
+}
+
+/* El sobre cerrado: un brillo que lo cruza de vez en cuando */
+.gacha__shine {
+  position: absolute;
+  z-index: 4;
+  top: calc(var(--t) * var(--ratio) * 100cqw);
+  left: calc(var(--l) * 100cqw);
+  width: calc((var(--r) - var(--l)) * 100cqw);
+  height: calc((var(--b) - var(--t)) * var(--ratio) * 100cqw);
+  overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.gacha__shine::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -60%;
+  width: 34%;
+  background: linear-gradient(90deg, transparent, rgb(255 246 220 / 0.55) 45%, rgb(255 255 255 / 0.75) 50%, rgb(255 246 220 / 0.55) 55%, transparent);
+  transform: skewX(-18deg);
+  animation: gacha-shine 3.2s ease-in-out infinite;
+}
+
+@keyframes gacha-shine {
+  0%,
+  55% {
+    left: -60%;
+  }
+  85%,
+  100% {
+    left: 130%;
+  }
+}
+
+/* Al rasgar, la luz sale para todos los sobres, del color de lo mejor que traen */
+.gacha--comun .gacha__glow {
+  opacity: 0.35;
+}
+
+/* El recuento final, con una pastilla del color de cada rareza */
+.gacha__pips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #5b4630;
+  font: 600 min(0.86rem, 3.6cqw) / 1.2 'Lora', Georgia, serif;
+}
+
+.gacha__pips li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gacha__pips i {
+  width: 10px;
+  height: 10px;
+  background: #d8c4a0;
+  box-shadow: 0 0 0 2px #3b2618;
+}
+
+.gacha__pips .is-poco-comun i {
+  background: #83946a;
+}
+
+.gacha__pips .is-raro i {
+  background: #f0c35a;
+}
+
+.gacha__pips .is-mistico i {
+  background: #9fd8ff;
+}
+
+.gacha__pips .is-legendario i {
+  background: #ffb0e6;
+}
+
+.gacha__pips .is-raro,
+.gacha__pips .is-mistico,
+.gacha__pips .is-legendario {
+  color: #2c1e14;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gacha__flash,
+  .gacha__confetti,
+  .gacha__shine {
+    display: none;
+  }
+}

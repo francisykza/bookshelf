@@ -46,6 +46,10 @@ export const JERSEYS = [
   { id: 9, nombre: 'Cereza', color: [150, 50, 58] },
   { id: 10, nombre: 'Lavanda', color: [160, 146, 190] },
   { id: 11, nombre: 'Mar', color: [52, 104, 120] },
+  // 1.78 (encargo del 3-11-2026): otra tanda, también de las misiones del día; el 14 es del conjunto «Noche estrellada»
+  { id: 12, nombre: 'Coral', color: [222, 124, 104] },
+  { id: 13, nombre: 'Turquesa', color: [72, 160, 156] },
+  { id: 14, nombre: 'Noche estrellada', color: [42, 50, 92] },
 ];
 export const PANTALONES = [
   { id: 0, nombre: 'Vaquero', color: [72, 88, 116] },
@@ -56,6 +60,9 @@ export const PANTALONES = [
   // Se ganan con las misiones del día (§70)
   { id: 5, nombre: 'Teja', color: [160, 86, 60] },
   { id: 6, nombre: 'Gris perla', color: [168, 168, 172] },
+  // 1.78: el 8 es del conjunto «Noche estrellada»
+  { id: 7, nombre: 'Burdeos', color: [112, 44, 56] },
+  { id: 8, nombre: 'Medianoche', color: [34, 38, 66] },
 ];
 // Complementos (§70): todos menos «ninguno» se ganan con las misiones del día
 export const COMPLEMENTOS = [
@@ -65,13 +72,23 @@ export const COMPLEMENTOS = [
   { id: 'boina', nombre: 'Boina' },
   { id: 'auriculares', nombre: 'Auriculares' },
   { id: 'flor', nombre: 'Flor en el pelo' },
+  // 1.78: dos más y la capa del conjunto «Noche estrellada», que deja un polvo de estrellas a tu alrededor (misticos.js)
+  { id: 'sombrero', nombre: 'Sombrero de paja' },
+  { id: 'gorra', nombre: 'Gorra marinera' },
+  { id: 'capa', nombre: 'Capa de estrellas' },
 ];
 
 /**
  * Las prendas que se ganan, en el orden en que llegan (una por cada día con las tres misiones hechas; §70). La misma
  * lista que `piso_prendas_orden` en el servidor. Cada una es «clave:valor» del aspecto.
  */
-export const PRENDAS = ['complemento:bufanda', 'jersey:8', 'complemento:gorro', 'pantalon:5', 'colorPelo:6', 'jersey:9', 'complemento:boina', 'jersey:10', 'pantalon:6', 'complemento:auriculares', 'colorPelo:7', 'jersey:11', 'complemento:flor'];
+export const PRENDAS = [
+  'complemento:bufanda', 'jersey:8', 'complemento:gorro', 'pantalon:5', 'colorPelo:6', 'jersey:9', 'complemento:boina', 'jersey:10', 'pantalon:6', 'complemento:auriculares', 'colorPelo:7', 'jersey:11', 'complemento:flor',
+  // 1.78: la tanda nueva, después de las de antes (lo ya ganado no cambia); el conjunto «Noche estrellada» llega al final
+  'jersey:12', 'complemento:sombrero', 'pantalon:7', 'jersey:13', 'complemento:gorra', 'jersey:14', 'pantalon:8', 'complemento:capa',
+];
+/** El conjunto con efectos (1.78): con las tres piezas puestas, las estrellas del jersey y la capa brillan más. */
+export const CONJUNTO_ESTRELLAS = { jersey: 14, pantalon: 8, complemento: 'capa' };
 const LISTS = { colorPelo: () => COLORES_PELO, jersey: () => JERSEYS, pantalon: () => PANTALONES, complemento: () => COMPLEMENTOS };
 export const prendaKey = (key, value) => `${key}:${value}`;
 export const isPrenda = (key, value) => PRENDAS.includes(prendaKey(key, value));
@@ -164,8 +181,19 @@ function standing(a, step = 0) {
     B(0.26, -0.09 + s, 0.86, 0.37, 0.09 + s, 1.4, top),
     B(-0.36, -0.07 - s, 0.74, -0.27, 0.07 - s, 0.86, skin, { grain: 0 }),
     B(0.27, -0.07 + s, 0.74, 0.36, 0.07 + s, 0.86, skin, { grain: 0 }),
+    ...starryTop(a, s),
   ];
   return out.concat(head(a, skin, H));
+}
+
+const STAR = [255, 226, 140];
+/** Las estrellitas del jersey «Noche estrellada» (en el pecho y las mangas; se encienden de tarde). */
+function starryTop(a, s = 0) {
+  if (a.jersey !== 14) return [];
+  const g = { grain: 0, glow: true };
+  return [[-0.16, 1.2], [0.1, 1.3], [-0.04, 1.02], [0.17, 0.92], [-0.19, 0.84]]
+    .map(([x, z]) => B(x - 0.025, 0.14, z - 0.025, x + 0.025, 0.155, z + 0.025, STAR, g))
+    .concat([B(-0.34, 0.09 - s, 1.12, -0.3, 0.1 - s, 1.16, STAR, g), B(0.3, 0.09 + s, 1.0, 0.34, 0.1 + s, 1.04, STAR, g)]);
 }
 
 /** La cabeza con la cara (ojos, mofletes, boca y, si las lleva, gafas redondas) y el pelo. */
@@ -206,6 +234,25 @@ function extra(id) {
     }
     case 'flor':
       return [B(0.18, 0.04, 1.84, 0.32, 0.18, 1.98, [232, 140, 160], f), B(0.23, 0.17, 1.89, 0.27, 0.19, 1.93, [236, 196, 92], f)];
+    case 'sombrero': {
+      const c = [222, 192, 120];
+      return [B(-0.42, -0.4, 1.9, 0.42, 0.42, 1.95, c), B(-0.27, -0.25, 1.95, 0.27, 0.27, 2.14, shade(c, 1.06)), B(-0.28, -0.26, 1.95, 0.28, 0.28, 2.0, [176, 82, 66], f)];
+    }
+    case 'gorra': {
+      const c = [236, 232, 222];
+      return [B(-0.28, -0.26, 1.88, 0.28, 0.27, 2.08, c), B(-0.29, -0.27, 1.86, 0.29, 0.28, 1.92, [44, 52, 80]), B(-0.2, 0.27, 1.86, 0.2, 0.42, 1.9, [44, 52, 80], f), B(-0.04, 0.27, 1.96, 0.04, 0.29, 2.02, [214, 178, 80], f)];
+    }
+    case 'capa': {
+      // A la espalda, de los hombros a las rodillas, con el cierre dorado y estrellas que se encienden de tarde
+      const c = [36, 42, 82];
+      const g = { grain: 0, glow: true };
+      return [
+        B(-0.41, -0.24, 0.5, 0.41, -0.15, 1.44, c),
+        B(-0.3, -0.18, 1.4, 0.3, 0.16, 1.48, shade(c, 1.2)),
+        B(-0.05, 0.15, 1.36, 0.05, 0.18, 1.44, [240, 195, 90], f),
+        ...[[-0.24, 1.2], [0.12, 1.05], [-0.06, 0.8], [0.25, 0.66], [-0.28, 0.6], [0.02, 1.3]].map(([x, z]) => B(x - 0.03, -0.26, z - 0.03, x + 0.03, -0.24, z + 0.03, STAR, g)),
+      ];
+    }
     default:
       return [];
   }
@@ -230,6 +277,7 @@ function sitting(a, h) {
     B(0.26, -0.09, 0.9, 0.37, 0.2, 1.4, top),
     B(-0.34, 0.18, 0.86, -0.24, 0.32, 0.96, skin, { grain: 0 }),
     B(0.24, 0.18, 0.86, 0.34, 0.32, 0.96, skin, { grain: 0 }),
+    ...starryTop(a),
     ...head(a, skin, H),
   ].map(up);
   return [...feet, ...shins, ...thighs, ...body];
