@@ -6,14 +6,14 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Cerrada, sin publicar: 1.80.0** (2026-11-03, §80). El casino del sótano del Gran Hotel tiene:
+- **Versión publicada**: 1.80.0 (2026-11-03, §80). El casino del sótano del Gran Hotel tiene:
   - «Las 21 páginas»: tres manos al día sin apostar, que solo abren el día que lees;
   - la mesa para dos con un amigo, en diferido, con fichas y garbanzos;
   - la caja, donde las fichas se cambian por ropa, muebles con efectos, el sobre del casino y el conejo de la chistera.
 
-  Está en la rama `1.80-casino` (PR #5). **Su migración `20261110120000_hotel_casino.sql` está aplicada en
+  Desde la rama `1.80-casino` (PR #5), con avance rápido de `main`; `/sw.js` ya trae la 1.80.0. **Su migración `20261110120000_hotel_casino.sql` está aplicada en
   producción** (3-11-2026).
-- **Versión publicada**: 1.79.0 (2026-11-03, §79). Las misiones del día dan 5 tickets cuando ya tienes toda la
+- **Antes, 1.79.0** (2026-11-03, §79). Las misiones del día dan 5 tickets cuando ya tienes toda la
   ropa, la cartela de la fachada del hotel es más pequeña y está la suite de la semana del ático, decorada entre todos
   (sin votos ni pisos ajenos: decisión de Francisco). Desde la rama `1.79-suite-semana` (PR #4), con avance rápido de `main`; `/sw.js` ya trae la 1.79.0. **Sus dos migraciones
   están aplicadas en producción** (3-11-2026): `20261109120000_edificio_diarias_tickets.sql` y
@@ -189,6 +189,10 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-03 · cuenta principal · 1.80.0 publicada
+- Francisco dijo «Súbelo»: avance rápido de `main` hasta la rama `1.80-casino` (PR #5), push y Vercel; `/sw.js`
+  ya sirve la 1.80.0. La migración ya estaba aplicada.
 
 ### 2026-11-03 · cuenta principal · migración de la 1.80.0 aplicada
 - Francisco dijo «Sí, hazlo tú». Claude pegó `20261110120000_hotel_casino.sql` en el SQL Editor del proyecto
