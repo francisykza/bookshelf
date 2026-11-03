@@ -10,7 +10,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   que cabe en el iPhone, sin sellos de frase, correo que se lee, regalos uno al día hasta «raro» y con copias de sobra,
   vestíbulo discreto, sobres con más impacto, tanda 3 (muebles con el perrito y el búho, ropa «Noche estrellada»,
   efectos en la fachada), tu personaje (y tu compañero) andando a la tienda y a la limusina, mantener pulsado para
-  mover un mueble y tu piso sin decorar al entrar con iconos claros. En la rama `1.78-encargo-3-11`, con su PR.
+  mover un mueble y tu piso sin decorar al entrar con iconos claros. En la rama `1.78-encargo-3-11`, PR #3.
   **Dos migraciones por aplicar (las aplica Francisco)**: `20261108120000_edificio_regalos_diarios.sql` y
   `20261108130000_edificio_tanda3.sql`; sin ellas, los regalos siguen con las reglas de antes en el servidor y los
   muebles nuevos no salen en los sobres.
@@ -176,7 +176,7 @@ Formato de cada entrada (la más reciente arriba):
 ### 2026-11-03 · cuenta principal · 1.78.0 cerrada
 - Francisco pidió «cierra 1.78.0»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC;
   §78 en `SPEC.md` con los seis bloques; commit en la rama `1.78-encargo-3-11`, push de la rama y PR a `main` desde el
-  navegador integrado. Sin publicar (no se ha subido `main`).
+  navegador integrado (PR #3). Sin publicar (no se ha subido `main`).
 - Las entradas de abajo (bloques 1 a 6) van todas en este commit.
 - Queda: que Francisco aplique las dos migraciones y, cuando lo diga («súbelo»), fusionar y comprobar `/sw.js`. WebKit
   no pasado; nada probado en un iPhone real. Sigue pendiente su respuesta sobre el cartel VIDEOCLUB.
