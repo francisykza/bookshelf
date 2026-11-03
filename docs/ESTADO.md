@@ -11,7 +11,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   - la mesa para dos con un amigo, en diferido, con fichas y garbanzos;
   - la caja, donde las fichas se cambian por ropa, muebles con efectos, el sobre del casino y el conejo de la chistera.
 
-  Está en la rama `1.80-casino`. **Su migración `20261110120000_hotel_casino.sql` está sin aplicar**: antes de
+  Está en la rama `1.80-casino` (PR #5). **Su migración `20261110120000_hotel_casino.sql` está sin aplicar**: antes de
   «súbelo», ofrecer el flujo del SQL Editor.
 - **Versión publicada**: 1.79.0 (2026-11-03, §79). Las misiones del día dan 5 tickets cuando ya tienes toda la
   ropa, la cartela de la fachada del hotel es más pequeña y está la suite de la semana del ático, decorada entre todos
@@ -196,7 +196,7 @@ Formato de cada entrada (la más reciente arriba):
 - Francisco dijo «Cierra la 1.80»:
   - versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC;
   - §80 escrito;
-  - commit en la rama `1.80-casino`, subida y PR desde el navegador.
+  - commit `2c290b9` en la rama `1.80-casino`, subida y PR #5 desde el navegador.
 - **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
 - Las tres entradas de abajo (bloque 1, mesa y caja) van en ese commit.
 
