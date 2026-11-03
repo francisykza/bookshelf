@@ -8,7 +8,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 - **Cerrada, sin publicar**: 1.79.0 (2026-11-03, §79). Las misiones del día dan 5 tickets cuando ya tienes toda la
   ropa, la cartela de la fachada del hotel es más pequeña y está la suite de la semana del ático, decorada entre todos
-  (sin votos ni pisos ajenos: decisión de Francisco). Rama `1.79-suite-semana`, en su PR. **Dos migraciones sin
+  (sin votos ni pisos ajenos: decisión de Francisco). Rama `1.79-suite-semana`, en el PR #4. **Dos migraciones sin
   aplicar**: `20261109120000_edificio_diarias_tickets.sql` y `20261109130000_hotel_suite_semana.sql`.
 - **Versión publicada**: 1.78.0 (2026-11-03): el encargo del 3-11-2026 entero (§78): revelación del sobre
   que cabe en el iPhone, sin sellos de frase, correo que se lee, regalos uno al día hasta «raro» y con copias de sobra,
@@ -57,7 +57,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.79.0 | Misiones del día que dan 5 tickets con el armario completo, cartela del hotel más pequeña y la suite de la semana decorada entre todos en el ático (en el PR; migraciones sin aplicar) | §79 |
+| 1.79.0 | Misiones del día que dan 5 tickets con el armario completo, cartela del hotel más pequeña y la suite de la semana decorada entre todos en el ático (en el PR #4; migraciones sin aplicar) | §79 |
 | 1.78.0 | El encargo del 3-11-2026: arreglos (sobre en el iPhone, sin sellos, correo leído, regalos uno al día hasta «raro»), vestíbulo discreto, sobres con más impacto, tanda 3 con mascota y conjunto «Noche estrellada», paseo hasta la tienda y la limusina, mantener pulsado para mover y la habitación primero con iconos (publicada; migraciones aplicadas) | §78 |
 | 1.77.0 | La fachada del Gran Hotel entera sobre una cartela crema, planta elegida con filete y rombo de latón y el Directorio de las plantas; el armario como modo propio del piso («← Al piso» / «Armario»), Ropa, Aspecto y Compañía con vista previa que se guarda con «Listo», y el dragón posado a tu lado (publicada) | §77 |
 | 1.76.0 | La apertura de sobres sobre el mostrador: un sobre por colección (expositor, selector y mostrador), de frente e inclinado en la madera, tres gestos (tira, carta que asoma con 2 × 2, 3 + 2), el sobre sale del encuadre, elegir con ✓ y «Colocar [nombre]» al editor del piso (publicada) | §76 |
@@ -179,7 +179,7 @@ Formato de cada entrada (la más reciente arriba):
 
 ### 2026-11-03 · cuenta principal · 1.79.0 cerrada
 - Francisco pidió «cierra 1.79.0»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC, y
-  §79 escrito. Commit en la rama `1.79-suite-semana`, subida, y PR desde el navegador. **Sin publicar** y **las dos
+  §79 escrito. Commit `81796fe` en la rama `1.79-suite-semana`, subida, y PR #4 desde el navegador. **Sin publicar** y **las dos
   migraciones sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
 
 ### 2026-11-03 · cuenta principal · 1.79.0: misiones con el armario completo, cartela y suite (bloques)
