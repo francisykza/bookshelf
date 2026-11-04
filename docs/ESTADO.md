@@ -200,7 +200,7 @@ Formato de cada entrada (la más reciente arriba):
 
 ### 2026-11-04 · cuenta principal · 1.81.0 cerrada
 - Francisco dijo «Cierra la 1.81»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC, y §81
-  escrito. Commit en la rama `1.81-casino-avisos`, subida y PR desde el navegador.
+  escrito. Commit `64a6f38` en la rama `1.81-casino-avisos`, subida y PR #6 desde el navegador.
 - **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
 
 ### 2026-11-04 · cuenta principal · cambios tras probar el casino (en la 1.81.0)
