@@ -109,8 +109,6 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Tickets sin leer** (1.81): decidir si se deja el camino fichas → sobre del casino → reciclar, ahora que el casino no
-  exige lectura.
 - **Reciclar solo lo repetido en los sobres** (idea de Francisco del 3-11-2026, para más adelante): un ajuste en la tienda
   del tipo «si ya tengo N copias de un mueble, recicla las que salgan de más en los sobres» (N lo elige la persona).
   Al abrir el sobre, lo que pase de N se recicla solo por sus tickets (las mismas cifras de `piso_reciclar`), y la
@@ -197,6 +195,8 @@ Formato de cada entrada (la más reciente arriba):
 ### 2026-11-04 · cuenta principal · 1.81.0 publicada
 - Francisco dijo «Súbelo»: avance rápido de `main` hasta la rama `1.81-casino-avisos` (PR #6), push y Vercel; `/sw.js`
   ya sirve la 1.81.0. La migración ya estaba aplicada.
+- **Decisión de Francisco** («Dejarlo así»): se mantiene el camino fichas → sobre del casino → reciclar, aunque dé
+  tickets sin leer.
 
 ### 2026-11-04 · cuenta principal · 1.81.0 cerrada
 - Francisco dijo «Cierra la 1.81»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC, y §81
