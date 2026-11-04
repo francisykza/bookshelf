@@ -206,6 +206,7 @@ Formato de cada entrada (la más reciente arriba):
 ```
 
 ### 2026-11-04 · cuenta principal · 1.83.0 cerrada
+- PR #8, con base en la rama de la 1.82 (PR #7) para que se vea solo lo suyo.
 - Francisco dijo «cierra la sala»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC, y §83
   escrito. Commit en la rama `1.83-sala-lectura`, subida y PR desde el navegador.
 - **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor, primero la de la 1.82.
