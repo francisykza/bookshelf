@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Cerrada, sin publicar: 1.83.0** (2026-11-04, §83). La sala de lectura del hotel, con personajes y mascotas, la librería
+  común y el saludo. Está en la rama `1.83-sala-lectura`, que sale de la 1.82. **Su migración
+  `20261113120000_hotel_sala_lectura.sql` está sin aplicar**: antes de «súbelo», ofrecer el flujo del SQL Editor.
 - **Cerrada, sin publicar: 1.82.0** (2026-11-04, §82). Avisos de mesa al momento, mesas de garbanzos, la lata con sus premios
   y el cambio de garbanzos y tickets. Está en la rama `1.82-casino-garbanzos`. **Su migración
   `20261112120000_hotel_casino_garbanzos.sql` está sin aplicar**: antes de «súbelo», ofrecer el flujo del SQL Editor.
@@ -114,7 +117,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 - **Migración de la 1.82.0 sin aplicar** (`20261112120000_hotel_casino_garbanzos.sql`): Francisco la aplica (o «hazlo tú»
   con el SQL Editor) antes de publicar.
-- **Siguiente en el rascacielos**: paso D de `docs/qa/gran-hotel.md` §9.6, la sala de lectura con el Pomodoro y el quiosco.
+- **Migración de la 1.83.0 sin aplicar** (`20261113120000_hotel_sala_lectura.sql`), después de la de la 1.82.0.
+- **Rascacielos, paso D** (`docs/qa/gran-hotel.md` §9.6): falta el quiosco. Luego, la Lonja y el resto del plan.
+- **Figuras como muebles animados: aplazado** (Francisco, 4-11-2026, «dejamos aplazado este tema»). Muestra en
+  `material-diseno/figuras-habitacion/`. Propuesta sin decidir: ganarlas al terminar el libro y exponerlas en las vitrinas. Antes
+  hay que decidir qué hacer con el parecido a personajes de las sagas. No retomarlo sin que lo pida.
 - **Reciclar solo lo repetido en los sobres** (idea de Francisco del 3-11-2026, para más adelante): un ajuste en la tienda
   del tipo «si ya tengo N copias de un mueble, recicla las que salgan de más en los sobres» (N lo elige la persona).
   Al abrir el sobre, lo que pase de N se recicla solo por sus tickets (las mismas cifras de `piso_reciclar`), y la
@@ -197,6 +204,32 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-04 · cuenta principal · 1.83.0 cerrada
+- PR #8, con base en la rama de la 1.82 (PR #7) para que se vea solo lo suyo.
+- Francisco dijo «cierra la sala»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC, y §83
+  escrito. Commit en la rama `1.83-sala-lectura`, subida y PR desde el navegador.
+- **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor, primero la de la 1.82.
+
+### 2026-11-04 · cuenta principal · sala de lectura (en la 1.83.0)
+- Francisco pidió personajes con su mascota en vez de iconos: se dibujan sentados dentro de la escena, con un libro, y el
+  legendario en el suelo. **Migración nueva sin aplicar**: `20261113120000_hotel_sala_lectura.sql` (`sala_lectura_personajes`,
+  para ver a quien lee en otro edificio). Sin ella se ve a los vecinos y a ti; a los demás, con el personaje de base.
+- Francisco no le veía sentido a la sala y eligió «Librería y compañía»: lomos en una balda común (`SalaLibreria.jsx`), saludo
+  entre quienes leen a la vez y «Has leído con…» al acabar. Va en la misma migración. Sin ella no se enseñan.
+- Probado con Supabase simulado y PGlite, **sin probar entre dos cuentas reales**. La presencia caduca a los 3 minutos sin
+  renovar, y solo se renueva con la app visible: con el móvil bloqueado no se te ve ni llegan saludos.
+- El quiosco espera a que Francisco dé por buena la sala.
+- Francisco propuso recuperar las figuras como muebles animados que no salen en sobres. Muestra en
+  `material-diseno/figuras-habitacion/figuras-habitacion.html` (fuera de git). Propuesta sin decidir: ganarlas al terminar el libro
+  y exponerlas en la galería de vitrinas. Antes hay que confirmar con él el parecido con personajes de las sagas.
+- Primer bloque del paso D, en la rama `1.83-sala-lectura`, **sin commit y sin subir versión**. El café-biblioteca ya abre
+  (`SalaLectura.jsx`, `salaArt.js`). Sin migración: usa el temporizador de la app y `reading_presence`, con `SeatChoice`.
+- Al sentarte empieza la sesión; al acabar, `SessionReport` (exportado de `PomodoroTray`) apunta las páginas ahí mismo y te
+  levanta. Sin comunidad se puede leer igual, pero no te ven ni ves a nadie.
+- Quien se sienta aquí también aparece en el salón: es la misma presencia.
+- Pruebas: `v183-sala-lectura` en 320, 390, escritorio y WebKit (emulación). `v174` y `v177` usan ahora el salón de baile
+  como planta cerrada. Capturas `v183-*`.
 
 ### 2026-11-04 · cuenta principal · 1.82.0 cerrada
 - Francisco dijo «ciérrala antes» de seguir con el rascacielos: versión en `src/diag.js`, `package.json`, `public/sw.js` y

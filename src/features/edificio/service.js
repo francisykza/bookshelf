@@ -67,6 +67,38 @@ export function localAvatar(userId) {
   }
 }
 
+/**
+ * El aspecto de quien lee en la sala del hotel: { [user_id]: { personaje, companero } }. Sin la migración de la 1.83
+ * se conforma con lo que `pisos` deja ver: tú y tus vecinos.
+ */
+export async function salaPersonajes(ids) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('sala_lectura_personajes', { ids });
+  let filas = data;
+  if (error) {
+    const { data: pisos, error: fallo } = await sb.from('pisos').select('user_id, personaje, companero').in('user_id', ids);
+    if (fallo) throw fail(fallo);
+    filas = pisos;
+  }
+  return Object.fromEntries((filas ?? []).map((f) => [f.user_id, { personaje: validateAvatar(f.personaje), companero: f.companero ?? null }]));
+}
+
+async function salaRpc(fn, args) {
+  const sb = await client();
+  const { data, error } = await sb.rpc(fn, args);
+  if (error) throw fail(error);
+  return data;
+}
+
+/** La librería común de la sala: { total, lomos: [{ id, titulo, alias, mio }] }. Sin la migración, falla y no se enseña. */
+export const salaLibreria = () => salaRpc('sala_libreria');
+export const dejarLomo = (nuevo) => salaRpc('sala_lomo_dejar', { nuevo });
+export const retirarLomo = (lomo) => salaRpc('sala_lomo_retirar', { lomo });
+/** Saluda a quien lee a la vez. Devuelve si ha salido (uno cada media hora por pareja). */
+export const saludarEnSala = (quien) => salaRpc('sala_saludar', { quien });
+/** Los ids de quien te acaba de saludar; cada saludo llega una vez. */
+export const saludosEnSala = () => salaRpc('sala_saludos_nuevos');
+
 /** Guarda el aspecto de tu personaje (lo ven tus vecinos). Sin la columna en el servidor, solo queda en el dispositivo. */
 export async function savePersonaje(userId, avatar) {
   const personaje = validateAvatar(avatar);

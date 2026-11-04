@@ -17,7 +17,7 @@ import { PanelShell } from './PanelShell';
  * Fin de una sesión: "¿por qué página vas?" con una estimación según tu velocidad, y después un resumen
  * de lo avanzado. Las páginas se apuntan en el día de hoy, así que aparecen en el calendario del portátil.
  */
-function SessionReport({ book, onDone, onOpenCalendar }) {
+export function SessionReport({ book, onDone, onOpenCalendar }) {
   const { state, actions } = useLibrary();
   const reading = state.books.filter((b) => b.status === 'reading');
   const [bookId, setBookId] = useState(book?.id ?? reading[0]?.id ?? '');

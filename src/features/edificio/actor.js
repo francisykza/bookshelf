@@ -362,6 +362,12 @@ function lying(a, h) {
 }
 
 /** Gira cajas locales (frente a +y) un número de cuartos: 0 → +y, 1 → -x, 2 → -y, 3 → +x (como los muebles). */
+// Un libro abierto en las manos, para quien lee sentado (la sala de lectura del hotel): tapas fuera, páginas hacia la cara
+function bookInHands(h, color) {
+  const dz = h - 0.7;
+  return [B(-0.24, 0.32, 0.92 + dz, 0.24, 0.37, 1.24 + dz, color, { grain: 0 }), B(-0.21, 0.28, 0.94 + dz, 0.21, 0.32, 1.22 + dz, [226, 214, 186], { grain: 0 })];
+}
+
 function turn(boxes, rot) {
   const f = [(x, y) => [x, y], (x, y) => [-y, x], (x, y) => [-x, -y], (x, y) => [y, -x]][rot & 3];
   return boxes.map((bx) => {
@@ -377,7 +383,7 @@ function turn(boxes, rot) {
  */
 export function actorBoxes(avatar, state) {
   let local;
-  if (state.pose === 'sit') local = sitting(avatar, state.h);
+  if (state.pose === 'sit') local = state.libro ? [...sitting(avatar, state.h), ...bookInHands(state.h, state.libro)] : sitting(avatar, state.h);
   else if (state.pose === 'lie') local = lying(avatar, state.h);
   else local = standing(avatar, state.pose === 'walk' ? state.step : 0);
   return turn(local, state.facing).map((bx) => ({ ...bx, b: [bx.b[0] + state.x, bx.b[1] + state.y, bx.b[2], bx.b[3] + state.x, bx.b[4] + state.y, bx.b[5]] }));

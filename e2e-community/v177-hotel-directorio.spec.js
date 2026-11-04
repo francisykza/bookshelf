@@ -73,42 +73,42 @@ test('el hotel cabe entero sobre la cartela, y tocar una planta o elegirla en el
   const before = await canvasState(page);
   expect(before.brass).toBe(0);
 
-  // Tocar el café en el dibujo
+  // Tocar el salón de baile en el dibujo
   const at = await page.evaluate(() => {
     const v = window.__granHotel;
-    const z = v.zones.find((x) => x.id === 'cafe');
+    const z = v.zones.find((x) => x.id === 'baile');
     const r = v.canvas.getBoundingClientRect();
     return { x: r.left + z.center.x * r.width, y: r.top + z.center.y * r.height };
   });
   await page.mouse.click(at.x, at.y);
-  await expect(plaque.getByRole('heading', { name: 'Café-biblioteca' })).toBeVisible();
+  await expect(plaque.getByRole('heading', { name: 'Salón de baile' })).toBeVisible();
   await expect(plaque.getByText('Próxima apertura')).toBeVisible();
-  await expect(plaque.getByText('Mesas para quienes leen el mismo libro.')).toBeVisible();
+  await expect(plaque.getByText('Lecturas conjuntas y presentaciones de los clubes.')).toBeVisible();
   await page.mouse.move(0, 0);
   const tapped = await canvasState(page);
   expect(tapped.brass).toBeGreaterThan(40);
-  await shot(page, info, 'v177-hotel-cafe');
+  await shot(page, info, 'v177-hotel-baile');
 
   // Escape quita la elección (y no cierra el hotel)
   await page.keyboard.press('Escape');
   await expect(plaque.getByRole('heading', { name: 'Gran Hotel del Puerto' })).toBeVisible();
   expect((await canvasState(page)).brass).toBe(0);
 
-  // El Directorio: las plantas con su estado (1.80: con el casino del sótano; 1.81: sin la suite de la semana); elegir el café da lo mismo que tocarlo
+  // El Directorio: las plantas con su estado (1.80: con el casino del sótano; 1.81: sin la suite de la semana); elegir el salón de baile da lo mismo que tocarlo
   await dir.click();
   const list = hotel.getByRole('dialog', { name: 'Directorio' });
   await expect(list.getByRole('button')).toHaveCount(9);
   await expect(list.getByRole('button', { name: /Vestíbulo/ })).toContainText('Abierto · entrar');
-  await expect(list.getByRole('button', { name: /Café-biblioteca/ })).toContainText('Próxima apertura');
+  await expect(list.getByRole('button', { name: /Salón de baile/ })).toContainText('Próxima apertura');
   await shot(page, info, 'v177-hotel-directorio');
-  await list.getByRole('button', { name: /Café-biblioteca/ }).click();
+  await list.getByRole('button', { name: /Salón de baile/ }).click();
   await expect(list).toHaveCount(0);
-  await expect(plaque.getByRole('heading', { name: 'Café-biblioteca' })).toBeVisible();
+  await expect(plaque.getByRole('heading', { name: 'Salón de baile' })).toBeVisible();
   expect(await canvasState(page)).toEqual(tapped);
 
   // Escape cierra el Directorio y no el hotel; desde él, el vestíbulo se entra
   await dir.click();
-  await expect(list.getByRole('button', { name: /Café-biblioteca/ })).toHaveAttribute('aria-current', 'true');
+  await expect(list.getByRole('button', { name: /Salón de baile/ })).toHaveAttribute('aria-current', 'true');
   await page.keyboard.press('Escape');
   await expect(list).toHaveCount(0);
   await expect(hotel.locator('canvas.hotel-canvas')).toBeVisible();

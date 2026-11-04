@@ -33,7 +33,7 @@ const FLOORS = [
   { id: 'terraza', boton: 'T', nombre: 'La terraza', texto: 'Guirnaldas, la radio del rincón sonando para todos y el puerto a tus pies.' },
   { id: 'baile', boton: 'B', nombre: 'El salón de baile', texto: 'La sala grande, para las lecturas conjuntas y las presentaciones de los clubes.' },
   { id: 'suites', boton: '3', nombre: 'Las suites de los clubes', texto: 'Cada club tiene su habitación, decorada entre sus miembros.' },
-  { id: 'cafe', boton: '1', nombre: 'El café-biblioteca', texto: 'Mesas junto a quien lee lo mismo y la sala de lectura: te sientas, empieza tu sesión de lectura y ves a quien lee a la vez.' },
+  { id: 'cafe', boton: '1', nombre: 'El café-biblioteca', abierta: true, texto: 'La sala de lectura: te sientas, empieza tu sesión de lectura y ves a quien lee a la vez.' },
   { id: 'lonja', boton: 'E', nombre: 'La Lonja', texto: 'El mercado del entresuelo: un puesto por persona para cambiar muebles o venderlos por tickets.' },
   { id: 'vestibulo', boton: 'V', nombre: 'El vestíbulo', aqui: true },
   { id: 'casino', boton: 'S', nombre: 'El casino del sótano', abierta: true, texto: 'Un casino de los años 20: tres manos al día de «Las 21 páginas», a solas o con un amigo, y la caja donde se cambian las fichas.' },

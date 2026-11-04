@@ -204,6 +204,10 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     manos para esa mesa. **Mesas de garbanzos** (4-11-2026): tras la mesa del día se sigue apostando solo garbanzos, sin
     gastar manos ni ganar fichas, hasta 6 al día por persona y una abierta por pareja. **La lata de los garbanzos**, plegada
     al pie de la caja: premios humildes y el cambio con tickets, con tope semanal. Las fichas siguen sin convertirse en tickets.
+  - **La sala de lectura del hotel** (4-11-2026, «Librería y compañía»): se ve a quien lee con su personaje, un libro y su
+    compañero, nunca con iconos. Tiene que dejar huella: **librería común** (quien termina un libro leyendo ahí puede dejar
+    su lomo, con su nombre; lo decide cada vez y puede retirarlo) y **saludo** cerrado entre quienes leen a la vez, sin texto
+    libre. Al acabar te dice con quién has leído. No da tickets ni recompensas.
   - **Encargo del 3-11-2026** (antes de seguir con el plan del rascacielos; por bloques con capturas):
     - **Sin «dejar una frase»** (los sellos de frase al vecino): sobra junto al libro de visitas. Se quita de la app;
       no se borran los datos.
