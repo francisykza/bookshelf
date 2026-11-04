@@ -73,10 +73,10 @@ test('la limusina del portal lleva al Gran Hotel, y Atrás vuelve', async ({ pag
 
   // Sin fila de botones: la planta se toca en el dibujo (o, con el teclado, con su botón sobre el dibujo)
   await expect(hotel.getByRole('navigation')).toHaveCount(0);
-  const cafe = hotel.getByRole('list', { name: 'Plantas del hotel' }).getByRole('button', { name: 'El café-biblioteca' });
+  const cafe = hotel.getByRole('list', { name: 'Plantas del hotel' }).getByRole('button', { name: 'El salón de baile' });
   await cafe.focus();
   await page.keyboard.press('Enter');
-  const card = hotel.getByRole('region', { name: 'El café-biblioteca' });
+  const card = hotel.getByRole('region', { name: 'El salón de baile' });
   await expect(card).toBeVisible();
   // 1.77: la cartela del pie dice la planta y «Próxima apertura»
   await expect(card.getByText('Próxima apertura')).toBeVisible();

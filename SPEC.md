@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.82.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.83.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5021,3 +5021,37 @@ al pedir el cierre.
 - e2e en emulación: `v180-casino` en 320, 390, escritorio y WebKit 390, según la prueba.
 - El toque se comprobó en el proyecto real con la clave pública, entre dos canales de prueba. **Sin probar entre dos
   cuentas reales.**
+
+## 83. La sala de lectura del Gran Hotel (1.83.0)
+
+Paso D de `docs/qa/gran-hotel.md` §9.6, primera mitad. Francisco la pidió «con sentido» el 4-11-2026 y eligió «Librería y
+compañía». **Una migración nueva, la aplica Francisco**: `20261113120000_hotel_sala_lectura.sql`. Sin ella la sala funciona,
+pero sin librería ni saludo, y a quien no es vecino se le ve con el personaje de base.
+
+### 83.1 La sala
+
+- Planta 1 del hotel, abierta desde el Directorio y el ascensor: biblioteca de noche con seis sillones.
+- Es el temporizador de la app y la presencia del salón (`reading_presence`), con la misma elección de qué compartir. Al
+  acabar, las páginas se apuntan ahí mismo con el formulario de la bandeja.
+- Quien lee se dibuja dentro de la escena, sentado y con un libro, con su personaje; su compañero legendario, en el suelo a su
+  lado. `sala_lectura_personajes` da solo ese aspecto y solo de quien se ve ya leyendo.
+
+### 83.2 La librería común
+
+- Quien termina un libro sentado en la sala puede dejar su lomo, con su nombre, a la vista de todo el hotel. Se pregunta cada
+  vez y se puede retirar. Hasta 3 al día y cada título una vez por persona. La balda enseña los 40 últimos.
+- El lomo lleva el título tal como está en tu biblioteca. No hay forma de denunciar un lomo: quien bloquea a alguien deja de
+  ver los suyos.
+
+### 83.3 La compañía
+
+- Saludo cerrado, sin texto, entre dos personas sentadas a la vez: uno cada media hora por pareja. Se mira cada 15 s mientras
+  estás sentado.
+- Al acabar, «Has leído con…»: quien has visto en la sala mientras seguías sentado. Lo cuenta el dispositivo.
+- No da tickets ni recompensas.
+
+### 83.4 Pruebas
+
+- PGlite: `sala-lectura.rls.test.js` (14). e2e en emulación: `v183-sala-lectura` en 320, 390, escritorio y WebKit 390, según la
+  prueba. **Sin probar entre dos cuentas reales.**
+- La presencia solo se renueva con la app visible: con el móvil bloqueado, a los 3 minutos no se te ve ni llegan saludos.

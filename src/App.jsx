@@ -406,6 +406,14 @@ function Sanctuary() {
             onClose={close}
             onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })}
             onOpenMissions={() => openPanel({ type: 'laptop', tab: 'missions' })}
+            timer={timer}
+            askPages={askPages}
+            onPagesDone={() => setAskPages(false)}
+            onOpenCalendar={() => {
+              setAskPages(false);
+              playUiSound('computerOn');
+              switchPanel({ type: 'laptop', tab: 'calendar' });
+            }}
           />
         </Suspense>
       )}

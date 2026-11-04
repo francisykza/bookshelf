@@ -140,6 +140,22 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     }
     const json = (body) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     const blockedWith = (other) => db.blocks.some((b) => (b.blocker === userId && b.blocked === other) || (b.blocker === other && b.blocked === userId));
+    if (table === 'rpc/sala_lectura_personajes') return json(db.sala_personajes ?? []);
+    // La sala: `db.sala` = { lomos, saludos (quien te saluda), enviados }. Sin él, como si no estuviera la migración
+    if (['rpc/sala_libreria', 'rpc/sala_lomo_dejar', 'rpc/sala_lomo_retirar', 'rpc/sala_saludar', 'rpc/sala_saludos_nuevos'].includes(table)) {
+      if (!db.sala) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'no existe' }) });
+      const sala = db.sala;
+      const body = req.postDataJSON?.() ?? {};
+      const vista = () => ({ total: sala.lomos.length, lomos: sala.lomos });
+      if (table === 'rpc/sala_lomo_dejar') sala.lomos.unshift({ id: randomUUID(), titulo: body.nuevo, alias: 'Ana lectora', mio: true });
+      if (table === 'rpc/sala_lomo_retirar') sala.lomos = sala.lomos.filter((l) => l.id !== body.lomo);
+      if (table === 'rpc/sala_saludar') {
+        (sala.enviados ??= []).push(body.quien);
+        return json(true);
+      }
+      if (table === 'rpc/sala_saludos_nuevos') return json((sala.saludos ?? []).splice(0));
+      return json(vista());
+    }
     if (table === 'rpc/asignar_edificio') {
       let mine = db.edificio_vecinos.find((v) => v.user_id === userId);
       if (!mine) {

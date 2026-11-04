@@ -172,7 +172,7 @@ function PisoView({ room, editable, label, soundOn, inside, decorate = false, in
   return <div ref={ref} className="ed-piso" />;
 }
 
-export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions = null }) {
+export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions = null, timer: reloj = null, askPages = false, onPagesDone, onOpenCalendar }) {
   const community = useCommunity({ autoload: true });
   // La melodía «Dos balcones» mientras estás en el edificio (1.73), si el sonido de la app está activado
   useEffect(() => {
@@ -426,7 +426,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   } else if (!data) {
     body = <p className="ed-note">Buscando tu puerta…</p>;
   } else if (inHotel) {
-    body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} />;
+    body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} timer={reloj} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} />;
   } else if (inShop) {
     body = inventory?.tienda ? (
       <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={(id) => {
