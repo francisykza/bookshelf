@@ -5171,4 +5171,4 @@ La copia para el acabado tiene que poder venderse: ni colocada ni recién llegad
 
 ### 86.5 Sin verificar
 
-Arrastrar con el dedo en un móvil real, los sonidos nuevos, regalar y poner en la Lonja una copia con acabado desde la pantalla (el servidor sí está probado), colgar una placa, vestir la ropa nueva en el armario y `api/portada.js` desplegada. La tienda aún no dice de qué taller es cada mueble, y el buzón no dice el acabado de un regalo.
+Arrastrar con el dedo en un móvil real, los sonidos nuevos, regalar y poner en la Lonja una copia con acabado desde la pantalla (el servidor sí está probado), colgar una placa y vestir la ropa nueva en el armario. La tienda aún no dice de qué taller es cada mueble, y el buzón no dice el acabado de un regalo.

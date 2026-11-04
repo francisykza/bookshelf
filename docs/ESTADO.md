@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Cerrada y sin publicar: 1.86.0** (2026-11-04, §85 y §86). Reseña como imagen, acabados, La estiba con su pared de premios, talleres y tablón «Se busca». Está en la rama `1.86-identidad-muebles`, PR #10. **Sus tres migraciones ya están aplicadas** (4-11-2026, SHA-256 comprobado y 42501 al anónimo); la pesada ya no funciona en la 1.84 publicada, hasta subir la 1.86: `20261115120000_edificio_acabados.sql`, `20261116120000_hotel_estiba.sql` y `20261117120000_edificio_talleres.sql`.
-- **Versión publicada: 1.84.0** (2026-11-04, §84), junto con la 1.82 y la 1.83; `/sw.js` ya la trae. La Lonja de dos plantas, con su panel de mercado, sus reglas contra los
+- **Versión publicada: 1.86.0** (2026-11-04, §85 y §86, PR #10); `/sw.js` ya la trae y sus tres migraciones están aplicadas. Reseña como imagen, acabados, La estiba con su pared de premios, talleres y tablón «Se busca». `api/portada.js` responde en producción: sirve una portada de Open Library y rechaza otros hosts.
+- **Anterior: 1.84.0** (2026-11-04, §84), junto con la 1.82 y la 1.83; `/sw.js` ya la trae. La Lonja de dos plantas, con su panel de mercado, sus reglas contra los
   abusos y la pesada de Remedios. Está en la rama `1.84-lonja` (PR #9), que sale de la 1.83. **Su migración
   `20261114120000_hotel_lonja.sql` está aplicada en producción** (4-11-2026).
 - **Antes, 1.83.0** (2026-11-04, §83). La sala de lectura del hotel, con personajes y mascotas, la librería
@@ -77,7 +77,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.86.0 | Reseña como imagen, acabados de muebles, La estiba con pared de premios, talleres y tablón «Se busca» (cerrada, sin publicar; migraciones aplicadas) | §85, §86 |
+| 1.86.0 | Reseña como imagen, acabados de muebles, La estiba con pared de premios, talleres y tablón «Se busca» (publicada) | §85, §86 |
 | 1.79.0 | Misiones del día que dan 5 tickets con el armario completo, cartela del hotel más pequeña y la suite de la semana decorada entre todos en el ático (publicada; migraciones aplicadas) | §79 |
 | 1.78.0 | El encargo del 3-11-2026: arreglos (sobre en el iPhone, sin sellos, correo leído, regalos uno al día hasta «raro»), vestíbulo discreto, sobres con más impacto, tanda 3 con mascota y conjunto «Noche estrellada», paseo hasta la tienda y la limusina, mantener pulsado para mover y la habitación primero con iconos (publicada; migraciones aplicadas) | §78 |
 | 1.77.0 | La fachada del Gran Hotel entera sobre una cartela crema, planta elegida con filete y rombo de latón y el Directorio de las plantas; el armario como modo propio del piso («← Al piso» / «Armario»), Ropa, Aspecto y Compañía con vista previa que se guarda con «Listo», y el dragón posado a tu lado (publicada) | §77 |
@@ -120,7 +120,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Publicar la 1.86** (migraciones ya aplicadas). Después, probar en un móvil real el arrastre de la estiba, los sonidos nuevos y la exportación de la reseña, que Francisco vea las cifras de sellos y precios, y decidir si la tienda dice de qué taller es cada mueble.
+- **Probar la 1.86** en un móvil real el arrastre de la estiba, los sonidos nuevos y la exportación de la reseña, que Francisco vea las cifras de sellos y precios, y decidir si la tienda dice de qué taller es cada mueble.
 - **Probar entre dos cuentas reales y en un iPhone** lo de las 1.82, 1.83 y 1.84, y escuchar los sonidos de la pesada.
 - **Rascacielos**: quiosco descartado por ahora y Lonja cerrada. Lo siguiente, en `docs/qa/gran-hotel.md` §9.6.
 - **Pisos ampliados o de varias plantas para los vecinos**: más adelante, con lo aprendido en la Lonja.
@@ -212,7 +212,7 @@ Formato de cada entrada (la más reciente arriba):
 
 ### 2026-11-04 · cuenta principal · 1.86.0 cerrada
 - Francisco pidió cerrarla con «Sí, ciérrala» tras ver los tres bloques. No hubo 1.85 aparte: la reseña como imagen va en la 1.86 (SPEC §85) y lo demás en §86. La rama `1.85-resena-imagen` pasa a llamarse `1.86-identidad-muebles`.
-- PR #10 abierta. Las tres migraciones se aplicaron con el flujo del SQL Editor (Francisco pulsó «Run»; 42501 al anónimo en las cuatro tablas y las funciones nuevas). Falta «súbelo».
+- PR #10 abierta. Las tres migraciones se aplicaron con el flujo del SQL Editor (Francisco pulsó «Run»; 42501 al anónimo en las cuatro tablas y las funciones nuevas). Publicada con «súbelo»: `/sw.js` trae la 1.86.0.
 
 ### 2026-11-04 · cuenta principal · reseña, acabados, estiba y talleres (en la 1.86.0)
 - Encargo de Francisco, por una captura del TikTok de libros de Enola: **exportar la reseña como imagen**. Hecho en disco, sin commit ni versión: `src/features/reviews/reviewCard.js` (dibujo en lienzo, 1080×1920 y 1080×1350, tres papeles, reparto en carrusel), `ReviewExport.jsx`, `review-export.css`, `api/portada.js` (primera función de Vercel: portadas de Google, que no se pueden usar en un lienzo de otro modo) y el botón en `MyReview`.
