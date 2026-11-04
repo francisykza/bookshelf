@@ -8,8 +8,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 - **Cerrada, sin publicar: 1.81.0** (2026-11-04, §81). El casino abre todos los días, las mesas para dos avisan en todo
   el edificio, los muebles se mueven con menos esfuerzo y ya no está la suite de la semana. Está en la rama
-  `1.81-casino-avisos`. **Su migración `20261111120000_hotel_casino_arreglos.sql` está sin aplicar**: antes de
-  «súbelo», ofrecer el flujo del SQL Editor.
+  `1.81-casino-avisos`, PR #6. **Su migración `20261111120000_hotel_casino_arreglos.sql` ya está aplicada en producción**
+  (4-11-2026). Falta «súbelo».
 - **Versión publicada**: 1.80.0 (2026-11-03, §80). El casino del sótano del Gran Hotel tiene:
   - «Las 21 páginas»: tres manos al día sin apostar, que solo abren el día que lees;
   - la mesa para dos con un amigo, en diferido, con fichas y garbanzos;
@@ -111,8 +111,6 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Migración de la 1.81.0 sin aplicar** (`20261111120000_hotel_casino_arreglos.sql`): Francisco la aplica (o «hazlo tú»
-  con el SQL Editor) antes de publicar.
 - **Tickets sin leer** (1.81): decidir si se deja el camino fichas → sobre del casino → reciclar, ahora que el casino no
   exige lectura.
 - **Reciclar solo lo repetido en los sobres** (idea de Francisco del 3-11-2026, para más adelante): un ajuste en la tienda
@@ -201,7 +199,8 @@ Formato de cada entrada (la más reciente arriba):
 ### 2026-11-04 · cuenta principal · 1.81.0 cerrada
 - Francisco dijo «Cierra la 1.81»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC, y §81
   escrito. Commit `64a6f38` en la rama `1.81-casino-avisos`, subida y PR #6 desde el navegador.
-- **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
+- **Sin publicar**. La migración se aplicó el 4-11-2026 con el SQL Editor: SHA-256 igual al del archivo de git, Francisco
+  pulsó Run («Success. No rows returned») y anon recibe 42501 en las cuatro funciones.
 
 ### 2026-11-04 · cuenta principal · cambios tras probar el casino (en la 1.81.0)
 - Francisco pidió cuatro cambios tras usar la 1.80:
@@ -241,7 +240,8 @@ Formato de cada entrada (la más reciente arriba):
   - versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC;
   - §80 escrito;
   - commit `2c290b9` en la rama `1.80-casino`, subida y PR #5 desde el navegador.
-- **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
+- **Sin publicar**. La migración se aplicó el 4-11-2026 con el SQL Editor: SHA-256 igual al del archivo de git, Francisco
+  pulsó Run («Success. No rows returned») y anon recibe 42501 en las cuatro funciones.
 - Las tres entradas de abajo (bloque 1, mesa y caja) van en ese commit.
 
 ### 2026-11-03 · cuenta principal · casino del sótano: «Las 21 páginas», la mesa para dos y la caja (en la 1.80.0)
