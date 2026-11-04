@@ -200,7 +200,7 @@ Formato de cada entrada (la más reciente arriba):
 
 ### 2026-11-04 · cuenta principal · 1.82.0 cerrada
 - Francisco dijo «ciérrala antes» de seguir con el rascacielos: versión en `src/diag.js`, `package.json`, `public/sw.js` y
-  la cabecera del SPEC, y §82 escrito. Commit en la rama `1.82-casino-garbanzos`, subida y PR desde el navegador.
+  la cabecera del SPEC, y §82 escrito. Commit `28ea034` en la rama `1.82-casino-garbanzos`, subida y PR #7 desde el navegador.
 - **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
 
 ### 2026-11-04 · cuenta principal · garbanzos y avisos al momento (en la 1.82.0)
