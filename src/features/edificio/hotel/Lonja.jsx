@@ -4,16 +4,19 @@
 // mercado, con la soltura del casino pero su propia cara: un toldo con tres faldones, la pizarra de las cuentas y etiquetas de
 // papel de estraza en la pared de ladrillo (clases `lj-`). Remedios, la lonjera, solo dice cosas ciertas y nunca mete prisa.
 // Todo lo decide el servidor (20261114120000_hotel_lonja.sql); aquí solo se elige, y lo que no se puede hacer, se dice.
+import { acabadoOf } from '../acabados';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_AVATAR } from '../actor';
 import { CATALOG, catalogItem, isEspecial, isMistico } from '../catalog';
 import { rarezaOf } from '../economy';
 import { renderActorThumb, renderThumb } from '../render';
-import { aceptarLonja, canjearLonja, cargarLonja, loadInventario, pesarLonja, ponerLonja, retirarLonja, senalarLonja, toldoLonja } from '../service';
+import { aceptarLonja, buscarLonja, canjearLonja, cargarLonja, loadInventario, ponerLonja, recogerTaller, retirarLonja, toldoLonja, zarparEstiba } from '../service';
 import { createShopSfx } from '../shopAudio';
 import { PixelNum } from './cartas21';
 import { LONJA_H, LONJA_W, PUESTOS_POR_PASILLO, REMEDIOS, TOLDOS, TOLDOS_ESPECIALES, renderLonja } from './lonjaArt';
-import { LonjaPesada } from './LonjaPesada';
+import { LonjaEstiba } from './LonjaEstiba';
+import { LonjaTablon } from './LonjaTablon';
+import { tallerDe } from '../talleres';
 import { useCountUp } from './useCountUp';
 
 // El cartel de algo de la escena, arriba y en medio de su recuadro. El resto del objeto se toca por píxeles (`Toque`)
@@ -29,14 +32,20 @@ function Toque({ hit, onToque }) {
   return <div className="gh-lonja__toque" aria-hidden="true" onClick={tocar} />;
 }
 
-const nombre = (id) => catalogItem(id)?.nombre ?? 'Mueble';
+// Una copia con acabado se escribe «mueble@acabado» (1.86)
+const partes = (clave) => String(clave).split('@');
+const daDe = (o) => (o.acabado ? `${o.da}@${o.acabado}` : o.da);
+const nombre = (clave) => {
+  const [id, acabado] = partes(clave);
+  return `${catalogItem(id)?.nombre ?? 'Mueble'}${acabado ? ` ${acabadoOf(acabado)?.nombre ?? ''}` : ''}`;
+};
 const PASO = 5;
 const RAREZAS = ['comun', 'poco-comun', 'raro'];
 const RAREZA_NOMBRE = { comun: 'común', 'poco-comun': 'poco común', raro: 'raro' };
 const COMISION = 0.1;
 const DICHOS = ['Aquí no se regatea: se cambia.', 'Lo que ves en el mostrador es lo que hay.', 'Las sagas, los místicos y las mascotas no pasan por esta lonja.', 'El gato no se cambia. Ya lo han intentado.'];
 const nivel = (r) => RAREZAS.indexOf(r);
-const rarezaDe = (id) => rarezaOf(catalogItem(id));
+const rarezaDe = (clave) => rarezaOf(catalogItem(partes(clave)[0]));
 const vecinas = (r) => RAREZAS.filter((x) => Math.abs(nivel(x) - nivel(r)) <= 1);
 const pedibles = (r) =>
   CATALOG.filter((c) => !c.set && !c.mascota && !isMistico(c) && !isEspecial(c) && vecinas(r).includes(rarezaOf(c))).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
@@ -58,9 +67,10 @@ function agruparPuestos(ofertas) {
   return [...puestos.values()];
 }
 
-function Mueble({ id }) {
-  const src = useMemo(() => renderThumb(id, 0, 44).toDataURL(), [id]);
-  return <img className="gh-lonja__thumb" src={src} alt="" draggable="false" />;
+function Mueble({ id: clave }) {
+  const [id, acabado] = partes(clave);
+  const src = useMemo(() => renderThumb(id, 0, 44, acabado ?? null).toDataURL(), [id, acabado]);
+  return <img className={`gh-lonja__thumb${acabado ? ' is-acabado' : ''}`} src={src} alt="" draggable="false" />;
 }
 
 function Elegir({ ids, valor, onElegir }) {
@@ -75,10 +85,10 @@ function Elegir({ ids, valor, onElegir }) {
   );
 }
 
-function Formulario({ lonja, busy, onPoner, onCancelar }) {
-  const ids = Object.keys(lonja.libres).sort((a, b) => nombre(a).localeCompare(nombre(b), 'es'));
+function Formulario({ lonja, busy, inicial = null, onPoner, onCancelar }) {
+  const ids = [...lonja.libresAcabado.map((x) => `${x.mueble}@${x.acabado}`), ...Object.keys(lonja.libres).sort((a, b) => nombre(a).localeCompare(nombre(b), 'es'))];
   const topeCobro = lonja.cobro.hecho >= lonja.cobro.tope;
-  const [doy, setDoy] = useState(ids[0] ?? null);
+  const [doy, setDoy] = useState(ids.includes(inicial) ? inicial : (ids[0] ?? null));
   const [modo, setModo] = useState(topeCobro ? 'mueble' : 'tickets');
   const [pido, setPido] = useState('');
   const [clase, setClase] = useState(null);
@@ -94,10 +104,10 @@ function Formulario({ lonja, busy, onPoner, onCancelar }) {
     );
   }
   const suya = rarezaDe(doy);
-  const [minimo, maximo] = lonja.horquilla[suya] ?? [5, 20];
+  const [minimo, maximo] = (partes(doy)[1] ? lonja.horquillaAcabado : lonja.horquilla)[suya] ?? [5, 20];
   const valor = Math.min(maximo, Math.max(minimo, precio ?? minimo));
   const claseVale = clase && vecinas(suya).includes(clase) ? clase : suya;
-  const pidoVale = pido && pido !== doy && vecinas(suya).includes(rarezaDe(pido)) ? pido : '';
+  const pidoVale = pido && pido !== partes(doy)[0] && vecinas(suya).includes(rarezaDe(pido)) ? pido : '';
   const recibes = lonja.sinComision > 0 ? valor : valor - Math.ceil(valor * COMISION);
   const listo = modo !== 'mueble' || pidoVale;
   return (
@@ -166,7 +176,7 @@ function Formulario({ lonja, busy, onPoner, onCancelar }) {
           type="button"
           className="lj-btn is-sello"
           disabled={busy || !listo}
-          onClick={() => onPoner(doy, modo === 'mueble' ? pidoVale : null, modo === 'tickets' ? valor : null, modo === 'clase' ? claseVale : null)}
+          onClick={() => onPoner(partes(doy)[0], modo === 'mueble' ? pidoVale : null, modo === 'tickets' ? valor : null, modo === 'clase' ? claseVale : null, partes(doy)[1] ?? null)}
         >
           Poner en el puesto
         </button>
@@ -208,6 +218,7 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
   const [soloPuedo, setSoloPuedo] = useState(false);
   const [poniendo, setPoniendo] = useState(false);
   const [libro, setLibro] = useState(false);
+  const [ofrecer, setOfrecer] = useState(null);
   const [seguro, setSeguro] = useState(null);
   const [pago, setPago] = useState(null);
   const [dicho, setDicho] = useState(-1);
@@ -263,12 +274,15 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
       setPago(null);
       sfx.play(typeof sonido === 'function' ? sonido(nueva) : sonido);
       loadInventario().then(onInventory, () => {});
+      setBusy(false);
+      return true;
     } catch (e) {
       setMsg(e.message);
       setSeguro(null);
       cargarLonja().then(setLonja, () => {});
     }
     setBusy(false);
+    return false;
   };
 
   const pagables = (o) => Object.keys(lonja.libres).filter((id) => rarezaDe(id) === o.busca_rareza);
@@ -312,8 +326,8 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
   };
   const tocar = (que) => {
     if (que === 'remedios') {
-      if (modo === 'pesada') setDicho((d) => d + 1);
-      cambiar('pesada');
+      if (modo === 'estiba') setDicho((d) => d + 1);
+      cambiar('estiba');
     } else if (que === 'puesto') cambiar('mio');
     else if (que === 'libro') {
       cambiar('mio');
@@ -324,7 +338,7 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
       setElegido(dueno === elegido ? null : dueno);
     }
   };
-  const encendido = modo === 'pesada' ? 'remedios' : modo === 'mio' ? 'puesto' : indiceElegido >= 0 ? `p${indiceElegido}` : null;
+  const encendido = modo === 'estiba' ? 'remedios' : modo === 'mio' ? 'puesto' : indiceElegido >= 0 ? `p${indiceElegido}` : null;
   const frase = () => {
     if (dicho >= 0) return DICHOS[dicho % DICHOS.length];
     if (lonja.nueva) return 'Bienvenida la gente nueva: los tres primeros días, a mirar.';
@@ -333,7 +347,14 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
     return todos.length === 1 ? 'Hoy hay un puesto abierto. Mirar es gratis.' : `Hoy hay ${todos.length} puestos abiertos. Mirar es gratis.`;
   };
   const huecos = lonja ? Array.from({ length: lonja.topeOfertas }, (_, k) => lonja.mias[k] ?? null) : [];
-  const pesadaPendiente = lonja && !lonja.juego.acabada;
+  const estibaPendiente = lonja && !lonja.estiba.hecha;
+  const placaPendiente = lonja?.talleres.some((t) => !t.recogido && !t.faltan.length);
+  /** Por qué te interesa esa oferta: lo marcaste en el tablón o te falta para un taller. */
+  const teInteresa = (id) => {
+    if (lonja.buscas.includes(id)) return 'Lo buscas';
+    const taller = tallerDe(id);
+    return taller && lonja.talleres.find((t) => t.id === taller.id)?.faltan.includes(id) ? `Te falta · ${taller.nombre}` : null;
+  };
 
   return (
     <section className="gh-casino gh-lonja" ref={root} aria-labelledby="gh-lonja-title" data-escape-local="open">
@@ -354,7 +375,7 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
             <span className="gh-lonja__cartel">{p.alias}</span>
           </button>
         ))}
-        <button type="button" className="gh-lonja__zona" style={zona(room.spots.remedios)} aria-label="Ir a la pesada de Remedios" onClick={() => tocar('remedios')}>
+        <button type="button" className="gh-lonja__zona" style={zona(room.spots.remedios)} aria-label="Ir a la estiba" onClick={() => tocar('remedios')}>
           <span className="gh-lonja__cartel">Remedios</span>
         </button>
       </div>
@@ -373,9 +394,13 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
               <button type="button" aria-pressed={modo === 'mio'} onClick={() => cambiar('mio')}>
                 <span>Tu puesto</span>
               </button>
-              <button type="button" aria-pressed={modo === 'pesada'} onClick={() => cambiar('pesada')}>
-                <span>La pesada</span>
-                {pesadaPendiente && modo !== 'pesada' && <i className="lj-toldo__aviso" role="img" aria-label="Te quedan encargos hoy" />}
+              <button type="button" aria-pressed={modo === 'estiba'} onClick={() => cambiar('estiba')}>
+                <span>La estiba</span>
+                {estibaPendiente && modo !== 'estiba' && <i className="lj-toldo__aviso" role="img" aria-label="Hoy tienes un barco por cargar" />}
+              </button>
+              <button type="button" aria-pressed={modo === 'tablon'} onClick={() => cambiar('tablon')}>
+                <span>El tablón</span>
+                {placaPendiente && modo !== 'tablon' && <i className="lj-toldo__aviso" role="img" aria-label="Tienes una placa por recoger" />}
               </button>
             </div>
 
@@ -444,17 +469,18 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
                       return (
                         <li key={o.id} className={abierta ? 'is-abierta' : ''}>
                           <div className="gh-lonja__fila">
-                            <Mueble id={o.da} />
+                            <Mueble id={daDe(o)} />
                             <p className="gh-lonja__oferta">
-                              <b>{nombre(o.da)}</b>
+                              <b>{nombre(daDe(o))}</b>
                               <span>Por {busca(o)}</span>
                               <i>{o.alias}</i>
+                              {teInteresa(o.da) && <em className="gh-lonja__interes">{teInteresa(o.da)}</em>}
                             </p>
                             {motivo ? (
                               <span className="gh-lonja__pega">{motivo}</span>
                             ) : (
                               !abierta && (
-                                <button type="button" className="lj-btn is-chico" aria-label={`Cambiar: ${nombre(o.da)} de ${o.alias}`} onClick={() => setSeguro(o.id)}>
+                                <button type="button" className="lj-btn is-chico" aria-label={`Cambiar: ${nombre(daDe(o))} de ${o.alias}`} onClick={() => setSeguro(o.id)}>
                                   Cambiar
                                 </button>
                               )
@@ -469,14 +495,14 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
                                 </>
                               )}
                               <p className="gh-lonja__txt">
-                                Das {o.busca_rareza ? (pago ? nombre(pago) : 'un mueble') : busca(o)} y te llevas {nombre(o.da)}. No se puede deshacer, y no podrás ofrecerlo en 3 días.
+                                Das {o.busca_rareza ? (pago ? nombre(pago) : 'un mueble') : busca(o)} y te llevas {nombre(daDe(o))}. No se puede deshacer, y no podrás ofrecerlo en 3 días.
                               </p>
                               <div className="lj-acciones">
                                 <button
                                   type="button"
                                   className="lj-btn is-sello is-chico"
                                   disabled={busy || (o.busca_rareza && !pago)}
-                                  onClick={() => jugar(() => aceptarLonja(o.id, pago), `Trato hecho: ${nombre(o.da)} ya es tuyo.`, 'chips')}
+                                  onClick={() => jugar(() => aceptarLonja(o.id, pago), `Trato hecho: ${nombre(daDe(o))} ya es tuyo.`, 'chips')}
                                 >
                                   Confirmar
                                 </button>
@@ -501,13 +527,13 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
                   {huecos.map((o, k) =>
                     o ? (
                       <li key={o.id}>
-                        <Mueble id={o.da} />
+                        <Mueble id={daDe(o)} />
                         <p className="gh-lonja__oferta">
-                          <b>{nombre(o.da)}</b>
+                          <b>{nombre(daDe(o))}</b>
                           <span>Por {busca(o)}</span>
                           <i>Le quedan {diasQuedan(o)} días</i>
                         </p>
-                        <button type="button" className="lj-link" disabled={busy} aria-label={`Retirar ${nombre(o.da)}`} onClick={() => jugar(() => retirarLonja(o.id), `${nombre(o.da)} vuelve a tu inventario.`)}>
+                        <button type="button" className="lj-link" disabled={busy} aria-label={`Retirar ${nombre(daDe(o))}`} onClick={() => jugar(() => retirarLonja(o.id), `${nombre(daDe(o))} vuelve a tu inventario.`)}>
                           Retirar
                         </button>
                       </li>
@@ -520,7 +546,7 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
                     ),
                   )}
                 </ol>
-                {poniendo && <Formulario lonja={lonja} busy={busy} onCancelar={() => setPoniendo(false)} onPoner={(doy, pido, precio, clase) => jugar(() => ponerLonja(doy, pido, precio, clase), 'Ya está en tu puesto.')} />}
+                {poniendo && <Formulario key={ofrecer ?? 'nuevo'} lonja={lonja} busy={busy} inicial={ofrecer} onCancelar={() => setPoniendo(false)} onPoner={(doy, pido, precio, clase, acabado) => jugar(() => ponerLonja(doy, pido, precio, clase, acabado), 'Ya está en tu puesto.')} />}
                 {lonja.retenidas > 0 && <p className="lj-nota">{lonja.retenidas === 1 ? 'Una copia recién llegada' : `${lonja.retenidas} copias recién llegadas`}: podrás ofrecerlas pasados tres días.</p>}
                 <details className="lj-plegable" open={libro} onToggle={(e) => setLibro(e.currentTarget.open)}>
                   <summary>
@@ -530,7 +556,7 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
                     <ul className="gh-lonja__reglas" aria-label="Cambios recientes de tu puesto">
                       {lonja.cerradas.map((o) => (
                         <li key={o.id}>
-                          {nombre(o.da)} por {o.pagado ? nombre(o.pagado) : `${o.neto ?? o.busca_tickets} tickets`}.
+                          {nombre(daDe(o))} por {o.pagado ? nombre(o.pagado) : `${o.neto ?? o.busca_tickets} tickets`}.
                         </li>
                       ))}
                     </ul>
@@ -542,15 +568,29 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
               </>
             )}
 
-            {modo === 'pesada' && (
-              <LonjaPesada
+            {modo === 'tablon' && (
+              <LonjaTablon
+                lonja={lonja}
+                busy={busy}
+                cara={retrato()}
+                onBuscar={(id, quiere) => jugar(() => buscarLonja(id, quiere), '', 'tap')}
+                onRecoger={(id) => jugar(() => recogerTaller(id), 'Placa recogida: la tienes en tu inventario para colgarla en tu piso.', 'stamp')}
+                onOfrecer={(id) => {
+                  setOfrecer(id);
+                  cambiar('mio');
+                  setPoniendo(true);
+                }}
+              />
+            )}
+
+            {modo === 'estiba' && (
+              <LonjaEstiba
                 lonja={lonja}
                 busy={busy}
                 cara={retrato()}
                 sfx={sfx}
-                onPesar={(izq, der) => jugar(() => pesarLonja(izq, der), '', null)}
-                onSenalar={(caja) => jugar(() => senalarLonja(caja), '', (l) => (l.juego.encargos.at(-1)?.senalada === l.juego.encargos.at(-1)?.caja ? 'stamp' : 'flip'))}
-                onCanjear={(que, hecho) => jugar(() => canjearLonja(que), hecho, 'chips')}
+                onZarpar={(carga) => jugar(() => zarparEstiba(carga), '', null)}
+                onCanjear={(que) => jugar(() => canjearLonja(que), '', 'chips')}
                 onToldo={(cual) => jugar(() => toldoLonja(cual), 'Toldo cambiado.')}
               />
             )}

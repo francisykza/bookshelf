@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.84.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.86.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5120,3 +5120,55 @@ pesa distinto. La guarda el servidor hasta resolver.
 - PGlite: `lonja.rls.test.js` (30). e2e en emulación: `v184-lonja` en 320, 390, escritorio y WebKit 390, según la prueba, con
   movimiento reducido; con las animaciones reales, solo una pasada a 390 en Chromium. **Sin probar entre dos cuentas reales ni en
   un iPhone**, y los sonidos nuevos no se han escuchado.
+
+## 85. La reseña como imagen (en la 1.86.0)
+
+Encargo de Francisco del 4-11-2026, para enseñar reseñas en un TikTok de libros. Se cierra junto con la 1.86: no hubo una 1.85 aparte.
+
+- Desde la ficha del libro, «Crear imagen de la reseña» la dibuja en un lienzo (`src/features/reviews/reviewCard.js`), sin pasar por una captura de pantalla.
+- Dos formatos, 1080 × 1920 y 1080 × 1350, y tres papeles. Una reseña larga se reparte en varias imágenes, sin dejar una casi vacía.
+- Se comparte con la hoja del sistema si el dispositivo la tiene; si no, se descarga. La pantalla está en `ReviewExport.jsx`.
+- La portada llega por `api/portada.js`, una función de Vercel que solo sirve imágenes de los orígenes permitidos: sin ella, el lienzo quedaría bloqueado por CORS y no se podría exportar.
+
+## 86. La identidad de los muebles y La estiba (1.86.0)
+
+Respuesta a dos pegas de Francisco del 4-11-2026: nadie compraría en la Lonja un sofá que la tienda vende igual, y la pesada de Remedios no resultaba intuitiva ni dejaba ver sus premios.
+**Tres migraciones nuevas, las aplica Francisco y en este orden**: `20261115120000_edificio_acabados.sql`, `20261116120000_hotel_estiba.sql` y `20261117120000_edificio_talleres.sql`. Hay que aplicarlas antes de publicar.
+
+### 86.1 Acabados
+
+- Cuatro acabados (`acabados.js`): Salitre, Sol de tarde, Lacado de puerto y Nácar, con pesos 45, 30, 20 y 5. Cambian los colores y añaden destellos discretos sobre el mismo dibujo.
+- Solo comunes, poco comunes y raros; nunca místicos, mascotas, sagas ni premios. En los sobres, 1 de cada 20 copias: primero se sortea el mueble, como siempre, y después el acabado. No cambian rarezas ni pity, y la probabilidad se ve en el sobre.
+- El sobre que trae uno se abre con otro brillo y su carta se distingue; el que no lo trae, no. La tienda vende siempre liso y lo ya poseído sigue liso.
+- La copia conserva el acabado al colocarla, regalarla o cambiarla. En la Lonja tiene una horquilla de precio más alta (`piso_acabados`, `piso_libres`).
+
+### 86.2 La estiba
+
+- Sustituye a la pesada. Una bodega de 8 × 5 al día, la misma para todo el mundo, partida por el servidor en bultos de modo que siempre existe una carga perfecta (`piso_estiba_bodega`).
+- Se juega en una escena dibujada (`hotel/estibaArt.js`): arrastrar del muelle, o tocar el bulto y el sitio. Tocar el bulto en la mano lo gira. Con teclado: flechas, R, Intro y Escape. Lo colocado se recuerda ese día en el dispositivo.
+- La carga y lo que da cada nivel se ven mientras se coloca: menos de la mitad, 1 sello; media bodega, 2; llena (80 %), 4; perfecta, 7. Solo se zarpa una vez al día y, si queda hueco, se pregunta antes.
+- `piso_estiba_zarpar` comprueba cada bulto. Los sellos no caducan y nunca son tickets. Con movimiento reducido, el resultado sale directo.
+- La pesada se cierra sin borrar datos: se revocan sus funciones y `piso_lonja()` sigue devolviendo `juego` para la versión anterior.
+
+### 86.3 La pared de premios
+
+Siempre a la vista bajo el juego, nunca plegada (`hotel/LonjaPared.jsx`), y sin ofertas ni cuentas atrás.
+
+| Premio | Sellos |
+| --- | --- |
+| Venta sin comisión / un hueco más / toldo | 10 / 14 / 18 |
+| Gorro de estibador / mahón de faena / jersey de rayas | 24 / 28 / 36 |
+| Acabado a elección sobre una copia lisa: Salitre / Sol de tarde / Lacado / Nácar | 40 / 50 / 70 / 100 |
+| Gaviota del puerto (legendaria, te acompaña, no sale en sobres) | 120 |
+
+La copia para el acabado tiene que poder venderse: ni colocada ni recién llegada.
+
+### 86.4 Talleres y «Se busca»
+
+- Seis talleres inventados (`talleres.js`, igual que `piso_talleres`) reúnen todos los muebles que se pueden cambiar en la Lonja. Tener una copia de todo lo de un taller da su placa para la pared y 30 sellos, una sola vez, aunque luego se venda algo. Los raros no están en la tienda, así que el Vivero y la Almoneda piden sobres o Lonja.
+- El tablón es el cuarto faldón del toldo (`hotel/LonjaTablon.jsx`). Cada cual marca hasta tres muebles, sin texto libre; la marca caduca a los 30 días y los bloqueos se respetan. Se ve quién busca qué y, con copia libre, «Ofrecer» abre tu puesto con ese mueble.
+- Las ofertas de los puestos llevan «Lo buscas» o «Te falta · taller».
+
+### 86.5 Sin verificar
+
+Arrastrar con el dedo en un móvil real, los sonidos nuevos, regalar y poner en la Lonja una copia con acabado desde la pantalla (el servidor sí está probado), colgar una placa, vestir la ropa nueva en el armario y `api/portada.js` desplegada. La tienda aún no dice de qué taller es cada mueble, y el buzón no dice el acabado de un regalo.

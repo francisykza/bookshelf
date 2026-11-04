@@ -16,7 +16,8 @@ import { createSfx } from '../minigames/libreria-puerto/audio';
 import { DIARIA_TICKETS } from './dailyMissions';
 import { CATALOG, CATEGORIES, COMPANEROS, PAREDES, SETS, SUELOS, catalogItem } from './catalog';
 import { createCompanion, misticoThumb } from './misticos';
-import { freeCopies, ownedCopies } from './inventory';
+import { acabadoOf } from './acabados';
+import { acabadosDe, freeCopies, ownedCopies, plainCopies } from './inventory';
 import { houseSwatch, pixelIcon, pixelVars } from './pixelUi';
 import { COLORES_PELO, COMPLEMENTOS, CONJUNTO_ESTRELLAS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, prendaOrigen, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
 import { ACTOR_ID, ART_H, ART_W, backdropImage, createRoomRenderer, renderActorThumb, renderThumb } from './render';
@@ -84,7 +85,7 @@ const nameOf = (item) => catalogItem(item.id).nombre;
  * `placeId` (1.76): un mueble recién sacado de un sobre; el piso se abre decorando con él ya puesto y elegido, para
  * arrastrarlo a su sitio. «Guardar» lo devuelve al inventario y el piso queda como estaba.
  */
-export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null, companion = null, onCompanionChange = () => {}, onDressing = () => {}, placeId = null } = {}) {
+export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, placeAcabado = null, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null, companion = null, onCompanionChange = () => {}, onDressing = () => {}, placeId = null } = {}) {
   const sfx = createSfx({ muted });
   const renderer = createRoomRenderer();
   let room = initial;
@@ -242,6 +243,23 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   container.append(root);
 
   const thumbs = new Map();
+  /** La ficha de una copia con acabado (1.86): se distingue de la lisa de un vistazo. */
+  function shelfTile(cat, acabado) {
+    const key = `${cat.id}@${acabado}`;
+    if (!thumbs.has(key)) thumbs.set(key, renderThumb(cat.id, 0, 44, acabado).toDataURL());
+    const b = el('button', { type: 'button', class: 'ep-item is-acabado', 'data-id': cat.id, 'data-acabado': acabado, draggable: 'false' }, el('img', { src: thumbs.get(key), alt: '', width: 44, height: 44, draggable: 'false' }), el('span', { text: acabadoOf(acabado).nombre }), el('b', { class: 'ep-item__count', 'aria-hidden': 'true' }));
+    b.addEventListener('click', (e) => {
+      if (b.dataset.dragged) {
+        delete b.dataset.dragged;
+        e.preventDefault();
+        return;
+      }
+      add(cat.id, acabado);
+    });
+    b.addEventListener('pointerdown', (e) => onShelfDown(e, cat.id, b, acabado));
+    return b;
+  }
+
   function fillGrid() {
     const isHouse = category === HOUSE;
     const isList = category === INROOM;
@@ -258,6 +276,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     for (const cat of CATALOG.filter((c) => c.cat === category && (!set || c.set === set.id))) {
       // Lo que no tienes no está en tu balda (llegará con la tienda)
       if (ownedCopies(inv, cat.id) === 0 || cat.compania) continue;
+      for (const acabado of Object.keys(acabadosDe(inv, cat.id))) grid.append(shelfTile(cat, acabado));
+      if (plainCopies(inv, cat.id) <= 0) continue;
       if (!thumbs.has(cat.id)) thumbs.set(cat.id, renderThumb(cat.id).toDataURL());
       const b = el('button', { type: 'button', class: 'ep-item', 'aria-label': `Añadir ${cat.nombre.toLowerCase()}`, 'data-id': cat.id, draggable: 'false' }, el('img', { src: thumbs.get(cat.id), alt: '', width: 44, height: 44, draggable: 'false' }), el('span', { text: cat.nombre }), el('b', { class: 'ep-item__count', 'aria-hidden': 'true' }));
       b.addEventListener('click', (e) => {
@@ -281,8 +301,9 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   function refreshCounts() {
     for (const b of grid.querySelectorAll('.ep-item[data-id]')) {
       const id = b.dataset.id;
-      const free = freeCopies(inv, room, id);
-      const name = catalogItem(id).nombre.toLowerCase();
+      const acabado = b.dataset.acabado ?? null;
+      const free = freeCopies(inv, room, id, acabado);
+      const name = `${catalogItem(id).nombre.toLowerCase()}${acabado ? ` ${acabadoOf(acabado).nombre}` : ''}`;
       const count = b.querySelector('.ep-item__count');
       count.hidden = free === Infinity;
       count.textContent = free === Infinity ? '' : `×${free}`;
@@ -835,7 +856,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   // 1.78: también se mueven solas las mascotas y el polvo de estrellas de la capa (1.80: y los muebles vivos de la caja
   // del casino y los destellos del vestido de lentejuelas)
-  const hasPlacedMisticos = () => room.items.some((i) => catalogItem(i.id)?.rareza === 'mistico' || catalogItem(i.id)?.mascota || catalogItem(i.id)?.vivo);
+  const hasPlacedMisticos = () => room.items.some((i) => i.acabado || catalogItem(i.id)?.rareza === 'mistico' || catalogItem(i.id)?.mascota || catalogItem(i.id)?.vivo);
   const starry = () => Boolean(me && look?.complemento === 'capa');
   const sequined = () => Boolean(me && look?.jersey === 16);
   const alive = () => !destroyed && !reducedMotion() && ((pal && me) || hasPlacedMisticos() || starry() || sequined());
@@ -867,6 +888,11 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     const out = [];
     for (const it of room.items) {
       const cat = catalogItem(it.id);
+      // Los destellos de un acabado, sobre el mueble
+      if (it.acabado && !skip?.has(it.uid) && cat?.capa !== 'pared') {
+        const rc = rectOf(it);
+        out.push({ id: 'chispas-acabado', x: (rc.x0 + rc.x1) / 2, y: (rc.y0 + rc.y1) / 2, z: heightOf(room, it), acabado: it.acabado, ancho: Math.max(rc.x1 - rc.x0, rc.y1 - rc.y0) });
+      }
       if (skip?.has(it.uid) || (cat?.rareza !== 'mistico' && !cat?.mascota && !cat?.vivo)) continue;
       const rc = rectOf(it);
       // La mascota, sobre su cojín (más bajo que la peana); mira hacia donde mira el mueble. Lo vivo de la caja, desde
@@ -943,9 +969,9 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     else delete root.dataset.escapeLocal;
     if (item) {
       const cat = catalogItem(item.id);
-      toolName.textContent = `${cat.nombre} · ${TONE_NAMES[item.tono]}`;
+      toolName.textContent = `${cat.nombre} · ${item.acabado ? acabadoOf(item.acabado).nombre : TONE_NAMES[item.tono]}`;
       rotateBtn.disabled = cat.capa === 'pared';
-      colorBtn.disabled = cat.tonos.length < 2;
+      colorBtn.disabled = cat.tonos.length < 2 || Boolean(item.acabado);
     }
     // Las muestras enseñan cómo quedaría tu piso: cada pared con tu suelo, y cada suelo con tu pared
     const wallOf = (id) => PAREDES.find((p) => p.id === id)?.color ?? PAREDES[0].color;
@@ -967,8 +993,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
         const text = `${nameOf(i)}${i.uid === selected ? ' (elegido)' : ''}`;
         if (!editable) return el('li', { text });
         // Al decorar, cada cosa de pie en la balda con su dibujo (y su color), como en el catálogo
-        const key = i.id + ':' + i.tono;
-        if (!thumbs.has(key)) thumbs.set(key, renderThumb(i.id, i.tono).toDataURL());
+        const key = `${i.id}:${i.tono}:${i.acabado ?? ''}`;
+        if (!thumbs.has(key)) thumbs.set(key, renderThumb(i.id, i.tono, 44, i.acabado ?? null).toDataURL());
         const b = el('button', { type: 'button', class: 'ep-item ep-inroom__item', 'aria-pressed': String(i.uid === selected), 'aria-label': text }, el('img', { src: thumbs.get(key), alt: '', width: 44, height: 44, draggable: 'false' }), el('span', { text: nameOf(i) }));
         b.addEventListener('click', () => {
           if (!decorating) setDecorating(true);
@@ -1015,9 +1041,9 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     say(`No te quedan más: ${catalogItem(id).nombre.toLowerCase()} ya está en tu piso. Guárdalo para ponerlo en otro sitio.`);
   }
 
-  function add(id) {
-    if (freeCopies(inv, room, id) <= 0) return noCopies(id);
-    const res = addItem(room, id, { near: { x: ROOM.w / 2, y: ROOM.d / 2 } });
+  function add(id, acabado = null) {
+    if (freeCopies(inv, room, id, acabado) <= 0) return noCopies(id);
+    const res = addItem(room, id, { near: { x: ROOM.w / 2, y: ROOM.d / 2 }, acabado });
     if (res.error) return fail(addError(id, res.error));
     sfx.play('place');
     selected = res.item.uid;
@@ -1246,11 +1272,11 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   // ── De la balda al piso ──
   // En la balda, deslizar de lado la recorre; tirar hacia arriba (hacia la habitación) saca el mueble.
-  function onShelfDown(e, id, btn) {
+  function onShelfDown(e, id, btn, acabado = null) {
     if (e.button !== undefined && e.button !== 0) return;
     // Sin copias libres no se saca (el clic lo explica)
-    if (freeCopies(inv, room, id) <= 0) return;
-    fresh = { id, btn, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false, base: null, preview: null, over: false };
+    if (freeCopies(inv, room, id, acabado) <= 0) return;
+    fresh = { id, acabado, btn, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false, base: null, preview: null, over: false };
     window.addEventListener('pointermove', onShelfMove);
     window.addEventListener('pointerup', onShelfUp);
     window.addEventListener('pointercancel', onShelfCancel);
@@ -1264,7 +1290,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       if (Math.hypot(dx, dy) < DRAG_PX) return;
       // De lado es recorrer la balda (lo hace el navegador): no es un arrastre
       if (Math.abs(dx) > Math.abs(dy) * 1.2) return endShelf();
-      const res = addItem(room, fresh.id, { near: { x: ROOM.w / 2, y: ROOM.d / 2 } });
+      const res = addItem(room, fresh.id, { near: { x: ROOM.w / 2, y: ROOM.d / 2 }, acabado: fresh.acabado });
       if (res.error) {
         fail(addError(fresh.id, res.error));
         return endShelf();
@@ -1279,7 +1305,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       fresh.base = res;
       fresh.btn.dataset.dragged = '1';
       fresh.btn.releasePointerCapture?.(e.pointerId);
-      ghost.src = thumbs.get(fresh.id);
+      ghost.src = thumbs.get(fresh.acabado ? `${fresh.id}@${fresh.acabado}` : fresh.id);
       ghost.hidden = false;
       root.classList.add('is-dragging');
       sfx.play('lift');
@@ -1481,7 +1507,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   if (editable && placeId && catalogItem(placeId)) {
     if (!decorating) setDecorating(true);
     const before = room;
-    add(placeId);
+    add(placeId, placeAcabado);
     if (room !== before) say(`Ya está en tu piso: arrastra ${catalogItem(placeId).nombre.toLowerCase()} a su sitio. «Guardar» devuelve el mueble a tu inventario.`);
   }
   scheduleWander();

@@ -1,5 +1,5 @@
-// 1.84 · La Lonja: lo ofrecido queda apartado, el cambio es de una vez y no se puede abusar de la economía; y la pesada de
-// Remedios, que da sellos y nunca tickets. Postgres real (PGlite) con todas las migraciones.
+// 1.84 · La Lonja: lo ofrecido queda apartado, el cambio es de una vez y no se puede abusar de la economía; y el canje de
+// sellos, que nunca da tickets (la estiba, en estiba.rls.test.js). Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
 import { CATALOG } from '../catalog';
@@ -13,8 +13,6 @@ const lonja = (u) => call(u, 'select piso_lonja()');
 const poner = (u, doy, pido, precio, clase = null) => call(u, 'select piso_lonja_poner($1, $2, $3, $4)', [doy, pido, precio, clase]);
 const retirar = (u, id) => call(u, 'select piso_lonja_retirar($1)', [id]);
 const aceptar = (u, id, pago = null) => call(u, 'select piso_lonja_aceptar($1, $2)', [id, pago]);
-const pesar = (u, izq, der) => call(u, 'select piso_lonja_pesar($1::integer[], $2::integer[])', [izq, der]);
-const senalar = (u, caja) => call(u, 'select piso_lonja_senalar($1)', [caja]);
 const canjear = (u, que) => call(u, 'select piso_lonja_canjear($1)', [que]);
 const copias = (u, m) => db.query('select copias from piso_inventario where user_id = $1 and mueble = $2', [u, m]).then((r) => r.rows[0]?.copias ?? 0);
 const tickets = (u) => db.query('select tickets from piso_cuentas where user_id = $1', [u]).then((r) => r.rows[0].tickets);
@@ -41,7 +39,6 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await db.query('delete from piso_lonja_ofertas');
-  await db.query('delete from piso_lonja_juego');
   await db.query("update piso_lonja_cuenta set sellos = 0, toldo = null, toldos = '{}', sin_comision = 0, hueco_hasta = null");
   await db.query('update piso_cuentas set tickets = 100');
   for (const u of [A, B, C, D, E, F]) {
@@ -276,76 +273,7 @@ describe('aceptar', () => {
   });
 });
 
-describe('la pesada de Remedios', () => {
-  const caja = (u) => db.query('select caja, pesa_mas from piso_lonja_juego where user_id = $1 and dia = current_date', [u]).then((r) => r.rows[0]);
-  // Resuelve el encargo en curso con `veces` pesadas; `bien` dice si señala la caja buena
-  const encargo = async (u, veces = 1, bien = true) => {
-    const { juego } = await lonja(u);
-    const { caja: buena } = await caja(u);
-    for (let i = 0; i < veces; i += 1) await pesar(u, [1], [2]);
-    return senalar(u, bien ? buena : (buena % juego.cajas) + 1);
-  };
-
-  it('la caja no sale del servidor hasta resolver, y la balanza dice la verdad', async () => {
-    const l = await lonja(A);
-    expect([l.juego.ronda, l.juego.cajas, l.juego.par, l.juego.tope]).toEqual([1, 6, 2, 3]);
-    expect(JSON.stringify(l.juego)).not.toMatch(/"caja":/);
-    const { caja: buena, pesa_mas: pesaMas } = await caja(A);
-    expect(buena).toBeLessThanOrEqual(6);
-    const otras = [1, 2, 3, 4, 5, 6].filter((n) => n !== buena);
-    const j = (await pesar(A, [buena], [otras[0]])).juego;
-    expect(j.pesaMas).toBe(pesaMas);
-    expect(j.pesadas[0].baja).toBe(pesaMas ? 'izq' : 'der');
-    expect((await pesar(A, [otras[1]], [otras[2]])).juego.pesadas[1].baja).toBe('igual');
-  });
-
-  it('tres encargos a la primera dan 6 sellos, sin tickets y una vez al día', async () => {
-    const antes = await tickets(A);
-    let l = await encargo(A);
-    expect([l.sellos, l.juego.ronda, l.juego.cajas, l.juego.acabada]).toEqual([1, 2, 9, false]);
-    expect(l.juego.pesadas).toEqual([]);
-    expect(l.juego.encargos[0]).toMatchObject({ ronda: 1, sellos: 1 });
-    l = await encargo(A);
-    expect([l.sellos, l.juego.ronda, l.juego.cajas, l.juego.par]).toEqual([3, 3, 8, 3]);
-    expect(l.juego.pesaMas).toBeNull();
-    l = await encargo(A);
-    expect([l.sellos, l.juego.sellos, l.juego.acabada]).toEqual([6, 6, true]);
-    expect(l.juego.encargos.map((e) => e.sellos)).toEqual([1, 2, 3]);
-    expect(await tickets(A)).toBe(antes);
-    expect(await rejects(senalar(A, 1))).toMatch(/mañana/);
-    expect(await rejects(pesar(A, [1], [2]))).toMatch(/mañana/);
-  });
-
-  it('con una pesada de más vale uno menos, y al menos uno', async () => {
-    expect((await encargo(A, 3)).sellos).toBe(1);
-    expect((await encargo(A, 3)).sellos).toBe(2);
-    expect((await encargo(A, 4)).sellos).toBe(4);
-  });
-
-  it('fallar acaba el día y no quita nada; hay que pesar antes', async () => {
-    await lonja(A);
-    expect(await rejects(senalar(A, 1))).toMatch(/Pesa al menos/);
-    await encargo(A);
-    const l = await encargo(A, 1, false);
-    expect([l.sellos, l.juego.acabada, l.juego.encargos[1].sellos]).toEqual([1, true, 0]);
-    expect(await rejects(pesar(A, [1], [2]))).toMatch(/mañana/);
-  });
-
-  it('quien falla el primero se lleva un sello por jugar', async () => {
-    expect((await encargo(A, 1, false)).sellos).toBe(1);
-  });
-
-  it('solo se pesa con cajas válidas y hasta una vez más de las justas', async () => {
-    await lonja(A);
-    expect(await rejects(pesar(A, [1, 2], [3]))).toMatch(/mismo número/);
-    expect(await rejects(pesar(A, [1], [1]))).toMatch(/mismo número/);
-    expect(await rejects(pesar(A, [1], [7]))).toMatch(/mismo número/);
-    expect(await rejects(senalar(A, 7))).toMatch(/Pesa al menos/);
-    for (let i = 0; i < 3; i += 1) await pesar(A, [1], [2]);
-    expect(await rejects(pesar(A, [1], [2]))).toMatch(/no quedan pesadas/);
-    expect(await rejects(senalar(A, 7))).toMatch(/no está en la mesa/);
-  });
-
+describe('el canje de la Lonja', () => {
   it('los sellos solo canjean toldos, ventas sin comisión y huecos, sin tickets', async () => {
     await db.query('update piso_lonja_cuenta set sellos = 40 where user_id = $1', [A]);
     const antes = await tickets(A);
@@ -367,7 +295,7 @@ it('las tablas no se tocan directamente y el anónimo no llama a nada', async ()
   for (const t of ['piso_lonja_ofertas', 'piso_lonja_cuenta', 'piso_lonja_juego']) {
     expect(await rejects(as(db, A, (q) => q(`select * from ${t}`)))).toMatch(/permission denied/);
   }
-  for (const f of ['piso_lonja()', 'piso_lonja_poner(text, text, integer, text)', 'piso_lonja_retirar(uuid)', 'piso_lonja_aceptar(uuid, text)', 'piso_lonja_pesar(integer[], integer[])', 'piso_lonja_senalar(integer)', 'piso_lonja_canjear(text)', 'piso_lonja_toldo(text)']) {
+  for (const f of ['piso_lonja()', 'piso_lonja_poner(text, text, integer, text, text)', 'piso_lonja_retirar(uuid)', 'piso_lonja_aceptar(uuid, text)', 'piso_lonja_canjear(text)', 'piso_lonja_toldo(text)']) {
     const { rows } = await db.query("select has_function_privilege('anon', $1, 'execute') as puede", [`public.${f}`]);
     expect(rows[0].puede).toBe(false);
   }

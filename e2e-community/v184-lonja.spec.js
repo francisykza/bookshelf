@@ -1,5 +1,5 @@
 // 1.84 · La Lonja del Gran Hotel, con Supabase simulado: se llega desde el Directorio, pones una oferta, la retiras, cambias
-// con un puesto y juegas la pesada. El servidor de verdad se prueba en lonja.rls.test.js; aquí, lo que se ve.
+// con un puesto. El servidor de verdad se prueba en lonja.rls.test.js; aquí, lo que se ve.
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -29,7 +29,6 @@ async function toLonja(page, extra = []) {
     horquilla: { comun: [5, 20], 'poco-comun': [10, 40], raro: [20, 60] },
     libres: { [M1]: 2, [M2]: 1 },
     toldos: [],
-    juego: { ronda: 1, cajas: 6, par: 2, tope: 3, pesaMas: true, pesadas: [], encargos: [], sellos: 0, acabada: false },
     mias: [],
     cerradas: [],
     puestos: [
@@ -112,71 +111,4 @@ test('una oferta de «cualquiera de esa rareza» deja elegir con qué pagas', as
   await ofertas.getByRole('button', { name: 'Confirmar' }).click();
   expect((await peticion).postDataJSON()).toMatchObject({ cual: 'o5', pago: M1 });
   await expect(lonja.getByText(/Trato hecho/)).toBeVisible();
-});
-
-test('la pesada: tres encargos, con las cajas descartadas tachadas, y el canje', async ({ page }, info) => {
-  test.skip(!/chromium-(320x640|390x844|1440x900)$|webkit-390x844/.test(info.project.name), '320, 390 (Chromium y WebKit) y escritorio');
-  const { lonja, mock } = await toLonja(page);
-  await lonja.getByRole('button', { name: 'Ir a la pesada de Remedios' }).click();
-  await expect(lonja.getByText('Seis cajas de sardinas')).toBeVisible();
-  const cajas = lonja.getByRole('group', { name: 'Las cajas del encargo' });
-  const caja = (n) => cajas.getByRole('button', { name: new RegExp(`caja ${n}\\b`, 'i') });
-  const pesa = async (izq, der) => {
-    await lonja.getByRole('button', { name: 'Vaciar la balanza' }).click({ timeout: 300 }).catch(() => {});
-    for (let k = 0; k < izq.length; k += 1) {
-      await caja(izq[k]).click();
-      await caja(der[k]).click();
-    }
-    await lonja.getByRole('button', { name: 'Pesar', exact: true }).click();
-  };
-  const senala = async (n) => {
-    await lonja.getByRole('button', { name: 'Señalar', exact: true }).click();
-    await caja(n).click();
-    await lonja.getByRole('button', { name: `Es la caja ${n}` }).click();
-  };
-  await caja(1).click();
-  await expect(caja(1)).toHaveAccessibleName('Caja 1 en el platillo izquierdo');
-  await caja(2).click();
-  await expect(caja(2)).toHaveAccessibleName('Caja 2 en el platillo derecho');
-  await caja(3).click();
-  await expect(lonja.getByText('Mismo número de cajas')).toBeVisible();
-  await caja(4).click();
-  await page.waitForTimeout(200);
-  await shot(page, info, 'v184-lonja-pesada-platos');
-  await lonja.getByRole('button', { name: 'Pesar', exact: true }).click();
-  await expect(lonja.getByText('Baja la derecha. Quedan 2 sin tachar.')).toBeVisible();
-  await expect(caja(5)).toHaveAccessibleName(/descartada/);
-  await page.waitForTimeout(200);
-  await shot(page, info, 'v184-lonja-pesada');
-  await pesa([3], [4]);
-  await expect(lonja.getByText(/Ya solo queda una/)).toBeVisible();
-  await senala(4);
-  await expect(lonja.getByText(/La 4! Pesaba de más/)).toBeVisible();
-  await expect(lonja.getByText('1 sello', { exact: true })).toBeVisible();
-  await page.waitForTimeout(200);
-  await shot(page, info, 'v184-lonja-sello');
-  expect(mock.db.lonja.sellos).toBe(13);
-  await lonja.getByRole('button', { name: 'Siguiente encargo' }).click();
-  await expect(lonja.getByText('Nueve cajas de naranjas')).toBeVisible();
-  await expect(cajas.getByRole('button')).toHaveCount(9);
-  await pesa([1, 2, 3], [4, 5, 6]);
-  await page.waitForTimeout(200);
-  await shot(page, info, 'v184-lonja-naranjas');
-  await senala(4);
-  await lonja.getByRole('button', { name: 'Siguiente encargo' }).click();
-  await expect(lonja.getByText('Ocho cajas de libros')).toBeVisible();
-  await pesa([1, 2], [3, 4]);
-  await expect(lonja.getByText(/Quedan 4 sin tachar|Quedan 4/)).toBeVisible();
-  await page.waitForTimeout(200);
-  await shot(page, info, 'v184-lonja-libros');
-  await senala(1);
-  await expect(lonja.getByText(/Era la 4/)).toBeVisible();
-  await expect(lonja.getByText('Mañana, otros tres encargos.')).toBeVisible();
-  expect(mock.db.lonja.sellos).toBe(15);
-  await lonja.getByText('El canje de Remedios').click();
-  await lonja.getByText('El canje de Remedios').scrollIntoViewIfNeeded();
-  await shot(page, info, 'v184-lonja-canje');
-  await lonja.getByRole('button', { name: /Canjear Venta sin comisión/ }).click();
-  await expect(lonja.getByText('Venta sin comisión: ya es tuyo.')).toBeVisible();
-  expect(mock.db.lonja.sellos).toBe(5);
 });

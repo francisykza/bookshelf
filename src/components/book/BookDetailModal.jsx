@@ -4,7 +4,7 @@
 // guardado explícito y borrador por libro), Notas (las anotaciones) e Historial (las sesiones del registro)—.
 // Lectores: las opiniones de la comunidad. Solo presentación: los datos y operaciones son los de siempre.
 import { BookMarked, ChevronDown, ChevronRight, Heart, Lock, Minus, PenLine, Plus, Trash2, X } from 'lucide-react';
-import { Suspense, lazy, useEffect, useId, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
 import { playUiSound } from '../../audio/uiSounds';
@@ -18,6 +18,8 @@ import { draftDiffers } from '../../features/reviews/opinion';
 import { useLibrary } from '../../state/useLibrary';
 import { modalRoot } from '../panels/modalRoot';
 import { PanelShell } from '../panels/PanelShell';
+
+const ReviewExport = lazy(() => import('../../features/reviews/ReviewExport').then((m) => ({ default: m.ReviewExport })));
 import { Cover, PhysicalBook } from '../shelf/BookItem';
 import { EdgePicker } from './EditionPicker';
 import { ElegantQuoteCard } from '../quotes/ElegantQuoteCard';
@@ -634,6 +636,8 @@ function MyReview({ book, owner, onUpdate, onOpenProfile, onBack }) {
   const fieldRef = useRef(null);
   const saving = useConfirmedSave((t) => (book.review ?? '') === t);
   const dirty = text !== saved;
+  const [exporting, setExporting] = useState(false);
+  const closeExport = useCallback(() => setExporting(false), []);
 
   // La reseña guardada cambia por otra vía (la nube, la reseña al terminar): si el campo no se ha tocado, se adopta;
   // si hay un borrador, se respeta
@@ -719,6 +723,20 @@ function MyReview({ book, owner, onUpdate, onOpenProfile, onBack }) {
         ) : null}
       </p>
       <PublishControls book={book} onUpdate={onUpdate} onOpenProfile={onOpenProfile} unsaved={dirty} />
+      {text.trim() && (
+        <button type="button" className="sheet-btn craft review-image-btn" onClick={() => setExporting(true)}>
+          Crear imagen de la reseña
+        </button>
+      )}
+      {exporting && (
+        <>
+          {/* Con la hoja de la imagen abierta, Escape la cierra a ella y no a la ficha (lo mira PanelShell) */}
+          <span hidden data-escape-local="open" />
+          <Suspense fallback={null}>
+            <ReviewExport book={book} texto={text} nombre={name} root={modalRoot()} onClose={closeExport} />
+          </Suspense>
+        </>
+      )}
       <button type="button" className="link-btn review-back" onClick={onBack}>
         Volver a la ficha
       </button>

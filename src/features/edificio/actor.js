@@ -53,6 +53,8 @@ export const JERSEYS = [
   // 1.80: de la caja del casino (ROPA_CASINO): el chaleco con camisa y pajarita, y el vestido de lentejuelas
   { id: 15, nombre: 'Chaleco de crupier', color: [128, 34, 48] },
   { id: 16, nombre: 'Vestido de lentejuelas', color: [176, 44, 98] },
+  // 1.86: de la pared de la Lonja (ROPA_ESTIBA)
+  { id: 17, nombre: 'Rayas de estibador', color: [226, 216, 196] },
 ];
 export const PANTALONES = [
   { id: 0, nombre: 'Vaquero', color: [72, 88, 116] },
@@ -68,6 +70,8 @@ export const PANTALONES = [
   { id: 8, nombre: 'Medianoche', color: [34, 38, 66] },
   // 1.80: de la caja del casino
   { id: 9, nombre: 'Raya diplomática', color: [64, 66, 78] },
+  // 1.86: de la pared de la Lonja
+  { id: 10, nombre: 'Mahón de faena', color: [46, 72, 112] },
 ];
 // Complementos (§70): todos menos «ninguno» se ganan con las misiones del día
 export const COMPLEMENTOS = [
@@ -84,6 +88,8 @@ export const COMPLEMENTOS = [
   // 1.80: de la caja del casino
   { id: 'visera', nombre: 'Visera de crupier' },
   { id: 'fedora', nombre: 'Fedora' },
+  // 1.86: de la pared de la Lonja
+  { id: 'gorro-estibador', nombre: 'Gorro de estibador' },
 ];
 
 /**
@@ -102,11 +108,16 @@ export const CONJUNTO_ESTRELLAS = { jersey: 14, pantalon: 8, complemento: 'capa'
  * el orden de las misiones. Como la de las misiones, solo se lleva si se tiene.
  */
 export const ROPA_CASINO = ['complemento:visera', 'pantalon:9', 'jersey:15', 'complemento:fedora', 'jersey:16'];
+/** La ropa de estibador (1.86): se cambia por sellos en la pared de la Lonja (PARED en hotel/estiba.js). */
+export const ROPA_ESTIBA = ['complemento:gorro-estibador', 'pantalon:10', 'jersey:17'];
 const LISTS = { colorPelo: () => COLORES_PELO, jersey: () => JERSEYS, pantalon: () => PANTALONES, complemento: () => COMPLEMENTOS };
 export const prendaKey = (key, value) => `${key}:${value}`;
-export const isPrenda = (key, value) => PRENDAS.includes(prendaKey(key, value)) || ROPA_CASINO.includes(prendaKey(key, value));
+export const isPrenda = (key, value) => [...PRENDAS, ...ROPA_CASINO, ...ROPA_ESTIBA].includes(prendaKey(key, value));
 /** De dónde sale una prenda que no tienes (para el aviso del armario). */
-export const prendaOrigen = (key, value) => (ROPA_CASINO.includes(prendaKey(key, value)) ? 'se cambia por fichas en la caja del casino' : 'se gana con las misiones del día');
+export const prendaOrigen = (key, value) => {
+  if (ROPA_CASINO.includes(prendaKey(key, value))) return 'se cambia por fichas en la caja del casino';
+  return ROPA_ESTIBA.includes(prendaKey(key, value)) ? 'se cambia por sellos en la pared de la Lonja' : 'se gana con las misiones del día';
+};
 /** El nombre de una prenda que se gana (para los avisos). */
 export function prendaNombre(prenda) {
   const [key, raw] = prenda.split(':');
@@ -198,6 +209,7 @@ function standing(a, step = 0) {
     B(0.27, -0.07 + s, 0.74, 0.36, 0.07 + s, 0.86, skin, { grain: 0 }),
     ...starryTop(a, s),
     ...casinoTop(a, top),
+    ...stripedTop(a, s),
     // El vestido: la falda de vuelo, hasta las rodillas
     ...(a.jersey === 16 ? [B(-0.3, -0.18, 0.42, 0.3, 0.18, 0.74, top), B(-0.31, -0.19, 0.42, 0.31, 0.19, 0.47, shade(top, 0.84)), ...sequins(0.19, [[-0.2, 0.6], [0.05, 0.52], [0.22, 0.64], [-0.06, 0.68]])] : []),
   ];
@@ -235,6 +247,18 @@ function casinoTop(a, top) {
   if (a.jersey === 16)
     return sequins(0.14, [[-0.17, 1.28], [0.12, 1.32], [-0.03, 1.16], [0.18, 1.06], [-0.2, 0.98], [0.04, 0.92], [-0.1, 0.8], [0.2, 0.78]]);
   return [];
+}
+
+const STRIPE = [44, 66, 108];
+/** Las rayas marineras del jersey de estibador, por delante y en las mangas. */
+function stripedTop(a, s = 0) {
+  if (a.jersey !== 17) return [];
+  const f = { grain: 0 };
+  return [1.26, 1.12, 0.98, 0.84].flatMap((z) => [
+    B(-0.26, 0.14, z, 0.26, 0.152, z + 0.055, STRIPE, f),
+    B(-0.375, 0.09 - s, z, -0.255, 0.102 - s, z + 0.055, STRIPE, f),
+    B(0.255, 0.09 + s, z, 0.375, 0.102 + s, z + 0.055, STRIPE, f),
+  ]);
 }
 
 const STAR = [255, 226, 140];
@@ -292,6 +316,11 @@ function extra(id) {
     case 'gorra': {
       const c = [236, 232, 222];
       return [B(-0.28, -0.26, 1.88, 0.28, 0.27, 2.08, c), B(-0.29, -0.27, 1.86, 0.29, 0.28, 1.92, [44, 52, 80]), B(-0.2, 0.27, 1.86, 0.2, 0.42, 1.9, [44, 52, 80], f), B(-0.04, 0.27, 1.96, 0.04, 0.29, 2.02, [214, 178, 80], f)];
+    }
+    case 'gorro-estibador': {
+      // De lana gruesa y sin borla, con la vuelta bien ancha
+      const c = [58, 74, 96];
+      return [B(-0.28, -0.26, 1.9, 0.28, 0.27, 2.12, c), B(-0.3, -0.28, 1.84, 0.3, 0.29, 1.98, shade(c, 1.28))];
     }
     case 'visera': {
       // La visera verde de celuloide de los crupieres, con su cinta

@@ -7,6 +7,7 @@ import { createRaster, hash, noise, rgb } from '../minigames/libreria-puerto/ras
 import { actorBoxes } from './actor';
 import { PAREDES, catalogItem } from './catalog';
 import { shapeOf } from './furniture';
+import { tintar } from './acabados';
 import { misticoOf, misticoThumb } from './misticos';
 import { clearFrame, createFrame, painterFor } from '../../vendor/pixelfx/core/index.js';
 import { ROOM, heightOf, rectOf } from './room';
@@ -85,7 +86,7 @@ function worldBox(item, cat, base, b) {
 /** Color de una alfombra en un punto del suelo (0 si el punto queda fuera, en la trenzada redonda). */
 function rugColor(r, item, x, y, ix, iy) {
   const cat = catalogItem(item.id);
-  const T = cat.tonos[item.tono];
+  const T = tintar(cat.tonos[item.tono], item.acabado);
   const rc = rectOf(item);
   const cx = (rc.x0 + rc.x1) / 2;
   const cy = (rc.y0 + rc.y1) / 2;
@@ -149,7 +150,7 @@ function drawItem(r, room, item, { lift = 0 } = {}) {
   boxes.forEach((bx, k) => {
     const wb = worldBox(item, cat, base, bx.b);
     r.setId(item.uid | (bx.glow ? GLOW_BIT : 0));
-    r.box(wb[0], wb[1], wb[2], wb[3], wb[4], wb[5], bx.c, { seed: item.uid * 7 + k, grain: bx.grain ?? 1, step: bx.step ?? 0.045 });
+    r.box(wb[0], wb[1], wb[2], wb[3], wb[4], wb[5], tintar(bx.c, item.acabado), { seed: item.uid * 7 + k, grain: bx.grain ?? 1, step: bx.step ?? 0.045 });
   });
   r.setId(0);
   if (cat.capa === 'suelo' || (cat.capa === 'encima' && lift > 0 && !heightOf(room, item))) {
@@ -386,7 +387,7 @@ export function createRoomRenderer() {
       clearFrame(fxFrame);
       const p = painterFor(fxFrame);
       p.place(Math.round(at.sx), Math.round(at.sy), !!b.flip);
-      m.draw(p, t, { moving: !!b.moving, perch: !!b.perch, tono: b.tono, full: !!b.full });
+      m.draw(p, t, { moving: !!b.moving, perch: !!b.perch, tono: b.tono, full: !!b.full, acabado: b.acabado, ancho: b.ancho });
       const d = at.d + 0.15;
       for (let i = 0; i < C.length; i += 1) {
         const c = C[i];
@@ -476,11 +477,11 @@ export function createRoomRenderer() {
 }
 
 /** Miniatura de un mueble del catálogo (para los botones), dibujada con el mismo motor. */
-export function renderThumb(id, tonoIndex = 0, size = 44) {
+export function renderThumb(id, tonoIndex = 0, size = 44, acabado = null) {
   // Los muebles vivos de la caja del casino (1.80) se ven como mueble: lo animado va encima
   if (misticoOf(id) && !misticoOf(id).vivo) return misticoThumb(id, size);
   const cat = catalogItem(id);
-  const item = cat.capa === 'pared' ? { uid: 1, id, pared: 'fondo', a: 0, tono: tonoIndex } : { uid: 1, id, x: 0, y: 0, rot: 0, tono: tonoIndex };
+  const item = cat.capa === 'pared' ? { uid: 1, id, pared: 'fondo', a: 0, tono: tonoIndex, acabado } : { uid: 1, id, x: 0, y: 0, rot: 0, tono: tonoIndex, acabado };
   const boxes = cat.capa === 'alfombra' ? [{ b: [0, 0, 0, cat.w, cat.d, 0.05] }] : shapeOf(id, cat.tonos[tonoIndex]);
   const probe = createRaster({ W: 1, H: 1, S: 1, yaw: YAW, ox: 0, oy: 0 });
   const pts = [];
@@ -500,7 +501,7 @@ export function renderThumb(id, tonoIndex = 0, size = 44) {
   } else {
     shapeOf(id, cat.tonos[tonoIndex]).forEach((bx, k) => {
       const wb = worldBox(item, cat, 0, bx.b);
-      r.box(wb[0], wb[1], wb[2], wb[3], wb[4], wb[5], bx.c, { seed: 7 + k, grain: bx.grain ?? 1, step: Math.min(0.045, 0.7 / s) });
+      r.box(wb[0], wb[1], wb[2], wb[3], wb[4], wb[5], tintar(bx.c, acabado), { seed: 7 + k, grain: bx.grain ?? 1, step: Math.min(0.045, 0.7 / s) });
     });
     r.shadeEdges();
   }

@@ -3,6 +3,7 @@
 // (supabase/migrations/20261103120000_edificio_inventario.sql); esto solo sirve para que la balda no ofrezca lo que el
 // servidor rechazaría. Sin inventario (`null`: la migración no está aplicada, o el prototipo de desarrollo), todo es
 // libre como antes.
+import { acabadoOf } from './acabados';
 import { CATALOG, catalogItem, isMistico } from './catalog';
 
 /** Muebles comunes que se eligen de inicio (una sola vez). */
@@ -33,18 +34,33 @@ export function ownedCopies(inventory, id) {
   return inventory.copias?.[id] ?? 0;
 }
 
-/** Copias libres (sin colocar) de un mueble en este piso. */
-export function freeCopies(inventory, room, id) {
+/** Copias de cada acabado que tienes de un mueble (1.86): { acabado: n }. */
+export const acabadosDe = (inventory, id) => inventory?.acabados?.[id] ?? {};
+
+/** Copias lisas: las que no llevan acabado. */
+export function plainCopies(inventory, id) {
   const owned = ownedCopies(inventory, id);
+  return owned === Infinity ? owned : owned - Object.values(acabadosDe(inventory, id)).reduce((a, b) => a + b, 0);
+}
+
+/** Copias libres (sin colocar) de un mueble en este piso: las lisas, o las de un acabado. */
+export function freeCopies(inventory, room, id, acabado = null) {
+  const owned = acabado ? (acabadosDe(inventory, id)[acabado] ?? 0) : plainCopies(inventory, id);
   if (owned === Infinity) return Infinity;
-  return Math.max(0, owned - (placedCounts(room)[id] ?? 0));
+  const puestos = (room?.items ?? []).filter((i) => i.id === id && (i.acabado ?? null) === acabado).length;
+  return Math.max(0, owned - puestos);
 }
 
 /** El primer mueble del piso del que no hay copias suficientes (null si todo cabe), como `piso_falta_copia`. */
 export function missingCopy(inventory, room) {
   if (!inventory) return null;
   const placed = placedCounts(room);
-  return Object.keys(placed).sort().find((id) => isCounted(id) && placed[id] > ownedCopies(inventory, id)) ?? null;
+  const sobra = (id) => {
+    const puestos = room.items.filter((i) => i.id === id);
+    if (puestos.filter((i) => !i.acabado).length > plainCopies(inventory, id)) return true;
+    return puestos.some((i) => i.acabado && puestos.filter((o) => o.acabado === i.acabado).length > (acabadosDe(inventory, id)[i.acabado] ?? 0));
+  };
+  return Object.keys(placed).sort().find((id) => isCounted(id) && (placed[id] > ownedCopies(inventory, id) || sobra(id))) ?? null;
 }
 
 /** ¿Es válida una elección de inicio? Seis comunes (se pueden repetir). */
@@ -62,5 +78,11 @@ export function normalizeInventory(data) {
   // `tienda`: el servidor ya tiene la migración de la tienda (si no, el escaparate no se abre)
   // `reclamadas`: claves `mision:<id>:<lunes>` de las misiones ya cobradas en tickets
   const reclamadas = (Array.isArray(data.reclamadas) ? data.reclamadas : []).filter((k) => typeof k === 'string' && /^mision:[a-z]{2,20}:\d{4}-\d{2}-\d{2}$/.test(k));
-  return { inicioElegido: data.inicio_elegido === true, copias, tickets: n(data.tickets), sinRaro: n(data.sin_raro), tienda: Number.isInteger(data.tickets), reclamadas };
+  // 1.86: cuántas de esas copias llevan cada acabado
+  const acabados = {};
+  for (const [id, tiene] of Object.entries(data.acabados ?? {})) {
+    const limpio = Object.fromEntries(Object.entries(tiene ?? {}).filter(([k, v]) => acabadoOf(k) && Number.isInteger(v) && v > 0));
+    if (copias[id] && Object.keys(limpio).length) acabados[id] = limpio;
+  }
+  return { inicioElegido: data.inicio_elegido === true, copias, acabados, tickets: n(data.tickets), sinRaro: n(data.sin_raro), tienda: Number.isInteger(data.tickets), reclamadas };
 }

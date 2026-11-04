@@ -5,6 +5,7 @@
 // 26 píxeles. Cada uno es draw(p, t, o) con el origen en el suelo, bajo el ser; mira a la derecha (quien lo coloca
 // lo voltea con p.place(x, y, flip)). o: { moving } (si va andando detrás de alguien), { perch } (posado junto a ti, en
 // el armario, 1.77).
+import { acabadoOf } from './acabados';
 import { FIRE_RAMP, composite, createFrame, hex, mix, painterFor, sparkle } from '../../vendor/pixelfx/core/index.js';
 
 const H = (s) => hex(s);
@@ -502,6 +503,45 @@ export function drawRabbit(p, t, o = {}) {
   });
 }
 
+// La pared de la Lonja (1.86). La gaviota del puerto (legendaria): blanca y gris, con el pico amarillo y su punto rojo. Parada,
+// mira de reojo y de vez en cuando abre las alas; al seguirte, vuela a tu lado. Una pluma cae despacio.
+const GULL_PAL = { o: '#3a4450', w: '#f6f6f0', W: '#ffffff', g: '#a8b4c0', G: '#7c8a98', k: '#2a3038', e: '#141820', y: '#f2c23c', r: '#d84a3c', p: '#e8a05c' };
+const GULL_ROWS = [
+  '....ooo......',
+  '...owwwo.....',
+  '...oweWoyy...',
+  '...owwwoyr...',
+  '..owwwwoo....',
+  '.ogggwwwwo...',
+  'okGggwwwwwo..',
+  'okkGggwwwwo..',
+  '.oookgwwwo...',
+  '....oooooo...',
+  '.....p..p....',
+  '....pp.pp....',
+];
+const GULL_WING_UP = ['oo.......', 'ogo....oo', 'oggo..ogo', '.oggoogo.', '..oggggo.'];
+const GULL_WING_DOWN = ['..oggggo.', '.oggoogo.', 'oggo..ogo', 'ogo....oo', 'oo.......'];
+
+export function drawGull(p, t, o = {}) {
+  const flying = Boolean(o.moving);
+  const cycle = t % 7;
+  const stretch = !flying && cycle > 5.4 && cycle < 6.4;
+  const lift = flying ? 7 + Math.sin(t * 5) * 1.6 : 0;
+  shadow(p, flying ? 5 : 6, lift);
+  const y = -12 - lift;
+  const look = !flying && Math.sin(t * 0.9) > 0.55 ? 1 : 0;
+  p.sprite(GULL_ROWS, GULL_PAL, -6 + look, y);
+  if (flying || stretch) {
+    const up = Math.sin(t * (flying ? 12 : 9)) > 0;
+    p.sprite(up ? GULL_WING_UP : GULL_WING_DOWN, GULL_PAL, -8, y + (up ? 0 : 4));
+  }
+  drift(t, 1, 5, (u) => {
+    if (u > 0.8) return;
+    p.dot(5 + Math.sin(u * 8) * 3, y - 2 + u * 16, H('#ffffff'), 0.85 - u);
+  });
+}
+
 // La gramola: el arco cambia de color despacio, suben burbujas de luz por los tubos y salen notas por arriba
 const JUKE = [H('#ff5a8a'), H('#ffb347'), H('#6fe0ff'), H('#9b7bff')];
 const NOTE = ['.oo', '.o.', 'oo.', 'oo.'];
@@ -551,6 +591,17 @@ export function drawSequins(p, t, o = {}) {
     });
 }
 
+// Los destellos de un mueble con acabado (1.86): del color del acabado, repartidos por el mueble
+export function drawFinish(p, t, o = {}) {
+  const color = H(acabadoOf(o.acabado)?.chispa ?? '#ffffff');
+  const ancho = (o.ancho ?? 1) * 9;
+  for (let i = 0; i < 7; i += 1) {
+    const tw = (t * (0.8 + hash(i, 4) * 0.7) + hash(i, 5) * 5) % 2.4;
+    if (tw > 0.42) continue;
+    sparkle(p, (hash(i, 1) - 0.5) * 2 * ancho, -4 - hash(i, 2) * (10 + ancho), tw < 0.2 ? 2 : 1, H('#ffffff'), color, 0.4);
+  }
+}
+
 export const MISTICOS = [
   { id: 'dragoncillo', nombre: 'Dragoncillo de escamas rojas', guino: 'Para quien leyó «Alas de sangre»', legendario: true, draw: drawDragon },
   { id: 'zorro-bruma', nombre: 'Zorro de bruma y ceniza', guino: 'Para quien leyó «Mistborn»', legendario: true, draw: drawFox },
@@ -563,9 +614,12 @@ export const MISTICOS = [
   { id: 'polvo-estrellas', nombre: 'Polvo de estrellas', efecto: true, draw: drawStardust },
   // 1.80: la caja del casino (el conejo te acompaña; la gramola y la mesa son muebles vivos; los destellos, del vestido)
   { id: 'conejo-chistera', nombre: 'Conejo de la chistera', guino: 'De la caja del casino del Gran Hotel', legendario: true, draw: drawRabbit },
+  // 1.86: la pared de la Lonja
+  { id: 'gaviota-puerto', nombre: 'Gaviota del puerto', guino: 'De la pared de premios de la Lonja', legendario: true, draw: drawGull },
   { id: 'gramola', nombre: 'Gramola', vivo: true, draw: drawJukebox },
   { id: 'mesa-tapete', nombre: 'Mesa de tapete verde', vivo: true, draw: drawFeltTable },
   { id: 'destellos', nombre: 'Destellos de lentejuelas', efecto: true, draw: drawSequins },
+  { id: 'chispas-acabado', nombre: 'Destellos del acabado', efecto: true, draw: drawFinish },
 ];
 
 export const misticoOf = (id) => MISTICOS.find((m) => m.id === id) ?? null;

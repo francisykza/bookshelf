@@ -2,6 +2,7 @@
 // válido (cada cambio se comprueba antes de aplicarse) y `validateRoom` hace lo mismo que el servidor (`piso_valido`,
 // comparados en edificio.rls.test.js) antes de guardar un piso o enseñarlo: solo muebles del catálogo, dentro de la
 // cuadrícula y sin solapes.
+import { acabadoOf, admiteAcabado } from './acabados';
 import { CATALOG, PAREDES, SUELOS, catalogItem } from './catalog';
 
 /** Medidas del piso en celdas; `wallH`: altura de las paredes (en celdas); `maxItems`: cosas como mucho. */
@@ -37,6 +38,7 @@ const capaOf = (item) => catalogItem(item.id)?.capa;
 export function check(room, item, { ignore = [] } = {}) {
   const cat = catalogItem(item.id);
   if (!cat || !Number.isInteger(item.tono) || item.tono < 0 || item.tono >= cat.tonos.length) return { ok: false, reason: 'desconocido' };
+  if (item.acabado && !(acabadoOf(item.acabado) && admiteAcabado(cat))) return { ok: false, reason: 'desconocido' };
   const others = room.items.filter((i) => i.uid !== item.uid && !ignore.includes(i.uid));
   if (cat.capa === 'pared') {
     if (!['fondo', 'izq'].includes(item.pared) || !Number.isInteger(item.a)) return { ok: false, reason: 'fuera' };
@@ -111,7 +113,7 @@ export function addItem(room, id, opts = {}) {
   if (room.items.length >= ROOM.maxItems) return { error: 'lleno' };
   const spot = findFreeSpot(room, id, opts);
   if (!spot) return { error: 'sitio' };
-  const item = { ...spot, uid: nextUid(room) };
+  const item = { ...spot, uid: nextUid(room), ...(opts.acabado ? { acabado: opts.acabado } : null) };
   return { room: { ...room, items: [...room.items, item] }, item };
 }
 
@@ -181,7 +183,8 @@ export function validateRoom(data) {
     seen.add(raw.uid);
     const cat = catalogItem(raw.id);
     if (!cat) return null;
-    clean.push(cat.capa === 'pared' ? { uid: raw.uid, id: raw.id, pared: raw.pared, a: raw.a, tono: raw.tono } : { uid: raw.uid, id: raw.id, x: raw.x, y: raw.y, rot: raw.rot, tono: raw.tono });
+    const piel = raw.acabado ? { acabado: raw.acabado } : null;
+    clean.push(cat.capa === 'pared' ? { uid: raw.uid, id: raw.id, pared: raw.pared, a: raw.a, tono: raw.tono, ...piel } : { uid: raw.uid, id: raw.id, x: raw.x, y: raw.y, rot: raw.rot, tono: raw.tono, ...piel });
   }
   // Se colocan por capas (primero lo que sostiene, luego lo de encima) y cada uno se comprueba con los anteriores
   clean.sort((a, b) => ORDER[capaOf(a)] - ORDER[capaOf(b)] || a.uid - b.uid);

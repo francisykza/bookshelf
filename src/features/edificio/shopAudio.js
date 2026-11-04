@@ -97,6 +97,8 @@ export function createShopSfx({ muted = false } = {}) {
     deal: () => paper(0.05, 0.07, 3600, 2200),
     // La balanza de la Lonja: la caja que se apoya, el latón que cede y el sello que cae
     thunk: () => tone('triangle', 150, 0.05, 0.08),
+    // La estiba: la sirena del barco al zarpar, dos notas graves y bajitas
+    bocina: () => [110, 82.41].forEach((f, k) => tone('sawtooth', f, 0.018, 0.55, k * 0.5)),
     creak: () => {
       paper(0.03, 0.45, 800, 320);
       tone('triangle', 96, 0.02, 0.14, 0.4);

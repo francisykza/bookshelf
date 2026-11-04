@@ -2250,7 +2250,7 @@
 .lj-toldo {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   margin: 0 -10px 10px;
   padding-top: 8px;
   background: linear-gradient(#2a160c 0 3px, #8e6224 3px 5px, transparent 5px);
@@ -2744,152 +2744,6 @@
   height: 14px;
   background: repeating-linear-gradient(90deg, var(--toldo) 0 7px, #f2dfb4 7px 14px);
   box-shadow: 0 0 0 2px var(--lj-tinta);
-}
-
-/* La pesada: tres albaranes y la mesa de Remedios de cerca */
-.lj-pesada {
-  scroll-margin-top: 72px;
-}
-
-.lj-albaranes {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin: 0 0 10px;
-  padding: 0;
-  list-style: none;
-}
-
-.lj-albaranes li {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 1px;
-  padding: 5px 2px;
-  background: #7a6242;
-  box-shadow: 0 0 0 2px var(--lj-tinta);
-  color: #2a160c;
-  font:
-    500 0.74rem/1.15 'Lora',
-    Georgia,
-    serif;
-}
-
-.lj-albaranes li.is-ahora {
-  background: var(--lj-estraza-l);
-  box-shadow:
-    0 0 0 2px var(--lj-tinta),
-    0 3px 0 2px var(--lj-laton);
-}
-
-.lj-albaranes li.is-sellado {
-  background: var(--lj-estraza);
-}
-
-.lj-albaranes li.is-sellado span {
-  color: var(--lj-rojo);
-  font-weight: 700;
-}
-
-.lj-albaranes li.is-fallido {
-  background: #5e4a34;
-  color: #d8c49c;
-}
-
-.lj-mesa {
-  position: relative;
-  box-shadow:
-    0 0 0 2px var(--lj-tinta),
-    0 0 0 4px var(--lj-laton-d),
-    0 0 0 6px var(--lj-tinta);
-  margin: 6px;
-}
-
-.lj-mesa canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
-}
-
-.lj-mesa__cajas {
-  position: absolute;
-  inset: 0;
-}
-
-.lj-mesa__caja {
-  position: absolute;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  transition: top 120ms steps(3), left 120ms steps(3);
-}
-
-.lj-mesa__caja:disabled {
-  cursor: default;
-}
-
-.lj-mesa__caja:focus-visible {
-  outline: 2px solid #ffe39a;
-}
-
-.lj-mesa__cuenta {
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin: 0;
-  padding: 4px 6px;
-  background: var(--lj-pizarra);
-  box-shadow: 0 0 0 2px var(--lj-tinta);
-  transform: translateX(-112%);
-}
-
-.lj-mesa__cuenta span {
-  color: #bcc4b0;
-  font:
-    italic 500 0.68rem/8px 'Lora',
-    Georgia,
-    serif;
-}
-
-.lj-mesa__cuenta i {
-  width: 8px;
-  height: 8px;
-  background: #4b5e55;
-}
-
-.lj-mesa__cuenta i.is-extra {
-  background: #6e4c34;
-}
-
-.lj-mesa__cuenta i.is-hecha {
-  background: var(--lj-tiza);
-}
-
-.lj-premio {
-  margin: 0;
-  padding: 6px 12px;
-  background: var(--lj-estraza-l);
-  box-shadow: 0 0 0 2px var(--lj-rojo);
-  color: var(--lj-rojo);
-  font:
-    700 0.95rem/1 'Lora',
-    Georgia,
-    serif;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lj-mesa__caja {
-    transition: none;
-  }
-
-  .lj-btn:active:not(:disabled) {
-    transform: none;
-  }
 }
 
 .gh-lonja__thumb {
@@ -3499,4 +3353,779 @@
   .gh-21 {
     padding-inline: max(10px, calc((100% - 640px) / 2));
   }
+}
+
+/* La estiba (1.86): el barco en su marco, la carga, el muelle con los bultos y la pared de premios */
+.lj-estiba {
+  scroll-margin-top: 72px;
+}
+
+.lj-barco {
+  position: relative;
+  margin: 6px;
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    0 0 0 4px var(--lj-laton-d),
+    0 0 0 6px var(--lj-tinta);
+}
+
+.lj-barco canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 216 / 196;
+  image-rendering: pixelated;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.lj-barco canvas:focus-visible {
+  outline: 3px solid var(--lj-laton);
+  outline-offset: 2px;
+}
+
+.lj-parte {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: min(78%, 280px);
+  padding: 12px 10px;
+  background: var(--lj-estraza-l);
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    4px 4px 0 2px rgb(0 0 0 / 0.35);
+  color: var(--lj-tinta);
+  font:
+    500 0.84rem/1.3 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+  transform: translate(-50%, -50%) rotate(-1.5deg);
+}
+
+.lj-parte p {
+  margin: 0;
+}
+
+.lj-parte__titulo {
+  font-size: 1.12rem;
+  font-weight: 700;
+}
+
+.lj-parte__sello {
+  padding: 2px 10px;
+  border: 3px solid var(--lj-rojo);
+  color: var(--lj-rojo);
+  font-size: 1.15rem;
+  font-weight: 700;
+  transform: rotate(-3deg);
+}
+
+.lj-carga {
+  margin: 10px 0;
+}
+
+.lj-carga__barra {
+  position: relative;
+  height: 12px;
+  background: var(--lj-pizarra);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+}
+
+.lj-carga__barra > span {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(90deg, var(--lj-laton) 0 6px, #cf9c44 6px 8px);
+  transition: width 0.2s steps(4);
+}
+
+.lj-carga__barra i {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -2px;
+  background: var(--lj-tiza);
+}
+
+.lj-carga__niveles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lj-carga__niveles li {
+  display: grid;
+  justify-items: center;
+  padding: 4px 2px;
+  background: var(--lj-estraza-d);
+  color: var(--lj-tinta);
+  font:
+    500 0.72rem/1.2 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+
+.lj-carga__niveles b {
+  font-size: 0.86rem;
+}
+
+.lj-carga__niveles li.is-hecho {
+  background: var(--lj-laton);
+  box-shadow: inset 0 0 0 2px var(--lj-tinta);
+}
+
+.lj-estiba__mano {
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+/* El muelle: tablas en las que esperan los bultos */
+.lj-muelle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 64px;
+  margin: 12px 0 8px;
+  padding: 10px 8px;
+  background: repeating-linear-gradient(0deg, #8a6238 0 14px, #6e4c2a 14px 16px);
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    inset 0 3px 0 rgb(0 0 0 / 0.25);
+}
+
+.lj-bulto {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  filter: drop-shadow(2px 2px 0 rgb(0 0 0 / 0.35));
+}
+
+.lj-bulto img {
+  display: block;
+  width: auto;
+  height: auto;
+  image-rendering: pixelated;
+  transform: scale(1.5);
+  transform-origin: center;
+  margin: 25%;
+  pointer-events: none;
+}
+
+.lj-bulto:focus-visible {
+  outline: 3px solid var(--lj-laton);
+}
+
+.lj-seguro {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: var(--lj-estraza-l);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+  color: var(--lj-tinta);
+  font:
+    500 0.86rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-seguro p {
+  margin: 0 0 8px;
+}
+
+/* La pared: listones de madera con ganchos de los que cuelgan etiquetas de estraza */
+.lj-pared {
+  margin: 18px -10px -18px;
+  padding: 14px 10px 22px;
+  background: #5a3a22 repeating-linear-gradient(90deg, rgb(0 0 0 / 0.16) 0 2px, transparent 2px 38px);
+  box-shadow: inset 0 4px 0 var(--lj-tinta);
+}
+
+.lj-pared__titulo {
+  margin: 0;
+  color: var(--lj-laton);
+  font:
+    700 1.14rem/1.2 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+
+.lj-pared__saldo {
+  margin: 4px 0 12px;
+  color: var(--lj-tiza);
+  font:
+    italic 500 0.86rem/1.25 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+
+.lj-pared__saldo b {
+  color: var(--lj-laton);
+  font-style: normal;
+}
+
+.lj-pared__balda {
+  margin: 16px 0 12px;
+  padding-bottom: 5px;
+  border-bottom: 4px solid var(--lj-tinta);
+  color: var(--lj-tiza);
+  font:
+    700 0.92rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-pared__nota {
+  margin: -6px 0 12px;
+  color: #d8cdb4;
+  font:
+    italic 500 0.8rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-gordo {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: linear-gradient(180deg, #38506a, #6a5a6e 62%, #c88a5c);
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    0 0 0 4px var(--lj-laton),
+    0 0 0 6px var(--lj-tinta);
+  color: var(--lj-tiza);
+  font:
+    500 0.82rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-gordo h5,
+.lj-gordo p {
+  margin: 0 0 3px;
+}
+
+.lj-gordo h5 {
+  font-size: 1.06rem;
+  font-weight: 700;
+}
+
+.lj-gordo .gh-caja__stage {
+  width: 116px;
+  height: 116px;
+  overflow: hidden;
+}
+
+.lj-gordo .gh-caja__live {
+  bottom: -42px;
+  width: 340px;
+  height: 340px;
+}
+
+.lj-gordo__cinta {
+  color: var(--lj-laton);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.lj-gordo__meta {
+  display: block;
+  height: 8px;
+  margin: 4px 0 8px;
+  background: rgb(0 0 0 / 0.4);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+}
+
+.lj-gordo__meta span {
+  display: block;
+  height: 100%;
+  background: var(--lj-laton);
+}
+
+.lj-etiquetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 16px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lj-etiquetas.is-cuatro {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 560px) {
+  .lj-etiquetas.is-cuatro {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.lj-etiqueta {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 3px;
+  padding: 12px 6px 8px;
+  background: var(--lj-estraza);
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    3px 3px 0 2px rgb(0 0 0 / 0.3);
+  color: var(--lj-tinta);
+  font:
+    500 0.72rem/1.25 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+
+/* El gancho del que cuelga */
+.lj-etiqueta::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 8px;
+  height: 12px;
+  margin-left: -4px;
+  background: var(--lj-laton);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+}
+
+.lj-etiqueta img {
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+}
+
+.lj-etiqueta b {
+  font-size: 0.8rem;
+}
+
+.lj-etiqueta.is-mio {
+  background: var(--lj-estraza-d);
+}
+
+.lj-etiqueta.is-elegida {
+  background: var(--lj-estraza-l);
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    0 0 0 4px var(--lj-laton),
+    0 0 0 6px var(--lj-tinta);
+}
+
+.lj-etiqueta__precio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.lj-gordo .lj-etiqueta__precio {
+  color: var(--lj-laton);
+}
+
+/* El sello de precio: un círculo de tinta roja en píxeles */
+.lj-etiqueta__precio i {
+  width: 10px;
+  height: 10px;
+  background: var(--lj-rojo);
+  box-shadow: 0 0 0 1px var(--lj-rojo-d);
+}
+
+.lj-etiqueta__mia {
+  margin: 2px 0 0;
+  color: var(--lj-rojo);
+  font-weight: 700;
+}
+
+.lj-gordo .lj-etiqueta__mia {
+  color: var(--lj-laton);
+}
+
+.lj-etiqueta__ask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.lj-copias {
+  margin-top: 14px;
+  padding: 8px;
+  background: var(--lj-estraza-l);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+  color: var(--lj-tinta);
+  font:
+    500 0.82rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-copias p {
+  margin: 0 0 6px;
+}
+
+.lj-copias ul {
+  display: grid;
+  gap: 4px;
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.lj-copias li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  background: var(--lj-estraza);
+}
+
+.lj-copias img {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.lj-premio-nuevo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px;
+  background: var(--lj-laton);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+  color: var(--lj-tinta);
+  font:
+    500 0.82rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-premio-nuevo img {
+  image-rendering: pixelated;
+}
+
+.lj-premio-nuevo p {
+  display: grid;
+  margin: 0;
+}
+
+@media (min-width: 720px) {
+  .lj-estiba {
+    max-width: 560px;
+    margin-inline: auto;
+  }
+}
+
+/* El tablón (1.86): corcho con notas clavadas, lo que tú buscas y las fichas de los talleres */
+.gh-lonja__oferta .gh-lonja__interes {
+  justify-self: start;
+  padding: 1px 5px;
+  background: var(--lj-rojo);
+  color: #fff4dc;
+  font:
+    700 0.68rem/1.25 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-corcho {
+  padding: 10px 8px 12px;
+  background: #a87c4c radial-gradient(circle at 1px 1px, rgb(70 42 20 / 0.5) 1px, transparent 1.5px) 0 0 / 6px 6px;
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    0 0 0 5px #6e4424,
+    0 0 0 7px var(--lj-tinta);
+  margin: 7px;
+}
+
+.lj-corcho h4 {
+  width: fit-content;
+  margin: 0 auto 12px;
+  padding: 3px 12px;
+  background: var(--lj-tinta);
+  color: var(--lj-estraza-l);
+  font:
+    700 1.06rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-corcho ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  gap: 14px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lj-corcho li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+  padding: 10px 6px 8px;
+  background: #f2e6c6;
+  box-shadow: 2px 3px 0 rgb(0 0 0 / 0.35);
+  color: var(--lj-tinta);
+  font:
+    500 0.74rem/1.25 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+  transform: rotate(-1deg);
+}
+
+.lj-corcho li:nth-child(even) {
+  transform: rotate(1.2deg);
+}
+
+/* La chincheta */
+.lj-corcho li::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: var(--lj-rojo);
+  box-shadow: 0 0 0 1px var(--lj-rojo-d);
+}
+
+.lj-corcho img {
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+}
+
+.lj-corcho em {
+  color: #6a5238;
+  font-size: 0.7rem;
+}
+
+.lj-corcho__vacio {
+  margin: 0;
+  color: var(--lj-tinta);
+  font:
+    italic 500 0.86rem/1.3 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+
+.lj-buscas {
+  margin: 14px 0;
+  color: var(--lj-tiza);
+  font:
+    500 0.84rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-buscas > p:first-child {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.lj-buscas ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lj-buscas li {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  background: var(--lj-estraza);
+  color: var(--lj-tinta);
+}
+
+.lj-buscas img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.lj-buscas .lj-link {
+  color: var(--lj-tinta);
+}
+
+.lj-talleres__titulo {
+  margin: 18px 0 10px;
+}
+
+.lj-talleres {
+  display: grid;
+  gap: 12px;
+}
+
+.lj-taller {
+  padding: 8px;
+  background: var(--lj-estraza-l);
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    inset 0 5px 0 var(--taller);
+  color: var(--lj-tinta);
+  font:
+    500 0.78rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-taller.is-completo {
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    0 0 0 4px var(--lj-laton),
+    0 0 0 6px var(--lj-tinta),
+    inset 0 5px 0 var(--taller);
+}
+
+.lj-taller header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 8px;
+  padding-top: 6px;
+}
+
+.lj-taller h5 {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.lj-taller header p {
+  grid-column: 1;
+  margin: 0;
+  font-style: italic;
+}
+
+.lj-taller__cuenta {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  padding: 2px 6px;
+  background: var(--lj-tinta);
+  color: var(--lj-estraza-l);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lj-taller__muebles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 56px);
+  justify-content: center;
+  gap: 4px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lj-taller__muebles li {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  background: #e4d2a8;
+}
+
+.lj-taller__muebles img {
+  display: block;
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.lj-taller__muebles button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 2px dashed #a48a60;
+  background: transparent;
+  cursor: pointer;
+}
+
+.lj-taller__muebles li.is-falta img {
+  filter: grayscale(1) brightness(0.45) contrast(0.7);
+  opacity: 0.55;
+}
+
+.lj-taller__muebles button[aria-pressed='true'] {
+  border: 2px solid var(--lj-rojo);
+}
+
+.lj-taller__muebles button i {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 9px;
+  height: 9px;
+  background: var(--lj-rojo);
+  box-shadow: 0 0 0 1px var(--lj-rojo-d);
+}
+
+.lj-taller__muebles button:focus-visible {
+  outline: 3px solid var(--lj-laton-d);
+}
+
+.lj-taller__premio,
+.lj-taller__placa {
+  margin: 0;
+  text-align: center;
+}
+
+.lj-taller__placa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.lj-taller__placa img {
+  image-rendering: pixelated;
+}
+
+.lj-taller > .lj-btn {
+  display: block;
+  margin: 0 auto;
 }

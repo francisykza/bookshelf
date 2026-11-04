@@ -2,8 +2,9 @@
 // las políticas de supabase/migrations/20261101120000_edificio_puerto.sql. El reparto en edificios lo hace el servidor
 // (`asignar_edificio`), y el portal llega en una sola consulta (`edificio_portal`). Los pisos que llegan se vuelven a
 // validar aquí antes de dibujarlos; el que se guarda va siempre limpio (`validateRoom`).
+import { acabadoOf } from './acabados';
 import { client, fail } from '../social/services/community';
-import { PRENDAS, ROPA_CASINO, validateAvatar } from './actor';
+import { PRENDAS, ROPA_CASINO, ROPA_ESTIBA, validateAvatar } from './actor';
 import { FIRMAS, catalogItem } from './catalog';
 import { rarezaOf } from './economy';
 import { normalizeInventory } from './inventory';
@@ -95,11 +96,16 @@ const normalizeLonja = (d) => ({
   toldos: d.toldos ?? [],
   sinComision: d.sinComision ?? 0,
   huecoHasta: d.huecoHasta ?? null,
-  juego: { ronda: 1, cajas: 6, par: 2, tope: 3, pesaMas: null, pesadas: [], encargos: [], sellos: 0, acabada: false, ...d.juego },
+  talleres: d.talleres ?? [],
+  buscas: d.buscas ?? [],
+  tablon: d.tablon ?? [],
+  estiba: { w: 8, h: 5, total: 0, bloqueadas: [], piezas: [], niveles: [], hecha: null, pared: [], acabados: {}, ...d.estiba },
   retenidas: d.retenidas ?? 0,
   topeOfertas: d.topeOfertas ?? 3,
   horquilla: d.horquilla ?? {},
+  horquillaAcabado: d.horquillaAcabado ?? {},
   libres: d.libres ?? {},
+  libresAcabado: d.libresAcabado ?? [],
   mias: d.mias ?? [],
   cerradas: d.cerradas ?? [],
   puestos: (d.puestos ?? []).map((o) => ({ ...o, personaje: validateAvatar(o.personaje) })),
@@ -111,11 +117,12 @@ async function lonjaRpc(fn, args) {
   return normalizeLonja(data);
 }
 export const cargarLonja = () => lonjaRpc('piso_lonja');
-export const ponerLonja = (doy, pido, precio, clase) => lonjaRpc('piso_lonja_poner', { doy, pido, precio, clase });
+export const ponerLonja = (doy, pido, precio, clase, acabado = null) => lonjaRpc('piso_lonja_poner', { doy, pido, precio, clase, ...(acabado ? { acabado } : null) });
 export const retirarLonja = (cual) => lonjaRpc('piso_lonja_retirar', { cual });
 export const aceptarLonja = (cual, pago = null) => lonjaRpc('piso_lonja_aceptar', { cual, pago });
-export const pesarLonja = (izq, der) => lonjaRpc('piso_lonja_pesar', { izq, der });
-export const senalarLonja = (cual) => lonjaRpc('piso_lonja_senalar', { cual });
+export const zarparEstiba = (carga) => lonjaRpc('piso_estiba_zarpar', { carga });
+export const buscarLonja = (cual, quiere) => lonjaRpc('piso_lonja_buscar', { cual, quiere });
+export const recogerTaller = (cual) => lonjaRpc('piso_taller_recoger', { cual });
 export const canjearLonja = (que) => lonjaRpc('piso_lonja_canjear', { que });
 export const toldoLonja = (cual) => lonjaRpc('piso_lonja_toldo', { cual });
 
@@ -173,7 +180,7 @@ export async function loadInventario() {
 
 // Armario del personaje y misiones del día (1.70, §70): { prendas: [«clave:valor»], hechas: [misiones del día], nueva,
 // tickets } (`tickets`, desde la 1.79: los ganados al completar las tres con todo el armario ya tuyo)
-const normalizeArmario = (d) => ({ prendas: Array.isArray(d?.prendas) ? d.prendas.filter((p) => PRENDAS.includes(p) || ROPA_CASINO.includes(p)) : [], hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null, tickets: Number.isInteger(d?.tickets) && d.tickets > 0 ? d.tickets : 0 });
+const normalizeArmario = (d) => ({ prendas: Array.isArray(d?.prendas) ? d.prendas.filter((p) => PRENDAS.includes(p) || ROPA_CASINO.includes(p) || ROPA_ESTIBA.includes(p)) : [], hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null, tickets: Number.isInteger(d?.tickets) && d.tickets > 0 ? d.tickets : 0 });
 
 /** Mi armario y lo hecho hoy (`dia`: «AAAA-MM-DD» del dispositivo). Sin la migración de las misiones, null. */
 export async function loadArmario(dia) {
@@ -223,7 +230,7 @@ export async function abrirSobre(sobre, cuantos) {
   fail(error);
   const premios = (Array.isArray(data?.premios) ? data.premios : [])
     .filter((p) => catalogItem(p?.mueble))
-    .map((p) => ({ mueble: p.mueble, rareza: rarezaOf(catalogItem(p.mueble)), nuevo: p.nuevo === true }));
+    .map((p) => ({ mueble: p.mueble, rareza: rarezaOf(catalogItem(p.mueble)), nuevo: p.nuevo === true, acabado: acabadoOf(p.acabado)?.id ?? null }));
   return { premios, inventario: normalizeInventory(data?.inventario) };
 }
 
@@ -281,9 +288,9 @@ export async function meGusta(piso, uid, si) {
 }
 
 /** Regala una copia libre de un mueble a un vecino. Devuelve tu inventario nuevo. */
-export async function regalar(para, mueble) {
+export async function regalar(para, mueble, acabado = null) {
   const sb = await client();
-  const { data, error } = await sb.rpc('piso_regalar', { para, mueble });
+  const { data, error } = await sb.rpc('piso_regalar', acabado ? { para, mueble, acabado } : { para, mueble });
   fail(error);
   return normalizeInventory(data);
 }

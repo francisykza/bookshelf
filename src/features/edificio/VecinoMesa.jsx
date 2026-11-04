@@ -5,7 +5,8 @@
 // que el libro, y se regala uno al día, solo hasta «raro» y solo si te queda otro (lo comprueba también el servidor).
 import { useMemo, useState } from 'react';
 import { CATALOG, FIRMAS } from './catalog';
-import { freeCopies, ownedCopies } from './inventory';
+import { acabadoOf } from './acabados';
+import { acabadosDe, freeCopies, ownedCopies } from './inventory';
 import { renderThumb } from './render';
 
 const firmaText = (id) => FIRMAS.find((f) => f.id === id)?.texto ?? '';
@@ -32,9 +33,9 @@ const markGift = (uid) => {
 /** Lo que puedes regalar: hasta «raro», sin sagas, y solo si tienes más de una copia y alguna sin colocar. */
 function giftable(inventory, room) {
   return CATALOG.filter((c) => !c.set && REGALABLES.has(c.rareza ?? 'comun'))
-    .map((c) => ({ c, owned: ownedCopies(inventory, c.id), n: freeCopies(inventory, room, c.id) }))
+    .flatMap((c) => [null, ...Object.keys(acabadosDe(inventory, c.id))].map((acabado) => ({ c, acabado, owned: ownedCopies(inventory, c.id), n: freeCopies(inventory, room, c.id, acabado) })))
     .filter((x) => x.owned !== Infinity && x.owned > 1 && x.n > 0)
-    .map(({ c, n }) => ({ c, n }));
+    .map(({ c, n, acabado }) => ({ c, n, acabado, key: `${c.id}@${acabado ?? ''}`, nombre: acabado ? `${c.nombre} ${acabadoOf(acabado).nombre}` : c.nombre }));
 }
 
 /**
@@ -50,7 +51,7 @@ export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, onF
   const canGift = Boolean(social && inventory && myRoom);
   const tabs = [{ id: 'libro', nombre: 'Libro de visitas' }, ...(canGift ? [{ id: 'regalar', nombre: 'Regalar' }] : [])];
   const free = useMemo(() => (canGift ? giftable(inventory, myRoom) : []), [canGift, inventory, myRoom]);
-  const thumbs = useMemo(() => Object.fromEntries(free.map(({ c }) => [c.id, renderThumb(c.id).toDataURL()])), [free]);
+  const thumbs = useMemo(() => Object.fromEntries(free.map(({ c, acabado, key }) => [key, renderThumb(c.id, 0, 44, acabado).toDataURL()])), [free]);
   const giftedToday = Math.max(now, givenAt) - givenAt < DAY_MS;
   const mineToday = social?.visitas.find((v) => v.de === myId && v.dia === today)?.frase ?? null;
   const others = social?.visitas.filter((v) => v.de !== myId).slice(0, 2) ?? [];
@@ -75,7 +76,7 @@ export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, onF
   const give = async () => {
     const c = gift;
     try {
-      await onRegalar(c.id);
+      await onRegalar(c.c.id, c.acabado);
       remember();
       setGift(null);
       setMsg(`Le has regalado: ${c.nombre.toLowerCase()}. Le aparecerá en su balda. Mañana podrás regalar otro.`);
@@ -100,11 +101,11 @@ export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, onF
       <>
         {free.length ? (
           <div className="ed-sellos__row ed-gifts" role="group" aria-label="Elige qué regalarle">
-            {free.map(({ c, n }) => (
-              <button key={c.id} type="button" className="ed-gift" aria-pressed={gift?.id === c.id} aria-label={`${c.nombre} (tienes ${n} libre${n === 1 ? '' : 's'})`} onClick={() => (setGift(c), setMsg(''))}>
-                <img src={thumbs[c.id]} alt="" width="44" height="44" />
-                <span>{c.nombre}</span>
-                <b aria-hidden="true">×{n}</b>
+            {free.map((x) => (
+              <button key={x.key} type="button" className={`ed-gift${x.acabado ? ' is-acabado' : ''}`} aria-pressed={gift?.key === x.key} aria-label={`${x.nombre} (tienes ${x.n} libre${x.n === 1 ? '' : 's'})`} onClick={() => (setGift(x), setMsg(''))}>
+                <img src={thumbs[x.key]} alt="" width="44" height="44" />
+                <span>{x.nombre}</span>
+                <b aria-hidden="true">×{x.n}</b>
               </button>
             ))}
           </div>

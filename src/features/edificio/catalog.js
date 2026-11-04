@@ -161,6 +161,17 @@ export const CATALOG = [
   { id: 'gramola', rareza: 'especial', casino: true, vivo: true, nombre: 'Gramola', cat: 'detalles', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.6, 1.2], tonos: [[110, 58, 40]], guino: 'De la caja del casino del Gran Hotel' },
   { id: 'conejo-chistera', rareza: 'legendario', compania: true, casino: true, nombre: 'Conejo de la chistera', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'De la caja del casino del Gran Hotel' },
 
+  // ── La pared de la Lonja (1.86): la gaviota, que como el conejo no sale en sobres (por eso `casino`) ──
+  { id: 'gaviota-puerto', rareza: 'legendario', compania: true, casino: true, nombre: 'Gaviota del puerto', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'De la pared de premios de la Lonja' },
+
+  // ── Las placas de los talleres (1.86, talleres.js): premios, como la de la suite ──
+  { id: 'placa-ebanisteria', rareza: 'especial', nombre: 'Placa de Ebanistería Marín', cat: 'pared', capa: 'pared', w: 1, tonos: [[132, 84, 48]], guino: 'Por completar Ebanistería Marín' },
+  { id: 'placa-tapiceria', rareza: 'especial', nombre: 'Placa de Tapicerías La Bahía', cat: 'pared', capa: 'pared', w: 1, tonos: [[176, 92, 84]], guino: 'Por completar Tapicerías La Bahía' },
+  { id: 'placa-faro', rareza: 'especial', nombre: 'Placa de Lámparas del Faro', cat: 'pared', capa: 'pared', w: 1, tonos: [[214, 164, 72]], guino: 'Por completar Lámparas del Faro' },
+  { id: 'placa-vivero', rareza: 'especial', nombre: 'Placa de Vivero del Muelle', cat: 'pared', capa: 'pared', w: 1, tonos: [[86, 128, 88]], guino: 'Por completar Vivero del Muelle' },
+  { id: 'placa-almoneda', rareza: 'especial', nombre: 'Placa de Almoneda del Capitán', cat: 'pared', capa: 'pared', w: 1, tonos: [[70, 96, 132]], guino: 'Por completar Almoneda del Capitán' },
+  { id: 'placa-menaje', rareza: 'especial', nombre: 'Placa de Menaje Las Dos Anclas', cat: 'pared', capa: 'pared', w: 1, tonos: [[122, 92, 140]], guino: 'Por completar Menaje Las Dos Anclas' },
+
   // ── La lata de los garbanzos (1.82): premios humildes, con las mismas reglas que los de la caja ──
   { id: 'tarro-garbanzos', rareza: 'especial', casino: true, nombre: 'Tarro de garbanzos', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [[222, 186, 118]], guino: 'De la lata de los garbanzos del casino' },
   { id: 'baraja-naipes', rareza: 'especial', casino: true, nombre: 'Baraja de naipes', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [[122, 30, 44]], guino: 'De la lata de los garbanzos del casino' },

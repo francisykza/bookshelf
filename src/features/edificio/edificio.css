@@ -2545,3 +2545,36 @@
 .ed-inside .ed-head:not(:has(.ed-sub)) .ed-title {
   font-size: 0.95rem;
 }
+
+/* 1.86: una copia con acabado se distingue de la lisa de un vistazo */
+.ep-item.is-acabado,
+.ed-gift.is-acabado {
+  position: relative;
+  background: linear-gradient(135deg, #fff3c4, #ffd9ec 45%, #cdf5ff);
+  box-shadow:
+    inset 0 0 0 2px #d9a441,
+    0 0 0 1px #7a4a12;
+}
+
+.ep-item.is-acabado::before,
+.ed-gift.is-acabado::before {
+  content: '✦';
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  color: #b4641c;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.ep-item.is-acabado span {
+  color: #4a2a12;
+  font-size: 0.72em;
+  line-height: 1.05;
+  text-shadow: none;
+}
+
+.gh-lonja__thumb.is-acabado {
+  background: linear-gradient(135deg, #fff3c4, #ffd9ec 45%, #cdf5ff);
+  box-shadow: inset 0 0 0 2px #d9a441;
+}

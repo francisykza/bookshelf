@@ -19,7 +19,7 @@ import { CAJA, fichasDe } from './veintiuna';
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** Recorta lo dibujado (sin el aire de la miniatura del catálogo) y lo amplía a un cuadrado de `size`. */
-function recortar(canvas, size) {
+export function recortar(canvas, size) {
   const { width: w, height: h } = canvas;
   const px = canvas.getContext('2d').getImageData(0, 0, w, h).data;
   let x0 = w;
@@ -80,7 +80,7 @@ const DONDE = {
 const TIPO = { prenda: 'Ropa', mueble: 'Mueble', companero: 'Legendario', sobre: 'Sobre' };
 
 /** El conejo, vivo, en la tarjeta grande (quieto con movimiento reducido). */
-function Vivo({ id }) {
+export function Vivo({ id }) {
   const host = useRef(null);
   useEffect(() => {
     const sprite = misticoSprite(id);

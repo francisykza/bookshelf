@@ -6,6 +6,7 @@
 // temporada, la ficha del elegido, abrir de 1 o de 5, lo que falta si no llega (con un atajo a las misiones) y las
 // probabilidades y garantías. Los tickets solo se ganan leyendo; muebles sueltos a precio fijo (lo raro solo sale en
 // sobres) y reciclar lo que no está colocado. Todo lo decide el servidor; esto enseña y pide confirmación antes de gastar.
+import { acabadosTexto } from './acabados';
 import { useEffect, useMemo, useState } from 'react';
 import { CATALOG, catalogItem, isMistico } from './catalog';
 import { MISION_TICKETS, PITY, SOBRES, TEMPORADA, TIENDA, costeDe, oddsTable, precioDe, rarezaInfo, rarezaOf, sobreOf, sobresHastaRaro, ticketsText } from './economy';
@@ -257,6 +258,7 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
               <span>Probabilidades y garantías</span>
               <small>Raro garantizado en un máximo de {sobresHastaRaro(inventory.sinRaro)} muebles.</small>
             </summary>
+            <p>{acabadosTexto()} La tienda vende siempre liso.</p>
             <p>
               Cada mueble de «{sobre.nombre}» se sortea así, en el servidor. Si el sobre no trae nada de una rareza, ese mueble sale de todo el catálogo. Llevas {inventory.sinRaro} {inventory.sinRaro === 1 ? 'mueble seguido' : 'muebles seguidos'} sin nada raro: cada {PITY}, uno raro seguro (en cualquier sobre). El de 5 trae al menos un poco común.{sobre.prob.mistico ? ' Los místicos solo salen en este sobre, sin garantía ni pity propio: un místico cuenta como algo raro. No se compran, no se reciclan ni se regalan.' : ''} Cada misión de la semana da {MISION_TICKETS} tickets.
             </p>

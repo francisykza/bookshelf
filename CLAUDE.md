@@ -213,8 +213,24 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     con su escalera. A prueba en la Lonja (`hotel/lonjaArt.js`); los pisos de los vecinos, más adelante.
   - **La Lonja** (4-11-2026): el panel, con la soltura del casino («el mejor menú») **pero sin ser igual**: cara propia de
     mercado (clases `lj-`: toldo, pizarra, etiquetas de estraza). **Fuera las mascotas**, además de místicos y sagas. Tiene que
-    dar libertad sin que se pueda explotar la economía: reglas en `20261114120000_hotel_lonja.sql`. Lleva un minijuego, **la
-    pesada de Remedios**, con escena dibujada (`hotel/pesadaArt.js`), no con botones sueltos; sus sellos nunca son tickets ni muebles.
+    dar libertad sin que se pueda explotar la economía: reglas en `20261114120000_hotel_lonja.sql`. Su minijuego lleva escena dibujada, no botones sueltos, y sus sellos nunca son tickets: desde la 1.86 es «La estiba» (`hotel/estibaArt.js`), que sustituye a la pesada de Remedios.
+  - **Identidad de los muebles** (4-11-2026, aprobado por Francisco; por bloques con capturas). Motivo: nadie compraría en la
+    Lonja un sofá que la tienda vende igual.
+    - **Acabados**: algunas copias salen con un acabado propio (cambio de colores y efecto discreto sobre el mismo dibujo;
+      empezar con tres o cuatro, unos más raros que otros). Solo comunes, poco comunes y raros; nunca místicos, mascotas ni
+      sagas. En sobres, **1 de cada 20 copias**: se sortea primero el mueble, como siempre, y después el acabado, sin tocar
+      rarezas ni pity, y la probabilidad se ve en el sobre. **La tienda vende siempre liso.** Con sellos se consigue uno
+      concreto, sin azar y caro. La copia conserva el acabado al venderla o regalarla. Lo ya poseído sigue liso.
+    - **Tiene que notarse**: una copia con acabado se ve claramente distinta a las demás, y el sobre que la trae se abre con
+      **otro brillo, más llamativo**. Solo cuando de verdad la trae: nada de falsos «casi» (§ «Sobres de la tienda»).
+    - **Colecciones de taller**: los muebles son de talleres con nombre; completar uno da una placa en el piso y un premio.
+    - **Tablón «Se busca»** en la Lonja: marcas el mueble que quieres, sin texto libre.
+    - **Catálogo rotatorio** de la tienda: idea aplazada, no hacerla sin que la pida.
+  - **«La estiba»** (4-11-2026, aprobada): sustituye a la pesada de Remedios, que a Francisco no le resultaba intuitiva ni veía
+    sus recompensas. Encajar bultos con forma de mueble en la bodega de un barco; una bodega al día, igual para todos, y el
+    servidor comprueba la carga. Los premios, siempre a la vista en una **pared de premios** en la Lonja, nunca plegados: sellos
+    por nivel de carga, canjeables por toldos, ropa de estibador, una mascota gaviota y acabados. Los sellos ganados se
+    conservan y **nunca crea tickets**.
   - **Encargo del 3-11-2026** (antes de seguir con el plan del rascacielos; por bloques con capturas):
     - **Sin «dejar una frase»** (los sellos de frase al vecino): sobra junto al libro de visitas. Se quita de la app;
       no se borran los datos.

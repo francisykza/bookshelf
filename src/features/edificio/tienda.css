@@ -1953,3 +1953,103 @@
     display: none;
   }
 }
+
+/* 1.86: el sobre que trae un acabado se abre con otro brillo; solo sale cuando de verdad lo trae */
+.gacha--acabado .gacha__glow {
+  inset: -95% -90%;
+  filter: saturate(1.35) brightness(1.1);
+  background: conic-gradient(from 0deg, #ff6fae, #ffe066, #6dffc4, #6cc6ff, #c79bff, #ff6fae);
+  -webkit-mask: radial-gradient(closest-side, #000 52%, transparent 86%);
+  mask: radial-gradient(closest-side, #000 52%, transparent 86%);
+  opacity: 1;
+  animation: gacha-foil-spin 2.6s linear infinite;
+}
+
+.gacha--acabado.is-opening .gacha__glow {
+  animation: gacha-foil-open 1.2s ease-out forwards;
+}
+
+.gacha--acabado .gacha__burst {
+  background: repeating-conic-gradient(from 0deg, #fff 0deg 5deg, var(--ac, #ffe08a) 5deg 13deg, transparent 13deg 22deg);
+}
+
+.gacha--acabado.is-sealed .gacha__env {
+  animation-duration: 0.8s;
+}
+
+.gacha--acabado .gacha__motes i {
+  background: #fff;
+  box-shadow: 0 0 6px 2px var(--ac, #ffe08a);
+}
+
+@keyframes gacha-foil-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gacha-foil-open {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(2.1) rotate(160deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6) rotate(260deg);
+  }
+}
+
+.gacha__flash.is-acabado {
+  --fc: var(--ac, #ffe08a);
+  animation-duration: 1.4s;
+}
+
+.gacha__card.is-acabado .gacha__face {
+  background: linear-gradient(150deg, #fffdf2, color-mix(in srgb, var(--ac, #ffe08a) 42%, #fffdf2));
+  outline: 3px solid var(--ac, #ffe08a);
+  outline-offset: -3px;
+}
+
+.gacha__card.is-acabado.is-shown {
+  animation: gacha-pop 0.7s 0.25s ease-out;
+  filter: drop-shadow(0 0 7px var(--ac, #ffe08a));
+}
+
+/* La lámina: una franja de colores que cruza la carta una y otra vez */
+.gacha__foil {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 111 174 / 0.42) 42%, rgb(255 224 102 / 0.5) 50%, rgb(109 255 196 / 0.42) 58%, transparent 70%) 0 0 / 260% 100%;
+  pointer-events: none;
+  animation: gacha-foil-sweep 2.4s linear infinite;
+}
+
+@keyframes gacha-foil-sweep {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+
+.gacha__acabado {
+  position: relative;
+  color: #7a1f3d;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.8em;
+  line-height: 1.1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gacha--acabado .gacha__glow,
+  .gacha__foil {
+    animation: none;
+  }
+}

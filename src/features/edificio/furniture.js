@@ -698,7 +698,8 @@ const peana = (T) => [
   B(0.26, 0.26, 0.08, 0.74, 0.74, 0.18, T),
   B(0.24, 0.24, 0.18, 0.76, 0.76, 0.22, [204, 170, 90], { grain: 0 }),
 ];
-for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta', 'conejo-chistera']) SHAPES[id] = peana;
+for (const id of ['ebanisteria', 'tapiceria', 'faro', 'vivero', 'almoneda', 'menaje']) SHAPES[`placa-${id}`] = SHAPES['placa-suite'];
+for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta', 'conejo-chistera', 'gaviota-puerto']) SHAPES[id] = peana;
 
 /** Cajas de un mueble en coordenadas locales (sin girar). */
 export function shapeOf(id, tono) {

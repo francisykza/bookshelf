@@ -105,7 +105,7 @@ function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '' }) {
 }
 
 /** El piso montado en un contenedor (lo dibuja el motor de píxeles, fuera de React). */
-function PisoView({ room, editable, label, soundOn, inside, decorate = false, inventory, avatar, companion = null, prendas = null, missions = null, notice = null, likes = null, placeId = null, onPlaced = null, onChange, onAvatarChange, onCompanionChange = null, onEvent, onLike, onDressing = null, closeDressing = 0 }) {
+function PisoView({ room, editable, label, soundOn, inside, decorate = false, inventory, avatar, companion = null, prendas = null, missions = null, notice = null, likes = null, placeId = null, placeAcabado = null, onPlaced = null, onChange, onAvatarChange, onCompanionChange = null, onEvent, onLike, onDressing = null, closeDressing = 0 }) {
   const ref = useRef(null);
   const api = useRef(null);
   const changed = useRef(onChange);
@@ -125,7 +125,7 @@ function PisoView({ room, editable, label, soundOn, inside, decorate = false, in
   useEffect(() => {
     // Tu piso se abre sin decorar (1.78: la habitación es la protagonista; la balda sale con «Decorar»). Si vienes de
     // la tienda a poner un mueble (placeId) o de elegir tu mudanza (`decorate`), se abre decorando
-    const piso = mountPiso(ref.current, { room, editable, label, inside, decorate: editable && decorate, inventory, muted: !soundOn, avatar, companion, prendas, missions, onCompanionChange: (id) => palChanged.current?.(id), onDressing: (on) => dressed.current?.(on), onChange: (r) => changed.current?.(r), onAvatarChange: (a) => avatarChanged.current?.(a), onEvent: (t) => evented.current?.(t), likes, onLike: onLike ? (uid, si) => likedRef.current?.(uid, si) : null, placeId });
+    const piso = mountPiso(ref.current, { room, editable, label, inside, decorate: editable && decorate, inventory, muted: !soundOn, avatar, companion, prendas, missions, onCompanionChange: (id) => palChanged.current?.(id), onDressing: (on) => dressed.current?.(on), onChange: (r) => changed.current?.(r), onAvatarChange: (a) => avatarChanged.current?.(a), onEvent: (t) => evented.current?.(t), likes, onLike: onLike ? (uid, si) => likedRef.current?.(uid, si) : null, placeId, placeAcabado });
     api.current = piso;
     // El mueble que venía de la tienda ya está puesto: no se vuelve a poner si el piso se monta otra vez
     if (placeId) onPlaced?.();
@@ -193,6 +193,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const [closeReveal, setCloseReveal] = useState(0);
   // El mueble elegido en un sobre para colocarlo (1.76): el piso se abre con él listo para arrastrar
   const [toPlace, setToPlace] = useState(null);
+  const [toPlaceAcabado, setToPlaceAcabado] = useState(null);
   // Dentro del hotel, la sala en la que estás (1.75): null es la fachada; el «Volver» de la barra sale a la calle
   const [hotelRoom, setHotelRoom] = useState(null);
   const [hotelDir, setHotelDir] = useState(false);
@@ -396,7 +397,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     );
   };
   const onFirmar = async (frase) => setSocial(open.user_id, await firmar(open.user_id, frase));
-  const onRegalar = async (mueble) => setInventory(await regalar(open.user_id, mueble));
+  const onRegalar = async (mueble, acabado) => setInventory(await regalar(open.user_id, mueble, acabado));
 
   let body;
   if (community.status === 'signed-out' || community.status === 'off') {
@@ -429,9 +430,10 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} timer={reloj} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} onInventory={setInventory} />;
   } else if (inShop) {
     body = inventory?.tienda ? (
-      <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={(id) => {
+      <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={(id, acabado = null) => {
           if (!me) return;
           setToPlace(id ?? null);
+          setToPlaceAcabado(acabado);
           onOpenPiso(me.user_id);
         }} onOpenMissions={onOpenMissions} onReveal={setRevealing} closeReveal={closeReveal} />
     ) : (
@@ -455,7 +457,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             {!(mine && inside) && <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : likes ? 'Toca un mueble para darle un «me gusta».' : 'Puedes mirar, pero no tocar nada.'}</p>}
           </div>
         </div>
-        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} decorate={mine && justPicked} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
+        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} decorate={mine && justPicked} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} placeAcabado={mine ? toPlaceAcabado : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
             {saving}

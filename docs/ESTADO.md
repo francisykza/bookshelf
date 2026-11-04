@@ -6,6 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Cerrada y sin publicar: 1.86.0** (2026-11-04, §85 y §86). Reseña como imagen, acabados, La estiba con su pared de premios, talleres y tablón «Se busca». Está en la rama `1.86-identidad-muebles`. **Sus tres migraciones están sin aplicar** y hay que aplicarlas antes de subir, en este orden: `20261115120000_edificio_acabados.sql`, `20261116120000_hotel_estiba.sql` y `20261117120000_edificio_talleres.sql`.
 - **Versión publicada: 1.84.0** (2026-11-04, §84), junto con la 1.82 y la 1.83; `/sw.js` ya la trae. La Lonja de dos plantas, con su panel de mercado, sus reglas contra los
   abusos y la pesada de Remedios. Está en la rama `1.84-lonja` (PR #9), que sale de la 1.83. **Su migración
   `20261114120000_hotel_lonja.sql` está aplicada en producción** (4-11-2026).
@@ -76,6 +77,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.86.0 | Reseña como imagen, acabados de muebles, La estiba con pared de premios, talleres y tablón «Se busca» (cerrada, sin publicar; tres migraciones sin aplicar) | §85, §86 |
 | 1.79.0 | Misiones del día que dan 5 tickets con el armario completo, cartela del hotel más pequeña y la suite de la semana decorada entre todos en el ático (publicada; migraciones aplicadas) | §79 |
 | 1.78.0 | El encargo del 3-11-2026: arreglos (sobre en el iPhone, sin sellos, correo leído, regalos uno al día hasta «raro»), vestíbulo discreto, sobres con más impacto, tanda 3 con mascota y conjunto «Noche estrellada», paseo hasta la tienda y la limusina, mantener pulsado para mover y la habitación primero con iconos (publicada; migraciones aplicadas) | §78 |
 | 1.77.0 | La fachada del Gran Hotel entera sobre una cartela crema, planta elegida con filete y rombo de latón y el Directorio de las plantas; el armario como modo propio del piso («← Al piso» / «Armario»), Ropa, Aspecto y Compañía con vista previa que se guarda con «Listo», y el dragón posado a tu lado (publicada) | §77 |
@@ -118,6 +120,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Aplicar las tres migraciones de la 1.86 y publicarla.** Después, probar en un móvil real el arrastre de la estiba, los sonidos nuevos y la exportación de la reseña, que Francisco vea las cifras de sellos y precios, y decidir si la tienda dice de qué taller es cada mueble.
 - **Probar entre dos cuentas reales y en un iPhone** lo de las 1.82, 1.83 y 1.84, y escuchar los sonidos de la pesada.
 - **Rascacielos**: quiosco descartado por ahora y Lonja cerrada. Lo siguiente, en `docs/qa/gran-hotel.md` §9.6.
 - **Pisos ampliados o de varias plantas para los vecinos**: más adelante, con lo aprendido en la Lonja.
@@ -206,6 +209,24 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-04 · cuenta principal · 1.86.0 cerrada
+- Francisco pidió cerrarla con «Sí, ciérrala» tras ver los tres bloques. No hubo 1.85 aparte: la reseña como imagen va en la 1.86 (SPEC §85) y lo demás en §86. La rama `1.85-resena-imagen` pasa a llamarse `1.86-identidad-muebles`.
+- Sin aplicar ni publicar. Falta el flujo del SQL Editor para las tres migraciones, en orden, y después «súbelo».
+
+### 2026-11-04 · cuenta principal · reseña, acabados, estiba y talleres (en la 1.86.0)
+- Encargo de Francisco, por una captura del TikTok de libros de Enola: **exportar la reseña como imagen**. Hecho en disco, sin commit ni versión: `src/features/reviews/reviewCard.js` (dibujo en lienzo, 1080×1920 y 1080×1350, tres papeles, reparto en carrusel), `ReviewExport.jsx`, `review-export.css`, `api/portada.js` (primera función de Vercel: portadas de Google, que no se pueden usar en un lienzo de otro modo) y el botón en `MyReview`.
+- Pruebas: Vitest de `src/features/reviews`, y `e2e/v185-resena-imagen.spec.js` en Chromium 390 y WebKit 390, y antes de los últimos retoques en escritorio. **Sin verificar**: `api/portada.js` solo funciona desplegado; compartir con la hoja del sistema, en un móvil real. En WebKit de Windows los títulos salen más finos: mirarlo en el iPhone.
+- **Aprobado por Francisco** (reglas en CLAUDE.md, «Identidad de los muebles» y «La estiba»): acabados a 1 de cada 20, «La estiba» con pared de premios, colecciones de taller y tablón «Se busca». Añadió que la copia rara se vea claramente distinta y que su sobre se abra con otro brillo.
+- **Bloque 1, acabados: hecho en disco, sin commit ni versión, esperando su visto bueno.** Migración nueva `20261115120000_edificio_acabados.sql` (**sin aplicar**; generada a partir de las funciones publicadas), `src/features/edificio/acabados.js`, y cambios en dibujo, balda, regalos, Lonja, tienda y `GachaReveal.jsx`. Pruebas: `acabados.rls.test.js` y todo `src/features/edificio` en Vitest, `v186-acabados`, `v176`, `v184`, `v171`, `v167` y `v166` en Chromium 390.
+- **Sin probar en el navegador**: regalar y poner en la Lonja una copia con acabado (el servidor sí está probado, la pantalla no, porque el simulador no los cubre). Los muebles de pared llevan el color pero no los destellos. El buzón aún no dice el acabado de un regalo, aunque se guarda.
+- **Bloque 2, «La estiba» y la pared de premios: hecho en disco, sin commit ni versión, esperando su visto bueno.** Migración nueva `20261116120000_hotel_estiba.sql` (**sin aplicar**, va después de la de acabados; se generó desde las funciones publicadas). Bodega diaria de 8 × 5 igual para todos, partida en bultos, con carga perfecta garantizada; `piso_estiba_zarpar` comprueba la carga y da 1, 2, 4 o 7 sellos una vez al día. `piso_lonja_canjear` añade ropa de estibador (`jersey:17`, `pantalon:10`, `complemento:gorro-estibador`), la gaviota (`gaviota-puerto`, 120 sellos) y un acabado concreto sobre una copia lisa (40 a 100 sellos). Pantalla: `hotel/estiba.js`, `estibaArt.js`, `LonjaEstiba.jsx`, `LonjaPared.jsx`.
+- **La pesada queda cerrada**: se borraron `LonjaPesada.jsx` y `pesadaArt.js`, y se revocan `piso_lonja_pesar` y `piso_lonja_senalar`. Su tabla, sus datos y los sellos ganados se conservan, y `piso_lonja()` sigue devolviendo `juego` para que la versión anterior no falle mientras se actualiza.
+- **Cifras propuestas por Claude, pendientes de que Francisco las vea**: sellos por nivel, precios de la ropa, de la gaviota y de los acabados.
+- **Pruebas del bloque 2**: `estiba.rls.test.js` y todo `src/features/edificio` en Vitest (186), `v186-estiba` en Chromium 360, 390 y escritorio y en WebKit 390, `v184-lonja` en Chromium y WebKit 390, y build. **Sin probar**: arrastrar con el dedo en un móvil de verdad (las pruebas usan ratón y toque simulados en el navegador), la sirena y los sonidos, y vestir la ropa nueva en el armario en el navegador (el servidor sí está probado).
+- **Bloque 3, talleres y «Se busca»: hecho en disco, sin commit ni versión, esperando su visto bueno.** Migración nueva `20261117120000_edificio_talleres.sql` (**sin aplicar**, va después de la de la estiba). Seis talleres inventados en `talleres.js` (igual que `piso_talleres`; todo mueble de tienda está en uno): tener una copia de todo da su placa (`placa-<taller>`, rareza especial) y 30 sellos, una vez. Tablón en `hotel/LonjaTablon.jsx`, cuarto faldón del toldo: hasta tres marcas, sin texto, caducan a los 30 días y respetan bloqueos; «Ofrecer» abre tu puesto con ese mueble. En los puestos, etiquetas «Lo buscas» y «Te falta · taller».
+- **Pruebas del bloque 3**: `talleres.rls.test.js`, todo `src/features/edificio` en Vitest y `v186-tablon`. **Sin probar**: colgar una placa en el piso en el navegador (usa la forma de la de la suite). La tienda aún no dice de qué taller es cada mueble.
+- **Queda**: las tres cosas (acabados, estiba, talleres) esperan su visto bueno. Al cerrar: subir versión, SPEC §85 y §86 y ofrecer el flujo del SQL Editor para **tres** migraciones, en orden: `20261115120000`, `20261116120000`, `20261117120000`. Ninguna está aplicada: publicar sin ellas rompería la Lonja.
 
 ### 2026-11-04 · cuenta principal · 1.84.0 publicada
 - `main` avanzó sin fusión desde la 1.81 hasta la 1.84, con las 1.82 y 1.83 dentro; `/sw.js` ya trae la 1.84.0.

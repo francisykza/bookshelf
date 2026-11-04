@@ -142,7 +142,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     const blockedWith = (other) => db.blocks.some((b) => (b.blocker === userId && b.blocked === other) || (b.blocker === other && b.blocked === userId));
     if (table === 'rpc/sala_lectura_personajes') return json(db.sala_personajes ?? []);
     // La Lonja: `db.lonja` es lo que devuelve `piso_lonja`; las reglas de verdad se prueban en lonja.rls.test.js
-    if (table.startsWith('rpc/piso_lonja')) {
+    if (table.startsWith('rpc/piso_lonja') || table === 'rpc/piso_estiba_zarpar' || table === 'rpc/piso_taller_recoger') {
       const l = db.lonja;
       if (!l) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'no existe' }) });
       const body = req.postDataJSON?.() ?? {};
@@ -161,30 +161,34 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         l.tickets -= o.busca_tickets ?? 0;
         l.cambios.hechos += 1;
       }
-      // En la pesada simulada, la caja buena siempre es la 4 y pesa de más
-      if (table === 'rpc/piso_lonja_pesar') {
-        const baja = body.izq.includes(4) ? 'izq' : body.der.includes(4) ? 'der' : 'igual';
-        l.juego.pesadas.push({ izq: body.izq, der: body.der, baja });
+      if (table === 'rpc/piso_lonja_buscar') l.buscas = body.quiere ? [...(l.buscas ?? []), body.cual] : l.buscas.filter((m) => m !== body.cual);
+      if (table === 'rpc/piso_taller_recoger') {
+        l.talleres.find((t) => t.id === body.cual).recogido = true;
+        l.sellos += 30;
       }
-      if (table === 'rpc/piso_lonja_senalar') {
-        const j = l.juego;
-        const sellos = body.cual === 4 ? j.ronda : 0;
-        j.encargos.push({ ronda: j.ronda, cajas: j.cajas, caja: 4, pesaMas: true, senalada: body.cual, sellos, pesadas: j.pesadas });
-        j.sellos += sellos;
+      // La estiba simulada: cuenta los huecos sin comprobar la carga (eso se prueba en estiba.rls.test.js)
+      if (table === 'rpc/piso_estiba_zarpar') {
+        const e = l.estiba;
+        const celdas = body.carga.reduce((n, c) => n + e.piezas.find((p) => p.id === c.pieza).celdas.length, 0);
+        const sellos = celdas >= e.total ? 7 : celdas * 100 >= e.total * 80 ? 4 : celdas * 100 >= e.total * 50 ? 2 : 1;
+        e.hecha = { carga: body.carga, celdas, total: e.total, sellos };
         l.sellos += sellos;
-        j.acabada = body.cual !== 4 || j.ronda === 3;
-        if (!j.acabada) {
-          j.ronda += 1;
-          j.cajas = [6, 9, 8][j.ronda - 1];
-          j.par = [2, 2, 3][j.ronda - 1];
-          j.tope = j.par + 1;
-          j.pesaMas = j.ronda < 3 ? true : null;
-          j.pesadas = [];
-        }
       }
       if (table === 'rpc/piso_lonja_canjear') {
-        l.sellos -= body.que === 'sin-comision' ? 10 : body.que === 'hueco' ? 14 : 18;
-        if (body.que === 'sin-comision') l.sinComision = (l.sinComision ?? 0) + 1;
+        const premio = l.estiba?.pared.find((a) => a.id === body.que);
+        const acabado = body.que.startsWith('acabado:') ? body.que.split(':') : null;
+        if (premio) {
+          l.sellos -= premio.precio;
+          premio.tienes = true;
+        } else if (acabado) {
+          l.sellos -= l.estiba.acabados[acabado[1]];
+          l.libres[acabado[2]] -= 1;
+          l.libresAcabado.push({ mueble: acabado[2], acabado: acabado[1], libres: 1 });
+        } else {
+          l.sellos -= body.que === 'sin-comision' ? 10 : body.que === 'hueco' ? 14 : 18;
+          if (body.que === 'sin-comision') l.sinComision = (l.sinComision ?? 0) + 1;
+          if (body.que.startsWith('toldo:')) l.toldos = [...l.toldos, body.que.slice(6)];
+        }
       }
       return json(l);
     }
@@ -565,7 +569,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       cuenta.tickets ??= 30;
       cuenta.sin_raro ??= 0;
       const reclamadas = () => (db.piso_reclamos ?? []).filter((k) => k.startsWith(`${userId}:`)).map((k) => `mision:${k.split(':').slice(1).join(':')}`).sort();
-      const mine = () => ({ inicio_elegido: cuenta.inicio_elegido, tickets: cuenta.tickets, sin_raro: cuenta.sin_raro, reclamadas: reclamadas(), copias: db.piso_inventario[userId] });
+      const mine = () => ({ inicio_elegido: cuenta.inicio_elegido, tickets: cuenta.tickets, sin_raro: cuenta.sin_raro, acabados: db.piso_acabados?.[userId] ?? {}, reclamadas: reclamadas(), copias: db.piso_inventario[userId] });
       const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
       const cat = (id) => CATALOG.find((c) => c.id === id && !c.set);
       const rareza = (id) => cat(id)?.rareza ?? 'comun';
@@ -599,11 +603,15 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         db.piso_sorteo ??= [];
         const premios = [];
         for (let i = 0; i < cuantos; i += 1) {
-          const mueble = db.piso_sorteo.shift() ?? 'silla';
+          const [mueble, acabado = null] = String(db.piso_sorteo.shift() ?? 'silla').split('@');
+          if (acabado) {
+            const mios = ((db.piso_acabados ??= {})[userId] ??= {});
+            (mios[mueble] ??= {})[acabado] = (mios[mueble][acabado] ?? 0) + 1;
+          }
           const nuevo = !(db.piso_inventario[userId][mueble] > 0);
           sumar(mueble, 1);
           cuenta.sin_raro = ['raro', 'mistico', 'legendario'].includes(rareza(mueble)) ? 0 : cuenta.sin_raro + 1;
-          premios.push({ mueble, rareza: rareza(mueble), nuevo });
+          premios.push({ mueble, rareza: rareza(mueble), nuevo, acabado });
         }
         cuenta.tickets -= coste;
         return json({ premios, inventario: mine() });
