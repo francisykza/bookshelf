@@ -1,11 +1,11 @@
 // El casino del sótano del Gran Hotel (1.80, docs/qa/gran-hotel.md §9.4): «Las 21 páginas», un veintiuno contra el
 // crupier sin apostar. Las cifras son las de piso_casino_reglas en supabase/migrations/20261110120000_hotel_casino.sql
-// (una prueba lo comprueba); la partida la reparte y la puntúa el servidor. Aquí, cómo se lee una carta y si hoy se
-// ha leído (la puerta del sótano solo se enciende entonces).
+// (una prueba lo comprueba); la partida la reparte y la puntúa el servidor. Aquí, cómo se lee una carta.
 
 /**
  * Manos al día, tope de fichas a la semana y las fichas de cada final (contra el crupier nunca se pierde nada). En la
- * mesa para dos: las fichas de compañía, lo más que se apuesta entre amigos y los garbanzos (imaginarios) del día.
+ * mesa para dos: las fichas de compañía, lo más que se apuesta entre amigos y los garbanzos del día. Desde la 1.82: las
+ * mesas de garbanzos de cada día y el cambio (lote de garbanzos por tickets, lo que vuelve y el tope semanal en tickets).
  */
 export const CASINO = {
   manos: 3,
@@ -19,6 +19,11 @@ export const CASINO = {
   apuestaGarbanzos: 50,
   garbanzosInicio: 100,
   garbanzosDia: 20,
+  mesasGarbanzos: 6,
+  cambioGarbanzos: 50,
+  cambioTickets: 5,
+  vueltaGarbanzos: 25,
+  topeCambio: 10,
 };
 
 const PALOS = ['picas', 'corazones', 'tréboles', 'diamantes'];
@@ -84,3 +89,13 @@ export const CAJA = [
   { id: 'conejo-chistera', tipo: 'companero', precio: 1500, nombre: 'Conejo de la chistera', texto: 'Legendario: sale de su chistera y baraja un naipe en el aire. Te acompaña.', efecto: true },
 ];
 export const articuloDe = (id) => CAJA.find((a) => a.id === id) ?? null;
+
+/**
+ * La lata de los garbanzos (1.82): premios humildes que se cambian por garbanzos, con los precios de
+ * piso_casino_lata_precios (una prueba lo comprueba). Como los de la caja: se tienen una vez y no salen en sobres.
+ */
+export const LATA = [
+  { id: 'tarro-garbanzos', precio: 150, nombre: 'Tarro de garbanzos', texto: 'Para que se vea lo ahorrado.' },
+  { id: 'baraja-naipes', precio: 300, nombre: 'Baraja de naipes', texto: 'Gastada de tanto repartir.' },
+  { id: 'taburete-barra', precio: 600, nombre: 'Taburete de barra', texto: 'El de la barra del sótano.' },
+];

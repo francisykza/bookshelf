@@ -9,7 +9,7 @@ import { SOBRES } from '../src/features/edificio/economy.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
 import { PRENDAS } from '../src/features/edificio/actor.js';
 import { missionsOf } from '../src/features/edificio/dailyMissions.js';
-import { CAJA, CASINO, valor } from '../src/features/edificio/hotel/veintiuna.js';
+import { CAJA, CASINO, LATA, valor } from '../src/features/edificio/hotel/veintiuna.js';
 
 export const SUPABASE = 'http://supabase.test';
 
@@ -131,6 +131,8 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     const req = route.request();
     const url = new URL(req.url());
     if (url.pathname.startsWith('/auth/v1/')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: userId }) });
+    // Los toques de la mesa para dos (1.82) no llevan datos: la prueba mueve la mesa a mano
+    if (url.pathname.startsWith('/realtime/')) return route.fulfill({ status: 202, contentType: 'application/json', body: '{}' });
     const table = url.pathname.replace('/rest/v1/', '');
     // 1.63 (SPEC §63): el edificio del puerto, como la migración (reparto, portal y RLS de pisos y sellos)
     if (['pisos', 'piso_sellos', 'rpc/asignar_edificio', 'rpc/edificio_portal'].includes(table) && !db.edificio_vecinos) {
@@ -221,6 +223,9 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         'rpc/piso_casino_rechazar',
         'rpc/piso_casino_mesa_jugar',
         'rpc/piso_casino_canjear',
+        'rpc/piso_casino_invitar_garbanzos',
+        'rpc/piso_casino_lata_canjear',
+        'rpc/piso_casino_cambiar',
       ].includes(table)
     ) {
       if (!db.casino) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
@@ -233,6 +238,9 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       ca.amigos ??= [];
       ca.mesas ??= [];
       ca.caja ??= [];
+      ca.lata ??= [];
+      ca.tickets ??= 30;
+      ca.cambio ??= { aTickets: 0, aGarbanzos: 0 };
       const body = req.postDataJSON?.() ?? {};
       const mesa = body.mesa ? ca.mesas.find((m) => m.id === body.mesa) : null;
       if (mesa) body.dia = mesa.dia;
@@ -241,9 +249,12 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         ca.garbanzosDia = body.dia;
       };
       const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
-      const hoy = ca.manos.filter((m) => m.dia === body.dia);
+      const hoy = ca.manos.filter((m) => m.dia === body.dia && m.mano <= 3);
+      const deGarbanzos = ca.manos.filter((m) => m.dia === body.dia && m.mano > 3);
+      const delDia = () => ca.manos.filter((m) => m.dia === body.dia && m.mano <= 3);
+      const garbanzosHoy = () => ca.manos.filter((m) => m.dia === body.dia && m.mano > 3);
       const abierta = hoy.find((m) => m.estado === 'jugando' && !m.mesa);
-      const guardadas = ca.mesas.filter((m) => m.anfitrion && m.dia === body.dia && m.estado === 'invitada').length;
+      const guardadas = ca.mesas.filter((m) => m.anfitrion && m.dia === body.dia && m.estado === 'invitada' && !m.solo_garbanzos).length;
       const cerrar = (m, fin, extra = 0) => {
         const premio = Math.min(CASINO[fin] + extra, Math.max(0, CASINO.tope - ca.semana));
         m.estado = fin;
@@ -256,8 +267,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         fichas: ca.fichas,
         semana: ca.semana,
         tope: CASINO.tope,
-        manos: ca.manos
-          .filter((m) => m.dia === body.dia)
+        manos: delDia()
           .map((m) => ({
             mano: m.mano,
             mesa: m.mesa ?? null,
@@ -268,7 +278,11 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
             estado: m.estado,
             fichas: m.fichas,
           })),
-        quedan: Math.max(0, CASINO.manos - ca.manos.filter((m) => m.dia === body.dia).length),
+        quedan: Math.max(0, CASINO.manos - delDia().length),
+        quedanGarbanzos: Math.max(0, CASINO.mesasGarbanzos - garbanzosHoy().length - ca.mesas.filter((m) => m.anfitrion && m.solo_garbanzos && m.estado === 'invitada').length),
+        tickets: ca.tickets,
+        lata: LATA.map((a) => ({ id: a.id, precio: a.precio, tienes: ca.lata.includes(a.id) })),
+        cambio: ca.cambio,
         jugando: ca.manos.some((m) => m.dia === body.dia && m.estado === 'jugando' && !m.mesa),
         garbanzos: ca.garbanzos,
         amigos: ca.amigos,
@@ -281,6 +295,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
               id: m.id,
               dia: m.dia,
               anfitrion: m.anfitrion,
+              solo_garbanzos: Boolean(m.solo_garbanzos),
               amigo: m.amigo,
               estado: m.estado,
               fichas: m.fichas,
@@ -307,7 +322,8 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         if (m.estado !== 'jugando' || mia.estado === 'jugando' || m.suya.estado === 'jugando') return;
         while (valor(m.crupier) < 17) m.crupier.push(m.mazo.shift());
         mia.crupier = m.crupier;
-        cerrar(mia, final(mia.tuyas, m.crupier), CASINO.compania);
+        if (m.solo_garbanzos) mia.estado = final(mia.tuyas, m.crupier);
+        else cerrar(mia, final(mia.tuyas, m.crupier), CASINO.compania);
         const puntos = (t) => (valor(t) > 21 ? -1 : valor(t));
         const yo = puntos(mia.tuyas);
         const otro = puntos(m.suya.tuyas);
@@ -328,8 +344,41 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         llegar();
         if (ca.fichas < body.fichas || ca.garbanzos < body.garbanzos) return fail('No tienes tanto para apostar.');
         if (hoy.length + guardadas >= CASINO.manos) return fail('Hoy ya has jugado tus tres manos, o las que quedan están guardadas para otras mesas: vuelve mañana.');
-        if (ca.mesas.some((m) => m.amigo.uid === amigo.uid && m.dia === body.dia && m.estado !== 'rechazada')) return fail('Hoy ya tenéis una mesa los dos: una al día por pareja.');
+        if (ca.mesas.some((m) => m.amigo.uid === amigo.uid && m.dia === body.dia && m.estado !== 'rechazada' && !m.solo_garbanzos)) return fail('Hoy ya tenéis una mesa los dos: una al día por pareja.');
         ca.mesas.unshift({ id: `mesa-${ca.mesas.length + 1}`, dia: body.dia, anfitrion: true, amigo, estado: 'invitada', fichas: body.fichas, garbanzos: body.garbanzos });
+        return json(estado());
+      }
+      if (table === 'rpc/piso_casino_invitar_garbanzos') {
+        const amigo = ca.amigos.find((a) => a.uid === body.amigo);
+        if (!amigo) return fail('Solo se juega en pareja con un amigo: alguien a quien sigues y te sigue.');
+        if (!(body.garbanzos >= 1 && body.garbanzos <= CASINO.apuestaGarbanzos)) return fail('En una mesa de garbanzos se apuesta de 1 a 50.');
+        llegar();
+        if (ca.garbanzos < body.garbanzos) return fail('No tienes tanto para apostar.');
+        ca.mesas.unshift({ id: `mesa-${ca.mesas.length + 1}`, dia: body.dia, anfitrion: true, amigo, estado: 'invitada', fichas: 0, garbanzos: body.garbanzos, solo_garbanzos: true });
+        return json(estado());
+      }
+      if (table === 'rpc/piso_casino_lata_canjear') {
+        const a = LATA.find((x) => x.id === body.articulo);
+        if (!a) return fail('Eso no está en la lata.');
+        if (ca.lata.includes(a.id)) return fail('Eso ya lo tienes.');
+        if (ca.garbanzos < a.precio) return fail('Te faltan garbanzos para eso.');
+        ca.garbanzos -= a.precio;
+        ca.lata.push(a.id);
+        return json(estado());
+      }
+      if (table === 'rpc/piso_casino_cambiar') {
+        const aTickets = body.sentido === 'a-tickets';
+        const hecho = aTickets ? ca.cambio.aTickets : ca.cambio.aGarbanzos;
+        if (hecho + CASINO.cambioTickets > CASINO.topeCambio) return fail('Esta semana ya has cambiado todo lo que se puede.');
+        if (aTickets) {
+          ca.garbanzos -= CASINO.cambioGarbanzos;
+          ca.tickets += CASINO.cambioTickets;
+          ca.cambio.aTickets += CASINO.cambioTickets;
+        } else {
+          ca.tickets -= CASINO.cambioTickets;
+          ca.garbanzos += CASINO.vueltaGarbanzos;
+          ca.cambio.aGarbanzos += CASINO.cambioTickets;
+        }
         return json(estado());
       }
       if (table === 'rpc/piso_casino_canjear') {
@@ -352,13 +401,13 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       if (table === 'rpc/piso_casino_aceptar') {
         if (!mesa || mesa.anfitrion || mesa.estado !== 'invitada') return fail('Esa mesa ya no te espera.');
         llegar();
-        if (hoy.length >= CASINO.manos) return fail('Alguno de los dos ya ha jugado sus tres manos de hoy.');
+        if (!mesa.solo_garbanzos && hoy.length >= CASINO.manos) return fail('Alguno de los dos ya ha jugado sus tres manos de hoy.');
         if (ca.fichas < mesa.fichas || ca.garbanzos < mesa.garbanzos) return fail('Alguno de los dos ya no tiene lo que se apostaba.');
         ca.fichas -= mesa.fichas;
         ca.garbanzos -= mesa.garbanzos;
         const mazo = ca.barajas.shift() ?? [9, 8, 6, 5, 22, 12, 1, 2, 3, 4, 7, 10, 11];
         // Como el servidor: anfitrión [1, 3], invitado [2, 4], crupier [5, 6]; aquí, el invitado eres tú
-        ca.manos.push({ dia: body.dia, mano: hoy.length + 1, mesa: mesa.id, tuyas: [mazo[1], mazo[3]], crupier: [mazo[4], mazo[5]], mazo: [], estado: 'jugando', fichas: 0 });
+        ca.manos.push({ dia: body.dia, mano: mesa.solo_garbanzos ? 11 + deGarbanzos.length : hoy.length + 1, mesa: mesa.id, tuyas: [mazo[1], mazo[3]], crupier: [mazo[4], mazo[5]], mazo: [], estado: 'jugando', fichas: 0 });
         mesa.suya = { tuyas: [mazo[0], mazo[2]], estado: 'jugando' };
         mesa.crupier = [mazo[4], mazo[5]];
         mesa.mazo = mazo.slice(6);

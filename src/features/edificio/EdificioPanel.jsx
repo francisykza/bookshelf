@@ -18,7 +18,7 @@ import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
 import { PRENDAS, prendaNombre } from './actor';
 import { missionsOf, todayKey } from './dailyMissions';
-import { contarDiaria, doorLabel, elegirInicio, firmar, loadArmario, loadCasino, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje, savePiso } from './service';
+import { contarDiaria, doorLabel, elegirInicio, escucharMesas, firmar, loadArmario, loadCasino, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje, savePiso } from './service';
 import { VecinoMesa } from './VecinoMesa';
 import { GranHotel } from './hotel/GranHotel';
 import { mesasQueEsperan } from './hotel/veintiuna';
@@ -32,7 +32,7 @@ const HOTEL_ID = 'hotel';
 
 const SAVE_MS = 900;
 // Cada cuánto se mira si te espera una mesa para dos del casino, estés donde estés del edificio (1.81)
-const AVISO_MS = 45000;
+const AVISO_MS = 20000;
 const fechaCorta = (dia) => dia.split('-').reverse().slice(0, 2).join('/');
 const nombreMesa = (m) => m.amigo?.alias ?? 'Tu amigo';
 const avisoMesa = (m) => (m.estado === 'invitada' ? `${nombreMesa(m)} te invita a la mesa para dos del casino.` : `Te toca en la mesa para dos con ${nombreMesa(m)}.`);
@@ -264,6 +264,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const enCasino = inHotel && hotelRoom === 'casino';
   const [mesas, setMesas] = useState([]);
   const [avisosVistos, setAvisosVistos] = useState(() => new Set());
+  // El toque de un amigo llega al momento; la consulta periódica queda por si falla
+  const mirarMesas = useRef(null);
+  useEffect(() => (ready ? escucharMesas(() => mirarMesas.current?.()) : undefined), [ready]);
   useEffect(() => {
     if (!ready || enCasino) return undefined;
     let alive = true;
@@ -274,11 +277,13 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
         () => {},
       );
     };
+    mirarMesas.current = mirar;
     mirar();
     const t = setInterval(mirar, AVISO_MS);
     document.addEventListener('visibilitychange', mirar);
     return () => {
       alive = false;
+      mirarMesas.current = null;
       clearInterval(t);
       document.removeEventListener('visibilitychange', mirar);
     };

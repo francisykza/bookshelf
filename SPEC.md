@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.81.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.82.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4980,3 +4980,44 @@ Francisco pidió cuatro cambios el 4-11-2026, tras usar la 1.80. **Una migració
   - `v180-casino` y `v178-mover` (320, 390, escritorio y WebKit 390, según la prueba);
   - `v174-limusina`, `v175-vestibulo`, `v177-hotel-directorio` y `v178-paseo` (390).
 - Se retira `v179-suite`.
+
+## 82. Los garbanzos del casino y los avisos al momento (1.82.0)
+
+Francisco pidió estos cambios el 4-11-2026, tras usar la 1.81. **Una migración nueva, la aplica Francisco**:
+`20261112120000_hotel_casino_garbanzos.sql`. Las cifras de §82.2 a §82.4 las propuso Claude y Francisco las dio por buenas
+al pedir el cierre.
+
+### 82.1 Avisos al momento
+
+- Cada jugada que afecta a tu amigo le manda un toque sin datos por Realtime Broadcast, al canal `casino-<uid>`. Al
+  recibirlo, su app vuelve a pedir el casino: lo que hay en la mesa lo sigue diciendo el servidor.
+- Si el toque falla, queda la consulta periódica: cada 20 s en el edificio y cada 15 s en el casino.
+- Arreglo: dentro del casino, sin una mesa en marcha, una invitación nueva no llegaba. Ahora el casino mira siempre, y
+  también al volver a la app.
+
+### 82.2 Mesas de garbanzos
+
+- El formulario de invitar desaparecía tras la mesa del día con ese amigo o sin manos, y por eso no se podía apostar.
+- Ahora, en esos casos, se abre una **mesa de garbanzos**: solo se apuestan garbanzos (10, 25 o 50), no gasta las tres
+  manos del día y no da fichas.
+- Hasta 6 al día por persona y una abierta por pareja. La mesa del día sigue siendo una por pareja.
+
+### 82.3 La lata de los garbanzos
+
+- Plegada al pie de la caja, para no cambiar su distribución.
+- Tres premios humildes, con las reglas de los de la caja: tarro de garbanzos (150), baraja de naipes (300) y taburete de
+  barra (600).
+
+### 82.4 El cambio de garbanzos y tickets
+
+- 50 garbanzos por 5 tickets y 5 tickets por 25 garbanzos, hasta 10 tickets a la semana en cada sentido. El tope lo cuenta
+  el servidor con su propia fecha. Ida y vuelta siempre se pierde.
+- **Decisión de Francisco**: es la tercera excepción a «los tickets solo se ganan leyendo». Los garbanzos dejan de ser una
+  moneda sin ningún valor, pero nunca se compran. Las fichas siguen sin convertirse en tickets.
+
+### 82.5 Pruebas
+
+- PGlite: `casino-garbanzos.rls.test.js`; 123 en edificio.
+- e2e en emulación: `v180-casino` en 320, 390, escritorio y WebKit 390, según la prueba.
+- El toque se comprobó en el proyecto real con la clave pública, entre dos canales de prueba. **Sin probar entre dos
+  cuentas reales.**

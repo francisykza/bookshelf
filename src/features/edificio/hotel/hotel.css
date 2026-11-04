@@ -1949,6 +1949,100 @@
   cursor: default;
 }
 
+/* La lata de los garbanzos: plegada al pie de la caja, para no quitarle sitio a los premios */
+.gh-lata {
+  border-top: 2px solid var(--c21-gold-d);
+  padding-top: 10px;
+  color: var(--c21-cream);
+}
+
+.gh-lata summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  color: #f0dcae;
+  font:
+    700 0.85rem/1.2 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+
+.gh-lata summary span {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gh-lata ul {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gh-lata li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: rgb(26 14 12 / 0.6);
+}
+
+.gh-lata li.is-text {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.gh-lata li img {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.gh-lata li p {
+  margin: 0;
+  font:
+    500 0.78rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.gh-lata li b {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.gh-lata__do {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.gh-lata__title {
+  margin: 12px 0 0;
+  color: #f0dcae;
+  font:
+    700 0.7rem/1 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.gh-lata__msg {
+  min-height: 1.3em;
+  margin: 8px 0 0;
+  font:
+    500 0.8rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
 /* La caja: la ventanilla del canje, con el premio gordo arriba y lo demás en tarjetas */
 .gh-21__felt.is-caja {
   grid-template-rows: none;

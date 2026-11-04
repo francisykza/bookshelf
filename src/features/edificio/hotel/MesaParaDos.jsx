@@ -5,15 +5,19 @@
 // garbanzos (imaginarios, sin ningún valor); gana quien acaba más cerca de 21 sin pasarse y el empate se devuelve.
 // Las cantidades se eligen entre unas pocas fijas (nunca texto libre) y nunca más de lo que tienes. Las cartas del amigo
 // se ven boca abajo hasta que la mesa se resuelve. Lo decide todo el servidor (20261110120000_hotel_casino.sql).
+// Desde la 1.82 (Francisco, 4-11-2026), sin mesa del día con ese amigo o sin manos se sigue con mesas de garbanzos: solo
+// se apuestan garbanzos, no gastan las tres manos y no dan fichas. Cada jugada toca al amigo para que lo vea al momento.
 import { useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
-import { aceptarMesa, invitarMesa, jugarMesa, loadCasino, rechazarMesa } from '../service';
+import { aceptarMesa, avisarMesa, invitarMesa, invitarMesaGarbanzos, jugarMesa, loadCasino, rechazarMesa } from '../service';
 import { Carta, PixelNum, Total } from './cartas21';
 import { CASINO, fichasDe, FINAL, garbanzosDe } from './veintiuna';
 
 const FICHAS = [0, 2, 5, CASINO.apuestaFichas];
 const GARBANZOS = [0, 10, 25, CASINO.apuestaGarbanzos];
 const CARTEL = { veintiuna: '¡Veintiuna!', ganada: '¡Ganas la mano!', empate: 'Empate', perdida: 'Gana la casa' };
+// En las mesas de garbanzos solo cuenta quién gana a quién
+const CARTEL_GARBANZOS = { ganas: '¡Ganas tú!', pierdes: 'Gana tu amigo', empate: 'Empate' };
 
 const nombre = (m) => m.amigo?.alias ?? 'Tu pareja de mesa';
 const hayApuesta = (m) => m.fichas > 0 || m.garbanzos > 0;
@@ -27,11 +31,11 @@ const boteDe = (m) => [m.fichas > 0 && fichasDe(m.fichas * 2), m.garbanzos > 0 &
 
 /** Cómo acabó la mesa, para el aviso. */
 function resultado(m) {
-  const mano = `${FINAL[m.mia.estado]}: +${fichasDe(m.mia.fichas)}.`;
-  if (!hayApuesta(m)) return mano;
-  if (m.apuesta === 'ganas') return `${mano} Te llevas el bote: ${boteDe(m)}.`;
-  if (m.apuesta === 'pierdes') return `${mano} El bote es para ${nombre(m)}.`;
-  return `${mano} Empate con ${nombre(m)}: cada uno recupera lo suyo.`;
+  const mano = m.solo_garbanzos ? '' : `${FINAL[m.mia.estado]}: +${fichasDe(m.mia.fichas)}. `;
+  if (!hayApuesta(m)) return mano.trim();
+  if (m.apuesta === 'ganas') return `${mano}Te llevas el bote: ${boteDe(m)}.`;
+  if (m.apuesta === 'pierdes') return `${mano}El bote es para ${nombre(m)}.`;
+  return `${mano}Empate con ${nombre(m)}: cada uno recupera lo suyo.`;
 }
 
 /** En qué está una mesa, en dos palabras. */
@@ -67,10 +71,15 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
   const mesa = data.mesas.find((m) => m.id === sel && m.mia) ?? null;
   const recibidas = data.mesas.filter((m) => m.estado === 'invitada' && !m.anfitrion);
   const otras = data.mesas.filter((m) => !(m.estado === 'invitada' && !m.anfitrion) && m.estado !== 'rechazada');
-  const libres = data.amigos.filter((a) => !data.mesas.some((m) => m.amigo.uid === a.uid && m.dia === dia && m.estado !== 'rechazada'));
+  // Con quién se puede abrir la mesa del día y con quién, si no, una de garbanzos
+  const mesaDelDia = (a) => data.quedan > 0 && !data.mesas.some((m) => m.amigo.uid === a.uid && m.dia === dia && m.estado !== 'rechazada' && !m.solo_garbanzos);
+  const mesaGarbanzos = (a) => data.quedanGarbanzos > 0 && !data.mesas.some((m) => m.amigo.uid === a.uid && ['invitada', 'jugando'].includes(m.estado));
+  const libres = data.amigos.filter((a) => mesaDelDia(a) || mesaGarbanzos(a));
   const elegido = libres.find((a) => a.uid === amigo) ?? null;
+  const deGarbanzos = elegido ? !mesaDelDia(elegido) : libres.every((a) => !mesaDelDia(a));
+  const faltaApuesta = deGarbanzos && (apGarbanzos === 0 || apGarbanzos > data.garbanzos);
 
-  const run = async (fn, id = sel) => {
+  const run = async (fn, id = sel, tocar = true) => {
     setBusy(true);
     setMsg('');
     const prev = data.mesas.find((m) => m.id === id);
@@ -80,6 +89,9 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
       onData(next);
       const m = next.mesas.find((x) => x.id === id);
       sfx.play(m?.mia ? 'deal' : 'tap');
+      // Se le toca cuando algo le afecta: si sigues pidiendo cartas, aún no
+      const otro = (m ?? prev)?.amigo?.uid;
+      if (tocar && otro && m?.mia?.estado !== 'jugando') avisarMesa(otro);
       if (m?.mia && m.estado === 'cerrada' && prev?.estado !== 'cerrada') {
         setTimeout(() => sfx.play(`mano-${m.mia.estado}`), 180);
         if (m.mia.fichas > 0) setTimeout(() => sfx.play('chips'), 520);
@@ -94,8 +106,9 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
     }
   };
   const invitar = async () => {
-    const next = await run(() => invitarMesa(dia, elegido.uid, apFichas, apGarbanzos), null);
+    const next = await run(() => (deGarbanzos ? invitarMesaGarbanzos(dia, elegido.uid, apGarbanzos) : invitarMesa(dia, elegido.uid, apFichas, apGarbanzos)), null);
     if (next) {
+      avisarMesa(elegido.uid);
       setMsg(`Invitación enviada a ${elegido.alias}: le llega el aviso aunque no esté en el casino. Cuando acepte, el crupier os reparte.`);
       setAmigo(null);
     }
@@ -142,11 +155,13 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
           <div className="gh-21__middle">
             {!juego ? (
               <p className={`gh-21__banner is-${mesa.mia.estado}`}>
-                <b>{CARTEL[mesa.mia.estado]}</b>
-                <span>
-                  <PixelNum value={`+${mesa.mia.fichas}`} label={`más ${fichasDe(mesa.mia.fichas)}`} />
-                  <i aria-hidden="true" />
-                </span>
+                <b>{mesa.solo_garbanzos ? CARTEL_GARBANZOS[mesa.apuesta] : CARTEL[mesa.mia.estado]}</b>
+                {!mesa.solo_garbanzos && (
+                  <span>
+                    <PixelNum value={`+${mesa.mia.fichas}`} label={`más ${fichasDe(mesa.mia.fichas)}`} />
+                    <i aria-hidden="true" />
+                  </span>
+                )}
                 {hayApuesta(mesa) && <em className={`is-${mesa.apuesta}`}>{{ ganas: 'El bote es tuyo', pierdes: `Bote para ${nombre(mesa)}`, empate: 'Bote devuelto' }[mesa.apuesta]}</em>}
               </p>
             ) : (
@@ -180,7 +195,7 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
           ) : juego ? (
             <>
               <p className="gh-21__done">Esperando a que {nombre(mesa)} juegue su mano: el crupier destapa cuando terminéis los dos.</p>
-              <button type="button" className="gh-21btn is-deal is-small" disabled={busy} onClick={() => run(() => loadCasino(dia))}>
+              <button type="button" className="gh-21btn is-deal is-small" disabled={busy} onClick={() => run(() => loadCasino(dia), sel, false)}>
                 Mirar si ha jugado
               </button>
             </>
@@ -207,11 +222,13 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
               <li key={m.id} className="gh-21__table is-invite">
                 <ReaderAvatar avatarId={m.amigo.avatar_id} alias={nombre(m)} size="list" decorative />
                 <p>
-                  <b>{nombre(m)} te invita a una mesa</b>
+                  <b>
+                    {nombre(m)} te invita a una mesa{m.solo_garbanzos ? ' de garbanzos' : ''}
+                  </b>
                   <span>{apuestaDe(m)}</span>
                 </p>
                 <div>
-                  <button type="button" className="gh-21btn is-deal is-small" disabled={busy || data.quedan === 0 || m.fichas > data.fichas || m.garbanzos > data.garbanzos} onClick={() => aceptar(m)}>
+                  <button type="button" className="gh-21btn is-deal is-small" disabled={busy || (m.solo_garbanzos ? data.quedanGarbanzos : data.quedan) === 0 || m.fichas > data.fichas || m.garbanzos > data.garbanzos} onClick={() => aceptar(m)}>
                     Aceptar y repartir
                   </button>
                   <button type="button" className="gh-21link" disabled={busy} onClick={() => run(() => rechazarMesa(m.id), m.id)}>
@@ -224,7 +241,9 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
               <li key={m.id} className={`gh-21__table is-${m.estado}`}>
                 <ReaderAvatar avatarId={m.amigo.avatar_id} alias={nombre(m)} size="list" decorative />
                 <p>
-                  <b>Mesa con {nombre(m)}</b>
+                  <b>
+                    Mesa{m.solo_garbanzos ? ' de garbanzos' : ''} con {nombre(m)}
+                  </b>
                   <span>
                     {enQue(m)} · {apuestaDe(m)}
                   </span>
@@ -247,10 +266,8 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
 
         {data.amigos.length === 0 ? (
           <p className="gh-21__empty">Para jugar en pareja hace falta un amigo: alguien a quien sigues y que te sigue en la comunidad.</p>
-        ) : data.quedan === 0 ? (
-          <p className="gh-21__empty">Hoy ya has jugado tus tres manos: mañana podrás invitar a alguien.</p>
         ) : libres.length === 0 ? (
-          recibidas.length === 0 && <p className="gh-21__empty">Hoy ya tienes mesa con todos tus amigos: una al día con cada uno.</p>
+          recibidas.length === 0 && <p className="gh-21__empty">{data.quedanGarbanzos === 0 ? 'Por hoy ya vale de mesas: mañana hay más.' : 'Ya tienes una mesa abierta con cada amigo: acabadla para empezar otra.'}</p>
         ) : (
           <div className="gh-21__new">
             <fieldset className="gh-21__who">
@@ -262,10 +279,14 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
                 </button>
               ))}
             </fieldset>
-            <Cantidad label="Fichas en juego" opciones={FICHAS} value={apFichas} max={data.fichas} onChange={setApFichas} de={fichasDe} />
-            <Cantidad label="Garbanzos en juego" opciones={GARBANZOS} value={apGarbanzos} max={data.garbanzos} onChange={setApGarbanzos} de={garbanzosDe} />
-            <button type="button" className="gh-21btn is-deal" disabled={busy || !elegido} onClick={invitar}>
-              {elegido ? `Invitar a ${elegido.alias}` : 'Elige con quién jugar'}
+            {deGarbanzos ? (
+              <p className="gh-21__empty">Mesa de garbanzos: no gasta manos ni da fichas. Hoy te quedan {data.quedanGarbanzos}.</p>
+            ) : (
+              <Cantidad label="Fichas en juego" opciones={FICHAS} value={apFichas} max={data.fichas} onChange={setApFichas} de={fichasDe} />
+            )}
+            <Cantidad label="Garbanzos en juego" opciones={deGarbanzos ? GARBANZOS.slice(1) : GARBANZOS} value={apGarbanzos} max={data.garbanzos} onChange={setApGarbanzos} de={garbanzosDe} />
+            <button type="button" className="gh-21btn is-deal" disabled={busy || !elegido || faltaApuesta} onClick={invitar}>
+              {!elegido ? 'Elige con quién jugar' : faltaApuesta ? 'Elige cuántos garbanzos' : `Invitar a ${elegido.alias}`}
             </button>
           </div>
         )}

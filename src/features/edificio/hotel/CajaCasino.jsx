@@ -13,6 +13,7 @@ import { renderActorThumb, renderThumb } from '../render';
 import { canjearCaja } from '../service';
 import { packArt } from '../shopArt';
 import { PixelNum } from './cartas21';
+import { LataGarbanzos } from './LataGarbanzos';
 import { CAJA, fichasDe } from './veintiuna';
 
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -244,6 +245,7 @@ export function CajaCasino({ data, dia, onData, sfx }) {
             </li>
           ))}
         </ul>
+        <LataGarbanzos data={data} dia={dia} onData={onData} sfx={sfx} arte={thumbOf} />
       </div>
       <p className="gh-21__msg" role="status" aria-live="polite">
         {msg}

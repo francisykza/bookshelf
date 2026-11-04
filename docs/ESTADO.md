@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Cerrada, sin publicar: 1.82.0** (2026-11-04, §82). Avisos de mesa al momento, mesas de garbanzos, la lata con sus premios
+  y el cambio de garbanzos y tickets. Está en la rama `1.82-casino-garbanzos`. **Su migración
+  `20261112120000_hotel_casino_garbanzos.sql` está sin aplicar**: antes de «súbelo», ofrecer el flujo del SQL Editor.
 - **Versión publicada**: 1.81.0 (2026-11-04, §81). El casino abre todos los días, las mesas para dos avisan en todo el
   edificio, los muebles se mueven con menos esfuerzo y ya no está la suite de la semana. Su migración
   `20261111120000_hotel_casino_arreglos.sql` está aplicada en producción. El casino del sótano del Gran Hotel tiene:
@@ -109,6 +112,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Migración de la 1.82.0 sin aplicar** (`20261112120000_hotel_casino_garbanzos.sql`): Francisco la aplica (o «hazlo tú»
+  con el SQL Editor) antes de publicar.
+- **Siguiente en el rascacielos**: paso D de `docs/qa/gran-hotel.md` §9.6, la sala de lectura con el Pomodoro y el quiosco.
 - **Reciclar solo lo repetido en los sobres** (idea de Francisco del 3-11-2026, para más adelante): un ajuste en la tienda
   del tipo «si ya tengo N copias de un mueble, recicla las que salgan de más en los sobres» (N lo elige la persona).
   Al abrir el sobre, lo que pase de N se recicla solo por sus tickets (las mismas cifras de `piso_reciclar`), y la
@@ -191,6 +197,25 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-04 · cuenta principal · 1.82.0 cerrada
+- Francisco dijo «ciérrala antes» de seguir con el rascacielos: versión en `src/diag.js`, `package.json`, `public/sw.js` y
+  la cabecera del SPEC, y §82 escrito. Commit en la rama `1.82-casino-garbanzos`, subida y PR desde el navegador.
+- **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
+
+### 2026-11-04 · cuenta principal · garbanzos y avisos al momento (en la 1.82.0)
+- Francisco pidió avisos más rápidos, seguir jugando con amigos apostando garbanzos, premios por garbanzos y cambio con
+  tickets con límite.
+- **Avisos**: toque sin datos por Realtime Broadcast al canal `casino-<uid>` (`escucharMesas` y `avisarMesa` en `service.js`),
+  más consulta cada 20 s en el edificio y cada 15 s en el casino. Había un fallo: dentro del casino, sin mesa en marcha,
+  una invitación nueva no llegaba. Broadcast comprobado en el proyecto real con la clave pública (menos de 1 s).
+- **Por qué no se podían apostar garbanzos**: el formulario desaparecía tras la mesa del día con ese amigo o sin manos.
+- **Mesas de garbanzos**: `solo_garbanzos`, manos numeradas desde la 11, sin fichas, 6 al día por persona.
+- **La lata** (`LataGarbanzos.jsx`): tarro 150, baraja 300 y taburete 600. Cambio: 50 garbanzos por 5 tickets y 5 tickets por
+  25 garbanzos, 10 tickets a la semana en cada sentido. Las cifras las he propuesto yo.
+- **Migración nueva sin aplicar**: `20261112120000_hotel_casino_garbanzos.sql`.
+- Pruebas: vitest de edificio (123) y e2e `v180-casino` en 320, 390, escritorio y WebKit (emulación). Capturas `v182-*`.
+- **Sin verificar**: el aviso entre dos cuentas reales. Fuera del edificio (en la biblioteca) sigue sin haber aviso.
 
 ### 2026-11-04 · cuenta principal · 1.81.0 publicada
 - Francisco dijo «Súbelo»: avance rápido de `main` hasta la rama `1.81-casino-avisos` (PR #6), push y Vercel; `/sw.js`

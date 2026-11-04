@@ -672,6 +672,26 @@ SHAPES['neon-veintiuna'] = (T) => {
   ];
 };
 
+// ── La lata de los garbanzos (1.82): premios humildes, sin efectos ──
+SHAPES['tarro-garbanzos'] = (T) => [
+  B(0.3, 0.3, 0, 0.7, 0.7, 0.4, T),
+  ...[[0.34, 0.1], [0.5, 0.2], [0.6, 0.08], [0.42, 0.3], [0.58, 0.32]].map(([x, z]) => B(x, 0.29, z, x + 0.07, 0.3, z + 0.06, shade(T, 0.72), { grain: 0 })),
+  B(0.3, 0.3, 0.4, 0.7, 0.7, 0.5, [206, 226, 226], { grain: 0 }),
+  B(0.27, 0.27, 0.5, 0.73, 0.73, 0.57, LATON, { grain: 0 }),
+];
+SHAPES['baraja-naipes'] = (T) => [
+  B(0.24, 0.3, 0, 0.62, 0.8, 0.05, CREAM, { grain: 0 }),
+  B(0.44, 0.22, 0, 0.8, 0.7, 0.14, CREAM, { grain: 0 }),
+  B(0.44, 0.22, 0.14, 0.8, 0.7, 0.16, T, { grain: 0 }),
+  B(0.58, 0.4, 0.16, 0.66, 0.5, 0.17, CREAM, { grain: 0 }),
+];
+SHAPES['taburete-barra'] = (T) => [
+  ...legs(1, 1, 0.72, WOOD_DARK, 0.24, 0.08),
+  B(0.26, 0.26, 0.26, 0.74, 0.74, 0.3, LATON, { grain: 0 }),
+  B(0.18, 0.18, 0.72, 0.82, 0.82, 0.78, WOOD_DARK),
+  B(0.2, 0.2, 0.78, 0.8, 0.8, 0.88, T),
+];
+
 // La peana de los místicos: piedra oscura con un filo dorado. El ser se dibuja encima, animado (misticos.js)
 const peana = (T) => [
   B(0.2, 0.2, 0, 0.8, 0.8, 0.08, shade(T, 0.8)),

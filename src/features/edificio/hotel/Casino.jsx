@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { dayKey } from '../../../domain/dates';
 import { useCommunity } from '../../social/hooks/useCommunity';
-import { jugarCasino, loadCasino, repartirCasino } from '../service';
+import { escucharMesas, jugarCasino, loadCasino, repartirCasino } from '../service';
 import { createShopSfx } from '../shopAudio';
 import { Carta, Huecos, PixelNum, Total } from './cartas21';
 import { useCountUp } from './useCountUp';
@@ -89,25 +89,32 @@ export function Casino({ onStreet, soundOn = false }) {
       alive = false;
     };
   }, [member, dia]);
-  // Con una mesa en marcha, se mira cada poco si el amigo ha aceptado o ha jugado (lo que llega tras una jugada tuya manda)
+  // Se mira cada poco si hay invitación o si el amigo ha jugado, y al momento con su toque o al volver a la app (lo que
+  // llega tras una jugada tuya manda)
   const jugada = useRef(0);
   const guardar = (d) => {
     jugada.current += 1;
     setData(d);
   };
-  const mesaViva = Boolean(data?.mesas.some((m) => ['invitada', 'jugando'].includes(m.estado)));
   useEffect(() => {
-    if (!mesaViva) return undefined;
-    const t = setInterval(() => {
+    if (!member) return undefined;
+    const mirar = () => {
       if (document.hidden) return;
       const antes = jugada.current;
       loadCasino(dia).then(
         (d) => d && antes === jugada.current && setData(d),
         () => {},
       );
-    }, MIRAR_MS);
-    return () => clearInterval(t);
-  }, [mesaViva, dia]);
+    };
+    const t = setInterval(mirar, MIRAR_MS);
+    const fuera = escucharMesas(mirar);
+    document.addEventListener('visibilitychange', mirar);
+    return () => {
+      clearInterval(t);
+      fuera();
+      document.removeEventListener('visibilitychange', mirar);
+    };
+  }, [member, dia]);
   useEffect(() => {
     root.current?.scrollIntoView({ block: 'start' });
   }, []);
@@ -355,7 +362,11 @@ export function Casino({ onStreet, soundOn = false }) {
               <p>
                 Con un amigo (os seguís los dos) jugáis contra el mismo crupier y el mismo mazo, cada uno cuando quiera; esas manos son de tus tres del día y dan {CASINO.compania} fichas más de
                 compañía. Entre los dos podéis apostar, una mesa al día, hasta {CASINO.apuestaFichas} fichas y {CASINO.apuestaGarbanzos} garbanzos: se lo lleva quien acabe más cerca de 21 sin
-                pasarse, y si empatáis se devuelve. Los garbanzos son de mentira: {CASINO.garbanzosInicio} al empezar y {CASINO.garbanzosDia} más cada día que juegas.
+                pasarse, y si empatáis se devuelve.
+              </p>
+              <p>
+                Después podéis seguir con mesas de garbanzos, hasta {CASINO.mesasGarbanzos} al día: no gastan manos ni dan fichas. Los garbanzos no se compran: {CASINO.garbanzosInicio} al empezar y{' '}
+                {CASINO.garbanzosDia} más cada día que juegas. Se gastan en la lata de la caja.
               </p>
             </details>
           </>

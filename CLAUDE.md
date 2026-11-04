@@ -156,7 +156,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     - **Misiones diarias de la habitación**: dan **ropa y colores del personaje**. **Desde la 1.79** (decisión de
       Francisco del 3-11-2026): cuando ya tienes **toda la ropa** que se gana con ellas, las tres del día dan **5
       tickets** en su lugar (lo cuenta el servidor). Es la segunda excepción a «los tickets solo se ganan leyendo»,
-      junto a la cuenta del fundador; no se extiende a más sin que lo pida.
+      junto a la cuenta del fundador; no se extiende a más sin que lo pida. **Tercera excepción** (Francisco, 4-11-2026): el
+      cambio de la lata del casino, 50 garbanzos por 5 tickets, hasta 10 tickets a la semana.
     - **Vecinos**, sin texto libre: regalar copias de muebles, libro de visitas con sellos de frase cerrada y «me
       gusta» por mueble. Visitar con tu personaje queda fuera por ahora.
   - **Sonidos cozy propios del edificio** (1-11-2026): sintetizados, por material y por acción (§6 del plan).
@@ -196,11 +197,13 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     amigo (**seguimiento mutuo**) se juega contra el mismo crupier, cada uno cuando quiere; esas manos son de las 3 del
     día y dan **2 fichas de compañía** más a cada uno (el tope semanal de 150 sigue). **Única excepción a «sin
     apostar»**: entre los dos se pueden apostar **fichas, una vez al día por pareja y hasta 10**, y **garbanzos** (una
-    moneda imaginaria sin ningún valor: empiezas con 100, +20 cada día que juegas, hasta 50 por mano). Gana la apuesta quien
+    empiezas con 100, +20 cada día que juegas, hasta 50 por mano; nunca se compran). Gana la apuesta quien
     acaba más cerca de 21 sin pasarse; empate, se devuelve. Solo con un amigo y aceptándolo los dos; nunca con
     desconocidos del hotel, nunca más de lo que se tiene. No se amplía sin que Francisco lo pida. **El aviso llega
     estés donde estés del edificio** (4-11-2026): una nota con «Ir al casino» y el buzón; quien invita guarda una de sus
-    manos para esa mesa.
+    manos para esa mesa. **Mesas de garbanzos** (4-11-2026): tras la mesa del día se sigue apostando solo garbanzos, sin
+    gastar manos ni ganar fichas, hasta 6 al día por persona y una abierta por pareja. **La lata de los garbanzos**, plegada
+    al pie de la caja: premios humildes y el cambio con tickets, con tope semanal. Las fichas siguen sin convertirse en tickets.
   - **Encargo del 3-11-2026** (antes de seguir con el plan del rascacielos; por bloques con capturas):
     - **Sin «dejar una frase»** (los sellos de frase al vecino): sobra junto al libro de visitas. Se quita de la app;
       no se borran los datos.

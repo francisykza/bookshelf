@@ -329,3 +329,97 @@ test('sin amigos, la mesa para dos explica cómo se juega en pareja', async ({ p
   await casino.getByRole('button', { name: /Con un amigo/ }).click();
   await expect(casino).toContainText('hace falta un amigo: alguien a quien sigues y que te sigue');
 });
+
+// 1.82: seguir jugando con garbanzos, los avisos dentro del casino y la lata
+async function alCasino(hotel) {
+  await hotel.getByRole('button', { name: 'Directorio' }).click();
+  await hotel.getByRole('button', { name: /Casino del sótano/ }).click();
+  return hotel.getByRole('region', { name: 'El casino del sótano' });
+}
+
+test('tras la mesa del día se sigue con una mesa de garbanzos, sin fichas en juego', async ({ page }, info) => {
+  test.skip(!/chromium-(320x640|390x844|1440x900)$|webkit-390x844/.test(info.project.name), '320, 390 (Chromium y WebKit) y escritorio');
+  const { hotel, mock } = await toHotel(page, {
+    fichas: 40,
+    semana: 10,
+    garbanzos: 100,
+    amigos: [BEA],
+    mesas: [{ id: 'mesa-dia', dia: HOY(), anfitrion: true, amigo: BEA, estado: 'cerrada', fichas: 0, garbanzos: 0, crupier: [9, 8], apuesta: 'empate', suya: { tuyas: [1, 2], estado: 'esperando' } }],
+    manos: [{ dia: HOY(), mano: 1, mesa: 'mesa-dia', tuyas: [3, 4], crupier: [9, 8], mazo: [], estado: 'ganada', fichas: 10 }],
+  });
+  const casino = await alCasino(hotel);
+  await casino.getByRole('button', { name: /Con un amigo/ }).click();
+  await casino.getByRole('button', { name: 'Bea lectora', exact: true }).click();
+  await expect(casino.getByText('Mesa de garbanzos: no gasta manos ni da fichas. Hoy te quedan 6.')).toBeVisible();
+  await expect(casino.getByRole('button', { name: '5 fichas' })).toHaveCount(0);
+  await expect(casino.getByRole('button', { name: 'Elige cuántos garbanzos' })).toBeDisabled();
+  await casino.getByRole('button', { name: '25 garbanzos' }).click();
+  await shot(page, info, 'v182-mesa-garbanzos');
+  await casino.getByRole('button', { name: 'Invitar a Bea lectora' }).click();
+  await expect(casino.getByRole('listitem').filter({ hasText: 'Mesa de garbanzos con Bea lectora' })).toContainText('25 garbanzos cada uno');
+  expect(mock.db.casino.mesas[0]).toMatchObject({ solo_garbanzos: true, garbanzos: 25, fichas: 0 });
+});
+
+test('una mesa de garbanzos se acepta sin manos del día y no da fichas', async ({ page }, info) => {
+  test.skip(!/chromium-390x844$/.test(info.project.name), 'una vez basta');
+  const manos = [1, 2, 3].map((mano) => ({ dia: HOY(), mano, tuyas: [3, 4], crupier: [9, 8], mazo: [], estado: 'perdida', fichas: 2 }));
+  const { hotel, mock } = await toHotel(page, {
+    fichas: 6,
+    semana: 6,
+    garbanzos: 100,
+    garbanzosDia: HOY(),
+    amigos: [BEA],
+    manos,
+    barajas: [[9, 8, 8, 7, 5, 6, 1, 2, 3, 4]],
+    mesas: [{ id: 'mesa-g', dia: HOY(), anfitrion: false, amigo: BEA, estado: 'invitada', fichas: 0, garbanzos: 25, solo_garbanzos: true }],
+  });
+  const casino = await alCasino(hotel);
+  await expect(casino.getByText('Bea lectora te invita a una mesa de garbanzos')).toBeVisible();
+  await casino.getByRole('button', { name: 'Aceptar y repartir' }).click();
+  await casino.getByRole('button', { name: 'Plantarse' }).click();
+  await expect(casino.getByText(/Esperando a que Bea lectora juegue/)).toBeVisible();
+  mock.db.casino.mesas[0].suya = { tuyas: [2, 3], estado: 'esperando' };
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect(casino.getByText('¡Ganas tú!')).toBeVisible();
+  await expect(casino.getByText('El bote es tuyo')).toBeVisible();
+  expect(mock.db.casino.fichas).toBe(6);
+  expect(mock.db.casino.garbanzos).toBe(125);
+});
+
+test('una invitación llega también estando en el casino sin ninguna mesa abierta', async ({ page }, info) => {
+  test.skip(!/chromium-390x844$/.test(info.project.name), 'una vez basta');
+  const { hotel, mock } = await toHotel(page, { fichas: 0, amigos: [BEA] });
+  const casino = await alCasino(hotel);
+  await expect(casino.getByRole('button', { name: 'Repartir la mano 1 de 3' })).toBeVisible();
+  mock.db.casino.mesas.push({ id: 'mesa-nueva', dia: HOY(), anfitrion: false, amigo: BEA, estado: 'invitada', fichas: 0, garbanzos: 0 });
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect(casino.getByLabel('1 te espera')).toBeVisible();
+  await expect(casino.getByText('Bea lectora te espera en la mesa para dos.')).toBeVisible();
+});
+
+test('la lata: plegada al pie de la caja, sus premios y el cambio con tope', async ({ page }, info) => {
+  test.skip(!/chromium-(320x640|390x844|1440x900)$|webkit-390x844/.test(info.project.name), '320, 390 (Chromium y WebKit) y escritorio');
+  const { hotel, mock } = await toHotel(page, { fichas: 0, garbanzos: 400, garbanzosDia: HOY(), tickets: 3 });
+  const casino = await alCasino(hotel);
+  await casino.getByRole('button', { name: 'La caja' }).first().click();
+  const lata = casino.locator('details.gh-lata');
+  await expect(lata.getByRole('list', { name: 'Premios de la lata' })).toBeHidden();
+  await lata.locator('summary').click();
+  await lata.scrollIntoViewIfNeeded();
+  await shot(page, info, 'v182-lata');
+  await expect(lata.getByRole('button', { name: '¿Cambias 600 garbanzos por Taburete de barra?' })).toBeDisabled();
+  await expect(lata.getByRole('button', { name: '¿Cambias 5 tickets por 25 garbanzos?' })).toBeDisabled();
+  await lata.getByRole('button', { name: '¿Cambias 150 garbanzos por Tarro de garbanzos?' }).click();
+  await lata.getByRole('button', { name: 'Sí, cambiar' }).click();
+  await expect(lata.getByRole('status')).toContainText('Tarro de garbanzos: ya está en tu inventario');
+  await expect(lata.getByText('Ya es tuyo')).toBeVisible();
+  for (const veces of [5, 10]) {
+    await lata.getByRole('button', { name: '¿Cambias 50 garbanzos por 5 tickets?' }).click();
+    await lata.getByRole('button', { name: 'Sí, cambiar' }).click();
+    await expect(lata.getByText(`Esta semana, ${veces} de 10 tickets.`).first()).toBeVisible();
+  }
+  await expect(lata.getByRole('button', { name: '¿Cambias 50 garbanzos por 5 tickets?' })).toBeDisabled();
+  expect(mock.db.casino).toMatchObject({ garbanzos: 150, tickets: 13 });
+  // Con 13 tickets ya se puede volver
+  await expect(lata.getByRole('button', { name: '¿Cambias 5 tickets por 25 garbanzos?' })).toBeEnabled();
+});

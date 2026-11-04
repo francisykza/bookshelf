@@ -160,6 +160,11 @@ export const CATALOG = [
   { id: 'mesa-tapete', rareza: 'especial', casino: true, vivo: true, nombre: 'Mesa de tapete verde', cat: 'mesas', capa: 'suelo', w: 2, d: 1, sup: 0.95, tonos: [[44, 122, 78]], guino: 'De la caja del casino del Gran Hotel' },
   { id: 'gramola', rareza: 'especial', casino: true, vivo: true, nombre: 'Gramola', cat: 'detalles', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.6, 1.2], tonos: [[110, 58, 40]], guino: 'De la caja del casino del Gran Hotel' },
   { id: 'conejo-chistera', rareza: 'legendario', compania: true, casino: true, nombre: 'Conejo de la chistera', cat: 'misticos', capa: 'suelo', w: 1, d: 1, tonos: [OBSIDIANA], guino: 'De la caja del casino del Gran Hotel' },
+
+  // ── La lata de los garbanzos (1.82): premios humildes, con las mismas reglas que los de la caja ──
+  { id: 'tarro-garbanzos', rareza: 'especial', casino: true, nombre: 'Tarro de garbanzos', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [[222, 186, 118]], guino: 'De la lata de los garbanzos del casino' },
+  { id: 'baraja-naipes', rareza: 'especial', casino: true, nombre: 'Baraja de naipes', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [[122, 30, 44]], guino: 'De la lata de los garbanzos del casino' },
+  { id: 'taburete-barra', rareza: 'especial', casino: true, nombre: 'Taburete de barra', cat: 'asientos', capa: 'suelo', w: 1, d: 1, tonos: [[122, 30, 44]], guino: 'De la lata de los garbanzos del casino' },
 ];
 
 /** Los premios (rareza 'especial'): no se compran, no salen en sobres y no se regalan ni se reciclan. */

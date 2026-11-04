@@ -230,11 +230,16 @@ const normalizeCasino = (d) => ({
   quedan: d.quedan ?? 0,
   jugando: Boolean(d.jugando),
   garbanzos: d.garbanzos ?? 0,
+  tickets: d.tickets ?? 0,
+  quedanGarbanzos: d.quedanGarbanzos ?? 0,
   // La mesa para dos: las invitaciones y las mesas (las cartas del amigo, solo al resolverse) y los amigos con quien jugar
   mesas: (d.mesas ?? []).map((m) => ({ ...m, crupier: m.crupier ?? [], mia: m.mia ? { ...m.mia, tuyas: m.mia.tuyas ?? [] } : null })),
   amigos: d.amigos ?? [],
   // La caja: [{ id, tipo, precio, tienes }]; al cambiar el sobre, sus premios
   caja: d.caja ?? [],
+  // La lata de los garbanzos: [{ id, precio, tienes }], y los tickets cambiados esta semana en cada sentido
+  lata: d.lata ?? [],
+  cambio: { aTickets: d.cambio?.aTickets ?? 0, aGarbanzos: d.cambio?.aGarbanzos ?? 0 },
   ...(d.premios ? { premios: d.premios } : {}),
 });
 
@@ -277,6 +282,77 @@ export async function invitarMesa(dia, amigo, fichas, garbanzos) {
   const { data, error } = await sb.rpc('piso_casino_invitar', { dia, amigo, fichas, garbanzos });
   fail(error);
   return normalizeCasino(data);
+}
+
+/** Invita a un amigo a una mesa de garbanzos: no gasta manos del día ni da fichas. */
+export async function invitarMesaGarbanzos(dia, amigo, garbanzos) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_invitar_garbanzos', { dia, amigo, garbanzos });
+  fail(error);
+  return normalizeCasino(data);
+}
+
+/** Cambia garbanzos por un premio de la lata (un id de LATA). */
+export async function canjearLata(dia, articulo) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_lata_canjear', { dia, articulo });
+  fail(error);
+  return normalizeCasino(data);
+}
+
+/** El cambio de la lata: 'a-tickets' o 'a-garbanzos', con el tope semanal del servidor. */
+export async function cambiarGarbanzos(dia, sentido) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_cambiar', { dia, sentido });
+  fail(error);
+  return normalizeCasino(data);
+}
+
+// Los toques de la mesa para dos (1.82): un aviso sin datos al canal del amigo, para que mire su casino al momento. No
+// lleva nada: lo que hay en la mesa lo sigue diciendo el servidor. Si falla, queda la consulta periódica
+const oyentesMesa = new Set();
+let canalMesa = null;
+let clienteMesa = null;
+
+/** Llama a `fn` cuando un amigo toca tu mesa. Devuelve cómo dejar de escuchar. */
+export function escucharMesas(fn) {
+  oyentesMesa.add(fn);
+  if (oyentesMesa.size === 1) {
+    (async () => {
+      try {
+        const sb = await client();
+        const { data } = await sb.auth.getSession();
+        const uid = data.session?.user?.id;
+        if (!uid || !oyentesMesa.size || canalMesa) return;
+        clienteMesa = sb;
+        canalMesa = sb
+          .channel(`casino-${uid}`)
+          .on('broadcast', { event: 'mesa' }, () => oyentesMesa.forEach((f) => f()))
+          .subscribe();
+      } catch {
+        // Sin canal: la consulta periódica sigue avisando
+      }
+    })();
+  }
+  return () => {
+    oyentesMesa.delete(fn);
+    if (!oyentesMesa.size && canalMesa) {
+      clienteMesa.removeChannel(canalMesa);
+      canalMesa = null;
+    }
+  };
+}
+
+/** Avisa a `uid` de que su mesa ha cambiado. Nunca falla: el aviso es solo un adelanto. */
+export async function avisarMesa(uid) {
+  try {
+    const sb = await client();
+    const canal = sb.channel(`casino-${uid}`);
+    await canal.httpSend('mesa', {});
+    await sb.removeChannel(canal);
+  } catch {
+    // La consulta periódica del amigo lo verá igual
+  }
 }
 
 /** Acepta una invitación: se aparta lo apostado y se reparte. */
