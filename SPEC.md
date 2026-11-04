@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.80.0 · 2026-11-03 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.81.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -4931,3 +4931,52 @@ Paso C del plan del Gran Hotel (`docs/qa/gran-hotel.md` §9.4). **Una migración
 - PGlite: `casino.rls.test.js` (10), `casino-mesa.rls.test.js` (11) y `casino-caja.rls.test.js` (7).
 - e2e en emulación: `v180-casino.spec.js` (8) en 320, 390, escritorio y WebKit 390.
 - Regresión: v170, v172, v173, v175, v177 y v179, y `v178-tanda3`.
+
+## 81. Cambios tras probar el casino: abierto todos los días, avisos en el edificio, mover muebles y sin la suite (1.81.0)
+
+Francisco pidió cuatro cambios el 4-11-2026, tras usar la 1.80. **Una migración nueva, la aplica Francisco**:
+`20261111120000_hotel_casino_arreglos.sql`. Sustituye a lo que dicen §79.3 y §80.1 sobre la suite y la lectura.
+
+### 81.1 El casino abre todos los días
+
+- **Decisión de Francisco**: ya no hace falta haber leído para jugar, porque «da mucho conflicto con las lecturas». Se
+  quitan la comprobación de lectura y el cartel de la puerta apagada.
+- Las tres manos al día y el tope de 150 fichas a la semana no cambian.
+- Efecto a tener en cuenta: se pueden conseguir tickets sin leer (fichas, sobre del casino y reciclar lo que salga).
+
+### 81.2 La mesa para dos avisa en todo el edificio
+
+- Las mesas que te esperan (una invitación o tu turno) salen en una nota de papel en el portal, tu piso, la tienda y el
+  hotel, con «Ir al casino» y una cruz para dejarla para luego. El botón lleva a la mesa sin el viaje en limusina.
+- El buzón también las recoge, y dice cuándo ha terminado una mesa.
+- El edificio mira cada 45 s y al volver a la app. Dentro del casino, cada 15 s mientras haya una mesa en marcha.
+- Si te espera una mesa, el casino se abre en «Con un amigo» y el crupier te lo dice.
+
+### 81.3 Arreglos del servidor
+
+- **Tope semanal**: `piso_casino_semana` sumaba las fichas de siempre y el tope no se reiniciaba el lunes. Ya cuenta
+  solo las de la semana.
+- **Quien invita guarda una mano** para esa mesa, para que su amigo siempre pueda aceptar. Retirar la invitación la
+  devuelve.
+- **Una invitación de ayer aceptada hoy** cuenta entre las manos de hoy.
+
+### 81.4 Mover muebles
+
+- El seguro contra moverlos sin querer es elegirlos: con un toque queda elegido y se arrastra sin esperar.
+- Sin elegir, basta una pulsación de 200 ms (antes 320) con 14 px de margen (antes 10).
+- Deslizar por encima de un mueble sin elegir sigue sin moverlo.
+
+### 81.5 Sin la suite de la semana
+
+- **Decisión de Francisco**: la sala de exposición de muebles no le convencía. Sale de la fachada, el Directorio y el
+  ascensor, y su bloque cuenta como parte del mirador.
+- No se borra ningún dato: sus tablas y funciones siguen en la base de datos, y quien tiene la «Placa de la suite» la
+  conserva.
+
+### 81.6 Pruebas
+
+- PGlite: `casino.rls.test.js` (11), `casino-mesa.rls.test.js` (13) y `suite.rls.test.js`; 110 en edificio.
+- e2e en emulación:
+  - `v180-casino` y `v178-mover` (320, 390, escritorio y WebKit 390, según la prueba);
+  - `v174-limusina`, `v175-vestibulo`, `v177-hotel-directorio` y `v178-paseo` (390).
+- Se retira `v179-suite`.

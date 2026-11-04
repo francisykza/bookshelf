@@ -1,6 +1,6 @@
 // 1.78 · Más difícil mover un mueble sin querer (encargo de Francisco del 3-11-2026), con Supabase simulado: en tu piso,
-// decorando, un deslizamiento rápido sobre un mueble no lo mueve; hay que mantenerlo pulsado un momento para
-// levantarlo y entonces arrastrarlo. Tocar un hueco con un mueble elegido lo suelta, ya no lo lleva allí.
+// decorando, un deslizamiento rápido sobre un mueble no lo mueve; hay que tocarlo antes, o mantenerlo pulsado un
+// momento, y entonces arrastrarlo (1.81: ya elegido, se arrastra sin esperar). Tocar un hueco con un mueble elegido lo suelta, ya no lo lleva allí.
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -61,7 +61,7 @@ test('decorando: deslizar no mueve, mantener pulsado sí, y tocar un hueco suelt
   await page.mouse.move(to.x, to.y, { steps: 5 });
   await page.mouse.up();
   expect(await items(page)).toEqual(before);
-  await expect(status).toContainText('mantenlo pulsado un momento');
+  await expect(status).toContainText('tócalo y luego arrástralo');
 
   // El toque lo dejó elegido, con sus herramientas; tocar un hueco lo suelta (ya no lo lleva allí)
   await expect(mine.locator('.ep-tools')).toBeVisible();
@@ -84,5 +84,16 @@ test('decorando: deslizar no mueve, mantener pulsado sí, y tocar un hueco suelt
   const moved = (await items(page)).find((i) => i.uid === uid);
   const was = before.find((i) => i.uid === uid);
   expect([moved.x, moved.y]).not.toEqual([was.x, was.y]);
+
+  // Ya elegido, se arrastra sin esperar
+  from = await pointOf(page, uid);
+  const { at: back } = await freeFloor(page);
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(back.x, back.y, { steps: 6 });
+  await page.mouse.up();
+  await expect(status).toContainText('en su sitio nuevo');
+  const again = (await items(page)).find((i) => i.uid === uid);
+  expect([again.x, again.y]).not.toEqual([moved.x, moved.y]);
   expect(errors).toEqual([]);
 });

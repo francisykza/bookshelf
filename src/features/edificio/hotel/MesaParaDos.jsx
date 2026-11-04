@@ -96,7 +96,7 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
   const invitar = async () => {
     const next = await run(() => invitarMesa(dia, elegido.uid, apFichas, apGarbanzos), null);
     if (next) {
-      setMsg(`Invitación enviada a ${elegido.alias}: cuando acepte, el crupier os reparte.`);
+      setMsg(`Invitación enviada a ${elegido.alias}: le llega el aviso aunque no esté en el casino. Cuando acepte, el crupier os reparte.`);
       setAmigo(null);
     }
   };

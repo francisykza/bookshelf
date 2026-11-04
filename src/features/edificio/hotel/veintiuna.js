@@ -2,7 +2,6 @@
 // crupier sin apostar. Las cifras son las de piso_casino_reglas en supabase/migrations/20261110120000_hotel_casino.sql
 // (una prueba lo comprueba); la partida la reparte y la puntúa el servidor. Aquí, cómo se lee una carta y si hoy se
 // ha leído (la puerta del sótano solo se enciende entonces).
-import { dayKey } from '../../../domain/dates';
 
 /**
  * Manos al día, tope de fichas a la semana y las fichas de cada final (contra el crupier nunca se pierde nada). En la
@@ -52,11 +51,8 @@ export function valor(cartas) {
   return total;
 }
 
-/** ¿Has leído hoy? Páginas registradas hoy o una sesión de lectura (lo mismo que cuenta la caja del Ático). */
-export function leidoHoy(state, now = new Date()) {
-  const hoy = dayKey(now);
-  return state.progress.readingLog.some((e) => e.date === hoy && e.pages > 0) || state.progress.pomodoros.some((p) => dayKey(new Date(p.at)) === hoy);
-}
+/** Las mesas para dos que te esperan: invitaciones por aceptar y manos por jugar. */
+export const mesasQueEsperan = (mesas = []) => mesas.filter((m) => (m.estado === 'invitada' && !m.anfitrion) || (m.estado === 'jugando' && m.mia?.estado === 'jugando'));
 
 /** Cómo acabó una mano, para leerlo. */
 export const FINAL = {

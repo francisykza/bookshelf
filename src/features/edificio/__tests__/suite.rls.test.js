@@ -4,7 +4,9 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
 import { starterRoom } from '../demo';
-import { SUITE_PLACA_SEMANAS } from '../hotel/suite';
+
+// La sala ya no está en la app (1.81), pero sus funciones siguen en la base de datos, con lo que ya se ganó
+const SUITE_PLACA_SEMANAS = 4;
 
 let db;
 let A, B, C;

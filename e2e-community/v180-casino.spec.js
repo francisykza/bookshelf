@@ -20,7 +20,7 @@ const HOY = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-async function toHotel(page, casino, { leido = true } = {}) {
+async function toPortal(page, casino, { leido = true } = {}) {
   const mock = createMockSupabase({ edificio_vecinos: [], piso_cuentas: {} });
   mock.db.profiles.push({ user_id: ANA.id, alias: 'Ana lectora', avatar_id: 'gato-lector', community_enabled: true });
   if (casino) mock.db.casino = casino;
@@ -51,7 +51,11 @@ async function toHotel(page, casino, { leido = true } = {}) {
   await page.waitForTimeout(950);
   await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
   await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
-  const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
+  return { portal: page.getByRole('dialog', { name: 'El edificio del puerto' }), mock };
+}
+
+async function toHotel(page, casino, opts) {
+  const { portal, mock } = await toPortal(page, casino, opts);
   await portal.getByRole('button', { name: 'Coger la limusina al Gran Hotel' }).click({ timeout: 15000 });
   const hotel = page.getByRole('dialog', { name: 'El Gran Hotel del Puerto' });
   await expect(hotel.locator('canvas.hotel-canvas')).toBeVisible();
@@ -180,15 +184,44 @@ test('la caja: el conejo arriba, cambiar fichas por ropa, el sobre y lo que falt
   expect(errors).toEqual([]);
 });
 
-test('sin lectura hoy, la puerta está apagada; sin la migración, abre pronto', async ({ page }, info) => {
+test('sin lectura hoy, el casino abre igual', async ({ page }, info) => {
   test.skip(!/chromium-390x844$/.test(info.project.name), 'una vez basta');
   const { hotel } = await toHotel(page, { fichas: 0 }, { leido: false });
   await hotel.getByRole('button', { name: 'Directorio' }).click();
   await hotel.getByRole('button', { name: /Casino del sótano/ }).click();
   const casino = hotel.getByRole('region', { name: 'El casino del sótano' });
-  await expect(casino).toContainText('La puerta está apagada');
-  await expect(casino.getByRole('button', { name: /Repartir/ })).toHaveCount(0);
-  await shot(page, info, 'v180-casino-apagado');
+  await expect(casino.getByRole('button', { name: 'Repartir la mano 1 de 3' })).toBeVisible();
+  await expect(casino).not.toContainText('apagada');
+});
+
+test('una invitación avisa en el edificio: la nota, el buzón y al casino con un toque', async ({ page }, info) => {
+  test.skip(!/chromium-(320x640|390x844|1440x900)$|webkit-390x844/.test(info.project.name), '320, 390 (Chromium y WebKit) y escritorio');
+  const dia = HOY();
+  const { portal, mock } = await toPortal(page, { fichas: 30, amigos: [BEA], mesas: [{ id: 'mesa-bea', dia, anfitrion: false, amigo: BEA, estado: 'invitada', fichas: 0, garbanzos: 0 }] }, { leido: false });
+  const aviso = page.locator('.ed-aviso');
+  await expect(aviso).toContainText('Bea lectora te invita a la mesa para dos del casino.');
+  await shot(page, info, 'v181-aviso-portal');
+  await expect(portal.locator('.ed-mailbox')).toHaveClass(/has-mail/);
+
+  // «Ahora no» lo guarda; el buzón sigue teniéndolo
+  await aviso.getByRole('button', { name: 'Ahora no' }).click();
+  await expect(aviso).toHaveCount(0);
+  await portal.locator('.ed-mailbox').click();
+  await expect(portal.locator('.ed-mailnote')).toContainText('Bea lectora te invita a la mesa para dos del casino.');
+  await portal.locator('.ed-mailbox').click();
+
+  // Otra invitación llega también dentro de tu piso, y un toque lleva a la mesa
+  mock.db.casino.mesas.push({ id: 'mesa-luis', dia, anfitrion: false, amigo: { uid: '33333333-3333-4333-8333-333333333333', alias: 'Luis', avatar_id: 'lectora-cafe' }, estado: 'invitada', fichas: 0, garbanzos: 0 });
+  await portal.getByRole('button', { name: /^Entrar en tu piso/ }).click({ timeout: 15000 });
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect(page.getByRole('dialog', { name: 'Tu piso' }).locator('canvas.ep-canvas')).toBeVisible();
+  await expect(aviso).toBeVisible();
+  await shot(page, info, 'v181-aviso-piso');
+  await aviso.getByRole('button', { name: 'Ir al casino' }).click();
+  const casino = page.getByRole('region', { name: 'El casino del sótano' });
+  await expect(casino.getByRole('button', { name: 'Con un amigo' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(casino).toContainText('Luis');
+  await expect(aviso).toHaveCount(0);
 });
 
 test('sin la migración del casino, la sala dice que abre pronto', async ({ page }, info) => {

@@ -25,8 +25,8 @@ import { ROOM, addItem, check, heightOf, itemsOn, moveItem, reasonText, recolorI
 const DRAG_PX = 6;
 // 1.78 (encargo del 3-11-2026, «más difícil mover un mueble sin querer»): un mueble del piso solo se levanta si se
 // mantiene pulsado un momento sin mover el dedo; un toque lo elige y un deslizamiento rápido no lo mueve
-const HOLD_MS = 320;
-const HOLD_SLOP_PX = 10; // lo que puede temblar el dedo mientras se mantiene
+const HOLD_MS = 200;
+const HOLD_SLOP_PX = 14; // lo que puede temblar el dedo mientras se mantiene
 const OUTFIT = 'personaje'; // pestaña de la balda con el armario de tu personaje (§69)
 const WALK_SPEED = 2.4; // celdas por segundo
 const STEP_S = 0.16; // cada zancada
@@ -999,7 +999,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (uid) {
       const item = room.items.find((i) => i.uid === uid);
       sfx.play('lift');
-      say(`${nameOf(item)}: mantenlo pulsado y arrástralo para moverlo.`);
+      say(`${nameOf(item)}: arrástralo para moverlo.`);
     }
   }
 
@@ -1162,21 +1162,23 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       walkToGround(a);
       return;
     }
+    // Ya elegido se arrastra sin esperar (1.81: mantener pulsado siempre costaba demasiado); elegirlo es el seguro
+    const held = Boolean(uid) && uid === selected;
     if (uid && uid !== selected) {
       // Si se toca algo de encima del elegido, se elige eso (para poder quitar la lámpara de la mesa)
       select(uid);
     } else if (!uid && selected) {
       // Tocar un hueco con algo elegido lo suelta (desde la 1.78 ya no lo lleva allí: era fácil moverlo sin querer)
       select(null);
-      say('Toca un mueble para elegirlo; para moverlo, mantenlo pulsado y arrástralo.');
+      say('Toca un mueble para elegirlo; después, arrástralo para moverlo.');
       return;
     } else if (!uid) {
       return;
     }
     const item = room.items.find((i) => i.uid === selected);
-    const d = { uid: selected, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, armed: false, timer: 0, moved: false, grab: grabOf(item, a), preview: null };
-    // Se levanta al rato de mantenerlo pulsado: entonces se ve en la mano, en su sitio, y ya se puede arrastrar
-    d.timer = setTimeout(() => {
+    const d = { uid: selected, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, armed: held, held, timer: 0, moved: false, grab: grabOf(item, a), preview: null };
+    // Sin elegir, se levanta al rato de mantenerlo pulsado: entonces se ve en la mano, en su sitio, y ya se puede arrastrar
+    if (!held) d.timer = setTimeout(() => {
       if (drag !== d) return;
       d.armed = true;
       d.preview = previewAt(item, targetAt(item, a, d.grab));
@@ -1203,11 +1205,12 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       if (far > HOLD_SLOP_PX) {
         const item = room.items.find((i) => i.uid === drag.uid);
         endDrag();
-        say(`Para mover ${nameOf(item).toLowerCase()}, mantenlo pulsado un momento y luego arrástralo.`);
+        say(`Para mover ${nameOf(item).toLowerCase()}, tócalo y luego arrástralo.`);
       }
       return;
     }
     if (!drag.moved && far < DRAG_PX) return;
+    if (!drag.moved && drag.held) sfx.play('lift');
     drag.moved = true;
     root.classList.add('is-dragging');
     const item = room.items.find((i) => i.uid === drag.uid);

@@ -8,7 +8,6 @@ import { CATALOG } from '../src/features/edificio/catalog.js';
 import { SOBRES } from '../src/features/edificio/economy.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
 import { PRENDAS } from '../src/features/edificio/actor.js';
-import { check } from '../src/features/edificio/room.js';
 import { missionsOf } from '../src/features/edificio/dailyMissions.js';
 import { CAJA, CASINO, valor } from '../src/features/edificio/hotel/veintiuna.js';
 
@@ -207,51 +206,6 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       if (body.si) db.piso_megusta.push({ piso, de: userId, uid: body.uid, mueble: item.id });
       return json(social());
     }
-    // 1.79: la suite de la semana del Gran Hotel, decorada entre todos, como 20261109130000_hotel_suite_semana.sql
-    // (solo si la prueba lo pide con db.suite = { pared, suelo, aportes: [{ user_id, item }], semanas: { id: n }, placas: [ids] }).
-    // Lo que tiene cada cual sale de db.piso_inventario (o, sin él, de su piso)
-    if (['rpc/piso_suite', 'rpc/piso_suite_llevar', 'rpc/piso_suite_retirar'].includes(table)) {
-      if (!db.suite) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
-      const su = db.suite;
-      su.aportes ??= [];
-      su.semanas ??= {};
-      su.placas ??= [];
-      const body = req.postDataJSON?.() ?? {};
-      const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
-      const perfil = (id) => db.profiles.find((x) => x.user_id === id) ?? {};
-      const lunes = (() => {
-        const d = new Date();
-        d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
-        return d.toISOString().slice(0, 10);
-      })();
-      const layout = (fuera = null) => ({ v: 1, pared: su.pared ?? 'noche', suelo: su.suelo ?? 'damero', items: su.aportes.filter((a) => a.user_id !== fuera).map((a, k) => ({ ...a.item, uid: k + 1 })) });
-      const mias = () => (su.semanas[userId] ?? 0) + (su.aportes.some((a) => a.user_id === userId) ? 1 : 0);
-      const estado = () => ({
-        semana: lunes,
-        layout: layout(),
-        aportes: su.aportes.map((a, k) => ({ uid: k + 1, alias: perfil(a.user_id).alias, avatar_id: perfil(a.user_id).avatar_id, mueble: a.item.id, yo: a.user_id === userId })),
-        mio: su.aportes.find((a) => a.user_id === userId)?.item ?? null,
-        semanas: mias(),
-        placa: su.placas.includes(userId),
-        meta: 4,
-      });
-      if (table === 'rpc/piso_suite') return json(estado());
-      if (table === 'rpc/piso_suite_retirar') {
-        su.aportes = su.aportes.filter((a) => a.user_id !== userId);
-        return json(estado());
-      }
-      const item = body.item;
-      const tiene = db.piso_inventario?.[userId] ? (db.piso_inventario[userId][item?.id] ?? 0) > 0 : (db.pisos.find((p) => p.user_id === userId)?.layout.items ?? starterRoom().items).some((i) => i.id === item?.id);
-      if (!tiene) return fail('Solo se lleva un mueble que tengas.');
-      const room = layout(userId);
-      const nuevo = { ...item, uid: room.items.length + 1 };
-      if (!check(room, nuevo).ok) return fail('Ahí no cabe: elige otro sitio.');
-      const k = su.aportes.findIndex((a) => a.user_id === userId);
-      if (k >= 0) su.aportes[k] = { user_id: userId, item };
-      else su.aportes.push({ user_id: userId, item });
-      if (mias() >= 4 && !su.placas.includes(userId)) su.placas.push(userId);
-      return json(estado());
-    }
     // 1.80: el casino del sótano, como 20261110120000_hotel_casino.sql (solo si la prueba lo pide con db.casino =
     // { fichas, semana, manos: [], barajas: [[cartas…], …] }). Cada reparto usa la siguiente baraja de `barajas` (sin
     // ellas, una fija): así la prueba sabe qué sale. La mesa para dos, con `amigos` y `mesas` (el amigo es simulado:
@@ -289,6 +243,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
       const hoy = ca.manos.filter((m) => m.dia === body.dia);
       const abierta = hoy.find((m) => m.estado === 'jugando' && !m.mesa);
+      const guardadas = ca.mesas.filter((m) => m.anfitrion && m.dia === body.dia && m.estado === 'invitada').length;
       const cerrar = (m, fin, extra = 0) => {
         const premio = Math.min(CASINO[fin] + extra, Math.max(0, CASINO.tope - ca.semana));
         m.estado = fin;
@@ -372,7 +327,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         if (body.fichas > CASINO.apuestaFichas || body.garbanzos > CASINO.apuestaGarbanzos) return fail('Se apuestan como mucho 10 fichas y 50 garbanzos.');
         llegar();
         if (ca.fichas < body.fichas || ca.garbanzos < body.garbanzos) return fail('No tienes tanto para apostar.');
-        if (hoy.length >= CASINO.manos) return fail('Hoy ya has jugado tus tres manos: vuelve mañana.');
+        if (hoy.length + guardadas >= CASINO.manos) return fail('Hoy ya has jugado tus tres manos, o las que quedan están guardadas para otras mesas: vuelve mañana.');
         if (ca.mesas.some((m) => m.amigo.uid === amigo.uid && m.dia === body.dia && m.estado !== 'rechazada')) return fail('Hoy ya tenéis una mesa los dos: una al día por pareja.');
         ca.mesas.unshift({ id: `mesa-${ca.mesas.length + 1}`, dia: body.dia, anfitrion: true, amigo, estado: 'invitada', fichas: body.fichas, garbanzos: body.garbanzos });
         return json(estado());
@@ -429,6 +384,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         llegar();
         if (abierta) return fail('Termina antes la mano que tienes.');
         if (hoy.length >= CASINO.manos) return fail('Hoy ya has jugado tus tres manos: vuelve mañana.');
+        if (hoy.length + guardadas >= CASINO.manos) return fail('Esa mano la tienes guardada para la mesa a la que has invitado: retira la invitación si prefieres jugarla a solas.');
         const mazo = ca.barajas.shift() ?? [9, 8, 6, 5, 12, 1, 2, 3, 4, 7, 10, 11];
         const m = { dia: body.dia, mano: hoy.length + 1, tuyas: [mazo[0], mazo[2]], crupier: [mazo[1], mazo[3]], mazo: mazo.slice(4), estado: 'jugando', fichas: 0 };
         ca.manos.push(m);

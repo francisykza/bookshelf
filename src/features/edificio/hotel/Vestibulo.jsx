@@ -3,7 +3,7 @@
 // - la recepción: el conserje da los encargos de la semana, que son las misiones de siempre (se cobran en tickets
 //   igual que en el ordenador, una vez por misión y semana, lo decide el servidor);
 // - el ascensor: la botonera de latón con una luz por planta es la navegación del hotel; las plantas que aún no abren
-//   dicen qué habrá, y la «P» sale a la plaza (1.79: la «Á» sube a la suite de la semana; 1.80: la «S» baja al casino);
+//   dicen qué habrá, y la «P» sale a la plaza (1.80: la «S» baja al casino);
 // - el tablón «Busco quien lea…» y el guardarropa: dicen qué habrá y «Abre pronto».
 // 1.78 (encargo del 3-11-2026: «que los menús no tengan tanto protagonismo»): al entrar no hay nada abierto, solo el
 // dibujo con letreros pequeños; lo de cada cosa sale en un papel más compacto al tocarla, y se cierra con «×», tocándola
@@ -30,14 +30,13 @@ const FLOORS = [
     nombre: 'El mirador de la corona',
     texto: 'El bar de arriba, con las mejores vistas: el ranking del minijuego, las distinciones y tu año de lectura en un calendario de pared.',
   },
-  { id: 'suite', boton: 'Á', nombre: 'La suite de la semana', abierta: true, texto: 'Una habitación que empieza vacía cada lunes y decoran entre todos: cada huésped lleva un mueble suyo.' },
   { id: 'terraza', boton: 'T', nombre: 'La terraza', texto: 'Guirnaldas, la radio del rincón sonando para todos y el puerto a tus pies.' },
   { id: 'baile', boton: 'B', nombre: 'El salón de baile', texto: 'La sala grande, para las lecturas conjuntas y las presentaciones de los clubes.' },
   { id: 'suites', boton: '3', nombre: 'Las suites de los clubes', texto: 'Cada club tiene su habitación, decorada entre sus miembros.' },
   { id: 'cafe', boton: '1', nombre: 'El café-biblioteca', texto: 'Mesas junto a quien lee lo mismo y la sala de lectura: te sientas, empieza tu sesión de lectura y ves a quien lee a la vez.' },
   { id: 'lonja', boton: 'E', nombre: 'La Lonja', texto: 'El mercado del entresuelo: un puesto por persona para cambiar muebles o venderlos por tickets.' },
   { id: 'vestibulo', boton: 'V', nombre: 'El vestíbulo', aqui: true },
-  { id: 'casino', boton: 'S', nombre: 'El casino del sótano', abierta: true, texto: 'Un casino de los años 20, sin apuestas: una partida de «Las 21 páginas» al día, solo si ese día has leído.' },
+  { id: 'casino', boton: 'S', nombre: 'El casino del sótano', abierta: true, texto: 'Un casino de los años 20: tres manos al día de «Las 21 páginas», a solas o con un amigo, y la caja donde se cambian las fichas.' },
   { id: 'plaza', boton: 'P', nombre: 'La plaza del muelle', calle: true },
 ];
 
@@ -121,7 +120,7 @@ function Encargos() {
 }
 
 // La esfera de plantas, en píxeles (como la del dibujo): de izquierda (sótano) a derecha (corona), con la aguja roja
-const DIAL = ['casino', 'vestibulo', 'lonja', 'cafe', 'suites', 'baile', 'terraza', 'suite', 'mirador'];
+const DIAL = ['casino', 'vestibulo', 'lonja', 'cafe', 'suites', 'baile', 'terraza', 'mirador'];
 const DIAL_W = 41;
 const DIAL_H = 23;
 // Las marcas, sin llegar a la base de la esfera (si no, la aguja del sótano y la de la corona quedarían tapadas)

@@ -3,7 +3,7 @@
 // tocándolo; sin él, con movimiento reducido) y la fachada viva del hotel, a todo lo que da la pantalla, que se toca
 // planta a planta (Francisco: «el gran hotel tiene demasiados menús y se empequeñece»: sin fila de botones; para el
 // teclado, cada planta tiene un botón invisible sobre el dibujo que se ve al enfocarlo). Aún no se entra en ninguna
-// sala salvo el vestíbulo (1.75, Vestibulo.jsx), la suite de la semana del ático (1.79, SuiteSemana.jsx) y el casino del
+// sala salvo el vestíbulo (1.75, Vestibulo.jsx), y el casino del
 // sótano (1.80, Casino.jsx): tocarlas es
 // entrar; las demás plantas dicen qué habrá y «Abre pronto».
 // 1.77 (maqueta de Francisco): el hotel entero cabe en la pantalla, de la aguja a la limusina, por encima de una cartela
@@ -14,7 +14,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FLOOR_ORDER, mountHotel, ZONES } from './hotelView';
 import { Casino } from './Casino';
 import { mountRide } from './ride';
-import { SuiteSemana } from './SuiteSemana';
 import { Vestibulo } from './Vestibulo';
 import './hotel.css';
 
@@ -193,7 +192,8 @@ function HotelFacade({ onEnter, directory, onDirectory }) {
  * el Directorio abierto (lo abre la barra del panel); `onDirectory(abierto)`. `soundOn`: el sonido de la app (el casino lo usa).
  */
 export function GranHotel({ room = null, onRoom = () => {}, directory = false, onDirectory = () => {}, soundOn = false }) {
-  const [riding, setRiding] = useState(() => !reducedMotion());
+  // Si se llega ya a una sala (el aviso de la mesa para dos), sin el viaje
+  const [riding, setRiding] = useState(() => !reducedMotion() && !room);
   // Abrir el Directorio durante el viaje es llegar ya
   if (directory && riding) setRiding(false);
   return (
@@ -207,8 +207,6 @@ export function GranHotel({ room = null, onRoom = () => {}, directory = false, o
         <Vestibulo onStreet={() => onRoom(null)} onFloor={onRoom} />
       ) : room === 'casino' ? (
         <Casino onStreet={() => onRoom(null)} soundOn={soundOn} />
-      ) : room === 'suite' ? (
-        <SuiteSemana onStreet={() => onRoom(null)} />
       ) : (
         <HotelFacade onEnter={onRoom} directory={directory} onDirectory={onDirectory} />
       )}

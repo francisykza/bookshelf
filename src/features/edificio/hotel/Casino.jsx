@@ -1,7 +1,7 @@
 // El casino del sótano del Gran Hotel (1.80; paso C de docs/qa/gran-hotel.md §9.4, decisiones de Francisco del
 // 2-11-2026). «Las 21 páginas»: un veintiuno contra el crupier con cartas-página, tres manos al día y SIN APOSTAR: cada
 // mano da fichas (8 si ganas, 12 con veintiuna servida, 4 si empatas y 2 si pierdes; nunca se pierde nada), con un
-// tope de 150 a la semana. La puerta solo se enciende si hoy has leído (páginas registradas o una sesión de lectura).
+// tope de 150 a la semana. Desde la 1.81 abre todos los días, leas o no (Francisco, 4-11-2026).
 // Reparte y puntúa el servidor (supabase/migrations/20261110120000_hotel_casino.sql): aquí solo se ven tus cartas y la
 // vista del crupier. Sin falsos «casi», sin cuentas atrás y sin «otra más»: al acabar la mano, el resultado y ya.
 // Encargo de Francisco (3-11-2026, «que tenga más presencia, acorde a los colores de la sala y más videojuego»): arriba,
@@ -13,13 +13,12 @@
 // (CajaCasino.jsx), donde las fichas se cambian por premios; la ventanilla de la sala también la abre.
 import { useEffect, useRef, useState } from 'react';
 import { dayKey } from '../../../domain/dates';
-import { useLibrary } from '../../../state/useLibrary';
 import { useCommunity } from '../../social/hooks/useCommunity';
 import { jugarCasino, loadCasino, repartirCasino } from '../service';
 import { createShopSfx } from '../shopAudio';
 import { Carta, Huecos, PixelNum, Total } from './cartas21';
 import { useCountUp } from './useCountUp';
-import { CASINO, fichasDe, FINAL, leidoHoy } from './veintiuna';
+import { CASINO, fichasDe, FINAL, mesasQueEsperan } from './veintiuna';
 import { CASINO_H, CASINO_W, renderCasino } from './casinoArt';
 import { CajaCasino } from './CajaCasino';
 import { MesaParaDos } from './MesaParaDos';
@@ -33,7 +32,6 @@ const NOTE = {
 
 // Lo que dice el crupier (frases cerradas; nunca empuja a jugar otra)
 const DICE = {
-  cerrada: 'Hoy aún no has leído. Lee un poco y te abro la mesa.',
   nueva: '¿Repartimos? Hoy tienes tres manos.',
   sigue: 'Cuando quieras, reparto la siguiente.',
   jugando: '¿Otra carta o te plantas?',
@@ -57,9 +55,9 @@ function manoDice(m, k, mesas) {
   return `Mano ${k + 1}${con}: ${FINAL[m.estado].toLowerCase()}, +${m.fichas}`;
 }
 
+const MIRAR_MS = 15000;
+
 export function Casino({ onStreet, soundOn = false }) {
-  const { state } = useLibrary();
-  const leido = leidoHoy(state);
   const community = useCommunity({ autoload: true });
   const member = community.status === 'ready' && community.member;
   const [data, setData] = useState(undefined);
@@ -79,13 +77,37 @@ export function Casino({ onStreet, soundOn = false }) {
     if (!member) return undefined;
     let alive = true;
     loadCasino(dia).then(
-      (d) => alive && setData(d),
+      (d) => {
+        if (!alive) return;
+        setData(d);
+        // Si te espera una mesa, se entra directo a ella
+        if (mesasQueEsperan(d?.mesas).length) setModo('pareja');
+      },
       () => alive && setData(null),
     );
     return () => {
       alive = false;
     };
   }, [member, dia]);
+  // Con una mesa en marcha, se mira cada poco si el amigo ha aceptado o ha jugado (lo que llega tras una jugada tuya manda)
+  const jugada = useRef(0);
+  const guardar = (d) => {
+    jugada.current += 1;
+    setData(d);
+  };
+  const mesaViva = Boolean(data?.mesas.some((m) => ['invitada', 'jugando'].includes(m.estado)));
+  useEffect(() => {
+    if (!mesaViva) return undefined;
+    const t = setInterval(() => {
+      if (document.hidden) return;
+      const antes = jugada.current;
+      loadCasino(dia).then(
+        (d) => d && antes === jugada.current && setData(d),
+        () => {},
+      );
+    }, MIRAR_MS);
+    return () => clearInterval(t);
+  }, [mesaViva, dia]);
   useEffect(() => {
     root.current?.scrollIntoView({ block: 'start' });
   }, []);
@@ -104,7 +126,7 @@ export function Casino({ onStreet, soundOn = false }) {
   else if (member && data === null) status = 'soon';
   else if (member && data) status = 'ready';
 
-  const abierta = status === 'ready' && leido;
+  const abierta = status === 'ready';
   const room = renderCasino({ apagada: !abierta });
   // A solas: la última mano que no es de una mesa para dos
   const solo = (d) => d?.manos.filter((m) => !m.mesa).at(-1) ?? null;
@@ -113,7 +135,7 @@ export function Casino({ onStreet, soundOn = false }) {
   const fichas = useCountUp(data?.fichas ?? 0);
   const garbanzos = useCountUp(data?.garbanzos ?? 0);
   // Lo que te espera en la mesa para dos: invitaciones y manos por jugar
-  const teEsperan = data ? data.mesas.filter((m) => (m.estado === 'invitada' && !m.anfitrion) || (m.estado === 'jugando' && m.mia?.estado === 'jugando')) : [];
+  const teEsperan = mesasQueEsperan(data?.mesas);
 
   const run = async (fn) => {
     setBusy(true);
@@ -122,7 +144,7 @@ export function Casino({ onStreet, soundOn = false }) {
     setAntes(enJuego ? { tuyas: mano.tuyas.length, crupier: mano.crupier.length } : { tuyas: 0, crupier: 0 });
     try {
       const next = await fn();
-      setData(next);
+      guardar(next);
       sfx.play('deal');
       const ult = solo(next);
       if (ult && ult.estado !== 'jugando') {
@@ -150,11 +172,10 @@ export function Casino({ onStreet, soundOn = false }) {
   let dice = null;
   if (status === 'ready') {
     if (modo === 'caja') dice = DICE.caja;
-    else if (!leido) dice = DICE.cerrada;
-    else if (modo === 'pareja') dice = DICE.pareja;
     else if (enJuego) dice = DICE.jugando;
     else if (mano && recien) dice = DICE[mano.estado];
     else if (teEsperan.length) dice = `${teEsperan[0].amigo?.alias ?? 'Alguien'} te espera en la mesa para dos.`;
+    else if (modo === 'pareja') dice = DICE.pareja;
     else if (data.quedan === 0) dice = DICE.hecho;
     else dice = data.manos.length ? DICE.sigue : DICE.nueva;
   }
@@ -247,16 +268,9 @@ export function Casino({ onStreet, soundOn = false }) {
             </div>
 
             {modo === 'caja' ? (
-              <CajaCasino data={data} dia={dia} onData={setData} sfx={sfx} />
-            ) : !leido ? (
-              <div className="gh-21__felt">
-                <div className="gh-21__closed">
-                  <h4>La puerta está apagada</h4>
-                  <p>El casino solo se enciende los días que lees. Registra unas páginas o una sesión de lectura y el crupier te reparte.</p>
-                </div>
-              </div>
+              <CajaCasino data={data} dia={dia} onData={guardar} sfx={sfx} />
             ) : modo === 'pareja' ? (
-              <MesaParaDos data={data} dia={dia} onData={setData} sfx={sfx} />
+              <MesaParaDos data={data} dia={dia} onData={guardar} sfx={sfx} />
             ) : (
               <>
                 <div className="gh-21__felt">

@@ -6,6 +6,7 @@ import { ArrowLeft, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../components/panels/PanelShell';
+import { dayKey } from '../../domain/dates';
 import { useCommunity } from '../social/hooks/useCommunity';
 import { FIRMAS, catalogItem } from './catalog';
 import { starterRoom } from './demo';
@@ -17,9 +18,10 @@ import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
 import { PRENDAS, prendaNombre } from './actor';
 import { missionsOf, todayKey } from './dailyMissions';
-import { contarDiaria, doorLabel, elegirInicio, firmar, loadArmario, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje, savePiso } from './service';
+import { contarDiaria, doorLabel, elegirInicio, firmar, loadArmario, loadCasino, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje, savePiso } from './service';
 import { VecinoMesa } from './VecinoMesa';
 import { GranHotel } from './hotel/GranHotel';
+import { mesasQueEsperan } from './hotel/veintiuna';
 import { StarterPicker } from './StarterPicker';
 import { Tienda } from './Tienda';
 
@@ -29,6 +31,11 @@ const TIENDA_ID = 'tienda';
 const HOTEL_ID = 'hotel';
 
 const SAVE_MS = 900;
+// Cada cuánto se mira si te espera una mesa para dos del casino, estés donde estés del edificio (1.81)
+const AVISO_MS = 45000;
+const fechaCorta = (dia) => dia.split('-').reverse().slice(0, 2).join('/');
+const nombreMesa = (m) => m.amigo?.alias ?? 'Tu amigo';
+const avisoMesa = (m) => (m.estado === 'invitada' ? `${nombreMesa(m)} te invita a la mesa para dos del casino.` : `Te toca en la mesa para dos con ${nombreMesa(m)}.`);
 // Cómo se ve un piso: «dentro» de la habitación (a pantalla completa, con la balda o la mesa del vecino abajo; por defecto) o
 // como ficha (el dibujo arriba y lo demás debajo). Es una preferencia de este dispositivo.
 const VIEW_KEY = 'bookshelf:edificio:vista';
@@ -253,6 +260,35 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const mine = open?.yo;
   // Dentro de un piso, la melodía baja; en la fachada y en la tienda, a su volumen
   const inPiso = Boolean(pisoId && !inShop && !inHotel);
+  // Las mesas para dos que te esperan avisan estés donde estés, menos dentro del propio casino
+  const enCasino = inHotel && hotelRoom === 'casino';
+  const [mesas, setMesas] = useState([]);
+  const [avisosVistos, setAvisosVistos] = useState(() => new Set());
+  useEffect(() => {
+    if (!ready || enCasino) return undefined;
+    let alive = true;
+    const mirar = () => {
+      if (document.hidden) return;
+      loadCasino(dayKey()).then(
+        (c) => alive && setMesas(c?.mesas ?? []),
+        () => {},
+      );
+    };
+    mirar();
+    const t = setInterval(mirar, AVISO_MS);
+    document.addEventListener('visibilitychange', mirar);
+    return () => {
+      alive = false;
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', mirar);
+    };
+  }, [ready, enCasino]);
+  const avisoDe = (m) => `${m.id}:${m.estado}`;
+  const aviso = enCasino || dressing || revealing ? null : (mesasQueEsperan(mesas).find((m) => !avisosVistos.has(avisoDe(m))) ?? null);
+  const irAlCasino = () => {
+    setHotelRoom('casino');
+    if (!inHotel) onOpenPiso(HOTEL_ID);
+  };
   useEffect(() => setEdificioMusicInside(inPiso), [inPiso]);
   // Al salir del hotel se olvida la sala: la próxima vez se llega otra vez a la fachada
   if (wasHotel !== inHotel) {
@@ -428,6 +464,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     const mail = [
       ...(social?.regalos.slice(0, 5).map((r) => `${r.alias ?? 'Un vecino'} te regaló: ${catalogItem(r.mueble).nombre.toLowerCase()}.`) ?? []),
       ...(social?.visitas.slice(0, 5).map((v) => `${v.alias ?? 'Un vecino'} firmó en tu libro de visitas: «${firmaText(v.frase)}».`) ?? []),
+      // Con su fecha: el buzón recuerda lo leído por su texto, y mañana puede ser otra mesa con la misma persona
+      ...mesasQueEsperan(mesas).map((m) => `${avisoMesa(m)} (${fechaCorta(m.dia)})`),
+      ...mesas.filter((m) => m.estado === 'cerrada').map((m) => `Ha terminado la mesa para dos con ${nombreMesa(m)}: mira el resultado en el casino. (${fechaCorta(m.dia)})`),
     ];
     // El portal (1.65): el edificio de borde a borde; el nombre queda para los lectores de pantalla
     body = (
@@ -481,6 +520,18 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
           </button>
         )}
       </div>
+      {aviso && (
+        <div className="ed-aviso" role="status">
+          <ReaderAvatar avatarId={aviso.amigo?.avatar_id} alias={nombreMesa(aviso)} size="list" decorative />
+          <p>{avisoMesa(aviso)}</p>
+          <button type="button" className="px-btn" onClick={irAlCasino}>
+            Ir al casino
+          </button>
+          <button type="button" className="ed-aviso__no" aria-label="Ahora no" onClick={() => setAvisosVistos((v) => new Set(v).add(avisoDe(aviso)))}>
+            <X aria-hidden="true" />
+          </button>
+        </div>
+      )}
       {body}
     </PanelShell>
   );

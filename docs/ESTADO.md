@@ -6,6 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Cerrada, sin publicar: 1.81.0** (2026-11-04, §81). El casino abre todos los días, las mesas para dos avisan en todo
+  el edificio, los muebles se mueven con menos esfuerzo y ya no está la suite de la semana. Está en la rama
+  `1.81-casino-avisos`. **Su migración `20261111120000_hotel_casino_arreglos.sql` está sin aplicar**: antes de
+  «súbelo», ofrecer el flujo del SQL Editor.
 - **Versión publicada**: 1.80.0 (2026-11-03, §80). El casino del sótano del Gran Hotel tiene:
   - «Las 21 páginas»: tres manos al día sin apostar, que solo abren el día que lees;
   - la mesa para dos con un amigo, en diferido, con fichas y garbanzos;
@@ -107,6 +111,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Migración de la 1.81.0 sin aplicar** (`20261111120000_hotel_casino_arreglos.sql`): Francisco la aplica (o «hazlo tú»
+  con el SQL Editor) antes de publicar.
+- **Tickets sin leer** (1.81): decidir si se deja el camino fichas → sobre del casino → reciclar, ahora que el casino no
+  exige lectura.
 - **Reciclar solo lo repetido en los sobres** (idea de Francisco del 3-11-2026, para más adelante): un ajuste en la tienda
   del tipo «si ya tengo N copias de un mueble, recicla las que salgan de más en los sobres» (N lo elige la persona).
   Al abrir el sobre, lo que pase de N se recicla solo por sus tickets (las mismas cifras de `piso_reciclar`), y la
@@ -189,6 +197,33 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-04 · cuenta principal · 1.81.0 cerrada
+- Francisco dijo «Cierra la 1.81»: versión en `src/diag.js`, `package.json`, `public/sw.js` y la cabecera del SPEC, y §81
+  escrito. Commit en la rama `1.81-casino-avisos`, subida y PR desde el navegador.
+- **Sin publicar** y **la migración sin aplicar**. Antes de «súbelo», ofrecer el flujo del SQL Editor.
+
+### 2026-11-04 · cuenta principal · cambios tras probar el casino (en la 1.81.0)
+- Francisco pidió cuatro cambios tras usar la 1.80:
+  - **Casino sin exigir lectura**: abre todos los días. Fuera `leidoHoy` y el cartel de la puerta apagada; regla en CLAUDE.md.
+  - **Mesa para dos**: las mesas que te esperan avisan en todo el edificio con una nota (`.ed-aviso`, «Ir al casino»
+    sin el viaje en limusina) y en el buzón, que también dice cuándo ha terminado una mesa. El panel mira cada 45 s; dentro
+    del casino, cada 15 s con una mesa en marcha. Con una mesa que te espera, el casino abre en «Con un amigo».
+  - **Mover muebles**: ya elegido se arrastra sin esperar; sin elegir, pulsación de 200 ms (antes 320) con 14 px de margen.
+  - **Sin la suite de la semana**: fuera de la fachada, el Directorio y el ascensor (su bloque cuenta como mirador).
+    Borrados `SuiteSemana.jsx`, `suite.js`, su CSS, su servicio y `v179-suite`. Interpreté «sala de exposición de
+    muebles» como esta sala. Sus tablas y funciones siguen en la base de datos y la placa sigue en el catálogo.
+- **Migración nueva sin aplicar**: `20261111120000_hotel_casino_arreglos.sql` (la aplica Francisco). Tres arreglos:
+  - **Fallo de la 1.80**: `piso_casino_semana` sumaba las fichas de siempre, porque `dia` era la columna y no el
+    parámetro. El tope de 150 no se reiniciaba el lunes. Comprobado con una prueba que fallaba (150 en vez de 0).
+  - Quien invita guarda una mano para esa mesa. Antes podía jugar sus tres y el amigo no podía aceptar.
+  - Una invitación de ayer aceptada hoy cuenta entre las manos de hoy.
+- Pruebas: vitest de edificio en verde; e2e `v180-casino` y `v178-mover` en 320, 390, escritorio y WebKit (emulación);
+  `v174`, `v175`, `v177-hotel-directorio` y `v178-paseo` en 390. Capturas `v181-aviso-*`.
+- **Sin verificar**: no sé qué falló exactamente a Francisco al invitar. Encontré y arreglé lo anterior, pero no he
+  mirado sus datos: la lista de amigos exige que os sigáis los dos y tener la comunidad activada.
+- **A decidir por Francisco**: sin exigir lectura, se pueden conseguir tickets sin leer (fichas → sobre del casino →
+  reciclar). El tope de 150 fichas a la semana da para poco más de un sobre.
 
 ### 2026-11-03 · cuenta principal · 1.80.0 publicada
 - Francisco dijo «Súbelo»: avance rápido de `main` hasta la rama `1.80-casino` (PR #5), push y Vercel; `/sw.js`

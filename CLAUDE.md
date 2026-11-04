@@ -186,18 +186,21 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     del edificio**, aparcada en el muelle con su chófer (aprobado «Sí, a la limusina», 2-11-2026; 1.74, §74.4).
     **Salas del hotel** (2-11-2026, `gran-hotel.md` §9): cada sala es la versión física de una función de la app y se
     navega con **un ascensor de latón**, no con menús. La Lonja (intercambio de muebles; nunca místicos ni sagas), la
-    suite de la semana (en dos pasos y voluntaria: candidato por edificio, vota todo el hotel, gana el lunes; premio sin
-    moneda) y **el casino del sótano**: minijuego «Las 21 páginas», **sin apostar** (partida diaria gratis, nunca se
-    pierde nada, sin falsos «casi»), **solo se abre si has registrado lectura ese día**; las fichas nunca se compran y
-    se canjean por sobres, ropa de casino y la mascota «el conejo de la chistera» (ocupa el sitio del legendario).
+    suite de la semana (**quitada de la app desde la 1.81**: a Francisco no le convencía la sala de exposición de
+    muebles, 4-11-2026; no se borran sus datos y quien tiene la placa la conserva) y **el casino del sótano**: minijuego
+    «Las 21 páginas», **sin apostar** (partida diaria gratis, nunca se pierde nada, sin falsos «casi»), **abierto todos
+    los días, leas o no** (desde la 1.81, decisión de Francisco del 4-11-2026: «da mucho conflicto con las lecturas»);
+    las fichas nunca se compran y se canjean por sobres, ropa de casino y la mascota «el conejo de la chistera» (ocupa el sitio del legendario).
     Orden: vestíbulo con ascensor, suite, casino, sala de lectura y quiosco, Lonja, vitrinas y mirador.
     **La mesa para dos del casino** (3-11-2026, «Fichas y garbanzos», «Os seguís los dos», «En diferido»): con un
     amigo (**seguimiento mutuo**) se juega contra el mismo crupier, cada uno cuando quiere; esas manos son de las 3 del
     día y dan **2 fichas de compañía** más a cada uno (el tope semanal de 150 sigue). **Única excepción a «sin
     apostar»**: entre los dos se pueden apostar **fichas, una vez al día por pareja y hasta 10**, y **garbanzos** (una
-    moneda imaginaria sin ningún valor: empiezas con 100, +20 cada día que lees, hasta 50 por mano). Gana la apuesta quien
+    moneda imaginaria sin ningún valor: empiezas con 100, +20 cada día que juegas, hasta 50 por mano). Gana la apuesta quien
     acaba más cerca de 21 sin pasarse; empate, se devuelve. Solo con un amigo y aceptándolo los dos; nunca con
-    desconocidos del hotel, nunca más de lo que se tiene. No se amplía sin que Francisco lo pida.
+    desconocidos del hotel, nunca más de lo que se tiene. No se amplía sin que Francisco lo pida. **El aviso llega
+    estés donde estés del edificio** (4-11-2026): una nota con «Ir al casino» y el buzón; quien invita guarda una de sus
+    manos para esa mesa.
   - **Encargo del 3-11-2026** (antes de seguir con el plan del rascacielos; por bloques con capturas):
     - **Sin «dejar una frase»** (los sellos de frase al vecino): sobra junto al libro de visitas. Se quita de la app;
       no se borran los datos.
@@ -210,7 +213,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       de todas las rarezas**, con una mascota.
     - **El personaje va andando de verdad** a donde le mandas (p. ej., a la limusina o a la puerta de una tienda) antes
       de cambiar de sitio; con movimiento reducido, directo.
-    - **Más difícil mover un mueble sin querer**.
+    - **Más difícil mover un mueble sin querer**. Desde la 1.81 (4-11-2026, «cuesta mucho moverlos»): el seguro es
+      elegirlo. Elegido con un toque se arrastra sin esperar; sin elegir, basta una pulsación corta.
     - **Al entrar en tu piso, la habitación es la protagonista**: sin la balda abierta; los menús que ya hay, detrás de
       **iconos claros** en la pantalla.
   - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración

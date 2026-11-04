@@ -154,10 +154,11 @@ persona.
 
 ### 9.3 La suite de la semana
 
+> **Quitada de la app en la 1.81** (Francisco, 4-11-2026): lo que sigue queda como historia.
 > **1.79 (decisión de Francisco del 3-11-2026): lo de abajo ya no vale.** La suite es una habitación común del ático
 > que empieza vacía cada lunes. Cada huésped lleva un mueble suyo, sin perderlo (corriente, de suelo, alfombra o
 > pared), lo puede mover, cambiar o retirar, y se ve quién trajo cada cosa. Con 4 semanas aportando, la «Placa de la
-> suite» (una vez). Ni pisos de nadie, ni votos, ni tickets. Ver `hotel/SuiteSemana.jsx` y
+> suite» (una vez). Ni pisos de nadie, ni votos, ni tickets. Ver `hotel/SuiteSemana.jsx` (ya borrado) y
 > `20261109130000_hotel_suite_semana.sql`.
 
 Arriba del todo, en el ático, se ve **el piso con más «me gusta» de la semana**, con el alias de quien vive en él y

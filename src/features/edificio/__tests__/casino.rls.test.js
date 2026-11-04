@@ -113,6 +113,14 @@ describe('las 21 páginas', () => {
     expect(s.manos.at(-1)).toMatchObject({ estado: 'ganada', fichas: 4 });
   });
 
+  it('el tope es de cada semana: lo ganado la semana pasada no cuenta', async () => {
+    const [C] = await createUsers(db, 1);
+    await as(db, C, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ('Semana', 'gato-lector', true)"));
+    await call(C, 'select piso_casino($1::date)', [HOY]);
+    await db.query("insert into piso_casino_manos (user_id, dia, mano, mazo, tuyas, crupier, estado, fichas) values ($1, date_trunc('week', current_date)::date - 3, 1, '{}', '{}', '{}', 'ganada', 150)", [C]);
+    expect((await casino(C)).semana).toBe(0);
+  });
+
   it('sin sesión no se llega a nada, y las tablas no se tocan', async () => {
     for (const sql of [`select piso_casino('${HOY}')`, `select piso_casino_repartir('${HOY}')`, `select piso_casino_jugar('${HOY}', 'pedir')`]) {
       expect(await rejects(as(db, null, (q) => q(sql)))).toMatch(/permission denied/);

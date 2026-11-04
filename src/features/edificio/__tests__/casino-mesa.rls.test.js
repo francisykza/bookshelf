@@ -166,6 +166,41 @@ describe('la mesa para dos', () => {
     expect(await rejects(invitar(A, B))).toMatch(/tres manos/);
   });
 
+  it('quien invita guarda una mano para esa mesa; retirar la invitación se la devuelve', async () => {
+    const [F, G] = await createUsers(db, 2);
+    for (const [i, u] of [F, G].entries()) await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Guarda ${i}`]));
+    await seguir(F, G);
+    await seguir(G, F);
+    const repartir = (u) => call(u, 'select piso_casino_repartir($1::date)', [HOY]);
+    const plantarse = async (u) => {
+      const s = await casino(u);
+      if (s.jugando) await call(u, "select piso_casino_jugar($1::date, 'plantarse')", [HOY]);
+    };
+    const m = mesaDe(await invitar(F, G), G);
+    await repartir(F);
+    await plantarse(F);
+    await repartir(F);
+    await plantarse(F);
+    expect(await rejects(repartir(F))).toMatch(/guardada para la mesa/);
+    // Retirar la invitación devuelve la mano
+    await rechazar(F, m.id);
+    await repartir(F);
+    await plantarse(F);
+    expect((await casino(F)).quedan).toBe(0);
+  });
+
+  it('una invitación de ayer aceptada hoy cuenta entre las manos de hoy', async () => {
+    const [F, G] = await createUsers(db, 2);
+    for (const [i, u] of [F, G].entries()) await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Ayer ${i}`]));
+    await seguir(F, G);
+    await seguir(G, F);
+    const m = mesaDe(await invitar(F, G), G);
+    await db.query('update piso_casino_mesas set dia = current_date - 1 where id = $1', [m.id]);
+    const s = await aceptar(G, m.id);
+    expect(mesaDe(s, F)).toMatchObject({ dia: new Date().toISOString().slice(0, 10), estado: 'jugando' });
+    expect(s.quedan).toBe(2);
+  });
+
   it('sin sesión no se llega a nada, y la tabla de mesas no se toca', async () => {
     const id = '00000000-0000-4000-8000-000000000000';
     for (const sql of [
