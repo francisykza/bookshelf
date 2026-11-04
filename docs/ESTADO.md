@@ -7,7 +7,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 ## Estado actual
 
 - **Cerrada, sin publicar: 1.84.0** (2026-11-04, §84). La Lonja de dos plantas, con su panel de mercado, sus reglas contra los
-  abusos y la pesada de Remedios. Está en la rama `1.84-lonja`, que sale de la 1.83. **Su migración
+  abusos y la pesada de Remedios. Está en la rama `1.84-lonja` (PR #9), que sale de la 1.83. **Su migración
   `20261114120000_hotel_lonja.sql` está sin aplicar**: antes de «súbelo», ofrecer el flujo del SQL Editor.
 - **Cerrada, sin publicar: 1.83.0** (2026-11-04, §83). La sala de lectura del hotel, con personajes y mascotas, la librería
   común y el saludo. Está en la rama `1.83-sala-lectura`, que sale de la 1.82. **Su migración
