@@ -6,7 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Cerrada y sin publicar: 1.86.0** (2026-11-04, §85 y §86). Reseña como imagen, acabados, La estiba con su pared de premios, talleres y tablón «Se busca». Está en la rama `1.86-identidad-muebles`. **Sus tres migraciones están sin aplicar** y hay que aplicarlas antes de subir, en este orden: `20261115120000_edificio_acabados.sql`, `20261116120000_hotel_estiba.sql` y `20261117120000_edificio_talleres.sql`.
+- **Cerrada y sin publicar: 1.86.0** (2026-11-04, §85 y §86). Reseña como imagen, acabados, La estiba con su pared de premios, talleres y tablón «Se busca». Está en la rama `1.86-identidad-muebles`, PR #10. **Sus tres migraciones están sin aplicar** y hay que aplicarlas antes de subir, en este orden: `20261115120000_edificio_acabados.sql`, `20261116120000_hotel_estiba.sql` y `20261117120000_edificio_talleres.sql`.
 - **Versión publicada: 1.84.0** (2026-11-04, §84), junto con la 1.82 y la 1.83; `/sw.js` ya la trae. La Lonja de dos plantas, con su panel de mercado, sus reglas contra los
   abusos y la pesada de Remedios. Está en la rama `1.84-lonja` (PR #9), que sale de la 1.83. **Su migración
   `20261114120000_hotel_lonja.sql` está aplicada en producción** (4-11-2026).
@@ -212,7 +212,7 @@ Formato de cada entrada (la más reciente arriba):
 
 ### 2026-11-04 · cuenta principal · 1.86.0 cerrada
 - Francisco pidió cerrarla con «Sí, ciérrala» tras ver los tres bloques. No hubo 1.85 aparte: la reseña como imagen va en la 1.86 (SPEC §85) y lo demás en §86. La rama `1.85-resena-imagen` pasa a llamarse `1.86-identidad-muebles`.
-- Sin aplicar ni publicar. Falta el flujo del SQL Editor para las tres migraciones, en orden, y después «súbelo».
+- PR #10 abierta. Sin aplicar ni publicar. Falta el flujo del SQL Editor para las tres migraciones, en orden, y después «súbelo».
 
 ### 2026-11-04 · cuenta principal · reseña, acabados, estiba y talleres (en la 1.86.0)
 - Encargo de Francisco, por una captura del TikTok de libros de Enola: **exportar la reseña como imagen**. Hecho en disco, sin commit ni versión: `src/features/reviews/reviewCard.js` (dibujo en lienzo, 1080×1920 y 1080×1350, tres papeles, reparto en carrusel), `ReviewExport.jsx`, `review-export.css`, `api/portada.js` (primera función de Vercel: portadas de Google, que no se pueden usar en un lienzo de otro modo) y el botón en `MyReview`.
