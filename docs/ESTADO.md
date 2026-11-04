@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Cerrada, sin publicar: 1.84.0** (2026-11-04, §84). La Lonja de dos plantas, con su panel de mercado, sus reglas contra los
+  abusos y la pesada de Remedios. Está en la rama `1.84-lonja`, que sale de la 1.83. **Su migración
+  `20261114120000_hotel_lonja.sql` está sin aplicar**: antes de «súbelo», ofrecer el flujo del SQL Editor.
 - **Cerrada, sin publicar: 1.83.0** (2026-11-04, §83). La sala de lectura del hotel, con personajes y mascotas, la librería
   común y el saludo. Está en la rama `1.83-sala-lectura`, que sale de la 1.82. **Su migración
   `20261113120000_hotel_sala_lectura.sql` está sin aplicar**: antes de «súbelo», ofrecer el flujo del SQL Editor.
@@ -118,7 +121,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - **Migración de la 1.82.0 sin aplicar** (`20261112120000_hotel_casino_garbanzos.sql`): Francisco la aplica (o «hazlo tú»
   con el SQL Editor) antes de publicar.
 - **Migración de la 1.83.0 sin aplicar** (`20261113120000_hotel_sala_lectura.sql`), después de la de la 1.82.0.
-- **Rascacielos, paso D** (`docs/qa/gran-hotel.md` §9.6): falta el quiosco. Luego, la Lonja y el resto del plan.
+- **Migración de la 1.84.0 sin aplicar** (`20261114120000_hotel_lonja.sql`), después de la de la 1.83.0.
+- **Rascacielos**: quiosco descartado por ahora y Lonja cerrada. Lo siguiente, en `docs/qa/gran-hotel.md` §9.6.
+- **Pisos ampliados o de varias plantas para los vecinos**: más adelante, con lo aprendido en la Lonja.
 - **Figuras como muebles animados: aplazado** (Francisco, 4-11-2026, «dejamos aplazado este tema»). Muestra en
   `material-diseno/figuras-habitacion/`. Propuesta sin decidir: ganarlas al terminar el libro y exponerlas en las vitrinas. Antes
   hay que decidir qué hacer con el parecido a personajes de las sagas. No retomarlo sin que lo pida.
@@ -204,6 +209,33 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-04 · cuenta principal · 1.84.0 cerrada
+- Francisco dio el «sí» a las capturas: versión subida, §84 en `SPEC.md` y commit en `1.84-lonja`. Quedan aprobadas las cifras de
+  abajo. Sin publicar, migración sin aplicar. Sin probar entre dos cuentas reales ni en un iPhone, y los sonidos nuevos sin escuchar.
+
+### 2026-11-04 · cuenta principal · la Lonja (en la 1.84.0)
+- `hotel/Lonja.jsx`, `hotel/LonjaPesada.jsx`, `hotel/lonjaArt.js`, `hotel/pesadaArt.js`, migración
+  `20261114120000_hotel_lonja.sql`, `lonja.rls.test.js` y `e2e-community/v184-lonja.spec.js`.
+  Se llega por el ascensor (botón E) y por el Directorio.
+- Lo ofrecido sale del inventario hasta que se retira o se cambia; mascotas, místicos, sagas y premios quedan fuera.
+- Panel con cara propia de mercado (toldo, pizarra, etiquetas de estraza): a Francisco el calco del casino no le valía. Modos: Los
+  puestos, Tu puesto, La pesada. **Cifras**: 3
+  ofertas por puesto, 3 cambios al día, horquillas de 5-20, 10-40 y 20-60 tickets, comisión del 10 %, cobrar hasta 100 tickets a la
+  semana, 3 días sin reofrecer lo recibido, un cambio por semana entre las mismas dos personas, rareza igual o contigua en los
+  trueques, ofertas de 7 días y cuentas de menos de 3 días solo miran. Mascotas fuera.
+- **La pesada de Remedios**: tres encargos al día en una escena dibujada: 6 cajas, 9 cajas y 8 sin saber si pesa de más o de menos.
+  Sellos: 1, 2 y 3 en las pesadas justas; con una de más, uno menos (al menos uno). Fallar acaba el día y no quita nada. Canje: venta sin comisión 10, hueco extra 7 días 14 y toldo 18. Sin tickets ni muebles.
+- Francisco pidió más personalidad y probar las **salas de varias plantas** en la Lonja. Primero se hizo con cámara entre
+  plantas y la descartó con dos maquetas: quiere **toda la sala a la vista, sin transición**. Ahora es un solo dibujo en corte
+  (`lonjaArt.js`): la nave abajo (cada puesto es una persona con su personaje y sus muebles en el mostrador; Remedios, la
+  lonjera, y un gato) y el altillo arriba (tu puesto, almacén, pizarra y libro de cuentas), con su escalera. La migración da
+  también `dueno` y `personaje`.
+
+### 2026-11-04 · cuenta principal · quiosco de la Gaceta, descartado por ahora
+- Se hizo y a Francisco no le terminó de convencer: «la descartamos por ahora». No entra en la app ni en git. El trabajo está en
+  `material-diseno/gaceta-aparcada/` (archivos nuevos y `cambios.patch`), por si vuelve. La plaza sigue en «Próxima apertura».
+- Si se retoma: sin citas, porque son privadas; y tocar una reseña no lleva a la obra, porque no hay vista pública.
 
 ### 2026-11-04 · cuenta principal · 1.83.0 cerrada
 - PR #8, con base en la rama de la 1.82 (PR #7) para que se vea solo lo suyo.

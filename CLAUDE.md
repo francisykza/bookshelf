@@ -208,6 +208,13 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     compañero, nunca con iconos. Tiene que dejar huella: **librería común** (quien termina un libro leyendo ahí puede dejar
     su lomo, con su nombre; lo decide cada vez y puede retirarlo) y **saludo** cerrado entre quienes leen a la vez, sin texto
     libre. Al acabar te dice con quién has leído. No da tickets ni recompensas.
+  - **Salas ampliadas y de varias plantas** (4-11-2026, idea de Francisco, con maquetas de un salón ampliado y de un piso de
+    tres plantas): **toda la sala se ve a la vez, sin transiciones**. Varias plantas = un solo dibujo en corte, unas sobre otras
+    con su escalera. A prueba en la Lonja (`hotel/lonjaArt.js`); los pisos de los vecinos, más adelante.
+  - **La Lonja** (4-11-2026): el panel, con la soltura del casino («el mejor menú») **pero sin ser igual**: cara propia de
+    mercado (clases `lj-`: toldo, pizarra, etiquetas de estraza). **Fuera las mascotas**, además de místicos y sagas. Tiene que
+    dar libertad sin que se pueda explotar la economía: reglas en `20261114120000_hotel_lonja.sql`. Lleva un minijuego, **la
+    pesada de Remedios**, con escena dibujada (`hotel/pesadaArt.js`), no con botones sueltos; sus sellos nunca son tickets ni muebles.
   - **Encargo del 3-11-2026** (antes de seguir con el plan del rascacielos; por bloques con capturas):
     - **Sin «dejar una frase»** (los sellos de frase al vecino): sobra junto al libro de visitas. Se quita de la app;
       no se borran los datos.

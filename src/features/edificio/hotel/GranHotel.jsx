@@ -15,6 +15,7 @@ import { FLOOR_ORDER, mountHotel, ZONES } from './hotelView';
 import { Casino } from './Casino';
 import { mountRide } from './ride';
 import { Vestibulo } from './Vestibulo';
+import { Lonja } from './Lonja';
 import { SalaLectura } from './SalaLectura';
 import './hotel.css';
 
@@ -192,8 +193,9 @@ function HotelFacade({ onEnter, directory, onDirectory }) {
  * `room`: la sala en la que estás (null, la fachada); `onRoom(sala)` entra en ella o sale a la calle. `directory`:
  * el Directorio abierto (lo abre la barra del panel); `onDirectory(abierto)`. `soundOn`: el sonido de la app (el casino lo usa).
  * `timer`, `askPages`, `onPagesDone` y `onOpenCalendar`: el temporizador de la app, para la sala de lectura.
+ * `onInventory`: la Lonja avisa al edificio de que tu inventario ha cambiado.
  */
-export function GranHotel({ room = null, onRoom = () => {}, directory = false, onDirectory = () => {}, soundOn = false, timer = null, askPages = false, onPagesDone, onOpenCalendar }) {
+export function GranHotel({ room = null, onRoom = () => {}, directory = false, onDirectory = () => {}, soundOn = false, timer = null, askPages = false, onPagesDone, onOpenCalendar, onInventory = () => {} }) {
   // Si se llega ya a una sala (el aviso de la mesa para dos), sin el viaje
   const [riding, setRiding] = useState(() => !reducedMotion() && !room);
   // Abrir el Directorio durante el viaje es llegar ya
@@ -209,6 +211,8 @@ export function GranHotel({ room = null, onRoom = () => {}, directory = false, o
         <Vestibulo onStreet={() => onRoom(null)} onFloor={onRoom} />
       ) : room === 'casino' ? (
         <Casino onStreet={() => onRoom(null)} soundOn={soundOn} />
+      ) : room === 'lonja' ? (
+        <Lonja onStreet={() => onRoom(null)} onInventory={onInventory} soundOn={soundOn} />
       ) : room === 'cafe' && timer ? (
         <SalaLectura onStreet={() => onRoom(null)} timer={timer} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} />
       ) : (

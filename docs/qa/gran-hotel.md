@@ -139,6 +139,8 @@ fachada sigue sirviendo para tocar una planta directamente.
 
 ### 9.2 La Lonja: el intercambio de muebles
 
+> **Hecha en la 1.84** (SPEC §84): las reglas y cifras vigentes están allí; mascotas fuera, y lleva la pesada de Remedios.
+
 En un puerto, la lonja es donde se compra y se vende lo que llega. Aquí hay puestos de madera con toldo, uno por
 persona.
 
