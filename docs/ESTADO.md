@@ -6,16 +6,16 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Cerrada, sin publicar: 1.84.0** (2026-11-04, §84). La Lonja de dos plantas, con su panel de mercado, sus reglas contra los
+- **Versión publicada: 1.84.0** (2026-11-04, §84), junto con la 1.82 y la 1.83; `/sw.js` ya la trae. La Lonja de dos plantas, con su panel de mercado, sus reglas contra los
   abusos y la pesada de Remedios. Está en la rama `1.84-lonja` (PR #9), que sale de la 1.83. **Su migración
   `20261114120000_hotel_lonja.sql` está aplicada en producción** (4-11-2026).
-- **Cerrada, sin publicar: 1.83.0** (2026-11-04, §83). La sala de lectura del hotel, con personajes y mascotas, la librería
+- **Antes, 1.83.0** (2026-11-04, §83). La sala de lectura del hotel, con personajes y mascotas, la librería
   común y el saludo. Está en la rama `1.83-sala-lectura`, que sale de la 1.82. **Su migración
   `20261113120000_hotel_sala_lectura.sql` está aplicada en producción** (4-11-2026).
-- **Cerrada, sin publicar: 1.82.0** (2026-11-04, §82). Avisos de mesa al momento, mesas de garbanzos, la lata con sus premios
+- **Antes, 1.82.0** (2026-11-04, §82). Avisos de mesa al momento, mesas de garbanzos, la lata con sus premios
   y el cambio de garbanzos y tickets. Está en la rama `1.82-casino-garbanzos`. **Su migración
   `20261112120000_hotel_casino_garbanzos.sql` está aplicada en producción** (4-11-2026).
-- **Versión publicada**: 1.81.0 (2026-11-04, §81). El casino abre todos los días, las mesas para dos avisan en todo el
+- **Antes, 1.81.0** (2026-11-04, §81). El casino abre todos los días, las mesas para dos avisan en todo el
   edificio, los muebles se mueven con menos esfuerzo y ya no está la suite de la semana. Su migración
   `20261111120000_hotel_casino_arreglos.sql` está aplicada en producción. El casino del sótano del Gran Hotel tiene:
   - «Las 21 páginas»: tres manos al día sin apostar;
@@ -118,7 +118,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Publicar las 1.82, 1.83 y 1.84** («súbelo»): sus migraciones ya están aplicadas.
+- **Probar entre dos cuentas reales y en un iPhone** lo de las 1.82, 1.83 y 1.84, y escuchar los sonidos de la pesada.
 - **Rascacielos**: quiosco descartado por ahora y Lonja cerrada. Lo siguiente, en `docs/qa/gran-hotel.md` §9.6.
 - **Pisos ampliados o de varias plantas para los vecinos**: más adelante, con lo aprendido en la Lonja.
 - **Figuras como muebles animados: aplazado** (Francisco, 4-11-2026, «dejamos aplazado este tema»). Muestra en
@@ -207,9 +207,12 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-04 · cuenta principal · 1.84.0 publicada
+- `main` avanzó sin fusión desde la 1.81 hasta la 1.84, con las 1.82 y 1.83 dentro; `/sw.js` ya trae la 1.84.0.
+
 ### 2026-11-04 · cuenta principal · migraciones de la 1.82, la 1.83 y la 1.84 aplicadas
 - Con el flujo del SQL Editor, en orden: SHA-256 comprobado y Francisco pulsó Run las tres veces. Con la clave pública, las seis
-  tablas nuevas y las funciones de la Lonja dan 42501. Esta nota queda sin commit hasta «súbelo». La app publicada sigue en la 1.81.
+  tablas nuevas y las funciones de la Lonja dan 42501.
 
 ### 2026-11-04 · cuenta principal · 1.84.0 cerrada
 - Francisco dio el «sí» a las capturas: versión subida, §84 en `SPEC.md` y commit en `1.84-lonja`. Quedan aprobadas las cifras de
