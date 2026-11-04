@@ -426,7 +426,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   } else if (!data) {
     body = <p className="ed-note">Buscando tu puerta…</p>;
   } else if (inHotel) {
-    body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} timer={reloj} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} />;
+    body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} timer={reloj} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} onInventory={setInventory} />;
   } else if (inShop) {
     body = inventory?.tienda ? (
       <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={(id) => {

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.83.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.84.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5055,3 +5055,68 @@ pero sin librería ni saludo, y a quien no es vecino se le ve con el personaje d
 - PGlite: `sala-lectura.rls.test.js` (14). e2e en emulación: `v183-sala-lectura` en 320, 390, escritorio y WebKit 390, según la
   prueba. **Sin probar entre dos cuentas reales.**
 - La presencia solo se renueva con la app visible: con el móvil bloqueado, a los 3 minutos no se te ve ni llegan saludos.
+
+## 84. La Lonja del Gran Hotel y la pesada de Remedios (1.84.0)
+
+La fase 7 de `docs/qa/economia-muebles.md` y el §9.2 de `docs/qa/gran-hotel.md`, con los cambios que pidió Francisco el 4-11-2026.
+**Una migración nueva, la aplica Francisco**: `20261114120000_hotel_lonja.sql`. Sin ella, la sala dice que está cerrada.
+
+### 84.1 La sala, entera y en corte
+
+- Entresuelo del hotel, abierta desde el Directorio y el ascensor (botón E). Es la primera **sala de dos plantas**: un solo dibujo
+  (`hotel/lonjaArt.js`), sin transiciones. Abajo, la nave: cada puesto es una persona con su personaje y sus muebles en el
+  mostrador, Remedios (la lonjera) y un gato. Arriba, el altillo: tu puesto, el almacén, la pizarra y el libro de cuentas.
+- Hasta cinco puestos por pasillo. Con más, se pasa de pasillo desde el panel.
+
+### 84.2 El panel
+
+Tiene la soltura del casino, pero cara propia de mercado (clases `lj-`): un toldo con tres faldones (Los puestos, Tu puesto, La
+pesada), la pizarra de las cuentas y etiquetas de papel de estraza sobre ladrillo. Tocar la escena lleva al modo que corresponde.
+
+- **Los puestos**: todas las ofertas del pasillo a la vez, con quién las pone, y el filtro «Lo que puedo pagar». Lo que no se puede
+  hacer se dice en su etiqueta. Cambiar pide confirmar.
+- **Tu puesto**: los huecos, el libro de cuentas y las reglas. Se puede pedir un precio en tickets, un mueble concreto o «lo que
+  sea» de una rareza; en este último caso, quien compra elige con qué paga.
+
+### 84.3 La economía
+
+Lo comprueba el servidor. **La Lonja no crea ningún ticket.**
+
+| Regla | Cifra |
+| --- | --- |
+| Precio por rareza, en tickets | común 5-20, poco común 10-40, raro 20-60 |
+| Comisión, que se queda en la Lonja | 10 %, redondeada hacia arriba |
+| Cobrar | hasta 100 tickets netos en 7 días; cambiar por muebles sigue abierto |
+| Ofertas por puesto | 3 (4 con el hueco extra), durante 7 días |
+| Cambios al día, para quien acepta | 3 |
+| Lo recibido aquí | 3 días sin poder ofrecerlo ni pagar con ello; sí colocarlo o reciclarlo |
+| Las mismas dos personas | un cambio cada 7 días, en cualquier sentido |
+| Trueques | rareza igual o contigua |
+| Cuentas de menos de 3 días | solo miran |
+
+Fuera de la Lonja: **mascotas**, místicos, sagas y premios. Se respetan los bloqueos. Lo ofrecido sale del inventario hasta que se
+cambia, se retira o caduca, y el cambio se hace de una vez.
+
+### 84.4 La pesada de Remedios
+
+Minijuego de lógica en la mesa de Remedios, dibujada aparte (`hotel/pesadaArt.js`). Tres encargos al día, y en cada uno una caja
+pesa distinto. La guarda el servidor hasta resolver.
+
+| Encargo | Cajas | Pesadas justas (máximo) | Sellos |
+| --- | --- | --- | --- |
+| Sardinas | 6, sabiendo si pesa de más o de menos | 2 (3) | 1 |
+| Naranjas | 9, sabiendo si pesa de más o de menos | 2 (3) | 2 |
+| Libros | 8, sin saberlo | 3 (4) | 3 |
+
+- Con una pesada de más, el encargo vale uno menos, y al menos uno. Fallar acaba el día y no quita nada; quien no había ganado
+  nada se lleva un sello por jugar.
+- Remedios tacha con tiza lo que la balanza ya ha descartado. Lo calcula el dispositivo con lo que la balanza ha dicho.
+- Con movimiento reducido, todo va directo a su sitio y el gato se queda quieto. Sonidos propios, solo después de tocar algo.
+- **Los sellos nunca son tickets ni muebles.** Se canjean por una venta sin comisión (10; hasta 2 guardadas), un hueco más durante
+  7 días (14) y cuatro toldos para tu puesto (18), que ve todo el mundo.
+
+### 84.5 Pruebas
+
+- PGlite: `lonja.rls.test.js` (30). e2e en emulación: `v184-lonja` en 320, 390, escritorio y WebKit 390, según la prueba, con
+  movimiento reducido; con las animaciones reales, solo una pasada a 390 en Chromium. **Sin probar entre dos cuentas reales ni en
+  un iPhone**, y los sonidos nuevos no se han escuchado.

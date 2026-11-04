@@ -97,7 +97,7 @@ test('el hotel cabe entero sobre la cartela, y tocar una planta o elegirla en el
   // El Directorio: las plantas con su estado (1.80: con el casino del sótano; 1.81: sin la suite de la semana); elegir el salón de baile da lo mismo que tocarlo
   await dir.click();
   const list = hotel.getByRole('dialog', { name: 'Directorio' });
-  await expect(list.getByRole('button')).toHaveCount(9);
+  await expect(list.getByRole('button')).toHaveCount(10);
   await expect(list.getByRole('button', { name: /Vestíbulo/ })).toContainText('Abierto · entrar');
   await expect(list.getByRole('button', { name: /Salón de baile/ })).toContainText('Próxima apertura');
   await shot(page, info, 'v177-hotel-directorio');

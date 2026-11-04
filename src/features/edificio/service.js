@@ -83,6 +83,42 @@ export async function salaPersonajes(ids) {
   return Object.fromEntries((filas ?? []).map((f) => [f.user_id, { personaje: validateAvatar(f.personaje), companero: f.companero ?? null }]));
 }
 
+// ── La Lonja del Gran Hotel (1.84, supabase/migrations/20261114120000_hotel_lonja.sql) ──
+const normalizeLonja = (d) => ({
+  personaje: validateAvatar(d.personaje),
+  tickets: d.tickets ?? 0,
+  sellos: d.sellos ?? 0,
+  cambios: d.cambios ?? { hechos: 0, tope: 3 },
+  cobro: d.cobro ?? { hecho: 0, tope: 100 },
+  nueva: Boolean(d.nueva),
+  toldo: d.toldo ?? null,
+  toldos: d.toldos ?? [],
+  sinComision: d.sinComision ?? 0,
+  huecoHasta: d.huecoHasta ?? null,
+  juego: { ronda: 1, cajas: 6, par: 2, tope: 3, pesaMas: null, pesadas: [], encargos: [], sellos: 0, acabada: false, ...d.juego },
+  retenidas: d.retenidas ?? 0,
+  topeOfertas: d.topeOfertas ?? 3,
+  horquilla: d.horquilla ?? {},
+  libres: d.libres ?? {},
+  mias: d.mias ?? [],
+  cerradas: d.cerradas ?? [],
+  puestos: (d.puestos ?? []).map((o) => ({ ...o, personaje: validateAvatar(o.personaje) })),
+});
+async function lonjaRpc(fn, args) {
+  const sb = await client();
+  const { data, error } = await sb.rpc(fn, args);
+  if (error) throw fail(error);
+  return normalizeLonja(data);
+}
+export const cargarLonja = () => lonjaRpc('piso_lonja');
+export const ponerLonja = (doy, pido, precio, clase) => lonjaRpc('piso_lonja_poner', { doy, pido, precio, clase });
+export const retirarLonja = (cual) => lonjaRpc('piso_lonja_retirar', { cual });
+export const aceptarLonja = (cual, pago = null) => lonjaRpc('piso_lonja_aceptar', { cual, pago });
+export const pesarLonja = (izq, der) => lonjaRpc('piso_lonja_pesar', { izq, der });
+export const senalarLonja = (cual) => lonjaRpc('piso_lonja_senalar', { cual });
+export const canjearLonja = (que) => lonjaRpc('piso_lonja_canjear', { que });
+export const toldoLonja = (cual) => lonjaRpc('piso_lonja_toldo', { cual });
+
 async function salaRpc(fn, args) {
   const sb = await client();
   const { data, error } = await sb.rpc(fn, args);

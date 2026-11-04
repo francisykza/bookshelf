@@ -2148,6 +2148,884 @@
   overflow-wrap: anywhere;
 }
 
+/* La Lonja (1.84): las dos plantas se ven a la vez, así que el dibujo manda en la altura */
+.gh-lonja__escena {
+  flex: none;
+  width: min(100%, calc(64dvh * var(--lonja-ratio)));
+  margin-inline: auto;
+}
+
+.gh-lonja__zona:focus-visible {
+  outline: 2px solid #ffd75a;
+  outline-offset: 1px;
+}
+
+.gh-lonja__toque {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+
+.gh-lonja__zona {
+  position: absolute;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  transform: translate(-50%, -60%);
+  background: none;
+  cursor: pointer;
+}
+
+.gh-lonja__zona.is-nave {
+  transform: translate(-50%, 15%);
+}
+
+.gh-lonja__zona::after {
+  position: absolute;
+  inset: -8px -4px;
+  content: '';
+}
+
+.gh-lonja__zona:disabled {
+  cursor: default;
+}
+
+.gh-lonja {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 66px);
+}
+
+.gh-lonja__cartel {
+  display: block;
+  max-width: 84px;
+  padding: 1px 4px 2px;
+  overflow: hidden;
+  background: #f6ead0;
+  box-shadow: 0 0 0 1px #1a0e0c;
+  color: #1a0e0c;
+  font:
+    600 0.68rem/1.1 'Lora',
+    Georgia,
+    serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gh-lonja__zona[aria-pressed='true'] .gh-lonja__cartel {
+  background: #e8b85a;
+}
+
+.gh-lonja__list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* El panel de la Lonja: mercado, no casino. Pared de ladrillo, un toldo con tres faldones, la pizarra de las cuentas y etiquetas
+   de papel de estraza. Sin esquinas redondas y con bordes de píxel */
+.gh-lonja {
+  --lj-tinta: #2a160c;
+  --lj-estraza: #e4c690;
+  --lj-estraza-l: #f2dfb4;
+  --lj-estraza-d: #b08c56;
+  --lj-pizarra: #24312c;
+  --lj-tiza: #ece6d2;
+  --lj-laton: #e8b85a;
+  --lj-laton-d: #8e6224;
+  --lj-rojo: #b02c3a;
+  --lj-rojo-d: #701a26;
+}
+
+.lj-panel {
+  flex: 1;
+  padding: 0 10px 18px;
+  background: #4a241b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='16' shape-rendering='crispEdges'%3E%3Cg fill='%233a1b14'%3E%3Crect width='32' height='2'/%3E%3Crect y='8' width='32' height='2'/%3E%3Crect x='8' y='2' width='2' height='6'/%3E%3Crect x='24' y='10' width='2' height='6'/%3E%3C/g%3E%3C/svg%3E");
+  color: var(--lj-tiza);
+}
+
+/* El toldo: cuelga de la sala y cada faldón es un modo; el abierto baja más y coge color */
+.lj-toldo {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0 -10px 10px;
+  padding-top: 8px;
+  background: linear-gradient(#2a160c 0 3px, #8e6224 3px 5px, transparent 5px);
+}
+
+.lj-toldo button {
+  position: relative;
+  display: grid;
+  height: 46px;
+  place-items: center;
+  padding: 0 4px 8px;
+  border: 0;
+  background: repeating-linear-gradient(90deg, #8a6a3e 0 13px, #5e4426 13px 26px);
+  cursor: pointer;
+  mask: linear-gradient(#000 0 0) top / 100% calc(100% - 6px) no-repeat, repeating-linear-gradient(90deg, #000 0 11px, transparent 11px 13px) bottom / 100% 6px no-repeat;
+}
+
+.lj-toldo button[aria-pressed='true'] {
+  height: 56px;
+  background: repeating-linear-gradient(90deg, var(--lj-rojo) 0 13px, #f4e4bc 13px 26px);
+}
+
+.lj-toldo span {
+  padding: 3px 6px;
+  background: #2a160c;
+  color: #cdb88e;
+  font:
+    700 0.74rem/1.1 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-toldo button[aria-pressed='true'] span {
+  background: var(--lj-estraza-l);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+  color: var(--lj-tinta);
+}
+
+.lj-toldo button:focus-visible span {
+  outline: 3px solid #ffe39a;
+}
+
+.lj-toldo__aviso {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  background: #ffe39a;
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+}
+
+/* La pizarra: lo tuyo, escrito con tiza */
+.lj-pizarra {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: var(--lj-pizarra);
+  box-shadow:
+    inset 0 0 0 1px #33453e,
+    0 0 0 3px #6e4424,
+    0 0 0 5px var(--lj-tinta);
+}
+
+.lj-pizarra > p {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  margin: 0;
+}
+
+.lj-pizarra > p .gh-px-num {
+  height: 20px;
+  width: auto;
+  color: var(--lj-tiza);
+  fill: var(--lj-tiza);
+}
+
+.lj-pizarra > p span,
+.lj-pizarra__cuentas p,
+.lj-pizarra__palotes .is-texto {
+  color: #bcc4b0;
+  font:
+    italic 500 0.74rem/1.15 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-pizarra__cuentas {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding-left: 12px;
+  border-left: 2px dashed #51625a;
+}
+
+.lj-pizarra__cuentas p {
+  margin: 0;
+}
+
+.lj-pizarra__raya {
+  display: block;
+  height: 4px;
+  background: #3c4e46;
+}
+
+.lj-pizarra__raya span {
+  display: block;
+  height: 100%;
+  background: var(--lj-tiza);
+}
+
+.lj-pizarra__palotes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lj-pizarra__palotes li:not(.is-texto) {
+  width: 3px;
+  height: 13px;
+  background: #4b5e55;
+}
+
+.lj-pizarra__palotes li.is-hecho {
+  background: var(--lj-tiza);
+}
+
+.lj-pizarra__palotes .is-texto {
+  margin-left: 4px;
+}
+
+/* Lo que dice Remedios: un papel clavado en la pared */
+.lj-dice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 5px 10px 5px 5px;
+  background: var(--lj-estraza-l);
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    3px 3px 0 2px rgb(0 0 0 / 0.3);
+  color: var(--lj-tinta);
+  font:
+    italic 500 0.9rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-dice img {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+}
+
+.lj-aviso {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  background: var(--lj-tiza);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+  color: var(--lj-tinta);
+  font:
+    600 0.86rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-nota {
+  margin: 8px 0;
+  color: var(--lj-estraza-l);
+  font:
+    italic 500 0.86rem/1.35 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+
+/* Botones: chapa de latón, y el rojo del sello para lo que no tiene vuelta */
+.lj-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: var(--lj-laton);
+  box-shadow:
+    inset 0 2px 0 #ffe39a,
+    inset 0 -3px 0 var(--lj-laton-d),
+    0 0 0 2px var(--lj-tinta);
+  color: var(--lj-tinta);
+  font:
+    700 0.92rem/1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+
+.lj-btn.is-sello {
+  background: var(--lj-rojo);
+  box-shadow:
+    inset 0 2px 0 #d65a64,
+    inset 0 -3px 0 var(--lj-rojo-d),
+    0 0 0 2px var(--lj-tinta);
+  color: #fff4dc;
+}
+
+.lj-btn.is-chico {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 0.82rem;
+}
+
+.lj-btn:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.lj-btn:disabled {
+  filter: saturate(0.3) brightness(0.72);
+  cursor: default;
+}
+
+.lj-btn:focus-visible,
+.lj-link:focus-visible,
+.gh-lonja__filtros button:focus-visible {
+  outline: 3px solid #ffe39a;
+  outline-offset: 2px;
+}
+
+.lj-link {
+  min-height: 36px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font:
+    italic 600 0.84rem/1 'Lora',
+    Georgia,
+    serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.lj-link:disabled {
+  opacity: 0.6;
+}
+
+.lj-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Las ofertas: etiquetas de estraza atadas con cordel */
+.gh-lonja__list,
+.gh-lonja__huecos {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.gh-lonja__list > li,
+.gh-lonja__huecos > li:not(.is-hueco) {
+  position: relative;
+  padding: 6px 8px 6px 20px;
+  background: var(--lj-estraza);
+  box-shadow: 3px 3px 0 rgb(0 0 0 / 0.3);
+  color: var(--lj-tinta);
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 10px calc(100% - 4px), 6px calc(100% - 4px), 6px calc(100% - 8px), 2px calc(100% - 8px), 2px 8px, 6px 8px, 6px 4px, 10px 4px);
+}
+
+.gh-lonja__list > li::before,
+.gh-lonja__huecos > li:not(.is-hueco)::before {
+  position: absolute;
+  top: calc(50% - 4px);
+  left: 7px;
+  width: 8px;
+  height: 8px;
+  background: #4a241b;
+  box-shadow: 0 0 0 2px var(--lj-estraza-d);
+  content: '';
+}
+
+.gh-lonja__list li.is-abierta {
+  background: var(--lj-estraza-l);
+}
+
+.gh-lonja__fila,
+.gh-lonja__huecos > li:not(.is-hueco) {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.gh-lonja__oferta {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  margin: 0;
+  font:
+    500 0.82rem/1.25 'Lora',
+    Georgia,
+    serif;
+  overflow-wrap: anywhere;
+}
+
+.gh-lonja__oferta b {
+  font-size: 0.92rem;
+}
+
+.gh-lonja__oferta span {
+  color: var(--lj-rojo-d);
+  font-weight: 700;
+}
+
+.gh-lonja__oferta i {
+  font-size: 0.76rem;
+}
+
+.gh-lonja__trato {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 2px dashed var(--lj-estraza-d);
+}
+
+.gh-lonja__trato .lj-acciones {
+  margin-top: 0;
+}
+
+.gh-lonja__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+.gh-lonja__filtros button {
+  min-height: 36px;
+  padding: 2px 10px;
+  border: 0;
+  background: #2a160c;
+  color: var(--lj-estraza);
+  font:
+    600 0.78rem/1.1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+
+.gh-lonja__filtros button[aria-pressed='true'] {
+  background: var(--lj-estraza);
+  box-shadow: inset 0 -3px 0 var(--lj-estraza-d);
+  color: var(--lj-tinta);
+}
+
+.gh-lonja__huecos .is-hueco button {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  background: repeating-linear-gradient(180deg, #6e4424 0 11px, #2a160c 11px 13px);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+  color: var(--lj-estraza-l);
+  font:
+    700 0.86rem/1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+
+.gh-lonja__huecos .is-hueco button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* El papel de los formularios: un albarán con sus líneas */
+.lj-albaran {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: repeating-linear-gradient(180deg, var(--lj-estraza-l) 0 23px, #dcc89a 23px 24px);
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    3px 3px 0 2px rgb(0 0 0 / 0.3);
+  color: var(--lj-tinta);
+}
+
+.lj-albaran .gh-lonja__cuenta {
+  margin-top: 6px;
+  text-align: center;
+}
+
+.lj-albaran .lj-link {
+  display: block;
+  margin: 6px auto 0;
+}
+
+/* Los plegables: una libreta de tapas de estraza */
+.lj-plegable {
+  margin-top: 8px;
+  background: #2a160c;
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+}
+
+.lj-plegable summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--lj-estraza-l);
+  font:
+    700 0.88rem/1.2 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+
+.lj-plegable summary:focus-visible {
+  outline: 3px solid #ffe39a;
+  outline-offset: -3px;
+}
+
+.lj-plegable summary span {
+  color: var(--lj-laton);
+}
+
+.lj-plegable[open] summary {
+  border-bottom: 2px dashed var(--lj-laton-d);
+}
+
+.gh-lonja__reglas {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px 10px 28px;
+  color: var(--lj-tiza);
+  font:
+    500 0.82rem/1.35 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-plegable > .lj-nota {
+  padding: 0 10px 10px;
+}
+
+.lj-canje {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+
+.lj-canje li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: var(--lj-estraza);
+  color: var(--lj-tinta);
+}
+
+.lj-canje p {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  font:
+    500 0.8rem/1.25 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-canje__toldo {
+  width: 42px;
+  height: 14px;
+  background: repeating-linear-gradient(90deg, var(--toldo) 0 7px, #f2dfb4 7px 14px);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+}
+
+/* La pesada: tres albaranes y la mesa de Remedios de cerca */
+.lj-pesada {
+  scroll-margin-top: 72px;
+}
+
+.lj-albaranes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.lj-albaranes li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 5px 2px;
+  background: #7a6242;
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+  color: #2a160c;
+  font:
+    500 0.74rem/1.15 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-albaranes li.is-ahora {
+  background: var(--lj-estraza-l);
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    0 3px 0 2px var(--lj-laton);
+}
+
+.lj-albaranes li.is-sellado {
+  background: var(--lj-estraza);
+}
+
+.lj-albaranes li.is-sellado span {
+  color: var(--lj-rojo);
+  font-weight: 700;
+}
+
+.lj-albaranes li.is-fallido {
+  background: #5e4a34;
+  color: #d8c49c;
+}
+
+.lj-mesa {
+  position: relative;
+  box-shadow:
+    0 0 0 2px var(--lj-tinta),
+    0 0 0 4px var(--lj-laton-d),
+    0 0 0 6px var(--lj-tinta);
+  margin: 6px;
+}
+
+.lj-mesa canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.lj-mesa__cajas {
+  position: absolute;
+  inset: 0;
+}
+
+.lj-mesa__caja {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: top 120ms steps(3), left 120ms steps(3);
+}
+
+.lj-mesa__caja:disabled {
+  cursor: default;
+}
+
+.lj-mesa__caja:focus-visible {
+  outline: 2px solid #ffe39a;
+}
+
+.lj-mesa__cuenta {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 4px 6px;
+  background: var(--lj-pizarra);
+  box-shadow: 0 0 0 2px var(--lj-tinta);
+  transform: translateX(-112%);
+}
+
+.lj-mesa__cuenta span {
+  color: #bcc4b0;
+  font:
+    italic 500 0.68rem/8px 'Lora',
+    Georgia,
+    serif;
+}
+
+.lj-mesa__cuenta i {
+  width: 8px;
+  height: 8px;
+  background: #4b5e55;
+}
+
+.lj-mesa__cuenta i.is-extra {
+  background: #6e4c34;
+}
+
+.lj-mesa__cuenta i.is-hecha {
+  background: var(--lj-tiza);
+}
+
+.lj-premio {
+  margin: 0;
+  padding: 6px 12px;
+  background: var(--lj-estraza-l);
+  box-shadow: 0 0 0 2px var(--lj-rojo);
+  color: var(--lj-rojo);
+  font:
+    700 0.95rem/1 'Lora',
+    Georgia,
+    serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lj-mesa__caja {
+    transition: none;
+  }
+
+  .lj-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+.gh-lonja__thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  image-rendering: pixelated;
+}
+
+.gh-lonja__pega {
+  flex: none;
+  max-width: 84px;
+  text-align: right;
+  font:
+    italic 500 0.78rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+
+.gh-lonja__seguro {
+  display: grid;
+  flex: none;
+  justify-items: center;
+}
+
+.gh-lonja__txt {
+  margin: 0;
+  font:
+    500 0.88rem/1.35 'Lora',
+    Georgia,
+    serif;
+}
+
+.gh-lonja__set {
+  min-width: 0;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+}
+
+.gh-lonja__set legend {
+  padding: 0;
+  font:
+    700 0.95rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+.gh-lonja__elige {
+  display: flex;
+  gap: 6px;
+  padding: 4px 2px;
+  overflow-x: auto;
+}
+
+.gh-lonja__pick {
+  flex: none;
+  padding: 2px;
+  border: 0;
+  background: rgb(58 30 20 / 0.14);
+  cursor: pointer;
+}
+
+.gh-lonja__pick[aria-pressed='true'] {
+  box-shadow: 0 0 0 3px var(--c21-gold-d);
+}
+
+.gh-lonja__modo {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+
+.gh-lonja__modo {
+  flex-wrap: wrap;
+}
+
+.gh-lonja__modo button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.gh-lonja__modo button,
+.gh-lonja__precio button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: var(--c21-wood-d);
+  color: var(--c21-cream);
+  font:
+    600 0.88rem/1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+
+.gh-lonja__modo button[aria-pressed='true'] {
+  background: var(--c21-gold);
+  color: var(--c21-ink);
+}
+
+.gh-lonja__precio button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.gh-lonja__precio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.gh-lonja__precio output {
+  min-width: 96px;
+  text-align: center;
+  font:
+    700 1rem/1 'Lora',
+    Georgia,
+    serif;
+}
+
+.gh-lonja__lista select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 2px solid var(--c21-wood);
+  background: var(--c21-cream);
+  color: var(--c21-ink);
+  font:
+    500 0.9rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+
 /* La lata de los garbanzos: plegada al pie de la caja, para no quitarle sitio a los premios */
 .gh-lata {
   border-top: 2px solid var(--c21-gold-d);

@@ -95,6 +95,17 @@ export function createShopSfx({ muted = false } = {}) {
     },
     // El casino del sótano (1.80): la carta que se reparte, las fichas que caen y cómo acaba la mano (sin fanfarrias)
     deal: () => paper(0.05, 0.07, 3600, 2200),
+    // La balanza de la Lonja: la caja que se apoya, el latón que cede y el sello que cae
+    thunk: () => tone('triangle', 150, 0.05, 0.08),
+    creak: () => {
+      paper(0.03, 0.45, 800, 320);
+      tone('triangle', 96, 0.02, 0.14, 0.4);
+    },
+    stamp: () => {
+      tone('square', 104, 0.035, 0.08);
+      paper(0.06, 0.07, 1500, 700);
+      [659.25, 987.77].forEach((f, k) => tone('triangle', f, 0.02, 0.2, 0.12 + k * 0.08));
+    },
     chips: () => [2093, 2349.32, 1975.53].forEach((f, k) => tone('sine', f, 0.012, 0.07, k * 0.05)),
     'mano-ganada': () => [523.25, 659.25, 783.99].forEach((f, k) => tone('triangle', f, 0.026, 0.35, k * 0.08)),
     'mano-veintiuna': () => {

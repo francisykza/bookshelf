@@ -141,6 +141,53 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     const json = (body) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     const blockedWith = (other) => db.blocks.some((b) => (b.blocker === userId && b.blocked === other) || (b.blocker === other && b.blocked === userId));
     if (table === 'rpc/sala_lectura_personajes') return json(db.sala_personajes ?? []);
+    // La Lonja: `db.lonja` es lo que devuelve `piso_lonja`; las reglas de verdad se prueban en lonja.rls.test.js
+    if (table.startsWith('rpc/piso_lonja')) {
+      const l = db.lonja;
+      if (!l) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'no existe' }) });
+      const body = req.postDataJSON?.() ?? {};
+      if (table === 'rpc/piso_lonja_poner') {
+        l.mias.push({ id: randomUUID(), da: body.doy, busca_mueble: body.pido, busca_tickets: body.precio, busca_rareza: body.clase, creada: new Date().toISOString() });
+        l.libres[body.doy] -= 1;
+      }
+      if (table === 'rpc/piso_lonja_retirar') {
+        const o = l.mias.find((x) => x.id === body.cual);
+        l.mias = l.mias.filter((x) => x !== o);
+        l.libres[o.da] = (l.libres[o.da] ?? 0) + 1;
+      }
+      if (table === 'rpc/piso_lonja_aceptar') {
+        const o = l.puestos.find((x) => x.id === body.cual);
+        l.puestos = l.puestos.filter((x) => x !== o);
+        l.tickets -= o.busca_tickets ?? 0;
+        l.cambios.hechos += 1;
+      }
+      // En la pesada simulada, la caja buena siempre es la 4 y pesa de más
+      if (table === 'rpc/piso_lonja_pesar') {
+        const baja = body.izq.includes(4) ? 'izq' : body.der.includes(4) ? 'der' : 'igual';
+        l.juego.pesadas.push({ izq: body.izq, der: body.der, baja });
+      }
+      if (table === 'rpc/piso_lonja_senalar') {
+        const j = l.juego;
+        const sellos = body.cual === 4 ? j.ronda : 0;
+        j.encargos.push({ ronda: j.ronda, cajas: j.cajas, caja: 4, pesaMas: true, senalada: body.cual, sellos, pesadas: j.pesadas });
+        j.sellos += sellos;
+        l.sellos += sellos;
+        j.acabada = body.cual !== 4 || j.ronda === 3;
+        if (!j.acabada) {
+          j.ronda += 1;
+          j.cajas = [6, 9, 8][j.ronda - 1];
+          j.par = [2, 2, 3][j.ronda - 1];
+          j.tope = j.par + 1;
+          j.pesaMas = j.ronda < 3 ? true : null;
+          j.pesadas = [];
+        }
+      }
+      if (table === 'rpc/piso_lonja_canjear') {
+        l.sellos -= body.que === 'sin-comision' ? 10 : body.que === 'hueco' ? 14 : 18;
+        if (body.que === 'sin-comision') l.sinComision = (l.sinComision ?? 0) + 1;
+      }
+      return json(l);
+    }
     // La sala: `db.sala` = { lomos, saludos (quien te saluda), enviados }. Sin él, como si no estuviera la migración
     if (['rpc/sala_libreria', 'rpc/sala_lomo_dejar', 'rpc/sala_lomo_retirar', 'rpc/sala_saludar', 'rpc/sala_saludos_nuevos'].includes(table)) {
       if (!db.sala) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'no existe' }) });
