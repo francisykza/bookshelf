@@ -20,6 +20,7 @@ import { FIGURES_ENABLED } from './domain/figures';
 import { FiguresVaultModal } from './components/figures/FiguresVaultModal';
 import { CozyRoom, ROOM_VIEW, SHELF_VIEW } from './components/room/CozyRoom';
 import { PanoramicRoom } from './components/room/PanoramicRoom';
+import { BaldaPanel } from './components/room/BaldaPanel';
 import { RoomCorner } from './components/room/RoomCorner';
 import { SocialRoom } from './components/room/SocialRoom';
 import { RadioPanel } from './features/radio/RadioPanel';
@@ -232,6 +233,7 @@ function Sanctuary() {
             timer={timer}
             onOpenShelf={openShelf}
             onOpenBook={openBook}
+            onOpenBalda={(id, group) => openPanel({ type: 'balda', id, select: String(group) })}
             onOpenLaptop={() => {
               playUiSound('computerOn');
               openPanel({ type: 'laptop', select: 'today' });
@@ -357,6 +359,8 @@ function Sanctuary() {
           onShowInRoom={(id) => switchPanel({ type: 'figure', id })}
         />
       )}
+      {/* Rincón 01: una balda de cerca para elegir el ejemplar; elegirlo abre su ficha y Atrás vuelve a la habitación */}
+      {panel?.type === 'balda' && <BaldaPanel key={`${panel.id}-${panel.select}`} shelfId={panel.id} group={panel.select ?? 0} onClose={close} onOpenBook={(book) => switchPanel({ type: 'book', id: book.id })} />}
       {panel?.type === 'figure' && <FigureDetail key={panel.id} id={panel.id} onClose={close} />}
       {panel?.type === 'tray' && (
         <PomodoroTray

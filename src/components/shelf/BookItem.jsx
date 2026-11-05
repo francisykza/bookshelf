@@ -43,7 +43,7 @@ function settleCover(src, status) {
 }
 
 /** Estado de la portada y, si aún carga, aviso cuando termine. Devuelve la función para dejar de esperar. */
-function watchCover(src, notify) {
+export function watchCover(src, notify) {
   const known = coverStatus.get(src);
   if (known === 'loaded' || known === 'failed') {
     notify(known);

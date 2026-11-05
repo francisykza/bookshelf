@@ -238,6 +238,16 @@ export const SHELF_LIPS = {
   cabinet2: [[124, 796], [330, 794], [330, 800], [124, 802]],
 };
 
+/**
+ * Canto de las cuatro baldas del hueco derecho (Rincón 01), medido sobre `fondo-limpio` a 3×: la tira clara es el frente
+ * del tablón (se ve desde abajo, así que la base de lo que se apoya queda detrás de ella). Abajo, el hilo de siempre.
+ */
+export const BOOKCASE_LIPS = {
+  top: [[124, 295], [330, 380], [330, 395], [124, 313]],
+  middle: [[124, 485], [330, 542], [330, 556], [124, 503]],
+  ...SHELF_LIPS,
+};
+
 /** Aire delante de la puerta-ventana donde flotan motas de polvo a la luz del día. */
 export const DUST_REGION = { x: 470, y: 430, w: 170, h: 520 };
 

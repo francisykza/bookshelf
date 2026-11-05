@@ -24,6 +24,8 @@ import { RoomSigns } from './RoomSigns';
 import { RoomHeader, RoomNavPlaques, ShelfPlaqueInScene } from './BedBook';
 import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
+import { BookcaseArt, BookcaseHits } from './RoomBookcase';
+import { useBookcase } from './bookcaseLayout';
 import { RoomReflections } from './RoomReflections';
 import { SceneBase } from './SceneBase';
 import { SceneStage } from './SceneStage';
@@ -57,7 +59,7 @@ function OffscreenReporter({ fit, actionsRef, onChange }) {
   return null;
 }
 
-export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenFigure, showFigures = true, onLogReading, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
+export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenBalda, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenFigure, showFigures = true, onLogReading, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
   const { state, actions } = useLibrary();
   const { settings, books, progress } = state;
   const reducedMotion = useReducedMotion();
@@ -80,6 +82,9 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   const [base, setBase] = useState({ status: 'loading', attempt: 0 });
   const guides = Boolean(settings.showGuides);
   const nightBase = settings.timeOfDay === 'night' && Boolean(SCENE_REFRESH.night);
+  // Rincón 01: con la vitrina de figuras oculta, la estantería entera es de libros (expuesto arriba, lomos abajo)
+  const bookcase = useBookcase(books, settings);
+  const newShelf = !showFigures;
 
   // Animaciones SVG: en pausa fuera de pantalla, con un modal delante, con la pestaña oculta o con movimiento reducido
   useEffect(() => {
@@ -200,6 +205,9 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         {/* Noche con su fondo pintado equivalente, si existe (misma geometría: nada se mueve al cambiar de hora) */}
         {art.ready && nightBase && <img className="scene-night-base" src={SCENE_REFRESH.night} width={ROOMS.MAIN_ROOM.width} height={ROOMS.MAIN_ROOM.height} alt="" draggable="false" />}
 
+        {/* 1 · la estantería: por debajo de la hiedra y de la luz, que pasan por delante como en la ilustración */}
+        {newShelf && <BookcaseArt layout={bookcase} scale={fit.scale} night={nightBase} />}
+
         {/* 5 · veleros de la bahía, recortados por la máscara del agua (detrás de la luz del día) */}
         <BaySailboats roomId="MAIN_ROOM" sea={ROOMS.MAIN_ROOM.sea} active={live} reducedMotion={reducedMotion} src={art.src} />
         <AmbientLife active={live} reducedMotion={reducedMotion} candleOn={settings.candleOn} timeOfDay={settings.timeOfDay} />
@@ -211,7 +219,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
         {/* 8 · superficies integradas en la ilustración (lomos, pantalla y su primer plano, páginas del libro):
             debajo de la luz y la atmósfera, que las tiñen igual que al resto de la habitación (SPEC §21.1) */}
         <div className="room-surfaces">
-          <RoomShelfBooks books={books} currentId={reading?.id} onOpenShelf={onOpenShelf} onHover={onHover} active={live} scale={fit.scale} awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))} />
+          {!newShelf && <RoomShelfBooks books={books} currentId={reading?.id} onOpenShelf={onOpenShelf} onHover={onHover} active={live} scale={fit.scale} awake={spot === 'shelf' || label?.id === 'shelf' || Boolean(label?.id?.startsWith('spine'))} />}
           <LaptopScreen today={today} running={live && !reducedMotion} />
           {/* La lectura escrita en el libro pintado de la cama, en coordenadas de la ilustración (SPEC §47) */}
           <BookOnBed book={bedBook} />
@@ -280,6 +288,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           <Hotspot id="lamp" spot={lit('lamp')} guides={guides} hint={13} onHover={onHover} onActivate={toggleLamp} label={{ title: 'Lámpara de latón', text: settings.lampOn ? 'Encendida · tocar para apagar' : 'Apagada · tocar para encender' }} />
           <Hotspot id="lantern" spot={lit('lantern')} guides={guides} hint={15} onHover={onHover} onActivate={toggleCandle} label={{ title: 'Vela de la mesita', text: settings.candleOn ? 'Encendida · tocar para soplar' : 'Apagada · tocar para encenderla' }} />
           {/* Figuras expuestas: por encima del hotspot de la vitrina (la madera de alrededor sigue abriendo el Ático) */}
+          {/* Libros de la estantería: por encima del hotspot general de la librería */}
+          {newShelf && <BookcaseHits layout={bookcase} scale={fit.scale} onOpenBook={onOpenBook} onOpenBalda={onOpenBalda} onHover={onHover} />}
           {showFigures && <RoomFigureShelves figures={progress.figures} onOpenFigure={onOpenFigure ?? ((id) => onOpenVault(id))} onHover={onHover} />}
           <TimeDial timeOfDay={settings.timeOfDay} onOpen={onOpenAtlas} onHover={onHover} spot={lit('sun')} />
           {/* Señales físicas permanentes (SPEC §28.9): decorativas; el toque llega al objeto de debajo. Con un panel

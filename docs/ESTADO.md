@@ -210,6 +210,28 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-05 · cuenta principal · respaldo de Rincón 01 y laboratorio del piso en primera persona
+- Francisco quiere probar `BookShelf-piso-piloto/02-Prompt-Claude.md` sin tocar esta carpeta, que queda como versión de comparación: sigue en `main` y con los cambios de Rincón 01 sin confirmar.
+- Esos cambios están copiados en la rama local `respaldo/rincon-antes-del-piloto`, en un commit hecho con un índice temporal, sin cambiar de rama ni tocar el área de preparación. No se han subido. No incluye `Rincon/` ni las demás carpetas de material sin seguimiento.
+- El piloto se hace solo en la rama `experimento/piso-primera-persona`, en el worktree `../BookShelf-piso-lab`, sin Supabase. La integración, la subida y el despliegue quedan pendientes de la decisión de Francisco.
+
+### 2026-11-05 · cuenta principal · Rincón 01, corrección visual: prueba en una balda (sin commit)
+- Francisco pidió probar el tamaño aparente de la maqueta `Rincon/referencias/04-maqueta-estanteria.png` **solo en la balda de debajo de Circe**, sin extenderlo todavía. Ahí van ahora tres ejemplares: uno de frente con su canto, el primero de la cola que tiene portada, y dos de lomo con su grosor natural. Para esta balda se usa una escala de 4,7 px por cm (`showcaseRow` en `roomShelf.js`): el grupo ocupa unos dos tercios del ancho y deja madera encima. Las dos baldas de abajo siguen con lomos estrechos. Cada ejemplar aparece una sola vez.
+- Arreglado: los botones de los libros quedaban por debajo del hotspot general de la librería (z 2) en las baldas de abajo; ahora `.rb-hits` tiene z 3.
+- Las capturas sacan las portadas de Google Books por ISBN porque Open Library no respondía (solo en `e2e/rincon-01-capturas.spec.js`; la app no cambia).
+- Pruebas: build; Vitest `src/domain`, 198/198; e2e `rincon-01-estanteria`, 14/14 en Chromium y WebKit 390; `v149` y `v152`, 4/4.
+- Pendiente de lo que diga Francisco: extender el tratamiento a las otras baldas o retocarlo; la versión y su sección del SPEC.
+
+### 2026-11-05 · cuenta principal · Rincón 01 «Mi estantería desde la cama» (sin commit, sobre la 1.86.0)
+- Encargo: «ejecuta únicamente `Rincon/prompts/01-estanteria.md`» y parar tras enseñar el antes y el después. Francisco eligió la biblioteca de ejemplo («Usa la de ejemplo»): no se entró en su cuenta.
+- La estantería de la habitación se dibuja ahora así: un libro expuesto de frente en la balda de arriba (la antigua vitrina de figuras) y lomos estrechos en grupos en las tres de abajo, por detrás de la hiedra y del canto de las baldas.
+  - **Libro expuesto**: el elegido (`settings.roomFeaturedId`, el id del ejemplar, se sincroniza con la cuenta); si no, la lectura actual, un favorito o el primero. Se elige desde la ficha con «Exponer en tu estantería». Al quitar el libro, se pone a null.
+  - **Lomos**: primero las lecturas, sin duplicados. Cuántos caben lo decide la madera: con 1200 libros, entre 20 y 80 lomos y una sola imagen. Colores de la edición o del hash estable. Cinta en la lectura actual. Si falta la portada, tela mate con el título y el autor.
+  - **Tocar**: los lomos son estrechos, así que cada grupo es un botón que abre la balda de cerca (panel `balda` con su entrada en el historial: Atrás y Escape la cierran). Desde ahí se toca el ejemplar y se abre su ficha.
+- Archivos nuevos: `src/domain/roomShelf.js` (+ test), `src/components/room/{RoomBookcase.jsx,bookcaseLayout.js,BaldaPanel.jsx}`, `src/styles/rincon-01.css`, `e2e/rincon-01-estanteria.spec.js`, `e2e/rincon-01-capturas.spec.js`. Archivos tocados: `App.jsx`, `CozyRoom.jsx`, `BookDetailModal.jsx`, `BookItem.jsx` (exporta `watchCover`), `sceneMap.js` (`BOOKCASE_LIPS`), `useLibrary.jsx` (removeBook), `index.css`.
+- Pruebas: build; Vitest `src/domain` 196/196; e2e `rincon-01-estanteria`, 12/12 en Chromium y WebKit 390; `v149` y `v152` en Chromium 390, 4/4. Capturas en `qa-report/rincon-01/{antes,despues}/`.
+- Sin verificar en un iPhone físico (solo emulación). Falta subir la versión y escribir su sección del SPEC: se hará cuando Francisco lo apruebe. La fase 02 no se ha empezado.
+
 ### 2026-11-04 · cuenta principal · 1.86.0 cerrada
 - Francisco pidió cerrarla con «Sí, ciérrala» tras ver los tres bloques. No hubo 1.85 aparte: la reseña como imagen va en la 1.86 (SPEC §85) y lo demás en §86. La rama `1.85-resena-imagen` pasa a llamarse `1.86-identidad-muebles`.
 - PR #10 abierta. Las tres migraciones se aplicaron con el flujo del SQL Editor (Francisco pulsó «Run»; 42501 al anónimo en las cuatro tablas y las funciones nuevas). Publicada con «súbelo»: `/sw.js` trae la 1.86.0.

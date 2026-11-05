@@ -486,6 +486,15 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
             </details>
 
             <div className="page__foot">
+              {/* Rincón 01: el libro de frente en la estantería de la habitación (una preferencia: el id del ejemplar) */}
+              <button
+                type="button"
+                className="link-btn sheet-feature"
+                aria-pressed={settings.roomFeaturedId === book.id}
+                onClick={() => actions.setSettings({ roomFeaturedId: settings.roomFeaturedId === book.id ? null : book.id })}
+              >
+                <BookMarked aria-hidden="true" /> {settings.roomFeaturedId === book.id ? 'Expuesto en tu estantería · dejar de exponer' : 'Exponer en tu estantería'}
+              </button>
               {confirmDelete ? (
                 <span className="confirm-inline">
                   ¿Sacarlo de tu librería?

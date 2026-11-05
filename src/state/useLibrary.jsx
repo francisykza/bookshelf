@@ -230,7 +230,15 @@ export function reducer(state, action) {
       return {
         ...state,
         books: state.books.filter((b) => b.id !== action.id),
-        settings: state.settings.currentBookId === action.id ? { ...state.settings, currentBookId: null } : state.settings,
+        // Rincón 01: si era el expuesto en la estantería, deja de serlo (se aplica el orden de sustitución de siempre)
+        settings:
+          state.settings.currentBookId === action.id || state.settings.roomFeaturedId === action.id
+            ? {
+                ...state.settings,
+                ...(state.settings.currentBookId === action.id ? { currentBookId: null } : null),
+                ...(state.settings.roomFeaturedId === action.id ? { roomFeaturedId: null } : null),
+              }
+            : state.settings,
       };
     case 'addQuote':
       // 1.56: un id que ya existe es un reintento del mismo guardado (no se duplica)
