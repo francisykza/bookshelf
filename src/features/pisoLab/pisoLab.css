@@ -1,0 +1,144 @@
+/* Piloto «Del portal al sillón» (solo en el laboratorio). A pantalla completa en el móvil, como el edificio. */
+.panel--edificio:has(.plab-room) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  width: min(100vw, 520px);
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 0;
+}
+
+.plab-room {
+  height: 100%;
+}
+
+.plab-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plab-bar svg {
+  width: 16px;
+  height: 16px;
+}
+
+.plab-title {
+  margin: 0;
+  overflow: hidden;
+  font: 600 1.05rem/1.2 'Cormorant Garamond', Georgia, serif;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plab-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #2a2432;
+}
+
+.plab-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: grab;
+}
+
+.plab-canvas:focus-visible {
+  outline: 3px solid #ffe7b0;
+  outline-offset: -3px;
+}
+
+.plab-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: #f3e7cc;
+  font: italic 1rem 'Lora', Georgia, serif;
+}
+
+.plab-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  background: #f3ead6;
+}
+
+.plab-primary {
+  flex-basis: 100%;
+  min-height: 44px;
+}
+
+.plab-note {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  color: #5e4a36;
+  font: 0.85rem/1.35 'Lora', Georgia, serif;
+}
+
+.plab-note .link-btn {
+  min-height: 24px;
+  text-decoration: underline;
+}
+
+.plab-cover {
+  position: absolute;
+  z-index: 2;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 1px 2px 2px 1px;
+  background: var(--spine);
+  box-shadow: -2px 1px 5px rgb(20 10 4 / 0.45);
+  cursor: pointer;
+}
+
+.plab-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.plab-cover__cloth {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 4px;
+  color: #f3e7cc;
+  font: 600 0.72rem/1.1 'Cormorant Garamond', Georgia, serif;
+  overflow-wrap: anywhere;
+}
+
+.plab-cover:focus-visible {
+  outline: 3px solid #ffe7b0;
+  outline-offset: 1px;
+}
+
+.plab-fallback {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  background: #f3ead6;
+  font-family: 'Lora', Georgia, serif;
+}
+
+.plab-fallback p {
+  margin: 0 0 6px;
+}

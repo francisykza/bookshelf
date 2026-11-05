@@ -10,6 +10,10 @@ import { createRaster, hash, noise, rgb } from '../minigames/libreria-puerto/ras
 import { drawLimo } from './limo';
 import { windowPictures } from './windowView';
 
+/** El cielo de atardecer de la fachada, de arriba abajo. El piloto del piso abre a esta misma hora. */
+export const FACADE_HORA = 'tarde';
+export const FACADE_SKY = [[54, 46, 92], [124, 78, 118], [214, 128, 120], [246, 184, 136]];
+
 const S = 18;
 const YAW = 0.3;
 const W = 180;
@@ -438,7 +442,7 @@ export function renderFacade(flats = {}) {
 
   // Cielo de atardecer con colinas y luces lejanas detrás; luz de tarde sobre todo lo demás
   const horizon = r.project(BW / 2, -1.2, 0).sy;
-  const sky = [[54, 46, 92], [124, 78, 118], [214, 128, 120], [246, 184, 136]];
+  const sky = FACADE_SKY;
   for (let iy = 0; iy < H; iy += 1) {
     const t = Math.min(1, Math.max(0, iy / (horizon - 4)));
     const band = t * (sky.length - 1);

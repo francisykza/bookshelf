@@ -3,7 +3,7 @@
 // recorrido con movimiento reducido. WebKit automatizado NO equivale a Safari en un iPhone real.
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 5195;
+const PORT = 5196; // Laboratorio del piloto: no choca con la carpeta original
 
 /**
  * Reloj de las pruebas a mediodía del mismo día de Madrid (1.51): la habitación cambia de ilustración de noche, así que

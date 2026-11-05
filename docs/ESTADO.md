@@ -210,6 +210,15 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-05 · cuenta principal · piloto «Del portal al sillón» (solo en este laboratorio)
+- Implementado en `src/features/pisoLab/`, ruta `/?piloto=piso`, con `three@0.170.0` y sin Supabase. Detalle, campos, medidas y pendientes en `docs/qa/piso-primera-persona.md`.
+- Commit local en `experimento/piso-primera-persona`, pedido por Francisco como punto de comparación, sobre el respaldo 9619b90. Sin subir. Integrar, subir y desplegar es decisión suya.
+- Decisión de Francisco: el suelo, el sillón y la lámpara del interior son referencias aprobadas.
+- Refinado el encuadre inicial a 390 × 844: la cámara sale del sillón real, con la cubierta real sobre la mesa, el hotel reconocible y el atardecer de la fachada. Plano de ejemplo cambiado y guardado con otra clave. Francisco lo revisa antes de seguir.
+- Acabado del fotograma final: sillón tapizado (`materials.js`), veta en la mesa, sombra del libro, el suelo real de `floorColor`, cubierta pedida al tocar la puerta y hora heredada de la fachada (`FACADE_HORA`). Primera entrada con caché vacía: unos 2,5 s hasta ver el piso, porque espera a la cubierta hasta un máximo de 2,2 s.
+- Pasada pixel acotada: lámpara de pie, su luz en las paredes y tapizado del sillón, con rampas y fórmula de tarde del decorador. El suelo aprobado no cambia (0 valores distintos en la franja comparada). No extender al resto del catálogo sin que lo pida Francisco.
+- Sin verificar: ningún móvil físico. Los 60 FPS del giro son de WebGL por software en este ordenador y no demuestran el objetivo de 30 FPS.
+
 ### 2026-11-05 · cuenta principal · respaldo de Rincón 01 y laboratorio del piso en primera persona
 - Francisco quiere probar `BookShelf-piso-piloto/02-Prompt-Claude.md` sin tocar esta carpeta, que queda como versión de comparación: sigue en `main` y con los cambios de Rincón 01 sin confirmar.
 - Esos cambios están copiados en la rama local `respaldo/rincon-antes-del-piloto`, en un commit hecho con un índice temporal, sin cambiar de rama ni tocar el área de preparación. No se han subido. No incluye `Rincon/` ni las demás carpetas de material sin seguimiento.

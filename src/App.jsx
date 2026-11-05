@@ -10,6 +10,7 @@ import { AccountPanel } from './components/panels/AccountPanel';
 import { LibrarianPanel } from './components/panels/LibrarianPanel';
 import { LaptopPanel } from './components/panels/LaptopPanel';
 import { PomodoroTray } from './components/panels/PomodoroTray';
+import { currentBook } from './domain/books';
 import { LogUndoToast, ReadingLogSheet, UNDO_MS } from './components/panels/ReadingLogSheet';
 import { describeEntry } from './domain/reading';
 import { ReviewSheet } from './components/panels/ReviewSheet';
@@ -44,6 +45,8 @@ const SocialHub = lazy(() => import('./features/social/components/SocialHub').th
 const GoodreadsImportPanel = lazy(() => import('./features/imports/GoodreadsImportPanel').then((m) => ({ default: m.GoodreadsImportPanel })));
 // 1.58 (SPEC §56): la visita a un rincón se carga solo al abrirla (y el vídeo, solo cuando empieza la entrada)
 const ReaderVisit = lazy(() => import('./features/social/components/ReaderVisit').then((m) => ({ default: m.ReaderVisit })));
+// Piloto del piso en primera persona (solo laboratorio): se abre con /?piloto=piso; el inicio no cambia
+const PisoLabPanel = lazy(() => import('./features/pisoLab/PisoLabPanel').then((m) => ({ default: m.PisoLabPanel })));
 const EdificioPanel = lazy(() => import('./features/edificio/EdificioPanel').then((m) => ({ default: m.EdificioPanel })));
 const ReaderProfile = lazy(() => import('./features/social/components/ReaderProfile').then((m) => ({ default: m.ReaderProfile })));
 
@@ -83,6 +86,11 @@ function Sanctuary() {
     },
     [nav],
   );
+  // Piloto: /?piloto=piso entra directo en el portal de prueba
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('piloto') === 'piso' && !locRef.current.panel) openPanel({ type: 'pisoLab' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const hadPanel = useRef(false);
   // Tipo del último panel abierto: al cerrar un libro suena su cubierta (más suave que el resto)
   const lastPanel = useRef(null);
@@ -330,10 +338,10 @@ function Sanctuary() {
           }
         />
       )}
-      {panel?.type === 'log' && (
+      {(panel?.type === 'log' || (panel?.type === 'pisoLab' && panel.select === 'registro')) && (
         <ReadingLogSheet
-          key={panel.id}
-          bookId={panel.id}
+          key={panel.type === 'log' ? panel.id : 'piso-lab'}
+          bookId={panel.type === 'log' ? panel.id : currentBook(state.books, settings)?.id}
           onClose={close}
           onSaved={(entry, meta) => {
             playUiSound('pageLeaves');
@@ -399,6 +407,21 @@ function Sanctuary() {
       {panel?.type === 'reader' && (
         <Suspense fallback={null}>
           <ReaderProfile userId={panel.id} onClose={close} />
+        </Suspense>
+      )}
+      {panel?.type === 'pisoLab' && (
+        <Suspense fallback={null}>
+          <PisoLabPanel
+            pisoId={panel.id ?? null}
+            select={panel.select ?? null}
+            onOpen={(id) => openPanel({ type: 'pisoLab', id })}
+            onSelect={(select) => openPanel({ type: 'pisoLab', id: panel.id, select })}
+            onBack={close}
+            onClose={close}
+            onOpenBook={(book) => openPanel({ type: 'book', id: book.id })}
+            onRegister={() => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' })}
+            onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
+          />
         </Suspense>
       )}
       {panel?.type === 'edificio' && (
