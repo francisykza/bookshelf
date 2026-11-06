@@ -77,7 +77,7 @@ export const PISOS = [
         f('lampara-pie', 0, 2, 0, 1),
         f('planta-grande', 0, 0, 0, 1),
         f('mesilla', 6, 0),
-        f('mesa-baja', 1, 2, 1),
+        f('mesa-baja', 1, 2, 3),
         f('escritorio', 3, 0),
         f('ordenador', 3, 0),
         w('ventana', 'izq', 2, 1),
@@ -112,9 +112,8 @@ export function loadRoom(piso) {
   } catch {
     // Sin almacenamiento, el piso de partida
   }
-  const layout = LAYOUTS[piso.id];
   const before = readStored(piso);
-  const fixed = repairRoom((saved && importRoom(saved)) || piso.seed(), layout, before);
+  const fixed = repairRoom((saved && importRoom(saved)) || piso.seed(), LAYOUTS[piso.id], before);
   if (saved && fixed.changed && canEdit(piso)) {
     try {
       if (!localStorage.getItem(BEFORE_KEY(piso.id))) localStorage.setItem(BEFORE_KEY(piso.id), saved);
@@ -132,7 +131,7 @@ export function loadRoom(piso) {
       // Sigue en memoria hasta la próxima carga
     }
   }
-  return withGuard(fixed.room, layout);
+  return withGuard(fixed.room);
 }
 
 /** Qué se ha completado y cuántos objetos siguen sin sitio. Lo primero, solo la primera vez que se pregunta. */
@@ -142,7 +141,7 @@ export function repairNews(piso) {
   return { ...news, stored: readStored(piso).length };
 }
 
-/** Vuelve a la distribución de partida, que ya trae los esenciales. */
+/** Vuelve a la distribución de partida, con los esenciales en su sitio de siempre. */
 export function resetRoom(piso) {
   try {
     localStorage.removeItem(KEY(piso.id));

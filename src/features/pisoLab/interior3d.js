@@ -6,7 +6,8 @@
 import { AmbientLight, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, Group, HemisphereLight, LinearFilter, Mesh, MeshBasicMaterial, MeshLambertMaterial, NearestFilter, PerspectiveCamera, PlaneGeometry, PointLight, Raycaster, RepeatWrapping, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
 import { PAREDES, catalogItem } from '../edificio/catalog';
 import { shapeOf } from '../edificio/furniture';
-import { ROOM, heightOf } from '../edificio/room';
+import { ROOM, heightOf, itemsOn } from '../edificio/room';
+import { mainShelf, readingTable } from './essentials';
 import { bookDims, wrapTitle } from './bookLayout';
 import { paintExterior } from './exterior';
 import { LAYERS, WATER_FRAMES, WATER_MS, PX_PER_CELL, layerMargins, layerPlane, rowOf } from './exteriorLayout';
@@ -325,7 +326,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   }
 
   // La estantería lleva su luz dibujada, como el sillón y la lámpara: así la luz del suelo no la quema y sigue igual
-  const shelf = room.items.find((i) => i.id === 'estanteria');
+  const shelf = mainShelf(room);
   const shelfPoint = (lx, ly, lz) => {
     const cat = catalogItem('estanteria');
     const [a, b] = turned(cat, shelf.rot, [lx, ly, 0, lx, ly, 0]);
@@ -573,9 +574,11 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       const off = own('textures', tableTexture(tono, { size, lights, lit: false }));
       const material = tinted(new MeshBasicMaterial({ map: lit }));
       tableKits.push({ material, lit, off });
-      if (item.id === 'escritorio' && !item.rot) {
+      if (item.id === 'escritorio') {
         const front = new Mesh(own('geometries', new PlaneGeometry(0.65, 1)), tinted(new MeshBasicMaterial({ map: own('textures', drawerTexture(tono)) })));
-        front.position.set(item.x + 0.425, lift + 0.6, item.y + 0.905);
+        const [fx, fy] = turned(cat, item.rot, [0.425, 0.905, 0, 0.425, 0.905, 0]);
+        front.position.set(item.x + fx, lift + 0.6, item.y + fy);
+        front.rotation.y = (-item.rot * Math.PI) / 2;
         furniture.add(front);
       }
       const key = `mesa|${item.id}|${item.rot}`;
@@ -626,7 +629,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     coverReal = false;
     coverReady = Promise.resolve();
     if (!data) return;
-    const table = room.items.find((i) => TABLES.has(i.id));
+    const table = readingTable(room) ?? room.items.find((i) => TABLES.has(i.id));
     const chair = room.items.find((i) => i.id === 'sillon');
     const spot = table ?? chair;
     if (!spot) return;
@@ -737,7 +740,9 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     const tono = catalogItem(item.id).tonos[item.tono];
     const door = item.id === 'puerta-piso';
     const material = pieceKit((lit) => (door ? doorTexture(tono, { lit }) : computerTexture(tono, { lit })));
-    const place = door ? (item.pared === 'fondo' ? (a, b) => [item.a + a, b] : (a, b) => [b, item.a + a]) : (a, b) => [a, b];
+    // El ordenador mira hacia donde esté girado, dentro de su celda
+    const turn = [(a, b) => [a, b], (a, b) => [1 - b, a], (a, b) => [1 - a, 1 - b], (a, b) => [b, 1 - a]][item.rot ?? 0];
+    const place = door ? (item.pared === 'fondo' ? (a, b) => [item.a + a, b] : (a, b) => [b, item.a + a]) : turn;
     const mesh = new Mesh(own('geometries', door ? pixelDoor(place) : pixelComputer(place)), material);
     if (!door) mesh.position.set(item.x, heightOf(room, item), item.y);
     mesh.userData = { uid: item.uid, id: item.id };
@@ -1062,7 +1067,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       const hit = found?.object.userData.id;
       if (hit === 'libro') onBook();
       else if (hit === 'puerta-piso') onDoor?.();
-      else if (hit === 'ordenador' || (hit === 'escritorio' && room.guard?.locked(room.items.find((i) => i.uid === found.object.userData.uid)))) onDesk?.();
+      else if (hit === 'ordenador' || (hit === 'escritorio' && itemsOn(room, found.object.userData.uid).some((t) => t.id === 'ordenador'))) onDesk?.();
       else if (hit === 'estanteria') onShelf(found.point.y - heightOf(room, shelf) < 1.17 ? 0 : found.point.y - heightOf(room, shelf) < 2.27 ? 1 : 2);
     },
     on,
@@ -1281,7 +1286,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     },
     /** Dónde poner una indicación junto al libro (o, sin libro, sobre la mesa), en px del contenedor. */
     bookAnchor() {
-      const table = room.items.find((i) => TABLES.has(i.id));
+      const table = readingTable(room) ?? room.items.find((i) => TABLES.has(i.id));
       // Más allá del libro, para no taparlo: por encima de su borde del fondo
       const far = bookGroup && new Vector3().subVectors(bookGroup.position, home.pos).setY(0).normalize();
       const point = bookGroup ? bookGroup.position.clone().addScaledVector(far, 0.42) : table ? new Vector3(table.x + catalogItem(table.id).w / 2, catalogItem(table.id).sup ?? 0.7, table.y + catalogItem(table.id).d / 2) : null;

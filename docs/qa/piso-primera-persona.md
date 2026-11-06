@@ -111,7 +111,8 @@ Procedimiento de siempre: subir la rama a GitHub y Vercel crea su versión de pr
 
 Inventario de funciones, posiciones y reglas en [piso-funciones.md](piso-funciones.md).
 
-- **Comprobado en emulación (Chromium y WebKit a 390 × 844; el ordenador también a 360 × 640):** entrar, biblioteca desde la estantería, registrar tocando el libro, calendario y diario desde el ordenador, y salir tocando la puerta; menú con teclado y foco; decorador protegido; guardado antiguo completado; restablecer.
+- **Barra superior:** flota sobre la habitación, sin franja; el dibujo llega hasta arriba. En tu piso el título queda solo para lectores de pantalla; en casa de otra persona se ve su nombre en una placa. La franja de abajo sigue igual.
+- **Comprobado en emulación (Chromium y WebKit a 390 × 844; el ordenador también a 360 × 640):** entrar, biblioteca desde la estantería, registrar tocando el libro, calendario y diario desde el ordenador, y salir tocando la puerta; menú con teclado y foco; esenciales movidos y girados en el decorador; guardado antiguo completado; restablecer.
 - **Sin comprobar:** ningún móvil físico, ni Safari real.
 - **Acabados:** se personalizan con los tonos de cada pieza. Los acabados especiales de la tienda no tienen dibujo en el interior: si una copia trae uno, se conserva, pero no se ve.
 - **Descubrir el ordenador y la puerta:** quedan fuera del encuadre inicial y aparecen al girar la vista hacia la derecha; el menú llega a ellos sin girar. A revisar en el recorrido físico.

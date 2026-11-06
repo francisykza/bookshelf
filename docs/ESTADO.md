@@ -210,6 +210,12 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-06 · cuenta principal · esenciales movibles y barra integrada (subido a la rama, «Sí, sube la rama»)
+- **Decisión de Francisco:** los esenciales siempre están, pero se pueden mover como el sillón para que cada cual reparta su habitación. Sustituye a las posiciones fijas de la entrada siguiente. Reglas en `docs/qa/piso-funciones.md`.
+- Solo no se puede guardar el último de su clase. El paso reservado va con el mueble y depende de hacia dónde mira. El escritorio se lleva el ordenador al moverlo y girarlo (`rotateItem` lo permite solo si `room.guard` lo dice; el producto no cambia).
+- Barra superior flotando sobre la habitación, a petición suya («que no cortase la pantalla»). La franja inferior no se ha tocado.
+- Comprobado en emulación; **ningún móvil físico**.
+
 ### 2026-11-06 · cuenta principal · elementos esenciales del piloto (subido a la rama, «Sí, sube la rama»)
 - Solo en `experimento/piso-primera-persona`. Inventario y reglas en `docs/qa/piso-funciones.md`; detalle y límites en `docs/qa/piso-primera-persona.md`.
 - Estantería, mesa de lectura, escritorio con ordenador y puerta tienen sitio fijo por piso (`essentials.js`). Se cambia su color, pero no se mueven, giran ni guardan, y su paso queda reservado (`room.guard`, que `room.js` solo consulta si existe: el producto no cambia). Las distribuciones antiguas se completan al cargar sin perder decoración, con copia previa; lo que no cabe queda apartado y se reintenta. Hay «Restablecer la habitación».

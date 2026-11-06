@@ -969,10 +969,10 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     else delete root.dataset.escapeLocal;
     if (item) {
       const cat = catalogItem(item.id);
-      const fixed = Boolean(room.guard?.locked(item));
-      toolName.textContent = `${cat.nombre}${fixed ? ' (esencial)' : ''} · ${item.acabado ? acabadoOf(item.acabado).nombre : TONE_NAMES[item.tono]}`;
-      rotateBtn.disabled = cat.capa === 'pared' || fixed;
-      storeBtn.disabled = fixed;
+      const essential = Boolean(room.guard?.essential(room, item));
+      toolName.textContent = `${cat.nombre}${essential ? ' (esencial)' : ''} · ${item.acabado ? acabadoOf(item.acabado).nombre : TONE_NAMES[item.tono]}`;
+      rotateBtn.disabled = cat.capa === 'pared';
+      storeBtn.disabled = Boolean(room.guard?.keeps(room, item));
       colorBtn.disabled = cat.tonos.length < 2 || Boolean(item.acabado);
     }
     // Las muestras enseñan cómo quedaría tu piso: cada pared con tu suelo, y cada suelo con tu pared
@@ -992,7 +992,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (category === INROOM) catTitle.textContent = listSummary.textContent;
     list.replaceChildren(
       ...room.items.map((i) => {
-        const fixed = Boolean(room.guard?.locked(i));
+        const fixed = Boolean(room.guard?.essential(room, i));
         const text = `${nameOf(i)}${fixed ? ', esencial' : ''}${i.uid === selected ? ' (elegido)' : ''}`;
         if (!editable) return el('li', { text });
         // Al decorar, cada cosa de pie en la balda con su dibujo (y su color), como en el catálogo
@@ -1028,7 +1028,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (uid) {
       const item = room.items.find((i) => i.uid === uid);
       sfx.play('lift');
-      say(room.guard?.locked(item) ? `${nameOf(item)}: ${reasonText('esencial')}` : `${nameOf(item)}: arrástralo para moverlo.`);
+      say(`${nameOf(item)}: arrástralo para moverlo.`);
     }
   }
 
@@ -1205,11 +1205,9 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       return;
     }
     const item = room.items.find((i) => i.uid === selected);
-    // Lo que una habitación protege se puede elegir, pero no levantar
-    const fixed = Boolean(room.guard?.locked(item));
-    const d = { uid: selected, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, armed: held && !fixed, held, fixed, timer: 0, moved: false, grab: grabOf(item, a), preview: null };
+    const d = { uid: selected, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, armed: held, held, timer: 0, moved: false, grab: grabOf(item, a), preview: null };
     // Sin elegir, se levanta al rato de mantenerlo pulsado: entonces se ve en la mano, en su sitio, y ya se puede arrastrar
-    if (!held && !fixed) d.timer = setTimeout(() => {
+    if (!held) d.timer = setTimeout(() => {
       if (drag !== d) return;
       d.armed = true;
       d.preview = previewAt(item, targetAt(item, a, d.grab));
@@ -1235,9 +1233,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       // Se ha movido antes de levantarlo: no era para moverlo
       if (far > HOLD_SLOP_PX) {
         const item = room.items.find((i) => i.uid === drag.uid);
-        const fixed = drag.fixed;
         endDrag();
-        say(fixed ? `${nameOf(item)}: ${reasonText('esencial')}` : `Para mover ${nameOf(item).toLowerCase()}, tócalo y luego arrástralo.`);
+        say(`Para mover ${nameOf(item).toLowerCase()}, tócalo y luego arrástralo.`);
       }
       return;
     }

@@ -605,3 +605,46 @@
   font: 600 0.84rem/1.15 'Lora', Georgia, serif;
   text-align: left;
 }
+
+/* La barra no corta la habitación: los botones flotan sobre ella, en sus esquinas */
+.panel--edificio:has(.ed-inside) .plab-bar {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  right: 0;
+  left: 0;
+  padding: calc(6px + env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  justify-content: flex-start;
+  background: none;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.plab-bar > * {
+  pointer-events: auto;
+}
+
+.plab-bar > .plab-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 3px 8px;
+  border: 2px solid #3a2415;
+  background: #f3ead6;
+  color: #3a2415;
+  font-size: 0.95rem;
+}
+
+.plab-bar > .plab-title--quiet {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+}
+
+/* El medidor, en la esquina contraria */
+.plab-bar > .plab-title--quiet + * {
+  margin-left: auto;
+}

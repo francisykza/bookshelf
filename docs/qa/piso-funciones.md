@@ -5,17 +5,23 @@ sacado del código: `CozyRoom.jsx`, `RoomCorner`, `SocialRoom`, `ShelfView`, `La
 
 ## Los cuatro elementos esenciales
 
-| Elemento | Piso 1.º A (tuyo) | Piso 2.º B (visita) | Paso que se reserva | Al tocarlo |
-| --- | --- | --- | --- | --- |
-| Estantería principal | Junto a la pared del fondo, esquina izquierda | Pared izquierda, al fondo | Delante de la estantería | Se acerca a la balda; desde ahí, toda la biblioteca |
-| Mesa de lectura | Delante del sillón | Junto al sillón | Entre la mesa y el sillón (el sillón sí puede estar). Encima no se puede poner nada: es el sitio del ejemplar | El libro abre el registro |
-| Escritorio con ordenador | Pared del fondo, a la derecha de la ventana | Pared del fondo | Delante del escritorio | Abre el escritorio de herramientas (en la visita no hace nada) |
-| Puerta de salida | Pared del fondo, a la derecha | Pared izquierda | Delante de la puerta | Sale al portal |
+Decisión de Francisco (6-11-2026): siempre están en la habitación, pero cada cual los coloca donde quiere, como el sillón. Sustituye a las posiciones fijas de la primera versión.
 
-Reglas en `src/features/pisoLab/essentials.js`. Se puede cambiar su color; no se pueden mover, girar ni guardar. Si falta alguno
-al cargar una distribución antigua, se añade; lo que estorba va al sitio libre más cercano y lo que no cabe queda apartado sin
-borrarse, para volver a intentarlo en la siguiente carga. Antes de la primera reparación se conserva una copia de la
-distribución (`…:antes`). «Restablecer la habitación» vuelve a la distribución de partida, que ya los trae.
+| Elemento | Dónde aparece en el 1.º A | Dónde aparece en el 2.º B | Paso que se reserva, delante | Al tocarlo |
+| --- | --- | --- | --- | --- |
+| Estantería principal | Fondo, esquina izquierda | Pared izquierda, al fondo | 1 celda | Se acerca a la balda; desde ahí, toda la biblioteca |
+| Mesa de lectura | Delante del sillón | Junto al sillón | 1 celda (el sillón sí puede estar). Encima no se puede poner nada: es el sitio del ejemplar | El libro abre el registro |
+| Escritorio con ordenador | Pared del fondo, a la derecha de la ventana | Pared del fondo | 1 celda | Abre el escritorio de herramientas (en la visita no hace nada) |
+| Puerta de salida | Pared del fondo, a la derecha | Pared izquierda | 2 celdas | Sale al portal |
+
+Reglas en `src/features/pisoLab/essentials.js`:
+
+- Se mueven, se giran y cambian de color como cualquier mueble. La puerta se mueve por las dos paredes. Lo único que no se puede es guardar el último de su clase; una copia de más sí.
+- El escritorio se lleva el ordenador al moverlo y al girarlo. El ordenador se puede cambiar de lado en el escritorio, pero no sacar de él.
+- El paso va con el mueble y depende de hacia dónde mira. No se puede poner nada de suelo encima (las alfombras sí), ni dejar un esencial mirando a una pared que le quite el paso.
+- Al cargar una distribución antigua, lo que ya está no se mueve si no molesta. Lo que falta busca un sitio libre sin echar a nadie, lo que tapa un paso va al sitio libre más cercano, y lo que no cabe queda apartado sin borrarse y se reintenta en la siguiente carga. Antes de la primera reparación se conserva una copia (`…:antes`).
+- «Restablecer la habitación» vuelve a la distribución de partida.
+- Como la vista sale del sillón y gira hasta cierto punto, un esencial puede quedar a tu espalda: el menú y los botones llegan a él igualmente.
 
 ## Funciones, acceso actual y destino en el piso
 

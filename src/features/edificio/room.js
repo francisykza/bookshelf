@@ -44,7 +44,8 @@ export function check(room, item, { ignore = [] } = {}) {
     if (!['fondo', 'izq'].includes(item.pared) || !Number.isInteger(item.a)) return { ok: false, reason: 'fuera' };
     if (item.a < 0 || item.a + cat.w > wallLength(item.pared)) return { ok: false, reason: 'fuera' };
     const hit = others.find((o) => o.pared === item.pared && capaOf(o) === 'pared' && item.a < o.a + catalogItem(o.id).w && o.a < item.a + cat.w);
-    return hit ? { ok: false, reason: 'choque', con: hit.id } : { ok: true };
+    if (hit) return { ok: false, reason: 'choque', con: hit.id };
+    return room.guard?.check(room, item, null) ?? { ok: true };
   }
   if (![item.x, item.y, item.rot].every(Number.isInteger) || item.rot < 0 || item.rot > 3) return { ok: false, reason: 'fuera' };
   const r = rectOf(item);
@@ -127,7 +128,6 @@ export function addItem(room, id, opts = {}) {
 export function moveItem(room, uid, target) {
   const item = room.items.find((i) => i.uid === uid);
   if (!item) return { error: 'desconocido' };
-  if (room.guard?.locked(item)) return { error: 'esencial' };
   const tops = itemsOn(room, uid);
   const moved = { ...item, ...target };
   const res = check(room, moved, { ignore: tops.map((t) => t.uid) });
@@ -141,15 +141,20 @@ export function moveItem(room, uid, target) {
 export function rotateItem(room, uid) {
   const item = room.items.find((i) => i.uid === uid);
   if (!item) return { error: 'desconocido' };
-  if (room.guard?.locked(item)) return { error: 'esencial' };
   if (capaOf(item) === 'pared') return { error: 'pared' };
-  if (itemsOn(room, uid).length) return { error: 'encima' };
+  const tops = itemsOn(room, uid);
+  if (tops.length && !room.guard?.turnsWithTops(tops)) return { error: 'encima' };
   const turned = { ...item, rot: (item.rot + 1) % 4 };
-  if (check(room, turned).ok) return { room: replace(room, [turned]) };
+  // Lo que va encima gira con él, en su misma celda del mueble (solo piezas de una celda)
+  const depth = footprint(catalogItem(item.id), item.rot).d;
+  const carried = (at) => tops.map((t) => ({ ...t, x: at.x + depth - 1 - (t.y - item.y), y: at.y + (t.x - item.x), rot: (t.rot + 1) % 4 }));
+  const ignore = tops.map((t) => t.uid);
+  if (check(room, turned, { ignore }).ok) return { room: replace(room, [turned, ...carried(turned)]) };
   const r = rectOf(item);
-  const spot = findFreeSpot({ ...room, items: room.items.filter((i) => i.uid !== uid) }, item.id, { rot: turned.rot, tono: item.tono, near: { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 } });
+  const spot = findFreeSpot({ ...room, items: room.items.filter((i) => i.uid !== uid && !ignore.includes(i.uid)) }, item.id, { rot: turned.rot, tono: item.tono, near: { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 } });
   if (!spot || Math.hypot(spot.x - item.x, spot.y - item.y) > 3) return { error: 'gira' };
-  return { room: replace(room, [{ ...turned, x: spot.x, y: spot.y }]) };
+  const placed = { ...turned, x: spot.x, y: spot.y };
+  return { room: replace(room, [placed, ...carried(placed)]) };
 }
 
 export function recolorItem(room, uid) {
@@ -162,7 +167,7 @@ export function recolorItem(room, uid) {
 export function removeItem(room, uid) {
   const item = room.items.find((i) => i.uid === uid);
   if (!item) return { error: 'desconocido' };
-  if (room.guard?.locked(item)) return { error: 'esencial' };
+  if (room.guard?.keeps(room, item)) return { error: 'esencial' };
   if (itemsOn(room, uid).length) return { error: 'encima' };
   return { room: { ...room, items: room.items.filter((i) => i.uid !== uid) } };
 }
@@ -234,7 +239,9 @@ export function reasonText(reason, con = null) {
     case 'pared':
       return 'Lo que va en la pared no se gira.';
     case 'esencial':
-      return 'Es un elemento esencial: se queda en su sitio. Puedes cambiarle el color.';
+      return 'Es un elemento esencial: no se puede guardar. Puedes moverlo o cambiarle el color.';
+    case 'escritorio':
+      return 'El ordenador va sobre el escritorio.';
     case 'zona':
       return name ? `Ahí hay que dejar paso hasta: ${name}.` : 'Ahí hay que dejar paso.';
     case 'reservado':

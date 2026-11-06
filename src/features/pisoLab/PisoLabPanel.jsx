@@ -6,7 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanelShell } from '../../components/panels/PanelShell';
 import { EDITIONS, currentBook, spineColor, visualEdition } from '../../domain/books';
-import { LAYOUTS, essentialName } from './essentials';
+import { essentialItems, essentialName } from './essentials';
 import { bookThicknessCm, inkFor } from '../../domain/roomShelf';
 import { useLibrary } from '../../state/useLibrary';
 import { FACADE_HORA } from '../edificio/facade';
@@ -253,22 +253,22 @@ function Interior({ piso, room, hora, reading, balda, covered, logging, listing,
 }
 
 /** Los cuatro esenciales, en el decorador: se eligen desde aquí y se puede volver a la distribución de partida. */
-function EssentialsBar({ piso, room, onPick, onReset }) {
+function EssentialsBar({ room, onPick, onReset }) {
   const [asking, setAsking] = useState(false);
-  const fixed = room.items.filter((i) => room.guard?.locked(i));
+  const fixed = essentialItems(room);
   return (
     <div className="plab-essentials" role="group" aria-label="Elementos esenciales">
-      <p>Esenciales: fijos y con paso libre. Puedes cambiarles el color.</p>
+      <p>Esenciales: siempre están y con paso libre. Muévelos a tu gusto.</p>
       <div>
         {fixed.map((item) => (
           <button key={item.uid} type="button" onClick={() => onPick(item.uid)}>
-            {essentialName(LAYOUTS[piso.id], item)}
+            {essentialName(item)}
           </button>
         ))}
       </div>
       {asking ? (
         <p role="alert">
-          Se quitará lo que has colocado y volverá la distribución de partida.{' '}
+          Se quitará lo que has colocado y todo volverá a la distribución de partida.{' '}
           <button
             type="button"
             onClick={() => {
@@ -383,7 +383,7 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
         <button type="button" className="px-btn" onClick={onBack}>
           <ArrowLeft aria-hidden="true" /> {view === 'decorar' || view === 'balda' ? 'Volver al sillón' : view === 'actual' ? 'Volver' : 'Al portal'}
         </button>
-        <h2 className="plab-title">{title}</h2>
+        <h2 className={piso.propio ? 'plab-title plab-title--quiet' : 'plab-title'}>{title}</h2>
         {wantsMeter(location.search) && <LabMeter apiRef={apiRef} total={books.length} limit={limit} placed={shelfBooks?.placed.size ?? 0} />}
       </div>
       {iso ? (
@@ -391,7 +391,6 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
           <VistaActual key={roomRev} piso={piso} room={room} editable={view === 'decorar'} evening={hora !== 'dia'} onChange={onChange} onView={(v) => (isoView.current = v)} />
           {view === 'decorar' && (
             <EssentialsBar
-              piso={piso}
               room={room}
               onPick={(uid) => isoView.current?.selectItem(uid)}
               onReset={() => {

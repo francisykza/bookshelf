@@ -181,32 +181,58 @@ test('el ordenador se usa a 360 px: todo se alcanza y no hay desplazamiento late
   }
 });
 
-test('el decorador los identifica: se eligen, cambian de color y no se pueden quitar', async ({ page }, info) => {
+test('el decorador los identifica: se mueven como cualquier mueble, pero no se guardan', async ({ page }, info) => {
   await enter(page);
   await page.getByRole('button', { name: 'Decorar' }).click();
   const bar = page.getByRole('group', { name: 'Elementos esenciales' });
   await expect(bar.getByRole('button').filter({ hasNotText: 'Restablecer' })).toHaveText(['Estantería', 'Mesa de lectura', 'Escritorio', 'Ordenador', 'Puerta de salida']);
-  await page.screenshot({ path: `${OUT}/decorador-${info.project.name}.png` });
   await bar.getByRole('button', { name: 'Escritorio' }).click();
-  await expect(page.locator('.ed-tools, .ed-room').getByText(/\(esencial\)/).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: /Girar/ }).first()).toBeDisabled();
-  await expect(page.getByRole('button', { name: /Guardar|Quitar/ }).first()).toBeDisabled();
+  await expect(page.locator('.ed-room').getByText(/\(esencial\)/).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /Guardar/ }).first()).toBeDisabled();
   await page.screenshot({ path: `${OUT}/decorador-elegido-${info.project.name}.png` });
-  const before = await page.evaluate(() => window.__edificioPiso.room.items.find((i) => i.id === 'escritorio'));
+  const item = (id) => page.evaluate((i) => window.__edificioPiso.room.items.find((x) => x.id === i), id);
+  const before = await item('escritorio');
+  const pc = await item('ordenador');
   await page.getByRole('button', { name: /[Cc]olor/ }).first().click();
-  const after = await page.evaluate(() => window.__edificioPiso.room.items.find((i) => i.id === 'escritorio'));
-  expect(after.tono).not.toBe(before.tono);
-  expect([after.x, after.y, after.uid]).toEqual([before.x, before.y, before.uid]);
-  // Arrastrarlo no lo mueve
+  expect((await item('escritorio')).tono).not.toBe(before.tono);
+  // Arrastrarlo lo mueve, y el ordenador va con él
   const point = await page.evaluate((uid) => window.__edificioPiso.screenOfItem(uid), before.uid);
   await page.mouse.move(point.x, point.y);
   await page.mouse.down();
-  await page.mouse.move(point.x - 60, point.y + 60, { steps: 6 });
+  await page.mouse.move(point.x - 40, point.y + 50, { steps: 8 });
   await page.mouse.up();
-  const dragged = await page.evaluate(() => window.__edificioPiso.room.items.find((i) => i.id === 'escritorio'));
-  expect([dragged.x, dragged.y]).toEqual([before.x, before.y]);
-  // Y lo nuevo tampoco cae en su paso: se comprueba con la misma regla que usa la balda
-  expect(await page.evaluate(() => window.__edificioPiso.check({ uid: 99, id: 'planta-grande', x: 5, y: 1, rot: 0, tono: 0 }).reason)).toBe('zona');
+  const after = await item('escritorio');
+  expect([after.x, after.y]).not.toEqual([before.x, before.y]);
+  const carried = await item('ordenador');
+  expect([carried.x - pc.x, carried.y - pc.y]).toEqual([after.x - before.x, after.y - before.y]);
+  await page.screenshot({ path: `${OUT}/decorador-movido-${info.project.name}.png` });
+  // Girarlo también; y su paso va con él
+  await page.getByRole('button', { name: /Girar/ }).first().click();
+  const spun = await item('escritorio');
+  expect(spun.rot).toBe(1);
+  expect((await item('ordenador')).rot).toBe(1);
+  // De vuelta al sillón se ve donde lo has puesto, y al ordenador se llega igual
+  await page.getByRole('button', { name: 'Volver al sillón' }).click();
+  await page.waitForFunction(() => window.__pisoLab?.()?.debug().windows.length > 0, null, { timeout: 30000 });
+  await page.evaluate(() => window.__pisoLab().lookTo(0.6));
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: `${OUT}/movido-sillon-${info.project.name}.png` });
+  await menu(page).click();
+  await sheet(page).getByRole('button', { name: 'Ordenador' }).click();
+  await expect(desktop(page)).toBeVisible();
+});
+
+test('la barra flota sobre la habitación: el dibujo llega hasta arriba', async ({ page }, info) => {
+  await enter(page);
+  const canvas = await page.locator('.plab-canvas').boundingBox();
+  expect(canvas.y).toBe(0);
+  const portalButton = page.getByRole('button', { name: 'Al portal' });
+  await expect(portalButton).toBeVisible();
+  // Encima de un botón sigue el botón; al lado, el lienzo
+  const box = await portalButton.boundingBox();
+  const under = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.className, [box.x + box.width + 60, box.y + box.height / 2]);
+  expect(under).toContain('plab-canvas');
+  await page.screenshot({ path: `${OUT}/barra-${info.project.name}.png` });
 });
 
 test('un guardado antiguo se completa al cargar, y restablecer vuelve a la distribución de partida', async ({ page }, info) => {
