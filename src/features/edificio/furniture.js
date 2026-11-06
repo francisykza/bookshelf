@@ -702,6 +702,10 @@ for (const id of ['ebanisteria', 'tapiceria', 'faro', 'vivero', 'almoneda', 'men
 for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta', 'conejo-chistera', 'gaviota-puerto']) SHAPES[id] = peana;
 
 /** Cajas de un mueble en coordenadas locales (sin girar). */
+export const registerShape = (id, fn) => {
+  SHAPES[id] = fn;
+};
+
 export function shapeOf(id, tono) {
   const fn = SHAPES[id];
   return fn ? fn(tono) : [];

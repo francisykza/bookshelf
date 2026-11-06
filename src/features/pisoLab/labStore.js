@@ -3,11 +3,17 @@
 // `layout` es el mismo de `room.js`: uid, id, x, y, rot, tono (o pared y a, en la pared). Todo pasa por `validateRoom`,
 // igual que en `savePiso` de service.js; lo único que cambia es el destino: este navegador y nunca Supabase.
 import { catalogItem, isMistico } from '../edificio/catalog';
+import './essentialItems';
+import { LAYOUTS, repairRoom, withGuard } from './essentials';
 import { shapeOf } from '../edificio/furniture';
 import { createRoom, exportRoom, importRoom, validateRoom } from '../edificio/room';
 
 // «plano2»: los pisos de prueba cambiaron de distribución; un guardado del plano anterior dejaría el sillón mirando a la pared
 const KEY = (id) => `bookshelf:lab:piso-primera-persona:plano2:${id}`;
+/** Lo que al reparar una distribución no ha cabido en ningún sitio: se vuelve a intentar en cada carga. */
+const STORED_KEY = (id) => `${KEY(id)}:sin-sitio`;
+/** La distribución tal como estaba antes de la primera reparación. */
+const BEFORE_KEY = (id) => `${KEY(id)}:antes`;
 
 /** Altura del horizonte en el hueco por planta, respecto a los ojos (en celdas de la habitación). Sube poco, para que la corona del hotel siga dentro del hueco; lo que más baja con la planta son los tejados: `ALTURAS`. */
 export const PLANTAS = { 1: { horizonte: 0.45 }, 2: { horizonte: 0.49 }, 3: { horizonte: 0.53 } };
@@ -47,9 +53,12 @@ export const PISOS = [
         f('sillon', 2, 4, 2),
         f('lampara-pie', 2, 0),
         f('mesa-baja', 2, 3),
-        f('planta-grande', 7, 0),
+        f('planta-grande', 8, 2),
+        f('escritorio', 5, 0),
+        f('ordenador', 5, 0),
         w('ventana', 'fondo', 3),
         w('ventana', 'izq', 5),
+        w('puerta-piso', 'fondo', 7),
       ]),
   },
   {
@@ -65,11 +74,15 @@ export const PISOS = [
       seed('salvia', 'damero', () => [
         f('estanteria', 0, 7, 3, 1),
         f('sillon', 2, 2, 1, 1),
-        f('lampara-pie', 1, 4, 0, 1),
+        f('lampara-pie', 0, 2, 0, 1),
         f('planta-grande', 0, 0, 0, 1),
         f('mesilla', 6, 0),
+        f('mesa-baja', 1, 2, 1),
+        f('escritorio', 3, 0),
+        f('ordenador', 3, 0),
         w('ventana', 'izq', 2, 1),
         w('cuadro', 'fondo', 3, 1),
+        w('puerta-piso', 'izq', 5),
       ]),
   },
 ];
@@ -79,6 +92,19 @@ export const doorLabel = (p) => `${p.puerta[0]}.º ${p.puerta[1]}`;
 /** Permiso: mirar, cualquiera; editar, solo quien vive allí (como `editable={mine}` en EdificioPanel). */
 export const canEdit = (piso) => Boolean(piso?.propio);
 
+// Lo que se ha completado desde la última vez que se preguntó, para decirlo una sola vez
+const lastRepair = new Map();
+
+function readStored(piso) {
+  try {
+    const list = JSON.parse(localStorage.getItem(STORED_KEY(piso.id)) ?? '[]');
+    return Array.isArray(list) ? list.filter((i) => i && Number.isInteger(i.uid) && catalogItem(i.id)) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** El piso con sus elementos esenciales: una distribución antigua se completa sin perder lo que tenía. */
 export function loadRoom(piso) {
   let saved = null;
   try {
@@ -86,7 +112,45 @@ export function loadRoom(piso) {
   } catch {
     // Sin almacenamiento, el piso de partida
   }
-  return (saved && importRoom(saved)) || piso.seed();
+  const layout = LAYOUTS[piso.id];
+  const before = readStored(piso);
+  const fixed = repairRoom((saved && importRoom(saved)) || piso.seed(), layout, before);
+  if (saved && fixed.changed && canEdit(piso)) {
+    try {
+      if (!localStorage.getItem(BEFORE_KEY(piso.id))) localStorage.setItem(BEFORE_KEY(piso.id), saved);
+    } catch {
+      // Sin sitio para la copia: la reparación no borra nada de todos modos
+    }
+    saveRoom(piso, fixed.room);
+    if (fixed.added.length || fixed.moved.length) lastRepair.set(piso.id, { added: fixed.added, moved: fixed.moved.length });
+  }
+  if (canEdit(piso) && JSON.stringify(before) !== JSON.stringify(fixed.stored)) {
+    try {
+      if (fixed.stored.length) localStorage.setItem(STORED_KEY(piso.id), JSON.stringify(fixed.stored));
+      else localStorage.removeItem(STORED_KEY(piso.id));
+    } catch {
+      // Sigue en memoria hasta la próxima carga
+    }
+  }
+  return withGuard(fixed.room, layout);
+}
+
+/** Qué se ha completado y cuántos objetos siguen sin sitio. Lo primero, solo la primera vez que se pregunta. */
+export function repairNews(piso) {
+  const news = lastRepair.get(piso.id) ?? { added: [], moved: 0 };
+  lastRepair.delete(piso.id);
+  return { ...news, stored: readStored(piso).length };
+}
+
+/** Vuelve a la distribución de partida, que ya trae los esenciales. */
+export function resetRoom(piso) {
+  try {
+    localStorage.removeItem(KEY(piso.id));
+    localStorage.removeItem(STORED_KEY(piso.id));
+  } catch {
+    // Sin almacenamiento, ya estaba en la de partida
+  }
+  return loadRoom(piso);
 }
 
 /** Guarda un piso propio, limpio. Devuelve si se ha guardado; el de un vecino nunca se escribe. */

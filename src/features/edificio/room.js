@@ -56,6 +56,9 @@ export function check(room, item, { ignore = [] } = {}) {
   }
   const hit = others.find((o) => capaOf(o) === cat.capa && overlap(r, rectOf(o)));
   if (hit) return { ok: false, reason: 'choque', con: hit.id };
+  // Una habitación puede traer reglas propias (`guard`): el piloto del piso protege así sus elementos esenciales
+  const veto = room.guard?.check(room, item, support?.uid ?? null);
+  if (veto) return veto;
   return { ok: true, support: support?.uid ?? null };
 }
 
@@ -124,6 +127,7 @@ export function addItem(room, id, opts = {}) {
 export function moveItem(room, uid, target) {
   const item = room.items.find((i) => i.uid === uid);
   if (!item) return { error: 'desconocido' };
+  if (room.guard?.locked(item)) return { error: 'esencial' };
   const tops = itemsOn(room, uid);
   const moved = { ...item, ...target };
   const res = check(room, moved, { ignore: tops.map((t) => t.uid) });
@@ -137,6 +141,7 @@ export function moveItem(room, uid, target) {
 export function rotateItem(room, uid) {
   const item = room.items.find((i) => i.uid === uid);
   if (!item) return { error: 'desconocido' };
+  if (room.guard?.locked(item)) return { error: 'esencial' };
   if (capaOf(item) === 'pared') return { error: 'pared' };
   if (itemsOn(room, uid).length) return { error: 'encima' };
   const turned = { ...item, rot: (item.rot + 1) % 4 };
@@ -155,7 +160,9 @@ export function recolorItem(room, uid) {
 
 /** Guarda un objeto (lo quita del piso). Un mueble con cosas encima no se puede guardar. */
 export function removeItem(room, uid) {
-  if (!room.items.some((i) => i.uid === uid)) return { error: 'desconocido' };
+  const item = room.items.find((i) => i.uid === uid);
+  if (!item) return { error: 'desconocido' };
+  if (room.guard?.locked(item)) return { error: 'esencial' };
   if (itemsOn(room, uid).length) return { error: 'encima' };
   return { room: { ...room, items: room.items.filter((i) => i.uid !== uid) } };
 }
@@ -226,6 +233,12 @@ export function reasonText(reason, con = null) {
       return 'Girado no cabe aquí.';
     case 'pared':
       return 'Lo que va en la pared no se gira.';
+    case 'esencial':
+      return 'Es un elemento esencial: se queda en su sitio. Puedes cambiarle el color.';
+    case 'zona':
+      return name ? `Ahí hay que dejar paso hasta: ${name}.` : 'Ahí hay que dejar paso.';
+    case 'reservado':
+      return 'Esa mesa está reservada para tu lectura.';
     default:
       return 'Eso no se puede hacer.';
   }

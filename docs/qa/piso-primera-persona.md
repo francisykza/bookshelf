@@ -89,7 +89,7 @@ No se ha tocado: es código compartido con la app vigente. Cada cambio de estado
 
 Procedimiento de siempre: subir la rama a GitHub y Vercel crea su versión de prueba por HTTPS. Datos de prueba por navegador, sin cuentas ni nube. El piloto no registra el service worker, para que las medidas no cuenten lo guardado por él y una versión nueva se vea al momento.
 
-Sustituye `<PREVIEW>` por la dirección de Vercel.
+`<PREVIEW>` es https://bookshelf-git-experimento-piso-primera-persona-francisykza.vercel.app. Tiene activa la protección de Vercel: hay que iniciar sesión en el móvil, abrir un enlace de «Share» del despliegue o desactivarla para Preview.
 
 **Android (Chrome)**
 1. Abre `<PREVIEW>/?piloto=piso&biblioteca=5000&medir=1`, toca tu puerta y anota la entrada en «Medir».
@@ -106,6 +106,17 @@ Sustituye `<PREVIEW>` por la dirección de Vercel.
 - que tocar un campo no acerque la página;
 - «Guardado» en el medidor con 5.000 libros y, tras registrar y recargar, que el registro siga (ver el riesgo de arriba);
 - también añadida a la pantalla de inicio, si la usas así: abre la misma dirección desde ella.
+
+## Elementos esenciales y ordenador
+
+Inventario de funciones, posiciones y reglas en [piso-funciones.md](piso-funciones.md).
+
+- **Comprobado en emulación (Chromium y WebKit a 390 × 844; el ordenador también a 360 × 640):** entrar, biblioteca desde la estantería, registrar tocando el libro, calendario y diario desde el ordenador, y salir tocando la puerta; menú con teclado y foco; decorador protegido; guardado antiguo completado; restablecer.
+- **Sin comprobar:** ningún móvil físico, ni Safari real.
+- **Acabados:** se personalizan con los tonos de cada pieza. Los acabados especiales de la tienda no tienen dibujo en el interior: si una copia trae uno, se conserva, pero no se ve.
+- **Descubrir el ordenador y la puerta:** quedan fuera del encuadre inicial y aparecen al girar la vista hacia la derecha; el menú llega a ellos sin girar. A revisar en el recorrido físico.
+- **Hueco del menú:** en Chromium por software, un fondo totalmente opaco encima del lienzo dejaba un rectángulo invertido del color del fondo. El menú usa un fondo al 99 %. No se ha comprobado si pasa en un móvil.
+- **Comunidad y cuenta:** se abren desde el ordenador, pero sin nube en el piloto.
 
 ## Pendiente y limitaciones
 
@@ -181,4 +192,4 @@ Sin frenar la CPU, con la cámara quieta: 24 redibujados en 10 s, los esperados 
 
 **Emulado, no real**: el segundo plano (se simula `visibilityState`), el teclado (se reduce la ventana), las zonas seguras (CDP, solo Chromium) y la pérdida de contexto (`WEBGL_lose_context`).
 
-**Sin probar**: cualquier móvil físico, Safari y Android reales, y la preview, que aún no está publicada.
+**Sin probar**: cualquier móvil físico, Safari y Android reales, y la preview abierta de verdad: está publicada, pero la protección de Vercel no deja comprobarla desde aquí.

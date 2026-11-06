@@ -186,7 +186,10 @@ export const isMistico = (c) => c?.rareza === 'mistico' || c?.rareza === 'legend
 /** Los legendarios: te acompañan, no se colocan. */
 export const COMPANEROS = CATALOG.filter((c) => c.compania);
 
-export const catalogItem = (id) => CATALOG.find((c) => c.id === id) ?? null;
+// Piezas de un laboratorio: se encuentran por su id, pero no están en el catálogo que se vende ni en el del servidor
+const EXTRA = new Map();
+export const registerCatalogItem = (item) => EXTRA.set(item.id, item);
+export const catalogItem = (id) => CATALOG.find((c) => c.id === id) ?? EXTRA.get(id) ?? null;
 export const setOf = (id) => SETS.find((s) => s.id === id) ?? null;
 
 /** Colores de pared y suelo que se pueden elegir. */

@@ -501,6 +501,7 @@ test('capturas de día y de noche y fluidez del giro (emulación)', async ({ pag
   await enter(page);
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${OUT}/dia-${info.project.name}.png` });
+  await page.getByRole('button', { name: 'Menú de accesos' }).click();
   await page.getByRole('button', { name: 'Ver de noche' }).click();
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${OUT}/noche-${info.project.name}.png` });
@@ -630,8 +631,8 @@ test('teclado y lector de pantalla: se llega a registrar con el tabulador y el f
   await enter(page);
   const register = page.getByRole('button', { name: 'Registrar lectura de Circe' });
   await expect(page.getByRole('img', { name: /Arrastra o usa las flechas/ })).toBeVisible();
-  await expect(page.getByRole('group', { name: 'Más acciones' }).getByRole('button')).toHaveText(['Balda', 'Decorar', 'Noche']);
-  for (const name of ['Ver la balda', 'Decorar', 'Ver de noche']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Más acciones' }).getByRole('button')).toHaveText(['Balda', 'Decorar', 'Menú']);
+  for (const name of ['Ver la balda', 'Decorar', 'Menú de accesos']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   // Desde el lienzo, en el orden natural
   await page.locator('.plab-canvas').focus();
   const yaw0 = (await debug(page)).yaw;
@@ -735,5 +736,5 @@ test('el visitante: sin registrar ni decorar, y tocar la mesa no abre nada', asy
   await enter(page, NEIGHBOUR);
   expect((await debug(page)).book).toBeNull();
   await expect(page.locator('.plab-primary')).toHaveCount(0);
-  await expect(page.getByRole('group', { name: 'Más acciones' }).getByRole('button')).toHaveText(['Balda', 'Noche']);
+  await expect(page.getByRole('group', { name: 'Más acciones' }).getByRole('button')).toHaveText(['Balda', 'Menú']);
 });

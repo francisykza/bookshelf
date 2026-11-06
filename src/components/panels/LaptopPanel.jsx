@@ -27,12 +27,16 @@ const TABS = [
   { id: 'quote', label: 'Citas', short: 'Citas', icon: 'citas' },
 ];
 
-export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook }) {
+// `desktop(open)`: lo que enseña el escritorio en vez del saludo (el piloto del piso pone ahí sus accesos); con `initialTab` null
+// se empieza en él. `diaryView`: con qué vista de Mi diario se abre.
+export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook, desktop = null, diaryView = 'calendar' }) {
   const { state } = useLibrary();
-  const start = TABS.some((t) => t.id === initialTab) ? initialTab : 'calendar';
+  const start = TABS.some((t) => t.id === initialTab) ? initialTab : desktop ? null : 'calendar';
   const [app, setApp] = useState(start);
+  // Con qué vista abre Mi diario desde el escritorio del piso
+  const [diary, setDiary] = useState(diaryView);
   // Apps montadas (la activa y las que guardan algo a medias)
-  const [alive, setAlive] = useState([start]);
+  const [alive, setAlive] = useState(start ? [start] : []);
   const [confirmExit, setConfirmExit] = useState(false);
   const screenRef = useRef(null);
   // Apps con algo escrito en un formulario aún abierto
@@ -101,7 +105,11 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
             if (id) touched.current.add(id);
           }}
         >
-          {!app && (
+          {!app && desktop?.((id, view) => {
+            if (view) setDiary(view);
+            open(id);
+          })}
+          {!app && !desktop && (
             <div className="pc-home">
               <p className="pc-home__day">{new Date(now).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
               <p className="pc-home__note">{today.text ? `Hoy: ${today.text}` : 'Hoy aún no has registrado lectura.'}</p>
@@ -121,7 +129,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
                 </button>
               </header>
               <div className="pc-win__body">
-                {t.id === 'calendar' && <DiaryApp selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />}
+                {t.id === 'calendar' && <DiaryApp key={diary} initialView={diary} selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />}
                 {t.id === 'stats' && <StatsApp />}
                 {t.id === 'sessions' && <SessionsApp />}
                 {t.id === 'goal' && <GoalApp />}
@@ -132,7 +140,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
           ))}
         </div>
 
-        <nav className="pc-dock" role="tablist" aria-label="Aplicaciones del ordenador">
+        {(app || !desktop) && <nav className="pc-dock" role="tablist" aria-label="Aplicaciones del ordenador">
           {TABS.map((t) => (
             <button key={t.id} type="button" role="tab" aria-selected={app === t.id} aria-controls={alive.includes(t.id) ? `pc-app-${t.id}` : undefined} aria-label={t.label} data-app={t.id} onClick={() => open(t.id)}>
               <span className="pc-dock__icon">
@@ -144,7 +152,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
               </span>
             </button>
           ))}
-        </nav>
+        </nav>}
       </div>
     </PanelShell>
   );

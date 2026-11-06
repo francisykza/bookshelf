@@ -10,7 +10,7 @@ import { ROOM, heightOf } from '../edificio/room';
 import { bookDims, wrapTitle } from './bookLayout';
 import { paintExterior } from './exterior';
 import { LAYERS, WATER_FRAMES, WATER_MS, PX_PER_CELL, layerMargins, layerPlane, rowOf } from './exteriorLayout';
-import { BALDA, baldaShadowTexture, bookTexture, contactShadowTexture, floorTexture, footShadowTexture, grainTexture, lampTexture, pagesTexture, pixelBook, pixelLamp, pixelTable, pixelWindow, shelfTexture, sillShadowTexture, spineAtlas, tableTexture, upholsteredArmchair, upholsteryTexture, wallPlates, wallTexture, windowTexture, woodShelf } from './materials';
+import { BALDA, baldaShadowTexture, bookTexture, contactShadowTexture, floorTexture, footShadowTexture, grainTexture, lampTexture, pagesTexture, pixelBook, pixelLamp, pixelTable, pixelWindow, shelfTexture, sillShadowTexture, spineAtlas, tableTexture, upholsteredArmchair, upholsteryTexture, wallPlates, wallTexture, windowTexture, woodShelf, computerTexture, doorTexture, drawerTexture, pixelComputer, pixelDoor } from './materials';
 
 /** Ojos de una persona sentada: un poco por encima del respaldo del sillón (1,75 celdas, furniture.js). */
 export const EYE = 1.85;
@@ -27,7 +27,9 @@ const YAW_MAX = 0.6;
 const MAX_LAMPS = 4;
 const TABLES = new Set(['mesa-baja', 'mesilla', 'mesa']);
 /** Las mesas de tablero y patas, dibujadas en píxel; la mesilla, que es un mueble cerrado, sigue con su veta. */
-const PIXEL_TABLES = new Set(['mesa-baja', 'mesa']);
+const PIXEL_TABLES = new Set(['mesa-baja', 'mesa', 'escritorio']);
+/** Piezas con su propio dibujo, más abajo. */
+const OWN_PIECES = new Set(['ventana', 'ordenador', 'puerta-piso']);
 /** El libro se deja algo girado respecto a quien lo mira: se ven el pie, las hojas y el lomo, y la portada se sigue leyendo. */
 const BOOK_TURN = 0.5;
 /** Inclinarse sobre el libro: breve y sin perderlo de vista. */
@@ -218,7 +220,7 @@ function coverCanvas(image, width, height) {
  * { id, title, color, thickness, height, coverLoad }; en un piso ajeno, null). Avisa con `onBook()`, `onShelf(balda)`, `onShelfTap()` (de cerca, fuera de un libro) y `onLost()` (se ha perdido la GPU).
  * Lanza un error si no se puede crear WebGL: quien monta ofrece entonces la salida en HTML.
  */
-export async function mountInterior(container, { room, piso, ventanas, book = null, shelfBooks = null, hora: startHora = 'tarde', onBook = () => {}, onShelf = () => {}, onShelfTap = () => {}, onLost = () => {} }) {
+export async function mountInterior(container, { room, piso, ventanas, book = null, shelfBooks = null, hora: startHora = 'tarde', onBook = () => {}, onShelf = () => {}, onShelfTap = () => {}, onLost = () => {}, onDesk = null, onDoor = null }) {
   const renderer = new WebGLRenderer({ antialias: false, powerPreference: 'low-power' });
   const canvas = renderer.domElement;
   canvas.className = 'plab-canvas';
@@ -306,7 +308,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   for (const item of room.items) {
     const cat = catalogItem(item.id);
     // La ventana y las mesas tienen su propia pieza, más abajo
-    if (!cat || item.id === 'ventana' || PIXEL_TABLES.has(item.id)) continue;
+    if (!cat || OWN_PIECES.has(item.id) || PIXEL_TABLES.has(item.id)) continue;
     const geometry = catalogGeometry(item, cat, item.id === 'estanteria' && Boolean(shelfBooks));
     usedShared.add(geometry);
     const kit = item.id === 'lampara-pie' ? lampKit(cat.tonos[item.tono]) : null;
@@ -330,6 +332,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     return new Vector3(shelf.x + a, lz, shelf.y + b);
   };
   const woodMats = [];
+  const pieceMats = [];
   const tinted = (material) => {
     if (!material.map) material.userData.base = material.color.clone();
     woodMats.push(material);
@@ -552,10 +555,11 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   // Las mesas: tablero, canto y patas en píxel, con su luz dibujada, y su sombra sobre el suelo. La mesilla, solo la veta
   const tableKits = [];
   for (const item of room.items) {
-    if (!TABLES.has(item.id)) continue;
+    if (!PIXEL_TABLES.has(item.id) && !TABLES.has(item.id)) continue;
     const cat = catalogItem(item.id);
     const tono = cat.tonos[item.tono];
-    const boxes = shapeOf(item.id, tono);
+    // Los frentes de los cajones y sus tiradores van pintados, no como patas
+    const boxes = shapeOf(item.id, tono).filter((box) => item.id !== 'escritorio' || box.b[4] - box.b[1] > 0.1);
     const top = boxes.reduce((a, b) => (b.b[5] > a.b[5] ? b : a));
     const [x0, y0, , x1, y1, z1] = turned(cat, item.rot, top.b);
     const lift = heightOf(room, item);
@@ -569,6 +573,11 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       const off = own('textures', tableTexture(tono, { size, lights, lit: false }));
       const material = tinted(new MeshBasicMaterial({ map: lit }));
       tableKits.push({ material, lit, off });
+      if (item.id === 'escritorio' && !item.rot) {
+        const front = new Mesh(own('geometries', new PlaneGeometry(0.65, 1)), tinted(new MeshBasicMaterial({ map: own('textures', drawerTexture(tono)) })));
+        front.position.set(item.x + 0.425, lift + 0.6, item.y + 0.905);
+        furniture.add(front);
+      }
       const key = `mesa|${item.id}|${item.rot}`;
       if (!shared.has(key)) shared.set(key, pixelTable(boxes, (b) => turned(cat, item.rot, b)));
       usedShared.add(shared.get(key));
@@ -710,6 +719,30 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       layer.material.map = layer.baked.get(hora);
       layer.material.needsUpdate = true;
     }
+  }
+
+  // El ordenador del escritorio y la puerta de salida: al tocarlos se abren las herramientas o se vuelve al portal
+  const pieceKit = (make) => {
+    const lit = own('textures', make(true));
+    const off = own('textures', make(false));
+    const material = own('materials', new MeshBasicMaterial({ map: lit, side: DoubleSide }));
+    material.userData.lit = lit;
+    material.userData.off = off;
+    woodMats.push(material);
+    pieceMats.push(material);
+    return material;
+  };
+  for (const item of room.items) {
+    if (item.id !== 'ordenador' && item.id !== 'puerta-piso') continue;
+    const tono = catalogItem(item.id).tonos[item.tono];
+    const door = item.id === 'puerta-piso';
+    const material = pieceKit((lit) => (door ? doorTexture(tono, { lit }) : computerTexture(tono, { lit })));
+    const place = door ? (item.pared === 'fondo' ? (a, b) => [item.a + a, b] : (a, b) => [b, item.a + a]) : (a, b) => [a, b];
+    const mesh = new Mesh(own('geometries', door ? pixelDoor(place) : pixelComputer(place)), material);
+    if (!door) mesh.position.set(item.x, heightOf(room, item), item.y);
+    mesh.userData = { uid: item.uid, id: item.id };
+    furniture.add(mesh);
+    meshes.push(mesh);
   }
 
   // El marco y el alféizar de cada ventana, con su madera y su luz dibujada; bajo el alféizar, su sombra sobre la pared
@@ -904,7 +937,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       t.material.map = hora === 'dia' ? t.off : t.lit;
       t.material.needsUpdate = true;
     }
-    for (const f of frameKits.values()) {
+    for (const f of [...frameKits.values(), ...pieceMats]) {
       f.map = hora === 'dia' ? f.userData.off : f.userData.lit;
       f.needsUpdate = true;
     }
@@ -1023,9 +1056,13 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       }
       const rect = canvas.getBoundingClientRect();
       ray.setFromCamera(new Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
-      const found = ray.intersectObjects(meshes, false)[0];
+      // Una lámpara o una planta por delante no quitan el toque a lo que se puede usar
+      const hits = ray.intersectObjects(meshes, false);
+      const found = hits.find(({ object: { userData: u } }) => u.id === 'libro' || u.id === 'puerta-piso' || u.id === 'ordenador' || u.id === 'escritorio' || u.id === 'estanteria');
       const hit = found?.object.userData.id;
       if (hit === 'libro') onBook();
+      else if (hit === 'puerta-piso') onDoor?.();
+      else if (hit === 'ordenador' || (hit === 'escritorio' && room.guard?.locked(room.items.find((i) => i.uid === found.object.userData.uid)))) onDesk?.();
       else if (hit === 'estanteria') onShelf(found.point.y - heightOf(room, shelf) < 1.17 ? 0 : found.point.y - heightOf(room, shelf) < 2.27 ? 1 : 2);
     },
     on,
@@ -1342,7 +1379,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     screenOf(what) {
       aim();
       camera.updateMatrixWorld();
-      const point = what === 'libro' ? bookGroup?.position.clone().add(new Vector3(0, 0.06, 0)) : shelf && (what === 'balda' ? shelfSpots[0]?.group.position.clone() : shelfPoint(1.7, 1, 1.75));
+      const piece = (what === 'ordenador' || what === 'puerta') && room.items.find((i) => i.id === (what === 'puerta' ? 'puerta-piso' : 'ordenador'));
+      const point = piece ? (what === 'puerta' ? new Vector3(piece.pared === 'fondo' ? piece.a + 1 : 0.05, 1.5, piece.pared === 'fondo' ? 0.05 : piece.a + 1) : new Vector3(piece.x + 0.5, heightOf(room, piece) + 0.45, piece.y + 0.44)) : what === 'libro' ? bookGroup?.position.clone().add(new Vector3(0, 0.06, 0)) : shelf && (what === 'balda' ? shelfSpots[0]?.group.position.clone() : shelfPoint(1.7, 1, 1.75));
       if (!point) return null;
       const q = point.project(camera);
       const rect = canvas.getBoundingClientRect();

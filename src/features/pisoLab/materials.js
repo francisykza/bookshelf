@@ -732,6 +732,157 @@ function quads(out, atlas, P, [x0, y0, z0, x1, y1, z1], faces) {
   }
 }
 
+/** El frente de los cajones del escritorio: dos cajones con su tirador de latón. */
+export function drawerTexture(tono) {
+  const r = probe();
+  const ramp = r.rampOf(tono);
+  const brass = r.rampOf(LATON);
+  const W = 40;
+  const H = 56;
+  const dither = (x, y, amount) => (r.bayerAt(x, y) - 0.5) * amount;
+  return texture(
+    canvasOf(W, H, (x, y) => {
+      if (x < 2 || x >= W - 2) return ramp[x < 2 ? 3 : 0];
+      const row = y % 28;
+      if (row === 0) return ramp[0];
+      if (row === 1) return ramp[4];
+      if (row >= 12 && row < 16 && x >= 13 && x < 27) return brass[row === 12 ? 4 : row === 15 ? 0 : 2];
+      return ramp[clampTone(2.3 + (noise(x * 0.04 + y, y * 0.5) - 0.5) * 0.7 + dither(x, y, 0.08))];
+    }),
+  );
+}
+
+// El ordenador: una pantalla pequeña con su escritorio pintado, como el resto del mobiliario
+const PC_W = 64;
+const PC_H = 64;
+const PC = { face: [0, 0, 48, 34], body: [0, 36, 24, 12], keys: [26, 36, 34, 14], foot: [0, 50, 20, 8], stand: [50, 0, 10, 12] };
+
+export function computerTexture(tono, { lit }) {
+  const r = probe();
+  const ramp = r.rampOf(tono);
+  const sea = r.rampOf(lit ? [120, 150, 170] : [96, 150, 170]);
+  const sun = r.rampOf([240, 196, 110]);
+  const paper = r.rampOf([240, 228, 200]);
+  const inside = ([x0, y0, w, h], x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
+  const dither = (x, y, amount) => (r.bayerAt(x, y) - 0.5) * amount;
+  const screen = (x, y) => {
+    // La bahía de fondo, una ventana de papel y el dock abajo
+    if (x >= 10 && x < 30 && y >= 4 && y < 16) {
+      if (y === 4 || y === 15 || x === 10 || x === 29) return ramp[0];
+      if (y === 6) return sea[1];
+      return y % 3 === 0 && x > 12 && x < 26 ? paper[1] : paper[4];
+    }
+    if (y >= 21) return (x + 2) % 6 < 4 && y >= 22 && y < 25 ? sun[3] : sea[0];
+    return sea[clampTone(y < 10 ? 3.6 : 2.4 + dither(x, y, 1))];
+  };
+  return texture(
+    canvasOf(PC_W, PC_H, (x, y) => {
+      if (inside(PC.face, x, y)) {
+        const lx = x - PC.face[0];
+        const ly = y - PC.face[1];
+        if (ly === 0) return ramp[4];
+        if (ly === PC.face[3] - 1 || lx === PC.face[2] - 1) return ramp[1];
+        if (lx === 0) return ramp[3];
+        if (lx >= 5 && lx < 43 && ly >= 3 && ly < 28) return lx === 5 || ly === 3 ? ramp[0] : screen(lx - 5, ly - 3);
+        return ramp[clampTone(2.8 + dither(x, y, 0.1))];
+      }
+      if (inside(PC.keys, x, y)) {
+        const lx = x - PC.keys[0];
+        const ly = y - PC.keys[1];
+        if (ly === 0 || lx === 0) return ramp[4];
+        if (ly === PC.keys[3] - 1) return ramp[0];
+        return ly % 3 === 0 || lx % 3 === 0 ? ramp[1] : ramp[3];
+      }
+      if (inside(PC.foot, x, y)) return ramp[clampTone(y - PC.foot[1] < 2 ? 3 : 1.8 + dither(x, y, 0.2))];
+      if (inside(PC.stand, x, y)) return ramp[x === PC.stand[0] ? 3 : 1];
+      return ramp[clampTone(1.7 + dither(x, y, 0.3))];
+    }),
+  );
+}
+
+/** `place(x, y)` pasa de la pieza a la habitación. */
+export function pixelComputer(place) {
+  const out = { pos: [], uv: [] };
+  const P = (x, y, z) => {
+    const [a, b] = place(x, y);
+    return [a, z, b];
+  };
+  const size = [PC_W, PC_H];
+  quads(out, size, P, [0.34, 0.2, 0, 0.66, 0.46, 0.04], { top: PC.foot, front: PC.foot, left: PC.foot, right: PC.foot });
+  quads(out, size, P, [0.44, 0.28, 0.04, 0.56, 0.36, 0.16], { front: PC.stand, back: PC.stand, left: PC.stand, right: PC.stand });
+  quads(out, size, P, [0.1, 0.16, 0.16, 0.9, 0.44, 0.72], { front: PC.face, back: PC.body, left: PC.body, right: PC.body, top: PC.body, under: PC.body });
+  quads(out, size, P, [0.18, 0.56, 0, 0.82, 0.86, 0.035], { top: PC.keys, front: PC.foot, left: PC.foot, right: PC.foot });
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(out.pos, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(out.uv, 2));
+  return g;
+}
+
+// La puerta de salida, de la misma madera que el marco de la ventana
+const DOOR_W = 112;
+const DOOR_H = 176;
+const DOOR = { leaf: [0, 0, 80, 150], jamb: [84, 0, 8, 150], jambSide: [94, 0, 6, 150], head: [0, 154, 92, 8], headUnder: [0, 164, 92, 6], knob: [104, 0, 6, 6] };
+
+export function doorTexture(tono, { lit }) {
+  const r = probe();
+  const ramp = r.rampOf(tono);
+  const warm = r.rampOf([Math.min(255, tono[0] * 1.16), tono[1] * 1.02, tono[2] * 0.84]);
+  const brass = r.rampOf(LATON);
+  const use = lit ? warm : ramp;
+  const inside = ([x0, y0, w, h], x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
+  const dither = (x, y, amount) => (r.bayerAt(x, y) - 0.5) * amount;
+  const wood = (along, across, base, x, y) => clampTone(base + (noise(along * 0.012 + 5, across * 0.16) - 0.5) * 0.7 + dither(x, y, 0.07));
+  const panel = (lx, ly, [x0, y0, x1, y1]) => {
+    if (lx < x0 || lx >= x1 || ly < y0 || ly >= y1) return null;
+    if (ly === y0 || lx === x0) return ramp[0];
+    if (ly === y1 - 1 || lx === x1 - 1) return ramp[4];
+    if (ly === y0 + 1 || lx === x0 + 1) return ramp[1];
+    return use[wood(ly, lx, 2.1, lx, ly)];
+  };
+  return texture(
+    canvasOf(DOOR_W, DOOR_H, (x, y) => {
+      if (inside(DOOR.leaf, x, y)) {
+        const lx = x - DOOR.leaf[0];
+        const ly = y - DOOR.leaf[1];
+        if (lx === 0 || ly === 0) return ramp[0];
+        if (lx === DOOR.leaf[2] - 1 || ly === DOOR.leaf[3] - 1) return ramp[1];
+        return panel(lx, ly, [12, 12, 68, 66]) ?? panel(lx, ly, [12, 82, 68, 138]) ?? use[wood(ly, lx, 2.8, lx, ly)];
+      }
+      if (inside(DOOR.jamb, x, y)) {
+        const lx = x - DOOR.jamb[0];
+        return lx === 0 ? ramp[4] : lx === DOOR.jamb[2] - 1 ? ramp[0] : use[wood(y, x, 2.6, x, y)];
+      }
+      if (inside(DOOR.jambSide, x, y)) return ramp[wood(y, x, 1.3, x, y)];
+      if (inside(DOOR.head, x, y)) {
+        const row = y - DOOR.head[1];
+        return row === 0 ? ramp[4] : row === DOOR.head[3] - 1 ? ramp[0] : use[wood(x, y * 3, 2.7, x, y)];
+      }
+      if (inside(DOOR.headUnder, x, y)) return ramp[wood(x, y, 0.5, x, y)];
+      if (inside(DOOR.knob, x, y)) return brass[y === 0 ? 4 : y === DOOR.knob[3] - 1 ? 1 : 3];
+      return ramp[1];
+    }),
+  );
+}
+
+/** `place(a, b)`: a lo largo de la pared y hacia la habitación, como `pixelWindow`. */
+export function pixelDoor(place) {
+  const out = { pos: [], uv: [] };
+  const P = (x, y, z) => {
+    const [a, b] = place(x, y);
+    return [a, z, b];
+  };
+  const size = [DOOR_W, DOOR_H];
+  quads(out, size, P, [0.2, 0, 0, 1.8, 0.03, 3.02], { front: DOOR.leaf });
+  quads(out, size, P, [0.08, 0, 0, 0.2, 0.12, 3.14], { front: DOOR.jamb, left: DOOR.jambSide, right: DOOR.jambSide });
+  quads(out, size, P, [1.8, 0, 0, 1.92, 0.12, 3.14], { front: DOOR.jamb, left: DOOR.jambSide, right: DOOR.jambSide });
+  quads(out, size, P, [0.08, 0, 3.02, 1.92, 0.14, 3.16], { front: DOOR.head, top: DOOR.head, under: DOOR.headUnder });
+  quads(out, size, P, [1.54, 0.03, 1.42, 1.66, 0.12, 1.54], { front: DOOR.knob, top: DOOR.knob, left: DOOR.knob, right: DOOR.knob });
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(out.pos, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(out.uv, 2));
+  return g;
+}
+
 /** La mesa con su madera: `boxes`, las cajas de furniture.js; la más alta es el tablero y las demás, las patas. */
 export function pixelTable(boxes, place) {
   const out = { pos: [], uv: [] };

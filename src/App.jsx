@@ -50,6 +50,7 @@ const ReaderVisit = lazy(() => import('./features/social/components/ReaderVisit'
 // Piloto del piso en primera persona (solo laboratorio): se abre con /?piloto=piso; el inicio no cambia
 const PISO_MESA = { on: 'Está sobre la mesa', off: 'Dejar sobre la mesa' };
 const PisoLabPanel = lazy(() => import('./features/pisoLab/PisoLabPanel').then((m) => ({ default: m.PisoLabPanel })));
+const PisoDesktop = lazy(() => import('./features/pisoLab/PisoDesktop').then((m) => ({ default: m.PisoDesktop })));
 const EdificioPanel = lazy(() => import('./features/edificio/EdificioPanel').then((m) => ({ default: m.EdificioPanel })));
 const ReaderProfile = lazy(() => import('./features/social/components/ReaderProfile').then((m) => ({ default: m.ReaderProfile })));
 
@@ -425,6 +426,7 @@ function Sanctuary() {
             onClose={close}
             onOpenBook={(book, row) => openPanel({ type: 'pisoLab', id: panel.id, select: `ficha:${row}:${book.id}` })}
             onRegister={() => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' })}
+            onExit={() => switchPanel({ type: 'pisoLab' })}
             onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
           />
         </Suspense>
@@ -433,6 +435,56 @@ function Sanctuary() {
         const bookId = panel.select.split(':').slice(2).join(':');
         const row = panel.select.split(':')[1];
         return <BookDetailModal key={bookId} bookId={bookId} mainPlace={PISO_MESA} onClose={close} onSwitch={(id, tab) => switchPanel(tab ? { type: 'book', id, tab } : { type: 'pisoLab', id: panel.id, select: `ficha:${row}:${id}` })} timer={timer} soundOn={settings.sound} onToggleSound={toggleSound} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />;
+      })()}
+      {panel?.type === 'pisoLab' && panel.select?.startsWith('ordenador') && (() => {
+        // El ordenador del piso: 'ordenador' es su escritorio y 'ordenador:app:vista', una pantalla concreta
+        const [, tab = null, view = 'today'] = panel.select.split(':');
+        const here = (select) => switchPanel({ type: 'pisoLab', id: panel.id, select });
+        return (
+          <Suspense fallback={null}>
+            <LaptopPanel
+              key={panel.select}
+              onClose={close}
+              initialTab={tab}
+              diaryView={view}
+              onComplete={(bookId) => switchPanel({ type: 'review', id: bookId, tab: 'piso', select: panel.id })}
+              onOpenLibrary={() => here('toda')}
+              onOpenBook={(id) => here(`ficha:2:${id}`)}
+              onOpenVault={null}
+              desktop={(open) => <PisoDesktop open={open} tool={(name) => openPanel({ type: 'pisoLab', id: panel.id, select: `abrir:${name}` })} go={{ library: () => here('toda'), community: () => openPanel({ type: 'social' }) }} />}
+            />
+          </Suspense>
+        );
+      })()}
+      {panel?.type === 'pisoLab' && panel.select?.startsWith('abrir:') && (() => {
+        // Las demás herramientas, encima del piso: al cerrarlas se vuelve al ordenador
+        const tool = panel.select.slice(6);
+        const toBook = (book) => switchPanel({ type: 'pisoLab', id: panel.id, select: `ficha:2:${book.id}` });
+        return (
+          <Suspense fallback={null}>
+            {tool === 'add' && <AddBookCard onClose={close} onAdded={close} />}
+            {tool === 'import' && <GoodreadsImportPanel onClose={close} />}
+            {tool === 'librarian' && <LibrarianPanel onClose={close} onOpenBook={toBook} />}
+            {tool === 'atlas' && <SagaMapModal onClose={close} onOpenBook={toBook} />}
+            {tool === 'radio' && <RadioPanel onClose={close} soundOn={settings.sound} onToggleSound={toggleSound} />}
+            {tool === 'account' && <AccountPanel onClose={close} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
+            {tool === 'tray' && (
+              <PomodoroTray
+                onClose={() => {
+                  setAskPages(false);
+                  close();
+                }}
+                timer={timer}
+                askPages={askPages}
+                onPagesDone={() => setAskPages(false)}
+                onOpenCalendar={() => {
+                  setAskPages(false);
+                  switchPanel({ type: 'pisoLab', id: panel.id, select: 'ordenador:calendar:calendar' });
+                }}
+              />
+            )}
+          </Suspense>
+        );
       })()}
       {panel?.type === 'edificio' && (
         <Suspense fallback={null}>

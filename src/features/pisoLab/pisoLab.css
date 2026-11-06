@@ -464,3 +464,144 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+/* Menú compacto de accesos */
+.plab-menu {
+  position: relative;
+  display: flex;
+}
+
+.plab-menu__sheet {
+  position: absolute;
+  z-index: 7;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: min(280px, calc(100vw - 16px));
+  max-height: 60dvh;
+  overflow: auto;
+  border: 3px solid #3a2415;
+  /* Casi opaco a propósito: encima del lienzo, un fondo opaco deja un hueco invertido en Chromium */
+  background: rgb(255 250 240 / 99%);
+}
+
+.plab-menu__sheet ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plab-menu__sheet button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  overflow: hidden;
+  border: 0;
+  border-bottom: 1px solid #dccba8;
+  background: none;
+  color: #3a2415;
+  font: 600 0.9rem/1.2 'Lora', Georgia, serif;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plab-menu__sheet button:focus-visible {
+  outline: 3px solid #3a2415;
+  outline-offset: -3px;
+}
+
+.plab-repair {
+  flex: 0 0 100%;
+  margin: 0;
+}
+
+/* Los esenciales, en el decorador */
+.plab-essentials {
+  display: grid;
+  gap: 4px;
+  padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  background: #f3ead6;
+  color: #3a2415;
+  font: 400 0.8rem/1.25 'Lora', Georgia, serif;
+}
+
+.plab-essentials p {
+  margin: 0;
+}
+
+.plab-essentials > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.plab-essentials button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 2px solid #b39a6e;
+  background: #fbf4e4;
+  color: #3a2415;
+  font: 600 0.78rem/1 'Lora', Georgia, serif;
+}
+
+/* En pantallas bajas, una sola fila: la habitación necesita el sitio */
+@media (max-height: 700px) {
+  .plab-essentials > div {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}
+
+.plab-essentials .link-btn {
+  justify-self: start;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-decoration: underline;
+}
+
+/* El escritorio del ordenador en el piso */
+.plab-desktop {
+  display: grid;
+  gap: 10px;
+  padding: 10px 10px 16px;
+  overflow-y: auto;
+}
+
+.plab-desktop h3 {
+  width: fit-content;
+  margin: 0 0 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #3a2415;
+  color: #fffaf0;
+  font: 600 0.82rem/1.2 'Lora', Georgia, serif;
+}
+
+.plab-desktop ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plab-desktop button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 4px 8px;
+  border: 1px solid #c9b48c;
+  border-radius: 4px;
+  background: #fffaf0;
+  color: #3a2415;
+  font: 600 0.84rem/1.15 'Lora', Georgia, serif;
+  text-align: left;
+}

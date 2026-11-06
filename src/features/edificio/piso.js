@@ -969,8 +969,10 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     else delete root.dataset.escapeLocal;
     if (item) {
       const cat = catalogItem(item.id);
-      toolName.textContent = `${cat.nombre} · ${item.acabado ? acabadoOf(item.acabado).nombre : TONE_NAMES[item.tono]}`;
-      rotateBtn.disabled = cat.capa === 'pared';
+      const fixed = Boolean(room.guard?.locked(item));
+      toolName.textContent = `${cat.nombre}${fixed ? ' (esencial)' : ''} · ${item.acabado ? acabadoOf(item.acabado).nombre : TONE_NAMES[item.tono]}`;
+      rotateBtn.disabled = cat.capa === 'pared' || fixed;
+      storeBtn.disabled = fixed;
       colorBtn.disabled = cat.tonos.length < 2 || Boolean(item.acabado);
     }
     // Las muestras enseñan cómo quedaría tu piso: cada pared con tu suelo, y cada suelo con tu pared
@@ -990,12 +992,13 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (category === INROOM) catTitle.textContent = listSummary.textContent;
     list.replaceChildren(
       ...room.items.map((i) => {
-        const text = `${nameOf(i)}${i.uid === selected ? ' (elegido)' : ''}`;
+        const fixed = Boolean(room.guard?.locked(i));
+        const text = `${nameOf(i)}${fixed ? ', esencial' : ''}${i.uid === selected ? ' (elegido)' : ''}`;
         if (!editable) return el('li', { text });
         // Al decorar, cada cosa de pie en la balda con su dibujo (y su color), como en el catálogo
         const key = `${i.id}:${i.tono}:${i.acabado ?? ''}`;
         if (!thumbs.has(key)) thumbs.set(key, renderThumb(i.id, i.tono, 44, i.acabado ?? null).toDataURL());
-        const b = el('button', { type: 'button', class: 'ep-item ep-inroom__item', 'aria-pressed': String(i.uid === selected), 'aria-label': text }, el('img', { src: thumbs.get(key), alt: '', width: 44, height: 44, draggable: 'false' }), el('span', { text: nameOf(i) }));
+        const b = el('button', { type: 'button', class: 'ep-item ep-inroom__item', 'aria-pressed': String(i.uid === selected), 'aria-label': text }, el('img', { src: thumbs.get(key), alt: '', width: 44, height: 44, draggable: 'false' }), el('span', { text: `${nameOf(i)}${fixed ? ' ★' : ''}` }));
         b.addEventListener('click', () => {
           if (!decorating) setDecorating(true);
           select(i.uid);
@@ -1025,7 +1028,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (uid) {
       const item = room.items.find((i) => i.uid === uid);
       sfx.play('lift');
-      say(`${nameOf(item)}: arrástralo para moverlo.`);
+      say(room.guard?.locked(item) ? `${nameOf(item)}: ${reasonText('esencial')}` : `${nameOf(item)}: arrástralo para moverlo.`);
     }
   }
 
@@ -1202,9 +1205,11 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       return;
     }
     const item = room.items.find((i) => i.uid === selected);
-    const d = { uid: selected, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, armed: held, held, timer: 0, moved: false, grab: grabOf(item, a), preview: null };
+    // Lo que una habitación protege se puede elegir, pero no levantar
+    const fixed = Boolean(room.guard?.locked(item));
+    const d = { uid: selected, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, armed: held && !fixed, held, fixed, timer: 0, moved: false, grab: grabOf(item, a), preview: null };
     // Sin elegir, se levanta al rato de mantenerlo pulsado: entonces se ve en la mano, en su sitio, y ya se puede arrastrar
-    if (!held) d.timer = setTimeout(() => {
+    if (!held && !fixed) d.timer = setTimeout(() => {
       if (drag !== d) return;
       d.armed = true;
       d.preview = previewAt(item, targetAt(item, a, d.grab));
@@ -1230,8 +1235,9 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       // Se ha movido antes de levantarlo: no era para moverlo
       if (far > HOLD_SLOP_PX) {
         const item = room.items.find((i) => i.uid === drag.uid);
+        const fixed = drag.fixed;
         endDrag();
-        say(`Para mover ${nameOf(item).toLowerCase()}, tócalo y luego arrástralo.`);
+        say(fixed ? `${nameOf(item)}: ${reasonText('esencial')}` : `Para mover ${nameOf(item).toLowerCase()}, tócalo y luego arrástralo.`);
       }
       return;
     }
@@ -1513,6 +1519,11 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   scheduleWander();
 
   return {
+    /** Elige un objeto desde fuera, como si se hubiera tocado. */
+    selectItem(uid) {
+      if (!decorating) setDecorating(true);
+      select(uid);
+    },
     get room() {
       return room;
     },

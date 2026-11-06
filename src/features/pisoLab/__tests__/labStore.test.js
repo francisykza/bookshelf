@@ -41,7 +41,8 @@ describe('pisos de prueba', () => {
 
   it('un guardado estropeado no se abre: vuelve el piso de partida', () => {
     memory.set('bookshelf:lab:piso-primera-persona:plano2:lab-1A', '{"v":1,"items":[{"id":"no-existe"}]}');
-    expect(JSON.stringify(loadRoom(a))).toBe(JSON.stringify(a.seed()));
+    const ids = (room) => room.items.map((i) => `${i.uid}:${i.id}`).sort();
+    expect(ids(loadRoom(a))).toEqual(ids(a.seed()));
   });
 });
 
