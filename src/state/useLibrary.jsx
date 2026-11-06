@@ -52,11 +52,15 @@ function initialState() {
 }
 
 function load() {
+  // Para el medidor del piloto: lo único que crece con la biblioteca en el arranque
+  performance.mark('piso-lab:biblioteca-inicio');
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? hydrate(JSON.parse(raw)) : initialState();
   } catch {
     return initialState();
+  } finally {
+    performance.mark('piso-lab:biblioteca-fin');
   }
 }
 

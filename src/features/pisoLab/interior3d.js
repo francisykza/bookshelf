@@ -3,11 +3,11 @@
 // mismas coordenadas, giros y colores del `layout` que dibuja `render.js`, así que lo que mueves en el editor es lo que
 // ves aquí. La geometría de cada pieza del catálogo se comparte entre pisos; lo demás (materiales, texturas, luces y el
 // lienzo) es de cada montaje y `destroy()` lo libera. Solo se dibuja cuando algo cambia.
-import { AmbientLight, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, Group, HemisphereLight, LinearFilter, Mesh, MeshBasicMaterial, MeshLambertMaterial, NearestFilter, PerspectiveCamera, PlaneGeometry, PointLight, Raycaster, RepeatWrapping, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
+import { AmbientLight, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, Group, HemisphereLight, LinearFilter, Mesh, MeshBasicMaterial, MeshLambertMaterial, NearestFilter, PerspectiveCamera, PlaneGeometry, PointLight, Raycaster, RepeatWrapping, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
 import { PAREDES, catalogItem } from '../edificio/catalog';
 import { shapeOf } from '../edificio/furniture';
-import { ROOM, heightOf, itemsOn } from '../edificio/room';
-import { mainShelf, readingTable } from './essentials';
+import { ROOM, heightOf, itemsOn, rectOf } from '../edificio/room';
+import { essentialItems, mainShelf, readingTable } from './essentials';
 import { bookDims, wrapTitle } from './bookLayout';
 import { paintExterior } from './exterior';
 import { LAYERS, WATER_FRAMES, WATER_MS, PX_PER_CELL, layerMargins, layerPlane, rowOf } from './exteriorLayout';
@@ -25,6 +25,12 @@ const TILT = 0.215;
 const TURN = 0.06;
 const ART_W = 320;
 const YAW_MAX = 0.6;
+/** Hasta dónde se puede girar si hace falta para ver un esencial. Más allá, el respaldo del sillón: se llega por el menú. */
+const YAW_REACH = 2.6;
+/** Con la mirada en la balda, lo que se deja libre: los lados y la barra de arriba, en px. */
+const ROW_MARGIN = { side: 10, top: 66, bottom: 10 };
+/** Radio del dedo: un toque que cae justo al lado de un mueble lo sigue eligiendo. */
+const FINGER = 14;
 const MAX_LAMPS = 4;
 const TABLES = new Set(['mesa-baja', 'mesilla', 'mesa']);
 /** Las mesas de tablero y patas, dibujadas en píxel; la mesilla, que es un mueble cerrado, sigue con su veta. */
@@ -221,7 +227,7 @@ function coverCanvas(image, width, height) {
  * { id, title, color, thickness, height, coverLoad }; en un piso ajeno, null). Avisa con `onBook()`, `onShelf(balda)`, `onShelfTap()` (de cerca, fuera de un libro) y `onLost()` (se ha perdido la GPU).
  * Lanza un error si no se puede crear WebGL: quien monta ofrece entonces la salida en HTML.
  */
-export async function mountInterior(container, { room, piso, ventanas, book = null, shelfBooks = null, hora: startHora = 'tarde', onBook = () => {}, onShelf = () => {}, onShelfTap = () => {}, onLost = () => {}, onDesk = null, onDoor = null }) {
+export async function mountInterior(container, { room, piso, ventanas, book = null, shelfBooks = null, hora: startHora = 'tarde', startYaw = 0, onBook = () => {}, onShelf = () => {}, onShelfTap = () => {}, onLost = () => {}, onDesk = null, onDoor = null }) {
   const renderer = new WebGLRenderer({ antialias: false, powerPreference: 'low-power' });
   const canvas = renderer.domElement;
   canvas.className = 'plab-canvas';
@@ -235,7 +241,29 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   // La cámara sale del sillón real: si lo mueves o lo giras en el editor, te sientas donde esté
   const seat = room.items.find((i) => i.id === 'sillon');
   const home = seat ? seatView(seat) : piso.mira === 'izq' ? { pos: new Vector3(8.6, EYE, 4.4), dir: new Vector3(-1, -TILT, 0), side: new Vector3(0, 0, -1) } : { pos: new Vector3(2.9, EYE, 8.6), dir: new Vector3(0, -TILT, -1), side: new Vector3(1, 0, 0) };
-  let yaw = 0;
+  // Un esencial puede estar en cualquier sitio: el giro llega hasta él, sea cual sea el reparto de la habitación
+  const headingTo = (point) => {
+    const to = point.clone().sub(home.pos);
+    const a = Math.atan2(home.dir.x, home.dir.z) - Math.atan2(to.x, to.z);
+    return Math.atan2(Math.sin(a), Math.cos(a));
+  };
+  const placeOf = (item) => {
+    if (item.pared === 'fondo') return new Vector3(item.a + 1, 1.5, 0.05);
+    if (item.pared === 'izq') return new Vector3(0.05, 1.5, item.a + 1);
+    const r = rectOf(item);
+    return new Vector3((r.x0 + r.x1) / 2, 1, (r.y0 + r.y1) / 2);
+  };
+  const yawRange = essentialItems(room).reduce(
+    ([low, high], item) => {
+      const a = Math.max(-YAW_REACH, Math.min(YAW_REACH, headingTo(placeOf(item))));
+      return [Math.min(low, a), Math.max(high, a)];
+    },
+    [-YAW_MAX, YAW_MAX],
+  );
+  const clampYaw = (value) => Math.max(yawRange[0], Math.min(yawRange[1], value));
+  let yaw = clampYaw(startYaw);
+  let zoomRow = null;
+  let veiled = [];
   let zoom = null; // { pos, target }: mirando una balda de cerca
   let pullRaf = 0;
   let frameHook = null;
@@ -799,7 +827,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       const to = (v.pared === 'fondo' ? new Vector3(s, z, 0) : new Vector3(0, z, s)).sub(home.pos);
       const a = Math.atan2(to.x, to.z) - Math.atan2(home.dir.x, home.dir.z);
       const delta = Math.atan2(Math.sin(a), Math.cos(a));
-      if (Math.abs(delta) < YAW_MAX + REACH_MARGIN) return true;
+      // `delta` va al revés que el giro: girar a la derecha lo acerca
+      if (-delta > yawRange[0] - REACH_MARGIN && -delta < yawRange[1] + REACH_MARGIN) return true;
     }
     return false;
   };
@@ -964,7 +993,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       camera.lookAt(zoom.target);
       return;
     }
-    camera.position.copy(home.pos).addScaledVector(home.side, yaw * 0.1);
+    // Los ojos se mueven lo justo: más allá del giro de siempre solo gira la mirada, y el exterior ya está comprobado desde ahí
+    camera.position.copy(home.pos).addScaledVector(home.side, Math.max(-YAW_MAX, Math.min(YAW_MAX, yaw)) * 0.1);
     const d = home.dir.clone().applyAxisAngle(new Vector3(0, 1, 0), -yaw);
     camera.lookAt(camera.position.clone().add(d));
   }
@@ -984,6 +1014,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     const t0 = performance.now();
     renderer.render(scene, camera);
     renderMs += performance.now() - t0;
+    if (renders === 0) performance.mark('piso-lab:primer-dibujo');
     renders += 1;
     frameHook?.();
   }
@@ -1006,7 +1037,23 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     camera.aspect = rect.width / rect.height;
     camera.fov = camera.aspect >= WIDE_ASPECT ? FOV : (2 * Math.atan(Math.tan((FOV * Math.PI) / 360) * (WIDE_ASPECT / camera.aspect)) * 180) / Math.PI;
     camera.updateProjectionMatrix();
+    if (zoomRow !== null && zoom) zoom = rowView(zoomRow);
     invalidate();
+  }
+
+  /**
+   * Lo que se puede usar bajo el dedo. Una lámpara o una planta por delante no quitan el toque; de lo que se puede usar, gana
+   * lo más cercano. Si el centro del dedo no da en nada, se mira a su alrededor.
+   */
+  function usableAt(x, y) {
+    const rect = canvas.getBoundingClientRect();
+    for (const [dx, dy] of [[0, 0], [FINGER, 0], [-FINGER, 0], [0, FINGER], [0, -FINGER]]) {
+      ray.setFromCamera(new Vector2(((x + dx - rect.left) / rect.width) * 2 - 1, -((y + dy - rect.top) / rect.height) * 2 + 1), camera);
+      const hits = ray.intersectObjects(meshes.filter((m) => m.visible), false);
+      const found = hits.find(({ object: { userData: u } }) => u.id === 'libro' || u.id === 'puerta-piso' || u.id === 'ordenador' || u.id === 'escritorio' || u.id === 'estanteria');
+      if (found) return found;
+    }
+    return null;
   }
 
   // Tocar y mirar. Un solo AbortController se lleva todos los oyentes al salir
@@ -1035,7 +1082,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       // Una vez que se ha movido, ya no es un toque aunque vuelva al mismo sitio
       if (Math.hypot(dx, e.clientY - press.y) > TAP_SLOP) press.moved = true;
       if (press.moved && !zoom) {
-        yaw = Math.max(-YAW_MAX, Math.min(YAW_MAX, press.yaw - dx * 0.004));
+        yaw = clampYaw(press.yaw - dx * 0.004);
         invalidate();
       }
     },
@@ -1059,11 +1106,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         onShelfTap();
         return;
       }
-      const rect = canvas.getBoundingClientRect();
-      ray.setFromCamera(new Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1), camera);
-      // Una lámpara o una planta por delante no quitan el toque a lo que se puede usar
-      const hits = ray.intersectObjects(meshes, false);
-      const found = hits.find(({ object: { userData: u } }) => u.id === 'libro' || u.id === 'puerta-piso' || u.id === 'ordenador' || u.id === 'escritorio' || u.id === 'estanteria');
+      const found = usableAt(e.clientX, e.clientY);
       const hit = found?.object.userData.id;
       if (hit === 'libro') onBook();
       else if (hit === 'puerta-piso') onDoor?.();
@@ -1077,7 +1120,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     (e) => {
       if (zoom || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
       e.preventDefault();
-      yaw = Math.max(-YAW_MAX, Math.min(YAW_MAX, yaw + (e.key === 'ArrowLeft' ? -0.08 : 0.08)));
+      yaw = clampYaw(yaw + (e.key === 'ArrowLeft' ? -0.08 : 0.08));
       invalidate();
     },
     on,
@@ -1159,6 +1202,67 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     aim();
     return view;
   }
+  /** La balda `row` entera en pantalla, sea cual sea su ancho: se aleja lo justo, sin salir de la habitación. */
+  function rowView(row) {
+    const view = ROW_VIEW.rows[row];
+    const target = shelfPoint(ROW_VIEW.x, ROW_VIEW.y, view.z);
+    const out = shelfPoint(1, 1, 0).sub(shelfPoint(1, 0, 0)).normalize();
+    const across = shelfPoint(1, 0, 0).sub(shelfPoint(0, 0, 0)).normalize();
+    const low = ROW_FLOOR[row];
+    const corners = [0, 2.16].flatMap((x) => [low, low + 1.02].map((z) => shelfPoint(x, 1, z)));
+    const rect = canvas.getBoundingClientRect();
+    const place = (dist) => {
+      const pos = target.clone().addScaledVector(out, dist).addScaledVector(across, dist * ROW_VIEW.side);
+      pos.y += view.up * (dist / ROW_VIEW.dist);
+      pos.x = Math.max(0.3, Math.min(ROOM.w - 0.3, pos.x));
+      pos.z = Math.max(0.3, Math.min(ROOM.d - 0.3, pos.z));
+      return pos;
+    };
+    const was = { pos: camera.position.clone(), q: camera.quaternion.clone() };
+    let pos = place(ROW_VIEW.dist);
+    for (let dist = ROW_VIEW.dist; dist <= 6; dist += 0.1) {
+      const next = place(dist);
+      camera.position.copy(next);
+      camera.lookAt(target);
+      camera.updateMatrixWorld();
+      pos = next;
+      const fits = corners.every((c) => {
+        const q = c.clone().project(camera);
+        const [x, y] = [((q.x + 1) / 2) * rect.width, ((1 - q.y) / 2) * rect.height];
+        return x >= ROW_MARGIN.side && x <= rect.width - ROW_MARGIN.side && y >= ROW_MARGIN.top && y <= rect.height - ROW_MARGIN.bottom;
+      });
+      if (fits) break;
+    }
+    camera.position.copy(was.pos);
+    camera.quaternion.copy(was.q);
+    camera.updateMatrixWorld();
+    return { pos, target };
+  }
+
+  /** Lo que se interpone entre los ojos y la balda se aparta mientras la miras; al volver, a su sitio. Solo se oculta, no se mueve. */
+  function clearSight(view, row) {
+    showVeiled();
+    const low = ROW_FLOOR[row];
+    const spots = [0.1, 1.08, 2.06].flatMap((x) => [low + 0.1, low + 0.9].map((z) => shelfPoint(x, 1, z)));
+    const veil = new Set();
+    const line = new Raycaster();
+    for (const spot of spots) {
+      const dir = spot.clone().sub(view.pos);
+      const far = dir.length();
+      line.set(view.pos, dir.normalize());
+      line.far = far;
+      for (const { object } of line.intersectObjects(meshes, false)) {
+        if (object.userData.id !== 'estanteria' && object.userData.id !== 'libro') veil.add(object);
+      }
+    }
+    veiled = [...veil];
+    for (const mesh of veiled) mesh.visible = false;
+  }
+  function showVeiled() {
+    for (const mesh of veiled) mesh.visible = true;
+    veiled = [];
+  }
+
   /** Lleva la cámara a `to` ({ pos, target }) o, con null, a su sitio en el sillón. Termina al llegar. */
   function fly(to, ms, instant = false) {
     cancelAnimationFrame(tween);
@@ -1236,12 +1340,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       if (shelf) {
         const seated = { pos: camera.position.clone(), target: camera.position.clone().add(camera.getWorldDirection(new Vector3()).multiplyScalar(4)) };
         const wasZoom = zoom;
-        for (const view of ROW_VIEW.rows) {
-          const target = shelfPoint(ROW_VIEW.x, ROW_VIEW.y, view.z);
-          const out2 = shelfPoint(1, 1, 0).sub(shelfPoint(1, 0, 0)).normalize();
-          const across = shelfPoint(1, 0, 0).sub(shelfPoint(0, 0, 0)).normalize();
-          const pos = target.clone().addScaledVector(out2, ROW_VIEW.dist).addScaledVector(across, ROW_VIEW.dist * ROW_VIEW.side);
-          pos.y += view.up;
+        for (const [row] of ROW_VIEW.rows.entries()) {
+          const { pos, target } = rowView(row);
           // Solo los tramos del recorrido en los que la ventana está en el encuadre
           for (let k = 0.05; k <= 1; k += 0.05) {
             zoom = { pos: seated.pos.clone().lerp(pos, k), target: seated.target.clone().lerp(target, k) };
@@ -1262,13 +1362,14 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       const on2 = row !== null;
       if (!shelf) return Promise.resolve();
       if (!on2 && !zoom) return Promise.resolve();
-      const view = ROW_VIEW.rows[on2 ? row : 2];
-      const target = shelfPoint(ROW_VIEW.x, ROW_VIEW.y, view.z);
-      const out = shelfPoint(1, 1, 0).sub(shelfPoint(1, 0, 0)).normalize();
-      const across = shelfPoint(1, 0, 0).sub(shelfPoint(0, 0, 0)).normalize();
-      const pos = target.clone().addScaledVector(out, ROW_VIEW.dist).addScaledVector(across, ROW_VIEW.dist * ROW_VIEW.side);
-      pos.y += view.up;
-      return fly(on2 ? { pos, target } : null, TWEEN_MS, instant);
+      zoomRow = on2 ? row : null;
+      if (!on2) {
+        showVeiled();
+        return fly(null, TWEEN_MS, instant);
+      }
+      const view = rowView(row);
+      clearSight(view, row);
+      return fly(view, TWEEN_MS, instant);
     },
     /**
      * Inclinarse sobre el libro antes de registrar y, con false, volver al encuadre del que saliste, con el mismo giro. Con
@@ -1284,6 +1385,24 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       }
       return zoom ? fly(null, LEAN_MS) : Promise.resolve();
     },
+    /** Lo mismo con el ordenador: se acerca hasta que llena la pantalla sin salirse de ella, y el giro se conserva. */
+    leanToDesk() {
+      const pc = room.items.find((i) => i.id === 'ordenador');
+      if (!pc || zoom || reduced()) return Promise.resolve();
+      const from = seatedView();
+      const target = placeOf(pc);
+      target.y = heightOf(room, pc) + 0.4;
+      const rect = canvas.getBoundingClientRect();
+      const halfWide = Math.tan((camera.fov * Math.PI) / 360) * (rect.width / rect.height);
+      // A esta distancia, el monitor (unos 0,8 m) ocupa algo más de la mitad del ancho
+      const near = 0.8 / (0.6 * 2 * halfWide);
+      const dist = from.pos.distanceTo(target);
+      const k = Math.max(0, Math.min(0.8, 1 - near / Math.max(dist, 0.01)));
+      return fly({ pos: from.pos.clone().lerp(target, k), target }, LEAN_MS);
+    },
+    /** El giro de ahora, para volver a él si se desmonta la habitación. */
+    yaw: () => yaw,
+    yawRange: () => [...yawRange],
     /** Dónde poner una indicación junto al libro (o, sin libro, sobre la mesa), en px del contenedor. */
     bookAnchor() {
       const table = readingTable(room) ?? room.items.find((i) => TABLES.has(i.id));
@@ -1351,15 +1470,58 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         return { id, left: x0, top: y0, width: x1 - x0, height: y1 - y0 };
       });
     },
+    /**
+     * Cuánto se ve de una pieza con la cámara de ahora: `inside`, la parte de su caja dentro de la pantalla; `clear`, de
+     * los puntos de ella que llegan a la pantalla, los que no tapa otra cosa; `by`, quién tapa el resto.
+     */
+    frameOf(what) {
+      aim();
+      camera.updateMatrixWorld();
+      const mine = meshes.filter(({ userData: u }) => u.id === what || (what === 'ordenador' && u.id === 'ordenador'));
+      if (!mine.length) return null;
+      const box = new Box3();
+      for (const m of mine) box.expandByObject(m);
+      const rect = canvas.getBoundingClientRect();
+      let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+      for (let i = 0; i < 8; i += 1) {
+        const q = new Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(camera);
+        const [x, y] = [((q.x + 1) / 2) * rect.width, ((1 - q.y) / 2) * rect.height];
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
+      const width = Math.max(0, Math.min(x1, rect.width) - Math.max(x0, 0));
+      const height = Math.max(0, Math.min(y1, rect.height) - Math.max(y0, 0));
+      const inside = ((width * height) / Math.max(1, (x1 - x0) * (y1 - y0)));
+      let seen = 0;
+      let free = 0;
+      const by = {};
+      for (let i = 0; i < 9; i += 1) {
+        for (let j = 0; j < 9; j += 1) {
+          const [x, y] = [x0 + ((x1 - x0) * (i + 0.5)) / 9, y0 + ((y1 - y0) * (j + 0.5)) / 9];
+          if (x < 0 || y < 0 || x > rect.width || y > rect.height) continue;
+          ray.setFromCamera(new Vector2((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1), camera);
+          const hits = ray.intersectObjects(meshes, false);
+          if (!hits.some(({ object }) => mine.includes(object))) continue;
+          seen += 1;
+          if (mine.includes(hits[0].object)) free += 1;
+          else by[hits[0].object.userData.id ?? 'otro'] = (by[hits[0].object.userData.id ?? 'otro'] ?? 0) + 1;
+        }
+      }
+      return { inside: Math.round(inside * 100) / 100, clear: seen ? Math.round((free / seen) * 100) / 100 : 0, by, box: [x0, y0, x1, y1].map(Math.round), screen: [Math.round(rect.width), Math.round(rect.height)] };
+    },
     /** Coloca la mirada en un giro exacto y dibuja ya: lo usan las comprobaciones de parpadeo. */
     lookTo(value) {
-      yaw = Math.max(-YAW_MAX, Math.min(YAW_MAX, value));
+      yaw = clampYaw(value);
       draw();
     },
     /** Giro sostenido para medir la fluidez: fotogramas por segundo y percentil 95 del tiempo de fotograma. */
-    measureYaw(ms = 3000) {
+    measureYaw(ms = 3000, { sync = false } = {}) {
       return new Promise((resolve) => {
         const frames = [];
+        const work = [];
+        const saved = yaw;
         const t0 = performance.now();
         let last = t0;
         const step = (now) => {
@@ -1367,14 +1529,19 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
           last = now;
           yaw = Math.sin((now - t0) / 700) * YAW_MAX;
           aim();
+          const before = performance.now();
           renderer.render(scene, camera);
+          // Sin esto la GPU trabaja aparte y el tiempo de fotograma no la incluye: leer un píxel obliga a esperarla
+          if (sync) renderer.getContext().readPixels(0, 0, 1, 1, renderer.getContext().RGBA, renderer.getContext().UNSIGNED_BYTE, new Uint8Array(4));
+          work.push(performance.now() - before);
           if (destroyed || now - t0 >= ms) {
             frames.shift();
             const sorted = [...frames].sort((a, b) => a - b);
             const total = frames.reduce((s, v) => s + v, 0);
-            yaw = 0;
+            yaw = saved;
             invalidate();
-            resolve({ fps: Math.round((frames.length * 10000) / total) / 10, p95ms: Math.round(sorted[Math.floor(sorted.length * 0.95)] * 10) / 10, frames: frames.length });
+            const at = (q) => Math.round(sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] * 10) / 10;
+            resolve({ fps: Math.round((frames.length * 10000) / total) / 10, p50ms: at(0.5), p95ms: at(0.95), p99ms: at(0.99), maxMs: at(1), over33: frames.filter((v) => v > 33.4).length, frames: frames.length, dibujoMs: Math.round((work.reduce((s, v) => s + v, 0) / work.length) * 10) / 10 });
           } else requestAnimationFrame(step);
         };
         requestAnimationFrame(step);

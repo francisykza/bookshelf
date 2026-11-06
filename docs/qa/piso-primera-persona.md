@@ -119,6 +119,88 @@ Inventario de funciones, posiciones y reglas en [piso-funciones.md](piso-funcion
 - **Hueco del menú:** en Chromium por software, un fondo totalmente opaco encima del lienzo dejaba un rectángulo invertido del color del fondo. El menú usa un fondo al 99 %. No se ha comprobado si pasa en un móvil.
 - **Comunidad y cuenta:** se abren desde el ordenador, pero sin nube en el piloto.
 
+## Usabilidad móvil y medición (6-11-2026)
+
+Todo en emulación: Chromium móvil a 390 × 844, CPU ×4 y WebGL por software, sobre la compilación local. **Ningún móvil físico.** La preview de Vercel pide sesión, así que no se ha medido allí. Script: `scripts/piso-lab-medidas.mjs`; vídeo: `scripts/piso-lab-video.mjs`; pruebas: `e2e/piso-usabilidad.spec.js`.
+
+### El indicador «Entrada»
+
+El número de la grabación (118541 ms) no era una entrada. El medidor guardaba el momento de tocar la puerta y volvía a restarlo cada vez que se montaba la habitación, y volver de Decorar la monta. Reproducido con la versión anterior: entrada real de 2221 ms, y tras 30 s y un paso por Decorar marcaba 34547 ms. No se puede saber qué se hizo exactamente en la grabación, pero el mecanismo da ese orden de magnitud. Con la página en segundo plano la medida tampoco valdría: ahora se marca como tal.
+
+Cada montaje tiene ahora su origen (`puerta`, `recarga`, `vuelta`) y solo `puerta` es «Entrada». Definiciones en `src/features/pisoLab/labTiming.js`:
+
+| Fase | Qué mide |
+| --- | --- |
+| Lectura de la biblioteca | Leer y preparar lo guardado, una vez, en el arranque de la página |
+| Hasta el portal | Del inicio de la página al portal montado |
+| Puerta | Del toque a que empieza el montaje (la animación del portal) |
+| Datos | Traer el código de la escena |
+| Escena | Construirla, con exterior y portadas |
+| Interactuar | De ahí a que un toque se atiende: temporizadores seguidos sin retraso. Funciona también en Safari, sin la API de tareas largas |
+
+### Entrada con 50 y 5.000 libros
+
+Mismas condiciones, perfil nuevo en cada repetición, 7 alternando. Mediana y extremos, en ms.
+
+| | 50 libros | 5.000 libros |
+| --- | --- | --- |
+| Lectura de la biblioteca | 4 (3–6) | 76 (73–94) |
+| Arranque hasta el portal | 1312 (1240–1483) | 2266 (2135–2425) |
+| Puerta | 647 (635–657) | 672 (670–678) |
+| Datos | 103 (96–109) | 99 (96–113) |
+| Escena | 954 (915–1016) | 949 (914–1036) |
+| Interactuar | 24 (21–33) | 25 (3–40) |
+| **Entrada, de la puerta a poder interactuar** | **1731 (1692–1784)** | **1750 (1699–1846)** |
+
+La entrada no crece con la biblioteca: la diferencia queda dentro del ruido. Lo que crece es el arranque, unos 950 ms, y solo 72 son leer: el resto es lo que la app calcula sobre los libros al arrancar. El perfil de la sección «Qué crece con la colección» apunta a `fold`, `normalizeText` y `hasPhrase`. No se ha tocado.
+
+### Giro y descanso
+
+| Giro, 5 s con 5.000 libros | CPU ×1 | CPU ×4 |
+| --- | --- | --- |
+| Fotogramas por segundo | 60 | 60 |
+| Tiempo de fotograma, mediana y percentil 95 | 16,7 y 16,8 ms | 16,7 y 16,7 ms |
+| Peor fotograma | 16,8 ms | 33,3 ms (uno, sin esperar a la GPU) |
+| Por encima de 33 ms | 0 | 0 |
+| Coste de dibujar, esperando a la GPU | 5,1 ms | 8,7 ms |
+
+26 llamadas de dibujo, 49 geometrías y 29 texturas. Dibuja la CPU por software: la GPU de un móvil no está medida, y la limitación de CPU no le afecta.
+
+| Dibujos en 5 s | |
+| --- | --- |
+| Quieto, ventana a la vista | 4 (el agua, a su paso lento) |
+| Quieto, sin ventana a la vista | 0 |
+| Tapado por el registro | 0 |
+| Página oculta | 0 |
+
+### Biblioteca de 5.000 libros, CPU ×4
+
+| Acción | Resultado |
+| --- | --- |
+| Abrir la biblioteca | 314 ms; 40 cargados |
+| Buscar fuera del bloque: n.º 4873, n.º 5000, n.º 2500 | 189, 84 y 130 ms; una fila, el ejemplar correcto |
+| Peor tecla escribiendo | 57 ms |
+| Filtros | Entre 95 y 194 ms |
+| Recorrer 3.399 resultados hasta el final | 17 filas como mucho; 12 imágenes como mucho; 704–724 nodos; memoria de JS de 29 a 25 MB; 330 portadas pedidas en todo el recorrido |
+| Desplazar sin parar | **15 fotogramas por segundo**: mediana 66,7 ms, percentil 95 83,4, peor 183,3 |
+| Abrir y cerrar una ficha | 396 y 683 ms; la búsqueda se conserva |
+| Abrir el registro | 502 ms (280 son el acercamiento) |
+| Guardar el registro | 1232 ms hasta cerrarse, con una **tarea larga de 647 ms**; la página pasa de 40 a 65 |
+
+Dos cosas por mirar: guardar bloquea el hilo principal, sin que se haya perfilado todavía por qué, y el desplazamiento va justo aquí, aunque con la página dibujada por software no se puede atribuir a la lista sin probarlo en un móvil. Los tiempos de acción incluyen lo que tarda Playwright en ver el resultado.
+
+### Qué ha cambiado
+
+- **Sillón:** el giro llega ahora hasta cada esencial esté donde esté (`yawRange`), hasta 2,6 rad; más allá queda el respaldo y se llega por el menú. Más allá de 0,6 rad solo gira la mirada: los ojos no se mueven, y el exterior sigue comprobado desde ellos. Antes, en el 2.º B el ordenador no se podía ver.
+- **Estantería:** cada balda se aleja lo justo para caber a lo ancho, sin salir de la habitación, y se reencuadra al girar el móvil. Antes, en la balda de abajo la estantería se salía por los dos lados a 320 y 390 px.
+- **Ordenador:** al tocarlo la cámara se acerca y se ve entero, también a 320 px.
+- **Volver:** el giro se conserva al cerrar registro, ordenador, ficha y Decorar; el escritorio recuerda su desplazamiento y el último botón.
+- **Tocar y arrastrar:** ya se distinguían; ahora está comprobado con eventos táctiles: arrastrar desde el libro solo mira, ir y volver no es un toque, mantener no hace nada y un temblor de 5 px sí es un toque. Si el centro del dedo no da en nada, se mira a 14 px alrededor.
+- **Accesos:** la estantería reserva 2 celdas delante en vez de 1. Lo que se interpone entre los ojos y la balda se oculta mientras la miras; no se mueve.
+- **Superpuestos, en la habitación:** la decoración no quita el toque y, entre dos muebles útiles, gana el más cercano.
+- **Superpuestos, en el decorador:** el primer toque avisa de lo que hay detrás y el segundo lo elige, y se puede arrastrar aunque siga tapado (`stackTaps`, solo en el piloto).
+- **Ordenador por dentro:** Calendario, Mi diario y Estadísticas delante; las otras 14 funciones en Mi lectura, Mi progreso, Mis libros y Fuera del piso.
+
 ## Pendiente y limitaciones
 
 - **Sin vista propia** (se avisa y lleva a la vista de siempre): compañeros místicos con animación y copias con acabado.
@@ -128,7 +210,7 @@ Inventario de funciones, posiciones y reglas en [piso-funciones.md](piso-funcion
 - **Libro de la mesa**: tocarlo abre el registro de ese ejemplar tras un acercamiento de 280 ms (ninguno con movimiento reducido, teclado o lector de pantalla). Sin lectura, la mesa queda vacía y el botón lleva a la estantería, o a Mi biblioteca si no hay libros. Sin portada, tela con el título repartido. Las guías (`showGuides`) se activan en el rincón: el piloto no tiene su interruptor.
 - **Cámara**: sale del sillón real, sentada y mirando hacia donde mira el sillón. Un piso sin sillón usa una vista fija. Si el sillón queda de cara a una pared, se verá la pared.
 - **Horizonte por planta**: valores artísticos, no físicos (`PLANTAS` y `ALTURAS`): sube un poco con la planta y los tejados bajan. Solo se ha comprobado a ojo el 1.º A; ningún piso de las plantas 2 y 3 del laboratorio da al hotel.
-- **Ventana lateral del 1.º A**: no se alcanza desde el sillón y su exterior no se pinta. Si algún día se puede girar hasta ella, habrá que pintarlo.
+- **Ventana lateral del 1.º A**: su exterior solo se pinta si el giro llega hasta ella, que ahora depende de dónde estén los esenciales.
 - **Materiales**: la lámpara de pie, las paredes, el sillón, la estantería, la ventana y la mesa baja y la mesa van dibujados en píxel; la mesilla lleva veta y el suelo es el del decorador. Los demás muebles y la alfombra siguen siendo cajas con luz suave, y el brillo de la lámpara en la estantería también.
 - **Cubierta**: se pide al tocar la puerta y el piso la espera hasta 2,2 s; si tarda más, aparece primero la tela con el título.
 - **Hora**: se entra al atardecer, la hora fija de la fachada, también en el editor. La fachada no sigue el reloj, y el interior tampoco.

@@ -7,7 +7,7 @@ import { catalogItem } from '../edificio/catalog';
 
 /** `depth`: las celdas libres que necesita delante, según hacia dónde mire. `exempt`: lo que sí puede estar ahí. */
 export const SPECS = {
-  estanteria: { nombre: 'Estantería', ids: ['estanteria'], depth: 1 },
+  estanteria: { nombre: 'Estantería', ids: ['estanteria'], depth: 2 },
   mesa: { nombre: 'Mesa de lectura', ids: ['mesa-baja', 'mesa'], depth: 1, exempt: ['sillon'] },
   escritorio: { nombre: 'Escritorio', ids: ['escritorio'], depth: 1 },
   ordenador: { nombre: 'Ordenador', ids: ['ordenador'], depth: 0 },

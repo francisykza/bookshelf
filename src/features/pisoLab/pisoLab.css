@@ -606,6 +606,32 @@
   text-align: left;
 }
 
+/* Lo que más se usa, delante y más grande; a 320 px siguen cabiendo los tres */
+.plab-desktop__main ul {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.plab-desktop .plab-desktop__main button {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 104px;
+  padding: 8px 4px;
+  border: 2px solid #3a2415;
+  text-align: center;
+}
+
+.plab-desktop__main strong {
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
+.plab-desktop__main small {
+  color: #6b5237;
+  font-size: 0.68rem;
+  font-weight: 400;
+}
+
 /* La barra no corta la habitación: los botones flotan sobre ella, en sus esquinas */
 .panel--edificio:has(.ed-inside) .plab-bar {
   position: absolute;

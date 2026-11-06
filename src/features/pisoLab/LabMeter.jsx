@@ -1,19 +1,6 @@
 // Medidas en el propio móvil, sin consola ni ordenador conectado. Solo aparece con `&medir=1` en la dirección.
 import { useEffect, useState } from 'react';
-
-const marks = { pressAt: null, entryMs: null };
-
-/** Se ha tocado la puerta. */
-export function markPress() {
-  marks.pressAt = performance.now();
-  marks.entryMs = null;
-}
-
-/** El interior ya se ve. Si se ha recargado dentro del piso no hay puerta: cuenta desde que empezó a cargar la página. */
-export function markReady() {
-  marks.entryMs = Math.round(performance.now() - (marks.pressAt ?? 0));
-  if (typeof window !== 'undefined') window.__pisoLabEntrada = marks.entryMs;
-}
+import { timingLines } from './labTiming';
 
 export const wantsMeter = (search) => new URLSearchParams(search).get('medir') === '1';
 
@@ -48,9 +35,9 @@ export function LabMeter({ apiRef, total, limit, placed }) {
   const heap = performance.memory?.usedJSHeapSize;
   const lines = [
     `Biblioteca: ${total} libros; en la habitación: ${placed} de ${limit} como mucho`,
-    `Entrada: ${marks.entryMs ?? '–'} ms`,
+    ...timingLines(),
     `Portadas de prueba pedidas: ${coversAsked()}`,
-    `Giro: ${yaw ? `${yaw.fps} FPS, percentil 95 de ${yaw.p95ms} ms, ${yaw.frames} fotogramas` : 'sin medir'}`,
+    `Giro: ${yaw ? `${yaw.fps} FPS; fotograma: mediana ${yaw.p50ms} ms, percentil 95 ${yaw.p95ms} ms, peor ${yaw.maxMs} ms; ${yaw.frames} fotogramas` : 'sin medir'}`,
     `Redibujados: ${debug?.exterior.renders ?? '–'}`,
     `Geometrías y texturas: ${debug ? `${debug.memory.geometries} y ${debug.memory.textures}` : '–'}`,
     `Guardado: ${storageUse()}`,

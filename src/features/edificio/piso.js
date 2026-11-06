@@ -85,13 +85,17 @@ const nameOf = (item) => catalogItem(item.id).nombre;
  * `placeId` (1.76): un mueble recién sacado de un sobre; el piso se abre decorando con él ya puesto y elegido, para
  * arrastrarlo a su sitio. «Guardar» lo devuelve al inventario y el piso queda como estaba.
  */
-export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, placeAcabado = null, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null, companion = null, onCompanionChange = () => {}, onDressing = () => {}, placeId = null } = {}) {
+/** Lo que se mueve el dedo, en px del dibujo, y sigue siendo el mismo punto de la pila de muebles. */
+const STACK_SLOP = 6;
+
+export function mountPiso(container, { room: initial, editable = false, evening = false, muted = true, label = 'Piso', inside = false, placeAcabado = null, decorate = false, inventory = null, avatar = null, prendas = null, missions = null, onChange = () => {}, onAction = null, onAvatarChange = () => {}, onEvent = () => {}, likes = null, onLike = null, companion = null, onCompanionChange = () => {}, onDressing = () => {}, placeId = null, stackTaps = false } = {}) {
   const sfx = createSfx({ muted });
   const renderer = createRoomRenderer();
   let room = initial;
   // Copias de cada mueble (1.66, §66); null: todo libre (sin la migración del inventario, o en el prototipo)
   let inv = inventory;
   let selected = null; // uid del objeto elegido
+  let stack = null; // Los toques seguidos en el mismo punto: { a, peeled }
   let drag = null; // { uid, pointerId, x0, y0, armed, timer, moved, grab, preview: { room, item, ok, reason, con } }
   let fresh = null; // mueble que llega de la balda: { id, pointerId, x0, y0, moved, base: { room, item }, preview, over }
   let isEvening = evening;
@@ -1148,7 +1152,9 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (e.button !== undefined && e.button !== 0) return;
     if (dressing) return;
     const a = toArt(e);
-    const uid = renderer.pick(a.x, a.y);
+    let uid = renderer.pick(a.x, a.y);
+    // Volver a tocar en el mismo punto sigue con lo de detrás, aunque por delante haya otra cosa
+    if (stackTaps && selected && stack && Math.hypot(a.x - stack.a.x, a.y - stack.a.y) <= STACK_SLOP && stack.peeled.has(uid)) uid = selected;
     // Tocar a tu personaje abre su armario en la balda
     if (uid === ACTOR_ID) {
       if (!editable) return say('Vive aquí.');
@@ -1205,7 +1211,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       return;
     }
     const item = room.items.find((i) => i.uid === selected);
-    const d = { uid: selected, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, armed: held, held, timer: 0, moved: false, grab: grabOf(item, a), preview: null };
+    const d = { uid: selected, at: a, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, armed: held, held, timer: 0, moved: false, grab: grabOf(item, a), preview: null };
     // Sin elegir, se levanta al rato de mantenerlo pulsado: entonces se ve en la mano, en su sitio, y ya se puede arrastrar
     if (!held) d.timer = setTimeout(() => {
       if (drag !== d) return;
@@ -1218,6 +1224,33 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     }, HOLD_MS);
     drag = d;
     canvas.setPointerCapture?.(e.pointerId);
+  }
+
+  // Muebles superpuestos: lo de delante no deja tocar lo de detrás. Se dibuja sin lo ya elegido para ver qué hay debajo de
+  // ese punto exacto, y otro toque en el mismo sitio lo elige; al acabarse, vuelve al de delante.
+  function underAt(a, peeled) {
+    renderer.bake(room, [...peeled].flatMap((uid) => group(uid)));
+    const uid = renderer.pick(a.x, a.y);
+    rebake();
+    return uid && uid !== ACTOR_ID ? uid : 0;
+  }
+  function stackTap(d) {
+    const same = stack && Math.hypot(d.at.x - stack.a.x, d.at.y - stack.a.y) <= STACK_SLOP;
+    if (!d.held || !same) stack = { a: d.at, peeled: new Set() };
+    stack.peeled.add(d.uid);
+    const next = underAt(stack.a, stack.peeled);
+    if (!d.held) {
+      if (next) say(`${nameOf(room.items.find((i) => i.uid === d.uid))}. Detrás hay ${nameOf(room.items.find((i) => i.uid === next)).toLowerCase()}: otro toque aquí lo elige.`);
+      return;
+    }
+    if (next) {
+      select(next);
+      return;
+    }
+    // Se ha acabado la pila: otra vez el de delante
+    const first = [...stack.peeled][0];
+    stack = { a: d.at, peeled: new Set() };
+    if (first && first !== d.uid) select(first);
   }
 
   function endDrag() {
@@ -1254,6 +1287,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (!d.moved) {
       // Levantado y soltado sin moverlo: se queda donde estaba
       if (d.armed) requestDraw();
+      if (stackTaps) stackTap(d);
       return;
     }
     const item = room.items.find((i) => i.uid === d.uid);
@@ -1515,7 +1549,24 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   }
   scheduleWander();
 
+  // Solo para las pruebas: un punto del dibujo donde `top` tapa a `under` (o, sin `under`, uno de `top`)
+  const stackProbe = (top, under) => {
+    const uidOf = (id) => room.items.find((it) => it.id === id)?.uid;
+    const a = uidOf(top);
+    const b = under && uidOf(under);
+    const points = [];
+    for (let y = 0; y < canvas.height; y += 2) for (let x = 0; x < canvas.width; x += 2) if (renderer.pick(x, y) === a) points.push({ x, y });
+    let found = points[Math.floor(points.length / 2)] ?? null;
+    if (b) {
+      renderer.bake(room, group(a));
+      found = points.find((q) => renderer.pick(q.x, q.y) === b) ?? null;
+      rebake();
+    }
+    return found && { ...found, w: canvas.width, h: canvas.height };
+  };
+
   return {
+    ...(import.meta.env.DEV ? { stackProbe, placed: (id) => room.items.find((it) => it.id === id) } : {}),
     /** Elige un objeto desde fuera, como si se hubiera tocado. */
     selectItem(uid) {
       if (!decorating) setDecorating(true);

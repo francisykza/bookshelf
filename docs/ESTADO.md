@@ -210,6 +210,14 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-06 · cuenta principal · usabilidad móvil y medición del piloto (subido a la rama, «Sí, sube la rama»)
+- Solo en la rama del piloto; `main` y producción sin tocar. Resultados y definiciones en `docs/qa/piso-primera-persona.md`, «Usabilidad móvil y medición».
+- **«Entrada» de 118541 ms:** era el medidor, que restaba la vieja pulsación de la puerta en cada montaje (por ejemplo, al volver de Decorar). Reproducido y corregido; ahora hay fases y origen (`labTiming.js`).
+- Encuadres a 320, 360 y 390 px, giro hasta cada esencial, posición recuperada, acceso a la estantería de 2 celdas, segundo toque para lo de detrás en el decorador y escritorio reorganizado.
+- `src/state/useLibrary.jsx` lleva dos `performance.mark` y `edificio/piso.js` la opción `stackTaps`, apagada fuera del piloto. A revisar si esto se integra.
+- **Por mirar:** guardar el registro con 5.000 libros bloquea 647 ms con CPU ×4; el arranque crece 950 ms; desplazar la lista va a 15 FPS en emulación.
+- Comprobado en emulación; **ningún móvil físico** ni la preview, que pide sesión.
+
 ### 2026-11-06 · cuenta principal · esenciales movibles y barra integrada (subido a la rama, «Sí, sube la rama»)
 - **Decisión de Francisco:** los esenciales siempre están, pero se pueden mover como el sillón para que cada cual reparta su habitación. Sustituye a las posiciones fijas de la entrada siguiente. Reglas en `docs/qa/piso-funciones.md`.
 - Solo no se puede guardar el último de su clase. El paso reservado va con el mueble y depende de hacia dónde mira. El escritorio se lleva el ordenador al moverlo y girarlo (`rotateItem` lo permite solo si `room.guard` lo dice; el producto no cambia).

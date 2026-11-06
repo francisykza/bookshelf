@@ -14,7 +14,8 @@ import { mountFacade } from '../edificio/facadeView';
 import { mountPiso } from '../edificio/piso';
 import { installPixelVars, pixelIconSmallSrc } from '../edificio/pixelUi';
 import { preloadCover } from './coverPreload';
-import { LabMeter, markPress, markReady, wantsMeter } from './LabMeter';
+import { LabMeter, wantsMeter } from './LabMeter';
+import { beginMount, cancelMount, markCode, markInteractive, markPortal, markPress, markScene } from './labTiming';
 import './pisoLab.css';
 import { PisoLibrary, emptyLibraryMemory } from './PisoLibrary';
 import { roomLimit, toggleExhibit } from './roomSelection';
@@ -36,13 +37,14 @@ function Portal({ onOpen, onPress, doorRef }) {
     const pressed = (e) => {
       const label = e.target.closest?.('button')?.getAttribute('aria-label');
       const piso = portalFlats().find((flat) => doorName(flat.piso) === label)?.piso;
-      if (piso) onPress(piso);
+      if (piso) onPress(piso, e.type === 'click');
     };
     ref.current.addEventListener('pointerdown', pressed, { signal: stop.signal, capture: true });
     ref.current.addEventListener('click', pressed, { signal: stop.signal, capture: true });
     const view = mountFacade(ref.current, {
       flats: portalFlats().map(({ piso, room }) => ({ puerta: piso.puerta, room, mine: piso.propio, name: piso.nombre, label: doorName(piso), onOpen: () => onOpen(piso.id) })),
     });
+    markPortal();
     // Al volver, el foco a la puerta de la que vienes
     const piso = pisoById(doorRef.current);
     if (piso) ref.current.querySelector(`button[aria-label="${doorName(piso)}"]`)?.focus({ preventScroll: true });
@@ -60,7 +62,7 @@ function Portal({ onOpen, onPress, doorRef }) {
 function VistaActual({ piso, room, editable, evening, onChange, onView }) {
   const ref = useRef(null);
   useEffect(() => {
-    const view = mountPiso(ref.current, { room, editable, decorate: editable, inside: true, evening, label: `Piso ${doorLabel(piso)}`, onChange });
+    const view = mountPiso(ref.current, { room, editable, decorate: editable, inside: true, evening, label: `Piso ${doorLabel(piso)}`, onChange, stackTaps: true });
     if (import.meta.env.DEV) window.__edificioPiso = view;
     onView?.(view);
     return () => {
@@ -110,7 +112,7 @@ function Tool({ icon, name, short, onClick }) {
   );
 }
 
-function Interior({ piso, room, hora, reading, balda, covered, logging, listing, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor }) {
+function Interior({ piso, room, hora, reading, balda, covered, leaning, listing, yawMemory, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor }) {
   const [picked, setPicked] = useState(null);
   const host = useRef(null);
   const api = useRef(null);
@@ -131,17 +133,20 @@ function Interior({ piso, room, hora, reading, balda, covered, logging, listing,
   useEffect(() => {
     let gone = false;
     let view = null;
+    beginMount();
     import('./interior3d')
-      .then(({ mountInterior }) =>
-        mountInterior(host.current, { room, piso, ventanas: ventanasDe(piso, room), book: tableData(reading), shelfBooks: shelfScene(shelfBooks), hora, onBook: () => handlers.current.onBook(), onShelf: (row) => handlers.current.onShelf(row), onShelfTap: () => handlers.current.onShelfTap(), onLost: () => handlers.current.onLost(), onDesk: () => handlers.current.onDesk?.(), onDoor: () => handlers.current.onDoor?.() }),
-      )
+      .then(({ mountInterior }) => {
+        markCode();
+        return mountInterior(host.current, { room, piso, ventanas: ventanasDe(piso, room), book: tableData(reading), shelfBooks: shelfScene(shelfBooks), hora, startYaw: yawMemory.current, onBook: () => handlers.current.onBook(), onShelf: (row) => handlers.current.onShelf(row), onShelfTap: () => handlers.current.onShelfTap(), onLost: () => handlers.current.onLost(), onDesk: () => handlers.current.onDesk?.(), onDoor: () => handlers.current.onDoor?.() });
+      })
       .then((v) => {
         if (gone) return v?.destroy();
         view = v;
         api.current = v;
         onApi(v);
-        markReady();
+        markScene();
         setReady(true);
+        markInteractive();
         return undefined;
       })
       .catch((error) => {
@@ -150,6 +155,8 @@ function Interior({ piso, room, hora, reading, balda, covered, logging, listing,
       });
     return () => {
       gone = true;
+      cancelMount();
+      if (view) yawMemory.current = view.yaw();
       view?.destroy();
       api.current = null;
       onApi(null);
@@ -186,9 +193,9 @@ function Interior({ piso, room, hora, reading, balda, covered, logging, listing,
 
   // Al guardar o cancelar el registro, de vuelta al encuadre del que saliste
   useEffect(() => {
-    if (ready && !logging && balda === null) api.current?.leanToBook(false);
+    if (ready && !leaning && balda === null) api.current?.leanToBook(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logging, ready]);
+  }, [leaning, ready]);
 
   // La indicación de las guías sigue al libro al girar, sin pasar por React
   const hintRef = useRef(null);
@@ -351,6 +358,21 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
       if (!gone.current) onRegister();
     });
   };
+  // Tocar el ordenador: la cámara se acerca y se abre su pantalla. El mismo seguro que el registro
+  const openDesk = () => {
+    if (opening.current) return;
+    if (balda !== null || !apiRef.current) {
+      onSelect('ordenador');
+      return;
+    }
+    opening.current = true;
+    apiRef.current.leanToDesk().then(() => {
+      opening.current = false;
+      if (!gone.current) onSelect('ordenador');
+    });
+  };
+  // Hacia dónde mirabas: se conserva aunque Decorar desmonte la habitación
+  const yawMemory = useRef(0);
   const hint = !editable || balda !== null || overlay || !settings.showGuides ? null : reading ? 'Toca para registrar' : 'Elige una lectura';
 
   // Guardado: como en el edificio, poco después de cada cambio y siempre al salir
@@ -431,7 +453,8 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
             reading={reading}
             balda={balda}
             covered={listing || overlay}
-            logging={select === 'registro'}
+            leaning={select === 'registro' || /^(?:ordenador|abrir:)/.test(select ?? '')}
+            yawMemory={yawMemory}
             listing={listing}
             hint={hint}
             shelfBooks={shelfBooks}
@@ -439,7 +462,7 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
             onBook={openLog}
             onShelf={(row) => onSelect(`balda:${row}`)}
             onOpenBook={onOpenBook}
-            onDesk={editable ? () => onSelect('ordenador') : null}
+            onDesk={editable ? openDesk : null}
             onDoor={onBack}
             onLost={() => setNoGpu(true)}
           />
@@ -504,8 +527,8 @@ export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose
   const piso = pisoById(pisoId);
   const { state } = useLibrary();
   // Lo que hace falta al otro lado de la puerta empieza a llegar al tocarla
-  const prepare = (door) => {
-    markPress();
+  const prepare = (door, repeat) => {
+    markPress({ repeat });
     import('./interior3d');
     if (door.propio) preloadCover(currentBook(state.books, state.settings)?.cover);
   };

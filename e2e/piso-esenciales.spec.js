@@ -43,7 +43,7 @@ async function tap(page, what, yaw) {
   await page.mouse.click(at.x, at.y);
 }
 const desktop = (page) => page.getByRole('region', { name: 'Mi lectura' });
-const icon = (page, name) => page.locator('.plab-desktop').getByRole('button', { name, exact: true });
+const icon = (page, name) => page.locator('.plab-desktop').getByRole('button', { name: new RegExp(`^${name}`) });
 
 test('recorrido: entrar, biblioteca, registrar, calendario, diario y salir al portal', async ({ page }, info) => {
   const external = [];
