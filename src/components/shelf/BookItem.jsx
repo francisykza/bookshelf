@@ -81,10 +81,11 @@ function scrollParent(el) {
  * falla, la cubierta tipográfica. Se pide cuando está a menos de una pantalla de su contenedor con desplazamiento (las
  * visibles primero; nunca todas las de la biblioteca al entrar), y una sola vez por URL.
  */
-export function Cover({ book, className = '', onLoaded }) {
+export function Cover({ book, className = '', onLoaded, eager = false }) {
   const src = book.cover || '';
   const [status, setStatus] = useState(() => (src ? (coverStatus.get(src) ?? 'loading') : 'none'));
-  const [near, setNear] = useState(() => coverStatus.has(src));
+  // `eager`: quien la monta ya sabe que está cerca (una lista virtual) y se ahorra buscar su contenedor, que obliga a calcular estilos
+  const [near, setNear] = useState(() => eager || coverStatus.has(src));
   const waitRef = useRef(null);
   useEffect(() => {
     const el = waitRef.current;

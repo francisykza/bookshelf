@@ -201,6 +201,96 @@ Dos cosas por mirar: guardar bloquea el hilo principal, sin que se haya perfilad
 - **Superpuestos, en el decorador:** el primer toque avisa de lo que hay detrás y el segundo lo elige, y se puede arrastrar aunque siga tapado (`stackTaps`, solo en el piloto).
 - **Ordenador por dentro:** Calendario, Mi diario y Estadísticas delante; las otras 14 funciones en Mi lectura, Mi progreso, Mis libros y Fuera del piso.
 
+## Pasada de rendimiento: guardar, desplazar y arrancar (6-11-2026)
+
+Todo en emulación: Chromium móvil a 390 × 844, 2 ppp, CPU ×4 y WebGL por software, sobre la versión compilada, 5.000 libros sintéticos y perfil nuevo en cada repetición. **Ningún móvil físico ni la preview.** La limitación de CPU no alcanza a la GPU. Scripts: `scripts/piso-lab-rendimiento.mjs` y `scripts/piso-lab-portadas-reales.mjs`; compilaciones y datos en `qa-report/rend/`, sin seguimiento.
+
+### Antes y después
+
+Mismo script y mismos datos, una compilación detrás de otra, 5 repeticiones. Mediana y extremos, en ms salvo donde se indica.
+
+| | Antes | Después |
+| --- | --- | --- |
+| **Guardar, tiempo total**, 1.er registro | 758 (699–784) | 301 (210–349) |
+| Guardar, tiempo total, 2.º registro | 920 (695–998) | 268 (218–283) |
+| **Tarea bloqueante más larga**, 1.er registro | 483 (442–506) | 90 (67–118) |
+| Tarea más larga, 2.º registro | 670 (443–736) | 92 (63–96) |
+| Tareas de más de 50 ms al guardar | 3 | 2 (1–2) |
+| **Desplazar, 40 px por fotograma**, FPS | 31,3 (30,7–31,7) | 60 (60–60) |
+| Fotogramas del peor segundo | 28 (25–28) | 60 (60–60) |
+| Fotograma, percentil 95 | 50 | 16,7 |
+| Filas e imágenes montadas como mucho | 17 y 9 | 17 y 9 |
+| **Arranque hasta el portal, 5.000 libros** | 1790 (1752–1862) | 1210 (1201–1304) |
+| Arranque hasta el portal, 50 libros | 1109 (996–1138) | 1079 (1054–1160) |
+| Lo que crece de 50 a 5.000 | 681 | 131 |
+| Tarea más larga del arranque, 5.000 libros | 376 | 283 |
+| Tareas de más de 50 ms del arranque, 5.000 libros | 7 | 5 |
+
+El ordenador tenía poca carga en esta tanda. En tandas anteriores, con más carga y antes de los últimos ajustes: desplazar 15,9–17,3 FPS antes y 41,1–42,4 después, peor segundo 13–14 y 36–39. Con traza activa, 34,7 FPS. **Los 60 FPS son el techo de esta tanda, no lo esperable en un móvil.** La comparación vale; el valor absoluto, no.
+
+### Guardar
+
+Partiendo del perfil anterior, con una tarea principal de 511 ms:
+
+| Parte | Antes | Qué era | Ahora |
+| --- | --- | --- | --- |
+| Actualizar el estado | Muy poco | El reducer solo copia el libro que cambia | Igual |
+| Cálculos derivados | 394 ms | `figureForBook` en un efecto de `ShelfView`, siempre montada, sobre los 5.000 libros y **con las figuras ocultas** | No se ejecuta si `FIGURES_ENABLED` es falso; al reactivarlas se recalcula |
+| Derivados de la biblioteca cerrada | ~20 ms | Ordenar y agrupar sin pintar nada | Esperan a que se abra |
+| Serialización | 60 + 59 ms | `JSON.stringify` del estado entero, dos veces | Unos 28 ms: texto por libro en caché (`serialize.js`), con salida idéntica y prueba |
+| Persistencia | 55 ms | `setItem` de 2,8 MB, más una segunda escritura | Una sola, unos 42 ms |
+| Sonido | 44–75 ms | Crear el contexto de audio, solo la primera vez | Igual |
+| Renderizado | El resto | Volver a dibujar la habitación | Va en otra tarea, separada de la escritura |
+
+**El objetivo de reducir las tareas de más de 50 ms se cumple solo en parte:** quedan 1 o 2, de entre 51 y 118 ms. `setItem` de 2,8 MB es síncrono y tiene que acabar antes de confirmar; bajarlo pide cambiar el formato de almacenamiento (por ejemplo, libros por separado), lo que afecta a toda la app, y no se ha tocado. La caché cuesta unos 8–10 MB más de memoria de JS con 5.000 libros.
+
+Integridad, en `e2e/piso-rendimiento.spec.js`: recarga justo al cerrarse, doble toque, tres registros seguidos con Deshacer, y fallo de escritura. Si `setItem` falla, el registro sigue abierto con el aviso y lo escrito, sin «Deshacer» ni progreso, lo guardado no cambia y reintentar entra una sola vez. `persistNow` siempre escribe de verdad; un estado solo cuenta como escrito si la escritura ha funcionado.
+
+### Desplazar
+
+- **La causa: una regla de CSS sin relación con la lista.** `.bed-pages__page:has(.bed-pages__action) > :not(.bed-pages__action)`, del libro de la cama, hacía recalcular toda la página con cada fila que entraba o salía: de unos 18.000 elementos a unos 970 en 2 s, y de 1.200 a 130 ms de estilos. Ahora es una clase. Una primera bisección culpaba a otra regla, la de `.book-sheet`; aislada en una página nueva no cambiaba nada, y se ha dejado como estaba. El mecanismo interno del navegador no está averiguado, y Safari puede comportarse distinto.
+- Filas con `memo`: solo se dibujan las que entran y salen.
+- Las portadas de la lista ya no buscan su contenedor con `getComputedStyle`, que forzaba estilos (206 ms en 6 s). Ya están acotadas por la lista.
+- Moviendo la lista a más de 1 px/ms no se piden portadas; se piden al frenar.
+- Sin cambios: búsqueda sobre toda la colección, filtros, posición al volver de una ficha y límites de filas e imágenes (`e2e/piso-lab-grande.spec.js`).
+
+### Arrancar
+
+Con 5.000 libros, lo que crecía en el perfil de partida:
+
+| Trabajo | Coste | ¿Hace falta para el portal? | Ahora |
+| --- | --- | --- | --- |
+| Emparejar figuras | 429 ms | No | Apagado mientras estén ocultas |
+| Leer y preparar lo guardado | 60–70 ms | Sí: hay un solo estado para toda la app | Igual |
+| Render de más, con los derivados de la biblioteca cerrada | ~115 ms | No | Los derivados, al abrirla |
+| Referencia para la nube | 46 ms | No | Solo si hay sesión |
+| Reescribir lo cargado | ~110 ms | No | En reposo, a trozos, y solo si cambia |
+
+Lo que no depende de los libros es lo que más pesa: la fachada dibujada, unos 295 ms (`getImageData` 240). Hace falta para ver el portal y no se ha tocado.
+
+### Portadas reales
+
+70 portadas reales de Open Library (36 ISBN, en español e inglés) en una mezcla de 126 archivos: tal cual, JPEG de 1600 y 3000 px, PNG de 900 px y WebP. Mediana 29 kB, máximo 3,2 MB. Red simulada de 80 ms + 3 Mbit/s; las URL que fallan siguen fallando. Las imágenes no están en el repositorio. 3 repeticiones.
+
+| | Antes | Después |
+| --- | --- | --- |
+| Rápido (40 px), FPS y peor segundo | 31,7 y 28 | 60 y 60 |
+| Rápido, portadas y datos pedidos en 6 s | 125, 27,2 MB | 43, 9,8 MB |
+| Despacio (8 px), FPS y peor segundo | 55,2 y 51 | 60 y 60 |
+| Despacio, portadas y datos pedidos en 6 s | 61, 12,6 MB | 65, 12,7 MB |
+| Filas e imágenes montadas como mucho | 17 y 10 | 17 y 10 |
+| Tareas de más de 50 ms | 0 | 0 |
+| Peso descomprimido de lo montado, como mucho | 76 MB | 75 MB |
+
+**Queda sin resolver:** diez imágenes montadas pueden sumar 75 MB descomprimidas si las portadas son enormes, aunque se muestren a 42 × 63. El límite cuenta imágenes, no su peso, y sin miniaturas en un servidor no se puede reducir desde aquí. Es lo primero que mirar en el iPhone.
+
+### Pruebas
+
+- Vitest: `src/features/pisoLab src/features/edificio src/domain src/state`, 461 de 461, con `src/state/__tests__/serialize.test.js`.
+- `e2e/piso-*` en Chromium y WebKit: 130 pasan, 2 omitidas y 2 fallan en WebKit (`piso-esenciales:245`, `piso-lab:817`). Son intermitentes y **también fallan en 9461907**, 1 de cada 4 repeticiones.
+- Fallan igual en 9461907, sin relación con esto: `e2e/v128:422`, `v128:478`, `v159:139` y los 4 casos de `e2e-community/v158`.
+- **Sin comprobar:** la sincronización con una sesión de nube. `snapshot` usa ahora `serializeState`, de salida idéntica, y su referencia se calcula al hacer falta, pero ninguna prueba que pase recorre ese camino.
+
 ## Pendiente y limitaciones
 
 - **Sin vista propia** (se avisa y lleva a la vista de siempre): compañeros místicos con animación y copias con acabado.

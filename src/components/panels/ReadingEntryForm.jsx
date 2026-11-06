@@ -114,9 +114,9 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
     // Progreso, sesión y estado se guardan juntos en una sola escritura; si falla, se deshace en memoria (no
     // se muestra como terminada) y el formulario conserva sus datos para reintentar con el mismo id
     setTimeout(() => {
-      lock.current = false;
-      setSaving(false);
       if (!actions.persistNow()) {
+        lock.current = false;
+        setSaving(false);
         actions.revertLog(draft.entry.id, before, figuresBefore);
         setFailure('No se ha podido guardar en este dispositivo. Tus datos siguen aquí: vuelve a intentarlo.');
         return;
@@ -124,15 +124,20 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
       // Éxito confirmado: ahora sí el sello y «Guardado» (una sola vez por guardado)
       const saved = draft.entry;
       playUiSound('save');
-      setSavedAt(Date.now());
-      setAttemptId(newId('s'));
-      setTexts({});
-      setTouched(false);
-      setConfirmCorrection(false);
-      // Con el libro y los sellos de antes, quien lo abrió puede ofrecer «Deshacer» de la operación completa
-      onDone?.(saved, { keepOpen, before, figuresBefore, completes });
-      // Solo tras el guardado confirmado y una vez por operación (el id del intento ya ha cambiado)
-      if (completes) onComplete?.(before.id, saved);
+      // Lo escrito y lo que cambia en pantalla van en tareas distintas, para no bloquear de una vez; el cerrojo sigue puesto
+      setTimeout(() => {
+        lock.current = false;
+        setSaving(false);
+        setSavedAt(Date.now());
+        setAttemptId(newId('s'));
+        setTexts({});
+        setTouched(false);
+        setConfirmCorrection(false);
+        // Con el libro y los sellos de antes, quien lo abrió puede ofrecer «Deshacer» de la operación completa
+        onDone?.(saved, { keepOpen, before, figuresBefore, completes });
+        // Solo tras el guardado confirmado y una vez por operación (el id del intento ya ha cambiado)
+        if (completes) onComplete?.(before.id, saved);
+      }, 0);
     }, 0);
   };
 

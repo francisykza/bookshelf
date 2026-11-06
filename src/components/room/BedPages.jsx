@@ -45,7 +45,7 @@ export function BookOnBed({ book }) {
             </b>
           </span>
         </div>
-        <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT)}>
+        <div className="bed-pages__page bed-pages__page--right bed-pages__page--action" style={place(RIGHT)}>
           <span className="bed-pages__secondary">Elige qué quieres leer</span>
           <span className="bed-pages__action">Elegir un libro</span>
         </div>
@@ -68,7 +68,7 @@ export function BookOnBed({ book }) {
         </span>
         {book.author && <span className="bed-pages__author">{book.author}</span>}
       </div>
-      <div className="bed-pages__page bed-pages__page--right" style={place(RIGHT)}>
+      <div className="bed-pages__page bed-pages__page--right bed-pages__page--action" style={place(RIGHT)}>
         <span className="bed-pages__progress">{progress.main}</span>
         {progress.secondary && <span className="bed-pages__secondary">{progress.secondary}</span>}
         {progress.fraction != null && (

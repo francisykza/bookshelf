@@ -17,6 +17,7 @@ import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
 import { MiniFigurePin } from '../figures/MiniFigurePin';
 import { figureForBook, useFigureCatalog } from '../figures/figureCatalog';
+import { FIGURES_ENABLED } from '../../domain/figures';
 import { EditionMenu } from '../book/EditionPicker';
 import { BookItem, Cover, spineW } from './BookItem';
 import { ScrollChevron } from './ScrollChevron';
@@ -569,6 +570,8 @@ function useColumns() {
   return n;
 }
 
+const NO_BOOKS = [];
+
 export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook, onAddBook, onOpenVault, onAskLibrarian, onImport }) {
   // Interactiva solo cuando ya ha entrado; visible (opaca o entrando/saliendo) en cualquier fase salvo «room»
   const open = phase === 'shelf';
@@ -619,8 +622,10 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
   // Biblioteca completa por estado (dado, recuerdos) y la misma con la búsqueda aplicada (baldas). `searched` es lo
   // escrito con un paso de retraso: escribir no espera a que se monten los libros que coinciden
   const searched = useDeferredValue(query);
-  const grouped = useMemo(() => groupByStatus(books), [books]);
-  const found = useMemo(() => groupByStatus(filterLibrary(books, { query: searched })), [books, searched]);
+  // Cerrada no pinta ningún libro: ordenar toda la colección espera a que se abra
+  const listed = live ? books : NO_BOOKS;
+  const grouped = useMemo(() => groupByStatus(listed), [listed]);
+  const found = useMemo(() => groupByStatus(filterLibrary(listed, { query: searched })), [listed, searched]);
 
   // Parte visible del mueble (en saltos de un cuarto de pantalla) para las filas virtuales, y posición al volver
   const shelvesRef = useRef(null);
@@ -788,7 +793,8 @@ export function ShelfView({ phase = 'room', onTransitionEnd, onBack, onOpenBook,
     [live, filter, found, rowEmpty, mode, rowH, cols, onOpenBook, onEdition, pick, actions.moveBook, pins, view, jump],
   );
   useEffect(() => {
-    if (!figCatalog.length || !figs) return;
+    // Con las figuras ocultas nadie usa este emparejado, que recorre todos los libros en cada cambio; al volver se recalcula.
+    if (!FIGURES_ENABLED || !figCatalog.length || !figs) return;
     const map = {};
     books.forEach((b) => {
       const fig = figureForBook(figCatalog, b, sagas);

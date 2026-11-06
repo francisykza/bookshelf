@@ -127,11 +127,12 @@
   opacity: 0.94;
 }
 
-.bed-pages__page:has(.bed-pages__action) {
+/* Con clase, no con :has(): `:has(…) > :not(…)` hacía recalcular toda la página con cada fila que entraba o salía de una lista */
+.bed-pages__page--action {
   mix-blend-mode: normal;
 }
 
-.bed-pages__page:has(.bed-pages__action) > :not(.bed-pages__action) {
+.bed-pages__page--action > :not(.bed-pages__action) {
   mix-blend-mode: multiply;
 }
 

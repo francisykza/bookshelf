@@ -3,6 +3,7 @@
 // dispositivo haya guardado al volver a la app y, si hay dos versiones distintas, pregunta cuál quedarse.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { activeOwnedCount } from '../domain/figures';
+import { serializeState } from './serialize';
 import { cloudEnabled, fetchLibrary, fetchLibraryStamp, getClient, saveLibrary, signOut as cloudSignOut } from '../services/cloud';
 import { DEVICE_SETTINGS, hydrate, useLibrary } from './useLibrary';
 
@@ -39,7 +40,13 @@ function backup(data, from) {
 function snapshot(state) {
   const settings = { ...state.settings };
   for (const key of DEVICE_SETTINGS) delete settings[key];
-  return JSON.stringify({ ...state, settings });
+  return serializeState({ ...state, settings });
+}
+
+/** La referencia con la que comparar: se calcula al hacer falta, porque sin sesión de nube no se usa nunca. */
+function baseSnapshot(snapRef, initialRef) {
+  if (snapRef.current === null) snapRef.current = snapshot(initialRef.current);
+  return snapRef.current;
 }
 
 /** Resumen para elegir entre dos versiones. */
@@ -77,7 +84,7 @@ export function CloudProvider({ children }) {
   const busyRef = useRef(false);
   const againRef = useRef(false);
   const syncRef = useRef(null);
-  if (snapRef.current === null) snapRef.current = snapshot(state);
+  const initialRef = useRef(state);
 
   useEffect(() => {
     stateRef.current = state;
@@ -132,7 +139,7 @@ export function CloudProvider({ children }) {
       // 1.000 libros, cientos de kB) se baja únicamente si otro dispositivo ha guardado algo desde entonces
       const known = metaRef.current;
       if (known.userId === u.id && known.syncedAt && (await fetchLibraryStamp(u.id)) === known.syncedAt) {
-        if (metaRef.current.dirty || snapshot(stateRef.current) !== snapRef.current) return upload(u, known.syncedAt);
+        if (metaRef.current.dirty || snapshot(stateRef.current) !== baseSnapshot(snapRef, initialRef)) return upload(u, known.syncedAt);
         setStatus('synced');
         return undefined;
       }
@@ -148,7 +155,7 @@ export function CloudProvider({ children }) {
       if (!remote) return upload(u, null);
       if (remote.updated_at !== meta.syncedAt) {
         // También es un cambio local el que se hizo MIENTRAS se descargaba (aún sin marcar): nunca se pisa en silencio
-        if (meta.dirty || snapshot(stateRef.current) !== snapRef.current) {
+        if (meta.dirty || snapshot(stateRef.current) !== baseSnapshot(snapRef, initialRef)) {
           setConflict({ remote, reason: 'both' });
           setStatus('conflict');
           return undefined;
@@ -227,7 +234,7 @@ export function CloudProvider({ children }) {
   // Cada cambio local se sube unos segundos después
   useEffect(() => {
     if (!user || conflict || metaRef.current.userId !== user.id) return undefined;
-    if (snapshot(state) === snapRef.current) return undefined;
+    if (snapshot(state) === baseSnapshot(snapRef, initialRef)) return undefined;
     saveMeta({ dirty: true });
     setStatus(navigator.onLine ? 'pending' : 'offline');
     const id = setTimeout(() => sync(user), PUSH_DELAY);

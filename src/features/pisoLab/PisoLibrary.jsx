@@ -2,7 +2,7 @@
 // pocas filas montadas a la vez. Las filas miden siempre lo mismo, así que saber cuáles se ven no obliga a medir nada. Una
 // portada solo se pide si su fila sigue montada un momento: pasar de largo no descarga nada.
 import { ArrowLeft, X } from 'lucide-react';
-import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Cover } from '../../components/shelf/BookItem';
 import { STATUS } from '../../domain/books';
 import { normalize } from '../../domain/bookPicker';
@@ -16,6 +16,10 @@ export const BLOCK = 40;
 const OVERSCAN = 4;
 /** Lo que una fila tiene que seguir montada para pedir su portada. */
 const COVER_DELAY = 160;
+/** Desplazándose más rápido que esto (px/ms) nadie llega a ver la portada: se espera, y no se descarga. */
+const FAST_SCROLL = 1;
+/** Hasta cuándo se considera que la lista sigue yendo rápido. Hay una sola lista a la vez. */
+const motion = { until: 0 };
 const FILTERS = [{ id: 'all', label: 'Todos' }, ...LIBRARY_STATUSES.map((id) => ({ id, label: STATUS[id] })), { id: 'chosen', label: 'Expuestos' }];
 
 /** Una memoria nueva para `memory`: lo que hay que recuperar al volver de la ficha de un libro. */
@@ -24,13 +28,19 @@ export const emptyLibraryMemory = () => ({ query: '', status: 'all', count: BLOC
 function RowCover({ book }) {
   const [wanted, setWanted] = useState(false);
   useEffect(() => {
-    const timer = setTimeout(() => setWanted(true), COVER_DELAY);
+    let timer = 0;
+    const ask = () => {
+      if (performance.now() < motion.until) timer = setTimeout(ask, COVER_DELAY);
+      else setWanted(true);
+    };
+    timer = setTimeout(ask, COVER_DELAY);
     return () => clearTimeout(timer);
   }, []);
-  return <span className="plab-row__cover">{wanted ? <Cover book={book} /> : <span className="cover-img cover-img--wait" aria-hidden="true" />}</span>;
+  return <span className="plab-row__cover">{wanted ? <Cover book={book} eager /> : <span className="cover-img cover-img--wait" aria-hidden="true" />}</span>;
 }
 
-function Row({ book, index, total, placed, chosen, onOpen, onToggle }) {
+// Al desplazar solo cambian las filas que entran y salen: las demás no se vuelven a dibujar
+const Row = memo(function Row({ book, index, total, placed, chosen, onOpen, onToggle }) {
   const isReading = book.status === 'reading';
   const note = placed ? 'En la estantería' : chosen ? 'Expuesto, no cabe ahora' : null;
   return (
@@ -54,7 +64,7 @@ function Row({ book, index, total, placed, chosen, onOpen, onToggle }) {
       )}
     </li>
   );
-}
+});
 
 export function PisoLibrary({ books, settings, placed, memory, notice, onBack, onOpen, onToggle }) {
   const [query, setQuery] = useState(memory.query);
@@ -103,8 +113,14 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
     if (!el) return undefined;
     el.scrollTop = memory.top;
     let frame = 0;
+    let lastTop = el.scrollTop;
+    let lastAt = performance.now();
     const read = () => {
       frame = 0;
+      const now = performance.now();
+      if (Math.abs(el.scrollTop - lastTop) > FAST_SCROLL * (now - lastAt)) motion.until = now + COVER_DELAY;
+      lastTop = el.scrollTop;
+      lastAt = now;
       memory.top = el.scrollTop;
       const top = Math.floor(el.scrollTop / ROW_H) * ROW_H;
       const height = el.clientHeight;
@@ -158,12 +174,20 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const open = (book) => {
-    memory.focusId = book.id;
-    onOpen(book);
-  };
+  const handlers = useRef(null);
+  useLayoutEffect(() => {
+    handlers.current = { onOpen, onToggle };
+  });
+  const open = useCallback(
+    (book) => {
+      memory.focusId = book.id;
+      handlers.current.onOpen(book);
+    },
+    [memory],
+  );
+  const toggle = useCallback((...args) => handlers.current.onToggle(...args), []);
   const rows = [];
-  for (let i = first; i < last; i += 1) rows.push(<Row key={found[i].id} book={found[i]} index={i} total={found.length} placed={placed.has(found[i].id)} chosen={chosen.has(found[i].id)} onOpen={open} onToggle={onToggle} />);
+  for (let i = first; i < last; i += 1) rows.push(<Row key={found[i].id} book={found[i]} index={i} total={found.length} placed={placed.has(found[i].id)} chosen={chosen.has(found[i].id)} onOpen={open} onToggle={toggle} />);
 
   return (
     <section ref={root} className="plab-library" aria-labelledby="plab-library-title">

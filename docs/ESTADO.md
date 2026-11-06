@@ -210,6 +210,16 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-06 · cuenta principal · pasada de rendimiento del piloto (subido a la rama, «Sí, sube la rama»)
+- Solo en la rama `experimento/piso-primera-persona`; `main` y producción no cambian. Resultados en `docs/qa/piso-primera-persona.md`, «Pasada de rendimiento».
+- **Guardar** con 5.000 libros, CPU ×4: 758 → 301 ms; tarea más larga 483 → 90 ms. Quedan 1 o 2 tareas de más de 50 ms: `setItem` de 2,8 MB no baja sin cambiar el formato.
+- **Desplazar:** la causa era `.bed-pages__page:has(…) > :not(…)`, ahora una clase. FPS de 31 a 60 con el ordenador libre; de 16–17 a 41–42 con carga.
+- **Arrancar:** lo que crece de 50 a 5.000 libros, de 681 a 131 ms; casi todo era emparejar figuras ocultas.
+- **Toca código compartido, aunque solo está en la rama del piloto:** `useLibrary.jsx`, `serialize.js` (nuevo), `cloudSync.jsx`, `ShelfView.jsx`, `BookItem.jsx`, `BedPages.jsx`, `room-149.css` y `ReadingEntryForm.jsx`. A revisar si se integra; la sincronización con sesión de nube no está probada con estos cambios.
+- **Sin resolver:** diez portadas enormes montadas pueden sumar 75 MB descomprimidas.
+- Fallos que ya estaban en 9461907: `piso-esenciales:245` y `piso-lab:817` en WebKit (intermitentes), `v128:422`, `v128:478`, `v159:139` y `e2e-community/v158`.
+- Comprobado en emulación; **ningún móvil físico** ni la preview, que pide sesión.
+
 ### 2026-11-06 · cuenta principal · usabilidad móvil y medición del piloto (subido a la rama, «Sí, sube la rama»)
 - Solo en la rama del piloto; `main` y producción sin tocar. Resultados y definiciones en `docs/qa/piso-primera-persona.md`, «Usabilidad móvil y medición».
 - **«Entrada» de 118541 ms:** era el medidor, que restaba la vieja pulsación de la puerta en cada montaje (por ejemplo, al volver de Decorar). Reproducido y corregido; ahora hay fases y origen (`labTiming.js`).

@@ -1,5 +1,6 @@
 // Estado de la biblioteca (SPEC §5.1): reducer puro + persistencia en localStorage + acciones.
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
+import { serializeState, warmSerialization } from './serialize';
 import { SAMPLE_EDITIONS, sampleBook, sampleBooks, sampleReadingLog } from '../data/sampleBooks';
 import { clampPage, createBook, newId, normalizeRating, normalizeTotal, percentRead, roundTo, shelfSort, trackUnit, withPosition, withStatus, withTracking } from '../domain/books';
 import { appendEntry, bookLog, editEntry, isActive, normalizeLog, quickUpdate } from '../domain/reading';
@@ -51,11 +52,15 @@ function initialState() {
   };
 }
 
+/** Lo leído al arrancar, para no reescribirlo si las migraciones no han cambiado nada. */
+let loadedText = null;
+
 function load() {
   // Para el medidor del piloto: lo único que crece con la biblioteca en el arranque
   performance.mark('piso-lab:biblioteca-inicio');
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
+    loadedText = raw;
     return raw ? hydrate(JSON.parse(raw)) : initialState();
   } catch {
     return initialState();
@@ -359,16 +364,36 @@ export function LibraryProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, undefined, load);
 
   const latest = useRef(state);
+  const loaded = useRef(state);
+  /** El último estado que se sabe escrito: solo se marca si la escritura ha funcionado. */
+  const written = useRef(null);
   const savedUnbox = useRef(state.progress.figures?.unbox?.id ?? null);
   useEffect(() => {
     latest.current = state;
     const write = () => {
+      if (written.current === latest.current) return;
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(latest.current));
+        const current = latest.current;
+        localStorage.setItem(STORAGE_KEY, serializeState(current));
+        written.current = current;
+        loadedText = null;
       } catch {
         // Almacenamiento lleno o bloqueado: la sesión sigue funcionando en memoria.
       }
     };
+    // Lo recién cargado no corre prisa: se prepara a trozos y solo se escribe si las migraciones cambiaron algo
+    if (state === loaded.current) {
+      return warmSerialization(state, () => {
+        try {
+          const text = serializeState(state);
+          if (text !== loadedText) localStorage.setItem(STORAGE_KEY, text);
+          written.current = state;
+        } catch {
+          // Sin almacenamiento: se reintenta con el próximo cambio.
+        }
+        loadedText = null;
+      });
+    }
     // Una caja recién abierta se guarda al momento: recargar justo después no pierde el premio (SPEC §13.6)
     const unboxId = state.progress.figures?.unbox?.id ?? null;
     if (unboxId !== savedUnbox.current) {
@@ -383,8 +408,10 @@ export function LibraryProvider({ children }) {
   // Al ocultar o cerrar la página se vuelca lo pendiente
   useEffect(() => {
     const flush = () => {
+      if (written.current === latest.current) return;
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(latest.current));
+        localStorage.setItem(STORAGE_KEY, serializeState(latest.current));
+        written.current = latest.current;
       } catch {
         // Sin almacenamiento: nada que volcar.
       }
@@ -410,7 +437,9 @@ export function LibraryProvider({ children }) {
       // Escritura inmediata tras guardar una lectura: devuelve false si el almacenamiento falla (SPEC §14.6)
       persistNow: () => {
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(latest.current));
+          const current = latest.current;
+          localStorage.setItem(STORAGE_KEY, serializeState(current));
+          written.current = current;
           return true;
         } catch {
           return false;
