@@ -8,7 +8,7 @@ import { Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from 
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
 import { playUiSound } from '../../audio/uiSounds';
-import { EDGE_NAMES, FORMATS, STATUS, visualEdition, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, sprayedEdge, trackUnit } from '../../domain/books';
+import { EDGE_NAMES, FORMATS, STATUS, currentBook, visualEdition, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, sprayedEdge, trackUnit } from '../../domain/books';
 import { dayKey } from '../../domain/dates';
 import { ReadingEntryForm } from '../panels/ReadingEntryForm';
 import { RatingInput } from './Rating';
@@ -266,7 +266,7 @@ const SECTIONS = [
 ];
 const DIARY_ENTRY = { right: 'review', review: 'review', notes: 'notes', history: 'history' };
 
-export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpenProfile, onOpenReader, onComplete, timer, soundOn, onToggleSound }) {
+export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpenProfile, onOpenReader, onComplete, timer, soundOn, onToggleSound, mainPlace = null }) {
   const { state, actions } = useLibrary();
   const book = state.books.find((b) => b.id === bookId);
   const [page, setPage] = useState(() => (DIARY_ENTRY[initialPage] ? 'right' : TABS.some((t) => t.id === initialPage) ? initialPage : 'left'));
@@ -312,7 +312,8 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
 
   if (!book) return null;
   const { settings } = state;
-  const isMain = settings.currentBookId === book.id;
+  // `mainPlace`: el piloto del piso lo deja sobre la mesa, donde ya hay un libro aunque nadie lo haya elegido
+  const isMain = mainPlace ? currentBook(state.books, settings)?.id === book.id : settings.currentBookId === book.id;
   const readingNow = state.books.filter((b) => b.status === 'reading');
   const update = (patch) => actions.updateBook(book.id, patch);
   const goTo = (id) => {
@@ -376,7 +377,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
             {book.status === 'reading' && (
               <button type="button" className="link-btn sheet-main" aria-pressed={isMain} onClick={() => actions.setSettings({ currentBookId: book.id })}>
                 <BookMarked aria-hidden="true" />
-                {isMain ? 'Es el libro abierto sobre tu cama' : 'Dejarlo abierto sobre la cama'}
+                {isMain ? (mainPlace?.on ?? 'Es el libro abierto sobre tu cama') : (mainPlace?.off ?? 'Dejarlo abierto sobre la cama')}
               </button>
             )}
             {/* Otras lecturas abiertas: una línea con «Ver», que despliega el selector de siempre (toca otro para

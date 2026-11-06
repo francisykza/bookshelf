@@ -80,6 +80,8 @@ export function wallTexture(tono, { w, h, lights, hora }) {
   const ramp = r.rampOf(tono);
   const BANDS = 5;
   const BLEND = 0.2;
+  // Cuánta luz lleva cada banda: las de fuera, más cerca entre sí para que el halo se funda con el malva
+  const WARMTH = [0, 0.12, 0.28, 0.56, 0.8, 1];
   const size = [w * FLOOR_PX, Math.round(h * FLOOR_PX)];
   const canvas = canvasOf(size[0], size[1], (x, y) => {
     const s = (x + 0.5) / FLOOR_PX;
@@ -92,7 +94,7 @@ export function wallTexture(tono, { w, h, lights, hora }) {
     }
     g = Math.min(1, g);
     const band = Math.max(0, Math.min(BANDS, Math.floor(g * BANDS + 0.5 + (r.bayerAt(x, y) - 0.5) * BLEND)));
-    const k = band / BANDS;
+    const k = WARMTH[band];
     // Lo más alejado de la luz, junto al techo, un tono por debajo: da cuerpo a la pared sin añadir nada
     const top = band === 0 && z + (r.bayerAt(x, y) - 0.5) * 0.06 > h - 0.36;
     const tone = band >= BANDS - 1 ? ramp[4] : top ? ramp[2] : ramp[3];
@@ -211,6 +213,610 @@ export function pixelLamp(place) {
   g.addGroup(0, count, 0);
   g.addGroup(count, shadeBox.pos.length / 3, 1);
   return g;
+}
+
+// La estantería: las medidas de `bookcase` (furniture.js) y un dibujo por cara, a la misma densidad que el suelo
+const SHELF_SIZE = 256;
+const SHELF = { back: [0, 0, 64, 109], innerL: [64, 0, 28, 109], innerR: [92, 0, 28, 109], outerL: [120, 0, 32, 109], outerR: [152, 0, 32, 109], frontL: [184, 0, 5, 109], frontR: [190, 0, 5, 109], cap: [196, 0, 5, 32], canto: [0, 112, 56, 5], board: [0, 118, 56, 5], top: [60, 112, 56, 28], under: [118, 112, 56, 28] };
+const BOARDS = [0, 1.1, 2.2, 3.26];
+const BOARD_THICK = 0.14;
+const SHELF_H = 3.4;
+/** La balda a la altura de la lámpara: su tablón asoma un poco para que el canto se lea como una pieza aparte. */
+export const BALDA = { z0: 2.2, z1: 2.34, ceiling: 3.26, x0: 0.14, x1: 1.86, front: 1.03 };
+
+/**
+ * La madera de la estantería, con la rampa del catálogo. Tablón con canto de tres tonos, sombra bajo la balda y, si
+ * `lit`, un reflejo cálido por bandas en el lateral que da a cada lámpara. `lights`: [{ x, y, z }] en coordenadas del mueble.
+ */
+export function shelfTexture(tono, { lights, lit }) {
+  const r = probe();
+  const ramp = r.rampOf(tono);
+  const warm = r.rampOf([Math.min(255, tono[0] * 1.16), tono[1] * 1.02, tono[2] * 0.84]);
+  const inside = ([x0, y0, w, h], x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
+  const dither = (x, y, amount) => (r.bayerAt(x, y) - 0.5) * amount;
+  const wood = (along, across, base, x, y) => clampTone(base + (noise(along * 0.012 + 3, across * 0.16) - 0.5) * 0.7 + (noise(along * 0.05 + 9, across * 0.7) - 0.5) * 0.32 + dither(x, y, 0.08));
+  // La sombra que cae bajo cada tablón: mucho más marcada bajo la balda de la lámpara
+  const hollow = (z, x, y) => {
+    let dark = 0;
+    for (const board of BOARDS) {
+      const under = board - z + dither(x, y, 0.05);
+      if (under > 0 && under < 0.42) dark = Math.max(dark, 1.5 * (under < 0.12 ? 1 : under < 0.26 ? 0.62 : 0.3));
+      // Contacto: una línea oscura donde el fondo se apoya en el tablón de abajo
+      const above = z - (board + BOARD_THICK);
+      if (above >= 0 && above < 0.07) dark = Math.max(dark, 0.9);
+    }
+    return dark;
+  };
+  // El reflejo en un lateral: `side` es 1 si mira hacia x creciente; siempre discreto, sin pasar del tono medio
+  const glowAt = (side, ly, z) => {
+    if (!lit) return 0;
+    let g = 0;
+    for (const l of lights) {
+      const depth = side > 0 ? l.x - 2 : -l.x;
+      if (depth <= 0) continue;
+      const d = Math.hypot(ly - l.y, z - l.z) / 1.45;
+      if (d < 1) g += (1 - d) ** 1.7 * Math.max(0.2, 1 - depth * 0.25);
+    }
+    return Math.min(1, g);
+  };
+  const lamp = lights.some((l) => l.x > 2) ? 1 : lights.some((l) => l.x < 0) ? -1 : 0;
+  const outer = (region, side, x, y) => {
+    const [x0, , w, h] = region;
+    const across = (x - x0 + 0.5) / w;
+    const ly = side > 0 ? 1 - across : across;
+    const z = SHELF_H * (1 - (y + 0.5) / h);
+    const band = Math.floor(glowAt(side, ly, z) * 4 + 0.5 + dither(x, y, 0.2)) / 4;
+    const tone = wood(y, x, 1.5 + band * 1.25, x, y);
+    return band > 0 ? warm[tone] : ramp[tone];
+  };
+  return texture(
+    canvasOf(SHELF_SIZE, SHELF_SIZE, (x, y) => {
+      const z = SHELF_H * (1 - (y + 0.5) / 109);
+      if (inside(SHELF.back, x, y)) {
+        // Contacto con los laterales: el fondo oscurece junto a ellos
+        const corner = x >= 5 && x <= 7 ? 0.8 : x >= 56 && x <= 58 ? 0.8 : 0;
+        return ramp[wood(y, x, 1.35 - Math.max(corner, hollow(z, x, y)), x, y)];
+      }
+      if (inside(SHELF.innerL, x, y) || inside(SHELF.innerR, x, y)) {
+        const left = inside(SHELF.innerL, x, y);
+        const region = left ? SHELF.innerL : SHELF.innerR;
+        const deep = left ? 1 - (x - region[0] + 0.5) / region[2] : (x - region[0] + 0.5) / region[2];
+        return ramp[wood(y, x, (left ? 1.75 : 1.4) - Math.max(deep > 0.84 ? 0.8 : 0, hollow(z, x, y)), x, y)];
+      }
+      if (inside(SHELF.outerL, x, y)) return outer(SHELF.outerL, -1, x, y);
+      if (inside(SHELF.outerR, x, y)) return outer(SHELF.outerR, 1, x, y);
+      if (inside(SHELF.frontL, x, y) || inside(SHELF.frontR, x, y)) {
+        const right = inside(SHELF.frontR, x, y);
+        // Solo el filo que da a la lámpara coge algo de su luz
+        const rim = right ? x === SHELF.frontR[0] + 4 && glowAt(1, 1, z) > 0.2 : x === SHELF.frontL[0] && glowAt(-1, 1, z) > 0.2;
+        return rim ? warm[3] : ramp[wood(y, x, 2.4, x, y)];
+      }
+      if (inside(SHELF.canto, x, y)) {
+        const row = y - SHELF.canto[1];
+        const toLamp = lit && lamp ? Math.max(0, lamp > 0 ? (x + 0.5) / SHELF.canto[2] - 0.74 : 0.26 - (x + 0.5) / SHELF.canto[2]) : 0;
+        // Filo claro arriba, cuerpo con veta y sombra abajo: se lee el grosor del tablón
+        if (row === 0) return (toLamp > 0 ? warm : ramp)[4];
+        if (row === 4) return ramp[0];
+        const tone = wood(x, y * 3, row === 3 ? 1.9 : 2.8, x, y);
+        return (toLamp > 0.06 ? warm : ramp)[tone];
+      }
+      if (inside(SHELF.board, x, y)) {
+        const row = y - SHELF.board[1];
+        // Mismo canto de tres tonos que la balda de la lámpara, sin su luz: las baldas se separan bien del fondo oscuro
+        if (row === 0) return ramp[4];
+        if (row === 4) return ramp[0];
+        return ramp[wood(x, y * 3, row === 3 ? 1.9 : 2.8, x, y)];
+      }
+      if (inside(SHELF.top, x, y)) {
+        // El tablón por arriba: se apaga hacia el fondo y junto a los laterales, donde apoya
+        const row = y - SHELF.top[1];
+        const edge = x - SHELF.top[0];
+        const rear = row < 5 ? 1.1 : row < 9 ? 0.5 : 0;
+        const side = edge < 2 || edge >= SHELF.top[2] - 2 ? 0.7 : 0;
+        return ramp[wood(edge, y, 3.2 - Math.max(rear, side), x, y)];
+      }
+      if (inside(SHELF.under, x, y)) return ramp[wood(x - SHELF.under[0], y, 0.5, x, y)];
+      if (inside(SHELF.cap, x, y)) return ramp[wood(y, x, 3, x, y)];
+      return ramp[1];
+    }),
+  );
+}
+
+/** El armazón de la estantería, sin los libros. `place(box)` lo coloca como `toWorld` de render.js. */
+export function woodShelf(place) {
+  const out = { pos: [], uv: [] };
+  const P = (x, y, z) => {
+    const [a, b] = place([x, y, 0, x, y, 0]);
+    return [a, z, b];
+  };
+  const box = ([x0, y0, z0, x1, y1, z1], faces) => {
+    const quads = {
+      front: [P(x0, y1, z0), P(x1, y1, z0), P(x1, y1, z1), P(x0, y1, z1)],
+      right: [P(x1, y1, z0), P(x1, y0, z0), P(x1, y0, z1), P(x1, y1, z1)],
+      left: [P(x0, y0, z0), P(x0, y1, z0), P(x0, y1, z1), P(x0, y0, z1)],
+      top: [P(x0, y1, z1), P(x1, y1, z1), P(x1, y0, z1), P(x0, y0, z1)],
+      under: [P(x0, y0, z0), P(x1, y0, z0), P(x1, y1, z0), P(x0, y1, z0)],
+    };
+    for (const [name, [rx, ry, rw, rh]] of Object.entries(faces)) {
+      const u0 = (rx + 0.2) / SHELF_SIZE;
+      const u1 = (rx + rw - 0.2) / SHELF_SIZE;
+      const v0 = 1 - (ry + rh - 0.2) / SHELF_SIZE;
+      const v1 = 1 - (ry + 0.2) / SHELF_SIZE;
+      const uv = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+      for (const k of [0, 1, 2, 0, 2, 3]) {
+        out.pos.push(...quads[name][k]);
+        out.uv.push(...uv[k]);
+      }
+    }
+  };
+  box([0, 0, 0, 2, 0.14, SHELF_H], { front: SHELF.back, top: SHELF.cap });
+  box([0, 0, 0, 0.14, 1, SHELF_H], { front: SHELF.frontL, left: SHELF.outerL, right: SHELF.innerL, top: SHELF.cap });
+  box([1.86, 0, 0, 2, 1, SHELF_H], { front: SHELF.frontR, right: SHELF.outerR, left: SHELF.innerR, top: SHELF.cap });
+  for (const z of BOARDS) {
+    const isBalda = z === BALDA.z0;
+    box([0.14, 0.14, z, 1.86, BALDA.front, z + BOARD_THICK], { front: isBalda ? SHELF.canto : SHELF.board, top: SHELF.top, under: SHELF.under });
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(out.pos, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(out.uv, 2));
+  return g;
+}
+
+// La ventana: las medidas de `ventana` (furniture.js) y un dibujo por cara, a la misma densidad que el suelo y la estantería
+const WIN_SIZE = 128;
+const WIN = { frontV: [0, 0, 5, 60], revealL: [6, 0, 10, 60], revealR: [17, 0, 10, 60], frontH: [28, 0, 58, 5], revealTop: [28, 6, 58, 10], revealBottom: [28, 17, 58, 10], sillTop: [28, 28, 64, 13], sillCanto: [28, 42, 64, 5], under: [28, 48, 64, 13], bar: [94, 0, 3, 56], barSide: [98, 0, 3, 56], rail: [28, 62, 54, 3] };
+/** El marco atraviesa la pared hacia fuera y sobresale hacia dentro: de ahí sale su grosor. */
+const WIN_OUT = -0.14;
+const WIN_IN = 0.14;
+
+/**
+ * La madera de la ventana, con la rampa del catálogo. El marco tiene canto claro y veta; por dentro del hueco se oscurece hacia la
+ * habitación y coge luz de la calle en el filo de fuera; el alféizar lleva la sombra de contacto del marco y un canto de tres
+ * tonos, como las baldas. Si `lit`, un reflejo cálido en el lado de la lámpara. `lamp`: -1 a la izquierda, 1 a la derecha, 0 ninguna.
+ */
+export function windowTexture(tono, { lamp, lit }) {
+  const r = probe();
+  const ramp = r.rampOf(tono);
+  const warm = r.rampOf([Math.min(255, tono[0] * 1.16), tono[1] * 1.02, tono[2] * 0.84]);
+  const inside = ([x0, y0, w, h], x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
+  const dither = (x, y, amount) => (r.bayerAt(x, y) - 0.5) * amount;
+  const wood = (along, across, base, x, y) => clampTone(base + (noise(along * 0.012 + 5, across * 0.16) - 0.5) * 0.7 + (noise(along * 0.05 + 2, across * 0.7) - 0.5) * 0.32 + dither(x, y, 0.08));
+  const toLamp = (u) => (lit && lamp ? Math.max(0, lamp > 0 ? u - 0.7 : 0.3 - u) : 0);
+  // Por dentro del hueco: `out` es 1 en el filo que da a la calle y 0 en el que da a la habitación
+  const reveal = (out, along, across, x, y, base = 1.1) => (out > 0.86 ? ramp[3] : ramp[wood(along, across, base + out * 0.8, x, y)]);
+  return texture(
+    canvasOf(WIN_SIZE, WIN_SIZE, (x, y) => {
+      if (inside(WIN.frontV, x, y)) {
+        const lx = x - WIN.frontV[0];
+        if (lx === 0) return ramp[1];
+        if (lx === WIN.frontV[2] - 1) return ramp[4];
+        return ramp[wood(y, x, 2.6, x, y)];
+      }
+      if (inside(WIN.revealL, x, y)) {
+        const out = 1 - (x - WIN.revealL[0] + 0.5) / WIN.revealL[2];
+        // El de la izquierda mira hacia la derecha: si la lámpara está a ese lado, le llega su luz
+        if (lit && lamp > 0 && out < 0.5) return warm[wood(y, x, 2.1, x, y)];
+        return reveal(out, y, x, x, y);
+      }
+      if (inside(WIN.revealR, x, y)) {
+        const out = (x - WIN.revealR[0] + 0.5) / WIN.revealR[2];
+        if (lit && lamp < 0 && out < 0.5) return warm[wood(y, x, 2.1, x, y)];
+        return reveal(out, y, x, x, y);
+      }
+      if (inside(WIN.frontH, x, y)) {
+        const row = y - WIN.frontH[1];
+        const u = (x - WIN.frontH[0] + 0.5) / WIN.frontH[2];
+        if (row === 0) return ramp[4];
+        if (row === WIN.frontH[3] - 1) return ramp[0];
+        return (toLamp(u) > 0.06 ? warm : ramp)[wood(x, y * 3, 2.7, x, y)];
+      }
+      if (inside(WIN.revealTop, x, y)) return reveal((y - WIN.revealTop[1] + 0.5) / WIN.revealTop[3], x, y, x, y, 0.5);
+      if (inside(WIN.revealBottom, x, y)) return reveal(1 - (y - WIN.revealBottom[1] + 0.5) / WIN.revealBottom[3], x, y, x, y, 2);
+      if (inside(WIN.sillTop, x, y)) {
+        // La primera fila, en la pared; la sombra de contacto del marco, tramada solo en su borde
+        const row = y - WIN.sillTop[1];
+        const u = (x - WIN.sillTop[0] + 0.5) / WIN.sillTop[2];
+        const shadow = row < 5 ? 1.5 : row < 7 ? (r.bayerAt(x, y) < 0.5 ? 1.5 : 0.4) : 0;
+        const tone = wood(x, y, 3.2 - shadow, x, y);
+        return (toLamp(u) > 0.04 && !shadow ? warm : ramp)[tone];
+      }
+      if (inside(WIN.sillCanto, x, y)) {
+        const row = y - WIN.sillCanto[1];
+        const u = (x - WIN.sillCanto[0] + 0.5) / WIN.sillCanto[2];
+        if (row === 0) return (toLamp(u) > 0 ? warm : ramp)[4];
+        if (row === WIN.sillCanto[3] - 1) return ramp[0];
+        return (toLamp(u) > 0.06 ? warm : ramp)[wood(x, y * 3, row === 3 ? 1.9 : 2.8, x, y)];
+      }
+      if (inside(WIN.under, x, y)) return ramp[wood(x, y, 0.5, x, y)];
+      if (inside(WIN.bar, x, y)) return x === WIN.bar[0] ? ramp[3] : x === WIN.bar[0] + 2 ? ramp[1] : ramp[wood(y, x, 2.4, x, y)];
+      if (inside(WIN.barSide, x, y)) return ramp[wood(y, x, 1.2, x, y)];
+      if (inside(WIN.rail, x, y)) {
+        const row = y - WIN.rail[1];
+        return row === 0 ? ramp[3] : row === 2 ? ramp[1] : ramp[wood(x, y, 2.4, x, y)];
+      }
+      return ramp[1];
+    }),
+  );
+}
+
+/**
+ * El marco y el alféizar, con su grosor. `place(a, b)` pasa de coordenadas de la pieza a las de la habitación. El parteluz y el
+ * travesaño quedan a media profundidad, en el plano del cristal. Sus caras se ven por los dos lados, porque en la otra pared se reflejan.
+ */
+export function pixelWindow(place) {
+  const out = { pos: [], uv: [] };
+  const box = ([x0, y0, z0, x1, y1, z1], faces) => {
+    const quads = {
+      front: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]],
+      right: [[x1, y1, z0], [x1, y0, z0], [x1, y0, z1], [x1, y1, z1]],
+      left: [[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]],
+      top: [[x0, y1, z1], [x1, y1, z1], [x1, y0, z1], [x0, y0, z1]],
+      under: [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]],
+    };
+    for (const [name, [rx, ry, rw, rh]] of Object.entries(faces)) {
+      const u0 = (rx + 0.2) / WIN_SIZE;
+      const u1 = (rx + rw - 0.2) / WIN_SIZE;
+      const v0 = 1 - (ry + rh - 0.2) / WIN_SIZE;
+      const v1 = 1 - (ry + 0.2) / WIN_SIZE;
+      const uv = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+      for (const k of [0, 1, 2, 0, 2, 3]) {
+        const [a, b, c] = quads[name][k];
+        const [wx, wy] = place(a, b);
+        out.pos.push(wx, c, wy);
+        out.uv.push(...uv[k]);
+      }
+    }
+  };
+  box([0.12, WIN_OUT, 1.42, 0.24, WIN_IN, 3.28], { front: WIN.frontV, right: WIN.revealL, left: WIN.barSide });
+  box([1.76, WIN_OUT, 1.42, 1.88, WIN_IN, 3.28], { front: WIN.frontV, left: WIN.revealR, right: WIN.barSide });
+  box([0.24, WIN_OUT, 3.16, 1.76, WIN_IN, 3.28], { front: WIN.frontH, under: WIN.revealTop });
+  box([0.24, WIN_OUT, 1.42, 1.76, WIN_IN, 1.54], { front: WIN.frontH, top: WIN.revealBottom });
+  box([0.96, -0.08, 1.54, 1.04, 0.03, 3.16], { front: WIN.bar, left: WIN.barSide, right: WIN.barSide });
+  box([0.24, -0.08, 2.62, 1.76, 0.03, 2.68], { front: WIN.rail, top: WIN.rail, under: WIN.rail });
+  // El alféizar asoma hacia ti, con su canto y una ménsula debajo
+  box([0.02, 0, 1.3, 1.98, 0.38, 1.42], { front: WIN.sillCanto, left: WIN.sillCanto, right: WIN.sillCanto, top: WIN.sillTop, under: WIN.under });
+  box([0.16, 0, 1.2, 1.84, 0.07, 1.3], { front: WIN.frontH, under: WIN.under });
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(out.pos, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(out.uv, 2));
+  return g;
+}
+
+/** La sombra del alféizar sobre la pared: tramado corto, solo pegado a la pieza. */
+export function sillShadowTexture() {
+  const r = probe();
+  const DARK = 0x58100806;
+  return texture(canvasOf(64, 14, (x, y) => (y < 3 ? DARK : y < 7 && r.bayerAt(x, y) < 1 - (y - 2) / 5 ? DARK : 0)));
+}
+
+/** La sombra de la balda sobre lo que hay debajo: tramado suelto que se aclara al bajar, sin degradados. */
+export function baldaShadowTexture() {
+  const r = probe();
+  const w = 56;
+  const h = 12;
+  const canvas = canvasOf(w, h, (x, y) => {
+    if (y < 4) return 0x8c100806;
+    if (y < 6) return r.bayerAt(x, y) < 0.5 ? 0x8c100806 : 0;
+    return 0;
+  });
+  return texture(canvas);
+}
+
+/** La sombra del mueble en el suelo: tramado corto y solo junto a su base. El suelo, debajo, sigue siendo el mismo. */
+export function footShadowTexture(w, d, margin, px = FLOOR_PX) {
+  const r = probe();
+  const W = Math.round((w + margin * 2) * px);
+  const H = Math.round((d + margin * 2) * px);
+  const edge = margin * px;
+  const DARK = 0x78100806;
+  return texture(
+    canvasOf(W, H, (x, y) => {
+      const out = Math.max(edge - x - 0.5, x + 0.5 - (W - edge), edge - y - 0.5, y + 0.5 - (H - edge));
+      if (out <= 0) return DARK;
+      return r.bayerAt(x, y) < 1 - out / edge ? DARK : 0;
+    }),
+  );
+}
+
+// Una celda del atlas de lomos: el lomo, su canto de color y, al final, las páginas
+const SPINE_W = 28;
+const SPINE_H = 128;
+const SPINE_CELL = 32;
+const SPINE_COLS = 12;
+
+/** La parte del título que se puede pintar, en una sola línea a lo largo del lomo: píxeles sueltos, sin suavizado. */
+function titleMask(title, w, h) {
+  const room = h - 28;
+  const canvas = document.createElement('canvas');
+  canvas.width = room;
+  canvas.height = w;
+  const g = canvas.getContext('2d', { willReadFrequently: true });
+  let text = String(title);
+  let size = 13;
+  const fit = () => {
+    g.font = `bold ${size}px Georgia, serif`;
+    return g.measureText(text).width <= room;
+  };
+  while (!fit() && size > 10) size -= 1;
+  // Si aun así no cabe, se corta por palabras: mejor un título corto que letras que no se leen
+  while (!fit() && text.includes(' ')) text = text.slice(0, text.lastIndexOf(' '));
+  g.textBaseline = 'middle';
+  g.textAlign = 'center';
+  g.fillText(text, room / 2, w / 2 + 0.5, room);
+  const { data } = g.getImageData(0, 0, room, w);
+  // A lo largo del lomo, de arriba abajo
+  return (x, y) => {
+    const mx = y - 14;
+    const my = w - 1 - x;
+    if (mx < 0 || mx >= room || my < 0 || my >= w) return false;
+    return data[(my * room + mx) * 4 + 3] > 120;
+  };
+}
+
+function spineTone(color, id) {
+  const value = new Color(color).getHex();
+  let hash = 7;
+  for (const ch of String(id)) hash = (hash * 31 + ch.charCodeAt(0)) % 1009;
+  const light = 0.84 + ((hash % 7) / 6) * 0.3;
+  const skew = (((hash >> 3) % 5) - 2) * 0.05;
+  const channel = (v, k) => Math.max(0, Math.min(255, Math.round(v * light * k)));
+  return [channel((value >> 16) & 255, 1 + skew), channel((value >> 8) & 255, 1), channel(value & 255, 1 - skew)];
+}
+
+/** Cada edición tiene su lomo, como en la balda de siempre: lo que los distingue son datos del propio libro. */
+function spinePixel(r, { id, edition, color, ink }, mask) {
+  const ramp = r.rampOf(spineTone(color, id));
+  const gold = r.rampOf([214, 176, 96]);
+  const cream = r.rampOf([232, 220, 190]);
+  // `inkFor` dice qué tinta se lee mejor sobre este lomo: clara u oscura
+  const inkTone = ink === 'light' ? rgb(240, 230, 205) : rgb(44, 32, 30);
+  const W = SPINE_W;
+  const H = SPINE_H;
+  const body = (x) => ramp[x === 0 || x === W - 1 ? 1 : x <= 2 ? 4 : x >= W - 3 ? 2 : 3];
+  return (x, y) => {
+    const near = (row, wide = 0) => Math.abs(y - row) <= wide;
+    const lettered = mask(x, y);
+    if (edition === 'leatherbound') {
+      if (near(10, 1) || near(H - 11, 1) || near(38, 1) || near(H - 39, 1)) return near(10) || near(H - 11) || near(38) || near(H - 39) ? gold[3] : ramp[1];
+      return lettered ? gold[4] : body(x);
+    }
+    if (edition === 'clothbound') {
+      // Tela con una etiqueta de papel: el título, en tinta oscura sobre ella
+      if (x >= 4 && x < W - 4 && y >= 12 && y < H - 12) return lettered ? ramp[0] : cream[3];
+      return (x + y) % 2 ? body(x) : ramp[2];
+    }
+    if (edition === 'paperback') {
+      if (near(3) || near(H - 4)) return ramp[1];
+      return lettered ? inkTone : ramp[x === 0 || x === W - 1 ? 2 : 3];
+    }
+    if (edition === 'sprayed_edges') {
+      if (near(7) || near(11) || near(H - 8) || near(H - 12)) return gold[3];
+      return lettered ? gold[4] : body(x);
+    }
+    if (edition === 'annotated') {
+      // Las marcas de colores asoman por un lado
+      if (x >= W - 3 && (near(24, 2) || near(52, 2) || near(88, 2))) return near(24, 2) ? 0xff5ac8f0 : near(52, 2) ? 0xff7ab8f5 : 0xff8ad8a0;
+      if (near(6) || near(H - 7)) return ramp[1];
+      return lettered ? inkTone : body(x);
+    }
+    if (near(6) || near(H - 7)) return gold[2];
+    return lettered ? inkTone : body(x);
+  };
+}
+
+/**
+ * Un atlas para todos los lomos de la estantería: una sola textura y un solo material, aunque haya muchos libros.
+ * `list`: [{ id, title, color, ink, edition }]. Devuelve { texture, size, spine(id), side(id), pages } con recortes en píxeles.
+ */
+export function spineAtlas(list) {
+  const r = probe();
+  const size = [SPINE_COLS * SPINE_CELL, (Math.floor(list.length / SPINE_COLS) + 1) * SPINE_H];
+  const slot = new Map(list.map((b, k) => [b.id, [(k % SPINE_COLS) * SPINE_CELL, Math.floor(k / SPINE_COLS) * SPINE_H]]));
+  const painters = list.map((b) => ({ ...slot.get(b.id), at: slot.get(b.id), paint: spinePixel(r, b, titleMask(b.title, SPINE_W, SPINE_H)), side: r.rampOf(spineTone(b.color, b.id))[2] }));
+  const lookup = new Map(painters.map((p) => [`${p.at[0]},${p.at[1]}`, p]));
+  const paper = r.rampOf([222, 206, 170]);
+  const pagesAt = [size[0] - SPINE_CELL, size[1] - SPINE_H];
+  const canvas = canvasOf(size[0], size[1], (x, y) => {
+    const cx = x - (x % SPINE_CELL);
+    const cy = y - (y % SPINE_H);
+    if (cx === pagesAt[0] && cy === pagesAt[1]) return paper[x % 3 === 0 ? 2 : 3];
+    const p = lookup.get(`${cx},${cy}`);
+    if (!p) return paper[1];
+    const lx = x - cx;
+    return lx < SPINE_W ? p.paint(lx, y - cy) : p.side;
+  });
+  return {
+    texture: texture(canvas),
+    size,
+    spine: (id) => [...slot.get(id), SPINE_W, SPINE_H],
+    side: (id) => [slot.get(id)[0] + SPINE_W + 1, slot.get(id)[1] + 2, 2, SPINE_H - 4],
+    pages: [...pagesAt, SPINE_CELL, SPINE_H],
+  };
+}
+
+// La mesa: las medidas de furniture.js y un dibujo por cara, a la densidad del tapizado, porque es lo que tienes más cerca
+const TABLE_W = 208;
+const TABLE_H = 112;
+const TABLE = { top: [0, 0, 176, 80], canto: [0, 82, 176, 7], end: [178, 0, 7, 80], leg: [187, 0, 14, 60], under: [0, 91, 176, 20] };
+
+/**
+ * La madera de una mesa, con la rampa del catálogo. El tablero son tablas a lo largo, con su junta y un empalme; la veta va a
+ * rodales y en tonos vecinos, para que no compita con el libro. Canto de tres tonos, como las baldas. Si `lit`, la luz de las
+ * lámparas por bandas. `size`: [ancho, hondo] del tablero. `lights`: [{ x, y, z }] en coordenadas del tablero, a su altura.
+ */
+export function tableTexture(tono, { size: [boardW, boardD], lights, lit }) {
+  const r = probe();
+  const ramp = r.rampOf(tono);
+  const warm = r.rampOf([Math.min(255, tono[0] * 1.16), tono[1] * 1.02, tono[2] * 0.84]);
+  const inside = ([x0, y0, w, h], x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
+  const dither = (x, y, amount) => (r.bayerAt(x, y) - 0.5) * amount;
+  const [topX, topY, topW, topH] = TABLE.top;
+  const planks = Math.max(2, Math.round(boardD / 0.27));
+  const glowAt = (u, v) => {
+    if (!lit) return 0;
+    let g = 0;
+    for (const l of lights) {
+      const d = Math.hypot(u * boardW - l.x, v * boardD - l.y, l.z) / 3.4;
+      if (d < 1) g += (1 - d) ** 1.6;
+    }
+    return Math.min(1, g);
+  };
+  const paintTop = (x, y) => {
+    const v = y / topH;
+    const row = v * planks;
+    const plank = Math.floor(row);
+    // Junta entre tablas: una línea oscura y, justo debajo, el filo de la siguiente
+    const rowPx = Math.floor((plank / planks) * topH);
+    if (plank > 0 && y === rowPx) return ramp[1];
+    const joint = Math.floor(((plank * 0.37 + 0.21) % 1) * topW);
+    if (plank % 2 === 0 && x === joint) return ramp[1];
+    const band = Math.floor(glowAt((x + 0.5) / topW, (y + 0.5) / topH) * 3 + 0.5 + dither(x, y, 0.3)) / 3;
+    let tone = 2.72 + ((plank * 5) % 3 - 1) * 0.2 + band * 0.9;
+    if (plank > 0 && y === rowPx + 1) tone += 0.5;
+    // La veta, a rodales: en cada tabla hay tramos con veta y tramos limpios
+    const patch = noise(x * 0.012 + plank * 7.3, plank * 3.1 + 0.5);
+    const streak = noise(x * 0.022 + plank * 11, y * 0.62 + plank * 5);
+    if (patch > 0.5 && streak > 0.58) tone -= 0.55;
+    tone += dither(x, y, 0.06);
+    // El borde del tablero: claro en el filo que da a ti, apagado en los otros
+    if (y === topH - 1) tone = 4;
+    else if (y < 2 || x === 0 || x === topW - 1) tone = Math.min(tone, 1.4);
+    return (band > 0 ? warm : ramp)[clampTone(tone)];
+  };
+  const canto = (x, y, h) => {
+    if (y === 0) return ramp[4];
+    if (y === h - 1) return ramp[0];
+    return ramp[clampTone((y === h - 2 ? 1.9 : 2.7) + (noise(x * 0.03 + 3, y * 0.5) - 0.5) * 0.5 + dither(x, y, 0.06))];
+  };
+  return texture(
+    canvasOf(TABLE_W, TABLE_H, (x, y) => {
+      if (inside(TABLE.top, x, y)) return paintTop(x - topX, y - topY);
+      if (inside(TABLE.canto, x, y)) return canto(x, y - TABLE.canto[1], TABLE.canto[3]);
+      if (inside(TABLE.end, x, y)) return canto(y, x - TABLE.end[0], TABLE.end[2]);
+      if (inside(TABLE.leg, x, y)) {
+        const lx = x - TABLE.leg[0];
+        const ly = y - TABLE.leg[1];
+        // Contacto: arriba, la sombra del tablero
+        if (ly < 7) return ramp[ly < 3 ? 0 : 1];
+        if (lx === 0) return ramp[3];
+        if (lx === TABLE.leg[2] - 1) return ramp[0];
+        return ramp[clampTone(1.9 + (noise(lx * 0.5, ly * 0.04) - 0.5) * 0.7 + dither(x, y, 0.06))];
+      }
+      if (inside(TABLE.under, x, y)) return ramp[clampTone(0.5 + dither(x, y, 0.2))];
+      return ramp[1];
+    }),
+  );
+}
+
+/** Caras con su recorte: `turn` gira el recorte un cuarto, para lo que se dibuja a lo largo y se pega de través. */
+function quads(out, atlas, P, [x0, y0, z0, x1, y1, z1], faces) {
+  const all = {
+    front: [P(x0, y1, z0), P(x1, y1, z0), P(x1, y1, z1), P(x0, y1, z1)],
+    back: [P(x1, y0, z0), P(x0, y0, z0), P(x0, y0, z1), P(x1, y0, z1)],
+    right: [P(x1, y1, z0), P(x1, y0, z0), P(x1, y0, z1), P(x1, y1, z1)],
+    left: [P(x0, y0, z0), P(x0, y1, z0), P(x0, y1, z1), P(x0, y0, z1)],
+    top: [P(x0, y1, z1), P(x1, y1, z1), P(x1, y0, z1), P(x0, y0, z1)],
+    under: [P(x0, y0, z0), P(x1, y0, z0), P(x1, y1, z0), P(x0, y1, z0)],
+  };
+  for (const [name, face] of Object.entries(faces)) {
+    const [rx, ry, rw, rh] = face.rect ?? face;
+    const u0 = (rx + 0.2) / atlas[0];
+    const u1 = (rx + rw - 0.2) / atlas[0];
+    const v0 = 1 - (ry + rh - 0.2) / atlas[1];
+    const v1 = 1 - (ry + 0.2) / atlas[1];
+    const uv = face.turn ? [[u0, v1], [u0, v0], [u1, v0], [u1, v1]] : [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+    for (const k of [0, 1, 2, 0, 2, 3]) {
+      out.pos.push(...all[name][k]);
+      out.uv.push(...uv[k]);
+    }
+  }
+}
+
+/** La mesa con su madera: `boxes`, las cajas de furniture.js; la más alta es el tablero y las demás, las patas. */
+export function pixelTable(boxes, place) {
+  const out = { pos: [], uv: [] };
+  const P = (x, y, z) => {
+    const [a, b] = place([x, y, 0, x, y, 0]);
+    return [a, z, b];
+  };
+  const size = [TABLE_W, TABLE_H];
+  const top = boxes.reduce((a, b) => (b.b[5] > a.b[5] ? b : a));
+  for (const box of boxes) {
+    if (box === top) quads(out, size, P, box.b, { top: TABLE.top, front: TABLE.canto, back: TABLE.canto, left: TABLE.end, right: TABLE.end, under: TABLE.under });
+    else quads(out, size, P, box.b, { front: TABLE.leg, back: TABLE.leg, left: TABLE.leg, right: TABLE.leg });
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(out.pos, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(out.uv, 2));
+  return g;
+}
+
+// El libro de la mesa: el lomo es el de su balda, y las páginas, con su sombra bajo la tapa
+const BOOK_W = 64;
+const BOOK = { spine: [0, 0, SPINE_W, SPINE_H], pages: [30, 0, 10, 64], edge: [42, 0, 4, 64], inner: [48, 0, 4, 64] };
+
+/** `data`: { id, title, color, ink, edition }. */
+export function bookTexture(data) {
+  const r = probe();
+  const paint = spinePixel(r, data, titleMask(data.title, SPINE_W, SPINE_H));
+  const ramp = r.rampOf(spineTone(data.color, data.id));
+  const paper = r.rampOf([222, 206, 170]);
+  const inside = ([x0, y0, w, h], x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
+  return texture(
+    canvasOf(BOOK_W, SPINE_H, (x, y) => {
+      if (inside(BOOK.spine, x, y)) return paint(x, y);
+      if (inside(BOOK.pages, x, y)) {
+        const lx = x - BOOK.pages[0];
+        // De abajo (0) arriba: bajo la tapa, la sombra; lo demás, las hojas
+        if (lx === BOOK.pages[2] - 1) return paper[0];
+        if (lx === BOOK.pages[2] - 2) return paper[1];
+        if (lx === 0) return paper[1];
+        return paper[lx % 2 ? 3 : 2];
+      }
+      if (inside(BOOK.edge, x, y)) return ramp[x === BOOK.edge[0] ? 1 : 2];
+      if (inside(BOOK.inner, x, y)) return ramp[1];
+      return ramp[2];
+    }),
+  );
+}
+
+/**
+ * El libro tumbado, apoyado en y = 0: dos tapas que sobresalen de las hojas, el lomo a la izquierda y el pie hacia z creciente.
+ * El grupo 0 usa `bookTexture`, y el grupo 1 es la cubierta, con su imagen entera.
+ */
+export function pixelBook({ width, length, thick, board }) {
+  const body = { pos: [], uv: [] };
+  const face = { pos: [], uv: [] };
+  const P = (x, y, z) => [x - width / 2, z, y - length / 2];
+  const size = [BOOK_W, SPINE_H];
+  const over = board * 0.9;
+  const hinge = board * 1.3;
+  const tall = { rect: BOOK.edge };
+  const pages = { rect: BOOK.pages, turn: true };
+  // Las tapas: se ve su canto y, por dentro, su color
+  const lower = [0, 0, 0, width, length, board];
+  const upper = [0, 0, thick - board, width, length, thick];
+  quads(body, size, P, lower, { front: tall, back: tall, right: tall, top: BOOK.inner, under: BOOK.inner });
+  quads(body, size, P, upper, { front: tall, back: tall, right: tall, under: BOOK.inner });
+  // El lomo, entero de tapa a tapa, con el dibujo de su balda
+  quads(body, size, P, [0, 0, 0, hinge, length, thick], { left: { rect: BOOK.spine, turn: true }, front: tall, back: tall });
+  // Las hojas, un poco metidas
+  quads(body, size, P, [hinge, over, board, width - over, length - over, thick - board], { front: pages, back: pages, right: pages });
+  const count = body.pos.length / 3;
+  quads(face, [1, 1], P, upper, { top: [-0.2, -0.2, 1.4, 1.4] });
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute([...body.pos, ...face.pos], 3));
+  g.setAttribute('uv', new Float32BufferAttribute([...body.uv, ...face.uv], 2));
+  g.addGroup(0, count, 0);
+  g.addGroup(count, face.pos.length / 3, 1);
+  return g;
+}
+
+/** El corte de las páginas, con sus líneas finas. */
+export function pagesTexture() {
+  const r = probe();
+  const paper = r.rampOf([222, 206, 170]);
+  return texture(canvasOf(24, 24, (x) => paper[x % 3 === 0 ? 2 : 3]));
 }
 
 // El tapizado: píxeles agrupados según la forma, a unos 96 por celda. [x, y, ancho, alto]

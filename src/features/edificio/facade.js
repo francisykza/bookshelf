@@ -59,8 +59,8 @@ const DOOR = [104, 66, 42];
 const BRASS = [214, 172, 90];
 const COBBLE = [150, 140, 132];
 const WATER = [54, 92, 112];
-const POT = [184, 98, 70];
-const LEAF = [96, 132, 84];
+export const POT = [184, 98, 70];
+export const LEAF = [96, 132, 84];
 const CURTAIN = [236, 214, 176];
 const STAIR = [250, 206, 96];
 const FRAME_WOOD = [84, 60, 46];
@@ -146,14 +146,17 @@ function paintSign(r) {
 }
 
 /** Un edificio vecino, más bajo y rosado, con su rejilla de ventanas oscuras y balconcillos. */
-function neighbour(r, x0, x1, height, seed) {
+export function neighbour(r, x0, x1, height, seed, litId = 0) {
   r.box(x0, 0, 0, x1, BD - 0.15, height, PINK, { grain: 0, face: (f, a, b) => (f === 'front' && b < GROUND_H ? r.rampOf(SAND)[2] : undefined) });
   r.box(x0 - 0.1, -0.1, height, x1 + 0.1, BD - 0.05, height + 0.18, WHITE, { grain: 0 });
   r.box(x0, 0, height + 0.18, x1, BD - 0.3, height + 0.5, [150, 84, 62], { grain: 0 });
   for (let z = GROUND_H + 0.5; z + 1.3 < height; z += FLOOR_H) {
     for (let a = x0 + 0.5; a + 0.7 < x1; a += 1.4) {
       r.box(a - 0.08, BD - 0.15, z - 0.08, a + 0.78, BD - 0.1, z + 1.38, WHITE, { grain: 0 });
-      r.box(a, BD - 0.1, z, a + 0.7, BD - 0.08, z + 1.3, hash(a, z + seed) > 0.6 ? [236, 190, 120] : [66, 62, 76], { grain: 0 });
+      const on = hash(a, z + seed) > 0.6;
+      if (on) r.setId(litId);
+      r.box(a, BD - 0.1, z, a + 0.7, BD - 0.08, z + 1.3, on ? [236, 190, 120] : [66, 62, 76], { grain: 0 });
+      r.setId(0);
       r.box(a - 0.1, BD - 0.1, z - 0.1, a + 0.8, BD + 0.25, z - 0.04, IRON, { grain: 0 });
       r.box(a - 0.1, BD + 0.2, z - 0.04, a + 0.8, BD + 0.25, z + 0.5, IRON, { grain: 0 });
     }

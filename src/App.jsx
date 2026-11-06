@@ -2,6 +2,8 @@
 // el menú. Este componente coordina el panorama de habitaciones, la librería, los paneles, el sonido y el
 // temporizador. Cambiar de habitación es estado de interfaz: no recrea proveedores ni toca la biblioteca.
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { modalRoot } from './components/panels/modalRoot';
 import { isAmbiencePlaying, setAmbience, setSfx, setTimeOfDay } from './audio/ambientAudio';
 import { playUiSound, setUiVolume } from './audio/uiSounds';
 import { timeOfDayByClock } from './domain/dates';
@@ -46,6 +48,7 @@ const GoodreadsImportPanel = lazy(() => import('./features/imports/GoodreadsImpo
 // 1.58 (SPEC §56): la visita a un rincón se carga solo al abrirla (y el vídeo, solo cuando empieza la entrada)
 const ReaderVisit = lazy(() => import('./features/social/components/ReaderVisit').then((m) => ({ default: m.ReaderVisit })));
 // Piloto del piso en primera persona (solo laboratorio): se abre con /?piloto=piso; el inicio no cambia
+const PISO_MESA = { on: 'Está sobre la mesa', off: 'Dejar sobre la mesa' };
 const PisoLabPanel = lazy(() => import('./features/pisoLab/PisoLabPanel').then((m) => ({ default: m.PisoLabPanel })));
 const EdificioPanel = lazy(() => import('./features/edificio/EdificioPanel').then((m) => ({ default: m.EdificioPanel })));
 const ReaderProfile = lazy(() => import('./features/social/components/ReaderProfile').then((m) => ({ default: m.ReaderProfile })));
@@ -352,11 +355,13 @@ function Sanctuary() {
             close();
           }}
           // Si el registro termina el libro, su reseña sustituye a la vista de registro (como en la ficha)
-          onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })}
+          onComplete={(id) => switchPanel(panel.type === 'pisoLab' ? { type: 'review', id, tab: 'piso', select: panel.id } : { type: 'review', id, tab: 'book' })}
         />
       )}
       {!panel && <LogUndoToast item={undoLog} onUndo={undoLastLog} />}
-      {panel?.type === 'review' &&<ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel(panel.tab === 'book' ? { type: 'book', id: panel.id } : { type: 'laptop', tab: 'calendar', select: panel.select })} />}
+      {/* Piloto: al volver a la habitación tras registrar, el mismo aviso, por encima del panel del piso */}
+      {panel?.type === 'pisoLab' && panel.id && !panel.select && createPortal(<LogUndoToast item={undoLog} onUndo={undoLastLog} />, modalRoot())}
+      {panel?.type === 'review' &&<ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel(panel.tab === 'piso' ? { type: 'pisoLab', id: panel.select } : panel.tab === 'book' ? { type: 'book', id: panel.id } : { type: 'laptop', tab: 'calendar', select: panel.select })} />}
       {panel?.type === 'vault' && (
         <FiguresVaultModal
           onClose={close}
@@ -418,12 +423,17 @@ function Sanctuary() {
             onSelect={(select) => openPanel({ type: 'pisoLab', id: panel.id, select })}
             onBack={close}
             onClose={close}
-            onOpenBook={(book) => openPanel({ type: 'book', id: book.id })}
+            onOpenBook={(book, row) => openPanel({ type: 'pisoLab', id: panel.id, select: `ficha:${row}:${book.id}` })}
             onRegister={() => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' })}
             onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
           />
         </Suspense>
       )}
+      {panel?.type === 'pisoLab' && panel.select?.startsWith('ficha:') && (() => {
+        const bookId = panel.select.split(':').slice(2).join(':');
+        const row = panel.select.split(':')[1];
+        return <BookDetailModal key={bookId} bookId={bookId} mainPlace={PISO_MESA} onClose={close} onSwitch={(id, tab) => switchPanel(tab ? { type: 'book', id, tab } : { type: 'pisoLab', id: panel.id, select: `ficha:${row}:${id}` })} timer={timer} soundOn={settings.sound} onToggleSound={toggleSound} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />;
+      })()}
       {panel?.type === 'edificio' && (
         <Suspense fallback={null}>
           <EdificioPanel

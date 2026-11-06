@@ -9,8 +9,8 @@ import { createRoom, exportRoom, importRoom, validateRoom } from '../edificio/ro
 // «plano2»: los pisos de prueba cambiaron de distribución; un guardado del plano anterior dejaría el sillón mirando a la pared
 const KEY = (id) => `bookshelf:lab:piso-primera-persona:plano2:${id}`;
 
-/** Altura del horizonte por planta, respecto a los ojos (en celdas de la habitación). */
-export const PLANTAS = { 1: { horizonte: -0.15 }, 2: { horizonte: 0.1 }, 3: { horizonte: 0.35 } };
+/** Altura del horizonte en el hueco por planta, respecto a los ojos (en celdas de la habitación). Sube poco, para que la corona del hotel siga dentro del hueco; lo que más baja con la planta son los tejados: `ALTURAS`. */
+export const PLANTAS = { 1: { horizonte: 0.45 }, 2: { horizonte: 0.49 }, 3: { horizonte: 0.53 } };
 /** Qué se ve desde cada pared según la fachada a la que da el piso. Solo `hotel` enseña el Gran Hotel. */
 export const FACHADAS = {
   sur: { fondo: 'hotel', izq: 'mar' },
@@ -111,7 +111,7 @@ export function ventanasDe(piso, room) {
     .filter((i) => i.id === 'ventana')
     .map((i) => {
       const vista = FACHADAS[piso.fachada][i.pared];
-      return { uid: i.uid, pared: i.pared, a: i.a, tono: i.tono, vista, hotel: vista === 'hotel', horizonte: PLANTAS[piso.planta].horizonte };
+      return { uid: i.uid, pared: i.pared, a: i.a, tono: i.tono, vista, hotel: vista === 'hotel', planta: piso.planta, horizonte: PLANTAS[piso.planta].horizonte, plants: room.items.some((p) => p.id === 'planta-grande' || p.id === 'planta-pequena') };
     });
 }
 

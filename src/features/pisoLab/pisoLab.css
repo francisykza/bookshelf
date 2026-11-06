@@ -12,6 +12,7 @@
 }
 
 .plab-room {
+  position: relative;
   height: 100%;
 }
 
@@ -20,6 +21,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  padding-right: max(8px, env(safe-area-inset-right));
+  padding-left: max(8px, env(safe-area-inset-left));
 }
 
 .plab-bar svg {
@@ -72,14 +75,86 @@
 .plab-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  align-items: stretch;
+  gap: 4px 6px;
+  padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   background: #f3ead6;
 }
 
 .plab-primary {
-  flex-basis: 100%;
-  min-height: 44px;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 4px;
+  text-align: left;
+}
+
+.plab-primary span,
+.plab-primary small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plab-primary span {
+  font: 600 0.92rem/1.1 'Lora', Georgia, serif;
+}
+
+.plab-primary small {
+  font: italic 0.78rem/1.15 'Lora', Georgia, serif;
+}
+
+.plab-tools {
+  display: flex;
+  flex: none;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.plab-tool {
+  flex-direction: column;
+  gap: 2px;
+  width: 58px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 0;
+  font: 600 0.72rem/1 'Lora', Georgia, serif;
+}
+
+.plab-tool img {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+}
+
+/* El aviso de «Deshacer», al volver a la habitación: por encima del panel del piso */
+#modal-root > .log-toast {
+  z-index: 1001;
+}
+
+.plab-hint {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  padding: 1px 3px;
+  border: 6px solid transparent;
+  border-image: var(--px-tag) 6 fill / 6px stretch;
+  color: #3a2415;
+  font: 600 0.78rem/1.1 'Lora', Georgia, serif;
+  white-space: nowrap;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.plab-hint[hidden] {
+  display: none;
 }
 
 .plab-note {
@@ -94,36 +169,49 @@
   text-decoration: underline;
 }
 
-.plab-cover {
+.plab-spot {
   position: absolute;
   z-index: 2;
   padding: 0;
-  overflow: hidden;
   border: 0;
-  border-radius: 1px 2px 2px 1px;
-  background: var(--spine);
-  box-shadow: -2px 1px 5px rgb(20 10 4 / 0.45);
+  background: transparent;
   cursor: pointer;
 }
 
-.plab-cover img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.plab-pick {
+  position: absolute;
+  z-index: 3;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  color: #3a2415;
+  background: #f3ead6;
+  border: 2px solid #5a3a22;
 }
 
-.plab-cover__cloth {
-  display: grid;
-  place-items: center;
-  height: 100%;
-  padding: 4px;
-  color: #f3e7cc;
-  font: 600 0.72rem/1.1 'Cormorant Garamond', Georgia, serif;
+.plab-pick__text {
+  min-width: 0;
+  margin: 0;
+  font: 1rem/1.2 'Cormorant Garamond', Georgia, serif;
+}
+
+.plab-pick__text strong,
+.plab-pick__text span {
+  display: block;
   overflow-wrap: anywhere;
 }
 
-.plab-cover:focus-visible {
+.plab-pick__open {
+  flex: none;
+  min-height: 44px;
+}
+
+.plab-spot:focus-visible {
   outline: 3px solid #ffe7b0;
   outline-offset: 1px;
 }
@@ -141,4 +229,238 @@
 
 .plab-fallback p {
   margin: 0 0 6px;
+}
+
+/* Toda la biblioteca, encima de la habitación */
+.plab-library {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f3ead6;
+  color: #3a2415;
+}
+
+.plab-library__head {
+  display: grid;
+  gap: 6px;
+  padding: calc(6px + env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));
+  border-bottom: 2px solid #c9b48c;
+}
+
+.plab-library__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plab-library__top svg {
+  width: 16px;
+  height: 16px;
+}
+
+.plab-library__top .plab-title:focus {
+  outline: none;
+}
+
+.plab-library__search {
+  position: relative;
+}
+
+/* Con menos de 16 px Safari acerca la página al escribir */
+.plab-library__search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 44px 0 10px;
+  border: 2px solid #6a4a2e;
+  border-radius: 0;
+  background: #fffaf0;
+  color: #3a2415;
+  font: 400 16px/1.2 'Lora', Georgia, serif;
+  appearance: none;
+}
+
+.plab-library__search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.plab-library__clear {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: #3a2415;
+}
+
+.plab-library__clear svg {
+  width: 18px;
+  height: 18px;
+}
+
+.plab-library__filters {
+  display: flex;
+  gap: 4px;
+  margin: 0 calc(-1 * max(8px, env(safe-area-inset-right))) 0 calc(-1 * max(8px, env(safe-area-inset-left)));
+  padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.plab-filter {
+  flex: none;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 2px solid #b39a6e;
+  background: #fbf4e4;
+  color: #3a2415;
+  font: 600 0.82rem/1 'Lora', Georgia, serif;
+}
+
+.plab-filter[aria-pressed='true'] {
+  border-color: #3a2415;
+  background: #3a2415;
+  color: #fbf4e4;
+}
+
+.plab-library__count {
+  margin: 0;
+  min-height: 1.2em;
+  font: italic 0.82rem/1.2 'Lora', Georgia, serif;
+}
+
+.plab-library__list {
+  flex: 1;
+  min-height: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.plab-library__list ul {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plab-row {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  border-bottom: 1px solid #dccba8;
+  contain: strict;
+}
+
+.plab-row__open {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+
+.plab-row__cover {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 42px;
+  height: 63px;
+  overflow: hidden;
+  background: #d9c9a6;
+  font-size: 5px;
+}
+
+.plab-row__cover > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.plab-row__text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.plab-row__text > * {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plab-row__text strong {
+  font: 600 0.94rem/1.2 'Lora', Georgia, serif;
+}
+
+.plab-row__text span {
+  font: 400 0.82rem/1.2 'Lora', Georgia, serif;
+}
+
+.plab-row__text small {
+  font: italic 0.74rem/1.2 'Lora', Georgia, serif;
+  color: #6a4f33;
+}
+
+.plab-row__exhibit {
+  flex: none;
+  width: 82px;
+  min-height: 44px;
+  padding: 0 2px;
+  font: 600 0.78rem/1 'Lora', Georgia, serif;
+}
+
+.plab-library__more {
+  display: block;
+  width: calc(100% - 16px);
+  min-height: 44px;
+  margin: 8px;
+}
+
+/* Medidas en el móvil (&medir=1) */
+.plab-meter {
+  margin-left: auto;
+}
+
+.plab-meter__sheet {
+  position: absolute;
+  z-index: 8;
+  top: 100%;
+  right: 4px;
+  left: 4px;
+  display: grid;
+  gap: 4px;
+  max-height: 70dvh;
+  padding: 8px;
+  overflow: auto;
+  border: 2px solid #3a2415;
+  background: #fffaf0;
+  color: #3a2415;
+  font: 400 0.8rem/1.25 'Lora', Georgia, serif;
+}
+
+.plab-meter__sheet p {
+  margin: 0;
+  overflow-wrap: anywhere;
 }

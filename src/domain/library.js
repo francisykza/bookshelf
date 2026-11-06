@@ -58,7 +58,10 @@ export const EMPTY_TEXT = {
   loading: 'Abriendo tu biblioteca…',
 };
 
-const SHELF_STATES = ['reading', 'read', 'want', 'abandoned'];
+export const SHELF_STATES = ['reading', 'read', 'want', 'abandoned'];
+
+/** Orden de un estado en la cola de lomos. */
+export const shelfQueueOrder = (s) => (x, y) => shelfSort(s)(x, y) || String(x.id).localeCompare(String(y.id));
 
 /**
  * Orden estable de los lomos con TODA la biblioteca (1.54, SPEC §52.2): el libro de la cama primero y después los
@@ -66,7 +69,7 @@ const SHELF_STATES = ['reading', 'read', 'want', 'abandoned'];
  * aunque no quepan todos, en las baldas hay libros de cada estado; nada se baraja al pintar.
  */
 export function roomShelfQueue(books, currentId) {
-  const lists = SHELF_STATES.map((s) => books.filter((b) => b.status === s && b.id !== currentId).sort((x, y) => shelfSort(s)(x, y) || String(x.id).localeCompare(String(y.id))));
+  const lists = SHELF_STATES.map((s) => books.filter((b) => b.status === s && b.id !== currentId).sort(shelfQueueOrder(s)));
   const queue = books.filter((b) => b.id === currentId);
   for (let i = 0; lists.some((l) => i < l.length); i++) for (const l of lists) if (i < l.length) queue.push(l[i]);
   return queue;

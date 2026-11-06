@@ -62,6 +62,9 @@ const ICONS = {
   // 1.75: los botones del ascensor del hotel, de latón y encendido
   boton: ['...ooooo...', '.ooYYYYyoo.', '.oYYyyyyyo.', 'oYyyyyyyybo', 'oYyyyyyyybo', 'oYyyyyyyybo', 'oyyyyyyyybo', 'oyyyyyyybbo', '.obyyyybbo.', '.oobbbbboo.', '...ooooo...'],
   botonLuz: ['...ooooo...', '.ooAAAAaoo.', '.oAAaaaaao.', 'oAaaaaaaayo', 'oAaaaaaaayo', 'oAaaaaaaayo', 'oaaaaaaaayo', 'oaaaaaaayyo', '.oyaaaayyo.', '.ooyyyyyoo.', '...ooooo...'],
+  // Piloto del piso: la balda con sus libros
+  balda: ['...........', '.ooo.oo.oo.', '.oro.oGoo..', '.oro.oGo.oo', '.oro.oGo.oy', '.oro.oGo.oy', '.oro.oGo.oo', '.ooo.ooo...', 'ooooooooooo', 'owwwwwwwwwo', 'ooooooooooo'],
+  lupa: ['...ooo.....', '..o...o....', '.o.....o...', '.o.....o...', '.o.....o...', '..o...o....', '...ooo.o...', '........o..', '.........o.', '..........o', '...........'],
   sobre: ['...........', '...........', 'ooooooooooo', 'oopppppppoo', 'opopppppopo', 'oppopppoppo', 'opppoRopppo', 'opppppppppo', 'ossssssssso', 'ooooooooooo', '...........'],
 };
 
@@ -103,6 +106,9 @@ export function installPixelVars() {
 
 /** La imagen de un icono (para usarla desde React). */
 export const pixelIconSrc = (name) => pixelVars()[`--px-i-${name}`].slice(4, -1);
+
+/** Un icono más pequeño, redibujado a dos píxeles por píxel para que siga nítido. */
+export const pixelIconSmallSrc = (name) => paint(ICONS[name], 2);
 
 /** Un icono como imagen decorativa (el nombre lo lleva el botón). */
 export function pixelIcon(name) {
