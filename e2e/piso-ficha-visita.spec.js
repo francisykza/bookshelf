@@ -90,6 +90,14 @@ for (const keyboard of ['cerrado', 'android', 'iphone']) {
     await page.screenshot({ path: `${OUT}/ficha-${keyboard}-${info.project.name}.png` });
     await sheet.getByRole('button', { name: /Guardar lectura/ }).click();
     await expect.poll(() => stored(page)).toEqual({ pagina: before.pagina + 5, sesiones: before.sesiones + 1 });
+    // Confirmación, progreso al día y formulario cerrado, con «Deshacer» a mano
+    await expect(sheet.locator('.log-toast--inline')).toContainText('Lectura registrada');
+    await expect(sheet.locator('.log-toast--inline').getByRole('button', { name: 'Deshacer' })).toBeVisible();
+    await expect(sheet.locator('.reading-form')).toHaveCount(0);
+    await expect(sheet.getByRole('spinbutton', { name: 'Página actual' })).toHaveValue(String(before.pagina + 5));
+    await expect(sheet.getByRole('button', { name: 'Registrar lectura' })).toBeFocused();
+    await sheet.locator('.log-toast--inline').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${OUT}/ficha-guardado-${keyboard}-${info.project.name}.png` });
     // Al recargar, la app vuelve a donde estaba (el historial) con lo leído del almacenamiento
     await page.reload();
     await page.waitForFunction(() => document.querySelector('.plab-room, .book-sheet') && typeof window.__pisoLab === 'function', null, { timeout: 30000 });
@@ -97,6 +105,87 @@ for (const keyboard of ['cerrado', 'android', 'iphone']) {
     expect(await stored(page)).toEqual({ pagina: before.pagina + 5, sesiones: before.sesiones + 1 });
   });
 }
+
+// Abre la ficha de un libro de la biblioteca de prueba desde «Buscar en toda la biblioteca»
+async function openSheet(page, id) {
+  await page.getByRole('button', { name: 'Ver la balda' }).click();
+  await page.waitForFunction(() => window.__pisoLab().debug().zoomed);
+  await page.getByRole('button', { name: /Buscar en toda la biblioteca/ }).click();
+  const title = await page.evaluate((x) => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.id === x).title, id);
+  await page.getByRole('searchbox', { name: /Buscar por título/ }).fill(title);
+  await page.locator('.plab-row__open').first().click();
+  return page.locator('.book-sheet');
+}
+const bookOf = (page, id) => page.evaluate((x) => {
+  const s = JSON.parse(localStorage.getItem('bookshelf:v1'));
+  const b = s.books.find((y) => y.id === x);
+  return { status: b.status, pagina: b.currentPage, total: b.pageCount, terminado: b.finishedAt, antes: b.pastReads ?? [], sesiones: (s.progress?.readingLog ?? []).filter((e) => e.bookId === x).length };
+}, id);
+// Cambia un libro (y, si se pide, añade una sesión al registro) antes de que la app arranque en la siguiente carga: al
+// salir, la app vuelve a escribir su estado y pisaría un cambio hecho con la página abierta. Solo una vez.
+async function setBook(page, id, patch, entry = null) {
+  await page.addInitScript(([x, p, e]) => {
+    if (sessionStorage.getItem('prueba:hecho')) return;
+    sessionStorage.setItem('prueba:hecho', '1');
+    const s = JSON.parse(localStorage.getItem('bookshelf:v1'));
+    s.books = s.books.map((b) => (b.id === x ? { ...b, ...p } : b));
+    if (e) s.progress = { ...s.progress, readingLog: [...(s.progress?.readingLog ?? []), { ...e, bookId: x }] };
+    localStorage.setItem('bookshelf:v1', JSON.stringify(s));
+  }, [id, patch, entry]);
+  await page.goto('/?piloto=piso&biblioteca=50');
+}
+
+test('ficha: «Deshacer» devuelve el progreso y la sesión, también tras recargar', async ({ page }) => {
+  await enter(page);
+  const sheet = await openSheet(page, 'lab-0');
+  const before = await stored(page);
+  await sheet.getByRole('button', { name: 'Registrar lectura' }).click();
+  await sheet.locator('.reading-form__input input').fill('7');
+  await sheet.getByRole('button', { name: /Guardar lectura/ }).click();
+  await expect.poll(() => stored(page)).toEqual({ pagina: before.pagina + 7, sesiones: before.sesiones + 1 });
+  await sheet.locator('.log-toast--inline').getByRole('button', { name: 'Deshacer' }).click();
+  await expect(sheet.getByText('Registro deshecho')).toBeVisible();
+  await expect.poll(() => stored(page)).toEqual(before);
+  await page.reload();
+  await page.waitForTimeout(1500);
+  expect(await stored(page)).toEqual(before);
+});
+
+test('ficha: en la última página y aún en «Leyendo» se ofrece terminarlo', async ({ page }) => {
+  const id = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.status === 'reading' && b.id !== 'lab-0' && b.pageCount > 0).id);
+  const { total } = await bookOf(page, id);
+  await setBook(page, id, { currentPage: total, currentPercent: 100 });
+  await enter(page);
+  const sheet = await openSheet(page, id);
+  await expect(sheet.locator('.sheet-log__finish')).toContainText('última página');
+  expect((await bookOf(page, id)).status).toBe('reading');
+  await sheet.getByRole('button', { name: 'Marcar como terminado' }).click();
+  await expect.poll(async () => (await bookOf(page, id)).status).toBe('read');
+});
+
+test('ficha: la relectura se empieza a petición y conserva el historial', async ({ page }) => {
+  const id = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.status === 'read' && b.pageCount > 0).id);
+  // Una sesión anterior en el registro, para ver que se conserva
+  await setBook(page, id, {}, { id: 'prueba-relectura', date: '2026-10-01', kind: 'read', delta: 20, createdAt: '2026-10-01T10:00:00.000Z' });
+  const before = await bookOf(page, id);
+  expect(before.sesiones).toBeGreaterThan(0);
+  await enter(page);
+  const sheet = await openSheet(page, id);
+  // Terminado: ni registro ni controles de página que lo devuelvan a «Leyendo» sin querer
+  await expect(sheet.getByRole('button', { name: 'Registrar lectura' })).toHaveCount(0);
+  await expect(sheet.getByRole('button', { name: 'Avanzar una página' })).toHaveCount(0);
+  expect((await bookOf(page, id)).status).toBe('read');
+  await sheet.getByRole('button', { name: 'Empezar relectura' }).click();
+  await expect(sheet.getByText('Ya lo leíste una vez')).toBeVisible();
+  await sheet.getByText('Ya lo leíste una vez').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${OUT}/relectura-${test.info().project.name}.png` });
+  await expect(sheet.getByRole('button', { name: 'Registrar lectura' })).toBeVisible();
+  await page.reload();
+  await page.waitForTimeout(1500);
+  const after = await bookOf(page, id);
+  expect(after).toMatchObject({ status: 'reading', pagina: 0, terminado: null, sesiones: before.sesiones });
+  expect(after.antes).toEqual([expect.objectContaining({ finishedAt: before.terminado })]);
+});
 
 test('recorrido: tu piso → edificio → piso de la vecina → edificio, y de visita no se toca nada', async ({ page }, info) => {
   await enter(page);

@@ -397,6 +397,30 @@ No he visto el guardado de 48 ms de la grabación. Su «0 libros rehechos» enca
 - El nombre del piso visitado («Piso de Vecina de prueba · 2.º B») se cortaba en la balda a 360 px. Ahora es un botón: un toque lo muestra entero en dos líneas y otro lo recoge (`aria-expanded`, y `title` con el nombre completo).
 - **Solo mirar:** sin registrar, Decorar ni Buscar. Al entrar, mirar la balda y salir, el `localStorage` queda igual, clave por clave (`e2e/piso-ficha-visita.spec.js`, y `piso-lab.spec.js` «el visitante»).
 
+## Cierre del registro, final del libro y relectura (7-11-2026)
+
+Medida de Francisco en esta prueba: guardados de 53 y 43 ms, un libro reconstruido y ninguna tarea de más de 50 ms. No se ha tocado el guardado.
+
+- **Cierre del registro en la ficha:** al guardar, el formulario se cierra y aparece «Lectura registrada · +N páginas» con **Deshacer** (8 s, como en la habitación: `LogUndoToast` y `revertLog`). El progreso de la ficha se actualiza y el foco vuelve a «Registrar lectura». «Deshacer» devuelve la página y la sesión y avisa «Registro deshecho».
+- **Última página en «Leyendo»:** la ficha ofrece «Marcar como terminado» (`atLastPage`) y, al pulsarlo, abre la reseña de terminar, como cuando un registro termina el libro. No se termina solo. Un registro que llega a la última página sigue terminando el libro como antes.
+- **Relectura, solo a petición:** en un libro terminado, la ficha no ofrece «Registrar lectura» ni los controles de página, que lo devolvían a «Leyendo» sin querer y borraban la fecha en que se terminó. En su lugar está **«Empezar relectura»** (`startReread`):
+  - la lectura anterior (inicio y fin) se guarda en `pastReads`;
+  - se vuelve a la página 0;
+  - las sesiones del registro no se tocan;
+  - la ficha dice «Ya lo leíste una vez; la última terminó el …».
+- **Campo nuevo `pastReads`** en el libro: va dentro de la biblioteca guardada, así que viaja igual a la nube. Los libros sin él siguen igual.
+- **Sigue igual:** elegir «Leyendo» en la balda de un libro terminado lo reabre como antes, sin guardar la lectura anterior. Corregir la última sesión de un libro terminado también lo reabre.
+
+Comprobado en emulación (Chromium y WebKit, 390 × 844), en `e2e/piso-ficha-visita.spec.js`:
+
+- Guardar y Cancelar se alcanzan con el teclado abierto (Android e iPhone simulados) y cerrado.
+- Al guardar, el formulario se cierra, aparece la confirmación con «Deshacer», el progreso queda al día y todo sigue tras recargar.
+- «Deshacer» funciona y su resultado sigue tras recargar.
+- En la última página se ofrece terminar el libro.
+- La relectura conserva la sesión anterior y la fecha de fin, también tras recargar.
+- Entrar en el piso de la vecina no cambia el almacenamiento.
+
+Capturas: `qa-report/piso-ficha-visita/`.
 ## Pendiente y limitaciones
 
 - **Sin vista propia** (se avisa y lleva a la vista de siempre): compañeros místicos con animación y copias con acabado.

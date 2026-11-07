@@ -8,9 +8,11 @@ import { Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from 
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
 import { playUiSound } from '../../audio/uiSounds';
-import { EDGE_NAMES, FORMATS, STATUS, currentBook, visualEdition, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, sprayedEdge, trackUnit } from '../../domain/books';
+import { EDGE_NAMES, FORMATS, STATUS, atLastPage, currentBook, visualEdition, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, sprayedEdge, trackUnit } from '../../domain/books';
 import { dayKey } from '../../domain/dates';
+import { describeEntry } from '../../domain/reading';
 import { ReadingEntryForm } from '../panels/ReadingEntryForm';
+import { LogUndoToast, UNDO_MS } from '../panels/ReadingLogSheet';
 import { RatingInput } from './Rating';
 import { Journal, useConfirmedSave } from './Annotations';
 import { NotebookShell, WaxSeal } from '../primitives';
@@ -100,6 +102,21 @@ function ProgressBlock({ book, onPage }) {
     );
   }
   const left = Math.max(0, (book.pageCount || 0) - book.currentPage);
+  // Terminado: la posición solo se mira. Moverla lo devolvería a «Leyendo» sin querer; la relectura se empieza aparte
+  if (book.status === 'read') {
+    return (
+      <div className="sheet-progress">
+        <h3 className="sheet-progress__title">Tu lugar en esta historia</h3>
+        <p className="sheet-progress__line">
+          <strong>
+            Pág. {book.currentPage.toLocaleString('es-ES')} de {book.pageCount.toLocaleString('es-ES')} · {formatPercent(pct)} leído
+          </strong>
+        </p>
+        <span className="page-controls__bar" style={{ '--p': `${pct}%` }} aria-hidden="true" />
+        <p className="sheet-progress__left">¡Terminado!</p>
+      </div>
+    );
+  }
   return (
     <div className="sheet-progress">
       <h3 className="sheet-progress__title">Tu lugar en esta historia</h3>
@@ -274,6 +291,15 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shownQuote, setShownQuote] = useState(null);
   const [logging, setLogging] = useState(false);
+  // Tras guardar, el formulario se cierra y queda «Lectura registrada» con «Deshacer» (los mismos 8 s que en la habitación)
+  const [undo, setUndo] = useState(null);
+  const [undone, setUndone] = useState(false);
+  const logButton = useRef(null);
+  useEffect(() => {
+    if (!undo) return undefined;
+    const id = setTimeout(() => setUndo((u) => (u === undo ? null : u)), Math.max(0, undo.at + UNDO_MS - Date.now()));
+    return () => clearTimeout(id);
+  }, [undo]);
   const [othersOpen, setOthersOpen] = useState(false);
   const scrollRef = useRef(null);
   const uid = useId();
@@ -440,20 +466,98 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
               onToggleSound={onToggleSound}
             />
 
-            {/* El mismo formulario de registro del calendario; si termina el libro, abre la reseña de terminar */}
+            {/* El mismo formulario de registro del calendario; si termina el libro, abre la reseña de terminar. Al guardar
+                se cierra y deja «Deshacer», como el registro de la habitación */}
             <div className="sheet-log">
-              <button type="button" className="sheet-btn sheet-btn--primary craft craft--terra" aria-expanded={logging} onClick={() => setLogging((v) => !v)}>
-                <Plus aria-hidden="true" />
-                Registrar lectura
-              </button>
-              {logging && (
+              {atLastPage(book) && (
+                <div className="sheet-log__finish">
+                  <p>Ya vas por la última página y el libro sigue en «Leyendo».</p>
+                  <button
+                    type="button"
+                    className="sheet-btn sheet-btn--primary craft craft--terra"
+                    onClick={() => {
+                      setUndo(null);
+                      update({ status: 'read' });
+                      setTimeout(() => actions.persistNow(), 0);
+                      onComplete?.(book.id);
+                    }}
+                  >
+                    Marcar como terminado
+                  </button>
+                </div>
+              )}
+              {book.status === 'read' ? (
+                <>
+                  <button
+                    type="button"
+                    className="sheet-btn sheet-btn--primary craft craft--terra"
+                    onClick={() => {
+                      setUndo(null);
+                      setUndone(false);
+                      actions.startReread(book.id);
+                      setTimeout(() => actions.persistNow(), 0);
+                    }}
+                  >
+                    <Plus aria-hidden="true" />
+                    Empezar relectura
+                  </button>
+                  <p className="sheet-log__note">Vuelves a la página 0. La lectura anterior y sus sesiones se quedan en tu historial.</p>
+                </>
+              ) : (
+                <button
+                  ref={logButton}
+                  type="button"
+                  className="sheet-btn sheet-btn--primary craft craft--terra"
+                  aria-expanded={logging}
+                  onClick={() => {
+                    setUndone(false);
+                    setLogging((v) => !v);
+                  }}
+                >
+                  <Plus aria-hidden="true" />
+                  Registrar lectura
+                </button>
+              )}
+              {logging && book.status !== 'read' && (
                 <ReadingEntryForm
                   date={dayKey()}
                   bookId={book.id}
-                  keepOpen
                   onCancel={() => setLogging(false)}
+                  onDone={(entry, meta) => {
+                    // Si termina el libro, su reseña sustituye a la ficha (onComplete): aquí no se cierra nada
+                    if (meta.completes) return;
+                    const d = describeEntry(entry);
+                    setLogging(false);
+                    setUndone(false);
+                    setUndo({ entry, before: meta.before, figuresBefore: meta.figuresBefore, text: d.advance ?? d.position ?? 'guardada', at: Date.now() });
+                    // El botón que tenía el foco se ha ido con el formulario: vuelve a «Registrar lectura»
+                    requestAnimationFrame(() => logButton.current?.focus({ preventScroll: true }));
+                  }}
                   onComplete={(id) => onComplete?.(id)}
                 />
+              )}
+              <LogUndoToast
+                className="log-toast--inline"
+                item={undo}
+                onUndo={() => {
+                  if (!undo) return;
+                  actions.revertLog(undo.entry.id, undo.before, undo.figuresBefore);
+                  setTimeout(() => actions.persistNow(), 0);
+                  setUndo(null);
+                  setUndone(true);
+                  logButton.current?.focus({ preventScroll: true });
+                }}
+              />
+              {undone && (
+                <p className="sheet-log__note" role="status">
+                  Registro deshecho: el progreso vuelve a como estaba.
+                </p>
+              )}
+              {book.pastReads?.length > 0 && (
+                <p className="sheet-log__note">
+                  {book.pastReads.length === 1 ? 'Ya lo leíste una vez' : `Ya lo leíste ${book.pastReads.length} veces`}
+                  {book.pastReads.at(-1)?.finishedAt ? `; la última terminó el ${new Date(book.pastReads.at(-1).finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}.
+                </p>
               )}
             </div>
 

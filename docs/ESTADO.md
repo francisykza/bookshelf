@@ -210,6 +210,13 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-07 · cuenta principal · cierre del registro, final del libro y relectura (subido a la rama, «Sí, sube la rama»)
+- Solo en la rama `experimento/piso-primera-persona`; `main` y producción no cambian. Detalle en `docs/qa/piso-primera-persona.md`, «Cierre del registro, final del libro y relectura».
+- **Ficha:** al guardar se cierra el formulario con «Lectura registrada» y Deshacer. En la última página y aún en «Leyendo» ofrece terminar el libro. Con un libro leído, «Empezar relectura» en vez de registrar o mover la página.
+- **Código compartido con la app:** `BookDetailModal.jsx`, `books.js` (`startReread`, `atLastPage`), `useLibrary.jsx` (acción `startReread`) y `ReadingLogSheet.jsx` (`className` del aviso). **Campo nuevo `pastReads`** en el libro, dentro de la biblioteca guardada; sin migración.
+- Sin cambiar: elegir «Leyendo» en la balda de un libro leído lo reabre como antes, sin guardar la lectura anterior.
+- Pruebas: `e2e/piso-ficha-visita.spec.js` 14 de 14 (Chromium y WebKit); piloto 92 de 92; `v134` y `v135` 22 de 22; Vitest de dominio 203 de 203 (nuevo `relectura.test.js`). Build bien.
+- Sin verificar: teclado real en Android y en un iPhone.
 ### 2026-11-07 · cuenta principal · ficha con teclado, «0 libros rehechos» y visitas (subido a la rama, «Sí, sube la rama»)
 - Solo en la rama `experimento/piso-primera-persona`; `main` y producción no cambian. Detalle en `docs/qa/piso-primera-persona.md`, «Ficha con teclado, «0 libros rehechos» y visitas».
 - **Registrar lectura en la ficha:** la fila de Guardar y Cancelar ya no queda pegada al pie, como en el registro independiente (`library-sheet.css`). El campo se lleva a la vista también en Android (`BookDetailModal.jsx`, código compartido con la app).

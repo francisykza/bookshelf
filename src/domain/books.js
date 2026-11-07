@@ -331,6 +331,30 @@ export function shelfSort(status) {
   };
 }
 
+/**
+ * Relectura (piloto del piso, 7-11-2026): solo de un libro terminado y siempre a petición, nunca por registrar una
+ * página más baja. La lectura anterior (inicio y fin) pasa a `pastReads` y se empieza desde el principio; las sesiones
+ * del registro no se tocan, así que el historial se conserva entero.
+ */
+export function startReread(book, now = new Date().toISOString()) {
+  if (book.status !== 'read') return book;
+  const past = { startedAt: book.startedAt || null, finishedAt: book.finishedAt || null };
+  return {
+    ...book,
+    pastReads: [...(Array.isArray(book.pastReads) ? book.pastReads : []), past],
+    status: 'reading',
+    currentPage: 0,
+    currentPercent: 0,
+    startedAt: now,
+    finishedAt: null,
+    abandonedAt: null,
+    updatedAt: now,
+  };
+}
+
+/** En «Leyendo» y ya en la última página (o en el 100 %): se ofrece terminarlo, sin terminarlo solo. */
+export const atLastPage = (book) => book.status === 'reading' && isComplete(book);
+
 /** Cambio de balda con sus consecuencias: terminado, empezado o vuelta a pendientes. */
 export function withStatus(book, status, now = new Date().toISOString()) {
   if (book.status === status) return book;

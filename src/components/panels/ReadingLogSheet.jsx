@@ -253,10 +253,10 @@ export const UNDO_MS = 8000;
  * Aviso tras guardar con «Deshacer» de la operación completa (registro, posición del libro y sellos). Su caducidad la
  * lleva quien lo crea (App, con la hora del registro): aquí solo se pinta, y nunca después de caducar.
  */
-export function LogUndoToast({ item, onUndo }) {
+export function LogUndoToast({ item, onUndo, className = '' }) {
   if (!item || Date.now() >= item.at + UNDO_MS) return null;
   return (
-    <div className="log-toast" role="status">
+    <div className={`log-toast ${className}`.trim()} role="status">
       <span>
         Lectura registrada · <b>{item.text}</b>
       </span>

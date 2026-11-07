@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { logPersist, serializeState, warmSerialization } from './serialize';
 import { SAMPLE_EDITIONS, sampleBook, sampleBooks, sampleReadingLog } from '../data/sampleBooks';
-import { clampPage, createBook, newId, normalizeRating, normalizeTotal, percentRead, roundTo, shelfSort, trackUnit, withPosition, withStatus, withTracking } from '../domain/books';
+import { clampPage, createBook, newId, normalizeRating, normalizeTotal, percentRead, roundTo, shelfSort, startReread, trackUnit, withPosition, withStatus, withTracking } from '../domain/books';
 import { appendEntry, bookLog, editEntry, isActive, normalizeLog, quickUpdate } from '../domain/reading';
 import { dayKey, timeOfDayByClock, weekKey } from '../domain/dates';
 import { EMPTY_COMPANION, applyTreasure } from '../domain/companion';
@@ -191,6 +191,8 @@ export function reducer(state, action) {
         }),
       };
     }
+    case 'startReread':
+      return { ...state, books: state.books.map((b) => (b.id === action.id ? startReread(b) : b)) };
     case 'setPage':
       return withQuick(state, action.id, action.page, action.source);
     case 'setTracking':
@@ -444,6 +446,7 @@ export function LibraryProvider({ children }) {
       setTracking: (id, unit) => dispatch({ type: 'setTracking', id, unit }),
       logReading: (entry, position) => dispatch({ type: 'logReading', entry, position }),
       revertLog: (entryId, book, figures) => dispatch({ type: 'revertLog', entryId, book, figures }),
+      startReread: (id) => dispatch({ type: 'startReread', id }),
       editSession: (sessionId, text) => dispatch({ type: 'editSession', sessionId, text }),
       removeSession: (sessionId) => dispatch({ type: 'removeSession', sessionId }),
       // Escritura inmediata tras guardar una lectura: devuelve false si el almacenamiento falla (SPEC §14.6)
