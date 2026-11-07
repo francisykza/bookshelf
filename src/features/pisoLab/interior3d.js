@@ -3,7 +3,7 @@
 // mismas coordenadas, giros y colores del `layout` que dibuja `render.js`, así que lo que mueves en el editor es lo que
 // ves aquí. La geometría de cada pieza del catálogo se comparte entre pisos; lo demás (materiales, texturas, luces y el
 // lienzo) es de cada montaje y `destroy()` lo libera. Solo se dibuja cuando algo cambia.
-import { AmbientLight, Box3, BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, Group, HemisphereLight, LinearFilter, Mesh, MeshBasicMaterial, MeshLambertMaterial, NearestFilter, PerspectiveCamera, PlaneGeometry, PointLight, Raycaster, RepeatWrapping, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
+import { AmbientLight, Box3, BoxGeometry, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, Group, HemisphereLight, LinearFilter, Matrix4, Mesh, MeshBasicMaterial, MeshLambertMaterial, NearestFilter, PerspectiveCamera, PlaneGeometry, PointLight, Raycaster, RepeatWrapping, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
 import { PAREDES, catalogItem } from '../edificio/catalog';
 import { shapeOf } from '../edificio/furniture';
 import { ROOM, heightOf, itemsOn, rectOf } from '../edificio/room';
@@ -11,7 +11,7 @@ import { essentialItems, mainShelf, readingTable } from './essentials';
 import { bookDims, wrapTitle } from './bookLayout';
 import { paintExterior } from './exterior';
 import { LAYERS, WATER_FRAMES, WATER_MS, PX_PER_CELL, layerMargins, layerPlane, rowOf } from './exteriorLayout';
-import { BALDA, baldaShadowTexture, bookTexture, contactShadowTexture, floorTexture, footShadowTexture, grainTexture, lampTexture, pagesTexture, pixelBook, pixelLamp, pixelTable, pixelWindow, shelfTexture, sillShadowTexture, spineAtlas, tableTexture, upholsteredArmchair, upholsteryTexture, wallPlates, wallTexture, windowTexture, woodShelf, computerTexture, doorTexture, drawerTexture, pixelComputer, pixelDoor } from './materials';
+import { BALDA, baldaShadowTexture, bookTexture, contactShadowTexture, floorTexture, footShadowTexture, grainTexture, lampTexture, pixelBook, pixelLamp, pixelTable, pixelWindow, shelfTexture, sillShadowTexture, tableTexture, upholsteredArmchair, upholsteryTexture, wallPlates, wallTexture, windowTexture, woodShelf, computerTexture, doorTexture, drawerTexture, pixelComputer, pixelDoor } from './materials';
 
 /** Ojos de una persona sentada: un poco por encima del respaldo del sillón (1,75 celdas, furniture.js). */
 export const EYE = 1.85;
@@ -28,7 +28,8 @@ const YAW_MAX = 0.6;
 /** Hasta dónde se puede girar si hace falta para ver un esencial. Más allá, el respaldo del sillón: se llega por el menú. */
 const YAW_REACH = 2.6;
 /** Con la mirada en la balda, lo que se deja libre: los lados y la barra de arriba, en px. */
-const ROW_MARGIN = { side: 10, top: 66, bottom: 10 };
+// Abajo, sitio para la tarjeta del libro elegido, que no tape los lomos
+const ROW_MARGIN = { side: 12, top: 66, bottom: 84 };
 /** Radio del dedo: un toque que cae justo al lado de un mueble lo sigue eligiendo. */
 const FINGER = 14;
 const MAX_LAMPS = 4;
@@ -53,14 +54,14 @@ const REACH_MARGIN = 0.75;
 /** Las cajas de `bookcase` que son armazón; el resto, sus libros de adorno. */
 const SHELF_FRAME = 7;
 /** Cada balda se mira desde la dirección del sillón: se acerca sin rodeos y se ve el lateral con su reflejo. De abajo arriba. */
-const ROW_VIEW = { x: 1.08, y: 0.9, dist: 2.25, side: 0.44, rows: [{ z: 0.56, up: 0.74 }, { z: 1.66, up: 0.24 }, { z: 2.76, up: 0.18 }] };
+// De cerca (1.88): la balda y sus libros en el centro, casi de frente; el recorrido empieza cerca y se aleja lo justo
+const ROW_VIEW = { x: 1.08, y: 0.9, dist: 2.25, near: 0.9, side: 0.22, rows: [{ z: 0.56, up: 0.62 }, { z: 1.66, up: 0.2 }, { z: 2.76, up: 0.12 }] };
 const ROW_FLOOR = [0.14, 1.24, BALDA.z1];
 const TWEEN_MS = 680;
 /** Un toque: el dedo apenas se mueve y se levanta pronto. Lo demás es girar o una pulsación que no pide nada. */
 const TAP_SLOP = 8;
 const TAP_MS = 450;
 const PULL = 0.15;
-const PULL_MS = 150;
 const COVER_TURN = -0.2;
 const MOTION = '(prefers-reduced-motion: reduce)';
 const reduced = () => typeof matchMedia === 'function' && matchMedia(MOTION).matches;
@@ -367,7 +368,6 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     woodMats.push(material);
     return own('materials', material);
   };
-  let shelfLights = [];
   let woodLit = null;
   let woodOff = null;
   let woodMat = null;
@@ -378,7 +378,6 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       const [x, y] = unturned(cat, shelf.rot, l.at.x - shelf.x, l.at.z - shelf.y);
       return { x, y, z: l.at.y };
     });
-    shelfLights = lights;
     woodLit = own('textures', shelfTexture(tono, { lights, lit: true }));
     woodOff = own('textures', shelfTexture(tono, { lights, lit: false }));
     woodMat = tinted(new MeshBasicMaterial({ map: woodLit }));
@@ -400,13 +399,16 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     furniture.add(foot);
   }
 
-  // Tus libros: tu lectura de frente, un poco girada, en la balda de la lámpara, y lomos reales hasta donde quepan.
-  // Comparten atlas y material; la luz de la lámpara les llega por vértice, según lo cerca que estén de ella
+  // Tus libros (1.88): cada ejemplar es el mismo modelo que el libro de la mesa, de pie, con el lomo hacia ti y la portada
+  // real de su edición en la tapa. Tu lectura, de frente en la balda de la lámpara; en las otras, el último se gira para
+  // enseñar su portada. La luz es la de la hora, la misma que en la mesa
   const shelfSpots = [];
-  const warmers = [];
+  // Lo que ocupan los libros de cada balda (en coordenadas de la estantería), para acercarse a ellos y no a la madera vacía
+  const rowBoxes = [null, null, null];
   let shelfCoverReal = false;
-  // Cuántos lomos llevan ya la cara de su libro (1.88)
-  let shelfLooks = 0;
+  // Cuántos ejemplares llevan ya su portada real, y cuántos su lomo auténtico
+  let shelfFaces = 0;
+  let shelfSpines = 0;
   let shelfCoverReady = Promise.resolve();
   // Lo que se tira y se rehace al cambiar los libros: la memoria de cada tanda no se queda en la tarjeta
   const freshKit = () => ({ materials: [], textures: [], geometries: [], meshes: [] });
@@ -414,6 +416,41 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     for (const m of kit.materials) m.dispose();
     for (const t of kit.textures) t.dispose();
     for (const g of kit.geometries) g.dispose();
+  };
+  // El libro de la mesa está tumbado (x: ancho, con el lomo en -x; y: grueso, con la tapa arriba; z: largo, el pie en +z).
+  // De pie: el ancho va hacia dentro de la balda (el lomo, hacia ti), la tapa mira a +x y la cabeza queda arriba
+  const UPRIGHT = new Matrix4().makeBasis(new Vector3(0, 0, -1), new Vector3(1, 0, 0), new Vector3(0, -1, 0));
+  const standing = (dims) => {
+    const g = pixelBook(dims);
+    g.applyMatrix4(UPRIGHT);
+    g.translate(-dims.thick / 2, 0, 0);
+    return g;
+  };
+  const SHOW_MS = 420;
+  const ease = (v) => {
+    const t = Math.max(0, Math.min(1, v));
+    return t * t * (3 - 2 * t);
+  };
+  /** Primero sale entero (lo bastante para girar sin rozar a sus vecinos) y después gira; al volver, al revés. */
+  const poseSpot = (s) => {
+    if (s.lead) {
+      s.hit.position.z = PULL * ease(s.show);
+      return;
+    }
+    // Entero por delante del canto de la estantería (sus laterales llegan a BALDA.front; los libros están en 0,6), con un
+    // margen: así gira sin rozar a sus vecinos ni a los laterales
+    const out = BALDA.front - 0.6 + 0.03 + s.width / 2 - s.depth;
+    // Recto hacia fuera de la balda, aunque el libro esté un poco girado: así no se mete en el sitio de su vecino
+    const along = out * ease(s.show / 0.45);
+    const turning = ease((s.show - 0.45) / 0.55);
+    // Al girar, la tapa quedaría corrida hacia un lado (gira sobre el lomo): ya fuera de la balda, se desliza para que
+    // la portada quede delante de su sitio y, en los extremos, dentro de la fila que enseña la cámara
+    const box = rowBoxes[s.row];
+    const half = s.width / 2;
+    const want = box && box.x1 - box.x0 > s.width ? Math.max(box.x0 + half, Math.min(box.x1 - half, s.x)) : s.x;
+    s.hit.position.x = -along * Math.sin(s.turn) + (want - s.x + s.depth) * turning;
+    s.hit.position.z = along * Math.cos(s.turn);
+    s.hit.rotation.y = (-Math.PI / 2 - s.turn) * turning;
   };
   let shelfLayer = null;
   let shelfKit = null;
@@ -426,8 +463,10 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       for (let k = woodMats.length - 1; k >= 0; k -= 1) if (shelfKit.materials.includes(woodMats[k])) woodMats.splice(k, 1);
     }
     shelfSpots.length = 0;
-    warmers.length = 0;
+    rowBoxes.fill(null);
     shelfCoverReal = false;
+    shelfFaces = 0;
+    shelfSpines = 0;
     shelfCoverReady = Promise.resolve();
     shelfLayer = null;
     shelfKit = null;
@@ -438,8 +477,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     shelfLayer = layer;
     furniture.add(layer);
     const own = (kind, x) => (kit[kind].push(x), x);
+    // Como en la mesa: la textura manda y la hora la tiñe
     const tinted = (material) => {
-      if (!material.map) material.userData.base = material.color.clone();
       woodMats.push(material);
       return own('materials', material);
     };
@@ -447,26 +486,17 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       kit.meshes.push(mesh);
       meshes.push(mesh);
     };
-    const shelfBooks = data;
+    const canvasTex = (canvas) => {
+      const tex = own('textures', new CanvasTexture(canvas));
+      tex.colorSpace = SRGBColorSpace;
+      tex.minFilter = LinearFilter;
+      tex.generateMipmaps = false;
+      return tex;
+    };
     const base = [0, -Math.PI / 2, Math.PI, Math.PI / 2][shelf.rot ?? 0];
     const lift = heightOf(room, shelf);
     const DEPTH = 0.56;
     const FRONT_Y = 0.6;
-    const list = shelfBooks.rows.flat();
-    const atlas = spineAtlas(list);
-    own('textures', atlas.texture);
-    // Las caras de los lomos (los colores de cada portada, o el lomo real) llegan después: se repinta la misma textura, una vez
-    shelfLooks = 0;
-    Promise.all(list.map((i) => Promise.resolve(i.look ?? null).then((v) => [i.id, v], () => [i.id, null]))).then((pairs) => {
-      if (destroyed || shelfKit !== kit) return;
-      const got = new Map(pairs.filter(([, v]) => v));
-      if (!got.size) return;
-      atlas.repaint(got);
-      shelfLooks = got.size;
-      invalidate();
-    });
-    const spineMat = tinted(new MeshBasicMaterial({ map: atlas.texture, vertexColors: true }));
-    const pages = tinted(new MeshBasicMaterial({ map: own('textures', pagesTexture()) }));
     const shadowMap = own('textures', contactShadowTexture());
     const shadowMat = own('materials', new MeshBasicMaterial({ map: shadowMap, color: '#1a0d08', transparent: true, depthWrite: false }));
     const plateOf = (x, z, width, depth, turn = 0) => {
@@ -477,105 +507,116 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       plate.userData = { id: 'estanteria' };
       layer.add(plate);
     };
-    // Una cara de la caja, a un recorte del atlas
-    const faceUv = (geometry, face, [rx, ry, rw, rh]) => {
-      const uv = geometry.attributes.uv;
-      const [W, H] = atlas.size;
-      const corners = [[rx, ry], [rx + rw, ry], [rx, ry + rh], [rx + rw, ry + rh]];
-      corners.forEach(([u, v], k) => uv.setXY(face * 4 + k, u / W, 1 - v / H));
-    };
-    const warmOf = (x, z) => {
-      let g = 0;
-      for (const l of shelfLights) {
-        const d = Math.hypot(x - l.x, FRONT_Y - l.y, z - l.z) / 2.6;
-        if (d < 1) g += (1 - d) ** 1.5;
-      }
-      return Math.min(1, g);
-    };
-    const place = (id, row, x, z, height, width, depth, turn, tilt = 0) => {
+    const place = (x, z, height, size, turn) => {
       const group = new Group();
       group.position.copy(shelfPoint(x, FRONT_Y, z + height / 2 + lift));
       group.rotation.y = base + turn;
-      group.rotation.z = tilt;
-      group.userData = { size: [width, height, depth] };
+      // Lo que se toca: [ancho, alto, hondo], con la cara de delante en z = hondo / 2
+      group.userData = { size };
       return group;
     };
+    /**
+     * Un ejemplar de pie con el modelo de la mesa: tela con su título hasta que llega su portada; entonces, la portada en la
+     * tapa, la forma de su portada y el lomo (el auténtico si lo hay; si no, reconstruido con sus colores).
+     */
+    const standingBook = (item, length, thick, width, face) => {
+      const dims = { width, length, thick, board: Math.max(0.012, thick * 0.11) };
+      const cover = tinted(new MeshBasicMaterial({ map: canvasTex(clothCover(item)) }));
+      const pages = tinted(new MeshBasicMaterial({ map: own('textures', bookTexture(item)) }));
+      const body = new Mesh(own('geometries', standing(dims)), [pages, cover]);
+      body.userData = { id: 'estanteria' };
+      const ready = Promise.resolve(face)
+        .catch(() => null)
+        .then((got) => {
+          if (!got || destroyed || shelfKit !== kit) return null;
+          if (got.look) {
+            pages.map = own('textures', bookTexture({ ...item, look: got.look }));
+            pages.needsUpdate = true;
+            if (got.look.authentic) shelfSpines += 1;
+          }
+          if (got.cover) {
+            cover.map = canvasTex(got.cover);
+            cover.needsUpdate = true;
+            shelfFaces += 1;
+          }
+          invalidate();
+          return got;
+        });
+      return { body, dims, ready };
+    };
 
-    const c = shelfBooks.cover;
-    const coverThick = Math.max(0.1, Math.min(0.2, c.thickness));
-    const coverHeight = Math.min(BALDA.ceiling - BALDA.z1 - 0.06, 0.72 * c.height);
+    // Tu lectura: el mismo ejemplar que en la mesa (medidas, lomo y portada), de pie y de frente
+    const c = data.cover;
+    const coverDims = bookDims(c);
+    const coverThick = coverDims.thick;
+    const coverHeight = coverDims.length;
     const COVER_X = 1.42;
-    const coverWidth = Math.max(0.46, 0.5 * c.height);
-    const coverGroup = place(c.id, 2, COVER_X, BALDA.z1, coverHeight, coverWidth, coverThick, COVER_TURN);
-    const coverHit = new Mesh(own('geometries', new BoxGeometry(coverWidth, coverHeight, coverThick)));
-    coverHit.userData = { id: 'estanteria' };
-    const clothTex = own('textures', new CanvasTexture(clothCover(c)));
-    clothTex.colorSpace = SRGBColorSpace;
-    clothTex.minFilter = LinearFilter;
-    clothTex.generateMipmaps = false;
-    const face = tinted(new MeshBasicMaterial({ map: clothTex }));
-    const cloth = tinted(new MeshBasicMaterial({ color: c.color }));
-    coverHit.material = [pages, cloth, pages, pages, face, cloth];
-    coverGroup.add(coverHit);
+    const coverWidth = coverDims.width;
+    const coverGroup = place(COVER_X, BALDA.z1, coverHeight, [coverWidth, coverHeight, coverThick], COVER_TURN);
+    // Tu lectura, de frente: el mismo libro girado para que su tapa mire hacia ti
+    const coverHold = new Group();
+    // La portada grande (la de la mesa) y el lomo de su cara: los dos, como en la mesa
+    const coverFace = Promise.all([Promise.resolve(c.coverLoad).catch(() => null), Promise.resolve(c.face).catch(() => null)]).then(([image, face]) => (image ? { cover: coverCanvas(image, 180, Math.round(180 / (image.naturalWidth / image.naturalHeight))), aspect: image.naturalWidth / image.naturalHeight, look: face?.look ?? null } : face));
+    const lead = standingBook(c, coverHeight, coverThick, coverWidth, coverFace);
+    lead.body.rotation.y = -Math.PI / 2;
+    coverHold.add(lead.body);
+    coverGroup.add(coverHold);
     layer.add(coverGroup);
     plateOf(COVER_X, BALDA.z1, coverWidth + 0.16, coverThick + 0.2, COVER_TURN);
-    shelfSpots.push({ id: c.id, row: 2, group: coverGroup, hit: coverHit, pull: 0 });
-    meshesAdd(coverHit);
-    shelfCoverReady = Promise.resolve(c.coverLoad).then((image) => {
-      if (!image || destroyed || shelfKit !== kit) return;
-      const aspect = image.naturalWidth / image.naturalHeight;
-      const [w0, h] = coverGroup.userData.size;
-      const w = Math.min(0.66, h * aspect);
-      coverHit.scale.x = w / w0;
+    shelfSpots.push({ id: c.id, row: 2, group: coverGroup, hit: coverHold, lead: true, show: 0, turn: 0, depth: 0, width: coverThick });
+    meshesAdd(lead.body);
+    rowBoxes[2] = { x0: COVER_X - coverWidth / 2, x1: COVER_X + coverWidth / 2, top: BALDA.z1 + coverHeight };
+    shelfCoverReady = lead.ready.then((got) => {
+      if (!got?.cover || shelfKit !== kit) return;
+      const w = bookDims(c, got.aspect).width;
+      lead.body.geometry = own('geometries', standing({ ...lead.dims, width: w }));
       coverGroup.userData.size[0] = w;
-      const width = 140;
-      const tex = own('textures', new CanvasTexture(coverCanvas(image, width, Math.round(width / aspect))));
-      tex.colorSpace = SRGBColorSpace;
-      tex.minFilter = LinearFilter;
-      tex.generateMipmaps = false;
-      face.map = tex;
-      face.needsUpdate = true;
       shelfCoverReal = true;
-      invalidate();
     });
 
-    shelfBooks.rows.forEach((items, row) => {
+    data.rows.forEach((items, row) => {
       if (!items.length) return;
       const floorZ = ROW_FLOOR[row];
-      const lastEnd = items[items.length - 1].x + items[items.length - 1].w;
-      // Arriba se arriman a la cubierta; en las otras baldas, el último se apoya en sus vecinos si hay sitio
+      // Hasta donde llega lo que ocupa el último, girado
+      const lastEnd = Math.max(...items.map((i) => i.x + i.w / 2 + (i.extent ?? i.w) / 2));
+      // Arriba se arriman a la cubierta
       const shift = row === 2 ? Math.max(0, COVER_X - coverWidth / 2 - 0.05 - (BALDA.x0 + lastEnd)) : 0;
-      const roomLeft = 1.72 - lastEnd;
-      items.forEach((item, k) => {
-        const lean = row !== 2 && k === items.length - 1 && k > 0 && roomLeft > 0.14 ? 0.1 : 0;
-        const x = BALDA.x0 + shift + item.x + item.w / 2 + (lean ? 0.045 : 0);
-        const height = Math.min((row === 2 ? BALDA.ceiling - BALDA.z1 : 0.96) - 0.06, item.h);
-        const z = floorZ + (lean ? (item.w / 2) * Math.sin(lean) : 0);
-        const group = place(item.id, row, x, z, height, item.w, DEPTH, 0, lean);
-        const geometry = own('geometries', new BoxGeometry(item.w, height, DEPTH));
-        for (const side of [0, 1, 3, 5]) faceUv(geometry, side, atlas.side(item.id));
-        faceUv(geometry, 2, atlas.pages);
-        faceUv(geometry, 4, atlas.spine(item.id));
-        const count = geometry.attributes.position.count;
-        const colors = new Float32Array(count * 3);
-        geometry.setAttribute('color', new BufferAttribute(colors, 3));
-        const g = warmOf(x, floorZ + height / 2);
-        warmers.push((lit) => {
-          const k2 = lit ? g : 0;
-          for (let v = 0; v < count; v += 1) colors.set([1 + 0.26 * k2, 1 + 0.08 * k2, 1 - 0.1 * k2], v * 3);
-          geometry.attributes.color.needsUpdate = true;
-        });
-        const hit = new Mesh(geometry, spineMat);
-        hit.userData = { id: 'estanteria' };
-        group.add(hit);
+      items.forEach((item) => {
+        // Las medidas del ejemplar, las de la mesa (`bookDims`), hasta que su portada le dé la proporción
+        const length = Math.min((row === 2 ? BALDA.ceiling - BALDA.z1 : 0.96) - 0.06, item.dims.length);
+        const width = item.dims.width;
+        const x = BALDA.x0 + shift + item.x + item.w / 2;
+        // El de cara se queda en medio de su hueco; los demás, con el lomo a ras del canto de la balda
+        const depth = item.display ? 0 : DEPTH / 2 - width / 2;
+        const group = place(x, floorZ, length, [item.w, length, item.display ? width : DEPTH], item.turn ?? 0);
+        const hold = new Group();
+        const made = standingBook(item, length, item.w, width, item.face);
+        made.body.position.z = depth;
+        hold.add(made.body);
+        group.add(hold);
         layer.add(group);
-        shelfSpots.push({ id: item.id, row, group, hit, pull: 0 });
-        meshesAdd(hit);
+        const spot = { id: item.id, row, group, hit: hold, lead: false, show: 0, turn: item.turn ?? 0, depth, width, x };
+        shelfSpots.push(spot);
+        meshesAdd(made.body);
+        // El libro toma la forma de su portada, sin salirse de la balda
+        made.ready.then((got) => {
+          if (!got?.aspect || shelfKit !== kit) return;
+          const w = Math.min(DEPTH, bookDims(item, got.aspect).width);
+          spot.width = w;
+          made.body.geometry = own('geometries', standing({ ...made.dims, width: w }));
+          if (!item.display) {
+            spot.depth = DEPTH / 2 - w / 2;
+            made.body.position.z = spot.depth;
+          } else group.userData.size[2] = w;
+          invalidate();
+        });
       });
       const from = BALDA.x0 + shift;
       plateOf(from + lastEnd / 2, floorZ, lastEnd + 0.14, DEPTH + 0.16);
+      const first = Math.min(...items.map((i) => i.x + i.w / 2 - (i.extent ?? i.w) / 2));
+      const tall = Math.max(...items.map((i) => i.dims.length));
+      rowBoxes[row] = { x0: from + first, x1: row === 2 ? COVER_X + coverWidth / 2 : from + lastEnd, top: floorZ + Math.max(tall, row === 2 ? coverHeight : 0) };
     });
-
   };
   buildShelfBooks(shelfBooks);
   // Lo que cada tablón deja en sombra debajo, también sobre los lomos de la balda de abajo
@@ -711,6 +752,15 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     group.add(shadow, body, hit);
     scene.add(group);
     meshes.push(hit);
+    // El lomo, el mismo que el de su ejemplar en la estantería: el auténtico si lo hay; si no, reconstruido de su portada
+    Promise.resolve(data.face)
+      .catch(() => null)
+      .then((got) => {
+        if (!got?.look || destroyed || bookKit !== kit) return;
+        pages.map = own('textures', bookTexture({ ...data, look: got.look }));
+        pages.needsUpdate = true;
+        invalidate();
+      });
     coverReady = Promise.resolve(data.coverLoad).then((image) => {
       if (!image || destroyed || bookKit !== kit) return;
       // El libro toma la forma de su portada
@@ -970,7 +1020,6 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     sun.color.set(light.sunColor);
     for (const l of lampLights) l.intensity = light.lamp;
     for (const f of fabrics.values()) f.color.set(light.fabric);
-    for (const w of warmers) w(hora !== 'dia');
     for (const m of woodMats) {
       m.color.set(light.wood);
       if (m.userData.base) m.color.multiply(m.userData.base);
@@ -1217,11 +1266,15 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   /** La balda `row` entera en pantalla, sea cual sea su ancho: se aleja lo justo, sin salir de la habitación. */
   function rowView(row) {
     const view = ROW_VIEW.rows[row];
-    const target = shelfPoint(ROW_VIEW.x, ROW_VIEW.y, view.z);
+    const low = ROW_FLOOR[row];
+    // Los libros de la balda, con un poco de madera alrededor; sin libros, la balda entera
+    const box = rowBoxes[row] ?? { x0: BALDA.x0, x1: BALDA.x1, top: low + 0.9 };
+    const [x0, x1] = [Math.max(0, box.x0 - 0.1), Math.min(2.16, box.x1 + 0.1)];
+    const [z0, z1] = [low - 0.04, box.top + 0.1];
+    const target = shelfPoint((x0 + x1) / 2, ROW_VIEW.y, (z0 + z1) / 2);
     const out = shelfPoint(1, 1, 0).sub(shelfPoint(1, 0, 0)).normalize();
     const across = shelfPoint(1, 0, 0).sub(shelfPoint(0, 0, 0)).normalize();
-    const low = ROW_FLOOR[row];
-    const corners = [0, 2.16].flatMap((x) => [low, low + 1.02].map((z) => shelfPoint(x, 1, z)));
+    const corners = [x0, x1].flatMap((x) => [z0, z1].map((z) => shelfPoint(x, 1.05, z)));
     const rect = canvas.getBoundingClientRect();
     const place = (dist) => {
       const pos = target.clone().addScaledVector(out, dist).addScaledVector(across, dist * ROW_VIEW.side);
@@ -1231,8 +1284,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       return pos;
     };
     const was = { pos: camera.position.clone(), q: camera.quaternion.clone() };
-    let pos = place(ROW_VIEW.dist);
-    for (let dist = ROW_VIEW.dist; dist <= 6; dist += 0.1) {
+    let pos = place(ROW_VIEW.near);
+    for (let dist = ROW_VIEW.near; dist <= 6; dist += 0.05) {
       const next = place(dist);
       camera.position.copy(next);
       camera.lookAt(target);
@@ -1435,26 +1488,96 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     onFrame(fn) {
       frameHook = fn;
     },
-    /** Saca un poco de su sitio el libro elegido y devuelve el anterior; con null, los devuelve todos. */
+    /**
+     * El libro elegido sale de la balda y gira hasta enseñarte su portada; el anterior vuelve antes a su sitio (primero se
+     * gira y luego entra), y solo entonces sale el nuevo: dos libros nunca se mueven a la vez. Tu lectura, que ya está de
+     * frente, solo se adelanta. Con movimiento reducido, sin animación. Con null, todos a su sitio.
+     */
     selectBook(id) {
       cancelAnimationFrame(pullRaf);
-      const set = (k) => {
+      const goal = (s) => (s.id === id ? 1 : 0);
+      if (reduced()) {
         for (const s of shelfSpots) {
-          s.pull += ((s.id === id ? PULL : 0) - s.pull) * k;
-          s.hit.position.z = s.pull;
+          s.show = goal(s);
+          poseSpot(s);
         }
         draw();
-      };
-      if (reduced()) return set(1);
-      const t0 = performance.now();
+        return undefined;
+      }
+      let last = performance.now();
       const step = (now) => {
         if (destroyed) return;
-        const t = Math.min(1, (now - t0) / PULL_MS);
-        set(t < 1 ? 0.35 : 1);
-        if (t < 1) pullRaf = requestAnimationFrame(step);
+        const dt = (now - last) / SHOW_MS;
+        last = now;
+        // Mientras otro no haya vuelto del todo, el elegido espera
+        const busy = shelfSpots.some((s) => s.id !== id && s.show > 0);
+        let moving = false;
+        for (const s of shelfSpots) {
+          const g = goal(s) && !busy ? 1 : 0;
+          if (s.show !== g) {
+            s.show = g > s.show ? Math.min(g, s.show + dt) : Math.max(g, s.show - dt);
+          }
+          moving = moving || s.show !== goal(s);
+          poseSpot(s);
+        }
+        draw();
+        if (moving) pullRaf = requestAnimationFrame(step);
       };
       pullRaf = requestAnimationFrame(step);
       return undefined;
+    },
+    /**
+     * Para las pruebas: recorre la salida y el giro de cada ejemplar en `steps` posturas y dice con qué vecinos se cruzaría
+     * (vistos desde arriba, cada libro es un rectángulo girado). También los cruces en reposo. [{ id, at, with }]
+     */
+    sweep(steps = 24) {
+      const quad = (s) => {
+        const body = s.hit.children[0];
+        body.geometry.computeBoundingBox();
+        const { min, max } = body.geometry.boundingBox;
+        s.group.updateMatrixWorld(true);
+        return [[min.x, min.z], [max.x, min.z], [max.x, max.z], [min.x, max.z]].map(([x, z]) => new Vector3(x, 0, z).applyMatrix4(body.matrixWorld)).map((v) => [v.x, v.z]);
+      };
+      // Separación por ejes (SAT): se cruzan si en ningún eje de los dos rectángulos quedan separados más de 2 mm
+      const cross = (p, q) => {
+        for (const poly of [p, q]) {
+          for (let k = 0; k < 4; k += 1) {
+            const [ax, az] = poly[k];
+            const [bx, bz] = poly[(k + 1) % 4];
+            const [nx, nz] = [az - bz, bx - ax];
+            const len = Math.hypot(nx, nz);
+            const proj = (pts) => pts.map(([x, z]) => (x * nx + z * nz) / len);
+            const [pa, pb] = [proj(p), proj(q)];
+            if (Math.max(...pa) <= Math.min(...pb) + 0.002 || Math.max(...pb) <= Math.min(...pa) + 0.002) return false;
+          }
+        }
+        return true;
+      };
+      const saved = shelfSpots.map((s) => s.show);
+      const found = [];
+      for (const s of shelfSpots) s.show = 0;
+      for (const s of shelfSpots) poseSpot(s);
+      for (const s of shelfSpots) {
+        const others = shelfSpots.filter((o) => o !== s && o.row === s.row);
+        const rest = others.map((o) => [o.id, quad(o)]);
+        for (let k = 0; k <= steps; k += 1) {
+          s.show = k / steps;
+          poseSpot(s);
+          const mine = quad(s);
+          const hit = rest.filter(([, q]) => cross(mine, q)).map(([oid]) => oid);
+          if (hit.length) {
+            found.push({ id: s.id, at: Math.round(s.show * 100) / 100, with: hit });
+            break;
+          }
+        }
+        s.show = 0;
+        poseSpot(s);
+      }
+      shelfSpots.forEach((s, k) => {
+        s.show = saved[k];
+        poseSpot(s);
+      });
+      return found;
     },
     /** Dónde caen en pantalla (px dentro del contenedor) los ejemplares de una balda: [{ id, left, top, width, height }]. */
     bookSlots(row) {
@@ -1559,10 +1682,22 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         requestAnimationFrame(step);
       });
     },
-    /** Dónde tocar (px de la ventana) para alcanzar el libro, la estantería o, con 'balda', la cubierta en ella: lo usan las pruebas. */
+    /**
+     * Dónde tocar (px de la ventana) para alcanzar el libro, la estantería o, con 'balda', la cubierta en ella; con 'balda:N',
+     * el centro de los libros de esa balda: lo usan las pruebas.
+     */
     screenOf(what) {
       aim();
       camera.updateMatrixWorld();
+      const rowOf = /^balda:([0-2])$/.exec(what);
+      if (rowOf) {
+        const row = Number(rowOf[1]);
+        const spots = shelf ? shelfSpots.filter((sp) => sp.row === row) : [];
+        if (!spots.length) return null;
+        const q = spots.reduce((sum, sp) => sum.add(sp.group.position), new Vector3()).divideScalar(spots.length).project(camera);
+        const r = canvas.getBoundingClientRect();
+        return { x: r.left + ((q.x + 1) / 2) * r.width, y: r.top + ((1 - q.y) / 2) * r.height };
+      }
       const piece = (what === 'ordenador' || what === 'puerta') && room.items.find((i) => i.id === (what === 'puerta' ? 'puerta-piso' : 'ordenador'));
       const point = piece ? (what === 'puerta' ? new Vector3(piece.pared === 'fondo' ? piece.a + 1 : 0.05, 1.5, piece.pared === 'fondo' ? 0.05 : piece.a + 1) : new Vector3(piece.x + 0.5, heightOf(room, piece) + 0.45, piece.y + 0.44)) : what === 'libro' ? bookGroup?.position.clone().add(new Vector3(0, 0.06, 0)) : shelf && (what === 'balda' ? shelfSpots[0]?.group.position.clone() : shelfPoint(1.7, 1, 1.75));
       if (!point) return null;
@@ -1579,8 +1714,10 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         memory: { ...renderer.info.memory },
         calls: renderer.info.render.calls,
         book: bookGroup ? { id: tableBook.id, color: tableBook.color, coverReal } : null,
-        shelf: { coverReal: shelfCoverReal, looks: shelfLooks, books: shelfSpots.map((s) => s.id), rows: [0, 1, 2].map((r) => shelfSpots.filter((s) => s.row === r).length) },
+        shelf: { coverReal: shelfCoverReal, faces: shelfFaces, spines: shelfSpines, shown: shelfSpots.filter((sp) => sp.show === 1).map((sp) => sp.id), books: shelfSpots.map((s) => s.id), rows: [0, 1, 2].map((r) => shelfSpots.filter((s) => s.row === r).length) },
         zoomed: Boolean(zoom),
+        // Para comparar encuadres entre navegadores: la balda, la cámara y el tamaño del lienzo
+        view: { row: zoomRow, pos: zoom ? zoom.pos.toArray().map((v) => Math.round(v * 1000) / 1000) : null, target: zoom ? zoom.target.toArray().map((v) => Math.round(v * 1000) / 1000) : null, rect: (({ width, height }) => [Math.round(width), Math.round(height)])(canvas.getBoundingClientRect()), fov: Math.round(camera.fov * 100) / 100 },
         paused: paused(),
         contextLost: lost,
         restores,

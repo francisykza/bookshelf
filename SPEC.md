@@ -5207,7 +5207,7 @@ publicarlo (7-11-2026, «Si funciona»).
 - Guardar con 5.000 libros: solo se reconstruye el libro modificado (`serializeState` con caché por objeto), pero se sigue escribiendo la biblioteca entera. Guardados medidos por Francisco: 53 y 43 ms.
 - Más detalle (desplazamiento, reposo y medidor `&medir=1`) en `docs/qa/piso-primera-persona.md`.
 
-## 88. La habitación de inicio es tu piso; los lomos tienen cara (1.88.0)
+## 88. La habitación de inicio es tu piso; cada libro, con su portada (1.88.0)
 
 Corrección de dos fallos de la 1.87 publicada (encargo de Francisco del 7-11-2026). Rama `1.88-habitacion-real`.
 
@@ -5229,20 +5229,89 @@ Corrección de dos fallos de la 1.87 publicada (encargo de Francisco del 7-11-20
 - Los pisos del piloto (`labStore.js`) solo con `?piloto=piso`. Una entrada del historial de la 1.87 (`lab-1A`) lleva a tu
   piso, o se cierra con la experiencia anterior.
 
-### 88.2 Lomos con la cara de su libro
+### 88.2 Cada ejemplar, con su portada real
 
-- Cada lomo dibujado lleva los **colores de su portada**, su **título** y el **apellido del autor**, en píxel. Con
-  `book.spine` (la imagen de un lomo propio) se usa esa; hoy ningún libro lo trae. Sin portada, o si la portada no deja
-  leer sus píxeles, el color de siempre.
-- Solo se piden las portadas de los ejemplares representados, **en miniatura** (`-S` de Open Library, `w80-h120` de
-  Google Books), cuatro a la vez y con una caché de 64 (`spineLooks.js`). Las portadas grandes (mesa y portada de
-  frente) se recuerdan como mucho 6.
+Encargos de Francisco del mismo día («prioridad visual» y los ajustes antes de cerrar la muestra): los libros de la
+estantería tienen el mismo tratamiento que el de la mesa, y **un mismo ejemplar se ve igual en la mesa y en la balda**.
+
+- **Un solo diseño por ejemplar.** Mesa y balda leen los mismos datos (`copyData`), las mismas medidas (`bookDims`:
+  alto, ancho y grosor según páginas y formato; el grosor va de 0,08 a 0,18) y la misma cara (`bookFace`: portada y
+  lomo). El modelo es `pixelBook` en los dos sitios (tapas que sobresalen, hojas, cantos, lomo). Solo cambian la
+  orientación (tumbado en la mesa, de pie en la balda) y la luz de cada sitio.
+- **Portada**: la real de su edición en la tapa, sin recortarla, pasarla a paleta ni sustituirla por colores; el libro
+  toma la proporción de su portada (el ancho, sin pasar del fondo de la balda). Sin portada, o si no se puede leer, la
+  tela con su título, como en la mesa. **La portada nunca se estira sobre el lomo para simular un lomo auténtico.**
+- **Lomo**: si el libro trae la imagen de su lomo (`book.spine`), se usa esa (auténtico). Si no (hoy, ningún libro), es
+  una **reconstrucción**: colores sacados del borde izquierdo de su portada (`spinePalette`) sobre uno de cinco diseños
+  (cabeza y pie con banda; bloque arriba con raya; dos filetes a lo largo; pie de otro color; filetes dobles y marca cuadrada), elegido por el ejemplar, con el título y el apellido en
+  píxel. El de la mesa usa el mismo lomo que el de la balda. La tarjeta del libro elegido lo dice: «Portada de su
+  edición · lomo reconstruido» (o «lomo de su edición»), y `debug().shelf.spines` cuenta los auténticos.
+- **Composición** (`composeRow` en `shelfLayout.js`): giros pequeños y fijos por libro, y nadie pisa al vecino (se
+  mide la huella girada); en las baldas de abajo y del medio, el último ejemplar se gira (0,8 rad) para enseñar su
+  portada. El ancho de cada balda se reparte según el grosor real y, si no caben todos, se aprieta un poco el relleno
+  antes de dejar ninguno fuera (`shelfRows`). Lo que no cabe se cuenta y no se dibuja. No cambia qué libros hay, su
+  orden ni la distribución guardada de la habitación.
+- **Al elegir uno**, sale recto de la balda (perpendicular al canto, aunque esté girado, para no meterse en el sitio
+  del vecino), hasta quedar entero por delante; luego gira hasta enseñar su portada y se desliza para que la portada
+  quede delante de su hueco y, en los extremos, dentro de la fila (420 ms; al soltarlo, al revés). Uno nuevo espera a que
+  el anterior haya vuelto. Con movimiento reducido, directo a su sitio final, sin animación. `sweep()` comprueba en
+  reposo y en cada postura de la salida y el giro que ningún libro atraviesa a otro.
+- **Cámara del acercamiento** (`rowView`): encuadra la balda elegida por sus libros (`rowBoxes`: de dónde a dónde llegan
+  y su altura), no por el mueble, con margen para la barra de arriba y la de abajo; así se recorta techo y suelo vacíos.
+- Solo se piden las portadas de los ejemplares representados, **en miniatura** (`-M` de Open Library, `w200-h300` de
+  Google Books, reducidas a 150 px), cuatro a la vez y con una caché de 64 (`spineLooks.js`). Las portadas grandes
+  (mesa y portada de frente) se recuerdan como mucho 6. Sigue el límite de 30 libros visibles: una biblioteca de miles
+  no crea más modelos ni pide más portadas.
 - La escena se vuelve a pintar si cambia la portada, el lomo, la edición, el color, el título o el autor, aunque el id
-  sea el mismo (`sceneKey` en `shelfLayout.js`).
-- Sigue el límite de 30 libros visibles y la búsqueda en toda la biblioteca.
+  sea el mismo (`sceneKey`).
 
 ### 88.3 Comprobado
 
-- Emulación (no móviles reales): `e2e-community/v188-habitacion-real.spec.js` con dos cuentas simuladas (entrada,
-  Decorar, edificio, regreso, recarga, cambio de cuenta, visita sin poder decorar); `e2e/piso-lomos.spec.js` con 1000
-  libros; `src/features/pisoLab/__tests__/spineLooks.test.js`.
+Todo en emulación (Chromium y WebKit de Playwright a 390 × 844); nada en un iPhone, en Safari ni en Android reales.
+
+- `e2e-community/v188-habitacion-real.spec.js` con dos cuentas simuladas (entrada, Decorar, edificio, regreso, recarga,
+  cambio de cuenta, visita sin poder decorar); `e2e/piso-lomos.spec.js` con 1000 libros (y la selección con movimiento
+  reducido); pruebas de `shelfLayout`, `bookLayout` y `spineLooks`.
+- `e2e/piso-muestra.spec.js` (ediciones reales de Open Library por ISBN; necesita red, sin red se salta):
+  - **cinco ediciones**: la habitación, cada balda de cerca y cada ejemplar elegido, frente a esa misma edición como libro
+    de la mesa, a la misma hora;
+  - **28 ediciones** distintas (27 representadas; filas de 10, 9 y 8): ningún cruce en reposo ni al salir y girar
+    (`sweep(32)`), y cada libro se elige con un toque en el centro de su sitio, comprobando que bajo el dedo está ese
+    libro y no un vecino (sitios de 16 a 71 px de ancho).
+  - Hojas comparativas en `qa-report/piso-muestra/hoja-webkit.png` y `hoja-chromium.png` (no van a git).
+- **Encuadre distinto entre Chromium y WebKit** (lo que se vio en las capturas anteriores): recorriendo la interfaz como
+  una persona (mirar a la estantería, tocar la balda) y esperando a que acabe el vuelo, los dos motores dan exactamente
+  la misma cámara (fila 1: posición [0,736, 1,687, 2,1], mira a [0,472, 1,58, 0,9]; fila 2: [1,54, 2,728, 2,15] →
+  [1,265, 2,661, 0,9]; lienzo 390 × 780, 80,83° de campo). La causa **probable** de la diferencia anterior es la prueba,
+  no la app: llamaba al acercamiento directamente, sin pasar por el panel, y capturaba a un tiempo fijo mientras el
+  vuelo de 680 ms seguía en marcha (Chromium dibuja por software y va más lento). No se ha reproducido la prueba antigua
+  para confirmarlo.
+- **Franja oscura arriba en Chromium** (vista antes con la tarjeta del libro elegido): **no se reproduce** con el código
+  actual y **su causa no está confirmada**. Comparación hecha: el lienzo leído con `toDataURL` en la misma tarea que su
+  dibujo frente a la captura de pantalla de esa zona, fila a fila, en la habitación, la balda de cerca y el libro
+  elegido con la tarjeta visible y oculta, en Chromium y en WebKit. En los ocho casos, ninguna banda de 4 px o más sale
+  en pantalla 25 niveles más oscura que el lienzo (la diferencia media es de 2 a 4 niveles; 17 con la tarjeta, que es la
+  propia tarjeta). Lo observado entonces: coincidía con la tarjeta reflejada en vertical y desaparecía al ocultarla, y
+  WebKit no la tenía. Sin una captura del fallo junto a su lienzo no se puede decir si era del dibujo, de la composición
+  de la página o de la emulación.
+- **Fallos intermitentes** en las tandas de pruebas del piso (Chromium y WebKit a 390 px: piso-lab, piso-lomos, piso-inicio,
+  piso-usabilidad, piso-esenciales, piso-ficha-visita y piso-muestra):
+  - `e2e/piso-lab.spec.js` «el libro: tocarlo abre el registro de ese ejemplar y al cancelar vuelves al mismo encuadre»
+    (WebKit): falló una vez un `toContainText` en una tanda anterior. Solo: 8 de 8. No falló en la tanda final.
+  - `e2e/piso-esenciales.spec.js` «el menú cabe en la pantalla, encima de los controles» (Chromium): falló una vez en esa
+    misma tanda. Solo: 8 de 8. No falló en la tanda final.
+  - El detalle del error de esos dos no se guardó (la salida se recortó) y no se ha vuelto a ver: **causa sin
+    identificar**. En la tanda siguiente fallaron otras dos que tampoco son de este cambio:
+    - `e2e/piso-esenciales.spec.js` «el decorador los identifica…» (WebKit): `screenOfItem` del edificio devuelve `null`
+      justo después de cambiar el color del escritorio (no encuentra sus píxeles en el dibujo). Sola, **falla 2 de 6**: es
+      intermitente de verdad, en el decorador del edificio, que esta rama no toca. Causa sin identificar.
+    - `e2e/piso-lab.spec.js` «si el registro termina el libro…» (WebKit): se agotaron los 90 s esperando el campo de
+      páginas del registro. Sola, pasa.
+  - Durante esa tanda el servidor anotó seis «Error creating WebGL context» (pruebas en paralelo con varios lienzos
+    WebGL). Es una pista de que la carga influye, **no una causa demostrada**.
+- **Tanda final** (con todo lo de arriba): 144 pasan, 1 se salta y 1 falla, «el decorador los identifica…» en WebKit.
+- **Fallo real encontrado y corregido**: con la cámara del acercamiento más cerca de la balda, en el recorrido hacia la
+  balda de abajo y la del medio se veía el final de las capas del paisaje de la ventana (la lejana por la derecha y por
+  arriba, la media por la derecha; `exteriorMargins` daba hasta −1,29 m). Las capas son ahora más anchas (lejana 6 celdas,
+  media 4,6) y la lejana más alta (hasta 4,4), con el cielo por encima de donde empezaba de su color más alto, así que
+  desde el sillón la ventana se ve igual. Margen mínimo ahora: 0,24 m.

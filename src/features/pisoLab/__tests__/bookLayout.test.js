@@ -12,8 +12,8 @@ describe('las medidas del libro de la mesa', () => {
   });
 
   it('un tomo enorme o un folleto se quedan dentro de lo razonable', () => {
-    expect(bookDims({ thickness: 2, height: 1 }).thick).toBe(0.15);
-    expect(bookDims({ thickness: 0.01, height: 1 }).thick).toBe(0.07);
+    expect(bookDims({ thickness: 2, height: 1 }).thick).toBe(0.18);
+    expect(bookDims({ thickness: 0.01, height: 1 }).thick).toBe(0.08);
   });
 
   it('una portada cuadrada o muy estrecha no deforma el libro', () => {

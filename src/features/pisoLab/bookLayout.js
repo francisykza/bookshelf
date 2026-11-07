@@ -1,16 +1,23 @@
-// Las medidas del libro de la mesa y el título de una cubierta sin portada. Sin Three.js ni lienzo: se prueban solos.
+// Las medidas de un ejemplar (el mismo en la mesa y en la estantería, 1.88) y el título de una cubierta sin portada. Sin
+// Three.js ni lienzo: se prueban solos.
 
 const BOOK_LENGTH = 0.62;
 /** Una cubierta rara no deforma el libro: fuera de esto, se ajusta a lo más cercano. */
 const ASPECT_MIN = 0.58;
 const ASPECT_MAX = 0.8;
 const ASPECT_CLOTH = 0.66;
-const THICK_MIN = 0.07;
-const THICK_MAX = 0.15;
-/** `thickness` viene exagerado para los lomos de la estantería; encima de la mesa, a la misma escala que su alto. */
-const THICK_SCALE = 0.55;
+const THICK_MIN = 0.08;
+const THICK_MAX = 0.18;
+/**
+ * `thickness`: el grosor del libro en celdas (`bookThicknessCm` · 0,06). Algo exagerado a la escala de su alto, para que un
+ * lomo se pueda tocar en la balda; el mismo en la mesa, porque es el mismo ejemplar.
+ */
+const THICK_SCALE = 0.6;
 
-/** { width, length, thick, board } en celdas. `data`: { thickness, height }. `aspect`: ancho / alto de su portada, si hay. */
+/**
+ * { width, length, thick, board } en celdas, para la mesa y para la estantería. `data`: { thickness, height }. `aspect`:
+ * ancho / alto de su portada, si hay; sin ella, la proporción de la tela.
+ */
 export function bookDims(data, aspect = ASPECT_CLOTH) {
   const length = BOOK_LENGTH * data.height;
   const thick = Math.max(THICK_MIN, Math.min(THICK_MAX, data.thickness * THICK_SCALE));

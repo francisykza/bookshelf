@@ -5,22 +5,21 @@
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanelShell } from '../../components/panels/PanelShell';
-import { EDITIONS, currentBook, spineColor, visualEdition } from '../../domain/books';
+import { currentBook } from '../../domain/books';
 import { essentialItems, essentialName } from './essentials';
-import { bookThicknessCm, inkFor } from '../../domain/roomShelf';
 import { useLibrary } from '../../state/useLibrary';
 import { FACADE_HORA } from '../edificio/facade';
 import { mountFacade } from '../edificio/facadeView';
 import { mountPiso } from '../edificio/piso';
 import { installPixelVars, pixelIconSmallSrc } from '../edificio/pixelUi';
 import { preloadCover } from './coverPreload';
-import { spineLook } from './spineLooks';
+import { bookFace } from './spineLooks';
 import { LabMeter, wantsMeter } from './LabMeter';
 import { beginMount, cancelMount, markCode, markInteractive, markPortal, markPress, markScene } from './labTiming';
 import './pisoLab.css';
 import { PisoLibrary, emptyLibraryMemory } from './PisoLibrary';
 import { roomLimit, toggleExhibit } from './roomSelection';
-import { TOP_ROW, fitSlots, sceneKey, shelfRows } from './shelfLayout';
+import { TOP_ROW, copyData, fitSlots, sceneKey, shelfRows } from './shelfLayout';
 import { canEdit, doorLabel, loadRoom, pendientes, pisoById, portalFlats, repairNews, resetRoom, saveRoom, ventanasDe } from './labStore';
 import { PisoMenu } from './PisoMenu';
 import { demoLibraryActive } from './sampleLibrary';
@@ -109,10 +108,15 @@ function BookSpot({ book, slot, selected, onChoose }) {
   );
 }
 
-const shelfData = (book) => ({ id: book.id, title: book.title, color: spineColor(book), ink: inkFor(spineColor(book)), edition: visualEdition(book), thickness: bookThicknessCm(book) * 0.06, height: EDITIONS[visualEdition(book)].height });
-const tableData = (book) => book && { ...shelfData(book), coverLoad: preloadCover(book.cover) };
-// Cada lomo, con la cara de su libro (1.88): solo se piden las portadas de los ejemplares que se dibujan
-const shelfScene = (shelfBooks) => shelfBooks && { cover: tableData(shelfBooks.cover), rows: shelfBooks.rows.map((row) => row.map((i) => ({ ...i, look: spineLook(i.book) }))) };
+/** Lo que se ve del ejemplar elegido: qué viene de su edición y qué está reconstruido. */
+const copyNote = (book) => {
+  const spine = typeof book.spine === 'string' && book.spine ? 'lomo de su edición' : 'lomo reconstruido';
+  return book.cover ? `Portada de su edición · ${spine}` : `Sin portada · ${spine}`;
+};
+// El mismo ejemplar en la mesa y en la estantería (1.88): mismos datos, mismas medidas y la misma cara (portada y lomo)
+const tableData = (book) => book && { ...copyData(book), coverLoad: preloadCover(book.cover), face: bookFace(book) };
+// Cada ejemplar, con la portada de su edición (1.88): solo se piden las de los que se dibujan, en miniatura
+const shelfScene = (shelfBooks) => shelfBooks && { cover: tableData(shelfBooks.cover), rows: shelfBooks.rows.map((row) => row.map((i) => ({ ...i, face: bookFace(i.book) }))) };
 
 
 /** Una acción secundaria: un icono y una palabra. El nombre completo es para el lector de pantalla y empieza igual. */
@@ -262,6 +266,8 @@ function Interior({ piso, room, hora, reading, balda, covered, leaning, listing,
           <p className="plab-pick__text">
             <strong>{picked.title}</strong>
             {picked.author ? <span>{picked.author}</span> : null}
+            {/* Qué es de su edición y qué no: la portada es la real; un lomo sin imagen propia es reconstruido */}
+            <small className="plab-pick__note">{copyNote(picked)}</small>
           </p>
           <button type="button" className="px-btn plab-pick__open" onClick={() => onOpenBook(picked, balda)}>
             Abrir ficha

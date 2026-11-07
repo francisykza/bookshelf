@@ -65,11 +65,11 @@ test('registrar desde el piso abre el registro vigente; solo la cubierta de tu l
   await page.waitForTimeout(800);
   covers.length = 0;
   await enter(page);
-  // Una sola cubierta grande, la misma en la mesa y en la estantería. Desde la 1.88, además, la miniatura (-S) de cada
-  // lomo dibujado, para pintarlo con sus colores; nada de los libros que no se ven
+  // Una sola cubierta grande, la misma en la mesa y en la estantería. Desde la 1.88, además, la miniatura (-M) de cada
+  // ejemplar dibujado, para su tapa y su lomo; nada de los libros que no se ven
   const shown = (await debug(page)).shelf.books.length;
-  const big = () => new Set(covers.filter((u) => !/-S.jpg/.test(u))).size;
-  const small = () => new Set(covers.filter((u) => /-S.jpg/.test(u))).size;
+  const big = () => new Set(covers.filter((u) => !/-M.jpg/.test(u))).size;
+  const small = () => new Set(covers.filter((u) => /-M.jpg/.test(u))).size;
   expect(big()).toBeLessThanOrEqual(1);
   expect(small()).toBeLessThanOrEqual(shown);
   await page.getByRole('button', { name: /^Registrar lectura de Circe/ }).click();

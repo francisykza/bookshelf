@@ -6,7 +6,7 @@
 // se calculan una vez por sesión, y la miniatura del hotel solo se carga si alguna ventana visible da a él.
 import { FACADE_SKY, LEAF, POT, neighbour } from '../edificio/facade';
 import { createRaster, hash, noise, rgb } from '../minigames/libreria-puerto/raster';
-import { ALTURAS, GLINT_ROWS, WATER_FRAMES, colOf, layerSize, rowOf } from './exteriorLayout';
+import { ALTURAS, GLINT_ROWS, LAYERS, WATER_FRAMES, colOf, layerSize, rowOf } from './exteriorLayout';
 
 /** El hotel, en la capa lejana: su sitio, en el cristal izquierdo. */
 const HOTEL_S = -0.4;
@@ -194,12 +194,14 @@ async function paintFar(vista, hora, horizonZ) {
   const line = rowOf('far', horizonZ);
   const sky = SKY[hora];
   const bayer = (x, y) => [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5][(y & 3) * 4 + (x & 3)] / 16;
+  // Por encima de donde empezaba (`sky`), el mismo color de lo más alto del cielo: el degradado no cambia
+  const top = Math.max(0, rowOf('far', LAYERS.far.sky));
   for (let y = 0; y < line; y += 1) {
-    const band = (y / line) * (sky.length - 1);
+    const band = (Math.max(0, y - top) / (line - top)) * (sky.length - 1);
     for (let x = 0; x < W; x += 1) {
       const k = Math.max(0, Math.min(sky.length - 2, Math.floor(band + (bayer(x, y) - 0.5) * 0.22)));
       const c = mix(sky[k], sky[k + 1], Math.floor(Math.max(0, Math.min(1, band - k)) * 4) / 4);
-      const star = hora !== 'dia' && y < line * (hora === 'noche' ? 0.8 : 0.28) && hash(x, y) > (hora === 'noche' ? 0.995 : 0.998);
+      const star = hora !== 'dia' && y < top + (line - top) * (hora === 'noche' ? 0.8 : 0.28) && hash(x, y) > (hora === 'noche' ? 0.995 : 0.998);
       pix[y * W + x] = star ? rgb(250, 240, 220) : rgb(...c);
     }
   }

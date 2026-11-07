@@ -1,24 +1,27 @@
-// La cara de cada lomo de la estantería del piso (1.88). Solo se piden las portadas de los ejemplares que se dibujan,
-// en miniatura (el tamaño pequeño de Open Library o de Google Books), cuatro a la vez y con una caché acotada: de cada
-// portada solo se guardan tres colores. Si el libro trae su propio lomo (`book.spine`, una imagen), se usa ese, reducido
-// al tamaño del atlas; si no, el lomo se pinta con los colores de su portada, su título y su autor (materials.js).
-// Sin portada, o si la portada no deja leer sus píxeles, queda el color de siempre (`spineColor`).
+// La cara de cada ejemplar de la estantería del piso (1.88). Cada libro de la balda es el mismo modelo que el de la mesa,
+// con la portada real de su edición en su tapa. Solo se piden las portadas de los ejemplares que se dibujan, en miniatura
+// (el tamaño mediano de Open Library o de Google Books), cuatro a la vez y con una caché acotada.
+//
+// El lomo: si el libro trae la imagen auténtica del lomo de su edición (`book.spine`), se usa esa. Si solo hay portada, el
+// lomo es una RECONSTRUCCIÓN (no el lomo original): los colores de la portada, el título y el apellido del autor, en píxel.
 
-/** Cuántas portadas y lomos se recuerdan: el doble de los libros que caben en la estantería. */
+/** Cuántas caras se recuerdan: el doble de los libros que caben en la estantería. */
 export const LOOKS_MAX = 64;
 const CONCURRENT = 4;
-/** Medidas de una celda del atlas (las de materials.js). */
+/** Medidas de un lomo en la textura del libro (las de materials.js). */
 export const SPINE_PX = { w: 28, h: 128 };
+/** La portada en la tapa: lo bastante para reconocerla de cerca, sin pedir la imagen grande. */
+const COVER_PX = 150;
 
 const cache = new Map();
 let running = 0;
 const waiting = [];
 
-/** La miniatura de una portada: la misma imagen en pequeño, cuando el servicio la ofrece. */
+/** La miniatura de una portada: la misma imagen en mediano, cuando el servicio la ofrece. */
 export function thumbUrl(url) {
   if (!url || typeof url !== 'string') return '';
-  if (url.includes('covers.openlibrary.org')) return url.replace(/-[LM]\.jpg/, '-S.jpg');
-  if (url.includes('books.google')) return `${url.replace(/&fife=w\d+-h\d+/, '')}&fife=w80-h120`;
+  if (url.includes('covers.openlibrary.org')) return url.replace(/-[LS]\.jpg/, '-M.jpg');
+  if (url.includes('books.google')) return `${url.replace(/&fife=w\d+-h\d+/, '')}&fife=w200-h300`;
   return url;
 }
 
@@ -51,7 +54,7 @@ function turn(task) {
   });
 }
 
-function pixelsOf(src, w, h, fit) {
+function imageOf(src) {
   return turn(
     () =>
       new Promise((resolve) => {
@@ -59,20 +62,7 @@ function pixelsOf(src, w, h, fit) {
         image.crossOrigin = 'anonymous';
         image.referrerPolicy = 'no-referrer';
         image.decoding = 'async';
-        image.onload = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
-            const g = canvas.getContext('2d', { willReadFrequently: true });
-            g.imageSmoothingEnabled = true;
-            fit(g, image, w, h);
-            resolve(g.getImageData(0, 0, w, h).data);
-          } catch {
-            // Sin permiso para leer sus píxeles (CORS): el color de siempre
-            resolve(null);
-          }
-        };
+        image.onload = () => resolve(image);
         image.onerror = () => resolve(null);
         image.src = src;
       }),
@@ -81,6 +71,20 @@ function pixelsOf(src, w, h, fit) {
 
 const lum = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+/**
+ * Los colores del lomo reconstruido: el del borde de la portada que da al lomo (`edge`, los píxeles de la izquierda), que es
+ * el que suele seguir por el lomo, y para los detalles el color principal de la portada si es distinto, o su detalle.
+ * Solo colores: nunca se pinta la portada sobre el lomo.
+ */
+export function spinePalette(edge, whole) {
+  const e = paletteOf(edge);
+  const w = paletteOf(whole);
+  if (!e) return w;
+  if (!w) return e;
+  const accent = dist(w.base, e.base) > 90 ? w.base : dist(w.accent, e.base) > 60 ? w.accent : e.accent;
+  return { base: e.base, accent, ink: lum(e.base) > 140 ? 'dark' : 'light' };
+}
 
 /** Tres colores de una portada: el que más ocupa, otro bien distinto para los detalles, y la tinta que se lee encima. */
 export function paletteOf(data) {
@@ -102,21 +106,57 @@ export function paletteOf(data) {
   return { base, accent, ink: lum(base) > 140 ? 'dark' : 'light' };
 }
 
-/** La portada entera en pequeño (32 × 48), para sacar sus colores. */
-const fitCover = (g, image, w, h) => g.drawImage(image, 0, 0, w, h);
-/** El lomo real, ocupando la celda del atlas. */
-const fitSpine = (g, image, w, h) => g.drawImage(image, 0, 0, w, h);
+/** La portada reducida (para la tapa) y sus colores (para el lomo reconstruido). null si no se puede leer. */
+function coverFace(image) {
+  const aspect = image.naturalWidth / image.naturalHeight || 0.66;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(COVER_PX * Math.min(1, aspect));
+  canvas.height = Math.round(canvas.width / aspect);
+  const g = canvas.getContext('2d', { willReadFrequently: true });
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(image, 0, 0, canvas.width, canvas.height);
+  try {
+    // Sin permiso para leer sus píxeles (CORS) tampoco se puede usar como textura
+    const sample = document.createElement('canvas');
+    sample.width = 32;
+    sample.height = 48;
+    const s = sample.getContext('2d', { willReadFrequently: true });
+    s.drawImage(canvas, 0, 0, 32, 48);
+    return { cover: canvas, aspect, look: spinePalette(s.getImageData(0, 0, 5, 48).data, s.getImageData(0, 0, 32, 48).data) };
+  } catch {
+    return null;
+  }
+}
+
+function spinePixels(image) {
+  const canvas = document.createElement('canvas');
+  canvas.width = SPINE_PX.w;
+  canvas.height = SPINE_PX.h;
+  const g = canvas.getContext('2d', { willReadFrequently: true });
+  g.drawImage(image, 0, 0, SPINE_PX.w, SPINE_PX.h);
+  try {
+    return g.getImageData(0, 0, SPINE_PX.w, SPINE_PX.h).data;
+  } catch {
+    return null;
+  }
+}
 
 /**
- * Promesa de la cara de un lomo: `{ pixels }` (el lomo real, RGBA de 28 × 128), `{ base, accent, ink }` (de su portada) o
- * null (el color de siempre). La clave es la imagen, no el libro: si cambia la portada o el lomo, se pide la nueva.
+ * Promesa de la cara de un ejemplar: `{ cover, aspect, look }` (la portada reducida, su proporción y los colores del lomo
+ * reconstruido), con `look.pixels` si hay lomo auténtico; o null (sin portada: tela con su título y el color de siempre).
+ * La clave es la imagen, no el libro: si cambia la portada o el lomo, se pide la nueva.
  */
-export function spineLook(book) {
-  const spine = typeof book?.spine === 'string' && book.spine ? book.spine : '';
-  if (spine) return remember(`lomo|${spine}`, () => pixelsOf(spine, SPINE_PX.w, SPINE_PX.h, fitSpine).then((pixels) => (pixels ? { pixels } : null)));
+export function bookFace(book) {
   const src = thumbUrl(book?.cover);
-  if (!src) return Promise.resolve(null);
-  return remember(`portada|${src}`, () => pixelsOf(src, 32, 48, fitCover).then((pixels) => (pixels ? paletteOf(pixels) : null)));
+  const spine = typeof book?.spine === 'string' && book.spine ? book.spine : '';
+  if (!src && !spine) return Promise.resolve(null);
+  return remember(`${src}|${spine}`, async () => {
+    const [image, spineImage] = await Promise.all([src ? imageOf(src) : null, spine ? imageOf(spine) : null]);
+    const face = image ? coverFace(image) : null;
+    const pixels = spineImage ? spinePixels(spineImage) : null;
+    if (!face && !pixels) return null;
+    return { cover: face?.cover ?? null, aspect: face?.aspect ?? null, look: pixels ? { pixels, authentic: true } : (face?.look ?? null) };
+  });
 }
 
 /** Para las pruebas: cuántas caras se recuerdan ahora mismo. */

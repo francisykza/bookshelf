@@ -206,6 +206,13 @@
   overflow-wrap: anywhere;
 }
 
+.plab-pick__text .plab-pick__note {
+  display: block;
+  margin-top: 2px;
+  color: #6a4a32;
+  font: italic 0.78rem/1.2 'Lora', Georgia, serif;
+}
+
 .plab-pick__open {
   flex: none;
   min-height: 44px;

@@ -11,8 +11,10 @@ export const PX_PER_CELL = 72;
  */
 export const LAYERS = {
   near: { depth: 2.2, wide: 3.2, z0: 0.6, z1: 3.8, texel: 2 },
-  mid: { depth: 10, wide: 3.8, z0: 0.6, z1: 2.6, texel: 1 },
-  far: { depth: 34, wide: 5, z0: 0.6, z1: 4, texel: 1 },
+  mid: { depth: 10, wide: 4.6, z0: 0.6, z1: 2.6, texel: 1 },
+  // La lejana, más ancha y más alta que lo que se ve desde el sillón: al acercarte a una balda (1.88) la ventana se ve
+  // desde más cerca y más de lado, y no debe asomar su final. `sky` es donde empieza el degradado del cielo, como antes
+  far: { depth: 34, wide: 6, z0: 0.6, z1: 4.4, sky: 4, texel: 1 },
 };
 
 /** Tamaño del lienzo de una capa, en píxeles. */

@@ -601,6 +601,39 @@ function spinePixel(r, { id, edition, color, ink, look }, mask) {
   const W = SPINE_W;
   const H = SPINE_H;
   const body = (x) => ramp[x === 0 || x === W - 1 ? 1 : x <= 2 ? 4 : x >= W - 3 ? 2 : 3];
+  // Lomo reconstruido (sin imagen propia): los colores de la portada en uno de cinco diseños, fijo para cada libro, para que
+  // la balda no sea una fila de lomos iguales. Es un lomo inventado con sus colores, no el de la edición
+  let hash = 11;
+  for (const ch of String(id)) hash = (hash * 31 + ch.charCodeAt(0)) % 1009;
+  const design = hash % 5;
+  const rebuilt = (x, y, lettered) => {
+    const near = (row, wide = 0) => Math.abs(y - row) <= wide;
+    const ink = lettered ? inkTone : null;
+    if (design === 1) {
+      // Bloque del segundo color arriba, con una raya
+      if (y < 20) return near(19) ? ramp[1] : band[x <= 1 || x >= W - 2 ? 1 : 2];
+      return ink ?? body(x);
+    }
+    if (design === 2) {
+      // Dos filetes a lo largo
+      if (x === 3 || x === W - 4) return band[3];
+      return ink ?? body(x);
+    }
+    if (design === 3) {
+      // Pie de otro color, donde va la editorial, y una raya fina arriba
+      if (y > H - 24) return near(H - 24) ? ramp[1] : y > H - 12 && x > W / 2 - 4 && x < W / 2 + 3 && y < H - 6 ? ramp[4] : band[2];
+      if (near(5)) return band[3];
+      return ink ?? body(x);
+    }
+    if (design === 4) {
+      // Filetes dobles arriba y una marca cuadrada abajo
+      if (near(7) || near(10) || near(H - 8) || near(H - 11)) return band[3];
+      if (y > H - 22 && y < H - 14 && x > W / 2 - 4 && x < W / 2 + 3) return band[2];
+      return ink ?? body(x);
+    }
+    if (near(4, 1) || near(H - 5, 1)) return band[2];
+    return ink ?? body(x);
+  };
   return (x, y) => {
     const near = (row, wide = 0) => Math.abs(y - row) <= wide;
     const lettered = mask(x, y);
@@ -614,6 +647,7 @@ function spinePixel(r, { id, edition, color, ink, look }, mask) {
       return (x + y) % 2 ? body(x) : ramp[2];
     }
     if (edition === 'paperback') {
+      if (look?.base) return rebuilt(x, y, lettered);
       if (near(3) || near(H - 4)) return look?.accent ? band[2] : ramp[1];
       return lettered ? inkTone : ramp[x === 0 || x === W - 1 ? 2 : 3];
     }
@@ -627,6 +661,7 @@ function spinePixel(r, { id, edition, color, ink, look }, mask) {
       if (near(6) || near(H - 7)) return ramp[1];
       return lettered ? inkTone : body(x);
     }
+    if (look?.base) return rebuilt(x, y, lettered);
     if (near(6) || near(H - 7)) return band[2];
     return lettered ? inkTone : body(x);
   };
@@ -950,11 +985,14 @@ export function pixelTable(boxes, place) {
 const BOOK_W = 64;
 const BOOK = { spine: [0, 0, SPINE_W, SPINE_H], pages: [30, 0, 10, 64], edge: [42, 0, 4, 64], inner: [48, 0, 4, 64] };
 
-/** `data`: { id, title, color, ink, edition }. */
+/**
+ * `data`: { id, title, author?, color, ink, edition, look? }. Con `look.pixels`, el lomo auténtico de su edición; con los
+ * colores de la portada (`look.base`…), un lomo reconstruido con su título y su autor (1.88); sin nada, el de siempre.
+ */
 export function bookTexture(data) {
   const r = probe();
-  const paint = spinePixel(r, data, titleMask(data.title, SPINE_W, SPINE_H));
-  const ramp = r.rampOf(spineTone(data.color, data.id));
+  const paint = spinePixel(r, data, titleMask(data.title, SPINE_W, SPINE_H, data.author));
+  const ramp = r.rampOf(spineTone(data.look?.base ? hexOf(data.look.base) : data.color, data.id));
   const paper = r.rampOf([222, 206, 170]);
   const inside = ([x0, y0, w, h], x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
   return texture(

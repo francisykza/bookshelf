@@ -1,4 +1,4 @@
-// 1.88: la cara de cada lomo sale de su portada (en miniatura) y la escena se vuelve a pintar si cambia la portada o la
+// 1.88: cada ejemplar de la balda lleva su portada (en miniatura) y la escena se vuelve a pintar si cambia la portada o la
 // edición aunque el libro sea el mismo.
 import { describe, expect, it } from 'vitest';
 import { paletteOf, thumbUrl } from '../spineLooks';
@@ -7,10 +7,10 @@ import { bookLooks, sceneKey } from '../shelfLayout';
 const pixels = (colors) => new Uint8ClampedArray(colors.flatMap(([r, g, b]) => [r, g, b, 255]));
 
 describe('miniaturas de portada', () => {
-  it('pide el tamaño pequeño de Open Library y de Google Books; lo demás, tal cual', () => {
-    expect(thumbUrl('https://covers.openlibrary.org/b/id/12345-L.jpg')).toBe('https://covers.openlibrary.org/b/id/12345-S.jpg');
-    expect(thumbUrl('https://covers.openlibrary.org/b/isbn/978-L.jpg?default=false')).toBe('https://covers.openlibrary.org/b/isbn/978-S.jpg?default=false');
-    expect(thumbUrl('https://books.google.com/books/content?id=x&zoom=1&fife=w600-h900')).toBe('https://books.google.com/books/content?id=x&zoom=1&fife=w80-h120');
+  it('pide el tamaño mediano de Open Library y de Google Books; lo demás, tal cual', () => {
+    expect(thumbUrl('https://covers.openlibrary.org/b/id/12345-L.jpg')).toBe('https://covers.openlibrary.org/b/id/12345-M.jpg');
+    expect(thumbUrl('https://covers.openlibrary.org/b/isbn/978-L.jpg?default=false')).toBe('https://covers.openlibrary.org/b/isbn/978-M.jpg?default=false');
+    expect(thumbUrl('https://books.google.com/books/content?id=x&zoom=1&fife=w600-h900')).toBe('https://books.google.com/books/content?id=x&zoom=1&fife=w200-h300');
     expect(thumbUrl('/lab/covers/c1.png?n=1')).toBe('/lab/covers/c1.png?n=1');
     expect(thumbUrl('')).toBe('');
     expect(thumbUrl(null)).toBe('');

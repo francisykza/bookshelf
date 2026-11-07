@@ -8,7 +8,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 - **En preview, sin publicar: 1.88.0** (2026-11-07, §88), rama `1.88-habitacion-real` desde `main` (`5a0e10c`). La
   habitación de inicio es el piso del edificio de tu cuenta (primera persona, vista de siempre y Decorar sobre el mismo
-  piso de Supabase) y los lomos llevan la cara de su libro. Sin migraciones. **No va a producción sin el visto bueno de
+  piso de Supabase) y cada libro de la estantería es el mismo ejemplar que el de la mesa, con su portada real y un
+  lomo reconstruido (dicho como tal). Sin migraciones. **No va a producción sin el visto bueno de
   Francisco.**
 - **Versión publicada: 1.87.0** (2026-11-07, §87). La habitación en primera persona es el inicio y su puerta lleva al
   edificio del puerto. De forma temporal, «Volver a la experiencia anterior» abre la habitación ilustrada como en la 1.86
@@ -85,7 +86,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.88.0 | La habitación de inicio es tu piso del edificio; lomos con los colores de su portada, título y autor (en preview) | §88 |
+| 1.88.0 | La habitación de inicio es tu piso del edificio; cada libro de la estantería con su portada real (en preview) | §88 |
 | 1.87.0 | La habitación en primera persona como inicio (publicada) | §87 |
 | 1.86.0 | Reseña como imagen, acabados de muebles, La estiba con pared de premios, talleres y tablón «Se busca» (publicada) | §85, §86 |
 | 1.79.0 | Misiones del día que dan 5 tickets con el armario completo, cartela del hotel más pequeña y la suite de la semana decorada entre todos en el ático (publicada; migraciones aplicadas) | §79 |
@@ -130,7 +131,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **1.88 (en preview):** que Francisco la compruebe con sus dos cuentas y apruebe llevarla a producción. En la 1.87
+- **1.88 (en preview):** que Francisco la compruebe con sus dos cuentas y sus bibliotecas reales (Android y Safari de
+  iPhone) y apruebe llevarla a producción. Quedan sin causa identificada la franja oscura de Chromium (no se reproduce)
+  y los fallos intermitentes de §88.3. En la 1.87
   publicada, la habitación de inicio aún enseña el piso de prueba `lab-1A`, guardado en cada dispositivo.
 - **1.87:** cuándo retirar la opción temporal «Volver a la experiencia anterior» y decidir si Rincón 01 se enciende
   (`RINCON_01`).
@@ -223,6 +226,32 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-07 · cuenta principal · 1.88.0: cada libro de la balda con su portada real, igual en mesa y balda (commit y subida a la rama, lo pidió Francisco)
+- Encargos de Francisco del 7-11-2026: «prioridad visual» (los libros de la estantería, con el tratamiento del de la mesa) y
+  después cinco ajustes antes de cerrar la muestra, con «haz commit y sube la rama de preview… Mantén main sin cambios».
+  `main` no se ha tocado. SPEC §88.2 y §88.3 reescritos.
+- Hecho:
+  - **Mismo ejemplar en mesa y balda**: mismos datos (`copyData`), medidas (`bookDims`, grosor 0,08–0,18), portada y lomo
+    (`bookFace`); solo cambian la orientación y la luz.
+  - **Portada real** de su edición en la tapa; el **lomo** es auténtico solo con `book.spine` y si no, **reconstruido**
+    con los colores del borde de la portada en uno de cinco diseños. La tarjeta lo dice («Portada de su edición · lomo
+    reconstruido»). La portada nunca se estira sobre el lomo.
+  - Composición sin pisarse (`composeRow`, `shelfRows`), selección que sale recta, gira y deja la portada delante de su
+    hueco (`poseSpot`), y `sweep()` para comprobar que nada se atraviesa.
+  - **Cámara del acercamiento** encuadrada por los libros de la balda (`rowBoxes`, `rowView`): menos techo y suelo vacíos.
+    Chromium y WebKit dan la misma cámara recorriendo la interfaz; la diferencia anterior era, probablemente, de la prueba.
+  - Capas del paisaje de la ventana más anchas y la lejana más alta: con la cámara más cerca se veía su final (lo cazó
+    «la ventana: no se ve el final de ninguna capa…»). Desde el sillón se ve igual.
+  - Muestras en `e2e/piso-muestra.spec.js` (necesitan red): cinco ediciones frente a la mesa y 28 ediciones (27
+    representadas, sin cruces, todas elegibles con un toque). Hojas en `qa-report/piso-muestra/` (no van a git).
+- Franja oscura de Chromium: **no se reproduce** y su causa **no está confirmada** (comparación lienzo/pantalla en §88.3).
+  Fallos intermitentes documentados en §88.3: dos sin identificar (no se repitieron), el del decorador del edificio en
+  WebKit (falla 2 de 6 solo; esta rama no toca el edificio) y un tiempo agotado en WebKit.
+- Pruebas: build, oxlint (solo avisos ya existentes), vitest de pisoLab (73) y tanda e2e final en Chromium y WebKit
+  a 390 px (piso-lab, piso-lomos, piso-inicio, piso-usabilidad, piso-esenciales, piso-ficha-visita y piso-muestra): 144
+  pasan, 1 se salta y 1 falla, el intermitente del decorador en WebKit.
+- Sin probar en Android ni en Safari de iPhone reales: eso es lo que Francisco va a mirar con sus bibliotecas en la preview.
 
 ### 2026-11-07 · cuenta principal · 1.88.0 en preview: la habitación es tu piso y los lomos tienen cara (subido a la rama, «Sí, sube la rama»)
 - Encargo de Francisco (dos fallos de la 1.87 publicada). Rama `1.88-habitacion-real` desde `main`; SPEC §88.
