@@ -542,7 +542,8 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
               </button>
             ) : null}
             <div className="plab-tools" role="group" aria-label="Más acciones">
-              {view !== 'balda' && <Tool icon="balda" name="Ver la balda" short="Balda" onClick={() => onSelect(`balda:${TOP_ROW}`)} />}
+              {/* 1.88.2: sin estantería en el piso no hay balda que mirar; el mismo botón lleva a la biblioteca entera (no se añade ningún mueble) */}
+              {view !== 'balda' && (room.items.some((i) => i.id === 'estanteria') || !editable ? <Tool icon="balda" name="Ver la balda" short="Balda" onClick={() => onSelect(`balda:${TOP_ROW}`)} /> : <Tool icon="balda" name="Toda la biblioteca (tu piso no tiene estantería)" short="Biblioteca" onClick={() => onSelect('toda')} />)}
               {view === 'balda' && editable && shelfBooks && <Tool icon="lupa" name={`Buscar en toda la biblioteca, ${books.length} libros`} short="Buscar" onClick={() => onSelect('toda')} />}
               {editable && <Tool icon="decorar" name="Decorar" short="Decorar" onClick={() => onSelect('decorar')} />}
               <PisoMenu

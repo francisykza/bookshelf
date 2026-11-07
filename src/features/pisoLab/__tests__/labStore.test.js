@@ -60,10 +60,15 @@ describe('ventanas', () => {
 });
 
 describe('piezas pendientes', () => {
-  it('los pisos de prueba no tienen; un místico o un acabado sí se avisan', () => {
+  it('los pisos de prueba no tienen; desde la 1.88.2 tampoco un místico, la mascota, lo vivo ni un acabado', () => {
     expect(pendientes(a.seed())).toEqual([]);
     const room = a.seed();
-    const raro = { ...room, items: [...room.items, { uid: 99, id: 'dragoncillo', x: 8, y: 8, rot: 0, tono: 0 }] };
-    expect(pendientes(raro)).toHaveLength(1);
+    const extra = [
+      { uid: 97, id: 'farol-azul', x: 8, y: 8, rot: 0, tono: 0 },
+      { uid: 98, id: 'perrito', x: 7, y: 8, rot: 1, tono: 1 },
+      { uid: 99, id: 'dragoncillo', x: 6, y: 8, rot: 0, tono: 0 },
+      { uid: 100, id: 'sillon', x: 5, y: 7, rot: 0, tono: 0, acabado: 'salitre' },
+    ];
+    expect(pendientes({ ...room, items: [...room.items, ...extra] })).toEqual([]);
   });
 });

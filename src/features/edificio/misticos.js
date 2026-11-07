@@ -680,12 +680,13 @@ export function misticoSprite(id) {
   canvas.height = N;
   const ctx = canvas.getContext('2d');
   const img = new ImageData(N, N);
-  const paint = (t, { moving = false, flip = false } = {}) => {
+  // 1.88.2: el resto de opciones (tono, acabado, ancho…) llegan al dibujo, como en el piso isométrico
+  const paint = (t, { moving = false, flip = false, ...extra } = {}) => {
     frame.color.fill(0);
     frame.light.fill(0);
     const p = painterFor(frame);
     p.place(N / 2, N - 10, flip);
-    m.draw(p, t, { moving });
+    m.draw(p, t, { moving, ...extra });
     img.data.fill(0);
     composite(frame, img.data, null);
     ctx.putImageData(img, 0, 0);

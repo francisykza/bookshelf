@@ -3,9 +3,11 @@
 // mismas coordenadas, giros y colores del `layout` que dibuja `render.js`, así que lo que mueves en el editor es lo que
 // ves aquí. La geometría de cada pieza del catálogo se comparte entre pisos; lo demás (materiales, texturas, luces y el
 // lienzo) es de cada montaje y `destroy()` lo libera. Solo se dibuja cuando algo cambia.
-import { AmbientLight, Box3, BoxGeometry, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, Group, HemisphereLight, LinearFilter, Matrix4, Mesh, MeshBasicMaterial, MeshLambertMaterial, NearestFilter, PerspectiveCamera, PlaneGeometry, PointLight, Raycaster, RepeatWrapping, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
+import { Sprite, SpriteMaterial, AmbientLight, Box3, BoxGeometry, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, Group, HemisphereLight, LinearFilter, Matrix4, Mesh, MeshBasicMaterial, MeshLambertMaterial, NearestFilter, PerspectiveCamera, PlaneGeometry, PointLight, Raycaster, RepeatWrapping, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
 import { PAREDES, catalogItem } from '../edificio/catalog';
 import { shapeOf } from '../edificio/furniture';
+import { tintar } from '../edificio/acabados';
+import { misticoOf, misticoSprite } from '../edificio/misticos';
 import { ROOM, heightOf, itemsOn, rectOf } from '../edificio/room';
 import { essentialItems, mainShelf, readingTable } from './essentials';
 import { bookDims, wrapTitle } from './bookLayout';
@@ -129,10 +131,12 @@ const shared = new Map();
 
 function catalogGeometry(item, cat, ownBooks = false) {
   const placing = cat.capa === 'pared' ? item.pared : item.rot;
-  const key = `${item.id}|${item.tono}|${placing}|${ownBooks}`;
+  const key = `${item.id}|${item.tono}|${item.acabado ?? ''}|${placing}|${ownBooks}`;
   if (!shared.has(key)) {
-    const tono = cat.tonos[item.tono];
+    // Con acabado, la misma pieza con su piel: cada color pasa por `tintar`, como en render.js (1.88.2)
+    const tono = tintar(cat.tonos[item.tono], item.acabado);
     let boxes = cat.capa === 'alfombra' ? [{ b: [0, 0, 0, cat.w, cat.d, 0.05], c: tono }] : shapeOf(item.id, tono);
+    if (item.acabado) boxes = boxes.map((box) => ({ ...box, c: tintar(box.c, item.acabado) }));
     // El armazón va aparte, con su madera; en la balda de la lámpara, tus libros en vez de los de adorno
     if (item.id === 'estanteria') boxes = ownBooks ? [] : boxes.slice(SHELF_FRAME);
     if (item.id === 'sillon') {
@@ -341,8 +345,9 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     if (!cat || OWN_PIECES.has(item.id) || PIXEL_TABLES.has(item.id)) continue;
     const geometry = catalogGeometry(item, cat, item.id === 'estanteria' && Boolean(shelfBooks));
     usedShared.add(geometry);
-    const kit = item.id === 'lampara-pie' ? lampKit(cat.tonos[item.tono]) : null;
-    const mesh = new Mesh(geometry, item.id === 'sillon' ? fabricOf(cat.tonos[item.tono]) : kit ? [kit.body, kit.shade] : [solid, glow]);
+    const skin = tintar(cat.tonos[item.tono], item.acabado);
+    const kit = item.id === 'lampara-pie' ? lampKit(skin) : null;
+    const mesh = new Mesh(geometry, item.id === 'sillon' ? fabricOf(skin) : kit ? [kit.body, kit.shade] : [solid, glow]);
     if (cat.capa === 'pared') mesh.position.set(item.pared === 'fondo' ? item.a : 0, 0, item.pared === 'fondo' ? 0 : item.a);
     else mesh.position.set(item.x, heightOf(room, item), item.y);
     mesh.userData = { uid: item.uid, id: item.id, rot: item.rot ?? 0 };
@@ -368,6 +373,47 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     woodMats.push(material);
     return own('materials', material);
   };
+  // 1.88.2: los seres del piso, como en el isométrico (`beingsNow` de piso.js): los místicos sobre su peana, la mascota
+  // sobre su cojín, los muebles vivos y los destellos de un acabado. Cada uno es su mismo dibujo de pixelfx en un lienzo de
+  // 72 px, de pie frente a la cámara, a la escala del piso isométrico (18 px por celda) y en el centro de su mueble, a la
+  // altura de lo que lo sostiene (`heightOf`). Leen el piso guardado tal cual: no se guarda ni se cambia nada.
+  const beings = [];
+  const BEING_W = 72 / 18;
+  const BEING_H = 72 / (18 * (Math.sqrt(3) / 2));
+  for (const item of room.items) {
+    const cat = catalogItem(item.id);
+    if (!cat) continue;
+    const rc = rectOf(item);
+    const cx = (rc.x0 + rc.x1) / 2;
+    const cy = (rc.y0 + rc.y1) / 2;
+    const wants = [];
+    if (item.acabado && cat.capa !== 'pared') wants.push({ id: 'chispas-acabado', z: heightOf(room, item), opts: { acabado: item.acabado, ancho: Math.max(rc.x1 - rc.x0, rc.y1 - rc.y0) }, lit: false });
+    if (cat.rareza === 'mistico' || cat.mascota || cat.vivo) {
+      const lift = cat.vivo ? 0 : cat.mascota ? 0.2 : 0.22;
+      wants.push({ id: item.id, z: heightOf(room, item) + lift, opts: { tono: item.tono, flip: cat.mascota || cat.vivo ? item.rot === 1 || item.rot === 2 : false }, lit: Boolean(cat.mascota || cat.vivo) });
+    }
+    for (const w of wants) {
+      if (!misticoOf(w.id)) continue;
+      const art = misticoSprite(w.id);
+      art.paint(1.3, w.opts);
+      const map = own('textures', new CanvasTexture(art.canvas));
+      map.magFilter = NearestFilter;
+      map.minFilter = NearestFilter;
+      map.generateMipmaps = false;
+      map.colorSpace = SRGBColorSpace;
+      const material = own('materials', new SpriteMaterial({ map, transparent: true, depthWrite: false, alphaTest: 0.02 }));
+      // La mascota y lo vivo reciben la luz de la hora, como los muebles; los místicos y los destellos dan la suya
+      if (w.lit) tinted(material);
+      const sprite = new Sprite(material);
+      sprite.center.set(art.ax / 72, 1 - art.ay / 72);
+      sprite.scale.set(BEING_W, BEING_H, 1);
+      sprite.position.set(cx, w.z, cy);
+      sprite.userData = { uid: item.uid, id: w.id, being: true };
+      sprite.raycast = () => {};
+      scene.add(sprite);
+      beings.push({ uid: item.uid, id: w.id, art, map, opts: w.opts, sprite });
+    }
+  }
   let woodLit = null;
   let woodOff = null;
   let woodMat = null;
@@ -639,9 +685,9 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   for (const item of room.items) {
     if (!PIXEL_TABLES.has(item.id) && !TABLES.has(item.id)) continue;
     const cat = catalogItem(item.id);
-    const tono = cat.tonos[item.tono];
+    const tono = tintar(cat.tonos[item.tono], item.acabado);
     // Los frentes de los cajones y sus tiradores van pintados, no como patas
-    const boxes = shapeOf(item.id, tono).filter((box) => item.id !== 'escritorio' || box.b[4] - box.b[1] > 0.1);
+    const boxes = shapeOf(item.id, tono).map((box) => (item.acabado ? { ...box, c: tintar(box.c, item.acabado) } : box)).filter((box) => item.id !== 'escritorio' || box.b[4] - box.b[1] > 0.1);
     const top = boxes.reduce((a, b) => (b.b[5] > a.b[5] ? b : a));
     const [x0, y0, , x1, y1, z1] = turned(cat, item.rot, top.b);
     const lift = heightOf(room, item);
@@ -1009,6 +1055,42 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     clearTimeout(waterTimer);
     waterTimer = 0;
     if (waterAllowed()) waterTimer = setTimeout(waterStep, WATER_MS);
+    syncBeings();
+  }
+
+  // Los seres se mueven a unos 5 fotogramas por segundo, con las mismas condiciones que el agua (nada en segundo plano, si
+  // algo tapa el piso o si pides menos movimiento: entonces se quedan en su postura de siempre, la de la miniatura)
+  const BEING_MS = 200;
+  let beingTimer = 0;
+  let beingT = 1.3;
+  let beingSteps = 0;
+  const beingsAllowed = () => beings.length > 0 && !destroyed && !covered && !motion?.matches && document.visibilityState !== 'hidden';
+  // Solo se repintan (y solo se redibuja la escena) si alguno está a la vista
+  const beingInView = (b) => {
+    const q = b.sprite.position.clone().project(camera);
+    return q.z < 1 && Math.abs(q.x) < 1.4 && q.y > -1.2 && q.y < 1.8;
+  };
+  function beingStep() {
+    beingTimer = 0;
+    if (!beingsAllowed()) return;
+    beingT += BEING_MS / 1000;
+    aim();
+    camera.updateMatrixWorld();
+    const seen = beings.filter(beingInView);
+    for (const b of seen) {
+      b.art.paint(beingT, b.opts);
+      b.map.needsUpdate = true;
+    }
+    if (seen.length) {
+      beingSteps += 1;
+      invalidate();
+    }
+    beingTimer = setTimeout(beingStep, BEING_MS);
+  }
+  function syncBeings() {
+    clearTimeout(beingTimer);
+    beingTimer = 0;
+    if (beingsAllowed()) beingTimer = setTimeout(beingStep, BEING_MS);
   }
 
   function applyLight() {
@@ -1716,6 +1798,19 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         book: bookGroup ? { id: tableBook.id, color: tableBook.color, coverReal } : null,
         shelf: { coverReal: shelfCoverReal, faces: shelfFaces, spines: shelfSpines, shown: shelfSpots.filter((sp) => sp.show === 1).map((sp) => sp.id), books: shelfSpots.map((s) => s.id), rows: [0, 1, 2].map((r) => shelfSpots.filter((s) => s.row === r).length) },
         // Dónde está la estantería que se dibuja (la del piso guardado): para comprobar que Decorar llega a la primera persona
+        // Los seres dibujados (místicos, mascota, vivos y destellos de acabado) y dónde están
+        beings: { list: beings.map((b) => ({ uid: b.uid, id: b.id, x: b.sprite.position.x, y: b.sprite.position.y, z: b.sprite.position.z })), steps: beingSteps, running: Boolean(beingTimer) },
+        // Cada pieza del piso dibujada (una vez por uid) y dónde: para comparar con el piso guardado y su isométrico
+        placed: (() => {
+          const out = new Map();
+          scene.traverse((o) => {
+            const u = o.userData;
+            if (u?.uid === undefined || u.being || out.has(u.uid)) return;
+            const p = o.getWorldPosition(new Vector3());
+            out.set(u.uid, { uid: u.uid, id: u.id, rot: u.rot ?? 0, x: Math.round(p.x * 1000) / 1000, y: Math.round(p.y * 1000) / 1000, z: Math.round(p.z * 1000) / 1000 });
+          });
+          return [...out.values()];
+        })(),
         shelfAt: shelf ? { uid: shelf.uid, x: shelf.x, y: shelf.y, rot: shelf.rot ?? 0 } : null,
         zoomed: Boolean(zoom),
         // Para comparar encuadres entre navegadores: la balda, la cámara y el tamaño del lienzo
@@ -1735,6 +1830,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       cancelAnimationFrame(tween);
       cancelAnimationFrame(pullRaf);
       clearTimeout(waterTimer);
+      clearTimeout(beingTimer);
       clearTimeout(lostTimer);
       stop.abort();
       observer.disconnect();

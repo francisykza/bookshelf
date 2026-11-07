@@ -2,7 +2,7 @@
 // del edificio real (docs/qa/piso-primera-persona.md): edificio y puerta (planta + letra) identifican el piso, y su
 // `layout` es el mismo de `room.js`: uid, id, x, y, rot, tono (o pared y a, en la pared). Todo pasa por `validateRoom`,
 // igual que en `savePiso` de service.js; lo único que cambia es el destino: este navegador y nunca Supabase.
-import { catalogItem, isMistico } from '../edificio/catalog';
+import { catalogItem } from '../edificio/catalog';
 import './essentialItems';
 import { LAYOUTS, repairRoom, withGuard } from './essentials';
 import { shapeOf } from '../edificio/furniture';
@@ -178,14 +178,18 @@ export function ventanasDe(piso, room) {
     });
 }
 
-/** Lo que aún no se puede ver bien por dentro: se avisa y queda la vista de siempre como salida. */
+/**
+ * Lo que aún no se puede ver bien por dentro: se avisa y queda la vista de siempre como salida. Desde la 1.88.2 los
+ * místicos, la mascota, lo vivo y los acabados se dibujan también en primera persona (interior3d.js): solo queda lo que no
+ * tiene forma en el catálogo.
+ */
 export function pendientes(room) {
   const out = new Map();
   for (const item of room.items) {
     const cat = catalogItem(item.id);
     if (!cat) continue;
     const sinForma = cat.capa !== 'alfombra' && shapeOf(item.id, cat.tonos[item.tono]).length === 0;
-    if (sinForma || isMistico(cat) || item.acabado) out.set(item.id, cat.nombre);
+    if (sinForma) out.set(item.id, cat.nombre);
   }
   return [...out.values()];
 }

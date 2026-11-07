@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.88.1 · 2026-11-07 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.88.2 · 2026-11-07 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5346,3 +5346,79 @@ placas de pisos fuera del dibujo, y en otros momentos del vídeo se veía bien. 
   se ve así en primera persona (`debug().shelfAt`) y sigue tras recargar; los objetos sin modelo en primera persona
   siguen en el piso guardado.
 - Sin cambios en las portadas ni en el tratamiento de los libros.
+
+### 88.5 1.88.2: los objetos que faltaban en primera persona y la misma habitación en las tres vistas (en preview)
+
+Encargo de Francisco del 7-11-2026, sobre la misma rama `1.88.1-fachada` («No mezcles con main todavía»): completar la
+integración entre el piso real, la primera persona y el decorador isométrico, con el estilo pixel de siempre.
+
+- **Qué faltaba** (lo que avisaba «Aún sin esta vista»): todo el catálogo ya tenía forma en primera persona salvo lo que en
+  el isométrico es un dibujo vivo encima del mueble: los **místicos** (farol de llama azul, rosa bajo la lluvia de
+  estrellas, búho de las constelaciones: solo se veía la peana), la **mascota** (perrito: solo el cojín), los **muebles
+  vivos** (gramola y mesa de tapete: sin su animación) y las **copias con acabado** (salitre, sol de tarde, lacado de
+  puerto, nácar: salían lisas y sin destellos).
+- **Cómo se dibujan ahora** (`interior3d.js`):
+  - Acabados: la misma pieza con su piel; cada color de sus cajas pasa por `tintar` como en `render.js` (también la
+    tela del sillón, la lámpara de pie y las mesas pixeladas). La geometría compartida lleva el acabado en su clave.
+  - Seres: el mismo dibujo de `misticos.js` (pixelfx), en un lienzo de 72 px de pie frente a la cámara, a la escala del
+    isométrico (18 px por celda), en el centro de su mueble y a la altura de lo que lo sostiene (`heightOf`) más su peana
+    (0,22) o su cojín (0,2), igual que `beingsNow` de `piso.js`; la mascota y lo vivo miran hacia donde está girado el
+    mueble. Los destellos del acabado, sobre su mueble y del color del acabado. La mascota y lo vivo reciben la luz de la
+    hora; los místicos y los destellos, no (dan la suya).
+  - Se mueven a 5 fotogramas por segundo solo si alguno está a la vista y con las condiciones del agua de la ventana
+    (nada en segundo plano, tapado o con movimiento reducido: entonces, quietos en la postura de su miniatura). No se
+    pueden tocar (no tapan la estantería ni la mesa).
+  - `misticoSprite(id).paint(t, opciones)` pasa ahora al dibujo el resto de opciones (tono, acabado, ancho), como el
+    isométrico; las llamadas de antes no cambian.
+- **«Aún sin esta vista»** solo sale para lo que no tenga forma en el catálogo (hoy, nada).
+- **Una sola fuente de datos**: la primera persona, la vista de siempre, Decorar y la visita leen el mismo piso guardado
+  (`useMyPiso`/`pisos.layout`); no hay una distribución aparte para la vista 3D ni se guarda nada al dibujarla.
+- **Accesos esenciales sin muebles**: sin estantería, escritorio ni ordenador, la biblioteca, el registro y el ordenador
+  siguen en los botones y el menú HTML («Toda la biblioteca», «Registrar lectura…», «Ordenador»). No se añade, mueve ni
+  guarda ningún mueble por su cuenta; darles un sitio fijo en el piso sería otro cambio, con sus reglas.
+- `debug()` del piso en primera persona: `beings` (qué seres, dónde y cuántos fotogramas) y `placed` (cada pieza
+  dibujada con su posición), para comparar con el piso guardado.
+- **«Ver la balda» sin estantería**: antes llevaba a una vista de balda vacía; ahora ese botón es «Biblioteca» y abre la
+  biblioteca entera. Con estantería, igual que antes.
+
+### 88.6 Comprobado y pendiente (1.88.2)
+
+Todo en emulación (Chromium y WebKit de Playwright a 390 × 844); nada en un iPhone, en Safari ni en Android reales.
+
+- `e2e-community/v1882-objetos.spec.js`, con dos cuentas simuladas:
+  - Piso de Ana con una mesa y una lámpara de mesa con acabado encima, una tetera en lo alto de la estantería, un farol
+    azul y un perrito. Recorrido: entrar → Decorar → mover la mesa (la lámpara va con ella), girar la lámpara, girar el
+    perrito y cambiarle el tono, guardar la tetera → Terminar → primera persona → recargar → Bruno visita el piso de Ana.
+  - En cada paso, lo dibujado en primera persona (`debug().placed` y `debug().beings`) coincide con el piso guardado:
+    sitio, giro, altura del soporte (lámpara a 1,25 sobre la mesa) y seres sobre su peana o su cojín.
+  - Lo guardado es exactamente lo que dejó el decorador. Bruno ve los mismos objetos, sin «Decorar», y ni su piso ni el
+    de Ana cambian con la visita.
+  - Sin estantería, escritorio ni ordenador: el ordenador (menú), la biblioteca (menú y «Biblioteca») y el registro
+    siguen a mano, y el piso guardado no cambia.
+- `e2e-community/v1882-comparativas.spec.js`: el mismo piso con los tres místicos, el perrito, la gramola, la mesa de
+  tapete (con naipes y una lámpara con acabado encima), un jarrón de nácar en lo alto de la estantería y un sofá lacado.
+  Cada ser, en su sitio y a su altura; lo de encima, a la altura de su mueble; se animan. Capturas en isométrico y en
+  primera persona (tres giros) en `qa-report/v1882/hoja.png` (no va a git).
+- Siguen pasando `v1881-fachada`, `v188-habitacion-real` y las e2e del piso (`piso-lab`, `piso-esenciales`, `piso-inicio`,
+  `piso-usabilidad`, `piso-rendimiento`, `piso-ficha-visita`, `piso-lomos`): 144 de 148 en la tanda, con fallos solo en
+  WebKit que solos pasan, salvo el ya conocido (abajo). Vitest de edificio y pisoLab: 268.
+- **Fallos intermitentes de WebKit** (trazas guardadas en `qa-report/trazas/`, no van a git):
+  - `piso-esenciales` «el decorador los identifica…»: `screenOfItem` nulo justo tras cambiar el color del escritorio en el
+    decorador isométrico. Solo, falla 2 de 3 (ya visto en la 1.88: 2 de 6). Esta rama no toca ese decorador; causa sin
+    identificar.
+  - `piso-lab` «tocar el libro… la estantería acerca la balda» (una vez, en la habitación antigua) y «el libro: tocarlo
+    abre el registro…», y `piso-usabilidad` «en el decorador…»: una vez cada uno en tandas de 2 hilos; solos pasan 4 de 4
+    y 3 de 3.
+  - La captura oscura al volver a la primera persona tras «Terminar» era de la prueba: se tomaba antes del primer
+    fotograma (la traza muestra que dibuja a los 200 ms). Las pruebas esperan ahora al primer dibujado.
+- **Pendiente**:
+  - Los seres son dibujos planos de pie frente a la cámara (como en el isométrico, un solo lado): de cerca se ven grandes
+    y pixelados, y al girar la mirada no cambian de cara.
+  - El compañero legendario que te sigue y tu personaje no salen en primera persona (en el isométrico sí).
+  - Un legendario colocado como mueble se ve como en el isométrico: solo su peana.
+  - En la biblioteca abierta sin estantería, el botón de volver sigue diciendo «Volver a la balda» y los libros
+    «En la estantería».
+  - Dar un sitio fijo en el piso a estantería, escritorio y ordenador queda para un cambio aparte (formato y reglas del
+    piso).
+  - `goodreads.test.js` «BOM y saltos de línea de Windows…» falla en este ordenador; es del lector CSV, que este cambio no
+    toca (no se ha comprobado con el commit anterior).

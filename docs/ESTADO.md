@@ -6,10 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En preview, sin publicar: 1.88.1** (2026-11-07, §88.4), rama `1.88.1-fachada` desde `main` (1.88.0). Corrige la
-  fachada del edificio al volver de un piso (se veía ampliada con placas fuera del dibujo; visto en Android) y comprueba
-  que mover y girar la estantería en Decorar llega a la primera persona y sigue tras recargar. Sin migraciones. **No va
-  a producción sin el visto bueno de Francisco.**
+- **En preview, sin publicar: 1.88.2** (2026-11-07, §88.4 a §88.6), rama `1.88.1-fachada` desde `main` (1.88.0).
+  Lleva la 1.88.1 (la fachada al volver de un piso, sin placas fuera del dibujo) y la 1.88.2: en primera persona se ven
+  los místicos, la mascota, los muebles vivos y los acabados (ya no hay «Aún sin esta vista»), siempre leyendo el mismo
+  piso guardado, y sin estantería «Ver la balda» pasa a abrir la biblioteca. Sin migraciones. **No va a producción sin
+  el visto bueno de Francisco** («No mezcles con main todavía»).
 - **Versión publicada: 1.88.0** (2026-11-07, §88). La habitación de inicio es el piso del edificio de tu cuenta
   (primera persona, vista de siempre y Decorar sobre el mismo piso de Supabase) y cada libro de la estantería es el
   mismo ejemplar que el de la mesa, con su portada real y un lomo reconstruido (dicho como tal). Viene de la rama
@@ -90,6 +91,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.88.2 | Místicos, mascota, muebles vivos y acabados en primera persona; «Biblioteca» sin estantería (en preview) | §88.5–§88.6 |
 | 1.88.1 | La fachada al volver de un piso, sin placas fuera del dibujo (en preview) | §88.4 |
 | 1.88.0 | La habitación de inicio es tu piso del edificio; cada libro de la estantería con su portada real (publicada) | §88 |
 | 1.87.0 | La habitación en primera persona como inicio (publicada) | §87 |
@@ -136,7 +138,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **1.88.1 (en preview):** que Francisco la pruebe en Android con la preview y apruebe publicarla.
+- **1.88.1 y 1.88.2 (en preview, rama `1.88.1-fachada`):** que Francisco las pruebe en Android y en Safari de iPhone con la
+  preview y apruebe publicarlas.
 - **1.88 (publicada):** quedan sin causa identificada la franja oscura de Chromium (no se reproduce) y los fallos
   intermitentes de §88.3 (entre ellos, el del decorador del edificio en WebKit).
 - **1.87:** cuándo retirar la opción temporal «Volver a la experiencia anterior» y decidir si Rincón 01 se enciende
@@ -230,6 +233,23 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-07 · cuenta principal · 1.88.2 en preview: los objetos que faltaban en primera persona (commit y subida a la rama)
+- Encargo de Francisco: completar la integración entre el piso real, la primera persona y el decorador, con el estilo
+  pixel; sin mezclar con `main`. Misma rama `1.88.1-fachada`. SPEC §88.5 y §88.6. La fachada (1.88.1) ya estaba hecha:
+  no se ha repetido.
+- Hecho: místicos (farol, rosa, búho), perrito, gramola y mesa de tapete como su dibujo de pixelfx de pie en la escena,
+  en el centro de su mueble y a la altura de su soporte; acabados como piel (`tintar`) y destellos. Animados solo si
+  están a la vista y sin movimiento reducido. `pendientes()` ya solo avisa de lo que no tenga forma (hoy, nada).
+  `misticoSprite().paint` acepta tono, acabado y ancho. `debug()`: `beings` y `placed`. Sin estantería, «Ver la
+  balda» es «Biblioteca» (abre la biblioteca entera); no se añade ni guarda ningún mueble.
+- Pruebas nuevas: `e2e-community/v1882-objetos.spec.js` (recorrido Decorar → Terminar → 3D → recarga → visita de Bruno, y
+  accesos sin muebles) y `v1882-comparativas.spec.js` (mismo piso en isométrico y en primera persona). Pasan en Chromium
+  y WebKit. Hoja en `qa-report/v1882/hoja.png` y trazas de WebKit en `qa-report/trazas/` (no van a git).
+- Intermitentes de WebKit, ajenos al cambio: el de `screenOfItem` en el decorador (`piso-esenciales`, solo falla 2 de 3)
+  y tres que solos pasan. `goodreads.test.js` falla en este ordenador (lector CSV, no tocado).
+- Pendiente: compañero y personaje en primera persona; los seres son planos; textos de «Volver a la balda» sin
+  estantería; sitio fijo para muebles esenciales (cambio aparte). Sin probar en un móvil real.
 
 ### 2026-11-07 · cuenta principal · 1.88.1 en preview: la fachada al volver de un piso (commit y subida a la rama)
 - Encargo de Francisco tras usarla en Android: fachada recortada y desplazada con placas fuera del dibujo; además,
