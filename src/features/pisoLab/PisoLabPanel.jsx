@@ -318,6 +318,8 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
   const [hora, setHora] = useState(FACADE_HORA);
   const [noGpu, setNoGpu] = useState(false);
   const apiRef = useRef(null);
+  // El nombre del piso visitado, entero al tocarlo cuando no cabe
+  const [fullTitle, setFullTitle] = useState(false);
   const reading = editable ? currentBook(books, settings) : null;
   const limit = useMemo(() => roomLimit(location.search), []);
   const shelfBooks = useMemo(() => (editable ? shelfRows(books, settings, limit) : null), [books, settings, editable, limit]);
@@ -403,9 +405,18 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
     <div className="ed-room ed-inside plab-room">
       <div className="ed-bar plab-bar" inert={listing}>
         <button type="button" className="px-btn" onClick={onBack}>
-          <ArrowLeft aria-hidden="true" /> {view === 'decorar' || view === 'balda' ? 'Volver al sillón' : view === 'actual' ? 'Volver' : 'Al portal'}
+          <ArrowLeft aria-hidden="true" /> {view === 'decorar' || view === 'balda' ? (editable ? 'Volver al sillón' : 'Volver a la sala') : view === 'actual' ? 'Volver' : 'Al portal'}
         </button>
-        <h2 className={piso.propio ? 'plab-title plab-title--quiet' : 'plab-title'}>{title}</h2>
+        {piso.propio ? (
+          <h2 className="plab-title plab-title--quiet">{title}</h2>
+        ) : (
+          // De visita, el nombre puede no caber: un toque lo muestra entero (y otro lo recoge)
+          <h2 className={fullTitle ? 'plab-title plab-title--full' : 'plab-title'} title={title}>
+            <button type="button" className="plab-title__btn" aria-expanded={fullTitle} onClick={() => setFullTitle((v) => !v)}>
+              {title}
+            </button>
+          </h2>
+        )}
         {wantsMeter(location.search) && <LabMeter apiRef={apiRef} total={books.length} limit={limit} placed={shelfBooks?.placed.size ?? 0} />}
       </div>
       {iso ? (

@@ -298,7 +298,8 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
         root.removeProperty('--sheet-vv-top');
       }
       const el = document.activeElement;
-      if (covered && el instanceof HTMLElement && el.matches('.book-sheet textarea, .book-sheet input')) requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest' }));
+      // También cuando el teclado encoge la ventana entera (Android), no solo la parte visible (iPhone)
+      if (el instanceof HTMLElement && el.matches('.book-sheet textarea, .book-sheet input')) requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest' }));
     };
     vv.addEventListener('resize', fit);
     vv.addEventListener('scroll', fit);

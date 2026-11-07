@@ -210,6 +210,14 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-07 · cuenta principal · ficha con teclado, «0 libros rehechos» y visitas (subido a la rama, «Sí, sube la rama»)
+- Solo en la rama `experimento/piso-primera-persona`; `main` y producción no cambian. Detalle en `docs/qa/piso-primera-persona.md`, «Ficha con teclado, «0 libros rehechos» y visitas».
+- **Registrar lectura en la ficha:** la fila de Guardar y Cancelar ya no queda pegada al pie, como en el registro independiente (`library-sheet.css`). El campo se lleva a la vista también en Android (`BookDetailModal.jsx`, código compartido con la app).
+- **«Libros rehechos»** cuenta los objetos de libro serializados de nuevo, no lo guardado: un guardado que no cambia el libro (p. ej., «Voy por la página» a la misma página) da 0 y se escribe igual. Comprobado tras recargar.
+- **Visitas:** en la balda de la vecina pone «Volver a la sala», y el nombre del piso se ve entero con un toque. Nada se guarda al visitar.
+- Pruebas: `e2e/piso-ficha-visita.spec.js` (8 de 8 en Chromium y WebKit 390 × 844). Las del piloto, 91 de 92: falla `piso-esenciales:245` en WebKit, el mismo fallo intermitente que ya había en `9461907`. Build bien.
+- Sin verificar: teclado real en Android y en un iPhone (aquí es simulado).
+
 ### 2026-11-07 · cuenta principal · medidor por acción en el piloto (subido a la rama, «Sí, sube la rama»)
 - Solo en la rama `experimento/piso-primera-persona`; `main` y producción no cambian. Detalle en `docs/qa/piso-primera-persona.md`, «Medidor por acción».
 - El medidor (`&medir=1`) apunta guardar lectura, desplazar la biblioteca y 30 s de reposo, con la misma apariencia. `labActions.js` es nuevo.

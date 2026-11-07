@@ -360,6 +360,43 @@ Las bibliotecas de prueba están separadas de los datos reales así:
 - Si en la preview ya había algo, se copia a `bookshelf:lab:biblioteca-propia` antes de sembrar y vuelve con `&biblioteca=propia`.
 - **No iniciar sesión en la nube dentro de la preview.** El piloto no apaga la sincronización: con sesión, la biblioteca de prueba podría subir a esa cuenta. No se ha comprobado si la preview tiene configurada la nube.
 
+## Ficha con teclado, «0 libros rehechos» y visitas (7-11-2026)
+
+### Registrar lectura dentro de la ficha
+
+- **Causa:** la fila de «Guardar lectura» y «Cancelar» heredaba de `laptop.css` una fila pegada al pie (`position: sticky; bottom: 0`, fondo opaco). Con el teclado abierto, la ficha encoge y esa fila tapaba el campo y el resumen.
+- **Arreglo, como en el registro independiente** (`ReadingLogSheet`, `.panel--log`): en la ficha la fila va en su sitio, después del resumen (`library-sheet.css`). Al enfocar el campo, la ficha lo lleva a la vista también cuando el teclado encoge la ventana entera (Android), no solo la parte visible (iPhone) (`BookDetailModal.jsx`).
+- **Comprobado en emulación** (Chromium y WebKit, 390 × 844), con el teclado cerrado, con la ventana encogida 336 px (Android) y con la parte visible encogida y un teclado pintado encima (iPhone):
+  - el campo con el foco se ve sin tocar nada;
+  - campo, resumen, Guardar y Cancelar se ven y se pueden tocar sin nada encima al desplazar la ficha;
+  - lo guardado sigue tras recargar.
+- Prueba: `e2e/piso-ficha-visita.spec.js`. Teclado simulado: falta verlo con un teclado real en Android y en un iPhone.
+
+### ¿Qué cuenta «libros rehechos»?
+
+Cuenta los libros cuyo texto JSON hubo que volver a generar en las serializaciones del guardado. Son los objetos de libro nuevos, que no estaban en la caché de `serializeState`. **No cuenta cambios guardados ni escrituras.**
+
+- Si el guardado cambia el libro (página, estado…), el reducer crea un objeto nuevo y sale **1**.
+- Si el libro no cambia, sale **0** aunque se guarde algo. Pasa, por ejemplo, con «Voy por la página» a la página en la que ya estabas: se añade una sesión al registro de lecturas, pero el libro queda igual. También puede pasar si otra serialización anterior ya lo había rehecho.
+- Lo que se escribe es siempre la biblioteca entera: mirar «escrituras» y «caracteres», no este contador.
+
+Reproducido con 5.000 libros, Chromium emulado sin limitar la CPU:
+
+| Guardado | Total | Rehechos | Escrituras | En el almacenamiento | Tras recargar |
+| --- | --- | --- | --- | --- | --- |
+| Ficha, «He leído» 5 | 51 ms | 1 | 1 | pág. 47 → 52, sesiones 2 → 3 | — |
+| Ficha, otra vez seguido | 52 ms | 1 | 1 | 52 → 58, sesiones 3 → 4 | — |
+| Ficha, «Voy por la página» 58 (la misma) | 45 ms | **0** | 1 | pág. 58, sesiones 4 → **5** | pág. 58, sesiones 5 |
+
+No he visto el guardado de 48 ms de la grabación. Su «0 libros rehechos» encaja con este caso: se guardó una sesión sin cambiar el libro, y la escritura cuenta 1. Para confirmarlo en el móvil, mirar en el medidor que «escrituras» sea 1 y comprobar la sesión en el historial tras recargar.
+
+### Visitar el piso de la vecina
+
+- Recorrido sin cambios: tu piso → «Al portal» → piso de la vecina → «Al portal». El aspecto de tu piso no cambia: su título sigue oculto.
+- De visita, la balda vuelve con **«Volver a la sala»** en vez de «Volver al sillón», porque el sillón no es tuyo.
+- El nombre del piso visitado («Piso de Vecina de prueba · 2.º B») se cortaba en la balda a 360 px. Ahora es un botón: un toque lo muestra entero en dos líneas y otro lo recoge (`aria-expanded`, y `title` con el nombre completo).
+- **Solo mirar:** sin registrar, Decorar ni Buscar. Al entrar, mirar la balda y salir, el `localStorage` queda igual, clave por clave (`e2e/piso-ficha-visita.spec.js`, y `piso-lab.spec.js` «el visitante»).
+
 ## Pendiente y limitaciones
 
 - **Sin vista propia** (se avisa y lleva a la vista de siempre): compañeros místicos con animación y copias con acabado.

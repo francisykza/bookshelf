@@ -670,6 +670,27 @@
   clip-path: inset(50%);
 }
 
+/* De visita, el nombre del piso es un botón que lo despliega entero si no cabe */
+.plab-title__btn {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.plab-title--full .plab-title__btn {
+  white-space: normal;
+}
+
 /* El medidor, en la esquina contraria */
 .plab-bar > .plab-title--quiet + * {
   margin-left: auto;

@@ -365,6 +365,20 @@
   width: 100%;
 }
 
+/* La fila de «Guardar lectura» y «Cancelar» va en su sitio, tras el resumen, como en el registro independiente
+   (.panel--log). Pegada al pie de la ficha, con el teclado abierto tapaba el campo y el resumen */
+.book-sheet .reading-form__actions {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
 /* Valoración y favorito */
 .sheet-rating {
   display: grid;
