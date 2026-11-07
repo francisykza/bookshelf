@@ -105,6 +105,13 @@ function Sanctuary() {
   useEffect(() => {
     if (home && !location.panel && location.view === 'room') nav.replace({ view: 'room', panel: { type: 'pisoLab', id: HOME_PISO } });
   }, [home, location.panel, location.view, nav]);
+  // Los pisos del piloto (lab-1A, lab-2B y su portal) solo se abren con ?piloto=piso. Una entrada del historial de la 1.87,
+  // que sobrevive a recargar, lleva a tu piso (o se cierra con la experiencia anterior): nunca un piso de prueba como tuyo
+  useEffect(() => {
+    const p = location.panel;
+    if (pilot || p?.type !== 'pisoLab' || p.id === HOME_PISO) return;
+    nav.replace({ view: location.view, panel: home ? { ...p, id: HOME_PISO } : null });
+  }, [pilot, home, location.panel, location.view, nav]);
   // El edificio, a mano antes de tocar la puerta: sin esto, mientras llega se vería la habitación de antes debajo
   useEffect(() => {
     if (!home) return undefined;
@@ -451,7 +458,7 @@ function Sanctuary() {
           <ReaderProfile userId={panel.id} onClose={close} />
         </Suspense>
       )}
-      {panel?.type === 'pisoLab' && (
+      {panel?.type === 'pisoLab' && (pilot || panel.id === HOME_PISO) && (
         <Suspense fallback={null}>
           <PisoLabPanel
             pisoId={panel.id ?? null}
@@ -465,6 +472,8 @@ function Sanctuary() {
             onExit={() => switchPanel({ type: 'pisoLab' })}
             onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
             home={home && panel.id === HOME_PISO}
+            onOpenAccount={() => openPanel({ type: 'account' })}
+            onOpenProfile={() => openPanel({ type: 'social', tab: 'perfil' })}
             // La música del edificio empieza en este mismo toque (en iOS, fuera de un toque no suena)
             onEdificio={() => (setEdificioMusic(settings.sound), openPanel({ type: 'edificio' }))}
             onAnterior={() => {

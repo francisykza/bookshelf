@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.87.0 · 2026-11-07 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.88.0 · 2026-11-07 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5206,3 +5206,43 @@ publicarlo (7-11-2026, «Si funciona»).
 
 - Guardar con 5.000 libros: solo se reconstruye el libro modificado (`serializeState` con caché por objeto), pero se sigue escribiendo la biblioteca entera. Guardados medidos por Francisco: 53 y 43 ms.
 - Más detalle (desplazamiento, reposo y medidor `&medir=1`) en `docs/qa/piso-primera-persona.md`.
+
+## 88. La habitación de inicio es tu piso; los lomos tienen cara (1.88.0)
+
+Corrección de dos fallos de la 1.87 publicada (encargo de Francisco del 7-11-2026). Rama `1.88-habitacion-real`.
+
+### 88.1 Tu piso real
+
+- La habitación de inicio (`HOME_PISO = 'mio'`) es **tu piso del edificio**: el de tu cuenta, leído con `loadEdificio` y
+  guardado con `savePiso`, con los permisos de siempre (solo se escribe el tuyo y el servidor lo valida). Primera persona,
+  vista de siempre, Decorar y el edificio leen y modifican el mismo piso (`src/features/edificio/myPiso.js`,
+  `src/features/pisoLab/useMyPiso.js`).
+- Lo último que la pestaña sabe de tu piso se recuerda **en memoria, por usuario** (`myPisoCache.js`), para que pasar de
+  una vista a otra no enseñe una versión anterior mientras llega la del servidor. Se olvida al cambiar de cuenta o cerrar
+  sesión (`CommunityProvider`). Nada de esto va a `localStorage`.
+- Mientras se resuelve la sesión o llega el piso: «Abriendo tu piso…». Sin cuenta, sin comunidad o con un error, un aviso
+  con lo que falta, «Mi biblioteca» y la experiencia anterior. **Nunca un piso de prueba como tuyo.**
+- **Sin reparaciones:** el piso se dibuja como está guardado. La puerta de salida y el ordenador (piezas del piloto que el
+  servidor no admite) se añaden solo al dibujo en primera persona, donde caben sin mover nada, y nunca se guardan. Si un
+  piso no tiene estantería, mesa o sillón, el interior funciona igual.
+- La primera vez sin piso, el de partida del edificio (`starterRoom`), como siempre.
+- Los pisos del piloto (`labStore.js`) solo con `?piloto=piso`. Una entrada del historial de la 1.87 (`lab-1A`) lleva a tu
+  piso, o se cierra con la experiencia anterior.
+
+### 88.2 Lomos con la cara de su libro
+
+- Cada lomo dibujado lleva los **colores de su portada**, su **título** y el **apellido del autor**, en píxel. Con
+  `book.spine` (la imagen de un lomo propio) se usa esa; hoy ningún libro lo trae. Sin portada, o si la portada no deja
+  leer sus píxeles, el color de siempre.
+- Solo se piden las portadas de los ejemplares representados, **en miniatura** (`-S` de Open Library, `w80-h120` de
+  Google Books), cuatro a la vez y con una caché de 64 (`spineLooks.js`). Las portadas grandes (mesa y portada de
+  frente) se recuerdan como mucho 6.
+- La escena se vuelve a pintar si cambia la portada, el lomo, la edición, el color, el título o el autor, aunque el id
+  sea el mismo (`sceneKey` en `shelfLayout.js`).
+- Sigue el límite de 30 libros visibles y la búsqueda en toda la biblioteca.
+
+### 88.3 Comprobado
+
+- Emulación (no móviles reales): `e2e-community/v188-habitacion-real.spec.js` con dos cuentas simuladas (entrada,
+  Decorar, edificio, regreso, recarga, cambio de cuenta, visita sin poder decorar); `e2e/piso-lomos.spec.js` con 1000
+  libros; `src/features/pisoLab/__tests__/spineLooks.test.js`.

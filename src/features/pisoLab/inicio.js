@@ -7,8 +7,9 @@
 // todo lo que compila Vercel (producción incluida); en local y en las pruebas, no, salvo con PISO_INICIO=1.
 
 export const INICIO_KEY = 'bookshelf:inicio';
-/** Tu piso en el piloto (`labStore.js`): la habitación del inicio. Aquí sin importar labStore, para no cargarlo al arrancar. */
-export const HOME_PISO = 'lab-1A';
+/** La habitación del inicio: tu piso del edificio, el de tu cuenta (1.88, `useMyPiso.js`). Los pisos del piloto
+ * (`labStore.js`) solo se abren en el modo de demostración, con ?piloto=piso. */
+export const HOME_PISO = 'mio';
 
 /* global __PISO_INICIO__ */
 const BUILD_DEFAULT = typeof __PISO_INICIO__ !== 'undefined' && __PISO_INICIO__ === true;

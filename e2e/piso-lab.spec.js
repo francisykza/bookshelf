@@ -55,7 +55,7 @@ test('el portal no carga Three.js ni portadas; la puerta abre el piso y al volve
   expect(external).toEqual([]);
 });
 
-test('registrar desde el piso abre el registro vigente; solo se pide la cubierta de tu lectura', async ({ page }) => {
+test('registrar desde el piso abre el registro vigente; solo la cubierta de tu lectura y las miniaturas de los lomos que se ven', async ({ page }) => {
   const covers = [];
   page.on('request', (r) => {
     if (r.url().includes('covers.openlibrary.org')) covers.push(r.url());
@@ -65,15 +65,21 @@ test('registrar desde el piso abre el registro vigente; solo se pide la cubierta
   await page.waitForTimeout(800);
   covers.length = 0;
   await enter(page);
-  // Una sola cubierta, la misma en la mesa y en la estantería: los lomos están dibujados
-  expect(new Set(covers).size).toBeLessThanOrEqual(1);
+  // Una sola cubierta grande, la misma en la mesa y en la estantería. Desde la 1.88, además, la miniatura (-S) de cada
+  // lomo dibujado, para pintarlo con sus colores; nada de los libros que no se ven
+  const shown = (await debug(page)).shelf.books.length;
+  const big = () => new Set(covers.filter((u) => !/-S.jpg/.test(u))).size;
+  const small = () => new Set(covers.filter((u) => /-S.jpg/.test(u))).size;
+  expect(big()).toBeLessThanOrEqual(1);
+  expect(small()).toBeLessThanOrEqual(shown);
   await page.getByRole('button', { name: /^Registrar lectura de Circe/ }).click();
   await expect(page.getByRole('dialog').filter({ hasText: 'Guardar lectura' }).last()).toContainText('Circe');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('heading', { name: 'Tu piso · 1.º A' })).toBeVisible();
   await page.getByRole('button', { name: 'Ver la balda' }).click();
   await expect(page.locator('.plab-spot')).not.toHaveCount(0);
-  expect(new Set(covers).size).toBeLessThanOrEqual(1);
+  expect(big()).toBeLessThanOrEqual(1);
+  expect(small()).toBeLessThanOrEqual(shown);
   await page.goBack();
   await expect(page.locator('.plab-spot')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Tu piso · 1.º A' })).toBeVisible();

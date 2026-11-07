@@ -6,6 +6,7 @@ import { useCloud } from '../../../state/cloudSync';
 import { clearSocialCache, fetchMyProfile, probeCommunity, saveMyProfile } from '../services/community';
 import { fetchFollowing, follow, unfollow } from '../services/connections';
 import { resetPresence } from './usePresence';
+import { forgetMyPiso } from '../../edificio/myPisoCache';
 
 const CommunityContext = createContext(null);
 
@@ -25,6 +26,7 @@ export function CommunityProvider({ children }) {
   // Cambio de cuenta o cierre de sesión: fuera todo lo del usuario anterior
   useEffect(() => {
     clearSocialCache(userId);
+    forgetMyPiso();
     seq.current += 1;
     setState({ status: 'idle', profile: null, error: '' });
     setFollowing(null);

@@ -14,17 +14,22 @@ import { mountFacade } from '../edificio/facadeView';
 import { mountPiso } from '../edificio/piso';
 import { installPixelVars, pixelIconSmallSrc } from '../edificio/pixelUi';
 import { preloadCover } from './coverPreload';
+import { spineLook } from './spineLooks';
 import { LabMeter, wantsMeter } from './LabMeter';
 import { beginMount, cancelMount, markCode, markInteractive, markPortal, markPress, markScene } from './labTiming';
 import './pisoLab.css';
 import { PisoLibrary, emptyLibraryMemory } from './PisoLibrary';
 import { roomLimit, toggleExhibit } from './roomSelection';
-import { TOP_ROW, fitSlots, shelfRows } from './shelfLayout';
+import { TOP_ROW, fitSlots, sceneKey, shelfRows } from './shelfLayout';
 import { canEdit, doorLabel, loadRoom, pendientes, pisoById, portalFlats, repairNews, resetRoom, saveRoom, ventanasDe } from './labStore';
 import { PisoMenu } from './PisoMenu';
 import { demoLibraryActive } from './sampleLibrary';
+import { HOME_PISO } from './inicio';
+import { rememberMyPiso, saveMyPiso } from '../edificio/myPiso';
+import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
 
 const SAVE_MS = 400;
+const NO_NEWS = { added: [], moved: 0, stored: 0 };
 const SIGUE = { tarde: { hora: 'noche', label: 'Ver de noche', short: 'Noche', icon: 'luna' }, noche: { hora: 'dia', label: 'Ver de día', short: 'Día', icon: 'sol' }, dia: { hora: 'tarde', label: 'Ver al atardecer', short: 'Tarde', icon: 'sol' } };
 /** Un dedo que se desliza más que esto sobre un libro no lo está eligiendo. */
 const SPOT_SLOP = 8;
@@ -60,19 +65,26 @@ function Portal({ onOpen, onPress, doorRef }) {
 }
 
 /** El editor o la vista de siempre, sobre el mismo piso. */
-function VistaActual({ piso, room, editable, evening, onChange, onView }) {
+function VistaActual({ piso, room, editable, evening, inventory = null, onChange, onView }) {
   const ref = useRef(null);
+  const api = useRef(null);
   useEffect(() => {
-    const view = mountPiso(ref.current, { room, editable, decorate: editable, inside: true, evening, label: `Piso ${doorLabel(piso)}`, onChange, stackTaps: true });
+    // Tu piso real: tus copias de cada mueble, como al decorar en el edificio (el servidor decide al guardar)
+    const view = mountPiso(ref.current, { room, editable, decorate: editable, inside: true, evening, label: `Piso ${doorLabel(piso)}`, onChange, stackTaps: true, inventory });
+    api.current = view;
     if (import.meta.env.DEV) window.__edificioPiso = view;
     onView?.(view);
     return () => {
+      api.current = null;
       onView?.(null);
       view.destroy();
     };
     // Se monta una vez: los cambios los lleva él y avisa con onChange
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    if (inventory) api.current?.setInventory(inventory);
+  }, [inventory]);
   return <div ref={ref} className="ed-piso" />;
 }
 
@@ -99,9 +111,9 @@ function BookSpot({ book, slot, selected, onChoose }) {
 
 const shelfData = (book) => ({ id: book.id, title: book.title, color: spineColor(book), ink: inkFor(spineColor(book)), edition: visualEdition(book), thickness: bookThicknessCm(book) * 0.06, height: EDITIONS[visualEdition(book)].height });
 const tableData = (book) => book && { ...shelfData(book), coverLoad: preloadCover(book.cover) };
-const shelfScene = (shelfBooks) => shelfBooks && { cover: tableData(shelfBooks.cover), rows: shelfBooks.rows };
-/** Cambia si hay que recolocar algo en la habitación; registrar una página, no. */
-const sceneKey = (reading, shelfBooks) => [reading?.id, shelfBooks?.cover.id, ...(shelfBooks?.rows.map((row) => row.map((i) => i.id).join()) ?? [])].join('|');
+// Cada lomo, con la cara de su libro (1.88): solo se piden las portadas de los ejemplares que se dibujan
+const shelfScene = (shelfBooks) => shelfBooks && { cover: tableData(shelfBooks.cover), rows: shelfBooks.rows.map((row) => row.map((i) => ({ ...i, look: spineLook(i.book) }))) };
+
 
 /** Una acción secundaria: un icono y una palabra. El nombre completo es para el lector de pantalla y empieza igual. */
 function Tool({ icon, name, short, onClick }) {
@@ -299,13 +311,17 @@ function EssentialsBar({ room, onPick, onReset }) {
   );
 }
 
-function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegister, onOpenLibrary, home = false, onEdificio, onAnterior }) {
+function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenBook, onRegister, onOpenLibrary, home = false, onEdificio, onAnterior }) {
   // Habitación de inicio: su puerta y «atrás» llevan al edificio del puerto, no al portal de prueba
   const leave = home && !select ? onEdificio : onBack;
   const { state, actions } = useLibrary();
   const { books, settings } = state;
-  const [room, setRoom] = useState(() => loadRoom(piso));
-  const [news] = useState(() => repairNews(piso));
+  // `real`: tu piso del edificio (useMyPiso), tal como está guardado. Sin él, un piso del piloto (solo con ?piloto=piso)
+  const [room, setRoom] = useState(() => (real ? real.room : loadRoom(piso)));
+  const [news] = useState(() => (real ? NO_NEWS : repairNews(piso)));
+  // En primera persona, con la puerta y el ordenador si caben (solo dibujados: no se guardan)
+  const inner = useMemo(() => (real ? withDoorAndComputer(room) : room), [real, room]);
+  const [saving, setSaving] = useState('');
   const [roomRev, setRoomRev] = useState(0);
   const isoView = useRef(null);
   const editable = canEdit(piso);
@@ -385,11 +401,26 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
   const timer = useRef(0);
   const flush = () => {
     clearTimeout(timer.current);
-    if (pending.current) saveRoom(piso, pending.current);
+    const next = pending.current;
     pending.current = null;
+    if (!next) return;
+    if (!real) {
+      saveRoom(piso, next);
+      return;
+    }
+    // Tu piso real, con el servicio del edificio: el servidor solo deja escribir el tuyo y lo vuelve a validar
+    saveMyPiso(real.userId, savable(next)).then(
+      () => !gone.current && setSaving('Guardado.'),
+      (e) => !gone.current && setSaving(`No se ha podido guardar: ${e.message}`),
+    );
   };
   const onChange = (next) => {
     setRoom(next);
+    if (real) {
+      // El edificio lo ve ya así, aunque el guardado aún no haya salido
+      rememberMyPiso(real.userId, { room: savable(next) });
+      setSaving('Guardando…');
+    }
     pending.current = next;
     clearTimeout(timer.current);
     timer.current = setTimeout(flush, SAVE_MS);
@@ -424,8 +455,13 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
       </div>
       {iso ? (
         <>
-          <VistaActual key={roomRev} piso={piso} room={room} editable={view === 'decorar'} evening={hora !== 'dia'} onChange={onChange} onView={(v) => (isoView.current = v)} />
-          {view === 'decorar' && (
+          <VistaActual key={roomRev} piso={piso} room={room} editable={view === 'decorar'} evening={hora !== 'dia'} inventory={real?.inventory ?? null} onChange={onChange} onView={(v) => (isoView.current = v)} />
+          {real && view === 'decorar' && (
+            <p className="ed-saving plab-saving" role="status" aria-live="polite">
+              {saving}
+            </p>
+          )}
+          {!real && view === 'decorar' && (
             <EssentialsBar
               room={room}
               onPick={(uid) => isoView.current?.selectItem(uid)}
@@ -462,7 +498,7 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
         <>
           <Interior
             piso={piso}
-            room={room}
+            room={inner}
             hora={hora}
             reading={reading}
             balda={balda}
@@ -547,8 +583,66 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
   );
 }
 
-export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose, onExit, onOpenBook, onRegister, onOpenLibrary, home = false, onEdificio, onAnterior }) {
-  const piso = pisoById(pisoId);
+/**
+ * La habitación de inicio: tu piso del edificio (1.88). Hasta que se sabe quién eres y llega tu piso, solo un aviso; sin
+ * cuenta o sin la comunidad, lo que falta y los caminos de siempre. Nunca un piso de prueba.
+ */
+function HomePiso({ onOpenLibrary, onEdificio, onAnterior, onOpenAccount, onOpenProfile, ...rest }) {
+  const mine = useMyPiso();
+  useEffect(() => installPixelVars(), []);
+  if (mine.state === 'ready') return <PisoView key={mine.piso.id} piso={mine.piso} real={{ userId: mine.userId, room: mine.room, inventory: mine.inventory }} onOpenLibrary={onOpenLibrary} onEdificio={onEdificio} onAnterior={onAnterior} {...rest} />;
+  const text = {
+    loading: 'Abriendo tu piso…',
+    'signed-out': 'Tu habitación es tu piso del edificio del puerto: inicia sesión en «Tu cuenta» para entrar.',
+    'no-member': 'Tu habitación es tu piso del edificio del puerto, que es para quien tiene la comunidad activada: tus vecinos verán tu piso y tu alias.',
+    unavailable: mine.error || 'Tu piso no está disponible ahora mismo.',
+    error: mine.error || 'No se ha podido abrir tu piso.',
+  }[mine.state];
+  return (
+    <div className="ed-room ed-inside plab-room plab-home" data-estado={mine.state}>
+      <div className="ed-bar plab-bar">
+        <button type="button" className="px-btn" onClick={onEdificio}>
+          <ArrowLeft aria-hidden="true" /> Al edificio
+        </button>
+        <h2 className="plab-title plab-title--quiet">Tu piso</h2>
+      </div>
+      <div className="plab-fallback plab-gate" role={mine.state === 'loading' ? 'status' : 'alert'}>
+        <p>{text}</p>
+        {mine.state === 'signed-out' && onOpenAccount && (
+          <button type="button" className="px-btn px-btn--sage" onClick={onOpenAccount}>
+            Abrir «Tu cuenta»
+          </button>
+        )}
+        {mine.state === 'no-member' && onOpenProfile && (
+          <button type="button" className="px-btn px-btn--sage" onClick={onOpenProfile}>
+            Activar la comunidad en mi perfil
+          </button>
+        )}
+        {mine.state === 'error' && (
+          <button type="button" className="px-btn" onClick={mine.retry}>
+            Reintentar
+          </button>
+        )}
+        {mine.state !== 'loading' && (
+          <>
+            <button type="button" className="px-btn" onClick={onOpenLibrary}>
+              Abrir Mi biblioteca
+            </button>
+            {onAnterior && (
+              <button type="button" className="px-btn" onClick={onAnterior}>
+                Volver a la experiencia anterior
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose, onExit, onOpenBook, onRegister, onOpenLibrary, home = false, onEdificio, onAnterior, onOpenAccount, onOpenProfile }) {
+  const isHome = pisoId === HOME_PISO;
+  const piso = isHome ? null : pisoById(pisoId);
   const { state } = useLibrary();
   // Lo que hace falta al otro lado de la puerta empieza a llegar al tocarla
   const prepare = (door, repeat) => {
@@ -564,8 +658,10 @@ export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose
   return (
     // Con el registro encima, Escape es suyo
     // Con el registro encima, Escape es suyo; en la habitación de inicio, Escape no la cierra (es la pantalla de inicio)
-    <PanelShell onClose={select === 'registro' || /^(ficha:|ordenador|abrir:)/.test(select ?? '') || (home && !select) ? () => {} : select === 'toda' ? onBack : onClose} label={piso ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
-      {piso ? (
+    <PanelShell onClose={select === 'registro' || /^(ficha:|ordenador|abrir:)/.test(select ?? '') || (home && !select) ? () => {} : select === 'toda' ? onBack : onClose} label={piso || isHome ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
+      {isHome ? (
+        <HomePiso select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} home={home} onEdificio={onEdificio} onAnterior={onAnterior} onOpenAccount={onOpenAccount} onOpenProfile={onOpenProfile} />
+      ) : piso ? (
         <PisoView key={piso.id} piso={piso} select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} home={home} onEdificio={onEdificio} onAnterior={onAnterior} />
       ) : (
         <>

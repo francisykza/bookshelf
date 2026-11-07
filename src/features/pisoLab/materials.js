@@ -524,25 +524,38 @@ const SPINE_H = 128;
 const SPINE_CELL = 32;
 const SPINE_COLS = 12;
 
-/** La parte del título que se puede pintar, en una sola línea a lo largo del lomo: píxeles sueltos, sin suavizado. */
-function titleMask(title, w, h) {
+/**
+ * El título que se puede pintar, en una sola línea a lo largo del lomo: píxeles sueltos, sin suavizado. Con `author`
+ * (1.88), el apellido va abajo, más pequeño, como en un lomo de verdad; si no cabe, solo el título.
+ */
+function titleMask(title, w, h, author = '') {
   const room = h - 28;
   const canvas = document.createElement('canvas');
   canvas.width = room;
   canvas.height = w;
   const g = canvas.getContext('2d', { willReadFrequently: true });
+  const surname = String(author ?? '').split(/[,;&]| y /)[0].trim().split(/\s+/).pop() ?? '';
+  g.font = 'bold 10px Georgia, serif';
+  const byline = surname && g.measureText(surname).width <= room * 0.34 ? surname : '';
+  const bylineW = byline ? Math.ceil(g.measureText(byline).width) + 8 : 0;
+  const titleRoom = room - bylineW;
   let text = String(title);
   let size = 13;
   const fit = () => {
     g.font = `bold ${size}px Georgia, serif`;
-    return g.measureText(text).width <= room;
+    return g.measureText(text).width <= titleRoom;
   };
   while (!fit() && size > 10) size -= 1;
   // Si aun así no cabe, se corta por palabras: mejor un título corto que letras que no se leen
   while (!fit() && text.includes(' ')) text = text.slice(0, text.lastIndexOf(' '));
   g.textBaseline = 'middle';
   g.textAlign = 'center';
-  g.fillText(text, room / 2, w / 2 + 0.5, room);
+  g.fillText(text, titleRoom / 2, w / 2 + 0.5, titleRoom);
+  if (byline) {
+    g.font = 'bold 10px Georgia, serif';
+    g.textAlign = 'right';
+    g.fillText(byline, room - 1, w / 2 + 0.5);
+  }
   const { data } = g.getImageData(0, 0, room, w);
   // A lo largo del lomo, de arriba abajo
   return (x, y) => {
@@ -563,13 +576,28 @@ function spineTone(color, id) {
   return [channel((value >> 16) & 255, 1 + skew), channel((value >> 8) & 255, 1), channel(value & 255, 1 - skew)];
 }
 
-/** Cada edición tiene su lomo, como en la balda de siempre: lo que los distingue son datos del propio libro. */
-function spinePixel(r, { id, edition, color, ink }, mask) {
-  const ramp = r.rampOf(spineTone(color, id));
+const hexOf = (c) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+
+/**
+ * Cada edición tiene su lomo, como en la balda de siempre: lo que los distingue son datos del propio libro. `look` (1.88,
+ * spineLooks.js): el lomo real del libro (`pixels`), que se pinta tal cual, o los colores de su portada (`base`, `accent`,
+ * `ink`), que sustituyen al color de siempre.
+ */
+function spinePixel(r, { id, edition, color, ink, look }, mask) {
+  if (look?.pixels) {
+    const px = look.pixels;
+    return (x, y) => {
+      const i = (y * SPINE_W + x) * 4;
+      return rgb(px[i], px[i + 1], px[i + 2]);
+    };
+  }
+  const ramp = r.rampOf(spineTone(look?.base ? hexOf(look.base) : color, id));
   const gold = r.rampOf([214, 176, 96]);
+  // Las bandas del lomo, del segundo color de la portada; el dorado de las ediciones especiales no cambia
+  const band = look?.accent ? r.rampOf(look.accent) : gold;
   const cream = r.rampOf([232, 220, 190]);
-  // `inkFor` dice qué tinta se lee mejor sobre este lomo: clara u oscura
-  const inkTone = ink === 'light' ? rgb(240, 230, 205) : rgb(44, 32, 30);
+  // `inkFor` dice qué tinta se lee mejor sobre este lomo: clara u oscura (con portada, la de sus colores)
+  const inkTone = (look?.ink ?? ink) === 'light' ? rgb(240, 230, 205) : rgb(44, 32, 30);
   const W = SPINE_W;
   const H = SPINE_H;
   const body = (x) => ramp[x === 0 || x === W - 1 ? 1 : x <= 2 ? 4 : x >= W - 3 ? 2 : 3];
@@ -586,7 +614,7 @@ function spinePixel(r, { id, edition, color, ink }, mask) {
       return (x + y) % 2 ? body(x) : ramp[2];
     }
     if (edition === 'paperback') {
-      if (near(3) || near(H - 4)) return ramp[1];
+      if (near(3) || near(H - 4)) return look?.accent ? band[2] : ramp[1];
       return lettered ? inkTone : ramp[x === 0 || x === W - 1 ? 2 : 3];
     }
     if (edition === 'sprayed_edges') {
@@ -599,38 +627,54 @@ function spinePixel(r, { id, edition, color, ink }, mask) {
       if (near(6) || near(H - 7)) return ramp[1];
       return lettered ? inkTone : body(x);
     }
-    if (near(6) || near(H - 7)) return gold[2];
+    if (near(6) || near(H - 7)) return band[2];
     return lettered ? inkTone : body(x);
   };
 }
 
 /**
  * Un atlas para todos los lomos de la estantería: una sola textura y un solo material, aunque haya muchos libros.
- * `list`: [{ id, title, color, ink, edition }]. Devuelve { texture, size, spine(id), side(id), pages } con recortes en píxeles.
+ * `list`: [{ id, title, author, color, ink, edition, look? }]. Devuelve { texture, size, spine(id), side(id), pages } con
+ * recortes en píxeles, y `repaint(looks)` (1.88): vuelve a pintar la misma textura cuando llegan las caras de los lomos
+ * (`looks`: Map de id a la cara de spineLooks.js), sin rehacer la estantería.
  */
 export function spineAtlas(list) {
   const r = probe();
   const size = [SPINE_COLS * SPINE_CELL, (Math.floor(list.length / SPINE_COLS) + 1) * SPINE_H];
   const slot = new Map(list.map((b, k) => [b.id, [(k % SPINE_COLS) * SPINE_CELL, Math.floor(k / SPINE_COLS) * SPINE_H]]));
-  const painters = list.map((b) => ({ ...slot.get(b.id), at: slot.get(b.id), paint: spinePixel(r, b, titleMask(b.title, SPINE_W, SPINE_H)), side: r.rampOf(spineTone(b.color, b.id))[2] }));
-  const lookup = new Map(painters.map((p) => [`${p.at[0]},${p.at[1]}`, p]));
+  const masks = new Map(list.map((b) => [b.id, titleMask(b.title, SPINE_W, SPINE_H, b.author)]));
   const paper = r.rampOf([222, 206, 170]);
   const pagesAt = [size[0] - SPINE_CELL, size[1] - SPINE_H];
-  const canvas = canvasOf(size[0], size[1], (x, y) => {
-    const cx = x - (x % SPINE_CELL);
-    const cy = y - (y % SPINE_H);
-    if (cx === pagesAt[0] && cy === pagesAt[1]) return paper[x % 3 === 0 ? 2 : 3];
-    const p = lookup.get(`${cx},${cy}`);
-    if (!p) return paper[1];
-    const lx = x - cx;
-    return lx < SPINE_W ? p.paint(lx, y - cy) : p.side;
-  });
+  const paintAll = (looks) => {
+    const painters = list.map((b) => {
+      const look = looks?.get(b.id) ?? null;
+      const tone = look?.base ? hexOf(look.base) : b.color;
+      return { at: slot.get(b.id), paint: spinePixel(r, { ...b, look }, masks.get(b.id)), side: r.rampOf(spineTone(tone, b.id))[2] };
+    });
+    const lookup = new Map(painters.map((p) => [`${p.at[0]},${p.at[1]}`, p]));
+    return (x, y) => {
+      const cx = x - (x % SPINE_CELL);
+      const cy = y - (y % SPINE_H);
+      if (cx === pagesAt[0] && cy === pagesAt[1]) return paper[x % 3 === 0 ? 2 : 3];
+      const p = lookup.get(`${cx},${cy}`);
+      if (!p) return paper[1];
+      const lx = x - cx;
+      return lx < SPINE_W ? p.paint(lx, y - cy) : p.side;
+    };
+  };
+  const canvas = canvasOf(size[0], size[1], paintAll(null));
+  const tex = texture(canvas);
   return {
-    texture: texture(canvas),
+    texture: tex,
     size,
     spine: (id) => [...slot.get(id), SPINE_W, SPINE_H],
     side: (id) => [slot.get(id)[0] + SPINE_W + 1, slot.get(id)[1] + 2, 2, SPINE_H - 4],
     pages: [...pagesAt, SPINE_CELL, SPINE_H],
+    repaint(looks) {
+      const fresh = canvasOf(size[0], size[1], paintAll(looks));
+      canvas.getContext('2d').drawImage(fresh, 0, 0);
+      tex.needsUpdate = true;
+    },
   };
 }
 

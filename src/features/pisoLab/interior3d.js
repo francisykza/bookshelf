@@ -405,6 +405,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   const shelfSpots = [];
   const warmers = [];
   let shelfCoverReal = false;
+  // Cuántos lomos llevan ya la cara de su libro (1.88)
+  let shelfLooks = 0;
   let shelfCoverReady = Promise.resolve();
   // Lo que se tira y se rehace al cambiar los libros: la memoria de cada tanda no se queda en la tarjeta
   const freshKit = () => ({ materials: [], textures: [], geometries: [], meshes: [] });
@@ -453,6 +455,16 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     const list = shelfBooks.rows.flat();
     const atlas = spineAtlas(list);
     own('textures', atlas.texture);
+    // Las caras de los lomos (los colores de cada portada, o el lomo real) llegan después: se repinta la misma textura, una vez
+    shelfLooks = 0;
+    Promise.all(list.map((i) => Promise.resolve(i.look ?? null).then((v) => [i.id, v], () => [i.id, null]))).then((pairs) => {
+      if (destroyed || shelfKit !== kit) return;
+      const got = new Map(pairs.filter(([, v]) => v));
+      if (!got.size) return;
+      atlas.repaint(got);
+      shelfLooks = got.size;
+      invalidate();
+    });
     const spineMat = tinted(new MeshBasicMaterial({ map: atlas.texture, vertexColors: true }));
     const pages = tinted(new MeshBasicMaterial({ map: own('textures', pagesTexture()) }));
     const shadowMap = own('textures', contactShadowTexture());
@@ -1567,7 +1579,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         memory: { ...renderer.info.memory },
         calls: renderer.info.render.calls,
         book: bookGroup ? { id: tableBook.id, color: tableBook.color, coverReal } : null,
-        shelf: { coverReal: shelfCoverReal, books: shelfSpots.map((s) => s.id), rows: [0, 1, 2].map((r) => shelfSpots.filter((s) => s.row === r).length) },
+        shelf: { coverReal: shelfCoverReal, looks: shelfLooks, books: shelfSpots.map((s) => s.id), rows: [0, 1, 2].map((r) => shelfSpots.filter((s) => s.row === r).length) },
         zoomed: Boolean(zoom),
         paused: paused(),
         contextLost: lost,

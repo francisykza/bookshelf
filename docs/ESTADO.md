@@ -6,6 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **En preview, sin publicar: 1.88.0** (2026-11-07, §88), rama `1.88-habitacion-real` desde `main` (`5a0e10c`). La
+  habitación de inicio es el piso del edificio de tu cuenta (primera persona, vista de siempre y Decorar sobre el mismo
+  piso de Supabase) y los lomos llevan la cara de su libro. Sin migraciones. **No va a producción sin el visto bueno de
+  Francisco.**
 - **Versión publicada: 1.87.0** (2026-11-07, §87). La habitación en primera persona es el inicio y su puerta lleva al
   edificio del puerto. De forma temporal, «Volver a la experiencia anterior» abre la habitación ilustrada como en la 1.86
   (Rincón 01, apagado). Incluye el registro con Deshacer, la relectura con historial y el rendimiento con 5.000 libros.
@@ -81,6 +85,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.88.0 | La habitación de inicio es tu piso del edificio; lomos con los colores de su portada, título y autor (en preview) | §88 |
+| 1.87.0 | La habitación en primera persona como inicio (publicada) | §87 |
 | 1.86.0 | Reseña como imagen, acabados de muebles, La estiba con pared de premios, talleres y tablón «Se busca» (publicada) | §85, §86 |
 | 1.79.0 | Misiones del día que dan 5 tickets con el armario completo, cartela del hotel más pequeña y la suite de la semana decorada entre todos en el ático (publicada; migraciones aplicadas) | §79 |
 | 1.78.0 | El encargo del 3-11-2026: arreglos (sobre en el iPhone, sin sellos, correo leído, regalos uno al día hasta «raro»), vestíbulo discreto, sobres con más impacto, tanda 3 con mascota y conjunto «Noche estrellada», paseo hasta la tienda y la limusina, mantener pulsado para mover y la habitación primero con iconos (publicada; migraciones aplicadas) | §78 |
@@ -124,9 +130,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **1.87:** cuándo retirar la opción temporal «Volver a la experiencia anterior»; decidir si Rincón 01 se enciende
-  (`RINCON_01`); y que la decoración de la habitación en primera persona se guarde en la cuenta (hoy vive en cada
-  dispositivo).
+- **1.88 (en preview):** que Francisco la compruebe con sus dos cuentas y apruebe llevarla a producción. En la 1.87
+  publicada, la habitación de inicio aún enseña el piso de prueba `lab-1A`, guardado en cada dispositivo.
+- **1.87:** cuándo retirar la opción temporal «Volver a la experiencia anterior» y decidir si Rincón 01 se enciende
+  (`RINCON_01`).
 - **Probar la 1.86** en un móvil real el arrastre de la estiba, los sonidos nuevos y la exportación de la reseña, que Francisco vea las cifras de sellos y precios, y decidir si la tienda dice de qué taller es cada mueble.
 - **Probar entre dos cuentas reales y en un iPhone** lo de las 1.82, 1.83 y 1.84, y escuchar los sonidos de la pesada.
 - **Rascacielos**: quiosco descartado por ahora y Lonja cerrada. Lo siguiente, en `docs/qa/gran-hotel.md` §9.6.
@@ -216,6 +223,22 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-07 · cuenta principal · 1.88.0 en preview: la habitación es tu piso y los lomos tienen cara (subido a la rama, «Sí, sube la rama»)
+- Encargo de Francisco (dos fallos de la 1.87 publicada). Rama `1.88-habitacion-real` desde `main`; SPEC §88.
+- **Piso real:** la habitación de inicio (`HOME_PISO = 'mio'`) lee y guarda tu piso con `loadEdificio`/`savePiso`
+  (`src/features/edificio/myPiso.js`, hook `src/features/pisoLab/useMyPiso.js`). Primera persona, vista de siempre,
+  Decorar y el edificio usan el mismo piso. En memoria, por usuario (`myPisoCache.js`); se olvida al cambiar de cuenta
+  (`CommunityProvider`). Mientras llega la sesión o el piso, «Abriendo tu piso…»; sin cuenta o sin comunidad, un aviso.
+  Nada de reparaciones: la puerta y el ordenador solo se dibujan si caben y nunca se guardan. Los pisos del piloto, solo
+  con `?piloto=piso`; una entrada del historial de la 1.87 (`lab-1A`) lleva a tu piso.
+- **Lomos:** miniatura de la portada de cada lomo dibujado (cuatro a la vez, caché de 64), con sus colores, título y
+  apellido del autor; `book.spine` si algún día hay un lomo propio (hoy ningún libro lo trae). La escena se repinta si
+  cambia la portada o la edición aunque el id sea el mismo. Caché de portadas grandes acotada a 6.
+- Comprobado (emulación, no móviles reales): e2e con dos cuentas simuladas (`e2e-community/v188-habitacion-real`) en
+  Chromium y WebKit 390; lomos con 1000 libros (`e2e/piso-lomos`); piloto, inicio, ficha, esenciales, usabilidad y
+  edificio; Vitest.
+- Pendiente: que Francisco lo pruebe con sus dos cuentas reales en la preview y apruebe producción.
 
 ### 2026-11-07 · cuenta principal · 1.87.0 publicada: la habitación en primera persona como inicio
 - Francisco lo comprobó en Android y en Safari de iPhone con la preview («Si funciona») y pidió integrar y publicar en la

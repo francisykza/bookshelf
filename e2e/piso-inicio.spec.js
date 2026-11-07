@@ -1,6 +1,8 @@
 // Versión privada: la habitación en primera persona como pantalla inicial, el edificio desde su puerta y la opción de
 // volver a la experiencia anterior. Perfil de Playwright con su propia biblioteca (la de ejemplo de la app), sin
 // biblioteca de demostración del piloto. `?inicio=habitacion` la activa en este perfil, como hará la preview por defecto.
+// Desde la 1.88 la habitación es tu piso del edificio: aquí no hay nube, así que se ve el aviso para iniciar sesión (y
+// nunca un piso de prueba). Con cuentas, en e2e-community/v188-habitacion-real.spec.js.
 // Emulación: no equivale a un Android ni a un iPhone reales.
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -18,7 +20,7 @@ test.beforeEach(async ({ page }, info) => {
 });
 
 const room = (page) => page.locator('.plab-room');
-const ready = (page) => page.waitForFunction(() => window.__pisoLab?.()?.debug().windows.length > 0, null, { timeout: 30000 });
+const ready = (page) => expect(page.getByText(/inicia sesión en «Tu cuenta» para entrar/)).toBeVisible({ timeout: 30000 });
 // Lo que es de la persona: libros, lecturas y ajustes guardados (sin las marcas de tiempo de la propia escritura)
 const library = (page) =>
   page.evaluate(() => {
@@ -37,7 +39,9 @@ test('la habitación es el inicio, su puerta lleva al edificio y se vuelve a ell
   await expect(room(page)).toBeVisible({ timeout: 30000 });
   await ready(page);
   await page.screenshot({ path: `${OUT}/inicio-${info.project.name}.png` });
-  // Sin portal de prueba ni vecina inventada: el botón y la puerta llevan al edificio
+  // Sin portal de prueba ni vecina inventada, ni un piso de prueba como tuyo: el aviso y el botón al edificio
+  await expect(page.locator('.plab-stage')).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('bookshelf:lab:piso-primera-persona:plano2:lab-1A'))).toBeNull();
   await expect(page.getByRole('button', { name: /Llamar y entrar en el piso de Vecina/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Al edificio' })).toBeVisible();
   // Escape no cierra la pantalla de inicio
@@ -66,8 +70,7 @@ test('se puede volver a la experiencia anterior y regresar, sin tocar la bibliot
 
   await page.goto('/?inicio=habitacion');
   await ready(page);
-  await page.getByRole('button', { name: 'Menú de accesos' }).click();
-  await page.getByRole('navigation', { name: 'Accesos del piso' }).getByRole('button', { name: 'Volver a la experiencia anterior' }).click();
+  await page.getByRole('button', { name: 'Volver a la experiencia anterior' }).click();
   await expect(room(page)).toHaveCount(0);
   // La elección se recuerda en este dispositivo
   await page.goto('/');
@@ -88,4 +91,19 @@ test('sin elegir nada, en local sigue empezando la habitación ilustrada', async
   await page.goto('/');
   await page.waitForTimeout(1500);
   await expect(room(page)).toHaveCount(0);
+});
+
+// 1.88: una entrada del historial de la 1.87 (el piso de prueba lab-1A), que sobrevive a recargar, lleva a tu piso
+test('una entrada antigua del historial no abre el piso de prueba como tuyo', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('prueba:hecho')) return;
+    sessionStorage.setItem('prueba:hecho', '1');
+    history.replaceState({ bookshelf: { loc: { view: 'room', panel: { type: 'pisoLab', id: 'lab-1A' } }, depth: 0, parent: null } }, '');
+  });
+  await page.goto('/?inicio=habitacion');
+  await ready(page);
+  await expect(page.locator('.plab-stage')).toHaveCount(0);
+  await expect(page.getByText('Tu piso · 1.º A')).toHaveCount(0);
+  expect(await page.evaluate(() => history.state.bookshelf.loc.panel.id)).toBe('mio');
+  expect(await page.evaluate(() => localStorage.getItem('bookshelf:lab:piso-primera-persona:plano2:lab-1A'))).toBeNull();
 });

@@ -18,6 +18,7 @@ const toItem = (item) => ({
   id: item.book.id,
   book: item.book,
   title: item.book.title,
+  author: item.book.author ?? '',
   color: spineColor(item.book),
   ink: inkFor(spineColor(item.book)),
   edition: visualEdition(item.book),
@@ -46,6 +47,12 @@ export function shelfRows(books, settings = {}, limit = ROOM_LIMIT) {
   const shown = top.length + middle.length + bottom.length;
   return { cover: lead, rows: [bottom, middle, top], hidden: pool.length - 1 - shown, placed: new Set([lead.id, ...[top, middle, bottom].flat().map((i) => i.id)]) };
 }
+
+/** Lo que se ve de un libro (1.88): si cambia la portada, el lomo, la edición, el color, el título o el autor, se vuelve a dibujar. */
+export const bookLooks = (b) => [b.id, b.cover, b.spine, visualEdition(b), spineColor(b), b.title, b.author].join('~');
+
+/** Cambia si hay que recolocar o volver a pintar algo en la habitación; registrar una página, no. */
+export const sceneKey = (reading, shelf) => [reading && bookLooks(reading), shelf && bookLooks(shelf.cover), ...(shelf?.rows.map((row) => row.map((i) => bookLooks(i.book)).join()) ?? [])].join('|');
 
 /**
  * Las zonas de toque de una balda: un lomo muy fino gana ancho a costa de sus vecinos más anchos, sin solaparse. El libro

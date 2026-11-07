@@ -9,7 +9,7 @@ import { PanelShell } from '../../components/panels/PanelShell';
 import { dayKey } from '../../domain/dates';
 import { useCommunity } from '../social/hooks/useCommunity';
 import { FIRMAS, catalogItem } from './catalog';
-import { starterRoom } from './demo';
+import { adoptMyPiso, rememberMyPiso, saveMyPiso } from './myPiso';
 import './edificio.css';
 import { mountFacade } from './facadeView';
 import { START_PICKS } from './inventory';
@@ -18,7 +18,7 @@ import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
 import { PRENDAS, prendaNombre } from './actor';
 import { missionsOf, todayKey } from './dailyMissions';
-import { contarDiaria, doorLabel, elegirInicio, escucharMesas, firmar, loadArmario, loadCasino, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje, savePiso } from './service';
+import { contarDiaria, doorLabel, elegirInicio, escucharMesas, firmar, loadArmario, loadCasino, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje } from './service';
 import { VecinoMesa } from './VecinoMesa';
 import { GranHotel } from './hotel/GranHotel';
 import { mesasQueEsperan } from './hotel/veintiuna';
@@ -225,13 +225,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     loadEdificio()
       .then((d) => {
         if (!alive) return;
-        // La primera vez, tu piso empieza con unos pocos muebles (y se guarda ya)
-        const me = d.vecinos.find((v) => v.yo);
-        if (me && !me.room) {
-          me.room = starterRoom();
-          savePiso(community.userId, me.room).catch(() => {});
-        }
-        setData(d);
+        // La primera vez, tu piso empieza con unos pocos muebles (y se guarda ya). Si lo acabas de cambiar en la
+        // habitación de inicio, esa versión (myPiso.js): su guardado puede ir aún de camino
+        setData(adoptMyPiso(community.userId, d));
         // El armario y las misiones del día (1.70); sin su migración, null y no se enseñan
         loadArmario(day).then((a) => alive && setArmario(a), () => alive && setArmario(null));
         // Si no llega, la balda ofrece todo y el servidor sigue siendo quien decide al guardar
@@ -249,7 +245,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
       clearTimeout(timer.current);
       clearTimeout(avatarTimer.current);
       if (pendingAvatar.current) savePersonaje(pendingAvatar.current.userId, pendingAvatar.current.personaje).catch(() => {});
-      if (pending.current) savePiso(pending.current.userId, pending.current.room).catch(() => {});
+      if (pending.current) saveMyPiso(pending.current.userId, pending.current.room).catch(() => {});
     },
     [],
   );
@@ -308,12 +304,14 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const onMyChange = (room) => {
     setData((d) => d && { ...d, vecinos: d.vecinos.map((v) => (v.yo ? { ...v, room } : v)) });
     pending.current = { userId: community.userId, room };
+    // La habitación de inicio lo ve ya así, aunque el guardado aún no haya salido
+    rememberMyPiso(community.userId, { room });
     setSaving('Guardando…');
     clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       const job = pending.current;
       pending.current = null;
-      savePiso(job.userId, job.room)
+      saveMyPiso(job.userId, job.room)
         .then(() => setSaving('Guardado.'))
         .catch((e) => setSaving(`No se ha podido guardar: ${e.message}`));
     }, SAVE_MS);
