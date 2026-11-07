@@ -6,12 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En preview, sin publicar: 1.88.2** (2026-11-07, §88.4 a §88.6), rama `1.88.1-fachada` desde `main` (1.88.0).
-  Lleva la 1.88.1 (la fachada al volver de un piso, sin placas fuera del dibujo) y la 1.88.2: en primera persona se ven
-  los místicos, la mascota, los muebles vivos y los acabados (ya no hay «Aún sin esta vista»), siempre leyendo el mismo
-  piso guardado, y sin estantería «Ver la balda» pasa a abrir la biblioteca. Sin migraciones. **No va a producción sin
-  el visto bueno de Francisco** («No mezcles con main todavía»).
-- **Versión publicada: 1.88.0** (2026-11-07, §88). La habitación de inicio es el piso del edificio de tu cuenta
+- **Versión publicada: 1.88.2** (2026-11-07, §88.4 a §88.6). Lleva la 1.88.1 (la fachada al volver de un piso, sin
+  placas fuera del dibujo) y la 1.88.2 (místicos, mascota, muebles vivos y acabados en primera persona; sin estantería,
+  «Biblioteca» en vez de «Ver la balda»). Viene de la rama `1.88.1-fachada`, con avance rápido de `main`, a petición de
+  Francisco («súbelo», confirmado «Sí, a main»). Sin migraciones.
+- **Anterior: 1.88.0** (2026-11-07, §88). La habitación de inicio es el piso del edificio de tu cuenta
   (primera persona, vista de siempre y Decorar sobre el mismo piso de Supabase) y cada libro de la estantería es el
   mismo ejemplar que el de la mesa, con su portada real y un lomo reconstruido (dicho como tal). Viene de la rama
   `1.88-habitacion-real`, con avance rápido de `main`, tras probarla Francisco en la preview («ya lo he probado,
@@ -91,8 +90,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.88.2 | Místicos, mascota, muebles vivos y acabados en primera persona; «Biblioteca» sin estantería (en preview) | §88.5–§88.6 |
-| 1.88.1 | La fachada al volver de un piso, sin placas fuera del dibujo (en preview) | §88.4 |
+| 1.88.2 | Místicos, mascota, muebles vivos y acabados en primera persona; «Biblioteca» sin estantería | §88.5–§88.6 |
+| 1.88.1 | La fachada al volver de un piso, sin placas fuera del dibujo | §88.4 |
 | 1.88.0 | La habitación de inicio es tu piso del edificio; cada libro de la estantería con su portada real (publicada) | §88 |
 | 1.87.0 | La habitación en primera persona como inicio (publicada) | §87 |
 | 1.86.0 | Reseña como imagen, acabados de muebles, La estiba con pared de premios, talleres y tablón «Se busca» (publicada) | §85, §86 |
@@ -138,8 +137,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **1.88.1 y 1.88.2 (en preview, rama `1.88.1-fachada`):** que Francisco las pruebe en Android y en Safari de iPhone con la
-  preview y apruebe publicarlas.
+- **1.88.2 (publicada):** comprobarla en Android y en Safari de iPhone reales (solo se ha probado en emulación).
 - **1.88 (publicada):** quedan sin causa identificada la franja oscura de Chromium (no se reproduce) y los fallos
   intermitentes de §88.3 (entre ellos, el del decorador del edificio en WebKit).
 - **1.87:** cuándo retirar la opción temporal «Volver a la experiencia anterior» y decidir si Rincón 01 se enciende
@@ -233,6 +231,10 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-07 · cuenta principal · 1.88.1 y 1.88.2 publicadas en producción
+- Francisco pidió «súbelo» y confirmó «Sí, a main». `main` avanza por avance rápido hasta la rama `1.88.1-fachada` (sin
+  merge ni reescritura); Vercel despliega producción. Sin migraciones. Sin probar aún en un móvil real.
 
 ### 2026-11-07 · cuenta principal · 1.88.2 en preview: los objetos que faltaban en primera persona (commit y subida a la rama)
 - Encargo de Francisco: completar la integración entre el piso real, la primera persona y el decorador, con el estilo

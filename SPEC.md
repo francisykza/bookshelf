@@ -5316,7 +5316,7 @@ Todo en emulación (Chromium y WebKit de Playwright a 390 × 844); nada en un iP
   media 4,6) y la lejana más alta (hasta 4,4), con el cielo por encima de donde empezaba de su color más alto, así que
   desde el sillón la ventana se ve igual. Margen mínimo ahora: 0,24 m.
 
-### 88.4 1.88.1: la fachada al volver de un piso (en preview)
+### 88.4 1.88.1: la fachada al volver de un piso
 
 Encargo de Francisco del 7-11-2026 tras probar en Android: la fachada del edificio aparecía recortada y desplazada, con
 placas de pisos fuera del dibujo, y en otros momentos del vídeo se veía bien. Rama `1.88.1-fachada`.
@@ -5347,7 +5347,7 @@ placas de pisos fuera del dibujo, y en otros momentos del vídeo se veía bien. 
   siguen en el piso guardado.
 - Sin cambios en las portadas ni en el tratamiento de los libros.
 
-### 88.5 1.88.2: los objetos que faltaban en primera persona y la misma habitación en las tres vistas (en preview)
+### 88.5 1.88.2: los objetos que faltaban en primera persona y la misma habitación en las tres vistas
 
 Encargo de Francisco del 7-11-2026, sobre la misma rama `1.88.1-fachada` («No mezcles con main todavía»): completar la
 integración entre el piso real, la primera persona y el decorador isométrico, con el estilo pixel de siempre.
