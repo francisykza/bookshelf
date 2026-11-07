@@ -464,13 +464,29 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
     root.append(btn, note);
   }
   container.replaceChildren(root);
-  // Vuelves de un piso: la vista se aleja desde su ventana
+  // Vuelves de un piso: la vista se aleja desde su ventana.
+  // 1.88.1 (fallo visto en Android): mientras se aleja, el dibujo está ampliado alrededor de esa ventana; como al llegar y al
+  // asomarse, las placas, las insignias y el buzón se ocultan y no se toca nada hasta que acaba (si no, se veían placas de
+  // otros pisos fuera del dibujo y el buzón, que no se amplía, en otro sitio). La ventana se olvida al terminar, no al
+  // montar: un segundo montaje seguido (StrictMode en desarrollo, o datos que llegan justo después) se aleja igual
   const back = lastPeek && Date.now() - lastPeek.at < 10 * 60 * 1000 ? (lastPeek.shop ? shop : windows.find((x) => x.puerta === lastPeek.puerta)) : null;
-  lastPeek = null;
+  const peeked = lastPeek;
+  const forget = () => {
+    if (lastPeek === peeked) lastPeek = null;
+  };
   if (back && !reducedMotion() && typeof stage.animate === 'function') {
+    busy = true;
+    root.classList.add('is-returning');
     stage.style.transformOrigin = centerOf(back);
-    stage.animate([{ transform: `scale(${ZOOM})` }, { transform: 'scale(1)' }], { duration: ZOOM_MS, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+    const run = stage.animate([{ transform: `scale(${ZOOM})` }, { transform: 'scale(1)' }], { duration: ZOOM_MS, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' });
+    const done = () => {
+      forget();
+      busy = false;
+      root.classList.remove('is-returning');
+    };
+    run.finished.then(done, done);
   } else if (!back && !reducedMotion() && typeof stage.animate === 'function') {
+    forget();
     // Llegas por el muelle: la vista sube desde el agua hasta el cartel y las placas aparecen al final
     root.classList.add('is-arriving');
     stage.style.transformOrigin = '50% 100%';
@@ -485,7 +501,7 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
       () => root.classList.remove('is-arriving'),
       () => root.classList.remove('is-arriving'),
     );
-  }
+  } else forget();
   return {
     destroy() {
       offOutside?.();

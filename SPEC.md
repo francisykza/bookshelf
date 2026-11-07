@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.88.0 · 2026-11-07 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.88.1 · 2026-11-07 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5315,3 +5315,34 @@ Todo en emulación (Chromium y WebKit de Playwright a 390 × 844); nada en un iP
   arriba, la media por la derecha; `exteriorMargins` daba hasta −1,29 m). Las capas son ahora más anchas (lejana 6 celdas,
   media 4,6) y la lejana más alta (hasta 4,4), con el cielo por encima de donde empezaba de su color más alto, así que
   desde el sillón la ventana se ve igual. Margen mínimo ahora: 0,24 m.
+
+### 88.4 1.88.1: la fachada al volver de un piso (en preview)
+
+Encargo de Francisco del 7-11-2026 tras probar en Android: la fachada del edificio aparecía recortada y desplazada, con
+placas de pisos fuera del dibujo, y en otros momentos del vídeo se veía bien. Rama `1.88.1-fachada`.
+
+- **Causa, reproducida**: al volver de un piso (el tuyo, también después de Decorar, o el de un vecino), `mountFacade`
+  hace el alejamiento desde la ventana por la que entraste: el escenario (dibujo y placas, que comparten la misma
+  transformación) empieza ampliado ×3,4 alrededor de esa ventana y vuelve a ×1 en 520 ms. A diferencia de la llegada por
+  el muelle y del asomarse, durante ese alejamiento **las placas no se ocultaban**: se veían placas de otros pisos fuera
+  del dibujo. Además, el buzón (fuera del escenario, no se amplía) quedaba a la vista sobre otra parte del dibujo, y se
+  podía tocar a mitad de animación.
+- **Por qué no salía en las pruebas**: solo pasa con el build de producción. En desarrollo, StrictMode monta la fachada
+  dos veces; el primer montaje se quedaba con la ventana de la que volvías (`lastPeek`) y el segundo hacía la llegada por
+  el muelle, en la que las placas sí se ocultan.
+- **Corrección** (`facadeView.js`, `edificio.css`): mientras se aleja, la fachada lleva `is-returning`, que oculta placas,
+  insignias, buzón y su nota, y no admite toques hasta que acaba (como al llegar y al asomarse). La ventana de la que
+  vuelves se olvida al terminar el alejamiento, no al montar: así un segundo montaje seguido (StrictMode, o datos que
+  llegan justo después) se aleja igual, y desarrollo y producción hacen lo mismo. Sin cambios en el dibujo, en las
+  placas ni en dónde se toca.
+- **Comprobado** (`e2e-community/v1881-fachada.spec.js`, emulación, no un Android real): se graba cada fotograma de la
+  fachada en cuatro recorridos (desde la habitación, tras Decorar en tu piso, tras el piso de un vecino y cambiando el
+  alto de la pantalla como las barras del móvil). Con el código anterior y el build de producción, falla: varios
+  fotogramas seguidos con las placas de 3.º A, 2.º A, 1.º A, 1.º B y «Al Gran Hotel» fuera del dibujo, 7 placas a la
+  vista con el dibujo ampliado y el buzón visible. Con la corrección, ningún fotograma así, y al acabar el dibujo llena
+  la fachada sin transformación con cada ventana dentro. Comparación en `qa-report/fachada-antes-despues/` (no va a git).
+  Con las barras (alto de 700 a 844 px) la fachada ya se recolocaba bien antes: no era la causa.
+- **Decorar y primera persona** (misma prueba): mover y girar la estantería, «Listo» y «Terminar» se guarda en el piso,
+  se ve así en primera persona (`debug().shelfAt`) y sigue tras recargar; los objetos sin modelo en primera persona
+  siguen en el piso guardado.
+- Sin cambios en las portadas ni en el tratamiento de los libros.

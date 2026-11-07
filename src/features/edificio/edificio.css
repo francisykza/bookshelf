@@ -833,9 +833,11 @@
   will-change: transform;
 }
 
-/* Al asomarse, las placas se apartan para que se vea la ventana */
+/* Al asomarse, las placas se apartan para que se vea la ventana; al volver (1.88.1), no aparecen hasta que la vista se ha alejado */
 .ed-facade.is-peeking .ed-window__plate,
-.ed-facade.is-peeking .ed-window__badge {
+.ed-facade.is-peeking .ed-window__badge,
+.ed-facade.is-returning .ed-window__plate,
+.ed-facade.is-returning .ed-window__badge {
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -2077,7 +2079,9 @@
 
 .ed-facade.is-arriving .ed-mailbox,
 .ed-facade.is-peeking .ed-mailbox,
-.ed-facade.is-peeking .ed-mailnote {
+.ed-facade.is-peeking .ed-mailnote,
+.ed-facade.is-returning .ed-mailbox,
+.ed-facade.is-returning .ed-mailnote {
   visibility: hidden;
 }
 

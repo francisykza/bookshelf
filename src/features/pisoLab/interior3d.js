@@ -1715,6 +1715,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         calls: renderer.info.render.calls,
         book: bookGroup ? { id: tableBook.id, color: tableBook.color, coverReal } : null,
         shelf: { coverReal: shelfCoverReal, faces: shelfFaces, spines: shelfSpines, shown: shelfSpots.filter((sp) => sp.show === 1).map((sp) => sp.id), books: shelfSpots.map((s) => s.id), rows: [0, 1, 2].map((r) => shelfSpots.filter((s) => s.row === r).length) },
+        // Dónde está la estantería que se dibuja (la del piso guardado): para comprobar que Decorar llega a la primera persona
+        shelfAt: shelf ? { uid: shelf.uid, x: shelf.x, y: shelf.y, rot: shelf.rot ?? 0 } : null,
         zoomed: Boolean(zoom),
         // Para comparar encuadres entre navegadores: la balda, la cámara y el tamaño del lienzo
         view: { row: zoomRow, pos: zoom ? zoom.pos.toArray().map((v) => Math.round(v * 1000) / 1000) : null, target: zoom ? zoom.target.toArray().map((v) => Math.round(v * 1000) / 1000) : null, rect: (({ width, height }) => [Math.round(width), Math.round(height)])(canvas.getBoundingClientRect()), fov: Math.round(camera.fov * 100) / 100 },

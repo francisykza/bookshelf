@@ -6,6 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **En preview, sin publicar: 1.88.1** (2026-11-07, §88.4), rama `1.88.1-fachada` desde `main` (1.88.0). Corrige la
+  fachada del edificio al volver de un piso (se veía ampliada con placas fuera del dibujo; visto en Android) y comprueba
+  que mover y girar la estantería en Decorar llega a la primera persona y sigue tras recargar. Sin migraciones. **No va
+  a producción sin el visto bueno de Francisco.**
 - **Versión publicada: 1.88.0** (2026-11-07, §88). La habitación de inicio es el piso del edificio de tu cuenta
   (primera persona, vista de siempre y Decorar sobre el mismo piso de Supabase) y cada libro de la estantería es el
   mismo ejemplar que el de la mesa, con su portada real y un lomo reconstruido (dicho como tal). Viene de la rama
@@ -86,6 +90,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.88.1 | La fachada al volver de un piso, sin placas fuera del dibujo (en preview) | §88.4 |
 | 1.88.0 | La habitación de inicio es tu piso del edificio; cada libro de la estantería con su portada real (publicada) | §88 |
 | 1.87.0 | La habitación en primera persona como inicio (publicada) | §87 |
 | 1.86.0 | Reseña como imagen, acabados de muebles, La estiba con pared de premios, talleres y tablón «Se busca» (publicada) | §85, §86 |
@@ -131,6 +136,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **1.88.1 (en preview):** que Francisco la pruebe en Android con la preview y apruebe publicarla.
 - **1.88 (publicada):** quedan sin causa identificada la franja oscura de Chromium (no se reproduce) y los fallos
   intermitentes de §88.3 (entre ellos, el del decorador del edificio en WebKit).
 - **1.87:** cuándo retirar la opción temporal «Volver a la experiencia anterior» y decidir si Rincón 01 se enciende
@@ -224,6 +230,23 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-07 · cuenta principal · 1.88.1 en preview: la fachada al volver de un piso (commit y subida a la rama)
+- Encargo de Francisco tras usarla en Android: fachada recortada y desplazada con placas fuera del dibujo; además,
+  comprobar que Decorar (mover o girar la estantería y «Terminar») llega a la primera persona y sigue tras recargar, y no
+  tocar portadas ni lomos. Pidió publicar la corrección en la preview: rama `1.88.1-fachada` desde `main`; `main` no
+  se toca. SPEC §88.4.
+- **Causa** (reproducida con el build de producción): al volver de un piso, el alejamiento desde la ventana empieza a
+  ×3,4 y, a diferencia de la llegada y del asomarse, no ocultaba las placas ni el buzón. En desarrollo no se veía porque
+  StrictMode monta dos veces la fachada y el segundo montaje hacía la llegada por el muelle.
+- **Corrección**: clase `is-returning` (oculta placas, insignias y buzón; sin toques hasta que acaba) y la ventana se
+  olvida al terminar, no al montar. `debug().shelfAt` en el piso en primera persona, para la prueba.
+- **Prueba nueva**: `e2e-community/v1881-fachada.spec.js` (fotograma a fotograma en los cuatro recorridos, y Decorar →
+  primera persona → recarga). Con el código anterior en el build de producción falla; con la corrección pasa.
+  Comparación en `qa-report/fachada-antes-despues/`.
+- Pruebas: build y vitest de edificio y pisoLab (268) pasan. En Chromium y WebKit a 390 px, la prueba nueva pasa 6 de 6 (fachada) y 8 de 8 (Decorar); pase final con v1881, v188, v163-edificio y v178-paseo: 17 pasan, 5 se saltan. En una tanda más amplia fallaron dos de `v167-tienda` (pasos dentro del sobre, ajenos a la fachada), que solas pasan 8 de 8. Lo que pasaba antes con el mismo síntoma (`screenOfItem` nulo justo tras un cambio) se espera ahora en la prueba nueva.
+- WebKit no abre la habitación con el build de producción servido en local (antes de llegar a la fachada): la evidencia
+  antes/después en producción es de Chromium; WebKit pasa la prueba nueva en desarrollo. Sin probar en un Android real.
 
 ### 2026-11-07 · cuenta principal · 1.88.0 publicada en producción
 - Francisco la probó en la preview y pidió publicarla («ya lo he probado, publícalo en main»). `main` avanza por avance
