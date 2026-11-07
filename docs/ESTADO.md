@@ -210,6 +210,13 @@ Formato de cada entrada (la más reciente arriba):
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
 
+### 2026-11-07 · cuenta principal · cierre del bloque y versión privada con la habitación como inicio (subido a la rama, «Sí, sube la rama»)
+- Solo en la rama `experimento/piso-primera-persona`; `main` y producción no cambian. Detalle en `docs/qa/piso-primera-persona.md`, «Cierre del bloque y versión privada».
+- **Cierre del registro aprobado** por Francisco. Comprobado en emulación: guardar, corregir y Deshacer siguen tras recargar; corregir no termina el libro; la relectura conserva el historial.
+- **Versión privada:** la habitación es el inicio y su puerta lleva al edificio real. «Volver a la experiencia anterior» está en el menú del piso; «Ir a la habitación nueva», en «Ambiente». Por defecto, solo en la preview de la rama (`__PISO_INICIO__`).
+- **Demostración separada:** con una biblioteca de demostración en el navegador, la nube se apaga. La habitación lo avisa con un enlace para volver a la tuya.
+- **Antes de integrar en `main`:** quitar el vaciado de Supabase de `vite.config.js`, poner `__PISO_INICIO__` en `true`, ajustar las pruebas de la habitación ilustrada y subir la versión. Lista completa en el documento QA.
+- Sin verificar: Android y Safari de iPhone reales, y el edificio con una cuenta (la preview no tiene nube).
 ### 2026-11-07 · cuenta principal · cierre del registro, final del libro y relectura (subido a la rama, «Sí, sube la rama»)
 - Solo en la rama `experimento/piso-primera-persona`; `main` y producción no cambian. Detalle en `docs/qa/piso-primera-persona.md`, «Cierre del registro, final del libro y relectura».
 - **Ficha:** al guardar se cierra el formulario con «Lectura registrada» y Deshacer. En la última página y aún en «Leyendo» ofrece terminar el libro. Con un libro leído, «Empezar relectura» en vez de registrar o mover la página.

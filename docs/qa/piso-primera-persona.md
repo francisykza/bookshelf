@@ -421,6 +421,45 @@ Comprobado en emulación (Chromium y WebKit, 390 × 844), en `e2e/piso-ficha-vis
 - Entrar en el piso de la vecina no cambia el almacenamiento.
 
 Capturas: `qa-report/piso-ficha-visita/`.
+## Cierre del bloque y versión privada (7-11-2026)
+
+Francisco aprobó visualmente el cierre del registro y la confirmación con Deshacer, según su última grabación.
+
+### Comprobaciones del cierre
+
+Hechas en emulación (Chromium y WebKit, 390 × 844), en `e2e/piso-ficha-visita.spec.js`:
+
+- **Guardar, corregir y Deshacer se conservan tras recargar.**
+  - La corrección con «Voy por la página» pide «Guardar corrección».
+  - La corrección con los botones de página también se conserva.
+- **Corregir páginas no crea una lectura terminada.** El libro sigue en «Leyendo», sin fecha de fin y sin lecturas anteriores nuevas.
+- **La relectura conserva el historial.** Corregir durante una relectura no la da por terminada, no toca la lectura anterior (`pastReads`) ni las sesiones, también tras recargar.
+
+### La habitación como pantalla inicial
+
+- La habitación en primera persona es el inicio. Su puerta, «Al edificio» y «Ir al edificio» del menú llevan al **edificio del puerto de la app**: el real, con su portal, tienda y hotel. Ya no llevan al portal de prueba con la vecina inventada.
+- Desde el edificio, «atrás» vuelve a la habitación. Escape no cierra la habitación, porque es el inicio.
+- **Volver a la experiencia anterior:** en el menú del piso, «Volver a la experiencia anterior» lleva a la habitación ilustrada. Se recuerda en este dispositivo (`bookshelf:inicio`).
+- **Regresar a la habitación nueva:** desde «Ambiente», con «Ir a la habitación nueva».
+- La elección no toca la biblioteca, las lecturas, la decoración ni la nube.
+- **Dónde está activa por defecto:** solo en la preview de la rama del piloto. Lo decide `__PISO_INICIO__` en `vite.config.js`, según `VERCEL_GIT_COMMIT_REF` o `PISO_INICIO=1`. En producción y en las pruebas no cambia nada; en cualquier navegador se puede activar con `?inicio=habitacion` y desactivar con `?inicio=anterior`.
+- `/?piloto=piso` sigue siendo el piloto de siempre, con el portal de prueba y la vecina.
+- El edificio se precarga a los 2,5 s de estar en la habitación. Sin eso, mientras llegaba se veía debajo la habitación de antes.
+
+### Datos de demostración, separados
+
+- Las bibliotecas de demostración solo se siembran con `?piloto=piso&biblioteca=N` y nunca en producción.
+- **Con una biblioteca de demostración en el navegador, la nube queda apagada** (`demoLibraryActive`, `cloudSync.jsx`): no baja ni sube nada.
+- La habitación avisa con «Biblioteca de demostración en este navegador · Volver a la tuya» (`?piloto=piso&biblioteca=propia`).
+- Comprobado: arrancar en la habitación, ir al edificio, volver, cambiar de experiencia y recargar dejan los libros y las sesiones como estaban, sin marca de demostración (`e2e/piso-inicio.spec.js`).
+
+### Antes de integrar en `main` (pendiente de la prueba de Francisco en Android y Safari de iPhone)
+
+- **La rama del piloto compila sin la nube:** en `vite.config.js`, las variables de Supabase se vacían salvo con `PISO_LAB_CON_NUBE`. Al integrar hay que quitarlo, o producción se quedaría sin cuentas.
+- `__PISO_INICIO__` tiene que valer `true` en producción.
+- Las pruebas que dan por hecho que se empieza en la habitación ilustrada tendrán que fijar `bookshelf:inicio` a `anterior`.
+- **En la preview no hay nube**, así que el edificio solo dice «Inicia sesión en "Tu cuenta"…» y no se puede probar entrar en él con una cuenta. Esa parte solo se verá en producción, salvo que se active la nube en la preview.
+- Subir versión (`src/diag.js`, `package.json`, `public/sw.js`, `SPEC.md`) y comprobar `sw.js` en producción.
 ## Pendiente y limitaciones
 
 - **Sin vista propia** (se avisa y lleva a la vista de siempre): compañeros místicos con animación y copias con acabado.

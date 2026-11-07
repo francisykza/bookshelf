@@ -44,7 +44,7 @@ function Toggle({ on, onChange, children }) {
   );
 }
 
-export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, onOpenRadio = null, guideActive = false, offscreen = [] }) {
+export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, onOpenRadio = null, onOpenNewRoom = null, guideActive = false, offscreen = [] }) {
   const cloud = useCloud();
   const { state, actions } = useLibrary();
   const { settings } = state;
@@ -180,6 +180,19 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, onOpenR
                 </button>
               )}
               <div className="corner-sheet__more">
+                {onOpenNewRoom && (
+                  // Versión privada: volver a la habitación en primera persona, que pasa a ser de nuevo el inicio
+                  <button
+                    type="button"
+                    className="corner-sheet__link"
+                    onClick={() => {
+                      setAmbient(false);
+                      onOpenNewRoom();
+                    }}
+                  >
+                    Ir a la habitación nueva
+                  </button>
+                )}
                 {!installedFullscreen && (
                   <button type="button" className="corner-sheet__link" aria-pressed={fullscreenApi ? fullscreen : undefined} onClick={toggleFullscreen}>
                     {fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}

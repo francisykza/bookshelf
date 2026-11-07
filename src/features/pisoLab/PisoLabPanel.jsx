@@ -22,6 +22,7 @@ import { roomLimit, toggleExhibit } from './roomSelection';
 import { TOP_ROW, fitSlots, shelfRows } from './shelfLayout';
 import { canEdit, doorLabel, loadRoom, pendientes, pisoById, portalFlats, repairNews, resetRoom, saveRoom, ventanasDe } from './labStore';
 import { PisoMenu } from './PisoMenu';
+import { demoLibraryActive } from './sampleLibrary';
 
 const SAVE_MS = 400;
 const SIGUE = { tarde: { hora: 'noche', label: 'Ver de noche', short: 'Noche', icon: 'luna' }, noche: { hora: 'dia', label: 'Ver de día', short: 'Día', icon: 'sol' }, dia: { hora: 'tarde', label: 'Ver al atardecer', short: 'Tarde', icon: 'sol' } };
@@ -298,7 +299,9 @@ function EssentialsBar({ room, onPick, onReset }) {
   );
 }
 
-function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegister, onOpenLibrary }) {
+function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegister, onOpenLibrary, home = false, onEdificio, onAnterior }) {
+  // Habitación de inicio: su puerta y «atrás» llevan al edificio del puerto, no al portal de prueba
+  const leave = home && !select ? onEdificio : onBack;
   const { state, actions } = useLibrary();
   const { books, settings } = state;
   const [room, setRoom] = useState(() => loadRoom(piso));
@@ -404,8 +407,8 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
   return (
     <div className="ed-room ed-inside plab-room">
       <div className="ed-bar plab-bar" inert={listing}>
-        <button type="button" className="px-btn" onClick={onBack}>
-          <ArrowLeft aria-hidden="true" /> {view === 'decorar' || view === 'balda' ? (editable ? 'Volver al sillón' : 'Volver a la sala') : view === 'actual' ? 'Volver' : 'Al portal'}
+        <button type="button" className="px-btn" onClick={leave}>
+          <ArrowLeft aria-hidden="true" /> {view === 'decorar' || view === 'balda' ? (editable ? 'Volver al sillón' : 'Volver a la sala') : view === 'actual' ? 'Volver' : home ? 'Al edificio' : 'Al portal'}
         </button>
         {piso.propio ? (
           <h2 className="plab-title plab-title--quiet">{title}</h2>
@@ -474,7 +477,7 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
             onShelf={(row) => onSelect(`balda:${row}`)}
             onOpenBook={onOpenBook}
             onDesk={editable ? openDesk : null}
-            onDoor={onBack}
+            onDoor={home ? onEdificio : onBack}
             onLost={() => setNoGpu(true)}
           />
           <div className="plab-controls" inert={listing}>
@@ -513,11 +516,21 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
                       ]
                     : []),
                   { name: SIGUE[hora].label, run: () => setHora(SIGUE[hora].hora) },
-                  { name: 'Salir al portal', run: () => (select ? onExit() : onBack()) },
+                  home ? { name: 'Ir al edificio', run: onEdificio } : { name: 'Salir al portal', run: () => (select ? onExit() : onBack()) },
+                  ...(home && onAnterior ? [{ name: 'Volver a la experiencia anterior', run: onAnterior }] : []),
                 ]}
               />
             </div>
             {!editable && <p className="plab-note">Puedes mirar y salir por la puerta; lo demás no se toca.</p>}
+            {/* Biblioteca de demostración en este navegador: se dice, y se puede volver a la tuya (la nube está apagada mientras tanto) */}
+            {editable && demoLibraryActive() && (
+              <p className="plab-note">
+                Biblioteca de demostración en este navegador.{' '}
+                <a className="link-btn" href="/?piloto=piso&biblioteca=propia">
+                  Volver a la tuya
+                </a>
+              </p>
+            )}
             {faltan.length > 0 && (
               <p className="plab-note">
                 Aún sin esta vista: {faltan.join(', ')}.{' '}
@@ -534,7 +547,7 @@ function PisoView({ piso, select, onSelect, onBack, onExit, onOpenBook, onRegist
   );
 }
 
-export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose, onExit, onOpenBook, onRegister, onOpenLibrary }) {
+export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose, onExit, onOpenBook, onRegister, onOpenLibrary, home = false, onEdificio, onAnterior }) {
   const piso = pisoById(pisoId);
   const { state } = useLibrary();
   // Lo que hace falta al otro lado de la puerta empieza a llegar al tocarla
@@ -550,9 +563,10 @@ export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose
   }, [piso]);
   return (
     // Con el registro encima, Escape es suyo
-    <PanelShell onClose={select === 'registro' || /^(ficha:|ordenador|abrir:)/.test(select ?? '') ? () => {} : select === 'toda' ? onBack : onClose} label={piso ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
+    // Con el registro encima, Escape es suyo; en la habitación de inicio, Escape no la cierra (es la pantalla de inicio)
+    <PanelShell onClose={select === 'registro' || /^(ficha:|ordenador|abrir:)/.test(select ?? '') || (home && !select) ? () => {} : select === 'toda' ? onBack : onClose} label={piso ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
       {piso ? (
-        <PisoView key={piso.id} piso={piso} select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} />
+        <PisoView key={piso.id} piso={piso} select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} home={home} onEdificio={onEdificio} onAnterior={onAnterior} />
       ) : (
         <>
           <div className="ed-bar plab-bar">

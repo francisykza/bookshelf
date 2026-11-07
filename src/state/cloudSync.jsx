@@ -6,6 +6,11 @@ import { activeOwnedCount } from '../domain/figures';
 import { serializeState } from './serialize';
 import { cloudEnabled, fetchLibrary, fetchLibraryStamp, getClient, saveLibrary, signOut as cloudSignOut } from '../services/cloud';
 import { DEVICE_SETTINGS, hydrate, useLibrary } from './useLibrary';
+import { demoLibraryActive } from '../features/pisoLab/sampleLibrary';
+
+// Con una biblioteca de demostración del piloto en este navegador, la nube queda apagada: ni baja ni sube nada. Se mira al
+// montar, no al cargar el módulo: la biblioteca de prueba se siembra justo antes (main.jsx)
+const syncAllowed = () => cloudEnabled && !demoLibraryActive();
 
 const META_KEY = 'bookshelf:sync';
 const BACKUP_KEY = 'bookshelf:backup';
@@ -73,7 +78,8 @@ const CloudContext = createContext(null);
 export function CloudProvider({ children }) {
   const { state, actions } = useLibrary();
   const [user, setUser] = useState(null);
-  const [status, setStatus] = useState(cloudEnabled ? 'loading' : 'off');
+  const [syncEnabled] = useState(syncAllowed);
+  const [status, setStatus] = useState(syncEnabled ? 'loading' : 'off');
   const [error, setError] = useState('');
   const [conflict, setConflict] = useState(null);
   const [lastSync, setLastSync] = useState(() => readMeta().at);
@@ -206,7 +212,7 @@ export function CloudProvider({ children }) {
 
   // Sesión: la que ya hubiera guardada, y los cambios (entrar, salir, renovar el token)
   useEffect(() => {
-    if (!cloudEnabled) return undefined;
+    if (!syncEnabled) return undefined;
     let sub = null;
     let alive = true;
     getClient().then(async (sb) => {
@@ -224,7 +230,7 @@ export function CloudProvider({ children }) {
       alive = false;
       sub?.unsubscribe();
     };
-  }, []);
+  }, [syncEnabled]);
 
   // Al entrar (o al resolverse una elección), sincroniza
   useEffect(() => {
@@ -300,7 +306,7 @@ export function CloudProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      enabled: cloudEnabled,
+      enabled: syncEnabled,
       user,
       status,
       error,
@@ -314,7 +320,7 @@ export function CloudProvider({ children }) {
       resolve,
       signOut,
     }),
-    [user, status, error, lastSync, conflict, state, sync, resolve, signOut],
+    [syncEnabled, user, status, error, lastSync, conflict, state, sync, resolve, signOut],
   );
 
   return <CloudContext.Provider value={value}>{children}</CloudContext.Provider>;

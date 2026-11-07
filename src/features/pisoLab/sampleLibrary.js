@@ -6,6 +6,15 @@ export const PRODUCTION_HOST = 'bookshelf-wine-iota.vercel.app';
 const STORAGE_KEY = 'bookshelf:v1';
 export const MARK_KEY = 'bookshelf:lab:biblioteca';
 export const COPY_KEY = 'bookshelf:lab:biblioteca-propia';
+
+/** ¿Hay una biblioteca de demostración en este navegador? Entonces la nube no se usa: nunca sube a una cuenta real. */
+export function demoLibraryActive(store = globalThis.localStorage) {
+  try {
+    return store?.getItem(MARK_KEY) != null;
+  } catch {
+    return false;
+  }
+}
 const COVERS = 12;
 
 const OPENINGS = ['El jardín', 'La casa', 'El último viaje', 'La isla', 'El cuaderno', 'La memoria', 'El faro', 'La biblioteca', 'El invierno', 'La cartógrafa', 'El relojero', 'La orilla', 'El camino', 'La noche', 'El río', 'La ciudad'];

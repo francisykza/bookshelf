@@ -151,6 +151,46 @@ test('ficha: «Deshacer» devuelve el progreso y la sesión, también tras recar
   expect(await stored(page)).toEqual(before);
 });
 
+test('ficha: corregir páginas se conserva tras recargar y nunca crea una lectura terminada', async ({ page }) => {
+  await enter(page);
+  const sheet = await openSheet(page, 'lab-0');
+  const start = await bookOf(page, 'lab-0');
+  // Corrección con «Voy por la página» a una página anterior: pide confirmarla y se guarda como corrección
+  await sheet.getByRole('button', { name: 'Registrar lectura' }).click();
+  await sheet.getByRole('radio', { name: 'Voy por la página' }).click();
+  await sheet.locator('.reading-form__input input').fill(String(start.pagina - 10));
+  await sheet.getByRole('button', { name: /Guardar lectura/ }).click();
+  await sheet.getByRole('button', { name: 'Guardar corrección' }).click();
+  await expect.poll(async () => (await bookOf(page, 'lab-0')).pagina).toBe(start.pagina - 10);
+  // Corrección con los botones de página
+  await sheet.getByRole('button', { name: 'Retroceder una página' }).click();
+  await expect.poll(async () => (await bookOf(page, 'lab-0')).pagina).toBe(start.pagina - 11);
+  await page.reload();
+  await page.waitForTimeout(1500);
+  const after = await bookOf(page, 'lab-0');
+  expect(after).toMatchObject({ status: 'reading', pagina: start.pagina - 11, terminado: null, antes: [] });
+});
+
+test('ficha: tras una relectura, corregir páginas no la da por terminada ni toca la lectura anterior', async ({ page }) => {
+  const id = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.status === 'read' && b.pageCount > 20).id);
+  await enter(page);
+  const sheet = await openSheet(page, id);
+  const before = await bookOf(page, id);
+  await sheet.getByRole('button', { name: 'Empezar relectura' }).click();
+  await sheet.getByRole('button', { name: 'Registrar lectura' }).click();
+  await sheet.locator('.reading-form__input input').fill('20');
+  await sheet.getByRole('button', { name: /Guardar lectura/ }).click();
+  await expect.poll(async () => (await bookOf(page, id)).pagina).toBe(20);
+  await sheet.getByRole('button', { name: 'Retroceder 10 páginas' }).click();
+  await expect.poll(async () => (await bookOf(page, id)).pagina).toBe(10);
+  await page.reload();
+  await page.waitForTimeout(1500);
+  const after = await bookOf(page, id);
+  expect(after).toMatchObject({ status: 'reading', pagina: 10, terminado: null });
+  expect(after.antes).toEqual([expect.objectContaining({ finishedAt: before.terminado })]);
+  expect(after.sesiones).toBeGreaterThanOrEqual(before.sesiones + 1);
+});
+
 test('ficha: en la última página y aún en «Leyendo» se ofrece terminarlo', async ({ page }) => {
   const id = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.status === 'reading' && b.id !== 'lab-0' && b.pageCount > 0).id);
   const { total } = await bookOf(page, id);

@@ -249,6 +249,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       **iconos claros** en la pantalla.
   - **Aprobado el paso a la app** («Sí, prepárala», 1-11-2026): 1.63, SPEC §63. La migración
     `20261101120000_edificio_puerto.sql` la aplica Francisco; sin ella, la tablet hace lo de siempre.
+- **Versión privada y paso a producción del piso en primera persona** (7-11-2026, decisión de Francisco):
+  - La habitación en primera persona será la pantalla inicial y su puerta llevará al edificio.
+  - Mientras dure la transición se conserva una opción para volver a la experiencia anterior, sin reiniciar ni sustituir bibliotecas, lecturas ni decoración.
+  - Los datos de demostración, siempre separados de las cuentas reales; en producción no se cargan.
+  - Se integra en `main` solo después de que Francisco lo compruebe en Android y en Safari de iPhone con la preview.
+  - No ampliar todavía el contenido del rascacielos.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.
 - **Biblioteca grande** (1.59, §59): la biblioteca cerrada no monta libros; el escaparate y los lomos solo montan lo
   cercano a la vista (no medir ni buscar libros en el DOM: puede no estar montado). Las portadas se piden una vez por URL

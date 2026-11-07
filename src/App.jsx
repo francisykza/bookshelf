@@ -28,6 +28,7 @@ import { RoomCorner } from './components/room/RoomCorner';
 import { SocialRoom } from './components/room/SocialRoom';
 import { RadioPanel } from './features/radio/RadioPanel';
 import { setEdificioMusic } from './features/edificio/music';
+import { HOME_PISO, choose as chooseStart, newRoomAvailable, startsInRoom } from './features/pisoLab/inicio';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { PerfProfiler } from './perf/PerfProfiler';
@@ -91,10 +92,23 @@ function Sanctuary() {
     [nav],
   );
   // Piloto: /?piloto=piso entra directo en el portal de prueba
+  const pilot = useMemo(() => new URLSearchParams(window.location.search).get('piloto') === 'piso', []);
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('piloto') === 'piso' && !locRef.current.panel) openPanel({ type: 'pisoLab' });
+    if (pilot && !locRef.current.panel) openPanel({ type: 'pisoLab' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Versión privada (src/features/pisoLab/inicio.js): la habitación es la pantalla de inicio y su puerta lleva al
+  // edificio. Sin panel encima, se vuelve a ella; «Volver a la experiencia anterior» lo desactiva en este dispositivo
+  const [home, setHome] = useState(() => !pilot && startsInRoom());
+  useEffect(() => {
+    if (home && !location.panel && location.view === 'room') nav.replace({ view: 'room', panel: { type: 'pisoLab', id: HOME_PISO } });
+  }, [home, location.panel, location.view, nav]);
+  // El edificio, a mano antes de tocar la puerta: sin esto, mientras llega se vería la habitación de antes debajo
+  useEffect(() => {
+    if (!home) return undefined;
+    const id = setTimeout(() => import('./features/edificio/EdificioPanel').catch(() => {}), 2500);
+    return () => clearTimeout(id);
+  }, [home]);
   const hadPanel = useRef(false);
   // Tipo del último panel abierto: al cerrar un libro suena su cubierta (más suave que el resto)
   const lastPanel = useRef(null);
@@ -237,7 +251,27 @@ function Sanctuary() {
         reducedMotion={reducedMotion}
         forceMain={guide.active}
         onSettled={setSettledRoom}
-        controls={phase === ROOM ? <RoomCorner onOpenAccount={() => openPanel({ type: 'account' })} onStartGuide={guide.start} onToggleSound={toggleSound} onOpenRadio={() => openPanel({ type: 'radio' })} guideActive={guide.active} offscreen={offscreen} /> : null}
+        controls={
+          phase === ROOM ? (
+            <RoomCorner
+              onOpenAccount={() => openPanel({ type: 'account' })}
+              onStartGuide={guide.start}
+              onToggleSound={toggleSound}
+              onOpenRadio={() => openPanel({ type: 'radio' })}
+              guideActive={guide.active}
+              offscreen={offscreen}
+              // Mientras dure la prueba: de la experiencia anterior se puede volver a la habitación nueva
+              onOpenNewRoom={
+                !pilot && newRoomAvailable()
+                  ? () => {
+                      chooseStart('habitacion');
+                      setHome(true);
+                    }
+                  : null
+              }
+            />
+          ) : null
+        }
         renderMain={(active) => (
           <CozyRoom
             active={active}
@@ -428,6 +462,14 @@ function Sanctuary() {
             onRegister={() => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' })}
             onExit={() => switchPanel({ type: 'pisoLab' })}
             onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
+            home={home && panel.id === HOME_PISO}
+            // La música del edificio empieza en este mismo toque (en iOS, fuera de un toque no suena)
+            onEdificio={() => (setEdificioMusic(settings.sound), openPanel({ type: 'edificio' }))}
+            onAnterior={() => {
+              chooseStart('anterior');
+              setHome(false);
+              nav.replace({ view: 'room', panel: null });
+            }}
           />
         </Suspense>
       )}
