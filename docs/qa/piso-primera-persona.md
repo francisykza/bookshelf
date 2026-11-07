@@ -291,6 +291,62 @@ Lo que no depende de los libros es lo que más pesa: la fachada dibujada, unos 2
 - Fallan igual en 9461907, sin relación con esto: `e2e/v128:422`, `v128:478`, `v159:139` y los 4 casos de `e2e-community/v158`.
 - **Sin comprobar:** la sincronización con una sesión de nube. `snapshot` usa ahora `serializeState`, de salida idéntica, y su referencia se calcula al hacer falta, pero ninguna prueba que pase recorre ese camino.
 
+## Medidor por acción: guardar, desplazar y reposo (7-11-2026)
+
+El medidor (`&medir=1`) apunta ahora, además del giro y la entrada, cada guardado de lectura, cada gesto de desplazamiento de la biblioteca y un recuento de 30 s en reposo. Lo mide aunque su hoja esté cerrada, y «Copiar» se lleva todas las líneas. Código: `src/features/pisoLab/labActions.js`; marcas `lectura:toque`, `lectura:confirmada` y `lectura:fallida` en `ReadingEntryForm.jsx`; registro de serializaciones y escrituras en `src/state/serialize.js`. El aspecto del medidor no cambia: son más líneas y un botón con las mismas clases.
+
+| Línea | Qué mide |
+| --- | --- |
+| Guardar lectura | Del toque en «Guardar lectura» a la confirmación, y si se escribió. Bloqueo más largo y cuántos pasan de 50 ms, hasta 1,2 s después de confirmar |
+| Guardar, por dentro | Serializaciones y escrituras de ese guardado, libros cuyo texto se rehízo, milisegundos y caracteres escritos |
+| Desplazar biblioteca | Cada gesto sobre la lista: segundos y velocidad, FPS, peor segundo, percentil 95 y peor fotograma, bloqueos, y filas e imágenes montadas |
+| Reposo 30 s | Sin tocar: dibujos de la escena, cambios en la página fuera del medidor y bloqueos. Si tocas la pantalla o la página se oculta, lo dice y no vale |
+| Bloqueos medidos con | La API de tareas largas (Chrome, también en Android) o, en Safari, que no la tiene, una sonda de temporizador |
+| Medido en | «navegador automatizado, emulación» si lo maneja un programa; si no, hay que decir qué móvil es |
+
+Los FPS son los del hilo principal. En un móvil el desplazamiento lo mueve el compositor y puede verse más suave de lo que dicen.
+
+### Dispositivo físico
+
+| Medida | Resultado | Dónde |
+| --- | --- | --- |
+| Giro con 5.000 libros | 60,2 FPS | Móvil de Francisco, 7-11-2026, según su captura. Modelo y navegador sin anotar |
+| Entrada | 1.131 ms | Ídem |
+| Guardar, desplazar y reposo | **Sin medir en un dispositivo físico** | Hay que repetirlo con la preview, ya con estas líneas |
+
+### Emulación
+
+Chromium móvil a 390 × 844, CPU ×4, WebGL por software, 5.000 libros sintéticos, versión compilada, lo que apunta el propio medidor. 3 repeticiones (`node scripts/piso-lab-rendimiento.mjs panel …`).
+
+| Acción | Resultado |
+| --- | --- |
+| Guardar, 1.er registro | 213–269 ms hasta confirmarse; bloqueo más largo 88–129 ms; 2 tareas de más de 50 ms |
+| Guardar, 2.º registro | 145–151 ms; bloqueo más largo 72–74 ms; 2 tareas de más de 50 ms |
+| Guardar, por dentro | 1 serialización y 1 escritura por guardado; **1 de 5.000 libros rehecho**; serializar 7–41 ms; escribir 2,81 M caracteres, 28–50 ms |
+| Desplazar, 6 s a unos 2.400 px/s | 60,2 FPS, peor segundo 60, 0 bloqueos; 17 filas y 9 imágenes. Es el techo de la pantalla con el ordenador libre, no lo esperable en un móvil |
+| Reposo 30 s | 49–51 dibujos de la escena, 0 cambios en la página, 0 bloqueos |
+
+Los dibujos en reposo son el agua de la ventana: un paso cada 420 ms mientras se ve. Con movimiento reducido, 0.
+
+**La sonda no sirve con la CPU limitada.** En reposo, con CPU ×4, encontraba unas 140 pausas en 10 s sin ninguna tarea larga, incluso sin dibujar nada; con CPU ×1, ninguna. Son las pausas con que Chrome emula la CPU lenta. Por eso, donde hay API de tareas largas, se usa esa. En Safari queda la sonda, sin esa limitación de por medio, pero no se ha podido contrastar en un iPhone.
+
+### ¿Guardar vuelve a serializar toda la biblioteca?
+
+No. Rehace el texto del libro que cambia y toma los otros 4.999 de la caché (prueba en `src/state/__tests__/serialize.test.js` y en el medidor). Lo que sí se repite cada vez es juntar y escribir el texto entero, 2,81 M caracteres, porque todo se guarda bajo una sola clave: esos son los 30–50 ms que quedan. Una serialización y una escritura por guardado: el temporizador y el cierre de la página ya no repiten lo escrito.
+
+### Persistencia, guardados seguidos y errores
+
+En `e2e/piso-rendimiento.spec.js`, en Chromium y WebKit:
+
+- Recargar justo al cerrarse el registro conserva el progreso y la sesión.
+- Doble toque: una sola sesión.
+- Tres registros seguidos y Deshacer: progreso e historial cuadrados, también tras recargar.
+- Escritura que falla: no se confirma, avisa, conserva lo escrito y el medidor lo apunta como «no se pudo escribir».
+- Arrancar no reescribe lo que no ha cambiado y sí lo que cambian las migraciones.
+- El medidor apunta una serialización, una escritura y como mucho un libro rehecho por guardado, desplazamientos con FPS y límites de filas e imágenes, y el reposo de 30 s.
+
+Los 15 FPS y la tarea de 647 ms eran del informe anterior, en emulación; la corrección está en 65a683b.
+
 ## Pendiente y limitaciones
 
 - **Sin vista propia** (se avisa y lleva a la vista de siempre): compañeros místicos con animación y copias con acabado.

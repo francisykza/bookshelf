@@ -104,6 +104,8 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
       return;
     }
     lock.current = true;
+    // Para el medidor del piloto: del toque a la confirmación
+    performance.mark?.('lectura:toque');
     setSaving(true);
     setFailure('');
     // Transición real a terminado: antes por debajo del total (o del 100 %) y ahora en él (419/420 no termina)
@@ -118,6 +120,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
         lock.current = false;
         setSaving(false);
         actions.revertLog(draft.entry.id, before, figuresBefore);
+        performance.mark?.('lectura:fallida');
         setFailure('No se ha podido guardar en este dispositivo. Tus datos siguen aquí: vuelve a intentarlo.');
         return;
       }
@@ -134,6 +137,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
         setTouched(false);
         setConfirmCorrection(false);
         // Con el libro y los sellos de antes, quien lo abrió puede ofrecer «Deshacer» de la operación completa
+        performance.mark?.('lectura:confirmada');
         onDone?.(saved, { keepOpen, before, figuresBefore, completes });
         // Solo tras el guardado confirmado y una vez por operación (el id del intento ya ha cambiado)
         if (completes) onComplete?.(before.id, saved);

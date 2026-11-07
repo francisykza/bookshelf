@@ -1,5 +1,6 @@
 // Medidas en el propio móvil, sin consola ni ordenador conectado. Solo aparece con `&medir=1` en la dirección.
 import { useEffect, useState } from 'react';
+import { actionLines, countIdle, idleLeft, watchActions } from './labActions';
 import { timingLines } from './labTiming';
 
 export const wantsMeter = (search) => new URLSearchParams(search).get('medir') === '1';
@@ -25,6 +26,10 @@ export function LabMeter({ apiRef, total, limit, placed }) {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [debug, setDebug] = useState(null);
+  const [, setVersion] = useState(0);
+  const [counting, setCounting] = useState(false);
+  // Guardar y desplazar se miden aunque la hoja esté cerrada: se hacen con ella cerrada
+  useEffect(() => watchActions(() => setVersion((v) => v + 1)), []);
   useEffect(() => {
     if (!open) return undefined;
     const read = () => setDebug(apiRef.current?.debug() ?? null);
@@ -39,6 +44,7 @@ export function LabMeter({ apiRef, total, limit, placed }) {
     `Portadas de prueba pedidas: ${coversAsked()}`,
     `Giro: ${yaw ? `${yaw.fps} FPS; fotograma: mediana ${yaw.p50ms} ms, percentil 95 ${yaw.p95ms} ms, peor ${yaw.maxMs} ms; ${yaw.frames} fotogramas` : 'sin medir'}`,
     `Redibujados: ${debug?.exterior.renders ?? '–'}`,
+    ...actionLines(),
     `Geometrías y texturas: ${debug ? `${debug.memory.geometries} y ${debug.memory.textures}` : '–'}`,
     `Guardado: ${storageUse()}`,
     `Memoria de JavaScript: ${heap ? `${Math.round(heap / 1048576)} MB` : 'este navegador no la da'}`,
@@ -48,6 +54,13 @@ export function LabMeter({ apiRef, total, limit, placed }) {
     setBusy(true);
     setYaw((await apiRef.current?.measureYaw(5000)) ?? null);
     setBusy(false);
+  };
+  const idle = async () => {
+    setCounting(true);
+    const tick = setInterval(() => setVersion((v) => v + 1), 1000);
+    await countIdle(() => apiRef.current?.debug().exterior.renders ?? 0);
+    clearInterval(tick);
+    setCounting(false);
   };
   const copy = async () => {
     try {
@@ -67,8 +80,11 @@ export function LabMeter({ apiRef, total, limit, placed }) {
           {lines.map((line) => (
             <p key={line.slice(0, 12)}>{line}</p>
           ))}
-          <button type="button" className="px-btn" disabled={busy || !debug} onClick={measure}>
+          <button type="button" className="px-btn" disabled={busy || counting || !debug} onClick={measure}>
             {busy ? 'Girando…' : 'Medir el giro, 5 s'}
+          </button>
+          <button type="button" className="px-btn" disabled={counting || busy || !debug} onClick={idle}>
+            {counting ? `Sin tocar… ${idleLeft() ?? 0} s` : 'Contar redibujos en reposo, 30 s'}
           </button>
           <button type="button" className="px-btn" onClick={copy}>
             {copied ? 'Copiado' : 'Copiar'}

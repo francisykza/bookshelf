@@ -146,3 +146,90 @@ test('arrancar no reescribe lo que no ha cambiado y sí lo que cambian las migra
   await page.getByRole('button', { name: /Entrar en tu piso/ }).waitFor({ timeout: 30000 });
   await expect.poll(async () => (await stored(page)).settings !== undefined, { timeout: 8000 }).toBe(true);
 });
+
+// ── El medidor (&medir=1): medidas por acción ──
+const openMeasured = async (page) => {
+  await page.goto('/?piloto=piso&biblioteca=5000&medir=1');
+  await page.getByRole('button', { name: /Entrar en tu piso/ }).click();
+  await page.waitForFunction(() => window.__pisoLab?.()?.debug().exterior.renders > 0, null, { timeout: 30000 });
+  // El texto de los libros se prepara en reposo al arrancar
+  await page.waitForTimeout(2500);
+};
+const measured = (page) => page.evaluate(() => window.__pisoLabMedidas ?? { guardados: [], desplazamientos: [], reposo: null });
+
+test('medidor: cada guardado rehace solo el libro que cambia y escribe una vez', async ({ page }) => {
+  await openMeasured(page);
+  for (const [n, pages] of [5, 6].entries()) {
+    await fill(page, pages);
+    await save(page).click();
+    await expect(dialogOf(page)).toBeHidden();
+    await expect.poll(async () => (await measured(page)).guardados.length, { timeout: 5000 }).toBe(n + 1);
+  }
+  const [first, second] = (await measured(page)).guardados;
+  for (const s of [first, second]) {
+    expect(s).toMatchObject({ resultado: 'confirmado', serializaciones: 1, escrituras: 1, libros: 5000, escrituraFallida: false });
+    expect(s.librosRehechos).toBeLessThanOrEqual(1);
+    expect(s.total).toBeGreaterThan(0);
+  }
+  // Y en la hoja del medidor, en texto
+  await page.getByRole('button', { name: 'Medir', exact: true }).click();
+  await expect(page.locator('.plab-meter__sheet')).toContainText('Guardados medidos: 2');
+  await expect(page.locator('.plab-meter__sheet')).toContainText('1 serialización, 1 de 5000 libros rehechos');
+  await expect(page.locator('.plab-meter__sheet')).toContainText('Medido en: navegador automatizado, emulación');
+});
+
+test('medidor: un guardado que no se puede escribir se anota como tal', async ({ page }) => {
+  await openMeasured(page);
+  await page.evaluate((key) => {
+    const real = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (name, value) {
+      if (name === key) throw new DOMException('Sin espacio', 'QuotaExceededError');
+      return real.call(this, name, value);
+    };
+  }, KEY);
+  await fill(page, 9);
+  await save(page).click();
+  await expect(dialogOf(page).getByText(/No se ha podido guardar/)).toBeVisible();
+  await expect.poll(async () => (await measured(page)).guardados.length, { timeout: 5000 }).toBe(1);
+  expect((await measured(page)).guardados[0]).toMatchObject({ resultado: 'no se pudo escribir', escrituraFallida: true });
+});
+
+test('medidor: desplazar la biblioteca y 30 s de reposo', async ({ page }) => {
+  test.setTimeout(150000);
+  await openMeasured(page);
+  await page.getByRole('button', { name: 'Ver la balda' }).click();
+  await page.waitForFunction(() => window.__pisoLab().debug().zoomed);
+  await page.getByRole('button', { name: /Buscar en toda la biblioteca, 5000 libros/ }).click();
+  await expect(page.getByRole('heading', { name: 'Tu biblioteca' })).toBeVisible();
+  await page.evaluate(
+    () =>
+      new Promise((done) => {
+        const el = document.querySelector('.plab-library__list');
+        const t0 = performance.now();
+        const step = (now) => {
+          el.scrollTop += 30;
+          if (now - t0 < 2000) requestAnimationFrame(step);
+          else done();
+        };
+        requestAnimationFrame(step);
+      }),
+  );
+  await expect.poll(async () => (await measured(page)).desplazamientos.length, { timeout: 5000 }).toBe(1);
+  const d = (await measured(page)).desplazamientos[0];
+  expect(d.segundos).toBeGreaterThan(1.5);
+  expect(d.fps).toBeGreaterThan(0);
+  expect(d.filas).toBeLessThan(30);
+  expect(d.imagenes).toBeLessThan(30);
+
+  // Reposo: de vuelta en la habitación, sin tocar nada
+  await page.getByRole('button', { name: /Volver a la balda/ }).click();
+  await page.getByRole('button', { name: /Volver al sillón/ }).click();
+  await page.getByRole('button', { name: 'Medir', exact: true }).click();
+  await page.getByRole('button', { name: /Contar redibujos en reposo/ }).click();
+  await expect(page.locator('.plab-meter__sheet')).toContainText('Reposo: contando');
+  await expect.poll(async () => (await measured(page)).reposo, { timeout: 40000, intervals: [2000] }).not.toBeNull();
+  const idle = (await measured(page)).reposo;
+  expect(idle).toMatchObject({ segundos: 30, valido: true });
+  expect(idle.escena).toBeGreaterThanOrEqual(0);
+  await expect(page.locator('.plab-meter__sheet')).toContainText('Reposo 30 s:');
+});

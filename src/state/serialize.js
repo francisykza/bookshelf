@@ -2,6 +2,16 @@
 // el texto de cada objeto vale mientras ese objeto exista. El resultado es idéntico al de JSON.stringify.
 
 const bookText = new WeakMap();
+/** Libros cuyo texto se ha tenido que rehacer en la serialización en curso. */
+let rebuilt = 0;
+
+/** Lo que han costado las últimas serializaciones y escrituras, para el medidor del piloto. Solo números, nunca datos. */
+export const persistLog = [];
+const LOG_MAX = 40;
+export function logPersist(entry) {
+  persistLog.push(entry);
+  if (persistLog.length > LOG_MAX) persistLog.shift();
+}
 const SLICE = 250;
 const IDLE_FALLBACK_MS = 800;
 
@@ -9,6 +19,7 @@ function textOf(book) {
   if (book === null || typeof book !== 'object') return JSON.stringify(book) ?? 'null';
   let text = bookText.get(book);
   if (text === undefined) {
+    rebuilt += 1;
     text = JSON.stringify(book) ?? 'null';
     bookText.set(book, text);
   }
@@ -16,13 +27,18 @@ function textOf(book) {
 }
 
 export function serializeState(state) {
+  const started = performance.now();
+  rebuilt = 0;
   const parts = [];
   for (const key of Object.keys(state)) {
     const value = state[key];
     const text = key === 'books' && Array.isArray(value) ? `[${value.map(textOf).join(',')}]` : JSON.stringify(value);
     if (text !== undefined) parts.push(`${JSON.stringify(key)}:${text}`);
   }
-  return `{${parts.join(',')}}`;
+  const text = `{${parts.join(',')}}`;
+  const books = Array.isArray(state.books) ? state.books.length : 0;
+  logPersist({ kind: 'serializar', at: started, ms: performance.now() - started, books, rebuilt, chars: text.length });
+  return text;
 }
 
 /**

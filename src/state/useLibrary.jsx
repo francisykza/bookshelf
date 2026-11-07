@@ -1,6 +1,6 @@
 // Estado de la biblioteca (SPEC §5.1): reducer puro + persistencia en localStorage + acciones.
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
-import { serializeState, warmSerialization } from './serialize';
+import { logPersist, serializeState, warmSerialization } from './serialize';
 import { SAMPLE_EDITIONS, sampleBook, sampleBooks, sampleReadingLog } from '../data/sampleBooks';
 import { clampPage, createBook, newId, normalizeRating, normalizeTotal, percentRead, roundTo, shelfSort, trackUnit, withPosition, withStatus, withTracking } from '../domain/books';
 import { appendEntry, bookLog, editEntry, isActive, normalizeLog, quickUpdate } from '../domain/reading';
@@ -50,6 +50,18 @@ function initialState() {
     settings: { ...DEFAULT_SETTINGS },
     progress: { readingLog: normalizeLog(sampleReadingLog()), pomodoros: [], claimed: {}, companion: { ...EMPTY_COMPANION }, figures: initialFigures(books) },
   };
+}
+
+/** Escribe lo guardado y anota cuánto ha tardado (para el medidor del piloto). Lanza si el almacenamiento falla. */
+function store(text) {
+  const started = performance.now();
+  try {
+    localStorage.setItem(STORAGE_KEY, text);
+    logPersist({ kind: 'escribir', at: started, ms: performance.now() - started, chars: text.length, ok: true });
+  } catch (error) {
+    logPersist({ kind: 'escribir', at: started, ms: performance.now() - started, chars: text.length, ok: false });
+    throw error;
+  }
 }
 
 /** Lo leído al arrancar, para no reescribirlo si las migraciones no han cambiado nada. */
@@ -374,7 +386,7 @@ export function LibraryProvider({ children }) {
       if (written.current === latest.current) return;
       try {
         const current = latest.current;
-        localStorage.setItem(STORAGE_KEY, serializeState(current));
+        store(serializeState(current));
         written.current = current;
         loadedText = null;
       } catch {
@@ -386,7 +398,7 @@ export function LibraryProvider({ children }) {
       return warmSerialization(state, () => {
         try {
           const text = serializeState(state);
-          if (text !== loadedText) localStorage.setItem(STORAGE_KEY, text);
+          if (text !== loadedText) store(text);
           written.current = state;
         } catch {
           // Sin almacenamiento: se reintenta con el próximo cambio.
@@ -410,7 +422,7 @@ export function LibraryProvider({ children }) {
     const flush = () => {
       if (written.current === latest.current) return;
       try {
-        localStorage.setItem(STORAGE_KEY, serializeState(latest.current));
+        store(serializeState(latest.current));
         written.current = latest.current;
       } catch {
         // Sin almacenamiento: nada que volcar.
@@ -438,7 +450,7 @@ export function LibraryProvider({ children }) {
       persistNow: () => {
         try {
           const current = latest.current;
-          localStorage.setItem(STORAGE_KEY, serializeState(current));
+          store(serializeState(current));
           written.current = current;
           return true;
         } catch {

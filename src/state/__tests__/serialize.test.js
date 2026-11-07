@@ -1,6 +1,6 @@
 // La caché de texto por libro solo vale si la salida es idéntica a JSON.stringify y ninguna acción cambia un libro en sitio.
 import { describe, expect, it, vi } from 'vitest';
-import { serializeState, warmSerialization } from '../serialize';
+import { persistLog, serializeState, warmSerialization } from '../serialize';
 import { hydrate, reducer } from '../useLibrary.jsx';
 
 const book = (id, extra = {}) => ({ id, title: `Título "${id}" ñ\n`, author: 'Autora', status: 'reading', totalPages: 300, currentPage: 10, ...extra });
@@ -68,5 +68,22 @@ describe('warmSerialization', () => {
     vi.runAllTimers();
     expect(never).not.toHaveBeenCalled();
     vi.useRealTimers();
+  });
+});
+
+describe('qué se rehace al guardar una lectura', () => {
+  it('solo el texto del libro que cambia; el resto de la biblioteca sale de la caché', () => {
+    const many = hydrate({ version: 99, books: Array.from({ length: 300 }, (_, i) => book(`b${i}`)) });
+    serializeState(many);
+    expect(persistLog.at(-1)).toMatchObject({ kind: 'serializar', books: 300, rebuilt: 300 });
+    const entry = { id: 's9', bookId: 'b7', pagesRead: 5, fromPage: 10, toPage: 15, date: '2026-11-07', at: 2 };
+    const logged = reducer(many, { type: 'logReading', entry, position: 15 });
+    const changed = logged.books.filter((b, i) => b !== many.books[i]).length;
+    expect(changed).toBe(1);
+    expect(serializeState(logged)).toBe(JSON.stringify(logged));
+    expect(persistLog.at(-1)).toMatchObject({ books: 300, rebuilt: 1 });
+    // Sin cambios, nada que rehacer
+    serializeState(logged);
+    expect(persistLog.at(-1).rebuilt).toBe(0);
   });
 });

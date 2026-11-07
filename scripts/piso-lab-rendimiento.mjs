@@ -5,6 +5,8 @@
 // Uso:
 //   node scripts/piso-lab-rendimiento.mjs medir <carpeta del build> <salida.json> [puerto] [repeticiones]
 //   node scripts/piso-lab-rendimiento.mjs perfil <carpeta del build, sin minificar> <salida.json> [puerto]
+//   node scripts/piso-lab-rendimiento.mjs panel <carpeta del build> <salida.json> [puerto] [repeticiones]
+//     Lo que apunta el medidor (&medir=1): dos guardados, 6 s de desplazamiento y 30 s de reposo, con su texto.
 import { chromium } from '@playwright/test';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -243,6 +245,33 @@ async function profileOf(cdp, work) {
   return { propio: top(self, 30), incluido: top(inclusive, 45) };
 }
 
+async function panelRuns(browser) {
+  const runs = [];
+  for (let i = 0; i < RUNS; i += 1) {
+    const { context, page } = await newPage(browser);
+    await page.goto(`${url(5000)}&medir=1`);
+    await goIn(page);
+    await page.waitForTimeout(2500);
+    await saveOnce(page, 25);
+    await saveOnce(page, 5);
+    await openLibrary(page);
+    await page.evaluate(scrollBody, 40);
+    await page.waitForTimeout(800);
+    await page.getByRole('button', { name: /Volver a la balda/ }).click();
+    await page.getByRole('button', { name: /Volver al sillón/ }).click();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: 'Medir', exact: true }).click();
+    await page.getByRole('button', { name: /Contar redibujos en reposo/ }).click();
+    await page.waitForFunction(() => window.__pisoLabMedidas?.reposo, null, { timeout: 45000, polling: 1000 });
+    const medidas = await page.evaluate(() => window.__pisoLabMedidas);
+    const texto = await page.locator('.plab-meter__sheet p').allTextContents();
+    runs.push({ ...medidas, texto: texto.filter((t) => /^(Guardar|Guardados|Desplazar|Reposo|Medido)/.test(t)) });
+    console.log('panel', JSON.stringify(runs.at(-1).texto));
+    await context.close();
+  }
+  return runs;
+}
+
 async function profiles(browser) {
   const out = {};
   {
@@ -323,6 +352,7 @@ try {
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-precise-memory-info'] });
   const result = { condiciones: 'Chromium móvil 390 × 844, 2 ppp, CPU ×4, WebGL por software, versión compilada, 5.000 libros sintéticos, perfil nuevo', build: dist, fecha: new Date().toISOString() };
   if (mode === 'perfil') Object.assign(result, await profiles(browser));
+  else if (mode === 'panel') result.panel = await panelRuns(browser);
   else {
     result.guardado = await saves(browser);
     result.desplazamiento = await scrolls(browser);
