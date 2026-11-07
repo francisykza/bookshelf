@@ -214,6 +214,8 @@ Formato de cada entrada (la más reciente arriba):
 - Solo en la rama `experimento/piso-primera-persona`; `main` y producción no cambian. Detalle en `docs/qa/piso-primera-persona.md`, «Medidor por acción».
 - El medidor (`&medir=1`) apunta guardar lectura, desplazar la biblioteca y 30 s de reposo, con la misma apariencia. `labActions.js` es nuevo.
 - Toca código compartido con una marca de rendimiento en `ReadingEntryForm.jsx` y el registro de serializaciones y escrituras en `serialize.js` y `useLibrary.jsx` (solo números). A revisar si se integra.
+- **Solo se reconstruye el libro modificado, pero todavía se escribe la biblioteca completa** (2,81 M caracteres en una sola clave). Francisco: no cambiar el almacenamiento ni añadir funciones hasta probar guardado, desplazamiento y reposo en Android y Safari de iPhone.
+- Bibliotecas de prueba: solo en el almacenamiento de la preview, nunca en producción; **no iniciar sesión en la nube en la preview**, porque el piloto no apaga la sincronización.
 - Guardar no vuelve a serializar la biblioteca: 1 de 5.000 libros rehecho, y una sola serialización y escritura de 2,81 M caracteres.
 - **Dispositivo físico:** solo lo que dio Francisco: giro a 60,2 FPS y entrada de 1.131 ms, en su móvil, sin modelo anotado. Guardar, desplazar y reposo, sin medir en un móvil.
 - En emulación, la sonda de temporizador inventa bloqueos con la CPU limitada: se usan tareas largas donde las hay.

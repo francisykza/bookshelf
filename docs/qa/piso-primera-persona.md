@@ -332,6 +332,8 @@ Los dibujos en reposo son el agua de la ventana: un paso cada 420 ms mientras se
 
 ### ¿Guardar vuelve a serializar toda la biblioteca?
 
+**Resumen: solo se reconstruye el libro modificado, pero todavía se escribe la biblioteca completa.** No se cambia el almacenamiento por ahora (decisión de Francisco, 7-11-2026).
+
 No. Rehace el texto del libro que cambia y toma los otros 4.999 de la caché (prueba en `src/state/__tests__/serialize.test.js` y en el medidor). Lo que sí se repite cada vez es juntar y escribir el texto entero, 2,81 M caracteres, porque todo se guarda bajo una sola clave: esos son los 30–50 ms que quedan. Una serialización y una escritura por guardado: el temporizador y el cierre de la página ya no repiten lo escrito.
 
 ### Persistencia, guardados seguidos y errores
@@ -346,6 +348,17 @@ En `e2e/piso-rendimiento.spec.js`, en Chromium y WebKit:
 - El medidor apunta una serialización, una escritura y como mucho un libro rehecho por guardado, desplazamientos con FPS y límites de filas e imágenes, y el reposo de 30 s.
 
 Los 15 FPS y la tarea de 647 ms eran del informe anterior, en emulación; la corrección está en 65a683b.
+
+### Prueba en Android y Safari de iPhone (7-11-2026)
+
+Decisión de Francisco: comprobar guardado, desplazamiento y reposo en Android y en Safari de iPhone **sin añadir funciones ni cambiar el almacenamiento** hasta tener esos datos.
+
+Las bibliotecas de prueba están separadas de los datos reales así:
+
+- Viven en el `localStorage` de la dirección de la preview, que es distinto del de producción (`bookshelf-wine-iota.vercel.app`). Lo de producción no se ve ni se toca desde la preview.
+- `seedPilotLibrary` no siembra nada en producción.
+- Si en la preview ya había algo, se copia a `bookshelf:lab:biblioteca-propia` antes de sembrar y vuelve con `&biblioteca=propia`.
+- **No iniciar sesión en la nube dentro de la preview.** El piloto no apaga la sincronización: con sesión, la biblioteca de prueba podría subir a esa cuenta. No se ha comprobado si la preview tiene configurada la nube.
 
 ## Pendiente y limitaciones
 
