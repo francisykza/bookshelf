@@ -6,12 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En preview, sin publicar: 1.88.0** (2026-11-07, §88), rama `1.88-habitacion-real` desde `main` (`5a0e10c`). La
-  habitación de inicio es el piso del edificio de tu cuenta (primera persona, vista de siempre y Decorar sobre el mismo
-  piso de Supabase) y cada libro de la estantería es el mismo ejemplar que el de la mesa, con su portada real y un
-  lomo reconstruido (dicho como tal). Sin migraciones. **No va a producción sin el visto bueno de
-  Francisco.**
-- **Versión publicada: 1.87.0** (2026-11-07, §87). La habitación en primera persona es el inicio y su puerta lleva al
+- **Versión publicada: 1.88.0** (2026-11-07, §88). La habitación de inicio es el piso del edificio de tu cuenta
+  (primera persona, vista de siempre y Decorar sobre el mismo piso de Supabase) y cada libro de la estantería es el
+  mismo ejemplar que el de la mesa, con su portada real y un lomo reconstruido (dicho como tal). Viene de la rama
+  `1.88-habitacion-real`, con avance rápido de `main`, tras probarla Francisco en la preview («ya lo he probado,
+  publícalo en main»). Sin migraciones.
+- **Anterior: 1.87.0** (2026-11-07, §87). La habitación en primera persona es el inicio y su puerta lleva al
   edificio del puerto. De forma temporal, «Volver a la experiencia anterior» abre la habitación ilustrada como en la 1.86
   (Rincón 01, apagado). Incluye el registro con Deshacer, la relectura con historial y el rendimiento con 5.000 libros.
   Viene de la rama `experimento/piso-primera-persona`, con avance rápido de `main`. Sin migraciones.
@@ -86,7 +86,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.88.0 | La habitación de inicio es tu piso del edificio; cada libro de la estantería con su portada real (en preview) | §88 |
+| 1.88.0 | La habitación de inicio es tu piso del edificio; cada libro de la estantería con su portada real (publicada) | §88 |
 | 1.87.0 | La habitación en primera persona como inicio (publicada) | §87 |
 | 1.86.0 | Reseña como imagen, acabados de muebles, La estiba con pared de premios, talleres y tablón «Se busca» (publicada) | §85, §86 |
 | 1.79.0 | Misiones del día que dan 5 tickets con el armario completo, cartela del hotel más pequeña y la suite de la semana decorada entre todos en el ático (publicada; migraciones aplicadas) | §79 |
@@ -131,10 +131,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **1.88 (en preview):** que Francisco la compruebe con sus dos cuentas y sus bibliotecas reales (Android y Safari de
-  iPhone) y apruebe llevarla a producción. Quedan sin causa identificada la franja oscura de Chromium (no se reproduce)
-  y los fallos intermitentes de §88.3. En la 1.87
-  publicada, la habitación de inicio aún enseña el piso de prueba `lab-1A`, guardado en cada dispositivo.
+- **1.88 (publicada):** quedan sin causa identificada la franja oscura de Chromium (no se reproduce) y los fallos
+  intermitentes de §88.3 (entre ellos, el del decorador del edificio en WebKit).
 - **1.87:** cuándo retirar la opción temporal «Volver a la experiencia anterior» y decidir si Rincón 01 se enciende
   (`RINCON_01`).
 - **Probar la 1.86** en un móvil real el arrastre de la estiba, los sonidos nuevos y la exportación de la reseña, que Francisco vea las cifras de sellos y precios, y decidir si la tienda dice de qué taller es cada mueble.
@@ -226,6 +224,11 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-07 · cuenta principal · 1.88.0 publicada en producción
+- Francisco la probó en la preview y pidió publicarla («ya lo he probado, publícalo en main»). `main` avanza por avance
+  rápido hasta la rama `1.88-habitacion-real` (sin merge ni reescritura); Vercel despliega producción. Sin migraciones.
+  Versión 1.88.0 ya estaba en `diag.js`, `package.json`, `package-lock.json`, `sw.js` y la cabecera de `SPEC.md`.
 
 ### 2026-11-07 · cuenta principal · 1.88.0: cada libro de la balda con su portada real, igual en mesa y balda (commit y subida a la rama, lo pidió Francisco)
 - Encargos de Francisco del 7-11-2026: «prioridad visual» (los libros de la estantería, con el tratamiento del de la mesa) y
