@@ -83,7 +83,8 @@ test('se puede volver a la experiencia anterior y regresar, sin tocar la bibliot
   expect(await library(page)).toEqual(before);
 });
 
-test('sin elegir nada, las pruebas y producción siguen empezando en la habitación ilustrada', async ({ page }) => {
+// En producción (compilada en Vercel) el inicio es la habitación; en local y en las pruebas, sin elegir nada, la ilustrada
+test('sin elegir nada, en local sigue empezando la habitación ilustrada', async ({ page }) => {
   await page.goto('/');
   await page.waitForTimeout(1500);
   await expect(room(page)).toHaveCount(0);

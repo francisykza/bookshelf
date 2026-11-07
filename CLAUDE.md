@@ -255,6 +255,7 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   - Los datos de demostración, siempre separados de las cuentas reales; en producción no se cargan.
   - Se integra en `main` solo después de que Francisco lo compruebe en Android y en Safari de iPhone con la preview.
   - No ampliar todavía el contenido del rascacielos.
+  - **Publicado en la 1.87.0** (7-11-2026). La experiencia anterior va como en la 1.86: **Rincón 01 está apagado** (`RINCON_01` en `bookcaseLayout.js`) hasta que Francisco lo apruebe.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.
 - **Biblioteca grande** (1.59, §59): la biblioteca cerrada no monta libros; el escaparate y los lomos solo montan lo
   cercano a la vista (no medir ni buscar libros en el DOM: puede no estar montado). Las portadas se piden una vez por URL

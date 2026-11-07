@@ -3,8 +3,8 @@
 // regresar; la elección se guarda solo en este dispositivo, fuera de la biblioteca, así que no toca libros, lecturas,
 // decoración ni la copia de la nube.
 //
-// Dónde está activa por defecto: lo decide la compilación (`__PISO_INICIO__`, en `vite.config.js`): la preview de la
-// rama del piloto sí; producción y las pruebas, no, hasta que Francisco apruebe integrarla.
+// Dónde está activa por defecto: lo decide la compilación (`__PISO_INICIO__`, en `vite.config.js`). Desde la 1.87, en
+// todo lo que compila Vercel (producción incluida); en local y en las pruebas, no, salvo con PISO_INICIO=1.
 
 export const INICIO_KEY = 'bookshelf:inicio';
 /** Tu piso en el piloto (`labStore.js`): la habitación del inicio. Aquí sin importar labStore, para no cargarlo al arrancar. */

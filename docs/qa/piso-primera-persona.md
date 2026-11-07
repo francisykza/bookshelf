@@ -453,7 +453,7 @@ Hechas en emulación (Chromium y WebKit, 390 × 844), en `e2e/piso-ficha-visita.
 - La habitación avisa con «Biblioteca de demostración en este navegador · Volver a la tuya» (`?piloto=piso&biblioteca=propia`).
 - Comprobado: arrancar en la habitación, ir al edificio, volver, cambiar de experiencia y recargar dejan los libros y las sesiones como estaban, sin marca de demostración (`e2e/piso-inicio.spec.js`).
 
-### Antes de integrar en `main` (pendiente de la prueba de Francisco en Android y Safari de iPhone)
+### Antes de integrar en `main` (hecho en la 1.87.0, 7-11-2026)
 
 - **La rama del piloto compila sin la nube:** en `vite.config.js`, las variables de Supabase se vacían salvo con `PISO_LAB_CON_NUBE`. Al integrar hay que quitarlo, o producción se quedaría sin cuentas.
 - `__PISO_INICIO__` tiene que valer `true` en producción.

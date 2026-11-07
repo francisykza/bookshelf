@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.86.0 · 2026-11-04 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.87.0 · 2026-11-07 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5172,3 +5172,37 @@ La copia para el acabado tiene que poder venderse: ni colocada ni recién llegad
 ### 86.5 Sin verificar
 
 Arrastrar con el dedo en un móvil real, los sonidos nuevos, regalar y poner en la Lonja una copia con acabado desde la pantalla (el servidor sí está probado), colgar una placa y vestir la ropa nueva en el armario. La tienda aún no dice de qué taller es cada mueble, y el buzón no dice el acabado de un regalo.
+
+## 87. La habitación en primera persona como inicio (1.87.0)
+
+Integración del piloto «Del portal al sillón» (rama `experimento/piso-primera-persona`, detalle y medidas en
+`docs/qa/piso-primera-persona.md`). Francisco lo comprobó en Android y en Safari de iPhone con la preview antes de
+publicarlo (7-11-2026, «Si funciona»).
+
+### 87.1 Inicio y edificio
+
+- La app arranca en **tu habitación en primera persona** (`PisoLabPanel` con el piso `lab-1A`; `src/features/pisoLab/inicio.js`).
+- Su puerta, el botón «Al edificio» y «Ir al edificio» del menú abren **el edificio del puerto** (§63), el de siempre, con las cuentas reales. Desde el edificio, atrás vuelve a la habitación. Escape no cierra la habitación.
+- Por defecto en todo lo que compila Vercel (`__PISO_INICIO__` en `vite.config.js`). En local y en las pruebas sigue la habitación ilustrada, salvo con `PISO_INICIO=1`.
+
+### 87.2 Volver a la experiencia anterior (temporal)
+
+- En el menú del piso, **«Volver a la experiencia anterior»** abre la habitación ilustrada de siempre. Desde «Ambiente», **«Ir a la habitación nueva»** vuelve.
+- La elección se guarda solo en el dispositivo (`bookshelf:inicio`), fuera de la biblioteca: no reinicia ni sustituye libros, lecturas, decoración ni la copia de la nube. `?inicio=habitacion|anterior` la fija desde la dirección.
+- La habitación ilustrada se publica **como en la 1.86**. Rincón 01 (§ en `docs/ESTADO.md`, 5-11-2026) va en el código pero apagado (`RINCON_01` en `bookcaseLayout.js`) hasta que Francisco lo apruebe.
+
+### 87.3 Registro, final del libro y relectura
+
+- En la ficha, al guardar se cierra el formulario con «Lectura registrada» y **Deshacer** (8 s, como en la habitación). Guardar y Cancelar van tras el resumen y no tapan el campo con el teclado abierto.
+- En la última página y aún en «Leyendo», la ficha ofrece **«Marcar como terminado»**: no lo termina sola.
+- Un libro leído no se reabre al registrar ni al mover la página. La **relectura** se empieza con «Empezar relectura»: la lectura anterior pasa a `book.pastReads` (inicio y fin), se vuelve a la página 0 y las sesiones del registro se conservan. Campo nuevo dentro de la biblioteca guardada, sin migración.
+
+### 87.4 Datos de demostración
+
+- Las bibliotecas de demostración (`?piloto=piso&biblioteca=N`) nunca se siembran en producción. En producción `?piloto=piso` no abre nada: su portal de prueba lleva una vecina inventada.
+- Si un navegador tiene una biblioteca de demostración, la nube se apaga (`demoLibraryActive`, `cloudSync.jsx`) y la habitación lo avisa con un enlace para volver a la tuya.
+
+### 87.5 Rendimiento
+
+- Guardar con 5.000 libros: solo se reconstruye el libro modificado (`serializeState` con caché por objeto), pero se sigue escribiendo la biblioteca entera. Guardados medidos por Francisco: 53 y 43 ms.
+- Más detalle (desplazamiento, reposo y medidor `&medir=1`) en `docs/qa/piso-primera-persona.md`.

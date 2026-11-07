@@ -6,7 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Versión publicada: 1.86.0** (2026-11-04, §85 y §86, PR #10); `/sw.js` ya la trae y sus tres migraciones están aplicadas. Reseña como imagen, acabados, La estiba con su pared de premios, talleres y tablón «Se busca». `api/portada.js` responde en producción: sirve una portada de Open Library y rechaza otros hosts.
+- **Versión publicada: 1.87.0** (2026-11-07, §87). La habitación en primera persona es el inicio y su puerta lleva al
+  edificio del puerto. De forma temporal, «Volver a la experiencia anterior» abre la habitación ilustrada como en la 1.86
+  (Rincón 01, apagado). Incluye el registro con Deshacer, la relectura con historial y el rendimiento con 5.000 libros.
+  Viene de la rama `experimento/piso-primera-persona`, con avance rápido de `main`. Sin migraciones.
+- **Anterior: 1.86.0** (2026-11-04, §85 y §86, PR #10); `/sw.js` ya la trae y sus tres migraciones están aplicadas. Reseña como imagen, acabados, La estiba con su pared de premios, talleres y tablón «Se busca». `api/portada.js` responde en producción: sirve una portada de Open Library y rechaza otros hosts.
 - **Anterior: 1.84.0** (2026-11-04, §84), junto con la 1.82 y la 1.83; `/sw.js` ya la trae. La Lonja de dos plantas, con su panel de mercado, sus reglas contra los
   abusos y la pesada de Remedios. Está en la rama `1.84-lonja` (PR #9), que sale de la 1.83. **Su migración
   `20261114120000_hotel_lonja.sql` está aplicada en producción** (4-11-2026).
@@ -120,6 +124,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **1.87:** cuándo retirar la opción temporal «Volver a la experiencia anterior»; decidir si Rincón 01 se enciende
+  (`RINCON_01`); y que la decoración de la habitación en primera persona se guarde en la cuenta (hoy vive en cada
+  dispositivo).
 - **Probar la 1.86** en un móvil real el arrastre de la estiba, los sonidos nuevos y la exportación de la reseña, que Francisco vea las cifras de sellos y precios, y decidir si la tienda dice de qué taller es cada mueble.
 - **Probar entre dos cuentas reales y en un iPhone** lo de las 1.82, 1.83 y 1.84, y escuchar los sonidos de la pesada.
 - **Rascacielos**: quiosco descartado por ahora y Lonja cerrada. Lo siguiente, en `docs/qa/gran-hotel.md` §9.6.
@@ -209,6 +216,25 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-07 · cuenta principal · 1.87.0 publicada: la habitación en primera persona como inicio
+- Francisco lo comprobó en Android y en Safari de iPhone con la preview («Si funciona») y pidió integrar y publicar en la
+  dirección de siempre. `main` avanza sin fusión hasta la rama `experimento/piso-primera-persona`, con el commit de la
+  integración. SPEC §87.
+- **Integración:**
+  - fuera el vaciado de Supabase de `vite.config.js`;
+  - `__PISO_INICIO__` vale `true` en lo que compila Vercel (en local y en las pruebas, solo con `PISO_INICIO=1`);
+  - `?piloto=piso` no abre nada en producción;
+  - versión 1.87.0 en `diag.js`, `package.json`, `package-lock.json`, `sw.js` y `SPEC.md`.
+- **Rincón 01 apagado** (Francisco: «Como en la 1.86»): `RINCON_01 = false` en `bookcaseLayout.js` y
+  `e2e/rincon-01-estanteria.spec.js` omitida. La experiencia anterior se publica tal como era.
+- **Cuentas, bibliotecas, lecturas y decoración:** no se tocan. La elección de inicio va en `bookshelf:inicio`, fuera
+  de la biblioteca. En producción no hay datos de demostración.
+- Comprobado: compilación como la de Vercel servida en local (arranca en la habitación con «Al edificio», sin marca de
+  demostración, `sw.js` con la 1.87.0); e2e del piloto, del inicio, de la ficha y de la habitación ilustrada; Vitest.
+- **Ojo, carpeta `bookshelf/`:** sigue en `f47c66b` con los cambios de Rincón 01 sin confirmar (copia en
+  `respaldo/rincon-antes-del-piloto` y en el commit `9619b90`). Antes de trabajar ahí, traer `main`: esos cambios ya
+  están en la 1.87, apagados.
 
 ### 2026-11-07 · cuenta principal · cierre del bloque y versión privada con la habitación como inicio (subido a la rama, «Sí, sube la rama»)
 - Solo en la rama `experimento/piso-primera-persona`; `main` y producción no cambian. Detalle en `docs/qa/piso-primera-persona.md`, «Cierre del bloque y versión privada».

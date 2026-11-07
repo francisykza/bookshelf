@@ -36,6 +36,8 @@ async function seed(page, make, settings = {}) {
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
 }
 
+// Rincón 01 está apagado desde la 1.87 (`RINCON_01` en bookcaseLayout.js) hasta que Francisco lo apruebe
+test.beforeEach(() => test.skip(true, 'Rincón 01 apagado'));
 test.beforeEach(async ({}, info) => {
   test.skip(!PROJECTS.test(info.project.name), '390 (Chromium y WebKit) y escritorio');
 });

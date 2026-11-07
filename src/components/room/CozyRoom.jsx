@@ -25,12 +25,14 @@ import { RoomHeader, RoomNavPlaques, ShelfPlaqueInScene } from './BedBook';
 import { CloudShadow, DrinkSteam, SoundWaves, TeaMist } from './RoomLiveData';
 import { RoomFigureShelves, RoomShelfBooks } from './RoomShelfBooks';
 import { BookcaseArt, BookcaseHits } from './RoomBookcase';
-import { useBookcase } from './bookcaseLayout';
+import { RINCON_01, useBookcase } from './bookcaseLayout';
 import { RoomReflections } from './RoomReflections';
 import { SceneBase } from './SceneBase';
 import { SceneStage } from './SceneStage';
 import { TeaDrain } from './TeaDrain';
 import { TimeOfDayLayers } from './TimeOfDayLayers';
+
+const NO_BOOKS = [];
 
 export const ROOM_VIEW = 'ROOM_VIEW';
 export const SHELF_VIEW = 'SHELF_VIEW';
@@ -83,8 +85,10 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
   const guides = Boolean(settings.showGuides);
   const nightBase = settings.timeOfDay === 'night' && Boolean(SCENE_REFRESH.night);
   // Rincón 01: con la vitrina de figuras oculta, la estantería entera es de libros (expuesto arriba, lomos abajo)
-  const bookcase = useBookcase(books, settings);
-  const newShelf = !showFigures;
+  // Rincón 01 apagado en la 1.87 (Francisco, 7-11-2026: «Como en la 1.86»): la experiencia anterior se publica tal cual
+  // la conocéis. Se enciende con RINCON_01 cuando lo apruebe
+  const newShelf = RINCON_01 && !showFigures;
+  const bookcase = useBookcase(newShelf ? books : NO_BOOKS, settings);
 
   // Animaciones SVG: en pausa fuera de pantalla, con un modal delante, con la pestaña oculta o con movimiento reducido
   useEffect(() => {

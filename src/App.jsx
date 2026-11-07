@@ -29,6 +29,7 @@ import { SocialRoom } from './components/room/SocialRoom';
 import { RadioPanel } from './features/radio/RadioPanel';
 import { setEdificioMusic } from './features/edificio/music';
 import { HOME_PISO, choose as chooseStart, newRoomAvailable, startsInRoom } from './features/pisoLab/inicio';
+import { PRODUCTION_HOST } from './features/pisoLab/sampleLibrary';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { PerfProfiler } from './perf/PerfProfiler';
@@ -92,7 +93,8 @@ function Sanctuary() {
     [nav],
   );
   // Piloto: /?piloto=piso entra directo en el portal de prueba
-  const pilot = useMemo(() => new URLSearchParams(window.location.search).get('piloto') === 'piso', []);
+  // En producción no: su portal de prueba lleva una vecina inventada, y allí no se cargan datos de demostración
+  const pilot = useMemo(() => new URLSearchParams(window.location.search).get('piloto') === 'piso' && window.location.hostname !== PRODUCTION_HOST, []);
   useEffect(() => {
     if (pilot && !locRef.current.panel) openPanel({ type: 'pisoLab' });
     // eslint-disable-next-line react-hooks/exhaustive-deps

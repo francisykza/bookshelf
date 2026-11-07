@@ -27,6 +27,9 @@ function featureBox() {
 export const FEATURE_BOX = featureBox();
 
 /** Reparto de la estantería: el expuesto y los grupos de cada balda (solo lo que cabe). */
+/** Rincón 01 («Mi estantería desde la cama»): apagado hasta que Francisco lo apruebe (decisión del 7-11-2026). */
+export const RINCON_01 = false;
+
 export function useBookcase(books, settings) {
   const { roomFeaturedId, currentBookId } = settings;
   return useMemo(() => {
