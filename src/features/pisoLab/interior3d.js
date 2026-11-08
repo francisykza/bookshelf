@@ -21,14 +21,18 @@ import { BALDA, baldaShadowTexture, bookTexture, contactShadowTexture, floorText
 export const EYE = 1.85;
 const FOV = 72;
 /** En vertical, tope del campo de visión sentado: menos techo y suelo vacíos, sin acercar la vista de la balda. */
-const SEATED_FOV_MAX = 66;
+const SEATED_FOV_MAX = 72;
+/** Mirada sentado: ligeramente por debajo del horizonte. */
+const SEATED_PITCH = 0.12;
+/** La mesa de lectura cuenta como «delante» dentro de este ángulo y distancia; `below`: cuánto por debajo del centro queda el libro. */
+const TABLE_AHEAD = { heading: 0.45, distance: 4, below: 0.38, maxPitch: 0.3 };
+const TABLE_TOP = 0.7;
 /** Dónde te sientas, en coordenadas del sillón: pegado al respaldo y arrimado a un brazo, para verlo en primer plano. */
-const SEAT = { lx: 0.35, ly: 0.375 };
+const SEAT = { lx: 0.5, ly: 0.5 };
 /** Cabeza algo baja y girada hacia el centro de la habitación: menos techo y más mesa. */
 /** Cuánto se espera a la cubierta para enseñar ya el piso con ella; si tarda más, llega después. */
 const COVER_WAIT = 2200;
 const TILT = 0.215;
-const TURN = 0.06;
 const ART_W = 320;
 const YAW_MAX = 0.6;
 /** Hasta dónde se puede girar si hace falta para ver un esencial. Más allá, el respaldo del sillón: se llega por el menú. */
@@ -163,13 +167,13 @@ function catalogGeometry(item, cat, ownBooks = false) {
 
 /** La vista desde el sillón: mira hacia donde mira su frente (y = d en sus coordenadas), como en `toWorld` de render.js. */
 function seatView(seat) {
-  // Pegado al respaldo y arrimado a un brazo, en proporción: el sillón da 0,7 y 0,75; un sofá o una mecedora, lo suyo
+  // En el centro del asiento y por delante del respaldo, en proporción a cada modelo: la cabeza de quien se sienta, no un punto junto al brazo
   const cat = catalogItem(seat.id);
   const lx = cat.w * SEAT.lx;
   const ly = cat.d * SEAT.ly;
   const [a, b] = turned(cat, seat.rot, [lx, ly, 0, lx, ly, 0]);
   const facing = [[0, 1], [-1, 0], [0, -1], [1, 0]][seat.rot];
-  const dir = new Vector3(facing[0], -TILT, facing[1]).applyAxisAngle(new Vector3(0, 1, 0), TURN);
+  const dir = new Vector3(facing[0], -TILT, facing[1]);
   return { pos: new Vector3(seat.x + a, EYE, seat.y + b), dir, side: new Vector3(-facing[1], 0, facing[0]) };
 }
 
@@ -265,37 +269,25 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     const r = rectOf(item);
     return new Vector3((r.x0 + r.x1) / 2, 1, (r.y0 + r.y1) / 2);
   };
-  // Sentado, la cabeza se gira de forma natural hacia lo que hay a mano: el libro en su mesa y, si caben juntos, la estantería.
-  // No se mueve nada: solo cambia hacia dónde se mira al sentarse, y se sigue pudiendo girar.
-  let seatAim = 0;
   // El tope del campo de visión nunca corta la estantería: cuanto más cerca está, más se abre
   const nearShelf = mainShelf(room);
   const shelfFov = nearShelf && seat ? ((2 * (Math.atan(1.9 / Math.max(0.5, Math.hypot(placeOf(nearShelf).x - home.pos.x, placeOf(nearShelf).z - home.pos.z))) + 0.16)) * 180 * 1.08) / Math.PI : 0;
   const seatedFovMax = Math.max(SEATED_FOV_MAX, shelfFov);
-  // Los pisos de muestra del piloto conservan su encuadre de siempre
-  if (seat && !String(piso.id).startsWith('lab-')) {
-    const HALF = 0.34;
+  // Sentado se mira al frente del sillón, siempre. Solo cambia cuánto se baja la vista: si la mesa de lectura está delante y cerca,
+  // lo justo para tener el libro en la parte baja del encuadre. Si no lo está, se gira a mano o se usa «Registrar lectura».
+  let seatPitch = null;
+  let tableAhead = false;
+  if (seat) {
+    seatPitch = SEATED_PITCH;
     const table = readingTable(room) ?? room.items.find((i) => TABLES.has(i.id));
-    const shelfItem = mainShelf(room);
-    const t = table ? headingTo(placeOf(table)) : null;
-    const s = shelfItem ? headingTo(placeOf(shelfItem)) : null;
-    if (t !== null && Math.abs(t) <= 1.5) seatAim = s !== null && Math.abs(t - s) < HALF * 1.8 ? (t + s) / 2 : t - Math.sign(t) * HALF * 0.55;
-    else if (s !== null && Math.abs(s) <= 1.1) seatAim = s * 0.7;
-    seatAim = Math.max(-1.15, Math.min(1.15, seatAim));
-    // Un sillón de cara a una pared cercana y sin nada a mano: la cabeza se gira hacia la habitación, no a la pared vacía
-    const facing = Math.abs(home.dir.x) > Math.abs(home.dir.z) ? (home.dir.x > 0 ? ROOM.w - home.pos.x : home.pos.x) : home.dir.z > 0 ? ROOM.d - home.pos.z : home.pos.z;
-    if (seatAim === 0 && facing < 3) seatAim = Math.max(-1.4, Math.min(1.4, headingTo(new Vector3(ROOM.w / 2, 1, ROOM.d / 2))));
-    const up = new Vector3(0, 1, 0);
-    home.dir.applyAxisAngle(up, -seatAim);
-    home.side.applyAxisAngle(up, -seatAim);
-    let pitch = 0.16;
-    if (table && Math.abs(headingTo(placeOf(table))) < HALF * 1.2) {
+    if (table) {
       const p = placeOf(table);
       const d = Math.hypot(p.x - home.pos.x, p.z - home.pos.z);
-      pitch = Math.max(0.16, Math.min(0.32, Math.atan((EYE - 0.7) / Math.max(d, 0.5)) * 0.7));
+      tableAhead = Math.abs(headingTo(p)) <= TABLE_AHEAD.heading && d <= TABLE_AHEAD.distance;
+      if (tableAhead) seatPitch = Math.max(SEATED_PITCH, Math.min(TABLE_AHEAD.maxPitch, Math.atan((EYE - TABLE_TOP) / d) - TABLE_AHEAD.below));
     }
     const flat = Math.hypot(home.dir.x, home.dir.z) || 1;
-    home.dir.set(home.dir.x / flat, -Math.tan(pitch), home.dir.z / flat);
+    home.dir.set(home.dir.x / flat, -Math.tan(seatPitch), home.dir.z / flat);
   }
   const yawRange = essentialItems(room).reduce(
     ([low, high], item) => {
@@ -357,6 +349,9 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   pushBox(shell, [ROOM.w, 0, 0, ROOM.w + 0.14, ROOM.d, ROOM.wallH], wall);
   pushBox(shell, [0, ROOM.d, 0, ROOM.w, ROOM.d + 0.14, ROOM.wallH], wall);
   pushBox(shell, [0, 0, ROOM.wallH, ROOM.w, ROOM.d, ROOM.wallH + 0.1], linear(wallColor.map((v) => v * 0.86)));
+  // Viguetas poco marcadas, del color del techo: lo parten sin añadir objetos. Todo es la misma malla: no cuesta llamadas de dibujo
+  const joist = linear(wallColor.map((v) => v * 0.72));
+  for (let k = 2; k < ROOM.d; k += 2) pushBox(shell, [0.1, k - 0.11, ROOM.wallH - 0.09, ROOM.w - 0.1, k + 0.11, ROOM.wallH], joist);
   // Rodapié con su remate y cornisa discreta, en las cuatro paredes; se interrumpe en la puerta. Geometría fija: no cuesta fotogramas
   const skirtCap = linear([136, 100, 72]);
   const cornice = linear(wallColor.map((v) => v * 0.93));
@@ -377,6 +372,11 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   pushBox(shell, [0, ROOM.d - 0.065, 0.24, ROOM.w, ROOM.d, 0.28], skirtCap);
   for (const box of [[0, 0, ROOM.w, 0.07], [0, 0, 0.07, ROOM.d], [ROOM.w - 0.07, 0, ROOM.w, ROOM.d], [0, ROOM.d - 0.07, ROOM.w, ROOM.d]]) {
     pushBox(shell, [box[0], box[1], ROOM.wallH - 0.12, box[2], box[3], ROOM.wallH], cornice);
+  }
+  // Segundo escalón de la cornisa, más fino, que la despega de la pared
+  const corniceStep = linear(wallColor.map((v) => v * 0.86));
+  for (const box of [[0, 0, ROOM.w, 0.03], [0, 0, 0.03, ROOM.d], [ROOM.w - 0.03, 0, ROOM.w, ROOM.d], [0, ROOM.d - 0.03, ROOM.w, ROOM.d]]) {
+    pushBox(shell, [box[0], box[1], ROOM.wallH - 0.19, box[2], box[3], ROOM.wallH - 0.12], corniceStep);
   }
   for (const box of [[0, 0.07, ROOM.w, 0.1], [0.07, 0, 0.1, ROOM.d], [ROOM.w - 0.1, 0, ROOM.w - 0.07, ROOM.d], [0, ROOM.d - 0.1, ROOM.w, ROOM.d - 0.07]]) {
     pushBox(shell, [box[0], box[1], ROOM.wallH - 0.05, box[2], box[3], ROOM.wallH], corniceLip);
@@ -774,7 +774,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         furniture.add(front);
       }
       const key = `mesa|${item.id}|${item.rot}`;
-      if (!shared.has(key)) shared.set(key, pixelTable(boxes, (b) => turned(cat, item.rot, b)));
+      if (!shared.has(key)) shared.set(key, pixelTable(boxes, (b) => turned(cat, item.rot, b), item.id === 'escritorio' ? [[0.3, 0.905, 0.815, 0.55, 0.945, 0.885], [0.3, 0.905, 0.315, 0.55, 0.945, 0.385]] : []));
       usedShared.add(shared.get(key));
       const mesh = new Mesh(shared.get(key), material);
       mesh.position.set(item.x, lift, item.y);
@@ -909,8 +909,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
 
   // Las paredes: su color y la luz de las lámparas de este piso, dibujados y a la misma densidad que el suelo
   const WALLS = [
-    { pared: 'fondo', length: ROOM.w, h: ROOM.wallH, segments: wallSegments(ROOM.w, panesOf('fondo')), lights: lamps.map((l) => ({ s: l.at.x, z: l.at.y, depth: l.at.z })) },
-    { pared: 'izq', length: ROOM.d, h: ROOM.wallH, segments: wallSegments(ROOM.d, panesOf('izq')), lights: lamps.map((l) => ({ s: l.at.z, z: l.at.y, depth: l.at.x })) },
+    { pared: 'fondo', length: ROOM.w, h: ROOM.wallH, panes: panesOf('fondo'), segments: wallSegments(ROOM.w, panesOf('fondo')), lights: lamps.map((l) => ({ s: l.at.x, z: l.at.y, depth: l.at.z })) },
+    { pared: 'izq', length: ROOM.d, h: ROOM.wallH, panes: panesOf('izq'), segments: wallSegments(ROOM.d, panesOf('izq')), lights: lamps.map((l) => ({ s: l.at.z, z: l.at.y, depth: l.at.x })) },
     { pared: 'der', length: ROOM.d, h: ROOM.wallH, segments: wallSegments(ROOM.d, []), lights: lamps.map((l) => ({ s: l.at.z, z: l.at.y, depth: ROOM.w - l.at.x })) },
   ];
   const plates = wallPlates(WALLS);
@@ -922,7 +922,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   });
   function paintWalls() {
     for (const layer of wallLayers) {
-      if (!layer.baked.has(hora)) layer.baked.set(hora, own('textures', wallTexture(wallColor, { w: layer.wallInfo.length, h: layer.wallInfo.h, lights: layer.wallInfo.lights, hora, warmth: nightWarmth })));
+      if (!layer.baked.has(hora)) layer.baked.set(hora, own('textures', wallTexture(wallColor, { w: layer.wallInfo.length, h: layer.wallInfo.h, lights: layer.wallInfo.lights, hora, warmth: nightWarmth, panes: layer.wallInfo.panes })));
       layer.material.map = layer.baked.get(hora);
       layer.material.needsUpdate = true;
     }
@@ -1171,19 +1171,19 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     // De noche, las lámparas que haya colocadas hacen el rincón cálido; sin ninguna, se queda la luz de luna de siempre
     const warm = hora === 'noche' ? nightWarmth : 0;
     if (warm) {
-      hemi.intensity = 0.5 - warm * 0.12;
-      hemi.color.set(light.hemiColor).lerp(WARM_FILL, warm * 0.6);
-      ambient.intensity = 0.35 - warm * 0.17;
+      hemi.intensity = 0.42 - warm * 0.1;
+      hemi.color.set(light.hemiColor).lerp(WARM_FILL, warm * 0.08);
+      ambient.intensity = 0.3 - warm * 0.14;
       sun.intensity = 0.05;
     }
     for (const l of lampLights) {
       l.intensity = hora === 'noche' ? light.lamp + warm * 6 : light.lamp;
-      l.distance = hora === 'noche' ? 13 : 9;
+      l.distance = hora === 'noche' ? 8 : 9;
       l.color.set(hora === 'noche' ? '#ffbe80' : '#ffc98a');
     }
-    const tintOf = (base, target) => (warm ? `#${new Color(base).lerp(new Color(target), warm).getHexString()}` : base);
-    const fabricTint = tintOf(light.fabric, '#e6c2a0');
-    const woodTint = tintOf(light.wood, '#d8b292');
+    const tintOf = (base, target) => (warm ? `#${new Color(base).lerp(new Color(target), warm * 0.4).getHexString()}` : base);
+    const fabricTint = tintOf(light.fabric, '#c6b4ac');
+    const woodTint = tintOf(light.wood, '#b0a2a4');
     for (const f of fabrics.values()) f.color.set(fabricTint);
     for (const m of woodMats) {
       m.color.set(woodTint);
@@ -1890,7 +1890,9 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         // Los seres dibujados (místicos, mascota, vivos y destellos de acabado) y dónde están
         // La cámara del asiento real: si queda en la habitación, si cae dentro de otro mueble y si llega a cada esencial
         camera: {
-          aim: seatAim,
+          dir: { x: home.dir.x, z: home.dir.z },
+          pitch: seatPitch,
+          tableAhead,
           fov: camera.fov,
           nightWarmth,
           seat: seat ? { uid: seat.uid, id: seat.id, x: seat.x, y: seat.y, rot: seat.rot } : null,

@@ -13,6 +13,7 @@ const color = ([r, g, b]) => new Color().setRGB(r / 255, g / 255, b / 255, SRGBC
 const WOOD_DARK = [110, 70, 46];
 /** Los colores de la lámpara de furniture.js y la luz de tarde de render.js. */
 const LATON = [196, 156, 76];
+const HIERRO = [92, 90, 94];
 const LIT = [255, 228, 164];
 const WHITE = 0xffffffff;
 const multiply = (p, [r, g, b]) => rgb((p & 255) * r, ((p >> 8) & 255) * g, ((p >> 16) & 255) * b);
@@ -75,7 +76,7 @@ export function grainTexture(tono, seed = 3) {
  * paso de una banda a otra. Mismos píxeles por celda que el suelo, y pegados a la pared: no bailan al girar.
  * `lights`: [{ s, z, depth }] en celdas, a lo largo de la pared, en altura y separada de ella.
  */
-export function wallTexture(tono, { w, h, lights, hora, warmth = 0 }) {
+export function wallTexture(tono, { w, h, lights, hora, warmth = 0, panes = [] }) {
   const r = probe();
   const ramp = r.rampOf(tono);
   const BANDS = 5;
@@ -88,8 +89,8 @@ export function wallTexture(tono, { w, h, lights, hora, warmth = 0 }) {
     const z = h - (y + 0.5) / FLOOR_PX;
     let g = 0;
     for (const l of lights) {
-      // De noche, la luz de la lámpara llega más lejos por la pared: es lo que hace el rincón
-      const reach = (2.25 + l.depth * 0.26) * (hora === 'noche' ? 1.5 : 1);
+      // De noche, un halo algo mayor alrededor de la lámpara; lejos de ella, la pared sigue en penumbra
+      const reach = (2.25 + l.depth * 0.26) * (hora === 'noche' ? 1.2 : 1);
       const d = Math.hypot(s - l.s, (z - l.z) * 1.12) / reach;
       if (d < 1) g += (1 - d) ** 1.7 * Math.max(0.15, 1 - l.depth * 0.1);
     }
@@ -98,12 +99,25 @@ export function wallTexture(tono, { w, h, lights, hora, warmth = 0 }) {
     const k = WARMTH[band];
     // Lo más alejado de la luz, junto al techo, un tono por debajo: da cuerpo a la pared sin añadir nada
     const top = band === 0 && z + (r.bayerAt(x, y) - 0.5) * 0.06 > h - 0.36;
-    // Enlucido: manchas amplias de un 2 % y bloques de 2 px, sin grano; y la sombra de la unión con el rodapié
-    const patch = noise(((x >> 2) / 11) | 0, ((y >> 2) / 7) | 0) > 0.72 && ((x >> 1) + (y >> 1)) % 4 === 0 ? 0.975 : 1;
-    const foot = z + (r.bayerAt(x, y) - 0.5) * 0.08 < 0.42 ? 0.95 : 1;
-    const tone = multiply(band >= BANDS - 1 ? ramp[4] : top ? ramp[2] : ramp[3], [patch * foot, patch * foot, patch * foot]);
+    // Enlucido a mano: zonas amplias e irregulares que nunca se repiten, siempre en el color elegido
+    const jitter = r.bayerAt(x, y) - 0.5;
+    const plaster = noise(s * 0.55 + w * 3, z * 0.8 + 7) * 0.62 + noise(s * 2.1 + 11, z * 1.5 + w) * 0.38 + jitter * 0.05;
+    const patch = plaster < 0.38 ? 0.972 : plaster < 0.6 ? 0.99 : 1;
+    // Sombra de las uniones: rodapié, cornisa, esquinas y alrededor del marco de la ventana, tramada solo en su borde
+    const foot = z + jitter * 0.08 < 0.42 ? 0.95 : 1;
+    const crown = z + jitter * 0.08 > h - 0.2 ? 0.88 : z + jitter * 0.12 > h - 0.46 ? 0.94 : 1;
+    const corner = Math.min(s, w - s) + jitter * 0.08;
+    const seam = corner < 0.12 ? 0.88 : corner < 0.3 ? 0.94 : 1;
+    const around = panes.some((p) => {
+      const out = Math.max(p.a + 0.02 - s, s - p.a - 1.98, 1.3 - z, z - 3.38) + jitter * 0.05;
+      return out > 0 && out < 0.1;
+    })
+      ? 0.92
+      : 1;
+    const shadow = patch * foot * crown * seam * around;
+    const tone = multiply(band >= BANDS - 1 ? ramp[4] : top ? ramp[2] : ramp[3], [shadow, shadow, shadow]);
     if (hora === 'dia') return tone;
-    if (hora === 'noche') return multiply(tone, [0.36 + warmth * 0.16 + k * 0.92, 0.34 + warmth * 0.08 + k * 0.68, 0.52 - warmth * 0.12 + k * 0.08]);
+    if (hora === 'noche') return multiply(tone, [0.29 + warmth * 0.02 + k * 1.0, 0.29 + warmth * 0.01 + k * 0.74, 0.47 - warmth * 0.03 + k * 0.08]);
     return multiply(tone, [0.6 + k * 0.55, 0.56 + k * 0.42, 0.74 + k * 0.06]);
   });
   return texture(canvas);
@@ -373,7 +387,7 @@ export function woodShelf(place) {
 
 // La ventana: las medidas de `ventana` (furniture.js) y un dibujo por cara, a la misma densidad que el suelo y la estantería
 const WIN_SIZE = 128;
-const WIN = { frontV: [0, 0, 5, 60], revealL: [6, 0, 10, 60], revealR: [17, 0, 10, 60], frontH: [28, 0, 58, 5], revealTop: [28, 6, 58, 10], revealBottom: [28, 17, 58, 10], sillTop: [28, 28, 64, 13], sillCanto: [28, 42, 64, 5], under: [28, 48, 64, 13], bar: [94, 0, 3, 56], barSide: [98, 0, 3, 56], rail: [28, 62, 54, 3] };
+const WIN = { frontV: [0, 0, 5, 60], revealL: [6, 0, 10, 60], revealR: [17, 0, 10, 60], frontH: [28, 0, 58, 5], revealTop: [28, 6, 58, 10], revealBottom: [28, 17, 58, 10], sillTop: [28, 28, 64, 13], sillCanto: [28, 42, 64, 5], under: [28, 48, 64, 13], bar: [94, 0, 3, 56], barSide: [98, 0, 3, 56], rail: [28, 62, 54, 3], iron: [104, 0, 8, 8], brass: [114, 0, 8, 8] };
 /** El marco atraviesa la pared hacia fuera y sobresale hacia dentro: de ahí sale su grosor. */
 const WIN_OUT = -0.14;
 const WIN_IN = 0.14;
@@ -386,6 +400,9 @@ const WIN_IN = 0.14;
 export function windowTexture(tono, { lamp, lit }) {
   const r = probe();
   const ramp = r.rampOf(tono);
+  const iron = r.rampOf(HIERRO);
+  const brass = r.rampOf(LATON);
+  const metal = (kind, [, y0, , h], y) => kind[y === y0 ? 4 : y === y0 + h - 1 ? 0 : 2];
   const warm = r.rampOf([Math.min(255, tono[0] * 1.16), tono[1] * 1.02, tono[2] * 0.84]);
   const inside = ([x0, y0, w, h], x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
   const dither = (x, y, amount) => (r.bayerAt(x, y) - 0.5) * amount;
@@ -395,8 +412,12 @@ export function windowTexture(tono, { lamp, lit }) {
   const reveal = (out, along, across, x, y, base = 1.1) => (out > 0.86 ? ramp[3] : ramp[wood(along, across, base + out * 0.8, x, y)]);
   return texture(
     canvasOf(WIN_SIZE, WIN_SIZE, (x, y) => {
+      if (inside(WIN.iron, x, y)) return metal(iron, WIN.iron, y);
+      if (inside(WIN.brass, x, y)) return metal(brass, WIN.brass, y);
       if (inside(WIN.frontV, x, y)) {
         const lx = x - WIN.frontV[0];
+        // Las uniones de los ingletes, arriba y abajo
+        if (y === 0 || y === WIN.frontV[3] - 1) return ramp[1];
         if (lx === 0) return ramp[1];
         if (lx === WIN.frontV[2] - 1) return ramp[4];
         return ramp[wood(y, x, 2.6, x, y)];
@@ -415,6 +436,7 @@ export function windowTexture(tono, { lamp, lit }) {
       if (inside(WIN.frontH, x, y)) {
         const row = y - WIN.frontH[1];
         const u = (x - WIN.frontH[0] + 0.5) / WIN.frontH[2];
+        if (x === WIN.frontH[0] || x === WIN.frontH[0] + WIN.frontH[2] - 1) return ramp[1];
         if (row === 0) return ramp[4];
         if (row === WIN.frontH[3] - 1) return ramp[0];
         return (toLamp(u) > 0.06 ? warm : ramp)[wood(x, y * 3, 2.7, x, y)];
@@ -489,6 +511,30 @@ export function pixelWindow(place) {
   // El alféizar asoma hacia ti, con su canto y una ménsula debajo
   box([0.02, 0, 1.3, 1.98, 0.38, 1.42], { front: WIN.sillCanto, left: WIN.sillCanto, right: WIN.sillCanto, top: WIN.sillTop, under: WIN.under });
   box([0.16, 0, 1.2, 1.84, 0.07, 1.3], { front: WIN.frontH, under: WIN.under });
+  // La hoja dentro del marco: un plano más hondo, que da profundidad al hueco
+  const stile = { front: WIN.bar, left: WIN.barSide, right: WIN.barSide };
+  const rail = { front: WIN.rail, top: WIN.rail, under: WIN.rail };
+  box([0.24, -0.1, 1.54, 0.31, 0.02, 3.16], stile);
+  box([1.69, -0.1, 1.54, 1.76, 0.02, 3.16], stile);
+  box([0.31, -0.1, 3.09, 1.69, 0.02, 3.16], rail);
+  box([0.31, -0.1, 1.54, 1.69, 0.02, 1.61], rail);
+  // Moldura escalonada exterior del tapajuntas y ménsulas de dos piezas bajo el alféizar
+  const band = { front: WIN.barSide, left: WIN.barSide, right: WIN.barSide };
+  box([0.02, WIN_IN + 0.03, 1.42, 0.06, WIN_IN + 0.05, 3.38], band);
+  box([1.94, WIN_IN + 0.03, 1.42, 1.98, WIN_IN + 0.05, 3.38], band);
+  box([0.06, WIN_IN + 0.03, 3.34, 1.94, WIN_IN + 0.05, 3.38], { front: WIN.rail, under: WIN.rail });
+  for (const x of [0.2, 1.66]) {
+    box([x, 0, 1.12, x + 0.14, 0.3, 1.3], { front: WIN.frontV, left: WIN.barSide, right: WIN.barSide, under: WIN.under });
+    box([x + 0.02, 0, 1.0, x + 0.12, 0.17, 1.12], { front: WIN.frontV, left: WIN.barSide, right: WIN.barSide, under: WIN.under });
+  }
+  // Herrajes: dos bisagras por lado y la falleba en el parteluz
+  const iron = { front: WIN.iron, left: WIN.iron, right: WIN.iron, top: WIN.iron, under: WIN.iron };
+  const brass = { front: WIN.brass, left: WIN.brass, right: WIN.brass, top: WIN.brass, under: WIN.brass };
+  for (const z of [1.86, 2.72]) {
+    box([0.19, WIN_IN, z, 0.27, WIN_IN + 0.016, z + 0.16], iron);
+    box([1.73, WIN_IN, z, 1.81, WIN_IN + 0.016, z + 0.16], iron);
+  }
+  box([0.93, 0.03, 2.2, 1.07, 0.07, 2.3], brass);
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(out.pos, 3));
   g.setAttribute('uv', new Float32BufferAttribute(out.uv, 2));
@@ -728,8 +774,8 @@ export function spineAtlas(list) {
 
 // La mesa: las medidas de furniture.js y un dibujo por cara, a la densidad del tapizado, porque es lo que tienes más cerca
 const TABLE_W = 208;
-const TABLE_H = 112;
-const TABLE = { top: [0, 0, 176, 80], canto: [0, 82, 176, 7], end: [178, 0, 7, 80], leg: [187, 0, 14, 60], under: [0, 91, 176, 20] };
+const TABLE_H = 128;
+const TABLE = { top: [0, 0, 176, 80], canto: [0, 82, 176, 7], end: [178, 0, 7, 80], leg: [187, 0, 14, 60], under: [0, 91, 176, 20], apron: [0, 112, 176, 12], iron: [180, 84, 8, 8], brass: [190, 84, 8, 8] };
 
 /**
  * La madera de una mesa, con la rampa del catálogo. El tablero son tablas a lo largo, con su junta y un empalme; la veta va a
@@ -743,6 +789,9 @@ export function tableTexture(tono, { size: [boardW, boardD], lights, lit }) {
   const inside = ([x0, y0, w, h], x, y) => x >= x0 && x < x0 + w && y >= y0 && y < y0 + h;
   const dither = (x, y, amount) => (r.bayerAt(x, y) - 0.5) * amount;
   const [topX, topY, topW, topH] = TABLE.top;
+  const iron = r.rampOf(HIERRO);
+  const brass = r.rampOf(LATON);
+  const metal = (kind, [, y0, , h], y) => kind[y === y0 ? 4 : y === y0 + h - 1 ? 0 : 2];
   const planks = Math.max(2, Math.round(boardD / 0.27));
   const glowAt = (u, v) => {
     if (!lit) return 0;
@@ -782,6 +831,17 @@ export function tableTexture(tono, { size: [boardW, boardD], lights, lit }) {
   };
   return texture(
     canvasOf(TABLE_W, TABLE_H, (x, y) => {
+      if (inside(TABLE.iron, x, y)) return metal(iron, TABLE.iron, y);
+      if (inside(TABLE.brass, x, y)) return metal(brass, TABLE.brass, y);
+      if (inside(TABLE.apron, x, y)) {
+        const ly = y - TABLE.apron[1];
+        // Faldón: la sombra del tablero arriba y un junquillo abajo
+        if (ly < 2) return ramp[0];
+        if (ly === 2) return ramp[1];
+        if (ly === TABLE.apron[3] - 2) return ramp[3];
+        if (ly === TABLE.apron[3] - 1) return ramp[0];
+        return ramp[clampTone(1.7 + (noise(x * 0.03 + 9, ly * 0.5) - 0.5) * 0.5 + dither(x, y, 0.06))];
+      }
       if (inside(TABLE.top, x, y)) return paintTop(x - topX, y - topY);
       if (inside(TABLE.canto, x, y)) return canto(x, y - TABLE.canto[1], TABLE.canto[3]);
       if (inside(TABLE.end, x, y)) return canto(y, x - TABLE.end[0], TABLE.end[2]);
@@ -790,6 +850,8 @@ export function tableTexture(tono, { size: [boardW, boardD], lights, lit }) {
         const ly = y - TABLE.leg[1];
         // Contacto: arriba, la sombra del tablero
         if (ly < 7) return ramp[ly < 3 ? 0 : 1];
+        // Las dos clavijas del ensamblaje con el faldón
+        if (ly >= 10 && ly < 12 && (lx === 3 || lx === 10)) return ramp[0];
         if (lx === 0) return ramp[3];
         if (lx === TABLE.leg[2] - 1) return ramp[0];
         return ramp[clampTone(1.9 + (noise(lx * 0.5, ly * 0.04) - 0.5) * 0.7 + dither(x, y, 0.06))];
@@ -824,7 +886,7 @@ function quads(out, atlas, P, [x0, y0, z0, x1, y1, z1], faces) {
   }
 }
 
-/** El frente de los cajones del escritorio: dos cajones con su tirador de latón. */
+/** El frente de los cajones del escritorio: dos cajones con cuarterón rehundido y la placa de latón de su tirador, que va aparte y con volumen. */
 export function drawerTexture(tono) {
   const r = probe();
   const ramp = r.rampOf(tono);
@@ -836,10 +898,15 @@ export function drawerTexture(tono) {
     canvasOf(W, H, (x, y) => {
       if (x < 2 || x >= W - 2) return ramp[x < 2 ? 3 : 0];
       const row = y % 28;
-      if (row === 0) return ramp[0];
-      if (row === 1) return ramp[4];
-      if (row >= 12 && row < 16 && x >= 13 && x < 27) return brass[row === 12 ? 4 : row === 15 ? 0 : 2];
-      return ramp[clampTone(2.3 + (noise(x * 0.04 + y, y * 0.5) - 0.5) * 0.7 + dither(x, y, 0.08))];
+      if (row < 2) return ramp[0];
+      if (row === 2) return ramp[3];
+      if (row === 27) return ramp[1];
+      if (row >= 11 && row < 17 && x >= 12 && x < 28) return brass[row === 11 ? 3 : row === 16 ? 0 : 1];
+      if (row >= 17 && row < 19 && x >= 13 && x < 27) return ramp[1];
+      const panel = x >= 5 && x < W - 5 && row >= 6 && row < 24;
+      if (panel && (x === 5 || row === 6)) return ramp[1];
+      if (panel && (x === W - 6 || row === 23)) return ramp[3];
+      return ramp[clampTone((panel ? 2 : 2.5) + (noise(x * 0.04 + y, y * 0.5) - 0.5) * 0.6 + dither(x, y, 0.08))];
     }),
   );
 }
@@ -976,7 +1043,7 @@ export function pixelDoor(place) {
 }
 
 /** La mesa con su madera: `boxes`, las cajas de furniture.js; la más alta es el tablero y las demás, las patas. */
-export function pixelTable(boxes, place) {
+export function pixelTable(boxes, place, pulls = []) {
   const out = { pos: [], uv: [] };
   const P = (x, y, z) => {
     const [a, b] = place([x, y, 0, x, y, 0]);
@@ -990,6 +1057,13 @@ export function pixelTable(boxes, place) {
   }
   // El faldón bajo el tablero, entre las patas: es la unión que hace que parezca una mesa montada
   const legs = boxes.filter((b) => b !== top && b.b[5] <= top.b[2] + 0.001);
+  // Bajo el tablero, un segundo filo retranqueado: el canto se lee en dos planos
+  const [tx0, ty0, tz0, tx1, ty1] = top.b;
+  quads(out, size, P, [tx0 + 0.05, ty0 + 0.05, tz0 - 0.04, tx1 - 0.05, ty1 - 0.05, tz0], { front: TABLE.apron, back: TABLE.apron, left: TABLE.end, right: TABLE.end });
+  // Regatones de hierro en las patas finas; los tiradores, de latón y con volumen
+  const shoe = { front: TABLE.iron, back: TABLE.iron, left: TABLE.iron, right: TABLE.iron };
+  for (const { b: [x0, y0, z0, x1, y1] } of legs) if (x1 - x0 < 0.3 && y1 - y0 < 0.3) quads(out, size, P, [x0 - 0.012, y0 - 0.012, z0, x1 + 0.012, y1 + 0.012, z0 + 0.07], shoe);
+  for (const b of pulls) quads(out, size, P, b, { front: TABLE.brass, left: TABLE.brass, right: TABLE.brass, top: TABLE.brass, under: TABLE.brass });
   if (legs.length >= 4) {
     const x0 = Math.min(...legs.map((b) => b.b[0])) + 0.03;
     const x1 = Math.max(...legs.map((b) => b.b[3])) - 0.03;
@@ -997,7 +1071,7 @@ export function pixelTable(boxes, place) {
     const y1 = Math.max(...legs.map((b) => b.b[4])) - 0.03;
     const z1 = top.b[2];
     const z0 = z1 - 0.13;
-    const face = { front: TABLE.canto, back: TABLE.canto, left: TABLE.end, right: TABLE.end, under: TABLE.under };
+    const face = { front: TABLE.apron, back: TABLE.apron, left: TABLE.apron, right: TABLE.apron, under: TABLE.under };
     quads(out, size, P, [x0, y0, z0, x1, y0 + 0.05, z1], face);
     quads(out, size, P, [x0, y1 - 0.05, z0, x1, y1, z1], face);
     quads(out, size, P, [x0, y0, z0, x0 + 0.05, y1, z1], face);

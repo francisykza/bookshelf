@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.89.1 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.89.2 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5477,3 +5477,13 @@ pasadas, WebKit 34 → 11; isométrica 5 s: 150 → 0 y 78 → 0 pintadas; llama
 - **Cámara del sillón.** Altura de ojos sin cambios (`EYE`). La mirada inicial busca la mesa y el libro, y la estantería si caben juntas; de cara a una pared cercana sin nada a mano, gira hacia el centro. Campo vertical con tope 66°, que se abre si la estantería está cerca. No se mueve ningún mueble. Los pisos `lab-` conservan su encuadre.
 - **Ordenador.** En Esenciales, miniatura compuesta y «Ordenador y escritorio · colocado»; si el escritorio no tiene celda libre, lo dice. El menú «Ordenador» acerca la cámara como al tocarlo.
 - **Comprobado** (emulación): Vitest de piso y edificio, e2e `piso-usabilidad`, `piso-esenciales`, `v189`, `v188` y `v1891-comparativas`. Las capturas de WebKit en Windows pueden entregar el fotograma anterior tras cambiar la hora (también antes de este cambio): la luz se compara en Chromium.
+
+### 89.7 Cámara del sillón y arquitectura del rincón (1.89.2)
+
+- **Cámara.** Ojos en el centro del asiento y por delante del respaldo (`SEAT`), a la misma altura. La mirada inicial es siempre el frente del sillón; solo baja si la mesa de lectura está delante y cerca (`TABLE_AHEAD`). Si no, se gira a mano o se usa «Registrar lectura». Un sillón de cara a una pared cercana ve esa pared.
+- **Ventana.** Hoja interior, moldura escalonada, ménsulas, uniones marcadas, bisagras de hierro y falleba de latón.
+- **Paredes y techo.** Enlucido irregular sin repetición, sombras tramadas en rodapié, cornisa, esquinas y marco, cornisa escalonada y viguetas, todo derivado del color elegido.
+- **Mesas.** Canto en dos planos, faldón, clavijas y regatones; escritorio con cuarterones y tiradores con volumen.
+- **Noche.** El calor queda cerca de las lámparas; lo demás, más frío y neutro.
+- **Sin cambios** de medidas de colocación, posiciones guardadas, suelo, libros ni animación. Mismas llamadas de dibujo, geometrías y texturas.
+- **Comprobado** (emulación): `v1892-camara-sillon`, `v1893-arte-rincon`, `v189`, `v188`, `piso-usabilidad`, `piso-esenciales`, Vitest de piso y edificio y build.

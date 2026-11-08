@@ -32,6 +32,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
 
 ## 1. Reglas de trabajo (las pone Francisco, el dueño del proyecto)
 
+- **Revisión por evidencias, sin entrar en previews** (8-11-2026). Cada entrega incluye: recorridos reales de la interfaz
+  grabados en vídeo con los cambios terminados; capturas comparables si hay cambios visuales; las comprobaciones
+  relevantes con sus fallos y limitaciones; y la versión o commit al que corresponden las evidencias.
+  **Antes de fusionar con `main`, esperar su aprobación de esa entrega concreta.** Al aprobarla: commit si falta, fusionar
+  con `main` y comprobar el despliegue de producción. Si hay cambios posteriores a lo revisado, indicarlos y volver a
+  validar lo afectado. Aprobar este flujo no aprueba ninguna versión.
 - **Todo en español**: respuestas, resúmenes, botones, mensajes de commit y comentarios de código. **Nunca en inglés**,
   ni una frase suelta ni en el cuadro final (Francisco lo recordó el 2-11-2026).
 - **Commits y subidas, solo cuando se pidan** («haz el commit», «súbelo»). Subir `main` **despliega en producción**

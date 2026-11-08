@@ -6,7 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En preview, sin publicar: 1.89.1** (2026-11-08, §89 y §89.6), rama `1.89-rincon-esenciales`. Su migración `20261118120000_edificio_esenciales.sql` está sin aplicar.
+- **Aprobada por evidencias, sin publicar: 1.89.2** (2026-11-08, §89 a §89.7), rama `1.89-rincon-esenciales`. Su migración `20261118120000_edificio_esenciales.sql` está sin aplicar.
 - **Versión publicada: 1.88.2** (2026-11-07, §88.4 a §88.6). Lleva la 1.88.1 (la fachada al volver de un piso, sin
   placas fuera del dibujo) y la 1.88.2 (místicos, mascota, muebles vivos y acabados en primera persona; sin estantería,
   «Biblioteca» en vez de «Ver la balda»). Viene de la rama `1.88.1-fachada`, con avance rápido de `main`, a petición de
@@ -91,6 +91,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.89.2 | Cámara del sillón y arquitectura del rincón (aprobada por evidencias, sin publicar) | §89.7 |
 | 1.89.1 | Arranque sin la habitación antigua, noche con las lámparas reales, cámara del sillón y puesto del ordenador (preview) | §89.6 |
 | 1.89.0 | Retirados sin perder datos, Esenciales, pasada del rincón y visita en primera persona (preview) | §89 |
 | 1.88.2 | Místicos, mascota, muebles vivos y acabados en primera persona; «Biblioteca» sin estantería | §88.5–§88.6 |
@@ -140,6 +141,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **1.89.2:** aplicar `20261118120000_edificio_esenciales.sql` en producción **antes** de fusionar con `main`: sin ella el servidor rechaza pisos con `ocultos` y esenciales básicos sin copia.
 - **1.89.1 (preview):** comprobar en la preview el cambio día/noche en Safari de iPhone (WebKit de Windows no lo captura fiable) y ver las vistas en un piso real: no hay comparativas de uno por falta de acceso autorizado.
 - **1.89.0 (preview):** aplicar la migración, probar en Android y Safari de iPhone y decidir si se publica; decidir cuándo restaurar los objetos retirados (§89.1).
 - **1.88.2 (publicada):** comprobarla en Android y en Safari de iPhone reales (solo se ha probado en emulación).
@@ -236,6 +238,23 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-08 · cuenta principal · pasada de arquitectura y materiales del rincón (incluida en el commit de la 1.89.2)
+
+- **Archivos, sobre `7e0640b` y junto a la cámara del sillón:** `pisoLab/materials.js`, `pisoLab/interior3d.js` y `e2e-community/v1893-arte-rincon.spec.js`. Huella de esos dos archivos fuente: `4a3c6071e391`.
+- **Hecho:** ventana con hoja interior, moldura, ménsulas, bisagras y falleba; enlucido sin repetición y sombras en uniones; viguetas y cornisa escalonada; mesas con doble canto, faldón, clavijas y regatones; escritorio con cuarterones y tiradores con volumen; noche con calor solo cerca de las lámparas. Sin cambios de medidas ni animación.
+- **Evidencias:** `qa-report/v1893/` (comparativas, `recorrido-*.webm` con arrastre real y `*-rendimiento.json`).
+- **Rendimiento (Chromium emulado):** mismas llamadas, geometrías y texturas; dibujo de 4,1–4,4 ms a 4,7–5,1 ms por fotograma.
+- **Sin verificar:** móviles físicos; luz en WebKit (sus capturas pueden ir un fotograma atrás).
+- **Aprobada** por Francisco («Apruebo la entrega», 8-11-2026). La fusión con `main` espera a la migración.
+
+### 2026-11-08 · cuenta principal · cámara del sillón tras la 1.89.1 (incluida en el commit de la 1.89.2)
+
+- **Archivos:** `pisoLab/interior3d.js`, `pisoLab/materials.js` y `e2e-community/v1892-camara-sillon.spec.js`.
+- **Hecho:** ojos en el centro del asiento y por delante del respaldo; mirada fija al frente del sillón (fuera el giro hacia mesa o estantería, también en el piloto); solo baja la vista si la mesa está delante y cerca; noche más localizada alrededor de las lámparas.
+- **Muestra:** distribución que solo existe en la prueba (ningún piso guardado cambia). Capturas y `giro.webm` en `qa-report/v1892/chromium-390x844/`.
+- **Comprobado (emulación):** e2e de cámara, v189 y v188 en Chromium y WebKit; `piso-usabilidad` y `piso-esenciales` en Chromium; Vitest de piso y edificio; build.
+- **Ojo:** un sillón de cara a una pared cercana ve esa pared, por decisión de Francisco: no se fuerza la mirada.
 
 ### 2026-11-08 · cuenta principal · 1.89.1 en preview: arranque, noche, cámara del sillón y ordenador (commit y subida a la rama)
 
