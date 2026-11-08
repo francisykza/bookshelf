@@ -5,9 +5,11 @@ import { playUiSound } from '../../audio/uiSounds';
 import { dayKey, parseDay } from '../../domain/dates';
 import { dayDatum, isActive, summarize } from '../../domain/reading';
 import { monthCells } from '../../domain/roomSurfaces';
+import { monthCovers } from '../../domain/monthSummary';
 import { MonthBooks } from '../../features/monthBooks/MonthBooks';
+import { warmCovers } from '../shelf/BookItem';
 import { useLibrary } from '../../state/useLibrary';
-import { PixelControl } from '../../ui/PixelIcon';
+import { PixelChevron, PixelControl } from '../../ui/PixelIcon';
 import { BookGroup, useDays, usePomodoros } from '../panels/ReadingCalendar';
 
 const WEEK = [
@@ -30,7 +32,7 @@ function fullCells(month) {
   return out;
 }
 
-export function PortCalendar({ selectDay = null, onRegister }) {
+export function PortCalendar({ selectDay = null, onRegister, onSubview }) {
   const { state } = useLibrary();
   const days = useDays(state);
   const pomos = usePomodoros(state);
@@ -59,16 +61,25 @@ export function PortCalendar({ selectDay = null, onRegister }) {
     window.history.pushState(window.history.state, '');
     setResumen(true);
   };
+  // El resumen del mes en pantalla, listo antes de que se pida
+  const mesClave = dayKey(month).slice(0, 7);
+  useEffect(() => {
+    warmCovers(monthCovers({ books: state.books, log: state.progress.readingLog, notes: state.progress.monthNotes }, mesClave), 4000);
+  }, [state.books, state.progress.readingLog, state.progress.monthNotes, mesClave]);
   useEffect(() => {
     if (!resumen) return undefined;
     cuerpo()?.scrollTo(0, 0);
+    onSubview?.(true);
     const cerrar = () => setResumen(false);
     window.addEventListener('popstate', cerrar);
     return () => {
       window.removeEventListener('popstate', cerrar);
+      onSubview?.(false);
       const body = cuerpo();
       if (body) body.scrollTop = altura.current;
     };
+    // `onSubview` solo avisa
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumen]);
 
   const shift = (n) => {
@@ -86,13 +97,11 @@ export function PortCalendar({ selectDay = null, onRegister }) {
       <i className="pp-cal-ring" aria-hidden="true" />
       <div className="port-cal__head">
         <button type="button" className="pp-btn pp-btn--icon" onClick={() => shift(-1)} aria-label="Mes anterior">
-          <PixelControl name="back" />
+          <PixelChevron />
         </button>
         <h3 aria-live="polite">{cap(month.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }))}</h3>
         <button type="button" className="pp-btn pp-btn--icon" onClick={() => shift(1)} aria-label="Mes siguiente">
-          <span className="pp-control--flip">
-            <PixelControl name="back" />
-          </span>
+          <PixelChevron next />
         </button>
       </div>
       <div className="port-cal__week" aria-hidden="true">
@@ -123,7 +132,7 @@ export function PortCalendar({ selectDay = null, onRegister }) {
               }}
             >
               <span>{parseDay(cell.date).getDate()}</span>
-              {read && <i aria-hidden="true" />}
+              {read && (datum.text ? <small className="port-cal__pag" aria-hidden="true">{datum.kind === 'pages' ? `${datum.text} p.` : datum.text}</small> : <i aria-hidden="true" />)}
             </button>
           );
         })}

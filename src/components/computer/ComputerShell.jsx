@@ -2,13 +2,13 @@
 // «Mi escritorio» y cerrar; dentro de una función, flecha al escritorio, su nombre y cerrar. Sin ventanitas.
 import { PixelControl } from '../../ui/PixelIcon';
 
-export function ComputerShell({ title, onBack, onClose, children }) {
+export function ComputerShell({ title, onBack, backLabel = 'Volver al escritorio', onClose, children }) {
   return (
     <div className="port-computer">
       <div className="pp-glass">
         <header className="port-computer__head">
           {onBack && (
-            <button type="button" className="pp-os-btn" onClick={onBack} aria-label="Volver al escritorio">
+            <button type="button" className="pp-os-btn" onClick={onBack} aria-label={backLabel}>
               <PixelControl name="back" />
             </button>
           )}

@@ -38,6 +38,8 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
   const { state } = useLibrary();
   const start = TABS.some((t) => t.id === initialTab) ? initialTab : desktop ? null : 'calendar';
   const [app, setApp] = useState(start);
+  // «Tu mes en libros» se abre dentro del calendario: la cabecera lo nombra y su flecha es la única para volver
+  const [resumenMes, setResumenMes] = useState(false);
   // Con qué vista abre Mi diario desde el escritorio del piso
   const [diary, setDiary] = useState(diaryView);
   // Apps montadas (la activa y las que guardan algo a medias)
@@ -100,7 +102,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
     return (
       <PanelShell onClose={requestExit} label="Ordenador: Mi escritorio" variant="port-computer">
         <div className="pc pc--port" data-app={app ?? 'desktop'}>
-          <ComputerShell title={current ? titleOf(current) : 'Mi escritorio'} onBack={app ? closeApp : null} onClose={requestExit}>
+          <ComputerShell title={resumenMes ? 'Tu mes en libros' : current ? titleOf(current) : 'Mi escritorio'} onBack={resumenMes ? () => window.history.back() : app ? closeApp : null} backLabel={resumenMes ? 'Volver al calendario' : undefined} onClose={requestExit}>
             {confirmExit && (
               <div className="pc__confirm" role="alertdialog" aria-labelledby="pc-confirm-text">
                 <p id="pc-confirm-text">Tienes un formulario a medias. Si sales del ordenador, se perderá lo que no hayas guardado.</p>
@@ -130,7 +132,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
               {TABS.filter((t) => alive.includes(t.id)).map((t) => (
                 <section key={t.id} className="pc-win" data-pc-app={t.id} id={`pc-app-${t.id}`} hidden={app !== t.id} aria-label={titleOf(t)}>
                   <div className="pc-win__body">
-                    {t.id === 'calendar' && (diary === 'calendar' ? <PortCalendar key="cal" selectDay={selectDay} onRegister={registrar} /> : <DiaryApp key={diary} initialView={diary} selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />)}
+                    {t.id === 'calendar' && (diary === 'calendar' ? <PortCalendar key="cal" selectDay={selectDay} onRegister={registrar} onSubview={setResumenMes} /> : <DiaryApp key={diary} initialView={diary} selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />)}
                     {t.id === 'stats' && <StatsApp />}
                     {t.id === 'sessions' && <SessionsApp />}
                     {t.id === 'goal' && <GoalApp />}

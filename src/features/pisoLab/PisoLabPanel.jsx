@@ -320,7 +320,7 @@ function EssentialsBar({ room, onPick, onReset }) {
   );
 }
 
-function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenBook, onRegister, onOpenLibrary, home = false, onEdificio, onAnterior }) {
+function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenBook, onRegister, onOpenLibrary, onAddBook, home = false, onEdificio, onAnterior }) {
   // Habitación de inicio: su puerta y «atrás» llevan al edificio del puerto, no al portal de prueba
   const leave = home && !select ? onEdificio : onBack;
   const { state, actions } = useLibrary();
@@ -609,7 +609,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
               </p>
             )}
           </div>
-          {listing && <PisoLibrary books={books} settings={settings} placed={shelfBooks?.placed ?? new Set()} memory={libraryMemory} notice={notice} onBack={onBack} onOpen={(book) => onOpenBook(book, TOP_ROW)} onToggle={exhibit} />}
+          {listing && <PisoLibrary books={books} settings={settings} placed={shelfBooks?.placed ?? new Set()} memory={libraryMemory} notice={notice} onBack={onBack} onOpen={(book) => onOpenBook(book, TOP_ROW)} onToggle={exhibit} onAdd={onAddBook} />}
         </>
       )}
     </div>
@@ -673,7 +673,7 @@ function HomePiso({ onOpenLibrary, onEdificio, onAnterior, onOpenAccount, onOpen
   );
 }
 
-export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose, onExit, onOpenBook, onRegister, onOpenLibrary, home = false, onEdificio, onAnterior, onOpenAccount, onOpenProfile }) {
+export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose, onExit, onOpenBook, onRegister, onOpenLibrary, onAddBook, home = false, onEdificio, onAnterior, onOpenAccount, onOpenProfile }) {
   const isHome = pisoId === HOME_PISO;
   const piso = isHome ? null : pisoById(pisoId);
   const { state } = useLibrary();
@@ -693,9 +693,9 @@ export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose
     // Con el registro encima, Escape es suyo; en la habitación de inicio, Escape no la cierra (es la pantalla de inicio)
     <PanelShell onClose={/^registro/.test(select ?? '') || /^(ficha:|ordenador|abrir:)/.test(select ?? '') || (home && !select) ? () => {} : select === 'toda' ? onBack : onClose} label={piso || isHome ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
       {isHome ? (
-        <HomePiso select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} home={home} onEdificio={onEdificio} onAnterior={onAnterior} onOpenAccount={onOpenAccount} onOpenProfile={onOpenProfile} />
+        <HomePiso select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} onAddBook={onAddBook} home={home} onEdificio={onEdificio} onAnterior={onAnterior} onOpenAccount={onOpenAccount} onOpenProfile={onOpenProfile} />
       ) : piso ? (
-        <PisoView key={piso.id} piso={piso} select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} home={home} onEdificio={onEdificio} onAnterior={onAnterior} />
+        <PisoView key={piso.id} piso={piso} select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} onAddBook={onAddBook} home={home} onEdificio={onEdificio} onAnterior={onAnterior} />
       ) : (
         <>
           <div className="ed-bar plab-bar">

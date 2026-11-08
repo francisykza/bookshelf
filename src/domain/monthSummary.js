@@ -116,6 +116,17 @@ export function cleanNote(previous = {}, patch = {}) {
 }
 
 /** Las portadas de la exportación, en tarjetas de 12 como máximo; ningún libro se queda fuera. */
+/** Las portadas de un mes, para tenerlas listas antes de enseñarlo. Si los datos fallan, ninguna: quien pinta ya mostrará el error. */
+export function monthCovers(data, month, limit = 12) {
+  try {
+    return monthSummary(data, month)
+      .finished.slice(0, limit)
+      .map((f) => f.book.cover);
+  } catch {
+    return [];
+  }
+}
+
 export function cardPages(finished, size = 12) {
   const pages = [];
   for (let i = 0; i < finished.length; i += size) pages.push(finished.slice(i, i + size));

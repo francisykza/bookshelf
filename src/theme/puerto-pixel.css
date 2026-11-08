@@ -1657,9 +1657,6 @@ section.plab-library .plab-filter[aria-pressed='true'] {
   color: var(--pp-green-ink);
 }
 
-section.plab-library .plab-filter[aria-pressed='true']::before {
-  content: '✓ ';
-}
 
 section.plab-library .plab-library__count {
   color: var(--pp-green-ink);
@@ -1786,4 +1783,85 @@ section.plab-library .px-btn {
 .pc--port .pc-stats,
 .pc--port .port-cal {
   margin-bottom: 12px;
+}
+
+/* Biblioteca: cada estado con su color y su forma, y Añadir siempre a la vista */
+section.plab-library .plab-library__buscar {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+section.plab-library .plab-library__buscar .plab-library__search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+section.plab-library .plab-library__add {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid var(--pp-green-ink);
+  background: var(--pp-green);
+  color: var(--pp-green-ink);
+  font: 700 14px/18px var(--port-sans);
+  white-space: nowrap;
+}
+
+section.plab-library .plab-library__filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+section.plab-library .plab-filter {
+  --f: #5c3a22;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4px 8px;
+  border: 2px solid var(--f);
+  background: #f5e7c8;
+  color: #38271f;
+  text-align: left;
+}
+
+section.plab-library .plab-filter svg {
+  flex: none;
+  color: var(--f);
+}
+
+section.plab-library .plab-filter[data-filtro='reading'] {
+  --f: #2f6b5e;
+}
+
+section.plab-library .plab-filter[data-filtro='want'] {
+  --f: #8a5a12;
+}
+
+section.plab-library .plab-filter[data-filtro='read'] {
+  --f: #4f6a2a;
+}
+
+section.plab-library .plab-filter[data-filtro='abandoned'] {
+  --f: #6f2a2e;
+}
+
+section.plab-library .plab-filter[data-filtro='chosen'] {
+  --f: #2f5478;
+}
+
+section.plab-library .plab-filter[aria-pressed='true'] {
+  border-color: var(--f);
+  background: var(--f);
+  box-shadow: inset 0 0 0 2px #fff4d7;
+  color: #fff4d7;
+}
+
+section.plab-library .plab-filter[aria-pressed='true'] svg {
+  color: inherit;
 }

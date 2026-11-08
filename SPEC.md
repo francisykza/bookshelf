@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.91.0 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.91.1 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5520,3 +5520,12 @@ Aprobada por Francisco el 8-11-2026 tras revisar vídeos y capturas. Sin migraci
 - **Tarjetas:** 1080 × 1920 en lienzo (`monthCard.js`), máximo 12 portadas por tarjeta y páginas numeradas si hay más. Si una portada no se puede usar, va una cubierta con el título. Nada se sube.
 - **Límites:** los libros leídos sin fecha se listan aparte porque no existe edición de fecha; el histórico solo cuenta lo que tiene fecha o sesiones.
 - **Pruebas:** `monthSummary.test.js`, `e2e-community/fase2-mes.spec.js`, `fase1-audio`, `fase1-scroll` y `fase1-visitas`.
+
+### 91.1 Ajustes del resumen, calendario y biblioteca (1.91.1)
+
+- **Resumen:** el favorito se elige tocando la portada en la balda y se destaca en su propia balda; cifras como composición editorial; frase sobre papel rayado.
+- **Navegación:** la flecha de la cabecera del ordenador es la única para volver; cambiar de mes usa ángulos (`PixelChevron`), también en el calendario.
+- **Portadas:** `warmCovers` (`BookItem.jsx`) prepara las del mes y las de los vecinos, y el mes cambia cuando se pueden pintar (espera máxima 350 ms). Medición manual: `e2e-community/medir-mes.spec.js`.
+- **Tarjeta:** las portadas toman el sitio libre; con favorito o frase, la primera tarjeta lleva como máximo 8 portadas y las demás 12.
+- **Calendario:** cada día con lectura indica sus páginas o su porcentaje.
+- **Biblioteca:** cada filtro con color e icono propios y «Añadir libro» siempre a la vista.

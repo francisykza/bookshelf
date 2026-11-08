@@ -72,6 +72,34 @@ export function watchCover(src, notify) {
   return () => list.delete(notify);
 }
 
+/**
+ * Deja listas unas portadas sin montar nada. Se resuelve cuando todas han llegado o a los `ms`, lo que ocurra antes; lo que siga
+ * en camino continúa y queda recordado.
+ */
+export function warmCovers(srcs, ms = 350) {
+  const pending = [...new Set(srcs.filter(Boolean))].filter((src) => !['loaded', 'failed'].includes(coverStatus.get(src)));
+  if (!pending.length) return Promise.resolve();
+  return new Promise((done) => {
+    let left = pending.length;
+    const stops = [];
+    const finish = () => {
+      clearTimeout(timer);
+      stops.forEach((stop) => stop());
+      done();
+    };
+    const timer = setTimeout(finish, ms);
+    pending.forEach((src) =>
+      stops.push(
+        watchCover(src, (status) => {
+          if (status === 'slow') return;
+          left -= 1;
+          if (!left) finish();
+        }),
+      ),
+    );
+  });
+}
+
 /** El contenedor con desplazamiento más cercano (la balda, el panel…): la precarga se mide contra él, no la ventana. */
 function scrollParent(el) {
   for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
@@ -85,7 +113,8 @@ function scrollParent(el) {
  * Portada real con su geometría fija: mientras llega, la tapa lisa del color del lomo (mismo tamaño); si no hay imagen o
  * falla, la cubierta tipográfica. Se pide cuando está a menos de una pantalla de su contenedor con desplazamiento (las
  * visibles primero; nunca todas las de la biblioteca al entrar), y una sola vez por URL. `steady`: portada única y a la
- * vista (ordenador, registro): mientras llega se ve la cubierta con el título y, ya decodificada, se pinta de una vez.
+ * vista (ordenador, registro): mientras llega se ve la cubierta con el título y, ya decodificada, se pinta de una vez. `instant`: ya
+ * se precargó y debe verse en el mismo fotograma que el resto de la pantalla.
  */
 // Las últimas portadas fijas ya decodificadas. Se copian a un lienzo: un <img> nuevo podría volver a descargar y pintarse a trozos
 const steadyKept = new Map();
@@ -138,11 +167,11 @@ function SteadyImage({ book, src, className }) {
   );
 }
 
-export function Cover({ book, className = '', onLoaded, eager = false, steady = false }) {
+export function Cover({ book, className = '', onLoaded, eager = false, steady = false, instant = false }) {
   const src = book.cover || '';
   const [, setStatus] = useState(null);
   // `eager`: quien la monta ya sabe que está cerca (una lista virtual) y se ahorra buscar su contenedor, que obliga a calcular estilos
-  const [near, setNear] = useState(() => eager || steady || coverStatus.has(src));
+  const [near, setNear] = useState(() => eager || steady || instant || coverStatus.has(src));
   const waitRef = useRef(null);
   useEffect(() => {
     const el = waitRef.current;
@@ -176,7 +205,7 @@ export function Cover({ book, className = '', onLoaded, eager = false, steady = 
   const shown = src ? (coverStatus.get(src) ?? 'loading') : 'none';
   if (shown === 'none' || shown === 'failed' || shown === 'slow') return <GeneratedCover book={book} />;
   if (shown === 'loading') return <span ref={waitRef} className={`cover-img cover-img--wait ${className}`} aria-hidden="true" />;
-  return <img className={`cover-img ${className}`} src={src} alt="" decoding="async" referrerPolicy="no-referrer" />;
+  return <img className={`cover-img ${className}`} src={src} alt="" decoding={instant ? 'sync' : 'async'} referrerPolicy="no-referrer" />;
 }
 
 function Tabs({ quotes }) {

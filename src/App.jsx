@@ -460,6 +460,7 @@ function Sanctuary() {
             onRegister={() => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' })}
             onExit={() => switchPanel({ type: 'pisoLab' })}
             onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
+            onAddBook={() => openPanel({ type: 'pisoLab', id: panel.id, select: 'abrir:add' })}
             home={home && panel.id === HOME_PISO}
             onOpenAccount={() => openPanel({ type: 'account' })}
             onOpenProfile={() => openPanel({ type: 'social', tab: 'perfil' })}

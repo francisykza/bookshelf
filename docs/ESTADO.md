@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.91.0** (2026-11-08, §91). Fase 1 (scroll, audio, visitas, paredes), caché persistente de portadas y «Tu mes en libros». Sin migraciones. Aprobada por Francisco tras revisar vídeo y PNG.
+- **Publicada en producción: 1.91.1** (2026-11-08, §91.1). Ajustes del resumen del mes, páginas por día en el calendario y filtros y «Añadir libro» en la biblioteca. Sin migraciones.
+- **Anterior: 1.91.0** (2026-11-08, §91). Fase 1 (scroll, audio, visitas, paredes), caché persistente de portadas y «Tu mes en libros». Sin migraciones. Aprobada por Francisco tras revisar vídeo y PNG.
 - **Anterior: 1.90.0** (2026-11-08, §90). Puerto Pixel: ordenador, registro, menú, calendario, radio, diario, estadísticas, biblioteca y decorar. Aprobada por Francisco tras revisar las evidencias; sin migraciones. El mar está retirado de Sonido por ahora. Sin probar en móviles físicos ni con cuentas reales; ficha de libro y Ajustes siguen sin reestilizar.
 - **Anterior: 1.89.3** (2026-11-08, §89 a §89.8). Migración `20261118120000_edificio_esenciales.sql` aplicada.
 - **Versión publicada: 1.88.2** (2026-11-07, §88.4 a §88.6). Lleva la 1.88.1 (la fachada al volver de un piso, sin
@@ -239,6 +240,17 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-08 · 1.91.1, publicada tras aprobar la entrega («Si súbelo»)
+
+Encargo de Francisco tras ver la 1.91.0.
+- **Resumen del mes:** el favorito se elige tocando la portada en la balda y se destaca en su propia balda; cifras como composición editorial; frase sobre papel rayado.
+- **Navegación:** la flecha de la cabecera es la única para volver y la cabecera dice «Tu mes en libros»; cambiar de mes usa ángulos (`PixelChevron`), también en el calendario.
+- **Salto de portadas:** ya estaban en caché (0 peticiones a la red); el hueco era montar y decodificar. Ahora `warmCovers` deja listas las del mes y las de los vecinos, y el mes cambia cuando se pueden pintar (espera máxima 350 ms). Medir a mano con `MEDIR_MES=salida.json` y `e2e-community/medir-mes.spec.js` sobre un build en `qa-report/dist-medir` con las variables del servidor simulado. Con CPU ×6: de 5 fotogramas y unos 60 ms con huecos a 0.
+- **Tarjeta:** las portadas toman el sitio libre; con favorito o frase, la primera tarjeta lleva 8 portadas como máximo y las demás 12.
+- **Calendario:** cada día con lectura dice sus páginas («18 p.») o su porcentaje.
+- **Biblioteca:** cada filtro con color e icono propios y «Añadir libro» siempre a la vista.
+- **Sin validar:** móvil físico; la caché y el salto solo se han medido en Chromium; primera descarga real sin caché no medida en este recorrido, porque la habitación ya pide esas portadas antes.
 
 ### 2026-11-08 · Fase 2 · 1.91.0, publicada tras aprobar la entrega (junto con la Fase 1)
 

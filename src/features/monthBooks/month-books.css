@@ -18,16 +18,18 @@
   --mb-burdeos: #5a1f24;
 }
 
-.mb__top,
 .mb__mes {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.mb__top h3 {
-  margin: 0;
-  font: 400 20px/24px var(--pp-title);
+.pp-chevron {
+  display: block;
+}
+
+.mb__mes b {
+  font: 400 18px/24px var(--pp-title);
 }
 
 .mb__mes p {
@@ -69,46 +71,76 @@
 }
 
 .mb__balda {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
   padding: 10px 8px 0;
   border-bottom: 10px solid var(--mb-madera);
   box-shadow: inset 0 -2px 0 var(--mb-luz), 0 3px 0 var(--mb-sombra);
 }
 
-.mb__balda ul {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  align-items: end;
-}
-
 .mb__libro {
   position: relative;
+  display: block;
   min-width: 0;
+  cursor: pointer;
 }
 
-.mb__portada {
+.mb__libro input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.mb__libro:has(input:focus-visible) {
+  outline: 3px solid var(--pp-focus);
+  outline-offset: 2px;
+}
+
+.mb__libro[data-favorito] .mb__tapa {
+  outline: 4px solid var(--mb-laton);
+  outline-offset: -4px;
+}
+
+.mb__cinta {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  width: 16px;
+  height: 30px;
+  background: var(--mb-burdeos);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%);
+  pointer-events: none;
+}
+
+.mb__tapa {
   position: relative;
   display: block;
   aspect-ratio: 2 / 3;
   overflow: hidden;
 }
 
-.mb__portada > .cover-img,
-.mb__portada > .gen-cover,
-.mb__portada > .cover-steady {
+.mb__tapa > .cover-img,
+.mb__tapa > .gen-cover,
+.mb__tapa > .cover-steady {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-.mb__portada > img.cover-img {
+.mb__tapa > img.cover-img {
   object-fit: contain;
   object-position: bottom;
 }
 
-.mb__portada > .cover-img--wait {
-  background: var(--mb-sombra);
+.mb__tapa > .cover-img--wait {
+  background: transparent;
 }
 
 .mb__lecturas {
@@ -120,91 +152,155 @@
   color: #fff4d7;
   font-size: 12px;
   line-height: 18px;
+  pointer-events: none;
 }
 
-.mb__titulo {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
+/* Las cifras: una composición de página, no tres casillas */
 .mb__cifras {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   margin: 0;
+  padding: 12px 0;
+  border-block: 4px double var(--mb-laton);
+  background: var(--pp-field);
 }
 
 .mb__cifras div {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 4px 14px;
+}
+
+.mb__cifra--mayor {
+  grid-row: span 2;
   align-items: center;
-  padding: 8px 4px;
-  border: 2px solid var(--mb-laton);
-  background: var(--pp-field);
+  border-right: 2px solid var(--mb-laton);
   text-align: center;
 }
 
 .mb__cifras dd {
   margin: 0;
-  font: 400 24px/30px var(--pp-title);
+  font: 400 30px/36px var(--pp-title);
   overflow-wrap: anywhere;
+}
+
+.mb__cifra--mayor dd {
+  font-size: 68px;
+  line-height: 76px;
 }
 
 .mb__cifras dt {
   color: var(--pp-muted);
-  font-size: 13px;
-  line-height: 17px;
+  font: 500 14px/18px Lora, Georgia, serif;
 }
 
-.mb__caja {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 10px;
-  border: 2px solid var(--pp-rule);
-  background: var(--pp-field);
-}
-
-.mb__caja h4,
-.mb__caja legend {
-  margin: 0;
-  padding: 0 2px;
+.mb__cifra--mayor dt {
   color: var(--mb-burdeos);
-  font: 700 15px/21px var(--port-sans);
+  font-weight: 700;
 }
 
-:root[data-ui-theme='noche'] .mb__caja h4,
-:root[data-ui-theme='noche'] .mb__caja legend {
+:root[data-ui-theme='noche'] .mb__cifra--mayor dt {
   color: var(--pp-ink);
 }
 
-.mb__favorito label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
+/* El favorito: un libro sobre su propia balda */
+.mb__destacado {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 14px;
+  align-items: end;
+  padding: 12px 12px 0;
+  border-bottom: 10px solid var(--mb-madera);
+  background: var(--mb-hueco);
+  box-shadow: 0 3px 0 var(--mb-sombra);
+  color: #fff4d7;
+}
+
+.mb__silueta {
+  display: block;
+  aspect-ratio: 2 / 3;
+  border: 2px dashed var(--mb-laton);
+}
+
+.mb__ficha {
+  display: grid;
+  gap: 2px;
+  align-self: center;
+  padding-bottom: 12px;
+  min-width: 0;
+}
+
+.mb__ficha p,
+.mb__ficha h4 {
+  margin: 0;
+}
+
+.mb__antetitulo {
+  color: #e2c37a;
+  font: 700 13px/18px var(--port-sans);
+}
+
+.mb__ficha h4 {
+  font: 700 19px/25px Lora, Georgia, serif;
   overflow-wrap: anywhere;
 }
 
-.mb__favorito input {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  accent-color: var(--pp-green);
+.mb__autoria {
+  font: italic 500 14px/20px Lora, Georgia, serif;
+}
+
+.mb__pista {
+  font: 500 15px/21px Lora, Georgia, serif;
+}
+
+.mb__quitar {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #e2c37a;
+  font: 600 14px/18px var(--port-sans);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* El recuerdo: unas líneas escritas sobre el papel */
+.mb__recuerdo {
+  display: grid;
+  gap: 2px;
+}
+
+.mb__recuerdo label {
+  color: var(--mb-burdeos);
+  font: italic 700 17px/24px Lora, Georgia, serif;
+}
+
+:root[data-ui-theme='noche'] .mb__recuerdo label {
+  color: var(--pp-ink);
+}
+
+.mb__contador {
+  margin: 0;
+  color: var(--pp-muted);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: right;
 }
 
 .mb textarea {
   width: 100%;
   min-height: 64px;
-  padding: 8px;
-  border: 2px solid var(--pp-rule);
-  background: var(--pp-gap);
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid var(--mb-laton);
+  background: repeating-linear-gradient(transparent 0 30px, var(--pp-rule) 30px 32px);
+  background-attachment: local;
   color: var(--pp-ink);
-  font: 16px/22px var(--port-sans);
-  resize: vertical;
+  font: italic 500 17px/32px Lora, Georgia, serif;
+  resize: none;
 }
 
 .mb__nota {
@@ -241,4 +337,17 @@
 .port-cal__mes {
   justify-self: center;
   margin-top: 8px;
+}
+
+/* Páginas de cada día */
+.pc--port .port-cal__pag {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--pp-green);
+  font: 700 11px/14px var(--port-sans);
+  white-space: nowrap;
+}
+
+.pc--port .port-cal__day[aria-pressed='true'] .port-cal__pag {
+  color: inherit;
 }

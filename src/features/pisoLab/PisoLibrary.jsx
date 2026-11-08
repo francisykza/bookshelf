@@ -22,6 +22,26 @@ const FAST_SCROLL = 1;
 const motion = { until: 0 };
 const FILTERS = [{ id: 'all', label: 'Todos' }, ...LIBRARY_STATUSES.map((id) => ({ id, label: STATUS[id] })), { id: 'chosen', label: 'Expuestos' }];
 
+// Un icono de píxeles para cada estado: cada filtro se reconoce por su forma además de por su color
+const PIXELES = {
+  all: ['##.##.##.', '##.##.##.', '##.##.##.', '##.##.##.', '##.##.##.', '##.##.##.', '##.##.##.', '#########'],
+  reading: ['.........', '##.....##', '#.##.##.#', '#..#.#..#', '#..#.#..#', '#..#.#..#', '###.#.###', '.########'],
+  want: ['..#####..', '..#####..', '..#####..', '..#####..', '..#####..', '..##.##..', '..#...#..'],
+  read: ['........#', '.......##', '......##.', '#....##..', '##..##...', '.####....', '..##.....'],
+  abandoned: ['#.......#', '##.....##', '.##...##.', '..##.##..', '...###...', '..##.##..', '.##...##.', '##.....##', '#.......#'],
+  chosen: ['....#....', '....#....', '...###...', '#########', '.#######.', '..#####..', '..##.##..', '.##...##.', '.#.....#.'],
+  add: ['...###...', '...###...', '...###...', '#########', '#########', '#########', '...###...', '...###...', '...###...'],
+};
+
+function Pixeles({ name }) {
+  const d = PIXELES[name].flatMap((row, y) => [...row].map((c, x) => (c === '#' ? `M${x} ${y}h1v1h-1z` : ''))).join('');
+  return (
+    <svg viewBox="0 0 9 9" width="14" height="14" shapeRendering="crispEdges" fill="currentColor" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
+}
+
 /** Una memoria nueva para `memory`: lo que hay que recuperar al volver de la ficha de un libro. */
 export const emptyLibraryMemory = () => ({ query: '', status: 'all', count: BLOCK, top: 0, focusId: null });
 
@@ -66,7 +86,7 @@ const Row = memo(function Row({ book, index, total, placed, chosen, onOpen, onTo
   );
 });
 
-export function PisoLibrary({ books, settings, placed, memory, notice, onBack, onOpen, onToggle }) {
+export function PisoLibrary({ books, settings, placed, memory, notice, onBack, onOpen, onToggle, onAdd }) {
   const [query, setQuery] = useState(memory.query);
   const [status, setStatus] = useState(memory.status);
   const [count, setCount] = useState(memory.count);
@@ -200,6 +220,7 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
             Tu biblioteca
           </h2>
         </div>
+        <div className="plab-library__buscar">
         <form
           className="plab-library__search"
           role="search"
@@ -215,9 +236,16 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
             </button>
           )}
         </form>
+        {onAdd && (
+          <button type="button" className="px-btn plab-library__add" onClick={onAdd}>
+            <Pixeles name="add" /> Añadir libro
+          </button>
+        )}
+        </div>
         <div className="plab-library__filters" role="group" aria-label="Filtrar">
           {FILTERS.map((f) => (
-            <button key={f.id} type="button" className="plab-filter" aria-pressed={status === f.id} onClick={() => setStatus(f.id)}>
+            <button key={f.id} type="button" className="plab-filter" data-filtro={f.id} aria-pressed={status === f.id} onClick={() => setStatus(f.id)}>
+              <Pixeles name={f.id} />
               {f.label}
             </button>
           ))}

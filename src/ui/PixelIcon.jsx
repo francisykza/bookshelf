@@ -24,3 +24,13 @@ export function PixelIcon({ name, size = 96 }) {
 export function PixelControl({ name }) {
   return <span className="pp-control" aria-hidden="true" style={{ '--control': `url('/assets/puerto/control-${name}.svg')` }} />;
 }
+
+// Cambiar de mes: un ángulo, para que no se confunda con la flecha de volver
+export function PixelChevron({ next = false }) {
+  const d = next ? 'M8 2h3v2h2v2h2v2h2v2h2v4h-2v2h-2v2h-2v2h-2v2H8v-3h2v-2h2v-2h2v-2h2v-2h-2v-2h-2V9h-2V7H8z' : 'M16 2h-3v2h-2v2H9v2H7v2H5v4h2v2h2v2h2v2h2v2h3v-3h-2v-2h-2v-2H9v-2H7v-2h2v-2h2V9h2V7h3z';
+  return (
+    <svg className="pp-chevron" viewBox="0 0 24 24" width="24" height="24" shapeRendering="crispEdges" fill="currentColor" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
+}

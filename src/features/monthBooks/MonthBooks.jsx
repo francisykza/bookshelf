@@ -1,40 +1,70 @@
 // «Tu mes en libros» (Fase 2), dentro del calendario del ordenador. Enseña solo tus datos, calculados por `monthSummary`, sin guardar nada salvo tu
-// favorito y tu frase, y sin escenas 3D: portadas normales sobre baldas de madera.
+// favorito y tu frase, y sin escenas 3D: portadas normales sobre baldas de madera. La balda es también donde se elige el favorito.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Cover } from '../../components/shelf/BookItem';
-import { NOTE_MAX, monthOf, monthSummary, shiftMonth } from '../../domain/monthSummary';
+import { Cover, warmCovers } from '../../components/shelf/BookItem';
+import { spineColor } from '../../domain/books';
+import { NOTE_MAX, monthCovers, monthOf, monthSummary, shiftMonth } from '../../domain/monthSummary';
 import { parseDay } from '../../domain/dates';
 import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
-import { PixelControl } from '../../ui/PixelIcon';
+import { PixelChevron, PixelControl } from '../../ui/PixelIcon';
 import { MonthExport } from './MonthExport';
 import './month-books.css';
 
 const POR_BALDA = 3;
+/** Lo que se espera a un mes nuevo antes de enseñarlo: lo guardado llega antes; lo que no, entra después sobre su tapa de color. */
+const ESPERA_MES = 350;
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 const nombreMes = (month) => cap(parseDay(`${month}-01`).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }));
 
-function Baldas({ finished }) {
+function Portada({ book }) {
+  return (
+    <span className="mb__tapa" style={{ background: spineColor(book) }}>
+      <Cover book={book} instant />
+    </span>
+  );
+}
+
+function Baldas({ finished, favorito, onElegir }) {
   const filas = [];
   for (let i = 0; i < finished.length; i += POR_BALDA) filas.push(finished.slice(i, i + POR_BALDA));
   return (
-    <ul className="mb__baldas" aria-label="Libros terminados este mes">
+    <div className="mb__baldas" role="radiogroup" aria-label="Libros terminados este mes. Elige tu favorito">
       {filas.map((fila) => (
-        <li key={fila[0].book.id} className="mb__balda">
-          <ul>
-            {fila.map(({ book, count }) => (
-              <li key={book.id} className="mb__libro">
-                <span className="mb__portada">
-                  <Cover book={book} />
-                </span>
-                {count > 1 && <span className="mb__lecturas">{count} lecturas</span>}
-                <span className="mb__titulo">{book.title}</span>
-              </li>
-            ))}
-          </ul>
-        </li>
+        <div key={fila[0].book.id} className="mb__balda">
+          {fila.map(({ book, count }) => (
+            <label key={book.id} className="mb__libro" data-favorito={favorito?.id === book.id || undefined}>
+              <Portada book={book} />
+              <input type="radio" name="mb-favorito" aria-label={book.title} checked={favorito?.id === book.id} onChange={() => onElegir(book.id)} />
+              {count > 1 && <span className="mb__lecturas">{count} lecturas</span>}
+              {favorito?.id === book.id && <i className="mb__cinta" aria-hidden="true" />}
+            </label>
+          ))}
+        </div>
       ))}
-    </ul>
+    </div>
+  );
+}
+
+function Destacado({ libro, perdido, onQuitar }) {
+  return (
+    <section className="mb__destacado" data-vacio={libro ? undefined : ''} aria-label="Mi favorito del mes">
+      <div className="mb__atril">{libro ? <Portada book={libro} /> : <span className="mb__silueta" aria-hidden="true" />}</div>
+      <div className="mb__ficha">
+        <p className="mb__antetitulo">Mi favorito del mes</p>
+        {libro ? (
+          <>
+            <h4>{libro.title}</h4>
+            {libro.author && <p className="mb__autoria">{libro.author}</p>}
+            <button type="button" className="mb__quitar" onClick={onQuitar}>
+              Quitar favorito
+            </button>
+          </>
+        ) : (
+          <p className="mb__pista">{perdido ? 'El libro que elegiste ya no consta como terminado este mes. Toca otra portada de la balda.' : 'Toca una portada de la balda para destacarla aquí.'}</p>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -47,12 +77,10 @@ function Recuerdo({ valor, onGuardar }) {
     onGuardar(texto);
   };
   return (
-    <section className="mb__caja">
-      <label htmlFor="mb-recuerdo">
-        <h4>Un recuerdo de este mes</h4>
-      </label>
-      <textarea id="mb-recuerdo" rows={2} maxLength={NOTE_MAX} value={texto} placeholder="Opcional" onChange={(e) => setTexto(e.target.value)} onBlur={guardar} />
-      <p className="mb__nota" aria-live="polite">
+    <section className="mb__recuerdo">
+      <label htmlFor="mb-recuerdo">Un recuerdo de este mes</label>
+      <textarea id="mb-recuerdo" rows={2} maxLength={NOTE_MAX} value={texto} placeholder="Escribe una frase, si te apetece" onChange={(e) => setTexto(e.target.value)} onBlur={guardar} />
+      <p className="mb__contador" aria-live="polite">
         {texto.length} de {NOTE_MAX}
       </p>
     </section>
@@ -66,17 +94,19 @@ export function MonthBooks({ initialMonth, onBack }) {
   const [intento, setIntento] = useState(0);
   const [exportando, setExportando] = useState(false);
   const raiz = useRef(null);
+  const destino = useRef(initialMonth);
   const actual = monthOf();
   const cargando = cloud?.status === 'loading';
+  const datos = useMemo(() => ({ books: state.books, log: state.progress.readingLog, notes: state.progress.monthNotes }), [state.books, state.progress.readingLog, state.progress.monthNotes]);
   const { summary, fallo } = useMemo(() => {
     try {
-      return { summary: monthSummary({ books: state.books, log: state.progress.readingLog, notes: state.progress.monthNotes }, month) };
+      return { summary: monthSummary(datos, month) };
     } catch {
       return { fallo: true };
     }
     // `intento` vuelve a calcular al pulsar Reintentar
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.books, state.progress.readingLog, state.progress.monthNotes, month, intento]);
+  }, [datos, month, intento]);
 
   // Escape cierra primero la vista previa y luego el resumen, sin llegar al ordenador
   useEffect(() => {
@@ -90,8 +120,20 @@ export function MonthBooks({ initialMonth, onBack }) {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [exportando, onBack]);
 
-  const cambiar = (by) => {
-    setMonth(shiftMonth(month, by));
+  // Los meses vecinos, listos antes de que se pida ir a ellos
+  useEffect(() => {
+    if (cargando) return;
+    warmCovers([...monthCovers(datos, shiftMonth(month, -1)), ...(month < actual ? monthCovers(datos, shiftMonth(month, 1)) : [])], 4000);
+  }, [datos, month, actual, cargando]);
+
+  // El mes cambia cuando sus portadas ya se pueden pintar: la balda nunca se ve vacía entre uno y otro
+  const cambiar = async (by) => {
+    const siguiente = shiftMonth(destino.current, by);
+    if (siguiente > actual) return;
+    destino.current = siguiente;
+    await warmCovers(monthCovers(datos, siguiente), ESPERA_MES);
+    if (destino.current !== siguiente) return;
+    setMonth(siguiente);
     raiz.current?.closest('.pc-win__body')?.scrollTo(0, 0);
   };
   const guardarNota = (patch) => actions.setMonthNote(month, patch);
@@ -99,24 +141,16 @@ export function MonthBooks({ initialMonth, onBack }) {
 
   return (
     <div className="mb" ref={raiz} data-escape-local="open">
-      <header className="mb__top">
-        <button type="button" className="pp-btn pp-btn--icon" onClick={onBack} aria-label="Volver al calendario">
-          <PixelControl name="back" />
-        </button>
-        <h3>Tu mes en libros</h3>
-      </header>
       <div className="mb__mes">
         <button type="button" className="pp-btn pp-btn--icon" onClick={() => cambiar(-1)} aria-label="Mes anterior">
-          <PixelControl name="back" />
+          <PixelChevron />
         </button>
         <p aria-live="polite">
           <b>{etiqueta}</b>
           {month === actual && <span className="mb__encurso">En curso</span>}
         </p>
         <button type="button" className="pp-btn pp-btn--icon" onClick={() => cambiar(1)} disabled={month >= actual} aria-label="Mes siguiente">
-          <span className="pp-control--flip">
-            <PixelControl name="back" />
-          </span>
+          <PixelChevron next />
         </button>
       </div>
 
@@ -133,10 +167,10 @@ export function MonthBooks({ initialMonth, onBack }) {
         </p>
       ) : (
         <>
-          {summary.finished.length > 0 ? <Baldas finished={summary.finished} /> : <p className="mb__estado">{summary.hasActivity ? 'Este mes has seguido avanzando' : 'Este mes no hay lecturas registradas. Cuando las haya, aparecerán aquí.'}</p>}
+          {summary.finished.length > 0 ? <Baldas finished={summary.finished} favorito={summary.favorite} onElegir={(favorite) => guardarNota({ favorite })} /> : <p className="mb__estado">{summary.hasActivity ? 'Este mes has seguido avanzando' : 'Este mes no hay lecturas registradas. Cuando las haya, aparecerán aquí.'}</p>}
 
           <dl className="mb__cifras">
-            <div>
+            <div className="mb__cifra--mayor">
               <dd>{summary.finishedCount.toLocaleString('es-ES')}</dd>
               <dt>Libros terminados</dt>
             </div>
@@ -152,22 +186,7 @@ export function MonthBooks({ initialMonth, onBack }) {
           {summary.unknown > 0 && <p className="mb__nota">Solo incluye los avances convertibles a páginas: {summary.unknown === 1 ? 'hay un avance' : `hay ${summary.unknown} avances`} sin total de páginas conocido.</p>}
           {summary.converted > 0 && <p className="mb__nota">Incluye {summary.converted.toLocaleString('es-ES')} páginas calculadas desde porcentajes.</p>}
 
-          {summary.finished.length > 0 && (
-            <fieldset className="mb__caja mb__favorito">
-              <legend>Mi favorito del mes</legend>
-              {summary.favoriteLost && <p className="mb__nota">El libro que elegiste ya no consta como terminado este mes. Puedes elegir otro.</p>}
-              <label>
-                <input type="radio" name="mb-favorito" checked={!summary.favorite} onChange={() => guardarNota({ favorite: null })} />
-                <span>Sin elegir</span>
-              </label>
-              {summary.finished.map(({ book }) => (
-                <label key={book.id}>
-                  <input type="radio" name="mb-favorito" checked={summary.favorite?.id === book.id} onChange={() => guardarNota({ favorite: book.id })} />
-                  <span>{book.title}</span>
-                </label>
-              ))}
-            </fieldset>
-          )}
+          {summary.finished.length > 0 && <Destacado libro={summary.favorite} perdido={summary.favoriteLost} onQuitar={() => guardarNota({ favorite: null })} />}
 
           <Recuerdo key={month} valor={summary.quote} onGuardar={(quote) => guardarNota({ quote })} />
 

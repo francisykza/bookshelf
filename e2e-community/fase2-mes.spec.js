@@ -130,7 +130,7 @@ test('cifras, relectura, histórico, favorito, vuelta al calendario y PNG', asyn
   // Volver: el mes del calendario sigue siendo el que estaba
   await page.getByRole('button', { name: 'Volver al calendario' }).click();
   await expect(page.locator('.mb')).toBeHidden();
-  await expect(page.locator('.port-cal__head h3')).toHaveText(mesCal);
+  await expect(page.locator('.port-cal__head h3')).toHaveText(mesCal); 
   // Y el favorito y la frase siguen guardados tras recargar
   await irAlMes(page, 0);
   await expect(page.getByRole('radio', { name: 'Libro de prueba 5' })).toBeChecked();
@@ -219,11 +219,60 @@ test('de noche se lee y el papel va atenuado', async ({ browser }, info) => {
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
     const a = lum(rgb(getComputedStyle(n).color));
-    const b = lum(rgb(getComputedStyle(n.parentElement).backgroundColor));
+    const b = lum(rgb(getComputedStyle(n.closest('.mb__cifras')).backgroundColor));
     return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   });
   expect(contraste).toBeGreaterThanOrEqual(4.5);
   await page.screenshot({ path: join(DIR, 'pantalla-noche.png') });
+  await context.close();
+});
+
+test('una flecha para volver, favorito en la balda y páginas por día', async ({ browser }, info) => {
+  soloChromium(info);
+  test.setTimeout(70000);
+  const hoy = `${mesRel(0)}-01`;
+  const { context, page } = await abrir(browser, base(libros(4), [sesion('a', `${PASADO}-03`, 32), sesion('b', hoy, 18)]));
+  await expect(page.locator('.port-cal__day[aria-label^="1 de"] .port-cal__pag')).toHaveText('18 p.');
+  await irAlMes(page, 1);
+  await expect(page.getByRole('button', { name: /^Volver/ })).toHaveCount(1);
+  await expect(page.locator('.port-computer__head h2')).toHaveText('Tu mes en libros');
+  await page.getByRole('radio', { name: 'Libro de prueba 2' }).check();
+  await expect(page.locator('.mb__destacado h4')).toHaveText('Libro de prueba 2');
+  await expect(page.locator('.mb__libro[data-favorito] .mb__cinta')).toHaveCount(1);
+  await page.locator('.mb__cifras').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(DIR, 'pantalla-favorito.png') });
+  await page.getByRole('button', { name: 'Quitar favorito' }).click();
+  await expect(page.locator('.mb__libro[data-favorito]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Volver al calendario' }).click();
+  await expect(page.locator('.mb')).toBeHidden();
+  await expect(page.locator('.port-computer__head h2')).toHaveText('Calendario');
+  await page.locator('.port-cal__head').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(DIR, 'calendario-paginas.png') });
+  await context.close();
+});
+
+test('biblioteca: un botón para cada estado y Añadir a la vista', async ({ browser }, info) => {
+  test.skip(!/^(chromium|webkit)-390x844$/.test(info.project.name), '390');
+  test.setTimeout(60000);
+  const { context, page } = await abrir(browser, base(libros(6)));
+  await page.getByRole('button', { name: 'Salir del ordenador' }).click();
+  await page.waitForTimeout(500);
+  const confirmar = page.getByRole('button', { name: /Salir|Apagar/ }).last();
+  if (await confirmar.isVisible().catch(() => false)) await confirmar.click().catch(() => {});
+  await page.waitForTimeout(600);
+  await menu(page).click();
+  await page.getByRole('button', { name: 'Mi biblioteca', exact: true }).click();
+  await expect(page.locator('.plab-library')).toBeVisible();
+  const colores = await page.locator('.plab-filter').evaluateAll((l) => l.map((n) => getComputedStyle(n).borderTopColor));
+  expect(new Set(colores).size).toBe(6);
+  const add = page.getByRole('button', { name: 'Añadir libro' });
+  await expect(add).toBeInViewport({ ratio: 1 });
+  await page.screenshot({ path: join(DIR, `${info.project.name}-biblioteca.png`) });
+  await page.locator('.plab-filter[data-filtro="abandoned"]').click();
+  await expect(page.locator('.plab-filter[data-filtro="abandoned"]')).toHaveAttribute('aria-pressed', 'true');
+  await add.click();
+  await expect(page.getByRole('dialog').or(page.locator('.add-book, .search-sheet')).first()).toBeVisible({ timeout: 8000 });
+  await page.screenshot({ path: join(DIR, `${info.project.name}-anadir.png`) });
   await context.close();
 });
 
