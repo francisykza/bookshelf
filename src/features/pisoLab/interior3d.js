@@ -20,6 +20,8 @@ import { BALDA, baldaShadowTexture, bookTexture, contactShadowTexture, floorText
 /** Ojos de una persona sentada: un poco por encima del respaldo del sillón (1,75 celdas, furniture.js). */
 export const EYE = 1.85;
 const FOV = 72;
+/** En vertical, tope del campo de visión sentado: menos techo y suelo vacíos, sin acercar la vista de la balda. */
+const SEATED_FOV_MAX = 66;
 /** Dónde te sientas, en coordenadas del sillón: pegado al respaldo y arrimado a un brazo, para verlo en primer plano. */
 const SEAT = { lx: 0.35, ly: 0.375 };
 /** Cabeza algo baja y girada hacia el centro de la habitación: menos techo y más mesa. */
@@ -263,6 +265,38 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     const r = rectOf(item);
     return new Vector3((r.x0 + r.x1) / 2, 1, (r.y0 + r.y1) / 2);
   };
+  // Sentado, la cabeza se gira de forma natural hacia lo que hay a mano: el libro en su mesa y, si caben juntos, la estantería.
+  // No se mueve nada: solo cambia hacia dónde se mira al sentarse, y se sigue pudiendo girar.
+  let seatAim = 0;
+  // El tope del campo de visión nunca corta la estantería: cuanto más cerca está, más se abre
+  const nearShelf = mainShelf(room);
+  const shelfFov = nearShelf && seat ? ((2 * (Math.atan(1.9 / Math.max(0.5, Math.hypot(placeOf(nearShelf).x - home.pos.x, placeOf(nearShelf).z - home.pos.z))) + 0.16)) * 180 * 1.08) / Math.PI : 0;
+  const seatedFovMax = Math.max(SEATED_FOV_MAX, shelfFov);
+  // Los pisos de muestra del piloto conservan su encuadre de siempre
+  if (seat && !String(piso.id).startsWith('lab-')) {
+    const HALF = 0.34;
+    const table = readingTable(room) ?? room.items.find((i) => TABLES.has(i.id));
+    const shelfItem = mainShelf(room);
+    const t = table ? headingTo(placeOf(table)) : null;
+    const s = shelfItem ? headingTo(placeOf(shelfItem)) : null;
+    if (t !== null && Math.abs(t) <= 1.5) seatAim = s !== null && Math.abs(t - s) < HALF * 1.8 ? (t + s) / 2 : t - Math.sign(t) * HALF * 0.55;
+    else if (s !== null && Math.abs(s) <= 1.1) seatAim = s * 0.7;
+    seatAim = Math.max(-1.15, Math.min(1.15, seatAim));
+    // Un sillón de cara a una pared cercana y sin nada a mano: la cabeza se gira hacia la habitación, no a la pared vacía
+    const facing = Math.abs(home.dir.x) > Math.abs(home.dir.z) ? (home.dir.x > 0 ? ROOM.w - home.pos.x : home.pos.x) : home.dir.z > 0 ? ROOM.d - home.pos.z : home.pos.z;
+    if (seatAim === 0 && facing < 3) seatAim = Math.max(-1.4, Math.min(1.4, headingTo(new Vector3(ROOM.w / 2, 1, ROOM.d / 2))));
+    const up = new Vector3(0, 1, 0);
+    home.dir.applyAxisAngle(up, -seatAim);
+    home.side.applyAxisAngle(up, -seatAim);
+    let pitch = 0.16;
+    if (table && Math.abs(headingTo(placeOf(table))) < HALF * 1.2) {
+      const p = placeOf(table);
+      const d = Math.hypot(p.x - home.pos.x, p.z - home.pos.z);
+      pitch = Math.max(0.16, Math.min(0.32, Math.atan((EYE - 0.7) / Math.max(d, 0.5)) * 0.7));
+    }
+    const flat = Math.hypot(home.dir.x, home.dir.z) || 1;
+    home.dir.set(home.dir.x / flat, -Math.tan(pitch), home.dir.z / flat);
+  }
   const yawRange = essentialItems(room).reduce(
     ([low, high], item) => {
       const a = Math.max(-YAW_REACH, Math.min(YAW_REACH, headingTo(placeOf(item))));
@@ -272,6 +306,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   );
   const clampYaw = (value) => Math.max(yawRange[0], Math.min(yawRange[1], value));
   let yaw = clampYaw(startYaw);
+  let fullFov = FOV;
   let zoomRow = null;
   let veiled = [];
   let zoom = null; // { pos, target }: mirando una balda de cerca
@@ -862,6 +897,9 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   sun.position.copy(piso.mira === 'izq' ? new Vector3(-6, 7, 3) : new Vector3(3, 7, -6));
   sun.target.position.set(ROOM.w / 2, 0, ROOM.d / 2);
   scene.add(hemi, ambient, sun, sun.target);
+  // Cuánto llegan las lámparas reales a donde te sientas (0: ninguna; 1: un rincón bien iluminado)
+  const WARM_FILL = new Color('#ffb985');
+  const nightWarmth = Math.min(1, lamps.reduce((sum, l) => sum + 1 / (1 + ((l.at.x - home.pos.x) ** 2 + (l.at.z - home.pos.z) ** 2) / 22), 0) * 1.5);
   const lampLights = lamps.map((l) => {
     const light = new PointLight('#ffc98a', 1, 9, 2);
     light.position.copy(l.at);
@@ -884,7 +922,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   });
   function paintWalls() {
     for (const layer of wallLayers) {
-      if (!layer.baked.has(hora)) layer.baked.set(hora, own('textures', wallTexture(wallColor, { w: layer.wallInfo.length, h: layer.wallInfo.h, lights: layer.wallInfo.lights, hora })));
+      if (!layer.baked.has(hora)) layer.baked.set(hora, own('textures', wallTexture(wallColor, { w: layer.wallInfo.length, h: layer.wallInfo.h, lights: layer.wallInfo.lights, hora, warmth: nightWarmth })));
       layer.material.map = layer.baked.get(hora);
       layer.material.needsUpdate = true;
     }
@@ -1130,10 +1168,25 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     ambient.intensity = light.ambient;
     sun.intensity = light.sun;
     sun.color.set(light.sunColor);
-    for (const l of lampLights) l.intensity = light.lamp;
-    for (const f of fabrics.values()) f.color.set(light.fabric);
+    // De noche, las lámparas que haya colocadas hacen el rincón cálido; sin ninguna, se queda la luz de luna de siempre
+    const warm = hora === 'noche' ? nightWarmth : 0;
+    if (warm) {
+      hemi.intensity = 0.5 - warm * 0.12;
+      hemi.color.set(light.hemiColor).lerp(WARM_FILL, warm * 0.6);
+      ambient.intensity = 0.35 - warm * 0.17;
+      sun.intensity = 0.05;
+    }
+    for (const l of lampLights) {
+      l.intensity = hora === 'noche' ? light.lamp + warm * 6 : light.lamp;
+      l.distance = hora === 'noche' ? 13 : 9;
+      l.color.set(hora === 'noche' ? '#ffbe80' : '#ffc98a');
+    }
+    const tintOf = (base, target) => (warm ? `#${new Color(base).lerp(new Color(target), warm).getHexString()}` : base);
+    const fabricTint = tintOf(light.fabric, '#e6c2a0');
+    const woodTint = tintOf(light.wood, '#d8b292');
+    for (const f of fabrics.values()) f.color.set(fabricTint);
     for (const m of woodMats) {
-      m.color.set(light.wood);
+      m.color.set(woodTint);
       if (m.userData.base) m.color.multiply(m.userData.base);
     }
     if (woodMat) {
@@ -1185,6 +1238,11 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     mustDraw = false;
     aim();
     const t0 = performance.now();
+    const wantFov = zoom || zoomRow !== null ? fullFov : Math.min(fullFov, seatedFovMax);
+    if (camera.fov !== wantFov) {
+      camera.fov = wantFov;
+      camera.updateProjectionMatrix();
+    }
     renderer.render(scene, camera);
     renderMs += performance.now() - t0;
     if (renders === 0) performance.mark('piso-lab:primer-dibujo');
@@ -1208,7 +1266,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     if (canvas.height !== h) mustDraw = true;
     renderer.setSize(ART_W, h, false);
     camera.aspect = rect.width / rect.height;
-    camera.fov = camera.aspect >= WIDE_ASPECT ? FOV : (2 * Math.atan(Math.tan((FOV * Math.PI) / 360) * (WIDE_ASPECT / camera.aspect)) * 180) / Math.PI;
+    fullFov = camera.aspect >= WIDE_ASPECT ? FOV : (2 * Math.atan(Math.tan((FOV * Math.PI) / 360) * (WIDE_ASPECT / camera.aspect)) * 180) / Math.PI;
+    camera.fov = zoom || zoomRow !== null ? fullFov : Math.min(fullFov, seatedFovMax);
     camera.updateProjectionMatrix();
     if (zoomRow !== null && zoom) zoom = rowView(zoomRow);
     invalidate();
@@ -1831,6 +1890,9 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         // Los seres dibujados (místicos, mascota, vivos y destellos de acabado) y dónde están
         // La cámara del asiento real: si queda en la habitación, si cae dentro de otro mueble y si llega a cada esencial
         camera: {
+          aim: seatAim,
+          fov: camera.fov,
+          nightWarmth,
           seat: seat ? { uid: seat.uid, id: seat.id, x: seat.x, y: seat.y, rot: seat.rot } : null,
           x: home.pos.x,
           z: home.pos.z,

@@ -75,7 +75,7 @@ export function grainTexture(tono, seed = 3) {
  * paso de una banda a otra. Mismos píxeles por celda que el suelo, y pegados a la pared: no bailan al girar.
  * `lights`: [{ s, z, depth }] en celdas, a lo largo de la pared, en altura y separada de ella.
  */
-export function wallTexture(tono, { w, h, lights, hora }) {
+export function wallTexture(tono, { w, h, lights, hora, warmth = 0 }) {
   const r = probe();
   const ramp = r.rampOf(tono);
   const BANDS = 5;
@@ -88,7 +88,8 @@ export function wallTexture(tono, { w, h, lights, hora }) {
     const z = h - (y + 0.5) / FLOOR_PX;
     let g = 0;
     for (const l of lights) {
-      const reach = 2.25 + l.depth * 0.26;
+      // De noche, la luz de la lámpara llega más lejos por la pared: es lo que hace el rincón
+      const reach = (2.25 + l.depth * 0.26) * (hora === 'noche' ? 1.5 : 1);
       const d = Math.hypot(s - l.s, (z - l.z) * 1.12) / reach;
       if (d < 1) g += (1 - d) ** 1.7 * Math.max(0.15, 1 - l.depth * 0.1);
     }
@@ -102,7 +103,7 @@ export function wallTexture(tono, { w, h, lights, hora }) {
     const foot = z + (r.bayerAt(x, y) - 0.5) * 0.08 < 0.42 ? 0.95 : 1;
     const tone = multiply(band >= BANDS - 1 ? ramp[4] : top ? ramp[2] : ramp[3], [patch * foot, patch * foot, patch * foot]);
     if (hora === 'dia') return tone;
-    if (hora === 'noche') return multiply(tone, [0.38 + k * 0.82, 0.36 + k * 0.62, 0.54 + k * 0.1]);
+    if (hora === 'noche') return multiply(tone, [0.36 + warmth * 0.16 + k * 0.92, 0.34 + warmth * 0.08 + k * 0.68, 0.52 - warmth * 0.12 + k * 0.08]);
     return multiply(tone, [0.6 + k * 0.55, 0.56 + k * 0.42, 0.74 + k * 0.06]);
   });
   return texture(canvas);

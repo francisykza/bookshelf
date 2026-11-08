@@ -252,8 +252,14 @@ function Sanctuary() {
   };
 
   return (
-    <main className="sanctuary" data-view={view} data-phase={phase} inert={panel ? true : undefined}>
+    <main className="sanctuary" data-view={view} data-phase={phase} data-home-3d={home || undefined} inert={panel ? true : undefined}>
       <h1 className="sr-only-focus">BookShelf, tu santuario de lectura junto al mar</h1>
+      {/* 1.89.1: con la habitación 3D como destino, la ilustrada sigue montada pero no se ve; hasta que llega el piso, solo este aviso */}
+      {home && (
+        <p className="home-boot" role="status">
+          Abriendo tu piso…
+        </p>
+      )}
       {/* Con un panel abierto o la librería delante, el panorama no cambia de habitación */}
       <PanoramicRoom
         locked={Boolean(panel) || phase !== ROOM || guide.active}

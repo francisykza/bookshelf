@@ -6,7 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En preview, sin publicar: 1.89.0** (2026-11-08, §89), rama `1.89-rincon-esenciales`. Su migración `20261118120000_edificio_esenciales.sql` está sin aplicar.
+- **En preview, sin publicar: 1.89.1** (2026-11-08, §89 y §89.6), rama `1.89-rincon-esenciales`. Su migración `20261118120000_edificio_esenciales.sql` está sin aplicar.
 - **Versión publicada: 1.88.2** (2026-11-07, §88.4 a §88.6). Lleva la 1.88.1 (la fachada al volver de un piso, sin
   placas fuera del dibujo) y la 1.88.2 (místicos, mascota, muebles vivos y acabados en primera persona; sin estantería,
   «Biblioteca» en vez de «Ver la balda»). Viene de la rama `1.88.1-fachada`, con avance rápido de `main`, a petición de
@@ -91,6 +91,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.89.1 | Arranque sin la habitación antigua, noche con las lámparas reales, cámara del sillón y puesto del ordenador (preview) | §89.6 |
 | 1.89.0 | Retirados sin perder datos, Esenciales, pasada del rincón y visita en primera persona (preview) | §89 |
 | 1.88.2 | Místicos, mascota, muebles vivos y acabados en primera persona; «Biblioteca» sin estantería | §88.5–§88.6 |
 | 1.88.1 | La fachada al volver de un piso, sin placas fuera del dibujo | §88.4 |
@@ -139,6 +140,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **1.89.1 (preview):** comprobar en la preview el cambio día/noche en Safari de iPhone (WebKit de Windows no lo captura fiable) y ver las vistas en un piso real: no hay comparativas de uno por falta de acceso autorizado.
 - **1.89.0 (preview):** aplicar la migración, probar en Android y Safari de iPhone y decidir si se publica; decidir cuándo restaurar los objetos retirados (§89.1).
 - **1.88.2 (publicada):** comprobarla en Android y en Safari de iPhone reales (solo se ha probado en emulación).
 - **1.88 (publicada):** quedan sin causa identificada la franja oscura de Chromium (no se reproduce) y los fallos
@@ -234,6 +236,13 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-08 · cuenta principal · 1.89.1 en preview: arranque, noche, cámara del sillón y ordenador (commit y subida a la rama)
+
+- **Hecho:** §89.6. El destello venía de montar siempre la habitación ilustrada mientras llega el piso diferido. Noche cálida solo con lámparas colocadas; mirada inicial hacia mesa y libro; «Ordenador y escritorio» con miniatura propia.
+- **Comparativas:** `e2e-community/v1891-comparativas.spec.js` (ETIQUETA=antes|despues) y hoja en `qa-report/v1891/`, solo con el piso de prueba.
+- **Sin verificar:** móviles físicos; un piso real (no se inician sesiones); el cambio de hora en WebKit, cuyas capturas en Windows pueden quedarse un fotograma atrás, igual que antes de este cambio.
+- **Limitaciones:** `cozy-book-room.jpg` sigue precargada aunque no se vea; la mirada prioriza la mesa, así que la estantería puede pedir girar o usar «Balda». La migración `20261118120000` sigue sin aplicar. `main` no se ha tocado.
 
 ### 2026-11-08 · cuenta principal · 1.89.0 en preview: rincón, Esenciales y visita en primera persona (commit y subida a la rama)
 

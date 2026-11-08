@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.89.0 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.89.1 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5469,3 +5469,11 @@ Vitest de `src/features/pisoLab` y `src/features/edificio`, RLS en PGlite, oxlin
 Chromium y WebKit a 390 px. Medido con `v189-medidas.spec.js`, mismo piso y encuadre (`qa-report/v189`), reposo 3D 5 s: Chromium 36 → 12
 pasadas, WebKit 34 → 11; isométrica 5 s: 150 → 0 y 78 → 0 pintadas; llamadas 66 → 54; texturas 87 → 83. Giro sin cambio apreciable
 (60 fps Chromium; ~10 fps WebKit, por software). La parte de los retirados y la de la pasada artística se miden juntas.
+
+### 89.6 Arranque, noche, cámara del sillón y puesto del ordenador (1.89.1)
+
+- **Arranque.** `App.jsx` monta siempre la habitación ilustrada y el piso 3D llega después, diferido; ese hueco era el destello. Con la habitación 3D como destino, la ilustrada sigue montada pero oculta (`data-home-3d`) y solo se ve «Abriendo tu piso…», con el aire de la carga del piso.
+- **Noche.** La calidez sale solo de las lámparas colocadas (`nightWarmth`, según su cercanía al asiento; sin lámparas, 0 y la luz de luna de siempre). Sube su alcance e intensidad, baja el relleno frío y calienta paredes, tela y madera. Sin partículas ni fuentes nuevas.
+- **Cámara del sillón.** Altura de ojos sin cambios (`EYE`). La mirada inicial busca la mesa y el libro, y la estantería si caben juntas; de cara a una pared cercana sin nada a mano, gira hacia el centro. Campo vertical con tope 66°, que se abre si la estantería está cerca. No se mueve ningún mueble. Los pisos `lab-` conservan su encuadre.
+- **Ordenador.** En Esenciales, miniatura compuesta y «Ordenador y escritorio · colocado»; si el escritorio no tiene celda libre, lo dice. El menú «Ordenador» acerca la cámara como al tocarlo.
+- **Comprobado** (emulación): Vitest de piso y edificio, e2e `piso-usabilidad`, `piso-esenciales`, `v189`, `v188` y `v1891-comparativas`. Las capturas de WebKit en Windows pueden entregar el fotograma anterior tras cambiar la hora (también antes de este cambio): la luz se compara en Chromium.

@@ -21,7 +21,7 @@ import { acabadosDe, freeCopies, ownedCopies, plainCopies } from './inventory';
 import { houseSwatch, pixelIcon, pixelVars } from './pixelUi';
 import { COLORES_PELO, COMPLEMENTOS, CONJUNTO_ESTRELLAS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, prendaOrigen, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
 import { ACTOR_ID, ART_H, ART_W, backdropImage, createRoomRenderer, renderActorThumb, renderThumb } from './render';
-import { ESENCIALES_TAB, GUARDIA, ROLES, conBasicos, faltan, itemsDeRol, opcionesDe, sustituir } from './esenciales';
+import { ESENCIALES_TAB, GUARDIA, ROLES, conBasicos, faltan, itemsDeRol, opcionesDe, ordenadorDe, sustituir } from './esenciales';
 import { EFECTOS_APAGADOS, esperanSitio, isRetirado, tieneVida } from './retirados';
 import { ROOM, addItem, check, heightOf, itemsOn, moveItem, reasonText, recolorItem, rectOf, removeItem, rotateItem, setFloor, setWall, wallLength } from './room';
 
@@ -281,12 +281,28 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     return `En el piso (${room.items.length})${esperan ? ` · ${esperan} esperan sitio` : ocultos ? ` · ${ocultos} retirados, guardados` : ''}`;
   };
 
+  // El escritorio que lleva el ordenador se nombra y se enseña como lo que es: el conjunto
+  const shownName = (item) => (item.id === 'escritorio' && ordenadorDe(room)?.uid === item.uid ? 'Ordenador y escritorio' : nameOf(item));
+  function puestoThumb(tono, acabado) {
+    const c = document.createElement('canvas');
+    c.width = 44;
+    c.height = 44;
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.drawImage(renderThumb('escritorio', tono, 44, acabado), 1, 7, 42, 42);
+    g.drawImage(renderThumb('ordenador', 0, 44), 8, -3, 30, 30);
+    return c;
+  }
+  const essThumb = (id, tono, acabado) => (id === 'escritorio' ? puestoThumb(tono, acabado) : renderThumb(id, tono, 44, acabado)).toDataURL();
+
   /** Ordenador, estantería y sillón: si faltan, se colocan; si están, se eligen para mover o girar, y se sustituyen. */
   function fillEss() {
     essBox.replaceChildren(
       ...ROLES.map((rol) => {
         const item = itemsDeRol(room, rol)[0] ?? null;
-        const thumb = renderThumb(item?.id ?? rol.base, item?.tono ?? 0, 44, item?.acabado ?? null).toDataURL();
+        const thumb = essThumb(item?.id ?? rol.base, item?.tono ?? 0, item?.acabado ?? null);
+        // Un escritorio lleno no tiene sitio para el ordenador: se dice, en vez de dar por hecho que está
+        const sinPc = rol.id === 'ordenador' && item && !ordenadorDe(room);
         const btn = (text, onClick, extra = {}) => {
           const b = el('button', { type: 'button', class: 'ep-ess__btn', text, ...extra });
           b.addEventListener('click', onClick);
@@ -309,7 +325,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
             })];
         const card = el('div', { class: 'ep-ess__card', 'data-rol': rol.id, 'data-estado': item ? 'colocado' : 'falta' },
           el('img', { src: thumb, alt: '', width: 44, height: 44, draggable: 'false' }),
-          el('div', { class: 'ep-ess__txt' }, el('b', { text: rol.nombre }), el('span', { text: item ? `${nameOf(item)} · colocado` : `Falta. ${rol.falta}` })),
+          el('div', { class: 'ep-ess__txt' }, el('b', { text: rol.nombre }), el('span', { text: sinPc ? 'Libera una celda del escritorio para el ordenador.' : item ? `${shownName(item)} · colocado` : `Falta. ${rol.falta}` })),
           el('div', { class: 'ep-ess__acts' }, ...actions));
         if (!item || essOpen !== rol.id) return card;
         const opts = opcionesDe(inv, room, rol, item);
@@ -317,7 +333,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
         if (!opts.length) row.append(el('span', { text: 'Aún no tienes otro modelo.' }));
         for (const o of opts) {
           const nombre = `${catalogItem(o.id).nombre} · ${o.acabado ? acabadoOf(o.acabado).nombre : TONE_NAMES[o.tono]}`;
-          const b = el('button', { type: 'button', class: 'ep-ess__opt', 'aria-label': `Sustituir por ${nombre}`, title: nombre, 'data-id': o.id, 'data-tono': String(o.tono) }, el('img', { src: renderThumb(o.id, o.tono, 44, o.acabado).toDataURL(), alt: '', width: 44, height: 44, draggable: 'false' }));
+          const b = el('button', { type: 'button', class: 'ep-ess__opt', 'aria-label': `Sustituir por ${nombre}`, title: nombre, 'data-id': o.id, 'data-tono': String(o.tono) }, el('img', { src: essThumb(o.id, o.tono, o.acabado), alt: '', width: 44, height: 44, draggable: 'false' }));
           b.addEventListener('click', () => {
             const res = sustituir(room, item.uid, o);
             if (res.error) return fail(res.error, res.con);
@@ -1049,7 +1065,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (item) {
       const cat = catalogItem(item.id);
       const essential = Boolean(room.guard?.essential(room, item));
-      toolName.textContent = `${cat.nombre}${essential ? ' (esencial)' : ''} · ${item.acabado ? acabadoOf(item.acabado).nombre : TONE_NAMES[item.tono]}`;
+      toolName.textContent = `${shownName(item)}${essential ? ' (esencial)' : ''} · ${item.acabado ? acabadoOf(item.acabado).nombre : TONE_NAMES[item.tono]}`;
       rotateBtn.disabled = cat.capa === 'pared';
       storeBtn.disabled = Boolean(room.guard?.keeps(room, item));
       storeBtn.title = storeBtn.disabled ? 'Sustitúyelo desde Esenciales' : '';
@@ -1108,7 +1124,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (uid) {
       const item = room.items.find((i) => i.uid === uid);
       sfx.play('lift');
-      say(`${nameOf(item)}: arrástralo para moverlo.`);
+      say(`${shownName(item)}: arrástralo para moverlo.`);
     }
   }
 

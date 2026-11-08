@@ -555,7 +555,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
                         ...(reading ? [{ name: `Registrar lectura de ${reading.title}`, run: () => onRegister() }] : []),
                         { name: 'Calendario', run: () => onSelect('ordenador:calendar:calendar') },
                         { name: 'Mi diario', run: () => onSelect('ordenador:calendar:today') },
-                        { name: 'Ordenador', run: () => onSelect('ordenador') },
+                        { name: 'Ordenador', run: openDesk },
                       ]
                     : []),
                   { name: SIGUE[hora].label, run: () => setHora(SIGUE[hora].hora) },

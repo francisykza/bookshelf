@@ -176,3 +176,23 @@ select {
     padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 }
+
+/* 1.89.1: si se arranca en la habitación 3D, nunca asoma la ilustrada mientras llega el piso */
+.sanctuary[data-home-3d] {
+  background: #2a2432;
+}
+
+.sanctuary[data-home-3d] .panorama-viewport {
+  visibility: hidden;
+}
+
+.home-boot {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: #2a2432;
+  color: #f3e7cc;
+  font: italic 1rem 'Lora', Georgia, serif;
+}
