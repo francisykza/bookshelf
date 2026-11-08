@@ -44,7 +44,7 @@ const plural = (n) => `${n} ${n === 1 ? 'libro compartido' : 'libros compartidos
  * completo en una sola consulta (no hay paginación), así que el número es el total real. Con muchas filas solo se
  * montan las cercanas a la vista. Sigue montada bajo la ficha de un libro: búsqueda y posición se conservan.
  */
-export function SharedLibrary({ items, alias, profile, reviews, openKey, onOpenBook, onBack }) {
+export function SharedLibrary({ items, alias, profile, reviews, openKey, onOpenBook, onBack, titulo = `Los libros de ${alias}`, volver = 'Volver al rincón' }) {
   const [query, setQuery] = useState('');
   const scrollerRef = useRef(null);
   const headRef = useRef(null);
@@ -120,13 +120,13 @@ export function SharedLibrary({ items, alias, profile, reviews, openKey, onOpenB
           <div className="reader-visit__library-row">
             <button type="button" className="reader-visit__back" onClick={onBack}>
               <ArrowLeft aria-hidden="true" />
-              <span>Volver al rincón</span>
+              <span>{volver}</span>
             </button>
             <div className="reader-visit__library-who">
               <ReaderAvatar avatarId={profile?.avatar_id} alias={alias} size="list" decorative />
               <span>
                 <h3 ref={headRef} tabIndex={-1}>
-                  Los libros de {alias}
+                  {titulo}
                 </h3>
                 <small role="status">{needle ? `${shown.length} de ${plural(items.length)}` : plural(items.length)}</small>
               </span>

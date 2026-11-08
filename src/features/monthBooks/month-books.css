@@ -1,0 +1,244 @@
+/* «Tu mes en libros» (Fase 2): baldas de madera, papel crema, verde oliva para actuar y detalles burdeos y latón */
+.mb {
+  --mb-madera: #7a4f2c;
+  --mb-luz: #a06f42;
+  --mb-sombra: #4d3019;
+  --mb-hueco: #5c3a22;
+  --mb-burdeos: #6f2a2e;
+  --mb-laton: #b08d3f;
+  display: grid;
+  gap: 12px;
+  padding: 12px 12px 24px;
+  background: var(--pp-paper);
+  color: var(--pp-ink);
+  font: 15px/21px var(--port-sans);
+}
+
+:root[data-ui-theme='noche'] .mb {
+  --mb-burdeos: #5a1f24;
+}
+
+.mb__top,
+.mb__mes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mb__top h3 {
+  margin: 0;
+  font: 400 20px/24px var(--pp-title);
+}
+
+.mb__mes p {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+}
+
+.mb__mes button:disabled {
+  opacity: 0.4;
+}
+
+.mb__encurso {
+  padding: 0 6px;
+  background: var(--mb-burdeos);
+  color: #fff4d7;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.mb__baldas,
+.mb__balda ul,
+.mb__sinfecha ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mb__baldas {
+  display: grid;
+  background: var(--mb-hueco);
+  outline: 2px solid var(--mb-laton);
+}
+
+.mb__balda {
+  padding: 10px 8px 0;
+  border-bottom: 10px solid var(--mb-madera);
+  box-shadow: inset 0 -2px 0 var(--mb-luz), 0 3px 0 var(--mb-sombra);
+}
+
+.mb__balda ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+
+.mb__libro {
+  position: relative;
+  min-width: 0;
+}
+
+.mb__portada {
+  position: relative;
+  display: block;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+}
+
+.mb__portada > .cover-img,
+.mb__portada > .gen-cover,
+.mb__portada > .cover-steady {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mb__portada > img.cover-img {
+  object-fit: contain;
+  object-position: bottom;
+}
+
+.mb__portada > .cover-img--wait {
+  background: var(--mb-sombra);
+}
+
+.mb__lecturas {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 0 4px;
+  background: var(--mb-burdeos);
+  color: #fff4d7;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.mb__titulo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.mb__cifras {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.mb__cifras div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  border: 2px solid var(--mb-laton);
+  background: var(--pp-field);
+  text-align: center;
+}
+
+.mb__cifras dd {
+  margin: 0;
+  font: 400 24px/30px var(--pp-title);
+  overflow-wrap: anywhere;
+}
+
+.mb__cifras dt {
+  color: var(--pp-muted);
+  font-size: 13px;
+  line-height: 17px;
+}
+
+.mb__caja {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px;
+  border: 2px solid var(--pp-rule);
+  background: var(--pp-field);
+}
+
+.mb__caja h4,
+.mb__caja legend {
+  margin: 0;
+  padding: 0 2px;
+  color: var(--mb-burdeos);
+  font: 700 15px/21px var(--port-sans);
+}
+
+:root[data-ui-theme='noche'] .mb__caja h4,
+:root[data-ui-theme='noche'] .mb__caja legend {
+  color: var(--pp-ink);
+}
+
+.mb__favorito label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+
+.mb__favorito input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--pp-green);
+}
+
+.mb textarea {
+  width: 100%;
+  min-height: 64px;
+  padding: 8px;
+  border: 2px solid var(--pp-rule);
+  background: var(--pp-gap);
+  color: var(--pp-ink);
+  font: 16px/22px var(--port-sans);
+  resize: vertical;
+}
+
+.mb__nota {
+  margin: 0;
+  color: var(--pp-muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.mb__estado {
+  margin: 0;
+  padding: 16px 12px;
+  border: 2px dashed var(--pp-rule);
+  text-align: center;
+}
+
+.mb__sinfecha summary {
+  min-height: 44px;
+  padding: 11px 0;
+  color: var(--pp-muted);
+  cursor: pointer;
+}
+
+.mb__sinfecha li {
+  overflow-wrap: anywhere;
+}
+
+.mb__guardar {
+  justify-self: stretch;
+  border-image-source: url('/assets/puerto/boton-verde.svg');
+  color: var(--pp-green-ink);
+}
+
+.port-cal__mes {
+  justify-self: center;
+  margin-top: 8px;
+}

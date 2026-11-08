@@ -8,6 +8,8 @@ import { DEFAULT_AVATAR } from '../src/features/edificio/actor.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
 import { createMockSupabase } from './mockSupabase';
 
+test.skip(true, 'Fase 1: Francisco retiró «Dos balcones» de la selección automática del edificio; el módulo y el archivo se conservan');
+
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 
 function seed() {

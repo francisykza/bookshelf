@@ -172,7 +172,7 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   - **Melodía «Dos balcones»** (2-11-2026): Francisco pasó un audio (WhatsApp, título ID3 «Dos balcones») para usarlo
     **más adelante** como música del edificio. La generó él con ChatGPT y descartó la sintonía de la serie (confirmado
     el 2-11-2026): se puede usar. **Desde la 1.73 suena en el edificio** (`public/media/edificio/dos-balcones.mp3`,
-    `edificio/music.js`): en bucle, bajita, solo con el sonido activado y callada mientras suena la radio. Y **sonidos de acciones estilo Stardew Valley**, muy satisfactorios: solo el estilo, sonidos
+    `edificio/music.js`): en bucle, bajita, solo con el sonido activado y callada mientras suena la radio. **Retirada del edificio en la Fase 1** (8-11-2026, Francisco la identificó como la «pista antigua» que no le gusta): el edificio sigue la música elegida en Sonido y no arranca ninguna por su cuenta; `dos-balcones.mp3` y `music.js` se conservan. Y **sonidos de acciones estilo Stardew Valley**, muy satisfactorios: solo el estilo, sonidos
     propios sintetizados (nunca muestras del juego).
   - **pixelfx** (2-11-2026, «adelante»): se puede usar https://github.com/patch-gg/pixelfx (MIT) para los efectos de
     muebles y diseños de aquí en adelante. Copiar solo el núcleo y los efectos que se usen, con su `LICENSE` y su

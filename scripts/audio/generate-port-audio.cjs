@@ -179,53 +179,55 @@ function luz() {
 
 const noiseBuf = (rnd) => Float64Array.from({ length: N }, () => rnd() * 2 - 1);
 
-/** Oleaje: rumor grave y espuma, con crecidas lentas que son armónicos de 1/32 Hz (bucle exacto). Ruido filtrado, no una grabación. */
+/** Oleaje tranquilo y lejano (Fase 1): solo rumor grave y un roce medio muy bajo que sube y baja despacio; sin rompientes ni espuma aguda. Ruido filtrado, no una grabación. */
 function mar() {
   const rnd = random(48151623);
   const buf = stereo();
   const swell = (t, ph) => {
     const x = (2 * Math.PI * t) / SECONDS;
-    const v = 0.62 + 0.16 * Math.sin(4 * x + ph) + 0.08 * Math.sin(3 * x + ph * 2.1) + 0.05 * Math.sin(5 * x + ph * 0.6);
-    return Math.max(0.05, v);
+    return 0.7 + 0.14 * Math.sin(2 * x + ph) + 0.1 * Math.sin(3 * x + ph * 2.1);
   };
   [0, 1].forEach((ch) => {
     const low = noiseBuf(rnd);
-    lowpass(low, 240);
-    lowpass(low, 420);
+    lowpass(low, 170);
+    lowpass(low, 300);
     const mid = noiseBuf(rnd);
-    lowpass(mid, 1100);
-    const high = noiseBuf(rnd);
-    lowpass(high, 500);
+    const midBajo = Float64Array.from(mid);
+    lowpass(mid, 620);
+    lowpass(mid, 620);
+    lowpass(midBajo, 240);
     for (let i = 0; i < N; i += 1) {
-      const t = i / SR;
-      const s = swell(t, 0.4 + ch * 0.35);
-      const foam = Math.pow(swell(t - 1.4, 0.4 + ch * 0.35), 2);
-      buf[ch][i] = low[i] * (0.75 + 0.5 * s) * 2.4 + (mid[i] - high[i]) * foam * 0.8;
+      const s = swell(i / SR, 0.4 + ch * 0.35);
+      buf[ch][i] = low[i] * s * 2.6 + (mid[i] - midBajo[i]) * s * s * 0.28;
     }
   });
-  normalize(buf, 0.28);
+  normalize(buf, 0.22);
   return buf;
 }
 
-/** Lluvia uniforme: ruido brillante continuo y muchas gotas pequeñas repartidas por igual; sin truenos. Ruido filtrado, no una grabación. */
+/** Lluvia fina y distante sobre una ventana (Fase 1): rumor suave sin brillo y pocas gotas blandas, de ataque redondeado; sin truenos. Ruido filtrado, no una grabación. */
 function lluvia() {
   const rnd = random(27182818);
   const buf = stereo();
   [0, 1].forEach((ch) => {
     const a = noiseBuf(rnd);
-    const low = Float64Array.from(a);
-    lowpass(low, 1100);
-    for (let i = 0; i < N; i += 1) buf[ch][i] = (a[i] - low[i]) * 0.3 + low[i] * 0.5;
-    lowpass(buf[ch], 7000);
-    for (let d = 0; d < 9000; d += 1) {
+    const grave = Float64Array.from(a);
+    lowpass(a, 1500);
+    lowpass(a, 1500);
+    lowpass(grave, 200);
+    for (let i = 0; i < N; i += 1) {
+      const x = (2 * Math.PI * i) / N;
+      buf[ch][i] = (a[i] - grave[i]) * (0.94 + 0.06 * Math.sin(3 * x + ch));
+    }
+    for (let d = 0; d < 900; d += 1) {
       const start = Math.floor(rnd() * N);
-      const level = 0.04 + rnd() * 0.12;
-      const f = 1400 + rnd() * 3200;
-      const length = Math.floor(SR * (0.004 + rnd() * 0.01));
-      for (let i = 0; i < length; i += 1) buf[ch][(start + i) % N] += Math.sin((2 * Math.PI * f * i) / SR) * level * (1 - i / length);
+      const level = 0.006 + rnd() * 0.016;
+      const f = 650 + rnd() * 1100;
+      const length = Math.floor(SR * (0.012 + rnd() * 0.02));
+      for (let i = 0; i < length; i += 1) buf[ch][(start + i) % N] += Math.sin((2 * Math.PI * f * i) / SR) * level * Math.sin((Math.PI * i) / length) ** 2;
     }
   });
-  normalize(buf, 0.34);
+  normalize(buf, 0.2);
   return buf;
 }
 

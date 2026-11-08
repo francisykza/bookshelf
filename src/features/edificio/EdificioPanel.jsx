@@ -13,7 +13,6 @@ import { adoptMyPiso, rememberMyPiso, saveMyPiso } from './myPiso';
 import './edificio.css';
 import { mountFacade } from './facadeView';
 import { START_PICKS } from './inventory';
-import { setEdificioMusic, setEdificioMusicInside } from './music';
 import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
 import { PRENDAS, prendaNombre } from './actor';
@@ -176,11 +175,7 @@ function PisoView({ room, editable, label, soundOn, inside, decorate = false, in
 
 export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions = null, timer: reloj = null, askPages = false, onPagesDone, onOpenCalendar }) {
   const community = useCommunity({ autoload: true });
-  // La melodía «Dos balcones» mientras estás en el edificio (1.73), si el sonido de la app está activado
-  useEffect(() => {
-    setEdificioMusic(soundOn);
-    return () => setEdificioMusic(false);
-  }, [soundOn]);
+  // El edificio no pone música propia (Fase 1, decisión de Francisco): sigue la que tengas elegida en Sonido
   const ready = community.status === 'ready' && community.member;
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -260,7 +255,6 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const me = data?.vecinos.find((v) => v.yo) ?? null;
   const mine = open?.yo;
   // Dentro de un piso, la melodía baja; en la fachada y en la tienda, a su volumen
-  const inPiso = Boolean(pisoId && !inShop && !inHotel);
   // Las mesas para dos que te esperan avisan estés donde estés, menos dentro del propio casino
   const enCasino = inHotel && hotelRoom === 'casino';
   const [mesas, setMesas] = useState([]);
@@ -295,7 +289,6 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     setHotelRoom('casino');
     if (!inHotel) onOpenPiso(HOTEL_ID);
   };
-  useEffect(() => setEdificioMusicInside(inPiso), [inPiso]);
   // Al salir del hotel se olvida la sala: la próxima vez se llega otra vez a la fachada
   if (wasHotel !== inHotel) {
     setWasHotel(inHotel);

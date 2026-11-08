@@ -2735,6 +2735,60 @@
   min-height: 320px;
 }
 
+.ed-visita3d__datos {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: 8px;
+  z-index: 3;
+  display: grid;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 2px solid #3b2618;
+  background: #fbf3df;
+  color: #3b2618;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.ed-visita3d__datos p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ed-visita3d__baldas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.ed-visita3d__baldas button,
+.ed-visita3d__datos p button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 2px solid #3b2618;
+  background: #efe2c4;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ed-visita3d__baldas button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ed-visita3d__baldas .is-toda {
+  margin-left: auto;
+}
+
+.ed-visita3d__biblioteca {
+  z-index: 40;
+}
+
 .ed-visita3d__hora {
   position: absolute;
   right: 8px;

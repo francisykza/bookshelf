@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.90.0** (2026-11-08, §90). Puerto Pixel: ordenador, registro, menú, calendario, radio, diario, estadísticas, biblioteca y decorar. Aprobada por Francisco tras revisar las evidencias; sin migraciones. El mar está retirado de Sonido por ahora. Sin probar en móviles físicos ni con cuentas reales; ficha de libro y Ajustes siguen sin reestilizar.
+- **Publicada en producción: 1.91.0** (2026-11-08, §91). Fase 1 (scroll, audio, visitas, paredes), caché persistente de portadas y «Tu mes en libros». Sin migraciones. Aprobada por Francisco tras revisar vídeo y PNG.
+- **Anterior: 1.90.0** (2026-11-08, §90). Puerto Pixel: ordenador, registro, menú, calendario, radio, diario, estadísticas, biblioteca y decorar. Aprobada por Francisco tras revisar las evidencias; sin migraciones. El mar está retirado de Sonido por ahora. Sin probar en móviles físicos ni con cuentas reales; ficha de libro y Ajustes siguen sin reestilizar.
 - **Anterior: 1.89.3** (2026-11-08, §89 a §89.8). Migración `20261118120000_edificio_esenciales.sql` aplicada.
 - **Versión publicada: 1.88.2** (2026-11-07, §88.4 a §88.6). Lleva la 1.88.1 (la fachada al volver de un piso, sin
   placas fuera del dibujo) y la 1.88.2 (místicos, mascota, muebles vivos y acabados en primera persona; sin estantería,
@@ -238,6 +239,24 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-08 · Fase 2 · 1.91.0, publicada tras aprobar la entrega (junto con la Fase 1)
+
+Francisco aprobó la entrega («Si») tras revisar vídeo y PNG. Mar y lluvia siguen sin que él haya dicho cómo suenan.
+- **Caché de portadas** (`public/sw.js`): Cache API `bookshelf-portadas-v1` (sin versión de app: sobrevive a las actualizaciones) + índice IndexedDB; 40 MiB / 300 portadas, LRU; clave estable por recurso; descargas agrupadas, 6 a la vez, visible primero; no guarda errores. Medir: `node scripts/perf-portadas.mjs salida.json` tras `npm run build`. Resultados en `qa-report/fase2/`.
+- **Límites de la caché**: Google Books no envía CORS, sus portadas son opacas (se cuentan a 256 KiB, no sirven a 3D ni a la tarjeta exportada: va cubierta con título). Solo se guardan hosts públicos de `COVER_HOSTS`; no existe imagen privada de cuenta. Las copias antiguas `*-covers` se descartan una vez. SW solo en producción. WebKit sin medir. No es modo sin conexión completo.
+- **«Tu mes en libros»** (`src/domain/monthSummary.js`, `src/features/monthBooks/`, botón en `PortCalendar.jsx`): notas en `progress.monthNotes['AAAA-MM']` (acción `setMonthNote`), sin migración. Tarjeta 1080×1920 en lienzo, máx. 12 portadas por tarjeta.
+- **Limitación**: no existe edición de fecha de lectura: «Hay libros leídos sin fecha» solo los lista y lo explica.
+- **Sin validar**: móvil físico (iPhone/Android), compartir real con `navigator.share` y teclado real (aproximado reduciendo la ventana).
+
+### 2026-11-08 · Fase 1 · publicada dentro de la 1.91.0
+
+- **Scroll del ordenador**: causa medida, `.pc--port .pc-win__body` con `overflow: visible` dentro de una ventana `overflow: hidden` (1.90). El cuerpo vuelve a ser el único con scroll; altura con teclado por `--vv-h`. Registrar desde el calendario vuelve a esa pantalla y a su altura. Pruebas: `e2e-community/fase1-scroll.spec.js`. Ojo: `Input.synthesizeScrollGesture` no desplaza ni una página de control aquí; usar `Input.dispatchTouchEvent`.
+- **Audio**: el recorrido solo arrancaba «Dos balcones» por encima de la pista elegida. Francisco confirmó que esa es la pista antigua: el edificio ya no arranca música propia y la elegida sigue sin reiniciarse; con «Sin música», silencio. Archivo y `music.js` conservados, `v173-musica.spec.js` en pausa. Pruebas: `fase1-audio.spec.js`.
+- **Mar y lluvia**: regenerados más suaves en `generate-port-audio.cjs`. **Sin escuchar**: faltan los oídos de Francisco. El mar sigue fuera de Sonido; ningún ambiente activo por defecto. Muestras en `qa-report/fase1/audio/`.
+- **Visitas** (`VisitaPiso.jsx`): «Está leyendo» (solo el título que se comparte), «Biblioteca de X», grupos de 30 y biblioteca completa con ficha pública. Limitación: «compartido» sigue siendo lo del rincón y las colecciones visibles, no toda su biblioteca. Pruebas: `fase1-visitas.spec.js`.
+- **Paredes**: mismo id y color base en todas las vistas; el malva de la tarde en primera persona borraba el matiz. Ajustado solo ese tinte en `materials.js`, sin tocar datos. La iso de la visita abre de día y Decorar y la 3D de tarde: sin cambiar. La luz de tarde de Decorar sigue azulada.
+- **Sin validar en móvil físico** (iPhone/Android); WebKit emulado usa rueda, no toque, y el teclado se aproxima reduciendo la ventana.
 
 ### 2026-11-08 · cuenta principal · 1.90.0 «Puerto Pixel», publicada tras aprobar la entrega (rama `1.90-escritorio-puerto`, avance rápido de `main`)
 

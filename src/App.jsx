@@ -5,7 +5,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { createPortal } from 'react-dom';
 import { modalRoot } from './components/panels/modalRoot';
 import { setTimeOfDay } from './audio/ambientAudio';
-import { adoptSettings, connectSettings, resumeSound, setBackgroundSound, setMusicBlocked, soundStarted } from './audio/audioController';
+import { adoptSettings, connectSettings, resumeSound, setBackgroundSound, soundStarted } from './audio/audioController';
 import { playUiSound } from './audio/uiSounds';
 import { SoundPanel } from './components/panels/SoundPanel';
 import { timeOfDayByClock } from './domain/dates';
@@ -29,7 +29,6 @@ import { BaldaPanel } from './components/room/BaldaPanel';
 import { RoomCorner } from './components/room/RoomCorner';
 import { SocialRoom } from './components/room/SocialRoom';
 import { RadioPanel } from './features/radio/RadioPanel';
-import { setEdificioMusic } from './features/edificio/music';
 import { HOME_PISO, choose as chooseStart, newRoomAvailable, startsInRoom } from './features/pisoLab/inicio';
 import { PRODUCTION_HOST } from './features/pisoLab/sampleLibrary';
 import { AddBookCard } from './components/shelf/AddBookCard';
@@ -203,8 +202,6 @@ function Sanctuary() {
   // 1.90: el controlador de sonido manda; los ajustes de siempre lo reflejan, y lo que se cambie en ellos le llega
   useEffect(() => connectSettings((mirror) => actions.setSettings(mirror)), [actions]);
   useEffect(() => adoptSettings({ sound: settings.sound !== false, sfx: settings.sfx !== false, uiVolume: settings.uiVolume ?? 0.25 }), [settings.sound, settings.sfx, settings.uiVolume]);
-  // «Dos balcones» es la música del edificio: mientras dure, la otra se calla sin perder su punto
-  useEffect(() => setMusicBlocked('edificio', panel?.type === 'edificio'), [panel?.type]);
 
   // La escena sigue al reloj (mañana, atardecer, noche) mientras no la cambies a mano
   useEffect(() => {
@@ -331,7 +328,7 @@ function Sanctuary() {
             onOpenRadio={() => openPanel({ type: 'radio' })}
             onOpenGuardian={FIGURES_ENABLED ? (id) => openPanel({ type: 'guardian', id }) : null}
             // La música del edificio empieza en este mismo toque (en iOS, fuera de un toque no suena)
-            onOpenEdificio={() => (setEdificioMusic(settings.sound), openPanel({ type: 'edificio' }))}
+            onOpenEdificio={() => openPanel({ type: 'edificio' })}
           />
         )}
       />
@@ -467,7 +464,7 @@ function Sanctuary() {
             onOpenAccount={() => openPanel({ type: 'account' })}
             onOpenProfile={() => openPanel({ type: 'social', tab: 'perfil' })}
             // La música del edificio empieza en este mismo toque (en iOS, fuera de un toque no suena)
-            onEdificio={() => (setEdificioMusic(settings.sound), openPanel({ type: 'edificio' }))}
+            onEdificio={() => openPanel({ type: 'edificio' })}
             onAnterior={() => {
               chooseStart('anterior');
               setHome(false);
@@ -489,7 +486,11 @@ function Sanctuary() {
           <Suspense fallback={null}>
             <LaptopPanel
               key={panel.select}
-              onRegister={(date) => openPanel({ type: 'pisoLab', id: panel.id, select: date ? `registro:${date}` : 'registro' })}
+              onRegister={(date, app, vista) => {
+                // Al volver del registro, la misma pantalla del ordenador y no su escritorio
+                if (app) here(`ordenador:${app}:${vista}`);
+                openPanel({ type: 'pisoLab', id: panel.id, select: date ? `registro:${date}` : 'registro' });
+              }}
               onClose={close}
               initialTab={tab}
               diaryView={view}

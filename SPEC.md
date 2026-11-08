@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.90.0 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.91.0 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5511,3 +5511,12 @@ Aprobada por Francisco el 8-11-2026 tras revisar vídeos y capturas. Sin migraci
 - **Biblioteca:** cabecera petróleo, filtros y libros en baldas; misma virtualización. **Decorar:** escena isométrica intacta.
 - **Sin reestilizar:** ficha de libro y Ajustes.
 - **Pruebas:** `e2e/pixel-v3.spec.js` y `e2e-community/pixel-v4.spec.js`, `pixel-v5-capturas.spec.js`, `pixel-final.spec.js`, `v190-*`. En emulación; no probado en móviles físicos ni con cuentas reales.
+
+## 91. Correcciones de la Fase 1, caché persistente de portadas y «Tu mes en libros» (1.91.0)
+
+- **Fase 1:** el cuerpo de cada ventana del ordenador es el único con scroll; el edificio ya no arranca música propia («Dos balcones» se conserva sin sonar); mar y lluvia regenerados más suaves, con el mar fuera de Sonido; las visitas enseñan «Está leyendo» y la biblioteca compartida en grupos de 30; tinte de tarde de las paredes ajustado en `materials.js`.
+- **Caché de portadas (`public/sw.js`):** Cache API `bookshelf-portadas-v1`, sin versión de app, más índice en IndexedDB. 40 MiB y 300 portadas, con desalojo por uso. Clave estable por recurso, descargas agrupadas y 6 a la vez, sin guardar errores. Las portadas sin CORS (Google Books) se guardan opacas y cuentan 256 KiB. No es un modo sin conexión completo. Medición: `scripts/perf-portadas.mjs`.
+- **«Tu mes en libros»:** se abre desde el calendario. Toda cifra sale de `monthSummary` (`src/domain/monthSummary.js`). Favorito y frase se guardan en `progress.monthNotes['AAAA-MM']`, sin migración.
+- **Tarjetas:** 1080 × 1920 en lienzo (`monthCard.js`), máximo 12 portadas por tarjeta y páginas numeradas si hay más. Si una portada no se puede usar, va una cubierta con el título. Nada se sube.
+- **Límites:** los libros leídos sin fecha se listan aparte porque no existe edición de fecha; el histórico solo cuenta lo que tiene fecha o sesiones.
+- **Pruebas:** `monthSummary.test.js`, `e2e-community/fase2-mes.spec.js`, `fase1-audio`, `fase1-scroll` y `fase1-visitas`.

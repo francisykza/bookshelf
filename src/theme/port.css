@@ -499,7 +499,7 @@
   flex: 1 1 auto;
   min-height: 0;
   padding: 0;
-  overflow: hidden auto;
+  overflow: hidden;
   background: var(--port-canvas);
   backdrop-filter: none;
 }
@@ -520,10 +520,12 @@
   display: none;
 }
 
+/* La única zona con scroll de cada función; la pantalla y la ventana no se desplazan */
 .pc--port .pc-win__body {
   max-height: none;
   padding: 16px;
-  overflow: visible;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
 }
 
 /* Las pantallas de siempre, sin su tira de pestañas: cada una se abre desde el escritorio */

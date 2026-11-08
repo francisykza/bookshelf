@@ -1769,3 +1769,21 @@ section.plab-library .px-btn {
     height: 32px;
   }
 }
+
+/* Con el teclado abierto, el ordenador mide lo que de verdad se ve */
+@media not all and (min-width: 768px) {
+  .panel-veil[data-variant='port-computer'] {
+    align-items: flex-start;
+  }
+
+  .panel.panel--port-computer {
+    height: var(--vv-h, 100dvh);
+    margin-top: var(--vv-top, 0px);
+  }
+}
+
+.pc--port .pc-diary,
+.pc--port .pc-stats,
+.pc--port .port-cal {
+  margin-bottom: 12px;
+}

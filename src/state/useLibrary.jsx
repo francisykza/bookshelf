@@ -1,4 +1,5 @@
 // Estado de la biblioteca (SPEC §5.1): reducer puro + persistencia en localStorage + acciones.
+import { cleanNote } from '../domain/monthSummary';
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { logPersist, serializeState, warmSerialization } from './serialize';
 import { SAMPLE_EDITIONS, sampleBook, sampleBooks, sampleReadingLog } from '../data/sampleBooks';
@@ -244,6 +245,14 @@ export function reducer(state, action) {
       const books = isLast && book && res.entry.to != null && res.entry.unit === trackUnit(book) ? placeBook(state, book.id, res.entry.to, new Date().toISOString()) : state.books;
       return { ...state, books, progress: { ...state.progress, readingLog: log.map((e) => (e.id === entry.id ? res.entry : e)) } };
     }
+    case 'setMonthNote': {
+      // Favorito y frase de un mes (Fase 2): solo los escribe la persona, y un mes sin nada no ocupa sitio
+      const notes = { ...state.progress.monthNotes };
+      const note = cleanNote(notes[action.month], action.patch);
+      if (Object.keys(note).length) notes[action.month] = note;
+      else delete notes[action.month];
+      return { ...state, progress: { ...state.progress, monthNotes: notes } };
+    }
     case 'removeSession':
       return {
         ...state,
@@ -445,6 +454,7 @@ export function LibraryProvider({ children }) {
       setPage: (id, page, source) => dispatch({ type: 'setPage', id, page, source }),
       setTracking: (id, unit) => dispatch({ type: 'setTracking', id, unit }),
       logReading: (entry, position) => dispatch({ type: 'logReading', entry, position }),
+      setMonthNote: (month, patch) => dispatch({ type: 'setMonthNote', month, patch }),
       revertLog: (entryId, book, figures) => dispatch({ type: 'revertLog', entryId, book, figures }),
       startReread: (id) => dispatch({ type: 'startReread', id }),
       editSession: (sessionId, text) => dispatch({ type: 'editSession', sessionId, text }),

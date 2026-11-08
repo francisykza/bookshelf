@@ -1,10 +1,11 @@
 // Calendario del ordenador del piso (1.90). Los datos y el criterio de «día con lectura» son los del calendario de siempre; al elegir un día,
 // sus lecturas aparecen debajo, sin ninguna ventana encima. Cada registro se puede editar y borrar como antes.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { playUiSound } from '../../audio/uiSounds';
 import { dayKey, parseDay } from '../../domain/dates';
 import { dayDatum, isActive, summarize } from '../../domain/reading';
 import { monthCells } from '../../domain/roomSurfaces';
+import { MonthBooks } from '../../features/monthBooks/MonthBooks';
 import { useLibrary } from '../../state/useLibrary';
 import { PixelControl } from '../../ui/PixelIcon';
 import { BookGroup, useDays, usePomodoros } from '../panels/ReadingCalendar';
@@ -46,6 +47,29 @@ export function PortCalendar({ selectDay = null, onRegister }) {
   const readDays = monthDays.filter((d) => (days[d] ?? []).some((g) => g.entries.some(isActive))).length;
   const groups = selected ? (days[selected] ?? []) : [];
   const pomo = selected ? pomos[selected] : null;
+  // «Tu mes en libros» se abre encima y deja el calendario montado: al volver, el mismo mes y la misma altura
+  const [resumen, setResumen] = useState(false);
+  const raiz = useRef(null);
+  const altura = useRef(0);
+  const cuerpo = () => raiz.current?.closest('.pc-win__body');
+  const abrirResumen = () => {
+    playUiSound('ui-press');
+    altura.current = cuerpo()?.scrollTop ?? 0;
+    // Una entrada en el historial: el «atrás» del móvil cierra el resumen y no el ordenador
+    window.history.pushState(window.history.state, '');
+    setResumen(true);
+  };
+  useEffect(() => {
+    if (!resumen) return undefined;
+    cuerpo()?.scrollTo(0, 0);
+    const cerrar = () => setResumen(false);
+    window.addEventListener('popstate', cerrar);
+    return () => {
+      window.removeEventListener('popstate', cerrar);
+      const body = cuerpo();
+      if (body) body.scrollTop = altura.current;
+    };
+  }, [resumen]);
 
   const shift = (n) => {
     playUiSound('ui-press');
@@ -56,7 +80,8 @@ export function PortCalendar({ selectDay = null, onRegister }) {
   };
 
   return (
-    <div className="port-cal">
+    <>
+    <div className="port-cal" ref={raiz} style={resumen ? { display: 'none' } : undefined}>
       <i className="pp-cal-ring" aria-hidden="true" />
       <i className="pp-cal-ring" aria-hidden="true" />
       <div className="port-cal__head">
@@ -106,6 +131,9 @@ export function PortCalendar({ selectDay = null, onRegister }) {
       <p className="port-cal__summary">
         <b>{summary.pages.toLocaleString('es-ES')}</b> páginas · <b>{readDays}</b> {readDays === 1 ? 'día' : 'días'} leyendo
       </p>
+      <button type="button" className="pp-btn port-cal__mes" onClick={abrirResumen}>
+        Tu mes en libros
+      </button>
       <section className="port-cal__list" aria-live="polite" aria-label={selected ? `Lecturas del ${longDay(selected)}` : 'Lecturas'}>
         {selected ? (
           <>
@@ -136,5 +164,7 @@ export function PortCalendar({ selectDay = null, onRegister }) {
         )}
       </section>
     </div>
+    {resumen && <MonthBooks initialMonth={dayKey(month).slice(0, 7)} onBack={() => window.history.back()} />}
+    </>
   );
 }

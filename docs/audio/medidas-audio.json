@@ -30,10 +30,10 @@
   "tasa": 44100,
   "duracionArchivo": 34,
   "bucle": 32,
-  "picoPCM": 0.28,
-  "picoDBFS": -11.1,
-  "rmsDBFS": -25.6,
-  "saltoEnLaUnion": 0.0111
+  "picoPCM": 0.22,
+  "picoDBFS": -13.2,
+  "rmsDBFS": -27.4,
+  "saltoEnLaUnion": 0.003
  },
  "lluvia": {
   "bytes": 408451,
@@ -42,9 +42,9 @@
   "tasa": 44100,
   "duracionArchivo": 34,
   "bucle": 32,
-  "picoPCM": 0.34,
-  "picoDBFS": -9.4,
-  "rmsDBFS": -22.9,
-  "saltoEnLaUnion": 0.1014
+  "picoPCM": 0.2,
+  "picoDBFS": -14,
+  "rmsDBFS": -27.3,
+  "saltoEnLaUnion": 0.0044
  }
 }

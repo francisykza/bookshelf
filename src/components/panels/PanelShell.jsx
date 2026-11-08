@@ -36,7 +36,7 @@ export function PanelShell({ onClose, label, variant, children }) {
   const ref = useRef(null);
   const veilRef = useRef(null);
   // 1.62 (§62.4): también la comunidad, para que el redactor del club quede por encima del teclado
-  useVisualViewportVars(veilRef, variant === 'log' || variant === 'social');
+  useVisualViewportVars(veilRef, variant === 'log' || variant === 'social' || variant === 'port-computer');
   // El cierre se guarda en una referencia: si el padre re-renderiza (p. ej. el reloj del temporizador cada
   // medio segundo) el efecto no se repite, así no se roba el foco ni se cierran los desplegables abiertos.
   const closeRef = useRef(onClose);

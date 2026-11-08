@@ -72,13 +72,13 @@ test('vídeo: diario, notas, estadísticas, biblioteca y decorar, de día y de n
     await pausa(1200);
     await page.getByRole('button', { name: 'Mi diario' }).click();
     await pausa(2500);
-    await page.locator('.pc__screen').evaluate((n) => n.scrollTo({ top: 420, behavior: 'smooth' }));
+    await page.locator('.pc-win:not([hidden]) .pc-win__body').evaluate((n) => n.scrollTo({ top: 420, behavior: 'smooth' }));
     await pausa(1800);
     await page.getByRole('button', { name: 'Volver al escritorio' }).click();
     await pausa(800);
     await page.getByRole('button', { name: 'Estadísticas' }).click();
     await pausa(2500);
-    await page.locator('.pc__screen').evaluate((n) => n.scrollTo({ top: 520, behavior: 'smooth' }));
+    await page.locator('.pc-win:not([hidden]) .pc-win__body').evaluate((n) => n.scrollTo({ top: 520, behavior: 'smooth' }));
     await pausa(1800);
     await page.getByRole('button', { name: 'Salir del ordenador' }).click();
     await pausa(900);

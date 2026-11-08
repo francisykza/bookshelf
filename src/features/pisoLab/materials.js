@@ -118,7 +118,8 @@ export function wallTexture(tono, { w, h, lights, hora, warmth = 0, panes = [] }
     const tone = multiply(band >= BANDS - 1 ? ramp[4] : top ? ramp[2] : ramp[3], [shadow, shadow, shadow]);
     if (hora === 'dia') return tone;
     if (hora === 'noche') return multiply(tone, [0.29 + warmth * 0.02 + k * 1.0, 0.29 + warmth * 0.01 + k * 0.74, 0.47 - warmth * 0.03 + k * 0.08]);
-    return multiply(tone, [0.6 + k * 0.55, 0.56 + k * 0.42, 0.74 + k * 0.06]);
+    // Tarde: atenúa sin cambiar el matiz; con el malva de antes, salvia, yeso y rosa acababan casi iguales
+    return multiply(tone, [0.71 + k * 0.44, 0.69 + k * 0.32, 0.72 + k * 0.08]);
   });
   return texture(canvas);
 }

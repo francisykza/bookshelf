@@ -3,7 +3,7 @@
 // al escritorio con el dock; «Salir» vuelve a la habitación. Las apps abiertas se conservan ocultas al cambiar de una
 // a otra: un formulario a medias no se pierde, y salir con uno escrito pide confirmación.
 import { LogOut, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useRef, useState, useLayoutEffect } from 'react';
 import { playUiSound } from '../../audio/uiSounds';
 import { dayKey } from '../../domain/dates';
 import { FIGURES_ENABLED } from '../../domain/figures';
@@ -31,6 +31,9 @@ const TABS = [
 
 // `desktop(open)`: lo que enseña el escritorio en vez del saludo (el piloto del piso pone ahí sus accesos); con `initialTab` null
 // se empieza en él. `diaryView`: con qué vista de Mi diario se abre.
+/** Punto de la pantalla al salir a registrar: al volver, se sigue donde estabas. */
+let alturaAlVolver = 0;
+
 export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook, desktop = null, diaryView = 'calendar', onRegister }) {
   const { state } = useLibrary();
   const start = TABS.some((t) => t.id === initialTab) ? initialTab : desktop ? null : 'calendar';
@@ -70,6 +73,21 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
       onClose();
     }
   };
+  // Registrar sale del ordenador: la ruta guarda antes qué pantalla estaba abierta, y aquí se recupera su altura
+  const registrar = desktop
+    ? (date) => {
+        alturaAlVolver = screenRef.current?.querySelector(`[data-pc-app="${app}"] .pc-win__body`)?.scrollTop ?? 0;
+        onRegister(date, app, diary);
+      }
+    : onRegister;
+  useLayoutEffect(() => {
+    if (desktop && start && alturaAlVolver) {
+      const cuerpo = screenRef.current?.querySelector(`[data-pc-app="${start}"] .pc-win__body`);
+      if (cuerpo) cuerpo.scrollTop = alturaAlVolver;
+    }
+    alturaAlVolver = 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const today = summarize(
     state.progress.readingLog.filter((e) => e.date === dayKey()),
     state.books,
@@ -112,7 +130,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
               {TABS.filter((t) => alive.includes(t.id)).map((t) => (
                 <section key={t.id} className="pc-win" data-pc-app={t.id} id={`pc-app-${t.id}`} hidden={app !== t.id} aria-label={titleOf(t)}>
                   <div className="pc-win__body">
-                    {t.id === 'calendar' && (diary === 'calendar' ? <PortCalendar key="cal" selectDay={selectDay} onRegister={onRegister} /> : <DiaryApp key={diary} initialView={diary} selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />)}
+                    {t.id === 'calendar' && (diary === 'calendar' ? <PortCalendar key="cal" selectDay={selectDay} onRegister={registrar} /> : <DiaryApp key={diary} initialView={diary} selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />)}
                     {t.id === 'stats' && <StatsApp />}
                     {t.id === 'sessions' && <SessionsApp />}
                     {t.id === 'goal' && <GoalApp />}
