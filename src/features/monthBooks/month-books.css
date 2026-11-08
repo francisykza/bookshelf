@@ -9,8 +9,8 @@
   display: grid;
   gap: 12px;
   padding: 12px 12px 24px;
-  background: var(--pp-paper);
-  color: var(--pp-ink);
+  background: var(--paper);
+  color: var(--ink);
   font: 15px/21px var(--port-sans);
 }
 
@@ -85,37 +85,6 @@
   display: block;
   min-width: 0;
   cursor: pointer;
-}
-
-.mb__libro input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.mb__libro:has(input:focus-visible) {
-  outline: 3px solid var(--pp-focus);
-  outline-offset: 2px;
-}
-
-.mb__libro[data-favorito] .mb__tapa {
-  outline: 4px solid var(--mb-laton);
-  outline-offset: -4px;
-}
-
-.mb__cinta {
-  position: absolute;
-  top: 0;
-  right: 8px;
-  width: 16px;
-  height: 30px;
-  background: var(--mb-burdeos);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%);
-  pointer-events: none;
 }
 
 .mb__tapa {
@@ -201,72 +170,6 @@
   font-weight: 700;
 }
 
-:root[data-ui-theme='noche'] .mb__cifra--mayor dt {
-  color: var(--pp-ink);
-}
-
-/* El favorito: un libro sobre su propia balda */
-.mb__destacado {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  gap: 14px;
-  align-items: end;
-  padding: 12px 12px 0;
-  border-bottom: 10px solid var(--mb-madera);
-  background: var(--mb-hueco);
-  box-shadow: 0 3px 0 var(--mb-sombra);
-  color: #fff4d7;
-}
-
-.mb__silueta {
-  display: block;
-  aspect-ratio: 2 / 3;
-  border: 2px dashed var(--mb-laton);
-}
-
-.mb__ficha {
-  display: grid;
-  gap: 2px;
-  align-self: center;
-  padding-bottom: 12px;
-  min-width: 0;
-}
-
-.mb__ficha p,
-.mb__ficha h4 {
-  margin: 0;
-}
-
-.mb__antetitulo {
-  color: #e2c37a;
-  font: 700 13px/18px var(--port-sans);
-}
-
-.mb__ficha h4 {
-  font: 700 19px/25px Lora, Georgia, serif;
-  overflow-wrap: anywhere;
-}
-
-.mb__autoria {
-  font: italic 500 14px/20px Lora, Georgia, serif;
-}
-
-.mb__pista {
-  font: 500 15px/21px Lora, Georgia, serif;
-}
-
-.mb__quitar {
-  justify-self: start;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #e2c37a;
-  font: 600 14px/18px var(--port-sans);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
 /* El recuerdo: unas líneas escritas sobre el papel */
 .mb__recuerdo {
   display: grid;
@@ -350,4 +253,701 @@
 
 .pc--port .port-cal__day[aria-pressed='true'] .port-cal__pag {
   color: inherit;
+}
+
+.mb__panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.mb__panel[hidden] {
+  display: none;
+}
+
+.mb__titulo {
+  margin: 4px 0 0;
+  font: 700 18px/24px Lora, Georgia, serif;
+  text-align: center;
+}
+
+.mb__titulo span {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.mb__elegir {
+  justify-self: center;
+}
+
+.mb__frase {
+  margin: 0;
+  padding: 8px 12px;
+  border-block: 1px solid var(--edge);
+  font: italic 500 16px/23px Lora, Georgia, serif;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* Fondo claro en las baldas: la madera es la tabla y no el hueco */
+.mb .mb__baldas {
+  background: transparent;
+  outline: 0;
+}
+
+.mb__estadoguardar {
+  min-height: 20px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.mb__estadoguardar[data-estado='error'] {
+  font-weight: 700;
+}
+
+/* El podio: tres peanas propias, 2–1–3, con las portadas fuera del dibujo y el número como texto */
+.mb-podio__cabecera {
+  margin: 6px 0 2px;
+  text-align: center;
+}
+
+.mb-podio__cabecera h3 {
+  margin: 0 0 4px;
+  font: 700 25px/30px Georgia, Lora, serif;
+}
+
+.mb-podio__cabecera p {
+  margin: 0;
+  color: var(--muted);
+  font: italic 15px/20px Georgia, Lora, serif;
+}
+
+.mb-podio {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin: 0;
+  padding: 26px 0 0;
+  list-style: none;
+}
+
+.mb-podio li {
+  position: relative;
+  flex: 0 0 33.333%;
+  min-width: 0;
+}
+
+.mb-podio[data-n='3'] li[data-puesto='1'],
+.mb-podio[data-n='2'] li[data-puesto='1'] {
+  order: 2;
+}
+
+.mb-podio[data-n='3'] li[data-puesto='2'],
+.mb-podio[data-n='2'] li[data-puesto='2'] {
+  order: 1;
+}
+
+.mb-podio li[data-puesto='3'] {
+  order: 3;
+}
+
+.mb-podio__libro {
+  position: relative;
+  display: block;
+  aspect-ratio: 113 / 138;
+}
+
+li[data-puesto='1'] .mb-podio__libro {
+  aspect-ratio: 113 / 152;
+}
+
+.mb-podio .mb__tapa {
+  height: 100%;
+  margin-inline: auto;
+  overflow: visible;
+}
+
+.mb-podio .mb__tapa > img.cover-img {
+  filter: drop-shadow(2px 3px 1px #21140950);
+}
+
+.mb-podio__estrella {
+  position: absolute;
+  top: -26px;
+  left: calc(50% - 12px);
+  width: 24px;
+  height: 24px;
+}
+
+.mb-podio__peana {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+.mb-podio__peana img {
+  display: block;
+  width: 100%;
+}
+
+.mb-podio__peana b {
+  position: absolute;
+  top: 52%;
+  right: 0;
+  left: 0;
+  color: #ffdf9d;
+  font: 700 24px/1 Georgia, Lora, serif;
+  text-align: center;
+  text-shadow: 1px 2px #4f2d21;
+  transform: translateY(-50%);
+}
+
+.mb-podio__base {
+  display: block;
+  height: 7px;
+  background: #8c5a34;
+  box-shadow: inset 0 2px #dbb375, 0 2px #4b3021;
+}
+
+/* Editor del ranking */
+.mb-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.mb-puestos,
+.mb-candidatos {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mb-puesto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid var(--edge);
+  background: var(--field);
+}
+
+.mb-puesto[data-activo] {
+  outline: 3px solid var(--wood);
+  outline-offset: -3px;
+}
+
+.mb-puesto__elige {
+  display: flex;
+  flex: 1 1 150px;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  min-height: 60px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 600 15px/20px var(--port-sans);
+  text-align: left;
+}
+
+.mb-puesto__elige .mb__tapa,
+.mb-puesto__vacio {
+  flex: none;
+  width: 40px;
+}
+
+.mb-puesto__vacio {
+  aspect-ratio: 2 / 3;
+  border: 2px dashed var(--edge);
+}
+
+.mb-puesto__num {
+  flex: none;
+  width: 22px;
+  font: 400 20px/24px var(--pp-title);
+  text-align: center;
+}
+
+.mb-puesto__titulo {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mb-puesto__mandos {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.mb-candidatos {
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+}
+
+.mb-candidato {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.mb-candidato__puesto {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 28px;
+  background: var(--mb-burdeos);
+  color: #fff4d7;
+  font: 400 18px/28px var(--pp-title);
+  text-align: center;
+}
+
+/* Acabado: cifras en tres columnas iguales, resto en baldas con moldura y controles con relieve */
+.mb .mb__cifras {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 12px 0;
+  border-block: 1px solid var(--line);
+  background: transparent;
+  text-align: center;
+}
+
+.mb .mb__cifras div,
+.mb .mb__cifra--mayor {
+  grid-row: auto;
+  align-items: center;
+  padding: 0 4px;
+  border-right: 0;
+}
+
+.mb .mb__cifras div + div {
+  border-left: 1px solid var(--line);
+}
+
+.mb .mb__cifras dd,
+.mb .mb__cifra--mayor dd {
+  font: 700 22px/28px Georgia, Lora, serif;
+}
+
+.mb .mb__cifras dt,
+.mb .mb__cifra--mayor dt {
+  color: var(--muted);
+  font: 400 14px/18px var(--port-sans);
+}
+
+.mb__mes b {
+  font: 700 18px/24px Georgia, Lora, serif;
+}
+
+.mb__titulo {
+  font: 700 19px/24px Georgia, Lora, serif;
+}
+
+.mb .mb__balda {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  padding: 0 7px 15px;
+  margin-bottom: 14px;
+  border-bottom: 0;
+  background: url('/assets/puerto/acabado/shelf.svg') bottom / 100% 15px no-repeat;
+  box-shadow: none;
+}
+
+.mb .mb__balda .mb__tapa > img.cover-img {
+  filter: drop-shadow(2px 3px 1px #21140950);
+}
+
+.mb .mb__balda .mb__tapa {
+  overflow: visible;
+  background: transparent !important;
+}
+
+.mb .mb__frase {
+  border-block-color: var(--line);
+  font: italic 15px/22px Georgia, Lora, serif;
+}
+
+.mb .mb__guardar {
+  width: 100%;
+}
+
+.mb .mb__cifras div,
+.mb .mb__cifra--mayor {
+  justify-content: flex-start;
+}
+
+/* Apoyo: la base de cada portada pisa la cara superior de su peana (y = 6 de 112 unidades del dibujo) */
+.mb-podio__libro {
+  z-index: 1;
+  margin-bottom: -5.36%;
+}
+
+/* El número va en el centro del panel frontal de cada peana; su tamaño sigue al alto de ese panel */
+.mb-podio__peana {
+  container-type: inline-size;
+}
+
+.mb-podio__peana b {
+  font-family: Lora, Georgia, serif;
+  font-size: 21cqw;
+}
+
+li[data-puesto='1'] .mb-podio__peana b {
+  top: 53%;
+}
+
+li[data-puesto='2'] .mb-podio__peana b {
+  top: 53.95%;
+}
+
+li[data-puesto='3'] .mb-podio__peana b {
+  top: 55%;
+  font-size: 14cqw;
+}
+
+/* Abalorios de la maqueta: marcos escalonados, carpetas con remaches, ramas, destellos y remates de latón */
+.mb.bs-literary {
+  padding-inline: 8px;
+}
+
+.mb__mes {
+  gap: 0;
+  justify-content: center;
+}
+
+.mb__mes::before,
+.mb__mes::after {
+  content: '';
+  flex: 1 1 8px;
+  height: 1px;
+  background: var(--line);
+}
+
+.mb__mes::before {
+  margin-right: 6px;
+}
+
+.mb__mes::after {
+  margin-left: 6px;
+}
+
+.mb__mes p {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  min-height: 44px;
+  padding: 0 12px;
+  border-block: 1px solid #6c5337;
+  background: #fbf1da;
+  box-shadow: inset 0 1px #fff6dc, 0 2px #674c32;
+}
+
+:root[data-ui-theme='noche'] .mb__mes p {
+  background: #564738;
+  box-shadow: inset 0 1px #7a6750, 0 2px #1d1813;
+}
+
+.mb__mes b {
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.mb .lit-tabs {
+  gap: 2px;
+  padding-inline: 12px;
+  border-bottom: 0;
+}
+
+.mb .color-tab {
+  border-radius: 0;
+  border-bottom: 0;
+  clip-path: polygon(0 100%, 0 6px, 3px 6px, 3px 3px, 6px 3px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px, 100% 100%);
+  font-family: Georgia, Lora, serif;
+  font-weight: 700;
+}
+
+.mb .color-tab:focus-visible {
+  clip-path: none;
+}
+
+.mb .color-tab[aria-selected='true'] {
+  outline: 0;
+}
+
+.mb .color-tab[aria-selected='true']::before {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 0;
+  left: 3px;
+  display: block;
+  width: auto;
+  height: 9px;
+  background: linear-gradient(#f3d995 0 2px, #c4994a 2px) left / 6px 100% no-repeat, linear-gradient(#f3d995 0 2px, #c4994a 2px) right / 6px 100% no-repeat;
+}
+
+.mb .color-tab[aria-selected='true']::after {
+  right: 16px;
+  left: 16px;
+  bottom: 5px;
+  height: 2px;
+}
+
+.mb .mb__panel {
+  margin-top: -12px;
+  padding: 12px 4px;
+  border: 7px solid transparent;
+  border-image: url('/assets/puerto/acabado/marco.svg') 8 / 7px stretch;
+}
+
+.mb-podio__cabecera h3 {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  font-size: 23px;
+}
+
+.mb-podio__cabecera h3::before,
+.mb-podio__cabecera h3::after,
+.mb .mb__titulo::before,
+.mb .mb__titulo::after {
+  content: '';
+  flex: none;
+  display: inline-block;
+  width: 26px;
+  height: 15px;
+  background: url('/assets/puerto/acabado/rama.svg') center / contain no-repeat;
+}
+
+.mb-podio__cabecera h3::before,
+.mb .mb__titulo::before {
+  transform: scaleX(-1);
+}
+
+.mb .mb__titulo::before {
+  margin-right: 6px;
+}
+
+.mb .mb__titulo::after {
+  margin-left: 6px;
+}
+
+.mb-podio__destello {
+  position: absolute;
+  top: -27px;
+  left: calc(50% - 34px);
+  width: 68px;
+  height: 22px;
+}
+
+.mb-podio__peana b {
+  display: flex;
+  gap: 0.06em;
+  align-items: center;
+  justify-content: center;
+}
+
+.mb-podio__peana b::before,
+.mb-podio__peana b::after {
+  content: '';
+  width: 0.55em;
+  height: 1em;
+  background: url('/assets/puerto/acabado/rama-oro.svg') center / contain no-repeat;
+}
+
+.mb-podio__peana b::after {
+  transform: scaleX(-1);
+}
+
+.mb-podio__base {
+  position: relative;
+  height: 10px;
+  margin-inline: -4px;
+  box-shadow: inset 0 3px #dbb375, inset 0 -2px #5e3a24, 0 2px #4b3021;
+}
+
+.mb-podio__base::before,
+.mb-podio__base::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #3a271e;
+  background: #c4994a;
+  box-shadow: inset 0 2px #f3d995;
+}
+
+.mb-podio__base::before {
+  left: 2px;
+}
+
+.mb-podio__base::after {
+  right: 2px;
+}
+
+.mb .mb__elegir {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font: 700 14px/20px Georgia, Lora, serif;
+}
+
+.mb__notita {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font: italic 14px/18px Georgia, Lora, serif;
+  text-align: center;
+}
+
+.mb .mb__cifras {
+  padding: 6px 0;
+  border: 7px solid transparent;
+  border-image: url('/assets/puerto/acabado/marco.svg') 8 / 7px stretch;
+}
+
+.mb .mb__cifras dd,
+.mb .mb__cifra--mayor dd {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  line-height: 24px;
+}
+
+.mb .mb__cifras dd::before {
+  content: '';
+  flex: none;
+  width: 20px;
+  height: 18px;
+  background: center / contain no-repeat;
+}
+
+.mb .mb__cifras div:nth-child(1) dd::before {
+  background-image: url('/assets/puerto/acabado/libros.svg');
+}
+
+.mb .mb__cifras div:nth-child(2) dd::before {
+  background-image: url('/assets/puerto/acabado/book.svg');
+}
+
+.mb .mb__cifras div:nth-child(3) dd::before {
+  background-image: url('/assets/puerto/acabado/calendario.svg');
+}
+
+.mb .mb__frase {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  border: 7px solid transparent;
+  border-image: url('/assets/puerto/acabado/marco.svg') 8 / 7px stretch;
+}
+
+.mb .mb__frase::before {
+  content: '';
+  flex: none;
+  width: 13px;
+  height: 24px;
+  background: url('/assets/puerto/acabado/bookmark.svg') center / contain no-repeat;
+}
+
+.mb .mb__guardar {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: 86%;
+  min-height: 52px;
+  outline: 1px solid #ad9b68;
+  outline-offset: 2px;
+  font: 700 17px/22px Georgia, Lora, serif !important;
+}
+
+/* Remates: el título de la balda en una línea, el botón final sin partir y la cabecera con su icono */
+.mb .mb__titulo {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+
+.mb .mb__titulo::before,
+.mb .mb__titulo::after {
+  width: 18px;
+  height: 11px;
+  margin-inline: 0;
+}
+
+.mb .mb__guardar {
+  width: 92%;
+  padding-inline: 10px;
+  font-size: 16px !important;
+  white-space: nowrap;
+}
+
+.pc--port:has(.mb) .port-computer__head h2 {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.pc--port:has(.mb) .port-computer__head h2::before {
+  content: '';
+  flex: none;
+  width: 22px;
+  height: 18px;
+  background: url('/assets/puerto/acabado/libros.svg') center / contain no-repeat;
+}
+
+.pc--port:has(.mb) .port-computer__head button:last-of-type {
+  color: #8f3a33 !important;
+}
+
+/* En pantallas estrechas ningún adorno puede empujar el contenido fuera */
+@media (max-width: 380px) {
+  .mb__mes::before,
+  .mb__mes::after {
+    display: none;
+  }
+
+  .mb__mes p {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 0 6px;
+  }
+
+  .mb__mes b {
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+
+  .mb .mb__guardar {
+    white-space: normal;
+  }
+
+  .mb .lit-tabs {
+    padding-inline: 2px;
+  }
+
+  .mb .color-tab {
+    padding-inline: 8px;
+  }
+
+  .mb .mb__panel {
+    padding-inline: 0;
+  }
+
+  .mb-podio__base {
+    margin-inline: 0;
+  }
 }

@@ -1600,108 +1600,25 @@
   --pp-burgundy: #5f2133;
 }
 
-section.plab-library {
-  background: var(--pp-wood-dark);
-  color: var(--pp-green-ink);
-}
-
-section.plab-library .plab-library__head {
-  gap: 8px;
-  border-bottom: 8px solid var(--pp-wood);
-  background: var(--pp-petrol);
-}
-
-section.plab-library .plab-title {
-  color: var(--pp-green-ink);
-  font: 400 20px/24px var(--pp-title);
-  text-transform: uppercase;
-}
-
-section.plab-library .plab-library__search input {
-  min-height: 48px;
-  padding: 0 32px 0 4px;
-  border: 8px solid transparent;
-  border-image: var(--pp-frame) 12 fill / 8px / 0 stretch;
-  background: none;
-  color: var(--pp-ink);
-}
-
-section.plab-library .plab-library__search input::placeholder {
-  color: var(--pp-muted);
-  opacity: 1;
-}
-
-section.plab-library .plab-library__clear {
-  top: 2px;
-  color: var(--pp-ink);
-}
-
-section.plab-library .plab-library__filters {
-  flex-wrap: wrap;
-  gap: 8px;
-  overflow: visible;
-}
-
-section.plab-library .plab-filter {
-  min-height: 44px;
-  padding: 0 12px;
-  border: 2px solid var(--pp-wood-dark);
-  background: var(--pp-burgundy);
-  color: var(--pp-green-ink);
-  font: 650 14px/18px var(--port-sans);
-}
-
-section.plab-library .plab-filter[aria-pressed='true'] {
-  border-color: var(--pp-green-ink);
-  background: var(--pp-green);
-  color: var(--pp-green-ink);
-}
 
 
-section.plab-library .plab-library__count {
-  color: var(--pp-green-ink);
-  font: 500 14px/20px var(--port-sans);
-}
 
-section.plab-library .plab-library__list {
-  background: repeating-linear-gradient(90deg, var(--pp-wood-dark) 0 22px, var(--pp-wood-line) 22px 24px);
-}
 
-section.plab-library .plab-row {
-  border-bottom: 6px solid var(--pp-plank);
-}
 
-section.plab-library .plab-row__cover {
-  box-shadow: 3px 0 0 rgba(0, 0, 0, 0.35);
-}
 
-section.plab-library .plab-row__text strong,
-section.plab-library .plab-row__text span {
-  color: var(--pp-green-ink);
-}
 
-section.plab-library .plab-row__text strong {
-  font: 700 16px/20px var(--port-serif);
-}
 
-section.plab-library .plab-row__text span,
-section.plab-library .plab-row__text small {
-  font: 400 14px/18px var(--port-sans);
-}
 
-section.plab-library .plab-row__text small {
-  color: #eadbb9;
-}
 
-section.plab-library button:focus-visible,
-section.plab-library input:focus-visible {
-  outline: 3px solid var(--pp-focus-wood);
-  outline-offset: -3px;
-}
 
-section.plab-library .plab-row__exhibit {
-  min-height: 48px;
-}
+
+
+
+
+
+
+
+
 
 /* Decorar: la escena y la balda son las reales; aquí, solo papel, tinta y objetivos */
 .plab-room .ep-ess__card {
@@ -1732,9 +1649,6 @@ section.plab-library .plab-row__exhibit {
   font-size: 14px;
 }
 
-section.plab-library .px-btn {
-  color: #3a2415;
-}
 
 .pc--port .pcd-book__log {
   height: auto;
@@ -1785,83 +1699,15 @@ section.plab-library .px-btn {
   margin-bottom: 12px;
 }
 
-/* Biblioteca: cada estado con su color y su forma, y Añadir siempre a la vista */
-section.plab-library .plab-library__buscar {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
-}
 
-section.plab-library .plab-library__buscar .plab-library__search {
-  flex: 1 1 auto;
-  min-width: 0;
-}
 
-section.plab-library .plab-library__add {
-  display: inline-flex;
-  flex: none;
-  gap: 6px;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 2px solid var(--pp-green-ink);
-  background: var(--pp-green);
-  color: var(--pp-green-ink);
-  font: 700 14px/18px var(--port-sans);
-  white-space: nowrap;
-}
 
-section.plab-library .plab-library__filters {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
 
-section.plab-library .plab-filter {
-  --f: #5c3a22;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 4px 8px;
-  border: 2px solid var(--f);
-  background: #f5e7c8;
-  color: #38271f;
-  text-align: left;
-}
 
-section.plab-library .plab-filter svg {
-  flex: none;
-  color: var(--f);
-}
 
-section.plab-library .plab-filter[data-filtro='reading'] {
-  --f: #2f6b5e;
-}
 
-section.plab-library .plab-filter[data-filtro='want'] {
-  --f: #8a5a12;
-}
 
-section.plab-library .plab-filter[data-filtro='read'] {
-  --f: #4f6a2a;
-}
 
-section.plab-library .plab-filter[data-filtro='abandoned'] {
-  --f: #6f2a2e;
-}
 
-section.plab-library .plab-filter[data-filtro='chosen'] {
-  --f: #2f5478;
-}
 
-section.plab-library .plab-filter[aria-pressed='true'] {
-  border-color: var(--f);
-  background: var(--f);
-  box-shadow: inset 0 0 0 2px #fff4d7;
-  color: #fff4d7;
-}
 
-section.plab-library .plab-filter[aria-pressed='true'] svg {
-  color: inherit;
-}

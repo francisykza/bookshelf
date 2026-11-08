@@ -36,7 +36,7 @@ const stored = (page) =>
 const reachable = (page) =>
   page.evaluate(() => {
     const bottom = window.visualViewport.height + window.visualViewport.offsetTop;
-    const form = document.querySelector('.book-sheet .reading-form');
+    const form = document.querySelector('.lit-ficha .reading-form');
     const parts = {
       campo: form.querySelector('.reading-form__input input'),
       resumen: form.querySelector('.reading-form__preview'),
@@ -62,8 +62,8 @@ for (const keyboard of ['cerrado', 'android', 'iphone']) {
     await page.getByRole('button', { name: /Buscar en toda la biblioteca/ }).click();
     const title = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.id === 'lab-0').title);
     await page.getByRole('searchbox', { name: /Buscar por título/ }).fill(title);
-    await page.locator('.plab-row__open').first().click();
-    const sheet = page.locator('.book-sheet');
+    await page.locator('.lit-libro, .plab-row__open').first().click();
+    const sheet = page.locator('.lit-ficha');
     await sheet.getByRole('button', { name: 'Registrar lectura' }).click();
     const input = sheet.locator('.reading-form__input input');
     await input.focus();
@@ -94,13 +94,14 @@ for (const keyboard of ['cerrado', 'android', 'iphone']) {
     await expect(sheet.locator('.log-toast--inline')).toContainText('Lectura registrada');
     await expect(sheet.locator('.log-toast--inline').getByRole('button', { name: 'Deshacer' })).toBeVisible();
     await expect(sheet.locator('.reading-form')).toHaveCount(0);
+    await sheet.locator('details', { hasText: 'Ajustar posición' }).locator('summary').click();
     await expect(sheet.getByRole('spinbutton', { name: 'Página actual' })).toHaveValue(String(before.pagina + 5));
     await expect(sheet.getByRole('button', { name: 'Registrar lectura' })).toBeFocused();
     await sheet.locator('.log-toast--inline').scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${OUT}/ficha-guardado-${keyboard}-${info.project.name}.png` });
     // Al recargar, la app vuelve a donde estaba (el historial) con lo leído del almacenamiento
     await page.reload();
-    await page.waitForFunction(() => document.querySelector('.plab-room, .book-sheet') && typeof window.__pisoLab === 'function', null, { timeout: 30000 });
+    await page.waitForFunction(() => document.querySelector('.plab-room, .lit-ficha') && typeof window.__pisoLab === 'function', null, { timeout: 30000 });
     await page.waitForTimeout(500);
     expect(await stored(page)).toEqual({ pagina: before.pagina + 5, sesiones: before.sesiones + 1 });
   });
@@ -113,8 +114,8 @@ async function openSheet(page, id) {
   await page.getByRole('button', { name: /Buscar en toda la biblioteca/ }).click();
   const title = await page.evaluate((x) => JSON.parse(localStorage.getItem('bookshelf:v1')).books.find((b) => b.id === x).title, id);
   await page.getByRole('searchbox', { name: /Buscar por título/ }).fill(title);
-  await page.locator('.plab-row__open').first().click();
-  return page.locator('.book-sheet');
+  await page.locator('.lit-libro, .plab-row__open').first().click();
+  return page.locator('.lit-ficha');
 }
 const bookOf = (page, id) => page.evaluate((x) => {
   const s = JSON.parse(localStorage.getItem('bookshelf:v1'));
@@ -163,6 +164,7 @@ test('ficha: corregir páginas se conserva tras recargar y nunca crea una lectur
   await sheet.getByRole('button', { name: 'Guardar corrección' }).click();
   await expect.poll(async () => (await bookOf(page, 'lab-0')).pagina).toBe(start.pagina - 10);
   // Corrección con los botones de página
+  await sheet.locator('details', { hasText: 'Ajustar posición' }).locator('summary').click();
   await sheet.getByRole('button', { name: 'Retroceder una página' }).click();
   await expect.poll(async () => (await bookOf(page, 'lab-0')).pagina).toBe(start.pagina - 11);
   await page.reload();
@@ -181,6 +183,7 @@ test('ficha: tras una relectura, corregir páginas no la da por terminada ni toc
   await sheet.locator('.reading-form__input input').fill('20');
   await sheet.getByRole('button', { name: /Guardar lectura/ }).click();
   await expect.poll(async () => (await bookOf(page, id)).pagina).toBe(20);
+  await sheet.locator('details', { hasText: 'Ajustar posición' }).locator('summary').click();
   await sheet.getByRole('button', { name: 'Retroceder 10 páginas' }).click();
   await expect.poll(async () => (await bookOf(page, id)).pagina).toBe(10);
   await page.reload();

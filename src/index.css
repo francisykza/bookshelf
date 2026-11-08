@@ -54,6 +54,7 @@
 @import './theme/tokens.css';
 @import './theme/port.css';
 @import './theme/puerto-pixel.css';
+@import './theme/literario.css';
 
 /* Sistema "Mediterranean Cozy": papel crema, roble miel, terracota, azul bahía y verde hiedra */
 @theme {

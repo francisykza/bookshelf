@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.91.1** (2026-11-08, §91.1). Ajustes del resumen del mes, páginas por día en el calendario y filtros y «Añadir libro» en la biblioteca. Sin migraciones.
+- **Publicada en producción: 1.92.0** (2026-11-08, §92). Biblioteca, ficha y «Tu mes en libros» con el acabado literario y favoritos ordenados. Sin migraciones. Aprobada por Francisco tras revisar capturas, PNG y vídeos.
+- **Anterior: 1.91.1** (2026-11-08, §91.1). Ajustes del resumen del mes, páginas por día en el calendario y filtros y «Añadir libro» en la biblioteca. Sin migraciones.
 - **Anterior: 1.91.0** (2026-11-08, §91). Fase 1 (scroll, audio, visitas, paredes), caché persistente de portadas y «Tu mes en libros». Sin migraciones. Aprobada por Francisco tras revisar vídeo y PNG.
 - **Anterior: 1.90.0** (2026-11-08, §90). Puerto Pixel: ordenador, registro, menú, calendario, radio, diario, estadísticas, biblioteca y decorar. Aprobada por Francisco tras revisar las evidencias; sin migraciones. El mar está retirado de Sonido por ahora. Sin probar en móviles físicos ni con cuentas reales; ficha de libro y Ajustes siguen sin reestilizar.
 - **Anterior: 1.89.3** (2026-11-08, §89 a §89.8). Migración `20261118120000_edificio_esenciales.sql` aplicada.
@@ -230,6 +231,14 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-08 · Fase 3 y acabado visual v4 · 1.92.0, publicada tras aprobar la entrega («Sí, publícala»)
+
+Biblioteca con portadas y lista, ficha con pestañas, ranking de 3 favoritos por mes (`monthNotes.favorites`; `favorite` antiguo se lee como puesto 1), exportación con estados y límites, y acabado v4 (`src/theme/literario.css`, `public/assets/puerto/acabado/`). Publicada desde la rama `1.90-escritorio-puerto` con avance rápido de `main`.
+Pruebas: `e2e-community/fase3`, `fase2-mes` y `acabado-v4` en verde. Pendiente: adaptar a la vista de portadas `e2e/piso-lab-grande` y 3 casos de `e2e/piso-ficha-visita` (foco tras abrir «Ajustar posición»); el caso «5.000 libros: registrar, cancelar» de `piso-lab-grande` falla en Cancelar y no está investigado. Evidencias en `qa-report/acabado-v4/`.
+
+Segunda pasada visual, por «sigue viéndose simple»: adornos pixel originales en `public/assets/puerto/acabado/` (`rama`, `rama-oro`, `destello`, `libros`, `calendario`, `lupa`, `marco`), marco y baldas de lado a lado en biblioteca, selector de vista unido, pie «Tu biblioteca, a tu ritmo», y en el mes pestañas de carpeta, laureles, cifras con icono y marcos; también en la tarjeta PNG. Las etiquetas de cifras pasan a «libros», «páginas» y «días leyendo».
+Sin verificar: WebKit no se repitió tras la segunda pasada (ya fallaba en él la prueba de `fase3` de volver a la posición de la biblioteca); tampoco móviles físicos. El resto de `fase3` y `fase2-mes` no se repitió tras el último retoque, limitado a pantallas de hasta 380 px.
 
 Formato de cada entrada (la más reciente arriba):
 

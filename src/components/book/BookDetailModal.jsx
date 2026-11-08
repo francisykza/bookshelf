@@ -3,14 +3,15 @@
 // plegados. Diario (1.53, SPEC §51): «Mi diario» con tres secciones independientes —Reseña (valoración y opinión, con
 // guardado explícito y borrador por libro), Notas (las anotaciones) e Historial (las sesiones del registro)—.
 // Lectores: las opiniones de la comunidad. Solo presentación: los datos y operaciones son los de siempre.
-import { BookMarked, ChevronDown, ChevronRight, Heart, Lock, Minus, PenLine, Plus, Trash2, X } from 'lucide-react';
+import { ArrowLeft, BookMarked, ChevronDown, ChevronRight, Heart, Lock, Minus, MoreHorizontal, PenLine, Plus, Trash2, X } from 'lucide-react';
 import { Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
 import { playUiSound } from '../../audio/uiSounds';
 import { EDGE_NAMES, FORMATS, STATUS, atLastPage, currentBook, visualEdition, audioHours, formatHours, formatPercent, hoursLeft, percentRead, progress, sprayedEdge, trackUnit } from '../../domain/books';
 import { dayKey } from '../../domain/dates';
-import { describeEntry } from '../../domain/reading';
+import { describeEntry, isActive } from '../../domain/reading';
+import { chosenIds, roomLimit, toggleExhibit } from '../../features/pisoLab/roomSelection';
 import { ReadingEntryForm } from '../panels/ReadingEntryForm';
 import { LogUndoToast, UNDO_MS } from '../panels/ReadingLogSheet';
 import { RatingInput } from './Rating';
@@ -181,14 +182,14 @@ const EDITION_NOTES = {
 };
 
 /** «Detalles de mi edición»: total de páginas, unidad de seguimiento, velocidad y edición (plegado). */
-function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed }) {
+function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed, title = 'Detalles de mi edición', detailsRef = null }) {
   const unit = trackUnit(book);
   const left = unit === 'pages' ? hoursLeft(book, pagesPerHour) : 0;
   const edge = sprayedEdge(book);
   return (
-    <details className="sheet-details">
+    <details className="sheet-details" ref={detailsRef}>
       <summary>
-        Detalles de mi edición
+        {title}
         <ChevronDown aria-hidden="true" />
       </summary>
       <div className="sheet-details__body">
@@ -269,6 +270,42 @@ function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed }) {
   );
 }
 
+// Las tres pestañas de la ficha del piso. Las rutas antiguas (`left`, `right`, `notes`, `history`, `readers`…) caen en la suya
+const LIT_TABS = [
+  { id: 'lectura', label: 'Mi lectura', tone: 'sage' },
+  { id: 'notas', label: 'Notas y citas', tone: 'blue' },
+  { id: 'resena', label: 'Reseña', tone: 'terracotta' },
+];
+const LIT_ENTRY = { notes: 'notas', right: 'resena', review: 'resena', readers: 'resena' };
+const longDate = (day) => new Date(`${day}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+
+/** «Mi recorrido»: solo hechos que constan en el registro y en el libro. */
+function Recorrido({ book, log }) {
+  const entries = log.filter((e) => e.bookId === book.id && isActive(e) && typeof e.date === 'string').sort((a, b) => a.date.localeCompare(b.date));
+  const first = entries[0];
+  const last = entries.at(-1);
+  const today = dayKey();
+  const items = [];
+  if (first) items.push(`Comenzado el ${longDate(first.date)}`);
+  if (last) items.push(`Última lectura · ${last.date === today ? 'Hoy' : longDate(last.date)}`);
+  if (last?.pages > 0) items.push(`${last.pages.toLocaleString('es-ES')} ${last.pages === 1 ? 'página' : 'páginas'} en tu última sesión`);
+  if (book.status === 'read' && book.finishedAt) items.push(`Terminado el ${new Date(book.finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`);
+  return (
+    <section className="lit-recorrido" aria-label="Mi recorrido">
+      <h3>Mi recorrido</h3>
+      {items.length ? (
+        <ol>
+          {items.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ol>
+      ) : (
+        <p className="sheet-log__note">Aún no hay lecturas registradas de este libro.</p>
+      )}
+    </section>
+  );
+}
+
 const TABS = [
   { id: 'left', label: 'Ficha' },
   { id: 'right', label: 'Diario' },
@@ -288,6 +325,11 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
   const book = state.books.find((b) => b.id === bookId);
   const [page, setPage] = useState(() => (DIARY_ENTRY[initialPage] ? 'right' : TABS.some((t) => t.id === initialPage) ? initialPage : 'left'));
   const [section, setSection] = useState(() => DIARY_ENTRY[initialPage] ?? 'review');
+  const [litTab, setLitTab] = useState(() => LIT_ENTRY[initialPage] ?? 'lectura');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [readersOpen, setReadersOpen] = useState(initialPage === 'readers');
+  const [exhibitNote, setExhibitNote] = useState('');
+  const editionRef = useRef(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [shownQuote, setShownQuote] = useState(null);
   const [logging, setLogging] = useState(false);
@@ -325,7 +367,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
       }
       const el = document.activeElement;
       // También cuando el teclado encoge la ventana entera (Android), no solo la parte visible (iPhone)
-      if (el instanceof HTMLElement && el.matches('.book-sheet textarea, .book-sheet input')) requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest' }));
+      if (el instanceof HTMLElement && el.matches('.book-sheet textarea, .book-sheet input, .lit-ficha textarea, .lit-ficha input')) requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest' }));
     };
     vv.addEventListener('resize', fit);
     vv.addEventListener('scroll', fit);
@@ -354,6 +396,343 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
     scrollRef.current?.scrollTo({ top: 0 });
   };
   const reviewPublished = book.publicReview?.status === 'published';
+  const logBlock = (
+            <div className="sheet-log">
+              {atLastPage(book) && (
+                <div className="sheet-log__finish">
+                  <p>Ya vas por la última página y el libro sigue en «Leyendo».</p>
+                  <button
+                    type="button"
+                    className="sheet-btn sheet-btn--primary craft craft--terra"
+                    onClick={() => {
+                      setUndo(null);
+                      update({ status: 'read' });
+                      setTimeout(() => actions.persistNow(), 0);
+                      onComplete?.(book.id);
+                    }}
+                  >
+                    Marcar como terminado
+                  </button>
+                </div>
+              )}
+              {book.status === 'read' ? (
+                <>
+                  <button
+                    type="button"
+                    className="sheet-btn sheet-btn--primary craft craft--terra"
+                    onClick={() => {
+                      setUndo(null);
+                      setUndone(false);
+                      actions.startReread(book.id);
+                      setTimeout(() => actions.persistNow(), 0);
+                    }}
+                  >
+                    <Plus aria-hidden="true" />
+                    Empezar relectura
+                  </button>
+                  <p className="sheet-log__note">Vuelves a la página 0. La lectura anterior y sus sesiones se quedan en tu historial.</p>
+                </>
+              ) : (
+                <button
+                  ref={logButton}
+                  type="button"
+                  className="sheet-btn sheet-btn--primary craft craft--terra"
+                  aria-expanded={logging}
+                  onClick={() => {
+                    setUndone(false);
+                    setLogging((v) => !v);
+                  }}
+                >
+                  <Plus aria-hidden="true" />
+                  Registrar lectura
+                </button>
+              )}
+              {logging && book.status !== 'read' && (
+                <ReadingEntryForm
+                  date={dayKey()}
+                  bookId={book.id}
+                  onCancel={() => setLogging(false)}
+                  onDone={(entry, meta) => {
+                    // Si termina el libro, su reseña sustituye a la ficha (onComplete): aquí no se cierra nada
+                    if (meta.completes) return;
+                    const d = describeEntry(entry);
+                    setLogging(false);
+                    setUndone(false);
+                    setUndo({ entry, before: meta.before, figuresBefore: meta.figuresBefore, text: d.advance ?? d.position ?? 'guardada', at: Date.now() });
+                    // El botón que tenía el foco se ha ido con el formulario: vuelve a «Registrar lectura»
+                    requestAnimationFrame(() => logButton.current?.focus({ preventScroll: true }));
+                  }}
+                  onComplete={(id) => onComplete?.(id)}
+                />
+              )}
+              <LogUndoToast
+                className="log-toast--inline"
+                item={undo}
+                onUndo={() => {
+                  if (!undo) return;
+                  actions.revertLog(undo.entry.id, undo.before, undo.figuresBefore);
+                  setTimeout(() => actions.persistNow(), 0);
+                  setUndo(null);
+                  setUndone(true);
+                  logButton.current?.focus({ preventScroll: true });
+                }}
+              />
+              {undone && (
+                <p className="sheet-log__note" role="status">
+                  Registro deshecho: el progreso vuelve a como estaba.
+                </p>
+              )}
+              {book.pastReads?.length > 0 && (
+                <p className="sheet-log__note">
+                  {book.pastReads.length === 1 ? 'Ya lo leíste una vez' : `Ya lo leíste ${book.pastReads.length} veces`}
+                  {book.pastReads.at(-1)?.finishedAt ? `; la última terminó el ${new Date(book.pastReads.at(-1).finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}.
+                </p>
+              )}
+            </div>
+  );
+  const progressBlock = (
+    <ProgressBlock
+      book={book}
+      onPage={(p) => {
+        actions.setPage(book.id, p);
+        if (p > book.currentPage) pageRustle(0.6);
+      }}
+    />
+  );
+  const epubBlock = (
+    <EpubSection book={book} autoRead={initialPage === 'epub'} onOpenBook={(id) => onSwitch?.(id, 'epub')} onComplete={onComplete} timer={timer} soundOn={soundOn} onToggleSound={onToggleSound} />
+  );
+  const othersBlock = book.status === 'reading' && readingNow.length > 1 && onSwitch && (
+    <nav className="reading-switch" aria-label="Libros que estás leyendo">
+      <span className="reading-switch__label">Otras lecturas abiertas</span>
+      {readingNow.map((b) => (
+        <button
+          key={b.id}
+          type="button"
+          className="reading-switch__book"
+          aria-current={b.id === book.id ? 'true' : undefined}
+          onClick={() => {
+            if (b.id === book.id) return;
+            actions.setSettings({ currentBookId: b.id });
+            onSwitch(b.id);
+          }}
+          title={`${b.title} · ${formatPercent(percentRead(b))}`}
+        >
+          <span className="reading-switch__cover">
+            <Cover book={b} />
+          </span>
+          <span className="reading-switch__text">
+            <b>{b.title}</b>
+            <em>{formatPercent(percentRead(b))}</em>
+          </span>
+        </button>
+      ))}
+    </nav>
+  );
+
+  // La ficha del piso: portada, progreso y acciones arriba, y tres pestañas de colores. Los datos y operaciones son los de siempre
+  if (mainPlace) {
+    const pct = percentRead(book);
+    const tituloLargo = book.title.length > 60;
+    const abrirEdicion = () => {
+      if (editionRef.current) editionRef.current.open = true;
+      requestAnimationFrame(() => editionRef.current?.scrollIntoView({ block: 'nearest' }));
+    };
+    const unit = trackUnit(book);
+    const limit = roomLimit(window.location.search);
+    const exhibited = chosenIds(settings).includes(book.id);
+    const toggleExhibited = () => {
+      const patch = toggleExhibit(settings, book.id, limit);
+      if (patch) actions.setSettings(patch);
+      setExhibitNote(patch ? '' : `Ya hay ${limit - 1} elegidos: retira alguno para exponer otro`);
+    };
+    const goLit = (id) => {
+      if (id !== litTab) playUiSound('diaryTab');
+      setLitTab(id);
+      scrollRef.current?.scrollTo({ top: 0 });
+    };
+    return (
+      <PanelShell onClose={onClose} label={`${book.title}, de ${book.author}`} variant="sheet">
+        <div className="lit-ficha bs-literary" data-edition={visualEdition(book)}>
+          <div className="lit-cabecera">
+            <button type="button" className="lit-boton" onClick={onClose} aria-label="Volver">
+              <ArrowLeft aria-hidden="true" width="20" height="20" />
+            </button>
+            <h2>Ficha del libro</h2>
+            <button type="button" className="lit-boton" aria-label="Más acciones" aria-haspopup="true" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)}>
+              <MoreHorizontal aria-hidden="true" width="20" height="20" />
+            </button>
+          </div>
+          {menuOpen && (
+            <div className="lit-menu">
+              <button
+                type="button"
+                className="lit-boton"
+                onClick={() => {
+                  setMenuOpen(false);
+                  abrirEdicion();
+                }}
+              >
+                Editar datos de la edición
+              </button>
+              {confirmDelete ? (
+                <span className="confirm-inline">
+                  ¿Sacarlo de tu librería?
+                  <button
+                    type="button"
+                    className="link-btn link-btn--danger"
+                    onClick={() => {
+                      actions.removeBook(book.id);
+                      onClose();
+                    }}
+                  >
+                    Sí, quitar
+                  </button>
+                  <button type="button" className="link-btn" onClick={() => setConfirmDelete(false)}>
+                    Cancelar
+                  </button>
+                </span>
+              ) : (
+                <button type="button" className="lit-boton" onClick={() => setConfirmDelete(true)}>
+                  <Trash2 aria-hidden="true" width="18" height="18" /> Quitar de la librería
+                </button>
+              )}
+            </div>
+          )}
+          <div ref={scrollRef} className="lit-ficha__cuerpo">
+            <header className="lit-cab" data-largo={tituloLargo || undefined}>
+              <span className="lit-cab__portada" style={{ background: 'var(--field)' }}>
+                <Cover book={book} eager />
+              </span>
+              <div>
+                {!tituloLargo && <h2>{book.title}</h2>}
+                <p>
+                  {book.author}
+                  {book.publishedDate && <span> · {book.publishedDate.slice(0, 4)}</span>}
+                </p>
+                <label>
+                  <select value={book.status} aria-label="Estado de lectura" onChange={(e) => update({ status: e.target.value })}>
+                    {Object.entries(STATUS).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="button" className="lit-cab__edicion" onClick={abrirEdicion}>
+                  Tu edición
+                </button>
+              </div>
+              {tituloLargo && <h2>{book.title}</h2>}
+              <img className="lit-cab__marca" src="/assets/puerto/acabado/bookmark.svg" alt="" />
+            </header>
+            <div className="lit-adorno" aria-hidden="true">
+              <img src="/assets/puerto/acabado/laurel.svg" alt="" />
+            </div>
+            <div className="lit-progreso">
+              <p className="lit-progreso__linea">
+                <span>{unit === 'pages' && book.pageCount ? `${book.currentPage.toLocaleString('es-ES')} de ${book.pageCount.toLocaleString('es-ES')} páginas` : 'Progreso en porcentaje'}</span>
+                <span>{formatPercent(pct)}</span>
+              </p>
+              <span className="lit-progreso__barra" style={{ '--p': `${pct}%` }} aria-hidden="true" />
+            </div>
+            {logBlock}
+            {book.status === 'reading' ? (
+              <button type="button" className="lit-expuesto" aria-pressed={isMain} onClick={() => actions.setSettings({ currentBookId: book.id })}>
+                <img src="/assets/puerto/acabado/book.svg" alt="" />
+                <span>{isMain ? mainPlace.on : mainPlace.off}</span>
+                <ChevronRight aria-hidden="true" width="18" height="18" />
+              </button>
+            ) : (
+              <button type="button" className="lit-expuesto" aria-pressed={exhibited} onClick={toggleExhibited}>
+                <img src="/assets/puerto/acabado/book.svg" alt="" />
+                <span>{exhibited ? 'Expuesto en tu habitación · retirar' : 'Exponer en tu habitación'}</span>
+                <ChevronRight aria-hidden="true" width="18" height="18" />
+              </button>
+            )}
+            {exhibitNote && (
+              <p className="sheet-log__note" role="status">
+                {exhibitNote}
+              </p>
+            )}
+            <div className="lit-tabs" role="tablist" aria-label="Secciones de la ficha">
+              {LIT_TABS.map((t) => (
+                <button key={t.id} type="button" role="tab" id={`${uid}-lit-${t.id}`} aria-controls={`${uid}-litp-${t.id}`} aria-selected={litTab === t.id} className="color-tab" data-tone={t.tone} onClick={() => goLit(t.id)}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {/* Las tres siguen montadas: un borrador de reseña o de nota no se pierde al cambiar de pestaña */}
+            <div role="tabpanel" id={`${uid}-litp-lectura`} aria-labelledby={`${uid}-lit-lectura`} hidden={litTab !== 'lectura'} className="diary-panel">
+              <Recorrido book={book} log={state.progress.readingLog} />
+              {othersBlock}
+              <details>
+                <summary>
+                  Ajustar posición
+                  <ChevronDown aria-hidden="true" />
+                </summary>
+                {progressBlock}
+              </details>
+              {epubBlock}
+              <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} mode="history" />
+            </div>
+            <div role="tabpanel" id={`${uid}-litp-notas`} aria-labelledby={`${uid}-lit-notas`} hidden={litTab !== 'notas'} className="diary-panel">
+              <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} onShow={setShownQuote} mode="notes" />
+            </div>
+            <div role="tabpanel" id={`${uid}-litp-resena`} aria-labelledby={`${uid}-lit-resena`} hidden={litTab !== 'resena'} className="diary-panel">
+              <MyReview book={book} owner={settings.owner} onUpdate={update} onOpenProfile={onOpenProfile} onBack={() => goLit('lectura')} />
+              <button type="button" className="fav-btn" aria-pressed={book.favorite} onClick={() => update({ favorite: !book.favorite })} title={book.favorite ? 'Quitar de favoritos' : 'Marcar como favorito'}>
+                <Heart aria-hidden="true" />
+                <span>Favorito</span>
+              </button>
+              <details open={readersOpen} onToggle={(e) => setReadersOpen(e.currentTarget.open)}>
+                <summary>
+                  Voces de lectores
+                  <ChevronDown aria-hidden="true" />
+                </summary>
+                {readersOpen && (
+                  <Suspense fallback={<p className="social-note">Abriendo…</p>}>
+                    <ReadersPanel book={book} onUpdate={update} onOpenReader={onOpenReader} />
+                  </Suspense>
+                )}
+              </details>
+            </div>
+            <details>
+              <summary>
+                Sobre el libro
+                <ChevronDown aria-hidden="true" />
+              </summary>
+              <div>
+                <p className="sheet-synopsis">{book.synopsis || 'Sin sinopsis todavía.'}</p>
+                {!!book.categories.length && (
+                  <ul className="chips">
+                    {book.categories.slice(0, 3).map((c) => (
+                      <li key={c}>{c}</li>
+                    ))}
+                  </ul>
+                )}
+                <ExLibris owner={settings.owner} onRename={(owner) => actions.setSettings({ owner })} />
+              </div>
+            </details>
+            <EditionDetails title="Datos de la edición" detailsRef={editionRef} book={book} pagesPerHour={settings.pagesPerHour} onUpdate={update} onTracking={(u) => actions.setTracking(book.id, u)} onSpeed={(pagesPerHour) => actions.setSettings({ pagesPerHour })} />
+          </div>
+        </div>
+        {shownQuote && (
+          <QuoteViewer
+            quote={shownQuote}
+            book={book}
+            pinned={settings.pinnedQuote?.text === shownQuote.text}
+            onPin={() =>
+              actions.setSettings({
+                pinnedQuote: settings.pinnedQuote?.text === shownQuote.text ? null : { text: shownQuote.text, author: book.author, work: book.title },
+              })
+            }
+            onClose={() => setShownQuote(null)}
+          />
+        )}
+      </PanelShell>
+    );
+  }
 
   return (
     <PanelShell onClose={onClose} label={`${book.title}, de ${book.author}`} variant="sheet">
@@ -468,98 +847,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
 
             {/* El mismo formulario de registro del calendario; si termina el libro, abre la reseña de terminar. Al guardar
                 se cierra y deja «Deshacer», como el registro de la habitación */}
-            <div className="sheet-log">
-              {atLastPage(book) && (
-                <div className="sheet-log__finish">
-                  <p>Ya vas por la última página y el libro sigue en «Leyendo».</p>
-                  <button
-                    type="button"
-                    className="sheet-btn sheet-btn--primary craft craft--terra"
-                    onClick={() => {
-                      setUndo(null);
-                      update({ status: 'read' });
-                      setTimeout(() => actions.persistNow(), 0);
-                      onComplete?.(book.id);
-                    }}
-                  >
-                    Marcar como terminado
-                  </button>
-                </div>
-              )}
-              {book.status === 'read' ? (
-                <>
-                  <button
-                    type="button"
-                    className="sheet-btn sheet-btn--primary craft craft--terra"
-                    onClick={() => {
-                      setUndo(null);
-                      setUndone(false);
-                      actions.startReread(book.id);
-                      setTimeout(() => actions.persistNow(), 0);
-                    }}
-                  >
-                    <Plus aria-hidden="true" />
-                    Empezar relectura
-                  </button>
-                  <p className="sheet-log__note">Vuelves a la página 0. La lectura anterior y sus sesiones se quedan en tu historial.</p>
-                </>
-              ) : (
-                <button
-                  ref={logButton}
-                  type="button"
-                  className="sheet-btn sheet-btn--primary craft craft--terra"
-                  aria-expanded={logging}
-                  onClick={() => {
-                    setUndone(false);
-                    setLogging((v) => !v);
-                  }}
-                >
-                  <Plus aria-hidden="true" />
-                  Registrar lectura
-                </button>
-              )}
-              {logging && book.status !== 'read' && (
-                <ReadingEntryForm
-                  date={dayKey()}
-                  bookId={book.id}
-                  onCancel={() => setLogging(false)}
-                  onDone={(entry, meta) => {
-                    // Si termina el libro, su reseña sustituye a la ficha (onComplete): aquí no se cierra nada
-                    if (meta.completes) return;
-                    const d = describeEntry(entry);
-                    setLogging(false);
-                    setUndone(false);
-                    setUndo({ entry, before: meta.before, figuresBefore: meta.figuresBefore, text: d.advance ?? d.position ?? 'guardada', at: Date.now() });
-                    // El botón que tenía el foco se ha ido con el formulario: vuelve a «Registrar lectura»
-                    requestAnimationFrame(() => logButton.current?.focus({ preventScroll: true }));
-                  }}
-                  onComplete={(id) => onComplete?.(id)}
-                />
-              )}
-              <LogUndoToast
-                className="log-toast--inline"
-                item={undo}
-                onUndo={() => {
-                  if (!undo) return;
-                  actions.revertLog(undo.entry.id, undo.before, undo.figuresBefore);
-                  setTimeout(() => actions.persistNow(), 0);
-                  setUndo(null);
-                  setUndone(true);
-                  logButton.current?.focus({ preventScroll: true });
-                }}
-              />
-              {undone && (
-                <p className="sheet-log__note" role="status">
-                  Registro deshecho: el progreso vuelve a como estaba.
-                </p>
-              )}
-              {book.pastReads?.length > 0 && (
-                <p className="sheet-log__note">
-                  {book.pastReads.length === 1 ? 'Ya lo leíste una vez' : `Ya lo leíste ${book.pastReads.length} veces`}
-                  {book.pastReads.at(-1)?.finishedAt ? `; la última terminó el ${new Date(book.pastReads.at(-1).finishedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}.
-                </p>
-              )}
-            </div>
+            {logBlock}
 
             <div className="sheet-rating">
               <RatingInput value={book.rating} onChange={(rating) => update({ rating })} />

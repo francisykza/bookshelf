@@ -108,16 +108,16 @@ test('cifras, relectura, histórico, favorito, vuelta al calendario y PNG', asyn
   expect(await cifras(page)).toEqual(['14', '62', '2']);
   await expect(page.locator('.mb__lecturas')).toHaveText('2 lecturas');
   await expect(page.locator('.mb__libro')).toHaveCount(13);
-  await page.getByRole('radio', { name: 'Libro de prueba 5' }).check();
+  await page.getByRole('tab', { name: 'Recuerdo', exact: true }).click();
   await page.locator('#mb-recuerdo').fill('Datos de prueba: un otoño de mucha lluvia.');
   await page.locator('#mb-recuerdo').blur();
+  await page.getByRole('tab', { name: 'Resumen', exact: true }).click();
   await page.screenshot({ path: (mkdirSync(DIR, { recursive: true }), join(DIR, `${info.project.name}-pantalla.png`)), fullPage: false });
   const d = await tarjetas(page);
   await expect(d.locator('.rx__vista img')).toHaveCount(2);
   expect(await guardar(page, d, `${info.project.name}-13-libros`)).toBe(2);
   // Excluir favorito y frase cambia la imagen
   const antes = await d.locator('.rx__vista img').first().getAttribute('src');
-  await d.getByLabel('Incluir mi favorito').uncheck();
   await d.getByLabel('Incluir mi recuerdo').uncheck();
   await expect(d.locator('.rx__vista img').first()).not.toHaveAttribute('src', antes, { timeout: 15000 });
   await page.keyboard.press('Escape');
@@ -133,7 +133,7 @@ test('cifras, relectura, histórico, favorito, vuelta al calendario y PNG', asyn
   await expect(page.locator('.port-cal__head h3')).toHaveText(mesCal); 
   // Y el favorito y la frase siguen guardados tras recargar
   await irAlMes(page, 0);
-  await expect(page.getByRole('radio', { name: 'Libro de prueba 5' })).toBeChecked();
+  await page.getByRole('tab', { name: 'Recuerdo', exact: true }).click();
   await expect(page.locator('#mb-recuerdo')).toHaveValue('Datos de prueba: un otoño de mucha lluvia.');
   // El atrás del navegador cierra el resumen, no el ordenador
   await page.goBack();
@@ -154,11 +154,12 @@ for (const [n, nombre] of [
     const books = n === 0 ? [{ id: 'x', title: 'Libro empezado', author: 'Prueba', status: 'reading', pageCount: 300, currentPage: 25, cover: '', quotes: [] }] : libros(n);
     const { context, page } = await abrir(browser, base(books, log));
     await irAlMes(page, 1);
-    if (n === 0) await expect(page.locator('.mb__estado')).toHaveText('Este mes has seguido avanzando');
+    if (n === 0) await expect(page.locator('.mb__panel:not([hidden]) .mb__estado')).toHaveText('Este mes has seguido avanzando');
     await page.screenshot({ path: join(DIR, `pantalla-${nombre}.png`) });
     const d = await tarjetas(page);
-    await expect(d.locator('.rx__vista img')).toHaveCount(1);
-    expect(await guardar(page, d, `tarjeta-${nombre}`)).toBe(1);
+    const cuantas = n > 9 ? 2 : 1;
+    await expect(d.locator('.rx__vista img')).toHaveCount(cuantas);
+    expect(await guardar(page, d, `tarjeta-${nombre}`)).toBe(cuantas);
     await context.close();
   });
 }
@@ -190,7 +191,6 @@ test('a 320 y con teclado se llega al botón final', async ({ browser }, info) =
   test.setTimeout(90000);
   const { context, page } = await abrir(browser, base(libros(14, { largos: 3 })), { w: 320, h: 640, webkit: info.project.name.startsWith('webkit') });
   await irAlMes(page, 1);
-  await page.locator('#mb-recuerdo').focus();
   await page.setViewportSize({ width: 320, height: 360 });
   await page.waitForTimeout(400);
   const boton = page.getByRole('button', { name: 'Guardar o compartir resumen' });
@@ -236,13 +236,6 @@ test('una flecha para volver, favorito en la balda y páginas por día', async (
   await irAlMes(page, 1);
   await expect(page.getByRole('button', { name: /^Volver/ })).toHaveCount(1);
   await expect(page.locator('.port-computer__head h2')).toHaveText('Tu mes en libros');
-  await page.getByRole('radio', { name: 'Libro de prueba 2' }).check();
-  await expect(page.locator('.mb__destacado h4')).toHaveText('Libro de prueba 2');
-  await expect(page.locator('.mb__libro[data-favorito] .mb__cinta')).toHaveCount(1);
-  await page.locator('.mb__cifras').scrollIntoViewIfNeeded();
-  await page.screenshot({ path: join(DIR, 'pantalla-favorito.png') });
-  await page.getByRole('button', { name: 'Quitar favorito' }).click();
-  await expect(page.locator('.mb__libro[data-favorito]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Volver al calendario' }).click();
   await expect(page.locator('.mb')).toBeHidden();
   await expect(page.locator('.port-computer__head h2')).toHaveText('Calendario');
@@ -263,8 +256,8 @@ test('biblioteca: un botón para cada estado y Añadir a la vista', async ({ bro
   await menu(page).click();
   await page.getByRole('button', { name: 'Mi biblioteca', exact: true }).click();
   await expect(page.locator('.plab-library')).toBeVisible();
-  const colores = await page.locator('.plab-filter').evaluateAll((l) => l.map((n) => getComputedStyle(n).borderTopColor));
-  expect(new Set(colores).size).toBe(6);
+  const colores = await page.locator('.plab-filter').evaluateAll((l) => l.map((n) => getComputedStyle(n).backgroundColor));
+  expect(new Set(colores).size).toBe(5);
   const add = page.getByRole('button', { name: 'Añadir libro' });
   await expect(add).toBeInViewport({ ratio: 1 });
   await page.screenshot({ path: join(DIR, `${info.project.name}-biblioteca.png`) });
@@ -276,62 +269,3 @@ test('biblioteca: un botón para cada estado y Añadir a la vista', async ({ bro
   await context.close();
 });
 
-test('vídeo del recorrido', async ({ browser }, info) => {
-  soloChromium(info);
-  test.setTimeout(90000);
-  mkdirSync(join(DIR, 'bruto'), { recursive: true });
-  const log = [sesion('a', `${PASADO}-03`, 30), sesion('b', `${PASADO}-03`, 20), sesion('c', `${PASADO}-09`, 12)];
-  const biblio = base(libros(13), log);
-  const context = await browser.newContext({ baseURL: 'http://localhost:5196', locale: 'es-ES', timezoneId: 'Europe/Madrid', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, acceptDownloads: true, recordVideo: { dir: join(DIR, 'bruto'), size: { width: 390, height: 844 } } });
-  const page = await context.newPage();
-  await page.route(/covers\.openlibrary\.org/, (route) => route.fulfill({ status: 200, contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': '*' }, body: svg(Number(/id\/(\d+)/.exec(route.request().url())?.[1] ?? 500) - 500) }));
-  const mock = createMockSupabase({ edificio_vecinos: [] });
-  mock.db.profiles.push({ user_id: ANA.id, alias: 'Ana de prueba', avatar_id: 'gato-lector', community_enabled: true });
-  mock.db.edificio_vecinos.push({ user_id: ANA.id, edificio: 'edificio-1', puerta: '2B' });
-  mock.db.pisos.push({ user_id: ANA.id, layout: SALA });
-  mock.db.libraries.push({ user_id: ANA.id, data: biblio, updated_at: new Date().toISOString(), version: 5 });
-  await page.addInitScript((datos) => {
-    localStorage.setItem('bookshelf:signs-hint-done', 'true');
-    if (!localStorage.getItem('bookshelf:v1')) localStorage.setItem('bookshelf:v1', JSON.stringify(datos));
-  }, biblio);
-  await mock.attach(page, ANA);
-  await page.goto('/?inicio=habitacion');
-  await expect(page.locator('.plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
-  await page.waitForTimeout(1200);
-  await menu(page).click();
-  await page.waitForTimeout(600);
-  await page.getByRole('button', { name: 'Mi biblioteca', exact: true }).click();
-  await page.waitForTimeout(2200);
-  await page.goBack();
-  await page.waitForTimeout(1200);
-  await menu(page).click();
-  await page.waitForTimeout(500);
-  await page.getByRole('button', { name: 'Ordenador', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Mi escritorio' })).toBeVisible({ timeout: 12000 });
-  await page.waitForTimeout(700);
-  await page.getByRole('button', { name: 'Calendario' }).click();
-  await page.waitForTimeout(1200);
-  await page.getByRole('button', { name: 'Tu mes en libros' }).click();
-  await page.waitForTimeout(1500);
-  await page.locator('.mb__mes').getByRole('button', { name: 'Mes anterior' }).click();
-  await page.waitForTimeout(1800);
-  const cuerpo = page.locator('.pc-win:not([hidden]) .pc-win__body');
-  await cuerpo.evaluate((n) => n.scrollTo({ top: 420, behavior: 'smooth' }));
-  await page.waitForTimeout(1400);
-  await page.getByRole('radio', { name: 'Libro de prueba 5' }).check();
-  await page.waitForTimeout(1000);
-  await page.locator('#mb-recuerdo').fill('Datos de prueba: un otoño de mucha lluvia.');
-  await page.locator('#mb-recuerdo').blur();
-  await page.waitForTimeout(900);
-  const d = await tarjetas(page);
-  await page.waitForTimeout(2500);
-  await guardar(page, d, 'video-guardado');
-  await page.waitForTimeout(1200);
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(800);
-  await page.getByRole('button', { name: 'Volver al calendario' }).click();
-  await page.waitForTimeout(1500);
-  const video = page.video();
-  await context.close();
-  writeFileSync(join(DIR, 'bruto', 'ruta.txt'), await video.path());
-});

@@ -1,6 +1,6 @@
 // Las cifras esperadas están calculadas a mano en cada caso, no con la propia función.
 import { describe, expect, it } from 'vitest';
-import { cardPages, cleanNote, finishDay, monthSummary, shiftMonth } from '../monthSummary';
+import { cardPlan, cleanNote, dropFavorite, finishDay, monthSummary, moveFavorite, noteFavorites, placeFavorite, shiftMonth } from '../monthSummary';
 
 const HOY = new Date(2026, 10, 8, 12);
 const libro = (id, extra = {}) => ({ id, title: `Libro ${id}`, status: 'want', pageCount: 300, finishedAt: null, ...extra });
@@ -105,7 +105,8 @@ describe('favorito y frase', () => {
   });
   it('la frase se limita a 160 caracteres y lo vacío no se guarda', () => {
     expect(cleanNote({}, { quote: 'x'.repeat(200) }).quote).toHaveLength(160);
-    expect(cleanNote({ favorite: 'a', quote: 'Algo' }, { favorite: null, quote: '   ' })).toEqual({});
+    expect(cleanNote({ favorite: 'a', quote: 'Algo' }, { favorites: [], quote: '   ' })).toEqual({});
+    expect(cleanNote({ favorite: 'a' }, { quote: 'Sigue' })).toEqual({ favorites: ['a'], quote: 'Sigue' });
   });
 });
 
@@ -120,7 +121,45 @@ describe('meses y tarjetas', () => {
   });
   it('reparte en tarjetas de 12 sin perder ninguno', () => {
     const lista = Array.from({ length: 25 }, (_, i) => i);
-    expect(cardPages(lista).map((p) => p.length)).toEqual([12, 12, 1]);
-    expect(cardPages([]).map((p) => p.length)).toEqual([0]);
+    expect(cardPlan(lista, true).map((p) => p.length)).toEqual([6, 9, 9, 1]);
+    expect(cardPlan(lista, false).map((p) => p.length)).toEqual([9, 9, 7]);
+    expect(cardPlan(lista, true).flat()).toEqual(lista);
+    expect(cardPlan([]).map((p) => p.length)).toEqual([0]);
+  });
+});
+
+describe('ranking mensual', () => {
+  const libro = (id, day = '2026-10-05') => ({ id, title: id, author: 'A', status: 'read', finishedAt: `${day}T10:00:00.000Z` });
+  const siete = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((id) => libro(id));
+  const r = (notes, books = siete) => monthSummary({ books, log: [], notes }, '2026-10', new Date(2026, 10, 8));
+
+  it('siete terminados y tres elegidos: tres en el podio y cuatro en el resto, sin repetir', () => {
+    const s = r({ '2026-10': { favorites: ['c', 'a', 'g'] } });
+    expect(s.podium.map((p) => p.book.id)).toEqual(['c', 'a', 'g']);
+    expect(s.rest.map((p) => p.book.id)).toEqual(['b', 'd', 'e', 'f']);
+  });
+  it('sin elegir no hay podio ni elección automática', () => {
+    const s = r({});
+    expect(s.podium).toEqual([]);
+    expect(s.rest).toHaveLength(7);
+  });
+  it('el favorito antiguo pasa al puesto 1 y no se completan los demás', () => {
+    expect(r({ '2026-10': { favorite: 'b' } }).podium.map((p) => p.book.id)).toEqual(['b']);
+  });
+  it('un libro borrado o movido de mes sale y el ranking se compacta sin elegir otro', () => {
+    const books = siete.filter((b) => b.id !== 'a').map((b) => (b.id === 'b' ? libro('b', '2026-09-30') : b));
+    const s = r({ '2026-10': { favorites: ['a', 'b', 'c'] } }, books);
+    expect(s.podium.map((p) => p.book.id)).toEqual(['c']);
+    expect(s.favoriteLost).toBe(true);
+  });
+  it('elegir, sustituir, intercambiar, mover y quitar no duplican', () => {
+    expect(placeFavorite([], 'a', 0)).toEqual(['a']);
+    expect(placeFavorite(['a', 'b'], 'c', 0)).toEqual(['c', 'b']);
+    expect(placeFavorite(['a', 'b', 'c'], 'c', 0)).toEqual(['c', 'b', 'a']);
+    expect(placeFavorite(['a'], 'a', 1)).toEqual(['a']);
+    expect(moveFavorite(['a', 'b'], 1, -1)).toEqual(['b', 'a']);
+    expect(moveFavorite(['a', 'b'], 0, -1)).toEqual(['a', 'b']);
+    expect(dropFavorite(['a', 'b'], 'a')).toEqual(['b']);
+    expect(noteFavorites({ favorites: ['a', 'a', 'b', 'c', 'd'] })).toEqual(['a', 'b', 'c']);
   });
 });

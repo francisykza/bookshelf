@@ -2,7 +2,7 @@
 // datos reales, así que corregir o borrar una sesión o una fecha cambia el resumen sin guardar nada. Campos usados:
 // - Libros terminados: `book.finishedAt` (si está en «read») y `book.pastReads[].finishedAt` (relecturas). Cada ciclo con fecha válida cuenta una vez.
 // - Páginas y días: `progress.readingLog`, con su `date` local. `pages` ya es el avance (una página absoluta se guardó convertida a avance).
-// - Favorito y frase: `progress.monthNotes['AAAA-MM']`, dentro de la biblioteca de la cuenta.
+// - Favoritos (hasta 3, por orden) y frase: `progress.monthNotes['AAAA-MM']`, dentro de la biblioteca de la cuenta. Un `favorite` antiguo cuenta como puesto 1.
 import { dayKey, parseDay } from './dates';
 import { isActive } from './reading';
 
@@ -11,6 +11,37 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_ONLY_ISO = /^(\d{4}-\d{2}-\d{2})T12:00:00\.000Z$/;
 
 export const NOTE_MAX = 160;
+export const FAVORITES_MAX = 3;
+
+/** Los ids elegidos, por orden, sin repetir. El campo antiguo de un solo favorito se lee como puesto 1. */
+export function noteFavorites(note) {
+  const raw = Array.isArray(note?.favorites) ? note.favorites : note?.favorite ? [note.favorite] : [];
+  return [...new Set(raw.filter(Boolean))].slice(0, FAVORITES_MAX);
+}
+
+/** Pone un libro en un puesto. Si ya estaba en otro, se intercambian: nunca sale dos veces. */
+export function placeFavorite(list, id, slot) {
+  const next = [...list];
+  const at = next.indexOf(id);
+  if (at >= 0) {
+    if (slot >= next.length) return next;
+    [next[at], next[slot]] = [next[slot], next[at]];
+    return next;
+  }
+  if (slot < next.length) next[slot] = id;
+  else next.push(id);
+  return next.slice(0, FAVORITES_MAX);
+}
+
+export function moveFavorite(list, index, by) {
+  const to = index + by;
+  if (index < 0 || index >= list.length || to < 0 || to >= list.length) return list;
+  const next = [...list];
+  [next[index], next[to]] = [next[to], next[index]];
+  return next;
+}
+
+export const dropFavorite = (list, id) => list.filter((x) => x !== id);
 export const monthOf = (date = new Date()) => dayKey(date).slice(0, 7);
 
 const realDay = (key) => DAY.test(key) && dayKey(parseDay(key)) === key;
@@ -64,7 +95,8 @@ function pagesOf(entries, byId) {
 /**
  * Resumen de un mes (`AAAA-MM`). `notes` es `progress.monthNotes`.
  * `finished`: una entrada por libro, con `count` lecturas ese mes; `finishedCount` es la suma de lecturas.
- * `favoriteLost`: había favorito, pero ese libro ya no se terminó este mes; la selección no se usa y tampoco se borra.
+ * `podium`: los elegidos que siguen siendo válidos, en orden; `rest`: los demás terminados, sin repetir ninguno. Nunca se elige nada solo.
+ * `favoriteLost`: algún elegido ya no se terminó este mes: sale del podio y lo que guardó la persona no se borra hasta que vuelva a editarlo.
  */
 export function monthSummary({ books = [], log = [], notes = {} }, month, today = new Date()) {
   const byId = new Map(books.map((b) => [b.id, b]));
@@ -90,7 +122,9 @@ export function monthSummary({ books = [], log = [], notes = {} }, month, today 
   const { pages, converted, unknown } = pagesOf(entries, byId);
   const days = new Set(entries.filter(isActive).map((e) => e.date)).size;
   const note = notes?.[month] ?? {};
-  const favorite = finished.find((f) => f.book.id === note.favorite)?.book ?? null;
+  const chosen = noteFavorites(note);
+  const podium = chosen.map((id) => finished.find((f) => f.book.id === id)).filter(Boolean);
+  const inPodium = new Set(podium.map((p) => p.book.id));
   return {
     month,
     current: month === monthOf(today),
@@ -100,8 +134,10 @@ export function monthSummary({ books = [], log = [], notes = {} }, month, today 
     converted,
     unknown,
     days,
-    favorite,
-    favoriteLost: Boolean(note.favorite) && !favorite,
+    podium,
+    rest: finished.filter((f) => !inPodium.has(f.book.id)),
+    favorite: podium[0]?.book ?? null,
+    favoriteLost: podium.length < chosen.length,
     quote: typeof note.quote === 'string' ? note.quote : '',
     undated,
     hasActivity: finished.length > 0 || entries.some((e) => e.kind !== 'correction'),
@@ -112,10 +148,10 @@ export function monthSummary({ books = [], log = [], notes = {} }, month, today 
 export function cleanNote(previous = {}, patch = {}) {
   const next = { ...previous, ...patch };
   const quote = String(next.quote ?? '').slice(0, NOTE_MAX);
-  return { ...(next.favorite ? { favorite: next.favorite } : null), ...(quote.trim() ? { quote } : null) };
+  const favorites = noteFavorites('favorites' in patch ? patch : previous);
+  return { ...(favorites.length ? { favorites } : null), ...(quote.trim() ? { quote } : null) };
 }
 
-/** Las portadas de la exportación, en tarjetas de 12 como máximo; ningún libro se queda fuera. */
 /** Las portadas de un mes, para tenerlas listas antes de enseñarlo. Si los datos fallan, ninguna: quien pinta ya mostrará el error. */
 export function monthCovers(data, month, limit = 12) {
   try {
@@ -127,8 +163,9 @@ export function monthCovers(data, month, limit = 12) {
   }
 }
 
-export function cardPages(finished, size = 12) {
-  const pages = [];
-  for (let i = 0; i < finished.length; i += size) pages.push(finished.slice(i, i + size));
-  return pages.length ? pages : [[]];
+/** Reparto de la exportación: con podio, hasta 6 libros más en la primera tarjeta; sin él, hasta 9; en las siguientes, hasta 9. Cada libro, una vez. */
+export function cardPlan(rest, withPodium = false, first = withPodium ? 6 : 9, size = 9) {
+  const pages = [rest.slice(0, first)];
+  for (let i = first; i < rest.length; i += size) pages.push(rest.slice(i, i + size));
+  return pages;
 }

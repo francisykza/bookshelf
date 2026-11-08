@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.91.1 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.92.0 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5529,3 +5529,14 @@ Aprobada por Francisco el 8-11-2026 tras revisar vídeos y capturas. Sin migraci
 - **Tarjeta:** las portadas toman el sitio libre; con favorito o frase, la primera tarjeta lleva como máximo 8 portadas y las demás 12.
 - **Calendario:** cada día con lectura indica sus páginas o su porcentaje.
 - **Biblioteca:** cada filtro con color e icono propios y «Añadir libro» siempre a la vista.
+
+## 92. Biblioteca, ficha y resumen del mes con acabado literario (1.92.0)
+
+Aprobada por Francisco el 8-11-2026 tras revisar capturas, PNG y vídeos. Sin migraciones.
+
+- **Biblioteca:** vista de portadas y lista virtualizadas, filtros de color, buscador, orden y regreso con posición. Marco de ventana, baldas de lado a lado y pie «Tu biblioteca, a tu ritmo».
+- **Ficha:** cabecera con portada, progreso, registro, «Expuesto en tu habitación», pestañas y recorrido de lectura.
+- **Tu mes en libros:** tres favoritos ordenados por mes en `progress.monthNotes['AAAA-MM'].favorites`; el `favorite` antiguo se lee como puesto 1. Podio de peanas, cifras, «También me acompañaron», recuerdo y exportación con estados y límites.
+- **PNG 1080 × 1920:** reutiliza las piezas reales de la pantalla, sin controles, nombre ni correo.
+- **Estilos y recursos:** `src/theme/literario.css` y `public/assets/puerto/acabado/`. Los adornos pixel son originales; las maquetas no se usan como fondo ni se instalan sus portadas de ejemplo.
+- **Diferencias aceptadas con la maqueta:** portadas reales sin lomo 3D, filtros de color (Fase 3), peanas separadas, contador en «También me acompañaron», sin × en la biblioteca y sin logotipo en la cabecera del mes.

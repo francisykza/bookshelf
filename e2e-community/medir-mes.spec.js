@@ -11,6 +11,7 @@ import { createMockSupabase } from './mockSupabase';
 
 process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = '1';
 const OUT = process.env.MEDIR_MES;
+const OUT_EXPORT = process.env.MEDIR_EXPORT;
 const DIST = 'qa-report/dist-medir';
 const PORT = 5199;
 const LATENCIA = 120; // ms por portada: en local llegarían al instante y el problema no se vería
@@ -23,12 +24,8 @@ const servidor = createServer((req, res) => {
   res.end(readFileSync(file));
 });
 
-test('medir las portadas al cambiar de mes', async () => {
-  test.skip(!OUT, 'solo a mano, con MEDIR_MES');
-  test.setTimeout(280000);
-await new Promise((ok) => servidor.listen(PORT, ok));
 
-const portada = await sharp({ create: { width: 180, height: 270, channels: 3, background: { r: 138, g: 90, b: 60 }, noise: { type: 'gaussian', mean: 128, sigma: 26 } } }).jpeg({ quality: 82 }).toBuffer();
+let portada;
 const ahora = new Date();
 const mes = (by) => {
   const d = new Date(ahora.getFullYear(), ahora.getMonth() + by, 1);
@@ -130,6 +127,11 @@ const anterior = (page) => page.locator('.mb__mes').getByRole('button', { name: 
 const siguiente = (page) => page.locator('.mb__mes').getByRole('button', { name: 'Mes siguiente' }).click();
 const entrar = (page) => page.getByRole('button', { name: 'Tu mes en libros' }).click();
 
+test('medir las portadas al cambiar de mes', async () => {
+  test.skip(!OUT, 'solo a mano, con MEDIR_MES');
+  test.setTimeout(280000);
+await new Promise((ok) => servidor.listen(PORT, ok));
+portada = await sharp({ create: { width: 180, height: 270, channels: 3, background: { r: 138, g: 90, b: 60 }, noise: { type: 'gaussian', mean: 128, sigma: 26 } } }).jpeg({ quality: 82 }).toBuffer();
 try {
   let { context, page } = await abrir();
   await page.goto(`http://localhost:${PORT}/?inicio=habitacion`);
@@ -160,4 +162,71 @@ try {
     // Windows puede tardar en soltar el perfil
   }
 }
+});
+
+// Reproducir «Preparando…»: portadas remotas válidas, sin CORS, rotas y una que nunca responde, con build de producción y service worker real.
+test('medir la exportación con portadas reales de cada tipo', async () => {
+  test.skip(!OUT_EXPORT, 'solo a mano, con MEDIR_EXPORT');
+  test.setTimeout(180000);
+  const srv = createServer((req, res) => {
+    const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+    let file = join(DIST, path === '/' ? 'index.html' : path);
+    if (!existsSync(file) || !extname(file)) file = join(DIST, 'index.html');
+    res.writeHead(200, { 'content-type': TIPOS[extname(file)] ?? 'application/octet-stream', 'cache-control': 'no-store' });
+    res.end(readFileSync(file));
+  });
+  await new Promise((ok) => srv.listen(PORT, ok));
+  const img = await sharp({ create: { width: 180, height: 270, channels: 3, background: { r: 60, g: 90, b: 138 } } }).jpeg().toBuffer();
+  const carpeta = mkdtempSync(join(tmpdir(), 'bookshelf-exp-'));
+  const m = mes(-1);
+  const cover = (i) => (i < 3 ? 'https://covers.openlibrary.org/b/id/' + (3000 + i) + '-M.jpg' : i < 6 ? 'https://books.google.com/books/content?id=g' + i + '&printsec=frontcover&img=1&zoom=1' : i === 6 ? 'https://covers.openlibrary.org/b/id/4040-M.jpg' : 'https://covers.openlibrary.org/b/id/5050-M.jpg');
+  const lista = Array.from({ length: 8 }, (_, i) => ({ ...libro(7000 + i, m, i), cover: cover(i) }));
+  const datos = { ...biblio, books: lista };
+  const context = await chromium.launchPersistentContext(carpeta, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, locale: 'es-ES', timezoneId: 'Europe/Madrid', serviceWorkers: 'allow', acceptDownloads: true });
+  const pedidos = [];
+  await context.route(/covers\.openlibrary\.org|books\.google\.com/, async (route) => {
+    const u = route.request().url();
+    pedidos.push(u.slice(-30));
+    if (u.includes('5050')) return; // nunca responde
+    if (u.includes('4040')) return route.fulfill({ status: 404, body: 'no' });
+    const cors = u.includes('openlibrary') ? { 'access-control-allow-origin': '*' } : {};
+    return route.fulfill({ status: 200, body: img, headers: { 'content-type': 'image/jpeg', ...cors } });
+  });
+  const page = context.pages()[0] ?? (await context.newPage());
+  const mock = createMockSupabase({ edificio_vecinos: [] });
+  mock.db.profiles.push({ user_id: ANA.id, alias: 'Prueba', avatar_id: 'gato-lector', community_enabled: true });
+  mock.db.edificio_vecinos.push({ user_id: ANA.id, edificio: 'edificio-1', puerta: '2B' });
+  mock.db.pisos.push({ user_id: ANA.id, layout: SALA });
+  mock.db.libraries.push({ user_id: ANA.id, data: datos, updated_at: new Date().toISOString(), version: 5 });
+  await page.addInitScript((d) => {
+    localStorage.setItem('bookshelf:signs-hint-done', 'true');
+    if (!localStorage.getItem('bookshelf:v1')) localStorage.setItem('bookshelf:v1', JSON.stringify(d));
+  }, datos);
+  await mock.attach(page, ANA);
+  const salida = [];
+  try {
+    await page.goto('http://localhost:' + PORT + '/?inicio=habitacion');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.waitForTimeout(1200);
+    await alCalendario(page);
+    await page.waitForTimeout(500);
+    await entrar(page);
+    await page.waitForTimeout(400);
+    await anterior(page);
+    await page.waitForTimeout(800);
+    for (const intento of ['primera apertura', 'reabrir']) {
+      const t0 = Date.now();
+      await page.getByRole('button', { name: /Guardar o compartir/ }).click();
+      const d = page.getByRole('dialog', { name: 'Vista previa del resumen' });
+      const r = await d.locator('.rx__vista img').first().waitFor({ timeout: 40000 }).then(() => 'imagen', () => 'sigue preparando a los 40 s');
+      salida.push({ intento, resultado: r, ms: Date.now() - t0, notas: await d.locator('.rx__nota').allTextContents(), etapas: await d.getAttribute('data-etapas').catch(() => null) });
+      console.log(JSON.stringify(salida.at(-1)));
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(500);
+    }
+  } finally {
+    writeFileSync(OUT_EXPORT, JSON.stringify({ salida, pedidos }, null, 2));
+    await context.close();
+    srv.close();
+  }
 });

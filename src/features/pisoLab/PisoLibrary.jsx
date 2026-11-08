@@ -1,7 +1,7 @@
 // Toda la biblioteca, desde la estantería: búsqueda y filtros sobre todos los ejemplares, resultados por bloques y solo unas
 // pocas filas montadas a la vez. Las filas miden siempre lo mismo, así que saber cuáles se ven no obliga a medir nada. Una
 // portada solo se pide si su fila sigue montada un momento: pasar de largo no descarga nada.
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft, Filter, LayoutGrid, List, X } from 'lucide-react';
 import { memo, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Cover } from '../../components/shelf/BookItem';
 import { STATUS } from '../../domain/books';
@@ -20,7 +20,33 @@ const COVER_DELAY = 160;
 const FAST_SCROLL = 1;
 /** Hasta cuándo se considera que la lista sigue yendo rápido. Hay una sola lista a la vez. */
 const motion = { until: 0 };
-const FILTERS = [{ id: 'all', label: 'Todos' }, ...LIBRARY_STATUSES.map((id) => ({ id, label: STATUS[id] })), { id: 'chosen', label: 'Expuestos' }];
+/** Cada estado con su tono: el color nunca es la única señal, también van nombre e icono. */
+const FILTERS = [
+  { id: 'all', label: 'Todos', tone: 'sage' },
+  { id: 'reading', label: 'Leyendo', tone: 'blue' },
+  { id: 'want', label: 'Pendientes', tone: 'mustard' },
+  { id: 'read', label: 'Leídos', tone: 'terracotta' },
+  { id: 'abandoned', label: 'Abandonados', tone: 'mauve' },
+].filter((f) => f.id === 'all' || LIBRARY_STATUSES.includes(f.id));
+const ORDERS = [
+  { id: 'title', label: 'Título' },
+  { id: 'author', label: 'Autoría' },
+  { id: 'added', label: 'Añadidos recientemente' },
+  { id: 'finished', label: 'Terminados recientemente' },
+];
+const byDate = (field) => (a, b) => String(b[1][field] ?? '').localeCompare(String(a[1][field] ?? '')) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+const SORTERS = {
+  title: (a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
+  author: (a, b) => normalize(a[1].author ?? '').localeCompare(normalize(b[1].author ?? '')) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
+  added: byDate('addedAt'),
+  finished: byDate('finishedAt'),
+};
+/** Portadas por fila según el ancho: 3 en el móvil y 2 si no caben cómodas; en pantallas grandes, las que quepan con unos 130 px. */
+const columnsFor = (width) => (width < 360 ? 2 : width < 600 ? 3 : Math.min(8, Math.floor((width - 12) / 142)));
+const coverRowHeight = (width) => {
+  const cols = columnsFor(width);
+  return Math.round((((width - 24 - (cols - 1) * 12) / cols) * 3) / 2) + 35;
+};
 
 // Un icono de píxeles para cada estado: cada filtro se reconoce por su forma además de por su color
 const PIXELES = {
@@ -29,7 +55,6 @@ const PIXELES = {
   want: ['..#####..', '..#####..', '..#####..', '..#####..', '..#####..', '..##.##..', '..#...#..'],
   read: ['........#', '.......##', '......##.', '#....##..', '##..##...', '.####....', '..##.....'],
   abandoned: ['#.......#', '##.....##', '.##...##.', '..##.##..', '...###...', '..##.##..', '.##...##.', '##.....##', '#.......#'],
-  chosen: ['....#....', '....#....', '...###...', '#########', '.#######.', '..#####..', '..##.##..', '.##...##.', '.#.....#.'],
   add: ['...###...', '...###...', '...###...', '#########', '#########', '#########', '...###...', '...###...', '...###...'],
 };
 
@@ -43,7 +68,7 @@ function Pixeles({ name }) {
 }
 
 /** Una memoria nueva para `memory`: lo que hay que recuperar al volver de la ficha de un libro. */
-export const emptyLibraryMemory = () => ({ query: '', status: 'all', count: BLOCK, top: 0, focusId: null });
+export const emptyLibraryMemory = () => ({ query: '', status: 'all', count: BLOCK, top: 0, focusId: null, view: 'covers', order: 'title', onlyChosen: false });
 
 function RowCover({ book }) {
   const [wanted, setWanted] = useState(false);
@@ -60,6 +85,20 @@ function RowCover({ book }) {
 }
 
 // Al desplazar solo cambian las filas que entran y salen: las demás no se vuelven a dibujar
+/** Una balda de portadas. Una sola etiqueta con todo lo que se sabe del libro: sin títulos repetidos bajo cada portada. */
+const CoverRow = memo(function CoverRow({ books, top, height, cols, chosen, onOpen }) {
+  return (
+    <li className="lit-fila" style={{ top, height, gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+      {books.map((book) => (
+        <button key={book.id} type="button" className="lit-libro" data-book={book.id} aria-label={`${book.title}, de ${book.author}. ${STATUS[book.status]}${chosen.has(book.id) ? '. Expuesto en la habitación' : ''}`} onClick={() => onOpen(book)}>
+          <RowCover book={book} />
+          {book.status === 'reading' && <i className="lit-libro__marca" aria-hidden="true" />}
+        </button>
+      ))}
+    </li>
+  );
+});
+
 const Row = memo(function Row({ book, index, total, placed, chosen, onOpen, onToggle }) {
   const isReading = book.status === 'reading';
   const note = placed ? 'En la estantería' : chosen ? 'Expuesto, no cabe ahora' : null;
@@ -88,9 +127,14 @@ const Row = memo(function Row({ book, index, total, placed, chosen, onOpen, onTo
 
 export function PisoLibrary({ books, settings, placed, memory, notice, onBack, onOpen, onToggle, onAdd }) {
   const [query, setQuery] = useState(memory.query);
-  const [status, setStatus] = useState(memory.status);
+  const [status, setStatus] = useState(memory.status === 'chosen' ? 'all' : memory.status);
   const [count, setCount] = useState(memory.count);
-  const [view, setView] = useState({ top: memory.top, height: 0 });
+  const [view, setView] = useState({ top: memory.top, height: 0, width: typeof window === 'undefined' ? 390 : window.innerWidth });
+  const [layout, setLayout] = useState(memory.view ?? 'covers');
+  const [order, setOrder] = useState(memory.order ?? 'title');
+  // Una memoria antigua con «Expuestos» como estado pasa a ser el filtro adicional
+  const [onlyChosen, setOnlyChosen] = useState(Boolean(memory.onlyChosen) || memory.status === 'chosen');
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const searched = useDeferredValue(query);
   const root = useRef(null);
   const list = useRef(null);
@@ -98,17 +142,17 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
 
   const sorted = useMemo(() => {
     const keyed = uniqueBooks(books).map((book) => [normalize(book.title), book]);
-    keyed.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+    keyed.sort(SORTERS[order]);
     return keyed.map((pair) => pair[1]);
-  }, [books]);
+  }, [books, order]);
   const chosen = useMemo(() => new Set(chosenIds(settings)), [settings]);
   const found = useMemo(() => {
-    const matches = filterLibrary(sorted, { query: searched, status: status === 'chosen' ? 'all' : status });
-    return status === 'chosen' ? matches.filter((b) => chosen.has(b.id)) : matches;
-  }, [sorted, searched, status, chosen]);
+    const matches = filterLibrary(sorted, { query: searched, status });
+    return onlyChosen ? matches.filter((b) => chosen.has(b.id)) : matches;
+  }, [sorted, searched, status, chosen, onlyChosen]);
 
   // Al cambiar la búsqueda o el filtro se empieza por arriba; al volver de una ficha, no
-  const asked = `${searched}|${status}`;
+  const asked = `${searched}|${status}|${order}|${onlyChosen}|${layout}`;
   const lastAsked = useRef(asked);
   useEffect(() => {
     if (lastAsked.current === asked) return;
@@ -119,8 +163,17 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
   }, [asked]);
 
   const shown = Math.min(count, found.length);
-  const first = Math.max(0, Math.floor(view.top / ROW_H) - OVERSCAN);
-  const last = Math.min(shown, Math.ceil((view.top + view.height) / ROW_H) + OVERSCAN);
+  const covers = layout === 'covers';
+  const cols = covers ? columnsFor(view.width) : 1;
+  const rowH = covers ? coverRowHeight(view.width) : ROW_H;
+  const rowRef = useRef(rowH);
+  rowRef.current = rowH;
+  // En portadas, una «fila» de la lista virtual es una balda
+  const totalRows = Math.ceil(shown / cols);
+  const firstRow = Math.max(0, Math.floor(view.top / rowH) - OVERSCAN);
+  const lastRow = Math.min(totalRows, Math.ceil((view.top + view.height) / rowH) + OVERSCAN);
+  const first = firstRow * cols;
+  const last = Math.min(shown, lastRow * cols);
 
   // El siguiente bloque llega antes de tocar fondo
   useEffect(() => {
@@ -142,9 +195,10 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
       lastTop = el.scrollTop;
       lastAt = now;
       memory.top = el.scrollTop;
-      const top = Math.floor(el.scrollTop / ROW_H) * ROW_H;
+      const top = Math.floor(el.scrollTop / rowRef.current) * rowRef.current;
       const height = el.clientHeight;
-      setView((v) => (v.top === top && v.height === height ? v : { top, height }));
+      const width = el.clientWidth;
+      setView((v) => (v.top === top && v.height === height && v.width === width ? v : { top, height, width }));
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(read);
@@ -163,8 +217,8 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
   }, []);
 
   useEffect(() => {
-    Object.assign(memory, { query, status, count });
-  }, [memory, query, status, count]);
+    Object.assign(memory, { query, status, count, view: layout, order, onlyChosen });
+  }, [memory, query, status, count, layout, order, onlyChosen]);
 
   // El teclado del móvil tapa parte de la pantalla: la vista se queda en lo que sigue a la vista
   useEffect(() => {
@@ -188,7 +242,11 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
   // Al volver de la ficha, el foco a la fila de la que vienes; al abrir, al título: abrir el teclado sin pedirlo tapa la lista
   useEffect(() => {
     const row = memory.focusId && root.current?.querySelector(`[data-book="${CSS.escape(memory.focusId)}"]`);
+    const list = root.current?.querySelector('.plab-library__list');
+    const top = list?.scrollTop ?? 0;
     (row || heading.current)?.focus({ preventScroll: true });
+    // WebKit mueve la lista al enfocar pese a preventScroll
+    if (list) list.scrollTop = top;
     memory.focusId = null;
     // Solo al abrir
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,19 +265,23 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
   );
   const toggle = useCallback((...args) => handlers.current.onToggle(...args), []);
   const rows = [];
-  for (let i = first; i < last; i += 1) rows.push(<Row key={found[i].id} book={found[i]} index={i} total={found.length} placed={placed.has(found[i].id)} chosen={chosen.has(found[i].id)} onOpen={open} onToggle={toggle} />);
+  if (covers) for (let r = firstRow; r < lastRow; r += 1) {
+    const group = found.slice(r * cols, Math.min(shown, (r + 1) * cols));
+    if (group.length) rows.push(<CoverRow key={group[0].id} books={group} top={r * rowH} height={rowH} cols={cols} chosen={chosen} onOpen={open} />);
+  }
+  else for (let i = first; i < last; i += 1) rows.push(<Row key={found[i].id} book={found[i]} index={i} total={found.length} placed={placed.has(found[i].id)} chosen={chosen.has(found[i].id)} onOpen={open} onToggle={toggle} />);
 
   return (
-    <section ref={root} className="plab-library" aria-labelledby="plab-library-title">
+    <section ref={root} className="plab-library bs-literary" aria-labelledby="plab-library-title">
+      <div className="lit-cabecera">
+        <button type="button" className="lit-boton" onClick={onBack} aria-label="Volver">
+          <ArrowLeft aria-hidden="true" width="20" height="20" />
+        </button>
+        <h2 ref={heading} id="plab-library-title" tabIndex={-1}>
+          Biblioteca
+        </h2>
+      </div>
       <header className="plab-library__head">
-        <div className="plab-library__top">
-          <button type="button" className="px-btn" onClick={onBack}>
-            <ArrowLeft aria-hidden="true" /> Volver a la balda
-          </button>
-          <h2 ref={heading} id="plab-library-title" tabIndex={-1} className="plab-title">
-            Tu biblioteca
-          </h2>
-        </div>
         <div className="plab-library__buscar">
         <form
           className="plab-library__search"
@@ -237,25 +299,66 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
           )}
         </form>
         {onAdd && (
-          <button type="button" className="px-btn plab-library__add" onClick={onAdd}>
-            <Pixeles name="add" /> Añadir libro
+          <button type="button" className="lit-boton lit-boton--verde" onClick={onAdd} aria-label="Añadir libro">
+            <Pixeles name="add" />
           </button>
         )}
         </div>
         <div className="plab-library__filters" role="group" aria-label="Filtrar">
           {FILTERS.map((f) => (
-            <button key={f.id} type="button" className="plab-filter" data-filtro={f.id} aria-pressed={status === f.id} onClick={() => setStatus(f.id)}>
-              <Pixeles name={f.id} />
+            <button key={f.id} type="button" className="plab-filter color-tab" data-filtro={f.id} data-tone={f.tone} aria-pressed={status === f.id} onClick={() => setStatus(f.id)}>
               {f.label}
             </button>
           ))}
         </div>
+        <div className="lit-barra">
         <p className="plab-library__count" role="status">
           {notice || (found.length ? `${found.length.toLocaleString('es-ES')} ${found.length === 1 ? 'libro' : 'libros'}${shown < found.length ? `, ${shown.toLocaleString('es-ES')} cargados` : ''}` : sorted.length ? 'Ningún libro coincide' : 'Aún no hay libros')}
         </p>
+        <span className="lit-segmento">
+        <button type="button" className="lit-boton" aria-label="Ver portadas" aria-pressed={covers} onClick={() => setLayout('covers')}>
+          <LayoutGrid aria-hidden="true" width="20" height="20" />
+        </button>
+        <button type="button" className="lit-boton" aria-label="Ver lista" aria-pressed={!covers} onClick={() => setLayout('list')}>
+          <List aria-hidden="true" width="20" height="20" />
+        </button>
+        </span>
+        <span className="lit-separa" aria-hidden="true" />
+        <button type="button" className="lit-boton" aria-label="Filtros y orden" aria-expanded={optionsOpen} onClick={() => setOptionsOpen((v) => !v)}>
+          <Filter aria-hidden="true" width="20" height="20" />
+        </button>
+        </div>
+        {optionsOpen && (
+          <div className="lit-opciones">
+            <label>
+              Ordenar por
+              <select value={order} onChange={(e) => setOrder(e.target.value)}>
+                {ORDERS.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <input type="checkbox" checked={onlyChosen} onChange={(e) => setOnlyChosen(e.target.checked)} /> Solo los expuestos en la habitación
+            </label>
+          </div>
+        )}
+        {onlyChosen && (
+          <button type="button" className="lit-boton" onClick={() => setOnlyChosen(false)} aria-label="Quitar el filtro Expuestos">
+            Expuestos <X aria-hidden="true" width="16" height="16" />
+          </button>
+        )}
       </header>
       <div ref={list} className="plab-library__list">
-        <ul style={{ height: shown * ROW_H }}>{rows}</ul>
+        <ul style={{ height: totalRows * rowH }}>{rows}</ul>
+        {covers && found.length > 0 && shown >= found.length && (
+          <p className="lit-pie">
+            <img src="/assets/puerto/acabado/book.svg" alt="" />
+            Tu biblioteca, a tu ritmo
+          </p>
+        )}
         {shown < found.length && (
           <button type="button" className="px-btn plab-library__more" onClick={() => setCount((c) => Math.min(found.length, c + BLOCK))}>
             Cargar {Math.min(BLOCK, found.length - shown)} más

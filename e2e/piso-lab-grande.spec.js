@@ -14,7 +14,7 @@ const library = async (page) => {
   await page.getByRole('button', { name: 'Ver la balda' }).click();
   await page.waitForFunction(() => window.__pisoLab().debug().zoomed);
   await page.getByRole('button', { name: /Buscar en toda la biblioteca, 5000 libros/ }).click();
-  await expect(page.getByRole('heading', { name: 'Tu biblioteca' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Biblioteca', exact: true })).toBeVisible();
 };
 const search = (page) => page.getByRole('searchbox', { name: /Buscar por título/ });
 
@@ -94,7 +94,7 @@ test('volver de una ficha conserva la búsqueda; exponer no toca el estado de le
   // Sobrevive a recargar, y retirarlo tampoco cambia el libro
   await page.reload();
   await page.waitForFunction(() => window.__pisoLab?.()?.debug().shelf.books.includes('lab-3999'), null, { timeout: 30000 });
-  await expect(page.getByRole('heading', { name: 'Tu biblioteca' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Biblioteca', exact: true })).toBeVisible();
   await search(page).fill('n.º 4000');
   await page.getByRole('button', { name: /Retirar de la estantería/ }).click();
   await page.waitForFunction(() => !window.__pisoLab().debug().shelf.books.includes('lab-3999'));

@@ -58,7 +58,7 @@ test('recorrido: entrar, biblioteca, registrar, calendario, diario y salir al po
   await tap(page, 'estanteria', -0.42);
   await page.waitForFunction(() => window.__pisoLab().debug().zoomed);
   await page.getByRole('button', { name: /Buscar en toda la biblioteca/ }).click();
-  await expect(page.getByRole('heading', { name: 'Tu biblioteca' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Biblioteca', exact: true })).toBeVisible();
   await page.goBack();
   await page.goBack();
   await page.waitForFunction(() => !window.__pisoLab().debug().zoomed);
