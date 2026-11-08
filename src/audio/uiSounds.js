@@ -4,12 +4,23 @@
 // sonidos breves a la vez y 80 ms entre repeticiones del mismo evento. Un fallo de audio nunca bloquea nada.
 import { bell, sfxEnabled, sharedAudio } from './ambientAudio';
 
-const MIN_GAP_MS = 80;
+const MIN_GAP_MS = 100;
+/** Un toque, un sonido: dentro de esta ventana solo pasa lo más importante (lo confirmado, luego navegar, luego el clic). */
+const ARBITER_MS = 100;
+const PRIORITY = { save: 3, pageLeaves: 3, noteSave: 3, 'save-success': 3, 'save-error': 3, 'computer-open': 2, 'panel-open': 2, 'panel-close': 2, computerOn: 2, libraryOpen: 2, bookOpen: 2, bookClose: 2, atticOpen: 2, close: 2, visit: 2, envelope: 2 };
+/** Los efectos de la 1.90 nacen a 0,08 como máximo; aquí se compensa para que los controles den un nivel que se oiga. */
+const SOFT_TRIM = 2.5;
+/** El ruido filtrado pierde casi toda su energía en el filtro: medido en la salida, necesita más para igualar a los tonos. */
+const SOFT_NOISE_TRIM = 7.5;
 const MAX_VOICES = 3;
 let volume = 0.25;
 let bus = null;
 let busCtx = null;
 let noiseBuf = null;
+let soft = null;
+let softNoise = null;
+let target = null;
+let lastPlay = { at: -Infinity, priority: 0 };
 
 /** Volumen de los efectos de interfaz (0–1); por defecto 25 %. */
 export function setUiVolume(v) {
@@ -48,6 +59,12 @@ function ensureBus() {
     bus = shared.ctx.createGain();
     bus.gain.value = volume;
     bus.connect(shared.master);
+    soft = shared.ctx.createGain();
+    soft.gain.value = SOFT_TRIM;
+    soft.connect(bus);
+    softNoise = shared.ctx.createGain();
+    softNoise.gain.value = SOFT_NOISE_TRIM;
+    softNoise.connect(bus);
     const len = Math.floor(shared.ctx.sampleRate * 0.5);
     noiseBuf = shared.ctx.createBuffer(1, len, shared.ctx.sampleRate);
     const d = noiseBuf.getChannelData(0);
@@ -75,7 +92,7 @@ function noise(ctx, t, { type = 'bandpass', freq, q = 1, peak, attack = 0.006, r
   if (sweep !== 1) f.frequency.exponentialRampToValueAtTime(freq * sweep, t + attack + release);
   f.Q.value = q;
   const env = envelope(ctx, t, peak, attack, release);
-  src.connect(f).connect(env).connect(bus);
+  src.connect(f).connect(env).connect(target ? softNoise : bus);
   src.start(t, Math.random() * 0.3);
   src.stop(t + attack + release + 0.02);
 }
@@ -87,7 +104,7 @@ function tone(ctx, t, { freq, peak, attack = 0.003, release, type = 'sine', glid
   osc.frequency.setValueAtTime(freq, t);
   if (glide !== 1) osc.frequency.exponentialRampToValueAtTime(freq * glide, t + attack + release);
   const env = envelope(ctx, t, peak, attack, release);
-  osc.connect(env).connect(bus);
+  osc.connect(env).connect(target ?? bus);
   osc.start(t);
   osc.stop(t + attack + release + 0.02);
 }
@@ -99,8 +116,42 @@ function pages(ctx, t, count, { freq = 3200, peak = 0.26, step = 0.07 } = {}) {
   }
 }
 
+/** Las voces suaves de «Escritorio del puerto»: pasan por su compensación de nivel. */
+const softly = (draw) => (c, t) => {
+  target = soft;
+  try {
+    draw(c, t);
+  } finally {
+    target = null;
+  }
+};
+
 /** Recetas por evento (SPEC §17.5, §35.4): material, nivel normalizado y duración objetivo (ms). */
 const RECIPES = {
+  // 1.90 · Madera y papel, un golpe seco
+  'ui-press': { ms: 35, play: softly((c, t) => noise(c, t, { freq: 1400, q: 1, peak: 0.07, attack: 0.003, release: 0.032 })) },
+  // 1.90 · Roce leve de papel, de 900 a 2400 Hz
+  'panel-open': { ms: 100, play: softly((c, t) => noise(c, t, { freq: 900, q: 0.9, peak: 0.06, attack: 0.03, release: 0.07, sweep: 2.67 })) },
+  // 1.90 · El mismo papel, más corto y más bajo
+  'panel-close': { ms: 70, play: softly((c, t) => noise(c, t, { freq: 2000, q: 0.9, peak: 0.04, attack: 0.02, release: 0.05, sweep: 0.6 })) },
+  // 1.90 · Mi y sol, dos notas suaves de 70 ms separadas 25 ms
+  'computer-open': {
+    ms: 180,
+    play: softly((c, t) => {
+      tone(c, t, { freq: 659.25, peak: 0.08, attack: 0.008, release: 0.062 });
+      tone(c, t + 0.095, { freq: 783.99, peak: 0.08, attack: 0.008, release: 0.062 });
+    }),
+  },
+  // 1.90 · Guardado confirmado: do, mi y sol, ligados
+  'save-success': {
+    ms: 220,
+    play: softly((c, t) => [523.25, 659.25, 783.99].forEach((freq, i) => tone(c, t + i * 0.06, { freq, peak: 0.075, attack: 0.01, release: 0.09 }))),
+  },
+  // 1.90 · No se ha guardado: dos pulsos graves, sin alarma
+  'save-error': {
+    ms: 130,
+    play: softly((c, t) => [0, 0.075].forEach((at) => tone(c, t + at, { freq: 220, peak: 0.08, attack: 0.005, release: 0.05 }))),
+  },
   // C · Libro que se desliza sobre la madera y se asienta (fricción grave, sin papel)
   libraryOpen: {
     ms: 340,
@@ -190,6 +241,8 @@ const RECIPES = {
   figureSelect: { ms: 70, play: (c, t) => tone(c, t, { freq: 300, peak: 0.26, release: 0.06, glide: 0.85 }) },
 };
 
+if (import.meta.env?.DEV && typeof window !== 'undefined') queueMicrotask(() => (window.__playUiSound = playUiSound));
+
 export const UI_EVENTS = [...Object.keys(RECIPES), 'sessionEnd'];
 
 /**
@@ -205,7 +258,12 @@ export function playUiSound(event, { force = false } = {}) {
       return true;
     }
     const recipe = RECIPES[event];
-    if (!recipe || !gate(event, performance.now(), recipe.ms)) return false;
+    if (!recipe) return false;
+    const now = performance.now();
+    const priority = PRIORITY[event] ?? 1;
+    if (now - lastPlay.at < ARBITER_MS && lastPlay.priority >= priority) return false;
+    if (!gate(event, now, recipe.ms)) return false;
+    lastPlay = { at: now, priority };
     // Se registra la emisión (una por acción) aunque el navegador aún no permita reproducir audio
     log(event);
     const ctx = ensureBus();

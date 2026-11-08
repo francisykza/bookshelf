@@ -42,7 +42,7 @@ async function tap(page, what, yaw) {
     .toBeLessThan(1);
   await page.mouse.click(at.x, at.y);
 }
-const desktop = (page) => page.getByRole('region', { name: 'Mi lectura' });
+const desktop = (page) => page.getByRole('region', { name: 'Lo principal' });
 const icon = (page, name) => page.locator('.plab-desktop').getByRole('button', { name: new RegExp(`^${name}`) });
 
 test('recorrido: entrar, biblioteca, registrar, calendario, diario y salir al portal', async ({ page }, info) => {
@@ -77,18 +77,18 @@ test('recorrido: entrar, biblioteca, registrar, calendario, diario y salir al po
   await page.screenshot({ path: `${OUT}/ordenador-${info.project.name}.png` });
   await icon(page, 'Calendario').click();
   await expect(page.locator('[data-pc-app="calendar"]')).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Calendario' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { name: 'Calendario' })).toBeVisible();
   await page.screenshot({ path: `${OUT}/calendario-${info.project.name}.png` });
 
   // De vuelta al escritorio del ordenador: el diario, con la lectura de hoy
-  await page.getByRole('button', { name: /^Cerrar / }).click();
+  await page.getByRole('button', { name: 'Volver al escritorio' }).click();
   await icon(page, 'Mi diario').click();
-  await expect(page.getByRole('tab', { name: 'Hoy' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { name: 'Mi diario' })).toBeVisible();
   await expect(page.locator('[data-pc-app="calendar"]')).toContainText('Circe');
   await page.screenshot({ path: `${OUT}/diario-${info.project.name}.png` });
 
   // Se apaga y se sale por la puerta
-  await page.getByRole('button', { name: /^Cerrar / }).click();
+  await page.getByRole('button', { name: 'Volver al escritorio' }).click();
   await page.getByRole('button', { name: /^Salir/ }).click();
   await expect(desktop(page)).toBeHidden();
   await page.waitForFunction(() => !window.__pisoLab().debug().paused);
@@ -102,7 +102,7 @@ test('el menú compacto: teclado, foco y las mismas funciones', async ({ page },
   await enter(page);
   await page.keyboard.press('m');
   await expect(sheet(page)).toBeVisible();
-  await expect(sheet(page).getByRole('button')).toHaveText(['Toda la biblioteca', 'Registrar lectura de Circe', 'Calendario', 'Mi diario', 'Ordenador', 'Ver de noche', 'Salir al portal']);
+  await expect(sheet(page).getByRole('button')).toHaveText(['Ordenador', 'Mi biblioteca', 'Salir al portal', /Sonido/, 'Decorar', 'Ajustes', 'Calendario', 'Mi diario', /^Ver de/, /^Registrar lectura/]);
   await expect(sheet(page).getByRole('button').first()).toBeFocused();
   await page.screenshot({ path: `${OUT}/menu-${info.project.name}.png` });
   // Escape solo cierra el menú y devuelve el foco
@@ -112,11 +112,10 @@ test('el menú compacto: teclado, foco y las mismas funciones', async ({ page },
   await expect(menu(page)).toHaveAttribute('aria-expanded', 'false');
   // Con el tabulador, hasta el calendario
   await page.keyboard.press('Enter');
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Tab');
+  for (let i = 0; i < 6; i += 1) await page.keyboard.press('Tab');
   await expect(sheet(page).getByRole('button', { name: 'Calendario' })).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('tab', { name: 'Calendario' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { name: 'Calendario' })).toBeVisible();
   // Con una capa encima, la tecla no lo abre
   await page.keyboard.press('m');
   await expect(sheet(page)).toBeHidden();
@@ -133,8 +132,8 @@ test('el menú compacto: teclado, foco y las mismas funciones', async ({ page },
 test('el menú cabe en la pantalla, encima de los controles', async ({ page }) => {
   await enter(page);
   await menu(page).click();
-  const box = await page.locator('.plab-menu__sheet').boundingBox();
-  expect(box.width).toBeLessThanOrEqual(280);
+  const box = await page.locator('.port-menu__sheet').boundingBox();
+  expect(box.width).toBeLessThanOrEqual(480);
   expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize().height);
 });
 
@@ -161,12 +160,13 @@ test('el ordenador se usa a 360 px: todo se alcanza y no hay desplazamiento late
   await sheet(page).getByRole('button', { name: 'Ordenador' }).click();
   await expect(desktop(page)).toBeVisible();
   await page.screenshot({ path: `${OUT}/ordenador-360-${info.project.name}.png` });
+  await page.getByRole('button', { name: 'Aplicaciones' }).click();
   const last = icon(page, 'Cuenta y copias');
   await last.scrollIntoViewIfNeeded();
   await expect(last).toBeInViewport();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
-  for (const button of await page.locator('.plab-desktop button').all()) expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  for (const button of await page.locator('.plab-desktop button:visible').all()) expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
   // Cada acceso abre una pantalla de verdad y se vuelve al ordenador
   for (const [name, seen] of [
     ['Añadir un libro', /biblioteca|título/i],
@@ -177,7 +177,7 @@ test('el ordenador se usa a 360 px: todo se alcanza y no hay desplazamiento late
     await expect(desktop(page)).toBeHidden();
     await expect(page.getByRole('dialog').last()).toContainText(seen);
     await page.goBack();
-    await expect(desktop(page)).toBeVisible();
+    await expect(page.locator('.pp-apps')).toBeVisible();
   }
 });
 

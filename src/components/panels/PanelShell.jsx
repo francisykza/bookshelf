@@ -58,7 +58,8 @@ export function PanelShell({ onClose, label, variant, children }) {
         event.stopPropagation();
         closeRef.current();
       } else if (event.key === 'Tab' && node) {
-        const items = [...node.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+        // Con una hoja modal abierta dentro del panel (el menú del piso), el foco se queda en ella
+        const items = [...(node.querySelector('[aria-modal="true"]') ?? node).querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
         if (!items.length) {
           event.preventDefault();
           return;

@@ -1,7 +1,8 @@
 // Apps del portátil (SPEC §6, §14): Calendario de lectura (portadas de lo que leíste cada día con el dato de
 // ese día) y Sesiones (registro cronológico). Cada lectura es un registro propio: se ve, se edita y se borra
 // por su id, agrupada por libro, y siempre con la posición que tenía el libro al registrarla.
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Coffee, Flame, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Coffee, Flame, Plus, X } from 'lucide-react';
+import { PortIcon } from '../../ui/PortIcon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { dayKey, parseDay } from '../../domain/dates';
 import { hash } from '../../domain/books';
@@ -20,7 +21,7 @@ const fmtDay = (key, opts) => cap(parseDay(key).toLocaleDateString('es-ES', opts
 const validTime = (iso) => Boolean(iso) && !Number.isNaN(new Date(iso).getTime());
 
 /** Sesiones del temporizador por día: { [date]: { count, minutes } }. */
-function usePomodoros(state) {
+export function usePomodoros(state) {
   return useMemo(() => {
     const days = {};
     state.progress.pomodoros.forEach((p) => {
@@ -34,7 +35,7 @@ function usePomodoros(state) {
 }
 
 /** Lecturas por día y libro, con todos sus registros individuales. */
-function useDays(state) {
+export function useDays(state) {
   return useMemo(() => groupByDay(state.progress.readingLog, state.books), [state.books, state.progress.readingLog]);
 }
 
@@ -76,10 +77,10 @@ function EntryRow({ entry, book }) {
         >
           <input value={text} onChange={(e) => setText(e.target.value)} inputMode="decimal" aria-label={`Nuevo valor para «${label}»`} aria-invalid={!!check?.error || undefined} autoFocus />
           <button type="submit" className="icon-btn icon-btn--tiny" disabled={!check?.entry} aria-label="Guardar el cambio">
-            <Check aria-hidden="true" />
+            <PortIcon name="check" />
           </button>
           <button type="button" className="icon-btn icon-btn--tiny" onClick={() => setEditing(false)} aria-label="Cancelar la edición">
-            <X aria-hidden="true" />
+            <PortIcon name="cerrar" />
           </button>
           <small className={check?.error ? 'reading-form__error' : 'reading-form__help'} role={check?.error ? 'alert' : undefined}>
             {check?.error ?? (check?.entry ? `Quedará: ${entryText(check.entry)}` : 'Escribe el valor corregido.')}
@@ -101,17 +102,17 @@ function EntryRow({ entry, book }) {
         }}
         aria-label={`Editar «${label}» de ${book.title}`}
       >
-        <Pencil aria-hidden="true" />
+        <PortIcon name="lapiz" />
       </button>
       <button type="button" className="icon-btn icon-btn--tiny" onClick={() => actions.removeSession(entry.id)} aria-label={`Borrar «${label}» de ${book.title}`}>
-        <Trash2 aria-hidden="true" />
+        <PortIcon name="papelera" />
       </button>
     </li>
   );
 }
 
 /** Un libro del día con sus registros (varias sesiones del mismo libro se ven por separado). */
-function BookGroup({ group, author }) {
+export function BookGroup({ group, author }) {
   const { book, entries } = group;
   return (
     <li className="day-group">

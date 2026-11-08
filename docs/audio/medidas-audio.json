@@ -1,0 +1,50 @@
+{
+ "tarde-en-el-puerto": {
+  "bytes": 544600,
+  "kbps": 128,
+  "canales": 2,
+  "tasa": 44100,
+  "duracionArchivo": 34,
+  "bucle": 32,
+  "picoPCM": 0.56,
+  "picoDBFS": -5,
+  "rmsDBFS": -18.2,
+  "saltoEnLaUnion": 0.0037
+ },
+ "luz-de-escritorio": {
+  "bytes": 476525,
+  "kbps": 112,
+  "canales": 2,
+  "tasa": 44100,
+  "duracionArchivo": 34,
+  "bucle": 32,
+  "picoPCM": 0.5,
+  "picoDBFS": -6,
+  "rmsDBFS": -20.4,
+  "saltoEnLaUnion": 0.0045
+ },
+ "mar": {
+  "bytes": 408451,
+  "kbps": 96,
+  "canales": 2,
+  "tasa": 44100,
+  "duracionArchivo": 34,
+  "bucle": 32,
+  "picoPCM": 0.28,
+  "picoDBFS": -11.1,
+  "rmsDBFS": -25.6,
+  "saltoEnLaUnion": 0.0111
+ },
+ "lluvia": {
+  "bytes": 408451,
+  "kbps": 96,
+  "canales": 2,
+  "tasa": 44100,
+  "duracionArchivo": 34,
+  "bucle": 32,
+  "picoPCM": 0.34,
+  "picoDBFS": -9.4,
+  "rmsDBFS": -22.9,
+  "saltoEnLaUnion": 0.1014
+ }
+}

@@ -1,0 +1,1771 @@
+/* Puerto Pixel: ordenador y registro de lectura (paquete v2 con el ajuste v3). Capa aparte, sobre port.css; el resto de pantallas aún no la usa. */
+@font-face {
+  font-family: PuertoPixel;
+  src: url('/assets/puerto/puerto-pixel.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --pp-paper: #f5e5c5;
+  --pp-ink: #38271f;
+  --pp-muted: #6d5743;
+  --pp-rule: #a98e68;
+  --pp-field: #fff6e3;
+  --pp-green: #435c2b;
+  --pp-green-ink: #fff4d7;
+  --pp-focus: #154b50;
+  --pp-track: #e9d5b1;
+  --pp-fill: #59753b;
+  --pp-gap: #fff3d8;
+  --pp-frame: url('/assets/puerto/marco-papel.svg');
+  --pp-title: PuertoPixel, ui-monospace, monospace;
+  /* Sistema del ordenador: no es papel */
+  --pp-sky: #7ca0b6;
+  --pp-wall: url('/assets/puerto/cielo-puerto.webp');
+  --pp-bezel: url('/assets/puerto/carcasa-marfil.svg');
+  --pp-bezel-color: #e8dec6;
+  --pp-os: #aab39b;
+  --pp-os-light: #cdd5c1;
+  --pp-os-dark: #4f5a49;
+  --pp-os-ink: #20261e;
+  --pp-win: #efe8d7;
+  --pp-win-ink: #2d2720;
+  --pp-win-muted: #5e5546;
+  --pp-win-rule: #a59b86;
+  --pp-label: #18222b;
+  --pp-label-shadow: rgba(228, 238, 243, 0.75);
+}
+
+:root[data-ui-theme='noche'] {
+  --pp-paper: #c6b18a;
+  --pp-ink: #30251f;
+  --pp-muted: #4f3f2e;
+  --pp-rule: #8a7350;
+  --pp-field: #d6c49f;
+  --pp-focus: #123f44;
+  --pp-track: #ae9870;
+  --pp-fill: #4a652f;
+  --pp-gap: #c6b18a;
+  --pp-frame: url('/assets/puerto/marco-papel-tenue.svg');
+  --pp-sky: #091732;
+  --pp-wall: url('/assets/puerto/cielo-puerto-noche.webp');
+  --pp-bezel: url('/assets/puerto/carcasa-noche.svg');
+  --pp-bezel-color: #b6ab92;
+  --pp-os: #8c9580;
+  --pp-os-light: #a5ae99;
+  --pp-os-dark: #3b4438;
+  --pp-win: #c6b18a;
+  --pp-win-ink: #30251f;
+  --pp-win-muted: #4f3f2e;
+  --pp-win-rule: #8a7350;
+  --pp-label: #fff4d7;
+  --pp-label-shadow: #06122a;
+}
+
+.pp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.pp-icon {
+  display: inline-block;
+  flex: none;
+  width: var(--icon-size, 80px);
+  height: var(--icon-size, 80px);
+  background: url('/assets/puerto/atlas-objetos.webp') calc(var(--col, 0) * 100% / 3) calc(var(--row, 0) * 100% / 2) / 400% 300% no-repeat;
+}
+
+.pp-control {
+  display: inline-block;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  -webkit-mask: var(--control) center / 24px 24px no-repeat;
+  mask: var(--control) center / 24px 24px no-repeat;
+}
+
+/* Botones de marco escalonado (cuaderno y acción principal) */
+.pp-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 8px solid transparent;
+  border-image: var(--pp-frame) 12 fill / 8px / 0 stretch;
+  border-radius: 0;
+  background: none;
+  color: var(--pp-ink);
+  font: 650 16px/20px var(--port-sans);
+  box-shadow: 0 3px 0 rgba(36, 27, 24, 0.55);
+}
+
+.pp-btn--primary {
+  border-image-source: url('/assets/puerto/boton-verde.svg');
+  color: var(--pp-green-ink);
+}
+
+.pp-btn--icon {
+  width: 48px;
+  min-height: 48px;
+  padding: 0;
+}
+
+.pp-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 rgba(36, 27, 24, 0.55);
+}
+
+/* Botones del sistema: relieve duro, sin papel */
+.pp-os-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid var(--pp-os-ink);
+  background: var(--pp-win);
+  color: var(--pp-win-ink);
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.45), inset -2px -2px 0 rgba(0, 0, 0, 0.16);
+  font: 600 14px/20px var(--port-sans);
+}
+
+.pp-os-btn--text {
+  width: auto;
+  min-height: 44px;
+  padding: 0 8px 0 2px;
+}
+
+.pp-os-btn:active:not(:disabled) {
+  box-shadow: inset -2px -2px 0 rgba(255, 255, 255, 0.45), inset 2px 2px 0 rgba(0, 0, 0, 0.16);
+}
+
+.pp-progress {
+  position: relative;
+  display: block;
+  height: 16px;
+  overflow: hidden;
+  border: 2px solid #8d704b;
+  background: var(--pp-track);
+}
+
+.pp-progress i {
+  display: block;
+  height: 100%;
+  background: var(--pp-fill);
+}
+
+.pp-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0, transparent calc(5% - 2px), var(--pp-gap) calc(5% - 2px), var(--pp-gap) 5%);
+  pointer-events: none;
+}
+
+/* El monitor: carcasa fina con esquinas escalonadas y un LED; dentro, el sistema */
+.panel-veil[data-variant='port-computer'],
+.panel.panel--port-computer,
+.pc.pc--port {
+  background: #241c1e;
+}
+
+.pc--port .port-computer {
+  position: relative;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  border: solid transparent;
+  border-width: 10px 10px 12px;
+  border-image: var(--pp-bezel) 12 fill / 10px 10px 12px / 0 stretch;
+  background: var(--pp-bezel-color);
+  background-clip: padding-box;
+}
+
+.pc--port .port-computer::after {
+  content: '';
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom) - 9px);
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  background: #9fc23c;
+  box-shadow: 0 0 0 1px #4c5a25;
+}
+
+.pp-glass {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 2px solid #26231f;
+  background: var(--pp-sky);
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+}
+
+.pc--port .port-computer__head {
+  gap: 4px;
+  min-height: 48px;
+  padding: 0 2px 0 10px;
+  border: 0;
+  border-bottom: 2px solid var(--pp-os-dark);
+  background: var(--pp-os);
+  box-shadow: inset 0 2px 0 var(--pp-os-light);
+}
+
+.pc--port .port-computer__head h2 {
+  color: var(--pp-os-ink);
+  font: 400 16px/24px var(--pp-title);
+}
+
+.pc--port .port-computer__head h2[data-centered] {
+  text-align: center;
+}
+
+.pc--port[data-app='desktop'] .pc__screen {
+  display: flex;
+  overflow: hidden;
+  background: var(--pp-sky);
+}
+
+.pc--port .plab-desktop {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  background: var(--pp-sky);
+}
+
+.pc--port .pc__screen,
+.pc--port .pc-win__body {
+  color: var(--port-ink);
+}
+
+/* Escritorio: el fondo es solo suyo */
+.pp-desk {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  container-type: size;
+}
+
+.pp-desk[hidden],
+.pp-apps[hidden] {
+  display: none;
+}
+
+.pp-desk__in {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100cqh;
+  padding: 8px 12px 22cqh;
+  background: var(--pp-wall) bottom center / 100% auto no-repeat, var(--pp-sky);
+}
+
+@container (max-height: 620px) {
+  .pp-desk__in {
+    padding-bottom: 12px;
+  }
+}
+
+.pp-desk__main {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.pp-desk__main button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 108px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pp-label);
+}
+
+.pp-desk__main button:active .pp-icon {
+  transform: translateY(1px);
+}
+
+.pp-desk__main strong {
+  font: 400 16px/20px var(--pp-title);
+  text-shadow: 1px 1px 0 var(--pp-label-shadow);
+}
+
+.pc--port .pp-desk button:focus-visible,
+.pc--port .pp-taskbar button:focus-visible,
+.pc--port .pp-os-btn:focus-visible,
+.pc--port .pp-apps button:focus-visible {
+  outline: 3px solid var(--pp-label);
+  outline-offset: -3px;
+}
+
+.pp-reading {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  border: 2px solid #26231f;
+  background: var(--pp-win);
+  color: var(--pp-win-ink);
+  box-shadow: 2px 2px 0 rgba(20, 20, 18, 0.45);
+}
+
+.pp-reading h3 {
+  margin: 0;
+  padding: 2px 8px;
+  border-bottom: 2px solid var(--pp-os-dark);
+  background: var(--pp-os);
+  color: var(--pp-os-ink);
+  font: 400 14px/20px var(--pp-title);
+}
+
+.pp-reading__body {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.pp-reading__cover {
+  display: block;
+  flex: none;
+  width: 64px;
+  height: 96px;
+  overflow: hidden;
+  background: #2b2420;
+}
+
+.pp-reading__cover > *,
+.panel--log .log-pick__trigger .log-pick__cover > * {
+  width: 100%;
+  height: 100%;
+}
+
+.pp-reading__cover .cover-img,
+.panel--log .log-pick__trigger .log-pick__cover .cover-img {
+  object-fit: contain;
+}
+
+.pp-reading__text {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+.pp-reading__text b {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  font: 700 16px/22px var(--port-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-reading__text small {
+  color: var(--pp-win-muted);
+  font: 14px/20px var(--port-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.pp-reading__text .pp-progress {
+  grid-row: 3;
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+.pp-reading .pp-btn {
+  grid-row: 2;
+  grid-column: 2;
+  min-width: 104px;
+  border-image-source: url('/assets/puerto/boton-verde.svg');
+  color: var(--pp-green-ink);
+  box-shadow: 0 2px 0 rgba(36, 27, 24, 0.55);
+}
+
+/* Cajón «Aplicaciones» */
+.pp-apps {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px 12px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--pp-os);
+  color: var(--pp-os-ink);
+}
+
+.pp-apps__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pp-apps h3 {
+  margin: 0;
+  color: var(--pp-os-ink);
+  font: 400 16px/24px var(--pp-title);
+}
+
+.pp-apps h4 {
+  margin: 12px 0 4px;
+  color: var(--pp-os-ink);
+  font: 700 14px/20px var(--port-sans);
+}
+
+.pp-apps .port-rows {
+  border: 2px solid #26231f;
+  background: var(--pp-win);
+}
+
+.pp-apps .port-rows li + li {
+  border-top: 1px solid var(--pp-win-rule);
+}
+
+.pp-apps .port-rows button {
+  min-height: 48px;
+  padding: 4px 8px;
+  color: var(--pp-win-ink);
+  font: 600 16px/24px var(--port-sans);
+  --port-icon-accent: var(--pp-win-muted);
+}
+
+.pp-apps .port-rows small,
+.pp-apps .port-rows__go {
+  color: var(--pp-win-muted);
+}
+
+.pp-taskbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 46px;
+  padding: 0 2px;
+  border-top: 2px solid var(--pp-os-dark);
+  background: var(--pp-os);
+  box-shadow: inset 0 2px 0 var(--pp-os-light);
+  color: var(--pp-os-ink);
+  --port-icon-accent: var(--pp-os-ink);
+}
+
+.pp-taskbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--pp-os-ink);
+  font: 600 14px/20px var(--port-sans);
+}
+
+.pp-taskbar button[aria-expanded='true'] {
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.22), inset -2px -2px 0 rgba(255, 255, 255, 0.3);
+}
+
+@media (min-width: 600px) {
+  .pp-desk__main {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 359px) {
+  .pp-icon {
+    --icon-size: 72px !important;
+  }
+
+  .pp-desk__main button {
+    min-height: 96px;
+  }
+
+  .pp-desk__main strong {
+    font-size: 14px;
+  }
+}
+
+/* Registrar lectura: el cuaderno burdeos */
+.panel-veil[data-variant='log'] {
+  padding: 0 12px 0 26px;
+}
+
+:root[data-ui-theme='noche'] .panel--log {
+  --port-surface: #c6b18a;
+  --port-surface-raised: #d6c49f;
+  --port-surface-muted: #ae9870;
+  --port-ink: #30251f;
+  --port-ink-muted: #4f3f2e;
+  --port-outline: #75603f;
+  --port-danger: #7a1f1a;
+  --port-focus: #123f44;
+}
+
+.panel.panel--log {
+  position: relative;
+  max-height: none;
+  margin-top: 28px;
+  overflow: visible;
+  border: 12px solid transparent !important;
+  border-image: var(--pp-frame) 12 fill / 12px / 0 stretch !important;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--pp-ink);
+}
+
+.log-binding {
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: -26px;
+  width: 16px;
+  background: url('/assets/puerto/lomo-burdeos.svg') 0 0 / 16px 64px repeat-y;
+  box-shadow: 3px 0 0 #431f2c;
+  pointer-events: none;
+}
+
+.log-binding i {
+  position: absolute;
+  top: -22px;
+  width: 24px;
+  height: 32px;
+  background: url('/assets/puerto/anilla-laton.svg') center / contain no-repeat;
+}
+
+.log-binding i:first-child {
+  left: 40px;
+}
+
+.log-binding i:last-child {
+  left: 80px;
+}
+
+.panel--log .log-sheet {
+  max-height: calc(min(90dvh, var(--vv-h, 90dvh)) - 52px);
+  padding: 0 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--pp-ink);
+}
+
+.panel.panel--log .log-sheet__heading {
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 52px;
+  border-bottom: 2px solid var(--pp-rule);
+  color: var(--pp-ink);
+  font: 400 20px/28px var(--pp-title);
+}
+
+.panel--log .log-sheet__close {
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border: 8px solid transparent;
+  border-image: var(--pp-frame) 12 fill / 8px / 0 stretch;
+  color: var(--pp-ink);
+  box-shadow: 0 2px 0 rgba(36, 27, 24, 0.55);
+}
+
+.panel--log .log-book {
+  position: relative;
+}
+
+.panel--log .log-pick {
+  position: relative;
+  margin: 8px 0 0;
+}
+
+.panel--log .log-pick__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.panel--log .log-pick__trigger {
+  align-items: flex-start;
+  height: 124px;
+  padding: 0 24px 0 0;
+}
+
+.panel--log .log-pick__trigger .log-pick__cover {
+  width: 82px;
+  height: 124px;
+  overflow: hidden;
+  background: #2b2420;
+}
+
+.panel--log .log-pick__text b {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--pp-ink);
+  font: 400 20px/26px var(--pp-title);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.panel--log .log-pick__trigger .log-pick__text em {
+  overflow: hidden;
+  color: var(--pp-muted);
+  font: 16px/24px var(--port-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel--log .log-pick__trigger .log-pick__text small {
+  display: none;
+}
+
+.panel--log .log-pick__chev {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  margin: 0;
+  color: var(--pp-muted);
+}
+
+.panel.panel--log .log-sheet__date {
+  position: absolute;
+  z-index: 1;
+  top: 80px;
+  right: 0;
+  left: 94px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  margin: 0;
+  color: var(--pp-muted);
+  font: 16px/24px var(--port-sans);
+}
+
+.panel--log .log-sheet__date b {
+  font-weight: 400;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+  white-space: nowrap;
+}
+
+.panel.panel--log .log-sheet__date input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0 !important;
+  opacity: 0;
+}
+
+.panel--log .log-sheet__date input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.panel--log .log-sheet__date:focus-within {
+  outline: 3px solid var(--pp-focus);
+  outline-offset: 1px;
+}
+
+.panel--log .log-sheet__rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  color: var(--pp-ink);
+  font: 700 16px/24px var(--port-sans);
+  text-align: center;
+}
+
+.panel--log .log-sheet__rule::before,
+.panel--log .log-sheet__rule::after {
+  content: '';
+  flex: 1;
+  border-top: 2px solid var(--pp-rule);
+}
+
+.panel--log .reading-form {
+  margin: 0;
+}
+
+.panel.panel--log .reading-form__modes {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 0.7fr;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.panel.panel--log .reading-form__modes button {
+  width: auto;
+  min-height: 48px;
+  padding: 0 4px;
+  border: 8px solid transparent !important;
+  border-image: var(--pp-frame) 12 fill / 8px / 0 stretch !important;
+  border-radius: 0;
+  background: none;
+  color: var(--pp-ink);
+  font: 650 16px/20px var(--port-sans);
+  box-shadow: 0 2px 0 rgba(36, 27, 24, 0.45);
+}
+
+.panel.panel--log .reading-form__modes button[aria-checked='true'] {
+  border-image-source: url('/assets/puerto/boton-verde.svg') !important;
+  background: none;
+  color: var(--pp-green-ink);
+}
+
+.panel--log .reading-form__field {
+  margin: 0;
+}
+
+.panel--log .reading-form__field > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.panel--log .reading-form__field > .reading-form__help {
+  display: none;
+}
+
+.panel--log .reading-form__input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.panel.panel--log .reading-form__input input {
+  flex: 0 1 112px;
+  width: 112px;
+  min-width: 0;
+  height: 56px;
+  padding: 0 4px;
+  border: 2px solid #9c7952 !important;
+  border-radius: 0;
+  background: var(--pp-field);
+  color: var(--pp-ink);
+  font: 700 28px/32px var(--port-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.panel.panel--log .reading-form__input input::placeholder {
+  color: var(--pp-muted);
+}
+
+.panel--log .reading-form__step {
+  border-image-source: url('/assets/puerto/boton-verde.svg');
+  color: var(--pp-green-ink);
+}
+
+.panel--log .reading-form__suffix {
+  position: static;
+  flex: 0 1 auto;
+  color: var(--pp-ink);
+  font: 16px/24px var(--port-sans);
+  white-space: nowrap;
+}
+
+.panel--log .reading-form__preview--room {
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--pp-ink);
+  font: 16px/24px var(--port-sans);
+  text-align: center;
+}
+
+.panel--log .reading-form__preview--room .reading-form__summary {
+  color: var(--pp-ink);
+  font: 16px/24px var(--port-sans);
+}
+
+.panel--log .reading-form__pct {
+  color: var(--pp-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel.panel--log .reading-form__error {
+  color: var(--port-danger);
+}
+
+.panel--log .reading-form > .reading-form__error,
+.panel--log .reading-form__check {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.panel--log .reading-form__actions {
+  padding: 12px 0 2px;
+  border: 0;
+  background: var(--pp-paper);
+}
+
+.panel.panel--log .reading-form__save {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  border: 8px solid transparent !important;
+  border-image: url('/assets/puerto/boton-verde.svg') 12 fill / 8px / 0 stretch !important;
+  border-radius: 0;
+  background: none;
+  color: var(--pp-green-ink);
+  font: 400 20px/24px var(--pp-title);
+  box-shadow: 0 3px 0 rgba(36, 27, 24, 0.55);
+}
+
+.panel.panel--log .reading-form__save:disabled {
+  background: none;
+  color: var(--pp-green-ink);
+  box-shadow: none;
+  filter: grayscale(0.7);
+}
+
+.panel--log .log-sheet button:focus-visible,
+.panel--log .log-sheet__close:focus-visible,
+.panel--log .reading-form__input input:focus-visible {
+  outline: 3px solid var(--pp-focus);
+  outline-offset: 2px;
+}
+
+.panel--log .log-sheet__confirm {
+  margin: 12px 0 0;
+}
+
+@media (max-width: 359px) {
+  .panel--log .log-pick__trigger {
+    height: 112px;
+  }
+
+  .panel--log .log-pick__trigger .log-pick__cover {
+    width: 74px;
+    height: 112px;
+  }
+
+  .panel.panel--log .log-sheet__date {
+    top: 68px;
+    left: 86px;
+  }
+
+  .panel--log .log-sheet__date .port-icon {
+    display: none;
+  }
+
+  .panel--log .log-sheet__date b {
+    font-size: 14px;
+  }
+
+  .panel.panel--log .reading-form__input input {
+    flex-basis: 80px;
+  }
+
+  .panel.panel--log .reading-form__save {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pp-btn:active:not(:disabled),
+  .pp-desk__main button:active .pp-icon {
+    transform: none;
+  }
+}
+
+.cover-steady {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cover-steady > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Dentro de la carcasa hay menos ancho: el calendario conserva sus casillas */
+
+@media (max-width: 300px) {
+  .panel.panel--log .reading-form__modes {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 300px) {
+  .panel--log .log-sheet__date b {
+    white-space: normal;
+  }
+}
+
+/* Puerto Pixel · menú de habitación, calendario y radio. Estructura y datos reales; el arte sale del atlas y de los marcos del paquete. */
+:root {
+  --pp-wood: #6b3d24;
+  --pp-wood-dark: #3f2418;
+  --pp-wood-line: #4a2b1c;
+  --pp-plank: #94592d;
+  --pp-focus-wood: #ffd35a;
+}
+
+:root[data-ui-theme='noche'] {
+  --pp-wood: #4a2c1d;
+  --pp-wood-dark: #2b1912;
+  --pp-wood-line: #352015;
+  --pp-plank: #6a4023;
+  --pp-slider-fill: #6b8a42;
+}
+
+.pp-control--flip {
+  transform: scaleX(-1);
+}
+
+.pp-plate {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 2px solid var(--pp-wood-dark);
+  background: var(--pp-paper);
+  color: var(--pp-ink);
+  font: 650 14px/20px var(--port-sans);
+  box-shadow: inset 0 -2px 0 var(--pp-rule);
+}
+
+/* Cabecera común del organizador y la radio */
+.pp-menu__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 56px;
+  padding: 4px 4px 4px 12px;
+  background: var(--pp-paper);
+  border-bottom: 4px solid var(--pp-wood-dark);
+}
+
+.pp-menu__head h2 {
+  min-width: 0;
+  margin: 0;
+  color: var(--pp-ink);
+  font: 400 20px/24px var(--pp-title);
+  text-transform: uppercase;
+}
+
+/* Organizador */
+.port-menu__sheet {
+  border: 12px solid transparent;
+  border-image: url('/assets/puerto/marco-madera.svg') 12 / 12px / 0 stretch;
+  border-radius: 0;
+  background: var(--pp-wood) padding-box;
+  box-shadow: 0 6px 0 rgba(20, 12, 8, 0.55);
+}
+
+.port-menu nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-bottom: 4px;
+}
+
+.port-menu button:focus-visible {
+  outline: 3px solid var(--pp-focus-wood);
+  outline-offset: -3px;
+}
+
+.pp-menu__shelves {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.port-menu__sheet {
+  max-height: min(92dvh, 760px);
+}
+
+/* Registrar queda siempre a la vista, aunque el resto tenga que desplazarse */
+.port-menu nav section:has(.pp-menu__primary) {
+  position: sticky;
+  bottom: 0;
+  padding-bottom: 4px;
+  background: var(--pp-wood);
+}
+
+.pp-menu__wide {
+  grid-column: 1 / -1;
+  padding: 8px 8px 0;
+}
+
+.pp-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  min-height: 124px;
+  padding: 4px;
+  border: 0;
+  border-right: 4px solid var(--pp-wood);
+  border-bottom: 8px solid var(--pp-plank);
+  border-radius: 0;
+  background: repeating-linear-gradient(90deg, var(--pp-wood-dark) 0 22px, var(--pp-wood-line) 22px 24px);
+}
+
+.pp-menu__shelves li:nth-child(2n) .pp-slot {
+  border-right: 0;
+}
+
+.pp-slot .pp-plate {
+  max-width: 100%;
+  text-align: center;
+}
+
+.pp-slot .pp-plate small {
+  display: block;
+  color: var(--pp-muted);
+  font: 500 14px/18px var(--port-sans);
+}
+
+.pp-slot[data-small] {
+  flex-direction: row;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 2px 4px;
+}
+
+.pp-slot:active .pp-icon {
+  transform: translateY(1px);
+}
+
+.pp-menu__plaque,
+.pp-menu__primary {
+  width: 100%;
+}
+
+.pp-menu__plaque {
+  min-height: 48px;
+}
+
+.pp-menu__primary {
+  min-height: 64px;
+  gap: 12px;
+}
+
+.pp-menu__primary span {
+  min-width: 0;
+  text-align: left;
+}
+
+.pp-menu__primary small {
+  display: block;
+  overflow: hidden;
+  font: 500 14px/18px var(--port-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Calendario: agenda de anillas dentro del monitor */
+.pc--port .port-cal {
+  --port-ink: var(--pp-ink);
+  --port-ink-muted: var(--pp-muted);
+  --port-outline: var(--pp-rule);
+  --port-surface-raised: var(--pp-field);
+  --port-danger: #7a1f1a;
+  position: relative;
+  margin-top: 18px;
+  padding: 10px 0 12px;
+  border: 8px solid transparent;
+  border-image: var(--pp-frame) 12 fill / 8px / 0 stretch;
+}
+
+.pc--port .port-cal::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: -8px;
+  width: 10px;
+  background: url('/assets/puerto/lomo-burdeos.svg') 0 0 / 100% auto repeat-y;
+}
+
+.pp-cal-ring {
+  position: absolute;
+  z-index: 1;
+  top: -26px;
+  width: 18px;
+  height: 38px;
+  background: url('/assets/puerto/anilla-laton.svg') center / contain no-repeat;
+}
+
+.pp-cal-ring:first-child {
+  left: 22%;
+}
+
+.pp-cal-ring:nth-child(2) {
+  right: 22%;
+}
+
+.pc--port .port-cal__head {
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--pp-rule);
+}
+
+.pc--port .port-cal__head h3 {
+  font: 700 20px/24px var(--port-serif);
+}
+
+.pc--port .port-cal__week span {
+  color: var(--pp-ink);
+  font-weight: 700;
+}
+
+.pc--port .port-cal__grid {
+  border-top: 2px solid var(--pp-rule);
+  border-left: 2px solid var(--pp-rule);
+}
+
+.pc--port .port-cal__other,
+.pc--port .port-cal__day {
+  justify-content: flex-start;
+  min-height: 48px;
+  padding-top: 3px;
+  border-right: 2px solid var(--pp-rule);
+  border-bottom: 2px solid var(--pp-rule);
+  border-radius: 0;
+  font: 600 16px/20px var(--port-sans);
+}
+
+.pc--port .port-cal__day[data-today] {
+  box-shadow: inset 0 0 0 3px var(--pp-focus);
+}
+
+.pc--port .port-cal__day[aria-pressed='true'] {
+  background: var(--pp-green);
+  color: var(--pp-green-ink);
+  box-shadow: inset 0 0 0 2px var(--pp-green-ink);
+}
+
+.pc--port .port-cal__day:focus-visible {
+  outline: 3px solid var(--pp-focus);
+  outline-offset: -3px;
+}
+
+.pc--port .port-cal__day i {
+  position: static;
+  width: 20px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: url('/assets/puerto/marca-lectura.svg') center / contain no-repeat;
+  mask: url('/assets/puerto/marca-lectura.svg') center / contain no-repeat;
+}
+
+.pc--port .port-cal__day[aria-pressed='true'] i {
+  background: currentColor;
+}
+
+.pc--port .port-cal__summary {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.pc--port .port-cal__list {
+  margin-top: 12px;
+  padding: 12px 8px 0;
+  border-top: 2px solid var(--pp-rule);
+}
+
+.pc--port .port-cal__list h3 {
+  font: 700 18px/24px var(--port-serif);
+  text-align: center;
+}
+
+.pc--port .port-cal__empty {
+  text-align: center;
+}
+
+.pc--port .port-cal__list > .pp-btn {
+  width: 100%;
+  min-height: 52px;
+}
+
+/* Radio */
+.panel.panel--port-sheet:has(.pp-radio) {
+  border: 12px solid transparent;
+  border-image: url('/assets/puerto/marco-madera.svg') 12 / 12px / 0 stretch;
+  border-radius: 0;
+  background: var(--pp-paper) padding-box;
+  box-shadow: 0 6px 0 rgba(20, 12, 8, 0.55);
+}
+
+.pp-radio {
+  max-height: calc(90dvh - 24px);
+  color: var(--pp-ink);
+}
+
+.pp-radio .port-sheet__body {
+  gap: 12px;
+  padding: 12px;
+}
+
+.pp-radio__set {
+  display: flex;
+  justify-content: center;
+  margin: -4px -12px 0;
+  border-bottom: 8px solid var(--pp-plank);
+}
+
+.pp-radio .port-sound__start p {
+  color: var(--pp-ink);
+}
+
+.pp-radio .port-switch {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 48px;
+  color: var(--pp-ink);
+}
+
+.pp-radio .port-switch > span {
+  font: 700 16px/24px var(--port-sans);
+}
+
+.pp-radio .port-switch i {
+  border: 2px solid var(--pp-wood-dark);
+  border-radius: 0;
+  background: var(--pp-track);
+}
+
+.pp-radio .port-switch i::after {
+  border-radius: 0;
+  background: var(--pp-field);
+  box-shadow: 0 0 0 2px var(--pp-wood-dark);
+}
+
+.pp-radio .port-switch input:checked ~ i {
+  background: var(--pp-green);
+}
+
+.pp-board {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 4px solid var(--pp-wood-dark);
+  background: var(--pp-wood);
+}
+
+.pp-level label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.pp-level output {
+  color: var(--pp-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.pp-level__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pp-level input[type='range'] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 48px;
+  margin: 0;
+  background: none;
+  appearance: none;
+  -webkit-appearance: none;
+  accent-color: auto;
+}
+
+.pp-level input[type='range']::-webkit-slider-runnable-track {
+  height: 14px;
+  border: 2px solid var(--pp-wood-dark);
+  background: linear-gradient(90deg, var(--pp-slider-fill, var(--pp-fill)) var(--v, 0%), #231a16 var(--v, 0%));
+}
+
+.pp-level input[type='range']::-moz-range-track {
+  height: 10px;
+  border: 2px solid var(--pp-wood-dark);
+  background: linear-gradient(90deg, var(--pp-slider-fill, var(--pp-fill)) var(--v, 0%), #231a16 var(--v, 0%));
+}
+
+.pp-level input[type='range']::-webkit-slider-thumb {
+  width: 18px;
+  height: 32px;
+  margin-top: -11px;
+  border: 2px solid var(--pp-wood-dark);
+  border-radius: 0;
+  background: #d9a93f;
+  box-shadow: inset 0 3px 0 #f4d27a, inset 0 -3px 0 #9a6f20;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.pp-level input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 28px;
+  border: 2px solid var(--pp-wood-dark);
+  border-radius: 0;
+  background: #d9a93f;
+}
+
+.pp-level input[type='range']:focus-visible {
+  outline: 3px solid var(--pp-focus-wood);
+  outline-offset: -2px;
+}
+
+.pp-level input[type='range']:disabled,
+.pp-mute:disabled {
+  opacity: 0.7;
+}
+
+.port-choice.pp-choice:disabled label {
+  color: var(--pp-muted);
+  opacity: 1;
+}
+
+.pp-mute {
+  position: relative;
+}
+
+.pp-mute[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 4px;
+  background: #7a1f1a;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.port-choice.pp-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.port-choice.pp-choice legend {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
+  padding: 0;
+  border: 0;
+  color: var(--pp-ink);
+  font: 700 14px/20px var(--port-sans);
+}
+
+.pp-choice label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 4px;
+  color: var(--pp-ink);
+  font: 650 14px/18px var(--port-sans);
+  text-align: center;
+}
+
+.pp-choice label input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+}
+
+.pp-chip {
+  border: 8px solid transparent;
+  border-image: var(--pp-frame) 12 fill / 8px / 0 stretch;
+}
+
+.pp-chip:has(input:checked) {
+  border-image-source: url('/assets/puerto/boton-verde.svg');
+  color: var(--pp-green-ink);
+}
+
+.pp-tape {
+  flex-direction: column;
+  grid-column: span 1;
+  padding: 6px 6px 6px;
+  border: 4px solid #6e1f28;
+  background: var(--pp-field);
+  box-shadow: inset 0 -12px 0 #b4483f;
+  color: var(--pp-ink);
+}
+
+.pp-tape:has(input:checked) {
+  outline: 3px solid var(--pp-green);
+  outline-offset: 1px;
+}
+
+.pp-tape .pp-control {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: var(--pp-green);
+}
+
+.pp-tape__reels {
+  display: flex;
+  gap: 32px;
+}
+
+.pp-tape__reels b {
+  width: 12px;
+  height: 12px;
+  border: 3px solid #2d2018;
+  background: var(--pp-field);
+}
+
+.pp-choice[data-tapes] .pp-chip {
+  grid-column: 1 / -1;
+  min-height: 48px;
+}
+
+.pp-choice label:has(input:focus-visible) {
+  outline: 3px solid var(--pp-focus);
+  outline-offset: 1px;
+}
+
+:root[data-ui-theme='noche'] .pp-tape {
+  box-shadow: inset 0 -12px 0 #85332d;
+}
+
+.pp-radio .port-switch input:checked ~ i::after {
+  background: var(--pp-field);
+}
+
+/* Puerto Pixel · diario, estadísticas y pantallas secundarias del ordenador, biblioteca y decorar. Solo aspecto: datos, gráficos y virtualización son los de siempre. */
+.pc.pc--port {
+  --pc-window: var(--pp-win);
+  --pc-card: var(--pp-field);
+  --pc-ink: var(--pp-ink);
+  --pc-ink-2: var(--pp-muted);
+  --pc-sage: var(--pp-fill);
+  --pc-terra: var(--pp-green);
+  --pc-line: var(--pp-rule);
+  --pc-sage-soft: var(--pp-track);
+  --pc-shadow: none;
+  --pc-radius: 0;
+  --pc-radius-sm: 0;
+}
+
+.pc--port .pc-win:not(:has(.port-cal)) .pc-win__body {
+  --port-ink: var(--pp-ink);
+  --port-ink-muted: var(--pp-muted);
+  --port-outline: var(--pp-rule);
+  --port-surface: var(--pp-paper);
+  --port-surface-raised: var(--pp-field);
+  background: var(--pp-paper);
+  color: var(--pp-ink);
+}
+
+.pc.pc--port .pc-win__body * {
+  border-radius: 0;
+}
+
+.pc--port .pc-btn:not(.pc-btn--primary) {
+  border: 2px solid var(--pp-wood-dark);
+  background: var(--pp-field);
+  color: var(--pp-ink);
+}
+
+.pc--port .pc-btn--primary,
+.pc--port .pc-btn--primary:hover {
+  min-height: 48px;
+  padding: 0 8px;
+  border: 8px solid transparent;
+  border-image: url('/assets/puerto/boton-verde.svg') 12 fill / 8px / 0 stretch;
+  background: none;
+  color: var(--pp-green-ink);
+}
+
+.pc--port .pc-win__body :focus-visible {
+  outline: 3px solid var(--pp-focus);
+  outline-offset: 1px;
+}
+
+/* Diario y estadísticas son cuadernos: anillas y lomo en un solo adorno */
+.pc--port .pc-win:has(.pc-diary, .pc-stats) .pc-win__body {
+  padding: 0;
+  background: none;
+}
+
+.pc--port .pc-diary,
+.pc--port .pc-stats {
+  --pc-card: transparent;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-top: 18px;
+  padding: 10px 6px 12px 12px;
+  border: 8px solid transparent;
+  border-image: var(--pp-frame) 12 fill / 8px / 0 stretch;
+  color: var(--pp-ink);
+}
+
+.pc--port .pc-diary::before,
+.pc--port .pc-stats::before {
+  content: '';
+  position: absolute;
+  top: -26px;
+  right: -8px;
+  bottom: -8px;
+  left: -8px;
+  background:
+    url('/assets/puerto/anilla-laton.svg') 22% 0 / 18px 38px no-repeat,
+    url('/assets/puerto/anilla-laton.svg') 78% 0 / 18px 38px no-repeat,
+    url('/assets/puerto/lomo-burdeos.svg') 0 26px / 10px auto repeat-y;
+  pointer-events: none;
+}
+
+.pc--port .pc-stats::after {
+  content: '';
+  order: -1;
+  align-self: center;
+  width: 96px;
+  height: 96px;
+  background: url('/assets/puerto/atlas-objetos.webp') calc(2 * 100% / 3) 0 / 400% 300% no-repeat;
+}
+
+.pc--port .diary__view :is(input, select, textarea) {
+  background: var(--pp-field);
+  color: var(--pp-ink);
+}
+
+/* Biblioteca: buscador y filtros sobre petróleo, y cada libro en su balda */
+:root {
+  --pp-petrol: #154b50;
+  --pp-burgundy: #7d2d43;
+}
+
+:root[data-ui-theme='noche'] {
+  --pp-petrol: #0b2a33;
+  --pp-burgundy: #5f2133;
+}
+
+section.plab-library {
+  background: var(--pp-wood-dark);
+  color: var(--pp-green-ink);
+}
+
+section.plab-library .plab-library__head {
+  gap: 8px;
+  border-bottom: 8px solid var(--pp-wood);
+  background: var(--pp-petrol);
+}
+
+section.plab-library .plab-title {
+  color: var(--pp-green-ink);
+  font: 400 20px/24px var(--pp-title);
+  text-transform: uppercase;
+}
+
+section.plab-library .plab-library__search input {
+  min-height: 48px;
+  padding: 0 32px 0 4px;
+  border: 8px solid transparent;
+  border-image: var(--pp-frame) 12 fill / 8px / 0 stretch;
+  background: none;
+  color: var(--pp-ink);
+}
+
+section.plab-library .plab-library__search input::placeholder {
+  color: var(--pp-muted);
+  opacity: 1;
+}
+
+section.plab-library .plab-library__clear {
+  top: 2px;
+  color: var(--pp-ink);
+}
+
+section.plab-library .plab-library__filters {
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow: visible;
+}
+
+section.plab-library .plab-filter {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid var(--pp-wood-dark);
+  background: var(--pp-burgundy);
+  color: var(--pp-green-ink);
+  font: 650 14px/18px var(--port-sans);
+}
+
+section.plab-library .plab-filter[aria-pressed='true'] {
+  border-color: var(--pp-green-ink);
+  background: var(--pp-green);
+  color: var(--pp-green-ink);
+}
+
+section.plab-library .plab-filter[aria-pressed='true']::before {
+  content: '✓ ';
+}
+
+section.plab-library .plab-library__count {
+  color: var(--pp-green-ink);
+  font: 500 14px/20px var(--port-sans);
+}
+
+section.plab-library .plab-library__list {
+  background: repeating-linear-gradient(90deg, var(--pp-wood-dark) 0 22px, var(--pp-wood-line) 22px 24px);
+}
+
+section.plab-library .plab-row {
+  border-bottom: 6px solid var(--pp-plank);
+}
+
+section.plab-library .plab-row__cover {
+  box-shadow: 3px 0 0 rgba(0, 0, 0, 0.35);
+}
+
+section.plab-library .plab-row__text strong,
+section.plab-library .plab-row__text span {
+  color: var(--pp-green-ink);
+}
+
+section.plab-library .plab-row__text strong {
+  font: 700 16px/20px var(--port-serif);
+}
+
+section.plab-library .plab-row__text span,
+section.plab-library .plab-row__text small {
+  font: 400 14px/18px var(--port-sans);
+}
+
+section.plab-library .plab-row__text small {
+  color: #eadbb9;
+}
+
+section.plab-library button:focus-visible,
+section.plab-library input:focus-visible {
+  outline: 3px solid var(--pp-focus-wood);
+  outline-offset: -3px;
+}
+
+section.plab-library .plab-row__exhibit {
+  min-height: 48px;
+}
+
+/* Decorar: la escena y la balda son las reales; aquí, solo papel, tinta y objetivos */
+.plab-room .ep-ess__card {
+  border-color: var(--pp-wood-dark);
+  background: var(--pp-paper);
+  color: var(--pp-ink);
+}
+
+.plab-room .ep-ess__card[data-estado='falta'] {
+  background: var(--pp-field);
+}
+
+.plab-room .ep-ess__txt {
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.plab-room .ep-ess__txt b {
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.plab-room .ep-ess__btn {
+  min-height: 48px;
+  border-color: var(--pp-wood-dark);
+  background: var(--pp-field);
+  color: var(--pp-ink);
+  font-size: 14px;
+}
+
+section.plab-library .px-btn {
+  color: #3a2415;
+}
+
+.pc--port .pcd-book__log {
+  height: auto;
+  padding: 2px 0;
+  line-height: 20px;
+  white-space: normal;
+}
+
+/* Si un marco no ha llegado (sin red), el color de debajo mantiene legible cada control */
+.pp-btn,
+.pp-chip {
+  background: var(--pp-field) padding-box;
+}
+
+.pp-btn--primary,
+.pp-chip:has(input:checked),
+.pc--port .pc-btn--primary,
+.pc--port .pc-btn--primary:hover {
+  background: var(--pp-green) padding-box;
+}
+
+@media (max-width: 340px) {
+  .pp-slot[data-small] {
+    gap: 4px;
+  }
+
+  .pp-slot[data-small] .pp-icon {
+    width: 32px;
+    height: 32px;
+  }
+}

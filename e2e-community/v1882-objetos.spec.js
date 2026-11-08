@@ -255,7 +255,7 @@ test('sin estantería, escritorio ni ordenador: biblioteca, registro y ordenador
   await expect(stage).toBeVisible({ timeout: 15000 });
 
   // La biblioteca entera, desde el menú
-  await menuItem('Toda la biblioteca');
+  await menuItem('Mi biblioteca');
   await expect(page.locator('.plab-room')).toBeVisible();
   await expect.poll(() => page.evaluate(() => new URL(location.href).search + JSON.stringify(history.state ?? null)), { timeout: 5000 }).toContain('toda');
   await page.waitForTimeout(300);

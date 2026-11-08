@@ -10,10 +10,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { playUiSound } from '../../audio/uiSounds';
 import { choiceLabels, initialReadingOrder, readingChoices } from '../../domain/bookPicker';
-import { completesReading, formatPercent, newId, trackUnit } from '../../domain/books';
+import { completesReading, formatPercent, newId, percentRead, progressLabel, trackUnit } from '../../domain/books';
 import { parseDay } from '../../domain/dates';
 import { MODES, buildEntry, defaultMode, modesFor, previewLines } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
+import { PixelControl } from '../../ui/PixelIcon';
+import { PortIcon } from '../../ui/PortIcon';
+
+const ROOM_MODES = { added: 'He leído', page: 'Página', percent: '%' };
 
 const fmtDate = (key) => parseDay(key).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
 
@@ -121,12 +125,13 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
         setSaving(false);
         actions.revertLog(draft.entry.id, before, figuresBefore);
         performance.mark?.('lectura:fallida');
+        playUiSound('save-error');
         setFailure('No se ha podido guardar en este dispositivo. Tus datos siguen aquí: vuelve a intentarlo.');
         return;
       }
       // Éxito confirmado: ahora sí el sello y «Guardado» (una sola vez por guardado)
       const saved = draft.entry;
-      playUiSound('save');
+      playUiSound('save-success');
       // Lo escrito y lo que cambia en pantalla van en tareas distintas, para no bloquear de una vez; el cerrojo sigue puesto
       setTimeout(() => {
         lock.current = false;
@@ -193,8 +198,33 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
     );
   }
 
+  const room = source === 'room';
   const label = activeMode === 'added' ? 'Páginas leídas' : activeMode === 'page' ? 'Página' : 'Porcentaje';
-  const suffix = activeMode === 'percent' ? '%' : activeMode === 'page' && book.pageCount ? `de ${book.pageCount}` : 'págs.';
+  const suffix = activeMode === 'percent' ? '%' : activeMode === 'page' && book.pageCount ? `de ${book.pageCount}` : room && activeMode === 'added' ? 'páginas' : 'págs.';
+  // − y + del cuaderno: parten de lo escrito o, si no hay nada, de la posición del libro
+  const step = (delta) => {
+    const typed = parseFloat(text.replace(',', '.'));
+    const base = Number.isFinite(typed) ? typed : activeMode === 'added' ? 0 : activeMode === 'page' ? book.currentPage || 0 : Math.floor(percentRead(book));
+    const top = activeMode === 'percent' ? 100 : activeMode === 'page' && book.pageCount ? book.pageCount : Infinity;
+    setText(String(Math.max(0, Math.min(top, base + delta))).replace('.', ','));
+    setConfirmCorrection(false);
+    setFailure('');
+  };
+  // El resumen de la hoja de registro: «Página 84 de 240 · 35 %», siempre con los datos del libro
+  const to = draft?.entry?.to;
+  const valid = room && to != null && !error;
+  const summary = !room
+    ? ''
+    : !valid
+      ? progressLabel(book)
+      : unit === 'pages'
+        ? book.pageCount
+          ? `Llegarás a la página ${to} de ${book.pageCount}`
+          : `Llegarás a la página ${to}`
+        : book.pageCount
+          ? `Llegarás a la página ${Math.round((to / 100) * book.pageCount)} de ${book.pageCount}`
+          : `Llegarás al ${formatPercent(to)}`;
+  const percentAt = !valid ? percentRead(book) : unit === 'pages' ? (book.pageCount ? Math.min(100, (to / book.pageCount) * 100) : null) : Math.min(100, to);
   const conversion =
     draft?.entry?.entered?.percent != null
       ? `= página ${draft.entry.to} de ${book.pageCount} · ${formatPercent((draft.entry.to / book.pageCount) * 100)}`
@@ -205,6 +235,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
   return (
     <form className="reading-form" onSubmit={submit} noValidate>
       {picker}
+      {room && <p className="log-sheet__rule">Registrar avance</p>}
       {modes.length > 1 && (
         <div className="reading-form__modes" role="radiogroup" aria-label="Cómo quieres registrarlo">
           {modes.map((m) => (
@@ -212,6 +243,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
               key={m}
               type="button"
               role="radio"
+              aria-label={room ? (m === 'percent' ? 'Porcentaje %' : MODES[m].label) : undefined}
               aria-checked={activeMode === m}
               onClick={() => {
                 if (m !== activeMode) playUiSound('select');
@@ -220,7 +252,7 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
                 setConfirmCorrection(false);
               }}
             >
-              {MODES[m].label}
+              {room ? ROOM_MODES[m] : MODES[m].label}
             </button>
           ))}
         </div>
@@ -228,13 +260,18 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
       <div className="reading-form__field">
         <label htmlFor={fieldId}>{modes.length > 1 ? label : MODES[activeMode].label}</label>
         <span className="reading-form__input">
+          {room && (
+            <button type="button" className="pp-btn pp-btn--icon reading-form__step" aria-label="Restar uno" disabled={saving} onClick={() => step(-1)}>
+              <PixelControl name="minus" />
+            </button>
+          )}
           <input
             id={fieldId}
             type="text"
             inputMode={activeMode === 'percent' ? 'decimal' : 'numeric'}
             autoComplete="off"
             value={text}
-            placeholder={activeMode === 'percent' ? 'Ej. 42,5' : activeMode === 'page' ? `Ej. ${Math.min(book.pageCount || Infinity, (book.currentPage || 0) + 20)}` : 'Ej. 20'}
+            placeholder={room ? '0' : activeMode === 'percent' ? 'Ej. 42,5' : activeMode === 'page' ? `Ej. ${Math.min(book.pageCount || Infinity, (book.currentPage || 0) + 20)}` : 'Ej. 20'}
             onChange={(e) => {
               setText(e.target.value);
               setConfirmCorrection(false);
@@ -243,27 +280,52 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
             aria-invalid={!!error || undefined}
             aria-describedby={error ? errorId : undefined}
           />
+          {room && (
+            <button type="button" className="pp-btn pp-btn--icon reading-form__step" aria-label="Sumar uno" disabled={saving} onClick={() => step(1)}>
+              <PixelControl name="plus" />
+            </button>
+          )}
           <span className="reading-form__suffix">{suffix}</span>
         </span>
         <small className="reading-form__help">{MODES[activeMode].help}</small>
         {error && (
           <small id={errorId} className="reading-form__error" role="alert">
+            <PortIcon name="error" />
             {error}
           </small>
         )}
-        {conversion && !error && <small className="reading-form__help reading-form__num">{conversion}</small>}
+        {conversion && !error && !room && <small className="reading-form__help reading-form__num">{conversion}</small>}
       </div>
 
       {/* Sin nada escrito, una pista; con un valor inválido manda su error (nunca «Escribe un valor») */}
-      {!preview && !text.trim() && (
+      {room && (
+        <div className="reading-form__preview reading-form__preview--room" data-correction={draft?.correction || undefined} aria-live="polite">
+          <span className="reading-form__summary">{summary}</span>
+          {percentAt != null && (
+            <span className="pp-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(percentAt)} aria-label="Progreso tras este registro">
+              <i style={{ width: `${percentAt}%` }} />
+            </span>
+          )}
+          {percentAt != null && <span className="reading-form__pct">{formatPercent(percentAt)} completado</span>}
+          {preview && draft.correction && previewLines(draft.entry).map((line, i) => <span key={i}>{line}</span>)}
+          {preview && !draft.correction && draft.entry.from == null && draft.entry.kind === 'read' && !(draft.entry.delta > 0) && <span>Sin posición anterior conocida</span>}
+          {preview && draft.conflict && (
+            <span className="reading-form__warn">
+              El {fmtDate(draft.conflict.date)} registraste {unit === 'percent' ? `el ${draft.conflict.to} %` : `la página ${draft.conflict.to}`}, menos que esto. Revisa ese registro si no es correcto.
+            </span>
+          )}
+        </div>
+      )}
+      {!room && !preview && !text.trim() && (
         <div className="reading-form__preview reading-form__preview--empty">
           <span className="reading-form__preview-label">Se guardará · {fmtDate(date)}</span>
           <span>Escribe un valor para ver cómo quedará.</span>
         </div>
       )}
-      {preview && (
+      {!room && preview && (
         <div className="reading-form__preview" data-correction={draft.correction || undefined} aria-live="polite">
           <span className="reading-form__preview-label">Se guardará · {fmtDate(date)}</span>
+          {summary && <span className="reading-form__summary">{summary}</span>}
           {previewLines(draft.entry).map((line, i) => (
             <span key={i} className={i === 0 ? 'reading-form__preview-main' : undefined}>
               {line}
@@ -285,15 +347,17 @@ export function ReadingEntryForm({ date, bookId: fixedId, source = 'form', onDon
       )}
       {failure && (
         <p className="reading-form__error" role="alert">
+          <PortIcon name="error" />
           {failure}
         </p>
       )}
       <div className="reading-form__actions">
         <button type="submit" className="stamp-btn reading-form__save" disabled={saving || !!draft?.error}>
+          {room && !saving && <PixelControl name="check" />}
           {saving ? 'Guardando…' : confirmCorrection ? 'Guardar corrección' : 'Guardar lectura'}
         </button>
         <span className="reading-form__saved" aria-live="polite">
-          {savedAt ? '✓ Guardado' : ''}
+          {savedAt ? <><PortIcon name="check" /> Guardado</> : ''}
         </span>
         {onCancel && (
           <button type="button" className="link-btn" onClick={onCancel}>

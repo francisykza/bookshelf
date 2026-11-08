@@ -16,6 +16,8 @@ import { DailyQuote, dailyQuoteReady } from './DailyQuote';
 import { DiaryApp } from './DiaryApp';
 import { PanelShell } from './PanelShell';
 import { SessionsApp } from './ReadingCalendar';
+import { ComputerShell } from '../computer/ComputerShell';
+import { PortCalendar } from '../computer/PortCalendar';
 
 // `id` se conserva (rutas y paneles guardados); `short` es el rótulo del dock y `icon` su imagen ilustrada
 const TABS = [
@@ -29,7 +31,7 @@ const TABS = [
 
 // `desktop(open)`: lo que enseña el escritorio en vez del saludo (el piloto del piso pone ahí sus accesos); con `initialTab` null
 // se empieza en él. `diaryView`: con qué vista de Mi diario se abre.
-export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook, desktop = null, diaryView = 'calendar' }) {
+export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook, desktop = null, diaryView = 'calendar', onRegister }) {
   const { state } = useLibrary();
   const start = TABS.some((t) => t.id === initialTab) ? initialTab : desktop ? null : 'calendar';
   const [app, setApp] = useState(start);
@@ -47,12 +49,13 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
   const pending = (id) => touched.current.has(id) && Boolean(screenRef.current?.querySelector(`[data-pc-app="${id}"] form`));
   const open = (id) => {
     // Cambiar de app: un clic breve (el arranque completo solo suena al encender el ordenador)
-    if (id !== app) playUiSound('appSwitch');
+    if (id !== app) playUiSound(desktop ? 'panel-open' : 'appSwitch');
     setConfirmExit(false);
     setApp(id);
     setAlive((list) => (list.includes(id) ? list : [...list, id]));
   };
   const closeApp = () => {
+    if (desktop) playUiSound('panel-close');
     const id = app;
     setApp(null);
     if (!pending(id)) {
@@ -62,12 +65,68 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
   };
   const requestExit = () => {
     if (TABS.some((t) => pending(t.id))) setConfirmExit(true);
-    else onClose();
+    else {
+      if (desktop) playUiSound('panel-close');
+      onClose();
+    }
   };
   const today = summarize(
     state.progress.readingLog.filter((e) => e.date === dayKey()),
     state.books,
   );
+
+  // 1.90: en el piso, un solo marco con una sola pantalla; la experiencia anterior sigue con sus ventanas y su dock
+  if (desktop) {
+    const titleOf = (t) => (t.id === 'calendar' ? { calendar: 'Calendario', today: 'Mi diario', notes: 'Notas' }[diary] : t.label);
+    const current = TABS.find((t) => t.id === app);
+    return (
+      <PanelShell onClose={requestExit} label="Ordenador: Mi escritorio" variant="port-computer">
+        <div className="pc pc--port" data-app={app ?? 'desktop'}>
+          <ComputerShell title={current ? titleOf(current) : 'Mi escritorio'} onBack={app ? closeApp : null} onClose={requestExit}>
+            {confirmExit && (
+              <div className="pc__confirm" role="alertdialog" aria-labelledby="pc-confirm-text">
+                <p id="pc-confirm-text">Tienes un formulario a medias. Si sales del ordenador, se perderá lo que no hayas guardado.</p>
+                <div>
+                  <button type="button" className="pc-btn pc-btn--ghost" onClick={() => setConfirmExit(false)} autoFocus>
+                    Seguir aquí
+                  </button>
+                  <button type="button" className="pc-btn pc-btn--primary" onClick={onClose}>
+                    Salir
+                  </button>
+                </div>
+              </div>
+            )}
+            <div
+              ref={screenRef}
+              className="pc__screen"
+              onInput={(e) => {
+                const id = e.target.closest?.('[data-pc-app]')?.dataset.pcApp;
+                if (id) touched.current.add(id);
+              }}
+            >
+              {!app &&
+                desktop((id, view) => {
+                  if (view) setDiary(view);
+                  open(id);
+                })}
+              {TABS.filter((t) => alive.includes(t.id)).map((t) => (
+                <section key={t.id} className="pc-win" data-pc-app={t.id} id={`pc-app-${t.id}`} hidden={app !== t.id} aria-label={titleOf(t)}>
+                  <div className="pc-win__body">
+                    {t.id === 'calendar' && (diary === 'calendar' ? <PortCalendar key="cal" selectDay={selectDay} onRegister={onRegister} /> : <DiaryApp key={diary} initialView={diary} selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />)}
+                    {t.id === 'stats' && <StatsApp />}
+                    {t.id === 'sessions' && <SessionsApp />}
+                    {t.id === 'goal' && <GoalApp />}
+                    {t.id === 'missions' && <MissionsApp onOpenVault={onOpenVault} />}
+                    {t.id === 'quote' && <DailyQuote />}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </ComputerShell>
+        </div>
+      </PanelShell>
+    );
+  }
 
   return (
     <PanelShell onClose={requestExit} label="Ordenador: Mi diario y apps de lectura" variant="laptop">

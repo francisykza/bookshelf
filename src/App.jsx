@@ -4,8 +4,10 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { modalRoot } from './components/panels/modalRoot';
-import { isAmbiencePlaying, setAmbience, setSfx, setTimeOfDay } from './audio/ambientAudio';
-import { playUiSound, setUiVolume } from './audio/uiSounds';
+import { setTimeOfDay } from './audio/ambientAudio';
+import { adoptSettings, connectSettings, resumeSound, setBackgroundSound, setMusicBlocked, soundStarted } from './audio/audioController';
+import { playUiSound } from './audio/uiSounds';
+import { SoundPanel } from './components/panels/SoundPanel';
 import { timeOfDayByClock } from './domain/dates';
 import { BookDetailModal } from './components/book/BookDetailModal';
 import { AccountPanel } from './components/panels/AccountPanel';
@@ -191,31 +193,18 @@ function Sanctuary() {
   // El sonido solo puede arrancar tras un gesto: el AudioContext se crea al pulsar los auriculares
   const toggleSound = () => {
     // Si estaba activado pero aún no había sonado (sin gesto previo), el primer toque lo enciende
-    if (settings.sound && !isAmbiencePlaying()) {
-      setAmbience(true);
+    if (settings.sound && !soundStarted()) {
+      resumeSound();
       return;
     }
-    const next = !settings.sound;
-    actions.setSettings({ sound: next });
-    setAmbience(next);
+    setBackgroundSound(!settings.sound);
   };
 
-  // Sonido activado por defecto: arranca con el primer toque o tecla en cualquier parte de la página
-  useEffect(() => {
-    if (!settings.sound) return undefined;
-    const start = (event) => {
-      if (event.target instanceof Element && event.target.closest('[data-id="headphones"]')) return;
-      setAmbience(true);
-      cleanup();
-    };
-    const cleanup = () => {
-      window.removeEventListener('pointerdown', start, true);
-      window.removeEventListener('keydown', start, true);
-    };
-    window.addEventListener('pointerdown', start, true);
-    window.addEventListener('keydown', start, true);
-    return cleanup;
-  }, [settings.sound]);
+  // 1.90: el controlador de sonido manda; los ajustes de siempre lo reflejan, y lo que se cambie en ellos le llega
+  useEffect(() => connectSettings((mirror) => actions.setSettings(mirror)), [actions]);
+  useEffect(() => adoptSettings({ sound: settings.sound !== false, sfx: settings.sfx !== false, uiVolume: settings.uiVolume ?? 0.25 }), [settings.sound, settings.sfx, settings.uiVolume]);
+  // «Dos balcones» es la música del edificio: mientras dure, la otra se calla sin perder su punto
+  useEffect(() => setMusicBlocked('edificio', panel?.type === 'edificio'), [panel?.type]);
 
   // La escena sigue al reloj (mañana, atardecer, noche) mientras no la cambies a mano
   useEffect(() => {
@@ -227,10 +216,6 @@ function Sanctuary() {
     const id = setInterval(sync, 60000);
     return () => clearInterval(id);
   }, [settings.timeAuto, settings.timeOfDay, actions]);
-
-  // Sonidos táctiles (papel, rotulador, ronroneo…) desactivables, con su volumen propio
-  useEffect(() => setSfx(settings.sfx !== false), [settings.sfx]);
-  useEffect(() => setUiVolume(settings.uiVolume ?? 0.25), [settings.uiVolume]);
 
   // El ambiente sonoro sigue a la hora: grillos de noche, chicharras y gaviotas al atardecer
   useEffect(() => setTimeOfDay(settings.timeOfDay), [settings.timeOfDay]);
@@ -391,10 +376,11 @@ function Sanctuary() {
           }
         />
       )}
-      {(panel?.type === 'log' || (panel?.type === 'pisoLab' && panel.select === 'registro')) && (
+      {(panel?.type === 'log' || (panel?.type === 'pisoLab' && panel.select?.startsWith('registro'))) && (
         <ReadingLogSheet
           key={panel.type === 'log' ? panel.id : 'piso-lab'}
           bookId={panel.type === 'log' ? panel.id : currentBook(state.books, settings)?.id}
+          initialDate={panel.type === 'pisoLab' ? panel.select.split(':')[1] : undefined}
           onClose={close}
           onSaved={(entry, meta) => {
             playUiSound('pageLeaves');
@@ -410,7 +396,7 @@ function Sanctuary() {
       )}
       {!panel && <LogUndoToast item={undoLog} onUndo={undoLastLog} />}
       {/* Piloto: al volver a la habitación tras registrar, el mismo aviso, por encima del panel del piso */}
-      {panel?.type === 'pisoLab' && panel.id && !panel.select && createPortal(<LogUndoToast item={undoLog} onUndo={undoLastLog} />, modalRoot())}
+      {panel?.type === 'pisoLab' && panel.id && (!panel.select || panel.select.startsWith('ordenador')) && createPortal(<LogUndoToast item={undoLog} onUndo={undoLastLog} />, modalRoot())}
       {panel?.type === 'review' &&<ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel(panel.tab === 'piso' ? { type: 'pisoLab', id: panel.select } : panel.tab === 'book' ? { type: 'book', id: panel.id } : { type: 'laptop', tab: 'calendar', select: panel.select })} />}
       {panel?.type === 'vault' && (
         <FiguresVaultModal
@@ -503,6 +489,7 @@ function Sanctuary() {
           <Suspense fallback={null}>
             <LaptopPanel
               key={panel.select}
+              onRegister={(date) => openPanel({ type: 'pisoLab', id: panel.id, select: date ? `registro:${date}` : 'registro' })}
               onClose={close}
               initialTab={tab}
               diaryView={view}
@@ -510,7 +497,7 @@ function Sanctuary() {
               onOpenLibrary={() => here('toda')}
               onOpenBook={(id) => here(`ficha:2:${id}`)}
               onOpenVault={null}
-              desktop={(open) => <PisoDesktop open={open} tool={(name) => openPanel({ type: 'pisoLab', id: panel.id, select: `abrir:${name}` })} go={{ library: () => here('toda'), community: () => openPanel({ type: 'social' }) }} />}
+              desktop={(open) => <PisoDesktop open={open} tool={(name) => openPanel({ type: 'pisoLab', id: panel.id, select: `abrir:${name}` })} go={{ library: () => here('toda'), community: () => openPanel({ type: 'social' }), register: () => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' }) }} />}
             />
           </Suspense>
         );
@@ -525,6 +512,7 @@ function Sanctuary() {
             {tool === 'import' && <GoodreadsImportPanel onClose={close} />}
             {tool === 'librarian' && <LibrarianPanel onClose={close} onOpenBook={toBook} />}
             {tool === 'atlas' && <SagaMapModal onClose={close} onOpenBook={toBook} />}
+            {tool === 'sonido' && <SoundPanel onClose={close} />}
             {tool === 'radio' && <RadioPanel onClose={close} soundOn={settings.sound} onToggleSound={toggleSound} />}
             {tool === 'account' && <AccountPanel onClose={close} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
             {tool === 'tray' && (

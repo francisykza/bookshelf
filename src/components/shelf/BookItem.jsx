@@ -3,7 +3,7 @@
 // objeto: cuero con nervios y cantoneras, tela con foil, cantos pintados, post-its, e-reader o estuche
 // de audiolibro. Además, post-its por cita guardada y cinta marcapáginas en los libros que estás leyendo.
 import { AudioLines, Headphones } from 'lucide-react';
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { useCoverColor } from '../../hooks/useCoverColor';
 import { calculateBookPhysics } from '../../utils/vibeEngine';
 import { EDGE_NAMES, EDITIONS, QUOTE_COLORS, audioHours, formatPercent, hash, percentRead, progress, ratingText, spineColor, spineHeight, spineWidth, sprayedEdge, visualEdition } from '../../domain/books';
@@ -59,7 +59,12 @@ export function watchCover(src, notify) {
     img.referrerPolicy = 'no-referrer';
     img.decoding = 'async';
     // Open Library devuelve a veces un píxel transparente en vez de un 404
-    img.onload = () => settleCover(src, img.naturalWidth < 10 ? 'failed' : 'loaded');
+    img.onload = () => {
+      if (img.naturalWidth < 10) return settleCover(src, 'failed');
+      // Se avisa ya decodificada, para que la portada aparezca entera de una vez
+      const ready = () => settleCover(src, 'loaded');
+      return img.decode ? img.decode().then(ready, ready) : ready();
+    };
     img.onerror = () => settleCover(src, 'failed');
     coverLoads.set(src, { img, patience: setTimeout(() => coverStatus.get(src) === 'loading' && settleCover(src, 'slow'), COVER_PATIENCE) });
     img.src = src;
@@ -79,13 +84,65 @@ function scrollParent(el) {
 /**
  * Portada real con su geometría fija: mientras llega, la tapa lisa del color del lomo (mismo tamaño); si no hay imagen o
  * falla, la cubierta tipográfica. Se pide cuando está a menos de una pantalla de su contenedor con desplazamiento (las
- * visibles primero; nunca todas las de la biblioteca al entrar), y una sola vez por URL.
+ * visibles primero; nunca todas las de la biblioteca al entrar), y una sola vez por URL. `steady`: portada única y a la
+ * vista (ordenador, registro): mientras llega se ve la cubierta con el título y, ya decodificada, se pinta de una vez.
  */
-export function Cover({ book, className = '', onLoaded, eager = false }) {
+// Las últimas portadas fijas ya decodificadas. Se copian a un lienzo: un <img> nuevo podría volver a descargar y pintarse a trozos
+const steadyKept = new Map();
+const STEADY_KEEP = 6;
+
+function keepSteady(src, img) {
+  steadyKept.delete(src);
+  steadyKept.set(src, img);
+  if (steadyKept.size > STEADY_KEEP) steadyKept.delete(steadyKept.keys().next().value);
+}
+
+/** Hasta tener la portada entera se ve la cubierta con el título; si falla, se queda esa cubierta. */
+function SteadyImage({ book, src, className }) {
+  const canvas = useRef(null);
+  const [ready, setReady] = useState(() => steadyKept.has(src));
+  useLayoutEffect(() => {
+    let gone = false;
+    const paint = (img) => {
+      if (gone || !canvas.current) return;
+      canvas.current.width = img.naturalWidth;
+      canvas.current.height = img.naturalHeight;
+      canvas.current.getContext('2d').drawImage(img, 0, 0);
+      setReady(true);
+    };
+    const kept = steadyKept.get(src);
+    if (kept) paint(kept);
+    else {
+      const img = new Image();
+      img.referrerPolicy = 'no-referrer';
+      img.decoding = 'async';
+      img.onload = () => {
+        if (img.naturalWidth < 10) return;
+        const done = () => {
+          keepSteady(src, img);
+          paint(img);
+        };
+        (img.decode ? img.decode() : Promise.resolve()).then(done, done);
+      };
+      img.src = src;
+    }
+    return () => {
+      gone = true;
+    };
+  }, [src]);
+  return (
+    <span className="cover-steady">
+      {!ready && <GeneratedCover book={book} />}
+      <canvas ref={canvas} className={`cover-img ${className}`} aria-hidden="true" style={ready ? undefined : { opacity: 0 }} />
+    </span>
+  );
+}
+
+export function Cover({ book, className = '', onLoaded, eager = false, steady = false }) {
   const src = book.cover || '';
-  const [status, setStatus] = useState(() => (src ? (coverStatus.get(src) ?? 'loading') : 'none'));
+  const [, setStatus] = useState(null);
   // `eager`: quien la monta ya sabe que está cerca (una lista virtual) y se ahorra buscar su contenedor, que obliga a calcular estilos
-  const [near, setNear] = useState(() => eager || coverStatus.has(src));
+  const [near, setNear] = useState(() => eager || steady || coverStatus.has(src));
   const waitRef = useRef(null);
   useEffect(() => {
     const el = waitRef.current;
@@ -106,7 +163,7 @@ export function Cover({ book, className = '', onLoaded, eager = false }) {
     return () => io.disconnect();
   }, [src, near]);
   useEffect(() => {
-    if (!src || !near) return undefined;
+    if (!src || !near || steady) return undefined;
     return watchCover(src, (next) => {
       setStatus(next);
       if (next === 'loaded') onLoaded?.(src);
@@ -114,7 +171,9 @@ export function Cover({ book, className = '', onLoaded, eager = false }) {
     // onLoaded solo avisa: cambiarlo no vuelve a pedir nada
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, near]);
-  const shown = src ? (coverStatus.get(src) ?? status) : 'none';
+  // Nunca el estado del libro anterior: si esta portada aún no se ha pedido, está cargando
+  if (steady && src) return <SteadyImage key={src} book={book} src={src} className={className} />;
+  const shown = src ? (coverStatus.get(src) ?? 'loading') : 'none';
   if (shown === 'none' || shown === 'failed' || shown === 'slow') return <GeneratedCover book={book} />;
   if (shown === 'loading') return <span ref={waitRef} className={`cover-img cover-img--wait ${className}`} aria-hidden="true" />;
   return <img className={`cover-img ${className}`} src={src} alt="" decoding="async" referrerPolicy="no-referrer" />;

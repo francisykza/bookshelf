@@ -159,12 +159,13 @@ test('cerrar una ficha o una herramienta devuelve a donde estabas', async ({ pag
   const pc = await stable(page, 'ordenador');
   await page.mouse.click(pc.x, pc.y);
   await expect(page.getByRole('region', { name: 'Lo principal' })).toBeVisible();
-  await page.locator('.plab-desktop').evaluate((el) => (el.scrollTop = 80));
-  const before = await page.locator('.plab-desktop').evaluate((el) => el.scrollTop);
+  await page.getByRole('button', { name: 'Aplicaciones' }).click();
+  await page.locator('.pp-apps').evaluate((el) => (el.scrollTop = 60));
+  const before = await page.locator('.pp-apps').evaluate((el) => el.scrollTop);
   await page.getByRole('button', { name: 'Reto anual', exact: true }).click();
-  await page.getByRole('button', { name: /^Cerrar / }).first().click();
-  await expect(page.getByRole('region', { name: 'Lo principal' })).toBeVisible();
-  expect(await page.locator('.plab-desktop').evaluate((el) => el.scrollTop)).toBe(before);
+  await page.getByRole('button', { name: 'Volver al escritorio' }).click();
+  await expect(page.getByRole('button', { name: 'Reto anual', exact: true })).toBeFocused();
+  expect(await page.locator('.pp-apps').evaluate((el) => el.scrollTop)).toBe(before);
   await page.getByRole('button', { name: 'Salir del ordenador' }).click();
   await page.waitForFunction(() => !window.__pisoLab().debug().zoomed && !window.__pisoLab().debug().paused);
   expect(await yaw(page)).toBeCloseTo(0.31, 2);
@@ -313,13 +314,14 @@ test('el escritorio: calendario, diario y estadísticas delante, y todas las fun
   await page.getByRole('button', { name: 'Menú de accesos' }).click();
   await page.getByRole('navigation', { name: 'Accesos del piso' }).getByRole('button', { name: 'Ordenador' }).click();
   const main = page.getByRole('region', { name: 'Lo principal' });
-  await expect(main.getByRole('button')).toHaveText([/Calendario/, /Mi diario/, /Estadísticas/]);
+  await expect(main.getByRole('button')).toHaveText([/Calendario/, /Mi diario/, /Estadísticas/, /Biblioteca/, /Sesiones/, /Comunidad/]);
+  await page.getByRole('button', { name: 'Aplicaciones' }).click();
   const names = await page.locator('.plab-desktop button').allInnerTexts();
-  const all = ['Calendario', 'Mi diario', 'Estadísticas', 'Notas', 'Sesiones', 'Temporizador', 'Reto anual', 'Misiones', 'Citas', 'Toda la biblioteca', 'Añadir un libro', 'Importar biblioteca', 'Pedir recomendación', 'Mapa de sagas', 'Radio', 'Comunidad', 'Cuenta y copias'];
+  const all = ['Calendario', 'Mi diario', 'Estadísticas', 'Notas', 'Sesiones', 'Temporizador', 'Reto anual', 'Misiones', 'Citas', 'Biblioteca', 'Sonido', 'Registrar', 'Aplicaciones', 'Volver al escritorio', 'Añadir un libro', 'Importar biblioteca', 'Pedir recomendación', 'Mapa de sagas', 'Radio', 'Comunidad', 'Cuenta y copias'];
   for (const name of all) expect(names.some((text) => text.includes(name))).toBe(true);
   expect(names).toHaveLength(all.length);
-  for (const section of ['Mi lectura', 'Mi progreso', 'Mis libros', 'Fuera del piso']) await expect(page.getByRole('region', { name: section })).toBeAttached();
-  // Los tres grandes se ven sin desplazar y sin salirse
+  for (const section of ['Mi lectura', 'Mi progreso', 'Mis libros', 'Radio y cuenta']) await expect(page.getByRole('region', { name: section })).toBeAttached();
+  // Los cuatro grandes se ven sin desplazar y sin salirse
   for (const button of await main.getByRole('button').all()) {
     const b = await button.boundingBox();
     expect(b.x).toBeGreaterThanOrEqual(0);

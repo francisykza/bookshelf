@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.89.3 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.90.0 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5496,3 +5496,18 @@ pasadas, WebKit 34 → 11; isométrica 5 s: 150 → 0 y 78 → 0 pintadas; llama
 - **Zona del libro.** `zonaLibro`: la celda de la mesa más cercana al asiento. `GUARDIA` rechaza objetos en ella (`libro`) y al soltar se ofrece el sitio válido más cercano. Regla de cliente: un piso antiguo sigue siendo válido; su libro usa otra celda libre sin guardar nada, y Decorar ofrece «Dejar sitio al libro», sin borrar nada y solo si se pide.
 - **Visita.** «Entrar en 3D» bajo la etiqueta del piso, a la vista sin desplazar; dentro, «Ver en isométrica» bajo la vista, con «Volver al portal» y los permisos de visitante.
 - **Comprobado** (emulación): `v1894-comprobaciones`, `v1894-evidencias`, `v1892`, `v1893`, `v189`, `v188`, `piso-usabilidad`, `piso-esenciales`, Vitest de piso y edificio y build.
+
+## 90. Puerto Pixel: ordenador, registro, menú, sonido y pantallas de lectura (1.90.0)
+
+Aprobada por Francisco el 8-11-2026 tras revisar vídeos y capturas. Sin migraciones. Detalle, recursos y diferencias con las láminas en `docs/design/puerto-pixel-v2.md`; inventario de funciones en `docs/qa/tabla-funciones-1.90.md`; sonido en `docs/audio/`.
+
+- **Capa visual** en `src/theme/puerto-pixel.css` (prefijo `pp-`; `px-` ya es de `edificio.css`) y objetos del atlas en `src/ui/PixelIcon.jsx`. Recursos en `public/assets/puerto/`.
+- **Ordenador:** carcasa de monitor, cielo continuo sobre el puerto, seis objetos, «Leyendo ahora» y cajón «Aplicaciones» con el resto de funciones.
+- **Registro de lectura:** cuaderno con portadas estables (`Cover steady`, `SteadyImage`).
+- **Menú de la habitación:** organizador de madera («Tu rincón»); suma «Decorar».
+- **Calendario:** agenda de anillas con cuadrícula real y detalle del día (`PortCalendar`).
+- **Sonido:** radio con interruptor, tres canales con volumen y silencio propios, ambientes y música, con un único controlador compartido (`src/audio/audioController.js`). Silencio hasta que se activa. El mar está retirado por ahora; su archivo se conserva.
+- **Diario, estadísticas y pantallas secundarias:** variables `--pc-*` con la paleta Puerto Pixel; diario y estadísticas como cuaderno.
+- **Biblioteca:** cabecera petróleo, filtros y libros en baldas; misma virtualización. **Decorar:** escena isométrica intacta.
+- **Sin reestilizar:** ficha de libro y Ajustes.
+- **Pruebas:** `e2e/pixel-v3.spec.js` y `e2e-community/pixel-v4.spec.js`, `pixel-v5-capturas.spec.js`, `pixel-final.spec.js`, `v190-*`. En emulación; no probado en móviles físicos ni con cuentas reales.

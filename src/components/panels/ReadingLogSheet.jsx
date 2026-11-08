@@ -8,10 +8,11 @@
 // abandonados). Cada libro visitado conserva su propio formulario montado (y su borrador) mientras la vista está
 // abierta, así que cambiar de libro no arrastra ni pierde lo escrito; el guardado usa siempre el libro de su
 // formulario. Elegir aquí no cambia el libro de la cama ni el estado de ninguno.
-import { Check, ChevronDown, Search, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { playUiSound } from '../../audio/uiSounds';
 import { progressLabel, shelfSort } from '../../domain/books';
-import { dayKey } from '../../domain/dates';
+import { PortIcon } from '../../ui/PortIcon';
+import { dayKey, parseDay } from '../../domain/dates';
 import { normalizeText } from '../../domain/bookSearch';
 import { useLibrary } from '../../state/useLibrary';
 import { Cover } from '../shelf/BookItem';
@@ -20,6 +21,13 @@ import { ReadingEntryForm } from './ReadingEntryForm';
 
 /** Con más de estas lecturas en curso aparece un buscador dentro de la lista. */
 const SEARCH_FROM = 6;
+
+const dateText = (key, today) => {
+  const text = parseDay(key).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+  const yesterday = new Date(parseDay(today));
+  yesterday.setDate(yesterday.getDate() - 1);
+  return key === today ? `Hoy · ${text}` : key === dayKey(yesterday) ? `Ayer · ${text}` : text;
+};
 
 function BookOption({ book, selected, onPick }) {
   return (
@@ -31,15 +39,15 @@ function BookOption({ book, selected, onPick }) {
         <b>{book.title}</b>
         <small>{progressLabel(book)}</small>
       </span>
-      {selected && <Check className="log-pick__check" aria-hidden="true" />}
+      {selected && <PortIcon name="check" className="log-pick__check" />}
     </li>
   );
 }
 
-export function ReadingLogSheet({ bookId, onClose, onSaved, onComplete }) {
+export function ReadingLogSheet({ bookId, initialDate, onClose, onSaved, onComplete }) {
   const { state } = useLibrary();
   const today = dayKey();
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(() => (initialDate && initialDate <= today ? initialDate : today));
   // Libro elegido en el formulario (no el de la cama: cambiarlo aquí no toca nada fuera)
   const [selectedId, setSelectedId] = useState(() => (state.books.some((b) => b.id === bookId) ? bookId : null));
   // Formularios ya abiertos en esta vista: cada uno guarda su borrador
@@ -72,22 +80,34 @@ export function ReadingLogSheet({ bookId, onClose, onSaved, onComplete }) {
       const el = document.activeElement;
       if (!(el instanceof HTMLElement) || !bodyRef.current?.contains(el) || !el.matches('input, select, textarea')) return;
       // 1.59 (SPEC §59.8): se desplaza el panel por dentro, no la página (eso subía el título bajo la barra de iOS)
-      const panel = el.closest('.panel');
+      const panel = bodyRef.current;
       if (!panel) return;
       const box = panel.getBoundingClientRect();
       const r = el.getBoundingClientRect();
-      if (r.top < box.top + 12 || r.bottom > box.bottom - 12) panel.scrollTop += r.top - box.top - (box.height - r.height) / 2;
+      // El pie con «Guardar» es fijo: lo que quede detrás tampoco se ve
+      const foot = panel.querySelector('.reading-form__actions')?.offsetHeight ?? 0;
+      if (r.top < box.top + 12 || r.bottom > box.bottom - foot - 12) panel.scrollTop += r.top - box.top - (box.height - foot - r.height) / 2;
     };
+    const sheet = bodyRef.current;
     vv.addEventListener('resize', keep);
-    return () => vv.removeEventListener('resize', keep);
+    sheet?.addEventListener('focusin', keep);
+    return () => {
+      vv.removeEventListener('resize', keep);
+      sheet?.removeEventListener('focusin', keep);
+    };
   }, []);
+
+  useEffect(() => void playUiSound('panel-open'), []);
 
   const dirty = Object.values(dirtyMap).some(Boolean);
   // Todas las salidas (×, «Cancelar», Escape, tocar fuera) pasan por aquí
   const requestClose = useCallback(() => {
     if (busy) return;
     if (dirty) setAsking(true);
-    else onClose();
+    else {
+      playUiSound('panel-close');
+      onClose();
+    }
   }, [busy, dirty, onClose]);
   useEffect(() => {
     if (asking) keepRef.current?.focus();
@@ -131,13 +151,18 @@ export function ReadingLogSheet({ bookId, onClose, onSaved, onComplete }) {
 
   return (
     <PanelShell onClose={requestClose} label={book ? `Registrar lectura de ${book.title}` : 'Registrar lectura'} variant="log">
+      <span className="log-binding" aria-hidden="true">
+        <i />
+        <i />
+      </span>
       <div className="log-sheet" ref={bodyRef}>
         <button type="button" className="log-sheet__close" onClick={requestClose} aria-label="Cerrar" disabled={busy}>
-          <X aria-hidden="true" />
+          <PortIcon name="cerrar" />
         </button>
-        <h2 className="log-sheet__heading">Registrar lectura</h2>
+        <h2 className="log-sheet__heading">Mi lectura</h2>
 
         {/* Selector de lectura: una tarjeta de papel con portada, título, progreso y flecha */}
+        <div className="log-book">
         <div className="log-pick" data-escape-local={open ? 'open' : undefined}>
           <span className="log-pick__label" id="log-pick-label">
             Lectura
@@ -155,10 +180,11 @@ export function ReadingLogSheet({ bookId, onClose, onSaved, onComplete }) {
             {book ? (
               <>
                 <span className="log-pick__cover">
-                  <Cover book={book} />
+                  <Cover key={book.id} book={book} steady />
                 </span>
                 <span className="log-pick__text" id="log-pick-value">
                   <b>{book.title}</b>
+                  <em>{book.author}</em>
                   <small>{progressLabel(book)}</small>
                 </span>
               </>
@@ -167,13 +193,13 @@ export function ReadingLogSheet({ bookId, onClose, onSaved, onComplete }) {
                 <b>Elige una lectura</b>
               </span>
             )}
-            <ChevronDown className="log-pick__chev" aria-hidden="true" />
+            <PortIcon name="flecha" className="log-pick__chev" />
           </button>
           {open && (
             <div className="log-pick__pop" onKeyDown={onListKey}>
               {readings.length + (showOthers ? others.length : 0) > SEARCH_FROM && (
                 <label className="log-pick__search">
-                  <Search aria-hidden="true" />
+                  <PortIcon name="busqueda" />
                   <input type="search" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Buscar en la lista" aria-label="Buscar en la lista de libros" />
                 </label>
               )}
@@ -208,9 +234,12 @@ export function ReadingLogSheet({ bookId, onClose, onSaved, onComplete }) {
         </div>
 
         <label className="log-sheet__date">
-          <span>Fecha</span>
+          <span className="pp-sr">Fecha</span>
+          <PortIcon name="calendario" />
+          <b aria-hidden="true">{dateText(date, today)}</b>
           <input type="date" value={date} max={today} disabled={busy} onChange={(e) => e.target.value && e.target.value <= today && setDate(e.target.value)} />
         </label>
+        </div>
         {asking && (
           <div className="log-sheet__confirm" role="alertdialog" aria-label="Cambios sin guardar">
             <p>Tienes una lectura escrita sin guardar.</p>
@@ -233,7 +262,6 @@ export function ReadingLogSheet({ bookId, onClose, onSaved, onComplete }) {
               date={date}
               bookId={id}
               source="room"
-              onCancel={requestClose}
               onDirtyChange={(value) => setDirtyFor(id, value)}
               onBusyChange={setBusy}
               onDone={(entry, meta) => onSaved?.(entry, meta)}
@@ -257,6 +285,7 @@ export function LogUndoToast({ item, onUndo, className = '' }) {
   if (!item || Date.now() >= item.at + UNDO_MS) return null;
   return (
     <div className={`log-toast ${className}`.trim()} role="status">
+      <PortIcon name="check" />
       <span>
         Lectura registrada · <b>{item.text}</b>
       </span>

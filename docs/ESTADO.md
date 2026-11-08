@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.89.3** (2026-11-08, §89 a §89.8). Migración `20261118120000_edificio_esenciales.sql` aplicada.
+- **Publicada en producción: 1.90.0** (2026-11-08, §90). Puerto Pixel: ordenador, registro, menú, calendario, radio, diario, estadísticas, biblioteca y decorar. Aprobada por Francisco tras revisar las evidencias; sin migraciones. El mar está retirado de Sonido por ahora. Sin probar en móviles físicos ni con cuentas reales; ficha de libro y Ajustes siguen sin reestilizar.
+- **Anterior: 1.89.3** (2026-11-08, §89 a §89.8). Migración `20261118120000_edificio_esenciales.sql` aplicada.
 - **Versión publicada: 1.88.2** (2026-11-07, §88.4 a §88.6). Lleva la 1.88.1 (la fachada al volver de un piso, sin
   placas fuera del dibujo) y la 1.88.2 (místicos, mascota, muebles vivos y acabados en primera persona; sin estantería,
   «Biblioteca» en vez de «Ver la balda»). Viene de la rama `1.88.1-fachada`, con avance rápido de `main`, a petición de
@@ -237,6 +238,19 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-08 · cuenta principal · 1.90.0 «Puerto Pixel», publicada tras aprobar la entrega (rama `1.90-escritorio-puerto`, avance rápido de `main`)
+
+- **Dónde:** rama local `1.90-escritorio-puerto` del worktree `BookShelf-piso-lab`, sobre `5114a4c` (1.89.3). Sin commit, sin subir y sin fusionar: espera la aprobación de Francisco.
+- **Hecho:** tokens día/noche (`src/theme/tokens.css`, sigue a la hora del piso), `port.css`, iconos `src/ui/PortIcon.jsx`, barra inferior, menú «Tu rincón» (`PisoMenu`), `ComputerShell`, escritorio y `PortCalendar`, hoja de registro, `audioController.js`, `SoundPanel.jsx`, seis efectos y cuatro bucles originales en `public/media/sonido/` (`scripts/audio/generate-port-audio.cjs`).
+- **Documentos:** `docs/audio/sonido-manifiesto.md`, `docs/qa/tabla-funciones-1.90.md`. Evidencias en `qa-report/v190/`.
+- **Pruebas:** `e2e-community/v190-*.spec.js`; adaptadas al menú nuevo `piso-esenciales`, `piso-usabilidad` y `v1882-objetos`.
+- **Limitaciones:** emulación; WebKit de Windows falló al poner la música; radio sigue con su comportamiento al ocultar; el equilibrio del sonido sin validar al oído; móviles físicos sin probar.
+- **Puerto Pixel v2, primera fase (también sin commit):** ordenador y registro según el paquete de Francisco; capa `src/theme/puerto-pixel.css`, `src/ui/PixelIcon.jsx`, recursos en `public/assets/puerto/`; diferencias en `docs/design/puerto-pixel-v2.md`, vídeo en `qa-report/pixel-v2/`. Menú, calendario, Sonido, diario, estadísticas, biblioteca y decoración siguen pendientes hasta que apruebe esta fase. Tres pruebas de `e2e/piso-lab.spec.js` sobre tocar el libro 3D y las guías ya fallaban en 1.89.3.
+- **Ajuste v3 (sin commit):** carcasa de monitor, cielo continuo (`cielo-puerto*.webp`, derivados de los fondos v2), cajón «Aplicaciones», papel cálido de noche y portadas estables (`steady` en `Cover`, `SteadyImage`). Detalle en `docs/design/puerto-pixel-v2.md`; prueba en `e2e/pixel-v3.spec.js`; vídeo en `qa-report/pixel-v3/`. Menú, calendario y sonido, en pausa hasta que Francisco revise esto.
+- **Menú, calendario y radio Puerto Pixel (sin commit):** organizador de madera, agenda de anillas y radio con silencio por canal. Detalle y diferencias en `docs/design/puerto-pixel-v2.md`; prueba en `e2e-community/pixel-v4.spec.js`; evidencias en `qa-report/pixel-v4/`. Quedan diario, estadísticas, biblioteca y decoración, tras revisar esto.
+- **Diario, estadísticas, biblioteca y decorar Puerto Pixel (sin commit):** capa `pp-` sobre lo existente; capturas y vídeo en `qa-report/pixel-v5/`. Mar retirado de Sonido por decisión de Francisco (archivo conservado). Revisión final con datos difíciles hecha en emulación (`e2e-community/pixel-final.spec.js`, `qa-report/pixel-final/`). Falta que Francisco apruebe esta entrega; hasta entonces, sin commit ni `main`. Sin probar: móviles físicos y cuentas reales.
+- **Aprobada** por Francisco el 8-11-2026 («Si» a publicar como 1.90.0). Las menciones «sin commit» de arriba describen cada fase antes de aprobarse. Intermitente sin causa averiguada: dos pruebas de decorar en WebKit (`piso-esenciales` y `piso-usabilidad`); salen igual sin la capa de decorar.
 
 ### 2026-11-08 · cuenta principal · acabado de visitas, estantería, zona del libro y botón 3D (1.89.3, aprobada y publicada)
 

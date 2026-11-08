@@ -1,0 +1,43 @@
+/* «Escritorio del puerto» (1.90): los valores de la interfaz, en un solo sitio. El tema sigue a la hora elegida en el piso. La escena 3D no los usa. */
+:root {
+  --port-canvas: #e8ddc8;
+  --port-surface: #f7f0df;
+  --port-surface-raised: #fff9ec;
+  --port-surface-muted: #e2d6bf;
+  --port-ink: #302a24;
+  --port-ink-muted: #665c4e;
+  --port-outline: #786650;
+  --port-frame: #49372b;
+  --port-primary: #485a40;
+  --port-on-primary: #fff9ec;
+  --port-accent: #8a642d;
+  --port-focus: #226277;
+  --port-danger: #a23832;
+  --port-on-danger: #ffffff;
+  --port-overlay: rgba(23, 19, 16, 0.48);
+
+  --port-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --port-serif: Georgia, 'Times New Roman', serif;
+  --port-shadow: 0 3px 0 var(--port-frame);
+  --port-shadow-modal: 0 3px 0 var(--port-frame), 0 8px 24px rgba(0, 0, 0, 0.16);
+  --port-radius-control: 2px;
+  --port-radius-panel: 4px;
+}
+
+:root[data-ui-theme='noche'] {
+  --port-canvas: #171f29;
+  --port-surface: #222d39;
+  --port-surface-raised: #2c3947;
+  --port-surface-muted: #1c2631;
+  --port-ink: #f3ebd9;
+  --port-ink-muted: #c0c6c8;
+  --port-outline: #81909b;
+  --port-frame: #111920;
+  --port-primary: #a8bd91;
+  --port-on-primary: #172117;
+  --port-accent: #d8b978;
+  --port-focus: #91cbda;
+  --port-danger: #ffb5aa;
+  --port-on-danger: #381714;
+  --port-overlay: rgba(4, 9, 15, 0.66);
+}

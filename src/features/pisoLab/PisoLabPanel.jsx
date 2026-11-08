@@ -11,11 +11,13 @@ import { useLibrary } from '../../state/useLibrary';
 import { FACADE_HORA } from '../edificio/facade';
 import { mountFacade } from '../edificio/facadeView';
 import { mountPiso } from '../edificio/piso';
-import { installPixelVars, pixelIconSmallSrc } from '../edificio/pixelUi';
+import { installPixelVars } from '../edificio/pixelUi';
 import { preloadCover } from './coverPreload';
 import { bookFace } from './spineLooks';
 import { LabMeter, wantsMeter } from './LabMeter';
 import { beginMount, cancelMount, markCode, markInteractive, markPortal, markPress, markScene } from './labTiming';
+import { playUiSound } from '../../audio/uiSounds';
+import { PortIcon } from '../../ui/PortIcon';
 import './pisoLab.css';
 import { PisoLibrary, emptyLibraryMemory } from './PisoLibrary';
 import { roomLimit, toggleExhibit } from './roomSelection';
@@ -122,8 +124,9 @@ const shelfScene = (shelfBooks) => shelfBooks && { cover: tableData(shelfBooks.c
 /** Una acción secundaria: un icono y una palabra. El nombre completo es para el lector de pantalla y empieza igual. */
 function Tool({ icon, name, short, onClick }) {
   return (
-    <button type="button" className="px-btn plab-tool" aria-label={name} onClick={onClick}>
-      <img src={pixelIconSmallSrc(icon)} alt="" width={22} height={22} />
+    <button type="button" className="plab-tool" aria-label={name} onClick={onClick}>
+      <PortIcon name={icon} />
+
       <span>{short}</span>
     </button>
   );
@@ -338,9 +341,14 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   const view = select === 'decorar' && !editable ? 'actual' : shelfView || listing ? 'balda' : select;
   const iso = view === 'decorar' || view === 'actual';
   // Lo que se abre encima, con el interior montado debajo
-  const overlay = select === 'registro' || /^(ficha:|ordenador|abrir:)/.test(select ?? '');
+  const overlay = /^registro/.test(select ?? '') || /^(ficha:|ordenador|abrir:)/.test(select ?? '');
   // Se entra a la hora de la fachada, el atardecer; el botón deja ver las otras
   const [hora, setHora] = useState(FACADE_HORA);
+  // El tema de la interfaz sigue a la hora elegida aquí: no hay un segundo selector. La escena no usa estos colores
+  useEffect(() => {
+    document.documentElement.dataset.uiTheme = hora === 'noche' ? 'noche' : 'dia';
+    return () => delete document.documentElement.dataset.uiTheme;
+  }, [hora]);
   const [noGpu, setNoGpu] = useState(false);
   const apiRef = useRef(null);
   // El nombre del piso visitado, entero al tocarlo cuando no cabe
@@ -388,6 +396,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   // Tocar el ordenador: la cámara se acerca y se abre su pantalla. El mismo seguro que el registro
   const openDesk = () => {
     if (opening.current) return;
+    playUiSound('computer-open');
     if (balda !== null || !apiRef.current) {
       onSelect('ordenador');
       return;
@@ -509,7 +518,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
             reading={reading}
             balda={balda}
             covered={listing || overlay}
-            leaning={select === 'registro' || /^(?:ordenador|abrir:)/.test(select ?? '')}
+            leaning={/^registro/.test(select ?? '') || /^(?:ordenador|abrir:)/.test(select ?? '')}
             yawMemory={yawMemory}
             listing={listing}
             hint={hint}
@@ -522,7 +531,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
             onDoor={home ? onEdificio : onBack}
             onLost={() => setNoGpu(true)}
           />
-          <div className="plab-controls" inert={listing}>
+          <div className="plab-controls" inert={listing} data-primary={reading || editable ? undefined : 'no'} style={{ '--tools': (view !== 'balda' || (editable && shelfBooks) ? 1 : 0) + (editable ? 1 : 0) + 1 }}>
             {(news.added.length > 0 || news.moved > 0 || news.stored > 0) && (
               <p className="plab-note plab-repair" role="status">
                 {news.added.length > 0 && `Tu piso se ha completado: ${news.added.join(', ').toLowerCase()}. `}
@@ -531,37 +540,54 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
               </p>
             )}
             {reading ? (
-              <button type="button" className="px-btn px-btn--sage plab-primary" aria-label={`Registrar lectura de ${reading.title}`} onClick={(e) => (e.detail ? openLog() : onRegister())}>
+              <button type="button" className="plab-primary" aria-label={`Registrar lectura de ${reading.title}`} onClick={(e) => (e.detail ? openLog() : onRegister())}>
                 <span>Registrar lectura</span>
                 <small>{reading.title}</small>
               </button>
             ) : editable ? (
-              <button type="button" className="px-btn px-btn--sage plab-primary" onClick={() => (shelfBooks ? onSelect(`balda:${TOP_ROW}`) : onOpenLibrary())}>
+              <button type="button" className="plab-primary" onClick={() => (shelfBooks ? onSelect(`balda:${TOP_ROW}`) : onOpenLibrary())}>
                 <span>Elegir una lectura</span>
                 <small>{shelfBooks ? 'En tu estantería' : 'En Mi biblioteca'}</small>
               </button>
             ) : null}
             <div className="plab-tools" role="group" aria-label="Más acciones">
               {/* 1.88.2: sin estantería en el piso no hay balda que mirar; el mismo botón lleva a la biblioteca entera (no se añade ningún mueble) */}
-              {view !== 'balda' && (room.items.some((i) => i.id === 'estanteria') || !editable ? <Tool icon="balda" name="Ver la balda" short="Balda" onClick={() => onSelect(`balda:${TOP_ROW}`)} /> : <Tool icon="balda" name="Toda la biblioteca (tu piso no tiene estantería)" short="Biblioteca" onClick={() => onSelect('toda')} />)}
-              {view === 'balda' && editable && shelfBooks && <Tool icon="lupa" name={`Buscar en toda la biblioteca, ${books.length} libros`} short="Buscar" onClick={() => onSelect('toda')} />}
-              {editable && <Tool icon="decorar" name="Decorar" short="Decorar" onClick={() => onSelect('decorar')} />}
+              {view !== 'balda' && (room.items.some((i) => i.id === 'estanteria') || !editable ? <Tool icon="estanteria" name="Ver la balda" short="Balda" onClick={() => onSelect(`balda:${TOP_ROW}`)} /> : <Tool icon="estanteria" name="Toda la biblioteca (tu piso no tiene estantería)" short="Biblioteca" onClick={() => onSelect('toda')} />)}
+              {view === 'balda' && editable && shelfBooks && <Tool icon="busqueda" name={`Buscar en toda la biblioteca, ${books.length} libros`} short="Buscar" onClick={() => onSelect('toda')} />}
+              {editable && <Tool icon="pincel" name="Decorar" short="Decorar" onClick={() => onSelect('decorar')} />}
               <PisoMenu
                 off={overlay}
-                items={[
-                  ...(editable
+                title={editable ? 'Tu rincón' : `Piso de ${piso.nombre}`}
+                main={
+                  editable
                     ? [
-                        { name: 'Toda la biblioteca', run: () => onSelect('toda') },
-                        ...(reading ? [{ name: `Registrar lectura de ${reading.title}`, run: () => onRegister() }] : []),
-                        { name: 'Calendario', run: () => onSelect('ordenador:calendar:calendar') },
-                        { name: 'Mi diario', run: () => onSelect('ordenador:calendar:today') },
-                        { name: 'Ordenador', run: openDesk },
+                        { name: 'Ordenador', icon: 'ordenador', main: true, run: openDesk },
+                        { name: 'Mi biblioteca', icon: 'estanteria', run: () => onSelect('toda') },
+                        home ? { name: 'Edificio', icon: 'edificio', run: onEdificio } : { name: 'Salir al portal', icon: 'edificio', run: () => (select ? onExit() : onBack()) },
+                        { name: 'Sonido', icon: 'altavoz', sound: true, run: () => onSelect('abrir:sonido') },
+                        { name: 'Decorar', icon: 'pincel', run: () => onSelect('decorar') },
+                        { name: 'Ajustes', icon: 'ajustes', run: () => onSelect('abrir:account') },
                       ]
-                    : []),
-                  { name: SIGUE[hora].label, run: () => setHora(SIGUE[hora].hora) },
-                  home ? { name: 'Ir al edificio', run: onEdificio } : { name: 'Salir al portal', run: () => (select ? onExit() : onBack()) },
-                  ...(home && onAnterior ? [{ name: 'Volver a la experiencia anterior', run: onAnterior }] : []),
-                ]}
+                    : [{ name: SIGUE[hora].label, icon: SIGUE[hora].hora === 'noche' ? 'luna' : 'sol', run: () => setHora(SIGUE[hora].hora) }, { name: 'Salir al portal', icon: 'edificio', plain: true, run: () => (select ? onExit() : onBack()) }]
+                }
+                more={
+                  editable
+                    ? [
+                        {
+                          title: 'Accesos rápidos',
+                          items: [
+                            { name: 'Calendario', icon: 'calendario', small: true, run: () => (playUiSound('computer-open'), onSelect('ordenador:calendar:calendar')) },
+                            { name: 'Mi diario', icon: 'cuaderno', small: true, run: () => (playUiSound('computer-open'), onSelect('ordenador:calendar:today')) },
+                          ],
+                        },
+                        {
+                          title: 'Esta habitación',
+                          items: [{ name: SIGUE[hora].label, icon: SIGUE[hora].hora === 'noche' ? 'luna' : 'sol', run: () => setHora(SIGUE[hora].hora) }, ...(home && onAnterior ? [{ name: 'Volver a la experiencia anterior', icon: 'flecha', run: onAnterior }] : [])],
+                        },
+                        ...(reading ? [{ title: 'Lectura', items: [{ name: `Registrar lectura de ${reading.title}`, label: 'Registrar lectura', sub: reading.title, primary: true, run: () => onRegister() }] }] : []),
+                      ]
+                    : []
+                }
               />
             </div>
             {!editable && <p className="plab-note">Puedes mirar y salir por la puerta; lo demás no se toca.</p>}
@@ -665,7 +691,7 @@ export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose
   return (
     // Con el registro encima, Escape es suyo
     // Con el registro encima, Escape es suyo; en la habitación de inicio, Escape no la cierra (es la pantalla de inicio)
-    <PanelShell onClose={select === 'registro' || /^(ficha:|ordenador|abrir:)/.test(select ?? '') || (home && !select) ? () => {} : select === 'toda' ? onBack : onClose} label={piso || isHome ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
+    <PanelShell onClose={/^registro/.test(select ?? '') || /^(ficha:|ordenador|abrir:)/.test(select ?? '') || (home && !select) ? () => {} : select === 'toda' ? onBack : onClose} label={piso || isHome ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
       {isHome ? (
         <HomePiso select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} home={home} onEdificio={onEdificio} onAnterior={onAnterior} onOpenAccount={onOpenAccount} onOpenProfile={onOpenProfile} />
       ) : piso ? (
