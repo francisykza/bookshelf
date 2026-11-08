@@ -8,7 +8,7 @@ import { PRENDAS, ROPA_CASINO, ROPA_ESTIBA, validateAvatar } from './actor';
 import { FIRMAS, catalogItem } from './catalog';
 import { rarezaOf } from './economy';
 import { normalizeInventory } from './inventory';
-import { validateRoom } from './room';
+import { empaquetar, leerPiso } from './retirados';
 
 const DOORS = ['3B', '3A', '2B', '2A', '1B', '1A'];
 export const doorLabel = (p) => `${p[0]}.º ${p[1]}`;
@@ -41,7 +41,7 @@ export async function loadEdificio() {
   const { data, error } = await sb.rpc('edificio_portal');
   fail(error);
   if (!data) throw Object.assign(new Error('No se ha podido encontrar tu edificio.'), { code: 'edificio' });
-  const vecinos = (data.vecinos ?? []).map((v) => ({ ...v, room: v.layout ? validateRoom(v.layout) : null, personaje: validateAvatar(v.personaje) }));
+  const vecinos = (data.vecinos ?? []).map((v) => ({ ...v, room: v.layout ? leerPiso(v.layout) : null, personaje: validateAvatar(v.personaje) }));
   return { edificio: data.edificio, puerta: data.puerta, vecinos };
 }
 
@@ -51,7 +51,8 @@ export function doorsOf(vecinos) {
 }
 
 export async function savePiso(userId, room) {
-  const layout = validateRoom(room);
+  // `empaquetar` devuelve también lo retirado: guardar nunca borra lo que no se dibuja
+  const layout = empaquetar(room);
   if (!layout) throw Object.assign(new Error('Ese piso no es válido.'), { code: 'invalid' });
   const sb = await client();
   const { error } = await sb.from('pisos').upsert({ user_id: userId, layout }, { onConflict: 'user_id' });

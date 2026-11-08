@@ -79,7 +79,8 @@ export function heightOf(room, item) {
   return base ? catalogItem(base.id).sup : 0;
 }
 
-const nextUid = (room) => room.items.reduce((n, i) => Math.max(n, i.uid), 0) + 1;
+// Lo oculto (retirados.js) conserva su identificador: uno nuevo nunca lo reutiliza
+const nextUid = (room) => [...room.items, ...(room.ocultos ?? [])].reduce((n, i) => Math.max(n, i.uid), 0) + 1;
 const replace = (room, changed) => ({ ...room, items: room.items.map((i) => changed.find((c) => c.uid === i.uid) ?? i) });
 
 /** Primer sitio libre para algo nuevo, lo más cerca posible de `near` (por defecto, el centro del piso). */
@@ -143,7 +144,7 @@ export function rotateItem(room, uid) {
   if (!item) return { error: 'desconocido' };
   if (capaOf(item) === 'pared') return { error: 'pared' };
   const tops = itemsOn(room, uid);
-  if (tops.length && !room.guard?.turnsWithTops(tops)) return { error: 'encima' };
+  if (tops.length && !room.guard?.turnsWithTops(tops, item)) return { error: 'encima' };
   const turned = { ...item, rot: (item.rot + 1) % 4 };
   // Lo que va encima gira con él, en su misma celda del mueble (solo piezas de una celda)
   const depth = footprint(catalogItem(item.id), item.rot).d;
@@ -239,7 +240,7 @@ export function reasonText(reason, con = null) {
     case 'pared':
       return 'Lo que va en la pared no se gira.';
     case 'esencial':
-      return 'Es un elemento esencial: no se puede guardar. Puedes moverlo o cambiarle el color.';
+      return 'Es el último de este esencial: puedes moverlo, girarlo o sustituirlo desde Esenciales.';
     case 'escritorio':
       return 'El ordenador va sobre el escritorio.';
     case 'zona':

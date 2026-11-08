@@ -2582,3 +2582,117 @@
   background: linear-gradient(135deg, #fff3c4, #ffd9ec 45%, #cdf5ff);
   box-shadow: inset 0 0 0 2px #d9a441;
 }
+
+/* 1.89: los esenciales, primera pestaña de la balda */
+.ep-ess[hidden] {
+  display: none;
+}
+
+.ep-ess {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 208px;
+  overflow-y: auto;
+  padding: 2px 4px 6px;
+}
+
+.ep-ess__card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 6px;
+  border: 2px solid #3b2618;
+  background: #fbf3df;
+  color: #3b2618;
+}
+
+.ep-ess__card[data-estado='falta'] {
+  border-style: dashed;
+  background: #f3e3c2;
+}
+
+.ep-ess__txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.ep-ess__txt b {
+  font-size: 14px;
+}
+
+.ep-ess__acts {
+  display: flex;
+  gap: 4px;
+}
+
+.ep-ess__btn {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 2px solid #3b2618;
+  background: #e9d3a4;
+  color: #3b2618;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ep-ess__opts {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  color: #fbf3df;
+  font-size: 13px;
+}
+
+.ep-ess__opt {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  padding: 2px;
+  border: 2px solid #3b2618;
+  background: #fbf3df;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* 1.89: la visita en primera persona a otro piso */
+.ed-visita-toggle {
+  align-self: center;
+  min-height: 44px;
+  margin: 4px auto;
+  padding: 0 14px;
+  border: 2px solid #3b2618;
+  background: #fbf3df;
+  color: #3b2618;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ed-visita3d {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: min(62dvh, 560px);
+  min-height: 320px;
+}
+
+.ed-visita3d__hora {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid #3b2618;
+  background: #fbf3df;
+  color: #3b2618;
+  font: inherit;
+  cursor: pointer;
+}

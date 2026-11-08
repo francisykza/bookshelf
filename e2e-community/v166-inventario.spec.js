@@ -41,6 +41,7 @@ test('la balda con tus copias, lo agotado apagado y «Tu mudanza» con seis comu
   await expect(mine.locator('.ep-shelf')).toBeVisible();
 
   // De inicio: los diez del piso inicial, todos ya colocados (agotados); lo que no tienes no está en la balda
+  await mine.locator('.ep-chip[data-cat="asientos"]').click();
   const sillon = mine.getByRole('button', { name: 'Añadir sillón (no te quedan)' });
   await expect(sillon).toBeVisible();
   await expect(sillon).toHaveClass(/is-out/);

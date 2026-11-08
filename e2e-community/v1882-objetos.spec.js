@@ -87,6 +87,7 @@ test.beforeEach(async ({ page }, info) => {
 });
 
 test('objetos en primera persona: mover, girar, tono y guardar se ven en 3D, tras recargar y desde otra cuenta', async ({ page, browser }, info) => {
+  test.skip(true, '1.89: estos objetos y efectos están retirados por ahora (retirados.js). Volver a activarla al restaurarlos.');
   test.setTimeout(180000);
   const mock = seed();
   await mock.attach(page, ANA);

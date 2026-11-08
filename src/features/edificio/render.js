@@ -11,6 +11,8 @@ import { tintar } from './acabados';
 import { misticoOf, misticoThumb } from './misticos';
 import { clearFrame, createFrame, painterFor } from '../../vendor/pixelfx/core/index.js';
 import { ROOM, heightOf, rectOf } from './room';
+import { ordenadorDe } from './esenciales';
+import { isRetirado } from './retirados';
 
 const S = 18;
 const YAW = Math.PI / 4;
@@ -291,9 +293,12 @@ export function createRoomRenderer() {
     r.setId(0);
     drawWalls(r, room);
     for (const item of room.items) {
-      if (excluded.has(item.uid) || catalogItem(item.id).capa === 'alfombra') continue;
+      if (excluded.has(item.uid) || catalogItem(item.id).capa === 'alfombra' || isRetirado(item.id)) continue;
       drawItem(r, room, item);
     }
+    // El ordenador va con su escritorio: se elige con él, se mueve con él y no se guarda
+    const pc = ordenadorDe(room);
+    if (pc && !excluded.has(pc.uid)) drawItem(r, room, pc);
     r.applyShadows();
     r.bakeOcclusion();
     baked.set(r.pix);

@@ -129,7 +129,7 @@ function Tool({ icon, name, short, onClick }) {
   );
 }
 
-function Interior({ piso, room, hora, reading, balda, covered, leaning, listing, yawMemory, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor }) {
+export function Interior({ piso, room, hora, reading, balda, covered, leaning, listing, yawMemory, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor }) {
   const [picked, setPicked] = useState(null);
   const host = useRef(null);
   const api = useRef(null);

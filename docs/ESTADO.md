@@ -6,6 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **En preview, sin publicar: 1.89.0** (2026-11-08, §89), rama `1.89-rincon-esenciales`. Su migración `20261118120000_edificio_esenciales.sql` está sin aplicar.
 - **Versión publicada: 1.88.2** (2026-11-07, §88.4 a §88.6). Lleva la 1.88.1 (la fachada al volver de un piso, sin
   placas fuera del dibujo) y la 1.88.2 (místicos, mascota, muebles vivos y acabados en primera persona; sin estantería,
   «Biblioteca» en vez de «Ver la balda»). Viene de la rama `1.88.1-fachada`, con avance rápido de `main`, a petición de
@@ -90,6 +91,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.89.0 | Retirados sin perder datos, Esenciales, pasada del rincón y visita en primera persona (preview) | §89 |
 | 1.88.2 | Místicos, mascota, muebles vivos y acabados en primera persona; «Biblioteca» sin estantería | §88.5–§88.6 |
 | 1.88.1 | La fachada al volver de un piso, sin placas fuera del dibujo | §88.4 |
 | 1.88.0 | La habitación de inicio es tu piso del edificio; cada libro de la estantería con su portada real (publicada) | §88 |
@@ -137,6 +139,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **1.89.0 (preview):** aplicar la migración, probar en Android y Safari de iPhone y decidir si se publica; decidir cuándo restaurar los objetos retirados (§89.1).
 - **1.88.2 (publicada):** comprobarla en Android y en Safari de iPhone reales (solo se ha probado en emulación).
 - **1.88 (publicada):** quedan sin causa identificada la franja oscura de Chromium (no se reproduce) y los fallos
   intermitentes de §88.3 (entre ellos, el del decorador del edificio en WebKit).
@@ -231,6 +234,16 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-08 · cuenta principal · 1.89.0 en preview: rincón, Esenciales y visita en primera persona (commit y subida a la rama)
+
+- Hecho (§89): retirados sin perder datos, pestaña Esenciales con básicos sin compra, cámara según el asiento real, pasada artística del
+  rincón y visita en primera persona a otros pisos.
+- **Sin publicar**, rama `1.89-rincon-esenciales`; Francisco dijo «No fusiones con main ni publiques en producción todavía».
+- **Migración `20261118120000_edificio_esenciales.sql` sin aplicar**: la aplica Francisco. Sin ella, colocar un básico que no se posee o
+  aparcar un retirado da error visible al guardar y no se pierde nada.
+- Sin verificar en móviles físicos: todo es emulación. `v1882-objetos` (el primer caso) y `v1882-comparativas` quedan saltadas mientras
+  esos objetos estén retirados.
 
 ### 2026-11-07 · cuenta principal · 1.88.1 y 1.88.2 publicadas en producción
 - Francisco pidió «súbelo» y confirmó «Sí, a main». `main` avanza por avance rápido hasta la rama `1.88.1-fachada` (sin

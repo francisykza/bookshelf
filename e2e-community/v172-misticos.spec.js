@@ -66,11 +66,8 @@ test('en tu piso: colocar un místico y elegir quién te acompaña (se guarda)',
   await expect(mine.locator('canvas.ep-canvas')).toBeVisible();
   await mine.getByRole('button', { name: 'Decorar' }).click();
 
-  // La pestaña «Místicos» de la balda trae el farol (el dragón no: acompaña, no se coloca)
-  await mine.getByRole('button', { name: 'Místicos' }).click();
-  await expect(mine.locator('.ep-item[data-id="dragoncillo"]')).toHaveCount(0);
-  await mine.locator('.ep-item[data-id="farol-azul"]').click();
-  await expect.poll(() => mock.db.pisos.find((p) => p.user_id === ANA.id).layout.items.some((i) => i.id === 'farol-azul'), { timeout: 10000 }).toBe(true);
+  // 1.89: los místicos colocables están retirados por ahora (retirados.js): sin pestaña y sin ponerlos
+  await expect(mine.locator('.ep-chip[data-cat="misticos"]')).toBeHidden();
 
   // El armario (1.77): la pestaña «Compañía» con «Sin compañía» y el dragón; se guarda con «Listo»
   await tapActor(page);

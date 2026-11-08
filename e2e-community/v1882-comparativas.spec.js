@@ -48,6 +48,7 @@ async function shot(page, info, name) {
 
 test.beforeEach(async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), '390 en Chromium y WebKit');
+  test.skip(true, '1.89: estos objetos y efectos están retirados por ahora (retirados.js). Volver a activarla al restaurarlos.');
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
 });
 

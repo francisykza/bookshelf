@@ -97,7 +97,10 @@ export function wallTexture(tono, { w, h, lights, hora }) {
     const k = WARMTH[band];
     // Lo más alejado de la luz, junto al techo, un tono por debajo: da cuerpo a la pared sin añadir nada
     const top = band === 0 && z + (r.bayerAt(x, y) - 0.5) * 0.06 > h - 0.36;
-    const tone = band >= BANDS - 1 ? ramp[4] : top ? ramp[2] : ramp[3];
+    // Enlucido: manchas amplias de un 2 % y bloques de 2 px, sin grano; y la sombra de la unión con el rodapié
+    const patch = noise(((x >> 2) / 11) | 0, ((y >> 2) / 7) | 0) > 0.72 && ((x >> 1) + (y >> 1)) % 4 === 0 ? 0.975 : 1;
+    const foot = z + (r.bayerAt(x, y) - 0.5) * 0.08 < 0.42 ? 0.95 : 1;
+    const tone = multiply(band >= BANDS - 1 ? ramp[4] : top ? ramp[2] : ramp[3], [patch * foot, patch * foot, patch * foot]);
     if (hora === 'dia') return tone;
     if (hora === 'noche') return multiply(tone, [0.38 + k * 0.82, 0.36 + k * 0.62, 0.54 + k * 0.1]);
     return multiply(tone, [0.6 + k * 0.55, 0.56 + k * 0.42, 0.74 + k * 0.06]);
@@ -356,6 +359,11 @@ export function woodShelf(place) {
     const isBalda = z === BALDA.z0;
     box([0.14, 0.14, z, 1.86, BALDA.front, z + BOARD_THICK], { front: isBalda ? SHELF.canto : SHELF.board, top: SHELF.top, under: SHELF.under });
   }
+  // Zócalo entre los laterales y moldura de remate: se lee como mueble apoyado y con unión, sin cambiar su medida
+  box([0.14, 0.9, 0, 1.86, 1.02, 0.14], { front: SHELF.canto });
+  box([-0.03, 0.1, SHELF_H - 0.12, 0, 1.04, SHELF_H], { left: SHELF.cap, front: SHELF.cap, top: SHELF.cap });
+  box([2, 0.1, SHELF_H - 0.12, 2.03, 1.04, SHELF_H], { right: SHELF.cap, front: SHELF.cap, top: SHELF.cap });
+  box([-0.03, 1, SHELF_H - 0.12, 2.03, 1.04, SHELF_H], { front: SHELF.canto, top: SHELF.cap, under: SHELF.under });
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(out.pos, 3));
   g.setAttribute('uv', new Float32BufferAttribute(out.uv, 2));
@@ -473,6 +481,10 @@ export function pixelWindow(place) {
   box([0.24, WIN_OUT, 1.42, 1.76, WIN_IN, 1.54], { front: WIN.frontH, top: WIN.revealBottom });
   box([0.96, -0.08, 1.54, 1.04, 0.03, 3.16], { front: WIN.bar, left: WIN.barSide, right: WIN.barSide });
   box([0.24, -0.08, 2.62, 1.76, 0.03, 2.68], { front: WIN.rail, top: WIN.rail, under: WIN.rail });
+  // Tapajuntas alrededor del marco, a ras de pared: el marco queda encajado y no pegado encima
+  box([0.02, WIN_IN, 1.42, 0.12, WIN_IN + 0.03, 3.38], { front: WIN.frontV, left: WIN.barSide, right: WIN.barSide });
+  box([1.88, WIN_IN, 1.42, 1.98, WIN_IN + 0.03, 3.38], { front: WIN.frontV, left: WIN.barSide, right: WIN.barSide });
+  box([0.02, WIN_IN, 3.28, 1.98, WIN_IN + 0.03, 3.38], { front: WIN.frontH, under: WIN.revealTop, top: WIN.frontH });
   // El alféizar asoma hacia ti, con su canto y una ménsula debajo
   box([0.02, 0, 1.3, 1.98, 0.38, 1.42], { front: WIN.sillCanto, left: WIN.sillCanto, right: WIN.sillCanto, top: WIN.sillTop, under: WIN.under });
   box([0.16, 0, 1.2, 1.84, 0.07, 1.3], { front: WIN.frontH, under: WIN.under });
@@ -975,6 +987,21 @@ export function pixelTable(boxes, place) {
     if (box === top) quads(out, size, P, box.b, { top: TABLE.top, front: TABLE.canto, back: TABLE.canto, left: TABLE.end, right: TABLE.end, under: TABLE.under });
     else quads(out, size, P, box.b, { front: TABLE.leg, back: TABLE.leg, left: TABLE.leg, right: TABLE.leg });
   }
+  // El faldón bajo el tablero, entre las patas: es la unión que hace que parezca una mesa montada
+  const legs = boxes.filter((b) => b !== top && b.b[5] <= top.b[2] + 0.001);
+  if (legs.length >= 4) {
+    const x0 = Math.min(...legs.map((b) => b.b[0])) + 0.03;
+    const x1 = Math.max(...legs.map((b) => b.b[3])) - 0.03;
+    const y0 = Math.min(...legs.map((b) => b.b[1])) + 0.03;
+    const y1 = Math.max(...legs.map((b) => b.b[4])) - 0.03;
+    const z1 = top.b[2];
+    const z0 = z1 - 0.13;
+    const face = { front: TABLE.canto, back: TABLE.canto, left: TABLE.end, right: TABLE.end, under: TABLE.under };
+    quads(out, size, P, [x0, y0, z0, x1, y0 + 0.05, z1], face);
+    quads(out, size, P, [x0, y1 - 0.05, z0, x1, y1, z1], face);
+    quads(out, size, P, [x0, y0, z0, x0 + 0.05, y1, z1], face);
+    quads(out, size, P, [x1 - 0.05, y0, z0, x1, y1, z1], face);
+  }
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(out.pos, 3));
   g.setAttribute('uv', new Float32BufferAttribute(out.uv, 2));
@@ -1192,6 +1219,8 @@ export function upholsteredArmchair(tono, place, unplace) {
     parts.push(part(place([a, b, c, d, e, f]), tint, radius, skin, local));
   };
   for (const [lx, ly] of [[0.2, 0.2], [1.68, 0.2], [0.2, 1.68], [1.68, 1.68]]) parts.push(part(place([lx, ly, 0, lx + 0.12, ly + 0.12, 0.22]), WOOD_DARK, 0));
+  // El bastidor de madera que une las patas, visible bajo la tapicería
+  parts.push(part(place([0.2, 0.2, 0.15, 1.8, 1.8, 0.23]), WOOD_DARK, 0));
   skinned([0.15, 0.25, 0.22, x1, 1.85, 0.7], 0.05, 'side');
   skinned([0.15, 0.2, 0.7, x1, 0.62, 1.75], 0.11, 'side', shade(white, 0.92));
   // Los brazos: el canto de arriba bien redondo, como en el dibujo isométrico

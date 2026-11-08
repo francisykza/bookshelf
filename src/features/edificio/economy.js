@@ -2,6 +2,7 @@
 // Solo números y textos: la regla de verdad (cobrar, sortear, dar copias) está en el servidor
 // (supabase/migrations/20261104120000_edificio_tienda.sql), y una prueba comprueba que estos números coinciden con los
 // suyos. Los tickets solo se ganan leyendo y nunca se compran con dinero.
+import { isRetirado } from './retirados';
 import { CATALOG, isEspecial, isMistico } from './catalog';
 
 export const RAREZAS = [
@@ -93,7 +94,7 @@ export const costeDe = (sobre, cuantos) => (cuantos === 5 ? sobre.coste5 : sobre
 const probDe = (sobre, rareza) => (rareza === 'comun' ? 1 - sobre.prob.raro - sobre.prob['poco-comun'] - (sobre.prob.mistico ?? 0) : sobre.prob[rareza]);
 
 /** Lo que se vende en la tienda: todo lo que no es de sagas y tiene precio (lo raro solo sale en sobres). */
-export const TIENDA = sinSaga.filter((c) => rarezaInfo(rarezaOf(c)).precio != null);
+export const TIENDA = sinSaga.filter((c) => rarezaInfo(rarezaOf(c)).precio != null && !isRetirado(c.id));
 export const precioDe = (id) => {
   const cat = CATALOG.find((c) => c.id === id);
   return cat && !cat.set ? rarezaInfo(rarezaOf(cat)).precio : null;

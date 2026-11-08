@@ -10,6 +10,8 @@ import { tintar } from '../edificio/acabados';
 import { misticoOf, misticoSprite } from '../edificio/misticos';
 import { ROOM, heightOf, itemsOn, rectOf } from '../edificio/room';
 import { essentialItems, mainShelf, readingTable } from './essentials';
+import { asientoDe } from '../edificio/esenciales';
+import { EFECTOS_APAGADOS, isRetirado, tieneVida } from '../edificio/retirados';
 import { bookDims, wrapTitle } from './bookLayout';
 import { paintExterior } from './exterior';
 import { LAYERS, WATER_FRAMES, WATER_MS, PX_PER_CELL, layerMargins, layerPlane, rowOf } from './exteriorLayout';
@@ -19,7 +21,7 @@ import { BALDA, baldaShadowTexture, bookTexture, contactShadowTexture, floorText
 export const EYE = 1.85;
 const FOV = 72;
 /** Dónde te sientas, en coordenadas del sillón: pegado al respaldo y arrimado a un brazo, para verlo en primer plano. */
-const SEAT = { lx: 0.7, ly: 0.75 };
+const SEAT = { lx: 0.35, ly: 0.375 };
 /** Cabeza algo baja y girada hacia el centro de la habitación: menos techo y más mesa. */
 /** Cuánto se espera a la cubierta para enseñar ya el piso con ella; si tarda más, llega después. */
 const COVER_WAIT = 2200;
@@ -159,8 +161,11 @@ function catalogGeometry(item, cat, ownBooks = false) {
 
 /** La vista desde el sillón: mira hacia donde mira su frente (y = d en sus coordenadas), como en `toWorld` de render.js. */
 function seatView(seat) {
-  const cat = catalogItem('sillon');
-  const [a, b] = turned(cat, seat.rot, [SEAT.lx, SEAT.ly, 0, SEAT.lx, SEAT.ly, 0]);
+  // Pegado al respaldo y arrimado a un brazo, en proporción: el sillón da 0,7 y 0,75; un sofá o una mecedora, lo suyo
+  const cat = catalogItem(seat.id);
+  const lx = cat.w * SEAT.lx;
+  const ly = cat.d * SEAT.ly;
+  const [a, b] = turned(cat, seat.rot, [lx, ly, 0, lx, ly, 0]);
   const facing = [[0, 1], [-1, 0], [0, -1], [1, 0]][seat.rot];
   const dir = new Vector3(facing[0], -TILT, facing[1]).applyAxisAngle(new Vector3(0, 1, 0), TURN);
   return { pos: new Vector3(seat.x + a, EYE, seat.y + b), dir, side: new Vector3(-facing[1], 0, facing[0]) };
@@ -244,7 +249,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   const scene = new Scene();
   const camera = new PerspectiveCamera(FOV, 1, 0.1, 80);
   // La cámara sale del sillón real: si lo mueves o lo giras en el editor, te sientas donde esté
-  const seat = room.items.find((i) => i.id === 'sillon');
+  const seat = asientoDe(room);
   const home = seat ? seatView(seat) : piso.mira === 'izq' ? { pos: new Vector3(8.6, EYE, 4.4), dir: new Vector3(-1, -TILT, 0), side: new Vector3(0, 0, -1) } : { pos: new Vector3(2.9, EYE, 8.6), dir: new Vector3(0, -TILT, -1), side: new Vector3(1, 0, 0) };
   // Un esencial puede estar en cualquier sitio: el giro llega hasta él, sea cual sea el reparto de la habitación
   const headingTo = (point) => {
@@ -317,8 +322,30 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   pushBox(shell, [ROOM.w, 0, 0, ROOM.w + 0.14, ROOM.d, ROOM.wallH], wall);
   pushBox(shell, [0, ROOM.d, 0, ROOM.w, ROOM.d + 0.14, ROOM.wallH], wall);
   pushBox(shell, [0, 0, ROOM.wallH, ROOM.w, ROOM.d, ROOM.wallH + 0.1], linear(wallColor.map((v) => v * 0.86)));
-  pushBox(shell, [0, 0, 0, ROOM.w, 0.05, 0.18], skirt);
-  pushBox(shell, [0, 0, 0, 0.05, ROOM.d, 0.18], skirt);
+  // Rodapié con su remate y cornisa discreta, en las cuatro paredes; se interrumpe en la puerta. Geometría fija: no cuesta fotogramas
+  const skirtCap = linear([136, 100, 72]);
+  const cornice = linear(wallColor.map((v) => v * 0.93));
+  const corniceLip = linear(wallColor.map((v) => v * 1.02));
+  const doorOf = (pared) => room.items.find((i) => i.id === 'puerta-piso' && i.pared === pared);
+  const runs = (length, door) => (door ? [[0, door.a + 0.06], [door.a + 1.94, length]] : [[0, length]]);
+  for (const [s0, s1] of runs(ROOM.w, doorOf('fondo'))) {
+    pushBox(shell, [s0, 0, 0, s1, 0.05, 0.24], skirt);
+    pushBox(shell, [s0, 0, 0.24, s1, 0.065, 0.28], skirtCap);
+  }
+  for (const [s0, s1] of runs(ROOM.d, doorOf('izq'))) {
+    pushBox(shell, [0, s0, 0, 0.05, s1, 0.24], skirt);
+    pushBox(shell, [0, s0, 0.24, 0.065, s1, 0.28], skirtCap);
+  }
+  pushBox(shell, [ROOM.w - 0.05, 0, 0, ROOM.w, ROOM.d, 0.24], skirt);
+  pushBox(shell, [ROOM.w - 0.065, 0, 0.24, ROOM.w, ROOM.d, 0.28], skirtCap);
+  pushBox(shell, [0, ROOM.d - 0.05, 0, ROOM.w, ROOM.d, 0.24], skirt);
+  pushBox(shell, [0, ROOM.d - 0.065, 0.24, ROOM.w, ROOM.d, 0.28], skirtCap);
+  for (const box of [[0, 0, ROOM.w, 0.07], [0, 0, 0.07, ROOM.d], [ROOM.w - 0.07, 0, ROOM.w, ROOM.d], [0, ROOM.d - 0.07, ROOM.w, ROOM.d]]) {
+    pushBox(shell, [box[0], box[1], ROOM.wallH - 0.12, box[2], box[3], ROOM.wallH], cornice);
+  }
+  for (const box of [[0, 0.07, ROOM.w, 0.1], [0.07, 0, 0.1, ROOM.d], [ROOM.w - 0.1, 0, ROOM.w - 0.07, ROOM.d], [0, ROOM.d - 0.1, ROOM.w, ROOM.d - 0.07]]) {
+    pushBox(shell, [box[0], box[1], ROOM.wallH - 0.05, box[2], box[3], ROOM.wallH], corniceLip);
+  }
   const shellGeo = own('geometries', new BufferGeometry());
   shellGeo.setAttribute('position', new Float32BufferAttribute(shell.pos, 3));
   shellGeo.setAttribute('normal', new Float32BufferAttribute(shell.nor, 3));
@@ -342,7 +369,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   for (const item of room.items) {
     const cat = catalogItem(item.id);
     // La ventana y las mesas tienen su propia pieza, más abajo
-    if (!cat || OWN_PIECES.has(item.id) || PIXEL_TABLES.has(item.id)) continue;
+    if (!cat || OWN_PIECES.has(item.id) || PIXEL_TABLES.has(item.id) || isRetirado(item.id)) continue;
     const geometry = catalogGeometry(item, cat, item.id === 'estanteria' && Boolean(shelfBooks));
     usedShared.add(geometry);
     const skin = tintar(cat.tonos[item.tono], item.acabado);
@@ -387,8 +414,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     const cx = (rc.x0 + rc.x1) / 2;
     const cy = (rc.y0 + rc.y1) / 2;
     const wants = [];
-    if (item.acabado && cat.capa !== 'pared') wants.push({ id: 'chispas-acabado', z: heightOf(room, item), opts: { acabado: item.acabado, ancho: Math.max(rc.x1 - rc.x0, rc.y1 - rc.y0) }, lit: false });
-    if (cat.rareza === 'mistico' || cat.mascota || cat.vivo) {
+    if (!EFECTOS_APAGADOS && item.acabado && cat.capa !== 'pared') wants.push({ id: 'chispas-acabado', z: heightOf(room, item), opts: { acabado: item.acabado, ancho: Math.max(rc.x1 - rc.x0, rc.y1 - rc.y0) }, lit: false });
+    if (tieneVida(item)) {
       const lift = cat.vivo ? 0 : cat.mascota ? 0.2 : 0.22;
       wants.push({ id: item.id, z: heightOf(room, item) + lift, opts: { tono: item.tono, flip: cat.mascota || cat.vivo ? item.rot === 1 || item.rot === 2 : false }, lit: Boolean(cat.mascota || cat.vivo) });
     }
@@ -592,12 +619,14 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     };
 
     // Tu lectura: el mismo ejemplar que en la mesa (medidas, lomo y portada), de pie y de frente
+    // En una visita sin libros compartidos no hay cubierta: la estantería se queda vacía
     const c = data.cover;
+    const COVER_X = 1.42;
+    const coverWidth = c ? bookDims(c).width : 0;
+    if (c) {
     const coverDims = bookDims(c);
     const coverThick = coverDims.thick;
     const coverHeight = coverDims.length;
-    const COVER_X = 1.42;
-    const coverWidth = coverDims.width;
     const coverGroup = place(COVER_X, BALDA.z1, coverHeight, [coverWidth, coverHeight, coverThick], COVER_TURN);
     // Tu lectura, de frente: el mismo libro girado para que su tapa mire hacia ti
     const coverHold = new Group();
@@ -619,6 +648,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       coverGroup.userData.size[0] = w;
       shelfCoverReal = true;
     });
+    }
 
     data.rows.forEach((items, row) => {
       if (!items.length) return;
@@ -661,7 +691,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       plateOf(from + lastEnd / 2, floorZ, lastEnd + 0.14, DEPTH + 0.16);
       const first = Math.min(...items.map((i) => i.x + i.w / 2 - (i.extent ?? i.w) / 2));
       const tall = Math.max(...items.map((i) => i.dims.length));
-      rowBoxes[row] = { x0: from + first, x1: row === 2 ? COVER_X + coverWidth / 2 : from + lastEnd, top: floorZ + Math.max(tall, row === 2 ? coverHeight : 0) };
+      rowBoxes[row] = { x0: from + first, x1: row === 2 ? COVER_X + coverWidth / 2 : from + lastEnd, top: floorZ + Math.max(tall, row === 2 && c ? bookDims(c).length : 0) };
     });
   };
   buildShelfBooks(shelfBooks);
@@ -1799,6 +1829,22 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         shelf: { coverReal: shelfCoverReal, faces: shelfFaces, spines: shelfSpines, shown: shelfSpots.filter((sp) => sp.show === 1).map((sp) => sp.id), books: shelfSpots.map((s) => s.id), rows: [0, 1, 2].map((r) => shelfSpots.filter((s) => s.row === r).length) },
         // Dónde está la estantería que se dibuja (la del piso guardado): para comprobar que Decorar llega a la primera persona
         // Los seres dibujados (místicos, mascota, vivos y destellos de acabado) y dónde están
+        // La cámara del asiento real: si queda en la habitación, si cae dentro de otro mueble y si llega a cada esencial
+        camera: {
+          seat: seat ? { uid: seat.uid, id: seat.id, x: seat.x, y: seat.y, rot: seat.rot } : null,
+          x: home.pos.x,
+          z: home.pos.z,
+          inRoom: home.pos.x > 0.1 && home.pos.x < ROOM.w - 0.1 && home.pos.z > 0.1 && home.pos.z < ROOM.d - 0.1,
+          inside: room.items
+            .filter((i) => i.uid !== seat?.uid && catalogItem(i.id)?.capa === 'suelo')
+            .filter((i) => {
+              const r = rectOf(i);
+              return home.pos.x > r.x0 && home.pos.x < r.x1 && home.pos.z > r.y0 && home.pos.z < r.y1;
+            })
+            .map((i) => i.id),
+          yawRange: [...yawRange],
+          reach: essentialItems(room).map((i) => ({ id: i.id, yaw: headingTo(placeOf(i)), ok: Math.abs(headingTo(placeOf(i))) <= YAW_REACH })),
+        },
         beings: { list: beings.map((b) => ({ uid: b.uid, id: b.id, x: b.sprite.position.x, y: b.sprite.position.y, z: b.sprite.position.z })), steps: beingSteps, running: Boolean(beingTimer) },
         // Cada pieza del piso dibujada (una vez por uid) y dónde: para comparar con el piso guardado y su isométrico
         placed: (() => {

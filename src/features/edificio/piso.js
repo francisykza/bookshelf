@@ -21,6 +21,8 @@ import { acabadosDe, freeCopies, ownedCopies, plainCopies } from './inventory';
 import { houseSwatch, pixelIcon, pixelVars } from './pixelUi';
 import { COLORES_PELO, COMPLEMENTOS, CONJUNTO_ESTRELLAS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, prendaOrigen, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
 import { ACTOR_ID, ART_H, ART_W, backdropImage, createRoomRenderer, renderActorThumb, renderThumb } from './render';
+import { ESENCIALES_TAB, GUARDIA, ROLES, conBasicos, faltan, itemsDeRol, opcionesDe, sustituir } from './esenciales';
+import { EFECTOS_APAGADOS, esperanSitio, isRetirado, tieneVida } from './retirados';
 import { ROOM, addItem, check, heightOf, itemsOn, moveItem, reasonText, recolorItem, rectOf, removeItem, rotateItem, setFloor, setWall, wallLength } from './room';
 
 const DRAG_PX = 6;
@@ -92,8 +94,10 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   const sfx = createSfx({ muted });
   const renderer = createRoomRenderer();
   let room = initial;
+  // Las reglas de los esenciales, solo al decorar tu piso (el piloto trae las suyas). No se guardan: `validateRoom` las quita
+  if (editable && !room.guard) room = { ...room, guard: GUARDIA };
   // Copias de cada mueble (1.66, §66); null: todo libre (sin la migración del inventario, o en el prototipo)
-  let inv = inventory;
+  let inv = conBasicos(inventory);
   let selected = null; // uid del objeto elegido
   let stack = null; // Los toques seguidos en el mismo punto: { a, peeled }
   let drag = null; // { uid, pointerId, x0, y0, armed, timer, moved, grab, preview: { room, item, ok, reason, con } }
@@ -173,7 +177,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   // ── La balda: catálogo, paredes y suelo ──
   const panel = el('section', { class: 'ep-panel ep-shelf', hidden: true, 'aria-label': 'Decorar tu piso' });
-  let category = CATEGORIES[0].id;
+  let category = editable ? ESENCIALES_TAB : CATEGORIES[0].id;
+  let essOpen = null;
   const catRow = el('div', { class: 'ep-cats', role: 'group', 'aria-label': 'Qué poner' });
   const catTitle = el('p', { class: 'ep-shelf__title', 'aria-hidden': 'true' });
   const grid = el('div', { class: 'ep-grid' });
@@ -192,12 +197,13 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   const listBox = editable ? el('div', { class: 'ep-inroom', hidden: true }, list) : el('details', { class: 'ep-list' }, listSummary, list);
   // La pestaña del armario en la balda (lo abre: el armario es un modo propio del piso, 1.77)
   const outfitTab = el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33 });
-  const CATS = [...CATEGORIES, { id: OUTFIT, nombre: 'Tu personaje' }, { id: HOUSE, nombre: 'Paredes y suelo' }, { id: INROOM, nombre: 'En el piso' }];
+  const essBox = el('div', { class: 'ep-ess', hidden: true });
+  const CATS = [{ id: ESENCIALES_TAB, nombre: 'Esenciales' }, ...CATEGORIES, { id: OUTFIT, nombre: 'Tu personaje' }, { id: HOUSE, nombre: 'Paredes y suelo' }, { id: INROOM, nombre: 'En el piso' }];
   // Cada pestaña lleva el dibujo de un mueble de su tipo; la de paredes y suelo, una muestra de los de tu piso
   // 1.74: el nombre corto, a la vista bajo el dibujo de cada pestaña
-  const TAB_SHORT = { asientos: 'Asientos', mesas: 'Mesas', [OUTFIT]: 'Armario', [HOUSE]: 'Paredes', [INROOM]: 'En el piso' };
-  const TAB_ICON = { asientos: 'sillon', mesas: 'mesa', luz: 'lampara-pie', plantas: 'planta-grande', detalles: 'tetera', pared: 'cuadro', alfombras: 'alfombra', sagas: 'esferas', misticos: 'farol-azul' };
-  const hasMisticos = () => CATALOG.some((c) => c.cat === 'misticos' && !c.compania && ownedCopies(inv, c.id) > 0);
+  const TAB_SHORT = { [ESENCIALES_TAB]: 'Esenciales', asientos: 'Asientos', mesas: 'Mesas', [OUTFIT]: 'Armario', [HOUSE]: 'Paredes', [INROOM]: 'En el piso' };
+  const TAB_ICON = { [ESENCIALES_TAB]: 'estanteria', asientos: 'sillon', mesas: 'mesa', luz: 'lampara-pie', plantas: 'planta-grande', detalles: 'tetera', pared: 'cuadro', alfombras: 'alfombra', sagas: 'esferas', misticos: 'farol-azul' };
+  const hasMisticos = () => CATALOG.some((c) => c.cat === 'misticos' && !c.compania && !isRetirado(c.id) && ownedCopies(inv, c.id) > 0);
   function syncMisticTab() {
     const b = catRow.querySelector('[data-cat="misticos"]');
     if (b) b.hidden = !hasMisticos();
@@ -237,7 +243,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       b.addEventListener('click', () => commit(setFloor(room, s.id), `Suelo: ${s.nombre.toLowerCase()}.`));
       floorRow.append(b);
     }
-    panel.append(el('div', { class: 'ep-shelf__head' }, catRow, catTitle), el('div', { class: 'ep-shelf__board' }, setRow, grid, house, listBox), hint);
+    panel.append(el('div', { class: 'ep-shelf__head' }, catRow, catTitle), el('div', { class: 'ep-shelf__board' }, setRow, essBox, grid, house, listBox), hint);
     root.append(panel, actionRow);
     // Fuera del panel: un antepasado con transform haría que «fixed» no siguiera al dedo
     document.body.append(ghost);
@@ -264,22 +270,90 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     return b;
   }
 
+  const essTitle = () => {
+    const n = faltan(room).length;
+    return n ? `Esenciales · falta${n > 1 ? 'n' : ''} ${n}` : 'Esenciales';
+  };
+  // Lo que no se dibuja se dice aquí, para que nadie crea que lo ha perdido
+  const inRoomTitle = () => {
+    const ocultos = room.ocultos?.length ?? 0;
+    const esperan = esperanSitio(room).length;
+    return `En el piso (${room.items.length})${esperan ? ` · ${esperan} esperan sitio` : ocultos ? ` · ${ocultos} retirados, guardados` : ''}`;
+  };
+
+  /** Ordenador, estantería y sillón: si faltan, se colocan; si están, se eligen para mover o girar, y se sustituyen. */
+  function fillEss() {
+    essBox.replaceChildren(
+      ...ROLES.map((rol) => {
+        const item = itemsDeRol(room, rol)[0] ?? null;
+        const thumb = renderThumb(item?.id ?? rol.base, item?.tono ?? 0, 44, item?.acabado ?? null).toDataURL();
+        const btn = (text, onClick, extra = {}) => {
+          const b = el('button', { type: 'button', class: 'ep-ess__btn', text, ...extra });
+          b.addEventListener('click', onClick);
+          return b;
+        };
+        const actions = item
+          ? [
+              btn('Elegir', () => {
+                if (!decorating) setDecorating(true);
+                select(item.uid);
+              }),
+              btn('Sustituir', () => {
+                essOpen = essOpen === rol.id ? null : rol.id;
+                fillEss();
+              }, { 'aria-expanded': String(essOpen === rol.id) }),
+            ]
+          : [btn('Colocar', () => {
+              if (!decorating) setDecorating(true);
+              add(rol.base);
+            })];
+        const card = el('div', { class: 'ep-ess__card', 'data-rol': rol.id, 'data-estado': item ? 'colocado' : 'falta' },
+          el('img', { src: thumb, alt: '', width: 44, height: 44, draggable: 'false' }),
+          el('div', { class: 'ep-ess__txt' }, el('b', { text: rol.nombre }), el('span', { text: item ? `${nameOf(item)} · colocado` : `Falta. ${rol.falta}` })),
+          el('div', { class: 'ep-ess__acts' }, ...actions));
+        if (!item || essOpen !== rol.id) return card;
+        const opts = opcionesDe(inv, room, rol, item);
+        const row = el('div', { class: 'ep-ess__opts' });
+        if (!opts.length) row.append(el('span', { text: 'Aún no tienes otro modelo.' }));
+        for (const o of opts) {
+          const nombre = `${catalogItem(o.id).nombre} · ${o.acabado ? acabadoOf(o.acabado).nombre : TONE_NAMES[o.tono]}`;
+          const b = el('button', { type: 'button', class: 'ep-ess__opt', 'aria-label': `Sustituir por ${nombre}`, title: nombre, 'data-id': o.id, 'data-tono': String(o.tono) }, el('img', { src: renderThumb(o.id, o.tono, 44, o.acabado).toDataURL(), alt: '', width: 44, height: 44, draggable: 'false' }));
+          b.addEventListener('click', () => {
+            const res = sustituir(room, item.uid, o);
+            if (res.error) return fail(res.error, res.con);
+            sfx.play('place');
+            essOpen = null;
+            selected = item.uid;
+            if (!decorating) setDecorating(true);
+            commit(res.room, `Ahora: ${nombre}.`);
+          });
+          row.append(b);
+        }
+        return el('div', { class: 'ep-ess__group' }, card, row);
+      }),
+    );
+    catTitle.textContent = essTitle();
+  }
+
   function fillGrid() {
     const isHouse = category === HOUSE;
     const isList = category === INROOM;
+    const isEss = category === ESENCIALES_TAB;
     const set = category === SAGAS ? SETS.find((x) => x.id === sagaSet) : null;
-    catTitle.textContent = isList ? `En el piso (${room.items.length})` : set ? set.nombre : CATS.find((c) => c.id === category).nombre;
+    catTitle.textContent = isEss ? essTitle() : isList ? inRoomTitle() : set ? set.nombre : CATS.find((c) => c.id === category).nombre;
     hint.textContent = set ? set.guino : HINT;
     setRow.hidden = !set;
     house.hidden = !isHouse;
     listBox.hidden = !isList;
-    grid.hidden = isHouse || isList;
-    hint.hidden = isHouse || isList;
+    essBox.hidden = !isEss;
+    grid.hidden = isHouse || isList || isEss;
+    hint.hidden = isHouse || isList || isEss;
     grid.replaceChildren();
-    if (isHouse || isList) return;
+    if (isEss) fillEss();
+    if (isHouse || isList || isEss) return;
     for (const cat of CATALOG.filter((c) => c.cat === category && (!set || c.set === set.id))) {
       // Lo que no tienes no está en tu balda (llegará con la tienda)
-      if (ownedCopies(inv, cat.id) === 0 || cat.compania) continue;
+      if (ownedCopies(inv, cat.id) === 0 || cat.compania || isRetirado(cat.id)) continue;
       for (const acabado of Object.keys(acabadosDe(inv, cat.id))) grid.append(shelfTile(cat, acabado));
       if (plainCopies(inv, cat.id) <= 0) continue;
       if (!thumbs.has(cat.id)) thumbs.set(cat.id, renderThumb(cat.id).toDataURL());
@@ -860,7 +934,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   // 1.78: también se mueven solas las mascotas y el polvo de estrellas de la capa (1.80: y los muebles vivos de la caja
   // del casino y los destellos del vestido de lentejuelas)
-  const hasPlacedMisticos = () => room.items.some((i) => i.acabado || catalogItem(i.id)?.rareza === 'mistico' || catalogItem(i.id)?.mascota || catalogItem(i.id)?.vivo);
+  const hasPlacedMisticos = () => room.items.some(tieneVida);
   const starry = () => Boolean(me && look?.complemento === 'capa');
   const sequined = () => Boolean(me && look?.jersey === 16);
   const alive = () => !destroyed && !reducedMotion() && ((pal && me) || hasPlacedMisticos() || starry() || sequined());
@@ -893,11 +967,11 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     for (const it of room.items) {
       const cat = catalogItem(it.id);
       // Los destellos de un acabado, sobre el mueble
-      if (it.acabado && !skip?.has(it.uid) && cat?.capa !== 'pared') {
+      if (!EFECTOS_APAGADOS && it.acabado && !skip?.has(it.uid) && cat?.capa !== 'pared') {
         const rc = rectOf(it);
         out.push({ id: 'chispas-acabado', x: (rc.x0 + rc.x1) / 2, y: (rc.y0 + rc.y1) / 2, z: heightOf(room, it), acabado: it.acabado, ancho: Math.max(rc.x1 - rc.x0, rc.y1 - rc.y0) });
       }
-      if (skip?.has(it.uid) || (cat?.rareza !== 'mistico' && !cat?.mascota && !cat?.vivo)) continue;
+      if (skip?.has(it.uid) || !tieneVida(it)) continue;
       const rc = rectOf(it);
       // La mascota, sobre su cojín (más bajo que la peana); mira hacia donde mira el mueble. Lo vivo de la caja, desde
       // el suelo del mueble (su dibujo sabe a qué altura va)
@@ -966,6 +1040,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   function refreshUi() {
     if (editable) refreshCounts();
+    if (editable && category === ESENCIALES_TAB) fillEss();
     const item = selected ? room.items.find((i) => i.uid === selected) : null;
     tools.hidden = !item;
     // Dentro de un panel de la app, Escape suelta lo elegido en vez de cerrar el panel (PanelShell lo respeta)
@@ -977,6 +1052,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       toolName.textContent = `${cat.nombre}${essential ? ' (esencial)' : ''} · ${item.acabado ? acabadoOf(item.acabado).nombre : TONE_NAMES[item.tono]}`;
       rotateBtn.disabled = cat.capa === 'pared';
       storeBtn.disabled = Boolean(room.guard?.keeps(room, item));
+      storeBtn.title = storeBtn.disabled ? 'Sustitúyelo desde Esenciales' : '';
       colorBtn.disabled = cat.tonos.length < 2 || Boolean(item.acabado);
     }
     // Las muestras enseñan cómo quedaría tu piso: cada pared con tu suelo, y cada suelo con tu pared
@@ -992,7 +1068,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       }
       houseTab.src = houseSwatch(wallOf(room.pared), FLOOR_INK[room.suelo] ?? FLOOR_INK.tablas);
     }
-    listSummary.textContent = `En el piso (${room.items.length})`;
+    listSummary.textContent = inRoomTitle();
     if (category === INROOM) catTitle.textContent = listSummary.textContent;
     list.replaceChildren(
       ...room.items.map((i) => {
@@ -1049,6 +1125,10 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   }
 
   function add(id, acabado = null) {
+    if (isRetirado(id)) {
+      sfx.play('invalid');
+      return say(`${catalogItem(id).nombre}: retirado por ahora de la decoración. Sigue en tu inventario.`);
+    }
     if (freeCopies(inv, room, id, acabado) <= 0) return noCopies(id);
     const res = addItem(room, id, { near: { x: ROOM.w / 2, y: ROOM.d / 2 }, acabado });
     if (res.error) return fail(addError(id, res.error));
@@ -1623,7 +1703,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       if (won) toggleToday(true);
     },
     setInventory(next) {
-      inv = next;
+      inv = conBasicos(next);
       if (!editable) return;
       syncMisticTab();
       fillGrid();

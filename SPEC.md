@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.88.2 · 2026-11-07 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.89.0 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5422,3 +5422,50 @@ Todo en emulación (Chromium y WebKit de Playwright a 390 × 844); nada en un iP
     piso).
   - `goodreads.test.js` «BOM y saltos de línea de Windows…» falla en este ordenador; es del lector CSV, que este cambio no
     toca (no se ha comprobado con el commit anterior).
+
+## 89. Rincón coherente: retirados, Esenciales y visita en primera persona (1.89.0)
+
+En la rama `1.89-rincon-esenciales`, con preview; **no publicada**. Migración: `20261118120000_edificio_esenciales.sql`.
+
+### 89.1 Objetos retirados temporalmente (`edificio/retirados.js`)
+
+- Retirados enteros: `farol-azul`, `rosa-estrellas`, `buho-estrellas` y `perrito` (sprites planos con partículas).
+- Solo se apaga el efecto: destellos de los acabados (`chispas-acabado`; queda el tinte) y la animación de encima de `gramola` y
+  `mesa-tapete`, que siguen como muebles modelados (la mesa es un soporte). Lámparas y luz ambiental, sin tocar.
+- No se dibujan en ninguna vista, no entran en la balda ni en la tienda, y no queda animación ni temporizador por ellos.
+  El compañero legendario y los efectos de ropa no son objetos colocados: siguen igual.
+- En memoria, `room.items` (visible) y `room.ocultos`. Lo oculto no bloquea selección ni colocación y conserva uid y sitio.
+- Al guardar (`empaquetar`, único punto): vuelve a `layout.items` si cabe en su sitio; si no, se aparca en `layout.ocultos`.
+- **Restaurar**: quitar el id de `RETIRADOS`. Vuelve a su sitio exacto solo si está libre; si no, se queda en `ocultos` y
+  Decorar avisa «esperan sitio». Nunca se recoloca en otra parte ni se solapa.
+- Limitación: una copia aparcada no cuenta como colocada; si se recicla mientras tanto, habrá que decidir qué hacer al restaurarla.
+
+### 89.2 Esenciales (`edificio/esenciales.js`)
+
+- Primera pestaña de Decorar: Ordenador, Estantería y Sillón, con su estado, Colocar o Elegir/Sustituir.
+- Son muebles normales: **Ordenador = escritorio con ordenador** (conjunto explícito: se deduce en el primer escritorio con
+  una celda libre, se elige y mueve con él y no se guarda); Estantería; Sillón (o sofá o mecedora).
+- Básicos sin compra: una copia lisa de sillón, estantería y escritorio siempre disponible (cliente `conBasicos`, servidor
+  `piso_falta_copia`). La tienda, sobres y reciclaje no cambian.
+- El último de cada tipo no se guarda (solo se mueve, gira o sustituye). A un piso antiguo no se le añade ni reorganiza nada: se
+  indica «Falta» y sus funciones siguen por los controles de siempre.
+- Cámara: `asientoDe` (sillón, sofá o mecedora); la posición es proporcional al mueble. `debug().camera` informa de ella.
+
+### 89.3 Pasada artística del rincón
+
+Geometría fija y texturas pintadas una vez; sin render continuo. Rodapié con remate y cornisa en las cuatro paredes (se corta en la
+puerta), enlucido mate de poco contraste, tapajuntas de ventana, zócalo y moldura de la estantería, faldón de las mesas de patas y
+bastidor del sillón. Suelo, libros, colores y acabados del usuario, sin cambios.
+
+### 89.4 Visita en primera persona (`pisoLab/VisitaPiso.jsx`)
+
+Desde la vista de un vecino, «Entrar en primera persona» (la isométrica sigue, con «Ver en isométrica»). Mismo `Interior` con el
+piso del propietario. Libros: solo `sharedBooks` de su rincón y colecciones visibles, con sus permisos; sin compartidos, estantería
+vacía. Sin Registrar, Decorar ni guardado; conserva `VecinoMesa`; la puerta y «Volver al portal» salen al edificio.
+
+### 89.5 Comprobado (emulación, nunca móviles físicos)
+
+Vitest de `src/features/pisoLab` y `src/features/edificio`, RLS en PGlite, oxlint, build y `e2e-community/v189-rincon.spec.js` en
+Chromium y WebKit a 390 px. Medido con `v189-medidas.spec.js`, mismo piso y encuadre (`qa-report/v189`), reposo 3D 5 s: Chromium 36 → 12
+pasadas, WebKit 34 → 11; isométrica 5 s: 150 → 0 y 78 → 0 pintadas; llamadas 66 → 54; texturas 87 → 83. Giro sin cambio apreciable
+(60 fps Chromium; ~10 fps WebKit, por software). La parte de los retirados y la de la pasada artística se miden juntas.

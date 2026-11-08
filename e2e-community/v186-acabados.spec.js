@@ -35,6 +35,7 @@ test('un sobre con acabado brilla distinto y la carta se distingue', async ({ pa
   await expect(page.locator('.gacha')).toHaveCount(0, { timeout: 10000 });
   await page.waitForTimeout(1800);
   await page.screenshot({ path: join(dirOf(info), 'v186-piso.png') });
+  await page.locator('.ep-chip[data-cat="asientos"]').click();
   await expect(page.locator('.ep-item.is-acabado').first()).toBeAttached();
   await page.locator('.ep-item.is-acabado').first().scrollIntoViewIfNeeded().catch(() => {});
 });

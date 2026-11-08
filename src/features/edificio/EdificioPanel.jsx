@@ -3,7 +3,7 @@
 // piso (se decora y se guarda solo) y el de cada vecino (se mira, se firma su libro y se le regala). Hace falta la
 // comunidad activada. Se carga bajo demanda: nada de esto pesa en la habitación.
 import { ArrowLeft, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../components/panels/PanelShell';
 import { dayKey } from '../../domain/dates';
@@ -24,6 +24,8 @@ import { GranHotel } from './hotel/GranHotel';
 import { mesasQueEsperan } from './hotel/veintiuna';
 import { StarterPicker } from './StarterPicker';
 import { Tienda } from './Tienda';
+// La visita en primera persona trae Three.js: solo se descarga si se entra
+const VisitaPiso = lazy(() => import('../pisoLab/VisitaPiso'));
 
 /** La tienda del bajo se abre como un «piso» más del portal (1.67, §67). */
 const TIENDA_ID = 'tienda';
@@ -199,6 +201,8 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const [hotelDir, setHotelDir] = useState(false);
   // El armario de tu piso abierto (1.77): la barra dice «← Al piso» y «Armario»
   const [dressing, setDressing] = useState(false);
+  // De quién es el piso que se está visitando en primera persona (null: la vista isométrica de siempre)
+  const [visita3d, setVisita3d] = useState(null);
   const [closeDressing, setCloseDressing] = useState(0);
   const [wasHotel, setWasHotel] = useState(false);
   const inside = view === 'dentro';
@@ -455,7 +459,16 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             {!(mine && inside) && <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : likes ? 'Toca un mueble para darle un «me gusta».' : 'Puedes mirar, pero no tocar nada.'}</p>}
           </div>
         </div>
-        {open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} decorate={mine && justPicked} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} placeAcabado={mine ? toPlaceAcabado : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
+        {!mine && open.room && (
+          <button type="button" className="ed-visita-toggle" onClick={() => setVisita3d(visita3d === open.user_id ? null : open.user_id)}>
+            {visita3d === open.user_id ? 'Ver en isométrica' : 'Entrar en primera persona'}
+          </button>
+        )}
+        {!mine && open.room && visita3d === open.user_id ? (
+          <Suspense fallback={<p className="ed-note">Entrando…</p>}>
+            <VisitaPiso key={open.user_id} vecino={open} edificio={data.edificio} onVolver={onClose} onIso={() => setVisita3d(null)} />
+          </Suspense>
+        ) : open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} decorate={mine && justPicked} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} placeAcabado={mine ? toPlaceAcabado : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
             {saving}

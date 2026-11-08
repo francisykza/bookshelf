@@ -123,7 +123,7 @@ export function shelfRows(books, settings = {}, limit = ROOM_LIMIT) {
 export const bookLooks = (b) => [b.id, b.cover, b.spine, visualEdition(b), spineColor(b), b.title, b.author].join('~');
 
 /** Cambia si hay que recolocar o volver a pintar algo en la habitación; registrar una página, no. */
-export const sceneKey = (reading, shelf) => [reading && bookLooks(reading), shelf && bookLooks(shelf.cover), ...(shelf?.rows.map((row) => row.map((i) => bookLooks(i.book)).join()) ?? [])].join('|');
+export const sceneKey = (reading, shelf) => [reading && bookLooks(reading), shelf?.cover && bookLooks(shelf.cover), ...(shelf?.rows.map((row) => row.map((i) => bookLooks(i.book)).join()) ?? [])].join('|');
 
 /**
  * Las zonas de toque de una balda: un lomo muy fino gana ancho a costa de sus vecinos más anchos, sin solaparse. El libro

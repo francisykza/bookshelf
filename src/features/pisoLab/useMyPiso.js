@@ -6,7 +6,8 @@
 // en el piloto y el servidor no admite, se añaden solo al dibujo en primera persona y solo donde caben sin mover nada
 // (`withDoorAndComputer`); nunca se guardan.
 import { useEffect, useState } from 'react';
-import { check, findFreeSpot } from '../edificio/room';
+import { findFreeSpot } from '../edificio/room';
+import { ordenadorDe } from '../edificio/esenciales';
 import { loadInventario } from '../edificio/service';
 import { cachedMyPiso, loadMyPiso } from '../edificio/myPiso';
 import { useCommunity } from '../social/hooks/useCommunity';
@@ -33,15 +34,8 @@ export function withDoorAndComputer(room) {
     const spot = findFreeSpot({ ...room, items }, 'puerta-piso');
     if (spot) add(spot);
   }
-  if (!items.some((i) => i.id === 'ordenador')) {
-    for (const desk of items.filter((i) => i.id === 'escritorio')) {
-      const pc = { uid: -1, id: 'ordenador', x: desk.x, y: desk.y, rot: desk.rot ?? 0, tono: 0 };
-      if (check({ ...room, items }, pc).ok) {
-        add(pc);
-        break;
-      }
-    }
-  }
+  const pc = ordenadorDe({ ...room, items });
+  if (pc) add(pc);
   return items === room.items ? room : { ...room, items };
 }
 
