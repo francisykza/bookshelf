@@ -6,7 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Aprobada por evidencias, sin publicar: 1.89.2** (2026-11-08, §89 a §89.7), rama `1.89-rincon-esenciales`. Su migración `20261118120000_edificio_esenciales.sql` está sin aplicar.
+- **Publicada en producción: 1.89.2** (2026-11-08, §89 a §89.7). Migración `20261118120000_edificio_esenciales.sql` aplicada.
 - **Versión publicada: 1.88.2** (2026-11-07, §88.4 a §88.6). Lleva la 1.88.1 (la fachada al volver de un piso, sin
   placas fuera del dibujo) y la 1.88.2 (místicos, mascota, muebles vivos y acabados en primera persona; sin estantería,
   «Biblioteca» en vez de «Ver la balda»). Viene de la rama `1.88.1-fachada`, con avance rápido de `main`, a petición de
@@ -91,7 +91,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.89.2 | Cámara del sillón y arquitectura del rincón (aprobada por evidencias, sin publicar) | §89.7 |
+| 1.89.2 | Cámara del sillón y arquitectura del rincón (publicada) | §89.7 |
 | 1.89.1 | Arranque sin la habitación antigua, noche con las lámparas reales, cámara del sillón y puesto del ordenador (preview) | §89.6 |
 | 1.89.0 | Retirados sin perder datos, Esenciales, pasada del rincón y visita en primera persona (preview) | §89 |
 | 1.88.2 | Místicos, mascota, muebles vivos y acabados en primera persona; «Biblioteca» sin estantería | §88.5–§88.6 |
@@ -141,9 +141,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **1.89.2:** aplicar `20261118120000_edificio_esenciales.sql` en producción **antes** de fusionar con `main`: sin ella el servidor rechaza pisos con `ocultos` y esenciales básicos sin copia.
-- **1.89.1 (preview):** comprobar en la preview el cambio día/noche en Safari de iPhone (WebKit de Windows no lo captura fiable) y ver las vistas en un piso real: no hay comparativas de uno por falta de acceso autorizado.
-- **1.89.0 (preview):** aplicar la migración, probar en Android y Safari de iPhone y decidir si se publica; decidir cuándo restaurar los objetos retirados (§89.1).
+- **1.89.2 (producción):** probar en Android y Safari de iPhone físicos; decidir cuándo restaurar los objetos retirados (§89.1).
 - **1.88.2 (publicada):** comprobarla en Android y en Safari de iPhone reales (solo se ha probado en emulación).
 - **1.88 (publicada):** quedan sin causa identificada la franja oscura de Chromium (no se reproduce) y los fallos
   intermitentes de §88.3 (entre ellos, el del decorador del edificio en WebKit).
@@ -238,6 +236,11 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-08 · cuenta principal · 1.89.2 publicada en producción
+
+- Aprobada por Francisco con vídeos y capturas («Apruebo la entrega»). Migración de Esenciales aplicada en el SQL Editor (SHA-256 comprobada, él pulsó «Run», sin error). `main` avanzó sin forzar a `1c5f5a6` y `/sw.js` de producción sirve la 1.89.2.
+- **Sin verificar:** móviles físicos.
 
 ### 2026-11-08 · cuenta principal · pasada de arquitectura y materiales del rincón (incluida en el commit de la 1.89.2)
 
