@@ -5,7 +5,8 @@
 import '../pisoLab/essentialItems';
 import { acabadosDe, freeCopies, plainCopies } from './inventory';
 import { catalogItem } from './catalog';
-import { check, findFreeSpot, footprint, itemsOn, rectOf } from './room';
+import { check, findFreeSpot, footprint, itemsOn, moveItem, rectOf } from './room';
+import { readingTable } from '../pisoLab/essentials';
 
 export const ESENCIALES_TAB = 'esenciales';
 export const ROLES = [
@@ -47,6 +48,58 @@ export function ordenadorDe(room) {
   return null;
 }
 
+const tocaCelda = (r, c) => r.x0 < c.x + 1 && c.x < r.x1 && r.y0 < c.y + 1 && c.y < r.y1;
+
+/**
+ * 1.89.3: la celda de la mesa que es del libro de lectura: la más cercana al asiento (si empatan, la primera). `invasores`: lo que
+ * un piso antiguo tiene ya encima de ella; `libres`: las celdas de la mesa sin nada. Se deduce siempre: no se guarda.
+ */
+export function zonaLibro(room) {
+  const mesa = readingTable(room) ?? room.items.find((i) => i.id === 'mesilla') ?? null;
+  if (!mesa) return null;
+  const r = rectOf(mesa);
+  const celdas = [];
+  for (let y = r.y0; y < r.y1; y += 1) for (let x = r.x0; x < r.x1; x += 1) celdas.push({ x, y });
+  const asiento = asientoDe(room);
+  const s = asiento ? rectOf(asiento) : null;
+  const dist = (c) => (s ? Math.hypot(c.x + 0.5 - (s.x0 + s.x1) / 2, c.y + 0.5 - (s.y0 + s.y1) / 2) : 0);
+  const celda = celdas.reduce((best, c) => (dist(c) < dist(best) - 1e-6 ? c : best));
+  const encima = itemsOn(room, mesa.uid).map(rectOf);
+  const objetos = itemsOn(room, mesa.uid);
+  return { mesa, celda, invasores: objetos.filter((t) => tocaCelda(rectOf(t), celda)), libres: celdas.filter((c) => !encima.some((t) => tocaCelda(t, c))) };
+}
+
+/** Dónde se dibuja el libro: su celda; con ella ocupada en un piso antiguo, otra libre de la mesa; si no hay, la suya. */
+export function sitioDelLibro(room) {
+  const zona = zonaLibro(room);
+  if (!zona) return null;
+  return zona.invasores.length ? (zona.libres[0] ?? zona.celda) : zona.celda;
+}
+
+/** El sitio válido más cercano para un objeto que quería ir a la celda del libro. */
+export function sitioValido(room, item) {
+  const sin = { ...room, items: room.items.filter((i) => i.uid !== item.uid) };
+  const zona = zonaLibro(sin);
+  const near = zona ? { x: zona.celda.x + 0.5, y: zona.celda.y + 0.5 } : { x: item.x + 0.5, y: item.y + 0.5 };
+  const spot = findFreeSpot(sin, item.id, { rot: item.rot ?? 0, tono: item.tono, near });
+  return spot ? { x: spot.x, y: spot.y } : null;
+}
+
+/** Solo si lo pide quien decora: aparta de la celda del libro lo que la ocupa, sin quitar nada del piso. O todo, o nada. */
+export function dejarSitioAlLibro(room) {
+  let next = room;
+  const movidos = [];
+  for (const item of zonaLibro(room)?.invasores ?? []) {
+    const spot = sitioValido(next, item);
+    if (!spot) return { error: 'sitio' };
+    const res = moveItem(next, item.uid, spot);
+    if (res.error) return { error: res.error };
+    next = res.room;
+    movidos.push(item);
+  }
+  return { room: next, movidos };
+}
+
 /** Las reglas de los esenciales en el decorador: no se guarda el último de cada tipo; lo demás, como cualquier mueble. */
 export const GUARDIA = {
   toJSON: () => undefined,
@@ -56,7 +109,12 @@ export const GUARDIA = {
     return Boolean(rol) && itemsDeRol(room, rol).length <= 1;
   },
   turnsWithTops: (tops, item) => Boolean(item && rolDe(item.id)) && tops.every((t) => catalogItem(t.id).w === 1 && catalogItem(t.id).d === 1),
-  check: () => null,
+  // 1.89.3: nada puede ponerse en la celda del libro de lectura
+  check: (room, item, support) => {
+    if (support == null || catalogItem(item.id)?.capa !== 'encima') return null;
+    const zona = zonaLibro(room);
+    return zona && zona.mesa.uid === support && tocaCelda(rectOf(item), zona.celda) ? { ok: false, reason: 'libro' } : null;
+  },
 };
 
 /** Con qué se puede sustituir un esencial: otros modelos, otros colores si solo hay un modelo, y tus acabados libres. */

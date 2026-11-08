@@ -193,7 +193,7 @@ test('visita en primera persona: dos cuentas, su piso y sus libros, sin tocar na
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
   await expect(page.locator('.ep-canvas')).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: 'Entrar en primera persona' }).click();
+  await page.getByRole('button', { name: 'Entrar en 3D' }).click();
   await ready3d(page);
   const visita = await debug(page);
   expect(visita.piso).toBe(`visita:${BEA.id}`);

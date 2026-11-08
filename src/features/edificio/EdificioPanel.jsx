@@ -459,9 +459,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             {!(mine && inside) && <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : likes ? 'Toca un mueble para darle un «me gusta».' : 'Puedes mirar, pero no tocar nada.'}</p>}
           </div>
         </div>
-        {!mine && open.room && (
-          <button type="button" className="ed-visita-toggle" onClick={() => setVisita3d(visita3d === open.user_id ? null : open.user_id)}>
-            {visita3d === open.user_id ? 'Ver en isométrica' : 'Entrar en primera persona'}
+        {!mine && open.room && visita3d !== open.user_id && (
+          <button type="button" className="ed-visita-toggle" onClick={() => setVisita3d(open.user_id)}>
+            Entrar en 3D
           </button>
         )}
         {!mine && open.room && visita3d === open.user_id ? (
@@ -469,6 +469,11 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
             <VisitaPiso key={open.user_id} vecino={open} edificio={data.edificio} onVolver={onClose} onIso={() => setVisita3d(null)} />
           </Suspense>
         ) : open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} decorate={mine && justPicked} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} placeAcabado={mine ? toPlaceAcabado : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
+        {!mine && open.room && visita3d === open.user_id && (
+          <button type="button" className="ed-visita-toggle is-dentro" onClick={() => setVisita3d(null)}>
+            Ver en isométrica
+          </button>
+        )}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
             {saving}

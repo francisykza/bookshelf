@@ -19,13 +19,14 @@ export const TOP_ROW = 2;
  */
 export const DISPLAY_SPACE = 0.4;
 export const DISPLAY_TURN = 0.8;
-const JITTER = 0.016;
+// 1.89.3: menos giro y más aire, para que cada ejemplar se distinga de su vecino
+const JITTER = 0.006;
 /** Huecos de la balda, en celdas: entre libros, entre grupos y a los lados. */
-const GAP = 0.01;
-const GROUP_GAP = 0.05;
+const GAP = 0.022;
+const GROUP_GAP = 0.07;
 const EDGE = 0.02;
 /** Lo que se reparte de más, como mucho, en cada hueco: separaciones que dejan ver un poco de las portadas. */
-const SPREAD_MAX = 0.035;
+const SPREAD_MAX = 0.05;
 const hashOf = (id) => [...String(id)].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 1009, 7);
 
 /** Ocupa a lo ancho de la balda un libro de grosor `w`, hondo `d` y girado `turn`. */

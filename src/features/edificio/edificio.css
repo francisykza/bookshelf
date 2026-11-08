@@ -2664,16 +2664,67 @@
 
 /* 1.89: la visita en primera persona a otro piso */
 .ed-visita-toggle {
-  align-self: center;
-  min-height: 44px;
-  margin: 4px auto;
-  padding: 0 14px;
-  border: 2px solid #3b2618;
-  background: #fbf3df;
-  color: #3b2618;
+  display: block;
+  min-height: 48px;
+  margin: 8px auto;
+  padding: 0 22px;
+  border: 3px solid #3b2618;
+  background: #5c7a52;
+  box-shadow: 0 3px 0 #3b2618;
+  color: #fff7e3;
   font: inherit;
+  font-weight: 700;
   cursor: pointer;
   touch-action: manipulation;
+}
+
+/* 1.89.3: dentro del piso la etiqueta va superpuesta arriba: el botón, justo debajo de ella y siempre a la vista */
+.ed-inside .ed-visita-toggle:not(.is-dentro) {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  z-index: 4;
+  margin: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.ed-visita-toggle.is-dentro {
+  background: #fbf3df;
+  color: #3b2618;
+}
+
+.ep-book-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  border: 2px solid #8a4b2a;
+  background: #fbeccb;
+  color: #3b2618;
+  font-size: 0.86rem;
+}
+
+.ep-book-note[hidden] {
+  display: none;
+}
+
+.ep-book-note__text {
+  flex: 1;
+  margin: 0;
+}
+
+.ep-book-note__btn {
+  flex: none;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 2px solid #3b2618;
+  background: #5c7a52;
+  color: #fff7e3;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .ed-visita3d {

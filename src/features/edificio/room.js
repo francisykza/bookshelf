@@ -245,6 +245,8 @@ export function reasonText(reason, con = null) {
       return 'El ordenador va sobre el escritorio.';
     case 'zona':
       return name ? `Ahí hay que dejar paso hasta: ${name}.` : 'Ahí hay que dejar paso.';
+    case 'libro':
+      return 'Ese hueco de la mesa es para tu libro de lectura.';
     case 'reservado':
       return 'Esa mesa está reservada para tu lectura.';
     default:

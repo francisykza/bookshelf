@@ -254,10 +254,10 @@ export function shelfTexture(tono, { lights, lit }) {
   const dither = (x, y, amount) => (r.bayerAt(x, y) - 0.5) * amount;
   const wood = (along, across, base, x, y) => clampTone(base + (noise(along * 0.012 + 3, across * 0.16) - 0.5) * 0.7 + (noise(along * 0.05 + 9, across * 0.7) - 0.5) * 0.32 + dither(x, y, 0.08));
   // La sombra que cae bajo cada tablón: mucho más marcada bajo la balda de la lámpara
-  const hollow = (z, x, y) => {
+  const hollow = (z) => {
     let dark = 0;
     for (const board of BOARDS) {
-      const under = board - z + dither(x, y, 0.05);
+      const under = board - z;
       if (under > 0 && under < 0.42) dark = Math.max(dark, 1.5 * (under < 0.12 ? 1 : under < 0.26 ? 0.62 : 0.3));
       // Contacto: una línea oscura donde el fondo se apoya en el tablón de abajo
       const above = z - (board + BOARD_THICK);
@@ -265,6 +265,8 @@ export function shelfTexture(tono, { lights, lit }) {
     }
     return dark;
   };
+  // 1.89.3: el fondo, casi liso: lo que tiene que distinguirse son los libros que hay delante
+  const quiet = (along, across, base) => clampTone(base + (noise(along * 0.012 + 3, across * 0.16) - 0.5) * 0.3);
   // El reflejo en un lateral: `side` es 1 si mira hacia x creciente; siempre discreto, sin pasar del tono medio
   const glowAt = (side, ly, z) => {
     if (!lit) return 0;
@@ -293,7 +295,7 @@ export function shelfTexture(tono, { lights, lit }) {
       if (inside(SHELF.back, x, y)) {
         // Contacto con los laterales: el fondo oscurece junto a ellos
         const corner = x >= 5 && x <= 7 ? 0.8 : x >= 56 && x <= 58 ? 0.8 : 0;
-        return ramp[wood(y, x, 1.35 - Math.max(corner, hollow(z, x, y)), x, y)];
+        return ramp[quiet(y, x, 1.35 - Math.max(corner, hollow(z, x, y)))];
       }
       if (inside(SHELF.innerL, x, y) || inside(SHELF.innerR, x, y)) {
         const left = inside(SHELF.innerL, x, y);
@@ -548,15 +550,13 @@ export function sillShadowTexture() {
   return texture(canvasOf(64, 14, (x, y) => (y < 3 ? DARK : y < 7 && r.bayerAt(x, y) < 1 - (y - 2) / 5 ? DARK : 0)));
 }
 
-/** La sombra de la balda sobre lo que hay debajo: tramado suelto que se aclara al bajar, sin degradados. */
+/** La sombra de la balda sobre lo que hay debajo. */
 export function baldaShadowTexture() {
-  const r = probe();
   const w = 56;
   const h = 12;
   const canvas = canvasOf(w, h, (x, y) => {
-    if (y < 4) return 0x8c100806;
-    if (y < 6) return r.bayerAt(x, y) < 0.5 ? 0x8c100806 : 0;
-    return 0;
+    // 1.89.3: una banda limpia; el tramado dejaba un peine sobre las cabezas de los libros
+    return y < 5 ? 0x70100806 : 0;
   });
   return texture(canvas);
 }
@@ -1145,6 +1145,28 @@ export function pixelBook({ width, length, thick, board }) {
   g.addGroup(0, count, 0);
   g.addGroup(count, face.pos.length / 3, 1);
   return g;
+}
+
+/**
+ * 1.89.3: la piel común de los muebles sin dibujo propio (sofás, camas, plantas, mesillas…), propios y de visita. Es un mapa
+ * gris que multiplica el color de cada pieza: rodales de tres tonos, sin costuras al repetirse. El color sigue siendo el elegido.
+ */
+export function furnitureSkinTexture() {
+  const r = probe();
+  const S = 48;
+  const cell = (i, j, n, seed) => {
+    const a = ((i + n) % n) * 127 + ((j + n) % n) * 311 + seed;
+    const v = Math.sin(a) * 43758.5453;
+    return v - Math.floor(v);
+  };
+  return texture(
+    canvasOf(S, S, (x, y) => {
+      const v = cell(Math.floor(x / 6), Math.floor(y / 6), 8, 11) * 0.6 + cell(Math.floor(x / 3), Math.floor(y / 3), 16, 29) * 0.4 + (r.bayerAt(x, y) - 0.5) * 0.18;
+      const k = v < 0.36 ? 219 : v < 0.66 ? 237 : 255;
+      return rgb(k, k, k);
+    }),
+    { repeat: true },
+  );
 }
 
 /** El corte de las páginas, con sus líneas finas. */

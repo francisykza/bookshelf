@@ -10,12 +10,12 @@ import { tintar } from '../edificio/acabados';
 import { misticoOf, misticoSprite } from '../edificio/misticos';
 import { ROOM, heightOf, itemsOn, rectOf } from '../edificio/room';
 import { essentialItems, mainShelf, readingTable } from './essentials';
-import { asientoDe } from '../edificio/esenciales';
+import { asientoDe, sitioDelLibro } from '../edificio/esenciales';
 import { EFECTOS_APAGADOS, isRetirado, tieneVida } from '../edificio/retirados';
 import { bookDims, wrapTitle } from './bookLayout';
 import { paintExterior } from './exterior';
 import { LAYERS, WATER_FRAMES, WATER_MS, PX_PER_CELL, layerMargins, layerPlane, rowOf } from './exteriorLayout';
-import { BALDA, baldaShadowTexture, bookTexture, contactShadowTexture, floorTexture, footShadowTexture, grainTexture, lampTexture, pixelBook, pixelLamp, pixelTable, pixelWindow, shelfTexture, sillShadowTexture, tableTexture, upholsteredArmchair, upholsteryTexture, wallPlates, wallTexture, windowTexture, woodShelf, computerTexture, doorTexture, drawerTexture, pixelComputer, pixelDoor } from './materials';
+import { BALDA, furnitureSkinTexture, baldaShadowTexture, bookTexture, contactShadowTexture, floorTexture, footShadowTexture, grainTexture, lampTexture, pixelBook, pixelLamp, pixelTable, pixelWindow, shelfTexture, sillShadowTexture, tableTexture, upholsteredArmchair, upholsteryTexture, wallPlates, wallTexture, windowTexture, woodShelf, computerTexture, doorTexture, drawerTexture, pixelComputer, pixelDoor } from './materials';
 
 /** Ojos de una persona sentada: un poco por encima del respaldo del sillón (1,75 celdas, furniture.js). */
 export const EYE = 1.85;
@@ -97,14 +97,62 @@ function pushBox(out, [x0, y0, z0, x1, y1, z1], color) {
   }
 }
 
+/** 1.89.3: cuánto se aclara u oscurece cada cara: la luz va pintada, como en las piezas con dibujo propio. */
+const faceTone = ([nx, ny, nz]) => (ny > 0 ? 1.08 : ny < 0 ? 0.55 : nz > 0 ? 0.92 : nz < 0 ? 0.74 : nx > 0 ? 0.84 : 0.8);
+const RIM = 0.03;
+
+/**
+ * Una caja con la piel común: cada cara con coordenadas en celdas para el mapa de tramado y un filete de color alrededor (claro
+ * arriba, oscuro abajo), que es lo que da el canto a las piezas dibujadas a mano.
+ */
+function pushSkin(out, box, c) {
+  const scratch = { pos: [], nor: [], col: [] };
+  pushBox(scratch, box, new Color());
+  for (let k = 0; k < scratch.pos.length; k += 18) {
+    const at = (n) => [scratch.pos[k + n * 3], scratch.pos[k + n * 3 + 1], scratch.pos[k + n * 3 + 2]];
+    const [a, b, , d] = [at(0), at(1), at(2), at(5)];
+    const n = [scratch.nor[k], scratch.nor[k + 1], scratch.nor[k + 2]];
+    const lu = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+    const lv = Math.hypot(d[0] - a[0], d[1] - a[1], d[2] - a[2]);
+    const P = (s, t) => [0, 1, 2].map((i) => a[i] + (b[i] - a[i]) * s + (d[i] - a[i]) * t);
+    const offset = a[0] + a[1] * 0.7 + a[2] * 1.3;
+    const tone = faceTone(n);
+    const quad = (s0, t0, s1, t1, kk) => {
+      const col = linear(c.map((v) => Math.min(255, v * kk)));
+      for (const [s, t] of [[s0, t0], [s1, t0], [s1, t1], [s0, t0], [s1, t1], [s0, t1]]) {
+        out.pos.push(...P(s, t));
+        out.nor.push(...n);
+        out.col.push(col.r, col.g, col.b);
+        out.uv.push(s * lu + offset, t * lv + offset);
+      }
+    };
+    if (n[1] < 0 || Math.min(lu, lv) < 0.05) {
+      quad(0, 0, 1, 1, tone);
+      continue;
+    }
+    const ru = Math.min(RIM, lu * 0.2) / lu;
+    const rv = Math.min(RIM, lv * 0.2) / lv;
+    const flat = n[1] > 0;
+    quad(ru, rv, 1 - ru, 1 - rv, tone);
+    quad(0, 1 - rv, 1, 1, tone * (flat ? 1.1 : 1.16));
+    quad(0, 0, 1, rv, tone * (flat ? 1.1 : 0.72));
+    quad(0, rv, ru, 1 - rv, tone * (flat ? 1.1 : 0.86));
+    quad(1 - ru, rv, 1, 1 - rv, tone * (flat ? 1.1 : 0.86));
+  }
+}
+
 function geometryOf(boxes) {
-  const solid = { pos: [], nor: [], col: [] };
+  const solid = { pos: [], nor: [], col: [], uv: [] };
   const glow = { pos: [], nor: [], col: [] };
-  for (const box of boxes) pushBox(box.glow ? glow : solid, box.b, linear(box.c));
+  for (const box of boxes) {
+    if (box.glow) pushBox(glow, box.b, linear(box.c));
+    else pushSkin(solid, box.b, box.c);
+  }
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute([...solid.pos, ...glow.pos], 3));
   g.setAttribute('normal', new Float32BufferAttribute([...solid.nor, ...glow.nor], 3));
   g.setAttribute('color', new Float32BufferAttribute([...solid.col, ...glow.col], 3));
+  g.setAttribute('uv', new Float32BufferAttribute([...solid.uv, ...new Array((glow.pos.length / 3) * 2).fill(0)], 2));
   g.addGroup(0, solid.pos.length / 3, 0);
   g.addGroup(solid.pos.length / 3, glow.pos.length / 3, 1);
   return g;
@@ -163,6 +211,17 @@ function catalogGeometry(item, cat, ownBooks = false) {
     shared.set(key, geometryOf(placed));
   }
   return shared.get(key);
+}
+
+/** 1.89.3: sin asiento, donde se está de pie: el punto de siempre o, si cae dentro de un mueble, el sitio libre más cercano. */
+function freeStand(room, x, z) {
+  const solids = room.items.filter((i) => catalogItem(i.id)?.capa === 'suelo').map(rectOf);
+  const free = (a, b) => !solids.some((r) => a > r.x0 - 0.35 && a < r.x1 + 0.35 && b > r.y0 - 0.35 && b < r.y1 + 0.35);
+  const spots = [];
+  for (let a = 0.5; a < ROOM.w; a += 0.5) for (let b = 0.5; b < ROOM.d; b += 0.5) spots.push([a, b]);
+  spots.sort((p, q) => Math.hypot(p[0] - x, p[1] - z) - Math.hypot(q[0] - x, q[1] - z));
+  const [a, b] = free(x, z) ? [x, z] : (spots.find(([p, q]) => free(p, q)) ?? [x, z]);
+  return new Vector3(a, EYE, b);
 }
 
 /** La vista desde el sillón: mira hacia donde mira su frente (y = d en sus coordenadas), como en `toWorld` de render.js. */
@@ -256,7 +315,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   const camera = new PerspectiveCamera(FOV, 1, 0.1, 80);
   // La cámara sale del sillón real: si lo mueves o lo giras en el editor, te sientas donde esté
   const seat = asientoDe(room);
-  const home = seat ? seatView(seat) : piso.mira === 'izq' ? { pos: new Vector3(8.6, EYE, 4.4), dir: new Vector3(-1, -TILT, 0), side: new Vector3(0, 0, -1) } : { pos: new Vector3(2.9, EYE, 8.6), dir: new Vector3(0, -TILT, -1), side: new Vector3(1, 0, 0) };
+  const home = seat ? seatView(seat) : piso.mira === 'izq' ? { pos: freeStand(room, 8.6, 4.4), dir: new Vector3(-1, -TILT, 0), side: new Vector3(0, 0, -1) } : { pos: freeStand(room, 2.9, 8.6), dir: new Vector3(0, -TILT, -1), side: new Vector3(1, 0, 0) };
   // Un esencial puede estar en cualquier sitio: el giro llega hasta él, sea cual sea el reparto de la habitación
   const headingTo = (point) => {
     const to = point.clone().sub(home.pos);
@@ -395,6 +454,15 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   floor.position.set(ROOM.w / 2, 0, ROOM.d / 2);
   scene.add(floor);
 
+  const woodMats = [];
+  const tinted = (material) => {
+    if (!material.map) material.userData.base = material.color.clone();
+    woodMats.push(material);
+    return own('materials', material);
+  };
+  // 1.89.3: los muebles sin dibujo propio llevan la misma piel y el mismo tinte de la hora que los dibujados, en tu piso y de visita
+  const skinMap = own('textures', furnitureSkinTexture());
+  const skinMat = tinted(new MeshBasicMaterial({ vertexColors: true, map: skinMap }));
   // Los muebles del layout: mismas celdas y giros que la vista isométrica
   const furniture = new Group();
   scene.add(furniture);
@@ -409,7 +477,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     usedShared.add(geometry);
     const skin = tintar(cat.tonos[item.tono], item.acabado);
     const kit = item.id === 'lampara-pie' ? lampKit(skin) : null;
-    const mesh = new Mesh(geometry, item.id === 'sillon' ? fabricOf(skin) : kit ? [kit.body, kit.shade] : [solid, glow]);
+    const mesh = new Mesh(geometry, item.id === 'sillon' ? fabricOf(skin) : kit ? [kit.body, kit.shade] : [skinMat, glow]);
     if (cat.capa === 'pared') mesh.position.set(item.pared === 'fondo' ? item.a : 0, 0, item.pared === 'fondo' ? 0 : item.a);
     else mesh.position.set(item.x, heightOf(room, item), item.y);
     mesh.userData = { uid: item.uid, id: item.id, rot: item.rot ?? 0 };
@@ -421,6 +489,9 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     }
   }
 
+  // 1.89.3: sentado no ves tu propio asiento: al girar, su respaldo o sus brazos tapaban media pantalla. De cerca de una balda, sí
+  const seatMesh = seat ? meshes.find((m) => m.userData.uid === seat.uid) : null;
+  let bookOnSeat = false;
   // La estantería lleva su luz dibujada, como el sillón y la lámpara: así la luz del suelo no la quema y sigue igual
   const shelf = mainShelf(room);
   const shelfPoint = (lx, ly, lz) => {
@@ -428,13 +499,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     const [a, b] = turned(cat, shelf.rot, [lx, ly, 0, lx, ly, 0]);
     return new Vector3(shelf.x + a, lz, shelf.y + b);
   };
-  const woodMats = [];
   const pieceMats = [];
-  const tinted = (material) => {
-    if (!material.map) material.userData.base = material.color.clone();
-    woodMats.push(material);
-    return own('materials', material);
-  };
   // 1.88.2: los seres del piso, como en el isométrico (`beingsNow` de piso.js): los místicos sobre su peana, la mascota
   // sobre su cojín, los muebles vivos y los destellos de un acabado. Cada uno es su mismo dibujo de pixelfx en un lienzo de
   // 72 px, de pie frente a la cámara, a la escala del piso isométrico (18 px por celda) y en el centro de su mueble, a la
@@ -606,7 +671,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     const DEPTH = 0.56;
     const FRONT_Y = 0.6;
     const shadowMap = own('textures', contactShadowTexture());
-    const shadowMat = own('materials', new MeshBasicMaterial({ map: shadowMap, color: '#1a0d08', transparent: true, depthWrite: false }));
+    const shadowMat = own('materials', new MeshBasicMaterial({ map: shadowMap, color: '#1a0d08', transparent: true, opacity: 0.7, depthWrite: false }));
     const plateOf = (x, z, width, depth, turn = 0) => {
       const plate = new Mesh(own('geometries', new PlaneGeometry(width, depth)), shadowMat);
       plate.rotation.x = -Math.PI / 2;
@@ -627,10 +692,17 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
      * Un ejemplar de pie con el modelo de la mesa: tela con su título hasta que llega su portada; entonces, la portada en la
      * tapa, la forma de su portada y el lomo (el auténtico si lo hay; si no, reconstruido con sus colores).
      */
+    // 1.89.3: de lejos, el lomo se promedia en vez de saltar de píxel en píxel (las letras hacían ruido); de cerca sigue siendo pixel
+    const spineMap = (data) => {
+      const map = own('textures', bookTexture(data));
+      map.minFilter = LinearFilter;
+      map.generateMipmaps = false;
+      return map;
+    };
     const standingBook = (item, length, thick, width, face) => {
       const dims = { width, length, thick, board: Math.max(0.012, thick * 0.11) };
       const cover = tinted(new MeshBasicMaterial({ map: canvasTex(clothCover(item)) }));
-      const pages = tinted(new MeshBasicMaterial({ map: own('textures', bookTexture(item)) }));
+      const pages = tinted(new MeshBasicMaterial({ map: spineMap(item) }));
       const body = new Mesh(own('geometries', standing(dims)), [pages, cover]);
       body.userData = { id: 'estanteria' };
       const ready = Promise.resolve(face)
@@ -638,7 +710,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
         .then((got) => {
           if (!got || destroyed || shelfKit !== kit) return null;
           if (got.look) {
-            pages.map = own('textures', bookTexture({ ...item, look: got.look }));
+            pages.map = spineMap({ ...item, look: got.look });
             pages.needsUpdate = true;
             if (got.look.authentic) shelfSpines += 1;
           }
@@ -794,7 +866,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       tex.center.set(0.5, 0.5);
       tex.rotation = Math.PI / 2;
     }
-    const plate = new Mesh(own('geometries', new PlaneGeometry(x1 - x0, y1 - y0)), own('materials', new MeshLambertMaterial({ map: tex })));
+    const plate = new Mesh(own('geometries', new PlaneGeometry(x1 - x0, y1 - y0)), tinted(new MeshBasicMaterial({ map: tex })));
     plate.rotation.x = -Math.PI / 2;
     plate.position.set(item.x + (x0 + x1) / 2, lift + z1 + 0.003, item.y + (y0 + y1) / 2);
     plate.userData = { id: item.id };
@@ -834,7 +906,10 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     };
     const cat = catalogItem(spot.id);
     const top = table ? (cat.sup ?? 0.7) : 1.12;
-    const [bx, bz] = table ? [spot.x + cat.w / 2, spot.y + cat.d / 2] : [spot.x + 0.3, spot.y + 1.2];
+    // 1.89.3: en su celda reservada de la mesa (si un piso antiguo la tiene ocupada, en otra libre; no se guarda nada)
+    const sitio = table ? sitioDelLibro(room) : null;
+    const [bx, bz] = sitio ? [sitio.x + 0.5, sitio.y + 0.5] : [spot.x + 0.3, spot.y + 1.2];
+    bookOnSeat = !table;
     const dims = bookDims(data);
     const group = new Group();
     bookGroup = group;
@@ -1214,6 +1289,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   }
 
   function aim() {
+    if (seatMesh) seatMesh.visible = Boolean(zoom) || bookOnSeat;
     if (zoom) {
       camera.position.copy(zoom.pos);
       camera.lookAt(zoom.target);
@@ -1906,6 +1982,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
               return home.pos.x > r.x0 && home.pos.x < r.x1 && home.pos.z > r.y0 && home.pos.z < r.y1;
             })
             .map((i) => i.id),
+          seatVisible: seatMesh ? seatMesh.visible : null,
           yawRange: [...yawRange],
           reach: essentialItems(room).map((i) => ({ id: i.id, yaw: headingTo(placeOf(i)), ok: Math.abs(headingTo(placeOf(i))) <= YAW_REACH })),
         },

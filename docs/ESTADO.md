@@ -6,7 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.89.2** (2026-11-08, §89 a §89.7). Migración `20261118120000_edificio_esenciales.sql` aplicada.
+- **Publicada en producción: 1.89.3** (2026-11-08, §89 a §89.8). Migración `20261118120000_edificio_esenciales.sql` aplicada.
 - **Versión publicada: 1.88.2** (2026-11-07, §88.4 a §88.6). Lleva la 1.88.1 (la fachada al volver de un piso, sin
   placas fuera del dibujo) y la 1.88.2 (místicos, mascota, muebles vivos y acabados en primera persona; sin estantería,
   «Biblioteca» en vez de «Ver la balda»). Viene de la rama `1.88.1-fachada`, con avance rápido de `main`, a petición de
@@ -91,6 +91,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.89.3 | Coherencia de visitas, estantería, zona del libro y acceso 3D (publicada) | §89.8 |
 | 1.89.2 | Cámara del sillón y arquitectura del rincón (publicada) | §89.7 |
 | 1.89.1 | Arranque sin la habitación antigua, noche con las lámparas reales, cámara del sillón y puesto del ordenador (preview) | §89.6 |
 | 1.89.0 | Retirados sin perder datos, Esenciales, pasada del rincón y visita en primera persona (preview) | §89 |
@@ -141,7 +142,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **1.89.2 (producción):** probar en Android y Safari de iPhone físicos; decidir cuándo restaurar los objetos retirados (§89.1).
+- **1.89.3 (producción):** probar en Android y Safari de iPhone físicos; decidir cuándo restaurar los objetos retirados (§89.1).
 - **1.88.2 (publicada):** comprobarla en Android y en Safari de iPhone reales (solo se ha probado en emulación).
 - **1.88 (publicada):** quedan sin causa identificada la franja oscura de Chromium (no se reproduce) y los fallos
   intermitentes de §88.3 (entre ellos, el del decorador del edificio en WebKit).
@@ -236,6 +237,14 @@ Formato de cada entrada (la más reciente arriba):
 - Qué quedó a medias o sin verificar.
 - Decisiones nuevas de Francisco que haya que respetar.
 ```
+
+### 2026-11-08 · cuenta principal · acabado de visitas, estantería, zona del libro y botón 3D (1.89.3, aprobada y publicada)
+
+- **Archivos, sobre `515fc43`:** `pisoLab/interior3d.js`, `materials.js`, `shelfLayout.js`, `edificio/esenciales.js`, `piso.js`, `room.js`, `EdificioPanel.jsx`, `edificio.css`, pruebas `zonaLibro.test.js` y `v1894-*.spec.js`. Huella: `136661c029fc`.
+- **Causas:** muebles lisos: sofás, camas, plantas y mesillas no tenían piel pixelada ni tinte de hora. Botón 3D: quedaba debajo de la etiqueta del piso. Respaldo: el asiento propio se dibujaba al girar.
+- **Hecho:** piel común con filetes y tinte de hora; asiento oculto sentado; punto libre si no hay asiento; estantería con más aire, fondo liso, sombras limpias y lomos sin parpadeo de lejos (14 libros, igual que antes); celda del libro reservada en `GUARDIA` con sitio válido al soltar; aviso y «Dejar sitio al libro» en Decorar; «Entrar en 3D» bajo la etiqueta y «Ver en isométrica» bajo la vista 3D.
+- **Limitaciones:** la celda del libro es regla de cliente, no de servidor (un piso antiguo sigue siendo válido). Con la mesa llena y sin resolver, el libro se solapa hasta usar el botón. Móviles físicos sin verificar.
+- **Evidencias:** `qa-report/v1894/{antes,despues}/chromium-390x844/`. Aprobada por Francisco («Apruebo la entrega»); tras lo revisado solo cambian versión y documentación.
 
 ### 2026-11-08 · cuenta principal · 1.89.2 publicada en producción
 

@@ -21,7 +21,7 @@ import { acabadosDe, freeCopies, ownedCopies, plainCopies } from './inventory';
 import { houseSwatch, pixelIcon, pixelVars } from './pixelUi';
 import { COLORES_PELO, COMPLEMENTOS, CONJUNTO_ESTRELLAS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, actorBoxes, isPrenda, prendaKey, prendaNombre, prendaOrigen, approachCell, blockedCells, facingOf, findPath, isSeat, nearestFree, seatOf, validateAvatar } from './actor';
 import { ACTOR_ID, ART_H, ART_W, backdropImage, createRoomRenderer, renderActorThumb, renderThumb } from './render';
-import { ESENCIALES_TAB, GUARDIA, ROLES, conBasicos, faltan, itemsDeRol, opcionesDe, ordenadorDe, sustituir } from './esenciales';
+import { dejarSitioAlLibro, sitioValido, zonaLibro, ESENCIALES_TAB, GUARDIA, ROLES, conBasicos, faltan, itemsDeRol, opcionesDe, ordenadorDe, sustituir } from './esenciales';
 import { EFECTOS_APAGADOS, esperanSitio, isRetirado, tieneVida } from './retirados';
 import { ROOM, addItem, check, heightOf, itemsOn, moveItem, reasonText, recolorItem, rectOf, removeItem, rotateItem, setFloor, setWall, wallLength } from './room';
 
@@ -187,6 +187,10 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   // Paredes y suelo en una sola fila que se recorre de lado, como los muebles
   const house = el('div', { class: 'ep-house', hidden: true }, el('div', { class: 'ep-house__group' }, el('span', { class: 'ep-house__label', text: 'Paredes' }), wallRow), el('div', { class: 'ep-house__group' }, el('span', { class: 'ep-house__label', text: 'Suelo' }), floorRow));
   const hint = el('p', { class: 'ep-shelf__hint', text: HINT });
+  // 1.89.3: un piso antiguo con algo en la celda del libro: se avisa al decorar y se arregla solo si se pide
+  const bookNoteText = el('p', { class: 'ep-book-note__text' });
+  const bookNoteBtn = el('button', { type: 'button', class: 'ep-book-note__btn', text: 'Dejar sitio al libro' });
+  const bookNote = el('div', { class: 'ep-book-note', hidden: true }, bookNoteText, bookNoteBtn);
   // Sagas: una fila de etiquetas con el nombre de cada set; debajo, sus muebles y el guiño a quien leyó el libro
   let sagaSet = SETS[0].id;
   const setRow = el('div', { class: 'ep-sets', role: 'group', 'aria-label': 'Sets de sagas', hidden: true });
@@ -244,6 +248,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       floorRow.append(b);
     }
     panel.append(el('div', { class: 'ep-shelf__head' }, catRow, catTitle), el('div', { class: 'ep-shelf__board' }, setRow, essBox, grid, house, listBox), hint);
+    panel.prepend(bookNote);
     root.append(panel, actionRow);
     // Fuera del panel: un antepasado con transform haría que «fixed» no siguiera al dedo
     document.body.append(ghost);
@@ -1105,8 +1110,15 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     );
   }
 
+  function syncBookNote() {
+    const zona = editable ? zonaLibro(room) : null;
+    bookNote.hidden = !zona?.invasores.length;
+    if (!bookNote.hidden) bookNoteText.textContent = `El libro de lectura comparte sitio con: ${zona.invasores.map((i) => catalogItem(i.id).nombre.toLowerCase()).join(', ')}.`;
+  }
+
   function commit(next, message) {
     room = next;
+    syncBookNote();
     settleActor();
     rebake();
     refreshUi();
@@ -1160,6 +1172,16 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     commit(res.room, message);
   }
 
+  bookNoteBtn.addEventListener('click', () => {
+    const res = dejarSitioAlLibro(room);
+    if (res.error) {
+      sfx.play('invalid');
+      return say('No queda otra superficie libre: mueve o guarda algo y vuelve a probar.');
+    }
+    sfx.play('place');
+    commit(res.room, `Hecho: ${res.movidos.map((i) => nameOf(i)).join(', ')} se ha movido y el libro ya tiene su sitio.`);
+  });
+
   function setDecorating(on) {
     decorating = on;
     root.classList.toggle('is-decorating', on);
@@ -1168,6 +1190,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     setIcon(decorateBtn, on ? 'listo' : 'decorar');
     decorateBtn.setAttribute('aria-expanded', String(on));
     if (on) {
+      syncBookNote();
       fillGrid();
       say('Decorando: arrastra algo de la balda o toca un mueble.');
       requestDraw();
@@ -1235,6 +1258,12 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (!target) return { room: base, item, ok: false, reason: 'fuera' };
     const res = moveItem(base, item.uid, target);
     if (!res.error) return { room: res.room, item: res.room.items.find((i) => i.uid === item.uid), ok: true };
+    // En la celda del libro no: se ofrece el sitio válido más cercano, y se ve ya donde caería
+    if (res.error === 'libro') {
+      const spot = sitioValido(base, item);
+      const near = spot ? moveItem(base, item.uid, spot) : null;
+      if (near && !near.error) return { room: near.room, item: near.room.items.find((i) => i.uid === item.uid), ok: true, aside: true };
+    }
     // No cabe: se enseña igualmente donde caería (con su contorno en rojo) y lo de encima con él
     const moved = { ...item, ...target };
     const dx = (moved.x ?? 0) - (item.x ?? 0);
@@ -1389,7 +1418,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     const item = room.items.find((i) => i.uid === d.uid);
     if (d.preview?.ok) {
       sfx.play('place');
-      commit(d.preview.room, `${nameOf(item)} en su sitio nuevo.`);
+      commit(d.preview.room, d.preview.aside ? `${nameOf(item)} queda al lado: ese hueco es del libro.` : `${nameOf(item)} en su sitio nuevo.`);
       onEvent('mover');
     } else {
       sfx.play('back');
@@ -1465,7 +1494,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     if (f.over && f.preview?.ok) {
       sfx.play('place');
       selected = f.preview.item.uid;
-      commit(f.preview.room, `${name} en tu piso.`);
+      commit(f.preview.room, f.preview.aside ? `${name} queda al lado: ese hueco es del libro.` : `${name} en tu piso.`);
       onEvent('nuevo');
     } else if (f.over && f.preview) {
       fail(f.preview.reason, f.preview.con);

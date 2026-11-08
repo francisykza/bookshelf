@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.89.2 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.89.3 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5487,3 +5487,12 @@ pasadas, WebKit 34 → 11; isométrica 5 s: 150 → 0 y 78 → 0 pintadas; llama
 - **Noche.** El calor queda cerca de las lámparas; lo demás, más frío y neutro.
 - **Sin cambios** de medidas de colocación, posiciones guardadas, suelo, libros ni animación. Mismas llamadas de dibujo, geometrías y texturas.
 - **Comprobado** (emulación): `v1892-camara-sillon`, `v1893-arte-rincon`, `v189`, `v188`, `piso-usabilidad`, `piso-esenciales`, Vitest de piso y edificio y build.
+
+### 89.8 Coherencia de visitas, estantería, zona del libro y acceso 3D (1.89.3)
+
+- **Acabado común.** Los muebles sin dibujo propio llevan la misma piel (mapa de tramado, filetes de canto y luz pintada) y el tinte de la hora que los dibujados, en el piso propio y en las visitas. Colores, muebles y distribución siguen siendo los de cada persona.
+- **Cámara.** Sentado no se dibuja el propio asiento (sí al mirar una balda de cerca, y si el libro está en el sillón). Sin asiento, se entra por el punto libre más cercano al de siempre.
+- **Estantería.** Más separación y menos giro entre libros, fondo casi liso, sombras sin tramado y lomos promediados al verse pequeños. Mismos libros y portadas reales.
+- **Zona del libro.** `zonaLibro`: la celda de la mesa más cercana al asiento. `GUARDIA` rechaza objetos en ella (`libro`) y al soltar se ofrece el sitio válido más cercano. Regla de cliente: un piso antiguo sigue siendo válido; su libro usa otra celda libre sin guardar nada, y Decorar ofrece «Dejar sitio al libro», sin borrar nada y solo si se pide.
+- **Visita.** «Entrar en 3D» bajo la etiqueta del piso, a la vista sin desplazar; dentro, «Ver en isométrica» bajo la vista, con «Volver al portal» y los permisos de visitante.
+- **Comprobado** (emulación): `v1894-comprobaciones`, `v1894-evidencias`, `v1892`, `v1893`, `v189`, `v188`, `piso-usabilidad`, `piso-esenciales`, Vitest de piso y edificio y build.
