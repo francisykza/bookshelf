@@ -9,6 +9,7 @@ export const ORIGINS = {
   last: 'Su última lectura',
   next: 'Su próxima lectura',
   memory: 'Un recuerdo de su rincón',
+  shelf: 'En su estantería',
   collection: 'En su colección',
 };
 
@@ -18,7 +19,7 @@ export const ORIGINS = {
  * trae id, una clave propia de su origen (no se fusiona con otra por parecerse el título). Respeta la visibilidad del
  * rincón (`corner.visible`) y de cada colección. Devuelve `{ featured, all }`.
  */
-export function sharedBooks({ ownerId, corner, collections = [] }) {
+export function sharedBooks({ ownerId, corner, collections = [], expuestos = [] }) {
   const byKey = new Map();
   const add = (ref, origin, extra = {}) => {
     if (!ref || !String(ref.title ?? '').trim()) return null;
@@ -31,6 +32,8 @@ export function sharedBooks({ ownerId, corner, collections = [] }) {
     byKey.set(key, item);
     return item;
   };
+  // Lo que tiene a la vista en la estantería va primero
+  expuestos.forEach((b, i) => add(b, 'shelf', { slot: `x${i}` }));
   const featured = [];
   if (corner?.visible) {
     (corner.featured_books ?? []).slice(0, 3).forEach((b, i) => {

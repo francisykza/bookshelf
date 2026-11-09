@@ -1,22 +1,26 @@
 // El lienzo del tablón: tarjetas e hilos libres sobre corcho. Los gestos se reciben en un único elemento y, mientras dura uno,
 // el documento no cambia: la tarjeta se mueve con un parche temporal y al soltar se confirma una sola vez.
 import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { anchorOf, centerOf, clampZoom, fitView, formatOf, localDelta, nearView, normalizeAngle, PAPERS, resized, SLOP, sortedItems, THREADS, toWorld, zoomAt } from './model';
+import { dibujoUrl } from './dibujo';
+import { anchorOf, centerOf, clampZoom, fitView, formatOf, localDelta, nearView, normalizeAngle, PAPERS, pinLocal, resized, SLOP, sortedItems, THREADS, toWorld, zoomAt } from './model';
 
 const ASSET = '/assets/puerto/tablon';
 
 const Card = memo(function Card({ item, selected, organizing, zoom, source }) {
   const format = formatOf(item);
   const n = item.body.length;
+  const clavo = pinLocal(item);
   const style = { left: item.x, top: item.y, width: item.width, height: item.height, transform: `rotate(${item.rotation}deg)`, '--paper': PAPERS[item.paper], '--sheet': `url(${ASSET}/paper-${item.paper}.svg)` };
   return (
-    <div className={`tb-card${selected ? ' is-selected' : ''}${source ? ' is-source' : ''}`} data-item={item.id} data-kind={item.kind} data-format={format} data-long={n > 110 ? 'largo' : n > 50 ? 'medio' : undefined} data-oculta={item.spoiler && !item.retirada ? 'si' : undefined} style={style}>
+    <div className={`tb-card${selected ? ' is-selected' : ''}${source ? ' is-source' : ''}`} data-item={item.id} data-kind={item.kind} data-format={format} data-forma={format === 'dibujo' && item.recortado ? 'si' : undefined} data-long={n > 110 ? 'largo' : n > 50 ? 'medio' : undefined} data-oculta={item.spoiler && !item.retirada ? 'si' : undefined} style={style}>
       <div className="tb-card__paper" />
       <div className="tb-card__in">
         {item.retirada ? (
           <p className="tb-card__gone">Nota retirada</p>
         ) : item.spoiler ? (
           <p className="tb-card__spoiler">Spoiler. Toca para leerlo</p>
+        ) : format === 'dibujo' ? (
+          <img className="tb-card__dibujo" src={dibujoUrl(item.dibujo, item.recortado)} alt={item.firma ? `Dibujo de ${item.firma}` : 'Dibujo'} draggable="false" />
         ) : (
           <>
             {item.kind === 'book' && (item.cover ? <img className="tb-card__cover" src={item.cover} alt="" draggable="false" loading="lazy" /> : <div className="tb-card__spine" aria-hidden="true" />)}
@@ -26,7 +30,7 @@ const Card = memo(function Card({ item, selected, organizing, zoom, source }) {
           </>
         )}
       </div>
-      <img className="tb-card__pin" src={`${ASSET}/pin-${item.pin}.svg`} alt="" draggable="false" />
+      <img className="tb-card__pin" src={`${ASSET}/pin-${item.pin}.svg`} alt="" draggable="false" style={clavo ? { left: clavo.x, top: clavo.y - 13 } : undefined} />
       {item.sticker && <img className="tb-card__sticker" src={`${ASSET}/sticker-${item.sticker}.svg`} alt="" draggable="false" />}
       {selected && organizing && (
         <>

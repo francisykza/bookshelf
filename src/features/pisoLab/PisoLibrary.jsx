@@ -34,12 +34,15 @@ const ORDERS = [
   { id: 'added', label: 'Añadidos recientemente' },
   { id: 'finished', label: 'Terminados recientemente' },
 ];
+// De la biblioteca de otra persona solo se conoce lo que comparte: sin fechas ni estados por los que ordenar
+const VISIT_ORDERS = [{ id: 'shared', label: 'Como lo comparte' }, ORDERS[0], ORDERS[1]];
 const byDate = (field) => (a, b) => String(b[1][field] ?? '').localeCompare(String(a[1][field] ?? '')) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
 const SORTERS = {
   title: (a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
   author: (a, b) => normalize(a[1].author ?? '').localeCompare(normalize(b[1].author ?? '')) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
   added: byDate('addedAt'),
   finished: byDate('finishedAt'),
+  shared: () => 0,
 };
 /** Portadas por fila según el ancho: 3 en el móvil y 2 si no caben cómodas; en pantallas grandes, las que quepan con unos 130 px. */
 const columnsFor = (width) => (width < 360 ? 2 : width < 600 ? 3 : Math.min(8, Math.floor((width - 12) / 142)));
@@ -94,7 +97,7 @@ const CoverRow = memo(function CoverRow({ books, top, height, cols, chosen, onOp
   return (
     <li className="lit-fila" style={{ top, height, gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
       {books.map((book) => (
-        <button key={book.id} type="button" className="lit-libro" data-book={book.id} aria-label={`${book.title}, de ${book.author}. ${STATUS[book.status]}${chosen.has(book.id) ? '. Expuesto en la habitación' : ''}`} onClick={() => onOpen(book)}>
+        <button key={book.id} type="button" className="lit-libro" data-book={book.id} aria-label={`${book.title}${book.author ? `, de ${book.author}` : ''}. ${book.origin ?? STATUS[book.status]}${chosen.has(book.id) ? '. Expuesto en la habitación' : ''}`} onClick={() => onOpen(book)}>
           <RowCover book={book} />
           {book.status === 'reading' && <i className="lit-libro__marca" aria-hidden="true" />}
         </button>
@@ -114,13 +117,13 @@ const Row = memo(function Row({ book, index, total, placed, chosen, onOpen, onTo
           <strong>{book.title}</strong>
           <span>{book.author}</span>
           <small>
-            {STATUS[book.status]}
+            {book.origin ?? STATUS[book.status]}
             {note ? ` · ${note}` : ''}
           </small>
         </span>
       </button>
       {/* Una lectura actual ya está en la habitación: no hay nada que elegir */}
-      {!isReading && (
+      {!isReading && onToggle && (
         <button type="button" className="px-btn plab-row__exhibit" aria-pressed={chosen} aria-label={`${chosen ? 'Retirar de la estantería' : 'Exponer en la estantería'}: ${book.title}`} onClick={() => onToggle(book)}>
           {chosen ? 'Expuesto' : 'Exponer'}
         </button>
@@ -129,7 +132,8 @@ const Row = memo(function Row({ book, index, total, placed, chosen, onOpen, onTo
   );
 });
 
-export function PisoLibrary({ books, settings, placed, memory, notice, onBack, onOpen, onToggle, onAdd }) {
+/** `visit`: la biblioteca de otra persona, solo para mirar ({ title, backLabel, searchLabel, empty, after }); sin estados, exponer ni añadir. */
+export function PisoLibrary({ books, settings, placed, memory, notice, onBack, onOpen, onToggle, onAdd, visit = null }) {
   const [query, setQuery] = useState(memory.query);
   const [status, setStatus] = useState(memory.status === 'chosen' ? 'all' : memory.status);
   const [count, setCount] = useState(memory.count);
@@ -149,7 +153,7 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
     keyed.sort(SORTERS[order]);
     return keyed.map((pair) => pair[1]);
   }, [books, order]);
-  const chosen = useMemo(() => new Set(chosenIds(settings)), [settings]);
+  const chosen = useMemo(() => new Set(visit ? [] : chosenIds(settings)), [settings, visit]);
   const found = useMemo(() => {
     const matches = filterLibrary(sorted, { query: searched, status });
     return onlyChosen ? matches.filter((b) => chosen.has(b.id)) : matches;
@@ -273,16 +277,16 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
     const group = found.slice(r * cols, Math.min(shown, (r + 1) * cols));
     if (group.length) rows.push(<CoverRow key={group[0].id} books={group} top={r * rowH} height={rowH} cols={cols} chosen={chosen} onOpen={open} />);
   }
-  else for (let i = first; i < last; i += 1) rows.push(<Row key={found[i].id} book={found[i]} index={i} total={found.length} placed={placed.has(found[i].id)} chosen={chosen.has(found[i].id)} onOpen={open} onToggle={toggle} />);
+  else for (let i = first; i < last; i += 1) rows.push(<Row key={found[i].id} book={found[i]} index={i} total={found.length} placed={placed.has(found[i].id)} chosen={chosen.has(found[i].id)} onOpen={open} onToggle={visit ? null : toggle} />);
 
   return (
     <section ref={root} className="plab-library bs-literary" aria-labelledby="plab-library-title">
       <div className="lit-cabecera">
-        <button type="button" className="lit-boton" onClick={onBack} aria-label="Volver">
+        <button type="button" className="lit-boton" onClick={onBack} aria-label={visit?.backLabel ?? 'Volver'}>
           <ArrowLeft aria-hidden="true" width="20" height="20" />
         </button>
         <h2 ref={heading} id="plab-library-title" tabIndex={-1}>
-          Biblioteca
+          {visit?.title ?? 'Biblioteca'}
         </h2>
       </div>
       <header className="plab-library__head">
@@ -295,7 +299,7 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
             e.currentTarget.querySelector('input')?.blur();
           }}
         >
-          <input type="search" value={query} placeholder="Título, autor o ISBN" aria-label="Buscar por título, autor o ISBN" enterKeyHint="search" autoComplete="off" onChange={(e) => setQuery(e.target.value)} />
+          <input type="search" value={query} placeholder={visit?.searchLabel ?? 'Título, autor o ISBN'} aria-label={visit?.searchLabel ?? 'Buscar por título, autor o ISBN'} enterKeyHint="search" autoComplete="off" onChange={(e) => setQuery(e.target.value)} />
           {query && (
             <button type="button" className="plab-library__clear" aria-label="Borrar la búsqueda" onClick={() => setQuery('')}>
               <X aria-hidden="true" />
@@ -308,16 +312,16 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
           </button>
         )}
         </div>
-        <div className="plab-library__filters" role="group" aria-label="Filtrar">
+        {!visit && <div className="plab-library__filters" role="group" aria-label="Filtrar">
           {FILTERS.map((f) => (
             <button key={f.id} type="button" className="plab-filter color-tab" data-filtro={f.id} data-tone={f.tone} aria-pressed={status === f.id} onClick={() => setStatus(f.id)}>
               {f.label}
             </button>
           ))}
-        </div>
+        </div>}
         <div className="lit-barra">
         <p className="plab-library__count" role="status">
-          {notice || (found.length ? `${found.length.toLocaleString('es-ES')} ${found.length === 1 ? 'libro' : 'libros'}${shown < found.length ? `, ${shown.toLocaleString('es-ES')} cargados` : ''}` : sorted.length ? 'Ningún libro coincide' : 'Aún no hay libros')}
+          {notice || (found.length ? `${found.length.toLocaleString('es-ES')} ${found.length === 1 ? 'libro' : 'libros'}${shown < found.length ? `, ${shown.toLocaleString('es-ES')} cargados` : ''}` : sorted.length ? 'Ningún libro coincide' : (visit?.empty ?? 'Aún no hay libros'))}
         </p>
         <span className="lit-segmento">
         <button type="button" className="lit-boton" aria-label="Ver portadas" aria-pressed={covers} onClick={() => setLayout('covers')}>
@@ -337,16 +341,18 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
             <label>
               Ordenar por
               <select value={order} onChange={(e) => setOrder(e.target.value)}>
-                {ORDERS.map((o) => (
+                {(visit ? VISIT_ORDERS : ORDERS).map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.label}
                   </option>
                 ))}
               </select>
             </label>
-            <label>
-              <input type="checkbox" checked={onlyChosen} onChange={(e) => setOnlyChosen(e.target.checked)} /> Solo los expuestos en la habitación
-            </label>
+            {!visit && (
+              <label>
+                <input type="checkbox" checked={onlyChosen} onChange={(e) => setOnlyChosen(e.target.checked)} /> Solo los expuestos en la habitación
+              </label>
+            )}
           </div>
         )}
         {onlyChosen && (
@@ -357,7 +363,7 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
       </header>
       <div ref={list} className="plab-library__list">
         <ul style={{ height: totalRows * rowH }}>{rows}</ul>
-        {covers && found.length > 0 && shown >= found.length && (
+        {!visit && covers && found.length > 0 && shown >= found.length && (
           <p className="lit-pie">
             <img src="/assets/puerto/acabado/book.svg" alt="" />
             Tu biblioteca, a tu ritmo
@@ -368,6 +374,7 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
             Cargar {Math.min(BLOCK, found.length - shown)} más
           </button>
         )}
+        {shown >= found.length && visit?.after}
       </div>
     </section>
   );

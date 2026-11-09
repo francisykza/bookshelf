@@ -13,7 +13,12 @@ const base = [
   { uid: 3, id: 'estanteria', x: 2, y: 0, rot: 0, tono: 0 },
 ];
 const copia = (o) => JSON.parse(JSON.stringify(o));
-const libros = Array.from({ length: 70 }, (_, i) => ({ id: `bea-${i}`, title: `Libro de Bea ${i + 1}`, author: 'Autora de Bea' }));
+const libros = Array.from({ length: 70 }, (_, i) => ({ id: `bea-${i}`, title: `Libro de Bea ${i + 1}`, author: 'Autora de Bea', cover: `https://portadas.test/${i}.svg` }));
+const TONOS = ['#4c6a55', '#8c3b2a', '#2e6a86', '#b98a34', '#5b4a78'];
+const portada = (route) => {
+  const n = Number(route.request().url().match(/(\d+)\.svg/)?.[1] ?? 0);
+  return route.fulfill({ contentType: 'image/svg+xml', body: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300"><rect width="200" height="300" fill="${TONOS[n % 5]}"/><rect x="24" y="40" width="152" height="8" fill="#f7edd5"/><rect x="44" y="64" width="112" height="6" fill="#f7edd5"/></svg>` });
+};
 
 function sembrar({ lectura = 'Lectura actual de Bea', paredAna = 'rosa', paredBea = 'salvia' } = {}) {
   const mock = createMockSupabase({ edificio_vecinos: [] });
@@ -41,6 +46,7 @@ async function entrar3d(page) {
 async function contexto(browser, extra = {}) {
   const context = await browser.newContext({ baseURL: 'http://localhost:5196', locale: 'es-ES', timezoneId: 'Europe/Madrid', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, ...extra });
   const page = await context.newPage();
+  await page.route('https://portadas.test/**', portada);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   return { context, page };
 }
@@ -75,12 +81,30 @@ test('A visita a B: todo es de B, recorre sus libros, vuelve a A y B no cambia',
   await expect.poll(async () => (await debug(page)).shelf.books.some((id) => !g1.includes(id)), { timeout: 8000 }).toBe(true);
   await page.getByRole('button', { name: 'Ver toda la biblioteca' }).click();
   await expect(page.getByRole('heading', { name: 'Biblioteca de Bea' })).toBeVisible();
+  // Solo lectura: lo que no se sabe de otra persona no se ofrece, y nada se puede cambiar
+  await expect(page.locator('.plab-library')).toBeVisible();
+  await expect(page.locator('.reader-visit__library')).toHaveCount(0);
+  await expect(page.locator('.plab-library')).toContainText('70 libros');
+  for (const name of ['Leyendo', 'Pendientes', 'Leídos', 'Abandonados', 'Añadir libro']) await expect(page.locator('.plab-library').getByRole('button', { name, exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Ver lista' }).click();
+  await expect(page.locator('.plab-row').first()).toContainText('Destacado en su rincón');
+  await expect(page.locator('.plab-row__exhibit')).toHaveCount(0);
+  await page.screenshot({ path: join(DIR, `${info.project.name}-biblioteca-lista.png`) });
+  await page.getByRole('button', { name: 'Ver portadas' }).click();
+  await page.getByRole('button', { name: 'Filtros y orden' }).click();
+  await expect(page.locator('.lit-opciones')).not.toContainText('Solo los expuestos');
+  await expect(page.locator('.lit-opciones option')).toHaveText(['Como lo comparte', 'Título', 'Autoría']);
+  await page.getByRole('button', { name: 'Filtros y orden' }).click();
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(DIR, `${info.project.name}-biblioteca.png`) });
   await page.getByRole('searchbox').or(page.locator('.reader-visit__library input')).first().fill('Libro de Bea 70');
   await page.getByRole('button', { name: /Libro de Bea 70/ }).first().click();
   await expect(page.getByRole('dialog', { name: 'Libro de Bea 70' })).toBeVisible();
   await page.screenshot({ path: join(DIR, `${info.project.name}-ficha.png`) });
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Libro de Bea 70' })).toBeHidden();
+  await expect(page.getByRole('searchbox')).toHaveValue('Libro de Bea 70');
+  await expect(page.getByRole('button', { name: /Libro de Bea 70/ }).first()).toBeFocused();
   await expect(page.getByRole('heading', { name: 'Biblioteca de Bea' })).toBeVisible();
   await page.getByRole('button', { name: 'Volver a su piso' }).click();
   await expect(page.getByRole('heading', { name: 'Biblioteca de Bea' })).toBeHidden();
@@ -156,4 +180,42 @@ test('la misma pared en cada vista y a la misma hora', async ({ browser }, info)
   await page.waitForTimeout(1200);
   await page.screenshot({ path: join(DIR, 'pared-visita-3d-dia.png') });
   await context.close();
+});
+
+test('recorrido grabado: la biblioteca de Bea en solo lectura', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'chromium-390x844', 'el vídeo se graba una vez');
+  test.setTimeout(120000);
+  mkdirSync(DIR, { recursive: true });
+  const { context, page } = await contexto(browser, { recordVideo: { dir: join(DIR, 'video'), size: { width: 390, height: 844 } } });
+  const mock = sembrar();
+  await mock.attach(page, ANA);
+  await page.route(/rpc\/piso_expuestos_de/, (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify([{ id: 'estante-1', title: 'Expuesto en la balda', author: 'Autora de Bea', cover: 'https://portadas.test/1.svg' }]) }));
+  await page.goto('/?inicio=habitacion');
+  await ready(page);
+  await aVisita(page);
+  await entrar3d(page);
+  await page.waitForTimeout(1200);
+  await page.getByRole('button', { name: 'Ver toda la biblioteca' }).click();
+  await page.waitForTimeout(1400);
+  await expect(page.locator('.plab-library')).toContainText('71 libros');
+  await page.getByRole('button', { name: 'Ver lista' }).click();
+  await expect(page.locator('.plab-row').first()).toContainText('Expuesto en la balda');
+  await expect(page.locator('.plab-row').first()).toContainText('En su estantería');
+  await page.waitForTimeout(600);
+  await page.getByRole('button', { name: 'Ver portadas' }).click();
+  await page.waitForTimeout(600);
+  await page.locator('.plab-library__list').evaluate((el) => el.scrollTo({ top: 700, behavior: 'smooth' }));
+  await page.waitForTimeout(1200);
+  await page.getByRole('searchbox').fill('Libro de Bea 12');
+  await page.waitForTimeout(900);
+  await page.getByRole('button', { name: /Libro de Bea 12/ }).first().click();
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: join(DIR, 'chromium-390x844-ficha-actual.png') });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(700);
+  await page.getByRole('button', { name: 'Volver a su piso' }).click();
+  await page.waitForTimeout(1000);
+  const video = page.video();
+  await context.close();
+  await video.saveAs('qa-report/biblioteca-visitante.webm');
 });

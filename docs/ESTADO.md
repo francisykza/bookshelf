@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.95.0** (2026-11-09, §95). Tablón libre: mueble de dos casillas, vista para mirar y «Diseñar» aparte, notas con formatos distintos y post-its. Migración `20261120120000_tablon.sql` aplicada por Francisco el 2026-11-09 (SHA-256 comprobado). Aprobada por Francisco tras revisar capturas y vídeo. Sin probar en móviles reales.
+- **Publicada en producción: 1.96.0** (2026-11-09, §96). Tablón montado en el escritorio, con relieve y contenido nítido; dibujos en hoja o forma; biblioteca del visitante con lo expuesto y lo compartido. Migraciones `20261121120000_piso_expuestos.sql` y `20261122120000_tablon_dibujos.sql` aplicadas por Francisco el 2026-11-09 (SHA-256 comprobado). Sin probar en móviles reales; **la capa nítida del tablón se descuadra en WebKit para Windows y falta verla en un iPhone**.
+- Anterior: 1.95.0 (2026-11-09, §95). Tablón libre: mueble de dos casillas, vista para mirar y «Diseñar» aparte, notas con formatos distintos y post-its. Migración `20261120120000_tablon.sql` aplicada por Francisco el 2026-11-09 (SHA-256 comprobado). Aprobada por Francisco tras revisar capturas y vídeo. Sin probar en móviles reales.
 - **Anterior: 1.94.0** (2026-11-09, §94). «Visitar» abre el piso del lector y las portadas se conservan al filtrar. Migración `20261119120000_piso_visita.sql` aplicada por Francisco el 2026-11-09 (SHA-256 comprobado; el anónimo recibe «permission denied»). Aprobada por Francisco tras revisar las capturas («Sí, publícala»). Sin probar en móviles reales.
 - **Anterior: 1.93.0** (2026-11-09, §93). Ficha y registro unificados, «Favoritos» y «Recuerdo» de Tu mes en libros, y Diario del ordenador como cuaderno. Sin migraciones. Aprobada por Francisco tras revisar las capturas («Sí, publícala»). Sin probar en móviles reales ni con teclado real.
 - **Anterior: 1.92.0** (2026-11-08, §92). Biblioteca, ficha y «Tu mes en libros» con el acabado literario y favoritos ordenados. Sin migraciones. Aprobada por Francisco tras revisar capturas, PNG y vídeos.
@@ -234,6 +235,32 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-09 · Dibujos en el tablón · 1.96.0, publicada
+
+Aprobada por Francisco tras revisar capturas y vídeo.
+- **Hecho:** quien visita puede dejar un dibujo en vez de un post-it (mismo cupo diario) y el dueño dibujar en su tablón desde Añadir. Se guardan como trazos (`dibujo.js`, `Dibujar.jsx`), con hoja o forma recortada: elige quien dibuja y el dueño puede cambiarlo en Editar. Se ve en el lienzo, la visita y la habitación.
+- **Migración aplicada, junto con la de libros expuestos:** `20261122120000_tablon_dibujos.sql`, comprobada con la clave pública.
+- **Decisión de Francisco:** levanta el veto al dibujo libre; regla escrita en `CLAUDE.md`.
+- **Sin firma en la tarjeta:** el dibujo recibido no enseña «De…» en el corcho, solo en su detalle.
+- **Sin moderación automática:** solo denuncia, bloqueo, retirada y permiso para exponerlo.
+- **Pruebas:** `npx vitest run src/features/tablon` (con RLS sobre PGlite) y `tablon.spec` en Chromium y WebKit a 390 px. Solo emulación.
+
+### 2026-11-09 · Tablón en el escritorio, nitidez, bandeja y libros expuestos · 1.96.0, publicada
+
+Publicado junto con los dibujos. Incluye la entrada siguiente.
+- **Hecho:** el tablón va montado sobre el monitor del escritorio que tiene el ordenador, con relieve; deja de colocarse aparte (lo guardado antes se ignora, sin borrar datos). El contenido se superpone en DOM a alta resolución (`.plab-board-sharp` en `interior3d.js`, con `matrix3d`). Bandeja de diseño encuadrada, con Alejar y Acercar solo con icono. La visita añade lo expuesto en la estantería (`expuestos.js`).
+- **Migración aplicada:** `20261121120000_piso_expuestos.sql`, comprobada con la clave pública.
+- **Decisión a confirmar:** «lo que decide compartir» sigue siendo lo elegido en su rincón y las colecciones visibles. La lectura actual no se publica como expuesta.
+- **Pruebas:** build, oxlint, Vitest de `pisoLab`, `tablon` y `social` (149, con RLS sobre PGlite) y `tablon`, `fase1-visitas` y `visita-directa` en Chromium y WebKit a 390 px (32 pasan, 4 omitidas). Solo emulación. WebKit en Windows no dibuja bien `matrix3d` (§4 de `CLAUDE.md`): la nitidez en iPhone está sin comprobar.
+
+### 2026-11-09 · Biblioteca del visitante en solo lectura · 1.96.0, publicada
+
+Publicado junto con los dibujos.
+- **Hecho:** «Ver toda la biblioteca» de una visita usa `PisoLibrary` con la prop `visit`: portadas y lista, búsqueda y orden («Como lo comparte», título, autoría). Sin filtros por estado, Exponer, Añadir ni fechas, porque de otra persona solo llega lo que comparte. Cada fila indica su origen. `SharedLibrary` retirada; la ficha sigue siendo `VisitBookSheet` con «Añadir a pendientes».
+- **Límite heredado:** «compartido» sigue siendo lo del rincón y las colecciones visibles, no toda su biblioteca.
+- **Pruebas:** `fase1-visitas`, `visita-directa` y `portadas-filtros` en Chromium y WebKit a 390 px. Sin migraciones. Solo emulación.
+- **Comunidad, sin empezar:** el paquete solo dice «diferencias visuales de Comunidad» y no hay lista de cuáles son; pendiente de que Francisco las concrete o apruebe compararla con las maquetas.
 
 ### 2026-11-09 · Tablón libre (paquete Tablón v2) · 1.95.0, publicada
 

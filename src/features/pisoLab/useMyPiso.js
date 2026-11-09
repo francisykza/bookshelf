@@ -14,7 +14,8 @@ import { useCommunity } from '../social/hooks/useCommunity';
 import './essentialItems';
 
 /** Las piezas que solo se dibujan: si aparecen en un guardado, se quitan antes de enviarlo. */
-export const DRAWN_ONLY = new Set(['puerta-piso', 'ordenador']);
+/** `tablon`: desde que va montado en el escritorio, un tablón suelto de la pared ya no se dibuja ni se guarda. */
+export const DRAWN_ONLY = new Set(['puerta-piso', 'ordenador', 'tablon']);
 
 /** Los datos de dibujo de tu piso: planta según la puerta; todas las ventanas dan a la fachada del hotel. */
 export function pisoFrom(userId, mine) {
@@ -24,7 +25,7 @@ export function pisoFrom(userId, mine) {
 
 /** Tu piso con la puerta de salida y el ordenador, solo para la vista en primera persona y solo si caben. */
 export function withDoorAndComputer(room) {
-  let items = room.items;
+  let items = room.items.some((i) => i.id === 'tablon') ? room.items.filter((i) => i.id !== 'tablon') : room.items;
   let next = items.reduce((max, i) => Math.max(max, i.uid), 0) + 1;
   const add = (item) => {
     items = [...items, { ...item, uid: next }];

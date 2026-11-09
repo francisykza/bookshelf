@@ -9,8 +9,9 @@ import { Lienzo } from './Lienzo';
 import { BoardFrame, DetailSheet, Sheet } from './parts';
 import { PortIcon } from '../../ui/PortIcon';
 import { Papers } from './TablonVisita';
+import { Dibujar, DibujoPieza, ElegirForma } from './Dibujar';
 import * as api from './service';
-import { addEdge, boundsOf, bottomZ, emptyDoc, itemSummary, KIND_NAMES, MAX_LABEL, MAX_NOTE, MAX_TITLE, newItem, normalizeAngle, patchEdge, patchItem, PINS, removeEdge, removeItem, resized, safeCover, sortedItems, STICKERS, THREAD_NAMES, THREADS, topZ, uid } from './model';
+import { addEdge, boundsOf, bottomZ, emptyDoc, itemSummary, KIND_NAMES, MAX_LABEL, MAX_NOTE, MAX_TITLE, newItem, normalizeAngle, PAPERS, patchEdge, patchItem, PINS, removeEdge, removeItem, resized, safeCover, sortedItems, STICKERS, THREAD_NAMES, THREADS, topZ, uid } from './model';
 import './tablon.css';
 
 const STATUS = { saved: 'Guardado', saving: 'Guardando…', error: 'Error al guardar', conflict: 'Conflicto', local: 'Guardado aquí' };
@@ -41,7 +42,12 @@ function ItemEditor({ item, isNew, ask, onDirty, onSave, onDelete, onClose, onAn
       }
     >
       <div className="tb-form">
-        {draft.kind === 'note' ? (
+        {draft.dibujo ? (
+          <div className="tb-field">
+            <div className="tb-dib__corcho"><DibujoPieza dibujo={draft.dibujo} recortado={draft.recortado} paper={PAPERS[draft.paper]} /></div>
+            <ElegirForma value={Boolean(draft.recortado)} onChange={(recortado) => set({ recortado })} />
+          </div>
+        ) : draft.kind === 'note' ? (
           <label className="tb-field">
             <span>Texto</span>
             <textarea autoFocus value={draft.body} maxLength={MAX_NOTE} rows={5} onChange={(e) => set({ body: e.target.value })} />
@@ -53,7 +59,7 @@ function ItemEditor({ item, isNew, ask, onDirty, onSave, onDelete, onClose, onAn
             <p className="tb-readonly">{draft.retirada ? 'Nota retirada' : draft.body}</p>
           </div>
         )}
-        <Papers value={draft.paper} onChange={(paper) => set({ paper })} />
+        {!(draft.dibujo && draft.recortado) && <Papers value={draft.paper} onChange={(paper) => set({ paper })} />}
         <label className="tb-field">
           <span>Chincheta</span>
           <select value={draft.pin} onChange={(e) => set({ pin: e.target.value })}>
@@ -90,7 +96,7 @@ function ItemEditor({ item, isNew, ask, onDirty, onSave, onDelete, onClose, onAn
   );
 }
 
-function AddSheet({ books, onNote, onBook, onQuote, onClose }) {
+function AddSheet({ books, onNote, onDraw, onBook, onQuote, onClose }) {
   const [tab, setTab] = useState('menu');
   const [q, setQ] = useState('');
   const [copy, setCopy] = useState(null);
@@ -115,6 +121,7 @@ function AddSheet({ books, onNote, onBook, onQuote, onClose }) {
       {tab === 'menu' ? (
         <div className="tb-choices">
           <button type="button" className="tb-btn" onClick={onNote}>Nota</button>
+          <button type="button" className="tb-btn" onClick={onDraw}>Dibujo</button>
           <button type="button" className="tb-btn" onClick={() => setTab('book')}>Libro de mi biblioteca</button>
           <button type="button" className="tb-btn" onClick={() => setTab('quote')}>Cita de mi Diario</button>
         </div>
@@ -143,7 +150,7 @@ function Received({ board, onOpen, onPlace, onArchive, onBlock, onReport, onClos
             <button type="button" className="tb-received__open" onClick={() => onOpen(n)}>
               {!n.read_at && !n.withdrawn_at && <img src="/assets/puerto/tablon/unread.svg" alt="Sin leer" width="20" height="20" />}
               <b>{n.alias}</b>
-              <span>{n.withdrawn_at ? 'Nota retirada' : n.spoiler ? 'Contiene spoiler' : n.body}</span>
+              {n.dibujo && !n.withdrawn_at ? <span className="tb-mini"><DibujoPieza dibujo={n.dibujo} recortado={n.recortado} alt="Dibujo" paper={PAPERS.crema} /></span> : <span>{n.withdrawn_at ? 'Nota retirada' : n.spoiler ? 'Contiene spoiler' : n.body}</span>}
             </button>
             <div className="tb-received__do">
               {!n.withdrawn_at && <button type="button" className="tb-btn" onClick={() => onPlace(n)}>Colocar en mapa</button>}
@@ -173,7 +180,8 @@ function SentNotes({ onClose }) {
       <ul className="tb-received">
         {notes?.map((n) => (
           <li key={n.id}>
-            <p><b>Para {n.alias}</b> {n.withdrawn_at ? 'Retirado' : n.body}</p>
+            <p><b>Para {n.alias}</b> {n.withdrawn_at ? 'Retirado' : n.dibujo ? 'Un dibujo' : n.body}</p>
+            {n.dibujo && !n.withdrawn_at && <span className="tb-mini"><DibujoPieza dibujo={n.dibujo} recortado={n.recortado} alt="Tu dibujo" paper={PAPERS.crema} /></span>}
             {!n.withdrawn_at && (
               <div className="tb-received__do">
                 <button type="button" className="tb-btn" onClick={() => run(api.setNotePermission(n.id, !n.author_allows_public))}>{n.author_allows_public ? 'Quitar permiso público' : 'Permitir en público'}</button>
@@ -286,7 +294,7 @@ export default function TablonPanel({ designing, routeEditing, onDesign, onRoute
           api.clearNotices().catch(() => {});
         } else if (d.sinLeer && !announced.current) {
           announced.current = true;
-          setNotice(d.sinLeer === 1 ? 'Tienes un post-it nuevo en Recibidas.' : `Tienes ${d.sinLeer} post-its nuevos en Recibidas.`);
+          setNotice(d.sinLeer === 1 ? 'Te han dejado algo nuevo en Recibidas.' : `Te han dejado ${d.sinLeer} cosas nuevas en Recibidas.`);
         }
       } catch (e) {
         setLoadError(e.message);
@@ -466,7 +474,7 @@ export default function TablonPanel({ designing, routeEditing, onDesign, onRoute
   const guard = (p) => p.catch((e) => setNotice(e.message));
 
   const openNote = (n) => {
-    setSheet({ type: 'detail', back: 'received', item: { kind: 'received', body: n.body, paper: n.style, spoiler: n.spoiler, retirada: Boolean(n.withdrawn_at), firma: n.alias } });
+    setSheet({ type: 'detail', back: 'received', item: { kind: 'received', body: n.body, dibujo: n.dibujo ?? null, recortado: n.recortado, paper: n.style, spoiler: n.spoiler, retirada: Boolean(n.withdrawn_at), firma: n.alias } });
     if (!n.read_at && !n.withdrawn_at) {
       guard(
         api.markRead(n.id).then(() => {
@@ -482,7 +490,7 @@ export default function TablonPanel({ designing, routeEditing, onDesign, onRoute
       setSheet(null);
       return;
     }
-    add('received', { body: n.body, paper: n.style, spoiler: n.spoiler, firma: n.alias, received_note_id: n.id });
+    add('received', { body: n.body, dibujo: n.dibujo ?? null, recortado: Boolean(n.recortado), paper: n.style, spoiler: n.spoiler, firma: n.alias, received_note_id: n.id });
     if (!designing) onDesign();
   };
   const dropNote = (n) => setBoard((b) => ({ ...b, recibidas: b.recibidas.filter((x) => x.id !== n.id) }));
@@ -537,10 +545,10 @@ export default function TablonPanel({ designing, routeEditing, onDesign, onRoute
   const covered = sheet || editor || publishing ? true : undefined;
   const isPublic = board.tablero.publica === meta.current.id;
   const items = sortedItems(doc.items);
-  const tool = (name, icon, run, extra = {}) => (
-    <button type="button" className="tb-tool" onClick={run} {...extra}>
+  const tool = (name, icon, run, extra = {}, mini = false) => (
+    <button type="button" className={mini ? 'tb-tool tb-tool--mini' : 'tb-tool'} aria-label={mini ? name : undefined} onClick={run} {...extra}>
       <PortIcon name={icon} />
-      <span>{name}</span>
+      {!mini && <span>{name}</span>}
     </button>
   );
   const sheets = (
@@ -578,7 +586,8 @@ export default function TablonPanel({ designing, routeEditing, onDesign, onRoute
         </Sheet>
       )}
       {sheet?.type === 'detail' && <DetailSheet item={sheet.item} onClose={() => setSheet(sheet.back ? { type: sheet.back } : null)} />}
-      {sheet?.type === 'add' && <AddSheet books={state.books} onClose={() => setSheet(null)} onNote={() => openEditor(newItem('note', center(), docRef.current.items), true)} onBook={(b) => add('book', { body: b.title, caption: b.author || null, cover: safeCover(b.cover), source_ref: String(b.id).slice(0, 120) })} onQuote={({ book, quote }) => add('quote', { body: quote.text.slice(0, 1200), caption: book.title.slice(0, 160), source_ref: String(quote.id).slice(0, 120) })} />}
+      {sheet?.type === 'add' && <AddSheet books={state.books} onClose={() => setSheet(null)} onNote={() => openEditor(newItem('note', center(), docRef.current.items), true)} onDraw={() => setSheet({ type: 'draw' })} onBook={(b) => add('book', { body: b.title, caption: b.author || null, cover: safeCover(b.cover), source_ref: String(b.id).slice(0, 120) })} onQuote={({ book, quote }) => add('quote', { body: quote.text.slice(0, 1200), caption: book.title.slice(0, 160), source_ref: String(quote.id).slice(0, 120) })} />}
+      {sheet?.type === 'draw' && <Sheet title="Dibujo" onClose={() => setSheet({ type: 'add' })}><Dibujar submitLabel="Clavar en el tablón" onSubmit={(d) => add('drawing', d)} /></Sheet>}
       {sheet?.type === 'received' && <Received board={board} onClose={() => setSheet(null)} onOpen={openNote} onPlace={placeNote} onArchive={(n) => guard(api.archiveNote(n.id).then(() => (dropNote(n), onChanged?.())))} onBlock={(n) => setSheet({ type: 'block', note: n })} onReport={(n) => setSheet({ type: 'report', note: n })} />}
       {sheet?.type === 'block' && (
         <Sheet title={`Bloquear a ${sheet.note.alias}`} onClose={() => setSheet({ type: 'received' })}>
@@ -690,8 +699,10 @@ export default function TablonPanel({ designing, routeEditing, onDesign, onRoute
           {tool('Conectar', 'hilo', () => changeMode(mode === 'conectar' ? 'organizar' : 'conectar'), { 'aria-pressed': mode === 'conectar', disabled: doc.items.length < 2 })}
           {tool('Deshacer', 'deshacer', undo, { disabled: !hist.past })}
           {tool('Rehacer', 'rehacer', redo, { disabled: !hist.future })}
-          {tool('Alejar', 'menos', () => map.current.zoomBy(0.8), { disabled: list })}
-          {tool('Acercar', 'mas', () => map.current.zoomBy(1.25), { disabled: list })}
+          <span className="tb-zoom">
+            {tool('Alejar', 'menos', () => map.current.zoomBy(0.8), { disabled: list }, true)}
+            {tool('Acercar', 'mas', () => map.current.zoomBy(1.25), { disabled: list }, true)}
+          </span>
           {tool('Encajar', 'encajar', () => map.current.fit(), { disabled: list })}
         </div>
       </div>
@@ -717,7 +728,7 @@ function ReportSheet({ note, onSend, onClose }) {
   return (
     <Sheet title="Denunciar este post-it" onClose={onClose}>
       <form className="tb-form" onSubmit={(e) => (e.preventDefault(), v.trim() && onSend(v.trim()))}>
-        <p className="tb-readonly">{note.body}</p>
+        {note.dibujo ? <DibujoPieza dibujo={note.dibujo} recortado={note.recortado} paper={PAPERS.crema} /> : <p className="tb-readonly">{note.body}</p>}
         <label className="tb-field"><span>Motivo</span><textarea value={v} maxLength={500} rows={3} onChange={(e) => setV(e.target.value)} /></label>
         <button type="submit" className="tb-btn tb-btn--main" disabled={!v.trim()}>Enviar denuncia</button>
       </form>

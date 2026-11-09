@@ -1029,16 +1029,46 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     meshes.push(mesh);
   }
 
-  // El tablón de corcho: un objeto aparte, con sus propias piezas para pulsarlo, y el corcho remetido dentro del marco
+  // El tablón va montado en el escritorio del ordenador, por encima del monitor: se mueve y gira con él, y cada uno se pulsa por separado.
   let boardTexture = null;
-  const boardItem = room.items.find((i) => i.id === 'tablon' && (i.pared === 'fondo' || i.pared === 'izq'));
+  let boardGroup = null;
+  let boardSharp = null;
+  const BOARD_W = 1.9;
+  const BOARD_H = 1.47;
+  const BOARD_BAR = 0.09;
+  const CORK_W = BOARD_W - BOARD_BAR * 2;
+  const CORK_H = BOARD_H - BOARD_BAR * 2;
+  const CORK_Z = -0.04;
+  const boardPc = room.items.find((i) => i.id === 'ordenador');
+  const boardItem = boardPc
+    ? room.items.find((i) => {
+        if (i.id !== 'escritorio') return false;
+        const r = rectOf(i);
+        return boardPc.x >= r.x0 && boardPc.x < r.x1 && boardPc.y >= r.y0 && boardPc.y < r.y1;
+      }) ?? null
+    : null;
   if (boardItem) {
-    const W = 1.9;
-    const H = 1.42;
-    const DEPTH = 0.05;
-    const BAR = 0.07;
     const group = new Group();
-    const frame = tinted(new MeshBasicMaterial({ color: new Color().setRGB(128 / 255, 80 / 255, 51 / 255, SRGBColorSpace) }));
+    const solid = (hex) => tinted(new MeshBasicMaterial({ color: new Color(hex) }));
+    const FRONT = solid('#9A6440');
+    const WOOD = solid('#805033');
+    const SIDE = solid('#5A3722');
+    const DEEP = solid('#2F1C12');
+    const BRASS = solid('#C69845');
+    const BRASS_DARK = solid('#7D5A22');
+    const data = { uid: boardItem.uid, id: 'tablon' };
+    // Orden de las caras: derecha, izquierda, arriba, abajo, delante, detrás. Sin luz real, el relieve lo dan estas tres maderas
+    const wood = [SIDE, SIDE, FRONT, DEEP, FRONT, DEEP];
+    const box = (w, h, d, x, y, z, material, pulsable = true) => {
+      const mesh = new Mesh(own('geometries', new BoxGeometry(w, h, d)), material);
+      mesh.position.set(x, y, z);
+      if (pulsable) {
+        mesh.userData = data;
+        meshes.push(mesh);
+      }
+      group.add(mesh);
+      return mesh;
+    };
     const start = document.createElement('canvas');
     // Del mismo tamaño que la composición dibujada: la textura no se puede redimensionar después
     start.width = 1536;
@@ -1048,27 +1078,43 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     ctx.fillRect(0, 0, 1536, 1152);
     boardTexture = own('textures', new CanvasTexture(start));
     boardTexture.colorSpace = SRGBColorSpace;
-    const cork = new Mesh(own('geometries', new PlaneGeometry(W - BAR * 2, H - BAR * 2)), tinted(new MeshBasicMaterial({ map: boardTexture })));
-    // Remetido, y lo bastante separado de la pared para que no parpadee
-    cork.position.z = DEPTH * 0.45;
-    const data = { uid: boardItem.uid, id: 'tablon' };
+    const cork = new Mesh(own('geometries', new PlaneGeometry(CORK_W, CORK_H)), tinted(new MeshBasicMaterial({ map: boardTexture })));
+    cork.position.z = CORK_Z;
     cork.userData = data;
     group.add(cork);
     meshes.push(cork);
-    for (const [w, h, x, y] of [[W, BAR, 0, (H - BAR) / 2], [W, BAR, 0, -(H - BAR) / 2], [BAR, H - BAR * 2, -(W - BAR) / 2, 0], [BAR, H - BAR * 2, (W - BAR) / 2, 0]]) {
-      const bar = new Mesh(own('geometries', new BoxGeometry(w, h, DEPTH)), frame);
-      bar.position.set(x, y, DEPTH / 2);
-      bar.userData = data;
-      group.add(bar);
-      meshes.push(bar);
+    box(BOARD_W, BOARD_H, 0.03, 0, 0, -0.085, DEEP);
+    const y = (BOARD_H - BOARD_BAR) / 2;
+    const x = (BOARD_W - BOARD_BAR) / 2;
+    box(BOARD_W, BOARD_BAR, 0.1, 0, y, -0.02, wood);
+    box(BOARD_W, BOARD_BAR, 0.1, 0, -y, -0.02, wood);
+    box(BOARD_BAR, BOARD_H - BOARD_BAR * 2, 0.1, -x, 0, -0.02, wood);
+    box(BOARD_BAR, BOARD_H - BOARD_BAR * 2, 0.1, x, 0, -0.02, wood);
+    // El borde interior oscuro separa el marco del corcho, remetido
+    const lip = 0.022;
+    box(CORK_W + lip * 2, lip, 0.01, 0, CORK_H / 2 + lip / 2, 0.034, DEEP);
+    box(CORK_W + lip * 2, lip, 0.01, 0, -CORK_H / 2 - lip / 2, 0.034, DEEP);
+    box(lip, CORK_H, 0.01, -CORK_W / 2 - lip / 2, 0, 0.034, DEEP);
+    box(lip, CORK_H, 0.01, CORK_W / 2 + lip / 2, 0, 0.034, DEEP);
+    // Remate arriba, repisa abajo y esquinas de latón
+    box(BOARD_W + 0.14, 0.07, 0.2, 0, BOARD_H / 2 + 0.035, -0.02, wood);
+    box(BOARD_W + 0.04, 0.05, 0.24, 0, -BOARD_H / 2 - 0.025, 0.02, wood);
+    for (const sx of [-1, 1]) {
+      for (const sy of [-1, 1]) {
+        box(0.11, 0.11, 0.016, sx * x, sy * y, 0.038, [BRASS_DARK, BRASS_DARK, BRASS, BRASS_DARK, BRASS, BRASS_DARK]);
+        box(0.03, 0.03, 0.012, sx * x, sy * y, 0.05, BRASS_DARK);
+      }
     }
-    const CENTER = 1.4 + H / 2;
-    if (boardItem.pared === 'fondo') group.position.set(boardItem.a + 1, CENTER, 0.012);
-    else {
-      group.position.set(0.012, CENTER, boardItem.a + 1);
-      group.rotation.y = Math.PI / 2;
-    }
+    const CENTER = 2.1 + BOARD_H / 2;
+    // Los dos postes salen de la parte trasera de la mesa; no se pulsan
+    const DESK_TOP = 1.22;
+    const postH = CENTER + BOARD_H / 2 - DESK_TOP;
+    for (const sx of [-1, 1]) box(0.08, postH, 0.08, sx * (BOARD_W / 2 - 0.13), DESK_TOP + postH / 2 - CENTER, -0.14, [SIDE, SIDE, WOOD, DEEP, WOOD, DEEP], false);
+    const [gx, gz] = turned(catalogItem('escritorio'), boardItem.rot ?? 0, [1, 0.24, 0, 1, 0.24, 0]);
+    group.position.set(boardItem.x + gx, CENTER, boardItem.y + gz);
+    group.rotation.y = (-(boardItem.rot ?? 0) * Math.PI) / 2;
     furniture.add(group);
+    boardGroup = group;
   }
 
   // El marco y el alféizar de cada ventana, con su madera y su luz dibujada; bajo el alféizar, su sombra sobre la pared
@@ -1345,6 +1391,62 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
 
   // Oculta (en segundo plano, o tapada del todo por otra vista) la habitación no dibuja: se anota y se pinta al volver
   const paused = () => document.visibilityState === 'hidden' || lost || (covered && !mustDraw);
+  // Dónde cae el corcho en la pantalla: cuatro esquinas y la transformación que lleva el lienzo nítido hasta ellas
+  let boardSharpKey = '';
+  let boardCheckAt = 0;
+  let boardFree = true;
+  function applyBoardLight() {
+    if (boardSharp) boardSharp.style.filter = hora === 'noche' ? 'brightness(.62) saturate(.9)' : hora === 'dia' ? 'none' : 'brightness(.95)';
+  }
+  function syncBoardSharp() {
+    if (!boardSharp || !boardGroup) return;
+    const rect = canvas.getBoundingClientRect();
+    const key = `${camera.matrixWorld.elements.join()}|${camera.fov}|${rect.width}|${rect.height}`;
+    if (key === boardSharpKey) return;
+    boardSharpKey = key;
+    const hw = CORK_W / 2;
+    const hh = CORK_H / 2;
+    const world = [[-hw, hh], [hw, hh], [hw, -hh], [-hw, -hh]].map(([x, y]) => boardGroup.localToWorld(new Vector3(x, y, CORK_Z)));
+    const inView = world.every((p) => p.clone().applyMatrix4(camera.matrixWorldInverse).z < -0.05);
+    const now = performance.now();
+    if (inView && now - boardCheckAt > 120) {
+      boardCheckAt = now;
+      // Si algo tapa el corcho se deja de superponer y se ve la textura de la escena, tapada como debe
+      const origin = camera.getWorldPosition(new Vector3());
+      const solids = meshes.filter((m) => m.visible);
+      boardFree = [...world, boardGroup.localToWorld(new Vector3(0, 0, CORK_Z))].every((p) => {
+        const to = p.clone().sub(origin);
+        const far = to.length();
+        ray.set(origin, to.normalize());
+        const first = ray.intersectObjects(solids, false)[0];
+        return !first || first.object.userData.id === 'tablon' || first.distance >= far - 0.05;
+      });
+    }
+    if (!inView || !boardFree) {
+      boardSharp.style.visibility = 'hidden';
+      return;
+    }
+    const [p0, p1, p2, p3] = world.map((p) => {
+      const q = p.clone().project(camera);
+      return [((q.x + 1) / 2) * rect.width, ((1 - q.y) / 2) * rect.height];
+    });
+    const dx1 = p1[0] - p2[0];
+    const dx2 = p3[0] - p2[0];
+    const dx3 = p0[0] - p1[0] + p2[0] - p3[0];
+    const dy1 = p1[1] - p2[1];
+    const dy2 = p3[1] - p2[1];
+    const dy3 = p0[1] - p1[1] + p2[1] - p3[1];
+    const den = dx1 * dy2 - dx2 * dy1;
+    if (!den) return;
+    const g = (dx3 * dy2 - dx2 * dy3) / den;
+    const h = (dx1 * dy3 - dx3 * dy1) / den;
+    const w = boardSharp.width;
+    const t = boardSharp.height;
+    const m = [(p1[0] - p0[0] + g * p1[0]) / w, (p1[1] - p0[1] + g * p1[1]) / w, 0, g / w, (p3[0] - p0[0] + h * p3[0]) / t, (p3[1] - p0[1] + h * p3[1]) / t, 0, h / t, 0, 0, 1, 0, p0[0], p0[1], 0, 1];
+    boardSharp.style.transform = `matrix3d(${m.join(',')})`;
+    boardSharp.style.visibility = 'visible';
+  }
+
   function draw() {
     raf = 0;
     if (destroyed) return;
@@ -1362,6 +1464,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       camera.updateProjectionMatrix();
     }
     renderer.render(scene, camera);
+    syncBoardSharp();
     renderMs += performance.now() - t0;
     if (renders === 0) performance.mark('piso-lab:primer-dibujo');
     renders += 1;
@@ -1671,6 +1774,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     setHora(value) {
       hora = value;
       applyLight();
+      applyBoardLight();
       paintWindows();
       invalidate();
     },
@@ -1773,10 +1877,10 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     leanToBoard() {
       if (!boardItem || zoom || reduced()) return Promise.resolve();
       const from = seatedView();
-      const target = boardItem.pared === 'fondo' ? new Vector3(boardItem.a + 1, 2.11, 0) : new Vector3(0, 2.11, boardItem.a + 1);
+      const target = boardGroup.getWorldPosition(new Vector3());
       const rect = canvas.getBoundingClientRect();
       const halfWide = Math.tan((camera.fov * Math.PI) / 360) * (rect.width / rect.height);
-      const near = 1.9 / (0.92 * 2 * halfWide);
+      const near = BOARD_W / (0.92 * 2 * halfWide);
       const dist = from.pos.distanceTo(target);
       const k = Math.max(0, Math.min(0.85, 1 - near / Math.max(dist, 0.01)));
       return fly({ pos: from.pos.clone().lerp(target, k), target }, LEAN_MS);
@@ -1786,6 +1890,14 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       if (!boardTexture) return;
       boardTexture.image = image;
       boardTexture.needsUpdate = true;
+      // La escena se dibuja a muy baja resolución: el contenido va encima, nítido, en su sitio exacto
+      image.className = 'plab-board-sharp';
+      image.setAttribute('aria-hidden', 'true');
+      if (boardSharp) boardSharp.replaceWith(image);
+      else canvas.after(image);
+      boardSharp = image;
+      boardSharpKey = '';
+      applyBoardLight();
       draw();
     },
     hasBoard: () => Boolean(boardItem),
@@ -2109,6 +2221,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     destroy() {
       if (destroyed) return;
       destroyed = true;
+      boardSharp?.remove();
       cancelAnimationFrame(raf);
       cancelAnimationFrame(tween);
       cancelAnimationFrame(pullRaf);

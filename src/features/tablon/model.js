@@ -1,5 +1,7 @@
 // Tablón libre: reglas puras del lienzo. Las coordenadas son del lienzo, independientes del dispositivo:
 // pantalla = origenViewport + (puntoLienzo − pan) × zoom.
+import { pinDe } from './dibujo';
+
 export const PAPERS = { crema: '#F7EDD5', salvia: '#BFCBA3', azul: '#B7CFD8', melocoton: '#DFB399' };
 export const PAPER_NAMES = { crema: 'Crema', salvia: 'Salvia', azul: 'Azul', melocoton: 'Melocotón' };
 export const INK = '#382B22';
@@ -19,7 +21,7 @@ export const SIZE = { minW: 80, maxW: 900, minH: 60, maxH: 900 };
 export const uid = () => crypto.randomUUID();
 const hash = (s) => [...String(s)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7);
 /** Qué objeto es cada tarjeta: las notas propias varían, siempre igual para una misma nota. */
-export const formatOf = (item) => ({ book: 'libro', quote: 'cita', received: 'correo' })[item.kind] ?? ['adhesiva', 'rayada', 'ficha'][hash(item.id) % 3];
+export const formatOf = (item) => (item.dibujo && !item.retirada && !item.spoiler ? 'dibujo' : undefined) ?? ({ book: 'libro', quote: 'cita', received: 'correo' })[item.kind] ?? ['adhesiva', 'rayada', 'ficha'][hash(item.id) % 3];
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 export const clampZoom = (z) => clamp(z, ZOOM[0], ZOOM[1]);
 export const normalizeAngle = (a) => {
@@ -45,10 +47,19 @@ const rotate = (x, y, deg) => {
   return { x: x * Math.cos(r) - y * Math.sin(r), y: x * Math.sin(r) + y * Math.cos(r) };
 };
 export const centerOf = (i) => ({ x: i.x + i.width / 2, y: i.y + i.height / 2 });
+/** Dónde va la chincheta de una forma recortada, en unidades de la tarjeta desde su esquina; null en cualquier otra. */
+export function pinLocal(item) {
+  if (!item.recortado || formatOf(item) !== 'dibujo') return null;
+  const lado = Math.min(item.width, item.height);
+  const p = pinDe(item.dibujo);
+  return { x: (item.width - lado) / 2 + lado * p.x, y: (item.height - lado) / 2 + lado * p.y };
+}
+
 /** Dónde está un ancla de la tarjeta, teniendo en cuenta su giro: la chincheta va arriba, centrada. */
 export function anchorOf(item, anchor = 'pin') {
   const c = centerOf(item);
-  const local = { pin: [0, -item.height / 2], top: [0, -item.height / 2], bottom: [0, item.height / 2], left: [-item.width / 2, 0], right: [item.width / 2, 0] }[anchor] ?? [0, -item.height / 2];
+  const clavo = anchor === 'pin' || !anchor ? pinLocal(item) : null;
+  const local = clavo ? [clavo.x - item.width / 2, clavo.y - item.height / 2] : { pin: [0, -item.height / 2], top: [0, -item.height / 2], bottom: [0, item.height / 2], left: [-item.width / 2, 0], right: [item.width / 2, 0] }[anchor] ?? [0, -item.height / 2];
   const p = rotate(local[0], local[1], item.rotation);
   return { x: c.x + p.x, y: c.y + p.y };
 }
@@ -110,7 +121,7 @@ export const bottomZ = (items) => items.reduce((m, i) => Math.min(m, i.z), 0) - 
 export const sortedItems = (items) => [...items].sort((a, b) => a.z - b.z);
 
 export function newItem(kind, at, items, extra = {}) {
-  const size = kind === 'book' ? { width: 190, height: 250 } : { width: 240, height: 180 };
+  const size = kind === 'book' ? { width: 190, height: 250 } : extra.dibujo ? { width: 240, height: 240 } : { width: 240, height: 180 };
   // Un poco desordenado para que parezca clavado a mano, siempre igual para un mismo número de tarjetas
   const rotation = [-3, 2, -1.5, 3, 0, -2][items.length % 6];
   return { id: uid(), kind, body: '', caption: null, cover: null, source_ref: null, x: at.x - size.width / 2, y: at.y - size.height / 2, ...size, rotation, z: topZ(items), paper: 'crema', pin: 'laton', sticker: null, spoiler: false, received_note_id: null, ...extra };
@@ -132,9 +143,9 @@ export const safeCover = (url) => (typeof url === 'string' && /^https:\/\//.test
 export const itemSummary = (i) => {
   if (i.retirada) return 'Nota retirada por quien la escribió';
   if (i.spoiler) return 'Contiene spoiler';
-  return i.body || 'Sin texto';
+  return i.body || (i.dibujo ? 'Dibujo' : 'Sin texto');
 };
-export const KIND_NAMES = { note: 'Nota', book: 'Libro', quote: 'Cita', received: 'Recibida' };
+export const KIND_NAMES = { note: 'Nota', book: 'Libro', quote: 'Cita', received: 'Recibida', drawing: 'Dibujo' };
 
 /** Hora local a la que se podrá dejar otro post-it. */
 export const nextSendLabel = (iso) => new Date(iso).toLocaleString('es-ES', { weekday: 'long', hour: '2-digit', minute: '2-digit' });

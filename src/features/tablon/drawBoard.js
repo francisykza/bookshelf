@@ -1,6 +1,7 @@
 // La imagen del corcho en la habitación: la composición entera, a escala, con los mismos papeles que el lienzo, en una textura estática.
 // Se dibuja una vez por revisión y nunca por fotograma. Quien llama decide qué composición pasa: a un visitante solo le llega la copia pública.
-import { anchorOf, boundsOf, centerOf, formatOf, PAPERS, INK, PIN_COLORS, THREADS } from './model';
+import { anchorOf, boundsOf, centerOf, formatOf, PAPERS, INK, pinLocal, PIN_COLORS, THREADS } from './model';
+import { dibujoCanvas } from './dibujo';
 
 export const BOARD_W = 1536;
 export const BOARD_H = 1152;
@@ -118,6 +119,19 @@ export async function drawBoard(doc, { unread = false } = {}) {
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate((i.rotation * Math.PI) / 180);
+      const clavo = pinLocal(i);
+      const pinX = clavo ? clavo.x * scale - w / 2 : 0;
+      const pinY = clavo ? clavo.y * scale - h / 2 : -h / 2;
+      if (format === 'dibujo') {
+        const lado = Math.min(w, h);
+        if (i.recortado) {
+          ctx.shadowColor = 'rgba(47,28,18,.42)';
+          ctx.shadowOffsetX = 5 * scale;
+          ctx.shadowOffsetY = 7 * scale;
+        } else paintPaper(ctx, i, format, w, h, scale);
+        ctx.drawImage(dibujoCanvas(i.dibujo, i.recortado), -lado / 2, -lado / 2, lado, lado);
+        ctx.shadowColor = 'transparent';
+      } else {
       paintPaper(ctx, i, format, w, h, scale);
       ctx.fillStyle = INK;
       ctx.textBaseline = 'top';
@@ -137,13 +151,14 @@ export async function drawBoard(doc, { unread = false } = {}) {
         const lh = size * 1.12;
         wrap(ctx, text, w - pad * 1.6, Math.max(1, Math.floor((h - top - 10 * scale) / lh))).forEach((l, n) => ctx.fillText(l, -w / 2 + pad, -h / 2 + top + n * lh));
       }
+      }
       ctx.fillStyle = 'rgba(47,28,18,.45)';
       ctx.beginPath();
-      ctx.arc(3 * scale, -h / 2 + 4 * scale, 11 * scale, 0, Math.PI * 2);
+      ctx.arc(pinX + 3 * scale, pinY + 4 * scale, 11 * scale, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = PIN_COLORS[i.pin] ?? PIN_COLORS.laton;
       ctx.beginPath();
-      ctx.arc(0, -h / 2, 11 * scale, 0, Math.PI * 2);
+      ctx.arc(pinX, pinY, 11 * scale, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }

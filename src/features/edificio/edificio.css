@@ -2789,6 +2789,21 @@
   z-index: 40;
 }
 
+/* La biblioteca actual, debajo de la ficha de un libro */
+.ed-visita3d__lista {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+}
+
+.ed-visita3d__biblioteca .reader-visit__sheet {
+  z-index: 2;
+}
+
+.ed-visita3d__resenas {
+  padding: 0 12px 20px;
+}
+
 .ed-visita3d__hora {
   position: absolute;
   right: 8px;

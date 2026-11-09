@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.95.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.96.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5569,3 +5569,12 @@ Solo interfaz: sin migraciones y sin cambios en cálculos ni persistencia.
 - **Público y post-its:** lo público es una copia aparte, publicada con vista previa y sin referencias privadas. Post-its de hasta 200 caracteres, uno al día por remitente y destinatario (UTC), atómicos e idempotentes; exponer uno exige permiso de quien lo escribió, que también puede retirarlo. El libro de visitas queda como archivo privado.
 - **Migración:** `20261120120000_tablon.sql`, aplicada por Francisco el 2026-11-09. Las tablas solo se usan mediante funciones.
 - **Pruebas:** `e2e-community/tablon.spec.js` (Chromium y WebKit a 390 px) y `tablon.rls.test.js`. Solo emulación.
+
+## 96. Tablón en el escritorio, dibujos y biblioteca del visitante (1.96.0)
+
+- **El tablón va montado en el escritorio** que tiene el ordenador, por encima del monitor, y se mueve y gira con él. Deja de ser un mueble que se coloca aparte: un tablón suelto ya guardado se ignora, sin borrar datos. Sin ese escritorio no hay tablón. Monitor y tablón se pulsan por separado.
+- **Relieve y nitidez:** marco con grosor, corcho hundido, remate, repisa y esquinas de latón. El contenido se superpone en el DOM a alta resolución (`.plab-board-sharp`, con `matrix3d`); si algo lo tapa se ve la textura de la escena.
+- **Bandeja de diseño** encuadrada a 360 y 390 px; Alejar y Acercar pasan a ser solo iconos.
+- **Biblioteca del visitante** en solo lectura: lo expuesto en la estantería y lo que se comparte (rincón y colecciones visibles). Lo expuesto se publica como copia aparte (`piso_expuestos`, migración `20261121120000_piso_expuestos.sql`), sin la lectura actual, y se lee con las reglas de la visita.
+- **Dibujos** (`dibujo.js`, `Dibujar.jsx`, migración `20261122120000_tablon_dibujos.sql`): quien visita deja un dibujo en vez de un post-it, con el mismo cupo diario, y el dueño puede dibujar desde Añadir. Se guardan como trazos validados en el servidor (cinco colores, coordenadas enteras de 0 a 120, hasta 150 trazos y 4000 puntos), nunca como imagen. Se deja la hoja o la forma recortada: elige quien dibuja y el dueño puede cambiarlo. Mismas reglas que un post-it para privacidad, permiso público, retirada, denuncia y bloqueo.
+- **Límites:** solo emulación. La capa nítida se descuadra en WebKit para Windows; falta comprobarla en un iPhone real. No hay moderación automática de los dibujos.

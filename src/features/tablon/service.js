@@ -92,6 +92,7 @@ export const clearNotices = () => rpc('tablon_avisos_vistos');
 export const sentNotes = () => rpc('tablon_mis_enviadas');
 export const setNotePermission = (nota, permitir) => rpc('tablon_permiso_nota', { nota, permitir });
 export const withdrawNote = (nota) => rpc('tablon_retirar_nota', { nota });
+export const sendDrawing = ({ destino, dibujo, forma, permitePublico, clave }) => rpc('tablon_enviar_dibujo', { destino, trazos: dibujo, forma, permite_publico: permitePublico, clave });
 export const sendNote = ({ destino, texto, estilo, spoiler, permitePublico, clave }) => rpc('tablon_enviar_nota', { destino, texto, estilo, es_spoiler: spoiler, permite_publico: permitePublico, clave });
 
 /** Lo que puede ver quien visita; null si no hay permiso o aún no existe la migración. */

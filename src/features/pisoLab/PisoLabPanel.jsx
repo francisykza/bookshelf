@@ -28,6 +28,7 @@ import { demoLibraryActive } from './sampleLibrary';
 import { HOME_PISO } from './inicio';
 import { rememberMyPiso, saveMyPiso } from '../edificio/myPiso';
 import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
+import { expuestosDe, publicarExpuestos } from './expuestos';
 import '../tablon/tablon.css';
 
 const SAVE_MS = 400;
@@ -432,7 +433,16 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
     });
   };
   // Lo que se ve en el corcho: tu composición activa, al entrar y al volver de editarla (una vez por revisión)
-  const hasBoard = room.items.some((i) => i.id === 'tablon');
+  const hasBoard = inner.items.some((i) => i.id === 'ordenador');
+  // Quien te visita ve lo que tienes a la vista: se publica poco después de cambiar
+  const expuestos = useMemo(() => (real && editable && books.length ? expuestosDe(shelfBooks) : null), [real, editable, books.length, shelfBooks]);
+  const firmaExpuestos = expuestos && JSON.stringify(expuestos);
+  useEffect(() => {
+    if (!firmaExpuestos) return undefined;
+    const t = setTimeout(() => publicarExpuestos(real.userId, JSON.parse(firmaExpuestos)), 2500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firmaExpuestos]);
   const showingBoard = /^tablon/.test(select ?? '');
   useEffect(() => {
     if (!editable || !hasBoard || showingBoard || !boardReady) return undefined;

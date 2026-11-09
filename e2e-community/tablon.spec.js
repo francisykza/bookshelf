@@ -5,7 +5,7 @@ import { createMockSupabase } from './mockSupabase';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 const BEA = { id: '22222222-2222-4222-8222-222222222222' };
-const sala = (tablon) => ({ v: 1, pared: 'yeso', suelo: 'tablas', items: [{ uid: 1, id: 'sillon', tono: 1, x: 4, y: 6, rot: 2 }, { uid: 2, id: 'escritorio', x: 3, y: 0, rot: 0, tono: 0 }, ...(tablon ? [{ uid: 3, id: 'tablon', tono: 0, pared: 'fondo', a: 5 }] : [])] });
+const sala = (tablon) => ({ v: 1, pared: 'yeso', suelo: 'tablas', items: [{ uid: 1, id: 'sillon', tono: 1, x: 4, y: 6, rot: 2 }, ...(tablon ? [{ uid: 2, id: 'escritorio', x: 3, y: 0, rot: 0, tono: 0 }] : [])] });
 const QUOTES = [{ id: 'c1', text: 'Una cita privada del Diario', page: 3, color: 'amber', createdAt: '2026-10-01' }];
 const DATOS = { version: 8, books: [{ id: 'b1', title: 'El libro del puerto', author: 'Marina Sol', status: 'reading', cover: '', quotes: QUOTES, addedAt: '2026-01-01' }], settings: { sound: false, sfx: false, onboardingDone: true }, progress: { readingLog: [], pomodoros: [], claimed: {} } };
 const CARD = (n, extra = {}) => ({ id: `a0000000-0000-4000-8000-${String(n).padStart(12, '0')}`, kind: 'note', body: `Nota ${n}`, x: 80 + (n % 10) * 260, y: 60 + Math.floor(n / 10) * 230, width: 240, height: 180, rotation: (n % 5) - 2, z: n, paper: ['crema', 'salvia', 'azul', 'melocoton'][n % 4], pin: 'laton', sticker: null, spoiler: false, caption: null, cover: null, source_ref: null, received_note_id: null, ...extra });
@@ -37,6 +37,11 @@ async function servidor(page, t, log) {
       return json({ publicada: true, revision: t.revision });
     }
     if (name === 'tablon_visita') return json({ publico: t.publico ? { title: t.title, bounds: {}, revision: 1, ...t.publico } : null, acepta: true, enviada_hoy: t.enviada ?? false, proximo: '2026-11-10T00:00:00Z' });
+    if (name === 'tablon_enviar_dibujo') {
+      t.enviada = true;
+      t.dibujoEnviado = body;
+      return json({ id: 'n8', repetida: false });
+    }
     if (name === 'tablon_enviar_nota') {
       t.enviada = true;
       t.enviadas = (t.enviadas ?? 0) + 1;
@@ -386,15 +391,115 @@ test('D · de visita solo se mira la copia pública, el spoiler se revela y el p
   await context.close();
 });
 
-test('sin mueble no hay acceso al tablón, ni en el menú ni en el ordenador', async ({ browser }) => {
+async function trazar(page, puntos) {
+  const c = await page.locator('.tb-dib__hoja').boundingBox();
+  const a = (p) => ({ x: c.x + (p[0] * c.width) / 120, y: c.y + (p[1] * c.height) / 120 });
+  await page.mouse.move(a(puntos[0]).x, a(puntos[0]).y);
+  await page.mouse.down();
+  for (const p of puntos.slice(1)) await page.mouse.move(a(p).x, a(p).y, { steps: 4 });
+  await page.mouse.up();
+}
+const GATO = [[25, 100], [20, 60], [22, 22], [45, 40], [75, 40], [98, 22], [100, 60], [95, 100], [60, 110], [25, 100]];
+const DIB = { v: 1, s: [{ c: 0, p: GATO.flat() }, { c: 0, p: [43, 62, 46, 66] }, { c: 0, p: [77, 62, 74, 66] }, { c: 1, p: [56, 76, 64, 76, 60, 81, 56, 76] }] };
+
+test('E · quien visita ve un dibujo publicado y deja el suyo como forma, sin duplicarlo y con el mismo cupo', async ({ browser, browserName }) => {
+  test.setTimeout(150000);
+  const t = tablero([], [], { publico: { items: [CARD(1, { x: 60, y: 60, body: 'Pasad y dejad algo' }), CARD(2, { x: 360, y: 40, kind: 'drawing', body: '', dibujo: DIB, recortado: true, width: 240, height: 240 })], edges: [] } });
+  const { context, page } = await abrir(browser, t, { video: browserName === 'chromium' });
+  await page.getByRole('button', { name: 'Al edificio' }).click();
+  await page.getByRole('dialog', { name: 'El edificio del puerto' }).getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
+  await page.getByRole('button', { name: 'Entrar en 3D' }).click({ timeout: 15000 });
+  await expect(page.locator('.ed-visita3d[data-visita="' + BEA.id + '"]')).toBeVisible({ timeout: 20000 });
+  await page.getByRole('button', { name: 'Tablón de Bea' }).click({ timeout: 15000 });
+  await expect(tarjeta(page, 2).locator('.tb-card__dibujo')).toBeVisible();
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: 'qa-report/tablon-dibujo-visita.png' });
+  await page.getByRole('button', { name: 'Dejar un dibujo' }).click();
+  await trazar(page, GATO);
+  await page.waitForTimeout(300);
+  await trazar(page, [[43, 62], [46, 66]]);
+  await trazar(page, [[77, 62], [74, 66]]);
+  await page.getByRole('button', { name: 'Rojo' }).click();
+  await trazar(page, [[56, 76], [64, 76], [60, 81], [56, 76]]);
+  await page.waitForTimeout(500);
+  await page.getByRole('button', { name: 'La forma' }).click();
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: 'qa-report/tablon-dibujo-enviar.png', fullPage: false });
+  await expect(page.getByLabel('Permitir que lo exponga en su tablón público')).not.toBeChecked();
+  await page.getByRole('button', { name: 'Dejar el dibujo' }).dblclick();
+  await expect(page.getByText('Dibujo enviado.')).toBeVisible({ timeout: 6000 });
+  expect(t.dibujoEnviado.forma).toBe(true);
+  expect(t.dibujoEnviado.permite_publico).toBe(false);
+  expect(t.dibujoEnviado.trazos.s).toHaveLength(4);
+  expect(t.enviadas ?? 0).toBe(0);
+  await page.waitForTimeout(900);
+  await page.getByRole('button', { name: 'Cerrar' }).click();
+  await page.getByRole('button', { name: 'Dejar un post-it' }).click();
+  await expect(page.getByText(/Ya le has dejado un post-it o un dibujo hoy/)).toBeVisible({ timeout: 6000 });
+  await page.waitForTimeout(800);
+  const video = page.video();
+  await context.close();
+  if (video) await video.saveAs('qa-report/tablon-dibujo.webm');
+});
+
+test('E · el dueño dibuja, clava, cambia entre hoja y forma, y el dibujo recibido se ve y se coloca', async ({ browser, browserName }) => {
+  test.setTimeout(150000);
+  const recibida = { id: 'd0000000-0000-4000-8000-000000000001', sender_id: BEA.id, alias: 'Bea', body: '', dibujo: DIB, recortado: true, style: 'crema', spoiler: false, author_allows_public: true, created_at: '2026-11-09T10:00:00Z', read_at: null, withdrawn_at: null };
+  const t = tablero([CARD(1, { x: 60, y: 60, body: 'Volver al capítulo tres' })], [], { acepta: true, recibidas: [recibida] });
+  const { context, page, log } = await abrir(browser, t);
+  await abrirTablon(page);
+  await disenar(page);
+  await page.getByRole('button', { name: /^Añadir/ }).click();
+  await page.getByRole('button', { name: 'Dibujo', exact: true }).click();
+  await trazar(page, [[30, 30], [90, 30], [90, 90], [30, 90], [30, 30]]);
+  await page.getByRole('button', { name: 'Rojo' }).click();
+  await trazar(page, [[50, 60], [70, 60]]);
+  await page.getByRole('button', { name: 'La forma' }).click();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: 'qa-report/tablon-dibujo-editor.png' });
+  await page.getByRole('button', { name: 'Clavar en el tablón' }).click();
+  await guardado(page);
+  const propio = t.items.find((i) => i.kind === 'drawing');
+  expect(propio.recortado).toBe(true);
+  expect(propio.dibujo.s).toHaveLength(2);
+  expect(propio.dibujo.s[1].c).toBe(1);
+  await page.getByRole('button', { name: /Recibidas/ }).click();
+  await expect(page.locator('.tb-mini img')).toBeVisible();
+  await page.getByRole('button', { name: 'Colocar en mapa' }).click();
+  await guardado(page);
+  const clavado = t.items.find((i) => i.kind === 'received');
+  expect(clavado.dibujo).toEqual(DIB);
+  const carta = page.locator(`[data-item="${clavado.id}"]`);
+  await expect(carta).toHaveAttribute('data-forma', 'si');
+  await page.screenshot({ path: 'qa-report/tablon-dibujo-forma.png' });
+  await page.getByRole('button', { name: 'Editar' }).click();
+  await page.getByRole('button', { name: 'La hoja' }).click();
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await guardado(page);
+  await expect(carta).not.toHaveAttribute('data-forma', 'si');
+  expect(t.items.find((i) => i.kind === 'received').recortado).toBe(false);
+  await page.getByRole('button', { name: 'Encajar' }).click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: 'qa-report/tablon-dibujo-hoja.png' });
+  expect(log.filter((n) => n === 'tablon_guardar').length).toBeGreaterThanOrEqual(3);
+  await page.getByRole('button', { name: 'Volver' }).first().click();
+  await expect(page.locator('.tb-app[data-view="mirar"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Volver' }).first().click();
+  await expect(page.locator('.tb-app')).toHaveCount(0);
+  await page.waitForTimeout(1200);
+  await mirarA(page, 'tablon');
+  await page.waitForTimeout(700);
+  await expect(page.locator('.plab-board-sharp')).toBeVisible();
+  await page.screenshot({ path: 'qa-report/tablon-dibujo-habitacion.png' });
+  await context.close();
+});
+
+test('sin escritorio no hay tablón, ni en la habitación ni en el menú', async ({ browser }) => {
   test.setTimeout(120000);
   const t = tablero([CARD(1)]);
   const { context, page } = await abrir(browser, t, { conMueble: false });
   expect(await page.evaluate(() => window.__pisoLab().hasBoard())).toBe(false);
   await page.getByRole('button', { name: 'Menú de accesos' }).click();
-  await expect(page.getByRole('button', { name: 'Tablón', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Ordenador', exact: true }).click();
-  await expect(page.locator('.pp-desk')).toBeVisible({ timeout: 8000 });
   await expect(page.getByRole('button', { name: 'Tablón', exact: true })).toHaveCount(0);
   await context.close();
 });
@@ -414,6 +519,11 @@ test('recorrido grabado: mirar el tablón desde el mueble y pasar a diseñar', a
   await mirarA(page, 'tablon');
   await page.waitForTimeout(1200);
   await page.screenshot({ path: 'qa-report/tablon-6-mueble.png' });
+  await expect(page.locator('.plab-board-sharp')).toBeVisible();
+  const nitido = await page.locator('.plab-board-sharp').boundingBox();
+  const sobre = await probe(page, 'tablon');
+  expect(sobre.x).toBeGreaterThan(nitido.x);
+  expect(sobre.x).toBeLessThan(nitido.x + nitido.width);
   await abrirTablon(page);
   await page.waitForTimeout(1400);
   await page.screenshot({ path: 'qa-report/tablon-7-vista-completa.png' });
@@ -425,6 +535,16 @@ test('recorrido grabado: mirar el tablón desde el mueble y pasar a diseñar', a
   await disenar(page);
   await page.waitForTimeout(1200);
   await page.screenshot({ path: 'qa-report/tablon-9-disenar.png' });
+  for (const ancho of [390, 360]) {
+    await page.setViewportSize({ width: ancho, height: 800 });
+    await page.waitForTimeout(200);
+    const cajas = await page.locator('.tb-tool').evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => [r.left, r.right]));
+    expect(Math.min(...cajas.map((c) => c[0]))).toBeGreaterThanOrEqual(8);
+    expect(Math.max(...cajas.map((c) => c[1]))).toBeLessThanOrEqual(ancho - 8);
+    await page.screenshot({ path: `qa-report/tablon-bandeja-${ancho}.png` });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(200);
   const c = await centro(tarjeta(page, 16));
   await drag(page, c, { x: c.x - 20, y: c.y + 40 });
   await guardado(page);

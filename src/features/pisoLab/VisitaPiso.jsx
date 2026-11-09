@@ -5,12 +5,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useCommunity } from '../social/hooks/useCommunity';
 import { useReaderCorner } from '../social/hooks/useReaderCorner';
-import { SharedLibrary, VisitBookSheet } from '../social/components/VisitBookSheet';
+import { VisitBookSheet } from '../social/components/VisitBookSheet';
+import { ReviewCard } from '../reviews/ReadersPanel';
+import { emptyLibraryMemory, PisoLibrary } from './PisoLibrary';
 import { currentTitle, sharedBooks } from '../social/visit';
 import { ROOM_LIMIT } from './roomSelection';
 import { Interior } from './PisoLabPanel';
 import { shelfRows } from './shelfLayout';
 import { pisoFrom, withDoorAndComputer } from './useMyPiso';
+import { cargarExpuestos } from './expuestos';
 import { loadVisit } from '../tablon/service';
 import { drawBoard } from '../tablon/drawBoard';
 import TablonVisita from '../tablon/TablonVisita';
@@ -19,6 +22,7 @@ const VACIA = { cover: null, rows: [[], [], []], hidden: [], placed: 0 };
 const SIGUE = { tarde: { hora: 'noche', label: 'Ver de noche' }, noche: { hora: 'dia', label: 'Ver de día' }, dia: { hora: 'tarde', label: 'Ver al atardecer' } };
 
 const nada = () => {};
+const SIN_COLOCAR = new Set();
 
 export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
   const community = useCommunity();
@@ -28,9 +32,11 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
   const [grupo, setGrupo] = useState(0);
   const [biblioteca, setBiblioteca] = useState(false);
   const [ficha, setFicha] = useState(null);
+  const memoriaLista = useRef({ ...emptyLibraryMemory(), order: 'shared' });
   const [tablon, setTablon] = useState(false);
   const [visitaTablon, setVisitaTablon] = useState(null);
   const [listo3d, setListo3d] = useState(false);
+  const [expuestos, setExpuestos] = useState([]);
   const abrirBiblioteca = useRef(null);
   const apiRef = useRef(null);
   // Solo en desarrollo: al salir, las pruebas vuelven a ver tu habitación, que sigue montada debajo
@@ -46,8 +52,15 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
   const room = useMemo(() => withDoorAndComputer(vecino.room), [vecino.room]);
   const nombre = vecino.alias ?? 'tu vecino';
   const listo = corner.status === 'ready' && corner.data;
-  // Solo lo que esa persona comparte, en el orden en que lo expone; nada se guarda ni se marca por visitarla
-  const compartidos = useMemo(() => (listo ? sharedBooks({ ownerId: vecino.user_id, corner: corner.data.corner, collections: corner.data.collections ?? [] }).all : []), [listo, corner.data, vecino.user_id]);
+  useEffect(() => {
+    let off = false;
+    cargarExpuestos(vecino.user_id).then((l) => !off && setExpuestos(l));
+    return () => {
+      off = true;
+    };
+  }, [vecino.user_id]);
+  // Lo que tiene a la vista y lo que decide compartir, nada más; nada se guarda ni se marca por visitarla
+  const compartidos = useMemo(() => (listo ? sharedBooks({ ownerId: vecino.user_id, corner: corner.data.corner, collections: corner.data.collections ?? [], expuestos }).all : []), [listo, corner.data, vecino.user_id, expuestos]);
   const grupos = Math.max(1, Math.ceil(compartidos.length / ROOM_LIMIT));
   // Una balda de libros cada vez: el modelo y las portadas siguen acotados aunque la biblioteca sea enorme
   const shelf = useMemo(() => {
@@ -62,13 +75,15 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
     return { id: `visita-lectura:${vecino.user_id}`, title: titulo, author: igual?.ref.author ?? '', cover: igual?.ref.cover ?? '', status: 'reading' };
   }, [titulo, compartidos, vecino.user_id]);
   const fichaAbierta = compartidos.find((it) => it.key === ficha) ?? null;
+  // La biblioteca actual, con referencias públicas: el primer origen dice por qué está a la vista
+  const librosVisita = useMemo(() => compartidos.map((it) => ({ id: it.key, title: it.ref.title, author: it.ref.author, cover: it.ref.cover, origin: it.origins[0] })), [compartidos]);
   // Escape cierra de uno en uno y no llega al panel del edificio
   useEffect(() => {
     if (!biblioteca) return undefined;
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
-      if (ficha) setFicha(null);
+      if (ficha) cerrarFicha();
       else cerrar();
     };
     window.addEventListener('keydown', onKey, true);
@@ -89,6 +104,12 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
       off = true;
     };
   }, [listo3d, visitaTablon]);
+  // La lista sigue montada debajo de la ficha: conserva búsqueda y posición, y el foco vuelve al libro
+  function cerrarFicha() {
+    const abierto = ficha;
+    setFicha(null);
+    requestAnimationFrame(() => document.querySelector(`.ed-visita3d__lista [data-book="${CSS.escape(abierto)}"]`)?.focus({ preventScroll: true }));
+  }
   function cerrar() {
     setBiblioteca(false);
     setFicha(null);
@@ -150,8 +171,33 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
       {tablon && visitaTablon && <TablonVisita ownerId={vecino.user_id} alias={nombre} visit={visitaTablon} onClose={() => setTablon(false)} onSent={leerTablon} />}
       {biblioteca && (
         <div className="reader-visit ed-visita3d__biblioteca" data-escape-local="open">
-          <SharedLibrary items={compartidos} alias={nombre} profile={corner.data.profile} reviews={corner.data.reviews} openKey={ficha} onOpenBook={setFicha} onBack={cerrar} titulo={`Biblioteca de ${nombre}`} volver="Volver a su piso" />
-          {ficha && <VisitBookSheet item={fichaAbierta} alias={nombre} profile={corner.data.profile} reviews={corner.data.reviews} onBack={() => setFicha(null)} />}
+          <div className="ed-visita3d__lista" inert={ficha ? true : undefined}>
+            <PisoLibrary
+              books={librosVisita}
+              placed={SIN_COLOCAR}
+              memory={memoriaLista.current}
+              onBack={cerrar}
+              onOpen={(book) => setFicha(book.id)}
+              visit={{
+                title: `Biblioteca de ${nombre}`,
+                backLabel: 'Volver a su piso',
+                searchLabel: 'Buscar en sus libros',
+                empty: `${nombre} aún no ha compartido libros`,
+                after: corner.data.reviews.length > 0 && (
+                  <section className="reader-visit__reviews ed-visita3d__resenas" aria-label="Reseñas publicadas">
+                    <h4>Reseñas publicadas</h4>
+                    {corner.data.reviews.map((r) => (
+                      <div key={r.id} className="reader-profile__review">
+                        {r.work && <p className="social-hand">{r.work.title}</p>}
+                        <ReviewCard review={r} author={corner.data.profile} mine={false} />
+                      </div>
+                    ))}
+                  </section>
+                ),
+              }}
+            />
+          </div>
+          {ficha && <VisitBookSheet item={fichaAbierta} alias={nombre} profile={corner.data.profile} reviews={corner.data.reviews} onBack={cerrarFicha} />}
         </div>
       )}
     </div>

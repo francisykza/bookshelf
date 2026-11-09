@@ -1,6 +1,7 @@
 // Piezas compartidas del tablón: la hoja que se abre encima y el detalle de una tarjeta.
 import { useEffect, useRef, useState } from 'react';
 import { formatOf, KIND_NAMES, PAPERS } from './model';
+import { DibujoPieza } from './Dibujar';
 
 /** El tablón descolgado: marco de madera, corcho y su placa. */
 export function BoardFrame({ title, children }) {
@@ -55,7 +56,7 @@ export function DetailSheet({ item, onClose, actions }) {
         ) : shown ? (
           <>
             {item.kind === 'book' && item.cover && <img src={item.cover} alt="" />}
-            <p>{item.body}</p>
+            {item.dibujo ? <DibujoPieza dibujo={item.dibujo} recortado={item.recortado} alt={item.firma ? `Dibujo de ${item.firma}` : 'Dibujo'} paper={PAPERS[item.paper]} /> : <p>{item.body}</p>}
             {item.caption && <small>{item.caption}</small>}
             {item.firma && <small>De {item.firma}</small>}
           </>

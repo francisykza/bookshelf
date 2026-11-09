@@ -202,11 +202,11 @@
   background: #ad794d;
 }
 .tb-tray {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: auto;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 2px 6px 6px;
+  gap: 2px;
+  padding: 2px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
 }
 .tb-tool {
   display: flex;
@@ -217,11 +217,20 @@
   min-width: 44px;
   min-height: 58px;
   padding: 2px 0;
-  font: 12.5px/1 'Lora', Georgia, serif;
+  flex: 0 1 auto;
+  font: 12px/1 'Lora', Georgia, serif;
   color: #f0e0bf;
   background: none;
   border: 0;
   cursor: pointer;
+}
+.tb-zoom {
+  display: flex;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 2px rgba(198, 152, 69, 0.55);
+}
+.tb-tool--mini {
+  min-height: 44px;
 }
 .tb-tool:disabled {
   opacity: 0.38;
@@ -407,6 +416,99 @@
 .tb-card.is-source .tb-card__paper {
   outline: 4px dashed var(--tb-string);
   outline-offset: -2px;
+}
+.tb-card[data-format='dibujo'] .tb-card__in {
+  padding: 0;
+}
+.tb-card__dibujo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.tb-card[data-forma] .tb-card__paper {
+  display: none;
+}
+.tb-card[data-forma]::before {
+  display: none;
+}
+.tb-card[data-forma] .tb-card__dibujo {
+  filter: drop-shadow(4px 5px 0 rgba(47, 28, 18, 0.42));
+}
+.tb-card.is-selected[data-forma] .tb-card__dibujo {
+  outline: 4px solid var(--tb-focus);
+  outline-offset: -2px;
+}
+.tb-card.is-source[data-forma] .tb-card__dibujo {
+  outline: 4px dashed var(--tb-string);
+  outline-offset: -2px;
+}
+.tb-pieza {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+.tb-pieza img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.tb-pieza[data-forma] img {
+  filter: drop-shadow(3px 4px 0 rgba(47, 28, 18, 0.42));
+}
+.tb-mini {
+  display: block;
+  width: 64px;
+  padding: 3px;
+  background: #ad794d;
+}
+.tb-dib__hoja {
+  display: block;
+  width: min(100%, 320px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  background: #f7edd5;
+  box-shadow: 0 0 0 2px var(--tb-brass-dark);
+  touch-action: none;
+  cursor: crosshair;
+}
+.tb-dib__util {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.tb-dib__colores {
+  display: flex;
+  flex: 1 0 100%;
+  justify-content: center;
+  gap: 10px;
+}
+.tb-dib__util > .tb-btn {
+  flex: 1 1 0;
+}
+.tb-dib-modo {
+  display: flex;
+  gap: 8px;
+}
+.tb-dib-modo .tb-btn {
+  flex: 1 1 0;
+}
+.tb-dib-modo .tb-btn[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 3px var(--tb-brass-dark);
+  font-weight: 700;
+}
+.tb-dib__corcho {
+  display: grid;
+  place-items: center;
+  width: 150px;
+  min-height: 150px;
+  margin: 0 auto;
+  padding: 10px;
+  background: #ad794d;
+  color: #2f1c12;
+  font-size: 14px;
+  text-align: center;
 }
 .tb-card__pin {
   position: absolute;
@@ -878,6 +980,14 @@
   height: 260px;
   margin: 8px 0;
   box-shadow: 0 0 0 5px #805033;
+}
+.plab-board-sharp {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 .plab-objlabel {
   position: absolute;
