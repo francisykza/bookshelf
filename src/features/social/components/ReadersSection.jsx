@@ -1,5 +1,5 @@
 // «Lectores» (1.62, SPEC §62; maqueta material-diseno/social-radio/maquetas/04-comunidad.png): buscador de lectoras y
-// lectores, «A quienes sigues» con su avatar (abre su perfil) y «Visitar rincón», y «Lo que comparten»: opiniones
+// lectores, «A quienes sigues» con su avatar (abre su perfil) y «Visitar piso», y «Lo que comparten»: opiniones
 // compactas de quien sigues. La portada y «Leer reseña» abren la ficha pública del libro (la reseña entera, con los
 // spoilers ocultos hasta pedirlos, y «Añadir a pendientes» explícito); nunca la ficha de un libro propio. Datos reales,
 // estados de carga, error y vacío, y opiniones por páginas.
@@ -14,7 +14,6 @@ import { useLibrary } from '../../../state/useLibrary';
 import { ReviewCard } from '../../reviews/ReadersPanel';
 import { fetchProfiles, reportContent, searchProfiles } from '../services/community';
 import { fetchActivity, fetchMoreActivity } from '../services/connections';
-import { warmVisit } from '../visitScene';
 import { AddToPending } from './AddToPending';
 
 /** Referencia pública de la obra de una opinión (título y autoría de la comunidad; la portada, la de tu ejemplar). */
@@ -168,7 +167,7 @@ function SharedReview({ review: r, author, books, onRead, onOpenReader }) {
   );
 }
 
-/** Una persona (seguida o encontrada): su avatar abre su perfil; «Visitar rincón» abre su casa. */
+/** Una persona (seguida o encontrada): su avatar abre su perfil; «Visitar piso» abre su piso. */
 function Person({ id, profile, onOpenReader, onVisit }) {
   const alias = profile?.alias;
   return (
@@ -178,8 +177,8 @@ function Person({ id, profile, onOpenReader, onVisit }) {
         {alias ? <span className="reader-person__name">{alias}</span> : <span className="follow-row__name--loading" aria-hidden="true" />}
       </button>
       {onVisit && alias && (
-        <button type="button" className="reader-person__visit" onPointerDown={warmVisit} onFocus={warmVisit} onClick={() => onVisit(id)} aria-label={`Visitar el rincón de ${alias}`}>
-          Visitar rincón
+        <button type="button" className="reader-person__visit" onClick={() => onVisit(id)} aria-label={`Visitar el piso de ${alias}`}>
+          Visitar piso
         </button>
       )}
     </li>

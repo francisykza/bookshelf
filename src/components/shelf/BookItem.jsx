@@ -62,7 +62,10 @@ export function watchCover(src, notify) {
     img.onload = () => {
       if (img.naturalWidth < 10) return settleCover(src, 'failed');
       // Se avisa ya decodificada, para que la portada aparezca entera de una vez
-      const ready = () => settleCover(src, 'loaded');
+      const ready = () => {
+        keepSteady(src, img);
+        settleCover(src, 'loaded');
+      };
       return img.decode ? img.decode().then(ready, ready) : ready();
     };
     img.onerror = () => settleCover(src, 'failed');
@@ -116,9 +119,11 @@ function scrollParent(el) {
  * vista (ordenador, registro): mientras llega se ve la cubierta con el título y, ya decodificada, se pinta de una vez. `instant`: ya
  * se precargó y debe verse en el mismo fotograma que el resto de la pantalla.
  */
-// Las últimas portadas fijas ya decodificadas. Se copian a un lienzo: un <img> nuevo podría volver a descargar y pintarse a trozos
+// Las últimas portadas ya decodificadas. Al volver a montarse (al cambiar de filtro, por ejemplo) se recoloca el mismo elemento, sin
+// pedir ni decodificar nada: un <img> nuevo podría volver a descargar y dejar el hueco a la vista. Solo guarda lo ya mostrado, con tope;
+// lo que sale de aquí vuelve a pasar por la caché de portadas. Las portadas fijas se copian a un lienzo para pintarse de una vez.
 const steadyKept = new Map();
-const STEADY_KEEP = 6;
+const STEADY_KEEP = 300;
 
 function keepSteady(src, img) {
   steadyKept.delete(src);
@@ -140,8 +145,10 @@ function SteadyImage({ book, src, className }) {
       setReady(true);
     };
     const kept = steadyKept.get(src);
-    if (kept) paint(kept);
-    else {
+    if (kept) {
+      keepSteady(src, kept);
+      paint(kept);
+    } else {
       const img = new Image();
       img.referrerPolicy = 'no-referrer';
       img.decoding = 'async';
@@ -167,7 +174,24 @@ function SteadyImage({ book, src, className }) {
   );
 }
 
-export function Cover({ book, className = '', onLoaded, eager = false, steady = false, instant = false }) {
+/** La portada ya decodificada, en el mismo fotograma. El envoltorio no genera caja: la imagen sigue maquetándose como hija de la cubierta. */
+function KeptImage({ src, className }) {
+  const host = useRef(null);
+  useLayoutEffect(() => {
+    const kept = steadyKept.get(src);
+    if (!kept || !host.current) return undefined;
+    keepSteady(src, kept);
+    // La misma portada puede estar a la vez en otro sitio: esa copia usa la caché normal
+    const node = kept.isConnected ? kept.cloneNode() : kept;
+    node.className = `cover-img ${className}`;
+    node.alt = '';
+    host.current.appendChild(node);
+    return () => node.remove();
+  }, [src, className]);
+  return <span ref={host} style={{ display: 'contents' }} />;
+}
+
+export function Cover({ book, className = '', onLoaded, eager = false, steady = false, instant = false, reuse = false }) {
   const src = book.cover || '';
   const [, setStatus] = useState(null);
   // `eager`: quien la monta ya sabe que está cerca (una lista virtual) y se ahorra buscar su contenedor, que obliga a calcular estilos
@@ -205,6 +229,7 @@ export function Cover({ book, className = '', onLoaded, eager = false, steady = 
   const shown = src ? (coverStatus.get(src) ?? 'loading') : 'none';
   if (shown === 'none' || shown === 'failed' || shown === 'slow') return <GeneratedCover book={book} />;
   if (shown === 'loading') return <span ref={waitRef} className={`cover-img cover-img--wait ${className}`} aria-hidden="true" />;
+  if (reuse && steadyKept.has(src)) return <KeptImage key={src} src={src} className={className} />;
   return <img className={`cover-img ${className}`} src={src} alt="" decoding={instant ? 'sync' : 'async'} referrerPolicy="no-referrer" />;
 }
 
@@ -325,7 +350,7 @@ export function PhysicalBook({ book, variant = 'shelf', spine, edge = sprayedEdg
         <span className="pbook__spine" />
         <span className={`pbook__top${edge ? ` edge--${edge}` : ''}`} />
         <span className="pbook__cover">
-          <Cover book={book} onLoaded={setReadySrc} />
+          <Cover book={book} onLoaded={setReadySrc} reuse />
           {/* Luz en los bordes y grano del material: capa encima de la portada original, sin redibujarla */}
           <span className="pbook__finish" aria-hidden="true" />
           {edition === 'leatherbound' && (

@@ -45,6 +45,25 @@ export async function loadEdificio() {
   return { edificio: data.edificio, puerta: data.puerta, vecinos };
 }
 
+/**
+ * El piso de un lector para visitarlo desde la Comunidad, o null si no se puede ver (lo decide el servidor). Sin la migración de
+ * `piso_visita` se sigue pudiendo visitar a los vecinos de tu edificio.
+ */
+export async function loadPisoVisita(userId) {
+  const sb = await client();
+  const leer = (v) => (v?.layout ? { ...v, room: leerPiso(v.layout), personaje: validateAvatar(v.personaje) } : null);
+  const { data, error } = await sb.rpc('piso_visita', { lector: userId });
+  try {
+    fail(error);
+  } catch (e) {
+    if (e.code !== 'unavailable') throw e;
+    const portal = await sb.rpc('edificio_portal');
+    fail(portal.error);
+    return leer(portal.data?.vecinos?.find((v) => v.user_id === userId && !v.yo));
+  }
+  return leer(data);
+}
+
 /** Las seis puertas en orden (de arriba abajo), con quien viva en cada una o null si está libre. */
 export function doorsOf(vecinos) {
   return DOORS.map((puerta) => ({ puerta, vecino: vecinos.find((v) => v.puerta === puerta) ?? null }));

@@ -26,12 +26,7 @@ export const sameLocation = (a, b) => JSON.stringify(normalizeLocation(a)) === J
 export function safeParent(loc) {
   const l = normalizeLocation(loc);
   if (l.panel?.type === 'vault' && l.panel.section === 'unbox') return { view: l.view, panel: { type: 'vault', id: l.panel.id } };
-  // Visita a un rincón (SPEC §56, 1.58.1): libro → habitación → «Lectores» (también tras recargar; la entrada no se repite)
-  // 1.61 (SPEC §61): un libro abierto desde «Sus libros» vuelve a «Sus libros» (`libros/clave`), no a la habitación
-  // 1.62 (SPEC §62.2): la habitación conserva su origen y, sin padre conocido, se vuelve al salón o a «Lectores»
-  const from = l.panel?.from ? { from: l.panel.from } : null;
-  if (l.panel?.type === 'visit' && typeof l.panel.select === 'string' && l.panel.select.startsWith('libros/')) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion', select: 'libros', ...from } };
-  if (l.panel?.type === 'visit' && l.panel.select) return { view: l.view, panel: { type: 'visit', id: l.panel.id, section: 'habitacion', ...from } };
+  // Visita al piso de un lector: sin padre conocido (recarga), se vuelve al salón o a «Lectores» según desde dónde se entró
   if (l.panel?.type === 'visit' && l.panel.from === 'salon') return { view: l.view, panel: null };
   if (l.panel?.type === 'visit') return { view: l.view, panel: { type: 'social', tab: 'lectores' } };
   // 1.63 (SPEC §63): un piso del edificio vuelve al portal

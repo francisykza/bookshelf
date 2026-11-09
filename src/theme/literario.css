@@ -293,7 +293,7 @@
   font-size: 11px;
 }
 
-.lit-libro .plab-row__cover > img {
+.lit-libro .plab-row__cover img {
   object-fit: contain;
   object-position: bottom;
 }
@@ -313,7 +313,7 @@
   padding-inline: 12px;
 }
 
-.bs-literary .plab-row__cover > img {
+.bs-literary .plab-row__cover img {
   object-fit: contain;
 }
 
@@ -681,8 +681,8 @@
   overflow: visible;
 }
 
-.lit-libro .plab-row__cover > img,
-.bs-literary .plab-row__cover > img {
+.lit-libro .plab-row__cover img,
+.bs-literary .plab-row__cover img {
   filter: drop-shadow(2px 3px 1px #21140950);
 }
 

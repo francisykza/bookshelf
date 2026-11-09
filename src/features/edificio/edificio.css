@@ -2801,3 +2801,81 @@
   font: inherit;
   cursor: pointer;
 }
+
+/* Visitar desde la Comunidad: el piso ocupa la pantalla, con una barra para volver y saber de quién es */
+.visita-lector {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  background: #211a16;
+  color: #fbf3df;
+}
+
+.visita-lector__bar {
+  z-index: 2;
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 10px 8px;
+}
+
+.visita-lector button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid #3b2618;
+  background: #fbf3df;
+  color: #3b2618;
+  font: inherit;
+  cursor: pointer;
+}
+
+.visita-lector__bar > button:first-child {
+  flex: none;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.visita-lector__quien {
+  padding: 0 6px !important;
+}
+
+.visita-lector__bar svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.visita-lector__quien b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.visita-lector .ed-visita3d {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
+.visita-lector__aviso {
+  display: grid;
+  flex: 1;
+  gap: 12px;
+  place-content: center;
+  justify-items: center;
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+}
+
+.visita-lector__aviso p {
+  margin: 0;
+}

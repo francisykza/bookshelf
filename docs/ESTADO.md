@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.93.0** (2026-11-09, §93). Ficha y registro unificados, «Favoritos» y «Recuerdo» de Tu mes en libros, y Diario del ordenador como cuaderno. Sin migraciones. Aprobada por Francisco tras revisar las capturas («Sí, publícala»). Sin probar en móviles reales ni con teclado real.
+- **Publicada en producción: 1.94.0** (2026-11-09, §94). «Visitar» abre el piso del lector y las portadas se conservan al filtrar. **Migración `20261119120000_piso_visita.sql` pendiente de aplicar por Francisco**: sin ella solo se visita a los vecinos. Aprobada por Francisco tras revisar las capturas («Sí, publícala»). Sin probar en móviles reales.
+- **Anterior: 1.93.0** (2026-11-09, §93). Ficha y registro unificados, «Favoritos» y «Recuerdo» de Tu mes en libros, y Diario del ordenador como cuaderno. Sin migraciones. Aprobada por Francisco tras revisar las capturas («Sí, publícala»). Sin probar en móviles reales ni con teclado real.
 - **Anterior: 1.92.0** (2026-11-08, §92). Biblioteca, ficha y «Tu mes en libros» con el acabado literario y favoritos ordenados. Sin migraciones. Aprobada por Francisco tras revisar capturas, PNG y vídeos.
 - **Anterior: 1.91.1** (2026-11-08, §91.1). Ajustes del resumen del mes, páginas por día en el calendario y filtros y «Añadir libro» en la biblioteca. Sin migraciones.
 - **Anterior: 1.91.0** (2026-11-08, §91). Fase 1 (scroll, audio, visitas, paredes), caché persistente de portadas y «Tu mes en libros». Sin migraciones. Aprobada por Francisco tras revisar vídeo y PNG.
@@ -232,6 +233,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-09 · Visitar abre el piso y portadas estables al filtrar · 1.94.0, publicada tras aprobar la entrega («Sí, publícala»)
+
+«Visitar» abre el piso con `VisitaLector` y `VisitaPiso`; retirados `ReaderVisit.jsx`, `visitScene.js` y `public/media/social-visit/`. Migración nueva `20261119120000_piso_visita.sql`, **sin aplicar** (decisión de Francisco: se ve el piso de quien sigues); sin ella solo se visita a los vecinos y a los demás se les avisa. Las pruebas antiguas `e2e-community/v158`, `v159`, `v161` y `v162` siguen describiendo la escena retirada y hay que adaptarlas. Portadas: al desmontarse por el filtro se perdía la imagen aunque constara como cargada; en la biblioteca actual (`PisoLibrary.jsx`) cada portada empezaba además como hueco y con retardo aunque ya estuviera cargada. `BookItem.jsx` guarda hasta 300 ya decodificadas y recoloca el mismo elemento `<img>`. «Abrir Mi biblioteca» desde tu piso ya no lleva a la biblioteca antigua. Pruebas: `visita-directa.spec.js`, `portadas-filtros.spec.js`, `pisoVisita.rls.test.js`. Solo emulación.
 
 ### 2026-11-09 · Diario del ordenador como cuaderno · 1.93.0, publicada tras aprobar la entrega («Sí, publícala»)
 

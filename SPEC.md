@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.93.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.94.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5550,3 +5550,11 @@ Solo interfaz: sin migraciones y sin cambios en cálculos ni persistencia.
 - **Diario del ordenador:** `DiaryNotebook` (`DiaryApp.jsx`) con pestañas Hoy, «Notas y citas» y Reseñas. Notas y citas son un único tipo de anotación (`book.quotes`), en una pestaña conjunta, por decisión de Francisco. El editor usa `AnnotationForm` dentro de la misma app. Las reseñas se leen de `book.review` y se abren en la ficha.
 - **Volver:** al cerrar el editor o la ficha abierta desde el Diario se conservan pestaña, filtros y posición de desplazamiento; la ficha regresa al ordenador. Calendario, estadísticas, habitación y wrap-up no cambian.
 - **Pruebas:** `e2e-community/diario-cuaderno.spec.js` y `e2e-community/ficha-acabado.spec.js`. Solo emulación (Chromium y WebKit de Playwright).
+
+## 94. «Visitar» abre el piso y portadas estables al filtrar (1.94.0)
+
+- **Visitar:** desde Comunidad y el salón se abre directamente el piso actual del lector (`VisitaLector`, que usa `VisitaPiso`), con una barra que identifica a su dueño, da acceso a su perfil y vuelve al origen. Retirados la escena del rincón heredado, su vídeo, sus imágenes y su precarga. Desde el edificio sigue la puerta con «Entrar en 3D».
+- **Permisos:** `piso_visita` (migración `20261119120000_piso_visita.sql`, la aplica Francisco) entrega el piso de los vecinos y de quien sigues, con comunidad activa y sin bloqueo; nunca su biblioteca. Sin la migración se visita solo a los vecinos y a los demás se les avisa.
+- **Portadas:** en la biblioteca actual (`PisoLibrary`), una portada ya mostrada no pasa por el hueco de espera. `BookItem.jsx` guarda hasta 300 ya decodificadas y recoloca el mismo elemento `<img>` al volver a montarse (prop `reuse`). Filtros, orden y datos no cambian.
+- **Biblioteca antigua:** «Abrir Mi biblioteca» desde tu piso lleva a la actual. La antigua queda para la experiencia anterior y si el piso no se puede cargar.
+- **Pruebas:** `e2e-community/visita-directa.spec.js`, `e2e-community/portadas-filtros.spec.js` y `pisoVisita.rls.test.js`. Solo emulación.

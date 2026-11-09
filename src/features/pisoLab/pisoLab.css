@@ -418,7 +418,8 @@
   font-size: 5px;
 }
 
-.plab-row__cover > * {
+.plab-row__cover > *,
+.plab-row__cover > span > img {
   position: absolute;
   inset: 0;
   width: 100%;

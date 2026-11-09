@@ -132,8 +132,8 @@ export function RoomTab({ timer, onVisit = null }) {
                     <small>{sessionMinutes(r.started_at)}</small>
                   </span>
                   {onVisit && (
-                    <button type="button" className="reader-person__visit" onClick={() => onVisit(r.user_id)} aria-label={`Ver el rincón de ${alias}`}>
-                      Ver rincón
+                    <button type="button" className="reader-person__visit" onClick={() => onVisit(r.user_id)} aria-label={`Visitar el piso de ${alias}`}>
+                      Visitar piso
                     </button>
                   )}
                 </li>

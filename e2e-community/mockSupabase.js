@@ -217,6 +217,17 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       }
       return json({ edificio: mine.edificio, puerta: mine.puerta });
     }
+    // La visita desde la Comunidad, como la migración: vecinos o seguidos, con comunidad activa y sin bloqueo
+    if (table === 'rpc/piso_visita') {
+      if (db.sinPisoVisita) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
+      const lector = route.request().postDataJSON()?.lector;
+      const yo = db.edificio_vecinos.find((v) => v.user_id === userId);
+      const suyo = db.edificio_vecinos.find((v) => v.user_id === lector);
+      const perfil = db.profiles.find((p) => p.user_id === lector);
+      const piso = db.pisos.find((p) => p.user_id === lector);
+      const puede = perfil?.community_enabled && !blockedWith(lector) && (suyo?.edificio === yo?.edificio || db.follows.some((f) => f.follower === userId && f.followed === lector));
+      return json(puede && suyo && piso ? { user_id: lector, alias: perfil.alias, avatar_id: perfil.avatar_id, puerta: suyo.puerta, layout: piso.layout } : null);
+    }
     if (table === 'rpc/edificio_portal') {
       const mine = db.edificio_vecinos.find((v) => v.user_id === userId);
       if (!mine) return json(null);

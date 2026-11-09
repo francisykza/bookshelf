@@ -62,14 +62,11 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   su inventario; se filtran con `RETIRED_FIGURES` (`src/domain/figures.js`).
 - **Comunidad en el cuaderno de cuero** (1.60, decisión de Francisco): el panel de la comunidad usa el cuaderno con
   anillas (`NotebookShell`) y pestañas de papel en todas sus hojas, según sus maquetas; no volver a la tarjeta lisa. Se
-  conserva «Visitar rincón». Una maqueta con una figura retirada no la recupera.
+  conserva «Visitar» (desde el 9-11-2026 abre el piso del lector). Una maqueta con una figura retirada no la recupera.
   **Desde la 1.62 (decisión de Francisco, paquete `material-diseno/social-radio/`)**: tres pestañas principales,
   Lectores / Salón / Clubes, visibles a 360 px sin desplazamiento; Perfil y Mi rincón se abren desde el avatar propio
   (no se pierde ninguna función). Sustituye a «se conservan las cinco pestañas» de la 1.60.
-- **Visita social** (sustituye a la regla de la 1.58.1 desde la 1.62, decisión de Francisco): fachada con el nombre y el
-  avatar de la persona; se entra tocando la ventana inferior derecha o «Entrar al rincón»; durante el vídeo, «Salir» y
-  «Saltar»; al terminar no se repite. Movimiento reducido, error o ahorro de datos: directo a la habitación. Solo la
-  ventana inferior derecha es interactiva (es la única trayectoria del vídeo). Volver lleva al origen (salón o lectores).
+- **Visita social** (decisión de Francisco del 9-11-2026; sustituye a la fachada y al vídeo de la 1.62): «Visitar» abre directamente el piso actual del lector (`VisitaLector` → `VisitaPiso`). El rincón heredado, su vídeo y sus recursos están retirados: no volver a enlazarlos. Se puede ver el piso de los vecinos y de quien sigues (`piso_visita`, migración `20261119120000_piso_visita.sql`, la aplica Francisco), con comunidad activa y sin bloqueo. Volver lleva al origen: Comunidad, salón o edificio.
 - **Paquete `material-diseno/social-radio/`** (1.62): se implementa por bloques, enseñando capturas al terminar cada uno
   antes de seguir (decisión de Francisco). Orden: 1) comunidad y tarjetas públicas, 2) asientos del salón y visita,
   3) radio y continuidad en el EPUB, 4) clubes.

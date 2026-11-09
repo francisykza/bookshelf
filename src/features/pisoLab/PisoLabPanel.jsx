@@ -336,6 +336,8 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   const editable = canEdit(piso);
   // Un visitante nunca llega al editor, aunque el historial lo pida
   const listing = select === 'toda' && editable;
+  // Tu piso abre la biblioteca actual; la de siempre queda solo para quien no tiene piso que mostrar
+  const abrirBiblioteca = editable ? () => onSelect('toda') : onOpenLibrary;
   const shelfView = /^(?:balda|ficha):(\d)/.exec(select ?? '');
   const balda = listing ? TOP_ROW : shelfView ? Number(shelfView[1]) : null;
   const view = select === 'decorar' && !editable ? 'actual' : shelfView || listing ? 'balda' : select;
@@ -492,7 +494,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
       ) : noGpu ? (
         <div className="plab-fallback" role="alert">
           <p>Este dispositivo no puede dibujar el interior. Tu biblioteca y tu registro siguen aquí.</p>
-          <button type="button" className="px-btn" onClick={onOpenLibrary}>
+          <button type="button" className="px-btn" onClick={abrirBiblioteca}>
             Abrir Mi biblioteca
           </button>
           {reading && (
@@ -545,7 +547,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
                 <small>{reading.title}</small>
               </button>
             ) : editable ? (
-              <button type="button" className="plab-primary" onClick={() => (shelfBooks ? onSelect(`balda:${TOP_ROW}`) : onOpenLibrary())}>
+              <button type="button" className="plab-primary" onClick={() => (shelfBooks ? onSelect(`balda:${TOP_ROW}`) : abrirBiblioteca())}>
                 <span>Elegir una lectura</span>
                 <small>{shelfBooks ? 'En tu estantería' : 'En Mi biblioteca'}</small>
               </button>

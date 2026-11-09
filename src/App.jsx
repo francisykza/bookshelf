@@ -48,8 +48,8 @@ import { LibraryProvider, useLibrary } from './state/useLibrary';
 // La comunidad se descarga solo al abrirla (SPEC §25.13)
 const SocialHub = lazy(() => import('./features/social/components/SocialHub').then((m) => ({ default: m.SocialHub })));
 const GoodreadsImportPanel = lazy(() => import('./features/imports/GoodreadsImportPanel').then((m) => ({ default: m.GoodreadsImportPanel })));
-// 1.58 (SPEC §56): la visita a un rincón se carga solo al abrirla (y el vídeo, solo cuando empieza la entrada)
-const ReaderVisit = lazy(() => import('./features/social/components/ReaderVisit').then((m) => ({ default: m.ReaderVisit })));
+// «Visitar» abre directamente el piso del lector; se carga solo al abrirlo
+const VisitaLector = lazy(() => import('./features/pisoLab/VisitaLector'));
 // Piloto del piso en primera persona (solo laboratorio): se abre con /?piloto=piso; el inicio no cambia
 const PISO_MESA = { on: 'Está sobre la mesa', off: 'Dejar sobre la mesa' };
 const PisoLabPanel = lazy(() => import('./features/pisoLab/PisoLabPanel').then((m) => ({ default: m.PisoLabPanel })));
@@ -427,19 +427,8 @@ function Sanctuary() {
       {panel?.type === 'atlas' && <SagaMapModal onClose={close} onOpenBook={openBook} />}
       {panel?.type === 'account' && <AccountPanel onClose={close} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
       {panel?.type === 'visit' && (
-        <Suspense fallback={<div className="reader-visit-wait" aria-hidden="true" />}>
-          <ReaderVisit
-            key={panel.id}
-            userId={panel.id}
-            stage={panel.section === 'habitacion' ? 'habitacion' : 'casa'}
-            select={panel.select ?? null}
-            // La entrada sustituye su paso en el historial: volver desde la habitación lleva al origen (1.58.1)
-            onEnter={() => switchPanel({ type: 'visit', id: panel.id, section: 'habitacion', from: panel.from })}
-            onSelect={(select) => openPanel({ type: 'visit', id: panel.id, section: 'habitacion', select, from: panel.from })}
-            from={panel.from ?? null}
-            onBack={close}
-            onProfile={() => openPanel({ type: 'reader', id: panel.id })}
-          />
+        <Suspense fallback={null}>
+          <VisitaLector key={panel.id} userId={panel.id} from={panel.from ?? null} onBack={close} onProfile={() => openPanel({ type: 'reader', id: panel.id })} />
         </Suspense>
       )}
       {panel?.type === 'reader' && (

@@ -3,7 +3,7 @@
 // portada solo se pide si su fila sigue montada un momento: pasar de largo no descarga nada.
 import { ArrowLeft, Filter, LayoutGrid, List, X } from 'lucide-react';
 import { memo, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Cover } from '../../components/shelf/BookItem';
+import { Cover, coverLoaded } from '../../components/shelf/BookItem';
 import { STATUS } from '../../domain/books';
 import { normalize } from '../../domain/bookPicker';
 import { LIBRARY_STATUSES, filterLibrary } from '../../domain/library';
@@ -71,8 +71,10 @@ function Pixeles({ name }) {
 export const emptyLibraryMemory = () => ({ query: '', status: 'all', count: BLOCK, top: 0, focusId: null, view: 'covers', order: 'title', onlyChosen: false });
 
 function RowCover({ book }) {
-  const [wanted, setWanted] = useState(false);
+  // Una portada ya mostrada no espera: el retardo solo evita pedir imágenes nuevas mientras se desplaza la lista
+  const [wanted, setWanted] = useState(() => coverLoaded(book.cover));
   useEffect(() => {
+    if (wanted) return undefined;
     let timer = 0;
     const ask = () => {
       if (performance.now() < motion.until) timer = setTimeout(ask, COVER_DELAY);
@@ -80,8 +82,10 @@ function RowCover({ book }) {
     };
     timer = setTimeout(ask, COVER_DELAY);
     return () => clearTimeout(timer);
+    // Solo decide al montarse
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return <span className="plab-row__cover">{wanted ? <Cover book={book} eager /> : <span className="cover-img cover-img--wait" aria-hidden="true" />}</span>;
+  return <span className="plab-row__cover">{wanted ? <Cover book={book} eager reuse /> : <span className="cover-img cover-img--wait" aria-hidden="true" />}</span>;
 }
 
 // Al desplazar solo cambian las filas que entran y salen: las demás no se vuelven a dibujar

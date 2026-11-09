@@ -5,7 +5,7 @@
 // la escena; los detalles, en los paneles.
 // 1.62 (SPEC §62.2): el sillón libre abre aquí mismo la elección para sentarte (con una etiqueta «Sentarme» sobre el
 // cojín) y el avatar de quien lee abre su tarjeta junto al asiento: su lectura solo si la comparte, «Ver perfil» y
-// «Visitar su rincón». Tu propio avatar abre la tuya, con «Levantarme».
+// «Visitar su piso». Tu propio avatar abre la tuya, con «Levantarme».
 import { ArrowRight, BookOpen, Armchair, Building2, Users } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
@@ -231,7 +231,7 @@ export function SocialSeats({ active, timer, onOpenHub, onOpenReader, onVisit, o
   );
 }
 
-/** Quien lee en un sillón: avatar, alias, su lectura solo si la comparte, y los accesos a su perfil y su rincón. */
+/** Quien lee en un sillón: avatar, alias, su lectura solo si la comparte, y los accesos a su perfil y su piso. */
 function ReaderCard({ person, profile, mine, time, anchor, busy, failure, onClose, onStand, onProfile, onVisit }) {
   const alias = profile?.alias ?? 'Lector';
   const book = person.share_book && person.book_title ? person.book_title : null;
@@ -266,7 +266,7 @@ function ReaderCard({ person, profile, mine, time, anchor, busy, failure, onClos
           </button>
           {onVisit && (
             <button type="button" className="seat-card__primary" onClick={onVisit}>
-              Visitar su rincón
+              Visitar su piso
               <ArrowRight aria-hidden="true" />
             </button>
           )}
