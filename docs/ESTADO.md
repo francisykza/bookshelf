@@ -236,7 +236,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Bitácora
 
-### 2026-11-09 · Reestructuración de muebles · 1.97.0, aprobada y con commit en la rama `1.90-escritorio-puerto`; falta aplicar la migración y publicar
+### 2026-11-09 · Reestructuración de muebles · 1.97.0, publicada
 
 Entrega por evidencias de los bloques 1 a 3 y los sobres cerrados; aprobada por Francisco («Vale, me parece bien»). Los vídeos de la tienda y el casino entran por la experiencia anterior (las pruebas locales arrancan ahí); Francisco no quiso regrabarlos.
 - **Versión 1.97.0** en `diag.js`, `package.json`, `sw.js` y SPEC (§97).
@@ -244,7 +244,7 @@ Entrega por evidencias de los bloques 1 a 3 y los sobres cerrados; aprobada por 
 - **Evidencias:** vídeos en `qa-report/reforma-muebles/videos/` (piso en primera persona y balda, tienda con sobres cerrados, caja y lata del casino), comparativas en `comparativa/` y hojas en `zonas/`.
 - **E2E ajustadas a lo retirado:** `v166` (mudanza sin silla ni banco), `v170` (el mueble nuevo es un sillón), `v180` (la lata en reforma), `v189` (sin mecedora para sustituir), `e2e/edificio-puerto` (lámpara de pie en vez de la de mesa y la planta; sagas, saltada). Las de abrir sobres se saltan con `SOBRES_CERRADOS`.
 - **Comprobado:** build; Vitest de `edificio` y `pisoLab` (301 pasan, 1 falla que ya fallaba: `casino.rls` «el tope de la semana»); e2e de comunidad v166, v167, v170, v173, v176, v178, v180, v186, v189 y las dos de la reforma a 390 en Chromium (falla `v189` «un piso antiguo sin esenciales», que también falla en la 1.96: hay dos botones «Decorar»); `e2e/edificio-puerto` (7 pasan, 1 saltada). Solo emulación. oxlint: sin errores nuevos (los de `src/vendor/pixelfx` ya estaban).
-- **Antes de publicar:** aplicar `20261123120000_muebles_reforma.sql` (SQL Editor, comprobar su SHA-256). Sin ella, la tienda dice «cerrado» pero el servidor seguiría abriendo sobres y dando lo retirado.
+- **Migración aplicada** (`20261123120000_muebles_reforma.sql`, SHA-256 comprobado en el SQL Editor; Francisco pulsó Run, sin errores). Con la clave pública, `piso_retirados`, `piso_retirado`, `piso_abrir_sobre` y `piso_comprar` dan 42501 al anónimo.
 
 ### 2026-11-09 · Reestructuración de muebles, bloque 3 (paredes) · sin commit, en la rama `1.90-escritorio-puerto`
 
