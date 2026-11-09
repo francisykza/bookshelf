@@ -47,7 +47,7 @@ const TABLES = new Set(['mesa-baja', 'mesilla', 'mesa']);
 /** Las mesas de tablero y patas, dibujadas en píxel; la mesilla, que es un mueble cerrado, sigue con su veta. */
 const PIXEL_TABLES = new Set(['mesa-baja', 'mesa', 'escritorio']);
 /** Piezas con su propio dibujo, más abajo. */
-const OWN_PIECES = new Set(['ventana', 'ordenador', 'puerta-piso']);
+const OWN_PIECES = new Set(['ventana', 'ordenador', 'puerta-piso', 'tablon']);
 /** El libro se deja algo girado respecto a quien lo mira: se ven el pie, las hojas y el lomo, y la portada se sigue leyendo. */
 const BOOK_TURN = 0.5;
 /** Inclinarse sobre el libro: breve y sin perderlo de vista. */
@@ -302,7 +302,7 @@ function coverCanvas(image, width, height) {
  * { id, title, color, thickness, height, coverLoad }; en un piso ajeno, null). Avisa con `onBook()`, `onShelf(balda)`, `onShelfTap()` (de cerca, fuera de un libro) y `onLost()` (se ha perdido la GPU).
  * Lanza un error si no se puede crear WebGL: quien monta ofrece entonces la salida en HTML.
  */
-export async function mountInterior(container, { room, piso, ventanas, book = null, shelfBooks = null, hora: startHora = 'tarde', startYaw = 0, onBook = () => {}, onShelf = () => {}, onShelfTap = () => {}, onLost = () => {}, onDesk = null, onDoor = null }) {
+export async function mountInterior(container, { room, piso, ventanas, book = null, shelfBooks = null, hora: startHora = 'tarde', startYaw = 0, onBook = () => {}, onShelf = () => {}, onShelfTap = () => {}, onLost = () => {}, onDesk = null, onDoor = null, onBoard = null, onPoint = null }) {
   const renderer = new WebGLRenderer({ antialias: false, powerPreference: 'low-power' });
   const canvas = renderer.domElement;
   canvas.className = 'plab-canvas';
@@ -1029,6 +1029,48 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     meshes.push(mesh);
   }
 
+  // El tablón de corcho: un objeto aparte, con sus propias piezas para pulsarlo, y el corcho remetido dentro del marco
+  let boardTexture = null;
+  const boardItem = room.items.find((i) => i.id === 'tablon' && (i.pared === 'fondo' || i.pared === 'izq'));
+  if (boardItem) {
+    const W = 1.9;
+    const H = 1.42;
+    const DEPTH = 0.05;
+    const BAR = 0.07;
+    const group = new Group();
+    const frame = tinted(new MeshBasicMaterial({ color: new Color().setRGB(128 / 255, 80 / 255, 51 / 255, SRGBColorSpace) }));
+    const start = document.createElement('canvas');
+    // Del mismo tamaño que la composición dibujada: la textura no se puede redimensionar después
+    start.width = 1536;
+    start.height = 1152;
+    const ctx = start.getContext('2d');
+    ctx.fillStyle = '#AD794D';
+    ctx.fillRect(0, 0, 1536, 1152);
+    boardTexture = own('textures', new CanvasTexture(start));
+    boardTexture.colorSpace = SRGBColorSpace;
+    const cork = new Mesh(own('geometries', new PlaneGeometry(W - BAR * 2, H - BAR * 2)), tinted(new MeshBasicMaterial({ map: boardTexture })));
+    // Remetido, y lo bastante separado de la pared para que no parpadee
+    cork.position.z = DEPTH * 0.45;
+    const data = { uid: boardItem.uid, id: 'tablon' };
+    cork.userData = data;
+    group.add(cork);
+    meshes.push(cork);
+    for (const [w, h, x, y] of [[W, BAR, 0, (H - BAR) / 2], [W, BAR, 0, -(H - BAR) / 2], [BAR, H - BAR * 2, -(W - BAR) / 2, 0], [BAR, H - BAR * 2, (W - BAR) / 2, 0]]) {
+      const bar = new Mesh(own('geometries', new BoxGeometry(w, h, DEPTH)), frame);
+      bar.position.set(x, y, DEPTH / 2);
+      bar.userData = data;
+      group.add(bar);
+      meshes.push(bar);
+    }
+    const CENTER = 1.4 + H / 2;
+    if (boardItem.pared === 'fondo') group.position.set(boardItem.a + 1, CENTER, 0.012);
+    else {
+      group.position.set(0.012, CENTER, boardItem.a + 1);
+      group.rotation.y = Math.PI / 2;
+    }
+    furniture.add(group);
+  }
+
   // El marco y el alféizar de cada ventana, con su madera y su luz dibujada; bajo el alféizar, su sombra sobre la pared
   const sillShadow = own('materials', new MeshBasicMaterial({ map: own('textures', sillShadowTexture()), transparent: true, alphaTest: 0.1, depthWrite: false }));
   const sillShadowGeo = own('geometries', new PlaneGeometry(1.96, 0.3));
@@ -1355,10 +1397,16 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
    */
   function usableAt(x, y) {
     const rect = canvas.getBoundingClientRect();
+    let onTable = false;
     for (const [dx, dy] of [[0, 0], [FINGER, 0], [-FINGER, 0], [0, FINGER], [0, -FINGER]]) {
       ray.setFromCamera(new Vector2(((x + dx - rect.left) / rect.width) * 2 - 1, -((y + dy - rect.top) / rect.height) * 2 + 1), camera);
       const hits = ray.intersectObjects(meshes.filter((m) => m.visible), false);
-      const found = hits.find(({ object: { userData: u } }) => u.id === 'libro' || u.id === 'puerta-piso' || u.id === 'ordenador' || u.id === 'escritorio' || u.id === 'estanteria');
+      // El monitor y el tablón los decide lo primero que se ve, justo bajo el dedo: nunca lo que hay detrás ni el hueco de al lado
+      if (dx === 0 && dy === 0 && (hits[0]?.object.userData.id === 'ordenador' || hits[0]?.object.userData.id === 'tablon')) return hits[0];
+      // Una mesa tapa lo que hay detrás: tocarla no abre la puerta ni la estantería del fondo
+      const table = hits.findIndex(({ object: { userData: u } }) => PIXEL_TABLES.has(u.id));
+      if (dx === 0 && dy === 0 && table === 0) onTable = true;
+      const found = (table < 0 ? hits : hits.slice(0, table)).find(({ object: { userData: u } }) => u.id === 'libro' || (!onTable && (u.id === 'puerta-piso' || u.id === 'estanteria')));
       if (found) return found;
     }
     return null;
@@ -1385,6 +1433,14 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   canvas.addEventListener(
     'pointermove',
     (e) => {
+      // Con ratón, solo lo señalado se nombra; en el móvil basta un toque
+      if (!press && e.pointerType === 'mouse' && !zoom && onPoint) {
+        const seen = usableAt(e.clientX, e.clientY)?.object.userData.id;
+        const name = seen === 'ordenador' ? 'Ordenador' : seen === 'tablon' ? 'Tablón' : null;
+        canvas.style.cursor = name ? 'pointer' : '';
+        const rect = canvas.getBoundingClientRect();
+        onPoint(name ? { name, x: e.clientX - rect.left, y: e.clientY - rect.top } : null);
+      }
       if (!press || e.pointerId !== press.id) return;
       const dx = e.clientX - press.x;
       // Una vez que se ha movido, ya no es un toque aunque vuelva al mismo sitio
@@ -1418,7 +1474,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       const hit = found?.object.userData.id;
       if (hit === 'libro') onBook();
       else if (hit === 'puerta-piso') onDoor?.();
-      else if (hit === 'ordenador' || (hit === 'escritorio' && itemsOn(room, found.object.userData.uid).some((t) => t.id === 'ordenador'))) onDesk?.();
+      else if (hit === 'ordenador') onDesk?.();
+      else if (hit === 'tablon') onBoard?.();
       else if (hit === 'estanteria') onShelf(found.point.y - heightOf(room, shelf) < 1.17 ? 0 : found.point.y - heightOf(room, shelf) < 2.27 ? 1 : 2);
     },
     on,
@@ -1711,6 +1768,45 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       const dist = from.pos.distanceTo(target);
       const k = Math.max(0, Math.min(0.8, 1 - near / Math.max(dist, 0.01)));
       return fly({ pos: from.pos.clone().lerp(target, k), target }, LEAN_MS);
+    },
+    /** Lo mismo con el tablón: de frente, hasta que llena la pantalla. Con movimiento reducido no se mueve. */
+    leanToBoard() {
+      if (!boardItem || zoom || reduced()) return Promise.resolve();
+      const from = seatedView();
+      const target = boardItem.pared === 'fondo' ? new Vector3(boardItem.a + 1, 2.11, 0) : new Vector3(0, 2.11, boardItem.a + 1);
+      const rect = canvas.getBoundingClientRect();
+      const halfWide = Math.tan((camera.fov * Math.PI) / 360) * (rect.width / rect.height);
+      const near = 1.9 / (0.92 * 2 * halfWide);
+      const dist = from.pos.distanceTo(target);
+      const k = Math.max(0, Math.min(0.85, 1 - near / Math.max(dist, 0.01)));
+      return fly({ pos: from.pos.clone().lerp(target, k), target }, LEAN_MS);
+    },
+    /** La composición dibujada en el corcho; se cambia solo cuando hay otra revisión. */
+    setBoardImage(image) {
+      if (!boardTexture) return;
+      boardTexture.image = image;
+      boardTexture.needsUpdate = true;
+      draw();
+    },
+    hasBoard: () => Boolean(boardItem),
+    /** Para las pruebas: dónde cae en pantalla el centro de un objeto y qué se pulsaría ahí. */
+    probe(id) {
+      const mesh = meshes.find((m) => m.userData.id === id);
+      if (!mesh) return null;
+      aim();
+      camera.updateMatrixWorld();
+      const point = new Box3().setFromObject(mesh.parent?.type === 'Group' && id === 'tablon' ? mesh.parent : mesh).getCenter(new Vector3());
+      const q = point.project(camera);
+      const rect = canvas.getBoundingClientRect();
+      const x = ((q.x + 1) / 2) * rect.width + rect.left;
+      const y = ((1 - q.y) / 2) * rect.height + rect.top;
+      return { x, y, hit: usableAt(x, y)?.object.userData.id ?? null };
+    },
+    hitAt: (x, y) => usableAt(x, y)?.object.userData.id ?? null,
+    setYawForTest(value) {
+      yaw = clampYaw(value);
+      invalidate();
+      return yaw;
     },
     /** El giro de ahora, para volver a él si se desmonta la habitación. */
     yaw: () => yaw,

@@ -50,6 +50,8 @@ const SocialHub = lazy(() => import('./features/social/components/SocialHub').th
 const GoodreadsImportPanel = lazy(() => import('./features/imports/GoodreadsImportPanel').then((m) => ({ default: m.GoodreadsImportPanel })));
 // «Visitar» abre directamente el piso del lector; se carga solo al abrirlo
 const VisitaLector = lazy(() => import('./features/pisoLab/VisitaLector'));
+const TablonPanel = lazy(() => import('./features/tablon/TablonPanel'));
+import { PanelShell } from './components/panels/PanelShell';
 // Piloto del piso en primera persona (solo laboratorio): se abre con /?piloto=piso; el inicio no cambia
 const PISO_MESA = { on: 'Está sobre la mesa', off: 'Dejar sobre la mesa' };
 const PisoLabPanel = lazy(() => import('./features/pisoLab/PisoLabPanel').then((m) => ({ default: m.PisoLabPanel })));
@@ -497,6 +499,13 @@ function Sanctuary() {
           </Suspense>
         );
       })()}
+      {panel?.type === 'pisoLab' && panel.select?.startsWith('tablon') && (
+        <Suspense fallback={null}>
+          <PanelShell onClose={close} label="Mi tablón" variant="visit">
+            <TablonPanel designing={panel.select.startsWith('tablon:diseno')} routeEditing={panel.select === 'tablon:diseno:editar'} onDesign={() => openPanel({ type: 'pisoLab', id: panel.id, select: 'tablon:diseno' })} onRoute={(on) => (on ? openPanel({ type: 'pisoLab', id: panel.id, select: 'tablon:diseno:editar' }) : close())} onClose={close} />
+          </PanelShell>
+        </Suspense>
+      )}
       {panel?.type === 'pisoLab' && panel.select?.startsWith('abrir:') && (() => {
         // Las demás herramientas, encima del piso: al cerrarlas se vuelve al ordenador
         const tool = panel.select.slice(6);

@@ -3,11 +3,13 @@
 // cerrada) y «Regalar» (una copia de sobra de un mueble tuyo). Sin texto libre en ningún caso. El «me gusta» de cada
 // mueble va en la habitación (piso.js). Desde la 1.78 (encargo del 3-11-2026) no hay sellos, que eran casi lo mismo
 // que el libro, y se regala uno al día, solo hasta «raro» y solo si te queda otro (lo comprueba también el servidor).
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CATALOG, FIRMAS } from './catalog';
 import { acabadoOf } from './acabados';
 import { acabadosDe, freeCopies, ownedCopies } from './inventory';
 import { renderThumb } from './render';
+import { PostItForm } from '../tablon/TablonVisita';
+import { loadVisit } from '../tablon/service';
 
 const firmaText = (id) => FIRMAS.find((f) => f.id === id)?.texto ?? '';
 const REGALABLES = new Set(['comun', 'poco-comun', 'raro']);
@@ -49,7 +51,16 @@ export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, onF
   const [givenAt, setGivenAt] = useState(() => lastGift(myId));
   const [now] = useState(() => Date.now());
   const canGift = Boolean(social && inventory && myRoom);
-  const tabs = [{ id: 'libro', nombre: 'Libro de visitas' }, ...(canGift ? [{ id: 'regalar', nombre: 'Regalar' }] : [])];
+  // Sin la migración del tablón sigue el libro de visitas de antes
+  const [visita, setVisita] = useState(null);
+  useEffect(() => {
+    let off = false;
+    loadVisit(vecino.user_id).then((v) => !off && setVisita(v), () => {});
+    return () => {
+      off = true;
+    };
+  }, [vecino.user_id]);
+  const tabs = [{ id: 'libro', nombre: visita ? 'Dejar un post-it' : 'Libro de visitas' }, ...(canGift ? [{ id: 'regalar', nombre: 'Regalar' }] : [])];
   const free = useMemo(() => (canGift ? giftable(inventory, myRoom) : []), [canGift, inventory, myRoom]);
   const thumbs = useMemo(() => Object.fromEntries(free.map(({ c, acabado, key }) => [key, renderThumb(c.id, 0, 44, acabado).toDataURL()])), [free]);
   const giftedToday = Math.max(now, givenAt) - givenAt < DAY_MS;
@@ -125,6 +136,8 @@ export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, onF
         </div>
       </>
     );
+  } else if (visita) {
+    content = <PostItForm destino={vecino.user_id} alias={vecino.alias} visit={visita} />;
   } else {
     content = (
       <>

@@ -11,6 +11,9 @@ import { ROOM_LIMIT } from './roomSelection';
 import { Interior } from './PisoLabPanel';
 import { shelfRows } from './shelfLayout';
 import { pisoFrom, withDoorAndComputer } from './useMyPiso';
+import { loadVisit } from '../tablon/service';
+import { drawBoard } from '../tablon/drawBoard';
+import TablonVisita from '../tablon/TablonVisita';
 
 const VACIA = { cover: null, rows: [[], [], []], hidden: [], placed: 0 };
 const SIGUE = { tarde: { hora: 'noche', label: 'Ver de noche' }, noche: { hora: 'dia', label: 'Ver de día' }, dia: { hora: 'tarde', label: 'Ver al atardecer' } };
@@ -25,6 +28,9 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
   const [grupo, setGrupo] = useState(0);
   const [biblioteca, setBiblioteca] = useState(false);
   const [ficha, setFicha] = useState(null);
+  const [tablon, setTablon] = useState(false);
+  const [visitaTablon, setVisitaTablon] = useState(null);
+  const [listo3d, setListo3d] = useState(false);
   const abrirBiblioteca = useRef(null);
   const apiRef = useRef(null);
   // Solo en desarrollo: al salir, las pruebas vuelven a ver tu habitación, que sigue montada debajo
@@ -69,6 +75,20 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
     return () => window.removeEventListener('keydown', onKey, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [biblioteca, ficha]);
+  const leerTablon = () => loadVisit(vecino.user_id).then(setVisitaTablon, () => setVisitaTablon(null));
+  useEffect(() => {
+    leerTablon();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vecino.user_id]);
+  // En el corcho, solo la copia pública: sin composición compartida, corcho vacío
+  useEffect(() => {
+    if (!listo3d) return undefined;
+    let off = false;
+    drawBoard(visitaTablon?.publico?.doc ?? null).then((image) => !off && apiRef.current?.setBoardImage(image));
+    return () => {
+      off = true;
+    };
+  }, [listo3d, visitaTablon]);
   function cerrar() {
     setBiblioteca(false);
     setFicha(null);
@@ -77,7 +97,12 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
 
   return (
     <div className="ed-visita3d" data-visita={vecino.user_id}>
-      <Interior piso={piso} room={room} hora={hora} reading={lectura} balda={null} covered={false} leaning={false} listing={false} yawMemory={yawMemory} hint={null} shelfBooks={shelf} onBook={nada} onShelf={nada} onOpenBook={nada} onLost={onIso} onApi={onApi} onDesk={nada} onDoor={onVolver} />
+      <Interior onBoard={() => visitaTablon && setTablon(true)} onReady={() => setListo3d(true)} piso={piso} room={room} hora={hora} reading={lectura} balda={null} covered={false} leaning={false} listing={false} yawMemory={yawMemory} hint={null} shelfBooks={shelf} onBook={nada} onShelf={nada} onOpenBook={nada} onLost={onIso} onApi={onApi} onDesk={nada} onDoor={onVolver} />
+      {visitaTablon && (visitaTablon.publico || visitaTablon.acepta) && !tablon && (
+        <button type="button" className="ed-visita3d__tablon" onClick={() => setTablon(true)}>
+          Tablón de {nombre}
+        </button>
+      )}
       <button type="button" className="ed-visita3d__hora" onClick={() => setHora(SIGUE[hora].hora)}>
         {SIGUE[hora].label}
       </button>
@@ -122,6 +147,7 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
           </>
         )}
       </section>
+      {tablon && visitaTablon && <TablonVisita ownerId={vecino.user_id} alias={nombre} visit={visitaTablon} onClose={() => setTablon(false)} onSent={leerTablon} />}
       {biblioteca && (
         <div className="reader-visit ed-visita3d__biblioteca" data-escape-local="open">
           <SharedLibrary items={compartidos} alias={nombre} profile={corner.data.profile} reviews={corner.data.reviews} openKey={ficha} onOpenBook={setFicha} onBack={cerrar} titulo={`Biblioteca de ${nombre}`} volver="Volver a su piso" />

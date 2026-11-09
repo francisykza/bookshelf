@@ -14,7 +14,8 @@ export const ROLES = [
   { id: 'estanteria', nombre: 'Estantería', base: 'estanteria', modelos: ['estanteria'], falta: 'Tus libros a la vista y toda la biblioteca.' },
   { id: 'sillon', nombre: 'Sillón', base: 'sillon', modelos: ['sillon', 'sofa', 'mecedora'], falta: 'Desde aquí lees y miras la habitación.' },
 ];
-export const BASICOS = ROLES.map((r) => r.base);
+// El tablón no es un esencial del piso, pero tampoco se compra: siempre hay una copia para colocarlo si se quiere
+export const BASICOS = [...ROLES.map((r) => r.base), 'tablon'];
 export const rolDe = (id) => ROLES.find((r) => r.modelos.includes(id)) ?? null;
 export const itemsDeRol = (room, rol) => room.items.filter((i) => rol.modelos.includes(i.id)).sort((a, b) => rol.modelos.indexOf(a.id) - rol.modelos.indexOf(b.id) || a.uid - b.uid);
 export const faltan = (room) => ROLES.filter((r) => !itemsDeRol(room, r).length);

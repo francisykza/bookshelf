@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.94.0** (2026-11-09, §94). «Visitar» abre el piso del lector y las portadas se conservan al filtrar. **Migración `20261119120000_piso_visita.sql` pendiente de aplicar por Francisco**: sin ella solo se visita a los vecinos. Aprobada por Francisco tras revisar las capturas («Sí, publícala»). Sin probar en móviles reales.
+- **Publicada en producción: 1.95.0** (2026-11-09, §95). Tablón libre: mueble de dos casillas, vista para mirar y «Diseñar» aparte, notas con formatos distintos y post-its. Migración `20261120120000_tablon.sql` aplicada por Francisco el 2026-11-09 (SHA-256 comprobado). Aprobada por Francisco tras revisar capturas y vídeo. Sin probar en móviles reales.
+- **Anterior: 1.94.0** (2026-11-09, §94). «Visitar» abre el piso del lector y las portadas se conservan al filtrar. Migración `20261119120000_piso_visita.sql` aplicada por Francisco el 2026-11-09 (SHA-256 comprobado; el anónimo recibe «permission denied»). Aprobada por Francisco tras revisar las capturas («Sí, publícala»). Sin probar en móviles reales.
 - **Anterior: 1.93.0** (2026-11-09, §93). Ficha y registro unificados, «Favoritos» y «Recuerdo» de Tu mes en libros, y Diario del ordenador como cuaderno. Sin migraciones. Aprobada por Francisco tras revisar las capturas («Sí, publícala»). Sin probar en móviles reales ni con teclado real.
 - **Anterior: 1.92.0** (2026-11-08, §92). Biblioteca, ficha y «Tu mes en libros» con el acabado literario y favoritos ordenados. Sin migraciones. Aprobada por Francisco tras revisar capturas, PNG y vídeos.
 - **Anterior: 1.91.1** (2026-11-08, §91.1). Ajustes del resumen del mes, páginas por día en el calendario y filtros y «Añadir libro» en la biblioteca. Sin migraciones.
@@ -234,9 +235,22 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Bitácora
 
+### 2026-11-09 · Tablón libre (paquete Tablón v2) · 1.95.0, publicada
+
+- **Segunda vuelta (encargo de Francisco, prevalece sobre lo de abajo):** el ordenador ya no abre el tablón ni lleva icono; acceso por el mueble o por «Tablón» en el Menú del piso si está colocado. Rutas: `select:'tablon'` es la vista para mirar; `'tablon:diseno'`, diseñar; `'tablon:diseno:editar'`, el editor. Sin el segmento Ver/Organizar. Mueble de 2 casillas (1,9 × 1,42 m), textura de 1536 × 1152 y migración con `w = 2` (sigue sin aplicar). Formatos de nota en `formatOf` (`model.js`), también en `drawBoard.js`. Marco de la vista en 4:3, como el mueble.
+
+Aprobada por Francisco tras revisar capturas y vídeo a 390 px.
+- **Hecho:** mueble «Tablón» opcional en Decorar (especial, gratis, fuera de tienda y sobres); monitor y tablón se pulsan por separado y la mesa ya no abre el ordenador ni la puerta de detrás; lienzo libre en `src/features/tablon/` (Ver/Organizar/Conectar, deshacer, lista, borrador y revisiones); icono en el ordenador; post-its con cuota atómica, Recibidas, publicación con vista previa y copia pública limpia, revocación y archivo del libro de visitas.
+- **Migración `20261120120000_tablon.sql` aplicada** por Francisco el 2026-11-09 en el SQL Editor; comprobada con la clave pública.
+- **Pruebas:** `e2e-community/tablon.spec.js` (Chromium y WebKit, 390 px), `src/features/tablon/__tests__/tablon.rls.test.js` (Postgres real). Build correcta. `casino.rls.test.js` («el tope de la semana») falla también sin estos cambios.
+- **Sin verificar:** móviles reales, gesto de pinza con dos dedos, colocar y retirar el mueble recorriendo Decorar, y las pantallas de bloquear, denunciar y libro antiguo.
+- **No había tablón v1** en este proyecto (el «Tablón» de la Lonja es otra cosa): no hay nada que migrar.
+- **Después, según el paquete:** biblioteca del visitante en solo lectura y diferencias visuales de Comunidad.
+
+
 ### 2026-11-09 · Visitar abre el piso y portadas estables al filtrar · 1.94.0, publicada tras aprobar la entrega («Sí, publícala»)
 
-«Visitar» abre el piso con `VisitaLector` y `VisitaPiso`; retirados `ReaderVisit.jsx`, `visitScene.js` y `public/media/social-visit/`. Migración nueva `20261119120000_piso_visita.sql`, **sin aplicar** (decisión de Francisco: se ve el piso de quien sigues); sin ella solo se visita a los vecinos y a los demás se les avisa. Las pruebas antiguas `e2e-community/v158`, `v159`, `v161` y `v162` siguen describiendo la escena retirada y hay que adaptarlas. Portadas: al desmontarse por el filtro se perdía la imagen aunque constara como cargada; en la biblioteca actual (`PisoLibrary.jsx`) cada portada empezaba además como hueco y con retardo aunque ya estuviera cargada. `BookItem.jsx` guarda hasta 300 ya decodificadas y recoloca el mismo elemento `<img>`. «Abrir Mi biblioteca» desde tu piso ya no lleva a la biblioteca antigua. Pruebas: `visita-directa.spec.js`, `portadas-filtros.spec.js`, `pisoVisita.rls.test.js`. Solo emulación.
+«Visitar» abre el piso con `VisitaLector` y `VisitaPiso`; retirados `ReaderVisit.jsx`, `visitScene.js` y `public/media/social-visit/`. Migración nueva `20261119120000_piso_visita.sql`, aplicada ese mismo día (decisión de Francisco: se ve el piso de quien sigues). Las pruebas antiguas `e2e-community/v158`, `v159`, `v161` y `v162` siguen describiendo la escena retirada y hay que adaptarlas. Portadas: al desmontarse por el filtro se perdía la imagen aunque constara como cargada; en la biblioteca actual (`PisoLibrary.jsx`) cada portada empezaba además como hueco y con retardo aunque ya estuviera cargada. `BookItem.jsx` guarda hasta 300 ya decodificadas y recoloca el mismo elemento `<img>`. «Abrir Mi biblioteca» desde tu piso ya no lleva a la biblioteca antigua. Pruebas: `visita-directa.spec.js`, `portadas-filtros.spec.js`, `pisoVisita.rls.test.js`. Solo emulación.
 
 ### 2026-11-09 · Diario del ordenador como cuaderno · 1.93.0, publicada tras aprobar la entrega («Sí, publícala»)
 

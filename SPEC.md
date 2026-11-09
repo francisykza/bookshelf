@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.94.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.95.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5558,3 +5558,14 @@ Solo interfaz: sin migraciones y sin cambios en cálculos ni persistencia.
 - **Portadas:** en la biblioteca actual (`PisoLibrary`), una portada ya mostrada no pasa por el hueco de espera. `BookItem.jsx` guarda hasta 300 ya decodificadas y recoloca el mismo elemento `<img>` al volver a montarse (prop `reuse`). Filtros, orden y datos no cambian.
 - **Biblioteca antigua:** «Abrir Mi biblioteca» desde tu piso lleva a la actual. La antigua queda para la experiencia anterior y si el piso no se puede cargar.
 - **Pruebas:** `e2e-community/visita-directa.spec.js`, `e2e-community/portadas-filtros.spec.js` y `pisoVisita.rls.test.js`. Solo emulación.
+
+## 95. Tablón libre (1.95.0)
+
+- **Mueble:** «Tablón», especial y gratis, de dos casillas de pared (1,9 × 1,42 m). Se pinta con la composición en una textura estática de 1536 × 1152 (`drawBoard.js`), una vez por revisión.
+- **Acceso:** tocar el mueble, o «Tablón» en el Menú del piso si está colocado. El ordenador no lo abre. Sin mueble no hay entrada, y los datos se conservan.
+- **Mirar y diseñar:** `select: 'tablon'` abre la vista enmarcada en 4:3, solo lectura; tocar una nota la abre en grande. El botón discreto «Diseñar» lleva a `'tablon:diseno'` y el editor es `'tablon:diseno:editar'`. Quien visita ve la misma vista con la copia pública.
+- **Notas:** `formatOf` da el objeto de cada tarjeta: nota adhesiva, hoja rayada o ficha (variación fija por id), cita a máquina, libro con marco blanco y correo con ribete. Cuatro papeles, tres chinchetas, adorno opcional e hilos unidos a las chinchetas.
+- **Lienzo:** libre en `src/features/tablon/`, con deshacer, conexiones, lista, varias composiciones, borrador local y control de revisiones; un conflicto nunca sobrescribe.
+- **Público y post-its:** lo público es una copia aparte, publicada con vista previa y sin referencias privadas. Post-its de hasta 200 caracteres, uno al día por remitente y destinatario (UTC), atómicos e idempotentes; exponer uno exige permiso de quien lo escribió, que también puede retirarlo. El libro de visitas queda como archivo privado.
+- **Migración:** `20261120120000_tablon.sql`, aplicada por Francisco el 2026-11-09. Las tablas solo se usan mediante funciones.
+- **Pruebas:** `e2e-community/tablon.spec.js` (Chromium y WebKit a 390 px) y `tablon.rls.test.js`. Solo emulación.

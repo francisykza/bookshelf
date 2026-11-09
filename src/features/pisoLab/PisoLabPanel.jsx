@@ -28,6 +28,7 @@ import { demoLibraryActive } from './sampleLibrary';
 import { HOME_PISO } from './inicio';
 import { rememberMyPiso, saveMyPiso } from '../edificio/myPiso';
 import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
+import '../tablon/tablon.css';
 
 const SAVE_MS = 400;
 const NO_NEWS = { added: [], moved: 0, stored: 0 };
@@ -132,8 +133,9 @@ function Tool({ icon, name, short, onClick }) {
   );
 }
 
-export function Interior({ piso, room, hora, reading, balda, covered, leaning, listing, yawMemory, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor }) {
+export function Interior({ piso, room, hora, reading, balda, covered, leaning, listing, yawMemory, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor, onBoard, onReady }) {
   const [picked, setPicked] = useState(null);
+  const [pointed, setPointed] = useState(null);
   const host = useRef(null);
   const api = useRef(null);
   const [ready, setReady] = useState(false);
@@ -147,7 +149,7 @@ export function Interior({ piso, room, hora, reading, balda, covered, leaning, l
   };
   const handlers = useRef({});
   useEffect(() => {
-    handlers.current = { onBook, onShelf, onLost, onDesk, onDoor, onShelfTap: () => choose(null) };
+    handlers.current = { onBook, onShelf, onLost, onDesk, onDoor, onBoard, onReady, onShelfTap: () => choose(null) };
   });
 
   useEffect(() => {
@@ -157,7 +159,7 @@ export function Interior({ piso, room, hora, reading, balda, covered, leaning, l
     import('./interior3d')
       .then(({ mountInterior }) => {
         markCode();
-        return mountInterior(host.current, { room, piso, ventanas: ventanasDe(piso, room), book: tableData(reading), shelfBooks: shelfScene(shelfBooks), hora, startYaw: yawMemory.current, onBook: () => handlers.current.onBook(), onShelf: (row) => handlers.current.onShelf(row), onShelfTap: () => handlers.current.onShelfTap(), onLost: () => handlers.current.onLost(), onDesk: () => handlers.current.onDesk?.(), onDoor: () => handlers.current.onDoor?.() });
+        return mountInterior(host.current, { room, piso, ventanas: ventanasDe(piso, room), book: tableData(reading), shelfBooks: shelfScene(shelfBooks), hora, startYaw: yawMemory.current, onBook: () => handlers.current.onBook(), onShelf: (row) => handlers.current.onShelf(row), onShelfTap: () => handlers.current.onShelfTap(), onLost: () => handlers.current.onLost(), onDesk: () => handlers.current.onDesk?.(), onDoor: () => handlers.current.onDoor?.(), onBoard: () => handlers.current.onBoard?.(), onPoint: setPointed });
       })
       .then((v) => {
         if (gone) return v?.destroy();
@@ -167,6 +169,7 @@ export function Interior({ piso, room, hora, reading, balda, covered, leaning, l
         markScene();
         setReady(true);
         markInteractive();
+        handlers.current.onReady?.();
         return undefined;
       })
       .catch((error) => {
@@ -253,6 +256,11 @@ export function Interior({ piso, room, hora, reading, balda, covered, leaning, l
 
   return (
     <div ref={host} className="plab-stage" data-ready={ready || undefined} inert={listing}>
+      {pointed && (pointed.name === 'Tablón' ? onBoard : onDesk) && (
+        <span className="plab-objlabel" style={{ left: pointed.x, top: pointed.y }}>
+          {pointed.name}
+        </span>
+      )}
       {!ready && <p className="plab-loading">Entrando…</p>}
       {/* El acceso de verdad es el botón de abajo: esto solo lo señala */}
       {ready && hint && (
@@ -343,7 +351,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   const view = select === 'decorar' && !editable ? 'actual' : shelfView || listing ? 'balda' : select;
   const iso = view === 'decorar' || view === 'actual';
   // Lo que se abre encima, con el interior montado debajo
-  const overlay = /^registro/.test(select ?? '') || /^(ficha:|ordenador|abrir:)/.test(select ?? '');
+  const overlay = /^registro/.test(select ?? '') || /^(ficha:|ordenador|tablon|abrir:)/.test(select ?? '');
   // Se entra a la hora de la fachada, el atardecer; el botón deja ver las otras
   const [hora, setHora] = useState(FACADE_HORA);
   // El tema de la interfaz sigue a la hora elegida aquí: no hay un segundo selector. La escena no usa estos colores
@@ -352,6 +360,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
     return () => delete document.documentElement.dataset.uiTheme;
   }, [hora]);
   const [noGpu, setNoGpu] = useState(false);
+  const [boardReady, setBoardReady] = useState(0);
   const apiRef = useRef(null);
   // El nombre del piso visitado, entero al tocarlo cuando no cabe
   const [fullTitle, setFullTitle] = useState(false);
@@ -409,6 +418,36 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
       if (!gone.current) onSelect('ordenador');
     });
   };
+  // Tocar el tablón: el mismo seguro, y siempre se abre el suyo
+  const openBoard = () => {
+    if (opening.current) return;
+    if (balda !== null || !apiRef.current) {
+      onSelect('tablon');
+      return;
+    }
+    opening.current = true;
+    apiRef.current.leanToBoard().then(() => {
+      opening.current = false;
+      if (!gone.current) onSelect('tablon');
+    });
+  };
+  // Lo que se ve en el corcho: tu composición activa, al entrar y al volver de editarla (una vez por revisión)
+  const hasBoard = room.items.some((i) => i.id === 'tablon');
+  const showingBoard = /^tablon/.test(select ?? '');
+  useEffect(() => {
+    if (!editable || !hasBoard || showingBoard || !boardReady) return undefined;
+    let off = false;
+    (async () => {
+      const [{ loadBoard }, { drawBoard }] = await Promise.all([import('../tablon/service'), import('../tablon/drawBoard')]);
+      const d = await loadBoard(real?.userId ?? null);
+      const image = await drawBoard(d.actual.doc, { unread: d.sinLeer > 0 });
+      if (!off) apiRef.current?.setBoardImage(image);
+    })().catch(() => {});
+    return () => {
+      off = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable, hasBoard, showingBoard, boardReady]);
   // Hacia dónde mirabas: se conserva aunque Decorar desmonte la habitación
   const yawMemory = useRef(0);
   const hint = !editable || balda !== null || overlay || !settings.showGuides ? null : reading ? 'Toca para registrar' : 'Elige una lectura';
@@ -520,7 +559,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
             reading={reading}
             balda={balda}
             covered={listing || overlay}
-            leaning={/^registro/.test(select ?? '') || /^(?:ordenador|abrir:)/.test(select ?? '')}
+            leaning={/^registro/.test(select ?? '') || /^(?:ordenador|tablon|abrir:)/.test(select ?? '')}
             yawMemory={yawMemory}
             listing={listing}
             hint={hint}
@@ -530,6 +569,8 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
             onShelf={(row) => onSelect(`balda:${row}`)}
             onOpenBook={onOpenBook}
             onDesk={editable ? openDesk : null}
+            onBoard={editable ? openBoard : null}
+            onReady={() => setBoardReady((n) => n + 1)}
             onDoor={home ? onEdificio : onBack}
             onLost={() => setNoGpu(true)}
           />
@@ -565,6 +606,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
                     ? [
                         { name: 'Ordenador', icon: 'ordenador', main: true, run: openDesk },
                         { name: 'Mi biblioteca', icon: 'estanteria', run: () => onSelect('toda') },
+                        ...(hasBoard ? [{ name: 'Tablón', icon: 'chincheta', plain: true, run: openBoard }] : []),
                         home ? { name: 'Edificio', icon: 'edificio', run: onEdificio } : { name: 'Salir al portal', icon: 'edificio', run: () => (select ? onExit() : onBack()) },
                         { name: 'Sonido', icon: 'altavoz', sound: true, run: () => onSelect('abrir:sonido') },
                         { name: 'Decorar', icon: 'pincel', run: () => onSelect('decorar') },
@@ -693,7 +735,7 @@ export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose
   return (
     // Con el registro encima, Escape es suyo
     // Con el registro encima, Escape es suyo; en la habitación de inicio, Escape no la cierra (es la pantalla de inicio)
-    <PanelShell onClose={/^registro/.test(select ?? '') || /^(ficha:|ordenador|abrir:)/.test(select ?? '') || (home && !select) ? () => {} : select === 'toda' ? onBack : onClose} label={piso || isHome ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
+    <PanelShell onClose={/^registro/.test(select ?? '') || /^(ficha:|ordenador|tablon|abrir:)/.test(select ?? '') || (home && !select) ? () => {} : select === 'toda' ? onBack : onClose} label={piso || isHome ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
       {isHome ? (
         <HomePiso select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} onAddBook={onAddBook} home={home} onEdificio={onEdificio} onAnterior={onAnterior} onOpenAccount={onOpenAccount} onOpenProfile={onOpenProfile} />
       ) : piso ? (

@@ -100,6 +100,7 @@ export const CATALOG = [
   { id: 'taza', nombre: 'Taza de té', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [CREMA, AZUL, TERRACOTA, MOSTAZA] },
   { id: 'estante-pared', nombre: 'Balda de pared', cat: 'pared', capa: 'pared', w: 2, tonos: [MADERA, NOGAL, MADERA_CLARA] },
   { id: 'espejo', nombre: 'Espejo', cat: 'pared', capa: 'pared', w: 1, tonos: [ORO, MADERA, NOGAL] },
+  { id: 'tablon', rareza: 'especial', nombre: 'Tablón', cat: 'pared', capa: 'pared', w: 2, tonos: [[128, 80, 51]] },
   { id: 'mapa', rareza: 'poco-comun', nombre: 'Mapa del puerto', cat: 'pared', capa: 'pared', w: 2, tonos: [SALVIA, TERRACOTA, MOSTAZA] },
   { id: 'alfombra-rayas', nombre: 'Alfombra de rayas', cat: 'alfombras', capa: 'alfombra', w: 2, d: 3, tonos: [AZUL, TERRACOTA, SALVIA] },
 
