@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.92.0** (2026-11-08, §92). Biblioteca, ficha y «Tu mes en libros» con el acabado literario y favoritos ordenados. Sin migraciones. Aprobada por Francisco tras revisar capturas, PNG y vídeos.
+- **Publicada en producción: 1.93.0** (2026-11-09, §93). Ficha y registro unificados, «Favoritos» y «Recuerdo» de Tu mes en libros, y Diario del ordenador como cuaderno. Sin migraciones. Aprobada por Francisco tras revisar las capturas («Sí, publícala»). Sin probar en móviles reales ni con teclado real.
+- **Anterior: 1.92.0** (2026-11-08, §92). Biblioteca, ficha y «Tu mes en libros» con el acabado literario y favoritos ordenados. Sin migraciones. Aprobada por Francisco tras revisar capturas, PNG y vídeos.
 - **Anterior: 1.91.1** (2026-11-08, §91.1). Ajustes del resumen del mes, páginas por día en el calendario y filtros y «Añadir libro» en la biblioteca. Sin migraciones.
 - **Anterior: 1.91.0** (2026-11-08, §91). Fase 1 (scroll, audio, visitas, paredes), caché persistente de portadas y «Tu mes en libros». Sin migraciones. Aprobada por Francisco tras revisar vídeo y PNG.
 - **Anterior: 1.90.0** (2026-11-08, §90). Puerto Pixel: ordenador, registro, menú, calendario, radio, diario, estadísticas, biblioteca y decorar. Aprobada por Francisco tras revisar las evidencias; sin migraciones. El mar está retirado de Sonido por ahora. Sin probar en móviles físicos ni con cuentas reales; ficha de libro y Ajustes siguen sin reestilizar.
@@ -231,6 +232,14 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-09 · Diario del ordenador como cuaderno · 1.93.0, publicada tras aprobar la entrega («Sí, publícala»)
+
+`DiaryNotebook` en `DiaryApp.jsx` (pestañas Hoy, «Notas y citas» y Reseñas; editor en la misma app), acabado en `literario.css` y retorno desde la ficha en `App.jsx`. Calendario, estadísticas, habitación y wrap-up, sin tocar. Datos sin cambios: siguen siendo `book.quotes` y `book.review`. Prueba y capturas: `e2e-community/diario-cuaderno.spec.js`, `qa-report/diario-cuaderno/`. Solo emulación; sin probar en móviles reales ni con teclado real.
+
+### 2026-11-09 · acabado de la ficha y del registro, Favoritos y Recuerdo · 1.93.0, publicada tras aprobar la entrega
+
+Campos, botones, desplegables y selección unificados en `src/theme/literario.css` (ficha, registro, «Notas y citas» y «Reseña»). En «Mi lectura», el recorrido y las sesiones van primero (5 días y «Ver registros anteriores») y Ajustar posición, EPUB, Sobre el libro y Datos de la edición quedan plegados en esa pestaña. El aviso «Deshacer» ya no flota sobre el título. En «Tu mes en libros», «Favoritos» pasa a tarjetas con medalla CSS y mandos con nombre, y «Recuerdo» a página de cuaderno con estado de guardado visible; resumen y exportación, sin cambios. El Diario del ordenador es un cuaderno (`DiaryNotebook` en `DiaryApp.jsx`) con pestañas Hoy, «Notas y citas» y Reseñas. Decisión de Francisco (9-11-2026): notas y citas siguen siendo un solo tipo de anotación, en una pestaña conjunta, y «Hoy» va primero. Prueba y capturas: `e2e-community/ficha-acabado.spec.js`, `qa-report/ficha-acabado/`.
 
 ### 2026-11-08 · Fase 3 y acabado visual v4 · 1.92.0, publicada tras aprobar la entrega («Sí, publícala»)
 

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.92.0 · 2026-11-08 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.93.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5540,3 +5540,13 @@ Aprobada por Francisco el 8-11-2026 tras revisar capturas, PNG y vídeos. Sin mi
 - **PNG 1080 × 1920:** reutiliza las piezas reales de la pantalla, sin controles, nombre ni correo.
 - **Estilos y recursos:** `src/theme/literario.css` y `public/assets/puerto/acabado/`. Los adornos pixel son originales; las maquetas no se usan como fondo ni se instalan sus portadas de ejemplo.
 - **Diferencias aceptadas con la maqueta:** portadas reales sin lomo 3D, filtros de color (Fase 3), peanas separadas, contador en «También me acompañaron», sin × en la biblioteca y sin logotipo en la cabecera del mes.
+
+## 93. Ficha y registro unificados, Favoritos y Recuerdo, y Diario como cuaderno (1.93.0)
+
+Solo interfaz: sin migraciones y sin cambios en cálculos ni persistencia.
+
+- **Ficha y registro de lectura:** campos, botones, desplegables y selección comparten acabado en `src/theme/literario.css`. En «Mi lectura», el recorrido y las sesiones van primero (5 días y «Ver registros anteriores»); Ajustar posición, EPUB, Sobre el libro y Datos de la edición quedan plegados.
+- **Tu mes en libros:** «Favoritos» pasa a tarjetas con medalla CSS y mandos con nombre; «Recuerdo», a página de cuaderno con estado de guardado visible.
+- **Diario del ordenador:** `DiaryNotebook` (`DiaryApp.jsx`) con pestañas Hoy, «Notas y citas» y Reseñas. Notas y citas son un único tipo de anotación (`book.quotes`), en una pestaña conjunta, por decisión de Francisco. El editor usa `AnnotationForm` dentro de la misma app. Las reseñas se leen de `book.review` y se abren en la ficha.
+- **Volver:** al cerrar el editor o la ficha abierta desde el Diario se conservan pestaña, filtros y posición de desplazamiento; la ficha regresa al ordenador. Calendario, estadísticas, habitación y wrap-up no cambian.
+- **Pruebas:** `e2e-community/diario-cuaderno.spec.js` y `e2e-community/ficha-acabado.spec.js`. Solo emulación (Chromium y WebKit de Playwright).

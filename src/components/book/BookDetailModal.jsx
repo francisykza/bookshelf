@@ -3,7 +3,7 @@
 // plegados. Diario (1.53, SPEC §51): «Mi diario» con tres secciones independientes —Reseña (valoración y opinión, con
 // guardado explícito y borrador por libro), Notas (las anotaciones) e Historial (las sesiones del registro)—.
 // Lectores: las opiniones de la comunidad. Solo presentación: los datos y operaciones son los de siempre.
-import { ArrowLeft, BookMarked, ChevronDown, ChevronRight, Heart, Lock, Minus, MoreHorizontal, PenLine, Plus, Trash2, X } from 'lucide-react';
+import { BookMarked, ChevronDown, ChevronRight, Heart, Lock, Minus, MoreHorizontal, PenLine, Plus, Trash2, X } from 'lucide-react';
 import { Suspense, lazy, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { pageRustle } from '../../audio/ambientAudio';
@@ -14,6 +14,7 @@ import { describeEntry, isActive } from '../../domain/reading';
 import { chosenIds, roomLimit, toggleExhibit } from '../../features/pisoLab/roomSelection';
 import { ReadingEntryForm } from '../panels/ReadingEntryForm';
 import { LogUndoToast, UNDO_MS } from '../panels/ReadingLogSheet';
+import { PixelChevron, PixelControl } from '../../ui/PixelIcon';
 import { RatingInput } from './Rating';
 import { Journal, useConfirmedSave } from './Annotations';
 import { NotebookShell, WaxSeal } from '../primitives';
@@ -88,7 +89,7 @@ function ExLibris({ owner, onRename }) {
 }
 
 /** Progreso: posición y barra; por páginas, con el ajuste rápido de la página actual (la estimación vive en los detalles). */
-function ProgressBlock({ book, onPage }) {
+function ProgressBlock({ book, onPage, pixel = false }) {
   const unit = trackUnit(book);
   const pct = percentRead(book);
   if (unit === 'percent') {
@@ -142,10 +143,10 @@ function ProgressBlock({ book, onPage }) {
           −10
         </button>
         <button type="button" className="round-btn craft craft--paper" onClick={() => onPage(book.currentPage - 1)} aria-label="Retroceder una página">
-          <Minus aria-hidden="true" />
+          {pixel ? <PixelControl name="minus" /> : <Minus aria-hidden="true" />}
         </button>
         <button type="button" className="round-btn craft craft--paper" onClick={() => onPage(book.currentPage + 1)} aria-label="Avanzar una página">
-          <Plus aria-hidden="true" />
+          {pixel ? <PixelControl name="plus" /> : <Plus aria-hidden="true" />}
         </button>
         <button type="button" className="round-btn craft craft--paper" onClick={() => onPage(book.currentPage + 10)} aria-label="Avanzar 10 páginas">
           +10
@@ -182,15 +183,16 @@ const EDITION_NOTES = {
 };
 
 /** «Detalles de mi edición»: total de páginas, unidad de seguimiento, velocidad y edición (plegado). */
-function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed, title = 'Detalles de mi edición', detailsRef = null }) {
+function EditionDetails({ book, pagesPerHour, onUpdate, onTracking, onSpeed, title = 'Detalles de mi edición', detailsRef = null, icon = null }) {
   const unit = trackUnit(book);
   const left = unit === 'pages' ? hoursLeft(book, pagesPerHour) : 0;
   const edge = sprayedEdge(book);
   return (
     <details className="sheet-details" ref={detailsRef}>
       <summary>
-        {title}
-        <ChevronDown aria-hidden="true" />
+        {icon}
+        {icon ? <span>{title}</span> : title}
+        {icon ? <PixelChevron next /> : <ChevronDown aria-hidden="true" />}
       </summary>
       <div className="sheet-details__body">
         <label className="sheet-field">
@@ -443,7 +445,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
                     setLogging((v) => !v);
                   }}
                 >
-                  <Plus aria-hidden="true" />
+                  {mainPlace ? <PixelControl name="plus" /> : <Plus aria-hidden="true" />}
                   Registrar lectura
                 </button>
               )}
@@ -493,6 +495,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
   const progressBlock = (
     <ProgressBlock
       book={book}
+      pixel={Boolean(mainPlace)}
       onPage={(p) => {
         actions.setPage(book.id, p);
         if (p > book.currentPage) pageRustle(0.6);
@@ -535,6 +538,8 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
     const pct = percentRead(book);
     const tituloLargo = book.title.length > 60;
     const abrirEdicion = () => {
+      // Los datos de la edición viven en «Mi lectura»: desde otra pestaña hay que volver a ella
+      setLitTab('lectura');
       if (editionRef.current) editionRef.current.open = true;
       requestAnimationFrame(() => editionRef.current?.scrollIntoView({ block: 'nearest' }));
     };
@@ -556,7 +561,7 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
         <div className="lit-ficha bs-literary" data-edition={visualEdition(book)}>
           <div className="lit-cabecera">
             <button type="button" className="lit-boton" onClick={onClose} aria-label="Volver">
-              <ArrowLeft aria-hidden="true" width="20" height="20" />
+              <PixelControl name="back" />
             </button>
             <h2>Ficha del libro</h2>
             <button type="button" className="lit-boton" aria-label="Más acciones" aria-haspopup="true" aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)}>
@@ -665,16 +670,48 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
             {/* Las tres siguen montadas: un borrador de reseña o de nota no se pierde al cambiar de pestaña */}
             <div role="tabpanel" id={`${uid}-litp-lectura`} aria-labelledby={`${uid}-lit-lectura`} hidden={litTab !== 'lectura'} className="diary-panel">
               <Recorrido book={book} log={state.progress.readingLog} />
+              <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} mode="history" pageSize={5} />
               {othersBlock}
-              <details>
-                <summary>
-                  Ajustar posición
-                  <ChevronDown aria-hidden="true" />
-                </summary>
-                {progressBlock}
-              </details>
-              {epubBlock}
-              <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} mode="history" />
+              {/* Herramientas secundarias, plegadas: lo importante de esta pestaña es el recorrido */}
+              <div className="lit-herramientas" role="group" aria-label="Herramientas del libro">
+                <details>
+                  <summary>
+                    <img src="/assets/puerto/acabado/bookmark.svg" alt="" />
+                    <span>Ajustar posición</span>
+                    <PixelChevron next />
+                  </summary>
+                  {progressBlock}
+                </details>
+                {/* Si se llega directamente al lector del EPUB, el apartado ya está abierto */}
+                <details open={initialPage === 'epub' || undefined}>
+                  <summary>
+                    <img src="/assets/puerto/acabado/archivo.svg" alt="" />
+                    <span>Archivo EPUB</span>
+                    {book.epub && <small>Vinculado</small>}
+                    <PixelChevron next />
+                  </summary>
+                  {epubBlock}
+                </details>
+                <details>
+                  <summary>
+                    <img src="/assets/puerto/acabado/book.svg" alt="" />
+                    <span>Sobre el libro</span>
+                    <PixelChevron next />
+                  </summary>
+                  <div>
+                    <p className="sheet-synopsis">{book.synopsis || 'Sin sinopsis todavía.'}</p>
+                    {!!book.categories.length && (
+                      <ul className="chips">
+                        {book.categories.slice(0, 3).map((c) => (
+                          <li key={c}>{c}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <ExLibris owner={settings.owner} onRename={(owner) => actions.setSettings({ owner })} />
+                  </div>
+                </details>
+                <EditionDetails title="Datos de la edición" icon={<img src="/assets/puerto/acabado/libros.svg" alt="" />} detailsRef={editionRef} book={book} pagesPerHour={settings.pagesPerHour} onUpdate={update} onTracking={(u) => actions.setTracking(book.id, u)} onSpeed={(pagesPerHour) => actions.setSettings({ pagesPerHour })} />
+              </div>
             </div>
             <div role="tabpanel" id={`${uid}-litp-notas`} aria-labelledby={`${uid}-lit-notas`} hidden={litTab !== 'notas'} className="diary-panel">
               <Journal book={book} log={state.progress.readingLog} meanings={settings.quoteMeanings} onShow={setShownQuote} mode="notes" />
@@ -687,8 +724,8 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
               </button>
               <details open={readersOpen} onToggle={(e) => setReadersOpen(e.currentTarget.open)}>
                 <summary>
-                  Voces de lectores
-                  <ChevronDown aria-hidden="true" />
+                  <span>Voces de lectores</span>
+                  <PixelChevron next />
                 </summary>
                 {readersOpen && (
                   <Suspense fallback={<p className="social-note">Abriendo…</p>}>
@@ -697,24 +734,6 @@ export function BookDetailModal({ bookId, initialPage, onClose, onSwitch, onOpen
                 )}
               </details>
             </div>
-            <details>
-              <summary>
-                Sobre el libro
-                <ChevronDown aria-hidden="true" />
-              </summary>
-              <div>
-                <p className="sheet-synopsis">{book.synopsis || 'Sin sinopsis todavía.'}</p>
-                {!!book.categories.length && (
-                  <ul className="chips">
-                    {book.categories.slice(0, 3).map((c) => (
-                      <li key={c}>{c}</li>
-                    ))}
-                  </ul>
-                )}
-                <ExLibris owner={settings.owner} onRename={(owner) => actions.setSettings({ owner })} />
-              </div>
-            </details>
-            <EditionDetails title="Datos de la edición" detailsRef={editionRef} book={book} pagesPerHour={settings.pagesPerHour} onUpdate={update} onTracking={(u) => actions.setTracking(book.id, u)} onSpeed={(pagesPerHour) => actions.setSettings({ pagesPerHour })} />
           </div>
         </div>
         {shownQuote && (

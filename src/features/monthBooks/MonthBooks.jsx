@@ -9,7 +9,7 @@ import { FAVORITES_MAX, NOTE_MAX, dropFavorite, monthCovers, monthOf, monthSumma
 import { parseDay } from '../../domain/dates';
 import { useCloud } from '../../state/cloudSync';
 import { useLibrary } from '../../state/useLibrary';
-import { PixelChevron } from '../../ui/PixelIcon';
+import { PixelChevron, PixelControl } from '../../ui/PixelIcon';
 import { MonthExport } from './MonthExport';
 import './month-books.css';
 
@@ -23,6 +23,7 @@ const PESTANAS = [
   { id: 'favoritos', label: 'Favoritos', tone: 'terracotta' },
   { id: 'recuerdo', label: 'Recuerdo', tone: 'blue' },
 ];
+const ORDINALES = ['primer', 'segundo', 'tercer'];
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 const nombreMes = (month) => cap(parseDay(`${month}-01`).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }));
 
@@ -30,6 +31,15 @@ function Portada({ book }) {
   return (
     <span className="mb__tapa" style={{ background: spineColor(book) }}>
       <Cover book={book} instant />
+    </span>
+  );
+}
+
+/** Medalla de píxeles con el puesto; el dibujo es solo CSS, sin imágenes. */
+function Medalla({ puesto, pequena = false }) {
+  return (
+    <span className={`mb-medalla${pequena ? ' mb-medalla--pequena' : ''}`} data-puesto={puesto} aria-hidden="true">
+      <b>{puesto}</b>
     </span>
   );
 }
@@ -123,7 +133,6 @@ function Favoritos({ summary, onCambiar, guardado, onReintentar }) {
   const mover = (i, by) => aplicar(moveFavorite(ids, i, by), `«${titulo(ids[i])}» pasa al puesto ${i + by + 1}.`);
   return (
     <section className="mb-editor" aria-label="Elegir mis favoritos">
-      <p className="mb__nota">Tu selección y tu orden. Solo la ves tú.</p>
       {summary.favoriteLost && <p className="mb__nota">Un libro que habías elegido ya no consta como terminado este mes y ha salido del podio.</p>}
       <ol className="mb-puestos">
         {[0, 1, 2].map((i) => {
@@ -132,23 +141,27 @@ function Favoritos({ summary, onCambiar, guardado, onReintentar }) {
           const disponible = i <= ids.length;
           return (
             <li key={i} className="mb-puesto" data-activo={puesto === i || undefined} data-libre={libre || undefined}>
-              <button type="button" className="mb-puesto__elige" disabled={!disponible} aria-pressed={puesto === i} aria-label={libre ? `Puesto ${i + 1}, libre` : `Puesto ${i + 1}: ${entrada.book.title}. Sustituir`} onClick={() => setActivo(i)}>
-                <span className="mb-puesto__num" aria-hidden="true">
-                  {i + 1}
-                </span>
+              <button type="button" className="mb-puesto__elige" disabled={!disponible} aria-pressed={puesto === i} aria-label={libre ? `Puesto ${i + 1}, libre. Elige tu ${ORDINALES[i]} favorito` : `Puesto ${i + 1}: ${entrada.book.title}, de ${entrada.book.author}. Sustituir`} onClick={() => setActivo(i)}>
+                <Medalla puesto={i + 1} />
                 {entrada ? <Portada book={entrada.book} /> : <span className="mb-puesto__vacio" aria-hidden="true" />}
-                <span className="mb-puesto__titulo">{entrada ? entrada.book.title : 'Sin elegir'}</span>
+                <span className="mb-puesto__texto">
+                  <span className="mb-puesto__titulo">{entrada ? entrada.book.title : `Elige tu ${ORDINALES[i]} favorito`}</span>
+                  {entrada && <span className="mb-puesto__autor">{entrada.book.author}</span>}
+                </span>
               </button>
               {entrada && (
                 <span className="mb-puesto__mandos">
-                  <button type="button" className="pp-btn pp-btn--icon" disabled={i === 0} aria-label={`Subir ${entrada.book.title}`} onClick={() => mover(i, -1)}>
-                    ↑
+                  <button type="button" className="pp-btn" disabled={i === 0} aria-label={`Subir ${entrada.book.title}`} onClick={() => mover(i, -1)}>
+                    <PixelChevron next />
+                    Subir
                   </button>
-                  <button type="button" className="pp-btn pp-btn--icon" disabled={i === ids.length - 1} aria-label={`Bajar ${entrada.book.title}`} onClick={() => mover(i, 1)}>
-                    ↓
+                  <button type="button" className="pp-btn mb-puesto__bajar" disabled={i === ids.length - 1} aria-label={`Bajar ${entrada.book.title}`} onClick={() => mover(i, 1)}>
+                    <PixelChevron next />
+                    Bajar
                   </button>
-                  <button type="button" className="pp-btn pp-btn--icon" aria-label={`Quitar ${entrada.book.title}`} onClick={() => aplicar(dropFavorite(ids, entrada.book.id), `«${entrada.book.title}» ya no está en el podio.`)}>
-                    ✕
+                  <button type="button" className="pp-btn" aria-label={`Quitar ${entrada.book.title}`} onClick={() => aplicar(dropFavorite(ids, entrada.book.id), `«${entrada.book.title}» ya no está en el podio.`)}>
+                    <PixelControl name="close" />
+                    Quitar
                   </button>
                 </span>
               )}
@@ -156,15 +169,15 @@ function Favoritos({ summary, onCambiar, guardado, onReintentar }) {
           );
         })}
       </ol>
-      <p className="mb__nota">Elige un libro para el puesto {puesto + 1}:</p>
+      <p className="mb-candidatos__guia">Libros del mes · toca uno para el puesto {puesto + 1}</p>
       <ul className="mb-candidatos">
         {summary.finished.map(({ book }) => {
           const en = ids.indexOf(book.id);
           return (
             <li key={book.id}>
-              <button type="button" className="mb-candidato" aria-label={`${book.title}, de ${book.author}${en >= 0 ? `. En el puesto ${en + 1}` : ''}`} onClick={() => elegir(book.id)}>
+              <button type="button" className="mb-candidato" data-elegido={en >= 0 || undefined} aria-label={`${book.title}, de ${book.author}${en >= 0 ? `. En el puesto ${en + 1}` : ''}`} onClick={() => elegir(book.id)}>
                 <Portada book={book} />
-                {en >= 0 && <span className="mb-candidato__puesto">{en + 1}</span>}
+                {en >= 0 && <Medalla puesto={en + 1} pequena />}
               </button>
             </li>
           );
@@ -196,25 +209,37 @@ function Recuerdo({ valor, onGuardar, guardado, onReintentar }) {
     ultimo.current = texto;
     onGuardar(texto);
   };
+  const sinGuardar = texto !== ultimo.current;
   return (
-    <section className="mb__recuerdo">
-      <label htmlFor="mb-recuerdo">Un recuerdo de este mes</label>
-      <textarea id="mb-recuerdo" rows={3} maxLength={NOTE_MAX} value={texto} placeholder="Escribe una frase, si te apetece" onChange={(e) => setTexto(e.target.value)} onBlur={guardar} />
-      <p className="mb__contador" aria-live="polite">
-        {texto.length} de {NOTE_MAX}
-      </p>
-      <p className="mb__estadoguardar" role={guardado === 'error' ? 'alert' : 'status'} data-estado={guardado}>
-        {guardado === 'error' ? (
-          <>
-            No se ha podido guardar tu recuerdo.{' '}
-            <button type="button" className="link-btn" onClick={onReintentar}>
-              Reintentar
-            </button>
-          </>
-        ) : guardado === 'saved' ? (
-          'Recuerdo guardado.'
-        ) : null}
-      </p>
+    <section className="mb__recuerdo mb-cuaderno">
+      <header className="mb-cuaderno__cabecera">
+        <label htmlFor="mb-recuerdo">¿Qué te llevas de este mes?</label>
+        <img src="/assets/puerto/acabado/bookmark.svg" alt="" />
+      </header>
+      <textarea id="mb-recuerdo" rows={6} maxLength={NOTE_MAX} value={texto} placeholder="Un mes de mundos a los que volvería." onChange={(e) => setTexto(e.target.value)} onBlur={guardar} />
+      <div className="mb-cuaderno__pie">
+        <p className="mb__estadoguardar" role={guardado === 'error' ? 'alert' : 'status'} data-estado={guardado}>
+          {guardado === 'error' ? (
+            <>
+              No se ha podido guardar tu recuerdo.{' '}
+              <button type="button" className="link-btn" onClick={onReintentar}>
+                Reintentar
+              </button>
+            </>
+          ) : guardado === 'saving' ? (
+            'Guardando…'
+          ) : sinGuardar ? (
+            'Sin guardar · se guarda al salir del cuaderno'
+          ) : guardado === 'saved' || texto ? (
+            'Recuerdo guardado.'
+          ) : (
+            'Se guarda al salir del cuaderno'
+          )}
+        </p>
+        <p className="mb__contador" aria-live="polite">
+          {texto.length} de {NOTE_MAX}
+        </p>
+      </div>
     </section>
   );
 }

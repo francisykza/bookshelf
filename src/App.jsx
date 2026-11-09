@@ -476,8 +476,8 @@ function Sanctuary() {
       )}
       {panel?.type === 'pisoLab' && panel.select?.startsWith('ficha:') && (() => {
         const bookId = panel.select.split(':').slice(2).join(':');
-        const row = panel.select.split(':')[1];
-        return <BookDetailModal key={bookId} bookId={bookId} mainPlace={PISO_MESA} onClose={close} onSwitch={(id, tab) => switchPanel(tab ? { type: 'book', id, tab } : { type: 'pisoLab', id: panel.id, select: `ficha:${row}:${id}` })} timer={timer} soundOn={settings.sound} onToggleSound={toggleSound} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />;
+        const [row, entrada] = panel.select.split(':')[1].split('-');
+        return <BookDetailModal key={bookId} bookId={bookId} initialPage={entrada} mainPlace={PISO_MESA} onClose={close} onSwitch={(id, tab) => switchPanel(tab ? { type: 'book', id, tab } : { type: 'pisoLab', id: panel.id, select: `ficha:${row}:${id}` })} timer={timer} soundOn={settings.sound} onToggleSound={toggleSound} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} onOpenReader={(id) => switchPanel({ type: 'reader', id })} onComplete={(id) => switchPanel({ type: 'review', id, tab: 'book' })} />;
       })()}
       {panel?.type === 'pisoLab' && panel.select?.startsWith('ordenador') && (() => {
         // El ordenador del piso: 'ordenador' es su escritorio y 'ordenador:app:vista', una pantalla concreta
@@ -497,7 +497,11 @@ function Sanctuary() {
               diaryView={view}
               onComplete={(bookId) => switchPanel({ type: 'review', id: bookId, tab: 'piso', select: panel.id })}
               onOpenLibrary={() => here('toda')}
-              onOpenBook={(id) => here(`ficha:2:${id}`)}
+              onOpenBook={(id, pagina, vista) => {
+                // Como al registrar: la ruta recuerda el Diario y la ficha se abre encima, para que volver regrese a él
+                here(`ordenador:calendar:${vista ?? 'today'}`);
+                openPanel({ type: 'pisoLab', id: panel.id, select: `ficha:${pagina ? `2-${pagina}` : '2'}:${id}` });
+              }}
               onOpenVault={null}
               desktop={(open) => <PisoDesktop open={open} tool={(name) => openPanel({ type: 'pisoLab', id: panel.id, select: `abrir:${name}` })} go={{ library: () => here('toda'), community: () => openPanel({ type: 'social' }), register: () => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' }) }} />}
             />

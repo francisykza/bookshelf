@@ -13,7 +13,7 @@ import { useLibrary } from '../../state/useLibrary';
 import { GoalApp, MissionsApp, StatsApp } from '../computer/ComputerApps';
 import { SectionIcon } from '../SectionIcon';
 import { DailyQuote, dailyQuoteReady } from './DailyQuote';
-import { DiaryApp } from './DiaryApp';
+import { DiaryApp, DiaryNotebook } from './DiaryApp';
 import { PanelShell } from './PanelShell';
 import { SessionsApp } from './ReadingCalendar';
 import { ComputerShell } from '../computer/ComputerShell';
@@ -97,7 +97,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
 
   // 1.90: en el piso, un solo marco con una sola pantalla; la experiencia anterior sigue con sus ventanas y su dock
   if (desktop) {
-    const titleOf = (t) => (t.id === 'calendar' ? { calendar: 'Calendario', today: 'Mi diario', notes: 'Notas' }[diary] : t.label);
+    const titleOf = (t) => (t.id === 'calendar' ? { calendar: 'Calendario', today: 'Mi diario', notes: 'Mi diario' }[diary] : t.label);
     const current = TABS.find((t) => t.id === app);
     return (
       <PanelShell onClose={requestExit} label="Ordenador: Mi escritorio" variant="port-computer">
@@ -132,7 +132,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
               {TABS.filter((t) => alive.includes(t.id)).map((t) => (
                 <section key={t.id} className="pc-win" data-pc-app={t.id} id={`pc-app-${t.id}`} hidden={app !== t.id} aria-label={titleOf(t)}>
                   <div className="pc-win__body">
-                    {t.id === 'calendar' && (diary === 'calendar' ? <PortCalendar key="cal" selectDay={selectDay} onRegister={registrar} onSubview={setResumenMes} /> : <DiaryApp key={diary} initialView={diary} selectDay={selectDay} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={onOpenBook} />)}
+                    {t.id === 'calendar' && (diary === 'calendar' ? <PortCalendar key="cal" selectDay={selectDay} onRegister={registrar} onSubview={setResumenMes} /> : <DiaryNotebook key={diary} initialView={diary} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={(id, pagina) => onOpenBook(id, pagina, diary)} />)}
                     {t.id === 'stats' && <StatsApp />}
                     {t.id === 'sessions' && <SessionsApp />}
                     {t.id === 'goal' && <GoalApp />}

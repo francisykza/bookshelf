@@ -341,14 +341,14 @@ const HISTORY_PAGE = 20;
  * Diario del libro: cronología por fecha. `mode` (1.53, SPEC §51): «notes» solo las anotaciones con su filtro y la
  * nueva anotación; «history» solo las sesiones del registro, de la más reciente a la más antigua y por tandas.
  */
-export function Journal({ book, log, meanings, onShow, mode = 'notes' }) {
+export function Journal({ book, log, meanings, onShow, mode = 'notes', pageSize = HISTORY_PAGE }) {
   const { actions } = useLibrary();
   const history = mode === 'history';
   const [filter, setFilter] = useState('all');
   const [writing, setWriting] = useState(() => Boolean(readDraft(book.id)));
   const [editId, setEditId] = useState(null);
   const [freshId, setFreshId] = useState(null);
-  const [shownDays, setShownDays] = useState(HISTORY_PAGE);
+  const [shownDays, setShownDays] = useState(pageSize);
   const days = useMemo(
     () =>
       journalDays(book, log)
@@ -488,7 +488,7 @@ export function Journal({ book, log, meanings, onShow, mode = 'notes' }) {
         </ol>
       )}
       {history && filtered.length > visibleDays.length && (
-        <button type="button" className="link-btn journal__more" onClick={() => setShownDays((n) => n + HISTORY_PAGE)}>
+        <button type="button" className="link-btn journal__more" onClick={() => setShownDays((n) => n + pageSize)}>
           Ver registros anteriores · {filtered.length - visibleDays.length} {filtered.length - visibleDays.length === 1 ? 'día' : 'días'}
         </button>
       )}

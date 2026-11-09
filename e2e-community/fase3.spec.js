@@ -293,8 +293,10 @@ test('ranking: elegir, ordenar, quitar, recargar y resto', async ({ browser }, i
   expect(cajas[0].x).toBeLessThan(cajas[2].x);
   expect(cajas[0].b).toBeLessThan(cajas[1].b);
   expect(cajas[1].b).toBeLessThan(cajas[2].b);
-  // Recuerdo y recarga
+  // Recuerdo y recarga: el ejemplo es solo un placeholder
   await tab(page, 'Recuerdo').click();
+  await expect(page.locator('#mb-recuerdo')).toHaveValue('');
+  await expect(page.getByLabel('¿Qué te llevas de este mes?')).toHaveAttribute('placeholder', /.+/);
   await page.locator('#mb-recuerdo').fill('Datos de prueba: un otoño de mucha lluvia.');
   await page.locator('#mb-recuerdo').blur();
   await expect(page.getByText('Recuerdo guardado.')).toBeVisible({ timeout: 6000 });
@@ -303,6 +305,9 @@ test('ranking: elegir, ordenar, quitar, recargar y resto', async ({ browser }, i
   await alMes(page, true);
   expect(await orden()).toEqual(['Puesto 1: Libro de prueba 7', 'Puesto 2: Libro de prueba 5', 'Puesto 3: Libro de prueba 2']);
   await expect(page.locator('.mb__frase')).toContainText('otoño');
+  await tab(page, 'Recuerdo').click();
+  await expect(page.locator('#mb-recuerdo')).toHaveValue('Datos de prueba: un otoño de mucha lluvia.');
+  await expect(page.getByText('Recuerdo guardado.')).toBeVisible();
   // Quitar compacta
   await tab(page, 'Favoritos').click();
   await page.getByRole('button', { name: 'Quitar Libro de prueba 7' }).click();
@@ -310,6 +315,21 @@ test('ranking: elegir, ordenar, quitar, recargar y resto', async ({ browser }, i
   await tab(page, 'Resumen').click();
   expect(await orden()).toEqual(['Puesto 1: Libro de prueba 5', 'Puesto 2: Libro de prueba 2']);
   await page.screenshot({ path: join(DIR, `${info.project.name}-podio-2.png`) });
+  await expect.poll(() => page.evaluate((m) => JSON.parse(localStorage.getItem('bookshelf:v1')).progress.monthNotes[m].favorites, PASADO)).toEqual(['p-4', 'p-1']);
+  // Capturas a 390 px de Favoritos (con un puesto libre) y Recuerdo, de día y de noche
+  await page.setViewportSize({ width: 390, height: 1180 });
+  for (const tema of ['dia', 'noche']) {
+    if (tema === 'noche') await noche(page);
+    for (const t of ['Favoritos', 'Recuerdo']) {
+      await tab(page, t).click();
+      await page.waitForTimeout(250);
+      await page.screenshot({ path: join(DIR, `${info.project.name}-mes-${t}-${tema}.png`) });
+    }
+  }
+  await tab(page, 'Favoritos').click();
+  await expect(page.getByText('Elige tu tercer favorito')).toBeVisible();
+  const justos = await page.locator('#mb-panel-favoritos').evaluate((n) => [...n.querySelectorAll('button')].filter((b) => b.getBoundingClientRect().height < 43.5).map((b) => b.getAttribute('aria-label')));
+  expect(justos).toEqual([]);
   await context.close();
 });
 

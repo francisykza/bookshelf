@@ -3,15 +3,17 @@
 // mismo `ReadingEntryForm` que el calendario y la ficha; el Calendario es el `CalendarApp` de siempre; las Notas
 // son las mismas anotaciones del diario de cada libro (crear, editar, filtrar y borrar con confirmación).
 import { BookOpen, ChevronRight, Pencil, Plus, Search, Sun } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { playUiSound } from '../../audio/uiSounds';
-import { STATUS, formatPercent, newId, percentRead } from '../../domain/books';
+import { STATUS, formatPercent, newId, percentRead, spineColor } from '../../domain/books';
 import { dayKey, parseDay } from '../../domain/dates';
 import { latestEntries, weekOf } from '../../domain/diary';
 import { COLOR_IDS, meaningOf } from '../../domain/quoteMeanings';
 import { activeDays, entryText } from '../../domain/reading';
 import { useLibrary } from '../../state/useLibrary';
 import { AnnotationForm, AnnotationItem, useConfirmedSave } from '../book/Annotations';
+import { RatingStars } from '../book/Rating';
+import { PixelControl } from '../../ui/PixelIcon';
 import { Cover } from '../shelf/BookItem';
 import { CalendarApp } from './ReadingCalendar';
 import { ReadingEntryForm } from './ReadingEntryForm';
@@ -302,6 +304,330 @@ function NotesView({ onOpenBook }) {
         )}
         {!shown.length && <li className="journal__none">Ninguna nota coincide con la búsqueda.</li>}
       </ul>
+    </div>
+  );
+}
+
+// El Diario del ordenador del piso: un cuaderno con tres pestañas. Lee y escribe las mismas anotaciones de cada libro
+// (`book.quotes`) y las mismas reseñas (`book.review`); no guarda nada propio.
+const CUADERNO = [
+  { id: 'today', label: 'Hoy', tone: 'mustard' },
+  { id: 'notes', label: 'Notas y citas', tone: 'sage' },
+  { id: 'reviews', label: 'Reseñas', tone: 'terracotta' },
+];
+/** Lo que había en pantalla al salir a una ficha: al volver, el Diario sigue donde estaba. */
+let alVolver = null;
+
+function VacioCuaderno({ icono, titulo, texto, accion, onAccion }) {
+  return (
+    <div className="pcd-vacio">
+      <img src={`/assets/puerto/acabado/${icono}.svg`} alt="" />
+      <h4>{titulo}</h4>
+      <p>{texto}</p>
+      {onAccion && (
+        <button type="button" className="sheet-btn sheet-btn--primary" onClick={onAccion}>
+          {accion}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Miniatura({ book }) {
+  return (
+    <span className="pcd-entrada__tapa" style={{ background: spineColor(book) }}>
+      <Cover book={book} />
+    </span>
+  );
+}
+
+function EditorNota({ edicion, libroInicial, onVolver, onAbrirFicha }) {
+  const { state, actions } = useLibrary();
+  const meanings = state.settings.quoteMeanings;
+  // Primero las lecturas en curso: es donde suele querer escribirse
+  const libros = useMemo(() => [...state.books].sort((a, b) => (b.status === 'reading') - (a.status === 'reading')), [state.books]);
+  const [elegido, setElegido] = useState(libroInicial);
+  const [borrando, setBorrando] = useState(false);
+  const book = state.books.find((b) => b.id === (edicion?.bookId ?? elegido)) ?? libros[0];
+  const quote = edicion ? book?.quotes.find((q) => q.id === edicion.quoteId) : null;
+  const adding = useConfirmedSave(({ bookId, id }) => state.books.some((b) => b.id === bookId && b.quotes.some((q) => q.id === id)));
+  const editing = useConfirmedSave(({ id, text, page, color }) => book?.quotes.some((q) => q.id === id && q.text === text && (q.page ?? null) === page && q.color === color));
+  if (!book || (edicion && !quote)) return null;
+  const guardarNueva = (nota, done) => {
+    const id = newId('q');
+    adding.save(
+      () => actions.addQuote(book.id, { id, ...nota }),
+      { bookId: book.id, id },
+      () => {
+        done();
+        playUiSound('noteSave');
+        onVolver();
+      },
+    );
+  };
+  const guardarCambios = (patch) =>
+    editing.save(
+      () => actions.updateQuote(book.id, quote.id, patch),
+      { id: quote.id, ...patch },
+      () => {
+        playUiSound('noteSave');
+        onVolver();
+      },
+    );
+  return (
+    <section className="pcd-editor" aria-label={edicion ? 'Editar anotación' : 'Nueva nota'}>
+      <button type="button" className="link-btn pcd-editor__volver" onClick={onVolver}>
+        <PixelControl name="back" />
+        Volver al listado
+      </button>
+      {edicion ? (
+        <div className="pcd-entrada pcd-entrada--cabecera">
+          <Miniatura book={book} />
+          <span className="pcd-entrada__texto">
+            <b>{book.title}</b>
+            <small>{book.author}</small>
+            {validIso(quote.createdAt) && <small>{shortDate(quote.createdAt)}</small>}
+          </span>
+        </div>
+      ) : (
+        <label className="pcd-picker">
+          <span>Libro</span>
+          <select value={book.id} onChange={(e) => setElegido(e.target.value)}>
+            {libros.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {quote?.comment && <p className="pcd-editor__comentario">{quote.comment}</p>}
+      {quote?.epub && <p className="pcd-editor__origen">{quote.epub.section ? 'Nota de una sección' : 'Fragmento'} del EPUB{quote.epub.name ? ` «${quote.epub.name}»` : ''}</p>}
+      {edicion ? (
+        <AnnotationForm book={book} meanings={meanings} initial={quote} title="Editar nota" submitLabel="Guardar cambios" status={editing.status} onRetry={editing.retry} onCancel={onVolver} onSubmit={guardarCambios} />
+      ) : (
+        <AnnotationForm key={book.id} book={book} meanings={meanings} title="Nueva nota" submitLabel="Guardar nota" placeholder="Una idea, una frase, lo que te ha removido…" draftable autoFocus status={adding.status} onRetry={adding.retry} onCancel={onVolver} onSubmit={guardarNueva} />
+      )}
+      {edicion && (
+        <div className="pcd-editor__mas">
+          <button type="button" className="link-btn" onClick={() => onAbrirFicha(book.id, 'notes')}>
+            Abrir la ficha del libro
+          </button>
+          {borrando ? (
+            <span className="confirm-inline" role="alertdialog" aria-label="Borrar esta anotación">
+              ¿Borrarla? No se puede deshacer.
+              <button
+                type="button"
+                className="link-btn link-btn--danger"
+                onClick={() => {
+                  actions.removeQuote(book.id, quote.id);
+                  onVolver();
+                }}
+              >
+                Sí, borrar
+              </button>
+              <button type="button" className="link-btn" onClick={() => setBorrando(false)}>
+                Cancelar
+              </button>
+            </span>
+          ) : (
+            <button type="button" className="link-btn link-btn--danger" onClick={() => setBorrando(true)}>
+              Borrar
+            </button>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ListaNotas({ filtros, setFiltros, onNueva, onEditar, onOpenLibrary }) {
+  const { state } = useLibrary();
+  const meanings = state.settings.quoteMeanings;
+  const { query, bookId, color } = filtros;
+  const withNotes = state.books.filter((b) => b.quotes.length);
+  const all = withNotes.flatMap((b) => b.quotes.map((q) => ({ book: b, quote: q })));
+  // Un libro filtrado puede haberse quedado sin notas: entonces el filtro no aplica
+  const libro = withNotes.some((b) => b.id === bookId) ? bookId : 'all';
+  const needle = query.trim().toLocaleLowerCase('es');
+  const shown = all
+    .filter((n) => libro === 'all' || n.book.id === libro)
+    .filter((n) => color === 'all' || (meaningOf(meanings, n.quote.color).id ?? 'unknown') === color)
+    .filter((n) => !needle || n.quote.text.toLocaleLowerCase('es').includes(needle) || n.book.title.toLocaleLowerCase('es').includes(needle))
+    .sort((a, b) => (b.quote.createdAt ?? '').localeCompare(a.quote.createdAt ?? ''));
+  const counts = all.reduce((acc, n) => {
+    const id = meaningOf(meanings, n.quote.color).id ?? 'unknown';
+    acc[id] = (acc[id] ?? 0) + 1;
+    return acc;
+  }, {});
+  const cambiar = (patch) => setFiltros((f) => ({ ...f, ...patch }));
+
+  if (!all.length) {
+    return state.books.length ? (
+      <VacioCuaderno icono="book" titulo="Tu cuaderno está en blanco" texto="Guarda aquí una idea o una frase de cualquiera de tus libros." accion="Nueva nota" onAccion={onNueva} />
+    ) : (
+      <VacioCuaderno icono="book" titulo="Tu cuaderno está en blanco" texto="Añade un libro a tu biblioteca para empezar a anotar." accion="Ir a mi biblioteca" onAccion={onOpenLibrary} />
+    );
+  }
+  return (
+    <div className="pcd-notes">
+      <button type="button" className="sheet-btn sheet-btn--primary pcd-nueva" onClick={onNueva}>
+        <PixelControl name="plus" />
+        Nueva nota
+      </button>
+      <div className="pcd-notes__filters">
+        <label className="pcd-search">
+          <Search aria-hidden="true" />
+          <input type="search" value={query} onChange={(e) => cambiar({ query: e.target.value })} placeholder="Buscar…" aria-label="Buscar en mis notas" />
+        </label>
+        <label className="pcd-picker">
+          <span>Libro</span>
+          <select value={libro} onChange={(e) => cambiar({ bookId: e.target.value })}>
+            <option value="all">Todos los libros</option>
+            {withNotes.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="quote-filter" role="radiogroup" aria-label="Filtrar notas por categoría">
+          <button type="button" role="radio" aria-checked={color === 'all'} onClick={() => cambiar({ color: 'all' })}>
+            Todas · {all.length}
+          </button>
+          {[...COLOR_IDS, ...(counts.unknown ? ['unknown'] : [])]
+            .filter((id) => counts[id])
+            .map((id) => {
+              const m = meaningOf(meanings, id === 'unknown' ? null : id);
+              return (
+                <button key={id} type="button" role="radio" aria-checked={color === id} style={{ '--marker': m.hex }} onClick={() => cambiar({ color: id })}>
+                  <span className="quote-filter__dot" aria-hidden="true" />
+                  {m.label} · {counts[id]}
+                </button>
+              );
+            })}
+        </div>
+      </div>
+      <p className="pcd-note" role="status">
+        {shown.length === all.length ? `${all.length} ${all.length === 1 ? 'nota' : 'notas'}` : `${shown.length} de ${all.length} notas`}
+      </p>
+      {shown.length ? (
+        <ul className="pcd-lista">
+          {shown.map(({ book, quote }) => {
+            const m = meaningOf(meanings, quote.color);
+            return (
+              <li key={quote.id}>
+                <button type="button" className="pcd-entrada" onClick={() => onEditar({ bookId: book.id, quoteId: quote.id })}>
+                  <Miniatura book={book} />
+                  <span className="pcd-entrada__texto">
+                    <b>{book.title}</b>
+                    <small>
+                      {validIso(quote.createdAt) ? shortDate(quote.createdAt) : 'Sin fecha'}
+                      {quote.page ? ` · pág. ${quote.page}` : ''}
+                    </small>
+                    <span className="pcd-entrada__fragmento">{quote.text}</span>
+                    <small className="pcd-entrada__marca">
+                      <i style={{ background: m.hex }} aria-hidden="true" />
+                      {m.label}
+                    </small>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <VacioCuaderno icono="lupa" titulo="Nada por aquí" texto="Ninguna nota coincide con la búsqueda." accion="Quitar filtros" onAccion={() => setFiltros({ query: '', bookId: 'all', color: 'all' })} />
+      )}
+    </div>
+  );
+}
+
+function ListaResenas({ onAbrir, onOpenLibrary }) {
+  const { state } = useLibrary();
+  const conResena = state.books.filter((b) => b.review?.trim()).sort((a, b) => (b.finishedAt ?? '').localeCompare(a.finishedAt ?? ''));
+  if (!conResena.length) return <VacioCuaderno icono="bookmark" titulo="Aún no hay reseñas" texto="Las reseñas que escribas en la ficha de cada libro aparecerán aquí." accion="Ir a mi biblioteca" onAccion={onOpenLibrary} />;
+  return (
+    <ul className="pcd-lista">
+      {conResena.map((book) => (
+        <li key={book.id}>
+          <button type="button" className="pcd-entrada" onClick={() => onAbrir(book.id, 'review')}>
+            <Miniatura book={book} />
+            <span className="pcd-entrada__texto">
+              <b>{book.title}</b>
+              <small>{validIso(book.finishedAt) ? `Terminado el ${shortDate(book.finishedAt)}` : 'Sin fecha de fin'}</small>
+              {book.rating > 0 && <RatingStars value={book.rating} />}
+              <span className="pcd-entrada__fragmento">{book.review}</span>
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function DiaryNotebook({ initialView, onComplete, onOpenLibrary, onOpenBook }) {
+  const { state } = useLibrary();
+  const raiz = useRef(null);
+  const [view, setView] = useState(() => alVolver?.view ?? (CUADERNO.some((v) => v.id === initialView) ? initialView : 'today'));
+  const [filtros, setFiltros] = useState(() => alVolver?.filtros ?? { query: '', bookId: 'all', color: 'all' });
+  // null: el listado; { nueva: true } o { bookId, quoteId }: el editor
+  const [editor, setEditor] = useState(null);
+  const alturaLista = useRef(0);
+  const cuerpo = () => raiz.current?.closest('.pc-win__body');
+
+  useLayoutEffect(() => {
+    if (!alVolver) return;
+    const body = cuerpo();
+    if (body) body.scrollTop = alVolver.top;
+    alVolver = null;
+  }, []);
+  // Al abrir el editor se empieza por arriba; al cerrarlo, el listado sigue donde estaba
+  const editorPrevio = useRef(editor);
+  useLayoutEffect(() => {
+    if (editorPrevio.current === editor) return;
+    editorPrevio.current = editor;
+    const body = cuerpo();
+    if (body) body.scrollTop = editor ? 0 : alturaLista.current;
+  }, [editor]);
+
+  const abrirEditor = (destino) => {
+    alturaLista.current = cuerpo()?.scrollTop ?? 0;
+    setEditor(destino);
+  };
+  const abrirFicha = (id, pagina) => {
+    // Desde el editor se vuelve al listado, a la altura que tenía
+    alVolver = { view, filtros, top: editor ? alturaLista.current : (cuerpo()?.scrollTop ?? 0) };
+    onOpenBook(id, pagina);
+  };
+  const ir = (id) => {
+    if (id !== view) playUiSound('diaryTab');
+    setView(id);
+    const body = cuerpo();
+    if (body) body.scrollTop = 0;
+  };
+  const libroInicial = (filtros.bookId !== 'all' && filtros.bookId) || (state.books.some((b) => b.id === state.settings.currentBookId && b.status === 'reading') ? state.settings.currentBookId : (state.books.find((b) => b.status === 'reading')?.id ?? state.books[0]?.id));
+
+  return (
+    <div ref={raiz} className="pc-diary pcd-cuaderno bs-literary" data-view={view}>
+      {editor ? (
+        <EditorNota edicion={editor.nueva ? null : editor} libroInicial={libroInicial} onVolver={() => setEditor(null)} onAbrirFicha={abrirFicha} />
+      ) : (
+        <>
+          <div className="lit-tabs" role="tablist" aria-label="Mi diario">
+            {CUADERNO.map((v) => (
+              <button key={v.id} type="button" role="tab" id={`diary-tab-${v.id}`} aria-selected={view === v.id} aria-controls={`diary-view-${v.id}`} className="color-tab" data-tone={v.tone} onClick={() => ir(v.id)}>
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <div className="diary__view" role="tabpanel" id={`diary-view-${view}`} aria-labelledby={`diary-tab-${view}`}>
+            {view === 'today' && <TodayView onComplete={onComplete} onOpenBook={abrirFicha} />}
+            {view === 'notes' && <ListaNotas filtros={filtros} setFiltros={setFiltros} onNueva={() => abrirEditor({ nueva: true })} onEditar={abrirEditor} onOpenLibrary={onOpenLibrary} />}
+            {view === 'reviews' && <ListaResenas onAbrir={abrirFicha} onOpenLibrary={onOpenLibrary} />}
+          </div>
+        </>
+      )}
     </div>
   );
 }
