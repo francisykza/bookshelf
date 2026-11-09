@@ -8,12 +8,32 @@
 // 1.78 (encargo del 3-11-2026: «que los menús no tengan tanto protagonismo»): al entrar no hay nada abierto, solo el
 // dibujo con letreros pequeños; lo de cada cosa sale en un papel más compacto al tocarla, y se cierra con «×», tocándola
 // otra vez o con Escape (un segundo Escape sale a la plaza).
+// 9-11-2026 (encargo de Francisco): se entra en la recepción en 3D (RecepcionVista.jsx), con los mismos papeles; este dibujo
+// isométrico queda como «Plano», que se elige con un botón y se recuerda en el dispositivo, y como respaldo si el móvil no
+// puede con el 3D.
 import { useEffect, useRef, useState } from 'react';
 import { missionStatus } from '../../../domain/missions';
 import { useLibrary } from '../../../state/useLibrary';
 import { MISION_TICKETS } from '../economy';
 import { useMissionTickets } from '../useMissionTickets';
 import { LOBBY_H, LOBBY_W, renderLobby } from './lobbyArt';
+import { Recepcion3D } from './RecepcionVista';
+
+const VISTA_KEY = 'bookshelf:vestibulo-vista';
+const readVista = () => {
+  try {
+    return localStorage.getItem(VISTA_KEY) === 'plano' ? 'plano' : '3d';
+  } catch {
+    return '3d';
+  }
+};
+const saveVista = (v) => {
+  try {
+    localStorage.setItem(VISTA_KEY, v);
+  } catch {
+    // sin almacenamiento, se queda solo para esta visita
+  }
+};
 
 const SPOTS = [
   { id: 'recepcion', nombre: 'Recepción' },
@@ -163,12 +183,20 @@ function drawDial(canvas, ang) {
 }
 
 /** La botonera de latón del ascensor, con la esfera de plantas encima (en el pixel art de la habitación). */
-function Ascensor({ onStreet, onFloor }) {
+// `viaje` (dentro de la cabina en 3D): al pulsar una planta abierta, la aguja va hasta ella y luego se llega
+function Ascensor({ onStreet, onFloor, viaje = false }) {
   const [floor, setFloor] = useState(null);
+  const [yendo, setYendo] = useState(null);
   const dial = useRef(null);
   const shown = useRef(dialAngle('vestibulo'));
   const f = FLOORS.find((x) => x.id === floor);
   // La aguja va hasta la planta pulsada (de golpe con movimiento reducido)
+  useEffect(() => {
+    if (!yendo) return undefined;
+    const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const t = setTimeout(() => onFloor(yendo), still ? 0 : 900);
+    return () => clearTimeout(t);
+  }, [yendo, onFloor]);
   useEffect(() => {
     const to = dialAngle(floor ?? 'vestibulo');
     const from = shown.current;
@@ -199,7 +227,15 @@ function Ascensor({ onStreet, onFloor }) {
                 className="gh-lift__btn"
                 aria-pressed={x.aqui || floor === x.id}
                 aria-current={x.aqui ? 'location' : undefined}
-                onClick={() => (x.calle ? onStreet() : x.abierta ? onFloor(x.id) : setFloor(x.aqui ? null : x.id))}
+                disabled={Boolean(yendo)}
+                onClick={() => {
+                  if (x.calle) onStreet();
+                  else if (x.abierta && viaje) {
+                    setFloor(x.id);
+                    setYendo(x.id);
+                  } else if (x.abierta) onFloor(x.id);
+                  else setFloor(x.aqui ? null : x.id);
+                }}
               >
                 <span className="gh-lift__lamp" aria-hidden="true">
                   {x.boton}
@@ -211,7 +247,11 @@ function Ascensor({ onStreet, onFloor }) {
         </ul>
       </div>
       <div className="gh-lift__note" role="status" aria-live="polite">
-        {f ? (
+        {yendo ? (
+          <p>
+            {DIAL.indexOf(yendo) > DIAL.indexOf('vestibulo') ? 'Subiendo' : 'Bajando'} {f.nombre.startsWith('El ') ? `al ${f.nombre.slice(3)}` : `a ${f.nombre[0].toLowerCase()}${f.nombre.slice(1)}`}…
+          </p>
+        ) : f ? (
           <>
             <h4>{f.nombre}</h4>
             <p>{f.texto}</p>
@@ -225,7 +265,36 @@ function Ascensor({ onStreet, onFloor }) {
   );
 }
 
+/** Lo que dice cada cosa del vestíbulo: el mismo papel en la vista 3D y en el plano. */
+function papel(spot, { onStreet, onFloor }) {
+  if (spot === 'recepcion') return <Encargos />;
+  if (spot === 'ascensor') return <Ascensor onStreet={onStreet} onFloor={onFloor} viaje />;
+  const info = INFO[spot];
+  if (!info) return null;
+  return (
+    <>
+      <p>{info.texto}</p>
+      <span className="gh-card__soon">Abre pronto</span>
+    </>
+  );
+}
+
 export function Vestibulo({ onStreet, onFloor = () => {} }) {
+  const [vista, setVista] = useState(readVista);
+  // Sin 3D (el móvil no puede o pierde la GPU), el plano, sin recordarlo: la próxima vez se vuelve a intentar
+  const [sin3d, setSin3d] = useState(false);
+  const elegir = (v) => {
+    saveVista(v);
+    setVista(v);
+  };
+  if (vista === '3d' && !sin3d) {
+    return <Recepcion3D onStreet={onStreet} onPlano={() => elegir('plano')} onFail={() => setSin3d(true)} paper={(spot) => papel(spot, { onStreet, onFloor })} />;
+  }
+  return <PlanoVestibulo onStreet={onStreet} onFloor={onFloor} on3d={sin3d ? null : () => elegir('3d')} />;
+}
+
+/** El vestíbulo isométrico de siempre (1.75), ahora el «Plano». `on3d`: vuelve a la vista 3D (null si no se puede). */
+function PlanoVestibulo({ onStreet, onFloor, on3d }) {
   const lobby = renderLobby();
   const root = useRef(null);
   const [spot, setSpot] = useState(null);
@@ -290,6 +359,13 @@ export function Vestibulo({ onStreet, onFloor = () => {} }) {
         </div>
       </div>
       {!spot && <p className="gh-lobby__hint">Toca la recepción, el ascensor, el tablón o el guardarropa.</p>}
+      {!spot && on3d && (
+        <p className="gh-lobby__vista">
+          <button type="button" className="gh-lobby__entrar" onClick={on3d}>
+            Entrar en la recepción
+          </button>
+        </p>
+      )}
       <div ref={desk} className={spot === 'ascensor' ? 'gh-desk gh-desk--lift' : 'gh-desk'} role="tabpanel" id="gh-lobby-panel" aria-labelledby={spot ? `gh-tab-${spot}` : undefined} hidden={!spot}>
         {spot && (
           <button type="button" className="gh-desk__close" aria-label="Cerrar" onClick={() => setSpot(null)}>

@@ -6,12 +6,10 @@
 // tablón «Busco quien lea…» y el guardarropa. Todo propio.
 import { createRaster, hash, noise, rgb } from '../../minigames/libreria-puerto/raster';
 import { evening, outlineOf, toDataURL } from '../shopRoom';
+// Medidas y colores compartidos con la recepción en 3D
+import { CREAM, GOLD, GOLD_D, HUESPED, MARBLE, MARBLE_D, RED, SD, SW, VELVET, WALL_T, WALNUT, WALNUT_L, WH } from './lobbyLayout';
 
 const YAW = Math.PI / 4;
-const SW = 11;
-const SD = 8;
-const WH = 4.8;
-const WALL_T = 0.3;
 const S_LOBBY = 16;
 const GLOW = 0x8000;
 // Lo que se toca (identificadores en el búfer de toques)
@@ -19,15 +17,6 @@ const ID = { recepcion: 1, ascensor: 2, tablon: 3, guardarropa: 4 };
 // Dónde cuelga el letrero de cada cosa (un punto del mundo, encima de ella)
 const TAG_AT = { recepcion: [3.0, 0.9, 3.5], ascensor: [7.9, 0.1, 4.45], tablon: [0, 2.0, 3.2], guardarropa: [0, 5.5, 3.45] };
 
-const CREAM = [234, 218, 186];
-const GOLD = [236, 190, 96];
-const GOLD_D = [168, 120, 54];
-const WALNUT = [98, 60, 40];
-const WALNUT_L = [138, 88, 56];
-const MARBLE = [232, 226, 212];
-const MARBLE_D = [50, 70, 68];
-const RED = [150, 40, 46];
-const VELVET = [52, 98, 96];
 const CORK = [176, 128, 80];
 const LEAF = [70, 120, 80];
 const SKIN = [236, 196, 160];
@@ -332,9 +321,10 @@ function buildLobby(r) {
   r.castShadow(LX, LY, 0.2, 0.7, 1, 0.5);
 
   // ── Una huésped esperando el ascensor, con su maleta ──
-  guest(6.4, 2.6, [214, 120, 88], [70, 46, 34], SKIN);
-  box(6.75, 2.45, 0, 7.0, 2.9, 0.55, [96, 120, 170], { seed: 9 });
-  r.castShadow(6.5, 2.65, 0.2, 0.4, 1, 0.5);
+  // Junto al ascensor, sin tapar al conserje desde la entrada (1.98: la misma huésped que en la recepción en 3D)
+  guest(HUESPED.x, HUESPED.y, [214, 120, 88], [70, 46, 34], SKIN);
+  box(HUESPED.x + 0.35, HUESPED.y - 0.15, 0, HUESPED.x + 0.6, HUESPED.y + 0.3, 0.55, [96, 120, 170], { seed: 9 });
+  r.castShadow(HUESPED.x + 0.1, HUESPED.y + 0.05, 0.2, 0.4, 1, 0.5);
 
   // ── La lámpara de araña, sobre el diván ──
   const CX = OX;

@@ -269,7 +269,10 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   - Mientras dure la transición se conserva una opción para volver a la experiencia anterior, sin reiniciar ni sustituir bibliotecas, lecturas ni decoración.
   - Los datos de demostración, siempre separados de las cuentas reales; en producción no se cargan.
   - Se integra en `main` solo después de que Francisco lo compruebe en Android y en Safari de iPhone con la preview.
-  - No ampliar todavía el contenido del rascacielos.
+  - ~~No ampliar todavía el contenido del rascacielos.~~ **Levantado el 9-11-2026** (Francisco: «ahora me gustaría que
+    empezáramos con el rascacielos»): al llegar al Gran Hotel se entra en la recepción recreada en 3D, con el mismo
+    motor que la habitación en primera persona y botones con el diseño de la recepción. Se planea primero y se hace por
+    bloques, con capturas entre uno y otro.
   - **Publicado en la 1.87.0** (7-11-2026). La experiencia anterior va como en la 1.86: **Rincón 01 está apagado** (`RINCON_01` en `bookcaseLayout.js`) hasta que Francisco lo apruebe.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.
 - **Biblioteca grande** (1.59, §59): la biblioteca cerrada no monta libros; el escaparate y los lomos solo montan lo

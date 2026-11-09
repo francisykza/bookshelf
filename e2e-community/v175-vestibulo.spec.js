@@ -27,6 +27,8 @@ async function toHotel(page) {
   });
   await mock.attach(page, ANA);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
+  // Desde la recepción en 3D (9-11-2026) se entra en 3D; estas pruebas son del plano isométrico, que se elige con «Plano»
+  await page.addInitScript(() => localStorage.setItem('bookshelf:vestibulo-vista', 'plano'));
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);

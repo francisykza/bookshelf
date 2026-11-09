@@ -114,8 +114,9 @@ test('pedir y pasarse da 2 fichas; tras tres manos, a mañana; la «S» del asce
   const { hotel } = await toHotel(page, { fichas: 16, semana: 16, manos: [hecha(1), hecha(2)], barajas: [[9, 9, 4, 6, 12, 3]] });
   await hotel.getByRole('button', { name: 'Directorio' }).click();
   await hotel.getByRole('button', { name: /Vestíbulo/ }).click();
-  await hotel.getByRole('tab', { name: 'Ascensor' }).click();
-  await hotel.getByRole('button', { name: /El casino del sótano/ }).click();
+  // Desde la 1.98 el vestíbulo es la recepción en 3D: la «S» está en la botonera de la cabina del ascensor
+  await hotel.locator('.rcp-bar').getByRole('button', { name: 'Ascensor' }).click();
+  await hotel.locator('.rcp-cabina').getByRole('button', { name: /El casino del sótano/ }).click({ timeout: 15000 });
   const casino = hotel.getByRole('region', { name: 'El casino del sótano' });
   await casino.getByRole('button', { name: 'Repartir la mano 3 de 3' }).click();
   await casino.getByRole('button', { name: 'Pedir carta' }).click();

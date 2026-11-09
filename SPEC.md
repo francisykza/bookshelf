@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.97.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.98.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5587,3 +5587,13 @@ Encargo de Francisco del 9-11-2026, «que cada mueble se sienta bien», por bloq
 - **Muebles por zona de la casa** (`ZONAS`, `zonaOf` en `catalog.js`): rincón de lectura, salón, dormitorio y estudio, y «Paredes y suelo» con lo de pared, las alfombras, los colores y el suelo. Sin pestañas vacías (hoy no sale Dormitorio). `cat` sigue siendo el tipo, para los sobres y el servidor.
 - **Las cuatro paredes del 3D, del mismo color:** la de enfrente lleva ya la misma lámina con el color elegido y la luz de las lámparas.
 - **Pendiente de decidir:** los talleres piden muebles retirados; los puestos de la Lonja ya puestos con algo retirado y pedir un mueble retirado; el reciclaje sigue enseñando copias retiradas.
+
+## 98. La recepción del Gran Hotel en 3D (1.98.0)
+
+Encargo de Francisco del 9-11-2026 («ahora me gustaría que empezáramos con el rascacielos»), por bloques con capturas entre uno y otro.
+- **Se entra en 3D:** al tocar el vestíbulo en la fachada del Gran Hotel se abre la recepción en primera persona (`recepcion3d.js`, Three.js con el mismo método que la habitación: arte a 320 px, luz pintada y texturas de píxel). Se está de pie en la entrada, en la esquina de la puerta, y se mira girando (arrastrar o flechas) del carrito, a la derecha, al guardarropa, a la izquierda. Los muebles y las personas salen del mismo plano que el dibujo isométrico (`lobbyLayout.js`): el conserje con el casillero de llaves hueco, el mostrador de nogal y mármol, la huésped con su maleta, el tablón, el guardarropa, el diván con la palmera, la araña y el ascensor con su esfera.
+- **Lo que se toca:** letreros de latón sobre la recepción, el ascensor, el tablón y el guardarropa, que siguen a la vista. Tocar una cosa (en la escena, en su letrero o en la barra de nogal de abajo, con «Encargos de la semana» en terciopelo y tres iconos de píxel) acerca la cámara y abre su papel crema con marco de latón; lo enfocado queda en el hueco que deja el papel. Son los mismos papeles del plano: los encargos del conserje y «Abre pronto» en el tablón y el guardarropa. «Volver», tocar fuera o Escape vuelven a la entrada; otro Escape sale a la plaza.
+- **El ascensor por dentro** (petición de Francisco: «que se abra y entres, que sea todo muy lujoso y veas las opciones como los botones de él»): las puertas de latón se abren, se entra en la cabina y se gira hacia la botonera. La cabina tiene nogal con marquetería, espejos biselados, friso déco, un sol de marquetería, banco de terciopelo, pasamanos y suelo de mármol con estrella. Los botones de las plantas son la botonera de siempre, puesta encima de la placa de latón de la pared (`plateRect()`). Al pulsar una planta abierta, la aguja va hasta ella («Bajando al casino del sótano…») y se llega; las demás dicen qué habrá en una placa de nogal. «Salir del ascensor» o Escape: se sale de espaldas y se cierran las puertas. Con movimiento reducido, todo directo.
+- **«Plano»:** cambia al vestíbulo isométrico de siempre, y el dispositivo lo recuerda (`bookshelf:vestibulo-vista`); su placa «Entrar en la recepción» vuelve al 3D. Sin WebGL, o si se pierde la GPU, se abre el plano y no se recuerda (la próxima vez se vuelve a intentar).
+- **Detalles técnicos:** `RecepcionVista.jsx` (no `Recepcion3D.jsx`: Windows no distingue mayúsculas y lo confundía con `recepcion3d.js`). `preserveDrawingBuffer` está activado porque el WebKit de Playwright en Windows no presentaba los fotogramas nuevos. En escritorio, el alto llega al pie del panel.
+- **Pruebas:** `e2e-community/v198-recepcion3d.spec.js` (360, 390, 430 y escritorio en Chromium, y WebKit a 390; casino desde la cabina; sin WebGL), `recepcion3d-capturas.spec.js` y `v175-vestibulo.spec.js` (prueba el plano y lo elige al empezar). Solo emulación.

@@ -4135,3 +4135,403 @@
   display: block;
   margin: 0 auto;
 }
+
+/* La recepción en 3D (encargo de Francisco del 9-11-2026, RecepcionVista.jsx): la escena a todo lo que da la pantalla y, encima,
+   los mandos con el diseño de la recepción: latón, nogal, terciopelo verde y el rombo del hotel. */
+.rcp {
+  --rcp-gold: #ecbe60;
+  --rcp-gold-d: #a8743a;
+  --rcp-walnut: #3a2418;
+  --rcp-velvet: #2f5e5c;
+  --rcp-cream: #f6ecd8;
+  position: relative;
+  height: var(--rcp-h, calc(100dvh - 60px));
+  overflow: hidden;
+  background: #14122a;
+  color: var(--rcp-cream);
+}
+
+.rcp-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.rcp-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: grab;
+}
+
+.rcp-canvas:focus-visible {
+  outline: 3px solid var(--rcp-gold);
+  outline-offset: -3px;
+}
+
+.rcp-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font: italic 1.05rem 'Cormorant Garamond', Georgia, serif;
+  color: var(--rcp-gold);
+}
+
+/* Letreros de latón sobre lo que se toca: siguen a la vista; de cerca, fuera */
+.rcp-tags {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.rcp-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-height: 26px;
+  padding: 2px 9px 3px;
+  border: 2px solid var(--rcp-gold);
+  border-radius: 0;
+  background: rgb(26 18 14 / 0.82);
+  box-shadow:
+    inset 0 0 0 1px #5a3a1c,
+    0 2px 0 rgb(10 8 20 / 0.6);
+  color: var(--rcp-cream);
+  font: 600 0.78rem/1 'Lora', Georgia, serif;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.rcp-tag::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 8px;
+  height: 8px;
+  background: var(--rcp-gold);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.rcp-tag[data-off='true'],
+.rcp[data-spot] .rcp-tag {
+  visibility: hidden;
+}
+
+.rcp-tag:focus-visible,
+.rcp-plano:focus-visible,
+.rcp-primary:focus-visible,
+.rcp-tool:focus-visible,
+.rcp-card__back:focus-visible {
+  outline: 3px solid var(--rcp-cream);
+  outline-offset: 2px;
+}
+
+/* «Plano»: una placa de latón pequeña, arriba a la derecha */
+.rcp-plano {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  right: 12px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 2px solid #5a3a1c;
+  border-radius: 0;
+  background: linear-gradient(#f3d27e, #d9a648 55%, #b9822f);
+  box-shadow:
+    inset 0 0 0 2px #f8e2a2,
+    0 3px 0 rgb(10 8 20 / 0.55);
+  color: #3a2418;
+  font: 700 0.86rem/1 'Lora', Georgia, serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.rcp[data-spot] .rcp-plano {
+  visibility: hidden;
+}
+
+/* La barra de abajo: nogal con filete dorado doble, como el zócalo de la recepción */
+.rcp-bar {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  border-top: 3px solid var(--rcp-gold);
+  background:
+    linear-gradient(var(--rcp-gold-d) 0 2px, transparent 2px 5px, var(--rcp-gold-d) 5px 6px, transparent 6px),
+    repeating-linear-gradient(90deg, #4a2e1f 0 46px, #3f271a 46px 48px),
+    var(--rcp-walnut);
+  box-shadow: 0 -4px 0 rgb(10 8 20 / 0.35);
+}
+
+.rcp-primary {
+  flex: 1 1 auto;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+  min-height: 56px;
+  margin-top: 4px;
+  padding: 6px 14px;
+  border: 2px solid var(--rcp-gold);
+  border-radius: 0;
+  background: linear-gradient(#3a6d6a, var(--rcp-velvet) 60%, #244a48);
+  box-shadow:
+    inset 0 0 0 2px #1d3a39,
+    inset 0 0 0 3px rgb(236 190 96 / 0.35);
+  color: var(--rcp-cream);
+  text-align: left;
+  cursor: pointer;
+}
+
+.rcp-primary span {
+  font: 600 1rem/1.15 'Lora', Georgia, serif;
+}
+
+.rcp-primary small {
+  font: italic 0.82rem/1.1 'Cormorant Garamond', Georgia, serif;
+  color: #e4d3a8;
+}
+
+.rcp-primary[aria-pressed='true'] {
+  background: linear-gradient(#244a48, var(--rcp-velvet));
+}
+
+.rcp-tool {
+  flex: 0 0 auto;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  width: 64px;
+  min-height: 60px;
+  padding: 2px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--rcp-cream);
+  font: 600 0.72rem/1.1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.rcp-tool__icon {
+  image-rendering: pixelated;
+}
+
+.rcp-tool[aria-pressed='true'] {
+  box-shadow: inset 0 -3px 0 var(--rcp-gold);
+}
+
+/* El papel de cada cosa: crema con marco de latón doble y el rombo del hotel bajo el título */
+.rcp-card {
+  position: absolute;
+  z-index: 3;
+  left: 10px;
+  right: 10px;
+  bottom: calc(90px + env(safe-area-inset-bottom));
+  max-height: 56%;
+  display: flex;
+  flex-direction: column;
+  border: 3px solid var(--rcp-gold);
+  background: #f8efdc;
+  box-shadow:
+    inset 0 0 0 3px #f8efdc,
+    inset 0 0 0 4px var(--rcp-gold-d),
+    0 4px 0 rgb(10 8 20 / 0.5);
+  color: #2c1e14;
+}
+
+.rcp-card__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px 12px 16px;
+  border-bottom: 1px solid var(--rcp-gold-d);
+}
+
+.rcp-card__head::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  background: var(--rcp-gold);
+  box-shadow: 0 0 0 1px var(--rcp-gold-d);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.rcp-card__head h4 {
+  margin: 0;
+  font: 600 1.2rem/1.15 'Cormorant Garamond', Georgia, serif;
+}
+
+.rcp-card__back {
+  flex: none;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 2px solid #5a3a1c;
+  border-radius: 0;
+  background: linear-gradient(#f3d27e, #d9a648 55%, #b9822f);
+  box-shadow: inset 0 0 0 2px #f8e2a2;
+  color: #3a2418;
+  font: 700 0.84rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.rcp-card__body {
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px 14px;
+  overscroll-behavior: contain;
+}
+
+.rcp-card__body > p {
+  margin: 0 0 10px;
+  font: 1rem/1.4 'Lora', Georgia, serif;
+}
+
+/* El plano isométrico: el botón para volver a la recepción en 3D */
+.gh-lobby__vista {
+  margin: 4px 0 0;
+  text-align: center;
+}
+
+/* La misma placa de latón que «Plano» en la recepción en 3D */
+.gh-lobby__entrar {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 2px solid #5a3a1c;
+  border-radius: 0;
+  background: linear-gradient(#f3d27e, #d9a648 55%, #b9822f);
+  box-shadow:
+    inset 0 0 0 2px #f8e2a2,
+    0 3px 0 rgb(10 8 20 / 0.55);
+  color: #3a2418;
+  font: 700 0.9rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.gh-lobby__entrar:focus-visible {
+  outline: 3px solid #f6ecd8;
+  outline-offset: 2px;
+}
+
+/* Dentro del ascensor (petición de Francisco del 9-11-2026): la botonera de siempre, encima de la placa de latón de la
+   cabina en 3D; lo que hay en cada planta, en una placa grabada debajo; y «Salir del ascensor» al pie */
+.rcp[data-spot='ascensor'] .rcp-bar {
+  display: none;
+}
+
+.rcp-cabina {
+  position: absolute;
+  z-index: 3;
+  animation: rcp-cabina-in 260ms ease-out both;
+}
+
+@keyframes rcp-cabina-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rcp-cabina {
+    animation: none;
+  }
+}
+
+.rcp-cabina .gh-lift {
+  display: block;
+  height: 100%;
+  max-width: none;
+}
+
+.rcp-cabina .gh-lift__box {
+  box-sizing: border-box;
+  height: 100%;
+  align-content: safe center;
+  overflow: auto;
+  padding: 6px 6px 8px;
+}
+
+.rcp-cabina .gh-lift__dial {
+  width: 102px;
+  height: 57px;
+}
+
+.rcp-cabina .gh-lift__readout {
+  margin: 6px 0 8px;
+}
+
+.rcp-cabina .gh-lift__btn {
+  min-height: 38px;
+  font-size: 0.72rem;
+}
+
+/* Lo que hay en la planta: una placa de nogal con letra de latón, bajo la botonera */
+.rcp-cabina .gh-lift__note {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: -6px;
+  right: -6px;
+  padding: 8px 12px;
+  border: 0;
+  border-image: none;
+  background: rgb(36 22 14 / 0.9);
+  box-shadow:
+    0 0 0 2px #a8743a,
+    0 0 0 4px #3b2618;
+  color: #f3dfae;
+  font: italic 0.88rem/1.35 'Cormorant Garamond', Georgia, serif;
+}
+
+.rcp-cabina .gh-lift__note h4 {
+  margin: 0 0 2px;
+  color: #ffd36a;
+  font: 700 0.9rem/1.2 'Lora', Georgia, serif;
+}
+
+.rcp-cabina .gh-lift__note p {
+  margin: 0 0 6px;
+}
+
+.rcp-salir {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  min-height: 46px;
+  padding: 0 22px;
+  border: 2px solid #5a3a1c;
+  border-radius: 0;
+  background: linear-gradient(#f3d27e, #d9a648 55%, #b9822f);
+  box-shadow:
+    inset 0 0 0 2px #f8e2a2,
+    0 3px 0 rgb(10 8 20 / 0.55);
+  color: #3a2418;
+  font: 700 0.92rem/1 'Lora', Georgia, serif;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+
+.rcp-salir:focus-visible {
+  outline: 3px solid #f6ecd8;
+  outline-offset: 2px;
+}
