@@ -7,11 +7,28 @@
 // Para restaurar uno: quitarlo de RETIRADOS. Al cargar vuelve a su sitio solo si sigue libre; si no, se queda en `ocultos`,
 // «esperando sitio» y avisado en Decorar. Nunca se recoloca en otra parte ni se solapa con nada.
 import { acabadoOf } from './acabados';
-import { catalogItem } from './catalog';
+import { CATALOG, catalogItem } from './catalog';
 import { ROOM, check, validateRoom } from './room';
 
-/** Se retiran enteros: farol, rosa y búho sobre peana, y el perrito sobre su cojín. */
-export const RETIRADOS = new Set(['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'perrito']);
+/** 1.89: se retiran enteros farol, rosa y búho sobre peana, y el perrito sobre su cojín. */
+const MISTICOS_PLANOS = ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'perrito'];
+/**
+ * Reestructuración de muebles (Francisco, 9-11-2026, «que cada mueble se sienta bien»): fuera las sagas y los muebles
+ * hechos de cajas que no están a la altura de los de la casa. Vuelven cuando se rehagan con un modelo como el del sillón,
+ * la estantería o las mesas. Se quedan los de la casa y lo de pared con dibujo propio.
+ */
+export const EN_REFORMA = [
+  // De suelo
+  'sofa', 'silla', 'banco', 'mesilla', 'cama', 'estufa', 'planta-grande', 'gato', 'puf', 'mecedora', 'comoda', 'baul', 'farol', 'monstera',
+  'perchero', 'cesto-mantas', 'chimenea', 'piano', 'telescopio', 'mesa-tapete', 'gramola', 'taburete-barra',
+  // Encima de un mueble
+  'lampara-mesa', 'planta-pequena', 'libros', 'radio', 'tetera', 'velas', 'cactus', 'pecera', 'globo', 'tocadiscos', 'taza', 'jarron',
+  'tarro-garbanzos', 'baraja-naipes',
+  // Alfombras
+  'alfombra', 'alfombra-redonda', 'alfombra-rayas',
+];
+const SAGAS = CATALOG.filter((c) => c.set).map((c) => c.id);
+export const RETIRADOS = new Set([...MISTICOS_PLANOS, ...EN_REFORMA, ...SAGAS]);
 /** Destellos de los acabados y animación encima de gramola y mesa de tapete: el mueble y su color se quedan, el efecto no. */
 export const EFECTOS_APAGADOS = true;
 

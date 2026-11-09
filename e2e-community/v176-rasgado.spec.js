@@ -3,10 +3,12 @@
 import { expect, test } from '@playwright/test';
 import { join } from 'node:path';
 import { dirOf, openShop } from './sobreShop';
+import { SOBRES_CERRADOS } from '../src/features/edificio/economy.js';
 
 test.use({ video: { mode: 'on', size: { width: 360, height: 800 } } });
 
 test('el rasgado del sobre, grabado a 360', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/chromium-360x800/.test(info.project.name), 'Chromium 360');
   test.setTimeout(90000);
   const { mock, shop } = await openShop(page);

@@ -16,6 +16,8 @@ function room(pared, suelo, items) {
 /** Tu piso al empezar: pocas cosas, para que haya sitio para decorar. */
 export function starterRoom() {
   return room('yeso', 'tablas', () => [
+    // Igual que el inventario inicial del servidor. Alfombra, planta, libros y tetera están retirados (9-11-2026): se
+    // dan igual, pero no se dibujan hasta que se rehagan
     f('alfombra', 3, 4),
     f('sillon', 5, 0),
     f('lampara-pie', 7, 0, 0, 0),

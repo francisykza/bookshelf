@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
+import { SOBRES_CERRADOS } from '../src/features/edificio/economy.js';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 
@@ -131,6 +132,7 @@ test('pedir y pasarse da 2 fichas; tras tres manos, a mañana; la «S» del asce
 });
 
 test('la caja: el conejo arriba, cambiar fichas por ropa, el sobre y lo que falta', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/chromium-(320x640|390x844|1440x900)$|webkit-390x844/.test(info.project.name), '320, 390 (Chromium y WebKit) y escritorio');
   const { hotel, mock } = await toHotel(page, { fichas: 330, semana: 40, caja: ['complemento:visera'], sobre: [{ mueble: 'sofa', rareza: 'poco-comun', nuevo: true }] });
   const errors = [];
@@ -407,19 +409,16 @@ test('la lata: plegada al pie de la caja, sus premios y el cambio con tope', asy
   await lata.locator('summary').click();
   await lata.scrollIntoViewIfNeeded();
   await shot(page, info, 'v182-lata');
-  await expect(lata.getByRole('button', { name: '¿Cambias 600 garbanzos por Taburete de barra?' })).toBeDisabled();
+  // Los tres premios de la lata están en reforma (9-11-2026)
+  await expect(lata.getByRole('list', { name: 'Premios de la lata' }).getByText('En reforma')).toHaveCount(3);
   await expect(lata.getByRole('button', { name: '¿Cambias 5 tickets por 25 garbanzos?' })).toBeDisabled();
-  await lata.getByRole('button', { name: '¿Cambias 150 garbanzos por Tarro de garbanzos?' }).click();
-  await lata.getByRole('button', { name: 'Sí, cambiar' }).click();
-  await expect(lata.getByRole('status')).toContainText('Tarro de garbanzos: ya está en tu inventario');
-  await expect(lata.getByText('Ya es tuyo')).toBeVisible();
   for (const veces of [5, 10]) {
     await lata.getByRole('button', { name: '¿Cambias 50 garbanzos por 5 tickets?' }).click();
     await lata.getByRole('button', { name: 'Sí, cambiar' }).click();
     await expect(lata.getByText(`Esta semana, ${veces} de 10 tickets.`).first()).toBeVisible();
   }
   await expect(lata.getByRole('button', { name: '¿Cambias 50 garbanzos por 5 tickets?' })).toBeDisabled();
-  expect(mock.db.casino).toMatchObject({ garbanzos: 150, tickets: 13 });
+  expect(mock.db.casino).toMatchObject({ garbanzos: 300, tickets: 13 });
   // Con 13 tickets ya se puede volver
   await expect(lata.getByRole('button', { name: '¿Cambias 5 tickets por 25 garbanzos?' })).toBeEnabled();
 });

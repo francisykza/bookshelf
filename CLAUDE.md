@@ -230,6 +230,17 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     - **Colecciones de taller**: los muebles son de talleres con nombre; completar uno da una placa en el piso y un premio.
     - **Tablón «Se busca»** en la Lonja: marcas el mueble que quieres, sin texto libre.
     - **Catálogo rotatorio** de la tienda: idea aplazada, no hacerla sin que la pida.
+  - **Reestructuración de muebles** (Francisco, 9-11-2026, «que cada mueble se sienta bien»; por bloques con capturas):
+    - **Fuera todos los muebles de saga** y los que no tengan un modelo 3D a la altura de los de la casa. Se quedan los de la
+      casa (sillón, lámpara de pie, estantería, mesa, escritorio, mesa baja, ventana) y lo de pared con dibujo (cuadro, espejo,
+      mapa, balda, reloj, tapiz, guirnalda, neón y placas). Se retiran sin borrar (`RETIRADOS` en `retirados.js`): quien los
+      tiene los conserva y vuelven cuando se rehagan al nivel de la casa. Galería para comparar: `e2e-community/muebles-galeria.spec.js`.
+    - **Sobres cerrados por reforma** (decisión de Francisco del 9-11-2026): sin los muebles retirados apenas quedaba qué
+      sortear. El servidor ya no abre sobres (también el de la caja del casino) y lo retirado no se compra, ni se cambia en el
+      casino o la lata, ni se regala ni se pone en la Lonja (`20261123120000_muebles_reforma.sql`, la aplica Francisco); la
+      tienda lo dice (`SOBRES_CERRADOS` en `economy.js`). Se reabren cuando haya muebles rehechos que sortear.
+    - **Muebles divididos por zona de la casa** (no por tipo): rincón de lectura, salón, dormitorio, estudio, y paredes y suelo.
+    - **Las cuatro paredes del piso 3D, del mismo color**: el elegido en Decorar, con la misma luz; solo cambia su sombra natural.
   - **«La estiba»** (4-11-2026, aprobada): sustituye a la pesada de Remedios, que a Francisco no le resultaba intuitiva ni veía
     sus recompensas. Encajar bultos con forma de mueble en la bodega de un barco; una bodega al día, igual para todos, y el
     servidor comprueba la carga. Los premios, siempre a la vista en una **pared de premios** en la Lonja, nunca plegados: sellos

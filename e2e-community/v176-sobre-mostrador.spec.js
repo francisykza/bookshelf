@@ -7,6 +7,7 @@
 import { expect, test } from '@playwright/test';
 import { join } from 'node:path';
 import { ANA, dirOf, openShop } from './sobreShop';
+import { SOBRES_CERRADOS } from '../src/features/edificio/economy.js';
 
 /**
  * Cada carta, contra el reparto calculado en el rasterizador (window.__gacha, solo en desarrollo): su base cae en su
@@ -43,6 +44,7 @@ async function checkSpots(page, what) {
 }
 
 test('el mismo sobre en el expositor, el selector y el mostrador; cinco cartas en 3 + 2 sobre la madera', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/360x800|390x844|1440x900/.test(info.project.name) || /reduced/.test(info.project.name), '360, 390 y escritorio');
   test.setTimeout(120000);
   const errors = [];
@@ -223,6 +225,7 @@ async function lieEdges(page) {
 }
 
 test('con movimiento reducido, la misma composición final: sin sobre ni tira y las cinco en su sitio', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/360x800|390x844/.test(info.project.name), '360 y 390');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const { mock, shop } = await openShop(page);

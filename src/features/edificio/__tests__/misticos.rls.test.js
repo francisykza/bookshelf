@@ -3,7 +3,7 @@
 // (solo el que tienes) y el portal lo enseña a los vecinos; no se compran, reciclan ni regalan; desde la 1.73 salen en
 // el sobre de coleccionista (bloque 3).
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
 import { CATALOG, COMPANEROS, isMistico } from '../catalog';
 import { starterRoom } from '../demo';
 import { addItem } from '../room';
@@ -17,7 +17,8 @@ const saveRoom = (u, room) => as(db, u, (q) => q('update pisos set layout = $1::
 const setPal = (u, id) => as(db, u, (q) => q('update pisos set companero = $1', [id]));
 
 beforeAll(async () => {
-  db = await createDatabase();
+  // Reglas de sobres y muebles para cuando se reabran: sin la migración de la reforma (ver supabaseHarness)
+  db = await createDatabase(Infinity, { sin: [REFORMA_MUEBLES] });
   [A, B] = await createUsers(db, 2);
   for (const [i, u] of [A, B].entries()) {
     await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Vecino ${i}`]));

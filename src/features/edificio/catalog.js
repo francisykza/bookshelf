@@ -20,9 +20,34 @@ export const CATEGORIES = [
   { id: 'detalles', nombre: 'Detalles' },
   { id: 'pared', nombre: 'Pared' },
   { id: 'alfombras', nombre: 'Alfombras' },
-  { id: 'sagas', nombre: 'Sagas' },
+  // Sin pestaña «Sagas» desde la reestructuración de muebles (9-11-2026): sus piezas siguen en CATALOG, retiradas
   { id: 'misticos', nombre: 'Místicos' },
 ];
+
+/**
+ * Zonas de la casa (reestructuración de muebles, decisión de Francisco del 9-11-2026: «por zona de la casa», no por tipo).
+ * Es como se agrupan los muebles en la balda y en la mudanza; `cat` sigue siendo el tipo, que usan los sobres y el
+ * servidor. La quinta zona, «Paredes y suelo», es la pestaña de la casa: lo de pared, las alfombras, los colores y el suelo.
+ */
+export const ZONAS = [
+  { id: 'lectura', nombre: 'Rincón de lectura', corto: 'Lectura', icono: 'sillon' },
+  { id: 'salon', nombre: 'Salón', corto: 'Salón', icono: 'mesa-baja' },
+  { id: 'dormitorio', nombre: 'Dormitorio', corto: 'Dormitorio', icono: 'cama' },
+  { id: 'estudio', nombre: 'Estudio', corto: 'Estudio', icono: 'escritorio' },
+];
+export const ZONA_PAREDES = 'paredes';
+const ZONA_DE = {
+  lectura: ['sillon', 'lampara-pie', 'estanteria', 'mecedora', 'puf', 'libros', 'cesto-mantas', 'tetera', 'taza', 'velas'],
+  dormitorio: ['cama', 'mesilla', 'comoda', 'baul', 'perchero', 'lampara-mesa'],
+  estudio: ['escritorio', 'silla', 'globo', 'telescopio', 'ordenador'],
+};
+/** La zona de un mueble: la suya si la tiene; lo de pared y las alfombras, «Paredes y suelo»; lo demás, el salón. */
+export function zonaOf(cat) {
+  if (!cat) return null;
+  if (cat.cat === 'misticos') return 'misticos';
+  for (const [zona, ids] of Object.entries(ZONA_DE)) if (ids.includes(cat.id)) return zona;
+  return cat.cat === 'pared' || cat.cat === 'alfombras' ? ZONA_PAREDES : 'salon';
+}
 
 // Sets de sagas (1.64, SPEC §64, encargo de Francisco): cada uno con nombre propio y un guiño a la saga que evoca.
 // Los muebles son originales: evocan la saga con objetos corrientes (un brasero, un laúd, unas esferas de luz), nunca

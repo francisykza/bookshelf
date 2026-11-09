@@ -236,6 +236,44 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Bitácora
 
+### 2026-11-09 · Reestructuración de muebles · 1.97.0, aprobada y con commit en la rama `1.90-escritorio-puerto`; falta aplicar la migración y publicar
+
+Entrega por evidencias de los bloques 1 a 3 y los sobres cerrados; aprobada por Francisco («Vale, me parece bien»). Los vídeos de la tienda y el casino entran por la experiencia anterior (las pruebas locales arrancan ahí); Francisco no quiso regrabarlos.
+- **Versión 1.97.0** en `diag.js`, `package.json`, `sw.js` y SPEC (§97).
+- **Arreglo de paso:** «Sustituir» en Esenciales ya no ofrece modelos retirados (`opcionesDe` en `esenciales.js`; la mecedora se ofrecía y luego no se dibujaba).
+- **Evidencias:** vídeos en `qa-report/reforma-muebles/videos/` (piso en primera persona y balda, tienda con sobres cerrados, caja y lata del casino), comparativas en `comparativa/` y hojas en `zonas/`.
+- **E2E ajustadas a lo retirado:** `v166` (mudanza sin silla ni banco), `v170` (el mueble nuevo es un sillón), `v180` (la lata en reforma), `v189` (sin mecedora para sustituir), `e2e/edificio-puerto` (lámpara de pie en vez de la de mesa y la planta; sagas, saltada). Las de abrir sobres se saltan con `SOBRES_CERRADOS`.
+- **Comprobado:** build; Vitest de `edificio` y `pisoLab` (301 pasan, 1 falla que ya fallaba: `casino.rls` «el tope de la semana»); e2e de comunidad v166, v167, v170, v173, v176, v178, v180, v186, v189 y las dos de la reforma a 390 en Chromium (falla `v189` «un piso antiguo sin esenciales», que también falla en la 1.96: hay dos botones «Decorar»); `e2e/edificio-puerto` (7 pasan, 1 saltada). Solo emulación. oxlint: sin errores nuevos (los de `src/vendor/pixelfx` ya estaban).
+- **Antes de publicar:** aplicar `20261123120000_muebles_reforma.sql` (SQL Editor, comprobar su SHA-256). Sin ella, la tienda dice «cerrado» pero el servidor seguiría abriendo sobres y dando lo retirado.
+
+### 2026-11-09 · Reestructuración de muebles, bloque 3 (paredes) · sin commit, en la rama `1.90-escritorio-puerto`
+
+- **Causa:** en el piso 3D, tres paredes (fondo, izquierda y derecha) llevan la lámina dibujada con el color elegido y la luz de las lámparas (`wallTexture`), pero la cuarta, la de enfrente, era solo la caja del armazón, con el color crudo y sin luz: se veía rosada frente al gris claro de las demás.
+- **Hecho:** cuarta lámina `frente` en `WALLS` (`interior3d.js`) y en `wallPlates` (`materials.js`): el mismo dibujo, la misma luz y la misma hora; solo cambian las sombras de cada pared. La vista isométrica no cambia.
+- **Pruebas:** build, oxlint y Vitest de `pisoLab` y `edificio` (301 pasan; falla `casino.rls` «el tope de la semana», que ya fallaba). Capturas en primera persona en `qa-report/reforma-muebles/comparativa/1-primera-persona-*` y `zonas/paredes-despues.png`. Solo de tarde y con el yeso por defecto; noche y otros colores, sin capturar.
+
+### 2026-11-09 · Reestructuración de muebles, bloque 2 (por zonas) · sin commit, en la rama `1.90-escritorio-puerto`
+
+- **Hecho:** `ZONAS` y `zonaOf` en `catalog.js`: rincón de lectura, salón, dormitorio y estudio, más «Paredes y suelo» (lo de pared y las alfombras, junto a los colores y el suelo, en la pestaña de la casa). `cat` no cambia, porque lo usan los sobres y la paridad con el servidor. La balda (`piso.js`) y «Tu mudanza» (`StarterPicker.jsx`) agrupan por zona; los místicos siguen en su pestaña, solo si tienes alguno. Sin pestañas vacías: hoy **no sale «Dormitorio»** (cama, mesilla, cómoda, baúl, perchero y lámpara de mesa están en reforma); vuelve cuando se rehaga alguno.
+- **Pruebas:** `zonas.test.js` (4) y Vitest de `edificio` y `pisoLab` (sigue fallando solo `casino.rls` «el tope de la semana»). `reforma-muebles.spec` a 390 px; hojas en `qa-report/reforma-muebles/zonas/` (antes por tipo y después por zonas). En `despues/` quedan capturas viejas del bloque 1 con nombres de pestaña de entonces.
+
+### 2026-11-09 · Reestructuración de muebles: sobres cerrados por reforma · sin commit, en la rama `1.90-escritorio-puerto`
+
+Decisión de Francisco («Cerrarlos por reforma»), escrita en `CLAUDE.md`.
+- **Migración nueva, sin aplicar ni publicar:** `20261123120000_muebles_reforma.sql` (la genera `migracion-reforma.mjs`, del scratchpad de esta sesión). `piso_retirados()` con los 63 retirados (solo para el servidor), `piso_abrir_sobre` cerrado (también el sobre de la caja del casino) y una comprobación al empezar en `piso_comprar`, `piso_casino_canjear`, `piso_casino_lata_canjear`, `piso_regalar` y `piso_lonja_poner` (copias literales de su última versión). No borra ni cambia datos. Para reabrir los sobres, volver a crear la función de `20261115120000_edificio_acabados.sql`.
+- **Cliente:** `SOBRES_CERRADOS` en `economy.js`; la tienda enseña «Cerrado por reforma» sin botones de abrir ni probabilidades (muebles y reciclaje siguen); en la caja y la lata del casino, el sobre y los muebles retirados llevan el sello «En reforma».
+- **Pruebas:** `reforma.rls.test.js` (PGlite: paridad con `RETIRADOS`, sobres cerrados sin cobrar, nada retirado se da, nada se borra). Las pruebas RLS de sobres, tienda, místicos, acabados, Lonja, regalos y casino cargan todo menos esta migración (`{ sin: [REFORMA_MUEBLES] }` en `supabaseHarness.js`), porque prueban las reglas para cuando se reabran. Vitest de `edificio` y `pisoLab`: 297 pasan; falla `casino.rls` «el tope de la semana», que ya fallaba. Las e2e que abren sobres (v167, v173, v176 ×2, v178, v180 caja, v186) se saltan con `SOBRES_CERRADOS`. Nueva `e2e-community/reforma-tienda.spec.js` (2 pasan a 390 en Chromium), con capturas en `qa-report/reforma-muebles/comparativa/` (4, 5 y 6).
+- **Sigue pendiente de decidir:** talleres (piden muebles retirados), puestos de la Lonja ya puestos con algo retirado (`piso_lonja_aceptar` no se ha tocado), si el reciclaje debe enseñar copias retiradas, y que en la Lonja aún se puede *pedir* un mueble retirado.
+
+### 2026-11-09 · Reestructuración de muebles, bloque 1 (retirar) · sin commit, en la rama `1.90-escritorio-puerto`
+
+Encargo de Francisco: fuera las sagas y los muebles que no estén a la altura de los de la casa, divididos por zonas y con las cuatro paredes del 3D del mismo color, enseñándolo poco a poco. Eligió la propuesta tras ver la galería (`e2e-community/muebles-galeria.spec.js`, hojas en `qa-report/muebles-hojas/`).
+- **Hecho (sin commit):** `EN_REFORMA` (39 muebles hechos de cajas) y todas las piezas de saga entran en `RETIRADOS` (`retirados.js`): no se dibujan ni se ofrecen en balda, tienda, mudanza inicial ni para poner en la Lonja, y el piso guardado no cambia. Sin pestaña «Sagas» y sin pestañas vacías en la balda. Quedan 14 muebles a la venta: los 7 de la casa y lo de pared con dibujo.
+- **Evidencias:** `e2e-community/reforma-muebles.spec.js` (antes en una copia de la 1.96 y después), comparativa en `qa-report/reforma-muebles/comparativa/`.
+- **Pruebas:** build y Vitest de `edificio` y `pisoLab` (291 pasan; falla `casino.rls` «el tope de la semana», que ya fallaba). `retirados.test` usa ahora la lámpara de pie en vez de la silla, que está retirada.
+- **Pendiente de decidir con Francisco antes de publicar:** los sobres se quedan sin raros ni poco comunes de suelo y el de «Balcón» vacío, y el servidor seguiría dando muebles retirados (no conoce `RETIRADOS`); los seis talleres piden muebles retirados y no se pueden completar; los puestos de otros en la Lonja aún pueden ofrecer algo retirado. Hace falta una migración.
+- **Siguen:** bloque 2, división por zonas de la casa; bloque 3, paredes del mismo color (en el 3D la del fondo sale gris y las demás rosadas).
+
 ### 2026-11-09 · Dibujos en el tablón · 1.96.0, publicada
 
 Aprobada por Francisco tras revisar capturas y vídeo.

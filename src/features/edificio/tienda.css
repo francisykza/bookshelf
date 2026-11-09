@@ -2053,3 +2053,17 @@
     animation: none;
   }
 }
+
+/* Sobres cerrados por reforma (9-11-2026): el sobre, apagado y con una tira de obra */
+.ts-card--cerrado .ts-card__pack {
+  filter: grayscale(0.85) brightness(0.92) drop-shadow(2px 3px 0 rgb(59 38 24 / 0.3));
+}
+
+.ts-card--cerrado h3 {
+  display: inline-block;
+  justify-self: start;
+  padding: 2px 8px;
+  background: repeating-linear-gradient(-45deg, #e8b53a 0 8px, #3b2618 8px 16px);
+  color: #fff8e6;
+  text-shadow: 1px 1px 0 #3b2618, -1px -1px 0 #3b2618, 1px -1px 0 #3b2618, -1px 1px 0 #3b2618;
+}

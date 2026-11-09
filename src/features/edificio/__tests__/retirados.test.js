@@ -35,7 +35,7 @@ describe('objetos retirados', () => {
   });
 
   it('al dejar de estar retirado vuelve a su sitio solo si sigue libre', () => {
-    const libre = { uid: 5, id: 'silla', x: 3, y: 3, rot: 0, tono: 0 };
+    const libre = { uid: 5, id: 'lampara-pie', x: 3, y: 3, rot: 0, tono: 0 };
     expect(repartir(base([SILLON]), [libre]).items.map((i) => i.uid)).toEqual([1, 5]);
     const ocupado = repartir(base([{ uid: 6, id: 'mesa-baja', x: 3, y: 3, rot: 0, tono: 0 }]), [libre]);
     expect(ocupado.items.map((i) => i.uid)).toEqual([6]);

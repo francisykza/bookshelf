@@ -3,7 +3,7 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
 import { ACABADOS, ACABADO_PROB } from '../acabados';
 import { createRoom } from '../room';
 
@@ -27,7 +27,8 @@ const conMueble = (layout, item) => ({ ...layout, items: [...layout.items, item]
 const hueco = (layout, extra) => ({ uid: 900 + layout.items.length, id: 'silla', x: 0, y: 0, rot: 0, tono: 0, ...extra });
 
 beforeAll(async () => {
-  db = await createDatabase(FILES.length);
+  // Reglas de sobres y muebles para cuando se reabran: sin la migración de la reforma (ver supabaseHarness)
+  db = await createDatabase(FILES.length, { sin: [REFORMA_MUEBLES] });
   [A, B] = await createUsers(db, 2);
   for (const [i, u] of [A, B].entries()) {
     await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Vecino ${i}`]));

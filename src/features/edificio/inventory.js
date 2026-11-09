@@ -5,6 +5,7 @@
 // libre como antes.
 import { acabadoOf } from './acabados';
 import { CATALOG, catalogItem, isMistico } from './catalog';
+import { isRetirado } from './retirados';
 
 /** Muebles comunes que se eligen de inicio (una sola vez). */
 export const START_PICKS = 6;
@@ -17,8 +18,8 @@ export const isCounted = (id) => {
 
 const rarezaOf = (cat) => cat.rareza ?? 'comun';
 
-/** Lo que se puede elegir de inicio: los comunes que no son de sagas. */
-export const STARTER_CHOICES = CATALOG.filter((c) => !c.set && rarezaOf(c) === 'comun');
+/** Lo que se puede elegir de inicio: los comunes que no son de sagas ni están retirados. */
+export const STARTER_CHOICES = CATALOG.filter((c) => !c.set && rarezaOf(c) === 'comun' && !isRetirado(c.id));
 
 /** Cuántos hay colocados de cada mueble: { id: n }. */
 export function placedCounts(room) {

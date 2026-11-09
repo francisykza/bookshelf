@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.96.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.97.0 · 2026-11-09 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5578,3 +5578,12 @@ Solo interfaz: sin migraciones y sin cambios en cálculos ni persistencia.
 - **Biblioteca del visitante** en solo lectura: lo expuesto en la estantería y lo que se comparte (rincón y colecciones visibles). Lo expuesto se publica como copia aparte (`piso_expuestos`, migración `20261121120000_piso_expuestos.sql`), sin la lectura actual, y se lee con las reglas de la visita.
 - **Dibujos** (`dibujo.js`, `Dibujar.jsx`, migración `20261122120000_tablon_dibujos.sql`): quien visita deja un dibujo en vez de un post-it, con el mismo cupo diario, y el dueño puede dibujar desde Añadir. Se guardan como trazos validados en el servidor (cinco colores, coordenadas enteras de 0 a 120, hasta 150 trazos y 4000 puntos), nunca como imagen. Se deja la hoja o la forma recortada: elige quien dibuja y el dueño puede cambiarlo. Mismas reglas que un post-it para privacidad, permiso público, retirada, denuncia y bloqueo.
 - **Límites:** solo emulación. La capa nítida se descuadra en WebKit para Windows; falta comprobarla en un iPhone real. No hay moderación automática de los dibujos.
+
+## 97. Reestructuración de muebles (1.97.0)
+
+Encargo de Francisco del 9-11-2026, «que cada mueble se sienta bien», por bloques con capturas.
+- **Retirados sin borrar:** todas las piezas de saga y 39 muebles hechos de cajas (`EN_REFORMA` en `retirados.js`) no se dibujan ni se ofrecen en la balda, la tienda, la mudanza ni la Lonja. Quien los tiene los conserva, el piso guardado no cambia y vuelven cuando se rehagan al nivel de la casa. Quedan 14 a la venta: sillón, lámpara de pie, estantería, mesa, mesa baja, escritorio, ventana y lo de pared con dibujo. Sin pestaña «Sagas».
+- **Sobres cerrados por reforma** (decisión de Francisco): la tienda lo dice sin botones de abrir ni probabilidades; en la caja y la lata del casino, el sobre y los muebles retirados llevan «En reforma». Lo hace cumplir el servidor (migración `20261123120000_muebles_reforma.sql`, la aplica Francisco): `piso_abrir_sobre` cerrado, y `piso_comprar`, `piso_casino_canjear`, `piso_casino_lata_canjear`, `piso_regalar` y `piso_lonja_poner` rechazan lo retirado. `piso_retirados()` coincide con `RETIRADOS` (prueba de paridad).
+- **Muebles por zona de la casa** (`ZONAS`, `zonaOf` en `catalog.js`): rincón de lectura, salón, dormitorio y estudio, y «Paredes y suelo» con lo de pared, las alfombras, los colores y el suelo. Sin pestañas vacías (hoy no sale Dormitorio). `cat` sigue siendo el tipo, para los sobres y el servidor.
+- **Las cuatro paredes del 3D, del mismo color:** la de enfrente lleva ya la misma lámina con el color elegido y la luz de las lámparas.
+- **Pendiente de decidir:** los talleres piden muebles retirados; los puestos de la Lonja ya puestos con algo retirado y pedir un mueble retirado; el reciclaje sigue enseñando copias retiradas.

@@ -75,7 +75,7 @@ test('los retirados no se dibujan ni bloquean, y guardar y recargar los conserva
   expect(room.items.some((i) => RETIRADOS.includes(i.id))).toBe(false);
   expect(room.ocultos.map((i) => i.id).sort()).toEqual([...RETIRADOS].sort());
   // Fuera de la balda
-  await page.locator('.ep-chip[data-cat="detalles"]').click();
+  await page.locator('.ep-chip[data-cat="salon"]').click();
   await expect(page.locator('.ep-item[data-id="perrito"]')).toHaveCount(0);
   await expect(page.locator('.ep-chip[data-cat="misticos"]')).toBeHidden();
   // La estantería (un soporte) va justo donde está la rosa oculta
@@ -115,18 +115,17 @@ test('Esenciales: mover, girar y sustituir se refleja en las dos vistas y tras r
   await expect(page.getByRole('button', { name: 'Guardar', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Girar' }).click();
   await expect.poll(() => iso(page).then((r) => r.items.find((i) => i.uid === 1).rot)).toBe(3);
-  // Sustituir el sillón por la mecedora, conservando su identificador
+  // La mecedora está en reforma (9-11-2026): ya no se ofrece para sustituir el sillón
   await card(page, 'sillon').getByRole('button', { name: 'Sustituir' }).click();
-  await page.getByRole('button', { name: /^Sustituir por Mecedora/ }).first().click();
-  await expect.poll(() => mine(mock).items.find((i) => i.uid === 1)?.id, { timeout: 8000 }).toBe('mecedora');
+  await expect(page.getByRole('button', { name: /^Sustituir por Mecedora/ })).toHaveCount(0);
   await page.getByRole('button', { name: 'Volver al sillón' }).click();
   await ready3d(page);
-  expect((await debug(page)).camera.seat).toMatchObject({ uid: 1, id: 'mecedora', rot: 3 });
+  expect((await debug(page)).camera.seat).toMatchObject({ uid: 1, id: 'sillon', rot: 3 });
   await page.reload();
   await expect(page.locator('.ep-canvas, .plab-stage[data-ready]').first()).toBeVisible({ timeout: 30000 });
   if (await page.getByRole('button', { name: 'Volver al sillón' }).count()) await page.getByRole('button', { name: 'Volver al sillón' }).click();
   await ready3d(page);
-  expect((await debug(page)).camera.seat).toMatchObject({ uid: 1, id: 'mecedora', rot: 3 });
+  expect((await debug(page)).camera.seat).toMatchObject({ uid: 1, id: 'sillon', rot: 3 });
 });
 
 test('un piso antiguo sin esenciales sigue funcionando y no se reorganiza', async ({ page }) => {

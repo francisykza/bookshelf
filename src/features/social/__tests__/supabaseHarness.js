@@ -20,12 +20,19 @@ const SUPABASE_STUB = `
 `;
 
 /** Base de datos con el esquema base y las migraciones indicadas (por prefijo de nombre, en orden). */
-export async function createDatabase(upTo = Infinity) {
+/**
+ * La reestructuración de muebles (9-11-2026) cierra los sobres y lo retirado no se compra ni se mueve. Las pruebas de
+ * esas reglas (para cuando se reabran) cargan todo menos esta migración, con `{ sin: [REFORMA_MUEBLES] }`; la reforma
+ * se prueba en edificio/__tests__/reforma.rls.test.js.
+ */
+export const REFORMA_MUEBLES = '20261123120000_muebles_reforma.sql';
+
+export async function createDatabase(upTo = Infinity, { sin = [] } = {}) {
   const db = new PGlite();
   await db.exec(SUPABASE_STUB);
   await db.exec(readFileSync(join(ROOT, 'supabase', 'schema.sql'), 'utf8'));
   const dir = join(ROOT, 'supabase', 'migrations');
-  const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  const files = readdirSync(dir).filter((f) => f.endsWith('.sql') && !sin.includes(f)).sort();
   for (const [i, f] of files.entries()) if (i < upTo) await db.exec(readFileSync(join(dir, f), 'utf8'));
   return db;
 }

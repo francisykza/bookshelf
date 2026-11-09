@@ -3208,6 +3208,12 @@
   transform: rotate(-5deg);
 }
 
+/* Reestructuración de muebles (9-11-2026): lo que no se cambia hasta que vuelva */
+.gh-caja__stamp.is-reforma {
+  box-shadow: inset 0 0 0 2px #c9a24a;
+  color: #e8c46a;
+}
+
 .gh-caja__item.is-mine img,
 .gh-caja__jackpot.is-mine .gh-caja__stage {
   filter: drop-shadow(0 0 6px rgb(255 227 154 / 0.6));

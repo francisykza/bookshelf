@@ -2,7 +2,7 @@
 // tickets), ropa del personaje, muebles exclusivos y el conejo de la chistera. Lo de la caja se tiene una vez, no sale
 // en sobres y no se recicla. Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
 import { DEFAULT_AVATAR, PRENDAS } from '../actor';
 import { catalogItem } from '../catalog';
 import { starterRoom } from '../demo';
@@ -19,7 +19,8 @@ const tickets = (u) => db.query('select tickets from piso_cuentas where user_id 
 const vestir = (u, p) => as(db, u, (q) => q('update pisos set personaje = $1::jsonb', [JSON.stringify({ ...DEFAULT_AVATAR, ...p })]));
 
 beforeAll(async () => {
-  db = await createDatabase();
+  // Reglas de sobres y muebles para cuando se reabran: sin la migración de la reforma (ver supabaseHarness)
+  db = await createDatabase(Infinity, { sin: [REFORMA_MUEBLES] });
   [A, B] = await createUsers(db, 2);
   for (const [i, u] of [A, B].entries()) {
     await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Jugador ${i}`]));

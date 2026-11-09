@@ -1,7 +1,7 @@
 // 1.82 · Los garbanzos del casino: mesas de garbanzos que no gastan manos ni dan fichas, la lata con sus premios y el
 // cambio de garbanzos y tickets, con su tope semanal. Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
 import { catalogItem } from '../catalog';
 import { starterRoom } from '../demo';
 import { CASINO, LATA } from '../hotel/veintiuna';
@@ -34,7 +34,8 @@ async function partida(a, b, garbanzos) {
 }
 
 beforeAll(async () => {
-  db = await createDatabase();
+  // Reglas de sobres y muebles para cuando se reabran: sin la migración de la reforma (ver supabaseHarness)
+  db = await createDatabase(Infinity, { sin: [REFORMA_MUEBLES] });
   [A, B, C, D] = await createUsers(db, 4);
   for (const [i, u] of [A, B, C, D].entries()) {
     await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Jugador ${i}`]));

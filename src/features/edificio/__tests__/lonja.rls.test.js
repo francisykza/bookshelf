@@ -1,7 +1,7 @@
 // 1.84 · La Lonja: lo ofrecido queda apartado, el cambio es de una vez y no se puede abusar de la economía; y el canje de
 // sellos, que nunca da tickets (la estiba, en estiba.rls.test.js). Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
 import { CATALOG } from '../catalog';
 import { starterRoom } from '../demo';
 
@@ -21,7 +21,8 @@ const uno = (where) => db.query(`select id from piso_catalogo where ${where} ord
 const envejecer = (dias) => db.query(`update piso_lonja_ofertas set cerrada = cerrada - interval '${dias} days', creada = creada - interval '${dias} days'`);
 
 beforeAll(async () => {
-  db = await createDatabase();
+  // Reglas de sobres y muebles para cuando se reabran: sin la migración de la reforma (ver supabaseHarness)
+  db = await createDatabase(Infinity, { sin: [REFORMA_MUEBLES] });
   [A, B, C, D, E, F] = await createUsers(db, 6);
   for (const [i, u] of [A, B, C, D, E, F].entries()) {
     await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Lector ${i}`]));

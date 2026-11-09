@@ -124,14 +124,14 @@ export function wallTexture(tono, { w, h, lights, hora, warmth = 0, panes = [] }
   return texture(canvas);
 }
 
-/** Tres paredes como láminas pegadas a las de verdad, con los huecos de sus ventanas: [{ pared, segments, length }]. */
+/** Las cuatro paredes como láminas pegadas a las de verdad, con los huecos de sus ventanas: [{ pared, segments, length }]. */
 export function wallPlates(walls) {
   const out = {};
   for (const { pared, segments, length, h } of walls) {
     const pos = [];
     const uv = [];
     for (const [s0, s1, z0, z1] of segments) {
-      const at = (s, z) => (pared === 'fondo' ? [s, z, 0.002] : pared === 'izq' ? [0.002, z, s] : [ROOM.w - 0.002, z, s]);
+      const at = (s, z) => (pared === 'fondo' ? [s, z, 0.002] : pared === 'izq' ? [0.002, z, s] : pared === 'frente' ? [s, z, ROOM.d - 0.002] : [ROOM.w - 0.002, z, s]);
       const q = [[s0, z0], [s1, z0], [s1, z1], [s0, z0], [s1, z1], [s0, z1]];
       for (const [s, z] of q) {
         pos.push(...at(s, z));

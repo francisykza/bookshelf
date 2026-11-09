@@ -7,6 +7,7 @@ import { acabadosDe, freeCopies, plainCopies } from './inventory';
 import { catalogItem } from './catalog';
 import { check, findFreeSpot, footprint, itemsOn, moveItem, rectOf } from './room';
 import { readingTable } from '../pisoLab/essentials';
+import { isRetirado } from './retirados';
 
 export const ESENCIALES_TAB = 'esenciales';
 export const ROLES = [
@@ -123,6 +124,8 @@ export function opcionesDe(inv, room, rol, item) {
   const sin = { ...room, items: room.items.filter((i) => i.uid !== item.uid) };
   const out = [];
   for (const id of rol.modelos) {
+    // Lo retirado no se ofrece (reestructuración de muebles, 9-11-2026): no se dibujaría
+    if (isRetirado(id)) continue;
     const cat = catalogItem(id);
     if (plainCopies(inv, id) > 0 && freeCopies(inv, sin, id) > 0) {
       if (rol.modelos.length === 1) {

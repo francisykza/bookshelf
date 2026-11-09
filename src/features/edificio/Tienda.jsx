@@ -9,7 +9,7 @@
 import { acabadosTexto } from './acabados';
 import { useEffect, useMemo, useState } from 'react';
 import { CATALOG, catalogItem, isMistico } from './catalog';
-import { MISION_TICKETS, PITY, SOBRES, TEMPORADA, TIENDA, costeDe, oddsTable, precioDe, rarezaInfo, rarezaOf, sobreOf, sobresHastaRaro, ticketsText } from './economy';
+import { MISION_TICKETS, PITY, SOBRES, SOBRES_CERRADOS, TEMPORADA, TIENDA, costeDe, oddsTable, precioDe, rarezaInfo, rarezaOf, sobreOf, sobresHastaRaro, ticketsText } from './economy';
 import { GachaReveal } from './GachaReveal';
 import { freeCopies, isCounted } from './inventory';
 import { pixelIconSrc } from './pixelUi';
@@ -137,7 +137,9 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
   const note =
     msg ||
     (tab === 'sobres'
-      ? falta > 0
+      ? SOBRES_CERRADOS
+        ? 'Los sobres están cerrados por reforma. Lo que tienes no se toca.'
+        : falta > 0
         ? `Te faltan ${ticketsText(falta)}.`
         : ''
       : tab === 'muebles'
@@ -145,10 +147,21 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
         : spare.length
           ? 'Lo que no tengas puesto en tu piso te lo cambio por tickets.'
           : 'Cuando te salga un repetido, tráemelo y te lo cambio por tickets.');
-  const showMissions = !msg && tab === 'sobres' && falta > 0 && onOpenMissions;
+  const showMissions = !msg && !SOBRES_CERRADOS && tab === 'sobres' && falta > 0 && onOpenMissions;
 
   let content = null;
-  if (tab === 'sobres') {
+  if (tab === 'sobres' && SOBRES_CERRADOS) {
+    // Cerrados por reforma (Francisco, 9-11-2026): el servidor ya no los abre; aquí solo se dice, sin botones ni probabilidades
+    content = (
+      <section className="ts-card ts-card--cerrado" aria-labelledby="ts-card-title">
+        <img className="ts-card__pack" src={packs.coleccion.full} alt="" />
+        <div className="ts-card__text">
+          <h3 id="ts-card-title">Cerrado por reforma</h3>
+          <p>Estamos rehaciendo los muebles para que cada uno se sienta bien. Los sobres vuelven cuando estén listos; mientras, los muebles de la casa siguen a la venta.</p>
+        </div>
+      </section>
+    );
+  } else if (tab === 'sobres') {
     content = (
       <>
         <div className="ts-packs" role="group" aria-label={`Sobres de la ${TEMPORADA.corto.toLowerCase()}, «${TEMPORADA.nombre}»`}>
@@ -252,7 +265,7 @@ export function Tienda({ inventory, room, soundOn = false, onInventory, onGoPiso
             </button>
           )}
         </div>
-        {tab === 'sobres' && (
+        {tab === 'sobres' && !SOBRES_CERRADOS && (
           <details className="ts-odds">
             <summary>
               <span>Probabilidades y garantías</span>

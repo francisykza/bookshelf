@@ -4,6 +4,7 @@
 import { expect, test } from '@playwright/test';
 import { join } from 'node:path';
 import { dirOf, openShop } from './sobreShop';
+import { SOBRES_CERRADOS } from '../src/features/edificio/economy.js';
 
 async function abrirUno(shop, page, mock, premio) {
   mock.db.piso_sorteo = [premio];
@@ -14,6 +15,7 @@ async function abrirUno(shop, page, mock, premio) {
 }
 
 test('un sobre con acabado brilla distinto y la carta se distingue', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   const { mock, shop } = await openShop(page);
   const gacha = await abrirUno(shop, page, mock, 'sofa@lacado');
   await expect(gacha).toHaveClass(/gacha--acabado/);
@@ -41,6 +43,7 @@ test('un sobre con acabado brilla distinto y la carta se distingue', async ({ pa
 });
 
 test('un sobre sin acabado no enseña ese brillo', async ({ page }) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   const { mock, shop } = await openShop(page);
   const gacha = await abrirUno(shop, page, mock, 'sofa');
   await expect(gacha).not.toHaveClass(/gacha--acabado/);

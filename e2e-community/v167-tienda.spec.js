@@ -7,6 +7,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
+import { SOBRES_CERRADOS } from '../src/features/edificio/economy.js';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 
@@ -43,6 +44,7 @@ async function openPortal(page, mock) {
 const wallet = (shop) => shop.locator('.ts-wallet strong');
 
 test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/320x640|390x844|1440x900/.test(info.project.name), '320, 390 (Chromium y WebKit) y escritorio');
   test.setTimeout(120000);
   const mock = mockWith({ tickets: 75, sin_raro: 3 });
@@ -147,6 +149,7 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
 });
 
 test('con movimiento reducido, el sobre enseña lo que trae sin animación', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/390x844/.test(info.project.name), 'una vez basta');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const mock = mockWith({ tickets: 30, sin_raro: 0 });
@@ -163,6 +166,7 @@ test('con movimiento reducido, el sobre enseña lo que trae sin animación', asy
 });
 
 test('sin tickets suficientes lo dice y lleva a las misiones; abajo, el nombre del sobre y qué hacer', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/320x640|390x844/.test(info.project.name), '320 y 390');
   const mock = mockWith({ tickets: 15, sin_raro: 1 });
   const portal = await openPortal(page, mock);

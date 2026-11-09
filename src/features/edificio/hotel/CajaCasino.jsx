@@ -7,7 +7,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_AVATAR } from '../actor';
 import { catalogItem } from '../catalog';
-import { rarezaInfo, SOBRES } from '../economy';
+import { rarezaInfo, SOBRES, SOBRES_CERRADOS } from '../economy';
+import { isRetirado } from '../retirados';
 import { misticoSprite, misticoThumb } from '../misticos';
 import { renderActorThumb, renderThumb } from '../render';
 import { canjearCaja } from '../service';
@@ -15,6 +16,9 @@ import { packArt } from '../shopArt';
 import { PixelNum } from './cartas21';
 import { LataGarbanzos } from './LataGarbanzos';
 import { CAJA, fichasDe } from './veintiuna';
+
+/** Reestructuración de muebles (9-11-2026): el sobre y los muebles retirados no se cambian hasta que vuelvan. */
+const enReforma = (a) => (a.tipo === 'sobre' ? SOBRES_CERRADOS : a.tipo === 'mueble' && isRetirado(a.id));
 
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -140,6 +144,7 @@ export function CajaCasino({ data, dia, onData, sfx }) {
   /** El botón (o el sello) de cada cosa, con la confirmación en el sitio. */
   const acciones = (a) => {
     if (a.tienes) return <p className="gh-caja__stamp">Ya es tuyo</p>;
+    if (enReforma(a)) return <p className="gh-caja__stamp is-reforma">En reforma</p>;
     const falta = a.precio - data.fichas;
     if (pide === a.id)
       return (

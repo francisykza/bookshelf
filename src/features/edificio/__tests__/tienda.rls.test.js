@@ -2,7 +2,7 @@
 // números que economy.js; misiones una vez por semana; comprar, abrir sobres (con pity y el de 5 con algo mejor) y
 // reciclar solo lo que no está colocado. Nada se escribe directamente.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
 import { CATALOG, catalogItem, isEspecial, isMistico } from '../catalog';
 import { starterRoom } from '../demo';
 import { BIENVENIDA, MISION_TICKETS, PITY, RAREZAS, SOBRES, oddsTable, precioDe, rarezaOf, sobreOf } from '../economy';
@@ -25,7 +25,8 @@ const monday = (offset = 0) => {
 };
 
 beforeAll(async () => {
-  db = await createDatabase();
+  // Reglas de sobres y muebles para cuando se reabran: sin la migración de la reforma (ver supabaseHarness)
+  db = await createDatabase(Infinity, { sin: [REFORMA_MUEBLES] });
   [A, B, H] = await createUsers(db, 3);
   for (const [i, u] of [A, B, H].entries()) {
     await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', $2)", [`Vecino ${i}`, u !== H]));

@@ -2,7 +2,7 @@
 // fase 1 de docs/qa/economia-muebles.md). Se tocan para meterlos en la caja (se pueden repetir) y se quitan desde la
 // caja; con seis, «Llevármelos» los pide al servidor, que es quien los da.
 import { useMemo, useState } from 'react';
-import { CATEGORIES } from './catalog';
+import { ZONAS, ZONA_PAREDES, zonaOf } from './catalog';
 import { START_PICKS, STARTER_CHOICES } from './inventory';
 import { renderThumb } from './render';
 
@@ -11,7 +11,8 @@ export function StarterPicker({ onPick, onLater }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const thumbs = useMemo(() => Object.fromEntries(STARTER_CHOICES.map((c) => [c.id, renderThumb(c.id, 0, 44).toDataURL()])), []);
-  const groups = CATEGORIES.map((g) => ({ ...g, items: STARTER_CHOICES.filter((c) => c.cat === g.id) })).filter((g) => g.items.length);
+  // Por zona de la casa (9-11-2026)
+  const groups = [...ZONAS, { id: ZONA_PAREDES, nombre: 'Paredes y suelo' }].map((g) => ({ ...g, items: STARTER_CHOICES.filter((c) => zonaOf(c) === g.id) })).filter((g) => g.items.length);
   const left = START_PICKS - picks.length;
   const countOf = (id) => picks.filter((p) => p === id).length;
   const nameOf = (id) => STARTER_CHOICES.find((c) => c.id === id).nombre;

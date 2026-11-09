@@ -987,6 +987,9 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     { pared: 'fondo', length: ROOM.w, h: ROOM.wallH, panes: panesOf('fondo'), segments: wallSegments(ROOM.w, panesOf('fondo')), lights: lamps.map((l) => ({ s: l.at.x, z: l.at.y, depth: l.at.z })) },
     { pared: 'izq', length: ROOM.d, h: ROOM.wallH, panes: panesOf('izq'), segments: wallSegments(ROOM.d, panesOf('izq')), lights: lamps.map((l) => ({ s: l.at.z, z: l.at.y, depth: l.at.x })) },
     { pared: 'der', length: ROOM.d, h: ROOM.wallH, segments: wallSegments(ROOM.d, []), lights: lamps.map((l) => ({ s: l.at.z, z: l.at.y, depth: ROOM.w - l.at.x })) },
+    // La cuarta, la de enfrente (decisión de Francisco del 9-11-2026: las cuatro del mismo color): antes era solo la caja
+    // del armazón, sin el dibujo ni la luz de las demás, y se veía de otro tono
+    { pared: 'frente', length: ROOM.w, h: ROOM.wallH, segments: wallSegments(ROOM.w, []), lights: lamps.map((l) => ({ s: l.at.x, z: l.at.y, depth: ROOM.d - l.at.z })) },
   ];
   const plates = wallPlates(WALLS);
   const wallLayers = WALLS.map((wallInfo) => {

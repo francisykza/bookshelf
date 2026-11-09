@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_AVATAR } from '../actor';
 import { CATALOG, catalogItem, isEspecial, isMistico } from '../catalog';
 import { rarezaOf } from '../economy';
+import { isRetirado } from '../retirados';
 import { renderActorThumb, renderThumb } from '../render';
 import { aceptarLonja, buscarLonja, canjearLonja, cargarLonja, loadInventario, ponerLonja, recogerTaller, retirarLonja, toldoLonja, zarparEstiba } from '../service';
 import { createShopSfx } from '../shopAudio';
@@ -86,7 +87,8 @@ function Elegir({ ids, valor, onElegir }) {
 }
 
 function Formulario({ lonja, busy, inicial = null, onPoner, onCancelar }) {
-  const ids = [...lonja.libresAcabado.map((x) => `${x.mueble}@${x.acabado}`), ...Object.keys(lonja.libres).sort((a, b) => nombre(a).localeCompare(nombre(b), 'es'))];
+  // Lo retirado (reestructuración de muebles) no se ofrece: no se vería en el piso de nadie
+  const ids = [...lonja.libresAcabado.filter((x) => !isRetirado(x.mueble)).map((x) => `${x.mueble}@${x.acabado}`), ...Object.keys(lonja.libres).filter((id) => !isRetirado(id)).sort((a, b) => nombre(a).localeCompare(nombre(b), 'es'))];
   const topeCobro = lonja.cobro.hecho >= lonja.cobro.tope;
   const [doy, setDoy] = useState(ids.includes(inicial) ? inicial : (ids[0] ?? null));
   const [modo, setModo] = useState(topeCobro ? 'mueble' : 'tickets');

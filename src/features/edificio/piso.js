@@ -14,7 +14,7 @@
 import './edificio.css';
 import { createSfx } from '../minigames/libreria-puerto/audio';
 import { DIARIA_TICKETS } from './dailyMissions';
-import { CATALOG, CATEGORIES, COMPANEROS, PAREDES, SETS, SUELOS, catalogItem } from './catalog';
+import { CATALOG, CATEGORIES, COMPANEROS, PAREDES, SETS, SUELOS, ZONAS, ZONA_PAREDES, catalogItem, zonaOf } from './catalog';
 import { createCompanion, misticoThumb } from './misticos';
 import { acabadoOf } from './acabados';
 import { acabadosDe, freeCopies, ownedCopies, plainCopies } from './inventory';
@@ -177,7 +177,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
 
   // ── La balda: catálogo, paredes y suelo ──
   const panel = el('section', { class: 'ep-panel ep-shelf', hidden: true, 'aria-label': 'Decorar tu piso' });
-  let category = editable ? ESENCIALES_TAB : CATEGORIES[0].id;
+  let category = editable ? ESENCIALES_TAB : ZONAS[0].id;
   let essOpen = null;
   const catRow = el('div', { class: 'ep-cats', role: 'group', 'aria-label': 'Qué poner' });
   const catTitle = el('p', { class: 'ep-shelf__title', 'aria-hidden': 'true' });
@@ -202,11 +202,16 @@ export function mountPiso(container, { room: initial, editable = false, evening 
   // La pestaña del armario en la balda (lo abre: el armario es un modo propio del piso, 1.77)
   const outfitTab = el('img', { class: 'ep-chip__img', alt: '', width: 33, height: 33 });
   const essBox = el('div', { class: 'ep-ess', hidden: true });
-  const CATS = [{ id: ESENCIALES_TAB, nombre: 'Esenciales' }, ...CATEGORIES, { id: OUTFIT, nombre: 'Tu personaje' }, { id: HOUSE, nombre: 'Paredes y suelo' }, { id: INROOM, nombre: 'En el piso' }];
+  // Reestructuración de muebles (9-11-2026): pestañas por zona de la casa, no por tipo, y sin pestañas vacías (una zona
+  // cuyos muebles están todos retirados no sale). «Paredes y suelo» es la pestaña de la casa: lo de pared, alfombras,
+  // colores y suelo. Los místicos siguen aparte, solo si tienes alguno.
+  const conMuebles = ZONAS.filter((z) => CATALOG.some((c) => zonaOf(c) === z.id && !c.compania && !isRetirado(c.id)));
+  const misticosTab = CATEGORIES.filter((g) => g.id === 'misticos');
+  const CATS = [{ id: ESENCIALES_TAB, nombre: 'Esenciales' }, ...conMuebles, { id: HOUSE, nombre: 'Paredes y suelo' }, ...misticosTab, { id: OUTFIT, nombre: 'Tu personaje' }, { id: INROOM, nombre: 'En el piso' }];
   // Cada pestaña lleva el dibujo de un mueble de su tipo; la de paredes y suelo, una muestra de los de tu piso
   // 1.74: el nombre corto, a la vista bajo el dibujo de cada pestaña
-  const TAB_SHORT = { [ESENCIALES_TAB]: 'Esenciales', asientos: 'Asientos', mesas: 'Mesas', [OUTFIT]: 'Armario', [HOUSE]: 'Paredes', [INROOM]: 'En el piso' };
-  const TAB_ICON = { [ESENCIALES_TAB]: 'estanteria', asientos: 'sillon', mesas: 'mesa', luz: 'lampara-pie', plantas: 'planta-grande', detalles: 'tetera', pared: 'cuadro', alfombras: 'alfombra', sagas: 'esferas', misticos: 'farol-azul' };
+  const TAB_SHORT = { [ESENCIALES_TAB]: 'Esenciales', ...Object.fromEntries(ZONAS.map((z) => [z.id, z.corto])), [OUTFIT]: 'Armario', [HOUSE]: 'Paredes', [INROOM]: 'En el piso' };
+  const TAB_ICON = { [ESENCIALES_TAB]: 'estanteria', ...Object.fromEntries(ZONAS.map((z) => [z.id, z.icono])), misticos: 'farol-azul' };
   const hasMisticos = () => CATALOG.some((c) => c.cat === 'misticos' && !c.compania && !isRetirado(c.id) && ownedCopies(inv, c.id) > 0);
   function syncMisticTab() {
     const b = catRow.querySelector('[data-cat="misticos"]');
@@ -367,12 +372,14 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     house.hidden = !isHouse;
     listBox.hidden = !isList;
     essBox.hidden = !isEss;
-    grid.hidden = isHouse || isList || isEss;
+    // En «Paredes y suelo», lo de pared y las alfombras encima de los colores y el suelo
+    grid.hidden = isList || isEss;
     hint.hidden = isHouse || isList || isEss;
     grid.replaceChildren();
     if (isEss) fillEss();
-    if (isHouse || isList || isEss) return;
-    for (const cat of CATALOG.filter((c) => c.cat === category && (!set || c.set === set.id))) {
+    if (isList || isEss) return;
+    const zona = isHouse ? ZONA_PAREDES : category;
+    for (const cat of CATALOG.filter((c) => zonaOf(c) === zona && (!set || c.set === set.id))) {
       // Lo que no tienes no está en tu balda (llegará con la tienda)
       if (ownedCopies(inv, cat.id) === 0 || cat.compania || isRetirado(cat.id)) continue;
       for (const acabado of Object.keys(acabadosDe(inv, cat.id))) grid.append(shelfTile(cat, acabado));
@@ -391,7 +398,8 @@ export function mountPiso(container, { room: initial, editable = false, evening 
       b.addEventListener('pointerdown', (e) => onShelfDown(e, cat.id, b));
       grid.append(b);
     }
-    if (!grid.children.length) grid.append(el('p', { class: 'ep-shelf__empty', text: 'Aún no tienes nada de esto.' }));
+    if (!grid.children.length && !isHouse) grid.append(el('p', { class: 'ep-shelf__empty', text: 'Aún no tienes nada de esto.' }));
+    grid.hidden = isHouse && !grid.children.length;
     grid.scrollLeft = 0;
     refreshCounts();
   }

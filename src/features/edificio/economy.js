@@ -24,6 +24,11 @@ export const MISION_TICKETS = 12;
 export const BIENVENIDA = 30;
 /** El mueble número PITY seguido sin nada raro es raro seguro (se cuenta entre todos los sobres). */
 export const PITY = 15;
+/**
+ * Sobres cerrados por reforma (decisión de Francisco del 9-11-2026): con los muebles de cajas retirados apenas quedaba qué
+ * sortear. Lo cierra el servidor (piso_abrir_sobre, migración 20261123120000_muebles_reforma.sql); esto solo lo dice.
+ */
+export const SOBRES_CERRADOS = true;
 
 export const rarezaOf = (cat) => cat?.rareza ?? 'comun';
 export const rarezaInfo = (id) => RAREZAS.find((r) => r.id === id) ?? RAREZAS_MISTICAS.find((r) => r.id === id) ?? RAREZAS_ESPECIALES.find((r) => r.id === id) ?? RAREZAS[0];

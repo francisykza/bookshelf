@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
+import { SOBRES_CERRADOS } from '../src/features/edificio/economy.js';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 
@@ -39,6 +40,7 @@ async function toShop(page) {
 }
 
 test('un legendario en el sobre de coleccionista: sus probabilidades, su carta y dónde ponerlo', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/390x844|1440x900/.test(info.project.name), '390 (Chromium y WebKit) y escritorio');
   test.setTimeout(90000);
   const errors = [];
@@ -94,6 +96,7 @@ test('un legendario en el sobre de coleccionista: sus probabilidades, su carta y
 });
 
 test('con movimiento reducido, el místico sale quieto y directo', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/chromium-390x844/.test(info.project.name), 'Chromium 390');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const { mock, shop } = await toShop(page);

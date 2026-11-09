@@ -3,6 +3,7 @@
 // tiene un tope a la semana en cada sentido. Las cantidades son fijas y se pide confirmación antes de cambiar. Lo cobra
 // y lo da el servidor (20261112120000_hotel_casino_garbanzos.sql).
 import { useState } from 'react';
+import { isRetirado } from '../retirados';
 import { canjearLata, cambiarGarbanzos } from '../service';
 import { CASINO, garbanzosDe, LATA } from './veintiuna';
 
@@ -76,6 +77,9 @@ export function LataGarbanzos({ data, dia, onData, sfx, arte }) {
             </p>
             {tienes.get(a.id) ? (
               <p>Ya es tuyo</p>
+            ) : isRetirado(a.id) ? (
+              // Reestructuración de muebles (9-11-2026): vuelve cuando se rehaga
+              <p>En reforma</p>
             ) : (
               boton(a.id, 'Cambiar', data.garbanzos >= a.precio, `¿Cambias ${garbanzosDe(a.precio)} por ${a.nombre}?`, () =>
                 hacer(() => canjearLata(dia, a.id), `${a.nombre}: ya está en tu inventario, colócalo en tu piso.`),

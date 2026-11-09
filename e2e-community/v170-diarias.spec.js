@@ -67,8 +67,8 @@ async function doMission(page, mine, id) {
     }
   } else if (id === 'nuevo') {
     await decorating(mine, true);
-    await mine.locator('.ep-chip[data-cat="asientos"]').click();
-    await mine.getByRole('button', { name: /^Añadir silla/ }).click();
+    await mine.locator('.ep-chip[data-cat="lectura"]').click();
+    await mine.getByRole('button', { name: /^Añadir sillón/ }).click();
   } else if (id === 'armario') {
     await decorating(mine, true);
     // 1.77: el armario es un modo propio del piso y lo elegido se guarda con «Listo»

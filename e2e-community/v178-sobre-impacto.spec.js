@@ -5,10 +5,12 @@
 import { expect, test } from '@playwright/test';
 import { join } from 'node:path';
 import { dirOf, openShop } from './sobreShop';
+import { SOBRES_CERRADOS } from '../src/features/edificio/economy.js';
 
 const FIVE = ['sofa', 'gato', 'radio', 'lampara-pie', 'planta-pequena'];
 
 test('cinco con un raro: brillo, color por rareza, destello y confeti solo en el raro, y el recuento', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/chromium-(360x800|390x844)$/.test(info.project.name), '360 y 390 en Chromium');
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -41,6 +43,7 @@ test('cinco con un raro: brillo, color por rareza, destello y confeti solo en el
 });
 
 test('con movimiento reducido: colores y recuento, sin brillo, destello ni confeti', async ({ page }, info) => {
+  test.skip(SOBRES_CERRADOS, 'Sobres cerrados por reforma (9-11-2026): vuelve al reabrirlos');
   test.skip(!/chromium-390x844$/.test(info.project.name), '390 en Chromium');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const { mock, shop } = await openShop(page);

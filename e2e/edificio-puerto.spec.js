@@ -59,16 +59,15 @@ test('tu piso: decorar con el catálogo, arrastrar, girar, color, guardar y se c
   await page.getByRole('button', { name: 'Decorar' }).click();
   await expect(page.locator('.ep-panel')).toBeVisible();
 
-  // Una lámpara de mesa va sola encima de un mueble con superficie
-  await page.locator('.ep-chip', { hasText: 'Luz' }).click();
-  await page.getByRole('button', { name: 'Añadir lámpara de mesa' }).click();
-  await expect(page.locator('.ep-status')).toContainText('Lámpara de mesa en tu piso');
+  // Una lámpara de pie, del rincón de lectura (la de mesa está en reforma desde el 9-11-2026)
+  await page.locator('.ep-chip[data-cat="lectura"]').click();
+  await page.getByRole('button', { name: 'Añadir lámpara de pie' }).click();
+  await expect(page.locator('.ep-status')).toContainText('Lámpara de pie en tu piso');
   let r = await room(page);
   const lamp = r.items.at(-1);
-  expect(lamp.id).toBe('lampara-mesa');
+  expect(lamp.id).toBe('lampara-pie');
 
   // Un sillón nuevo y se arrastra a un hueco libre
-  await page.locator('.ep-chip[data-cat="asientos"]').click();
   await page.getByRole('button', { name: 'Añadir sillón' }).click();
   r = await room(page);
   const chair = r.items.at(-1);
@@ -111,9 +110,9 @@ test('tu piso: decorar con el catálogo, arrastrar, girar, color, guardar y se c
 
   // Guardar la lámpara
   await page.locator('.ep-chip', { hasText: 'En el piso' }).click();
-  await page.getByRole('button', { name: 'Lámpara de mesa', exact: true }).click();
+  await page.getByRole('button', { name: 'Lámpara de pie', exact: true }).last().click();
   await page.getByRole('button', { name: 'Guardar' }).click();
-  await expect(page.locator('.ep-status')).toHaveText('Lámpara de mesa guardado.');
+  await expect(page.locator('.ep-status')).toHaveText('Lámpara de pie guardado.');
   const count = (await room(page)).items.length;
 
   // Se conserva al recargar
@@ -136,15 +135,16 @@ test('la balda: un mueble se arrastra hasta el piso y cae donde se suelta; fuera
   test.skip(!/chromium-(360x800|390x844|1440x900)$|webkit-390x844$/.test(info.project.name), 'arrastre');
   const errors = await open(page, '?piso=2b');
   await page.getByRole('button', { name: 'Decorar' }).click();
-  await page.locator('.ep-chip', { hasText: 'Plantas' }).click();
+  // La planta grande está en reforma (9-11-2026): una lámpara de pie, también de una celda
+  await page.locator('.ep-chip[data-cat="lectura"]').click();
   const before = (await room(page)).items.length;
-  const plant = page.getByRole('button', { name: 'Añadir planta grande' });
+  const plant = page.getByRole('button', { name: 'Añadir lámpara de pie' });
   await plant.scrollIntoViewIfNeeded();
   // Soltarla en un hueco libre lejos del centro (donde la pondría un toque)
   await page.locator('.ep-canvas').evaluate((c) => c.scrollIntoView({ block: 'start' }));
   const cell = await page.evaluate(() => {
     const free = [];
-    for (let y = 0; y < 9; y += 1) for (let x = 0; x < 9; x += 1) if (window.__edificio.piso.check({ uid: -1, id: 'planta-grande', x, y, rot: 0, tono: 0 }).ok) free.push({ x, y });
+    for (let y = 0; y < 9; y += 1) for (let x = 0; x < 9; x += 1) if (window.__edificio.piso.check({ uid: -1, id: 'lampara-pie', x, y, rot: 0, tono: 0 }).ok) free.push({ x, y });
     return free.sort((a, b) => Math.hypot(b.x - 4, b.y - 4) - Math.hypot(a.x - 4, a.y - 4) || a.y - b.y)[0];
   });
   const drop = await cellPoint(page, cell.x + 0.5, cell.y + 0.5);
@@ -156,11 +156,11 @@ test('la balda: un mueble se arrastra hasta el piso y cae donde se suelta; fuera
   await expect(page.locator('.ep-status')).toContainText('suéltalo en tu piso');
   await shot(page, info, 'ep-balda-arrastrando', false);
   await page.mouse.up();
-  await expect(page.locator('.ep-status')).toHaveText('Planta grande en tu piso.');
+  await expect(page.locator('.ep-status')).toHaveText('Lámpara de pie en tu piso.');
   let r = await room(page);
   expect(r.items).toHaveLength(before + 1);
   const added = r.items.at(-1);
-  expect(added.id).toBe('planta-grande');
+  expect(added.id).toBe('lampara-pie');
   expect({ x: added.x, y: added.y }).toEqual(cell);
   await expect(page.locator('.ep-tools')).toBeVisible();
   await shot(page, info, 'ep-balda-soltada', false);
@@ -171,13 +171,14 @@ test('la balda: un mueble se arrastra hasta el piso y cae donde se suelta; fuera
   await page.mouse.down();
   await page.mouse.move(again.x + again.width / 2, again.y - 30, { steps: 4 });
   await page.mouse.up();
-  await expect(page.locator('.ep-status')).toHaveText('Planta grande vuelve a la balda.');
+  await expect(page.locator('.ep-status')).toHaveText('Lámpara de pie vuelve a la balda.');
   r = await room(page);
   expect(r.items).toHaveLength(before + 1);
   expect(errors).toEqual([]);
 });
 
 test('sagas: cada set con su nombre y su guiño, y sus muebles caben en el piso', async ({ page }, info) => {
+  test.skip(true, 'Sagas retiradas en la reestructuración de muebles (9-11-2026): vuelve cuando se rehagan');
   test.skip(!/chromium-(390x844|1440x900)$|webkit-390x844$/.test(info.project.name), 'sagas');
   const errors = await open(page, '?piso=2b');
   // Se vacía el piso (en el almacén del prototipo) para que quepan todos los de las sagas
