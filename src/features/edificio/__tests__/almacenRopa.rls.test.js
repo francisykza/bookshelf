@@ -30,6 +30,8 @@ describe('la ropa de la planta', () => {
   it('los precios del servidor son los del cliente', async () => {
     const r = await db.query('select piso_almacen_ropa() as t');
     expect(r.rows[0].t).toEqual(ROPA_TIENDA);
+    // Es interna (20261130120000_almacen_ropa_permisos.sql): nadie la llama directamente, ni con sesión
+    expect(await rejects(call(A, 'select piso_almacen_ropa()'))).toMatch(/permission denied/);
   });
 
   it('se compra todo junto y va al armario', async () => {
