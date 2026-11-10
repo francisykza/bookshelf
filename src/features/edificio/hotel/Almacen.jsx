@@ -7,25 +7,31 @@
 // - la visita con un amigo: os veis con vuestro personaje, cada uno con su carrito y sus tickets, y «Mira esto».
 // La escena es `almacen3d.js` (Three.js, se carga al entrar); las reglas de la compra, en el servidor.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { validateAvatar } from '../actor';
+import { usesLocked, validateAvatar } from '../actor';
 import { catalogItem } from '../catalog';
-import { ticketsText } from '../economy';
+import { isDeHabitacionEspecial, ticketsText } from '../economy';
 import { ownedCopies } from '../inventory';
 import { renderThumb } from '../render';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { todayKey } from '../dailyMissions';
-import { almacenAmigos, almacenComprar, almacenEmpezar, almacenInvitar, almacenPulso, almacenSalir, almacenSellar, almacenUnirse, loadAlmacen, loadArmario, loadInventario, loadMiPersonaje, savePersonaje } from '../service';
+import { almacenAmigos, almacenComprar, almacenRopaComprar, almacenEmpezar, almacenInvitar, almacenPulso, almacenSalir, almacenSellar, almacenUnirse, loadAlmacen, loadArmario, loadInventario, loadMiPersonaje, savePersonaje } from '../service';
 import { Caja, SellaAlbaran } from './AlmacenCaja';
 import { ALBARAN, duracion } from './albaran';
-import { ARTICULOS, DE_PASO, EXPOSITORES, SECCIONES, medidasDe, nombreTono } from './almacenLayout';
+import { ARTICULOS, BAJO, DE_PASO, EXPOSITORES, SECCIONES, medidasDe, nombreTono, plantaDe } from './almacenLayout';
 import { Lonja } from './Lonja';
 import { Probador } from './Probador';
+import { CestaRopa, ZonaRopa } from './RopaPapeles';
+import { CESTA_MAX, ZONAS_ROPA, cestaSana, zonaRopa } from './plantaRopa';
 import { mismoLook } from './ropa';
 import { ROTULO_OFERTA, mapaOfertas, precioOferta } from './ofertas';
 import './almacen.css';
 
 const CARRITO_KEY = 'bookshelf:almacen-carrito';
 const COMPRA_KEY = 'bookshelf:almacen-compra';
+/** 2.ª ampliación · La cesta de la planta de ropa (lo que llevas para probarte). */
+const CESTA_KEY = 'bookshelf:almacen-cesta';
+/** Bloque 3 · La clave del pago de la ropa (la misma en cada reintento mientras no cambie lo que se paga). */
+const COMPRA_ROPA_KEY = 'bookshelf:almacen-compra-ropa';
 /** La sala a la que se entra al llegar (la deja el aviso de invitación del edificio). */
 export const UNIRSE_KEY = 'bookshelf:almacen-unirse';
 const PULSO_MS = 1000;
@@ -80,6 +86,7 @@ function motivo(e, total, tickets) {
   if (m.includes('almacen:precio')) return 'El total ha cambiado desde que lo viste. Revisa la cuenta y vuelve a confirmar; no se ha cobrado nada.';
   if (m.includes('almacen:descuento')) return 'El descuento de hoy ya no está disponible. Revisa la cuenta; no se ha cobrado nada.';
   if (m.includes('almacen:retirado') || m.includes('almacen:no_se_vende')) return 'Algo del carrito ya no se vende. Quítalo y vuelve a intentarlo; no se ha cobrado nada.';
+  if (m.includes('almacen:ya_tuya')) return 'Algo de la cesta ya es tuyo. Vuelve a abrir la cesta; no se ha cobrado nada.';
   if (m.includes('almacen:')) return 'La caja no ha podido cobrar ese carrito. No se ha cobrado nada.';
   return 'No se ha podido confirmar la compra (¿sin conexión?). Tu carrito sigue aquí: vuelve a intentarlo y no se cobrará dos veces.';
 }
@@ -173,6 +180,25 @@ function Icono({ id }) {
       [7, 8, 2, 1, '#28262e'],
       [7, 11, 2, 1, '#28262e'],
     ],
+    ropa: [
+      [2, 5, 12, 8, '#5a8f88'],
+      [2, 5, 3, 3, '#3f6e68'],
+      [11, 5, 3, 3, '#3f6e68'],
+      [6, 4, 4, 2, '#f6ecd8'],
+      [7, 6, 2, 7, '#3f6e68'],
+      [3, 12, 10, 1, '#2a4e4a'],
+    ],
+    cesta: [
+      [7, 1, 2, 1, '#6a4430'],
+      [4, 2, 2, 4, '#6a4430'],
+      [10, 2, 2, 4, '#6a4430'],
+      [5, 1, 6, 1, '#6a4430'],
+      [4, 5, 4, 3, '#b8624a'],
+      [8, 4, 4, 4, '#5a8f88'],
+      [2, 7, 12, 7, '#be9260'],
+      [2, 9, 12, 1, '#8a6238'],
+      [2, 12, 12, 1, '#8a6238'],
+    ],
     mercadillo: [
       [1, 3, 14, 3, '#b8624a'],
       [1, 3, 2, 3, '#f6ecd8'],
@@ -193,8 +219,8 @@ function Icono({ id }) {
   );
 }
 
-const TITULOS = { directorio: 'Directorio', carrito: 'Tu carrito', caja: 'La caja', amigo: 'Con un amigo', probador: 'El probador' };
-const ANTETITULOS = { directorio: 'Todo el almacén, por pasillos', carrito: 'Paquetes planos', caja: 'Mostrador de salida', amigo: 'Visita compartida', probador: 'Tu ropa, delante del espejo' };
+const TITULOS = { directorio: 'Directorio', carrito: 'Tu carrito', caja: 'La caja', amigo: 'Con un amigo', probador: 'El probador', cesta: 'Tu cesta', ropa: 'Moda' };
+const ANTETITULOS = { directorio: 'Todo el almacén, por pasillos', carrito: 'Paquetes planos', caja: 'Mostrador de salida', amigo: 'Visita compartida', probador: 'Tu ropa, delante del espejo', cesta: 'Para el probador', ropa: 'Planta −1 · Moda' };
 const seccionDe = (e) => SECCIONES.find((x) => x.id === e.seccion);
 const CARTEL_TEXTO = {
   'c:lectura': 'Pasillo 1 · Rincón de lectura',
@@ -204,8 +230,20 @@ const CARTEL_TEXTO = {
   'c:autoservicio': 'Autoservicio',
   'c:habitaciones': 'Pasillo 4 · Las habitaciones',
   'c:heroes': 'Capa y Antifaz',
+  'c:pronto': 'Ala nueva · próximamente',
+  'c:moda': 'Planta −1 · Moda',
 };
-const SITIO_TEXTO = { caja: 'Caja', directorio: 'Directorio', mercadillo: 'Mercadillo y estiba', probador: 'Probador' };
+const SITIO_TEXTO = {
+  caja: 'Caja',
+  directorio: 'Directorio',
+  mercadillo: 'Mercadillo y estiba',
+  probador: 'Probador',
+  // 2.ª ampliación · Las escaleras mecánicas
+  bajar: '↓ Planta −1 · Moda',
+  subir: '↑ Planta 0 · Muebles y caja',
+  // Bloque 2 · Las zonas de la planta de ropa
+  ...Object.fromEntries(ZONAS_ROPA.map((z) => [`ropa:${z.id}`, z.nombre])),
+};
 
 export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
   const wrap = useRef(null);
@@ -248,8 +286,58 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
   const vistos = useRef({});
   const papelRef = useRef(null);
   const pagando = useRef(false);
+  // 2.ª ampliación · En qué planta estás y el aviso de «pasa por caja primero» (con muebles en el carrito no se baja)
+  const [planta, setPlanta] = useState(0);
+  const [bloqueo, setBloqueo] = useState(false);
+  const carritoRef = useRef(carrito);
+  carritoRef.current = carrito;
+  // Bloque 2 · La planta de ropa: la zona abierta, la cesta y tu ropa (lo ganado y cómo vas), para decir qué es tuyo
+  const [zonaId, setZonaId] = useState(null);
+  const [cesta, setCesta] = useState(() => cestaSana(leer(CESTA_KEY, [])));
+  const [ropaMia, setRopaMia] = useState(null); // { prendas, base }
+  const ropaPedida = useRef(false);
+  useEffect(() => guardar(CESTA_KEY, cesta.length ? cesta : null), [cesta]);
+  useEffect(() => {
+    if (ready) api.current?.cesta?.(cesta);
+  }, [ready, cesta]);
+  const pedirRopa = useCallback(() => {
+    if (ropaPedida.current) return;
+    ropaPedida.current = true;
+    Promise.all([loadMiPersonaje().catch(() => null), loadArmario(todayKey()).catch(() => null)]).then(([yo, armario]) => setRopaMia({ prendas: armario?.prendas ?? null, base: yo?.personaje ?? null }));
+  }, []);
+  // Bloque 3 · El pago de la ropa de la planta, desde la cesta
+  const [cobroRopa, setCobroRopa] = useState({ fase: 'lista', error: '', hecho: null });
+  const pagandoRopa = useRef(false);
+  async function pagarRopa(prendas, total) {
+    if (pagandoRopa.current || !prendas.length) return;
+    pagandoRopa.current = true;
+    setCobroRopa({ fase: 'pagando', error: '', hecho: null });
+    const firma = JSON.stringify({ prendas, total });
+    let pendiente = leer(COMPRA_ROPA_KEY, null);
+    if (!pendiente || pendiente.firma !== firma) {
+      pendiente = { clave: nuevaClave(), firma };
+      guardar(COMPRA_ROPA_KEY, pendiente);
+    }
+    try {
+      const r = await almacenRopaComprar(pendiente.clave, prendas, total);
+      guardar(COMPRA_ROPA_KEY, null);
+      setRopaMia((m) => ({ ...(m ?? {}), prendas: r.prendas }));
+      setCobroRopa({ fase: 'lista', error: '', hecho: { ropa: r.ropa, total: r.total } });
+      cargar();
+    } catch (e) {
+      if (String(e?.message ?? '').includes('almacen:')) guardar(COMPRA_ROPA_KEY, null);
+      setCobroRopa({ fase: 'lista', error: motivo(e, total, estado?.tickets).replace('ese carrito', 'esa ropa').replace('Tu carrito sigue aquí', 'Tu cesta sigue aquí'), hecho: null });
+      cargar();
+    } finally {
+      pagandoRopa.current = false;
+    }
+  }
+  const ponerEnCesta = useCallback((p) => setCesta((c) => (c.includes(p) ? c.filter((x) => x !== p) : c.length >= CESTA_MAX ? c : [...c, p])), []);
 
   useEffect(() => guardar(CARRITO_KEY, carrito), [carrito]);
+  useEffect(() => {
+    if (!carrito.length) setBloqueo(false);
+  }, [carrito.length]);
   useEffect(() => {
     papelRef.current = papel;
   });
@@ -286,6 +374,9 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
           mounted = mountAlmacen(host.current, {
             onPick: (id) => elegir.current(id),
             onLost: () => alive && setSin3d(true),
+            onMove: (p) => alive && setPlanta(plantaDe(p.z ?? 0)),
+            puedeBajar: () => carritoRef.current.length === 0,
+            onBloqueo: () => alive && setBloqueo(true),
             onFrame: (tags) => {
               const w = host.current?.clientWidth ?? 0;
               for (const [id, t] of Object.entries(tags)) {
@@ -418,6 +509,9 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
       else if (id === 'carrito') setPapel((p) => (p === 'carrito' ? null : 'carrito'));
       else if (id === 'mercadillo') irAlMercadillo();
       else if (id === 'probador') irAlProbador();
+      else if (id === 'bajar') irAPlanta('ropa');
+      else if (id === 'subir') irAPlanta('arriba');
+      else if (id.startsWith('ropa:')) irAZona(id.slice(5));
     };
   });
   // De cerca: el mueble queda en el hueco que deja el papel
@@ -434,6 +528,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
   }, [ready, ficha]);
 
   function irACaja() {
+    setBloqueo(false);
     if (papelRef.current === 'ficha') api.current?.leave(true);
     setFicha(null);
     setPapel('caja');
@@ -490,6 +585,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
     const pr = probador;
     if (!pr?.look || pr.guardando) return;
     if (mismoLook(pr.look, pr.base)) return cerrar();
+    if (usesLocked(pr.look, pr.prendas ?? []) && !usesLocked(pr.base, pr.prendas ?? [])) return;
     setProbador({ ...pr, guardando: true, error: '' });
     try {
       await savePersonaje(pr.uid, pr.look);
@@ -498,6 +594,24 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
     } catch (e) {
       setProbador({ ...pr, guardando: false, error: e?.message || 'No se ha podido guardar. Prueba otra vez.' });
     }
+  }
+  // ── Bloque 2 · Una zona de la planta de ropa: se va andando hasta ella y se abre su papel ──
+  function irAZona(id) {
+    if (!zonaRopa(id)) return;
+    if (papelRef.current === 'ficha') api.current?.leave(true);
+    setFicha(null);
+    setZonaId(id);
+    setPapel('ropa');
+    pedirRopa();
+    api.current?.go(`ropa:${id}`);
+  }
+  // ── 2.ª ampliación · Bajar a la planta de ropa o subir a la de muebles, por las escaleras mecánicas ──
+  function irAPlanta(a) {
+    if (papelRef.current === 'ficha') api.current?.leave(true);
+    setFicha(null);
+    setPapel(null);
+    setBloqueo(false);
+    api.current?.go(a);
   }
   function irAlMercadillo() {
     const ir = () => {
@@ -679,10 +793,11 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
       enVuelo = true;
       const pose = api.current?.pose() ?? { x: 15.5, y: 23.6, yaw: 3.5 };
       const d = estadoRef.current?.descuento;
-      const zona = mercadillo ? 'mercadillo' : papelRef.current === 'caja' ? 'caja' : 'pasillos';
+      const zona = mercadillo ? 'mercadillo' : plantaDe(pose.z ?? 0) === BAJO.z ? 'ropa' : papelRef.current === 'caja' ? 'caja' : 'pasillos';
       try {
         const r = await almacenPulso(visita.sala, {
-          ...pose,
+          x: pose.x,
+          y: pose.y,
           yaw: ((pose.yaw % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI),
           zona,
           mira: miraMia.current,
@@ -703,7 +818,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
           if (!antes.length && aqui.length) setAviso(`${aqui[0].alias ?? 'Tu amigo'} está en el almacén contigo.`);
           return aqui;
         });
-        api.current?.setPeers(aqui.filter((o) => o.zona !== 'mercadillo').map((o) => ({ uid: o.uid, avatar: validateAvatar(o.personaje), x: o.x, y: o.y, yaw: o.yaw })));
+        api.current?.setPeers(aqui.filter((o) => o.zona !== 'mercadillo').map((o) => ({ uid: o.uid, avatar: validateAvatar(o.personaje), x: o.x, y: o.y, z: o.zona === 'ropa' ? BAJO.z : 0, yaw: o.yaw })));
         for (const o of aqui) {
           const visto = vistos.current[o.uid];
           if (visto == null) vistos.current[o.uid] = o.mira_n;
@@ -826,8 +941,22 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
         {sin3d && <Carretilla lineas={carrito} abierto={papel === 'carrito'} onOpen={() => setPapel((p) => (p === 'carrito' ? null : 'carrito'))} />}
       </div>
 
-      {(aviso || mira) && (
+      {(aviso || mira || bloqueo) && (
         <div className="alm-avisos" role="status">
+          {bloqueo && (
+            <div className="alm-mira alm-bloqueo">
+              <Icono id="carrito" />
+              <p>
+                Antes de bajar, <b>pasa por caja</b>: llevas muebles en el carrito.
+              </p>
+              <button type="button" className="alm-btn alm-btn--primario" onClick={irACaja}>
+                Ir a caja
+              </button>
+              <button type="button" className="alm-x" aria-label="Ahora no" onClick={() => setBloqueo(false)}>
+                ×
+              </button>
+            </div>
+          )}
           {mira && (
             <div className="alm-mira">
               <Icono id="amigo" />
@@ -895,7 +1024,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
             <div className="alm-ficha">
               <div className="alm-ficha__muestra">
                 <img className="alm-ficha__thumb" src={thumbOf(fichaE.id, ficha.tono, 64)} alt="" width="80" height="80" />
-                <span className="alm-precio" aria-hidden="true" data-oferta={ofertas.get(fichaA.id)?.tipo}>
+                <span className="alm-precio" aria-hidden="true" data-oferta={ofertas.get(fichaA.id)?.tipo} data-especial={isDeHabitacionEspecial(fichaA.id) || undefined}>
                   {ofertas.has(fichaA.id) && <s>{fichaA.precio}</s>}
                   <b>{precioHoy(fichaA)}</b>
                   <small>tickets</small>
@@ -910,6 +1039,13 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
                         <s>{ticketsText(fichaA.precio)}</s> {ticketsText(precioHoy(fichaA))}{' '}
                         <em className="alm-oferta" data-tipo={ofertas.get(fichaA.id).tipo}>
                           {ROTULO_OFERTA[ofertas.get(fichaA.id).tipo]} · −{ofertas.get(fichaA.id).pct} %
+                        </em>
+                      </>
+                    ) : isDeHabitacionEspecial(fichaA.id) ? (
+                      <>
+                        {ticketsText(fichaA.precio)}{' '}
+                        <em className="alm-oferta" data-tipo="especial">
+                          De habitación especial · nunca se rebaja
                         </em>
                       </>
                     ) : (
@@ -964,7 +1100,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
             </span>
             <div className="alm-card__titulo">
               <small>{ANTETITULOS[papel]}</small>
-              <h4 id="alm-card-title">{TITULOS[papel]}</h4>
+              <h4 id="alm-card-title">{papel === 'ropa' ? (zonaRopa(zonaId)?.nombre ?? TITULOS.ropa) : TITULOS[papel]}</h4>
             </div>
             <button type="button" className="alm-card__back" onClick={cerrar}>
               Volver
@@ -1042,6 +1178,9 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
                 <div className="alm-acciones alm-acciones--pie">
                   <button type="button" className="alm-btn alm-btn--primario" onClick={irACaja}>
                     Ir a caja
+                  </button>
+                  <button type="button" className="alm-btn alm-btn--papel" onClick={() => irAPlanta(planta === BAJO.z ? 'arriba' : 'ropa')}>
+                    {planta === BAJO.z ? 'Subir a muebles' : 'Bajar a la planta de ropa'}
                   </button>
                   <button type="button" className="alm-btn alm-btn--papel" onClick={irAlMercadillo}>
                     Mercadillo y estiba
@@ -1128,9 +1267,25 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
                 />
               </>
             )}
+            {papel === 'ropa' && zonaRopa(zonaId) && (
+              <ZonaRopa zona={zonaRopa(zonaId)} cesta={cesta} prendas={ropaMia?.prendas ?? null} base={ropaMia?.base ?? undefined} onCesta={ponerEnCesta} onProbador={irAlProbador} />
+            )}
+            {papel === 'cesta' && (
+              <CestaRopa
+                cesta={cesta}
+                prendas={ropaMia?.prendas ?? null}
+                base={ropaMia?.base ?? undefined}
+                tickets={estado?.tickets ?? null}
+                cobro={cobroRopa}
+                onPagar={pagarRopa}
+                onCesta={ponerEnCesta}
+                onVaciar={() => setCesta([])}
+                onProbador={irAlProbador}
+              />
+            )}
             {papel === 'probador' &&
               (probador?.look ? (
-                <Probador look={probador.look} base={probador.base} prendas={probador.prendas} guardando={probador.guardando} error={probador.error} sin3d={!escena3d || sin3d} onLook={(look) => setProbador((pr) => pr && { ...pr, look, error: '' })} onListo={listoProbador} />
+                <Probador look={probador.look} base={probador.base} prendas={probador.prendas} cesta={cesta} guardando={probador.guardando} error={probador.error} sin3d={!escena3d || sin3d} onLook={(look) => setProbador((pr) => pr && { ...pr, look, error: '' })} onListo={listoProbador} />
               ) : probador?.error ? (
                 <p className="alm-aviso" role="alert">
                   {probador.error}
@@ -1198,6 +1353,17 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
           <Icono id="directorio" />
           <span>Directorio</span>
         </button>
+        {planta === BAJO.z ? (
+          <button type="button" className="alm-tool" aria-pressed={papel === 'cesta'} aria-label={`Cesta: ${cesta.length} ${cesta.length === 1 ? 'prenda' : 'prendas'}`} onClick={() => (pedirRopa(), cargar(), setCobroRopa((c) => ({ ...c, error: '', hecho: null })), setPapel((p) => (p === 'cesta' ? null : 'cesta')))}>
+            <Icono id="cesta" />
+            <span>Cesta</span>
+            {cesta.length > 0 && (
+              <i className="alm-tool__chapa" aria-hidden="true">
+                {cesta.length}
+              </i>
+            )}
+          </button>
+        ) : (
         <button
           type="button"
           className="alm-tool"
@@ -1213,6 +1379,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
             </i>
           )}
         </button>
+        )}
         <button type="button" className="alm-tool alm-tool--caja" aria-pressed={papel === 'caja'} onClick={irACaja}>
           <Icono id="caja" />
           <span>Caja</span>

@@ -4,6 +4,7 @@
 // suyos. Los tickets solo se ganan leyendo y nunca se compran con dinero.
 import { isRetirado } from './retirados';
 import { CATALOG, isEspecial, isMistico } from './catalog';
+import { tallerDe } from './talleres';
 
 export const RAREZAS = [
   { id: 'comun', nombre: 'Común', precio: 20, reciclar: 3 },
@@ -103,9 +104,18 @@ const probDe = (sobre, rareza) => (rareza === 'comun' ? 1 - sobre.prob.raro - so
 
 /** Lo que se vende en la tienda: todo lo que no es de sagas y tiene precio (lo raro solo sale en sobres). */
 export const TIENDA = sinSaga.filter((c) => rarezaInfo(rarezaOf(c)).precio != null && !isRetirado(c.id));
+/**
+ * Las habitaciones especiales del almacén (decisión de Francisco del 10-11-2026): sus muebles cuestan el doble de su rareza
+ * (común 40, poco común 80), en el almacén y en la tienda, y nunca se rebajan (ni ofertas ni albarán). Son talleres de
+ * talleres.js; el servidor tiene la misma lista (piso_de_habitacion_especial, 20261129120000_almacen_especiales.sql).
+ */
+export const HABITACIONES_ESPECIALES = ['heroes'];
+export const PRECIO_ESPECIAL = 2;
+export const isDeHabitacionEspecial = (id) => HABITACIONES_ESPECIALES.includes(tallerDe(id)?.id);
 export const precioDe = (id) => {
   const cat = CATALOG.find((c) => c.id === id);
-  return cat && !cat.set ? rarezaInfo(rarezaOf(cat)).precio : null;
+  const precio = cat && !cat.set ? rarezaInfo(rarezaOf(cat)).precio : null;
+  return precio != null && isDeHabitacionEspecial(id) ? precio * PRECIO_ESPECIAL : precio;
 };
 
 /** Qué puede salir en un sobre, por rareza, con su probabilidad por mueble (para enseñarla en la tienda). */

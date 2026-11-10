@@ -34,6 +34,8 @@ export async function createDatabase(upTo = Infinity, { sin = [] } = {}) {
   const dir = join(ROOT, 'supabase', 'migrations');
   const files = readdirSync(dir).filter((f) => f.endsWith('.sql') && !sin.includes(f)).sort();
   for (const [i, f] of files.entries()) if (i < upTo) await db.exec(readFileSync(join(dir, f), 'utf8'));
+  // Desde la 1.106 la tienda pregunta si un mueble está retirado: sin la reforma, nada lo está
+  if (sin.includes(REFORMA_MUEBLES)) await db.exec("create or replace function public.piso_retirado(mueble text) returns boolean language sql immutable set search_path = '' as $$ select false $$");
   return db;
 }
 

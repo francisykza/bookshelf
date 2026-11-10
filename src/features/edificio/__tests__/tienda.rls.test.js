@@ -37,7 +37,7 @@ beforeAll(async () => {
 
 describe('las reglas del servidor coinciden con economy.js', () => {
   it('rarezas del catálogo y precios', async () => {
-    const { rows } = await db.query('select id, rareza, piso_precio(rareza) as precio from piso_catalogo where saga is null order by id');
+    const { rows } = await db.query('select id, rareza, piso_precio_mueble(id) as precio from piso_catalogo where saga is null order by id');
     expect(Object.fromEntries(rows.map((r) => [r.id, r.rareza]))).toEqual(Object.fromEntries(CATALOG.filter((c) => !c.set).map((c) => [c.id, rarezaOf(c)])));
     for (const r of rows) expect(r.precio, r.id).toBe(precioDe(r.id));
     for (const r of RAREZAS) expect(rows.some((x) => x.rareza === r.id), r.id).toBe(true);

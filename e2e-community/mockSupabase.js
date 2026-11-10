@@ -5,9 +5,9 @@
 // límite, objeto único, upsert con conflicto y la vista de estadísticas.
 import { randomUUID } from 'node:crypto';
 import { CATALOG } from '../src/features/edificio/catalog.js';
-import { SOBRES } from '../src/features/edificio/economy.js';
+import { SOBRES, isDeHabitacionEspecial } from '../src/features/edificio/economy.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
-import { PRENDAS } from '../src/features/edificio/actor.js';
+import { PRENDAS, ROPA_TIENDA } from '../src/features/edificio/actor.js';
 import { missionsOf } from '../src/features/edificio/dailyMissions.js';
 import { CAJA, CASINO, LATA, valor } from '../src/features/edificio/hotel/veintiuna.js';
 import { ALBARAN, DESCUENTOS } from '../src/features/edificio/hotel/albaran.js';
@@ -16,7 +16,7 @@ import { isRetirado } from '../src/features/edificio/retirados.js';
 export const SUPABASE = 'http://supabase.test';
 
 // 1.99 · El Almacén del Puerto
-const ALMACEN_RPC = ['estado', 'empezar', 'sellar', 'comprar', 'amigos', 'invitar', 'unirse', 'salir', 'pulso'].map((x) => `rpc/piso_almacen_${x}`);
+const ALMACEN_RPC = ['estado', 'empezar', 'sellar', 'comprar', 'ropa_comprar', 'amigos', 'invitar', 'unirse', 'salir', 'pulso'].map((x) => `rpc/piso_almacen_${x}`);
 const madrid = (t = Date.now()) => new Date(t).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
 /** La próxima medianoche de Madrid, en ms (busca el primer minuto en que cambia el día). */
 function vuelveMadrid() {
@@ -610,7 +610,11 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
       const cat = (id) => CATALOG.find((c) => c.id === id && !c.set);
       const rareza = (id) => cat(id)?.rareza ?? 'comun';
-      const precio = (id) => ({ comun: 20, 'poco-comun': 40 })[rareza(id)] ?? null;
+      // 1.106: lo de las habitaciones especiales, al doble (20261129120000_almacen_especiales.sql)
+      const precio = (id) => {
+        const p = ({ comun: 20, 'poco-comun': 40 })[rareza(id)] ?? null;
+        return p != null && isDeHabitacionEspecial(id) ? p * 2 : p;
+      };
       const sumar = (id, n) => (db.piso_inventario[userId][id] = Math.max(0, (db.piso_inventario[userId][id] ?? 0) + n));
       if (table === 'rpc/piso_reclamar_mision') {
         const { mision, semana } = req.postDataJSON();
@@ -688,15 +692,18 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
           if (!Array.isArray(articulos) || !articulos.length || articulos.length > 12) return fail('almacen:vacio');
           const ids = new Set();
           let subtotal = 0;
+          let rebajable = 0;
           let ahorro = 0;
           for (const l of articulos) {
             if (typeof l?.id !== 'string' || !Number.isInteger(l.n) || l.n < 1 || l.n > 10 || ids.has(l.id)) return fail('almacen:linea');
             ids.add(l.id);
             if (isRetirado(l.id)) return fail('almacen:retirado');
             if (!cat(l.id) || precio(l.id) == null) return fail('almacen:no_se_vende');
-            const pctO = (al.ofertas ?? []).find((o) => o.id === l.id)?.pct ?? 0;
+            const especial = isDeHabitacionEspecial(l.id);
+            const pctO = especial ? 0 : ((al.ofertas ?? []).find((o) => o.id === l.id)?.pct ?? 0);
             const unidad = precio(l.id) - Math.floor((precio(l.id) * pctO) / 100);
             subtotal += unidad * l.n;
+            if (!especial) rebajable += unidad * l.n;
             ahorro += (precio(l.id) - unidad) * l.n;
           }
           let pct = 0;
@@ -704,7 +711,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
             if (!dia || descuentoDe(dia).estado !== 'hecho') return fail('almacen:descuento');
             pct = descuentoDe(dia).pct;
           }
-          const descuento = Math.floor((subtotal * pct) / 100);
+          const descuento = Math.floor((rebajable * pct) / 100);
           const total = subtotal - descuento;
           if (esperado !== total) return fail('almacen:precio');
           if (cuenta.tickets < total) return fail('almacen:saldo');
@@ -719,6 +726,32 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
             return route.abort('failed');
           }
           return json({ ...r, inventario: mine() });
+        }
+        // 1.105: la ropa de la planta, como 20261128120000_almacen_ropa.sql (al armario de db.diarias)
+        if (table === 'rpc/piso_almacen_ropa_comprar') {
+          const { compra, prendas, esperado } = body;
+          const armario = ((db.diarias ??= {})[userId] ??= { prendas: [], dias: {} });
+          const hecha = al.compras[compra];
+          if (hecha) {
+            if (hecha.user !== userId || !hecha.r.ropa) return fail('almacen:clave');
+            return json({ ...hecha.r, repetida: true, prendas: [...armario.prendas] });
+          }
+          if (!Array.isArray(prendas) || !prendas.length || prendas.length > 8) return fail('almacen:vacio');
+          if (new Set(prendas).size !== prendas.length || prendas.some((p) => typeof p !== 'string')) return fail('almacen:linea');
+          if (prendas.some((p) => ROPA_TIENDA[p] == null)) return fail('almacen:no_se_vende');
+          if (prendas.some((p) => armario.prendas.includes(p))) return fail('almacen:ya_tuya');
+          const total = prendas.reduce((t, p) => t + ROPA_TIENDA[p], 0);
+          if (esperado !== total) return fail('almacen:precio');
+          if (cuenta.tickets < total) return fail('almacen:saldo');
+          cuenta.tickets -= total;
+          armario.prendas.push(...prendas);
+          const r = { compra, repetida: false, total, ropa: [...prendas] };
+          al.compras[compra] = { user: userId, r };
+          if ((al.cortar ?? 0) > 0) {
+            al.cortar -= 1;
+            return route.abort('failed');
+          }
+          return json({ ...r, prendas: [...armario.prendas] });
         }
         if (table === 'rpc/piso_almacen_amigos') {
           const vivas = al.salas.filter((x) => x.estado !== 'cerrada');
@@ -756,7 +789,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
           if (sala.estado === 'cerrada') return json({ estado: 'cerrada', otros: [] });
           const clamp = (v, a, b, d) => (Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : d);
           const sello = body.sello && ['rapido', 'sinprisa'].includes(body.sello.modo) ? { modo: body.sello.modo, empezado: body.sello.empezado, marcas: (body.sello.marcas ?? []).slice(0, 3).map((m) => (m === true || m === false ? m : null)) } : null;
-          al.presencia[`${sala.id}:${userId}`] = { uid: userId, x: clamp(body.x, 0, 29.5, 15.5), y: clamp(body.y, 0, 26, 23.6), yaw: clamp(body.yaw, -7, 7, 3.5), zona: ['pasillos', 'caja', 'mercadillo'].includes(body.zona) ? body.zona : 'pasillos', mira: cat(body.mira) && !isRetirado(body.mira) ? body.mira : null, mira_n: body.mira_n ?? 0, sello, visto: Date.now() };
+          al.presencia[`${sala.id}:${userId}`] = { uid: userId, x: clamp(body.x, 0, 29.5, 15.5), y: clamp(body.y, 0, 26, 23.6), yaw: clamp(body.yaw, -7, 7, 3.5), zona: ['pasillos', 'caja', 'mercadillo', 'ropa'].includes(body.zona) ? body.zona : 'pasillos', mira: cat(body.mira) && !isRetirado(body.mira) ? body.mira : null, mira_n: body.mira_n ?? 0, sello, visto: Date.now() };
           const otros = Object.entries(al.presencia)
             .filter(([k, p]) => k.startsWith(`${sala.id}:`) && p.uid !== userId && Date.now() - p.visto < 20000)
             .map(([, p]) => ({ ...p, alias: perfil(p.uid).alias, avatar_id: perfil(p.uid).avatar_id, personaje: db.pisos.find((x) => x.user_id === p.uid)?.personaje ?? null, hace: (Date.now() - p.visto) / 1000 }));

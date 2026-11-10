@@ -236,6 +236,16 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     almacén: la tienda y el resto de precios no cambian. Ropa: **un probador con espejo** para cambiarte la ropa que ya
     tienes (no vende ropa ni toca misiones ni casino). Superhéroes: **muebles nuevos a la venta** (5-6 originales con
     modelo 3D a la altura de la casa; migración nueva, la aplica Francisco).
+    **Segunda ampliación** (encargo de Francisco del 10-11-2026, por bloques con capturas): al entrar, **escaleras mecánicas a una
+    planta de abajo**, con el recorrido visible al bajar y subir; abajo, **la planta de ropa**, como una tienda de ropa, dividida por
+    zonas, con una **cesta** para llevar lo que te gusta y **probadores** (los de arriba se mueven allí). **Antes de bajar, si llevas
+    muebles en el carrito, hay que pasar por caja.** La zona de habitaciones, **más grande**, con más habitaciones **cerradas por
+    ahora** hasta que lleguen muebles. Decisiones de Francisco (10-11-2026): **ropa nueva propia de la planta, a la venta con
+    tickets**; la de misiones, casino y estiba se ve colgada pero **sigue sin venderse** (dice cómo se gana). Los muebles de las
+    **habitaciones especiales** (hoy «Capa y Antifaz») cuestan **el doble** (común 40, poco común 80), en el almacén y en la tienda
+    del bajo, y **nunca se rebajan**: ni ofertas del día o de la semana ni descuento del albarán. **Las habitaciones cerradas**
+    (10-11-2026): nada industrial (no persianas metálicas), con cortina de terciopelo y caballete; la sala no es un pasillo plano
+    (placita con bancos y arco del «ala nueva») y **las habitaciones con muebles van antes** que las cerradas.
   - **Identidad de los muebles** (4-11-2026, aprobado por Francisco; por bloques con capturas). Motivo: nadie compraría en la
     Lonja un sofá que la tienda vende igual.
     - **Acabados**: algunas copias salen con un acabado propio (cambio de colores y efecto discreto sobre el mismo dibujo;

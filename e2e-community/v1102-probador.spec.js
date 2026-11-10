@@ -1,10 +1,12 @@
 // 1.102 (SPEC §102) · El probador del Almacén del Puerto, con Supabase simulado: el espejo y las cabinas junto al paso de
 // las habitaciones, ponerse delante del espejo, cambiarse solo la ropa que ya se tiene (se ve en el reflejo), «Listo»
 // lo guarda y «Volver» lo deja como estaba. Capturas en qa-report/almacen/.
+// 2.ª ampliación (bloque 2, 1.104): el probador ha bajado a la planta de ropa; la prueba lo busca allí.
 import { expect, test } from '@playwright/test';
 import { ANA, alAlmacen, mockAlmacen, shot } from './almacenHelpers';
 
 const settled = (page) => page.waitForFunction(() => window.__almacen3d.settled());
+const BZ = -4.6;
 const COMO_VA = { piel: 2, pelo: 'melena', colorPelo: 1, jersey: 0, pantalon: 0, gafas: false, complemento: 'ninguno' };
 
 /** El almacén con tu piso, tu personaje y algo de ropa ganada (misiones, casino y estiba). */
@@ -18,7 +20,7 @@ function conArmario(prendas = ['jersey:12', 'complemento:capa', 'jersey:15', 'pa
 const personajeDe = (mock) => mock.db.pisos.find((p) => p.user_id === ANA.id).personaje;
 
 async function alEspejo(page, alm) {
-  await page.evaluate(() => window.__almacen3d.place(21.1, 4.2, Math.PI));
+  await page.evaluate((z) => window.__almacen3d.place(14.3, 3.6, Math.PI, z), BZ);
   await page.waitForTimeout(300);
   await alm.locator('.alm-tag--sitio', { hasText: 'Probador' }).click();
   await expect(alm.locator('.alm-card--probador .alm-percha').first()).toBeVisible({ timeout: 15000 });
@@ -32,8 +34,8 @@ test('el probador: el espejo y las cabinas, delante del espejo y cambiarse', asy
   page.on('pageerror', (e) => errors.push(String(e)));
   const mock = conArmario();
   const { alm } = await alAlmacen(page, mock);
-  // Desde el paso, mirando a la entrada de las habitaciones: el espejo y las cabinas
-  await page.evaluate(() => window.__almacen3d.place(19.0, 4.2, Math.PI / 2 + 0.5));
+  // En la planta de ropa, delante de las cabinas: el espejo y las cortinas
+  await page.evaluate((z) => window.__almacen3d.place(11.5, 6.2, Math.PI, z), BZ);
   await page.waitForTimeout(300);
   await shot(page, info, '40-probador');
   await alEspejo(page, alm);
@@ -66,7 +68,7 @@ test('el probador solo tiene la ropa que ya es tuya, y «Volver» no guarda nada
   await alEspejo(page, alm);
   const card = alm.locator('.alm-card--probador');
   await expect(card).toContainText('Tienes 1 de');
-  await expect(card).toContainText('Aquí no se vende ropa');
+  await expect(card).toContainText('la ropa especial sale de las misiones del día');
   // Lo de serie y lo ganado, sí; lo que no tienes (otra prenda de las misiones, la del casino y la de la estiba), no
   await expect(card.locator('[data-prenda="jersey:0"]')).toBeVisible();
   await expect(card.locator('[data-prenda="jersey:12"]')).toBeVisible();
@@ -102,18 +104,13 @@ test('vídeo: al probador desde la entrada, cambiarse delante del espejo y qued�
   const { alm } = await alAlmacen(page, mock, undefined, { reduced: false });
   const pausa = (ms) => page.waitForTimeout(ms);
   await pausa(900);
-  // Andando hasta el paso de las habitaciones (por el directorio, a un mueble de la sala) y de ahí al probador
+  // Bajando por las escaleras mecánicas (desde el directorio) y, abajo, al probador
   await alm.locator('.alm-bar').getByRole('button', { name: 'Directorio' }).click();
   await pausa(700);
-  const seccion = alm.locator('section.alm-dir__seccion', { hasText: 'Capa y Antifaz' });
-  await seccion.scrollIntoViewIfNeeded();
-  await seccion.locator('.alm-dir__item').filter({ has: page.getByText('Neón del rayo', { exact: true }) }).click();
-  await expect(alm.locator('.alm-card--ficha h4')).toHaveText('Neón del rayo', { timeout: 30000 });
+  await alm.getByRole('button', { name: 'Bajar a la planta de ropa' }).click();
   await settled(page);
   await pausa(900);
-  await alm.locator('.alm-card__back').click();
-  await settled(page);
-  await page.evaluate(() => window.__almacen3d.place(19.0, 4.2, Math.PI / 2 + 0.5));
+  await page.evaluate((z) => window.__almacen3d.place(11.5, 6.2, Math.PI, z), BZ);
   await pausa(1500);
   await alm.locator('.alm-tag--sitio', { hasText: 'Probador' }).click();
   const card = alm.locator('.alm-card--probador');

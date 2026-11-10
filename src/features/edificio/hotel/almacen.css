@@ -44,7 +44,7 @@
 .alm svg { image-rendering: pixelated; }
 
 /* ── Letreros de la escena ─────────────────────────────────────────── */
-.alm-tags { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.alm-tags { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .alm-tag,
 .alm-cartel,
 .alm-nombre { position: absolute; top: 0; left: 0; white-space: nowrap; }
@@ -498,6 +498,9 @@ li[data-m='false'] .alb__mini { filter: grayscale(1); opacity: 0.5; }
 .alm-dir__item[data-oferta='semana'] { box-shadow: inset 0 0 0 2px var(--alm-red), inset 0 -3px 0 var(--alm-kraft); }
 .alm-dir__item b[data-oferta] { background: var(--alm-gold); color: var(--alm-ink); }
 .alm-ticket__oferta { margin-left: 6px; color: var(--alm-red); font-size: 0.72rem; font-weight: 700; }
+/* 1.106 · lo de las habitaciones especiales: precio doble, nunca rebajado */
+.alm-oferta[data-tipo='especial'] { background: #1c2040; color: #f3d27a; }
+.alm-ticket__especial { margin-left: 6px; color: #2c3266; font-size: 0.72rem; font-weight: 700; }
 
 /* ── 1.102 · El probador: pestañas de papel, una fila de perchas que se desliza y el pie con «Listo» ── */
 .alm-card--probador { max-height: 48%; }
@@ -518,3 +521,35 @@ li[data-m='false'] .alb__mini { filter: grayscale(1); opacity: 0.5; }
 .alm-probador__pie { display: flex; gap: 8px; }
 .alm-probador__pie .alm-btn { flex: 1; }
 .alm-probador__pie .alm-btn:disabled { opacity: 0.55; cursor: default; }
+
+/* 2.ª ampliación · bloque 2: la planta de ropa (papel de zona, cesta y prendas prestadas en el probador) */
+.alm-card--ropa, .alm-card--cesta { max-height: 58%; }
+.alm-card--ropa .alm-card__body, .alm-card--cesta .alm-card__body { padding: 8px 12px 10px; }
+.alm-zona__donde { margin: 0 0 6px; font-size: 0.78rem; }
+.alm-zona__lista { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.alm-prenda { --alm-px: 2px; display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 8px; padding: 4px 6px 4px 4px; background: var(--alm-kraft-l); box-shadow: inset 0 0 0 1px var(--alm-kraft-d), inset 0 -3px 0 var(--alm-kraft); }
+.alm-prenda img { width: 44px; height: 44px; image-rendering: pixelated; background: var(--alm-paper); box-shadow: inset 0 0 0 1px var(--alm-kraft-d); }
+.alm-prenda__txt { display: grid; min-width: 0; line-height: 1.2; }
+.alm-prenda__txt b { overflow: hidden; color: var(--alm-ink); font-size: 0.86rem; text-overflow: ellipsis; white-space: nowrap; }
+.alm-prenda__txt small { color: #6a5440; font-size: 0.72rem; }
+.alm-prenda[data-origen='casino'] .alm-prenda__txt small, .alm-prenda[data-origen='estiba'] .alm-prenda__txt small, .alm-prenda[data-origen='misiones'] .alm-prenda__txt small { color: var(--alm-red-d); }
+.alm-prenda__cesta { min-height: 36px; padding: 0 10px; font-size: 0.76rem; }
+.alm-prenda__cesta[aria-pressed='true'] { background: var(--alm-gold); }
+.alm-prenda__cesta:disabled { opacity: 0.5; cursor: default; }
+.alm-percha[data-prestada] { background: repeating-linear-gradient(135deg, var(--alm-paper) 0 6px, #f1e2c4 6px 12px); box-shadow: inset 0 0 0 2px var(--alm-red); }
+.alm-percha[data-prestada][aria-pressed='true'] { background: var(--alm-gold); box-shadow: inset 0 0 0 2px var(--alm-red-d); }
+
+/* 2.ª ampliación · bloque 3: la ropa de la planta, con precio, y su pago desde la cesta */
+.alm-prenda:has(.alm-prenda__precio) { grid-template-columns: 44px 1fr auto auto; }
+.alm-prenda[data-origen='tienda'] { background: #fbf1da; box-shadow: inset 0 0 0 1px var(--alm-gold-d), inset 0 -3px 0 var(--alm-kraft); }
+.alm-prenda[data-origen='tienda'] .alm-prenda__txt small { color: var(--alm-teal-d); font-weight: 600; }
+.alm-prenda__precio { --alm-px: 2px; display: grid; justify-items: center; min-width: 40px; padding: 2px 5px; background: var(--alm-kraft); box-shadow: inset 0 0 0 1px var(--alm-gold-d), inset 0 -2px 0 var(--alm-kraft-d); color: var(--alm-ink); line-height: 1; }
+.alm-prenda__precio b { font: 700 0.96rem/1 'Lora', Georgia, serif; }
+.alm-prenda__precio small { font-size: 0.6rem; letter-spacing: 0.04em; }
+.alm-cesta__pago { display: grid; gap: 6px; margin: 4px 0 8px; padding: 8px; background: var(--alm-kraft-l); box-shadow: inset 0 0 0 2px var(--alm-gold-d); }
+.alm-cesta__pago > p:first-child { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; color: var(--alm-ink); }
+.alm-cesta__pago > p:first-child span { display: grid; font-size: 0.86rem; }
+.alm-cesta__pago > p:first-child small { color: #6a5440; font-size: 0.72rem; }
+.alm-cesta__pago > p:first-child b { font: 700 1.1rem 'Lora', Georgia, serif; }
+.alm-cesta__pago .alm-btn:disabled { opacity: 0.55; cursor: default; }
+.alm-cesta__pagado { margin: 0 0 8px; padding: 7px 9px; background: #e3efe2; box-shadow: inset 0 0 0 2px var(--alm-teal); color: var(--alm-teal-d); font-size: 0.82rem; }

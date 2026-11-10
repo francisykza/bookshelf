@@ -4,7 +4,7 @@
 // validar aquí antes de dibujarlos; el que se guarda va siempre limpio (`validateRoom`).
 import { acabadoOf } from './acabados';
 import { client, fail } from '../social/services/community';
-import { DEFAULT_AVATAR, PRENDAS, ROPA_CASINO, ROPA_ESTIBA, validateAvatar } from './actor';
+import { DEFAULT_AVATAR, PRENDAS, ROPA_CASINO, ROPA_ESTIBA, ROPA_TIENDA, validateAvatar } from './actor';
 import { FIRMAS, catalogItem } from './catalog';
 import { rarezaOf } from './economy';
 import { normalizeInventory } from './inventory';
@@ -200,7 +200,9 @@ export async function loadInventario() {
 
 // Armario del personaje y misiones del día (1.70, §70): { prendas: [«clave:valor»], hechas: [misiones del día], nueva,
 // tickets } (`tickets`, desde la 1.79: los ganados al completar las tres con todo el armario ya tuyo)
-const normalizeArmario = (d) => ({ prendas: Array.isArray(d?.prendas) ? d.prendas.filter((p) => PRENDAS.includes(p) || ROPA_CASINO.includes(p) || ROPA_ESTIBA.includes(p)) : [], hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null, tickets: Number.isInteger(d?.tickets) && d.tickets > 0 ? d.tickets : 0 });
+/** Lo que se puede tener en el armario: lo ganado (misiones, casino, estiba) y lo comprado en la planta de ropa (1.105). */
+const deArmario = (lista) => (Array.isArray(lista) ? lista.filter((p) => PRENDAS.includes(p) || ROPA_CASINO.includes(p) || ROPA_ESTIBA.includes(p) || ROPA_TIENDA[p] != null) : []);
+const normalizeArmario = (d) => ({ prendas: deArmario(d?.prendas), hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null, tickets: Number.isInteger(d?.tickets) && d.tickets > 0 ? d.tickets : 0 });
 
 /**
  * 1.102 · Quién soy y cómo voy, para el probador del almacén: { uid, personaje }. El personaje, el del servidor; sin él
@@ -517,6 +519,16 @@ export async function almacenComprar(compra, articulos, esperado, usarDescuento)
   const { data, error } = await sb.rpc('piso_almacen_comprar', { compra, articulos, esperado, usar_descuento: usarDescuento });
   fail(error);
   return { ...data, inventario: normalizeInventory(data?.inventario) };
+}
+/**
+ * 1.105 · Paga la ropa de la planta de ropa (todo o nada, con la clave de compra: un reintento no cobra dos veces).
+ * Devuelve { compra, repetida, total, ropa, prendas } (prendas: todo tu armario).
+ */
+export async function almacenRopaComprar(compra, prendas, esperado) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_ropa_comprar', { compra, prendas, esperado });
+  fail(error);
+  return { ...data, prendas: deArmario(data?.prendas), ropa: deArmario(data?.ropa) };
 }
 /** Amigos a quien invitar, invitaciones que te esperan y tu sala. null sin la migración. */
 export async function almacenAmigos() {

@@ -1,7 +1,7 @@
 // La caja del Almacén del Puerto (1.99, §99): los artículos del carrito, el descuento del día («Sella el albarán», opcional)
 // y el total antes de confirmar. Lo que se cobra lo calcula el servidor; aquí solo se enseña y se pide.
 import { useEffect, useRef, useState } from 'react';
-import { ticketsText } from '../economy';
+import { isDeHabitacionEspecial, ticketsText } from '../economy';
 import { DESCUENTOS, MARCAS, PASOS, TOLERANCIA, acierta, duracion, marcaDe, planoEn, posicion, pctDe } from './albaran';
 import { sonar } from './albaranSfx';
 
@@ -286,7 +286,10 @@ export function Caja({
   const d = estado?.descuento ?? null;
   const pct = d?.estado === 'hecho' ? (d.pct ?? pctDe(d.marcas)) : 0;
   const aplica = usar && d?.estado === 'hecho';
-  const rebaja = aplica ? Math.floor((subtotal * pct) / 100) : 0;
+  // El albarán no toca los muebles de las habitaciones especiales (1.106): se rebaja solo el resto, como en el servidor
+  const rebajable = lineas.reduce((s, l) => s + (isDeHabitacionEspecial(l.id) ? 0 : l.precio * l.n), 0);
+  const rebaja = aplica ? Math.floor((rebajable * pct) / 100) : 0;
+  const hayEspeciales = lineas.some((l) => isDeHabitacionEspecial(l.id));
   const total = subtotal - rebaja;
   const tickets = estado?.tickets ?? null;
   const falta = tickets != null && total > tickets ? total - tickets : 0;
@@ -345,6 +348,7 @@ export function Caja({
               <span>
                 {l.nombre} × {l.n}
                 {l.oferta && <small className="alm-ticket__oferta">oferta −{l.oferta.pct} %</small>}
+                {isDeHabitacionEspecial(l.id) && <small className="alm-ticket__especial">sin rebajas</small>}
               </span>
               <span>
                 {l.oferta && <s>{l.base * l.n}</s>} {ticketsText(l.precio * l.n)}
@@ -407,6 +411,7 @@ export function Caja({
                   <span>Usar el descuento en esta compra (vale para una sola)</span>
                 </label>
               )}
+              {pct > 0 && hayEspeciales && <p className="alm-nota">Lo de las habitaciones especiales no se rebaja: el albarán va sobre lo demás.</p>}
             </>
           )}
           {d?.estado === 'usado' && <p>Ya usaste el descuento de hoy.</p>}

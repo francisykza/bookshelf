@@ -55,6 +55,11 @@ export const JERSEYS = [
   { id: 16, nombre: 'Vestido de lentejuelas', color: [176, 44, 98] },
   // 1.86: de la pared de la Lonja (ROPA_ESTIBA)
   { id: 17, nombre: 'Rayas de estibador', color: [226, 216, 196] },
+  // 1.105 (2.ª ampliación del almacén, bloque 3): la ropa propia de la planta de ropa, a la venta con tickets (ROPA_TIENDA)
+  { id: 18, nombre: 'Punto de trenzas', color: [230, 220, 196] },
+  { id: 19, nombre: 'Cuadros de leñador', color: [168, 52, 50] },
+  { id: 20, nombre: 'Cárdigan de botones', color: [150, 140, 72] },
+  { id: 21, nombre: 'Rombos', color: [54, 112, 116] },
 ];
 export const PANTALONES = [
   { id: 0, nombre: 'Vaquero', color: [72, 88, 116] },
@@ -72,6 +77,10 @@ export const PANTALONES = [
   { id: 9, nombre: 'Raya diplomática', color: [64, 66, 78] },
   // 1.86: de la pared de la Lonja
   { id: 10, nombre: 'Mahón de faena', color: [46, 72, 112] },
+  // 1.105: de la planta de ropa del almacén
+  { id: 11, nombre: 'Pana mostaza', color: [186, 140, 62] },
+  { id: 12, nombre: 'Blanco roto', color: [222, 214, 196] },
+  { id: 13, nombre: 'Verde botella', color: [40, 84, 62] },
 ];
 // Complementos (§70): todos menos «ninguno» se ganan con las misiones del día
 export const COMPLEMENTOS = [
@@ -90,6 +99,10 @@ export const COMPLEMENTOS = [
   { id: 'fedora', nombre: 'Fedora' },
   // 1.86: de la pared de la Lonja
   { id: 'gorro-estibador', nombre: 'Gorro de estibador' },
+  // 1.105: de la planta de ropa del almacén
+  { id: 'panuelo', nombre: 'Pañuelo de lunares' },
+  { id: 'pompon', nombre: 'Gorro de pompón' },
+  { id: 'bandolera', nombre: 'Bolso bandolera' },
 ];
 
 /**
@@ -110,12 +123,29 @@ export const CONJUNTO_ESTRELLAS = { jersey: 14, pantalon: 8, complemento: 'capa'
 export const ROPA_CASINO = ['complemento:visera', 'pantalon:9', 'jersey:15', 'complemento:fedora', 'jersey:16'];
 /** La ropa de estibador (1.86): se cambia por sellos en la pared de la Lonja (PARED en hotel/estiba.js). */
 export const ROPA_ESTIBA = ['complemento:gorro-estibador', 'pantalon:10', 'jersey:17'];
+/**
+ * La ropa propia de la planta de ropa del almacén (1.105, decisión de Francisco del 10-11-2026): se compra con tickets en la
+ * planta (la misma lista y los mismos precios que `piso_almacen_ropa` en el servidor). Solo se lleva si se tiene.
+ */
+export const ROPA_TIENDA = {
+  'jersey:18': 30,
+  'jersey:19': 30,
+  'jersey:20': 26,
+  'jersey:21': 30,
+  'pantalon:11': 22,
+  'pantalon:12': 20,
+  'pantalon:13': 20,
+  'complemento:panuelo': 14,
+  'complemento:pompon': 16,
+  'complemento:bandolera': 18,
+};
 const LISTS = { colorPelo: () => COLORES_PELO, jersey: () => JERSEYS, pantalon: () => PANTALONES, complemento: () => COMPLEMENTOS };
 export const prendaKey = (key, value) => `${key}:${value}`;
-export const isPrenda = (key, value) => [...PRENDAS, ...ROPA_CASINO, ...ROPA_ESTIBA].includes(prendaKey(key, value));
+export const isPrenda = (key, value) => [...PRENDAS, ...ROPA_CASINO, ...ROPA_ESTIBA, ...Object.keys(ROPA_TIENDA)].includes(prendaKey(key, value));
 /** De dónde sale una prenda que no tienes (para el aviso del armario). */
 export const prendaOrigen = (key, value) => {
   if (ROPA_CASINO.includes(prendaKey(key, value))) return 'se cambia por fichas en la caja del casino';
+  if (ROPA_TIENDA[prendaKey(key, value)]) return 'se compra con tickets en la planta de ropa del almacén';
   return ROPA_ESTIBA.includes(prendaKey(key, value)) ? 'se cambia por sellos en la pared de la Lonja' : 'se gana con las misiones del día';
 };
 /** El nombre de una prenda que se gana (para los avisos). */
@@ -210,6 +240,7 @@ function standing(a, step = 0) {
     ...starryTop(a, s),
     ...casinoTop(a, top),
     ...stripedTop(a, s),
+    ...tiendaTop(a, top, s),
     // El vestido: la falda de vuelo, hasta las rodillas
     ...(a.jersey === 16 ? [B(-0.3, -0.18, 0.42, 0.3, 0.18, 0.74, top), B(-0.31, -0.19, 0.42, 0.31, 0.19, 0.47, shade(top, 0.84)), ...sequins(0.19, [[-0.2, 0.6], [0.05, 0.52], [0.22, 0.64], [-0.06, 0.68]])] : []),
   ];
@@ -259,6 +290,42 @@ function stripedTop(a, s = 0) {
     B(-0.375, 0.09 - s, z, -0.255, 0.102 - s, z + 0.055, STRIPE, f),
     B(0.255, 0.09 + s, z, 0.375, 0.102 + s, z + 0.055, STRIPE, f),
   ]);
+}
+
+/**
+ * 1.105 · Los dibujos de la ropa de la planta: trenzas de punto, cuadros de leñador, cárdigan con botones y rombos. Por
+ * delante (y en las mangas, de pie). `sentado`: solo el frente.
+ */
+function tiendaTop(a, top, s = 0, sentado = false) {
+  const f = { grain: 0 };
+  const front = (x0, z0, x1, z1, c) => B(x0, 0.14, z0, x1, 0.152, z1, c, f);
+  const mangas = (z0, z1, c) =>
+    sentado ? [] : [B(-0.375, 0.09 - s, z0, -0.255, 0.102 - s, z1, c, f), B(0.255, 0.09 + s, z0, 0.375, 0.102 + s, z1, c, f)];
+  if (a.jersey === 18) {
+    const c = shade(top, 0.82);
+    return [-0.16, 0, 0.16].flatMap((x) => [0.78, 0.94, 1.1, 1.26].map((z, k) => front(x - 0.03 + (k % 2) * 0.02, z, x + 0.01 + (k % 2) * 0.02, z + 0.1, c)));
+  }
+  if (a.jersey === 19) {
+    const d = [52, 30, 34];
+    return [
+      ...[0.86, 1.06, 1.26].map((z) => front(-0.26, z, 0.26, z + 0.06, d)),
+      ...[-0.16, 0.04].map((x) => front(x, 0.7, x + 0.06, 1.42, d)),
+      ...mangas(1.06, 1.12, d),
+      ...mangas(1.26, 1.32, d),
+    ];
+  }
+  if (a.jersey === 20) {
+    const boton = [236, 214, 160];
+    return [front(-0.025, 0.7, 0.025, 1.42, shade(top, 0.78)), ...[1.3, 1.14, 0.98, 0.82].map((z) => front(0.035, z, 0.075, z + 0.04, boton)), ...mangas(0.86, 0.9, shade(top, 0.78))];
+  }
+  if (a.jersey === 21) {
+    const c = [230, 200, 120];
+    return [
+      ...[[-0.13, 1.2], [0.13, 1.2], [0, 1.02], [-0.13, 0.84], [0.13, 0.84]].flatMap(([x, z]) => [front(x - 0.05, z, x + 0.05, z + 0.03, c), front(x - 0.02, z - 0.035, x + 0.02, z + 0.065, c)]),
+      ...mangas(1.1, 1.14, c),
+    ];
+  }
+  return [];
 }
 
 const STAR = [255, 226, 140];
@@ -337,6 +404,35 @@ function extra(id) {
         B(0.22, -0.02, 1.98, 0.29, 0.05, 2.12, [228, 186, 84], f),
       ];
     }
+    // 1.105 · De la planta de ropa del almacén
+    case 'panuelo': {
+      const c = [196, 54, 62];
+      const lunar = [246, 236, 220];
+      return [
+        B(-0.23, -0.15, 1.38, 0.23, 0.18, 1.48, c),
+        B(-0.08, 0.15, 1.24, 0.08, 0.2, 1.4, shade(c, 0.9)),
+        ...[[-0.15, 1.44], [0.12, 1.42], [0, 1.3]].map(([x, z]) => B(x - 0.02, 0.18, z - 0.02, x + 0.02, 0.205, z + 0.02, lunar, f)),
+      ];
+    }
+    case 'pompon': {
+      const c = [224, 132, 60];
+      return [
+        B(-0.27, -0.25, 1.82, 0.27, 0.27, 2.08, c),
+        B(-0.275, -0.255, 1.82, 0.275, 0.275, 1.9, shade(c, 0.82), f),
+        ...[-0.16, -0.02, 0.12].map((x) => B(x, 0.27, 1.92, x + 0.06, 0.28, 2.06, shade(c, 1.15), f)),
+        B(-0.09, -0.08, 2.08, 0.09, 0.1, 2.24, [246, 236, 214]),
+      ];
+    }
+    case 'bandolera': {
+      const c = [126, 78, 46];
+      return [
+        // La correa, del hombro derecho a la cadera izquierda, y el bolso a un lado
+        ...[0, 1, 2, 3, 4].map((k) => B(0.2 - k * 0.1, 0.14, 1.36 - k * 0.12, 0.28 - k * 0.1, 0.16, 1.42 - k * 0.12, c, f)),
+        B(-0.26, 0.14, 0.7, -0.06, 0.2, 0.9, c),
+        B(-0.265, 0.14, 0.83, -0.055, 0.205, 0.91, shade(c, 1.2), f),
+        B(-0.18, 0.205, 0.82, -0.14, 0.215, 0.86, [228, 186, 84], f),
+      ];
+    }
     case 'capa': {
       // A la espalda, de los hombros a las rodillas, con el cierre dorado y estrellas que se encienden de tarde
       const c = [36, 42, 82];
@@ -374,6 +470,7 @@ function sitting(a, h) {
     B(0.24, 0.18, 0.86, 0.34, 0.32, 0.96, skin, { grain: 0 }),
     ...starryTop(a),
     ...casinoTop(a, top),
+    ...tiendaTop(a, top, 0, true),
     ...head(a, skin, H),
   ].map(up);
   // Sentada con el vestido, la falda cubre los muslos
