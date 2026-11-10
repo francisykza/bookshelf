@@ -172,7 +172,11 @@ describe('visitar el almacén con un amigo', () => {
     expect(a.x).toBeCloseTo(4.2);
     expect(JSON.stringify(v)).not.toMatch(/tickets/);
     const vuelta = (await pulso(A, sala)).otros[0];
-    expect(vuelta).toMatchObject({ uid: B, x: 18, y: 0, zona: 'pasillos', mira: null, sello: null });
+    // 1.102.1 · Hasta el fondo de las habitaciones (x 29,5), no más
+    expect(vuelta).toMatchObject({ uid: B, x: 29.5, y: 0, zona: 'pasillos', mira: null, sello: null });
+    // En el probador, al otro lado del paso, se guarda tal cual
+    await pulso(B, sala, { x: 21.1, y: 4.2 });
+    expect((await pulso(A, sala)).otros[0].x).toBeCloseTo(21.1);
   });
 
   it('si el invitado se va, quien invitó sigue; si se va quien invitó, la sala se cierra', async () => {

@@ -756,7 +756,7 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
           if (sala.estado === 'cerrada') return json({ estado: 'cerrada', otros: [] });
           const clamp = (v, a, b, d) => (Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : d);
           const sello = body.sello && ['rapido', 'sinprisa'].includes(body.sello.modo) ? { modo: body.sello.modo, empezado: body.sello.empezado, marcas: (body.sello.marcas ?? []).slice(0, 3).map((m) => (m === true || m === false ? m : null)) } : null;
-          al.presencia[`${sala.id}:${userId}`] = { uid: userId, x: clamp(body.x, 0, 18, 15.5), y: clamp(body.y, 0, 26, 23.6), yaw: clamp(body.yaw, -7, 7, 3.5), zona: ['pasillos', 'caja', 'mercadillo'].includes(body.zona) ? body.zona : 'pasillos', mira: cat(body.mira) && !isRetirado(body.mira) ? body.mira : null, mira_n: body.mira_n ?? 0, sello, visto: Date.now() };
+          al.presencia[`${sala.id}:${userId}`] = { uid: userId, x: clamp(body.x, 0, 29.5, 15.5), y: clamp(body.y, 0, 26, 23.6), yaw: clamp(body.yaw, -7, 7, 3.5), zona: ['pasillos', 'caja', 'mercadillo'].includes(body.zona) ? body.zona : 'pasillos', mira: cat(body.mira) && !isRetirado(body.mira) ? body.mira : null, mira_n: body.mira_n ?? 0, sello, visto: Date.now() };
           const otros = Object.entries(al.presencia)
             .filter(([k, p]) => k.startsWith(`${sala.id}:`) && p.uid !== userId && Date.now() - p.visto < 20000)
             .map(([, p]) => ({ ...p, alias: perfil(p.uid).alias, avatar_id: perfil(p.uid).avatar_id, personaje: db.pisos.find((x) => x.user_id === p.uid)?.personaje ?? null, hace: (Date.now() - p.visto) / 1000 }));
