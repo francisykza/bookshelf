@@ -46,7 +46,9 @@ describe('las reglas del servidor coinciden con economy.js', () => {
   it('los sobres de la pared: precios, probabilidades y muebles', async () => {
     // «Todo el catálogo» en el servidor es por rareza: los místicos se sortean aparte (solo en el de coleccionista) y
     // los premios (1.79) no salen nunca
-    const todos = CATALOG.filter((c) => !c.set && !isMistico(c) && !isEspecial(c)).map((c) => c.id);
+    // las colecciones del almacén (1.101) tampoco: los sobres están cerrados por la reforma y, al reabrirlos, piso_abrir_sobre
+    // tendrá que dejarlas fuera como hace economy.js (anotado en SPEC §101)
+    const todos = CATALOG.filter((c) => !c.set && !isMistico(c) && !isEspecial(c) && !c.coleccion).map((c) => c.id);
     for (const s of SOBRES) {
       const { rows } = await db.query('select piso_sobre($1) as d', [s.id]);
       const d = rows[0].d;

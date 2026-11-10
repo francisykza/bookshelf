@@ -34,7 +34,10 @@ export const rarezaOf = (cat) => cat?.rareza ?? 'comun';
 export const rarezaInfo = (id) => RAREZAS.find((r) => r.id === id) ?? RAREZAS_MISTICAS.find((r) => r.id === id) ?? RAREZAS_ESPECIALES.find((r) => r.id === id) ?? RAREZAS[0];
 
 const sinSaga = CATALOG.filter((c) => !c.set && !isMistico(c) && !isEspecial(c));
-const deCategorias = (...cats) => sinSaga.filter((c) => cats.includes(c.cat)).map((c) => c.id);
+// Las colecciones del almacén (1.101, `coleccion`) se venden en la tienda y en el almacén, pero no entran en los sobres:
+// sus sorteos, probabilidades y pity no cambian (Francisco: no tocar las recompensas de otros sistemas)
+const deSobre = sinSaga.filter((c) => !c.coleccion);
+const deCategorias = (...cats) => deSobre.filter((c) => cats.includes(c.cat)).map((c) => c.id);
 
 /** La temporada de sobres a la venta (cada temporada trae sus sobres; los de antes pueden volver o no). */
 export const TEMPORADA = { id: 't1', nombre: 'Otoño en el puerto', corto: 'Temporada 1' };
@@ -89,7 +92,7 @@ export const SOBRES = [
     // Místicos (1.73, cifras aprobadas por Francisco): 1 % por mueble, restado de lo raro; 1 de cada 4, legendario
     prob: { raro: 0.14, 'poco-comun': 0.35, mistico: 0.01 },
     legendario: 0.25,
-    muebles: sinSaga.map((c) => c.id),
+    muebles: deSobre.map((c) => c.id),
     dice: 'El caro de la casa: de todo un poco, bastantes más papeletas para lo poco común y lo raro... y, muy de vez en cuando, algo que no es de este mundo.',
   },
 ];
@@ -116,9 +119,9 @@ export function oddsTable(sobre) {
       })
     : [];
   const normales = RAREZAS.map((r) => {
-    const propios = sinSaga.filter((c) => sobre.muebles.includes(c.id) && rarezaOf(c) === r.id);
+    const propios = deSobre.filter((c) => sobre.muebles.includes(c.id) && rarezaOf(c) === r.id);
     const fuera = !propios.length;
-    const items = fuera ? sinSaga.filter((c) => rarezaOf(c) === r.id) : propios;
+    const items = fuera ? deSobre.filter((c) => rarezaOf(c) === r.id) : propios;
     const prob = probDe(sobre, r.id);
     return { ...r, prob, items, fuera, cada: items.length ? prob / items.length : 0 };
   });

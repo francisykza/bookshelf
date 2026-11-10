@@ -61,8 +61,10 @@ async function entrar(page) {
   await hotel.getByRole('button', { name: 'Directorio' }).click();
   await hotel
     .getByRole('dialog', { name: 'Directorio' })
-    .getByRole('button', { name: /La Lonja/ })
+    .getByRole('button', { name: /almacén/i })
     .click();
+  // 1.99: la Lonja de antes es el mercadillo del almacén (acceso secundario)
+  await hotel.locator('section.alm .alm-bar').getByRole('button', { name: 'Mercadillo' }).click();
   const lonja = hotel.getByRole('region', { name: 'La Lonja' });
   await expect(lonja.getByRole('button', { name: /^El tablón/ })).toBeVisible();
   return { mock, lonja };

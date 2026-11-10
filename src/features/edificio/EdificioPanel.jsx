@@ -17,7 +17,8 @@ import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
 import { PRENDAS, prendaNombre } from './actor';
 import { missionsOf, todayKey } from './dailyMissions';
-import { contarDiaria, doorLabel, elegirInicio, escucharMesas, firmar, loadArmario, loadCasino, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje } from './service';
+import { almacenAmigos, contarDiaria, doorLabel, elegirInicio, escucharMesas, firmar, loadArmario, loadCasino, loadEdificio, loadInventario, loadSocial, localAvatar, meGusta, regalar, saveCompanero, savePersonaje } from './service';
+import { UNIRSE_KEY } from './hotel/Almacen';
 import { VecinoMesa } from './VecinoMesa';
 import { GranHotel } from './hotel/GranHotel';
 import { mesasQueEsperan } from './hotel/veintiuna';
@@ -283,8 +284,47 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
       document.removeEventListener('visibilitychange', mirar);
     };
   }, [ready, enCasino]);
+  // 1.99 (§99): la invitación a recorrer el almacén con un amigo también avisa estés donde estés, menos dentro del almacén
+  const enAlmacen = inHotel && hotelRoom === 'lonja';
+  const [visitas, setVisitas] = useState([]);
+  useEffect(() => {
+    if (!ready || enAlmacen) return undefined;
+    let alive = true;
+    let parado = false;
+    const mirar = () => {
+      if (document.hidden || parado) return;
+      almacenAmigos().then(
+        (a) => {
+          if (!alive) return;
+          // Sin la migración del almacén no hay nada que mirar: se deja de preguntar
+          if (a === null) parado = true;
+          setVisitas((a?.invitaciones ?? []).filter((x) => x.estado === 'invitada'));
+        },
+        () => {},
+      );
+    };
+    mirar();
+    const t = setInterval(mirar, AVISO_MS);
+    document.addEventListener('visibilitychange', mirar);
+    return () => {
+      alive = false;
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', mirar);
+    };
+  }, [ready, enAlmacen]);
   const avisoDe = (m) => `${m.id}:${m.estado}`;
-  const aviso = enCasino || dressing || revealing ? null : (mesasQueEsperan(mesas).find((m) => !avisosVistos.has(avisoDe(m))) ?? null);
+  const avisoMesaPendiente = enCasino || dressing || revealing ? null : (mesasQueEsperan(mesas).find((m) => !avisosVistos.has(avisoDe(m))) ?? null);
+  const visita = avisoMesaPendiente || enAlmacen || dressing || revealing ? null : (visitas.find((v) => !avisosVistos.has(`almacen:${v.sala}`)) ?? null);
+  const aviso = avisoMesaPendiente ?? (visita ? { almacen: true, sala: visita.sala, amigo: { alias: visita.alias, avatar_id: visita.avatar_id } } : null);
+  const irAlAlmacen = (sala) => {
+    try {
+      sessionStorage.setItem(UNIRSE_KEY, sala);
+    } catch {
+      /* sin almacenamiento: se entra igualmente y se acepta desde «Con un amigo» */
+    }
+    setHotelRoom('lonja');
+    if (!inHotel) onOpenPiso(HOTEL_ID);
+  };
   const irAlCasino = () => {
     setHotelRoom('casino');
     if (!inHotel) onOpenPiso(HOTEL_ID);
@@ -539,11 +579,11 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
       {aviso && (
         <div className="ed-aviso" role="status">
           <ReaderAvatar avatarId={aviso.amigo?.avatar_id} alias={nombreMesa(aviso)} size="list" decorative />
-          <p>{avisoMesa(aviso)}</p>
-          <button type="button" className="px-btn" onClick={irAlCasino}>
-            Ir al casino
+          <p>{aviso.almacen ? `${nombreMesa(aviso)} te invita a recorrer el almacén de muebles.` : avisoMesa(aviso)}</p>
+          <button type="button" className="px-btn" onClick={aviso.almacen ? () => irAlAlmacen(aviso.sala) : irAlCasino}>
+            {aviso.almacen ? 'Ir al almacén' : 'Ir al casino'}
           </button>
-          <button type="button" className="ed-aviso__no" aria-label="Ahora no" onClick={() => setAvisosVistos((v) => new Set(v).add(avisoDe(aviso)))}>
+          <button type="button" className="ed-aviso__no" aria-label="Ahora no" onClick={() => setAvisosVistos((v) => new Set(v).add(aviso.almacen ? `almacen:${aviso.sala}` : avisoDe(aviso)))}>
             <X aria-hidden="true" />
           </button>
         </div>

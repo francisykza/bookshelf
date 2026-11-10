@@ -15,7 +15,7 @@ import { FLOOR_ORDER, mountHotel, ZONES } from './hotelView';
 import { Casino } from './Casino';
 import { mountRide } from './ride';
 import { Vestibulo } from './Vestibulo';
-import { Lonja } from './Lonja';
+import { Almacen } from './Almacen';
 import { SalaLectura } from './SalaLectura';
 import './hotel.css';
 
@@ -212,7 +212,7 @@ export function GranHotel({ room = null, onRoom = () => {}, directory = false, o
       ) : room === 'casino' ? (
         <Casino onStreet={() => onRoom(null)} soundOn={soundOn} />
       ) : room === 'lonja' ? (
-        <Lonja onStreet={() => onRoom(null)} onInventory={onInventory} soundOn={soundOn} />
+        <Almacen onStreet={() => onRoom(null)} onInventory={onInventory} soundOn={soundOn} />
       ) : room === 'cafe' && timer ? (
         <SalaLectura onStreet={() => onRoom(null)} timer={timer} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} />
       ) : (

@@ -4,7 +4,7 @@
 // validar aquí antes de dibujarlos; el que se guarda va siempre limpio (`validateRoom`).
 import { acabadoOf } from './acabados';
 import { client, fail } from '../social/services/community';
-import { PRENDAS, ROPA_CASINO, ROPA_ESTIBA, validateAvatar } from './actor';
+import { DEFAULT_AVATAR, PRENDAS, ROPA_CASINO, ROPA_ESTIBA, validateAvatar } from './actor';
 import { FIRMAS, catalogItem } from './catalog';
 import { rarezaOf } from './economy';
 import { normalizeInventory } from './inventory';
@@ -201,6 +201,20 @@ export async function loadInventario() {
 // Armario del personaje y misiones del día (1.70, §70): { prendas: [«clave:valor»], hechas: [misiones del día], nueva,
 // tickets } (`tickets`, desde la 1.79: los ganados al completar las tres con todo el armario ya tuyo)
 const normalizeArmario = (d) => ({ prendas: Array.isArray(d?.prendas) ? d.prendas.filter((p) => PRENDAS.includes(p) || ROPA_CASINO.includes(p) || ROPA_ESTIBA.includes(p)) : [], hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null, tickets: Number.isInteger(d?.tickets) && d.tickets > 0 ? d.tickets : 0 });
+
+/**
+ * 1.102 · Quién soy y cómo voy, para el probador del almacén: { uid, personaje }. El personaje, el del servidor; sin él
+ * (o sin la migración de la 1.69), el del dispositivo; y si no, el de serie.
+ */
+export async function loadMiPersonaje() {
+  const sb = await client();
+  const { data } = await sb.auth.getSession();
+  const uid = data.session?.user?.id;
+  if (!uid) throw Object.assign(new Error('Inicia sesión para cambiarte de ropa.'), { code: 'sin-sesion' });
+  const { data: fila, error } = await sb.from('pisos').select('personaje').eq('user_id', uid).maybeSingle();
+  const delServidor = error ? null : validateAvatar(fila?.personaje ?? null);
+  return { uid, personaje: delServidor ?? localAvatar(uid) ?? DEFAULT_AVATAR };
+}
 
 /** Mi armario y lo hecho hoy (`dia`: «AAAA-MM-DD» del dispositivo). Sin la migración de las misiones, null. */
 export async function loadArmario(dia) {
@@ -472,4 +486,67 @@ export async function jugarMesa(mesa, accion) {
   const { data, error } = await sb.rpc('piso_casino_mesa_jugar', { mesa, accion });
   fail(error);
   return normalizeCasino(data);
+}
+
+// ── El Almacén del Puerto (1.99, §99): caja, albarán del día y visita con un amigo ──
+/** Lo de la caja: { dia, ahora, vuelve (ms), tickets, descuento }. null si la migración aún no está aplicada. */
+export async function loadAlmacen() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_estado');
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
+  fail(error);
+  return data;
+}
+/** Empezar el albarán de hoy ('rapido' o 'sinprisa'): gasta el intento. */
+export async function almacenEmpezar(modo) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_empezar', { modo });
+  fail(error);
+  return data;
+}
+/** Sellar un plano del albarán (0, 1 o 2). */
+export async function almacenSellar(plano, acierto) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_sellar', { plano, acierto });
+  fail(error);
+  return data;
+}
+/** Comprar el carrito: la misma `compra` (clave) en cada reintento. Devuelve { total, pct, descuento, inventario… }. */
+export async function almacenComprar(compra, articulos, esperado, usarDescuento) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_comprar', { compra, articulos, esperado, usar_descuento: usarDescuento });
+  fail(error);
+  return { ...data, inventario: normalizeInventory(data?.inventario) };
+}
+/** Amigos a quien invitar, invitaciones que te esperan y tu sala. null sin la migración. */
+export async function almacenAmigos() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_amigos');
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
+  fail(error);
+  return data;
+}
+export async function almacenInvitar(amigo) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_invitar', { amigo });
+  fail(error);
+  return data;
+}
+export async function almacenUnirse(sala) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_unirse', { sala });
+  fail(error);
+  return data;
+}
+export async function almacenSalir(sala) {
+  const sb = await client();
+  const { error } = await sb.rpc('piso_almacen_salir', { sala });
+  fail(error);
+}
+/** El pulso de la visita: manda dónde estás y devuelve { estado, otros } (sin tickets ni carrito). */
+export async function almacenPulso(sala, p) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_pulso', { sala, x: p.x, y: p.y, yaw: p.yaw, zona: p.zona, mira: p.mira ?? null, mira_n: p.mira_n ?? 0, sello: p.sello ?? null });
+  fail(error);
+  return data;
 }

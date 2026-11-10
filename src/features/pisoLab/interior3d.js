@@ -5,7 +5,7 @@
 // lienzo) es de cada montaje y `destroy()` lo libera. Solo se dibuja cuando algo cambia.
 import { Sprite, SpriteMaterial, AmbientLight, Box3, BoxGeometry, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, Float32BufferAttribute, Group, HemisphereLight, LinearFilter, Matrix4, Mesh, MeshBasicMaterial, MeshLambertMaterial, NearestFilter, PerspectiveCamera, PlaneGeometry, PointLight, Raycaster, RepeatWrapping, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
 import { PAREDES, catalogItem } from '../edificio/catalog';
-import { shapeOf } from '../edificio/furniture';
+import { SILLON_CAPA_BASE, shapeOf } from '../edificio/furniture';
 import { tintar } from '../edificio/acabados';
 import { misticoOf, misticoSprite } from '../edificio/misticos';
 import { ROOM, heightOf, itemsOn, rectOf } from '../edificio/room';
@@ -195,7 +195,7 @@ function catalogGeometry(item, cat, ownBooks = false) {
     if (item.acabado) boxes = boxes.map((box) => ({ ...box, c: tintar(box.c, item.acabado) }));
     // El armazón va aparte, con su madera; en la balda de la lámpara, tus libros en vez de los de adorno
     if (item.id === 'estanteria') boxes = ownBooks ? [] : boxes.slice(SHELF_FRAME);
-    if (item.id === 'sillon') {
+    if (item.id === 'sillon' || item.id === 'sillon-capa') {
       shared.set(key, upholsteredArmchair(tono, (b) => turned(cat, item.rot, b), (x, y) => unturned(cat, item.rot, x, y)));
       return shared.get(key);
     }
@@ -209,6 +209,18 @@ function catalogGeometry(item, cat, ownBooks = false) {
       return { ...box, b: item.pared === 'fondo' ? box.b : [y0, x0, z0, y1, x1, z1] };
     });
     shared.set(key, geometryOf(placed));
+  }
+  return shared.get(key);
+}
+
+/** 1.101 · Lo que el sillón de la capa lleva encima del sillón de la casa (capa, broche y cojín), girado como él. */
+function capeGeometry(item, cat) {
+  const key = `${item.id}|${item.tono}|${item.acabado ?? ''}|${item.rot}|capa`;
+  if (!shared.has(key)) {
+    const tono = tintar(cat.tonos[item.tono], item.acabado);
+    let boxes = shapeOf(item.id, tono).slice(SILLON_CAPA_BASE);
+    if (item.acabado) boxes = boxes.map((box) => ({ ...box, c: tintar(box.c, item.acabado) }));
+    shared.set(key, geometryOf(boxes.map((box) => ({ ...box, b: turned(cat, item.rot, box.b) }))));
   }
   return shared.get(key);
 }
@@ -477,7 +489,14 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     usedShared.add(geometry);
     const skin = tintar(cat.tonos[item.tono], item.acabado);
     const kit = item.id === 'lampara-pie' ? lampKit(skin) : null;
-    const mesh = new Mesh(geometry, item.id === 'sillon' ? fabricOf(skin) : kit ? [kit.body, kit.shade] : [skinMat, glow]);
+    const tapizado = item.id === 'sillon' || item.id === 'sillon-capa';
+    const mesh = new Mesh(geometry, tapizado ? fabricOf(skin) : kit ? [kit.body, kit.shade] : [skinMat, glow]);
+    // 1.101 · El sillón de la capa: el sillón tapizado de la casa y, encima, su capa y el cojín del antifaz con la piel de siempre
+    if (item.id === 'sillon-capa') {
+      const capa = capeGeometry(item, cat);
+      usedShared.add(capa);
+      mesh.add(new Mesh(capa, [skinMat, glow]));
+    }
     if (cat.capa === 'pared') mesh.position.set(item.pared === 'fondo' ? item.a : 0, 0, item.pared === 'fondo' ? 0 : item.a);
     else mesh.position.set(item.x, heightOf(room, item), item.y);
     mesh.userData = { uid: item.uid, id: item.id, rot: item.rot ?? 0 };

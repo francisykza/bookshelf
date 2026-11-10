@@ -423,6 +423,7 @@ export function actorBoxes(avatar, state) {
 const SEATS = {
   silla: { at: [0.5, 0.5], h: 0.82 },
   sillon: { at: [1, 1.05], h: 0.92 },
+  'sillon-capa': { at: [1, 1.05], h: 0.92 },
   sofa: { at: [1.5, 1.05], h: 0.92 },
   banco: { at: [1, 0.5], h: 0.7 },
   puf: { at: [0.5, 0.5], h: 0.58 },

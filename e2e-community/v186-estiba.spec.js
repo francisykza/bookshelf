@@ -97,8 +97,10 @@ async function entrar(page, movimiento = true) {
   await hotel.getByRole('button', { name: 'Directorio' }).click();
   await hotel
     .getByRole('dialog', { name: 'Directorio' })
-    .getByRole('button', { name: /La Lonja/ })
+    .getByRole('button', { name: /almacén/i })
     .click();
+  // 1.99: la Lonja de antes es el mercadillo del almacén (acceso secundario)
+  await hotel.locator('section.alm .alm-bar').getByRole('button', { name: 'Mercadillo' }).click();
   const lonja = hotel.getByRole('region', { name: 'La Lonja' });
   await page.emulateMedia({ reducedMotion: movimiento ? 'no-preference' : 'reduce' });
   await lonja.getByRole('button', { name: /^La estiba/ }).click();

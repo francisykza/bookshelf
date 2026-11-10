@@ -698,13 +698,179 @@ SHAPES['taburete-barra'] = (T) => [
   B(0.2, 0.2, 0.78, 0.8, 0.8, 0.88, T),
 ];
 
+// ── La colección de superhéroes (1.101): taller «Capa y Antifaz». Género y guiños propios, sin personajes ni emblemas ──
+const HERO_RED = [176, 44, 48];
+const HERO_GOLD = [214, 170, 70];
+const HERO_INK = [36, 32, 42];
+const COMIC = [[196, 52, 48], [60, 98, 170], [232, 190, 60], [90, 150, 90], [150, 70, 140], [236, 120, 50]];
+/** La capa que va con cada color: roja con lo azul, lo verde y lo oscuro; dorada con lo rojo. */
+const capaDe = (T) => (T[0] > T[2] + 30 ? HERO_GOLD : HERO_RED);
+/** Cuántas cajas son el sillón (las de `armchair`): lo que sigue es la capa y el cojín, que el piso 3D dibuja aparte. */
+export const SILLON_CAPA_BASE = 9;
+SHAPES['sillon-capa'] = (T) => {
+  const C = capaDe(T);
+  return [
+    ...armchair(2, T),
+    // La capa, echada sobre el respaldo: por encima, cayendo por detrás con su bajo y un poco por delante, con su broche
+    B(0.32, 0.12, 1.75, 1.68, 0.66, 1.81, C),
+    B(0.32, 0.11, 0.62, 1.68, 0.2, 1.81, C),
+    B(0.32, 0.1, 0.5, 1.68, 0.2, 0.62, shade(C, 0.72)),
+    B(0.44, 0.62, 1.36, 1.56, 0.67, 1.76, shade(C, 1.08)),
+    B(0.6, 0.67, 1.6, 0.74, 0.7, 1.72, LATON, { grain: 0 }),
+    B(1.26, 0.67, 1.6, 1.4, 0.7, 1.72, LATON, { grain: 0 }),
+    B(0.74, 0.675, 1.64, 1.26, 0.69, 1.67, shade(LATON, 0.8), { grain: 0 }),
+    // El cojín con antifaz, apoyado en el respaldo
+    B(0.7, 0.66, 0.92, 1.3, 0.88, 1.32, HERO_INK),
+    B(0.79, 0.88, 1.1, 0.95, 0.895, 1.2, CREAM, { grain: 0 }),
+    B(1.05, 0.88, 1.1, 1.21, 0.895, 1.2, CREAM, { grain: 0 }),
+  ];
+};
+SHAPES['estanteria-comics'] = (T) => {
+  const out = [
+    B(0, 0, 0, 0.12, 1, 2.6, T),
+    B(1.88, 0, 0, 2, 1, 2.6, T),
+    B(0.12, 0, 0, 1.88, 0.1, 2.5, shade(T, 0.78)),
+    B(0, 0, 2.5, 2, 1, 2.62, shade(T, 1.08)),
+    B(0.12, 0.1, 0, 1.88, 1, 0.3, shade(T, 0.9)),
+  ];
+  // Tres repisas con su labio; en cada una, tres cómics de cara, apoyados hacia atrás (dos escalones: abajo y la tapa arriba)
+  let k = 0;
+  for (const z of [0.3, 1.04, 1.78]) {
+    out.push(B(0.12, 0.1, z, 1.88, 0.98, z + 0.06, shade(T, 0.95)));
+    out.push(B(0.12, 0.92, z + 0.06, 1.88, 1.0, z + 0.14, shade(T, 1.12)));
+    for (const x of [0.2, 0.76, 1.32]) {
+      const c = COMIC[k % COMIC.length];
+      const d = COMIC[(k + 3) % COMIC.length];
+      // La tapa, de cara y apenas inclinada (el lomo asoma detrás), con su cabecera, una figura con capa y una explosión
+      out.push(B(x + 0.02, 0.7, z + 0.06, x + 0.46, 0.8, z + 0.62, shade(c, 0.6), { grain: 0 }));
+      out.push(B(x, 0.8, z + 0.06, x + 0.48, 0.88, z + 0.68, c, { grain: 0 }));
+      out.push(B(x + 0.03, 0.88, z + 0.55, x + 0.45, 0.89, z + 0.65, CREAM, { grain: 0 }));
+      out.push(B(x + 0.06, 0.89, z + 0.58, x + 0.3, 0.895, z + 0.62, HERO_INK, { grain: 0 }));
+      out.push(B(x + 0.34, 0.89, z + 0.58, x + 0.42, 0.895, z + 0.62, d, { grain: 0 }));
+      out.push(B(x + 0.12, 0.88, z + 0.12, x + 0.2, 0.89, z + 0.4, HERO_INK, { grain: 0 }));
+      out.push(B(x + 0.13, 0.88, z + 0.4, x + 0.19, 0.89, z + 0.47, CREAM, { grain: 0 }));
+      out.push(B(x + 0.06, 0.88, z + 0.14, x + 0.12, 0.885, z + 0.38, d, { grain: 0 }));
+      out.push(B(x + 0.27, 0.88, z + 0.14, x + 0.43, 0.89, z + 0.34, [250, 214, 80], { grain: 0 }));
+      out.push(B(x + 0.31, 0.89, z + 0.19, x + 0.39, 0.895, z + 0.29, [220, 70, 50], { grain: 0 }));
+      k += 1;
+    }
+  }
+  // Encima, un montón de números atrasados
+  out.push(B(0.3, 0.3, 2.62, 0.92, 0.82, 2.68, COMIC[1], { grain: 0 }));
+  out.push(B(0.34, 0.26, 2.68, 0.96, 0.78, 2.73, COMIC[2], { grain: 0 }));
+  out.push(B(0.28, 0.32, 2.73, 0.9, 0.84, 2.78, COMIC[0], { grain: 0 }));
+  return out;
+};
+SHAPES['foco-heroe'] = (T) => {
+  const out = [];
+  // El trípode: tres patas abiertas (escalones de hierro) y la columna
+  for (const [dx, dy] of [[-1, 1], [1, 1], [0, -1.3]]) {
+    for (let t = 0; t < 4; t += 1) {
+      const x = 0.5 + dx * (0.06 + t * 0.09);
+      const y = 0.5 + dy * (0.05 + t * 0.07);
+      const z = 0.62 - t * 0.17;
+      out.push(B(x - 0.04, y - 0.04, Math.max(0, z - 0.17), x + 0.04, y + 0.04, z, IRON));
+    }
+  }
+  out.push(B(0.46, 0.46, 0.45, 0.54, 0.54, 1.12, IRON));
+  out.push(B(0.42, 0.42, 0.6, 0.58, 0.58, 0.66, LATON, { grain: 0 }));
+  // La horquilla, el tambor del foco y su lente encendida
+  out.push(B(0.2, 0.44, 1.08, 0.8, 0.56, 1.14, LATON));
+  out.push(B(0.2, 0.44, 1.14, 0.26, 0.56, 1.5, LATON));
+  out.push(B(0.74, 0.44, 1.14, 0.8, 0.56, 1.5, LATON));
+  out.push(B(0.27, 0.26, 1.12, 0.73, 0.78, 1.62, T));
+  for (const z of [1.2, 1.32, 1.44]) out.push(B(0.29, 0.21, z, 0.71, 0.26, z + 0.05, shade(T, 0.7)));
+  out.push(B(0.24, 0.78, 1.1, 0.76, 0.84, 1.64, LATON, { grain: 0 }));
+  out.push(B(0.3, 0.84, 1.16, 0.7, 0.86, 1.58, [255, 240, 196], { glow: true, grain: 0 }));
+  out.push(B(0.42, 0.4, 1.62, 0.58, 0.62, 1.68, HERO_INK));
+  return out;
+};
+SHAPES['maniqui-capa'] = (T) => {
+  const C = capaDe(T);
+  return [
+    B(0.26, 0.26, 0, 0.74, 0.74, 0.08, WOOD_DARK),
+    B(0.47, 0.47, 0.08, 0.53, 0.53, 0.9, LATON, { grain: 0 }),
+    // La capa, de los hombros al suelo, abierta abajo
+    B(0.2, 0.22, 0.42, 0.8, 0.32, 1.0, C),
+    B(0.22, 0.26, 1.0, 0.78, 0.36, 1.84, C),
+    B(0.2, 0.22, 0.36, 0.8, 0.32, 0.44, shade(C, 0.72)),
+    B(0.22, 0.32, 1.78, 0.78, 0.42, 1.96, shade(C, 1.1)),
+    // El traje sobre el busto: caderas, cintura, pecho y hombros, con el cinturón y un rombo en el pecho
+    B(0.3, 0.38, 0.9, 0.7, 0.62, 1.2, shade(T, 0.85)),
+    B(0.33, 0.4, 1.2, 0.67, 0.6, 1.42, T),
+    B(0.28, 0.36, 1.42, 0.72, 0.64, 1.74, T),
+    B(0.24, 0.38, 1.7, 0.76, 0.62, 1.82, shade(T, 1.08)),
+    B(0.32, 0.39, 1.2, 0.68, 0.61, 1.27, LATON, { grain: 0 }),
+    B(0.45, 0.61, 1.18, 0.55, 0.63, 1.29, shade(LATON, 1.15), { grain: 0 }),
+    B(0.44, 0.64, 1.5, 0.56, 0.65, 1.66, C, { grain: 0 }),
+    B(0.4, 0.64, 1.55, 0.6, 0.645, 1.61, C, { grain: 0 }),
+    // El cuello y la cabeza de madera, con su antifaz
+    B(0.46, 0.46, 1.82, 0.54, 0.54, 1.9, CREAM),
+    B(0.4, 0.4, 1.9, 0.6, 0.6, 2.14, CREAM),
+    B(0.39, 0.39, 1.98, 0.61, 0.61, 2.06, HERO_INK, { grain: 0 }),
+    B(0.43, 0.61, 2.0, 0.48, 0.615, 2.04, CREAM, { grain: 0 }),
+    B(0.52, 0.61, 2.0, 0.57, 0.615, 2.04, CREAM, { grain: 0 }),
+  ];
+};
+SHAPES['cartel-vinetas'] = (T) => {
+  const P = { grain: 0 };
+  const out = [
+    B(0.2, 0, 1.9, 1.8, 0.08, 3.1, T),
+    B(0.28, 0, 1.98, 1.72, 0.1, 3.02, CREAM, P),
+    // Viñeta 1: el cielo y una figura con capa en vuelo
+    B(0.32, 0, 2.52, 0.98, 0.11, 2.98, [110, 160, 210], P),
+    B(0.5, 0, 2.7, 0.78, 0.12, 2.78, HERO_INK, P),
+    B(0.78, 0, 2.72, 0.84, 0.12, 2.79, CREAM, P),
+    B(0.38, 0, 2.66, 0.56, 0.12, 2.8, HERO_RED, P),
+    B(0.36, 0, 2.6, 0.48, 0.12, 2.68, HERO_RED, P),
+    B(0.6, 0, 2.6, 0.64, 0.115, 2.66, [240, 240, 236], P),
+    B(0.44, 0, 2.86, 0.52, 0.115, 2.9, [240, 240, 236], P),
+    // Viñeta 2: la explosión de la onomatopeya
+    B(1.02, 0, 2.52, 1.68, 0.11, 2.98, [240, 200, 70], P),
+    B(1.18, 0, 2.64, 1.52, 0.12, 2.86, [220, 70, 50], P),
+    B(1.26, 0, 2.58, 1.44, 0.12, 2.92, [220, 70, 50], P),
+    B(1.12, 0, 2.72, 1.58, 0.12, 2.78, [220, 70, 50], P),
+    B(1.28, 0, 2.68, 1.42, 0.125, 2.82, CREAM, P),
+    B(1.31, 0, 2.72, 1.39, 0.13, 2.78, HERO_INK, P),
+    // Viñeta 3, apaisada: la ciudad de noche, con ventanas encendidas y un bocadillo
+    B(0.32, 0, 2.02, 1.68, 0.11, 2.48, [50, 56, 96], P),
+  ];
+  for (const [x0, w, h] of [[0.36, 0.16, 0.2], [0.54, 0.12, 0.3], [0.68, 0.18, 0.16], [0.9, 0.14, 0.34], [1.06, 0.2, 0.22], [1.3, 0.12, 0.28], [1.44, 0.2, 0.18]]) {
+    out.push(B(x0, 0, 2.02, x0 + w, 0.12, 2.02 + h, [28, 28, 46], P));
+    if (h > 0.18) out.push(B(x0 + 0.04, 0, 2.02 + h - 0.1, x0 + 0.07, 0.125, 2.02 + h - 0.06, [255, 220, 130], { glow: true, grain: 0 }));
+  }
+  out.push(B(1.12, 0, 2.34, 1.6, 0.13, 2.46, [250, 250, 244], P));
+  out.push(B(1.2, 0, 2.3, 1.26, 0.13, 2.34, [250, 250, 244], P));
+  out.push(B(1.18, 0, 2.39, 1.52, 0.135, 2.41, HERO_INK, P));
+  return out;
+};
+SHAPES['neon-rayo'] = (T) => {
+  const core = T.map((v) => Math.round(v * 0.4 + 255 * 0.6));
+  const tube = (x0, z0, x1, z1) => [B(x0, 0.06, z0, x1, 0.13, z1, T, { grain: 0 }), B(x0 + 0.02, 0.13, z0 + 0.02, x1 - 0.02, 0.145, z1 - 0.02, core, { glow: true, grain: 0 })];
+  return [
+    B(0.12, 0, 2.1, 0.88, 0.05, 3.3, [30, 24, 36]),
+    B(0.12, 0, 2.1, 0.88, 0.055, 2.14, LATON, { grain: 0 }),
+    B(0.12, 0, 3.26, 0.88, 0.055, 3.3, LATON, { grain: 0 }),
+    // El rayo: baja en zigzag, de arriba a la derecha a abajo a la izquierda
+    ...tube(0.58, 3.04, 0.72, 3.18),
+    ...tube(0.52, 2.92, 0.66, 3.06),
+    ...tube(0.46, 2.8, 0.6, 2.94),
+    ...tube(0.4, 2.7, 0.54, 2.82),
+    ...tube(0.4, 2.62, 0.68, 2.72),
+    ...tube(0.54, 2.5, 0.68, 2.64),
+    ...tube(0.48, 2.38, 0.62, 2.52),
+    ...tube(0.42, 2.27, 0.56, 2.4),
+    ...tube(0.36, 2.18, 0.5, 2.29),
+  ];
+};
+
 // La peana de los místicos: piedra oscura con un filo dorado. El ser se dibuja encima, animado (misticos.js)
 const peana = (T) => [
   B(0.2, 0.2, 0, 0.8, 0.8, 0.08, shade(T, 0.8)),
   B(0.26, 0.26, 0.08, 0.74, 0.74, 0.18, T),
   B(0.24, 0.24, 0.18, 0.76, 0.76, 0.22, [204, 170, 90], { grain: 0 }),
 ];
-for (const id of ['ebanisteria', 'tapiceria', 'faro', 'vivero', 'almoneda', 'menaje']) SHAPES[`placa-${id}`] = SHAPES['placa-suite'];
+for (const id of ['ebanisteria', 'tapiceria', 'faro', 'vivero', 'almoneda', 'menaje', 'heroes']) SHAPES[`placa-${id}`] = SHAPES['placa-suite'];
 for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta', 'conejo-chistera', 'gaviota-puerto']) SHAPES[id] = peana;
 
 /** Cajas de un mueble en coordenadas locales (sin girar). */

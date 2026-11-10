@@ -1,0 +1,520 @@
+/* El Almacén del Puerto (1.99, §99). Cara propia de almacén, con la misma familia de píxel que la recepción:
+   papeles de estraza con rótulo verde (como un albarán), etiquetas colgantes en la escena, el ticket de la caja a máquina
+   y la barra como una balda de estantería metálica. Todo con esquinas de píxel (sin redondeos). */
+.alm {
+  --alm-ink: #2a1d14;
+  --alm-kraft: #ead8b2;
+  --alm-kraft-l: #f6ead0;
+  --alm-kraft-d: #c6a672;
+  --alm-paper: #fbf5e6;
+  --alm-teal: #286460;
+  --alm-teal-d: #17403d;
+  --alm-teal-l: #3f8a83;
+  --alm-gold: #ecbe60;
+  --alm-gold-d: #a8743a;
+  --alm-red: #a8434c;
+  --alm-red-d: #6e2228;
+  --alm-cream: #f6ecd8;
+  --alm-night: #16142a;
+  --alm-px: 3px;
+  position: relative;
+  height: var(--alm-h, calc(100dvh - 60px));
+  overflow: hidden;
+  background: var(--alm-night);
+  color: var(--alm-cream);
+}
+/* Esquinas de píxel: se recortan los cuatro picos */
+.alm-btn,
+.alm-card__back,
+.alm-volver,
+.alm-tag,
+.alm-cartel,
+.alm-nombre,
+.alm-dir__item,
+.alm-carretilla,
+.alb__sellar {
+  clip-path: polygon(0 var(--alm-px), var(--alm-px) var(--alm-px), var(--alm-px) 0, calc(100% - var(--alm-px)) 0, calc(100% - var(--alm-px)) var(--alm-px), 100% var(--alm-px), 100% calc(100% - var(--alm-px)), calc(100% - var(--alm-px)) calc(100% - var(--alm-px)), calc(100% - var(--alm-px)) 100%, var(--alm-px) 100%, var(--alm-px) calc(100% - var(--alm-px)), 0 calc(100% - var(--alm-px)));
+}
+.alm-stage { position: absolute; inset: 0; }
+.alm-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; cursor: grab; }
+.alm-canvas:active { cursor: grabbing; }
+.alm-loading,
+.alm-sin3d { position: absolute; inset: 0; display: grid; place-content: center; gap: 12px; margin: 0; padding: 24px; text-align: center; font: italic 1.05rem 'Cormorant Garamond', Georgia, serif; color: var(--alm-gold); }
+.alm img,
+.alm svg { image-rendering: pixelated; }
+
+/* ── Letreros de la escena ─────────────────────────────────────────── */
+.alm-tags { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.alm-tag,
+.alm-cartel,
+.alm-nombre { position: absolute; top: 0; left: 0; white-space: nowrap; }
+.alm-tag[data-off='true'],
+.alm-cartel[data-off='true'],
+.alm-nombre[data-off='true'],
+.alm[data-papel] .alm-tag { visibility: hidden; }
+/* Rótulo de pasillo: chapa esmaltada verde con su número y un filo crema */
+.alm-cartel { padding: 3px 9px 4px; background: var(--alm-teal); box-shadow: inset 0 0 0 2px var(--alm-teal-d), inset 0 0 0 3px #6fb0a6; display: flex; align-items: center; gap: 6px; color: var(--alm-cream); font: 700 0.74rem/1.1 'Lora', Georgia, serif; }
+.alm-cartel i { display: grid; place-items: center; width: 16px; height: 16px; margin-left: -4px; background: var(--alm-cream); color: var(--alm-teal-d); font: 700 0.72rem/1 'Courier Prime', 'Courier New', monospace; font-style: normal; }
+/* Sitios (caja, directorio, mercadillo): señal amarilla con flecha */
+.alm-tag { display: flex; gap: 6px; align-items: center; pointer-events: auto; cursor: pointer; border: 0; font: 700 0.76rem/1.1 'Lora', Georgia, serif; }
+.alm-tag--sitio { padding: 4px 10px 5px 8px; background: var(--alm-gold); box-shadow: inset 0 -3px 0 var(--alm-gold-d), inset 0 0 0 2px #5a3a1c; color: var(--alm-ink); }
+.alm-tag--sitio::before { content: ''; width: 8px; height: 10px; background: var(--alm-ink); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+/* Precio: etiqueta de estraza colgada de su hilo, con el número en un círculo de sello */
+.alm-tag--precio { --alm-px: 2px; gap: 7px; padding: 3px 4px 3px 10px; background: var(--alm-kraft); box-shadow: inset 0 0 0 1px var(--alm-gold-d), inset 0 -2px 0 var(--alm-kraft-d); color: var(--alm-ink); font-weight: 600; }
+.alm-tag--precio::before { content: ''; position: absolute; left: 3px; top: calc(50% - 2px); width: 4px; height: 4px; background: var(--alm-night); }
+.alm-tag--precio b { display: grid; place-items: center; min-width: 22px; height: 18px; padding: 0 3px; background: var(--alm-red); color: #fff; font: 700 0.72rem/1 'Courier Prime', 'Courier New', monospace; }
+.alm-tag:hover,
+.alm-tag:focus-visible { filter: brightness(1.08); outline: 2px solid var(--alm-cream); outline-offset: 1px; }
+.alm-nombre { padding: 3px 8px; background: var(--alm-ink); box-shadow: inset 0 0 0 2px var(--alm-gold); color: var(--alm-cream); font: 700 0.74rem/1.1 'Lora', Georgia, serif; }
+
+/* ── La carretilla de la esquina ───────────────────────────────────── */
+.alm-carretilla { position: absolute; z-index: 3; left: 10px; bottom: calc(92px + env(safe-area-inset-bottom)); display: grid; justify-items: center; padding: 6px 8px 4px; border: 0; background: rgb(22 20 42 / 0.72); box-shadow: inset 0 0 0 2px rgb(236 190 96 / 0.7); cursor: pointer; }
+.alm-carretilla:hover,
+.alm-carretilla[aria-pressed='true'] { background: rgb(23 64 61 / 0.9); }
+.alm-carretilla:focus-visible { outline: 3px solid var(--alm-cream); }
+.alm-carretilla__carga { display: flex; flex-wrap: wrap-reverse; justify-content: center; width: 60px; min-height: 4px; gap: 1px; margin-bottom: -2px; }
+.alm-paquete { display: grid; place-items: center; width: 18px; height: 14px; background: #c08a56; box-shadow: inset 0 0 0 1px #7a5232, inset 0 -3px 0 #a5703f; }
+.alm-paquete--grande { flex: none; width: 44px; height: 38px; box-shadow: inset 0 0 0 2px #7a5232, inset 0 -5px 0 #a5703f; }
+.alm-paquete--grande::after { content: ''; position: absolute; }
+.alm-carretilla__n { position: absolute; top: 2px; right: 2px; min-width: 20px; padding: 2px 4px; background: var(--alm-red); color: #fff; font: 700 0.72rem/1 'Courier Prime', 'Courier New', monospace; text-align: center; }
+.alm-carretilla__rotulo { margin-top: 2px; color: var(--alm-gold); font: 700 0.62rem/1 'Lora', Georgia, serif; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ── Barra de abajo: balda de estantería metálica ──────────────────── */
+.alm-bar {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 2px;
+  padding: 7px 4px calc(7px + env(safe-area-inset-bottom));
+  border-top: 3px solid var(--alm-gold);
+  background:
+    radial-gradient(circle at 10px 9px, #8fc0b6 0 1.5px, transparent 2px) 0 0 / 48px 100% repeat-x,
+    linear-gradient(var(--alm-teal-l) 0 3px, transparent 3px),
+    linear-gradient(180deg, var(--alm-teal) 0%, var(--alm-teal-d) 100%);
+  box-shadow: 0 -3px 0 rgb(0 0 0 / 0.35);
+}
+.alm-tool {
+  position: relative;
+  flex: 1 1 0;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 3px;
+  min-width: 0;
+  max-width: 96px;
+  min-height: 58px;
+  padding: 4px 2px 3px;
+  border: 0;
+  background: none;
+  color: var(--alm-cream);
+  font: 600 0.68rem/1.1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+.alm-tool span { max-width: 100%; line-height: 1.05; text-align: center; overflow-wrap: anywhere; }
+.alm-tool .alm-tool__icon { width: 28px; height: 28px; padding: 3px; background: rgb(10 30 28 / 0.45); box-shadow: inset 0 0 0 2px rgb(143 192 182 / 0.35); }
+.alm-tool:hover .alm-tool__icon { background: rgb(10 30 28 / 0.7); }
+.alm-tool[aria-pressed='true'] { color: var(--alm-gold); }
+.alm-tool[aria-pressed='true'] .alm-tool__icon { background: var(--alm-kraft); box-shadow: inset 0 0 0 2px var(--alm-gold), 0 3px 0 var(--alm-gold-d); transform: translateY(-3px); }
+.alm-tool:focus-visible { outline: 3px solid var(--alm-cream); outline-offset: -3px; }
+.alm-tool__chapa { position: absolute; top: 0; left: calc(50% + 8px); min-width: 18px; padding: 2px 3px; background: var(--alm-red); color: #fff; font: 700 0.66rem/1 'Courier Prime', 'Courier New', monospace; font-style: normal; text-align: center; box-shadow: 0 0 0 1px var(--alm-red-d); }
+/* La caja, en el centro: placa principal de latón */
+.alm-tool--caja { flex: 1.25 1 0; max-width: 110px; min-height: 66px; margin-top: -12px; padding: 6px 4px 4px; background: linear-gradient(#f5d684, var(--alm-gold) 45%, #c99446); box-shadow: inset 0 0 0 2px #5a3a1c, inset 0 -4px 0 var(--alm-gold-d), 0 3px 0 rgb(0 0 0 / 0.35); color: var(--alm-ink); clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% 100%, 0 100%); }
+.alm-tool--caja span { font-weight: 700; font-size: 0.78rem; }
+.alm-tool--caja small { font: 700 0.62rem/1 'Courier Prime', 'Courier New', monospace; opacity: 0.8; }
+.alm-tool--caja .alm-tool__icon { background: rgb(255 255 255 / 0.35); box-shadow: inset 0 0 0 2px rgb(90 58 28 / 0.45); }
+.alm-tool--caja[aria-pressed='true'] { color: var(--alm-ink); background: linear-gradient(#fbe3a0, #f2c86e 45%, #d6a44f); }
+.alm-tool--caja[aria-pressed='true'] .alm-tool__icon { background: var(--alm-paper); transform: none; box-shadow: inset 0 0 0 2px var(--alm-teal); }
+
+/* ── Papeles: albarán de estraza con rótulo verde ──────────────────── */
+.alm-card {
+  --alm-px: 4px;
+  position: absolute;
+  z-index: 5;
+  left: 10px;
+  right: 10px;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  max-height: 60%;
+  display: flex;
+  flex-direction: column;
+  background:
+    repeating-linear-gradient(0deg, rgb(120 84 40 / 0.05) 0 1px, transparent 1px 4px),
+    var(--alm-paper);
+  box-shadow: inset 0 0 0 3px var(--alm-ink), inset 0 0 0 5px var(--alm-gold), inset 0 0 0 6px var(--alm-gold-d);
+  color: var(--alm-ink);
+  filter: drop-shadow(0 5px 0 rgb(10 8 20 / 0.55));
+  animation: alm-sube 0.18s steps(3) both;
+}
+@keyframes alm-sube { from { transform: translateY(14px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .alm-card { animation: none; } }
+.alm-card__head { display: flex; align-items: center; gap: 10px; margin: 6px 6px 0; padding: 7px 8px 7px 8px; background: var(--alm-teal); box-shadow: inset 0 -3px 0 var(--alm-teal-d), inset 0 2px 0 var(--alm-teal-l); color: var(--alm-cream); }
+.alm-card__sello { display: grid; place-items: center; flex: none; width: 36px; height: 36px; background: var(--alm-kraft); box-shadow: inset 0 0 0 2px var(--alm-gold-d); }
+.alm-card__sello svg { width: 26px; height: 26px; }
+.alm-card__titulo { flex: 1; min-width: 0; }
+.alm-card__titulo small { display: block; overflow: hidden; color: #a9d6cc; font: 700 0.62rem/1.2 'Lora', Georgia, serif; letter-spacing: 0.08em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.alm-card__head h4 { margin: 0; overflow: hidden; font: 700 1.32rem/1.1 'Cormorant Garamond', Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
+.alm-card__body { min-height: 0; overflow: auto; padding: 10px 16px 14px; font: 0.94rem/1.42 'Lora', Georgia, serif; overscroll-behavior: contain; scrollbar-color: var(--alm-kraft-d) transparent; }
+
+/* Botones */
+.alm-card__back,
+.alm-btn,
+.alm-volver { --alm-px: 3px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 0 14px; border: 0; background: linear-gradient(#f5d684, var(--alm-gold) 50%, #c99446); box-shadow: inset 0 0 0 2px #5a3a1c, inset 0 -4px 0 var(--alm-gold-d); color: var(--alm-ink); font: 700 0.86rem/1 'Lora', Georgia, serif; cursor: pointer; }
+.alm-card__back { flex: none; min-height: 36px; padding: 0 12px; }
+.alm-btn--primario { background: linear-gradient(#4b9089, var(--alm-teal) 55%, #1f5450); box-shadow: inset 0 0 0 2px var(--alm-teal-d), inset 0 -4px 0 var(--alm-teal-d), inset 0 2px 0 #6fb0a6; color: var(--alm-cream); }
+.alm-btn--papel { background: var(--alm-kraft); box-shadow: inset 0 0 0 2px var(--alm-gold-d), inset 0 -3px 0 var(--alm-kraft-d); }
+.alm-btn:hover:not(:disabled),
+.alm-card__back:hover,
+.alm-volver:hover { filter: brightness(1.07); }
+.alm-btn:active:not(:disabled),
+.alm-card__back:active,
+.alm-volver:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #5a3a1c; }
+.alm-btn:focus-visible,
+.alm-card__back:focus-visible,
+.alm-volver:focus-visible { outline: 3px solid var(--alm-ink); outline-offset: 2px; }
+.alm-btn:disabled { filter: grayscale(0.7); opacity: 0.55; cursor: default; }
+.alm-nota { margin: 6px 0; color: #6a5440; font-size: 0.84rem; }
+.alm-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.alm-acciones .alm-btn--primario { flex: 1 1 auto; }
+
+/* Ficha */
+.alm-ficha { display: flex; gap: 14px; align-items: center; }
+.alm-ficha__muestra { position: relative; flex: none; padding: 6px 6px 10px; background: repeating-linear-gradient(45deg, #e3cfa6 0 4px, #dcc69a 4px 8px); box-shadow: inset 0 0 0 2px var(--alm-gold-d), inset 0 -4px 0 #b88c55; }
+.alm-ficha__thumb { display: block; width: 80px; height: 80px; }
+.alm-precio { position: absolute; right: -10px; top: -8px; display: grid; justify-items: center; padding: 3px 6px 4px; background: var(--alm-red); box-shadow: inset 0 0 0 2px var(--alm-red-d), 0 2px 0 rgb(0 0 0 / 0.25); color: #fff; transform: rotate(6deg); }
+.alm-precio b { font: 700 1.05rem/1 'Courier Prime', 'Courier New', monospace; }
+.alm-precio small { font: 700 0.52rem/1 'Lora', serif; letter-spacing: 0.06em; text-transform: uppercase; }
+.alm-ficha__datos { display: grid; flex: 1; gap: 0; margin: 0; }
+.alm-ficha__datos div { display: grid; grid-template-columns: 4.6em 1fr; gap: 6px; padding: 3px 0; border-bottom: 1px dashed var(--alm-kraft-d); }
+.alm-ficha__datos div:last-child { border-bottom: 0; }
+.alm-ficha__datos dt { color: var(--alm-teal); font: 700 0.66rem/1.9 'Lora', serif; letter-spacing: 0.06em; text-transform: uppercase; }
+.alm-ficha__datos dd { margin: 0; font-size: 0.9rem; }
+.alm-tonos { margin: 12px 0 2px; padding: 0; border: 0; }
+.alm-tonos legend { display: flex; gap: 6px; align-items: baseline; margin-bottom: 6px; color: var(--alm-teal); font: 700 0.66rem 'Lora', serif; letter-spacing: 0.06em; text-transform: uppercase; }
+.alm-tonos legend span { color: var(--alm-ink); font: italic 600 0.92rem 'Lora', serif; letter-spacing: 0; text-transform: none; }
+.alm-tonos__fila { display: flex; flex-wrap: wrap; gap: 8px; }
+.alm-tono { position: relative; display: block; padding: 3px; background: var(--alm-paper); box-shadow: inset 0 0 0 2px var(--alm-kraft-d); cursor: pointer; }
+.alm-tono:has(input:checked) { background: var(--alm-gold); box-shadow: inset 0 0 0 2px var(--alm-ink); transform: translateY(-2px); }
+.alm-tono:has(input:focus-visible) { outline: 3px solid var(--alm-teal); outline-offset: 1px; }
+.alm-tono input { position: absolute; opacity: 0; pointer-events: none; }
+.alm-tono__muestra { display: block; width: 32px; height: 32px; box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.25), inset 0 -6px 0 rgb(0 0 0 / 0.14); }
+.alm-tono__nombre { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Directorio */
+.alm-dir__seccion + .alm-dir__seccion { margin-top: 12px; }
+.alm-dir h5 { display: flex; align-items: center; gap: 8px; margin: 2px 0 8px; font: 700 1.1rem/1.1 'Cormorant Garamond', Georgia, serif; }
+.alm-dir h5 small { margin-left: auto; color: #8a6e52; font: italic 0.76rem 'Lora', serif; }
+.alm-dir__pasillo { display: grid; place-items: center; flex: none; width: 26px; height: 26px; background: var(--alm-teal); box-shadow: inset 0 0 0 2px var(--alm-teal-d), inset 0 0 0 3px #6fb0a6; color: var(--alm-cream); font: 700 0.86rem/1 'Courier Prime', 'Courier New', monospace; }
+.alm-dir ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 6px; }
+.alm-dir ul,
+.alm-carro ul,
+.alm-amigos__lista,
+.alm-ticket { margin: 0; padding: 0; list-style: none; }
+.alm-dir__item { --alm-px: 2px; display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; width: 100%; min-height: 54px; padding: 6px 8px 6px 6px; border: 0; background: var(--alm-kraft-l); box-shadow: inset 0 0 0 1px var(--alm-kraft-d), inset 0 -3px 0 var(--alm-kraft); color: var(--alm-ink); font: inherit; text-align: left; cursor: pointer; }
+.alm-dir__item img { grid-row: span 2; width: 40px; height: 40px; background: #e3cfa6; }
+.alm-dir__item span { font-weight: 600; font-size: 0.88rem; line-height: 1.15; }
+.alm-dir__item b { justify-self: start; padding: 1px 4px; background: var(--alm-red); color: #fff; font: 700 0.68rem/1.2 'Courier Prime', 'Courier New', monospace; }
+.alm-dir__item:hover { background: #fff8e8; }
+.alm-dir__item:focus-visible { outline: 3px solid var(--alm-teal); outline-offset: -3px; }
+.alm-acciones--pie { position: sticky; bottom: -14px; margin: 14px -16px -14px; padding: 10px 16px 12px; background: linear-gradient(transparent, var(--alm-paper) 30%); }
+
+/* Carrito */
+.alm-carro li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--alm-kraft-d); }
+.alm-carro .alm-paquete--grande { position: relative; }
+.alm-carro .alm-paquete--grande img { width: 28px; height: 28px; }
+.alm-carro__nombre { flex: 1; display: grid; min-width: 0; font-weight: 600; }
+.alm-carro__nombre small { color: #8a6e52; font: 0.76rem 'Lora', serif; }
+.alm-carro__n { display: flex; align-items: center; background: var(--alm-paper); box-shadow: inset 0 0 0 2px var(--alm-gold-d); }
+.alm-carro__n button { width: 34px; height: 34px; border: 0; background: var(--alm-kraft); color: var(--alm-ink); font: 700 1.05rem/1 'Courier Prime', monospace; cursor: pointer; box-shadow: inset 0 0 0 2px var(--alm-gold-d); }
+.alm-carro__n button:disabled { opacity: 0.4; cursor: default; }
+.alm-carro__n output { min-width: 28px; text-align: center; font: 700 0.98rem 'Courier Prime', monospace; }
+.alm-quitar { display: grid; place-items: center; min-width: 34px; height: 34px; padding: 0 6px; border: 0; background: none; color: var(--alm-red); font: 600 0.78rem 'Lora', serif; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.alm-carro__pie { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.alm-carro__total { display: flex; flex: 1 1 140px; justify-content: space-between; align-items: center; margin: 0; padding: 6px 10px; background: repeating-linear-gradient(90deg, #d9b878 0 10px, #d2af6c 10px 12px); box-shadow: inset 0 0 0 1px var(--alm-gold-d); }
+.alm-carro__total span { font-size: 0.84rem; }
+.alm-carro__total b { font: 700 1rem 'Courier Prime', 'Courier New', monospace; }
+.alm-vacio { display: flex; gap: 12px; align-items: center; color: #6a5440; }
+.alm-vacio svg { flex: none; width: 48px; height: 48px; opacity: 0.6; }
+.alm-vacio p { margin: 0; }
+.alm-enlace { min-height: 32px; padding: 0; border: 0; background: none; color: var(--alm-teal); font: 600 0.84rem 'Lora', serif; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* Caja: el cajero habla en un bocadillo y la cuenta es un ticket a máquina */
+.alm-caja__cajero { position: relative; margin: 2px 0 10px; padding: 8px 12px; background: var(--alm-kraft-l); box-shadow: inset 0 0 0 2px var(--alm-kraft-d); font-style: italic; }
+.alm-caja__cajero::before { content: ''; position: absolute; top: -8px; left: 28px; width: 12px; height: 8px; background: var(--alm-kraft-d); clip-path: polygon(0 100%, 50% 0, 100% 100%); }
+.alm-ticket { font: 0.9rem/1.35 'Courier Prime', 'Courier New', monospace; }
+.alm-ticket li { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
+.alm-ticket li span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alm-ticket--cuenta,
+.alm-caja > .alm-ticket:first-of-type { position: relative; margin: 6px 0 8px; padding: 10px 12px 14px; background: #fffdf6; box-shadow: 0 0 0 1px #e1d6bf; }
+.alm-ticket--cuenta::after,
+.alm-caja > .alm-ticket:first-of-type::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px; background: linear-gradient(-45deg, transparent 4px, #fffdf6 4px) 0 0 / 8px 6px repeat-x, linear-gradient(45deg, transparent 4px, #fffdf6 4px) 0 0 / 8px 6px repeat-x; }
+.alm-ticket__total { margin-top: 4px; padding-top: 6px !important; border-top: 2px dashed var(--alm-ink); font-weight: 700; font-size: 1.02rem; }
+.alm-ticket__rebaja { color: var(--alm-teal); font-weight: 700; }
+.alm-aviso { margin: 8px 0; padding: 6px 10px; background: #f6dcd8; box-shadow: inset 3px 0 0 var(--alm-red); color: #7a2024; font-weight: 600; }
+.alm-caja > .alm-btn--primario { width: 100%; min-height: 48px; margin-top: 6px; font-size: 0.96rem; }
+.alm-caja__pagado { display: inline-block; margin: 0 0 4px; padding: 3px 10px; box-shadow: inset 0 0 0 3px var(--alm-red); color: var(--alm-red); font: 700 1.5rem/1.1 'Courier Prime', monospace; letter-spacing: 0.2em; text-transform: uppercase; transform: rotate(-4deg); opacity: 0.88; }
+.alm-check { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; font-size: 0.88rem; cursor: pointer; }
+.alm-check input { flex: none; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--alm-teal); }
+
+/* Mientras se juega, la caja enseña solo el mostrador (cinta, sello y botón a la vista) */
+.alm-caja[data-jugando] > :not(.alm-albaran) { display: none; }
+.alm-caja[data-jugando] > .alm-albaran { margin-top: 0; }
+
+/* El albarán: hoja azul de papel carbón */
+.alm-albaran { position: relative; margin: 12px 0; padding: 10px 12px 12px; background: repeating-linear-gradient(180deg, transparent 0 21px, rgb(47 94 138 / 0.12) 21px 22px), #eef3f6; box-shadow: inset 0 0 0 2px #2f5e8a, inset 0 0 0 4px #eef3f6, inset 0 0 0 5px rgb(47 94 138 / 0.5); color: #1d2f44; }
+.alm-albaran h5 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; color: #2f5e8a; font: 700 0.98rem 'Courier Prime', 'Courier New', monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.alm-albaran h5::after { content: 'Nº ' attr(data-n); margin-left: auto; font-size: 0.72rem; letter-spacing: 0.04em; opacity: 0.7; }
+.alm-albaran p { margin: 4px 0; }
+.alm-albaran .alm-nota { color: #4b6178; }
+.alm-albaran strong { color: var(--alm-red); }
+.alm-btn--sello { min-height: 44px; background: var(--alm-red); box-shadow: inset 0 0 0 2px var(--alm-red-d), inset 0 -4px 0 var(--alm-red-d), inset 0 2px 0 #cf6d74; color: #fff; letter-spacing: 0.02em; }
+.alm-albaran__premios { display: flex; gap: 6px; margin: 8px 0 4px; padding: 0; list-style: none; }
+.alm-albaran__premios li { display: grid; justify-items: center; flex: 1; padding: 4px 2px; background: #fff; box-shadow: inset 0 0 0 1px rgb(47 94 138 / 0.4); font: 700 0.86rem/1.1 'Courier Prime', monospace; }
+.alm-albaran__premios small { font: 0.62rem 'Lora', serif; opacity: 0.75; }
+
+/* ── Avisos y «Mira esto» ──────────────────────────────────────────── */
+.alm-avisos { position: absolute; z-index: 6; top: 10px; left: 10px; right: 10px; display: grid; gap: 6px; }
+.alm-mira,
+.alm-aviso-flota { display: flex; align-items: center; gap: 10px; margin: 0; padding: 8px 10px; background: var(--alm-paper); box-shadow: inset 0 0 0 2px var(--alm-ink), inset 0 0 0 4px var(--alm-gold); color: var(--alm-ink); font: 0.9rem/1.3 'Lora', Georgia, serif; filter: drop-shadow(0 3px 0 rgb(10 8 20 / 0.5)); }
+.alm-aviso-flota { padding-left: 14px; box-shadow: inset 0 0 0 2px var(--alm-ink), inset 6px 0 0 var(--alm-teal); }
+.alm-mira svg { flex: none; width: 28px; height: 28px; }
+.alm-mira p { flex: 1; margin: 0; }
+.alm-mira .alm-btn { min-height: 36px; }
+.alm-x { flex: none; width: 36px; height: 36px; border: 0; background: none; color: inherit; font-size: 1.3rem; cursor: pointer; }
+
+/* Con un amigo */
+.alm-amigos p { margin: 4px 0 10px; }
+.alm-amigos__lista { display: grid; gap: 6px; margin-bottom: 10px !important; }
+.alm-amigos__lista li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; background: var(--alm-kraft-l); box-shadow: inset 0 0 0 1px var(--alm-kraft-d); }
+.alm-amigos__lista li > span { flex: 1; font-weight: 600; }
+.alm-amigos__invita { background: #e3efe9 !important; box-shadow: inset 0 0 0 2px var(--alm-teal) !important; }
+.alm-mirando { margin-bottom: 10px; padding: 8px; background: #e3efe9; box-shadow: inset 0 0 0 2px var(--alm-teal); }
+
+/* El mercadillo de antes, con su franja para volver */
+.alm-mercadillo { position: relative; }
+.alm-volver__franja { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--alm-teal); box-shadow: inset 0 -3px 0 var(--alm-teal-d); color: var(--alm-cream); font: italic 0.84rem 'Lora', serif; }
+.alm-volver__franja .alm-volver { min-height: 38px; }
+.alm-volver::before { content: ''; width: 7px; height: 10px; background: currentColor; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+
+/* «Sella el albarán»: la cinta del mostrador, el sello de goma colgado sobre su marca y la tinta donde cae */
+.alb { position: relative; }
+.alb__dice { min-height: 2.6em; margin: 4px 0 6px; font-weight: 600; }
+.alb__mesa {
+  position: relative;
+  height: 118px;
+  margin: 6px 4px 10px;
+  padding: 0 30px;
+  background: linear-gradient(#3a2418 0 10px, #5b3a26 10px 12px, transparent 12px), linear-gradient(transparent 0 100px, #5b3a26 100px 102px, #3a2418 102px);
+  touch-action: manipulation;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* La cinta: lamas que corren (se mueven con el reloj del albarán, a saltos en «sin prisa») */
+.alb__cinta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 42px;
+  height: 62px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.07) 0 2px, transparent 2px 24px) var(--cinta, 0) 0 / 24px 100%,
+    linear-gradient(#2c2c34, #43434d 18%, #3a3a44 82%, #22222a);
+  box-shadow: inset 0 3px 0 rgb(0 0 0 / 0.35), inset 0 -3px 0 rgb(0 0 0 / 0.35), 0 0 0 2px #15151b;
+}
+.alb__cinta::before,
+.alb__cinta::after { content: ''; position: absolute; top: -4px; bottom: -4px; width: 14px; background: radial-gradient(circle at 50% 50%, #8a8a96 0 3px, #55555f 3px 6px, #2a2a32 6px); }
+.alb__cinta::before { left: -8px; }
+.alb__cinta::after { right: -8px; }
+.alb__pasos { inset: 0; translate: none !important; }
+.alb__pasos span { position: absolute; z-index: 1; top: 98px; width: 2px; height: 6px; background: var(--alm-gold); }
+.alb__pista { position: absolute; left: 30px; right: 30px; top: 0; bottom: 0; }
+.alb__pista > * { position: absolute; translate: -50% 0; }
+.alb__pista .alb__marca { z-index: 1; top: 54px; width: 34px; height: 34px; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.alb__pista .alb__marca::before,
+.alb__pista .alb__marca::after { content: ''; position: absolute; background: rgb(236 120 128 / 0.75); }
+.alb__pista .alb__marca::before { left: 16px; top: -6px; width: 2px; height: 46px; }
+.alb__pista .alb__marca::after { top: 16px; left: -6px; width: 46px; height: 2px; }
+/* El plano: hoja azul con cuadrícula, el dibujo del mueble y su casilla de sello */
+.alb__pista .alb__plano { z-index: 2; top: 46px; width: 60px; height: 54px; background: repeating-linear-gradient(0deg, transparent 0 7px, rgb(255 255 255 / 0.16) 7px 8px), repeating-linear-gradient(90deg, transparent 0 7px, rgb(255 255 255 / 0.16) 7px 8px), #2f5e8a; box-shadow: inset 0 0 0 2px #eef3f6, 0 4px 0 rgb(0 0 0 / 0.45); }
+.alb__plano-dibujo { position: absolute; left: 4px; bottom: 4px; width: 22px; height: 22px; }
+.alb__plano-dibujo img { width: 22px; height: 22px; filter: grayscale(1) brightness(2.2) contrast(0.8); opacity: 0.85; mix-blend-mode: screen; }
+.alb__plano-dibujo i { display: block; width: 18px; height: 12px; margin-top: 6px; box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.6); }
+.alb__pista .alb__casilla { position: absolute; left: 50%; top: 13px; width: 26px; height: 26px; margin-left: -13px; border: 2px dashed #f6ecd8; background: rgb(255 255 255 / 0.08); }
+.alb__plano[data-sellado='false'] { filter: grayscale(0.85) brightness(0.8); }
+/* La tinta: cae donde estaba el plano; buena, dentro de la casilla */
+.alb__pista .alb__tinta { z-index: 3; top: 58px; width: 26px; height: 26px; background: radial-gradient(circle, transparent 0 7px, rgb(196 52 64 / 0.92) 7px 10px, transparent 10px), radial-gradient(circle, rgb(196 52 64 / 0.92) 0 3px, transparent 3px); pointer-events: none; animation: alb-tinta 0.22s steps(3) both; }
+.alb__tinta[data-ok='false'] { opacity: 0.8; }
+@keyframes alb-tinta { from { scale: 1.6; opacity: 0; } }
+/* El sello de goma: mango de madera y base, colgado sobre la marca; baja al sellar */
+.alb__pista .alb__sello { z-index: 4; top: -2px; width: 40px; height: 60px; pointer-events: none; }
+.alb__sello-cuerpo { position: absolute; inset: 0; background:
+    linear-gradient(#e0b46a, #b98445) 13px 0 / 14px 22px no-repeat,
+    linear-gradient(#7a4a2a, #5b3a26) 9px 20px / 22px 8px no-repeat,
+    linear-gradient(#c0b8a8, #8e8678) 3px 28px / 34px 10px no-repeat,
+    linear-gradient(#b83a46, #8a2430) 5px 38px / 30px 6px no-repeat; }
+.alb__sello-cuerpo::after { content: ''; position: absolute; left: 19px; top: -30px; width: 2px; height: 30px; background: #6a6a76; }
+.alb__sello-cuerpo[data-baja] { animation: alb-golpe 0.26s steps(6) both; }
+@keyframes alb-golpe { 0% { translate: 0 0; } 35% { translate: 0 22px; scale: 1.06 0.9; } 55% { translate: 0 20px; } 100% { translate: 0 0; } }
+/* Lo que ha pasado, encima del sello */
+.alb__pista .alb__pop { z-index: 5; top: 2px; padding: 3px 8px; background: var(--alm-paper); box-shadow: inset 0 0 0 2px currentColor; color: var(--alm-teal); font: 700 0.82rem/1 'Lora', serif; white-space: nowrap; pointer-events: none; animation: alb-pop 1.1s steps(8) both; }
+.alb__pop[data-tipo='clavado'] { background: var(--alm-gold); color: var(--alm-ink); }
+.alb__pop[data-tipo='fuera'] { color: #6a5440; }
+@keyframes alb-pop { 0% { opacity: 0; translate: -50% 10px; } 15% { opacity: 1; translate: -50% 0; } 80% { opacity: 1; } 100% { opacity: 0; translate: -50% -8px; } }
+/* Cierre: el descuento estampado en la cinta */
+.alb__cierre { position: absolute; z-index: 6; left: 50%; top: 40px; translate: -50% 0; padding: 4px 14px; box-shadow: inset 0 0 0 4px currentColor; color: var(--alm-red); background: rgb(251 245 230 / 0.92); font: 700 1.8rem/1 'Courier Prime', monospace; letter-spacing: 0.06em; rotate: -6deg; animation: alb-estampa 0.35s steps(5) both; }
+.alb__cierre[data-n='0'] { color: #6a5440; }
+@keyframes alb-estampa { from { scale: 2.2; opacity: 0; } }
+/* El albarán que se va llenando */
+.alb__marcas { display: flex; gap: 6px; margin: 4px 0 8px; padding: 0; list-style: none; }
+.alb__marcas li { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; padding: 4px; background: #fff; box-shadow: inset 0 0 0 1px rgb(47 94 138 / 0.35); font: 0.7rem/1.15 'Lora', serif; }
+.alb__marcas li[data-ahora] { box-shadow: inset 0 0 0 2px #2f5e8a; }
+.alb__marcas li[data-m='true'] { box-shadow: inset 0 0 0 2px var(--alm-teal); color: var(--alm-teal); font-weight: 700; }
+.alb__marcas li[data-m='false'] { color: var(--alm-red); }
+.alb__mini { position: relative; display: grid; place-items: center; flex: none; width: 24px; height: 22px; background: #2f5e8a; box-shadow: inset 0 0 0 1px #eef3f6; }
+.alb__mini img { width: 16px; height: 16px; filter: grayscale(1) brightness(2.2); mix-blend-mode: screen; opacity: 0.8; }
+.alb__mini b { position: absolute; inset: 3px; display: grid; place-items: center; box-shadow: inset 0 0 0 2px var(--alm-red); color: var(--alm-red); background: rgb(255 255 255 / 0.85); font: 700 0.5rem/1 'Courier Prime', monospace; rotate: -8deg; }
+li[data-m='false'] .alb__mini { filter: grayscale(1); opacity: 0.5; }
+.alb__mini-texto { overflow: hidden; }
+.alb__sellar { --alm-px: 4px; width: 100%; min-height: 56px; border: 0; background: linear-gradient(#cf6068, var(--alm-red) 55%, #8e343c); box-shadow: inset 0 0 0 3px var(--alm-red-d), inset 0 -6px 0 var(--alm-red-d), inset 0 3px 0 #e48a90; color: #fff; font: 700 1.15rem 'Lora', serif; letter-spacing: 0.04em; cursor: pointer; touch-action: manipulation; }
+.alb__sellar:active:not(:disabled) { transform: translateY(3px); box-shadow: inset 0 0 0 3px var(--alm-red-d); }
+.alb__sellar:disabled { filter: grayscale(0.5); opacity: 0.7; }
+.alb[data-mirando] .alb__mesa { cursor: default; }
+/* La hoja sellada (en la caja, después de jugar) */
+.alb-hoja { display: flex; align-items: center; gap: 6px; margin: 4px 0 8px; }
+.alb-hoja__plano { display: grid; place-items: center; width: 34px; height: 30px; background: #2f5e8a; box-shadow: inset 0 0 0 2px #eef3f6; color: rgb(255 255 255 / 0.5); font: 700 0.62rem 'Courier Prime', monospace; }
+.alb-hoja__plano[data-m='true'] { background: #fff; box-shadow: inset 0 0 0 2px var(--alm-red); color: var(--alm-red); rotate: -6deg; }
+.alb-hoja__pct { margin-left: auto; padding: 2px 10px; box-shadow: inset 0 0 0 3px currentColor; color: var(--alm-red); font: 700 1.3rem/1.1 'Courier Prime', monospace; rotate: -5deg; }
+.alb-hoja__pct[data-pct='0'] { color: #6a5440; }
+.alb-hoja[data-recien] .alb-hoja__plano[data-m='true'] { animation: alb-estampa 0.3s steps(4) both; animation-delay: calc(var(--i) * 0.18s); }
+.alb-hoja[data-recien] .alb-hoja__pct { animation: alb-estampa 0.35s steps(5) 0.6s both; }
+@media (prefers-reduced-motion: reduce) {
+  .alb__sello-cuerpo[data-baja],
+  .alb__tinta,
+  .alb__pop,
+  .alb__cierre,
+  .alb-hoja[data-recien] * { animation: none !important; }
+}
+
+/* Escritorio: los papeles no se estiran de lado a lado */
+@media (min-width: 620px) {
+  .alm-card { left: 50%; right: auto; width: min(520px, calc(100% - 20px)); transform: translateX(-50%); }
+  @keyframes alm-sube { from { transform: translate(-50%, 14px); opacity: 0; } }
+}
+
+/* El albarán en el mostrador (escena 3D): la cámara baja a la cinta; encima solo el letrero de lo que pasa, los tres planos del
+   albarán y el botón. Nada de tarjeta: la escena se toca para sellar. */
+.alm[data-mostrador] .alm-card,
+.alm[data-mostrador] .alm-bar,
+.alm[data-mostrador] .alm-tags { display: none; }
+.alm-juego { position: absolute; z-index: 6; inset: 0; pointer-events: none; }
+.alm-juego .alb--escena { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); }
+.alb--escena .alb__dice {
+  align-self: center;
+  max-width: 340px;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 12px;
+  background: rgb(22 20 42 / 0.82);
+  box-shadow: inset 0 0 0 2px var(--alm-gold), 0 3px 0 rgb(0 0 0 / 0.4);
+  color: var(--alm-cream);
+  font: 600 0.9rem/1.3 'Lora', serif;
+  text-align: center;
+}
+.alb--escena .alb__marcas { order: 3; margin: auto 0 8px; }
+.alb--escena .alb__marcas li { background: rgb(251 245 230 / 0.94); }
+.alb--escena .alb__sellar { order: 4; pointer-events: auto; min-height: 60px; filter: drop-shadow(0 4px 0 rgb(10 8 20 / 0.55)); }
+.alb__pop--escena {
+  position: absolute;
+  left: 50%;
+  top: 32%;
+  padding: 5px 14px;
+  background: var(--alm-paper);
+  box-shadow: inset 0 0 0 3px currentColor, 0 4px 0 rgb(0 0 0 / 0.4);
+  color: var(--alm-teal);
+  font: 700 1.25rem/1 'Lora', serif;
+  white-space: nowrap;
+  animation: alb-pop 1.1s steps(8) both;
+}
+.alb__cierre--escena { top: 30%; font-size: 2.6rem; }
+@media (min-width: 900px) {
+  .alm-juego .alb--escena { left: 50%; right: auto; width: 520px; translate: -50% 0; }
+}
+.alm[data-mostrador] .alm-carretilla,
+.alm[data-mostrador] .alm-mira,
+.alm[data-mostrador] .alm-aviso-flota { display: none; }
+.alb--escena .alb__marcas li { color: var(--alm-ink); }
+.alb--escena .alb__marcas li[data-m='true'] { color: var(--alm-teal); }
+.alb--escena .alb__marcas li[data-m='false'] { color: var(--alm-red); }
+.alb--escena .alb__pop--escena { top: 20%; }
+
+/* El albarán de la caja, como un resguardo grapado al ticket: una línea con el botón; las reglas, plegadas */
+.alm-albaran { margin: 14px 2px 10px; padding: 8px 10px 8px 20px; rotate: -0.8deg; background:
+    radial-gradient(circle at 6px 50%, var(--alm-paper) 0 2.5px, transparent 3px) 0 0 / 12px 9px repeat-y,
+    linear-gradient(90deg, transparent 11px, rgb(47 94 138 / 0.35) 11px 12px, transparent 12px),
+    repeating-linear-gradient(180deg, transparent 0 21px, rgb(47 94 138 / 0.1) 21px 22px), #eef3f6;
+  box-shadow: inset 0 0 0 1px rgb(47 94 138 / 0.55), 2px 3px 0 rgb(42 29 20 / 0.18); }
+.alm-albaran::before { content: ''; position: absolute; top: -7px; left: 26px; width: 22px; height: 12px; background: linear-gradient(#c9ced4, #8e959e); box-shadow: inset 0 0 0 1px #6a7078; }
+.alm-albaran h5 { margin: 0; font-size: 0.86rem; }
+.alm-albaran__fila { display: flex; align-items: center; gap: 10px; }
+.alm-albaran__texto { flex: 1; min-width: 0; }
+.alm-albaran__lema { margin: 2px 0 0 !important; font: 0.84rem/1.2 'Lora', serif; }
+.alm-albaran__lema b { color: var(--alm-red); font-family: 'Courier Prime', monospace; }
+.alm-albaran__fila .alm-btn--sello { flex: none; min-width: 84px; min-height: 44px; }
+.alm-albaran__pie { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-top: 6px; font-size: 0.78rem; }
+.alm-albaran__prisa { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; cursor: pointer; }
+.alm-albaran__prisa input { width: 18px; height: 18px; margin: 0; accent-color: #2f5e8a; }
+.alm-albaran__como summary { min-height: 32px; display: inline-flex; align-items: center; color: #2f5e8a; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; list-style: none; }
+.alm-albaran__como summary::-webkit-details-marker { display: none; }
+.alm-albaran__como[open] { flex-basis: 100%; }
+.alm-albaran__como p { font-size: 0.8rem; line-height: 1.35; }
+.alm-albaran .alm-hoja + p,
+.alm-albaran .alb-hoja { margin-top: 6px; }
+.alm-albaran__texto h5 { letter-spacing: 0.06em; white-space: nowrap; }
+.alm-albaran__texto h5::after { display: none; }
+.alm-albaran__lema b { white-space: nowrap; letter-spacing: -0.02em; }
+
+/* Ofertas (1.100): rojo de cartel de rebajas; la de la semana, dorada */
+.alm-tag__oferta { order: -1; display: grid; place-items: center; height: 18px; padding: 0 4px; background: var(--alm-gold); color: var(--alm-ink); font: 700 0.66rem/1 'Courier Prime', monospace; font-style: normal; }
+.alm-tag--precio[data-oferta] { background: #fff3e0; box-shadow: inset 0 0 0 2px var(--alm-red), inset 0 -2px 0 var(--alm-kraft-d); }
+.alm-tag--precio[data-oferta='semana'] .alm-tag__oferta { background: var(--alm-red); color: #fff; }
+.alm-tag--precio s { color: #8a6a4a; font: 0.66rem/1 'Courier Prime', monospace; }
+.alm-precio s { font: 700 0.7rem/1 'Courier Prime', monospace; opacity: 0.8; }
+.alm-precio[data-oferta] { background: var(--alm-gold); box-shadow: inset 0 0 0 2px var(--alm-gold-d), 0 2px 0 rgb(0 0 0 / 0.25); color: var(--alm-ink); }
+.alm-precio[data-oferta='semana'] { background: var(--alm-red); color: #fff; }
+.alm-oferta { display: inline-block; margin-top: 2px; padding: 0 5px; background: var(--alm-gold); color: var(--alm-ink); font: 700 0.72rem/1.4 'Lora', serif; font-style: normal; }
+.alm-oferta[data-tipo='semana'] { background: var(--alm-red); color: #fff; }
+.alm-ficha__datos s,
+.alm-dir__item s,
+.alm-carro__nombre s,
+.alm-ticket s { opacity: 0.6; }
+.alm-dir__ofertas { padding: 8px; background: repeating-linear-gradient(-45deg, rgb(236 190 96 / 0.18) 0 8px, transparent 8px 16px); box-shadow: inset 0 0 0 2px var(--alm-gold); }
+.alm-dir__ofertas .alm-dir__pasillo { background: var(--alm-red); }
+.alm-dir__item span small { display: block; color: var(--alm-red); font: 700 0.66rem/1.2 'Lora', serif; }
+.alm-dir__item[data-oferta='semana'] { box-shadow: inset 0 0 0 2px var(--alm-red), inset 0 -3px 0 var(--alm-kraft); }
+.alm-dir__item b[data-oferta] { background: var(--alm-gold); color: var(--alm-ink); }
+.alm-ticket__oferta { margin-left: 6px; color: var(--alm-red); font-size: 0.72rem; font-weight: 700; }
+
+/* ── 1.102 · El probador: pestañas de papel, una fila de perchas que se desliza y el pie con «Listo» ── */
+.alm-card--probador { max-height: 48%; }
+.alm-card--probador .alm-card__body { padding: 8px 12px 10px; }
+.alm-probador { display: grid; gap: 8px; }
+.alm-probador__muestra { justify-self: center; width: 96px; height: 96px; image-rendering: pixelated; background: #d8e6ea; box-shadow: inset 0 0 0 3px var(--alm-gold-d); }
+.alm-probador__filas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.alm-probador__fila { min-height: 36px; padding: 0 4px; border: 0; background: var(--alm-kraft); box-shadow: inset 0 0 0 2px var(--alm-gold-d), inset 0 -3px 0 var(--alm-kraft-d); color: var(--alm-ink); font: 700 0.8rem/1 'Lora', Georgia, serif; cursor: pointer; }
+.alm-probador__fila[aria-selected='true'] { background: var(--alm-teal); box-shadow: inset 0 0 0 2px var(--alm-teal-d), inset 0 2px 0 var(--alm-teal-l); color: var(--alm-cream); }
+.alm-probador__fila:focus-visible,
+.alm-percha:focus-visible { outline: 3px solid var(--alm-teal); outline-offset: 1px; }
+.alm-probador__perchas { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 8px; scroll-snap-type: x proximity; scrollbar-color: var(--alm-kraft-d) transparent; overscroll-behavior-x: contain; }
+.alm-percha { flex: none; display: grid; justify-items: center; gap: 3px; width: 70px; padding: 5px 3px 4px; border: 0; background: var(--alm-paper); box-shadow: inset 0 0 0 2px var(--alm-kraft-d); color: var(--alm-ink); font: 0.68rem/1.15 'Lora', Georgia, serif; cursor: pointer; scroll-snap-align: start; }
+.alm-percha img { width: 44px; height: 44px; image-rendering: pixelated; }
+.alm-percha span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alm-percha[aria-pressed='true'] { background: var(--alm-gold); box-shadow: inset 0 0 0 2px var(--alm-ink); transform: translateY(-2px); }
+.alm-probador__nota { margin: 0; font-size: 0.76rem; line-height: 1.3; }
+.alm-probador__pie { display: flex; gap: 8px; }
+.alm-probador__pie .alm-btn { flex: 1; }
+.alm-probador__pie .alm-btn:disabled { opacity: 0.55; cursor: default; }

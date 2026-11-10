@@ -218,6 +218,24 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   - **La Lonja** (4-11-2026): el panel, con la soltura del casino («el mejor menú») **pero sin ser igual**: cara propia de
     mercado (clases `lj-`: toldo, pizarra, etiquetas de estraza). **Fuera las mascotas**, además de místicos y sagas. Tiene que
     dar libertad sin que se pueda explotar la economía: reglas en `20261114120000_hotel_lonja.sql`. Su minijuego lleva escena dibujada, no botones sueltos, y sus sellos nunca son tickets: desde la 1.86 es «La estiba» (`hotel/estibaArt.js`), que sustituye a la pesada de Remedios.
+    **La Lonja pasa a ser un gran almacén de muebles en 3D** (encargo de Francisco del 9-11-2026): se recorre como la
+    recepción 3D (mismo lenguaje de píxel), con pasillos, expositores, ambientes montados, carrito con planos, directorio y
+    caja con cajero. Minijuego diario opcional «Sella el albarán» (0/3/6/10 % de descuento, uno al día por cuenta, reinicio en
+    el servidor, alternativa sin reflejos). Compra atómica en el servidor, con la moneda y el catálogo de siempre. Se visita
+    con un amigo (seguimiento mutuo), cada uno con su carrito, monedas y descuento. El mercadillo de la Lonja de antes
+    (puestos, tablón «Se busca», «La estiba» y su pared de premios) **se conserva** como acceso secundario dentro del almacén.
+    **El albarán se juega en el propio mostrador 3D** (9-11-2026): la cámara baja a la cinta, sin abrir nada encima.
+    **Ampliación pedida el 9-11-2026** (por bloques con capturas): el carrito se ve delante de ti con los paquetes de lo
+    que llevas; el albarán de la caja, más pequeño y orgánico; **ofertas** (cada día unos muebles al azar con descuento y
+    cada semana alguno con un gran descuento, decididas por el servidor); **colecciones por zonas temáticas como en una
+    tienda de muebles con habitaciones montadas** (una zona contigua de pequeñas habitaciones; la primera, de
+    superhéroes, con su rincón especial, y un par de habitaciones normales alrededor para que no quede vacía); y algo
+    para la ropa. Superhéroes: género y guiños originales, nunca personajes, emblemas, logos ni diseños oficiales.
+    **Decisiones de Francisco (9-11-2026)**: ofertas, **4 muebles al día con −20 %** y **1 a la semana (desde el lunes) con
+    −50 %**, al azar y decididas por el servidor; se suman al albarán con el descuento total limitado al 60 %. Solo en el
+    almacén: la tienda y el resto de precios no cambian. Ropa: **un probador con espejo** para cambiarte la ropa que ya
+    tienes (no vende ropa ni toca misiones ni casino). Superhéroes: **muebles nuevos a la venta** (5-6 originales con
+    modelo 3D a la altura de la casa; migración nueva, la aplica Francisco).
   - **Identidad de los muebles** (4-11-2026, aprobado por Francisco; por bloques con capturas). Motivo: nadie compraría en la
     Lonja un sofá que la tienda vende igual.
     - **Acabados**: algunas copias salen con un acabado propio (cambio de colores y efecto discreto sobre el mismo dibujo;

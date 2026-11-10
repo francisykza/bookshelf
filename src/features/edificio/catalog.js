@@ -37,7 +37,7 @@ export const ZONAS = [
 ];
 export const ZONA_PAREDES = 'paredes';
 const ZONA_DE = {
-  lectura: ['sillon', 'lampara-pie', 'estanteria', 'mecedora', 'puf', 'libros', 'cesto-mantas', 'tetera', 'taza', 'velas'],
+  lectura: ['sillon', 'sillon-capa', 'estanteria-comics', 'lampara-pie', 'estanteria', 'mecedora', 'puf', 'libros', 'cesto-mantas', 'tetera', 'taza', 'velas'],
   dormitorio: ['cama', 'mesilla', 'comoda', 'baul', 'perchero', 'lampara-mesa'],
   estudio: ['escritorio', 'silla', 'globo', 'telescopio', 'ordenador'],
 };
@@ -197,6 +197,17 @@ export const CATALOG = [
   { id: 'placa-vivero', rareza: 'especial', nombre: 'Placa de Vivero del Muelle', cat: 'pared', capa: 'pared', w: 1, tonos: [[86, 128, 88]], guino: 'Por completar Vivero del Muelle' },
   { id: 'placa-almoneda', rareza: 'especial', nombre: 'Placa de Almoneda del Capitán', cat: 'pared', capa: 'pared', w: 1, tonos: [[70, 96, 132]], guino: 'Por completar Almoneda del Capitán' },
   { id: 'placa-menaje', rareza: 'especial', nombre: 'Placa de Menaje Las Dos Anclas', cat: 'pared', capa: 'pared', w: 1, tonos: [[122, 92, 140]], guino: 'Por completar Menaje Las Dos Anclas' },
+  { id: 'placa-heroes', rareza: 'especial', nombre: 'Placa de Capa y Antifaz', cat: 'pared', capa: 'pared', w: 1, tonos: [[168, 44, 52]], guino: 'Por completar Capa y Antifaz' },
+
+  // ── La colección de superhéroes (1.101, encargo de Francisco del 9-11-2026): la primera habitación temática del Almacén
+  // del Puerto. Muebles originales del género (capas, antifaces, viñetas, focos y rayos), nunca personajes, emblemas ni logos.
+  // Son del taller «Capa y Antifaz» (talleres.js) ──
+  { id: 'sillon-capa', coleccion: 'heroes', rareza: 'poco-comun', nombre: 'Sillón de la capa', cat: 'asientos', capa: 'suelo', w: 2, d: 2, tonos: [AZUL, GRANATE, PIZARRA] },
+  { id: 'estanteria-comics', coleccion: 'heroes', nombre: 'Expositor de cómics', cat: 'mesas', capa: 'suelo', w: 2, d: 1, tonos: [MADERA, NEGRO, AZUL] },
+  { id: 'foco-heroe', coleccion: 'heroes', rareza: 'poco-comun', nombre: 'Foco de la señal', cat: 'luz', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.85, 1.4], tonos: [HIERRO, GRANATE, ORO] },
+  { id: 'maniqui-capa', coleccion: 'heroes', rareza: 'poco-comun', nombre: 'Maniquí con capa', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [AZUL, GRANATE, MUSGO] },
+  { id: 'cartel-vinetas', coleccion: 'heroes', nombre: 'Lámina de viñetas', cat: 'pared', capa: 'pared', w: 2, tonos: [NEGRO, GRANATE, AZUL] },
+  { id: 'neon-rayo', coleccion: 'heroes', rareza: 'poco-comun', nombre: 'Neón del rayo', cat: 'pared', capa: 'pared', w: 1, luz: [0.5, 0.3, 2.7], tonos: [[250, 206, 80], [110, 210, 240], [240, 110, 150]] },
 
   // ── La lata de los garbanzos (1.82): premios humildes, con las mismas reglas que los de la caja ──
   { id: 'tarro-garbanzos', rareza: 'especial', casino: true, nombre: 'Tarro de garbanzos', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [[222, 186, 118]], guino: 'De la lata de los garbanzos del casino' },

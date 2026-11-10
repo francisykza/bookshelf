@@ -53,7 +53,9 @@ async function toLonja(page, extra = []) {
   const hotel = page.getByRole('dialog', { name: 'El Gran Hotel del Puerto' });
   await expect(hotel.locator('canvas.hotel-canvas')).toBeVisible();
   await hotel.getByRole('button', { name: 'Directorio' }).click();
-  await hotel.getByRole('dialog', { name: 'Directorio' }).getByRole('button', { name: /La Lonja/ }).click();
+  await hotel.getByRole('dialog', { name: 'Directorio' }).getByRole('button', { name: /almacén/i }).click();
+  // 1.99: la Lonja de antes es el mercadillo del almacén (acceso secundario)
+  await hotel.locator('section.alm .alm-bar').getByRole('button', { name: 'Mercadillo' }).click();
   return { lonja: hotel.getByRole('region', { name: 'La Lonja' }), mock };
 }
 

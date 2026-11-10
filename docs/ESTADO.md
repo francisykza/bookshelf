@@ -6,6 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **En commit en la rama `1.90-escritorio-puerto`, sin publicar: 1.102.0** (2026-11-10, §99 a §102). El Almacén del Puerto: la Lonja en 3D con carrito, caja, «Sella el albarán» y visita con un amigo; el mercadillo de antes, dentro; el carro delante, ofertas del día y de la semana, las habitaciones con la colección de superhéroes «Capa y Antifaz» y el probador con espejo. Necesita tres migraciones, por orden (las aplica Francisco): `20261124120000_hotel_almacen.sql`, `20261125120000_almacen_ofertas.sql` y `20261126120000_almacen_heroes.sql` (el probador no lleva). Los cuatro bloques de la ampliación, hechos. Francisco pidió el commit el 10-11-2026 («Sí, a commit») tras ver las evidencias del probador; **no ha aprobado todavía el paso a `main`** ni la preview, y las migraciones siguen sin aplicar.
 - **Publicada en producción: 1.98.0** (2026-11-09, §98; `sw.js` de producción ya trae v1.98.0). La recepción del Gran Hotel en 3D, con la cabina del ascensor por dentro; «Plano» lleva al vestíbulo isométrico. Aprobada por Francisco tras revisar capturas y vídeos («Sí, publícala»). Sin migraciones. Sin probar en móviles reales.
 - Anterior: 1.96.0 (2026-11-09, §96). Tablón montado en el escritorio, con relieve y contenido nítido; dibujos en hoja o forma; biblioteca del visitante con lo expuesto y lo compartido. Migraciones `20261121120000_piso_expuestos.sql` y `20261122120000_tablon_dibujos.sql` aplicadas por Francisco el 2026-11-09 (SHA-256 comprobado). Sin probar en móviles reales; **la capa nítida del tablón se descuadra en WebKit para Windows y falta verla en un iPhone**.
 - Anterior: 1.95.0 (2026-11-09, §95). Tablón libre: mueble de dos casillas, vista para mirar y «Diseñar» aparte, notas con formatos distintos y post-its. Migración `20261120120000_tablon.sql` aplicada por Francisco el 2026-11-09 (SHA-256 comprobado). Aprobada por Francisco tras revisar capturas y vídeo. Sin probar en móviles reales.
@@ -100,6 +101,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.99.0 | El Almacén del Puerto: la Lonja en 3D (sin publicar) | §99 |
 | 1.89.3 | Coherencia de visitas, estantería, zona del libro y acceso 3D (publicada) | §89.8 |
 | 1.89.2 | Cámara del sillón y arquitectura del rincón (publicada) | §89.7 |
 | 1.89.1 | Arranque sin la habitación antigua, noche con las lámparas reales, cámara del sillón y puesto del ordenador (preview) | §89.6 |
@@ -151,6 +153,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **1.99.0 (sin publicar):** que Francisco revise la entrega (vídeos y capturas en `qa-report/almacen/`); aplicar `20261124120000_hotel_almacen.sql` antes de publicar; probar en un iPhone real. `v186-tablon` «se ve lo que se busca…» falla desde la 1.97 (usa el sofá, retirado), no por el almacén.
 - **1.89.3 (producción):** probar en Android y Safari de iPhone físicos; decidir cuándo restaurar los objetos retirados (§89.1).
 - **1.88.2 (publicada):** comprobarla en Android y en Safari de iPhone reales (solo se ha probado en emulación).
 - **1.88 (publicada):** quedan sin causa identificada la franja oscura de Chromium (no se reproduce) y los fallos
@@ -236,6 +239,32 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-10 · El Almacén del Puerto (la Lonja en 3D) · 1.99.0 a 1.102.0 (§99 a §102), en commit en la rama `1.90-escritorio-puerto` (Claude), sin publicar
+- **Commit** (10-11-2026, «Sí, a commit»): todo el almacén de una vez, de la 1.99 al probador de la 1.102. Sin subir ni fusionar con `main`: falta que Francisco apruebe la entrega para producción y aplique, por orden, `20261124120000_hotel_almacen.sql`, `20261125120000_almacen_ofertas.sql` y `20261126120000_almacen_heroes.sql`. `.claude/launch.json` se queda fuera del commit (configuración local).
+Encargo de Francisco (pegado entero en la conversación): la Lonja pasa a ser un almacén de muebles 3D con carrito, caja,
+minijuego diario «Sella el albarán» y visita con un amigo.
+- **Terminado (segunda sesión):** escena ajustada con capturas (caja que enmarca al cajero, letreros dentro de la pantalla, emblema
+  limpio); RPC del almacén en `mockSupabase.js` (con `cortar`/`caida` para simular fallos de red); aviso de invitación en
+  `EdificioPanel.jsx` («Ir al almacén», deja de preguntar si no hay migración); `v184-lonja`, `v186-estiba` y `v186-tablon` entran por
+  el almacén y «Mercadillo»; `e2e-community/v199-almacen.spec.js` (capturas 360/390/430/escritorio; recorrido, saldo, doble toque,
+  red, albarán con recarga, visita con dos cuentas y aviso, en Chromium y WebKit 390) en verde. Vídeos `qa-report/almacen/recorrido-*.webm`
+  (`ALMACEN_VIDEO=1`). Versión 1.99.0 y SPEC §99. **Sin verificar:** móviles reales; el fallo de `v186-tablon` del sofá es anterior (1.97).
+- **Retoque de la interfaz** (Francisco: «me gusta mucho… pero quiero que la interfaz sea un poco más atractiva y los menús también»; muebles y distribución, sin cambios): cara propia de almacén en `almacen.css`. Papeles de estraza con rótulo verde, antetítulo e icono; ficha con muestra en tarima y precio en sello rojo, tonos en muestrario; directorio en fichas por pasillo; carrito con cinta de total; caja con bocadillo del cajero, ticket a máquina (Courier Prime) y sello «Pagado»; albarán en hoja azul de papel carbón con los premios a la vista y botón de sello. Barra como balda metálica verde con la Caja en el centro (placa de latón con el total) y chapa roja con el número del carrito. Letreros de la escena: pasillo con su número, señales amarillas con flecha y etiquetas de estraza con el precio. Comparativa en `qa-report/almacen/comparativa-interfaz.png` (capturas anteriores en `antes/`).
+- **Minijuego más vivo** (Francisco: «que sea más divertido e interactivo»; los menús nuevos le gustan más que los de antes): cinta con los muebles del carrito en los planos, sello de goma que baja, tinta donde cae, «¡Clavado!/¡Sellado!/Fuera de la casilla», albarán que se llena, descuento estampado al cerrar y hoja sellada en la caja; sonidos en `hotel/albaranSfx.js`. Tiempos del servidor sin cambios. Capturas 14, 14b, 14c y 15 en `qa-report/almacen/`. Sonido sin escuchar (aquí no hay altavoces que comprobar).
+- **Albarán en el mostrador 3D** (Francisco: «que la cámara se acercase a la caja… sin abrir nada externo»): `almacen3d.js` monta cinta, sello con riel, marca y planos (`mostrador()`, `albaran()`, `juego()`); `SellaAlbaran` con `escena` deja solo letrero, planos y botón (`.alm-juego`), y `Almacen.jsx` entra y sale del modo (`data-mostrador`). El acierto se calcula con el reloj al tocar. Pruebas: el albarán se lee de `data-pos`/`data-marca` de `.alb`. Sin 3D y al mirar a un amigo, la versión 2D. Sin commit, a la espera de que Francisco lo vea.
+- **Ampliación del almacén, bloque 1** (9-11-2026, sin commit): carro de plataforma en 3D pegado a la cámara con un paquete por unidad del carrito (hasta 8) y la pegatina del mueble; tocarlo abre el carrito (la carretilla de la esquina solo queda sin 3D; el botón Carrito de la barra lleva el nombre accesible con la cuenta). El albarán de la caja es un resguardo grapado: una línea con «Jugar», «Sin prisa» y «¿Cómo va?» plegado. Capturas 8b, 9 y 15 y vídeos de nuevo en qa-report/almacen. **Siguen** (por bloques con capturas): ofertas del día y de la semana (servidor, migración nueva), zona de habitaciones temáticas con la de superhéroes y sus muebles nuevos, y el probador. Cifras y decisiones en CLAUDE.md (La Lonja).
+- **Bloque 2, ofertas (1.100.0, sin commit)**: migración nueva `supabase/migrations/20261125120000_almacen_ofertas.sql` (la aplica Francisco, después de la del almacén): `piso_almacen_ofertas_de(dia)` (4 del día −20 %, 1 de la semana −50 %, hash del día/semana), el estado trae `ofertas` y `semana_hasta`, y la compra cobra el precio de oferta y guarda `ahorro`. Cliente: `hotel/ofertas.js`; ofertas en etiquetas, ficha, directorio, carrito, caja y recibo. El carro se dibuja en una segunda pasada (capa 1) para no meterse en los muebles. Vitest del edificio: 244/245; el que falla (casino, «el tope de la semana») falla igual sin esta migración, no es de esto. **Sigue**: zona de habitaciones temáticas con superhéroes, y el probador.
+- **Bloque 3, las habitaciones y Capa y Antifaz (1.101.0, SPEC §101, sin commit)**: seis muebles nuevos de superhéroes (`catalog.js` con `coleccion: 'heroes'`, formas en `furniture.js`, el sillón con la tapicería de la casa en `interior3d.js`), taller nuevo «Capa y Antifaz» con `placa-heroes`, y migración `supabase/migrations/20261126120000_almacen_heroes.sql` (la aplica Francisco, después de la de ofertas; SHA-256 `22ce26943db86a2acf81a8e157fd36a9f53c1941a10c8f92a91f29512dfa681f`). No entran en los sobres (cerrados); **al reabrirlos, `piso_abrir_sobre` tiene que dejarlos fuera también en el servidor**. En el almacén, una sala contigua por un paso en la pared derecha, con el pasillo 4: Capa y Antifaz con su rincón (escenario, maniquí, foco y mural de la ciudad con la señal), el Estudio con vistas y la Salita de tarde. Pruebas: vitest del edificio 244/245 (el del casino, anterior), `v1101-habitaciones.spec.js` y `reforma-tienda.spec.js` (20 muebles). Ayudantes del almacén movidos a `e2e-community/almacenHelpers.js`. Retratos en `qa-report/heroes-retratos.png`; capturas 30–38 en `qa-report/almacen/`.
+- **Bloque 4, el probador (1.102.0, SPEC §102, sin commit, 10-11-2026)**: espejo grande de pie y dos cabinas con cortina en la entrada de las habitaciones (`PROBADOR` en `almacenLayout.js`, `buildProbador` en `almacen3d.js`). El letrero «Probador» lleva andando al espejo, la cámara se pone delante y tu personaje sale reflejado (`probador()`/`vestir()`); el papel (`hotel/Probador.jsx`, filas en `hotel/ropa.js`) enseña solo la ropa de serie, la ganada y la puesta, y «Listo, me lo quedo» guarda con `savePersonaje`. `loadMiPersonaje()` nuevo en `service.js`. No cuenta misiones ni toca monedas; sin migración. Los sitios (rótulo y toque) ahora también filtran por lado de la pared. Pruebas: `v1102-probador.spec.js` y las del almacén. **Sin verificar**: móviles reales.
+- Lo de la primera sesión:
+- `hotel/almacenLayout.js` (plano, pasillos, expositores, rutas), `hotel/almacen3d.js` (escena), `hotel/Almacen.jsx`
+  (vista, ficha, directorio, carrito, caja, mercadillo, visita), `hotel/AlmacenCaja.jsx` (caja y minijuego), `hotel/albaran.js`,
+  `hotel/almacen.css` (primera pasada). `GranHotel.jsx` abre `<Almacen>` en la sala 'lonja'; la Lonja de siempre sigue entera
+  como «Mercadillo y estiba» (en el muelle y en la barra). Rótulos de la planta «E» cambiados en `Vestibulo.jsx` y `hotelView.js`.
+- Migración `20261124120000_hotel_almacen.sql` (la aplica Francisco) y su prueba `__tests__/almacen.rls.test.js` (13 en verde).
+- Servicios nuevos al final de `service.js`. `npm run build` pasa.
+No desplegar ni pasar a `main` sin que Francisco lo diga.
 
 ### 2026-11-09 · Recepción del Gran Hotel en 3D · 1.98.0 (§98), aprobada por Francisco («Sí, publícala») y subida a `main` desde la rama `1.90-escritorio-puerto`
 

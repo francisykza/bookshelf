@@ -47,6 +47,14 @@ export const TALLERES = [
     color: [122, 92, 140],
     muebles: ['libros', 'tetera', 'taza', 'perchero', 'ventana', 'cuadro', 'estante-pared', 'espejo'],
   },
+  // 1.101 · La colección de superhéroes del Almacén del Puerto, con su habitación temática
+  {
+    id: 'heroes',
+    nombre: 'Capa y Antifaz',
+    lema: 'Para quien salva el día y luego lee un rato.',
+    color: [168, 44, 52],
+    muebles: ['sillon-capa', 'estanteria-comics', 'foco-heroe', 'maniqui-capa', 'cartel-vinetas', 'neon-rayo'],
+  },
 ];
 
 export const tallerDe = (mueble) => TALLERES.find((t) => t.muebles.includes(mueble)) ?? null;

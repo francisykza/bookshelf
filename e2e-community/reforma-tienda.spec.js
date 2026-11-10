@@ -30,7 +30,8 @@ test('la tienda: sobres cerrados por reforma; muebles y reciclaje, abiertos', as
   await shop.getByRole('tab', { name: 'Muebles' }).click();
   await page.waitForTimeout(500);
   await page.screenshot({ path: join(DIR, '4-tienda-muebles.png'), fullPage: true });
-  if (DESPUES) await expect(shop.locator('.ts-grid .ts-item')).toHaveCount(14);
+  // Los 14 de la casa y, desde la 1.101, los 6 de la colección Capa y Antifaz
+  if (DESPUES) await expect(shop.locator('.ts-grid .ts-item')).toHaveCount(20);
 });
 
 test('la caja y la lata del casino: lo retirado, «En reforma»', async ({ page }, info) => {

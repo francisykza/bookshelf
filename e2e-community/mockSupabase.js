@@ -10,8 +10,31 @@ import { starterRoom } from '../src/features/edificio/demo.js';
 import { PRENDAS } from '../src/features/edificio/actor.js';
 import { missionsOf } from '../src/features/edificio/dailyMissions.js';
 import { CAJA, CASINO, LATA, valor } from '../src/features/edificio/hotel/veintiuna.js';
+import { ALBARAN, DESCUENTOS } from '../src/features/edificio/hotel/albaran.js';
+import { isRetirado } from '../src/features/edificio/retirados.js';
 
 export const SUPABASE = 'http://supabase.test';
+
+// 1.99 · El Almacén del Puerto
+const ALMACEN_RPC = ['estado', 'empezar', 'sellar', 'comprar', 'amigos', 'invitar', 'unirse', 'salir', 'pulso'].map((x) => `rpc/piso_almacen_${x}`);
+const madrid = (t = Date.now()) => new Date(t).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
+/** La próxima medianoche de Madrid, en ms (busca el primer minuto en que cambia el día). */
+function vuelveMadrid() {
+  const hoy = madrid();
+  let t = Date.now();
+  while (madrid(t) === hoy) t += 15 * 60000;
+  t -= 15 * 60000;
+  while (madrid(t) === hoy) t += 60000;
+  return t - (t % 60000);
+}
+function descuentoDe(d) {
+  const P = ALBARAN.plano[d.modo];
+  const fin = d.empezado + ALBARAN.previo + 3 * P + ALBARAN.margen;
+  const aciertos = d.marcas.filter((m) => m === true).length;
+  const pendientes = d.marcas.filter((m) => m == null).length;
+  const estado = d.usado ? 'usado' : pendientes > 0 && Date.now() < fin ? 'jugando' : 'hecho';
+  return { estado, modo: d.modo, empezado: d.empezado, marcas: d.marcas, aciertos, pct: estado === 'jugando' ? null : DESCUENTOS[aciertos] };
+}
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 
@@ -564,7 +587,8 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     }
     // 1.66 (SPEC §66): inventario de muebles, como la migración (solo si la prueba lo pide con `db.piso_cuentas`)
     // 1.67 (SPEC §67): tickets, tienda y sobres. El sorteo del mock es fijo: la prueba pone los premios en `db.piso_sorteo`.
-    if (['rpc/piso_mi_inventario', 'rpc/piso_elegir_inicio', 'rpc/piso_reclamar_mision', 'rpc/piso_comprar', 'rpc/piso_abrir_sobre', 'rpc/piso_reciclar', 'rpc/piso_regalar'].includes(table)) {
+    if (['rpc/piso_mi_inventario', 'rpc/piso_elegir_inicio', 'rpc/piso_reclamar_mision', 'rpc/piso_comprar', 'rpc/piso_abrir_sobre', 'rpc/piso_reciclar', 'rpc/piso_regalar', ...ALMACEN_RPC].includes(table)) {
+      if (ALMACEN_RPC.includes(table) && !db.almacen) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
       if (table === 'rpc/piso_regalar' && !db.vecinosSocial) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
       if (!db.piso_cuentas) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
       const counted = (id) => CATALOG.some((c) => c.id === id && !c.set);
@@ -605,6 +629,139 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         cuenta.tickets -= precio(mueble);
         sumar(mueble, 1);
         return json(mine());
+      }
+      // 1.99 (SPEC §99): el Almacén del Puerto, como 20261124120000_hotel_almacen.sql (solo si la prueba pone `db.almacen = {}`).
+      // `db.almacen.cortar`: cuántas compras siguientes se hacen pero la respuesta no llega (fallo de red tras cobrar).
+      // `db.almacen.caida`: cuántas compras siguientes no llegan al servidor.
+      // `db.almacen.ofertas`: las ofertas de hoy, como 20261125120000_almacen_ofertas.sql ([{ id, pct, tipo }]; sin ponerlas, ninguna).
+      if (ALMACEN_RPC.includes(table)) {
+        const al = db.almacen;
+        al.dias ??= {};
+        al.compras ??= {};
+        al.salas ??= [];
+        al.presencia ??= {};
+        const body = req.postDataJSON() ?? {};
+        const hoy = madrid();
+        const dia = al.dias[`${userId}:${hoy}`] ?? null;
+        const estado = () => {
+          const d = al.dias[`${userId}:${hoy}`];
+          return {
+            dia: hoy,
+            ahora: Date.now(),
+            vuelve: vuelveMadrid(),
+            semana_hasta: vuelveMadrid() + 3 * 86400000,
+            ofertas: al.ofertas ?? [],
+            tickets: cuenta.tickets,
+            descuento: d ? descuentoDe(d) : { estado: 'libre' },
+          };
+        };
+        const amigo = (otro) => otro && otro !== userId && db.follows.some((x) => x.follower === userId && x.followed === otro) && db.follows.some((x) => x.follower === otro && x.followed === userId) && !blockedWith(otro);
+        const perfil = (uid) => db.profiles.find((p) => p.user_id === uid) ?? {};
+        if (table === 'rpc/piso_almacen_estado') return json(estado());
+        if (table === 'rpc/piso_almacen_empezar') {
+          if (!['rapido', 'sinprisa'].includes(body.modo)) return fail('almacen:modo');
+          al.dias[`${userId}:${hoy}`] ??= { modo: body.modo, empezado: Date.now(), marcas: [null, null, null], usado: false };
+          return json(estado());
+        }
+        if (table === 'rpc/piso_almacen_sellar') {
+          if (!dia || dia.usado) return fail('almacen:sin_albaran');
+          const { plano, acierto } = body;
+          if (!(plano >= 0 && plano <= 2)) return fail('almacen:plano');
+          if (dia.marcas[plano] == null) {
+            const P = ALBARAN.plano[dia.modo];
+            const t = Date.now() - dia.empezado;
+            dia.marcas[plano] = Boolean(acierto) && t >= ALBARAN.previo + plano * P - 600 && t <= ALBARAN.previo + (plano + 1) * P + ALBARAN.margen;
+          }
+          return json(estado());
+        }
+        if (table === 'rpc/piso_almacen_comprar') {
+          const { compra, articulos, esperado, usar_descuento } = body;
+          if ((al.caida ?? 0) > 0) {
+            al.caida -= 1;
+            return route.abort('failed');
+          }
+          const hecha = al.compras[compra];
+          if (hecha) {
+            if (hecha.user !== userId) return fail('almacen:clave');
+            return json({ ...hecha.r, repetida: true, inventario: mine() });
+          }
+          if (!Array.isArray(articulos) || !articulos.length || articulos.length > 12) return fail('almacen:vacio');
+          const ids = new Set();
+          let subtotal = 0;
+          let ahorro = 0;
+          for (const l of articulos) {
+            if (typeof l?.id !== 'string' || !Number.isInteger(l.n) || l.n < 1 || l.n > 10 || ids.has(l.id)) return fail('almacen:linea');
+            ids.add(l.id);
+            if (isRetirado(l.id)) return fail('almacen:retirado');
+            if (!cat(l.id) || precio(l.id) == null) return fail('almacen:no_se_vende');
+            const pctO = (al.ofertas ?? []).find((o) => o.id === l.id)?.pct ?? 0;
+            const unidad = precio(l.id) - Math.floor((precio(l.id) * pctO) / 100);
+            subtotal += unidad * l.n;
+            ahorro += (precio(l.id) - unidad) * l.n;
+          }
+          let pct = 0;
+          if (usar_descuento) {
+            if (!dia || descuentoDe(dia).estado !== 'hecho') return fail('almacen:descuento');
+            pct = descuentoDe(dia).pct;
+          }
+          const descuento = Math.floor((subtotal * pct) / 100);
+          const total = subtotal - descuento;
+          if (esperado !== total) return fail('almacen:precio');
+          if (cuenta.tickets < total) return fail('almacen:saldo');
+          cuenta.tickets -= total;
+          for (const l of articulos) sumar(l.id, l.n);
+          if (usar_descuento) dia.usado = true;
+          const r = { compra, repetida: false, subtotal, ahorro, pct, descuento, total, articulos };
+          al.compras[compra] = { user: userId, r };
+          al.cobros = (al.cobros ?? 0) + 1;
+          if ((al.cortar ?? 0) > 0) {
+            al.cortar -= 1;
+            return route.abort('failed');
+          }
+          return json({ ...r, inventario: mine() });
+        }
+        if (table === 'rpc/piso_almacen_amigos') {
+          const vivas = al.salas.filter((x) => x.estado !== 'cerrada');
+          const amigos = db.follows.filter((x) => x.follower === userId && amigo(x.followed)).map((x) => ({ uid: x.followed, alias: perfil(x.followed).alias, avatar_id: perfil(x.followed).avatar_id }));
+          const invitaciones = vivas.filter((x) => x.invitado === userId && amigo(x.anfitrion)).map((x) => ({ sala: x.id, uid: x.anfitrion, alias: perfil(x.anfitrion).alias, avatar_id: perfil(x.anfitrion).avatar_id, estado: x.estado }));
+          const m = vivas.find((x) => x.anfitrion === userId);
+          return json({ amigos, invitaciones, mia: m ? { sala: m.id, uid: m.invitado, alias: perfil(m.invitado).alias, avatar_id: perfil(m.invitado).avatar_id, estado: m.estado } : null });
+        }
+        if (table === 'rpc/piso_almacen_invitar') {
+          if (!amigo(body.amigo)) return fail('almacen:no_amigo');
+          let sala = al.salas.find((x) => x.anfitrion === userId && x.invitado === body.amigo && x.estado !== 'cerrada');
+          if (!sala) {
+            for (const x of al.salas) if (x.anfitrion === userId) x.estado = 'cerrada';
+            sala = { id: randomUUID(), anfitrion: userId, invitado: body.amigo, estado: 'invitada' };
+            al.salas.push(sala);
+          }
+          return json({ sala: sala.id, estado: sala.estado });
+        }
+        const sala = al.salas.find((x) => x.id === body.sala);
+        if (table === 'rpc/piso_almacen_unirse') {
+          if (!sala || sala.invitado !== userId || sala.estado === 'cerrada' || !amigo(sala.anfitrion)) return fail('almacen:sala');
+          sala.estado = 'abierta';
+          return json({ sala: sala.id, estado: 'abierta' });
+        }
+        if (table === 'rpc/piso_almacen_salir') {
+          if (sala) {
+            delete al.presencia[`${sala.id}:${userId}`];
+            if (sala.anfitrion === userId) sala.estado = 'cerrada';
+          }
+          return json(null);
+        }
+        if (table === 'rpc/piso_almacen_pulso') {
+          if (!sala || ![sala.anfitrion, sala.invitado].includes(userId)) return fail('almacen:sala');
+          if (sala.invitado === userId && sala.estado === 'invitada') return json({ estado: 'invitada', otros: [] });
+          if (sala.estado === 'cerrada') return json({ estado: 'cerrada', otros: [] });
+          const clamp = (v, a, b, d) => (Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : d);
+          const sello = body.sello && ['rapido', 'sinprisa'].includes(body.sello.modo) ? { modo: body.sello.modo, empezado: body.sello.empezado, marcas: (body.sello.marcas ?? []).slice(0, 3).map((m) => (m === true || m === false ? m : null)) } : null;
+          al.presencia[`${sala.id}:${userId}`] = { uid: userId, x: clamp(body.x, 0, 18, 15.5), y: clamp(body.y, 0, 26, 23.6), yaw: clamp(body.yaw, -7, 7, 3.5), zona: ['pasillos', 'caja', 'mercadillo'].includes(body.zona) ? body.zona : 'pasillos', mira: cat(body.mira) && !isRetirado(body.mira) ? body.mira : null, mira_n: body.mira_n ?? 0, sello, visto: Date.now() };
+          const otros = Object.entries(al.presencia)
+            .filter(([k, p]) => k.startsWith(`${sala.id}:`) && p.uid !== userId && Date.now() - p.visto < 20000)
+            .map(([, p]) => ({ ...p, alias: perfil(p.uid).alias, avatar_id: perfil(p.uid).avatar_id, personaje: db.pisos.find((x) => x.user_id === p.uid)?.personaje ?? null, hace: (Date.now() - p.visto) / 1000 }));
+          return json({ estado: sala.estado, otros });
+        }
       }
       if (table === 'rpc/piso_abrir_sobre') {
         const { sobre, cuantos } = req.postDataJSON();
