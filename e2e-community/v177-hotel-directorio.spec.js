@@ -37,6 +37,11 @@ async function toHotel(page) {
 // Lo que se ve del lienzo: una huella de sus píxeles y cuántos son del latón de la planta elegida
 const canvasState = (page) =>
   page.evaluate(() => {
+    // 1.115: en 3D, el latón es el filete (SVG) que rodea la planta elegida; la huella, qué rodea
+    if (window.__granHotel.mode === '3d') {
+      const polys = [...document.querySelectorAll('.gh-3d__outline polygon')];
+      return { hash: polys.length, brass: polys.length * 100 };
+    }
     const c = window.__granHotel.canvas;
     const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
     let hash = 0;

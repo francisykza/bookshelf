@@ -4535,3 +4535,80 @@
   outline: 3px solid #f6ecd8;
   outline-offset: 2px;
 }
+
+/* ── «Exteriores en 3D», bloque 3 (11-11-2026): la fachada es la plaza del muelle en 3D (hotelView3d.js), a todo lo que
+   da el hotel bajo la barra; la cartela y el Directorio, encima. El filete de latón de la planta elegida es un SVG que
+   sigue a la vista ── */
+.gh--3d .gh-art {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  max-width: none;
+  height: auto;
+  aspect-ratio: auto;
+  transform: none;
+  touch-action: none;
+}
+
+.gh-3d {
+  position: absolute;
+  inset: 0;
+}
+
+.gh--3d .gh-art .hotel-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-mask-image: none;
+  mask-image: none;
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: grab;
+}
+
+.gh--3d .gh-art .hotel-canvas:focus-visible {
+  outline: 3px solid #f0c468;
+  outline-offset: -3px;
+}
+
+.gh-3d__outline {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.gh-3d__outline polygon {
+  fill: rgb(240 195 90 / 0.08);
+  stroke: #f0c35a;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px rgb(240 195 90 / 0.7));
+}
+
+.gh-3d__rhombus {
+  fill: #f0c35a;
+  stroke: #8a5a14;
+  stroke-width: 2;
+}
+
+/* Mientras se anda (al bajar de la limusina o hasta la puerta), los botones de las plantas no se pulsan */
+.gh-art.is-walking .gh-zone {
+  visibility: hidden;
+}
+
+/* El panel del hotel en 3D, de alto fijo (como el portal en 3D): la cartela queda dentro de la tarjeta en escritorio */
+.panel--edificio:has(.gh--3d) {
+  height: min(94dvh, 980px);
+  overflow: hidden;
+}
+
+@media (max-width: 699px) {
+  .panel--edificio:has(.gh--3d) {
+    height: 100dvh;
+  }
+}

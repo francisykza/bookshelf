@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.114.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.115.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5943,3 +5943,34 @@ ser un corte: la cámara anda.
 - **Pruebas**: `calle3d.spec.js` suma «salir a pie: de tu piso a la calle» (la app: de tu habitación al umbral, la vuelta y la
   tienda) y «después: salir del portal a pie» (la página de desarrollo, a cámara lenta, con la limusina y la tienda). Capturas en
   `qa-report/calle3d/3-salida-*.png` y `4-app-*.png`.
+
+## 115. El Gran Hotel en 3D, desde la plaza (1.115.0)
+
+«Exteriores en 3D», bloque 3 (Francisco, 11-11-2026: «Sí, bloque 3»; al ver las primeras capturas, «Me gustaría que se viese
+más espectacular y que la gente no parezcan palos»; aprobado para la app con «Sí, móntalo»). La fachada del Gran Hotel deja de
+ser un dibujo plano: es la plaza del muelle en 3D, de noche, a la altura de una persona.
+
+- **El motor compartido** (`exterior3d.js`): lo que tenían la calle del edificio y ahora el hotel (grabar las cajas del dibujo
+  2D, pintar cada cara que se ve, una sola malla, la cámara que mira y anda entre sitios fijos). La calle sale idéntica (misma
+  huella de capturas). Suma dos opciones: `bloom` (el resplandor de lo que brilla, a la misma resolución baja que todo) y
+  `tick` (animar a unos 30 fotogramas por segundo; con movimiento reducido no se anima). `setView` corta un giro en marcha.
+- **La plaza** (`hotel/hotel3d.js`): la torre sale de las mismas cajas que el 2D (`drawHotelBody` en `hotelArt.js`; el 2D
+  sigue idéntico, misma huella SHA-256 de `renderHotel`), con la plaza más honda, el rótulo «GRAN HOTEL / DEL PUERTO» en neón
+  con la letra del 2D, la luna, la ciudad al fondo y la luz de cada ventana sobre la fachada. **Gente con cuerpo**
+  (`person3d`): zapatos, piernas o falda, abrigo con mangas y manos, bolso, pelo, sombrero; el botones con su uniforme y su
+  gorra. **Más espectáculo**: resplandor en ventanas, neón, farolas y aguja; los dos focos de la corona barren el cielo; una
+  baliza roja late en lo alto de la aguja; la plaza está mojada, con estelas de las luces y charcos (pintadas en el suelo).
+- **En la app** (`hotel/hotelView3d.js`, `GranHotel.jsx`): la misma cartela, el mismo Directorio y las mismas plantas, con la
+  misma forma que la fachada 2D (`mountHotel`). Las plantas se tocan en la torre: gana la primera caja de `ZONE_BOXES`
+  (`hotelArt.js`, compartidas con el 2D) que contiene el punto; la elegida se rodea con un filete de latón y un rombo que
+  siguen a la vista. Arrastrar o las flechas miran alrededor (y arriba, hasta la corona); elegir una planta que no se ve, o
+  enfocar su botón con el teclado, gira la vista hasta ella. El panel tiene alto fijo, como el portal en 3D.
+- **La llegada**: ya no hay viaje 2D por la calle; bajas de la limusina junto a la marquesina, mirando la torre de abajo arriba,
+  y andas hasta la plaza (3,2 s). **Entrar** en una planta abierta (vestíbulo, café-biblioteca, almacén, casino) es andar
+  hasta la puerta rodeando la limusina por detrás (2,4 s). Al salir de una sala se vuelve a la plaza mirando hacia donde
+  mirabas, sin repetir la llegada. Con movimiento reducido: sin llegada ni paseo, y la vista quieta.
+- **Sin WebGL** (o si se pierde): la fachada 2D y el viaje en limusina de siempre (`hotelView.js`, `ride.js`).
+- **Pruebas**: nueva `e2e-community/v1115-hotel3d.spec.js` (llegada, tocar plantas, arrastrar, Directorio, teclado, entrar
+  andando y volver; con movimiento reducido; vídeo) a 390 en Chromium y WebKit y en escritorio; `hotel3d.spec.js` (la página de
+  desarrollo `dev/hotel3d.html`, con capturas y vídeo). `v174-limusina` y `v177-hotel-directorio` se adaptan al 3D (sin viaje;
+  el latón es el filete SVG). Capturas y vídeos en `qa-report/hotel3d/` y `qa-report/hotel3d-app/`.

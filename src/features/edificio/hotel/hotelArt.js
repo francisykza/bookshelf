@@ -20,6 +20,8 @@ const TD = 6; // fondo de la torre
 const QUAY = TD + 4.6; // donde acaba la plaza y empieza el agua
 const SPIRE = 53;
 const U = 8; // lo que sube todo lo que está por encima del fuste
+/** Medidas y marcas que comparte la vista 3D (hotel3d.js). */
+export const HOTEL_PARTS = { TD, QUAY, SPIRE, U, GLOW, TAG_WIN, TAG_SPIRE, TAG_BULB, TAG_LIMO };
 
 const CREAM = [232, 214, 178];
 const GOLD = [240, 196, 104];
@@ -53,7 +55,22 @@ const CLOTHES = [
 const SKIN = [[236, 196, 160], [196, 140, 100], [140, 92, 64]];
 
 // Letra de píxeles propia para el rótulo
-const GLYPHS = {
+/** Las plantas que se tocan: cajas del mundo [x0, y0, z0, x1, y1, z1]; la primera que contiene el punto gana (el casino
+ * antes que el vestíbulo, que lo rodea). Las usan la fachada 2D (renderHotel) y la vista 3D (hotelView3d.js). */
+export const ZONE_BOXES = [
+  { id: 'terraza', boxes: [[-0.3, TD - 1.3, 22 + U - 0.1, 10.3, TD + 0.2, 23.6 + U]] },
+  // El bloque estrecho de encima de la terraza es parte de la corona (1.81: sin la suite de la semana)
+  { id: 'mirador', boxes: [[2.8, 1.7, 29 + U - 0.2, 7.2, TD - 1.8, SPIRE], [1.4, 0.8, 22 + U + 0.25, 8.6, TD - 1, 29 + U]] },
+  { id: 'baile', boxes: [[-0.3, TD - 0.1, 13.3 + 3, 10.3, TD + 0.75, 16.6 + 3]] },
+  { id: 'suites', boxes: [[0, 0, 16.6 + 3, 10, TD, 22 + U]] },
+  { id: 'cafe', boxes: [[0, 0, 5.15, 10, TD, 13.3 + 3]] },
+  // 1.80: la puerta del casino del sótano, a la derecha de la marquesina (antes que el vestíbulo, que la rodea)
+  { id: 'casino', boxes: [[8.3, TD + 0.2, 0, 9.9, TD + 0.6, 3.1]] },
+  { id: 'vestibulo', boxes: [[-0.8, -0.3, 0, 10.8, TD + 2.1, 5.2]] },
+  { id: 'plaza', boxes: [[-4.5, TD + 0.3, 0, 14.5, QUAY, 1.2]] },
+];
+
+export const GLYPHS = {
   G: ['###', '#..', '#.#', '#.#', '###'],
   R: ['##.', '#.#', '##.', '#.#', '#.#'],
   A: ['.#.', '#.#', '###', '#.#', '#.#'],
@@ -78,41 +95,20 @@ function frame() {
   return { ox, oy, H: Math.ceil(bottom.sy - top.sy) + 16 };
 }
 
-export function renderHotel() {
-  const F = frame();
-  const H = F.H;
-  const r = createRaster({ W, H, S, yaw: YAW, ox: F.ox, oy: F.oy });
-  r.clear(0);
-  const water = new Uint8Array(W * H);
-  const glow = new Uint8Array(W * H);
-  const lights = [];
-  const light = (x, y, z, radius, color = [255, 200, 130]) => lights.push({ ...r.project(x, y, z), radius, color });
+/**
+ * Las cajas del hotel (la torre, la planta baja, la plaza con su gente, los vecinos, el barquito y la limusina), sin el
+ * suelo ni el cielo: las pinta el dibujo 2D (renderHotel) y las graba la vista 3D (hotel3d.js). `light(x, y, z, radio,
+ * color)` recibe las luces de la noche (radio en píxeles del 2D, 6 por unidad); `quay`, dónde acaba la plaza (el 3D la
+ * alarga); `people`, cuánto más anchas y altas son las personas; `drawPerson(r, x, y, z, k, { doorman })`, otra forma
+ * de dibujarlas (el 3D las hace con cuerpo). Devuelve la gente de la plaza.
+ */
+export function drawHotelBody(r, { light = () => {}, quay = QUAY, people: [pw, ph] = [1, 1], drawPerson = null } = {}) {
   const lit = (fn) => {
     r.setId(GLOW);
     fn();
     r.setId(0);
   };
-
-  // Plaza de adoquines, el borde del muelle y el agua
-  const cobble = r.rampOf(COBBLE);
   const stone = r.rampOf(STONE);
-  r.floor((x, y, ix, iy) => {
-    if (y < -3) return 0;
-    if (y > QUAY + 0.4) {
-      water[iy * W + ix] = 1;
-      return r.rampOf(WATER)[2];
-    }
-    if (y > QUAY) return stone[(x * 1.6) % 1 < 0.08 ? 1 : 3];
-    const cy = Math.floor(y * 2.4);
-    const cx = Math.floor(x * 2 + (cy % 2) * 0.5);
-    const seam = (x * 2 + (cy % 2) * 0.5) % 1 < 0.12 || (y * 2.4) % 1 < 0.14;
-    // Un círculo de baldosas claras delante de la puerta, como una rosa de los vientos
-    const dx = x - 5;
-    const dy = y - (TD + 2.9);
-    if (dx * dx + dy * dy * 1.6 < 2.2) return stone[(Math.atan2(dy, dx) * 4) % 1.6 < 0.8 ? 4 : 3];
-    return cobble[Math.max(0, Math.min(4, Math.floor(3 + (hash(cx, cy) - 0.5) * 1.2 - (seam ? 1.3 : 0))))];
-  });
-
   const cream = r.rampOf(CREAM);
   const towerFace = (f, a, b) => {
     if (f === 'top') return r.rampOf(ROOF)[(a * 2) % 1 < 0.1 || (b * 2) % 1 < 0.1 ? 1 : 2];
@@ -218,11 +214,12 @@ export function renderHotel() {
   // Terraza de la azotea (sobre el fuste): barandilla, sombrillas, macetas, gente y guirnaldas de bombillas
   for (let x = 0.05; x < 9.95; x += 0.25) r.box(x, TD - 0.1, 22.05 + U, x + 0.04, TD - 0.05, 22.5 + U, IRON, { grain: 0, step: 0.03 });
   r.box(0, TD - 0.12, 22.5 + U, 10, TD - 0.04, 22.56 + U, IRON, { grain: 0, step: 0.03 });
-  const person = (x, y, z, k) => {
+  const person = (x, y, z, k, extra) => {
+    if (drawPerson) return drawPerson(r, x, y, z, k, extra);
     const c = CLOTHES[k % CLOTHES.length];
-    r.box(x, y, z, x + 0.17, y + 0.13, z + 0.42, c, { grain: 0, step: 0.03 });
-    r.box(x + 0.02, y + 0.01, z + 0.42, x + 0.15, y + 0.12, z + 0.56, SKIN[k % 3], { grain: 0, step: 0.03 });
-    if (k % 4 === 1) r.box(x + 0.01, y, z + 0.52, x + 0.16, y + 0.13, z + 0.6, [84, 60, 46], { grain: 0, step: 0.03 });
+    r.box(x, y, z, x + 0.17 * pw, y + 0.13 * pw, z + 0.42 * ph, c, { grain: 0, step: 0.03 });
+    r.box(x + 0.02 * pw, y + 0.01 * pw, z + 0.42 * ph, x + 0.15 * pw, y + 0.12 * pw, z + 0.56 * ph, SKIN[k % 3], { grain: 0, step: 0.03 });
+    if (k % 4 === 1) r.box(x + 0.01 * pw, y, z + 0.52 * ph, x + 0.16 * pw, y + 0.13 * pw, z + 0.6 * ph, [84, 60, 46], { grain: 0, step: 0.03 });
   };
   for (const [x, c] of [
     [0.7, RED],
@@ -338,8 +335,8 @@ export function renderHotel() {
     r.castShadow(x + 0.08, y + 0.06, 0.1, 0.12, 1, 0);
   });
   // Botones del portero junto a la puerta
-  person(3.3, TD + 0.9, 0, 0);
-  r.box(3.3, TD + 0.9, 0.52, 3.47, TD + 1.03, 0.66, RED, { grain: 0, step: 0.03 });
+  person(3.3, TD + 0.9, 0, 0, { doorman: true });
+  if (!drawPerson) r.box(3.3, TD + 0.9, 0.52 * ph, 3.3 + 0.17 * pw, TD + 0.9 + 0.13 * pw, 0.66 * ph, RED, { grain: 0, step: 0.03 });
 
   // Edificios vecinos, más bajos: a la izquierda uno mostaza como el nuestro, a la derecha uno de ladrillo
   const neighbour = (x0, x1, h, color, seed, roof) => {
@@ -355,19 +352,53 @@ export function renderHotel() {
   r.box(15.7, 2.2, 10.6, 16.7, 3.2, 11.0, [92, 64, 48], { grain: 0, step: 0.05 });
   
   // Un barquito con luces en el agua
-  r.box(12.5, QUAY + 3.4, 0, 17.0, QUAY + 4.5, 0.55, WHITE, { grain: 0, step: 0.05 });
-  r.box(13.4, QUAY + 3.6, 0.55, 15.8, QUAY + 4.3, 1.2, [214, 204, 186], { grain: 0, step: 0.05 });
+  r.box(12.5, quay + 3.4, 0, 17.0, quay + 4.5, 0.55, WHITE, { grain: 0, step: 0.05 });
+  r.box(13.4, quay + 3.6, 0.55, 15.8, quay + 4.3, 1.2, [214, 204, 186], { grain: 0, step: 0.05 });
   lit(() => {
-    for (let x = 13.6; x < 15.6; x += 0.45) r.box(x, QUAY + 4.3, 0.7, x + 0.25, QUAY + 4.33, 1.0, LAMP, { grain: 0, step: 0.03 });
+    for (let x = 13.6; x < 15.6; x += 0.45) r.box(x, quay + 4.3, 0.7, x + 0.25, quay + 4.33, 1.0, LAMP, { grain: 0, step: 0.03 });
   });
   // Bolardos del muelle
-  for (const x of [-1, 3, 7, 11]) r.box(x, QUAY - 0.3, 0, x + 0.3, QUAY, 0.4, IRON, { grain: 0, step: 0.03 });
+  for (const x of [-1, 3, 7, 11]) r.box(x, quay - 0.3, 0, x + 0.3, quay, 0.4, IRON, { grain: 0, step: 0.03 });
   // La limusina negra que te ha traído (1.74, §74), esperando delante de la alfombra roja
   drawLimo(r, 3.35, TD + 3.2, { glowId: GLOW, bodyId: TAG_LIMO });
   r.setId(0);
   // Un charco de luz cálida a su alrededor, para que el coche negro se lea sobre el empedrado
   light(5, TD + 4.4, 0.1, 30, [255, 214, 160]);
   light(5, TD + 3.6, 1.2, 22, [255, 226, 190]);
+  return { crowd };
+}
+
+export function renderHotel() {
+  const F = frame();
+  const H = F.H;
+  const r = createRaster({ W, H, S, yaw: YAW, ox: F.ox, oy: F.oy });
+  r.clear(0);
+  const water = new Uint8Array(W * H);
+  const glow = new Uint8Array(W * H);
+  const lights = [];
+  const light = (x, y, z, radius, color = [255, 200, 130]) => lights.push({ ...r.project(x, y, z), radius, color });
+
+  // Plaza de adoquines, el borde del muelle y el agua
+  const cobble = r.rampOf(COBBLE);
+  const stone = r.rampOf(STONE);
+  r.floor((x, y, ix, iy) => {
+    if (y < -3) return 0;
+    if (y > QUAY + 0.4) {
+      water[iy * W + ix] = 1;
+      return r.rampOf(WATER)[2];
+    }
+    if (y > QUAY) return stone[(x * 1.6) % 1 < 0.08 ? 1 : 3];
+    const cy = Math.floor(y * 2.4);
+    const cx = Math.floor(x * 2 + (cy % 2) * 0.5);
+    const seam = (x * 2 + (cy % 2) * 0.5) % 1 < 0.12 || (y * 2.4) % 1 < 0.14;
+    // Un círculo de baldosas claras delante de la puerta, como una rosa de los vientos
+    const dx = x - 5;
+    const dy = y - (TD + 2.9);
+    if (dx * dx + dy * dy * 1.6 < 2.2) return stone[(Math.atan2(dy, dx) * 4) % 1.6 < 0.8 ? 4 : 3];
+    return cobble[Math.max(0, Math.min(4, Math.floor(3 + (hash(cx, cy) - 0.5) * 1.2 - (seam ? 1.3 : 0))))];
+  });
+
+  const { crowd } = drawHotelBody(r, { light, quay: QUAY });
   // Hasta dónde baja la entrada (la limusina incluida): por encima de esa línea va todo lo que tiene que verse
   const entryY = Math.max(...[3.35, 3.35 + LIMO_L].flatMap((x) => [TD + 3.2, TD + 3.2 + LIMO_D].map((y) => r.project(x, y, 0).sy))) + 3;
 
@@ -614,18 +645,7 @@ export function renderHotel() {
     }
     return c;
   };
-  const ZONES = [
-    { id: 'terraza', boxes: [[-0.3, TD - 1.3, 22 + U - 0.1, 10.3, TD + 0.2, 23.6 + U]] },
-    // El bloque estrecho de encima de la terraza es parte de la corona (1.81: sin la suite de la semana)
-    { id: 'mirador', boxes: [[2.8, 1.7, 29 + U - 0.2, 7.2, TD - 1.8, SPIRE], [1.4, 0.8, 22 + U + 0.25, 8.6, TD - 1, 29 + U]] },
-    { id: 'baile', boxes: [[-0.3, TD - 0.1, 13.3 + 3, 10.3, TD + 0.75, 16.6 + 3]] },
-    { id: 'suites', boxes: [[0, 0, 16.6 + 3, 10, TD, 22 + U]] },
-    { id: 'cafe', boxes: [[0, 0, 5.15, 10, TD, 13.3 + 3]] },
-    // 1.80: la puerta del casino del sótano, a la derecha de la marquesina (antes que el vestíbulo, que la rodea)
-    { id: 'casino', boxes: [[8.3, TD + 0.2, 0, 9.9, TD + 0.6, 3.1]] },
-    { id: 'vestibulo', boxes: [[-0.8, -0.3, 0, 10.8, TD + 2.1, 5.2]] },
-    { id: 'plaza', boxes: [[-4.5, TD + 0.3, 0, 14.5, QUAY, 1.2]] },
-  ];
+  const ZONES = ZONE_BOXES.map((z) => ({ ...z }));
   const zoneMap = new Uint8Array(W * H);
   ZONES.forEach((z, k) => {
     z.polys = z.boxes.map((b) => hull(...b));

@@ -10,16 +10,22 @@
 // crema al pie que dice qué es la planta elegida («Café-biblioteca», «Próxima apertura» y su lema); la planta elegida
 // lleva un filete de latón con un rombo a su izquierda (hotelView.js). «Directorio», en la barra, abre la lista de las
 // plantas con su estado: elegir una ahí es lo mismo que tocarla en la fachada.
+// «Exteriores en 3D», bloque 3 (11-11-2026): la fachada es la plaza del muelle en 3D (hotelView3d.js), con la misma
+// cartela, el mismo Directorio y las plantas que se tocan en la torre. Se llega bajando de la limusina junto a la
+// marquesina (sin el viaje 2D, que queda con la fachada 2D cuando no hay WebGL) y se anda hasta la puerta al entrar.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FLOOR_ORDER, mountHotel, ZONES } from './hotelView';
 import { Casino } from './Casino';
 import { mountRide } from './ride';
+import { canHotel3d, mountHotelView3d } from './hotelView3d';
 import { Vestibulo } from './Vestibulo';
 import { Almacen } from './Almacen';
 import { SalaLectura } from './SalaLectura';
 import './hotel.css';
 
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let has3d = null;
+const hotel3d = () => (has3d ??= canHotel3d());
 
 /** El viaje: la limusina por la calle del puerto de noche, con la cámara detrás. Tocar llega ya. */
 function LimoRide({ onDone }) {
@@ -86,38 +92,50 @@ function Directory({ zone, onPick, onClose }) {
 }
 
 /** La fachada viva del hotel; la planta elegida se dice en la cartela del pie. */
-function HotelFacade({ onEnter, directory, onDirectory }) {
+function HotelFacade({ onEnter, directory, onDirectory, arrive = false }) {
   const box = useRef(null);
   const host = useRef(null);
   const foot = useRef(null);
   const view = useRef(null);
   const [zones, setZones] = useState([]);
   const [zone, setZone] = useState(null);
+  const [is3d, setIs3d] = useState(false);
   const enter = useRef(onEnter);
   useEffect(() => {
     enter.current = onEnter;
   }, [onEnter]);
   // Una planta abierta (el vestíbulo) se entra; las demás se señalan y se dicen en la cartela
+  // En 3D, primero se anda hasta la puerta
   const choose = useRef((id) => {
-    if (id && ZONES[id].abierta) return enter.current(id);
+    if (id && ZONES[id].abierta) return view.current?.goIn ? view.current.goIn().then(() => enter.current(id)) : enter.current(id);
     view.current?.select(id);
     setZone(id);
   });
   useEffect(() => {
-    const v = mountHotel(host.current, { still: reducedMotion(), t0: 3, onPick: (id) => choose.current(id) });
-    view.current = v;
-    host.current.style.setProperty('--gh-ratio', String(v.canvas.width / v.canvas.height));
-    box.current.style.setProperty('--gh-entry', String(v.entry));
-    setZones(v.zones);
-    if (import.meta.env.DEV) window.__granHotel = v;
-    return () => v.destroy();
-  }, []);
+    const opts = { still: reducedMotion(), t0: 3, onPick: (id) => choose.current(id) };
+    const use = (v) => {
+      view.current = v;
+      setIs3d(v.mode === '3d');
+      if (v.mode !== '3d') {
+        host.current.style.setProperty('--gh-ratio', String(v.canvas.width / v.canvas.height));
+        box.current.style.setProperty('--gh-entry', String(v.entry));
+      }
+      setZones(v.zones);
+      if (import.meta.env.DEV) window.__granHotel = v;
+    };
+    const v = hotel3d() ? mountHotelView3d(host.current, { ...opts, arrive, onFallback: use }) : mountHotel(host.current, opts);
+    use(v);
+    return () => view.current?.destroy();
+  }, [arrive]);
   // El alto que hay (de la barra al pie de la pantalla) y el de la cartela: el hotel cabe entre los dos
   useLayoutEffect(() => {
     const fit = () => {
       const el = box.current;
       if (!el) return;
-      el.style.setProperty('--gh-h', `${Math.max(320, window.innerHeight - el.getBoundingClientRect().top)}px`);
+      // En 3D el panel tiene un alto fijo (hotel.css): el hotel llega hasta su borde de abajo, no hasta el de la ventana
+      const panel = el.closest('.panel--edificio');
+      const bottom = el.classList.contains('gh--3d') && panel ? Math.min(window.innerHeight, panel.getBoundingClientRect().bottom) : window.innerHeight;
+      el.style.setProperty('--gh-h', `${Math.max(320, bottom - el.getBoundingClientRect().top)}px`);
       el.style.setProperty('--gh-foot', `${foot.current?.offsetHeight ?? 0}px`);
     };
     fit();
@@ -128,7 +146,7 @@ function HotelFacade({ onEnter, directory, onDirectory }) {
       ro?.disconnect();
       window.removeEventListener('resize', fit);
     };
-  }, []);
+  }, [is3d]);
   const pick = (id) => choose.current(id);
   useEffect(() => {
     if (!zone) return undefined;
@@ -146,7 +164,7 @@ function HotelFacade({ onEnter, directory, onDirectory }) {
   };
   const info = zone ? ZONES[zone] : null;
   return (
-    <div className="gh" ref={box}>
+    <div className={is3d ? 'gh gh--3d' : 'gh'} ref={box}>
       <div className="gh-art" ref={host}>
         <ul className="gh-zones" aria-label="Plantas del hotel">
           {zones.map((z) => (
@@ -154,6 +172,7 @@ function HotelFacade({ onEnter, directory, onDirectory }) {
               <button
                 type="button"
                 className="gh-zone"
+                data-zone={z.id}
                 style={{ left: `${z.center.x * 100}%`, top: `${z.center.y * 100}%` }}
                 aria-pressed={zone === z.id}
                 onClick={() => pick(zone === z.id ? null : z.id)}
@@ -197,7 +216,13 @@ function HotelFacade({ onEnter, directory, onDirectory }) {
  */
 export function GranHotel({ room = null, onRoom = () => {}, directory = false, onDirectory = () => {}, soundOn = false, timer = null, askPages = false, onPagesDone, onOpenCalendar, onInventory = () => {} }) {
   // Si se llega ya a una sala (el aviso de la mesa para dos), sin el viaje
-  const [riding, setRiding] = useState(() => !reducedMotion() && !room);
+  // Con el hotel en 3D no hay viaje: bajas de la limusina en la plaza (la primera vez que se ve la fachada)
+  const [riding, setRiding] = useState(() => !reducedMotion() && !room && !hotel3d());
+  const [arrive, setArrive] = useState(() => !room && !reducedMotion());
+  const toRoom = (r) => {
+    setArrive(false);
+    onRoom(r);
+  };
   // Abrir el Directorio durante el viaje es llegar ya
   if (directory && riding) setRiding(false);
   return (
@@ -216,7 +241,7 @@ export function GranHotel({ room = null, onRoom = () => {}, directory = false, o
       ) : room === 'cafe' && timer ? (
         <SalaLectura onStreet={() => onRoom(null)} timer={timer} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} />
       ) : (
-        <HotelFacade onEnter={onRoom} directory={directory} onDirectory={onDirectory} />
+        <HotelFacade onEnter={toRoom} directory={directory} onDirectory={onDirectory} arrive={arrive} />
       )}
     </div>
   );

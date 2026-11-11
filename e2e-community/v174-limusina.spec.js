@@ -58,16 +58,11 @@ test('la limusina del portal lleva al Gran Hotel, y Atrás vuelve', async ({ pag
 
   await limo.click();
   const hotel = page.getByRole('dialog', { name: 'El Gran Hotel del Puerto' });
-  const ride = hotel.getByRole('button', {
-    name: /^En limusina hacia el Gran Hotel/,
-  });
-  await expect(ride).toBeVisible();
-  await page.waitForTimeout(1400);
-  await shot(page, info, 'v174-viaje');
-  await page.waitForTimeout(700);
-  await shot(page, info, 'v174-viaje-2');
-  await ride.click();
+  // 1.115: con el hotel en 3D no hay viaje; bajas de la limusina en la plaza y andas hasta la vista de siempre
+  // (el viaje 2D queda para cuando no hay WebGL)
   await expect(hotel.locator('canvas.hotel-canvas')).toBeVisible();
+  await expect(hotel.getByRole('button', { name: /^En limusina hacia el Gran Hotel/ })).toHaveCount(0);
+  await expect(hotel.locator('.gh-art')).not.toHaveClass(/is-walking/, { timeout: 8000 });
   await page.waitForTimeout(600);
   await shot(page, info, 'v174-hotel');
 
@@ -85,6 +80,8 @@ test('la limusina del portal lleva al Gran Hotel, y Atrás vuelve', async ({ pag
   await page.keyboard.press('Escape');
   await expect(card).toHaveCount(0);
   // Tocar en el dibujo: el vestíbulo, a la altura de la marquesina (1.79: cuando el hotel se ha ajustado a la cartela pequeña)
+  // 1.115: el botón de la planta, al enfocarlo, gira la vista hasta ella; se vuelve a mirar de frente
+  await page.evaluate(() => window.__granHotel.hotel?.()?.setView(0));
   const canvasBox = () => page.evaluate(() => JSON.stringify(window.__granHotel.canvas.getBoundingClientRect()));
   let last = '';
   await expect.poll(async () => last === (last = await canvasBox()), { intervals: [150, 150, 150, 150] }).toBe(true);
