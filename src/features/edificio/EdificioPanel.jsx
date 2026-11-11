@@ -11,7 +11,7 @@ import { useCommunity } from '../social/hooks/useCommunity';
 import { FIRMAS, catalogItem } from './catalog';
 import { adoptMyPiso, rememberMyPiso, saveMyPiso } from './myPiso';
 import './edificio.css';
-import { mountFacade } from './facadeView';
+import { mountCalleView } from './calleView';
 import { START_PICKS } from './inventory';
 import { mountPiso } from './piso';
 import { installPixelVars, pixelIconSrc } from './pixelUi';
@@ -73,7 +73,7 @@ const markMail = (uid, lines) => {
   }
 };
 
-/** La fachada del edificio (la dibuja facade.js fuera de React); cada ventana ocupada es un botón. */
+/** La calle del edificio en 3D (calleView.js, fuera de React; sin WebGL, la fachada 2D); cada piso ocupado es un botón. */
 function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '' }) {
   const ref = useRef(null);
   const open = useRef(onOpenPiso);
@@ -82,7 +82,7 @@ function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '' }) {
   }, [onOpenPiso]);
   useEffect(() => {
     const me = vecinos.find((v) => v.yo);
-    const view = mountFacade(ref.current, {
+    const view = mountCalleView(ref.current, {
       flats: vecinos.map((v) => ({
         puerta: v.puerta,
         room: v.room,
@@ -526,7 +526,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     ];
     // El portal (1.65): el edificio de borde a borde; el nombre queda para los lectores de pantalla
     body = (
-      <div className="ed-portal">
+      <div className="ed-portal ed-portal--3d">
         <h2 className="px-sr" id="ed-title">
           El edificio del puerto. Tu puerta: {doorLabel(data.puerta)}.
         </h2>

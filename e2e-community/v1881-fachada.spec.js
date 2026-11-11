@@ -98,7 +98,7 @@ async function settled(page) {
     const inside = (b) => b.left >= art.left - 1 && b.right <= art.right + 1 && b.top >= art.top - 1 && b.bottom <= art.bottom + 1;
     return {
       same: ['left', 'top', 'width', 'height'].every((k) => Math.abs(root[k] - art[k]) < 1),
-      windowsOut: [...document.querySelectorAll('.ed-facade .ed-window')].filter((w) => !inside(r(w))).map((w) => w.getAttribute('aria-label')),
+      windowsOut: [...document.querySelectorAll('.ed-facade .ed-window:not(.is-off)')].filter((w) => !inside(r(w))).map((w) => w.getAttribute('aria-label')),
       inViewport: art.left >= -1 && art.right <= innerWidth + 1,
     };
   });

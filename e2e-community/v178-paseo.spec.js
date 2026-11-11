@@ -8,6 +8,10 @@ import { PRENDAS } from '../src/features/edificio/actor.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
 import { createMockSupabase } from './mockSupabase';
 
+// Desde «Exteriores en 3D» (11-11-2026) el portal es la calle en 3D (calleView.js) y este paseo, dibujado sobre la
+// fachada 2D, ya no está: volverá con el bloque 2 (salir a pie). Mientras, sus pruebas se saltan; la de movimiento
+// reducido (directo a la tienda) sigue valiendo.
+const SIN_PASEO = 'Sin paseo 2D en la calle 3D (vuelve en el bloque 2 de «Exteriores en 3D»)';
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 const ESTRELLAS = { piel: 2, pelo: 'rizos', colorPelo: 0, jersey: 14, pantalon: 8, gafas: false, complemento: 'capa' };
 
@@ -47,6 +51,7 @@ async function toPortal(page, { companero = null } = {}) {
 const walkerBox = (panel) => panel.locator('.ed-walker').evaluate((el) => el.getBoundingClientRect().left);
 
 test('a la tienda y a la limusina, tu personaje va andando desde el portal', async ({ page }, info) => {
+  test.skip(true, SIN_PASEO);
   test.skip(!/chromium-(360x800|390x844|1440x900)$/.test(info.project.name), '360, 390 y escritorio en Chromium');
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -79,6 +84,7 @@ test('a la tienda y a la limusina, tu personaje va andando desde el portal', asy
 });
 
 test('el legendario que te acompaña va detrás de ti hasta la limusina', async ({ page }, info) => {
+  test.skip(true, SIN_PASEO);
   test.skip(!/chromium-(360x800|390x844|1440x900)$/.test(info.project.name), '360, 390 y escritorio en Chromium');
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -98,6 +104,7 @@ test('el legendario que te acompaña va detrás de ti hasta la limusina', async 
 });
 
 test('tocar otra vez mientras anda lo salta', async ({ page }, info) => {
+  test.skip(true, SIN_PASEO);
   test.skip(!/chromium-390x844$/.test(info.project.name), '390 en Chromium');
   const panel = await toPortal(page);
   const limo = panel.getByRole('button', { name: 'Coger la limusina al Gran Hotel' });

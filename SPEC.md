@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.112.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.113.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5892,3 +5892,31 @@ chisteras no sale el botón de los sellos.
   una copia lisa de un mueble que lo admita; sellos de cada uno, nada por tickets) y `v1112-premios` (capturas 27 los sellos, 28 la
   varita cambiada, 29 el acabado puesto, 30 la caja con el reloj y la alfombra, 31 el armario de las chisteras, 32 a 34 la ropa
   nueva en el probador; vídeo). Galería del piso 3D: `muebles-galeria.spec.js` con `MUEBLE=alfombra-rombos` y `baul-mago`.
+
+## 113. El portal del edificio en 3D: la calle desde el muelle (1.113.0)
+
+«Exteriores en 3D», bloque 1 (Francisco, 11-11-2026: «descuadra demasiado cuando sales a ellos y entras en los entornos 3D,
+como podríamos hacer para darles más peso, y, forma»; eligió «Exteriores en 3D» y, con las capturas, «Sí, móntalo»). El portal del
+edificio deja de ser la fachada isométrica y pasa a ser **la calle en 3D**, con el mismo motor que el piso y la recepción.
+
+- **El mismo edificio, sin dibujarlo dos veces**: las cajas de la fachada salen a `drawFacadeBody(r, flats)` (`facade.js`). El 2D
+  las pinta como siempre (el dibujo sale idéntico: misma huella) y `calle3d.js` las **graba** con un rasterizador de mentira y
+  pinta cada cara visible en un atlas, con las mismas rampas, tramado y detalles, lo que se ve por las ventanas de cada piso
+  (`windowPictures`), las letras del cartel a doble tamaño (`signGlyphs`) y la luz de la tarde con lo que alumbran ventanas y
+  faroles. Todo en una malla (unas 1.760 caras, atlas de 2048 × 587). Lo pintado se guarda y se reutiliza si el portal se vuelve a
+  montar con los mismos pisos.
+- **La vista**: de pie en el muelle, a 8,6 del portal, ojos a 1,6, mirando un poco hacia arriba para que el cartel entre por
+  arriba. Arrastrar gira ±0,5 rad a los lados y baja la vista hasta 0,3 rad; también las flechas. En apaisado, campo vertical de 74°.
+  Al llegar, la vista sube desde el muelle hasta el cartel.
+- **Solo en 3D**: el cartel va 0,8 más alto (desde abajo lo tapaba el antepecho), dos vecinos más a los lados, farolas en el
+  bordillo, adoquines más menudos, charcos y hojas de otoño.
+- **Los toques** (`calleView.js`, mismas opciones y nombres que `mountFacade`): un botón por piso con su placa, la tienda, el buzón
+  con su nota y la limusina, colocados sobre la vista y movidos con ella. Arrastrar encima de ellos también gira (y no cuenta como
+  toque). Al tocar un piso o la tienda, la vista se acerca y entras; al volver, se aleja desde allí y con el giro que tenías. Lo que
+  queda fuera de la vista no se ve ni se toca, pero sigue para el teclado y los lectores de pantalla: al llegar a ello, la vista
+  gira hasta ello. Sin WebGL (o si se pierde), la fachada 2D de siempre.
+- **Lo que se queda fuera, de momento**: el paseo de tu personaje hasta la tienda o la limusina (1.78), las gaviotas y los
+  destellos del agua del 2D. El paseo vuelve con el bloque 2 (salir del piso a la calle sin corte).
+- **Pruebas**: `e2e-community/calle3d.spec.js` (la calle en la página de desarrollo `dev/calle3d.html` y el portal de la app: girar
+  sobre un botón sin entrar, entrar en tu piso y volver, el buzón, la limusina fuera de la vista y el teclado; capturas y vídeos en
+  `qa-report/calle3d/`). `v1881-fachada` cuenta solo las placas a la vista. Las tres del paseo de `v178-paseo` se saltan.

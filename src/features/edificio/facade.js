@@ -101,25 +101,21 @@ function frame() {
 }
 
 const FRAME = frame();
+/** Medidas, ids y colores que necesita la calle en 3D (calle3d.js) para montar este mismo edificio. */
+export const FACADE_PARTS = {
+  BW, BD, GROUND_H, FLOOR_H, TOP, TOWER_H, SIGN_X0, SIGN_X1, SIGN_Y, SIGN_Z0, SIGN_Z1,
+  GLOW_BIT, GLASS_ID, LIMO_ID,
+  colors: { COBBLE, STONE, WATER, LIT, CURTAIN, FRAME_WOOD, BLIND, WHITE, IRON, PINK },
+};
 export const FACADE_W = W;
 export const FACADE_H = FRAME.H;
 
 /**
  * Las letras del cartel, rojas con sombra y bailando un píxel arriba y abajo (como un rótulo de serie de los 2000,
- * pero con letra propia). Se pintan en la pantalla siguiendo la inclinación del cartel.
+ * pero con letra propia), sobre un cartel de `boardW` píxeles: `put(x, y, c)` pinta cada píxel (la sombra primero).
+ * La fachada 2D las pinta en la pantalla siguiendo la inclinación del cartel; la calle 3D, en su cara (calle3d.js).
  */
-function paintSign(r) {
-  const p0 = r.project(SIGN_X0, SIGN_Y, SIGN_Z1);
-  const p1 = r.project(SIGN_X1, SIGN_Y, SIGN_Z1);
-  const slope = (p1.sy - p0.sy) / (p1.sx - p0.sx);
-  const boardW = Math.round(p1.sx - p0.sx);
-  const red = rgb(196, 52, 40);
-  const dark = rgb(92, 30, 26);
-  const put = (x, y, c) => {
-    const sx = Math.round(p0.sx + x);
-    const sy = Math.round(p0.sy + y + slope * x);
-    if (sx >= 0 && sy >= 0 && sx < r.W && sy < r.H) r.pix[sy * r.W + sx] = c;
-  };
+export function signGlyphs(boardW, put, { red = rgb(196, 52, 40), dark = rgb(92, 30, 26) } = {}) {
   const widthOf = (line) => [...line].reduce((w, ch) => w + (ch === ' ' ? 3 : (GLYPHS[ch === 'Í' ? 'I' : ch][0].length + 1)), -1);
   SIGN_LINES.forEach((line, row) => {
     let x = Math.round((boardW - widthOf(line)) / 2);
@@ -142,6 +138,17 @@ function paintSign(r) {
       }
       x += glyph[0].length + 1;
     });
+  });
+}
+
+function paintSign(r) {
+  const p0 = r.project(SIGN_X0, SIGN_Y, SIGN_Z1);
+  const p1 = r.project(SIGN_X1, SIGN_Y, SIGN_Z1);
+  const slope = (p1.sy - p0.sy) / (p1.sx - p0.sx);
+  signGlyphs(Math.round(p1.sx - p0.sx), (x, y, c) => {
+    const sx = Math.round(p0.sx + x);
+    const sy = Math.round(p0.sy + y + slope * x);
+    if (sx >= 0 && sy >= 0 && sx < r.W && sy < r.H) r.pix[sy * r.W + sx] = c;
   });
 }
 
@@ -184,37 +191,15 @@ function balcony(r, x0, x1, z) {
 }
 
 /**
- * Dibuja la fachada. `flats`: { [puerta]: { room } } para las puertas ocupadas;
- * las que no estén, libres. Devuelve { canvas, windows: [{ puerta, left, top, width, height }] (en fracciones del
- * dibujo), sign }.
+ * Las cajas de la fachada (sin el suelo, las sombras ni los cristales por dentro): los vecinos, el edificio, la planta
+ * baja, la limusina y los seis pisos con sus balcones. La comparten el dibujo 2D (renderFacade) y la calle en 3D
+ * (calle3d.js, que las graba en vez de pintarlas). Devuelve dónde cae la limusina.
  */
-export function renderFacade(flats = {}) {
-  const r = createRaster({ W, H: FRAME.H, S, yaw: YAW, ox: FRAME.ox, oy: FRAME.oy });
-  const H = FRAME.H;
-  r.clear(0);
+export function drawFacadeBody(r, flats = {}) {
   const at = (x, y, z) => {
     const p = r.project(x, y, z);
     return [p.sx | 0, p.sy | 0];
   };
-
-  // Muelle de adoquines y, delante, el agua del puerto
-  r.setId(0);
-  const cobble = r.rampOf(COBBLE);
-  const water = r.rampOf(WATER);
-  r.floor((x, y, ix, iy) => {
-    if (y < -1.2) return 0;
-    const d = (r.bayerAt(ix, iy) - 0.5) * 0.5;
-    if (y > BD + 2.6) {
-      const ripple = Math.sin(x * 3.1 + y * 7 + noise(x, y * 2) * 4);
-      return water[ripple > 0.82 ? 4 : ripple < -0.6 ? 1 : 2];
-    }
-    if (y > BD + 2.35) return r.rampOf(STONE)[1];
-    const cy = Math.floor(y * 2.6);
-    const cx = Math.floor(x * 2.2 + (cy % 2) * 0.5);
-    const seam = (x * 2.2 + (cy % 2) * 0.5) % 1 < 0.12 || (y * 2.6) % 1 < 0.14;
-    return cobble[Math.max(0, Math.min(4, Math.floor(3 + (hash(cx, cy) - 0.5) * 1.2 + d - (seam ? 1.3 : 0))))];
-  });
-
   // Vecinos a los lados, más bajos
   neighbour(r, -5, -0.05, GROUND_H + FLOOR_H * 2 + 0.3, 1);
   neighbour(r, BW + 0.05, BW + 5, GROUND_H + FLOOR_H * 2 + 0.6, 2);
@@ -343,10 +328,6 @@ export function renderFacade(flats = {}) {
   }
 
   // Los seis pisos
-  const windows = [];
-  const lights = [];
-  // Cristales de los pisos ocupados (en fracciones del dibujo): la vista les pone una luz que respira (facadeView.js)
-  const panes = [];
   for (const [k, f] of FLATS.entries()) {
     const flat = flats[f.puerta] ?? null;
     const room = flat?.room ?? null;
@@ -381,6 +362,47 @@ export function renderFacade(flats = {}) {
       }
       r.setId(0);
     }
+  }
+  return { limoAt };
+}
+
+/**
+ * Dibuja la fachada. `flats`: { [puerta]: { room } } para las puertas ocupadas;
+ * las que no estén, libres. Devuelve { canvas, windows: [{ puerta, left, top, width, height }] (en fracciones del
+ * dibujo), sign }.
+ */
+export function renderFacade(flats = {}) {
+  const r = createRaster({ W, H: FRAME.H, S, yaw: YAW, ox: FRAME.ox, oy: FRAME.oy });
+  const H = FRAME.H;
+  r.clear(0);
+
+  // Muelle de adoquines y, delante, el agua del puerto
+  r.setId(0);
+  const cobble = r.rampOf(COBBLE);
+  const water = r.rampOf(WATER);
+  r.floor((x, y, ix, iy) => {
+    if (y < -1.2) return 0;
+    const d = (r.bayerAt(ix, iy) - 0.5) * 0.5;
+    if (y > BD + 2.6) {
+      const ripple = Math.sin(x * 3.1 + y * 7 + noise(x, y * 2) * 4);
+      return water[ripple > 0.82 ? 4 : ripple < -0.6 ? 1 : 2];
+    }
+    if (y > BD + 2.35) return r.rampOf(STONE)[1];
+    const cy = Math.floor(y * 2.6);
+    const cx = Math.floor(x * 2.2 + (cy % 2) * 0.5);
+    const seam = (x * 2.2 + (cy % 2) * 0.5) % 1 < 0.12 || (y * 2.6) % 1 < 0.14;
+    return cobble[Math.max(0, Math.min(4, Math.floor(3 + (hash(cx, cy) - 0.5) * 1.2 + d - (seam ? 1.3 : 0))))];
+  });
+
+  const { limoAt } = drawFacadeBody(r, flats);
+
+  // Los seis pisos: dónde cae cada uno (para los botones)
+  const windows = [];
+  const lights = [];
+  // Cristales de los pisos ocupados (en fracciones del dibujo): la vista les pone una luz que respira (facadeView.js)
+  const panes = [];
+  for (const f of FLATS) {
+    const flat = flats[f.puerta] ?? null;
     const p0 = r.project(f.x0 - 0.05, BD + 0.45, f.z0 + 0.25);
     const p1 = r.project(f.x1 + 0.05, BD, f.gz1 + 0.36);
     windows.push({ puerta: f.puerta, left: Math.min(p0.sx, p1.sx) / W, top: Math.min(p0.sy, p1.sy) / H, width: Math.abs(p1.sx - p0.sx) / W, height: Math.abs(p1.sy - p0.sy) / H });
