@@ -2908,6 +2908,13 @@
   background: #2e2850;
 }
 
+/* En el móvil, a pantalla completa hasta abajo (como el resto del edificio): no el 94 % de la tarjeta */
+@media (max-width: 699px) {
+  .panel--edificio:has(.ed-portal--3d) {
+    height: 100dvh;
+  }
+}
+
 .panel--edificio:has(.ed-portal--3d) .ed-bar {
   position: absolute;
   inset: 0 0 auto;
@@ -2975,4 +2982,19 @@
 .ed-calle .is-off {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Salir a pie (bloque 2): mientras andas, ni placas ni botones (no se pulsan a medio paso); vuelven al llegar */
+.ed-calle.is-walking .ed-window,
+.ed-calle.is-walking .ed-mailbox,
+.ed-calle.is-walking .ed-mailnote {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.ed-calle .ed-window,
+.ed-calle .ed-mailbox {
+  transition:
+    opacity 0.3s,
+    visibility 0.3s;
 }

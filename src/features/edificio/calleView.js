@@ -3,14 +3,18 @@
 // piso por cuerpo de ventanas, con su placa; la tienda del bajo; el buzón con su nota, y la limusina. Al tocar un piso o
 // la tienda, la vista se acerca (te asomas) y entras; al volver, se aleja desde allí. Arrastrar, también encima de los
 // botones, gira la vista. Si no hay WebGL (o se pierde), se monta la fachada 2D de siempre.
-import { EYE, mountCalle } from './calle3d';
+import { EYE, SPOTS, mountCalle } from './calle3d';
 import { FACADE_PARTS, FLATS } from './facade';
 import { mountFacade } from './facadeView';
+import { olvidarSalida, vienesDeSalir } from './salida';
 
 const { BD } = FACADE_PARTS;
 const ZOOM = 3.2;
 const ZOOM_MS = 520;
 const ARRIVE_MS = 1300;
+// Salir del portal (del umbral a la vista de siempre) y andar a la limusina o a la tienda
+const LEAVE_MS = 3400;
+const WALK_MS = 1700;
 
 // Lo último en lo que entraste: al volver al portal, la vista se aleja desde ahí
 let lastPeek = null;
@@ -89,6 +93,8 @@ export function mountCalleView(container, opts) {
   const forget = () => {
     if (lastPeek === back) lastPeek = null;
   };
+  // Sales de tu piso por la puerta: apareces en el umbral del portal, mirando al muelle, y te das la vuelta
+  const leaving = !back && vienesDeSalir();
   const again = !back && lastView && Date.now() - lastView.at < 4000 ? lastView : null;
   try {
     calle = mountCalle(view, {
@@ -120,6 +126,16 @@ export function mountCalleView(container, opts) {
     stage.style.transformOrigin = `${cx}px ${cy}px`;
     const run = stage.animate([{ transform: 'scale(1)' }, { transform: `scale(${ZOOM})` }], { duration: ZOOM_MS, easing: 'cubic-bezier(0.55, 0, 0.75, 0.2)', fill: 'forwards' });
     run.finished.then(then, then);
+  };
+  // Andar hasta un sitio de SPOTS mirando a un rectángulo; los botones se esconden mientras (no se pulsan a medio paso)
+  const walking = (on) => {
+    busy = on;
+    root.classList.toggle('is-walking', on);
+  };
+  const walkTo = (spot, r, pitch) => {
+    const p = SPOTS[spot];
+    walking(true);
+    return calle.walk([{ spot, yaw: Math.atan2((r.x0 + r.x1) / 2 - p.x, p.y - r.y), pitch }], { ms: WALK_MS }).then(() => walking(false));
   };
   const plateOf = (title, sub) => {
     const plate = document.createElement('span');
@@ -177,7 +193,8 @@ export function mountCalleView(container, opts) {
     el.addEventListener('click', () => {
       if (busy) return;
       lastPeek = { at: Date.now(), yaw: calle?.yaw() ?? 0, shop: true };
-      peek(el, onOpenShop);
+      // Andas hasta el escaparate y te asomas
+      walkTo('shop', SHOP, 0).then(() => peek(el, onOpenShop));
     });
     li.append(el);
     list.append(li);
@@ -192,7 +209,8 @@ export function mountCalleView(container, opts) {
     el.append(plateOf('Al Gran Hotel'));
     el.addEventListener('click', () => {
       if (busy) return;
-      onOpenLimo();
+      // Vas andando hasta la limusina antes de subir
+      walkTo('limo', LIMO, -0.2).then(onOpenLimo);
     });
     li.append(el);
     list.append(li);
@@ -272,7 +290,20 @@ export function mountCalleView(container, opts) {
 
   // Al llegar: la vista sube desde el muelle hasta el cartel y las placas aparecen al final. Al volver de dentro, se
   // aleja desde donde entraste
-  if (back && !reducedMotion() && typeof stage.animate === 'function') {
+  if (leaving || again?.walking) {
+    // Del umbral (mirando al muelle) a unos pasos, girando, y a la vista de siempre. Si el portal se vuelve a montar a
+    // medio camino, sigue desde donde iba
+    const keys = [
+      { spot: 'turn', yaw: Math.PI * 0.72, pitch: -0.04 },
+      { spot: 'home', yaw: 0, pitch: 'home' },
+    ];
+    const from = again?.walking ? again.pose : { spot: 'door', yaw: Math.PI, pitch: -0.06 };
+    walking(true);
+    calle.walk(again?.walking ? keys.slice(again.pose.y > SPOTS.turn.y - 0.2 ? 1 : 0) : keys, { from, ms: again?.walking ? 1400 : LEAVE_MS }).then(() => {
+      walking(false);
+      olvidarSalida();
+    });
+  } else if (back && !reducedMotion() && typeof stage.animate === 'function') {
     const spot = spots.find((s) => s.key === (back.shop ? 'shop' : back.puerta));
     busy = true;
     root.classList.add('is-returning');
@@ -307,7 +338,17 @@ export function mountCalleView(container, opts) {
     calle: () => calle,
     destroy() {
       offOutside?.();
-      if (calle) lastView = { at: Date.now(), yaw: calle.yaw(), pitch: calle.pitch() - calle.pitchHome(), since, arriving: root.classList.contains('is-arriving') };
+      if (calle)
+        lastView = {
+          at: Date.now(),
+          yaw: calle.yaw(),
+          pitch: calle.pitch() - calle.pitchHome(),
+          since,
+          arriving: root.classList.contains('is-arriving'),
+          // A medio salir del portal: el próximo montaje sigue andando desde aquí
+          walking: (leaving || again?.walking) && calle.walking(),
+          pose: { ...calle.where(), yaw: calle.yaw(), pitch: calle.pitch() },
+        };
       calle?.destroy();
       fallback?.destroy();
       root.remove();

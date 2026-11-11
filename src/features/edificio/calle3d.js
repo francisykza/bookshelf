@@ -24,6 +24,7 @@ import {
   Vector3,
   WebGLRenderer,
   BackSide,
+  RepeatWrapping,
 } from 'three';
 import { createRaster, hash, noise, rgb } from '../minigames/libreria-puerto/raster';
 import { FACADE_PARTS, FACADE_SKY, FLATS, drawFacadeBody, neighbour, signGlyphs } from './facade';
@@ -44,6 +45,19 @@ const VFOV_LANDSCAPE = 74; // más que en la recepción: el edificio entero, del
 const VFOV_MAX = 90;
 /** Cuánto se gira a cada lado (radianes) y cuánto se baja la vista desde la de siempre. */
 const YAW_MAX = 0.5;
+/**
+ * Por dónde se anda (bloque 2, «salir a pie»): al salir de tu piso apareces en el umbral del portal, mirando al muelle, y
+ * te das la vuelta hasta la vista de siempre; a la limusina y a la tienda se va andando. Mundo de la app (x, y).
+ */
+export const SPOTS = {
+  home: { x: EYE.x, y: EYE.y },
+  door: { x: BW / 2, y: BD + 0.55 },
+  turn: { x: BW / 2 - 0.45, y: BD + 3.6 },
+  limo: { x: 5.7, y: BD + 3.3 },
+  shop: { x: 6.5, y: BD + 3.5 },
+};
+// La calle se monta para verse bien desde todos ellos (solo se pintan las caras que se ven desde alguno)
+const EYES = Object.values(SPOTS).map((p) => [p.x, p.y, EYE.z]);
 const PITCH_DOWN = 0.3;
 const PX = 32; // píxeles de textura por unidad, como el piso y la recepción
 const GROUND_PX = 24;
@@ -140,8 +154,7 @@ function facesOf({ b: [x0, y0, z0, x1, y1, z1] }) {
   const out = [];
   const add = (f) => {
     const n = f.n;
-    const toEye = [EYE.x - f.o[0], EYE.y - f.o[1], EYE.z - f.o[2]];
-    if (n[0] * toEye[0] + n[1] * toEye[1] + n[2] * toEye[2] > 1e-6) out.push(f);
+    if (EYES.some((e) => n[0] * (e[0] - f.o[0]) + n[1] * (e[1] - f.o[1]) + n[2] * (e[2] - f.o[2]) > 1e-6)) out.push(f);
   };
   if (dx > 1e-4 && dz > 1e-4)
     add({
@@ -412,6 +425,25 @@ function streetOf(flats) {
   return cached.data;
 }
 let skyCanvas = null;
+let waterCanvas = null;
+
+/** El agua del puerto más allá del muelle (se ve al salir del portal): una lámina pequeña que se repite. */
+const WATER_TILE = 2; // unidades que mide cada lámina
+function paintWater() {
+  const r = probe();
+  const water = r.rampOf(C.WATER);
+  const n = WATER_TILE * GROUND_PX;
+  const data = new Uint32Array(n * n);
+  for (let j = 0; j < n; j += 1)
+    for (let i = 0; i < n; i += 1) {
+      const u = (2 * Math.PI * i) / n;
+      const v = (2 * Math.PI * j) / n;
+      const ripple = Math.sin(u + v * 3 + Math.sin(v * 2 + u) * 1.6);
+      const c = water[ripple > 0.86 ? 4 : ripple < -0.55 ? 1 : 2];
+      data[j * n + i] = rgb(R(c) * 0.8, G(c) * 0.72, B(c) * 0.82);
+    }
+  return canvasFrom(n, n, data);
+}
 
 /** El muelle: adoquines como los de la fachada, la acera de piedra junto a las casas y, al fondo detrás de ti, el agua. */
 const GROUND = { x0: -14, x1: 22, y0: -0.5, y1: BD + 16 };
@@ -554,6 +586,15 @@ export function mountCalle(container, { flats = {}, startYaw = 0, startPitch = n
   ground.rotation.x = -Math.PI / 2;
   ground.position.set((GROUND.x0 + GROUND.x1) / 2, 0, (GROUND.y0 + GROUND.y1) / 2);
   scene.add(ground);
+  const waterTex = own(texture((waterCanvas ??= paintWater())));
+  waterTex.wrapS = RepeatWrapping;
+  waterTex.wrapT = RepeatWrapping;
+  const WATER = { x0: -120, x1: 130, y0: GROUND.y1 - 0.02, y1: GROUND.y1 + 140 };
+  waterTex.repeat.set((WATER.x1 - WATER.x0) / WATER_TILE, (WATER.y1 - WATER.y0) / WATER_TILE);
+  const sea = new Mesh(own(new PlaneGeometry(WATER.x1 - WATER.x0, WATER.y1 - WATER.y0)), own(new MeshBasicMaterial({ map: waterTex })));
+  sea.rotation.x = -Math.PI / 2;
+  sea.position.set((WATER.x0 + WATER.x1) / 2, -0.01, (WATER.y0 + WATER.y1) / 2);
+  scene.add(sea);
   const sky = new Mesh(
     own(new CylinderGeometry(SKY_R, SKY_R, SKY_H + 5, 48, 1, true)),
     own(
@@ -569,6 +610,9 @@ export function mountCalle(container, { flats = {}, startYaw = 0, startPitch = n
   scene.add(sky);
 
   let yaw = clamp(startYaw, -YAW_MAX, YAW_MAX);
+  // Dónde están los ojos (se mueven solo al andar) y el paseo en curso: { keys: [{ x, y, yaw, pitch }], t0, ms, done }
+  const at = { ...SPOTS.home };
+  let path = null;
   let pitch = 0;
   let pitchHome = 0;
   const pitchRange = () => [pitchHome - PITCH_DOWN, pitchHome];
@@ -587,9 +631,37 @@ export function mountCalle(container, { flats = {}, startYaw = 0, startPitch = n
       pitch = glide.from[1] + (glide.to[1] - glide.from[1]) * e;
       if (k >= 1) glide = null;
     }
-    camera.position.set(EYE.x, EYE.z, EYE.y);
+    if (path) {
+      const k = Math.min(1, (performance.now() - path.t0) / path.ms);
+      // Arranca y para despacio; cada tramo dura lo que mide (andar y girar)
+      const e = k * k * (3 - 2 * k);
+      const { keys, lens, total } = path;
+      let dist = e * total;
+      let i = 0;
+      while (i < lens.length - 1 && dist > lens[i]) {
+        dist -= lens[i];
+        i += 1;
+      }
+      const t = lens[i] ? Math.min(1, dist / lens[i]) : 1;
+      const a = keys[i];
+      const b = keys[i + 1];
+      at.x = a.x + (b.x - a.x) * t;
+      at.y = a.y + (b.y - a.y) * t;
+      yaw = a.yaw + (b.yaw - a.yaw) * t;
+      // La vista de siempre se mira al pintar: si el móvil gira a medio paso, se llega a la nueva
+      const pa = a.pitch === 'home' ? pitchHome : a.pitch;
+      pitch = pa + ((b.pitch === 'home' ? pitchHome : b.pitch) - pa) * t;
+      if (k >= 1) {
+        const done = path.done;
+        path = null;
+        done();
+      }
+    }
+    camera.position.set(at.x, EYE.z, at.y);
+    sky.position.x = at.x;
+    sky.position.z = at.y;
     const d = 10;
-    camera.lookAt(EYE.x + Math.sin(yaw) * d, EYE.z + Math.tan(pitch) * d, EYE.y - Math.cos(yaw) * d);
+    camera.lookAt(at.x + Math.sin(yaw) * d, EYE.z + Math.tan(pitch) * d, at.y - Math.cos(yaw) * d);
   }
   function draw() {
     raf = 0;
@@ -598,7 +670,7 @@ export function mountCalle(container, { flats = {}, startYaw = 0, startPitch = n
     renderer.render(scene, camera);
     renders += 1;
     onFrame();
-    if (glide) invalidate();
+    if (glide || path) invalidate();
   }
   function invalidate() {
     if (!raf && !destroyed) raf = requestAnimationFrame(draw);
@@ -670,7 +742,7 @@ export function mountCalle(container, { flats = {}, startYaw = 0, startPitch = n
           // Sin captura, se sigue mientras el dedo esté encima
         }
       }
-      if (!press.moved) return;
+      if (!press.moved || path) return;
       yaw = clamp(press.yaw + (e.clientX - press.x) * DRAG, -YAW_MAX, YAW_MAX);
       pitch = clamp(press.pitch + (e.clientY - press.y) * DRAG, ...pitchRange());
       invalidate();
@@ -691,7 +763,7 @@ export function mountCalle(container, { flats = {}, startYaw = 0, startPitch = n
         ArrowUp: [0, KEY_STEP],
         ArrowDown: [0, -KEY_STEP],
       }[e.key];
-      if (!k) return;
+      if (!k || path) return;
       e.preventDefault();
       yaw = clamp(yaw + k[0], -YAW_MAX, YAW_MAX);
       pitch = clamp(pitch + k[1], ...pitchRange());
@@ -725,13 +797,48 @@ export function mountCalle(container, { flats = {}, startYaw = 0, startPitch = n
     },
     pitchHome: () => pitchHome,
     /** Llevar la vista poco a poco hasta (yaw, cabeceo respecto a la de siempre). Con movimiento reducido, de golpe. */
+    /**
+     * Andar por `keys` ([{ x, y, yaw, pitch }]; `pitch: 'home'` es la vista de siempre, y un punto con `spot` toma su
+     * sitio de SPOTS) desde donde estás (o desde `from`). Con movimiento reducido, de golpe. La promesa se cumple al llegar.
+     */
+    walk(keys, { ms = null, from = null } = {}) {
+      glide = null;
+      const fix = (k) => {
+        const p = k.spot ? SPOTS[k.spot] : k;
+        return { x: p.x, y: p.y, yaw: k.yaw ?? 0, pitch: k.pitch == null ? 'home' : k.pitch };
+      };
+      if (from) {
+        const f = fix(from);
+        Object.assign(at, { x: f.x, y: f.y });
+        yaw = f.yaw;
+        pitch = f.pitch === 'home' ? pitchHome : f.pitch;
+      }
+      const list = [{ x: at.x, y: at.y, yaw, pitch }, ...keys.map(fix)];
+      const lens = list.slice(1).map((b, i) => Math.hypot(b.x - list[i].x, b.y - list[i].y) + Math.abs(b.yaw - list[i].yaw) * 1.3 + 1e-3);
+      const total = lens.reduce((a, b) => a + b, 0);
+      return new Promise((resolve) => {
+        if (reduced()) {
+          const last = list[list.length - 1];
+          Object.assign(at, { x: last.x, y: last.y });
+          yaw = last.yaw;
+          pitch = last.pitch === 'home' ? pitchHome : last.pitch;
+          invalidate();
+          resolve();
+          return;
+        }
+        path = { keys: list, lens, total, t0: performance.now(), ms: ms ?? Math.max(500, total * 420), done: resolve };
+        invalidate();
+      });
+    },
+    walking: () => Boolean(path),
+    where: () => ({ ...at }),
     glideTo(y, dp = 0, ms = 1100) {
       const to = [clamp(y, -YAW_MAX, YAW_MAX), clamp(pitchHome + dp, ...pitchRange())];
       if (reduced()) [yaw, pitch] = to;
       else glide = { from: [yaw, pitch], to, t0: performance.now(), ms };
       invalidate();
     },
-    settled: () => !glide,
+    settled: () => !glide && !path,
     renders: () => renders,
     /** Cuántas caras y de qué tamaño es el atlas (para vigilar lo que pesa). */
     stats: () => ({ faces: street.faces, atlas: street.atlas }),

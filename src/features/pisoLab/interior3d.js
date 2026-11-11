@@ -2029,6 +2029,20 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       const k = Math.max(0, Math.min(0.85, 1 - near / Math.max(dist, 0.01)));
       return fly({ pos: from.pos.clone().lerp(target, k), target }, LEAN_MS);
     },
+    /**
+     * Salir a pie («Exteriores en 3D», bloque 2): te levantas y vas andando hasta la puerta del piso, mirándola, y la
+     * promesa se cumple al llegar (el portal sigue desde el umbral). Sin puerta o con movimiento reducido, no se mueve.
+     */
+    walkToDoor(ms = 950) {
+      const door = room.items.find((i) => i.id === 'puerta-piso');
+      if (!door || reduced()) return Promise.resolve();
+      const fondo = door.pared === 'fondo';
+      const target = fondo ? new Vector3(door.a + 1, 1.35, 0.05) : new Vector3(0.05, 1.35, door.a + 1);
+      const from = zoom ?? seatedView();
+      const pos = target.clone().add(fondo ? new Vector3(0, 0, 0.75) : new Vector3(0.75, 0, 0));
+      pos.y = from.pos.y;
+      return fly({ pos, target }, ms);
+    },
     /** La composición dibujada en el corcho; se cambia solo cuando hay otra revisión. */
     setBoardImage(image) {
       if (!boardTexture) return;

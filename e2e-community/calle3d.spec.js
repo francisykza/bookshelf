@@ -80,6 +80,84 @@ test('el portal de la app', async ({ page }, info) => {
   expect(errors.filter((e) => !/WebSocket|Failed to load resource/.test(e))).toEqual([]);
 });
 
+// Bloque 2 en la app: «Al edificio» en tu piso 3D va andando hasta la puerta y el portal empieza en el umbral
+test('salir a pie: de tu piso a la calle', async ({ page }, info) => {
+  test.skip(info.project.name !== 'chromium-390x844', 'Chromium a 390');
+  test.setTimeout(120000);
+  mkdirSync(DIR, { recursive: true });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  const mock = createMockSupabase({ edificio_vecinos: [], piso_cuentas: { [ANA.id]: { inicio_elegido: true, tickets: 40 } } });
+  mock.db.profiles.push({ user_id: ANA.id, alias: 'Ana lectora', avatar_id: 'gato-lector', community_enabled: true });
+  await mock.attach(page, ANA);
+  await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
+  await page.goto('/?inicio=habitacion');
+  await expect(page.locator('.plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: join(DIR, '4-app-1-piso.png') });
+  await page.getByRole('button', { name: 'Al edificio' }).click();
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(DIR, '4-app-2-hacia-la-puerta.png') });
+  const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
+  await expect(portal.locator('canvas.calle-canvas')).toBeVisible({ timeout: 15000 });
+  // En el umbral, andando: sin botones a medio paso
+  await expect(portal.locator('.ed-calle')).toHaveClass(/is-walking/);
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: join(DIR, '4-app-3-umbral.png') });
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: join(DIR, '4-app-4-girando.png') });
+  await expect(portal.locator('.ed-calle')).not.toHaveClass(/is-walking/, { timeout: 10000 });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: join(DIR, '4-app-5-portal.png') });
+  // A la tienda se va andando y te asomas
+  await portal.getByRole('button', { name: 'Entrar en la tienda del bajo' }).click();
+  await expect(portal.locator('.ed-calle')).toHaveClass(/is-walking/);
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: join(DIR, '4-app-6-a-la-tienda.png') });
+  await expect(page.getByRole('dialog', { name: /tienda/i })).toBeVisible({ timeout: 15000 });
+  expect(errors.filter((e) => !/WebSocket|Failed to load resource/.test(e))).toEqual([]);
+});
+
+// Bloque 2: salir a pie. Del umbral del portal (mirando al muelle) a la vista de siempre, y andar a la limusina y a la tienda
+test('después: salir del portal a pie', async ({ page }, info) => {
+  test.skip(info.project.name !== 'chromium-390x844', 'Chromium a 390');
+  mkdirSync(DIR, { recursive: true });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await page.goto('/dev/calle3d.html');
+  await page.waitForFunction(() => window.__calle3d?.renders() > 0);
+  const shot = (name) => page.screenshot({ path: join(DIR, `3-salida-${name}.png`) });
+  // Paseo despacio para poder capturar a medio camino
+  await page.evaluate(() => {
+    window.__salida = window.__calle3d.walk(
+      [
+        { spot: 'turn', yaw: Math.PI * 0.72, pitch: -0.04 },
+        { spot: 'home', yaw: 0, pitch: 'home' },
+      ],
+      { from: { spot: 'door', yaw: Math.PI, pitch: -0.06 }, ms: 6000 },
+    );
+  });
+  await page.waitForTimeout(80);
+  await shot('1-umbral');
+  await page.waitForTimeout(2400);
+  await shot('2-pasos');
+  await page.waitForTimeout(1700);
+  await shot('3-girando');
+  await page.evaluate(() => window.__salida);
+  const end = await page.evaluate(() => ({ ...window.__calle3d.where(), yaw: window.__calle3d.yaw(), pitch: window.__calle3d.pitch() - window.__calle3d.pitchHome() }));
+  expect(Math.abs(end.yaw)).toBeLessThan(1e-6);
+  expect(Math.abs(end.pitch)).toBeLessThan(1e-6);
+  await shot('4-vista');
+  // A la limusina y a la tienda
+  await page.evaluate(() => window.__calle3d.walk([{ spot: 'limo', yaw: Math.atan2(6.275 - 5.7, 1.8), pitch: -0.2 }]));
+  await shot('5-limusina');
+  await page.evaluate(() => window.__calle3d.walk([{ spot: 'shop', yaw: Math.atan2(6.475 - 6.5, 3.2), pitch: 0 }]));
+  await shot('6-tienda');
+  expect(errors).toEqual([]);
+});
+
 test('después: la calle en 3D desde el muelle', async ({ page }, info) => {
   test.skip(info.project.name !== 'chromium-390x844', 'Chromium a 390');
   mkdirSync(DIR, { recursive: true });

@@ -28,6 +28,7 @@ import { demoLibraryActive } from './sampleLibrary';
 import { HOME_PISO } from './inicio';
 import { rememberMyPiso, saveMyPiso } from '../edificio/myPiso';
 import { salaPersonajes } from '../edificio/service';
+import { marcarSalida } from '../edificio/salida';
 import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
 import { expuestosDe, publicarExpuestos } from './expuestos';
 import '../tablon/tablon.css';
@@ -345,8 +346,6 @@ function EssentialsBar({ room, onPick, onReset }) {
 }
 
 function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenBook, onRegister, onOpenLibrary, onAddBook, home = false, onEdificio, onAnterior }) {
-  // Habitación de inicio: su puerta y «atrás» llevan al edificio del puerto, no al portal de prueba
-  const leave = home && !select ? onEdificio : onBack;
   const { state, actions } = useLibrary();
   const { books, settings } = state;
   // `real`: tu piso del edificio (useMyPiso), tal como está guardado. Sin él, un piso del piloto (solo con ?piloto=piso)
@@ -378,6 +377,21 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   const [noGpu, setNoGpu] = useState(false);
   const [boardReady, setBoardReady] = useState(0);
   const apiRef = useRef(null);
+  // Salir a pie (Exteriores en 3D, bloque 2): vas andando hasta la puerta y el portal sigue desde el umbral
+  const goingOut = useRef(false);
+  const goOut = () => {
+    if (goingOut.current) return;
+    goingOut.current = true;
+    const out = () => {
+      marcarSalida();
+      onEdificio();
+    };
+    const walk = apiRef.current?.walkToDoor?.();
+    if (walk) walk.then(out);
+    else out();
+  };
+  // Habitación de inicio: su puerta y «atrás» llevan al edificio del puerto, no al portal de prueba
+  const leave = home && !select ? goOut : onBack;
   // El nombre del piso visitado, entero al tocarlo cuando no cabe
   const [fullTitle, setFullTitle] = useState(false);
   const reading = editable ? currentBook(books, settings) : null;
@@ -596,7 +610,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
             onDesk={editable ? openDesk : null}
             onBoard={editable ? openBoard : null}
             onReady={() => setBoardReady((n) => n + 1)}
-            onDoor={home ? onEdificio : onBack}
+            onDoor={home ? goOut : onBack}
             onLost={() => setNoGpu(true)}
           />
           <div className="plab-controls" inert={listing} data-primary={reading || editable ? undefined : 'no'} style={{ '--tools': (view !== 'balda' || (editable && shelfBooks) ? 1 : 0) + (editable ? 1 : 0) + 1 }}>

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.113.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.114.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5920,3 +5920,26 @@ edificio deja de ser la fachada isométrica y pasa a ser **la calle en 3D**, con
 - **Pruebas**: `e2e-community/calle3d.spec.js` (la calle en la página de desarrollo `dev/calle3d.html` y el portal de la app: girar
   sobre un botón sin entrar, entrar en tu piso y volver, el buzón, la limusina fuera de la vista y el teclado; capturas y vídeos en
   `qa-report/calle3d/`). `v1881-fachada` cuenta solo las placas a la vista. Las tres del paseo de `v178-paseo` se saltan.
+
+## 114. Salir a pie: del piso a la calle sin corte (1.114.0)
+
+«Exteriores en 3D», bloque 2 (Francisco, 11-11-2026: «Sí, bloque 2»). Salir de tu piso, ir a la limusina o a la tienda deja de
+ser un corte: la cámara anda.
+
+- **En tu piso** (`PisoLabPanel.jsx`, `interior3d.js`): «Al edificio» y tocar la puerta llevan la cámara andando hasta la
+  puerta, mirándola (`walkToDoor`, ~0,95 s), y después se abre el edificio. Solo en tu habitación de inicio; con movimiento
+  reducido, directo.
+- **En la calle** (`calle3d.js`): la cámara ya no está clavada en el muelle. Hay sitios por donde se anda (`SPOTS`: la vista de
+  siempre, el umbral del portal, unos pasos fuera, delante de la limusina y delante del escaparate) y `walk(keys)` recorre
+  posiciones y giros con un arranque y una parada suaves; cada tramo dura lo que mide. Las caras se pintan si se ven desde
+  cualquiera de esos sitios. Más allá del muelle, el agua del puerto (una lámina que se repite) hasta el horizonte.
+- **La llegada desde el piso** (`salida.js`, `calleView.js`): el piso marca que sales por la puerta y el portal empieza en el
+  umbral, mirando al muelle; das unos pasos, te vuelves y acabas en la vista de siempre (3,4 s; a la limusina o a la tienda, 1,7 s). Si el portal se vuelve a montar a
+  medio camino (llega el correo), sigue desde donde iba. Desde el salón se llega como antes, por el muelle.
+- **A la limusina y a la tienda, andando** (sustituye al paseo 2D de la 1.78): tocar la limusina te lleva delante de ella antes de
+  ir al Gran Hotel; tocar la tienda, delante del escaparate (por encima de la limusina aparcada) y después te asomas. Mientras se
+  anda, placas, buzón y botones se esconden y no se pulsan; arrastrar y las flechas no giran.
+- **Corregido**: en el móvil, el portal 3D llega hasta abajo (antes ocupaba el 94 % del alto y dejaba ver lo de debajo).
+- **Pruebas**: `calle3d.spec.js` suma «salir a pie: de tu piso a la calle» (la app: de tu habitación al umbral, la vuelta y la
+  tienda) y «después: salir del portal a pie» (la página de desarrollo, a cámara lenta, con la limusina y la tienda). Capturas en
+  `qa-report/calle3d/3-salida-*.png` y `4-app-*.png`.
