@@ -7,7 +7,7 @@
 // se ven boca abajo hasta que la mesa se resuelve. Lo decide todo el servidor (20261110120000_hotel_casino.sql).
 // Desde la 1.82 (Francisco, 4-11-2026), sin mesa del día con ese amigo o sin manos se sigue con mesas de garbanzos: solo
 // se apuestan garbanzos, no gastan las tres manos y no dan fichas. Cada jugada toca al amigo para que lo vea al momento.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { aceptarMesa, avisarMesa, invitarMesa, invitarMesaGarbanzos, jugarMesa, loadCasino, rechazarMesa } from '../service';
 import { Carta, PixelNum, Total } from './cartas21';
@@ -59,7 +59,7 @@ function Cantidad({ label, opciones, value, max, onChange, de }) {
   );
 }
 
-export function MesaParaDos({ data, dia, onData, sfx }) {
+export function MesaParaDos({ data, dia, onData, sfx, onVista }) {
   const [sel, setSel] = useState(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -69,6 +69,9 @@ export function MesaParaDos({ data, dia, onData, sfx }) {
   const [apGarbanzos, setApGarbanzos] = useState(0);
 
   const mesa = data.mesas.find((m) => m.id === sel && m.mia) ?? null;
+  // 1.108 · La mesa abierta se ve también en la mesa 3D de la sala (con el amigo en el taburete de al lado)
+  useEffect(() => onVista?.(mesa), [mesa, onVista]);
+  useEffect(() => () => onVista?.(null), [onVista]);
   const recibidas = data.mesas.filter((m) => m.estado === 'invitada' && !m.anfitrion);
   const otras = data.mesas.filter((m) => !(m.estado === 'invitada' && !m.anfitrion) && m.estado !== 'rechazada');
   // Con quién se puede abrir la mesa del día y con quién, si no, una de garbanzos

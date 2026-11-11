@@ -60,6 +60,8 @@ export const JERSEYS = [
   { id: 19, nombre: 'Cuadros de leñador', color: [168, 52, 50] },
   { id: 20, nombre: 'Cárdigan de botones', color: [150, 140, 72] },
   { id: 21, nombre: 'Rombos', color: [54, 112, 116] },
+  // 1.109: de la ruleta del casino (ROPA_RULETA): terciopelo verde con solapas de raso, camisa y pajarita dorada
+  { id: 22, nombre: 'Esmoquin de terciopelo', color: [34, 84, 66] },
 ];
 export const PANTALONES = [
   { id: 0, nombre: 'Vaquero', color: [72, 88, 116] },
@@ -103,6 +105,10 @@ export const COMPLEMENTOS = [
   { id: 'panuelo', nombre: 'Pañuelo de lunares' },
   { id: 'pompon', nombre: 'Gorro de pompón' },
   { id: 'bandolera', nombre: 'Bolso bandolera' },
+  // 1.112: de la caja del casino, el reloj; de las chisteras, la chistera de mago y la varita
+  { id: 'reloj-bolsillo', nombre: 'Reloj de bolsillo' },
+  { id: 'chistera-mago', nombre: 'Chistera de mago' },
+  { id: 'varita', nombre: 'Varita de mago' },
 ];
 
 /**
@@ -120,9 +126,13 @@ export const CONJUNTO_ESTRELLAS = { jersey: 14, pantalon: 8, complemento: 'capa'
  * La ropa de la caja del casino (1.80): se cambia por fichas (CAJA en hotel/veintiuna.js, con su precio) y no entra en
  * el orden de las misiones. Como la de las misiones, solo se lleva si se tiene.
  */
-export const ROPA_CASINO = ['complemento:visera', 'pantalon:9', 'jersey:15', 'complemento:fedora', 'jersey:16'];
+export const ROPA_CASINO = ['complemento:visera', 'pantalon:9', 'jersey:15', 'complemento:fedora', 'complemento:reloj-bolsillo', 'jersey:16'];
+/** La ropa de las chisteras del casino (1.112): se cambia por sellos de partidas perfectas (PREMIOS_CHISTERAS en hotel/chisteras.js). */
+export const ROPA_CHISTERAS = ['complemento:chistera-mago', 'complemento:varita'];
 /** La ropa de estibador (1.86): se cambia por sellos en la pared de la Lonja (PARED en hotel/estiba.js). */
 export const ROPA_ESTIBA = ['complemento:gorro-estibador', 'pantalon:10', 'jersey:17'];
+/** La ropa de la ruleta del casino (1.109): puede tocar en el giro de la semana (RULETA en hotel/ruleta.js). */
+export const ROPA_RULETA = ['jersey:22'];
 /**
  * La ropa propia de la planta de ropa del almacén (1.105, decisión de Francisco del 10-11-2026): se compra con tickets en la
  * planta (la misma lista y los mismos precios que `piso_almacen_ropa` en el servidor). Solo se lleva si se tiene.
@@ -141,10 +151,12 @@ export const ROPA_TIENDA = {
 };
 const LISTS = { colorPelo: () => COLORES_PELO, jersey: () => JERSEYS, pantalon: () => PANTALONES, complemento: () => COMPLEMENTOS };
 export const prendaKey = (key, value) => `${key}:${value}`;
-export const isPrenda = (key, value) => [...PRENDAS, ...ROPA_CASINO, ...ROPA_ESTIBA, ...Object.keys(ROPA_TIENDA)].includes(prendaKey(key, value));
+export const isPrenda = (key, value) => [...PRENDAS, ...ROPA_CASINO, ...ROPA_ESTIBA, ...ROPA_RULETA, ...ROPA_CHISTERAS, ...Object.keys(ROPA_TIENDA)].includes(prendaKey(key, value));
 /** De dónde sale una prenda que no tienes (para el aviso del armario). */
 export const prendaOrigen = (key, value) => {
   if (ROPA_CASINO.includes(prendaKey(key, value))) return 'se cambia por fichas en la caja del casino';
+  if (ROPA_RULETA.includes(prendaKey(key, value))) return 'puede tocar en la ruleta del casino';
+  if (ROPA_CHISTERAS.includes(prendaKey(key, value))) return 'se cambia por sellos de las chisteras del casino';
   if (ROPA_TIENDA[prendaKey(key, value)]) return 'se compra con tickets en la planta de ropa del almacén';
   return ROPA_ESTIBA.includes(prendaKey(key, value)) ? 'se cambia por sellos en la pared de la Lonja' : 'se gana con las misiones del día';
 };
@@ -241,6 +253,7 @@ function standing(a, step = 0) {
     ...casinoTop(a, top),
     ...stripedTop(a, s),
     ...tiendaTop(a, top, s),
+    ...varita(a, s),
     // El vestido: la falda de vuelo, hasta las rodillas
     ...(a.jersey === 16 ? [B(-0.3, -0.18, 0.42, 0.3, 0.18, 0.74, top), B(-0.31, -0.19, 0.42, 0.31, 0.19, 0.47, shade(top, 0.84)), ...sequins(0.19, [[-0.2, 0.6], [0.05, 0.52], [0.22, 0.64], [-0.06, 0.68]])] : []),
   ];
@@ -318,6 +331,28 @@ function tiendaTop(a, top, s = 0, sentado = false) {
     const boton = [236, 214, 160];
     return [front(-0.025, 0.7, 0.025, 1.42, shade(top, 0.78)), ...[1.3, 1.14, 0.98, 0.82].map((z) => front(0.035, z, 0.075, z + 0.04, boton)), ...mangas(0.86, 0.9, shade(top, 0.78))];
   }
+  if (a.jersey === 22) {
+    // El esmoquin: la camisa en uve, las solapas de raso negro, la pajarita dorada y dos botones
+    const camisa = [240, 234, 222];
+    const raso = [26, 24, 30];
+    const oro = [226, 180, 80];
+    return [
+      front(-0.1, 1.36, 0.1, 1.44, camisa),
+      front(-0.065, 1.26, 0.065, 1.36, camisa),
+      front(-0.03, 1.16, 0.03, 1.26, camisa),
+      B(-0.16, 0.14, 1.3, -0.1, 0.158, 1.44, raso, f),
+      B(-0.12, 0.14, 1.18, -0.065, 0.158, 1.3, raso, f),
+      B(-0.075, 0.14, 1.08, -0.03, 0.158, 1.18, raso, f),
+      B(0.1, 0.14, 1.3, 0.16, 0.158, 1.44, raso, f),
+      B(0.065, 0.14, 1.18, 0.12, 0.158, 1.3, raso, f),
+      B(0.03, 0.14, 1.08, 0.075, 0.158, 1.18, raso, f),
+      B(-0.09, 0.152, 1.37, -0.015, 0.17, 1.43, oro, f),
+      B(0.015, 0.152, 1.37, 0.09, 0.17, 1.43, oro, f),
+      B(-0.02, 0.152, 1.38, 0.02, 0.175, 1.42, shade(oro, 0.8), f),
+      ...[0.98, 0.86].map((z) => front(-0.02, z, 0.02, z + 0.04, raso)),
+      ...mangas(0.74, 0.8, raso),
+    ];
+  }
   if (a.jersey === 21) {
     const c = [230, 200, 120];
     return [
@@ -354,6 +389,23 @@ function head(a, skin, H) {
   out.push(B(-0.05, 0.24, 1.52, 0.05, 0.262, 1.545, [168, 82, 66], f));
   return out.concat(hair(a.pelo, H), extra(a.complemento));
 }
+
+/** 1.112 · La varita de mago, en alto en la mano derecha (de frente se lee): de ébano, con la punta de marfil y una chispa que se enciende de tarde. */
+function varita(a, s = 0, sentado = false) {
+  if (a.complemento !== 'varita') return [];
+  const ebano = [30, 24, 30];
+  const g = { grain: 0, glow: true };
+  if (sentado) {
+    return [B(0.27, 0.27, 0.9, 0.315, 0.315, 1.26, ebano, { grain: 0 }), B(0.265, 0.265, 1.26, 0.32, 0.32, 1.33, CREAM_WAND, { grain: 0 }), B(0.27, 0.27, 1.33, 0.315, 0.315, 1.38, STAR, g)];
+  }
+  return [
+    B(0.295, 0.08 + s, 0.76, 0.34, 0.125 + s, 1.14, ebano, { grain: 0 }),
+    B(0.29, 0.075 + s, 1.14, 0.345, 0.13 + s, 1.21, CREAM_WAND, { grain: 0 }),
+    B(0.295, 0.08 + s, 1.21, 0.34, 0.125 + s, 1.26, STAR, g),
+    B(0.27, 0.09 + s, 1.22, 0.365, 0.115 + s, 1.245, STAR, g),
+  ];
+}
+const CREAM_WAND = [244, 236, 214];
 
 /** Los complementos (§70), sobre la figura de pie. */
 function extra(id) {
@@ -433,6 +485,29 @@ function extra(id) {
         B(-0.18, 0.205, 0.82, -0.14, 0.215, 0.86, [228, 186, 84], f),
       ];
     }
+    case 'reloj-bolsillo': {
+      // 1.112 · El reloj dorado en el bolsillo del pecho, con su cadena hasta el ojal
+      const oro = [226, 180, 80];
+      return [
+        ...[0, 1, 2, 3].map((k) => B(-0.06 + k * 0.05, 0.14, 1.04 - k * 0.025, -0.02 + k * 0.05, 0.165, 1.06 - k * 0.025, oro, f)),
+        B(0.1, 0.14, 0.86, 0.22, 0.17, 0.98, oro, f),
+        B(0.12, 0.17, 0.88, 0.2, 0.178, 0.96, [244, 236, 214], f),
+        B(0.155, 0.178, 0.9, 0.165, 0.182, 0.94, [40, 34, 40], f),
+        B(0.14, 0.14, 0.98, 0.18, 0.165, 1.01, oro, f),
+      ];
+    }
+    case 'chistera-mago': {
+      // 1.112 · Alta, de terciopelo añil, con su cinta morada y estrellas doradas que se encienden de tarde
+      const c = [32, 28, 64];
+      const g = { grain: 0, glow: true };
+      return [
+        B(-0.4, -0.38, 1.9, 0.4, 0.4, 1.95, shade(c, 0.8)),
+        B(-0.25, -0.23, 1.95, 0.25, 0.25, 2.44, c),
+        B(-0.255, -0.235, 1.97, 0.255, 0.255, 2.06, [118, 56, 170], f),
+        B(-0.25, -0.23, 2.44, 0.25, 0.25, 2.47, shade(c, 1.25), f),
+        ...[[-0.12, 2.16], [0.1, 2.26], [-0.02, 2.36], [0.15, 2.12]].map(([x, z]) => B(x - 0.025, 0.25, z - 0.025, x + 0.025, 0.262, z + 0.025, STAR, g)),
+      ];
+    }
     case 'capa': {
       // A la espalda, de los hombros a las rodillas, con el cierre dorado y estrellas que se encienden de tarde
       const c = [36, 42, 82];
@@ -471,6 +546,7 @@ function sitting(a, h) {
     ...starryTop(a),
     ...casinoTop(a, top),
     ...tiendaTop(a, top, 0, true),
+    ...varita(a, 0, true),
     ...head(a, skin, H),
   ].map(up);
   // Sentada con el vestido, la falda cubre los muslos

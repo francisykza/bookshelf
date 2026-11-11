@@ -2,10 +2,10 @@
 // el plano de la ropa, sin dibujo: las zonas (como en una tienda de ropa), qué prendas cuelgan en cada una y de dónde sale
 // cada prenda. Lo usan la escena (`almacen3d.js`) y los papeles de la planta (`RopaPapeles.jsx`).
 // Mundo de la app, como en `almacenLayout.js`: x a lo ancho, y a lo hondo, z arriba (la planta, en z = BAJO.z).
-import { COMPLEMENTOS, JERSEYS, PANTALONES, ROPA_CASINO, ROPA_ESTIBA, ROPA_TIENDA, isPrenda, prendaKey } from '../actor';
+import { COMPLEMENTOS, JERSEYS, PANTALONES, ROPA_CASINO, ROPA_CHISTERAS, ROPA_ESTIBA, ROPA_RULETA, ROPA_TIENDA, isPrenda, prendaKey } from '../actor';
 import { BAJO } from './almacenLayout';
 
-const FIESTA = [...ROPA_CASINO, ...ROPA_ESTIBA];
+const FIESTA = [...ROPA_CASINO, ...ROPA_ESTIBA, ...ROPA_RULETA, ...ROPA_CHISTERAS];
 const deLaPlanta = (key, ids) => ids.map((id) => prendaKey(key, id)).filter((p) => !FIESTA.includes(p));
 
 /**
@@ -96,11 +96,13 @@ export const seGana = (p) => {
 };
 /** Bloque 3 · Lo que cuesta en tickets la ropa propia de la planta (null: no se vende). */
 export const precioRopa = (p) => ROPA_TIENDA[p] ?? null;
-/** De dónde sale: 'serie', 'misiones', 'casino', 'estiba' o 'tienda' (la ropa de la planta, con tickets). */
+/** De dónde sale: 'serie', 'misiones', 'casino', 'estiba', 'ruleta', 'chisteras' o 'tienda' (la ropa de la planta, con tickets). */
 export function origenDe(p) {
   if (ROPA_TIENDA[p]) return 'tienda';
   if (ROPA_CASINO.includes(p)) return 'casino';
   if (ROPA_ESTIBA.includes(p)) return 'estiba';
+  if (ROPA_RULETA.includes(p)) return 'ruleta';
+  if (ROPA_CHISTERAS.includes(p)) return 'chisteras';
   return seGana(p) ? 'misiones' : 'serie';
 }
 export const ORIGEN_TEXTO = {
@@ -108,6 +110,8 @@ export const ORIGEN_TEXTO = {
   misiones: 'Se gana con las misiones del día',
   casino: 'Se cambia por fichas en la caja del casino',
   estiba: 'Se cambia por sellos en la pared de la Lonja',
+  ruleta: 'Puede tocar en la ruleta del casino',
+  chisteras: 'Se cambia por sellos de las chisteras del casino',
   tienda: 'De la planta: se compra con tickets',
 };
 /** ¿Es tuya? Lo de serie, siempre; lo que se gana, si está en `prendas`. */

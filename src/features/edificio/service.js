@@ -4,7 +4,7 @@
 // validar aquí antes de dibujarlos; el que se guarda va siempre limpio (`validateRoom`).
 import { acabadoOf } from './acabados';
 import { client, fail } from '../social/services/community';
-import { DEFAULT_AVATAR, PRENDAS, ROPA_CASINO, ROPA_ESTIBA, ROPA_TIENDA, validateAvatar } from './actor';
+import { DEFAULT_AVATAR, PRENDAS, ROPA_CASINO, ROPA_CHISTERAS, ROPA_ESTIBA, ROPA_RULETA, ROPA_TIENDA, validateAvatar } from './actor';
 import { FIRMAS, catalogItem } from './catalog';
 import { rarezaOf } from './economy';
 import { normalizeInventory } from './inventory';
@@ -201,7 +201,7 @@ export async function loadInventario() {
 // Armario del personaje y misiones del día (1.70, §70): { prendas: [«clave:valor»], hechas: [misiones del día], nueva,
 // tickets } (`tickets`, desde la 1.79: los ganados al completar las tres con todo el armario ya tuyo)
 /** Lo que se puede tener en el armario: lo ganado (misiones, casino, estiba) y lo comprado en la planta de ropa (1.105). */
-const deArmario = (lista) => (Array.isArray(lista) ? lista.filter((p) => PRENDAS.includes(p) || ROPA_CASINO.includes(p) || ROPA_ESTIBA.includes(p) || ROPA_TIENDA[p] != null) : []);
+const deArmario = (lista) => (Array.isArray(lista) ? lista.filter((p) => PRENDAS.includes(p) || ROPA_CASINO.includes(p) || ROPA_ESTIBA.includes(p) || ROPA_RULETA.includes(p) || ROPA_CHISTERAS.includes(p) || ROPA_TIENDA[p] != null) : []);
 const normalizeArmario = (d) => ({ prendas: deArmario(d?.prendas), hechas: Array.isArray(d?.hechas) ? d.hechas : [], nueva: PRENDAS.includes(d?.nueva) ? d.nueva : null, tickets: Number.isInteger(d?.tickets) && d.tickets > 0 ? d.tickets : 0 });
 
 /**
@@ -401,6 +401,110 @@ export async function invitarMesaGarbanzos(dia, amigo, garbanzos) {
   const { data, error } = await sb.rpc('piso_casino_invitar_garbanzos', { dia, amigo, garbanzos });
   fail(error);
   return normalizeCasino(data);
+}
+
+// ── La ruleta de premios (1.109, supabase/migrations/20261201120000_casino_ruleta.sql) ──
+const normalizeRuleta = (d) => ({
+  semana: d.semana,
+  casillas: d.casillas ?? [],
+  repetido: d.repetido ?? 40,
+  giro: d.giro ?? null,
+  fichas: d.fichas ?? 0,
+  garbanzos: d.garbanzos ?? 0,
+});
+
+/** La ruleta de la semana de `dia` (AAAA-MM-DD): las casillas y el giro, si ya lo has hecho. Sin la migración, null. */
+export async function loadRuleta(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_ruleta', { dia });
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
+  fail(error);
+  return normalizeRuleta(data);
+}
+
+/** Gira la ruleta de la semana: el premio lo decide y lo da el servidor; vuelve la ruleta con el giro hecho. */
+export async function girarRuleta(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_ruleta_girar', { dia });
+  fail(error);
+  return normalizeRuleta(data);
+}
+
+// ── «Las tres chisteras» (1.110, supabase/migrations/20261202120000_casino_chisteras.sql) ──
+const normalizeChisteras = (d) => ({
+  dia: d.dia,
+  estado: d.estado ?? null,
+  ronda: d.ronda ?? 1,
+  rondas: d.rondas ?? [],
+  aciertos: d.aciertos ?? 0,
+  fichas: d.fichas ?? 0,
+  perfectas: d.perfectas ?? 0,
+  semana: d.semana ?? 0,
+  tope: d.tope ?? 150,
+  fichasCuenta: d.fichasCuenta ?? 0,
+  // Solo al mirar una ronda: dónde empieza el conejo y los cambios
+  inicio: d.inicio ?? null,
+  cambios: d.cambios ?? null,
+  // Solo al elegir: la elegida, dónde estaba y si has acertado
+  elegida: d.elegida ?? null,
+  conejo: d.conejo ?? null,
+  acierto: d.acierto ?? null,
+  // 1.112 · Los sellos (uno por partida perfecta) y sus premios; sin la migración de los premios nuevos, null
+  tienda: d.tienda
+    ? { sellos: d.tienda.sellos ?? 0, premios: d.tienda.premios ?? [], acabables: d.tienda.acabables ?? [] }
+    : null,
+});
+
+/** La partida de las chisteras de `dia` (sin empezarla). Sin la migración, null. */
+export async function loadChisteras(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_chisteras', { dia });
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
+  fail(error);
+  return normalizeChisteras(data);
+}
+
+/** Mira la ronda que toca: el servidor la baraja (de nuevo cada vez) y dice dónde empieza el conejo y los cambios. */
+export async function verChisteras(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_chisteras_ver', { dia });
+  fail(error);
+  return normalizeChisteras(data);
+}
+
+/** Elige una chistera (0 izquierda, 1 medio, 2 derecha): lo comprueba el servidor. */
+export async function elegirChistera(dia, chistera) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_chisteras_elegir', { dia, chistera });
+  fail(error);
+  return normalizeChisteras(data);
+}
+
+/** 1.112 · Cambia sellos de las chisteras por un premio (el acabado, en `mueble`, una copia lisa tuya). */
+export async function canjearChisteras(dia, premio, mueble = null) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_chisteras_canjear', { dia, premio, mueble });
+  fail(error);
+  return normalizeChisteras(data);
+}
+
+// ── La vitrina de premios (1.111, supabase/migrations/20261203120000_casino_vitrina.sql) ──
+const normalizeVitrina = (d) => ({
+  uid: d.uid ?? null,
+  alias: d.alias ?? null,
+  tienes: d.tienes ?? [],
+  fichas: d.fichas ?? 0,
+  garbanzos: d.garbanzos ?? 0,
+  hitos: d.hitos ?? [],
+});
+
+/** La vitrina: la tuya o, con `otro`, la de un amigo (os seguís los dos). Sin la migración, null. */
+export async function loadVitrina(otro = null) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_casino_vitrina', { otro });
+  if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
+  fail(error);
+  return normalizeVitrina(data);
 }
 
 /** Cambia garbanzos por un premio de la lata (un id de LATA). */

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.106.0 · 2026-11-10 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.112.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5704,3 +5704,191 @@ Segunda ampliación del almacén (CLAUDE.md, «La Lonja»), bloque 4. Encargo de
 - **Corrección de paso**: los letreros ocultos se quedaban fuera de la pantalla y la capa del almacén se podía desplazar en horizontal si algo la movía (se vio al bajar por la caja); ahora la capa de letreros recorta (`overflow: hidden`). Y las texturas de pared se redondean a píxeles enteros (la sala nueva mide 24,35 de hondo).
 - **Pruebas**: `src/features/edificio/__tests__/almacenEspeciales.rls.test.js` (Postgres real: misma lista y precios que el cliente, nunca en ofertas en 60 días, la tienda al doble y la compra con oferta y albarán), `tienda.rls.test.js` compara con `piso_precio_mueble`; el arnés de PGlite crea `piso_retirado` (todo «no») cuando se carga sin la reforma. `e2e-community/v1106-habitaciones-cerradas.spec.js` (capturas 80–86: el pasillo desde el paso, la placita y el arco, el ala nueva, desde el fondo, la ficha especial, la caja sin rebaja y pagado; vídeo con `ALMACEN_VIDEO=1`); `v1101-habitaciones` pasa a 80 tickets el sillón de la capa.
 
+## 107. El casino del sótano en 3D: la sala (1.107.0)
+
+Encargo de Francisco del 10-11-2026 (CLAUDE.md, «El casino en 3D»; plan en `docs/qa/casino-3d.md`), bloque a de cinco: la sala, más grande e impactante, con el motor del almacén y la recepción (three.js a 320 px de ancho, ampliado sin suavizar, luz pintada en las texturas y un dibujo solo cuando algo cambia). Los juegos siguen como estaban: este bloque monta la sala y lleva hasta ellos.
+
+- **El plano** (`hotel/casinoLayout.js`): sala de 16 × 22 × 6,6. Se entra por **un rellano a media altura** y se baja por **una escalera de mármol** de doce peldaños con alfombra y barandillas (`zDe` da la altura del suelo). Al fondo, **la ruleta de premios** en su tarima; a la izquierda, **la mesa de «Las 21 páginas»** (media luna, crupier detrás, tres taburetes) y **la ventanilla de la caja** con su reja y la cajera; a la derecha, **«Las tres chisteras»** y **la vitrina de premios** (tres armarios de cristal); al fondo a la izquierda, **la barra**. Cuatro columnas y tres arañas que no tapan la ruleta. Se anda por una red de pasillos (`NODOS`, `TRAMOS`, `route` con Dijkstra) y se toca el suelo para ir (`dentro`).
+- **La escena** (`hotel/casino3d.js`, `mountCasino`): moqueta granate con rombos dorados, zócalo de nogal y papel verde con abanicos, techo de casetones, neones con letra propia de píxel y contorno oscuro («LA RULETA», «21», «LAS TRES CHISTERAS», «CAJA», «VITRINA DE PREMIOS», «BAR»), la rueda de ocho casillas con su aro de nogal y veinte bombillas (preparada para el bloque c), crupier y cajera. Se arrastra para mirar; la cámara inclina según la altura.
+- **Los sitios** (`SITIOS`): cada uno con su placa de latón encima (`.cs3-tag`) y, en el «Plano» de la esquina, la lista de los cinco. Tocar uno anda hasta él. **La mesa**: el crupier habla en un bocadillo («¿Repartimos? Hoy tienes tres manos.») y un aviso lleva al panel de juego de siempre, justo debajo. **La caja**: abre la caja. **La ruleta, las chisteras y la vitrina**, marcadas «pronto», dicen qué serán. Quien te espera en la mesa para dos se anuncia al llegar.
+- **Sin WebGL**, la escena isométrica de antes. Con movimiento reducido, se llega directo y los avisos no se animan.
+- **Sin migración.** No cambia ningún premio, límite ni regla.
+- **Pruebas**: `hotel/__tests__/casinoLayout.test.js` (la escalera sin saltos, se llega a cada sitio, los pasillos no rozan las columnas y los nudos se pueden tocar); `e2e-community/v1107-casino3d.spec.js` (capturas 01–07 en `qa-report/casino/` a 360, 390, 430, escritorio y WebKit 390; vídeo con `CASINO_VIDEO=1`); `v180-casino` pasa al bocadillo y los avisos nuevos.
+
+## 108. «Las 21 páginas» en la mesa 3D (1.108.0)
+
+El casino en 3D (CLAUDE.md, «El casino en 3D»; plan en `docs/qa/casino-3d.md`), bloque b. La partida a solas ya no se juega en el tapete HTML de debajo: **se juega sentado a la mesa de la sala**. Reparte y puntúa el servidor como siempre (`piso_casino_repartir`, `piso_casino_jugar`); no cambia ninguna regla, premio ni límite. Sin migración.
+
+- **Sentarse**: tocar la mesa (su placa, el «Plano» o «Sentarse a la mesa» del panel) anda hasta ella y la cámara baja al taburete del medio, mirando el paño y al crupier (`sentarse` en `casino3d.js`; 0,7 s, directo con movimiento reducido). Sentado no se anda ni se gira; «Levantarse» vuelve a la sala. Ir a la caja (por el plano o la pestaña) también levanta.
+- **Las cartas en el paño**: cartas-página de 20 × 28 px pintadas en píxeles (papel crema, el signo en la esquina y del revés en la de abajo, el palo de 9 × 9 en el centro y un marco dorado en las figuras; el dorso, granate con rombos dorados). Salen del sabot y se deslizan hasta su sitio, una tras otra; la tapada del crupier se da la vuelta al destaparse. Un filete dorado pintado en el paño marca dónde caen las del crupier y las tuyas. Lo hace `mano({ id, crupier, tapada, tuyas, suyas, fichas, amigo })`.
+- **Las fichas de hoy**, apiladas a tu lado en la mesa (una ficha de la pila por cada dos ganadas, hasta 30).
+- **Encima de la escena**: «Levantarse» arriba a la izquierda; el marcador (crupier y tú, en placas de latón con cifras de píxel) arriba a la derecha; el bocadillo del crupier sobre su cabeza; el cartel del resultado entre tus cartas y los botones; abajo, «Repartir la mano N de 3», «Pedir carta» y «Plantarse», los botones gruesos de siempre. Al acabar, el resultado y ya: sin «otra más». Para los lectores de pantalla, las cartas de cada uno en listas con su nombre.
+- **La mesa para dos**: la mesa abierta en «Con un amigo» se ve en el paño (`onVista` de `MesaParaDos.jsx`): tus cartas, las del crupier y las del amigo, boca abajo hasta que se resuelve, con **el amigo sentado en un taburete en la punta de la media luna con su personaje** (`salaPersonajes`; sin él, el de serie). La cámara se abre en diagonal para verle. Las jugadas de la mesa para dos siguen en su panel, debajo («Jugar la mano» baja a él).
+- **El panel de debajo** conserva el marcador de fichas, garbanzos, semana y manos, las pestañas, la caja y «Cómo se juega». Sin WebGL, el tapete HTML de antes, igual que siempre.
+- **Pruebas**: `v1107-casino3d` (capturas 02 sentado, 02b reparto, 02c resultado y 02d la mesa para dos, y el vídeo con la mano entera); `v180-casino` se sienta antes de repartir y se levanta antes del plano.
+
+## 109. La ruleta de premios del casino, una vez por semana (1.109.0)
+
+El casino en 3D (CLAUDE.md, «El casino en 3D»; plan en `docs/qa/casino-3d.md`), bloque c. **Migración nueva**:
+`supabase/migrations/20261201120000_casino_ruleta.sql` (la aplica Francisco). Sin ella, la ruleta se ve y se puede ir
+hasta ella, pero dice «La ruleta aún no gira: falta prepararla en el servidor» y no hay botón de girar.
+
+- **Un giro por semana** (de lunes a domingo, la semana de las fichas), solo a solas: al ir a la ruleta, el panel pasa a
+  «A solas». **Decide el servidor** (`piso_casino_ruleta_girar`): sortea la casilla con sus pesos, da el premio en la misma
+  transacción y guarda el giro (`piso_casino_ruleta`, uno por cuenta y semana, RLS y sin acceso directo). La app solo enseña lo
+  decidido: la rueda gira hasta esa casilla.
+- **Las nueve casillas** (`RULETA` en `hotel/ruleta.js`, iguales que `piso_casino_ruleta_casillas`; una prueba lo comprueba):
+  20 fichas (28 %), el esmoquin de terciopelo (7 %), 40 fichas (20 %), la lámpara de flecos (6 %), 100 garbanzos (20 %), la
+  ruleta de sobremesa (5 %), 80 fichas (9 %), el reloj de pie art déco (3 %) y, la casilla más rara y dorada, **el mapache
+  crupier** (2 %, un compañero legendario que te acompaña; ver abajo). Lo que ya tienes y
+  vuelve a salir se cambia por 40 fichas (el giro no se pierde). Las fichas de la ruleta no cuentan en el tope de 150 (no son
+  manos). Sin tickets ni sobres.
+- **Delante de la rueda**: tocar la ruleta (su letrero o el plano) anda hasta ella y la cámara se pone de frente
+  (`anteRuleta` en `casino3d.js`). Encima: «Volver a la sala»; abajo, el **cartel de latón con lo que puede tocar y su
+  probabilidad**, siempre a la vista mientras se está delante, con «✓» en lo que ya es tuyo, y el botón «Girar la ruleta».
+- **La rueda**: cada casilla lleva su premio pintado en píxeles y de cara hacia fuera (la ficha con su cifra, los garbanzos,
+  la pajarita del esmoquin, la lámpara, la ruletita, el reloj y la cara del mapache); la que queda bajo la flecha se lee derecha. **El giro es
+  honesto**: cinco vueltas y una frenada que solo frena (la velocidad baja sin parar hasta cero, sin pausas ni acelerones), se
+  para dentro de su casilla y lejos de la raya, sin cuentas atrás y sin «otra». 5,2 s; con movimiento reducido, directa.
+  Al parar: el cartel «¡Te toca!» (o «Ya lo tenías: … 40 fichas») y, abajo, «Es tuyo: ya está en tu inventario. La ruleta
+  vuelve a girar el lunes.», dicho una vez. Al volver otra vez esa semana, la rueda está parada donde quedó.
+- **Los premios nuevos**: tres muebles de premio (rareza 'especial', `casino` y `ruleta: true` en `catalog.js`, con su fila en
+  `piso_catalogo`), hechos con el mismo modelo de cajas que los de la casa (`furniture.js`): la lámpara de flecos (pie de
+  latón, pantalla de terciopelo en tres escalones con flecos dorados, encendida), la ruleta de sobremesa (velador de nogal con
+  la ruletita encima; sin girar: los efectos siguen apagados por la reforma) y el reloj de pie art déco (caja alta de nogal,
+  ventana del péndulo, esfera crema y remate escalonado). Y el **esmoquin de terciopelo** (jersey 22, `ROPA_RULETA`): verde
+  botella con solapas de raso, camisa y pajarita dorada; solo se lleva si te ha tocado (lo comprueba el servidor) y en la
+  planta de ropa cuelga con «Puede tocar en la ruleta del casino».
+- **El mapache crupier** (decisión de Francisco del 10-11-2026: los premios raros, «mucho más apetecibles»; el último, «una
+  mascota que pueda ir contigo, como las de antes, pero de casino», y **«modelo 3D de verdad»**): un mapache gris original con su
+  antifaz, la cola de anillos, visera verde de crupier, pajarita roja y ligas doradas. Legendario (`compania: true` en
+  `catalog.js`, fila 'legendario' en `piso_catalogo`, y en `piso_casino_exclusivos`: nunca sale en sobres), no se compra, no
+  se recicla, no se regala ni va a la Lonja; se elige en el armario de tu piso como el conejo y la gaviota, y el servidor
+  comprueba que lo tienes. **En 3D**: es el primer compañero con modelo de volúmenes de verdad, hecho con cajas como el personaje
+  y el crupier (`mapache3d.js`: solo datos y pose; cada motor lo pinta con su luz). **En el casino te sigue**
+  (`casino3d.js`, `setCompanero`; Casino.jsx lee tu compañero con `salaPersonajes`): mientras andas, a tu lado y un poco por
+  detrás, sin cruzarse delante de la vista; al pararte, se adelanta al trote hasta un hueco libre que se vea bien en pantalla
+  (sin meterse en mesas, columnas, caja, vitrina ni tarima), se vuelve hacia ti y hace malabares con tres fichas (y guiña);
+  desde el rellano te espera escalera abajo; pegado a una mesa sin hueco a la vista, se queda a tu lado, fuera de cuadro.
+  Con movimiento reducido, quieto, con una ficha en la mano y sin malabares. **En el piso en primera persona** (`interior3d.js`,
+  `setCompanero`; `PisoLabPanel.jsx` lee el compañero de quien vive en el piso, así que **quien te visita también lo ve**): como
+  ahí se está sentado en el sillón, se queda contigo en el suelo, delante y mirándote, en el primer hueco libre que se vea
+  entero desde el sillón (con la cámara de verdad y sin que un mueble se interponga; si la mesa baja tapa el suelo de delante,
+  de medio cuerpo arriba), con la piel y la luz de la hora de los muebles; malabares a unos 12 fotogramas por segundo, solo si
+  está a la vista y nada tapa el piso. En el armario y en el piso isométrico sigue saliendo su dibujo de píxeles
+  (`misticos.js`), como los demás compañeros.
+- **Pruebas**: `casino-ruleta.rls.test.js` (PGlite: casillas y pesos iguales a la app, un giro por semana, cada casilla da lo
+  suyo con el sorteo forzado, lo repetido da fichas, fuera del tope, el esmoquin, el mapache como compañero y fuera de los
+  sobres, sin sesión y sin acceso a lo interno), `mapache3d.test.js` (cajas, tamaño, malabares por fuera de la cara y la pose
+  con movimiento reducido), `v1109-mapache` (capturas 13 en el rellano y 14 en la sala del casino, 15 en tu piso y 16 de visita; vídeos siguiéndote
+  por el casino y en tu piso con malabares; con movimiento reducido, quieto),
+  `hotel/__tests__/ruleta.test.js` (se para en su casilla y lejos de la raya, la frenada solo frena, la semana empieza el
+  lunes), `v1109-ruleta` (capturas 09 delante de la rueda, 10 lo que tocó, 11 repetido, 12 el esmoquin en el probador; vídeo
+  con la rueda girando de verdad) y `v1107-casino3d` (sin la migración, lo dice y no gira).
+
+## 110. «Las tres chisteras», el tercer juego del casino (1.110.0)
+
+El casino en 3D (CLAUDE.md, «El casino en 3D»; plan en `docs/qa/casino-3d.md`), bloque d; Francisco eligió el juego («Sí,
+las chisteras», 10-11-2026). **Migración nueva**: `supabase/migrations/20261202120000_casino_chisteras.sql` (la aplica
+Francisco). Sin ella, la mesa se ve y se puede ir hasta ella, pero dice «Las chisteras aún no se juegan: falta prepararlas en
+el servidor».
+
+- **El juego** (de habilidad, a solas, una partida al día): el conejo blanco salta de su sitio, al otro lado de la mesa, a
+  debajo de una chistera levantada; la chistera baja y las tres se cruzan, una por delante y otra por detrás, sin chocar con
+  la del medio. Tres rondas con 3, 5 y 7 cambios, cada una más deprisa (640, 470 y 340 ms por cambio). Al acabar los cambios
+  se elige **tocando la chistera** o con los botones «Izquierda», «En medio» y «Derecha». Mientras se mueven no se puede
+  elegir ni salir.
+- **Honesto**: si aciertas, se levanta la chistera y el conejo da un salto; si no, se levanta la elegida, vacía, y después la
+  de verdad, y se dice «Esta vez, no. Estaba en la del medio.», sin rodeos ni falsos «casi». Sin cuentas atrás y sin «otra».
+- **Baraja y comprueba el servidor** (`piso_casino_chisteras_ver` y `piso_casino_chisteras_elegir`): cada vez que se mira una
+  ronda la vuelve a sortear (dónde empieza el conejo y los cambios), así que salir y volver no ayuda: la ronda a medio mirar se
+  baraja de nuevo; la elección se comprueba con lo último que se enseñó y vale una vez por ronda. Lo que está por elegir no se
+  puede leer de otro modo (tabla `piso_casino_chisteras`, RLS y sin acceso directo).
+- **Premios**: según cuántas rondas aciertas, 1, 3, 6 o 10 fichas (`CHISTERAS_JUEGO` en `hotel/chisteras.js`, iguales que
+  `piso_casino_chisteras_reglas`), **dentro** del tope de 150 a la semana: `piso_casino_semana` suma ahora las manos del 21 y
+  las chisteras (la ruleta sigue fuera). Nunca se pierde nada. Sin tickets ni sobres. Las **partidas perfectas** (tres de
+  tres) se cuentan y se dicen («Partidas perfectas: 1»): son para los premios de la vitrina del bloque e.
+- **Delante de la mesa** (`anteChisteras` en `casino3d.js`): la cámara, de pie y un poco por encima, con las tres chisteras,
+  el conejo y la lámpara a la vista. Arriba, «Volver a la sala» y el marcador («Ronda 2 de 3» y tres fichas: dorada si
+  acertaste, apagada si no); antes de empezar, las reglas en una línea; abajo, «Empezar» o «Ronda n de 3», el cartel de cada
+  ronda y, al acabar, «2 de 3 +6» y «Hoy: 2 de 3, +6 fichas. Mañana, más chisteras.». Al volver a la sala la mesa se recoge.
+  Las chisteras y el conejo son piezas aparte (`kitChistera`, `kitConejo`) que se mueven con una lista de pasos.
+- **Movimiento reducido**: sin saltos ni botes; el conejo aparece bajo la chistera y cada cambio va despacio (1,1 s) y uno a
+  uno, con pausa entre ellos. Para quien no ve la mesa, cada cambio se dice («Cambian la de la izquierda y la del medio.») y
+  después dónde estaba el conejo.
+- **Pruebas**: `casino-chisteras.rls.test.js` (PGlite: reglas y cuenta del conejo iguales a la app; antes de mirar no se sabe
+  nada y cada vez que se mira se baraja de nuevo; una elección por ronda y más cambios cada ronda; perfecta y sin aciertos;
+  dentro del tope de la semana; chistera fuera de la mesa, otro día, sin comunidad y sin sesión), `v1110-chisteras`
+  (capturas 17 delante de la mesa, 18 eligiendo, 19 acierto, 20 fallo, 21 la partida acabada; con movimiento reducido, los
+  cambios dichos; hoy ya jugadas; vídeo de una partida entera) y `v1107-casino3d` (sin la migración, lo dice y no se juega).
+
+## 111. La vitrina de premios del casino (1.111.0)
+
+El casino en 3D (CLAUDE.md, «El casino en 3D»; plan en `docs/qa/casino-3d.md`, bloque e y §4), primera parte; Francisco: «Sí,
+la vitrina». **Migración nueva**: `supabase/migrations/20261203120000_casino_vitrina.sql` (la aplica Francisco, después de la
+de las chisteras). Sin ella, la vitrina se ve con todo tapado y dice «La vitrina aún no está lista: falta prepararla en el
+servidor».
+
+- **Qué enseña** (`ARMARIOS` en `hotel/vitrina.js`): los tres armarios de cristal de la pared derecha, con tres baldas cada uno.
+  El de **la caja** (sus nueve premios: neón «21», mesa de tapete, gramola, chaleco, fedora, vestido de lentejuelas, visera,
+  pantalón de raya y el conejo de la chistera); el de **la ruleta y la lata** (el esmoquin, el reloj de pie, el mapache, la
+  lámpara de flecos, la ruleta de sobremesa, el tarro, la baraja y el taburete, y las **pilas** de tus fichas y tus garbanzos,
+  que crecen con lo que tienes); y el de **las copas**: doce hitos, cuatro por juego (`HITOS`), en bronce, plata, oro y oro con
+  gema: copas para «Las 21 páginas», medallas con la rueda para la ruleta y chisteras de oro para las chisteras. Los hitos
+  son **solo de adorno**: no dan nada.
+- **Lo ganado, expuesto; lo que falta, tapado**: cada premio que tienes está en su balda en 3D, más encendido (los muebles con
+  su modelo de `furniture.js`, la ropa puesta en una figurita, el conejo sentado en su chistera, el mapache con su ficha); lo
+  que no, bajo un **paño de terciopelo** granate con flecos dorados y su plaquita, del tamaño de lo que tapa. Arriba, la
+  cuenta: «Tu vitrina · 17 de 29» (sin contar las pilas).
+- **Delante de la vitrina** (`anteVitrina` y `armario` en `casino3d.js`): la cámara, de pie frente a un armario; las
+  pestañas «La caja», «Ruleta y lata» y «Las copas» la deslizan de uno a otro. **Tocar un premio** lo adelanta, lo agranda y lo
+  hace girar despacio en su balda (con movimiento reducido, sin girar), y abajo sale su ficha: el nombre y «Es tuyo: expuesto
+  aquí y en tu inventario», «Logrado: solo de adorno» o «Aún no.» con **cómo se gana** (precio en la caja o la lata, la
+  probabilidad en la ruleta o lo que pide el hito). Para lectores de pantalla, una lista de los premios del armario.
+- **Lo ganado se usa y además se expone** (decisión de Francisco del 10-11-2026, «Las dos cosas»): la vitrina mira tu
+  inventario y tu armario; no guarda nada aparte.
+- **La de un amigo** (os seguís los dos): «Ver la de …» (hasta tres de tus amigos del casino) enseña su vitrina, solo para
+  mirar («La vitrina de Bea lectora · 4 de 29», «Lo tiene Bea lectora.»); «Volver a la mía».
+- **El servidor** (`piso_casino_vitrina(otro)`): lo que tienes de los premios del casino (la lista sale de los precios de la
+  caja y la lata y de las casillas de la ruleta, `piso_casino_vitrina_premios`), tus fichas y garbanzos, y los hitos logrados,
+  calculados con lo que ya guarda (manos, giros, partidas); sin tabla nueva. La de otro, solo si `piso_casino_amigo`.
+- **Queda para la 1.112**: los seis premios nuevos del catálogo aprobado (§4 del plan): el reloj de bolsillo dorado y la
+  alfombra de rombos de la caja, y la chistera de mago, el baúl de mago, el acabado «Polvo de estrellas» y la varita, que se
+  ganan con las partidas perfectas de las chisteras. Necesitan modelo, ropa, precio y una migración.
+- **Pruebas**: `casino-vitrina.rls.test.js` (PGlite: premios e hitos iguales a la app; al empezar, nada; lo que tienes y solo lo
+  del casino; cada hito en su número; la de un amigo sí y la de quien no os seguís, no) y `v1111-vitrina` (capturas 22 el
+  armario de la caja, 23 un premio tapado, 24 la ruleta y la lata, 25 las copas, 26 la de un amigo; sin la migración, todo
+  tapado; vídeo).
+
+## 112. Los premios nuevos de la vitrina (1.112.0)
+
+El casino en 3D, bloque e, segunda parte (plan en `docs/qa/casino-3d.md` §4, aprobado por Francisco el 10-11-2026 con «3-4 más»);
+Francisco: «Sí, la 1.112». **Migración nueva**: `supabase/migrations/20261204120000_casino_premios_nuevos.sql` (la aplica
+Francisco, después de la de la vitrina). Sin ella, los premios nuevos se ven tapados en la vitrina, la caja no los ofrece y en las
+chisteras no sale el botón de los sellos.
+
+- **De la caja, con fichas**: el **reloj de bolsillo dorado** (complemento, 180 fichas: dorado en el bolsillo del pecho, con su
+  cadena; luce sobre el chaleco de crupier) y la **alfombra de rombos dorados** (mueble de suelo 3 × 2, 350 fichas: granate, ribete
+  y tres rombos dorados, con flecos). Rareza «especial», como los demás premios: no se compran en la tienda, no salen en sobres y no
+  se regalan ni se reciclan.
+- **De las chisteras, con sellos** (`PREMIOS_CHISTERAS` en `hotel/chisteras.js`): **cada partida perfecta (tres de tres) es un
+  sello**. Se cambian delante de la mesa de las chisteras («Premios · N sellos»), cada premio una vez: la **chistera de mago**
+  (2 sellos; añil, con cinta morada y estrellas que se encienden de tarde), la **varita de mago** (4; de ébano con punta de marfil,
+  en alto en la mano derecha), el **baúl de mago** (6; mueble de suelo 2 × 1, añil con flejes de latón y una luna pintada, se le
+  pueden poner cosas encima) y el acabado **«Polvo de estrellas»** (10; añil y dorado, se pone en una copia lisa tuya que eliges, como
+  los acabados de la pared de la Lonja). **Nunca con dinero ni tickets.** Los sellos los cuenta el servidor (partidas perfectas
+  menos lo ya cambiado). Cifras aprobadas por Francisco el 11-11-2026.
+- **«Polvo de estrellas» no sale en los sobres** (el sorteo de acabados no cambia) ni se canjea en la Lonja; la copia lo conserva
+  al venderla o regalarla, como los demás. En la app, `ACABADO_CHISTERAS` en `acabados.js` (fuera de `ACABADOS`, la lista del
+  sorteo).
+- **La vitrina** pasa de 29 a 35 premios: en el armario de la caja, el reloj y la alfombra (enrollada a medias, con su rombo a la
+  vista); el tercer armario se llama **«Chisteras y copas»**: abajo los cuatro premios de las chisteras (la chistera en su figurita,
+  la varita y el reloj en un cojín de terciopelo, el baúl y un frasco de polvo de estrellas), y encima las copas (las de las
+  chisteras y la ruleta en una balda y las del 21 en otra).
+- **Ropa**: las tres prendas nuevas son complementos (se lleva uno a la vez); el armario dice de dónde salen («se cambia por sellos
+  de las chisteras del casino») y la planta de ropa las enseña colgadas, sin venderlas.
+- **Pruebas**: `casino-premios.rls.test.js` (PGlite: caja, premios, ropa, catálogo y vitrina iguales a la app; sin perfectas no hay
+  sellos y la de dos aciertos no cuenta; cada premio una vez, gasta sus sellos y solo se lleva lo que se tiene; el acabado solo en
+  una copia lisa de un mueble que lo admita; sellos de cada uno, nada por tickets) y `v1112-premios` (capturas 27 los sellos, 28 la
+  varita cambiada, 29 el acabado puesto, 30 la caja con el reloj y la alfombra, 31 el armario de las chisteras, 32 a 34 la ropa
+  nueva en el probador; vídeo). Galería del piso 3D: `muebles-galeria.spec.js` con `MUEBLE=alfombra-rombos` y `baul-mago`.

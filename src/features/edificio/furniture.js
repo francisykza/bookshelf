@@ -864,6 +864,172 @@ SHAPES['neon-rayo'] = (T) => {
   ];
 };
 
+// ── La ruleta del casino (1.109): los premios de la ruleta de la semana. Art déco propio: latón, nogal y terciopelo ──
+const DORADO = [222, 180, 86];
+const RASO = [30, 26, 32];
+/** Un disco de cajas (`n` tiras a lo ancho) centrado en (cx, cy), de radio `r`, entre z0 y z1. */
+function disco(cx, cy, r, z0, z1, c, n = 7, extra = {}) {
+  const out = [];
+  for (let k = 0; k < n; k += 1) {
+    const x0 = cx - r + (k * 2 * r) / n;
+    const x1 = x0 + (2 * r) / n;
+    const m = (x0 + x1) / 2 - cx;
+    const h = Math.sqrt(Math.max(0, r * r - m * m));
+    out.push(B(x0, cy - h, z0, x1, cy + h, z1, c, extra));
+  }
+  return out;
+}
+SHAPES['lampara-flecos'] = (T) => {
+  const out = [
+    // La base escalonada de nogal y el pie de latón, con dos nudos
+    B(0.2, 0.2, 0, 0.8, 0.8, 0.07, WOOD_DARK),
+    B(0.28, 0.28, 0.07, 0.72, 0.72, 0.14, LATON, { grain: 0 }),
+    B(0.46, 0.46, 0.14, 0.54, 0.54, 2.3, LATON, { grain: 0 }),
+    B(0.42, 0.42, 0.86, 0.58, 0.58, 0.94, DORADO, { grain: 0 }),
+    B(0.42, 0.42, 1.66, 0.58, 0.58, 1.74, DORADO, { grain: 0 }),
+    // La pantalla de terciopelo, en tres escalones (más ancha abajo), encendida por dentro, con su ribete dorado
+    B(0.12, 0.12, 2.3, 0.88, 0.88, 2.46, T, { glow: true }),
+    B(0.19, 0.19, 2.46, 0.81, 0.81, 2.62, shade(T, 1.08), { glow: true }),
+    B(0.26, 0.26, 2.62, 0.74, 0.74, 2.76, shade(T, 1.16), { glow: true }),
+    B(0.11, 0.11, 2.29, 0.89, 0.89, 2.32, DORADO, { grain: 0 }),
+    B(0.25, 0.25, 2.75, 0.75, 0.75, 2.78, DORADO, { grain: 0 }),
+    B(0.46, 0.46, 2.78, 0.54, 0.54, 2.86, DORADO, { grain: 0 }),
+  ];
+  // Los flecos, colgando todo alrededor: hebras doradas y del color de la pantalla, de largos que alternan
+  for (let k = 0; k < 10; k += 1) {
+    const t = 0.13 + k * 0.077;
+    const c = k % 2 ? DORADO : shade(T, 0.8);
+    const z0 = 2.3 - (k % 3 === 1 ? 0.24 : 0.18);
+    out.push(B(t, 0.86, z0, t + 0.04, 0.89, 2.3, c, { grain: 0 }));
+    out.push(B(t, 0.11, z0, t + 0.04, 0.14, 2.3, c, { grain: 0 }));
+    out.push(B(0.11, t, z0, 0.14, t + 0.04, 2.3, c, { grain: 0 }));
+    out.push(B(0.86, t, z0, 0.89, t + 0.04, 2.3, c, { grain: 0 }));
+  }
+  return out;
+};
+SHAPES['ruleta-sobremesa'] = (T) => {
+  const out = [
+    // El velador: pie de nogal con tres escalones, columna torneada y tablero redondo con su filo de latón
+    ...disco(0.5, 0.5, 0.32, 0, 0.08, shade(T, 0.85)),
+    ...disco(0.5, 0.5, 0.22, 0.08, 0.16, T),
+    B(0.44, 0.44, 0.16, 0.56, 0.56, 0.86, T),
+    B(0.41, 0.41, 0.42, 0.59, 0.59, 0.5, LATON, { grain: 0 }),
+    ...disco(0.5, 0.5, 0.45, 0.86, 0.94, T),
+    ...disco(0.5, 0.5, 0.47, 0.9, 0.92, LATON, 9, { grain: 0 }),
+    // La ruleta encima: el cuenco de nogal, el aro dorado, el plato verde y la cruz de latón del centro
+    ...disco(0.5, 0.5, 0.38, 0.94, 1.06, shade(T, 0.7)),
+    ...disco(0.5, 0.5, 0.36, 1.06, 1.08, DORADO, 9, { grain: 0 }),
+    ...disco(0.5, 0.5, 0.3, 1.06, 1.09, [44, 112, 76], 7, { grain: 0 }),
+    B(0.47, 0.47, 1.09, 0.53, 0.53, 1.2, DORADO, { grain: 0 }),
+    B(0.36, 0.48, 1.16, 0.64, 0.52, 1.19, DORADO, { grain: 0 }),
+    B(0.48, 0.36, 1.16, 0.52, 0.64, 1.19, DORADO, { grain: 0 }),
+  ];
+  // Las casillas del aro: ocho, granate y negro, y la bolita de marfil en una de ellas
+  for (let k = 0; k < 8; k += 1) {
+    const a = (k / 8) * 2 * Math.PI;
+    const x = 0.5 + Math.cos(a) * 0.25;
+    const y = 0.5 + Math.sin(a) * 0.25;
+    out.push(B(x - 0.04, y - 0.04, 1.09, x + 0.04, y + 0.04, 1.1, k % 2 ? RASO : [168, 40, 52], { grain: 0 }));
+  }
+  out.push(B(0.73, 0.47, 1.1, 0.78, 0.52, 1.15, CREAM, { grain: 0 }));
+  return out;
+};
+SHAPES['reloj-deco'] = (T) => {
+  const P = { grain: 0 };
+  const out = [
+    // El zócalo, más ancho, y la caja alta de nogal, con dos filos de latón a los lados
+    B(0.14, 0.18, 0, 0.86, 0.82, 0.3, shade(T, 0.8)),
+    B(0.12, 0.16, 0.3, 0.88, 0.84, 0.36, DORADO, P),
+    B(0.22, 0.26, 0.36, 0.78, 0.74, 2.9, T),
+    B(0.2, 0.72, 0.36, 0.24, 0.76, 2.9, DORADO, P),
+    B(0.76, 0.72, 0.36, 0.8, 0.76, 2.9, DORADO, P),
+    // La ventana del péndulo: cristal oscuro con su marco, la varilla y el disco dorado
+    B(0.32, 0.74, 0.7, 0.68, 0.76, 2.3, DORADO, P),
+    B(0.35, 0.755, 0.74, 0.65, 0.77, 2.26, [40, 34, 44], P),
+    B(0.49, 0.77, 1.1, 0.51, 0.78, 2.22, DORADO, P),
+    B(0.43, 0.77, 0.98, 0.57, 0.785, 1.12, DORADO, { grain: 0, glow: true }),
+    // La cabeza: la esfera crema con su marco dorado y las agujas, y el remate escalonado (art déco) con su abanico
+    B(0.18, 0.22, 2.9, 0.82, 0.78, 3.62, T),
+    B(0.24, 0.78, 2.98, 0.76, 0.8, 3.54, DORADO, P),
+    B(0.28, 0.8, 3.02, 0.72, 0.815, 3.5, CREAM, P),
+    B(0.49, 0.815, 3.25, 0.51, 0.825, 3.45, RASO, P),
+    B(0.5, 0.815, 3.25, 0.64, 0.825, 3.27, RASO, P),
+    B(0.47, 0.82, 3.23, 0.53, 0.83, 3.29, DORADO, P),
+    ...[3.06, 3.44].map((z) => B(0.49, 0.815, z, 0.51, 0.82, z + 0.03, RASO, P)),
+    ...[0.32, 0.66].map((x) => B(x, 0.815, 3.25, x + 0.03, 0.82, 3.27, RASO, P)),
+    B(0.22, 0.26, 3.62, 0.78, 0.74, 3.74, shade(T, 1.1)),
+    B(0.3, 0.32, 3.74, 0.7, 0.68, 3.86, T),
+    B(0.4, 0.38, 3.86, 0.6, 0.62, 3.96, shade(T, 1.1)),
+    B(0.36, 0.74, 3.62, 0.64, 0.76, 3.8, DORADO, P),
+    B(0.46, 0.68, 3.86, 0.54, 0.7, 4.04, DORADO, P),
+  ];
+  // Los rayos dorados del abanico, sobre la esfera
+  for (const [x, z] of [[0.28, 3.66], [0.38, 3.7], [0.62, 3.7], [0.72, 3.66]]) out.push(B(x - 0.015, 0.74, z, x + 0.015, 0.755, z + 0.06, DORADO, P));
+  return out;
+};
+
+// ── Los premios nuevos del casino (1.112) ──
+/** Un rombo escalonado de cajas planas, centrado en (cx, cy), de media anchura `rx` y media altura `ry`. */
+function rombo(cx, cy, rx, ry, z0, z1, c, n = 5) {
+  const out = [];
+  for (let k = -n + 1; k < n; k += 1) {
+    const w = rx * (1 - Math.abs(k) / n);
+    const y = cy + (k / n) * ry;
+    out.push(B(cx - w, y - ry / (2 * n), z0, cx + w, y + ry / (2 * n), z1, c, { grain: 0 }));
+  }
+  return out;
+}
+SHAPES['alfombra-rombos'] = (T) => {
+  const P = { grain: 0 };
+  const out = [
+    // La lana granate, con un ribete dorado y otro más oscuro, y los flecos dorados en los lados cortos
+    B(0.1, 0.06, 0, 2.9, 1.94, 0.04, T),
+    B(0.16, 0.12, 0.04, 2.84, 0.18, 0.05, DORADO, P),
+    B(0.16, 1.82, 0.04, 2.84, 1.88, 0.05, DORADO, P),
+    B(0.16, 0.18, 0.04, 0.22, 1.82, 0.05, DORADO, P),
+    B(2.78, 0.18, 0.04, 2.84, 1.82, 0.05, DORADO, P),
+    B(0.28, 0.24, 0.04, 2.72, 0.28, 0.045, shade(T, 0.7), P),
+    B(0.28, 1.72, 0.04, 2.72, 1.76, 0.045, shade(T, 0.7), P),
+  ];
+  for (let k = 0; k < 12; k += 1) {
+    const y = 0.14 + k * 0.145;
+    out.push(B(0.0, y, 0, 0.1, y + 0.06, 0.02, k % 2 ? DORADO : CREAM, P), B(2.9, y, 0, 3.0, y + 0.06, 0.02, k % 2 ? DORADO : CREAM, P));
+  }
+  // Tres rombos dorados grandes en el centro, con su corazón granate claro, y medios rombos en las esquinas
+  for (const cx of [0.82, 1.5, 2.18]) {
+    out.push(...rombo(cx, 1, 0.3, 0.56, 0.04, 0.05, DORADO), ...rombo(cx, 1, 0.17, 0.32, 0.05, 0.055, shade(T, 1.45), 4));
+  }
+  for (const [cx, cy] of [[0.5, 0.46], [2.5, 0.46], [0.5, 1.54], [2.5, 1.54]]) out.push(...rombo(cx, cy, 0.1, 0.16, 0.04, 0.05, shade(DORADO, 0.85), 3));
+  return out;
+};
+SHAPES['baul-mago'] = (T) => {
+  const P = { grain: 0 };
+  const STAR = [255, 226, 140];
+  const out = [
+    // Las patas de latón, el cuerpo de madera teñida y la tapa abombada, en dos escalones
+    ...[[0.1, 0.14], [1.78, 0.14], [0.1, 0.74], [1.78, 0.74]].map(([x, y]) => B(x, y, 0, x + 0.12, y + 0.12, 0.1, DORADO, P)),
+    B(0.08, 0.12, 0.1, 1.92, 0.88, 0.66, T),
+    B(0.06, 0.1, 0.62, 1.94, 0.9, 0.7, shade(T, 0.75)),
+    B(0.08, 0.14, 0.7, 1.92, 0.86, 0.8, shade(T, 1.1)),
+    B(0.1, 0.24, 0.8, 1.9, 0.76, 0.88, shade(T, 1.2)),
+    // Las cantoneras y los flejes de latón, delante, detrás y por encima de la tapa
+    ...[0.36, 1.58].flatMap((x) => [B(x, 0.1, 0.1, x + 0.08, 0.9, 0.8, LATON, P), B(x, 0.24, 0.8, x + 0.08, 0.76, 0.885, LATON, P)]),
+    ...[0.06, 1.86].map((x) => B(x, 0.1, 0.1, x + 0.08, 0.9, 0.18, DORADO, P)),
+    // La cerradura con su ojo de llave y el asa
+    B(0.9, 0.88, 0.5, 1.1, 0.92, 0.74, DORADO, P),
+    B(0.97, 0.92, 0.56, 1.03, 0.925, 0.64, RASO, P),
+    ...[0.0, 1.94].map((x) => B(x, 0.42, 0.42, x + 0.06, 0.58, 0.48, LATON, P)),
+    // La luna creciente y las estrellas pintadas en el frente, que se encienden de tarde
+    B(0.56, 0.885, 0.3, 0.62, 0.895, 0.52, STAR, { grain: 0, glow: true }),
+    B(0.62, 0.885, 0.26, 0.68, 0.895, 0.32, STAR, { grain: 0, glow: true }),
+    B(0.62, 0.885, 0.5, 0.68, 0.895, 0.56, STAR, { grain: 0, glow: true }),
+  ];
+  for (const [x, z] of [[1.24, 0.46], [1.4, 0.3], [1.34, 0.56], [0.74, 0.2], [0.2, 0.44], [1.72, 0.42]]) {
+    out.push(B(x - 0.025, 0.885, z - 0.025, x + 0.025, 0.895, z + 0.025, STAR, { grain: 0, glow: true }));
+  }
+  return out;
+};
+
 // La peana de los místicos: piedra oscura con un filo dorado. El ser se dibuja encima, animado (misticos.js)
 const peana = (T) => [
   B(0.2, 0.2, 0, 0.8, 0.8, 0.08, shade(T, 0.8)),
@@ -871,7 +1037,7 @@ const peana = (T) => [
   B(0.24, 0.24, 0.18, 0.76, 0.76, 0.22, [204, 170, 90], { grain: 0 }),
 ];
 for (const id of ['ebanisteria', 'tapiceria', 'faro', 'vivero', 'almoneda', 'menaje', 'heroes']) SHAPES[`placa-${id}`] = SHAPES['placa-suite'];
-for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta', 'conejo-chistera', 'gaviota-puerto']) SHAPES[id] = peana;
+for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta', 'conejo-chistera', 'gaviota-puerto', 'mapache-crupier']) SHAPES[id] = peana;
 
 /** Cajas de un mueble en coordenadas locales (sin girar). */
 export const registerShape = (id, fn) => {

@@ -1,0 +1,434 @@
+/* El casino del sótano en 3D (1.107, encargo de Francisco del 10-11-2026). La sala ocupa casi toda la pantalla; encima,
+   los letreros de cada sitio como placas de latón art déco con esquinas de píxel, el bocadillo del crupier y un aviso.
+   Debajo sigue la mesa de juego de cerca (hotel.css, .gh-21). Colores de .gh-casino. */
+.cs3 {
+  --cs3-px: 3px;
+  position: relative;
+  height: clamp(380px, 66dvh, 640px);
+  overflow: hidden;
+  background: #1a1020;
+}
+.cs3-stage { position: absolute; inset: 0; }
+.cs3-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; cursor: grab; }
+.cs3-canvas:active { cursor: grabbing; }
+.cs3-canvas:focus-visible { outline: 2px solid var(--c21-gold); outline-offset: -4px; }
+.cs3.is-off .cs3-canvas { filter: brightness(0.55) saturate(0.7); }
+.cs3-loading { position: absolute; inset: 0; display: grid; place-content: center; margin: 0; padding: 24px; text-align: center; font: italic 1.05rem 'Cormorant Garamond', Georgia, serif; color: var(--c21-gold); }
+
+.cs3-tags { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.cs3-tag,
+.cs3-dice { position: absolute; top: 0; left: 0; }
+.cs3-tag[data-off='true'],
+.cs3-dice[data-off='true'],
+.cs3-dice[data-vacio='true'] { visibility: hidden; }
+
+/* La placa de cada sitio: latón con filete granate y la flecha hacia abajo */
+.cs3-tag {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 10px 5px;
+  border: 0;
+  background: var(--c21-gold);
+  box-shadow: inset 0 -3px 0 var(--c21-gold-d), inset 0 0 0 2px var(--c21-red-d);
+  color: var(--c21-ink);
+  font: 700 0.76rem/1.1 'Lora', Georgia, serif;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  clip-path: polygon(0 var(--cs3-px), var(--cs3-px) var(--cs3-px), var(--cs3-px) 0, calc(100% - var(--cs3-px)) 0, calc(100% - var(--cs3-px)) var(--cs3-px), 100% var(--cs3-px), 100% calc(100% - var(--cs3-px)), calc(100% - var(--cs3-px)) calc(100% - var(--cs3-px)), calc(100% - var(--cs3-px)) 100%, var(--cs3-px) 100%, var(--cs3-px) calc(100% - var(--cs3-px)), 0 calc(100% - var(--cs3-px)));
+}
+.cs3-tag::before { content: ''; width: 7px; height: 7px; background: var(--c21-red); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.cs3-tag:active { transform-origin: center; filter: brightness(0.92); }
+.cs3-tag:focus-visible { outline: 2px solid var(--c21-cream); outline-offset: 2px; }
+.cs3-tag.is-pronto { background: #d8c7a4; box-shadow: inset 0 -3px 0 #a08c66, inset 0 0 0 2px #6e5a3a; }
+.cs3-tag i { padding: 1px 4px 2px; background: var(--c21-ink); color: var(--c21-cream); font: 700 0.62rem/1 'Courier Prime', 'Courier New', monospace; font-style: normal; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* El bocadillo del crupier, sobre su cabeza */
+.cs3-dice {
+  max-width: min(64%, 250px);
+  margin: 0;
+  padding: 5px 9px 6px;
+  background: var(--c21-cream);
+  box-shadow: 0 0 0 2px var(--c21-ink), 3px 3px 0 2px rgb(0 0 0 / 0.35);
+  color: var(--c21-ink);
+  font: 600 0.78rem/1.25 'Lora', Georgia, serif;
+  text-align: center;
+}
+.cs3-dice::after {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: var(--c21-cream);
+  box-shadow: 2px 0 0 var(--c21-ink), -2px 0 0 var(--c21-ink), 0 2px 0 var(--c21-ink);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  content: '';
+}
+
+/* El plano de la sala: un botón de latón en la esquina y, al abrirlo, los cinco sitios en una tarjeta granate */
+.cs3-plano,
+.cs3-mapa button,
+.cs3-aviso button {
+  border: 0;
+  cursor: pointer;
+  clip-path: polygon(0 var(--cs3-px), var(--cs3-px) var(--cs3-px), var(--cs3-px) 0, calc(100% - var(--cs3-px)) 0, calc(100% - var(--cs3-px)) var(--cs3-px), 100% var(--cs3-px), 100% calc(100% - var(--cs3-px)), calc(100% - var(--cs3-px)) calc(100% - var(--cs3-px)), calc(100% - var(--cs3-px)) 100%, var(--cs3-px) 100%, var(--cs3-px) calc(100% - var(--cs3-px)), 0 calc(100% - var(--cs3-px)));
+}
+.cs3-plano {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  min-height: 36px;
+  padding: 6px 12px 7px;
+  background: rgb(26 14 12 / 0.82);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d);
+  color: var(--c21-gold-l);
+  font: 700 0.76rem/1 'Courier Prime', 'Courier New', monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cs3-plano[aria-expanded='true'] { background: var(--c21-red-d); box-shadow: inset 0 0 0 2px var(--c21-gold); }
+.cs3-plano:focus-visible,
+.cs3-mapa button:focus-visible,
+.cs3-aviso button:focus-visible { outline: 2px solid var(--c21-cream); outline-offset: 2px; }
+.cs3-mapa {
+  position: absolute;
+  top: 52px;
+  right: 10px;
+  z-index: 4;
+  display: grid;
+  gap: 4px;
+  min-width: 200px;
+  padding: 8px;
+  background: var(--c21-red-d);
+  box-shadow: inset 0 0 0 2px var(--c21-gold), 0 4px 0 rgb(0 0 0 / 0.4);
+}
+.cs3-mapa button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 6px 10px;
+  background: var(--c21-gold);
+  box-shadow: inset 0 -3px 0 var(--c21-gold-d);
+  color: var(--c21-ink);
+  font: 700 0.82rem/1.1 'Lora', Georgia, serif;
+  text-align: left;
+}
+.cs3-mapa i { padding: 1px 4px 2px; background: var(--c21-ink); color: var(--c21-cream); font: 700 0.62rem/1 'Courier Prime', 'Courier New', monospace; font-style: normal; text-transform: uppercase; }
+
+/* El aviso al llegar a un sitio: una tarjeta de crupier abajo, sin tapar la sala */
+.cs3-avisos { position: absolute; right: 12px; bottom: 12px; left: 12px; z-index: 3; pointer-events: none; }
+.cs3-aviso {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 9px 12px 10px;
+  pointer-events: auto;
+  background: var(--c21-red-d);
+  box-shadow: inset 0 0 0 2px var(--c21-gold), 0 4px 0 rgb(0 0 0 / 0.4);
+  color: var(--c21-cream);
+  font: 600 0.82rem/1.3 'Lora', Georgia, serif;
+  text-align: center;
+  animation: cs3-in 0.18s ease-out both;
+}
+.cs3-aviso button {
+  min-height: 36px;
+  padding: 6px 14px 8px;
+  background: var(--c21-gold);
+  box-shadow: inset 0 -3px 0 var(--c21-gold-d);
+  color: var(--c21-ink);
+  font: 700 0.8rem/1 'Lora', Georgia, serif;
+}
+@keyframes cs3-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs3-aviso { animation: none; }
+}
+
+/* 1.108 · Sentado a la mesa: el juego se lleva sobre el propio paño. Arriba, levantarse y el marcador (dos placas de
+   latón con las cifras de píxel); en medio, el cartel del resultado; abajo, los botones gruesos de siempre. */
+.cs3-sit { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.cs3-sit > * { pointer-events: auto; }
+.cs3-levantarse {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  min-height: 36px;
+  padding: 6px 12px 7px;
+  border: 0;
+  background: rgb(26 14 12 / 0.82);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d);
+  color: var(--c21-gold-l);
+  font: 700 0.76rem/1 'Courier Prime', 'Courier New', monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.cs3-levantarse:focus-visible { outline: 2px solid var(--c21-cream); outline-offset: 2px; }
+.cs3-marcador { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; pointer-events: none; }
+.cs3-total {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  min-width: 58px;
+  margin: 0;
+  padding: 4px 8px 6px;
+  background: var(--c21-gold);
+  box-shadow: inset 0 -3px 0 var(--c21-gold-d), inset 0 0 0 2px var(--c21-red-d);
+  color: var(--c21-ink);
+}
+.cs3-total span { font: 700 0.6rem/1 'Courier Prime', 'Courier New', monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+.cs3-total .gh-px-num { height: 16px; fill: var(--c21-ink); }
+.cs3-total.is-tu { background: var(--c21-cream); }
+/* El cartel, entre tus cartas y los botones: no tapa la mano del crupier */
+.cs3-cartel { position: absolute; bottom: 92px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+.cs3-acts {
+  position: absolute;
+  right: 10px;
+  bottom: 14px;
+  left: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.cs3-acts .gh-21btn { min-width: 128px; }
+.cs3-acts .gh-21__done { max-width: 340px; padding: 8px 12px; background: rgb(26 14 12 / 0.82); box-shadow: inset 0 0 0 2px var(--c21-gold-d); }
+.cs3-sit__nota {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 9px 12px 10px;
+  background: var(--c21-red-d);
+  box-shadow: inset 0 0 0 2px var(--c21-gold), 0 4px 0 rgb(0 0 0 / 0.4);
+  color: var(--c21-cream);
+  font: 600 0.82rem/1.3 'Lora', Georgia, serif;
+  text-align: center;
+}
+.cs3-sit__nota button {
+  min-height: 36px;
+  padding: 6px 14px 8px;
+  border: 0;
+  background: var(--c21-gold);
+  box-shadow: inset 0 -3px 0 var(--c21-gold-d);
+  color: var(--c21-ink);
+  font: 700 0.8rem/1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+/* Debajo, sin sentarse: una invitación a la mesa */
+.gh-21__sit { display: grid; gap: 10px; justify-items: center; padding: 14px 8px 6px; text-align: center; }
+.gh-21__sit p { margin: 0; color: #e8d6b0; font: italic 500 0.92rem/1.35 'Lora', Georgia, serif; }
+
+/* 1.109 · Delante de la ruleta: la rueda arriba; debajo, el cartel de latón con lo que puede tocar y su probabilidad
+   (siempre a la vista), el cartel de lo que ha tocado y el botón de girar. */
+.cs3-prob {
+  position: absolute;
+  right: 10px;
+  bottom: 74px;
+  left: 10px;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 7px 10px 8px;
+  background: rgb(26 14 12 / 0.86);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d), inset 0 0 0 4px rgb(26 14 12 / 0.86), inset 0 0 0 5px var(--c21-gold);
+  color: var(--c21-cream);
+  font: 400 0.66rem/1.25 'Courier Prime', 'Courier New', monospace;
+}
+.cs3-prob h4 { margin: 0 0 5px; color: var(--c21-gold-l); font: 700 0.68rem/1 'Courier Prime', 'Courier New', monospace; letter-spacing: 0.08em; text-align: center; text-transform: uppercase; }
+.cs3-prob ol { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 2px 12px; margin: 0; padding: 0; list-style: none; }
+.cs3-prob li { display: flex; gap: 6px; justify-content: space-between; min-width: 0; padding: 1px 0; border-bottom: 1px dotted rgb(232 184 90 / 0.35); }
+.cs3-prob li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs3-prob li i { color: var(--c21-gold); font-style: normal; }
+.cs3-prob li b { color: var(--c21-gold-l); font-weight: 700; white-space: nowrap; }
+.cs3-prob li.is-rara span { color: var(--c21-gold-l); }
+.cs3-prob li.is-tocado { background: rgb(232 184 90 / 0.22); box-shadow: 0 0 0 2px rgb(232 184 90 / 0.22); }
+.cs3-prob p { margin: 5px 0 0; color: rgb(255 244 220 / 0.78); text-align: center; }
+.cs3-rul .cs3-cartel.cs3-tocado { bottom: auto; top: 52px; display: grid; gap: 4px; justify-items: center; white-space: normal; text-align: center; max-width: calc(100% - 24px); }
+.cs3-rul .cs3-tocado span { font: 700 0.86rem/1.2 'Courier Prime', 'Courier New', monospace; }
+.cs3-rul .cs3-tocado.is-rara { box-shadow: 0 0 0 3px var(--c21-gold-l), 0 0 18px rgb(255 227 154 / 0.55); }
+.cs3-rul .cs3-levantarse:disabled { opacity: 0.55; cursor: default; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .cs3-prob { right: 10px; bottom: 10px; left: auto; width: 300px; margin: 0; }
+  .cs3-rul .cs3-acts { right: auto; left: 10px; }
+}
+
+/* 1.110 · Delante de las chisteras: arriba a la derecha, las tres rondas como fichas (acertada, dorada; fallada, apagada);
+   el cartel de la ronda en medio; abajo, empezar o los tres botones de elegir (también se toca la chistera); y las reglas
+   en una línea, siempre a la vista. */
+.cs3-chis__marcador {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  gap: 5px;
+  justify-items: end;
+  padding: 6px 9px 7px;
+  background: rgb(26 14 12 / 0.82);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d);
+  pointer-events: none;
+}
+.cs3-chis__marcador p { margin: 0; color: var(--c21-gold-l); font: 700 0.66rem/1 'Courier Prime', 'Courier New', monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+.cs3-chis__marcador ol { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.cs3-chis__marcador li { width: 16px; height: 16px; border-radius: 50%; background: rgb(255 244 220 / 0.14); box-shadow: inset 0 0 0 2px rgb(232 184 90 / 0.45); }
+.cs3-chis__marcador li.is-bien { background: var(--c21-gold); box-shadow: inset 0 0 0 2px var(--c21-gold-d), inset 0 0 0 5px var(--c21-gold-l); }
+.cs3-chis__marcador li.is-mal { background: rgb(60 40 40 / 0.9); box-shadow: inset 0 0 0 2px rgb(232 184 90 / 0.3); }
+.cs3-chis .cs3-cartel { bottom: 84px; display: grid; gap: 4px; justify-items: center; white-space: normal; text-align: center; max-width: calc(100% - 24px); }
+.cs3-chis .cs3-cartel span { font: 700 0.86rem/1.2 'Courier Prime', 'Courier New', monospace; }
+.cs3-chis__elige { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.cs3-chis .cs3-chis__elige .gh-21btn { min-width: 0; flex: 1 1 auto; max-width: 150px; padding-inline: 10px; font-size: 0.82rem; letter-spacing: 0.01em; }
+.cs3-chis__reglas {
+  position: absolute;
+  right: 12px;
+  bottom: 76px;
+  left: 12px;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 5px 10px 6px;
+  background: rgb(26 14 12 / 0.72);
+  color: rgb(255 244 220 / 0.86);
+  font: 500 0.72rem/1.3 'Lora', Georgia, serif;
+  text-align: center;
+  pointer-events: none;
+}
+.cs3-chis .cs3-levantarse:disabled { opacity: 0.55; cursor: default; }
+
+/* 1.111 · Delante de la vitrina: arriba, volver y la cuenta («7 de 31»); debajo, las pestañas de los tres armarios; abajo, la
+   ficha del premio que se mira (nombre y si es tuyo o cómo se gana) y, si tienes amigos, ver la vitrina de uno. */
+.cs3-vit__cuenta {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+  margin: 0;
+  padding: 6px 9px 7px;
+  background: rgb(26 14 12 / 0.82);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d);
+  color: var(--c21-gold-l);
+  font: 700 0.66rem/1 'Courier Prime', 'Courier New', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.cs3-vit__cuenta b { color: var(--c21-cream); font-size: 0.86rem; }
+.cs3-vit__armarios { position: absolute; top: 58px; right: 10px; left: 10px; display: flex; gap: 6px; justify-content: center; }
+.cs3-vit__armarios button,
+.cs3-vit__amigos button,
+.cs3-vit__ficha button {
+  min-height: 34px;
+  padding: 6px 10px 7px;
+  border: 0;
+  background: rgb(26 14 12 / 0.82);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d);
+  color: var(--c21-gold-l);
+  font: 700 0.72rem/1 'Courier Prime', 'Courier New', monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.cs3-vit__armarios button[aria-pressed='true'] { background: var(--c21-gold); box-shadow: inset 0 -3px 0 var(--c21-gold-d); color: var(--c21-ink); }
+.cs3-vit__abajo { position: absolute; right: 10px; bottom: 12px; left: 10px; display: grid; gap: 8px; justify-items: center; }
+.cs3-vit__abajo > * { pointer-events: auto; }
+.cs3-vit__ficha {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  width: 100%;
+  max-width: 420px;
+  padding: 9px 12px 10px;
+  background: var(--c21-red-d);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d), 0 4px 0 rgb(0 0 0 / 0.4);
+  color: var(--c21-cream);
+  text-align: center;
+}
+.cs3-vit__ficha.is-tuyo { box-shadow: inset 0 0 0 2px var(--c21-gold-l), 0 0 14px rgb(255 227 154 / 0.35), 0 4px 0 rgb(0 0 0 / 0.4); }
+.cs3-vit__ficha h4 { margin: 0; color: var(--c21-gold-l); font: 700 0.86rem/1.15 'Lora', Georgia, serif; }
+.cs3-vit__ficha p { margin: 0; font: 500 0.8rem/1.3 'Lora', Georgia, serif; }
+.cs3-vit__nota { max-width: 380px; margin: 0; padding: 7px 11px 8px; background: rgb(26 14 12 / 0.78); color: rgb(255 244 220 / 0.9); font: 500 0.76rem/1.3 'Lora', Georgia, serif; text-align: center; }
+.cs3-vit__amigos { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+
+/* 1.112 · Los sellos de las chisteras: un botón discreto bajo «Volver a la sala» y, al tocarlo, la hoja de sus premios (lo
+   tuyo, en dorado; lo que aún no llega, con cuántos sellos faltan). */
+.cs3-chis__sellosbtn {
+  position: absolute;
+  top: 54px;
+  left: 10px;
+  min-height: 34px;
+  padding: 6px 10px 7px;
+  border: 0;
+  background: rgb(26 14 12 / 0.82);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d);
+  color: var(--c21-gold-l);
+  font: 700 0.7rem/1 'Courier Prime', 'Courier New', monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.cs3-chis__sellos {
+  position: absolute;
+  right: 10px;
+  bottom: 12px;
+  left: 10px;
+  z-index: 3;
+  display: grid;
+  gap: 7px;
+  max-width: 440px;
+  max-height: calc(100% - 110px);
+  margin: 0 auto;
+  padding: 10px 12px 12px;
+  overflow-y: auto;
+  background: var(--c21-red-d);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d), 0 4px 0 rgb(0 0 0 / 0.4);
+  color: var(--c21-cream);
+}
+.cs3-chis__sellos h4 { margin: 0; color: var(--c21-gold-l); font: 700 0.9rem/1.15 'Lora', Georgia, serif; text-align: center; }
+.cs3-chis__sellos > p { margin: 0; font: 500 0.74rem/1.3 'Lora', Georgia, serif; text-align: center; opacity: 0.9; }
+.cs3-chis__sellos ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.cs3-chis__sellos li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 9px;
+  background: rgb(26 14 12 / 0.55);
+  box-shadow: inset 0 0 0 1px rgb(232 184 90 / 0.35);
+}
+.cs3-chis__sellos li.is-tuyo { box-shadow: inset 0 0 0 2px var(--c21-gold-l), 0 0 10px rgb(255 227 154 / 0.25); }
+.cs3-chis__sellos li > div { display: grid; gap: 3px; min-width: 0; }
+.cs3-chis__sellos b { color: var(--c21-gold-l); font: 700 0.8rem/1.15 'Lora', Georgia, serif; }
+.cs3-chis__sellos small { font: 500 0.7rem/1.25 'Lora', Georgia, serif; opacity: 0.88; }
+.cs3-chis__sellos select { max-width: 100%; min-height: 30px; font: 500 0.74rem/1 'Lora', Georgia, serif; }
+.cs3-chis__sellos li button,
+.cs3-chis__cerrar {
+  flex: none;
+  min-height: 34px;
+  padding: 6px 10px 7px;
+  border: 0;
+  background: var(--c21-gold);
+  box-shadow: inset 0 -3px 0 var(--c21-gold-d);
+  color: var(--c21-ink);
+  font: 700 0.72rem/1 'Courier Prime', 'Courier New', monospace;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.cs3-chis__sellos li button:disabled { background: rgb(255 244 220 / 0.16); box-shadow: inset 0 0 0 2px rgb(232 184 90 / 0.3); color: rgb(255 244 220 / 0.7); cursor: default; }
+.cs3-chis__cerrar { justify-self: center; background: rgb(26 14 12 / 0.82); box-shadow: inset 0 0 0 2px var(--c21-gold-d); color: var(--c21-gold-l); }
+.cs3-chis__tuyo { flex: none; color: var(--c21-gold-l); font: 700 0.7rem/1 'Courier Prime', 'Courier New', monospace; letter-spacing: 0.05em; text-transform: uppercase; }
+.cs3-chis__sellosmsg { margin: 0; color: var(--c21-gold-l); font: 600 0.76rem/1.3 'Lora', Georgia, serif; text-align: center; }

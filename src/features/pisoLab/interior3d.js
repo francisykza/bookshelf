@@ -8,6 +8,7 @@ import { PAREDES, catalogItem } from '../edificio/catalog';
 import { SILLON_CAPA_BASE, shapeOf } from '../edificio/furniture';
 import { tintar } from '../edificio/acabados';
 import { misticoOf, misticoSprite } from '../edificio/misticos';
+import { MAPACHE, poseMapache } from '../edificio/mapache3d';
 import { ROOM, heightOf, itemsOn, rectOf } from '../edificio/room';
 import { essentialItems, mainShelf, readingTable } from './essentials';
 import { asientoDe, sitioDelLibro } from '../edificio/esenciales';
@@ -191,7 +192,9 @@ function catalogGeometry(item, cat, ownBooks = false) {
   if (!shared.has(key)) {
     // Con acabado, la misma pieza con su piel: cada color pasa por `tintar`, como en render.js (1.88.2)
     const tono = tintar(cat.tonos[item.tono], item.acabado);
-    let boxes = cat.capa === 'alfombra' ? [{ b: [0, 0, 0, cat.w, cat.d, 0.05], c: tono }] : shapeOf(item.id, tono);
+    // Una alfombra con dibujo propio (1.112, la de rombos) va con su modelo; las demás, lisas
+    const propia = cat.capa === 'alfombra' ? shapeOf(item.id, tono) : null;
+    let boxes = cat.capa === 'alfombra' && !propia.length ? [{ b: [0, 0, 0, cat.w, cat.d, 0.05], c: tono }] : (propia ?? shapeOf(item.id, tono));
     if (item.acabado) boxes = boxes.map((box) => ({ ...box, c: tintar(box.c, item.acabado) }));
     // El armazón va aparte, con su madera; en la balda de la lámpara, tus libros en vez de los de adorno
     if (item.id === 'estanteria') boxes = ownBooks ? [] : boxes.slice(SHELF_FRAME);
@@ -560,6 +563,95 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       beings.push({ uid: item.uid, id: w.id, art, map, opts: w.opts, sprite });
     }
   }
+  // 1.109 · El mapache crupier, si es el compañero de quien vive aquí (`setCompanero`): el primer compañero con volúmenes de
+  // verdad (mapache3d.js), con la misma piel y la misma luz de la hora que los muebles. Se queda contigo en el suelo, delante
+  // del sillón y a la vista, mirándote; quieto hace malabares y guiña. Con movimiento reducido, quieto y con su ficha en la mano.
+  const mapache = (() => {
+    const mat = [skinMat, glow];
+    const geo = (boxes, [ox, oy, oz] = [0, 0, 0]) => own('geometries', geometryOf(boxes.map((x) => ({ ...x, b: [x.b[0] - ox, x.b[1] - oy, x.b[2] - oz, x.b[3] - ox, x.b[4] - oy, x.b[5] - oz] }))));
+    const raiz = new Group();
+    const cuerpo = new Group();
+    raiz.add(cuerpo);
+    cuerpo.add(new Mesh(geo(MAPACHE.cuerpo), mat));
+    const cola = new Group();
+    const [cx, cy, cz] = MAPACHE.pivoteCola;
+    cola.position.set(cx, cz, cy);
+    cola.add(new Mesh(geo(MAPACHE.cola), mat));
+    cuerpo.add(cola);
+    const fichaGeo = geo(MAPACHE.ficha);
+    const fichas = [0, 1, 2].map(() => cuerpo.add(new Mesh(fichaGeo, mat)).children.at(-1));
+    const parpados = MAPACHE.parpados.map((p) => cuerpo.add(new Mesh(geo([p]), mat)).children.at(-1));
+    raiz.visible = false;
+    raiz.userData = { being: true, id: 'mapache-crupier' };
+    scene.add(raiz);
+    return { raiz, cuerpo, cola, fichas, parpados, on: false, steps: 0 };
+  })();
+  /** Dónde se pone: el primer hueco libre del suelo delante del sillón que se vea bien desde él (sin mirar a otro lado). */
+  function sitioMapache() {
+    const libre = (x, y) =>
+      x > 0.45 && x < ROOM.w - 0.45 && y > 0.45 && y < ROOM.d - 0.45 &&
+      !room.items.some((i) => {
+        if (catalogItem(i.id)?.capa !== 'suelo' && !OWN_PIECES.has(i.id)) return false;
+        if (catalogItem(i.id)?.capa === 'pared') return false;
+        const r = rectOf(i);
+        return x > r.x0 - 0.3 && x < r.x1 + 0.3 && y > r.y0 - 0.3 && y < r.y1 + 0.3;
+      });
+    // Con la cámara de verdad desde el sillón (su giro y su inclinación de ahora) y el campo de visión con que se dibuja
+    aim();
+    const cam = camera.clone();
+    cam.fov = Math.min(fullFov, seatedFovMax);
+    cam.updateProjectionMatrix();
+    cam.updateMatrixWorld();
+    const eye = cam.position.clone();
+    const f = cam.getWorldDirection(new Vector3()).setY(0).normalize();
+    const side = new Vector3(-f.z, 0, f.x);
+    const ve = (x, y, z) => {
+      const q = new Vector3(x, z, y).project(cam);
+      return q.z < 1 && Math.abs(q.x) < 0.68 && q.y > -0.82 && q.y < 0.7;
+    };
+    // Y que ningún mueble se interponga (la mesa baja delante del sillón lo taparía)
+    const rayo = new Raycaster();
+    const libreDeVista = (x, y, z) => {
+      const p = new Vector3(x, z, y);
+      const d = p.clone().sub(eye);
+      const lejos = d.length();
+      rayo.set(eye, d.normalize());
+      rayo.far = lejos;
+      return !rayo.intersectObjects(scene.children.filter((o) => o !== mapache.raiz), true).some((h) => h.distance < lejos - 0.15 && h.object.visible);
+    };
+    const huecos = [];
+    for (const d of [2.2, 2.6, 1.9, 3.1, 3.6, 4.2, 1.6]) {
+      for (const k of [0.3, -0.3, 0.12, -0.12, 0.5, -0.5]) {
+        const x = eye.x + f.x * d + side.x * d * k;
+        const y = eye.z + f.z * d + side.z * d * k;
+        if (libre(x, y) && ve(x, y, 0) && ve(x, y, MAPACHE.alto)) huecos.push([x, y]);
+      }
+    }
+    // Entero a la vista (de los pies a las orejas); si no hay sitio así (la mesa baja tapa el suelo de delante), de medio
+    // cuerpo arriba; y si tampoco, el primer hueco libre en el encuadre
+    return huecos.find(([x, y]) => libreDeVista(x, y, 0.14) && libreDeVista(x, y, 0.65)) ?? huecos.find(([x, y]) => libreDeVista(x, y, 0.35) && libreDeVista(x, y, 0.65)) ?? huecos[0] ?? null;
+  }
+  function ponerMapache() {
+    const at = mapache.on ? sitioMapache() : null;
+    mapache.raiz.visible = Boolean(at);
+    if (!at) return;
+    mapache.raiz.position.set(at[0], 0, at[1]);
+    // Mirándote, al asiento
+    mapache.raiz.rotation.y = Math.atan2(home.pos.x - at[0], home.pos.z - at[1]);
+    poseDelMapache(1.3);
+  }
+  function poseDelMapache(t) {
+    const p = poseMapache(t, { quieto: Boolean(motion?.matches) });
+    mapache.cuerpo.position.y = p.bote;
+    mapache.cola.rotation.y = p.cola;
+    mapache.fichas.forEach((m, i) => {
+      const at = p.fichas[i];
+      m.visible = Boolean(at);
+      if (at) m.position.set(at[0], at[2], at[1]);
+    });
+    mapache.parpados.forEach((m, i) => (m.visible = p.parpados[i]));
+  }
+
   let woodLit = null;
   let woodOff = null;
   let woodMat = null;
@@ -1344,6 +1436,34 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     clearTimeout(beingTimer);
     beingTimer = 0;
     if (beingsAllowed()) beingTimer = setTimeout(beingStep, BEING_MS);
+    syncMapache();
+  }
+  // 1.109 · El mapache, más suelto que los dibujos (unos 12 fotogramas por segundo) y con las mismas condiciones; solo se
+  // redibuja si está a la vista
+  const MAPACHE_MS = 80;
+  let mapacheTimer = 0;
+  const mapacheAllowed = () => mapache.on && mapache.raiz.visible && !destroyed && !covered && !motion?.matches && document.visibilityState !== 'hidden';
+  function mapacheStep() {
+    mapacheTimer = 0;
+    if (!mapacheAllowed()) return;
+    aim();
+    camera.updateMatrixWorld();
+    const q = mapache.raiz.position.clone().setY(0.4).project(camera);
+    if (q.z < 1 && Math.abs(q.x) < 1.3 && q.y > -1.3 && q.y < 1.3) {
+      poseDelMapache(performance.now() / 1000);
+      mapache.steps += 1;
+      invalidate();
+    }
+    mapacheTimer = setTimeout(mapacheStep, MAPACHE_MS);
+  }
+  function syncMapache() {
+    clearTimeout(mapacheTimer);
+    mapacheTimer = 0;
+    if (!mapacheAllowed()) {
+      if (mapache.on) poseDelMapache(1.3);
+      return;
+    }
+    mapacheTimer = setTimeout(mapacheStep, MAPACHE_MS);
   }
 
   function applyLight() {
@@ -1512,6 +1632,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     fullFov = camera.aspect >= WIDE_ASPECT ? FOV : (2 * Math.atan(Math.tan((FOV * Math.PI) / 360) * (WIDE_ASPECT / camera.aspect)) * 180) / Math.PI;
     camera.fov = zoom || zoomRow !== null ? fullFov : Math.min(fullFov, seatedFovMax);
     camera.updateProjectionMatrix();
+    // El mapache, donde se vea entero con este tamaño
+    if (mapache.on && !zoom && zoomRow === null) ponerMapache();
     if (zoomRow !== null && zoom) zoom = rowView(zoomRow);
     invalidate();
   }
@@ -1944,6 +2066,22 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     },
     /** El giro de ahora, para volver a él si se desmonta la habitación. */
     yaw: () => yaw,
+    /** 1.109 · El compañero de quien vive aquí: si es el mapache crupier, se queda contigo en el suelo, a la vista. */
+    setCompanero(id) {
+      mapache.on = id === 'mapache-crupier';
+      ponerMapache();
+      syncMapache();
+      invalidate();
+    },
+    /** 1.109 · Para las pruebas: el mapache, dónde está y si se ve desde el sillón. */
+    mapache() {
+      if (!mapache.on) return null;
+      aim();
+      camera.updateMatrixWorld();
+      const p = mapache.raiz.position;
+      const q = p.clone().setY(0.4).project(camera);
+      return { visible: mapache.raiz.visible, x: p.x, y: p.z, front: q.z < 1 && Math.abs(q.x) < 0.95 && Math.abs(q.y) < 0.95, steps: mapache.steps, running: Boolean(mapacheTimer) };
+    },
     yawRange: () => [...yawRange],
     /** Dónde poner una indicación junto al libro (o, sin libro, sobre la mesa), en px del contenedor. */
     bookAnchor() {
@@ -2249,6 +2387,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       cancelAnimationFrame(pullRaf);
       clearTimeout(waterTimer);
       clearTimeout(beingTimer);
+      clearTimeout(mapacheTimer);
       clearTimeout(lostTimer);
       stop.abort();
       observer.disconnect();

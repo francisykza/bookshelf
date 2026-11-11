@@ -82,9 +82,11 @@ export const CAJA = [
   { id: 'jersey:15', tipo: 'prenda', precio: 100, nombre: 'Chaleco de crupier', texto: 'Granate, con camisa blanca, pajarita y botones dorados.' },
   { id: 'sobre', tipo: 'sobre', precio: 120, nombre: 'Sobre del casino', texto: 'Un sobre de Edición coleccionista: el mismo sorteo, con su místico y su pity.' },
   { id: 'complemento:fedora', tipo: 'prenda', precio: 140, nombre: 'Fedora de ala corta', texto: 'Negra, con cinta granate y una pluma dorada.' },
+  { id: 'complemento:reloj-bolsillo', tipo: 'prenda', precio: 180, nombre: 'Reloj de bolsillo dorado', texto: 'Con su cadena hasta el ojal: para saber cuándo plantarse.' },
   { id: 'jersey:16', tipo: 'prenda', precio: 200, nombre: 'Vestido de lentejuelas', texto: 'Frambuesa con lentejuelas doradas: centellea al andar y de noche brilla.', efecto: true },
   { id: 'neon-veintiuna', tipo: 'mueble', precio: 250, nombre: 'Rótulo de neón «21»', texto: 'El del casino, para tu pared: se enciende de noche.', efecto: true },
   { id: 'mesa-tapete', tipo: 'mueble', precio: 300, nombre: 'Mesa de tapete verde', texto: 'Con sus naipes y sus fichas; la baraja se mueve sola.', efecto: true },
+  { id: 'alfombra-rombos', tipo: 'mueble', precio: 350, nombre: 'Alfombra de rombos dorados', texto: 'Granate, con ribete y rombos dorados, como la del sótano.' },
   { id: 'gramola', tipo: 'mueble', precio: 400, nombre: 'Gramola', texto: 'De arco de luces que cambian de color, con notas que flotan.', efecto: true },
   { id: 'conejo-chistera', tipo: 'companero', precio: 1500, nombre: 'Conejo de la chistera', texto: 'Legendario: sale de su chistera y baraja un naipe en el aire. Te acompaña.', efecto: true },
 ];

@@ -55,6 +55,12 @@ async function toPortal(page, casino, { leido = true } = {}) {
   return { portal: page.getByRole('dialog', { name: 'El edificio del puerto' }), mock };
 }
 
+// 1.108 · La partida se juega sentado a la mesa 3D de la sala: «Sentarse a la mesa» anda hasta ella y se sienta
+async function sentarse(page, casino) {
+  await casino.getByRole('button', { name: 'Sentarse a la mesa' }).click();
+  await page.waitForFunction(() => window.__casino3d?.sentado() && window.__casino3d.settled());
+}
+
 async function toHotel(page, casino, opts) {
   const { portal, mock } = await toPortal(page, casino, opts);
   await portal.getByRole('button', { name: 'Coger la limusina al Gran Hotel' }).click({ timeout: 15000 });
@@ -78,17 +84,19 @@ test('el casino: repartir, plantarse y ganar fichas sin apostar nada', async ({ 
   const casino = hotel.getByRole('region', { name: 'El casino del sótano' });
   await expect(casino.getByRole('img', { name: '30 fichas' })).toBeVisible();
   await expect(casino).toContainText('Semana 30/150');
-  await expect(casino.locator('.gh-casino__say')).toContainText('¿Repartimos?');
+  await expect(casino.locator('.cs3-dice')).toContainText('¿Repartimos?');
   await expect(casino.getByRole('list', { name: 'Tus manos de hoy' })).toContainText('Mano 1: por jugar');
   await shot(page, info, 'v180-casino');
 
   // La baraja fija del simulado: tú 10 + 7 = 17; el crupier enseña un 9 (y tapa un 6)
+  await sentarse(page, casino);
   await casino.getByRole('button', { name: 'Repartir la mano 1 de 3' }).click();
   await expect(casino.getByRole('list', { name: 'Tus cartas: 17' })).toBeVisible();
   await expect(casino.getByRole('list', { name: /Cartas del crupier/ }).getByRole('listitem')).toHaveCount(2);
-  await expect(casino.getByLabel('Carta tapada')).toBeVisible();
-  await expect(casino.locator('.gh-casino__say')).toContainText('¿Otra carta o te plantas?');
-  await expect(casino.locator('.gh-21-total').last()).toContainText('Tú');
+  // En el paño: las dos del crupier (una tapada) y las dos tuyas
+  await expect.poll(() => page.evaluate(() => window.__casino3d.cartas())).toEqual(['c0', 'c1', 't0', 't1']);
+  await expect(casino.locator('.cs3-dice')).toContainText('¿Otra carta o te plantas?');
+  await expect(casino.locator('.cs3-total').last()).toContainText('Tú');
   await shot(page, info, 'v180-casino-mano');
 
   // Plantarse: el crupier pide (15 + rey = 25) y se pasa
@@ -118,6 +126,8 @@ test('pedir y pasarse da 2 fichas; tras tres manos, a mañana; la «S» del asce
   await hotel.locator('.rcp-bar').getByRole('button', { name: 'Ascensor' }).click();
   await hotel.locator('.rcp-cabina').getByRole('button', { name: /El casino del sótano/ }).click({ timeout: 15000 });
   const casino = hotel.getByRole('region', { name: 'El casino del sótano' });
+  await expect(casino).toHaveAttribute('data-ready', 'true', { timeout: 15000 });
+  await sentarse(page, casino);
   await casino.getByRole('button', { name: 'Repartir la mano 3 de 3' }).click();
   await casino.getByRole('button', { name: 'Pedir carta' }).click();
   await expect(casino.getByRole('status').last()).toContainText('Gana el crupier: +2 fichas.');
@@ -126,9 +136,12 @@ test('pedir y pasarse da 2 fichas; tras tres manos, a mañana; la «S» del asce
   await expect(casino.getByRole('img', { name: '18 fichas' })).toBeVisible();
   await expect(casino.locator('.gh-21__banner')).toContainText('Gana la casa');
   await shot(page, info, 'v180-casino-perdida');
-  // La ventanilla de la sala abre la caja (y la vuelve a cerrar)
-  await casino.getByRole('button', { name: 'Caja', exact: true }).click();
-  await expect(casino.getByRole('button', { name: 'La caja' })).toHaveAttribute('aria-pressed', 'true');
+  // La ventanilla de la sala abre la caja (desde la 1.107, en la sala 3D: se va hasta ella con el plano; desde la 1.108,
+  // sentado a la mesa, primero hay que levantarse)
+  await casino.getByRole('button', { name: 'Levantarse' }).click();
+  await casino.getByRole('button', { name: 'Plano' }).click();
+  await casino.getByRole('navigation', { name: 'Plano de la sala' }).getByRole('button', { name: 'La caja' }).click();
+  await expect(casino.locator('.gh-21__modes').getByRole('button', { name: 'La caja' })).toHaveAttribute('aria-pressed', 'true');
   await expect(casino.getByRole('list', { name: 'Lo que hay en la caja' })).toBeVisible();
 });
 
@@ -142,7 +155,7 @@ test('la caja: el conejo arriba, cambiar fichas por ropa, el sobre y lo que falt
   await hotel.getByRole('button', { name: /Casino del sótano/ }).click();
   const casino = hotel.getByRole('region', { name: 'El casino del sótano' });
   await casino.getByRole('button', { name: 'La caja' }).click();
-  await expect(casino.locator('.gh-casino__say')).toContainText('La caja está abierta');
+  await expect(casino.locator('.cs3-dice')).toContainText('La caja está abierta');
 
   // El premio gordo, vivo, con lo que falta para él
   const gordo = casino.getByRole('article', { name: 'Conejo de la chistera' });
@@ -193,7 +206,7 @@ test('sin lectura hoy, el casino abre igual', async ({ page }, info) => {
   await hotel.getByRole('button', { name: 'Directorio' }).click();
   await hotel.getByRole('button', { name: /Casino del sótano/ }).click();
   const casino = hotel.getByRole('region', { name: 'El casino del sótano' });
-  await expect(casino.getByRole('button', { name: 'Repartir la mano 1 de 3' })).toBeVisible();
+  await expect(casino.getByRole('button', { name: 'Sentarse a la mesa' })).toBeVisible();
   await expect(casino).not.toContainText('apagada');
 });
 
@@ -256,7 +269,9 @@ test('la mesa para dos: aceptar la invitación, jugar, esperar al amigo y llevar
   await hotel.getByRole('button', { name: 'Directorio' }).click();
   await hotel.getByRole('button', { name: /Casino del sótano/ }).click();
   const casino = hotel.getByRole('region', { name: 'El casino del sótano' });
-  await expect(casino.locator('.gh-casino__say')).toContainText('Bea lectora te espera en la mesa para dos');
+  await expect(casino.locator('.cs3-dice')).toContainText('Bea lectora te espera en la mesa para dos');
+  // 1.107 · El crupier solo habla de cerca; quien te espera se dice al llegar, en el aviso de la sala
+  await expect(casino.locator('.cs3-aviso')).toContainText('Bea lectora te espera en la mesa para dos.');
   await expect(casino.getByRole('img', { name: '100 garbanzos' })).toBeVisible();
   const conAmigo = casino.getByRole('button', { name: /Con un amigo/ });
   await expect(conAmigo).toContainText('1');
@@ -393,11 +408,11 @@ test('una invitación llega también estando en el casino sin ninguna mesa abier
   test.skip(!/chromium-390x844$/.test(info.project.name), 'una vez basta');
   const { hotel, mock } = await toHotel(page, { fichas: 0, amigos: [BEA] });
   const casino = await alCasino(hotel);
-  await expect(casino.getByRole('button', { name: 'Repartir la mano 1 de 3' })).toBeVisible();
+  await expect(casino.getByRole('button', { name: 'Sentarse a la mesa' })).toBeVisible();
   mock.db.casino.mesas.push({ id: 'mesa-nueva', dia: HOY(), anfitrion: false, amigo: BEA, estado: 'invitada', fichas: 0, garbanzos: 0 });
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   await expect(casino.getByLabel('1 te espera')).toBeVisible();
-  await expect(casino.getByText('Bea lectora te espera en la mesa para dos.')).toBeVisible();
+  await expect(casino.locator('.cs3-aviso')).toContainText('Bea lectora te espera en la mesa para dos.');
 });
 
 test('la lata: plegada al pie de la caja, sus premios y el cambio con tope', async ({ page }, info) => {

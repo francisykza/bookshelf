@@ -70,7 +70,7 @@ export function Probador({ look, base, prendas, cesta = [], onLook, onListo, gua
       <p className="alm-nota alm-probador__nota">
         {bloqueado
           ? `Lo marcado es de la cesta y aún no es tuyo: solo para verte. ${ORIGEN_TEXTO[origenDe(prendaKey(...prestado))]}.`
-          : `${prendas ? `Tienes ${tienes} de ${GANABLES.length} prendas especiales.` : 'Aquí está la ropa de serie.'} Lo de la cesta se prueba aquí; la ropa especial sale de las misiones del día, la caja del casino y la estiba, o se compra con tickets en esta planta.`}
+          : `${prendas ? `Tienes ${tienes} de ${GANABLES.length} prendas especiales.` : 'Aquí está la ropa de serie.'} Lo de la cesta se prueba aquí; la ropa especial sale de las misiones del día, la caja, la ruleta y las chisteras del casino y la estiba, o se compra con tickets en esta planta.`}
       </p>
       {error && (
         <p className="alm-aviso" role="alert">

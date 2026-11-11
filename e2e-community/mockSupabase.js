@@ -10,6 +10,8 @@ import { starterRoom } from '../src/features/edificio/demo.js';
 import { PRENDAS, ROPA_TIENDA } from '../src/features/edificio/actor.js';
 import { missionsOf } from '../src/features/edificio/dailyMissions.js';
 import { CAJA, CASINO, LATA, valor } from '../src/features/edificio/hotel/veintiuna.js';
+import { RULETA, RULETA_REPETIDO, lunesDe } from '../src/features/edificio/hotel/ruleta.js';
+import { CHISTERAS_JUEGO, PREMIOS_CHISTERAS, conejoTras } from '../src/features/edificio/hotel/chisteras.js';
 import { ALBARAN, DESCUENTOS } from '../src/features/edificio/hotel/albaran.js';
 import { isRetirado } from '../src/features/edificio/retirados.js';
 
@@ -329,6 +331,13 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         'rpc/piso_casino_invitar_garbanzos',
         'rpc/piso_casino_lata_canjear',
         'rpc/piso_casino_cambiar',
+        'rpc/piso_casino_ruleta',
+        'rpc/piso_casino_ruleta_girar',
+        'rpc/piso_casino_chisteras',
+        'rpc/piso_casino_chisteras_ver',
+        'rpc/piso_casino_chisteras_elegir',
+        'rpc/piso_casino_chisteras_canjear',
+        'rpc/piso_casino_vitrina',
       ].includes(table)
     ) {
       if (!db.casino) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
@@ -483,6 +492,114 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
           ca.cambio.aGarbanzos += CASINO.cambioTickets;
         }
         return json(estado());
+      }
+      if (table === 'rpc/piso_casino_ruleta' || table === 'rpc/piso_casino_ruleta_girar') {
+        if (!ca.ruleta) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
+        const ru = ca.ruleta;
+        ru.giros ??= {};
+        ru.tienes ??= [];
+        const lunes = lunesDe(body.dia);
+        const vista = () => ({
+          semana: lunes,
+          casillas: RULETA.map((c) => ({ ...c, tienes: ru.tienes.includes(c.id) })),
+          repetido: RULETA_REPETIDO,
+          giro: ru.giros[lunes] ?? null,
+          fichas: ca.fichas,
+          garbanzos: ca.garbanzos,
+        });
+        if (table === 'rpc/piso_casino_ruleta') return json(vista());
+        if (ru.giros[lunes]) return fail('Esta semana ya has girado la ruleta.');
+        llegar();
+        const n = ru.sale ?? 0;
+        const c = RULETA[n];
+        const giro = { casilla: n, premio: c.id, repetido: false, fichas: 0, garbanzos: 0 };
+        if (c.tipo === 'fichas') giro.fichas = c.cantidad;
+        else if (c.tipo === 'garbanzos') giro.garbanzos = c.cantidad;
+        else if (ru.tienes.includes(c.id)) Object.assign(giro, { repetido: true, fichas: RULETA_REPETIDO });
+        // (muebles, prenda y el mapache, que es un compañero)
+        else ru.tienes.push(c.id);
+        ca.fichas += giro.fichas;
+        ca.garbanzos += giro.garbanzos;
+        ru.giros[lunes] = giro;
+        return json(vista());
+      }
+      // 1.111 · La vitrina: `ca.vitrina = { tienes, hitos, amigos: { [uid]: { alias, tienes, hitos, fichas, garbanzos } } }`
+      if (table === 'rpc/piso_casino_vitrina') {
+        if (!ca.vitrina) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
+        const vi = ca.vitrina;
+        if (body.otro) {
+          const o = vi.amigos?.[body.otro];
+          if (!o) return fail('Solo se ve la vitrina de un amigo: os tenéis que seguir los dos.');
+          return json({ uid: body.otro, alias: o.alias, tienes: o.tienes ?? [], hitos: o.hitos ?? [], fichas: o.fichas ?? 0, garbanzos: o.garbanzos ?? 0 });
+        }
+        return json({ uid: userId, tienes: vi.tienes ?? [], hitos: vi.hitos ?? [], fichas: ca.fichas, garbanzos: ca.garbanzos });
+      }
+      // 1.110 · Las chisteras: `ca.chisteras = { barajas: [[inicio, cambios]…], partidas: {} }` (las barajas, en orden; sin
+      // ellas, al azar)
+      if (table.startsWith('rpc/piso_casino_chisteras')) {
+        if (!ca.chisteras) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
+        const ch = ca.chisteras;
+        ch.partidas ??= {};
+        ch.perfectas ??= 0;
+        const p = ch.partidas[body.dia];
+        const vista = (extra = {}) => ({
+          dia: body.dia,
+          estado: p?.estado ?? null,
+          ronda: p?.ronda ?? 1,
+          rondas: p?.rondas ?? [],
+          aciertos: p?.aciertos ?? 0,
+          fichas: p?.fichas ?? 0,
+          perfectas: ch.perfectas,
+          reglas: CHISTERAS_JUEGO,
+          semana: ca.semana,
+          tope: CASINO.tope,
+          fichasCuenta: ca.fichas,
+          // 1.112 · Los sellos (`ch.canjes`: lo ya cambiado; `ch.acabables`: muebles con copia lisa), solo con `ch.premios`
+          tienda: ch.premios
+            ? {
+                sellos: ch.perfectas - (ch.canjes ?? []).reduce((n, id) => n + PREMIOS_CHISTERAS.find((x) => x.id === id).sellos, 0),
+                premios: PREMIOS_CHISTERAS.map((x) => ({ id: x.id, tipo: x.tipo, sellos: x.sellos, tienes: (ch.canjes ?? []).includes(x.id) })),
+                acabables: ch.acabables ?? [],
+              }
+            : undefined,
+          ...extra,
+        });
+        if (table === 'rpc/piso_casino_chisteras') return json(vista());
+        if (table === 'rpc/piso_casino_chisteras_canjear') {
+          const x = PREMIOS_CHISTERAS.find((q) => q.id === body.premio);
+          if (!x) return fail('Eso no se cambia por sellos.');
+          ch.canjes ??= [];
+          if (ch.canjes.includes(x.id)) return fail('Eso ya lo tienes.');
+          if (vista().tienda.sellos < x.sellos) return fail('Te faltan sellos: se gana uno con cada partida perfecta.');
+          if (x.tipo === 'acabado' && !(ch.acabables ?? []).includes(body.mueble)) return fail('Necesitas una copia lisa guardada de ese mueble, sin colocar ni recién llegada.');
+          ch.canjes.push(x.id);
+          if (ca.vitrina) ca.vitrina.tienes = [...(ca.vitrina.tienes ?? []), x.id];
+          return json(vista());
+        }
+        if (p?.estado === 'hecha') return fail('Hoy ya has jugado a las chisteras: mañana, más.');
+        if (table === 'rpc/piso_casino_chisteras_ver') {
+          llegar();
+          const q = (ch.partidas[body.dia] ??= { estado: 'jugando', ronda: 1, rondas: [], aciertos: 0, fichas: 0 });
+          const n = CHISTERAS_JUEGO.cambios[q.ronda - 1];
+          const [inicio, cambios] = ch.barajas?.shift() ?? [Math.floor(Math.random() * 3), Array.from({ length: n }, () => Math.floor(Math.random() * 3))];
+          Object.assign(q, { inicio, cambios });
+          const r = vista({ inicio, cambios });
+          return json({ ...r, estado: 'jugando' });
+        }
+        if (!p?.cambios) return fail('Primero mira la ronda.');
+        const conejo = conejoTras(p.inicio, p.cambios);
+        const acierto = conejo === body.chistera;
+        p.aciertos += acierto ? 1 : 0;
+        p.rondas.push({ elegida: body.chistera, conejo, acierto });
+        p.cambios = null;
+        if (p.ronda >= CHISTERAS_JUEGO.rondas) {
+          p.estado = 'hecha';
+          p.fichas = Math.min(CHISTERAS_JUEGO.premios[p.aciertos], Math.max(0, CASINO.tope - ca.semana));
+          ca.fichas += p.fichas;
+          ca.semana += p.fichas;
+          if (p.aciertos === 3) ch.perfectas += 1;
+        } else p.ronda += 1;
+        return json(vista({ elegida: body.chistera, conejo, acierto }));
       }
       if (table === 'rpc/piso_casino_canjear') {
         const a = CAJA.find((x) => x.id === body.articulo);

@@ -13,7 +13,13 @@ export const ACABADOS = [
   { id: 'nacar', nombre: 'Nácar', peso: 5, tonos: ['#4a3f86', '#8f8fe0', '#efc2e6', '#ffffff'], chispa: '#ffffff' },
 ];
 
-export const acabadoOf = (id) => ACABADOS.find((a) => a.id === id) ?? null;
+/**
+ * 1.112 · «Polvo de estrellas», el acabado de las chisteras del casino: se cambia por sellos de partidas perfectas y se pone
+ * en una copia lisa tuya. No sale en los sobres ni se canjea en la Lonja (por eso no está en ACABADOS).
+ */
+export const ACABADO_CHISTERAS = { id: 'polvo-estrellas', nombre: 'Polvo de estrellas', tonos: ['#141438', '#3c2f86', '#a184e6', '#ffe9a8'], chispa: '#fff6c8' };
+
+export const acabadoOf = (id) => ACABADOS.find((a) => a.id === id) ?? (id === ACABADO_CHISTERAS.id ? ACABADO_CHISTERAS : null);
 
 /** ¿Puede llevar acabado? Los mismos que entran en la Lonja: hasta «raro», sin sagas ni mascotas. */
 export function admiteAcabado(cat) {

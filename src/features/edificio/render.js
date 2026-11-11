@@ -106,6 +106,20 @@ function rugColor(r, item, x, y, ix, iy) {
   }
   const e = Math.max(Math.abs(ex), Math.abs(ey));
   if (e > 1) return 0;
+  if (item.id === 'alfombra-rombos') {
+    // 1.112 · La del casino: ribete dorado, una franja granate oscura y rombos dorados con el corazón más claro
+    const ORO = [222, 180, 86];
+    const band = 1 - e;
+    if (band < 0.07) return r.rampOf(ORO)[level(0.2)];
+    if (band < 0.14) return r.rampOf(T)[level(-0.9)];
+    if (band < 0.19) return r.rampOf(ORO)[level(0)];
+    const u = (((x - rc.x0) % 0.75) + 0.75) % 0.75 - 0.375;
+    const v = (((y - rc.y0) % 0.66) + 0.66) % 0.66 - 0.33;
+    const m = Math.abs(u) / 0.375 + Math.abs(v) / 0.33;
+    if (m > 0.8 && m < 1) return r.rampOf(ORO)[level(0)];
+    if (m < 0.34) return r.rampOf(ORO)[level(-0.5)];
+    return r.rampOf(T)[level(0)];
+  }
   if (item.id === 'alfombra-rayas') {
     // Rayas a lo largo del lado corto (en su tono, crema y un tono más oscuro) y un fleco claro en los extremos
     const long = rc.x1 - rc.x0 > rc.y1 - rc.y0;

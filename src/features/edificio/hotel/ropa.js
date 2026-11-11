@@ -1,5 +1,5 @@
 // 1.102 (SPEC §102) · La ropa del probador del almacén: qué filas hay, qué se puede poner y si has cambiado algo.
-import { COMPLEMENTOS, JERSEYS, PANTALONES, PRENDAS, ROPA_CASINO, ROPA_ESTIBA, ROPA_TIENDA, isPrenda, prendaKey } from '../actor';
+import { COMPLEMENTOS, JERSEYS, PANTALONES, PRENDAS, ROPA_CASINO, ROPA_CHISTERAS, ROPA_ESTIBA, ROPA_RULETA, ROPA_TIENDA, isPrenda, prendaKey } from '../actor';
 
 /** Las filas del probador: solo la ropa (el pelo y la piel se cambian en el armario de tu piso). */
 export const FILAS_ROPA = [
@@ -18,7 +18,7 @@ export const FILAS_ROPA = [
 ];
 const ROPA_KEYS = new Set(FILAS_ROPA.map((f) => f.key));
 /** Toda la ropa que se gana (misiones, casino y estiba) o se compra (la planta de ropa), para contar cuánta tienes. */
-export const GANABLES = [...PRENDAS, ...ROPA_CASINO, ...ROPA_ESTIBA, ...Object.keys(ROPA_TIENDA)].filter((p) => ROPA_KEYS.has(p.split(':')[0]));
+export const GANABLES = [...PRENDAS, ...ROPA_CASINO, ...ROPA_ESTIBA, ...ROPA_RULETA, ...ROPA_CHISTERAS, ...Object.keys(ROPA_TIENDA)].filter((p) => ROPA_KEYS.has(p.split(':')[0]));
 
 /** Lo que se puede poner de una fila: lo de serie, lo ganado y lo que ya llevas puesto. */
 export function opcionesDe(fila, prendas, base) {

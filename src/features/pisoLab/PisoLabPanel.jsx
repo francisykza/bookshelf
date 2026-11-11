@@ -27,6 +27,7 @@ import { PisoMenu } from './PisoMenu';
 import { demoLibraryActive } from './sampleLibrary';
 import { HOME_PISO } from './inicio';
 import { rememberMyPiso, saveMyPiso } from '../edificio/myPiso';
+import { salaPersonajes } from '../edificio/service';
 import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
 import { expuestosDe, publicarExpuestos } from './expuestos';
 import '../tablon/tablon.css';
@@ -196,6 +197,20 @@ export function Interior({ piso, room, hora, reading, balda, covered, leaning, l
   useEffect(() => {
     api.current?.setCovered(covered);
   }, [covered, ready]);
+
+  // 1.109 · El compañero de quien vive aquí: si es el mapache crupier, se queda contigo en el suelo (en volúmenes, interior3d.js)
+  const dueño = piso.userId ?? null;
+  useEffect(() => {
+    if (!dueño || !ready) return undefined;
+    let alive = true;
+    salaPersonajes([dueño]).then(
+      (r) => alive && api.current?.setCompanero?.(r[dueño]?.companero ?? null),
+      () => {},
+    );
+    return () => {
+      alive = false;
+    };
+  }, [dueño, ready]);
 
   // Lo que dejas sobre la mesa desde la ficha es el ejemplar que hay en la habitación, y la estantería se recoloca con él
   const key = sceneKey(reading, shelfBooks);

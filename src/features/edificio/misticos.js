@@ -542,6 +542,68 @@ export function drawGull(p, t, o = {}) {
   });
 }
 
+// La ruleta del casino (1.109). El mapache crupier (legendario, la casilla más rara de la ruleta): un mapache gris con su
+// antifaz, la cola de anillos y una visera verde de crupier. Quieto, hace malabares con tres fichas (y de vez en cuando
+// guiña); al seguirte, va al trote con una ficha en la mano y la cola dando botes. Original: ni personaje ni mascota de
+// ningún casino o juego.
+const COON_PAL = { o: '#2a2428', g: '#8a8490', G: '#b4aeb8', w: '#f2eee8', k: '#2e2830', e: '#fff8e8', n: '#141014', v: '#2c7a4e', V: '#5ab07a', y: '#e8b85a' };
+const COON_ROWS = [
+  '.oo....oo...',
+  'oGgo..oGgo..',
+  'ovvvvvvvvVVo',
+  'ogVVVVVVVVo.',
+  'owwwgggwwwo.',
+  'okkekkkekkoo',
+  'okkkwgwkkkwn',
+  '.owwwwwwwwo.',
+  '..oggggggo..',
+  '.ogggwwgggo.',
+  'ogggwwwwgggo',
+  'ogggwwwwgggo',
+  '.oggyggggggo',
+  '..oo....oo..',
+];
+// Guiñando: un ojo cerrado
+const COON_GUINO = COON_ROWS.map((r, k) => (k === 5 ? 'okkekkkkkkoo' : r));
+const COON_TAIL = ['..oo', '.oko', 'oGgo', 'okko', 'oGgo', 'okko', 'oGgo', '.oo.'];
+function ficha(p, x, y, glint) {
+  p.rect(x - 1.5, y - 1, 4, 3, H('#3a2a20'));
+  p.rect(x - 1, y - 0.5, 3, 2, H('#e8b85a'));
+  p.px(x + 0.5, y, H('#a8283a'));
+  if (glint) p.px(x - 0.5, y - 0.5, H('#fff4dc'));
+}
+export function drawRaccoon(p, t, o = {}) {
+  const moving = Boolean(o.moving);
+  const bob = moving ? Math.abs(Math.sin(t * 8)) * 2.5 : 0;
+  shadow(p, 7, bob);
+  const top = -14 - bob;
+  // La cola de anillos, detrás, que se mece (al trote, da botes)
+  const sway = Math.round(Math.sin(t * (moving ? 9 : 2.2)));
+  p.sprite(COON_TAIL, COON_PAL, -10 + sway, top + 5 + (moving ? Math.round(bob / 2) : 0));
+  const guino = !moving && t % 4.5 > 4.2;
+  p.sprite(guino ? COON_GUINO : COON_ROWS, COON_PAL, -6, top);
+  if (moving) {
+    // Una ficha en la mano, que brilla al trote
+    ficha(p, 5, top + 10, Math.sin(t * 8) > 0.6);
+    return;
+  }
+  // Los malabares: tres fichas en un óvalo a su lado (sin taparle la cara), desde la mano hasta por encima de las
+  // orejas, con un brillo dorado en la de arriba
+  for (let i = 0; i < 3; i += 1) {
+    const a = t * 3.1 + (i * 2 * Math.PI) / 3;
+    const x = 9 + Math.cos(a) * 3;
+    const y = top + 3 - Math.sin(a) * 6;
+    ficha(p, x, y, Math.sin(a) > 0.9);
+    if (Math.sin(a) > 0.95) p.glow(x + 0.5, y, 4, H('#ffe39a'), 0.25);
+  }
+  // De vez en cuando, una chispa dorada que sube
+  drift(t, 2, 3.4, (u, i) => {
+    if (u > 0.7) return;
+    const x = (hash(i, 4) - 0.5) * 16;
+    if (hash(i, 6) > 0.5 && u > 0.3 && u < 0.4) sparkle(p, x, top - 2 - u * 12, 1, H('#fff6d8'), H('#ffd27a'), 0.3);
+  });
+}
+
 // La gramola: el arco cambia de color despacio, suben burbujas de luz por los tubos y salen notas por arriba
 const JUKE = [H('#ff5a8a'), H('#ffb347'), H('#6fe0ff'), H('#9b7bff')];
 const NOTE = ['.oo', '.o.', 'oo.', 'oo.'];
@@ -616,6 +678,8 @@ export const MISTICOS = [
   { id: 'conejo-chistera', nombre: 'Conejo de la chistera', guino: 'De la caja del casino del Gran Hotel', legendario: true, draw: drawRabbit },
   // 1.86: la pared de la Lonja
   { id: 'gaviota-puerto', nombre: 'Gaviota del puerto', guino: 'De la pared de premios de la Lonja', legendario: true, draw: drawGull },
+  // 1.109: la casilla más rara de la ruleta del casino
+  { id: 'mapache-crupier', nombre: 'Mapache crupier', guino: 'La casilla más rara de la ruleta del casino', legendario: true, draw: drawRaccoon },
   { id: 'gramola', nombre: 'Gramola', vivo: true, draw: drawJukebox },
   { id: 'mesa-tapete', nombre: 'Mesa de tapete verde', vivo: true, draw: drawFeltTable },
   { id: 'destellos', nombre: 'Destellos de lentejuelas', efecto: true, draw: drawSequins },

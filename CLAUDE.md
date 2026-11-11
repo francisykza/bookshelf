@@ -197,6 +197,15 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     los días, leas o no** (desde la 1.81, decisión de Francisco del 4-11-2026: «da mucho conflicto con las lecturas»);
     las fichas nunca se compran y se canjean por sobres, ropa de casino y la mascota «el conejo de la chistera» (ocupa el sitio del legendario).
     Orden: vestíbulo con ascensor, suite, casino, sala de lectura y quiosco, Lonja, vitrinas y mirador.
+    **El casino en 3D** (encargo de Francisco del 10-11-2026; plan en `docs/qa/casino-3d.md`, por bloques con capturas):
+    sala más grande e impactante con el motor del almacén, «Las 21 páginas» en una mesa 3D, **una ruleta de premios una
+    vez por semana** (decide el servidor, probabilidades a la vista, sin falsos «casi»; **se gira solo a solas, aunque
+    los amigos que visitan la ven**), el tercer juego **«Las tres chisteras»** (seguir al conejo bajo las chisteras, de
+    habilidad) y **una vitrina de premios** en la sala. Premios (aprobados el 10-11-2026, «Vale»): blackjack como hoy;
+    ruleta con fichas, garbanzos, prenda y mueble trofeo exclusivos, sus fichas **fuera** del tope de 150; chisteras con
+    pocas fichas al día **dentro** del tope; copas de hitos solo decorativas; **sin tickets nuevos ni sobres** (siguen
+    cerrados). Lo ganado va al inventario para usarlo **y además** queda expuesto en la vitrina, que **ven los amigos**
+    al visitar; Francisco quiere que la vitrina sea **lo más inmersiva posible**. **Los premios raros, apetecibles** (10-11-2026): la casilla más rara de la ruleta es una **mascota de casino que te acompaña**, el mapache crupier, con **modelo 3D de verdad** (volúmenes, no el dibujo de píxeles de pie; `mapache3d.js`), y te sigue. **La vitrina enseña todos los premios del casino** (aprobado el 10-11-2026, con 3-4 más de los propuestos; lista en `casino-3d.md` §4): lo ganado iluminado y lo que falta tapado con un paño y cómo se gana.
     **La mesa para dos del casino** (3-11-2026, «Fichas y garbanzos», «Os seguís los dos», «En diferido»): con un
     amigo (**seguimiento mutuo**) se juega contra el mismo crupier, cada uno cuando quiere; esas manos son de las 3 del
     día y dan **2 fichas de compañía** más a cada uno (el tope semanal de 150 sigue). **Única excepción a «sin
