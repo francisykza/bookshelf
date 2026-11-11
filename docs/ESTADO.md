@@ -242,6 +242,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Bitácora
 
+### 2026-11-11 · Arreglo: la ruleta del casino no se podía girar · 1.112.0 (Claude)
+- Francisco: «Pero no puedo girar la ruleta todavía»; la sala decía «La ruleta aún no gira: falta prepararla en el servidor».
+- **Causa**: `piso_casino_ruleta(dia)` estaba declarada `stable`. PostgREST ejecuta las funciones `stable` e `immutable` en una transacción de solo lectura, pero esta llama a `piso_yo()`, que escribe (asegura el inventario), así que fallaba con cualquier cuenta real; la app trata cualquier error al cargar la ruleta como «sin migración». PGlite no pasa por PostgREST y las pruebas no lo vieron. Era la única función así.
+- **Arreglo**: `20261205120000_casino_ruleta_volatil.sql` (874 B, `d26a0c85…c311e29f8e8`; solo `alter function … volatile`). Pegada en el SQL Editor con bytes y SHA-256 iguales al archivo; Francisco pulsó «Run» («Success»). Con la clave pública, sigue dando 42501 al anónimo. Prueba nueva: `rpc-solo-lectura.rls.test.js` (ninguna función `stable`/`immutable` que pueda llamar una cuenta usa `piso_yo()`; falla sin el arreglo y pasa con él). La app no cambia: no hace falta desplegar.
+- **Commit y subida** pedidos por Francisco («Sí, haz el commit»): la migración, la prueba y esta entrada, en `main` sin forzar. **Comprobado por Francisco** con su cuenta tras recargar la app: la ruleta ya gira («Sí, gira»).
+
 ### 2026-11-11 · Migraciones del casino 3D aplicadas en producción · 1.112.0 (Claude)
 - Francisco: «Tras las migraciones» (fusionar con `main` solo después de aplicarlas) y «hazlo tú». Él inició sesión en el panel del navegador; Claude pegó cada migración en el SQL Editor del proyecto `bookshelf` comprobando bytes y SHA-256 con git, y Francisco pulsó «Run» («Success»), en este orden:
   - `20261201120000_casino_ruleta.sql` (13.798 B, `3865b125…c9d4c8`)
