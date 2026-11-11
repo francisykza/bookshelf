@@ -1,0 +1,529 @@
+/* La sala de lectura en 3D (1.116, encargo de Francisco del 11-11-2026). La biblioteca ocupa casi toda la pantalla; encima,
+   los letreros como placas de latón con esquinas de píxel, el saludo como bocadillo sobre quien lee y, sentado en tu
+   sillón, el reloj y los botones de siempre en una tarjeta de nogal al pie. Debajo sigue el panel de la sala (hotel.css,
+   .gh-lect). Colores de .gh-casino y un verde de biblioteca propio. */
+.sl3 {
+  --sl3-px: 3px;
+  --sl3-green: #2f5a44;
+  --sl3-green-d: #1d3a2c;
+  position: relative;
+  /* La sala manda: casi toda la pantalla (Francisco, 11-11-2026: «lo de las lecturas le quita protagonismo») */
+  height: clamp(420px, 80dvh, 820px);
+  overflow: hidden;
+  background: #120e1c;
+}
+.sl3-stage {
+  position: absolute;
+  inset: 0;
+}
+.sl3-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: grab;
+}
+.sl3-canvas:active {
+  cursor: grabbing;
+}
+.sl3-canvas:focus-visible {
+  outline: 2px solid var(--c21-gold);
+  outline-offset: -4px;
+}
+.sl3-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  padding: 24px;
+  color: var(--c21-gold);
+  font:
+    italic 1.05rem 'Cormorant Garamond',
+    Georgia,
+    serif;
+  text-align: center;
+}
+
+.sl3-tags {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sl3-tag,
+.sl3-hola {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.sl3-tag[data-off='true'],
+.sl3-hola[data-off='true'],
+.sl3-hola[data-vacio='true'] {
+  visibility: hidden;
+}
+
+/* Las placas de latón con filete verde y el rombo */
+.sl3-tag,
+.sl3-plano,
+.sl3-mapa button,
+.sl3-levantarse {
+  border: 0;
+  cursor: pointer;
+  clip-path: polygon(
+    0 var(--sl3-px),
+    var(--sl3-px) var(--sl3-px),
+    var(--sl3-px) 0,
+    calc(100% - var(--sl3-px)) 0,
+    calc(100% - var(--sl3-px)) var(--sl3-px),
+    100% var(--sl3-px),
+    100% calc(100% - var(--sl3-px)),
+    calc(100% - var(--sl3-px)) calc(100% - var(--sl3-px)),
+    calc(100% - var(--sl3-px)) 100%,
+    var(--sl3-px) 100%,
+    var(--sl3-px) calc(100% - var(--sl3-px)),
+    0 calc(100% - var(--sl3-px))
+  );
+}
+/* Discretas (Francisco, 11-11-2026): una plaquita oscura y translúcida con letra dorada, que no le quite la vista a la sala */
+.sl3-tag {
+  --sl3-px: 2px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 7px 4px;
+  background: rgb(20 12 10 / 0.5);
+  box-shadow: inset 0 0 0 1px rgb(226 184 100 / 0.45);
+  color: var(--c21-gold-l);
+  font:
+    600 0.66rem/1.1 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
+  white-space: nowrap;
+  opacity: 0.86;
+  pointer-events: auto;
+}
+.sl3-tag:hover,
+.sl3-tag:focus-visible {
+  background: rgb(20 12 10 / 0.72);
+  opacity: 1;
+}
+.sl3-tag::before {
+  width: 5px;
+  height: 5px;
+  background: var(--c21-gold);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  content: '';
+}
+.sl3-tag:active {
+  filter: brightness(0.92);
+}
+.sl3-tag:focus-visible,
+.sl3-plano:focus-visible,
+.sl3-mapa button:focus-visible,
+.sl3-levantarse:focus-visible {
+  outline: 2px solid var(--c21-cream);
+  outline-offset: 2px;
+}
+.sl3-tag.is-pronto {
+  color: #d8c7a4;
+  opacity: 0.7;
+}
+.sl3 .sl3-tag i {
+  padding: 1px 3px;
+  background: rgb(226 184 100 / 0.22);
+  color: var(--c21-gold-l);
+  font-size: 0.52rem;
+}
+.sl3-tag i,
+.sl3-mapa i {
+  padding: 1px 4px 2px;
+  background: var(--c21-ink);
+  color: var(--c21-cream);
+  font:
+    700 0.62rem/1 'Courier Prime',
+    'Courier New',
+    monospace;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* El saludo: un bocadillo de papel sobre la cabeza de quien te saluda */
+.sl3-hola {
+  margin: 0;
+  padding: 4px 9px 5px;
+  background: var(--c21-cream);
+  box-shadow:
+    0 0 0 2px var(--c21-ink),
+    3px 3px 0 2px rgb(0 0 0 / 0.35);
+  color: var(--c21-ink);
+  font:
+    700 0.8rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+.sl3-hola::after {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: var(--c21-cream);
+  box-shadow:
+    2px 0 0 var(--c21-ink),
+    -2px 0 0 var(--c21-ink),
+    0 2px 0 var(--c21-ink);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  content: '';
+}
+
+/* El plano: un botón en la esquina y, al abrirlo, los sitios en una tarjeta verde biblioteca */
+.sl3-plano,
+.sl3-levantarse {
+  position: absolute;
+  top: 10px;
+  z-index: 4;
+  min-height: 36px;
+  padding: 6px 12px 7px;
+  background: rgb(18 14 12 / 0.82);
+  box-shadow: inset 0 0 0 2px var(--c21-gold-d);
+  color: var(--c21-gold-l);
+  font:
+    700 0.76rem/1 'Courier Prime',
+    'Courier New',
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sl3-plano {
+  right: 10px;
+}
+.sl3-levantarse {
+  left: 10px;
+}
+.sl3-plano[aria-expanded='true'] {
+  background: var(--sl3-green-d);
+  box-shadow: inset 0 0 0 2px var(--c21-gold);
+}
+.sl3-mapa {
+  position: absolute;
+  top: 52px;
+  right: 10px;
+  z-index: 4;
+  display: grid;
+  gap: 4px;
+  min-width: 200px;
+  padding: 8px;
+  background: var(--sl3-green-d);
+  box-shadow:
+    inset 0 0 0 2px var(--c21-gold),
+    0 4px 0 rgb(0 0 0 / 0.4);
+}
+.sl3-mapa button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 6px 10px;
+  background: var(--c21-gold);
+  box-shadow: inset 0 -3px 0 var(--c21-gold-d);
+  color: var(--c21-ink);
+  font:
+    700 0.82rem/1.1 'Lora',
+    Georgia,
+    serif;
+  text-align: left;
+}
+.sl3-mapa button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Sentado en tu sillón (o delante de la librería): la escena manda; abajo, una tarjeta de nogal con el reloj y los botones */
+.sl3-sit {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.sl3-sit > * {
+  pointer-events: auto;
+}
+.sl3 .sl3-sit__panel,
+.sl3-lib__nota {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  display: grid;
+  gap: 8px;
+  max-width: 440px;
+  max-height: calc(100% - 64px);
+  margin: 0 auto;
+  padding: 8px 12px 12px;
+  overflow-y: auto;
+  background: rgb(36 22 16 / 0.9);
+  box-shadow:
+    inset 0 0 0 2px var(--c21-gold-d),
+    0 4px 0 rgb(0 0 0 / 0.4);
+  color: var(--c21-cream);
+}
+/* Sentado, la sesión es una franja baja: el reloj a la izquierda y los botones a la derecha, sin tapar la sala */
+.sl3 .sl3-sit__panel:has(> .gh-lect__clock),
+.sl3-sesion:has(> .gh-lect__clock) {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  align-items: center;
+  max-width: 420px;
+  padding: 6px 8px 6px 12px;
+  background: rgb(30 18 12 / 0.74);
+}
+.sl3-sit__panel > .gh-lect__clock,
+.sl3-sesion > .gh-lect__clock {
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+.sl3-sit__panel > .gh-lect__clock p,
+.sl3-sesion > .gh-lect__clock p {
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sl3-sit__panel > .gh-lect__clock strong,
+.sl3-sesion > .gh-lect__clock strong {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.05;
+}
+.sl3-sit__panel > .gh-21__acts,
+.sl3-sesion > .gh-21__acts {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 4px 4px 0;
+}
+.sl3-sit__panel > .gh-21__acts .gh-21btn,
+.sl3-sesion > .gh-21__acts .gh-21btn {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+}
+.sl3-sit__panel > .sl3-sit__hola {
+  grid-column: 1 / -1;
+  padding: 2px 8px 3px;
+  font-size: 0.74rem;
+}
+.sl3-sit__hola {
+  margin: 0;
+  padding: 4px 8px 5px;
+  background: var(--c21-cream);
+  box-shadow: 0 0 0 2px var(--c21-ink);
+  color: var(--c21-ink);
+  font:
+    700 0.8rem/1.25 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+.sl3-lib__nota {
+  justify-items: center;
+  font:
+    600 0.84rem/1.35 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+.sl3-lib__nota p {
+  margin: 0;
+}
+.sl3-lib__nota .gh-21link {
+  color: var(--c21-gold-l);
+}
+
+/* El aviso al tocar algo: una nota de papel arriba, sin tapar la sala */
+.sl3-aviso {
+  position: absolute;
+  top: 56px;
+  right: 12px;
+  left: 12px;
+  z-index: 3;
+  max-width: 380px;
+  margin: 0 auto;
+  padding: 8px 12px 9px;
+  background: var(--c21-cream);
+  box-shadow:
+    0 0 0 2px var(--c21-gold-d),
+    0 4px 0 rgb(0 0 0 / 0.35);
+  color: var(--c21-ink);
+  font:
+    600 0.82rem/1.3 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+  animation: sl3-in 0.18s ease-out both;
+}
+@keyframes sl3-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sl3-aviso {
+    animation: none;
+  }
+}
+
+/* En el panel de debajo (sin estar sentado), la misma franja, sin fondo propio */
+.sl3-sesion:has(> .gh-lect__clock) {
+  display: grid;
+  margin: 0 auto 6px;
+  padding: 4px 4px 4px 6px;
+  background: none;
+}
+.sl3-sesion > .gh-lect__dura,
+.sl3-sit__panel > .gh-lect__dura {
+  grid-column: 1 / -1;
+}
+
+/* Elegir cuánto dura la sesión: botoncitos discretos, antes de empezar */
+.gh-lect__dura {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0 0;
+}
+.gh-lect__dura button {
+  min-width: 34px;
+  min-height: 30px;
+  padding: 0 6px;
+  border: 0;
+  background: rgb(20 12 10 / 0.45);
+  box-shadow: inset 0 0 0 1px rgb(226 184 100 / 0.4);
+  color: var(--c21-gold-l);
+  font:
+    600 0.74rem/1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+.gh-lect__dura button[aria-pressed='true'] {
+  background: var(--c21-gold);
+  box-shadow: inset 0 -2px 0 var(--c21-gold-d);
+  color: var(--c21-ink);
+}
+.gh-lect__dura button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.gh-lect__dura button:focus-visible {
+  outline: 2px solid var(--c21-cream);
+  outline-offset: 1px;
+}
+.gh-lect__dura span {
+  color: var(--c21-cream);
+  font:
+    italic 0.72rem 'Lora',
+    Georgia,
+    serif;
+  opacity: 0.8;
+}
+/* Los botones siempre a la derecha del reloj, aunque haya una fila encima (el saludo) o debajo (la duración) */
+.sl3 .sl3-sit__panel:has(> .gh-lect__clock),
+.sl3-sesion:has(> .gh-lect__clock) {
+  grid-auto-flow: row dense;
+}
+.sl3-sit__panel > .gh-21__acts,
+.sl3-sesion > .gh-21__acts {
+  grid-column: 2;
+}
+
+/* 1.117 · «Leer con un amigo»: una fila con su cara, la frase y los botones; sin ocupar más que la lista de quien lee */
+.gh-cita {
+  margin: 4px 0 10px;
+}
+.gh-cita__fila {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+}
+.gh-cita__fila > p,
+.gh-cita__fila > .gh-21__acts,
+.gh-cita__fila > .gh-21link,
+.gh-cita__fila > .gh-21btn {
+  grid-column: 2;
+  margin: 0;
+}
+.gh-cita__fila:not(:has(> .reader-avatar)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.gh-cita__fila:not(:has(> .reader-avatar)) > * {
+  grid-column: 1;
+}
+.gh-cita__fila > .gh-21btn {
+  justify-self: start;
+}
+.gh-cita__fila > p {
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+.gh-cita__nota {
+  grid-column: 1 / -1;
+  font-size: 0.74rem;
+  font-style: italic;
+  opacity: 0.78;
+}
+.gh-cita__form {
+  display: grid;
+  gap: 8px;
+}
+.gh-cita__amigos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gh-cita__amigos button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 40px;
+  padding: 3px 10px 3px 4px;
+  border: 0;
+  background: rgb(20 12 10 / 0.45);
+  box-shadow: inset 0 0 0 1px rgb(226 184 100 / 0.4);
+  color: var(--c21-cream);
+  font: 600 0.8rem/1.1 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+.gh-cita__amigos button[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--c21-gold);
+  color: var(--c21-gold-l);
+}
+.gh-cita__amigos button:focus-visible {
+  outline: 2px solid var(--c21-cream);
+  outline-offset: 1px;
+}
+.gh-cita .gh-lect__dura {
+  justify-content: flex-start;
+}

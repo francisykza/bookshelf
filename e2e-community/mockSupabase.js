@@ -219,6 +219,54 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       }
       return json(l);
     }
+    // 1.117 · La cita de lectura: `db.citas` = { amigos, invitaciones, mia, otroLate (el amigo late a la vez) }. Sin él,
+    // como si no estuviera la migración. La hora es la de este reloj.
+    if (table.startsWith('rpc/sala_cita')) {
+      if (!db.citas) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'no existe' }) });
+      const c = db.citas;
+      const body = req.postDataJSON?.() ?? {};
+      const ahora = Date.now();
+      c.amigos ??= [];
+      c.invitaciones ??= [];
+      (c.llamadas ??= []).push({ rpc: table.slice(4), body });
+      const vista = (x) => {
+        if (!x) return null;
+        const estado = x.estado === 'aceptada' && x.fin <= ahora ? 'terminada' : x.estado;
+        return { ...x, estado, otro_aqui: Boolean(c.otroLate) && estado === 'aceptada' && ahora >= x.empieza };
+      };
+      if (table === 'rpc/sala_citas') return json({ amigos: c.amigos, invitaciones: c.invitaciones.map(vista), mia: vista(c.mia), ahora });
+      if (table === 'rpc/sala_cita_invitar') {
+        const amigo = c.amigos.find((x) => x.uid === body.amigo);
+        const empieza = ahora + body.en_min * 60000;
+        c.mia = { cita: randomUUID(), soy: 'anfitrion', uid: amigo.uid, alias: amigo.alias, avatar_id: amigo.avatar_id, minutos: body.minutos, empieza, fin: empieza + body.minutos * 60000, estado: 'invitada', juntos: 0, mios: 0 };
+        return json(vista(c.mia));
+      }
+      if (table === 'rpc/sala_cita_responder') {
+        const inv = c.invitaciones.find((x) => x.cita === body.cita);
+        c.invitaciones = c.invitaciones.filter((x) => x !== inv);
+        if (body.acepta) {
+          const empieza = Math.max(inv.empieza, ahora);
+          c.mia = { ...inv, soy: 'invitado', estado: 'aceptada', empieza, fin: empieza + inv.minutos * 60000, juntos: 0, mios: 0 };
+        } else c.mia = { ...inv, soy: 'invitado', estado: 'no_vino' };
+        return json(vista(c.mia));
+      }
+      if (table === 'rpc/sala_cita_latido') {
+        const m = c.mia;
+        if (m?.cita === body.cita && m.estado === 'aceptada' && ahora >= m.empieza && ahora < m.fin) {
+          const minuto = Math.floor((ahora - m.empieza) / 60000);
+          m.minutos_latidos = [...new Set([...(m.minutos_latidos ?? []), minuto])];
+          m.mios = m.minutos_latidos.length;
+          if (c.otroLate) m.juntos = m.mios;
+        }
+        return json(vista(m));
+      }
+      if (table === 'rpc/sala_cita_dejar') {
+        const m = c.mia;
+        if (m?.cita === body.cita) c.mia = m.estado === 'aceptada' && ahora >= m.empieza ? { ...m, estado: 'terminada' } : null;
+        return json(null);
+      }
+      return json(null);
+    }
     // La sala: `db.sala` = { lomos, saludos (quien te saluda), enviados }. Sin él, como si no estuviera la migración
     if (['rpc/sala_libreria', 'rpc/sala_lomo_dejar', 'rpc/sala_lomo_retirar', 'rpc/sala_saludar', 'rpc/sala_saludos_nuevos'].includes(table)) {
       if (!db.sala) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'no existe' }) });

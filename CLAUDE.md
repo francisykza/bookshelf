@@ -221,6 +221,13 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     compañero, nunca con iconos. Tiene que dejar huella: **librería común** (quien termina un libro leyendo ahí puede dejar
     su lomo, con su nombre; lo decide cada vez y puede retirarlo) y **saludo** cerrado entre quienes leen a la vez, sin texto
     libre. Al acabar te dice con quién has leído. No da tickets ni recompensas.
+    **La sala en 3D** (encargo de Francisco del 11-11-2026; plan en `docs/qa/sala-lectura-3d.md`, por bloques con capturas):
+    biblioteca de noche en 3D con el motor del casino. Decisiones de Francisco (11-11-2026): **a solas, tu sillón con tu libro**
+    en la mesita (sin cuaderno de la sala, sin «Abrir el libro» ni mesa por libro de momento); **cita de lectura con un amigo**
+    (seguimiento mutuo, aviso en el edificio, reloj común del servidor, «habéis leído juntos»; «haz lo que veas mejor»); **placa
+    del sofá por pareja, sin rachas** (horas y libros juntos, solo adorno de la sala); y **una selección de gestos cerrados**
+    para comunicarse con la otra persona, sin texto libre.
+    **Aspecto de la sala** (11-11-2026): gran biblioteca mágica de triple altura y luz cálida («cozy»); la sala manda en la pantalla y la sesión va en una franja baja, nunca media pantalla; letreros discretos; la duración de la sesión la elige quien lee.
   - **Salas ampliadas y de varias plantas** (4-11-2026, idea de Francisco, con maquetas de un salón ampliado y de un piso de
     tres plantas): **toda la sala se ve a la vez, sin transiciones**. Varias plantas = un solo dibujo en corte, unas sobre otras
     con su escalera. A prueba en la Lonja (`hotel/lonjaArt.js`); los pisos de los vecinos, más adelante.

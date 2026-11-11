@@ -28,6 +28,13 @@ async function toSala(page) {
   mock.db.reading_presence.push({ user_id: BEA, share_book: true, book_title: 'El faro del fin', started_at: ahora, last_seen: ahora });
   await mock.attach(page, ANA);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
+  // Desde la 1.116 la sala es 3D (su prueba es v1116-sala3d); aquí se sigue probando la de siempre, la que se ve sin WebGL
+  await page.addInitScript(() => {
+    const get = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (kind, ...rest) {
+      return /webgl/.test(kind) ? null : get.call(this, kind, ...rest);
+    };
+  });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
@@ -38,7 +45,7 @@ async function toSala(page) {
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Coger la limusina al Gran Hotel' }).click({ timeout: 15000 });
   const hotel = page.getByRole('dialog', { name: 'El Gran Hotel del Puerto' });
-  await expect(hotel.locator('canvas.hotel-canvas')).toBeVisible();
+  await expect(hotel.getByRole('button', { name: 'Directorio' })).toBeVisible({ timeout: 15000 });
   await hotel.getByRole('button', { name: 'Directorio' }).click();
   await hotel.getByRole('button', { name: /Café-biblioteca/ }).click();
   return { sala: hotel.getByRole('region', { name: 'La sala de lectura' }), mock };

@@ -666,3 +666,39 @@ export async function almacenPulso(sala, p) {
   fail(error);
   return data;
 }
+
+// ── 1.117 (§117) · La cita de lectura en la sala del hotel ──
+const sinCitas = (error) => error && (error.code === 'PGRST202' || error.code === '42883');
+/** Amigos, invitaciones que te esperan, tu cita y la hora del servidor; null si la migración aún no está. */
+export async function salaCitas() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('sala_citas');
+  if (sinCitas(error)) return null;
+  fail(error);
+  return data;
+}
+/** Invitar a un amigo a leer: `en` 0, 15 o 30 min; `minutos` 15, 25 o 45. */
+export async function salaCitaInvitar(amigo, en, minutos) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('sala_cita_invitar', { amigo, en_min: en, minutos });
+  fail(error);
+  return data;
+}
+export async function salaCitaResponder(cita, acepta) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('sala_cita_responder', { cita, acepta });
+  fail(error);
+  return data;
+}
+/** Un latido por minuto mientras estás en el sofá con la app a la vista; devuelve la cita (con «juntos»). */
+export async function salaCitaLatido(cita) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('sala_cita_latido', { cita });
+  fail(error);
+  return data;
+}
+export async function salaCitaDejar(cita) {
+  const sb = await client();
+  const { error } = await sb.rpc('sala_cita_dejar', { cita });
+  fail(error);
+}

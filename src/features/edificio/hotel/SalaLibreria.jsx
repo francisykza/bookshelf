@@ -1,14 +1,12 @@
 // La librería de la sala de lectura (1.83, docs/qa/gran-hotel.md §9.5): una balda común con los lomos de los libros que
 // la gente ha terminado leyendo aquí. Al tocar un lomo se ve qué libro es y quién lo dejó; el tuyo se puede retirar.
 import { useState } from 'react';
+import { lomoDe as lomo } from './salaLayout';
 
-const TONOS = ['#96362f', '#345c6e', '#b08846', '#40684c', '#78466e', '#8a5a3a'];
-
-// El mismo libro siempre tiene el mismo lomo: color y altura salen del título
+// El mismo libro siempre tiene el mismo lomo: color y altura salen del título (1.116: la misma regla que la sala en 3D)
 function lomoDe(titulo) {
-  let n = 7;
-  for (const c of titulo) n = (n * 31 + c.charCodeAt(0)) % 9973;
-  return { background: TONOS[n % TONOS.length], height: `${72 + (n % 5) * 7}%` };
+  const { color, alto } = lomo(titulo);
+  return { background: color, height: `${Math.round(alto * 100)}%` };
 }
 
 export function SalaLibreria({ libreria, onRetirar }) {

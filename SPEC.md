@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.115.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.117.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -5974,3 +5974,102 @@ ser un dibujo plano: es la plaza del muelle en 3D, de noche, a la altura de una 
   andando y volver; con movimiento reducido; vídeo) a 390 en Chromium y WebKit y en escritorio; `hotel3d.spec.js` (la página de
   desarrollo `dev/hotel3d.html`, con capturas y vídeo). `v174-limusina` y `v177-hotel-directorio` se adaptan al 3D (sin viaje;
   el latón es el filete SVG). Capturas y vídeos en `qa-report/hotel3d/` y `qa-report/hotel3d-app/`.
+
+## 116. La sala de lectura en 3D: a solas, tu sillón con tu libro (1.116.0)
+
+Encargo de Francisco del 11-11-2026 («darle un sentido y utilidad real… para tener un motivo para ir hasta allí solo o
+acompañado, y hacer su recreación en 3D»; plan en `docs/qa/sala-lectura-3d.md`). Bloque a de tres: la sala en 3D y lo que
+se hace en ella a solas. Sus respuestas: «el sillón y el libro» a solas; la cita de lectura con un amigo, el sofá y los
+gestos quedan para los bloques b (1.117) y c (1.118).
+
+- **La sala** (`hotel/sala3d.js`, plano en `hotel/salaLayout.js`): una biblioteca de doble altura, de noche, con el motor y
+  el lenguaje de píxel del casino (texturas pintadas una vez con la luz ya puesta, 320 px de ancho, render a demanda). El
+  ventanal al puerto con su faro y lluvia, la galería alta con barandilla y escalera de caracol, la chimenea con fuego y el
+  sofá para dos delante, el reloj de pie, la mesa larga con lámparas verdes, el techo artesonado con la araña, el gato dormido
+  en la galería y la librería común junto a la entrada. Se anda por pasillos (tocar el suelo o un letrero; «Plano» lleva a
+  cada sitio). Con movimiento reducido no se anima nada (fuego, lluvia, péndulo) y no hay paseos.
+- **Profundidad y espectáculo** (Francisco, al ver las primeras capturas: «que se vea con más profundidad la biblioteca»):
+  las librerías de pared tienen relieve (cantos de balda, pilastras, zócalo y cornisa salen de la pared); lo lejano se pierde
+  en una penumbra azulada (niebla); lo que brilla tiene resplandor (lámparas, araña, fuego, esfera del reloj), a la misma
+  resolución baja que todo; y de los tres ventanucos altos bajan **haces de luna** hasta el suelo, con su mancha de luz y
+  motas de polvo que flotan (quietas con movimiento reducido). Corregido: el suelo estaba pintado al revés en lo hondo (la
+  alfombra azul del ventanal salía en la entrada).
+- **Una gran biblioteca mágica, más acogedora** (Francisco, al ver la segunda entrega: «luces más cozy», «la parte de arriba
+  con más sensación de magnificencia, como si entrases a una gran biblioteca mágica», las tiras de la librería «deslumbran» y
+  «lo de las lecturas ocupa la mitad de la pantalla»): la sala es de **triple altura** (10,6) con una **segunda galería** por las
+  cuatro paredes y sus farolillos; el techo es una **bóveda celeste** pintada en los artesones dorados, con estrellas y un rosetón
+  de oro; una **araña grande** de dos coronas caladas de velas con lágrimas de cristal; **un corro de libros abiertos que vuela
+  despacio** bajo la bóveda y **chispas doradas** que suben (quietos con movimiento reducido). La luz es ámbar cerca de las
+  lámparas y, de lejos, un malva cálido; el resplandor y la niebla, más suaves y cálidos; las tiras de la librería común, tenues.
+  La cámara mira un poco hacia arriba. **La sala ocupa casi toda la pantalla** (80 % del alto) y, sentado, la sesión es una
+  franja baja (reloj a la izquierda, Pausar y Levantarte a la derecha) en vez de media pantalla.
+- **Más detalle en los muebles y letreros discretos** (Francisco: «algo más de detalle a los muebles» y «que los rótulos sean
+  más discretos»): sillones con capitoné en rombo, cojín de cabeza, brazos enrollados, tachuelas doradas y patas torneadas con
+  rueda de latón; lámparas de pantalla plisada con pie escalonado; mesitas de trípode con galería de latón; la mesa larga con
+  taraceas, cajones, patas torneadas y travesaños, tintero con pluma, una pila de libros y un globo terráqueo; sillas de respaldo
+  de barrotes con remates; el sofá con capitoné, tachuelas y borlas; el reloj con frontón partido, columnillas y remates; y un
+  globo de pie junto al ventanal. Los letreros son plaquitas oscuras y translúcidas con letra dorada pequeña.
+- **La sesión, más pequeña, y su duración la eliges tú** (Francisco: «que el apartado de sesión de lectura sea más pequeño» y
+  «que puedas elegir tú el tiempo de sesión»): en 3D, la sesión del panel de debajo es la misma franja baja que sentado (reloj y
+  libro a la izquierda, el botón a la derecha). Antes de empezar, una fila discreta elige la duración: 15, 25, 45 o 60 minutos,
+  o de 5 en 5 con − y + (de 5 a 120). Es el mismo ajuste que el Pomodoro de la app (`settings.focusMinutes`), así que vale en
+  todas partes y se recuerda.
+- **Tu sillón** (seis, cada uno con su lámpara de pie y su mesita): te sientas en el que elijas y la sala lo recuerda en el
+  dispositivo (`bookshelf:sala-sillon:<cuenta>`); si está ocupado, se te ofrece uno libre. **Tu libro** está en la mesita, con
+  su portada (o una tela del color de su lomo) y, sentado, lo tienes abierto en las manos. Sentado, el reloj, Pausar y
+  Levantarte van en una tarjeta de nogal al pie de la escena. Al volver con la sesión en marcha, la sala te sienta en tu sillón.
+- **Quien lee** se ve en su sillón con su personaje, su libro y su compañero (el mapache crupier en 3D; los demás
+  legendarios, como figura de píxel). El saludo cerrado de siempre sale en un bocadillo sobre quien saluda y, si estás
+  sentado, también en tu tarjeta.
+- **El reloj de pie es el reloj del Pomodoro**: la esfera enseña lo que queda de la sesión y el péndulo va mientras corre;
+  tocarlo dice cuánto queda.
+- **La librería común** tiene sus lomos de verdad en las baldas (el mismo color y alto que en el panel, `lomoDe`), forrada de
+  terciopelo verde y alumbrada bajo cada balda; se llena desde el centro. Tocar un lomo lo saca un poco y dice de quién es; el
+  tuyo se puede retirar desde ahí.
+- **El sofá para dos** se ve con su letrero «pronto»: es la cita de lectura del bloque b.
+- **Sin WebGL** (o si se pierde), la sala isométrica de siempre. El panel de debajo (quién lee, saludar, la librería) no
+  cambia; en 3D, «Sentarte a leer» pasa a «Ir a tu sillón» o «Ir a un sillón libre».
+- Sin migraciones, sin tickets ni recompensas nuevas.
+- **Pruebas**: `salaLayout.test.js` (rutas, reparto de sillones, lomos); nueva `e2e-community/v1116-sala3d.spec.js`
+  (entrada, sentarse, tu libro, la librería y sus lomos, el reloj, el sofá, andar tocando el suelo; volver con la sesión en
+  marcha; sin WebGL; vídeo) a 360, 390, 430 y escritorio en Chromium y a 390 en WebKit; `v183-sala-lectura` sigue probando la
+  sala de siempre, sin WebGL. Capturas y vídeos en `qa-report/sala3d/`.
+
+## 117. La cita de lectura: el sofá para dos (1.117.0)
+
+Bloque b del plan de la sala de lectura (`docs/qa/sala-lectura-3d.md`). Francisco: «cita de lectura con un amigo, haz lo que
+veas mejor» y, tras revisar el bloque a, «Sí, al bloque b». Un motivo para ir acompañado: quedar con un amigo a leer a la vez.
+
+- **Invitar** (panel «Leer con un amigo», debajo de la sesión): a un amigo (seguimiento mutuo, sin bloqueo, como la mesa
+  para dos del casino), «Ahora», «En 15 min» o «En 30 min», y 15, 25 o 45 minutos. Con un solo amigo, ya va elegido. Una cita
+  abierta a la vez: invitar de nuevo cierra la anterior.
+- **Lo que llega**: la invitación avisa estés donde estés del edificio, menos dentro de la sala (como la mesa del casino y la
+  visita del almacén): «X te invita a leer juntos en la sala de lectura ahora (25 min)» con «Ir a la sala». En la sala, en
+  su panel, «Aceptar» o «Ahora no». Caduca a los 10 min sin respuesta; decir que no y no contestar se ven igual para quien
+  invitó: «X no ha podido venir». Sin texto libre en ningún punto.
+- **El sofá para dos** deja de ser «pronto» (su letrero dice «con X» cuando hay cita). Con la cita aceptada, «Ir al sofá»
+  (o tocarlo) te sienta en tu plaza (la 6 quien invitó, la 7 quien vino). La vista va por detrás del sofá: os veis los dos
+  sentados junto a la chimenea; tu amigo aparece a tu lado cuando está en el sofá (y deja libre su sillón).
+- **Un reloj para los dos**: lo pone el servidor. Si la cita es para más tarde, en el sofá ves la cuenta atrás; al llegar la
+  hora empieza la sesión con lo que queda de la cita (`timer.startFor`) y acaba a la vez para los dos aunque uno llegue
+  tarde. Una cita «ahora» aceptada tarde empieza al aceptarla.
+- **«Habéis leído juntos»**: mientras estás en el sofá con la app a la vista, un latido cada 30 s (uno por minuto cuenta);
+  los minutos juntos son los minutos en que latisteis los dos. Se dice así en el panel («cuentan mientras estáis los dos en el
+  sofá con la app a la vista»): con el móvil bloqueado no cuenta. Al acabar (o al «Dejar la cita» ya empezada) la sala dice
+  «Habéis leído juntos N minutos, X y tú», también encima del formulario de páginas.
+- **Migración** `20261206120000_sala_citas.sql`: `sala_citas` y `sala_latidos` con RLS cerrada (sin permisos directos) y
+  funciones `security definer` `volatile` (ninguna `stable`, ninguna llama a `piso_yo()`): `sala_citas()`,
+  `sala_cita_invitar(amigo, en_min, minutos)`, `sala_cita_responder(cita, acepta)`, `sala_cita_latido(cita)` y
+  `sala_cita_dejar(cita)`; la comprobación de amigo es `piso_casino_amigo`. Sin la migración aplicada, la sala sigue como en
+  la 1.116 (sofá «pronto», sin panel ni aviso).
+- Sin tickets, sin recompensas, sin rachas.
+- **Código**: `hotel/useCitaSala.js` (lo que dice el servidor, consulta cada 15 s y al volver a la app), `hotel/CitaSala.jsx`
+  (el panel), `SalaLectura.jsx` (el sofá, el reloj común, el latido, quién va en cada sillón), `salaLayout.js` (`PLAZAS_SOFA`,
+  `plazaDe`), `sala3d.js` (sentarse en el sofá y su vista), `EdificioPanel.jsx` (el aviso) y `service.js` (`salaCitas`,
+  `salaCitaInvitar`, `salaCitaResponder`, `salaCitaLatido`, `salaCitaDejar`).
+- **Pruebas**: `sala-citas.rls.test.js` (PGlite con todas las migraciones: solo amigos, opciones cerradas, nadie de fuera ve
+  ni toca, una cita a la vez, caducidad, rechazar = no venir, reloj del servidor, latido único por minuto y solo dentro del
+  reloj, «juntos», dejarla, bloqueo); `rpc-solo-lectura` sigue en verde. e2e nueva `v1117-sala-cita.spec.js` con Supabase
+  simulado (invitar, «no ha podido venir», aceptar, esperar en el sofá, el reloj de los dos, tu amiga a tu lado, «habéis
+  leído juntos»; el aviso del edificio; sin la migración) a 360, 390 y escritorio en Chromium y a 390 en WebKit, con vídeo.
+  Capturas y vídeos en `qa-report/sala-cita/`. Nada probado entre dos cuentas reales ni en móviles reales.
