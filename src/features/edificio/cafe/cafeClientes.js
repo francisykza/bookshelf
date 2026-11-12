@@ -5,6 +5,9 @@
 // las listas son las mismas que en la migración (una prueba lo comprueba). Personajes y frases, propios.
 import { COMPLEMENTOS, JERSEYS, PANTALONES, PELOS, PIELES, COLORES_PELO, isPrenda } from '../actor';
 import { dayKey } from '../../../domain/dates';
+import { huecosDelNivel } from './cafeNiveles';
+
+export { huecosDelNivel };
 
 /** Cuántos clientes nuevos vienen al día según el nivel del café. */
 export const clientesDelNivel = (nivel = 1) => (nivel <= 1 ? 3 : nivel === 2 ? 4 : 5);
@@ -14,8 +17,10 @@ export const MAX_HABITUALES = 2;
 export const BEBIDAS = [
   { id: 'cafe', nombre: 'Café', nivel: 1 },
   { id: 'te', nombre: 'Té', nivel: 1 },
+  { id: 'chocolate', nombre: 'Chocolate', nivel: 2, carta: 'chocolate' },
 ];
-export const bebidasDelNivel = (nivel = 1) => BEBIDAS.filter((b) => b.nivel <= nivel);
+/** Las bebidas de la carta: café y té, y lo que hayas abierto en ella (bloque 4a: el chocolate). */
+export const bebidasDe = (carta = []) => BEBIDAS.filter((b) => !b.carta || carta.includes(b.carta));
 /**
  * Revisión del bloque 3 (Francisco, 12-11-2026): el café pesa más que el libro. Cada cliente pide una bebida con cuatro
  * elecciones, que se prepara en la barra; el libro es un extra. Las mismas listas y cuentas que `cafe_receta`,
@@ -28,6 +33,7 @@ export const PARTES = [
     opciones: [
       { id: 'cafe', nombre: 'Café' },
       { id: 'te', nombre: 'Té' },
+      { id: 'chocolate', nombre: 'Chocolate', carta: 'chocolate' },
     ],
   },
   {
@@ -54,16 +60,30 @@ export const PARTES = [
       { id: 'nada', nombre: 'Sin nada' },
       { id: 'canela', nombre: 'Canela' },
       { id: 'miel', nombre: 'Miel' },
+      { id: 'nata', nombre: 'Nata montada', carta: 'nata' },
     ],
   },
 ];
-/** La receta de un número (los clientes, de las cifras de los miles de su semilla; los habituales, de quién son). */
-export function recetaDe(r) {
-  const [b, g, l, t] = PARTES;
-  return [b.opciones[r % 2].id, g.opciones[Math.floor(r / 2) % 2].id, l.opciones[Math.floor(r / 4) % 3].id, t.opciones[Math.floor(r / 12) % 3].id];
+/** Las opciones de una parte con lo que haya abierto en la carta. */
+export const opcionesDe = (parte, carta = []) => PARTES.find((p) => p.id === parte).opciones.filter((o) => !o.carta || carta.includes(o.carta));
+/**
+ * La receta de un número (los clientes, de las cifras de los miles de su semilla; los habituales, de quién son). Cada parte
+ * toma su opción con su propia base (cuántas opciones tiene con la carta de ese día); sin carta, la cuenta de siempre.
+ */
+export function recetaDe(r, carta = []) {
+  let d = 1;
+  return PARTES.map((p) => {
+    const ops = opcionesDe(p.id, carta);
+    const o = ops[Math.floor(r / d) % ops.length].id;
+    d *= ops.length;
+    return o;
+  });
 }
-/** Lo que pide un cliente del día: los habituales, siempre lo mismo («lo de siempre»). */
-export const recetaPide = (c) => (c.n > 100 ? recetaDe(c.quien * 29 + 7) : recetaDe(Math.floor(c.semilla / 1000)));
+/**
+ * Lo que pide un cliente del día con la carta de ese día (la fija el servidor al abrir el día). Los habituales, siempre lo
+ * mismo («lo de siempre»), con la carta de siempre.
+ */
+export const recetaPide = (c, carta = []) => (c.n > 100 ? recetaDe(c.quien * 29 + 7) : recetaDe(Math.floor(c.semilla / 1000), carta));
 /** Cuántas partes de la bebida coinciden. */
 export const aciertosDe = (receta, pide) => pide.reduce((n, x, k) => n + (receta?.[k] === x ? 1 : 0), 0);
 /** Estrellas: cada parte acertada vale un punto y el libro que encaja, otro (de cinco). */
@@ -95,17 +115,17 @@ export const tipoDe = (c) => (c.habitual ? 'habitual' : c.excentrico ? 'excentri
 export const nombreOpcion = (parte, id) => PARTES.find((p) => p.id === parte)?.opciones.find((o) => o.id === id)?.nombre ?? id;
 /** La comanda, clara: «Un café intenso con leche de avena y canela». */
 export function comandaClara([bebida, grano, leche, toque]) {
-  const base = `Un ${bebida === 'te' ? 'té' : 'café'} ${grano === 'suave' ? 'suave' : 'intenso'}`;
+  const base = bebida === 'chocolate' ? `Un chocolate ${grano === 'suave' ? 'con leche' : 'negro'}` : `Un ${bebida === 'te' ? 'té' : 'café'} ${grano === 'suave' ? 'suave' : 'intenso'}`;
   const conLeche = leche === 'sin' ? 'sin leche' : leche === 'entera' ? 'con leche entera' : 'con leche de avena';
-  const conToque = toque === 'nada' ? '' : toque === 'canela' ? ' y canela' : ' y miel';
+  const conToque = toque === 'nada' ? '' : toque === 'canela' ? ' y canela' : toque === 'nata' ? ' y nata montada' : ' y miel';
   return `${base} ${conLeche}${conToque}.`;
 }
 /** La comanda del excéntrico: cada parte, con un acertijo (frases cerradas). */
 export const ACERTIJOS = {
-  bebida: { cafe: 'Algo que se muela, no que se deje en remojo.', te: 'Hojas en agua caliente; nada de molinillos.' },
+  bebida: { cafe: 'Algo que se muela, no que se deje en remojo.', te: 'Hojas en agua caliente; nada de molinillos.', chocolate: 'Lo que se bate en el cazo, espeso como una tarde de lluvia.' },
   grano: { suave: 'Que me susurre al oído, no que me grite.', intenso: 'Fuerte como un temporal en el puerto.' },
   leche: { sin: 'Ni una nube en mi taza.', entera: 'Con la nube de una vaca contenta.', avena: 'Con la nube del campo, no de la granja.' },
-  toque: { nada: 'Y tal cual, sin adornos.', canela: 'Con el polvo de una corteza.', miel: 'Con lo que guardan las abejas.' },
+  toque: { nada: 'Y tal cual, sin adornos.', canela: 'Con el polvo de una corteza.', miel: 'Con lo que guardan las abejas.', nata: 'Con una nube que se monta a mano.' },
 };
 export const comandaAcertijo = (receta) => PARTES.map((p, k) => ACERTIJOS[p.id][receta[k]]);
 
@@ -338,7 +358,7 @@ export function clientesDelDia(dia, pedidos) {
       nombre: ex?.nombre ?? 'Cliente',
       aspecto: ex?.avatar ?? aspectoDe(c.semilla),
       pedido: pedidos[c.n] ?? PEDIDO_LIBRE,
-      pide: recetaPide(c),
+      pide: recetaPide(c, dia.carta ?? []),
     };
   });
   const habituales = (dia.habituales ?? []).map((h) => ({
@@ -351,3 +371,63 @@ export function clientesDelDia(dia, pedidos) {
   }));
   return [...nuevos, ...habituales];
 }
+
+// ── Libros en cajas (§121.3, cifras aprobadas por Francisco el 12-11-2026, «Sí, esas cifras») ──
+// Lo que lees desbloquea el título en la distribuidora; con granos se compran cajas (de un género o de un título), la caja
+// llega al café, se abre y los ejemplares se colocan en la balda. Solo se recomienda lo que está en la balda; si encaja, el
+// cliente se lo lleva y paga unos granos más. Las cifras son las de la migración (una prueba lo comprueba).
+/** Los géneros de la distribuidora (los mismos ids que `cafe_generos()` en el servidor). */
+export const GENEROS = [
+  { id: 'novela', nombre: 'Novela' },
+  { id: 'fantasia', nombre: 'Fantasía' },
+  { id: 'misterio', nombre: 'Misterio' },
+  { id: 'amor', nombre: 'Amor' },
+  { id: 'clasico', nombre: 'Clásico' },
+  { id: 'ciencia-ficcion', nombre: 'Ciencia ficción' },
+  { id: 'poesia', nombre: 'Poesía' },
+  { id: 'historia', nombre: 'Historia' },
+  { id: 'biografia', nombre: 'Biografía' },
+  { id: 'juvenil', nombre: 'Juvenil' },
+];
+/** Cómo se reconoce cada género en las categorías del libro (en orden: la primera que casa manda). */
+const GENERO_DE = [
+  [/science fiction|ciencia ficci|ficción científica|dystop|distop/, 'ciencia-ficcion'],
+  [/fantas/, 'fantasia'],
+  [/myster|misterio|crime|crimen|thriller|polic|suspense|detective/, 'misterio'],
+  [/romanc|amor|love/, 'amor'],
+  [/classic|clásic/, 'clasico'],
+  [/poetry|poesía|poesia/, 'poesia'],
+  [/histor/, 'historia'],
+  [/biograph|biograf|memoir|memorias/, 'biografia'],
+  [/juvenile|young adult|juvenil/, 'juvenil'],
+];
+/** El género de un libro de tu biblioteca (si no se sabe, «Novela»). */
+export const generoDe = (b) => GENERO_DE.find(([re]) => re.test(categorias(b)))?.[1] ?? 'novela';
+export const nombreGenero = (id) => GENEROS.find((g) => g.id === id)?.nombre ?? 'Novela';
+/** Caja de un género: 5 ejemplares al azar entre tus títulos de ese género. */
+export const CAJA_GENERO = { ejemplares: 5, precio: 10 };
+/** Caja de un título concreto: 3 ejemplares. */
+export const CAJA_TITULO = { ejemplares: 3, precio: 9 };
+/** La caja de bienvenida, gratis y una vez. */
+export const BIENVENIDA = 8;
+/** Granos de más cuando el cliente se lleva el libro (solo si encaja). */
+export const EXTRA_LLEVADO = 2;
+
+/** Los títulos que la distribuidora tiene para ti (los de `librosDelCafe`), como los espera el servidor. */
+export const titulosDelCafe = (libros = []) => libros.slice(0, 200).map((b) => ({ clave: String(b.id).slice(0, 80), titulo: String(b.title || 'Sin título').slice(0, 200), genero: generoDe(b) }));
+/** Cuántos títulos tienes de cada género (para la distribuidora: solo se venden los que tienes). */
+export function generosDisponibles(titulos = []) {
+  const n = {};
+  for (const t of titulos) n[t.genero] = (n[t.genero] ?? 0) + 1;
+  return GENEROS.filter((g) => n[g.id]).map((g) => ({ ...g, titulos: n[g.id] }));
+}
+/** Lo que hay en la balda, como libros para recomendar: el de tu biblioteca si sigue ahí; si no, uno mínimo con su título. */
+export function librosDeLaBalda(estado, libros = []) {
+  const porId = new Map(libros.map((b) => [String(b.id), b]));
+  return (estado?.libros ?? [])
+    .filter((x) => x.balda > 0)
+    .map((x) => ({ ...(porId.get(x.clave) ?? { id: x.clave, title: x.titulo, author: '', categories: [GENEROS.find((g) => g.id === x.genero)?.nombre ?? ''] }), clave: x.clave, ejemplares: x.balda }));
+}
+/** Cuántos ejemplares hay en la balda y cuántos esperan en las cajas. */
+export const enBalda = (estado) => (estado?.libros ?? []).reduce((s, x) => s + x.balda, 0);
+export const enCajas = (estado) => (estado?.libros ?? []).reduce((s, x) => s + x.caja, 0);

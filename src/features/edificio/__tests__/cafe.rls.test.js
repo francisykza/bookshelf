@@ -33,8 +33,8 @@ beforeAll(async () => {
 
 describe('el café-librería del bajo: el local y Decorar', () => {
   it('las listas del servidor son las de la app', async () => {
-    const filas = (await db.query('select id, w, d, precio, nivel from cafe_catalogo order by id')).rows;
-    expect(filas).toEqual(CAFE_MUEBLES.map(({ id, w, d, precio, nivel }) => ({ id, w, d, precio, nivel })).sort((a, b) => a.id.localeCompare(b.id)));
+    const filas = (await db.query('select id, w, d, precio, nivel, hito from cafe_catalogo order by id')).rows;
+    expect(filas).toEqual(CAFE_MUEBLES.map(({ id, w, d, precio, nivel, hito = 0 }) => ({ id, w, d, precio, nivel, hito })).sort((a, b) => a.id.localeCompare(b.id)));
     expect((await db.query('select cafe_nombres() as n')).rows[0].n).toEqual(CAFE_NOMBRES);
     expect((await db.query('select cafe_plano_inicial() as p')).rows[0].p).toEqual(PLANO_INICIAL);
     expect((await db.query('select cafe_plano_valido(cafe_plano_inicial()) as ok')).rows[0].ok).toBe(true);

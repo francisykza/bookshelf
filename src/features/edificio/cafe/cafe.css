@@ -1797,3 +1797,1291 @@
     height: 64px;
   }
 }
+
+/* ── 1.121, preparar en la barra (12-11-2026): cada paso con su objeto y su gesto ── */
+/* La zona del gesto: toda la escena por encima del cuadro (el cuadro y el marcador quedan por encima de ella) */
+.cf3-gesto {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.cf3-gesto[data-activo='true'] {
+  cursor: grab;
+  pointer-events: auto;
+}
+.cf3-gesto[data-activo='true']:active {
+  cursor: grabbing;
+}
+.cf3-gesto:focus-visible {
+  outline: 3px solid var(--cf3-amber);
+  outline-offset: -6px;
+}
+/* La pista: una flecha de píxel sobre el objeto, con el dedo que la recorre (quieto con movimiento reducido) */
+.cf3-gesto__pista {
+  position: absolute;
+  width: 88px;
+  height: 88px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.cf3-pista {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.55));
+}
+.cf3-pista__trazo {
+  fill: none;
+  stroke: #ffe3a6;
+  stroke-dasharray: 6 5;
+  stroke-linecap: square;
+  stroke-width: 4;
+}
+.cf3-pista__dedo {
+  fill: #fff6dc;
+  stroke: #2a1a10;
+  stroke-width: 3;
+  offset-path: var(--cf3-pista-camino);
+  animation: cf3-pista 1.6s ease-in-out infinite;
+}
+.cf3-pista__mantener {
+  fill: none;
+  stroke: #ffe3a6;
+  stroke-width: 3;
+  opacity: 0;
+  offset-path: var(--cf3-pista-camino);
+  offset-distance: 100%;
+  animation: cf3-pista-mantener 1.6s ease-out infinite;
+}
+.cf3-pista[data-pista='giro'] {
+  --cf3-pista-camino: path('M 44 12 A 32 32 0 1 1 12 44');
+}
+.cf3-pista[data-pista='abajo'] {
+  --cf3-pista-camino: path('M 44 8 L 44 70');
+}
+.cf3-pista[data-pista='abajo-mantener'] {
+  --cf3-pista-camino: path('M 44 8 L 44 62');
+}
+.cf3-pista[data-pista='derecha'] {
+  --cf3-pista-camino: path('M 6 44 Q 44 10 82 44');
+}
+.cf3-pista[data-pista='arriba-mantener'] {
+  --cf3-pista-camino: path('M 44 76 L 44 18');
+}
+.cf3-pista[data-pista='vaiven-vertical'] {
+  --cf3-pista-camino: path('M 44 14 L 44 74 L 44 14');
+}
+.cf3-pista[data-pista='lado-mantener'] {
+  --cf3-pista-camino: path('M 14 44 L 74 44');
+}
+.cf3-pista[data-pista='trazo'] {
+  --cf3-pista-camino: path('M 44 6 Q 30 24 44 40 Q 58 56 44 78');
+}
+.cf3-pista[data-pista='vaiven'] {
+  --cf3-pista-camino: path('M 8 44 L 80 44 L 8 44');
+}
+.cf3-pista[data-pista='dibujo'] {
+  --cf3-pista-camino: path('M 44 44 m -6 0 a 6 6 0 1 1 12 0 a 12 12 0 1 1 -24 0 a 18 18 0 1 1 36 0');
+}
+@keyframes cf3-pista {
+  from {
+    offset-distance: 0%;
+  }
+  80%,
+  to {
+    offset-distance: 100%;
+  }
+}
+@keyframes cf3-pista-mantener {
+  0%,
+  55% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  75% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+/* «¡Hecho!»: un sello breve sobre el objeto */
+.cf3-gesto__hecho {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  padding: 6px 12px 7px;
+  background: #3f6b3c;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -3px 0 #2c4c2a,
+    0 3px 0 rgb(0 0 0 / 0.4);
+  color: #f3f7e6;
+  font: 400 16px/16px var(--pp-title);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: translate(-50%, -50%) rotate(-4deg);
+  animation: cf3-hecho 0.42s steps(4, jump-end) both;
+}
+@keyframes cf3-hecho {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-4deg) scale(1.6);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-4deg) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-pista__dedo {
+    offset-distance: 50%;
+    animation: none;
+  }
+  .cf3-pista__mantener,
+  .cf3-gesto__hecho {
+    animation: none;
+  }
+}
+/* Las cinco etapas de la taza, en una fila: hecha, ahora y luego */
+.cf3-etapas {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.cf3-etapas li {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 4px 2px 5px;
+  background: #241619;
+  box-shadow: inset 0 0 0 2px var(--cf3-ink);
+  color: rgb(243 230 200 / 0.45);
+}
+.cf3-etapas li[data-estado='ahora'] {
+  background: #4a3034;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px var(--cf3-amber);
+  color: var(--cf3-cream);
+}
+.cf3-etapas li[data-estado='hecha'] {
+  background: #2f4a2d;
+  color: #d8eccb;
+}
+.cf3-etapas__num {
+  flex: none;
+  font: 400 11px/11px var(--pp-title);
+}
+.cf3-etapas__nombre {
+  overflow: hidden;
+  font: 400 10px/11px var(--pp-title);
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+/* Las opciones de la etapa (lo mismo que tocar la cosa en la barra) */
+.cf3-opciones {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 6px;
+}
+.cf3-opcion {
+  min-height: 44px;
+  padding: 6px 6px 8px;
+  border: 0;
+  background: #3a2629;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px var(--cf3-amber),
+    inset 0 -4px 0 rgb(0 0 0 / 0.3);
+  color: var(--cf3-cream);
+  font:
+    700 0.82rem/1.15 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+.cf3-opcion:hover,
+.cf3-opcion:focus-visible {
+  background: #4a3034;
+}
+.cf3-opcion:active {
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px var(--cf3-amber);
+  transform: translateY(2px);
+}
+/* El medidor del gesto: cuánto llevas (no es un tiempo; lo hecho no se pierde) */
+.cf3-medidor {
+  position: relative;
+  height: 12px;
+  background: #1a1014;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px rgb(231 183 101 / 0.45);
+}
+.cf3-medidor__lleno {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  max-width: calc(100% - 6px);
+  background: repeating-linear-gradient(90deg, #e7b765 0 6px, #d29a48 6px 8px);
+}
+
+/* ── 1.121 (§121.2): la «!» de ayuda sobre lo siguiente que hay que tocar (niveles 1 y 2, o si te quedas parado) ── */
+.cf3-ayuda {
+  position: absolute;
+  z-index: 1;
+  width: 26px;
+  height: 30px;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  background: var(--cf3-amber);
+  box-shadow:
+    inset 0 0 0 3px #2a1a10,
+    inset 0 -4px 0 #b37a32,
+    0 3px 0 rgb(0 0 0 / 0.45);
+  image-rendering: pixelated;
+}
+/* El «!»: un palo y un punto de píxel */
+.cf3-ayuda::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 5px;
+  height: 15px;
+  transform: translateX(-50%);
+  background: linear-gradient(#2a1a10 0 62%, transparent 62% 76%, #2a1a10 76%);
+}
+/* El piquito que apunta hacia la cosa */
+.cf3-ayuda::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 8px;
+  height: 7px;
+  transform: translateX(-50%);
+  background:
+    linear-gradient(#2a1a10 0 0) center top / 8px 3px no-repeat,
+    linear-gradient(#2a1a10 0 0) center bottom / 3px 4px no-repeat;
+}
+/* Sobre el objeto del gesto, por encima de la pista del dedo */
+.cf3-ayuda--gesto {
+  margin-top: -40px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-ayuda {
+    animation: cf3-ayuda-salta 1.1s steps(2, jump-none) infinite;
+  }
+}
+@keyframes cf3-ayuda-salta {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 0 -5px;
+  }
+}
+
+/* ── Libros en cajas (§121.3): la caja de reparto, la balda de 12 y la distribuidora ── */
+/* Sus piezas van una debajo de otra (los botones y el error del cuadro de diálogo usan áreas de su rejilla) */
+.cf3-libros > * {
+  grid-area: auto;
+}
+.cf3-libros {
+  max-height: min(72vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.cf3-libros .cf3-balda__cabeza {
+  flex-wrap: nowrap;
+}
+.cf3-libros__titulo {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 6px;
+  font: 400 14px/16px var(--pp-title);
+}
+.cf3-libros__cuenta {
+  color: var(--cf3-amber);
+}
+/* La balda: madera, 12 huecos en dos filas (6 + 6) a 390 px */
+.cf3-libros__balda {
+  padding: 8px 8px 10px;
+  background: linear-gradient(#4a2e1e, #3a2416);
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -6px 0 #6b4630,
+    inset 0 3px 0 rgb(0 0 0 / 0.35);
+}
+.cf3-libros__huecos {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cf3-libros__hueco {
+  display: grid;
+  place-items: end center;
+  height: 74px;
+  border-bottom: 5px solid #7a5232;
+  background: rgb(15 9 11 / 0.35);
+  box-shadow: inset 0 0 0 1px rgb(231 183 101 / 0.12);
+}
+.cf3-libros__hueco:not([data-lleno]) {
+  background: repeating-linear-gradient(90deg, transparent 0 6px, rgb(231 183 101 / 0.08) 6px 7px), rgb(15 9 11 / 0.35);
+}
+/* Un lomo: color del libro, con su título en vertical y bandas doradas */
+.cf3-lomo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 66px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background:
+    linear-gradient(transparent 7px, rgb(242 210 122 / 0.85) 7px 9px, transparent 9px calc(100% - 9px), rgb(242 210 122 / 0.85) calc(100% - 9px) calc(100% - 7px), transparent calc(100% - 7px)),
+    linear-gradient(90deg, rgb(0 0 0 / 0.28), transparent 30%, rgb(255 255 255 / 0.12) 55%, rgb(0 0 0 / 0.3)), var(--cf3-lomo);
+  box-shadow: inset 0 0 0 2px var(--cf3-ink);
+  color: #fff3dc;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.cf3-lomo:focus-visible {
+  outline: 2px solid var(--cf3-cream);
+  outline-offset: 1px;
+}
+.cf3-lomo:active:not(:disabled) {
+  cursor: grabbing;
+}
+.cf3-lomo__titulo {
+  overflow: hidden;
+  max-height: 46px;
+  font:
+    700 9px/1 'Lora',
+    Georgia,
+    serif;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+/* En la caja, los lomos van de pie, apretados, como recién sacados del reparto */
+.cf3-lomo--caja {
+  width: 28px;
+  height: 58px;
+}
+.cf3-lomo--fantasma {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  transform: translate(-50%, -60%) rotate(-6deg);
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    4px 6px 0 rgb(0 0 0 / 0.35);
+}
+.cf3-lomo[data-nuevo='true'] {
+  animation: cf3-lomo-salta 520ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  animation-delay: var(--cf3-retraso, 0ms);
+}
+@keyframes cf3-lomo-salta {
+  0% {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+/* La caja de reparto: cartón con cinta y dos solapas que se abren */
+/* El botón del HUD y el letrero de la caja en la escena */
+.cf3-libros-btn .cf3-px {
+  width: 30px;
+  height: 28px;
+}
+.cf3-tag--libros {
+  background: var(--cf3-amber);
+  color: #2a1a10;
+}
+.cf3-tag--libros::before {
+  width: auto;
+  height: auto;
+  background: none;
+  color: #2a1a10;
+  content: '!';
+  transform: none;
+}
+/* La distribuidora */
+.cf3-distri {
+  display: grid;
+  gap: 10px;
+}
+.cf3-distri__granos {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  font: 400 16px/16px var(--pp-title);
+}
+.cf3-distri__granos .cf3-px {
+  width: 18px;
+  height: 18px;
+}
+.cf3-distri__nota {
+  margin-left: auto;
+  color: rgb(243 230 200 / 0.75);
+  font:
+    italic 0.74rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-distri__generos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cf3-distri__oferta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgb(15 9 11 / 0.35);
+  box-shadow: inset 0 0 0 2px var(--cf3-ink);
+}
+.cf3-distri__que {
+  flex: 1;
+  margin: 0;
+  font:
+    0.8rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-distri__comprar {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+  align-items: center;
+}
+.cf3-distri__comprar .cf3-px {
+  width: 16px;
+  height: 16px;
+}
+.cf3-distri__titulos {
+  display: grid;
+  gap: 6px;
+  max-height: 170px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.cf3-distri__titulos li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.cf3-distri__lomo {
+  flex: none;
+  width: 10px;
+  height: 30px;
+  background: var(--cf3-lomo);
+  box-shadow: inset 0 0 0 2px var(--cf3-ink);
+}
+.cf3-distri__titulo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font:
+    0.82rem/1.2 'Lora',
+    Georgia,
+    serif;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cf3-distri__uno {
+  flex: none;
+  min-height: 34px;
+  padding: 6px 10px 9px;
+  font-size: 12px;
+  line-height: 14px;
+}
+.cf3-fichas__vacia {
+  margin: 0;
+  color: rgb(243 230 200 / 0.85);
+  font:
+    italic 0.82rem/1.35 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-dado__ficha--libro {
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px #d98a5e;
+  color: #ffc7a0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-lomo[data-nuevo='true'] {
+    animation: none;
+  }
+}
+
+/* ── Libros en cajas, más cozy (Francisco, 12-11-2026): luz de lámpara, madera cálida, papel de seda y lomos distintos ── */
+.cf3-libros {
+  background: radial-gradient(120% 60% at 50% 0%, rgb(255 196 120 / 0.16), transparent 70%), linear-gradient(#3a2418, #2a1912);
+}
+/* La balda: fondo de madera con vetas, la luz de una lámpara desde arriba y el canto claro */
+.cf3-libros__balda {
+  position: relative;
+  padding-top: 16px;
+  background:
+    radial-gradient(70% 90% at 50% -10%, rgb(255 200 120 / 0.32), transparent 65%),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.08) 0 2px, transparent 2px 23px, rgb(255 230 190 / 0.04) 23px 25px, transparent 25px 47px), linear-gradient(#5a3824, #3e2617);
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -7px 0 #8a5c38,
+    inset 0 -9px 0 #2a170e,
+    inset 0 3px 0 rgb(0 0 0 / 0.3);
+}
+.cf3-libros__titulo {
+  color: #f6e2bc;
+}
+.cf3-libros__hueco {
+  height: 78px;
+  border-bottom: 6px solid #9a6a40;
+  background: linear-gradient(transparent 55%, rgb(0 0 0 / 0.18));
+  box-shadow: inset 0 -1px 0 #c89058;
+}
+/* Un hueco libre: la silueta tenue de un libro que aún no ha llegado */
+.cf3-libros__hueco:not([data-lleno]) {
+  background:
+    linear-gradient(90deg, transparent 32%, rgb(246 226 188 / 0.07) 32% 68%, transparent 68%) bottom / 100% 62% no-repeat,
+    linear-gradient(transparent 55%, rgb(0 0 0 / 0.18));
+}
+/* La guirnalda de bombillas que cuelga sobre la balda (quieta con movimiento reducido) */
+.cf3-libros__guirnalda {
+  position: absolute;
+  top: 2px;
+  right: 10px;
+  left: 10px;
+  display: flex;
+  justify-content: space-between;
+  height: 12px;
+  border-top: 1px solid rgb(30 18 12 / 0.9);
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  pointer-events: none;
+}
+.cf3-libros__guirnalda span {
+  width: 5px;
+  height: 6px;
+  margin-top: calc(2px + (4 - (var(--cf3-k) - 4) * (var(--cf3-k) - 4) / 4) * 1px);
+  background: #ffd78a;
+  box-shadow: 0 0 6px 2px rgb(255 190 100 / 0.55);
+  animation: cf3-bombilla 3.2s ease-in-out infinite;
+  animation-delay: calc(var(--cf3-k) * -0.37s);
+}
+.cf3-libros__guirnalda span:nth-child(3n + 2) {
+  background: #ffb98a;
+}
+@keyframes cf3-bombilla {
+  50% {
+    opacity: 0.72;
+  }
+}
+/* Los lomos: cada título con su alto, su grosor y su encuadernación */
+.cf3-lomo {
+  width: var(--cf3-ancho, 30px);
+  height: var(--cf3-alto, 66px);
+}
+.cf3-lomo--caja {
+  width: calc(var(--cf3-ancho, 28px) - 2px);
+  height: calc(var(--cf3-alto, 58px) - 8px);
+}
+/* Tela: dos bandas doradas arriba y abajo (la de siempre) */
+/* Piel: nervios en relieve y un tono más hondo */
+.cf3-lomo[data-forma='piel'] {
+  background:
+    linear-gradient(
+      transparent 10px,
+      rgb(0 0 0 / 0.35) 10px 11px,
+      rgb(255 230 180 / 0.35) 11px 12px,
+      transparent 12px calc(100% - 12px),
+      rgb(0 0 0 / 0.35) calc(100% - 12px) calc(100% - 11px),
+      rgb(255 230 180 / 0.35) calc(100% - 11px) calc(100% - 10px),
+      transparent calc(100% - 10px)
+    ),
+    linear-gradient(90deg, rgb(0 0 0 / 0.38), rgb(255 255 255 / 0.1) 45%, rgb(0 0 0 / 0.42)), var(--cf3-lomo);
+}
+/* Rústica: lisa, con una etiqueta de papel para el título */
+.cf3-lomo[data-forma='rustica'] {
+  background:
+    linear-gradient(transparent 22%, #efe0bf 22% 78%, transparent 78%) center / 70% 100% no-repeat,
+    linear-gradient(90deg, rgb(0 0 0 / 0.22), transparent 35%, rgb(255 255 255 / 0.14) 60%, rgb(0 0 0 / 0.25)),
+    var(--cf3-lomo);
+}
+.cf3-lomo[data-forma='rustica'] .cf3-lomo__titulo {
+  color: #3a2418;
+  text-shadow: none;
+}
+/* El que acaba de llegar a la balda se asienta con un pequeño balanceo */
+.cf3-lomo[data-asienta='true'] {
+  transform-origin: 50% 100%;
+  animation: cf3-lomo-asienta 420ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+@keyframes cf3-lomo-asienta {
+  0% {
+    transform: translateY(-14px) rotate(-6deg);
+  }
+  60% {
+    transform: translateY(0) rotate(2.5deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+/* La caja: el papel de seda donde descansan los libros y la etiqueta de la distribuidora */
+/* Pilar comenta lo que pasa en la caja */
+.cf3-libros__pilar {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: #f3e6c8;
+  font-style: normal;
+}
+.cf3-libros__quien {
+  flex: none;
+  padding: 2px 6px 3px;
+  background: var(--cf3-amber);
+  color: #2a1a10;
+  font: 400 11px/11px var(--pp-title);
+}
+.cf3-libros .cf3-pestana {
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-libros__guirnalda span,
+  .cf3-lomo[data-asienta='true'] {
+    animation: none;
+  }
+}
+/* Los libros de la balda, juntos uno al lado de otro (como en una librería), y los huecos que quedan, a la derecha */
+.cf3-libros__huecos {
+  grid-template-columns: repeat(6, auto);
+  gap: 4px 1px;
+  justify-content: start;
+  background: linear-gradient(transparent 78px, #9a6a40 78px 83px, #2a170e 83px 84px, transparent 84px) 0 0 / 100% 88px repeat-y;
+}
+.cf3-libros__hueco,
+.cf3-libros__hueco:not([data-lleno]) {
+  width: auto;
+  height: 84px;
+  padding-bottom: 6px;
+  border-bottom: 0;
+  background: none;
+  box-shadow: none;
+}
+.cf3-libros__hueco:not([data-lleno])::after {
+  display: block;
+  width: 28px;
+  height: 58px;
+  margin: 0 3px;
+  background: rgb(246 226 188 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(246 226 188 / 0.08);
+  content: '';
+}
+/* Rústica: lisa y mate, con el sello de la editorial abajo */
+.cf3-lomo[data-forma='rustica'] {
+  background:
+    linear-gradient(#efe0bf, #efe0bf) 50% calc(100% - 5px) / 8px 6px no-repeat,
+    linear-gradient(90deg, rgb(0 0 0 / 0.2), transparent 35%, rgb(255 255 255 / 0.1) 60%, rgb(0 0 0 / 0.22)),
+    var(--cf3-lomo);
+}
+.cf3-lomo[data-forma='rustica'] .cf3-lomo__titulo {
+  color: #fff3dc;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
+}
+
+/* ── La caja de reparto, de cartón y en 3D (Francisco, 12-11-2026: «La quiero más 3d») ──
+   Una caja expositora de cartón con el frente recortado, vista un poco desde arriba: el fondo, el suelo y los laterales son
+   caras de verdad en perspectiva (CSS 3D), los laterales bajan en rampa hasta el frente, la solapa trasera queda de pie y
+   la sombra se posa en el suelo. Los libros van dentro, entre el fondo y la cara delantera, que no recoge toques (se toca y
+   se arrastra el libro de detrás). Cerrada, la solapa delantera tapa la boca y la trasera se tumba encima; al abrirse giran. */
+.cf3-libros__caja {
+  --cf3-carton: #b8865a;
+  --cf3-carton-l: #d6a674;
+  --cf3-carton-d: #8a5e38;
+  --cf3-carton-in: #5a3a22;
+  --cf3-carton-ink: #2a170e;
+  --cf3-hondo: 92px;
+  --cf3-frente: 40px;
+  position: relative;
+  isolation: isolate;
+  margin: 34px 34px 6px;
+}
+/* La sombra de la caja en el suelo */
+.cf3-libros__caja::before {
+  position: absolute;
+  z-index: -1;
+  right: -7%;
+  bottom: -13px;
+  left: -7%;
+  height: 26px;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.18) 60%, transparent);
+  content: '';
+}
+.cf3-carton__solido {
+  position: absolute;
+  inset: 20px 0 0;
+  perspective: 340px;
+  perspective-origin: 50% -150px;
+  pointer-events: none;
+}
+.cf3-carton__cuerpo {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+.cf3-carton__cara {
+  position: absolute;
+  box-shadow: inset 0 0 0 2px var(--cf3-carton-ink);
+}
+/* El fondo, al fondo de la caja: cartón por dentro, más oscuro arriba */
+.cf3-carton__cara--fondo {
+  inset: 0;
+  background: linear-gradient(90deg, transparent calc(50% - 1px), rgb(42 23 14 / 0.35) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)), linear-gradient(var(--cf3-carton-in), #74502f);
+  transform: translateZ(calc(var(--cf3-hondo) * -1));
+}
+.cf3-carton__cara--suelo {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--cf3-hondo);
+  background: #3e2716;
+  transform-origin: 50% 100%;
+  transform: rotateX(90deg);
+}
+/* Los laterales, por dentro: altos atrás y bajando en rampa hasta el frente recortado */
+.cf3-carton__cara--izq,
+.cf3-carton__cara--der {
+  top: 0;
+  bottom: 0;
+  width: var(--cf3-hondo);
+}
+.cf3-carton__cara--izq {
+  left: 0;
+  background: linear-gradient(90deg, #a07045, #7a5131);
+  clip-path: polygon(0 calc(100% - var(--cf3-frente)), 100% 0, 100% 100%, 0 100%);
+  transform-origin: 0 50%;
+  transform: rotateY(90deg);
+}
+.cf3-carton__cara--der {
+  right: 0;
+  background: linear-gradient(90deg, #7a5131, #a07045);
+  clip-path: polygon(0 0, 100% calc(100% - var(--cf3-frente)), 100% 100%, 0 100%);
+  transform-origin: 100% 50%;
+  transform: rotateY(-90deg);
+}
+/* Las solapas giran sobre sus bisagras */
+.cf3-carton__solapa {
+  position: absolute;
+  right: 0;
+  left: 0;
+  background: linear-gradient(var(--cf3-carton-l), var(--cf3-carton));
+  box-shadow: inset 0 0 0 2px var(--cf3-carton-ink);
+  transform-origin: 50% 100%;
+  transition:
+    transform 460ms cubic-bezier(0.3, 1.25, 0.5, 1),
+    opacity 200ms ease 240ms;
+}
+/* La trasera, de pie y un poco echada hacia atrás; cerrada, tumbada sobre la boca */
+.cf3-carton__solapa--fondo {
+  top: calc(var(--cf3-hondo) * -0.46);
+  height: calc(var(--cf3-hondo) * 0.46);
+  background: linear-gradient(var(--cf3-carton), var(--cf3-carton-l));
+  transform: translateZ(calc(var(--cf3-hondo) * -1)) rotateX(-16deg);
+}
+/* La delantera: cerrada, de pie tapando la boca, con su precinto; abierta, cae hacia fuera y se esconde tras el frente */
+.cf3-carton__solapa--frente {
+  bottom: var(--cf3-frente);
+  height: calc(100% - var(--cf3-frente));
+  background:
+    linear-gradient(90deg, transparent calc(50% - 11px), rgb(232 214 170 / 0.85) calc(50% - 11px) calc(50% + 11px), transparent calc(50% + 11px)),
+    linear-gradient(var(--cf3-carton-l), var(--cf3-carton));
+  opacity: 0;
+  transform: rotateX(100deg);
+}
+.cf3-libros__caja:not([data-abierta]) .cf3-carton__solapa--fondo {
+  transform: translateZ(calc(var(--cf3-hondo) * -1)) rotateX(90deg);
+}
+.cf3-libros__caja:not([data-abierta]) .cf3-carton__solapa--frente {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0s;
+}
+.cf3-carton__dentro {
+  position: relative;
+  z-index: 1;
+  min-height: 96px;
+  padding: 6px 14px 26px;
+  transition: opacity 220ms ease 160ms;
+}
+.cf3-libros__caja:not([data-abierta]) .cf3-carton__dentro {
+  opacity: 0;
+  transition-delay: 0s;
+}
+.cf3-libros__lomos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 2px;
+  align-items: flex-end;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* En la caja, de pie y apretados; el título, arriba (lo de abajo queda tras el cartón) */
+.cf3-lomo--caja {
+  place-items: start center;
+  padding-top: 6px;
+}
+.cf3-lomo--caja .cf3-lomo__titulo {
+  max-height: 26px;
+}
+.cf3-libros__caja .cf3-balda__vacio {
+  padding: 6px 4px 0;
+  color: #f0dcb8;
+}
+/* La cara delantera: más clara, con el canto de arriba iluminado, la cinta y la etiqueta */
+.cf3-carton__frente {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--cf3-frente);
+  background:
+    linear-gradient(90deg, transparent calc(50% - 11px), rgb(232 214 170 / 0.75) calc(50% - 11px) calc(50% + 11px), transparent calc(50% + 11px)),
+    linear-gradient(var(--cf3-carton-l), var(--cf3-carton) 40%, var(--cf3-carton-d));
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-carton-ink),
+    inset 0 4px 0 #e8bb86,
+    inset 0 -6px 0 rgb(0 0 0 / 0.14);
+  pointer-events: none;
+}
+/* El papel de seda que asoma, arrugado, por el borde */
+.cf3-carton__frente::before {
+  position: absolute;
+  top: -9px;
+  right: 4px;
+  left: 4px;
+  height: 11px;
+  background:
+    radial-gradient(10px 7px at 8px 11px, #f1e6cf 90%, transparent 100%) 0 0 / 23px 11px repeat-x,
+    radial-gradient(12px 6px at 17px 12px, #e3d2b2 90%, transparent 100%) 0 0 / 23px 11px repeat-x,
+    radial-gradient(8px 5px at 4px 12px, #f7efde 90%, transparent 100%) 11px 0 / 31px 11px repeat-x;
+  opacity: 0.9;
+  content: '';
+}
+.cf3-libros__etiqueta {
+  position: absolute;
+  top: 7px;
+  left: 10px;
+  display: grid;
+  padding: 2px 6px 3px;
+  background: #f4e8cc;
+  box-shadow:
+    inset 0 0 0 1px rgb(80 50 30 / 0.5),
+    1px 2px 0 rgb(0 0 0 / 0.25);
+  color: #6b3a24;
+  font:
+    700 0.54rem/1.2 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.02em;
+  transform: rotate(-2deg);
+}
+.cf3-libros__etiqueta span:last-child {
+  color: #a0442e;
+  font-weight: 400;
+  font-style: italic;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-carton__solapa,
+  .cf3-carton__dentro {
+    transition: none;
+  }
+}
+/* Cerrada, el papel de seda queda dentro */
+.cf3-libros__caja:not([data-abierta]) .cf3-carton__frente::before {
+  opacity: 0;
+}
+
+/* ── Libros y caja con volumen (Francisco, 12-11-2026: «se ven demasiado planos como imágenes pegadas y los títulos de los
+   libros salen desparejos») ──
+   Los títulos salían desparejos porque se colaba la regla antigua de `.cf3-lomo` (la ficha de antes: rejilla de dos columnas,
+   esquinas de píxel recortadas y fondo oscuro al pasar el dedo). Se anula para los lomos de libro (`[data-forma]`): todos los
+   títulos empiezan a la misma altura bajo la banda de arriba, con la misma letra, de arriba abajo, y con palabras enteras
+   (`tituloLomo`). Cada libro tiene cabeza (el canto de las hojas, visto desde arriba), lomo redondeado y sombra propia. */
+.cf3-lomo[data-forma] {
+  grid-template-areas: none;
+  grid-template-columns: none;
+  gap: 0;
+  place-items: start center;
+  min-height: 0;
+  padding: 14px 0 0;
+  clip-path: none;
+  overflow: visible;
+  border-radius: 3px 3px 1px 1px;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 3px 0 0 rgb(255 240 210 / 0.12),
+    inset -4px 0 0 rgb(0 0 0 / 0.22),
+    2px 0 0 rgb(0 0 0 / 0.28),
+    4px -3px 7px rgb(0 0 0 / 0.32);
+}
+.cf3-lomo[data-forma='tela'] {
+  background:
+    linear-gradient(transparent 7px, rgb(242 210 122 / 0.85) 7px 9px, transparent 9px calc(100% - 9px), rgb(242 210 122 / 0.85) calc(100% - 9px) calc(100% - 7px), transparent calc(100% - 7px)),
+    linear-gradient(90deg, rgb(0 0 0 / 0.34), rgb(255 255 255 / 0.06) 22%, rgb(255 255 255 / 0.2) 42%, transparent 62%, rgb(0 0 0 / 0.36)), var(--cf3-lomo);
+}
+.cf3-lomo[data-forma='piel'] {
+  background:
+    linear-gradient(
+      transparent 7px,
+      rgb(0 0 0 / 0.35) 7px 8px,
+      rgb(255 230 180 / 0.35) 8px 9px,
+      transparent 9px calc(100% - 9px),
+      rgb(0 0 0 / 0.35) calc(100% - 9px) calc(100% - 8px),
+      rgb(255 230 180 / 0.35) calc(100% - 8px) calc(100% - 7px),
+      transparent calc(100% - 7px)
+    ),
+    linear-gradient(90deg, rgb(0 0 0 / 0.4), rgb(255 255 255 / 0.04) 22%, rgb(255 235 200 / 0.18) 42%, transparent 62%, rgb(0 0 0 / 0.44)), var(--cf3-lomo);
+}
+.cf3-lomo[data-forma='rustica'] {
+  background:
+    linear-gradient(#efe0bf, #efe0bf) 50% calc(100% - 5px) / 8px 6px no-repeat,
+    linear-gradient(90deg, rgb(0 0 0 / 0.26), rgb(255 255 255 / 0.05) 22%, rgb(255 255 255 / 0.14) 42%, transparent 62%, rgb(0 0 0 / 0.28)),
+    var(--cf3-lomo);
+}
+/* La cabeza del libro: las tapas y el canto de las hojas, que se ven desde arriba */
+.cf3-lomo[data-forma]::before {
+  position: absolute;
+  right: 1px;
+  bottom: calc(100% - 1px);
+  left: 1px;
+  height: 5px;
+  border-radius: 2px 2px 0 0;
+  background:
+    linear-gradient(rgb(0 0 0 / 0.25), transparent 2px), linear-gradient(90deg, var(--cf3-lomo) 0 2px, transparent 2px calc(100% - 2px), var(--cf3-lomo) calc(100% - 2px)),
+    repeating-linear-gradient(90deg, #f4e9cf 0 1px, #dccba6 1px 2px);
+  box-shadow: 0 0 0 1px var(--cf3-ink);
+  content: '';
+  pointer-events: none;
+}
+.cf3-lomo[data-forma]:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+/* Los títulos, todos iguales: misma letra, mismo arranque, de arriba abajo */
+.cf3-lomo[data-forma] .cf3-lomo__titulo,
+.cf3-lomo--caja[data-forma] .cf3-lomo__titulo {
+  grid-area: auto;
+  max-height: calc(100% - 20px);
+  overflow: hidden;
+  color: #fff3dc;
+  font:
+    700 7.5px/1 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  text-overflow: clip;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.65);
+  writing-mode: vertical-rl;
+  transform: none;
+}
+/* En la caja, a su altura entera: solo el pie queda tras el cartón */
+.cf3-lomo--caja[data-forma] {
+  width: calc(var(--cf3-ancho, 28px) - 2px);
+  height: var(--cf3-alto, 64px);
+  padding-top: 14px;
+}
+.cf3-carton__dentro {
+  padding-bottom: 40px;
+}
+/* El cartón, con su textura de canal y su luz: el fondo más hondo abajo (donde se juntan las paredes), el canto grueso
+   de la cara delantera visto desde arriba, y la cara delantera con luz de un lado */
+.cf3-carton__cara--fondo {
+  background:
+    linear-gradient(transparent 60%, rgb(0 0 0 / 0.38)), linear-gradient(90deg, rgb(0 0 0 / 0.3), transparent 14%, transparent 86%, rgb(0 0 0 / 0.3)),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.05) 0 1px, transparent 1px 4px), linear-gradient(#5e3d23, #7a5333);
+}
+.cf3-carton__cara--izq {
+  background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.05) 0 1px, transparent 1px 4px), linear-gradient(90deg, #b07c4d, #6e482a);
+}
+.cf3-carton__cara--der {
+  background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.05) 0 1px, transparent 1px 4px), linear-gradient(90deg, #5f3e24, #9a6a40);
+}
+.cf3-carton__solapa {
+  background: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.05) 0 1px, transparent 1px 4px), linear-gradient(var(--cf3-carton-l), var(--cf3-carton));
+}
+.cf3-carton__solapa--fondo {
+  background: repeating-linear-gradient(90deg, rgb(0 0 0 / 0.05) 0 1px, transparent 1px 4px), linear-gradient(#9c6c42, var(--cf3-carton-l));
+}
+.cf3-carton__frente {
+  height: calc(var(--cf3-frente) + 4px);
+  background:
+    linear-gradient(#f3cf9c 0 3px, #8a5e38 3px 4px, #5a3a22 4px 5px, transparent 5px),
+    linear-gradient(90deg, transparent calc(50% - 11px), rgb(240 224 186 / 0.8) calc(50% - 11px) calc(50% + 11px), transparent calc(50% + 11px)),
+    linear-gradient(90deg, transparent calc(50% - 9px), rgb(255 255 255 / 0.25) calc(50% - 9px) calc(50% - 6px), transparent calc(50% - 6px)),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.045) 0 1px, transparent 1px 4px), linear-gradient(90deg, rgb(255 230 190 / 0.18), transparent 40%, rgb(0 0 0 / 0.16)),
+    linear-gradient(var(--cf3-carton-l) 5px, var(--cf3-carton) 45%, var(--cf3-carton-d));
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-carton-ink),
+    inset 0 -7px 0 rgb(0 0 0 / 0.16),
+    0 -2px 6px rgb(0 0 0 / 0.35);
+}
+.cf3-libros__etiqueta {
+  top: 10px;
+}
+
+/* ── Bloque 4a (1.122): la barra con sus hitos, la tienda de muebles del café y el cartel de lo conseguido ── */
+.cf3-xp {
+  position: relative;
+}
+/* Las tres marcas de los hitos: a un cuarto, a la mitad y a tres cuartos */
+.cf3-xp__hito {
+  position: absolute;
+  top: -3px;
+  width: 6px;
+  height: 14px;
+  margin-left: -3px;
+  background: #5a3a26;
+  box-shadow: inset 0 0 0 2px var(--cf3-ink);
+}
+.cf3-xp__hito[data-hecho] {
+  background: var(--cf3-amber);
+}
+.cf3-mueble--tienda {
+  gap: 4px;
+  padding-bottom: 7px;
+}
+.cf3-mueble__precio {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  color: var(--cf3-amber);
+  font: 400 14px/1 var(--pp-title);
+}
+.cf3-mueble__precio .cf3-px-art,
+.cf3-mueble__precio svg,
+.cf3-mueble__precio canvas,
+.cf3-mueble__precio img {
+  width: 14px;
+  height: 14px;
+}
+.cf3-mueble__precio[data-falta] {
+  color: #b9a089;
+}
+.cf3-mueble__cerrado {
+  max-width: 76px;
+  color: #c9b49a;
+  font:
+    italic 0.56rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-mueble[data-cerrado] .cf3-mueble__icono {
+  filter: grayscale(1) brightness(0.45);
+}
+
+/* El cartel de lo conseguido: una tarjeta de madera y latón en el centro, con el local detrás un poco oscurecido */
+.cf3-logro {
+  position: absolute;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(circle at 50% 45%, rgb(255 214 140 / 0.12), rgb(10 6 8 / 0.62) 70%);
+}
+.cf3-logro__carta {
+  --cf3-px: 4px;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  width: min(340px, 100%);
+  padding: 18px 16px 16px;
+  background:
+    linear-gradient(rgb(255 236 200 / 0.06), transparent 40%),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.06) 0 1px, transparent 1px 7px),
+    #3a2418;
+  box-shadow:
+    inset 0 0 0 3px var(--cf3-ink),
+    inset 0 0 0 6px #b98b4c,
+    inset 0 0 0 8px var(--cf3-ink),
+    0 18px 40px rgb(0 0 0 / 0.5);
+  color: var(--cf3-cream);
+  text-align: center;
+  clip-path: polygon(
+    0 var(--cf3-px),
+    var(--cf3-px) var(--cf3-px),
+    var(--cf3-px) 0,
+    calc(100% - var(--cf3-px)) 0,
+    calc(100% - var(--cf3-px)) var(--cf3-px),
+    100% var(--cf3-px),
+    100% calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) 100%,
+    var(--cf3-px) 100%,
+    var(--cf3-px) calc(100% - var(--cf3-px)),
+    0 calc(100% - var(--cf3-px))
+  );
+}
+.cf3-logro__ante {
+  margin: 0;
+  color: var(--cf3-amber);
+  font: 400 15px/1 var(--pp-title);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cf3-logro__t {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  margin: 0;
+  font: 400 22px/1.1 var(--pp-title);
+}
+.cf3-logro__t--hito {
+  color: var(--cf3-amber);
+}
+.cf3-logro__nv {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  background: var(--cf3-amber);
+  box-shadow:
+    inset 0 0 0 3px #2a1a10,
+    inset 0 -8px 0 #c99545,
+    0 0 0 4px rgb(255 214 140 / 0.25);
+  color: #2a1a10;
+  font: 400 40px/0.8 var(--pp-title);
+}
+.cf3-logro__nv span {
+  font-size: 13px;
+}
+.cf3-logro__tickets {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  padding: 4px 10px;
+  background: #f3e6c8;
+  box-shadow: inset 0 0 0 2px #2a1a10;
+  color: #6b2a1e;
+  font: 400 18px/1 var(--pp-title);
+}
+.cf3-logro__ticket {
+  display: inline-block;
+  width: 18px;
+  height: 12px;
+  background:
+    radial-gradient(circle at 0 50%, transparent 3px, #d8485a 3.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 3px, #d8485a 3.5px) right / 51% 100% no-repeat;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2);
+}
+.cf3-logro__estrella {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--cf3-amber);
+  clip-path: polygon(50% 0, 62% 36%, 100% 38%, 70% 60%, 80% 100%, 50% 76%, 20% 100%, 30% 60%, 0 38%, 38% 36%);
+}
+.cf3-logro__abre,
+.cf3-logro__hitos {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font:
+    0.8rem/1.3 'Lora',
+    Georgia,
+    serif;
+  text-align: left;
+}
+.cf3-logro__abre li {
+  padding-left: 16px;
+  background: linear-gradient(var(--cf3-amber), var(--cf3-amber)) 2px 0.45em / 6px 6px no-repeat;
+}
+.cf3-logro__hitos li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgb(0 0 0 / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(231 183 101 / 0.3);
+}
+.cf3-logro__ok {
+  min-width: 150px;
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-logro {
+    animation: cf3-logro-entra 220ms ease-out both;
+  }
+  .cf3-logro__carta {
+    animation: cf3-logro-sube 420ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  }
+  .cf3-logro[data-subida] .cf3-logro__nv {
+    animation: cf3-logro-nv 700ms cubic-bezier(0.3, 1.6, 0.5, 1) 160ms both;
+  }
+  @keyframes cf3-logro-entra {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes cf3-logro-sube {
+    from {
+      opacity: 0;
+      transform: translateY(18px) scale(0.94);
+    }
+  }
+  @keyframes cf3-logro-nv {
+    0% {
+      transform: scale(0.4) rotate(-12deg);
+    }
+    60% {
+      transform: scale(1.12) rotate(3deg);
+    }
+  }
+}

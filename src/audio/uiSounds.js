@@ -73,6 +73,20 @@ function ensureBus() {
   return shared.ctx;
 }
 
+/**
+ * El bus de efectos (con el volumen de «Sonidos táctiles») para quien sintetiza sonidos propios, como la barra del café
+ * (1.121); null si los efectos están apagados o no hay audio. Nunca lanza.
+ */
+export function uiSfxBus() {
+  try {
+    if (!sfxEnabled()) return null;
+    const ctx = ensureBus();
+    return ctx ? { ctx, out: bus } : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Envolvente con rampas cortas (sin clics de audio). */
 function envelope(ctx, t, peak, attack, release) {
   const g = ctx.createGain();

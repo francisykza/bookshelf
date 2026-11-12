@@ -8,6 +8,12 @@ import { footprint } from '../room';
 /** La cuadrícula que se decora (en casillas): 6 de ancho (x) por 6 de hondo (y, de la cortina al escaparate). */
 export const CUADRICULA = { w: 6, d: 6 };
 export const MAX_COSAS = 24;
+/**
+ * Bloque 4a (1.122): desde el nivel 2 se recogen las cortinas y la cuadrícula crece 3 filas hacia el fondo (las filas −3 a −1,
+ * detrás de donde estaba la cortina); las casillas de antes no cambian de número. Lo mismo en el servidor.
+ */
+export const FONDO = 3;
+export const filasDe = (nivel = 1) => ({ desde: nivel >= 2 ? -FONDO : 0, hasta: CUADRICULA.d });
 
 /** Los muebles propios del café: medidas en casillas, precio en granos y nivel desde el que se venden. */
 export const CAFE_MUEBLES = [
@@ -16,6 +22,16 @@ export const CAFE_MUEBLES = [
   { id: 'cafe-taburete', nombre: 'Taburete de barra', w: 1, d: 1, precio: 25, nivel: 1 },
   { id: 'cafe-estanteria', nombre: 'Estantería baja', w: 2, d: 1, precio: 80, nivel: 1 },
   { id: 'cafe-lampara', nombre: 'Lámpara de cristal', w: 1, d: 1, precio: 60, nivel: 1 },
+  // Bloque 4a (1.122): los de la subida a los niveles 2 y 3, y los de los primeros hitos (`hito: 1`)
+  { id: 'cafe-maceta', nombre: 'Maceta de barro', w: 1, d: 1, precio: 35, nivel: 1, hito: 1 },
+  { id: 'cafe-banco', nombre: 'Banco corrido', w: 2, d: 1, precio: 70, nivel: 2 },
+  { id: 'cafe-vitrina', nombre: 'Vitrina de tartas', w: 2, d: 1, precio: 90, nivel: 2 },
+  { id: 'cafe-planta', nombre: 'Planta grande', w: 1, d: 1, precio: 45, nivel: 2 },
+  { id: 'cafe-perchero', nombre: 'Perchero', w: 1, d: 1, precio: 40, nivel: 2, hito: 1 },
+  { id: 'cafe-estanteria-alta', nombre: 'Estantería alta', w: 2, d: 1, precio: 140, nivel: 3 },
+  { id: 'cafe-orejero', nombre: 'Sillón orejero', w: 1, d: 1, precio: 120, nivel: 3 },
+  { id: 'cafe-mesita', nombre: 'Mesita con quinqué', w: 1, d: 1, precio: 80, nivel: 3 },
+  { id: 'cafe-reloj', nombre: 'Reloj de pie', w: 1, d: 1, precio: 160, nivel: 3, hito: 1 },
 ];
 export const cafeMueble = (id) => CAFE_MUEBLES.find((m) => m.id === id) ?? null;
 
@@ -96,23 +112,25 @@ export function rectoDe(item) {
 
 const solapan = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 
-/** ¿Cabe `item` donde dice? Dentro de la cuadrícula y sin pisar a otra cosa (salvo `ignorar`). */
-export function cabe(plano, item, ignorar = item.uid) {
+/** ¿Cabe `item` donde dice? Dentro de la cuadrícula del nivel y sin pisar a otra cosa (salvo `ignorar`). */
+export function cabe(plano, item, ignorar = item.uid, nivel = 1) {
   if (!medidas(item.id) || ![item.x, item.y, item.rot].every(Number.isInteger) || item.rot < 0 || item.rot > 3) return false;
   const r = rectoDe(item);
-  if (r.x0 < 0 || r.y0 < 0 || r.x1 > CUADRICULA.w || r.y1 > CUADRICULA.d) return false;
+  if (r.x0 < 0 || r.y0 < filasDe(nivel).desde || r.x1 > CUADRICULA.w || r.y1 > CUADRICULA.d) return false;
   return !plano.items.some((o) => o.uid !== ignorar && solapan(r, rectoDe(o)));
 }
 
 /** El primer hueco libre para `id` (girado como pueda), empezando cerca de (x, y); null si no cabe en ningún sitio. */
-export function hueco(plano, id, cerca = { x: 2, y: 3 }) {
+export function hueco(plano, id, cerca = null, nivel = 1) {
+  // Desde el nivel 2, lo nuevo va primero al fondo recién abierto
+  const c = cerca ?? (nivel >= 2 ? { x: 2, y: -2 } : { x: 2, y: 3 });
   const opciones = [];
-  for (let y = 0; y < CUADRICULA.d; y += 1) for (let x = 0; x < CUADRICULA.w; x += 1) opciones.push({ x, y, dist: Math.hypot(x - cerca.x, y - cerca.y) });
+  for (let y = filasDe(nivel).desde; y < CUADRICULA.d; y += 1) for (let x = 0; x < CUADRICULA.w; x += 1) opciones.push({ x, y, dist: Math.hypot(x - c.x, y - c.y) });
   opciones.sort((a, b) => a.dist - b.dist);
   for (const rot of [0, 1]) {
     for (const o of opciones) {
       const item = { uid: '__nuevo', id, x: o.x, y: o.y, rot };
-      if (cabe(plano, item, '__nuevo')) return { x: o.x, y: o.y, rot };
+      if (cabe(plano, item, '__nuevo', nivel)) return { x: o.x, y: o.y, rot };
     }
   }
   return null;

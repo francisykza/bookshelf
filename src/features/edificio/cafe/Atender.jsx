@@ -1,23 +1,35 @@
-// El café-librería del bajo, bloque 3 (1.121), revisado el 12-11-2026 (Francisco: «el café pesa más, el libro es un extra»):
-// atender a un cliente, en el cuadro de diálogo de abajo y en la escena.
+// El café-librería del bajo, bloque 3 (1.121), revisado el 12-11-2026 (Francisco: «el café pesa más, el libro es un extra»)
+// y rehecho el mismo día para que preparar sea divertido y cada paso se sienta único («quiero que el proceso de hacer el cafe
+// sea divertido y adictivo, y que cada paso se sienta unico, tanto por los movimientos que haga el usuario como por los
+// objetos que tenga que ver»): atender a un cliente, en el cuadro de diálogo de abajo y en la escena.
 // 1. Te pide la bebida en una comanda (clara; la del excéntrico, en acertijos), que se queda a la vista arriba.
-// 2. «A la barra»: la cámara baja a la barra 3D; tocas la cafetera o la tetera, un tarro (suave o intenso) y, si lleva, la
-//    leche y el toque (o los eliges abajo, uno a uno), y mantienes pulsado para llenar la taza (lo llenado no se pierde al
-//    soltar; con movimiento reducido, un toque).
-// 3. Se la llevas: la taza en la mano y vas andando hasta su mesa (tocándole o con «Llevársela»).
-// 4. El libro, de extra: tres fichas de tu estantería con sus pistas (páginas, año, género), o «Solo el café».
-// 5. Estrellas (de 1 a 3, según lo acertado; las pone el servidor con `cafe_servir`) y el repaso de qué acertaste.
+// 2. «A la barra»: cinco etapas, cada una con su objeto y su gesto (`cafeGestos.js`): la bebida (tocar la cafetera o la
+//    tetera), el grano (el tarro y la manivela del molinillo) o la hoja (el tarro y la cuchara), la extracción (apisonar y la
+//    palanca) o la infusión (la tetera y el colador), la leche (la jarrita bajo el vapor y servirla con pulso) y el toque
+//    (agitar la canela o dibujar un hilo de miel). La cámara se acerca a cada objeto. Nada falla ni corre prisa; lo hecho no
+//    se pierde al soltar; con movimiento reducido o con el teclado, cada gesto es un toque.
+// 3. «Llevársela»: la taza en la mano y vas andando hasta su mesa.
+// 4. El libro, de extra: tres fichas de lo que tienes en la balda (§121.3: los ejemplares comprados en cajas) con sus pistas
+//    (páginas, año, género), o «Solo el café». Si encaja, el cliente se lleva el ejemplar y paga 2 granos más; sin
+//    ejemplares en la balda, solo el café.
+// 5. Estrellas (de 1 a 3, según lo acertado; las pone el servidor con `cafe_servir`) y el repaso de qué acertaste. Los gestos
+//    no cambian las estrellas: solo cuenta la receta.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { colorDe } from './cafeMuebles';
-import { PARTES, PEDIDO_ACERTIJO, RESENAS, comandaAcertijo, comandaClara, librosParaRecomendar, nombreOpcion } from './cafeClientes';
+import { PARTES, PEDIDO_ACERTIJO, RESENAS, comandaAcertijo, comandaClara, librosParaRecomendar, nombreOpcion, opcionesDe } from './cafeClientes';
+import { AYUDA_NIVELES, AYUDA_PARADO_MS, ELIGE, ETAPAS, GESTOS, crearGesto, gestosDe, nombreEtapa, verAyuda, vistaTaza } from './cafeGestos';
+import { crearSfxBarra } from './cafeSfx';
 import { retratoDe } from './cafeIconos';
 import { errorCafe } from './cafeService';
 import { PixelArt } from './PixelArt';
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** La hora para los gestos que se mantienen (fuera del componente: solo se llama en los toques y en cada cuadro). */
+const reloj = () => performance.now();
 const rgb = (c) => `rgb(${c[0]} ${c[1]} ${c[2]})`;
-const LLENAR_MS = 1000;
-const VACIA = { bebida: null, grano: null, leche: 'sin', toque: 'nada' };
+const VACIA = { bebida: null, grano: null, leche: null, toque: null };
+/** Cuánto se queda el objeto en su postura final antes de pasar al siguiente (un respiro; directo con movimiento reducido). */
+const RESPIRO_MS = 420;
 const CATEGORIAS = [
   [/science fiction|ciencia ficci/, 'Ciencia ficción'],
   [/fantas/, 'Fantasía'],
@@ -44,6 +56,40 @@ function pistas(b, ctx) {
   return out;
 }
 
+/** Lo que se pregunta al elegir cada parte. */
+const PREGUNTA = {
+  bebida: (r, carta = []) => (carta.includes('chocolate') ? '¿Café, té o chocolate? Toca la cafetera, la tetera o el cazo.' : '¿Café o té? Toca la cafetera o la tetera.'),
+  grano: (r) =>
+    r.bebida === 'te'
+      ? '¿Qué hoja? Toca un tarro: la verde es suave; la negra, intensa.'
+      : r.bebida === 'chocolate'
+        ? '¿Qué cacao? Toca un tarro: el claro, con leche; el oscuro, negro.'
+        : '¿Qué grano? Toca un tarro: el claro es suave; el tostado, intenso.',
+  leche: () => '¿Leche? Toca una jarrita, o «Sin leche».',
+  toque: (r, carta = []) => (carta.includes('nata') ? '¿Un toque final? Toca la canela, la miel o la nata, o «Sin nada».' : '¿Un toque final? Toca la canela o la miel, o «Sin nada».'),
+};
+/** Qué marca de la barra mira cada gesto (donde va la pista y, en la manivela y la miel, el centro del gesto). */
+const MARCA = { manivela: 'manivela', apisonar: 'portafiltro', palanca: 'palanca', cuchara: 'tarros', tetera: 'tetera', colador: 'taza', vapor: 'vapor', verter: 'taza', agitar: 'taza', hilo: 'taza', molinillo: 'cazo', cazo: 'cazo', batir: 'bol' };
+/** El sonido al elegir cada cosa. */
+const SONIDO_ELEGIR = { bebida: (v) => (v === 'te' ? 'tetera' : v === 'chocolate' ? 'cazo' : 'cafetera'), grano: () => 'tarro', leche: () => 'jarra', toque: () => 'jarra' };
+/** Los que se mantienen suenan mientras dura (el café que cae, el agua, el vapor). */
+const SUENA_MIENTRAS = {
+  palanca: (s) => s.pose.bajada >= 0.85,
+  tetera: (s) => s.pose.alzada >= 0.6,
+  vapor: (s) => Math.abs(s.pose.inclina) >= 0.5,
+  cazo: (s) => s.pose.inclina >= 0.6,
+};
+
+/** La siguiente etapa y gesto que quedan por hacer con esta receta (5 = la taza está lista). */
+function siguiente(receta, ei, gi) {
+  for (let e = ei, g = gi; e < ETAPAS.length; e += 1, g = 0) {
+    const parte = ELIGE[ETAPAS[e]];
+    if (parte && receta[parte] == null) return { ei: e, gi: 0 };
+    if (g < gestosDe(ETAPAS[e], receta).length) return { ei: e, gi: g };
+  }
+  return { ei: ETAPAS.length, gi: 0 };
+}
+
 function Estrellas({ n }) {
   return (
     <span className="cf3-estrellas" role="img" aria-label={`${n} de 3 estrellas`}>
@@ -54,50 +100,267 @@ function Estrellas({ n }) {
   );
 }
 
-export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir, onCerrar }) {
+/** La pista del gesto, dibujada sobre el objeto: una flecha de píxel por gesto (quieta con movimiento reducido). */
+function Pista({ tipo }) {
+  const p = GESTOS[tipo]?.pista;
+  const trazo = {
+    giro: 'M 44 12 A 32 32 0 1 1 12 44',
+    abajo: 'M 44 8 L 44 70',
+    'abajo-mantener': 'M 44 8 L 44 62',
+    derecha: 'M 6 44 Q 44 10 82 44',
+    'arriba-mantener': 'M 44 76 L 44 18',
+    'vaiven-vertical': 'M 44 14 L 44 74',
+    'lado-mantener': 'M 14 44 L 74 44',
+    'izquierda-mantener': 'M 76 44 L 18 44',
+    remover: 'M 44 10 A 34 26 0 1 1 10 44 A 34 26 0 0 1 44 10',
+    batir: 'M 44 30 a 12 12 0 1 1 -1 0 m 1 10 a 12 12 0 1 1 -1 0 m 1 10 a 12 12 0 1 1 -1 0',
+    trazo: 'M 44 6 Q 30 24 44 40 Q 58 56 44 78',
+    vaiven: 'M 8 44 L 80 44',
+    dibujo: 'M 44 44 m -6 0 a 6 6 0 1 1 12 0 a 12 12 0 1 1 -24 0 a 18 18 0 1 1 36 0',
+  }[p];
+  if (!trazo) return null;
+  return (
+    <svg className="cf3-pista" data-pista={p} viewBox="0 0 88 88" aria-hidden="true" shapeRendering="crispEdges">
+      <path d={trazo} className="cf3-pista__trazo" />
+      <circle className="cf3-pista__dedo" r="7" />
+      {p.endsWith('mantener') && <circle className="cf3-pista__mantener" r="13" />}
+    </svg>
+  );
+}
+
+const SIN_CARTA = [];
+
+export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA }) {
   const [paso, setPaso] = useState('pide');
   const [receta, setReceta] = useState(VACIA);
-  const [llenado, setLlenado] = useState(0);
-  const [vertiendo, setVertiendo] = useState(false);
+  const [ei, setEi] = useState(0);
+  const [gi, setGi] = useState(0);
+  const [hechos, setHechos] = useState({});
+  const [g, setG] = useState(null);
+  const [pistaEn, setPistaEn] = useState(null);
+  const [marcas, setMarcas] = useState(null);
+  const [paradoEn, setParadoEn] = useState(null);
   const [libro, setLibro] = useState(null);
   const [dado, setDado] = useState(null);
   const [error, setError] = useState('');
+  const [sfx] = useState(() => crearSfxBarra());
+  const rec = useRef(null);
   const raf = useRef(0);
-  const llenadoRef = useRef(0);
+  const respiro = useRef(0);
+  const zona = useRef(null);
   const raro = cliente.raro;
   const quien = cliente.habitual || raro ? cliente.nombre : 'Cliente';
   const fichas = useMemo(() => librosParaRecomendar(cliente.pedido, libros, ctx, cliente.semilla), [cliente.pedido, cliente.semilla, libros, ctx]);
   const lista = [receta.bebida, receta.grano, receta.leche, receta.toque];
-  const lista_ = lista.join();
   const encaja = libro ? cliente.pedido.encaja(libro, ctx) : false;
   const enBarra = paso === 'barra';
-  const lleva = paso === 'llevar' || paso === 'yendo' || paso === 'libro' || paso === 'sirviendo';
+  const lleva = paso === 'yendo' || paso === 'libro' || paso === 'sirviendo';
 
-  // La escena sigue a la barra: entrar, lo elegido y la taza; al salir, la taza en la mano
-  useEffect(() => () => cancelAnimationFrame(raf.current), []);
+  const etapa = ETAPAS[ei] ?? null;
+  const parte = etapa ? ELIGE[etapa] : null;
+  const eligiendo = enBarra && Boolean(parte) && receta[parte] == null;
+  const gesto = enBarra && etapa && !eligiendo ? (gestosDe(etapa, receta)[gi] ?? null) : null;
+  const clave = gesto ? `${ei}:${gi}:${gesto}` : null;
+  const lista_ = enBarra && ei >= ETAPAS.length;
+  const actual = gesto && g?.clave === clave ? g : null;
+  const pista = pistaEn?.clave === clave ? pistaEn : null;
+  // La «!» de ayuda: en qué punto estás (elegir una parte, un gesto o la taza lista) y si toca enseñarla
+  const puntoClave = enBarra ? (lista_ ? 'lista' : eligiendo ? `e:${ei}:${parte}` : (clave ?? 'nada')) : paso;
+  const ayuda = verAyuda(ayudas, nivel, paradoEn === puntoClave);
+  const marcasAhora = marcas?.clave === puntoClave ? marcas.lista : [];
+  const vista = useMemo(() => vistaTaza(receta, hechos, actual ? { tipo: gesto, pose: actual.pose } : null), [receta, hechos, actual, gesto]);
+
+  useEffect(() => sfx.setActivo(soundOn), [sfx, soundOn]);
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(raf.current);
+      clearTimeout(respiro.current);
+      sfx.apagar();
+    },
+    [sfx],
+  );
+  // La escena sigue a la barra: entrar, lo que se ve en cada momento y adónde mira la cámara
   useEffect(() => () => escena?.barra(false), [escena]);
   useEffect(() => {
     if (enBarra) escena?.barra(true);
   }, [enBarra, escena]);
   useEffect(() => {
-    if (enBarra) escena?.setReceta(receta, { lleno: llenado, vertiendo });
-  }, [enBarra, escena, receta, llenado, vertiendo]);
+    if (!enBarra) return;
+    escena?.setBarra({
+      receta,
+      gesto,
+      pose: actual?.pose ?? {},
+      pulsado: actual?.pulsado ?? false,
+      hechos,
+      vista,
+      elige: eligiendo ? parte : null,
+      lista: lista_,
+      carta,
+      enfoque: lista_ ? 'lista' : eligiendo ? etapa : (gesto ?? etapa),
+    });
+  }, [enBarra, escena, receta, gesto, actual, hechos, vista, eligiendo, parte, lista_, etapa, carta]);
+  // Dónde cae el objeto del gesto en la pantalla, cuando la cámara ya ha llegado (para la pista y el centro del gesto)
+  useEffect(() => {
+    if (!gesto) return undefined;
+    let vivo = true;
+    let id = 0;
+    const mira = () => {
+      if (!vivo) return;
+      if (escena && !escena.settled()) {
+        id = requestAnimationFrame(mira);
+        return;
+      }
+      const m = escena?.barraMarca(MARCA[gesto]);
+      const r = zona.current?.getBoundingClientRect();
+      if (m && r) setPistaEn({ clave, x: m.x - r.left, y: m.y - r.top, cx: m.x, cy: m.y });
+      else if (r) setPistaEn({ clave, x: r.width / 2, y: r.height * 0.32, cx: r.left + r.width / 2, cy: r.top + r.height * 0.32 });
+    };
+    id = requestAnimationFrame(mira);
+    return () => {
+      vivo = false;
+      cancelAnimationFrame(id);
+    };
+  }, [gesto, clave, escena]);
 
-  const elegir = (parte, valor) => {
-    // La leche y el toque se quitan al volver a tocarlos
-    const v = (parte === 'leche' || parte === 'toque') && receta[parte] === valor ? (parte === 'leche' ? 'sin' : 'nada') : valor;
-    if (receta[parte] === v) return;
-    // Cambiar la receta con la taza empezada: taza nueva
-    llenadoRef.current = 0;
-    setLlenado(0);
-    setReceta({ ...receta, [parte]: v });
+  // Pasado un rato sin avanzar (en los niveles altos), la «!» aparece igualmente
+  useEffect(() => {
+    if (ayudas !== 'auto' || (nivel ?? 1) <= AYUDA_NIVELES) return undefined;
+    const id = setTimeout(() => setParadoEn(puntoClave), AYUDA_PARADO_MS);
+    return () => clearTimeout(id);
+  }, [ayudas, nivel, puntoClave]);
+  // Al elegir: dónde caen, en la pantalla, las cosas de esa parte (encima de cada una, cuando la cámara ya ha llegado)
+  useEffect(() => {
+    if (!eligiendo || !escena) return undefined;
+    let vivo = true;
+    let id = 0;
+    const mira = () => {
+      if (!vivo) return;
+      if (!escena.settled()) {
+        id = requestAnimationFrame(mira);
+        return;
+      }
+      const r = zona.current?.getBoundingClientRect();
+      if (!r) return;
+      const lista = [];
+      for (const o of opcionesDe(parte, carta)) {
+        const p = escena.barraEnPantalla(`barra:${parte}:${o.id}`, { cima: true });
+        if (p?.front) lista.push({ id: o.id, x: p.x - r.left, y: p.y - r.top });
+      }
+      setMarcas({ clave: puntoClave, lista });
+    };
+    id = requestAnimationFrame(mira);
+    return () => {
+      vivo = false;
+      cancelAnimationFrame(id);
+    };
+  }, [eligiendo, escena, parte, puntoClave, carta]);
+
+  /** Pasar a lo siguiente (otra etapa o la taza lista), con su sonido. */
+  const avanzar = (r, e, gIdx) => {
+    const sig = siguiente(r, e, gIdx);
+    if (sig.ei > e) sfx.play(sig.ei >= ETAPAS.length ? 'lista' : 'etapa');
+    rec.current = null;
+    setG(null);
+    setEi(sig.ei);
+    setGi(sig.gi);
   };
-  const cambiar = (parte) => {
-    const opciones = PARTES.find((p) => p.id === parte).opciones;
-    const k = opciones.findIndex((o) => o.id === receta[parte]);
-    elegir(parte, opciones[(k + 1) % opciones.length].id);
+  const elegir = (p, valor) => {
+    if (!eligiendo || p !== parte) return;
+    // Solo lo que está en la carta (el cazo y el bol están en la barra desde el principio, pero se abren con los hitos)
+    if (!opcionesDe(p, carta).some((o) => o.id === valor)) return;
+    const r = { ...receta, [p]: valor };
+    sfx.play(SONIDO_ELEGIR[p](valor));
+    setReceta(r);
+    avanzar(r, ei, 0);
   };
+  /** Antes de empezar el gesto de una etapa, se puede cambiar lo elegido. */
+  const puedeCambiar = enBarra && !eligiendo && !lista_ && Boolean(parte) && gi === 0 && !(actual?.progreso > 0);
+  const cambiar = () => {
+    if (!puedeCambiar) return;
+    rec.current = null;
+    setG(null);
+    setReceta({ ...receta, [parte]: null });
+  };
+  /** Tirar lo preparado y empezar otra taza (sin castigo). */
+  const deNuevo = () => {
+    cancelAnimationFrame(raf.current);
+    clearTimeout(respiro.current);
+    sfx.apagar();
+    sfx.play('vaciar');
+    rec.current = null;
+    setG(null);
+    setHechos({});
+    setReceta(VACIA);
+    setEi(0);
+    setGi(0);
+  };
+
+  // ── El gesto: la zona sobre la escena recoge el dedo y el reconocedor dice el progreso y la postura ──
+  const reconocedor = () => {
+    if (rec.current?.clave !== clave) {
+      const ancho = zona.current?.getBoundingClientRect().width || 390;
+      const centro = pista ? { x: pista.cx, y: pista.cy } : null;
+      rec.current = { clave, g: crearGesto(gesto, { escala: Math.min(ancho, 600) / 390, centro }) };
+    }
+    return rec.current.g;
+  };
+  const aplicar = (s) => {
+    setG({ ...s, clave });
+    if (rec.current?.fin) return;
+    for (const ev of s.eventos) if (ev !== 'hecho' && ev !== 'toca') sfx.play(ev);
+    const suena = SUENA_MIENTRAS[gesto];
+    if (suena) sfx.bucle(gesto, s.pulsado && !s.hecho && suena(s), gesto === 'vapor' ? s.pose.espuma : 0);
+    if (s.hecho && rec.current && !rec.current.fin) {
+      rec.current.fin = true;
+      cancelAnimationFrame(raf.current);
+      sfx.bucle(gesto, false);
+      const h = { ...hechos, [gesto]: s.pose };
+      const [r, e, gIdx] = [receta, ei, gi + 1];
+      clearTimeout(respiro.current);
+      const seguir = () => {
+        setHechos(h);
+        avanzar(r, e, gIdx);
+      };
+      if (reduced()) seguir();
+      else respiro.current = setTimeout(seguir, RESPIRO_MS);
+    }
+  };
+  const latido = () => {
+    const r = rec.current?.g;
+    if (!r) return;
+    const s = r.paso(reloj());
+    aplicar(s);
+    if (s.pulsado && !s.hecho) raf.current = requestAnimationFrame(latido);
+  };
+  const completar = () => {
+    if (!gesto || actual?.hecho) return;
+    aplicar(reconocedor().completar());
+  };
+  const onDown = (e) => {
+    if (!gesto || actual?.hecho) return;
+    e.preventDefault();
+    if (reduced()) return completar();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    const r = reconocedor();
+    aplicar(r.abajo(e.clientX, e.clientY, reloj()));
+    cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(latido);
+  };
+  const onMove = (e) => {
+    const r = rec.current?.clave === clave ? rec.current.g : null;
+    if (!r || !r.estado.pulsado) return;
+    aplicar(r.mover(e.clientX, e.clientY, reloj()));
+  };
+  const onUp = () => {
+    const r = rec.current?.clave === clave ? rec.current.g : null;
+    cancelAnimationFrame(raf.current);
+    if (!r || !r.estado.pulsado) return;
+    aplicar(r.arriba());
+  };
+
   const llevar = async () => {
+    const lleva_ = { receta, vista: vistaTaza(receta, hechos) };
+    escena?.barra(false, { llevar: lleva_ });
     if (!escena) return setPaso('libro');
     setPaso('yendo');
     await escena.irACliente(cliente.n);
@@ -105,56 +368,22 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   };
   const lista3d = useRef(null);
   useEffect(() => {
-    lista3d.current = { paso, elegir, llevar };
+    lista3d.current = { elegir };
   });
-  // Los toques en la escena mientras atiendes: lo de la barra y el propio cliente cuando llevas su taza
+  // Los toques en la escena mientras atiendes: lo que se elige en la barra
   useEffect(() => {
     registrarToque?.((id) => {
       if (!lista3d.current) return false;
-      const { paso: ahora, elegir: el, llevar: ll } = lista3d.current;
-      if (ahora === 'barra' && id.startsWith('barra:')) {
-        const [, parte, valor] = id.split(':');
-        el(parte, valor);
+      if (id.startsWith('barra:')) {
+        const [, p, valor] = id.split(':');
+        lista3d.current.elegir(p, valor);
         return true;
       }
-      if (ahora === 'llevar' && id === `cliente:${cliente.n}`) {
-        ll();
-        return true;
-      }
-      return ahora !== 'pide' && ahora !== 'gracias';
+      return true;
     });
     return () => registrarToque?.(null);
-  }, [registrarToque, cliente.n]);
+  }, [registrarToque]);
 
-  const listo = () => {
-    cancelAnimationFrame(raf.current);
-    setVertiendo(false);
-    llenadoRef.current = 1;
-    setLlenado(1);
-    escena?.barra(false, { llevar: receta });
-    setPaso('llevar');
-  };
-  // Verter: mientras se mantiene pulsado, la taza se llena; al soltar se queda como esté (y se sigue luego)
-  const empezar = () => {
-    if (paso !== 'barra' || !receta.bebida || !receta.grano) return;
-    if (reduced()) return listo();
-    cancelAnimationFrame(raf.current);
-    setVertiendo(true);
-    let antes = performance.now();
-    const paso_ = (now) => {
-      const v = Math.min(1, llenadoRef.current + (now - antes) / LLENAR_MS);
-      antes = now;
-      llenadoRef.current = v;
-      setLlenado(v);
-      if (v >= 1) listo();
-      else raf.current = requestAnimationFrame(paso_);
-    };
-    raf.current = requestAnimationFrame(paso_);
-  };
-  const soltar = () => {
-    cancelAnimationFrame(raf.current);
-    setVertiendo(false);
-  };
   const servir = async (b) => {
     setLibro(b);
     setPaso('sirviendo');
@@ -172,7 +401,7 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
 
   const retrato = <PixelArt icono={retratoDe(cliente.aspecto)} />;
   const pide = dado?.pide ?? cliente.pide;
-  const comanda = !(paso === 'pide' || enBarra || paso === 'llevar' || paso === 'yendo') ? null : (
+  const comanda = !(paso === 'pide' || enBarra || paso === 'yendo') ? null : (
     <section
       className={`cf3-comanda${raro ? ' cf3-comanda--raro' : ''}`}
       aria-label={raro ? `La comanda de ${quien}, en acertijos` : `La comanda de ${quien}`}
@@ -207,26 +436,53 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       </>
     );
   } else if (enBarra) {
-    texto = 'Toca en la barra lo que lleva y mantén pulsada la cafetera para servir.';
-    extra = (
-      <div className="cf3-receta" role="group" aria-label="Lo que lleva la taza">
-        {PARTES.map((p) => {
-          const v = receta[p.id];
+    const opciones = eligiendo ? opcionesDe(parte, carta) : [];
+    const def = gesto ? GESTOS[gesto] : null;
+    texto = lista_ ? '¡Lista! Huele de maravilla.' : eligiendo ? PREGUNTA[parte](receta, carta) : def ? `${def.orden}. ${reduced() ? 'Un toque basta.' : def.ayuda}` : '';
+    const etapas = (
+      <ol className="cf3-etapas" aria-label="Las etapas de la taza">
+        {ETAPAS.map((id, k) => {
+          const est = k < ei ? 'hecha' : k === ei && !lista_ ? 'ahora' : 'luego';
+          const p = ELIGE[id];
+          const valor = p && receta[p] != null && k <= ei ? nombreOpcion(p, receta[p]) : null;
           return (
-            <button
-              key={p.id}
-              type="button"
-              className="cf3-receta__hueco"
-              data-vacio={v ? undefined : 'true'}
-              aria-label={`${p.nombre}: ${v ? nombreOpcion(p.id, v) : 'sin elegir'}. Cambiar`}
-              onClick={() => cambiar(p.id)}
-            >
-              <span className="cf3-receta__parte">{p.nombre}</span>
-              <span className="cf3-receta__valor">{v ? nombreOpcion(p.id, v) : '¿…?'}</span>
-            </button>
+            <li key={id} data-estado={est} aria-current={est === 'ahora' ? 'step' : undefined}>
+              <span className="cf3-etapas__num" aria-hidden="true">
+                {est === 'hecha' ? '✓' : k + 1}
+              </span>
+              <span className="cf3-etapas__nombre">{nombreEtapa(id, receta)}</span>
+              {valor && <span className="px-sr">: {valor}</span>}
+            </li>
           );
         })}
-      </div>
+      </ol>
+    );
+    extra = (
+      <>
+        {etapas}
+        {eligiendo && (
+          <div className="cf3-opciones" role="group" aria-label={nombreEtapa(etapa, receta)}>
+            {opciones.map((o) => (
+              <button key={o.id} type="button" className="cf3-opcion" onClick={() => elegir(parte, o.id)}>
+                {parte === 'grano' && receta.bebida === 'te'
+                  ? o.id === 'suave'
+                    ? 'Hoja verde · suave'
+                    : 'Hoja negra · intensa'
+                  : parte === 'grano' && receta.bebida === 'chocolate'
+                    ? o.id === 'suave'
+                      ? 'Cacao con leche'
+                      : 'Cacao negro'
+                    : o.nombre}
+              </button>
+            ))}
+          </div>
+        )}
+        {gesto && (
+          <div className="cf3-medidor" role="progressbar" aria-label={def.orden} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((actual?.progreso ?? 0) * 100)}>
+            <span className="cf3-medidor__lleno" style={{ width: `${Math.round((actual?.progreso ?? 0) * 100)}%` }} />
+          </div>
+        )}
+      </>
     );
     botones = (
       <>
@@ -234,50 +490,45 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
           type="button"
           className="cf3-btn cf3-btn--suave"
           onClick={() => {
-            soltar();
+            sfx.apagar();
             onCerrar();
           }}
         >
           Luego
         </button>
-        <button
-          key="verter"
-          type="button"
-          className="cf3-btn cf3-btn--verde cf3-cafetera"
-          disabled={!receta.bebida || !receta.grano}
-          onPointerDown={empezar}
-          onPointerUp={soltar}
-          onPointerLeave={soltar}
-          onPointerCancel={soltar}
-          onKeyDown={(e) => {
-            if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
-              e.preventDefault();
-              empezar();
-            }
-          }}
-          onKeyUp={soltar}
-          aria-label={reduced() ? 'Servir' : 'Mantén pulsado para servir'}
-        >
-          {reduced() ? 'Servir' : llenado > 0 ? `Sigue pulsando · ${Math.round(llenado * 100)} %` : 'Mantén pulsado para servir'}
-        </button>
+        {puedeCambiar && (
+          <button key="cambiar" type="button" className="cf3-btn cf3-btn--suave" onClick={cambiar}>
+            Cambiar
+          </button>
+        )}
+        {receta.bebida && !lista_ && (
+          <button key="de-nuevo" type="button" className="cf3-btn cf3-btn--suave" onClick={deNuevo} aria-label="Tirar lo preparado y empezar otra taza">
+            De nuevo
+          </button>
+        )}
+        {gesto && reduced() && (
+          <button key={`atajo-${clave}`} type="button" className="cf3-btn cf3-btn--verde" onClick={completar}>
+            {def.atajo}
+          </button>
+        )}
+        {lista_ && (
+          <button key="llevar" type="button" className="cf3-btn cf3-btn--verde" onClick={llevar}>
+            Llevársela
+          </button>
+        )}
       </>
     );
-  } else if (paso === 'llevar' || paso === 'yendo') {
-    texto =
-      paso === 'yendo'
-        ? `Con cuidado, que quema… Vas hacia ${raro || cliente.habitual ? quien : 'su mesa'}.`
-        : `Lista. Llévasela${raro || cliente.habitual ? ` a ${quien}` : ''}: tócale en el local o pulsa «Llevársela».`;
-    botones = (
-      <button key="llevar" type="button" className="cf3-btn cf3-btn--verde" onClick={llevar} disabled={paso === 'yendo'}>
-        Llevársela
-      </button>
-    );
+  } else if (paso === 'yendo') {
+    texto = `Con cuidado, que quema… Vas hacia ${raro || cliente.habitual ? quien : 'su mesa'}.`;
+    botones = null;
   } else if (paso === 'libro' || paso === 'sirviendo') {
     texto = `«¡Qué buena pinta! ${raro ? (PEDIDO_ACERTIJO[cliente.pedido.id] ?? PEDIDO_ACERTIJO.libre) : cliente.pedido.frase}»`;
-    extra = (
+    extra = !fichas.length ? (
+      <p className="cf3-fichas__vacia">No te quedan libros en la balda. Compra una caja en la distribuidora para recomendar; hoy, solo el café.</p>
+    ) : (
       <ul className="cf3-fichas" aria-label="Recomiéndale un libro (opcional)">
         {fichas.map((b) => (
-          <li key={b.id}>
+          <li key={b.clave ?? b.id}>
             <button
               type="button"
               className="cf3-ficha"
@@ -308,11 +559,13 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   } else {
     const e = dado?.estrellas ?? 1;
     const resena = cliente.habitual && dado?.frase != null ? ` Te dejo una nota en la pizarra: “${RESENAS[dado.frase] ?? ''}”` : '';
+    const arte = hechos.verter?.arte;
+    const piropo = arte === 'hoja' ? ' ¡Y qué hoja tan bonita!' : arte === 'corazon' ? ' ¡Un corazón en la espuma!' : '';
     texto =
       raro && dado?.dorada
         ? `«${raro.dorada}» Te ha dejado una reseña dorada en la pizarra.`
         : e === 3
-          ? `«¡Perfecto! Justo lo que quería.${resena}»`
+          ? `«¡Perfecto! Justo lo que quería.${piropo}${resena}»`
           : e === 2
             ? `«Muy rico, aunque no era del todo lo que pedí.${resena}»`
             : `«No era lo que pedí… pero gracias igualmente.${resena}»`;
@@ -328,10 +581,13 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
               </li>
             );
           })}
-          <li data-ok={libro ? (encaja ? 'true' : 'false') : 'nada'}>{libro ? (encaja ? '✓ El libro' : '✗ El libro no era') : '· Sin libro'}</li>
+          <li data-ok={libro ? (dado.llevado ? 'true' : 'false') : 'nada'}>
+            {libro ? (dado.llevado ? `✓ Se lleva «${libro.title}»` : encaja ? '✗ El libro no estaba en la balda' : '✗ El libro no era: vuelve a la balda') : '· Sin libro'}
+          </li>
         </ul>
         <p className="cf3-dado" aria-label={`Has ganado ${dado.granos} granos y ${dado.reputacion} de reputación`}>
           <span className="cf3-dado__ficha">+{dado.granos} granos</span>
+          {dado.extra > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--libro">{`${dado.extra} por el libro`}</span>}
           <span className="cf3-dado__ficha cf3-dado__ficha--rep">+{dado.reputacion} reputación</span>
         </p>
       </div>
@@ -344,9 +600,46 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     );
   }
 
+  const def = gesto ? GESTOS[gesto] : null;
   return (
     <>
       {comanda}
+      {enBarra && (
+        <div
+          ref={zona}
+          className="cf3-gesto"
+          data-activo={gesto ? 'true' : undefined}
+          data-gesto={gesto ?? undefined}
+          role={gesto ? 'button' : undefined}
+          tabIndex={gesto ? 0 : -1}
+          aria-hidden={gesto ? undefined : 'true'}
+          aria-label={gesto ? `${def.orden}. Con el teclado, Intro lo hace de una vez.` : undefined}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+          onLostPointerCapture={onUp}
+          onKeyDown={(e) => {
+            if (gesto && (e.key === 'Enter' || e.key === ' ') && !e.repeat) {
+              e.preventDefault();
+              completar();
+            }
+          }}
+        >
+          {ayuda && eligiendo && marcasAhora.map((m) => <span key={m.id} className="cf3-ayuda" data-para={m.id} style={{ left: `${m.x}px`, top: `${m.y}px` }} aria-hidden="true" />)}
+          {ayuda && gesto && pista && !(actual?.progreso > 0) && <span className="cf3-ayuda cf3-ayuda--gesto" style={{ left: `${pista.x}px`, top: `${pista.y}px` }} aria-hidden="true" />}
+          {gesto && pista && !(actual?.progreso > 0) && (
+            <span className="cf3-gesto__pista" style={{ left: `${pista.x}px`, top: `${pista.y}px` }}>
+              <Pista tipo={gesto} />
+            </span>
+          )}
+          {gesto && actual?.hecho && (
+            <span className="cf3-gesto__hecho" aria-hidden="true">
+              ¡Hecho!
+            </span>
+          )}
+        </div>
+      )}
       {lleva && <span className="px-sr">Llevas {comandaClara(lista).toLowerCase()}</span>}
       <div
         className={`cf3-franja cf3-franja--atender${raro ? ' cf3-franja--raro' : ''}`}
@@ -354,7 +647,11 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
         aria-label={`Atender a ${quien}`}
         data-paso={paso}
         data-pedido={cliente.pedido.id}
-        data-receta={lista_}
+        data-receta={lista.map((x) => x ?? '').join()}
+        data-etapa={enBarra ? (lista_ ? 'lista' : etapa) : undefined}
+        data-gesto={gesto ?? undefined}
+        data-ayuda={ayuda ? 'true' : undefined}
+        data-progreso={gesto ? Math.round((actual?.progreso ?? 0) * 100) : undefined}
         style={raro ? { '--cf3-tema': rgb(raro.tema) } : undefined}
       >
         <span className="cf3-quien" aria-hidden="true">
@@ -372,7 +669,7 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
               {error}
             </p>
           )}
-          <div className="cf3-botones">{botones}</div>
+          {botones && <div className="cf3-botones">{botones}</div>}
         </div>
       </div>
     </>

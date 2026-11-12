@@ -35,6 +35,9 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
 - **Revisión por evidencias, sin entrar en previews** (8-11-2026). Cada entrega incluye: recorridos reales de la interfaz
   grabados en vídeo con los cambios terminados; capturas comparables si hay cambios visuales; las comprobaciones
   relevantes con sus fallos y limitaciones; y la versión o commit al que corresponden las evidencias.
+  **Las evidencias se envían al chat** (Francisco, 12-11-2026: «Cuando hagas cambios pasame las evidencias para que yo pueda
+  verlas en el chat»): al terminar cada cambio, mandar los vídeos y las capturas principales como archivos en la conversación
+  (no basta con decir la carpeta de `qa-report/`).
   **Antes de fusionar con `main`, esperar su aprobación de esa entrega concreta.** Al aprobarla: commit si falta, fusionar
   con `main` y comprobar el despliegue de producción. Si hay cambios posteriores a lo revisado, indicarlos y volver a
   validar lo afectado. Aprobar este flujo no aprueba ninguna versión.
@@ -174,6 +177,39 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     ni quita nada, y se ve qué se falló. **Un cliente excéntrico al día**, claramente distinto a los demás, con un pedido raro
     y más difícil de interpretar: con 3 estrellas paga **el triple** (unos 15 granos y 40 de reputación) y deja **una reseña
     dorada** en la pizarra.
+    **Preparar el café, divertido y adictivo** (Francisco, 12-11-2026, literal: «quiero que el proceso de hacer el cafe sea
+    divertido y adictivo, y que cada paso se sienta unico, tanto por los movimientos que haga el usuario como por los objetos
+    que tenga que ver»): **cada paso de la barra tiene su propio gesto y su propio objeto** (p. ej., moler girando la manivela,
+    apisonar, tirar de la palanca y mantener, cremar la leche inclinando la jarra, servir con pulso), nunca elecciones parecidas
+    entre sí. Con las reglas de efectos de siempre: respuestas discretas, sonido propio sintetizado, silencio, volumen y
+    movimiento reducido; sin trucos de presión ni falsos «casi»; todo con el dedo a 390 px. Si un cambio tocara la economía,
+    las recetas o el servidor, consultarlo antes con él.
+    **Refinado antes de los siguientes bloques** (Francisco, 12-11-2026):
+    - **Exclamaciones** («para que la gente no se líe a causa del pixel art»): una «!» de píxel ámbar que salta **solo sobre lo
+      siguiente que hay que tocar** (el cliente, la cafetera, el tarro, la manivela…), en los **niveles 1 y 2**; después, solo si
+      alguien se queda parado. En Ajustes, «Ayudas visuales» para tenerlas siempre o nunca.
+    - **Libros comprados en cajas** (idea de Francisco tomada del género de Tiny Bookshop; solo la mecánica, nunca su arte):
+      lo que lees **desbloquea el título** en la distribuidora del café; con **granos** se compran **cajas por género** (o de
+      un título concreto, más caras) con ejemplares de libros leídos; la caja llega al café, se abre y **se arrastran los lomos a
+      las baldas**. **Solo se recomienda lo que está en la balda**, y cada ejemplar que se lleva un cliente paga granos de más.
+      **Caja de bienvenida gratis** al abrir el café; sin ejemplares, «Solo el café» (cobra el café y solo pierde el punto del
+      libro). **Cifras aprobadas** (Francisco, 12-11-2026, «Sí, esas cifras»; `docs/qa/cafe-libreria.md` §11): caja de
+      género, 5 ejemplares por 10 granos; de un título, 3 por 9; +2 granos por ejemplar que se lleva el cliente (solo si
+      encaja; si no, vuelve a la balda); bienvenida de 8 una vez; 12 huecos en el nivel 1. Se hace antes del bloque 4.
+      **Los libros, cozy y acogedores** (Francisco, 12-11-2026): lomos distintos por título, juntos en una balda cálida, la
+      caja con papel de seda, Pilar comentando y sonidos suaves de papel y madera; no volver a un panel frío de huecos.
+      **Bloque 4, decisiones de Francisco (12-11-2026)**: se parte en **4a** (subir de nivel con recorrido de cámara,
+      tickets de nivel y diarios, hitos, niveles 2–3: ventanal, vitrina, estanterías altas y chimenea) y **4b** (altillo,
+      terraza y escaparate en la fachada). **Una receta nueva por nivel**, cada una con su gesto y su objeto: nivel 2
+      chocolate caliente (bebida; remover en el cazo con el molinillo), nivel 3 nata montada (toque; batir girando), nivel 4
+      vainilla (toque; rascar la vaina), nivel 5 bebidas con hielo (agitar la coctelera). **Tres hitos por nivel** (cada
+      tercio de la barra, una vez, los cuenta el servidor): 1.º un mueble nuevo del café a la venta (nivel 2 de 40 a 90 granos,
+      nivel 3 de 80 a 160), 2.º lo nuevo de la carta, 3.º 15 granos. **Huecos de balda por nivel: 12 / 18 / 30 / 36 / 42.**
+      **El local crece con los niveles** (Francisco, 12-11-2026): en los **niveles 1 a 5** se va haciendo más grande la planta de la
+      calle; en los **niveles 6, 7 y 8**, un **sótano** (bodega y tostadero) que crece en cada uno; **pasado el 8**, una **segunda
+      planta** que también crece. **Cada planta tiene su cuadrícula de Decorar** y en ella se sientan clientes. **El espacio tiene
+      que servir para jugar mejor, no solo para decorar** (más sitio, más rendimiento). Sustituye al «altillo en el nivel 4» del
+      bloque 4b. Las cifras de los niveles 6 en adelante (umbrales, tickets y lo que rinde cada planta) las aprueba él.
   - **Más vida en el edificio** (encargo del 1-11-2026, por bloques con capturas entre uno y otro: 1) más muebles,
     2) personaje, 3) misiones diarias, 4) vecinos). Decisiones de Francisco:
     - **Personaje propio y personalizable** en tu piso: tocas el suelo o un mueble y va andando hasta allí. En sillas,

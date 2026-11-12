@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.121.0 · 2026-11-12 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.122.0 · 2026-11-12 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6245,7 +6245,8 @@ fallos se puntúan con estrellas, y llega un cliente excéntrico al día. Sin su
   2. **En la barra**: la cámara pasa a una vista de la barra desde arriba, con **piezas 3D artesanales** (cafetera de palanca de
      cobre, tetera de hierro, tarros de grano y de hoja, jarras de leche, lata de canela, tarro de miel y la taza en su
      platillo). **Se toca en la barra lo que lleva** (lo elegido se enmarca en ámbar) o se cambia en las cuatro casillas del
-     cuadro («Bebida: Café. Cambiar»); la leche y el toque se quitan al volver a tocarlos. **Mantener pulsado «Servir»**
+     cuadro («Bebida: Café. Cambiar»); la leche y el toque se quitan al volver a tocarlos. *(Desde §121.1, la barra va por
+     etapas y cada paso tiene su gesto y su objeto; lo que sigue en este punto queda sustituido.)* **Mantener pulsado «Servir»**
      vierte: la taza se llena con su color, la espuma, la canela o la miel y el chorro (un segundo y medio; lo llenado no se
      pierde al soltar, sin medir reflejos; «Sigue pulsando · 40 %»). Cambiar la receta con la taza empezada empieza otra.
      **Con movimiento reducido, un toque.**
@@ -6306,3 +6307,184 @@ fallos se puntúan con estrellas, y llega un cliente excéntrico al día. Sin su
   a 360, 390, 430 y escritorio en Chromium y a 390 en WebKit, con vídeo; y con movimiento reducido (servir con un toque, sin
   andar). `v1119-cafe` y `v1120-cafe-decorar` siguen en verde. Capturas y vídeos en `qa-report/cafe-clientes/`. Sin probar en
   móviles reales ni con el servidor de verdad (las dos migraciones del café están sin aplicar).
+
+### 121.1 Preparar el café: un gesto y un objeto por paso (1.121.0, sin publicar)
+
+Encargo de Francisco del 12-11-2026, literal: «quiero que el proceso de hacer el cafe sea divertido y adictivo, y que cada
+paso se sienta unico, tanto por los movimientos que haga el usuario como por los objetos que tenga que ver». Sustituye al
+«Mantener pulsado Servir» del punto 2 de §121. **No cambia la economía, las recetas ni el servidor**: las cuatro elecciones son
+las mismas, `cafe_servir` recibe lo mismo y **los gestos no cambian las estrellas** (solo cuenta la receta).
+
+- **Cinco etapas**, en una fila del cuadro (Bebida · Grano u Hoja · Extraer o Reposar · Leche · Toque; ✓ las hechas). En cada
+  una la cámara se acerca a su objeto (de lado y desde arriba, con el objeto en la parte alta de la pantalla) y el cuadro dice
+  la orden y cómo hacerla; una pista dibujada sobre el objeto enseña el movimiento.
+- **Cada paso, su gesto y su objeto** (con el dedo o el ratón, a 390 px; las medidas se escalan con la pantalla):
+
+  | Etapa | Objeto | Gesto | Sonido |
+  | --- | --- | --- | --- |
+  | Bebida | cafetera de palanca o tetera de hierro | tocarla (o su botón) | soplo de vapor y cobre / hierro y tapa |
+  | Grano (café) | tarro y **molinillo de manivela** | **girar** dos vueltas, hacia cualquier lado; la tolva baja y el cajón se llena | crujido cada octavo de vuelta |
+  | Hoja (té) | tarro y **cuchara de latón** | **arrastrar** la cucharada del tarro al colador | roce de hojas |
+  | Extraer (café) | portafiltro y **prensador**; **palanca** | **deslizar hacia abajo** con firmeza; después **bajar la palanca y mantener** (el manómetro se enciende y cae el café) | golpe y clac; el café que cae |
+  | Reposar (té) | **tetera**; **colador** | **subir y mantener** (la tetera se inclina y vierte); **subir y bajar** el colador cinco veces (el té coge color) | agua; un plop por inmersión |
+  | Leche (si lleva) | jarra bajo la **lanza de vapor**; la jarra sobre la taza | **inclinar a un lado y mantener** hasta que se crea la espuma; **un trazo hacia abajo**: recto sale un corazón, ondulado (3 ondas o más) una hoja, que va apareciendo mientras se sirve | vapor (más grave al crearse); una nota por onda |
+  | Toque (si lleva) | bote de canela o cazo de miel | **agitar de lado a lado** sobre la taza; **dibujar** el hilo de miel por encima, como se quiera | sacudidas; el hilo que se estira |
+
+  Tras extraer o reposar, la taza sale del grupo a la madera para la leche y el toque.
+- **Reglas**: ningún gesto falla ni tiene tiempo límite; lo mantenido se suma y **soltar no pierde nada**; sin falsos «casi» ni
+  presión. Un respiro breve y «¡Hecho!» al acabar cada gesto; tres notas al terminar la taza. Un medidor (`progressbar`) dice
+  cuánto falta. «Cambiar» vuelve a elegir antes de empezar el gesto; «De nuevo» tira lo preparado y empieza otra taza; «Luego»
+  deja al cliente esperando. El dibujo de la leche es un piropo en las gracias, sin efecto en las estrellas.
+- **Movimiento reducido o teclado**: cada gesto se hace de una vez con un toque, con Intro o con su botón («Moler», «Apisonar»,
+  «Extraer», «Echar las hojas», «Verter el agua», «Infusionar», «Cremar la leche», «Servir la leche», «Espolvorear», «Echar la
+  miel»); la cámara salta sin moverse.
+- **Sonido**: propio, sintetizado con Web Audio, breve y bajito, uno por acción y material; va por el bus de efectos de la app
+  (respeta «Sonidos táctiles» y su volumen) y solo con el sonido del edificio activado; nada suena antes de tocar; los que duran
+  mientras se mantiene se apagan al soltar.
+- **Código**: `cafe/cafeGestos.js` (etapas, gestos por receta, reconocedores puros de cada gesto y `vistaTaza`),
+  `cafe/cafeSfx.js` (los sonidos), `audio/uiSounds.js` (`uiSfxBus`), `cafe/Atender.jsx` (las etapas y la zona del gesto),
+  `cafe/cafe3d.js` (la barra con sus partes que se mueven, `ENFOQUES` de cámara por gesto, la taza con su dibujo, y en la API
+  `setBarra`, `barraMarca`) y `cafe.css` (capa de los gestos).
+- **Pruebas**: `cafeGestos.test.js` (12: etapas y gestos por receta, cada reconocedor, que soltar no pierde nada, el corazón y
+  la hoja, `completar`, `vistaTaza`); `cafeClientes`, `cafe-clientes.rls`, `cafe.rls` y `rpc-solo-lectura` siguen en verde. e2e
+  `v1121-cafe-clientes.spec.js` reescrita: cada gesto se hace con el ratón sobre su objeto (manivela en círculos, trazos,
+  mantener, vaivenes, el hilo en espiral), un día entero con té, café con leche mal, el excéntrico y el habitual (con miel en vez
+  de canela: 2 estrellas y el repaso «✗ Miel · pidió canela»), con capturas de cada paso; y con movimiento reducido (Cambiar,
+  «De nuevo» y cada gesto con su botón). Capturas y vídeos en `qa-report/cafe-clientes/` (las de la versión anterior, en
+  `antes-1121/`). Sin probar en móviles reales: solo emulación de Chromium y WebKit.
+- **La canela, desde encima** (Francisco, 12-11-2026): el bote gira sobre su centro y queda boca abajo justo encima de la
+  taza, se balancea con el dedo y el polvo cae en vertical dentro.
+
+### 121.2 La «!» de ayuda sobre lo siguiente que hay que tocar (1.121.0, sin publicar)
+
+Francisco, 12-11-2026: «para que la gente no se lie a causa del pixel art que las cosas que tienen que tocar resalten con una
+exclamación al menos para los primeros niveles». Eligió «solo lo siguiente».
+
+- Una **«!» de píxel ámbar** (cuadrito con borde oscuro y piquito hacia la cosa) que salta despacio (quieta con movimiento
+  reducido) sobre **lo siguiente que hay que tocar**:
+  - al elegir una parte, sobre **cada cosa que se puede elegir** de esa parte (la cafetera y la tetera; los dos tarros; las
+    dos jarritas; la canela y la miel): **nunca delata cuál es la buena**;
+  - en un gesto, sobre su objeto, encima de la pista del dedo; se va en cuanto empieza el gesto;
+  - los clientes que esperan ya llevaban su «!» (§121).
+- **Cuándo**: en los **niveles 1 y 2**, siempre; desde el 3, solo si alguien lleva **6 segundos** sin avanzar en ese punto.
+  Regla en `cafeGestos.js` (`verAyuda`, `AYUDA_NIVELES`, `AYUDA_PARADO_MS`).
+- **Ajuste** en «Tu cuenta», apartado «Ayudas visuales»: «Al empezar (niveles 1 y 2) y si me quedo parado» (por defecto),
+  «Siempre» o «Nunca» (`settings.ayudasCafe`). No suena ni cambia nada del juego.
+- **Código**: `cafe/Atender.jsx` (las marcas, en la zona del gesto), `cafe/cafe3d.js` (`barraEnPantalla(id, { cima })`),
+  `cafe/Cafe.jsx` (pasa el ajuste y el nivel), `cafe.css` (`.cf3-ayuda`) y `components/panels/AccountPanel.jsx`.
+- **Pruebas**: `cafeGestos.test.js` comprueba la regla (13 pruebas); la e2e `v1121-cafe-clientes` comprueba las dos «!» al
+  elegir cada parte y la del gesto antes de empezarlo, con capturas `*-ayuda-manivela`, `*-ayuda-tetera` y `*-ayuda-vapor`.
+
+### 121.3 Libros en cajas: la distribuidora, la caja de reparto y la balda (1.121.0, sin publicar)
+
+Idea de Francisco tomada del género de Tiny Bookshop (solo la mecánica, nunca su arte); eligió «cajas por género» y «caja de
+bienvenida y Solo el café», y aprobó las cifras el 12-11-2026 («Sí, esas cifras»; `docs/qa/cafe-libreria.md` §11).
+
+- **Lo leído desbloquea el título** en la distribuidora (los de `librosDelCafe`: tus leídos; con menos de 3, también Leyendo
+  y Quiero leer). Cada título lleva su **género** (`generoDe`, por las categorías del libro; si no se sabe, «Novela»), de una
+  lista cerrada de 10 (`GENEROS`, igual que `cafe_generos()`).
+- **Cajas con granos** (nunca con dinero): de un **género**, **5 ejemplares por 10 granos**, al azar entre tus títulos de ese
+  género (el azar lo pone el servidor); de un **título concreto**, **3 por 9**. Antes de pagar se ve qué puede traer (los
+  títulos de ese género). Sin granos suficientes, el botón no se pulsa y el servidor lo rechaza.
+- **Caja de bienvenida**: **8 ejemplares gratis, una sola vez**, repartidos entre géneros, al entrar con el café abierto. La
+  vista se vuelve hacia la caja y Pilar lo cuenta.
+- **La caja llega al café**: una caja de cartón con su cinta y lomos asomando, en el suelo al final del mostrador, con un
+  letrero ámbar «! Caja de libros · n» mientras quedan ejemplares por colocar; en el HUD, un botón de lomos con el número.
+- **Colocar**: al tocar la caja se abre el cuadro «Tus libros»: la caja abre sus solapas y los lomos saltan (directo con
+  movimiento reducido); se **arrastran a la balda** (o se tocan: van al primer hueco) y se devuelven tocándolos en la balda.
+  «Colocarlos todos» / «Llenar la balda (n)». **12 huecos en el nivel 1** (`huecosDelNivel`). Nada se pierde.
+- **Solo se recomienda lo que está en la balda**: las tres fichas salen de sus ejemplares; las estanterías del café enseñan
+  la balda (vacías si no hay ninguno; sin la migración, tus leídos como en la 1.120). Si el libro **encaja**, el cliente **se
+  lo lleva** (sale de la balda) y paga **2 granos más**; si no encaja, vuelve a la balda. Un libro que no está en la balda no
+  cuenta. **Sin ejemplares, solo el café** (cobra el café; solo se pierde el punto del libro).
+- **Servidor** (en `20261211120000_cafe_clientes.sql`, sin aplicar: la aplica Francisco): tabla `cafe_libros` (clave,
+  título, género, caja y balda por cuenta; RLS sin acceso directo), `cafe_locales.libros_bienvenida`; funciones
+  `cafe_bienvenida(titulos)`, `cafe_comprar_caja(genero, clave, titulos)` y `cafe_colocar(poner, quitar)`;
+  `cafe_servir` gana el 5.º parámetro `libro`; `cafe_dia`, `cafe_habitual` y `cafe_servir` devuelven `libros`. Los
+  títulos los manda la app (el servidor no tiene la biblioteca); el servidor cobra, sortea y cuenta cajas y baldas.
+- **Código**: `cafe/LibrosCafe.jsx` (la caja, la balda y la distribuidora), `cafe/Cafe.jsx`, `cafe/Atender.jsx` (fichas de
+  la balda, «Se lleva …» y «2 por el libro»), `cafe/cafeClientes.js` (cifras y reglas), `cafe/cafeService.js`,
+  `cafe/cafe3d.js` (la caja de reparto, su letrero y las estanterías vacías), `cafe/cafeLayout.js` (`CAJA_LIBROS` y su sitio),
+  `cafe/cafeMuebles.js`, `cafe/cafeIconos.js` (`LIBROS`) y `cafe.css`.
+- **Pruebas**: `cafe-clientes.rls.test.js` (PGlite) comprueba cifras iguales a la app, bienvenida una vez, cajas de género y
+  de título, granos, el tope de 12, servir con y sin el libro en la balda y que `cafe_libros` no se toca; la e2e
+  `v1121-cafe-clientes` tiene una prueba nueva (bienvenida, arrastrar, tocar, colocar todos, devolver, comprar las dos cajas,
+  balda llena, estanterías) y el día y el reducido adaptados (el cliente se lleva el libro; balda vacía, solo el café).
+- **Más cozy** (Francisco, 12-11-2026: «me gusta pero quiero un toque más cozy y acogedor con los libros»), sin tocar reglas:
+  cada título tiene su lomo propio y siempre el mismo (tela con bandas doradas, piel con nervios o rústica lisa con el sello de
+  la editorial; alto y grosor propios, `aireDe` en `LibrosCafe.jsx`); en la balda los libros van **juntos, uno al lado de
+  otro**, y los huecos libres a la derecha como siluetas tenues; la balda tiene luz de lámpara, vetas y una **guirnalda de
+  bombillas** (quieta con movimiento reducido); el que acaba de llegar **se asienta** con un pequeño balanceo; la caja trae
+  **papel de seda** y la etiqueta «Distribuidora del Puerto · Frágil · son libros ♥»; con libros esperando, la caja se abre
+  delante de ti al tocarla; **Pilar comenta** (frases cerradas: «¡Huele a libro nuevo!…», «¡Qué bonita ha quedado la
+  balda!…») en lugar del texto de ayuda; y **sonidos propios** bajitos (`cafeSfx.js`: `cajaAbre`, `libroPon`,
+  `libroQuita`, `baldaLlena`, `campanilla` al comprar), solo con el sonido activado y siempre tras un toque.
+- **La caja, de cartón de verdad** (la anterior, plana, no le convencía a Francisco): vista de frente y un poco desde arriba,
+  con la pared del fondo oscura, los libros dentro asomando por encima de la cara delantera (que no recoge toques), el papel
+  de seda arrugado en el borde, la cinta y la etiqueta en la cara delantera, y las solapas abiertas hacia fuera y la del fondo
+  de pie. Cerrada, la tapa con su precinto; al abrirse, la tapa se levanta y las solapas se despliegan (directo con
+  movimiento reducido). Clases `.cf3-carton__*`.
+- **La caja, en 3D** (Francisco, 12-11-2026: «La quiero más 3d»): caja expositora de cartón con el frente recortado, de caras
+  reales en perspectiva (CSS 3D, `.cf3-carton__solido`): fondo, suelo y laterales que bajan en rampa hasta el frente, la
+  solapa trasera de pie y la sombra en el suelo. Los libros siguen siendo HTML normal entre el fondo y la cara delantera (se
+  tocan y se arrastran igual). Cerrada, la solapa delantera tapa la boca con su precinto y la trasera se tumba encima; al
+  abrirse giran sobre sus bisagras (directo con movimiento reducido).
+- **Con volumen y títulos parejos** (Francisco, 12-11-2026: «se ven demasiado planos como imágenes pegadas y los títulos de los
+  libros salen desparejos»): los títulos salían desparejos por una regla antigua de `.cf3-lomo` que se colaba (rejilla de dos
+  columnas, esquinas recortadas); se anula para los lomos de libro (`.cf3-lomo[data-forma]`). Ahora todos los títulos usan la
+  misma letra, empiezan a la misma altura, se leen de arriba abajo y llevan palabras enteras que caben en el lomo
+  (`tituloLomo`: sin el artículo si hace falta, y «…» si no cabe entero; el nombre completo sigue en la etiqueta accesible).
+  Cada libro tiene cabeza con el canto de las hojas, lomo redondeado y sombra propia, y alto de 64 a 72 px. El cartón lleva
+  textura de canal, el canto grueso de la cara delantera, la luz de un lado y la sombra en las esquinas del fondo.
+
+## 122. El café-librería del bajo, bloque 4a: subir de nivel, hitos y la carta (1.122.0)
+
+Bloque 4a del plan del café-librería (`docs/qa/cafe-libreria.md` §12; Francisco, 12-11-2026: «continua con los siguientes
+bloques», y eligió partir el bloque 4 en 4a y 4b, una receta nueva por nivel, hitos «mueble, carta, granos» y huecos
+12/18/30/36/42). Migración nueva, **sin aplicar**: `20261212120000_cafe_niveles.sql` (requiere las dos del café anteriores).
+
+- **Niveles por reputación** (0 / 300 / 1.000 / 2.500 / 5.000, ya aprobados). Al subir, los **tickets del nivel**
+  (10 / 20 / 40 / 60 / 100; el del nivel 1 se cobra con el primer cliente) una vez por nivel, en la misma transacción que el
+  servicio. **Tickets del día**: tantos como el nivel (tope 5), una vez al día, con el primer cliente. Lo cuenta el servidor
+  (`cafe_progreso`, solo desde `cafe_servir`) y lo devuelve en `progreso`.
+- **Tres hitos por nivel**, a un cuarto, a la mitad y a tres cuartos de la barra (así ninguno coincide con la subida):
+  1.º un mueble nuevo del café a la venta (nivel 1 maceta, 2 perchero, 3 reloj de pared), 2.º lo nuevo de la carta (nivel 2
+  el chocolate, nivel 3 la nata) y 3.º 15 granos. Una vez cada uno (`cafe_hitos`). En la barra del nivel, tres marcas.
+- **El cartel de lo conseguido** (`LogroCafe.jsx`), al despedir al cliente: la subida (el número grande, sus tickets y lo
+  que se abre, con frases cerradas), los hitos y los tickets del día. Solo lo que ha dado el servidor; sin cuentas atrás ni
+  presión. Suena una vez (arpegio al subir, «ding» en un hito); con movimiento reducido, sin animación.
+- **Al cerrar el cartel de una subida, se abre el local**: hasta entonces la escena sigue en el nivel de antes. Nivel 2: se
+  recogen la cortina y el caballete, queda una viga de roble y al fondo **un ventanal al puerto** (cielo de tarde, faro,
+  velas y el brillo del sol en el agua; alféizar con geranios). Nivel 3: **estanterías hasta el techo** con su escalera de
+  biblioteca y **la chimenea encendida** (brasa, llamas, candelabros y su resplandor en el suelo). La cámara hace **un
+  recorrido** por lo nuevo y vuelve a tu vista (`recorrido(nivel)` en `cafe3d.js`); con movimiento reducido, no hay
+  recorrido. Desde el nivel 2 se puede andar hasta el fondo.
+- **La cuadrícula crece hacia el fondo**: desde el nivel 2, tres filas más (−3 a −1, detrás de donde estaba la cortina); las
+  casillas de antes no cambian de número. `filasDe(nivel)` en `cafeCatalogo.js`; en el servidor, `cafe_plano_valido(plano,
+  nivel)` y `cafe_guardar` con el nivel del café. Lo nuevo que añades en Decorar va primero al fondo.
+- **La tienda del café**, en Decorar (tercera pestaña, «Tienda»): todos los muebles del café con su precio en granos; los de
+  otro nivel dicen en cuál se abren y los de un hito, cuánta reputación falta. Nueve muebles nuevos con modelo 3D e icono:
+  maceta (35, hito 1 del nivel 1), banco corrido (70), vitrina de tartas (90), planta grande (45), perchero (40, hito), estantería
+  alta (140, 96 libros), sillón orejero (120), mesita con quinqué (80) y reloj de pared (160, hito). Al comprar, el aviso sale
+  en la cabecera de la balda (el cuadro de Pilar no se ve mientras decoras).
+- **Huecos de la balda por nivel**: 12 / 18 / 30 / 36 / 42 (`HUECOS`, también en el servidor).
+- **La carta, por días**: el servidor fija la carta del día al abrirlo (lo que piden los clientes no cambia a media jornada);
+  los habituales piden siempre «lo de siempre». La receta se cuenta con base mixta (`recetaDe(r, carta)`): con la carta vacía,
+  igual que antes.
+- **El chocolate caliente** (nivel 2, bebida), con sus objetos: el hornillo de hierro con **el cazo de cobre** (detrás de la
+  tetera) y **el molinillo de madera**. El cacao se elige en su tarro (claro, con leche; oscuro, negro); después, **remover**
+  con el molinillo en círculos amplios dentro del cazo (tres vueltas: se espesa y deja remolinos) e **inclinar el cazo** sobre
+  la taza (deslizar a la izquierda y mantener mientras cae).
+- **La nata montada** (nivel 3, toque): **el bol de loza con las varillas** (junto a la miel). **Batir girando**: vueltas
+  pequeñas y seguidas (cinco) hasta que salen picos; la nata se posa en la taza como una nube.
+- Los gestos nuevos cumplen las reglas de siempre (`cafeGestos.js`): ninguno falla ni tiene tiempo límite, soltar no pierde lo
+  hecho, no cambian las estrellas y con movimiento reducido o teclado se hacen de un toque. Sonidos propios sintetizados:
+  el cazo al elegirlo, el molinillo que se arrastra, el tintineo de las varillas y el chocolate que cae (`cafeSfx.js`). La
+  pregunta de la barra nombra lo nuevo solo si está en la carta, y lo que no está abierto no se puede elegir aunque se toque.
+- **Pruebas**: `cafe-niveles.rls.test.js` (7, PGlite: cifras iguales a la app, tickets del nivel y del día una vez, hitos una
+  vez con sus 15 granos, el mueble de hito no se vende antes, la carta del día y el chocolate rechazado antes de abrirlo, la
+  cuadrícula del fondo solo desde el nivel 2, tablas y funciones internas cerradas); `cafeGestos.test.js` (molinillo, cazo y
+  varillas); e2e `v1122-cafe-niveles.spec.js` (subir al nivel 2 con el cartel, el recorrido, la tienda, comprar y colocar al
+  fondo; el nivel 3 con la chimenea y un chocolate con nata hecho con los gestos).
+- **Queda para el bloque 4b**: el altillo (nivel 4), la terraza y el escaparate en la fachada (nivel 5), sus muebles y su carta
+  (vainilla y bebidas con hielo).

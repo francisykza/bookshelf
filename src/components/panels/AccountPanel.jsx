@@ -194,6 +194,15 @@ function UiSound() {
         <input type="checkbox" checked={state.settings.bookVibe !== false} onChange={(e) => actions.setSettings({ bookVibe: e.target.checked })} />
         Teñir la luz de la habitación con el tono del libro que leo
       </label>
+      <h3>Ayudas visuales</h3>
+      <label className="account-range">
+        <span>La «!» sobre lo siguiente que hay que tocar (café-librería)</span>
+        <select value={state.settings.ayudasCafe ?? 'auto'} onChange={(e) => actions.setSettings({ ayudasCafe: e.target.value })}>
+          <option value="auto">Al empezar (niveles 1 y 2) y si me quedo parado</option>
+          <option value="siempre">Siempre</option>
+          <option value="nunca">Nunca</option>
+        </select>
+      </label>
     </section>
   );
 }

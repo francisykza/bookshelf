@@ -30,6 +30,14 @@ export const CABALLETE = { x: 3.6, y: 4.05 };
 /** La bombilla desnuda que cuelga del techo y la lamparita del mostrador. */
 export const BOMBILLA = { x: 4.0, y: 7.2, z: 3.7 };
 export const LAMPARITA = { x: 7.65, y: 6.9, z: 1.05 };
+/**
+ * Bloque 4a (1.122): al subir al nivel 2 se recogen las cortinas y se abre el fondo del local, con un ventanal al puerto
+ * en la pared del fondo; en el nivel 3, estanterías hasta el techo en la pared izquierda del fondo y la chimenea encendida
+ * a la derecha. Nada de esto se mueve ni se decora: es el local.
+ */
+export const VENTANAL = { x0: 1.3, x1: 6.3, z0: 0.85, z1: 3.7 };
+export const CHIMENEA = { x0: 7.5, x1: 9.2, hondo: 0.6, alto: 1.4 };
+export const ALTAS = { y0: 0.45, y1: 3.35, fondo: 0.46 };
 /** La estantería vieja, vacía, en la pared izquierda. */
 export const ESTANTERIA = { y0: 5.0, y1: 8.6, fondo: 0.42, alto: 2.4 };
 
@@ -54,6 +62,8 @@ export const INICIO = { x: 7.0, y: 9.9, yaw: Math.PI + 0.32 };
 export const INICIO_ABIERTO = { x: 6.9, y: 10.2, yaw: Math.PI + 0.78 };
 /** Delante del mostrador, frente a Pilar. */
 export const ANTE_PILAR = { x: 6.5, y: 5.6 };
+/** La caja de reparto de la distribuidora (§121.3): en el suelo, al final del mostrador, cuando hay libros por colocar. */
+export const CAJA_LIBROS = { x0: 7.35, y0: 7.95, x1: 8.0, y1: 8.5, alto: 0.5 };
 
 /**
  * Lo que se toca: su caja en el mundo (para el toque y su letrero), dónde va su letrero y adónde se va y se mira al llegar.
@@ -67,6 +77,14 @@ export const SITIOS = {
     tag: [(ESCAPARATE.x0 + ESCAPARATE.x1) / 2, SD - 0.1, ESCAPARATE.z1 + 0.15],
     ir: { x: 3.4, y: 8.6 },
     mira: [3.4, SD],
+  },
+  // Solo se ve (y se toca) con libros esperando en la caja
+  libros: {
+    nombre: 'Caja de libros',
+    box: [CAJA_LIBROS.x0, CAJA_LIBROS.y0, 0, CAJA_LIBROS.x1, CAJA_LIBROS.y1, CAJA_LIBROS.alto + 0.1],
+    tag: [(CAJA_LIBROS.x0 + CAJA_LIBROS.x1) / 2, (CAJA_LIBROS.y0 + CAJA_LIBROS.y1) / 2, CAJA_LIBROS.alto + 0.25],
+    ir: { x: 5.3, y: 10.2 },
+    mira: [(CAJA_LIBROS.x0 + CAJA_LIBROS.x1) / 2, (CAJA_LIBROS.y0 + CAJA_LIBROS.y1) / 2],
   },
 };
 
@@ -83,11 +101,15 @@ export const enCasilla = (x, y) => ({ x: Math.floor((x - CUADRO.x0) / CUADRO.cel
 const HOLGURA = 0.35;
 const choca = (x, y, [x0, y0, , x1, y1], h = HOLGURA) => x > x0 - h && x < x1 + h && y > y0 - h && y < y1 + h;
 /**
- * Si se puede estar en (x, y): dentro del local abierto (delante de la cortina), sin atravesar el mostrador ni los bultos.
+ * Si se puede estar en (x, y): dentro del local abierto (delante de la cortina; desde el nivel 2, hasta el fondo), sin
+ * atravesar el mostrador ni los bultos.
  * `limpio`: el local ya inaugurado (sin cajas, sábanas ni escalera); `muebles`: cajas del mundo de lo colocado.
  */
-export function dentro(x, y, { limpio = false, muebles = [] } = {}) {
-  if (x < 0.5 || x > SW - 0.5 || y < CORTINA.y + 0.45 || y > SD - 0.5) return false;
+export function dentro(x, y, { limpio = false, muebles = [], nivel = 1 } = {}) {
+  if (x < 0.5 || x > SW - 0.5 || y < (nivel >= 2 ? 0.5 : CORTINA.y + 0.45) || y > SD - 0.5) return false;
+  // Nivel 3: la chimenea y las estanterías altas del fondo
+  if (nivel >= 3 && x > CHIMENEA.x0 - HOLGURA && x < CHIMENEA.x1 + HOLGURA && y < CHIMENEA.hondo + 0.35 + HOLGURA) return false;
+  if (nivel >= 3 && x < ALTAS.fondo + HOLGURA && y < ALTAS.y1 + HOLGURA) return false;
   if (x > MOSTRADOR.x0 - HOLGURA && y > MOSTRADOR.y0 - HOLGURA && y < MOSTRADOR.y1 + HOLGURA) return false;
   if (x < ESTANTERIA.fondo + HOLGURA && y > ESTANTERIA.y0 && y < ESTANTERIA.y1) return false;
   if (muebles.some((b) => choca(x, y, b, 0.22))) return false;

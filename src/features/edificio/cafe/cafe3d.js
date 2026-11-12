@@ -63,13 +63,17 @@ import {
   SD,
   SH,
   SITIOS,
+  CAJA_LIBROS,
   SW,
   dentro,
   enCasilla,
   enMundo,
   hastaDonde,
+  ALTAS,
+  CHIMENEA,
+  VENTANAL,
 } from './cafeLayout';
-import { CUADRICULA, medidas } from './cafeCatalogo';
+import { CUADRICULA, filasDe, medidas } from './cafeCatalogo';
 import { cajasDe, colorDe } from './cafeMuebles';
 import { footprint } from '../room';
 
@@ -85,9 +89,6 @@ const WALK = 2.6; // unidades por segundo
 const TAP_SLOP = 8;
 /** Cada cuánto se mueven la lluvia y el polvo (unos 12 cuadros por segundo). */
 const VIVO_MS = 84;
-/** La vista de la barra: desde delante del mostrador, mirando la barra desde arriba (que quede por encima del cuadro de abajo). */
-const BARRA_CAM = { x: 6.6, y: 6.08, z: 2.02 };
-const BARRA_MIRA = { x: 7.66, y: 6.08, z: 0.5 };
 
 const linear = ([r, g, b]) => new Color().setRGB(r / 255, g / 255, b / 255, SRGBColorSpace);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -309,7 +310,7 @@ function paintCeiling() {
 
 // ── Cajas: mundo de la app (x, y a lo hondo, z arriba) → Three (x, z, y) ──
 const FACE_TONE = { top: 1.06, bottom: 0.6, front: 0.92, back: 0.74, right: 0.84, left: 0.8 };
-function pushBox(out, [x0, y0, z0, x1, y1, z1], color, { glow = false, g = null } = {}) {
+function pushBox(out, [x0, y0, z0, x1, y1, z1], color, { glow = false, g = null, xf = null } = {}) {
   const gl = glow ? 0 : (g ?? glowAt((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2));
   const faces = [
     [
@@ -376,7 +377,7 @@ function pushBox(out, [x0, y0, z0, x1, y1, z1], color, { glow = false, g = null 
   for (const [name, [a, b, c, d], n] of faces) {
     const col = glow ? linear(typeof color === 'number' ? unpack(color) : color) : litColor(color, gl, FACE_TONE[name]);
     for (const p of [a, b, c, a, c, d]) {
-      out.pos.push(...p);
+      out.pos.push(...(xf ? xf(p) : p));
       out.nor.push(...n);
       out.col.push(col.r, col.g, col.b);
     }
@@ -496,6 +497,29 @@ function girar({ w, d }, rot, b) {
   const q = at(b[3], b[4]);
   return [Math.min(p[0], q[0]), Math.min(p[1], q[1]), b[2], Math.max(p[0], q[0]), Math.max(p[1], q[1]), b[5]];
 }
+/** La caja de reparto de la distribuidora (§121.3): cartón con la cinta, las solapas a medio abrir y un lomo asomando. */
+function cajaDeReparto(s) {
+  const { x0, y0, x1, y1, alto } = CAJA_LIBROS;
+  const carton = [178, 134, 86];
+  const lado = [150, 108, 66];
+  const cinta = [214, 190, 140];
+  pushBox(s, [x0, y0, 0, x1, y1, alto], carton);
+  pushBox(s, [x0 - 0.005, y0 + 0.03, 0.02, x0, y1 - 0.03, alto - 0.04], lado);
+  pushBox(s, [x0 + 0.04, y0 - 0.005, 0.04, x1 - 0.04, y0, alto - 0.04], lado);
+  // La cinta, por encima y bajando por los lados
+  const cx = (x0 + x1) / 2;
+  pushBox(s, [cx - 0.05, y0 - 0.008, alto - 0.18, cx + 0.05, y1 + 0.008, alto + 0.005], cinta);
+  // Las solapas, levantadas hacia fuera
+  pushBox(s, [x0 - 0.12, y0 + 0.02, alto - 0.02, x0 + 0.02, y1 - 0.02, alto + 0.03], [196, 150, 98]);
+  pushBox(s, [x1 - 0.02, y0 + 0.02, alto - 0.02, x1 + 0.12, y1 - 0.02, alto + 0.03], [196, 150, 98]);
+  // Lomos asomando
+  const colores = [
+    [176, 72, 62],
+    [74, 116, 82],
+    [210, 160, 70],
+  ];
+  colores.forEach((c, k) => pushBox(s, [x0 + 0.12 + k * 0.13, y0 + 0.14, alto - 0.05, x0 + 0.21 + k * 0.13, y1 - 0.14, alto + 0.09 + (k % 2) * 0.04], c));
+}
 /** Los lomos de tus libros en la estantería vieja de la pared (de cara al local, +x). */
 function lomosPared(s, libros) {
   const { y0, y1, fondo, alto } = ESTANTERIA;
@@ -543,17 +567,166 @@ function paintRotulo(texto, w, h, { fondo = [70, 44, 30], letra = [238, 214, 160
   return c;
 }
 /** La rejilla de Decorar: casillas con su filete ámbar, transparentes. */
-function paintRejilla() {
+function paintRejilla(filas = CUADRICULA.d) {
   const n = 16;
   const c = document.createElement('canvas');
   c.width = CUADRICULA.w * n;
-  c.height = CUADRICULA.d * n;
+  c.height = filas * n;
   const ctx = c.getContext('2d');
   ctx.fillStyle = 'rgba(231,183,101,0.10)';
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.fillStyle = 'rgba(244,206,140,0.75)';
   for (let k = 0; k <= CUADRICULA.w; k += 1) ctx.fillRect(Math.min(c.width - 1, k * n), 0, 1, c.height);
-  for (let k = 0; k <= CUADRICULA.d; k += 1) ctx.fillRect(0, Math.min(c.height - 1, k * n), c.width, 1);
+  for (let k = 0; k <= filas; k += 1) ctx.fillRect(0, Math.min(c.height - 1, k * n), c.width, 1);
+  return c;
+}
+
+// ── Bloque 4a (1.122): lo que se abre al crecer el café ──
+/** El puerto por el ventanal: cielo de tarde, el mar con su brillo, el espigón con el faro y dos velas. */
+function paintPuerto() {
+  const w = 120;
+  const h = 70;
+  return canvasOf(w, h, (ix, iy) => {
+    const hor = 38;
+    if (iy < hor) {
+      // El cielo: de azul claro arriba a melocotón junto al mar, con dos nubes
+      const k = iy / hor;
+      let c = [Math.round(150 + 96 * k), Math.round(186 + 20 * k), Math.round(214 - 60 * k)];
+      const nube = (iy > 8 && iy < 12 && ix > 14 && ix < 38) || (iy > 16 && iy < 19 && ix > 70 && ix < 98) || (iy === 11 && ix > 18 && ix < 32);
+      if (nube) c = [250, 236, 222];
+      // El sol, bajo, a la derecha
+      if (Math.hypot(ix - 92, iy - 30) < 5) c = [255, 226, 160];
+      // El faro, en el espigón de la izquierda
+      if (ix >= 22 && ix <= 25 && iy >= 22) c = iy < 25 ? [196, 70, 60] : iy < 28 ? [244, 238, 226] : iy < 31 ? [196, 70, 60] : [244, 238, 226];
+      if (ix >= 21 && ix <= 26 && iy === 21) c = [70, 64, 60];
+      if (ix >= 22 && ix <= 25 && iy === 20) c = [255, 220, 130];
+      // Las velas
+      for (const [vx, vy, vh] of [
+        [58, 30, 7],
+        [80, 33, 5],
+      ]) {
+        const d = iy - vy;
+        if (d >= 0 && d < vh && ix >= vx && ix <= vx + Math.round((d * 4) / vh)) c = [250, 246, 236];
+        if (ix === vx && d >= 0 && d < vh + 1) c = [90, 70, 56];
+      }
+      return rgb(...c);
+    }
+    // El espigón de piedra, que entra en el mar
+    if (iy < hor + 4 && ix < 34 - (iy - hor) * 2) return rgb(118, 112, 104);
+    // Los cascos de los barcos
+    if (iy === hor && ((ix >= 56 && ix <= 63) || (ix >= 78 && ix <= 84))) return rgb(120, 60, 48);
+    // El mar, con el brillo del sol en ondas
+    const k = (iy - hor) / (h - hor);
+    const onda = noise(ix * 0.35, iy * 1.4) > 0.62;
+    const brillo = Math.abs(ix - 92) < 6 - k * 3 && hash(ix, iy) > 0.45;
+    const c = brillo ? [255, 222, 168] : onda ? [120, 170, 196] : [Math.round(70 - 20 * k), Math.round(124 - 30 * k), Math.round(164 - 30 * k)];
+    return rgb(...c);
+  });
+}
+/** El ventanal del fondo: marco de madera con sus parteluces, el alféizar y unas macetas. */
+function ventanal(s) {
+  const { x0, x1, z0, z1 } = VENTANAL;
+  const m = [96, 64, 42];
+  const y = 0.04;
+  pushBox(s, [x0 - 0.12, 0, z0 - 0.12, x1 + 0.12, y + 0.08, z0], m);
+  pushBox(s, [x0 - 0.12, 0, z1, x1 + 0.12, y + 0.08, z1 + 0.14], m);
+  pushBox(s, [x0 - 0.12, 0, z0, x0, y + 0.08, z1], m);
+  pushBox(s, [x1, 0, z0, x1 + 0.12, y + 0.08, z1], m);
+  for (let x = x0 + 1.25; x < x1 - 0.2; x += 1.25) pushBox(s, [x - 0.04, 0, z0, x + 0.04, y + 0.06, z1], m);
+  pushBox(s, [x0, 0, z1 - 0.72, x1, y + 0.06, z1 - 0.66], m);
+  // El alféizar, ancho, con macetas de geranios
+  pushBox(s, [x0 - 0.2, 0, z0 - 0.2, x1 + 0.2, 0.32, z0 - 0.12], WOOD_L);
+  for (const x of [x0 + 0.5, x0 + 2.4, x1 - 0.7]) {
+    pushBox(s, [x - 0.12, 0.08, z0 - 0.12, x + 0.12, 0.28, z0 + 0.08], [176, 92, 64]);
+    pushBox(s, [x - 0.14, 0.06, z0 + 0.08, x + 0.14, 0.3, z0 + 0.22], [86, 128, 70]);
+    pushBox(s, [x - 0.06, 0.1, z0 + 0.2, x + 0.04, 0.2, z0 + 0.27], [214, 74, 80], { glow: true });
+  }
+}
+/** Donde estaba la cortina: una viga de roble de pared a pared, como un arco abierto. */
+function viga(s) {
+  const y = CORTINA.y;
+  pushBox(s, [0, y - 0.14, SH - 0.42, SW, y + 0.14, SH], [104, 70, 44]);
+  pushBox(s, [0, y - 0.15, SH - 0.44, SW, y + 0.15, SH - 0.4], [82, 54, 34]);
+}
+/** Nivel 3: estanterías de pared hasta el techo, llenas de lomos, con su escalera de biblioteca. */
+function estanteriasAltas(s) {
+  const { y0, y1, fondo } = ALTAS;
+  const alto = SH - 0.12;
+  pushBox(s, [0, y0, 0, fondo, y0 + 0.07, alto], WOOD_D);
+  pushBox(s, [0, y1 - 0.07, 0, fondo, y1, alto], WOOD_D);
+  pushBox(s, [0, y0, alto - 0.12, fondo + 0.06, y1, alto + 0.08], WOOD_D);
+  const paleta = [
+    [150, 60, 52],
+    [60, 90, 120],
+    [200, 170, 96],
+    [78, 110, 80],
+    [120, 80, 110],
+    [210, 196, 170],
+    [176, 104, 60],
+  ];
+  for (let z = 0.06, fila = 0; z < alto - 0.5; z += 0.52, fila += 1) {
+    pushBox(s, [0, y0, z, fondo, y1, z + 0.05], WOOD);
+    for (let y = y0 + 0.08, k = 0; y < y1 - 0.12; k += 1) {
+      const ancho = 0.05 + hash(k, fila) * 0.05;
+      const altoL = 0.3 + hash(fila, k) * 0.14;
+      if (hash(k * 3, fila * 7) > 0.92) {
+        y += 0.1;
+        continue;
+      }
+      pushBox(s, [0.05, y, z + 0.05, fondo - 0.05, y + ancho, z + 0.05 + altoL], paleta[Math.floor(hash(k * 7 + fila, fila) * paleta.length)]);
+      y += ancho + 0.004;
+    }
+  }
+  // La barra de latón arriba y la escalera apoyada
+  pushBox(s, [fondo + 0.12, y0 + 0.1, alto - 0.6, fondo + 0.16, y1 - 0.1, alto - 0.56], BRASS, { g: 0.6 });
+  const xf = giro([fondo + 0.55, 1.9, 0], 'y', -0.2);
+  for (const dy of [-0.2, 0.2]) pushBox(s, [fondo + 0.52, 1.9 + dy - 0.03, 0, fondo + 0.58, 1.9 + dy + 0.03, alto - 0.5], WOOD_L, { xf });
+  for (let z = 0.35; z < alto - 0.6; z += 0.38) pushBox(s, [fondo + 0.52, 1.7, z, fondo + 0.58, 2.1, z + 0.04], WOOD_L, { xf });
+}
+/** Nivel 3: la chimenea de ladrillo con su repisa, el fuego encendido (brasa y llamas) y la losa de piedra. */
+function chimenea(s) {
+  const { x0, x1, hondo, alto } = CHIMENEA;
+  const ladrillo = [150, 82, 62];
+  pushBox(s, [x0, 0, 0, x1, hondo, alto], ladrillo);
+  for (let z = 0.2; z < alto; z += 0.2) pushBox(s, [x0 - 0.005, hondo, z, x1 + 0.005, hondo + 0.004, z + 0.014], [120, 64, 48]);
+  pushBox(s, [x0 + 0.2, 0, alto + 0.08, x1 - 0.2, hondo - 0.12, SH], [140, 76, 58]);
+  pushBox(s, [x0 - 0.12, 0, alto, x1 + 0.12, hondo + 0.1, alto + 0.09], WOOD_D);
+  // La boca, oscura, y el fuego
+  const bx0 = x0 + 0.38;
+  const bx1 = x1 - 0.38;
+  pushBox(s, [bx0, hondo, 0.1, bx1, hondo + 0.006, 0.86], [34, 22, 18]);
+  pushBox(s, [bx0 - 0.06, hondo, 0.86, bx1 + 0.06, hondo + 0.03, 0.96], [120, 64, 48]);
+  pushBox(s, [bx0 + 0.08, hondo + 0.01, 0.12, bx1 - 0.08, hondo + 0.16, 0.2], [70, 44, 30]);
+  pushBox(s, [bx0 + 0.16, hondo + 0.03, 0.2, bx1 - 0.16, hondo + 0.13, 0.26], [92, 58, 38]);
+  pushBox(s, [bx0 + 0.1, hondo + 0.02, 0.2, bx1 - 0.1, hondo + 0.12, 0.24], [255, 120, 40], { glow: true });
+  const cx = (bx0 + bx1) / 2;
+  for (const [dx, w, z1, c] of [
+    [-0.16, 0.07, 0.52, [255, 150, 60]],
+    [0.02, 0.09, 0.66, [255, 176, 70]],
+    [0.18, 0.06, 0.48, [255, 150, 60]],
+    [-0.04, 0.05, 0.5, [255, 226, 130]],
+    [0.1, 0.04, 0.44, [255, 226, 130]],
+  ])
+    pushBox(s, [cx + dx - w / 2, hondo + 0.05, 0.24, cx + dx + w / 2, hondo + 0.1, z1], c, { glow: true });
+  // La losa de piedra delante y dos candelabros en la repisa
+  pushBox(s, [x0 - 0.2, hondo, 0, x1 + 0.2, hondo + 0.42, 0.04], [128, 122, 114]);
+  for (const x of [x0 + 0.2, x1 - 0.2]) {
+    pushBox(s, [x - 0.04, 0.15, alto + 0.09, x + 0.04, 0.25, alto + 0.12], BRASS);
+    pushBox(s, [x - 0.015, 0.185, alto + 0.12, x + 0.015, 0.215, alto + 0.3], [240, 230, 210]);
+    pushBox(s, [x - 0.01, 0.19, alto + 0.3, x + 0.01, 0.21, alto + 0.34], [255, 210, 120], { glow: true });
+  }
+}
+/** El resplandor del fuego en el suelo, delante de la chimenea (transparente, sumado). */
+function paintResplandor() {
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 64;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,160,80,0.42)');
+  g.addColorStop(1, 'rgba(255,140,60,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
   return c;
 }
 
@@ -639,33 +812,166 @@ function paintLluvia(canvas, t, quieto) {
  * Monta el local en `container`. `onPick(id)`: se ha tocado un sitio ('pilar', 'cortina', 'escaparate'). `onFrame(tags)`:
  * en cada cuadro, dónde caen los letreros (x, y en px del contenedor, y si se ven). `onLost()`: se perdió el WebGL.
  */
-// ── Revisión del bloque 3 (12-11-2026): la barra artesanal, sobre el mostrador a la izquierda de la lamparita. Una cafetera de
-// palanca de cobre, la tetera de hierro con su colador, los tarros de grano (u hoja), las jarritas de leche, la lata de
-// canela y el tarro de miel; la taza en su plato, que se llena de verdad. Tocar cada cosa la elige (marco ámbar). ──
+// ── La barra (revisión del bloque 3, 12-11-2026; rehecha el mismo día para que cada paso tenga su gesto y su objeto): sobre el
+// mostrador, de izquierda a derecha, las jarritas de leche, el molinillo de manivela, los tarros, el portafiltro con su
+// prensador, la cafetera de palanca de cobre (con la lanza de vapor), la taza en su plato, la tetera de hierro, la lata de
+// canela y el tarro de miel. Lo que se mueve (la manivela, el prensador, la palanca, la tetera, la cuchara, el colador, la
+// jarra, el bote y el cazo) se dibuja girado o desplazado según la postura del gesto (`cafeGestos.js`). Todo propio. ──
 const COBRE = [190, 112, 70];
 const COBRE_L = [226, 150, 96];
 const LOZA = [238, 230, 212];
+const ACERO = [176, 178, 182];
+const ACERO_D = [112, 114, 120];
+const NOGAL = [92, 58, 38];
 const BARRA_Z = 1.05;
-/** Dónde está cada cosa de la barra (caja del mundo para tocarla) y qué elige. */
+const TAZA_EN = { x: 7.47, y: 6.05 };
+/** Tras la extracción (o la infusión), la taza sale del grupo a la madera, delante, para la leche y el toque. */
+const TAZA_FUERA = { x: 7.36, y: 6.12 };
+const tazaPos = (est = {}) => (est.hechos?.palanca || est.hechos?.colador || est.hechos?.cazo ? TAZA_FUERA : TAZA_EN);
+const MOLINILLO = { x: 7.46, y: 5.54 };
+const PORTA = { x: 7.43, y: 5.8 };
+const VAPOR = { x: 7.54, y: 5.84 };
+const TETERA = { x: 7.72, y: 6.45 };
+const TARROS = { suave: 5.49, intenso: 5.69 };
+const TARRO_X = 7.74;
+const JARRAS = { entera: 5.08, avena: 5.26 };
+const JARRA_X = 7.39;
+const CANELA = { x: 7.44, y: 6.4 };
+const MIEL = { x: 7.44, y: 6.6 };
+/** Bloque 4a: el hornillo con el cazo de cobre del chocolate (detrás de la tetera) y el bol de la nata (junto a la miel). */
+const CAZO = { x: 7.85, y: 6.68 };
+const BOL = { x: 7.44, y: 6.82 };
+/** Dónde está cada cosa de la barra que se elige tocándola (caja del mundo) y qué elige. */
 export const BARRA_COSAS = {
-  'barra:bebida:cafe': { box: [7.4, 5.88, BARRA_Z, 7.94, 6.22, BARRA_Z + 0.62], parte: 'bebida', valor: 'cafe' },
-  'barra:bebida:te': { box: [7.5, 6.32, BARRA_Z, 7.88, 6.58, BARRA_Z + 0.34], parte: 'bebida', valor: 'te' },
-  'barra:grano:suave': { box: [7.64, 5.44, BARRA_Z, 7.86, 5.64, BARRA_Z + 0.3], parte: 'grano', valor: 'suave' },
-  'barra:grano:intenso': { box: [7.64, 5.66, BARRA_Z, 7.86, 5.86, BARRA_Z + 0.3], parte: 'grano', valor: 'intenso' },
-  'barra:leche:entera': { box: [7.32, 5.5, BARRA_Z, 7.56, 5.7, BARRA_Z + 0.2], parte: 'leche', valor: 'entera' },
-  'barra:leche:avena': { box: [7.32, 5.72, BARRA_Z, 7.56, 5.92, BARRA_Z + 0.2], parte: 'leche', valor: 'avena' },
-  'barra:toque:canela': { box: [7.32, 6.3, BARRA_Z, 7.54, 6.48, BARRA_Z + 0.2], parte: 'toque', valor: 'canela' },
-  'barra:toque:miel': { box: [7.32, 6.5, BARRA_Z, 7.54, 6.7, BARRA_Z + 0.26], parte: 'toque', valor: 'miel' },
+  'barra:bebida:cafe': { box: [7.6, 5.9, BARRA_Z, 7.93, 6.2, BARRA_Z + 0.8], parte: 'bebida', valor: 'cafe' },
+  'barra:bebida:te': { box: [7.6, 6.34, BARRA_Z, 7.84, 6.56, BARRA_Z + 0.34], parte: 'bebida', valor: 'te' },
+  'barra:grano:suave': { box: [7.67, TARROS.suave - 0.08, BARRA_Z, 7.81, TARROS.suave + 0.08, BARRA_Z + 0.28], parte: 'grano', valor: 'suave' },
+  'barra:grano:intenso': { box: [7.67, TARROS.intenso - 0.08, BARRA_Z, 7.81, TARROS.intenso + 0.08, BARRA_Z + 0.28], parte: 'grano', valor: 'intenso' },
+  'barra:leche:entera': { box: [7.32, JARRAS.entera - 0.07, BARRA_Z, 7.46, JARRAS.entera + 0.07, BARRA_Z + 0.17], parte: 'leche', valor: 'entera' },
+  'barra:leche:avena': { box: [7.32, JARRAS.avena - 0.07, BARRA_Z, 7.46, JARRAS.avena + 0.07, BARRA_Z + 0.17], parte: 'leche', valor: 'avena' },
+  'barra:toque:canela': { box: [7.37, 6.33, BARRA_Z, 7.51, 6.47, BARRA_Z + 0.2], parte: 'toque', valor: 'canela' },
+  'barra:toque:miel': { box: [7.37, 6.53, BARRA_Z, 7.51, 6.67, BARRA_Z + 0.26], parte: 'toque', valor: 'miel' },
+  // Lo de la carta (bloque 4a): están en la barra desde el principio, pero solo se eligen con su hito
+  'barra:bebida:chocolate': { box: [CAZO.x - 0.09, CAZO.y - 0.09, BARRA_Z, CAZO.x + 0.09, CAZO.y + 0.09, BARRA_Z + 0.3], parte: 'bebida', valor: 'chocolate', carta: 'chocolate' },
+  'barra:toque:nata': { box: [BOL.x - 0.075, BOL.y - 0.075, BARRA_Z, BOL.x + 0.075, BOL.y + 0.075, BARRA_Z + 0.22], parte: 'toque', valor: 'nata', carta: 'nata' },
 };
-/** El color de lo que hay en la taza: la bebida, su fuerza y la leche. */
-function colorBebida({ bebida, grano, leche }) {
-  const base = bebida === 'te' ? (grano === 'intenso' ? [150, 74, 36] : [206, 150, 64]) : grano === 'intenso' ? [62, 34, 22] : [104, 62, 36];
-  if (!leche || leche === 'sin') return base;
-  const l = leche === 'avena' ? [226, 204, 160] : [244, 236, 220];
-  return base.map((c, k) => Math.round(c * 0.45 + l[k] * 0.55));
+/** Puntos de la barra (para la cámara y para saber dónde caen en la pantalla). */
+export const BARRA_MARCAS = {
+  taza: [TAZA_EN.x, TAZA_EN.y, BARRA_Z + 0.09],
+  manivela: [MOLINILLO.x, MOLINILLO.y, BARRA_Z + 0.27],
+  portafiltro: [PORTA.x, PORTA.y, BARRA_Z + 0.08],
+  palanca: [7.64, 6.05, BARRA_Z + 0.6],
+  tetera: [TETERA.x, TETERA.y, BARRA_Z + 0.15],
+  vapor: [VAPOR.x, VAPOR.y, BARRA_Z + 0.1],
+  tarros: [TARRO_X, 5.59, BARRA_Z + 0.14],
+  jarras: [JARRA_X, 5.17, BARRA_Z + 0.08],
+  toques: [7.44, 6.5, BARRA_Z + 0.1],
+  cazo: [CAZO.x, CAZO.y, BARRA_Z + 0.17],
+  bol: [BOL.x, BOL.y, BARRA_Z + 0.1],
+};
+/** La cámara de cada paso: de lado y desde arriba, con el objeto en la parte alta de la pantalla (abajo va el cuadro). */
+function enfoque([x, y, z], d, { alto = 0.75, bajo = 0.75, lado = 0 } = {}) {
+  return { p: [x - d * 0.75, y - d * lado, z + d * alto], m: [x + d * 0.1, y + d * lado * 0.2, z - d * bajo] };
 }
-/** La taza con su plato, hueca, centrada en (cx, cy) sobre z0; `lleno` de 0 a 1. */
-function taza(s, cx, cy, z0, { bebida = null, grano = null, leche = 'sin', toque = 'nada', lleno = 0, humo = false } = {}, g = null) {
+/** El enfoque de la taza, esté donde esté. */
+const enTaza =
+  (d, op, dz = 0.09) =>
+  (est) => {
+    const { x, y } = tazaPos(est);
+    return enfoque([x, y, BARRA_Z + dz], d, op);
+  };
+const ENFOQUES = {
+  general: { p: [6.6, 6.08, 2.02], m: [7.66, 6.08, 0.5] },
+  // Con el chocolate en la carta, la cámara se abre un poco para que entre el cazo
+  bebida: (est) => (est.carta?.includes('chocolate') ? enfoque([7.7, 6.4, BARRA_Z + 0.3], 1.15) : enfoque([7.68, 6.2, BARRA_Z + 0.3], 1.0)),
+  grano: enfoque([7.6, 5.6, BARRA_Z + 0.14], 0.72),
+  manivela: enfoque(BARRA_MARCAS.manivela, 0.5, { alto: 0.95 }),
+  cuchara: enfoque([7.62, 5.8, BARRA_Z + 0.28], 0.85, { alto: 0.5, bajo: 0.45 }),
+  apisonar: enfoque(BARRA_MARCAS.portafiltro, 0.66, { alto: 0.5, bajo: 0.55, lado: 0.5 }),
+  palanca: enfoque([7.6, 6.02, BARRA_Z + 0.4], 0.95, { alto: 0.45, bajo: 0.5, lado: 0.75 }),
+  tetera: enfoque([7.62, 6.22, BARRA_Z + 0.22], 0.95, { alto: 0.6 }),
+  colador: enfoque(BARRA_MARCAS.taza, 0.55, { alto: 0.6, lado: 0.4 }),
+  leche: enfoque(BARRA_MARCAS.jarras, 0.6),
+  vapor: enfoque([VAPOR.x, VAPOR.y, BARRA_Z + 0.18], 0.62, { alto: 0.55 }),
+  verter: enTaza(0.62, { alto: 0.85, lado: 0.35 }),
+  toque: (est) => (est.carta?.includes('nata') ? enfoque([7.44, 6.62, BARRA_Z + 0.1], 0.72) : enfoque(BARRA_MARCAS.toques, 0.62)),
+  molinillo: enfoque(BARRA_MARCAS.cazo, 0.5, { alto: 0.95 }),
+  cazo: enfoque([7.66, 6.36, BARRA_Z + 0.22], 0.95, { alto: 0.6 }),
+  batir: enfoque(BARRA_MARCAS.bol, 0.48, { alto: 0.95 }),
+  agitar: enTaza(0.8, { alto: 0.5, bajo: 0.22, lado: 0.3 }, 0.16),
+  hilo: enTaza(0.55, { alto: 1.1, lado: 0.2 }),
+  lista: enTaza(0.55),
+};
+
+/** Un giro alrededor de `piv` ([x, y, z] de la app) sobre el eje 'z' (vertical), 'y' (de fondo) o 'x'; luego, `luego`. */
+function giro(piv, eje, ang, luego = null) {
+  const [px, py, pz] = piv;
+  const c = Math.cos(ang);
+  const s = Math.sin(ang);
+  return (p) => {
+    const x = p[0] - px;
+    const z = p[1] - pz;
+    const y = p[2] - py;
+    let nx = x;
+    let ny = y;
+    let nz = z;
+    if (eje === 'z') {
+      nx = x * c - y * s;
+      ny = x * s + y * c;
+    } else if (eje === 'y') {
+      nx = x * c + z * s;
+      nz = -x * s + z * c;
+    } else {
+      ny = y * c - z * s;
+      nz = y * s + z * c;
+    }
+    const out = [nx + px, nz + pz, ny + py];
+    return luego ? luego(out) : out;
+  };
+}
+/** Un desplazamiento (en la app) para pushBox. */
+const desplaza = (dx, dy, dz) => (p) => [p[0] + dx, p[1] + dz, p[2] + dy];
+
+/** El color de la bebida: café o té, su fuerza, cuánto color ha soltado el té y la leche que lleva (0 a 1). */
+function colorBebida({ bebida, grano }, { leche = 0, tipoLeche = 'entera', color = 1 } = {}) {
+  let base =
+    bebida === 'te'
+      ? grano === 'intenso'
+        ? [150, 74, 36]
+        : [196, 150, 64]
+      : bebida === 'chocolate'
+        ? grano === 'intenso'
+          ? [74, 40, 28]
+          : [128, 76, 46]
+        : grano === 'intenso'
+          ? [62, 34, 22]
+          : [104, 62, 36];
+  if (bebida === 'te') base = base.map((c, k) => Math.round([214, 198, 160][k] + (c - [214, 198, 160][k]) * color));
+  if (!leche) return base;
+  const l = tipoLeche === 'avena' ? [226, 204, 160] : [244, 236, 220];
+  return base.map((c, k) => Math.round(c + (c * 0.45 + l[k] * 0.55 - c) * leche));
+}
+const ARTE = {
+  corazon: ['.......', '.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'],
+  hoja: ['...X...', '.X.X.X.', '..XXX..', '.X.X.X.', '..XXX..', '.X.X.X.', '...X...'],
+};
+const PUNTOS_CANELA = [
+  [-0.02, -0.01],
+  [0.012, 0.018],
+  [0.02, -0.02],
+  [-0.008, 0.024],
+  [0.026, 0.006],
+  [-0.026, 0.012],
+  [0.004, -0.028],
+  [-0.016, -0.024],
+  [0.016, 0.03],
+  [0.0, 0.0],
+];
+/**
+ * La taza con su plato, hueca, centrada en (cx, cy) sobre z0. `v`: lo que lleva (`vistaTaza`): cuánto (0 a 1), la leche, el
+ * color del té, la crema, el dibujo de la leche, la canela y la miel.
+ */
+function taza(s, cx, cy, z0, receta = {}, v = {}, { humo = false, g = null } = {}) {
   const o = { g };
   pushBox(s, [cx - 0.08, cy - 0.08, z0, cx + 0.08, cy + 0.08, z0 + 0.014], LOZA, o);
   const b = z0 + 0.014;
@@ -680,23 +986,50 @@ function taza(s, cx, cy, z0, { bebida = null, grano = null, leche = 'sin', toque
   pushBox(s, [cx + 0.05, cy - 0.012, b + 0.075, cx + 0.075, cy + 0.012, b + 0.087], LOZA, o);
   // Una franja de color en la loza
   pushBox(s, [cx - 0.051, cy - 0.051, b + 0.07, cx + 0.051, cy + 0.051, b + 0.078], [150, 74, 60], o);
-  if (!bebida || lleno <= 0) return;
-  const top = b + 0.012 + Math.min(1, lleno) * 0.078;
-  const c = colorBebida({ bebida, grano, leche });
-  pushBox(s, [cx - 0.05 + t, cy - 0.05 + t, b + 0.012, cx + 0.05 - t, cy + 0.05 - t, top], c, o);
-  if (lleno >= 1 && leche && leche !== 'sin') pushBox(s, [cx - 0.03, cy - 0.03, top, cx + 0.03, cy + 0.03, top + 0.003], [250, 244, 230], { glow: true });
-  if (lleno >= 1 && toque === 'canela')
-    for (const [dx, dy] of [
-      [-0.02, -0.01],
-      [0.012, 0.018],
-      [0.02, -0.02],
-      [-0.008, 0.024],
-    ])
-      pushBox(s, [cx + dx - 0.005, cy + dy - 0.005, top, cx + dx + 0.005, cy + dy + 0.005, top + 0.004], [120, 62, 34], o);
-  if (lleno >= 1 && toque === 'miel') {
-    pushBox(s, [cx - 0.025, cy - 0.004, top, cx + 0.025, cy + 0.004, top + 0.004], [255, 200, 80], { glow: true });
-    pushBox(s, [cx - 0.004, cy - 0.025, top, cx + 0.004, cy + 0.025, top + 0.004], [255, 200, 80], { glow: true });
+  const lleno = Math.min(1, v.lleno ?? 0);
+  if (!receta.bebida || lleno <= 0) return;
+  const top = b + 0.012 + lleno * 0.078;
+  const c = colorBebida(receta, { leche: v.leche ?? 0, tipoLeche: receta.leche, color: v.color ?? 1 });
+  const i0 = -0.05 + t;
+  pushBox(s, [cx + i0, cy + i0, b + 0.012, cx - i0, cy - i0, top], c, o);
+  // La crema del café (sin leche encima), en tostado claro
+  if (v.crema && !(v.leche > 0.2))
+    pushBox(
+      s,
+      [cx + i0, cy + i0, top, cx - i0, cy - i0, top + 0.002],
+      c.map((k) => Math.min(255, k + 70)),
+      o,
+    );
+  // El dibujo de la leche, cuadradito a cuadradito: el corazón o la hoja
+  const arte = ARTE[v.arte];
+  if (arte) {
+    const k = (2 * -i0) / 7;
+    const filas = Math.ceil((v.arteParcial ?? 1) * 7);
+    arte.forEach((fila, r) =>
+      [...fila].forEach((ch, col) => {
+        if (ch !== 'X' || r >= filas) return;
+        const x = cx - i0 - (r + 1) * k;
+        const y = cy + i0 + col * k;
+        pushBox(s, [x, y, top, x + k, y + k, top + 0.003], [236, 226, 206], { g: 0.82 });
+      }),
+    );
   }
+  const canela = Math.round((v.canela ?? 0) * PUNTOS_CANELA.length);
+  for (const [dx, dy] of PUNTOS_CANELA.slice(0, canela)) pushBox(s, [cx + dx - 0.005, cy + dy - 0.005, top, cx + dx + 0.005, cy + dy + 0.005, top + 0.004], [120, 62, 34], o);
+  for (const [u, w] of v.miel ?? []) {
+    const x = cx - w * 0.034;
+    const y = cy + u * 0.034;
+    pushBox(s, [x - 0.004, y - 0.004, top, x + 0.004, y + 0.004, top + 0.004], [214, 146, 48], { g: 0.85 });
+  }
+  // La nata montada: una nube con picos que sobresale de la taza
+  if (v.nata > 0) {
+    const n = [250, 246, 236];
+    pushBox(s, [cx + i0, cy + i0, top, cx - i0, cy - i0, top + 0.016], n, { g: 0.8 });
+    pushBox(s, [cx - 0.028, cy - 0.028, top + 0.016, cx + 0.028, cy + 0.028, top + 0.03], n, { g: 0.76 });
+    pushBox(s, [cx - 0.014, cy - 0.014, top + 0.03, cx + 0.014, cy + 0.014, top + 0.042], n, { g: 0.72 });
+    pushBox(s, [cx - 0.004, cy - 0.004, top + 0.042, cx + 0.004, cy + 0.004, top + 0.05], n, { g: 0.7 });
+  }
+  if (v.hojas) pushBox(s, [cx - 0.02, cy - 0.02, top, cx + 0.02, cy + 0.02, top + 0.002], receta.grano === 'intenso' ? [60, 40, 28] : [110, 140, 70], o);
   if (humo)
     for (const [dx, dz, w] of [
       [-0.015, 0.05, 0.012],
@@ -705,59 +1038,123 @@ function taza(s, cx, cy, z0, { bebida = null, grano = null, leche = 'sin', toque
     ])
       pushBox(s, [cx + dx - w * 0.6, cy - w * 0.6, top + dz, cx + dx + w * 0.6, cy + w * 0.6, top + dz + w * 1.2], [214, 204, 190], o);
 }
-/** El marco ámbar en la barra alrededor de lo elegido. */
-function marcoBarra(s, [x0, y0, , x1, y1]) {
+/** El marco en la barra alrededor de una cosa: ámbar si se puede elegir ahora. */
+function marcoBarra(s, [x0, y0, , x1, y1], color = [255, 206, 120]) {
   const z = BARRA_Z + 0.004;
   const e = 0.012;
-  const c = [255, 206, 120];
   for (const bx of [
     [x0, y0, z, x1, y0 + e, z + 0.006],
     [x0, y1 - e, z, x1, y1, z + 0.006],
     [x0, y0, z, x0 + e, y1, z + 0.006],
     [x1 - e, y0, z, x1, y1, z + 0.006],
   ])
-    pushBox(s, bx, c, { glow: true });
+    pushBox(s, bx, color, { glow: true });
 }
-/** Todo lo de la barra, con lo elegido de la receta (y la taza, con lo que lleve). */
-function barraKit(s, receta = {}, { lleno = 0, vertiendo = false, humo = false } = {}) {
+/** Un aro cuadrado (el borde de un cazo o la franja de un bol), hueco por dentro: radio exterior `r` y grosor `e`. */
+function aro(s, x, y, r, e, z0, z1, color, o) {
+  pushBox(s, [x - r, y - r, z0, x + r, y - r + e, z1], color, o);
+  pushBox(s, [x - r, y + r - e, z0, x + r, y + r, z1], color, o);
+  pushBox(s, [x - r, y - r, z0, x - r + e, y + r, z1], color, o);
+  pushBox(s, [x + r - e, y - r, z0, x + r, y + r, z1], color, o);
+}
+/** Un chorro fino entre dos alturas (glow, para que se vea). */
+function chorro(s, x, y, z0, z1, color, w = 0.006) {
+  pushBox(s, [x - w, y - w, z0, x + w, y + w, z1], color, { glow: true });
+}
+/** Una jarrita de leche (loza con franja y pico hacia ti; asa detrás), con `xf` si se mueve; `espuma`, de 0 a 1. */
+function jarrita(s, x, y, tipo, { xf = null, espuma = 0, g = 0.86 } = {}) {
+  const z = BARRA_Z;
+  const cuerpo = tipo === 'avena' ? [218, 200, 156] : [240, 236, 226];
+  const franja = tipo === 'avena' ? [128, 152, 84] : [86, 118, 168];
+  const o = { g, xf };
+  pushBox(s, [x - 0.06, y - 0.06, z, x + 0.06, y + 0.06, z + 0.14], cuerpo, o);
+  pushBox(s, [x - 0.062, y - 0.062, z + 0.1, x + 0.062, y + 0.062, z + 0.115], franja, o);
+  pushBox(s, [x - 0.09, y - 0.025, z + 0.11, x - 0.06, y + 0.025, z + 0.14], cuerpo, o);
+  pushBox(s, [x + 0.06, y - 0.012, z + 0.04, x + 0.095, y + 0.012, z + 0.115], cuerpo, o);
+  if (espuma > 0) pushBox(s, [x - 0.05, y - 0.05, z + 0.14, x + 0.05, y + 0.05, z + 0.14 + espuma * 0.035], [232, 224, 208], { g: 0.78, xf });
+}
+
+/**
+ * Todo lo de la barra. `est`: { receta, gesto (el que se hace ahora), pose (su postura), pulsado, hechos ({ gesto: pose }),
+ * vista (`vistaTaza`), elige (la parte que se elige ahora: sus cosas, con marco), lista (taza terminada) }.
+ */
+function barraKit(s, est = {}) {
+  const { receta = {}, gesto = null, pose = {}, pulsado = false, hechos = {}, vista = {}, elige = null, lista = false, carta = [] } = est;
   const z = BARRA_Z;
   const g = 0.86;
   const o = { g };
-  // La cafetera de palanca: cobre con aros de latón, cúpula, manómetro, el grupo hacia ti y su palanca de madera
+  const te = receta.bebida === 'te';
+  const T = tazaPos(est);
+  const ahora = (k) => gesto === k;
+  const p = (k) => (ahora(k) ? pose : hechos[k]) ?? {};
+
+  // ── La cafetera de palanca: cobre con aros de latón, cúpula, manómetro, el grupo hacia ti y la lanza de vapor ──
   pushBox(s, [7.6, 5.9, z, 7.93, 6.2, z + 0.06], [74, 50, 36], o);
   pushBox(s, [7.65, 5.94, z + 0.06, 7.89, 6.16, z + 0.44], COBRE, o);
   pushBox(s, [7.645, 5.935, z + 0.13, 7.895, 6.165, z + 0.16], BRASS, o);
   pushBox(s, [7.645, 5.935, z + 0.36, 7.895, 6.165, z + 0.39], BRASS, o);
   pushBox(s, [7.68, 5.97, z + 0.44, 7.86, 6.13, z + 0.5], COBRE_L, o);
   pushBox(s, [7.74, 6.03, z + 0.5, 7.8, 6.07, z + 0.58], BRASS, o);
-  pushBox(s, [7.645, 5.99, z + 0.26, 7.65, 6.05, z + 0.32], [244, 236, 214], { glow: true });
+  // El manómetro: se enciende mientras cae el café
+  const extrayendo = ahora('palanca') && pulsado && (pose.bajada ?? 0) >= 0.85;
+  pushBox(s, [7.645, 5.99, z + 0.26, 7.65, 6.05, z + 0.32], extrayendo ? [255, 236, 190] : [222, 214, 196], { glow: true });
+  pushBox(s, [7.643, 6.017, z + 0.27, 7.646, 6.023, extrayendo ? z + 0.315 : z + 0.29], [170, 40, 30], { glow: true });
+  // El grupo y, si ya está apisonado, el portafiltro encajado con su mango de nogal
   pushBox(s, [7.54, 6.0, z + 0.2, 7.65, 6.1, z + 0.27], BRASS, o);
-  pushBox(s, [7.38, 6.035, z + 0.215, 7.54, 6.065, z + 0.245], [96, 58, 36], o);
-  pushBox(s, [7.86, 6.04, z + 0.44, 7.89, 6.06, z + 0.72], [58, 44, 36], o);
-  pushBox(s, [7.845, 6.025, z + 0.72, 7.905, 6.075, z + 0.79], [96, 58, 36], o);
+  if (hechos.apisonar) {
+    pushBox(s, [7.52, 6.0, z + 0.17, 7.6, 6.1, z + 0.2], ACERO, o);
+    pushBox(s, [7.555, 5.9, z + 0.175, 7.585, 6.0, z + 0.2], NOGAL, o);
+    pushBox(s, [7.55, 5.86, z + 0.17, 7.59, 5.9, z + 0.205], NOGAL, o);
+  }
+  // La lanza de vapor, a la izquierda, con su llave
+  pushBox(s, [7.6, 5.86, z + 0.32, 7.65, 5.9, z + 0.35], ACERO, o);
+  pushBox(s, [VAPOR.x - 0.008, VAPOR.y - 0.008, z + 0.17, VAPOR.x + 0.008, VAPOR.y + 0.008, z + 0.35], ACERO, o);
+  pushBox(s, [7.6, 5.84, z + 0.36, 7.63, 5.87, z + 0.4], NOGAL, o);
+  // La palanca: gira hacia ti desde lo alto del grupo
+  const bajada = ahora('palanca') ? (pose.bajada ?? 0) : 0;
+  const xfP = giro([7.64, 6.05, z + 0.42], 'y', -bajada * 1.75);
+  pushBox(s, [7.625, 6.04, z + 0.42, 7.655, 6.06, z + 0.78], [58, 44, 36], { g, xf: xfP });
+  pushBox(s, [7.615, 6.025, z + 0.78, 7.665, 6.075, z + 0.86], NOGAL, { g, xf: xfP });
   // La lucecita: encendida si hoy toca café
   pushBox(s, [7.645, 6.09, z + 0.08, 7.65, 6.12, z + 0.11], receta.bebida === 'cafe' ? [255, 120, 70] : [90, 40, 30], { glow: receta.bebida === 'cafe' });
-  // La tetera de hierro en su salvamanteles, con asa de latón y el pico hacia la taza
-  pushBox(s, [7.6, 6.35, z, 7.84, 6.55, z + 0.02], BRASS, o);
-  pushBox(s, [7.62, 6.37, z + 0.02, 7.82, 6.53, z + 0.18], [52, 78, 76], o);
-  pushBox(s, [7.66, 6.41, z + 0.18, 7.78, 6.49, z + 0.21], [44, 64, 62], o);
-  pushBox(s, [7.7, 6.43, z + 0.21, 7.74, 6.47, z + 0.24], BRASS, o);
-  pushBox(s, [7.55, 6.43, z + 0.07, 7.62, 6.47, z + 0.11], [52, 78, 76], o);
-  pushBox(s, [7.52, 6.43, z + 0.11, 7.56, 6.47, z + 0.14], [52, 78, 76], o);
-  pushBox(s, [7.66, 6.44, z + 0.24, 7.68, 6.46, z + 0.32], BRASS, o);
-  pushBox(s, [7.76, 6.44, z + 0.24, 7.78, 6.46, z + 0.32], BRASS, o);
-  pushBox(s, [7.66, 6.44, z + 0.32, 7.78, 6.46, z + 0.34], BRASS, o);
-  // Los tarros: cristal con corcho y etiqueta; dentro, grano (u hoja si toca té), claro o tostado
-  const te = receta.bebida === 'te';
-  for (const [y, fuerte] of [
-    [5.54, false],
-    [5.76, true],
-  ]) {
+  if (extrayendo) {
+    chorro(s, 7.51, 6.04, z + 0.12, z + 0.17, colorBebida({ ...receta, bebida: 'cafe' }), 0.004);
+    chorro(s, 7.51, 6.06, z + 0.12, z + 0.17, colorBebida({ ...receta, bebida: 'cafe' }), 0.004);
+  }
+
+  // ── El molinillo de manivela: caja de nogal con su cajón, la tolva de latón y la manivela que gira ──
+  const { x: mx, y: my } = MOLINILLO;
+  pushBox(s, [mx - 0.1, my - 0.1, z, mx + 0.1, my + 0.1, z + 0.16], NOGAL, o);
+  pushBox(s, [mx - 0.105, my - 0.06, z + 0.03, mx - 0.1, my + 0.06, z + 0.09], WOOD_L, o);
+  pushBox(s, [mx - 0.115, my - 0.012, z + 0.05, mx - 0.105, my + 0.012, z + 0.07], BRASS, o);
+  pushBox(s, [mx - 0.08, my - 0.08, z + 0.16, mx + 0.08, my + 0.08, z + 0.2], BRASS, o);
+  const molido = p('manivela').molido ?? 0;
+  if ((receta.grano && !te && elige !== 'grano') || molido > 0) {
+    // El grano en la tolva (baja al moler) y el molido que asoma en el cajón
+    const tostado = receta.grano === 'intenso' ? [58, 34, 24] : [150, 98, 56];
+    pushBox(s, [mx - 0.06, my - 0.06, z + 0.17, mx + 0.06, my + 0.06, z + 0.2 + 0.02 * (1 - molido)], tostado, o);
+    if (molido > 0)
+      pushBox(
+        s,
+        [mx - 0.103, my - 0.05, z + 0.032, mx - 0.1, my + 0.05, z + 0.032 + 0.05 * molido],
+        tostado.map((c) => c + 20),
+        o,
+      );
+  }
+  const xfM = giro([mx, my, z + 0.2], 'z', p('manivela').angulo ?? 0);
+  pushBox(s, [mx - 0.012, my - 0.012, z + 0.2, mx + 0.012, my + 0.012, z + 0.27], ACERO_D, o);
+  pushBox(s, [mx - 0.012, my - 0.012, z + 0.26, mx + 0.012, my + 0.13, z + 0.275], ACERO, { g, xf: xfM });
+  pushBox(s, [mx - 0.016, my + 0.11, z + 0.275, mx + 0.016, my + 0.14, z + 0.33], NOGAL, { g, xf: xfM });
+
+  // ── Los tarros: cristal con corcho y etiqueta; dentro, grano (u hoja si toca té), claro o tostado ──
+  for (const [tipo, y] of Object.entries(TARROS)) {
+    const fuerte = tipo === 'intenso';
     const dentro = te ? (fuerte ? [72, 52, 36] : [126, 150, 78]) : fuerte ? [58, 34, 24] : [168, 112, 62];
-    pushBox(s, [7.69, y - 0.07, z, 7.81, y + 0.07, z + 0.19], dentro, o);
+    const x = TARRO_X;
+    pushBox(s, [x - 0.06, y - 0.07, z, x + 0.06, y + 0.07, z + 0.19], dentro, o);
     pushBox(
       s,
-      [7.7, y - 0.06, z + 0.06, 7.8, y + 0.06, z + 0.07],
+      [x - 0.05, y - 0.06, z + 0.06, x + 0.05, y + 0.06, z + 0.07],
       dentro.map((c) => Math.max(0, c - 26)),
       o,
     );
@@ -767,47 +1164,249 @@ function barraKit(s, receta = {}, { lleno = 0, vertiendo = false, humo = false }
       [-0.07, 0.07],
       [0.06, 0.07],
     ])
-      pushBox(s, [7.75 + dx + 0.003, y + dy + 0.003, z, 7.75 + dx + 0.009, y + dy + 0.009, z + 0.21], [176, 196, 196], o);
-    pushBox(s, [7.685, y - 0.075, z + 0.19, 7.815, y + 0.075, z + 0.205], [176, 196, 196], o);
-    pushBox(s, [7.7, y - 0.06, z + 0.22, 7.8, y + 0.06, z + 0.27], [172, 128, 82], o);
-    pushBox(s, [7.675, y - 0.04, z + 0.07, 7.685, y + 0.04, z + 0.14], PAPER, o);
-    pushBox(s, [7.672, y - 0.015, z + 0.095, 7.676, y + 0.015, z + 0.115], fuerte ? [58, 34, 24] : [168, 112, 62], o);
+      pushBox(s, [x + dx + 0.003, y + dy + 0.003, z, x + dx + 0.009, y + dy + 0.009, z + 0.21], [176, 196, 196], o);
+    pushBox(s, [x - 0.065, y - 0.075, z + 0.19, x + 0.065, y + 0.075, z + 0.205], [176, 196, 196], o);
+    pushBox(s, [x - 0.05, y - 0.06, z + 0.22, x + 0.05, y + 0.06, z + 0.27], [172, 128, 82], o);
+    pushBox(s, [x - 0.075, y - 0.04, z + 0.07, x - 0.065, y + 0.04, z + 0.14], PAPER, o);
+    pushBox(s, [x - 0.078, y - 0.015, z + 0.095, x - 0.074, y + 0.015, z + 0.115], fuerte ? [58, 34, 24] : [168, 112, 62], o);
   }
-  // Las jarritas de leche: de vaca (franja azul) y de avena (franja verde)
-  for (const [y, cuerpo, franja] of [
-    [5.6, [240, 236, 226], [86, 118, 168]],
-    [5.82, [218, 200, 156], [128, 152, 84]],
-  ]) {
-    pushBox(s, [7.39, y - 0.06, z, 7.51, y + 0.06, z + 0.14], cuerpo, o);
-    pushBox(s, [7.388, y - 0.062, z + 0.1, 7.512, y + 0.062, z + 0.115], franja, o);
-    pushBox(s, [7.36, y - 0.025, z + 0.11, 7.39, y + 0.025, z + 0.14], cuerpo, o);
-    pushBox(s, [7.51, y - 0.012, z + 0.04, 7.545, y + 0.012, z + 0.115], cuerpo, o);
+
+  // ── El portafiltro y el prensador (solo café): hasta apisonar, sobre la madera; luego, en el grupo ──
+  if (!te && !hechos.apisonar) {
+    const { x, y } = PORTA;
+    pushBox(s, [x - 0.05, y - 0.05, z, x + 0.05, y + 0.05, z + 0.04], ACERO, o);
+    pushBox(s, [x - 0.2, y - 0.015, z + 0.012, x - 0.05, y + 0.015, z + 0.036], NOGAL, o);
+    if (hechos.manivela) pushBox(s, [x - 0.04, y - 0.04, z + 0.04, x + 0.04, y + 0.04, z + 0.046 - 0.004 * (p('apisonar').bajada ?? 0)], receta.grano === 'intenso' ? [70, 44, 30] : [160, 108, 64], o);
+    const baja = (ahora('apisonar') ? (pose.bajada ?? 0) : 0) * 0.09;
+    const xfT = desplaza(0, 0, -baja);
+    pushBox(s, [x - 0.04, y - 0.04, z + 0.14, x + 0.04, y + 0.04, z + 0.16], ACERO, { g, xf: xfT });
+    pushBox(s, [x - 0.015, y - 0.015, z + 0.16, x + 0.015, y + 0.015, z + 0.22], NOGAL, { g, xf: xfT });
+    pushBox(s, [x - 0.028, y - 0.028, z + 0.22, x + 0.028, y + 0.028, z + 0.25], NOGAL, { g, xf: xfT });
   }
-  // La lata de canela (con dos ramitas) y el tarro de miel con su cazo
-  pushBox(s, [7.38, 6.34, z, 7.5, 6.46, z + 0.13], [150, 78, 48], o);
-  pushBox(s, [7.375, 6.335, z + 0.13, 7.505, 6.465, z + 0.15], BRASS, o);
-  pushBox(s, [7.41, 6.37, z + 0.15, 7.425, 6.43, z + 0.19], [128, 66, 36], o);
-  pushBox(s, [7.44, 6.38, z + 0.15, 7.455, 6.44, z + 0.18], [128, 66, 36], o);
-  pushBox(s, [7.38, 6.54, z, 7.5, 6.66, z + 0.12], [222, 164, 52], o);
-  pushBox(s, [7.39, 6.55, z + 0.02, 7.49, 6.65, z + 0.1], [255, 196, 84], { glow: true });
-  pushBox(s, [7.375, 6.535, z + 0.12, 7.505, 6.665, z + 0.14], [176, 120, 60], o);
-  pushBox(s, [7.43, 6.59, z + 0.14, 7.45, 6.61, z + 0.25], [150, 100, 60], o);
-  pushBox(s, [7.42, 6.58, z + 0.2, 7.46, 6.62, z + 0.23], [150, 100, 60], o);
-  // El colador del té, sobre la taza, si toca té
-  if (te) pushBox(s, [7.43, 6.01, z + 0.14, 7.51, 6.09, z + 0.16], BRASS, o);
-  // La taza, bajo el grupo, y el chorro mientras se vierte
-  taza(s, 7.47, 6.05, z, { ...receta, lleno, humo }, g);
-  if (vertiendo && receta.bebida) {
-    const tope = z + 0.026 + Math.min(1, lleno) * 0.078;
-    pushBox(s, [7.465, 6.045, tope, 7.475, 6.055, te ? z + 0.14 : z + 0.2], colorBebida({ ...receta, leche: 'sin' }), { glow: true });
+
+  // ── La tetera de hierro: en su salvamanteles o, al levantarla, sobre la taza e inclinada ──
+  const alzada = ahora('tetera') ? (pose.alzada ?? 0) : 0;
+  pushBox(s, [TETERA.x - 0.12, TETERA.y - 0.1, z, TETERA.x + 0.12, TETERA.y + 0.1, z + 0.02], BRASS, o);
+  {
+    const k = Math.min(1, alzada / 0.6);
+    const xfK = giro([TETERA.x, TETERA.y, z + 0.02], 'x', k * 0.7, desplaza(k * (7.56 - TETERA.x), k * (6.22 - TETERA.y), k * 0.2));
+    const ok = { g, xf: xfK };
+    const { x, y } = TETERA;
+    pushBox(s, [x - 0.1, y - 0.08, z + 0.02, x + 0.1, y + 0.08, z + 0.18], [52, 78, 76], ok);
+    pushBox(s, [x - 0.06, y - 0.04, z + 0.18, x + 0.06, y + 0.04, z + 0.21], [44, 64, 62], ok);
+    pushBox(s, [x - 0.02, y - 0.02, z + 0.21, x + 0.02, y + 0.02, z + 0.24], BRASS, ok);
+    // El pico, hacia la taza
+    pushBox(s, [x - 0.02, y - 0.14, z + 0.07, x + 0.02, y - 0.08, z + 0.11], [52, 78, 76], ok);
+    pushBox(s, [x - 0.02, y - 0.17, z + 0.11, x + 0.02, y - 0.13, z + 0.14], [52, 78, 76], ok);
+    pushBox(s, [x - 0.01, y - 0.06, z + 0.24, x + 0.01, y - 0.04, z + 0.32], BRASS, ok);
+    pushBox(s, [x - 0.01, y + 0.04, z + 0.24, x + 0.01, y + 0.06, z + 0.32], BRASS, ok);
+    pushBox(s, [x - 0.01, y - 0.06, z + 0.32, x + 0.01, y + 0.06, z + 0.34], BRASS, ok);
+    if (ahora('tetera') && pulsado && alzada >= 0.6) chorro(s, TAZA_EN.x + 0.01, TAZA_EN.y + 0.01, z + 0.1, z + 0.3, [214, 220, 214], 0.005);
   }
-  // Lo elegido, con su marco
-  for (const cosa of Object.values(BARRA_COSAS)) if (receta[cosa.parte] === cosa.valor) marcoBarra(s, cosa.box);
+
+  // ── El colador sobre la taza (té): con las hojas dentro; sube y baja con el dedo ──
+  if (te && !hechos.colador) {
+    const alto = (p('colador').altura ?? 0) * 0.05;
+    const xfC = desplaza(0, 0, ahora('colador') ? alto : 0);
+    const { x, y } = TAZA_EN;
+    pushBox(s, [x - 0.04, y - 0.04, z + 0.13, x + 0.04, y + 0.04, z + 0.15], BRASS, { g, xf: xfC });
+    pushBox(s, [x - 0.008, y + 0.04, z + 0.14, x + 0.008, y + 0.12, z + 0.15], BRASS, { g, xf: xfC });
+    if (vista.hojas) pushBox(s, [x - 0.03, y - 0.03, z + 0.15, x + 0.03, y + 0.03, z + 0.16], receta.grano === 'intenso' ? [60, 40, 28] : [110, 140, 70], { g, xf: xfC });
+  }
+  // La cuchara del té: del tarro elegido al colador, por encima
+  if (ahora('cuchara') && receta.grano) {
+    const tt = pose.t ?? 0;
+    const y0 = TARROS[receta.grano];
+    const x = TARRO_X + (TAZA_EN.x - TARRO_X) * tt;
+    const y = y0 + (TAZA_EN.y - y0) * tt;
+    const zz = z + 0.3 + Math.sin(tt * Math.PI) * 0.08;
+    pushBox(s, [x - 0.035, y - 0.03, zz, x + 0.035, y + 0.03, zz + 0.014], BRASS, o);
+    pushBox(s, [x - 0.025, y - 0.022, zz + 0.014, x + 0.025, y + 0.022, zz + 0.03], receta.grano === 'intenso' ? [60, 40, 28] : [110, 140, 70], o);
+    pushBox(s, [x - 0.16, y - 0.009, zz + 0.012, x - 0.035, y + 0.009, zz + 0.022], BRASS, o);
+    pushBox(s, [x - 0.18, y - 0.014, zz + 0.014, x - 0.15, y + 0.014, zz + 0.026], NOGAL, o);
+  }
+
+  // ── Las jarritas de leche: la elegida va bajo la lanza para cremarla y luego sobre la taza para servir ──
+  for (const [tipo, y] of Object.entries(JARRAS)) {
+    const mia = receta.leche === tipo;
+    if (mia && ahora('vapor')) {
+      const inc = pose.inclina ?? 0;
+      const xf = giro([JARRA_X, y, z], 'x', inc * 0.45, desplaza(VAPOR.x - JARRA_X, VAPOR.y - y, 0.01));
+      jarrita(s, JARRA_X, y, tipo, { xf, espuma: pose.espuma ?? 0 });
+      if (pulsado && Math.abs(inc) >= 0.5)
+        for (const [dx, dz] of [
+          [0.02, 0.24],
+          [-0.015, 0.3],
+          [0.01, 0.36],
+        ])
+          pushBox(s, [VAPOR.x + dx - 0.01, VAPOR.y - 0.01, z + dz, VAPOR.x + dx + 0.01, VAPOR.y + 0.01, z + dz + 0.02], [228, 222, 214], o);
+    } else if (mia && ahora('verter')) {
+      const xf = giro([JARRA_X, y, z], 'y', -(0.5 + (pose.vertido ?? 0) * 0.4), desplaza(T.x + 0.17 - JARRA_X, T.y + (pose.x ?? 0) * 0.025 - y, 0.1));
+      jarrita(s, JARRA_X, y, tipo, { xf, espuma: 1, g: 0.72 });
+      if (pulsado) chorro(s, T.x + 0.035, T.y + (pose.x ?? 0) * 0.025, z + 0.1, z + 0.19, [236, 228, 212], 0.005);
+    } else jarrita(s, JARRA_X, y, tipo, { espuma: mia && hechos.vapor && !hechos.verter ? 1 : 0 });
+  }
+
+  // ── La lata de canela (se agita sobre la taza) y el tarro de miel con su cazo (dibuja el hilo) ──
+  if (ahora('agitar')) {
+    // Boca abajo, justo encima de la taza: gira sobre su centro y se balancea con el dedo; el polvo cae en vertical
+    const vai = pose.x ?? 0;
+    const sobre = 0.25;
+    const xf = giro([CANELA.x, CANELA.y, z + 0.075], 'x', Math.PI + vai * 0.25, desplaza(T.x - CANELA.x, T.y - CANELA.y + vai * 0.025, sobre - 0.075));
+    pushBox(s, [CANELA.x - 0.05, CANELA.y - 0.05, z, CANELA.x + 0.05, CANELA.y + 0.05, z + 0.13], [150, 78, 48], { g, xf });
+    pushBox(s, [CANELA.x - 0.055, CANELA.y - 0.055, z + 0.13, CANELA.x + 0.055, CANELA.y + 0.055, z + 0.15], BRASS, { g, xf });
+    if (pulsado)
+      for (let k = 0; k < 4; k += 1) {
+        const dz = 0.12 + k * 0.012;
+        const dy = vai * 0.025 + [-0.012, 0.008, -0.004, 0.012][k];
+        pushBox(s, [T.x - 0.004, T.y + dy - 0.004, z + dz, T.x + 0.004, T.y + dy + 0.004, z + dz + 0.006], [140, 72, 40], o);
+      }
+  } else {
+    pushBox(s, [CANELA.x - 0.06, CANELA.y - 0.06, z, CANELA.x + 0.06, CANELA.y + 0.06, z + 0.13], [150, 78, 48], o);
+    pushBox(s, [CANELA.x - 0.065, CANELA.y - 0.065, z + 0.13, CANELA.x + 0.065, CANELA.y + 0.065, z + 0.15], BRASS, o);
+    pushBox(s, [CANELA.x - 0.03, CANELA.y - 0.03, z + 0.15, CANELA.x - 0.015, CANELA.y + 0.03, z + 0.19], [128, 66, 36], o);
+  }
+  pushBox(s, [MIEL.x - 0.06, MIEL.y - 0.06, z, MIEL.x + 0.06, MIEL.y + 0.06, z + 0.12], [222, 164, 52], o);
+  pushBox(s, [MIEL.x - 0.05, MIEL.y - 0.05, z + 0.02, MIEL.x + 0.05, MIEL.y + 0.05, z + 0.1], [255, 196, 84], { glow: true });
+  pushBox(s, [MIEL.x - 0.065, MIEL.y - 0.065, z + 0.12, MIEL.x + 0.065, MIEL.y + 0.065, z + 0.14], [176, 120, 60], o);
+  {
+    const ult = ahora('hilo') ? pose.puntos?.at(-1) : null;
+    const [cx, cy, cz] = ult ? [T.x - ult[1] * 0.034, T.y + ult[0] * 0.034, z + 0.15] : [MIEL.x, MIEL.y, z + 0.14];
+    const xfD = ult ? giro([cx, cy, cz], 'y', -0.7) : null;
+    pushBox(s, [cx - 0.006, cy - 0.006, cz, cx + 0.006, cy + 0.006, cz + 0.12], [150, 100, 60], { g, xf: xfD });
+    pushBox(s, [cx - 0.016, cy - 0.016, cz - 0.02, cx + 0.016, cy + 0.016, cz + 0.01], [176, 118, 64], { g, xf: xfD });
+    if (ult && pulsado) pushBox(s, [cx - 0.003, cy - 0.003, z + 0.11, cx + 0.003, cy + 0.003, cz - 0.02], [214, 146, 48], { g: 0.85 });
+  }
+
+  // ── Bloque 4a: el hornillo de hierro con el cazo de cobre del chocolate y su molinillo de madera ──
+  {
+    const { x, y } = CAZO;
+    const choco = receta.bebida === 'chocolate';
+    pushBox(s, [x - 0.09, y - 0.09, z, x + 0.09, y + 0.09, z + 0.05], [52, 48, 46], o);
+    pushBox(s, [x - 0.095, y - 0.095, z + 0.05, x + 0.095, y + 0.095, z + 0.06], [74, 68, 64], o);
+    // El fuego, bajito, solo si hoy toca chocolate
+    pushBox(s, [x - 0.05, y - 0.05, z + 0.06, x + 0.05, y + 0.05, z + 0.064], choco ? [255, 150, 70] : [90, 60, 50], { glow: choco });
+    for (const [dx, dy] of [
+      [-0.06, -0.06],
+      [0.06, -0.06],
+      [-0.06, 0.06],
+      [0.06, 0.06],
+    ])
+      pushBox(s, [x + dx - 0.006, y + dy - 0.006, z - 0.01, x + dx + 0.006, y + dy + 0.006, z], [40, 36, 34], o);
+    // El cazo: en el hornillo o, al servir, sobre la taza e inclinado (como la tetera)
+    const inc = ahora('cazo') ? (pose.inclina ?? 0) : 0;
+    const servido = p('cazo').servido ?? 0;
+    const k = Math.min(1, inc / 0.6);
+    const xfZ = ahora('cazo') ? giro([x, y, z + 0.064], 'x', k * 0.85, desplaza(k * (TAZA_EN.x + 0.06 - x), k * (TAZA_EN.y + 0.16 - y), k * 0.2)) : null;
+    const oz = { g, xf: xfZ };
+    const zc = z + 0.064;
+    pushBox(s, [x - 0.07, y - 0.07, zc, x + 0.07, y + 0.07, zc + 0.012], COBRE, oz);
+    pushBox(s, [x - 0.07, y - 0.07, zc, x - 0.058, y + 0.07, zc + 0.11], COBRE, oz);
+    pushBox(s, [x + 0.058, y - 0.07, zc, x + 0.07, y + 0.07, zc + 0.11], COBRE, oz);
+    pushBox(s, [x - 0.07, y - 0.07, zc, x + 0.07, y - 0.058, zc + 0.11], COBRE, oz);
+    pushBox(s, [x - 0.07, y + 0.058, zc, x + 0.07, y + 0.07, zc + 0.11], COBRE, oz);
+    aro(s, x, y, 0.074, 0.016, zc + 0.1, zc + 0.112, COBRE_L, oz);
+    // El pico, hacia la taza, y el mango de nogal hacia ti
+    pushBox(s, [x - 0.015, y - 0.09, zc + 0.09, x + 0.015, y - 0.07, zc + 0.11], COBRE_L, oz);
+    pushBox(s, [x - 0.24, y - 0.012, zc + 0.08, x - 0.07, y + 0.012, zc + 0.1], NOGAL, oz);
+    pushBox(s, [x - 0.26, y - 0.016, zc + 0.078, x - 0.22, y + 0.016, zc + 0.102], BRASS, oz);
+    // Dentro, el chocolate (en cuanto se elige el cacao), que se espesa al remover y baja al servir
+    if (choco && receta.grano && servido < 1) {
+      const c = colorBebida(receta);
+      const nivel = zc + 0.012 + 0.07 * (1 - servido * 0.85);
+      pushBox(s, [x - 0.058, y - 0.058, zc + 0.012, x + 0.058, y + 0.058, nivel], c, oz);
+      // Los remolinos, más claros, que deja el molinillo
+      const espeso = p('molinillo').espeso ?? 0;
+      const giros = Math.round(espeso * 6);
+      for (let q = 0; q < giros; q += 1) {
+        const a = q * 1.05 + (p('molinillo').angulo ?? 0) * 0.2;
+        const r = 0.018 + (q % 3) * 0.011;
+        pushBox(
+          s,
+          [x + Math.cos(a) * r - 0.006, y + Math.sin(a) * r - 0.006, nivel, x + Math.cos(a) * r + 0.006, y + Math.sin(a) * r + 0.006, nivel + 0.003],
+          c.map((v) => Math.min(255, v + 46)),
+          oz,
+        );
+      }
+      // Un poco de vapor cuando ya está espeso
+      if (espeso >= 1 && !ahora('cazo'))
+        for (const [dx, dz] of [
+          [-0.015, 0.05],
+          [0.012, 0.09],
+        ])
+          pushBox(s, [x + dx - 0.007, y - 0.007, nivel + dz, x + dx + 0.007, y + 0.007, nivel + dz + 0.014], [222, 212, 200], o);
+    }
+    if (ahora('cazo') && pulsado && inc >= 0.6) chorro(s, TAZA_EN.x, TAZA_EN.y + 0.01, z + 0.1, z + 0.3, colorBebida(receta), 0.006);
+    // El molinillo: un palo torneado con la cabeza de aros. Mientras se remueve, dentro del cazo y girando; si no, en la madera
+    if (ahora('molinillo')) {
+      const a = pose.angulo ?? 0;
+      const r = 0.032;
+      const mx = x + Math.cos(a) * r;
+      const my = y + Math.sin(a) * r;
+      pushBox(s, [mx - 0.007, my - 0.007, zc + 0.03, mx + 0.007, my + 0.007, zc + 0.3], WOOD_L, { g });
+      pushBox(s, [mx - 0.022, my - 0.022, zc + 0.03, mx + 0.022, my + 0.022, zc + 0.05], WOOD_L, { g });
+      pushBox(s, [mx - 0.016, my - 0.016, zc + 0.055, mx + 0.016, my + 0.016, zc + 0.07], NOGAL, { g });
+      pushBox(s, [mx - 0.012, my - 0.012, zc + 0.28, mx + 0.012, my + 0.012, zc + 0.31], NOGAL, { g });
+    } else if (!hechos.molinillo || !choco) {
+      const yy = y + 0.13;
+      pushBox(s, [x - 0.14, yy - 0.006, z, x + 0.1, yy + 0.006, z + 0.012], WOOD_L, o);
+      pushBox(s, [x + 0.06, yy - 0.02, z, x + 0.1, yy + 0.02, z + 0.035], WOOD_L, o);
+      pushBox(s, [x + 0.07, yy - 0.016, z + 0.035, x + 0.09, yy + 0.016, z + 0.04], NOGAL, o);
+    }
+  }
+  // ── Bloque 4a: el bol de loza con la nata y las varillas de alambre ──
+  {
+    const { x, y } = BOL;
+    const azul = [96, 128, 170];
+    pushBox(s, [x - 0.05, y - 0.05, z, x + 0.05, y + 0.05, z + 0.012], LOZA, o);
+    pushBox(s, [x - 0.07, y - 0.07, z + 0.012, x - 0.058, y + 0.07, z + 0.09], LOZA, o);
+    pushBox(s, [x + 0.058, y - 0.07, z + 0.012, x + 0.07, y + 0.07, z + 0.09], LOZA, o);
+    pushBox(s, [x - 0.07, y - 0.07, z + 0.012, x + 0.07, y - 0.058, z + 0.09], LOZA, o);
+    pushBox(s, [x - 0.07, y + 0.058, z + 0.012, x + 0.07, y + 0.07, z + 0.09], LOZA, o);
+    aro(s, x, y, 0.072, 0.014, z + 0.065, z + 0.075, azul, o);
+    // La nata: líquida al principio; al batir sube y le salen picos
+    const montada = p('batir').montada ?? 0;
+    const nata = [248, 244, 234];
+    if (!hechos.batir || receta.toque !== 'nata') {
+      const alto = z + 0.03 + 0.03 * montada;
+      pushBox(s, [x - 0.058, y - 0.058, z + 0.012, x + 0.058, y + 0.058, alto], nata, { g: 0.82 });
+      const picos = Math.round(montada * 5);
+      for (const [dx, dy] of [
+        [-0.03, -0.02],
+        [0.02, 0.03],
+        [0.03, -0.025],
+        [-0.02, 0.028],
+        [0, 0],
+      ].slice(0, picos))
+        pushBox(s, [x + dx - 0.01, y + dy - 0.01, alto, x + dx + 0.01, y + dy + 0.01, alto + 0.016], nata, { g: 0.76 });
+    }
+    // Las varillas: girando en el bol mientras se bate; si no, apoyadas dentro
+    const a = ahora('batir') ? (pose.angulo ?? 0) : 0.7;
+    const r = ahora('batir') ? 0.022 : 0.012;
+    const vx = x + Math.cos(a) * r;
+    const vy = y + Math.sin(a) * r;
+    const xfV = ahora('batir') ? null : giro([x, y, z + 0.03], 'x', 0.35);
+    for (const [ox, oy] of [
+      [-0.018, 0],
+      [0.018, 0],
+      [0, -0.018],
+      [0, 0.018],
+    ]) {
+      pushBox(s, [vx + ox - 0.0025, vy + oy - 0.0025, z + 0.03, vx + ox + 0.0025, vy + oy + 0.0025, z + 0.14], ACERO, { g, xf: xfV });
+    }
+    pushBox(s, [vx - 0.02, vy - 0.02, z + 0.026, vx + 0.02, vy + 0.02, z + 0.032], ACERO, { g, xf: xfV });
+    pushBox(s, [vx - 0.01, vy - 0.01, z + 0.14, vx + 0.01, vy + 0.01, z + 0.25], NOGAL, { g, xf: xfV });
+  }
+
+  // ── La taza, bajo el grupo ──
+  taza(s, T.x, T.y, z, receta, vista, { humo: lista && !reduced(), g });
+  // Lo que se puede elegir ahora, con su marco
+  if (elige) for (const cosa of Object.values(BARRA_COSAS)) if (cosa.parte === elige && (!cosa.carta || carta.includes(cosa.carta))) marcoBarra(s, cosa.box, receta[elige] === cosa.valor ? [255, 226, 160] : [214, 150, 70]);
 }
-/** La taza que llevas en la mano (en el sitio de la cámara: x a la derecha, z arriba, y hacia ti). */
-function tazaEnMano(receta) {
+/** La taza que llevas en la mano (en el sitio de la cámara: x a la derecha, z arriba, y hacia ti), con lo que lleve. */
+function tazaEnMano({ receta = {}, vista = {} } = {}) {
   const s = kit();
-  taza(s, 0, 0, 0, { ...receta, lleno: 1, humo: true }, 0.62);
+  taza(s, 0, 0, 0, receta, { ...vista, lleno: 1 }, { humo: true, g: 0.62 });
   return s;
 }
 /**
@@ -977,10 +1576,51 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       m.position.set(SW / 2, SH / 2, SD);
     },
   );
-  {
+  // Lo que tapa el fondo en el nivel 1 (la cortina y el caballete), que se recoge al subir al nivel 2
+  const telon = (() => {
     const s = kit();
     cortina(s);
     caballete(s);
+    const m = new Mesh(own(geometryOf(s)), flat);
+    scene.add(m);
+    return m;
+  })();
+  // Bloque 4a: el nivel 2 (la viga y el ventanal con el puerto) y el nivel 3 (estanterías altas y chimenea)
+  const nivel2 = (() => {
+    const s = kit();
+    viga(s);
+    ventanal(s);
+    const m = new Mesh(own(geometryOf(s)), flat);
+    m.visible = false;
+    scene.add(m);
+    return m;
+  })();
+  const puerto = plane(VENTANAL.x1 - VENTANAL.x0, VENTANAL.z1 - VENTANAL.z0, paintPuerto(), (m) => {
+    m.position.set((VENTANAL.x0 + VENTANAL.x1) / 2, (VENTANAL.z0 + VENTANAL.z1) / 2, 0.03);
+    m.visible = false;
+  });
+  const nivel3 = (() => {
+    const s = kit();
+    estanteriasAltas(s);
+    chimenea(s);
+    const m = new Mesh(own(geometryOf(s)), flat);
+    m.visible = false;
+    scene.add(m);
+    return m;
+  })();
+  const resplandor = plane(
+    2.6,
+    1.8,
+    paintResplandor(),
+    (m) => {
+      m.rotation.x = -Math.PI / 2;
+      m.position.set((CHIMENEA.x0 + CHIMENEA.x1) / 2, 0.02, CHIMENEA.hondo + 0.7);
+      m.visible = false;
+    },
+    { glow: true, smooth: true },
+  );
+  {
+    const s = kit();
     mostrador(s);
     bombilla(s);
     estanteria(s);
@@ -1009,7 +1649,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       (iy === 5 && ix > 2 && ix < 21 && ix % 3 === 0);
     return boceto ? rgb(150, 144, 136) : rgb(236, 230, 214);
   });
-  plane(1.3, 0.98, lamina, (m) => m.position.set(CABALLETE.x, 1.33, CABALLETE.y + 0.13));
+  const laminaPlano = plane(1.3, 0.98, lamina, (m) => m.position.set(CABALLETE.x, 1.33, CABALLETE.y + 0.13));
   // El cartel «SE TRASPASA», colgado de la puerta de cara al local, con su cordel
   const cartel = plane(CARTEL.ancho, CARTEL.alto, paintCartel(), (m) => {
     m.rotation.y = Math.PI;
@@ -1098,25 +1738,32 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
 
   // ── El plano: lo colocado, con tus libros en las estanterías ──
   const LIBROS_POR_ESTANTERIA = 56;
+  const CABEN = { 'cafe-estanteria': LIBROS_POR_ESTANTERIA, 'cafe-estanteria-alta': 96 };
   const planoGrupo = new Group();
   scene.add(planoGrupo);
-  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [] };
+  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1 };
   let modo = { decorar: false, sel: null, mal: false };
   let piezas = [];
   let obstaculos = [];
-  const rejilla = plane(
-    CUADRICULA.w * CUADRO.celda,
-    CUADRICULA.d * CUADRO.celda,
-    paintRejilla(),
-    (m) => {
-      m.rotation.x = -Math.PI / 2;
-      const o = enMundo(0, 0);
-      m.position.set(o.x + (CUADRICULA.w * CUADRO.celda) / 2, 0.012, o.y + (CUADRICULA.d * CUADRO.celda) / 2);
-      m.visible = false;
-    },
-    { glow: true },
-  );
-  rejilla.renderOrder = 2;
+  const hacerRejilla = (nivel) => {
+    const { desde, hasta } = filasDe(nivel);
+    const filas = hasta - desde;
+    const m = plane(
+      CUADRICULA.w * CUADRO.celda,
+      filas * CUADRO.celda,
+      paintRejilla(filas),
+      (p) => {
+        p.rotation.x = -Math.PI / 2;
+        const o = enMundo(0, desde);
+        p.position.set(o.x + (CUADRICULA.w * CUADRO.celda) / 2, 0.012, o.y + (filas * CUADRO.celda) / 2);
+        p.visible = false;
+      },
+      { glow: true },
+    );
+    m.renderOrder = 2;
+    return m;
+  };
+  const rejillas = { 1: hacerRejilla(1), 2: hacerRejilla(2) };
   function vaciarGrupo() {
     for (const m of planoGrupo.children.slice()) {
       planoGrupo.remove(m);
@@ -1127,16 +1774,19 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     vaciarGrupo();
     piezas = [];
     obstaculos = [];
-    let estanterias = 0;
-    // Los libros que no caben en las estanterías del café van a la de la pared
-    const enCafe = estado.plano.items.filter((i) => i.id === 'cafe-estanteria').length * LIBROS_POR_ESTANTERIA;
+    let usados = 0;
+    // Los libros que no caben en las estanterías del café van a la de la pared (la alta, 1.122, tiene cinco baldas)
+    const enCafe = estado.plano.items.reduce((s, i) => s + (CABEN[i.id] ?? 0), 0);
     for (const it of estado.plano.items) {
       const med = medidas(it.id);
       if (!med) continue;
       const f = footprint(med, it.rot);
       const o = enMundo(it.x, it.y);
-      const libros = it.id === 'cafe-estanteria' ? estado.libros.slice(estanterias * LIBROS_POR_ESTANTERIA, (estanterias + 1) * LIBROS_POR_ESTANTERIA) : [];
-      if (it.id === 'cafe-estanteria') estanterias += 1;
+      const cabe = CABEN[it.id] ?? 0;
+      const tramo = cabe ? estado.libros.slice(usados, usados + cabe) : [];
+      // Con los libros en cajas, una estantería sin ejemplares se queda vacía (sin lomos de relleno)
+      const libros = estado.vacias && !tramo.length && cabe ? null : tramo;
+      usados += cabe;
       const s = kit();
       for (const box of cajasDe(it.id, libros)) {
         const t = girar(med, it.rot, box.b);
@@ -1151,6 +1801,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     {
       const s = kit();
       if (estado.inaugurado) lomosPared(s, estado.libros.slice(enCafe));
+      if (estado.inaugurado && estado.cajas > 0) cajaDeReparto(s);
       // La pieza elegida en Decorar: un marco ámbar en el suelo (rojo si no cabe donde está)
       const sel = modo.decorar && estado.plano.items.find((i) => i.uid === modo.sel);
       if (sel && medidas(sel.id)) {
@@ -1171,7 +1822,16 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     trastos.visible = !estado.inaugurado;
     cartel.visible = !estado.inaugurado;
     abierto.visible = estado.inaugurado;
-    rejilla.visible = modo.decorar;
+    // Bloque 4a: el fondo del local según el nivel (la cortina hasta el 2; luego, la viga y el ventanal; en el 3, más)
+    const n = estado.inaugurado ? estado.nivel : 1;
+    telon.visible = n < 2;
+    laminaPlano.visible = n < 2;
+    nivel2.visible = n >= 2;
+    puerto.visible = n >= 2;
+    nivel3.visible = n >= 3;
+    resplandor.visible = n >= 3;
+    rejillas[1].visible = modo.decorar && n < 2;
+    rejillas[2].visible = modo.decorar && n >= 2;
     canvas.setAttribute(
       'aria-label',
       estado.inaugurado
@@ -1181,7 +1841,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     montarClientes();
     montarBarra();
   }
-  const opcionesPaso = () => ({ limpio: estado.inaugurado, muebles: [...obstaculos, ...obstaculosClientes] });
+  const opcionesPaso = () => ({ limpio: estado.inaugurado, muebles: [...obstaculos, ...obstaculosClientes], nivel: estado.inaugurado ? estado.nivel : 1 });
 
   // ── Bloque 3 (1.121): los clientes del día, sentados en las sillas y taburetes del plano (los que esperan, sin libro y
   // con su letrero; los atendidos, leyendo el libro que les diste). Si faltan asientos, de pie junto al escaparate. ──
@@ -1256,9 +1916,13 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   // ── La barra (revisión del bloque 3): la vista de la barra, lo elegido, la taza que se llena y la que llevas en la mano ──
   const barraGrupo = new Group();
   scene.add(barraGrupo);
-  let barra = { activa: false, receta: {}, lleno: 0, vertiendo: false };
+  let barra = { activa: false, est: {} };
   // De 0 (tus ojos) a 1 (la vista de la barra): un paso corto, directo con movimiento reducido
   let barraT = 0;
+  // La cámara de la barra va de un paso a otro (de cerca a cada objeto): «vista» es dónde está y «vistaMeta», adónde va
+  let vistaMeta = ENFOQUES.general;
+  let vista = { p: [...ENFOQUES.general.p], m: [...ENFOQUES.general.m] };
+  const vistaQuieta = () => vista.p.every((v, k) => Math.abs(v - vistaMeta.p[k]) < 0.002) && vista.m.every((v, k) => Math.abs(v - vistaMeta.m[k]) < 0.002);
   const pickersBarra = Object.entries(BARRA_COSAS).map(([id, cosa]) => {
     const [x0, y0, z0, x1, y1, z1] = cosa.box;
     const m = new Mesh(own(new BoxGeometry(x1 - x0, z1 - z0, y1 - y0)), hidden);
@@ -1274,21 +1938,21 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     }
     if (estado.inaugurado) {
       const s = kit();
-      barraKit(s, barra.activa ? barra.receta : {}, { lleno: barra.activa ? barra.lleno : 0, vertiendo: barra.vertiendo, humo: barra.lleno >= 1 && !reduced() });
+      barraKit(s, barra.activa ? barra.est : {});
       barraGrupo.add(new Mesh(geometryOf(s), flat));
     }
     invalidate();
   }
   let enMano = null;
   const sobreTodo = own(new MeshBasicMaterial({ vertexColors: true }));
-  function ponerEnMano(receta) {
+  function ponerEnMano(lleva) {
     if (enMano) {
       camera.remove(enMano);
       enMano.geometry.dispose();
       enMano = null;
     }
-    if (receta) {
-      enMano = new Mesh(geometryOf(tazaEnMano(receta)), sobreTodo);
+    if (lleva) {
+      enMano = new Mesh(geometryOf(tazaEnMano(lleva)), sobreTodo);
       enMano.position.set(0.15, -0.21, -0.58);
       enMano.rotation.y = -0.4;
       enMano.scale.setScalar(0.85);
@@ -1317,6 +1981,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   let py = INICIO.y;
   let yaw = INICIO.yaw;
   let walk = null;
+  // Bloque 4a: el recorrido de cámara al subir de nivel ({ t0, paso, puntos: [{ p, m }], fin }) o null
+  let tour = null;
   let raf = 0;
   let destroyed = false;
   let renders = 0;
@@ -1353,15 +2019,41 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       barraT = reduced() ? meta : Math.min(1, Math.max(0, barraT + (meta ? 1 : -1) * dt * 2.6));
       moving = moving || barraT !== meta;
     }
+    if (!vistaQuieta()) {
+      const k = reduced() ? 1 : 1 - Math.exp(-dt * 7);
+      for (const c of ['p', 'm']) vista[c] = vista[c].map((v, i) => (Math.abs(vistaMeta[c][i] - v) < 0.002 ? vistaMeta[c][i] : v + (vistaMeta[c][i] - v) * k));
+      moving = true;
+    }
     if (modo.decorar) {
-      const o = enMundo(CUADRICULA.w / 2, CUADRICULA.d / 2);
-      camera.position.set(o.x, 6.4, SD + 2.2);
-      camera.lookAt(o.x, 0, o.y - 0.4);
+      const { desde, hasta } = filasDe(estado.nivel);
+      const o = enMundo(CUADRICULA.w / 2, (desde + hasta) / 2);
+      const ancha = desde < 0;
+      camera.position.set(o.x, ancha ? 8.6 : 6.4, SD + (ancha ? 2.6 : 2.2));
+      camera.lookAt(o.x, 0, o.y - (ancha ? 0.2 : 0.4));
+    } else if (tour) {
+      // El recorrido al subir de nivel: de tu vista a lo nuevo y vuelta (con movimiento reducido no hay recorrido)
+      // (el reloj del cuadro puede ir unos milisegundos por detrás del inicio del recorrido)
+      const ahora = Math.max(0, (now - tour.t0) / 1000);
+      const tramo = Math.min(tour.puntos.length - 2, Math.floor(ahora / tour.paso));
+      const u = Math.min(1, (ahora - tramo * tour.paso) / tour.paso);
+      const k = u * u * (3 - 2 * u);
+      const [a, b] = [tour.puntos[tramo], tour.puntos[tramo + 1]];
+      const lerp = (x, y) => x.map((v, i) => v + (y[i] - v) * k);
+      const p = lerp(a.p, b.p);
+      const m = lerp(a.m, b.m);
+      camera.position.set(p[0], p[2], p[1]);
+      camera.lookAt(m[0], m[2], m[1]);
+      moving = true;
+      if (ahora >= tour.paso * (tour.puntos.length - 1)) {
+        const fin = tour.fin;
+        tour = null;
+        fin?.();
+      }
     } else {
       const k = barraT * barraT * (3 - 2 * barraT);
       const mezcla = (a, b) => a + (b - a) * k;
-      camera.position.set(mezcla(px, BARRA_CAM.x), mezcla(EYE, BARRA_CAM.z), mezcla(py, BARRA_CAM.y));
-      camera.lookAt(mezcla(px + Math.sin(yaw) * 6, BARRA_MIRA.x), mezcla(EYE + Math.tan(PITCH) * 6, BARRA_MIRA.z), mezcla(py + Math.cos(yaw) * 6, BARRA_MIRA.y));
+      camera.position.set(mezcla(px, vista.p[0]), mezcla(EYE, vista.p[2]), mezcla(py, vista.p[1]));
+      camera.lookAt(mezcla(px + Math.sin(yaw) * 6, vista.m[0]), mezcla(EYE + Math.tan(PITCH) * 6, vista.m[2]), mezcla(py + Math.cos(yaw) * 6, vista.m[1]));
     }
     camera.updateMatrixWorld();
     return moving;
@@ -1377,7 +2069,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     const out = {};
     for (const [id, s] of Object.entries(SITIOS)) {
       const p = project(...s.tag);
-      out[id] = { ...p, visible: !walk && !modo.decorar && !barra.activa && barraT === 0 && p.front };
+      const hay = id === 'libros' ? estado.inaugurado && estado.cajas > 0 : id === 'cortina' ? !(estado.inaugurado && estado.nivel >= 2) : true;
+      if (tour) {
+        out[id] = { ...p, visible: false };
+        continue;
+      }
+      out[id] = { ...p, visible: hay && !walk && !modo.decorar && !barra.activa && barraT === 0 && p.front };
     }
     for (const [n, c] of Object.entries(sitiosClientes)) {
       const p = project(c.x, c.y, c.z);
@@ -1430,7 +2127,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   }
   function pickAt(clientX, clientY) {
     rayAt(clientX, clientY);
-    return ray.intersectObjects(barra.activa ? pickersBarra : [...pickers, ...pickersClientes], false)[0]?.object.userData.id ?? null;
+    const sitios = pickers.filter((m) => (m.userData.id === 'libros' ? estado.inaugurado && estado.cajas > 0 : m.userData.id === 'cortina' ? !(estado.inaugurado && estado.nivel >= 2) : true));
+    return ray.intersectObjects(barra.activa ? pickersBarra : [...sitios, ...pickersClientes], false)[0]?.object.userData.id ?? null;
   }
   /** La pieza del plano bajo un punto de la pantalla (su uid), o null. */
   function piezaEn(clientX, clientY) {
@@ -1442,7 +2140,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     rayAt(clientX, clientY);
     if (!ray.ray.intersectPlane(floorPlane, hit)) return null;
     const c = enCasilla(hit.x, hit.z);
-    return c.x >= 0 && c.y >= 0 && c.x < CUADRICULA.w && c.y < CUADRICULA.d ? c : null;
+    return c.x >= 0 && c.y >= filasDe(estado.nivel).desde && c.x < CUADRICULA.w && c.y < CUADRICULA.d ? c : null;
   }
 
   /** Ir andando en línea recta hasta (x, y), parando antes de chocar; `face`, adónde mirar al llegar. */
@@ -1559,7 +2257,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     canvas,
     renders: () => renders,
     pose: () => ({ x: px, y: py, yaw }),
-    settled: () => !walk,
+    settled: () => !walk && vistaQuieta() && (barra.activa ? barraT === 1 : barraT === 0),
     /** Ir a un sitio ('pilar', 'cortina', 'escaparate' o 'entrada'). Promesa que acaba al llegar. */
     go(id) {
       if (id === 'entrada') return walkTo(INICIO.x, INICIO.y, { face: [INICIO.x + Math.sin(INICIO.yaw), INICIO.y + Math.cos(INICIO.yaw)] });
@@ -1592,10 +2290,10 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     },
     invalidate,
     /** El estado del local: si está inaugurado, su nombre, el plano y tus libros (títulos) para las estanterías. */
-    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [] } = {}) {
+    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1 } = {}) {
       const nombreAntes = estado.nombre;
       const abre = inaugurado && !estado.inaugurado;
-      estado = { inaugurado, nombre, plano, libros };
+      estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel };
       // Al abrir el café (o entrar ya abierto), la vista de todo el rincón
       if (abre) {
         walk = null;
@@ -1611,6 +2309,25 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       }
       montarPlano();
     },
+    /**
+     * Bloque 4a: el recorrido de cámara al subir de nivel, para enseñar lo que se ha abierto (al 2, el fondo con el ventanal;
+     * al 3, además, la chimenea y las estanterías altas) y volver a tu vista. Promesa que acaba al volver. Con movimiento
+     * reducido, nada (se ve al andar).
+     */
+    recorrido(nivel) {
+      if (reduced() || nivel < 2) return Promise.resolve();
+      walk = null;
+      const ojo = { p: [px, py, EYE], m: [px + Math.sin(yaw) * 6, py + Math.cos(yaw) * 6, EYE + Math.tan(PITCH) * 6] };
+      const puntos = [ojo, { p: [4.2, 9.4, 3.1], m: [3.8, 1.0, 1.4] }, { p: [3.8, 5.2, 2.0], m: [3.8, 0, 2.2] }];
+      if (nivel >= 3) puntos.push({ p: [5.2, 4.4, 2.0], m: [8.3, 0.4, 0.9] }, { p: [3.0, 4.2, 2.4], m: [0, 1.9, 2.6] });
+      puntos.push(ojo);
+      return new Promise((fin) => {
+        tour = { t0: performance.now(), paso: 1.5, puntos, fin };
+        invalidate();
+      });
+    },
+    /** ¿Está el recorrido en marcha? (para las pruebas) */
+    enRecorrido: () => Boolean(tour),
     /** Decorar: la vista desde arriba con la rejilla; `sel`, la pieza elegida; `mal`, si no cabe donde está. */
     decorar(on, { sel = null, mal = false } = {}) {
       walk = null;
@@ -1664,18 +2381,25 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         yaw = -Math.PI / 2;
         onMove({ x: px, y: py, yaw });
       }
-      barra = { activa: Boolean(on), receta: {}, lleno: 0, vertiendo: false };
+      barra = { activa: Boolean(on), est: {} };
+      vistaMeta = ENFOQUES.general;
+      if (on && barraT === 0) vista = { p: [...ENFOQUES.general.p], m: [...ENFOQUES.general.m] };
       ponerEnMano(on ? null : llevar);
       montarBarra();
     },
-    /** Lo elegido en la barra ({ bebida, grano, leche, toque }), lo que lleva la taza (0 a 1) y si se está vertiendo. */
-    setReceta(receta, { lleno = 0, vertiendo = false } = {}) {
-      barra = { ...barra, receta, lleno, vertiendo };
+    /**
+     * Lo que se ve en la barra en este momento: { receta, gesto, pose, pulsado, hechos, vista (`vistaTaza`), elige, lista,
+     * enfoque } (el enfoque, un paso o un gesto de `ENFOQUES`: la cámara se acerca a ese objeto).
+     */
+    setBarra(est = {}) {
+      barra = { ...barra, est };
+      const e = ENFOQUES[est.enfoque] ?? ENFOQUES.general;
+      vistaMeta = typeof e === 'function' ? e(est) : e;
       montarBarra();
     },
-    /** La taza en la mano (una receta) o nada. */
-    llevar(receta) {
-      ponerEnMano(receta);
+    /** La taza en la mano ({ receta, vista }) o nada. */
+    llevar(lleva) {
+      ponerEnMano(lleva);
     },
     /** Ir con la taza hasta un cliente (hasta donde se pueda andar) y mirarle. Promesa que acaba al llegar. */
     irACliente(n) {
@@ -1712,11 +2436,22 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       return walkTo(px + (c.x - px) * k, py + (c.y - py) * k, { face: [c.x, c.y] });
     },
     /** Dónde cae en la pantalla una cosa de la barra (para las pruebas). */
-    barraEnPantalla(id) {
+    barraEnPantalla(id, { cima = false } = {}) {
       aim(performance.now());
       const b = BARRA_COSAS[id]?.box;
       if (!b) return null;
-      const p = project((b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2);
+      // `cima`: encima de la cosa (donde va la «!» de ayuda), no en su centro; en la cafetera, sobre el cuerpo y no la palanca
+      const p = project((b[0] + b[3]) / 2, (b[1] + b[4]) / 2, cima ? Math.min(b[5], b[2] + 0.34) + 0.03 : (b[2] + b[5]) / 2);
+      const rect = canvas.getBoundingClientRect();
+      return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
+    },
+    /** Dónde cae en la pantalla una marca de la barra ('taza', 'manivela', 'portafiltro'…), en px de la ventana. */
+    barraMarca(nombre) {
+      aim(performance.now());
+      const tp = tazaPos(barra.est);
+      const m = nombre === 'taza' ? [tp.x, tp.y, BARRA_Z + 0.09] : BARRA_MARCAS[nombre];
+      if (!m) return null;
+      const p = project(...m);
       const rect = canvas.getBoundingClientRect();
       return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
     },

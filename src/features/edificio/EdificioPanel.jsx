@@ -511,7 +511,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   } else if (inShop) {
     // 1.119 (docs/qa/cafe-libreria.md, bloque 1): el bajo en traspaso, que será tu café-librería. Sobres, muebles y
     // reciclar ya no se ven aquí (Tienda.jsx se conserva sin montar; el servidor y tus datos no cambian)
-    body = <Cafe inventario={inventory} layoutPiso={me?.room ?? null} />;
+    body = <Cafe inventario={inventory} layoutPiso={me?.room ?? null} soundOn={soundOn} />;
   } else if (pisoId && !open) {
     body = <p className="ed-note">Este piso ya no está en tu edificio.</p>;
   } else if (open && mine && choosing) {

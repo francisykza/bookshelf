@@ -275,3 +275,85 @@ Sin probar en móviles reales: se dirá en cada entrega.
    - Solo leídos: la estantería empieza vacía y los clientes piden «algo que tengas».
 8. **Nombre de la moneda.**
    - **Granos (recomendada)** · Propinas · Terrones.
+
+## 11. Libros comprados en cajas (propuesta, 12-11-2026)
+
+Francisco, 12-11-2026: le gusta que en Tiny Bookshop los libros se compren con la moneda del juego, lleguen en cajas y
+se coloquen en las estanterías. Eligió **cajas por género**, **caja de bienvenida gratis** y, sin ejemplares, **«Solo el
+café»**. Se toma solo la mecánica (género), nunca su arte ni su interfaz. **Las cifras y la migración son una propuesta: las
+aprueba él antes de hacerlas.**
+
+- **La distribuidora** (en el café, un objeto de la escena: la caja de reparto junto a la puerta, con su albarán):
+  - lo que tienes **leído desbloquea su título**; con menos de 3 leídos, también «Leyendo» y «Quiero leer» (como ya se
+    aprobó para las fichas), marcados «aún sin leer»;
+  - **caja por género** (Novela, Fantasía, Misterio, Amor, Clásico, Ciencia ficción, Poesía, Historia, Biografía,
+    Juvenil; solo los géneros donde tengas algo): **5 ejemplares** al azar entre tus títulos de ese género, **10 granos**;
+  - **caja de un título concreto**: **3 ejemplares**, **9 granos** (más cara por ejemplar: eliges sin azar);
+  - lo que trae cada caja se ve **antes de pagar** («5 ejemplares de tu Fantasía, al azar entre 7 títulos»); sin sorteos de
+    rareza ni pity, y la caja **llega al momento** (sin esperas ni cuentas atrás).
+- **Colocar**: la caja aparece en el suelo del café; al tocarla se abre (los lomos saltan, como en un sobre, honesto) y
+  **se arrastran los lomos a los huecos de las baldas** de las estanterías del café (con la «!» en los huecos libres en
+  los niveles 1 y 2). Lo que no cabe se queda en la caja, sin perderse. Huecos: **12 en el nivel 1** (las estanterías que
+  ya tiene el local), y más con cada estantería o nivel (bloque 4).
+- **Recomendar**: las tres fichas salen **solo de lo que está en la balda** (si hay menos de tres títulos, menos fichas;
+  si no hay ninguno, solo «Solo el café», que cobra el café y solo pierde el punto del libro).
+  - Si el libro **encaja**, el cliente **se lleva el ejemplar** (sale de la balda) y paga **+2 granos** además de lo de hoy.
+  - Si **no encaja**, lo hojea y lo devuelve a la balda: no se pierde el ejemplar.
+  - Cuentas: una caja de género (10) se recupera con 5 aciertos (+10), y además cada acierto sube las estrellas. Comprar
+    no es obligatorio para jugar; es lo que hace rendir el libro.
+- **Caja de bienvenida**: **8 ejemplares gratis**, una vez, al abrir el café (o al llegar esta función para los cafés ya
+  abiertos), elegidos entre tus títulos para que haya variedad de géneros.
+- **El servidor** (en la migración `20261211120000_cafe_clientes.sql`, que sigue sin aplicar, o en una nueva si ya se
+  aplicó): `cafe_libros` (por cuenta y título: clave, título y género que manda la app, ejemplares en caja y en balda,
+  hueco), `cafe_comprar_caja(genero | clave, titulos[])` (cobra con `for update`, nunca por debajo de 0, y elige al azar
+  en el servidor entre los títulos que manda la app), `cafe_colocar(clave, hueco)` y `cafe_bienvenida()` (una vez);
+  `cafe_servir` recibe además la clave del libro y descuenta el ejemplar solo si encaja. Como la app es la que conoce tu
+  biblioteca, **el servidor no puede comprobar que lo hayas leído**: por eso el techo diario de granos se mantiene (+2 por
+  ejemplar dentro del máximo del día, §6.3), y comprar cajas solo gasta.
+- **Preguntas para Francisco**: ¿estas cifras (caja de género 5 × 10 granos, de título 3 × 9, +2 por ejemplar que se
+  lleva, bienvenida de 8, 12 huecos en el nivel 1)? ¿Se hace antes del bloque 4 (recomendado: cambia cómo funciona el
+  libro y el bloque 4 añade estanterías) o dentro de él?
+
+## 12. Bloque 4a: subir de nivel, hitos y la carta (hecho, 1.122.0, 12-11-2026)
+
+Decisiones de Francisco (12-11-2026): partir el bloque 4 en **4a** y **4b**; **una receta nueva por nivel**, cada una con su
+gesto y su objeto (nivel 2 chocolate caliente, 3 nata montada, 4 vainilla, 5 bebidas con hielo); **tres hitos por nivel**
+(1.º un mueble nuevo del café a la venta, 2.º lo nuevo de la carta, 3.º 15 granos); **huecos 12 / 18 / 30 / 36 / 42**. Las
+cifras de tickets (10 / 20 / 40 / 60 / 100 y 1 a 5 al día, tope 5) y los umbrales de nivel ya estaban aprobados.
+
+Hecho en la 1.122.0 (detalle en SPEC §122): niveles, tickets del nivel y del día, hitos con marcas en la barra, el cartel de
+lo conseguido, la tienda del café en Decorar con nueve muebles nuevos, el fondo del local en los niveles 2 (ventanal al
+puerto) y 3 (estanterías hasta el techo y chimenea) con un recorrido de cámara, la cuadrícula tres filas más honda desde el
+nivel 2, la carta por días y el chocolate (cazo y molinillo) y la nata (bol y varillas) en la barra. Migración
+`20261212120000_cafe_niveles.sql`, sin aplicar.
+
+Interpretaciones mías, **aprobadas por Francisco con la entrega** («Sí, lo apruebo», 12-11-2026):
+- Los hitos caen a un cuarto, a la mitad y a tres cuartos de la barra de cada nivel (así ninguno coincide con la subida).
+- En el nivel 1 el 2.º hito no da nada (no hay carta nueva en el nivel 1); se puede cambiar por granos o por otro mueble.
+- Los 10 tickets del nivel 1 se cobran con el primer cliente atendido (no al inaugurar), y los del día, con el primer
+  cliente de cada día, en el mismo cartel.
+- Los muebles y precios nuevos: nivel 1 maceta (35, hito); nivel 2 banco corrido (70), vitrina de tartas (90), planta
+  grande (45) y perchero (40, hito); nivel 3 estantería alta (140, 96 libros), sillón orejero (120), mesita con quinqué (80)
+  y reloj de pared (160, hito). Están dentro de los márgenes que dio (nivel 2 de 40 a 90; nivel 3 de 80 a 160).
+- El cacao del chocolate se elige en el tarro y va directo al cazo (sin gesto propio): los dos gestos del chocolate son
+  remover con el molinillo e inclinar el cazo.
+
+Bloque 4b (siguiente, con su visto bueno): el altillo (nivel 4) con la vainilla (rascar la vaina) y la terraza y el
+escaparate de la fachada (nivel 5) con las bebidas con hielo (agitar la coctelera), sus muebles y sus hitos.
+
+### 12.1 El local crece con los niveles (decisión de Francisco, 12-11-2026)
+
+Francisco: en los niveles 1 a 5 se va haciendo más grande la planta de la calle; en los 6, 7 y 8, un sótano (bodega y
+tostadero) que crece en cada uno; pasado el 8, una segunda planta que también crece. Cada planta, con su cuadrícula de
+Decorar y clientes. «Que tuviese sentido la mejora de espacio con que la persona pueda ser más óptima, no solo decoración».
+Sustituye al altillo del nivel 4.
+
+Propuesta aprobada en lo general («Vale, me parece bien»); las cifras, pendientes de su aprobación:
+- **Más asientos, más clientes al día**: los clientes del día salen de las mesas y sillas colocadas, con un tope por nivel.
+- **Más baldas, más libros a la venta**: más ejemplares, más fichas que encajan, más estrellas y granos.
+- **El tostadero del sótano**: un saco tostado al día que se recoge cuando se quiera (sin plazo ni pérdida); abre granos
+  especiales en la carta, que pagan más.
+- **La segunda planta**: una función propia (p. ej., sala de lectura donde los habituales se quedan y dejan más reseñas),
+  por concretar.
+- Sin castigos, rachas que se pierdan, energía ni cuentas atrás. Umbrales, tickets y rendimiento de los niveles 6 en
+  adelante: los aprueba Francisco antes de hacerlos.

@@ -6,17 +6,23 @@
 // libros leídos llenan las estanterías. «Decorar»: la vista desde arriba con la rejilla; tocas un mueble para elegirlo, lo
 // arrastras o tocas una casilla para llevarlo, lo giras o lo guardas, y añades muebles del café o de tu casa (una copia
 // no está en dos sitios). Lo guarda el servidor (`cafeService.js`). Sin la migración del café, el bajo sigue en traspaso.
+// Libros en cajas (§121.3): lo leído llega a la distribuidora; las cajas se compran con granos, llegan al café (una caja de
+// reparto en el suelo, junto al mostrador) y sus lomos se colocan en la balda (`LibrosCafe.jsx`). Las estanterías enseñan
+// lo que hay en la balda y solo eso se recomienda. Al abrir el café, una caja de bienvenida de 8, gratis.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
 import { renderShopRoom } from '../shopRoom';
 import { CAFE_MUEBLES, CAFE_NOMBRES, cabe, deCasa, hueco, libresDeCasa, libresDelCafe, progresoNivel, uidNuevo } from './cafeCatalogo';
-import { GRANO, PILAR, PIZARRA, TAZA, iconoDe } from './cafeIconos';
+import { GRANO, LIBROS, PILAR, PIZARRA, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { cargarCafe, cargarDia, errorCafe, guardarCafe, inaugurarCafe, llegaHabitual, servirCliente } from './cafeService';
-import { EXCENTRICOS, HABITUALES, RESENAS, clientesDelDia, pedidosDelDia, sesionesDeHoy } from './cafeClientes';
+import { bienvenidaLibros, cargarCafe, cargarDia, comprarCafe, errorCafe, guardarCafe, inaugurarCafe, llegaHabitual, servirCliente } from './cafeService';
+import { cartaDe, hayLogro, umbralHito } from './cafeNiveles';
+import { LogroCafe } from './LogroCafe';
+import { BIENVENIDA, EXCENTRICOS, HABITUALES, RESENAS, clientesDelDia, enBalda, enCajas, librosDeLaBalda, pedidosDelDia, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
 import { Atender } from './Atender';
+import { LibrosCafe } from './LibrosCafe';
 import { dayKey } from '../../../domain/dates';
 import './cafe.css';
 
@@ -48,7 +54,7 @@ function librosDelCafe(books = []) {
 const PLANO_VACIO = { v: 1, items: [] };
 const nombreDe = (id) => CAFE_MUEBLES.find((m) => m.id === id)?.nombre ?? catalogItem(id)?.nombre ?? id;
 
-export function Cafe({ inventario = null, layoutPiso = null }) {
+export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) {
   const { state } = useLibrary();
   const host = useRef(null);
   const api = useRef(null);
@@ -70,6 +76,11 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
   const [borrador, setBorrador] = useState(null);
   const [sel, setSel] = useState(null);
   const [pestana, setPestana] = useState('cafe');
+  // Bloque 4a: lo conseguido en el último servicio (subida, hitos, tickets del día), que se enseña al acabar con el cliente
+  const [logro, setLogro] = useState(null);
+  // Lo que ve la escena: el nivel de antes mientras quede por enseñar el cartel de la subida (al cerrarlo, se abre lo nuevo
+  // con un recorrido de cámara)
+  const nivelEscena = logro && logro.a > logro.de ? logro.de : (local?.nivel ?? 1);
   // Bloque 3: el día (undefined: cargando; null: sin la migración de clientes), a quién se atiende y la pizarra
   const [hoy] = useState(() => dayKey());
   const [dia, setDia] = useState(undefined);
@@ -77,6 +88,13 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
   const [pizarra, setPizarra] = useState(false);
   const [ganado, setGanado] = useState(0);
   const dados = useRef({});
+  // Libros en cajas: undefined, cargando; null, sin la migración; si no, { huecos, bienvenida, libros: [{ clave, titulo, genero, caja, balda }] }
+  const [librosCafe, setLibrosCafe] = useState(undefined);
+  // El cuadro de tus libros: null (cerrado) o { hoja, recien } (las claves que acaban de llegar, para que salten)
+  const [panelLibros, setPanelLibros] = useState(null);
+  const pidiendoBienvenida = useRef(false);
+  // Al llegar la caja de bienvenida, la vista se vuelve hacia ella (en cuanto la escena esté lista)
+  const mirarCaja = useRef(false);
   // Mientras atiendes, los toques en la escena (la barra, el cliente al que llevas la taza) los recoge Atender
   const atenderToque = useRef(null);
   const registrarToque = useRef((fn) => {
@@ -85,7 +103,11 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
   const pidiendoHabitual = useRef(false);
   const vacio = sin3d ? renderShopRoom({ vacio: true }) : null;
   const libros = useMemo(() => librosDelCafe(state?.books), [state?.books]);
-  const titulos = useMemo(() => libros.map((b) => b.title), [libros]);
+  const titulosDistri = useMemo(() => titulosDelCafe(libros), [libros]);
+  // Las estanterías enseñan lo que hay en la balda, un lomo por ejemplar (sin la migración de los libros, tus leídos, como en la 1.120)
+  const titulos = useMemo(() => (librosCafe === null ? libros.map((b) => b.title) : (librosCafe?.libros ?? []).flatMap((b) => Array(b.balda).fill(b.titulo))), [librosCafe, libros]);
+  const deLaBalda = useMemo(() => librosDeLaBalda(librosCafe, libros), [librosCafe, libros]);
+  const porColocar = enCajas(librosCafe);
   const sesiones = sesionesDeHoy(state?.progress, hoy);
   const { pedidos, ctx } = useMemo(() => pedidosDelDia(dia, libros, hoy), [dia, libros, hoy]);
   const clientesHoy = useMemo(() => clientesDelDia(dia, pedidos), [dia, pedidos]);
@@ -93,6 +115,9 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
   const clienteAtendido = clientesHoy.find((c) => c.n === atendiendo) ?? null;
   const abierto = Boolean(local?.inaugurado);
   const decorando = borrador != null;
+  // La carta abierta (bloque 4a): el chocolate y la nata, según la reputación
+  const reputacion = local?.reputacion ?? 0;
+  const carta = useMemo(() => cartaDe(reputacion), [reputacion]);
   const frases = [...PILAR_DICE, local ? PILAR_FIN_CON : PILAR_FIN_SIN];
 
   useEffect(() => {
@@ -165,9 +190,14 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
       (r) => {
         if (!alive) return;
         setDia(r?.dia ?? null);
+        setLibrosCafe(r?.libros ?? null);
         if (r?.cafe) setLocal(r.cafe);
       },
-      () => alive && setDia(null),
+      () => {
+        if (!alive) return;
+        setDia(null);
+        setLibrosCafe(null);
+      },
     );
     return () => {
       alive = false;
@@ -188,14 +218,39 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
       });
   }, [dia, sesiones, hoy]);
 
+  // La caja de bienvenida: la primera vez que entras con el café abierto y algún título que ofrecer (una sola vez; el servidor
+  // lo comprueba)
+  useEffect(() => {
+    if (!librosCafe || librosCafe.bienvenida || !titulosDistri.length || pidiendoBienvenida.current) return;
+    pidiendoBienvenida.current = true;
+    bienvenidaLibros(titulosDistri)
+      .then((r) => {
+        if (r.libros) setLibrosCafe(r.libros);
+        if (r.cafe) setLocal(r.cafe);
+        setHablando(null);
+        if (r.caja.length) mirarCaja.current = true;
+        setAviso(
+          `¡Ha llegado una caja de la distribuidora! ${r.caja.length || BIENVENIDA} libros de los que has leído, de regalo. Tócala y colócalos en la balda: solo se recomienda lo que está a la vista.`,
+        );
+      })
+      .catch(() => {})
+      .finally(() => {
+        pidiendoBienvenida.current = false;
+      });
+  }, [librosCafe, titulosDistri]);
+
   // La escena sigue al estado: el local, el plano (o el borrador de Decorar) y tus libros
   const plano = useMemo(() => borrador ?? local?.plano ?? PLANO_VACIO, [borrador, local?.plano]);
   const selItem = borrador?.items.find((i) => i.uid === sel) ?? null;
   useEffect(() => {
     if (!ready) return;
-    api.current?.setLocal({ inaugurado: abierto, nombre: local?.nombre ?? null, plano, libros: titulos });
+    api.current?.setLocal({ inaugurado: abierto, nombre: local?.nombre ?? null, plano, libros: titulos, cajas: porColocar, vacias: librosCafe != null, nivel: nivelEscena });
     api.current?.decorar(decorando, { sel, mal: false });
-  }, [ready, abierto, local?.nombre, plano, titulos, decorando, sel]);
+    if (mirarCaja.current && porColocar > 0 && !decorando) {
+      mirarCaja.current = false;
+      api.current?.go('libros');
+    }
+  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena]);
   // Los clientes, sentados: los atendidos, con el libro que les diste (o uno de tu estantería si fue en otra visita)
   useEffect(() => {
     if (!ready) return;
@@ -241,6 +296,7 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
       }
       setAtendiendo(null);
       if (id === 'pilar') return hablar();
+      if (id === 'libros') return abrirLibros('caja');
       setHablando(null);
       setAviso((abierto ? AVISOS_ABIERTO : AVISOS)[id] ?? '');
       api.current?.go(id);
@@ -253,7 +309,7 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
       const it = borrador.items.find((i) => i.uid === uid);
       if (!it) return;
       const movido = { ...it, x: e.x, y: e.y };
-      if (cabe(borrador, movido)) setBorrador({ ...borrador, items: borrador.items.map((i) => (i.uid === uid ? movido : i)) });
+      if (cabe(borrador, movido, movido.uid, local?.nivel ?? 1)) setBorrador({ ...borrador, items: borrador.items.map((i) => (i.uid === uid ? movido : i)) });
     };
   });
 
@@ -282,18 +338,29 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
     setPizarra(false);
     setAtendiendo(n);
   }
+  function abrirLibros(hoja, recien = []) {
+    setAtendiendo(null);
+    setPizarra(false);
+    setAviso('');
+    setHablando(null);
+    setPanelLibros({ hoja, recien });
+    if (hoja === 'caja' && porColocar > 0) api.current?.go('libros');
+  }
   const servir = async ({ receta, encaja, libro }) => {
     const c = clienteAtendido;
-    const r = await servirCliente(hoy, c.n, receta, encaja);
+    const r = await servirCliente(hoy, c.n, receta, encaja, libro?.clave ?? null);
     dados.current[c.n] = libro?.title ?? null;
+    if (r.libros) setLibrosCafe(r.libros);
     if (r.cafe) setLocal(r.cafe);
     if (r.dia) setDia(r.dia);
-    setGanado(r.dado?.granos ?? 0);
+    setGanado((r.dado?.granos ?? 0) + (r.progreso?.granos ?? 0));
+    if (hayLogro(r.progreso)) setLogro(r.progreso);
     return r.dado;
   };
 
   const empezarDecorar = () => {
     setAtendiendo(null);
+    setPanelLibros(null);
     setPizarra(false);
     setAviso('');
     setHablando(null);
@@ -326,7 +393,7 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
     if (!selItem) return;
     for (const k of [1, 2, 3]) {
       const g = { ...selItem, rot: (selItem.rot + k) % 4 };
-      if (cabe(borrador, g)) {
+      if (cabe(borrador, g, g.uid, local?.nivel ?? 1)) {
         setBorrador({ ...borrador, items: borrador.items.map((i) => (i.uid === sel ? g : i)) });
         return;
       }
@@ -340,7 +407,7 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
   };
   const anadir = (id) => {
     setError('');
-    const sitio = hueco(borrador, id);
+    const sitio = hueco(borrador, id, undefined, local?.nivel ?? 1);
     if (!sitio) return setError('No queda sitio libre para ese mueble. Quita o mueve algo antes.');
     const uid = uidNuevo(borrador);
     setBorrador({ ...borrador, items: [...borrador.items, { uid, id, ...sitio }] });
@@ -355,6 +422,34 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
         .map((id) => ({ id, nombre: nombreDe(id), libres: libresDeCasa(inventario, layoutPiso, borrador, id) }))
     : [];
   const lista = pestana === 'cafe' ? delCafe : deTuCasa;
+  // La tienda (bloque 4a): los muebles del café con su precio; los de otro nivel o de un hito aún no alcanzado, con cómo se abren
+  const rep = local?.reputacion ?? 0;
+  const tienda = decorando
+    ? CAFE_MUEBLES.map((m) => {
+        const porNivel = m.nivel > (local?.nivel ?? 1);
+        const porHito = !porNivel && m.hito && rep < umbralHito(m.nivel, m.hito);
+        const cerrado = porNivel ? `Se abre en el nivel ${m.nivel}` : porHito ? `Hito ${m.hito} del nivel ${m.nivel}: faltan ${umbralHito(m.nivel, m.hito) - rep} de reputación` : null;
+        return { ...m, cerrado, tienes: local?.inventario?.[m.id] ?? 0 };
+      })
+    : [];
+  /** Cerrar el cartel de lo conseguido; si fue una subida, se abre lo nuevo del local y la cámara lo enseña. */
+  const cerrarLogro = () => {
+    const sube = logro && logro.a > logro.de ? logro.a : 0;
+    setLogro(null);
+    if (sube) requestAnimationFrame(() => api.current?.recorrido?.(sube));
+  };
+  const comprar = async (m) => {
+    setError('');
+    setOcupado(true);
+    try {
+      setLocal(await comprarCafe(m.id));
+      setAviso(`¡${m.nombre}, tuyo! Ya lo tienes en «Del café» para colocarlo.`);
+    } catch (e) {
+      setError(errorCafe(e));
+    } finally {
+      setOcupado(false);
+    }
+  };
 
   const prog = progresoNivel(local?.nivel ?? 1, local?.reputacion ?? 0);
   const titulo = abierto ? `${local.nombre}, tu café-librería.` : 'El café-librería del bajo: el local, vacío y en traspaso.';
@@ -395,8 +490,8 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
       {!sin3d && (
         <div className="cf3-tags" hidden={decorando}>
           {Object.entries(SITIOS).map(([id, s]) => (
-            <button key={id} type="button" className="cf3-tag" data-off="true" ref={(el) => (tagEls.current[id] = el)} onClick={() => pick.current(id)}>
-              {s.nombre}
+            <button key={id} type="button" className={`cf3-tag${id === 'libros' ? ' cf3-tag--libros' : ''}`} data-off="true" ref={(el) => (tagEls.current[id] = el)} onClick={() => pick.current(id)}>
+              {id === 'libros' ? `${s.nombre} · ${porColocar}` : s.nombre}
             </button>
           ))}
           {pendientes.map((c) => (
@@ -427,6 +522,9 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
               <span className="cf3-placa__nivel">{prog.nombre}</span>
               <span className="cf3-xp">
                 <span className="cf3-xp__lleno" style={{ width: `${Math.round(prog.hecho * 100)}%` }} />
+                {[1, 2, 3].map((k) => (
+                  <span key={k} className="cf3-xp__hito" style={{ left: `${k * 25}%` }} data-hecho={(local.reputacion ?? 0) >= umbralHito(local.nivel, k) ? 'true' : undefined} />
+                ))}
               </span>
               <span className="cf3-xp__cifra">{prog.meta ? `${prog.lleva} / ${prog.meta}` : `${prog.lleva}`}</span>
             </span>
@@ -441,13 +539,28 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
                 </span>
               )}
             </p>
+            {librosCafe && !decorando && (
+              <button
+                type="button"
+                className="cf3-pizarra-btn cf3-libros-btn"
+                aria-label={`Tus libros: ${enBalda(librosCafe)} en la balda${porColocar ? `, ${porColocar} por colocar` : ''}`}
+                aria-expanded={Boolean(panelLibros)}
+                onClick={() => (panelLibros ? setPanelLibros(null) : abrirLibros(porColocar ? 'caja' : 'distribuidora'))}
+              >
+                <PixelArt icono={LIBROS} />
+                {porColocar > 0 && <span className="cf3-pizarra-btn__n">{porColocar}</span>}
+              </button>
+            )}
             {dia && !decorando && (
               <button
                 type="button"
                 className="cf3-pizarra-btn"
                 aria-label={`La pizarra: ${dia.pizarra.length} reseña${dia.pizarra.length === 1 ? '' : 's'}`}
                 aria-expanded={pizarra}
-                onClick={() => setPizarra((v) => !v)}
+                onClick={() => {
+                  setPanelLibros(null);
+                  setPizarra((v) => !v);
+                }}
               >
                 <PixelArt icono={PIZARRA} />
                 {dia.pizarra.length > 0 && <span className="cf3-pizarra-btn__n">{dia.pizarra.length}</span>}
@@ -477,6 +590,7 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
           </button>
         </section>
       )}
+      {logro && !clienteAtendido && !decorando && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
       {decorando ? (
         <div className="cf3-balda" role="region" aria-label="Decorar tu café">
           <div className="cf3-balda__cabeza">
@@ -486,7 +600,10 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
                   <PixelArt icono={iconoDe(selItem.id)} />
                 </span>
               )}
-              <span className="cf3-balda__titulo">{selItem ? nombreDe(selItem.id) : 'Toca un mueble para moverlo'}</span>
+              {/* Mientras se decora, el aviso (p. ej., lo que acabas de comprar en la tienda) va aquí: el cuadro de Pilar no se ve */}
+              <span className="cf3-balda__titulo" role={aviso && !selItem ? 'status' : undefined}>
+                {selItem ? nombreDe(selItem.id) : aviso || 'Toca un mueble para moverlo'}
+              </span>
             </p>
             {selItem ? (
               <div className="cf3-balda__herr">
@@ -522,36 +639,70 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
                 <button type="button" role="tab" aria-selected={pestana === 'casa'} className="cf3-pestana" onClick={() => setPestana('casa')}>
                   De tu casa
                 </button>
+                <button type="button" role="tab" aria-selected={pestana === 'tienda'} className="cf3-pestana" onClick={() => setPestana('tienda')}>
+                  Tienda
+                </button>
               </div>
-              <ul className="cf3-balda__fila">
-                {lista.length ? (
-                  lista.map((m) => {
-                    const libres = m.libres > 0 ? `${m.libres} libre${m.libres === 1 ? '' : 's'}` : 'Todo puesto';
-                    return (
-                      <li key={m.id}>
-                        <button
-                          type="button"
-                          className="cf3-mueble"
-                          disabled={m.libres <= 0}
-                          onClick={() => anadir(m.id)}
-                          aria-label={`Poner ${m.nombre} (${m.libres > 0 ? libres : 'ninguno libre'})`}
-                        >
-                          <span className="cf3-mueble__icono">
-                            <PixelArt icono={iconoDe(m.id)} />
+              {pestana === 'tienda' ? (
+                <ul className="cf3-balda__fila cf3-tienda">
+                  {tienda.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        type="button"
+                        className="cf3-mueble cf3-mueble--tienda"
+                        data-cerrado={m.cerrado ? 'true' : undefined}
+                        disabled={ocupado || Boolean(m.cerrado) || local.granos < m.precio}
+                        onClick={() => comprar(m)}
+                        aria-label={m.cerrado ? `${m.nombre}: ${m.cerrado}` : `Comprar ${m.nombre} por ${m.precio} granos${m.tienes ? ` (tienes ${m.tienes})` : ''}`}
+                      >
+                        <span className="cf3-mueble__icono">
+                          <PixelArt icono={iconoDe(m.id)} />
+                        </span>
+                        {m.tienes > 0 && <span className="cf3-mueble__n">{m.tienes}</span>}
+                        <span className="cf3-mueble__nombre">{m.nombre}</span>
+                        {m.cerrado ? (
+                          <span className="cf3-mueble__cerrado">{m.cerrado}</span>
+                        ) : (
+                          <span className="cf3-mueble__precio" data-falta={local.granos < m.precio ? 'true' : undefined}>
+                            <PixelArt icono={GRANO} />
+                            {m.precio}
                           </span>
-                          <span className="cf3-mueble__n" data-cero={m.libres > 0 ? undefined : 'true'}>
-                            {Math.max(0, m.libres)}
-                          </span>
-                          <span className="cf3-mueble__nombre">{m.nombre}</span>
-                          <span className="px-sr">{libres}</span>
-                        </button>
-                      </li>
-                    );
-                  })
-                ) : (
-                  <li className="cf3-balda__vacio">{pestana === 'cafe' ? 'Aún no hay más muebles del café.' : 'De tu casa pueden venir mesas y lámparas que tengas libres.'}</li>
-                )}
-              </ul>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="cf3-balda__fila">
+                  {lista.length ? (
+                    lista.map((m) => {
+                      const libres = m.libres > 0 ? `${m.libres} libre${m.libres === 1 ? '' : 's'}` : 'Todo puesto';
+                      return (
+                        <li key={m.id}>
+                          <button
+                            type="button"
+                            className="cf3-mueble"
+                            disabled={m.libres <= 0}
+                            onClick={() => anadir(m.id)}
+                            aria-label={`Poner ${m.nombre} (${m.libres > 0 ? libres : 'ninguno libre'})`}
+                          >
+                            <span className="cf3-mueble__icono">
+                              <PixelArt icono={iconoDe(m.id)} />
+                            </span>
+                            <span className="cf3-mueble__n" data-cero={m.libres > 0 ? undefined : 'true'}>
+                              {Math.max(0, m.libres)}
+                            </span>
+                            <span className="cf3-mueble__nombre">{m.nombre}</span>
+                            <span className="px-sr">{libres}</span>
+                          </button>
+                        </li>
+                      );
+                    })
+                  ) : (
+                    <li className="cf3-balda__vacio">{pestana === 'cafe' ? 'Aún no hay más muebles del café.' : 'De tu casa pueden venir mesas y lámparas que tengas libres.'}</li>
+                  )}
+                </ul>
+              )}
             </>
           )}
           {error && (
@@ -560,14 +711,32 @@ export function Cafe({ inventario = null, layoutPiso = null }) {
             </p>
           )}
         </div>
+      ) : panelLibros && librosCafe ? (
+        <LibrosCafe
+          estado={librosCafe}
+          titulos={titulosDistri}
+          granos={local?.granos ?? 0}
+          hoja={panelLibros.hoja}
+          recien={panelLibros.recien}
+          soundOn={soundOn}
+          onCambio={(r) => {
+            if (r.libros) setLibrosCafe(r.libros);
+            if (r.cafe) setLocal(r.cafe);
+          }}
+          onCerrar={() => setPanelLibros(null)}
+        />
       ) : clienteAtendido ? (
         <Atender
           key={clienteAtendido.n}
           cliente={clienteAtendido}
           ctx={ctx}
-          libros={libros}
+          libros={deLaBalda}
           escena={ready && !sin3d ? api.current : null}
           registrarToque={registrarToque}
+          soundOn={soundOn}
+          ayudas={state.settings.ayudasCafe ?? 'auto'}
+          nivel={local?.nivel ?? 1}
+          carta={carta}
           onServir={servir}
           onCerrar={() => setAtendiendo(null)}
         />

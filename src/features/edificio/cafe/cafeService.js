@@ -6,13 +6,13 @@ import { CAFE_MUEBLES, cabe, deCasa, medidas } from './cafeCatalogo';
 const sinMigracion = (error) => error && (error.code === 'PGRST202' || error.code === '42883');
 
 /** El plano que llega, otra vez comprobado aquí: lo que no se sepa dibujar o no quepa, fuera. */
-function limpio(plano) {
+function limpio(plano, nivel = 1) {
   const out = { v: 1, items: [] };
   for (const it of Array.isArray(plano?.items) ? plano.items : []) {
     if (!it || typeof it.uid !== 'string' || !medidas(it.id)) continue;
     if (!CAFE_MUEBLES.some((m) => m.id === it.id) && !deCasa(it.id)) continue;
     const item = { uid: it.uid, id: it.id, x: it.x, y: it.y, rot: it.rot };
-    if (cabe(out, item)) out.items.push(item);
+    if (cabe(out, item, item.uid, nivel)) out.items.push(item);
   }
   return out;
 }
@@ -25,7 +25,7 @@ function normalizar(data) {
     reputacion: data.reputacion ?? 0,
     granos: data.granos ?? 0,
     inaugurado: Boolean(data.inaugurado),
-    plano: limpio(data.plano),
+    plano: limpio(data.plano, data.nivel ?? 1),
     inventario: data.inventario ?? {},
   };
 }
@@ -71,6 +71,9 @@ function normalizarDia(d) {
   const cliente = (c) => ({ n: entero(c.n), semilla: entero(c.semilla), servido: Boolean(c.servido), encaja: c.encaja == null ? null : Boolean(c.encaja), estrellas: estrellas(c.estrellas) });
   return {
     dia: String(d.dia ?? ''),
+    // La carta de ese día (bloque 4a) y los tickets del día que ya dio
+    carta: Array.isArray(d.carta) ? d.carta.filter((x) => x === 'chocolate' || x === 'nata') : [],
+    tickets: entero(d.tickets ?? 0),
     clientes: (Array.isArray(d.clientes) ? d.clientes : [])
       .map((c) => ({ ...cliente(c), excentrico: Boolean(c.excentrico), quien: c.excentrico ? entero(c.quien) % 6 : null }))
       .filter((c) => c.n >= 1 && c.n <= 5),
@@ -80,7 +83,33 @@ function normalizarDia(d) {
       .filter((r) => (r.dorada ? r.quien < 6 : r.quien < 12) && r.frase < 12),
   };
 }
-const conDia = (data) => ({ cafe: normalizar(data?.cafe), dia: normalizarDia(data?.dia), dado: data?.dado ?? null });
+/** Tus libros del café (§121.3): los huecos de la balda, si ya llegó la bienvenida y cada título con su caja y su balda. */
+function normalizarLibros(l) {
+  if (!l) return null;
+  const n = (v, max) => Math.min(max, Math.max(0, entero(v)));
+  return {
+    huecos: n(l.huecos, 99) || 12,
+    bienvenida: Boolean(l.bienvenida),
+    libros: (Array.isArray(l.libros) ? l.libros : [])
+      .filter((b) => b && typeof b.clave === 'string' && b.clave)
+      .map((b) => ({ clave: b.clave, titulo: String(b.titulo ?? ''), genero: String(b.genero ?? 'novela'), caja: n(b.caja, 999), balda: n(b.balda, 99) }))
+      .filter((b) => b.caja > 0 || b.balda > 0),
+  };
+}
+/** Lo nuevo tras un servicio (bloque 4a): niveles con sus tickets, hitos, granos de hito y tickets del día. */
+function normalizarProgreso(p) {
+  if (!p || typeof p !== 'object') return null;
+  const lista = (x) => (Array.isArray(x) ? x.filter((y) => y && Number.isInteger(y.nivel)) : []);
+  return { de: p.de ?? 1, a: p.a ?? 1, niveles: lista(p.niveles), hitos: lista(p.hitos), granos: p.granos ?? 0, ticketsDia: p.tickets_dia ?? 0, tickets: p.tickets ?? 0 };
+}
+const conDia = (data) => ({
+  cafe: normalizar(data?.cafe),
+  dia: normalizarDia(data?.dia),
+  libros: normalizarLibros(data?.libros),
+  dado: data?.dado ?? null,
+  progreso: normalizarProgreso(data?.progreso),
+});
+const conLibros = (data) => ({ cafe: normalizar(data?.cafe), libros: normalizarLibros(data?.libros), caja: Array.isArray(data?.caja) ? data.caja.filter((k) => typeof k === 'string') : [] });
 
 /** El día del café (`dia`, AAAA-MM-DD): los clientes, los habituales y la pizarra. null si falta la migración del bloque 3. */
 export async function cargarDia(dia) {
@@ -99,12 +128,40 @@ export async function llegaHabitual(dia) {
   return conDia(data);
 }
 
-/** Llevarle a un cliente lo preparado: la receta [bebida, grano, leche, toque] y si el libro que le diste encaja (null, sin libro). */
-export async function servirCliente(dia, cliente, receta, encaja) {
+/**
+ * Llevarle a un cliente lo preparado: la receta [bebida, grano, leche, toque], si el libro que le diste encaja (null, sin
+ * libro) y la clave de ese libro de la balda (si encaja, se lo lleva y paga 2 granos más).
+ */
+export async function servirCliente(dia, cliente, receta, encaja, libro = null) {
   const sb = await client();
-  const { data, error } = await sb.rpc('cafe_servir', { dia, cliente, receta, encaja: encaja ?? null });
+  const { data, error } = await sb.rpc('cafe_servir', { dia, cliente, receta, encaja: encaja ?? null, libro: libro ?? null });
   fail(error);
   return conDia(data);
+}
+
+// ── Libros en cajas (§121.3) ──
+/** La caja de bienvenida (8 ejemplares, gratis y una vez) con tus títulos (`titulosDelCafe`). */
+export async function bienvenidaLibros(titulos) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_bienvenida', { titulos });
+  fail(error);
+  return conLibros(data);
+}
+
+/** Comprar una caja en la distribuidora: de un género (`genero`) o de un título (`clave`). */
+export async function comprarCaja({ genero = null, clave = null }, titulos) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_comprar_caja', { genero, clave, titulos });
+  fail(error);
+  return conLibros(data);
+}
+
+/** Sube ejemplares de la caja a la balda (`poner`, una clave por ejemplar) o los devuelve a la caja (`quitar`). */
+export async function colocarLibros(poner = [], quitar = []) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_colocar', { poner, quitar });
+  fail(error);
+  return conLibros(data);
 }
 
 /** Lo que dice cada error del servidor, en palabras de la app. */
@@ -114,6 +171,9 @@ export function errorCafe(e) {
   if (/cafe:dia/.test(m)) return 'Ha cambiado el día: vuelve a entrar en el café.';
   if (/cafe:cliente|cafe:receta/.test(m)) return 'No se ha podido atender. Vuelve a entrar en el café.';
   if (/cafe:granos/.test(m)) return 'Aún no tienes granos suficientes.';
+  if (/cafe:bienvenida/.test(m)) return 'La caja de bienvenida ya te llegó.';
+  if (/cafe:titulos|cafe:titulo|cafe:genero/.test(m)) return 'La distribuidora no tiene ese libro. Vuelve a entrar en el café.';
+  if (/cafe:colocar/.test(m)) return 'Son demasiados de una vez.';
   if (/cafe:copias/.test(m)) return 'No te quedan copias libres de ese mueble: lo tienes puesto en tu piso o en el café.';
   if (/cafe:plano/.test(m)) return 'Eso no cabe ahí.';
   if (/cafe:ya/.test(m)) return 'El café ya está inaugurado.';
