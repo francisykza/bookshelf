@@ -110,12 +110,12 @@ test('salir a pie: de tu piso a la calle', async ({ page }, info) => {
   await expect(portal.locator('.ed-calle')).not.toHaveClass(/is-walking/, { timeout: 10000 });
   await page.waitForTimeout(400);
   await page.screenshot({ path: join(DIR, '4-app-5-portal.png') });
-  // A la tienda se va andando y te asomas
-  await portal.getByRole('button', { name: 'Entrar en la tienda del bajo' }).click();
+  // Al café-librería del bajo (la tienda hasta la 1.118) se va andando y te asomas
+  await portal.getByRole('button', { name: 'Entrar en el café-librería del bajo' }).click();
   await expect(portal.locator('.ed-calle')).toHaveClass(/is-walking/);
   await page.waitForTimeout(700);
   await page.screenshot({ path: join(DIR, '4-app-6-a-la-tienda.png') });
-  await expect(page.getByRole('dialog', { name: /tienda/i })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('dialog', { name: /café-librería/i })).toBeVisible({ timeout: 15000 });
   expect(errors.filter((e) => !/WebSocket|Failed to load resource/.test(e))).toEqual([]);
 });
 

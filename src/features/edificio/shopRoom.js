@@ -69,7 +69,9 @@ function toWorld(item, cat, base, lx, ly, lz) {
 }
 
 /** El local, amueblado. `mood` de la dependienta: 'base' o 'happy'. Devuelve las luces (puntos del mundo). */
-function buildShop(r, mood, near = false) {
+// `vacio` (1.119, el café-librería del bajo, bloque 1): el local en traspaso, sin el cartel del videoclub, sin el rincón de
+// muebles, el reciclaje ni el expositor de sobres; en su sitio, cajas de mudanza y lo que queda bajo sábanas.
+function buildShop(r, mood, near = false, vacio = false) {
   const lights = [];
   const box = (x0, y0, z0, x1, y1, z1, c, opts = {}) => {
     r.setId((opts.id ?? 0) | (opts.glow ? GLOW : 0));
@@ -159,6 +161,8 @@ function buildShop(r, mood, near = false) {
 
   // ── Pared de la izquierda: estanterías llenas y el cartel del videoclub de antes ──
   for (const y of [0.3, 2.35]) item('estanteria', { x: 0, y, rot: 3 });
+  if (vacio) cajasDeMudanza(box, r);
+  if (!vacio) {
   // Cartel (de madera, con letras de píxel pintadas en su cara)
   const label = 'VIDEOCLUB';
   const cols = [...label].reduce((w, ch) => w + FONT[ch][0].length + 1, 1);
@@ -198,6 +202,7 @@ function buildShop(r, mood, near = false) {
   item('lampara-mesa', { x: 3.9, y: 1.35 }, 0, ID.muebles, 0.9);
   // Etiqueta del precio colgando del sillón
   box(3.3, 3.42, 0.95, 3.52, 3.44, 1.22, CREAM, { id: ID.muebles, grain: 0 });
+  }
 
   // ── Guirnalda y cuadro en la pared del fondo, sobre el mostrador ──
   item('guirnalda', { pared: 'fondo', a: 5.6 }, 0);
@@ -281,6 +286,8 @@ function buildShop(r, mood, near = false) {
   box(8.37, 2.97, 1.56, 8.43, 3.03, 1.6, shade(BRASS, 0.7), { grain: 0 });
   r.castShadow(8.15, 2.9, 0.4, 1.9, 1, 0.5);
 
+  const packs = [];
+  if (!vacio) {
   // ── La caja de reciclaje (sección «Reciclar»): listones, cosas asomando y su cartelito con flechas ──
   const RX = near ? -20 : 5.3;
   const RY = 4.9;
@@ -330,7 +337,6 @@ function buildShop(r, mood, near = false) {
       return pixels[i + 3] ? rgb(pixels[i], pixels[i + 1], pixels[i + 2]) : null;
     };
   };
-  const packs = [];
   SOBRES.forEach((s, i) => {
     // En fila en la grada baja, de pie, cada uno con su taco detrás
     const x0 = EX + 0.12 + i * 0.98;
@@ -344,6 +350,7 @@ function buildShop(r, mood, near = false) {
     packs.push([x0, y, z0, x1, y + 0.06, z1]);
   });
   r.castShadow(EX + EW / 2, EY + 0.6, 0.3, EW / 2, 1, 0.5);
+  }
 
   // ── Plantas y lámparas colgadas ──
   if (!near) item('planta-grande', { x: 9.0, y: 6.8 }, 0);
@@ -356,6 +363,37 @@ function buildShop(r, mood, near = false) {
   }
   lights.push([2.9, 0.4, 2.6]);
   return { lights, packs };
+}
+
+// El local en traspaso: cajas de cartón con su cinta, una escalera de pintor y lo que queda tapado con sábanas
+const CARTON = [184, 142, 92];
+const SABANA = [226, 220, 204];
+function cajasDeMudanza(box, r) {
+  const caja = (x, y, z, w, d, h, k) =>
+    box(x, y, z, x + w, y + d, z + h, k % 2 ? CARTON : [170, 128, 82], {
+      seed: k * 5 + 1,
+      face: (f, a, b) => (f === 'top' && Math.abs(a - x - w / 2) < 0.05 ? rgb(214, 196, 150) : f !== 'top' && Math.abs(b - z - h + 0.06) < 0.04 ? rgb(214, 196, 150) : null),
+    });
+  // Dos montones en el rincón donde estaban los muebles sueltos y uno donde estaba el reciclaje
+  caja(1.6, 1.8, 0, 0.9, 0.8, 0.62, 0);
+  caja(1.7, 1.85, 0.62, 0.7, 0.7, 0.5, 1);
+  caja(2.7, 2.1, 0, 0.8, 0.7, 0.55, 2);
+  caja(5.3, 4.9, 0, 0.9, 0.8, 0.6, 3);
+  caja(5.35, 4.95, 0.6, 0.8, 0.7, 0.45, 4);
+  r.castShadow(2.3, 2.3, 0.25, 1.2, 1, 0.5);
+  r.castShadow(5.75, 5.3, 0.25, 0.7, 1, 0.5);
+  // Lo que queda del expositor y de una mesa, tapado con sábanas que caen hasta el suelo
+  box(0.55, 5.4, 0, 3.4, 6.5, 0.85, SABANA, { seed: 31, face: (f, a, b) => (f !== 'top' && Math.floor(a * 6 + b * 3) % 3 === 0 ? rgb(204, 196, 178) : null) });
+  box(0.75, 5.5, 0.85, 3.2, 6.4, 1.05, SABANA, { seed: 33 });
+  box(3.7, 5.6, 0, 4.7, 6.4, 0.72, SABANA, { seed: 35 });
+  r.castShadow(2.4, 6.0, 0.3, 2.0, 1, 0.5);
+  // La escalera de pintor, abierta
+  for (const [x0, x1] of [
+    [4.1, 4.16],
+    [4.5, 4.56],
+  ])
+    box(x0, 3.0, 0, x1, 3.06, 1.9, [150, 118, 80], { grain: 0 });
+  for (let z = 0.4; z < 1.9; z += 0.45) box(4.1, 3.0, z, 4.56, 3.06, z + 0.05, [150, 118, 80], { grain: 0 });
 }
 
 /** Luz de tarde, como en los pisos: todo un poco más oscuro y tintado, y cada luz alumbra a su alrededor. */
@@ -448,7 +486,8 @@ export function outlineOf(r, id) {
  * `tags`: dónde cuelga su letrero; `outlines`: su contorno encendido (imagen del tamaño del dibujo); `hit(fx, fy)`:
  * qué sección hay bajo un punto (fracciones), o null.
  */
-export function renderShopRoom() {
+export function renderShopRoom({ vacio = false } = {}) {
+  if (vacio) return renderVacio();
   if (roomCache) return roomCache;
   const r = createRaster({ W: FRAME.W, H: FRAME.H, S: S_ROOM, yaw: YAW, ox: FRAME.ox, oy: FRAME.oy });
   r.clear(0);
@@ -501,6 +540,21 @@ export function renderShopRoom() {
   const scene = toDataURL(r, (x, y) => rgb(...(y < r.H * 0.5 ? [58, 42, 46] : [46, 34, 38])));
   roomCache = { scene, spots, tags, outlines, hit };
   return roomCache;
+}
+
+let vacioCache = null;
+/** El local vacío, en traspaso (1.119): solo la imagen (sin WebGL, el café-librería se ve así). */
+function renderVacio() {
+  if (vacioCache) return vacioCache;
+  const r = createRaster({ W: FRAME.W, H: FRAME.H, S: S_ROOM, yaw: YAW, ox: FRAME.ox, oy: FRAME.oy });
+  r.clear(0);
+  const { lights } = buildShop(r, 'base', false, true);
+  r.applyShadows();
+  r.bakeOcclusion();
+  r.shadeEdges();
+  evening(r, lights, 70);
+  vacioCache = { scene: toDataURL(r, (x, y) => rgb(...(y < r.H * 0.5 ? [58, 42, 46] : [46, 34, 38]))) };
+  return vacioCache;
 }
 
 export const COUNTER_W = 150;

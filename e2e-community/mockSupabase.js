@@ -166,7 +166,9 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     const json = (body) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     const blockedWith = (other) => db.blocks.some((b) => (b.blocker === userId && b.blocked === other) || (b.blocker === other && b.blocked === userId));
     // Como un servidor sin la migración del tablón; las pruebas del tablón ponen su propia ruta encima
-    if (table.startsWith('rpc/tablon_') || table.startsWith('rpc/piso_publicar_expuestos') || table.startsWith('rpc/piso_expuestos_de')) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
+    // El café del bajo (1.120): sin `simularCafe` (cafeMock.js), el servidor aún no tiene su migración
+    if (table.startsWith('rpc/cafe_')) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
+    if (table.startsWith('rpc/tablon_') ||table.startsWith('rpc/piso_publicar_expuestos') || table.startsWith('rpc/piso_expuestos_de')) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
     if (table === 'rpc/sala_lectura_personajes') return json(db.sala_personajes ?? []);
     // La Lonja: `db.lonja` es lo que devuelve `piso_lonja`; las reglas de verdad se prueban en lonja.rls.test.js
     if (table.startsWith('rpc/piso_lonja') || table === 'rpc/piso_estiba_zarpar' || table === 'rpc/piso_taller_recoger') {

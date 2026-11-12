@@ -15,6 +15,7 @@ const DESPUES = ETAPA === 'despues';
 test.use({ video: { mode: 'on', size: { width: 390, height: 844 } } });
 
 test('la tienda: sobres cerrados por reforma; muebles y reciclaje, abiertos', async ({ page }, info) => {
+  test.skip(true, 'Desde la 1.119 la tienda del bajo es el café-librería: sin sobres, muebles ni reciclaje a la vista (lo comprueba v1119-cafe)');
   test.skip(info.project.name !== 'chromium-390x844', 'Chromium a 390');
   test.setTimeout(120000);
   mkdirSync(DIR, { recursive: true });

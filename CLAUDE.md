@@ -151,6 +151,29 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     - Sobres, Muebles y Reciclar son objetos de la escena (expositor, rincón del sillón, caja de reciclaje) con un
       letrero y su contorno encendido;
     - no volver a una fila de pestañas grandes que le quite protagonismo a la tienda.
+  - **El café-librería del bajo** (encargo de Francisco del 11-11-2026; plan en `docs/qa/cafe-libreria.md`, por bloques con
+    capturas): la tienda del bajo deja la venta de muebles (ya está el almacén del hotel) y **desaparecen los sobres/gacha y el
+    reciclaje de su vista** (sin borrar inventario, tickets ni datos). En su lugar, un **minijuego importante de la app**: tu
+    propio café-librería cozy en 3D, con el motor y el estilo de las salas del hotel, que se decora a tu gusto y sube de nivel de
+    forma adictiva pero orgánica (sin castigos, rachas que se pierdan, energía ni cuentas atrás). Clientes que piden libros de tu
+    biblioteca real; tu lectura mueve el café. Decisiones de Francisco: **moneda propia del café** (solo sirve ahí, nunca se
+    compra con dinero); **cada nivel da una recompensa de tickets** y **cada día se ganan unos tickets extra según el nivel**
+    para animar a jugar (**cuarta excepción** a «los tickets solo se ganan leyendo»; las cifras, con tope, las aprueba él y las
+    cuenta el servidor); **subir de nivel desbloquea muebles nuevos y funciones** para mejorar el local.
+    **Plan aprobado** (Francisco, 11-11-2026, «Sí, las recomendadas»; detalle en `cafe-libreria.md` §10): tickets **10 / 20 / 40 /
+    60 / 100 al subir** (230 en total) y **1 / 2 / 3 / 4 / 5 al día según el nivel, tope 5 al día**, al atender al primer cliente;
+    **la dependienta se queda como camarera**; **cinco niveles** (Rincón, Café, Librería, Altillo, Terraza y escaparate) **con
+    tres hitos dentro** de cada uno; **los muebles del café solo se colocan en el café**; **nombre del café de una lista cerrada**
+    (sin texto libre); **reciclar desaparece** con la tienda; con menos de 3 leídos, **el café presta los de «Leyendo» y «Quiero
+    leer»**; la moneda se llama **granos** (nunca se compra, no se cambia por tickets ni pasa entre cuentas).
+    **Revisión del bloque 3** (Francisco, 12-11-2026): **el café pesa más que el libro**. Cada bebida se prepara en **la barra
+    en 3D, artesanal y cozy**, según lo que pide cada cliente, y **se le lleva a su mesa**. La receta tiene **cuatro
+    elecciones en el nivel 1**: bebida (café o té), grano u hoja (suave o intenso), leche (sin, entera o avena) y un toque
+    (nada, canela o miel); el bloque 4 desbloqueará más. **El libro es un extra**: se elige entre **pocas fichas atractivas**,
+    no de la estantería entera. **Fallar se puntúa con estrellas** (de 1 a 3 según lo acertado): paga menos, pero nunca cero
+    ni quita nada, y se ve qué se falló. **Un cliente excéntrico al día**, claramente distinto a los demás, con un pedido raro
+    y más difícil de interpretar: con 3 estrellas paga **el triple** (unos 15 granos y 40 de reputación) y deja **una reseña
+    dorada** en la pizarra.
   - **Más vida en el edificio** (encargo del 1-11-2026, por bloques con capturas entre uno y otro: 1) más muebles,
     2) personaje, 3) misiones diarias, 4) vecinos). Decisiones de Francisco:
     - **Personaje propio y personalizable** en tu piso: tocas el suelo o un mueble y va andando hasta allí. En sillas,

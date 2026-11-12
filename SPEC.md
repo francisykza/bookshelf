@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.118.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.121.0 · 2026-11-12 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6118,3 +6118,191 @@ selección de gestos para poder comunicarte con la otra persona»; tras publicar
   la lista y en el sofá con su cupo, el gesto que te llega, apuntar el libro al acabar la cita, sin la migración) a 360, 390
   y escritorio en Chromium y a 390 en WebKit, con vídeo. Capturas y vídeos en `qa-report/sala-placa/`. Nada probado entre
   dos cuentas reales ni en móviles reales.
+
+## 119. El café-librería del bajo, bloque 1: el local vacío en 3D (1.119.0)
+
+Bloque 1 del plan del café-librería (`docs/qa/cafe-libreria.md`, aprobado por Francisco el 11-11-2026: «Sí, las
+recomendadas»). La tienda del bajo deja de vender: se retira su vista y en su lugar está el antiguo videoclub vacío, en
+traspaso, en 3D con el motor y el estilo de las salas del hotel.
+
+- **Fuera la tienda**: desde la calle, la puerta del bajo es «Café-librería» con la placa «Se traspasa» y abre «El
+  café-librería del bajo». Ya no hay sobres, muebles a la venta ni reciclaje a la vista. **No se borra nada**: tickets,
+  inventario, sobres y datos siguen igual en el servidor (la prueba lo comprueba). Las misiones del ordenador ahora mandan
+  los tickets al almacén del Gran Hotel.
+- **El local, de noche**: suelo de damero rojo y crema gastado (con la huella del expositor), yeso con los huecos claros de
+  lo que colgaba, vigas, la bombilla desnuda y la lamparita verde del mostrador; el escaparate y la puerta dan a la calle
+  mojada del muelle con su farola y el faro, con lluvia. Cajas de mudanza, sábanas sobre bultos, una escalera de pintor y una
+  estantería vieja vacía. **Al fondo, una cortina de terciopelo con su caballete** (nada industrial) tapa la parte del local
+  que se abrirá al subir de nivel. En la puerta, el cartel de cartón «SE TRASPASA».
+- **Pilar** (la dependienta, que se queda de camarera) detrás del mostrador: saluda («¡Pasa, pasa! Cuidado con las cajas.»)
+  y, con «Hablar con Pilar», la vista va al mostrador y cuenta en cuatro frases que se jubila y te deja las llaves.
+- **Se recorre** arrastrando para mirar y tocando el suelo para andar, sin atravesar el mostrador ni los bultos; letreros
+  discretos (Pilar, El resto del local, El escaparate) y la franja baja de madera con lo que dice Pilar. A pantalla completa,
+  con «Volver al portal» encima. Con movimiento reducido, sin paseo de cámara (directo); lo vivo (lluvia, polvo) quieto.
+  **Sin WebGL**, el dibujo isométrico del local vacío (`renderShopRoom({ vacio: true })`) con Pilar igual.
+- **Código**: `edificio/cafe/` (`cafeLayout.js` plano y colisiones, `cafe3d.js` escena, `Cafe.jsx`, `cafe.css`),
+  `EdificioPanel.jsx` (el bajo monta `<Cafe />`), `shopRoom.js` (variante vacía), `calleView.js`, `facadeView.js`,
+  `ComputerApps.jsx`. Sin migraciones.
+- **Queda para otros bloques**: el dibujo de la fachada aún enseña el escaparate de la tienda (se rehace en el bloque 4).
+  Decorar y el nivel 1 son el bloque 2.
+- **Pruebas**: e2e nueva `v1119-cafe.spec.js` (recorrido con Pilar, cortina y escaparate; sin tienda; tickets e inventario
+  iguales; andar sin atravesar el mostrador; movimiento reducido; sin WebGL) a 360, 390, 430 y escritorio en Chromium y a 390
+  en WebKit, con vídeo; `calle3d`, `v178-paseo` y `v167-tienda` actualizadas y en verde; el recorrido de la tienda de
+  `reforma-tienda` queda saltado (ya no existe). Capturas y vídeos en `qa-report/cafe/`. Sin probar en móviles reales.
+
+## 120. El café-librería del bajo, bloque 2: las llaves, el nivel 1 y Decorar (1.120.0)
+
+Bloque 2 del plan del café-librería (`docs/qa/cafe-libreria.md`; Francisco: «Sí, al bloque 2» tras ver el bloque 1).
+
+- **Las llaves**: con la migración aplicada, la última frase de Pilar cambia a «Ya está vacío. Si lo quieres, aquí tienes las
+  llaves: solo falta ponerle nombre.» con «Quedarme con las llaves» o «Ahora no». El nombre se elige de **una lista cerrada
+  de 12** (sin texto libre: «La Última Página», «El Marcapáginas», «Café del Muelle», «Taza y Lomo»…); «Inaugurar el café»
+  solo se activa con uno elegido. Se inaugura una vez.
+- **El rincón (nivel 1)**: al inaugurar se van las cajas, las sábanas y la escalera; en la puerta, «ABIERTO» en lugar de «SE
+  TRASPASA»; en la pared de detrás de la barra, un rótulo con el nombre del café; arriba a la izquierda, una placa discreta con el
+  nombre y «Nivel 1 · Rincón». Llegan gratis y colocados los muebles del rincón: dos mesas redondas de mármol, cuatro sillas de
+  bistró, dos taburetes de barra, una estantería baja y una lámpara de cristal (modelos propios, `cafe/cafeMuebles.js`). Pilar
+  sigue en la barra («Pronto vendrán clientes a pedirte libros…»). Se entra mirando en diagonal a todo el rincón.
+- **Tus libros en las estanterías**: los lomos de la estantería baja (de la balda de arriba hacia abajo) son tus libros leídos;
+  lo que no cabe pasa a la estantería vieja de la pared. Con menos de 3 leídos, el café presta los de «Leyendo» y «Quiero leer».
+  Cada lomo tiene un color según su título (no se piden portadas en el café).
+- **Decorar**: la vista sube por encima del escaparate y mira el local desde arriba, con una rejilla ámbar de 6 × 6 casillas
+  delante de la cortina. Se toca un mueble para elegirlo (marco ámbar en el suelo) y se arrastra o se toca una casilla libre
+  para llevarlo; «Girar» (a cuartos de vuelta, si cabe), «Guardar en la balda» y «Soltar». Sin elegir nada, la balda de madera
+  enseña «Del café» (los muebles del café con sus copias libres) y «De tu casa» (los muebles de casa que pueden ir: de suelo,
+  sin saga, sin místicos ni retirados y no los esenciales del piso; con las copias que no están en tu piso ni ya en el café).
+  Al tocar uno, se pone en el hueco libre más cercano al centro. «Listo» guarda; «Cancelar» lo deja como estaba. Nada se
+  coloca encima de otra cosa ni fuera de la rejilla. Los granos se ven (0 por ahora): llegan con los clientes en el bloque 3.
+- **Una copia, un sitio**: un mueble de casa puesto en el café cuenta como usado también para el piso (y al revés).
+- **Migración** `20261210120000_cafe_local.sql` (la aplica Francisco): `cafe_catalogo` (los cinco muebles del café, medidas,
+  precio en granos y nivel), `cafe_locales` (nombre, nivel, reputación, granos con tope, plano e inauguración) y
+  `cafe_inventario`, con RLS y sin permisos directos; funciones `security definer` y `volatile`: `cafe_mio()`,
+  `cafe_inaugurar(nombre)`, `cafe_guardar(plano)` y `cafe_comprar(mueble)` (con granos, para el bloque 3), y las internas
+  `cafe_nombres`, `cafe_plano_inicial`, `cafe_de_casa`, `cafe_plano_valido` (hasta 24 cosas, uid único, dentro de la
+  cuadrícula, giro a cuartos y sin solapes), `cafe_falta_de_casa` y `cafe_json`. **Redefine `piso_falta_copia`** (la misma
+  de la 1.95) para sumar los muebles de casa que están en el café. No toca tickets, sobres, pity ni el inventario existente.
+  **Sin la migración**, el bajo sigue como en la 1.119 (en traspaso, sin llaves ni Decorar).
+- **Sin WebGL**: el dibujo isométrico del local y la placa con el nombre; Decorar no se ofrece.
+- **Código**: `cafe/cafeCatalogo.js` (muebles, nombres, plano inicial y reglas del plano, iguales que en el servidor),
+  `cafe/cafeMuebles.js` (modelos), `cafe/cafeService.js`, `cafe/cafeLayout.js` (la rejilla en el mundo y los muebles como
+  obstáculos al andar), `cafe/cafe3d.js` (`setLocal`, `decorar`, el rótulo y la rejilla), `cafe/Cafe.jsx` y `cafe.css`;
+  `EdificioPanel.jsx` le pasa al café tu inventario y tu piso.
+- **Pruebas**: `cafe.rls.test.js` (PGlite con todas las migraciones: listas iguales a las de la app, el local nace en
+  traspaso, sin comunidad no hay café, las tablas no se tocan, una sola inauguración con nombre de la lista, el plano y sus
+  reglas, copias del café y de casa con el piso, el piso no puede usar una copia que está en el café, comprar sin bajar de
+  cero); `inventario`, `esenciales`, `acabados`, `edificio`, `reforma` y `rpc-solo-lectura`, en verde con la función
+  redefinida. e2e nueva `v1120-cafe-decorar.spec.js` con el servidor del café simulado (`e2e-community/cafeMock.js`, mismas
+  reglas): las llaves y el nombre, el rincón, la estantería con tus libros, Decorar (elegir, llevar, girar, guardar en la balda,
+  traer la mesa baja de casa), guardar, salir y volver a entrar; arrastrar sin pisar otra pieza; sin WebGL. A 360, 390, 430 y
+  escritorio en Chromium y a 390 en WebKit, con vídeo. `v1119-cafe` sigue en verde sin la migración. Capturas y vídeos en
+  `qa-report/cafe-decorar/`. Sin probar en móviles reales ni con el servidor de verdad (la migración está sin aplicar).
+
+### 120.1 La interfaz del café, más de videojuego (1.120.1)
+
+Francisco: «Cambia como se ve la interfaz para que se vea un poco más cercana al estilo videojuego y más atractiva». Solo
+cambia el aspecto; las reglas, el servidor y la migración del bloque 2 siguen igual.
+
+- **Cuadro de diálogo de RPG**: la franja de abajo es un cuadro oscuro con marco doble (crema y madera), el **retrato de
+  píxel de Pilar** a la izquierda y una **pestaña con su nombre** sobre el borde. Mientras cuenta su historia, un «▼» de píxel
+  parpadea al final de la frase (quieto con movimiento reducido). Los avisos (guardado, cortina, escaparate…) llevan una
+  taza en lugar del retrato y no llevan pestaña. Los botones van debajo del texto, junto al retrato (a la derecha si el café
+  mide 700 px o más de ancho; se mide el café, no la ventana).
+- **Botones de píxel con relieve**: contorno oscuro, luz arriba y sombra abajo; se hunden al pulsarlos. Ámbar para la acción
+  normal, madera para la secundaria y **verde para confirmar** («Quedarme con las llaves», «Inaugurar el café», «Listo»).
+- **Letra de píxel** (PuertoPixel, la de la app; nunca la de pixelfx) en botones, letreros de la escena, pestañas, nombres y
+  el HUD. Lo que se lee largo (lo que dice Pilar, nombres de muebles) sigue en Lora.
+- **HUD arriba**: una placa con la **insignia del nivel** («NV 1»), el nombre del café, el nombre del nivel y la **barra de
+  reputación** hacia el siguiente (0 / 300 en el Rincón, cifras del plan §6, `CAFE_NIVELES` y `progresoNivel` en
+  `cafeCatalogo.js`); a la derecha, el **monedero de granos** con su grano dibujado. Se ve también en Decorar.
+- **Nombre del café**: las 12 opciones son placas de madera; la elegida se enciende en ámbar con una flecha de píxel.
+- **Decorar como inventario**: casillas cuadradas con el **icono de píxel de cada mueble** (los cinco del café, la mesa baja y
+  la lámpara de pie; el resto de lo de casa, una caja), el **número de copias libres en una esquina** y el nombre debajo; las
+  agotadas, en gris. Pestañas «Del café» / «De tu casa» como solapas. Con un mueble elegido, su icono junto al nombre. La
+  balda es más baja para no tapar la rejilla (el título y «Cancelar / Listo» en una fila; la línea de los granos pasa al HUD).
+- **Código**: `cafe/cafeIconos.js` (los dibujos, cuadrículas de letras con su paleta, propios), `cafe/PixelArt.jsx` (los
+  dibuja como SVG de bordes duros), `Cafe.jsx` y `cafe.css` (capa «1.120.1» al final).
+- **Pruebas**: `v1119-cafe` y `v1120-cafe-decorar` sin cambios, en verde a 360, 390, 430 y escritorio en Chromium y a 390 en
+  WebKit; capturas y vídeo nuevos en `qa-report/cafe-decorar/` y `qa-report/cafe/` (sustituyen a las de la 1.120.0).
+
+## 121. El café-librería del bajo, bloque 3: clientes, barra y granos (1.121.0)
+
+Bloque 3 del plan del café-librería (`docs/qa/cafe-libreria.md` §3, §5 y §6; Francisco: «Seguir al bloque 3» tras aprobar la
+1.120.1), **rehecho tras su revisión del 12-11-2026**: el café pesa más que el libro, cada bebida se prepara en una barra 3D
+artesanal según lo que pide el cliente y se le lleva a su mesa; el libro pasa a ser un extra, elegido entre pocas fichas; los
+fallos se puntúan con estrellas, y llega un cliente excéntrico al día. Sin subidas de nivel ni tickets: llegan en el bloque 4.
+
+- **Clientes del día**: cada día (de Madrid) llegan los que da tu nivel (**3 en el Rincón**; 4 en el 2 y 5 del 3 en adelante;
+  el último, el excéntrico), los fija el servidor y **esperan todo el día**: no se van, no se enfadan y no se acumulan. Se ven
+  **sentados** en las sillas y taburetes del plano (si faltan asientos, de pie junto al escaparate), con aspecto propio sacado
+  de su semilla y ropa de la corriente (nunca prendas que se ganan). Los que esperan llevan encima un **bocadillo «!»** que
+  salta (quieto con movimiento reducido; si dos caen juntos, se apilan); tocarlo, o «Atender» en el cuadro de Pilar, empieza.
+- **La receta** (nivel 1, cuatro elecciones; el bloque 4 desbloqueará más): **bebida** (café o té), **grano u hoja** (suave o
+  intenso), **leche** (sin, entera o avena) y **toque** (nada, canela o miel): 36 recetas. Cada cliente pide la suya, sacada
+  de su semilla; un habitual pide siempre «lo de siempre». La comanda se lee en una nota de papel arriba («Un café intenso
+  con leche de avena y canela.»).
+- **Atender** (en el cuadro de diálogo, con el retrato de píxel del cliente):
+  1. **Pide**: su saludo y la comanda. «A la barra» o «Luego».
+  2. **En la barra**: la cámara pasa a una vista de la barra desde arriba, con **piezas 3D artesanales** (cafetera de palanca de
+     cobre, tetera de hierro, tarros de grano y de hoja, jarras de leche, lata de canela, tarro de miel y la taza en su
+     platillo). **Se toca en la barra lo que lleva** (lo elegido se enmarca en ámbar) o se cambia en las cuatro casillas del
+     cuadro («Bebida: Café. Cambiar»); la leche y el toque se quitan al volver a tocarlos. **Mantener pulsado «Servir»**
+     vierte: la taza se llena con su color, la espuma, la canela o la miel y el chorro (un segundo y medio; lo llenado no se
+     pierde al soltar, sin medir reflejos; «Sigue pulsando · 40 %»). Cambiar la receta con la taza empezada empieza otra.
+     **Con movimiento reducido, un toque.**
+  3. **Llevársela**: sales de la barra con **la taza en la mano** (se ve abajo a la derecha) y vas andando hasta el cliente
+     (tocándolo o con «Llevársela»), a un paso de él y de frente; con movimiento reducido, directo.
+  4. **El libro, un extra**: tres **fichas** con portada de color, título, autoría y pistas (género, páginas, año, «Favorito»,
+     «Lo último que leíste»), **una que encaja** si tu estantería puede, en otro sitio cada vez; o «Solo el café».
+  5. **Las estrellas**: puntos = aciertos de la receta (0 a 4) + 1 si el libro encaja; **5 → 3 estrellas, 3 o 4 → 2, menos → 1**.
+     Se ve qué se acertó y qué no («✓ Café», «✗ Entera · pidió de avena», «✓ El libro», «· Sin libro») y lo ganado. **Nunca es
+     cero ni quita nada.**
+- **Lo que deja** (granos / reputación, lo cuenta el servidor):
+
+  | | 1 ★ | 2 ★ | 3 ★ |
+  | --- | --- | --- | --- |
+  | Cliente | 2 / 6 | 4 / 10 | 5 / 14 |
+  | Habitual | 3 / 8 | 5 / 12 | 6 / 15 |
+  | Excéntrico | 5 / 14 | 10 / 26 | **15 / 40** |
+
+- **El excéntrico del día**: el último cliente de cada día es uno de seis personajes propios (la Condesa de los Marcapáginas,
+  el Señor Tictac, Madame Niebla, el Capitán Tinta, Doña Orquídea y el Profesor Lupa). **Se distingue a la vista**: tocado
+  propio en 3D (turbante, bombín, velo, tricornio, flores o birrete; cajas propias, nunca prendas), aura de su color en el suelo
+  y chispas, letrero con estrella de su color, franja y retrato con estrella. **Pide en acertijos**, una línea por elección
+  («Algo que se muela, no que se deje en remojo.», «Con la nube de una vaca contenta.»). Con 3 estrellas paga **el triple** y
+  deja **una reseña dorada** en la pizarra con su firma («★ Madame Niebla»); con menos, paga según la tabla y sin reseña.
+  Pilar avisa: «Tienes 3 clientes esperando, y uno es muy peculiar».
+- **Habituales** (12 personajes propios con nombre y aspecto fijos: Tomás, Lucía, Anselmo, Marga, Iker, Valentina, Paco,
+  Nuria, Héctor, Carmela, Bruno e Inés): **cada sesión de lectura de hoy trae uno, como mucho 2 al día**. Cuenta cada
+  sesión de lectura cozy de 15 minutos o más, y haber registrado lectura hoy (el registro no guarda minutos: cuenta como
+  una). Si terminaste un libro ayer u hoy, el habitual pregunta por él. Al irse **deja una reseña cerrada en la pizarra**
+  (12 frases propias), con las estrellas que sean.
+- **La pizarra**: un botón con su dibujo en el HUD, bajo los granos (con el número de reseñas); se abre de tiza sobre verde
+  con las últimas 6 y quién las firmó; las doradas, en oro.
+- **Fin del día**: «Hoy ya está todo el mundo atendido. Si lees un rato, vendrá algún habitual.» (o «El local es tuyo para
+  decorar.» si ya vinieron los dos). Sin cuentas atrás. Al volver a entrar, los atendidos siguen leyendo.
+- **Migración** `20261211120000_cafe_clientes.sql` (la aplica Francisco; requiere la del bloque 2): `cafe_dias` (clientes
+  fijados por el nivel del servidor y habituales, por cuenta y día), `cafe_servicios` (uno por cliente y día: receta,
+  aciertos, si encajó, estrellas, granos y reputación) y `cafe_resenas` (de habitual o dorada), con RLS y sin permisos
+  directos; funciones `security definer` y `volatile`: `cafe_dia(dia)`, `cafe_habitual(dia)` y `cafe_servir(dia, cliente,
+  receta, encaja)`, y las internas `cafe_hoy`, `cafe_dia_valido` (solo hoy o ayer de Madrid), `cafe_clientes_nivel`,
+  `cafe_receta`, `cafe_pide`, `cafe_estrellas`, `cafe_premio`, `cafe_semilla`, `cafe_quien`, `cafe_abrir_dia` y
+  `cafe_dia_json`. **La receta pedida, los aciertos, las estrellas y las cifras las pone el servidor**; la app solo dice si
+  el libro encajó (no tiene la biblioteca), y eso vale como mucho 1 de 5 puntos. Todo tiene techo diario (nivel 1: 3 clientes,
+  el último el excéntrico, y 2 habituales: 37 granos y 98 de reputación como mucho). **Sin la migración**, el café abierto sigue como
+  en la 1.120 (sin clientes).
+- **Código**: `cafe/cafeClientes.js` (recetas, comandas y acertijos, estrellas, premios, excéntricos, habituales, reseñas,
+  pedidos y las fichas de `librosParaRecomendar`, iguales que en el servidor), `cafe/Atender.jsx` (pide → barra → llevar →
+  libro → gracias), `cafe/cafe3d.js` (`BARRA_COSAS`, `barraKit`, la taza en la mano, `adornoExcentrico`, y en la API `barra`,
+  `setReceta`, `llevar`, `irACliente`, `barraEnPantalla`, `enBarra`), `cafe/cafeService.js`, `Cafe.jsx` y `cafe.css` (capas
+  «1.121»).
+- **Pruebas**: `cafe-clientes.rls.test.js` (PGlite con todas las migraciones: recetas, estrellas, premios y excéntricos
+  iguales que en la app; el último cliente es el excéntrico; receta válida; 3 estrellas y 1 estrella; un habitual con 2
+  estrellas deja su reseña; el excéntrico con 3 paga 15/40 y deja la dorada, con 2 no; tablas y funciones internas cerradas);
+  `cafeClientes.test.js` (36 recetas distintas, comandas, aspectos de los excéntricos sin prendas, estrellas y premios, tres
+  fichas con una que encaja en sitios distintos, pedidos y habituales); `cafe.rls` y `rpc-solo-lectura` siguen en verde. e2e
+  `v1121-cafe-clientes.spec.js` con el servidor simulado (`cafeMock.js`, mismas reglas): un día entero (uno perfecto
+  eligiendo en la barra 3D con libro, 3 estrellas; uno con la leche mal y sin libro, 2 estrellas; el excéntrico tras «Luego»,
+  perfecto, con reseña dorada; el habitual con un libro que no encaja; la pizarra; «todo el mundo atendido»; volver a entrar)
+  a 360, 390, 430 y escritorio en Chromium y a 390 en WebKit, con vídeo; y con movimiento reducido (servir con un toque, sin
+  andar). `v1119-cafe` y `v1120-cafe-decorar` siguen en verde. Capturas y vídeos en `qa-report/cafe-clientes/`. Sin probar en
+  móviles reales ni con el servidor de verdad (las dos migraciones del café están sin aplicar).

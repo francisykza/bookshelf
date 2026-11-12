@@ -188,8 +188,9 @@ export function mountCalleView(container, opts) {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'ed-window ed-shop';
-    el.setAttribute('aria-label', 'Entrar en la tienda del bajo');
-    el.append(plateOf('Tienda', shopBadge));
+    // 1.119: la tienda del bajo es el café-librería (en traspaso hasta que se inaugure)
+    el.setAttribute('aria-label', 'Entrar en el café-librería del bajo');
+    el.append(plateOf('Café-librería', shopBadge));
     el.addEventListener('click', () => {
       if (busy) return;
       lastPeek = { at: Date.now(), yaw: calle?.yaw() ?? 0, shop: true };

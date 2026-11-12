@@ -360,7 +360,7 @@ export function GoalApp() {
   );
 }
 
-/** Misiones de la semana: con figuras, cajas para el Ático; sin ellas (1.67, §67), tickets para la tienda del bajo. */
+/** Misiones de la semana: con figuras, cajas para el Ático; sin ellas (1.67, §67), tickets para la tienda del bajo (desde la 1.119, para el almacén del hotel). */
 export function MissionsApp(props) {
   return FIGURES_ENABLED ? <GuardianMissionsApp {...props} /> : <TicketMissionsApp />;
 }
@@ -368,8 +368,8 @@ export function MissionsApp(props) {
 const TICKET_NOTE = {
   loading: 'Comprobando tus tickets…',
   'signed-out': 'Inicia sesión en «Tu cuenta» y activa la comunidad para cobrar tus misiones en tickets.',
-  'no-community': 'Activa la comunidad en tu perfil para cobrar tus misiones en tickets de la tienda del bajo.',
-  soon: 'La tienda del bajo abre muy pronto: entonces podrás cobrar aquí tus misiones.',
+  'no-community': 'Activa la comunidad en tu perfil para cobrar tus misiones en tickets.',
+  soon: 'Los tickets llegan muy pronto: entonces podrás cobrar aquí tus misiones.',
 };
 
 /** 1.67: cada misión cumplida se cobra en tickets (una vez por semana; lo decide el servidor). */
@@ -386,7 +386,7 @@ function TicketMissionsApp() {
       await t.cobrar(m.id);
       // La misión queda también apuntada en tu biblioteca, como siempre
       if (!m.claimed) actions.claimMission(m.id);
-      setMsg(`+${MISION_TICKETS} tickets por «${m.title}». Gástalos en la tienda del bajo del edificio.`);
+      setMsg(`+${MISION_TICKETS} tickets por «${m.title}». Gástalos en el almacén del Gran Hotel.`);
     } catch (e) {
       setMsg(`No se ha podido cobrar: ${e.message}`);
     } finally {
@@ -399,7 +399,7 @@ function TicketMissionsApp() {
         <Ticket aria-hidden="true" />
         {t.status === 'ready' ? (
           <p>
-            <b>{t.tickets}</b> tickets para la tienda del bajo
+            <b>{t.tickets}</b> tickets para el almacén del hotel
           </p>
         ) : (
           <p className="pc-muted">{TICKET_NOTE[t.status]}</p>

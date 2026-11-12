@@ -1,0 +1,1799 @@
+/* El café-librería del bajo (1.119, encargo de Francisco del 11-11-2026). El local manda en la pantalla; encima, letreros
+   discretos (plaquitas oscuras y translúcidas con letra crema, como en la sala de lectura) y, al pie, una franja baja de
+   madera con lo que dice Pilar. Todo bajo .cf3. */
+/* De borde a borde y hasta arriba, como la calle 3D del portal: la barra («Volver al portal») va encima del local */
+.panel--edificio:has(.cf3) {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  height: min(94dvh, 980px);
+  overflow: hidden;
+  padding: 0;
+  background: #140e14;
+}
+@media (max-width: 699px) {
+  .panel--edificio:has(.cf3) {
+    height: 100dvh;
+  }
+}
+.panel--edificio:has(.cf3) .ed-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 6;
+  margin: 0;
+  padding: 6px 8px;
+  background: linear-gradient(rgb(20 14 20 / 0.75), rgb(20 14 20 / 0));
+  pointer-events: none;
+}
+.panel--edificio:has(.cf3) .ed-bar > * {
+  pointer-events: auto;
+}
+.panel--edificio:has(.cf3) .ed-bar__back {
+  color: #f3e6c8;
+}
+.cf3 {
+  --cf3-px: 3px;
+  --cf3-cream: #f3e6c8;
+  --cf3-amber: #e7b765;
+  position: relative;
+  /* El local manda: todo el panel */
+  height: 100%;
+  min-height: 420px;
+  overflow: hidden;
+  background: #140e14;
+}
+.cf3-stage,
+.cf3-iso {
+  position: absolute;
+  inset: 0;
+}
+.cf3-iso {
+  display: grid;
+  place-items: center;
+  padding-bottom: 96px;
+  background: linear-gradient(#3a2a2e, #2e2226);
+}
+.cf3-iso img {
+  width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.cf3-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: grab;
+}
+.cf3-canvas:active {
+  cursor: grabbing;
+}
+.cf3-canvas:focus-visible {
+  outline: 2px solid var(--cf3-amber);
+  outline-offset: -4px;
+}
+.cf3-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  padding: 24px;
+  color: var(--cf3-amber);
+  font:
+    italic 1.05rem 'Cormorant Garamond',
+    Georgia,
+    serif;
+  text-align: center;
+}
+
+.cf3-tags {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+.cf3-tag {
+  --cf3-px: 2px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 7px 4px;
+  border: 0;
+  background: rgb(24 14 10 / 0.5);
+  box-shadow: inset 0 0 0 1px rgb(231 183 101 / 0.45);
+  color: var(--cf3-cream);
+  font:
+    600 0.66rem/1.1 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
+  white-space: nowrap;
+  opacity: 0.86;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.cf3-tag[data-off='true'] {
+  visibility: hidden;
+}
+.cf3-tag:hover,
+.cf3-tag:focus-visible {
+  background: rgb(24 14 10 / 0.72);
+  opacity: 1;
+}
+.cf3-tag::before {
+  width: 5px;
+  height: 5px;
+  background: var(--cf3-amber);
+  content: '';
+  transform: rotate(45deg);
+}
+
+/* Las placas y la franja, con esquinas de píxel */
+.cf3-tag,
+.cf3-caja,
+.cf3-btn,
+.cf3-quien,
+.cf3-retrato,
+.cf3-placa,
+.cf3-monedero,
+.cf3-nombre,
+.cf3-pestana,
+.cf3-mueble {
+  clip-path: polygon(
+    0 var(--cf3-px),
+    var(--cf3-px) var(--cf3-px),
+    var(--cf3-px) 0,
+    calc(100% - var(--cf3-px)) 0,
+    calc(100% - var(--cf3-px)) var(--cf3-px),
+    100% var(--cf3-px),
+    100% calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) 100%,
+    var(--cf3-px) 100%,
+    var(--cf3-px) calc(100% - var(--cf3-px)),
+    0 calc(100% - var(--cf3-px))
+  );
+}
+
+/* La franja baja: madera oscura con filete ámbar; lo que dice Pilar y un botón */
+.cf3-franja {
+  position: absolute;
+  right: 10px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  left: 10px;
+  z-index: 3;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: linear-gradient(rgb(90 58 38 / 0.94), rgb(58 36 24 / 0.94));
+  box-shadow:
+    inset 0 0 0 1px rgb(231 183 101 / 0.55),
+    inset 0 0 0 3px rgb(30 18 12 / 0.6);
+  color: var(--cf3-cream);
+}
+.cf3-dice {
+  flex: 1;
+  margin: 0;
+  font:
+    0.86rem/1.35 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-quien {
+  margin-right: 4px;
+  color: var(--cf3-amber);
+  font-weight: 700;
+}
+.cf3-botones {
+  flex: none;
+}
+.cf3-btn {
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 0;
+  background: var(--cf3-amber);
+  color: #2a1a10;
+  font:
+    700 0.82rem/1.1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+.cf3-btn:hover,
+.cf3-btn:focus-visible {
+  background: #f2c97c;
+}
+.cf3-btn:focus-visible {
+  outline: 2px solid var(--cf3-cream);
+  outline-offset: 2px;
+}
+@media (max-width: 380px) {
+  .cf3-franja {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ── Bloque 2 (1.120): la placa con el nombre, el selector de nombre y la balda de Decorar ── */
+.cf3-btn--suave {
+  background: rgb(243 230 200 / 0.14);
+  box-shadow: inset 0 0 0 1px rgb(231 183 101 / 0.55);
+  color: var(--cf3-cream);
+}
+.cf3-btn--suave:hover,
+.cf3-btn--suave:focus-visible {
+  background: rgb(243 230 200 / 0.24);
+}
+.cf3-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cf3-botones {
+  display: flex;
+  gap: 8px;
+}
+.cf3-botones--fila {
+  justify-content: flex-end;
+}
+.cf3-placa {
+  --cf3-px: 2px;
+  position: absolute;
+  top: calc(44px + env(safe-area-inset-top, 0px));
+  left: 10px;
+  z-index: 3;
+  display: grid;
+  margin: 0;
+  padding: 5px 9px 6px;
+  background: rgb(24 14 10 / 0.58);
+  box-shadow: inset 0 0 0 1px rgb(231 183 101 / 0.5);
+  color: var(--cf3-cream);
+  pointer-events: none;
+}
+.cf3-placa__nombre {
+  font:
+    700 0.86rem/1.15 'Cormorant Garamond',
+    Georgia,
+    serif;
+  letter-spacing: 0.02em;
+}
+.cf3-placa__nivel {
+  color: var(--cf3-amber);
+  font:
+    600 0.62rem/1.2 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cf3-franja--nombres {
+  display: grid;
+  gap: 8px;
+}
+.cf3-nombres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cf3-nombre {
+  min-height: 34px;
+  padding: 4px 9px;
+  border: 0;
+  background: rgb(243 230 200 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(231 183 101 / 0.4);
+  color: var(--cf3-cream);
+  font:
+    600 0.78rem/1.1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+.cf3-nombre[aria-checked='true'] {
+  background: var(--cf3-amber);
+  color: #2a1a10;
+}
+.cf3-nombre:focus-visible,
+.cf3-pestana:focus-visible,
+.cf3-mueble:focus-visible {
+  outline: 2px solid var(--cf3-cream);
+  outline-offset: 2px;
+}
+.cf3-error {
+  margin: 0;
+  color: #ffb4a0;
+  font:
+    600 0.78rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+
+/* La balda de Decorar: la misma madera que la franja, un poco más alta */
+.cf3-balda {
+  --cf3-px: 3px;
+  position: absolute;
+  right: 10px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  left: 10px;
+  z-index: 3;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  background: linear-gradient(rgb(90 58 38 / 0.95), rgb(58 36 24 / 0.95));
+  box-shadow:
+    inset 0 0 0 1px rgb(231 183 101 / 0.55),
+    inset 0 0 0 3px rgb(30 18 12 / 0.6);
+  color: var(--cf3-cream);
+  clip-path: polygon(
+    0 var(--cf3-px),
+    var(--cf3-px) var(--cf3-px),
+    var(--cf3-px) 0,
+    calc(100% - var(--cf3-px)) 0,
+    calc(100% - var(--cf3-px)) var(--cf3-px),
+    100% var(--cf3-px),
+    100% calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) 100%,
+    var(--cf3-px) 100%,
+    var(--cf3-px) calc(100% - var(--cf3-px)),
+    0 calc(100% - var(--cf3-px))
+  );
+}
+.cf3-balda__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.cf3-balda__titulo {
+  margin: 0;
+  font:
+    700 0.9rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-balda__herr {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cf3-balda__ayuda,
+.cf3-balda__granos,
+.cf3-balda__vacio {
+  margin: 0;
+  color: rgb(243 230 200 / 0.8);
+  font:
+    italic 0.78rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-balda__pestanas {
+  display: flex;
+  gap: 4px;
+}
+.cf3-pestana {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: rgb(243 230 200 / 0.7);
+  font:
+    700 0.78rem/1.1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+.cf3-pestana[aria-selected='true'] {
+  border-bottom-color: var(--cf3-amber);
+  color: var(--cf3-cream);
+}
+.cf3-balda__fila {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 2px;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+.cf3-mueble {
+  display: grid;
+  gap: 2px;
+  min-width: 110px;
+  min-height: 52px;
+  padding: 6px 9px;
+  border: 0;
+  background: rgb(30 18 12 / 0.5);
+  box-shadow: inset 0 0 0 1px rgb(231 183 101 / 0.45);
+  color: var(--cf3-cream);
+  text-align: left;
+  cursor: pointer;
+}
+.cf3-mueble:hover:not(:disabled) {
+  background: rgb(30 18 12 / 0.72);
+}
+.cf3-mueble:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.cf3-mueble__nombre {
+  font:
+    700 0.76rem/1.15 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-mueble__n {
+  color: var(--cf3-amber);
+  font:
+    600 0.66rem/1.1 'Lora',
+    Georgia,
+    serif;
+}
+
+/* ── 1.120.1: la interfaz del café, más de videojuego ──
+   Cuadro de diálogo de RPG (retrato de Pilar, pestaña con su nombre y el «▼» de seguir), botones de píxel con relieve que se
+   hunden al pulsarlos, un HUD arriba (insignia de nivel, barra de reputación y granos), placas de madera para el nombre y la
+   balda de Decorar como un inventario de casillas con icono y número. Títulos y botones con la letra PuertoPixel de la app
+   (no la de pixelfx); los textos largos siguen en Lora para leerse bien. */
+.cf3 {
+  --cf3-ink: #0f090b;
+  --cf3-panel: #24161b;
+  --cf3-panel-2: #1a1014;
+  --cf3-wood: #6b4630;
+  --cf3-wood-dark: #3e2618;
+  --cf3-green: #6a9a3e;
+  /* El cuadro de diálogo se reparte según el ancho del café, no de la ventana */
+  container: cf3 / inline-size;
+}
+
+/* Botones de píxel: contorno oscuro, luz arriba y sombra abajo; al pulsar se hunden */
+.cf3-btn {
+  min-height: 42px;
+  padding: 9px 14px 12px;
+  background: var(--cf3-amber);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -5px 0 #b37a32,
+    inset 0 4px 0 #ffe0a0;
+  color: #2a1a10;
+  font: 400 14px/16px var(--pp-title);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.cf3-btn:hover,
+.cf3-btn:focus-visible {
+  background: #f4c97a;
+}
+.cf3-btn:active:not(:disabled) {
+  padding-top: 11px;
+  padding-bottom: 10px;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -2px 0 #b37a32,
+    inset 0 5px 0 #c98f3e;
+}
+.cf3-btn--suave {
+  background: #5a3a28;
+  box-shadow:
+    inset 0 0 0 2px #120a08,
+    inset 0 -5px 0 #3a2418,
+    inset 0 4px 0 #80583a;
+  color: var(--cf3-cream);
+}
+.cf3-btn--suave:hover,
+.cf3-btn--suave:focus-visible {
+  background: #684531;
+}
+.cf3-btn--suave:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 2px #120a08,
+    inset 0 -2px 0 #3a2418,
+    inset 0 5px 0 #2e1c12;
+}
+.cf3-btn--verde {
+  background: var(--cf3-green);
+  box-shadow:
+    inset 0 0 0 2px #17240e,
+    inset 0 -5px 0 #446a26,
+    inset 0 4px 0 #a0cc68;
+  color: #fff6dc;
+  text-shadow: 0 2px 0 #2c4418;
+}
+.cf3-btn--verde:hover,
+.cf3-btn--verde:focus-visible {
+  background: #78aa48;
+}
+.cf3-btn--verde:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 2px #17240e,
+    inset 0 -2px 0 #446a26,
+    inset 0 5px 0 #4e7a2c;
+}
+.cf3-btn:disabled {
+  opacity: 0.55;
+  filter: grayscale(0.5);
+}
+
+/* Los letreros de la escena, en la letra de píxel */
+.cf3-tag {
+  padding: 4px 8px 5px;
+  background: rgb(26 16 20 / 0.82);
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px rgb(231 183 101 / 0.75);
+  font: 400 14px/14px var(--pp-title);
+  letter-spacing: 0.03em;
+  opacity: 0.94;
+}
+
+/* El cuadro de diálogo */
+.cf3-franja {
+  display: block;
+  padding: 12px 0 0;
+  background: none;
+  box-shadow: none;
+}
+.cf3-caja {
+  --cf3-px: 4px;
+  display: grid;
+  grid-template-areas:
+    'retrato dice'
+    'retrato botones';
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+  padding: 16px 14px 14px;
+  background:
+    linear-gradient(rgb(255 255 255 / 0.035) 50%, transparent 50%) 0 0 / 100% 4px,
+    linear-gradient(var(--cf3-panel), var(--cf3-panel-2));
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px #e9cf98,
+    inset 0 0 0 6px var(--cf3-wood),
+    inset 0 0 0 8px var(--cf3-ink);
+  color: var(--cf3-cream);
+}
+@container cf3 (min-width: 700px) {
+  .cf3-caja {
+    grid-template-areas: 'retrato dice botones';
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+  }
+}
+.cf3-franja--nombres .cf3-caja {
+  grid-template-areas:
+    'retrato dice'
+    'nombres nombres'
+    'error error'
+    'botones botones';
+  grid-template-columns: 60px minmax(0, 1fr);
+}
+.cf3-quien {
+  --cf3-px: 2px;
+  position: absolute;
+  top: 0;
+  left: 22px;
+  z-index: 1;
+  margin: 0;
+  padding: 4px 12px 6px;
+  background: var(--cf3-amber);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #b37a32;
+  color: #2a1a10;
+  font: 400 14px/14px var(--pp-title);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.cf3-retrato {
+  --cf3-px: 3px;
+  grid-area: retrato;
+  align-self: start;
+  display: block;
+  width: 60px;
+  height: 60px;
+  padding: 6px;
+  background: linear-gradient(#8a6a4a, #6b4a32);
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px #d4ac6a,
+    inset 0 0 0 5px var(--cf3-ink);
+}
+.cf3-retrato[data-aviso='true'] {
+  background: linear-gradient(#4a3428, #33231b);
+}
+.cf3-px {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.cf3-dice {
+  grid-area: dice;
+  font:
+    0.92rem/1.42 'Lora',
+    Georgia,
+    serif;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
+}
+/* El «▼» de seguir, de píxel y parpadeando (quieto con movimiento reducido) */
+.cf3-sigue {
+  display: inline-block;
+  width: 10px;
+  height: 6px;
+  margin-left: 8px;
+  background: var(--cf3-amber);
+  clip-path: polygon(0 0, 100% 0, 100% 34%, 80% 34%, 80% 67%, 60% 67%, 60% 100%, 40% 100%, 40% 67%, 20% 67%, 20% 34%, 0 34%);
+  vertical-align: middle;
+  animation: cf3-parpadeo 0.9s steps(2, jump-none) infinite;
+}
+@keyframes cf3-parpadeo {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0.25;
+    transform: translateY(2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-sigue {
+    animation: none;
+  }
+}
+.cf3-botones {
+  grid-area: botones;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.cf3-error {
+  grid-area: error;
+}
+@media (max-width: 380px) {
+  .cf3-franja {
+    flex-direction: initial;
+  }
+  .cf3-caja {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+  .cf3-retrato {
+    width: 52px;
+    height: 52px;
+    padding: 5px;
+  }
+  .cf3-botones .cf3-btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* Las placas del nombre: maderas colgadas; la elegida, encendida */
+.cf3-nombres {
+  grid-area: nombres;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+  max-height: 40vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.cf3-nombre {
+  --cf3-px: 2px;
+  min-height: 40px;
+  padding: 6px 8px 9px;
+  background: var(--cf3-wood);
+  box-shadow:
+    inset 0 0 0 2px #120a08,
+    inset 0 -4px 0 #4a2e1f,
+    inset 0 3px 0 #8e6244;
+  color: var(--cf3-cream);
+  font: 400 14px/16px var(--pp-title);
+  text-align: center;
+}
+.cf3-nombre:hover {
+  background: #7a5238;
+}
+.cf3-nombre[aria-checked='true'] {
+  background: var(--cf3-amber);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 #b37a32,
+    inset 0 3px 0 #ffe0a0;
+  color: #2a1a10;
+}
+.cf3-nombre[aria-checked='true']::before {
+  display: inline-block;
+  width: 6px;
+  height: 10px;
+  margin-right: 6px;
+  background: #2a1a10;
+  clip-path: polygon(0 0, 34% 0, 34% 20%, 67% 20%, 67% 40%, 100% 40%, 100% 60%, 67% 60%, 67% 80%, 34% 80%, 34% 100%, 0 100%);
+  content: '';
+}
+
+/* El HUD de arriba: la insignia del nivel, el nombre, la barra de reputación y los granos */
+.cf3-hud {
+  position: absolute;
+  top: calc(46px + env(safe-area-inset-top, 0px));
+  right: 10px;
+  left: 10px;
+  z-index: 3;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.cf3-placa,
+.cf3-monedero {
+  --cf3-px: 3px;
+  position: static;
+  margin: 0;
+  background: rgb(26 16 20 / 0.88);
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px rgb(231 183 101 / 0.85),
+    inset 0 0 0 5px var(--cf3-ink);
+  color: var(--cf3-cream);
+}
+.cf3-placa {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 7px 12px 7px 7px;
+}
+.cf3-placa__insignia {
+  --cf3-px: 2px;
+  display: grid;
+  flex: none;
+  place-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(#f6cf83, #d49c45);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #a86e2c;
+  color: #2a1a10;
+  font: 400 20px/18px var(--pp-title);
+  text-align: center;
+}
+.cf3-placa__nv {
+  font-size: 9px;
+  line-height: 10px;
+  letter-spacing: 0.08em;
+}
+.cf3-placa__texto {
+  display: grid;
+  grid-template-areas:
+    'nombre nombre'
+    'nivel cifra'
+    'xp xp';
+  gap: 2px 8px;
+  min-width: 0;
+}
+.cf3-placa__nombre {
+  grid-area: nombre;
+  overflow: hidden;
+  font: 400 16px/18px var(--pp-title);
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cf3-placa__nivel {
+  grid-area: nivel;
+  font:
+    700 0.62rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-xp__cifra {
+  grid-area: cifra;
+  color: rgb(243 230 200 / 0.75);
+  font:
+    600 0.6rem/1.2 'Lora',
+    Georgia,
+    serif;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.cf3-xp {
+  grid-area: xp;
+  display: block;
+  width: 140px;
+  max-width: 100%;
+  height: 8px;
+  padding: 2px;
+  background: var(--cf3-ink);
+  box-shadow: inset 0 0 0 1px #5a3a26;
+}
+.cf3-xp__lleno {
+  display: block;
+  min-width: 2px;
+  height: 100%;
+  background: repeating-linear-gradient(90deg, #9cd46e 0 4px, #79b34e 4px 6px);
+}
+.cf3-monedero {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 12px 8px 9px;
+  font: 400 16px/16px var(--pp-title);
+}
+.cf3-monedero .cf3-px {
+  width: 18px;
+  height: 18px;
+}
+
+/* La balda de Decorar como inventario */
+.cf3-balda {
+  --cf3-px: 4px;
+  gap: 9px;
+  padding: 14px 14px 14px;
+  background: linear-gradient(var(--cf3-panel), var(--cf3-panel-2));
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px #e9cf98,
+    inset 0 0 0 6px var(--cf3-wood),
+    inset 0 0 0 8px var(--cf3-ink);
+}
+.cf3-balda__elegido {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  margin: 0;
+}
+.cf3-balda__icono {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 3px;
+  background: #3a2a26;
+  box-shadow: inset 0 0 0 2px var(--cf3-ink);
+}
+.cf3-balda__titulo {
+  font: 400 16px/18px var(--pp-title);
+}
+.cf3-balda__pestanas {
+  gap: 4px;
+  border-bottom: 2px solid var(--cf3-wood);
+}
+.cf3-pestana {
+  --cf3-px: 2px;
+  min-height: 34px;
+  padding: 7px 12px 6px;
+  border: 0;
+  background: #3a2620;
+  box-shadow: inset 0 0 0 2px var(--cf3-ink);
+  color: rgb(243 230 200 / 0.7);
+  font: 400 14px/14px var(--pp-title);
+  clip-path: polygon(0 var(--cf3-px), var(--cf3-px) var(--cf3-px), var(--cf3-px) 0, calc(100% - var(--cf3-px)) 0, calc(100% - var(--cf3-px)) var(--cf3-px), 100% var(--cf3-px), 100% 100%, 0 100%);
+}
+.cf3-pestana[aria-selected='true'] {
+  background: var(--cf3-amber);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 3px 0 #ffe0a0;
+  color: #2a1a10;
+}
+.cf3-balda__fila {
+  gap: 8px;
+  padding: 2px 0 4px;
+}
+.cf3-mueble {
+  --cf3-px: 3px;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  width: 84px;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 6px 8px;
+  background: #2e1e22;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px #5a3e30,
+    inset 0 -6px 0 #24161a;
+  text-align: center;
+}
+.cf3-mueble:hover:not(:disabled),
+.cf3-mueble:focus-visible {
+  background: #3a2629;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px var(--cf3-amber),
+    inset 0 -6px 0 #24161a;
+}
+.cf3-mueble:active:not(:disabled) {
+  transform: translateY(2px);
+}
+.cf3-mueble__icono {
+  display: block;
+  width: 48px;
+  height: 48px;
+  padding: 4px;
+  background: radial-gradient(circle at 50% 60%, rgb(231 183 101 / 0.22), transparent 70%);
+}
+.cf3-mueble:disabled .cf3-mueble__icono {
+  filter: grayscale(1) brightness(0.7);
+}
+.cf3-mueble__nombre {
+  font:
+    700 0.64rem/1.15 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-mueble__n {
+  --cf3-px: 2px;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  background: var(--cf3-amber);
+  box-shadow: inset 0 0 0 2px #2a1a10;
+  color: #2a1a10;
+  font: 400 14px/20px var(--pp-title);
+  clip-path: polygon(
+    0 var(--cf3-px),
+    var(--cf3-px) var(--cf3-px),
+    var(--cf3-px) 0,
+    calc(100% - var(--cf3-px)) 0,
+    calc(100% - var(--cf3-px)) var(--cf3-px),
+    100% var(--cf3-px),
+    100% calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) 100%,
+    var(--cf3-px) 100%,
+    var(--cf3-px) calc(100% - var(--cf3-px)),
+    0 calc(100% - var(--cf3-px))
+  );
+}
+.cf3-mueble__n[data-cero='true'] {
+  background: #5a3e30;
+  color: rgb(243 230 200 / 0.7);
+}
+/* Compacta para no tapar la rejilla: el título y «Cancelar / Listo» en una fila; con un mueble elegido, sus herramientas debajo */
+.cf3-balda__cabeza {
+  flex-wrap: nowrap;
+}
+.cf3-balda__cabeza:has(.cf3-balda__icono) {
+  flex-wrap: wrap;
+}
+.cf3-balda__elegido {
+  flex: 1 1 auto;
+}
+.cf3-balda__cabeza:not(:has(.cf3-balda__icono)) .cf3-balda__titulo {
+  font-size: 14px;
+  line-height: 16px;
+}
+.cf3-balda__herr {
+  flex-wrap: nowrap;
+}
+.cf3-balda__herr .cf3-btn {
+  min-height: 38px;
+  padding: 8px 10px 11px;
+  font-size: 12px;
+  line-height: 14px;
+}
+.cf3-balda__herr .cf3-btn:active:not(:disabled) {
+  padding-top: 10px;
+  padding-bottom: 9px;
+}
+.cf3-pestana {
+  min-height: 30px;
+  padding: 6px 10px 5px;
+}
+.cf3-mueble {
+  width: 76px;
+  padding: 6px 5px 7px;
+  gap: 3px;
+}
+.cf3-mueble__icono {
+  width: 42px;
+  height: 42px;
+  padding: 3px;
+}
+
+/* ── 1.121 (bloque 3): los clientes, atender, la taza que se llena y la pizarra ── */
+/* El letrero de quien espera: ámbar, con un «!» de píxel, para que se vea que te busca */
+.cf3-tag--cliente {
+  background: var(--cf3-amber);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #b37a32;
+  color: #2a1a10;
+  text-shadow: none;
+  opacity: 1;
+}
+.cf3-tag--cliente {
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+.cf3-tag--cliente::before {
+  width: 4px;
+  height: 10px;
+  background: linear-gradient(#2a1a10 0 60%, transparent 60% 75%, #2a1a10 75%);
+  transform: none;
+}
+.cf3-tag--cliente:hover,
+.cf3-tag--cliente:focus-visible {
+  background: #f4c97a;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-tag--cliente:not([data-off='true']) {
+    animation: cf3-salta 1.2s steps(2, jump-none) infinite;
+  }
+}
+@keyframes cf3-salta {
+  from {
+    margin-top: 0;
+  }
+  to {
+    margin-top: -3px;
+  }
+}
+
+/* A la derecha del HUD: los granos y, debajo, la pizarra */
+.cf3-hud__der {
+  display: grid;
+  flex: none;
+  gap: 6px;
+  justify-items: end;
+}
+.cf3-monedero {
+  position: relative;
+}
+.cf3-monedero__mas {
+  position: absolute;
+  top: 100%;
+  right: 4px;
+  color: #ffe08a;
+  font: 400 16px/16px var(--pp-title);
+  text-shadow:
+    0 2px 0 #2a1a10,
+    2px 0 0 #2a1a10,
+    -2px 0 0 #2a1a10,
+    0 -2px 0 #2a1a10;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-monedero__mas {
+    animation: cf3-sube 2.4s steps(12, end) forwards;
+  }
+}
+@keyframes cf3-sube {
+  from {
+    opacity: 1;
+    transform: translateY(14px);
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+.cf3-pizarra-btn {
+  --cf3-px: 3px;
+  position: relative;
+  width: 46px;
+  height: 42px;
+  padding: 7px;
+  border: 0;
+  background: rgb(26 16 20 / 0.88);
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px rgb(231 183 101 / 0.85),
+    inset 0 0 0 5px var(--cf3-ink);
+  cursor: pointer;
+  pointer-events: auto;
+  clip-path: polygon(
+    0 var(--cf3-px),
+    var(--cf3-px) var(--cf3-px),
+    var(--cf3-px) 0,
+    calc(100% - var(--cf3-px)) 0,
+    calc(100% - var(--cf3-px)) var(--cf3-px),
+    100% var(--cf3-px),
+    100% calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) 100%,
+    var(--cf3-px) 100%,
+    var(--cf3-px) calc(100% - var(--cf3-px)),
+    0 calc(100% - var(--cf3-px))
+  );
+}
+.cf3-pizarra-btn:hover,
+.cf3-pizarra-btn:focus-visible,
+.cf3-pizarra-btn[aria-expanded='true'] {
+  background: #3a2629;
+}
+.cf3-pizarra-btn:focus-visible {
+  outline: 2px solid var(--cf3-cream);
+  outline-offset: -6px;
+}
+.cf3-pizarra-btn__n {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 2px;
+  background: var(--cf3-amber);
+  color: #2a1a10;
+  font: 400 12px/14px var(--pp-title);
+}
+
+/* La pizarra: de tiza sobre verde, con marco de madera */
+.cf3-pizarra {
+  --cf3-px: 4px;
+  position: absolute;
+  top: calc(150px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  left: 16px;
+  z-index: 4;
+  display: grid;
+  gap: 10px;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 16px 18px 16px;
+  background: radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.05), transparent 60%), #2f4a3a;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 7px #8a5e3a,
+    inset 0 0 0 9px var(--cf3-ink);
+  color: #e8efe4;
+  clip-path: polygon(
+    0 var(--cf3-px),
+    var(--cf3-px) var(--cf3-px),
+    var(--cf3-px) 0,
+    calc(100% - var(--cf3-px)) 0,
+    calc(100% - var(--cf3-px)) var(--cf3-px),
+    100% var(--cf3-px),
+    100% calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) 100%,
+    var(--cf3-px) 100%,
+    var(--cf3-px) calc(100% - var(--cf3-px)),
+    0 calc(100% - var(--cf3-px))
+  );
+}
+.cf3-pizarra__titulo {
+  margin: 0;
+  font: 400 18px/20px var(--pp-title);
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.cf3-pizarra__lista {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cf3-pizarra__lista li {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgb(232 239 228 / 0.3);
+}
+.cf3-pizarra__frase {
+  font:
+    italic 0.95rem/1.35 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-pizarra__firma {
+  justify-self: end;
+  color: #f2d48a;
+  font: 400 14px/14px var(--pp-title);
+}
+.cf3-pizarra__vacia {
+  margin: 0;
+  font:
+    italic 0.88rem/1.4 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-pizarra .cf3-btn {
+  justify-self: center;
+}
+
+/* Atender: la taza, lo ganado y el corazón */
+.cf3-franja--atender .cf3-caja {
+  grid-template-areas:
+    'retrato dice'
+    'retrato extra'
+    'retrato botones';
+}
+@container cf3 (min-width: 700px) {
+  .cf3-franja--atender .cf3-caja {
+    grid-template-areas:
+      'retrato dice botones'
+      'retrato extra botones';
+  }
+}
+.cf3-franja--atender .cf3-taza,
+.cf3-franja--atender .cf3-dado,
+.cf3-franja--atender .cf3-error {
+  grid-area: extra;
+}
+.cf3-retrato {
+  position: relative;
+}
+.cf3-corazon {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 26px;
+  height: 24px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-corazon {
+    animation: cf3-late 0.8s steps(4, end) both;
+  }
+}
+@keyframes cf3-late {
+  0% {
+    transform: scale(0.4);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.cf3-btn--icono {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.cf3-btn--icono .cf3-px {
+  width: 22px;
+  height: 22px;
+}
+.cf3-btn.cf3-cafetera {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.cf3-taza {
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  height: 46px;
+}
+.cf3-taza__vaso {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  background: #f3e6c8;
+  box-shadow:
+    inset 0 0 0 3px #3a2418,
+    inset 0 -6px 0 #d9c49a;
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 84% 100%, 16% 100%, 0 80%);
+}
+.cf3-taza__liquido {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  left: 3px;
+  display: block;
+  max-height: calc(100% - 6px);
+  background: repeating-linear-gradient(#6b3d22 0 4px, #5a3422 4px 6px);
+}
+.cf3-taza__liquido[data-bebida='te'] {
+  background: repeating-linear-gradient(#c88a3a 0 4px, #b07a32 4px 6px);
+}
+.cf3-taza__asa {
+  width: 10px;
+  height: 18px;
+  margin-left: -2px;
+  box-shadow: inset 0 0 0 3px #3a2418;
+}
+.cf3-dado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+.cf3-dado__ficha {
+  --cf3-px: 2px;
+  padding: 5px 9px 6px;
+  background: #4a3020;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px #e7b765;
+  color: #ffe08a;
+  font: 400 14px/14px var(--pp-title);
+}
+.cf3-dado__ficha--rep {
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px #79b34e;
+  color: #b8ec8c;
+}
+
+/* Recomendar: los lomos de tu estantería, como fichas de inventario */
+.cf3-lomos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+  max-height: min(38vh, 260px);
+  margin: 0;
+  padding: 0 2px 2px 0;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+.cf3-lomo {
+  --cf3-px: 2px;
+  display: grid;
+  grid-template-areas:
+    'tapa titulo'
+    'tapa autor';
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 1px 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 8px 6px 6px;
+  border: 0;
+  background: #2e1e22;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px #5a3e30;
+  color: var(--cf3-cream);
+  text-align: left;
+  cursor: pointer;
+  clip-path: polygon(
+    0 var(--cf3-px),
+    var(--cf3-px) var(--cf3-px),
+    var(--cf3-px) 0,
+    calc(100% - var(--cf3-px)) 0,
+    calc(100% - var(--cf3-px)) var(--cf3-px),
+    100% var(--cf3-px),
+    100% calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) 100%,
+    var(--cf3-px) 100%,
+    var(--cf3-px) calc(100% - var(--cf3-px)),
+    0 calc(100% - var(--cf3-px))
+  );
+}
+.cf3-lomo:hover,
+.cf3-lomo:focus-visible {
+  background: #3a2629;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px var(--cf3-amber);
+}
+.cf3-lomo:active {
+  transform: translateY(2px);
+}
+.cf3-lomo__tapa {
+  grid-area: tapa;
+  align-self: stretch;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.5),
+    inset 0 4px 0 rgb(255 255 255 / 0.18);
+}
+.cf3-lomo__titulo {
+  grid-area: titulo;
+  overflow: hidden;
+  font:
+    700 0.72rem/1.2 'Lora',
+    Georgia,
+    serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cf3-lomo__autor {
+  grid-area: autor;
+  overflow: hidden;
+  color: rgb(243 230 200 / 0.65);
+  font:
+    italic 0.66rem/1.2 'Lora',
+    Georgia,
+    serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 1.121, revisión del 12-11-2026: la comanda, la receta, las fichas de libro, las estrellas y el excéntrico ── */
+/* Atender: lo de abajo ocupa todo el ancho (fichas, receta, resultado) */
+.cf3-franja--atender .cf3-caja {
+  grid-template-areas:
+    'retrato dice'
+    'extra extra'
+    'error error'
+    'botones botones';
+}
+@container cf3 (min-width: 700px) {
+  .cf3-franja--atender .cf3-caja {
+    grid-template-areas:
+      'retrato dice botones'
+      'extra extra extra'
+      'error error error';
+  }
+}
+.cf3-franja--atender .cf3-error {
+  grid-area: error;
+}
+.cf3-extra {
+  grid-area: extra;
+  min-width: 0;
+}
+
+/* La comanda: un tique de papel prendido arriba, que se queda a la vista mientras preparas y llevas la taza */
+.cf3-comanda {
+  --cf3-px: 3px;
+  position: absolute;
+  top: calc(112px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  z-index: 3;
+  max-width: min(320px, calc(100% - 92px));
+  margin: 0;
+  padding: 10px 12px 12px;
+  background: repeating-linear-gradient(transparent 0 19px, rgb(120 90 60 / 0.16) 19px 20px), #f6ecd4;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 #d8c49c,
+    0 4px 0 rgb(0 0 0 / 0.35);
+  color: #2e1e14;
+  pointer-events: none;
+  clip-path: polygon(
+    0 var(--cf3-px),
+    var(--cf3-px) var(--cf3-px),
+    var(--cf3-px) 0,
+    calc(100% - var(--cf3-px)) 0,
+    calc(100% - var(--cf3-px)) var(--cf3-px),
+    100% var(--cf3-px),
+    100% calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) 100%,
+    var(--cf3-px) 100%,
+    var(--cf3-px) calc(100% - var(--cf3-px)),
+    0 calc(100% - var(--cf3-px))
+  );
+}
+.cf3-comanda::before {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 22px;
+  height: 7px;
+  background: rgb(214 170 92 / 0.85);
+  content: '';
+  transform: translateX(-50%);
+}
+.cf3-comanda__titulo {
+  margin: 2px 0 6px;
+  color: #8a3a2a;
+  font: 400 14px/14px var(--pp-title);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.cf3-comanda__linea {
+  margin: 0;
+  font:
+    700 0.95rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-comanda__acertijos {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font:
+    italic 0.82rem/1.28 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-comanda__acertijos li::before {
+  margin-right: 6px;
+  color: var(--cf3-tema, #8a5ab0);
+  content: '✦';
+  font-style: normal;
+}
+/* La del excéntrico: papel de su color, con borde dorado */
+.cf3-comanda--raro {
+  background: radial-gradient(circle at 85% 15%, rgb(255 255 255 / 0.18), transparent 50%), color-mix(in srgb, var(--cf3-tema) 22%, #f6ecd4);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 0 0 4px #e8c56a,
+    inset 0 0 0 5px #2a1a10,
+    0 4px 0 rgb(0 0 0 / 0.35);
+}
+.cf3-comanda--raro .cf3-comanda__titulo {
+  color: color-mix(in srgb, var(--cf3-tema) 70%, #2a1a10);
+}
+
+/* La receta: cuatro huecos, cada uno se cambia tocándolo (o tocando su cosa en la barra) */
+.cf3-receta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.cf3-receta__hueco {
+  --cf3-px: 2px;
+  display: grid;
+  gap: 3px;
+  min-height: 48px;
+  padding: 6px 4px 7px;
+  border: 0;
+  background: #3a2629;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px var(--cf3-amber);
+  color: var(--cf3-cream);
+  text-align: center;
+  cursor: pointer;
+}
+.cf3-receta__hueco[data-vacio='true'] {
+  background: #241619;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px rgb(231 183 101 / 0.4);
+}
+.cf3-receta__hueco:hover,
+.cf3-receta__hueco:focus-visible {
+  background: #4a3034;
+}
+.cf3-receta__parte {
+  color: rgb(243 230 200 / 0.6);
+  font: 400 11px/11px var(--pp-title);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cf3-receta__valor {
+  overflow: hidden;
+  font:
+    700 0.78rem/1.15 'Lora',
+    Georgia,
+    serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cf3-receta__hueco[data-vacio='true'] .cf3-receta__valor {
+  color: var(--cf3-amber);
+}
+
+/* Las fichas de libro: tres tapas con sus pistas */
+.cf3-fichas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cf3-ficha {
+  --cf3-px: 3px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 6px 6px 8px;
+  border: 0;
+  background: #2e1e22;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px #5a3e30;
+  color: var(--cf3-cream);
+  text-align: left;
+  cursor: pointer;
+}
+.cf3-ficha:hover,
+.cf3-ficha:focus-visible {
+  background: #3a2629;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px var(--cf3-amber);
+}
+.cf3-ficha:active:not(:disabled) {
+  transform: translateY(2px);
+}
+.cf3-ficha:disabled {
+  opacity: 0.6;
+}
+.cf3-ficha__tapa {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  height: 74px;
+  padding: 6px 6px 6px 12px;
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.35) 0 5px, rgb(255 255 255 / 0.16) 5px 6px, transparent 6px), linear-gradient(rgb(255 255 255 / 0.14), transparent 40%), var(--cf3-tapa);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.55),
+    inset 0 -3px 0 rgb(0 0 0 / 0.25);
+}
+.cf3-ficha__tapa::after {
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  left: 12px;
+  height: 2px;
+  background: rgb(255 230 170 / 0.55);
+  content: '';
+}
+.cf3-ficha__titulo {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #fff6e0;
+  font:
+    700 0.74rem/1.18 'Lora',
+    Georgia,
+    serif;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.6);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.cf3-ficha__autor {
+  overflow: hidden;
+  color: rgb(243 230 200 / 0.7);
+  font:
+    italic 0.68rem/1.2 'Lora',
+    Georgia,
+    serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cf3-ficha__pistas {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 3px;
+}
+.cf3-ficha__pistas span {
+  padding: 2px 4px 3px;
+  background: #4a3020;
+  color: #ffe08a;
+  font: 400 11px/11px var(--pp-title);
+}
+
+/* El resultado: tres estrellas de píxel, el repaso y lo ganado */
+.cf3-resultado {
+  display: grid;
+  gap: 8px;
+}
+.cf3-estrellas {
+  display: flex;
+  gap: 6px;
+}
+.cf3-estrella {
+  width: 26px;
+  height: 25px;
+  background: #3a2a26;
+  clip-path: polygon(50% 0, 62% 35%, 100% 37%, 70% 60%, 80% 100%, 50% 77%, 20% 100%, 30% 60%, 0 37%, 38% 35%);
+}
+.cf3-estrella[data-llena='true'] {
+  background: linear-gradient(#ffe08a 0 45%, #e7b765 45%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-estrella[data-llena='true'] {
+    animation: cf3-late 0.5s steps(4, end) both;
+  }
+  .cf3-estrella[data-llena='true']:nth-child(2) {
+    animation-delay: 0.25s;
+  }
+  .cf3-estrella[data-llena='true']:nth-child(3) {
+    animation-delay: 0.5s;
+  }
+}
+.cf3-repaso {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cf3-repaso li {
+  padding: 3px 6px 4px;
+  background: #2f4422;
+  color: #c8f0a0;
+  font:
+    0.74rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-repaso li[data-ok='false'] {
+  background: #4a2224;
+  color: #ffb8a8;
+}
+.cf3-repaso li[data-ok='nada'] {
+  background: #33262a;
+  color: rgb(243 230 200 / 0.7);
+}
+
+/* El excéntrico: su letrero es una estrella de su color; su cuadro, con marco dorado */
+.cf3-tag--raro {
+  background: var(--cf3-tema);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 0 0 3px #ffe08a,
+    0 0 10px var(--cf3-tema);
+}
+.cf3-tag--raro::before {
+  width: 16px;
+  height: 15px;
+  background: #ffe08a;
+  clip-path: polygon(50% 0, 62% 35%, 100% 37%, 70% 60%, 80% 100%, 50% 77%, 20% 100%, 30% 60%, 0 37%, 38% 35%);
+}
+.cf3-tag--raro:hover,
+.cf3-tag--raro:focus-visible {
+  background: color-mix(in srgb, var(--cf3-tema) 80%, white);
+}
+.cf3-franja--raro .cf3-quien {
+  background: var(--cf3-tema);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 0 0 3px #ffe08a;
+  color: #fff6dc;
+  text-shadow: 0 2px 0 #2a1a10;
+}
+.cf3-franja--raro .cf3-caja {
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px #ffe08a,
+    inset 0 0 0 6px var(--cf3-tema),
+    inset 0 0 0 8px var(--cf3-ink);
+}
+.cf3-retrato--raro {
+  background: linear-gradient(color-mix(in srgb, var(--cf3-tema) 70%, white), var(--cf3-tema));
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px #ffe08a,
+    inset 0 0 0 5px var(--cf3-ink);
+}
+.cf3-retrato--raro::after {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 19px;
+  background: #ffe08a;
+  clip-path: polygon(50% 0, 62% 35%, 100% 37%, 70% 60%, 80% 100%, 50% 77%, 20% 100%, 30% 60%, 0 37%, 38% 35%);
+  content: '';
+}
+
+/* La pizarra: las reseñas doradas */
+.cf3-pizarra__lista li[data-dorada='true'] .cf3-pizarra__frase {
+  color: #ffe08a;
+}
+.cf3-pizarra__lista li[data-dorada='true'] .cf3-pizarra__firma {
+  color: #ffd36a;
+}
+@media (max-width: 380px) {
+  .cf3-fichas {
+    gap: 5px;
+  }
+  .cf3-ficha__tapa {
+    height: 64px;
+  }
+}

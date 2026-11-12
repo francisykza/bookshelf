@@ -335,12 +335,12 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'ed-window ed-shop';
-    el.setAttribute('aria-label', 'Entrar en la tienda del bajo');
+    el.setAttribute('aria-label', 'Entrar en el café-librería del bajo');
     box(el, shop);
     const plate = document.createElement('span');
     plate.className = 'ed-window__plate';
     const name = document.createElement('strong');
-    name.textContent = 'Tienda';
+    name.textContent = 'Café-librería';
     plate.append(name);
     if (shopBadge) {
       const who = document.createElement('span');

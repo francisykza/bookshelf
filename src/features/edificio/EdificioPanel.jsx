@@ -23,7 +23,7 @@ import { VecinoMesa } from './VecinoMesa';
 import { GranHotel } from './hotel/GranHotel';
 import { mesasQueEsperan } from './hotel/veintiuna';
 import { StarterPicker } from './StarterPicker';
-import { Tienda } from './Tienda';
+import { Cafe } from './cafe/Cafe';
 // La visita en primera persona trae Three.js: solo se descarga si se entra
 const VisitaPiso = lazy(() => import('../pisoLab/VisitaPiso'));
 
@@ -174,7 +174,7 @@ function PisoView({ room, editable, label, soundOn, inside, decorate = false, in
   return <div ref={ref} className="ed-piso" />;
 }
 
-export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions = null, timer: reloj = null, askPages = false, onPagesDone, onOpenCalendar }) {
+export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions: _onOpenMissions = null, timer: reloj = null, askPages = false, onPagesDone, onOpenCalendar }) {
   const community = useCommunity({ autoload: true });
   // El edificio no pone música propia (Fase 1, decisión de Francisco): sigue la que tengas elegida en Sonido
   const ready = community.status === 'ready' && community.member;
@@ -186,12 +186,12 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   // Mis copias de cada mueble (1.66, §66); null: sin la migración del inventario, todo libre como antes
   const [inventory, setInventory] = useState(null);
   const [choosing, setChoosing] = useState(false);
-  // En la tienda, con un sobre abierto, el «Volver» de la barra vuelve a la tienda (1.68)
-  const [revealing, setRevealing] = useState(false);
-  const [closeReveal, setCloseReveal] = useState(0);
-  // El mueble elegido en un sobre para colocarlo (1.76): el piso se abre con él listo para arrastrar
+  // 1.119: la tienda del bajo es el café-librería (cafe/Cafe.jsx); ya no abre sobres, así que no hay «Volver a la tienda»
+  const revealing = false;
+  // El mueble elegido en un sobre para colocarlo (1.76): desde la 1.119 no llega ninguno (la tienda no vende), pero el piso
+  // lo sigue admitiendo
   const [toPlace, setToPlace] = useState(null);
-  const [toPlaceAcabado, setToPlaceAcabado] = useState(null);
+  const [toPlaceAcabado] = useState(null);
   // Dentro del hotel, la sala en la que estás (1.75): null es la fachada; el «Volver» de la barra sale a la calle
   const [hotelRoom, setHotelRoom] = useState(null);
   const [hotelDir, setHotelDir] = useState(false);
@@ -509,16 +509,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   } else if (inHotel) {
     body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} timer={reloj} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} onInventory={setInventory} />;
   } else if (inShop) {
-    body = inventory?.tienda ? (
-      <Tienda inventory={inventory} room={me?.room} soundOn={soundOn} onInventory={setInventory} onGoPiso={(id, acabado = null) => {
-          if (!me) return;
-          setToPlace(id ?? null);
-          setToPlaceAcabado(acabado);
-          onOpenPiso(me.user_id);
-        }} onOpenMissions={onOpenMissions} onReveal={setRevealing} closeReveal={closeReveal} />
-    ) : (
-      <p className="ed-note">{inventory ? 'La tienda del bajo abre muy pronto.' : 'Abriendo la tienda…'}</p>
-    );
+    // 1.119 (docs/qa/cafe-libreria.md, bloque 1): el bajo en traspaso, que será tu café-librería. Sobres, muebles y
+    // reciclar ya no se ven aquí (Tienda.jsx se conserva sin montar; el servidor y tus datos no cambian)
+    body = <Cafe inventario={inventory} layoutPiso={me?.room ?? null} />;
   } else if (pisoId && !open) {
     body = <p className="ed-note">Este piso ya no está en tu edificio.</p>;
   } else if (open && mine && choosing) {
@@ -575,18 +568,18 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
         <h2 className="px-sr" id="ed-title">
           El edificio del puerto. Tu puerta: {doorLabel(data.puerta)}.
         </h2>
-        <Facade vecinos={data.vecinos} onOpenPiso={onOpenPiso} shopBadge={inventory?.tienda ? `${inventory.tickets} tickets` : null} mail={mail} userId={community.userId} />
+        <Facade vecinos={data.vecinos} onOpenPiso={onOpenPiso} shopBadge="Se traspasa" mail={mail} userId={community.userId} />
       </div>
     );
   }
 
   return (
-    <PanelShell onClose={onClose} label={inHotel ? 'El Gran Hotel del Puerto' : inShop ? 'La tienda del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
+    <PanelShell onClose={onClose} label={inHotel ? 'El Gran Hotel del Puerto' : inShop ? 'El café-librería del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
       <div className="ed-bar">
         {pisoId ? (
-          <button type="button" className="ed-bar__back" onClick={dressing ? () => setCloseDressing((n) => n + 1) : inShop && revealing ? () => setCloseReveal((n) => n + 1) : inHotel && hotelRoom ? () => setHotelRoom(null) : onClose}>
+          <button type="button" className="ed-bar__back" onClick={dressing ? () => setCloseDressing((n) => n + 1) : inHotel && hotelRoom ? () => setHotelRoom(null) : onClose}>
             <ArrowLeft aria-hidden="true" />
-            {dressing ? 'Al piso' : inShop && revealing ? 'Volver a la tienda' : inHotel ? (hotelRoom ? 'A la calle' : 'Al puerto') : 'Volver al portal'}
+            {dressing ? 'Al piso' : inHotel ? (hotelRoom ? 'A la calle' : 'Al puerto') : 'Volver al portal'}
           </button>
         ) : (
           <button type="button" className="ed-bar__close" onClick={onClose} aria-label="Cerrar el edificio">

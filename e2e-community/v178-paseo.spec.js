@@ -58,7 +58,7 @@ test('a la tienda y a la limusina, tu personaje va andando desde el portal', asy
   let panel = await toPortal(page);
 
   // A la tienda: sale del portal y anda hacia la derecha
-  await panel.getByRole('button', { name: 'Entrar en la tienda del bajo' }).click();
+  await panel.getByRole('button', { name: 'Entrar en el café-librería del bajo' }).click();
   await expect(panel.locator('.ed-walker')).toHaveCount(1);
   await page.waitForTimeout(450);
   const x0 = await walkerBox(panel);
@@ -66,9 +66,9 @@ test('a la tienda y a la limusina, tu personaje va andando desde el portal', asy
   await page.waitForTimeout(400);
   expect(await walkerBox(panel)).toBeGreaterThan(x0);
   // Aún no ha entrado: la tienda se abre al llegar
-  await expect(page.getByRole('dialog', { name: 'La tienda del bajo' })).toHaveCount(0);
-  await expect(page.getByRole('dialog', { name: 'La tienda del bajo' })).toBeVisible({ timeout: 8000 });
-  await page.getByRole('dialog', { name: 'La tienda del bajo' }).getByRole('button', { name: /^Atrás|^Volver|^Salir/ }).first().click();
+  await expect(page.getByRole('dialog', { name: 'El café-librería del bajo' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'El café-librería del bajo' })).toBeVisible({ timeout: 8000 });
+  await page.getByRole('dialog', { name: 'El café-librería del bajo' }).getByRole('button', { name: /^Atrás|^Volver|^Salir/ }).first().click();
 
   // A la limusina: baja hacia el coche y sube; luego, el viaje
   panel = page.getByRole('dialog', { name: 'El edificio del puerto' });
@@ -118,7 +118,7 @@ test('con movimiento reducido, directo a la tienda, sin paseo', async ({ page },
   test.skip(!/chromium-390x844$/.test(info.project.name), '390 en Chromium');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const panel = await toPortal(page);
-  await panel.getByRole('button', { name: 'Entrar en la tienda del bajo' }).click();
-  await expect(page.getByRole('dialog', { name: 'La tienda del bajo' })).toBeVisible({ timeout: 3000 });
+  await panel.getByRole('button', { name: 'Entrar en el café-librería del bajo' }).click();
+  await expect(page.getByRole('dialog', { name: 'El café-librería del bajo' })).toBeVisible({ timeout: 3000 });
   await expect(page.locator('.ed-walker')).toHaveCount(0);
 });

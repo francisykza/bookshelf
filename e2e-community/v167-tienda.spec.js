@@ -234,7 +234,7 @@ test('las misiones del ordenador se cobran en tickets y las figuras no aparecen'
   await page.keyboard.press('Enter');
   const laptop = page.getByRole('dialog').first();
   await laptop.getByRole('tab', { name: /Misiones/ }).click();
-  await expect(laptop.getByText('tickets para la tienda del bajo')).toBeVisible({ timeout: 15000 });
+  await expect(laptop.getByText('tickets para el almacén del hotel')).toBeVisible({ timeout: 15000 });
   await expect(laptop.locator('.pc-tickets b')).toHaveText('30');
   await expect(laptop.getByText('Abrir el Ático')).toHaveCount(0);
   const row = laptop.locator('.pc-mission', { hasText: 'Completa 2 sesiones de lectura cozy' });
