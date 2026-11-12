@@ -148,6 +148,21 @@ const SONIDOS = {
     tono(b, { f: 2600, a: 2400, tipo: 'triangle', pico: 0.02, caida: 0.05 });
     ruido(b, { f: 3200, q: 2, pico: 0.05, caida: 0.04 });
   },
+  /** Bloque 4b: elegir el café con hielo, la cubitera de latón que suena al levantar la tapa (cubitos que se tocan). */
+  cubitera: (b) => {
+    tono(b, { f: 1900, a: 1750, tipo: 'triangle', pico: 0.04, caida: 0.09 });
+    tono(b, { f: 2700, tipo: 'sine', pico: 0.03, caida: 0.07, d: 0.05 });
+  },
+  /** Agitar la coctelera: los cubitos contra el acero, un golpe por vaivén (cristalino, con algo de ruido). */
+  hielo: (b) => {
+    const f = 2200 + Math.random() * 900;
+    tono(b, { f, a: f * 0.92, tipo: 'triangle', pico: 0.035, caida: 0.06 });
+    ruido(b, { f: 5200, q: 2.2, pico: 0.06, caida: 0.05 });
+  },
+  /** Elegir la vainilla: la vaina que se deja en la tabla de madera. */
+  vaina: (b) => tono(b, { f: 300, a: 260, tipo: 'triangle', pico: 0.06, caida: 0.1 }),
+  /** Rascar la vaina: la punta del cuchillo por la piel, un raspado corto y seco. */
+  raspa: (b) => ruido(b, { f: 2600, q: 3, tipo: 'bandpass', pico: 0.1, ataque: 0.02, caida: 0.14, barrido: 0.55 }),
   /** Empezar de nuevo: la taza vacía vuelve al plato. */
   vaciar: (b) => tono(b, { f: 1400, a: 1100, tipo: 'triangle', pico: 0.04, caida: 0.1 }),
 };

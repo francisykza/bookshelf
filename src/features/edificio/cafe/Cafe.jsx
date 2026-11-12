@@ -13,14 +13,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
 import { renderShopRoom } from '../shopRoom';
-import { CAFE_MUEBLES, CAFE_NOMBRES, cabe, deCasa, hueco, libresDeCasa, libresDelCafe, progresoNivel, uidNuevo } from './cafeCatalogo';
+import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCasa, libresDelCafe, maxCosas, progresoNivel, uidNuevo } from './cafeCatalogo';
 import { GRANO, LIBROS, PILAR, PIZARRA, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { bienvenidaLibros, cargarCafe, cargarDia, comprarCafe, errorCafe, guardarCafe, inaugurarCafe, llegaHabitual, servirCliente } from './cafeService';
+import { bienvenidaLibros, cargarCafe, cargarDia, comprarCafe, errorCafe, guardarCafe, inaugurarCafe, llegaHabitual, ponerEscaparate, servirCliente } from './cafeService';
 import { cartaDe, hayLogro, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
-import { BIENVENIDA, EXCENTRICOS, HABITUALES, RESENAS, clientesDelDia, enBalda, enCajas, librosDeLaBalda, pedidosDelDia, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
+import { BIENVENIDA, EXCENTRICOS, HABITUALES, RESENAS, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, pedidosDelDia, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { dayKey } from '../../../domain/dates';
@@ -43,6 +43,9 @@ const AVISOS_ABIERTO = {
   cortina: 'Detrás de la cortina sigue el local. Se irá abriendo cuando el café crezca.',
   escaparate: 'Desde la calle ya se ve la luz de tu café.',
 };
+/** Bloque 4b: el escaparate se elige desde el nivel 5; tres de tus leídos, de cara a la calle. */
+const ESCAPARATE_NIVEL = 5;
+const ESCAPARATE_MAX = 3;
 
 /** Tus libros para las estanterías: los leídos; con menos de 3, el café presta los de «Leyendo» y «Quiero leer». */
 function librosDelCafe(books = []) {
@@ -69,6 +72,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const [hablando, setHablando] = useState(null);
   const [aviso, setAviso] = useState('');
   const [eligiendo, setEligiendo] = useState(false);
+  // El escaparate (nivel 5): null, cerrado; si no, las claves elegidas
+  const [escaparate, setEscaparate] = useState(null);
   const [nombre, setNombre] = useState(null);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState('');
@@ -104,6 +109,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const vacio = sin3d ? renderShopRoom({ vacio: true }) : null;
   const libros = useMemo(() => librosDelCafe(state?.books), [state?.books]);
   const titulosDistri = useMemo(() => titulosDelCafe(libros), [libros]);
+  // Para el escaparate, solo tus leídos (nunca los prestados de «Leyendo» o «Quiero leer»)
+  const leidosEscaparate = useMemo(() => titulosDelCafe((state?.books ?? []).filter((b) => b.status === 'read' && b.title)).slice(0, 24), [state?.books]);
   // Las estanterías enseñan lo que hay en la balda, un lomo por ejemplar (sin la migración de los libros, tus leídos, como en la 1.120)
   const titulos = useMemo(() => (librosCafe === null ? libros.map((b) => b.title) : (librosCafe?.libros ?? []).flatMap((b) => Array(b.balda).fill(b.titulo))), [librosCafe, libros]);
   const deLaBalda = useMemo(() => librosDeLaBalda(librosCafe, libros), [librosCafe, libros]);
@@ -241,16 +248,39 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
 
   // La escena sigue al estado: el local, el plano (o el borrador de Decorar) y tus libros
   const plano = useMemo(() => borrador ?? local?.plano ?? PLANO_VACIO, [borrador, local?.plano]);
+  const escaparateTitulos = useMemo(() => (local?.escaparate ?? []).map((b) => b.titulo), [local?.escaparate]);
+  // Bloque 4b: con menos asientos que clientes posibles en el nivel 4 o 5, vienen menos (nunca menos de 5). Pilar lo dice sin
+  // agobiar: una vez al día al entrar y, después, cuando no hay nadie esperando.
+  const nivelAhora = local?.nivel ?? 1;
+  const tope = TOPE_CLIENTES[Math.min(5, nivelAhora)];
+  const caben = clientesDelNivel(nivelAhora, asientosDe(local?.plano));
+  const faltanAsientos = Boolean(abierto && tope != null && caben < tope);
+  const textoAsientos = `Con más sitios para sentarse vendría más gente: ahora caben ${caben} clientes al día y podrían venir ${tope}. Cuando quieras, coloca sillas o bancos en Decorar.`;
+  const avisadoAsientos = useRef(null);
+  useEffect(() => {
+    if (!dia || !faltanAsientos || avisadoAsientos.current === hoy) return;
+    avisadoAsientos.current = hoy;
+    setAviso(textoAsientos);
+  }, [dia, faltanAsientos, hoy, textoAsientos]);
   const selItem = borrador?.items.find((i) => i.uid === sel) ?? null;
   useEffect(() => {
     if (!ready) return;
-    api.current?.setLocal({ inaugurado: abierto, nombre: local?.nombre ?? null, plano, libros: titulos, cajas: porColocar, vacias: librosCafe != null, nivel: nivelEscena });
+    api.current?.setLocal({
+      inaugurado: abierto,
+      nombre: local?.nombre ?? null,
+      plano,
+      libros: titulos,
+      cajas: porColocar,
+      vacias: librosCafe != null,
+      nivel: nivelEscena,
+      escaparate: escaparateTitulos,
+    });
     api.current?.decorar(decorando, { sel, mal: false });
     if (mirarCaja.current && porColocar > 0 && !decorando) {
       mirarCaja.current = false;
       api.current?.go('libros');
     }
-  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena]);
+  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena, escaparateTitulos]);
   // Los clientes, sentados: los atendidos, con el libro que les diste (o uno de tu estantería si fue en otra visita)
   useEffect(() => {
     if (!ready) return;
@@ -298,6 +328,13 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       if (id === 'pilar') return hablar();
       if (id === 'libros') return abrirLibros('caja');
       setHablando(null);
+      if (id === 'escaparate' && abierto && (local?.nivel ?? 1) >= ESCAPARATE_NIVEL) {
+        setAviso('');
+        setError('');
+        setEscaparate((local?.escaparate ?? []).map((b) => b.clave));
+        api.current?.go(id);
+        return;
+      }
       setAviso((abierto ? AVISOS_ABIERTO : AVISOS)[id] ?? '');
       api.current?.go(id);
     };
@@ -312,6 +349,25 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       if (cabe(borrador, movido, movido.uid, local?.nivel ?? 1)) setBorrador({ ...borrador, items: borrador.items.map((i) => (i.uid === uid ? movido : i)) });
     };
   });
+
+  const guardarEscaparate = async () => {
+    if (!escaparate || ocupado) return;
+    setOcupado(true);
+    setError('');
+    try {
+      const elegidos = leidosEscaparate.filter((b) => escaparate.includes(b.clave));
+      const c = await ponerEscaparate(elegidos);
+      setLocal(c);
+      setEscaparate(null);
+      setAviso(elegidos.length ? '¡Qué bonito ha quedado! Los verá todo el que pase por el muelle, también desde la fachada.' : 'El escaparate queda vacío, solo con la lamparita.');
+    } catch (e) {
+      setError(errorCafe(e));
+    } finally {
+      setOcupado(false);
+    }
+  };
+  const marcarEscaparate = (clave) =>
+    setEscaparate((xs) => (xs.includes(clave) ? xs.filter((k) => k !== clave) : xs.length >= ESCAPARATE_MAX ? xs : [...xs, clave]));
 
   const inaugurar = async () => {
     if (!nombre || ocupado) return;
@@ -407,6 +463,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   };
   const anadir = (id) => {
     setError('');
+    if (borrador.items.length >= maxCosas(local?.nivel ?? 1)) return setError(`Caben ${maxCosas(local?.nivel ?? 1)} cosas como mucho. Quita algo antes.`);
     const sitio = hueco(borrador, id, undefined, local?.nivel ?? 1);
     if (!sitio) return setError('No queda sitio libre para ese mueble. Quita o mueve algo antes.');
     const uid = uidNuevo(borrador);
@@ -455,10 +512,12 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const titulo = abierto ? `${local.nombre}, tu café-librería.` : 'El café-librería del bajo: el local, vacío y en traspaso.';
   const ultima = hablando === frases.length - 1;
   // El cuadro de diálogo: quién habla (Pilar con su retrato o un aviso con la taza), qué dice y si hay más
-  const quienHabla = eligiendo || !aviso;
+  const quienHabla = eligiendo || escaparate != null || !aviso;
   const texto = eligiendo
     ? '«¿Cómo se va a llamar? Lo verán todos los que pasen por el muelle.»'
-    : aviso
+    : escaparate != null
+      ? `«Elige hasta tres de tus leídos para el escaparate: se verán desde la calle.» (${escaparate.length} de ${ESCAPARATE_MAX})`
+      : aviso
       ? aviso
       : abierto && hablando == null && dia && pendientes.length
         ? `«${pendientes.length === 1 ? 'Tienes un cliente esperando' : `Tienes ${pendientes.length} clientes esperando`}${pendientes.some((c) => c.raro) ? (pendientes.length === 1 ? ', y es muy peculiar' : ', y uno es muy peculiar') : ''}. ${pendientes.length === 1 ? 'Tócalo' : 'Toca uno'} en el local, o «Atender», para ver qué pide.»`
@@ -466,7 +525,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
           ? sesiones < 2
             ? '«Hoy ya está todo el mundo atendido. Si lees un rato, vendrá algún habitual.»'
             : '«Hoy ya está todo el mundo atendido. El local es tuyo para decorar.»'
-          : abierto && hablando == null
+          : abierto && hablando == null && faltanAsientos
+            ? `«${textoAsientos}»`
+            : abierto && hablando == null
             ? `«¡Qué bien huele hoy «${local.nombre}»! Si quieres cambiar algo de sitio, toca Decorar.»`
             : abierto
               ? '«Pronto vendrán clientes a pedirte libros. Yo pongo los cafés; tú recomiendas.»'
@@ -741,7 +802,11 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
           onCerrar={() => setAtendiendo(null)}
         />
       ) : (
-        <div className={`cf3-franja${eligiendo ? ' cf3-franja--nombres' : ''}`} role="region" aria-label={eligiendo ? 'El nombre de tu café' : 'Pilar, en el mostrador'}>
+        <div
+          className={`cf3-franja${eligiendo || escaparate != null ? ' cf3-franja--nombres' : ''}`}
+          role="region"
+          aria-label={eligiendo ? 'El nombre de tu café' : escaparate != null ? 'El escaparate' : 'Pilar, en el mostrador'}
+        >
           {quienHabla && (
             <span className="cf3-quien" aria-hidden="true">
               Pilar
@@ -756,7 +821,41 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
               {texto}
               {sigue && <span className="cf3-sigue" aria-hidden="true" />}
             </p>
-            {eligiendo ? (
+            {escaparate != null ? (
+              <>
+                {leidosEscaparate.length ? (
+                  <div className="cf3-nombres" role="group" aria-label="Tus leídos para el escaparate">
+                    {leidosEscaparate.map((b) => (
+                      <button
+                        key={b.clave}
+                        type="button"
+                        aria-pressed={escaparate.includes(b.clave)}
+                        className="cf3-nombre"
+                        disabled={!escaparate.includes(b.clave) && escaparate.length >= ESCAPARATE_MAX}
+                        onClick={() => marcarEscaparate(b.clave)}
+                      >
+                        {b.titulo}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="cf3-error">Aún no tienes libros leídos. Cuando termines uno, podrás ponerlo aquí.</p>
+                )}
+                {error && (
+                  <p className="cf3-error" role="alert">
+                    {error}
+                  </p>
+                )}
+                <div className="cf3-botones cf3-botones--fila">
+                  <button type="button" className="cf3-btn cf3-btn--suave" onClick={() => setEscaparate(null)} disabled={ocupado}>
+                    Ahora no
+                  </button>
+                  <button type="button" className="cf3-btn cf3-btn--verde" onClick={guardarEscaparate} disabled={ocupado}>
+                    {ocupado ? 'Colocando...' : 'Poner en el escaparate'}
+                  </button>
+                </div>
+              </>
+            ) : eligiendo ? (
               <>
                 <div className="cf3-nombres" role="radiogroup" aria-label="Nombres del café">
                   {CAFE_NOMBRES.map((n) => (

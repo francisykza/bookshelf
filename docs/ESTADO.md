@@ -6,6 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **En la rama `1.90-escritorio-puerto`, sin publicar: 1.123.0** (aprobada por Francisco con la limusina movida; commit pedido por él) (2026-11-12, §123). El café-librería del bajo, **bloque 4b** (cifras aprobadas, «Sí, esas cifras»): el ala lateral del nivel 4 (pared de la izquierda abierta, cuadrícula 9 × 9, vainilla rascando la vaina), la terraza y el escaparate del nivel 5 (acera con toldo y farolillos, tres leídos de cara a la calle y visibles desde la fachada, placa con el nombre, café con hielo agitando la coctelera), clientes según los asientos (6 y 7, nunca menos de 5, con aviso de Pilar) y ocho muebles nuevos. **Migración nueva sin aplicar**: `20261213120000_cafe_ampliacion.sql` (va después de la del bloque 4a). Evidencias en `qa-report/cafe-ampliacion/`. Interpretaciones por confirmar en `cafe-libreria.md` §13 (el ala a la izquierda, 32 cosas, leche fría).
 - **Aprobada por Francisco, con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.122.0** (2026-11-12, §122; «Sí, lo apruebo», con las interpretaciones de `cafe-libreria.md` §12). El café-librería del bajo, **bloque 4a**: subir de nivel con el cartel y un recorrido de cámara, tickets del nivel y del día, tres hitos por nivel, la tienda del café en Decorar (nueve muebles nuevos), el fondo del local en los niveles 2 (ventanal al puerto) y 3 (estanterías hasta el techo y chimenea), la cuadrícula tres filas más honda desde el nivel 2, la carta por días y en la barra el chocolate (cazo y molinillo) y la nata (bol y varillas). **Migración nueva sin aplicar**: `20261212120000_cafe_niveles.sql` (va después de las dos del café). Evidencias en `qa-report/cafe-niveles/`. Siguiente: el bloque 4b, ya con el local que crece por plantas (§12.1), tras aprobar sus cifras.
 - **En revisión, con commit en la rama `1.90-escritorio-puerto` (sin subir): 1.121.0** (2026-11-12, §121). El café-librería del bajo, bloque 3, rehecho tras la revisión de Francisco: la barra 3D con la receta de cuatro elecciones, llevar la taza a la mesa, el libro como extra en tres fichas, estrellas y el excéntrico del día. **Migración nueva sin aplicar**: `20261211120000_cafe_clientes.sql`. Evidencias en `qa-report/cafe-clientes/`. **Encima, sin commit (§121.1, 12-11-2026)**: preparar el café con un gesto y un objeto por paso (manivela, apisonar, palanca, tetera, colador, vapor, verter con dibujo, canela y miel), con sonidos propios; sin cambios de economía, recetas ni servidor.
 - **En revisión, sin commit: 1.120.1** (2026-11-12, §120.1). La interfaz del café, más de videojuego (solo aspecto).
@@ -262,6 +263,38 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-12 · Café, bloque 4b: el ala lateral, la terraza y el escaparate · 1.123.0 (§123), commit en la rama (Claude)
+- Francisco aprobó las cifras del bloque 4b («Sí, esas cifras»; están en `CLAUDE.md`).
+- Hecho:
+  - `cafeCatalogo.js`: `columnasDe`, `casillaValida`, `TERRAZA`, `ASIENTOS`/`asientosDe` y `maxCosas` (32 desde el nivel 4).
+  - `cafeClientes.js`: `clientesDelNivel(nivel, asientos)` y el café con hielo y la vainilla en la carta.
+  - `cafeNiveles.js`: los hitos 4 y 5 y lo que se abre.
+  - En la barra, la tabla de la vainilla y la coctelera con la cubitera (gestos `rascar` y `coctelera`, con sus sonidos).
+  - En `cafe3d.js`: el ala lateral (pared a `ALA.x0`, pilares, viga, campanas, luz propia), la terraza (frente abierto, acera, muelle, fachada por fuera, toldo con farolillos, puerta abierta, placa fuera), el escaparate con tus libros, las cuadrículas por nivel, la cámara de Decorar y la niebla en los niveles 4 y 5, los asientos de dos y el recorrido de los niveles 4 y 5.
+  - En `Cafe.jsx`: el aviso de los asientos y el selector del escaparate.
+  - Ocho muebles con modelo 3D e icono.
+  - La fachada: `drawFacadeBody(r, flats, cafe)` con los libros y la terraza, `cargarFachada` en `EdificioPanel.jsx`, y la placa con el nombre del café.
+  - Servidor: `20261213120000_cafe_ampliacion.sql`, **sin aplicar**.
+  - Página de desarrollo: `dev/calle3d.html?cafe=1`.
+- **Por confirmar con Francisco** (`cafe-libreria.md` §13):
+  - el ala se abre a la izquierda, no a la derecha como le dije, porque a la derecha está la barra;
+  - 32 cosas desde el nivel 4;
+  - el nivel 4 se llama «Ala lateral»;
+  - la leche fría del café con hielo;
+  - la placa con el nombre del café.
+- Pruebas:
+  - PGlite `cafe-ampliacion` (6), `cafe-niveles`, `cafe`, `cafe-clientes` y `rpc-solo-lectura`, más `cafeGestos` y `cafeClientes`: en verde. Build y oxlint limpios.
+  - `npx vitest run src/features/edificio`: 387 de 388. Falla `estiba.rls` «no se cuela nada», que también falla sola; esa prueba depende de la bodega del día y este bloque no toca la estiba ni sus migraciones. No he comprobado si falla igual en el commit anterior.
+  - e2e `v1123-cafe-ampliacion` (3 pruebas): en verde en Chromium 360, 390, 430 y 1440 y en WebKit 390. A 360, la del nivel 5 falló una vez y pasó al repetirla sola.
+  - Regresión en Chromium 390: `v1119`, `v1120`, `v1121`, `v1122` y `calle3d`, 16 de 16 en verde.
+- Versión subida a 1.123.0. Evidencias en `qa-report/cafe-ampliacion/`. Sin móviles reales. **Commit en la rama** (lo pidió Francisco: «Sí, haz el commit»); sin fusionar con `main` ni subir.
+- **Revisión de Francisco** («Sí, pero… la limusina con el chófer la movería a la izquierda para que no interfiera»): la
+  limusina pasa a la izquierda del portal, delante de la librería (`LIMO_X = -0.6` en `facade.js`; `SPOTS.limo` en
+  `calle3d.js`; el rectángulo `LIMO` en `calleView.js`; el camino a pie), y el bolardo, a la derecha. Anotado en
+  `CLAUDE.md`. La prueba del portal en `calle3d.spec.js` ya no espera que la limusina quede fuera de vista al mirar a la
+  izquierda. En verde: `calle3d.spec.js` y la fachada de `v1123` en Chromium 390 (WebKit se salta esa prueba). Build y
+  oxlint limpios.
 
 ### 2026-11-12 · Commit del bloque 4a en la rama · 1.122.0 (Claude)
 - Francisco aprobó el bloque 4a («Sí, lo apruebo») y pidió el commit **solo en la rama** y pasar al bloque 4b. No se fusiona con `main` ni se aplican migraciones: los bloques 1 a 4a del café siguen sin publicar.

@@ -299,7 +299,8 @@
     serif;
   cursor: pointer;
 }
-.cf3-nombre[aria-checked='true'] {
+.cf3-nombre[aria-checked='true'],
+.cf3-nombre[aria-pressed='true'] {
   background: var(--cf3-amber);
   color: #2a1a10;
 }
@@ -712,7 +713,8 @@
     inset 0 3px 0 #ffe0a0;
   color: #2a1a10;
 }
-.cf3-nombre[aria-checked='true']::before {
+.cf3-nombre[aria-checked='true']::before,
+.cf3-nombre[aria-pressed='true']::before {
   display: inline-block;
   width: 6px;
   height: 10px;
@@ -720,6 +722,11 @@
   background: #2a1a10;
   clip-path: polygon(0 0, 34% 0, 34% 20%, 67% 20%, 67% 40%, 100% 40%, 100% 60%, 67% 60%, 67% 80%, 34% 80%, 34% 100%, 0 100%);
   content: '';
+}
+
+/* Bloque 4b: en el escaparate, los libros que ya no caben (hay tres elegidos), apagados */
+.cf3-nombre:disabled {
+  opacity: 0.45;
 }
 
 /* El HUD de arriba: la insignia del nivel, el nombre, la barra de reputación y los granos */

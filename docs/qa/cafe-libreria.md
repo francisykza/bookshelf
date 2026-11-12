@@ -357,3 +357,19 @@ Propuesta aprobada en lo general («Vale, me parece bien»); las cifras, pendien
   por concretar.
 - Sin castigos, rachas que se pierdan, energía ni cuentas atrás. Umbrales, tickets y rendimiento de los niveles 6 en
   adelante: los aprueba Francisco antes de hacerlos.
+
+## 13. Bloque 4b: el ala lateral, la terraza y el escaparate (hecho, 1.123.0, 12-11-2026, pendiente de revisión)
+
+Con las cifras aprobadas («Sí, esas cifras», 12-11-2026). Detalle en `SPEC.md` §123. Interpretaciones mías, para que
+Francisco las confirme o las cambie:
+- **El ala se abre a la izquierda**, no a la derecha como se dijo al proponerlo: a la derecha está la barra con Pilar y la
+  cafetera; abrir esa pared la desmontaría. La cuadrícula crece por la izquierda (columnas −3 a −1).
+- La estantería de la pared y las estanterías altas del nivel 3 se mueven con la pared, al fondo del ala.
+- El nivel 4 se llama «Ala lateral» (antes «Altillo», que ya no existe con el plan de plantas de §12.1).
+- **Hasta 32 cosas** en el plano desde el nivel 4 (24 antes): con una cuadrícula de 9 × 9 y la terraza, 24 se quedaban
+  cortas.
+- El café con hielo lleva **la leche fría** (solo servirla, sin vapor ni dibujo).
+- Pilar avisa de los asientos que faltan una vez al día al entrar (y luego, cuando no hay nadie esperando).
+- En la fachada, la placa del bajo dice el nombre del café desde que se inaugura (antes, «Se traspasa» siempre).
+- **Revisión de Francisco** (12-11-2026): la limusina con el chófer tapaba la terraza; pasa a la izquierda del portal,
+  delante de la librería. Hecho en la misma 1.123.0.

@@ -248,9 +248,9 @@ function walkAlong(stage, walk, who, path, done) {
  * `walker` (opcional, 1.78): { avatar, companion } de tu personaje (companion: el legendario que te sigue, o null); con él, antes de entrar en la tienda o de subir a la limusina,
  * sale del portal y va andando hasta allí (con movimiento reducido, directo).
  */
-export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '', mail = null, onOpenLimo = null, walker = null }) {
+export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '', mail = null, onOpenLimo = null, walker = null, cafe = null }) {
   const byDoor = Object.fromEntries(flats.map((f) => [f.puerta, { room: f.room }]));
-  const { canvas, windows, panes, shore, shop, mailbox, limo, walk, sign } = renderFacade(byDoor);
+  const { canvas, windows, panes, shore, shop, mailbox, limo, walk, sign } = renderFacade(byDoor, cafe);
   const root = document.createElement('div');
   root.className = 'ed-facade';
   root.style.aspectRatio = `${FACADE_W} / ${FACADE_H}`;

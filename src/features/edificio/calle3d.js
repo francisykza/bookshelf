@@ -33,7 +33,8 @@ export const SPOTS = {
   home: { x: EYE.x, y: EYE.y },
   door: { x: BW / 2, y: BD + 0.55 },
   turn: { x: BW / 2 - 0.45, y: BD + 3.6 },
-  limo: { x: 5.7, y: BD + 3.3 },
+  // 1.123: la limusina, a la izquierda del portal
+  limo: { x: 0.25, y: BD + 3.3 },
   shop: { x: 6.5, y: BD + 3.5 },
 };
 // La calle se monta para verse bien desde todos ellos (solo se pintan las caras que se ven desde alguno)
@@ -45,11 +46,11 @@ const WIN_W = 14;
 const WIN_H = 22;
 
 /** Graba la calle: el edificio de siempre y, como desde el muelle se ve más a los lados, dos vecinos más. */
-function recordStreet(flats) {
+function recordStreet(flats, cafe = null) {
   const rec = recorder();
   neighbour(rec, -11.5, -5.1, GROUND_H + FLOOR_H * 3 + 0.2, 3);
   neighbour(rec, 13.1, 19, GROUND_H + FLOOR_H + 0.5, 4);
-  drawFacadeBody(rec, flats);
+  drawFacadeBody(rec, flats, cafe);
   // Desde abajo, el antepecho de la azotea tapaba la mitad del cartel: aquí va más alto, con las patas más largas
   const near = (a, b) => Math.abs(a - b) < 1e-6;
   for (const box of rec.boxes) {
@@ -173,8 +174,8 @@ function windowTexel(f, a, b, occupied, ctx, sheenHere) {
 }
 
 /** Las cajas grabadas, en una sola malla con su atlas (exterior3d.js), y el suelo. */
-function buildStreet(flats) {
-  const rec = recordStreet(flats);
+function buildStreet(flats, cafe = null) {
+  const rec = recordStreet(flats, cafe);
   const r = probe();
   const ctx = {
     flats,
@@ -191,13 +192,15 @@ function buildStreet(flats) {
 // Lo pintado (lo que tarda) se guarda: si el portal se vuelve a montar con los mismos pisos (llega el correo, vuelves de
 // un piso), solo se suben las láminas a la tarjeta gráfica
 let cached = null;
-function streetOf(flats) {
-  const key = JSON.stringify(
+function streetOf(flats, cafe = null) {
+  const key = JSON.stringify([
     Object.entries(flats)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([puerta, f]) => [puerta, f.room?.pared ?? '', (f.room?.items ?? []).map((i) => [i.id, i.x ?? i.a ?? 0])]),
-  );
-  if (cached?.key !== key) cached = { key, data: buildStreet(flats) };
+    // Bloque 4b: lo que del café se ve desde la calle (la terraza y los libros del escaparate, desde el nivel 5)
+    cafe?.inaugurado && cafe.nivel >= 5 ? (cafe.escaparate ?? []).map((b) => b.titulo) : null,
+  ]);
+  if (cached?.key !== key) cached = { key, data: buildStreet(flats, cafe) };
   return cached.data;
 }
 let skyCanvas = null;
@@ -314,7 +317,7 @@ function paintSky() {
  * Monta la calle en `container`. `flats`: { [puerta]: { room } } de las puertas ocupadas (como renderFacade). Las demás
  * opciones, las de mountExterior (exterior3d.js). Devuelve el control de la vista (para la app y las pruebas).
  */
-export function mountCalle(container, { flats = {}, ...opts } = {}) {
+export function mountCalle(container, { flats = {}, cafe = null, ...opts } = {}) {
   return mountExterior(
     container,
     {
@@ -329,7 +332,7 @@ export function mountCalle(container, { flats = {}, ...opts } = {}) {
       // La vista de siempre: lo más alto del edificio, justo dentro por arriba (si cabe, sin mirar hacia arriba de más)
       homePitch: (fov) => clamp(Math.atan2(ROOF_TOP - EYE.z, EYE.y - BD) - fov / 2 + 0.06, 0, 0.7),
       build(scene, own) {
-        const street = streetOf(flats);
+        const street = streetOf(flats, cafe);
         scene.add(meshOf(street, own));
         const ground = new Mesh(own(new PlaneGeometry(GROUND.x1 - GROUND.x0, GROUND.y1 - GROUND.y0)), own(new MeshBasicMaterial({ map: own(texture(street.groundCanvas)) })));
         // El plano mira hacia arriba; la fila de arriba de su lámina, hacia las casas (y pequeña)

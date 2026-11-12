@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.122.0 · 2026-11-12 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.123.0 · 2026-11-12 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6488,3 +6488,49 @@ bloques», y eligió partir el bloque 4 en 4a y 4b, una receta nueva por nivel, 
   fondo; el nivel 3 con la chimenea y un chocolate con nata hecho con los gestos).
 - **Queda para el bloque 4b**: el altillo (nivel 4), la terraza y el escaparate en la fachada (nivel 5), sus muebles y su carta
   (vainilla y bebidas con hielo).
+
+## 123. El café-librería del bajo, bloque 4b: el ala lateral, la terraza y el escaparate (1.123.0)
+
+Bloque 4b del plan del café-librería (`docs/qa/cafe-libreria.md` §13; cifras aprobadas por Francisco el 12-11-2026, «Sí, esas
+cifras»). Es el final de la planta de la calle (niveles 1 a 5, §12.1). Migración nueva, **sin aplicar**:
+`20261213120000_cafe_ampliacion.sql` (va después de las del café y de `20261212120000_cafe_niveles.sql`).
+
+- **Nivel 4, «Ala lateral»** (antes «Altillo»): se abre **la pared de la izquierda** (la barra está a la derecha) y el local
+  gana un ala de 3,4 unidades: suelo de damero, techo con vigas, su pared de fondo, una ventanita a la calle, dos pilares de
+  ladrillo en los extremos, una viga de roble donde estaba la pared y tres campanas de latón que la alumbran. La pared de la
+  izquierda, con su estantería de siempre y las estanterías altas del nivel 3, pasa al fondo del ala. La cuadrícula de
+  Decorar pasa a **9 × 9** (columnas −3 a 5, filas −3 a 5; las casillas de antes no cambian de número). En Decorar, los
+  pilares y la viga se esconden para que no tapen la cuadrícula.
+- **Nivel 5, «Terraza y escaparate»**: la puerta queda abierta y el cristal del escaparate se ve a través; fuera, la acera
+  mojada con **tres filas de terraza** (filas 7 a 9, columnas 0 a 5, con su propia cuadrícula en Decorar), **el toldo a
+  rayas granate y crema con su guirnalda de farolillos**, la fachada de estuco mostaza con zócalo de piedra, **la placa con
+  el nombre del café** sobre el escaparate y, enfrente, el muelle de noche con el faro. En la terraza no llueve. Se puede
+  salir a la acera andando.
+- **El escaparate**: desde el nivel 5, al tocar el escaparate, Pilar pide **hasta tres de tus leídos** (nunca los prestados de
+  «Leyendo» o «Quiero leer»); se ven de pie, de cara a la calle, en una peana con su lamparita (el del centro, más alto).
+  Lo guarda el servidor (`cafe_poner_escaparate`, solo desde el nivel 5 y como mucho tres títulos).
+- **Desde la calle**: el portal pide tu café con `cafe_fachada` (solo tu cuenta; no crea nada). Desde el nivel 5, en la fachada
+  del edificio se ven **tus tres libros en el escaparate** y la guirnalda bajo el toldo, y dos mesitas de terraza en la acera
+. **La limusina y su chófer pasan a la izquierda del portal**, delante de la librería (Francisco, 12-11-2026: que no
+  tape el café ni su terraza); el bolardo del muelle se va a la derecha, y el camino a pie y el sitio desde el que se mira
+  la limusina en la calle 3D se mueven con ella. La placa del bajo dice el nombre del café en vez de «Se traspasa» en cuanto se inaugura.
+  Lo pintado de la calle se vuelve a hacer solo si cambia lo que se ve.
+- **Clientes por asientos**: en el nivel 4 pueden venir **6** al día y en el 5, **7**, pero solo con al menos tantos asientos
+  colocados (silla, taburete, orejero y silla de terraza, 1; banco y sofá, 2; también los de casa); si faltan, vienen menos,
+  **nunca menos de 5** (los de los niveles 1 a 3, sin cambios). El servidor lo fija al abrir el día (`cafe_clientes_dia` y
+  `cafe_asientos`). Pilar lo avisa **una vez al día al entrar** y, después, cuando no hay nadie esperando, sin agobiar. El tope
+  diario de reputación sube solo, con los clientes. En la escena, el banco y el sofá sientan a dos.
+- **Hasta 32 cosas** en el plano desde el nivel 4 (24 antes), en la app y en el servidor.
+- **La vainilla** (nivel 4, toque, 2.º hito): en la barra, **la tabla con la vaina y un cuchillo pequeño**. Gesto: **rascar
+  la vaina de arriba abajo, tres trazos**, levantando el dedo entre uno y otro; las semillas negras caen en la taza.
+- **El café con hielo** (nivel 5, bebida, 2.º hito): **la cubitera de latón** para elegirlo y **la coctelera de acero**. Se
+  muele y se extrae como el café y después se **agita la coctelera de lado a lado** con vaivenes amplios (se escarcha y el
+  hielo suena); la leche va **fría, solo servirla** (sin vapor), sin dibujo ni crema y sin humo. En la taza, los cubitos.
+- **Ocho muebles nuevos** con modelo 3D e icono: nivel 4, mesa larga compartida (150), biombo de librería con tus lomos
+  (180), lámpara de bankers (120) y, de hito, piano vertical (200); nivel 5, mesa de hierro (150), silla de terraza (150),
+  macetero largo (180) y, de hito, farol de forja (250). Tickets, huecos de la balda e hitos, sin cambios.
+- **Pruebas**: `cafe-ampliacion.rls.test.js` (6, PGlite: carta y recetas iguales a la app, asientos y clientes del día, el
+  plano de 9 × 9 y la terraza iguales a `casillaValida`, el tope de 32, el escaparate y la fachada, funciones internas
+  cerradas); `cafeGestos.test.js` (rascar y coctelera); e2e `v1123-cafe-ampliacion.spec.js` (el ala y su cuadrícula con un
+  café con vainilla; la terraza, el escaparate con tres leídos, el aviso de los asientos y un café con hielo; la fachada desde
+  la calle en la página de desarrollo `dev/calle3d.html?cafe=1`).

@@ -27,7 +27,17 @@ function normalizar(data) {
     inaugurado: Boolean(data.inaugurado),
     plano: limpio(data.plano, data.nivel ?? 1),
     inventario: data.inventario ?? {},
+    // Bloque 4b (1.123): hasta tres de tus leídos en el escaparate (nivel 5)
+    escaparate: escaparateDe(data.escaparate),
   };
+}
+
+/** El escaparate que llega: como mucho tres títulos con su clave. */
+function escaparateDe(x) {
+  return (Array.isArray(x) ? x : [])
+    .filter((b) => b && typeof b.clave === 'string' && b.clave)
+    .slice(0, 3)
+    .map((b) => ({ clave: b.clave, titulo: String(b.titulo ?? ''), genero: String(b.genero ?? 'novela') }));
 }
 
 /** Mi café (o null si el servidor aún no tiene la migración del café). */
@@ -72,11 +82,11 @@ function normalizarDia(d) {
   return {
     dia: String(d.dia ?? ''),
     // La carta de ese día (bloque 4a) y los tickets del día que ya dio
-    carta: Array.isArray(d.carta) ? d.carta.filter((x) => x === 'chocolate' || x === 'nata') : [],
+    carta: Array.isArray(d.carta) ? d.carta.filter((x) => ['chocolate', 'nata', 'vainilla', 'hielo'].includes(x)) : [],
     tickets: entero(d.tickets ?? 0),
     clientes: (Array.isArray(d.clientes) ? d.clientes : [])
       .map((c) => ({ ...cliente(c), excentrico: Boolean(c.excentrico), quien: c.excentrico ? entero(c.quien) % 6 : null }))
-      .filter((c) => c.n >= 1 && c.n <= 5),
+      .filter((c) => c.n >= 1 && c.n <= 7),
     habituales: (Array.isArray(d.habituales) ? d.habituales : []).map((h) => ({ ...cliente(h), quien: entero(h.quien) })).filter((h) => h.n >= 101 && h.n <= 102 && h.quien >= 0 && h.quien < 12),
     pizarra: (Array.isArray(d.pizarra) ? d.pizarra : [])
       .map((r) => ({ dia: String(r.dia ?? ''), quien: entero(r.quien), frase: entero(r.frase), dorada: Boolean(r.dorada) }))
@@ -139,6 +149,27 @@ export async function servirCliente(dia, cliente, receta, encaja, libro = null) 
   return conDia(data);
 }
 
+// ── Bloque 4b (1.123): el escaparate y lo que se ve desde la calle (`20261213120000_cafe_ampliacion.sql`) ──
+/** Pone en el escaparate hasta tres de tus leídos (`titulosDelCafe` de los elegidos). */
+export async function ponerEscaparate(titulos) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_poner_escaparate', { titulos });
+  fail(error);
+  return normalizar(data);
+}
+
+/** Tu café visto desde la calle: { inaugurado, nombre, nivel, escaparate } o null (sin café o sin la migración). */
+export async function cargarFachada() {
+  try {
+    const sb = await client();
+    const { data, error } = await sb.rpc('cafe_fachada');
+    if (error || !data) return null;
+    return { inaugurado: Boolean(data.inaugurado), nombre: typeof data.nombre === 'string' ? data.nombre : null, nivel: Number.isInteger(data.nivel) ? data.nivel : 1, escaparate: escaparateDe(data.escaparate) };
+  } catch {
+    return null;
+  }
+}
+
 // ── Libros en cajas (§121.3) ──
 /** La caja de bienvenida (8 ejemplares, gratis y una vez) con tus títulos (`titulosDelCafe`). */
 export async function bienvenidaLibros(titulos) {
@@ -177,5 +208,6 @@ export function errorCafe(e) {
   if (/cafe:copias/.test(m)) return 'No te quedan copias libres de ese mueble: lo tienes puesto en tu piso o en el café.';
   if (/cafe:plano/.test(m)) return 'Eso no cabe ahí.';
   if (/cafe:ya/.test(m)) return 'El café ya está inaugurado.';
+  if (/cafe:nivel/.test(m)) return 'El escaparate se abre en el nivel 5.';
   return 'No se ha podido guardar. Vuelve a intentarlo.';
 }

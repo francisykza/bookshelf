@@ -1,5 +1,5 @@
 // Los gestos de la barra del café hechos con el ratón, como el dedo (1.121, revisión del 12-11-2026; 1.122, bloque 4a: el
-// molinillo y el cazo del chocolate y las varillas de la nata). Comunes a los specs del café.
+// molinillo y el cazo del chocolate y las varillas de la nata; 1.123, bloque 4b: la vainilla y la coctelera). Comunes a los specs del café.
 import { expect } from '@playwright/test';
 
 export const quieto = async (page, ms = 600) => {
@@ -113,6 +113,25 @@ export async function hacerGesto(page, cafe, tipo, { foto = null, arte = 'hoja',
     await page.waitForTimeout(700);
     await medio();
     await page.waitForTimeout(1200);
+    await m.up();
+  } else if (tipo === 'rascar') {
+    // Bloque 4b: tres trazos de arriba abajo por la vaina, levantando el dedo entre uno y otro
+    for (let k = 0; k < 3; k += 1) {
+      await m.move(c.x, c.y - 50 * e);
+      await m.down();
+      for (let j = 1; j <= 8; j += 1) await m.move(c.x, c.y - 50 * e + j * 12 * e);
+      if (k === 1) await medio();
+      await m.up();
+      await page.waitForTimeout(120);
+    }
+  } else if (tipo === 'coctelera') {
+    // Bloque 4b: vaivenes amplios de lado a lado
+    await m.move(c.x, c.y);
+    await m.down();
+    for (let k = 1; k <= 14; k += 1) {
+      await a(c.x + (k % 2 ? 1 : -1) * 70 * e, c.y);
+      if (k === 6) await medio();
+    }
     await m.up();
   }
   await expect(caja).not.toHaveAttribute('data-gesto', tipo, { timeout: 4000 });

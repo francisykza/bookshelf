@@ -9,8 +9,13 @@ import { huecosDelNivel } from './cafeNiveles';
 
 export { huecosDelNivel };
 
-/** Cuántos clientes nuevos vienen al día según el nivel del café. */
-export const clientesDelNivel = (nivel = 1) => (nivel <= 1 ? 3 : nivel === 2 ? 4 : 5);
+/**
+ * Cuántos clientes nuevos vienen al día según el nivel del café. Bloque 4b (1.123, aprobado por Francisco): en los niveles 4
+ * y 5, tantos como asientos colocados, con 6 y 7 como mucho y nunca menos de 5 (lo de los niveles 1 a 3, 3 / 4 / 5).
+ */
+export const TOPE_CLIENTES = { 4: 6, 5: 7 };
+export const clientesDelNivel = (nivel = 1, asientos = Infinity) =>
+  nivel <= 1 ? 3 : nivel === 2 ? 4 : nivel === 3 ? 5 : Math.min(TOPE_CLIENTES[Math.min(5, nivel)], Math.max(5, asientos));
 /** Habituales como mucho al día (uno por sesión de lectura). */
 export const MAX_HABITUALES = 2;
 /** La carta: lo que se puede servir en cada nivel (el nivel 1, café y té). */
@@ -18,6 +23,7 @@ export const BEBIDAS = [
   { id: 'cafe', nombre: 'Café', nivel: 1 },
   { id: 'te', nombre: 'Té', nivel: 1 },
   { id: 'chocolate', nombre: 'Chocolate', nivel: 2, carta: 'chocolate' },
+  { id: 'frio', nombre: 'Café con hielo', nivel: 5, carta: 'hielo' },
 ];
 /** Las bebidas de la carta: café y té, y lo que hayas abierto en ella (bloque 4a: el chocolate). */
 export const bebidasDe = (carta = []) => BEBIDAS.filter((b) => !b.carta || carta.includes(b.carta));
@@ -34,6 +40,7 @@ export const PARTES = [
       { id: 'cafe', nombre: 'Café' },
       { id: 'te', nombre: 'Té' },
       { id: 'chocolate', nombre: 'Chocolate', carta: 'chocolate' },
+      { id: 'frio', nombre: 'Café con hielo', carta: 'hielo' },
     ],
   },
   {
@@ -61,6 +68,7 @@ export const PARTES = [
       { id: 'canela', nombre: 'Canela' },
       { id: 'miel', nombre: 'Miel' },
       { id: 'nata', nombre: 'Nata montada', carta: 'nata' },
+      { id: 'vainilla', nombre: 'Vainilla', carta: 'vainilla' },
     ],
   },
 ];
@@ -115,17 +123,22 @@ export const tipoDe = (c) => (c.habitual ? 'habitual' : c.excentrico ? 'excentri
 export const nombreOpcion = (parte, id) => PARTES.find((p) => p.id === parte)?.opciones.find((o) => o.id === id)?.nombre ?? id;
 /** La comanda, clara: «Un café intenso con leche de avena y canela». */
 export function comandaClara([bebida, grano, leche, toque]) {
-  const base = bebida === 'chocolate' ? `Un chocolate ${grano === 'suave' ? 'con leche' : 'negro'}` : `Un ${bebida === 'te' ? 'té' : 'café'} ${grano === 'suave' ? 'suave' : 'intenso'}`;
+  const base =
+    bebida === 'chocolate'
+      ? `Un chocolate ${grano === 'suave' ? 'con leche' : 'negro'}`
+      : bebida === 'frio'
+        ? `Un café con hielo ${grano === 'suave' ? 'suave' : 'intenso'}`
+        : `Un ${bebida === 'te' ? 'té' : 'café'} ${grano === 'suave' ? 'suave' : 'intenso'}`;
   const conLeche = leche === 'sin' ? 'sin leche' : leche === 'entera' ? 'con leche entera' : 'con leche de avena';
-  const conToque = toque === 'nada' ? '' : toque === 'canela' ? ' y canela' : toque === 'nata' ? ' y nata montada' : ' y miel';
+  const conToque = { nada: '', canela: ' y canela', nata: ' y nata montada', vainilla: ' y vainilla', miel: ' y miel' }[toque] ?? '';
   return `${base} ${conLeche}${conToque}.`;
 }
 /** La comanda del excéntrico: cada parte, con un acertijo (frases cerradas). */
 export const ACERTIJOS = {
-  bebida: { cafe: 'Algo que se muela, no que se deje en remojo.', te: 'Hojas en agua caliente; nada de molinillos.', chocolate: 'Lo que se bate en el cazo, espeso como una tarde de lluvia.' },
+  bebida: { cafe: 'Algo que se muela, no que se deje en remojo.', te: 'Hojas en agua caliente; nada de molinillos.', chocolate: 'Lo que se bate en el cazo, espeso como una tarde de lluvia.', frio: 'Algo que se muela y luego se agite con hielo, como el muelle en enero.' },
   grano: { suave: 'Que me susurre al oído, no que me grite.', intenso: 'Fuerte como un temporal en el puerto.' },
   leche: { sin: 'Ni una nube en mi taza.', entera: 'Con la nube de una vaca contenta.', avena: 'Con la nube del campo, no de la granja.' },
-  toque: { nada: 'Y tal cual, sin adornos.', canela: 'Con el polvo de una corteza.', miel: 'Con lo que guardan las abejas.', nata: 'Con una nube que se monta a mano.' },
+  toque: { nada: 'Y tal cual, sin adornos.', canela: 'Con el polvo de una corteza.', miel: 'Con lo que guardan las abejas.', nata: 'Con una nube que se monta a mano.', vainilla: 'Con lo que esconde una vaina negra.' },
 };
 export const comandaAcertijo = (receta) => PARTES.map((p, k) => ACERTIJOS[p.id][receta[k]]);
 

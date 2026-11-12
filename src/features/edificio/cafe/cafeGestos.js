@@ -12,6 +12,11 @@
 // - Chocolate (nivel 2): el cacao se elige en su tarro; en el cazo de cobre, remover con el molinillo de madera (círculos
 //   amplios, tres vueltas: se espesa) y servir inclinando el cazo sobre la taza (deslizar a la izquierda y mantener).
 // - Nata montada (nivel 3): batir girando las varillas en el bol (vueltas pequeñas y seguidas, hasta que hace picos).
+// Bloque 4b (1.123), con su gesto y su objeto (Francisco, 12-11-2026):
+// - Vainilla (nivel 4): en la tabla, rascar la vaina con la punta del cuchillo, de arriba abajo, tres trazos (cada uno se
+//   vuelve a armar subiendo el dedo o soltándolo); las semillas negras caen en la taza.
+// - Café con hielo (nivel 5): se muele y se extrae como el café; después, en la coctelera con hielo, agitar de lado a lado
+//   con vaivenes amplios (diez, el hielo suena). La leche, fría: sin vapor, solo servirla.
 // Reglas: ningún gesto falla ni tiene tiempo límite; lo hecho no se pierde al soltar; los gestos no cambian las estrellas
 // (solo cuenta la receta); con movimiento reducido o con el teclado, cada gesto se hace de una vez (`completar`).
 // Aquí, solo cuentas (sin React ni Three): los reconocedores reciben puntos en píxeles y dan el progreso y la postura.
@@ -22,7 +27,8 @@ export const ETAPAS = ['bebida', 'grano', 'extraer', 'leche', 'toque'];
 export function nombreEtapa(id, receta = {}) {
   const te = receta.bebida === 'te';
   const choco = receta.bebida === 'chocolate';
-  return { bebida: 'Bebida', grano: te ? 'Hoja' : choco ? 'Cacao' : 'Grano', extraer: te ? 'Reposar' : choco ? 'Remover' : 'Extraer', leche: 'Leche', toque: 'Toque' }[id] ?? id;
+  const frio = receta.bebida === 'frio';
+  return { bebida: 'Bebida', grano: te ? 'Hoja' : choco ? 'Cacao' : 'Grano', extraer: te ? 'Reposar' : choco ? 'Remover' : frio ? 'Agitar' : 'Extraer', leche: 'Leche', toque: 'Toque' }[id] ?? id;
 }
 
 /** Qué se elige en cada etapa (la extracción no tiene elección: sale de la bebida). */
@@ -36,10 +42,13 @@ export function gestosDe(etapa, receta = {}) {
     if (etapa === 'grano') return [];
     if (etapa === 'extraer') return ['molinillo', 'cazo'];
   }
+  const frio = receta.bebida === 'frio';
   if (etapa === 'grano') return [te ? 'cuchara' : 'manivela'];
-  if (etapa === 'extraer') return te ? ['tetera', 'colador'] : ['apisonar', 'palanca'];
-  if (etapa === 'leche') return receta.leche && receta.leche !== 'sin' ? ['vapor', 'verter'] : [];
-  if (etapa === 'toque') return { canela: ['agitar'], miel: ['hilo'], nata: ['batir'] }[receta.toque] ?? [];
+  // El café con hielo: después de extraer, a la coctelera
+  if (etapa === 'extraer') return te ? ['tetera', 'colador'] : frio ? ['apisonar', 'palanca', 'coctelera'] : ['apisonar', 'palanca'];
+  // La leche del café con hielo va fría: sin vapor
+  if (etapa === 'leche') return receta.leche && receta.leche !== 'sin' ? (frio ? ['verter'] : ['vapor', 'verter']) : [];
+  if (etapa === 'toque') return { canela: ['agitar'], miel: ['hilo'], nata: ['batir'], vainilla: ['rascar'] }[receta.toque] ?? [];
   return [];
 }
 
@@ -58,6 +67,8 @@ export const GESTOS = {
   molinillo: { orden: 'Remueve el chocolate con el molinillo', ayuda: 'Círculos amplios dentro del cazo: tres vueltas y se espesa.', atajo: 'Remover', pista: 'remover' },
   cazo: { orden: 'Inclina el cazo sobre la taza', ayuda: 'Desliza hacia la izquierda y mantén mientras cae el chocolate.', atajo: 'Servir el chocolate', pista: 'izquierda-mantener' },
   batir: { orden: 'Bate la nata girando las varillas', ayuda: 'Vueltas pequeñas y seguidas, hasta que haga picos.', atajo: 'Montar la nata', pista: 'batir' },
+  rascar: { orden: 'Rasca la vaina de vainilla', ayuda: 'Pasa el cuchillo a lo largo de la vaina, de arriba abajo: tres trazos.', atajo: 'Rascar la vaina', pista: 'rascar' },
+  coctelera: { orden: 'Agita la coctelera con hielo', ayuda: 'De lado a lado, con brío, hasta que el hielo cante.', atajo: 'Agitar', pista: 'coctelera' },
 };
 
 /** Tiempos de los gestos que se mantienen (lo mantenido se suma: soltar no pierde nada). */
@@ -84,6 +95,13 @@ export const MEDIDAS = {
   ondasHoja: 3,
   vaivenAgitar: 20,
   vecesAgitar: 8,
+  /** La coctelera: vaivenes mucho más amplios que la canela, y más. */
+  vaivenCoctelera: 46,
+  vecesCoctelera: 10,
+  /** La vainilla: tres trazos hacia abajo de este largo; se vuelve a armar subiendo esto o soltando. */
+  rascar: 60,
+  rearmeRascar: 24,
+  trazosRascar: 3,
   hilo: 300,
 };
 
@@ -106,6 +124,8 @@ function poseInicial(tipo) {
     molinillo: { angulo: 0, espeso: 0 },
     cazo: { inclina: 0, servido: 0 },
     batir: { angulo: 0, montada: 0 },
+    rascar: { t: 0, raspados: 0 },
+    coctelera: { x: 0, agitado: 0, golpes: 0 },
   }[tipo];
 }
 /** Los gestos que giran alrededor de un centro: cuántas vueltas y desde qué distancia cuenta. */
@@ -171,7 +191,12 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
   let largo = 0;
   let tAntes = 0;
   const c = centro ?? { x: 0, y: 0 };
-  const vv = vaiven((tipo === 'colador' ? M.vaivenColador : tipo === 'verter' ? M.ondaVerter : M.vaivenAgitar) * e);
+  const vv = vaiven((tipo === 'colador' ? M.vaivenColador : tipo === 'verter' ? M.ondaVerter : tipo === 'coctelera' ? M.vaivenCoctelera : M.vaivenAgitar) * e);
+  // La vainilla: dónde empezó el trazo, si está armado y lo más abajo que ha llegado
+  let armado = true;
+  let yTrazo = 0;
+  let yArriba = 0;
+  let trazos = 0;
 
   const estado = (eventos = []) => ({ tipo, progreso, hecho, pose, pulsado, eventos });
   const acabar = (eventos) => {
@@ -196,6 +221,9 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
       tAntes = t;
       ang = Math.atan2(y - c.y, x - c.x);
       vv.empezar(tipo === 'colador' ? y : x);
+      armado = true;
+      yTrazo = y;
+      yArriba = y;
       const eventos = ['toca'];
       if (tipo === 'hilo') pose = { puntos: [...pose.puntos, [clamp((x - c.x) / (110 * e), -1, 1), clamp((y - c.y) / (110 * e), -1, 1)]].slice(-48) };
       return estado(eventos);
@@ -273,6 +301,36 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
           if (progreso >= 1) acabar(eventos);
         }
         pose = { x: clamp(dx / (40 * e), -1, 1), golpes: vv.veces };
+      } else if (tipo === 'rascar') {
+        // Cada trazo de arriba abajo cuenta una vez; subir el dedo (o soltarlo) lo vuelve a armar
+        if (armado) {
+          const tt = clamp((y - yTrazo) / (M.rascar * e));
+          pose = { t: tt, raspados: trazos };
+          progreso = Math.max(progreso, clamp((trazos + tt) / M.trazosRascar));
+          if (tt >= 1) {
+            trazos += 1;
+            armado = false;
+            yArriba = y;
+            eventos.push('raspa');
+            pose = { t: 1, raspados: trazos };
+            progreso = clamp(trazos / M.trazosRascar);
+            if (trazos >= M.trazosRascar) acabar(eventos);
+          }
+        } else {
+          yArriba = Math.max(yArriba, y);
+          if (yArriba - y >= M.rearmeRascar * e) {
+            armado = true;
+            yTrazo = y;
+            pose = { t: 0, raspados: trazos };
+          }
+        }
+      } else if (tipo === 'coctelera') {
+        if (vv.mover(x)) {
+          eventos.push('hielo');
+          progreso = clamp(vv.veces / M.vecesCoctelera);
+          if (progreso >= 1) acabar(eventos);
+        }
+        pose = { x: clamp(dx / (60 * e), -1, 1), agitado: progreso, golpes: vv.veces };
       } else if (tipo === 'hilo') {
         const d = Math.hypot(x - ultimo.x, y - ultimo.y);
         if (d >= 4 * e) {
@@ -313,7 +371,8 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
       else if (tipo === 'colador') pose = { ...pose, altura: 0 };
       else if (tipo === 'vapor' || tipo === 'cazo') pose = { ...pose, inclina: 0 };
       else if (tipo === 'verter') pose = { ...pose, x: 0 };
-      else if (tipo === 'agitar') pose = { ...pose, x: 0 };
+      else if (tipo === 'agitar' || tipo === 'coctelera') pose = { ...pose, x: 0 };
+      else if (tipo === 'rascar') pose = { ...pose, t: hecho ? 1 : 0 };
       return estado();
     },
     /** De una vez (movimiento reducido, teclado): el gesto acabado, con su resultado más sencillo. */
@@ -334,6 +393,8 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
         molinillo: { angulo: Math.PI * 6, espeso: 1 },
         cazo: { inclina: 0, servido: 1 },
         batir: { angulo: Math.PI * 10, montada: 1 },
+        rascar: { t: 1, raspados: M.trazosRascar },
+        coctelera: { x: 0, agitado: 1, golpes: M.vecesCoctelera },
       }[tipo];
       acabar(eventos);
       return estado(eventos);
@@ -365,6 +426,7 @@ export function vistaTaza(receta = {}, hechos = {}, actual = null) {
   const conLeche = receta.leche && receta.leche !== 'sin';
   const base = conLeche ? 0.55 : 0.85;
   const choco = receta.bebida === 'chocolate';
+  const frio = receta.bebida === 'frio';
   const primero = te ? (pose('tetera')?.lleno ?? 0) : choco ? (pose('cazo')?.servido ?? 0) : (pose('palanca')?.extraido ?? 0);
   const leche = conLeche ? (pose('verter')?.vertido ?? 0) : 0;
   // El té coge color con cada inmersión del colador
@@ -373,11 +435,15 @@ export function vistaTaza(receta = {}, hechos = {}, actual = null) {
     lleno: clamp(primero * base + leche * (1 - base)),
     leche: conLeche ? clamp(leche) : 0,
     color,
-    crema: !te && !choco && primero > 0.4,
+    crema: !te && !choco && !frio && primero > 0.4,
+    // El café con hielo: los cubitos aparecen en la taza al acabar de agitar
+    hielo: frio ? (hechos.coctelera ? 1 : 0) : 0,
+    // Las semillas de vainilla, según los trazos
+    vainilla: receta.toque === 'vainilla' ? clamp((pose('rascar')?.raspados ?? 0) / MEDIDAS.trazosRascar) : 0,
     // La nata, que crece en picos según se bate y se posa en la taza al acabar
     nata: receta.toque === 'nata' ? (hechos.batir ? 1 : 0) : 0,
     espeso: choco ? (pose('molinillo')?.espeso ?? 0) : 0,
-    ...arteDe(pose('verter')),
+    ...(frio ? { arte: null } : arteDe(pose('verter'))),
     canela: clamp((pose('agitar')?.golpes ?? 0) / MEDIDAS.vecesAgitar),
     miel: pose('hilo')?.puntos ?? [],
     hojas: te && (pose('cuchara')?.t ?? 0) >= 1,

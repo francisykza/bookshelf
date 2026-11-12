@@ -281,6 +281,171 @@ function reloj() {
   return out;
 }
 
+// ── Bloque 4b (1.123): los del ala lateral (nivel 4) y los de la terraza (nivel 5) ──
+const VERDE_F = [44, 70, 58];
+const VERDE_C = [70, 104, 80];
+const CRISTAL_V = [64, 150, 96];
+
+/** Mesa larga compartida de roble, de dos casillas, con caballetes, un camino de lino, tazas y una pila de libros. */
+function mesaLarga() {
+  const out = [];
+  for (const x of [0.22, 1.72]) {
+    out.push(b([x, 0.2, 0, x + 0.06, 0.8, 0.05], MADERA_D));
+    out.push(b([x, 0.47, 0.05, x + 0.06, 0.53, 0.68], MADERA_D));
+    out.push(b([x, 0.22, 0.6, x + 0.06, 0.78, 0.68], MADERA_D));
+  }
+  out.push(b([0.28, 0.48, 0.3, 1.72, 0.52, 0.34], MADERA_D));
+  out.push(b([0.08, 0.16, 0.68, 1.92, 0.84, 0.74], MADERA), b([0.08, 0.16, 0.74, 1.92, 0.84, 0.76], MADERA_L));
+  // El camino de lino a lo largo
+  out.push(b([0.16, 0.42, 0.76, 1.84, 0.58, 0.765], [222, 210, 186]));
+  out.push(b([0.36, 0.22, 0.76, 0.5, 0.36, 0.77], [236, 232, 222]), b([0.39, 0.25, 0.77, 0.47, 0.33, 0.85], [244, 240, 232]));
+  out.push(b([1.46, 0.64, 0.76, 1.6, 0.78, 0.77], [236, 232, 222]), b([1.49, 0.67, 0.77, 1.57, 0.75, 0.85], [244, 240, 232]));
+  out.push(b([0.9, 0.24, 0.76, 1.2, 0.42, 0.8], [60, 90, 120]), b([0.92, 0.26, 0.8, 1.18, 0.4, 0.84], [200, 168, 96]), b([0.94, 0.25, 0.84, 1.16, 0.41, 0.87], [150, 60, 52]));
+  return out;
+}
+
+/** Biombo de librería: tres hojas de madera en zigzag, cada una con dos baldas de lomos (separa rincones sin cerrar). */
+function biombo(libros = []) {
+  const out = [];
+  const hojas = [
+    [0.06, 0.66, 0.26],
+    [0.68, 1.3, 0.5],
+    [1.32, 1.94, 0.26],
+  ];
+  let k = 0;
+  for (const [x0, x1, y] of hojas) {
+    out.push(b([x0, y, 0, x0 + 0.05, y + 0.22, 1.7], MADERA_D), b([x1 - 0.05, y, 0, x1, y + 0.22, 1.7], MADERA_D));
+    out.push(b([x0, y, 0, x1, y + 0.04, 1.7], MADERA), b([x0 - 0.01, y - 0.01, 1.7, x1 + 0.01, y + 0.23, 1.76], MADERA_L));
+    for (const z of [0.12, 0.66, 1.18]) {
+      out.push(b([x0 + 0.05, y, z, x1 - 0.05, y + 0.22, z + 0.04], MADERA_L));
+      if (z > 1 || libros === null) continue;
+      let x = x0 + 0.08;
+      while (x < x1 - 0.12) {
+        const ancho = 0.05 + ((k * 7) % 4) * 0.01;
+        const alto = 0.24 + ((k * 5) % 5) * 0.03;
+        const titulo = libros[k];
+        out.push(b([x, y + 0.05, z + 0.04, x + ancho, y + 0.2, z + 0.04 + alto], titulo ? colorDe(titulo) : LOMOS[(k * 3) % LOMOS.length]));
+        x += ancho + 0.01;
+        k += 1;
+      }
+    }
+  }
+  // Las bisagras de latón
+  for (const x of [0.66, 1.3]) for (const z of [0.3, 1.4]) out.push(b([x - 0.02, 0.36, z, x + 0.02, 0.42, z + 0.08], LATON));
+  return out;
+}
+
+/** Lámpara de bankers sobre su velador: pie de latón y pantalla de cristal verde que deja una luz cálida abajo. */
+function bankers() {
+  const out = [];
+  out.push(b([0.3, 0.47, 0, 0.7, 0.53, 0.04], MADERA_D), b([0.47, 0.3, 0, 0.53, 0.7, 0.04], MADERA_D));
+  out.push(b([0.46, 0.46, 0.04, 0.54, 0.54, 0.7], MADERA_D));
+  out.push(b([0.24, 0.3, 0.7, 0.76, 0.7, 0.75], MADERA), b([0.3, 0.24, 0.7, 0.7, 0.76, 0.75], MADERA));
+  // La lámpara: base, mástil, el brazo y la pantalla verde con su borde
+  out.push(b([0.38, 0.42, 0.75, 0.62, 0.58, 0.79], LATON), b([0.48, 0.48, 0.79, 0.52, 0.52, 1.08], LATON));
+  out.push(b([0.3, 0.44, 1.02, 0.7, 0.56, 1.06], LATON));
+  out.push(b([0.28, 0.4, 1.06, 0.72, 0.6, 1.14], CRISTAL_V), b([0.32, 0.43, 1.14, 0.68, 0.57, 1.18], [92, 180, 120]));
+  out.push(b([0.3, 0.42, 1.04, 0.7, 0.58, 1.06], [255, 222, 150], { glow: true }));
+  out.push(b([0.6, 0.5, 0.92, 0.62, 0.52, 1.02], LATON), b([0.59, 0.49, 0.9, 0.63, 0.53, 0.93], LATON));
+  return out;
+}
+
+/** Piano vertical de nogal con su banqueta, la tapa abierta, teclas blancas y negras y dos candelabros (hito del nivel 4). */
+function piano() {
+  const out = [];
+  const N = [86, 52, 34];
+  out.push(b([0.08, 0.1, 0, 1.92, 0.5, 1.36], N), b([0.04, 0.06, 1.36, 1.96, 0.54, 1.42], MADERA_L));
+  out.push(b([0.08, 0.5, 0, 0.18, 0.62, 0.66], N), b([1.82, 0.5, 0, 1.92, 0.62, 0.66], N));
+  out.push(b([0.16, 0.5, 0.62, 1.84, 0.66, 0.68], [244, 238, 222]));
+  for (let x = 0.22; x < 1.8; x += 0.105) if (Math.round(x / 0.105) % 7 !== 2 && Math.round(x / 0.105) % 7 !== 6) out.push(b([x, 0.5, 0.68, x + 0.05, 0.6, 0.71], [28, 22, 22]));
+  out.push(b([0.16, 0.48, 0.68, 1.84, 0.52, 0.86], N));
+  // El atril con una partitura y el panel tallado
+  out.push(b([0.6, 0.48, 0.92, 1.4, 0.5, 1.2], [232, 222, 196]), b([0.66, 0.47, 0.98, 1.34, 0.48, 1.0], [80, 70, 64]), b([0.66, 0.47, 1.06, 1.34, 0.48, 1.08], [80, 70, 64]));
+  out.push(b([0.2, 0.49, 0.1, 1.8, 0.5, 0.5], [104, 66, 44]));
+  // Los candelabros de latón, con su vela encendida
+  for (const x of [0.22, 1.7]) {
+    out.push(b([x, 0.5, 1.0, x + 0.08, 0.6, 1.04], LATON), b([x + 0.02, 0.52, 1.04, x + 0.06, 0.56, 1.16], [240, 230, 204]));
+    out.push(b([x + 0.03, 0.53, 1.16, x + 0.05, 0.55, 1.2], [255, 214, 140], { glow: true }));
+  }
+  // La banqueta
+  out.push(b([0.62, 0.74, 0, 0.68, 0.8, 0.44], N), b([1.32, 0.74, 0, 1.38, 0.8, 0.44], N), b([0.62, 0.92, 0, 0.68, 0.98, 0.44], N), b([1.32, 0.92, 0, 1.38, 0.98, 0.44], N));
+  out.push(b([0.58, 0.7, 0.44, 1.42, 1.0, 0.52], CUERO));
+  return out;
+}
+
+/** Mesa de hierro de terraza, pintada de verde, con la tapa de chapa calada y una taza. */
+function mesaHierro() {
+  const out = [];
+  for (const [x, y] of [
+    [0.24, 0.24],
+    [0.7, 0.24],
+    [0.24, 0.7],
+    [0.7, 0.7],
+  ])
+    out.push(b([x, y, 0, x + 0.06, y + 0.06, 0.7], VERDE_F));
+  out.push(b([0.28, 0.28, 0.24, 0.72, 0.72, 0.26], VERDE_F));
+  out.push(b([0.18, 0.24, 0.7, 0.82, 0.76, 0.74], VERDE_C), b([0.24, 0.18, 0.7, 0.76, 0.82, 0.74], VERDE_C));
+  // El calado: unas rendijas más oscuras en la chapa
+  for (const x of [0.32, 0.44, 0.56, 0.68]) out.push(b([x, 0.3, 0.741, x + 0.03, 0.7, 0.745], VERDE_F));
+  out.push(b([0.38, 0.38, 0.745, 0.52, 0.52, 0.755], [236, 232, 222]), b([0.41, 0.41, 0.755, 0.49, 0.49, 0.83], [244, 240, 232]));
+  return out;
+}
+
+/** Silla de terraza de hierro verde, con el asiento de lamas y el respaldo de volutas (respaldo en y = 0). */
+function sillaTerraza() {
+  const out = [];
+  for (const [x, y] of [
+    [0.26, 0.2],
+    [0.68, 0.2],
+    [0.26, 0.7],
+    [0.68, 0.7],
+  ])
+    out.push(b([x, y, 0, x + 0.05, y + 0.05, 0.44], VERDE_F));
+  for (const y of [0.22, 0.36, 0.5, 0.64]) out.push(b([0.24, y, 0.44, 0.76, y + 0.1, 0.48], VERDE_C));
+  out.push(b([0.26, 0.2, 0.48, 0.31, 0.25, 1.0], VERDE_F), b([0.69, 0.2, 0.48, 0.74, 0.25, 1.0], VERDE_F));
+  out.push(b([0.26, 0.19, 0.94, 0.74, 0.24, 1.0], VERDE_C), b([0.26, 0.19, 0.6, 0.74, 0.23, 0.64], VERDE_C));
+  // Las volutas del respaldo
+  out.push(b([0.4, 0.19, 0.66, 0.46, 0.23, 0.92], VERDE_C), b([0.54, 0.19, 0.66, 0.6, 0.23, 0.92], VERDE_C), b([0.44, 0.19, 0.76, 0.56, 0.23, 0.8], VERDE_C));
+  return out;
+}
+
+/** Macetero largo de madera pintada, con lavanda y unas flores, para cerrar la terraza. */
+function macetero() {
+  const out = [];
+  out.push(b([0.06, 0.28, 0, 1.94, 0.72, 0.5], [104, 74, 56]), b([0.04, 0.26, 0.46, 1.96, 0.74, 0.52], MADERA_L));
+  for (const x of [0.5, 1.0, 1.5]) out.push(b([x - 0.02, 0.27, 0.05, x + 0.02, 0.28, 0.46], [86, 60, 46]));
+  out.push(b([0.1, 0.32, 0.5, 1.9, 0.68, 0.52], [66, 46, 36]));
+  for (let k = 0; k < 13; k += 1) {
+    const x = 0.14 + k * 0.135;
+    const y = 0.36 + ((k * 5) % 3) * 0.1;
+    const alto = 0.34 + ((k * 7) % 4) * 0.07;
+    out.push(b([x, y, 0.52, x + 0.03, y + 0.03, 0.52 + alto], [86, 120, 78]));
+    out.push(b([x - 0.02, y - 0.02, 0.52 + alto - 0.1, x + 0.05, y + 0.05, 0.52 + alto + 0.04], k % 4 === 1 ? [226, 196, 110] : [146, 120, 186]));
+  }
+  return out;
+}
+
+/** Farol de forja de pie, con su cristal encendido y volutas en el brazo (hito del nivel 5). */
+function farol() {
+  const out = [];
+  out.push(b([0.32, 0.32, 0, 0.68, 0.68, 0.12], HIERRO), b([0.38, 0.38, 0.12, 0.62, 0.62, 0.2], HIERRO));
+  out.push(b([0.46, 0.46, 0.2, 0.54, 0.54, 2.0], HIERRO));
+  for (const z of [0.5, 1.4]) out.push(b([0.43, 0.43, z, 0.57, 0.57, z + 0.05], HIERRO));
+  out.push(b([0.36, 0.48, 1.7, 0.46, 0.52, 1.74], HIERRO), b([0.54, 0.48, 1.7, 0.64, 0.52, 1.74], HIERRO));
+  // El farol: base, cristales encendidos con sus montantes y el sombrerete
+  out.push(b([0.36, 0.36, 2.0, 0.64, 0.64, 2.04], HIERRO));
+  out.push(b([0.38, 0.38, 2.04, 0.62, 0.62, 2.36], [255, 214, 140], { glow: true }));
+  for (const [x, y] of [
+    [0.36, 0.36],
+    [0.6, 0.36],
+    [0.36, 0.6],
+    [0.6, 0.6],
+  ])
+    out.push(b([x, y, 2.04, x + 0.04, y + 0.04, 2.36], HIERRO));
+  out.push(b([0.33, 0.33, 2.36, 0.67, 0.67, 2.42], HIERRO), b([0.4, 0.4, 2.42, 0.6, 0.6, 2.5], HIERRO), b([0.47, 0.47, 2.5, 0.53, 0.53, 2.58], LATON));
+  return out;
+}
+
 const MODELOS = {
   'cafe-mesa': mesa,
   'cafe-silla': silla,
@@ -296,9 +461,17 @@ const MODELOS = {
   'cafe-orejero': orejero,
   'cafe-mesita': mesita,
   'cafe-reloj': reloj,
+  'cafe-mesa-larga': mesaLarga,
+  'cafe-biombo': biombo,
+  'cafe-bankers': bankers,
+  'cafe-piano': piano,
+  'cafe-mesa-hierro': mesaHierro,
+  'cafe-silla-terraza': sillaTerraza,
+  'cafe-macetero': macetero,
+  'cafe-farol': farol,
 };
 /** Los muebles del café que enseñan tus libros en sus baldas. */
-export const ESTANTERIAS = ['cafe-estanteria', 'cafe-estanteria-alta'];
+export const ESTANTERIAS = ['cafe-estanteria', 'cafe-estanteria-alta', 'cafe-biombo'];
 
 /** Las cajas de un mueble del plano (del café o de casa), sin girar. `libros`: títulos para la estantería. */
 export function cajasDe(id, libros = []) {
@@ -310,4 +483,4 @@ export function cajasDe(id, libros = []) {
 }
 
 /** Si el mueble da luz (para que la escena lo sepa). */
-export const daLuz = (id) => id === 'cafe-lampara' || id === 'cafe-vitrina' || Boolean(catalogItem(id)?.luz);
+export const daLuz = (id) => ['cafe-lampara', 'cafe-vitrina', 'cafe-bankers', 'cafe-farol', 'cafe-piano'].includes(id) || Boolean(catalogItem(id)?.luz);

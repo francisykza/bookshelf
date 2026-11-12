@@ -38,6 +38,15 @@ export const LAMPARITA = { x: 7.65, y: 6.9, z: 1.05 };
 export const VENTANAL = { x0: 1.3, x1: 6.3, z0: 0.85, z1: 3.7 };
 export const CHIMENEA = { x0: 7.5, x1: 9.2, hondo: 0.6, alto: 1.4 };
 export const ALTAS = { y0: 0.45, y1: 3.35, fondo: 0.46 };
+/**
+ * Bloque 4b (1.123): en el nivel 4 se abre la pared de la izquierda (quedan dos pilares en los extremos y una viga) y el ala
+ * lateral llega hasta x = −3,4; la pared, con las estanterías altas y la vieja, se va al fondo del ala. En el nivel 5, la
+ * acera de la terraza, delante del escaparate (se sale por la puerta).
+ */
+export const ALA = { x0: -3.4, x1: 0, pilar: 0.35 };
+export const ACERA = { x0: 0.4, x1: 9.0, y0: SD + 0.35, y1: SD + 3.9 };
+/** La pared de la izquierda, donde esté: en x = 0 hasta el nivel 3; al fondo del ala desde el 4. */
+export const paredIzquierda = (nivel = 1) => (nivel >= 4 ? ALA.x0 : 0);
 /** La estantería vieja, vacía, en la pared izquierda. */
 export const ESTANTERIA = { y0: 5.0, y1: 8.6, fondo: 0.42, alto: 2.4 };
 
@@ -106,12 +115,22 @@ const choca = (x, y, [x0, y0, , x1, y1], h = HOLGURA) => x > x0 - h && x < x1 + 
  * `limpio`: el local ya inaugurado (sin cajas, sábanas ni escalera); `muebles`: cajas del mundo de lo colocado.
  */
 export function dentro(x, y, { limpio = false, muebles = [], nivel = 1 } = {}) {
-  if (x < 0.5 || x > SW - 0.5 || y < (nivel >= 2 ? 0.5 : CORTINA.y + 0.45) || y > SD - 0.5) return false;
-  // Nivel 3: la chimenea y las estanterías altas del fondo
+  // Nivel 5: la acera de la terraza; entre dentro y fuera, solo por la puerta
+  if (nivel >= 5 && y > SD - 0.5) {
+    if (y < ACERA.y0) {
+      if (x < PUERTA.x0 + 0.3 || x > PUERTA.x1 - 0.3) return false;
+    } else if (x < ACERA.x0 || x > ACERA.x1 || y > ACERA.y1) return false;
+    return !muebles.some((b) => choca(x, y, b, 0.22));
+  }
+  const pared = paredIzquierda(nivel);
+  if (x < pared + 0.5 || x > SW - 0.5 || y < (nivel >= 2 ? 0.5 : CORTINA.y + 0.45) || y > SD - 0.5) return false;
+  // Nivel 4: los dos pilares que quedan de la pared, en los extremos
+  if (nivel >= 4 && Math.abs(x) < 0.2 + HOLGURA && (y < ALA.pilar + HOLGURA || y > SD - ALA.pilar - HOLGURA)) return false;
+  // Nivel 3: la chimenea y las estanterías altas del fondo (desde el 4, en la pared del ala)
   if (nivel >= 3 && x > CHIMENEA.x0 - HOLGURA && x < CHIMENEA.x1 + HOLGURA && y < CHIMENEA.hondo + 0.35 + HOLGURA) return false;
-  if (nivel >= 3 && x < ALTAS.fondo + HOLGURA && y < ALTAS.y1 + HOLGURA) return false;
+  if (nivel >= 3 && x < pared + ALTAS.fondo + HOLGURA && y < ALTAS.y1 + HOLGURA) return false;
   if (x > MOSTRADOR.x0 - HOLGURA && y > MOSTRADOR.y0 - HOLGURA && y < MOSTRADOR.y1 + HOLGURA) return false;
-  if (x < ESTANTERIA.fondo + HOLGURA && y > ESTANTERIA.y0 && y < ESTANTERIA.y1) return false;
+  if (x < pared + ESTANTERIA.fondo + HOLGURA && y > ESTANTERIA.y0 && y < ESTANTERIA.y1) return false;
   if (muebles.some((b) => choca(x, y, b, 0.22))) return false;
   return limpio || ![...SABANAS, ...CAJAS, ESCALERA_CAJA].some((b) => choca(x, y, b));
 }

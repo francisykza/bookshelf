@@ -242,3 +242,43 @@ describe('bloque 4a: el chocolate y la nata, con su gesto y su objeto', () => {
     expect(taza.crema).toBe(false);
   });
 });
+
+describe('bloque 4b: la vainilla y el café con hielo, con su gesto y su objeto', () => {
+  const FRIO = { bebida: 'frio', grano: 'intenso', leche: 'entera', toque: 'vainilla' };
+  it('el café con hielo se agita en la coctelera y su leche va fría; la vainilla se rasca; gestos nuevos y distintos', () => {
+    const frio = ETAPAS.flatMap((e) => gestosDe(e, FRIO));
+    expect(frio).toEqual(['manivela', 'apisonar', 'palanca', 'coctelera', 'verter', 'rascar']);
+    expect(nombreEtapa('extraer', FRIO)).toBe('Agitar');
+    expect(GESTOS.coctelera.pista).not.toBe(GESTOS.agitar.pista);
+    expect(GESTOS.rascar.pista).not.toBe(GESTOS.apisonar.pista);
+  });
+  it('la coctelera pide diez vaivenes amplios; los de la canela no bastan', () => {
+    expect(vaivenes(crearGesto('coctelera'), 'x', 10, 20).progreso).toBe(0);
+    const s = vaivenes(crearGesto('coctelera'), 'x', 10, 60);
+    expect(s.hecho).toBe(true);
+    expect(s.pose.agitado).toBe(1);
+    const taza = vistaTaza(FRIO, { palanca: { extraido: 1 }, coctelera: s.pose, verter: { vertido: 1, arte: 'corazon' } });
+    expect(taza.hielo).toBe(1);
+    expect(taza.arte).toBeNull();
+    expect(taza.crema).toBe(false);
+  });
+  it('la vainilla: tres trazos de arriba abajo; uno largo sin subir cuenta solo una vez', () => {
+    const largo = crearGesto('rascar');
+    largo.abajo(200, 100);
+    let s = largo.mover(200, 400);
+    expect(s.pose.raspados).toBe(1);
+    expect(s.hecho).toBe(false);
+    const g = crearGesto('rascar');
+    // Dos trazos en la misma pulsación (subiendo entre uno y otro) y el tercero en otra
+    g.abajo(200, 100);
+    g.mover(200, 170);
+    g.mover(200, 120);
+    s = g.mover(200, 190);
+    expect(s.pose.raspados).toBe(2);
+    g.arriba();
+    g.abajo(200, 100);
+    s = g.mover(200, 170);
+    expect(s.hecho).toBe(true);
+    expect(vistaTaza(FRIO, { rascar: s.pose }).vainilla).toBe(1);
+  });
+});

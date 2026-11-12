@@ -2,7 +2,7 @@
 // reglas que el servidor (nombre de la lista, una sola inauguración, plano dentro de la cuadrícula y sin solapes, copias
 // del café y de casa contando el piso). Se engancha después de `mock.attach` (la última ruta manda). Sin `cafe`, el
 // servidor no tiene la migración (404 PGRST202), como antes de aplicarla.
-import { CAFE_MUEBLES, CAFE_NOMBRES, PLANO_INICIAL, cabe, cuenta, deCasa, medidas } from '../src/features/edificio/cafe/cafeCatalogo';
+import { CAFE_MUEBLES, CAFE_NOMBRES, PLANO_INICIAL, asientosDe, cabe, cuenta, deCasa, maxCosas, medidas } from '../src/features/edificio/cafe/cafeCatalogo';
 import { GRANOS_HITO, TICKETS_NIVEL, cartaDe, nivelDe, novedades, ticketsDelDia, umbralHito } from '../src/features/edificio/cafe/cafeNiveles';
 import { SUPABASE } from './mockSupabase';
 import {
@@ -35,8 +35,8 @@ const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
  * las cajas de género, aquí, en orden (para que las capturas sean siempre iguales).
  */
 export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null } = {}) {
-  const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, llamadas: [], ...estado } : null;
-  const vista = () => ({ nombre: c.nombre, nivel: c.nivel, reputacion: c.reputacion, granos: c.granos, plano: c.plano, inaugurado: c.inaugurado, inventario: c.inventario });
+  const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], llamadas: [], ...estado } : null;
+  const vista = () => ({ nombre: c.nombre, nivel: c.nivel, reputacion: c.reputacion, granos: c.granos, plano: c.plano, inaugurado: c.inaugurado, inventario: c.inventario, escaparate: c.escaparate });
   // ── Libros en cajas ──
   const lib = { bienvenida: Boolean(estado?.libros?.bienvenida), libros: Object.fromEntries((estado?.libros?.libros ?? []).map((b) => [b.clave, { ...b }])) };
   if (c) c.lib = lib;
@@ -131,7 +131,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
         uids.add(it.uid);
         limpio.items.push(it);
       }
-      if (!Array.isArray(items) || items.length > 24) return falla(route, 'cafe:plano');
+      if (!Array.isArray(items) || items.length > maxCosas(c.nivel)) return falla(route, 'cafe:plano');
       const n = cuenta(limpio);
       const casa = piso();
       const enPiso = cuenta(casa.layout);
@@ -150,6 +150,15 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       c.inventario[m.id] = (c.inventario[m.id] ?? 0) + 1;
       return json(route, vista());
     }
+    // Bloque 4b (1.123): el escaparate (nivel 5, hasta tres títulos) y lo que se ve desde la calle
+    if (rpc === 'cafe_poner_escaparate') {
+      if (!c.inaugurado) return falla(route, 'cafe:cerrado');
+      if (c.nivel < 5) return falla(route, 'cafe:nivel');
+      if (!Array.isArray(body.titulos) || body.titulos.length > 3 || !titulosValidos(body.titulos)) return falla(route, 'cafe:titulos');
+      c.escaparate = body.titulos.map(({ clave, titulo, genero }) => ({ clave, titulo, genero }));
+      return json(route, vista());
+    }
+    if (rpc === 'cafe_fachada') return json(route, { inaugurado: c.inaugurado, nombre: c.nombre, nivel: c.nivel, escaparate: c.nivel >= 5 ? c.escaparate : [] });
     if (clientes && ['cafe_dia', 'cafe_habitual', 'cafe_servir'].includes(rpc)) return diaDelCafe(route, rpc, body);
     if (clientes && ['cafe_bienvenida', 'cafe_comprar_caja', 'cafe_colocar'].includes(rpc)) return libros(route, rpc, body);
     return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
@@ -185,7 +194,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
   function diaDelCafe(route, rpc, body) {
     if (body.dia !== clientes.hoy && body.dia !== ayer) return falla(route, 'cafe:dia');
     if (!c.inaugurado) return falla(route, 'cafe:cerrado');
-    const d = (dias[body.dia] ??= { dia: body.dia, clientes: clientesDelNivel(c.nivel), habituales: 0, servidos: {}, carta: cartaDe(c.reputacion), tickets: 0 });
+    const d = (dias[body.dia] ??= { dia: body.dia, clientes: clientesDelNivel(c.nivel, asientosDe(c.plano)), habituales: 0, servidos: {}, carta: cartaDe(c.reputacion), tickets: 0 });
     let dado = null;
     let progreso = null;
     if (rpc === 'cafe_habitual') d.habituales = Math.min(MAX_HABITUALES, d.habituales + 1);

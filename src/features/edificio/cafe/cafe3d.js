@@ -72,8 +72,10 @@ import {
   ALTAS,
   CHIMENEA,
   VENTANAL,
+  ALA,
+  paredIzquierda,
 } from './cafeLayout';
-import { CUADRICULA, filasDe, medidas } from './cafeCatalogo';
+import { ASIENTOS, CUADRICULA, casillaValida, columnasDe, filasDe, medidas } from './cafeCatalogo';
 import { cajasDe, colorDe } from './cafeMuebles';
 import { footprint } from '../room';
 
@@ -124,9 +126,26 @@ const LUCES = [
   { at: [2.0, SD - 0.3, 2.4], k: 0.32, reach: 4.2 },
   { at: [(PUERTA.x0 + PUERTA.x1) / 2, SD - 0.3, 2.0], k: 0.2, reach: 3.0 },
 ];
+/**
+ * Bloque 4b (1.123): la luz del ala lateral (tres campanas de latón) y la de los farolillos de la terraza. Solo cuentan desde
+ * su nivel (`LUCES_NIVEL`, que pone setLocal): así lo de los niveles 1 a 3 se ve igual que antes.
+ */
+const LUZ_ALA = { at: [-1.7, 6.0, 3.6], k: 0.8, reach: 5.2 };
+const LUZ_TERRAZA = { at: [3.6, SD + 2.3, 2.3], k: 0.75, reach: 4.0 };
+let LUCES_NIVEL = [];
+/** Pinta con estas luces de nivel encendidas (las láminas del ala y de la calle se pintan al montar). */
+function conLuces(luces, fn) {
+  const antes = LUCES_NIVEL;
+  LUCES_NIVEL = luces;
+  try {
+    return fn();
+  } finally {
+    LUCES_NIVEL = antes;
+  }
+}
 function glowAt(x, y, z) {
   let g = 0.06;
-  for (const { at, k, reach } of LUCES) {
+  for (const { at, k, reach } of LUCES_NIVEL.length ? [...LUCES, ...LUCES_NIVEL] : LUCES) {
     const d = Math.hypot(x - at[0], y - at[1], (z - at[2]) * 1.15) / reach;
     if (d < 1) g += k * (1 - d) ** 1.5;
   }
@@ -253,8 +272,13 @@ function calle(x, z) {
   return rgb(20 + t * 6, 26 + t * 4, 56 + t * 10);
 }
 
-// La pared de delante: el escaparate con su marco verde y la puerta acristalada
-function delanteExtra(a, b, ix, iy) {
+// La pared de delante: el escaparate con su marco verde y la puerta acristalada. Con `abierto` (nivel 5, la terraza), el
+// cristal se ve a través (transparente: detrás está la acera de verdad) y la puerta queda abierta.
+const delanteExtra = delanteDe(false);
+function delanteDe(abierto) {
+  return (a, b, ix, iy) => delanteDePx(a, b, ix, iy, abierto);
+}
+function delanteDePx(a, b, ix, iy, abierto) {
   const x = SW - a;
   const r = probe();
   const green = r.rampOf(GREEN);
@@ -265,10 +289,11 @@ function delanteExtra(a, b, ix, iy) {
     if (x < x0 || x > x1 || b < z0 || b > z1) return lit(green[x < x0 - 0.1 || x > x1 + 0.1 || b < z0 - 0.1 ? 1 : 2], g, ix, iy);
     // Dos parteluces y un travesaño alto (el montante)
     if (Math.abs(x - (x0 + (x1 - x0) / 3)) < 0.04 || Math.abs(x - (x0 + (2 * (x1 - x0)) / 3)) < 0.04 || Math.abs(b - (z1 - 0.55)) < 0.04) return lit(green[2], g, ix, iy);
-    return calle(x, b);
+    return abierto ? 0 : calle(x, b);
   }
   if (x > PUERTA.x0 - 0.14 && x < PUERTA.x1 + 0.14 && b < PUERTA.alto + 0.14) {
     if (x < PUERTA.x0 || x > PUERTA.x1 || b > PUERTA.alto) return lit(wood[1], g, ix, iy);
+    if (abierto) return 0;
     const u = x - PUERTA.x0;
     if (u < 0.12 || u > PUERTA.x1 - PUERTA.x0 - 0.12 || b < 1.0 || b > PUERTA.alto - 0.12) return lit(wood[u < 0.05 || b < 0.06 ? 1 : 3], g, ix, iy);
     // El pomo de latón
@@ -294,18 +319,217 @@ function derechaExtra(a, b, ix, iy) {
 }
 
 // ── El techo: yeso con vigas de madera a lo ancho ──
-function paintCeiling() {
+function paintCeiling(x0 = 0, ancho = SW) {
   const r = probe();
   const wood = r.rampOf(WOOD_D);
   const plaster = r.rampOf(PLASTER);
-  return canvasOf(SW * PX, SD * PX, (ix, iy) => {
-    const x = (ix + 0.5) / PX;
+  return canvasOf(Math.round(ancho * PX), SD * PX, (ix, iy) => {
+    const x = x0 + (ix + 0.5) / PX;
     const y = SD - (iy + 0.5) / PX;
     const g = glowAt(x, y, SH) * 0.7;
     const v = frac(y / 1.8);
     if (v < 0.12) return lit(wood[v < 0.03 || v > 0.1 ? 1 : 3], g, ix, iy);
     return lit(plaster[noise(x * 3, y * 3) > 0.8 ? 2 : 3], g, ix, iy);
   });
+}
+
+// ── Bloque 4b (1.123): lo que se abre en los niveles 4 y 5 ──
+/** El suelo del ala lateral: el mismo damero, con polvo junto a las paredes nuevas. */
+function paintSueloAla() {
+  const r = probe();
+  const red = r.rampOf(TILE_R);
+  const cream = r.rampOf(TILE_C);
+  const ancho = ALA.x1 - ALA.x0;
+  return canvasOf(Math.round(ancho * PX), SD * PX, (ix, iy) => {
+    const x = ALA.x0 + (ix + 0.5) / PX;
+    const y = (iy + 0.5) / PX;
+    const g = glowAt(x, y, 0);
+    const T = 0.62;
+    const tx = Math.floor(x / T);
+    const ty = Math.floor(y / T);
+    const ramp = (((tx + ty) % 2) + 2) % 2 ? red : cream;
+    if (frac(x / T) < 0.05 || frac(y / T) < 0.05) return lit(ramp[1], g, ix, iy);
+    const borde = Math.min(x - ALA.x0, y, SD - y);
+    const polvo = noise(x * 3, y * 3) * 0.6 + (borde < 0.7 ? (0.7 - borde) * 0.6 : 0);
+    return lit(ramp[clamp(3 - (noise(tx * 2.1, ty * 1.7) > 0.72 ? 1 : 0) + (polvo > 0.78 ? 1 : 0), 1, 4)], g, ix, iy);
+  });
+}
+/** La ventanita del ala en la pared de delante: marco verde y la calle de noche detrás. */
+function ventanaAla(a, b, ix, iy) {
+  const x = ALA.x1 - a;
+  if (x < -2.5 || x > -0.9 || b < 1.3 || b > 3.1) return null;
+  const r = probe();
+  const green = r.rampOf(GREEN);
+  const g = glowAt(x, SD - 0.3, b);
+  if (x < -2.4 || x > -1.0 || b < 1.4 || b > 3.0 || Math.abs(x + 1.7) < 0.035) return lit(green[x < -2.45 || x > -0.95 ? 1 : 2], g, ix, iy);
+  return calle(x + 6.3, b);
+}
+const MOSTAZA = [206, 158, 78];
+const PIEDRA = [150, 140, 126];
+/** El café visto desde la acera (nivel 5): zócalo de piedra, estuco mostaza, cornisa, el escaparate (con el cristal a través) y la puerta abierta. Va de x = −6 a 16. */
+const FUERA = { x0: -6, x1: 16, alto: SH + 1.4 };
+function paintFachadaFuera() {
+  const r = probe();
+  const stucco = r.rampOf(MOSTAZA);
+  const stone = r.rampOf(PIEDRA);
+  const green = r.rampOf(GREEN);
+  const wood = r.rampOf(WOOD);
+  const W = FUERA.x1 - FUERA.x0;
+  return canvasOf(W * PX, Math.round(FUERA.alto * PX), (ix, iy) => {
+    const x = FUERA.x0 + (ix + 0.5) / PX;
+    const b = FUERA.alto - (iy + 0.5) / PX;
+    const g = glowAt(x, SD + 0.25, b);
+    const { x0, x1, z0, z1 } = ESCAPARATE;
+    if (x > x0 - 0.16 && x < x1 + 0.16 && b > z0 - 0.16 && b < z1 + 0.14) {
+      if (x < x0 || x > x1 || b < z0 || b > z1) return lit(green[x < x0 - 0.1 || x > x1 + 0.1 || b < z0 - 0.1 ? 1 : 2], g, ix, iy);
+      if (Math.abs(x - (x0 + (x1 - x0) / 3)) < 0.04 || Math.abs(x - (x0 + (2 * (x1 - x0)) / 3)) < 0.04 || Math.abs(b - (z1 - 0.55)) < 0.04) return lit(green[2], g, ix, iy);
+      return 0;
+    }
+    if (x > PUERTA.x0 - 0.14 && x < PUERTA.x1 + 0.14 && b < PUERTA.alto + 0.14) {
+      if (x < PUERTA.x0 || x > PUERTA.x1 || b > PUERTA.alto) return lit(wood[1], g, ix, iy);
+      return 0;
+    }
+    // La ventanita del ala, encendida por dentro
+    if (x > -2.5 && x < -0.9 && b > 1.3 && b < 3.1) {
+      if (x < -2.4 || x > -1.0 || b < 1.4 || b > 3.0 || Math.abs(x + 1.7) < 0.035) return lit(green[2], g, ix, iy);
+      return b > 2.6 ? rgb(214, 170, 104) : rgb(236, 196, 124);
+    }
+    // Las esquinas del bajo, de piedra; el zócalo; la cornisa
+    if (b < 0.45 || x < ALA.x0 + 0.25 || x > SW - 0.25) return lit(stone[noise(x * 5, b * 5) > 0.7 ? 2 : 3], g, ix, iy);
+    if (b > SH - 0.34 && b < SH - 0.08) return lit(stone[b > SH - 0.14 ? 2 : 3], g, ix, iy);
+    if (x < ALA.x0 || x > SW) return lit(stone[1], g * 0.6, ix, iy);
+    const n = noise(x * 2.2, b * 2.2);
+    return lit(stucco[n > 0.8 ? 2 : n < 0.25 ? 4 : 3], g, ix, iy);
+  });
+}
+/** La acera mojada delante del café: adoquines con el reflejo de los farolillos. Va de x = −6 a 16 y de SD a SD + 5. */
+function paintAcera() {
+  const r = probe();
+  const adoquin = r.rampOf([70, 76, 98]);
+  const W = FUERA.x1 - FUERA.x0;
+  return canvasOf(W * PX, 5 * PX, (ix, iy) => {
+    const x = FUERA.x0 + (ix + 0.5) / PX;
+    const y = SD + (iy + 0.5) / PX;
+    const g = glowAt(x, y, 0);
+    if (y > SD + 4.4) return lit(r.rampOf(PIEDRA)[y > SD + 4.55 ? 2 : 3], g, ix, iy);
+    const cy = Math.floor(y / 0.3);
+    const junta = frac(x / 0.36 + (cy % 2) * 0.5) < 0.08 || frac(y / 0.3) < 0.1;
+    if (junta) return lit(adoquin[1], g * 0.8, ix, iy);
+    const brillo = g > 0.45 && noise(x * 7, y * 9) > 0.62;
+    return brillo ? rgb(214, 170, 104) : lit(adoquin[noise(x * 4, y * 5) > 0.7 ? 3 : 2], g, ix, iy);
+  });
+}
+/** Al otro lado de la acera, el muelle de noche: el agua con reflejos, la otra orilla con sus luces, el faro y estrellas. */
+function paintMuelle() {
+  const w = 26 * 8;
+  const h = 7 * 8;
+  return canvasOf(w, h, (ix, iy) => {
+    const x = -8 + (ix + 0.5) / 8;
+    const z = 7 - (iy + 0.5) / 8;
+    if (z < 0.2) return rgb(96, 92, 90);
+    if (z < 1.5) {
+      const ola = noise(x * 6, z * 22);
+      if (Math.abs(x - 3.6) < 0.8 && ola > 0.5) return rgb(200, 150, 90);
+      return ola > 0.8 ? rgb(46, 66, 104) : rgb(18, 28, 54);
+    }
+    if (z < 1.75) {
+      if (Math.abs(x - 11) < 0.1) return rgb(214, 210, 200);
+      return noise(x * 13, 3) > 0.72 ? rgb(236, 196, 120) : rgb(16, 20, 32);
+    }
+    if (Math.abs(x - 11) < 0.08 && z < 2.3) return Math.floor(z * 10) % 2 ? rgb(214, 210, 200) : rgb(160, 50, 50);
+    if (Math.abs(x - 11) < 0.14 && z > 2.3 && z < 2.45) return rgb(255, 236, 170);
+    if (hash(Math.floor(x * 8), Math.floor(z * 8)) > 0.985) return rgb(214, 214, 236);
+    const k = clamp((z - 1.75) / 4, 0, 1);
+    return rgb(20 + k * 6, 26 + k * 4, 56 + k * 10);
+  });
+}
+/** Los pilares que quedan de la pared de la izquierda, la viga que la sustituye y las tres campanas de latón del ala. */
+function alaKit(s) {
+  const ladrillo = [150, 82, 62];
+  for (const [y0, y1] of [
+    [0, ALA.pilar],
+    [SD - ALA.pilar, SD],
+  ]) {
+    pushBox(s, [-0.2, y0, 0, 0.2, y1, SH], ladrillo);
+    for (let z = 0.25; z < SH - 0.5; z += 0.25) pushBox(s, [-0.205, y0, z, 0.205, y1, z + 0.02], [120, 64, 48]);
+  }
+  pushBox(s, [-0.24, 0, SH - 0.5, 0.24, SD, SH], [104, 70, 44]);
+  pushBox(s, [-0.25, 0, SH - 0.52, 0.25, SD, SH - 0.47], [82, 54, 34]);
+  for (const y of [3.0, 6.0, 9.0]) {
+    const x = -1.7;
+    pushBox(s, [x - 0.012, y - 0.012, 3.5, x + 0.012, y + 0.012, SH], [40, 34, 32], { g: 0.4 });
+    pushBox(s, [x - 0.17, y - 0.17, 3.3, x + 0.17, y + 0.17, 3.5], BRASS, { g: 0.85 });
+    pushBox(s, [x - 0.11, y - 0.11, 3.22, x + 0.11, y + 0.11, 3.3], BULB, { glow: true });
+  }
+}
+/** El toldo de la terraza (rayas granate y crema), sus brazos de hierro y la guirnalda de farolillos de su borde. */
+function toldoKit(s) {
+  const [xa, xb] = [0.35, 6.85];
+  const fondo = 3.0;
+  const za = 3.5;
+  const zb = 2.75;
+  const tramos = 8;
+  for (let k = 0; k < tramos; k += 1) {
+    const y0 = SD + (fondo * k) / tramos;
+    const y1 = SD + (fondo * (k + 1)) / tramos;
+    const z = za + ((zb - za) * (k + 0.5)) / tramos;
+    for (let x = xa, i = 0; x < xb; x += 0.4, i += 1) pushBox(s, [x, y0 - 0.01, z - 0.06, Math.min(xb, x + 0.4), y1 + 0.01, z + 0.06], i % 2 ? [236, 226, 204] : [150, 52, 50], { g: 0.7 });
+  }
+  // El faldón con sus ondas
+  for (let x = xa, i = 0; x < xb; x += 0.4, i += 1) {
+    pushBox(s, [x, SD + fondo - 0.02, zb - 0.22, Math.min(xb, x + 0.4), SD + fondo + 0.02, zb], i % 2 ? [236, 226, 204] : [150, 52, 50], { g: 0.72 });
+    pushBox(s, [x + 0.1, SD + fondo - 0.02, zb - 0.3, x + 0.3, SD + fondo + 0.02, zb - 0.22], i % 2 ? [236, 226, 204] : [150, 52, 50], { g: 0.72 });
+  }
+  for (const x of [xa + 0.2, xb - 0.2]) {
+    const xf = giro([x, SD, za - 0.4], 'x', -0.95);
+    pushBox(s, [x - 0.025, SD, za - 0.42, x + 0.025, SD + 0.05, za - 0.4 + 2.6], [52, 50, 56], { g: 0.6, xf });
+  }
+  // La guirnalda: un cable que cuelga un poco y una bombilla cálida cada medio metro
+  for (let x = xa + 0.25; x < xb - 0.1; x += 0.5) {
+    const u = (x - xa) / (xb - xa);
+    const z = zb - 0.34 - Math.sin(u * Math.PI) * 0.18;
+    pushBox(s, [x - 0.25, SD + fondo - 0.04, z + 0.03, x + 0.25, SD + fondo - 0.02, z + 0.04], [40, 34, 32], { g: 0.4 });
+    pushBox(s, [x - 0.035, SD + fondo - 0.07, z - 0.08, x + 0.035, SD + fondo + 0.0, z], Math.round(x * 2) % 3 ? [255, 214, 140] : [255, 176, 120], { glow: true });
+  }
+}
+/** La puerta del café, abierta hacia dentro (nivel 5: se sale a la terraza). */
+function puertaAbiertaKit(s) {
+  const x = PUERTA.x1 - 0.04;
+  const y1 = SD - 0.05;
+  const y0 = y1 - (PUERTA.x1 - PUERTA.x0);
+  pushBox(s, [x - 0.05, y0, 0, x, y1, PUERTA.alto], WOOD, { g: 0.6 });
+  pushBox(s, [x - 0.055, y0 + 0.14, 1.0, x - 0.045, y1 - 0.14, PUERTA.alto - 0.14], [70, 86, 120], { g: 0.7 });
+  pushBox(s, [x - 0.09, y0 + 0.1, 1.0, x - 0.05, y0 + 0.16, 1.08], BRASS, { g: 0.7 });
+}
+/** El escaparate (nivel 5): una peana de madera con tus tres libros de cara a la calle y una lamparita que los alumbra. */
+function escaparateKit(s, libros = []) {
+  const y0 = SD - 0.5;
+  const y1 = SD - 0.16;
+  pushBox(s, [1.1, y0, 0, 5.7, y1, 0.5], WOOD_D);
+  pushBox(s, [1.08, y0 - 0.02, 0.5, 5.72, y1 + 0.02, 0.54], WOOD_L);
+  const xs = [2.0, 3.4, 4.8];
+  // El del centro, un poco más alto, sobre su peana
+  pushBox(s, [2.95, y0 + 0.02, 0.54, 3.85, y1 - 0.02, 0.74], WOOD_D);
+  pushBox(s, [2.93, y0, 0.74, 3.87, y1, 0.77], WOOD_L);
+  libros.slice(0, 3).forEach((titulo, k) => {
+    const x = xs[k];
+    const z = k === 1 ? 0.77 : 0.54;
+    const c = colorDe(titulo);
+    const claro = c.map((v) => Math.min(255, v + 80));
+    // El libro de pie, de cara a la calle, apoyado en su atril; la cubierta con su recuadro y el título en bandas claras
+    pushBox(s, [x - 0.04, y1 - 0.24, z, x + 0.04, y1 - 0.16, z + 0.5], WOOD_D);
+    pushBox(s, [x - 0.3, y1 - 0.12, z + 0.02, x + 0.3, y1 - 0.02, z + 0.86], c);
+    pushBox(s, [x - 0.3, y1 - 0.13, z + 0.02, x - 0.26, y1 - 0.02, z + 0.86], c.map((v) => Math.max(0, v - 40)));
+    pushBox(s, [x - 0.24, y1 - 0.021, z + 0.08, x + 0.24, y1 - 0.016, z + 0.8], claro);
+    pushBox(s, [x - 0.2, y1 - 0.016, z + 0.12, x + 0.2, y1 - 0.011, z + 0.76], c);
+    pushBox(s, [x - 0.15, y1 - 0.011, z + 0.56, x + 0.15, y1 - 0.006, z + 0.64], claro);
+    pushBox(s, [x - 0.11, y1 - 0.011, z + 0.46, x + 0.11, y1 - 0.006, z + 0.5], claro);
+    pushBox(s, [x - 0.08, y1 - 0.011, z + 0.2, x + 0.08, y1 - 0.006, z + 0.34], claro);
+  });
+  // La lamparita de pinza que alumbra los libros
+  pushBox(s, [5.5, y0 + 0.05, 0.54, 5.56, y0 + 0.11, 1.4], [52, 50, 56]);
+  pushBox(s, [5.36, y0 + 0.02, 1.36, 5.6, y0 + 0.26, 1.5], BRASS);
+  pushBox(s, [5.4, y0 + 0.06, 1.33, 5.56, y0 + 0.22, 1.36], BULB, { glow: true });
 }
 
 // ── Cajas: mundo de la app (x, y a lo hondo, z arriba) → Three (x, z, y) ──
@@ -521,7 +745,7 @@ function cajaDeReparto(s) {
   colores.forEach((c, k) => pushBox(s, [x0 + 0.12 + k * 0.13, y0 + 0.14, alto - 0.05, x0 + 0.21 + k * 0.13, y1 - 0.14, alto + 0.09 + (k % 2) * 0.04], c));
 }
 /** Los lomos de tus libros en la estantería vieja de la pared (de cara al local, +x). */
-function lomosPared(s, libros) {
+function lomosPared(s, libros, dx = 0) {
   const { y0, y1, fondo, alto } = ESTANTERIA;
   let k = 0;
   for (let z = 0.08; z + 0.4 < alto && k < libros.length; z += 0.58) {
@@ -529,7 +753,7 @@ function lomosPared(s, libros) {
     while (y < y1 - 0.16 && k < libros.length) {
       const ancho = 0.06 + ((k * 7) % 4) * 0.012;
       const altoL = 0.26 + ((k * 5) % 5) * 0.024;
-      pushBox(s, [0.06, y, z + 0.05, fondo - 0.04, y + ancho, z + 0.05 + altoL], colorDe(libros[k]));
+      pushBox(s, [dx + 0.06, y, z + 0.05, dx + fondo - 0.04, y + ancho, z + 0.05 + altoL], colorDe(libros[k]));
       y += ancho + 0.012;
       k += 1;
     }
@@ -567,16 +791,16 @@ function paintRotulo(texto, w, h, { fondo = [70, 44, 30], letra = [238, 214, 160
   return c;
 }
 /** La rejilla de Decorar: casillas con su filete ámbar, transparentes. */
-function paintRejilla(filas = CUADRICULA.d) {
+function paintRejilla(filas = CUADRICULA.d, cols = CUADRICULA.w) {
   const n = 16;
   const c = document.createElement('canvas');
-  c.width = CUADRICULA.w * n;
+  c.width = cols * n;
   c.height = filas * n;
   const ctx = c.getContext('2d');
   ctx.fillStyle = 'rgba(231,183,101,0.10)';
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.fillStyle = 'rgba(244,206,140,0.75)';
-  for (let k = 0; k <= CUADRICULA.w; k += 1) ctx.fillRect(Math.min(c.width - 1, k * n), 0, 1, c.height);
+  for (let k = 0; k <= cols; k += 1) ctx.fillRect(Math.min(c.width - 1, k * n), 0, 1, c.height);
   for (let k = 0; k <= filas; k += 1) ctx.fillRect(0, Math.min(c.height - 1, k * n), c.width, 1);
   return c;
 }
@@ -827,7 +1051,7 @@ const BARRA_Z = 1.05;
 const TAZA_EN = { x: 7.47, y: 6.05 };
 /** Tras la extracción (o la infusión), la taza sale del grupo a la madera, delante, para la leche y el toque. */
 const TAZA_FUERA = { x: 7.36, y: 6.12 };
-const tazaPos = (est = {}) => (est.hechos?.palanca || est.hechos?.colador || est.hechos?.cazo ? TAZA_FUERA : TAZA_EN);
+const tazaPos = (est = {}) => (est.hechos?.palanca || est.hechos?.colador || est.hechos?.cazo || est.hechos?.coctelera ? TAZA_FUERA : TAZA_EN);
 const MOLINILLO = { x: 7.46, y: 5.54 };
 const PORTA = { x: 7.43, y: 5.8 };
 const VAPOR = { x: 7.54, y: 5.84 };
@@ -841,6 +1065,10 @@ const MIEL = { x: 7.44, y: 6.6 };
 /** Bloque 4a: el hornillo con el cazo de cobre del chocolate (detrás de la tetera) y el bol de la nata (junto a la miel). */
 const CAZO = { x: 7.85, y: 6.68 };
 const BOL = { x: 7.44, y: 6.82 };
+/** Bloque 4b: al final de la barra, la tabla con la vaina de vainilla y, al fondo, la coctelera y la cubitera de latón. */
+const VAINA = { x: 7.4, y: 7.12 };
+const COCTELERA = { x: 7.8, y: 7.12 };
+const CUBITERA = { x: 7.8, y: 7.32 };
 /** Dónde está cada cosa de la barra que se elige tocándola (caja del mundo) y qué elige. */
 export const BARRA_COSAS = {
   'barra:bebida:cafe': { box: [7.6, 5.9, BARRA_Z, 7.93, 6.2, BARRA_Z + 0.8], parte: 'bebida', valor: 'cafe' },
@@ -854,6 +1082,8 @@ export const BARRA_COSAS = {
   // Lo de la carta (bloque 4a): están en la barra desde el principio, pero solo se eligen con su hito
   'barra:bebida:chocolate': { box: [CAZO.x - 0.09, CAZO.y - 0.09, BARRA_Z, CAZO.x + 0.09, CAZO.y + 0.09, BARRA_Z + 0.3], parte: 'bebida', valor: 'chocolate', carta: 'chocolate' },
   'barra:toque:nata': { box: [BOL.x - 0.075, BOL.y - 0.075, BARRA_Z, BOL.x + 0.075, BOL.y + 0.075, BARRA_Z + 0.22], parte: 'toque', valor: 'nata', carta: 'nata' },
+  'barra:toque:vainilla': { box: [VAINA.x - 0.095, VAINA.y - 0.07, BARRA_Z, VAINA.x + 0.095, VAINA.y + 0.07, BARRA_Z + 0.08], parte: 'toque', valor: 'vainilla', carta: 'vainilla' },
+  'barra:bebida:frio': { box: [CUBITERA.x - 0.08, CUBITERA.y - 0.08, BARRA_Z, CUBITERA.x + 0.08, CUBITERA.y + 0.08, BARRA_Z + 0.2], parte: 'bebida', valor: 'frio', carta: 'hielo' },
 };
 /** Puntos de la barra (para la cámara y para saber dónde caen en la pantalla). */
 export const BARRA_MARCAS = {
@@ -868,6 +1098,8 @@ export const BARRA_MARCAS = {
   toques: [7.44, 6.5, BARRA_Z + 0.1],
   cazo: [CAZO.x, CAZO.y, BARRA_Z + 0.17],
   bol: [BOL.x, BOL.y, BARRA_Z + 0.1],
+  vaina: [VAINA.x, VAINA.y, BARRA_Z + 0.03],
+  coctelera: [COCTELERA.x, COCTELERA.y, BARRA_Z + 0.16],
 };
 /** La cámara de cada paso: de lado y desde arriba, con el objeto en la parte alta de la pantalla (abajo va el cuadro). */
 function enfoque([x, y, z], d, { alto = 0.75, bajo = 0.75, lado = 0 } = {}) {
@@ -883,7 +1115,13 @@ const enTaza =
 const ENFOQUES = {
   general: { p: [6.6, 6.08, 2.02], m: [7.66, 6.08, 0.5] },
   // Con el chocolate en la carta, la cámara se abre un poco para que entre el cazo
-  bebida: (est) => (est.carta?.includes('chocolate') ? enfoque([7.7, 6.4, BARRA_Z + 0.3], 1.15) : enfoque([7.68, 6.2, BARRA_Z + 0.3], 1.0)),
+  // Con el chocolate en la carta, la cámara se abre un poco para que entre el cazo; con el hielo, también la cubitera
+  bebida: (est) =>
+    est.carta?.includes('hielo')
+      ? enfoque([7.72, 6.62, BARRA_Z + 0.3], 1.45)
+      : est.carta?.includes('chocolate')
+        ? enfoque([7.7, 6.4, BARRA_Z + 0.3], 1.15)
+        : enfoque([7.68, 6.2, BARRA_Z + 0.3], 1.0),
   grano: enfoque([7.6, 5.6, BARRA_Z + 0.14], 0.72),
   manivela: enfoque(BARRA_MARCAS.manivela, 0.5, { alto: 0.95 }),
   cuchara: enfoque([7.62, 5.8, BARRA_Z + 0.28], 0.85, { alto: 0.5, bajo: 0.45 }),
@@ -894,7 +1132,14 @@ const ENFOQUES = {
   leche: enfoque(BARRA_MARCAS.jarras, 0.6),
   vapor: enfoque([VAPOR.x, VAPOR.y, BARRA_Z + 0.18], 0.62, { alto: 0.55 }),
   verter: enTaza(0.62, { alto: 0.85, lado: 0.35 }),
-  toque: (est) => (est.carta?.includes('nata') ? enfoque([7.44, 6.62, BARRA_Z + 0.1], 0.72) : enfoque(BARRA_MARCAS.toques, 0.62)),
+  toque: (est) =>
+    est.carta?.includes('vainilla')
+      ? enfoque([7.44, 6.78, BARRA_Z + 0.1], 0.95)
+      : est.carta?.includes('nata')
+        ? enfoque([7.44, 6.62, BARRA_Z + 0.1], 0.72)
+        : enfoque(BARRA_MARCAS.toques, 0.62),
+  rascar: enfoque(BARRA_MARCAS.vaina, 0.42, { alto: 1.0 }),
+  coctelera: enfoque([COCTELERA.x, COCTELERA.y, BARRA_Z + 0.2], 0.85, { alto: 0.55, bajo: 0.5 }),
   molinillo: enfoque(BARRA_MARCAS.cazo, 0.5, { alto: 0.95 }),
   cazo: enfoque([7.66, 6.36, BARRA_Z + 0.22], 0.95, { alto: 0.6 }),
   batir: enfoque(BARRA_MARCAS.bol, 0.48, { alto: 0.95 }),
@@ -943,9 +1188,13 @@ function colorBebida({ bebida, grano }, { leche = 0, tipoLeche = 'entera', color
         ? grano === 'intenso'
           ? [74, 40, 28]
           : [128, 76, 46]
-        : grano === 'intenso'
-          ? [62, 34, 22]
-          : [104, 62, 36];
+        : bebida === 'frio'
+          ? grano === 'intenso'
+            ? [88, 54, 34]
+            : [128, 84, 52]
+          : grano === 'intenso'
+            ? [62, 34, 22]
+            : [104, 62, 36];
   if (bebida === 'te') base = base.map((c, k) => Math.round([214, 198, 160][k] + (c - [214, 198, 160][k]) * color));
   if (!leche) return base;
   const l = tipoLeche === 'avena' ? [226, 204, 160] : [244, 236, 220];
@@ -1030,6 +1279,22 @@ function taza(s, cx, cy, z0, receta = {}, v = {}, { humo = false, g = null } = {
     pushBox(s, [cx - 0.004, cy - 0.004, top + 0.042, cx + 0.004, cy + 0.004, top + 0.05], n, { g: 0.7 });
   }
   if (v.hojas) pushBox(s, [cx - 0.02, cy - 0.02, top, cx + 0.02, cy + 0.02, top + 0.002], receta.grano === 'intenso' ? [60, 40, 28] : [110, 140, 70], o);
+  // Bloque 4b: los cubitos del café con hielo, que asoman (con su brillo), y las semillas negras de la vainilla
+  if (v.hielo > 0)
+    for (const [dx, dy, dz] of [
+      [-0.018, -0.014, 0.004],
+      [0.016, -0.004, 0.008],
+      [-0.004, 0.018, 0.002],
+    ]) {
+      pushBox(s, [cx + dx - 0.014, cy + dy - 0.014, top - 0.01 + dz, cx + dx + 0.014, cy + dy + 0.014, top + 0.012 + dz], [214, 232, 240], { g: 0.86 });
+      pushBox(s, [cx + dx - 0.006, cy + dy - 0.006, top + 0.012 + dz, cx + dx + 0.004, cy + dy + 0.004, top + 0.014 + dz], [250, 254, 255], { glow: true });
+    }
+  const semillas = Math.round((v.vainilla ?? 0) * 12);
+  for (let k = 0; k < semillas; k += 1) {
+    const a = k * 2.4;
+    const r = 0.008 + (k % 4) * 0.008;
+    pushBox(s, [cx + Math.cos(a) * r - 0.0025, cy + Math.sin(a) * r - 0.0025, top, cx + Math.cos(a) * r + 0.0025, cy + Math.sin(a) * r + 0.0025, top + 0.003], [34, 24, 20], o);
+  }
   if (humo)
     for (const [dx, dz, w] of [
       [-0.015, 0.05, 0.012],
@@ -1116,7 +1381,7 @@ function barraKit(s, est = {}) {
   pushBox(s, [7.625, 6.04, z + 0.42, 7.655, 6.06, z + 0.78], [58, 44, 36], { g, xf: xfP });
   pushBox(s, [7.615, 6.025, z + 0.78, 7.665, 6.075, z + 0.86], NOGAL, { g, xf: xfP });
   // La lucecita: encendida si hoy toca café
-  pushBox(s, [7.645, 6.09, z + 0.08, 7.65, 6.12, z + 0.11], receta.bebida === 'cafe' ? [255, 120, 70] : [90, 40, 30], { glow: receta.bebida === 'cafe' });
+  pushBox(s, [7.645, 6.09, z + 0.08, 7.65, 6.12, z + 0.11], ['cafe', 'frio'].includes(receta.bebida) ? [255, 120, 70] : [90, 40, 30], { glow: ['cafe', 'frio'].includes(receta.bebida) });
   if (extrayendo) {
     chorro(s, 7.51, 6.04, z + 0.12, z + 0.17, colorBebida({ ...receta, bebida: 'cafe' }), 0.004);
     chorro(s, 7.51, 6.06, z + 0.12, z + 0.17, colorBebida({ ...receta, bebida: 'cafe' }), 0.004);
@@ -1398,8 +1663,58 @@ function barraKit(s, est = {}) {
     pushBox(s, [vx - 0.01, vy - 0.01, z + 0.14, vx + 0.01, vy + 0.01, z + 0.25], NOGAL, { g, xf: xfV });
   }
 
+  // ── Bloque 4b: la tabla de la vainilla, con la vaina negra y el cuchillo pequeño; se rasca de arriba abajo ──
+  {
+    const { x, y } = VAINA;
+    pushBox(s, [x - 0.095, y - 0.07, z, x + 0.095, y + 0.07, z + 0.018], WOOD_L, o);
+    pushBox(s, [x - 0.095, y - 0.07, z + 0.018, x + 0.095, y - 0.064, z + 0.02], NOGAL, o);
+    const raspados = p('rascar').raspados ?? 0;
+    const usada = receta.toque === 'vainilla' && hechos.rascar;
+    // La vaina: abierta a lo largo cuando ya se ha rascado (se ve el interior más claro)
+    pushBox(s, [x - 0.085, y - 0.008, z + 0.018, x + 0.085, y + 0.008, z + 0.03], [42, 28, 24], o);
+    if (raspados > 0 || usada) pushBox(s, [x - 0.08, y - 0.003, z + 0.03, x + 0.08, y + 0.003, z + 0.032], [96, 66, 40], o);
+    // Las semillas que van quedando en la tabla
+    for (let k = 0; k < raspados * 5; k += 1) pushBox(s, [x - 0.07 + k * 0.01, y + 0.012, z + 0.018, x - 0.066 + k * 0.01, y + 0.016, z + 0.021], [24, 16, 12], o);
+    // El cuchillo: mientras se rasca, sobre la vaina y bajando hacia ti; si no, apoyado en la tabla
+    const tt = ahora('rascar') ? (pose.t ?? 0) : 0;
+    const kx = ahora('rascar') ? x + 0.075 - tt * 0.15 : x;
+    const ky = ahora('rascar') ? y : y + 0.045;
+    const kz = ahora('rascar') ? z + 0.034 : z + 0.018;
+    pushBox(s, [kx - 0.006, ky - 0.004, kz, kx + 0.03, ky + 0.004, kz + 0.006], ACERO, o);
+    pushBox(s, [kx + 0.03, ky - 0.007, kz, kx + 0.075, ky + 0.007, kz + 0.012], NOGAL, o);
+  }
+  // ── Bloque 4b: la cubitera de latón con hielo y la coctelera de acero, que se agita de lado a lado ──
+  {
+    const { x, y } = CUBITERA;
+    pushBox(s, [x - 0.07, y - 0.07, z, x + 0.07, y + 0.07, z + 0.13], BRASS, o);
+    aro(s, x, y, 0.074, 0.012, z + 0.12, z + 0.135, [214, 180, 96], o);
+    const hielo = receta.bebida === 'frio';
+    for (const [dx, dy, dz] of [
+      [-0.03, -0.025, 0],
+      [0.02, -0.02, 0.006],
+      [-0.012, 0.024, 0.004],
+      [0.028, 0.026, 0],
+    ])
+      pushBox(s, [x + dx - 0.018, y + dy - 0.018, z + 0.1 + dz, x + dx + 0.018, y + dy + 0.018, z + 0.136 + dz], [206, 226, 236], { glow: hielo });
+  }
+  {
+    const { x, y } = COCTELERA;
+    const ag = ahora('coctelera');
+    const px_ = ag ? (pose.x ?? 0) : 0;
+    // Agitando: sube, se ladea con el vaivén y va de un lado a otro
+    const xfC = ag ? giro([x, y, z + 0.05], 'x', px_ * 0.5, desplaza(0, px_ * 0.07, 0.12)) : null;
+    const oc = { g, xf: xfC };
+    pushBox(s, [x - 0.04, y - 0.04, z, x + 0.04, y + 0.04, z + 0.2], ACERO, oc);
+    pushBox(s, [x - 0.043, y - 0.043, z + 0.17, x + 0.043, y + 0.043, z + 0.185], ACERO_D, oc);
+    pushBox(s, [x - 0.03, y - 0.03, z + 0.2, x + 0.03, y + 0.03, z + 0.25], ACERO, oc);
+    pushBox(s, [x - 0.012, y - 0.012, z + 0.25, x + 0.012, y + 0.012, z + 0.275], ACERO_D, oc);
+    // La escarcha: se va cubriendo al agitar
+    const frio = p('coctelera').agitado ?? 0;
+    if (frio > 0) pushBox(s, [x - 0.041, y - 0.041, z + 0.02, x + 0.041, y + 0.041, z + 0.02 + frio * 0.14], [226, 236, 242], { g: 0.9, xf: xfC });
+  }
+
   // ── La taza, bajo el grupo ──
-  taza(s, T.x, T.y, z, receta, vista, { humo: lista && !reduced(), g });
+  taza(s, T.x, T.y, z, receta, vista, { humo: lista && !reduced() && receta.bebida !== 'frio', g });
   // Lo que se puede elegir ahora, con su marco
   if (elige) for (const cosa of Object.values(BARRA_COSAS)) if (cosa.parte === elige && (!cosa.carta || carta.includes(cosa.carta))) marcoBarra(s, cosa.box, receta[elige] === cosa.valor ? [255, 226, 160] : [214, 150, 70]);
 }
@@ -1538,8 +1853,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     paintWall(SW, (a, b) => [a, 0.05, b]),
     (m) => m.position.set(SW / 2, SH / 2, 0),
   );
-  // Izquierda (x = 0, a es y desde la entrada): el hueco claro de los carteles de antes
-  plane(
+  // Izquierda (x = 0, a es y desde la entrada): el hueco claro de los carteles de antes. Desde el nivel 4, al fondo del ala
+  const paredIzq = plane(
     SD,
     SH,
     paintWall(
@@ -1567,7 +1882,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     },
   );
   // Delante (y = SD): escaparate y puerta; el hueco del rótulo viejo encima
-  plane(
+  const frente = plane(
     SW,
     SH,
     paintWall(SW, (a, b) => [SW - a, SD - 0.05, b], delanteExtra, [[SW - 6.0, 3.7, SW - 0.8, 4.5]]),
@@ -1576,6 +1891,102 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       m.position.set(SW / 2, SH / 2, SD);
     },
   );
+  // Bloque 4b: la misma pared con el cristal a través y la puerta abierta (nivel 5, la terraza)
+  const frenteAbierto = plane(
+    SW,
+    SH,
+    conLuces([LUZ_TERRAZA], () => paintWall(SW, (a, b) => [SW - a, SD - 0.05, b], delanteDe(true), [[SW - 6.0, 3.7, SW - 0.8, 4.5]])),
+    (m) => {
+      m.rotation.y = Math.PI;
+      m.position.set(SW / 2, SH / 2, SD);
+      m.visible = false;
+    },
+    { cut: true },
+  );
+  // ── Bloque 4b: el ala lateral (nivel 4): suelo, techo, sus paredes, los pilares, la viga y la luz ──
+  const alaGrupo = new Group();
+  let alaPilares = null;
+  alaGrupo.visible = false;
+  scene.add(alaGrupo);
+  conLuces([LUZ_ALA], () => {
+    const ancho = ALA.x1 - ALA.x0;
+    const cx = (ALA.x0 + ALA.x1) / 2;
+    alaGrupo.add(
+      plane(ancho, SD, paintSueloAla(), (m) => {
+        m.rotation.x = -Math.PI / 2;
+        m.position.set(cx, 0.001, SD / 2);
+      }),
+    );
+    alaGrupo.add(
+      plane(ancho, SD, paintCeiling(ALA.x0, ancho), (m) => {
+        m.rotation.x = Math.PI / 2;
+        m.position.set(cx, SH, SD / 2);
+      }),
+    );
+    alaGrupo.add(
+      plane(
+        ancho,
+        SH,
+        paintWall(ancho, (a, b) => [ALA.x0 + a, 0.05, b]),
+        (m) => m.position.set(cx, SH / 2, 0),
+      ),
+    );
+    alaGrupo.add(
+      plane(
+        ancho,
+        SH,
+        paintWall(ancho, (a, b) => [ALA.x1 - a, SD - 0.05, b], ventanaAla),
+        (m) => {
+          m.rotation.y = Math.PI;
+          m.position.set(cx, SH / 2, SD);
+        },
+      ),
+    );
+    const s = kit();
+    alaKit(s);
+    alaPilares = new Mesh(own(geometryOf(s)), flat);
+    alaGrupo.add(alaPilares);
+  });
+  // ── Bloque 4b: la terraza (nivel 5): la acera, el muelle enfrente, la fachada por fuera, el toldo y la puerta abierta ──
+  const fueraGrupo = new Group();
+  fueraGrupo.visible = false;
+  scene.add(fueraGrupo);
+  const fachadaFuera = conLuces([LUZ_TERRAZA], () => {
+    const ancho = FUERA.x1 - FUERA.x0;
+    fueraGrupo.add(
+      plane(ancho, 5, paintAcera(), (m) => {
+        m.rotation.x = -Math.PI / 2;
+        m.position.set((FUERA.x0 + FUERA.x1) / 2, 0.001, SD + 2.5);
+      }),
+    );
+    fueraGrupo.add(
+      plane(26, 7, paintMuelle(), (m) => {
+        m.rotation.y = Math.PI;
+        m.position.set(5, 3.5, SD + 5);
+      }),
+    );
+    const s = kit();
+    puertaAbiertaKit(s);
+    fueraGrupo.add(new Mesh(own(geometryOf(s)), flat));
+    return plane(
+      ancho,
+      FUERA.alto,
+      paintFachadaFuera(),
+      (m) => {
+        m.position.set((FUERA.x0 + FUERA.x1) / 2, FUERA.alto / 2, SD + 0.02);
+        m.visible = false;
+      },
+      { cut: true },
+    );
+  });
+  const toldo = conLuces([LUZ_TERRAZA], () => {
+    const s = kit();
+    toldoKit(s);
+    const m = new Mesh(own(geometryOf(s)), flat);
+    m.visible = false;
+    scene.add(m);
+    return m;
+  });
   // Lo que tapa el fondo en el nivel 1 (la cortina y el caballete), que se recoge al subir al nivel 2
   const telon = (() => {
     const s = kit();
@@ -1599,9 +2010,23 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     m.position.set((VENTANAL.x0 + VENTANAL.x1) / 2, (VENTANAL.z0 + VENTANAL.z1) / 2, 0.03);
     m.visible = false;
   });
-  const nivel3 = (() => {
+  const estanteriaVieja = (() => {
+    const s = kit();
+    estanteria(s);
+    const m = new Mesh(own(geometryOf(s)), flat);
+    scene.add(m);
+    return m;
+  })();
+  const altasM = (() => {
     const s = kit();
     estanteriasAltas(s);
+    const m = new Mesh(own(geometryOf(s)), flat);
+    m.visible = false;
+    scene.add(m);
+    return m;
+  })();
+  const nivel3 = (() => {
+    const s = kit();
     chimenea(s);
     const m = new Mesh(own(geometryOf(s)), flat);
     m.visible = false;
@@ -1623,7 +2048,6 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     const s = kit();
     mostrador(s);
     bombilla(s);
-    estanteria(s);
     // El felpudo de la entrada
     pushBox(s, [PUERTA.x0 - 0.1, SD - 0.9, 0, PUERTA.x1 + 0.1, SD - 0.15, 0.02], [120, 92, 60]);
     scene.add(new Mesh(own(geometryOf(s)), flat));
@@ -1662,6 +2086,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     m.visible = false;
   });
   let rotulo = null;
+  let rotuloFuera = null;
   function ponerRotulo(nombre) {
     if (rotulo) {
       scene.remove(rotulo);
@@ -1670,20 +2095,32 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       rotulo.geometry.dispose();
       rotulo = null;
     }
+    if (rotuloFuera) {
+      scene.remove(rotuloFuera);
+      rotuloFuera.material.dispose();
+      rotuloFuera.geometry.dispose();
+      rotuloFuera = null;
+    }
     if (!nombre) return;
     const map = texture(paintRotulo(nombre, 120, 22, { px: 11 }));
     rotulo = new Mesh(new PlaneGeometry(3.0, 0.55), new MeshBasicMaterial({ map }));
     rotulo.rotation.y = -Math.PI / 2;
     rotulo.position.set(SW - 0.05, 3.55, PILAR.y);
     scene.add(rotulo);
+    rotuloFuera = new Mesh(new PlaneGeometry(3.6, 0.6), new MeshBasicMaterial({ map }));
+    rotuloFuera.position.set((ESCAPARATE.x0 + ESCAPARATE.x1) / 2, 4.15, SD + 0.05);
+    rotuloFuera.visible = false;
+    scene.add(rotuloFuera);
   }
-  {
+  const cordel = (() => {
     const s = kit();
     pushBox(s, [CARTEL.x - 0.5, SD - 0.08, CARTEL.z + CARTEL.alto / 2, CARTEL.x - 0.48, SD - 0.06, CARTEL.z + 0.6], [60, 50, 40], { g: 0.4 });
     pushBox(s, [CARTEL.x + 0.48, SD - 0.08, CARTEL.z + CARTEL.alto / 2, CARTEL.x + 0.5, SD - 0.06, CARTEL.z + 0.6], [60, 50, 40], { g: 0.4 });
     pushBox(s, [CARTEL.x - 0.03, SD - 0.1, CARTEL.z + 0.58, CARTEL.x + 0.03, SD - 0.04, CARTEL.z + 0.64], BRASS, { g: 0.5 });
-    scene.add(new Mesh(own(geometryOf(s)), flat));
-  }
+    const m = new Mesh(own(geometryOf(s)), flat);
+    scene.add(m);
+    return m;
+  })();
   // Pilar, detrás del mostrador, mirando al local (−x)
   {
     const m = new Mesh(own(geometryOf(figuraKit(PILAR_ASPECTO, glowAt(PILAR.x, PILAR.y, 1.5) + 0.08))), flat);
@@ -1738,24 +2175,23 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
 
   // ── El plano: lo colocado, con tus libros en las estanterías ──
   const LIBROS_POR_ESTANTERIA = 56;
-  const CABEN = { 'cafe-estanteria': LIBROS_POR_ESTANTERIA, 'cafe-estanteria-alta': 96 };
+  const CABEN = { 'cafe-estanteria': LIBROS_POR_ESTANTERIA, 'cafe-estanteria-alta': 96, 'cafe-biombo': 24 };
   const planoGrupo = new Group();
   scene.add(planoGrupo);
-  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1 };
+  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1, escaparate: [] };
   let modo = { decorar: false, sel: null, mal: false };
   let piezas = [];
   let obstaculos = [];
-  const hacerRejilla = (nivel) => {
-    const { desde, hasta } = filasDe(nivel);
-    const filas = hasta - desde;
+  const rejillaDe = (c0, c1, f0, f1) => {
+    const [cols, filas] = [c1 - c0, f1 - f0];
     const m = plane(
-      CUADRICULA.w * CUADRO.celda,
+      cols * CUADRO.celda,
       filas * CUADRO.celda,
-      paintRejilla(filas),
+      paintRejilla(filas, cols),
       (p) => {
         p.rotation.x = -Math.PI / 2;
-        const o = enMundo(0, desde);
-        p.position.set(o.x + (CUADRICULA.w * CUADRO.celda) / 2, 0.012, o.y + (filas * CUADRO.celda) / 2);
+        const o = enMundo(c0, f0);
+        p.position.set(o.x + (cols * CUADRO.celda) / 2, 0.012, o.y + (filas * CUADRO.celda) / 2);
         p.visible = false;
       },
       { glow: true },
@@ -1763,7 +2199,15 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     m.renderOrder = 2;
     return m;
   };
-  const rejillas = { 1: hacerRejilla(1), 2: hacerRejilla(2) };
+  const hacerRejilla = (nivel) => {
+    const c = columnasDe(nivel);
+    const f = filasDe(nivel);
+    const out = [rejillaDe(c.desde, c.hasta, f.desde, f.hasta)];
+    // La terraza (nivel 5), aparte: la fila 6 es la pared
+    if (nivel >= 5) out.push(rejillaDe(0, CUADRICULA.w, 7, 10));
+    return out;
+  };
+  const rejillas = { 1: hacerRejilla(1), 2: hacerRejilla(2), 4: hacerRejilla(4), 5: hacerRejilla(5) };
   function vaciarGrupo() {
     for (const m of planoGrupo.children.slice()) {
       planoGrupo.remove(m);
@@ -1800,7 +2244,9 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     }
     {
       const s = kit();
-      if (estado.inaugurado) lomosPared(s, estado.libros.slice(enCafe));
+      if (estado.inaugurado) lomosPared(s, estado.libros.slice(enCafe), paredIzquierda(estado.nivel));
+      // Bloque 4b: el escaparate con tus tres libros (nivel 5)
+      if (estado.inaugurado && estado.nivel >= 5) escaparateKit(s, estado.escaparate);
       if (estado.inaugurado && estado.cajas > 0) cajaDeReparto(s);
       // La pieza elegida en Decorar: un marco ámbar en el suelo (rojo si no cabe donde está)
       const sel = modo.decorar && estado.plano.items.find((i) => i.uid === modo.sel);
@@ -1830,8 +2276,24 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     puerto.visible = n >= 2;
     nivel3.visible = n >= 3;
     resplandor.visible = n >= 3;
-    rejillas[1].visible = modo.decorar && n < 2;
-    rejillas[2].visible = modo.decorar && n >= 2;
+    // Bloque 4b: el ala lateral (la pared de la izquierda, con sus estanterías, se va al fondo del ala) y la terraza
+    altasM.visible = n >= 3;
+    for (const m of [paredIzq, altasM, estanteriaVieja]) m.position.x = paredIzquierda(n);
+    alaGrupo.visible = n >= 4;
+    alaPilares.visible = !modo.decorar;
+    const terraza = n >= 5;
+    // En la terraza no llueve: la noche está despejada
+    lluvia.visible = !terraza;
+    frente.visible = !terraza;
+    frenteAbierto.visible = terraza;
+    fueraGrupo.visible = terraza;
+    fachadaFuera.visible = terraza && !modo.decorar;
+    toldo.visible = terraza && !modo.decorar;
+    if (rotuloFuera) rotuloFuera.visible = terraza && !modo.decorar;
+    cordel.visible = !terraza;
+    if (terraza) abierto.visible = false;
+    const clave = n >= 5 ? 5 : n >= 4 ? 4 : n >= 2 ? 2 : 1;
+    for (const [k, ms] of Object.entries(rejillas)) for (const m of ms) m.visible = modo.decorar && Number(k) === clave;
     canvas.setAttribute(
       'aria-label',
       estado.inaugurado
@@ -1851,7 +2313,10 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   let pickersClientes = [];
   let obstaculosClientes = [];
   let sitiosClientes = {};
-  const ASIENTO = { 'cafe-silla': { at: [0.5, 0.42], h: 0.51 }, 'cafe-taburete': { at: [0.5, 0.42], h: 0.82 } };
+  // Bloque 4b: cuentan todos los asientos del plano (los mismos que `ASIENTOS` del catálogo, que deciden cuántos clientes vienen
+  // en los niveles 4 y 5); el banco y el sofá, dos sitios. La altura del asiento, por mueble (0,5 si no se dice).
+  const ALTO_ASIENTO = { 'cafe-silla': 0.51, 'cafe-taburete': 0.82, 'taburete-barra': 0.82, 'cafe-orejero': 0.5, 'cafe-silla-terraza': 0.48, sofa: 0.45, puf: 0.4 };
+  const ASIENTO = Object.fromEntries(Object.entries(ASIENTOS).map(([id, n]) => [id, { n, h: ALTO_ASIENTO[id] ?? 0.5 }]));
   const DE_PIE = [
     [1.4, 9.7],
     [2.5, 9.9],
@@ -1867,9 +2332,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       const a = ASIENTO[it.id];
       const med = medidas(it.id);
       if (!a || !med) continue;
-      const t = girar(med, it.rot, [a.at[0], a.at[1], 0, a.at[0], a.at[1], 0]);
       const o = enMundo(it.x, it.y);
-      out.push({ x: o.x + t[0], y: o.y + t[1], h: a.h, facing: it.rot ?? 0 });
+      for (let k = 0; k < a.n; k += 1) {
+        const ax = ((k + 0.5) * med.w) / a.n;
+        const t = girar(med, it.rot, [ax, 0.42, 0, ax, 0.42, 0]);
+        out.push({ x: o.x + t[0], y: o.y + t[1], h: a.h, facing: it.rot ?? 0 });
+      }
     }
     return out;
   }
@@ -2024,12 +2492,19 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       for (const c of ['p', 'm']) vista[c] = vista[c].map((v, i) => (Math.abs(vistaMeta[c][i] - v) < 0.002 ? vistaMeta[c][i] : v + (vistaMeta[c][i] - v) * k));
       moving = true;
     }
+    // En Decorar de los niveles 4 y 5, desde tan arriba, la niebla se aparta: el local entero se ve con su luz
+    const lejos = modo.decorar && estado.nivel >= 4;
+    scene.fog.near = lejos ? 12 : 7;
+    scene.fog.far = lejos ? 36 : 22;
     if (modo.decorar) {
       const { desde, hasta } = filasDe(estado.nivel);
-      const o = enMundo(CUADRICULA.w / 2, (desde + hasta) / 2);
-      const ancha = desde < 0;
-      camera.position.set(o.x, ancha ? 8.6 : 6.4, SD + (ancha ? 2.6 : 2.2));
-      camera.lookAt(o.x, 0, o.y - (ancha ? 0.2 : 0.4));
+      const c = columnasDe(estado.nivel);
+      // Con la terraza, la vista llega hasta la acera
+      const fin = estado.nivel >= 5 ? 10 : hasta;
+      const o = enMundo((c.desde + c.hasta) / 2, (desde + fin) / 2);
+      const [alto, atras, baja] = estado.nivel >= 5 ? [11.4, 5.2, 0.9] : estado.nivel >= 4 ? [10.2, 3.6, 0.1] : desde < 0 ? [8.6, 2.6, 0.2] : [6.4, 2.2, 0.4];
+      camera.position.set(o.x, alto, (estado.nivel >= 5 ? enMundo(0, fin).y : SD) + atras);
+      camera.lookAt(o.x, 0, o.y - baja);
     } else if (tour) {
       // El recorrido al subir de nivel: de tu vista a lo nuevo y vuelta (con movimiento reducido no hay recorrido)
       // (el reloj del cuadro puede ir unos milisegundos por detrás del inicio del recorrido)
@@ -2140,7 +2615,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     rayAt(clientX, clientY);
     if (!ray.ray.intersectPlane(floorPlane, hit)) return null;
     const c = enCasilla(hit.x, hit.z);
-    return c.x >= 0 && c.y >= filasDe(estado.nivel).desde && c.x < CUADRICULA.w && c.y < CUADRICULA.d ? c : null;
+    return casillaValida(c.x, c.y, estado.nivel) ? c : null;
   }
 
   /** Ir andando en línea recta hasta (x, y), parando antes de chocar; `face`, adónde mirar al llegar. */
@@ -2290,10 +2765,13 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     },
     invalidate,
     /** El estado del local: si está inaugurado, su nombre, el plano y tus libros (títulos) para las estanterías. */
-    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1 } = {}) {
+    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1, escaparate = [] } = {}) {
       const nombreAntes = estado.nombre;
       const abre = inaugurado && !estado.inaugurado;
-      estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel };
+      estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate };
+      // Las luces del ala y de la terraza alumbran lo colocado solo desde su nivel
+      const n = inaugurado ? nivel : 1;
+      LUCES_NIVEL = [...(n >= 4 ? [LUZ_ALA] : []), ...(n >= 5 ? [LUZ_TERRAZA] : [])];
       // Al abrir el café (o entrar ya abierto), la vista de todo el rincón
       if (abre) {
         walk = null;
@@ -2318,8 +2796,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       if (reduced() || nivel < 2) return Promise.resolve();
       walk = null;
       const ojo = { p: [px, py, EYE], m: [px + Math.sin(yaw) * 6, py + Math.cos(yaw) * 6, EYE + Math.tan(PITCH) * 6] };
-      const puntos = [ojo, { p: [4.2, 9.4, 3.1], m: [3.8, 1.0, 1.4] }, { p: [3.8, 5.2, 2.0], m: [3.8, 0, 2.2] }];
-      if (nivel >= 3) puntos.push({ p: [5.2, 4.4, 2.0], m: [8.3, 0.4, 0.9] }, { p: [3.0, 4.2, 2.4], m: [0, 1.9, 2.6] });
+      const puntos = [ojo];
+      if (nivel === 2 || nivel === 3) puntos.push({ p: [4.2, 9.4, 3.1], m: [3.8, 1.0, 1.4] }, { p: [3.8, 5.2, 2.0], m: [3.8, 0, 2.2] });
+      if (nivel === 3) puntos.push({ p: [5.2, 4.4, 2.0], m: [8.3, 0.4, 0.9] }, { p: [3.0, 4.2, 2.4], m: [0, 1.9, 2.6] });
+      // Bloque 4b: al 4, el ala lateral que se abre a la izquierda; al 5, el escaparate y la terraza desde la acera
+      if (nivel === 4) puntos.push({ p: [4.6, 8.6, 2.6], m: [-2.0, 5.6, 1.0] }, { p: [1.6, 3.2, 2.4], m: [-2.6, 8.4, 1.0] });
+      if (nivel >= 5) puntos.push({ p: [3.4, 7.0, 2.0], m: [3.4, 14.0, 1.2] }, { p: [8.4, SD + 3.7, 2.1], m: [2.6, SD - 0.4, 1.5] }, { p: [0.8, SD + 3.5, 1.9], m: [5.2, SD + 0.6, 1.1] });
       puntos.push(ojo);
       return new Promise((fin) => {
         tour = { t0: performance.now(), paso: 1.5, puntos, fin };

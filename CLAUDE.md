@@ -210,6 +210,16 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       planta** que también crece. **Cada planta tiene su cuadrícula de Decorar** y en ella se sientan clientes. **El espacio tiene
       que servir para jugar mejor, no solo para decorar** (más sitio, más rendimiento). Sustituye al «altillo en el nivel 4» del
       bloque 4b. Las cifras de los niveles 6 en adelante (umbrales, tickets y lo que rinde cada planta) las aprueba él.
+      **Bloque 4b, cifras aprobadas** (Francisco, 12-11-2026, «Sí, esas cifras»): **nivel 4, el ala lateral** (se abre la pared
+      de la derecha: cuadrícula 9 × 9), **vainilla** (rascar la vaina deslizando el cuchillo) y muebles de 120 a 200 granos (mesa
+      larga, biombo de librería, lámpara de bankers; hito, piano vertical de adorno); **nivel 5, terraza y escaparate** (tres
+      filas en la acera con toldo y farolillos, escaparate con tres de tus leídos **visible desde la fachada** y placa con el
+      nombre del café), **bebidas con hielo** (agitar la coctelera de lado a lado) y muebles de 150 a 250 granos (mesa de hierro,
+      silla de terraza, macetero largo; hito, farol de forja). **Clientes al día 6 en el nivel 4 y 7 en el 5, solo con al menos
+      tantos asientos colocados** (si faltan, vienen menos, sin castigo y con un aviso amable de Pilar; nunca menos que en los
+      niveles 1 a 3); el **tope diario de reputación** sube en proporción. Tickets, huecos e hitos, sin cambios.
+      **Mejoras de la casa y del café**: se le recomendó mantenerlas separadas con los puentes que ya hay (12-11-2026); sin
+      decisión suya todavía.
   - **Más vida en el edificio** (encargo del 1-11-2026, por bloques con capturas entre uno y otro: 1) más muebles,
     2) personaje, 3) misiones diarias, 4) vecinos). Decisiones de Francisco:
     - **Personaje propio y personalizable** en tu piso: tocas el suelo o un mueble y va andando hasta allí. En sillas,
@@ -247,7 +257,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   - **El Gran Hotel del Puerto** (2-11-2026, plan en `docs/qa/gran-hotel.md`): más espectacular y, como la fachada del
     edificio, **que se pueda interactuar desde la propia fachada**. **Se llega en una limusina negra de lujo**
     (2-11-2026): para ir al hotel hay que coger la limusina (en nuestro pixel art, original). **Se coge delante del portal
-    del edificio**, aparcada en el muelle con su chófer (aprobado «Sí, a la limusina», 2-11-2026; 1.74, §74.4).
+    del edificio**, aparcada en el muelle con su chófer (aprobado «Sí, a la limusina», 2-11-2026; 1.74, §74.4). **Desde la 1.123
+    va a la izquierda del portal**, delante de la librería (Francisco, 12-11-2026: que no tape el café ni su terraza).
     **Salas del hotel** (2-11-2026, `gran-hotel.md` §9): cada sala es la versión física de una función de la app y se
     navega con **un ascensor de latón**, no con menús. La Lonja (intercambio de muebles; nunca místicos ni sagas), la
     suite de la semana (**quitada de la app desde la 1.81**: a Francisco no le convencía la sala de exposición de

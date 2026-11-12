@@ -67,9 +67,9 @@ test('el portal de la app', async ({ page }, info) => {
   await expect(portal.getByRole('region', { name: 'Tu buzón' })).toBeVisible();
   await page.screenshot({ path: join(DIR, '1-despues-buzon.png') });
   await portal.getByRole('button', { name: /^Tu buzón/ }).click();
-  // La limusina lleva al Gran Hotel. Seguías mirando a la izquierda (como al entrar): al llegar a ella con el teclado,
-  // la vista gira hasta ella
-  await expect(limo).toHaveClass(/is-off/);
+  // La limusina lleva al Gran Hotel. Desde la 1.123 está a la izquierda del portal: mirando a la izquierda (como al
+  // entrar) ya se ve, sin girar
+  await expect(limo).not.toHaveClass(/is-off/);
   await limo.focus();
   await expect(limo).not.toHaveClass(/is-off/);
   await page.waitForTimeout(600);
@@ -151,7 +151,7 @@ test('después: salir del portal a pie', async ({ page }, info) => {
   expect(Math.abs(end.pitch)).toBeLessThan(1e-6);
   await shot('4-vista');
   // A la limusina y a la tienda
-  await page.evaluate(() => window.__calle3d.walk([{ spot: 'limo', yaw: Math.atan2(6.275 - 5.7, 1.8), pitch: -0.2 }]));
+  await page.evaluate(() => window.__calle3d.walk([{ spot: 'limo', yaw: Math.atan2(0.825 - 0.25, 1.8), pitch: -0.2 }]));
   await shot('5-limusina');
   await page.evaluate(() => window.__calle3d.walk([{ spot: 'shop', yaw: Math.atan2(6.475 - 6.5, 3.2), pitch: 0 }]));
   await shot('6-tienda');

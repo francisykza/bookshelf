@@ -7,7 +7,7 @@
     <title>La calle en 3D (desarrollo)</title>
     <!-- Solo desarrollo: el edificio del puerto visto desde el muelle (src/features/edificio/calle3d.js), a pantalla
          completa, para verlo y capturarlo por bloques antes de llevarlo a la app. ?yaw=0.4 gira la vista; ?vacio=1 deja
-         todos los pisos libres. -->
+         todos los pisos libres; ?cafe=1, el café del bajo en el nivel 5 (la terraza y tres libros en el escaparate). -->
     <style>
       html,
       body {
@@ -78,8 +78,22 @@
             },
           };
       const t0 = performance.now();
+      // 1.123: el café del bajo visto desde la calle, en el nivel 5
+      const cafe = q.get('cafe')
+        ? {
+            inaugurado: true,
+            nombre: 'Taza y Lomo',
+            nivel: 5,
+            escaparate: [
+              { clave: 'f', titulo: 'El dragón del muelle' },
+              { clave: 'a', titulo: 'Cartas de amor al puerto' },
+              { clave: 's', titulo: 'Naves sobre la bahía' },
+            ],
+          }
+        : null;
       window.__calle3d = mountCalle(document.getElementById('stage'), {
         flats,
+        cafe,
         startYaw: Number(q.get('yaw') ?? 0),
       });
       window.__calle3dMs = Math.round(performance.now() - t0);

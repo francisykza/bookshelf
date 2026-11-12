@@ -29,19 +29,21 @@ export const umbralHito = (nivel, hito) => desdeNivel(nivel) + Math.floor((tramo
 
 /**
  * Lo que da cada hito: 1.º un mueble nuevo del café a la venta, 2.º lo nuevo de la carta (del nivel 2 en adelante) y
- * 3.º 15 granos. Los muebles y la carta de los niveles 4 y 5 llegan con el bloque 4b.
+ * 3.º 15 granos. Bloque 4b (1.123): el piano y la vainilla en el nivel 4; el farol y el café con hielo en el 5.
  */
 export const HITOS = {
   1: { 1: { mueble: 'cafe-maceta' }, 2: {}, 3: { granos: GRANOS_HITO } },
   2: { 1: { mueble: 'cafe-perchero' }, 2: { carta: 'chocolate' }, 3: { granos: GRANOS_HITO } },
   3: { 1: { mueble: 'cafe-reloj' }, 2: { carta: 'nata' }, 3: { granos: GRANOS_HITO } },
-  4: { 1: {}, 2: {}, 3: { granos: GRANOS_HITO } },
-  5: { 1: {}, 2: {}, 3: { granos: GRANOS_HITO } },
+  4: { 1: { mueble: 'cafe-piano' }, 2: { carta: 'vainilla' }, 3: { granos: GRANOS_HITO } },
+  5: { 1: { mueble: 'cafe-farol' }, 2: { carta: 'hielo' }, 3: { granos: GRANOS_HITO } },
 };
 /** Lo nuevo de la carta, por orden: qué es y en qué nivel (se abre en su 2.º hito). */
 export const CARTA = [
   { id: 'chocolate', nombre: 'Chocolate caliente', parte: 'bebida', nivel: 2 },
   { id: 'nata', nombre: 'Nata montada', parte: 'toque', nivel: 3 },
+  { id: 'vainilla', nombre: 'Vainilla', parte: 'toque', nivel: 4 },
+  { id: 'hielo', nombre: 'Café con hielo', parte: 'bebida', nivel: 5 },
 ];
 /** Lo que hay abierto en la carta con esta reputación. */
 export const cartaDe = (reputacion = 0) => CARTA.filter((c) => reputacion >= umbralHito(c.nivel, 2)).map((c) => c.id);
@@ -74,8 +76,8 @@ export function siguienteHito(reputacion = 0) {
 export const ABRE = {
   2: ['4 clientes al día', '18 huecos en la balda', 'Muebles nuevos: banco corrido, vitrina de tartas y planta grande', 'Se recogen las cortinas: todo el bajo, con el ventanal al puerto'],
   3: ['5 clientes al día', '30 huecos en la balda', 'Muebles nuevos: estantería alta, sillón orejero y mesita con quinqué', 'Estanterías hasta el techo y la chimenea encendida'],
-  4: ['36 huecos en la balda'],
-  5: ['42 huecos en la balda'],
+  4: ['Hasta 6 clientes al día, si tienen dónde sentarse', '36 huecos en la balda', 'Muebles nuevos: mesa larga, biombo de librería y lámpara de bankers', 'Se abre la pared: el ala lateral, con su cuadrícula'],
+  5: ['Hasta 7 clientes al día, si tienen dónde sentarse', '42 huecos en la balda', 'Muebles nuevos: mesa de hierro, silla de terraza y macetero largo', 'La terraza en la acera y tu escaparate, que se ve desde la calle'],
 };
 /** Lo que dice un hito, en una línea. */
 export function textoHito(h, nombreMueble = (id) => id) {

@@ -9,6 +9,7 @@
 import { createRaster, hash, noise, rgb } from '../minigames/libreria-puerto/raster';
 import { drawLimo } from './limo';
 import { windowPictures } from './windowView';
+import { colorDe } from './cafe/cafeMuebles';
 
 /** El cielo de atardecer de la fachada, de arriba abajo. El piloto del piso abre a esta misma hora. */
 export const FACADE_HORA = 'tarde';
@@ -24,6 +25,8 @@ const LIMO_ID = 120; // la limusina y su chófer: lo que tapa a tu personaje cua
 // Medidas del edificio (unidades del mundo)
 const BW = 8;
 const BD = 2.4;
+/** Dónde empieza la limusina (su trasera; el morro mira al portal). 1.123: a la izquierda del portal. */
+const LIMO_X = -0.6;
 const GROUND_H = 2.3;
 const FLOOR_H = 2.25;
 const TOP = GROUND_H + FLOOR_H * 3;
@@ -180,6 +183,9 @@ function tallWindow(r, x0, x1, z0, z1, surround, glassId, glass) {
   r.setId(0);
 }
 
+/** Farolillos alternos de la guirnalda de la terraza (uno de cada tres, más rosado). */
+const k2 = (x) => Math.round(x * 3.7) % 3 !== 0;
+
 /** Balconcito de hierro bajo una ventana. */
 function balcony(r, x0, x1, z) {
   r.box(x0, BD, z - 0.1, x1, BD + 0.45, z, WHITE, { grain: 0 });
@@ -193,9 +199,12 @@ function balcony(r, x0, x1, z) {
 /**
  * Las cajas de la fachada (sin el suelo, las sombras ni los cristales por dentro): los vecinos, el edificio, la planta
  * baja, la limusina y los seis pisos con sus balcones. La comparten el dibujo 2D (renderFacade) y la calle en 3D
- * (calle3d.js, que las graba en vez de pintarlas). Devuelve dónde cae la limusina.
+ * (calle3d.js, que las graba en vez de pintarlas). Devuelve dónde cae la limusina. `cafe` (1.123, bloque 4b): tu café visto
+ * desde la calle ({ inaugurado, nivel, escaparate }, de `cargarFachada`); desde el nivel 5, en el escaparate se ven tus tres
+ * libros y en la acera, la terraza con sus farolillos.
  */
-export function drawFacadeBody(r, flats = {}) {
+export function drawFacadeBody(r, flats = {}, cafe = null) {
+  const terraza = Boolean(cafe?.inaugurado && cafe.nivel >= 5);
   const at = (x, y, z) => {
     const p = r.project(x, y, z);
     return [p.sx | 0, p.sy | 0];
@@ -282,18 +291,50 @@ export function drawFacadeBody(r, flats = {}) {
   r.box(5.4, BD + 0.08, 0.45, 7.4, BD + 0.16, 1.75, [240, 196, 124], { grain: 0 });
   r.setId(0);
   r.box(6.35, BD + 0.16, 0.45, 6.45, BD + 0.24, 1.75, FRAME_WOOD, { grain: 0 });
-  // En el escaparate: una lámpara de pie y un sillón a la izquierda, una estantería a la derecha
-  r.box(5.62, BD + 0.16, 0.45, 5.67, BD + 0.22, 1.25, IRON, { grain: 0 });
-  r.box(5.5, BD + 0.16, 1.25, 5.8, BD + 0.24, 1.48, [214, 120, 88], { grain: 0 });
-  r.box(5.85, BD + 0.16, 0.45, 6.28, BD + 0.24, 0.85, [118, 138, 104], { grain: 0 });
-  r.box(5.85, BD + 0.16, 0.85, 5.95, BD + 0.24, 1.1, [118, 138, 104], { grain: 0 });
-  r.box(6.6, BD + 0.16, 0.45, 7.2, BD + 0.22, 1.5, FRAME_WOOD, { grain: 0 });
-  for (const z of [0.75, 1.1]) for (let a = 6.66; a < 7.12; a += 0.09) r.box(a, BD + 0.22, z, a + 0.07, BD + 0.25, z + 0.24, spines[Math.floor(hash(a * 11, z) * 5)], { grain: 0 });
+  const libros = terraza ? (cafe.escaparate ?? []).slice(0, 3) : [];
+  if (libros.length) {
+    // Bloque 4b: tu escaparate, una peana con tus libros de cara a la calle (el del centro, más alto)
+    r.box(5.5, BD + 0.16, 0.45, 7.3, BD + 0.24, 0.62, FRAME_WOOD, { grain: 0 });
+    r.box(6.15, BD + 0.16, 0.62, 6.65, BD + 0.24, 0.78, FRAME_WOOD, { grain: 0 });
+    libros.forEach((b, k) => {
+      const x = [5.85, 6.4, 6.95][k];
+      const z = k === 1 ? 0.78 : 0.62;
+      const c = colorDe(b.titulo);
+      r.box(x - 0.18, BD + 0.24, z, x + 0.18, BD + 0.27, z + 0.5, c, { grain: 0 });
+      r.box(x - 0.12, BD + 0.27, z + 0.3, x + 0.12, BD + 0.28, z + 0.36, c.map((v) => Math.min(255, v + 80)), { grain: 0 });
+      r.box(x - 0.08, BD + 0.27, z + 0.12, x + 0.08, BD + 0.28, z + 0.2, c.map((v) => Math.min(255, v + 80)), { grain: 0 });
+    });
+  } else {
+    // En el escaparate: una lámpara de pie y un sillón a la izquierda, una estantería a la derecha
+    r.box(5.62, BD + 0.16, 0.45, 5.67, BD + 0.22, 1.25, IRON, { grain: 0 });
+    r.box(5.5, BD + 0.16, 1.25, 5.8, BD + 0.24, 1.48, [214, 120, 88], { grain: 0 });
+    r.box(5.85, BD + 0.16, 0.45, 6.28, BD + 0.24, 0.85, [118, 138, 104], { grain: 0 });
+    r.box(5.85, BD + 0.16, 0.85, 5.95, BD + 0.24, 1.1, [118, 138, 104], { grain: 0 });
+    r.box(6.6, BD + 0.16, 0.45, 7.2, BD + 0.22, 1.5, FRAME_WOOD, { grain: 0 });
+    for (const z of [0.75, 1.1]) for (let a = 6.66; a < 7.12; a += 0.09) r.box(a, BD + 0.22, z, a + 0.07, BD + 0.25, z + 0.24, spines[Math.floor(hash(a * 11, z) * 5)], { grain: 0 });
+  }
   // Cartel colgado de una barra: un sobre con su lacre rojo
   r.box(7.62, BD, 1.62, 7.66, BD + 0.7, 1.66, IRON, { grain: 0 });
   r.box(7.5, BD + 0.38, 1.1, 7.6, BD + 0.98, 1.62, WHITE, { grain: 0 });
   r.box(7.6, BD + 0.6, 1.3, 7.63, BD + 0.76, 1.44, [168, 70, 52], { grain: 0 });
   r.box(5.2, BD, 1.92, 7.6, BD + 0.5, 2.05, [168, 70, 52], { grain: 0, face: (f, a) => (Math.floor(a * 4) % 2 ? r.rampOf(WHITE)[3] : undefined) });
+  if (terraza) {
+    // Bloque 4b: la terraza del café en la acera, a la derecha del paso a la puerta: dos mesitas de hierro verde con su
+    // silla y, bajo el toldo, la guirnalda de farolillos
+    const VERDE = [70, 104, 80];
+    for (const x of [6.55, 7.25]) {
+      r.box(x - 0.03, BD + 0.4, 0, x + 0.03, BD + 0.46, 0.42, VERDE, { grain: 0 });
+      r.box(x - 0.17, BD + 0.3, 0.42, x + 0.17, BD + 0.56, 0.46, VERDE, { grain: 0 });
+      r.box(x - 0.05, BD + 0.38, 0.46, x + 0.03, BD + 0.46, 0.52, WHITE, { grain: 0 });
+      r.box(x + 0.2, BD + 0.62, 0, x + 0.36, BD + 0.66, 0.28, VERDE, { grain: 0 });
+      r.box(x + 0.2, BD + 0.5, 0.26, x + 0.36, BD + 0.66, 0.3, VERDE, { grain: 0 });
+      r.box(x + 0.2, BD + 0.64, 0.3, x + 0.36, BD + 0.67, 0.58, VERDE, { grain: 0 });
+      r.castShadow(x, BD + 0.45, 0.3, 0.2);
+    }
+    r.setId(GLOW_BIT);
+    for (let x = 5.35; x < 7.55; x += 0.27) r.box(x, BD + 0.46, 1.84, x + 0.06, BD + 0.5, 1.9, k2(x) ? [255, 214, 140] : [255, 176, 120], { grain: 0 });
+    r.setId(0);
+  }
   r.box(7.65, BD + 0.1, 0, 7.95, BD + 0.4, 0.3, POT, { grain: 0 });
   for (let k = 0; k < 4; k += 1) r.box(7.62 + k * 0.08, BD + 0.15, 0.3, 7.74 + k * 0.08, BD + 0.35, 0.6 + hash(k, 5) * 0.3, LEAF, { grain: 0 });
   // Farol de pared junto al portal
@@ -305,12 +346,13 @@ export function drawFacadeBody(r, flats = {}) {
   // El buzón (1.73): rojo, con su ranura de latón, en la pared entre la librería y el portal. Se toca para ver el correo
   r.box(2.9, BD, 0.8, 3.26, BD + 0.2, 1.3, [168, 70, 52], { seed: 5, face: (f, a, b) => (f === 'front' && b > 1.12 && b < 1.17 && a > 2.96 && a < 3.2 ? r.rampOf(BRASS)[1] : undefined) });
   r.box(2.88, BD, 1.3, 3.28, BD + 0.24, 1.36, [120, 48, 40], { grain: 0 });
-  // Bolardo en el muelle, para que se lea «puerto»
-  r.box(0.6, BD + 1.7, 0, 0.95, BD + 2.05, 0.45, IRON, { grain: 0 });
-  r.box(0.55, BD + 1.65, 0.45, 1.0, BD + 2.1, 0.52, IRON, { grain: 0 });
-  r.castShadow(0.8, BD + 1.9, 0.4, 0.25);
-  // La limusina negra (1.74, §74), aparcada delante de la tienda con su chófer: se toca para ir al Gran Hotel
-  const limoAt = drawLimo(r, 4.85, BD + 0.95, { glowId: GLOW_BIT, bodyId: LIMO_ID });
+  // Bolardo en el muelle, para que se lea «puerto» (1.123: a la derecha, donde ya no estorba a la limusina)
+  r.box(8.0, BD + 1.7, 0, 8.35, BD + 2.05, 0.45, IRON, { grain: 0 });
+  r.box(7.95, BD + 1.65, 0.45, 8.4, BD + 2.1, 0.52, IRON, { grain: 0 });
+  r.castShadow(8.2, BD + 1.9, 0.4, 0.25);
+  // La limusina negra (1.74, §74) con su chófer: se toca para ir al Gran Hotel. Desde la 1.123 (Francisco, 12-11-2026) está
+  // aparcada a la izquierda del portal, delante de la librería, para no tapar el café ni su terraza
+  const limoAt = drawLimo(r, LIMO_X, BD + 0.95, { glowId: GLOW_BIT, bodyId: LIMO_ID });
 
   // La escalera: dos ventanas pequeñas por planta en el cuerpo central, con cortinas amarillas encendidas
   for (let k = 0; k < 3; k += 1) {
@@ -371,7 +413,7 @@ export function drawFacadeBody(r, flats = {}) {
  * las que no estén, libres. Devuelve { canvas, windows: [{ puerta, left, top, width, height }] (en fracciones del
  * dibujo), sign }.
  */
-export function renderFacade(flats = {}) {
+export function renderFacade(flats = {}, cafe = null) {
   const r = createRaster({ W, H: FRAME.H, S, yaw: YAW, ox: FRAME.ox, oy: FRAME.oy });
   const H = FRAME.H;
   r.clear(0);
@@ -394,7 +436,7 @@ export function renderFacade(flats = {}) {
     return cobble[Math.max(0, Math.min(4, Math.floor(3 + (hash(cx, cy) - 0.5) * 1.2 + d - (seam ? 1.3 : 0))))];
   });
 
-  const { limoAt } = drawFacadeBody(r, flats);
+  const { limoAt } = drawFacadeBody(r, flats, cafe);
 
   // Los seis pisos: dónde cae cada uno (para los botones)
   const windows = [];
@@ -551,9 +593,9 @@ export function renderFacade(flats = {}) {
     yaw: YAW,
     front,
     door: foot(4.0, BD + 0.3),
-    // A la tienda, por la acera pegada a la pared; a la limusina, hasta su puerta de atrás, del lado de la acera
+    // A la tienda, por la acera pegada a la pared; a la limusina, por la acera hasta su puerta de atrás
     shop: [foot(4.0, BD + 0.55), foot(5.95, BD + 0.55), foot(5.95, BD + 0.32)],
-    limo: [foot(4.0, BD + 0.6), foot(5.45, BD + 0.8)],
+    limo: [foot(4.0, BD + 0.6), foot(LIMO_X + 0.6, BD + 0.6), foot(LIMO_X + 0.6, BD + 0.8)],
   };
   return { canvas, windows, panes, shore, shop, mailbox, limo, walk, sign: SIGN_LINES.join(' ') };
 }

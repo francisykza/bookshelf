@@ -68,7 +68,8 @@ beforeAll(async () => {
 
 describe('el café-librería del bajo: clientes, recetas, estrellas y el excéntrico', () => {
   it('las cifras, recetas y estrellas del servidor son las de la app', async () => {
-    for (const n of [1, 2, 3, 4, 5]) expect((await db.query('select cafe_clientes_nivel($1) as c', [n])).rows[0].c).toBe(clientesDelNivel(n));
+    // Los niveles 4 y 5 cuentan además los asientos (bloque 4b): `cafe_clientes_dia`, en cafe-ampliacion.rls.test.js
+    for (const n of [1, 2, 3]) expect((await db.query('select cafe_clientes_nivel($1) as c', [n])).rows[0].c).toBe(clientesDelNivel(n));
     expect((await db.query('select cafe_bebidas(1) as b')).rows[0].b).toEqual(BEBIDAS.filter((b) => b.nivel <= 1).map((b) => b.id));
     for (const r of [0, 1, 2, 5, 11, 12, 13, 35, 36, 99, 431, 999]) expect((await db.query('select cafe_receta($1) as r', [r])).rows[0].r).toEqual(recetaDe(r));
     for (let a = 0; a <= 4; a += 1) for (const e of [false, true]) expect((await db.query('select cafe_estrellas($1, $2) as s', [a, e])).rows[0].s).toBe(estrellasDe(a, e));

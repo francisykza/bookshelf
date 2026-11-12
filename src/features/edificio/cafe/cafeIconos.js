@@ -409,6 +409,153 @@ const RELOJ = {
   ],
 };
 
+// ── Bloque 4b (1.123): los muebles del ala lateral y de la terraza ──
+const MESA_LARGA = {
+  paleta: { m: '#7a4a2c', M: '#a8774a', L: '#c89a62', l: '#ded2ba', w: '#f4efe4', k: '#2a1a10' },
+  filas: [
+    '................',
+    '................',
+    '................',
+    '...w........w...',
+    '..wkw......wkw..',
+    'LLLLLLLLLLLLLLLL',
+    'MlllllllllllllMM',
+    'MMMMMMMMMMMMMMMM',
+    '.mm..........mm.',
+    '.mm..........mm.',
+    '.mmmmmmmmmmmmmm.',
+    '.mm..........mm.',
+    '.mm..........mm.',
+    'mmmm........mmmm',
+  ],
+};
+const BIOMBO = {
+  paleta: { m: '#5a3420', M: '#8a5a38', L: '#b88a5a', r: '#b8574a', v: '#4f7a54', a: '#d6a548', z: '#56708e', o: '#d6a65a' },
+  filas: [
+    'LLLLL.LLLLL.LLLL',
+    'MrvaM.MazrM.MvaM',
+    'MrvaMoMazrMoMvaM',
+    'MLLLM.MLLLM.MLLM',
+    'MazvM.MrvzM.MzrM',
+    'MazvM.MrvzM.MzrM',
+    'MLLLM.MLLLM.MLLM',
+    'MMMMMoMMMMMoMMMM',
+    'M...M.M...M.M..M',
+    'M...M.M...M.M..M',
+    'MMMMM.MMMMM.MMMM',
+    'm...m.m...m.m..m',
+  ],
+};
+const BANKERS = {
+  paleta: { g: '#2f6e48', G: '#5cb47a', y: '#ffe0a0', b: '#c99a4a', B: '#e8c27a', m: '#6b4228', M: '#9a6a42' },
+  filas: [
+    '..............',
+    '...GGGGGGGG...',
+    '..gGGGGGGGGg..',
+    '.gggggggggggg.',
+    '..yyyyyyyyyy..',
+    '......bb......',
+    '......bb..B...',
+    '......bb..b...',
+    '....BBBBBB....',
+    'MMMMMMMMMMMMMM',
+    'mmmmmmmmmmmmmm',
+    '......mm......',
+    '......mm......',
+    '....mmmmmm....',
+  ],
+};
+const PIANO = {
+  paleta: { n: '#4a2c1c', N: '#6e4630', L: '#a8774a', w: '#f4efe4', k: '#1a1414', p: '#e8dcc0', y: '#ffd68c', c: '#8e3a32' },
+  filas: [
+    'LLLLLLLLLLLLLLLL',
+    'NNNNNNNNNNNNNNNN',
+    'NyNNNppppppNNNyN',
+    'NnNNNppppppNNNnN',
+    'NNNNNNNNNNNNNNNN',
+    'NNNNNNNNNNNNNNNN',
+    'nwkwkwwkwkwkwwkn',
+    'nwwwwwwwwwwwwwwn',
+    'nnnnnnnnnnnnnnnn',
+    'nNNNNNNNNNNNNNNn',
+    'nNNNNNccccNNNNNn',
+    'nNNNNNn..nNNNNNn',
+    'nn....n..n....nn',
+  ],
+};
+const MESA_HIERRO = {
+  paleta: { v: '#2c463a', V: '#46684f', G: '#6e9478', w: '#f4efe4', k: '#2a1a10' },
+  filas: [
+    '..............',
+    '..............',
+    '......w.......',
+    '.....wkw......',
+    'GGGGGGGGGGGGGG',
+    'VvVvVvVvVvVvVV',
+    'VVVVVVVVVVVVVV',
+    '.v..........v.',
+    '.v..........v.',
+    '.vvvvvvvvvvvv.',
+    '.v..........v.',
+    '.v..........v.',
+    'vv..........vv',
+  ],
+};
+const SILLA_TERRAZA = {
+  paleta: { v: '#2c463a', V: '#46684f', G: '#6e9478' },
+  filas: [
+    '..vvvvvvvv....',
+    '..vGGGGGGv....',
+    '..vG.VV.Gv....',
+    '..vGVGGVGv....',
+    '..vG.VV.Gv....',
+    '..vGGGGGGv....',
+    '..v......v....',
+    '..GGGGGGGGGG..',
+    '..VVVVVVVVVV..',
+    '..v.......v...',
+    '..v.......v...',
+    '..v.......v...',
+    '.vv.......vv..',
+  ],
+};
+const MACETERO = {
+  paleta: { m: '#5a3a2a', M: '#8a6448', L: '#b88a5a', h: '#56785a', H: '#86b07a', p: '#9278ba', P: '#b8a0dc', a: '#e2c46e' },
+  filas: [
+    '..P...p..P..a...',
+    '.pP..Pp.aP..pP..',
+    '.ph.pPh.ah.pPh..',
+    '..hHph.hH.Hph.p.',
+    '..hHhh.hHhhHhhPp',
+    '.HhhHhHhhHhhHhh.',
+    'LLLLLLLLLLLLLLLL',
+    'MMMMMMMMMMMMMMMM',
+    'MmMMMMmMMMMmMMMM',
+    'MmMMMMmMMMMmMMMM',
+    'MMMMMMMMMMMMMMMM',
+    'mmmmmmmmmmmmmmmm',
+  ],
+};
+const FAROL = {
+  paleta: { k: '#2e2a2c', K: '#4a4446', y: '#ffe0a0', Y: '#ffc870', b: '#d6a65a' },
+  filas: [
+    '......b.......',
+    '.....kkk......',
+    '....kkkkk.....',
+    '...kyYkYyk....',
+    '...kYykyYk....',
+    '...kyYkYyk....',
+    '...kkkkkkk....',
+    '..K..kk..K....',
+    '...KKkkKK.....',
+    '......kk......',
+    '......kk......',
+    '.....kkkk.....',
+    '......kk......',
+    '....kkkkkk....',
+  ],
+};
+
 const POR_MUEBLE = {
   'cafe-mesa': MESA,
   'cafe-silla': SILLA,
@@ -426,6 +573,14 @@ const POR_MUEBLE = {
   'cafe-orejero': OREJERO,
   'cafe-mesita': MESITA,
   'cafe-reloj': RELOJ,
+  'cafe-mesa-larga': MESA_LARGA,
+  'cafe-biombo': BIOMBO,
+  'cafe-bankers': BANKERS,
+  'cafe-piano': PIANO,
+  'cafe-mesa-hierro': MESA_HIERRO,
+  'cafe-silla-terraza': SILLA_TERRAZA,
+  'cafe-macetero': MACETERO,
+  'cafe-farol': FAROL,
 };
 /** El icono de un mueble del café o de casa (los de casa sin dibujo propio, una caja). */
 export const iconoDe = (id) => POR_MUEBLE[id] ?? CAJA;

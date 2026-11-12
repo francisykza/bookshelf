@@ -24,6 +24,7 @@ import { GranHotel } from './hotel/GranHotel';
 import { mesasQueEsperan } from './hotel/veintiuna';
 import { StarterPicker } from './StarterPicker';
 import { Cafe } from './cafe/Cafe';
+import { cargarFachada } from './cafe/cafeService';
 // La visita en primera persona trae Three.js: solo se descarga si se entra
 const VisitaPiso = lazy(() => import('../pisoLab/VisitaPiso'));
 
@@ -74,7 +75,7 @@ const markMail = (uid, lines) => {
 };
 
 /** La calle del edificio en 3D (calleView.js, fuera de React; sin WebGL, la fachada 2D); cada piso ocupado es un botón. */
-function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '' }) {
+function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '', cafe = null }) {
   const ref = useRef(null);
   const open = useRef(onOpenPiso);
   useEffect(() => {
@@ -98,11 +99,13 @@ function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '' }) {
       onOpenLimo: () => open.current(HOTEL_ID),
       // Tu personaje (y el legendario que te sigue), que van andando hasta la tienda o la limusina (1.78)
       walker: me ? { avatar: me.personaje ?? localAvatar(userId), companion: me.companero ?? null } : null,
+      // 1.123: tu café visto desde la calle (la terraza y el escaparate, desde el nivel 5)
+      cafe,
     });
     return () => view.destroy();
     // El correo llega como lista nueva en cada render: se compara por su texto
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vecinos, shopBadge, mail?.join('|'), userId]);
+  }, [vecinos, shopBadge, mail?.join('|'), userId, cafe]);
   return <div ref={ref} className="ed-facade-mount" />;
 }
 
@@ -251,6 +254,21 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   );
 
   const inShop = pisoId === TIENDA_ID;
+  // 1.123 (bloque 4b): tu café visto desde la calle; se vuelve a pedir al salir del café (puede haber subido de nivel o
+  // cambiado el escaparate). Sin la migración o sin café, null: la fachada de siempre
+  const [fachadaCafe, setFachadaCafe] = useState(null);
+  useEffect(() => {
+    if (inShop) return undefined;
+    let vivo = true;
+    cargarFachada().then((c) => {
+      if (!vivo) return;
+      // Solo cambia la calle si cambia lo que se ve
+      setFachadaCafe((antes) => (JSON.stringify(antes) === JSON.stringify(c) ? antes : c));
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [inShop]);
   const inHotel = pisoId === HOTEL_ID;
   const open = pisoId && !inShop && !inHotel ? (data?.vecinos.find((v) => v.user_id === pisoId) ?? null) : null;
   const me = data?.vecinos.find((v) => v.yo) ?? null;
@@ -568,7 +586,14 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
         <h2 className="px-sr" id="ed-title">
           El edificio del puerto. Tu puerta: {doorLabel(data.puerta)}.
         </h2>
-        <Facade vecinos={data.vecinos} onOpenPiso={onOpenPiso} shopBadge="Se traspasa" mail={mail} userId={community.userId} />
+        <Facade
+          vecinos={data.vecinos}
+          onOpenPiso={onOpenPiso}
+          shopBadge={fachadaCafe?.inaugurado && fachadaCafe.nombre ? fachadaCafe.nombre : 'Se traspasa'}
+          mail={mail}
+          userId={community.userId}
+          cafe={fachadaCafe}
+        />
       </div>
     );
   }

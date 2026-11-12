@@ -58,7 +58,12 @@ function pistas(b, ctx) {
 
 /** Lo que se pregunta al elegir cada parte. */
 const PREGUNTA = {
-  bebida: (r, carta = []) => (carta.includes('chocolate') ? '¿Café, té o chocolate? Toca la cafetera, la tetera o el cazo.' : '¿Café o té? Toca la cafetera o la tetera.'),
+  bebida: (r, carta = []) =>
+    carta.includes('hielo')
+      ? '¿Café, té, chocolate o café con hielo? Toca la cafetera, la tetera, el cazo o la cubitera.'
+      : carta.includes('chocolate')
+        ? '¿Café, té o chocolate? Toca la cafetera, la tetera o el cazo.'
+        : '¿Café o té? Toca la cafetera o la tetera.',
   grano: (r) =>
     r.bebida === 'te'
       ? '¿Qué hoja? Toca un tarro: la verde es suave; la negra, intensa.'
@@ -66,12 +71,22 @@ const PREGUNTA = {
         ? '¿Qué cacao? Toca un tarro: el claro, con leche; el oscuro, negro.'
         : '¿Qué grano? Toca un tarro: el claro es suave; el tostado, intenso.',
   leche: () => '¿Leche? Toca una jarrita, o «Sin leche».',
-  toque: (r, carta = []) => (carta.includes('nata') ? '¿Un toque final? Toca la canela, la miel o la nata, o «Sin nada».' : '¿Un toque final? Toca la canela o la miel, o «Sin nada».'),
+  toque: (r, carta = []) =>
+    carta.includes('vainilla')
+      ? '¿Un toque final? Toca la canela, la miel, la nata o la vainilla, o «Sin nada».'
+      : carta.includes('nata')
+        ? '¿Un toque final? Toca la canela, la miel o la nata, o «Sin nada».'
+        : '¿Un toque final? Toca la canela o la miel, o «Sin nada».',
 };
 /** Qué marca de la barra mira cada gesto (donde va la pista y, en la manivela y la miel, el centro del gesto). */
-const MARCA = { manivela: 'manivela', apisonar: 'portafiltro', palanca: 'palanca', cuchara: 'tarros', tetera: 'tetera', colador: 'taza', vapor: 'vapor', verter: 'taza', agitar: 'taza', hilo: 'taza', molinillo: 'cazo', cazo: 'cazo', batir: 'bol' };
+const MARCA = { manivela: 'manivela', apisonar: 'portafiltro', palanca: 'palanca', cuchara: 'tarros', tetera: 'tetera', colador: 'taza', vapor: 'vapor', verter: 'taza', agitar: 'taza', hilo: 'taza', molinillo: 'cazo', cazo: 'cazo', batir: 'bol', rascar: 'vaina', coctelera: 'coctelera' };
 /** El sonido al elegir cada cosa. */
-const SONIDO_ELEGIR = { bebida: (v) => (v === 'te' ? 'tetera' : v === 'chocolate' ? 'cazo' : 'cafetera'), grano: () => 'tarro', leche: () => 'jarra', toque: () => 'jarra' };
+const SONIDO_ELEGIR = {
+  bebida: (v) => ({ te: 'tetera', chocolate: 'cazo', frio: 'cubitera' })[v] ?? 'cafetera',
+  grano: () => 'tarro',
+  leche: () => 'jarra',
+  toque: (v) => (v === 'vainilla' ? 'vaina' : 'jarra'),
+};
 /** Los que se mantienen suenan mientras dura (el café que cae, el agua, el vapor). */
 const SUENA_MIENTRAS = {
   palanca: (s) => s.pose.bajada >= 0.85,
@@ -114,6 +129,8 @@ function Pista({ tipo }) {
     'izquierda-mantener': 'M 76 44 L 18 44',
     remover: 'M 44 10 A 34 26 0 1 1 10 44 A 34 26 0 0 1 44 10',
     batir: 'M 44 30 a 12 12 0 1 1 -1 0 m 1 10 a 12 12 0 1 1 -1 0 m 1 10 a 12 12 0 1 1 -1 0',
+    rascar: 'M 30 10 L 30 70 M 44 10 L 44 70 M 58 10 L 58 70',
+    coctelera: 'M 4 56 Q 44 16 84 56 M 84 56 L 74 50 M 4 56 L 14 50',
     trazo: 'M 44 6 Q 30 24 44 40 Q 58 56 44 78',
     vaiven: 'M 8 44 L 80 44',
     dibujo: 'M 44 44 m -6 0 a 6 6 0 1 1 12 0 a 12 12 0 1 1 -24 0 a 18 18 0 1 1 36 0',
