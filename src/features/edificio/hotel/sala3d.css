@@ -56,14 +56,17 @@
   pointer-events: none;
 }
 .sl3-tag,
-.sl3-hola {
+.sl3-hola,
+.sl3-placa {
   position: absolute;
   top: 0;
   left: 0;
 }
 .sl3-tag[data-off='true'],
 .sl3-hola[data-off='true'],
-.sl3-hola[data-vacio='true'] {
+.sl3-hola[data-vacio='true'],
+.sl3-placa[data-off='true'],
+.sl3-placa[data-vacio='true'] {
   visibility: hidden;
 }
 
@@ -526,4 +529,165 @@
 }
 .gh-cita .gh-lect__dura {
   justify-content: flex-start;
+}
+
+/* 1.118 · La placa del sofá: el letrero grabado sobre el respaldo, del color de su metal (sin rachas ni cuentas atrás) */
+.sl3-placa {
+  --sl3-metal: #cc9e52;
+  margin: 0;
+  padding: 3px 8px 4px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sl3-metal) 86%, white) 0%, var(--sl3-metal) 55%, color-mix(in srgb, var(--sl3-metal) 70%, black) 100%);
+  box-shadow:
+    0 0 0 2px rgb(46 28 20 / 0.92),
+    2px 2px 0 2px rgb(0 0 0 / 0.3);
+  color: rgb(40 24 14);
+  font:
+    700 0.64rem/1.15 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+  white-space: nowrap;
+}
+.sl3-placa[data-metal='plata'] {
+  --sl3-metal: #ced2da;
+}
+.sl3-placa[data-metal='oro'] {
+  --sl3-metal: #f6ca5c;
+}
+
+/* Los gestos cerrados: una fila de botones pequeños, que se parte en dos si no cabe */
+.gh-gestos {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.gh-gestos__fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.gh-gestos__fila button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 0;
+  background: rgb(20 12 10 / 0.45);
+  box-shadow: inset 0 0 0 1px rgb(226 184 100 / 0.4);
+  color: var(--c21-gold-l);
+  font:
+    600 0.74rem/1 'Lora',
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+.gh-gestos__fila button[aria-pressed='true'] {
+  background: var(--c21-gold);
+  box-shadow: inset 0 -2px 0 var(--c21-gold-d);
+  color: var(--c21-ink);
+}
+.gh-gestos__fila button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.gh-gestos__fila button:focus-visible {
+  outline: 2px solid var(--c21-cream);
+  outline-offset: 1px;
+}
+.gh-gestos.is-compacta .gh-gestos__fila button {
+  min-height: 30px;
+  padding: 0 7px;
+  font-size: 0.7rem;
+}
+.gh-gestos__msg {
+  margin: 0;
+  color: var(--c21-cream);
+  font:
+    italic 500 0.72rem/1.3 'Lora',
+    Georgia,
+    serif;
+  opacity: 0.85;
+}
+.gh-cita__fila > .gh-gestos,
+.sl3-sit__panel > .gh-gestos {
+  grid-column: 1 / -1;
+}
+/* En el sofá con «Gestos», «Pausar» y «Levantarte», los botones se estrechan para que el reloj no se corte */
+.sl3 .sl3-sit__panel:has(> .gh-lect__clock) {
+  grid-template-columns: minmax(4.6rem, 1fr) auto;
+}
+.sl3-sit__panel > .gh-21__acts:has(> .gh-21btn:nth-child(3)) {
+  gap: 5px;
+}
+.sl3-sit__panel > .gh-21__acts:has(> .gh-21btn:nth-child(3)) .gh-21btn {
+  padding: 0 7px;
+  font-size: 0.64rem;
+  letter-spacing: 0.02em;
+}
+.gh-lect__list li:has(> .gh-gestos) {
+  flex-wrap: wrap;
+}
+.gh-lect__list li > .gh-gestos {
+  flex: 1 0 100%;
+}
+.gh-lect__gestos {
+  flex: none;
+}
+
+/* Vuestras placas del sofá, en «Leer con un amigo»: una línea por amigo con su chapa de metal */
+.gh-placas {
+  margin-top: 10px;
+}
+.gh-placas__titulo {
+  margin: 0 0 6px;
+  color: var(--c21-gold-l);
+  font:
+    700 0.72rem/1.2 'Lora',
+    Georgia,
+    serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.gh-placas ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gh-placa {
+  --sl3-metal: #cc9e52;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgb(26 14 12 / 0.6);
+}
+.gh-placa[data-metal='plata'] {
+  --sl3-metal: #ced2da;
+}
+.gh-placa[data-metal='oro'] {
+  --sl3-metal: #f6ca5c;
+}
+.gh-placa__metal {
+  flex: none;
+  width: 26px;
+  height: 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sl3-metal) 86%, white), var(--sl3-metal) 55%, color-mix(in srgb, var(--sl3-metal) 70%, black));
+  box-shadow:
+    0 0 0 2px rgb(46 28 20),
+    inset 0 -3px 0 rgb(0 0 0 / 0.12);
+}
+.gh-placa p {
+  min-width: 0;
+  margin: 0;
+  font:
+    500 0.82rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.gh-placa span {
+  display: block;
+  font-size: 0.74rem;
+  opacity: 0.82;
+  overflow-wrap: anywhere;
 }

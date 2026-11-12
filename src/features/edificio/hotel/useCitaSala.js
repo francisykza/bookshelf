@@ -1,8 +1,9 @@
 // 1.117 (§117) · La cita de lectura de la sala: lo que dice el servidor (amigos, invitaciones, tu cita y su hora) y lo
 // que se le pide. Se mira cada poco mientras la sala está a la vista; sin la migración, `disponible` es false y la sala
 // sigue como antes.
+// 1.118 (§118): también las placas del sofá (una por amigo con el que has leído juntos); sin su migración, `placas` es null.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { salaCitaDejar, salaCitaInvitar, salaCitaLatido, salaCitaResponder, salaCitas } from '../service';
+import { salaCitaDejar, salaCitaInvitar, salaCitaLatido, salaCitaResponder, salaCitas, salaPlacaLibro, salaPlacas } from '../service';
 
 const CITA_MS = 15000;
 
@@ -44,6 +45,18 @@ export function useCitaSala(enabled) {
     };
   }, [enabled, refrescar]);
 
+  // Las placas: al entrar y cuando cambia tu cita (al acabar, o un minuto más juntos)
+  const [placas, setPlacas] = useState(undefined);
+  const clavePlaca = `${datos?.mia?.cita ?? ''}|${datos?.mia?.estado ?? ''}|${datos?.mia?.juntos ?? 0}`;
+  useEffect(() => {
+    if (!enabled || datos === null) return;
+    salaPlacas().then(
+      (p) => vivo.current && setPlacas(p),
+      () => {},
+    );
+  }, [enabled, datos === null, clavePlaca]); // eslint-disable-line react-hooks/exhaustive-deps
+  const apuntarLibro = (cita, titulo) => salaPlacaLibro(cita, titulo).then((p) => vivo.current && setPlacas(p));
+
   const tras = (p) => p.then(refrescar);
   const invitar = (amigo, en, minutos) => tras(salaCitaInvitar(amigo, en, minutos));
   const responder = (cita, acepta) => tras(salaCitaResponder(cita, acepta));
@@ -60,6 +73,9 @@ export function useCitaSala(enabled) {
     amigos: datos?.amigos ?? [],
     invitaciones: datos?.invitaciones ?? [],
     mia: datos?.mia ?? null,
+    /** Tus placas del sofá (undefined mientras se miran; null sin la migración). */
+    placas,
+    apuntarLibro,
     /** La hora del servidor, según este reloj. */
     ahora: () => Date.now() + desfase.current,
     invitar,

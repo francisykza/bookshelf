@@ -8,6 +8,8 @@
 // es el del Pomodoro y la librería común son lomos de verdad en sus baldas. Sin WebGL, el dibujo isométrico de siempre.
 // 1.117 (bloque b): la cita de lectura con un amigo (`CitaSala`, `useCitaSala`): os sentáis en el sofá para dos, el reloj
 // lo pone el servidor y, al acabar, la sala dice cuántos minutos habéis leído juntos.
+// 1.118 (bloque c): los gestos cerrados (`gestos.js`) entre quienes leen a la vez y con tu amigo en la cita, y la placa
+// del sofá por pareja, sin rachas: se ve en el respaldo y, al terminar un libro leyendo juntos, se puede apuntar en ella.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SessionReport } from '../../../components/panels/PomodoroTray';
 import { currentBook, spineColor } from '../../../domain/books';
@@ -21,10 +23,11 @@ import { preloadCover } from '../../pisoLab/coverPreload';
 import { DEFAULT_AVATAR } from '../actor';
 import { misticoOf, misticoSprite } from '../misticos';
 import { renderActorThumb } from '../render';
-import { dejarLomo, localAvatar, retirarLomo, salaLibreria, salaPersonajes, saludarEnSala, saludosEnSala } from '../service';
+import { dejarLomo, localAvatar, retirarLomo, salaGesto, salaGestosNuevos, salaLibreria, salaPersonajes, saludarEnSala } from '../service';
 import { renderSala, SALA_H, SALA_W, SILLONES } from './salaArt';
 import { PLAZA_SOFA, SILLONES as SILLONES_3D, repartoSillones } from './salaLayout';
-import { CitaSala, faseCita, nombreCita } from './CitaSala';
+import { CitaSala, FilaGestos, faseCita, nombreCita } from './CitaSala';
+import { gestoDe, tiempoJuntos } from './gestos';
 import { useCitaSala } from './useCitaSala';
 import { SalaLibreria } from './SalaLibreria';
 import './sala3d.css';
@@ -112,7 +115,14 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
   const [libreria, setLibreria] = useState(null);
   const [oferta, setOferta] = useState(null);
   const [saludados, setSaludados] = useState([]);
-  const [saludo, setSaludo] = useState(null);
+  // El último gesto que te ha llegado: { de, gesto }
+  const [gesto, setGesto] = useState(null);
+  const saludo = gesto?.de ?? null;
+  // Si el servidor ya tiene los gestos nuevos (sin su migración, solo «¡Hola!»)
+  const [conLista, setConLista] = useState(true);
+  const [gestosDe, setGestosDe] = useState(null);
+  const [gestosSofa, setGestosSofa] = useState(false);
+  const [ofertaPlaca, setOfertaPlaca] = useState(null);
   const [leidoCon, setLeidoCon] = useState([]);
   const pidiendo = useRef(null);
   const [eligiendo, setEligiendo] = useState(false);
@@ -306,28 +316,40 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
     const otros = ids.split(',').filter((id) => id !== community.userId);
     setLeidoCon((antes) => (otros.every((id) => antes.includes(id)) ? antes : [...new Set([...antes, ...otros])]));
   }, [sentado, ids, community.userId]);
-  // Quien te saluda: se mira solo mientras estás sentado y la migración está aplicada
+  // Quien te hace un gesto: se mira mientras estás sentado (con la migración de la sala) o en tu cita con un amigo
   const conSaludos = sentado && Boolean(libreria);
+  const conGestos = conSaludos || citaViva;
   useEffect(() => {
-    if (!conSaludos) return undefined;
+    if (!conGestos) return undefined;
     let alive = true;
     const mirar = () =>
-      saludosEnSala().then(
-        (de) => alive && de?.length > 0 && setSaludo(de[0]),
+      salaGestosNuevos().then(
+        (r) => {
+          if (!alive) return;
+          setConLista(r.gestos);
+          if (r.lista.length > 0) setGesto(r.lista[0]);
+        },
         () => {},
       );
     mirar();
     const cada = setInterval(mirar, SALUDO_MS);
+    // Al volver a la app, se mira enseguida
+    const alVolver = () => !document.hidden && mirar();
+    document.addEventListener('visibilitychange', alVolver);
     return () => {
       alive = false;
       clearInterval(cada);
+      document.removeEventListener('visibilitychange', alVolver);
     };
-  }, [conSaludos]);
+  }, [conGestos]);
   useEffect(() => {
-    if (!saludo) return undefined;
-    const fuera = setTimeout(() => setSaludo(null), SALUDO_VISIBLE_MS);
+    if (!gesto) return undefined;
+    const fuera = setTimeout(() => setGesto(null), SALUDO_VISIBLE_MS);
     return () => clearTimeout(fuera);
-  }, [saludo]);
+  }, [gesto]);
+  useEffect(() => {
+    if (!enSofa) setGestosSofa(false);
+  }, [enSofa]);
   useEffect(() => {
     if (askPages) pidiendo.current ??= new Date().toISOString();
   }, [askPages]);
@@ -368,6 +390,11 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
   useEffect(() => {
     if (ready) api.current?.lomos(libreria?.lomos ?? []);
   }, [ready, libreria]);
+  const placas = Array.isArray(cita.placas) ? cita.placas : [];
+  const placaVista = miCita && (citaViva || fase === 'fin') ? (placas.find((p) => p.uid === miCita.uid) ?? null) : (placas[0] ?? null);
+  useEffect(() => {
+    if (ready) api.current?.placa(placaVista ? { metal: placaVista.metal } : null);
+  }, [ready, placaVista?.metal]); // eslint-disable-line react-hooks/exhaustive-deps
   const relojFrac = timer.total ? Math.round((timer.remaining / timer.total) * 400) / 400 : 1;
   useEffect(() => {
     if (ready) api.current?.reloj({ frac: relojFrac, descanso: timer.phase === 'break', activo: enSesion, running: timer.running });
@@ -411,11 +438,37 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
     pidiendo.current = null;
     const terminado = desde && state.books.find((b) => b.status === 'read' && b.finishedAt >= desde);
     onPagesDone();
-    if (terminado && me && libreria) setOferta(terminado.title);
+    if (terminado && miCita?.cita && (miCita.juntos ?? 0) > 0 && (fase === 'fin' || fase === 'leyendo') && Array.isArray(cita.placas)) {
+      setOfertaPlaca({ cita: miCita.cita, titulo: terminado.title, con: nombreCita(miCita) });
+      return;
+    }
+    trasLibro(terminado?.title);
+  };
+  const trasLibro = (titulo) => {
+    if (titulo && me && libreria) setOferta(titulo);
     else {
       if (me) standUpNow(community.userId);
       levantarCamara();
     }
+  };
+  const cerrarPlaca = (apuntar) => {
+    const o = ofertaPlaca;
+    const sigue = () => {
+      setOfertaPlaca(null);
+      trasLibro(o.titulo);
+    };
+    if (!apuntar) return sigue();
+    setBusy(true);
+    return cita
+      .apuntarLibro(o.cita, o.titulo)
+      .then(
+        () => setAviso(`Apuntado en vuestra placa del sofá: «${o.titulo}».`),
+        () => setAviso('No se ha podido apuntar en la placa. Inténtalo luego desde la sala.'),
+      )
+      .finally(() => {
+        setBusy(false);
+        sigue();
+      });
   };
   const cerrarOferta = (lomo) => {
     setOferta(null);
@@ -433,10 +486,17 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
       });
   };
   const retirar = (id) => retirarLomo(id).then(setLibreria, () => {});
+  // «Saludar» es el saludo de siempre (con la migración nueva llega como el gesto «¡Hola!»)
   const saludar = (id) => {
     setSaludados((antes) => [...antes, id]);
     saludarEnSala(id).catch(() => {});
   };
+  // Un gesto de la lista cerrada; el servidor dice si ha salido (dentro del cupo, no)
+  const hacerGesto = (id, g) =>
+    salaGesto(id, g).then((ok) => {
+      if (ok !== false && g === 'hola') setSaludados((antes) => (antes.includes(id) ? antes : [...antes, id]));
+      return ok;
+    });
 
   // ── Lo que se toca en la sala 3D ──
   const sentarseEn = async (k) => {
@@ -472,8 +532,10 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
     if (id === 'sillon') return ofrecido != null && sentarseEn(ofrecido);
     if (id === 'sofa') {
       if (!citaViva) {
-        setAviso(cita.disponible ? 'El sofá para dos es para leer con un amigo: invítalo en «Leer con un amigo», aquí debajo.' : 'El sofá para dos, pronto: para quedar a leer con un amigo.');
-        return a.go('sofa');
+        const conPlaca = placaVista ? ` En el respaldo, tu placa con ${placaVista.alias ?? 'tu amigo'}.` : '';
+        setAviso(cita.disponible ? `El sofá para dos es para leer con un amigo: invítalo en «Leer con un amigo», aquí debajo.${conPlaca}` : 'El sofá para dos, pronto: para quedar a leer con un amigo.');
+        // Con placa, se mira el respaldo, donde está; si no, la chimenea
+        return a.go(placaVista ? 'placa' : 'sofa');
       }
       setAviso('');
       await a.go('sofa');
@@ -516,9 +578,16 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
   const nombre = (r) => (r.user_id === community.userId ? 'Tú' : (profiles[r.user_id]?.alias ?? 'Alguien'));
   const otros = seated.length - (me ? 1 : 0) + extra;
   const hola = seated.findIndex((r) => r.user_id === saludo);
-  const holaSillon = hola >= 0 ? reparto.get(saludo) : null;
+  // Tu amigo en el sofá no está en los sillones: su gesto sale sobre su plaza
+  const desdeSofa = Boolean(saludo) && otroAqui && saludo === miCita.uid;
+  const holaSillon = desdeSofa ? suPlaza : hola >= 0 ? (reparto.get(saludo) ?? null) : null;
+  const gestoVisto = gesto ? gestoDe(gesto.gesto) : null;
+  const fraseGesto = gestoVisto ? gestoVisto.frase(profiles[saludo]?.alias ?? (miCita?.uid === saludo ? nombreCita(miCita) : 'Alguien')) : null;
+  const placaTexto = placaVista
+    ? `${placaVista.alias ?? 'Tu amigo'} y tú · ${tiempoJuntos(placaVista.minutos)} juntos${placaVista.libros.length ? ` · ${placaVista.libros.length === 1 ? '1 libro' : `${placaVista.libros.length} libros`}` : ''}`
+    : '';
   const juntos =
-    miCita && fase === 'fin' && miCita.juntos > 0 && (askPages || oferta) ? (
+    miCita && fase === 'fin' && miCita.juntos > 0 && (askPages || oferta || ofertaPlaca) ? (
       <p className="gh-lect__con">
         Habéis leído juntos {miCita.juntos === 1 ? '1 minuto' : `${miCita.juntos} minutos`}, {nombreCita(miCita)} y tú.
       </p>
@@ -526,17 +595,39 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
   const compania = (
     <>
       {juntos}
-      {leidoCon.length > 0 && (askPages || oferta) ? <p className="gh-lect__con">Has leído con {lista(leidoCon.map((id) => profiles[id]?.alias ?? 'alguien'))}.</p> : null}
+      {leidoCon.length > 0 && (askPages || oferta || ofertaPlaca) ? <p className="gh-lect__con">Has leído con {lista(leidoCon.map((id) => profiles[id]?.alias ?? 'alguien'))}.</p> : null}
     </>
   );
   const lomoElegido = libreria?.lomos.find((l) => l.id === lomoSel) ?? null;
   const en3d = !sin3d;
 
+  // En el sofá con tu amigo, los gestos a mano (se abren debajo de la franja)
+  const botonGestos =
+    enSofa && citaViva ? (
+      <button type="button" className="gh-21btn is-stand" aria-expanded={gestosSofa} onClick={() => setGestosSofa((v) => !v)}>
+        Gestos
+      </button>
+    ) : null;
   // El reloj, la sesión y los botones de siempre: sentado en la sala 3D, encima de la escena; si no, en el panel
   const cabecera = askPages ? (
     <div className="gh-lect__paper">
       {compania}
       <SessionReport book={book} onDone={apuntado} onOpenCalendar={onOpenCalendar} />
+    </div>
+  ) : ofertaPlaca ? (
+    <div className="gh-lect__paper">
+      {compania}
+      <p className="gh-lect__con">
+        Has terminado <em>{ofertaPlaca.titulo}</em> leyendo con {ofertaPlaca.con}. ¿Lo apuntáis en la placa del sofá? Lo verá {ofertaPlaca.con}.
+      </p>
+      <div className="gh-21__acts">
+        <button type="button" className="gh-21btn is-deal" disabled={busy} onClick={() => cerrarPlaca(true)}>
+          Apuntarlo en la placa
+        </button>
+      </div>
+      <button type="button" className="gh-21link" disabled={busy} onClick={() => cerrarPlaca(false)}>
+        Ahora no
+      </button>
     </div>
   ) : oferta ? (
     <div className="gh-lect__paper">
@@ -561,6 +652,7 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
         <p>para empezar los dos ({miCita.minutos} min)</p>
       </div>
       <div className="gh-21__acts">
+        {botonGestos}
         <button type="button" className="gh-21btn is-stand" onClick={levantarCamara}>
           Levantarte
         </button>
@@ -602,6 +694,7 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
         </div>
       ) : (
         <div className="gh-21__acts">
+          {botonGestos}
           {timer.running ? (
             <button type="button" className="gh-21btn is-stand" onClick={timer.pause}>
               Pausar
@@ -663,9 +756,12 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
             <button type="button" className={`sl3-tag${cita.disponible ? '' : ' is-pronto'}`} ref={(el) => (tagEls.current.sofa = el)} data-off="true" onClick={() => pick.current('sofa')}>
               Sofá para dos{sofaNota}
             </button>
-            {SILLONES_3D.map((_, k) => (
+            <span className="sl3-placa" aria-hidden="true" ref={(el) => (tagEls.current.placa = el)} data-off="true" data-metal={placaVista?.metal} data-vacio={placaVista ? undefined : 'true'}>
+              {placaTexto}
+            </span>
+            {Array.from({ length: PLAZA_SOFA + 2 }, (_, k) => (
               <span key={k} className="sl3-hola" aria-hidden="true" ref={(el) => (tagEls.current[`cabeza-${k}`] = el)} data-off="true" data-vacio={holaSillon === k ? undefined : 'true'}>
-                ¡Hola!
+                {gestoVisto?.bocadillo ?? '¡Hola!'}
               </span>
             ))}
           </div>
@@ -700,12 +796,13 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
               </button>
               <div className="sl3-sit__panel gh-21">
                 {/* Quien te saluda puede estar a tu lado, fuera de la vista: también se dice aquí (el aviso de verdad va en el panel) */}
-                {hola >= 0 && (
+                {fraseGesto && (
                   <p className="sl3-sit__hola" aria-hidden="true">
-                    {profiles[saludo]?.alias ?? 'Alguien'} levanta la vista y te saluda.
+                    {fraseGesto}
                   </p>
                 )}
                 {cabecera}
+                {gestosSofa && botonGestos && !askPages && !oferta && !ofertaPlaca && <FilaGestos para={nombreCita(miCita)} solo={!conLista} compacta onGesto={(g) => hacerGesto(miCita.uid, g)} />}
               </div>
             </div>
           )}
@@ -761,7 +858,7 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
           })}
           {hola >= 0 && (
             <span className="gh-lect__hola" aria-hidden="true" style={{ left: `${(room.cabezas[hola].x / SALA_W) * 100}%`, top: `${(room.cabezas[hola].y / SALA_H) * 100}%` }}>
-              ¡Hola!
+              {gestoVisto?.bocadillo ?? '¡Hola!'}
             </span>
           )}
         </div>
@@ -772,7 +869,7 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
 
         {enabled ? (
           <>
-            {cita.disponible && <CitaSala cita={cita} enSofa={enSofa} onSofa={en3d && ready ? () => pick.current('sofa') : undefined} />}
+            {cita.disponible && <CitaSala cita={cita} enSofa={enSofa} onSofa={en3d && ready ? () => pick.current('sofa') : undefined} onGesto={hacerGesto} conGestos={conLista} />}
             <h4 className="gh-21__lobbytitle">{otros > 0 ? 'Leyendo ahora' : 'Aún no lee nadie más'}</h4>
             {seated.length > 0 && (
               <ul className="gh-lect__list" aria-label="Quién lee ahora">
@@ -791,14 +888,26 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
                         {saludados.includes(r.user_id) ? 'Saludado' : r.user_id === saludo ? 'Devolver' : 'Saludar'}
                       </button>
                     )}
+                    {conSaludos && conLista && r.user_id !== community.userId && (
+                      <button
+                        type="button"
+                        className="gh-21link gh-lect__gestos"
+                        aria-expanded={gestosDe === r.user_id}
+                        aria-label={`Más gestos para ${nombre(r)}`}
+                        onClick={() => setGestosDe((v) => (v === r.user_id ? null : r.user_id))}
+                      >
+                        Gestos
+                      </button>
+                    )}
+                    {conSaludos && gestosDe === r.user_id && <FilaGestos para={nombre(r)} compacta onGesto={(g) => hacerGesto(r.user_id, g)} />}
                   </li>
                 ))}
               </ul>
             )}
             {extra > 0 && <p className="gh-21__empty">Y {extra} más, en los sillones del fondo.</p>}
-            {hola >= 0 && (
+            {fraseGesto && (
               <p className="gh-21__note" role="status">
-                {profiles[saludo]?.alias ?? 'Alguien'} levanta la vista y te saluda.
+                {fraseGesto}
               </p>
             )}
             {libreria && <SalaLibreria libreria={libreria} onRetirar={retirar} />}

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.117.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.118.0 · 2026-11-11 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6073,3 +6073,48 @@ veas mejor» y, tras revisar el bloque a, «Sí, al bloque b». Un motivo para i
   simulado (invitar, «no ha podido venir», aceptar, esperar en el sofá, el reloj de los dos, tu amiga a tu lado, «habéis
   leído juntos»; el aviso del edificio; sin la migración) a 360, 390 y escritorio en Chromium y a 390 en WebKit, con vídeo.
   Capturas y vídeos en `qa-report/sala-cita/`. Nada probado entre dos cuentas reales ni en móviles reales.
+
+## 118. La placa del sofá y los gestos cerrados (1.118.0)
+
+Bloque c del plan de la sala de lectura (`docs/qa/sala-lectura-3d.md`). Francisco: «la placa del sofá sin rachas» y «una
+selección de gestos para poder comunicarte con la otra persona»; tras publicar el bloque b, «Sí, al bloque c».
+
+- **La placa del sofá, una por pareja de amigos**: los minutos que habéis leído juntos en el sofá (los mismos de «habéis
+  leído juntos», sumados de todas vuestras citas) y los libros que habéis terminado leyendo juntos. **Sin rachas, sin cuentas
+  atrás, sin nada que se pierda**: las horas solo suben y los hitos (1, 5, 10, 25, 50 y 100 h) solo cambian el metal: latón,
+  plata desde 10 h y oro desde 50 h. Solo la ven los dos (con un bloqueo desaparece para ambos). Es un adorno de la sala: no
+  da tickets ni recompensas.
+- **Dónde se ve**: en «Leer con un amigo», «Vuestras placas del sofá» (una línea por amigo, de más a menos horas: «Bea
+  lectora y tú · 1 h 10 min juntos», «Placa de latón · 1 hora · un libro terminado juntos: «…»», con su chapa de metal); y en
+  la escena, **una placa de metal atornillada al dorso del respaldo del sofá**, con su letrero («Bea lectora y tú · 1 h 10 min
+  juntos · 1 libro»). En tu cita, la placa es la vuestra; sin cita, la de más horas. Al tocar el sofá sin cita, si tienes
+  placa, la vista mira al respaldo (no a la chimenea) y el aviso lo dice: «En el respaldo, tu placa con X».
+- **Apuntar un libro**: si terminas un libro en una cita en la que habéis leído juntos, después del formulario de páginas la
+  sala pregunta «Has terminado X leyendo con Y. ¿Lo apuntáis en la placa del sofá? Lo verá Y.» con «Apuntarlo en la placa» o
+  «Ahora no»; después sigue lo de siempre (dejar su lomo en la librería, si estabas sentado en un sillón). El servidor solo lo
+  deja en una cita tuya aceptada, hasta 3 horas después de acabar y con al menos un minuto juntos en ella; título de 1 a 120
+  caracteres, sin repetir, y como mucho 3 al día.
+- **Los gestos, una lista cerrada** (sin texto libre): ¡Hola!, Alzar la taza, ¿Qué tal va? (enseñas tu libro), ¡Qué bueno!,
+  Un capítulo más, Momento intenso y Buenas noches (`hotel/gestos.js`: botón, bocadillo y frase; la misma lista en el
+  servidor). Se hacen a quien lee contigo en la sala (en «Leyendo ahora», «Saludar» como siempre y, al lado, «Gestos») y a tu
+  amigo en la cita (en el panel de la cita y, en el sofá, con «Gestos» en la franja). **Cupo**: uno cada 30 min a la misma
+  persona en la sala; en una cita, uno por minuto. Si no sale, se dice sin insistir («Ya le has hecho un gesto hace muy poco»).
+- **Lo que llega**: un bocadillo sobre la cabeza de quien lo hace (también sobre su plaza del sofá) y su frase en la franja y
+  en el panel («Bea lectora te da las buenas noches.»), durante 10 s. Se mira cada 15 s y al volver a la app.
+- **Migración** `20261207120000_sala_parejas.sql`: `sala_saludos.gesto` (lista cerrada, el saludo de antes es «hola»),
+  `sala_pareja_libros` con RLS cerrada y sin permisos directos, y funciones `security definer` `volatile`: `sala_gesto(quien,
+  gesto)`, `sala_gestos_nuevos()`, `sala_placas()` y `sala_placa_libro(cita, titulo)`; `sala_en_cita` y
+  `sala_pareja_minutos` son internas (sin permiso para nadie). Sin la migración aplicada: sin placas y solo «¡Hola!» (el
+  saludo de la 1.83, como antes).
+- **Código**: `hotel/gestos.js`, `hotel/CitaSala.jsx` (`FilaGestos` y las placas), `hotel/useCitaSala.js` (`placas`,
+  `apuntarLibro`), `SalaLectura.jsx` (los gestos que llegan y se hacen, la placa en la escena, apuntar el libro),
+  `sala3d.js` (la placa en el respaldo con su metal, `placa()` y `verPlaca()`, el sitio `placa` y los bocadillos sobre las
+  plazas 6 y 7), `sala3d.css` y `service.js` (`salaGesto`, `salaGestosNuevos`, `salaPlacas`, `salaPlacaLibro`).
+- **Pruebas**: `sala-parejas.rls.test.js` (PGlite con todas las migraciones: lista cerrada, solo entre quienes leen a la vez
+  o en la cita, los cupos, el saludo antiguo llega como «hola», las placas solo con minutos juntos y solo para los dos, los
+  hitos y los metales, apuntar un libro con sus límites, el bloqueo, y que las tablas y funciones internas no se tocan);
+  `gestos.test.js` (la lista de la app es la del servidor); `rpc-solo-lectura`, `sala-citas` y `sala-lectura` siguen en
+  verde. e2e nueva `v1118-sala-placa.spec.js` con Supabase simulado (las placas en el panel y en el respaldo, los gestos en
+  la lista y en el sofá con su cupo, el gesto que te llega, apuntar el libro al acabar la cita, sin la migración) a 360, 390
+  y escritorio en Chromium y a 390 en WebKit, con vídeo. Capturas y vídeos en `qa-report/sala-placa/`. Nada probado entre
+  dos cuentas reales ni en móviles reales.

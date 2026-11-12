@@ -219,6 +219,30 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       }
       return json(l);
     }
+    // 1.118 · Gestos y placas del sofá: `db.parejas` = { placas, gestos (los que te llegan: [{ de, gesto }]), enviados,
+    // cupo (a quién ya no se puede hacer otro gesto todavía) }. Sin él, como si no estuviera la migración.
+    if (['rpc/sala_gesto', 'rpc/sala_gestos_nuevos', 'rpc/sala_placas', 'rpc/sala_placa_libro'].includes(table)) {
+      if (!db.parejas) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'no existe' }) });
+      const p = db.parejas;
+      const body = req.postDataJSON?.() ?? {};
+      p.placas ??= [];
+      if (table === 'rpc/sala_gesto') {
+        (p.enviados ??= []).push({ quien: body.quien, gesto: body.gesto });
+        if ((p.cupo ?? []).includes(body.quien)) return json(false);
+        (p.cupo ??= []).push(body.quien);
+        return json(true);
+      }
+      if (table === 'rpc/sala_gestos_nuevos') return json((p.gestos ?? []).splice(0));
+      if (table === 'rpc/sala_placa_libro') {
+        const uid = db.citas?.mia?.cita === body.cita ? db.citas.mia.uid : null;
+        const placa = p.placas.find((x) => x.uid === uid);
+        if (!placa) return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message: 'sala:placa' }) });
+        const titulo = String(body.titulo ?? '').trim();
+        if (!placa.libros.some((l) => l.titulo.toLowerCase() === titulo.toLowerCase())) placa.libros.push({ titulo, mio: true });
+        (p.apuntados ??= []).push({ cita: body.cita, titulo });
+      }
+      return json(p.placas);
+    }
     // 1.117 · La cita de lectura: `db.citas` = { amigos, invitaciones, mia, otroLate (el amigo late a la vez) }. Sin él,
     // como si no estuviera la migración. La hora es la de este reloj.
     if (table.startsWith('rpc/sala_cita')) {

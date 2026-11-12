@@ -702,3 +702,42 @@ export async function salaCitaDejar(cita) {
   const { error } = await sb.rpc('sala_cita_dejar', { cita });
   fail(error);
 }
+
+// ── 1.118 (§118) · Los gestos cerrados y la placa del sofá ──
+/** Un gesto a quien lee contigo (lista cerrada). Devuelve si ha salido. Sin la migración, solo «¡Hola!» (el saludo de siempre). */
+export async function salaGesto(quien, gesto) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('sala_gesto', { quien, gesto });
+  if (sinCitas(error)) {
+    if (gesto === 'hola') return saludarEnSala(quien);
+    throw Object.assign(new Error('Ese gesto aún no está en el servidor.'), { code: 'sin_gestos' });
+  }
+  fail(error);
+  return data;
+}
+/** Los gestos que te acaban de llegar: { gestos (si el servidor ya los tiene), lista: [{ de, gesto }] }. */
+export async function salaGestosNuevos() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('sala_gestos_nuevos');
+  if (sinCitas(error)) {
+    const ids = await saludosEnSala();
+    return { gestos: false, lista: (ids ?? []).map((de) => ({ de, gesto: 'hola' })) };
+  }
+  fail(error);
+  return { gestos: true, lista: data ?? [] };
+}
+/** Tus placas del sofá: [{ uid, alias, avatar_id, minutos, hito, metal, libros: [{ titulo, mio }] }]; null sin la migración. */
+export async function salaPlacas() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('sala_placas');
+  if (sinCitas(error)) return null;
+  fail(error);
+  return data ?? [];
+}
+/** Apunta en la placa un libro terminado en una cita en la que habéis leído juntos. Devuelve tus placas. */
+export async function salaPlacaLibro(cita, titulo) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('sala_placa_libro', { cita, titulo });
+  fail(error);
+  return data ?? [];
+}

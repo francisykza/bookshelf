@@ -133,6 +133,8 @@ const CREAM = [242, 232, 208];
 const PAPER = [236, 226, 200];
 const LAMP = [255, 204, 128];
 const GREEN_LAMP = [70, 150, 96];
+// 1.118: los metales de la placa del sofá (latón, plata desde 10 h y oro desde 50 h)
+const METAL = { laton: [204, 158, 82], plata: [206, 210, 218], oro: [246, 202, 92] };
 const GLASS = [26, 40, 78];
 const PLASTER = [196, 178, 150];
 const BOOKS = [
@@ -1494,6 +1496,38 @@ export function mountSala(container, { onPick = () => {}, onLomo = () => {}, onF
     invalidate();
   }
 
+  // ── 1.118 · La placa del sofá: tu placa con quien lees (o la de más horas), en el dorso del respaldo ──
+  const placaGrupo = new Group();
+  scene.add(placaGrupo);
+  let placaMetal = null;
+  function ponerPlaca(p) {
+    const metal = p?.metal && METAL[p.metal] ? p.metal : null;
+    if (metal === placaMetal) return;
+    placaMetal = metal;
+    for (const m of [...placaGrupo.children]) {
+      placaGrupo.remove(m);
+      m.geometry.dispose();
+    }
+    if (metal) {
+      const c = METAL[metal];
+      const hondo = c.map((v) => v * 0.55);
+      const { x, y } = SOFA;
+      const bx = x + 0.55;
+      const k = kit();
+      // Un marco de nogal, la chapa y dos líneas grabadas, con dos tornillos
+      pushBox(k, [bx, y - 0.31, 0.84, bx + 0.02, y + 0.31, 1.16], WALNUT_D);
+      pushBox(k, [bx + 0.02, y - 0.27, 0.875, bx + 0.034, y + 0.27, 1.125], c, { g: metal === 'oro' ? 1.05 : 0.95 });
+      for (const [dz, w] of [
+        [1.04, 0.17],
+        [0.95, 0.21],
+      ])
+        pushBox(k, [bx + 0.034, y - w, dz, bx + 0.039, y + w, dz + 0.014], hondo, { g: 0.85 });
+      for (const sy of [-1, 1]) pushBox(k, [bx + 0.034, y + sy * 0.235 - 0.013, 0.993, bx + 0.044, y + sy * 0.235 + 0.013, 1.019], c.map((v) => v * 0.78), { g: 0.9 });
+      placaGrupo.add(new Mesh(geometryOf(k), flat));
+    }
+    invalidate();
+  }
+
   // ── Quien lee: su personaje sentado en su sillón, con su libro, y su compañero al lado ──
   const lectoresGrupo = new Group();
   scene.add(lectoresGrupo);
@@ -1835,13 +1869,17 @@ export function mountSala(container, { onPick = () => {}, onLomo = () => {}, onF
     const s = SITIOS[`sillon-${sillonTag}`];
     const p = project(...s.tag);
     out.sillon = { ...p, visible: !quiet && p.front };
-    // Dónde sale el saludo de cada sillón (sobre la cabeza de quien lee)
-    SILLONES.forEach((_, k) => {
+    // Dónde sale el gesto de cada sillón y de las dos plazas del sofá (sobre la cabeza de quien lee)
+    for (let k = 0; k < PLAZA_SOFA + 2; k += 1) {
       const a = asientoDe(k);
-      const q = project(a.x, a.y, 2.3);
-      const ocupado = lectores.some((l) => l.sillon === k && !(l.yo && typeof ultimo === 'number' && ultimo === k && seatK > 0.6));
+      const q = project(a.x, a.y, k >= PLAZA_SOFA ? 2.05 : 2.3);
+      const ocupado = lectores.some((l) => l.sillon === k && !(l.yo && typeof ultimo === 'number' && ultimo === k && seatK > 0.6 && k < PLAZA_SOFA));
       out[`cabeza-${k}`] = { ...q, visible: ocupado && q.front };
-    });
+    }
+    // La placa del sofá: se lee sentada en el sofá o al acercarte a él
+    const pl = project(SOFA.x + 0.62, SOFA.y, 1.3);
+    const enElSofa = typeof ultimo === 'number' && ultimo >= PLAZA_SOFA && sentado !== false && seatK > 0.6;
+    out.placa = { ...pl, visible: Boolean(placaMetal) && pl.front && (enElSofa || (!quiet && Math.hypot(px - SOFA.x, py - SOFA.y) < 5)) };
     return out;
   }
   let viveHasta = 0;
@@ -2028,6 +2066,10 @@ export function mountSala(container, { onPick = () => {}, onLomo = () => {}, onF
     },
     /** Los lomos de la librería común (los de `sala_libreria`). */
     lomos: ponerLomos,
+    /** La placa del sofá: { metal: 'laton' | 'plata' | 'oro' } o null (sin placa). */
+    placa: ponerPlaca,
+    /** Para las pruebas: el metal de la placa que se ve (o null). */
+    verPlaca: () => placaMetal,
     /** El lomo que se mira de cerca (sale un poco de su balda), o ninguno. */
     elegirLomo(id) {
       lomoSel = id;
@@ -2062,9 +2104,11 @@ export function mountSala(container, { onPick = () => {}, onLomo = () => {}, onF
     /** Ponerse delante de la librería común (o irse). Promesa que acaba al llegar. */
     anteLibreria: (onOff = true) => ponerse('libreria', onOff),
     enLibreria: () => sentado === 'libreria',
-    /** Ir a un sitio ('libreria', 'sofa', 'reloj', 'sillon-k' o 'entrada'). Promesa que acaba al llegar. */
+    /** Ir a un sitio ('libreria', 'sofa', 'placa', 'reloj', 'sillon-k' o 'entrada'). Promesa que acaba al llegar. */
     go(id) {
       if (id === 'entrada') return walkTo(NODOS.entrada[0], NODOS.entrada[1], { face: [7, 8] });
+      // Junto al sofá, mirando su respaldo (y la placa) en vez de la chimenea
+      if (id === 'placa') return walkTo(NODOS.sofa[0], NODOS.sofa[1], { face: [SOFA.x, SOFA.y] });
       const s = SITIOS[id];
       if (!s) return Promise.resolve();
       const [x, y] = NODOS[s.nudo];
@@ -2109,6 +2153,7 @@ export function mountSala(container, { onPick = () => {}, onLomo = () => {}, onF
       observer.disconnect();
       quitarLibroMesa();
       for (const m of lomoMeshes.values()) m.geometry.dispose();
+      for (const m of placaGrupo.children) m.geometry.dispose();
       for (const m of lectoresGrupo.children) if (m.isMesh) m.geometry.dispose();
       for (const sp of sprites) {
         sp.tex.dispose();

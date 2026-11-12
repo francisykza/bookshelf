@@ -1,8 +1,74 @@
 // 1.117 (§117) · «Leer con un amigo», en el panel de la sala de lectura: invitar (ahora, en 15 o en 30 min; 15, 25 o
 // 45 min), aceptar o no lo que te llega, cómo va tu cita y, al acabar, cuántos minutos habéis leído juntos. Frases
 // cerradas, sin texto libre; no contestar y decir que no se ven igual («No ha podido venir»).
+// 1.118 (§118): los gestos cerrados con tu amigo durante la cita (`FilaGestos`) y vuestras placas del sofá, sin rachas.
 import { useEffect, useState } from 'react';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
+import { GESTOS, METALES, tiempoJuntos } from './gestos';
+
+/**
+ * Los gestos cerrados para alguien que lee contigo. `onGesto(id)` devuelve una promesa con si ha salido; si no (dentro
+ * del cupo), se dice sin insistir. `solo`: solo «¡Hola!» (el servidor aún no tiene los gestos nuevos).
+ */
+export function FilaGestos({ para, onGesto, solo = false, compacta = false }) {
+  const [estado, setEstado] = useState(null); // { id, ok }
+  const [busy, setBusy] = useState(false);
+  const lista = solo ? GESTOS.slice(0, 1) : GESTOS;
+  const enviar = (id) => {
+    setBusy(true);
+    Promise.resolve(onGesto(id))
+      .then(
+        (ok) => setEstado({ id, ok: ok !== false }),
+        () => setEstado({ id, ok: false }),
+      )
+      .finally(() => setBusy(false));
+  };
+  return (
+    <div className={`gh-gestos${compacta ? ' is-compacta' : ''}`}>
+      <div className="gh-gestos__fila" role="group" aria-label={`Un gesto para ${para}`}>
+        {lista.map((g) => (
+          <button type="button" key={g.id} disabled={busy} aria-pressed={estado?.ok && estado.id === g.id ? true : undefined} onClick={() => enviar(g.id)}>
+            {g.boton}
+          </button>
+        ))}
+      </div>
+      {estado && (
+        <p className="gh-gestos__msg" role="status">
+          {estado.ok ? `${GESTOS.find((g) => g.id === estado.id).boton} — enviado.` : 'Ya le has hecho un gesto hace muy poco: espera un momento.'}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Vuestras placas del sofá: una por amigo con el que has leído juntos. Sin rachas ni cuentas atrás. */
+function Placas({ placas }) {
+  if (!placas?.length) return null;
+  return (
+    <div className="gh-placas">
+      <h5 className="gh-placas__titulo">Vuestras placas del sofá</h5>
+      <ul aria-label="Vuestras placas del sofá">
+        {placas.map((p) => (
+          <li key={p.uid} className="gh-placa" data-metal={p.metal}>
+            <span className="gh-placa__metal" aria-hidden="true" />
+            <p>
+              <b>{p.alias ?? 'Tu amigo'} y tú</b> · {tiempoJuntos(p.minutos)} juntos
+              <span>
+                Placa de {METALES[p.metal] ?? 'latón'}
+                {p.hito > 0 ? ` · ${p.hito === 1 ? '1 hora' : `${p.hito} horas`}` : ''}
+                {p.libros.length > 0 &&
+                  ` · ${p.libros.length === 1 ? 'un libro terminado juntos' : `${p.libros.length} libros terminados juntos`}: ${p.libros
+                    .slice(-3)
+                    .map((l) => `«${l.titulo}»`)
+                    .join(', ')}${p.libros.length > 3 ? '…' : ''}`}
+              </span>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export const mmss = (ms) => {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -30,7 +96,7 @@ export function faseCita(c, ahora) {
   return ahora < c.fin ? 'leyendo' : 'fin';
 }
 
-export function CitaSala({ cita, enSofa, onSofa }) {
+export function CitaSala({ cita, enSofa, onSofa, onGesto, conGestos = true }) {
   const [abierto, setAbierto] = useState(false);
   const [amigo, setAmigo] = useState(null);
   const [en, setEn] = useState(0);
@@ -128,6 +194,7 @@ export function CitaSala({ cita, enSofa, onSofa }) {
             Dejar la cita
           </button>
         </div>
+        {enCurso.estado === 'aceptada' && onGesto && <FilaGestos para={nombreCita(enCurso)} solo={!conGestos} onGesto={(g) => onGesto(enCurso.uid, g)} />}
         <p className="gh-cita__nota">Los minutos juntos cuentan mientras estáis los dos en el sofá con la app a la vista.</p>
       </div>
     );
@@ -211,6 +278,7 @@ export function CitaSala({ cita, enSofa, onSofa }) {
         Leer con un amigo
       </h4>
       {cuerpo}
+      <Placas placas={cita.placas} />
       {fallo && (
         <p className="gh-21__msg" role="status">
           {fallo}
