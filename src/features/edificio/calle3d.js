@@ -33,8 +33,8 @@ export const SPOTS = {
   home: { x: EYE.x, y: EYE.y },
   door: { x: BW / 2, y: BD + 0.55 },
   turn: { x: BW / 2 - 0.45, y: BD + 3.6 },
-  // 1.123: la limusina, a la izquierda del portal
-  limo: { x: 0.25, y: BD + 3.3 },
+  // 1.123: la limusina, a la izquierda del portal (el chófer espera delante del coche, del lado del muelle)
+  limo: { x: 1.9, y: BD + 4.4 },
   shop: { x: 6.5, y: BD + 3.5 },
 };
 // La calle se monta para verse bien desde todos ellos (solo se pintan las caras que se ven desde alguno)

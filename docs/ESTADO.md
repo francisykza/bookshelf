@@ -285,6 +285,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   - la placa con el nombre del café.
 - Pruebas:
   - PGlite `cafe-ampliacion` (6), `cafe-niveles`, `cafe`, `cafe-clientes` y `rpc-solo-lectura`, más `cafeGestos` y `cafeClientes`: en verde. Build y oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir.
   - `npx vitest run src/features/edificio`: 387 de 388. Falla `estiba.rls` «no se cuela nada», que también falla sola; esa prueba depende de la bodega del día y este bloque no toca la estiba ni sus migraciones. No he comprobado si falla igual en el commit anterior.
   - e2e `v1123-cafe-ampliacion` (3 pruebas): en verde en Chromium 360, 390, 430 y 1440 y en WebKit 390. A 360, la del nivel 5 falló una vez y pasó al repetirla sola.
   - Regresión en Chromium 390: `v1119`, `v1120`, `v1121`, `v1122` y `calle3d`, 16 de 16 en verde.
@@ -295,6 +301,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   `CLAUDE.md`. La prueba del portal en `calle3d.spec.js` ya no espera que la limusina quede fuera de vista al mirar a la
   izquierda. En verde: `calle3d.spec.js` y la fachada de `v1123` en Chromium 390 (WebKit se salta esa prueba). Build y
   oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir.
 
 ### 2026-11-12 · Commit del bloque 4a en la rama · 1.122.0 (Claude)
 - Francisco aprobó el bloque 4a («Sí, lo apruebo») y pidió el commit **solo en la rama** y pasar al bloque 4b. No se fusiona con `main` ni se aplican migraciones: los bloques 1 a 4a del café siguen sin publicar.
@@ -304,23 +316,53 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - Francisco: «Vale me convence, continua con los siguientes bloques». Decisiones nuevas (en `CLAUDE.md`): bloque 4 partido en 4a y 4b; una receta por nivel con su gesto y su objeto (chocolate, nata, vainilla, hielo); hitos «mueble, carta, granos»; huecos 12/18/30/36/42.
 - Hecho: `cafeNiveles.js` (cifras, hitos, carta), `LogroCafe.jsx` (el cartel), la tienda en Decorar, nueve muebles con modelo e icono, `cafe_progreso` y la carta del día en el servidor (`20261212120000_cafe_niveles.sql`, sin aplicar), el fondo del local por nivel con `recorrido(nivel)`, la cuadrícula hasta la fila −3 (`filasDe`, `cafe_plano_valido(plano, nivel)`), y en la barra el cazo con el molinillo y el bol con las varillas (gestos `molinillo`, `cazo` y `batir`, con sus sonidos). Las ayudas de los gestos de la barra del e2e pasan a `e2e-community/cafeBarra.js` (las usan `v1121` y `v1122`).
 - **Aprobado por Francisco** («Sí, lo apruebo», 12-11-2026), con las interpretaciones de `docs/qa/cafe-libreria.md` §12 (hitos al 25/50/75 %, el 2.º hito del nivel 1 vacío, los 10 tickets del nivel 1 con el primer cliente, los muebles y precios, el cacao sin gesto propio).
-- Pruebas: PGlite `cafe-niveles`, `cafe`, `cafe-clientes` (22) y `cafeGestos`/`cafeClientes` (25) en verde; `rpc-solo-lectura` en verde (49 en total); build y oxlint limpios. e2e `v1122-cafe-niveles` (2 pruebas) y `v1121-cafe-clientes` en Chromium 360/390/430/1440 y WebKit 390, en verde (el spec 1.121 cierra ahora el cartel del primer día con `despedir`; «libros en cajas» falló una vez en 360 y pasó al repetir). Versión subida a 1.122.0. Evidencias en `qa-report/cafe-niveles/` (montajes en `entrega/`), enviadas al chat. Tras la entrega, Francisco decidió cómo crece el local (`CLAUDE.md` y `cafe-libreria.md` §12.1): planta de la calle en los niveles 1 a 5, sótano en el 6 al 8 y segunda planta después, con el espacio dando rendimiento; aprobó la propuesta en lo general, las cifras siguen pendientes. Sin móviles reales. **Sin commit.**
+- Pruebas: PGlite `cafe-niveles`, `cafe`, `cafe-clientes` (22) y `cafeGestos`/`cafeClientes` (25) en verde; `rpc-solo-lectura` en verde (49 en total); build y oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir. e2e `v1122-cafe-niveles` (2 pruebas) y `v1121-cafe-clientes` en Chromium 360/390/430/1440 y WebKit 390, en verde (el spec 1.121 cierra ahora el cartel del primer día con `despedir`; «libros en cajas» falló una vez en 360 y pasó al repetir). Versión subida a 1.122.0. Evidencias en `qa-report/cafe-niveles/` (montajes en `entrega/`), enviadas al chat. Tras la entrega, Francisco decidió cómo crece el local (`CLAUDE.md` y `cafe-libreria.md` §12.1): planta de la calle en los niveles 1 a 5, sótano en el 6 al 8 y segunda planta después, con el espacio dando rendimiento; aprobó la propuesta en lo general, las cifras siguen pendientes. Sin móviles reales. **Sin commit.**
 
 ### 2026-11-12 · Café: libros y caja con volumen, títulos parejos · 1.121.0 (§121.3), sin commit (Claude)
 - Francisco: «se ven demasiado planos como imágenes pegadas y los títulos de los libros salen desparejos». Causa de los títulos: se colaba la regla antigua de `.cf3-lomo` (rejilla de dos columnas, esquinas recortadas y fondo oscuro al pasar el dedo); anulada para los lomos de libro. Títulos con la misma letra y arranque, de arriba abajo, con palabras enteras (`tituloLomo` en `LibrosCafe.jsx`); libros con cabeza de hojas, lomo redondeado y sombra; cartón con textura, canto y luz. Solo aspecto.
-- Pruebas: e2e «libros en cajas» en verde en Chromium 360/390/430/1440 y WebKit 390, y la e2e del café completa en 390 (3 de 3); build y oxlint limpios. Antes y después en `qa-report/cafe-clientes/entrega-cajas/9-…`, `10-…` y `11-caja-de-cerca.png` (el antes, en `antes-volumen/`), enviados al chat. Sin móviles reales. **Sin commit.**
+- Pruebas: e2e «libros en cajas» en verde en Chromium 360/390/430/1440 y WebKit 390, y la e2e del café completa en 390 (3 de 3); build y oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir. Antes y después en `qa-report/cafe-clientes/entrega-cajas/9-…`, `10-…` y `11-caja-de-cerca.png` (el antes, en `antes-volumen/`), enviados al chat. Sin móviles reales. **Sin commit.**
 
 ### 2026-11-12 · Café: la caja de los libros, en 3D · 1.121.0 (§121.3), sin commit (Claude)
 - Francisco: «La quiero más 3d». La caja pasa a ser un sólido con caras en perspectiva (CSS 3D): fondo, suelo, laterales en rampa hasta el frente recortado, solapa trasera de pie y sombra en el suelo; cerrada, las solapas tapan la boca y se abren girando. Solo aspecto: ni reglas ni servidor.
-- Pruebas: e2e «libros en cajas» en verde en Chromium 360/390/430/1440 y WebKit 390, y la e2e del café completa en 390 (3 de 3); build y oxlint limpios. Antes y después en `qa-report/cafe-clientes/entrega-cajas/7-caja-3d-antes-despues.png` (el antes, en `antes-3d/`), enviado al chat con el vídeo. Sin móviles reales (el 3D de CSS en Safari de iPhone no está comprobado). **Sin commit.**
+- Pruebas: e2e «libros en cajas» en verde en Chromium 360/390/430/1440 y WebKit 390, y la e2e del café completa en 390 (3 de 3); build y oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir. Antes y después en `qa-report/cafe-clientes/entrega-cajas/7-caja-3d-antes-despues.png` (el antes, en `antes-3d/`), enviado al chat con el vídeo. Sin móviles reales (el 3D de CSS en Safari de iPhone no está comprobado). **Sin commit.**
 
 ### 2026-11-12 · Café: la caja de los libros, de cartón de verdad · 1.121.0 (§121.3), sin commit (Claude)
 - Francisco: la caja no le convencía. Rehecha como una caja de cartón abierta (pared del fondo, libros asomando, papel de seda en el borde, cinta y etiqueta delante, solapas abiertas hacia fuera; cerrada, con su tapa precintada). Solo aspecto: ni reglas ni servidor.
-- Pruebas: e2e «libros en cajas» en verde en Chromium 360/390/430/1440 y WebKit 390; build y oxlint limpios. Antes y después en `qa-report/cafe-clientes/entrega-cajas/6-caja-carton.png` (el antes, en `antes-caja/`), enviado al chat. **Sin commit.**
+- Pruebas: e2e «libros en cajas» en verde en Chromium 360/390/430/1440 y WebKit 390; build y oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir. Antes y después en `qa-report/cafe-clientes/entrega-cajas/6-caja-carton.png` (el antes, en `antes-caja/`), enviado al chat. **Sin commit.**
 
 ### 2026-11-12 · Café: los libros, más cozy · 1.121.0 (§121.3), sin commit (Claude)
 - Francisco: «me gusta pero quiero un toque más cozy y acogedor con los libros». **Hecho** sin tocar reglas, cifras ni servidor: lomos distintos por título (tela, piel o rústica; alto y grosor), libros juntos en la balda con los huecos como siluetas, luz de lámpara y guirnalda, el último se asienta con un balanceo, papel de seda y etiqueta en la caja, Pilar comenta lo que pasa y sonidos sintetizados de cartón, papel, madera y campanilla. Anotado en `CLAUDE.md`.
-- Pruebas: e2e «libros en cajas» en verde en Chromium 360/390/430/1440 y WebKit 390; build y oxlint limpios. Antes y después en `qa-report/cafe-clientes/entrega-cajas/` (`antes/`, `4-cozy-antes-despues.png`, `5-cozy-mas.png`), enviados al chat. Los sonidos no se pueden comprobar en las grabaciones (van sin audio). Sin móviles reales. **Sin commit.**
+- Pruebas: e2e «libros en cajas» en verde en Chromium 360/390/430/1440 y WebKit 390; build y oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir. Antes y después en `qa-report/cafe-clientes/entrega-cajas/` (`antes/`, `4-cozy-antes-despues.png`, `5-cozy-mas.png`), enviados al chat. Los sonidos no se pueden comprobar en las grabaciones (van sin audio). Sin móviles reales. **Sin commit.**
 
 ### 2026-11-12 · Café: libros en cajas (distribuidora, caja de reparto y balda) · 1.121.0 (§121.3), sin commit (Claude)
 - Francisco aprobó las cifras («Sí, esas cifras»): caja de género 5 por 10 granos, de título 3 por 9, +2 granos por ejemplar que se lleva el cliente (solo si encaja), bienvenida de 8 una vez y 12 huecos en el nivel 1.
@@ -332,7 +374,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - Francisco pidió, antes de seguir con los bloques, que lo que hay que tocar resalte con una exclamación en los primeros niveles, y adaptar la compra de libros en cajas de Tiny Bookshop. Decidió (12-11-2026): **«!» solo sobre lo siguiente**, en los niveles 1 y 2 y después si alguien se queda parado, con ajuste «Ayudas visuales»; **cajas por género**; **caja de bienvenida gratis** y, sin ejemplares, «Solo el café». Anotado en `CLAUDE.md`.
 - **Hecho** (§121.2): la «!» sobre las cosas que se pueden elegir (todas las de esa parte; nunca delata la buena) y sobre el objeto de cada gesto; desde el nivel 3, a los 6 s sin avanzar; ajuste en «Tu cuenta» (`settings.ayudasCafe`). Sin cambios de economía ni servidor.
 - **Propuesta sin hacer**: libros en cajas, en `docs/qa/cafe-libreria.md` §11 (caja de género 5 ejemplares por 10 granos, de título 3 por 9, +2 granos por ejemplar que se lleva el cliente, bienvenida de 8, 12 huecos en el nivel 1; tablas y funciones nuevas). Aprobada después («Sí, esas cifras»): hecha en la entrada de arriba.
-- Pruebas: Vitest del café 35 en verde (13 de `cafeGestos`); e2e `v1121` en Chromium y WebKit 390 en verde con las capturas `*-ayuda-*`; build y oxlint limpios. Tanda completa `v1119`, `v1120` y `v1121` (Chromium 360/390/430/1440 y WebKit 390, dos trabajadores): 18 en verde y 3 fallos por carga («Error creating WebGL context»), en verde al repetirlos de uno en uno. **Sin commit**. Sin móviles reales.
+- Pruebas: Vitest del café 35 en verde (13 de `cafeGestos`); e2e `v1121` en Chromium y WebKit 390 en verde con las capturas `*-ayuda-*`; build y oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir. Tanda completa `v1119`, `v1120` y `v1121` (Chromium 360/390/430/1440 y WebKit 390, dos trabajadores): 18 en verde y 3 fallos por carga («Error creating WebGL context»), en verde al repetirlos de uno en uno. **Sin commit**. Sin móviles reales.
 
 ### 2026-11-12 · Preparar el café: un gesto y un objeto por paso · 1.121.0 (§121.1), sin commit (Claude)
 - Francisco, literal: «quiero que el proceso de hacer el cafe sea divertido y adictivo, y que cada paso se sienta unico, tanto por los movimientos que haga el usuario como por los objetos que tenga que ver». Anotado como regla en `CLAUDE.md` («Revisión del bloque 3»).
@@ -1446,6 +1494,12 @@ Francisco aprobó la entrega («Si») tras revisar vídeo y PNG. Mar y lluvia si
   `20261105150000_edificio_vecinos.sql` (sin aplicar). El simulado de Supabase lo activa con `db.vecinosSocial`.
 - Pruebas: Vitest edificio 59/59 (nueva `vecinos.rls`); e2e v163, v169, v170 y v171 en verde en Chromium 390 y 1440
   y WebKit 390 (v171 también en 320); build y oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir.
 - Francisco vio las capturas y pidió el commit (los bloques 1 a 4 van juntos en él).
 - **Migraciones aplicadas en producción** (2-11-2026, Francisco eligió aplicarlas): las pegó Claude en el SQL Editor
   del proyecto `bookshelf`, una a una y en orden, comprobando bytes y SHA-256 contra el archivo (tanda2 3135 B
@@ -1468,6 +1522,12 @@ Francisco aprobó la entrega («Si») tras revisar vídeo y PNG. Mar y lluvia si
 - Versión 1.70.0 en los cuatro sitios y SPEC §69-§70 (la 1.69 no se publicó sola: va dentro de la 1.70).
 - Pruebas: Vitest edificio 51/51 (nuevas `actor`, `personaje.rls`, `diarias.rls`); e2e v163, v166, v167, v169 y v170
   en verde en Chromium 390 y 1440 y WebKit 390; build y oxlint limpios.
+- **Segundo ajuste** (Francisco: «¿la limusina y el chófer se verían en la primera vista inicial sin necesidad de girar?»;
+  «Sí, ajústala»): en la vista inicial se cortaba la mitad del coche y el chófer quedaba fuera. Ahora el coche va pegado al
+  borde del edificio (`LIMO_X = 0.05`) y el chófer, delante de él, del lado del muelle (`chauffeurAt: 'side'` en
+  `limo.js`; el hotel no cambia). Se ven los dos a 360, 390 y 430 px, en escritorio y en WebKit 390 (solo la punta del
+  parachoques trasero toca el borde). En la calle 3D, la vista se para un poco más lejos (`SPOTS.limo` en `BD + 4,4`) para
+  no quedarse pegada al chófer. **Commit en la rama** (lo pidió Francisco), aparte del del bloque 4b; sin fusionar con `main` ni subir.
 - **Decisión de Francisco** (ya en CLAUDE.md): las misiones diarias dan ropa del personaje, nunca tickets.
 - Francisco: «se ven demasiado grandes las misiones, le quita protagonismo a la habitación». La hoja es ahora una nota
   pequeña encima de su botón (abajo a la izquierda), con textos cortos («Da un paseo», «Mueve un mueble»…); con ella

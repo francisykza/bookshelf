@@ -26,8 +26,8 @@ const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(pre
 /** Rectángulos del mundo de la app (en un plano de y fija) para cada botón. */
 const BAY = (f) => ({ x0: f.x0 - 0.05, x1: f.x1 + 0.05, z0: f.z0 + 0.25, z1: f.gz1 + 0.36, y: BD + 0.2 });
 const SHOP = { x0: 5.15, x1: 7.8, z0: 0.95, z1: 2.15, y: BD + 0.3 };
-// 1.123: a la izquierda del portal (con el chófer, que espera detrás)
-const LIMO = { x0: -1.15, x1: 2.8, z0: 0, z1: 0.95, y: BD + 1.5 };
+// 1.123: a la izquierda del portal (con el chófer, que espera delante, del lado del muelle)
+const LIMO = { x0: -0.05, x1: 3.45, z0: 0, z1: 0.95, y: BD + 1.5 };
 const MAILBOX = { x0: 2.7, x1: 3.46, z0: 0.6, z1: 1.55, y: BD + 0.25 };
 
 /** Mismas opciones que mountFacade (facadeView.js). Devuelve { destroy }. */

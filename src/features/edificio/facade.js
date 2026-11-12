@@ -25,8 +25,8 @@ const LIMO_ID = 120; // la limusina y su chófer: lo que tapa a tu personaje cua
 // Medidas del edificio (unidades del mundo)
 const BW = 8;
 const BD = 2.4;
-/** Dónde empieza la limusina (su trasera; el morro mira al portal). 1.123: a la izquierda del portal. */
-const LIMO_X = -0.6;
+/** Dónde empieza la limusina (su trasera; el morro mira al portal). 1.123: a la izquierda del portal, entera en la vista inicial. */
+const LIMO_X = 0.05;
 const GROUND_H = 2.3;
 const FLOOR_H = 2.25;
 const TOP = GROUND_H + FLOOR_H * 3;
@@ -352,7 +352,7 @@ export function drawFacadeBody(r, flats = {}, cafe = null) {
   r.castShadow(8.2, BD + 1.9, 0.4, 0.25);
   // La limusina negra (1.74, §74) con su chófer: se toca para ir al Gran Hotel. Desde la 1.123 (Francisco, 12-11-2026) está
   // aparcada a la izquierda del portal, delante de la librería, para no tapar el café ni su terraza
-  const limoAt = drawLimo(r, LIMO_X, BD + 0.95, { glowId: GLOW_BIT, bodyId: LIMO_ID });
+  const limoAt = drawLimo(r, LIMO_X, BD + 0.95, { glowId: GLOW_BIT, bodyId: LIMO_ID, chauffeurAt: 'side' });
 
   // La escalera: dos ventanas pequeñas por planta en el cuerpo central, con cortinas amarillas encendidas
   for (let k = 0; k < 3; k += 1) {
@@ -593,9 +593,9 @@ export function renderFacade(flats = {}, cafe = null) {
     yaw: YAW,
     front,
     door: foot(4.0, BD + 0.3),
-    // A la tienda, por la acera pegada a la pared; a la limusina, por la acera hasta su puerta de atrás
+    // A la tienda, por la acera pegada a la pared; a la limusina, por la acera hasta su puerta de atrás, junto al chófer
     shop: [foot(4.0, BD + 0.55), foot(5.95, BD + 0.55), foot(5.95, BD + 0.32)],
-    limo: [foot(4.0, BD + 0.6), foot(LIMO_X + 0.6, BD + 0.6), foot(LIMO_X + 0.6, BD + 0.8)],
+    limo: [foot(4.0, BD + 0.6), foot(LIMO_X + 2.7, BD + 0.6), foot(LIMO_X + 2.7, BD + 0.8)],
   };
   return { canvas, windows, panes, shore, shop, mailbox, limo, walk, sign: SIGN_LINES.join(' ') };
 }

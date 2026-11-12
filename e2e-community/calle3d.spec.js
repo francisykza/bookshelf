@@ -151,7 +151,7 @@ test('después: salir del portal a pie', async ({ page }, info) => {
   expect(Math.abs(end.pitch)).toBeLessThan(1e-6);
   await shot('4-vista');
   // A la limusina y a la tienda
-  await page.evaluate(() => window.__calle3d.walk([{ spot: 'limo', yaw: Math.atan2(0.825 - 0.25, 1.8), pitch: -0.2 }]));
+  await page.evaluate(() => window.__calle3d.walk([{ spot: 'limo', yaw: Math.atan2(1.7 - 1.9, 2.9), pitch: -0.2 }]));
   await shot('5-limusina');
   await page.evaluate(() => window.__calle3d.walk([{ spot: 'shop', yaw: Math.atan2(6.475 - 6.5, 3.2), pitch: 0 }]));
   await shot('6-tienda');

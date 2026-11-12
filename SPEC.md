@@ -6512,7 +6512,10 @@ cifras»). Es el final de la planta de la calle (niveles 1 a 5, §12.1). Migraci
 - **Desde la calle**: el portal pide tu café con `cafe_fachada` (solo tu cuenta; no crea nada). Desde el nivel 5, en la fachada
   del edificio se ven **tus tres libros en el escaparate** y la guirnalda bajo el toldo, y dos mesitas de terraza en la acera
 . **La limusina y su chófer pasan a la izquierda del portal**, delante de la librería (Francisco, 12-11-2026: que no
-  tape el café ni su terraza); el bolardo del muelle se va a la derecha, y el camino a pie y el sitio desde el que se mira
+  tape el café ni su terraza). Pegada al borde del edificio y con **el chófer delante del coche, del lado del muelle**
+  (`chauffeurAt: 'side'` en `drawLimo`; el hotel lo sigue teniendo junto a la trasera), se ven los dos en la vista
+  inicial del portal sin girar, de 360 px a escritorio (solo la punta del parachoques trasero toca el borde); el bolardo
+  del muelle se va a la derecha, y el camino a pie y el sitio desde el que se mira
   la limusina en la calle 3D se mueven con ella. La placa del bajo dice el nombre del café en vez de «Se traspasa» en cuanto se inaugura.
   Lo pintado de la calle se vuelve a hacer solo si cambia lo que se ve.
 - **Clientes por asientos**: en el nivel 4 pueden venir **6** al día y en el 5, **7**, pero solo con al menos tantos asientos

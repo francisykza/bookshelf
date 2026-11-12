@@ -258,7 +258,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     edificio, **que se pueda interactuar desde la propia fachada**. **Se llega en una limusina negra de lujo**
     (2-11-2026): para ir al hotel hay que coger la limusina (en nuestro pixel art, original). **Se coge delante del portal
     del edificio**, aparcada en el muelle con su chófer (aprobado «Sí, a la limusina», 2-11-2026; 1.74, §74.4). **Desde la 1.123
-    va a la izquierda del portal**, delante de la librería (Francisco, 12-11-2026: que no tape el café ni su terraza).
+    va a la izquierda del portal**, delante de la librería (Francisco, 12-11-2026: que no tape el café ni su terraza),
+    y **coche y chófer se ven en la vista inicial sin girar** (el chófer, delante del coche, del lado del muelle).
     **Salas del hotel** (2-11-2026, `gran-hotel.md` §9): cada sala es la versión física de una función de la app y se
     navega con **un ascensor de latón**, no con menús. La Lonja (intercambio de muebles; nunca místicos ni sagas), la
     suite de la semana (**quitada de la app desde la 1.81**: a Francisco no le convencía la sala de exposición de

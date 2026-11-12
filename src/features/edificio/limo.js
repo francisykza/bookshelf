@@ -22,9 +22,11 @@ const SKIN = [214, 164, 124];
  * La dibuja en un dibujo ya empezado (`r`, de createRaster), entre x … x + LIMO_L e y … y + LIMO_D, del suelo hacia
  * arriba. `glowId`: el id con el que ese dibujo enciende las luces (los faros). `shadow`: si deja su sombra en el suelo
  * (hay que llamar luego a r.applyShadows, como hace la fachada). `bodyId`: el id del resto del coche (el hotel lo
- * usa para perfilarlo). Devuelve dónde cae en la pantalla (en píxeles).
+ * usa para perfilarlo). `chauffeurAt`: el chófer espera junto a la trasera ('tail', el hotel) o delante de su puerta, del
+ * lado del muelle ('side', el portal desde la 1.123, para que se vea entero en la vista inicial). Devuelve dónde cae en la
+ * pantalla (en píxeles).
  */
-export function drawLimo(r, x, y, { glowId = 0, bodyId = 0, chauffeur = true, shadow = true } = {}) {
+export function drawLimo(r, x, y, { glowId = 0, bodyId = 0, chauffeur = true, chauffeurAt = 'tail', shadow = true } = {}) {
   const L = LIMO_L;
   const D = LIMO_D;
   const chrome = r.rampOf(CHROME);
@@ -96,10 +98,11 @@ export function drawLimo(r, x, y, { glowId = 0, bodyId = 0, chauffeur = true, sh
       return glint ? tint[4] : tint[b > 0.74 ? 2 : 1];
     },
   });
-  // El chófer, de pie detrás del coche, esperándote: traje negro, camisa blanca y gorra de plato
+  // El chófer, de pie junto al coche, esperándote: traje negro, camisa blanca y gorra de plato
+  const delLado = chauffeurAt === 'side';
   if (chauffeur) {
-    const hx = x - 0.35;
-    const hy = y + D - 0.05;
+    const hx = delLado ? x + L - 1.0 : x - 0.35;
+    const hy = delLado ? y + D + 0.22 : y + D - 0.05;
     r.box(hx - 0.1, hy - 0.08, 0, hx + 0.1, hy + 0.08, 0.5, SUIT, {
       grain: 0,
       step: 0.02,
@@ -124,7 +127,7 @@ export function drawLimo(r, x, y, { glowId = 0, bodyId = 0, chauffeur = true, sh
     if (shadow) r.castShadow(hx, hy, 0.2, 0.2);
   }
   const pts = [];
-  for (const px of [x - (chauffeur ? 0.5 : 0.07), x + L + 0.07]) for (const py of [y, y + D + (chauffeur ? 0.05 : 0)]) for (const pz of [0, chauffeur ? 1.16 : 0.86]) pts.push(r.project(px, py, pz));
+  for (const px of [x - (chauffeur && !delLado ? 0.5 : 0.07), x + L + 0.07]) for (const py of [y, y + D + (chauffeur ? (delLado ? 0.32 : 0.05) : 0)]) for (const pz of [0, chauffeur ? 1.16 : 0.86]) pts.push(r.project(px, py, pz));
   const xs = pts.map((p) => p.sx);
   const ys = pts.map((p) => p.sy);
   return {
