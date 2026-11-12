@@ -6,7 +6,7 @@
 // - Portadas de Open Library / Google Books: caché limitada, sin red si ya está y revalidada de vez en cuando (Fase 2).
 // - Nada de Supabase ni de otros orígenes; nunca se guardan respuestas fallidas.
 const PREFIX = 'bookshelf-';
-const VERSION = `${PREFIX}v1.123.0`;
+const VERSION = `${PREFIX}v1.124.0`;
 // Sin la versión de la app en el nombre: actualizar no vacía las portadas. Solo cambia si cambia el esquema de lo guardado
 const COVERS = `${PREFIX}portadas-v1`;
 // Fase 1 (1.21.0): las dos ilustraciones nuevas del panorama. `/cozy-book-room.jpg` sigue publicado para una

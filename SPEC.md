@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.123.0 · 2026-11-12 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.124.0 · 2026-11-12 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6537,3 +6537,34 @@ cifras»). Es el final de la planta de la calle (niveles 1 a 5, §12.1). Migraci
   cerradas); `cafeGestos.test.js` (rascar y coctelera); e2e `v1123-cafe-ampliacion.spec.js` (el ala y su cuadrícula con un
   café con vainilla; la terraza, el escaparate con tres leídos, el aviso de los asientos y un café con hielo; la fachada desde
   la calle en la página de desarrollo `dev/calle3d.html?cafe=1`).
+
+## 124. Los carteles de la fachada: placas de madera, esmalte y latón (1.124.0)
+
+Encargo de Francisco del 12-11-2026, con una maqueta del portal como referencia de composición y carácter (no como textura:
+no se recorta nada de ella). Solo cambian los carteles que se tocan en la fachada; la fachada, el cartel de la azotea, las
+cámaras, la limusina, los menús, la navegación, la ocupación y los datos de las viviendas siguen igual.
+
+- **Un solo constructor** (`src/features/edificio/placas.js`) para la calle 3D (`calleView.js`) y la fachada 2D sin WebGL
+  (`facadeView.js`), con sus estilos en `placas.css` (se carga con él). Los botones, su sitio (los rectángulos del mundo
+  proyectados en cada fotograma), sus etiquetas accesibles y sus acciones no cambian.
+- **Placas de vivienda**: silueta rectangular con esquinas escalonadas (el contorno de nogal son cuatro sombras sin
+  difuminar, una por lado), borde interior de latón mate, sombra dura de 2 px y dos remaches cuadrados. A la izquierda,
+  el número en un compartimento de nogal con dos vetas; a la derecha, el texto real. **Libre**: esmalte marfil y texto
+  marrón oscuro. **Tu piso**: esmalte verde, texto crema y una llavecita. **Un vecino**: esmalte de pergamino con su
+  nombre real. Los nombres largos se cortan con puntos suspensivos y siguen enteros en la etiqueta accesible.
+- **El café-librería**: rótulo de nogal con marco fino de latón, texto crema y dos sujeciones de latón de las que cuelga,
+  arriba del escaparate. En traspaso, debajo, una tablilla de papel con «Se traspasa»; inaugurado, el rótulo dice el nombre
+  del café y no hay aviso.
+- **Al Gran Hotel**: placa de esmalte azul noche con borde de latón, texto crema, una flecha a la izquierda y una
+  campanilla, bajo la limusina.
+- **Iconos** (llave, flecha y campanilla): SVG de 16 × 16 en cuadrícula de píxel, con `shape-rendering: crispEdges`.
+- **Colores**: los de la maqueta, el latón algo más apagado para la luz de tarde (latón #A98446, luz #CDB27A, marfil
+  #ECDCB6). Sin degradados brillantes, resplandores ni desenfoque: no parecen emitir luz.
+- **Letra**: Lora en negrita (la de la app), de 13 a 15 px según el ancho (`clamp` con unidades del contenedor; 14 px a
+  390 px y 13 px a 360 px, donde se quita relleno antes que letra); el aviso de papel, 12 a 13 px. El ancho de cada placa
+  depende de la pantalla (como mucho un 38 % del ancho), no del hueco que se toca, que cambia mientras la vista se mueve.
+- **Al tocar**: lo que se toca es el balcón, el escaparate o la limusina enteros (más de 44 px de alto); al pulsar, 1 px
+  abajo y menos sombra, sin rebotes. El foco del teclado se ve en el balcón y en la placa.
+- **Pruebas**: e2e `v1124-placas.spec.js` (libre, tuya y un vecino con nombre largo; el café en traspaso y abierto; el
+  hotel; la fachada 2D; tamaños de letra, que nada se pisa ni se sale, alto de lo que se toca, y entrar en tu piso, en el
+  café y en el Gran Hotel).

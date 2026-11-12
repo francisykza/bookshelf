@@ -1,0 +1,297 @@
+/* 1.124 · Los carteles de la fachada (placas.js; maqueta de Francisco del 12-11-2026). Madera de nogal, esmalte y latón
+   mate, con contorno de píxel (esquinas escalonadas: el contorno son cuatro sombras sin difuminar, una por lado) y una
+   sombra dura pequeña. Sin degradados brillantes, resplandores ni desenfoque: no parecen emitir luz. Los colores de la
+   maqueta, un poco apagados para la luz de tarde de la escena. Se carga con edificio.css. */
+
+.ed-facade {
+  --pl-nogal: #432b20;
+  --pl-nogal-claro: #563727;
+  --pl-sombra: #291c18;
+  --pl-laton: #a98446;
+  --pl-laton-luz: #cdb27a;
+  --pl-marfil: #ecdcb6;
+  --pl-pergamino: #e4cfa4;
+  --pl-verde: #42583b;
+  --pl-azul: #263746;
+  --pl-crema: #f3e4bd;
+  --pl-texto: #35271e;
+  /* El contorno de píxel y la sombra dura: 2 px de nogal por cada lado (sin esquinas) y 2 px de sombra debajo */
+  --pl-marco: 0 -2px 0 0 var(--pl-nogal), 0 2px 0 0 var(--pl-nogal), -2px 0 0 0 var(--pl-nogal), 2px 0 0 0 var(--pl-nogal), 0 4px 0 0 var(--pl-sombra);
+  --pl-marco-pulsado: 0 -2px 0 0 var(--pl-nogal), 0 2px 0 0 var(--pl-nogal), -2px 0 0 0 var(--pl-nogal), 2px 0 0 0 var(--pl-nogal), 0 3px 0 0 var(--pl-sombra);
+}
+
+/* ── La placa (viviendas y hotel) ── */
+.ed-facade .ed-window .ed-window__plate.ed-placa {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  /* Su ancho no depende del hueco que se toca (cambia mientras la vista se mueve) sino de la pantalla: cabe bajo su
+     balcón sin llegar a la columna de enfrente */
+  flex: none;
+  max-width: 38cqi;
+  min-width: 0;
+  padding: 1px;
+  border-radius: 0;
+  background: var(--pl-marfil);
+  color: var(--pl-texto);
+  font: 700 clamp(12px, 3.6cqi, 15px) / 1 var(--font-sans, 'Lora', Georgia, serif);
+  letter-spacing: 0.01em;
+  /* El borde interior de latón y el contorno de nogal */
+  box-shadow:
+    inset 0 0 0 1px var(--pl-laton),
+    var(--pl-marco);
+  transform: translateY(40%);
+}
+
+/* Los dos remaches cuadrados, a los extremos */
+.ed-facade .ed-placa::before,
+.ed-facade .ed-placa::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 1px);
+  z-index: 1;
+  width: 2px;
+  height: 2px;
+  background: var(--pl-laton-luz);
+  box-shadow: 1px 1px 0 0 var(--pl-sombra);
+  pointer-events: none;
+}
+
+.ed-facade .ed-placa::before {
+  left: 3px;
+}
+
+.ed-facade .ed-placa::after {
+  right: 4px;
+}
+
+/* El número, en su compartimento de nogal con unas pocas vetas, separado por un filo de latón */
+.ed-facade .ed-placa__num {
+  flex: none;
+  padding: 5px 5px 4px 8px;
+  border-right: 1px solid var(--pl-laton);
+  background: linear-gradient(#0000 0 30%, #3a241a 30% calc(30% + 1px), #0000 0 72%, #3a241a 72% calc(72% + 1px), #0000 0), var(--pl-nogal-claro);
+  color: var(--pl-crema);
+  white-space: nowrap;
+}
+
+.ed-facade .ed-window .ed-placa .ed-placa__txt {
+  min-width: 0;
+  padding: 5px 9px 4px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: inherit;
+}
+
+/* Vivienda libre: esmalte marfil y texto marrón oscuro, sin acción */
+.ed-facade .ed-window .ed-placa--libre .ed-placa__txt {
+  color: var(--pl-texto);
+  font-weight: 600;
+}
+
+/* Vivienda de un vecino: la misma familia, en esmalte de pergamino, con su nombre */
+.ed-facade .ed-window .ed-window__plate.ed-placa--ajena {
+  background: var(--pl-pergamino);
+}
+
+/* Tu piso: esmalte verde profundo, texto crema y la llavecita */
+.ed-facade .ed-window .ed-window__plate.ed-placa--propia {
+  background: var(--pl-verde);
+  color: var(--pl-crema);
+}
+
+.ed-facade .ed-placa--propia .ed-placa__txt {
+  padding-right: 4px;
+}
+
+.ed-facade .ed-placa__icono {
+  flex: none;
+  align-self: center;
+  width: 16px;
+  height: 16px;
+  fill: var(--pl-laton);
+}
+
+.ed-facade .ed-placa__icono .luz {
+  fill: var(--pl-laton-luz);
+}
+
+.ed-facade .ed-placa--propia .ed-placa__icono--llave {
+  margin-right: 8px;
+  fill: #c3a35f;
+}
+
+/* Al Gran Hotel: esmalte azul noche, texto crema, flecha y campanilla */
+.ed-facade .ed-window .ed-window__plate.ed-placa--hotel {
+  align-items: center;
+  max-width: 62cqi;
+  padding-left: 8px;
+  background: var(--pl-azul);
+  color: var(--pl-crema);
+  transform: translateY(78%);
+}
+
+.ed-facade .ed-placa--hotel .ed-placa__icono--flecha {
+  width: 14px;
+  height: 14px;
+  margin-right: 5px;
+  fill: var(--pl-crema);
+}
+
+.ed-facade .ed-placa--hotel .ed-placa__icono--campana {
+  margin-right: 1px;
+}
+
+.ed-facade .ed-placa--hotel .ed-placa__txt {
+  padding-left: 5px;
+}
+
+/* ── El rótulo colgante del café-librería y su aviso de papel ── */
+.ed-facade .ed-shop {
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.ed-facade .ed-window .ed-window__plate.ed-cartel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+  gap: 5px;
+  max-width: 46cqi;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--pl-crema);
+  font: 700 clamp(12px, 3.4cqi, 14px) / 1 var(--font-sans, 'Lora', Georgia, serif);
+  transform: none;
+}
+
+.ed-facade .ed-cartel__tabla {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  padding: 1px;
+  background: linear-gradient(#0000 0 26%, #2f1d15 26% calc(26% + 1px), #0000 0 70%, #2f1d15 70% calc(70% + 1px), #0000 0), var(--pl-nogal);
+  box-shadow:
+    inset 0 0 0 1px var(--pl-laton),
+    0 -2px 0 0 var(--pl-sombra),
+    0 2px 0 0 var(--pl-sombra),
+    -2px 0 0 0 var(--pl-sombra),
+    2px 0 0 0 var(--pl-sombra),
+    0 4px 0 0 rgb(41 28 24 / 0.75);
+}
+
+/* Las dos sujeciones de latón, de las que cuelga el rótulo */
+.ed-facade .ed-cartel__tabla::before,
+.ed-facade .ed-cartel__tabla::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  width: 2px;
+  height: 8px;
+  background: var(--pl-laton);
+  box-shadow:
+    -1px -2px 0 0 var(--pl-laton-luz),
+    1px -2px 0 0 var(--pl-laton-luz);
+  pointer-events: none;
+}
+
+.ed-facade .ed-cartel__tabla::before {
+  left: 14%;
+}
+
+.ed-facade .ed-cartel__tabla::after {
+  right: 14%;
+}
+
+.ed-facade .ed-cartel__txt {
+  display: block;
+  padding: 5px 9px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: inherit;
+}
+
+/* «Se traspasa»: una tablilla de papel colgada debajo, más pequeña */
+.ed-facade .ed-window .ed-cartel .ed-cartel__aviso {
+  position: relative;
+  display: block;
+  max-width: 92%;
+  padding: 3px 7px 2px;
+  overflow: hidden;
+  background: #ecdfc0;
+  color: var(--pl-texto);
+  font: 600 italic clamp(12px, 3.1cqi, 13px) / 1.1 var(--font-sans, 'Lora', Georgia, serif);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 0 0 1px #c9b48c,
+    0 2px 0 0 rgb(41 28 24 / 0.7);
+}
+
+.ed-facade .ed-cartel__aviso::before,
+.ed-facade .ed-cartel__aviso::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 2px;
+  background: var(--pl-laton);
+}
+
+.ed-facade .ed-cartel__aviso::before {
+  left: 5px;
+}
+
+.ed-facade .ed-cartel__aviso::after {
+  right: 5px;
+}
+
+/* ── Pulsar: 1 px abajo y menos sombra, sin rebotes ── */
+.ed-facade .ed-window:active:not(.ed-window--free) .ed-window__plate.ed-placa {
+  box-shadow:
+    inset 0 0 0 1px var(--pl-laton),
+    var(--pl-marco-pulsado);
+}
+
+.ed-facade .ed-window:active .ed-cartel__tabla {
+  box-shadow:
+    inset 0 0 0 1px var(--pl-laton),
+    0 -2px 0 0 var(--pl-sombra),
+    0 2px 0 0 var(--pl-sombra),
+    -2px 0 0 0 var(--pl-sombra),
+    2px 0 0 0 var(--pl-sombra),
+    0 3px 0 0 rgb(41 28 24 / 0.75);
+}
+
+/* El foco del teclado, también en la placa (además del contorno del balcón) */
+.ed-facade .ed-window:focus-visible .ed-window__plate.ed-placa,
+.ed-facade .ed-window:focus-visible .ed-cartel__tabla {
+  outline: 2px solid var(--pl-crema);
+  outline-offset: 3px;
+}
+
+/* En los móviles estrechos (360 px), menos relleno dentro de la placa en vez de letra más pequeña */
+@container (max-width: 375px) {
+  .ed-facade .ed-placa__num {
+    padding: 5px 4px 4px 7px;
+  }
+
+  .ed-facade .ed-window .ed-placa .ed-placa__txt {
+    padding: 5px 7px 4px 5px;
+  }
+
+  .ed-facade .ed-placa--propia .ed-placa__txt {
+    padding-right: 3px;
+  }
+
+  .ed-facade .ed-placa--propia .ed-placa__icono--llave {
+    margin-right: 7px;
+  }
+}

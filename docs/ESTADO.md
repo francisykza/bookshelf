@@ -6,6 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada por Francisco («Me valen, commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.124.0** (2026-11-12, §124). Los carteles de la fachada, según la maqueta de Francisco: placas de madera, esmalte y latón para las viviendas (libre, tuya y de un vecino), el rótulo colgante del café con «Se traspasa» y la placa azul del Gran Hotel. Solo visual; ni migraciones ni datos. Capturas en `qa-report/placas/`.
 - **En la rama `1.90-escritorio-puerto`, sin publicar: 1.123.0** (aprobada por Francisco con la limusina movida; commit pedido por él) (2026-11-12, §123). El café-librería del bajo, **bloque 4b** (cifras aprobadas, «Sí, esas cifras»): el ala lateral del nivel 4 (pared de la izquierda abierta, cuadrícula 9 × 9, vainilla rascando la vaina), la terraza y el escaparate del nivel 5 (acera con toldo y farolillos, tres leídos de cara a la calle y visibles desde la fachada, placa con el nombre, café con hielo agitando la coctelera), clientes según los asientos (6 y 7, nunca menos de 5, con aviso de Pilar) y ocho muebles nuevos. **Migración nueva sin aplicar**: `20261213120000_cafe_ampliacion.sql` (va después de la del bloque 4a). Evidencias en `qa-report/cafe-ampliacion/`. Interpretaciones por confirmar en `cafe-libreria.md` §13 (el ala a la izquierda, 32 cosas, leche fría).
 - **Aprobada por Francisco, con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.122.0** (2026-11-12, §122; «Sí, lo apruebo», con las interpretaciones de `cafe-libreria.md` §12). El café-librería del bajo, **bloque 4a**: subir de nivel con el cartel y un recorrido de cámara, tickets del nivel y del día, tres hitos por nivel, la tienda del café en Decorar (nueve muebles nuevos), el fondo del local en los niveles 2 (ventanal al puerto) y 3 (estanterías hasta el techo y chimenea), la cuadrícula tres filas más honda desde el nivel 2, la carta por días y en la barra el chocolate (cazo y molinillo) y la nata (bol y varillas). **Migración nueva sin aplicar**: `20261212120000_cafe_niveles.sql` (va después de las dos del café). Evidencias en `qa-report/cafe-niveles/`. Siguiente: el bloque 4b, ya con el local que crece por plantas (§12.1), tras aprobar sus cifras.
 - **En revisión, con commit en la rama `1.90-escritorio-puerto` (sin subir): 1.121.0** (2026-11-12, §121). El café-librería del bajo, bloque 3, rehecho tras la revisión de Francisco: la barra 3D con la receta de cuatro elecciones, llevar la taza a la mesa, el libro como extra en tres fichas, estrellas y el excéntrico del día. **Migración nueva sin aplicar**: `20261211120000_cafe_clientes.sql`. Evidencias en `qa-report/cafe-clientes/`. **Encima, sin commit (§121.1, 12-11-2026)**: preparar el café con un gesto y un objeto por paso (manivela, apisonar, palanca, tetera, colador, vapor, verter con dibujo, canela y miel), con sonidos propios; sin cambios de economía, recetas ni servidor.
@@ -263,6 +264,21 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-12 · Los carteles de la fachada · 1.124.0 (§124), commit en la rama (Claude)
+- Encargo de Francisco con maqueta: rediseñar solo los carteles que se tocan en la fachada (viviendas, café y hotel). La
+  regla está en `CLAUDE.md`.
+- Hecho: `placas.js` (constructor común e iconos SVG de 16 × 16) y `placas.css`; `calleView.js` y `facadeView.js`
+  los usan en vez de sus placas de antes. No cambian botones, posiciones, etiquetas accesibles ni acciones.
+- Diferencias con la maqueta, a confirmar:
+  - **Sin hora de día**: la calle 3D es siempre de noche y la fachada 2D (sin WebGL), al atardecer; la «captura de día» es la
+    de la fachada 2D.
+  - **Café inaugurado**: el rótulo dice el nombre del café (antes iba debajo de «Café-librería»), sin tablilla.
+  - El vecino va en esmalte de pergamino, un poco más cálido que el marfil de lo libre, para distinguirlos.
+  - La placa del hotel va bajo el coche, como antes, no al lado.
+- Pruebas: `v1124-placas.spec.js` (3) en Chromium 360, 390, 430 y 1440 y WebKit 390, más `calle3d`, `v1881-fachada` y
+  `v1119-cafe` en esos tamaños: 27 en verde y 1 fallo de `v1119` («el bajo en traspaso», Chromium 390) que se quedó en la
+  habitación antes de abrir la tablet; repetida sola, en verde. Build y oxlint limpios. Sin móviles reales. Francisco lo aprobó («Me valen, commit»): **commit en la rama**, sin subir ni fusionar con `main`. Las diferencias de arriba quedan aceptadas con la aprobación.
 
 ### 2026-11-12 · Café, bloque 4b: el ala lateral, la terraza y el escaparate · 1.123.0 (§123), commit en la rama (Claude)
 - Francisco aprobó las cifras del bloque 4b («Sí, esas cifras»; están en `CLAUDE.md`).

@@ -5,6 +5,7 @@ import { DEFAULT_AVATAR, facingOf, validateAvatar } from './actor';
 import { FACADE_H, FACADE_W, renderFacade } from './facade';
 import { misticoOf, misticoSprite } from './misticos';
 import { ROOM_SCALE, renderActorWalk } from './render';
+import { cartelDelBajo, placaHotel, placaVivienda } from './placas';
 
 const pct = (v) => `${(v * 100).toFixed(3)}%`;
 const ZOOM = 3.4;
@@ -292,14 +293,7 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
     const el = document.createElement(flat ? 'button' : 'div');
     el.className = `ed-window${flat?.mine ? ' ed-window--mine' : ''}${flat ? '' : ' ed-window--free ed-door--free'}`;
     Object.assign(el.style, { left: pct(w.left), top: pct(w.top), width: pct(w.width), height: pct(w.height) });
-    const plate = document.createElement('span');
-    plate.className = 'ed-window__plate';
-    const door = document.createElement('strong');
-    door.textContent = `${puerta[0]}.º ${puerta[1]}`;
-    const who = document.createElement('span');
-    who.textContent = flat ? flat.name : 'Libre';
-    plate.append(door, who);
-    el.append(plate);
+    el.append(placaVivienda(`${puerta[0]}.º ${puerta[1]}`, flat ? flat.name : 'Libre', flat ? (flat.mine ? 'propia' : 'ajena') : 'libre'));
     if (flat) {
       el.type = 'button';
       el.setAttribute('aria-label', flat.label);
@@ -337,17 +331,7 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
     el.className = 'ed-window ed-shop';
     el.setAttribute('aria-label', 'Entrar en el café-librería del bajo');
     box(el, shop);
-    const plate = document.createElement('span');
-    plate.className = 'ed-window__plate';
-    const name = document.createElement('strong');
-    name.textContent = 'Café-librería';
-    plate.append(name);
-    if (shopBadge) {
-      const who = document.createElement('span');
-      who.textContent = shopBadge;
-      plate.append(who);
-    }
-    el.append(plate);
+    el.append(cartelDelBajo(shopBadge));
     const peekShop = () => {
       busy = true;
       root.classList.add('is-peeking');
@@ -378,12 +362,7 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
     el.className = 'ed-window ed-limo';
     el.setAttribute('aria-label', 'Coger la limusina al Gran Hotel');
     box(el, limo);
-    const plate = document.createElement('span');
-    plate.className = 'ed-window__plate';
-    const name = document.createElement('strong');
-    name.textContent = 'Al Gran Hotel';
-    plate.append(name);
-    el.append(plate);
+    el.append(placaHotel());
     el.addEventListener('click', () => {
       if (skipWalk) return skipWalk();
       if (busy) return;

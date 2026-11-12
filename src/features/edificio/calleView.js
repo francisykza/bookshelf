@@ -7,6 +7,7 @@ import { EYE, SPOTS, mountCalle } from './calle3d';
 import { FACADE_PARTS, FLATS } from './facade';
 import { mountFacade } from './facadeView';
 import { olvidarSalida, vienesDeSalir } from './salida';
+import { cartelDelBajo, placaHotel, placaVivienda } from './placas';
 
 const { BD } = FACADE_PARTS;
 const ZOOM = 3.2;
@@ -139,19 +140,6 @@ export function mountCalleView(container, opts) {
     walking(true);
     return calle.walk([{ spot, yaw: Math.atan2((r.x0 + r.x1) / 2 - p.x, p.y - r.y), pitch }], { ms: WALK_MS }).then(() => walking(false));
   };
-  const plateOf = (title, sub) => {
-    const plate = document.createElement('span');
-    plate.className = 'ed-window__plate';
-    const strong = document.createElement('strong');
-    strong.textContent = title;
-    plate.append(strong);
-    if (sub) {
-      const span = document.createElement('span');
-      span.textContent = sub;
-      plate.append(span);
-    }
-    return plate;
-  };
 
   const list = document.createElement('ul');
   list.className = 'ed-facade__flats';
@@ -162,7 +150,7 @@ export function mountCalleView(container, opts) {
     const li = document.createElement('li');
     const el = document.createElement(flat ? 'button' : 'div');
     el.className = `ed-window${flat?.mine ? ' ed-window--mine' : ''}${flat ? '' : ' ed-window--free ed-door--free'}`;
-    el.append(plateOf(`${puerta[0]}.º ${puerta[1]}`, flat ? flat.name : 'Libre'));
+    el.append(placaVivienda(`${puerta[0]}.º ${puerta[1]}`, flat ? flat.name : 'Libre', flat ? (flat.mine ? 'propia' : 'ajena') : 'libre'));
     if (flat) {
       el.type = 'button';
       el.setAttribute('aria-label', flat.label);
@@ -192,7 +180,7 @@ export function mountCalleView(container, opts) {
     el.className = 'ed-window ed-shop';
     // 1.119: la tienda del bajo es el café-librería (en traspaso hasta que se inaugure)
     el.setAttribute('aria-label', 'Entrar en el café-librería del bajo');
-    el.append(plateOf('Café-librería', shopBadge));
+    el.append(cartelDelBajo(shopBadge));
     el.addEventListener('click', () => {
       if (busy) return;
       lastPeek = { at: Date.now(), yaw: calle?.yaw() ?? 0, shop: true };
@@ -209,7 +197,7 @@ export function mountCalleView(container, opts) {
     el.type = 'button';
     el.className = 'ed-window ed-limo';
     el.setAttribute('aria-label', 'Coger la limusina al Gran Hotel');
-    el.append(plateOf('Al Gran Hotel'));
+    el.append(placaHotel());
     el.addEventListener('click', () => {
       if (busy) return;
       // Vas andando hasta la limusina antes de subir

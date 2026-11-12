@@ -220,6 +220,13 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       niveles 1 a 3); el **tope diario de reputación** sube en proporción. Tickets, huecos e hitos, sin cambios.
       **Mejoras de la casa y del café**: se le recomendó mantenerlas separadas con los puentes que ya hay (12-11-2026); sin
       decisión suya todavía.
+  - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
+    esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
+    degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la
+    tuya en verde con llave, la de un vecino con su nombre real (nunca «Libre» ni un estado inventado); el café, rótulo
+    colgante con «Se traspasa» en una tablilla de papel solo cuando toca; el hotel, placa azul con flecha y campanilla.
+    Texto real siempre aparte del marco; nombres largos con puntos suspensivos y enteros en la etiqueta accesible; nunca
+    letra ilegible para que quepa.
   - **Más vida en el edificio** (encargo del 1-11-2026, por bloques con capturas entre uno y otro: 1) más muebles,
     2) personaje, 3) misiones diarias, 4) vecinos). Decisiones de Francisco:
     - **Personaje propio y personalizable** en tu piso: tocas el suelo o un mueble y va andando hasta allí. En sillas,
