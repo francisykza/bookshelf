@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.128.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.129.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6741,3 +6741,46 @@ migración.
   acertijo y nada tapando la palanca, en cada gesto; la «!» roja en Decorar, la tienda y la barra y que se va; la cámara hacia
   el cliente; la portada de Google Books en la ficha cuando Open Library no la tiene). Solo emulación: no se ha probado en un
   iPhone ni en Safari, y el sonido se ha medido, no escuchado en un móvil.
+
+## 129. El café-librería del bajo, bloque 6c: la sala de catas (1.129.0)
+
+Cifras aprobadas por Francisco el 13-11-2026 («Sí, esas cifras»; `docs/qa/cafe-libreria.md` §14) y encargo del mismo día
+(«Vale, ahora sigue con la sala de catas»). Tercer y último bloque del sótano: el nivel 8, «La sala de catas». Los niveles 1 a 7
+y sus hitos no cambian.
+
+- **El nivel 8** empieza en 21.000 de reputación; al subir, **100 tickets** (el tope de 5 al día no cambia). Huecos de la
+  balda, **60**. Hasta **10 clientes al día**, si tienen dónde sentarse (los de abajo cuentan). Su barra mide 8.000: los hitos
+  caen en **23.000, 25.000 y 27.000** («hitos hasta 27.000»). Hitos: 1.º el mapa de cafés a la venta, 2.º **el chai con
+  especias y el café brûlée** en la carta, a la vez, 3.º **25 granos**.
+- **La bodega crece** por la derecha y hacia delante: la cuadrícula pasa a **9 × 6** (columnas −2 a 6, filas 20 a 25). La
+  escalera, que estaba donde van las columnas nuevas, **se corre a la pared nueva** (se baja y se sube por ella; el letrero
+  «Subir al café» y la llegada van con ella). Al fondo de las columnas nuevas, **el mostrador de catas**: tabla de roble, dos
+  baldas con tarros de cada tueste, las tazas de cata boca abajo y una balanza de latón. Un farol más y la luz del café cae por
+  la escalera nueva. El tostador sigue en su sitio. Siguen cabiendo 40 cosas.
+- **El chai con especias** (bebida): se elige tocando el **mortero de piedra**, al principio de la barra. Luego el té (hoja
+  verde, «Chai · suave», o negra, «Chai · intenso»; nunca el tueste de la casa) y el gesto propio: **machacar las especias,
+  cuatro golpes secos** (cada toque, un golpe de la mano del mortero; las especias pasan de enteras a polvo cobrizo). Después,
+  la tetera y el colador como el té, y la taza toma un color cobrizo.
+- **El café brûlée** (toque): se elige tocando el **azucarero**, al final de la barra, junto al soplete. El gesto: **el
+  soplete en zigzag sobre la taza, sin soltar, hasta que el azúcar se dora** (seis pasadas; soltar no pierde lo hecho, y sin
+  apretar la llama se apaga y no dora). La costra pasa de blanca a dorada, con puntos tostados.
+- Ningún gesto falla ni tiene tiempo límite; con movimiento reducido o con el teclado, un toque. Pistas propias («golpes» y
+  «zigzag»), la «!» con las reglas de siempre y sonidos propios: el mortero al elegirlo, cada golpe, el azucarero, la chispa del
+  soplete y su llama mientras se aprieta. La comanda («Un chai suave…», «…y costra brûlée») y los acertijos del excéntrico.
+- **Muebles nuevos** (tienda del café): butaca de cuero (300 granos, un asiento), mesa de catas (2 × 1, 360) y mapa de cafés
+  (400, hito 1). Modelos e iconos propios.
+- **La subida al 8**: el cartel («La sala de catas», 100 tickets, lo que se abre) y un recorrido que baja por la escalera nueva
+  y se acerca al mostrador de catas.
+- **Servidor**: migración `20261217120000_cafe_catas.sql` (la aplica Francisco; va después de la del tostadero): los tres
+  muebles; el nivel 8 en `cafe_nivel_desde`/`cafe_nivel_de`, tickets, huecos, `cafe_hito_umbral` (tramo 8.000) y
+  `cafe_granos_hito` (25); el chai y el brûlée en `cafe_carta`, `cafe_bebidas_carta` y `cafe_toques_carta` (al final, para no
+  cambiar las recetas de antes); la butaca en `cafe_asientos`; hasta 10 clientes; el sótano de 9 × 6 en `cafe_casilla_valida`.
+  `cafe_servir` y `cafe_receta_carta` no cambian (ya leen las listas de la carta).
+- **La barra**: el mortero va al principio, antes de la caja registradora del mostrador (encima de ella la tapaba); con el
+  chai en la carta, la cámara de «¿qué bebida?» se abre del mortero a la cubitera.
+- **Pruebas**: `cafe-catas.rls.test.js` (7: paridad de cifras y catálogo, la cuadrícula de 9 × 6, la butaca y los 10
+  clientes, las recetas con el chai, la subida al 8 con sus 100 tickets, el chai y el brûlée solo desde su hito, y los
+  permisos del anónimo) y los gestos del mortero y del soplete en `cafeGestos.test.js`; `cafe-tostadero.rls.test.js` ya
+  no da el 7 por último nivel. E2E `e2e-community/v1129-cafe-catas.spec.js` (la sala, la escalera nueva, Decorar en 9 × 6,
+  la tienda y un chai con brûlée en la barra, en 390, 360, 430, 1440 y WebKit 390; la subida al 8, en 390 y WebKit 390),
+  con la regresión de v1125, v1127 y v1128 en 390. Solo emulación: sin probar en móviles reales.

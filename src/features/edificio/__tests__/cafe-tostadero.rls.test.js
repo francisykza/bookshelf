@@ -43,7 +43,7 @@ beforeAll(async () => {
 
 describe('el café-librería del bajo, bloque 6b: el tostadero', () => {
   it('las cifras del nivel 7 son las de la app; los niveles 1 a 6 no cambian', async () => {
-    expect(CAFE_NIVELES.at(-1)).toMatchObject({ nivel: 7, desde: 15000 });
+    expect(CAFE_NIVELES.find((n) => n.nivel === 7)).toMatchObject({ nivel: 7, desde: 15000 });
     for (const n of [1, 2, 3, 4, 5, 6, 7]) {
       const q = (await db.query('select cafe_nivel_desde($1) d, cafe_tickets_nivel($1) t, cafe_tickets_dia($1) td, cafe_huecos($1) h, cafe_granos_hito($1) g', [n])).rows[0];
       expect(q).toEqual({ d: CAFE_NIVELES[n - 1].desde, t: TICKETS_NIVEL[n], td: ticketsDelDia(n), h: HUECOS[n], g: granosHito(n) });
@@ -56,7 +56,7 @@ describe('el café-librería del bajo, bloque 6b: el tostadero', () => {
       const q = (await db.query('select cafe_nivel_de($1) n, cafe_carta($1) c', [r])).rows[0];
       expect(q).toEqual({ n: nivelDe(r), c: cartaDe(r) });
     }
-    expect([nivelDe(14999), nivelDe(15000), nivelDe(99999)]).toEqual([6, 7, 7]);
+    expect([nivelDe(14999), nivelDe(15000), nivelDe(20999)]).toEqual([6, 7, 7]);
     expect(cartaDe(17999)).not.toContain('casa');
     expect(cartaDe(18000)).toContain('casa');
   });

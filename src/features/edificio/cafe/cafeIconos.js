@@ -609,6 +609,58 @@ const SACO = {
     'g...........g.',
   ],
 };
+// Bloque 6c (1.129): los de la sala de catas
+const BUTACA = {
+  paleta: { d: '#56321f', m: '#76462a', l: '#925c38', k: '#3c2416', y: '#cea45a' },
+  filas: [
+    '..............',
+    '...llllllll...',
+    '..lmmmmmmmmm..',
+    '..mmdmmdmmdm..',
+    '..mmmmmmmmmm..',
+    'llmmdmmdmmdmll',
+    'lmlllllllllmml',
+    'mmmmmmmmmmmmmm',
+    'mmddddddddddmm',
+    'ymddddddddddmy',
+    '.k..........k.',
+    '..............',
+  ],
+};
+const MESA_CATAS = {
+  paleta: { d: '#5c3a24', m: '#80522f', l: '#9e6a42', w: '#ece6d8', c: '#6e4226', g: '#c4c4c0', o: '#b8683e' },
+  filas: [
+    '..............',
+    '..............',
+    '...........o..',
+    '..........ooo.',
+    '.ww.ww.ww.ooo.',
+    '.wc.wc.wc.ooo.',
+    'llllllllllllll',
+    'mmmmmmmmmmmmmm',
+    '.d..........d.',
+    '.d..........d.',
+    '.d..........d.',
+    '..............',
+  ],
+};
+const MAPA = {
+  paleta: { d: '#5c3a24', m: '#80522f', p: '#d6c6a0', t: '#b0966a', v: '#607850', r: '#c4342c' },
+  filas: [
+    'mmmmmmmmmmmmmm',
+    'mppppppppppppm',
+    'mpttpppttpttpm',
+    'mpttpptttpttpm',
+    'mvvrvvvvrvvrvm',
+    'mpttppttpppppm',
+    'mpppppttpptppm',
+    'mmmmmmmmmmmmmm',
+    '.d....d....d..',
+    '.d...d.....d..',
+    '.d..d.......d.',
+    '.d.d........d.',
+  ],
+};
 const LATAS = {
   paleta: { d: '#5c3a24', m: '#80522f', r: '#a8342c', v: '#345c4a', y: '#c4964a', a: '#2c4070', s: '#c4c4c0' },
   filas: [
@@ -697,6 +749,9 @@ const POR_MUEBLE = {
   'cafe-candil': CANDIL,
   'cafe-saco': SACO,
   'cafe-latas': LATAS,
+  'cafe-butaca': BUTACA,
+  'cafe-mesa-catas': MESA_CATAS,
+  'cafe-mapa': MAPA,
 };
 /** El icono de un mueble del café o de casa (los de casa sin dibujo propio, una caja). */
 export const iconoDe = (id) => POR_MUEBLE[id] ?? CAJA;

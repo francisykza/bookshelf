@@ -66,7 +66,17 @@ export const ANTE_TRAMPILLA = { x: 7.8, y: 2.1, yaw: Math.atan2(4.0 - 7.8, 6.0 -
  * se corren al fondo de la misma pared.
  */
 export const BODEGA_TOSTADERO = { ...BODEGA, x0: 35.8 };
-export const bodegaDe = (nivel = 6) => (nivel >= 7 ? BODEGA_TOSTADERO : BODEGA);
+/**
+ * Bloque 6c (1.129): en el nivel 8, la sala de catas. La bodega crece por la derecha (dos columnas más de cuadrícula, donde
+ * estaba la escalera, que se corre a la pared nueva) y hacia delante (una fila más). Contra el fondo, el mostrador de catas.
+ */
+export const BODEGA_CATAS = { ...BODEGA_TOSTADERO, x1: 49.6, y1: 7.6 };
+export const ESCALERA_CATAS = { x0: 48.2, x1: 49.5, y0: 3.2, y1: BODEGA_CATAS.y1 };
+export const LLEGADA_CATAS = { x: 48.8, y: 2.5, yaw: Math.atan2(44.5 - 48.8, 3.4 - 2.5) };
+export const bodegaDe = (nivel = 6) => (nivel >= 8 ? BODEGA_CATAS : nivel >= 7 ? BODEGA_TOSTADERO : BODEGA);
+/** La escalera de la bodega y dónde se llega al bajar, según el nivel (en el 8, en la pared nueva). */
+export const escaleraDe = (nivel = 6) => (nivel >= 8 ? ESCALERA_CATAS : ESCALERA_BODEGA);
+export const llegadaDe = (nivel = 6) => (nivel >= 8 ? LLEGADA_CATAS : LLEGADA_BODEGA);
 /** Lo que ocupa el tostador con su enfriador (por aquí no se anda) y la trampilla del tambor, de cara a la sala. */
 export const TOSTADOR = { x0: 35.8, x1: 38.25, y0: 0.45, y1: 2.95 };
 export const TAMBOR = { x: 37.1, y: 1.4, z: 1.0, r: 0.42 };
@@ -106,6 +116,16 @@ export const CAJA_LIBROS = { x0: 7.35, y0: 7.95, x1: 8.0, y1: 8.5, alto: 0.5 };
 /**
  * Lo que se toca: su caja en el mundo (para el toque y su letrero), dónde va su letrero y adónde se va y se mira al llegar.
  */
+/** El sitio de la escalera que sube al café (su caja, su letrero y adónde se va). */
+const subirPor = (E, ir) => ({
+  nombre: 'Subir al café',
+  planta: 'bodega',
+  nivel: 6,
+  box: [E.x0, E.y0, 0, E.x1, E.y0 + 2.2, 1.7],
+  tag: [(E.x0 + E.x1) / 2, E.y0 + 0.9, 1.75],
+  ir,
+  mira: [(E.x0 + E.x1) / 2 + 0.0, E.y0 + 2.4],
+});
 export const SITIOS = {
   // Bloque 6a: la trampilla (en el café, desde el nivel 6) y la escalera de la bodega. Los demás sitios son del café
   trampilla: {
@@ -117,15 +137,7 @@ export const SITIOS = {
     ir: ANTE_TRAMPILLA,
     mira: [9.0, 2.1],
   },
-  subir: {
-    nombre: 'Subir al café',
-    planta: 'bodega',
-    nivel: 6,
-    box: [ESCALERA_BODEGA.x0, ESCALERA_BODEGA.y0, 0, ESCALERA_BODEGA.x1, ESCALERA_BODEGA.y0 + 2.2, 1.7],
-    tag: [(ESCALERA_BODEGA.x0 + ESCALERA_BODEGA.x1) / 2, ESCALERA_BODEGA.y0 + 0.9, 1.75],
-    ir: LLEGADA_BODEGA,
-    mira: [46.85, 5.0],
-  },
+  subir: subirPor(ESCALERA_BODEGA, LLEGADA_BODEGA),
   // Bloque 6b: el tostador (en la bodega, desde el nivel 7)
   tostador: {
     nombre: 'El tostador',
@@ -160,6 +172,9 @@ export const SITIOS = {
  * (pasada la estantería vieja) al pasillo del mostrador, y de la cortina (pasado el caballete) al escaparate.
  */
 export const CUADRO = { x0: 0.6, y0: 4.45, celda: 1 };
+/** Bloque 6c: en el nivel 8 la escalera sube por la pared nueva. Un sitio, según el nivel. */
+export const SUBIR_CATAS = subirPor(ESCALERA_CATAS, LLEGADA_CATAS);
+export const sitioDe = (id, nivel = 1) => (id === 'subir' && nivel >= 8 ? SUBIR_CATAS : SITIOS[id]);
 /** Bloque 6a: la cuadrícula de la bodega (filas 20 a 24 del plano, `SOTANO` en cafeCatalogo.js), pasadas las barricas. */
 export const CUADRO_BODEGA = { x0: 40.7, y0: 0.7, fila: 20 };
 /** Esquina de una casilla en el mundo (las filas desde la 20 son de la bodega). */
@@ -187,7 +202,8 @@ export function dentro(x, y, { limpio = false, muebles = [], nivel = 1, planta =
     if (x < B.x0 + 1.1 || x > B.x1 - 0.5 || y < B.y0 + 0.75 || y > B.y1 - 0.5) return false;
     // Bloque 6b: el tostador y su enfriador
     if (nivel >= 7 && x < TOSTADOR.x1 + HOLGURA && y < TOSTADOR.y1 + HOLGURA) return false;
-    if (x > ESCALERA_BODEGA.x0 - HOLGURA && y > ESCALERA_BODEGA.y0 - 0.15) return false;
+    const E = escaleraDe(nivel);
+    if (x > E.x0 - HOLGURA && y > E.y0 - 0.15) return false;
     return !muebles.some((b) => choca(x, y, b, 0.22));
   }
   if (x > 30) return false;

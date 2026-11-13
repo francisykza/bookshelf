@@ -1893,6 +1893,13 @@
 .cf3-pista[data-pista='vaiven'] {
   --cf3-pista-camino: path('M 8 44 L 80 44 L 8 44');
 }
+/* Bloque 6c: los golpes del mortero (arriba y abajo, varias veces) y el zigzag del soplete */
+.cf3-pista[data-pista='golpes'] {
+  --cf3-pista-camino: path('M 44 10 L 44 50 L 44 10 L 44 50');
+}
+.cf3-pista[data-pista='zigzag'] {
+  --cf3-pista-camino: path('M 8 30 L 30 58 L 52 30 L 74 58 L 84 44');
+}
 .cf3-pista[data-pista='dibujo'] {
   --cf3-pista-camino: path('M 44 44 m -6 0 a 6 6 0 1 1 12 0 a 12 12 0 1 1 -24 0 a 18 18 0 1 1 36 0');
 }

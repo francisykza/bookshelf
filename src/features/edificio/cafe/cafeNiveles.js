@@ -5,16 +5,16 @@
 import { CAFE_NIVELES, tramoUltimo } from './cafeCatalogo';
 
 /** Tickets al subir a cada nivel (el 1, al inaugurar: se cobra con el primer cliente). Aprobado: 10 / 20 / 40 / 60 / 100. */
-export const TICKETS_NIVEL = { 1: 10, 2: 20, 3: 40, 4: 60, 5: 100, 6: 80, 7: 90 };
+export const TICKETS_NIVEL = { 1: 10, 2: 20, 3: 40, 4: 60, 5: 100, 6: 80, 7: 90, 8: 100 };
 /** Tickets del día según el nivel, una vez al día al atender al primer cliente: 1 a 5, con tope de 5. */
 export const ticketsDelDia = (nivel = 1) => Math.min(5, Math.max(1, nivel));
-/** Libros que caben en la balda en cada nivel. Aprobado: 12 / 18 / 30 / 36 / 42 y, en el sótano, 48 (bodega) y 54 (tostadero). */
-export const HUECOS = { 1: 12, 2: 18, 3: 30, 4: 36, 5: 42, 6: 48, 7: 54 };
-export const NIVEL_MAX = 7;
+/** Libros que caben en la balda en cada nivel. Aprobado: 12 / 18 / 30 / 36 / 42 y, en el sótano, 48 (bodega), 54 (tostadero) y 60 (sala de catas). */
+export const HUECOS = { 1: 12, 2: 18, 3: 30, 4: 36, 5: 42, 6: 48, 7: 54, 8: 60 };
+export const NIVEL_MAX = 8;
 export const huecosDelNivel = (nivel = 1) => HUECOS[Math.min(NIVEL_MAX, Math.max(1, nivel))];
-/** Granos del tercer hito de cada nivel: 15 hasta el 5; 20 en el 6 y el 7 (aprobado el 13-11-2026). */
+/** Granos del tercer hito de cada nivel: 15 hasta el 5; 20 en el 6 y el 7; 25 en el 8 (aprobado el 13-11-2026). */
 export const GRANOS_HITO = 15;
-export const granosHito = (nivel = 1) => (nivel >= 6 ? 20 : GRANOS_HITO);
+export const granosHito = (nivel = 1) => (nivel >= 8 ? 25 : nivel >= 6 ? 20 : GRANOS_HITO);
 
 /** Reputación desde la que empieza cada nivel. */
 export const desdeNivel = (n) => CAFE_NIVELES.find((x) => x.nivel === n)?.desde ?? 0;
@@ -43,6 +43,8 @@ export const HITOS = {
   6: { 1: { mueble: 'cafe-candil' }, 2: {}, 3: { granos: granosHito(6) } },
   // Bloque 6b (1.127): el tostadero; en su 2.º hito, el tueste de la casa en la carta (y con él, el saco del día)
   7: { 1: { mueble: 'cafe-latas' }, 2: { carta: 'casa' }, 3: { granos: granosHito(7) } },
+  // Bloque 6c (1.129): la sala de catas; en su 2.º hito, dos de la carta a la vez: el chai con especias y el café brûlée
+  8: { 1: { mueble: 'cafe-mapa' }, 2: { carta: 'chai', carta2: 'brulee' }, 3: { granos: granosHito(8) } },
 };
 /** Lo nuevo de la carta, por orden: qué es y en qué nivel (se abre en su 2.º hito). */
 export const CARTA = [
@@ -51,6 +53,8 @@ export const CARTA = [
   { id: 'vainilla', nombre: 'Vainilla', parte: 'toque', nivel: 4 },
   { id: 'hielo', nombre: 'Café con hielo', parte: 'bebida', nivel: 5 },
   { id: 'casa', nombre: 'Tueste de la casa', parte: 'grano', nivel: 7 },
+  { id: 'chai', nombre: 'Chai con especias', parte: 'bebida', nivel: 8 },
+  { id: 'brulee', nombre: 'Café brûlée', parte: 'toque', nivel: 8 },
 ];
 /** Lo que hay abierto en la carta con esta reputación. */
 export const cartaDe = (reputacion = 0) => CARTA.filter((c) => reputacion >= umbralHito(c.nivel, 2)).map((c) => c.id);
@@ -97,12 +101,19 @@ export const ABRE = {
     'Muebles nuevos: saco de arpillera, para sentarse',
     'La bodega crece: el tostadero, con su tambor y dos columnas más',
   ],
+  8: [
+    'Hasta 10 clientes al día, si tienen dónde sentarse (también abajo)',
+    '60 huecos en la balda',
+    'Muebles nuevos: butaca de cuero y mesa de catas',
+    'La sala de catas: la bodega crece hacia la derecha y hacia delante',
+  ],
 };
 /** Lo que dice un hito, en una línea. */
 export function textoHito(h, nombreMueble = (id) => id) {
   const x = HITOS[h.nivel]?.[h.hito] ?? {};
   if (x.mueble) return `Nuevo en la tienda: ${nombreMueble(x.mueble)}`;
-  if (x.carta) return `Nuevo en la carta: ${CARTA.find((c) => c.id === x.carta)?.nombre ?? x.carta}`;
+  const nombre = (id) => CARTA.find((c) => c.id === id)?.nombre ?? id;
+  if (x.carta) return `Nuevo en la carta: ${nombre(x.carta)}${x.carta2 ? ` y ${nombre(x.carta2)}` : ''}`;
   if (x.granos) return `+${x.granos} granos`;
   return 'Un paso más hacia el siguiente nivel';
 }

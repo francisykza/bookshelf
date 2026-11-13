@@ -459,3 +459,18 @@ sala de catas, el chai y el café brûlée (nivel 8). Migración nueva en cada b
 - **El tostador ocupa la esquina izquierda del fondo**, fuera de la cuadrícula; las columnas nuevas (−2 y −1) quedan delante.
   Si se pone un mueble justo delante del tostador, se sigue pudiendo usar (la cámara se coloca sola).
 - **Arreglo de la 1.125**: con 8 clientes en el nivel 6, la app descartaba al 8.º (el excéntrico) al leer el día. Corregido.
+
+### 14.9 Bloque 6c, hecho (1.129.0, 13-11-2026), con interpretaciones por confirmar
+
+- **La escalera se corre a la pared nueva.** Las columnas nuevas (5 y 6) caen donde estaba la escalera: no cabían de otra forma
+  (por la izquierda está el tostador, y el servidor no admite columnas por debajo de la −3). La sala se alarga por la derecha y
+  la fila nueva (la 25) va hacia delante; la escalera baja ahora por la pared de la derecha, con su letrero y su llegada.
+- **La barra del nivel 8 mide 8.000** (21.000 a 29.000), para que sus hitos caigan en 23.000, 25.000 y 27.000 («hitos hasta
+  27.000»). El 8 es, por ahora, el último nivel.
+- **El chai y el brûlée llegan juntos** en el 2.º hito del nivel 8 (25.000), los dos a la vez («lo nuevo de la carta»).
+- **El chai lleva té** (hoja verde, suave, o negra, intensa) y se elige su fuerza con los tarros del té; nunca el tueste de la
+  casa. El mortero va antes de la tetera, en lugar de la cuchara del té.
+- **El brûlée solo dora apretando**: la llama se enciende al apretar y se apaga al soltar; lo dorado no se pierde.
+- **Siguen cabiendo 40 cosas** (no se aprobó un tope nuevo). La butaca de cuero es un asiento; el mapa de cafés, el mueble del
+  1.er hito.
+- **El mostrador de catas** del fondo es decorado fijo de la sala (no se compra ni se mueve), como el botellero.

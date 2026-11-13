@@ -60,13 +60,17 @@ function pistas(b, ctx) {
 /** Lo que se pregunta al elegir cada parte. */
 const PREGUNTA = {
   bebida: (r, carta = []) =>
-    carta.includes('hielo')
+    carta.includes('chai')
+      ? '¿Café, té, chocolate, café con hielo o chai? Toca la cafetera, la tetera, el cazo, la cubitera o el mortero.'
+      : carta.includes('hielo')
       ? '¿Café, té, chocolate o café con hielo? Toca la cafetera, la tetera, el cazo o la cubitera.'
       : carta.includes('chocolate')
         ? '¿Café, té o chocolate? Toca la cafetera, la tetera o el cazo.'
         : '¿Café o té? Toca la cafetera o la tetera.',
   grano: (r) =>
-    r.bebida === 'te'
+    r.bebida === 'chai'
+      ? '¿Qué té para el chai? Toca un tarro: la hoja verde, suave; la negra, intensa.'
+      : r.bebida === 'te'
       ? '¿Qué hoja? Toca un tarro: la verde es suave; la negra, intensa.'
       : r.bebida === 'chocolate'
         ? '¿Qué cacao? Toca un tarro: el claro, con leche; el oscuro, negro.'
@@ -75,20 +79,22 @@ const PREGUNTA = {
           : '¿Qué grano? Toca un tarro: el claro es suave; el tostado, intenso.',
   leche: () => '¿Leche? Toca una jarrita, o «Sin leche».',
   toque: (r, carta = []) =>
-    carta.includes('vainilla')
+    carta.includes('brulee')
+      ? '¿Un toque final? Toca la canela, la miel, la nata, la vainilla o el azucarero, o «Sin nada».'
+      : carta.includes('vainilla')
       ? '¿Un toque final? Toca la canela, la miel, la nata o la vainilla, o «Sin nada».'
       : carta.includes('nata')
         ? '¿Un toque final? Toca la canela, la miel o la nata, o «Sin nada».'
         : '¿Un toque final? Toca la canela o la miel, o «Sin nada».',
 };
 /** Qué marca de la barra mira cada gesto (donde va la pista y, en la manivela y la miel, el centro del gesto). */
-const MARCA = { manivela: 'manivela', apisonar: 'portafiltro', palanca: 'palanca', cuchara: 'tarros', tetera: 'tetera', colador: 'taza', vapor: 'vapor', verter: 'taza', agitar: 'taza', hilo: 'taza', molinillo: 'cazo', cazo: 'cazo', batir: 'bol', rascar: 'vaina', coctelera: 'coctelera' };
+const MARCA = { manivela: 'manivela', apisonar: 'portafiltro', palanca: 'palanca', cuchara: 'tarros', tetera: 'tetera', colador: 'taza', vapor: 'vapor', verter: 'taza', agitar: 'taza', hilo: 'taza', molinillo: 'cazo', cazo: 'cazo', batir: 'bol', rascar: 'vaina', coctelera: 'coctelera', mortero: 'mortero', soplete: 'taza' };
 /** El sonido al elegir cada cosa. */
 const SONIDO_ELEGIR = {
-  bebida: (v) => ({ te: 'tetera', chocolate: 'cazo', frio: 'cubitera' })[v] ?? 'cafetera',
+  bebida: (v) => ({ te: 'tetera', chocolate: 'cazo', frio: 'cubitera', chai: 'mortero' })[v] ?? 'cafetera',
   grano: (v) => (v === 'casa' ? 'saco' : 'tarro'),
   leche: () => 'jarra',
-  toque: (v) => (v === 'vainilla' ? 'vaina' : 'jarra'),
+  toque: (v) => (v === 'vainilla' ? 'vaina' : v === 'brulee' ? 'azucarero' : 'jarra'),
 };
 /** Los que se mantienen suenan mientras dura (el café que cae, el agua, el vapor). */
 const SUENA_MIENTRAS = {
@@ -96,6 +102,8 @@ const SUENA_MIENTRAS = {
   tetera: (s) => s.pose.alzada >= 0.6,
   vapor: (s) => Math.abs(s.pose.inclina) >= 0.5,
   cazo: (s) => s.pose.inclina >= 0.6,
+  // Bloque 6c: el soplete, encendido mientras se aprieta
+  soplete: (s) => Boolean(s.pose.llama),
 };
 
 /** La siguiente etapa y gesto que quedan por hacer con esta receta (5 = la taza está lista). */
@@ -136,6 +144,9 @@ export function Pista({ tipo }) {
     batir: 'M 44 30 a 12 12 0 1 1 -1 0 m 1 10 a 12 12 0 1 1 -1 0 m 1 10 a 12 12 0 1 1 -1 0',
     rascar: 'M 30 10 L 30 70 M 44 10 L 44 70 M 58 10 L 58 70',
     coctelera: 'M 4 56 Q 44 16 84 56 M 84 56 L 74 50 M 4 56 L 14 50',
+    // Bloque 6c: cuatro golpes secos en el mortero, y el zigzag del soplete sin soltar
+    golpes: 'M 44 10 L 44 50 M 30 62 L 58 62 M 34 70 L 54 70',
+    zigzag: 'M 8 30 L 30 58 L 52 30 L 74 58 L 84 44',
     trazo: 'M 44 6 Q 30 24 44 40 Q 58 56 44 78',
     vaiven: 'M 8 44 L 80 44',
     dibujo: 'M 44 44 m -6 0 a 6 6 0 1 1 12 0 a 12 12 0 1 1 -24 0 a 18 18 0 1 1 36 0',
@@ -593,6 +604,10 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
                   ? tazas > 0
                     ? `Tueste de la casa · ${tazas} ${tazas === 1 ? 'taza' : 'tazas'}`
                     : 'Tueste de la casa · sin tazas'
+                  : parte === 'grano' && receta.bebida === 'chai'
+                  ? o.id === 'suave'
+                    ? 'Chai · suave'
+                    : 'Chai · intenso'
                   : parte === 'grano' && receta.bebida === 'te'
                   ? o.id === 'suave'
                     ? 'Hoja verde · suave'

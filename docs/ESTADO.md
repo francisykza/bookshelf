@@ -6,6 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.129.0** (2026-11-13, §129; «Vale, ahora sigue con la sala de catas»; «Migración y commit»). El café-librería del bajo,
+  **bloque 6c, la sala de catas** (cifras aprobadas, «Sí, esas cifras»): nivel 8 desde 21.000 (hitos hasta 27.000), 100
+  tickets, 10 clientes, 60 huecos, el sótano de 9 × 6 con la escalera corrida a la pared nueva y el mostrador de catas, tres
+  muebles (butaca, mesa de catas y mapa de cafés), y en la barra el chai (mortero, cuatro golpes, y la tetera) y el brûlée
+  (soplete en zigzag sin soltar). **Migración aplicada** el 13-11-2026: `20261217120000_cafe_catas.sql` (va después de la del
+  tostadero). Evidencias en `qa-report/cafe-catas/`. Interpretaciones por confirmar en `cafe-libreria.md` §14.9.
 - **Publicada en producción: 1.128.0** (2026-11-13, §128; «Sí, publícala»; `main` avanzó sin forzar de `c96ecb9` a `bdeb16e` y `/sw.js` de producción ya sirve v1.128.0). La lista de Francisco tras el tostadero («Sí, empieza»): la «!» roja de lo
   nuevo (Decorar, tienda, opciones de la barra y sitios nuevos; se va al verlo), la música sin petardeo, los sonidos igualados
   (medidos), la barra despejada (comanda plegada en el gesto, el excéntrico con un acertijo, la palanca libre), la cámara hacia
@@ -187,6 +193,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Café, bloque 6c (1.129.0, con commit y migración aplicada)**: publicar solo cuando Francisco lo pida; las
+  interpretaciones de `cafe-libreria.md` §14.9, por confirmar. El 8 es, por ahora, el último nivel: la segunda planta necesita sus cifras.
+
 - **Café, lista de Francisco del 13-11-2026 (tras el tostadero)**: hecha y publicada en la 1.128.0 (§128).
   Queda por confirmar con los datos de su pareja que la causa de las fichas sin portada era la de Open Library (§128.6).
 
@@ -309,6 +318,30 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · Migración de la sala de catas aplicada y commit de la 1.129.0 (Claude)
+
+- Francisco: «Migración y commit», tras ver las evidencias. `20261217120000_cafe_catas.sql` pegada en el SQL Editor del
+  proyecto `bookshelf` con `setValue` de Monaco (9.123 B, SHA-256 `57b99675…be150782`, igual al archivo de git) y ejecutada
+  por él («Success. No rows returned»). Con la clave pública dan 42501 al anónimo `cafe_carta`, `cafe_bebidas_carta`,
+  `cafe_toques_carta`, `cafe_casilla_valida`, `cafe_asientos`, `cafe_clientes_dia`, `cafe_hito_umbral`,
+  `cafe_granos_hito`, `cafe_nivel_de`, `cafe_nivel_desde`, `cafe_huecos`, `cafe_tickets_nivel` y la tabla `cafe_catalogo`;
+  una función inexistente da PGRST202, como control. Commit en la rama; **sin publicar** (`main` sigue en la 1.128.0).
+
+### 2026-11-13 · Café, bloque 6c: la sala de catas · 1.129.0 (§129) (Claude)
+
+- **Qué se hizo** («Vale, ahora sigue con la sala de catas», con las cifras de §14): el nivel 8 en el dominio
+  (`cafeNiveles.js`, `cafeClientes.js`, `cafeService.js`) y en el servidor (migración nueva); el sótano de 9 × 6
+  (`BODEGA_CATAS`, la escalera corrida a `ESCALERA_CATAS` y su llegada; `escaleraDe`, `llegadaDe`, `sitioDe` en
+  `cafeLayout.js`), el mostrador de catas con un farol más y el recorrido de la subida; butaca, mesa de catas y mapa de cafés
+  (modelos e iconos); el chai (mortero de piedra, cuatro golpes, la tetera y el colador) y el brûlée (azucarero y soplete en
+  zigzag) con sus pistas, sonidos, comanda y acertijos. El mortero va antes de la caja registradora del mostrador (encima de
+  ella la cámara del gesto quedaba dentro de la caja).
+- **Comprobado**: build, oxlint (sin errores en el café; los avisos de `Cafe.jsx` ya estaban), Vitest de `edificio` (54
+  archivos; `lonja` y `sala-lectura` fallaron por tiempo con Playwright a la vez y pasan solas, 38), `cafe-catas.rls.test.js`
+  (7) y los gestos nuevos; e2e `v1129-cafe-catas.spec.js` en 390, 360, 430, escritorio y WebKit 390 (en la tanda, la subida a 390 falló al cargar mientras corrían Vitest y el build; repetida sola, pasa), y regresión a 390 de
+  v1125, v1127 y v1128. Solo emulación; los sonidos, sin escuchar en un móvil.
+- Interpretaciones por confirmar en `cafe-libreria.md` §14.9.
 
 ### 2026-11-13 · 1.128.0 a producción (Claude)
 

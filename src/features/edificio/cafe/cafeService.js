@@ -91,7 +91,7 @@ function normalizarDia(d) {
   return {
     dia: String(d.dia ?? ''),
     // La carta de ese día (bloque 4a) y los tickets del día que ya dio
-    carta: Array.isArray(d.carta) ? d.carta.filter((x) => ['chocolate', 'nata', 'vainilla', 'hielo', 'casa'].includes(x)) : [],
+    carta: Array.isArray(d.carta) ? d.carta.filter((x) => ['chocolate', 'nata', 'vainilla', 'hielo', 'casa', 'chai', 'brulee'].includes(x)) : [],
     tickets: entero(d.tickets ?? 0),
     clientes: (Array.isArray(d.clientes) ? d.clientes : [])
       .map((c) => ({ ...cliente(c), excentrico: Boolean(c.excentrico), quien: c.excentrico ? entero(c.quien) % 6 : null }))

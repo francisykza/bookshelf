@@ -311,3 +311,56 @@ describe('bloque 6b: el tambor del tostador', () => {
     expect(s).toMatchObject({ hecho: true, pose: { abierta: 0, caido: 1 } });
   });
 });
+
+// Bloque 6c (1.129): la sala de catas
+describe('el chai (mortero) y el brûlée (soplete)', () => {
+  const CHAI = { bebida: 'chai', grano: 'suave', leche: 'entera', toque: 'brulee' };
+  it('el chai: las especias en el mortero y, después, como el té', () => {
+    expect(gestosDe('grano', CHAI)).toEqual(['mortero']);
+    expect(gestosDe('extraer', CHAI)).toEqual(['tetera', 'colador']);
+    expect(gestosDe('toque', CHAI)).toEqual(['soplete']);
+    expect([nombreEtapa('grano', CHAI), nombreEtapa('extraer', CHAI)]).toEqual(['Especias', 'Reposar']);
+    for (const g of ['mortero', 'soplete']) expect(GESTOS[g]).toMatchObject({ orden: expect.any(String), ayuda: expect.any(String), atajo: expect.any(String) });
+  });
+  it('el mortero: cada toque es un golpe; al cuarto, hecho', () => {
+    const g = crearGesto('mortero');
+    for (let k = 1; k <= 3; k += 1) {
+      const s = g.abajo(100, 100, k * 100);
+      expect(s.eventos).toContain('machaca');
+      expect(s.pose).toEqual({ maza: 1, golpes: k });
+      expect(s.hecho).toBe(false);
+      expect(g.arriba().pose.maza).toBe(0);
+    }
+    const s = g.abajo(100, 100, 500);
+    expect(s).toMatchObject({ hecho: true, progreso: 1, pose: { golpes: 4 } });
+    expect(s.eventos).toEqual(expect.arrayContaining(['machaca', 'hecho']));
+  });
+  it('el soplete: en zigzag sin soltar, se dora; soltando no se pierde nada', () => {
+    const g = crearGesto('soplete');
+    expect(g.abajo(200, 300, 0).pose.llama).toBe(true);
+    let x = 200;
+    for (let k = 1; k <= 3; k += 1) {
+      x = k % 2 ? 240 : 200;
+      g.mover(x, 300, k * 100);
+    }
+    const medio = g.arriba();
+    expect(medio.pose.llama).toBe(false);
+    expect(medio.progreso).toBeGreaterThan(0);
+    expect(medio.hecho).toBe(false);
+    // Moverse sin apretar no dora
+    expect(g.mover(100, 300, 500).progreso).toBe(medio.progreso);
+    g.abajo(200, 300, 600);
+    let s;
+    for (let k = 1; k <= 12 && !s?.hecho; k += 1) s = g.mover(k % 2 ? 240 : 200, 300, 600 + k * 100);
+    expect(s).toMatchObject({ hecho: true, progreso: 1 });
+    expect(s.pose.dorado).toBe(1);
+  });
+  it('de una vez, y la taza: especias, costra y dorado', () => {
+    expect(crearGesto('mortero').completar().pose).toEqual({ maza: 0, golpes: 4 });
+    expect(crearGesto('soplete').completar().pose).toEqual({ x: 0, dorado: 1, llama: false });
+    expect(vistaTaza(CHAI, {})).toMatchObject({ chai: true, hojas: false, especias: 0, brulee: 0, dorado: 0 });
+    const hechos = { mortero: { maza: 0, golpes: 4 }, tetera: { alzada: 0, lleno: 1 }, soplete: { x: 0, dorado: 1, llama: false } };
+    expect(vistaTaza(CHAI, hechos)).toMatchObject({ hojas: true, especias: 1, brulee: 1, dorado: 1 });
+    expect(vistaTaza(CHAI, hechos).lleno).toBeGreaterThan(0);
+  });
+});

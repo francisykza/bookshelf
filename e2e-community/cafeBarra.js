@@ -133,6 +133,25 @@ export async function hacerGesto(page, cafe, tipo, { foto = null, arte = 'hoja',
       if (k === 6) await medio();
     }
     await m.up();
+  } else if (tipo === 'mortero') {
+    // Bloque 6c: cuatro golpes secos, un toque cada uno
+    for (let k = 0; k < 4; k += 1) {
+      await m.move(c.x, c.y);
+      await m.down();
+      await page.waitForTimeout(90);
+      if (k === 1) await medio();
+      await m.up();
+      await page.waitForTimeout(160);
+    }
+  } else if (tipo === 'soplete') {
+    // Bloque 6c: en zigzag de lado a lado, sin soltar
+    await m.move(c.x, c.y);
+    await m.down();
+    for (let k = 1; k <= 10; k += 1) {
+      await a(c.x + (k % 2 ? 1 : -1) * 40 * e, c.y + (k % 2 ? 14 : -14) * e);
+      if (k === 4) await medio();
+    }
+    await m.up();
   }
   await expect(caja).not.toHaveAttribute('data-gesto', tipo, { timeout: 4000 });
 }

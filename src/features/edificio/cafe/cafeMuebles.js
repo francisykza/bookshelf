@@ -567,6 +567,102 @@ function candil() {
   return out;
 }
 
+// ── Bloque 6c (1.129): los muebles de la sala de catas ──
+const CUERO_M = [118, 70, 42];
+const CUERO_D = [86, 50, 32];
+const CUERO_L = [146, 92, 56];
+/** Butaca de cuero de club, baja y ancha: brazos redondos, cojín capitoné y patas cortas de madera (un asiento). */
+function butaca() {
+  const out = [];
+  for (const [x, y] of [
+    [0.14, 0.16],
+    [0.8, 0.16],
+    [0.14, 0.82],
+    [0.8, 0.82],
+  ])
+    out.push(b([x, y, 0, x + 0.06, y + 0.06, 0.1], MADERA_D));
+  out.push(b([0.1, 0.12, 0.1, 0.9, 0.9, 0.36], CUERO_D));
+  out.push(b([0.24, 0.3, 0.36, 0.76, 0.88, 0.48], CUERO_L), b([0.26, 0.32, 0.48, 0.74, 0.86, 0.5], CUERO_M));
+  // Los brazos, gordos y redondeados por arriba
+  for (const x of [0.06, 0.76]) {
+    out.push(b([x, 0.12, 0.1, x + 0.18, 0.92, 0.62], CUERO_M));
+    out.push(b([x + 0.02, 0.14, 0.62, x + 0.16, 0.9, 0.68], CUERO_L));
+  }
+  // El respaldo, curvo: tres tramos
+  out.push(b([0.1, 0.08, 0.36, 0.9, 0.3, 0.96], CUERO_M), b([0.16, 0.06, 0.96, 0.84, 0.28, 1.02], CUERO_L));
+  // Los botones del capitoné
+  for (const x of [0.32, 0.5, 0.68]) for (const z of [0.6, 0.8]) out.push(b([x - 0.02, 0.29, z, x + 0.02, 0.31, z + 0.03], CUERO_D));
+  // Tachuelas de latón por el frente de los brazos
+  for (const x of [0.07, 0.91]) for (let z = 0.18; z < 0.6; z += 0.1) out.push(b([x, 0.91, z, x + 0.02, 0.93, z + 0.02], LATON));
+  return out;
+}
+/** Mesa de catas (2 × 1): tabla larga de roble con las tazas de cata en fila, sus cucharas, un hervidor y los platillos de granos. */
+function mesaCatas() {
+  const out = [];
+  for (const [x, y] of [
+    [0.12, 0.14],
+    [1.82, 0.14],
+    [0.12, 0.8],
+    [1.82, 0.8],
+  ])
+    out.push(b([x, y, 0, x + 0.07, y + 0.07, 0.74], ROBLE_D));
+  out.push(b([0.16, 0.18, 0.5, 1.86, 0.82, 0.54], ROBLE_D));
+  out.push(b([0.06, 0.08, 0.74, 1.94, 0.92, 0.8], ROBLE), b([0.06, 0.08, 0.8, 1.94, 0.92, 0.81], ROBLE_L));
+  // Seis tazas de cata en fila, cada una con su café (de más claro a más oscuro) y su cuchara
+  const TUESTE = [
+    [184, 128, 74],
+    [160, 104, 58],
+    [134, 82, 46],
+    [110, 66, 38],
+    [86, 52, 32],
+    [64, 40, 26],
+  ];
+  for (let k = 0; k < 6; k += 1) {
+    const x = 0.2 + k * 0.28;
+    out.push(b([x, 0.42, 0.81, x + 0.16, 0.58, 0.9], [236, 230, 216]), b([x + 0.02, 0.44, 0.9, x + 0.14, 0.56, 0.91], TUESTE[k]));
+    out.push(b([x + 0.04, 0.62, 0.81, x + 0.12, 0.7, 0.83], [196, 196, 192]), b([x + 0.07, 0.7, 0.81, x + 0.09, 0.84, 0.82], [196, 196, 192]));
+    // Detrás, el platillo con sus granos
+    out.push(b([x + 0.01, 0.18, 0.81, x + 0.15, 0.32, 0.83], [226, 218, 200]), b([x + 0.04, 0.21, 0.83, x + 0.12, 0.29, 0.86], TUESTE[k]));
+  }
+  // El hervidor de cuello de cisne, de cobre, en una punta
+  out.push(b([1.78, 0.4, 0.81, 1.92, 0.6, 1.02], [184, 104, 62]), b([1.8, 0.42, 1.02, 1.9, 0.58, 1.06], [150, 82, 50]));
+  out.push(b([1.72, 0.48, 0.92, 1.78, 0.52, 1.04], [184, 104, 62]), b([1.68, 0.48, 1.0, 1.73, 0.52, 1.04], [184, 104, 62]));
+  return out;
+}
+/** Mapa de cafés (hito del nivel 8): un atril de roble con el mapa del mundo de los cafés, sus chinchetas y las fichas de origen. */
+function mapa() {
+  const out = [];
+  // El atril: dos patas delante y una detrás, y el travesaño
+  out.push(b([0.16, 0.5, 0, 0.22, 0.58, 1.5], ROBLE_D), b([0.78, 0.5, 0, 0.84, 0.58, 1.5], ROBLE_D), b([0.47, 0.2, 0, 0.53, 0.26, 1.42], ROBLE_D));
+  out.push(b([0.14, 0.5, 0.46, 0.86, 0.6, 0.52], ROBLE));
+  // El tablero con su marco y el mapa (océano, continentes y las zonas del café en verde oscuro)
+  out.push(b([0.1, 0.46, 0.52, 0.9, 0.52, 1.36], ROBLE));
+  out.push(b([0.14, 0.52, 0.56, 0.86, 0.53, 1.32], [214, 198, 160]));
+  const tierra = [
+    [0.18, 1.04, 0.36, 1.24],
+    [0.26, 0.74, 0.36, 1.02],
+    [0.46, 1.06, 0.6, 1.26],
+    [0.48, 0.76, 0.62, 1.04],
+    [0.66, 1.0, 0.82, 1.22],
+    [0.7, 0.66, 0.8, 0.78],
+  ];
+  for (const [x0, z0, x1, z1] of tierra) out.push(b([x0, 0.53, z0, x1, 0.535, z1], [176, 150, 104]));
+  // El cinturón del café, entre los trópicos
+  out.push(b([0.14, 0.535, 0.9, 0.86, 0.538, 0.98], [96, 120, 80]));
+  for (const [x, z, c] of [
+    [0.3, 0.92, [196, 52, 44]],
+    [0.52, 0.95, [196, 52, 44]],
+    [0.56, 0.9, [206, 164, 90]],
+    [0.74, 0.93, [196, 52, 44]],
+  ])
+    out.push(b([x, 0.538, z, x + 0.03, 0.56, z + 0.03], c));
+  // Las fichas de origen, clavadas abajo
+  for (const x of [0.2, 0.42, 0.64]) out.push(b([x, 0.535, 0.6, x + 0.16, 0.54, 0.7], [240, 232, 214]), b([x + 0.02, 0.54, 0.66, x + 0.14, 0.542, 0.67], [92, 64, 48]));
+  // Una balda en el travesaño con un tarro de muestra
+  out.push(b([0.3, 0.44, 0.52, 0.42, 0.56, 0.7], [196, 214, 208], { g: 0.75 }), b([0.32, 0.46, 0.53, 0.4, 0.54, 0.64], [110, 66, 38]));
+  return out;
+}
+
 const MODELOS = {
   'cafe-mesa': mesa,
   'cafe-silla': silla,
@@ -595,6 +691,9 @@ const MODELOS = {
   'cafe-candil': candil,
   'cafe-saco': saco,
   'cafe-latas': latas,
+  'cafe-butaca': butaca,
+  'cafe-mesa-catas': mesaCatas,
+  'cafe-mapa': mapa,
 };
 /** Los muebles del café que enseñan tus libros en sus baldas. */
 export const ESTANTERIAS = ['cafe-estanteria', 'cafe-estanteria-alta', 'cafe-biombo'];

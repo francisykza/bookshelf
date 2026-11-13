@@ -163,6 +163,27 @@ const SONIDOS = {
   vaina: (b) => tono(b, { f: 300, a: 260, tipo: 'triangle', pico: 0.06, caida: 0.1 }),
   /** Rascar la vaina: la punta del cuchillo por la piel, un raspado corto y seco. */
   raspa: (b) => ruido(b, { f: 2600, q: 3, tipo: 'bandpass', pico: 0.1, ataque: 0.02, caida: 0.14, barrido: 0.55 }),
+  // ── Bloque 6c (1.129): la sala de catas ──
+  /** Elegir el chai: el mortero de piedra que se arrima por la madera. */
+  mortero: (b) => {
+    tono(b, { f: 210, a: 180, tipo: 'triangle', pico: 0.08, caida: 0.14 });
+    ruido(b, { f: 700, q: 1.4, pico: 0.05, caida: 0.06 });
+  },
+  /** Un golpe de la mano del mortero: piedra contra piedra, seco, y las especias que crujen. */
+  machaca: (b) => {
+    tono(b, { f: 150 + Math.random() * 30, a: 110, tipo: 'sine', pico: 0.14, caida: 0.09 });
+    ruido(b, { f: 1800, q: 1.8, pico: 0.08, caida: 0.07, barrido: 0.6 });
+  },
+  /** Elegir el brûlée: la tapa del azucarero de loza. */
+  azucarero: (b) => {
+    tono(b, { f: 1680, a: 1560, tipo: 'triangle', pico: 0.04, caida: 0.1 });
+    tono(b, { f: 2240, tipo: 'sine', pico: 0.025, caida: 0.08, d: 0.05 });
+  },
+  /** Encender el soplete: el chasquido de la chispa y el «fum» de la llama. */
+  chispa: (b) => {
+    ruido(b, { f: 4200, q: 3, pico: 0.06, caida: 0.03 });
+    ruido(b, { f: 600, q: 0.8, tipo: 'lowpass', pico: 0.08, ataque: 0.02, caida: 0.16, d: 0.03 });
+  },
   /** Empezar de nuevo: la taza vacía vuelve al plato. */
   vaciar: (b) => tono(b, { f: 1400, a: 1100, tipo: 'triangle', pico: 0.04, caida: 0.1 }),
 
@@ -375,6 +396,8 @@ const BUCLES = {
   cazo: { tipo: 'lowpass', f: 480, q: 0.8, pico: 0.2 },
   /** Bloque 6b: los granos tostados que caen por la rampa al enfriador (un chisporroteo seco). */
   granosCaen: { tipo: 'bandpass', f: 3000, q: 1.4, pico: 0.12 },
+  /** Bloque 6c: la llama del soplete, un soplido suave y continuo. */
+  soplete: { tipo: 'bandpass', f: 1500, q: 0.6, pico: 0.07 },
 };
 
 /** El bus de un sonido con su ganancia (la de `GANANCIA`, si la tiene). */
