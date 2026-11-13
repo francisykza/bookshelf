@@ -6,6 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Publicada en producción: 1.125.0** (2026-11-13; «vamos a aplicar todas las migraciones pendientes y fusionar con main lo que queda»; `main` avanza sin forzar de `3d9bf6d` a la rama `1.90-escritorio-puerto`). Lleva de la 1.119 a la 1.125: el café-librería del bajo (bloques 1, 2, 3, 4a, 4b y 6a), la limusina a la vista y los carteles de la fachada. **Las cinco migraciones del café, aplicadas** el 13-11-2026 (ver la bitácora). Las líneas de abajo de la 1.119 a la 1.125 son su historia; lo que decían «sin commit» o «sin aplicar» ya no vale.
 - **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.125.0** (2026-11-13, §125). El café-librería del bajo, **bloque 6a** (cifras aprobadas, «Sí, esas cifras»): el nivel 6, «La bodega», con la trampilla tras la barra, la cámara que baja, la cuadrícula 5 × 5 del sótano con sus asientos y clientes, Decorar en dos plantas y tres muebles nuevos. **Migración nueva sin aplicar**: `20261214120000_cafe_sotano.sql` (va después de la del bloque 4b). Evidencias en `qa-report/cafe-bodega/`. Las interpretaciones de `cafe-libreria.md` §14.7 quedan aceptadas con la aprobación. Siguiente: 6b (el tostadero), solo con su visto bueno.
 - **Aprobada por Francisco («Me valen, commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.124.0** (2026-11-12, §124). Los carteles de la fachada, según la maqueta de Francisco: placas de madera, esmalte y latón para las viviendas (libre, tuya y de un vecino), el rótulo colgante del café con «Se traspasa» y la placa azul del Gran Hotel. Solo visual; ni migraciones ni datos. Capturas en `qa-report/placas/`.
 - **En la rama `1.90-escritorio-puerto`, sin publicar: 1.123.0** (aprobada por Francisco con la limusina movida; commit pedido por él) (2026-11-12, §123). El café-librería del bajo, **bloque 4b** (cifras aprobadas, «Sí, esas cifras»): el ala lateral del nivel 4 (pared de la izquierda abierta, cuadrícula 9 × 9, vainilla rascando la vaina), la terraza y el escaparate del nivel 5 (acera con toldo y farolillos, tres leídos de cara a la calle y visibles desde la fachada, placa con el nombre, café con hielo agitando la coctelera), clientes según los asientos (6 y 7, nunca menos de 5, con aviso de Pilar) y ocho muebles nuevos. **Migración nueva sin aplicar**: `20261213120000_cafe_ampliacion.sql` (va después de la del bloque 4a). Evidencias en `qa-report/cafe-ampliacion/`. Interpretaciones por confirmar en `cafe-libreria.md` §13 (el ala a la izquierda, 32 cosas, leche fría).
@@ -265,6 +266,26 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · Migraciones del café aplicadas y 1.125.0 a producción (Claude)
+- Francisco pidió aplicar todas las migraciones pendientes y fusionar con `main` lo que quedaba. Con el flujo del SQL Editor
+  (él inició sesión en el panel del navegador y pulsó «Run» en cada una; las cinco, «Success»), Claude pegó en el proyecto
+  `bookshelf`, una a una y en orden, con bytes y SHA-256 de lo pegado iguales a git:
+  - `20261210120000_cafe_local.sql` (16 987 B, `cebe163c…dae693`)
+  - `20261211120000_cafe_clientes.sql` (26 922 B, `2347f4e2…2ccb10b`)
+  - `20261212120000_cafe_niveles.sql` (23 881 B, `9d321d1f…444c24b`)
+  - `20261213120000_cafe_ampliacion.sql` (11 869 B, `c8475886…bc39c262`)
+  - `20261214120000_cafe_sotano.sql` (12 497 B, `1eef4de2…f10fa88`)
+- Cómo se pegó: el portapapeles de Windows no llega al panel del navegador y la página no puede leer un servidor local, así
+  que el texto se pasó al editor con `setValue` de Monaco y se comprobó la huella dentro de la página antes de cada «Run».
+- Con la clave pública, al anónimo le dan 42501 las 18 funciones del café que se probaron (`cafe_mio`, `cafe_inaugurar`,
+  `cafe_guardar`, `cafe_comprar`, `cafe_comprar_caja`, `cafe_bienvenida`, `cafe_colocar`, `cafe_dia`, `cafe_habitual`,
+  `cafe_servir`, `cafe_poner_escaparate`, `cafe_fachada` y las internas `cafe_progreso`, `cafe_nivel_de`, `cafe_granos_hito`,
+  `cafe_plano_valido`, `cafe_casilla_valida`, `cafe_asientos`) y las nueve tablas (`cafe_locales`, `cafe_catalogo`,
+  `cafe_inventario`, `cafe_dias`, `cafe_servicios`, `cafe_resenas`, `cafe_libros`, `cafe_niveles_cobrados`, `cafe_hitos`).
+  Una función inexistente da PGRST202, como control.
+- Después, `main` avanzó sin forzar hasta este commit y se subió (despliegue de Vercel). Sin probar con cuentas reales ni en
+  móviles reales.
 
 ### 2026-11-13 · Café, bloque 6a: la trampilla y la bodega · 1.125.0 (§125), commit en la rama (Claude)
 - Francisco aprobó las cifras del sótano («Sí, esas cifras»; en `CLAUDE.md` y `cafe-libreria.md` §14) y pidió hacerlo por bloques
