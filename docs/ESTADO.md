@@ -6,7 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.129.0** (2026-11-13, §129; «Vale, ahora sigue con la sala de catas»; «Migración y commit»). El café-librería del bajo,
+- **Publicada en producción: 1.129.0** (2026-11-13, §129; «Vale, ahora sigue con la sala de catas»; «Migración y commit»; «Sí, publícala»; `main` avanzó sin forzar de `d5808a9` a `1d6f2c4` y `/sw.js` de producción ya sirve v1.129.0). El café-librería del bajo,
   **bloque 6c, la sala de catas** (cifras aprobadas, «Sí, esas cifras»): nivel 8 desde 21.000 (hitos hasta 27.000), 100
   tickets, 10 clientes, 60 huecos, el sótano de 9 × 6 con la escalera corrida a la pared nueva y el mostrador de catas, tres
   muebles (butaca, mesa de catas y mapa de cafés), y en la barra el chai (mortero, cuatro golpes, y la tetera) y el brûlée
@@ -193,8 +193,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Café, bloque 6c (1.129.0, con commit y migración aplicada)**: publicar solo cuando Francisco lo pida; las
-  interpretaciones de `cafe-libreria.md` §14.9, por confirmar. El 8 es, por ahora, el último nivel: la segunda planta necesita sus cifras.
+- **Café, bloque 6c (1.129.0, publicada)**: las interpretaciones de `cafe-libreria.md` §14.9, por confirmar. El 8 es, por ahora, el último nivel: la segunda planta necesita sus cifras.
 
 - **Café, lista de Francisco del 13-11-2026 (tras el tostadero)**: hecha y publicada en la 1.128.0 (§128).
   Queda por confirmar con los datos de su pareja que la causa de las fichas sin portada era la de Open Library (§128.6).
@@ -318,6 +317,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · 1.129.0 a producción (Claude)
+
+- Francisco: «Sí, publícala». `main` avanzó sin forzar de `d5808a9` a `1d6f2c4` (también la rama) y `/sw.js` de producción
+  ya sirve v1.129.0. Migración ya aplicada. Sin probar con cuentas reales ni en móviles reales.
 
 ### 2026-11-13 · Migración de la sala de catas aplicada y commit de la 1.129.0 (Claude)
 
