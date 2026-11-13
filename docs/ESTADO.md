@@ -6,12 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.126.0** (2026-11-13, §126). Tras probar la 1.125 en producción («esta genial»): la música
+- **Publicada en producción: 1.126.0** (2026-11-13, §126; `main` avanzó sin forzar de `cbb6d22` a `28d3f1c` y `/sw.js` de producción ya sirve v1.126.0; migración `20261215120000_cafe_probador.sql` aplicada y el script del probador con las dos cuentas, la de Francisco y la de su pareja). Tras probar la 1.125 en producción («esta genial»): la música
   propia del café (sintetizada, jazz lento de café; calla la de Sonido mientras estás dentro), un sonido por cada acción del
   café, la barra con una franja ligera y el cómo de cada gesto en una notita junto al objeto, y Pilar sin hablar de los sobres
   ni de lo de antes; portadas reales en las fichas y en el escaparate de tu café (pedidas el 13-11-2026); jornadas de prueba
-  para la cuenta de Francisco. **Migración nueva sin aplicar**: `20261215120000_cafe_probador.sql` (y después, a mano,
-  `supabase/scripts/cafe_probador.sql` con su correo). Evidencias en `qa-report/cafe-sonido/` y muestras de audio en `qa-report/v1126/`.
+  para la cuenta de Francisco. Migración y script del probador, aplicados. Evidencias en `qa-report/cafe-sonido/` y muestras de audio en `qa-report/v1126/`.
   Sin publicar: subir a `main` solo cuando él lo pida. Migración y script, sin aplicar (los aplica él).
 - **Publicada en producción: 1.125.0** (2026-11-13; «vamos a aplicar todas las migraciones pendientes y fusionar con main lo que queda»; `main` avanzó sin forzar de `3d9bf6d` a `cbb6d22` y `/sw.js` de producción ya sirve v1.125.0). Lleva de la 1.119 a la 1.125: el café-librería del bajo (bloques 1, 2, 3, 4a, 4b y 6a), la limusina a la vista y los carteles de la fachada. **Las cinco migraciones del café, aplicadas** el 13-11-2026 (ver la bitácora). Las líneas de abajo de la 1.119 a la 1.125 son su historia; lo que decían «sin commit» o «sin aplicar» ya no vale.
 - **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.125.0** (2026-11-13, §125). El café-librería del bajo, **bloque 6a** (cifras aprobadas, «Sí, esas cifras»): el nivel 6, «La bodega», con la trampilla tras la barra, la cámara que baja, la cuadrícula 5 × 5 del sótano con sus asientos y clientes, Decorar en dos plantas y tres muebles nuevos. **Migración nueva sin aplicar**: `20261214120000_cafe_sotano.sql` (va después de la del bloque 4b). Evidencias en `qa-report/cafe-bodega/`. Las interpretaciones de `cafe-libreria.md` §14.7 quedan aceptadas con la aprobación. Siguiente: 6b (el tostadero), solo con su visto bueno.
