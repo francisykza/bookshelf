@@ -6,11 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.128.0** (2026-11-13, §128). La lista de Francisco tras el tostadero («Sí, empieza»): la «!» roja de lo
+- **Publicada en producción: 1.128.0** (2026-11-13, §128; «Sí, publícala»; `main` avanzó sin forzar de `c96ecb9` a `bdeb16e` y `/sw.js` de producción ya sirve v1.128.0). La lista de Francisco tras el tostadero («Sí, empieza»): la «!» roja de lo
   nuevo (Decorar, tienda, opciones de la barra y sitios nuevos; se va al verlo), la música sin petardeo, los sonidos igualados
   (medidos), la barra despejada (comanda plegada en el gesto, el excéntrico con un acertijo, la palanca libre), la cámara hacia
   el cliente y las portadas que faltaban buscadas por su ISBN en Google Books. **Sin migración**. Evidencias en
-  `qa-report/cafe-ajustes/`. Publicar (subir a `main`), solo cuando lo pida.
+  `qa-report/cafe-ajustes/`.
 - **Publicada en producción: 1.127.0** (2026-11-13, §127; «Aplicar migración y publicar»; `main` avanza sin forzar desde `b6453ac`; migración `20261216120000_cafe_tostadero.sql` aplicada). El café-librería del bajo,
   **bloque 6b, el tostadero** (cifras aprobadas, «Sí, el tostadero»): nivel 7 desde 15.000, el sótano de 7 × 5 con el tostador,
   un saco al día recogido tirando de la trampilla del tambor (5 tazas de «tueste de la casa», +3 granos y +4 de reputación cada
@@ -187,7 +187,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Café, lista de Francisco del 13-11-2026 (tras el tostadero)**: hecha en la 1.128.0 (§128), con commit y sin publicar.
+- **Café, lista de Francisco del 13-11-2026 (tras el tostadero)**: hecha y publicada en la 1.128.0 (§128).
   Queda por confirmar con los datos de su pareja que la causa de las fichas sin portada era la de Open Library (§128.6).
 
 - **Café-librería, traspaso a la otra cuenta (13-11-2026, tras el commit de la 1.126.0)**. Francisco seguirá con la otra
@@ -309,6 +309,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · 1.128.0 a producción (Claude)
+
+- Francisco: «Sí, publícala». `main` avanzó sin forzar de `c96ecb9` a `bdeb16e` (también la rama) y `/sw.js` de producción
+  ya sirve v1.128.0. Sin migración. Sin probar con cuentas reales ni en móviles reales; queda ver con su pareja si ya le salen
+  las portadas (§128.6).
 
 ### 2026-11-13 · Ajustes del café tras el tostadero · 1.128.0 (§128), commit en la rama (Claude)
 
