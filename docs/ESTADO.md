@@ -186,7 +186,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
     prueba»): música propia del café (`cafeMusica.js`, sin vinilo ni murmullo), un sonido por acción (`cafeSfx.js`), la barra
     en una franja ligera con la notita del gesto, Pilar sin hablar de lo de antes, portadas reales (fichas con la imagen;
     escaparate a 36 × 54 con `cafePortadas.js`) y **jornadas de prueba** solo para la cuenta de Francisco.
-  - **Pendiente de Francisco, en este orden**: 1) aplicar `supabase/migrations/20261215120000_cafe_probador.sql` (flujo del
+  - **Hecho el 13-11-2026** (migración aplicada, script con las dos cuentas, publicada): **Antes pendiente de Francisco, en este orden**: 1) aplicar `supabase/migrations/20261215120000_cafe_probador.sql` (flujo del
     SQL Editor: SHA-256 del archivo, él pulsa «Run»; comprobar con la clave pública que `cafe_probadores` da «permission
     denied» al anónimo); 2) ejecutar a mano `supabase/scripts/cafe_probador.sql` con su correo (el correo nunca va a git);
     3) decir «súbelo» para fusionar con `main` y comprobar que `/sw.js` de producción sirve v1.126.0. Sin la migración, el café
@@ -296,6 +296,14 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · Migración del probador aplicada y 1.126.0 a producción (Claude, la otra cuenta)
+
+- Retomado el traspaso. Francisco: «Migración y publicar». `20261215120000_cafe_probador.sql` pegada en el SQL Editor (SHA-256
+  `24289f16…5a28fb`, igual al archivo) y ejecutada por él («success»); con la clave pública, `cafe_probadores`,
+  `cafe_jornada` y `cafe_nueva_jornada` dan «permission denied» al anónimo. Después, el script del probador con **las dos
+  cuentas que pidió Francisco: la suya y la de su pareja** (él dio los correos; ejecutado por él, salen las dos con jornada
+  `3000-01-01`; los correos no van a git). Regla ampliada en `CLAUDE.md` («Jornadas de prueba»). Fusión con `main` sin forzar.
 
 ### 2026-11-13 · Traspaso a la otra cuenta tras la 1.126.0 (Claude)
 

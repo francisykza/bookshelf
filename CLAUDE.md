@@ -242,7 +242,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       probar yo todas las funciones del juego y ver cosas cambiar o no»): las cuentas de `cafe_probadores` (solo la suya, con
       `supabase/scripts/cafe_probador.sql`, a mano) juegan un día de prueba propio y, con todos atendidos, «Otra jornada» trae
       clientes nuevos; lo ganado (granos, reputación, niveles y sus tickets) cuenta igual y no se borra nada. Para el resto no
-      cambia nada. No se extiende a nadie más sin que lo pida.
+      cambia nada. No se extiende a nadie más sin que lo pida. **Ampliado a la cuenta de su pareja** (Francisco, 13-11-2026,
+      al aplicar la migración: las dos cuentas, añadidas en el SQL Editor; los correos nunca van a git).
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la
