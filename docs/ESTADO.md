@@ -177,16 +177,39 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Café-librería, traspaso a la otra cuenta (12-11-2026)**. Francisco seguirá con la otra cuenta en el mismo punto y con el mismo método.
-  - **Dónde**: carpeta `BookShelf-piso-lab` (no `bookshelf/`), rama `1.90-escritorio-puerto`, commit «1.119.0 a 1.121.0: el café-librería del bajo, bloques 1 a 3 con la revisión del 12-11» (sin subir; `main` no lo tiene). Plan: `docs/qa/cafe-libreria.md`; diseño vigente: SPEC §119, §120, §120.1 y §121; reglas de Francisco: `CLAUDE.md` («El café-librería del bajo» y «Revisión del bloque 3»).
-  - **Bloque 4a (12-11-2026, 1.122.0)**: aprobado por Francisco y con commit en la rama (sin fusionar con `main`); migración `20261212120000_cafe_niveles.sql` sin aplicar. Las tres migraciones del café (`20261210120000`, `20261211120000`, `20261212120000`) se aplican al publicar. Siguiente: el bloque 4b.
-  - **Novedad (12-11-2026, sin commit)**: la barra por gestos (§121.1), la «!» de ayuda (§121.2) y los libros en cajas (§121.3) están en la carpeta, pendientes de que Francisco los revise; van encima del commit de la rama.
-  - **Punto exacto**: entregada la revisión del bloque 3 (1.121.0) con vídeos y capturas en `qa-report/cafe-clientes/` (`qa-report/` no está en git: solo en este ordenador). Francisco iba a pedir **cambios sobre esa entrega**: hacerlos en la misma 1.121.0 (aún no aprobada), sin subir versión, y volver a entregar con evidencias. Detalles que ya se vieron y se pueden mejorar: con la primera clienta, junto a la pared, la vista al llevarle la taza queda muy cerca de su cara; al excéntrico a veces se le ve de espaldas desde donde se le atiende (`irACliente` en `cafe3d.js` prueba puntos delante del cliente a 1,7 / 1,4 / 2,1 / 1,1 y va al primero alcanzable en línea recta).
-  - **Cómo se trabaja**: por bloques, con capturas a 390 (y 360, 430 y escritorio) y vídeo en Chromium y WebKit a 390; pruebas acotadas, nunca `npm run qa:full`; Prettier solo en archivos nuevos (todo `src/features/edificio/cafe/`, `cafeMock.js`, las e2e `v1119`–`v1121` y las pruebas `cafe*` lo son: `--single-quote --print-width 200`). Commit, migraciones y `main` solo cuando Francisco lo pida y tras aprobar cada entrega.
-  - **Comprobaciones** (verdes a 12-11-2026): `npx vitest run src/features/edificio/__tests__/cafe src/features/edificio/__tests__/rpc-solo-lectura` (24); `npx playwright test -c playwright.community.config.js v1119-cafe v1120-cafe-decorar v1121-cafe-clientes --workers=2` (21; las omitidas son proyectos que cada prueba excluye a propósito); `npx oxlint src/features/edificio/cafe`; `npm run build`. No editar archivos mientras corre el e2e (recarga Vite y da fallos falsos).
-  - **Migraciones sin aplicar**: `20261210120000_cafe_local.sql` y `20261211120000_cafe_clientes.sql`. Mientras no estén aplicadas, los cambios de servidor se hacen **en esos mismos archivos** (y en `cafeMock.js` y `cafeClientes.js`, que deben dar lo mismo; las pruebas de paridad lo vigilan). Al aprobar: flujo del SQL Editor (SHA-256, Francisco pulsa «Run»).
-  - **No tocar** los archivos de la sala de lectura de la otra sesión (`CitaSala.jsx`, `SalaLectura.jsx`, `sala3d.css`, `sala3d.js`, `useCitaSala.js`, sus pruebas y su migración) ni `.claude/`.
-  - Después: bloque 4 (niveles 2 a 5, tickets y desbloqueos, migración `cafe_niveles`), según `cafe-libreria.md` §9.
+- **Café-librería, traspaso a la otra cuenta (13-11-2026, tras el commit de la 1.126.0)**. Francisco seguirá con la otra
+  cuenta en este punto y con el mismo método.
+  - **Dónde**: carpeta `BookShelf-piso-lab` (no `bookshelf/`), rama `1.90-escritorio-puerto`, último commit «1.126.0: el
+    café-librería del bajo, su música, un sonido por acción, portadas reales y jornadas de prueba». **Sin subir**: producción
+    y `main` siguen en la 1.125.0. Árbol limpio salvo `.claude/` (no tocarlo ni subirlo).
+  - **Lo que hay en la 1.126** (SPEC §126; reglas en `CLAUDE.md`, «Tras probar la 1.125 en producción» y «Jornadas de
+    prueba»): música propia del café (`cafeMusica.js`, sin vinilo ni murmullo), un sonido por acción (`cafeSfx.js`), la barra
+    en una franja ligera con la notita del gesto, Pilar sin hablar de lo de antes, portadas reales (fichas con la imagen;
+    escaparate a 36 × 54 con `cafePortadas.js`) y **jornadas de prueba** solo para la cuenta de Francisco.
+  - **Pendiente de Francisco, en este orden**: 1) aplicar `supabase/migrations/20261215120000_cafe_probador.sql` (flujo del
+    SQL Editor: SHA-256 del archivo, él pulsa «Run»; comprobar con la clave pública que `cafe_probadores` da «permission
+    denied» al anónimo); 2) ejecutar a mano `supabase/scripts/cafe_probador.sql` con su correo (el correo nunca va a git);
+    3) decir «súbelo» para fusionar con `main` y comprobar que `/sw.js` de producción sirve v1.126.0. Sin la migración, el café
+    funciona como en la 1.125 (sin «Otra jornada»).
+  - **Siguiente trabajo del café**, solo cuando él lo pida: **bloque 6b, el tostadero** (nivel 7: un saco al día recogido
+    tirando de la trampilla del tambor, «tueste de la casa» y su receta), y luego **6c, la sala de catas** (nivel 8: chai con
+    mortero y café brûlée con soplete). Cifras ya aprobadas: `CLAUDE.md` («El sótano, cifras aprobadas») y
+    `docs/qa/cafe-libreria.md` §14. Cada bloque con su migración nueva (la aplica él) y capturas antes de seguir. Sin decidir:
+    «Mejoras de la casa y del café» (se le recomendó mantenerlas separadas).
+  - **Cómo se trabaja**: por bloques, con capturas a 390 (y 360, 430 y escritorio) y vídeo a 390, **enviados al chat** con
+    los archivos; pruebas acotadas, nunca `npm run qa:full`; Prettier solo en archivos nuevos (`--single-quote
+    --print-width 200`). Al cerrar un bloque: versión en `src/diag.js`, `package.json`, `public/sw.js` y cabecera de
+    `SPEC.md`, su sección en SPEC y entrada aquí. Commit, migraciones y `main`, solo cuando Francisco lo pida.
+  - **Comprobaciones del café** (verdes el 13-11-2026): `npx vitest run src/features/edificio` (395; dos de
+    `sala-parejas.rls.test.js` pueden pasarse de 5 s con todo a la vez y pasan solas); `npx playwright test -c
+    playwright.community.config.js e2e-community/v1126-cafe-sonido.spec.js e2e-community/v1119-cafe.spec.js
+    e2e-community/v1121-cafe-clientes.spec.js --project=chromium-390x844` (11); `npx oxlint src/features/edificio/cafe`;
+    `npm run build`. Con `PORTADAS_REALES=1`, `v1126` usa portadas reales de Open Library (de la red). Nunca dos tandas de
+    Playwright a la vez (comparten el puerto 5196) ni editar mientras corren.
+  - **Ojo**: las cinco migraciones del café hasta la 1.125 ya están aplicadas en producción: los cambios de servidor van
+    siempre en **una migración nueva**, y `cafeMock.js` y las reglas de `cafeClientes.js`/`cafeNiveles.js` deben dar lo mismo
+    (las pruebas de paridad lo vigilan). En `cafe3d.js` las coordenadas de la app son (x, y hondo, z arriba) y Three usa
+    (x, z, y). La música del café sale por `sceneMusicOut()` de `audioController.js`.
 - **1.99.0 (sin publicar):** que Francisco revise la entrega (vídeos y capturas en `qa-report/almacen/`); aplicar `20261124120000_hotel_almacen.sql` antes de publicar; probar en un iPhone real. `v186-tablon` «se ve lo que se busca…» falla desde la 1.97 (usa el sofá, retirado), no por el almacén.
 - **1.89.3 (producción):** probar en Android y Safari de iPhone físicos; decidir cuándo restaurar los objetos retirados (§89.1).
 - **1.88.2 (publicada):** comprobarla en Android y en Safari de iPhone reales (solo se ha probado en emulación).
@@ -274,6 +297,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Bitácora
 
+### 2026-11-13 · Traspaso a la otra cuenta tras la 1.126.0 (Claude)
+
+- Francisco: «dejame esto preparado para que lo continue con la otra cuenta». Puesto al día el punto de traspaso del café en
+  «Pendiente» (dónde está, qué falta de Francisco, el siguiente bloque y cómo se comprueba). Sin cambios de código.
+
 ### 2026-11-13 · El sonido del café, la barra más ligera, portadas reales y jornadas de prueba · 1.126.0 (§126), con commit (Claude)
 
 - **Qué se hizo** (encargo de Francisco tras probar la 1.125, por orden de importancia): `cafe/cafeMusica.js` (música propia
@@ -300,8 +328,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   Vitest del edificio: 395, todas bien salvo dos de `sala-parejas` que se pasan de los 5 s con todo a la vez (solas, pasan).
 - **Música sin «lluvia»** (Francisco: «se escucha como una lluvia de fondo que la empaña mucho»): fuera el vinilo y el
   murmullo, escobillas más suaves; mismo volumen.
-- **Queda**: su aprobación; fuera del café siguen los «En reforma» de la caja del casino y la lata de garbanzos y el aviso de
-  sobres cerrados de `Tienda.jsx` (no se tocaron: el encargo era el diálogo del café).
+- **Aprobada** («Sí, haz el commit») y con commit en la rama; sin subir a `main`. **Queda**: aplicar la migración y el script
+  de las jornadas y publicar, cuando Francisco lo pida. Fuera del café siguen los «En reforma» de la caja del casino y la lata
+  de garbanzos y el aviso de sobres cerrados de `Tienda.jsx` (no se tocaron: el encargo era el diálogo del café).
 
 ### 2026-11-13 · Migraciones del café aplicadas y 1.125.0 a producción (Claude)
 - Francisco pidió aplicar todas las migraciones pendientes y fusionar con `main` lo que quedaba. Con el flujo del SQL Editor
