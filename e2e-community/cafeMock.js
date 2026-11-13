@@ -3,7 +3,7 @@
 // del café y de casa contando el piso). Se engancha después de `mock.attach` (la última ruta manda). Sin `cafe`, el
 // servidor no tiene la migración (404 PGRST202), como antes de aplicarla.
 import { CAFE_MUEBLES, CAFE_NOMBRES, PLANO_INICIAL, asientosDe, cabe, cuenta, deCasa, maxCosas, medidas } from '../src/features/edificio/cafe/cafeCatalogo';
-import { GRANOS_HITO, TICKETS_NIVEL, cartaDe, nivelDe, novedades, ticketsDelDia, umbralHito } from '../src/features/edificio/cafe/cafeNiveles';
+import { TICKETS_NIVEL, cartaDe, granosHito, nivelDe, novedades, ticketsDelDia, umbralHito } from '../src/features/edificio/cafe/cafeNiveles';
 import { SUPABASE } from './mockSupabase';
 import {
   BIENVENIDA,
@@ -226,15 +226,15 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       const nov = novedades(antes, c.reputacion);
       const niveles = [...(c.cobrados?.includes(1) ? [] : [{ nivel: 1, tickets: TICKETS_NIVEL[1] }]), ...nov.niveles];
       c.cobrados = [...new Set([...(c.cobrados ?? []), ...niveles.map((x) => x.nivel)])];
-      const granosHito = nov.hitos.filter((h) => h.hito === 3).length * GRANOS_HITO;
+      const granosDeHitos = nov.hitos.filter((h) => h.hito === 3).reduce((s, h) => s + granosHito(h.nivel), 0);
       const de = c.nivel;
       c.nivel = Math.max(c.nivel, nivelDe(c.reputacion));
       const ticketsDia = d.tickets ? 0 : ticketsDelDia(c.nivel);
       d.tickets ||= ticketsDia;
-      c.granos = Math.min(100000, c.granos + granosHito);
+      c.granos = Math.min(100000, c.granos + granosDeHitos);
       const tk = niveles.reduce((s, x) => s + x.tickets, 0) + ticketsDia;
       c.tickets = (c.tickets ?? 0) + tk;
-      progreso = { de, a: c.nivel, niveles, hitos: nov.hitos.map(({ nivel, hito }) => ({ nivel, hito })), granos: granosHito, tickets_dia: ticketsDia, tickets: tk };
+      progreso = { de, a: c.nivel, niveles, hitos: nov.hitos.map(({ nivel, hito }) => ({ nivel, hito })), granos: granosDeHitos, tickets_dia: ticketsDia, tickets: tk };
       dado = { ...p, granos: p.granos + extra, llevado: lleva, extra, estrellas, aciertos, pide, frase: null, dorada: false };
       if (habitual) {
         dado.frase = clientes.frases?.[n - 101] ?? 2;

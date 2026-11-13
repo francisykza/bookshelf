@@ -13,9 +13,9 @@ export { huecosDelNivel };
  * Cuántos clientes nuevos vienen al día según el nivel del café. Bloque 4b (1.123, aprobado por Francisco): en los niveles 4
  * y 5, tantos como asientos colocados, con 6 y 7 como mucho y nunca menos de 5 (lo de los niveles 1 a 3, 3 / 4 / 5).
  */
-export const TOPE_CLIENTES = { 4: 6, 5: 7 };
+export const TOPE_CLIENTES = { 4: 6, 5: 7, 6: 8 };
 export const clientesDelNivel = (nivel = 1, asientos = Infinity) =>
-  nivel <= 1 ? 3 : nivel === 2 ? 4 : nivel === 3 ? 5 : Math.min(TOPE_CLIENTES[Math.min(5, nivel)], Math.max(5, asientos));
+  nivel <= 1 ? 3 : nivel === 2 ? 4 : nivel === 3 ? 5 : Math.min(TOPE_CLIENTES[Math.min(6, nivel)], Math.max(5, asientos));
 /** Habituales como mucho al día (uno por sesión de lectura). */
 export const MAX_HABITUALES = 2;
 /** La carta: lo que se puede servir en cada nivel (el nivel 1, café y té). */

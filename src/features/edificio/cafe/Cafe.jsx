@@ -14,7 +14,7 @@ import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
 import { renderShopRoom } from '../shopRoom';
 import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCasa, libresDelCafe, maxCosas, progresoNivel, uidNuevo } from './cafeCatalogo';
-import { GRANO, LIBROS, PILAR, PIZARRA, TAZA, iconoDe } from './cafeIconos';
+import { GRANO, LIBROS, PILAR, PIZARRA, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
 import { bienvenidaLibros, cargarCafe, cargarDia, comprarCafe, errorCafe, guardarCafe, inaugurarCafe, llegaHabitual, ponerEscaparate, servirCliente } from './cafeService';
@@ -42,7 +42,11 @@ const AVISOS = {
 const AVISOS_ABIERTO = {
   cortina: 'Detrás de la cortina sigue el local. Se irá abriendo cuando el café crezca.',
   escaparate: 'Desde la calle ya se ve la luz de tu café.',
+  trampilla: '«Cuidado con el escalón, que el tercero cruje.»',
+  subir: '',
 };
+/** Bloque 6a: desde el nivel 6 se decoran dos plantas, el café y la bodega. */
+const BODEGA_NIVEL = 6;
 /** Bloque 4b: el escaparate se elige desde el nivel 5; tres de tus leídos, de cara a la calle. */
 const ESCAPARATE_NIVEL = 5;
 const ESCAPARATE_MAX = 3;
@@ -81,6 +85,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const [borrador, setBorrador] = useState(null);
   const [sel, setSel] = useState(null);
   const [pestana, setPestana] = useState('cafe');
+  // Bloque 6a: la planta que se decora ('calle' o 'bodega'); al empezar, la planta en la que estás
+  const [plantaDecor, setPlantaDecor] = useState('calle');
+  const [plantaEscena, setPlantaEscena] = useState('calle');
   // Bloque 4a: lo conseguido en el último servicio (subida, hitos, tickets del día), que se enseña al acabar con el cliente
   const [logro, setLogro] = useState(null);
   // Lo que ve la escena: el nivel de antes mientras quede por enseñar el cartel de la subida (al cerrarlo, se abre lo nuevo
@@ -148,6 +155,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
           mounted = mountCafe(host.current, {
             onPick: (id) => pick.current(id),
             onDecor: (e) => decor.current(e),
+            // Bloque 6a: en qué planta estás (al llegar a un sitio o al cambiar de planta)
+            onMove: () => alive && setPlantaEscena(mounted?.planta?.() ?? 'calle'),
             onLost: () => alive && setSin3d(true),
             onFrame: (tags) => {
               const w = host.current?.clientWidth ?? 0;
@@ -252,7 +261,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   // Bloque 4b: con menos asientos que clientes posibles en el nivel 4 o 5, vienen menos (nunca menos de 5). Pilar lo dice sin
   // agobiar: una vez al día al entrar y, después, cuando no hay nadie esperando.
   const nivelAhora = local?.nivel ?? 1;
-  const tope = TOPE_CLIENTES[Math.min(5, nivelAhora)];
+  const tope = TOPE_CLIENTES[Math.min(6, nivelAhora)];
   const caben = clientesDelNivel(nivelAhora, asientosDe(local?.plano));
   const faltanAsientos = Boolean(abierto && tope != null && caben < tope);
   const textoAsientos = `Con más sitios para sentarse vendría más gente: ahora caben ${caben} clientes al día y podrían venir ${tope}. Cuando quieras, coloca sillas o bancos en Decorar.`;
@@ -275,12 +284,12 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       nivel: nivelEscena,
       escaparate: escaparateTitulos,
     });
-    api.current?.decorar(decorando, { sel, mal: false });
+    api.current?.decorar(decorando, { sel, mal: false, planta: plantaDecor });
     if (mirarCaja.current && porColocar > 0 && !decorando) {
       mirarCaja.current = false;
       api.current?.go('libros');
     }
-  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena, escaparateTitulos]);
+  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena, escaparateTitulos, plantaDecor]);
   // Los clientes, sentados: los atendidos, con el libro que les diste (o uno de tu estantería si fue en otra visita)
   useEffect(() => {
     if (!ready) return;
@@ -422,6 +431,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     setHablando(null);
     setError('');
     setSel(null);
+    setPlantaDecor((local?.nivel ?? 1) >= BODEGA_NIVEL ? (api.current?.planta?.() ?? 'calle') : 'calle');
     setBorrador({ v: 1, items: local.plano.items.map((i) => ({ ...i })) });
   };
   const cancelarDecorar = () => {
@@ -464,7 +474,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const anadir = (id) => {
     setError('');
     if (borrador.items.length >= maxCosas(local?.nivel ?? 1)) return setError(`Caben ${maxCosas(local?.nivel ?? 1)} cosas como mucho. Quita algo antes.`);
-    const sitio = hueco(borrador, id, undefined, local?.nivel ?? 1);
+    const nivelD = local?.nivel ?? 1;
+    // Desde el nivel 6, en la planta que se está decorando
+    const sitio = hueco(borrador, id, undefined, nivelD, nivelD >= BODEGA_NIVEL ? plantaDecor : null);
     if (!sitio) return setError('No queda sitio libre para ese mueble. Quita o mueve algo antes.');
     const uid = uidNuevo(borrador);
     setBorrador({ ...borrador, items: [...borrador.items, { uid, id, ...sitio }] });
@@ -612,6 +624,11 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                 {porColocar > 0 && <span className="cf3-pizarra-btn__n">{porColocar}</span>}
               </button>
             )}
+            {plantaEscena === 'bodega' && !decorando && (
+              <button type="button" className="cf3-pizarra-btn cf3-subir-btn" aria-label="Subir al café" onClick={() => pick.current('subir')}>
+                <PixelArt icono={SUBIR} />
+              </button>
+            )}
             {dia && !decorando && (
               <button
                 type="button"
@@ -652,6 +669,18 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         </section>
       )}
       {logro && !clienteAtendido && !decorando && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
+      {decorando && (local?.nivel ?? 1) >= BODEGA_NIVEL && (
+        <div className="cf3-plantas" role="group" aria-label="Qué planta decoras">
+          {[
+            ['calle', 'El café'],
+            ['bodega', 'La bodega'],
+          ].map(([id, nombre]) => (
+            <button key={id} type="button" className="cf3-pestana" aria-pressed={plantaDecor === id} onClick={() => setPlantaDecor(id)}>
+              {nombre}
+            </button>
+          ))}
+        </div>
+      )}
       {decorando ? (
         <div className="cf3-balda" role="region" aria-label="Decorar tu café">
           <div className="cf3-balda__cabeza">
@@ -690,7 +719,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
             )}
           </div>
           {selItem ? (
-            <p className="cf3-balda__ayuda">Arrástralo o toca una casilla libre para llevarlo allí.</p>
+            <p className="cf3-balda__ayuda">
+              Arrástralo o toca una casilla libre para llevarlo allí.
+              {(local?.nivel ?? 1) >= BODEGA_NIVEL ? ' Para bajarlo o subirlo, cambia de planta arriba y toca una casilla.' : ''}
+            </p>
           ) : (
             <>
               <div className="cf3-balda__pestanas" role="tablist" aria-label="De dónde sacar muebles">

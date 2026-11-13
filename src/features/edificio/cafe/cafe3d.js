@@ -74,8 +74,14 @@ import {
   VENTANAL,
   ALA,
   paredIzquierda,
+  BODEGA,
+  TRAMPILLA,
+  ESCALERA_BODEGA,
+  LLEGADA_BODEGA,
+  ANTE_TRAMPILLA,
+  plantaEn,
 } from './cafeLayout';
-import { ASIENTOS, CUADRICULA, casillaValida, columnasDe, filasDe, medidas } from './cafeCatalogo';
+import { ASIENTOS, CUADRICULA, SOTANO, casillaValida, columnasDe, filasDe, medidas } from './cafeCatalogo';
 import { cajasDe, colorDe } from './cafeMuebles';
 import { footprint } from '../room';
 
@@ -132,6 +138,12 @@ const LUCES = [
  */
 const LUZ_ALA = { at: [-1.7, 6.0, 3.6], k: 0.8, reach: 5.2 };
 const LUZ_TERRAZA = { at: [3.6, SD + 2.3, 2.3], k: 0.75, reach: 4.0 };
+/** Bloque 6a (1.125): los dos faroles de hierro de la bodega y la luz del café que cae por la escalera. Lejos del local: no lo tocan. */
+const LUZ_BODEGA = [
+  { at: [42.3, 3.7, 2.55], k: 0.9, reach: 4.6 },
+  { at: [44.9, 3.7, 2.55], k: 0.85, reach: 4.6 },
+  { at: [46.85, 6.3, 3.3], k: 0.55, reach: 3.0 },
+];
 let LUCES_NIVEL = [];
 /** Pinta con estas luces de nivel encendidas (las láminas del ala y de la calle se pintan al montar). */
 function conLuces(luces, fn) {
@@ -1804,6 +1816,206 @@ function adornoExcentrico(s, boxes, { tocado, tema }, sx, sy) {
     pushBox(s, [sx + dx - 0.025, sy + dy - 0.025, dz, sx + dx + 0.025, sy + dy + 0.025, dz + 0.05], [255, 236, 170], { glow: true });
 }
 
+// ── Bloque 6a (1.125): la bodega del sótano (nivel 6) y la trampilla de detrás de la barra ──
+const LADRILLO = [150, 84, 62];
+const MORTERO = [168, 150, 126];
+const LOSA = [128, 118, 104];
+const ROBLE = [128, 82, 50];
+const ROBLE_D = [92, 58, 36];
+const HIERRO_B = [58, 52, 52];
+const BOTELLA = [44, 74, 58];
+/** Ladrillo visto a soga (medio ladrillo de desfase por hilada) sobre un zócalo de piedra; `a`, a lo ancho y `b`, altura. */
+function ladrilloPx(a, b, g, ix, iy) {
+  const r = probe();
+  if (b < 0.5) {
+    const piedra = r.rampOf(LOSA);
+    const hilada = Math.floor(b / 0.25);
+    const u = frac((a + (hilada % 2) * 0.35) / 0.7);
+    if (u < 0.05 || frac(b / 0.25) < 0.1) return lit(piedra[1], g, ix, iy);
+    return lit(piedra[noise(a * 3, b * 3) > 0.72 ? 2 : 3], g, ix, iy);
+  }
+  const ramp = r.rampOf(LADRILLO);
+  const hilada = Math.floor(b / 0.25);
+  const desfase = hilada % 2 ? 0.25 : 0;
+  const u = frac((a + desfase) / 0.5);
+  if (u < 0.08 || frac(b / 0.25) < 0.16) return lit(r.rampOf(MORTERO)[2], g * 0.9, ix, iy);
+  const k = Math.floor((a + desfase) / 0.5);
+  const h = hash(k, hilada);
+  // Salitre: manchas claras abajo, como en las bodegas de verdad
+  if (b < 1.0 && noise(a * 0.9, b * 1.2) > 0.84) return lit(ramp[2], g + 0.04, ix, iy);
+  return lit(ramp[h > 0.9 ? 2 : h < 0.08 ? 4 : 3], g, ix, iy);
+}
+function paintMuro(w, world, extra = () => null) {
+  const alto = BODEGA.alto;
+  return canvasOf(Math.round(w * PX), Math.round(alto * PX), (ix, iy) => {
+    const a = (ix + 0.5) / PX;
+    const b = alto - (iy + 0.5) / PX;
+    const own = extra(a, b, ix, iy);
+    if (own != null) return own;
+    return ladrilloPx(a, b, glowAt(...world(a, b)), ix, iy);
+  });
+}
+/** El ventanuco de la pared de delante, alto, con sus barrotes: deja ver la noche del muelle a ras de la acera. */
+function ventanuco(a, b, ix, iy) {
+  const x = BODEGA.x1 - a;
+  if (x < 41.4 || x > 43.2 || b < 2.35 || b > 3.0) return null;
+  const r = probe();
+  const g = glowAt(x, BODEGA.y1 - 0.3, b);
+  if (x < 41.48 || x > 43.12 || b < 2.42 || b > 2.93) return lit(r.rampOf(MORTERO)[1], g, ix, iy);
+  if (Math.abs(frac((x - 41.48) / 0.27) - 0.5) > 0.42) return lit(HIERRO_B, g + 0.1, ix, iy);
+  // La acera mojada y la luz de la farola, al fondo
+  if (b < 2.55) return rgb(52, 50, 60);
+  return hash(ix, iy) > 0.96 ? rgb(214, 210, 236) : rgb(26 + (b - 2.55) * 20, 32, 62);
+}
+/** El suelo de losas de piedra, colocadas a matajunta. */
+function paintSueloBodega() {
+  const r = probe();
+  const piedra = r.rampOf(LOSA);
+  const [ancho, hondo] = [BODEGA.x1 - BODEGA.x0, BODEGA.y1 - BODEGA.y0];
+  return canvasOf(Math.round(ancho * PX), Math.round(hondo * PX), (ix, iy) => {
+    const x = BODEGA.x0 + (ix + 0.5) / PX;
+    const y = BODEGA.y0 + (iy + 0.5) / PX;
+    const g = glowAt(x, y, 0);
+    const fy = Math.floor(y / 0.8);
+    const off = fy % 2 ? 0.45 : 0;
+    const fx = Math.floor((x + off) / 0.9);
+    if (frac((x + off) / 0.9) < 0.05 || frac(y / 0.8) < 0.06) return lit(piedra[1], g, ix, iy);
+    const n = noise(x * 2.6, y * 2.6);
+    return lit(piedra[n > 0.8 ? 4 : hash(fx, fy) > 0.66 ? 2 : 3], g, ix, iy);
+  });
+}
+/** La bóveda, vista desde abajo: ladrillo a lo largo y, sobre la escalera, el hueco de la trampilla con la luz del café. */
+function paintBovedaBodega() {
+  const r = probe();
+  const ramp = r.rampOf(LADRILLO);
+  const [ancho, hondo] = [BODEGA.x1 - BODEGA.x0, BODEGA.y1 - BODEGA.y0];
+  return canvasOf(Math.round(ancho * PX), Math.round(hondo * PX), (ix, iy) => {
+    const x = BODEGA.x0 + (ix + 0.5) / PX;
+    const y = BODEGA.y1 - (iy + 0.5) / PX;
+    const g = glowAt(x, y, BODEGA.alto) * 0.75;
+    if (x > ESCALERA_BODEGA.x0 + 0.05 && y > BODEGA.y1 - 1.25) {
+      const borde = Math.min(x - ESCALERA_BODEGA.x0, BODEGA.y1 - 0.02 - y, y - (BODEGA.y1 - 1.25)) < 0.08;
+      return borde ? lit(ROBLE_D, 0.7, ix, iy) : rgb(196, 140, 82);
+    }
+    const hilada = Math.floor(x / 0.25);
+    const u = frac((y + (hilada % 2) * 0.25) / 0.5);
+    if (u < 0.08 || frac(x / 0.25) < 0.16) return lit(r.rampOf(MORTERO)[2], g * 0.9, ix, iy);
+    return lit(ramp[hash(Math.floor(y / 0.5), hilada) > 0.9 ? 2 : 3], g, ix, iy);
+  });
+}
+/** Los arcos de ladrillo de la bóveda (dos, de pared a pared), con sus pilastras. */
+function arcosBodega(s) {
+  const { x0, x1, alto } = BODEGA;
+  const ancho = x1 - x0;
+  for (const y of [2.1, 5.3]) {
+    for (let k = 0; k < 41; k += 1) {
+      const xa = x0 + (k * ancho) / 41;
+      const xb = x0 + ((k + 1) * ancho) / 41;
+      const u = (k + 0.5) / 41;
+      const z = 2.2 + 1.05 * Math.sqrt(Math.sin(Math.PI * u));
+      pushBox(s, [xa, y - 0.2, z - 0.16, xb, y + 0.2, alto], k % 2 ? LADRILLO : [134, 72, 54]);
+      pushBox(s, [xa, y - 0.21, z - 0.2, xb, y + 0.21, z - 0.16], MORTERO);
+    }
+    pushBox(s, [x0, y - 0.24, 0, x0 + 0.24, y + 0.24, 2.3], [138, 78, 58]);
+    for (let z = 0.25; z < 2.3; z += 0.25) pushBox(s, [x0, y - 0.245, z, x0 + 0.245, y + 0.245, z + 0.03], MORTERO);
+    if (y < ESCALERA_BODEGA.y0) {
+      pushBox(s, [x1 - 0.24, y - 0.24, 0, x1, y + 0.24, 2.3], [138, 78, 58]);
+      for (let z = 0.25; z < 2.3; z += 0.25) pushBox(s, [x1 - 0.245, y - 0.245, z, x1, y + 0.245, z + 0.03], MORTERO);
+    }
+  }
+}
+/** Una barrica tumbada (el eje a lo ancho, x), con la cara redonda al local: duelas, aros, la espita y su número de tiza. */
+function barricaTumbada(s, cy, cz, r, x0, x1) {
+  for (let k = -5; k <= 5; k += 1) {
+    const dz = (k / 5.5) * r;
+    const half = Math.sqrt(Math.max(0, r * r - dz * dz));
+    const z0 = cz + dz - r / 11;
+    pushBox(s, [x0, cy - half, z0, x1, cy + half, z0 + (2 * r) / 11], Math.abs(k) % 3 === 1 ? ROBLE_D : ROBLE);
+  }
+  for (const xa of [x0 + 0.08, x1 - 0.14]) pushBox(s, [xa, cy - r - 0.01, cz - r - 0.01, xa + 0.05, cy + r + 0.01, cz + r + 0.01], HIERRO_B);
+  pushBox(s, [x1, cy - r * 0.78, cz - r * 0.78, x1 + 0.02, cy + r * 0.78, cz + r * 0.78], [150, 104, 66]);
+  pushBox(s, [x1 + 0.02, cy - 0.05, cz - r * 0.55, x1 + 0.1, cy + 0.05, cz - r * 0.45], BRASS, { g: 0.7 });
+  pushBox(s, [x1 + 0.021, cy - 0.12, cz + 0.08, x1 + 0.024, cy + 0.1, cz + 0.13], [232, 226, 210]);
+}
+function barricasBodega(s) {
+  const { x0 } = BODEGA;
+  // La cuna de madera y tres barricas; una cuarta, encima
+  pushBox(s, [x0, 0.5, 0, x0 + 0.95, 5.4, 0.14], ROBLE_D);
+  for (const cy of [1.3, 2.9, 4.5]) barricaTumbada(s, cy, 0.6, 0.46, x0 + 0.02, x0 + 0.92);
+  barricaTumbada(s, 3.7, 1.43, 0.4, x0 + 0.06, x0 + 0.86);
+}
+/** El botellero de la pared del fondo: casillas de madera con las botellas tumbadas (el culo a la vista). */
+function botelleroBodega(s) {
+  const [xa, xb, y0, y1, alto] = [40.6, 45.6, BODEGA.y0, BODEGA.y0 + 0.42, 2.2];
+  pushBox(s, [xa, y0, 0, xb, y0 + 0.04, alto], ROBLE_D);
+  for (let x = xa; x <= xb + 0.01; x += 0.5) pushBox(s, [x - 0.03, y0, 0, x + 0.03, y1, alto], ROBLE);
+  for (let z = 0; z <= alto + 0.01; z += 0.36) pushBox(s, [xa, y0, z, xb, y1, z + 0.04], ROBLE);
+  for (let x = xa + 0.06, i = 0; x < xb - 0.05; x += 0.5, i += 1)
+    for (let z = 0.06, j = 0; z < alto - 0.2; z += 0.36, j += 1)
+      for (const dx of [0.08, 0.24]) {
+        if (hash(i * 5 + (dx > 0.1 ? 1 : 0), j) > 0.86) continue;
+        pushBox(s, [x + dx, y1 - 0.1, z + 0.06, x + dx + 0.12, y1 - 0.02, z + 0.18], BOTELLA);
+        pushBox(s, [x + dx + 0.03, y1 - 0.02, z + 0.12, x + dx + 0.06, y1 - 0.015, z + 0.15], [150, 200, 170], { g: 0.6 });
+      }
+}
+/** La escalera de obra con peldaños de madera, que sube a la trampilla, y su barandilla de hierro del lado del local. */
+function escaleraBodega(s) {
+  const { x0, x1, y0, y1 } = ESCALERA_BODEGA;
+  const n = 14;
+  const fondo = (y1 - y0) / n;
+  const sube = BODEGA.alto / n;
+  for (let k = 0; k < n; k += 1) {
+    const ya = y0 + k * fondo;
+    pushBox(s, [x0 + 0.05, ya, 0, x1, ya + fondo, (k + 1) * sube - 0.05], [118, 106, 94]);
+    pushBox(s, [x0 + 0.02, ya - 0.02, (k + 1) * sube - 0.05, x1, ya + fondo, (k + 1) * sube], [150, 104, 66]);
+  }
+  for (let k = 0; k <= n; k += 3) {
+    const ya = y0 + k * fondo + 0.1;
+    const z = k * sube;
+    pushBox(s, [x0 - 0.02, ya, z, x0 + 0.03, ya + 0.05, z + 0.95], HIERRO_B);
+  }
+  for (let k = 0; k < n; k += 1) {
+    const ya = y0 + k * fondo;
+    pushBox(s, [x0 - 0.04, ya, k * sube + 0.92, x0 + 0.05, ya + fondo, k * sube + 0.98], BRASS, { g: 0.55 });
+  }
+}
+/** Los dos faroles de hierro que cuelgan de la bóveda, encendidos. */
+function farolesBodega(s) {
+  for (const { at } of LUZ_BODEGA.slice(0, 2)) {
+    const [x, y, z] = at;
+    pushBox(s, [x - 0.012, y - 0.012, z + 0.3, x + 0.012, y + 0.012, BODEGA.alto], [40, 34, 32], { g: 0.4 });
+    pushBox(s, [x - 0.16, y - 0.16, z + 0.22, x + 0.16, y + 0.16, z + 0.3], HIERRO_B, { g: 0.7 });
+    pushBox(s, [x - 0.12, y - 0.12, z - 0.2, x + 0.12, y + 0.12, z + 0.22], BULB, { glow: true });
+    for (const [dx, dy] of [
+      [-0.13, -0.13],
+      [0.11, -0.13],
+      [-0.13, 0.11],
+      [0.11, 0.11],
+    ])
+      pushBox(s, [x + dx, y + dy, z - 0.22, x + dx + 0.02, y + dy + 0.02, z + 0.22], HIERRO_B, { g: 0.6 });
+    pushBox(s, [x - 0.15, y - 0.15, z - 0.26, x + 0.15, y + 0.15, z - 0.2], HIERRO_B, { g: 0.6 });
+  }
+}
+/** La trampilla abierta de detrás de la barra (nivel 6): el marco, el hueco con los peldaños alumbrados desde abajo, la tapa apoyada y la barandilla. */
+function trampillaKit(s) {
+  const { x0, x1, y0, y1 } = TRAMPILLA;
+  pushBox(s, [x0 - 0.07, y0 - 0.07, 0, x1 + 0.07, y1 + 0.07, 0.02], WOOD_D, { g: 0.55 });
+  pushBox(s, [x0, y0, 0.02, x1, y1, 0.024], [34, 22, 18], { g: 0.3 });
+  for (let k = 0; k < 4; k += 1) {
+    const xa = x0 + 0.12 + k * 0.24;
+    pushBox(s, [xa, y0 + 0.1, 0.024, xa + 0.15, y1 - 0.1, 0.027], [196 - k * 34, 140 - k * 26, 84 - k * 16], { g: 0.95 - k * 0.2 });
+  }
+  // La tapa, abierta contra la pared, con sus dos bisagras
+  pushBox(s, [x1 + 0.06, y0, 0, x1 + 0.13, y1, 1.15], WOOD, { g: 0.5 });
+  for (const ya of [y0 + 0.3, y1 - 0.42]) pushBox(s, [x1 + 0.03, ya, 0.03, x1 + 0.14, ya + 0.12, 0.2], HIERRO_B, { g: 0.5 });
+  for (let ya = y0 + 0.2; ya < y1; ya += 0.35) pushBox(s, [x1 + 0.055, ya, 0.05, x1 + 0.06, ya + 0.02, 1.1], WOOD_D, { g: 0.45 });
+  // La barandilla de latón en los dos lados cortos (se entra por el del local)
+  for (const ya of [y0 - 0.05, y1 + 0.02]) {
+    for (const xa of [x0 - 0.05, x1 - 0.02]) pushBox(s, [xa, ya, 0, xa + 0.05, ya + 0.04, 0.9], BRASS, { g: 0.6 });
+    pushBox(s, [x0 - 0.05, ya - 0.005, 0.86, x1 + 0.03, ya + 0.045, 0.92], BRASS, { g: 0.65 });
+  }
+}
+
 export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, onLost = () => {}, onMove = () => {}, onDecor = () => {} } = {}) {
   const renderer = new WebGLRenderer({ antialias: false, powerPreference: 'low-power', preserveDrawingBuffer: true });
   const canvas = renderer.domElement;
@@ -1987,6 +2199,85 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     scene.add(m);
     return m;
   });
+  // ── Bloque 6a: la bodega (nivel 6), aparte en el mundo, y la trampilla de detrás de la barra ──
+  const bodegaGrupo = new Group();
+  bodegaGrupo.visible = false;
+  scene.add(bodegaGrupo);
+  const bodegaPiezas = conLuces(LUZ_BODEGA, () => {
+    const { x0, x1, y0, y1, alto } = BODEGA;
+    const [ancho, hondo, cx, cy] = [x1 - x0, y1 - y0, (x0 + x1) / 2, (y0 + y1) / 2];
+    bodegaGrupo.add(
+      plane(ancho, hondo, paintSueloBodega(), (m) => {
+        m.rotation.x = -Math.PI / 2;
+        m.position.set(cx, 0, cy);
+      }),
+    );
+    bodegaGrupo.add(
+      plane(ancho, hondo, paintBovedaBodega(), (m) => {
+        m.rotation.x = Math.PI / 2;
+        m.position.set(cx, alto, cy);
+      }),
+    );
+    bodegaGrupo.add(
+      plane(
+        ancho,
+        alto,
+        paintMuro(ancho, (a, b) => [x0 + a, y0 + 0.05, b]),
+        (m) => m.position.set(cx, alto / 2, y0),
+      ),
+    );
+    bodegaGrupo.add(
+      plane(
+        hondo,
+        alto,
+        paintMuro(hondo, (a, b) => [x0 + 0.05, y1 - a, b]),
+        (m) => {
+          m.rotation.y = Math.PI / 2;
+          m.position.set(x0, alto / 2, cy);
+        },
+      ),
+    );
+    bodegaGrupo.add(
+      plane(
+        hondo,
+        alto,
+        paintMuro(hondo, (a, b) => [x1 - 0.05, y0 + a, b]),
+        (m) => {
+          m.rotation.y = -Math.PI / 2;
+          m.position.set(x1, alto / 2, cy);
+        },
+      ),
+    );
+    bodegaGrupo.add(
+      plane(
+        ancho,
+        alto,
+        paintMuro(ancho, (a, b) => [x1 - a, y1 - 0.05, b], ventanuco),
+        (m) => {
+          m.rotation.y = Math.PI;
+          m.position.set(cx, alto / 2, y1);
+        },
+      ),
+    );
+    // Lo que no se ve desde arriba al decorar: los arcos, las barricas, el botellero, la escalera y los faroles
+    const s = kit();
+    arcosBodega(s);
+    barricasBodega(s);
+    botelleroBodega(s);
+    escaleraBodega(s);
+    farolesBodega(s);
+    const m = new Mesh(own(geometryOf(s)), flat);
+    bodegaGrupo.add(m);
+    return m;
+  });
+  const trampillaM = (() => {
+    const s = kit();
+    trampillaKit(s);
+    const m = new Mesh(own(geometryOf(s)), flat);
+    m.visible = false;
+    scene.add(m);
+    return m;
+  })();
   // Lo que tapa el fondo en el nivel 1 (la cortina y el caballete), que se recoge al subir al nivel 2
   const telon = (() => {
     const s = kit();
@@ -2179,7 +2470,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   const planoGrupo = new Group();
   scene.add(planoGrupo);
   let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1, escaparate: [] };
-  let modo = { decorar: false, sel: null, mal: false };
+  let modo = { decorar: false, sel: null, mal: false, planta: 'calle' };
   let piezas = [];
   let obstaculos = [];
   const rejillaDe = (c0, c1, f0, f1) => {
@@ -2207,7 +2498,9 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     if (nivel >= 5) out.push(rejillaDe(0, CUADRICULA.w, 7, 10));
     return out;
   };
-  const rejillas = { 1: hacerRejilla(1), 2: hacerRejilla(2), 4: hacerRejilla(4), 5: hacerRejilla(5) };
+  const rejillas = { 1: hacerRejilla(1), 2: hacerRejilla(2), 4: hacerRejilla(4), 5: hacerRejilla(5), bodega: [rejillaDe(SOTANO.x0, SOTANO.x1, SOTANO.y0, SOTANO.y1)] };
+  // Bloque 6a: en qué planta estás ('calle' o 'bodega')
+  let planta = 'calle';
   function vaciarGrupo() {
     for (const m of planoGrupo.children.slice()) {
       planoGrupo.remove(m);
@@ -2292,18 +2585,24 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     if (rotuloFuera) rotuloFuera.visible = terraza && !modo.decorar;
     cordel.visible = !terraza;
     if (terraza) abierto.visible = false;
-    const clave = n >= 5 ? 5 : n >= 4 ? 4 : n >= 2 ? 2 : 1;
-    for (const [k, ms] of Object.entries(rejillas)) for (const m of ms) m.visible = modo.decorar && Number(k) === clave;
+    // Bloque 6a: la bodega y la trampilla, desde el nivel 6
+    bodegaGrupo.visible = n >= 6;
+    bodegaPiezas.visible = !modo.decorar;
+    trampillaM.visible = n >= 6;
+    const clave = modo.planta === 'bodega' ? 'bodega' : String(n >= 5 ? 5 : n >= 4 ? 4 : n >= 2 ? 2 : 1);
+    for (const [k, ms] of Object.entries(rejillas)) for (const m of ms) m.visible = modo.decorar && k === clave;
     canvas.setAttribute(
       'aria-label',
       estado.inaugurado
-        ? `${estado.nombre ?? 'Tu café'}, tu café-librería. Arrastra o usa las flechas para mirar; toca el suelo para andar y a Pilar, en el mostrador, para hablar con ella.`
+        ? planta === 'bodega'
+          ? `La bodega de ${estado.nombre ?? 'tu café'}, en el sótano. Arrastra o usa las flechas para mirar; toca el suelo para andar y la escalera para subir al café.`
+          : `${estado.nombre ?? 'Tu café'}, tu café-librería. Arrastra o usa las flechas para mirar; toca el suelo para andar y a Pilar, en el mostrador, para hablar con ella.${n >= 6 ? ' Detrás de la barra, la trampilla baja a la bodega.' : ''}`
         : 'El bajo, vacío y en traspaso. Arrastra o usa las flechas para mirar; toca el suelo para andar y a Pilar, en el mostrador, para hablar con ella.',
     );
     montarClientes();
     montarBarra();
   }
-  const opcionesPaso = () => ({ limpio: estado.inaugurado, muebles: [...obstaculos, ...obstaculosClientes], nivel: estado.inaugurado ? estado.nivel : 1 });
+  const opcionesPaso = () => ({ limpio: estado.inaugurado, muebles: [...obstaculos, ...obstaculosClientes], nivel: estado.inaugurado ? estado.nivel : 1, planta });
 
   // ── Bloque 3 (1.121): los clientes del día, sentados en las sillas y taburetes del plano (los que esperan, sin libro y
   // con su letrero; los atendidos, leyendo el libro que les diste). Si faltan asientos, de pie junto al escaparate. ──
@@ -2339,7 +2638,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         out.push({ x: o.x + t[0], y: o.y + t[1], h: a.h, facing: it.rot ?? 0 });
       }
     }
-    return out;
+    // Bloque 6a: los de la calle primero; la bodega se llena después
+    return out.sort((a, b) => (plantaEn(a.x) === 'bodega') - (plantaEn(b.x) === 'bodega'));
   }
   function montarClientes() {
     for (const m of clientesGrupo.children.slice()) {
@@ -2376,7 +2676,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       clientesGrupo.add(m);
       pickersClientes.push(m);
       if (!sentado) obstaculosClientes.push([sx - 0.3, sy - 0.3, 0, sx + 0.3, sy + 0.3, 1.8]);
-      sitiosClientes[c.n] = { x: sx, y: sy, z: alto + 0.15, espera: !c.servido, mira: sentado ? sentado.facing : 2 };
+      sitiosClientes[c.n] = { x: sx, y: sy, z: alto + 0.15, espera: !c.servido, mira: sentado ? sentado.facing : 2, planta: plantaEn(sx) };
     });
     invalidate();
   }
@@ -2493,10 +2793,15 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       moving = true;
     }
     // En Decorar de los niveles 4 y 5, desde tan arriba, la niebla se aparta: el local entero se ve con su luz
-    const lejos = modo.decorar && estado.nivel >= 4;
+    const lejos = modo.decorar && (estado.nivel >= 4 || modo.planta === 'bodega');
     scene.fog.near = lejos ? 12 : 7;
     scene.fog.far = lejos ? 36 : 22;
-    if (modo.decorar) {
+    if (modo.decorar && modo.planta === 'bodega') {
+      // Bloque 6a: la bodega desde arriba (la bóveda no se ve por encima), con la escalera a la derecha
+      const o = enMundo((SOTANO.x0 + SOTANO.x1) / 2 + 0.3, (SOTANO.y0 + SOTANO.y1) / 2);
+      camera.position.set(o.x, 7.4, BODEGA.y1 + 2.4);
+      camera.lookAt(o.x, 0, o.y - 0.2);
+    } else if (modo.decorar) {
       const { desde, hasta } = filasDe(estado.nivel);
       const c = columnasDe(estado.nivel);
       // Con la terraza, la vista llega hasta la acera
@@ -2513,7 +2818,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       const u = Math.min(1, (ahora - tramo * tour.paso) / tour.paso);
       const k = u * u * (3 - 2 * u);
       const [a, b] = [tour.puntos[tramo], tour.puntos[tramo + 1]];
-      const lerp = (x, y) => x.map((v, i) => v + (y[i] - v) * k);
+      // Un corte: se salta de golpe (de la trampilla a la escalera de la bodega, o al revés)
+      const lerp = (x, y) => (b.corte ? y : x.map((v, i) => v + (y[i] - v) * k));
       const p = lerp(a.p, b.p);
       const m = lerp(a.m, b.m);
       camera.position.set(p[0], p[2], p[1]);
@@ -2540,11 +2846,18 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     tagPoint.set(x, z, y).project(camera);
     return { x: ((tagPoint.x + 1) / 2) * rect.width, y: ((1 - tagPoint.y) / 2) * rect.height, front: tagPoint.z < 1 && Math.abs(tagPoint.x) < 0.95 && tagPoint.y < 0.97 && tagPoint.y > -0.9 };
   }
+  /** ¿Está a la vista y se puede tocar este sitio? (Según tu planta, el nivel y lo que haya en el local.) */
+  function sitioActivo(id) {
+    const s = SITIOS[id];
+    if ((s.planta ?? 'calle') !== planta) return false;
+    if (s.nivel && !(estado.inaugurado && estado.nivel >= s.nivel)) return false;
+    return id === 'libros' ? estado.inaugurado && estado.cajas > 0 : id === 'cortina' ? !(estado.inaugurado && estado.nivel >= 2) : true;
+  }
   function tags() {
     const out = {};
     for (const [id, s] of Object.entries(SITIOS)) {
       const p = project(...s.tag);
-      const hay = id === 'libros' ? estado.inaugurado && estado.cajas > 0 : id === 'cortina' ? !(estado.inaugurado && estado.nivel >= 2) : true;
+      const hay = sitioActivo(id);
       if (tour) {
         out[id] = { ...p, visible: false };
         continue;
@@ -2553,7 +2866,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     }
     for (const [n, c] of Object.entries(sitiosClientes)) {
       const p = project(c.x, c.y, c.z);
-      out[`cliente:${n}`] = { ...p, visible: !walk && !modo.decorar && !barra.activa && barraT === 0 && c.espera && p.front };
+      out[`cliente:${n}`] = { ...p, visible: !tour && !walk && !modo.decorar && !barra.activa && barraT === 0 && c.espera && c.planta === planta && p.front };
     }
     return out;
   }
@@ -2602,8 +2915,10 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   }
   function pickAt(clientX, clientY) {
     rayAt(clientX, clientY);
-    const sitios = pickers.filter((m) => (m.userData.id === 'libros' ? estado.inaugurado && estado.cajas > 0 : m.userData.id === 'cortina' ? !(estado.inaugurado && estado.nivel >= 2) : true));
-    return ray.intersectObjects(barra.activa ? pickersBarra : [...sitios, ...pickersClientes], false)[0]?.object.userData.id ?? null;
+    if (tour) return null;
+    const sitios = pickers.filter((m) => sitioActivo(m.userData.id));
+    const suyos = pickersClientes.filter((m) => sitiosClientes[m.userData.id.slice(8)]?.planta === planta);
+    return ray.intersectObjects(barra.activa ? pickersBarra : [...sitios, ...suyos], false)[0]?.object.userData.id ?? null;
   }
   /** La pieza del plano bajo un punto de la pantalla (su uid), o null. */
   function piezaEn(clientX, clientY) {
@@ -2637,6 +2952,75 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     });
   }
 
+  /**
+   * Bloque 6a: pasar a la otra planta. Se anda hasta la trampilla (o hasta el pie de la escalera) y la cámara baja por el hueco
+   * y la escalera de la bodega (o sube por ella y sale por la trampilla). Con movimiento reducido, directo. Promesa que acaba al llegar.
+   */
+  let cambiando = null;
+  function cambiarPlanta(destino) {
+    if (destino === planta || (destino === 'bodega' && !(estado.inaugurado && estado.nivel >= 6))) return Promise.resolve();
+    if (cambiando) return cambiando;
+    const llegar = () => {
+      const p = destino === 'bodega' ? LLEGADA_BODEGA : ANTE_TRAMPILLA;
+      planta = destino;
+      walk = null;
+      px = p.x;
+      py = p.y;
+      yaw = p.yaw;
+      onMove({ x: px, y: py, yaw, planta });
+      montarPlano();
+    };
+    const sitio = SITIOS[destino === 'bodega' ? 'trampilla' : 'subir'];
+    cambiando = walkTo(sitio.ir.x, sitio.ir.y, { face: sitio.mira })
+      .then(
+        () =>
+          new Promise((fin) => {
+            if (reduced()) {
+              llegar();
+              fin();
+              return;
+            }
+            const ojo = { p: [px, py, EYE], m: [px + Math.sin(yaw) * 6, py + Math.cos(yaw) * 6, EYE + Math.tan(PITCH) * 6] };
+            const al = destino === 'bodega' ? LLEGADA_BODEGA : ANTE_TRAMPILLA;
+            const final = { p: [al.x, al.y, EYE], m: [al.x + Math.sin(al.yaw) * 6, al.y + Math.cos(al.yaw) * 6, EYE + Math.tan(PITCH) * 6] };
+            const [tx, ty] = [(TRAMPILLA.x0 + TRAMPILLA.x1) / 2, (TRAMPILLA.y0 + TRAMPILLA.y1) / 2];
+            const ex = (ESCALERA_BODEGA.x0 + ESCALERA_BODEGA.x1) / 2;
+            const puntos =
+              destino === 'bodega'
+                ? [
+                    ojo,
+                    { p: [tx - 0.85, ty, 1.55], m: [tx + 0.1, ty, -0.4] },
+                    { p: [tx - 0.4, ty, 1.15], m: [tx + 0.2, ty, -0.6] },
+                    { corte: true, p: [ex, BODEGA.y1 - 0.3, 3.05], m: [ex, ESCALERA_BODEGA.y0 - 0.5, 1.0] },
+                    { p: [ex, ESCALERA_BODEGA.y0 + 1.4, 2.1], m: [ex - 1.2, 0.6, 1.1] },
+                    final,
+                  ]
+                : [
+                    ojo,
+                    { p: [ex, ESCALERA_BODEGA.y0 + 1.0, 1.9], m: [ex, BODEGA.y1, 2.8] },
+                    { p: [ex, BODEGA.y1 - 0.5, 3.0], m: [ex, BODEGA.y1 + 0.6, 4.0] },
+                    { corte: true, p: [tx - 0.3, ty, 1.0], m: [tx - 2.0, ty + 1.2, 1.6] },
+                    { p: [tx - 0.7, ty, 1.5], m: [4.0, 6.0, 1.3] },
+                    final,
+                  ];
+            tour = {
+              t0: performance.now(),
+              paso: 0.85,
+              puntos,
+              fin: () => {
+                llegar();
+                fin();
+              },
+            };
+            invalidate();
+          }),
+      )
+      .finally(() => {
+        cambiando = null;
+      });
+    return cambiando;
+  }
+
   // ── Mandos: arrastrar mira; un toque en un sitio lo elige; tocar el suelo lleva hasta allí ──
   const stop = new AbortController();
   const on = { signal: stop.signal };
@@ -2664,7 +3048,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         }
         return;
       }
-      if (!press.moved || walk || barra.activa) return;
+      if (!press.moved || walk || barra.activa || tour) return;
       yaw = press.yaw + (e.clientX - press.x) * DRAG;
       invalidate();
     },
@@ -2675,6 +3059,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     const tap = !press.moved && e.type === 'pointerup';
     const moved = press.moved;
     press = null;
+    if (cambiando) return;
     if (moved && !modo.decorar) onMove({ x: px, y: py, yaw });
     if (!tap) return;
     if (modo.decorar) {
@@ -2691,7 +3076,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       onPick(id);
       return;
     }
-    if (barra.activa) return;
+    if (barra.activa || tour) return;
     rayAt(e.clientX, e.clientY);
     if (ray.ray.intersectPlane(floorPlane, hit) && dentro(hit.x, hit.z, opcionesPaso())) walkTo(hit.x, hit.z);
   };
@@ -2700,7 +3085,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   canvas.addEventListener(
     'keydown',
     (e) => {
-      if (modo.decorar || barra.activa) return;
+      if (modo.decorar || barra.activa || cambiando || tour) return;
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         yaw += e.key === 'ArrowLeft' ? KEY_STEP : -KEY_STEP;
@@ -2735,14 +3120,23 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     settled: () => !walk && vistaQuieta() && (barra.activa ? barraT === 1 : barraT === 0),
     /** Ir a un sitio ('pilar', 'cortina', 'escaparate' o 'entrada'). Promesa que acaba al llegar. */
     go(id) {
-      if (id === 'entrada') return walkTo(INICIO.x, INICIO.y, { face: [INICIO.x + Math.sin(INICIO.yaw), INICIO.y + Math.cos(INICIO.yaw)] });
+      if (id === 'entrada') return cambiarPlanta('calle').then(() => walkTo(INICIO.x, INICIO.y, { face: [INICIO.x + Math.sin(INICIO.yaw), INICIO.y + Math.cos(INICIO.yaw)] }));
+      // Bloque 6a: la trampilla baja a la bodega y la escalera sube al café
+      if (id === 'trampilla') return cambiarPlanta('bodega');
+      if (id === 'subir') return cambiarPlanta('calle');
       const s = SITIOS[id];
       if (!s) return Promise.resolve();
-      return walkTo(s.ir.x, s.ir.y, { face: s.mira });
+      // Un sitio de la otra planta: primero se cambia de planta
+      return cambiarPlanta(s.planta ?? 'calle').then(() => walkTo(s.ir.x, s.ir.y, { face: s.mira }));
     },
+    /** Bloque 6a: en qué planta estás ('calle' o 'bodega'). */
+    planta: () => planta,
+    /** ¿Se está cambiando de planta? (para las pruebas) */
+    cambiando: () => Boolean(cambiando),
     /** Ponerse en un sitio de golpe (para las pruebas y las capturas). */
     place(x, y, yawTo = yaw) {
       walk = null;
+      planta = plantaEn(x);
       px = x;
       py = y;
       yaw = yawTo;
@@ -2771,7 +3165,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate };
       // Las luces del ala y de la terraza alumbran lo colocado solo desde su nivel
       const n = inaugurado ? nivel : 1;
-      LUCES_NIVEL = [...(n >= 4 ? [LUZ_ALA] : []), ...(n >= 5 ? [LUZ_TERRAZA] : [])];
+      LUCES_NIVEL = [...(n >= 4 ? [LUZ_ALA] : []), ...(n >= 5 ? [LUZ_TERRAZA] : []), ...(n >= 6 ? LUZ_BODEGA : [])];
       // Al abrir el café (o entrar ya abierto), la vista de todo el rincón
       if (abre) {
         walk = null;
@@ -2780,10 +3174,16 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         yaw = INICIO_ABIERTO.yaw;
       }
       if (nombre !== nombreAntes || (inaugurado && !rotulo)) ponerRotulo(inaugurado ? nombre : null);
-      // Si lo colocado te deja dentro de un mueble, un paso al pasillo
-      if (!dentro(px, py, opcionesPaso()) && !walk) {
+      // Sin bodega (por debajo del nivel 6), al café
+      if (planta === 'bodega' && !(inaugurado && nivel >= 6)) {
+        planta = 'calle';
         px = INICIO.x;
         py = INICIO.y;
+      }
+      // Si lo colocado te deja dentro de un mueble, un paso al pasillo (en la bodega, al pie de la escalera)
+      if (!dentro(px, py, opcionesPaso()) && !walk && !tour) {
+        px = planta === 'bodega' ? LLEGADA_BODEGA.x : INICIO.x;
+        py = planta === 'bodega' ? LLEGADA_BODEGA.y : INICIO.y;
       }
       montarPlano();
     },
@@ -2801,8 +3201,16 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       if (nivel === 3) puntos.push({ p: [5.2, 4.4, 2.0], m: [8.3, 0.4, 0.9] }, { p: [3.0, 4.2, 2.4], m: [0, 1.9, 2.6] });
       // Bloque 4b: al 4, el ala lateral que se abre a la izquierda; al 5, el escaparate y la terraza desde la acera
       if (nivel === 4) puntos.push({ p: [4.6, 8.6, 2.6], m: [-2.0, 5.6, 1.0] }, { p: [1.6, 3.2, 2.4], m: [-2.6, 8.4, 1.0] });
-      if (nivel >= 5) puntos.push({ p: [3.4, 7.0, 2.0], m: [3.4, 14.0, 1.2] }, { p: [8.4, SD + 3.7, 2.1], m: [2.6, SD - 0.4, 1.5] }, { p: [0.8, SD + 3.5, 1.9], m: [5.2, SD + 0.6, 1.1] });
-      puntos.push(ojo);
+      if (nivel === 5) puntos.push({ p: [3.4, 7.0, 2.0], m: [3.4, 14.0, 1.2] }, { p: [8.4, SD + 3.7, 2.1], m: [2.6, SD - 0.4, 1.5] }, { p: [0.8, SD + 3.5, 1.9], m: [5.2, SD + 0.6, 1.1] });
+      // Bloque 6a: al 6, la trampilla abierta tras la barra y, abajo, la bodega (se salta de una a otra)
+      if (nivel >= 6)
+        puntos.push(
+          { p: [6.2, 4.6, 2.4], m: [9.0, 2.1, 0.2] },
+          { corte: true, p: [46.9, 6.5, 2.9], m: [43.6, 2.2, 0.8] },
+          { p: [45.6, 6.2, 1.9], m: [41.0, 0.6, 1.0] },
+          { p: [41.8, 6.2, 1.8], m: [44.8, 0.8, 1.2] },
+        );
+      puntos.push(nivel >= 6 ? { ...ojo, corte: true } : ojo);
       return new Promise((fin) => {
         tour = { t0: performance.now(), paso: 1.5, puntos, fin };
         invalidate();
@@ -2810,10 +3218,13 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     },
     /** ¿Está el recorrido en marcha? (para las pruebas) */
     enRecorrido: () => Boolean(tour),
-    /** Decorar: la vista desde arriba con la rejilla; `sel`, la pieza elegida; `mal`, si no cabe donde está. */
-    decorar(on, { sel = null, mal = false } = {}) {
+    /**
+     * Decorar: la vista desde arriba con la rejilla; `sel`, la pieza elegida; `mal`, si no cabe donde está; `planta`, la que se
+     * decora ('calle' o, desde el nivel 6, 'bodega').
+     */
+    decorar(on, { sel = null, mal = false, planta: dePlanta = 'calle' } = {}) {
       walk = null;
-      modo = { decorar: Boolean(on), sel, mal };
+      modo = { decorar: Boolean(on), sel, mal, planta: dePlanta === 'bodega' && estado.nivel >= 6 ? 'bodega' : 'calle' };
       montarPlano();
     },
     /** Dónde cae en la pantalla el centro de una casilla (para las pruebas). */
@@ -2857,6 +3268,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
      */
     barra(on, { llevar = null } = {}) {
       walk = null;
+      if (on && planta === 'bodega') {
+        planta = 'calle';
+        px = ANTE_PILAR.x;
+        py = ANTE_PILAR.y;
+        yaw = Math.PI / 2;
+      }
       if (!on && barra.activa) {
         px = ANTE_PILAR.x;
         py = ANTE_PILAR.y;
@@ -2887,6 +3304,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     irACliente(n) {
       const c = sitiosClientes[n];
       if (!c) return Promise.resolve();
+      // Bloque 6a: si está en la otra planta, se baja (o se sube) con la taza y luego se va hasta él
+      if (c.planta !== planta) return cambiarPlanta(c.planta).then(() => this.irACliente(n));
       // A un paso del cliente y, si se puede, delante de él (nunca a su espalda ni encima de su silla): se prueban
       // puntos a su alrededor, primero los de su frente, y se va al primero al que se llega andando en línea recta
       const FRENTE = [

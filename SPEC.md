@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.124.0 · 2026-11-12 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.125.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6568,3 +6568,32 @@ cámaras, la limusina, los menús, la navegación, la ocupación y los datos de 
 - **Pruebas**: e2e `v1124-placas.spec.js` (libre, tuya y un vecino con nombre largo; el café en traspaso y abierto; el
   hotel; la fachada 2D; tamaños de letra, que nada se pisa ni se sale, alto de lo que se toca, y entrar en tu piso, en el
   café y en el Gran Hotel).
+
+## 125. El café-librería del bajo, bloque 6a: la trampilla y la bodega (1.125.0)
+
+Cifras aprobadas por Francisco el 13-11-2026 («Sí, esas cifras»; `docs/qa/cafe-libreria.md` §14). Primer bloque del sótano:
+el nivel 6, «La bodega». Los niveles 1 a 5 y sus hitos no cambian.
+
+- **El nivel 6** empieza en 10.000 de reputación; al subir, **80 tickets** (el tope de 5 al día no cambia). Huecos de la balda,
+  **48**. Hasta **8 clientes al día**, si tienen dónde sentarse (los asientos de la bodega cuentan; si faltan, vienen menos,
+  sin castigo). Su tramo, como último nivel por ahora, mide 5.000 (`TRAMO_FINAL`). Hitos: 1.º el candil de pared a la venta,
+  2.º sin nada nuevo de la carta (el nivel ya abre la bodega), 3.º **20 granos**.
+- **La trampilla**, detrás de la barra, a la derecha de Pilar: se ve desde el nivel 6, con su anilla y la escalera alumbrada
+  desde abajo. Al tocarla, la cámara anda hasta ella, se asoma y baja a lo alto de la escalera de la bodega; al subir, lo
+  mismo al revés. Pilar avisa: «Cuidado con el escalón, que el tercero cruje.». Mientras se baja o se sube, la pantalla no
+  responde. En la bodega, un botón de píxel «Subir al café» (escalera con flecha) arriba a la derecha, porque al llegar la
+  escalera queda a la espalda.
+- **La bodega**: bóveda de ladrillo con dos arcos, suelo de losas, barricas tumbadas y un botellero al fondo, dos faroles
+  colgados y un ventanuco. Cuadrícula de **5 × 5**, con sus asientos y sus clientes (se les lleva el café bajando la
+  escalera; preparar se hace siempre en la barra de arriba). Con movimiento reducido, se cambia de planta directo.
+- **Decorar en dos plantas**: desde el nivel 6, arriba en el centro, «El café» y «La bodega» eligen la cuadrícula; al empezar,
+  la de la planta en la que estás. Lo nuevo se coloca en la planta elegida; para bajar o subir algo, se cambia de planta y se
+  toca una casilla. Máximo de cosas colocadas, **40** desde el nivel 6 (32 hasta el 5).
+- **Muebles nuevos** (tienda del café): mesa de barrica (220 granos), banco de bodega (2 × 1, dos asientos, 260) y candil de
+  pared (300, hito 1). Modelos 3D propios con su luz cálida.
+- **Servidor**: migración `20261214120000_cafe_sotano.sql` (la aplica Francisco; va después de la del bloque 4b): amplía a
+  nivel 8 y 10 clientes las comprobaciones, añade los tres muebles, el nivel 6 en `cafe_nivel_desde`/`cafe_nivel_de`,
+  tickets, huecos, umbral de hitos y `cafe_granos_hito`, el banco de dos asientos, hasta 8 clientes y las casillas del
+  sótano en `cafe_casilla_valida`/`cafe_plano_valido` (40 cosas).
+- **Pruebas**: Vitest `cafe-sotano.rls.test.js` (4) y la suite del café; e2e `v1125-cafe-bodega.spec.js` (bajar, clientes de
+  abajo, Decorar en la bodega, llevar un café abajo y subir; y subir al nivel 6 con su recorrido).

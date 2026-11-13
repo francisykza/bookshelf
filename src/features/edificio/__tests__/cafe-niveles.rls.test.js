@@ -39,7 +39,7 @@ describe('el café-librería del bajo, bloque 4a: niveles, tickets, hitos y cart
       expect(q).toEqual({ d: CAFE_NIVELES[n - 1].desde, t: TICKETS_NIVEL[n], td: ticketsDelDia(n), h: HUECOS[n] });
       for (const k of [1, 2, 3]) expect((await db.query('select cafe_hito_umbral($1, $2) u', [n, k])).rows[0].u).toBe(umbralHito(n, k));
     }
-    expect(Object.values(TICKETS_NIVEL).reduce((a, b) => a + b, 0)).toBe(230);
+    expect([1, 2, 3, 4, 5].reduce((a, n) => a + TICKETS_NIVEL[n], 0)).toBe(230);
     for (const r of [0, 299, 300, 474, 475, 999, 1000, 1749, 1750, 2500, 5000, 9999]) {
       const q = (await db.query('select cafe_nivel_de($1) n, cafe_carta($1) c', [r])).rows[0];
       expect(q).toEqual({ n: nivelDe(r), c: cartaDe(r) });

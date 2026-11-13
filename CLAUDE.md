@@ -218,6 +218,14 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       silla de terraza, macetero largo; hito, farol de forja). **Clientes al día 6 en el nivel 4 y 7 en el 5, solo con al menos
       tantos asientos colocados** (si faltan, vienen menos, sin castigo y con un aviso amable de Pilar; nunca menos que en los
       niveles 1 a 3); el **tope diario de reputación** sube en proporción. Tickets, huecos e hitos, sin cambios.
+      **El sótano, cifras aprobadas** (Francisco, 13-11-2026, «Sí, esas cifras»; `docs/qa/cafe-libreria.md` §14): **nivel 6, la
+      bodega** (desde 10.000 de reputación), **7, el tostadero** (15.000) y **8, la sala de catas** (21.000; sus hitos hasta
+      27.000); tickets al subir **80 / 90 / 100** (el tope de 5 al día no cambia); **hasta 8 / 9 / 10 clientes** con asientos (los
+      del sótano cuentan); **48 / 54 / 60 huecos**; muebles de 200–300, 250–350 y 300–400 granos; 3.er hito de 20, 20 y 25 granos.
+      **El tostadero**: un saco al día (no se acumula más de uno, sin plazo), recogido tirando de la trampilla del tambor; 5 tazas de
+      «tueste de la casa» por saco, a +3 granos y +4 de reputación. **Chai con especias** (nivel 8, bebida; mortero, cuatro golpes)
+      y **café brûlée** (nivel 8, toque; soplete en zigzag). Los niveles 1 a 5 y sus hitos no cambian. Por bloques con capturas:
+      6a bodega, 6b tostadero, 6c sala de catas; migración en cada uno (la aplica él).
       **Mejoras de la casa y del café**: se le recomendó mantenerlas separadas con los puentes que ya hay (12-11-2026); sin
       decisión suya todavía.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,

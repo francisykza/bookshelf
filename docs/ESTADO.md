@@ -6,6 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.125.0** (2026-11-13, §125). El café-librería del bajo, **bloque 6a** (cifras aprobadas, «Sí, esas cifras»): el nivel 6, «La bodega», con la trampilla tras la barra, la cámara que baja, la cuadrícula 5 × 5 del sótano con sus asientos y clientes, Decorar en dos plantas y tres muebles nuevos. **Migración nueva sin aplicar**: `20261214120000_cafe_sotano.sql` (va después de la del bloque 4b). Evidencias en `qa-report/cafe-bodega/`. Las interpretaciones de `cafe-libreria.md` §14.7 quedan aceptadas con la aprobación. Siguiente: 6b (el tostadero), solo con su visto bueno.
 - **Aprobada por Francisco («Me valen, commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.124.0** (2026-11-12, §124). Los carteles de la fachada, según la maqueta de Francisco: placas de madera, esmalte y latón para las viviendas (libre, tuya y de un vecino), el rótulo colgante del café con «Se traspasa» y la placa azul del Gran Hotel. Solo visual; ni migraciones ni datos. Capturas en `qa-report/placas/`.
 - **En la rama `1.90-escritorio-puerto`, sin publicar: 1.123.0** (aprobada por Francisco con la limusina movida; commit pedido por él) (2026-11-12, §123). El café-librería del bajo, **bloque 4b** (cifras aprobadas, «Sí, esas cifras»): el ala lateral del nivel 4 (pared de la izquierda abierta, cuadrícula 9 × 9, vainilla rascando la vaina), la terraza y el escaparate del nivel 5 (acera con toldo y farolillos, tres leídos de cara a la calle y visibles desde la fachada, placa con el nombre, café con hielo agitando la coctelera), clientes según los asientos (6 y 7, nunca menos de 5, con aviso de Pilar) y ocho muebles nuevos. **Migración nueva sin aplicar**: `20261213120000_cafe_ampliacion.sql` (va después de la del bloque 4a). Evidencias en `qa-report/cafe-ampliacion/`. Interpretaciones por confirmar en `cafe-libreria.md` §13 (el ala a la izquierda, 32 cosas, leche fría).
 - **Aprobada por Francisco, con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.122.0** (2026-11-12, §122; «Sí, lo apruebo», con las interpretaciones de `cafe-libreria.md` §12). El café-librería del bajo, **bloque 4a**: subir de nivel con el cartel y un recorrido de cámara, tickets del nivel y del día, tres hitos por nivel, la tienda del café en Decorar (nueve muebles nuevos), el fondo del local en los niveles 2 (ventanal al puerto) y 3 (estanterías hasta el techo y chimenea), la cuadrícula tres filas más honda desde el nivel 2, la carta por días y en la barra el chocolate (cazo y molinillo) y la nata (bol y varillas). **Migración nueva sin aplicar**: `20261212120000_cafe_niveles.sql` (va después de las dos del café). Evidencias en `qa-report/cafe-niveles/`. Siguiente: el bloque 4b, ya con el local que crece por plantas (§12.1), tras aprobar sus cifras.
@@ -264,6 +265,28 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · Café, bloque 6a: la trampilla y la bodega · 1.125.0 (§125), commit en la rama (Claude)
+- Francisco aprobó las cifras del sótano («Sí, esas cifras»; en `CLAUDE.md` y `cafe-libreria.md` §14) y pidió hacerlo por bloques
+  con capturas: este es el 6a.
+- Hecho: nivel 6 en dominio (`cafeCatalogo.js`, `cafeNiveles.js`, `cafeClientes.js`), la bodega en 3D (`cafe3d.js`,
+  `cafeLayout.js`: sala aparte a x 39,4–47,6, `cambiarPlanta` con cortes de cámara), tres muebles (`cafeMuebles.js`,
+  `cafeIconos.js`), Decorar por planta y botón «Subir al café» (`Cafe.jsx`, `cafe.css`), el simulador (`cafeMock.js`) y la
+  migración `20261214120000_cafe_sotano.sql` (**sin aplicar; la aplica Francisco**).
+- Interpretaciones por confirmar (§14.7): 40 cosas desde el nivel 6, preparar siempre en la barra de arriba, el botón de subir
+  en la esquina, y el 2.º hito del 6 sin premio.
+- Pruebas: Vitest de `src/features/edificio` (392, con `cafe-sotano.rls.test.js`) en verde; e2e `v1125-cafe-bodega.spec.js`
+  en Chromium 360, 390, 430 y 1440 y WebKit 390: 7 en verde (la subida de nivel solo va a 390). Una primera tanda falló en
+  360 y 430 porque el cartel «Primer cliente del día» tapaba «Hasta luego»: la prueba ahora lo cierra; no era un fallo de la
+  app. Regresión `v1119` a `v1123` en Chromium 390: 15 en verde. Build limpio y oxlint sin avisos en el café. Sin móviles reales. Francisco lo aprobó («Sí, haz el commit»):
+  **commit en la rama**, sin subir ni fusionar con `main`; las interpretaciones de §14.7 quedan aceptadas. La migración sigue sin
+  aplicar.
+
+### 2026-11-13 · Propuesta del sótano del café (niveles 6 a 8), sin commit (Claude)
+- Francisco pidió la propuesta («Proponer el sótano»). Está en `docs/qa/cafe-libreria.md` §14: umbrales 10.000 / 15.000 / 21.000,
+  tickets 80 / 90 / 100 al subir (tope diario de 5 sin cambios), hasta 8 / 9 / 10 clientes con asientos, 48 / 54 / 60 huecos,
+  el tostadero (un saco al día, 5 tazas de «tueste de la casa» a +3 granos y +4 de reputación), el chai (mortero) y el café
+  brûlée (soplete), y una alternativa más rápida. **Pendiente de su aprobación**; no se ha tocado código. Sin commit.
 
 ### 2026-11-12 · Los carteles de la fachada · 1.124.0 (§124), commit en la rama (Claude)
 - Encargo de Francisco con maqueta: rediseñar solo los carteles que se tocan en la fachada (viviendas, café y hotel). La

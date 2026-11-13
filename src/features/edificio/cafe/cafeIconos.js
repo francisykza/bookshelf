@@ -555,6 +555,83 @@ const FAROL = {
     '....kkkkkk....',
   ],
 };
+// Bloque 6a (1.125): los de la bodega
+const BARRICA = {
+  paleta: { d: '#5c3a24', m: '#80522f', l: '#a8784a', k: '#403a38', w: '#f0e6ce', y: '#ffd27a' },
+  filas: [
+    '.....y........',
+    '.....w........',
+    '..dddddddddd..',
+    '.llllllllllll.',
+    '..kkkkkkkkkk..',
+    '..mmlmmlmmlm..',
+    '.mmmlmmlmmlmm.',
+    '.kkkkkkkkkkkk.',
+    '.mmmlmmlmmlmm.',
+    '.mmmlmmlmmlmm.',
+    '..kkkkkkkkkk..',
+    '..mmlmmlmmlm..',
+    '...dddddddd...',
+  ],
+};
+const BANCO_BODEGA = {
+  paleta: { d: '#5c3a24', m: '#80522f', l: '#a8784a', a: '#aa8c62', k: '#403a38' },
+  filas: [
+    '................',
+    '.d............d.',
+    '.dmmmmmmmmmmmmd.',
+    '.dmmmmmmmmmmmmd.',
+    '.d............d.',
+    '..aaaaaa.aaaaaa.',
+    'llllllllllllllll',
+    'dddddddddddddddd',
+    '.mmmm......mmmm.',
+    '.kkkk......kkkk.',
+    '.mmmm......mmmm.',
+    '.mmmm......mmmm.',
+    '.dddd......dddd.',
+  ],
+};
+const CANDIL = {
+  paleta: { k: '#363032', K: '#544c4c', y: '#ffe0a0', Y: '#ffb860' },
+  filas: [
+    '..kkkkkkk.....',
+    '..k.....k.....',
+    '..k.kk..k.....',
+    '..k.....k.....',
+    '..k....kkk....',
+    '..k...KkkkY...',
+    '..k....kk.y...',
+    '..k...........',
+    '.kkk..........',
+    '..k...........',
+    '..k...........',
+    '..k...........',
+    '.k.k..........',
+    'k...k.........',
+  ],
+};
+
+/** Bloque 6a: subir al café desde la bodega (una escalera de piedra con su flecha). */
+export const SUBIR = {
+  paleta: { p: '#8a7e70', P: '#b4a690', m: '#4a3a30', y: '#ffd27a', Y: '#e7b765' },
+  filas: [
+    '.........yy...',
+    '........yyyy..',
+    '.......yyyyyy.',
+    '.........yy...',
+    '.........yy...',
+    '........PPPPP.',
+    '........ppppp.',
+    '.....PPPPpppp.',
+    '.....ppppmppp.',
+    '..PPPPpppmppp.',
+    '..ppppmpppppp.',
+    'PPPpppmpppppp.',
+    'pppmpppppmppp.',
+    'mmmmmmmmmmmmm.',
+  ],
+};
 
 const POR_MUEBLE = {
   'cafe-mesa': MESA,
@@ -581,6 +658,9 @@ const POR_MUEBLE = {
   'cafe-silla-terraza': SILLA_TERRAZA,
   'cafe-macetero': MACETERO,
   'cafe-farol': FAROL,
+  'cafe-barrica': BARRICA,
+  'cafe-banco-bodega': BANCO_BODEGA,
+  'cafe-candil': CANDIL,
 };
 /** El icono de un mueble del café o de casa (los de casa sin dibujo propio, una caja). */
 export const iconoDe = (id) => POR_MUEBLE[id] ?? CAJA;

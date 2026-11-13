@@ -446,6 +446,72 @@ function farol() {
   return out;
 }
 
+// ── Bloque 6a (1.125): la bodega ──
+const ROBLE = [128, 82, 50];
+const ROBLE_D = [92, 58, 36];
+const ROBLE_L = [158, 106, 66];
+const ARO = [64, 58, 56];
+
+/** Mesa de barrica: un tonel de roble de pie, con sus aros de hierro, la tapa de madera y una vela en su palmatoria. */
+function barrica() {
+  const out = [];
+  // El tonel, con la panza un poco más ancha (tres escalones de píxel) y las duelas marcadas
+  out.push(b([0.26, 0.26, 0, 0.74, 0.74, 0.86], ROBLE_D));
+  out.push(b([0.2, 0.24, 0.12, 0.8, 0.76, 0.74], ROBLE), b([0.24, 0.2, 0.12, 0.76, 0.8, 0.74], ROBLE));
+  out.push(b([0.18, 0.28, 0.26, 0.82, 0.72, 0.6], ROBLE_L), b([0.28, 0.18, 0.26, 0.72, 0.82, 0.6], ROBLE_L));
+  for (const x of [0.36, 0.5, 0.64]) out.push(b([x, 0.175, 0.14, x + 0.015, 0.18, 0.72], ROBLE_D), b([0.175, x, 0.14, 0.18, x + 0.015, 0.72], ROBLE_D));
+  for (const z of [0.1, 0.36, 0.5, 0.76]) {
+    const ancho = z === 0.36 || z === 0.5 ? 0.17 : 0.19;
+    out.push(b([ancho, ancho + 0.06, z, 1 - ancho, 1 - ancho - 0.06, z + 0.04], ARO), b([ancho + 0.06, ancho, z, 1 - ancho - 0.06, 1 - ancho, z + 0.04], ARO));
+  }
+  // La tapa: un tablero redondo de roble, más ancho que el tonel
+  out.push(b([0.12, 0.22, 0.86, 0.88, 0.78, 0.92], ROBLE_D), b([0.22, 0.12, 0.86, 0.78, 0.88, 0.92], ROBLE_D));
+  out.push(b([0.14, 0.24, 0.92, 0.86, 0.76, 0.94], ROBLE_L), b([0.24, 0.14, 0.92, 0.76, 0.86, 0.94], ROBLE_L));
+  // Una palmatoria de latón con su vela encendida y una taza
+  out.push(b([0.3, 0.3, 0.94, 0.44, 0.44, 0.96], LATON), b([0.34, 0.34, 0.96, 0.4, 0.4, 1.08], [240, 230, 206]));
+  out.push(b([0.355, 0.355, 1.08, 0.385, 0.385, 1.13], [255, 210, 130], { glow: true }));
+  out.push(b([0.54, 0.52, 0.94, 0.68, 0.66, 0.95], [236, 232, 222]), b([0.57, 0.55, 0.95, 0.65, 0.63, 1.03], [244, 240, 232]));
+  return out;
+}
+
+/** Banco de bodega: un tablón grueso de roble sobre dos pies de barrica cortada, con un cojín de arpillera (respaldo de pared). */
+function bancoBodega() {
+  const out = [];
+  for (const x of [0.16, 1.5]) {
+    out.push(b([x, 0.26, 0, x + 0.34, 0.74, 0.4], ROBLE));
+    out.push(b([x - 0.02, 0.28, 0.06, x + 0.36, 0.72, 0.1], ARO), b([x - 0.02, 0.28, 0.3, x + 0.36, 0.72, 0.34], ARO));
+  }
+  out.push(b([0.08, 0.2, 0.4, 1.92, 0.8, 0.5], ROBLE_D), b([0.1, 0.22, 0.5, 1.9, 0.78, 0.52], ROBLE_L));
+  // Las vetas del tablón y los dos cojines de arpillera
+  for (const x of [0.5, 1.0, 1.5]) out.push(b([x, 0.22, 0.52, x + 0.02, 0.78, 0.521], ROBLE_D));
+  out.push(b([0.2, 0.3, 0.52, 0.94, 0.72, 0.58], [170, 140, 98]), b([1.06, 0.3, 0.52, 1.8, 0.72, 0.58], [170, 140, 98]));
+  // El respaldo, una tabla baja en y = 0.16
+  out.push(b([0.12, 0.14, 0.5, 0.2, 0.22, 0.98], ROBLE_D), b([1.8, 0.14, 0.5, 1.88, 0.22, 0.98], ROBLE_D));
+  out.push(b([0.1, 0.13, 0.72, 1.9, 0.21, 0.94], ROBLE));
+  return out;
+}
+
+/** Candil de hierro de pie (hito del nivel 6): un pie de trípode y el candil colgado de su brazo, encendido. */
+function candil() {
+  const out = [];
+  for (const [x0, y0, x1, y1] of [
+    [0.24, 0.46, 0.5, 0.54],
+    [0.5, 0.46, 0.76, 0.54],
+    [0.46, 0.24, 0.54, 0.5],
+  ])
+    out.push(b([x0, y0, 0, x1, y1, 0.05], ARO));
+  out.push(b([0.47, 0.47, 0.05, 0.53, 0.53, 1.7], ARO), b([0.44, 0.44, 0.9, 0.56, 0.56, 0.94], ARO));
+  // El brazo y la voluta, hacia +y
+  out.push(b([0.47, 0.47, 1.66, 0.53, 0.84, 1.7], ARO), b([0.47, 0.8, 1.58, 0.53, 0.84, 1.7], ARO));
+  out.push(b([0.47, 0.53, 1.74, 0.53, 0.62, 1.78], ARO), b([0.47, 0.6, 1.7, 0.53, 0.64, 1.76], ARO));
+  // El candil: la cazoleta de hierro, el pico con la llama y la cadenita
+  out.push(b([0.49, 0.8, 1.42, 0.51, 0.82, 1.58], ARO));
+  out.push(b([0.4, 0.72, 1.3, 0.6, 0.9, 1.42], ARO), b([0.43, 0.75, 1.42, 0.57, 0.87, 1.44], [120, 90, 60]));
+  out.push(b([0.47, 0.9, 1.36, 0.53, 0.98, 1.42], ARO));
+  out.push(b([0.48, 0.92, 1.42, 0.52, 0.96, 1.52], [255, 200, 110], { glow: true }), b([0.485, 0.925, 1.52, 0.515, 0.955, 1.57], [255, 236, 170], { glow: true }));
+  return out;
+}
+
 const MODELOS = {
   'cafe-mesa': mesa,
   'cafe-silla': silla,
@@ -469,6 +535,9 @@ const MODELOS = {
   'cafe-silla-terraza': sillaTerraza,
   'cafe-macetero': macetero,
   'cafe-farol': farol,
+  'cafe-barrica': barrica,
+  'cafe-banco-bodega': bancoBodega,
+  'cafe-candil': candil,
 };
 /** Los muebles del café que enseñan tus libros en sus baldas. */
 export const ESTANTERIAS = ['cafe-estanteria', 'cafe-estanteria-alta', 'cafe-biombo'];
@@ -483,4 +552,4 @@ export function cajasDe(id, libros = []) {
 }
 
 /** Si el mueble da luz (para que la escena lo sepa). */
-export const daLuz = (id) => ['cafe-lampara', 'cafe-vitrina', 'cafe-bankers', 'cafe-farol', 'cafe-piano'].includes(id) || Boolean(catalogItem(id)?.luz);
+export const daLuz = (id) => ['cafe-lampara', 'cafe-vitrina', 'cafe-bankers', 'cafe-farol', 'cafe-piano', 'cafe-candil', 'cafe-barrica'].includes(id) || Boolean(catalogItem(id)?.luz);

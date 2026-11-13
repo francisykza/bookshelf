@@ -47,6 +47,22 @@ export const ALA = { x0: -3.4, x1: 0, pilar: 0.35 };
 export const ACERA = { x0: 0.4, x1: 9.0, y0: SD + 0.35, y1: SD + 3.9 };
 /** La pared de la izquierda, donde esté: en x = 0 hasta el nivel 3; al fondo del ala desde el 4. */
 export const paredIzquierda = (nivel = 1) => (nivel >= 4 ? ALA.x0 : 0);
+/**
+ * Bloque 6a (1.125): la bodega del sótano (nivel 6). Se baja por la trampilla de detrás de la barra (al fondo del pasillo de
+ * Pilar). En el mundo va aparte, lejos del local (x desde 39,4), con el suelo en z = 0 como el café: así se anda, se toca y
+ * se decora igual. Bóveda de ladrillo, barricas tumbadas en la pared izquierda, un botellero al fondo y la escalera a la
+ * derecha, que sube hasta el hueco de la trampilla.
+ */
+export const BODEGA = { x0: 39.4, x1: 47.6, y0: -0.6, y1: 7.0, alto: 3.4 };
+export const TRAMPILLA = { x0: 8.4, x1: 9.5, y0: 1.4, y1: 2.8 };
+export const ESCALERA_BODEGA = { x0: 46.2, x1: 47.5, y0: 2.6, y1: BODEGA.y1 };
+/** Al pie de la escalera de la bodega, mirando a la sala. */
+export const LLEGADA_BODEGA = { x: 46.8, y: 1.9, yaw: Math.atan2(42.5 - 46.8, 3.0 - 1.9) };
+/** Junto a la trampilla, en el café, mirando al local (al subir). */
+export const ANTE_TRAMPILLA = { x: 7.8, y: 2.1, yaw: Math.atan2(4.0 - 7.8, 6.0 - 2.1) };
+/** La planta de un punto del mundo. */
+export const plantaEn = (x) => (x >= BODEGA.x0 - 2 ? 'bodega' : 'calle');
+
 /** La estantería vieja, vacía, en la pared izquierda. */
 export const ESTANTERIA = { y0: 5.0, y1: 8.6, fondo: 0.42, alto: 2.4 };
 
@@ -78,6 +94,25 @@ export const CAJA_LIBROS = { x0: 7.35, y0: 7.95, x1: 8.0, y1: 8.5, alto: 0.5 };
  * Lo que se toca: su caja en el mundo (para el toque y su letrero), dónde va su letrero y adónde se va y se mira al llegar.
  */
 export const SITIOS = {
+  // Bloque 6a: la trampilla (en el café, desde el nivel 6) y la escalera de la bodega. Los demás sitios son del café
+  trampilla: {
+    nombre: 'Bajar a la bodega',
+    planta: 'calle',
+    nivel: 6,
+    box: [TRAMPILLA.x0, TRAMPILLA.y0, 0, TRAMPILLA.x1, TRAMPILLA.y1, 1.0],
+    tag: [(TRAMPILLA.x0 + TRAMPILLA.x1) / 2, (TRAMPILLA.y0 + TRAMPILLA.y1) / 2, 1.25],
+    ir: ANTE_TRAMPILLA,
+    mira: [9.0, 2.1],
+  },
+  subir: {
+    nombre: 'Subir al café',
+    planta: 'bodega',
+    nivel: 6,
+    box: [ESCALERA_BODEGA.x0, ESCALERA_BODEGA.y0, 0, ESCALERA_BODEGA.x1, ESCALERA_BODEGA.y0 + 2.2, 1.7],
+    tag: [(ESCALERA_BODEGA.x0 + ESCALERA_BODEGA.x1) / 2, ESCALERA_BODEGA.y0 + 0.9, 1.75],
+    ir: LLEGADA_BODEGA,
+    mira: [46.85, 5.0],
+  },
   pilar: { nombre: 'Pilar', box: [PILAR.x - 0.5, PILAR.y - 0.5, 0.9, PILAR.x + 0.5, PILAR.y + 0.5, 2.2], tag: [PILAR.x, PILAR.y, 2.35], ir: ANTE_PILAR, mira: [PILAR.x, PILAR.y] },
   cortina: { nombre: 'El resto del local', box: [0.2, CORTINA.y - 0.1, 0, 7.2, CORTINA.y + 0.15, CORTINA.alto], tag: [CABALLETE.x, CORTINA.y, 2.6], ir: { x: 3.6, y: 6.2 }, mira: [3.6, 0] },
   escaparate: {
@@ -102,10 +137,18 @@ export const SITIOS = {
  * (pasada la estantería vieja) al pasillo del mostrador, y de la cortina (pasado el caballete) al escaparate.
  */
 export const CUADRO = { x0: 0.6, y0: 4.45, celda: 1 };
-/** Esquina de una casilla en el mundo. */
-export const enMundo = (cx, cy) => ({ x: CUADRO.x0 + cx * CUADRO.celda, y: CUADRO.y0 + cy * CUADRO.celda });
+/** Bloque 6a: la cuadrícula de la bodega (filas 20 a 24 del plano, `SOTANO` en cafeCatalogo.js), pasadas las barricas. */
+export const CUADRO_BODEGA = { x0: 40.7, y0: 0.7, fila: 20 };
+/** Esquina de una casilla en el mundo (las filas desde la 20 son de la bodega). */
+export const enMundo = (cx, cy) =>
+  cy >= CUADRO_BODEGA.fila
+    ? { x: CUADRO_BODEGA.x0 + cx * CUADRO.celda, y: CUADRO_BODEGA.y0 + (cy - CUADRO_BODEGA.fila) * CUADRO.celda }
+    : { x: CUADRO.x0 + cx * CUADRO.celda, y: CUADRO.y0 + cy * CUADRO.celda };
 /** La casilla bajo un punto del mundo (puede caer fuera de la cuadrícula). */
-export const enCasilla = (x, y) => ({ x: Math.floor((x - CUADRO.x0) / CUADRO.celda), y: Math.floor((y - CUADRO.y0) / CUADRO.celda) });
+export const enCasilla = (x, y) =>
+  plantaEn(x) === 'bodega'
+    ? { x: Math.floor((x - CUADRO_BODEGA.x0) / CUADRO.celda), y: CUADRO_BODEGA.fila + Math.floor((y - CUADRO_BODEGA.y0) / CUADRO.celda) }
+    : { x: Math.floor((x - CUADRO.x0) / CUADRO.celda), y: Math.floor((y - CUADRO.y0) / CUADRO.celda) };
 
 const HOLGURA = 0.35;
 const choca = (x, y, [x0, y0, , x1, y1], h = HOLGURA) => x > x0 - h && x < x1 + h && y > y0 - h && y < y1 + h;
@@ -114,7 +157,16 @@ const choca = (x, y, [x0, y0, , x1, y1], h = HOLGURA) => x > x0 - h && x < x1 + 
  * atravesar el mostrador ni los bultos.
  * `limpio`: el local ya inaugurado (sin cajas, sábanas ni escalera); `muebles`: cajas del mundo de lo colocado.
  */
-export function dentro(x, y, { limpio = false, muebles = [], nivel = 1 } = {}) {
+export function dentro(x, y, { limpio = false, muebles = [], nivel = 1, planta = 'calle' } = {}) {
+  // Bloque 6a: en la bodega, entre las barricas, el botellero y la pared de delante, sin pisar la escalera
+  if (planta === 'bodega') {
+    if (x < BODEGA.x0 + 1.1 || x > BODEGA.x1 - 0.5 || y < BODEGA.y0 + 0.75 || y > BODEGA.y1 - 0.5) return false;
+    if (x > ESCALERA_BODEGA.x0 - HOLGURA && y > ESCALERA_BODEGA.y0 - 0.15) return false;
+    return !muebles.some((b) => choca(x, y, b, 0.22));
+  }
+  if (x > BODEGA.x0 - 2) return false;
+  // El hueco abierto de la trampilla (nivel 6)
+  if (nivel >= 6 && x > TRAMPILLA.x0 - 0.2 && y > TRAMPILLA.y0 - 0.2 && y < TRAMPILLA.y1 + 0.2) return false;
   // Nivel 5: la acera de la terraza; entre dentro y fuera, solo por la puerta
   if (nivel >= 5 && y > SD - 0.5) {
     if (y < ACERA.y0) {

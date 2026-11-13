@@ -373,3 +373,75 @@ Francisco las confirme o las cambie:
 - En la fachada, la placa del bajo dice el nombre del café desde que se inaugura (antes, «Se traspasa» siempre).
 - **Revisión de Francisco** (12-11-2026): la limusina con el chófer tapaba la terraza; pasa a la izquierda del portal,
   delante de la librería. Hecho en la misma 1.123.0.
+
+## 14. El sótano: niveles 6, 7 y 8 (aprobado, 13-11-2026)
+
+Desarrolla §12.1 («Vale, me parece bien» en lo general). **Cifras aprobadas por Francisco** el 13-11-2026 («Sí, esas
+cifras»), las de la tabla; la alternativa más rápida queda descartada.
+
+### 14.1 Ritmo de hoy, para medir
+
+Con 3 estrellas, un día completo deja unas 70 de reputación en el nivel 1 y unas 125 en el 5 (los clientes, más el
+excéntrico). Hoy se tarda, más o menos, 4 días en el nivel 1, 9 en el 2, 16 en el 3, 23 en el 4 y unos 40 en el 5 hasta
+su tercer hito (8.750). Los hitos del nivel 5 no cambian.
+
+### 14.2 Los tres niveles
+
+| | Nivel 6 · La bodega | Nivel 7 · El tostadero | Nivel 8 · La sala de catas |
+| --- | --- | --- | --- |
+| Empieza en | 10.000 de reputación | 15.000 | 21.000 (sus hitos, hasta 27.000) |
+| Días aprox. (3 estrellas) | unos 35 | unos 38 | unos 38 hasta su 3.er hito |
+| Tickets al subir | 80 | 90 | 100 |
+| Tickets del día | 5 (el tope de 5 no cambia) | 5 | 5 |
+| Clientes al día, con asientos | hasta 8 | hasta 9 | hasta 10 |
+| Huecos en la balda | 48 | 54 | 60 |
+| El sótano | se abre la trampilla tras la barra: bóveda de ladrillo, cuadrícula 5 × 5 | crece: cuadrícula 7 × 5, con el tostador | crece: cuadrícula 9 × 6, con la mesa de catas |
+| Lo nuevo de la carta (2.º hito) | — (el nivel abre la bodega) | **Tueste de la casa** (grano) | **Chai con especias** (bebida) y **café brûlée** (toque) |
+| Muebles (1.er hito y tienda) | barricas de mesa, banco de bodega, candil de pared: 200–300 granos | saco de arpillera, estantería de latas: 250–350 | mesa de catas, butaca de cuero, mapa de cafés: 300–400 |
+| 3.er hito | 20 granos | 20 granos | 25 granos |
+
+Los tickets de nivel suman 270 más (500 en total con los de los niveles 1 a 5). El tope de 5 tickets al día no sube.
+
+### 14.3 Para qué sirve el espacio (que se juegue mejor, no solo decorar)
+
+- **Más sitio, más clientes**: el sótano tiene su cuadrícula y sus asientos cuentan como los de arriba. Los clientes del día
+  siguen saliendo de los asientos colocados, con el tope del nivel (si faltan, vienen menos, sin castigo, como en el 4 y el 5).
+- **El tostadero** (nivel 7): **un saco al día**, que se recoge cuando quieras, sin plazo ni pérdida (si no lo recoges, no se
+  acumula más de uno). Recogerlo es un gesto propio: **tirar de la trampilla del tambor hacia ti** y los granos caen al
+  enfriador. Cada saco da **5 tazas de «tueste de la casa»**. Algunos clientes lo piden; si te queda, se elige en la barra
+  como un grano más y esa taza paga **+3 granos y +4 de reputación**. Si no te queda, se sirve con otro grano y solo se pierde
+  ese punto, como un fallo cualquiera.
+- **La balda de la bodega**: los 6 huecos más de cada nivel son baldas del sótano; se recomiendan igual que las de arriba.
+
+### 14.4 Las recetas nuevas, cada una con su gesto y su objeto
+
+- **Tueste de la casa** (nivel 7, grano): el saco del tostadero junto al molinillo; luego se muele como siempre.
+- **Chai con especias** (nivel 8, bebida): **machacar las especias en el mortero** con toques secos (cuatro golpes), y después
+  la tetera como el té.
+- **Café brûlée** (nivel 8, toque): una capa de azúcar sobre la espuma y **pasar el soplete en zigzag** sin soltar hasta que
+  dore. Con movimiento reducido, un toque.
+
+Nada de esto puede salir mal del todo: fallar paga menos, nunca cero, como ahora.
+
+### 14.5 Lo que no cambia
+
+Los niveles 1 a 5 y sus hitos, los pagos por estrellas, el excéntrico del día, las cajas de libros, el tope de 5 tickets al
+día y las reglas de siempre (sin castigos, rachas, energía ni cuentas atrás). La segunda planta, pasado el 8, queda para
+más adelante, con su propia propuesta.
+
+### 14.6 Cómo se haría
+
+Por bloques, con capturas entre uno y otro: **6a**, la trampilla y la bodega (nivel 6, la escalera, la cámara que baja,
+la cuadrícula del sótano, los asientos y los clientes); **6b**, el tostadero y el tueste de la casa (nivel 7); **6c**, la
+sala de catas, el chai y el café brûlée (nivel 8). Migración nueva en cada bloque, la aplica Francisco.
+
+**Alternativa más rápida**, si los días parecen muchos: empezar el 6 en 8.000, el 7 en 12.000 y el 8 en 17.000 (unos 20, 30 y
+32 días). Obliga a adelantar los hitos del nivel 5, que ya están hechos (el farol y el café con hielo llegarían antes).
+
+### 14.7 Bloque 6a, hecho (1.125.0, 13-11-2026), con interpretaciones por confirmar
+
+- **40 cosas colocadas** desde el nivel 6 (antes 32): con dos plantas no cabía lo de arriba más la bodega. No estaba en la tabla.
+- **Preparar, siempre arriba**: a un cliente de la bodega se le prepara en la barra (la escena salta a la barra) y se le lleva
+  la taza bajando la escalera.
+- **Botón «Subir al café»** en la esquina, además de la escalera: al llegar abajo la escalera queda a la espalda.
+- **El 2.º hito del nivel 6** no trae nada de la carta (la tabla dice «—»): se marca y se celebra, sin premio.
