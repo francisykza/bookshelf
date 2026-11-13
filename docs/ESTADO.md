@@ -6,12 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.127.0** (2026-11-13, §127). El café-librería del bajo,
+- **Publicada en producción: 1.127.0** (2026-11-13, §127; «Aplicar migración y publicar»; `main` avanza sin forzar desde `b6453ac`; migración `20261216120000_cafe_tostadero.sql` aplicada). El café-librería del bajo,
   **bloque 6b, el tostadero** (cifras aprobadas, «Sí, el tostadero»): nivel 7 desde 15.000, el sótano de 7 × 5 con el tostador,
   un saco al día recogido tirando de la trampilla del tambor (5 tazas de «tueste de la casa», +3 granos y +4 de reputación cada
-  una), 90 tickets, 9 clientes, 54 huecos, saco de arpillera y estantería de latas. **Migración nueva sin aplicar**:
+  una), 90 tickets, 9 clientes, 54 huecos, saco de arpillera y estantería de latas. **Migración aplicada** el 13-11-2026:
   `20261216120000_cafe_tostadero.sql` (va después de la del probador). Evidencias en `qa-report/cafe-tostadero/`.
-  Las interpretaciones de `cafe-libreria.md` §14.8 quedan aceptadas con la aprobación. Migración y `main`, solo cuando Francisco lo pida.
+  Las interpretaciones de `cafe-libreria.md` §14.8 quedan aceptadas con la aprobación. 
 - **Publicada en producción: 1.126.0** (2026-11-13, §126; `main` avanzó sin forzar de `cbb6d22` a `28d3f1c` y `/sw.js` de producción ya sirve v1.126.0; migración `20261215120000_cafe_probador.sql` aplicada y el script del probador con las dos cuentas, la de Francisco y la de su pareja). Tras probar la 1.125 en producción («esta genial»): la música
   propia del café (sintetizada, jazz lento de café; calla la de Sonido mientras estás dentro), un sonido por cada acción del
   café, la barra con una franja ligera y el cómo de cada gesto en una notita junto al objeto, y Pilar sin hablar de los sobres
@@ -310,6 +310,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · Migración del tostadero aplicada y 1.127.0 a producción (Claude)
+
+- Francisco: «Aplicar migración y publicar». `20261216120000_cafe_tostadero.sql` pegada en el SQL Editor del proyecto `bookshelf`
+  con `setValue` de Monaco (16 605 B, SHA-256 `4f09fbde…dcfdc77da`, igual al archivo de git) y ejecutada por él («Success.
+  No rows returned»). Con la clave pública dan 42501 al anónimo `cafe_recoger_saco`, `cafe_servir`, `cafe_granos_carta`,
+  `cafe_receta_carta`, `cafe_json`, `cafe_carta`, `cafe_casilla_valida`, `cafe_hito_umbral` y las tablas `cafe_locales` y
+  `cafe_catalogo`; una función inexistente da PGRST202, como control. Después, `main` avanzó sin forzar y se subió. Sin probar
+  con cuentas reales ni en móviles reales. Siguiente: la lista de Francisco del 13-11-2026 en «Pendiente».
 
 ### 2026-11-13 · Café, bloque 6b: el tostadero · 1.127.0 (§127), commit en la rama (Claude)
 
