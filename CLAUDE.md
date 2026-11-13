@@ -228,6 +228,21 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       6a bodega, 6b tostadero, 6c sala de catas; migración en cada uno (la aplica él).
       **Mejoras de la casa y del café**: se le recomendó mantenerlas separadas con los puentes que ya hay (12-11-2026); sin
       decisión suya todavía.
+    **Tras probar la 1.125 en producción** (Francisco, 13-11-2026, «esta genial»), por orden de importancia:
+    - **El sonido del café, lo primero**: la música del café tiene que sentirse **cozy**, y **cada acción tiene que tener un
+      sonido** que case con lo que se hace, atractivo y orgánico (andar, los clientes, servir, cobrar, decorar, la trampilla…,
+      no solo la barra). Sonidos y música propios y sintetizados, con las reglas de efectos de siempre.
+    - **Las indicaciones de la barra, más orgánicas**: hoy ocupan mucho; no deben tapar las herramientas.
+    - **Sin hablar de lo de antes**: la app la usan, por ahora, solo Francisco y su pareja; los diálogos no mencionan los
+      sobres, la reforma ni lo que había antes en el bajo.
+    - **Portadas reales** de los libros en el juego: quiere saber si se puede o si pesaría demasiado (se le contesta antes de
+      hacerlo). **Hechas en la 1.126** («Sí, haz las portadas en las fichas y el escaparate»; «mejóralas un poco»): en las
+      fichas, la imagen; en el escaparate, la portada pixelada a 36 × 54 (con 10 × 15 no se reconocía).
+    - **Jornadas de prueba para su cuenta** (Francisco, 13-11-2026: «Quiero que mi cuenta pueda jugar todo lo que quiera para
+      probar yo todas las funciones del juego y ver cosas cambiar o no»): las cuentas de `cafe_probadores` (solo la suya, con
+      `supabase/scripts/cafe_probador.sql`, a mano) juegan un día de prueba propio y, con todos atendidos, «Otra jornada» trae
+      clientes nuevos; lo ganado (granos, reputación, niveles y sus tickets) cuenta igual y no se borra nada. Para el resto no
+      cambia nada. No se extiende a nadie más sin que lo pida.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la

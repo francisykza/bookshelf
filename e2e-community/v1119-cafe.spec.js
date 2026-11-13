@@ -69,16 +69,17 @@ test('el bajo en traspaso: sin tienda, Pilar habla y lo tuyo no cambia', async (
   await expect(cafe.getByRole('button', { name: /^Abrir|^Comprar|^Reciclar/ })).toHaveCount(0);
   await expect(cafe.locator('.ts-wallet, .ts-packs, .ts-grid')).toHaveCount(0);
 
-  // Pilar saluda; al hablar con ella, la cámara va al mostrador y cuenta sus cuatro frases
+  // Pilar saluda; al hablar con ella, la cámara va al mostrador y cuenta sus tres frases
   await expect(cafe.locator('.cf3-dice')).toContainText('Cuidado con las cajas');
   await cafe.getByRole('button', { name: 'Hablar con Pilar' }).click();
   await expect(cafe.locator('.cf3-dice')).toContainText('Soy Pilar');
   await page.waitForFunction(() => window.__cafe3d?.settled());
   await page.waitForTimeout(500);
   await page.screenshot({ path: join(DIR, `2-pilar-${tam(info)}.png`) });
+  // 1.126: sin hablar de lo que había antes en el bajo (Francisco, 13-11-2026)
+  await expect(cafe.locator('.cf3-dice')).not.toContainText(/sobres|reforma|tickets/);
   await cafe.getByRole('button', { name: 'Seguir' }).click();
-  await expect(cafe.locator('.cf3-dice')).toContainText('tus tickets y tus muebles siguen contigo');
-  await cafe.getByRole('button', { name: 'Seguir' }).click();
+  await expect(cafe.locator('.cf3-dice')).not.toContainText(/sobres|reforma|tickets/);
   await expect(cafe.locator('.cf3-dice')).toContainText('un café con libros');
   await cafe.getByRole('button', { name: 'Seguir' }).click();
   await expect(cafe.locator('.cf3-dice')).toContainText('te doy las llaves');

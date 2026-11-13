@@ -33,6 +33,9 @@ const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
  * el servidor no tiene esa migración.
  * Libros en cajas (§121.3): `estado.libros` = { bienvenida, libros: [{ clave, titulo, genero, caja, balda }] }; el azar de
  * las cajas de género, aquí, en orden (para que las capturas sean siempre iguales).
+ * Jornadas de prueba (1.126, `20261215120000_cafe_probador.sql`): con `clientes.jornada` (AAAA-MM-DD), la cuenta prueba y
+ * juega ese día; `cafe_nueva_jornada` abre el siguiente si ya está todo el mundo atendido. `clientes.atendidosEn`: los días
+ * (AAAA-MM-DD) que empiezan con todo el mundo ya atendido (2 estrellas, sin libro).
  */
 export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null } = {}) {
   const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], llamadas: [], ...estado } : null;
@@ -159,12 +162,23 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       return json(route, vista());
     }
     if (rpc === 'cafe_fachada') return json(route, { inaugurado: c.inaugurado, nombre: c.nombre, nivel: c.nivel, escaparate: c.nivel >= 5 ? c.escaparate : [] });
+    if (clientes?.jornada && rpc === 'cafe_jornada') return json(route, jornada);
+    if (clientes?.jornada && rpc === 'cafe_nueva_jornada') {
+      const d = dias[jornada];
+      if (d && Object.keys(d.servidos).length < d.clientes + d.habituales) return falla(route, 'cafe:pendientes');
+      const sig = new Date(`${jornada}T12:00:00Z`);
+      sig.setUTCDate(sig.getUTCDate() + 1);
+      jornada = sig.toISOString().slice(0, 10);
+      c.llamadas.push({ rpc, jornada });
+      return json(route, jornada);
+    }
     if (clientes && ['cafe_dia', 'cafe_habitual', 'cafe_servir'].includes(rpc)) return diaDelCafe(route, rpc, body);
     if (clientes && ['cafe_bienvenida', 'cafe_comprar_caja', 'cafe_colocar'].includes(rpc)) return libros(route, rpc, body);
     return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
   });
   // ── Los clientes del día (bloque 3) ──
   const dias = {};
+  let jornada = clientes?.jornada ?? null;
   const pizarra = [];
   const ayer = clientes ? new Date(new Date(`${clientes.hoy}T12:00:00Z`).getTime() - 864e5).toISOString().slice(0, 10) : null;
   const semilla = (k) => clientes.semillas?.[k] ?? 1000 + k * 7919;
@@ -192,9 +206,13 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     pizarra: pizarra.slice(0, 6),
   });
   function diaDelCafe(route, rpc, body) {
-    if (body.dia !== clientes.hoy && body.dia !== ayer) return falla(route, 'cafe:dia');
+    if (body.dia !== clientes.hoy && body.dia !== ayer && body.dia !== jornada) return falla(route, 'cafe:dia');
     if (!c.inaugurado) return falla(route, 'cafe:cerrado');
     const d = (dias[body.dia] ??= { dia: body.dia, clientes: clientesDelNivel(c.nivel, asientosDe(c.plano)), habituales: 0, servidos: {}, carta: cartaDe(c.reputacion), tickets: 0 });
+    if (clientes.atendidosEn?.includes(d.dia) && !d.preparado) {
+      d.preparado = true;
+      for (let k = 1; k <= d.clientes; k += 1) d.servidos[k] = { encaja: false, receta: null, estrellas: 2, libro: null };
+    }
     let dado = null;
     let progreso = null;
     if (rpc === 'cafe_habitual') d.habituales = Math.min(MAX_HABITUALES, d.habituales + 1);

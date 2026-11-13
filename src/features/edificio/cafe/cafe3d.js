@@ -513,8 +513,13 @@ function puertaAbiertaKit(s) {
   pushBox(s, [x - 0.055, y0 + 0.14, 1.0, x - 0.045, y1 - 0.14, PUERTA.alto - 0.14], [70, 86, 120], { g: 0.7 });
   pushBox(s, [x - 0.09, y0 + 0.1, 1.0, x - 0.05, y0 + 0.16, 1.08], BRASS, { g: 0.7 });
 }
-/** El escaparate (nivel 5): una peana de madera con tus tres libros de cara a la calle y una lamparita que los alumbra. */
-function escaparateKit(s, libros = []) {
+/**
+ * El escaparate (nivel 5): una peana de madera con tus tres libros de cara a la calle y una lamparita que los alumbra. 1.126:
+ * con `portadas` (el lienzo pixelado de cada portada real, o null), la cubierta es su portada: devuelve dónde va cada una
+ * ({ lienzo, x, y, z } del centro, en el mundo de la app) para pintarla encima sin suavizar.
+ */
+function escaparateKit(s, libros = [], portadas = []) {
+  const conPortada = [];
   const y0 = SD - 0.5;
   const y1 = SD - 0.16;
   pushBox(s, [1.1, y0, 0, 5.7, y1, 0.5], WOOD_D);
@@ -532,6 +537,12 @@ function escaparateKit(s, libros = []) {
     pushBox(s, [x - 0.04, y1 - 0.24, z, x + 0.04, y1 - 0.16, z + 0.5], WOOD_D);
     pushBox(s, [x - 0.3, y1 - 0.12, z + 0.02, x + 0.3, y1 - 0.02, z + 0.86], c);
     pushBox(s, [x - 0.3, y1 - 0.13, z + 0.02, x - 0.26, y1 - 0.02, z + 0.86], c.map((v) => Math.max(0, v - 40)));
+    const lienzo = portadas[k];
+    if (lienzo) {
+      // La portada real, sobre la cubierta (a la derecha del lomo)
+      conPortada.push({ lienzo, x: x + 0.02, y: y1 - 0.014, z: z + 0.44 });
+      return;
+    }
     pushBox(s, [x - 0.24, y1 - 0.021, z + 0.08, x + 0.24, y1 - 0.016, z + 0.8], claro);
     pushBox(s, [x - 0.2, y1 - 0.016, z + 0.12, x + 0.2, y1 - 0.011, z + 0.76], c);
     pushBox(s, [x - 0.15, y1 - 0.011, z + 0.56, x + 0.15, y1 - 0.006, z + 0.64], claro);
@@ -542,6 +553,16 @@ function escaparateKit(s, libros = []) {
   pushBox(s, [5.5, y0 + 0.05, 0.54, 5.56, y0 + 0.11, 1.4], [52, 50, 56]);
   pushBox(s, [5.36, y0 + 0.02, 1.36, 5.6, y0 + 0.26, 1.5], BRASS);
   pushBox(s, [5.4, y0 + 0.06, 1.33, 5.56, y0 + 0.22, 1.36], BULB, { glow: true });
+  return conPortada;
+}
+/** El material de cada portada del escaparate (uno por lienzo, que ya se pide una vez por URL). */
+const materialPortada = new WeakMap();
+function portadaMaterial(lienzo) {
+  if (!materialPortada.has(lienzo)) {
+    // Sin luz propia: un poco más apagada que el lienzo para que no brille más que la madera de al lado
+    materialPortada.set(lienzo, new MeshBasicMaterial({ map: texture(lienzo), color: 0xe6ddd2 }));
+  }
+  return materialPortada.get(lienzo);
 }
 
 // ── Cajas: mundo de la app (x, y a lo hondo, z arriba) → Three (x, z, y) ──
@@ -2016,7 +2037,7 @@ function trampillaKit(s) {
   }
 }
 
-export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, onLost = () => {}, onMove = () => {}, onDecor = () => {} } = {}) {
+export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, onLost = () => {}, onMove = () => {}, onDecor = () => {}, onSonido = () => {} } = {}) {
   const renderer = new WebGLRenderer({ antialias: false, powerPreference: 'low-power', preserveDrawingBuffer: true });
   const canvas = renderer.domElement;
   canvas.className = 'cf3-canvas';
@@ -2469,7 +2490,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   const CABEN = { 'cafe-estanteria': LIBROS_POR_ESTANTERIA, 'cafe-estanteria-alta': 96, 'cafe-biombo': 24 };
   const planoGrupo = new Group();
   scene.add(planoGrupo);
-  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1, escaparate: [] };
+  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1, escaparate: [], portadas: [] };
   let modo = { decorar: false, sel: null, mal: false, planta: 'calle' };
   let piezas = [];
   let obstaculos = [];
@@ -2539,7 +2560,13 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       const s = kit();
       if (estado.inaugurado) lomosPared(s, estado.libros.slice(enCafe), paredIzquierda(estado.nivel));
       // Bloque 4b: el escaparate con tus tres libros (nivel 5)
-      if (estado.inaugurado && estado.nivel >= 5) escaparateKit(s, estado.escaparate);
+      if (estado.inaugurado && estado.nivel >= 5)
+        for (const pt of escaparateKit(s, estado.escaparate, estado.portadas)) {
+          // De cara a la calle: el plano mira a +z de Three, que es hacia la acera
+          const m = new Mesh(new PlaneGeometry(0.56, 0.84), portadaMaterial(pt.lienzo));
+          m.position.set(pt.x, pt.z, pt.y);
+          planoGrupo.add(m);
+        }
       if (estado.inaugurado && estado.cajas > 0) cajaDeReparto(s);
       // La pieza elegida en Decorar: un marco ámbar en el suelo (rojo si no cabe donde está)
       const sel = modo.decorar && estado.plano.items.find((i) => i.uid === modo.sel);
@@ -2757,6 +2784,17 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   let lastT = 0;
   const t0 = performance.now();
 
+  // 1.126: los pasos suenan según lo andado (madera en el café, piedra en la bodega, losas en la acera de la terraza)
+  let andado = 0;
+  let pasoN = 0;
+  const PASO = 0.62;
+  function pisada(d) {
+    andado += d;
+    if (andado < PASO) return;
+    andado -= PASO;
+    pasoN += 1;
+    onSonido('paso', { suelo: planta === 'bodega' ? 'piedra' : py > SD ? 'acera' : 'madera', n: pasoN });
+  }
   function advance(dt) {
     if (!walk) return false;
     const { tx, ty, face } = walk;
@@ -2769,11 +2807,13 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       const k = Math.min(1, (WALK * dt) / d);
       px += dx * k;
       py += dy * k;
+      pisada(d * k);
       return true;
     }
     if (face && Math.abs(wrapA(want - yaw)) > 0.01) return true;
     const done = walk.done;
     walk = null;
+    andado = PASO * 0.5;
     onMove({ x: px, y: py, yaw });
     done?.();
     return false;
@@ -3012,6 +3052,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
                 fin();
               },
             };
+            onSonido('planta', { destino, duracion: 0.85 * (puntos.length - 1) });
             invalidate();
           }),
       )
@@ -3116,6 +3157,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   return {
     canvas,
     renders: () => renders,
+    /** Cuántas portadas reales del escaparate tiene la escena (las pruebas lo miran). */
+    portadasEscaparate: () => (estado.portadas ?? []).filter(Boolean).length,
     pose: () => ({ x: px, y: py, yaw }),
     settled: () => !walk && vistaQuieta() && (barra.activa ? barraT === 1 : barraT === 0),
     /** Ir a un sitio ('pilar', 'cortina', 'escaparate' o 'entrada'). Promesa que acaba al llegar. */
@@ -3159,10 +3202,10 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     },
     invalidate,
     /** El estado del local: si está inaugurado, su nombre, el plano y tus libros (títulos) para las estanterías. */
-    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1, escaparate = [] } = {}) {
+    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1, escaparate = [], portadas = [] } = {}) {
       const nombreAntes = estado.nombre;
       const abre = inaugurado && !estado.inaugurado;
-      estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate };
+      estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate, portadas };
       // Las luces del ala y de la terraza alumbran lo colocado solo desde su nivel
       const n = inaugurado ? nivel : 1;
       LUCES_NIVEL = [...(n >= 4 ? [LUZ_ALA] : []), ...(n >= 5 ? [LUZ_TERRAZA] : []), ...(n >= 6 ? LUZ_BODEGA : [])];

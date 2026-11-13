@@ -3121,3 +3121,190 @@
     inset 0 3px 0 #ffe0a0;
   color: #2a1a10;
 }
+
+/* ── 1.126 (Francisco, 13-11-2026: «las indicaciones ocupan mucho»): en la barra, el cuadro se encoge a una franja ──
+   Sin retrato ni nombre; una línea con la orden o la pregunta, las cinco etapas en fichitas (solo la de ahora con nombre), un
+   medidor fino y botones pequeños. El cómo del gesto va en una notita de papel junto al objeto, y la comanda, más pequeña. */
+.cf3-franja--barra {
+  padding-top: 0;
+}
+.cf3-franja--barra .cf3-quien,
+.cf3-franja--barra .cf3-retrato {
+  display: none;
+}
+.cf3-franja--barra .cf3-caja {
+  --cf3-px: 3px;
+  grid-template-areas:
+    'dice dice'
+    'extra extra'
+    'error error'
+    'botones botones';
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  padding: 10px 12px 10px;
+  background: linear-gradient(rgb(42 26 22 / 0.9), rgb(30 18 16 / 0.92));
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px rgb(233 207 152 / 0.55);
+}
+@container cf3 (min-width: 700px) {
+  .cf3-franja--barra .cf3-caja {
+    grid-template-areas:
+      'dice botones'
+      'extra extra'
+      'error error';
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+.cf3-franja--barra .cf3-dice {
+  font-size: 0.86rem;
+  line-height: 1.3;
+}
+.cf3-dice__como {
+  color: rgb(243 230 200 / 0.62);
+  font-size: 0.78rem;
+}
+/* Las etapas: fichitas; la de ahora, con su nombre, y las demás, solo el número o el ✓ */
+.cf3-franja--barra .cf3-etapas {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 6px;
+}
+.cf3-franja--barra .cf3-etapas li {
+  flex: 0 0 auto;
+  min-width: 22px;
+  padding: 3px 5px 4px;
+}
+.cf3-franja--barra .cf3-etapas li[data-estado='ahora'] {
+  flex: 0 1 auto;
+}
+.cf3-franja--barra .cf3-etapas li:not([data-estado='ahora']) .cf3-etapas__nombre {
+  display: none;
+}
+.cf3-franja--barra .cf3-opciones {
+  gap: 5px;
+}
+.cf3-franja--barra .cf3-opcion {
+  min-height: 40px;
+  padding: 5px 6px 7px;
+  font-size: 0.78rem;
+}
+.cf3-franja--barra .cf3-medidor {
+  height: 8px;
+}
+.cf3-franja--barra .cf3-medidor__lleno {
+  top: 2px;
+  bottom: 2px;
+}
+.cf3-franja--barra .cf3-botones {
+  gap: 6px;
+}
+.cf3-franja--barra .cf3-btn {
+  min-height: 38px;
+  padding: 6px 12px 8px;
+  font-size: 13px;
+}
+@media (max-width: 380px) {
+  .cf3-franja--barra .cf3-botones .cf3-btn {
+    flex: 0 1 auto;
+  }
+}
+/* La comanda, mientras preparas: un tique pequeño en la esquina, que no tapa la barra */
+.cf3:has(.cf3-franja--barra) .cf3-comanda {
+  max-width: min(230px, calc(100% - 110px));
+  padding: 6px 9px 8px;
+}
+.cf3:has(.cf3-franja--barra) .cf3-comanda__titulo {
+  margin: 1px 0 3px;
+  font-size: 11px;
+  line-height: 11px;
+}
+.cf3:has(.cf3-franja--barra) .cf3-comanda__linea {
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+.cf3:has(.cf3-franja--barra) .cf3-comanda__acertijos {
+  gap: 2px;
+  font-size: 0.72rem;
+}
+/* La notita del cómo: papel junto al objeto, a un lado de la pista, sin tapar el objeto ni recoger toques */
+.cf3-gesto__nota {
+  --cf3-px: 2px;
+  position: absolute;
+  width: max-content;
+  max-width: 148px;
+  margin: 0;
+  padding: 5px 8px 6px;
+  background: #f6ecd4;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #d8c49c,
+    0 3px 0 rgb(0 0 0 / 0.35);
+  color: #2e1e14;
+  font:
+    italic 0.74rem/1.25 'Lora',
+    Georgia,
+    serif;
+  pointer-events: none;
+  transform: translate(50px, -50%) rotate(-1.5deg);
+  animation: cf3-nota-entra 0.35s ease-out both;
+}
+.cf3-gesto__nota[data-lado='izq'] {
+  transform: translate(calc(-100% - 50px), -50%) rotate(1.5deg);
+}
+.cf3-gesto__nota[data-lado='abajo'] {
+  text-align: center;
+  transform: translate(-50%, 50px) rotate(-1deg);
+}
+@keyframes cf3-nota-entra {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-gesto__nota {
+    animation: none;
+  }
+}
+
+/* ── 1.126: la ficha con la portada real, centrada en la tapa oscurecida, y el título debajo (dos líneas) ── */
+.cf3-ficha__tapa--portada {
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  padding: 4px;
+  background: linear-gradient(rgb(255 255 255 / 0.1), transparent 40%), color-mix(in srgb, var(--cf3-tapa) 55%, #1a1014);
+}
+.cf3-ficha__tapa--portada::after {
+  display: none;
+}
+.cf3-ficha__portada {
+  display: block;
+  width: 44px;
+  height: 66px;
+  object-fit: cover;
+  background: var(--cf3-tapa);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.6),
+    2px 2px 0 rgb(0 0 0 / 0.35);
+}
+.cf3-ficha__nombre {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #fff6e0;
+  font:
+    700 0.74rem/1.18 'Lora',
+    Georgia,
+    serif;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+@media (max-width: 380px) {
+  .cf3-ficha__portada {
+    width: 37px;
+    height: 56px;
+  }
+}

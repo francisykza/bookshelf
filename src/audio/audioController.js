@@ -120,11 +120,33 @@ function audioGraph() {
   return shared;
 }
 
+/** Cuánto suena la música propia de un sitio (el café): el volumen de música, salvo con «Sin música» o la radio puesta. */
+const sceneLevel = () => (prefs.on && prefs.musicId !== 'none' && !isRadioOn() ? (prefs.music / 100) * TRIM.music : 0);
+
 function setChannelGains(shared) {
   const t = shared.ctx.currentTime;
   shared.master.gain.setTargetAtTime(prefs.master / 100, t, 0.03);
   buses.ambience.gain.setTargetAtTime((prefs.ambience / 100) * TRIM.ambience, t, 0.05);
   buses.music.gain.setTargetAtTime(blockers.size ? 0 : (prefs.music / 100) * TRIM.music, t, blockers.size ? 0.3 : 0.05);
+  sceneBus?.gain.setTargetAtTime(sceneLevel(), t, 0.3);
+}
+
+let sceneBus = null;
+/**
+ * La salida para la música propia de un sitio (1.126, el café): sigue el volumen de música, el silencio, «Sin música» y la
+ * radio, como la música de Sonido. Null hasta que el sonido está activado y ha habido un gesto (nada suena antes).
+ */
+export function sceneMusicOut() {
+  if (!unlocked || !prefs.on) return null;
+  const shared = audioGraph();
+  if (!shared) return null;
+  if (!sceneBus) {
+    sceneBus = shared.ctx.createGain();
+    sceneBus.gain.value = 0;
+    sceneBus.connect(shared.master);
+  }
+  sceneBus.gain.setTargetAtTime(sceneLevel(), shared.ctx.currentTime, 0.3);
+  return { ctx: shared.ctx, out: sceneBus };
 }
 
 function loadBuffer(ctx, item) {
@@ -382,7 +404,12 @@ if (typeof window !== 'undefined') {
   }
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('pagehide', flush);
-  onRadioChange(() => setMusicBlocked('radio', isRadioOn()));
+  onRadioChange(() => {
+    setMusicBlocked('radio', isRadioOn());
+    // La música propia del sitio también se calla con la radio
+    const shared = unlocked && prefs.on ? sharedAudio() : null;
+    if (shared && sceneBus) sceneBus.gain.setTargetAtTime(sceneLevel(), shared.ctx.currentTime, 0.3);
+  });
   if (import.meta.env?.DEV) {
     window.__portAudio = () => ({
       prefs: { ...prefs },
@@ -393,6 +420,7 @@ if (typeof window !== 'undefined') {
       ambiente: playing.ambience?.id ?? null,
       fundiendo: Number(Boolean(fading.music)) + Number(Boolean(fading.ambience)),
       bloqueos: [...blockers],
+      escena: sceneBus ? sceneLevel() : null,
       buffers: [...buffers.keys()],
       needsTap,
       errors,

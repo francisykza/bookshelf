@@ -146,6 +146,14 @@ function Pista({ tipo }) {
 }
 
 const SIN_CARTA = [];
+/** Dónde va la notita del cómo: a un lado de la pista si cabe (148 de ancho a 50 del centro), y si no, debajo. */
+const NOTA = { ancho: 148, aparte: 50, margen: 8 };
+function ladoNota(x, ancho) {
+  const hueco = NOTA.aparte + NOTA.ancho + NOTA.margen;
+  if (x + hueco <= ancho) return 'der';
+  if (x - hueco >= 0) return 'izq';
+  return 'abajo';
+}
 
 export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA }) {
   const [paso, setPaso] = useState('pide');
@@ -160,6 +168,8 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   const [libro, setLibro] = useState(null);
   const [dado, setDado] = useState(null);
   const [error, setError] = useState('');
+  // Las portadas que no cargan (sin red, o Open Library devuelve un píxel vacío): esas fichas vuelven a la tapa de color
+  const [sinPortada, setSinPortada] = useState({});
   const [sfx] = useState(() => crearSfxBarra());
   const rec = useRef(null);
   const raf = useRef(0);
@@ -188,6 +198,22 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   const vista = useMemo(() => vistaTaza(receta, hechos, actual ? { tipo: gesto, pose: actual.pose } : null), [receta, hechos, actual, gesto]);
 
   useEffect(() => sfx.setActivo(soundOn), [sfx, soundOn]);
+  // 1.126: cada momento del cliente con su sonido (la comanda, la taza, el libro, las estrellas y los granos, la despedida)
+  useEffect(() => {
+    sfx.play(cliente.raro ? 'raro' : 'comanda');
+    // Solo al empezar a atenderlo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sfx]);
+  useEffect(() => {
+    if (!dado) return undefined;
+    const n = Math.max(1, Math.min(3, dado.estrellas ?? 1));
+    const pasos = reduced() ? 0 : 0.22;
+    const ids = [];
+    for (let k = 0; k < n; k += 1) ids.push(setTimeout(() => sfx.play('estrella', { k }), 120 + k * pasos * 1000));
+    ids.push(setTimeout(() => sfx.play('granos', { n: dado.granos ?? 3 }), 200 + n * pasos * 1000 + 150));
+    if (dado.dorada) ids.push(setTimeout(() => sfx.play('dorada'), 200 + n * pasos * 1000 + 700));
+    return () => ids.forEach(clearTimeout);
+  }, [dado, sfx]);
   useEffect(
     () => () => {
       cancelAnimationFrame(raf.current);
@@ -376,11 +402,13 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   };
 
   const llevar = async () => {
+    sfx.play('bandeja');
     const lleva_ = { receta, vista: vistaTaza(receta, hechos) };
     escena?.barra(false, { llevar: lleva_ });
     if (!escena) return setPaso('libro');
     setPaso('yendo');
     await escena.irACliente(cliente.n);
+    sfx.play('tazaMesa');
     setPaso('libro');
   };
   const lista3d = useRef(null);
@@ -402,6 +430,7 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   }, [registrarToque]);
 
   const servir = async (b) => {
+    if (b) sfx.play('libroDesliza');
     setLibro(b);
     setPaso('sirviendo');
     setError('');
@@ -455,7 +484,30 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   } else if (enBarra) {
     const opciones = eligiendo ? opcionesDe(parte, carta) : [];
     const def = gesto ? GESTOS[gesto] : null;
-    texto = lista_ ? '¡Lista! Huele de maravilla.' : eligiendo ? PREGUNTA[parte](receta, carta) : def ? `${def.orden}. ${reduced() ? 'Un toque basta.' : def.ayuda}` : '';
+    // 1.126 (Francisco, 13-11-2026: «las indicaciones ocupan mucho»): una línea corta abajo; el cómo, junto al objeto
+    const pregunta = eligiendo ? PREGUNTA[parte](receta, carta) : '';
+    const corte = pregunta.indexOf('? ');
+    texto = lista_ ? (
+      '¡Lista! Huele de maravilla.'
+    ) : eligiendo ? (
+      corte > 0 ? (
+        <>
+          {pregunta.slice(0, corte + 1)} <span className="cf3-dice__como">{pregunta.slice(corte + 2)}</span>
+        </>
+      ) : (
+        pregunta
+      )
+    ) : def ? (
+      reduced() ? (
+        `${def.orden}. Un toque basta.`
+      ) : (
+        <>
+          {def.orden}.<span className="px-sr"> {def.ayuda}</span>
+        </>
+      )
+    ) : (
+      ''
+    );
     const etapas = (
       <ol className="cf3-etapas" aria-label="Las etapas de la taza">
         {ETAPAS.map((id, k) => {
@@ -554,9 +606,23 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
               onClick={() => servir(b)}
               style={{ '--cf3-tapa': rgb(colorDe(b.title)) }}
             >
-              <span className="cf3-ficha__tapa" aria-hidden="true">
-                <span className="cf3-ficha__titulo">{b.title}</span>
+              {/* 1.126 (Francisco, 13-11-2026): la portada real, si la tiene y carga; si no, la tapa de color con el título */}
+              <span className={`cf3-ficha__tapa${b.cover && !sinPortada[b.cover] ? ' cf3-ficha__tapa--portada' : ''}`} aria-hidden="true">
+                {b.cover && !sinPortada[b.cover] && (
+                  <img
+                    className="cf3-ficha__portada"
+                    src={b.cover}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    decoding="async"
+                    draggable="false"
+                    onLoad={(e) => e.currentTarget.naturalWidth < 10 && setSinPortada((m) => ({ ...m, [b.cover]: true }))}
+                    onError={() => setSinPortada((m) => ({ ...m, [b.cover]: true }))}
+                  />
+                )}
+                {!(b.cover && !sinPortada[b.cover]) && <span className="cf3-ficha__titulo">{b.title}</span>}
               </span>
+              {b.cover && !sinPortada[b.cover] && <span className="cf3-ficha__nombre">{b.title}</span>}
               <span className="cf3-ficha__autor">{b.author}</span>
               <span className="cf3-ficha__pistas">
                 {pistas(b, ctx).map((t) => (
@@ -611,7 +677,15 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     );
     // Con su propia clave: si no, React reutilizaría otro botón y un toque a destiempo despediría al cliente
     botones = (
-      <button key="hasta-luego" type="button" className="cf3-btn" onClick={onCerrar}>
+      <button
+        key="hasta-luego"
+        type="button"
+        className="cf3-btn"
+        onClick={() => {
+          sfx.play('despedida');
+          onCerrar();
+        }}
+      >
         Hasta luego
       </button>
     );
@@ -650,6 +724,16 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
               <Pista tipo={gesto} />
             </span>
           )}
+          {gesto && pista && !(actual?.progreso > 0) && !reduced() && (
+            <span
+              className="cf3-gesto__nota"
+              data-lado={ladoNota(pista.x, zona.current?.clientWidth ?? 390)}
+              style={{ left: `${pista.x}px`, top: `${pista.y}px` }}
+              aria-hidden="true"
+            >
+              {def.ayuda}
+            </span>
+          )}
           {gesto && actual?.hecho && (
             <span className="cf3-gesto__hecho" aria-hidden="true">
               ¡Hecho!
@@ -659,7 +743,7 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       )}
       {lleva && <span className="px-sr">Llevas {comandaClara(lista).toLowerCase()}</span>}
       <div
-        className={`cf3-franja cf3-franja--atender${raro ? ' cf3-franja--raro' : ''}`}
+        className={`cf3-franja cf3-franja--atender${raro ? ' cf3-franja--raro' : ''}${enBarra ? ' cf3-franja--barra' : ''}`}
         role="region"
         aria-label={`Atender a ${quien}`}
         data-paso={paso}

@@ -17,19 +17,22 @@ import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCa
 import { GRANO, LIBROS, PILAR, PIZARRA, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { bienvenidaLibros, cargarCafe, cargarDia, comprarCafe, errorCafe, guardarCafe, inaugurarCafe, llegaHabitual, ponerEscaparate, servirCliente } from './cafeService';
+import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, comprarCafe, errorCafe, guardarCafe, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate, servirCliente } from './cafeService';
 import { cartaDe, hayLogro, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
 import { BIENVENIDA, EXCENTRICOS, HABITUALES, RESENAS, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, pedidosDelDia, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { dayKey } from '../../../domain/dates';
+import { crearCafeMusica } from './cafeMusica';
+import { crearSfxBarra } from './cafeSfx';
+import { portadaPixel } from './cafePortadas';
+import { sceneMusicOut, setMusicBlocked } from '../../../audio/audioController';
 import './cafe.css';
 
 /** Lo que cuenta Pilar en el traspaso, por orden (frases cerradas). */
 const PILAR_DICE = [
   '¡Hola! Soy Pilar. Treinta años detrás de este mostrador… y ya me toca descansar los pies.',
-  'Los muebles ahora los vende el almacén del Gran Hotel, y los sobres siguen cerrados por la reforma. Lo tuyo no se toca: tus tickets y tus muebles siguen contigo.',
   'El bajo se traspasa… y me han dicho que tú lees mucho. ¿Te imaginas un café con libros? Yo me quedaría detrás de la barra.',
 ];
 const PILAR_FIN_SIN = 'Estoy terminando de vaciarlo. En cuanto esté, te doy las llaves.';
@@ -95,6 +98,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const nivelEscena = logro && logro.a > logro.de ? logro.de : (local?.nivel ?? 1);
   // Bloque 3: el día (undefined: cargando; null: sin la migración de clientes), a quién se atiende y la pizarra
   const [hoy] = useState(() => dayKey());
+  // Jornadas de prueba (solo las cuentas de `cafe_probadores`, la de Francisco): undefined, comprobando; null, se juega el día
+  // de hoy; si no, el día de prueba, y al atender a todos se puede abrir otra jornada
+  const [jornada, setJornada] = useState(undefined);
+  const diaJuego = jornada || hoy;
   const [dia, setDia] = useState(undefined);
   const [atendiendo, setAtendiendo] = useState(null);
   const [pizarra, setPizarra] = useState(false);
@@ -134,6 +141,29 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const carta = useMemo(() => cartaDe(reputacion), [reputacion]);
   const frases = [...PILAR_DICE, local ? PILAR_FIN_CON : PILAR_FIN_SIN];
 
+  // La música propia del café (1.126): mientras estás aquí suena en vez de la de Sonido y sigue su volumen, «Sin música» y la
+  // radio; nunca antes de un gesto (si aún no se puede, lo intenta en el siguiente toque)
+  const musica = useRef(null);
+  // Los sonidos de cada acción (1.126): andar, Pilar, decorar, comprar, la pizarra… (los de la barra, en Atender)
+  const [sfx] = useState(() => crearSfxBarra());
+  useEffect(() => sfx.setActivo(soundOn), [sfx, soundOn]);
+  useEffect(() => {
+    if (!soundOn) return undefined;
+    setMusicBlocked('cafe', true);
+    const m = crearCafeMusica(sceneMusicOut);
+    musica.current = m;
+    const intentar = () => {
+      if (m.arrancar()) window.removeEventListener('pointerdown', intentar, true);
+    };
+    if (!m.arrancar()) window.addEventListener('pointerdown', intentar, true);
+    return () => {
+      window.removeEventListener('pointerdown', intentar, true);
+      m.parar();
+      musica.current = null;
+      setMusicBlocked('cafe', false);
+    };
+  }, [soundOn]);
+
   useEffect(() => {
     let alive = true;
     cargarCafe().then(
@@ -158,6 +188,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
             // Bloque 6a: en qué planta estás (al llegar a un sitio o al cambiar de planta)
             onMove: () => alive && setPlantaEscena(mounted?.planta?.() ?? 'calle'),
             onLost: () => alive && setSin3d(true),
+            onSonido: (nombre, datos) => sfx.play(nombre, datos),
             onFrame: (tags) => {
               const w = host.current?.clientWidth ?? 0;
               // Los bocadillos de clientes que caen uno encima de otro (uno sentado detrás de otro) se apilan hacia arriba
@@ -196,13 +227,21 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       api.current = null;
       if (import.meta.env.DEV && window.__cafe3d === mounted) window.__cafe3d = null;
     };
-  }, []);
+  }, [sfx]);
 
   // El día del café: los clientes los fija el servidor (sin la migración del bloque 3, no hay clientes)
   useEffect(() => {
-    if (!abierto) return undefined;
+    if (!abierto || jornada !== undefined) return undefined;
+    let vivo = true;
+    cargarJornada().then((j) => vivo && setJornada(j));
+    return () => {
+      vivo = false;
+    };
+  }, [abierto, jornada]);
+  useEffect(() => {
+    if (!abierto || jornada === undefined) return undefined;
     let alive = true;
-    cargarDia(hoy).then(
+    cargarDia(diaJuego).then(
       (r) => {
         if (!alive) return;
         setDia(r?.dia ?? null);
@@ -218,12 +257,12 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     return () => {
       alive = false;
     };
-  }, [abierto, hoy]);
+  }, [abierto, jornada, diaJuego]);
   // Has leído hoy: llegan los habituales que traen tus sesiones (el servidor pone el tope)
   useEffect(() => {
     if (!dia || pidiendoHabitual.current || dia.habituales.length >= sesiones) return;
     pidiendoHabitual.current = true;
-    llegaHabitual(hoy)
+    llegaHabitual(diaJuego)
       .then((r) => {
         if (r?.dia) setDia(r.dia);
         if (r?.cafe) setLocal(r.cafe);
@@ -232,7 +271,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       .finally(() => {
         pidiendoHabitual.current = false;
       });
-  }, [dia, sesiones, hoy]);
+  }, [dia, sesiones, diaJuego]);
 
   // La caja de bienvenida: la primera vez que entras con el café abierto y algún título que ofrecer (una sola vez; el servidor
   // lo comprueba)
@@ -258,6 +297,22 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   // La escena sigue al estado: el local, el plano (o el borrador de Decorar) y tus libros
   const plano = useMemo(() => borrador ?? local?.plano ?? PLANO_VACIO, [borrador, local?.plano]);
   const escaparateTitulos = useMemo(() => (local?.escaparate ?? []).map((b) => b.titulo), [local?.escaparate]);
+  // 1.126: las portadas reales del escaparate (las de tu biblioteca, por su clave), en píxeles; null las que no cargan
+  const [portadasEsc, setPortadasEsc] = useState([]);
+  const nivelLocal = local?.nivel ?? 1;
+  const coversEsc = useMemo(
+    () => (nivelLocal >= ESCAPARATE_NIVEL ? (local?.escaparate ?? []).map((e) => (state?.books ?? []).find((b) => String(b.id).slice(0, 80) === e.clave)?.cover || null) : []),
+    [nivelLocal, local?.escaparate, state?.books],
+  );
+  const clavePortadas = coversEsc.join('|');
+  useEffect(() => {
+    let vivo = true;
+    const urls = clavePortadas ? clavePortadas.split('|') : [];
+    Promise.all(urls.map((u) => portadaPixel(u || null))).then((r) => vivo && setPortadasEsc(r));
+    return () => {
+      vivo = false;
+    };
+  }, [clavePortadas]);
   // Bloque 4b: con menos asientos que clientes posibles en el nivel 4 o 5, vienen menos (nunca menos de 5). Pilar lo dice sin
   // agobiar: una vez al día al entrar y, después, cuando no hay nadie esperando.
   const nivelAhora = local?.nivel ?? 1;
@@ -283,13 +338,14 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       vacias: librosCafe != null,
       nivel: nivelEscena,
       escaparate: escaparateTitulos,
+      portadas: portadasEsc,
     });
     api.current?.decorar(decorando, { sel, mal: false, planta: plantaDecor });
     if (mirarCaja.current && porColocar > 0 && !decorando) {
       mirarCaja.current = false;
       api.current?.go('libros');
     }
-  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena, escaparateTitulos, plantaDecor]);
+  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena, escaparateTitulos, portadasEsc, plantaDecor]);
   // Los clientes, sentados: los atendidos, con el libro que les diste (o uno de tu estantería si fue en otra visita)
   useEffect(() => {
     if (!ready) return;
@@ -303,6 +359,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       })),
     );
   }, [ready, clientesHoy, titulos, plano]);
+  // Mientras preparas y sirves, la música baja un poco para que se oiga lo que haces
+  useEffect(() => {
+    musica.current?.atenuar(Boolean(clienteAtendido));
+  }, [clienteAtendido]);
   useEffect(() => {
     if (!ganado) return undefined;
     const t = setTimeout(() => setGanado(0), 2400);
@@ -316,6 +376,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   }, [aviso]);
 
   const hablar = () => {
+    sfx.play('pilar');
     setAviso('');
     setHablando(0);
     api.current?.go('pilar');
@@ -328,6 +389,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         const c = clientesHoy.find((x) => x.n === Number(id.slice(8)));
         if (!c) return;
         if (!c.servido) return atender(c.n);
+        sfx.play('toque');
         setAtendiendo(null);
         setHablando(null);
         setAviso(c.habitual || c.raro ? `${c.nombre} está leyendo tan a gusto. Mejor no molestar.` : 'Está leyendo tan a gusto. Mejor no molestar.');
@@ -336,6 +398,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       setAtendiendo(null);
       if (id === 'pilar') return hablar();
       if (id === 'libros') return abrirLibros('caja');
+      // La trampilla y la escalera suenan con su recorrido (la escena lo avisa)
+      if (id !== 'trampilla' && id !== 'subir') sfx.play(id === 'escaparate' ? 'cristal' : 'toque');
       setHablando(null);
       if (id === 'escaparate' && abierto && (local?.nivel ?? 1) >= ESCAPARATE_NIVEL) {
         setAviso('');
@@ -350,12 +414,19 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     // Decorar: elegir una pieza, llevarla a una casilla o arrastrarla
     decor.current = (e) => {
       if (!borrador) return;
-      if (e.tipo === 'elegir') return setSel(e.uid);
+      if (e.tipo === 'elegir') {
+        if (e.uid !== sel) sfx.play('coger');
+        return setSel(e.uid);
+      }
       const uid = e.tipo === 'arrastre' ? e.uid : sel;
       const it = borrador.items.find((i) => i.uid === uid);
       if (!it) return;
       const movido = { ...it, x: e.x, y: e.y };
-      if (cabe(borrador, movido, movido.uid, local?.nivel ?? 1)) setBorrador({ ...borrador, items: borrador.items.map((i) => (i.uid === uid ? movido : i)) });
+      if (cabe(borrador, movido, movido.uid, local?.nivel ?? 1)) {
+        // Al arrastrar, un roce por casilla; al llevarlo de un toque, el golpe de dejarlo
+        if (movido.x !== it.x || movido.y !== it.y) sfx.play(e.tipo === 'arrastre' ? 'arrastra' : 'soltar');
+        setBorrador({ ...borrador, items: borrador.items.map((i) => (i.uid === uid ? movido : i)) });
+      } else if (e.tipo !== 'arrastre') sfx.play('noCabe');
     };
   });
 
@@ -367,6 +438,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       const elegidos = leidosEscaparate.filter((b) => escaparate.includes(b.clave));
       const c = await ponerEscaparate(elegidos);
       setLocal(c);
+      sfx.play('cristal');
       setEscaparate(null);
       setAviso(elegidos.length ? '¡Qué bonito ha quedado! Los verá todo el que pase por el muelle, también desde la fachada.' : 'El escaparate queda vacío, solo con la lamparita.');
     } catch (e) {
@@ -384,6 +456,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     setError('');
     try {
       const c = await inaugurarCafe(nombre);
+      sfx.play('llaves');
       setLocal(c);
       setEligiendo(false);
       setHablando(null);
@@ -408,12 +481,29 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     setPizarra(false);
     setAviso('');
     setHablando(null);
+    sfx.play('papel');
     setPanelLibros({ hoja, recien });
     if (hoja === 'caja' && porColocar > 0) api.current?.go('libros');
   }
+  // Otra jornada de prueba: el servidor la abre si ya está todo el mundo atendido; llegan clientes nuevos
+  const otraJornada = async () => {
+    if (ocupado) return;
+    setOcupado(true);
+    setAviso('');
+    try {
+      const j = await nuevaJornada();
+      sfx.play('llaves');
+      setAtendiendo(null);
+      setJornada(j);
+    } catch (e) {
+      setError(errorCafe(e));
+    } finally {
+      setOcupado(false);
+    }
+  };
   const servir = async ({ receta, encaja, libro }) => {
     const c = clienteAtendido;
-    const r = await servirCliente(hoy, c.n, receta, encaja, libro?.clave ?? null);
+    const r = await servirCliente(diaJuego, c.n, receta, encaja, libro?.clave ?? null);
     dados.current[c.n] = libro?.title ?? null;
     if (r.libros) setLibrosCafe(r.libros);
     if (r.cafe) setLocal(r.cafe);
@@ -424,6 +514,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   };
 
   const empezarDecorar = () => {
+    sfx.play('papel');
     setAtendiendo(null);
     setPanelLibros(null);
     setPizarra(false);
@@ -435,6 +526,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     setBorrador({ v: 1, items: local.plano.items.map((i) => ({ ...i })) });
   };
   const cancelarDecorar = () => {
+    sfx.play('papel');
     setBorrador(null);
     setSel(null);
     setError('');
@@ -445,6 +537,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     setError('');
     try {
       const c = await guardarCafe(borrador);
+      sfx.play('guardar');
       setLocal(c);
       setBorrador(null);
       setSel(null);
@@ -460,24 +553,28 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     for (const k of [1, 2, 3]) {
       const g = { ...selItem, rot: (selItem.rot + k) % 4 };
       if (cabe(borrador, g, g.uid, local?.nivel ?? 1)) {
+        sfx.play('girar');
         setBorrador({ ...borrador, items: borrador.items.map((i) => (i.uid === sel ? g : i)) });
         return;
       }
     }
+    sfx.play('noCabe');
     setError('No hay sitio para girarlo ahí.');
   };
   const quitar = () => {
     if (!selItem) return;
+    sfx.play('quitar');
     setBorrador({ ...borrador, items: borrador.items.filter((i) => i.uid !== sel) });
     setSel(null);
   };
   const anadir = (id) => {
     setError('');
-    if (borrador.items.length >= maxCosas(local?.nivel ?? 1)) return setError(`Caben ${maxCosas(local?.nivel ?? 1)} cosas como mucho. Quita algo antes.`);
+    if (borrador.items.length >= maxCosas(local?.nivel ?? 1)) return sfx.play('noCabe'), setError(`Caben ${maxCosas(local?.nivel ?? 1)} cosas como mucho. Quita algo antes.`);
     const nivelD = local?.nivel ?? 1;
     // Desde el nivel 6, en la planta que se está decorando
     const sitio = hueco(borrador, id, undefined, nivelD, nivelD >= BODEGA_NIVEL ? plantaDecor : null);
-    if (!sitio) return setError('No queda sitio libre para ese mueble. Quita o mueve algo antes.');
+    if (!sitio) return sfx.play('noCabe'), setError('No queda sitio libre para ese mueble. Quita o mueve algo antes.');
+    sfx.play('soltar');
     const uid = uidNuevo(borrador);
     setBorrador({ ...borrador, items: [...borrador.items, { uid, id, ...sitio }] });
     setSel(uid);
@@ -512,6 +609,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     setOcupado(true);
     try {
       setLocal(await comprarCafe(m.id));
+      sfx.play('comprar');
       setAviso(`¡${m.nombre}, tuyo! Ya lo tienes en «Del café» para colocarlo.`);
     } catch (e) {
       setError(errorCafe(e));
@@ -534,7 +632,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       : abierto && hablando == null && dia && pendientes.length
         ? `«${pendientes.length === 1 ? 'Tienes un cliente esperando' : `Tienes ${pendientes.length} clientes esperando`}${pendientes.some((c) => c.raro) ? (pendientes.length === 1 ? ', y es muy peculiar' : ', y uno es muy peculiar') : ''}. ${pendientes.length === 1 ? 'Tócalo' : 'Toca uno'} en el local, o «Atender», para ver qué pide.»`
         : abierto && hablando == null && dia && clientesHoy.length
-          ? sesiones < 2
+          ? jornada
+            ? '«Ya está todo el mundo atendido. Como estás probando el café, abro otra jornada cuando quieras.»'
+            : sesiones < 2
             ? '«Hoy ya está todo el mundo atendido. Si lees un rato, vendrá algún habitual.»'
             : '«Hoy ya está todo el mundo atendido. El local es tuyo para decorar.»'
           : abierto && hablando == null && faltanAsientos
@@ -618,7 +718,11 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                 className="cf3-pizarra-btn cf3-libros-btn"
                 aria-label={`Tus libros: ${enBalda(librosCafe)} en la balda${porColocar ? `, ${porColocar} por colocar` : ''}`}
                 aria-expanded={Boolean(panelLibros)}
-                onClick={() => (panelLibros ? setPanelLibros(null) : abrirLibros(porColocar ? 'caja' : 'distribuidora'))}
+                onClick={() => {
+                  if (!panelLibros) return abrirLibros(porColocar ? 'caja' : 'distribuidora');
+                  sfx.play('papel');
+                  setPanelLibros(null);
+                }}
               >
                 <PixelArt icono={LIBROS} />
                 {porColocar > 0 && <span className="cf3-pizarra-btn__n">{porColocar}</span>}
@@ -637,6 +741,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                 aria-expanded={pizarra}
                 onClick={() => {
                   setPanelLibros(null);
+                  sfx.play(pizarra ? 'papel' : 'tiza');
                   setPizarra((v) => !v);
                 }}
               >
@@ -703,7 +808,14 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                 <button type="button" className="cf3-btn cf3-btn--suave" onClick={quitar}>
                   Guardar en la balda
                 </button>
-                <button type="button" className="cf3-btn" onClick={() => setSel(null)}>
+                <button
+                  type="button"
+                  className="cf3-btn"
+                  onClick={() => {
+                    sfx.play('soltar');
+                    setSel(null);
+                  }}
+                >
                   Soltar
                 </button>
               </div>
@@ -925,6 +1037,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                             Decorar
                           </button>
                         )
+                      ) : jornada && dia && clientesHoy.length ? (
+                        <button type="button" className="cf3-btn cf3-btn--verde" onClick={otraJornada} disabled={ocupado}>
+                          {ocupado ? 'Abriendo...' : 'Otra jornada'}
+                        </button>
                       ) : (
                         <button type="button" className="cf3-btn cf3-btn--suave" onClick={hablar}>
                           Hablar con Pilar
@@ -961,7 +1077,14 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                     Hasta pronto
                   </button>
                 ) : (
-                  <button type="button" className="cf3-btn" onClick={() => setHablando((k) => k + 1)}>
+                  <button
+                    type="button"
+                    className="cf3-btn"
+                    onClick={() => {
+                      sfx.play('pilar');
+                      setHablando((k) => k + 1);
+                    }}
+                  >
                     Seguir
                   </button>
                 )}

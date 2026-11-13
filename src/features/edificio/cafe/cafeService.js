@@ -130,6 +130,29 @@ export async function cargarDia(dia) {
   return conDia(data);
 }
 
+/**
+ * Jornadas de prueba (1.126, solo para las cuentas de `cafe_probadores`): el día de prueba que toca jugar (AAAA-MM-DD) o null
+ * (no prueba, o el servidor no tiene la migración `20261215120000_cafe_probador.sql`; nunca rompe el café).
+ */
+export async function cargarJornada() {
+  try {
+    const sb = await client();
+    const { data, error } = await sb.rpc('cafe_jornada');
+    if (error || typeof data !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+/** Otra jornada de prueba, con todos los de la actual atendidos: devuelve el día nuevo. */
+export async function nuevaJornada() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_nueva_jornada');
+  fail(error);
+  return String(data);
+}
+
 /** Has leído hoy: llega un habitual (el servidor pone el tope de 2). */
 export async function llegaHabitual(dia) {
   const sb = await client();
@@ -209,5 +232,7 @@ export function errorCafe(e) {
   if (/cafe:plano/.test(m)) return 'Eso no cabe ahí.';
   if (/cafe:ya/.test(m)) return 'El café ya está inaugurado.';
   if (/cafe:nivel/.test(m)) return 'El escaparate se abre en el nivel 5.';
+  if (/cafe:pendientes/.test(m)) return 'Aún queda alguien por atender en esta jornada.';
+  if (/cafe:probador/.test(m)) return 'Las jornadas de prueba solo están en la cuenta de pruebas.';
   return 'No se ha podido guardar. Vuelve a intentarlo.';
 }

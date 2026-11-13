@@ -6,6 +6,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.126.0** (2026-11-13, §126). Tras probar la 1.125 en producción («esta genial»): la música
+  propia del café (sintetizada, jazz lento de café; calla la de Sonido mientras estás dentro), un sonido por cada acción del
+  café, la barra con una franja ligera y el cómo de cada gesto en una notita junto al objeto, y Pilar sin hablar de los sobres
+  ni de lo de antes; portadas reales en las fichas y en el escaparate de tu café (pedidas el 13-11-2026); jornadas de prueba
+  para la cuenta de Francisco. **Migración nueva sin aplicar**: `20261215120000_cafe_probador.sql` (y después, a mano,
+  `supabase/scripts/cafe_probador.sql` con su correo). Evidencias en `qa-report/cafe-sonido/` y muestras de audio en `qa-report/v1126/`.
+  Sin publicar: subir a `main` solo cuando él lo pida. Migración y script, sin aplicar (los aplica él).
 - **Publicada en producción: 1.125.0** (2026-11-13; «vamos a aplicar todas las migraciones pendientes y fusionar con main lo que queda»; `main` avanzó sin forzar de `3d9bf6d` a `cbb6d22` y `/sw.js` de producción ya sirve v1.125.0). Lleva de la 1.119 a la 1.125: el café-librería del bajo (bloques 1, 2, 3, 4a, 4b y 6a), la limusina a la vista y los carteles de la fachada. **Las cinco migraciones del café, aplicadas** el 13-11-2026 (ver la bitácora). Las líneas de abajo de la 1.119 a la 1.125 son su historia; lo que decían «sin commit» o «sin aplicar» ya no vale.
 - **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.125.0** (2026-11-13, §125). El café-librería del bajo, **bloque 6a** (cifras aprobadas, «Sí, esas cifras»): el nivel 6, «La bodega», con la trampilla tras la barra, la cámara que baja, la cuadrícula 5 × 5 del sótano con sus asientos y clientes, Decorar en dos plantas y tres muebles nuevos. **Migración nueva sin aplicar**: `20261214120000_cafe_sotano.sql` (va después de la del bloque 4b). Evidencias en `qa-report/cafe-bodega/`. Las interpretaciones de `cafe-libreria.md` §14.7 quedan aceptadas con la aprobación. Siguiente: 6b (el tostadero), solo con su visto bueno.
 - **Aprobada por Francisco («Me valen, commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.124.0** (2026-11-12, §124). Los carteles de la fachada, según la maqueta de Francisco: placas de madera, esmalte y latón para las viviendas (libre, tuya y de un vecino), el rótulo colgante del café con «Se traspasa» y la placa azul del Gran Hotel. Solo visual; ni migraciones ni datos. Capturas en `qa-report/placas/`.
@@ -266,6 +273,35 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · El sonido del café, la barra más ligera, portadas reales y jornadas de prueba · 1.126.0 (§126), con commit (Claude)
+
+- **Qué se hizo** (encargo de Francisco tras probar la 1.125, por orden de importancia): `cafe/cafeMusica.js` (música propia
+  y generativa del café, por `sceneMusicOut()`, una salida nueva de `audioController.js` que sigue el volumen de música, «Sin
+  música», el silencio y la radio; el café bloquea la música de Sonido con `setMusicBlocked('cafe')` y la suelta al salir);
+  unos 30 sonidos nuevos en `cafeSfx.js` (pasos por suelo, trampilla y peldaños desde `cafe3d.js` con `onSonido`, Pilar,
+  comanda, taza, libro, estrellas, granos, despedida, Decorar, pizarra, escaparate, llaves); la barra con
+  `.cf3-franja--barra` y la notita `.cf3-gesto__nota`; la frase de Pilar sobre el almacén, los sobres y la reforma, fuera.
+- **Comprobado**: build, oxlint, Vitest de `src/features/edificio` (50 archivos, 392 pruebas), e2e
+  `v1126-cafe-sonido.spec.js` y `v1119-cafe.spec.js` en 360, 390, 430, escritorio y WebKit 390. La música y los sonidos se
+  renderizaron fuera de la app (`qa-report/v1126/*.wav`): la música queda al nivel de «Luz de escritorio» y los efectos al de
+  los de la barra. **Solo emulación**: no se ha escuchado en un móvil real.
+- **Portadas reales** (Francisco: «Sí, haz las portadas en las fichas y el escaparate»): fichas con la portada real y, en el
+  escaparate de tu café, cada portada en una rejilla de 10 × 15 dibujada con cubitos (`cafePortadas.js`, por Open Library o
+  `/api/portada`). En desarrollo `/api/portada` no existe (es de Vercel): ahí solo salen las de Open Library. Desde la fachada
+  y para los vecinos, la cubierta de color (haría falta migración).
+- **Escaparate, mejor** (Francisco: «Sí, mejóralas un poco»): con portadas reales, la rejilla de 10 × 15 se quedaba en
+  manchas; ahora cada portada es una imagen de 36 × 54 píxeles pintada sin suavizar sobre la cubierta, y se reconoce. Capturas
+  con portadas reales de Open Library (`PORTADAS_REALES=1`, sufijo `-reales`).
+- **Jornadas de prueba** (Francisco: «Quiero que mi cuenta pueda jugar todo lo que quiera para probar yo todas las funciones
+  del juego»): tabla `cafe_probadores` (solo su cuenta, con el script a mano), `cafe_jornada` y `cafe_nueva_jornada`; con
+  todos atendidos, «Otra jornada» trae clientes nuevos. Sin borrar nada; lo ganado cuenta (también los tickets de nivel y los
+  del día, por jornada, solo en su cuenta). Al resto, nada. **Sin aplicar** la migración ni el script: los aplica Francisco.
+  Vitest del edificio: 395, todas bien salvo dos de `sala-parejas` que se pasan de los 5 s con todo a la vez (solas, pasan).
+- **Música sin «lluvia»** (Francisco: «se escucha como una lluvia de fondo que la empaña mucho»): fuera el vinilo y el
+  murmullo, escobillas más suaves; mismo volumen.
+- **Queda**: su aprobación; fuera del café siguen los «En reforma» de la caja del casino y la lata de garbanzos y el aviso de
+  sobres cerrados de `Tienda.jsx` (no se tocaron: el encargo era el diálogo del café).
 
 ### 2026-11-13 · Migraciones del café aplicadas y 1.125.0 a producción (Claude)
 - Francisco pidió aplicar todas las migraciones pendientes y fusionar con `main` lo que quedaba. Con el flujo del SQL Editor

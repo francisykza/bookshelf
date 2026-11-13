@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.125.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.126.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6597,3 +6597,59 @@ el nivel 6, «La bodega». Los niveles 1 a 5 y sus hitos no cambian.
   sótano en `cafe_casilla_valida`/`cafe_plano_valido` (40 cosas).
 - **Pruebas**: Vitest `cafe-sotano.rls.test.js` (4) y la suite del café; e2e `v1125-cafe-bodega.spec.js` (bajar, clientes de
   abajo, Decorar en la bodega, llevar un café abajo y subir; y subir al nivel 6 con su recorrido).
+
+## 126. El café-librería del bajo: su música, un sonido por acción y la barra más ligera (1.126.0)
+
+Tras probar la 1.125 en producción (Francisco, 13-11-2026, «esta genial»), por orden de importancia. Sin cambios de economía,
+recetas ni servidor (no hay migración).
+
+- **La música del café** (`cafe/cafeMusica.js`): propia, original y sintetizada con Web Audio, sin archivos. Un jazz lento de
+  café a 72 pulsos con swing, en fa mayor: piano eléctrico cálido con trémolo, contrabajo, escobillas y bombo blando, a ratos
+  una celesta, y alguna taza a lo lejos. Sin vinilo ni murmullo de fondo (Francisco: «se escucha como una lluvia de fondo que
+  la empaña»), y las escobillas, cortas y suaves. Cada vuelta de ocho
+  compases varía un poco. Mientras estás en el café **suena en vez de la música de Sonido** (`setMusicBlocked('cafe')`) y,
+  al salir, vuelve la de siempre. Va por una salida nueva del controlador, `sceneMusicOut()`, que sigue el volumen de música,
+  «Sin música», el silencio y la radio. Nunca suena antes de un gesto (si aún no se puede, lo intenta en el siguiente toque),
+  entra en 2,5 s y sale en 0,9 s; mientras atiendes a un cliente baja un poco. Su nivel está igualado al de «Luz de
+  escritorio» (RMS 0,083 frente a 0,085).
+- **Un sonido por acción** (`cafeSfx.js`, por el bus de efectos: respeta «Sonidos táctiles», su volumen y el sonido del
+  edificio). Pasos según lo andado: madera en el café (alguna tabla cruje), piedra en la bodega y losa en la acera de la
+  terraza; la trampilla (bisagra y tapa) y los peldaños al bajar o subir, el tercero cruje. Pilar murmura tres sílabas (sin
+  voz) al hablarle y al pasar de frase. Del cliente: la comanda (un tintineo raro si es el excéntrico), coger la taza, dejarla
+  en la mesa, el libro que se desliza, una nota por estrella, los granos que caen en el tarro, la reseña dorada y la silla y
+  la campanilla al despedirse. Decorar: coger, arrastrar (un roce por casilla), soltar, girar, guardar en la balda, «no
+  cabe» (sin reproche), comprar (la caja registradora) y Listo. También la pizarra (tiza), los paneles (papel), el
+  escaparate (cristal) y la inauguración (llaves). Los de la barra, los libros y los logros siguen como estaban.
+- **La barra, más ligera** (Francisco: «las indicaciones ocupan mucho»): en la barra, el cuadro de abajo pasa a ser una
+  franja (`.cf3-franja--barra`) sin retrato ni nombre, con una línea (la orden del gesto o la pregunta, con el «toca…» más
+  suave), las cinco etapas en fichitas (solo la de ahora con nombre), un medidor fino y botones pequeños: de ~190 a ~125 px
+  de alto a 390. El cómo de cada gesto va en una **notita de papel junto al objeto**, a un lado de la pista (o debajo si no
+  cabe), que se va al empezar el gesto y no recoge toques. La comanda, más pequeña mientras preparas. Con movimiento
+  reducido no hay notita («Un toque basta.» en la franja). Los lectores de pantalla siguen oyendo la ayuda entera.
+- **Portadas reales** (Francisco: «Sí, haz las portadas en las fichas y el escaparate»). En las **fichas de recomendar**, la
+  portada del libro (la misma imagen de tu biblioteca) centrada en la tapa y el título debajo; si no tiene o no carga (o Open
+  Library devuelve un píxel vacío), la tapa de color de siempre. En el **escaparate** (nivel 5), cada portada se reduce a una
+  imagen de 36 × 54 píxeles con los colores escalonados y se pinta sin suavizar sobre la cubierta del libro, en el pixel art
+  de la escena (`cafe/cafePortadas.js`, una vez por URL). La primera versión, una rejilla de 10 × 15 dibujada con cubitos,
+  dejaba una portada real en manchas (Francisco: «mejóralas un poco»); para leer sus píxeles pasa por Open Library directo o por `/api/portada`, como la
+  imagen de las reseñas, y si no se puede, la cubierta de color. Solo en tu café: desde la fachada y para los vecinos sigue la
+  cubierta de color (haría falta guardar la portada en el servidor, con migración). En las baldas, los lomos, como siempre.
+- **Jornadas de prueba** (Francisco: «Quiero que mi cuenta pueda jugar todo lo que quiera para probar yo todas las funciones
+  del juego y ver cosas cambiar o no»). **Migración nueva**: `20261215120000_cafe_probador.sql` (la aplica Francisco) y, a mano,
+  `supabase/scripts/cafe_probador.sql` con el correo de su cuenta. Quien está en `cafe_probadores` (nadie puede añadirse desde
+  la app) juega un día de prueba propio, desde el 1-1-3000 (`cafe_jornada`); con todos atendidos, Pilar lo dice y el botón
+  **«Otra jornada»** (`cafe_nueva_jornada`) abre la siguiente, con sus clientes, su excéntrico y sus habituales (los de tu
+  lectura de hoy también llegan). No se borra nada y lo ganado cuenta igual: granos, reputación, niveles, hitos y sus tickets;
+  los tickets del día salen por jornada (como mucho 5), solo en esa cuenta. Para el resto de cuentas no cambia nada: el día
+  sigue siendo hoy o ayer, sin botón. Sin la migración, el café de siempre.
+- **Sin hablar de lo de antes**: Pilar ya no menciona los sobres, la reforma ni el almacén del hotel (la app la usan, por
+  ahora, Francisco y su pareja).
+- **Pruebas**: e2e `v1126-cafe-sonido.spec.js` (música propia y bloqueo de la de Sonido, pasos, Pilar, cada momento del
+  cliente, Decorar, la franja de la barra y la notita sin tapar el objeto ni salirse; 360, 390, 430, escritorio y WebKit 390)
+  y `v1119-cafe.spec.js` (las frases de Pilar); en el mismo spec, las fichas con portada y el escaparate con tres portadas en
+  píxeles desde la acera (portadas de prueba servidas por la propia prueba). En WebKit de Playwright para Windows no hay Web
+  Audio: ahí se comprueba qué suena, no que se oiga. Con `PORTADAS_REALES=1`, el mismo spec usa tres portadas reales de Open
+  Library (de la red) y guarda las capturas con `-reales`. Jornadas: `cafe-probador.rls.test.js` (PGlite: solo la lista,
+  nadie se añade, el resto sigue con hoy o ayer, otra jornada solo con todos atendidos y sin borrar nada) y, en el spec, «Otra
+  jornada» con todos atendidos y su ausencia en una cuenta normal. Muestras renderizadas fuera de la app en `qa-report/v1126/`
+  (`cafe-musica-1126.wav`, 75 s, y `cafe-sonidos-1126.wav`). Solo emulación: no se ha escuchado en un iPhone ni en Safari.
