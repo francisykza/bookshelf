@@ -24,6 +24,8 @@ import { BIENVENIDA, EXCENTRICOS, HABITUALES, RESENAS, TOPE_CLIENTES, clientesDe
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
+import { portadaPorIsbn } from './cafePortadaIsbn';
+import { SITIOS_NUEVOS, marcarVisto, nuevosDe, vistosDe } from './cafeNuevo';
 import { dayKey } from '../../../domain/dates';
 import { crearCafeMusica } from './cafeMusica';
 import { crearSfxBarra } from './cafeSfx';
@@ -51,6 +53,15 @@ const AVISOS_ABIERTO = {
   tostador: '',
 };
 /** Bloque 6a: desde el nivel 6 se decoran dos plantas, el café y la bodega. */
+/** 1.128: la «!» roja de lo nuevo (lo que acabas de desbloquear); se va al tocarlo o verlo. */
+function Nuevo() {
+  return (
+    <span className="cf3-nuevo">
+      <span className="px-sr">, nuevo</span>
+    </span>
+  );
+}
+
 const BODEGA_NIVEL = 6;
 /** Bloque 4b: el escaparate se elige desde el nivel 5; tres de tus leídos, de cara a la calle. */
 const ESCAPARATE_NIVEL = 5;
@@ -90,6 +101,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const [borrador, setBorrador] = useState(null);
   const [sel, setSel] = useState(null);
   const [pestana, setPestana] = useState('cafe');
+  // 1.128: lo ya visto de lo desbloqueado (para la «!» roja de lo nuevo; cafeNuevo.js) y lo nuevo de la tienda al abrirla
+  const [vistos, setVistos] = useState(null);
+  const [nuevosTienda, setNuevosTienda] = useState(null);
   // Bloque 6a: la planta que se decora ('calle' o 'bodega'); al empezar, la planta en la que estás
   const [plantaDecor, setPlantaDecor] = useState('calle');
   const [plantaEscena, setPlantaEscena] = useState('calle');
@@ -308,15 +322,26 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   // 1.126: las portadas reales del escaparate (las de tu biblioteca, por su clave), en píxeles; null las que no cargan
   const [portadasEsc, setPortadasEsc] = useState([]);
   const nivelLocal = local?.nivel ?? 1;
+  // 1.128: cada una con su portada y su ISBN («portada~isbn»); si la portada no carga, la de su misma edición en Google Books
   const coversEsc = useMemo(
-    () => (nivelLocal >= ESCAPARATE_NIVEL ? (local?.escaparate ?? []).map((e) => (state?.books ?? []).find((b) => String(b.id).slice(0, 80) === e.clave)?.cover || null) : []),
+    () =>
+      nivelLocal >= ESCAPARATE_NIVEL
+        ? (local?.escaparate ?? []).map((e) => {
+            const b = (state?.books ?? []).find((x) => String(x.id).slice(0, 80) === e.clave);
+            return `${b?.cover || ''}~${b?.isbn || ''}`;
+          })
+        : [],
     [nivelLocal, local?.escaparate, state?.books],
   );
   const clavePortadas = coversEsc.join('|');
   useEffect(() => {
     let vivo = true;
     const urls = clavePortadas ? clavePortadas.split('|') : [];
-    Promise.all(urls.map((u) => portadaPixel(u || null))).then((r) => vivo && setPortadasEsc(r));
+    const una = (par) => {
+      const [u, isbn] = par.split('~');
+      return portadaPixel(u || null).then((p) => p ?? (isbn ? portadaPorIsbn(isbn).then((otra) => portadaPixel(otra || null)) : null));
+    };
+    Promise.all(urls.map(una)).then((r) => vivo && setPortadasEsc(r));
     return () => {
       vivo = false;
     };
@@ -324,7 +349,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   // Bloque 4b: con menos asientos que clientes posibles en el nivel 4 o 5, vienen menos (nunca menos de 5). Pilar lo dice sin
   // agobiar: una vez al día al entrar y, después, cuando no hay nadie esperando.
   const nivelAhora = local?.nivel ?? 1;
-  const tope = TOPE_CLIENTES[Math.min(6, nivelAhora)];
+  const tope = TOPE_CLIENTES[Math.min(7, nivelAhora)];
   const caben = clientesDelNivel(nivelAhora, asientosDe(local?.plano));
   const faltanAsientos = Boolean(abierto && tope != null && caben < tope);
   const textoAsientos = `Con más sitios para sentarse vendría más gente: ahora caben ${caben} clientes al día y podrían venir ${tope}. Cuando quieras, coloca sillas o bancos en Decorar.`;
@@ -416,6 +441,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         return;
       }
       setAtendiendo(null);
+      if (SITIOS_NUEVOS[id]) verNuevo(`sitio:${id}`);
       if (id === 'pilar') return hablar();
       if (id === 'libros') return abrirLibros('caja');
       // Bloque 6b: el tostador, delante de su trampilla
@@ -505,6 +531,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     setError('');
     setPizarra(false);
     setAtendiendo(n);
+    // 1.128 (Francisco, 13-11-2026: «que cuando te salga el cliente al que vas a atender la cámara vaya a por él»): vas hasta él
+    // mientras te dice lo que quiere (con movimiento reducido, sin paseo)
+    if (ready && !sin3d) api.current?.irACliente?.(n);
   }
   function abrirLibros(hoja, recien = []) {
     setAtendiendo(null);
@@ -543,6 +572,24 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     return r.dado;
   };
 
+  const nuevos = useMemo(() => (vistos ? nuevosDe(local?.reputacion ?? 0, vistos) : new Set()), [local?.reputacion, vistos]);
+  const hayMuebleNuevo = [...nuevos].some((k) => k.startsWith('mueble:'));
+  const verNuevo = (claves) => setVistos((v) => (v ? marcarVisto('cafe', v, claves) : v));
+  // La primera vez, lo que ya tenías cuenta como visto
+  useEffect(() => {
+    if (local?.inaugurado && !vistos) setVistos(vistosDe('cafe', local.reputacion ?? 0));
+  }, [local?.inaugurado, local?.reputacion, vistos]);
+  // Al abrir la tienda se ven sus muebles nuevos: la «!» se queda en ellos mientras sigues en Decorar y ya no vuelve
+  useEffect(() => {
+    if (!decorando || pestana !== 'tienda' || !vistos) return;
+    const ks = [...nuevos].filter((k) => k.startsWith('mueble:'));
+    if (!ks.length) return;
+    setNuevosTienda((t) => new Set([...(t ?? []), ...ks]));
+    verNuevo(ks);
+  }, [decorando, pestana, nuevos, vistos]);
+  useEffect(() => {
+    if (!decorando) setNuevosTienda(null);
+  }, [decorando]);
   const empezarDecorar = () => {
     sfx.play('papel');
     setAtendiendo(null);
@@ -693,8 +740,17 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       {!sin3d && (
         <div className="cf3-tags" hidden={decorando}>
           {Object.entries(SITIOS).map(([id, s]) => (
-            <button key={id} type="button" className={`cf3-tag${id === 'libros' ? ' cf3-tag--libros' : ''}`} data-off="true" ref={(el) => (tagEls.current[id] = el)} onClick={() => pick.current(id)}>
+            <button
+              key={id}
+              type="button"
+              className={`cf3-tag${id === 'libros' ? ' cf3-tag--libros' : ''}`}
+              data-off="true"
+              data-nuevo={nuevos.has(`sitio:${id}`) ? 'true' : undefined}
+              ref={(el) => (tagEls.current[id] = el)}
+              onClick={() => pick.current(id)}
+            >
               {id === 'libros' ? `${s.nombre} · ${porColocar}` : id === 'tostador' && saco ? `${s.nombre} · saco listo` : s.nombre}
+              {nuevos.has(`sitio:${id}`) && <Nuevo />}
             </button>
           ))}
           {pendientes.map((c) => (
@@ -874,8 +930,16 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                 <button type="button" role="tab" aria-selected={pestana === 'casa'} className="cf3-pestana" onClick={() => setPestana('casa')}>
                   De tu casa
                 </button>
-                <button type="button" role="tab" aria-selected={pestana === 'tienda'} className="cf3-pestana" onClick={() => setPestana('tienda')}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={pestana === 'tienda'}
+                  className="cf3-pestana"
+                  onClick={() => setPestana('tienda')}
+                  data-nuevo={hayMuebleNuevo ? 'true' : undefined}
+                >
                   Tienda
+                  {hayMuebleNuevo && <Nuevo />}
                 </button>
               </div>
               {pestana === 'tienda' ? (
@@ -888,8 +952,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                         data-cerrado={m.cerrado ? 'true' : undefined}
                         disabled={ocupado || Boolean(m.cerrado) || local.granos < m.precio}
                         onClick={() => comprar(m)}
-                        aria-label={m.cerrado ? `${m.nombre}: ${m.cerrado}` : `Comprar ${m.nombre} por ${m.precio} granos${m.tienes ? ` (tienes ${m.tienes})` : ''}`}
+                        aria-label={m.cerrado ? `${m.nombre}: ${m.cerrado}` : `Comprar ${m.nombre} por ${m.precio} granos${m.tienes ? ` (tienes ${m.tienes})` : ''}${nuevosTienda?.has(`mueble:${m.id}`) ? ', nuevo' : ''}`}
+                        data-nuevo={nuevosTienda?.has(`mueble:${m.id}`) ? 'true' : undefined}
                       >
+                        {nuevosTienda?.has(`mueble:${m.id}`) && <Nuevo />}
                         <span className="cf3-mueble__icono">
                           <PixelArt icono={iconoDe(m.id)} />
                         </span>
@@ -983,6 +1049,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
           ayudas={state.settings.ayudasCafe ?? 'auto'}
           nivel={local?.nivel ?? 1}
           carta={carta}
+          nuevos={nuevos}
+          onVisto={verNuevo}
           tazas={tazas}
           onServir={servir}
           onCerrar={() => setAtendiendo(null)}
@@ -1075,8 +1143,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                     <>
                       {pendientes.length ? (
                         !sin3d && (
-                          <button type="button" className="cf3-btn cf3-btn--suave" onClick={empezarDecorar}>
+                          <button type="button" className="cf3-btn cf3-btn--suave" onClick={empezarDecorar} data-nuevo={hayMuebleNuevo ? 'true' : undefined}>
                             Decorar
+                            {hayMuebleNuevo && <Nuevo />}
                           </button>
                         )
                       ) : jornada && dia && clientesHoy.length ? (
@@ -1094,8 +1163,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                         </button>
                       ) : (
                         !sin3d && (
-                          <button type="button" className="cf3-btn" onClick={empezarDecorar}>
+                          <button type="button" className="cf3-btn" onClick={empezarDecorar} data-nuevo={hayMuebleNuevo ? 'true' : undefined}>
                             Decorar
+                            {hayMuebleNuevo && <Nuevo />}
                           </button>
                         )
                       )}

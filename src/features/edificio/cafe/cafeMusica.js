@@ -70,20 +70,25 @@ function sala(ctx) {
  * Monta la música en `ctx` hacia `destino`. Devuelve { programar(desde, hasta), salida, parar() }. El tiempo musical empieza
  * en `inicio` (segundos del contexto).
  */
-function montar(ctx, destino, inicio) {
+function montar(ctx, destino, inicio, { offline = false } = {}) {
+  // 1.128 (Francisco, 13-11-2026: «la música muestra un poco de petardeo»): menos ganancia antes del compresor (que ya sube lo
+  // que comprime) y un margen después, para que, sumada a los efectos, no llegue a saturar
   const salida = ctx.createGain();
-  salida.gain.value = 1.9;
+  salida.gain.value = 1.35;
   // Cálido: sin agudos chillones
   const tono = ctx.createBiquadFilter();
   tono.type = 'lowpass';
   tono.frequency.value = 4200;
   tono.Q.value = 0.5;
   const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -16;
+  comp.threshold.value = -18;
+  comp.knee.value = 10;
   comp.ratio.value = 5;
-  comp.attack.value = 0.02;
+  comp.attack.value = 0.01;
   comp.release.value = 0.3;
-  salida.connect(tono).connect(comp).connect(destino);
+  const margen = ctx.createGain();
+  margen.gain.value = 0.82;
+  salida.connect(tono).connect(comp).connect(margen).connect(destino);
   const eco = sala(ctx);
   const ecoG = ctx.createGain();
   ecoG.gain.value = 0.22;
@@ -134,7 +139,12 @@ function montar(ctx, destino, inicio) {
   const fuentes = [trem, cinta];
   for (const f of fuentes) f.start(inicio);
 
+  // 1.128: una nota que llegaría tarde (el móvil atrasó el temporizador) no se toca: sonaría de golpe, con chasquido. Al
+  // acabar, cada nota se suelta de la «cinta» y de su salida (si no, se quedaban enganchadas y, con el rato, el móvil no daba
+  // abasto y petardeaba).
+  const tarde = (t) => !offline && t < ctx.currentTime + 0.02;
   function voz(t, f, { dur, pico, tipo = 'sine', ataque = 0.006, a = null, destino: d, detune = false }) {
+    if (tarde(t)) return;
     const o = ctx.createOscillator();
     o.type = tipo;
     o.frequency.setValueAtTime(f, t);
@@ -147,8 +157,13 @@ function montar(ctx, destino, inicio) {
     o.connect(g).connect(d);
     o.start(t);
     o.stop(t + ataque + dur + 0.05);
+    o.onended = () => {
+      if (detune) cintaG.disconnect(o.detune);
+      g.disconnect();
+    };
   }
   function soplo(t, { f, q = 1, tipo = 'bandpass', dur, pico, ataque = 0.004, d }) {
+    if (tarde(t)) return;
     const s = ctx.createBufferSource();
     s.buffer = ruidoDe(ctx);
     const fl = ctx.createBiquadFilter();
@@ -162,6 +177,7 @@ function montar(ctx, destino, inicio) {
     s.connect(fl).connect(g).connect(d);
     s.start(t, Math.random() * 1.5);
     s.stop(t + ataque + dur + 0.05);
+    s.onended = () => g.disconnect();
   }
 
   /** Una nota del piano eléctrico: la fundamental, un brillo de campana al pulsar y un gemelo un pelín desafinado. */
@@ -248,6 +264,7 @@ function montar(ctx, destino, inicio) {
     /** Escribe los compases que empiezan antes de `hasta` (segundos del contexto) y alguna taza de fondo. */
     programar(hasta) {
       const ultimo = Math.floor((hasta - inicio) / COMPAS);
+      if (!offline) hecho = Math.max(hecho, Math.floor((ctx.currentTime - inicio) / COMPAS) - 1);
       while (hecho < ultimo) {
         hecho += 1;
         compas(hecho);
@@ -291,7 +308,8 @@ export function crearCafeMusica(abrir) {
       g.gain.exponentialRampToValueAtTime(1, t + 2.5);
       g.connect(out);
       m = montar(ctx, g, t);
-      const latido = () => m?.programar(ctx.currentTime + 1.2);
+      // Con más margen (el móvil atrasa los temporizadores cuando el 3D va cargado)
+      const latido = () => m?.programar(ctx.currentTime + 2);
       latido();
       timer = setInterval(latido, 250);
       return true;
@@ -324,7 +342,7 @@ export function crearCafeMusica(abrir) {
 export async function renderCafeMusica(segundos = 60) {
   const ctx = new OfflineAudioContext(2, Math.ceil(44100 * segundos), 44100);
   ruidoCache = new WeakMap();
-  const m = montar(ctx, ctx.destination, 0.05);
+  const m = montar(ctx, ctx.destination, 0.05, { offline: true });
   m.programar(segundos);
   return ctx.startRendering();
 }

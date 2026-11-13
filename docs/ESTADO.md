@@ -6,6 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.128.0** (2026-11-13, §128). La lista de Francisco tras el tostadero («Sí, empieza»): la «!» roja de lo
+  nuevo (Decorar, tienda, opciones de la barra y sitios nuevos; se va al verlo), la música sin petardeo, los sonidos igualados
+  (medidos), la barra despejada (comanda plegada en el gesto, el excéntrico con un acertijo, la palanca libre), la cámara hacia
+  el cliente y las portadas que faltaban buscadas por su ISBN en Google Books. **Sin migración**. Evidencias en
+  `qa-report/cafe-ajustes/`. Publicar (subir a `main`), solo cuando lo pida.
 - **Publicada en producción: 1.127.0** (2026-11-13, §127; «Aplicar migración y publicar»; `main` avanza sin forzar desde `b6453ac`; migración `20261216120000_cafe_tostadero.sql` aplicada). El café-librería del bajo,
   **bloque 6b, el tostadero** (cifras aprobadas, «Sí, el tostadero»): nivel 7 desde 15.000, el sótano de 7 × 5 con el tostador,
   un saco al día recogido tirando de la trampilla del tambor (5 tazas de «tueste de la casa», +3 granos y +4 de reputación cada
@@ -182,14 +187,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Café, lista de Francisco del 13-11-2026 (tras el tostadero; «para más tarde cuando termines»)**, sin empezar:
-  1. Exclamaciones **rojas** en lo que se acaba de desbloquear, que desaparecen al pulsarlo o verlo.
-  2. La música del café «petardea» un poco.
-  3. Algunos sonidos suenan muy fuertes.
-  4. Las instrucciones siguen tapando la palanca de la cafetera; con el excéntrico, sus acertijos tapan mucho más.
-  5. Que la cámara vaya hacia el cliente al que vas a atender.
-  6. A su pareja (iPhone) las fichas de libros le salen sin portada (cubierta de color con el título) salvo alguna; mirar por
-     qué no carga la portada real.
+- **Café, lista de Francisco del 13-11-2026 (tras el tostadero)**: hecha en la 1.128.0 (§128), con commit y sin publicar.
+  Queda por confirmar con los datos de su pareja que la causa de las fichas sin portada era la de Open Library (§128.6).
 
 - **Café-librería, traspaso a la otra cuenta (13-11-2026, tras el commit de la 1.126.0)**. Francisco seguirá con la otra
   cuenta en este punto y con el mismo método.
@@ -310,6 +309,25 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · Ajustes del café tras el tostadero · 1.128.0 (§128), commit en la rama (Claude)
+
+- **Qué se hizo** (lista de Francisco del 13-11-2026, «Sí, empieza»): la «!» roja de lo nuevo (`cafeNuevo.js`; Decorar,
+  pestaña Tienda, cada mueble nuevo, opciones nuevas de la barra y letreros del escaparate, la trampilla y el tostador; la
+  primera vez todo lo que ya tenías cuenta como visto); la música sin petardeo (`cafeMusica.js`: menos ganancia, margen tras el
+  compresor, notas tardías descartadas y nodos soltados); los sonidos igualados por medida (`GANANCIA` y bucles en
+  `cafeSfx.js`, `medirSonidos`); la comanda plegada durante el gesto y el excéntrico con un solo acertijo en la barra; la
+  cámara de la palanca; al atender, andar hasta el cliente; las portadas que Open Library no tiene, de su mismo ISBN en Google
+  Books (`cafePortadaIsbn.js`, fichas y escaparate, recordadas en el dispositivo, sin tocar la biblioteca).
+- **Arreglos**: `barra(false)` y `decorar(false)` en `cafe3d.js` cortaban cualquier paseo en curso aunque no se estuviera en
+  la barra ni en Decorar (por eso la cámara no iba al cliente); `TOPE_CLIENTES` se leía fuera de la tabla en el nivel 8.
+- **Comprobado**: build, oxlint (sin errores en el café), Vitest del café (77, con `cafe-nuevo.test.js` nueva), e2e
+  `v1128-cafe-ajustes.spec.js` en 390, 360, 430, escritorio y WebKit 390 (en la tanda seguida, 360 y 430 fallaron al arrancar
+  en frío; repetidas solas, pasan las dos), y regresión a 390 de v1119, v1121, v1125, v1126 y v1127 (15, bien). Evidencias en
+  `qa-report/cafe-ajustes/` (capturas y dos vídeos a 390). Solo emulación; el sonido, medido y no escuchado en un móvil; la
+  causa de las fichas sin portada de su pareja es probable, no comprobada con sus datos.
+- **Aprobada** («Sí, haz el commit», tras ver vídeos y capturas) y con commit en la rama. Sin migración. **Queda**: publicar
+  cuando Francisco lo pida.
 
 ### 2026-11-13 · Migración del tostadero aplicada y 1.127.0 a producción (Claude)
 

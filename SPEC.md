@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.127.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.128.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6699,3 +6699,45 @@ Cifras aprobadas por Francisco el 13-11-2026 («Sí, esas cifras»; `docs/qa/caf
   `v1127-cafe-tostadero.spec.js` (el aviso, la bodega ancha, recoger el saco con el gesto, no hay otro el mismo día, Decorar
   y la tienda abajo, servir el tueste tocando el saco de la barra; y subir al 7 con su recorrido y el tostador frío). Solo
   emulación: no se ha probado en un iPhone ni en Safari.
+
+## 128. El café-librería del bajo: lo nuevo en rojo, sonido más suave y la barra despejada (1.128.0)
+
+Lista de Francisco del 13-11-2026, tras el tostadero («Sí, empieza»). Sin cambios de economía, recetas ni servidor; sin
+migración.
+
+- **128.1 La «!» roja de lo nuevo** («que aparezcan exclamaciones rojas en aquellas cosas que has desbloqueado, que desaparezca
+  cuando las pulses o veas»). Distinta de la «!» ámbar de las ayudas (lo siguiente que hay que tocar): la roja dice «esto es
+  nuevo». Sale en el botón **Decorar** y en la pestaña **Tienda** mientras haya un mueble nuevo a la venta; en **cada mueble
+  nuevo** de la tienda (a la izquierda: a la derecha va cuántos tienes); en las **opciones nuevas de la barra** (el chocolate, la
+  nata, la vainilla, el café con hielo, el tueste de la casa…); y en los **letreros de los sitios nuevos** (el escaparate, la
+  trampilla y el tostador). Se va al abrir la tienda (las tarjetas la conservan hasta salir de Decorar), al elegir en ese paso
+  de la barra o al tocar el sitio. Lo visto se recuerda en el dispositivo (`bookshelf:cafe-visto`, `cafeNuevo.js`); **la primera
+  vez se da por visto todo lo que ya tenías**, así que solo sale para lo que se abra a partir de ahora. El lector de pantalla
+  dice «nuevo». Se mueve como las ayudas (salto de dos pasos) y queda quieta con movimiento reducido.
+- **128.2 La música, sin petardeo**. Menos ganancia antes del compresor (1,35 en lugar de 1,9), compresor más suave (umbral
+  −18 dB, rodilla 10) y un margen de 0,82 después. Las notas que llegarían tarde (el móvil atrasa el temporizador con el 3D
+  cargado) no se tocan, en vez de sonar de golpe con chasquido; si el retraso pasa de un compás, se salta lo que ya pasó; se
+  programa con 2 s de margen; y cada nota se suelta al acabar (antes se quedaban enganchadas y, con el rato, saturaban el móvil).
+- **128.3 Los sonidos, igualados**. Medidos uno a uno sin altavoz (`medirSonidos` en `cafeSfx.js`), la mayoría queda hacia
+  −40 dB de volumen medio y sobresalían el golpe del apisonador (−24,5), la cafetera, el tostador, la jarra y la tetera (hacia
+  −30) y los pasos. Cada uno lleva su ganancia y todos quedan en −34 dB o menos (mediana −40,3) sin cambiar cómo suenan. Los
+  bucles, más bajos: la palanca, la tetera, los granos que caen y, sobre todo, el siseo del vapor.
+- **128.4 La barra despejada** («la palanca se sigue tapando con las instrucciones; con los excéntricos tapan mucho más»).
+  Durante un gesto, la comanda se pliega a su título; con el excéntrico, en «pide» se ven sus cuatro acertijos y en la barra
+  solo el del paso que toca. El encuadre de la palanca deja la cafetera en el hueco libre, con la nota al lado. La e2e comprueba
+  en cada gesto que ni la comanda, ni el HUD, ni la franja, ni la nota pisan el centro del objeto.
+- **128.5 La cámara va hacia el cliente** («que cuando te salga el cliente al que vas a atender la cámara vaya a por él»): al
+  atender, vas andando hasta él mientras te dice lo que quiere (con movimiento reducido, directo). Arreglo de paso: salir de la
+  barra sin estar en ella (lo hace el panel al abrirse) o repintar el local cortaba cualquier paseo en curso.
+- **128.6 Portadas que faltaban** («a mi pareja le salen así los libros»). Los libros importados de Goodreads piden la portada
+  a Open Library por su ISBN y, si allí no está, se quedaban en la tapa de color. Ahora, si esa falla, se busca **la portada de
+  la misma edición (el mismo ISBN, nunca otra)** en Google Books, como hace el buscador al añadir un libro, en las fichas y en
+  el escaparate. Solo para enseñarla en el café: no se guarda en el libro ni cambia la biblioteca. Lo encontrado (y que no hay)
+  se recuerda en el dispositivo (`bookshelf:cafe-portadas`, una semana si no hay, un mes si hay). La causa es probable, no
+  comprobada con los datos de su pareja.
+- **Arreglo**: el tope de clientes de la 1.127 se leía fuera de la tabla con el nivel 8 (`TOPE_CLIENTES`).
+- **Pruebas**: Vitest `cafe-nuevo.test.js` (4: lo desbloqueado por reputación, la primera vez como visto, marcar y sin
+  almacenamiento) y las del café (77); e2e `v1128-cafe-ajustes.spec.js` (la barra con la comanda plegada, el excéntrico con un
+  acertijo y nada tapando la palanca, en cada gesto; la «!» roja en Decorar, la tienda y la barra y que se va; la cámara hacia
+  el cliente; la portada de Google Books en la ficha cuando Open Library no la tiene). Solo emulación: no se ha probado en un
+  iPhone ni en Safari, y el sonido se ha medido, no escuchado en un móvil.

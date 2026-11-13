@@ -3227,6 +3227,24 @@
   gap: 2px;
   font-size: 0.72rem;
 }
+/* 1.128: mientras haces un gesto, la comanda se pliega a su título; el excéntrico, eligiendo, enseña solo el acertijo del paso.
+   Lo plegado queda para los lectores de pantalla (recortado, no quitado). */
+.cf3-comanda[data-plegada='true'] .cf3-comanda__linea,
+.cf3-comanda[data-plegada='true'] .cf3-comanda__acertijos,
+.cf3-comanda[data-un-acertijo='true'] .cf3-comanda__acertijos li:not([data-ahora='true']) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.cf3:has(.cf3-franja--barra) .cf3-comanda[data-plegada='true'] {
+  padding-bottom: 5px;
+}
+.cf3:has(.cf3-franja--barra) .cf3-comanda[data-plegada='true'] .cf3-comanda__titulo {
+  margin-bottom: 0;
+}
 /* La notita del cómo: papel junto al objeto, a un lado de la pista, sin tapar el objeto ni recoger toques */
 .cf3-gesto__nota {
   --cf3-px: 2px;
@@ -3306,5 +3324,46 @@
   .cf3-ficha__portada {
     width: 37px;
     height: 56px;
+  }
+}
+
+/* ── 1.128 (§128.1): la «!» roja de lo nuevo (lo recién desbloqueado); se va al tocarlo o verlo ── */
+[data-nuevo='true']:not(.cf3-tag) {
+  position: relative;
+}
+/* Dentro del borde: botones, letreros y tarjetas llevan esquinas de píxel (clip-path) que recortarían lo que asome */
+.cf3-nuevo {
+  position: absolute;
+  z-index: 2;
+  top: 3px;
+  right: 3px;
+  width: 13px;
+  height: 16px;
+  pointer-events: none;
+  background: #d8432f;
+  box-shadow:
+    inset 0 0 0 2px #2a1010,
+    inset 0 -3px 0 #9e2a1d,
+    0 2px 0 rgb(0 0 0 / 0.45);
+  image-rendering: pixelated;
+}
+.cf3-nuevo::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 3px;
+  height: 9px;
+  transform: translateX(-50%);
+  background: linear-gradient(#fff3e0 0 60%, transparent 60% 75%, #fff3e0 75%);
+}
+/* En la tienda, a la izquierda: a la derecha va cuántos tienes */
+.cf3-mueble .cf3-nuevo {
+  right: auto;
+  left: 3px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-nuevo {
+    animation: cf3-ayuda-salta 1.3s steps(2, jump-none) infinite;
   }
 }

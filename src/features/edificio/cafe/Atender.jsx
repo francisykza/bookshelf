@@ -21,6 +21,7 @@ import { AYUDA_NIVELES, AYUDA_PARADO_MS, ELIGE, ladoNota, ETAPAS, GESTOS, crearG
 import { crearSfxBarra } from './cafeSfx';
 import { retratoDe } from './cafeIconos';
 import { errorCafe } from './cafeService';
+import { portadaPorIsbn, portadaRecordada } from './cafePortadaIsbn';
 import { PixelArt } from './PixelArt';
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -150,8 +151,11 @@ export function Pista({ tipo }) {
 }
 
 const SIN_CARTA = [];
+const SIN_NUEVOS = new Set();
+/** La opción de la barra que abre cada cosa nueva de la carta (el café con hielo es la opción «frio»). */
+const OPCION_CARTA = { frio: 'hielo' };
 
-export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0 }) {
+export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
   const [paso, setPaso] = useState('pide');
   const [receta, setReceta] = useState(VACIA);
   const [ei, setEi] = useState(0);
@@ -166,6 +170,8 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   const [error, setError] = useState('');
   // Las portadas que no cargan (sin red, o Open Library devuelve un píxel vacío): esas fichas vuelven a la tapa de color
   const [sinPortada, setSinPortada] = useState({});
+  // 1.128: si la de Open Library no está, la de la misma edición en Google Books (por el ISBN), recordada en el dispositivo
+  const [alternas, setAlternas] = useState({});
   const [sfx] = useState(() => crearSfxBarra());
   const rec = useRef(null);
   const raf = useRef(0);
@@ -174,6 +180,24 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   const raro = cliente.raro;
   const quien = cliente.habitual || raro ? cliente.nombre : 'Cliente';
   const fichas = useMemo(() => librosParaRecomendar(cliente.pedido, libros, ctx, cliente.semilla), [cliente.pedido, cliente.semilla, libros, ctx]);
+  /** La portada que se enseña: la del libro si carga; si no, la otra de su ISBN (si la hay); si no, ninguna. */
+  const portadaDe = (b) => {
+    if (b.cover && !sinPortada[b.cover]) return b.cover;
+    const otra = alternas[b.isbn] ?? portadaRecordada(b.isbn);
+    return otra && !sinPortada[otra] ? otra : null;
+  };
+  const faltan = fichas
+    .filter((b) => b.isbn && (!b.cover || sinPortada[b.cover]) && alternas[b.isbn] === undefined && portadaRecordada(b.isbn) === undefined)
+    .map((b) => b.isbn)
+    .join('|');
+  useEffect(() => {
+    if (!faltan) return undefined;
+    let vivo = true;
+    for (const isbn of faltan.split('|')) portadaPorIsbn(isbn).then((url) => vivo && setAlternas((m) => ({ ...m, [isbn]: url })));
+    return () => {
+      vivo = false;
+    };
+  }, [faltan]);
   const lista = [receta.bebida, receta.grano, receta.leche, receta.toque];
   const encaja = libro ? cliente.pedido.encaja(libro, ctx) : false;
   const enBarra = paso === 'barra';
@@ -306,8 +330,14 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     setEi(sig.ei);
     setGi(sig.gi);
   };
+  // 1.128: la «!» roja en lo nuevo de la carta; se va al elegir en ese paso (se ha visto)
+  const claveNueva = (id) => `carta:${OPCION_CARTA[id] ?? id}`;
   const elegir = (p, valor) => {
     if (!eligiendo || p !== parte) return;
+    const vistas = opcionesDe(p, carta, p === 'bebida' ? null : receta.bebida)
+      .map((o) => claveNueva(o.id))
+      .filter((k) => nuevos.has(k));
+    if (vistas.length) onVisto?.(vistas);
     // Solo lo que está en la carta (el cazo y el bol están en la barra desde el principio, pero se abren con los hitos)
     if (!opcionesDe(p, carta, p === 'bebida' ? null : receta.bebida).some((o) => o.id === valor)) return;
     // Bloque 6b: el tueste de la casa sale del saco; sin tazas, no hay (baja al tostadero)
@@ -451,17 +481,26 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
 
   const retrato = <PixelArt icono={retratoDe(cliente.aspecto)} />;
   const pide = dado?.pide ?? cliente.pide;
+  // 1.128 (Francisco, 13-11-2026: «la palanca se sigue tapando con las instrucciones» y, con el excéntrico, «tapan mucho más»):
+  // en la barra, mientras haces un gesto, la comanda se pliega a su título; eligiendo, el excéntrico enseña solo el acertijo de
+  // ese paso. Lo plegado sigue ahí para los lectores de pantalla.
+  const plegada = enBarra && Boolean(gesto);
+  const acertijoAhora = enBarra && eligiendo ? PARTES.findIndex((p) => p.id === parte) : -1;
   const comanda = !(paso === 'pide' || enBarra || paso === 'yendo') ? null : (
     <section
       className={`cf3-comanda${raro ? ' cf3-comanda--raro' : ''}`}
+      data-plegada={plegada ? 'true' : undefined}
+      data-un-acertijo={raro && (plegada || acertijoAhora >= 0) ? 'true' : undefined}
       aria-label={raro ? `La comanda de ${quien}, en acertijos` : `La comanda de ${quien}`}
       style={raro ? { '--cf3-tema': rgb(raro.tema) } : undefined}
     >
       <h3 className="cf3-comanda__titulo">{raro ? `★ ${quien}` : cliente.habitual ? `${quien}: lo de siempre` : 'Comanda'}</h3>
       {raro ? (
         <ul className="cf3-comanda__acertijos">
-          {comandaAcertijo(cliente.pide).map((t) => (
-            <li key={t}>{t}</li>
+          {comandaAcertijo(cliente.pide).map((t, k) => (
+            <li key={t} data-ahora={k === acertijoAhora ? 'true' : undefined}>
+              {t}
+            </li>
           ))}
         </ul>
       ) : (
@@ -536,7 +575,20 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
         {eligiendo && (
           <div className="cf3-opciones" role="group" aria-label={nombreEtapa(etapa, receta)}>
             {opciones.map((o) => (
-              <button key={o.id} type="button" className="cf3-opcion" onClick={() => elegir(parte, o.id)} disabled={o.id === 'casa' && tazas < 1} data-opcion={o.id}>
+              <button
+                key={o.id}
+                type="button"
+                className="cf3-opcion"
+                onClick={() => elegir(parte, o.id)}
+                disabled={o.id === 'casa' && tazas < 1}
+                data-opcion={o.id}
+                data-nuevo={nuevos.has(claveNueva(o.id)) ? 'true' : undefined}
+              >
+                {nuevos.has(claveNueva(o.id)) && (
+                  <span className="cf3-nuevo">
+                    <span className="px-sr">, nuevo</span>
+                  </span>
+                )}
                 {o.id === 'casa'
                   ? tazas > 0
                     ? `Tueste de la casa · ${tazas} ${tazas === 1 ? 'taza' : 'tazas'}`
@@ -604,7 +656,9 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       <p className="cf3-fichas__vacia">No te quedan libros en la balda. Compra una caja en la distribuidora para recomendar; hoy, solo el café.</p>
     ) : (
       <ul className="cf3-fichas" aria-label="Recomiéndale un libro (opcional)">
-        {fichas.map((b) => (
+        {fichas.map((b) => {
+          const portada = portadaDe(b);
+          return (
           <li key={b.clave ?? b.id}>
             <button
               type="button"
@@ -615,22 +669,23 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
               style={{ '--cf3-tapa': rgb(colorDe(b.title)) }}
             >
               {/* 1.126 (Francisco, 13-11-2026): la portada real, si la tiene y carga; si no, la tapa de color con el título */}
-              <span className={`cf3-ficha__tapa${b.cover && !sinPortada[b.cover] ? ' cf3-ficha__tapa--portada' : ''}`} aria-hidden="true">
-                {b.cover && !sinPortada[b.cover] && (
+              <span className={`cf3-ficha__tapa${portada ? ' cf3-ficha__tapa--portada' : ''}`} aria-hidden="true">
+                {portada && (
                   <img
+                    key={portada}
                     className="cf3-ficha__portada"
-                    src={b.cover}
+                    src={portada}
                     alt=""
                     referrerPolicy="no-referrer"
                     decoding="async"
                     draggable="false"
-                    onLoad={(e) => e.currentTarget.naturalWidth < 10 && setSinPortada((m) => ({ ...m, [b.cover]: true }))}
-                    onError={() => setSinPortada((m) => ({ ...m, [b.cover]: true }))}
+                    onLoad={(e) => e.currentTarget.naturalWidth < 10 && setSinPortada((m) => ({ ...m, [portada]: true }))}
+                    onError={() => setSinPortada((m) => ({ ...m, [portada]: true }))}
                   />
                 )}
-                {!(b.cover && !sinPortada[b.cover]) && <span className="cf3-ficha__titulo">{b.title}</span>}
+                {!portada && <span className="cf3-ficha__titulo">{b.title}</span>}
               </span>
-              {b.cover && !sinPortada[b.cover] && <span className="cf3-ficha__nombre">{b.title}</span>}
+              {portada && <span className="cf3-ficha__nombre">{b.title}</span>}
               <span className="cf3-ficha__autor">{b.author}</span>
               <span className="cf3-ficha__pistas">
                 {pistas(b, ctx).map((t) => (
@@ -639,7 +694,8 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
               </span>
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
     );
     botones = (

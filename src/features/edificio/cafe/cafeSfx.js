@@ -345,15 +345,48 @@ const SONIDOS = {
   },
 };
 
+/**
+ * 1.128 (Francisco, 13-11-2026: «algunos sonidos suenan muy fuerte»): medidos uno a uno (`medirSonidos`), la mayoría queda
+ * hacia −40 dB de volumen medio y estos sobresalían (el golpe del apisonador, a −24,5; la cafetera, el tostador, la jarra y la
+ * tetera, hacia −30; los pasos, que se repiten mucho, a −34). Se bajan a la altura del resto sin cambiar cómo suenan.
+ */
+const GANANCIA = {
+  golpe: 0.33,
+  cafetera: 0.5,
+  tostador: 0.55,
+  jarra: 0.55,
+  tetera: 0.6,
+  clic: 0.65,
+  plop: 0.7,
+  soltar: 0.7,
+  paso: 0.6,
+  libroPon: 0.7,
+  hojas: 0.65,
+  subeNivel: 0.8,
+  cajaAbre: 0.8,
+};
+
 /** Lo que suena mientras se mantiene: el café que cae, el agua y el vapor (su color cambia con la leche). */
+// 1.128: más bajos; el vapor (un siseo agudo continuo) era el que más molestaba
 const BUCLES = {
-  palanca: { tipo: 'lowpass', f: 700, q: 0.7, pico: 0.22 },
-  tetera: { tipo: 'bandpass', f: 1100, q: 0.9, pico: 0.3 },
-  vapor: { tipo: 'highpass', f: 2600, q: 0.7, pico: 0.12 },
+  palanca: { tipo: 'lowpass', f: 700, q: 0.7, pico: 0.17 },
+  tetera: { tipo: 'bandpass', f: 1100, q: 0.9, pico: 0.17 },
+  vapor: { tipo: 'highpass', f: 2600, q: 0.7, pico: 0.045 },
   cazo: { tipo: 'lowpass', f: 480, q: 0.8, pico: 0.2 },
   /** Bloque 6b: los granos tostados que caen por la rampa al enfriador (un chisporroteo seco). */
-  granosCaen: { tipo: 'bandpass', f: 3000, q: 1.4, pico: 0.18 },
+  granosCaen: { tipo: 'bandpass', f: 3000, q: 1.4, pico: 0.12 },
 };
+
+/** El bus de un sonido con su ganancia (la de `GANANCIA`, si la tiene). */
+function conGanancia(b, nombre) {
+  const k = GANANCIA[nombre];
+  if (!k) return b;
+  const g = b.ctx.createGain();
+  g.gain.value = k;
+  g.connect(b.out);
+  setTimeout(() => g.disconnect(), 3000);
+  return { ...b, out: g };
+}
 
 export function crearSfxBarra() {
   let activo = false;
@@ -371,7 +404,7 @@ export function crearSfxBarra() {
       const b = bus();
       if (!b || !SONIDOS[nombre]) return;
       try {
-        SONIDOS[nombre](b, datos);
+        SONIDOS[nombre](conGanancia(b, nombre), datos);
       } catch {
         /* un fallo de audio nunca bloquea nada */
       }
@@ -424,4 +457,33 @@ export function crearSfxBarra() {
       for (const k of Object.keys(bucles)) this.bucle(k, false);
     },
   };
+}
+
+/**
+ * 1.128 (Francisco, 13-11-2026: «algunos sonidos suenan muy fuerte»): cada sonido renderizado aparte, para medirlo (pruebas).
+ * Devuelve { nombre: { pico, rms } } en dBFS; el RMS, de la parte que suena (por encima de −50 dB).
+ */
+export async function medirSonidos(nombres = Object.keys(SONIDOS), datos = {}) {
+  const out = {};
+  for (const nombre of nombres) {
+    const ctx = new OfflineAudioContext(1, 44100 * 2, 44100);
+    const k = ctx.createGain();
+    k.gain.value = GANANCIA[nombre] ?? 1;
+    k.connect(ctx.destination);
+    SONIDOS[nombre]({ ctx, out: k }, datos[nombre]);
+    const d = (await ctx.startRendering()).getChannelData(0);
+    let pico = 0;
+    let suma = 0;
+    let n = 0;
+    for (const v of d) pico = Math.max(pico, Math.abs(v));
+    const umbral = pico * 10 ** (-50 / 20);
+    for (const v of d)
+      if (Math.abs(v) > umbral) {
+        suma += v * v;
+        n += 1;
+      }
+    const db = (x) => Math.round(20 * Math.log10(Math.max(1e-9, x)) * 10) / 10;
+    out[nombre] = { pico: db(pico), rms: db(Math.sqrt(suma / Math.max(1, n))) };
+  }
+  return out;
 }

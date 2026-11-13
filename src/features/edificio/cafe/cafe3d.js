@@ -1172,7 +1172,8 @@ const ENFOQUES = {
   manivela: enfoque(BARRA_MARCAS.manivela, 0.5, { alto: 0.95 }),
   cuchara: enfoque([7.62, 5.8, BARRA_Z + 0.28], 0.85, { alto: 0.5, bajo: 0.45 }),
   apisonar: enfoque(BARRA_MARCAS.portafiltro, 0.66, { alto: 0.5, bajo: 0.55, lado: 0.5 }),
-  palanca: enfoque([7.6, 6.02, BARRA_Z + 0.4], 0.95, { alto: 0.45, bajo: 0.5, lado: 0.75 }),
+  // 1.128: más bajo en la pantalla, para que el asa no quede pegada a la comanda y haya sitio para bajarla
+  palanca: enfoque([7.6, 6.02, BARRA_Z + 0.4], 1.0, { alto: 0.5, bajo: 0.22, lado: 0.75 }),
   tetera: enfoque([7.62, 6.22, BARRA_Z + 0.22], 0.95, { alto: 0.6 }),
   colador: enfoque(BARRA_MARCAS.taza, 0.55, { alto: 0.6, lado: 0.4 }),
   leche: enfoque(BARRA_MARCAS.jarras, 0.6),
@@ -3477,7 +3478,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
      * decora ('calle' o, desde el nivel 6, 'bodega').
      */
     decorar(on, { sel = null, mal = false, planta: dePlanta = 'calle' } = {}) {
-      walk = null;
+      // 1.128: solo al entrar o estar en Decorar (si no, cada repintado del local cortaba el paseo hasta el cliente)
+      if (on || modo.decorar) walk = null;
       modo = { decorar: Boolean(on), sel, mal, planta: dePlanta === 'bodega' && estado.nivel >= 6 ? 'bodega' : 'calle' };
       montarPlano();
     },
@@ -3521,7 +3523,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
      * `llevar` (una receta), con la taza en la mano.
      */
     barra(on, { llevar = null } = {}) {
-      walk = null;
+      // 1.128: salir de la barra sin estar en ella (al abrir o cerrar el panel de atender) no corta el paseo hasta el cliente
+      if (on || barra.activa) walk = null;
       if (on && planta === 'bodega') {
         planta = 'calle';
         px = ANTE_PILAR.x;
