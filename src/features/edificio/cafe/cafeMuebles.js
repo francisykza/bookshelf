@@ -491,6 +491,61 @@ function bancoBodega() {
   return out;
 }
 
+/** Saco de arpillera (nivel 7): un saco de café lleno, tumbado y mullido, con la boca atada; se sienta encima. */
+function saco() {
+  const out = [];
+  const ARP = [176, 142, 94];
+  const ARP_D = [148, 116, 74];
+  const ARP_L = [196, 166, 116];
+  // El cuerpo, con la panza en escalones de píxel
+  out.push(b([0.14, 0.2, 0, 0.86, 0.8, 0.12], ARP_D));
+  out.push(b([0.1, 0.16, 0.08, 0.9, 0.84, 0.32], ARP), b([0.16, 0.1, 0.1, 0.84, 0.9, 0.3], ARP));
+  out.push(b([0.14, 0.2, 0.32, 0.86, 0.8, 0.42], ARP_L));
+  // Las costuras, la marca de tinta (sin letras) y la boca atada con su cordel
+  out.push(b([0.49, 0.1, 0.1, 0.51, 0.9, 0.42], ARP_D));
+  out.push(b([0.28, 0.895, 0.16, 0.44, 0.9, 0.28], [92, 60, 44]), b([0.56, 0.895, 0.16, 0.72, 0.9, 0.28], [92, 60, 44]));
+  out.push(b([0.86, 0.38, 0.18, 0.96, 0.62, 0.34], ARP_D), b([0.9, 0.42, 0.16, 0.94, 0.58, 0.36], [210, 190, 150]));
+  out.push(b([0.95, 0.44, 0.2, 1.0, 0.56, 0.32], ARP_L));
+  // Unos granos caídos al lado
+  for (const [x, y] of [
+    [0.06, 0.3],
+    [0.04, 0.62],
+    [0.92, 0.82],
+  ])
+    out.push(b([x, y, 0, x + 0.04, y + 0.03, 0.02], [92, 54, 32]));
+  return out;
+}
+
+/** Estantería de latas (hito 1 del nivel 7): baldas de roble con latas de café de colores y una báscula de latón. */
+function latas() {
+  const out = [];
+  // Los costados, el fondo y tres baldas (contra la pared, en y = 0)
+  for (const x of [0.06, 1.88]) out.push(b([x, 0.16, 0, x + 0.06, 0.62, 1.7], ROBLE_D));
+  out.push(b([0.06, 0.12, 0, 1.94, 0.16, 1.7], ROBLE));
+  for (const z of [0.06, 0.6, 1.12, 1.64]) out.push(b([0.08, 0.16, z, 1.92, 0.62, z + 0.05], ROBLE_L));
+  // Las latas: redondas en escalones, de varios colores, con su tapa de hojalata
+  const COLORES = [
+    [168, 52, 44],
+    [52, 92, 74],
+    [196, 150, 64],
+    [44, 64, 112],
+    [120, 60, 90],
+  ];
+  for (const [k, z] of [0.11, 0.65, 1.17].entries())
+    for (let i = 0; i < 6; i += 1) {
+      const x = 0.18 + i * 0.28;
+      const alta = (i + k) % 3 === 0 ? 0.36 : 0.26;
+      const c = COLORES[(i * 2 + k) % COLORES.length];
+      out.push(b([x, 0.28, z, x + 0.2, 0.5, z + alta], c), b([x + 0.03, 0.25, z, x + 0.17, 0.53, z + alta], c));
+      out.push(b([x + 0.02, 0.27, z + alta, x + 0.18, 0.51, z + alta + 0.03], [196, 196, 192]));
+      out.push(b([x + 0.03, 0.525, z + alta * 0.35, x + 0.17, 0.531, z + alta * 0.7], [232, 222, 196]));
+    }
+  // Arriba, una báscula de latón con su platillo y un saquito
+  out.push(b([0.3, 0.26, 1.69, 0.62, 0.5, 1.73], LATON), b([0.43, 0.35, 1.73, 0.49, 0.41, 1.92], LATON), b([0.32, 0.28, 1.92, 0.6, 0.48, 1.95], LATON));
+  out.push(b([1.2, 0.24, 1.69, 1.62, 0.54, 1.9], [176, 142, 94]), b([1.3, 0.3, 1.9, 1.52, 0.48, 1.96], [196, 166, 116]));
+  return out;
+}
+
 /** Candil de hierro de pie (hito del nivel 6): un pie de trípode y el candil colgado de su brazo, encendido. */
 function candil() {
   const out = [];
@@ -538,6 +593,8 @@ const MODELOS = {
   'cafe-barrica': barrica,
   'cafe-banco-bodega': bancoBodega,
   'cafe-candil': candil,
+  'cafe-saco': saco,
+  'cafe-latas': latas,
 };
 /** Los muebles del café que enseñan tus libros en sus baldas. */
 export const ESTANTERIAS = ['cafe-estanteria', 'cafe-estanteria-alta', 'cafe-biombo'];

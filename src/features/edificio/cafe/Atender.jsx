@@ -17,7 +17,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { colorDe } from './cafeMuebles';
 import { PARTES, PEDIDO_ACERTIJO, RESENAS, comandaAcertijo, comandaClara, librosParaRecomendar, nombreOpcion, opcionesDe } from './cafeClientes';
-import { AYUDA_NIVELES, AYUDA_PARADO_MS, ELIGE, ETAPAS, GESTOS, crearGesto, gestosDe, nombreEtapa, verAyuda, vistaTaza } from './cafeGestos';
+import { AYUDA_NIVELES, AYUDA_PARADO_MS, ELIGE, ladoNota, ETAPAS, GESTOS, crearGesto, gestosDe, nombreEtapa, verAyuda, vistaTaza } from './cafeGestos';
 import { crearSfxBarra } from './cafeSfx';
 import { retratoDe } from './cafeIconos';
 import { errorCafe } from './cafeService';
@@ -69,7 +69,9 @@ const PREGUNTA = {
       ? '¿Qué hoja? Toca un tarro: la verde es suave; la negra, intensa.'
       : r.bebida === 'chocolate'
         ? '¿Qué cacao? Toca un tarro: el claro, con leche; el oscuro, negro.'
-        : '¿Qué grano? Toca un tarro: el claro es suave; el tostado, intenso.',
+        : r.casa
+          ? '¿Qué grano? Toca un tarro o el saco: el claro es suave; el tostado, intenso; el saco, tu tueste de la casa.'
+          : '¿Qué grano? Toca un tarro: el claro es suave; el tostado, intenso.',
   leche: () => '¿Leche? Toca una jarrita, o «Sin leche».',
   toque: (r, carta = []) =>
     carta.includes('vainilla')
@@ -83,7 +85,7 @@ const MARCA = { manivela: 'manivela', apisonar: 'portafiltro', palanca: 'palanca
 /** El sonido al elegir cada cosa. */
 const SONIDO_ELEGIR = {
   bebida: (v) => ({ te: 'tetera', chocolate: 'cazo', frio: 'cubitera' })[v] ?? 'cafetera',
-  grano: () => 'tarro',
+  grano: (v) => (v === 'casa' ? 'saco' : 'tarro'),
   leche: () => 'jarra',
   toque: (v) => (v === 'vainilla' ? 'vaina' : 'jarra'),
 };
@@ -116,12 +118,14 @@ function Estrellas({ n }) {
 }
 
 /** La pista del gesto, dibujada sobre el objeto: una flecha de píxel por gesto (quieta con movimiento reducido). */
-function Pista({ tipo }) {
+export function Pista({ tipo }) {
   const p = GESTOS[tipo]?.pista;
   const trazo = {
     giro: 'M 44 12 A 32 32 0 1 1 12 44',
     abajo: 'M 44 8 L 44 70',
     'abajo-mantener': 'M 44 8 L 44 62',
+    // Bloque 6b: tirar del asa del tambor hacia ti (el asa arriba y el tirón hacia abajo)
+    tirar: 'M 28 12 L 60 12 M 44 12 L 44 64',
     derecha: 'M 6 44 Q 44 10 82 44',
     'arriba-mantener': 'M 44 76 L 44 18',
     'vaiven-vertical': 'M 44 14 L 44 74',
@@ -146,16 +150,8 @@ function Pista({ tipo }) {
 }
 
 const SIN_CARTA = [];
-/** Dónde va la notita del cómo: a un lado de la pista si cabe (148 de ancho a 50 del centro), y si no, debajo. */
-const NOTA = { ancho: 148, aparte: 50, margen: 8 };
-function ladoNota(x, ancho) {
-  const hueco = NOTA.aparte + NOTA.ancho + NOTA.margen;
-  if (x + hueco <= ancho) return 'der';
-  if (x - hueco >= 0) return 'izq';
-  return 'abajo';
-}
 
-export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA }) {
+export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0 }) {
   const [paso, setPaso] = useState('pide');
   const [receta, setReceta] = useState(VACIA);
   const [ei, setEi] = useState(0);
@@ -212,6 +208,8 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     for (let k = 0; k < n; k += 1) ids.push(setTimeout(() => sfx.play('estrella', { k }), 120 + k * pasos * 1000));
     ids.push(setTimeout(() => sfx.play('granos', { n: dado.granos ?? 3 }), 200 + n * pasos * 1000 + 150));
     if (dado.dorada) ids.push(setTimeout(() => sfx.play('dorada'), 200 + n * pasos * 1000 + 700));
+    // Bloque 6b: el tueste de la casa, cobrado a quien lo pidió
+    if (dado.tueste) ids.push(setTimeout(() => sfx.play('tueste'), 200 + n * pasos * 1000 + 450));
     return () => ids.forEach(clearTimeout);
   }, [dado, sfx]);
   useEffect(
@@ -239,9 +237,10 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       elige: eligiendo ? parte : null,
       lista: lista_,
       carta,
+      tazas,
       enfoque: lista_ ? 'lista' : eligiendo ? etapa : (gesto ?? etapa),
     });
-  }, [enBarra, escena, receta, gesto, actual, hechos, vista, eligiendo, parte, lista_, etapa, carta]);
+  }, [enBarra, escena, receta, gesto, actual, hechos, vista, eligiendo, parte, lista_, etapa, carta, tazas]);
   // Dónde cae el objeto del gesto en la pantalla, cuando la cámara ya ha llegado (para la pista y el centro del gesto)
   useEffect(() => {
     if (!gesto) return undefined;
@@ -285,7 +284,7 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       const r = zona.current?.getBoundingClientRect();
       if (!r) return;
       const lista = [];
-      for (const o of opcionesDe(parte, carta)) {
+      for (const o of opcionesDe(parte, carta, receta.bebida)) {
         const p = escena.barraEnPantalla(`barra:${parte}:${o.id}`, { cima: true });
         if (p?.front) lista.push({ id: o.id, x: p.x - r.left, y: p.y - r.top });
       }
@@ -296,7 +295,7 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       vivo = false;
       cancelAnimationFrame(id);
     };
-  }, [eligiendo, escena, parte, puntoClave, carta]);
+  }, [eligiendo, escena, parte, puntoClave, carta, receta.bebida]);
 
   /** Pasar a lo siguiente (otra etapa o la taza lista), con su sonido. */
   const avanzar = (r, e, gIdx) => {
@@ -310,7 +309,12 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   const elegir = (p, valor) => {
     if (!eligiendo || p !== parte) return;
     // Solo lo que está en la carta (el cazo y el bol están en la barra desde el principio, pero se abren con los hitos)
-    if (!opcionesDe(p, carta).some((o) => o.id === valor)) return;
+    if (!opcionesDe(p, carta, p === 'bebida' ? null : receta.bebida).some((o) => o.id === valor)) return;
+    // Bloque 6b: el tueste de la casa sale del saco; sin tazas, no hay (baja al tostadero)
+    if (valor === 'casa' && tazas < 1) {
+      sfx.play('noCabe');
+      return;
+    }
     const r = { ...receta, [p]: valor };
     sfx.play(SONIDO_ELEGIR[p](valor));
     setReceta(r);
@@ -482,10 +486,10 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       </>
     );
   } else if (enBarra) {
-    const opciones = eligiendo ? opcionesDe(parte, carta) : [];
+    const opciones = eligiendo ? opcionesDe(parte, carta, parte === 'bebida' ? null : receta.bebida) : [];
     const def = gesto ? GESTOS[gesto] : null;
     // 1.126 (Francisco, 13-11-2026: «las indicaciones ocupan mucho»): una línea corta abajo; el cómo, junto al objeto
-    const pregunta = eligiendo ? PREGUNTA[parte](receta, carta) : '';
+    const pregunta = eligiendo ? PREGUNTA[parte]({ ...receta, casa: opciones.some((o) => o.id === 'casa') }, carta) : '';
     const corte = pregunta.indexOf('? ');
     texto = lista_ ? (
       '¡Lista! Huele de maravilla.'
@@ -532,8 +536,12 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
         {eligiendo && (
           <div className="cf3-opciones" role="group" aria-label={nombreEtapa(etapa, receta)}>
             {opciones.map((o) => (
-              <button key={o.id} type="button" className="cf3-opcion" onClick={() => elegir(parte, o.id)}>
-                {parte === 'grano' && receta.bebida === 'te'
+              <button key={o.id} type="button" className="cf3-opcion" onClick={() => elegir(parte, o.id)} disabled={o.id === 'casa' && tazas < 1} data-opcion={o.id}>
+                {o.id === 'casa'
+                  ? tazas > 0
+                    ? `Tueste de la casa · ${tazas} ${tazas === 1 ? 'taza' : 'tazas'}`
+                    : 'Tueste de la casa · sin tazas'
+                  : parte === 'grano' && receta.bebida === 'te'
                   ? o.id === 'suave'
                     ? 'Hoja verde · suave'
                     : 'Hoja negra · intensa'
@@ -671,6 +679,7 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
         <p className="cf3-dado" aria-label={`Has ganado ${dado.granos} granos y ${dado.reputacion} de reputación`}>
           <span className="cf3-dado__ficha">+{dado.granos} granos</span>
           {dado.extra > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--libro">{`${dado.extra} por el libro`}</span>}
+          {dado.tueste && dado.bono_granos > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--tueste">{`+${dado.bono_granos} y +${dado.bono_reputacion} por el tueste`}</span>}
           <span className="cf3-dado__ficha cf3-dado__ficha--rep">+{dado.reputacion} reputación</span>
         </p>
       </div>

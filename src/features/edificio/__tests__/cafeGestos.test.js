@@ -282,3 +282,32 @@ describe('bloque 4b: la vainilla y el café con hielo, con su gesto y su objeto'
     expect(vistaTaza(FRIO, { rascar: s.pose }).vainilla).toBe(1);
   });
 });
+
+describe('bloque 6b: el tambor del tostador', () => {
+  it('tirar del asa hacia ti abre la trampilla; mantenida, caen los granos; soltar la cierra sin perder lo caído', () => {
+    const g = crearGesto('tambor');
+    g.abajo(200, 300, 0);
+    // A medias no cae nada
+    g.mover(200, 330, 10);
+    let s = g.paso(400);
+    expect(s.progreso).toBe(0);
+    expect(g.mover(200, 395, 410).eventos).toContain('abre');
+    for (let t = 420; t <= 1200; t += 50) s = g.paso(t);
+    expect(s.progreso).toBeGreaterThan(0.3);
+    expect(s.hecho).toBe(false);
+    const medio = s.progreso;
+    s = g.arriba();
+    expect(s.pose.abierta).toBe(0);
+    expect(s.progreso).toBe(medio);
+    // Otra vez abajo hasta el final: 1,6 s mantenida en total
+    g.abajo(200, 300, 2000);
+    g.mover(200, 395, 2010);
+    for (let t = 2020; t <= 3200 && !s.hecho; t += 50) s = g.paso(t);
+    expect(s.hecho).toBe(true);
+    expect(s.pose.caido).toBe(1);
+  });
+  it('de una vez (movimiento reducido o teclado)', () => {
+    const s = crearGesto('tambor').completar();
+    expect(s).toMatchObject({ hecho: true, pose: { abierta: 0, caido: 1 } });
+  });
+});

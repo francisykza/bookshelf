@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.126.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.127.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6653,3 +6653,49 @@ recetas ni servidor (no hay migración).
   nadie se añade, el resto sigue con hoy o ayer, otra jornada solo con todos atendidos y sin borrar nada) y, en el spec, «Otra
   jornada» con todos atendidos y su ausencia en una cuenta normal. Muestras renderizadas fuera de la app en `qa-report/v1126/`
   (`cafe-musica-1126.wav`, 75 s, y `cafe-sonidos-1126.wav`). Solo emulación: no se ha escuchado en un iPhone ni en Safari.
+
+## 127. El café-librería del bajo, bloque 6b: el tostadero (1.127.0)
+
+Cifras aprobadas por Francisco el 13-11-2026 («Sí, esas cifras»; `docs/qa/cafe-libreria.md` §14) y encargo del mismo día
+(«Sí, el tostadero»). Segundo bloque del sótano: el nivel 7, «El tostadero». Los niveles 1 a 6 y sus hitos no cambian.
+
+- **El nivel 7** empieza en 15.000 de reputación; al subir, **90 tickets** (el tope de 5 al día no cambia). Huecos de la
+  balda, **54**. Hasta **9 clientes al día**, si tienen dónde sentarse (los de abajo cuentan). Su barra llega hasta los 21.000
+  aprobados del nivel 8 (6.000), así sus hitos (16.500, 18.000 y 19.500) no se moverán cuando se abra la sala de catas. Hitos:
+  1.º la estantería de latas a la venta, 2.º **el tueste de la casa** en la carta, 3.º **20 granos**.
+- **La bodega crece** por la izquierda: dos columnas más de cuadrícula (**7 × 5**, columnas −2 a 4), las barricas al fondo de
+  esa pared y, delante, **el tostador**: el tambor de hierro con su cara redonda, la placa de latón y la mirilla, la trampilla
+  con su asa, la tolva, la chimenea hasta la bóveda, la boca del hogar encendida, la rampa y el enfriador redondo con su brazo.
+  Un farol más y el resplandor del hogar. Siguen cabiendo 40 cosas.
+- **El saco del día**: con el tueste en la carta, cada día hay un saco en el tambor (la mirilla se enciende y el letrero dice
+  «El tostador · saco listo»; Pilar lo avisa una vez al día). Se recoge cuando quieras, sin plazo; si no lo recoges, no se
+  junta más de uno. Al tocar el tostador, la cámara se pone delante de la trampilla y el gesto es **tirar del asa hacia ti
+  (hacia abajo) y mantener** mientras los granos caen por la rampa al enfriador; luego el brazo los remueve solo y Pilar los
+  embolsa: **5 tazas** de «tueste de la casa». Las que te quedan no caducan (como mucho 99; si no caben, el saco espera). Con
+  movimiento reducido o con el teclado, un toque. Antes del 2.º hito, el tostador está frío y Pilar dice cuándo llega el primer
+  saco. Sonidos propios: el tostador al acercarse, la trampilla, los granos que caen (mientras se mantiene), el enfriador, el
+  saco y el tueste cobrado. La «!» sobre el asa, con las reglas de siempre (en el nivel 7, si te quedas parado 6 s).
+- **El tueste de la casa en la barra**: el saco de arpillera, junto a los tarros, más o menos lleno según las tazas. Es un
+  grano más del café y del café con hielo (con té o chocolate no se pide: sale intenso); se elige tocando el saco o su botón
+  («Tueste de la casa · 5 tazas») y luego se muele como siempre. Sin tazas no se puede elegir. Algunos clientes lo piden
+  («de tueste de la casa»; el excéntrico, «del grano que tuestas tú, abajo, en el tambor»). Servírselo a quien lo pidió gasta
+  una taza y paga **+3 granos y +4 de reputación** además de lo de siempre («3 y 4 por el tueste»); a quien no, gasta la taza
+  y el grano cuenta como fallo.
+- **Muebles nuevos** (tienda del café): saco de arpillera (250 granos, un asiento) y estantería de latas (2 × 1, 350, hito 1).
+  Modelos e iconos propios.
+- **La subida al 7**: el cartel («El tostadero», 90 tickets, lo que se abre) y un recorrido que baja a la bodega y se acerca al
+  tostador.
+- **Arreglo**: el día que llegaba del servidor descartaba los clientes con número mayor que 7, así que con 8 en el nivel 6 se
+  perdía el excéntrico (el último). Ahora admite hasta 10.
+- **Servidor**: migración `20261216120000_cafe_tostadero.sql` (la aplica Francisco; va después de la del probador): los dos
+  muebles; las columnas `tazas` (0 a 99) y `saco_dia` de `cafe_locales`; el nivel 7 en `cafe_nivel_desde`/`cafe_nivel_de`,
+  tickets, huecos y `cafe_hito_umbral` (tramo 6.000); el tueste en `cafe_carta` (al final, para no cambiar las recetas de
+  antes) y en las recetas (`cafe_granos_carta`, `cafe_receta_carta`); el saco en `cafe_asientos`; hasta 9 clientes; el sótano
+  de 7 × 5 en `cafe_casilla_valida`; `tostadero` en `cafe_json`; la nueva `cafe_recoger_saco(dia)` (un saco por día; los de las
+  jornadas de prueba no tapan los días de verdad) y `cafe_servir` con el tueste (sin tazas, `cafe:tueste`).
+- **Pruebas**: Vitest `cafe-tostadero.rls.test.js` (8, PGlite: cifras, cuadrícula, asientos y 9 clientes, recetas iguales en la
+  app y en el servidor, un saco al día, el probador, servir con tueste y su bono, y el anónimo sin permiso),
+  `cafe-sotano.rls.test.js` (ajustada: el 6 ya no es el último nivel) y el gesto del tambor en `cafeGestos.test.js`; e2e
+  `v1127-cafe-tostadero.spec.js` (el aviso, la bodega ancha, recoger el saco con el gesto, no hay otro el mismo día, Decorar
+  y la tienda abajo, servir el tueste tocando el saco de la barra; y subir al 7 con su recorrido y el tostador frío). Solo
+  emulación: no se ha probado en un iPhone ni en Safari.

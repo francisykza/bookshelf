@@ -28,7 +28,7 @@ beforeAll(async () => {
 
 describe('el café-librería del bajo, bloque 6a: la bodega', () => {
   it('las cifras del nivel 6 son las de la app; los niveles 1 a 5 no cambian', async () => {
-    expect(CAFE_NIVELES.at(-1)).toMatchObject({ nivel: 6, desde: 10000 });
+    expect(CAFE_NIVELES.find((x) => x.nivel === 6)).toMatchObject({ nivel: 6, desde: 10000 });
     for (const n of [1, 2, 3, 4, 5, 6]) {
       const q = (await db.query('select cafe_nivel_desde($1) d, cafe_tickets_nivel($1) t, cafe_tickets_dia($1) td, cafe_huecos($1) h, cafe_granos_hito($1) g', [n])).rows[0];
       expect(q).toEqual({ d: CAFE_NIVELES[n - 1].desde, t: TICKETS_NIVEL[n], td: ticketsDelDia(n), h: HUECOS[n], g: granosHito(n) });
@@ -42,7 +42,7 @@ describe('el café-librería del bajo, bloque 6a: la bodega', () => {
       const q = (await db.query('select cafe_nivel_de($1) n, cafe_carta($1) c', [r])).rows[0];
       expect(q).toEqual({ n: nivelDe(r), c: cartaDe(r) });
     }
-    expect(nivelDe(99999)).toBe(6);
+    expect(nivelDe(14999)).toBe(6);
   });
 
   it('la cuadrícula de la bodega, la misma en la app y en el servidor, y solo desde el nivel 6', async () => {

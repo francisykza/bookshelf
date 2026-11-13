@@ -3,7 +3,7 @@
 // del café y de casa contando el piso). Se engancha después de `mock.attach` (la última ruta manda). Sin `cafe`, el
 // servidor no tiene la migración (404 PGRST202), como antes de aplicarla.
 import { CAFE_MUEBLES, CAFE_NOMBRES, PLANO_INICIAL, asientosDe, cabe, cuenta, deCasa, maxCosas, medidas } from '../src/features/edificio/cafe/cafeCatalogo';
-import { TICKETS_NIVEL, cartaDe, granosHito, nivelDe, novedades, ticketsDelDia, umbralHito } from '../src/features/edificio/cafe/cafeNiveles';
+import { BONO_TUESTE, TAZAS_MAX, TAZAS_SACO, TICKETS_NIVEL, cartaDe, granosHito, nivelDe, novedades, sacoListo, ticketsDelDia, tuesteAbierto, umbralHito } from '../src/features/edificio/cafe/cafeNiveles';
 import { SUPABASE } from './mockSupabase';
 import {
   BIENVENIDA,
@@ -12,10 +12,8 @@ import {
   EXTRA_LLEVADO,
   GENEROS,
   MAX_HABITUALES,
-  PARTES,
   aciertosDe,
-  bebidasDe,
-  opcionesDe,
+  recetaValida,
   clientesDelNivel,
   estrellasDe,
   huecosDelNivel,
@@ -36,10 +34,12 @@ const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
  * Jornadas de prueba (1.126, `20261215120000_cafe_probador.sql`): con `clientes.jornada` (AAAA-MM-DD), la cuenta prueba y
  * juega ese día; `cafe_nueva_jornada` abre el siguiente si ya está todo el mundo atendido. `clientes.atendidosEn`: los días
  * (AAAA-MM-DD) que empiezan con todo el mundo ya atendido (2 estrellas, sin libro).
+ * El tostadero (1.127, `20261216120000_cafe_tostadero.sql`): `estado.tazas` y `estado.sacoDia` (AAAA-MM-DD o null);
+ * `cafe_recoger_saco` da 5 tazas una vez al día, y servir el tueste gasta una y, a quien lo pidió, paga el bono.
  */
 export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null } = {}) {
-  const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], llamadas: [], ...estado } : null;
-  const vista = () => ({ nombre: c.nombre, nivel: c.nivel, reputacion: c.reputacion, granos: c.granos, plano: c.plano, inaugurado: c.inaugurado, inventario: c.inventario, escaparate: c.escaparate });
+  const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], tazas: 0, sacoDia: null, llamadas: [], ...estado } : null;
+  const vista = () => ({ nombre: c.nombre, nivel: c.nivel, reputacion: c.reputacion, granos: c.granos, plano: c.plano, inaugurado: c.inaugurado, inventario: c.inventario, escaparate: c.escaparate, tostadero: { tazas: c.tazas, saco_dia: c.sacoDia } });
   // ── Libros en cajas ──
   const lib = { bienvenida: Boolean(estado?.libros?.bienvenida), libros: Object.fromEntries((estado?.libros?.libros ?? []).map((b) => [b.clave, { ...b }])) };
   if (c) c.lib = lib;
@@ -172,6 +172,16 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       c.llamadas.push({ rpc, jornada });
       return json(route, jornada);
     }
+    if (clientes && rpc === 'cafe_recoger_saco') {
+      if (body.dia !== clientes.hoy && body.dia !== ayer && body.dia !== jornada) return falla(route, 'cafe:dia');
+      if (!c.inaugurado) return falla(route, 'cafe:cerrado');
+      if (!tuesteAbierto(c.reputacion)) return falla(route, 'cafe:tueste');
+      if (!sacoListo(c.reputacion, c.sacoDia, body.dia)) return falla(route, 'cafe:saco');
+      if (c.tazas + TAZAS_SACO > TAZAS_MAX) return falla(route, 'cafe:tazas');
+      c.tazas += TAZAS_SACO;
+      c.sacoDia = body.dia;
+      return json(route, { cafe: vista(), tazas: TAZAS_SACO });
+    }
     if (clientes && ['cafe_dia', 'cafe_habitual', 'cafe_servir'].includes(rpc)) return diaDelCafe(route, rpc, body);
     if (clientes && ['cafe_bienvenida', 'cafe_comprar_caja', 'cafe_colocar'].includes(rpc)) return libros(route, rpc, body);
     return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
@@ -221,9 +231,9 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       if (!((n >= 1 && n <= d.clientes) || (n >= 101 && n <= 100 + d.habituales))) return falla(route, 'cafe:cliente');
       const r = body.receta;
       const carta = cartaDe(c.reputacion);
-      const valida =
-        Array.isArray(r) && r.length === 4 && bebidasDe(carta).some((b) => b.id === r[0]) && PARTES.slice(1).every((parte, k) => opcionesDe(parte.id, carta).some((o) => o.id === r[k + 1]));
-      if (!valida) return falla(route, 'cafe:receta');
+      if (!recetaValida(r, carta)) return falla(route, 'cafe:receta');
+      // El tueste de la casa sale del saco: sin tazas, no hay
+      if (r[1] === 'casa' && c.tazas < 1) return falla(route, 'cafe:tueste');
       if (d.servidos[n]) return falla(route, 'cafe:servido');
       const habitual = n > 100;
       const excentrico = !habitual && n === d.clientes;
@@ -235,7 +245,12 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       const extra = lleva ? EXTRA_LLEVADO : 0;
       if (lleva) lib.libros[body.libro].balda -= 1;
       const estrellas = estrellasDe(aciertos, lleva);
-      const p = premio(habitual ? 'habitual' : excentrico ? 'excentrico' : 'cliente', estrellas);
+      const base = premio(habitual ? 'habitual' : excentrico ? 'excentrico' : 'cliente', estrellas);
+      // Bloque 6b: servir el tueste gasta una taza; a quien lo pidió, +3 granos y +4 de reputación
+      const tueste = r[1] === 'casa' && pide[1] === 'casa';
+      const bono = tueste ? BONO_TUESTE : { granos: 0, reputacion: 0 };
+      const p = { granos: base.granos + bono.granos, reputacion: base.reputacion + bono.reputacion };
+      if (r[1] === 'casa') c.tazas -= 1;
       d.servidos[n] = { encaja: lleva, receta: r, estrellas, libro: body.libro ?? null };
       c.granos = Math.min(100000, c.granos + p.granos + extra);
       const antes = c.reputacion;
@@ -253,7 +268,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       const tk = niveles.reduce((s, x) => s + x.tickets, 0) + ticketsDia;
       c.tickets = (c.tickets ?? 0) + tk;
       progreso = { de, a: c.nivel, niveles, hitos: nov.hitos.map(({ nivel, hito }) => ({ nivel, hito })), granos: granosDeHitos, tickets_dia: ticketsDia, tickets: tk };
-      dado = { ...p, granos: p.granos + extra, llevado: lleva, extra, estrellas, aciertos, pide, frase: null, dorada: false };
+      dado = { ...p, granos: p.granos + extra, llevado: lleva, extra, estrellas, aciertos, pide, frase: null, dorada: false, tueste, bono_granos: bono.granos, bono_reputacion: bono.reputacion };
       if (habitual) {
         dado.frase = clientes.frases?.[n - 101] ?? 2;
         pizarra.unshift({ dia: d.dia, quien, frase: dado.frase, dorada: false });

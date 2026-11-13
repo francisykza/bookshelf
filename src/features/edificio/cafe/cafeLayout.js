@@ -60,8 +60,21 @@ export const ESCALERA_BODEGA = { x0: 46.2, x1: 47.5, y0: 2.6, y1: BODEGA.y1 };
 export const LLEGADA_BODEGA = { x: 46.8, y: 1.9, yaw: Math.atan2(42.5 - 46.8, 3.0 - 1.9) };
 /** Junto a la trampilla, en el café, mirando al local (al subir). */
 export const ANTE_TRAMPILLA = { x: 7.8, y: 2.1, yaw: Math.atan2(4.0 - 7.8, 6.0 - 2.1) };
-/** La planta de un punto del mundo. */
-export const plantaEn = (x) => (x >= BODEGA.x0 - 2 ? 'bodega' : 'calle');
+/**
+ * Bloque 6b (1.127): en el nivel 7 la bodega crece por la izquierda (dos columnas más de cuadrícula) y, contra esa pared, el
+ * tostador: el tambor de hierro con su trampilla y su asa, la tolva, la chimenea y el enfriador redondo delante. Las barricas
+ * se corren al fondo de la misma pared.
+ */
+export const BODEGA_TOSTADERO = { ...BODEGA, x0: 35.8 };
+export const bodegaDe = (nivel = 6) => (nivel >= 7 ? BODEGA_TOSTADERO : BODEGA);
+/** Lo que ocupa el tostador con su enfriador (por aquí no se anda) y la trampilla del tambor, de cara a la sala. */
+export const TOSTADOR = { x0: 35.8, x1: 38.25, y0: 0.45, y1: 2.95 };
+export const TAMBOR = { x: 37.1, y: 1.4, z: 1.0, r: 0.42 };
+export const ENFRIADOR = { x: 37.65, y: 1.45, z: 0.62, r: 0.5 };
+/** Delante del tostador, mirando a la trampilla del tambor. */
+export const ANTE_TOSTADOR = { x: 39.15, y: 1.75, yaw: Math.atan2(37.1 - 39.15, 1.5 - 1.75) };
+/** La planta de un punto del mundo (la bodega, aparte, desde x = 30). */
+export const plantaEn = (x) => (x >= 30 ? 'bodega' : 'calle');
 
 /** La estantería vieja, vacía, en la pared izquierda. */
 export const ESTANTERIA = { y0: 5.0, y1: 8.6, fondo: 0.42, alto: 2.4 };
@@ -113,6 +126,16 @@ export const SITIOS = {
     ir: LLEGADA_BODEGA,
     mira: [46.85, 5.0],
   },
+  // Bloque 6b: el tostador (en la bodega, desde el nivel 7)
+  tostador: {
+    nombre: 'El tostador',
+    planta: 'bodega',
+    nivel: 7,
+    box: [TOSTADOR.x0 + 0.1, TOSTADOR.y0 + 0.2, 0, TOSTADOR.x1, TOSTADOR.y1, 2.0],
+    tag: [TAMBOR.x, TAMBOR.y + 0.3, 2.15],
+    ir: ANTE_TOSTADOR,
+    mira: [TAMBOR.x, TAMBOR.y + 0.1],
+  },
   pilar: { nombre: 'Pilar', box: [PILAR.x - 0.5, PILAR.y - 0.5, 0.9, PILAR.x + 0.5, PILAR.y + 0.5, 2.2], tag: [PILAR.x, PILAR.y, 2.35], ir: ANTE_PILAR, mira: [PILAR.x, PILAR.y] },
   cortina: { nombre: 'El resto del local', box: [0.2, CORTINA.y - 0.1, 0, 7.2, CORTINA.y + 0.15, CORTINA.alto], tag: [CABALLETE.x, CORTINA.y, 2.6], ir: { x: 3.6, y: 6.2 }, mira: [3.6, 0] },
   escaparate: {
@@ -160,11 +183,14 @@ const choca = (x, y, [x0, y0, , x1, y1], h = HOLGURA) => x > x0 - h && x < x1 + 
 export function dentro(x, y, { limpio = false, muebles = [], nivel = 1, planta = 'calle' } = {}) {
   // Bloque 6a: en la bodega, entre las barricas, el botellero y la pared de delante, sin pisar la escalera
   if (planta === 'bodega') {
-    if (x < BODEGA.x0 + 1.1 || x > BODEGA.x1 - 0.5 || y < BODEGA.y0 + 0.75 || y > BODEGA.y1 - 0.5) return false;
+    const B = bodegaDe(nivel);
+    if (x < B.x0 + 1.1 || x > B.x1 - 0.5 || y < B.y0 + 0.75 || y > B.y1 - 0.5) return false;
+    // Bloque 6b: el tostador y su enfriador
+    if (nivel >= 7 && x < TOSTADOR.x1 + HOLGURA && y < TOSTADOR.y1 + HOLGURA) return false;
     if (x > ESCALERA_BODEGA.x0 - HOLGURA && y > ESCALERA_BODEGA.y0 - 0.15) return false;
     return !muebles.some((b) => choca(x, y, b, 0.22));
   }
-  if (x > BODEGA.x0 - 2) return false;
+  if (x > 30) return false;
   // El hueco abierto de la trampilla (nivel 6)
   if (nivel >= 6 && x > TRAMPILLA.x0 - 0.2 && y > TRAMPILLA.y0 - 0.2 && y < TRAMPILLA.y1 + 0.2) return false;
   // Nivel 5: la acera de la terraza; entre dentro y fuera, solo por la puerta

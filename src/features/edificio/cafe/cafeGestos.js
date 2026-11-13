@@ -69,10 +69,12 @@ export const GESTOS = {
   batir: { orden: 'Bate la nata girando las varillas', ayuda: 'Vueltas pequeñas y seguidas, hasta que haga picos.', atajo: 'Montar la nata', pista: 'batir' },
   rascar: { orden: 'Rasca la vaina de vainilla', ayuda: 'Pasa el cuchillo a lo largo de la vaina, de arriba abajo: tres trazos.', atajo: 'Rascar la vaina', pista: 'rascar' },
   coctelera: { orden: 'Agita la coctelera con hielo', ayuda: 'De lado a lado, con brío, hasta que el hielo cante.', atajo: 'Agitar', pista: 'coctelera' },
+  // Bloque 6b (1.127): en el tostador del sótano, no en la barra
+  tambor: { orden: 'Tira del asa de la trampilla y mantén', ayuda: 'Hacia ti (hacia abajo) y sin soltar, mientras caen los granos al enfriador.', atajo: 'Abrir la trampilla', pista: 'tirar' },
 };
 
 /** Tiempos de los gestos que se mantienen (lo mantenido se suma: soltar no pierde nada). */
-export const MANTENER_MS = { palanca: 1400, tetera: 1500, vapor: 1500, cazo: 1500 };
+export const MANTENER_MS = { palanca: 1400, tetera: 1500, vapor: 1500, cazo: 1500, tambor: 1600 };
 /** Vueltas de la manivela, vaivenes y trazos (en píxeles a 390 px de ancho; se escalan con la pantalla). */
 export const MEDIDAS = {
   vueltas: 2,
@@ -103,6 +105,8 @@ export const MEDIDAS = {
   rearmeRascar: 24,
   trazosRascar: 3,
   hilo: 300,
+  /** El asa de la trampilla del tambor: tanto hacia abajo para abrirla del todo. */
+  tambor: 90,
 };
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
@@ -126,6 +130,7 @@ function poseInicial(tipo) {
     batir: { angulo: 0, montada: 0 },
     rascar: { t: 0, raspados: 0 },
     coctelera: { x: 0, agitado: 0, golpes: 0 },
+    tambor: { abierta: 0, caido: 0 },
   }[tipo];
 }
 /** Los gestos que giran alrededor de un centro: cuántas vueltas y desde qué distancia cuenta. */
@@ -263,6 +268,11 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
         const b = clamp(dy / (M.palanca * e));
         if (b >= 0.85 && pose.bajada < 0.85) eventos.push('abajo');
         pose = { ...pose, bajada: b };
+      } else if (tipo === 'tambor') {
+        // Tirar del asa hacia ti: la trampilla se abre; abierta del todo, caen los granos mientras la mantienes
+        const b = clamp(dy / (M.tambor * e));
+        if (b >= 0.85 && pose.abierta < 0.85) eventos.push('abre');
+        pose = { ...pose, abierta: b };
       } else if (tipo === 'cuchara') {
         const tt = clamp(dx / (M.cuchara * e));
         pose = { t: tt };
@@ -352,10 +362,10 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
       tAntes = t;
       if (!pulsado || hecho || !MANTENER_MS[tipo]) return estado();
       const eventos = [];
-      const listo = tipo === 'palanca' ? pose.bajada >= 0.85 : tipo === 'tetera' ? pose.alzada >= 0.6 : tipo === 'cazo' ? pose.inclina >= 0.6 : Math.abs(pose.inclina) >= 0.5;
+      const listo = tipo === 'palanca' ? pose.bajada >= 0.85 : tipo === 'tambor' ? pose.abierta >= 0.85 : tipo === 'tetera' ? pose.alzada >= 0.6 : tipo === 'cazo' ? pose.inclina >= 0.6 : Math.abs(pose.inclina) >= 0.5;
       if (listo) {
         progreso = clamp(progreso + dt / MANTENER_MS[tipo]);
-        const k = { palanca: 'extraido', tetera: 'lleno', vapor: 'espuma', cazo: 'servido' }[tipo];
+        const k = { palanca: 'extraido', tetera: 'lleno', vapor: 'espuma', cazo: 'servido', tambor: 'caido' }[tipo];
         pose = { ...pose, [k]: progreso };
         if (progreso >= 1) acabar(eventos);
       }
@@ -366,6 +376,7 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
       // Lo que se mueve con el dedo vuelve a su sitio; lo hecho se queda
       if (tipo === 'apisonar') pose = { bajada: hecho ? 1 : 0 };
       else if (tipo === 'palanca') pose = { ...pose, bajada: 0 };
+      else if (tipo === 'tambor') pose = { ...pose, abierta: 0 };
       else if (tipo === 'cuchara' && !hecho) pose = { t: 0 };
       else if (tipo === 'tetera') pose = { ...pose, alzada: 0 };
       else if (tipo === 'colador') pose = { ...pose, altura: 0 };
@@ -395,6 +406,7 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
         batir: { angulo: Math.PI * 10, montada: 1 },
         rascar: { t: 1, raspados: M.trazosRascar },
         coctelera: { x: 0, agitado: 1, golpes: M.vecesCoctelera },
+        tambor: { abierta: 0, caido: 1 },
       }[tipo];
       acabar(eventos);
       return estado(eventos);
@@ -455,6 +467,14 @@ export function vistaTaza(receta = {}, hechos = {}, actual = null) {
  * siguiente que hay que tocar. 'auto': en los niveles 1 y 2 siempre y, después, si alguien se queda parado; 'siempre'; 'nunca'.
  * Al elegir, sobre todas las opciones de esa parte (nunca delata cuál es la buena).
  */
+/** Dónde va la notita del cómo: a un lado de la pista si cabe (148 de ancho a 50 del centro), y si no, debajo. */
+const NOTA = { ancho: 148, aparte: 50, margen: 8 };
+export function ladoNota(x, ancho) {
+  const hueco = NOTA.aparte + NOTA.ancho + NOTA.margen;
+  if (x + hueco <= ancho) return 'der';
+  if (x - hueco >= 0) return 'izq';
+  return 'abajo';
+}
 export const AYUDA_NIVELES = 2;
 export const AYUDA_PARADO_MS = 6000;
 export function verAyuda(ayudas, nivel, parado) {

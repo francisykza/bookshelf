@@ -592,6 +592,40 @@ const BANCO_BODEGA = {
     '.dddd......dddd.',
   ],
 };
+const SACO = {
+  paleta: { d: '#94744a', m: '#b08e5e', l: '#c4a674', k: '#5c3c2c', g: '#5c3620' },
+  filas: [
+    '..............',
+    '..............',
+    '..............',
+    '...lllllll....',
+    '..lmmmmmmmlk..',
+    '.lmmmdmmmmmkk.',
+    '.mmkmdmkmmmlk.',
+    '.mmmmdmmmmmkk.',
+    '.mmmmdmmmmml..',
+    '.dmmmdmmmmmd..',
+    '..ddddddddd...',
+    'g...........g.',
+  ],
+};
+const LATAS = {
+  paleta: { d: '#5c3a24', m: '#80522f', r: '#a8342c', v: '#345c4a', y: '#c4964a', a: '#2c4070', s: '#c4c4c0' },
+  filas: [
+    'd............d',
+    'dssss..ssssssd',
+    'drrrr..yyyvvvd',
+    'drrrr..yyyvvvd',
+    'dmmmmmmmmmmmmd',
+    'd.sss.ssss.ssd',
+    'd.vvv.aaaa.rrd',
+    'd.vvv.aaaa.rrd',
+    'dmmmmmmmmmmmmd',
+    'dsss.sss.sss.d',
+    'dyyy.rrr.aaa.d',
+    'dmmmmmmmmmmmmd',
+  ],
+};
 const CANDIL = {
   paleta: { k: '#363032', K: '#544c4c', y: '#ffe0a0', Y: '#ffb860' },
   filas: [
@@ -661,6 +695,8 @@ const POR_MUEBLE = {
   'cafe-barrica': BARRICA,
   'cafe-banco-bodega': BANCO_BODEGA,
   'cafe-candil': CANDIL,
+  'cafe-saco': SACO,
+  'cafe-latas': LATAS,
 };
 /** El icono de un mueble del café o de casa (los de casa sin dibujo propio, una caja). */
 export const iconoDe = (id) => POR_MUEBLE[id] ?? CAJA;

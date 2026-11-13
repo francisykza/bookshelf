@@ -29,7 +29,16 @@ function normalizar(data) {
     inventario: data.inventario ?? {},
     // Bloque 4b (1.123): hasta tres de tus leídos en el escaparate (nivel 5)
     escaparate: escaparateDe(data.escaparate),
+    // Bloque 6b (1.127): las tazas de tueste de la casa que te quedan y el día del último saco recogido
+    tostadero: tostaderoDe(data.tostadero),
   };
+}
+
+/** Lo del tostadero que llega: tazas entre 0 y 99 y el día del último saco (AAAA-MM-DD) o null. */
+function tostaderoDe(t) {
+  const tazas = Math.min(99, Math.max(0, Math.floor(Number(t?.tazas) || 0)));
+  const sacoDia = typeof t?.saco_dia === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.saco_dia) ? t.saco_dia : null;
+  return { tazas, sacoDia };
 }
 
 /** El escaparate que llega: como mucho tres títulos con su clave. */
@@ -82,11 +91,12 @@ function normalizarDia(d) {
   return {
     dia: String(d.dia ?? ''),
     // La carta de ese día (bloque 4a) y los tickets del día que ya dio
-    carta: Array.isArray(d.carta) ? d.carta.filter((x) => ['chocolate', 'nata', 'vainilla', 'hielo'].includes(x)) : [],
+    carta: Array.isArray(d.carta) ? d.carta.filter((x) => ['chocolate', 'nata', 'vainilla', 'hielo', 'casa'].includes(x)) : [],
     tickets: entero(d.tickets ?? 0),
     clientes: (Array.isArray(d.clientes) ? d.clientes : [])
       .map((c) => ({ ...cliente(c), excentrico: Boolean(c.excentrico), quien: c.excentrico ? entero(c.quien) % 6 : null }))
-      .filter((c) => c.n >= 1 && c.n <= 7),
+      // Hasta 9 clientes desde el nivel 7 (el excéntrico es el último: con 8 en el nivel 6 ya hacía falta pasar del 7)
+      .filter((c) => c.n >= 1 && c.n <= 10),
     habituales: (Array.isArray(d.habituales) ? d.habituales : []).map((h) => ({ ...cliente(h), quien: entero(h.quien) })).filter((h) => h.n >= 101 && h.n <= 102 && h.quien >= 0 && h.quien < 12),
     pizarra: (Array.isArray(d.pizarra) ? d.pizarra : [])
       .map((r) => ({ dia: String(r.dia ?? ''), quien: entero(r.quien), frase: entero(r.frase), dorada: Boolean(r.dorada) }))
@@ -172,6 +182,17 @@ export async function servirCliente(dia, cliente, receta, encaja, libro = null) 
   return conDia(data);
 }
 
+/**
+ * Bloque 6b (1.127, `20261216120000_cafe_tostadero.sql`): recoger el saco del día del tambor del tostadero (`dia`, el de la
+ * app). Devuelve { cafe, tazas } con las tazas que ha dado.
+ */
+export async function recogerSaco(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_recoger_saco', { dia });
+  fail(error);
+  return { cafe: normalizar(data?.cafe), tazas: Number(data?.tazas) || 0 };
+}
+
 // ── Bloque 4b (1.123): el escaparate y lo que se ve desde la calle (`20261213120000_cafe_ampliacion.sql`) ──
 /** Pone en el escaparate hasta tres de tus leídos (`titulosDelCafe` de los elegidos). */
 export async function ponerEscaparate(titulos) {
@@ -221,6 +242,9 @@ export async function colocarLibros(poner = [], quitar = []) {
 /** Lo que dice cada error del servidor, en palabras de la app. */
 export function errorCafe(e) {
   const m = String(e?.message ?? e ?? '');
+  if (/cafe:tueste/.test(m)) return 'No te queda tueste de la casa: baja al tostadero a por el saco.';
+  if (/cafe:saco/.test(m)) return 'Hoy ya recogiste el saco: mañana habrá otro en el tambor.';
+  if (/cafe:tazas/.test(m)) return 'Ya tienes 99 tazas guardadas: sirve unas cuantas y vuelve a por el saco.';
   if (/cafe:servido/.test(m)) return 'A este cliente ya lo has atendido hoy.';
   if (/cafe:dia/.test(m)) return 'Ha cambiado el día: vuelve a entrar en el café.';
   if (/cafe:cliente|cafe:receta/.test(m)) return 'No se ha podido atender. Vuelve a entrar en el café.';

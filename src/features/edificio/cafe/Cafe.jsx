@@ -18,11 +18,12 @@ import { GRANO, LIBROS, PILAR, PIZARRA, SUBIR, TAZA, iconoDe } from './cafeIcono
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
 import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, comprarCafe, errorCafe, guardarCafe, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate, servirCliente } from './cafeService';
-import { cartaDe, hayLogro, umbralHito } from './cafeNiveles';
+import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
 import { BIENVENIDA, EXCENTRICOS, HABITUALES, RESENAS, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, pedidosDelDia, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
+import { Tostadero } from './Tostadero';
 import { dayKey } from '../../../domain/dates';
 import { crearCafeMusica } from './cafeMusica';
 import { crearSfxBarra } from './cafeSfx';
@@ -47,6 +48,7 @@ const AVISOS_ABIERTO = {
   escaparate: 'Desde la calle ya se ve la luz de tu café.',
   trampilla: '«Cuidado con el escalón, que el tercero cruje.»',
   subir: '',
+  tostador: '',
 };
 /** Bloque 6a: desde el nivel 6 se decoran dos plantas, el café y la bodega. */
 const BODEGA_NIVEL = 6;
@@ -104,6 +106,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const diaJuego = jornada || hoy;
   const [dia, setDia] = useState(undefined);
   const [atendiendo, setAtendiendo] = useState(null);
+  // Bloque 6b: delante del tostador, recogiendo el saco del día (Tostadero.jsx)
+  const [tostando, setTostando] = useState(false);
   const [pizarra, setPizarra] = useState(false);
   const [ganado, setGanado] = useState(0);
   const dados = useRef({});
@@ -139,6 +143,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   // La carta abierta (bloque 4a): el chocolate y la nata, según la reputación
   const reputacion = local?.reputacion ?? 0;
   const carta = useMemo(() => cartaDe(reputacion), [reputacion]);
+  // Bloque 6b: el saco del día en el tambor (con el tueste de la casa en la carta) y las tazas que te quedan
+  const tazas = local?.tostadero?.tazas ?? 0;
+  const hayTostador = abierto && (local?.nivel ?? 1) >= 7;
+  const saco = hayTostador && jornada !== undefined && sacoListo(reputacion, local?.tostadero?.sacoDia ?? null, diaJuego);
   const frases = [...PILAR_DICE, local ? PILAR_FIN_CON : PILAR_FIN_SIN];
 
   // La música propia del café (1.126): mientras estás aquí suena en vez de la de Sonido y sigue su volumen, «Sin música» y la
@@ -326,6 +334,18 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     avisadoAsientos.current = hoy;
     setAviso(textoAsientos);
   }, [dia, faltanAsientos, hoy, textoAsientos]);
+  // Bloque 6b: Pilar avisa una vez al día de que hay saco en el tambor
+  const avisadoSaco = useRef(null);
+  useEffect(() => {
+    if (!saco || !dia || avisadoSaco.current === diaJuego) return;
+    avisadoSaco.current = diaJuego;
+    setAviso('«Huele a tostado: hay un saco recién hecho esperando en el tambor del sótano. Bájalo cuando quieras.»');
+  }, [saco, dia, diaJuego]);
+  // Lo que se ve del tostador cuando no estás delante (encendido con el tueste en la carta; la mirilla, con el saco listo)
+  useEffect(() => {
+    if (!ready || tostando || !hayTostador) return;
+    api.current?.setTostador?.({ encendido: tuesteAbierto(reputacion), listo: saco });
+  }, [ready, tostando, hayTostador, reputacion, saco]);
   const selItem = borrador?.items.find((i) => i.uid === sel) ?? null;
   useEffect(() => {
     if (!ready) return;
@@ -383,7 +403,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   };
   useEffect(() => {
     pick.current = (id) => {
-      if (decorando) return;
+      if (decorando || tostando) return;
       if (atenderToque.current?.(id)) return;
       if (id.startsWith('cliente:')) {
         const c = clientesHoy.find((x) => x.n === Number(id.slice(8)));
@@ -398,6 +418,16 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       setAtendiendo(null);
       if (id === 'pilar') return hablar();
       if (id === 'libros') return abrirLibros('caja');
+      // Bloque 6b: el tostador, delante de su trampilla
+      if (id === 'tostador') {
+        setHablando(null);
+        setAviso('');
+        setError('');
+        setPanelLibros(null);
+        setPizarra(false);
+        api.current?.go('tostador').then(() => setTostando(true));
+        return;
+      }
       // La trampilla y la escalera suenan con su recorrido (la escena lo avisa)
       if (id !== 'trampilla' && id !== 'subir') sfx.play(id === 'escaparate' ? 'cristal' : 'toque');
       setHablando(null);
@@ -664,7 +694,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         <div className="cf3-tags" hidden={decorando}>
           {Object.entries(SITIOS).map(([id, s]) => (
             <button key={id} type="button" className={`cf3-tag${id === 'libros' ? ' cf3-tag--libros' : ''}`} data-off="true" ref={(el) => (tagEls.current[id] = el)} onClick={() => pick.current(id)}>
-              {id === 'libros' ? `${s.nombre} · ${porColocar}` : s.nombre}
+              {id === 'libros' ? `${s.nombre} · ${porColocar}` : id === 'tostador' && saco ? `${s.nombre} · saco listo` : s.nombre}
             </button>
           ))}
           {pendientes.map((c) => (
@@ -930,6 +960,17 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
           }}
           onCerrar={() => setPanelLibros(null)}
         />
+      ) : tostando && local ? (
+        <Tostadero
+          escena={ready && !sin3d ? api.current : null}
+          local={local}
+          dia={diaJuego}
+          soundOn={soundOn}
+          ayudas={state.settings.ayudasCafe ?? 'auto'}
+          nivel={nivelLocal}
+          onRecogido={(c) => setLocal(c)}
+          onCerrar={() => setTostando(false)}
+        />
       ) : clienteAtendido ? (
         <Atender
           key={clienteAtendido.n}
@@ -942,6 +983,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
           ayudas={state.settings.ayudasCafe ?? 'auto'}
           nivel={local?.nivel ?? 1}
           carta={carta}
+          tazas={tazas}
           onServir={servir}
           onCerrar={() => setAtendiendo(null)}
         />

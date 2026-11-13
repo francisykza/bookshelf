@@ -75,13 +75,17 @@ import {
   ALA,
   paredIzquierda,
   BODEGA,
+  BODEGA_TOSTADERO,
+  ENFRIADOR,
+  TAMBOR,
+  ANTE_TOSTADOR,
   TRAMPILLA,
   ESCALERA_BODEGA,
   LLEGADA_BODEGA,
   ANTE_TRAMPILLA,
   plantaEn,
 } from './cafeLayout';
-import { ASIENTOS, CUADRICULA, SOTANO, casillaValida, columnasDe, filasDe, medidas } from './cafeCatalogo';
+import { ASIENTOS, CUADRICULA, SOTANO, casillaValida, columnasDe, filasDe, medidas, sotanoDe } from './cafeCatalogo';
 import { cajasDe, colorDe } from './cafeMuebles';
 import { footprint } from '../room';
 
@@ -144,6 +148,11 @@ const LUZ_BODEGA = [
   { at: [44.9, 3.7, 2.55], k: 0.85, reach: 4.6 },
   { at: [46.85, 6.3, 3.3], k: 0.55, reach: 3.0 },
 ];
+/**
+ * Bloque 6b (1.127): la bodega del nivel 7, más ancha: un farol más sobre las columnas nuevas y el resplandor de la boca del
+ * hogar del tostador, a ras de suelo.
+ */
+const LUZ_TOSTADERO = [{ at: [39.0, 3.7, 2.55], k: 0.85, reach: 4.4 }, ...LUZ_BODEGA, { at: [37.2, 1.4, 0.35], k: 0.5, reach: 1.7 }];
 let LUCES_NIVEL = [];
 /** Pinta con estas luces de nivel encendidas (las láminas del ala y de la calle se pintan al montar). */
 function conLuces(luces, fn) {
@@ -1093,6 +1102,8 @@ const TARROS = { suave: 5.49, intenso: 5.69 };
 const TARRO_X = 7.74;
 const JARRAS = { entera: 5.08, avena: 5.26 };
 const JARRA_X = 7.39;
+/** Bloque 6b (1.127): el saco del tostadero, junto a los tarros (el tueste de la casa, solo para el café). */
+const SACO_BARRA = { x: 7.76, y: 5.31 };
 const CANELA = { x: 7.44, y: 6.4 };
 const MIEL = { x: 7.44, y: 6.6 };
 /** Bloque 4a: el hornillo con el cazo de cobre del chocolate (detrás de la tetera) y el bol de la nata (junto a la miel). */
@@ -1117,6 +1128,8 @@ export const BARRA_COSAS = {
   'barra:toque:nata': { box: [BOL.x - 0.075, BOL.y - 0.075, BARRA_Z, BOL.x + 0.075, BOL.y + 0.075, BARRA_Z + 0.22], parte: 'toque', valor: 'nata', carta: 'nata' },
   'barra:toque:vainilla': { box: [VAINA.x - 0.095, VAINA.y - 0.07, BARRA_Z, VAINA.x + 0.095, VAINA.y + 0.07, BARRA_Z + 0.08], parte: 'toque', valor: 'vainilla', carta: 'vainilla' },
   'barra:bebida:frio': { box: [CUBITERA.x - 0.08, CUBITERA.y - 0.08, BARRA_Z, CUBITERA.x + 0.08, CUBITERA.y + 0.08, BARRA_Z + 0.2], parte: 'bebida', valor: 'frio', carta: 'hielo' },
+  // Bloque 6b: el saco del tostadero, solo para el café (y el café con hielo)
+  'barra:grano:casa': { box: [SACO_BARRA.x - 0.08, SACO_BARRA.y - 0.08, BARRA_Z, SACO_BARRA.x + 0.08, SACO_BARRA.y + 0.08, BARRA_Z + 0.24], parte: 'grano', valor: 'casa', carta: 'casa', solo: ['cafe', 'frio'] },
 };
 /** Puntos de la barra (para la cámara y para saber dónde caen en la pantalla). */
 export const BARRA_MARCAS = {
@@ -1155,7 +1168,7 @@ const ENFOQUES = {
       : est.carta?.includes('chocolate')
         ? enfoque([7.7, 6.4, BARRA_Z + 0.3], 1.15)
         : enfoque([7.68, 6.2, BARRA_Z + 0.3], 1.0),
-  grano: enfoque([7.6, 5.6, BARRA_Z + 0.14], 0.72),
+  grano: (est) => (est.carta?.includes('casa') && ['cafe', 'frio'].includes(est.receta?.bebida) ? enfoque([7.62, 5.5, BARRA_Z + 0.14], 0.86) : enfoque([7.6, 5.6, BARRA_Z + 0.14], 0.72)),
   manivela: enfoque(BARRA_MARCAS.manivela, 0.5, { alto: 0.95 }),
   cuchara: enfoque([7.62, 5.8, BARRA_Z + 0.28], 0.85, { alto: 0.5, bajo: 0.45 }),
   apisonar: enfoque(BARRA_MARCAS.portafiltro, 0.66, { alto: 0.5, bajo: 0.55, lado: 0.5 }),
@@ -1227,7 +1240,9 @@ function colorBebida({ bebida, grano }, { leche = 0, tipoLeche = 'entera', color
             : [128, 84, 52]
           : grano === 'intenso'
             ? [62, 34, 22]
-            : [104, 62, 36];
+            : grano === 'casa'
+              ? [82, 46, 28]
+              : [104, 62, 36];
   if (bebida === 'te') base = base.map((c, k) => Math.round([214, 198, 160][k] + (c - [214, 198, 160][k]) * color));
   if (!leche) return base;
   const l = tipoLeche === 'avena' ? [226, 204, 160] : [244, 236, 220];
@@ -1429,7 +1444,7 @@ function barraKit(s, est = {}) {
   const molido = p('manivela').molido ?? 0;
   if ((receta.grano && !te && elige !== 'grano') || molido > 0) {
     // El grano en la tolva (baja al moler) y el molido que asoma en el cajón
-    const tostado = receta.grano === 'intenso' ? [58, 34, 24] : [150, 98, 56];
+    const tostado = receta.grano === 'intenso' ? [58, 34, 24] : receta.grano === 'casa' ? [96, 58, 34] : [150, 98, 56];
     pushBox(s, [mx - 0.06, my - 0.06, z + 0.17, mx + 0.06, my + 0.06, z + 0.2 + 0.02 * (1 - molido)], tostado, o);
     if (molido > 0)
       pushBox(
@@ -1444,6 +1459,22 @@ function barraKit(s, est = {}) {
   pushBox(s, [mx - 0.012, my - 0.012, z + 0.26, mx + 0.012, my + 0.13, z + 0.275], ACERO, { g, xf: xfM });
   pushBox(s, [mx - 0.016, my + 0.11, z + 0.275, mx + 0.016, my + 0.14, z + 0.33], NOGAL, { g, xf: xfM });
 
+  // ── Bloque 6b: el saco de arpillera del tostadero, más o menos lleno según las tazas que te quedan ──
+  if (carta.includes('casa')) {
+    const { x: sx, y: sy } = SACO_BARRA;
+    const lleno = Math.min(1, (est.tazas ?? 0) / 5);
+    const h = 0.05 + 0.14 * lleno;
+    const ARPILLERA = [176, 142, 94];
+    for (let k = 0; k < 4; k += 1) {
+      const a = k === 0 ? 0.07 : k === 3 ? 0.055 : 0.075;
+      pushBox(s, [sx - a, sy - a, z + (h * k) / 4, sx + a, sy + a, z + (h * (k + 1)) / 4], k % 2 ? ARPILLERA : [164, 130, 86], o);
+    }
+    // La boca doblada y, si queda, el grano tostado asomando
+    pushBox(s, [sx - 0.065, sy - 0.065, z + h, sx + 0.065, sy + 0.065, z + h + 0.025], [190, 158, 108], o);
+    if (lleno > 0) pushBox(s, [sx - 0.045, sy - 0.045, z + h + 0.01, sx + 0.045, sy + 0.045, z + h + 0.03], [82, 46, 28], o);
+    // La etiqueta de tela con la marca del café (sin letras)
+    pushBox(s, [sx - 0.071, sy - 0.03, z + h * 0.35, sx - 0.07, sy + 0.03, z + h * 0.75], [226, 214, 186], o);
+  }
   // ── Los tarros: cristal con corcho y etiqueta; dentro, grano (u hoja si toca té), claro o tostado ──
   for (const [tipo, y] of Object.entries(TARROS)) {
     const fuerte = tipo === 'intenso';
@@ -1749,7 +1780,9 @@ function barraKit(s, est = {}) {
   // ── La taza, bajo el grupo ──
   taza(s, T.x, T.y, z, receta, vista, { humo: lista && !reduced() && receta.bebida !== 'frio', g });
   // Lo que se puede elegir ahora, con su marco
-  if (elige) for (const cosa of Object.values(BARRA_COSAS)) if (cosa.parte === elige && (!cosa.carta || carta.includes(cosa.carta))) marcoBarra(s, cosa.box, receta[elige] === cosa.valor ? [255, 226, 160] : [214, 150, 70]);
+  if (elige)
+    for (const cosa of Object.values(BARRA_COSAS))
+      if (cosa.parte === elige && (!cosa.carta || carta.includes(cosa.carta)) && (!cosa.solo || cosa.solo.includes(receta.bebida))) marcoBarra(s, cosa.box, receta[elige] === cosa.valor ? [255, 226, 160] : [214, 150, 70]);
 }
 /** La taza que llevas en la mano (en el sitio de la cámara: x a la derecha, z arriba, y hacia ti), con lo que lleve. */
 function tazaEnMano({ receta = {}, vista = {} } = {}) {
@@ -1866,8 +1899,10 @@ function ladrilloPx(a, b, g, ix, iy) {
   if (b < 1.0 && noise(a * 0.9, b * 1.2) > 0.84) return lit(ramp[2], g + 0.04, ix, iy);
   return lit(ramp[h > 0.9 ? 2 : h < 0.08 ? 4 : 3], g, ix, iy);
 }
+/** La bodega que se está pintando (la del nivel 6 o, desde el 7, la del tostadero, más ancha). */
+let BOD = BODEGA;
 function paintMuro(w, world, extra = () => null) {
-  const alto = BODEGA.alto;
+  const alto = BOD.alto;
   return canvasOf(Math.round(w * PX), Math.round(alto * PX), (ix, iy) => {
     const a = (ix + 0.5) / PX;
     const b = alto - (iy + 0.5) / PX;
@@ -1878,10 +1913,10 @@ function paintMuro(w, world, extra = () => null) {
 }
 /** El ventanuco de la pared de delante, alto, con sus barrotes: deja ver la noche del muelle a ras de la acera. */
 function ventanuco(a, b, ix, iy) {
-  const x = BODEGA.x1 - a;
+  const x = BOD.x1 - a;
   if (x < 41.4 || x > 43.2 || b < 2.35 || b > 3.0) return null;
   const r = probe();
-  const g = glowAt(x, BODEGA.y1 - 0.3, b);
+  const g = glowAt(x, BOD.y1 - 0.3, b);
   if (x < 41.48 || x > 43.12 || b < 2.42 || b > 2.93) return lit(r.rampOf(MORTERO)[1], g, ix, iy);
   if (Math.abs(frac((x - 41.48) / 0.27) - 0.5) > 0.42) return lit(HIERRO_B, g + 0.1, ix, iy);
   // La acera mojada y la luz de la farola, al fondo
@@ -1892,10 +1927,10 @@ function ventanuco(a, b, ix, iy) {
 function paintSueloBodega() {
   const r = probe();
   const piedra = r.rampOf(LOSA);
-  const [ancho, hondo] = [BODEGA.x1 - BODEGA.x0, BODEGA.y1 - BODEGA.y0];
+  const [ancho, hondo] = [BOD.x1 - BOD.x0, BOD.y1 - BOD.y0];
   return canvasOf(Math.round(ancho * PX), Math.round(hondo * PX), (ix, iy) => {
-    const x = BODEGA.x0 + (ix + 0.5) / PX;
-    const y = BODEGA.y0 + (iy + 0.5) / PX;
+    const x = BOD.x0 + (ix + 0.5) / PX;
+    const y = BOD.y0 + (iy + 0.5) / PX;
     const g = glowAt(x, y, 0);
     const fy = Math.floor(y / 0.8);
     const off = fy % 2 ? 0.45 : 0;
@@ -1909,13 +1944,13 @@ function paintSueloBodega() {
 function paintBovedaBodega() {
   const r = probe();
   const ramp = r.rampOf(LADRILLO);
-  const [ancho, hondo] = [BODEGA.x1 - BODEGA.x0, BODEGA.y1 - BODEGA.y0];
+  const [ancho, hondo] = [BOD.x1 - BOD.x0, BOD.y1 - BOD.y0];
   return canvasOf(Math.round(ancho * PX), Math.round(hondo * PX), (ix, iy) => {
-    const x = BODEGA.x0 + (ix + 0.5) / PX;
-    const y = BODEGA.y1 - (iy + 0.5) / PX;
-    const g = glowAt(x, y, BODEGA.alto) * 0.75;
-    if (x > ESCALERA_BODEGA.x0 + 0.05 && y > BODEGA.y1 - 1.25) {
-      const borde = Math.min(x - ESCALERA_BODEGA.x0, BODEGA.y1 - 0.02 - y, y - (BODEGA.y1 - 1.25)) < 0.08;
+    const x = BOD.x0 + (ix + 0.5) / PX;
+    const y = BOD.y1 - (iy + 0.5) / PX;
+    const g = glowAt(x, y, BOD.alto) * 0.75;
+    if (x > ESCALERA_BODEGA.x0 + 0.05 && y > BOD.y1 - 1.25) {
+      const borde = Math.min(x - ESCALERA_BODEGA.x0, BOD.y1 - 0.02 - y, y - (BOD.y1 - 1.25)) < 0.08;
       return borde ? lit(ROBLE_D, 0.7, ix, iy) : rgb(196, 140, 82);
     }
     const hilada = Math.floor(x / 0.25);
@@ -1926,7 +1961,7 @@ function paintBovedaBodega() {
 }
 /** Los arcos de ladrillo de la bóveda (dos, de pared a pared), con sus pilastras. */
 function arcosBodega(s) {
-  const { x0, x1, alto } = BODEGA;
+  const { x0, x1, alto } = BOD;
   const ancho = x1 - x0;
   for (const y of [2.1, 5.3]) {
     for (let k = 0; k < 41; k += 1) {
@@ -1937,8 +1972,11 @@ function arcosBodega(s) {
       pushBox(s, [xa, y - 0.2, z - 0.16, xb, y + 0.2, alto], k % 2 ? LADRILLO : [134, 72, 54]);
       pushBox(s, [xa, y - 0.21, z - 0.2, xb, y + 0.21, z - 0.16], MORTERO);
     }
-    pushBox(s, [x0, y - 0.24, 0, x0 + 0.24, y + 0.24, 2.3], [138, 78, 58]);
-    for (let z = 0.25; z < 2.3; z += 0.25) pushBox(s, [x0, y - 0.245, z, x0 + 0.245, y + 0.245, z + 0.03], MORTERO);
+    // En el nivel 7, la pilastra de la izquierda del primer arco deja sitio al tostador
+    if (BOD === BODEGA || y > 3) {
+      pushBox(s, [x0, y - 0.24, 0, x0 + 0.24, y + 0.24, 2.3], [138, 78, 58]);
+      for (let z = 0.25; z < 2.3; z += 0.25) pushBox(s, [x0, y - 0.245, z, x0 + 0.245, y + 0.245, z + 0.03], MORTERO);
+    }
     if (y < ESCALERA_BODEGA.y0) {
       pushBox(s, [x1 - 0.24, y - 0.24, 0, x1, y + 0.24, 2.3], [138, 78, 58]);
       for (let z = 0.25; z < 2.3; z += 0.25) pushBox(s, [x1 - 0.245, y - 0.245, z, x1, y + 0.245, z + 0.03], MORTERO);
@@ -1959,7 +1997,14 @@ function barricaTumbada(s, cy, cz, r, x0, x1) {
   pushBox(s, [x1 + 0.021, cy - 0.12, cz + 0.08, x1 + 0.024, cy + 0.1, cz + 0.13], [232, 226, 210]);
 }
 function barricasBodega(s) {
-  const { x0 } = BODEGA;
+  const { x0 } = BOD;
+  // Bloque 6b: en el nivel 7, las barricas se corren al fondo de la pared (delante va el tostador)
+  if (BOD !== BODEGA) {
+    pushBox(s, [x0, 3.3, 0, x0 + 0.95, 6.7, 0.14], ROBLE_D);
+    for (const cy of [3.8, 4.75, 6.2]) barricaTumbada(s, cy, 0.6, 0.46, x0 + 0.02, x0 + 0.92);
+    barricaTumbada(s, 4.28, 1.43, 0.4, x0 + 0.06, x0 + 0.86);
+    return;
+  }
   // La cuna de madera y tres barricas; una cuarta, encima
   pushBox(s, [x0, 0.5, 0, x0 + 0.95, 5.4, 0.14], ROBLE_D);
   for (const cy of [1.3, 2.9, 4.5]) barricaTumbada(s, cy, 0.6, 0.46, x0 + 0.02, x0 + 0.92);
@@ -1967,7 +2012,7 @@ function barricasBodega(s) {
 }
 /** El botellero de la pared del fondo: casillas de madera con las botellas tumbadas (el culo a la vista). */
 function botelleroBodega(s) {
-  const [xa, xb, y0, y1, alto] = [40.6, 45.6, BODEGA.y0, BODEGA.y0 + 0.42, 2.2];
+  const [xa, xb, y0, y1, alto] = [40.6, 45.6, BOD.y0, BOD.y0 + 0.42, 2.2];
   pushBox(s, [xa, y0, 0, xb, y0 + 0.04, alto], ROBLE_D);
   for (let x = xa; x <= xb + 0.01; x += 0.5) pushBox(s, [x - 0.03, y0, 0, x + 0.03, y1, alto], ROBLE);
   for (let z = 0; z <= alto + 0.01; z += 0.36) pushBox(s, [xa, y0, z, xb, y1, z + 0.04], ROBLE);
@@ -1984,7 +2029,7 @@ function escaleraBodega(s) {
   const { x0, x1, y0, y1 } = ESCALERA_BODEGA;
   const n = 14;
   const fondo = (y1 - y0) / n;
-  const sube = BODEGA.alto / n;
+  const sube = BOD.alto / n;
   for (let k = 0; k < n; k += 1) {
     const ya = y0 + k * fondo;
     pushBox(s, [x0 + 0.05, ya, 0, x1, ya + fondo, (k + 1) * sube - 0.05], [118, 106, 94]);
@@ -2002,9 +2047,9 @@ function escaleraBodega(s) {
 }
 /** Los dos faroles de hierro que cuelgan de la bóveda, encendidos. */
 function farolesBodega(s) {
-  for (const { at } of LUZ_BODEGA.slice(0, 2)) {
+  for (const { at } of BOD === BODEGA ? LUZ_BODEGA.slice(0, 2) : LUZ_TOSTADERO.slice(0, 3)) {
     const [x, y, z] = at;
-    pushBox(s, [x - 0.012, y - 0.012, z + 0.3, x + 0.012, y + 0.012, BODEGA.alto], [40, 34, 32], { g: 0.4 });
+    pushBox(s, [x - 0.012, y - 0.012, z + 0.3, x + 0.012, y + 0.012, BOD.alto], [40, 34, 32], { g: 0.4 });
     pushBox(s, [x - 0.16, y - 0.16, z + 0.22, x + 0.16, y + 0.16, z + 0.3], HIERRO_B, { g: 0.7 });
     pushBox(s, [x - 0.12, y - 0.12, z - 0.2, x + 0.12, y + 0.12, z + 0.22], BULB, { glow: true });
     for (const [dx, dy] of [
@@ -2036,6 +2081,125 @@ function trampillaKit(s) {
     pushBox(s, [x0 - 0.05, ya - 0.005, 0.86, x1 + 0.03, ya + 0.045, 0.92], BRASS, { g: 0.65 });
   }
 }
+
+// ── Bloque 6b (1.127): el tostador del sótano (nivel 7) ──
+const HIERRO_T = [56, 50, 48];
+const GRANO_T = [104, 62, 36];
+/** La cara del tambor, de cara a la sala (x creciente), y la trampilla, abajo en ella. */
+const CARA_T = TAMBOR.x - 0.32;
+const TRAMPILLA_T = { y0: TAMBOR.y - 0.14, y1: TAMBOR.y + 0.14, z: TAMBOR.z - TAMBOR.r * 0.78, alto: 0.2 };
+/** Lo que no se mueve: el pedestal con el hogar, la carcasa y el tambor, la tolva, la chimenea y el enfriador con su eje. */
+function tostadorKit(s) {
+  const { y, z, r } = TAMBOR;
+  pushBox(s, [35.85, 0.7, 0, CARA_T + 0.06, 2.1, 0.5], [96, 72, 60]);
+  pushBox(s, [35.85, 0.68, 0.48, CARA_T + 0.08, 2.12, 0.53], [130, 92, 66]);
+  pushBox(s, [CARA_T + 0.06, 1.12, 0.08, CARA_T + 0.09, 1.68, 0.12], HIERRO_B);
+  pushBox(s, [CARA_T + 0.06, 1.12, 0.36, CARA_T + 0.09, 1.68, 0.4], HIERRO_B);
+  // La carcasa de hierro con sus remaches de latón
+  pushBox(s, [35.9, 0.82, 0.53, CARA_T, 1.98, 1.5], HIERRO_T);
+  for (const za of [0.62, 1.42]) for (let ya = 0.9; ya < 1.95; ya += 0.18) pushBox(s, [CARA_T, ya, za, CARA_T + 0.012, ya + 0.03, za + 0.03], BRASS, { g: 0.6 });
+  // La cara del tambor: redonda (en escalones), con su aro de latón
+  for (let k = -6; k <= 6; k += 1) {
+    const dz = (k / 6.5) * r;
+    const half = Math.sqrt(Math.max(0, r * r - dz * dz));
+    const z0 = z + dz - r / 13;
+    pushBox(s, [CARA_T, y - half, z0, CARA_T + 0.08, y + half, z0 + (2 * r) / 13], k % 2 ? [70, 62, 58] : [62, 55, 52]);
+    pushBox(s, [CARA_T + 0.08, y - half - 0.015, z0, CARA_T + 0.095, y - half + 0.03, z0 + (2 * r) / 13], BRASS, { g: 0.65 });
+    pushBox(s, [CARA_T + 0.08, y + half - 0.03, z0, CARA_T + 0.095, y + half + 0.015, z0 + (2 * r) / 13], BRASS, { g: 0.65 });
+  }
+  // La placa del tostadero, sin letras, y el termómetro
+  pushBox(s, [CARA_T + 0.08, y - 0.2, z + r * 0.45, CARA_T + 0.095, y + 0.2, z + r * 0.62], BRASS, { g: 0.75 });
+  pushBox(s, [CARA_T + 0.08, y + 0.2, z + 0.02, CARA_T + 0.11, y + 0.3, z + 0.12], [226, 220, 204], { g: 0.7 });
+  pushBox(s, [CARA_T + 0.11, y + 0.245, z + 0.06, CARA_T + 0.115, y + 0.255, z + 0.11], [180, 40, 34], { g: 0.7 });
+  // La manivela del tambor, a un lado
+  pushBox(s, [CARA_T + 0.02, 1.98, z - 0.03, CARA_T + 0.06, 2.12, z + 0.03], HIERRO_B);
+  pushBox(s, [CARA_T + 0.02, 2.1, z - 0.2, CARA_T + 0.06, 2.14, z + 0.03], HIERRO_B);
+  pushBox(s, [CARA_T + 0.0, 2.08, z - 0.26, CARA_T + 0.08, 2.16, z - 0.18], ROBLE_D);
+  // La tolva, arriba: tres tramos que se abren hacia arriba
+  for (let k = 0; k < 3; k += 1) {
+    const h = 0.1 + k * 0.07;
+    pushBox(s, [36.35 - h, y - h, 1.5 + k * 0.13, 36.35 + h, y + h, 1.63 + k * 0.13], k === 2 ? ACERO : ACERO_D);
+  }
+  // La chimenea de humos, hasta la bóveda, con su collar
+  pushBox(s, [35.98, 0.86, 1.5, 36.2, 1.08, BODEGA.alto], [44, 40, 38]);
+  pushBox(s, [35.96, 0.84, 2.2, 36.22, 1.1, 2.26], BRASS, { g: 0.55 });
+  // La rampa de la trampilla al enfriador
+  const xf = giro([CARA_T + 0.1, y, TRAMPILLA_T.z - 0.02], 'y', 0.28);
+  pushBox(s, [CARA_T + 0.1, y - 0.11, TRAMPILLA_T.z - 0.05, ENFRIADOR.x - ENFRIADOR.r * 0.55, y + 0.11, TRAMPILLA_T.z - 0.02], ACERO_D, { xf });
+  for (const ya of [y - 0.12, y + 0.1]) pushBox(s, [CARA_T + 0.1, ya, TRAMPILLA_T.z - 0.05, ENFRIADOR.x - ENFRIADOR.r * 0.55, ya + 0.02, TRAMPILLA_T.z + 0.03], ACERO_D, { xf });
+  // El enfriador: la bandeja redonda sobre tres patas, el borde de latón y el eje del brazo
+  const { x: ex, y: ey, z: ez, r: er } = ENFRIADOR;
+  for (let k = 0; k < 3; k += 1) {
+    const a = (k / 3) * Math.PI * 2 + 0.5;
+    const [lx, ly] = [ex + Math.cos(a) * er * 0.7, ey + Math.sin(a) * er * 0.7];
+    pushBox(s, [lx - 0.025, ly - 0.025, 0, lx + 0.025, ly + 0.025, ez - 0.04], HIERRO_B);
+  }
+  for (let k = -6; k <= 6; k += 1) {
+    const dx = (k / 6.5) * er;
+    const half = Math.sqrt(Math.max(0, er * er - dx * dx));
+    pushBox(s, [ex + dx - er / 13, ey - half, ez - 0.05, ex + dx + er / 13, ey + half, ez - 0.02], k % 2 ? [84, 80, 76] : [74, 70, 66]);
+  }
+  for (let k = 0; k < 20; k += 1) {
+    const a = (k / 20) * Math.PI * 2;
+    const [rx, ry] = [ex + Math.cos(a) * er, ey + Math.sin(a) * er];
+    pushBox(s, [rx - 0.05, ry - 0.05, ez - 0.05, rx + 0.05, ry + 0.05, ez + 0.06], BRASS, { g: 0.6 });
+  }
+  pushBox(s, [ex - 0.025, ey - 0.025, ez - 0.02, ex + 0.025, ey + 0.025, ez + 0.2], ACERO);
+  // Dos sacos vacíos doblados, junto a la pared
+  pushBox(s, [35.9, 2.2, 0, 36.5, 2.85, 0.1], [170, 140, 96]);
+  pushBox(s, [35.92, 2.24, 0.1, 36.46, 2.8, 0.16], [184, 154, 108]);
+}
+/**
+ * Lo que se mueve o cambia (est, de setTostador): la boca del hogar y la mirilla, encendidas con el tueste en la carta
+ * (encendido) y más vivas con el saco listo (listo); la trampilla con su asa (abierta, 0 a 1); los granos que caen (cae, 0 a 1,
+ * y fase); los del enfriador (caido, 0 a 1) y el brazo que los remueve (brazo, en radianes).
+ */
+function tostadorVivoKit(s, est = {}) {
+  const { y, z } = TAMBOR;
+  const { encendido = false, listo = false, abierta = 0, cae = 0, caido = 0, brazo = 0, fase = 0 } = est;
+  pushBox(s, [CARA_T + 0.06, 1.14, 0.12, CARA_T + 0.065, 1.66, 0.36], encendido ? (listo ? [255, 150, 64] : [214, 96, 44]) : [40, 26, 22], { glow: encendido, g: 0.3 });
+  pushBox(s, [CARA_T + 0.08, y - 0.06, z + 0.1, CARA_T + 0.1, y + 0.06, z + 0.2], encendido && listo ? [255, 186, 92] : [52, 40, 34], { glow: encendido && listo, g: 0.4 });
+  // La trampilla, con la bisagra abajo: se abre hacia ti
+  const { y0, y1, z: tz, alto } = TRAMPILLA_T;
+  if (abierta > 0.05) pushBox(s, [CARA_T + 0.075, y0 + 0.01, tz + 0.01, CARA_T + 0.08, y1 - 0.01, tz + alto - 0.01], [26, 16, 12], { g: 0.4 });
+  const xf = giro([CARA_T + 0.08, y, tz], 'y', abierta * 1.35);
+  pushBox(s, [CARA_T + 0.08, y0, tz, CARA_T + 0.105, y1, tz + alto], [78, 70, 66], { xf });
+  pushBox(s, [CARA_T + 0.105, y - 0.09, tz + alto - 0.06, CARA_T + 0.17, y - 0.07, tz + alto - 0.04], BRASS, { g: 0.75, xf });
+  pushBox(s, [CARA_T + 0.105, y + 0.07, tz + alto - 0.06, CARA_T + 0.17, y + 0.09, tz + alto - 0.04], BRASS, { g: 0.75, xf });
+  pushBox(s, [CARA_T + 0.15, y - 0.1, tz + alto - 0.07, CARA_T + 0.19, y + 0.1, tz + alto - 0.03], ROBLE_D, { xf });
+  // Los granos que caen por la rampa
+  const { x: ex, y: ey, z: ez, r: er } = ENFRIADOR;
+  if (cae > 0 && abierta > 0.5) {
+    for (let k = 0; k < 14; k += 1) {
+      const t = (k / 14 + fase) % 1;
+      const gx = CARA_T + 0.12 + (ex - er * 0.4 - CARA_T - 0.12) * t;
+      const gz = tz + 0.02 - (tz - ez + 0.04) * t * t;
+      const gy = y + (hash(k, 3) - 0.5) * 0.14;
+      pushBox(s, [gx - 0.018, gy - 0.014, gz, gx + 0.018, gy + 0.014, gz + 0.022], k % 3 ? GRANO_T : [80, 46, 28], { g: 0.5 });
+    }
+  }
+  // Los granos en la bandeja y el brazo que los remueve
+  if (caido > 0) {
+    const h = 0.012 + caido * 0.05;
+    for (let k = -5; k <= 5; k += 1) {
+      const dx = (k / 5.5) * er * 0.92;
+      const half = Math.sqrt(Math.max(0, (er * 0.92) ** 2 - dx * dx));
+      pushBox(s, [ex + dx - er / 11, ey - half, ez - 0.02, ex + dx + er / 11, ey + half, ez - 0.02 + h * (0.7 + 0.3 * hash(k, 9))], k % 2 ? GRANO_T : [92, 54, 32], { g: 0.5 });
+    }
+  }
+  const xb = giro([ex, ey, ez], 'z', brazo);
+  pushBox(s, [ex - er * 0.86, ey - 0.018, ez + 0.05, ex + er * 0.86, ey + 0.018, ez + 0.09], ACERO, { xf: xb, g: 0.6 });
+  pushBox(s, [ex - 0.018, ey - er * 0.86, ez + 0.05, ex + 0.018, ey + er * 0.86, ez + 0.09], ACERO, { xf: xb, g: 0.6 });
+  pushBox(s, [ex - 0.04, ey - 0.04, ez + 0.18, ex + 0.04, ey + 0.04, ez + 0.24], BRASS, { g: 0.7 });
+}
+/** Las marcas del tostador (para la ayuda «!» y las pruebas): el asa de la trampilla y el enfriador. */
+const TOSTADOR_MARCAS = {
+  asa: [CARA_T + 0.18, TAMBOR.y, TRAMPILLA_T.z + TRAMPILLA_T.alto - 0.05],
+  enfriador: [ENFRIADOR.x, ENFRIADOR.y, ENFRIADOR.z + 0.05],
+  tambor: [CARA_T + 0.09, TAMBOR.y, TAMBOR.z],
+};
+/** La cámara delante del tostador: de cara a la trampilla, con el enfriador abajo. */
+const ENFOQUE_TOSTADOR = { p: [39.6, 1.45, 1.75], m: [37.0, 1.45, 0.65] };
 
 export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, onLost = () => {}, onMove = () => {}, onDecor = () => {}, onSonido = () => {} } = {}) {
   const renderer = new WebGLRenderer({ antialias: false, powerPreference: 'low-power', preserveDrawingBuffer: true });
@@ -2221,11 +2385,9 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     return m;
   });
   // ── Bloque 6a: la bodega (nivel 6), aparte en el mundo, y la trampilla de detrás de la barra ──
-  const bodegaGrupo = new Group();
-  bodegaGrupo.visible = false;
-  scene.add(bodegaGrupo);
-  const bodegaPiezas = conLuces(LUZ_BODEGA, () => {
-    const { x0, x1, y0, y1, alto } = BODEGA;
+  // Bloque 6b: dos bodegas, la del nivel 6 y la del 7 (más ancha, con el tostador); se ve una u otra
+  const bodegaKit = (B, luces, bodegaGrupo) => conLuces(luces, () => {
+    const { x0, x1, y0, y1, alto } = B;
     const [ancho, hondo, cx, cy] = [x1 - x0, y1 - y0, (x0 + x1) / 2, (y0 + y1) / 2];
     bodegaGrupo.add(
       plane(ancho, hondo, paintSueloBodega(), (m) => {
@@ -2291,6 +2453,41 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     bodegaGrupo.add(m);
     return m;
   });
+  const montarBodega = (B, luces) => {
+    const grupo = new Group();
+    grupo.visible = false;
+    scene.add(grupo);
+    const antes = BOD;
+    BOD = B;
+    try {
+      return { grupo, piezas: bodegaKit(B, luces, grupo) };
+    } finally {
+      BOD = antes;
+    }
+  };
+  const bodega6 = montarBodega(BODEGA, LUZ_BODEGA);
+  const bodega7 = montarBodega(BODEGA_TOSTADERO, LUZ_TOSTADERO);
+  conLuces(LUZ_TOSTADERO, () => {
+    const s = kit();
+    tostadorKit(s);
+    bodega7.grupo.add(new Mesh(own(geometryOf(s)), flat));
+  });
+  // Lo que se mueve del tostador, que se vuelve a montar con cada cambio
+  const tostadorGrupo = new Group();
+  bodega7.grupo.add(tostadorGrupo);
+  let tost = { activa: false, est: {} };
+  function montarTostador() {
+    for (const m of tostadorGrupo.children.slice()) {
+      tostadorGrupo.remove(m);
+      m.geometry.dispose();
+    }
+    conLuces(LUZ_TOSTADERO, () => {
+      const s = kit();
+      tostadorVivoKit(s, tost.est);
+      tostadorGrupo.add(new Mesh(geometryOf(s), flat));
+    });
+    invalidate();
+  }
   const trampillaM = (() => {
     const s = kit();
     trampillaKit(s);
@@ -2519,7 +2716,9 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     if (nivel >= 5) out.push(rejillaDe(0, CUADRICULA.w, 7, 10));
     return out;
   };
-  const rejillas = { 1: hacerRejilla(1), 2: hacerRejilla(2), 4: hacerRejilla(4), 5: hacerRejilla(5), bodega: [rejillaDe(SOTANO.x0, SOTANO.x1, SOTANO.y0, SOTANO.y1)] };
+  const rejillas = { 1: hacerRejilla(1), 2: hacerRejilla(2), 4: hacerRejilla(4), 5: hacerRejilla(5), bodega: [rejillaDe(SOTANO.x0, SOTANO.x1, SOTANO.y0, SOTANO.y1)],
+    bodega7: [rejillaDe(sotanoDe(7).x0, SOTANO.x1, SOTANO.y0, SOTANO.y1)],
+  };
   // Bloque 6a: en qué planta estás ('calle' o 'bodega')
   let planta = 'calle';
   function vaciarGrupo() {
@@ -2613,10 +2812,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     cordel.visible = !terraza;
     if (terraza) abierto.visible = false;
     // Bloque 6a: la bodega y la trampilla, desde el nivel 6
-    bodegaGrupo.visible = n >= 6;
-    bodegaPiezas.visible = !modo.decorar;
+    bodega6.grupo.visible = n === 6;
+    bodega7.grupo.visible = n >= 7;
+    bodega6.piezas.visible = !modo.decorar;
+    bodega7.piezas.visible = !modo.decorar;
     trampillaM.visible = n >= 6;
-    const clave = modo.planta === 'bodega' ? 'bodega' : String(n >= 5 ? 5 : n >= 4 ? 4 : n >= 2 ? 2 : 1);
+    const clave = modo.planta === 'bodega' ? (n >= 7 ? 'bodega7' : 'bodega') : String(n >= 5 ? 5 : n >= 4 ? 4 : n >= 2 ? 2 : 1);
     for (const [k, ms] of Object.entries(rejillas)) for (const m of ms) m.visible = modo.decorar && k === clave;
     canvas.setAttribute(
       'aria-label',
@@ -2822,7 +3023,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     const dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0;
     lastT = now;
     let moving = advance(dt);
-    const meta = barra.activa ? 1 : 0;
+    const meta = barra.activa || tost.activa ? 1 : 0;
     if (barraT !== meta) {
       barraT = reduced() ? meta : Math.min(1, Math.max(0, barraT + (meta ? 1 : -1) * dt * 2.6));
       moving = moving || barraT !== meta;
@@ -2838,8 +3039,10 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     scene.fog.far = lejos ? 36 : 22;
     if (modo.decorar && modo.planta === 'bodega') {
       // Bloque 6a: la bodega desde arriba (la bóveda no se ve por encima), con la escalera a la derecha
-      const o = enMundo((SOTANO.x0 + SOTANO.x1) / 2 + 0.3, (SOTANO.y0 + SOTANO.y1) / 2);
-      camera.position.set(o.x, 7.4, BODEGA.y1 + 2.4);
+      const so = sotanoDe(estado.nivel);
+      const ancha = estado.nivel >= 7;
+      const o = enMundo((so.x0 + so.x1) / 2 + (ancha ? -0.2 : 0.3), (SOTANO.y0 + SOTANO.y1) / 2);
+      camera.position.set(o.x, ancha ? 8.6 : 7.4, BODEGA.y1 + (ancha ? 2.9 : 2.4));
       camera.lookAt(o.x, 0, o.y - 0.2);
     } else if (modo.decorar) {
       const { desde, hasta } = filasDe(estado.nivel);
@@ -2902,11 +3105,11 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         out[id] = { ...p, visible: false };
         continue;
       }
-      out[id] = { ...p, visible: hay && !walk && !modo.decorar && !barra.activa && barraT === 0 && p.front };
+      out[id] = { ...p, visible: hay && !walk && !modo.decorar && !barra.activa && !tost.activa && barraT === 0 && p.front };
     }
     for (const [n, c] of Object.entries(sitiosClientes)) {
       const p = project(c.x, c.y, c.z);
-      out[`cliente:${n}`] = { ...p, visible: !tour && !walk && !modo.decorar && !barra.activa && barraT === 0 && c.espera && c.planta === planta && p.front };
+      out[`cliente:${n}`] = { ...p, visible: !tour && !walk && !modo.decorar && !barra.activa && !tost.activa && barraT === 0 && c.espera && c.planta === planta && p.front };
     }
     return out;
   }
@@ -2958,6 +3161,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     if (tour) return null;
     const sitios = pickers.filter((m) => sitioActivo(m.userData.id));
     const suyos = pickersClientes.filter((m) => sitiosClientes[m.userData.id.slice(8)]?.planta === planta);
+    if (tost.activa) return null;
     return ray.intersectObjects(barra.activa ? pickersBarra : [...sitios, ...suyos], false)[0]?.object.userData.id ?? null;
   }
   /** La pieza del plano bajo un punto de la pantalla (su uid), o null. */
@@ -3089,7 +3293,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         }
         return;
       }
-      if (!press.moved || walk || barra.activa || tour) return;
+      if (!press.moved || walk || barra.activa || tost.activa || tour) return;
       yaw = press.yaw + (e.clientX - press.x) * DRAG;
       invalidate();
     },
@@ -3117,7 +3321,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       onPick(id);
       return;
     }
-    if (barra.activa || tour) return;
+    if (barra.activa || tost.activa || tour) return;
     rayAt(e.clientX, e.clientY);
     if (ray.ray.intersectPlane(floorPlane, hit) && dentro(hit.x, hit.z, opcionesPaso())) walkTo(hit.x, hit.z);
   };
@@ -3126,7 +3330,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   canvas.addEventListener(
     'keydown',
     (e) => {
-      if (modo.decorar || barra.activa || cambiando || tour) return;
+      if (modo.decorar || barra.activa || tost.activa || cambiando || tour) return;
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         yaw += e.key === 'ArrowLeft' ? KEY_STEP : -KEY_STEP;
@@ -3160,7 +3364,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     /** Cuántas portadas reales del escaparate tiene la escena (las pruebas lo miran). */
     portadasEscaparate: () => (estado.portadas ?? []).filter(Boolean).length,
     pose: () => ({ x: px, y: py, yaw }),
-    settled: () => !walk && vistaQuieta() && (barra.activa ? barraT === 1 : barraT === 0),
+    settled: () => !walk && vistaQuieta() && (barra.activa || tost.activa ? barraT === 1 : barraT === 0),
     /** Ir a un sitio ('pilar', 'cortina', 'escaparate' o 'entrada'). Promesa que acaba al llegar. */
     go(id) {
       if (id === 'entrada') return cambiarPlanta('calle').then(() => walkTo(INICIO.x, INICIO.y, { face: [INICIO.x + Math.sin(INICIO.yaw), INICIO.y + Math.cos(INICIO.yaw)] }));
@@ -3208,7 +3412,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate, portadas };
       // Las luces del ala y de la terraza alumbran lo colocado solo desde su nivel
       const n = inaugurado ? nivel : 1;
-      LUCES_NIVEL = [...(n >= 4 ? [LUZ_ALA] : []), ...(n >= 5 ? [LUZ_TERRAZA] : []), ...(n >= 6 ? LUZ_BODEGA : [])];
+      LUCES_NIVEL = [...(n >= 4 ? [LUZ_ALA] : []), ...(n >= 5 ? [LUZ_TERRAZA] : []), ...(n >= 7 ? LUZ_TOSTADERO : n >= 6 ? LUZ_BODEGA : [])];
       // Al abrir el café (o entrar ya abierto), la vista de todo el rincón
       if (abre) {
         walk = null;
@@ -3246,7 +3450,14 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       if (nivel === 4) puntos.push({ p: [4.6, 8.6, 2.6], m: [-2.0, 5.6, 1.0] }, { p: [1.6, 3.2, 2.4], m: [-2.6, 8.4, 1.0] });
       if (nivel === 5) puntos.push({ p: [3.4, 7.0, 2.0], m: [3.4, 14.0, 1.2] }, { p: [8.4, SD + 3.7, 2.1], m: [2.6, SD - 0.4, 1.5] }, { p: [0.8, SD + 3.5, 1.9], m: [5.2, SD + 0.6, 1.1] });
       // Bloque 6a: al 6, la trampilla abierta tras la barra y, abajo, la bodega (se salta de una a otra)
-      if (nivel >= 6)
+      // Bloque 6b: al 7, la bodega más ancha y el tostador
+      if (nivel >= 7)
+        puntos.push(
+          { corte: true, p: [46.9, 6.5, 2.9], m: [41.6, 2.2, 0.8] },
+          { p: [42.4, 5.8, 2.0], m: [37.0, 1.6, 0.9] },
+          { p: [39.4, 2.6, 1.6], m: [36.8, 1.3, 0.8] },
+        );
+      else if (nivel >= 6)
         puntos.push(
           { p: [6.2, 4.6, 2.4], m: [9.0, 2.1, 0.2] },
           { corte: true, p: [46.9, 6.5, 2.9], m: [43.6, 2.2, 0.8] },
@@ -3400,6 +3611,40 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
     },
     enBarra: () => barra.activa && barraT === 1,
+    /**
+     * Bloque 6b: la vista del tostador (on), delante de la trampilla del tambor; al salir, delante del tostador. Sin letreros ni
+     * toques mientras dura (el gesto lo lleva Tostadero.jsx).
+     */
+    tostador(on) {
+      walk = null;
+      if (on && planta !== 'bodega') return;
+      if (on) {
+        px = ANTE_TOSTADOR.x;
+        py = ANTE_TOSTADOR.y;
+        yaw = ANTE_TOSTADOR.yaw;
+        if (barraT === 0) vista = { p: [...ENFOQUE_TOSTADOR.p], m: [...ENFOQUE_TOSTADOR.m] };
+        vistaMeta = ENFOQUE_TOSTADOR;
+      } else if (tost.activa) {
+        onMove({ x: px, y: py, yaw });
+      }
+      tost = { ...tost, activa: Boolean(on) };
+      montarTostador();
+    },
+    /** Lo que se ve del tostador: { encendido, listo, abierta, cae, caido, brazo, fase } (ver tostadorVivoKit). */
+    setTostador(est = {}) {
+      tost = { ...tost, est };
+      montarTostador();
+    },
+    /** Dónde cae en la pantalla una marca del tostador ('asa', 'enfriador', 'tambor'), en px de la ventana. */
+    tostadorMarca(nombre) {
+      aim(performance.now());
+      const m = TOSTADOR_MARCAS[nombre];
+      if (!m) return null;
+      const p = project(...m);
+      const rect = canvas.getBoundingClientRect();
+      return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
+    },
+    enTostador: () => tost.activa && barraT === 1,
     destroy() {
       ponerEnMano(null);
       destroyed = true;

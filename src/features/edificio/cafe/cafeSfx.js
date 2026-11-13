@@ -313,6 +313,36 @@ const SONIDOS = {
   },
   /** Abrir o cerrar un panel de papel (la pizarra, los libros) o pasar la hoja de Pilar: un papelito. */
   papel: (b) => ruido(b, { f: 2200, q: 0.9, pico: 0.05, ataque: 0.01, caida: 0.09, barrido: 0.75 }),
+  // ── Bloque 6b (1.127): el tostadero ──
+  /** Acercarse al tostador: el hierro templado que suena hueco y el fuego que respira en la boca. */
+  tostador: (b) => {
+    tono(b, { f: 98, a: 92, tipo: 'triangle', pico: 0.16, ataque: 0.01, caida: 0.5 });
+    tono(b, { f: 392, tipo: 'sine', pico: 0.03, caida: 0.4, d: 0.03 });
+    ruido(b, { f: 300, q: 0.6, tipo: 'lowpass', pico: 0.12, ataque: 0.08, caida: 0.5 });
+  },
+  /** La trampilla del tambor se abre: el pestillo de hierro y la bisagra. */
+  trampillaTambor: (b) => {
+    ruido(b, { f: 1800, q: 3, pico: 0.18, caida: 0.04 });
+    tono(b, { f: 420, a: 300, tipo: 'square', pico: 0.02, caida: 0.06, d: 0.02 });
+    tono(b, { f: 640, a: 520, tipo: 'sawtooth', pico: 0.015, ataque: 0.04, caida: 0.18, d: 0.05 });
+  },
+  /** El enfriador: el brazo que arrastra los granos tostados por la bandeja, que crepitan. */
+  enfriador: (b) => {
+    ruido(b, { f: 900, q: 0.8, pico: 0.12, ataque: 0.05, caida: 0.6, barrido: 0.8 });
+    for (let k = 0; k < 7; k += 1) ruido(b, { f: 3400 + Math.random() * 1600, q: 4, pico: 0.06, caida: 0.02, d: 0.08 + k * 0.09 + Math.random() * 0.04 });
+  },
+  /** El saco de arpillera: la tela áspera y el grano que se asienta dentro (al recogerlo y al elegirlo en la barra). */
+  saco: (b) => {
+    ruido(b, { f: 1400, q: 0.7, pico: 0.12, ataque: 0.02, caida: 0.2, barrido: 0.7 });
+    for (let k = 0; k < 6; k += 1) ruido(b, { f: 2200 + k * 220, q: 3, pico: 0.07, caida: 0.03, d: 0.12 + k * 0.025 });
+    tono(b, { f: 130, a: 100, tipo: 'triangle', pico: 0.06, caida: 0.1, d: 0.2 });
+  },
+  /** El tueste de la casa, cobrado a quien lo pidió: dos campanillas de latón, una más alta. */
+  tueste: (b) => {
+    tono(b, { f: 1568, tipo: 'sine', pico: 0.05, caida: 0.4 });
+    tono(b, { f: 2093, tipo: 'sine', pico: 0.04, caida: 0.5, d: 0.12 });
+    tono(b, { f: 523, tipo: 'triangle', pico: 0.04, caida: 0.3, d: 0.12 });
+  },
 };
 
 /** Lo que suena mientras se mantiene: el café que cae, el agua y el vapor (su color cambia con la leche). */
@@ -321,6 +351,8 @@ const BUCLES = {
   tetera: { tipo: 'bandpass', f: 1100, q: 0.9, pico: 0.3 },
   vapor: { tipo: 'highpass', f: 2600, q: 0.7, pico: 0.12 },
   cazo: { tipo: 'lowpass', f: 480, q: 0.8, pico: 0.2 },
+  /** Bloque 6b: los granos tostados que caen por la rampa al enfriador (un chisporroteo seco). */
+  granosCaen: { tipo: 'bandpass', f: 3000, q: 1.4, pico: 0.18 },
 };
 
 export function crearSfxBarra() {

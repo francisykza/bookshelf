@@ -445,3 +445,17 @@ sala de catas, el chai y el café brûlée (nivel 8). Migración nueva en cada b
   la taza bajando la escalera.
 - **Botón «Subir al café»** en la esquina, además de la escalera: al llegar abajo la escalera queda a la espalda.
 - **El 2.º hito del nivel 6** no trae nada de la carta (la tabla dice «—»): se marca y se celebra, sin premio.
+
+### 14.8 Bloque 6b, hecho (1.127.0, 13-11-2026), con interpretaciones por confirmar
+
+- **El primer saco llega con el tueste en la carta** (2.º hito del nivel 7, 18.000). Antes, el tostador está en la bodega, frío,
+  y Pilar dice cuándo llega. Se cambia en `tuesteAbierto` (app) y en la condición de `cafe_recoger_saco` (servidor).
+- **La barra del nivel 7 mide 6.000**, hasta el umbral aprobado del 8 (21.000), para que sus hitos no se muevan al abrir el 6c.
+- **Las tazas que sobran no caducan**: como mucho 99; si no caben las 5 del saco, el saco espera en el tambor.
+- **El bono, solo a quien lo pidió y con tueste**: servirlo a quien no lo pidió gasta la taza y cuenta como fallo de grano.
+  Sin tazas, la opción sale apagada («sin tazas»).
+- **Solo con café**: con té o chocolate el tueste no se pide (la receta pasa a intenso), ni se puede elegir.
+- **El saco de arpillera es un asiento**; la estantería de latas, el mueble del 1.er hito. Siguen cabiendo 40 cosas.
+- **El tostador ocupa la esquina izquierda del fondo**, fuera de la cuadrícula; las columnas nuevas (−2 y −1) quedan delante.
+  Si se pone un mueble justo delante del tostador, se sigue pudiendo usar (la cámara se coloca sola).
+- **Arreglo de la 1.125**: con 8 clientes en el nivel 6, la app descartaba al 8.º (el excéntrico) al leer el día. Corregido.

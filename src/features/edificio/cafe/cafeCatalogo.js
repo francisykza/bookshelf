@@ -30,6 +30,12 @@ export const TERRAZA = { x0: 0, x1: 6, y0: 7, y1: 10 };
  * de la calle, para que nunca se mezclen). Crecerá en los niveles 7 y 8. Lo mismo en el servidor.
  */
 export const SOTANO = { x0: 0, x1: 5, y0: 20, y1: 25 };
+/**
+ * Bloque 6b (1.127, cifras aprobadas por Francisco el 13-11-2026): en el nivel 7 el sótano crece con el tostadero y su
+ * cuadrícula pasa a 7 × 5: dos columnas más por la izquierda (−2 y −1), hacia donde se abre el muro. Lo mismo en el servidor.
+ */
+export const TOSTADERO_COLS = 2;
+export const sotanoDe = (nivel = 6) => ({ ...SOTANO, x0: nivel >= 7 ? SOTANO.x0 - TOSTADERO_COLS : SOTANO.x0 });
 /** ¿En qué planta está una casilla? ('calle' o 'bodega') */
 export const plantaDe = (y) => (y >= SOTANO.y0 ? 'bodega' : 'calle');
 /** ¿Es una casilla del local (o de la terraza, o de la bodega) en este nivel? */
@@ -37,14 +43,15 @@ export function casillaValida(x, y, nivel = 1) {
   const c = columnasDe(nivel);
   const f = filasDe(nivel);
   if (x >= c.desde && x < c.hasta && y >= f.desde && y < f.hasta) return true;
-  if (nivel >= 6 && x >= SOTANO.x0 && x < SOTANO.x1 && y >= SOTANO.y0 && y < SOTANO.y1) return true;
+  const s = sotanoDe(nivel);
+  if (nivel >= 6 && x >= s.x0 && x < s.x1 && y >= s.y0 && y < s.y1) return true;
   return nivel >= 5 && x >= TERRAZA.x0 && x < TERRAZA.x1 && y >= TERRAZA.y0 && y < TERRAZA.y1;
 }
 /** Todas las casillas de un nivel (para buscar hueco y para la rejilla); con `planta`, solo las de esa planta. */
 export function casillasDe(nivel = 1, planta = null) {
   const out = [];
   for (let y = filasDe(nivel).desde; y < SOTANO.y1; y += 1)
-    for (let x = columnasDe(nivel).desde; x < CUADRICULA.w; x += 1) if (casillaValida(x, y, nivel) && (!planta || plantaDe(y) === planta)) out.push({ x, y });
+    for (let x = Math.min(columnasDe(nivel).desde, sotanoDe(nivel).x0); x < CUADRICULA.w; x += 1) if (casillaValida(x, y, nivel) && (!planta || plantaDe(y) === planta)) out.push({ x, y });
   return out;
 }
 
@@ -78,6 +85,9 @@ export const CAFE_MUEBLES = [
   { id: 'cafe-barrica', nombre: 'Mesa de barrica', w: 1, d: 1, precio: 220, nivel: 6 },
   { id: 'cafe-banco-bodega', nombre: 'Banco de bodega', w: 2, d: 1, precio: 260, nivel: 6 },
   { id: 'cafe-candil', nombre: 'Candil de hierro', w: 1, d: 1, precio: 300, nivel: 6, hito: 1 },
+  // Bloque 6b (1.127): los del tostadero (nivel 7, de 250 a 350 granos); el saco es un asiento y las latas, del primer hito
+  { id: 'cafe-saco', nombre: 'Saco de arpillera', w: 1, d: 1, precio: 250, nivel: 7 },
+  { id: 'cafe-latas', nombre: 'Estantería de latas', w: 2, d: 1, precio: 350, nivel: 7, hito: 1 },
 ];
 export const cafeMueble = (id) => CAFE_MUEBLES.find((m) => m.id === id) ?? null;
 
@@ -89,18 +99,29 @@ export const CAFE_NIVELES = [
   { nivel: 3, nombre: 'Librería', desde: 1000 },
   { nivel: 4, nombre: 'Ala lateral', desde: 2500 },
   { nivel: 5, nombre: 'Terraza y escaparate', desde: 5000 },
-  // Bloque 6a (1.125): el sótano. El 7 (el tostadero, 15.000) y el 8 (la sala de catas, 21.000) llegan en los bloques 6b y 6c
+  // Bloque 6a (1.125): el sótano. Bloque 6b (1.127): el tostadero. El 8 (la sala de catas, 21.000) llega en el bloque 6c
   { nivel: 6, nombre: 'La bodega', desde: 10000 },
+  { nivel: 7, nombre: 'El tostadero', desde: 15000 },
 ];
 /** La barra del último nivel abierto (para sus hitos): 5.000 de reputación. */
 export const TRAMO_FINAL = 5000;
+/**
+ * Bloque 6b: el nivel 8 ya tiene su umbral aprobado (21.000, la sala de catas) aunque aún no esté abierto; la barra del 7 llega
+ * hasta él (6.000), para que sus hitos no se muevan cuando se abra. Lo mismo en el servidor.
+ */
+export const DESDE_PROXIMO = { 8: 21000 };
+/** Lo que mide la barra del último nivel abierto. */
+export const tramoUltimo = (nivel) => (DESDE_PROXIMO[nivel + 1] ? DESDE_PROXIMO[nivel + 1] - (CAFE_NIVELES.find((x) => x.nivel === nivel)?.desde ?? 0) : TRAMO_FINAL);
 /** Cómo va la barra del nivel: el nombre del nivel, lo que llevas dentro de él y lo que falta para el siguiente. */
 export function progresoNivel(nivel = 1, reputacion = 0) {
   const n = CAFE_NIVELES.find((x) => x.nivel === nivel) ?? CAFE_NIVELES[0];
   const sig = CAFE_NIVELES.find((x) => x.nivel === n.nivel + 1) ?? null;
   const lleva = Math.max(0, reputacion - n.desde);
   // El último nivel abierto también tiene su barra, para ver llegar sus hitos
-  if (!sig) return { nombre: n.nombre, hecho: Math.min(1, lleva / TRAMO_FINAL), lleva, meta: TRAMO_FINAL };
+  if (!sig) {
+    const meta = tramoUltimo(n.nivel);
+    return { nombre: n.nombre, hecho: Math.min(1, lleva / meta), lleva, meta };
+  }
   return { nombre: n.nombre, hecho: Math.min(1, lleva / (sig.desde - n.desde)), lleva, meta: sig.desde - n.desde };
 }
 
@@ -182,6 +203,7 @@ export const ASIENTOS = {
   'cafe-orejero': 1,
   'cafe-silla-terraza': 1,
   'cafe-banco-bodega': 2,
+  'cafe-saco': 1,
   silla: 1,
   banco: 2,
   sofa: 2,
@@ -198,7 +220,7 @@ export const asientosDe = (plano) => (plano?.items ?? []).reduce((n, it) => n + 
  */
 export function hueco(plano, id, cerca = null, nivel = 1, planta = null) {
   // Lo nuevo va primero a lo recién abierto: el fondo (nivel 2), el ala lateral (nivel 4) y la terraza (nivel 5); en la bodega, al centro
-  const c = cerca ?? (planta === 'bodega' ? { x: 2, y: SOTANO.y0 + 2 } : nivel >= 5 ? { x: 2, y: 8 } : nivel >= 4 ? { x: -2, y: 2 } : nivel >= 2 ? { x: 2, y: -2 } : { x: 2, y: 3 });
+  const c = cerca ?? (planta === 'bodega' ? { x: nivel >= 7 ? -1 : 2, y: SOTANO.y0 + 2 } : nivel >= 5 ? { x: 2, y: 8 } : nivel >= 4 ? { x: -2, y: 2 } : nivel >= 2 ? { x: 2, y: -2 } : { x: 2, y: 3 });
   const opciones = casillasDe(nivel, planta).map((o) => ({ ...o, dist: Math.hypot(o.x - c.x, o.y - c.y) }));
   opciones.sort((a, b) => a.dist - b.dist);
   for (const rot of [0, 1]) {

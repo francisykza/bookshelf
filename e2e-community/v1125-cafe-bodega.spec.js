@@ -159,8 +159,8 @@ test('nivel 6: la trampilla, bajar a la bodega, sus clientes, Decorar abajo, un 
   const foto = async (nombre) => page.screenshot({ path: join(DIR, `bodega-${nombre}-${tam(info)}.png`) });
   const seeds = semillasCafe(7, 4000);
   const { cafe, c } = await alCafe(page, { nivel: 6, reputacion: umbralHito(6, 1) + 40, granos: 900, cobrados: [1, 2, 3, 4, 5, 6], plano: PLANO_6 }, seeds);
-  // Con 10 asientos (6 arriba y 4 abajo) vienen los 8 del nivel 6: 7 ya esperan (el excéntrico llega luego); el 7.º, abajo
-  await expect(cafe.locator('.cf3-dice')).toContainText('Tienes 7 clientes esperando', { timeout: 9000 });
+  // Con 10 asientos (6 arriba y 4 abajo) vienen los 8 del nivel 6, el excéntrico incluido (1.127: antes la app perdía al 8.º); el 7.º, abajo
+  await expect(cafe.locator('.cf3-dice')).toContainText('Tienes 8 clientes esperando', { timeout: 9000 });
   await quieto(page);
   await foto('local');
   // La trampilla abierta, detrás de la barra, con su letrero

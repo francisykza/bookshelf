@@ -6,6 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.127.0** (2026-11-13, §127). El café-librería del bajo,
+  **bloque 6b, el tostadero** (cifras aprobadas, «Sí, el tostadero»): nivel 7 desde 15.000, el sótano de 7 × 5 con el tostador,
+  un saco al día recogido tirando de la trampilla del tambor (5 tazas de «tueste de la casa», +3 granos y +4 de reputación cada
+  una), 90 tickets, 9 clientes, 54 huecos, saco de arpillera y estantería de latas. **Migración nueva sin aplicar**:
+  `20261216120000_cafe_tostadero.sql` (va después de la del probador). Evidencias en `qa-report/cafe-tostadero/`.
+  Las interpretaciones de `cafe-libreria.md` §14.8 quedan aceptadas con la aprobación. Migración y `main`, solo cuando Francisco lo pida.
 - **Publicada en producción: 1.126.0** (2026-11-13, §126; `main` avanzó sin forzar de `cbb6d22` a `28d3f1c` y `/sw.js` de producción ya sirve v1.126.0; migración `20261215120000_cafe_probador.sql` aplicada y el script del probador con las dos cuentas, la de Francisco y la de su pareja). Tras probar la 1.125 en producción («esta genial»): la música
   propia del café (sintetizada, jazz lento de café; calla la de Sonido mientras estás dentro), un sonido por cada acción del
   café, la barra con una franja ligera y el cómo de cada gesto en una notita junto al objeto, y Pilar sin hablar de los sobres
@@ -176,6 +182,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Café, lista de Francisco del 13-11-2026 (tras el tostadero; «para más tarde cuando termines»)**, sin empezar:
+  1. Exclamaciones **rojas** en lo que se acaba de desbloquear, que desaparecen al pulsarlo o verlo.
+  2. La música del café «petardea» un poco.
+  3. Algunos sonidos suenan muy fuertes.
+  4. Las instrucciones siguen tapando la palanca de la cafetera; con el excéntrico, sus acertijos tapan mucho más.
+  5. Que la cámara vaya hacia el cliente al que vas a atender.
+  6. A su pareja (iPhone) las fichas de libros le salen sin portada (cubierta de color con el título) salvo alguna; mirar por
+     qué no carga la portada real.
+
 - **Café-librería, traspaso a la otra cuenta (13-11-2026, tras el commit de la 1.126.0)**. Francisco seguirá con la otra
   cuenta en este punto y con el mismo método.
   - **Dónde**: carpeta `BookShelf-piso-lab` (no `bookshelf/`), rama `1.90-escritorio-puerto`, último commit «1.126.0: el
@@ -295,6 +310,21 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-13 · Café, bloque 6b: el tostadero · 1.127.0 (§127), commit en la rama (Claude)
+
+- **Qué se hizo** (Francisco: «Sí, el tostadero», con las cifras del sótano ya aprobadas): migración
+  `20261216120000_cafe_tostadero.sql` (catálogo, `cafe_locales.tazas` y `saco_dia`, cifras del nivel 7, el tueste en la
+  carta, `cafe_recoger_saco` y `cafe_servir` con el bono); `cafeMock.js` con las mismas reglas; en la app, el tostador en 3D
+  en la esquina del sótano (tambor, trampilla, rampa, enfriador con brazo), `Tostadero.jsx` con el gesto «tambor» (tirar y
+  mantener), cinco sonidos y un bucle nuevos, el saco junto al molinillo en la barra y la opción «Tueste de la casa · N tazas».
+  Las ayudas «!» siguen la regla de siempre (niveles 1 y 2, luego 6 s parado; el ajuste manda).
+- **Arreglo de la 1.125**: con 8 clientes en el nivel 6 la app descartaba al 8.º (el excéntrico) al leer el día.
+- **Comprobado**: build, oxlint, Vitest de `src/features/edificio` (todas bien salvo `sala-parejas`, que se pasa de tiempo
+  con todo a la vez y sola pasa), `cafe-tostadero.rls.test.js` (8 pruebas) y la e2e `v1127-cafe-tostadero.spec.js` en 360, 390, 430, escritorio y WebKit 390 (la subida, a 390); regresión a 390 de v1119, v1121, v1125 y v1126, bien. En `v1125` la cuenta de Pilar pasa de 7 a 8 clientes por el arreglo de abajo. Solo
+  emulación: nada probado en un móvil real.
+- **Aprobada** («Sí, haz el commit», tras ver vídeos y capturas) y con commit en la rama, con las interpretaciones de §14.8. **Queda**:
+  aplicar la migración (flujo del SQL Editor) y publicar, cuando Francisco lo pida; después, su lista del 13-11-2026 en «Pendiente».
 
 ### 2026-11-13 · Migración del probador aplicada y 1.126.0 a producción (Claude, la otra cuenta)
 
