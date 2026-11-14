@@ -113,6 +113,79 @@ function calido(b) {
   return { ...b, out: v };
 }
 
+/**
+ * Tras ver la 1.133 (Francisco, 14-11-2026: «que esto tambien tuviese sus propios sonidos»): la sala de la trastienda, distinta de
+ * la del café y de la librería. Un cuarto pequeño, bajo de techo y lleno de papel: la reverberación es más corta (medio
+ * segundo), más densa y más oscura, con un eco temprano de la pared del banco; y todo lo del taller pasa por ella.
+ */
+function salaTrastienda(ctx) {
+  const n = Math.floor(ctx.sampleRate * 0.6);
+  const ir = ctx.createBuffer(2, n, ctx.sampleRate);
+  const temprano = Math.floor(ctx.sampleRate * 0.017);
+  for (let c = 0; c < 2; c += 1) {
+    const d = ir.getChannelData(c);
+    let lp = 0;
+    for (let i = 0; i < n; i += 1) {
+      const t = i / ctx.sampleRate;
+      const a = 0.4 - 0.32 * Math.min(1, t / 0.3);
+      lp += a * (Math.random() * 2 - 1 - lp);
+      d[i] = lp * Math.exp(-t * 11) * Math.min(1, t / 0.006);
+    }
+    // El rebote de la pared del banco, a unos seis metros de ida y vuelta
+    const k = temprano + c * 23;
+    for (let i = 0; i < 160; i += 1) d[k + i] += (Math.random() * 2 - 1) * 0.22 * (1 - i / 160);
+  }
+  return ir;
+}
+const TRASTIENDAS = new WeakMap();
+/** El bus del taller: sin lo agudo (paso bajo a 2,6 kHz), un poco de cuerpo en la madera (220 Hz) y la sala de la trastienda. */
+function trastienda(b) {
+  let v = TRASTIENDAS.get(b.out);
+  if (!v) {
+    const { ctx } = b;
+    const entrada = ctx.createGain();
+    const fl = ctx.createBiquadFilter();
+    fl.type = 'lowpass';
+    fl.frequency.value = 2600;
+    fl.Q.value = 0.6;
+    const cuerpo = ctx.createBiquadFilter();
+    cuerpo.type = 'peaking';
+    cuerpo.frequency.value = 220;
+    cuerpo.Q.value = 0.9;
+    cuerpo.gain.value = 3;
+    const seco = ctx.createGain();
+    seco.gain.value = 0.88;
+    const conv = ctx.createConvolver();
+    conv.buffer = salaTrastienda(ctx);
+    const humedo = ctx.createGain();
+    humedo.gain.value = 0.38;
+    entrada.connect(fl).connect(cuerpo);
+    cuerpo.connect(seco).connect(b.out);
+    cuerpo.connect(conv).connect(humedo).connect(b.out);
+    v = entrada;
+    TRASTIENDAS.set(b.out, v);
+  }
+  return { ...b, out: v };
+}
+/** La voz de don Celestino, sin palabras: un zumbido de garganta (diente de sierra por un filtro de vocal «o») que cae un poco. */
+function voz(b, { f, a, pico = 0.04, ataque = 0.04, caida = 0.2, d = 0 }) {
+  const t = b.ctx.currentTime + 0.005 + d;
+  const o = b.ctx.createOscillator();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(f, t);
+  o.frequency.exponentialRampToValueAtTime(a, t + ataque + caida);
+  const fl = b.ctx.createBiquadFilter();
+  fl.type = 'bandpass';
+  fl.frequency.value = 480;
+  fl.Q.value = 1.1;
+  const fl2 = b.ctx.createBiquadFilter();
+  fl2.type = 'lowpass';
+  fl2.frequency.value = 900;
+  o.connect(fl).connect(fl2).connect(env(b.ctx, t, pico, ataque, caida)).connect(b.out);
+  o.start(t);
+  o.stop(t + ataque + caida + 0.05);
+}
+
 const SONIDOS = {
   /** Tocar la cafetera: un soplo de vapor y el cobre que suena. */
   cafetera: (b) => {
@@ -584,6 +657,108 @@ const SONIDOS = {
     tono(b, { f: 2093, tipo: 'sine', pico: 0.04, caida: 0.5, d: 0.12 });
     tono(b, { f: 523, tipo: 'triangle', pico: 0.04, caida: 0.3, d: 0.12 });
   },
+  // ── 1.133: el taller de la trastienda (todos por la sala cálida de madera, `DEL_TALLER`) ──
+  /** La puerta baja de detrás de la barra: el picaporte, la bisagra que se queja un poco y la campanilla de dentro. */
+  tallerPuerta: (b) => {
+    ruido(b, { f: 1500, q: 3, pico: 0.14, caida: 0.04 });
+    tono(b, { f: 520, a: 610, tipo: 'sawtooth', pico: 0.012, ataque: 0.06, caida: 0.32, d: 0.06 });
+    nota(b, { f: 1318.5, pico: 0.03, caida: 0.9, d: 0.3 });
+    nota(b, { f: 1760, pico: 0.02, caida: 0.8, d: 0.36 });
+  },
+  /**
+   * Don Celestino habla: un «mm-hm» grave y amable de garganta (sin palabras), unas veces de dos golpes y otras de uno, y el
+   * taburete que cruje un poco al inclinarse hacia el banco.
+   */
+  celestino: (b) => {
+    const dos = Math.random() < 0.6;
+    voz(b, { f: 132, a: 121, pico: 0.05, ataque: 0.05, caida: 0.2 });
+    if (dos) voz(b, { f: 150, a: 126, pico: 0.042, ataque: 0.03, caida: 0.26, d: 0.24 });
+    ruido(b, { f: 640, q: 4, pico: 0.035, ataque: 0.02, caida: 0.12, barrido: 0.85, d: dos ? 0.5 : 0.3 });
+  },
+  /** Un cuarto de la tapa, limpio: un soplo de polvo que se va a contraluz y una nota de madera que sube con cada cuarto. */
+  polvoClaro: (b, datos = {}) => {
+    const k = Math.max(1, Math.min(3, datos.k ?? 1));
+    ruido(b, { f: 1900, q: 0.7, pico: 0.06, ataque: 0.04, caida: 0.3, barrido: 0.55 });
+    madera(b, { f: ESCALA[k + 1], pico: 0.03, caida: 0.32, d: 0.1 });
+    nota(b, { f: ESCALA[k + 3] * 2, pico: 0.008, caida: 0.6, d: 0.16 });
+  },
+  /** Coger una herramienta del banco: madera sobre el tapete y un roce. */
+  herramienta: (b, datos = {}) => {
+    madera(b, { f: datos.f ?? 330, pico: 0.05, caida: 0.14 });
+    ruido(b, { f: 1600, q: 0.8, pico: 0.03, ataque: 0.01, caida: 0.07 });
+  },
+  /** Una mancha de moho que se va: un soplito y una nota pequeña. */
+  moho: (b) => {
+    ruido(b, { f: 2600, q: 1, pico: 0.05, ataque: 0.01, caida: 0.16, barrido: 0.6 });
+    nota(b, { f: 784, pico: 0.018, caida: 0.5, d: 0.04 });
+  },
+  /** Una mancha borrada: dos notas suaves de cajita (la última, más alta). */
+  manchaFuera: (b, datos = {}) => {
+    const k = Math.min(ESCALA.length - 2, datos.k ?? 0);
+    nota(b, { f: ESCALA[k + 2], pico: 0.025, caida: 0.55 });
+    nota(b, { f: ESCALA[k + 4] ?? 880, pico: 0.02, caida: 0.6, d: 0.08 });
+  },
+  /** Barrer las migas con el canto de la mano: un soplo largo que se va. */
+  migas: (b) => {
+    ruido(b, { f: 3200, q: 0.7, pico: 0.08, ataque: 0.03, caida: 0.35, barrido: 0.5 });
+    for (let k = 0; k < 5; k += 1) ruido(b, { f: 4200 + k * 300, q: 4, pico: 0.03, caida: 0.02, d: 0.12 + k * 0.04 });
+  },
+  /** Una pasada de plegadera completa: el papel que se tensa y queda liso. */
+  alisado: (b, datos = {}) => {
+    ruido(b, { f: 1800, q: 1.4, pico: 0.06, ataque: 0.02, caida: 0.18, barrido: 1.4 });
+    madera(b, { f: datos.ultima ? 523.25 : 392, pico: 0.035, caida: 0.3, d: 0.08 });
+  },
+  /** Un cuarto de vuelta del husillo: la madera que cruje y el hierro de la rosca. */
+  husillo: (b, datos = {}) => {
+    const k = datos.k ?? 0;
+    ruido(b, { f: 700 + k * 40, q: 3, pico: 0.07, ataque: 0.01, caida: 0.09, barrido: 0.8 });
+    tono(b, { f: 210 + k * 6, a: 190 + k * 6, tipo: 'triangle', pico: 0.03, caida: 0.07 });
+  },
+  /** La prensa llega al tope: un crujido largo de madera y un golpe sordo, «ya está». */
+  tope: (b) => {
+    ruido(b, { f: 520, q: 2.5, pico: 0.1, ataque: 0.02, caida: 0.4, barrido: 0.7 });
+    tono(b, { f: 110, a: 82, tipo: 'triangle', pico: 0.12, caida: 0.22, d: 0.22 });
+    madera(b, { f: 262, pico: 0.04, caida: 0.4, d: 0.26 });
+  },
+  /** El hierro caliente toca el pan de oro: un chisporroteo muy breve. */
+  hierro: (b) => {
+    for (let k = 0; k < 4; k += 1) ruido(b, { f: 5200 + Math.random() * 1600, q: 5, pico: 0.02, caida: 0.015, d: k * 0.025 });
+    ruido(b, { f: 900, q: 0.8, pico: 0.02, ataque: 0.02, caida: 0.18 });
+  },
+  /** Una letra dorada: un tintineo suave que sube con cada letra. */
+  oro: (b, datos = {}) => {
+    const k = datos.k ?? 0;
+    const f = ESCALA[k % ESCALA.length] * (k >= ESCALA.length ? 2 : 1);
+    nota(b, { f: f * 2, pico: 0.022, caida: 0.7 });
+    tono(b, { f: f * 5.04, pico: 0.006, caida: 0.25, d: 0.01 });
+  },
+  /** El ex libris: el sello que baja hasta el papel y la tinta que queda. */
+  exlibris: (b) => {
+    madera(b, { f: 196, pico: 0.07, caida: 0.18 });
+    ruido(b, { f: 900, q: 1, pico: 0.05, caida: 0.07, d: 0.01 });
+    nota(b, { f: 659.25, pico: 0.02, caida: 0.7, d: 0.12 });
+  },
+  /** Abrir o cerrar el libro en el banco: las hojas que respiran y la tapa sobre el tapete. */
+  libroAbre: (b) => {
+    ruido(b, { f: 2400, q: 0.8, pico: 0.05, ataque: 0.04, caida: 0.2, barrido: 0.7 });
+    madera(b, { f: 233, pico: 0.035, caida: 0.18, d: 0.18 });
+  },
+  /** Un daño arreglado: tres notas que suben (el banco aprueba). */
+  danoHecho: (b, datos = {}) => {
+    const base = datos.bien ? 2 : 1;
+    [0, 2, 4].forEach((k, i) => nota(b, { f: ESCALA[Math.min(ESCALA.length - 1, base + k)], pico: 0.024, caida: 0.55, d: i * 0.09 }));
+  },
+  /** La ficha «antes / después»: la cartulina sobre el banco. */
+  ficha: (b) => {
+    ruido(b, { f: 1600, q: 0.9, pico: 0.06, ataque: 0.01, caida: 0.12, barrido: 0.75 });
+    madera(b, { f: 349.23, pico: 0.03, caida: 0.2, d: 0.06 });
+  },
+  /** El cliente recoge su libro: la campanilla de la puerta y el pago, granos en un platillo. */
+  entregaTaller: (b) => {
+    nota(b, { f: 1046.5, pico: 0.03, caida: 0.8 });
+    nota(b, { f: 1318.5, pico: 0.025, caida: 0.8, d: 0.12 });
+    for (let k = 0; k < 6; k += 1) ruido(b, { f: 3000 + k * 250, q: 4, pico: 0.03, caida: 0.025, d: 0.3 + k * 0.035 });
+  },
 };
 
 /**
@@ -630,12 +805,43 @@ const BUCLES = {
   granosCaen: { tipo: 'bandpass', f: 3000, q: 1.4, pico: 0.12 },
   /** Bloque 6c: la llama del soplete, un soplido suave y continuo. */
   soplete: { tipo: 'bandpass', f: 1500, q: 0.6, pico: 0.07 },
+  // 1.133: lo que suena mientras se trabaja en el taller, bajito
+  /** El roce de las cerdas de la brocha sobre la tela. */
+  brocha: { tipo: 'bandpass', f: 4200, q: 0.8, pico: 0.035 },
+  /** La goma de miga que frota el papel (más grave y blando). */
+  goma: { tipo: 'bandpass', f: 1300, q: 1.2, pico: 0.05 },
+  /** La plegadera que se desliza por el papel. */
+  plegadera: { tipo: 'bandpass', f: 2600, q: 1.6, pico: 0.03 },
+  /** El pincel con la cola caliente: húmedo y espeso. */
+  cola: { tipo: 'lowpass', f: 900, q: 1.1, pico: 0.06 },
 };
 
 /** 1.131: los sonidos del libro, que suenan en la sala de la librería (`calido`). */
 const DEL_LIBRO = new Set(['placa', 'lomo', 'sacar', 'tabla', 'libroTabla', 'devolver', 'kraft', 'rasga', 'pliegue', 'cordel', 'lazo', 'paginas', 'marca', 'cierra', 'bolsa', 'meter', 'selloBaja', 'sello', 'libroEtapa', 'reparto', 'secciones']);
-/** El bus de un sonido: el del libro, por su sala; y con su ganancia (la de `GANANCIA`, si la tiene). */
-const busDe = (b, nombre) => conGanancia(DEL_LIBRO.has(nombre) ? calido(b) : b, nombre);
+/** 1.133: los del taller de la trastienda, por la misma sala cálida. */
+const DEL_TALLER = new Set([
+  'tallerPuerta',
+  'celestino',
+  'herramienta',
+  'polvoClaro',
+  'moho',
+  'manchaFuera',
+  'migas',
+  'alisado',
+  'husillo',
+  'tope',
+  'hierro',
+  'oro',
+  'exlibris',
+  'libroAbre',
+  'danoHecho',
+  'ficha',
+  'entregaTaller',
+]);
+/** Los bucles del taller, que también suenan en la trastienda. */
+const BUCLES_TALLER = new Set(['brocha', 'goma', 'plegadera', 'cola']);
+/** El bus de un sonido: el del libro, por la sala de la librería; el del taller, por la trastienda; y con su ganancia. */
+const busDe = (b, nombre) => conGanancia(DEL_TALLER.has(nombre) ? trastienda(b) : DEL_LIBRO.has(nombre) ? calido(b) : b, nombre);
 
 /** El bus de un sonido con su ganancia (la de `GANANCIA`, si la tiene). */
 function conGanancia(b, nombre) {
@@ -706,7 +912,7 @@ export function crearSfxBarra() {
         const g = b.ctx.createGain();
         g.gain.setValueAtTime(0.0001, t);
         g.gain.exponentialRampToValueAtTime(def.pico, t + 0.08);
-        s.connect(fl).connect(g).connect(b.out);
+        s.connect(fl).connect(g).connect(BUCLES_TALLER.has(nombre) ? trastienda(b).out : b.out);
         s.start(t);
         bucles[nombre] = { ctx: b.ctx, s, fl, g };
       } catch {

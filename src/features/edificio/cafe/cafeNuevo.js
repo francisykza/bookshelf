@@ -1,6 +1,6 @@
 // 1.128 (Francisco, 13-11-2026: «que aparezcan exclamaciones rojas en aquellas cosas que has desbloqueado, que desaparezca
 // cuando las pulses o veas»). Lo desbloqueado del café: los muebles nuevos de la tienda, lo nuevo de la carta y los sitios
-// nuevos del local (el escaparate, la trampilla de la bodega y el tostador). Lo que ya viste se recuerda en el dispositivo.
+// nuevos del local (el taller de la trastienda, el escaparate, la trampilla de la bodega y el tostador). Lo que ya viste se recuerda en el dispositivo.
 // La primera vez se da por visto todo lo que ya tenías: la «!» roja es solo para lo que se abra a partir de ahora.
 // Distinta de la «!» ámbar de las ayudas (lo siguiente que hay que tocar): la roja dice «esto es nuevo».
 import { CAFE_MUEBLES } from './cafeCatalogo';
@@ -8,7 +8,7 @@ import { cartaDe, nivelDe, umbralHito } from './cafeNiveles';
 
 const CLAVE = 'bookshelf:cafe-visto';
 /** Desde qué nivel está cada sitio nuevo del local. */
-export const SITIOS_NUEVOS = { escaparate: 5, trampilla: 6, tostador: 7 };
+export const SITIOS_NUEVOS = { taller: 3, escaparate: 5, trampilla: 6, tostador: 7 };
 
 /** Todo lo desbloqueado con esta reputación, como claves: 'mueble:cafe-saco', 'carta:casa', 'sitio:tostador'. */
 export function desbloqueados(reputacion = 0) {

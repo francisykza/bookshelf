@@ -2,6 +2,7 @@
 // migración aplicada, `cargarCafe` devuelve null y el bajo sigue como en la 1.119 (el local en traspaso, sin Decorar).
 import { client, fail } from '../../social/services/community';
 import { CAFE_MUEBLES, cabe, deCasa, medidas } from './cafeCatalogo';
+import { encargoDe } from './cafeTaller';
 
 const sinMigracion = (error) => error && (error.code === 'PGRST202' || error.code === '42883');
 
@@ -264,6 +265,35 @@ export async function recogerSaco(dia) {
   return { cafe: normalizar(data?.cafe), tazas: Number(data?.tazas) || 0 };
 }
 
+// ── 1.133: el taller de la trastienda (`20261220120000_cafe_taller.sql`) ──
+/** El taller tal como llega: { encargo (con su libro y su cliente, o null), hechos, hoy (el terminado ese día, o null) }. */
+function normalizarTaller(t) {
+  if (!t || typeof t !== 'object') return null;
+  const hoy = t.hoy && Number.isInteger(t.hoy.estrellas) ? { n: t.hoy.n, libro: t.hoy.libro, quien: t.hoy.quien, estrellas: t.hoy.estrellas, granos: entero(t.hoy.granos), reputacion: entero(t.hoy.reputacion) } : null;
+  return { encargo: encargoDe(t.encargo), hechos: entero(t.hechos), hoy };
+}
+/**
+ * El taller del día (`dia`, el de la app): el encargo que espera en el banco (si hoy no ha llegado ni se ha terminado otro, llega
+ * uno nuevo). null si el servidor no tiene la migración; el error `cafe:taller`, por debajo del nivel 3.
+ */
+export async function cargarTaller(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_taller', { dia });
+  if (sinMigracion(error)) return null;
+  fail(error);
+  return normalizarTaller(data);
+}
+/**
+ * Terminar un encargo: cómo quedó cada daño, en su orden (`mimo`: 2, bien; 1, se podía mejorar). El servidor pone las estrellas,
+ * paga y mira si el café sube. Devuelve { cafe, dia, libros, dado: { granos, reputacion, estrellas }, progreso, taller }.
+ */
+export async function restaurarEncargo(dia, n, mimo) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_restaurar', { dia, n, mimo: mimo.map((m) => (m === 2 ? 2 : 1)) });
+  fail(error);
+  return { ...conDia(data), taller: normalizarTaller(data?.taller) };
+}
+
 // ── Bloque 4b (1.123): el escaparate y lo que se ve desde la calle (`20261213120000_cafe_ampliacion.sql`) ──
 /** Pone en el escaparate hasta tres de tus leídos (`titulosDelCafe` de los elegidos). */
 export async function ponerEscaparate(titulos) {
@@ -318,6 +348,9 @@ export function errorCafe(e) {
   if (/cafe:tazas/.test(m)) return 'Ya tienes 99 tazas guardadas: sirve unas cuantas y vuelve a por el saco.';
   if (/cafe:servido/.test(m)) return 'A este cliente ya lo has atendido hoy.';
   if (/cafe:influencer/.test(m)) return 'Ese cliente ya se ha ido. Vuelve a entrar en el café.';
+  if (/cafe:taller/.test(m)) return 'El taller se abre en el nivel 3, con la librería.';
+  if (/cafe:encargo/.test(m)) return 'Ese encargo ya está terminado. Vuelve a entrar en el taller.';
+  if (/cafe:mimo/.test(m)) return 'No se ha podido guardar el encargo. Vuelve a intentarlo.';
   if (/cafe:dia/.test(m)) return 'Ha cambiado el día: vuelve a entrar en el café.';
   if (/cafe:cliente|cafe:receta|cafe:libro/.test(m)) return 'No se ha podido atender. Vuelve a entrar en el café.';
   if (/cafe:granos/.test(m)) return 'Aún no tienes granos suficientes.';

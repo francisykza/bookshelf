@@ -83,6 +83,22 @@ export const TAMBOR = { x: 37.1, y: 1.4, z: 1.0, r: 0.42 };
 export const ENFRIADOR = { x: 37.65, y: 1.45, z: 0.62, r: 0.5 };
 /** Delante del tostador, mirando a la trampilla del tambor. */
 export const ANTE_TOSTADOR = { x: 39.15, y: 1.75, yaw: Math.atan2(37.1 - 39.15, 1.5 - 1.75) };
+
+// ── 1.133: el taller de la trastienda (nivel 3). La puerta baja de la pared de la derecha, detrás de la barra (bajo la balda
+// vieja), y el cuarto, aparte en el mundo como la bodega: no se anda por él, se entra con la cámara. ──
+export const PUERTA_TALLER = { y0: 6.35, y1: 7.15, alto: 1.82 };
+/** Delante de la barra, frente a la puerta del taller. */
+export const ANTE_TALLER = { x: 6.55, y: 6.75, yaw: Math.PI / 2 };
+/** El cuarto: estrecho y bajo, con el banco contra la pared del fondo (y = 0). */
+export const TALLER = { x0: 60, x1: 64.4, y0: 0, y1: 3.6, alto: 2.8 };
+/** El banco de trabajo con su tapete verde (z: la altura del tapete). */
+export const BANCO = { x0: 60.35, x1: 64.05, y0: 0.06, y1: 0.98, z: 0.86 };
+/** El libro en el banco: el lomo (su canto izquierdo, cerrado) y la cabeza (el canto del fondo). */
+export const LIBRO_BANCO = { x: 61.92, y: 0.3 };
+/** La prensa de husillo, a la derecha del banco (su centro). */
+export const PRENSA_TALLER = { x: 63.46, y: 0.5 };
+/** Don Celestino, de pie delante del banco, a la izquierda del libro (entero en la vista de la entrada, también en vertical). */
+export const CELESTINO = { x: 61.6, y: 1.35 };
 /** La planta de un punto del mundo (la bodega, aparte, desde x = 30). */
 export const plantaEn = (x) => (x >= 30 ? 'bodega' : 'calle');
 
@@ -147,6 +163,16 @@ export const SITIOS = {
     tag: [TAMBOR.x, TAMBOR.y + 0.3, 2.15],
     ir: ANTE_TOSTADOR,
     mira: [TAMBOR.x, TAMBOR.y + 0.1],
+  },
+  // 1.133: la puerta del taller de la trastienda (desde el nivel 3)
+  taller: {
+    nombre: 'El taller',
+    planta: 'calle',
+    nivel: 3,
+    box: [SW - 0.14, PUERTA_TALLER.y0, 0, SW, PUERTA_TALLER.y1, PUERTA_TALLER.alto],
+    tag: [SW - 0.1, (PUERTA_TALLER.y0 + PUERTA_TALLER.y1) / 2, PUERTA_TALLER.alto + 0.2],
+    ir: ANTE_TALLER,
+    mira: [SW, (PUERTA_TALLER.y0 + PUERTA_TALLER.y1) / 2],
   },
   pilar: { nombre: 'Pilar', box: [PILAR.x - 0.5, PILAR.y - 0.5, 0.9, PILAR.x + 0.5, PILAR.y + 0.5, 2.2], tag: [PILAR.x, PILAR.y, 2.35], ir: ANTE_PILAR, mira: [PILAR.x, PILAR.y] },
   cortina: { nombre: 'El resto del local', box: [0.2, CORTINA.y - 0.1, 0, 7.2, CORTINA.y + 0.15, CORTINA.alto], tag: [CABALLETE.x, CORTINA.y, 2.6], ir: { x: 3.6, y: 6.2 }, mira: [3.6, 0] },

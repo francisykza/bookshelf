@@ -90,11 +90,20 @@ import {
   ESCALERA_BODEGA,
   ANTE_TRAMPILLA,
   plantaEn,
+  PUERTA_TALLER,
+  ANTE_TALLER,
+  TALLER,
+  BANCO,
+  LIBRO_BANCO,
+  PRENSA_TALLER,
+  CELESTINO,
 } from './cafeLayout';
 import { ASIENTOS, CUADRICULA, SOTANO, casillaValida, columnasDe, filasDe, medidas, sotanoDe } from './cafeCatalogo';
 import { cajasDe, colorDe } from './cafeMuebles';
 import { footprint } from '../room';
 import { estanteLibreria } from './cafeLibreria';
+import { LIBRO_TALLER, PLIEGUE, letrasTapa, manchasDe, semillaEncargo } from './cafeTallerGestos';
+import { PLIEGO_PX, TAPA_PX, lienzo, pintarPliego, pintarTapa } from './cafeTallerPintura';
 
 const ART_W = 320;
 const PX = 16; // píxeles de textura por unidad en suelo, paredes y techo
@@ -2929,6 +2938,633 @@ const TOSTADOR_MARCAS = {
   tambor: [CARA_T + 0.09, TAMBOR.y, TAMBOR.z],
 };
 /** La cámara delante del tostador: de cara a la trampilla, con el enfriador abajo. */
+// ── 1.133: el taller de la trastienda (nivel 3; plan en docs/qa/cafe-libreria.md §16.3). Aparte en el mundo, como la bodega:
+// el banco de don Celestino con su tapete verde, la prensa de husillo, la lámpara de brazo con lupa, los hilos de colores, los
+// botes de cola y engrudo, los papeles jaspeados colgados y un ventanuco con lluvia. Su paleta: verde botella, cuero y latón. ──
+const VERDE_B = [46, 86, 62];
+const TAPETE = [56, 104, 72];
+const CUERO = [124, 80, 48];
+const CUERO_D = [88, 56, 34];
+const LATON_T = [210, 168, 94];
+const LATON_TD = [150, 112, 58];
+const ROBLE_T = [140, 94, 58];
+const ROBLE_TD = [104, 68, 42];
+const YESO_T = [200, 184, 156];
+const HIERRO_TL = [62, 58, 58];
+const PAPEL_T = [236, 226, 200];
+const HUESO = [232, 222, 196];
+const MIGA_T = [222, 206, 200];
+const COLA_T = [188, 142, 80];
+const PIEL_T = [236, 192, 152];
+/** Los hilos de coser cuadernillos (los carretes de la balda) y las telas de los libros que esperan en la estantería. */
+const HILOS_T = [
+  [178, 52, 48],
+  [60, 96, 150],
+  [214, 170, 70],
+  [86, 130, 80],
+  [150, 84, 120],
+  [226, 214, 186],
+];
+const LOMOS_T = [CUERO, CUERO_D, [122, 44, 46], [50, 86, 64], [44, 56, 96], [150, 120, 80], [96, 40, 40], [72, 78, 86]];
+/** Los papeles jaspeados que se secan colgados del cordel: [paleta, x del centro]. */
+const JASPEADOS = [
+  [[[64, 92, 140], [196, 160, 92], [150, 60, 54], [40, 52, 86]], 60.62],
+  [[[58, 110, 84], [214, 186, 120], [120, 70, 46], [34, 62, 52]], 61.06],
+  [[[150, 84, 110], [86, 110, 150], [226, 200, 150], [70, 44, 70]], 61.5],
+];
+/** La luz del taller: la lámpara de brazo sobre el tapete, la de techo y, muy poca, la del ventanuco. */
+const LUZ_TALLER = [
+  { at: [61.6, 0.4, 1.3], k: 1.0, reach: 2.3 },
+  { at: [61.9, 1.45, 2.4], k: 0.55, reach: 3.4 },
+  { at: [62.38, 0.2, 1.75], k: 0.16, reach: 1.3 },
+];
+/** El ventanuco, en la pared del fondo, encima del banco (x de un lado al otro; z de abajo arriba). */
+const VENTANUCO_T = { x0: 61.98, x1: 62.78, z0: 1.45, z1: 2.05 };
+/** La puerta del taller, por dentro (en la pared de delante). */
+const PUERTA_T = { x0: 62.9, x1: 63.7, alto: 1.95 };
+/**
+ * El libro del taller, en su sitio (x desde el lomo, y desde la cabeza, z desde lo que lo sostiene): la bisagra de la tapa, la
+ * tapa cerrada por encima, la primera página y la guarda (con la tapa abierta, sobre el tapete), y su grueso.
+ */
+const LIBRO_Z = { bisagra: 0.023, tapa: 0.0462, pagina: 0.0425, guarda: 0.0042, grueso: 0.046 };
+/** La vista al entrar: el banco, la lámpara, el ventanuco y don Celestino a la izquierda (también en un móvil en vertical). */
+const VISTA_ENTRADA = { p: [62.45, 3.3, 1.6], m: [61.7, 0.5, 1.0] };
+/** Donde queda el libro dentro de la prensa (su esquina, como `LIBRO_BANCO`) y lo que sube su base sobre el banco. */
+const LIBRO_PRENSA = { x: PRENSA_TALLER.x - LIBRO_TALLER.ancho / 2, y: PRENSA_TALLER.y - LIBRO_TALLER.hondo / 2, z: 0.06 };
+/**
+ * Don Celestino, hecho a mano y no con la figura de los clientes (Francisco, tras ver la 1.133: «que se vea mucho más único»):
+ * calvo, con la herradura de pelo blanco, los tufos sobre las orejas y la visera verde de encuadernador; cejas pobladas, bigote de
+ * morsa, gafas de media luna de latón por las que mira por encima y la nariz colorada; la camisa remangada con ligas negras, la
+ * pajarita granate, el chaleco verde botella con la cadena del reloj, el mandil de cuero con remaches y su bolsillo (la plegadera
+ * de hueso y un lápiz), pantalón de pana con el bajo vuelto y zapatos color sangre de toro. Un lápiz detrás de la oreja y la
+ * espalda un poco cargada, de tantos años inclinado sobre el banco. Mismo marco que `actorBoxes`: el frente mira a +y.
+ */
+function celestinoKit(luz) {
+  const s = kit();
+  const b = (x0, y0, z0, x1, y1, z1, c) => pushBox(s, [x0, y0, z0, x1, y1, z1], c, { g: luz });
+  const piel = PIELES[1].color;
+  const oreja = [222, 172, 134];
+  const canas = [238, 234, 226];
+  const canasS = [206, 200, 190];
+  const camisa = [238, 234, 222];
+  const puno = [222, 216, 198];
+  const chaleco = [46, 88, 66];
+  const chalecoD = [30, 62, 46];
+  const pana = [118, 88, 60];
+  const panaD = [92, 66, 44];
+  const zapato = [104, 36, 34];
+  const granate = [132, 34, 50];
+  const visera = [96, 170, 112];
+  const viseraD = [48, 108, 68];
+  const negro = [38, 32, 34];
+  const tinta = [44, 30, 26];
+  const cristal = [214, 228, 232];
+  const lapiz = [226, 182, 58];
+  const goma = [222, 140, 150];
+  // Zapatos con la puntera brillante, la pana con sus rayas y el bajo vuelto
+  for (const [x0, x1] of [
+    [-0.2, -0.03],
+    [0.03, 0.2],
+  ]) {
+    b(x0 - 0.01, -0.09, 0, x1 + 0.01, 0.15, 0.1, zapato);
+    b(x0, 0.15, 0.03, x1, 0.158, 0.08, [140, 58, 50]);
+    b(x0, -0.09, 0.1, x1, 0.09, 0.72, pana);
+    b(x0 - 0.008, -0.098, 0.1, x1 + 0.008, 0.098, 0.15, panaD);
+    for (const x of [x0 + 0.035, x0 + 0.08, x0 + 0.125]) b(x, 0.09, 0.16, x + 0.012, 0.096, 0.42, panaD);
+  }
+  // La cintura, el chaleco verde botella (con algo de tripa por delante y la chepa por detrás)
+  b(-0.25, -0.13, 0.7, 0.25, 0.13, 0.86, pana);
+  b(-0.26, -0.14, 0.82, 0.26, 0.14, 1.4, chaleco);
+  b(-0.2, 0.14, 0.86, 0.2, 0.172, 1.1, chaleco);
+  b(-0.22, -0.172, 1.16, 0.22, -0.14, 1.38, chaleco);
+  // La camisa en el pico del chaleco, los botones de latón, el bolsillo del reloj y la cadena hasta el ojal
+  b(-0.075, 0.14, 1.27, 0.075, 0.152, 1.4, camisa);
+  b(-0.04, 0.14, 1.17, 0.04, 0.152, 1.27, camisa);
+  for (const z of [0.95, 1.04]) b(-0.02, 0.172, z, 0.02, 0.186, z + 0.035, LATON_T);
+  b(-0.02, 0.152, 1.125, 0.02, 0.164, 1.16, LATON_T);
+  b(-0.2, 0.172, 1.03, -0.1, 0.18, 1.045, chalecoD);
+  b(-0.16, 0.174, 0.99, -0.09, 0.186, 1.003, LATON_T);
+  b(-0.09, 0.174, 0.978, -0.03, 0.186, 0.991, LATON_T);
+  // El mandil de cuero, de la cintura a las rodillas: la correa con su hebilla, el bolsillo con remaches, la plegadera y el lápiz
+  b(-0.265, -0.15, 0.86, 0.265, 0.19, 0.92, CUERO_D);
+  b(0.11, 0.19, 0.866, 0.165, 0.2, 0.914, LATON_T);
+  b(-0.22, 0.17, 0.4, 0.22, 0.2, 0.88, CUERO);
+  b(-0.222, 0.172, 0.4, 0.222, 0.202, 0.43, CUERO_D);
+  b(-0.16, 0.2, 0.55, 0.06, 0.212, 0.72, [104, 66, 40]);
+  b(-0.16, 0.2, 0.705, 0.06, 0.214, 0.72, CUERO_D);
+  for (const x of [-0.16, 0.035]) b(x, 0.212, 0.69, x + 0.025, 0.222, 0.715, LATON_T);
+  b(-0.13, 0.204, 0.64, -0.1, 0.216, 0.8, HUESO);
+  b(-0.06, 0.204, 0.64, -0.04, 0.216, 0.78, lapiz);
+  b(-0.06, 0.204, 0.78, -0.04, 0.216, 0.8, goma);
+  // Los brazos, un poco adelantados: camisa remangada, ligas negras, el puño vuelto, los antebrazos y las manos
+  for (const [x0, x1] of [
+    [-0.37, -0.26],
+    [0.26, 0.37],
+  ]) {
+    b(x0, -0.07, 1.04, x1, 0.13, 1.4, camisa);
+    b(x0 - 0.006, -0.076, 1.2, x1 + 0.006, 0.136, 1.245, negro);
+    b(x0 - 0.008, -0.078, 0.97, x1 + 0.008, 0.138, 1.05, puno);
+    b(x0 + 0.01, -0.05, 0.86, x1 - 0.01, 0.13, 0.97, piel);
+    b(x0 + 0.008, -0.04, 0.74, x1 - 0.008, 0.12, 0.86, oreja);
+  }
+  // El cuello de la camisa y la pajarita granate
+  b(-0.1, -0.03, 1.38, 0.1, 0.15, 1.47, piel);
+  b(-0.17, -0.1, 1.38, 0.17, 0.16, 1.455, camisa);
+  b(-0.11, 0.16, 1.37, -0.025, 0.178, 1.44, granate);
+  b(0.025, 0.16, 1.37, 0.11, 0.178, 1.44, granate);
+  b(-0.03, 0.16, 1.385, 0.03, 0.19, 1.43, [98, 22, 36]);
+  // La cabeza, adelantada: la calva, la herradura de canas, las orejas, los tufos y el lápiz detrás de la oreja
+  const y = 0.05;
+  b(-0.24, -0.21 + y, 1.45, 0.24, 0.23 + y, 1.93, piel);
+  b(-0.27, -0.24 + y, 1.52, -0.24, 0.1 + y, 1.8, canas);
+  b(0.24, -0.24 + y, 1.52, 0.27, 0.1 + y, 1.8, canas);
+  b(-0.27, -0.24 + y, 1.52, 0.27, -0.21 + y, 1.8, canas);
+  b(-0.3, 0.0 + y, 1.6, -0.27, 0.08 + y, 1.72, oreja);
+  b(0.27, 0.0 + y, 1.6, 0.3, 0.08 + y, 1.72, oreja);
+  b(-0.31, -0.08 + y, 1.72, -0.26, 0.07 + y, 1.82, canas);
+  b(0.262, -0.08 + y, 1.75, 0.305, 0.07 + y, 1.82, canas);
+  b(0.268, -0.12 + y, 1.72, 0.3, 0.14 + y, 1.748, lapiz);
+  b(0.272, 0.14 + y, 1.724, 0.296, 0.175 + y, 1.744, [70, 56, 46]);
+  b(0.268, -0.15 + y, 1.72, 0.3, -0.12 + y, 1.748, goma);
+  // La visera verde: la cinta alrededor de la cabeza y el ala, en dos escalones hacia abajo, con el canto oscuro
+  b(-0.255, -0.225 + y, 1.78, 0.255, 0.235 + y, 1.835, viseraD);
+  b(-0.25, 0.235 + y, 1.8, 0.25, 0.33 + y, 1.83, visera);
+  b(-0.24, 0.33 + y, 1.775, 0.24, 0.405 + y, 1.805, visera);
+  b(-0.24, 0.405 + y, 1.768, 0.24, 0.415 + y, 1.8, viseraD);
+  // La cara: cejas pobladas (caídas por fuera), los ojos por encima de las gafas de media luna, mejillas, nariz y bigote de morsa
+  for (const sx of [-1, 1]) {
+    const x = sx * 0.11;
+    b(x - 0.075, 0.22 + y, 1.72, x + 0.075, 0.268 + y, 1.765, canas);
+    b(sx > 0 ? x + 0.055 : x - 0.1, 0.22 + y, 1.695, sx > 0 ? x + 0.1 : x - 0.055, 0.264 + y, 1.725, canas);
+    b(x - 0.022, 0.23 + y, 1.665, x + 0.022, 0.245 + y, 1.705, tinta);
+    b(x - 0.08, 0.23 + y, 1.6, x + 0.08, 0.25 + y, 1.66, LATON_T);
+    b(x - 0.065, 0.23 + y, 1.61, x + 0.065, 0.256 + y, 1.65, cristal);
+    b(Math.min(sx * 0.19, sx * 0.245), 0.23 + y, 1.645, Math.max(sx * 0.19, sx * 0.245), 0.244 + y, 1.658, LATON_TD);
+    b(Math.min(sx * 0.24, sx * 0.252), 0.1 + y, 1.645, Math.max(sx * 0.24, sx * 0.252), 0.24 + y, 1.658, LATON_TD);
+    b(x - 0.035, 0.23 + y, 1.56, x + 0.035, 0.242 + y, 1.6, [232, 150, 130]);
+  }
+  b(-0.03, 0.23 + y, 1.64, 0.03, 0.252 + y, 1.655, LATON_T);
+  b(-0.04, 0.23 + y, 1.555, 0.04, 0.29 + y, 1.635, [216, 140, 116]);
+  b(-0.02, 0.29 + y, 1.6, 0.005, 0.296 + y, 1.62, [238, 172, 150]);
+  b(-0.15, 0.23 + y, 1.5, 0.15, 0.285 + y, 1.562, canas);
+  b(-0.13, 0.23 + y, 1.49, 0.13, 0.27 + y, 1.5, canasS);
+  b(-0.175, 0.23 + y, 1.455, -0.11, 0.28 + y, 1.52, canas);
+  b(0.11, 0.23 + y, 1.455, 0.175, 0.28 + y, 1.52, canas);
+  return s;
+}
+
+/** Un punto de la tapa (u, v) en el mundo, con el libro en `L` (la esquina de su lomo y su cabeza). */
+const enTapa = (L, u, v) => [L.x + u * LIBRO_TALLER.ancho, L.y + v * LIBRO_TALLER.hondo, L.z + LIBRO_Z.tapa];
+/** Un punto de las dos páginas (u, v): la guarda a la izquierda del lomo (más baja, sobre el tapete) y la página a la derecha. */
+const enPliego = (L, u, v) => [L.x + (u * 2 - 1) * LIBRO_TALLER.ancho, L.y + v * LIBRO_TALLER.hondo, L.z + (u < 0.5 ? LIBRO_Z.guarda : LIBRO_Z.pagina)];
+/** La altura de la platina de la prensa (su cara de abajo) según lo apretada (0, arriba; 1, sobre el libro). */
+const platinaZ = (baja = 0) => lerp(1.1, BANCO.z + LIBRO_PRENSA.z + LIBRO_Z.grueso, clamp(baja, 0, 1));
+/** Lo alto del husillo (la cruceta), que baja con la platina. */
+const husilloZ = (baja = 0) => platinaZ(baja) + 0.56;
+
+/** Las paredes del taller: zócalo de tablas verde botella con su moldura de roble y, encima, yeso crema con su cornisa. */
+function paintParedTaller(w, world, extra = () => null) {
+  const r = probe();
+  const verde = r.rampOf(VERDE_B);
+  const roble = r.rampOf(ROBLE_T);
+  const yeso = r.rampOf(YESO_T);
+  const alto = TALLER.alto;
+  return canvasOf(Math.round(w * PX), Math.round(alto * PX), (ix, iy) => {
+    const a = (ix + 0.5) / PX;
+    const b = alto - (iy + 0.5) / PX;
+    const g = glowAt(...world(a, b));
+    const suyo = extra(a, b, ix, iy, g);
+    if (suyo != null) return suyo;
+    if (b < 0.08) return lit(roble[1], g, ix, iy);
+    if (b < 0.92) return lit(verde[frac(a / 0.2) < 0.08 ? 1 : b > 0.86 ? 3 : 2], g, ix, iy);
+    if (b < 1.0) return lit(roble[b > 0.97 ? 3 : 2], g, ix, iy);
+    if (b > alto - 0.1) return lit(roble[b > alto - 0.04 ? 1 : 2], g, ix, iy);
+    const n = noise(a * 2.2 + 3, b * 2.2);
+    return lit(yeso[n > 0.8 ? 2 : n < 0.15 && r.bayerAt(ix, iy) > 0.7 ? 4 : 3], g, ix, iy);
+  });
+}
+/** El ventanuco de la pared del fondo: el marco de roble con su cruz y, fuera, la noche del barrio (tejados y una ventana). */
+function ventanucoTaller(a, b, ix, iy, g) {
+  const x = TALLER.x0 + a;
+  const { x0, x1, z0, z1 } = VENTANUCO_T;
+  if (x < x0 - 0.06 || x > x1 + 0.06 || b < z0 - 0.06 || b > z1 + 0.06) return null;
+  const r = probe();
+  if (x < x0 || x > x1 || b < z0 || b > z1) return lit(r.rampOf(ROBLE_TD)[2], g, ix, iy);
+  if (Math.abs(x - (x0 + x1) / 2) < 0.025 || Math.abs(b - (z0 + z1) / 2) < 0.025) return lit(r.rampOf(ROBLE_TD)[3], g, ix, iy);
+  const u = (x - x0) / (x1 - x0);
+  const tejado = z0 + 0.12 + (u < 0.35 ? 0.08 : u < 0.62 ? 0.02 : 0.11);
+  if (b < tejado) {
+    if (u > 0.68 && u < 0.8 && b > tejado - 0.1 && b < tejado - 0.04) return rgb(236, 180, 96);
+    return rgb(30, 28, 40);
+  }
+  return noise(x * 6, b * 6) > 0.72 ? rgb(58, 62, 92) : rgb(38 + (b - z0) * 18, 44, 74);
+}
+/** La puerta del taller, por dentro: tablas verdes, su marco y el pomo de latón. */
+function puertaTallerDentro(a, b, ix, iy, g) {
+  const x = TALLER.x1 - a;
+  const { x0, x1, alto } = PUERTA_T;
+  if (x < x0 - 0.07 || x > x1 + 0.07 || b > alto + 0.07) return null;
+  const r = probe();
+  if (x < x0 || x > x1 || b > alto) return lit(r.rampOf(ROBLE_TD)[2], g, ix, iy);
+  if (Math.abs(x - (x0 + 0.1)) < 0.03 && Math.abs(b - 0.95) < 0.03) return lit(LATON_T, g + 0.2, ix, iy);
+  return lit(r.rampOf(VERDE_B)[frac((x - x0) / 0.2) < 0.08 ? 1 : b > 1.0 && b < 1.08 ? 3 : 2], g, ix, iy);
+}
+/** El suelo de tablas de roble a matajunta, con la alfombra gastada delante del banco. */
+function paintSueloTaller() {
+  const r = probe();
+  const roble = r.rampOf(ROBLE_T);
+  const alfombra = r.rampOf([132, 54, 50]);
+  const orla = r.rampOf([196, 150, 82]);
+  const { x0, x1, y0, y1 } = TALLER;
+  return canvasOf(Math.round((x1 - x0) * PX), Math.round((y1 - y0) * PX), (ix, iy) => {
+    const x = x0 + (ix + 0.5) / PX;
+    const y = y0 + (iy + 0.5) / PX;
+    const g = glowAt(x, y, 0);
+    if (x > 61.0 && x < 63.4 && y > 1.15 && y < 2.15) {
+      const e = Math.min(x - 61.0, 63.4 - x, y - 1.15, 2.15 - y);
+      if (e < 0.07) return lit(orla[e < 0.03 ? 1 : 2], g, ix, iy);
+      if (e < 0.13) return lit(alfombra[1], g, ix, iy);
+      const rombo = Math.abs(frac((x - 61.0) / 0.4) - 0.5) + Math.abs(frac((y - 1.15) / 0.4) - 0.5) < 0.18;
+      return lit(rombo ? orla[2] : alfombra[noise(x * 5, y * 5) > 0.75 ? 3 : 2], g, ix, iy);
+    }
+    const fila = Math.floor(y / 0.19);
+    const off = (fila % 3) * 0.55;
+    const tabla = Math.floor((x + off) / 1.3);
+    if (frac(y / 0.19) < 0.09 || frac((x + off) / 1.3) < 0.012) return lit(roble[0], g, ix, iy);
+    const h = hash(tabla, fila);
+    const tono = h > 0.6 ? 3 : h < 0.2 ? 1 : 2;
+    return lit(roble[noise(x * 4, y * 9) > 0.78 ? Math.min(4, tono + 1) : tono], g, ix, iy);
+  });
+}
+/** El techo: yeso con vigas oscuras a lo hondo. */
+function paintTechoTaller() {
+  const r = probe();
+  const viga = r.rampOf(ROBLE_TD);
+  const yeso = r.rampOf(YESO_T);
+  const { x0, x1, y0, y1, alto } = TALLER;
+  return canvasOf(Math.round((x1 - x0) * PX), Math.round((y1 - y0) * PX), (ix, iy) => {
+    const x = x0 + (ix + 0.5) / PX;
+    const y = y1 - (iy + 0.5) / PX;
+    const g = glowAt(x, y, alto) * 0.75;
+    const v = frac((x - x0) / 1.1);
+    if (v < 0.14) return lit(viga[v < 0.03 || v > 0.11 ? 1 : 2], g, ix, iy);
+    return lit(yeso[noise(x * 3, y * 3) > 0.8 ? 2 : 3], g, ix, iy);
+  });
+}
+/** Un papel jaspeado (de aguas): vetas que se doblan, en los colores de cada uno, con su hilo claro. */
+function paintJaspeado(paleta, semilla, g) {
+  const W = 22;
+  const H = 28;
+  return canvasOf(W, H, (ix, iy) => {
+    const x = ix / W;
+    const y = iy / H;
+    const t = noise(x * 3 + semilla, y * 2.4) * 2.2 + y * 3.1 + Math.sin(x * 7 + semilla) * 0.35;
+    const vena = Math.abs(frac(t * paleta.length) - 0.5) < 0.06;
+    return lit(vena ? PAPEL_T : paleta[Math.floor(frac(t) * paleta.length)], g, ix, iy);
+  });
+}
+/** Un palo de cajitas de `a` a `b` (brazos de lámpara, mangos y cordeles inclinados). */
+function paloKit(s, a, b, grueso, color, o = {}) {
+  const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) / (grueso * 0.8)));
+  const h = grueso / 2;
+  for (let k = 0; k <= n; k += 1) {
+    const [x, y, z] = [0, 1, 2].map((i) => a[i] + ((b[i] - a[i]) * k) / n);
+    pushBox(s, [x - h, y - h, z - h, x + h, y + h, z + h], color, o);
+  }
+}
+
+/**
+ * La puerta baja del taller, en la pared de la derecha, detrás de la barra: verde botella, con su placa de latón (un libro
+ * abierto) y un hilo de luz por debajo. Abierta, gira hacia el café y deja ver la luz cálida del taller.
+ */
+function puertaTallerKit(s, abre) {
+  const { y0, y1, alto } = PUERTA_TALLER;
+  const X = SW;
+  const yc = (y0 + y1) / 2;
+  pushBox(s, [X - 0.06, y0 - 0.07, 0, X, y0, alto + 0.07], ROBLE_TD);
+  pushBox(s, [X - 0.06, y1, 0, X, y1 + 0.07, alto + 0.07], ROBLE_TD);
+  pushBox(s, [X - 0.06, y0 - 0.07, alto, X, y1 + 0.07, alto + 0.07], ROBLE_TD);
+  if (!abre) {
+    pushBox(s, [X - 0.012, y0 + 0.04, 0, X - 0.006, y1 - 0.04, 0.012], [255, 196, 120], { glow: true });
+  }
+  const o = abre ? { xf: giro([X - 0.03, y1, 0], 'z', -1.25) } : {};
+  pushBox(s, [X - 0.05, y0 + 0.01, 0.012, X - 0.012, y1 - 0.01, alto - 0.005], VERDE_B, o);
+  for (const z of [0.35, 1.3]) pushBox(s, [X - 0.058, y0 + 0.05, z, X - 0.05, y1 - 0.05, z + 0.1], [38, 72, 52], o);
+  for (let y = y0 + 0.2; y < y1 - 0.1; y += 0.2) pushBox(s, [X - 0.054, y, 0.05, X - 0.05, y + 0.012, alto - 0.05], [36, 68, 50], o);
+  pushBox(s, [X - 0.085, y0 + 0.08, 0.92, X - 0.05, y0 + 0.13, 0.97], LATON_T, o);
+  pushBox(s, [X - 0.056, yc - 0.12, 1.52, X - 0.05, yc + 0.12, 1.68], LATON_T, o);
+  pushBox(s, [X - 0.06, yc - 0.085, 1.56, X - 0.056, yc - 0.006, 1.64], PAPEL_T, o);
+  pushBox(s, [X - 0.06, yc + 0.006, 1.56, X - 0.056, yc + 0.085, 1.64], PAPEL_T, o);
+}
+
+/** Lo que se ve del taller por la puerta abierta, desde el café: el banco a contraluz bajo la lámpara, en pequeño. */
+function paintHuecoTaller() {
+  const W = 13;
+  const H = 29;
+  return canvasOf(W, H, (ix, iy) => {
+    const a = (ix + 0.5) / W;
+    const b = 1 - (iy + 0.5) / H;
+    const luz = Math.max(0, 1 - Math.hypot((a - 0.42) * 1.4, b - 0.48) * 1.7);
+    const c = (k) => rgb(...[226, 168, 104].map((v) => Math.min(255, v * (0.55 + luz * k))));
+    if (b < 0.12) return rgb(92, 58, 38);
+    if (b > 0.43 && b < 0.47 && a > 0.08) return rgb(120, 78, 46);
+    if (b > 0.14 && b < 0.43 && (Math.abs(a - 0.2) < 0.04 || Math.abs(a - 0.86) < 0.04)) return rgb(70, 46, 32);
+    if (b > 0.47 && b < 0.49 && a > 0.3 && a < 0.62) return rgb(56, 104, 72);
+    if (b > 0.6 && b < 0.64 && a > 0.34 && a < 0.5) return rgb(46, 86, 62);
+    if (b > 0.585 && b < 0.6 && a > 0.38 && a < 0.46) return rgb(255, 236, 190);
+    if (b < 0.4) return rgb(...[46, 86, 62].map((v) => v * (0.7 + luz * 0.6)));
+    return c(0.8);
+  });
+}
+/** Lo que no se mueve del taller: el banco con el tapete, la prensa, las lámparas, las herramientas colgadas y lo de las baldas. */
+function tallerKit(s) {
+  const { x0, x1, y0, y1, z } = BANCO;
+  // El banco de roble: el tablero, el faldón con dos cajones, las patas y la balda de abajo con cartones y resmas
+  pushBox(s, [x0, y0, z - 0.045, x1, y1, z - 0.005], ROBLE_T);
+  pushBox(s, [x0 + 0.03, y1 - 0.04, z - 0.25, x1 - 0.03, y1, z - 0.045], ROBLE_TD);
+  for (const [a, b] of [
+    [60.55, 61.45],
+    [62.95, 63.85],
+  ]) {
+    pushBox(s, [a, y1, z - 0.22, b, y1 + 0.012, z - 0.07], ROBLE_T);
+    pushBox(s, [(a + b) / 2 - 0.05, y1 + 0.012, z - 0.16, (a + b) / 2 + 0.05, y1 + 0.03, z - 0.13], LATON_T);
+  }
+  for (const x of [x0 + 0.03, (x0 + x1) / 2 - 0.04, x1 - 0.11]) for (const y of [y0 + 0.04, y1 - 0.12]) pushBox(s, [x, y, 0, x + 0.08, y + 0.08, z - 0.25], ROBLE_TD);
+  pushBox(s, [x0 + 0.05, y0 + 0.06, 0.16, x1 - 0.05, y1 - 0.06, 0.2], ROBLE_T);
+  for (let k = 0; k < 5; k += 1) pushBox(s, [60.6, 0.25, 0.2 + k * 0.025, 61.3 + (k % 2) * 0.06, 0.8, 0.222 + k * 0.025], k % 2 ? CARTON : CARTON_D);
+  for (let k = 0; k < 4; k += 1) pushBox(s, [62.3, 0.3, 0.2 + k * 0.04, 62.8, 0.75, 0.236 + k * 0.04], k % 2 ? PAPEL_T : [222, 210, 184]);
+  // El tapete verde, con su pespunte claro
+  pushBox(s, [61.25, 0.1, z - 0.005, 62.9, 0.94, z], TAPETE);
+  for (const [a, b, c, d] of [
+    [61.28, 0.13, 62.87, 0.138],
+    [61.28, 0.902, 62.87, 0.91],
+    [61.28, 0.13, 61.288, 0.91],
+    [62.862, 0.13, 62.87, 0.91],
+  ])
+    pushBox(s, [a, b, z, c, d, z + 0.0006], [116, 156, 116]);
+
+  // La prensa de husillo: la base, los dos montantes, el puente con su tuerca de latón
+  const P = PRENSA_TALLER;
+  pushBox(s, [P.x - 0.3, P.y - 0.28, z, P.x + 0.3, P.y + 0.28, z + LIBRO_PRENSA.z], ROBLE_T);
+  for (const d of [-1, 1]) {
+    const xa = P.x + d * 0.31;
+    pushBox(s, [xa - 0.05, P.y - 0.1, z, xa + 0.05, P.y + 0.1, 1.44], ROBLE_TD);
+    pushBox(s, [xa - 0.035, P.y - 0.035, 1.46, xa + 0.035, P.y + 0.035, 1.49], LATON_T);
+  }
+  pushBox(s, [P.x - 0.38, P.y - 0.12, 1.36, P.x + 0.38, P.y + 0.12, 1.46], ROBLE_TD);
+  pushBox(s, [P.x - 0.045, P.y - 0.045, 1.46, P.x + 0.045, P.y + 0.045, 1.49], LATON_T);
+
+  // La lámpara de brazo, con su pantalla verde y la bombilla, y la lupa en su brazo, por encima del tapete
+  pushBox(s, [60.9, 0.1, z, 61.0, 0.2, z + 0.04], LATON_TD);
+  paloKit(s, [60.95, 0.15, z + 0.04], [60.95, 0.15, 1.38], 0.022, LATON_T);
+  paloKit(s, [60.95, 0.15, 1.38], [61.52, 0.3, 1.46], 0.018, LATON_T);
+  paloKit(s, [61.52, 0.3, 1.46], [61.58, 0.36, 1.4], 0.018, LATON_T);
+  pushBox(s, [61.5, 0.28, 1.36, 61.66, 0.44, 1.4], VERDE_B);
+  pushBox(s, [61.47, 0.25, 1.33, 61.69, 0.47, 1.36], [38, 74, 52]);
+  pushBox(s, [61.54, 0.32, 1.315, 61.62, 0.4, 1.333], [255, 222, 156], { glow: true });
+  paloKit(s, [60.95, 0.15, 1.08], [61.3, 0.36, 1.13], 0.014, LATON_T);
+  for (let k = 0; k < 14; k += 1) {
+    const a = (k / 14) * Math.PI * 2;
+    const [lx, ly] = [61.36 + Math.cos(a) * 0.065, 0.42 + Math.sin(a) * 0.065];
+    pushBox(s, [lx - 0.009, ly - 0.009, 1.12, lx + 0.009, ly + 0.009, 1.14], LATON_T);
+  }
+  pushBox(s, [61.33, 0.39, 1.128, 61.35, 0.41, 1.132], [226, 240, 244], { glow: true });
+
+  // La lámpara de techo, con su pantalla de esmalte verde
+  paloKit(s, [61.9, 1.45, TALLER.alto], [61.9, 1.45, 2.6], 0.012, [40, 36, 34]);
+  pushBox(s, [61.8, 1.35, 2.52, 62.0, 1.55, 2.6], VERDE_B);
+  pushBox(s, [61.76, 1.31, 2.48, 62.04, 1.59, 2.52], [38, 74, 52]);
+  pushBox(s, [61.86, 1.41, 2.46, 61.94, 1.49, 2.48], [255, 222, 156], { glow: true });
+
+  // Las herramientas colgadas de su listón: martillo, tijeras, punzones, plegaderas, brochas y la cuchilla
+  pushBox(s, [60.5, 0.02, 1.2, 62.3, 0.06, 1.26], ROBLE_T);
+  pushBox(s, [60.62, 0.06, 0.98, 60.645, 0.08, 1.2], ROBLE_TD);
+  pushBox(s, [60.58, 0.055, 0.96, 60.69, 0.085, 1.0], HIERRO_TL);
+  pushBox(s, [60.84, 0.06, 1.0, 60.855, 0.075, 1.2], [176, 178, 182]);
+  pushBox(s, [60.875, 0.06, 1.0, 60.89, 0.075, 1.2], [176, 178, 182]);
+  pushBox(s, [60.83, 0.058, 1.12, 60.9, 0.078, 1.16], LATON_T);
+  for (let k = 0; k < 3; k += 1) {
+    const xa = 61.12 + k * 0.05;
+    pushBox(s, [xa, 0.062, 1.04 + k * 0.02, xa + 0.008, 0.07, 1.16], [176, 178, 182]);
+    pushBox(s, [xa - 0.012, 0.058, 1.16, xa + 0.02, 0.078, 1.2], ROBLE_TD);
+  }
+  for (const xa of [61.38, 61.44]) pushBox(s, [xa, 0.062, 1.0, xa + 0.03, 0.07, 1.2], HUESO);
+  for (const [xa, c] of [
+    [61.86, [196, 176, 140]],
+    [62.0, [170, 150, 120]],
+  ]) {
+    pushBox(s, [xa, 0.06, 1.08, xa + 0.02, 0.08, 1.2], ROBLE_TD);
+    pushBox(s, [xa - 0.012, 0.058, 1.04, xa + 0.032, 0.082, 1.08], LATON_T);
+    pushBox(s, [xa - 0.014, 0.058, 0.99, xa + 0.034, 0.082, 1.04], c);
+  }
+  pushBox(s, [62.14, 0.06, 1.02, 62.2, 0.07, 1.12], [196, 198, 202]);
+  pushBox(s, [62.15, 0.058, 1.12, 62.19, 0.078, 1.2], ROBLE_TD);
+
+  // El cordel de los papeles jaspeados, con sus pinzas de madera
+  pushBox(s, [60.38, 0.12, 2.245, 61.78, 0.13, 2.252], [92, 80, 66]);
+  for (const [, xc] of JASPEADOS) for (const d of [-0.12, 0.12]) pushBox(s, [xc + d - 0.012, 0.115, 2.19, xc + d + 0.012, 0.14, 2.26], WOOD_L);
+
+  // El alféizar del ventanuco, con una maceta pequeña
+  pushBox(s, [VENTANUCO_T.x0 - 0.08, 0, VENTANUCO_T.z0 - 0.06, VENTANUCO_T.x1 + 0.08, 0.1, VENTANUCO_T.z0 - 0.02], ROBLE_T);
+  const maceta = VENTANUCO_T.x0 + 0.12;
+  pushBox(s, [maceta, 0.03, VENTANUCO_T.z0 - 0.02, maceta + 0.1, 0.09, VENTANUCO_T.z0 + 0.06], [176, 92, 60]);
+  for (const [dx, dz] of [
+    [0, 0.06],
+    [-0.025, 0.1],
+    [0.025, 0.11],
+    [0, 0.15],
+  ])
+    pushBox(s, [maceta + 0.035 + dx, 0.05, VENTANUCO_T.z0 + dz, maceta + 0.065 + dx, 0.07, VENTANUCO_T.z0 + dz + 0.04], [86, 130, 80]);
+
+  // Los carretes de hilo de colores, en su balda, a la derecha del ventanuco
+  pushBox(s, [63.0, 0.02, 1.84, 63.58, 0.11, 1.87], ROBLE_T);
+  HILOS_T.forEach((c, k) => {
+    const xa = 63.04 + k * 0.088;
+    pushBox(s, [xa, 0.03, 1.87, xa + 0.06, 0.09, 1.88], WOOD_L);
+    pushBox(s, [xa + 0.006, 0.036, 1.88, xa + 0.054, 0.084, 1.95], c);
+    pushBox(s, [xa, 0.03, 1.95, xa + 0.06, 0.09, 1.96], WOOD_L);
+  });
+
+  // El hornillo con el cazo de la cola caliente y el bote de engrudo (el pincel de la cola, con lo que se mueve)
+  pushBox(s, [60.5, 0.5, z, 60.72, 0.72, z + 0.08], HIERRO_TL);
+  pushBox(s, [60.53, 0.718, z + 0.02, 60.69, 0.722, z + 0.045], [255, 140, 70], { glow: true });
+  pushBox(s, [60.53, 0.53, z + 0.08, 60.69, 0.69, z + 0.18], [190, 112, 70]);
+  pushBox(s, [60.525, 0.525, z + 0.17, 60.695, 0.695, z + 0.185], [226, 150, 96]);
+  pushBox(s, [60.545, 0.545, z + 0.172, 60.675, 0.675, z + 0.178], COLA_T);
+  pushBox(s, [60.69, 0.59, z + 0.12, 60.78, 0.63, z + 0.14], ROBLE_TD);
+  pushBox(s, [60.8, 0.62, z, 60.94, 0.76, z + 0.11], [176, 120, 82]);
+  pushBox(s, [60.79, 0.61, z + 0.1, 60.95, 0.77, z + 0.12], [150, 98, 66]);
+  pushBox(s, [60.81, 0.63, z + 0.115, 60.93, 0.75, z + 0.118], [240, 236, 226]);
+
+  // La estantería de la pared de la izquierda: libros a la espera, tarros de colores y pieles de cuero enrolladas
+  const E = { x0: TALLER.x0, x1: TALLER.x0 + 0.32, y0: 1.95, y1: 3.35 };
+  pushBox(s, [E.x0, E.y0 - 0.04, 0, E.x1, E.y0, 2.2], ROBLE_TD);
+  pushBox(s, [E.x0, E.y1, 0, E.x1, E.y1 + 0.04, 2.2], ROBLE_TD);
+  [0.08, 0.6, 1.12, 1.64, 2.16].forEach((zb, i) => {
+    pushBox(s, [E.x0, E.y0, zb, E.x1, E.y1, zb + 0.035], ROBLE_T);
+    if (i === 4) return;
+    let y = E.y0 + 0.03;
+    for (let k = 0; y < E.y1 - 0.08; k += 1) {
+      const h = hash(i * 7 + 1, k);
+      if (i === 1 && h > 0.72) {
+        // Un tarro de cristal con su color (pigmentos, engrudo, granos de cola)
+        const c = HILOS_T[k % HILOS_T.length];
+        pushBox(s, [E.x0 + 0.08, y, zb + 0.035, E.x0 + 0.22, y + 0.13, zb + 0.2], [196, 214, 206]);
+        pushBox(s, [E.x0 + 0.09, y + 0.01, zb + 0.04, E.x0 + 0.215, y + 0.12, zb + 0.12], c);
+        pushBox(s, [E.x0 + 0.075, y - 0.005, zb + 0.2, E.x0 + 0.225, y + 0.135, zb + 0.22], ROBLE_TD);
+        y += 0.15;
+        continue;
+      }
+      if (i === 3 && h > 0.6) {
+        pushBox(s, [E.x0 + 0.04, y, zb + 0.035, E.x1 - 0.02, y + 0.11, zb + 0.14], k % 2 ? CUERO : CUERO_D);
+        y += 0.13;
+        continue;
+      }
+      const ancho = 0.03 + hash(k, i + 7) * 0.035;
+      const alto = 0.24 + hash(i + 3, k) * 0.18;
+      pushBox(s, [E.x0 + 0.04, y, zb + 0.035, E.x1 - 0.03 - h * 0.03, y + ancho, zb + 0.035 + alto], LOMOS_T[Math.floor(hash(k, i) * LOMOS_T.length)]);
+      y += ancho + 0.004;
+    }
+  });
+
+  // La cajonera de los papeles, en la pared de la derecha, con sus tiradores y los rollos encima
+  const C = { x0: TALLER.x1 - 0.42, x1: TALLER.x1, y0: 1.4, y1: 2.95, alto: 1.02 };
+  pushBox(s, [C.x0, C.y0, 0, C.x1, C.y1, C.alto], ROBLE_TD);
+  for (let k = 0; k < 6; k += 1) {
+    const zb = 0.08 + k * 0.155;
+    pushBox(s, [C.x0 - 0.01, C.y0 + 0.04, zb, C.x0, C.y1 - 0.04, zb + 0.13], ROBLE_T);
+    pushBox(s, [C.x0 - 0.03, (C.y0 + C.y1) / 2 - 0.08, zb + 0.05, C.x0 - 0.01, (C.y0 + C.y1) / 2 + 0.08, zb + 0.075], LATON_T);
+  }
+  for (const [ya, c] of [
+    [1.5, CUERO],
+    [1.75, [214, 200, 168]],
+    [2.0, CUERO_D],
+    [2.3, [196, 160, 92]],
+  ])
+    pushBox(s, [C.x0 + 0.04, ya, C.alto, C.x1 - 0.04, ya + 0.16, C.alto + 0.15], c);
+
+  // El taburete alto de don Celestino
+  const T = { x: 61.1, y: 1.62 };
+  for (const [dx, dy] of [
+    [-0.13, -0.13],
+    [0.1, -0.13],
+    [-0.13, 0.1],
+    [0.1, 0.1],
+  ])
+    pushBox(s, [T.x + dx, T.y + dy, 0, T.x + dx + 0.03, T.y + dy + 0.03, 0.72], ROBLE_TD);
+  pushBox(s, [T.x - 0.16, T.y - 0.16, 0.72, T.x + 0.16, T.y + 0.16, 0.77], ROBLE_T);
+  pushBox(s, [T.x - 0.13, T.y - 0.13, 0.3, T.x + 0.13, T.y + 0.13, 0.32], ROBLE_TD);
+}
+
+/** Lo que se mueve de la prensa: la platina, que baja con el husillo, la rosca y la cruceta que gira (`p`, la vista de la prensa). */
+function prensaVivaKit(s, p = {}) {
+  const { x, y } = PRENSA_TALLER;
+  const z0 = platinaZ(p.prensa ?? 0);
+  const tope = husilloZ(p.prensa ?? 0);
+  pushBox(s, [x - 0.25, y - 0.24, z0, x + 0.25, y + 0.24, z0 + 0.05], ROBLE_T);
+  pushBox(s, [x - 0.016, y - 0.016, z0 + 0.05, x + 0.016, y + 0.016, tope], HIERRO_TL);
+  for (let zz = z0 + 0.08; zz < tope - 0.04; zz += 0.035) pushBox(s, [x - 0.019, y - 0.019, zz, x + 0.019, y + 0.019, zz + 0.012], [92, 88, 86]);
+  const xf = giro([x, y, tope], 'z', p.angulo ?? 0);
+  pushBox(s, [x - 0.2, y - 0.012, tope - 0.024, x + 0.2, y + 0.012, tope], HIERRO_TL, { xf });
+  for (const d of [-1, 1]) pushBox(s, [x + d * 0.2 - 0.022, y - 0.022, tope - 0.034, x + d * 0.2 + 0.022, y + 0.022, tope + 0.01], LATON_T, { xf });
+  pushBox(s, [x - 0.03, y - 0.03, tope - 0.03, x + 0.03, y + 0.03, tope + 0.006], LATON_TD);
+}
+
+/** Las herramientas del banco, en su sitio (menos la que tienes en la mano): brocha, goma, plegadera, sello, hierro y pan de oro. */
+function utilesTaller(s, mano) {
+  const z = BANCO.z;
+  if (mano !== 'brocha') {
+    pushBox(s, [62.38, 0.845, z, 62.56, 0.87, z + 0.02], ROBLE_TD);
+    pushBox(s, [62.56, 0.84, z, 62.59, 0.875, z + 0.024], LATON_T);
+    pushBox(s, [62.59, 0.838, z, 62.645, 0.877, z + 0.022], [196, 176, 140]);
+  }
+  if (mano !== 'goma') pushBox(s, [62.7, 0.8, z, 62.75, 0.84, z + 0.026], MIGA_T);
+  if (mano !== 'plegadera') pushBox(s, [62.36, 0.71, z, 62.56, 0.735, z + 0.006], HUESO);
+  if (mano !== 'sello') selloKit(s, 62.79, 0.62, z);
+  // El hierro de dorar, sobre su hornillo con las brasas, y el librillo de pan de oro
+  pushBox(s, [62.56, 0.22, z, 62.72, 0.36, z + 0.05], HIERRO_TL);
+  pushBox(s, [62.58, 0.36, z + 0.015, 62.7, 0.362, z + 0.03], [255, 140, 70], { glow: true });
+  if (mano !== 'hierro') {
+    pushBox(s, [62.6, 0.28, z + 0.05, 62.62, 0.3, z + 0.068], [255, 176, 96], { glow: true });
+    paloKit(s, [62.62, 0.29, z + 0.062], [62.74, 0.29, z + 0.07], 0.01, LATON_T);
+    paloKit(s, [62.74, 0.29, z + 0.07], [62.86, 0.29, z + 0.076], 0.018, ROBLE_TD);
+  }
+  pushBox(s, [62.36, 0.22, z, 62.46, 0.32, z + 0.006], [196, 168, 120]);
+  pushBox(s, [62.37, 0.23, z + 0.006, 62.45, 0.31, z + 0.007], [236, 196, 100]);
+  // El pincel de la cola, apoyado en el cazo
+  if (mano !== 'pincel') paloKit(s, [60.61, 0.6, z + 0.15], [60.67, 0.66, z + 0.32], 0.014, ROBLE_TD);
+}
+
+/**
+ * La herramienta en la mano, apoyada en `c` (el punto del libro donde está el dedo): la brocha, la goma de miga, el canto de la
+ * mano, la plegadera de hueso, el pincel de la cola o el hierro caliente (el sello del ex libris va aparte, con `selloKit`). Sin
+ * apretar, flota un poco por encima; el mango sube hacia la derecha y hacia ti, como en una mano derecha.
+ */
+function herramientaKit(s, nombre, [x, y, z], { baja = 0 } = {}) {
+  const z0 = z + (1 - clamp(baja, 0, 1)) * 0.025;
+  const o = { g: 0.9 };
+  const mango = (desde, largo, color, grueso = 0.01) => paloKit(s, desde, [desde[0] + largo * 0.3, desde[1] + largo * 0.6, desde[2] + largo * 0.74], grueso, color, o);
+  if (nombre === 'brocha') {
+    // La paletina ancha de pelo de cabra (tras ver la 1.133: limpia en unas cuatro pasadas), con su virola de latón
+    pushBox(s, [x - 0.045, y - 0.008, z0, x + 0.045, y + 0.008, z0 + 0.026], [214, 196, 160], o);
+    pushBox(s, [x - 0.045, y - 0.0085, z0, x + 0.045, y + 0.0085, z0 + 0.006], [176, 156, 120], o);
+    pushBox(s, [x - 0.043, y - 0.01, z0 + 0.026, x + 0.043, y + 0.01, z0 + 0.04], LATON_T, o);
+    pushBox(s, [x - 0.03, y - 0.008, z0 + 0.04, x + 0.03, y + 0.008, z0 + 0.05], ROBLE_TD, o);
+    mango([x, y, z0 + 0.05], 0.08, ROBLE_TD);
+  } else if (nombre === 'goma') {
+    pushBox(s, [x - 0.022, y - 0.016, z0, x + 0.022, y + 0.016, z0 + 0.026 - baja * 0.004], MIGA_T, o);
+  } else if (nombre === 'mano') {
+    pushBox(s, [x - 0.01, y - 0.045, z0, x + 0.01, y + 0.045, z0 + 0.035], PIEL_T, o);
+    pushBox(s, [x - 0.004, y - 0.045, z0 + 0.035, x + 0.05, y + 0.045, z0 + 0.05], PIEL_T, o);
+    paloKit(s, [x + 0.045, y + 0.02, z0 + 0.06], [x + 0.09, y + 0.08, z0 + 0.11], 0.04, [150, 140, 72], o);
+  } else if (nombre === 'plegadera') {
+    paloKit(s, [x, y, z0 + 0.004], [x + 0.03, y + 0.09, z0 + 0.04], 0.012, HUESO, o);
+  } else if (nombre === 'pincel') {
+    pushBox(s, [x - 0.008, y - 0.008, z0, x + 0.008, y + 0.008, z0 + 0.02], COLA_T, o);
+    pushBox(s, [x - 0.007, y - 0.007, z0 + 0.02, x + 0.007, y + 0.007, z0 + 0.034], LATON_T, o);
+    mango([x, y, z0 + 0.038], 0.08, ROBLE_TD, 0.008);
+  } else if (nombre === 'hierro') {
+    // El mango viene hacia ti y un poco a la izquierda, bajo el título y hacia lo ya dorado (hacia la derecha o hacia arriba
+    // taparía las letras que faltan)
+    pushBox(s, [x - 0.012, y - 0.012, z0, x + 0.012, y + 0.012, z0 + 0.018], [255, 176, 96], { glow: true });
+    paloKit(s, [x, y, z0 + 0.02], [x - 0.004, y + 0.032, z0 + 0.034], 0.007, LATON_T, o);
+    paloKit(s, [x - 0.004, y + 0.032, z0 + 0.034], [x - 0.018, y + 0.09, z0 + 0.05], 0.011, ROBLE_TD, o);
+  }
+}
+
+/** El polvo que levanta la brocha: motas a contraluz que suben y se van apartando (`nube`, de la vista del polvo; `ahora`, su reloj). */
+function nubeKit(s, nube, ahora, punto) {
+  nube.forEach((n, i) => {
+    const edad = (ahora - n.t) / 1000;
+    if (!(edad >= 0 && edad < 1.6)) return;
+    for (let k = 0; k < 3; k += 1) {
+      const [h1, h2, h3] = [hash(i, k + 1), hash(i, k + 5), hash(i, k + 9)];
+      const [x, y, z] = punto(n.u + (h1 - 0.5) * 0.12, n.v + (h2 - 0.5) * 0.12);
+      const sube = edad * (0.05 + h3 * 0.07);
+      const dx = (h1 - 0.5) * edad * 0.05;
+      const d = 0.0012;
+      pushBox(s, [x + dx - d, y - d, z + sube, x + dx + d, y + d, z + sube + d * 2], [255, 238, 205], { glow: true });
+    }
+  });
+}
+
+/** El cuerpo del libro (en su sitio, ver `LIBRO_Z`): la tapa de atrás, el bloque de hojas con sus cantos y el lomo con sus nervios. */
+function libroTallerKit(s, tela) {
+  const { ancho: A, hondo: H } = LIBRO_TALLER;
+  const o = { g: 0.86 };
+  const osc = tela.map((v) => Math.round(v * 0.72));
+  pushBox(s, [0, -0.002, 0, A + 0.002, H + 0.002, 0.004], tela, o);
+  pushBox(s, [0.004, 0.004, 0.004, A - 0.004, H - 0.004, LIBRO_Z.pagina], PAPEL_T, o);
+  for (const zz of [0.012, 0.021, 0.03]) pushBox(s, [0.004, H - 0.0045, zz, A - 0.004, H - 0.0035, zz + 0.0015], [206, 192, 160], o);
+  pushBox(s, [-0.008, -0.002, 0, 0.004, H + 0.002, LIBRO_Z.grueso], osc, o);
+  for (const yy of [0.06, 0.14, 0.22, 0.3]) pushBox(s, [-0.01, yy, 0.006, -0.007, yy + 0.012, LIBRO_Z.grueso - 0.006], osc.map((v) => Math.round(v * 0.85)), o);
+}
+/** La tapa de delante, que gira sobre el lomo: el cartón forrado, centrado a lo hondo en su bisagra. */
+function tapaTallerKit(s, tela) {
+  const { ancho: A, hondo: H } = LIBRO_TALLER;
+  pushBox(s, [0, -H / 2 - 0.002, 0.019, A + 0.002, H / 2 + 0.002, 0.0228], tela, { g: 0.86 });
+}
+
 const ENFOQUE_TOSTADOR = { p: [39.6, 1.45, 1.75], m: [37.0, 1.45, 0.65] };
 
 export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, onLost = () => {}, onMove = () => {}, onDecor = () => {}, onSonido = () => {} } = {}) {
@@ -3376,6 +4012,276 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     scene.add(m);
   }
 
+  // ── 1.133: el taller de la trastienda (nivel 3): la puerta baja de detrás de la barra y, aparte en el mundo, el cuarto de don
+  // Celestino. `tall.est`, lo que se ve al trabajar (Taller.jsx): { vista ('entrada', 'tapa', 'titulo', 'lomo', 'pliego',
+  // 'izquierda', 'derecha', 'prensa' o 'ficha'), encargo (de `encargoDe`, o null: el banco vacío), vistas (de `vistasDe`), abre
+  // (el libro, de 0 a 1), enPrensa (de 0 a 1, el libro que va a la prensa), herramienta (la que tienes en la mano), superficie
+  // ('tapa' o 'pliego'), pose ({ u, v, baja }), nube (el polvo que sube) y ahora (su reloj, en ms) }. ──
+  const puertaTaller = [0, 1].map((abre) => {
+    const s = kit();
+    puertaTallerKit(s, abre);
+    const m = new Mesh(own(geometryOf(s)), flat);
+    m.visible = false;
+    scene.add(m);
+    return m;
+  });
+  const huecoTaller = plane(
+    PUERTA_TALLER.y1 - PUERTA_TALLER.y0,
+    PUERTA_TALLER.alto,
+    paintHuecoTaller(),
+    (m) => {
+      m.rotation.y = -Math.PI / 2;
+      m.position.set(SW - 0.004, PUERTA_TALLER.alto / 2, (PUERTA_TALLER.y0 + PUERTA_TALLER.y1) / 2);
+      m.visible = false;
+    },
+  );
+  let puertaAbierta = false;
+  const verPuerta = () => {
+    const hay = estado.inaugurado && estado.nivel >= SITIOS.taller.nivel;
+    puertaTaller[0].visible = hay && !puertaAbierta;
+    puertaTaller[1].visible = hay && puertaAbierta;
+    huecoTaller.visible = hay && puertaAbierta;
+  };
+  const tallerGrupo = new Group();
+  tallerGrupo.visible = false;
+  scene.add(tallerGrupo);
+  const lluviaTallerCanvas = document.createElement('canvas');
+  lluviaTallerCanvas.width = 26;
+  lluviaTallerCanvas.height = 20;
+  let lluviaTaller = null;
+  conLuces(LUZ_TALLER, () => {
+    const { x0, x1, y0, y1, alto } = TALLER;
+    const [ancho, hondo, cx, cy] = [x1 - x0, y1 - y0, (x0 + x1) / 2, (y0 + y1) / 2];
+    tallerGrupo.add(
+      plane(ancho, hondo, paintSueloTaller(), (m) => {
+        m.rotation.x = -Math.PI / 2;
+        m.position.set(cx, 0, cy);
+      }),
+    );
+    tallerGrupo.add(
+      plane(ancho, hondo, paintTechoTaller(), (m) => {
+        m.rotation.x = Math.PI / 2;
+        m.position.set(cx, alto, cy);
+      }),
+    );
+    tallerGrupo.add(plane(ancho, alto, paintParedTaller(ancho, (a, b) => [x0 + a, y0 + 0.05, b], ventanucoTaller), (m) => m.position.set(cx, alto / 2, y0)));
+    tallerGrupo.add(
+      plane(hondo, alto, paintParedTaller(hondo, (a, b) => [x0 + 0.05, y1 - a, b]), (m) => {
+        m.rotation.y = Math.PI / 2;
+        m.position.set(x0, alto / 2, cy);
+      }),
+    );
+    tallerGrupo.add(
+      plane(hondo, alto, paintParedTaller(hondo, (a, b) => [x1 - 0.05, y0 + a, b]), (m) => {
+        m.rotation.y = -Math.PI / 2;
+        m.position.set(x1, alto / 2, cy);
+      }),
+    );
+    tallerGrupo.add(
+      plane(ancho, alto, paintParedTaller(ancho, (a, b) => [x1 - a, y1 - 0.05, b], puertaTallerDentro), (m) => {
+        m.rotation.y = Math.PI;
+        m.position.set(cx, alto / 2, y1);
+      }),
+    );
+    const s = kit();
+    tallerKit(s);
+    tallerGrupo.add(new Mesh(own(geometryOf(s)), flat));
+    // Los papeles jaspeados, secándose en el cordel
+    JASPEADOS.forEach(([paleta, xc], k) => tallerGrupo.add(plane(0.36, 0.44, paintJaspeado(paleta, k * 3.7, glowAt(xc, 0.2, 2.0)), (m) => m.position.set(xc, 2.0, 0.135))));
+    // Don Celestino, junto a su taburete, mirando al banco y a la puerta
+    const c = new Mesh(own(geometryOf(celestinoKit(glowAt(CELESTINO.x, CELESTINO.y, 1.5) + 0.06))), flat);
+    c.position.set(CELESTINO.x, 0, CELESTINO.y);
+    c.rotation.y = Math.atan2(VISTA_ENTRADA.p[0] - CELESTINO.x, VISTA_ENTRADA.p[1] - CELESTINO.y);
+    tallerGrupo.add(c);
+    // La lluvia en el cristal del ventanuco
+    const V = VENTANUCO_T;
+    lluviaTaller = plane(V.x1 - V.x0, V.z1 - V.z0, lluviaTallerCanvas, (m) => m.position.set((V.x0 + V.x1) / 2, (V.z0 + V.z1) / 2, y0 + 0.025), { glow: true });
+    tallerGrupo.add(lluviaTaller);
+  });
+  // El libro del banco: el cuerpo (la tapa de atrás, las hojas y el lomo), la primera página y la tapa, que gira sobre el lomo
+  // con su cara (la tapa pintada) y su revés (la guarda). La tapa y las dos páginas se pintan en dos lienzos (`cafeTallerPintura`).
+  const tapaLienzo = lienzo(TAPA_PX.w, TAPA_PX.h);
+  const pliegoLienzo = lienzo(PLIEGO_PX.w, PLIEGO_PX.h);
+  const tapaTex = own(texture(tapaLienzo));
+  const guardaTex = own(texture(pliegoLienzo));
+  guardaTex.repeat.set(0.5, 1);
+  const paginaTex = own(texture(pliegoLienzo));
+  paginaTex.repeat.set(0.5, 1);
+  paginaTex.offset.set(0.5, 0);
+  const hojaGeo = own(new PlaneGeometry(LIBRO_TALLER.ancho, LIBRO_TALLER.hondo));
+  const hoja = (map) => new Mesh(hojaGeo, own(new MeshBasicMaterial({ map, color: 0xeee2d0 })));
+  const libroT = new Group();
+  libroT.visible = false;
+  tallerGrupo.add(libroT);
+  const paginaM = hoja(paginaTex);
+  paginaM.rotation.x = -Math.PI / 2;
+  paginaM.position.set(LIBRO_TALLER.ancho / 2, LIBRO_Z.pagina, LIBRO_TALLER.hondo / 2);
+  libroT.add(paginaM);
+  const tapaG = new Group();
+  tapaG.position.set(0, LIBRO_Z.bisagra, LIBRO_TALLER.hondo / 2);
+  libroT.add(tapaG);
+  const tapaM = hoja(tapaTex);
+  tapaM.rotation.x = -Math.PI / 2;
+  tapaM.position.set(LIBRO_TALLER.ancho / 2, LIBRO_Z.tapa - LIBRO_Z.bisagra, 0);
+  tapaG.add(tapaM);
+  // El revés de la tapa: girado para que, con el libro abierto (la tapa dada la vuelta), la guarda se lea derecha
+  const guardaM = hoja(guardaTex);
+  guardaM.rotation.set(-Math.PI / 2, 0, Math.PI, 'ZYX');
+  guardaM.position.set(LIBRO_TALLER.ancho / 2, LIBRO_Z.bisagra - LIBRO_Z.guarda, 0);
+  tapaG.add(guardaM);
+  let cuerpoM = null;
+  let placaM = null;
+  let libroDe = null;
+  // Lo último pintado en los lienzos (al cambiar de libro, nada)
+  const SIN_PINTAR = {};
+  let vistasPintadas = SIN_PINTAR;
+  // Lo que se mueve (la prensa, las herramientas y el polvo), que se vuelve a montar con cada cambio
+  const tallerVivo = new Group();
+  tallerGrupo.add(tallerVivo);
+  let tall = { activa: false, est: {} };
+  // El polvo que flota en la luz de la lámpara de brazo y el vaho del cazo de la cola
+  const MOTAS_T = 30;
+  const VAHO = 10;
+  const motaTGeo = own(new BufferGeometry());
+  motaTGeo.setAttribute('position', new Float32BufferAttribute(new Float32Array((MOTAS_T + VAHO) * 3), 3));
+  motaTGeo.setAttribute('color', new Float32BufferAttribute(new Float32Array((MOTAS_T + VAHO) * 3), 3));
+  const motasT = new Points(motaTGeo, own(new PointsMaterial({ size: 1, sizeAttenuation: false, vertexColors: true, transparent: true, depthWrite: false, blending: AdditiveBlending })));
+  motasT.frustumCulled = false;
+  motasT.renderOrder = 3;
+  tallerGrupo.add(motasT);
+  const moverMotasT = (t) => {
+    const p = motaTGeo.attributes.position;
+    const c = motaTGeo.attributes.color;
+    for (let k = 0; k < MOTAS_T; k += 1) {
+      const [a, b, d, e] = [hash(k, 11), hash(k, 12), hash(k, 13), hash(k, 14)];
+      const ang = a * Math.PI * 2 + t * 0.06 * (0.5 + d);
+      const rad = 0.05 + b * 0.32;
+      p.setXYZ(k, 61.62 + Math.cos(ang) * rad, 0.92 + frac(e + t * 0.012 * (0.4 + d)) * 0.4, 0.45 + Math.sin(ang) * rad * 0.7);
+      const brillo = 0.55 + 0.45 * Math.sin(t * 1.3 + k);
+      c.setXYZ(k, 0.85 * brillo, 0.74 * brillo, 0.55 * brillo);
+    }
+    for (let k = 0; k < VAHO; k += 1) {
+      const f = frac(hash(k, 21) + t * 0.16);
+      p.setXYZ(MOTAS_T + k, 60.61 + Math.sin(t * 0.9 + k * 1.7) * 0.02 * (1 + f * 2), BANCO.z + 0.19 + f * 0.32, 0.61 + Math.cos(t * 0.7 + k) * 0.015);
+      const v = (1 - f) * 0.32;
+      c.setXYZ(MOTAS_T + k, v, v, v * 0.95);
+    }
+    p.needsUpdate = true;
+    c.needsUpdate = true;
+  };
+  /** Dónde está el libro (ver `enTapa`): en el banco o, al prensar, de camino a la prensa (sube, va y entra por delante). */
+  function libroOrigen(e = tall.est) {
+    const t = clamp(e.enPrensa ?? 0, 0, 1);
+    const tramos = [
+      [LIBRO_BANCO.x, LIBRO_BANCO.y, BANCO.z],
+      [LIBRO_BANCO.x, 0.62, BANCO.z + 0.13],
+      [LIBRO_PRENSA.x, 0.62, BANCO.z + 0.13],
+      [LIBRO_PRENSA.x, LIBRO_PRENSA.y, BANCO.z + LIBRO_PRENSA.z],
+    ];
+    const f = t * 3;
+    const i = Math.min(2, Math.floor(f));
+    const u = f - i;
+    const k = u * u * (3 - 2 * u);
+    const [x, y, z] = tramos[i].map((v, j) => v + (tramos[i + 1][j] - v) * k);
+    return { x, y, z };
+  }
+  /** La cámara del taller según lo que se hace: de cerca a cada cosa, desde delante y arriba (el cuadro va abajo: lo que se toca queda arriba). */
+  function vistaTaller(e = tall.est) {
+    const L = libroOrigen(e);
+    const { ancho: A, hondo: H } = LIBRO_TALLER;
+    const ta = tanAncho();
+    const tv = Math.tan((camera.fov * Math.PI) / 360);
+    const encima = ([x, y, z], ancho, el = 1.0, sube = 0.3) => {
+      const d = Math.max(ancho / 2 / ta, (ancho * 0.72) / tv);
+      return { p: [x, y + d * Math.cos(el), z + d * Math.sin(el)], m: [x, y + d * sube, z] };
+    };
+    const letras = letrasTapa(e.encargo?.tapa ?? '');
+    const centro = letras.length ? [letras.reduce((s2, l) => s2 + l.u, 0) / letras.length, letras[0].v] : [0.58, 0.2];
+    switch (e.vista) {
+      case 'tapa':
+        return encima(enTapa(L, 0.5, 0.5), 0.36);
+      case 'titulo':
+        // el título, más al centro que lo demás (debajo viene el mango del hierro)
+        return encima(enTapa(L, ...centro), 0.24, 1.0, 0.12);
+      case 'lomo':
+        return encima(enTapa(L, 0.3, 0.5), 0.3);
+      case 'pliego':
+        return encima([L.x, L.y + H / 2, L.z + 0.025], 0.62);
+      case 'izquierda':
+        return encima(enPliego(L, 0.25, 0.5), 0.36);
+      case 'derecha':
+        return encima(enPliego(L, 0.75, 0.5), 0.36);
+      case 'prensa':
+        return encima([PRENSA_TALLER.x, PRENSA_TALLER.y + 0.02, 1.15], 1.0, 0.55, 0.22);
+      case 'ficha':
+        return encima([L.x + A / 2 + 0.1, L.y + H / 2, BANCO.z], 0.8, 0.9);
+      default:
+        return VISTA_ENTRADA;
+    }
+  }
+  /** Lo del taller que se mueve: el libro (su sitio, la tapa y lo pintado), la prensa, las herramientas y el polvo. */
+  function montarTaller() {
+    for (const m of tallerVivo.children.slice()) {
+      tallerVivo.remove(m);
+      m.geometry.dispose();
+    }
+    const e = tall.est;
+    const enc = tallerGrupo.visible ? (e.encargo ?? null) : null;
+    libroT.visible = Boolean(enc);
+    const L = libroOrigen(e);
+    if (enc) {
+      const clave = `${enc.n}:${enc.libro}`;
+      if (libroDe !== clave) {
+        for (const m of [cuerpoM, placaM]) {
+          if (!m) continue;
+          m.parent.remove(m);
+          m.geometry.dispose();
+        }
+        const a = kit();
+        libroTallerKit(a, enc.tela);
+        cuerpoM = new Mesh(geometryOf(a), flat);
+        libroT.add(cuerpoM);
+        const b = kit();
+        tapaTallerKit(b, enc.tela);
+        placaM = new Mesh(geometryOf(b), flat);
+        tapaG.add(placaM);
+        libroDe = clave;
+        vistasPintadas = SIN_PINTAR;
+      }
+      if (e.vistas !== vistasPintadas) {
+        pintarTapa(tapaLienzo, enc, e.vistas ?? undefined);
+        pintarPliego(pliegoLienzo, enc, e.vistas ?? undefined);
+        tapaTex.needsUpdate = true;
+        guardaTex.needsUpdate = true;
+        paginaTex.needsUpdate = true;
+        vistasPintadas = e.vistas;
+      }
+      libroT.position.set(L.x, L.z, L.y);
+      tapaG.rotation.z = Math.PI * suaveT(e.abre ?? 0);
+    }
+    if (tallerGrupo.visible) {
+      const s = kit();
+      conLuces(LUZ_TALLER, () => {
+        prensaVivaKit(s, e.vistas?.prensa ?? {});
+        const mano = enc ? e.herramienta : null;
+        utilesTaller(s, mano);
+        const pose = e.pose ?? {};
+        if (mano === 'sello') {
+          const x = e.vistas?.exlibris?.exlibris ?? {};
+          const [tx, ty, tz] = enPliego(L, x.u ?? 0.25, x.v ?? 0.62);
+          const alza = x.sellado ? 0.06 : x.baja ? 0.004 * (1 - (x.presion ?? 0)) : 0.04;
+          selloKit(s, tx, ty, tz + alza, x.baja && !x.sellado ? (x.presion ?? 0) : 0, { g: 0.9 });
+        } else if (mano && pose.u != null) {
+          const punto = (e.superficie ?? 'tapa') === 'pliego' ? enPliego : enTapa;
+          herramientaKit(s, mano, punto(L, pose.u, pose.v), pose);
+        }
+        if (enc && e.nube?.length && !reduced()) nubeKit(s, e.nube, e.ahora ?? 0, (u, v) => enTapa(L, u, v));
+      });
+      tallerVivo.add(new Mesh(geometryOf(s), flat));
+    }
+    invalidate();
+  }
+
   // ── La lluvia en el escaparate y en el cristal de la puerta ──
   const lluviaCanvas = document.createElement('canvas');
   lluviaCanvas.width = 86;
@@ -3417,6 +4323,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     paintLluvia(lluviaCanvas, t, quieto);
     lluvia.material.map.needsUpdate = true;
     moverMotas(quieto ? 0 : t);
+    // 1.133: la lluvia del ventanuco y el polvo y el vaho del taller, solo si se ve
+    if (tallerGrupo.visible) {
+      paintLluvia(lluviaTallerCanvas, t, quieto);
+      lluviaTaller.material.map.needsUpdate = true;
+      moverMotasT(quieto ? 0 : t);
+    }
   };
   pintaVivo(0);
 
@@ -3743,14 +4655,17 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     bodega7.piezas.visible = !modo.decorar;
     bodega8.piezas.visible = !modo.decorar;
     trampillaM.visible = n >= 6;
+    verPuerta();
     const clave = modo.planta === 'bodega' ? (n >= 8 ? 'bodega8' : n >= 7 ? 'bodega7' : 'bodega') : String(n >= 5 ? 5 : n >= 4 ? 4 : n >= 2 ? 2 : 1);
     for (const [k, ms] of Object.entries(rejillas)) for (const m of ms) m.visible = modo.decorar && k === clave;
     canvas.setAttribute(
       'aria-label',
-      estado.inaugurado
+      tall.activa
+        ? ARIA_TALLER
+        : estado.inaugurado
         ? planta === 'bodega'
           ? `La bodega de ${estado.nombre ?? 'tu café'}, en el sótano. Arrastra o usa las flechas para mirar; toca el suelo para andar y la escalera para subir al café.`
-          : `${estado.nombre ?? 'Tu café'}, tu café-librería. Arrastra o usa las flechas para mirar; toca el suelo para andar y a Pilar, en el mostrador, para hablar con ella.${n >= 6 ? ' Detrás de la barra, la trampilla baja a la bodega.' : ''}`
+          : `${estado.nombre ?? 'Tu café'}, tu café-librería. Arrastra o usa las flechas para mirar; toca el suelo para andar y a Pilar, en el mostrador, para hablar con ella.${n >= 3 ? ' Detrás de la barra, una puerta baja lleva al taller de la trastienda.' : ''}${n >= 6 ? ' Detrás de la barra, la trampilla baja a la bodega.' : ''}`
         : 'El bajo, vacío y en traspaso. Arrastra o usa las flechas para mirar; toca el suelo para andar y a Pilar, en el mostrador, para hablar con ella.',
     );
     montarClientes();
@@ -3919,6 +4834,9 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   const ray = new Raycaster();
   const floorPlane = new Plane(new Vector3(0, 1, 0), 0);
   const hit = new Vector3();
+  // 1.133: el plano de la tapa o de las páginas del libro del taller, para saber dónde cae el dedo
+  const planoTaller = new Plane();
+  const arribaTaller = new Vector3(0, 1, 0);
 
   // ── Dónde estás y adónde miras ──
   let px = INICIO.x;
@@ -3971,7 +4889,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     const dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0;
     lastT = now;
     let moving = advance(dt);
-    const meta = barra.activa || tost.activa || lib.activa ? 1 : 0;
+    const meta = barra.activa || tost.activa || lib.activa || tall.activa ? 1 : 0;
     if (barraT !== meta) {
       barraT = reduced() ? meta : Math.min(1, Math.max(0, barraT + (meta ? 1 : -1) * dt * 2.6));
       moving = moving || barraT !== meta;
@@ -4055,11 +4973,11 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         out[id] = { ...p, visible: false };
         continue;
       }
-      out[id] = { ...p, visible: hay && !walk && !modo.decorar && !barra.activa && !tost.activa && !lib.activa && barraT === 0 && p.front };
+      out[id] = { ...p, visible: hay && !walk && !modo.decorar && !barra.activa && !tost.activa && !lib.activa && !tall.activa && !yendoTaller && barraT === 0 && p.front };
     }
     for (const [n, c] of Object.entries(sitiosClientes)) {
       const p = project(c.x, c.y, c.z);
-      out[`cliente:${n}`] = { ...p, visible: !tour && !walk && !modo.decorar && !barra.activa && !tost.activa && !lib.activa && barraT === 0 && c.espera && c.planta === planta && p.front };
+      out[`cliente:${n}`] = { ...p, visible: !tour && !walk && !modo.decorar && !barra.activa && !tost.activa && !lib.activa && !tall.activa && !yendoTaller && barraT === 0 && c.espera && c.planta === planta && p.front };
     }
     return out;
   }
@@ -4111,7 +5029,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     if (tour) return null;
     const sitios = pickers.filter((m) => sitioActivo(m.userData.id));
     const suyos = pickersClientes.filter((m) => sitiosClientes[m.userData.id.slice(8)]?.planta === planta);
-    if (tost.activa || lib.activa) return null;
+    if (tost.activa || lib.activa || tall.activa || yendoTaller) return null;
     return ray.intersectObjects(barra.activa ? pickersBarra : [...sitios, ...suyos], false)[0]?.object.userData.id ?? null;
   }
   /** La pieza del plano bajo un punto de la pantalla (su uid), o null. */
@@ -4218,6 +5136,114 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     return cambiando;
   }
 
+  /**
+   * 1.133: entrar en el taller: se anda hasta delante de la puerta, la cámara pasa por encima de la barra, la puerta se abre y,
+   * de la luz del hueco, se pasa al cuarto de don Celestino. Al salir, al revés: quedas delante de la barra, mirando al café.
+   * Con movimiento reducido, directo. `est`, lo que ya se ve en el banco al llegar.
+   */
+  let yendoTaller = null;
+  const ARIA_TALLER = 'El taller de la trastienda: el banco de don Celestino con su tapete verde, la prensa de husillo y la lámpara de brazo. Lo que se hace, en el cuadro de abajo.';
+  function entrarTaller(est = {}) {
+    if (tall.activa) return Promise.resolve();
+    if (yendoTaller) return yendoTaller;
+    const s = sitioDe('taller', estado.nivel);
+    yendoTaller = cambiarPlanta('calle')
+      .then(() => walkTo(s.ir.x, s.ir.y, { face: s.mira }))
+      .then(
+        () =>
+          new Promise((fin) => {
+            tall = { activa: false, est: { vista: 'entrada', ...est } };
+            tallerGrupo.visible = true;
+            montarTaller();
+            const dentroYa = () => {
+              puertaAbierta = false;
+              verPuerta();
+              tall = { ...tall, activa: true };
+              vistaMeta = vistaTaller(tall.est);
+              vista = { p: [...vistaMeta.p], m: [...vistaMeta.m] };
+              barraT = 1;
+              walk = null;
+              canvas.setAttribute('aria-label', ARIA_TALLER);
+              montarTaller();
+              fin();
+            };
+            onSonido('tallerPuerta');
+            if (reduced()) {
+              dentroYa();
+              return;
+            }
+            puertaAbierta = true;
+            verPuerta();
+            const yc = (PUERTA_TALLER.y0 + PUERTA_TALLER.y1) / 2 - 0.12;
+            const ojo = { p: [px, py, EYE], m: [px + Math.sin(yaw) * 6, py + Math.cos(yaw) * 6, EYE + Math.tan(PITCH) * 6] };
+            tour = {
+              t0: performance.now(),
+              paso: 0.8,
+              puntos: [
+                ojo,
+                { p: [MOSTRADOR.x1 + 0.4, yc, 1.62], m: [SW, yc + 0.12, 1.0] },
+                { p: [SW - 1.05, yc + 0.12, 1.3], m: [SW, yc + 0.12, 1.0] },
+                { corte: true, p: [(PUERTA_T.x0 + PUERTA_T.x1) / 2, TALLER.y1 - 0.08, 1.55], m: [61.6, 0.6, 1.0] },
+                vistaTaller(tall.est),
+              ],
+              fin: dentroYa,
+            };
+            invalidate();
+          }),
+      )
+      .finally(() => {
+        yendoTaller = null;
+      });
+    return yendoTaller;
+  }
+  function salirTaller() {
+    if (!tall.activa) return Promise.resolve();
+    if (yendoTaller) return yendoTaller;
+    yendoTaller = new Promise((fin) => {
+      const fuera = () => {
+        tallerGrupo.visible = false;
+        puertaAbierta = false;
+        tall = { activa: false, est: {} };
+        montarTaller();
+        walk = null;
+        px = ANTE_TALLER.x;
+        py = ANTE_TALLER.y;
+        yaw = -Math.PI / 2;
+        onMove({ x: px, y: py, yaw });
+        montarPlano();
+        fin();
+      };
+      const desde = { p: [...vista.p], m: [...vista.m] };
+      tall = { ...tall, activa: false };
+      barraT = 0;
+      onSonido('tallerPuerta');
+      if (reduced()) {
+        fuera();
+        return;
+      }
+      puertaAbierta = true;
+      verPuerta();
+      const yc = (PUERTA_TALLER.y0 + PUERTA_TALLER.y1) / 2;
+      const P = (PUERTA_T.x0 + PUERTA_T.x1) / 2;
+      tour = {
+        t0: performance.now(),
+        paso: 0.8,
+        puntos: [
+          desde,
+          { p: [P, TALLER.y1 - 0.3, 1.55], m: [P, TALLER.y1 + 1, 1.35] },
+          { corte: true, p: [SW - 0.3, yc, 1.25], m: [SW - 2, yc - 0.1, 1.2] },
+          { p: [MOSTRADOR.x1 + 0.4, yc - 0.12, 1.62], m: [4.5, yc - 0.3, 1.3] },
+          { p: [ANTE_TALLER.x, ANTE_TALLER.y, EYE], m: [ANTE_TALLER.x - 6, ANTE_TALLER.y, EYE + Math.tan(PITCH) * 6] },
+        ],
+        fin: fuera,
+      };
+      invalidate();
+    }).finally(() => {
+      yendoTaller = null;
+    });
+    return yendoTaller;
+  }
+
   // ── Mandos: arrastrar mira; un toque en un sitio lo elige; tocar el suelo lleva hasta allí ──
   const stop = new AbortController();
   const on = { signal: stop.signal };
@@ -4245,7 +5271,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         }
         return;
       }
-      if (!press.moved || walk || barra.activa || tost.activa || lib.activa || tour) return;
+      if (!press.moved || walk || barra.activa || tost.activa || lib.activa || tall.activa || yendoTaller || tour) return;
       yaw = press.yaw + (e.clientX - press.x) * DRAG;
       invalidate();
     },
@@ -4273,7 +5299,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       onPick(id);
       return;
     }
-    if (barra.activa || tost.activa || lib.activa || tour) return;
+    if (barra.activa || tost.activa || lib.activa || tall.activa || yendoTaller || tour) return;
     rayAt(e.clientX, e.clientY);
     if (ray.ray.intersectPlane(floorPlane, hit) && dentro(hit.x, hit.z, opcionesPaso())) walkTo(hit.x, hit.z);
   };
@@ -4282,7 +5308,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   canvas.addEventListener(
     'keydown',
     (e) => {
-      if (modo.decorar || barra.activa || tost.activa || lib.activa || cambiando || tour) return;
+      if (modo.decorar || barra.activa || tost.activa || lib.activa || tall.activa || yendoTaller || cambiando || tour) return;
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         yaw += e.key === 'ArrowLeft' ? KEY_STEP : -KEY_STEP;
@@ -4316,7 +5342,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     /** Cuántas portadas reales del escaparate tiene la escena (las pruebas lo miran). */
     portadasEscaparate: () => (estado.portadas ?? []).filter(Boolean).length,
     pose: () => ({ x: px, y: py, yaw }),
-    settled: () => !walk && vistaQuieta() && (barra.activa || tost.activa || lib.activa ? barraT === 1 : barraT === 0),
+    settled: () => !walk && vistaQuieta() && (barra.activa || tost.activa || lib.activa || tall.activa ? barraT === 1 : barraT === 0),
     /**
      * 1.131: ¿la cámara de la barra ya casi ha llegado a lo que mira? (A `tol` del final; sin esperar a que se pare del todo.)
      * Pilar espera a esto antes de empezar cada gesto, como quien alarga la mano hasta la siguiente herramienta.
@@ -4744,11 +5770,91 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       return out.sort((p, q) => p.x - q.x);
     },
     enLibreria: () => lib.activa && barraT === 1,
+    /**
+     * 1.133: el taller de la trastienda (on): andas hasta la puerta de detrás de la barra, la cámara pasa por encima, la puerta
+     * se abre y entras (con `est`, lo que ya se ve en el banco al llegar; ver `tall.est`). Al salir, al revés. Promesa que acaba al
+     * llegar. Sin letreros ni toques en la escena mientras dura (los gestos los lleva Taller.jsx).
+     */
+    taller(on, est = {}) {
+      return on ? entrarTaller(est) : salirTaller();
+    },
+    /** Lo que se ve en el taller (ver `tall.est`): la cámara sigue a la vista y al libro. */
+    setTaller(est = {}) {
+      if (!tall.activa) return;
+      tall = { ...tall, est };
+      vistaMeta = vistaTaller(est);
+      montarTaller();
+    },
+    /**
+     * El punto del libro bajo el dedo, en `u` y `v` de la superficie ('tapa': la tapa cerrada; 'pliego': las dos páginas, con la
+     * guarda a la izquierda), sin recortar (fuera del libro sale de 0 a 1), o null.
+     */
+    tallerPunto(clientX, clientY, sup = tall.est.superficie ?? 'tapa') {
+      aim(performance.now());
+      rayAt(clientX, clientY);
+      const L = libroOrigen();
+      const { ancho: A, hondo: H } = LIBRO_TALLER;
+      const corta = (z) => ray.ray.intersectPlane(planoTaller.set(arribaTaller, -z), hit);
+      if (sup === 'tapa') return corta(L.z + LIBRO_Z.tapa) ? { u: (hit.x - L.x) / A, v: (hit.z - L.y) / H } : null;
+      if (!corta(L.z + LIBRO_Z.pagina)) return null;
+      let u = (hit.x - L.x + A) / (2 * A);
+      let v = (hit.z - L.y) / H;
+      if (u < 0.5 && corta(L.z + LIBRO_Z.guarda)) {
+        u = Math.min(0.4999, (hit.x - L.x + A) / (2 * A));
+        v = (hit.z - L.y) / H;
+      }
+      return { u, v };
+    },
+    /**
+     * Dónde cae en la pantalla una marca del taller (en px de la ventana): 'tapa:u:v', 'pliego:u:v', 'letra:<k>', 'mancha:<k>',
+     * 'pliegue' (o 'pliegue:a' y 'pliegue:b', sus puntas), 'husillo', 'lomo', 'libro', 'guarda', 'prensa' o 'celestino'.
+     */
+    tallerMarca(nombre) {
+      aim(performance.now());
+      const e = tall.est;
+      const L = libroOrigen(e);
+      const enc = e.encargo;
+      const [tipo, a, b] = String(nombre).split(':');
+      let m = null;
+      if (tipo === 'tapa') m = enTapa(L, Number(a), Number(b));
+      else if (tipo === 'pliego') m = enPliego(L, Number(a), Number(b));
+      else if (tipo === 'letra') {
+        const l = letrasTapa(enc?.tapa ?? '')[Number(a)];
+        if (l) m = enTapa(L, l.u, l.v);
+      } else if (tipo === 'mancha') {
+        const k = manchasDe(semillaEncargo(enc))[Number(a)];
+        if (k) m = enPliego(L, k.u, k.v);
+      } else if (tipo === 'pliegue') {
+        const [u, v] = a === 'a' ? PLIEGUE.a : a === 'b' ? PLIEGUE.b : [(PLIEGUE.a[0] + PLIEGUE.b[0]) / 2, (PLIEGUE.a[1] + PLIEGUE.b[1]) / 2];
+        m = enPliego(L, u, v);
+      } else
+        m =
+          {
+            husillo: [PRENSA_TALLER.x, PRENSA_TALLER.y, husilloZ(e.vistas?.prensa?.prensa ?? 0) - 0.012],
+            lomo: enTapa(L, 0.08, 0.5),
+            libro: enTapa(L, 0.5, 0.5),
+            guarda: enPliego(L, 0.25, 0.62),
+            prensa: [PRENSA_TALLER.x, PRENSA_TALLER.y, 1.0],
+            celestino: [CELESTINO.x, CELESTINO.y, 1.95],
+          }[tipo] ?? null;
+      if (!m) return null;
+      const p = project(...m);
+      const rect = canvas.getBoundingClientRect();
+      return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
+    },
+    /** ¿Estás en el taller, con la cámara ya en su sitio? */
+    enTaller: () => tall.activa && barraT === 1 && !tour,
+    /** ¿Se está entrando o saliendo del taller? (para las pruebas) */
+    yendoTaller: () => Boolean(yendoTaller),
     destroy() {
       ponerEnMano(null);
       destroyed = true;
       lib = { activa: false, est: {}, lleva: null };
       montarLibreria();
+      tall = { activa: false, est: {} };
+      tallerGrupo.visible = false;
+      montarTaller();
+      for (const m of [cuerpoM, placaM]) m?.geometry.dispose();
       vaciarGrupo();
       clientes = [];
       montarClientes();

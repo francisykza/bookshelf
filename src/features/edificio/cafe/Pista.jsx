@@ -38,6 +38,10 @@ const TRAZOS = {
   meter: 'M 44 6 L 44 50 M 22 38 L 22 76 L 66 76 L 66 38',
   // 1.130: empujar la caja de libros hacia arriba (colocarlos todos)
   arriba: 'M 44 76 L 44 14 M 44 14 L 34 26 M 44 14 L 54 26',
+  // 1.133, el taller: pasadas largas de brocha (ida y vuelta), círculos pequeños con la goma y barrer de lado a lado
+  pasadas: 'M 6 30 L 82 30 Q 88 41 82 52 L 6 52',
+  circulos: 'M 44 30 a 14 14 0 1 1 -0.1 0 m 0.1 6 a 8 8 0 1 1 -0.1 0',
+  barrer: 'M 6 44 L 82 44 M 82 44 L 72 36 M 82 44 L 72 52',
 };
 
 /** La pista del gesto `tipo` (o la de `trazo`, una de `TRAZOS`), dibujada sobre el objeto. */

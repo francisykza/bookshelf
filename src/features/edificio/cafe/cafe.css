@@ -3198,6 +3198,11 @@
   text-align: center;
   transform: translate(-50%, 50px) rotate(-1deg);
 }
+/* 1.133, el taller: la nota del dorado, encima del título (al lado taparía las letras que faltan) */
+.cf3-gesto__nota[data-lado='arriba'] {
+  text-align: center;
+  transform: translate(-50%, calc(-100% - 50px)) rotate(1deg);
+}
 @keyframes cf3-nota-entra {
   from {
     opacity: 0;
@@ -4098,4 +4103,439 @@
 }
 .cf3-placa[data-sube='true'] .cf3-xp__cifra {
   color: #ffe08a;
+}
+
+/* ── 1.133, el taller de la trastienda (§16.3): don Celestino, el encargo y la cartulina «antes / después» ── */
+/* Tras ver la 1.133 (Francisco, «que el menu del taller tenga un poco más de alma comparado con la cafeteria normal»): el cuadro
+   es un libro encuadernado en media piel con puntas, como los que salen del banco. Tela verde con su trama, el lomo de cuero a la
+   izquierda con sus nervios dorados, las puntas de cuero a la derecha y un filete de oro por dentro. El nombre, en un tejuelo de
+   piel roja con letras doradas; el retrato, en un marco de latón con remaches; los botones, de piel con filete de oro (el de
+   «Luego», de papel de estraza); los daños, etiquetas de estraza con su agujero; la etapa de ahora, con la cinta de registro, y
+   el medidor, pan de oro sobre piel. Todo de píxel, sin brillos ni desenfoques. */
+.cf3-franja--taller {
+  --cf3-tela: #2e4a38;
+  --cf3-tela-2: #223a2c;
+  --cf3-piel: #74362a;
+  --cf3-piel-d: #4e2018;
+  --cf3-oro: #e0b864;
+  --cf3-estraza: #d8bf8e;
+  --cf3-estraza-d: #b09464;
+}
+.cf3-franja--taller .cf3-caja {
+  position: relative;
+  padding: 16px 16px 14px 34px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 16px, var(--cf3-oro) 16px 18px, transparent 18px 21px, var(--cf3-oro) 21px 23px, transparent 23px 46px) 2px 0 / 18px 100% no-repeat,
+    linear-gradient(90deg, transparent 0 2px, var(--cf3-piel) 2px 18px, var(--cf3-piel-d) 18px 20px, #1c120c 20px 22px, transparent 22px),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.09) 0 1px, transparent 1px 3px),
+    linear-gradient(var(--cf3-tela), var(--cf3-tela-2));
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 2px 0 4px rgb(255 255 255 / 0.05);
+}
+/* El filete de oro, por dentro de la tela (sin pisar el lomo) */
+.cf3-franja--taller .cf3-caja::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  bottom: 6px;
+  left: 27px;
+  box-shadow: inset 0 0 0 2px rgb(224 184 100 / 0.62);
+  pointer-events: none;
+}
+/* Las puntas de cuero, arriba y abajo a la derecha */
+.cf3-franja--taller .cf3-caja::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
+  width: 24px;
+  background:
+    linear-gradient(225deg, var(--cf3-piel) 0 48%, var(--cf3-piel-d) 48% 54%, transparent 54%) top right / 24px 24px no-repeat,
+    linear-gradient(315deg, var(--cf3-piel) 0 48%, var(--cf3-piel-d) 48% 54%, transparent 54%) bottom right / 24px 24px no-repeat;
+  pointer-events: none;
+}
+.cf3-franja--taller .cf3-extra {
+  box-shadow: none;
+}
+/* El nombre, en un tejuelo de piel roja con filete y letras doradas, y un florón a cada lado */
+.cf3-franja--taller .cf3-quien {
+  left: 40px;
+  padding: 5px 12px 6px;
+  background: #8a2a26;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 0 0 3px #8a2a26,
+    inset 0 0 0 4px var(--cf3-oro);
+  color: #f6d88a;
+  text-shadow: 0 1px 0 #3a0e0c;
+}
+.cf3-franja--taller .cf3-quien::before,
+.cf3-franja--taller .cf3-quien::after {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin: 0 7px 2px 0;
+  background: var(--cf3-oro);
+  vertical-align: middle;
+}
+.cf3-franja--taller .cf3-quien::after {
+  margin: 0 0 2px 7px;
+}
+/* El retrato, en un marco de latón con cuatro remaches, sobre el tapete del banco */
+.cf3-franja--taller .cf3-retrato {
+  background: linear-gradient(#3e5a46, #2a4032);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 0 0 5px #c99a48,
+    inset 0 0 0 6px #2a1a10;
+}
+.cf3-franja--taller .cf3-retrato::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 3px;
+  height: 3px;
+  background: #fff0b0;
+  box-shadow:
+    53px 0 0 #fff0b0,
+    0 53px 0 #fff0b0,
+    53px 53px 0 #fff0b0;
+  pointer-events: none;
+}
+/* Los botones: de piel con filete de oro (el de seguir), de latón (los de hablar) y de papel de estraza («Luego») */
+.cf3-franja--taller .cf3-btn {
+  background: #d4ac5c;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -5px 0 #9a7430,
+    inset 0 4px 0 #f2d890;
+  color: #2a1a10;
+}
+.cf3-franja--taller .cf3-btn:hover,
+.cf3-franja--taller .cf3-btn:focus-visible {
+  background: #e0bc6c;
+}
+.cf3-franja--taller .cf3-btn:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -2px 0 #9a7430,
+    inset 0 5px 0 #b48a3c;
+}
+.cf3-franja--taller .cf3-btn--verde {
+  background: #7e3626;
+  box-shadow:
+    inset 0 0 0 2px #1e0e0a,
+    inset 0 -5px 0 #56221a,
+    inset 0 4px 0 #a04a34;
+  outline: 2px solid rgb(224 184 100 / 0.85);
+  outline-offset: -7px;
+  color: #ffe7a8;
+  text-shadow: 0 2px 0 #3a120c;
+}
+.cf3-franja--taller .cf3-btn--verde:hover,
+.cf3-franja--taller .cf3-btn--verde:focus-visible {
+  background: #8e402e;
+}
+.cf3-franja--taller .cf3-btn--verde:focus-visible {
+  outline: 2px solid var(--cf3-cream);
+  outline-offset: 2px;
+}
+.cf3-franja--taller .cf3-btn--verde:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 2px #1e0e0a,
+    inset 0 -2px 0 #56221a,
+    inset 0 5px 0 #5e281c;
+}
+.cf3-franja--taller .cf3-btn--suave {
+  background: #c8a676;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 #a07f50,
+    inset 0 3px 0 #e4caa0;
+  color: #2e1e14;
+}
+.cf3-franja--taller .cf3-btn--suave:hover,
+.cf3-franja--taller .cf3-btn--suave:focus-visible {
+  background: #d4b484;
+}
+.cf3-franja--taller .cf3-btn--suave:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -2px 0 #a07f50,
+    inset 0 4px 0 #a88a5c;
+}
+/* Las etapas, etiquetas de estraza; la de ahora, con la cinta de registro roja; las hechas, con el sello verde */
+.cf3-franja--taller .cf3-etapas li {
+  position: relative;
+  background: #8c7450;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -3px 0 #6e5a3c;
+  color: rgb(46 30 20 / 0.72);
+}
+.cf3-franja--taller .cf3-etapas li[data-estado='ahora'] {
+  padding-right: 13px;
+  background: var(--cf3-estraza);
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -3px 0 var(--cf3-estraza-d);
+  color: #2e1e14;
+}
+.cf3-franja--taller .cf3-etapas li[data-estado='ahora']::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: 4px;
+  width: 6px;
+  height: calc(100% + 8px);
+  background: #b02c32;
+  box-shadow: inset -2px 0 0 #7e1c22;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+}
+.cf3-franja--taller .cf3-etapas li[data-estado='hecha'] {
+  background: #b8c48e;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -3px 0 #8e9c66;
+  color: #24401e;
+}
+/* El medidor: pan de oro que se va asentando sobre la piel */
+.cf3-franja--taller .cf3-medidor {
+  background: #3a1c16;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px rgb(224 184 100 / 0.3);
+}
+.cf3-franja--taller .cf3-medidor__lleno {
+  background: repeating-linear-gradient(90deg, #f8e08e 0 5px, #e6ba52 5px 7px, #c4923a 7px 8px);
+}
+/* El repaso, en etiquetas de estraza (lo que se podía mejorar, en ámbar) */
+.cf3-franja--taller .cf3-repaso li {
+  background: #e4d2a6;
+  box-shadow: inset 0 -2px 0 #c0a87a;
+  color: #24401e;
+}
+.cf3-franja--taller .cf3-repaso li[data-ok='mejor'] {
+  background: #f0d48c;
+  color: #6a3e0e;
+}
+/* En la barra, el cuadro se encoge: el lomo y las puntas, más finos, y la tela algo transparente */
+.cf3-franja--barra.cf3-franja--taller .cf3-caja {
+  padding: 10px 14px 10px 26px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 10px, var(--cf3-oro) 10px 12px, transparent 12px 15px, var(--cf3-oro) 15px 17px, transparent 17px 34px) 2px 0 / 12px 100% no-repeat,
+    linear-gradient(90deg, transparent 0 2px, var(--cf3-piel) 2px 14px, #1c120c 14px 16px, transparent 16px),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 3px),
+    linear-gradient(rgb(46 74 56 / 0.94), rgb(34 58 44 / 0.95));
+  box-shadow: inset 0 0 0 2px var(--cf3-ink);
+}
+.cf3-franja--barra.cf3-franja--taller .cf3-caja::before {
+  top: 5px;
+  right: 5px;
+  bottom: 5px;
+  left: 20px;
+  box-shadow: inset 0 0 0 2px rgb(224 184 100 / 0.45);
+}
+.cf3-franja--barra.cf3-franja--taller .cf3-caja::after {
+  width: 16px;
+  background:
+    linear-gradient(225deg, var(--cf3-piel) 0 48%, var(--cf3-piel-d) 48% 56%, transparent 56%) top right / 16px 16px no-repeat,
+    linear-gradient(315deg, var(--cf3-piel) 0 48%, var(--cf3-piel-d) 48% 56%, transparent 56%) bottom right / 16px 16px no-repeat;
+}
+/* El encargo: lo que cuenta su dueño en un papelito, el libro y sus daños en fichitas */
+.cf3-encargo {
+  display: grid;
+  gap: 6px;
+}
+.cf3-encargo__cita {
+  --cf3-px: 2px;
+  position: relative;
+  margin: 4px 0 0;
+  padding: 6px 9px 7px;
+  background: #f6ecd4;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #d8c49c;
+  color: #2e1e14;
+  font:
+    italic 0.8rem/1.35 'Lora',
+    Georgia,
+    serif;
+  transform: rotate(-0.6deg);
+}
+.cf3-encargo__cita::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: #b8402e;
+  box-shadow:
+    inset 2px 2px 0 #e8806a,
+    0 0 0 2px #2a1a10,
+    2px 3px 0 2px rgb(0 0 0 / 0.25);
+}
+.cf3-encargo__libro {
+  margin: 0;
+  color: rgb(243 230 200 / 0.86);
+  font:
+    0.8rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-encargo__libro cite {
+  color: #ffe08a;
+  font-style: italic;
+}
+.cf3-encargo__danos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cf3-encargo__danos li {
+  --cf3-px: 2px;
+  position: relative;
+  padding: 4px 8px 6px 15px;
+  background: #d8bf8e;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -3px 0 #b09464;
+  color: #2e1e14;
+  font: 400 12px/12px var(--pp-title);
+}
+.cf3-encargo__danos li::before {
+  content: '';
+  position: absolute;
+  top: calc(50% - 3px);
+  left: 6px;
+  width: 4px;
+  height: 4px;
+  background: #223a2c;
+  box-shadow: 0 0 0 1px #8c7450;
+}
+.cf3-encargo__danos li[data-hecho='true'] {
+  background: #b8c48e;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -3px 0 #8e9c66;
+  color: #24401e;
+}
+/* En el repaso, lo que se podía mejorar: un consejo en ámbar, nunca un fallo */
+.cf3-repaso li[data-ok='mejor'] {
+  background: #4a3a1c;
+  color: #ffe0a0;
+}
+/* «¡Perfecto!»: el sello del daño bien hecho, en dorado */
+.cf3-gesto__hecho[data-bien='true'] {
+  background: #9a7424;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -3px 0 #6e5218,
+    0 3px 0 rgb(0 0 0 / 0.4);
+  color: #fff3c8;
+}
+/* La cartulina: la ficha «antes / después» sobre el banco, junto al libro */
+.cf3-cartulina {
+  --cf3-px: 3px;
+  position: absolute;
+  top: calc(146px + env(safe-area-inset-top, 0px));
+  right: 14px;
+  width: min(184px, 47%);
+  margin: 0;
+  padding: 10px 10px 14px;
+  background:
+    linear-gradient(rgb(255 255 255 / 0.22), transparent 45%),
+    #efe2c4;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 #d6c39a,
+    0 4px 0 rgb(0 0 0 / 0.4);
+  color: #2e1e14;
+  transform: rotate(2deg);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-cartulina {
+    animation: cf3-cartulina 0.5s steps(5, end) both;
+  }
+}
+@keyframes cf3-cartulina {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) rotate(-4deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(2deg);
+  }
+}
+.cf3-cartulina__titulo {
+  margin: 0 0 8px;
+  font:
+    italic 600 0.78rem/1.2 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+.cf3-cartulina__tapas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cf3-cartulina__tapa {
+  display: grid;
+  gap: 5px;
+  justify-items: center;
+}
+.cf3-cartulina__tapa img,
+.cf3-cartulina__vacia {
+  display: block;
+  width: 100%;
+  aspect-ratio: 80 / 110;
+  background: #7a5a3a;
+  box-shadow:
+    0 0 0 2px #2a1a10,
+    2px 3px 0 rgb(0 0 0 / 0.3);
+  image-rendering: pixelated;
+}
+.cf3-cartulina__pie {
+  color: #6b4a32;
+  font: 400 11px/11px var(--pp-title);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* El ex libris del taller, estampado en una esquina de la cartulina */
+.cf3-cartulina__sello {
+  position: absolute;
+  right: 6px;
+  bottom: -9px;
+  padding: 3px 6px 4px;
+  background: rgb(239 226 196 / 0.85);
+  box-shadow: inset 0 0 0 2px #8a2a24;
+  color: #8a2a24;
+  font: 400 10px/10px var(--pp-title);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-8deg);
+}
+/* Las pistas del taller: pasadas largas de brocha, círculos pequeños con la goma y barrer de lado a lado */
+.cf3-pista[data-pista='pasadas'] {
+  --cf3-pista-camino: path('M 6 30 L 82 30 Q 88 41 82 52 L 6 52');
+}
+.cf3-pista[data-pista='circulos'] {
+  --cf3-pista-camino: path('M 44 30 a 14 14 0 1 1 -0.1 0 a 14 14 0 1 1 0.1 0');
+}
+.cf3-pista[data-pista='barrer'] {
+  --cf3-pista-camino: path('M 6 44 L 82 44');
 }

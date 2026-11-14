@@ -6,6 +6,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada por Francisco («Me convence»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.133.0**
+  (2026-11-14, §133; «Continua por donde se quedo la otra cuenta»). `main` y producción siguen en la 1.132.0. El café-librería
+  del bajo, **bloque 2 de §16**: el taller de la trastienda, primera tanda (desde el nivel 3, una puerta tras la barra; don
+  Celestino; un encargo de un cliente al día que no caduca; polvo, manchas, arrugas, lomo y prensa, y dorado, cada uno con su
+  gesto, objeto y sonido; el ex libris y la ficha «antes / después»; 6 / 9 / 12 granos y 15 / 22 / 30 de reputación).
+  **Migración nueva sin aplicar**: `20261220120000_cafe_taller.sql`, que se aplica **justo antes de publicar** (la aplica
+  Francisco). Evidencias en `qa-report/v1133/`, enviadas al chat. **Encima, tras verlo Francisco** («me gusta pero…»,
+  §133.5): gestos más cortos, don Celestino hecho a mano, el menú del taller como un libro encuadernado, y sonidos y música
+  propios del taller. Las evidencias van con sonido.
 - **Publicada en producción: 1.132.0** (2026-11-14, §132; «Continua por donde se quedo la otra cuenta», que había dejado el
   bloque a medias en un commit de la rama; «Sí, haz el commit»; «Migración y publicar»; `main` avanzó sin forzar de `bc5ee48`
   a `cafd2d0` (también la rama) y `/sw.js` de producción ya sirve v1.132.0). El café-librería del bajo, **bloque 1 de §16**:
@@ -220,8 +229,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   - decisiones de la 1.ª tanda tomadas;
   - **bloque 1 (fuera la pizarra y el influencer), publicado como 1.132.0** (migración aplicada): lo que Francisco note al
     jugarlo;
-  - antes del bloque 2 (el taller, primera tanda), que Francisco apruebe sus cifras (§16.3) y la interpretación del encargo
-    del amigo (§16.4). **Es lo siguiente.**
+  - **bloque 2 (el taller, primera tanda), terminado y aprobado como 1.133.0 («Me convence»), con commit en la rama**: falta
+    publicarlo cuando Francisco lo pida. Orden: la migración `20261220120000_cafe_taller.sql` en el SQL Editor (SHA-256
+    comprobado, él pulsa «Run») **justo antes**, después `main` y comprobar `/sw.js`. **Es lo siguiente.** Las
+    interpretaciones de §16.7 siguen sin confirmar expresamente.
+  - antes del bloque 3 (segunda tanda y el encargo del amigo), que apruebe la interpretación de §16.4.
 
 - **Café, el libro más cerca y Pilar a mano (1.131.0, publicada)**: lo que Francisco note al jugarla. Evidencias en
   `qa-report/v1131/`, enviadas al chat.
@@ -375,6 +387,125 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · Café: el taller, aprobado · 1.133.0, commit en la rama (Claude)
+
+- Francisco, tras las evidencias con sonido: «Me convence». Commit en `1.90-escritorio-puerto` de toda la 1.133.0: el bloque 2
+  (§133) y el refinado tras verlo él (§133.5), con `scripts/onedrive-dirent.cjs`.
+- **Sin publicar**: `main` y producción siguen en la 1.132.0. **La migración `20261220120000_cafe_taller.sql`, sin aplicar**;
+  se aplica justo antes de publicar, cuando él lo pida («Migración y publicar», como en la 1.132). Sin ella, el café va como
+  en la 1.132 y no hay letrero del taller.
+- Las interpretaciones de §16.7 no las ha confirmado una a una; la del encargo del amigo (§16.4), pendiente para el bloque 3.
+
+### 2026-11-14 · Café: el taller, tras verlo Francisco · 1.133.0 (§133.5), sin commit (Claude)
+
+Francisco, tras las evidencias de la 1.133: «me gusta pero algunas acciones tardan demasiado, como quitar el polvo y me
+gustaría que esto tambien tuviese sus propios sonidos y que don celestino se vea mucho más unico y que el menu del taller tenga
+un poco más de alma comparado con la cafeteria normal, además de tener su propia musica como la cafeteria». Se queda en la
+1.133.0 (no se ha publicado). Regla nueva en `CLAUDE.md` (el taller, «Tras ver la 1.133»).
+
+- **Hecho**:
+  - Gestos más cortos en `MEDIDAS_TALLER`: el polvo, en unas cuatro pasadas; también la goma, el hierro y el sello. La
+    brocha es una paletina ancha.
+  - Don Celestino, hecho a mano en `celestinoKit` (`cafe3d.js`) y su retrato a juego. `figuraKit` vuelve a ser como en la
+    1.132.
+  - El menú del taller como un libro en media piel con puntas: CSS de `.cf3-franja--taller`, también en la barra.
+  - Los sonidos del taller en su propia sala, la trastienda (`trastienda` en `cafeSfx.js`), con los bucles. Además:
+    - la voz de garganta de don Celestino;
+    - `polvoClaro`, con el evento `claro:N` del gesto del polvo.
+  - La música del taller, con violonchelo con arco, rumor de lluvia, brasas y la cola que burbujea.
+  - Las e2e con vídeo graban el sonido de la página y lo mezclan con el vídeo. La música, aparte, en `musica-taller.wav`.
+- **OneDrive** (de esta tarde): Node 24 lista todos los archivos del proyecto como enlaces, y Playwright decía «No tests
+  found» (con las dos configuraciones). Se arregla sin tocar nada en disco con `scripts/onedrive-dirent.cjs`; ver
+  `CLAUDE.md` §4.
+- **Pruebas**:
+  - `v1133-cafe-taller.spec.js` a 390 y 360: 6 pasan y 4 se saltan (las que solo van a 390).
+  - Vitest `cafeTaller.test.js` y `cafe-taller.rls.test.js`: 21 de 21.
+  - Regresión `v1132` a 390: 3 de 3.
+  - Build y lint de lo tocado, sin errores.
+  - Los dos vídeos llevan sonido: decodificado en Chromium, suena en unos 66–69 de sus 70–74 s, con pico 0,37 y sin saturar.
+    `musica-taller.wav` suena los 48 s.
+- **La prueba de movimiento reducido fallaba a veces** (2 o 3 de cada 4 a 6 repeticiones). Al entrar, el letrero del taller
+  se quedaba con `data-off`. La causa es una carrera de la prueba: coloca la cámara delante de la puerta antes de que lleguen
+  los datos del día. Al llegar, `setLocal` vuelve a montar lo colocado y recoloca al jugador. Ahora `entrar` espera al
+  encargo del día y se vuelve a colocar si hace falta. Solo cambia la prueba, no la app. Con 5 repeticiones seguidas, 5 de 5.
+- **Sin commit**, y **la migración `20261220120000_cafe_taller.sql` sin aplicar**.
+- **Pendiente de Francisco**:
+  - revisar estas evidencias, ahora con sonido;
+  - las interpretaciones de §16.7;
+  - la del encargo del amigo (§16.4).
+
+### 2026-11-14 · Café: el taller de la trastienda, primera tanda · 1.133.0 (§133), sin commit (Claude)
+
+Francisco: «Continua por donde se quedo la otra cuenta». Se termina el bloque 2 de `cafe-libreria.md` §16.6, que la otra
+cuenta dejó a medias sin commit (entrada de abajo): reglas, gestos, pintura, música, sonidos, servicio, simulación y la
+trastienda en 3D ya estaban; faltaba la app.
+
+- **Hecho en esta sesión**:
+  - `Taller.jsx`, nuevo: don Celestino (dos frases la primera vez), el encargo en su papelito, los gestos uno detrás de otro
+    con su herramienta, pista, nota, bucle y sonidos, el mimo y el sello de cada daño, el ex libris, la ficha «antes /
+    después» en su cartulina, el resultado y el día sin encargo. También «Luego» a medias (se recuerda mientras la app sigue
+    abierta), movimiento reducido (un toque o el atajo) y el teclado (Intro).
+  - Su CSS, en `cafe.css`. Las pistas `pasadas`, `circulos` y `barrer`, en `Pista.jsx`. El retrato `DON_CELESTINO`, en
+    `cafeIconos.js`.
+  - Enganchado en `Cafe.jsx`: el letrero de la puerta («· un encargo»), su música en vez de la del café, y el cartel de lo
+    conseguido que espera a volver.
+  - Ajustes de la trastienda tras las capturas:
+    - don Celestino más al centro de la entrada, con el taburete a su lado;
+    - el mango del hierro, hacia ti (tapaba las letras);
+    - la cámara del título, más al centro;
+    - la nota del dorado, encima del título;
+    - la «!» no sale mientras aprietas.
+  - Arreglos que salieron en las e2e:
+    - con movimiento reducido, el letrero del taller se quedaba escondido hasta mover la cámara: la escena quieta no se
+      redibuja sola; ahora se pide un fotograma al llegar el encargo;
+    - «Te falta» nombraba solo el siguiente daño: ahora los nombra todos («página arrugada y título borrado»).
+  - E2e `v1133-cafe-taller.spec.js`. Se borró la temporal `v1133-explora.spec.js`.
+  - Versión 1.133.0, SPEC §133 y `cafe-libreria.md` §16.7, con las interpretaciones por confirmar.
+- **Pruebas**:
+  - build;
+  - `npx oxlint` sin avisos nuevos;
+  - vitest del edificio (también `cafeTaller.test.js` y `cafe-taller.rls.test.js`);
+  - e2e a 390: primer encargo, otro día con la cola de más, movimiento reducido y nivel 2 sin letrero;
+  - e2e a 360: el primer encargo.
+  - Regresión: `v1132-cafe-influencer.spec.js` a 390 (3 de 3).
+  - Vitest con todo el edificio a la vez: `sala-parejas.rls.test.js` dio un tiempo agotado (PGlite con 61 archivos a la
+    vez); sola, pasa. No tiene que ver con el café.
+  - Evidencias en `qa-report/v1133/`, enviadas al chat.
+  - Sin probar en móviles reales.
+- **Sin commit** y **la migración `20261220120000_cafe_taller.sql` sin aplicar** (la aplica Francisco). Sin ella, la puerta
+  no tiene letrero y el café va como en la 1.132.
+- **Mirado en las capturas y sin cambiar**: las herramientas en la mano son bloques sencillos (se leen, pero de cerca se ven
+  toscas) y la lluvia del ventanuco, algo ruidosa. En la ficha, el «antes» enseña la tapa: las manchas, que están dentro, no
+  salen ahí.
+- **Pendiente de Francisco**:
+  - revisar las evidencias;
+  - las interpretaciones de §16.7;
+  - la del encargo del amigo (§16.4), que hace falta para el bloque 3.
+
+### 2026-11-14 · Bloque 2 del taller, a medias (Claude, sin commit)
+
+- Francisco: «Sí, empieza» (bloque 2, `cafe-libreria.md` §16.6). Se cortó por el límite de uso de la cuenta. **Todo sin commit**
+  y **la migración `20261220120000_cafe_taller.sql` sin aplicar** (escrita y probada con PGlite en `cafe-taller.rls.test.js`).
+- Hecho y en disco: reglas y gestos (`cafeTaller.js`, `cafeTallerGestos.js`, 14 pruebas en `cafeTaller.test.js`), pintura del
+  libro (`cafeTallerPintura.js`), música (`cafeTallerMusica.js`, `crearMusicaViva` en `cafeMusica.js`), sonidos del taller en
+  `cafeSfx.js`, servicio (`cargarTaller`, `restaurarEncargo`) y simulación (`cafeMock`), y la trastienda en 3D en `cafe3d.js`
+  (puerta tras la barra desde el nivel 3, cuarto con banco, prensa, lámpara con lupa, papeles, hilos, cola, ventanuco con lluvia,
+  don Celestino; el libro con tapa que se abre; API `taller`, `setTaller`, `tallerPunto`, `tallerMarca`, `enTaller`). Don
+  Celestino se acaba de mover a (61.3, 1.35) en `cafeLayout.js` y **no se ha vuelto a mirar en captura**.
+- Falta: el panel `Taller.jsx` y su CSS (ficha del encargo, los cinco gestos con `crearGestoTaller`, ex libris, ficha antes /
+  después, resultado), el icono de Celestino en `cafeIconos.js`, enganchar el taller en `Cafe.jsx` (y su música), la e2e de verdad
+  `v1133-cafe-taller.spec.js` (borrar la temporal `v1133-explora.spec.js`), evidencias, versión 1.133.0, SPEC §133 y §16.7.
+- Pendiente de mirar en las capturas: las herramientas en la mano se ven toscas de cerca y la lluvia del ventanuco, algo ruidosa.
+
+### 2026-11-14 · Cifras del taller aprobadas (Claude)
+
+- Francisco: «Sí, esas cifras del taller». Valen las de `cafe-libreria.md` §16.3: el encargo de un cliente, 6 / 9 / 12 granos
+  y 15 / 22 / 30 de reputación (1★ / 2★ / 3★); el de un amigo, la mitad (3 / 5 / 6 y 8 / 11 / 15); aparte del tope diario de
+  reputación y sin tickets. Anotado en `CLAUDE.md` (el taller, en el café-librería) y en `cafe-libreria.md` §16 y §16.3.
+- Con eso, el bloque 2 (primera tanda del taller) ya no espera a nada más que a que él diga que se empiece. La interpretación
+  del encargo del amigo (§16.4) sigue por aprobar, pero solo hace falta para el bloque 3.
+- **Sin commit**: solo documentos (`CLAUDE.md`, `cafe-libreria.md` y este); van con el commit del bloque 2.
 
 ### 2026-11-14 · Migración del influencer aplicada y 1.132.0 a producción (Claude)
 

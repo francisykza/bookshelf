@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.132.0 · 2026-11-14 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.133.0 · 2026-11-14 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7041,3 +7041,125 @@ empezó una cuenta y lo terminó la otra (bitácora de `docs/ESTADO.md`). Migrac
   las fotos con las reglas de la migración.
 - `e2e-community/v1132-cafe-influencer.spec.js`: la Bloguera viral (360 y 390), la arena acabada con movimiento reducido (360
   y 390) y los virales del día siguiente (390). Capturas y vídeos en `qa-report/v1132/`.
+
+## 133. El café-librería del bajo: el taller de la trastienda, primera tanda (1.133.0)
+
+Encargo de Francisco del 14-11-2026 (plan en `docs/qa/cafe-libreria.md` §16.3, bloque 2 de §16.6; «Sí, empieza»), con las
+cifras aprobadas el mismo día («Sí, esas cifras del taller»): desde el nivel 3, una puerta detrás de la barra lleva al taller de
+la trastienda, el banco de don Celestino. Como mucho un encargo de un cliente al día, sin caducar ni reloj; cada daño con su
+gesto, su objeto y su sonido; al final, el ex libris y la ficha «antes / después». Paga 6 / 9 / 12 granos y 15 / 22 / 30 de
+reputación (1★ / 2★ / 3★), aparte del tope diario y sin tickets. Pilar no restaura. Lo empezó una cuenta y lo terminó la otra
+(bitácora de `docs/ESTADO.md`). Migración nueva: `20261220120000_cafe_taller.sql` (la aplica Francisco).
+
+### 133.1 El servidor
+
+- Tabla `cafe_encargos` (RLS sin permisos directos): el número del encargo de cada cuenta, el día que llegó, el libro (0 a 15)
+  y quién lo trae (0 a 11) de las listas cerradas, sus daños, y al terminar el día, las estrellas, el mimo de cada daño y lo
+  pagado.
+- **`cafe_taller(dia)`**: desde el nivel 3 (`cafe:taller` si no). Devuelve el encargo pendiente; si no hay ninguno y ese día no
+  ha llegado ni se ha terminado otro, llega uno nuevo. El primero de cada cuenta es siempre el Quijote con polvo, pliegue y
+  título borrado (`PRIMER_ENCARGO`); los demás, libro, cliente y daños al azar (2 o 3 en los niveles 3 y 4, 3 o 4 en el 5 y el
+  6, 4 o 5 desde el 7). También dice cuántos van hechos y el terminado ese día (`hoy`).
+- **`cafe_restaurar(dia, n, mimo)`**: la app dice cómo quedó cada daño, en su orden (2, bien; 1, se podía mejorar). El servidor
+  pone las estrellas (3 con todos bien, 2 con al menos la mitad, 1 si no; nunca cero), paga granos y reputación por
+  `cafe_progreso` (con su techo del influencer y sus hitos) y devuelve el café, el día, los libros, el taller y el progreso.
+  Errores: `cafe:encargo` (ya terminado o de otro) y `cafe:mimo` (mal formado).
+
+### 133.2 La trastienda en 3D (`cafe3d.js`, `cafeLayout.js`)
+
+- **La puerta**: baja, en la pared de la derecha detrás de la barra, con su letrero «El taller» desde el nivel 3 (y «· un
+  encargo» si hay uno esperando; sin la migración, sin letrero). Al tocarla se anda hasta delante, la cámara pasa por encima de
+  la barra, la puerta se abre (suena `tallerPuerta`) y se entra; al salir, al revés. Con movimiento reducido, directo.
+- **El cuarto**: estrecho y bajo, aparte en el mundo como la bodega. El banco con tapete verde, la prensa de husillo, la lámpara
+  de brazo con lupa, papeles jaspeados colgados, hilos, el cazo de la cola con su vaho, el hornillo del hierro de dorar, el
+  ventanuco con lluvia y el polvo que flota en la luz. Don Celestino, de pie junto a su taburete, hecho a mano (§133.5).
+- **El libro en el banco**: la tapa (con su tela, su adorno y el título en letra de píxel) gira sobre el lomo y deja ver la
+  guarda jaspeada y la portadilla; lo pintado sale de `cafeTallerPintura.js` (polvo y moho, manchas, migas, pliegue, cola, oro
+  y el ex libris). Para prensar, el libro sube, va y entra en la prensa; la platina baja con el husillo.
+- **La API**: `taller(on, est)`, `setTaller(est)` (la cámara va a la vista de cada gesto: tapa, título, lomo, pliego, una
+  página, prensa o ficha), `tallerPunto` (el dedo, en `u` y `v` de la tapa o de las dos páginas), `tallerMarca` y `enTaller`.
+
+### 133.3 En la app (`Taller.jsx`)
+
+- **Don Celestino** (retrato `DON_CELESTINO` en `cafeIconos.js`) se presenta la primera vez con dos frases y enseña el primer
+  encargo; después solo comenta. Su voz (un «mm-hm» de garganta, sin palabras) suena cada vez que dice algo.
+- **El encargo**: quién lo ha traído y lo que cuenta en un papelito, el libro y sus daños en fichitas. «Empezar» o «Luego».
+- **Los gestos** (`cafeTallerGestos.js`), uno detrás de otro en el orden del banco, cada uno con su herramienta en la mano, su
+  pista, su notita de cómo, su bucle y sus sonidos:
+  - polvo y moho, la brocha: pasadas largas y suaves (el moho pide más; levanta polvo a contraluz);
+  - manchas y lápiz, la goma de miga: círculos pequeños sobre cada mancha; después, barrer las migas con el canto de la mano;
+  - página arrugada, la plegadera: apretar y deslizar a lo largo del pliegue, ida y vuelta;
+  - lomo despegado: pincelar el lomo con cola caliente y girar el husillo de la prensa hasta el tope;
+  - título borrado: apretar y mantener el hierro caliente sobre cada letra, que se enciende en oro;
+  - y, al final, apretar y mantener el sello del ex libris en la guarda.
+- **El mimo**: cada daño queda «bien» o «se podía mejorar» (brocha brusca, frotar fuera de la mancha, la plegadera lejos del
+  pliegue, cola de más, el hierro descentrado). Al arreglar uno, su sello («¡Perfecto!» en dorado o «¡Hecho!») y lo que dice
+  don Celestino: su elogio o, si se podía mejorar, «Bien hecho.» con el consejo.
+- **La ficha**: el libro se cierra, suena la cartulina y, sobre el banco, la ficha «antes / después» con las dos tapas y el
+  sello del ex libris; abajo, las estrellas, cómo quedó cada daño (el consejo en ámbar, nunca como fallo), lo ganado y lo que
+  dice don Celestino según las estrellas. Al volver al café, «Por hoy no hay más encargos» con lo restaurado hoy.
+- **Sin prisas**: «Luego» deja el encargo en el banco y lo hecho se recuerda mientras la app sigue abierta (el gesto empezado se
+  repite). Nunca caduca.
+- **Ayudas**: la «!» sobre lo siguiente (la mancha que queda, la letra que falta) solo si te quedas parado o con «Ayudas
+  visuales: siempre» (el taller es del nivel 3 en adelante). Con movimiento reducido, un toque o el botón del atajo hace cada
+  gesto de una vez y queda bien; con el teclado, Intro sobre el libro.
+- **La música del taller** (`cafeTallerMusica.js`): mientras estás dentro suena en vez de la del café, con su volumen, «Sin
+  música», el silencio y la radio. Guitarra de nailon lenta, bajo pulsado, violonchelo con arco, la lluvia en el cristal y las
+  brasas del hornillo (§133.5); sin reloj.
+- **El cartel de lo conseguido** (un hito alcanzado con la reputación del taller) espera a que vuelvas al café.
+
+### 133.4 Pruebas
+
+- `cafeTaller.test.js` (14): reglas, gestos, pintura y paridad con la migración.
+- `cafe-taller.rls.test.js` (PGlite): permisos, el primer encargo, uno al día que no caduca, el pago y sus errores.
+- `e2e-community/cafeMock.js`: con `taller`, las reglas de la migración.
+- `e2e-community/v1133-cafe-taller.spec.js`: el primer encargo con don Celestino (360 y 390, vídeo con sonido a 390), otro
+  día con manchas y lomo y la cola de más (390, vídeo con sonido), movimiento reducido con «Luego» a medias y el teclado (390),
+  la música del taller aparte (suena sin saturar ni quedarse en un susurro; `musica-taller.wav`) y sin letrero por debajo del
+  nivel 3. Capturas, vídeos y la música en `qa-report/v1133/`.
+
+### 133.5 Tras verlo Francisco (14-11-2026)
+
+«me gusta pero algunas acciones tardan demasiado, como quitar el polvo y me gustaría que esto tambien tuviese sus propios
+sonidos y que don celestino se vea mucho más unico y que el menu del taller tenga un poco más de alma comparado con la
+cafeteria normal, además de tener su propia musica como la cafeteria». Sigue siendo la 1.133.0, sin publicar. No cambian el
+servidor, la migración, las cifras ni la economía.
+
+- **Gestos más cortos** (`MEDIDAS_TALLER` en `cafeTallerGestos.js`):
+  - la brocha limpia más ancho y más de una vez: unas cuatro pasadas en vez de diez o doce;
+  - el moho, al 60 % de lo que limpia la brocha;
+  - casi limpia la tapa, lo que queda se va con el último soplo;
+  - la goma borra casi el doble en cada vuelta;
+  - el hierro, 0,45 s por letra (antes 0,65), y el sello del ex libris, 0,65 s (antes 0,9).
+  La brocha es ahora una paletina ancha, como la de verdad.
+- **Don Celestino, hecho a mano** (`celestinoKit` en `cafe3d.js`; ya no es la figura de los clientes con un mandil):
+  - calvo, con la herradura de canas y la visera verde de encuadernador;
+  - cejas pobladas, gafas de media luna por las que mira por encima, nariz colorada y bigote de morsa;
+  - camisa remangada con ligas negras, pajarita granate y chaleco verde botella con la cadena del reloj;
+  - mandil de cuero con remaches y un bolsillo con la plegadera y un lápiz;
+  - pana con el bajo vuelto y zapatos color sangre de toro;
+  - un lápiz detrás de la oreja y la espalda algo cargada.
+  Su retrato (`DON_CELESTINO`), a juego.
+- **El menú del taller, un libro encuadernado** (`.cf3-franja--taller` en `cafe.css`), en media piel con puntas: tela verde con
+  su trama, el lomo de cuero con nervios dorados a la izquierda, las puntas de cuero y un filete de oro.
+  - El nombre, en un tejuelo rojo con letras doradas; el retrato, en un marco de latón con remaches.
+  - Los botones: de piel con filete de oro («Empezar», «Seguir»), de latón (los de hablar) y de papel de estraza («Luego»).
+  - Los daños, en etiquetas de estraza con su agujero; la cita del cliente, clavada con un alfiler.
+  - La etapa de ahora lleva su cinta de registro roja, y el medidor es pan de oro sobre piel.
+  En la barra, lo mismo pero más fino. Todo de píxel, sin brillos ni desenfoques.
+- **Sus propios sonidos** (`cafeSfx.js`): todo lo del taller, también los bucles de la brocha, la goma, la plegadera y la cola,
+  suena en **la trastienda**. Es una sala propia, más pequeña, corta y oscura que la del café y la de la librería, con el rebote
+  de la pared del banco. Además:
+  - don Celestino tiene voz de garganta (un «mm-hm», sin palabras) y le cruje el taburete;
+  - cada cuarto de tapa limpia suena un soplo de polvo con una nota de madera que sube (`polvoClaro`, con los eventos
+    `claro:1` a `claro:3` del gesto).
+- **Su propia música, con más alma** (`cafeTallerMusica.js`). Ya sonaba en vez de la del café desde la 1.133, pero los vídeos de
+  Playwright no tienen sonido. A la guitarra de nailon se le añade:
+  - desde la segunda vuelta, un violonchelo con arco, en dos vueltas de cada tres: notas largas que van de acorde en acorde por
+    el camino más corto;
+  - debajo, el rumor de la lluvia en el cristal del ventanuco;
+  - las brasas del hornillo, que crepitan;
+  - y la cola caliente, que hace «blup».
+- **Evidencias con sonido**: las pruebas con vídeo graban lo que suena en la página y lo mezclan con el vídeo usando el ffmpeg
+  de Playwright. Una grabadora escucha la salida de audio sin cambiar nada. La música del taller, además, se guarda aparte
+  (`musica-taller.wav`, 48 s).

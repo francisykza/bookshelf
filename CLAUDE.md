@@ -281,8 +281,15 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     - **El taller de restauración, desde el nivel 3 (Librería)**: «el taller de la trastienda», cuarto propio en 3D con don
       Celestino. Clientes que traen libros en mal estado; como mucho **uno al día, más otro de un amigo**, sin caducar ni reloj.
       Mecánicas **lo más artesanales y placenteras posible**, cada daño con su gesto, su objeto y su sonido. Dan **reputación y
-      granos extra** (cifras de §16.3, **pendientes de su visto bueno**, igual que la interpretación del encargo del amigo de
-      §16.4), sin tickets, y tienen **identidad propia**. Pilar no restaura.
+      granos extra**, sin tickets, y tienen **identidad propia**. Pilar no restaura. **Cifras aprobadas** (Francisco, 14-11-2026,
+      «Sí, esas cifras del taller»; §16.3): el encargo de un cliente, **6 / 9 / 12 granos y 15 / 22 / 30 de reputación** (1★ /
+      2★ / 3★); el de un amigo, la mitad (**3 / 5 / 6 granos y 8 / 11 / 15**); aparte del tope diario de reputación. La
+      interpretación del encargo del amigo (§16.4) sigue **pendiente de su visto bueno**; hace falta para el bloque 3.
+      **Tras ver la 1.133** (Francisco, 14-11-2026, «me gusta pero…»): **los gestos, más cortos** («algunas acciones tardan
+      demasiado, como quitar el polvo»); el taller con **sus propios sonidos** y **su propia música**, como el café; **don
+      Celestino, mucho más único** (no una figura de cliente con mandil); y **el menú del taller con más alma** que el del café
+      (identidad propia de banco de encuadernador, no la franja del café con otro color). Los vídeos de Playwright no graban
+      sonido: para enseñarle sonidos y música, mandarlos aparte o mezclados en el vídeo.
     - **La pizarra se quita del todo** («no me termina de convencer»): sin botón ni panel; la nota del habitual y la reseña
       dorada se ven en su bocadillo al despedirse, y Pilar no la menciona. Sin borrar datos del servidor.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
@@ -562,6 +569,11 @@ Maquetas de referencia: `docs/design/references/`.
 - Desde la 1.58.2 la única prueba que falla es `e2e/v149` en WebKit (Windows no dibuja bien `matrix3d`, ver
   `docs/ESTADO.md`). Si aparece otra, investigar antes de tocarla: no ocultarlas cambiando
   la prueba sin investigar.
+- **OneDrive y Node** (14-11-2026): de repente, Node 24 lista los archivos de la carpeta como enlaces (`readdir` con
+  `withFileTypes`; el `lstat` dice que no lo son). Playwright los salta y dice «No tests found», con las dos configuraciones.
+  Arreglo sin tocar nada en disco: cargar `scripts/onedrive-dirent.cjs` con
+  `NODE_OPTIONS="--require ./scripts/onedrive-dirent.cjs"` delante de `npx playwright test` y de `npm run build`. Vitest
+  con la ruta del archivo funciona sin él.
 - **Mientras corre una e2e, no tocar ningún archivo del proyecto**, tampoco los `.md`. El escáner de Tailwind v4 lee
   también `SPEC.md`, `CLAUDE.md` o `docs/`, y al cambiar uno el servidor de Vite de la prueba recarga la página. El 14-11-2026
   una prueba del café falló así a mitad de un cliente: al guardar `SPEC.md`, la página volvió a la habitación. Escribir los

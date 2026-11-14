@@ -13,7 +13,7 @@ const COMPAS = PULSO * 4;
 const SWING = 0.62;
 const VUELTA = 8;
 
-const nota = (n) => 440 * 2 ** ((n - 69) / 12);
+export const nota = (n) => 440 * 2 ** ((n - 69) / 12);
 // [bajo, voces del piano] en números MIDI
 const ACORDES = [
   [41, [57, 60, 64, 67]], // Fmaj9
@@ -30,7 +30,7 @@ const VARIANTES = { 5: [45, [55, 61, 64, 67]], 7: [36, [58, 61, 64, 67]] };
 const PENTA = [65, 67, 69, 72, 74, 77, 79, 81];
 
 /** Un número al azar que se repite con la misma semilla (cada vuelta, su variación). */
-function azar(semilla) {
+export function azar(semilla) {
   let s = semilla >>> 0 || 1;
   return () => {
     s ^= s << 13;
@@ -41,7 +41,7 @@ function azar(semilla) {
 }
 
 let ruidoCache = new WeakMap();
-function ruidoDe(ctx) {
+export function ruidoDe(ctx) {
   let b = ruidoCache.get(ctx);
   if (!b) {
     const n = Math.floor(ctx.sampleRate * 2);
@@ -54,7 +54,7 @@ function ruidoDe(ctx) {
 }
 
 /** Una sala pequeña: un eco que se apaga en algo más de un segundo y medio. */
-function sala(ctx) {
+export function sala(ctx) {
   const n = Math.floor(ctx.sampleRate * 1.7);
   const ir = ctx.createBuffer(2, n, ctx.sampleRate);
   for (let c = 0; c < 2; c += 1) {
@@ -291,6 +291,14 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
  * { arrancar(), parar(), atenuar(on) }; arrancar se puede llamar de nuevo sin efecto si ya suena.
  */
 export function crearCafeMusica(abrir) {
+  return crearMusicaViva(abrir, montar);
+}
+
+/**
+ * 1.133: lo que tienen en común la música del café y la del taller: arrancar con un fundido, escribir las notas a ratos,
+ * parar con otro fundido y bajar el volumen mientras se trabaja. `montarla(ctx, destino, inicio)` monta una música concreta.
+ */
+export function crearMusicaViva(abrir, montarla) {
   let m = null;
   let timer = 0;
   let ctxVivo = null;
@@ -307,7 +315,7 @@ export function crearCafeMusica(abrir) {
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(1, t + 2.5);
       g.connect(out);
-      m = montar(ctx, g, t);
+      m = montarla(ctx, g, t);
       // Con más margen (el móvil atrasa los temporizadores cuando el 3D va cargado)
       const latido = () => m?.programar(ctx.currentTime + 2);
       latido();

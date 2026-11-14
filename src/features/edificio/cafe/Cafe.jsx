@@ -12,6 +12,8 @@
 // 1.130 (Francisco, 14-11-2026; `cafe-libreria.md` §15): los clientes piden de lo que hay en la balda (género, extensión y
 // cómo se lo lleva; `pedidosLibro`), la estantería de la pared va por secciones (`Libreria.jsx`), Pilar prepara lo que
 // dominas y, cada mañana, el reparto repone lo vendido (una caja junto al mostrador, con su aviso).
+// 1.133 (§16.3): desde el nivel 3, la puerta de detrás de la barra lleva al taller de la trastienda (`Taller.jsx`), con su
+// música; un encargo al día como mucho, que espera en el banco hasta que lo hagas.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
@@ -20,7 +22,7 @@ import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCa
 import { GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
+import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, cargarTaller, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
 import { enFrase } from './cafeInfluencers';
 import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
@@ -29,6 +31,9 @@ import { REPARTO, pedidosLibro } from './cafeLibreria';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
+import { Taller } from './Taller';
+import { TALLER_NIVEL } from './cafeTaller';
+import { crearTallerMusica } from './cafeTallerMusica';
 import { portadaPorIsbn } from './cafePortadaIsbn';
 import { SITIOS_NUEVOS, marcarVisto, nuevosDe, vistosDe } from './cafeNuevo';
 import { dayKey } from '../../../domain/dates';
@@ -127,6 +132,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const [atendiendo, setAtendiendo] = useState(null);
   // Bloque 6b: delante del tostador, recogiendo el saco del día (Tostadero.jsx)
   const [tostando, setTostando] = useState(false);
+  // 1.133: el taller del día (undefined: cargando o por debajo del nivel 3; null: sin la migración) y si estás dentro
+  const [taller, setTaller] = useState(undefined);
+  const [enTaller, setEnTaller] = useState(false);
   const [ganado, setGanado] = useState(0);
   const dados = useRef({});
   // Libros en cajas: undefined, cargando; null, sin la migración; si no, { huecos, bienvenida, libros: [{ clave, titulo, genero, caja, balda }] }
@@ -168,10 +176,11 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const tazas = local?.tostadero?.tazas ?? 0;
   const hayTostador = abierto && (local?.nivel ?? 1) >= 7;
   const saco = hayTostador && jornada !== undefined && sacoListo(reputacion, local?.tostadero?.sacoDia ?? null, diaJuego);
+  const hayTaller = abierto && (local?.nivel ?? 1) >= TALLER_NIVEL;
   const frases = [...PILAR_DICE, local ? PILAR_FIN_CON : PILAR_FIN_SIN];
 
   // La música propia del café (1.126): mientras estás aquí suena en vez de la de Sonido y sigue su volumen, «Sin música» y la
-  // radio; nunca antes de un gesto (si aún no se puede, lo intenta en el siguiente toque)
+  // radio; nunca antes de un gesto (si aún no se puede, lo intenta en el siguiente toque). 1.133: en el taller, la suya.
   const musica = useRef(null);
   // Los sonidos de cada acción (1.126): andar, Pilar, decorar, comprar… (los de la barra, en Atender)
   const [sfx] = useState(() => crearSfxBarra());
@@ -179,7 +188,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   useEffect(() => {
     if (!soundOn) return undefined;
     setMusicBlocked('cafe', true);
-    const m = crearCafeMusica(sceneMusicOut);
+    const m = enTaller ? crearTallerMusica(sceneMusicOut) : crearCafeMusica(sceneMusicOut);
     musica.current = m;
     const intentar = () => {
       if (m.arrancar()) window.removeEventListener('pointerdown', intentar, true);
@@ -191,7 +200,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       musica.current = null;
       setMusicBlocked('cafe', false);
     };
-  }, [soundOn]);
+  }, [soundOn, enTaller]);
 
   useEffect(() => {
     let alive = true;
@@ -287,6 +296,24 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       alive = false;
     };
   }, [abierto, jornada, diaJuego]);
+  // 1.133: el taller del día (el encargo que espera en el banco); sin la migración, la puerta no se ofrece
+  useEffect(() => {
+    if (!hayTaller || jornada === undefined) return undefined;
+    let vivo = true;
+    cargarTaller(diaJuego).then(
+      (t) => vivo && setTaller(t),
+      () => vivo && setTaller(null),
+    );
+    return () => {
+      vivo = false;
+    };
+  }, [hayTaller, jornada, diaJuego]);
+  // El letrero del taller aparece (o cambia de texto) cuando llega el encargo: un fotograma para colocarlo, porque con la
+  // escena quieta (movimiento reducido) no se vuelve a dibujar sola y se quedaría escondido
+  const letreroTaller = taller ? (taller.encargo ? 'encargo' : 'taller') : null;
+  useEffect(() => {
+    if (letreroTaller) api.current?.invalidate?.();
+  }, [letreroTaller]);
   // Has leído hoy: llegan los habituales que traen tus sesiones (el servidor pone el tope)
   useEffect(() => {
     if (!dia || pidiendoHabitual.current || dia.habituales.length >= sesiones) return;
@@ -471,7 +498,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   };
   useEffect(() => {
     pick.current = (id) => {
-      if (decorando || tostando) return;
+      if (decorando || tostando || enTaller) return;
       if (atenderToque.current?.(id)) return;
       if (id.startsWith('cliente:')) {
         const c = clientesHoy.find((x) => x.n === Number(id.slice(8)));
@@ -500,6 +527,16 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         setError('');
         setPanelLibros(null);
         api.current?.go('tostador').then(() => setTostando(true));
+        return;
+      }
+      // 1.133: el taller, por la puerta de detrás de la barra (la escena anda hasta ella y entra)
+      if (id === 'taller') {
+        if (!taller) return;
+        setHablando(null);
+        setAviso('');
+        setError('');
+        setPanelLibros(null);
+        setEnTaller(true);
         return;
       }
       // La trampilla y la escalera suenan con su recorrido (la escena lo avisa)
@@ -803,7 +840,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       )}
       {!sin3d && (
         <div className="cf3-tags" hidden={decorando}>
-          {Object.entries(SITIOS).map(([id, s]) => (
+          {Object.entries(SITIOS)
+            .filter(([id]) => id !== 'taller' || taller)
+            .map(([id, s]) => (
             <button
               key={id}
               type="button"
@@ -813,7 +852,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
               ref={(el) => (tagEls.current[id] = el)}
               onClick={() => pick.current(id)}
             >
-              {id === 'libros' ? `${s.nombre} · ${porColocar}` : id === 'tostador' && saco ? `${s.nombre} · saco listo` : s.nombre}
+              {id === 'libros' ? `${s.nombre} · ${porColocar}` : id === 'tostador' && saco ? `${s.nombre} · saco listo` : id === 'taller' && taller?.encargo ? `${s.nombre} · un encargo` : s.nombre}
               {nuevos.has(`sitio:${id}`) && <Nuevo />}
             </button>
           ))}
@@ -866,7 +905,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                 </span>
               )}
             </p>
-            {librosCafe && !decorando && (
+            {librosCafe && !decorando && !enTaller && (
               <button
                 type="button"
                 className="cf3-pizarra-btn cf3-libros-btn"
@@ -891,7 +930,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         </div>
       )}
 
-      {logro && !clienteAtendido && !decorando && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
+      {logro && !clienteAtendido && !decorando && !enTaller && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
       {decorando && (local?.nivel ?? 1) >= BODEGA_NIVEL && (
         <div className="cf3-plantas" role="group" aria-label="Qué planta decoras">
           {[
@@ -1057,6 +1096,24 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
             if (r.cafe) setLocal(r.cafe);
           }}
           onCerrar={() => setPanelLibros(null)}
+        />
+      ) : enTaller && taller ? (
+        <Taller
+          escena={ready && !sin3d ? api.current : null}
+          estado={taller}
+          dia={diaJuego}
+          soundOn={soundOn}
+          ayudas={state.settings.ayudasCafe ?? 'auto'}
+          nivel={nivelLocal}
+          onHecho={(r) => {
+            if (r.cafe) setLocal(r.cafe);
+            if (r.dia) setDia(r.dia);
+            if (r.libros) setLibrosCafe(r.libros);
+            if (r.taller) setTaller(r.taller);
+            setGanado((r.dado?.granos ?? 0) + (r.progreso?.granos ?? 0));
+            if (hayLogro(r.progreso)) setLogro(r.progreso);
+          }}
+          onCerrar={() => setEnTaller(false)}
         />
       ) : tostando && local ? (
         <Tostadero

@@ -830,3 +830,49 @@ export const LIBROS = {
   paleta: { r: '#b8574a', R: '#e08a6e', v: '#4f7a54', V: '#86b07a', a: '#d6a548', A: '#f2d27a', m: '#7a5232', M: '#a8774a', k: '#2a1a10' },
   filas: ['............', '.kkk........', '.kRk.kkk....', '.krk.kVk.kkk', '.kRk.kvk.kAk', '.krk.kVk.kak', '.krk.kvk.kAk', '.kRk.kvk.kak', '.krk.kVk.kak', 'MMMMMMMMMMMM', 'mmmmmmmmmmmm'],
 };
+
+/**
+ * 1.133: don Celestino, el encuadernador del taller, como su modelo 3D: la calva asomando sobre la visera verde, las canas en
+ * herradura, cejas pobladas, los ojos por encima de las gafas de media luna, nariz colorada, bigote de morsa, pajarita granate,
+ * camisa remangada con ligas, chaleco verde botella con su botón de latón y el mandil de cuero con remaches.
+ */
+export const DON_CELESTINO = {
+  paleta: {
+    s: '#e8b48c',
+    S: '#cf9672',
+    V: '#2f6c44',
+    v: '#62ac74',
+    h: '#eeeae2',
+    H: '#c4bfb4',
+    W: '#f7f4ee',
+    k: '#2a1d16',
+    b: '#d9b26a',
+    e: '#d4e4e8',
+    r: '#ec9c88',
+    n: '#d4806c',
+    M: '#f4f0e8',
+    w: '#efe9dd',
+    p: '#8a2434',
+    t: '#2e5a44',
+    g: '#262022',
+    a: '#7a4a2a',
+  },
+  filas: [
+    '.....ssssss.....',
+    '....VVVVVVVV....',
+    '..VvvvvvvvvvvV..',
+    '..hhsSSSSSSshh..',
+    '..hhWWWssWWWhh..',
+    '.shhsksssskshhs.',
+    '..hbeebssbeebh..',
+    '..hhrssnnssrhh..',
+    '...hMMMMMMMMh...',
+    '...MMssssssMM...',
+    '....SssssssS....',
+    '.....wppppw.....',
+    '..wttttwwttttw..',
+    '.ggtttttbttttgg.',
+    '.wwaaaaaaaaaaww.',
+    '.ssaabaaaabaass.',
+  ],
+};

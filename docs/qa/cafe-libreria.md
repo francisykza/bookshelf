@@ -589,8 +589,10 @@ reputación) y el servidor (migraciones nuevas, las aplica él).
 - el taller, **desde el nivel 3** (§16.3);
 - la pizarra, **fuera del todo**, sin cuadritos dorados (§16.5).
 
-Siguen **por aprobar**, antes del bloque 2:
-- las cifras de pago del taller (§16.3);
+**Cifras del taller aprobadas** (Francisco, 14-11-2026, «Sí, esas cifras del taller»): las de §16.3, también la mitad para
+el encargo del amigo.
+
+Sigue **por aprobar**, antes del bloque 3 (el bloque 2 no la necesita):
 - la interpretación del encargo del amigo (§16.4).
 
 ### 16.1 Para comparar: lo que paga hoy un cliente
@@ -685,7 +687,7 @@ Clientes al día: 3 en el nivel 1, hasta 10 en el 8. Atender a uno a mano, bebid
   postal del puerto, una carta sin abrir… Se guardan en **la caja de los hallazgos** del taller, una colección solo de adorno.
 - **El libro del taller**: un registro con cada restauración (fecha, título, de quién era, estrellas, hallazgo), para
   hojearlo.
-- **Lo que paga** (**cifras por aprobar**):
+- **Lo que paga** (**cifras aprobadas**, Francisco, 14-11-2026, «Sí, esas cifras del taller»):
   - **Encargo de un cliente**: **6 / 9 / 12 granos** y **15 / 22 / 30 de reputación** (1★ / 2★ / 3★). Es más o menos lo de
     dos clientes, porque lleva su rato (3 a 5 minutos).
   - **Encargo de un amigo**: la mitad (**3 / 5 / 6 granos** y **8 / 11 / 15 de reputación**).
@@ -723,3 +725,35 @@ Clientes al día: 3 en el nivel 1, hasta 10 en el 8. Atender a uno a mano, bebid
    arrugas, lomo y prensa, y dorado), el ex libris y la ficha «antes / después». Migración nueva (encargos y pagos).
 3. **El taller, segunda tanda**: coser, desgarro y esquinas, los hallazgos, el libro del taller y el encargo del amigo.
    Migración nueva (envíos entre amigos).
+
+### 16.7 Bloque 2, hecho (1.133.0, 14-11-2026), con interpretaciones por confirmar
+
+El taller de la trastienda, primera tanda (SPEC §133; migración `20261220120000_cafe_taller.sql`, la aplica Francisco). Lo
+empezó una cuenta y lo terminó la otra. Lo que se decidió sin preguntar:
+
+- **El primer encargo, siempre el mismo**: el Quijote, con polvo, una página arrugada y el título borrado. Es el que enseña don
+  Celestino (dos frases la primera vez; después, solo comenta). Los demás, libro, cliente y daños al azar.
+- **Cuántos daños**: 2 o 3 en los niveles 3 y 4, 3 o 4 en el 5 y el 6, y 4 o 5 desde el 7 (de los cinco de esta tanda; en la
+  segunda, hasta 6).
+- **«Lomo y prensa» es un solo daño con dos gestos**: pincelar la cola y girar el husillo. Cuenta lo peor de los dos (en la
+  prensa no se puede fallar: el mimo lo pone la cola).
+- **El mimo de cada daño, en dos valores**: «bien» o «se podía mejorar»; nunca cero. La brocha, sin prisa (pasadas rápidas
+  levantan el polvo en vez de quitarlo); la goma, dentro de la mancha; la plegadera, cerca del pliegue; la cola, sin cargar
+  demasiado un tramo; el hierro, centrado en la letra. El ex libris no puntúa.
+- **Las estrellas** las pone el servidor: 3 con todos bien, 2 con al menos la mitad, 1 si no.
+- **Uno al día que no caduca**: el encargo llega al abrir el café (desde el nivel 3) y se queda en el banco hasta que lo
+  termines, aunque pasen días; el siguiente llega a partir del día después de terminarlo (nunca dos el mismo día).
+- **«Luego» a medias**: lo hecho se recuerda mientras la app sigue abierta; si la cierras, el encargo sigue en el banco y se
+  empieza otra vez desde el principio (el servidor solo guarda el encargo terminado).
+- **La «!»**: el taller empieza en el nivel 3, así que solo sale si te quedas parado (o con «Ayudas visuales: siempre»), sobre
+  lo siguiente: la mancha que queda, la letra que falta, el husillo, el sello.
+- **Movimiento reducido**: un toque sobre el libro (o el botón del atajo, o Intro) hace cada gesto de una vez y queda bien.
+- **La puerta del taller** está en la pared de la derecha, detrás de la barra, con su letrero desde el nivel 3. Sin la migración,
+  no hay letrero y el café va como en la 1.132.
+
+**Tras verlo Francisco** (14-11-2026, «me gusta pero…»; SPEC §133.5): los gestos, más cortos (el polvo, unas cuatro pasadas).
+Don Celestino, hecho a mano, con visera verde, bigote de morsa, gafas de media luna, pajarita, chaleco y mandil con remaches.
+El menú del taller, un libro en media piel con puntas: tejuelo rojo, lomo con nervios dorados, botones de piel y de estraza y
+cinta de registro. El taller suena en su propia sala, la trastienda (la voz de don Celestino y un soplo por cada cuarto de
+polvo), y su música lleva violonchelo con arco, lluvia en el cristal y brasas. Las evidencias van con sonido. Sin cambios de
+servidor, cifras ni economía.

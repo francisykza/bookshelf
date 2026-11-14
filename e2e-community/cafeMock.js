@@ -22,6 +22,7 @@ import {
   recetaPide,
 } from '../src/features/edificio/cafe/cafeClientes';
 import { EXTRA_LIBRO, REPARTO, estrellasTotal } from '../src/features/edificio/cafe/cafeLibreria';
+import { PRIMER_ENCARGO, TALLER_NIVEL, estrellasTaller, premioTaller } from '../src/features/edificio/cafe/cafeTaller';
 
 const json = (route, data, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
 const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
@@ -49,7 +50,7 @@ const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
  * le sirve (a tiempo, como el excéntrico; viral con 3 estrellas) y sube el café. `estado.influencers`: { [nivel]: { despedido,
  * dia, estrellas, a_tiempo, viral, viral_dia } } de antes. El siguiente día nuevo, 3 virales (201 a 203). La pizarra ya no va.
  */
-export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null } = {}) {
+export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null, taller = null } = {}) {
   const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], tazas: 0, sacoDia: null, llamadas: [], espera: 0, influencers: {}, ...estado } : null;
   if (c) c.influencers = structuredClone(c.influencers);
   const conInf = Boolean(clientes?.influencer);
@@ -223,8 +224,52 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     if (clientes && ['cafe_dia', 'cafe_habitual', 'cafe_servir', 'cafe_entregar'].includes(rpc)) return diaDelCafe(route, rpc, body);
     if (conInf && ['cafe_influencer_empezar', 'cafe_influencer_entregar'].includes(rpc)) return diaDelCafe(route, rpc, body);
     if (clientes && ['cafe_bienvenida', 'cafe_comprar_caja', 'cafe_colocar'].includes(rpc)) return libros(route, rpc, body);
+    if (clientes && taller && ['cafe_taller', 'cafe_restaurar'].includes(rpc)) return tallerDelCafe(route, rpc, body);
     return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
   });
+  // ── 1.133: el taller de la trastienda (`20261220120000_cafe_taller.sql`): un encargo al día como mucho, que no caduca ──
+  const tal = taller ? { encargos: structuredClone(taller.encargos ?? []), siguientes: structuredClone(taller.siguientes ?? []) } : null;
+  if (c && tal) c.taller = tal;
+  const tallerDe = (dia) => {
+    let e = tal.encargos.find((x) => !x.hecho);
+    if (!e && !tal.encargos.some((x) => x.llega === dia || x.dia_hecho === dia)) {
+      const n = tal.encargos.length + 1;
+      const sig = n === 1 ? PRIMER_ENCARGO : (tal.siguientes.shift() ?? { libro: 9, quien: 3, danos: ['manchas', 'lomo'] });
+      e = { n, llega: dia, libro: sig.libro, quien: sig.quien, danos: [...sig.danos], hecho: false };
+      tal.encargos.push(e);
+    }
+    const h = [...tal.encargos].reverse().find((x) => x.dia_hecho === dia);
+    return {
+      encargo: e ? { n: e.n, libro: e.libro, quien: e.quien, danos: e.danos, llega: e.llega } : null,
+      hechos: tal.encargos.filter((x) => x.hecho).length,
+      hoy: h ? { n: h.n, libro: h.libro, quien: h.quien, estrellas: h.estrellas, granos: h.granos, reputacion: h.reputacion } : null,
+    };
+  };
+  function tallerDelCafe(route, rpc, body) {
+    if (body.dia !== clientes.hoy && body.dia !== ayer && body.dia !== jornada) return falla(route, 'cafe:dia');
+    if (!c.inaugurado) return falla(route, 'cafe:cerrado');
+    if (c.nivel < TALLER_NIVEL) return falla(route, 'cafe:taller');
+    c.llamadas.push({ rpc, ...body });
+    if (rpc === 'cafe_taller') return json(route, tallerDe(body.dia));
+    const e = tal.encargos.find((x) => x.n === body.n);
+    if (!e || e.hecho) return falla(route, 'cafe:encargo');
+    if (!Array.isArray(body.mimo) || body.mimo.length !== e.danos.length || body.mimo.some((m) => m !== 1 && m !== 2)) return falla(route, 'cafe:mimo');
+    const estrellas = estrellasTaller(body.mimo);
+    const p = premioTaller(estrellas);
+    Object.assign(e, { hecho: true, dia_hecho: body.dia, estrellas, mimo: body.mimo, ...p });
+    const d = (dias[body.dia] ??= { dia: body.dia, clientes: clientesDelNivel(c.nivel, asientosDe(c.plano)), habituales: 0, servidos: {}, carta: cartaDe(c.reputacion), tickets: 0 });
+    c.granos = Math.min(100000, c.granos + p.granos);
+    const antes = c.reputacion;
+    c.reputacion += p.reputacion;
+    if (conInf) apartar();
+    const nov = novedades(antes, c.reputacion);
+    const de = c.nivel;
+    c.nivel = Math.max(c.nivel, nivelDe(c.reputacion));
+    const granosDeHitos = nov.hitos.filter((h) => h.hito === 3).reduce((s, h) => s + granosHito(h.nivel), 0);
+    c.granos = Math.min(100000, c.granos + granosDeHitos);
+    const progreso = { de, a: c.nivel, niveles: nov.niveles, hitos: nov.hitos.map(({ nivel, hito }) => ({ nivel, hito })), granos: granosDeHitos, tickets_dia: 0, tickets: nov.niveles.reduce((s, x) => s + x.tickets, 0) };
+    return json(route, { cafe: vista(), dia: diaJson(d), libros: librosJson(), taller: tallerDe(body.dia), dado: { ...p, estrellas, mimo: body.mimo }, progreso });
+  }
   // ── Los clientes del día (bloque 3) ──
   const dias = {};
   // 1.130: lo que se vendió otro día y aún no se ha repuesto (las claves de los ejemplares): el reparto lo trae al abrir el día
