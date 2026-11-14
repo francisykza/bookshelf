@@ -9,7 +9,10 @@ import { crearSfxBarra } from './cafeSfx';
 
 const nombreNivel = (n) => CAFE_NIVELES.find((x) => x.nivel === n)?.nombre ?? '';
 
-/** `logro`: el progreso de `cafe_servir` ({ niveles, hitos, granos, ticketsDia }). */
+/**
+ * `logro`: el progreso de `cafe_servir` ({ niveles, hitos, granos, ticketsDia }) y, si la subida llegó al despedir al
+ * influencer (1.132), `video`: { nombre, publica, viral }.
+ */
 export function LogroCafe({ logro, soundOn = false, onCerrar }) {
   const boton = useRef(null);
   // La subida que se celebra: la del nivel más alto (el 1 se cobra al inaugurar y no tiene cartel)
@@ -37,6 +40,14 @@ export function LogroCafe({ logro, soundOn = false, onCerrar }) {
                 Nivel {subida.nivel} · {nombreNivel(subida.nivel)}
               </span>
             </h3>
+            {logro.video && (
+              <p className="cf3-logro__video">
+                <span className="cf3-rec" aria-hidden="true">
+                  REC
+                </span>
+                {`${logro.video.nombre} ha publicado «${logro.video.publica}»${logro.video.viral ? ', y se está haciendo viral' : ''}.`}
+              </p>
+            )}
             <p className="cf3-logro__tickets">
               <span className="cf3-logro__ticket" aria-hidden="true" />+{subida.tickets} tickets
             </p>

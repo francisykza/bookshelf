@@ -17,6 +17,9 @@
 // Pilar (1.130, §15.1): lo que ya dominas (12 servidas de 2 estrellas o más) te lo prepara ella si quieres: tú eliges cada
 // parte de la receta y los gestos los hace ella en la barra, con sus sonidos (con movimiento reducido, directos). Al
 // excéntrico y lo recién abierto de la carta, siempre a mano. Lo elegido se recuerda en el dispositivo, por bebida.
+// El influencer (1.132, §16.2): su comanda es clara y en directo («REC»); al ir a la barra se da la vuelta al reloj de arena
+// (`onEmpezar`, el servidor apunta la hora) y la arena cae hasta que le sirves. Siempre a mano. Al despedirle, lo que publica
+// y, si fue viral, lo que trae. Los que vienen por su vídeo saludan diciendo de quién era.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PARTES, RESENAS, comandaAcertijo, comandaClara, nombreGenero, nombreOpcion, opcionesDe } from './cafeClientes';
 import { AYUDA_NIVELES, AYUDA_PARADO_MS, ELIGE, ladoNota, ETAPAS, GESTOS, crearGesto, gestosDe, nombreEtapa, verAyuda, vistaTaza } from './cafeGestos';
@@ -25,9 +28,11 @@ import { PILAR, retratoDe } from './cafeIconos';
 import { errorCafe } from './cafeService';
 import { DOMINIO, comandaLibro, comandaLibroAcertijo, extensionDe, formaPorId, frasePedido, haciaDominio, pilarHaceEtapa, pilarPuede, preparaRecordado, recordarPrepara } from './cafeLibreria';
 import { BUCLE_PILAR, PILAR_MIRA_MS, duracionPilar, poseAuto, respiroPilar, sonidosEntre, tiempoPilar } from './cafePilar';
+import { despedidaInfluencer, saludoViral } from './cafeInfluencers';
 import { useLibreria } from './Libreria';
 import { Pista } from './Pista';
 import { PixelArt } from './PixelArt';
+import { RelojArena } from './RelojArena';
 
 export { Pista };
 
@@ -140,7 +145,7 @@ function repasoLibro(libro, pedido, ok, forma) {
   ];
 }
 
-export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, escena, registrarToque, onServir, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
+export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, escena, registrarToque, onServir, onEmpezar, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
   const [paso, setPaso] = useState('pide');
   const [receta, setReceta] = useState(VACIA);
   const [ei, setEi] = useState(0);
@@ -166,7 +171,13 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
   const zona = useRef(null);
   const llevaRef = useRef(null);
   const raro = cliente.raro;
-  const quien = cliente.habitual || raro ? cliente.nombre : 'Cliente';
+  // 1.132: el influencer del día (con su ficha de cafeInfluencers.js) y los que vienen por su vídeo viral
+  const inf = cliente.influencer ?? null;
+  const esViral = cliente.viral !== undefined;
+  const quien = cliente.habitual || raro || inf ? cliente.nombre : 'Cliente';
+  // El reloj de arena: cuándo se le dio la vuelta (en este dispositivo; el servidor mide lo suyo, con margen) o null
+  const [arena, setArena] = useState(null);
+  const [empezando, setEmpezando] = useState(false);
   // Lo que pide del libro se fija al llegar (la balda cambia al servir y los pedidos del día se recalculan)
   const [pedido] = useState(() => cliente.pedido);
   const pideLibro = pedido?.id === 'libro';
@@ -183,8 +194,9 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
   const lista_ = enBarra && ei >= ETAPAS.length;
   const actual = gesto && g?.clave === clave ? g : null;
   const pista = pistaEn?.clave === clave ? pistaEn : null;
-  // Pilar: si la bebida ya la dominas (nunca al excéntrico), lo elegido aquí o lo recordado; y si este gesto lo hace ella
-  const puedePilar = enBarra && pilarPuede(dominio, receta.bebida, { excentrico: Boolean(raro) });
+  // Pilar: si la bebida ya la dominas (nunca al excéntrico ni al influencer), lo elegido aquí o lo recordado; y si este gesto
+  // lo hace ella
+  const puedePilar = enBarra && pilarPuede(dominio, receta.bebida, { excentrico: Boolean(raro || inf) });
   const modoPilar = puedePilar ? (prepara ?? preparaRecordado(receta.bebida)) : null;
   const pilarAhora = Boolean(gesto) && modoPilar === 'pilar' && pilarHaceEtapa(dominio, receta, etapa);
   const ofrecePilar = puedePilar && modoPilar == null && !lista_;
@@ -197,7 +209,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
   useEffect(() => sfx.setActivo(soundOn), [sfx, soundOn]);
   // 1.126: cada momento del cliente con su sonido (la comanda, la taza, el libro, las estrellas y los granos, la despedida)
   useEffect(() => {
-    sfx.play(cliente.raro ? 'raro' : 'comanda');
+    sfx.play(cliente.influencer ? 'directo' : cliente.raro ? 'raro' : 'comanda');
     // Solo al empezar a atenderlo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sfx]);
@@ -211,6 +223,8 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     if (dado.dorada) ids.push(setTimeout(() => sfx.play('dorada'), 200 + n * pasos * 1000 + 700));
     // Bloque 6b: el tueste de la casa, cobrado a quien lo pidió
     if (dado.tueste) ids.push(setTimeout(() => sfx.play('tueste'), 200 + n * pasos * 1000 + 450));
+    // 1.132: el vídeo del influencer se hace viral
+    if (dado.influencer?.viral) ids.push(setTimeout(() => sfx.play('viral'), 200 + n * pasos * 1000 + 700));
     // 1.130: la bebida ya la dominas (el aviso de Pilar, con su brillo)
     if (!cliente.raro && n >= 2 && haciaDominio(dominioAntes, receta.bebida) === DOMINIO - 1) ids.push(setTimeout(() => sfx.play('bordas'), 200 + n * pasos * 1000 + 950));
     return () => ids.forEach(clearTimeout);
@@ -505,6 +519,23 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     aplicar(r.arriba());
   };
 
+  /** «A la barra»; con el influencer, antes se da la vuelta al reloj de arena (el servidor apunta la hora; empezar otra vez no castiga). */
+  const aLaBarra = async () => {
+    if (!inf) return setPaso('barra');
+    if (empezando) return;
+    setEmpezando(true);
+    setError('');
+    try {
+      await onEmpezar?.(inf.nivel);
+      sfx.play('arena');
+      setArena(Date.now());
+      setPaso('barra');
+    } catch (e) {
+      setError(errorCafe(e));
+    } finally {
+      setEmpezando(false);
+    }
+  };
   const llevar = async () => {
     sfx.play('bandeja');
     const lleva_ = { receta, vista: vistaTaza(receta, hechos) };
@@ -593,14 +624,21 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
   const lineaLibro = comandaLibro(pedido);
   const comanda = !(paso === 'pide' || enBarra || paso === 'yendo' || enLibreria) ? null : (
     <section
-      className={`cf3-comanda${raro ? ' cf3-comanda--raro' : ''}`}
+      className={`cf3-comanda${raro ? ' cf3-comanda--raro' : ''}${inf ? ' cf3-comanda--influencer' : ''}`}
       data-plegada={plegada ? 'true' : undefined}
       data-solo-libro={enLibreria ? 'true' : undefined}
       data-un-acertijo={raro && (plegada || acertijoAhora >= 0) ? 'true' : undefined}
-      aria-label={raro ? `La comanda de ${quien}, en acertijos` : `La comanda de ${quien}`}
-      style={raro ? { '--cf3-tema': rgb(raro.tema) } : undefined}
+      aria-label={raro ? `La comanda de ${quien}, en acertijos` : inf ? `La comanda de ${quien}, en directo` : `La comanda de ${quien}`}
+      style={raro ? { '--cf3-tema': rgb(raro.tema) } : inf ? { '--cf3-tema': rgb(inf.tema) } : undefined}
     >
-      <h3 className="cf3-comanda__titulo">{raro ? `★ ${quien}` : cliente.habitual ? `${quien}: lo de siempre` : 'Comanda'}</h3>
+      <h3 className="cf3-comanda__titulo">
+        {inf && (
+          <span className="cf3-rec" aria-hidden="true">
+            REC
+          </span>
+        )}
+        {raro ? `★ ${quien}` : inf ? quien : cliente.habitual ? `${quien}: lo de siempre` : 'Comanda'}
+      </h3>
       {raro ? (
         <ul className="cf3-comanda__acertijos">
           {[...comandaAcertijo(cliente.pide), ...comandaLibroAcertijo(pedido)].map((t, k) => (
@@ -629,13 +667,21 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
   if (paso === 'pide') {
     // 1.130: y el libro, en tres partes (solo de lo que hay en la balda); el del excéntrico, en sus acertijos de la comanda
     const yLibro = pideLibro ? ` ${frasePedido(pedido)}` : '';
-    texto = raro ? raro.saludo : cliente.habitual ? `«¡Hola otra vez! Lo de siempre, por favor.${yLibro}»` : `«¡Buenas! ¿Me pones esto? Lo tienes apuntado.${yLibro}»`;
+    texto = raro
+      ? raro.saludo
+      : inf
+        ? `«${inf.saludo}${yLibro}»`
+        : esViral
+          ? `«${saludoViral(cliente.viral)}${yLibro}»`
+          : cliente.habitual
+            ? `«¡Hola otra vez! Lo de siempre, por favor.${yLibro}»`
+            : `«¡Buenas! ¿Me pones esto? Lo tienes apuntado.${yLibro}»`;
     botones = (
       <>
         <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar}>
           Luego
         </button>
-        <button type="button" className="cf3-btn cf3-btn--verde" onClick={() => setPaso('barra')}>
+        <button type="button" className="cf3-btn cf3-btn--verde" onClick={aLaBarra} disabled={empezando} aria-label={inf ? 'A la barra: se da la vuelta al reloj de arena' : undefined}>
           A la barra
         </button>
       </>
@@ -806,7 +852,8 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
       </>
     );
   } else if (paso === 'yendo') {
-    texto = entrega?.libro || libreria.fase === 'listo' ? `Con la bandeja, despacio… Vas hacia ${raro || cliente.habitual ? quien : 'su mesa'}.` : `Con cuidado, que quema… Vas hacia ${raro || cliente.habitual ? quien : 'su mesa'}.`;
+    const hacia = raro || inf || cliente.habitual ? quien : 'su mesa';
+    texto = entrega?.libro || libreria.fase === 'listo' ? `Con la bandeja, despacio… Vas hacia ${hacia}.` : `Con cuidado, que quema… Vas hacia ${hacia}.`;
     botones = null;
   } else if (enLibreria) {
     // 1.130: la librería (Libreria.jsx) dice y elige en este mismo cuadro
@@ -845,8 +892,10 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     const resena = cliente.habitual && dado?.frase != null ? ` Te dejo una nota: “${RESENAS[dado.frase] ?? ''}”` : '';
     const arte = hechos.verter?.arte;
     const piropo = arte === 'hoja' ? ' ¡Y qué hoja tan bonita!' : arte === 'corazon' ? ' ¡Un corazón en la espuma!' : '';
-    texto =
-      raro && dado?.dorada
+    const fueInf = inf && dado?.influencer ? dado.influencer : null;
+    texto = fueInf
+      ? despedidaInfluencer(fueInf)
+      : raro && dado?.dorada
         ? `«${raro.dorada}» Te ha dejado una reseña dorada.`
         : e === 3
           ? `«¡Perfecto! Justo lo que quería.${piropo}${resena}»`
@@ -858,6 +907,23 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     extra = dado && (
       <div className="cf3-resultado">
         <Estrellas n={e} />
+        {fueInf && (
+          <div className="cf3-publica" style={{ '--cf3-tema': rgb(inf.tema) }} data-viral={fueInf.viral ? 'true' : undefined} data-a-tiempo={fueInf.a_tiempo ? 'true' : 'false'}>
+            <p className="cf3-publica__titulo">
+              <span className="cf3-rec" aria-hidden="true">
+                REC
+              </span>
+              <span className="px-sr">Publica: </span>
+              {`«${inf.publica}»`}
+            </p>
+            {fueInf.viral && (
+              <ul className="cf3-publica__viral" aria-label="Su vídeo se hace viral">
+                <li data-tipo="clientes">Mañana vendrán 3 clientes por su vídeo</li>
+                <li data-tipo="foto">Foto firmada para tu pared</li>
+              </ul>
+            )}
+          </div>
+        )}
         {yaLaBordas && (
           <p className="cf3-pilar cf3-pilar--nota">
             <span className="cf3-pilar__retrato" aria-hidden="true">
@@ -917,9 +983,13 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
   }
 
   const def = gesto ? GESTOS[gesto] : null;
+  // 1.132: el reloj de arena, a la vista desde la barra hasta que le sirves (en la librería, el camino y al servir también)
+  const verArena = Boolean(inf && arena) && paso !== 'pide' && paso !== 'gracias';
+  const tema = raro ? rgb(raro.tema) : inf ? rgb(inf.tema) : null;
   return (
     <>
       {comanda}
+      {verArena && <RelojArena desde={arena} />}
       {enBarra && (
         <div
           ref={zona}
@@ -970,7 +1040,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
       {enLibreria && libreria.capa}
       {lleva && <span className="px-sr">Llevas {comandaClara(lista).toLowerCase()}</span>}
       <div
-        className={`cf3-franja cf3-franja--atender${raro ? ' cf3-franja--raro' : ''}${enBarra || enLibreria ? ' cf3-franja--barra' : ''}${enLibreria ? ' cf3-franja--libreria' : ''}`}
+        className={`cf3-franja cf3-franja--atender${raro ? ' cf3-franja--raro' : ''}${inf ? ' cf3-franja--influencer' : ''}${enBarra || enLibreria ? ' cf3-franja--barra' : ''}${enLibreria ? ' cf3-franja--libreria' : ''}`}
         role="region"
         aria-label={`Atender a ${quien}`}
         data-paso={paso}
@@ -984,13 +1054,16 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
         data-pilar-ahora={pilarAhora ? 'true' : undefined}
         data-ayuda={ayuda ? 'true' : undefined}
         data-progreso={enLibreria ? libreria.progreso : gesto ? Math.round((actual?.progreso ?? 0) * 100) : undefined}
-        style={raro ? { '--cf3-tema': rgb(raro.tema) } : undefined}
+        data-influencer={inf ? inf.nivel : undefined}
+        data-viral={esViral ? 'true' : undefined}
+        data-arena={verArena ? 'true' : undefined}
+        style={tema ? { '--cf3-tema': tema } : undefined}
       >
         <span className="cf3-quien" aria-hidden="true">
           {raro ? `★ ${quien}` : quien}
         </span>
         <div className="cf3-caja">
-          <span className={`cf3-retrato${raro ? ' cf3-retrato--raro' : ''}`}>{retrato}</span>
+          <span className={`cf3-retrato${raro ? ' cf3-retrato--raro' : ''}${inf ? ' cf3-retrato--influencer' : ''}`}>{retrato}</span>
           <p className="cf3-dice" aria-live="polite">
             <span className="px-sr">{quien}: </span>
             {texto}

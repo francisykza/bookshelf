@@ -6,6 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.132.0**
+  (2026-11-14, §132; «Continua por donde se quedo la otra cuenta», que había dejado el bloque a medias en un commit de la rama). El café-librería del bajo, **bloque 1 de §16**: fuera la pizarra y **el
+  influencer de cada nivel** (siete personajes; llega con la barra llena; reloj de arena de latón sin números; siempre a mano;
+  a tiempo y con 3★, viral: 3 clientes al día siguiente y su foto firmada en la pared; el nivel sube al despedirle). **Migración
+  nueva sin aplicar**: `20261219120000_cafe_influencer.sql`, que se aplica **justo antes de publicar**, con la entrega
+  aprobada (ver la bitácora). Evidencias en `qa-report/v1132/`, enviadas al chat. `main` y producción siguen en la 1.131.0.
 - **Publicada en producción: 1.131.0** (2026-11-14, §131; «Confirma los cambios del árbol de trabajo»; «Sí, publícala»;
   `main` avanzó sin forzar de `858afc2` a `14b4a83` (también la rama) y `/sw.js` de producción ya sirve v1.131.0). Tras jugar la 1.130 («me gustan como
   están pero querría que la camara esté un poco más cerca y que los sonidos sean más cozy»; «que cuando pilar prepara el café
@@ -211,9 +217,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 - **Café, influencer, taller de restauración y fuera la pizarra** (encargo del 14-11-2026, plan en `cafe-libreria.md` §16):
   - decisiones de la 1.ª tanda tomadas;
-  - **bloque 1 (fuera la pizarra y el influencer), a medias, con commit en la rama (sin subir)**: hecho el servidor (migración nueva, sin
-    aplicar), las reglas, el servicio y quitar la pizarra; falta la parte visible del influencer. Lista exacta de lo que
-    falta en la bitácora, entrada «Traspaso a mitad del bloque 1 del influencer». **Es lo siguiente.**
+  - **bloque 1 (fuera la pizarra y el influencer), terminado y aprobado como 1.132.0, con commit en la rama**: falta
+    publicarlo cuando Francisco lo pida. Orden: la migración `20261219120000_cafe_influencer.sql` en el SQL Editor (SHA-256
+    comprobado, él pulsa «Run») **justo antes**, después `main` y comprobar `/sw.js`. **Es lo siguiente.**
   - antes del bloque 2, sus cifras del taller (§16.3) y el encargo del amigo (§16.4).
 
 - **Café, el libro más cerca y Pilar a mano (1.131.0, publicada)**: lo que Francisco note al jugarla. Evidencias en
@@ -368,6 +374,54 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · Café: fuera la pizarra y el influencer de cada nivel · 1.132.0 (§132), commit en la rama (Claude)
+
+Francisco: «Continua por donde se quedo la otra cuenta». Se termina el bloque 1 de `cafe-libreria.md` §16 (la otra cuenta lo
+dejó a medias en el commit anterior de la rama: migración, reglas, servicio y la pizarra fuera de `Cafe.jsx`/`Atender.jsx`).
+Francisco revisó las evidencias (vídeos y capturas de `qa-report/v1132/`, enviados al chat) y respondió «Sí, haz el commit»:
+**todo esto va en un commit en la rama `1.90-escritorio-puerto`, sin subir**; `main` y producción siguen en la 1.131.0.
+
+**Hecho** (detalle en `SPEC.md` §132):
+- `Atender.jsx`: el influencer (saludo, comanda «en directo» con REC y su color, «A la barra» da la vuelta al reloj con
+  `onEmpezar`, sin Pilar, despedida según cómo salió y la ficha de lo que publica con lo viral); los virales saludan con
+  `saludoViral`.
+- `RelojArena.jsx` (nuevo) y `cafeArena.js` (nuevo, el dibujo en píxel): reloj de latón arriba a la derecha, bajo el botón de
+  los libros; la arena baja por un embudo con un hilo por el centro; sin números; `arenaTexto` para lectores de pantalla; con
+  movimiento reducido, una barra quieta.
+- `Cafe.jsx`: servir con `entregarInfluencer`, «¡A punto de subir!» en la placa, Pilar le menciona, la etiqueta REC con su
+  color, `setFotos` con las fotos del servidor y el cartel de la subida con el vídeo. `LogroCafe.jsx`: la línea del vídeo.
+- `cafe3d.js`: `adornoInfluencer` (lo suyo en la cabeza y en la mano, piloto REC mientras espera y aro redondo de píxeles) y
+  las fotos firmadas en el hueco del cartel viejo de la pared derecha (`setFotos`, 4 + 3, clavo donde falta).
+- `cafeSfx.js`: `directo`, `arena` y `viral`. `cafe.css`: fuera los estilos del panel de la pizarra (se queda
+  `.cf3-pizarra-btn`); el bloque 1.132 (REC, comanda, retrato, etiqueta, reloj, ficha viral, línea del cartel y placa en oro).
+- `cafeInfluencers.js`: `enFrase` («la Bloguera del Muelle» dentro de una frase).
+- Pruebas: `cafeInfluencers.test.js` (7, nueva); `cafeMock.js` sin pizarra y, con `clientes.influencer`, el tope, el
+  influencer del día, `cafe_influencer_empezar`/`entregar`, los virales y las fotos con las reglas de la migración;
+  `v1132-cafe-influencer.spec.js` (nueva): la Bloguera viral (360 y 390), la arena acabada con movimiento reducido (360 y 390)
+  y los virales del día siguiente (390).
+- `cafe-libreria.md` §16.2: la tabla, con las recetas que valen.
+- Versión 1.132.0 (`diag.js`, `package.json`, `public/sw.js`, cabecera y §132 de `SPEC.md`).
+
+**Comprobado** (sobre lo de esta entrada):
+- `npm run build` bien; `npx oxlint` sin avisos nuevos en lo tocado; `npx vitest run src/features/edificio`, 59 archivos y
+  452 pruebas en verde (con `cafeInfluencers.test.js` y `cafe-influencer.rls.test.js`).
+- `v1132-cafe-influencer.spec.js` en Chromium 390 y 360: 5 de 5 (los virales, solo a 390). `v1121-cafe-clientes.spec.js`
+  (3 de 3) y `v1130-cafe-libreria.spec.js` (3 de 3) en Chromium 390, tras tocar `cafeMock.js`.
+- Capturas a 390 y 360: el reloj no choca con el botón de los libros; la foto firmada se ve en la pared de la derecha
+  (pequeña y discreta; se le dio algo más de luz para que se lea quién es).
+
+**Interpretaciones** (se le explicaron al enviar las evidencias; aprobó la entrega sin comentarlas, así que se dan por buenas
+salvo que diga otra cosa):
+- El reloj empieza al tocar «A la barra», no al tocar «Atender» como decía el plan (§16.2): pedir y leer la comanda no
+  gastan arena. Es lo que dejó hecho la otra cuenta en el servidor (`cafe_influencer_empezar`); si vuelve a «A la barra»
+  otra vez, el reloj vuelve a empezar (no castiga).
+- La placa enseña el nivel nuevo en cuanto se le sirve (como cualquier subida); el cartel sale al despedirle.
+
+**Sin verificar**: móviles reales; WebKit; la migración contra el Supabase de producción (sigue **sin aplicar**).
+
+**Cuidado al publicar** (sigue valiendo lo de la entrada anterior): la migración `20261219120000_cafe_influencer.sql` se
+aplica **justo antes de publicar la 1.132**, con la entrega aprobada, nunca antes.
 
 ### 2026-11-14 · Traspaso a mitad del bloque 1 del influencer, commit en la rama (Claude)
 

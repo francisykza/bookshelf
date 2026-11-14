@@ -39,7 +39,8 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { createRaster, hash, noise, rgb } from '../../minigames/libreria-puerto/raster';
-import { DEFAULT_AVATAR, actorBoxes } from '../actor';
+import { COLORES_PELO, DEFAULT_AVATAR, PIELES, actorBoxes } from '../actor';
+import { INFLUENCERS, NIVELES_INFLUENCER } from './cafeInfluencers';
 import {
   ANTE_PILAR,
   BOMBILLA,
@@ -2411,6 +2412,154 @@ function adornoExcentrico(s, boxes, { tocado, tema }, sx, sy) {
     pushBox(s, [sx + dx - 0.025, sy + dy - 0.025, dz, sx + dx + 0.025, sy + dy + 0.025, dz + 0.05], [255, 236, 170], { glow: true });
 }
 
+// ── 1.132 (§16.2): el influencer y sus fotos firmadas ──
+/** Una caja en las coordenadas de la figura (x a su derecha, y hacia donde mira), girada como ella (`facing`) y llevada a (cx, cy). */
+function cajaDe([x0, y0, z0, x1, y1, z1], facing, cx, cy) {
+  const f = [(x, y) => [x, y], (x, y) => [-y, x], (x, y) => [-x, -y], (x, y) => [y, -x]][facing & 3];
+  const p = f(x0, y0);
+  const q = f(x1, y1);
+  return [Math.min(p[0], q[0]) + cx, Math.min(p[1], q[1]) + cy, z0, Math.max(p[0], q[0]) + cx, Math.max(p[1], q[1]) + cy, z1];
+}
+const NEGRO_INF = [36, 34, 40];
+const PLATA_INF = [190, 196, 206];
+const BLANCO_INF = [246, 240, 230];
+const ROJO_REC = [229, 72, 60];
+/**
+ * Lo que solo llevan los influencers (no es ninguna prenda): lo de la cabeza y lo que tienen en la mano derecha (el palo del
+ * móvil, el anillo de luz, la libreta, la cámara, los auriculares y el micro, el cuenco de cata o su libro), un aro redondo de
+ * píxel de su color en el suelo (el del excéntrico es cuadrado y con chispas) y, mientras espera, la lucecita roja «REC»
+ * sobre la cabeza. `boxes`: las cajas de la figura ya en el mundo; (sx, sy) y `facing`: dónde está y adónde mira.
+ */
+function adornoInfluencer(s, boxes, { accesorio, tema }, sx, sy, facing = 2, espera = false) {
+  const all = boxes.map((b) => b.b);
+  const top = Math.max(...all.map((b) => b[5]));
+  const cabeza = all.filter((b) => b[5] > top - 0.3);
+  const hx = (Math.min(...cabeza.map((b) => b[0])) + Math.max(...cabeza.map((b) => b[3]))) / 2;
+  const hy = (Math.min(...cabeza.map((b) => b[1])) + Math.max(...cabeza.map((b) => b[4]))) / 2;
+  const t = top - 0.02;
+  const o = { g: glowAt(sx, sy, 1.2) + 0.06 };
+  const oscuro = tema.map((c) => Math.round(c * 0.55));
+  const claro = tema.map((c) => Math.min(255, c + 40));
+  // En la cabeza (alrededor de su centro) y en la mano (a su derecha, un poco por delante)
+  const enCabeza = (b, c, op = o) => pushBox(s, cajaDe(b, facing, hx, hy), c, op);
+  const enMano = (b, c, op = o) => pushBox(s, cajaDe(b, facing, sx, sy), c, op);
+  const m = top - 0.66;
+  if (accesorio === 'palo') {
+    // La gorra de visera y el palo del móvil, con la pantalla encendida mirándola
+    enCabeza([-0.19, -0.19, t, 0.19, 0.19, t + 0.08], tema);
+    enCabeza([-0.16, 0.17, t, 0.16, 0.34, t + 0.03], oscuro);
+    enMano([0.33, 0.18, m, 0.36, 0.21, top + 0.16], PLATA_INF);
+    enMano([0.27, 0.15, top + 0.12, 0.43, 0.21, top + 0.4], NEGRO_INF);
+    enMano([0.29, 0.145, top + 0.15, 0.41, 0.15, top + 0.37], [214, 236, 246], { glow: true });
+  } else if (accesorio === 'aro') {
+    // El gorro de lana con su pompón y el anillo de luz en su palo
+    enCabeza([-0.19, -0.19, t - 0.02, 0.19, 0.19, t + 0.12], tema);
+    enCabeza([-0.2, -0.2, t - 0.04, 0.2, 0.2, t + 0.01], oscuro);
+    enCabeza([-0.05, -0.05, t + 0.12, 0.05, 0.05, t + 0.2], BLANCO_INF);
+    enMano([0.35, 0.2, m, 0.38, 0.23, top - 0.06], NEGRO_INF);
+    const [cx, cz, r, e] = [0.365, top + 0.12, 0.19, 0.045];
+    const luz = [255, 246, 222];
+    enMano([cx - r, 0.19, cz + r - e, cx + r, 0.24, cz + r], luz, { glow: true });
+    enMano([cx - r, 0.19, cz - r, cx + r, 0.24, cz - r + e], luz, { glow: true });
+    enMano([cx - r, 0.19, cz - r, cx - r + e, 0.24, cz + r], luz, { glow: true });
+    enMano([cx + r - e, 0.19, cz - r, cx + r, 0.24, cz + r], luz, { glow: true });
+  } else if (accesorio === 'libreta') {
+    // La boina y la libreta roja con su lápiz
+    enCabeza([-0.22, -0.2, t, 0.21, 0.21, t + 0.06], tema);
+    enCabeza([-0.02, -0.02, t + 0.06, 0.02, 0.02, t + 0.11], oscuro);
+    enMano([0.22, 0.12, m, 0.4, 0.17, m + 0.25], tema);
+    enMano([0.235, 0.17, m + 0.015, 0.385, 0.175, m + 0.235], BLANCO_INF);
+    enMano([0.41, 0.13, m + 0.04, 0.435, 0.155, m + 0.32], [236, 196, 84]);
+  } else if (accesorio === 'camara') {
+    // La gorra plana y la cámara de fotos, con el objetivo hacia delante y el flash
+    enCabeza([-0.19, -0.19, t, 0.19, 0.19, t + 0.07], oscuro);
+    enCabeza([-0.17, 0.15, t, 0.17, 0.3, t + 0.03], oscuro.map((c) => Math.round(c * 0.8)));
+    enMano([0.2, 0.1, m + 0.06, 0.45, 0.25, m + 0.22], NEGRO_INF);
+    enMano([0.27, 0.25, m + 0.09, 0.38, 0.34, m + 0.19], PLATA_INF);
+    enMano([0.29, 0.34, m + 0.11, 0.36, 0.345, m + 0.17], [70, 110, 150], { glow: true });
+    enMano([0.38, 0.12, m + 0.22, 0.43, 0.17, m + 0.26], BLANCO_INF, { glow: true });
+    enMano([0.2, 0.14, m + 0.22, 0.24, 0.17, top - 0.2], tema);
+  } else if (accesorio === 'auriculares') {
+    // Los auriculares (la diadema y los dos cascos de su color) y el micro de mano
+    enCabeza([-0.21, -0.03, t - 0.01, 0.21, 0.03, t + 0.05], NEGRO_INF);
+    enCabeza([-0.26, -0.08, top - 0.32, -0.18, 0.08, top - 0.12], tema, { glow: true });
+    enCabeza([0.18, -0.08, top - 0.32, 0.26, 0.08, top - 0.12], tema, { glow: true });
+    enMano([0.3, 0.16, m, 0.35, 0.21, m + 0.2], NEGRO_INF);
+    enMano([0.28, 0.14, m + 0.2, 0.37, 0.23, m + 0.3], PLATA_INF);
+  } else if (accesorio === 'cata') {
+    // El sombrero pequeño con su cinta y el cuenco de cata con la cuchara
+    enCabeza([-0.24, -0.24, t, 0.24, 0.24, t + 0.03], oscuro);
+    enCabeza([-0.16, -0.16, t + 0.03, 0.16, 0.16, t + 0.17], oscuro);
+    enCabeza([-0.165, -0.165, t + 0.04, 0.165, 0.165, t + 0.08], claro);
+    enMano([0.22, 0.12, m + 0.02, 0.4, 0.3, m + 0.1], BLANCO_INF);
+    enMano([0.24, 0.14, m + 0.1, 0.38, 0.28, m + 0.106], [70, 40, 24]);
+    enMano([0.38, 0.2, m + 0.06, 0.41, 0.23, m + 0.32], PLATA_INF);
+  } else {
+    // La autora: el sombrero de ala ancha y su guía en la mano, con el título dorado
+    enCabeza([-0.3, -0.3, t, 0.3, 0.3, t + 0.03], tema);
+    enCabeza([-0.17, -0.17, t + 0.03, 0.17, 0.17, t + 0.19], tema);
+    enCabeza([-0.175, -0.175, t + 0.04, 0.175, 0.175, t + 0.08], oscuro);
+    enMano([0.22, 0.1, m, 0.42, 0.16, m + 0.29], tema);
+    enMano([0.25, 0.16, m + 0.19, 0.39, 0.165, m + 0.22], [236, 190, 90], { glow: true });
+  }
+  // Mientras espera, la lucecita «REC» sobre la cabeza (una placa oscura con el punto rojo encendido)
+  if (espera) {
+    pushBox(s, [hx - 0.13, hy - 0.03, top + 0.34, hx + 0.13, hy + 0.03, top + 0.46], NEGRO_INF, o);
+    pushBox(s, [hx - 0.1, hy - 0.04, top + 0.37, hx - 0.04, hy + 0.04, top + 0.43], ROJO_REC, { glow: true });
+    pushBox(s, [hx - 0.01, hy - 0.035, top + 0.385, hx + 0.1, hy + 0.035, top + 0.415], BLANCO_INF, o);
+  }
+  // El aro del suelo: un círculo de píxeles de su color
+  const r = 0.58;
+  const p = 0.05;
+  for (let i = -r - p; i <= r + p; i += p)
+    for (let j = -r - p; j <= r + p; j += p) {
+      const d = Math.hypot(i + p / 2, j + p / 2);
+      if (Math.abs(d - r) < p * 0.62) pushBox(s, [sx + i, sy + j, 0.012, sx + i + p, sy + j + p, 0.02], tema, { glow: true });
+    }
+}
+
+/** Dónde cuelga cada foto firmada: en el hueco del cartel viejo de la pared de la derecha, 4 arriba y 3 abajo (una por nivel). */
+const FOTOS = (() => {
+  const [w, h, hueco] = [0.36, 0.46, 0.08];
+  const fila = (niveles, z0) => niveles.map((n, k) => ({ nivel: n, y0: 9.3 - (niveles.length * w + (niveles.length - 1) * hueco) / 2 + k * (w + hueco), z0, w, h }));
+  return [...fila(NIVELES_INFLUENCER.slice(0, 4), 3.21), ...fila(NIVELES_INFLUENCER.slice(4), 2.63)];
+})();
+/**
+ * Las fotos enmarcadas y firmadas de los influencers que se hicieron virales (`niveles`); donde falta una, solo su clavo. Un
+ * retrato pequeño en su color, el paspartú y la firma a tinta.
+ */
+function fotosKit(s, niveles = []) {
+  const x = SW - 0.006;
+  for (const f of FOTOS) {
+    const [y0, y1, z0, z1] = [f.y0, f.y0 + f.w, f.z0, f.z0 + f.h];
+    const yc = (y0 + y1) / 2;
+    const o = { g: glowAt(SW - 0.4, yc, (z0 + z1) / 2) + 0.05 };
+    // La foto y el paspartú, algo más claros que la pared (papel satinado): que se lea quién es aunque la luz quede lejos
+    const op = { g: Math.min(1, o.g + 0.22) };
+    const ficha = INFLUENCERS[f.nivel];
+    if (!niveles.includes(f.nivel) || !ficha) {
+      pushBox(s, [x - 0.04, yc - 0.014, z1 - 0.06, x, yc + 0.014, z1 - 0.032], [70, 64, 60], o);
+      continue;
+    }
+    const piel = PIELES[ficha.avatar.piel]?.color ?? PIELES[1].color;
+    const pelo = COLORES_PELO[ficha.avatar.colorPelo]?.color ?? COLORES_PELO[0].color;
+    const tema = ficha.tema;
+    // El clavo, el marco de nogal y el paspartú
+    pushBox(s, [x - 0.03, yc - 0.012, z1 + 0.01, x, yc + 0.012, z1 + 0.036], [70, 64, 60], o);
+    pushBox(s, [x - 0.04, y0, z0, x, y1, z1], [92, 58, 36], o);
+    pushBox(s, [x - 0.046, y0 + 0.03, z0 + 0.03, x - 0.04, y1 - 0.03, z1 - 0.03], [240, 228, 200], op);
+    // La foto: su color de fondo, los hombros con su jersey del color del tema, la cabeza y el pelo
+    const fx = x - 0.05;
+    pushBox(s, [fx, y0 + 0.06, z0 + 0.11, x - 0.046, y1 - 0.06, z1 - 0.06], tema.map((c) => Math.min(255, Math.round(c * 0.45 + 140))), op);
+    pushBox(s, [fx - 0.004, y0 + 0.09, z0 + 0.11, fx, y1 - 0.09, z0 + 0.2], tema.map((c) => Math.round(c * 0.7)), op);
+    pushBox(s, [fx - 0.004, yc - 0.05, z0 + 0.2, fx, yc + 0.05, z0 + 0.3], piel, op);
+    pushBox(s, [fx - 0.006, yc - 0.055, z0 + 0.28, fx, yc + 0.055, z0 + 0.32], pelo, op);
+    // La firma, a tinta sobre el paspartú
+    pushBox(s, [x - 0.048, y0 + 0.07, z0 + 0.06, x - 0.046, yc + 0.01, z0 + 0.075], [52, 40, 70], op);
+    pushBox(s, [x - 0.048, yc - 0.01, z0 + 0.07, x - 0.046, y1 - 0.08, z0 + 0.085], [52, 40, 70], op);
+  }
+}
+
 // ── Bloque 6a (1.125): la bodega del sótano (nivel 6) y la trampilla de detrás de la barra ──
 const LADRILLO = [150, 84, 62];
 const MORTERO = [168, 150, 126];
@@ -3674,6 +3823,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       const luz = glowAt(sx, sy, 1.2) + 0.04;
       for (const bx of boxes) pushBox(s, bx.b, bx.c, { g: luz });
       if (c.raro) adornoExcentrico(s, boxes, c.raro, sx, sy);
+      if (c.influencer) adornoInfluencer(s, boxes, c.influencer, sx, sy, estadoFigura.facing, !c.servido);
       const figura = new Mesh(geometryOf(s), flat);
       figura.userData.xy = [sx, sy];
       clientesGrupo.add(figura);
@@ -3687,6 +3837,23 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       if (!sentado) obstaculosClientes.push([sx - 0.3, sy - 0.3, 0, sx + 0.3, sy + 0.3, 1.8]);
       sitiosClientes[c.n] = { x: sx, y: sy, z: alto + 0.15, espera: !c.servido, mira: sentado ? sentado.facing : 2, planta: plantaEn(sx) };
     });
+    invalidate();
+  }
+
+  // ── 1.132: las fotos firmadas de los influencers, en la pared de la derecha ──
+  const fotosGrupo = new Group();
+  scene.add(fotosGrupo);
+  let fotos = [];
+  function montarFotos() {
+    for (const m of fotosGrupo.children.slice()) {
+      fotosGrupo.remove(m);
+      m.geometry.dispose();
+    }
+    if (estado.inaugurado) {
+      const s = kit();
+      fotosKit(s, fotos);
+      fotosGrupo.add(new Mesh(geometryOf(s), flat));
+    }
     invalidate();
   }
 
@@ -4200,6 +4367,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1, escaparate = [], portadas = [], balda = null, decor = [] } = {}) {
       const nombreAntes = estado.nombre;
       const abre = inaugurado && !estado.inaugurado;
+      const cambiaAbierto = inaugurado !== estado.inaugurado;
       // 1.130: `balda`, lo que hay en la balda ({ clave, title, genero, paginas, ejemplares }) para la estantería por secciones;
       // `decor`, tus leídos (títulos), para las estanterías de los muebles
       estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate, portadas, balda, decor };
@@ -4233,6 +4401,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         py = planta === 'bodega' ? llegadaDe(n).y : INICIO.y;
       }
       montarPlano();
+      // 1.132: las fotos de la pared, solo con el café abierto
+      if (cambiaAbierto) montarFotos();
     },
     /**
      * Bloque 4a: el recorrido de cámara al subir de nivel, para enseñar lo que se ha abierto (al 2, el fondo con el ventanal;
@@ -4309,10 +4479,15 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       return { x: rect.left + p.x, y: rect.top + p.y };
     },
     piezas: () => estado.plano.items.length,
-    /** Los clientes del día: [{ n, aspecto, servido, libro (título del que les diste) }]. */
+    /** Los clientes del día: [{ n, aspecto, raro, influencer, servido, libro (título del que les diste) }]. */
     setClientes(lista = []) {
       clientes = lista;
       montarClientes();
+    },
+    /** 1.132: las fotos firmadas de la pared (los niveles de los influencers que se hicieron virales). */
+    setFotos(niveles = []) {
+      fotos = (Array.isArray(niveles) ? niveles : []).filter((n) => NIVELES_INFLUENCER.includes(n));
+      montarFotos();
     },
     /** Dónde cae en la pantalla un cliente (para las pruebas), o null. */
     clienteEnPantalla(n) {
@@ -4577,6 +4752,11 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       vaciarGrupo();
       clientes = [];
       montarClientes();
+      fotos = [];
+      for (const m of fotosGrupo.children.slice()) {
+        fotosGrupo.remove(m);
+        m.geometry.dispose();
+      }
       if (rotulo) ponerRotulo(null);
       cancelAnimationFrame(raf);
       clearTimeout(vivoTimer);

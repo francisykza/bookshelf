@@ -101,6 +101,9 @@ export const INFLUENCERS = {
 export const NIVELES_INFLUENCER = Object.keys(INFLUENCERS).map(Number);
 export const influencerDe = (nivel) => INFLUENCERS[nivel] ?? null;
 
+/** El nombre dentro de una frase, con el artículo en minúscula («y la Bloguera del Muelle viene…»). */
+export const enFrase = (nombre = '') => nombre.replace(/^(El|La) /, (m) => m.toLowerCase());
+
 /** Lo que dicen al pedir los que vienen por su vídeo viral. */
 export function saludoViral(nivel) {
   const nombre = INFLUENCERS[nivel]?.nombre;

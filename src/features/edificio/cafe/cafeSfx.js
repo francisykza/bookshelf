@@ -292,6 +292,25 @@ const SONIDOS = {
   },
   /** El cliente excéntrico: su comanda llega con un tintineo raro, como un móvil de conchas. */
   raro: (b) => [1661, 1976, 1480, 2217].forEach((f, k) => tono(b, { f, tipo: 'sine', pico: 0.025, caida: 0.5, d: k * 0.07 })),
+  // 1.132: el influencer
+  /** Llega en directo: el clic suave de su cámara al empezar a grabar y dos notas cálidas que suben (sin pitidos). */
+  directo: (b) => {
+    ruido(b, { f: 3400, q: 1.6, pico: 0.05, ataque: 0.002, caida: 0.025 });
+    ruido(b, { f: 2200, q: 1.4, pico: 0.035, ataque: 0.002, caida: 0.03, d: 0.05 });
+    nota(b, { f: 659.25, pico: 0.028, caida: 0.5, d: 0.12 });
+    nota(b, { f: 987.77, pico: 0.024, caida: 0.6, d: 0.24 });
+  },
+  /** Dar la vuelta al reloj de arena: el latón que se apoya en la madera de la barra y la arena que empieza a caer. */
+  arena: (b) => {
+    madera(b, { f: 262, pico: 0.06, caida: 0.16 });
+    tono(b, { f: 1568, a: 1540, tipo: 'sine', pico: 0.018, caida: 0.35, d: 0.02 });
+    ruido(b, { f: 5200, q: 1.8, pico: 0.03, ataque: 0.12, caida: 0.6, barrido: 0.8, d: 0.08 });
+  },
+  /** El vídeo se hace viral: una escala que sube, como una cajita de música contenta, y un brillo de papel de foto. */
+  viral: (b) => {
+    [523.25, 659.25, 784, 1046.5, 1318.5].forEach((f, k) => nota(b, { f, pico: 0.022, caida: 0.55, d: k * 0.08 }));
+    ruido(b, { f: 6200, q: 2.4, pico: 0.03, ataque: 0.01, caida: 0.25, barrido: 1.2, d: 0.42 });
+  },
   /** Coger la taza para llevarla: la loza sobre el plato. */
   bandeja: (b) => {
     tono(b, { f: 2350, a: 2300, tipo: 'sine', pico: 0.03, caida: 0.16 });

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.131.0 · 2026-11-14 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.132.0 · 2026-11-14 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6969,3 +6969,75 @@ migraciones ni cifras nuevas.
   las de la 1.130, para comparar, en `qa-report/v1131/antes/`.
 - `e2e-community/v1130-cafe-libreria.spec.js`, de nuevo en Chromium 390 y 360 y en WebKit 390, con la cámara nueva. Solo
   emulación: sin probar en móviles reales.
+
+## 132. El café-librería del bajo: fuera la pizarra y el influencer de cada nivel (1.132.0)
+
+Encargo de Francisco del 14-11-2026, tras la 1.131 (plan en `docs/qa/cafe-libreria.md` §16, bloque 1; «Sí, empieza»), con
+sus decisiones del mismo día: un influencer fijo y diseñado para cada subida, que llega al llenar la barra; el nivel sube al
+despedirle, salga como salga; siempre a mano y paga como el excéntrico; el límite de tiempo es un reloj de arena de latón
+(unos 2 min 30 s, sin números ni alarmas; con movimiento reducido, quieto; lo mide el servidor con margen); a tiempo y con 3★,
+«el vídeo se hace viral» (3 clientes más al día siguiente y una foto firmada en la pared). Y la pizarra, fuera del todo. Lo
+empezó una cuenta y lo terminó la otra (bitácora de `docs/ESTADO.md`). Migración nueva: `20261219120000_cafe_influencer.sql`.
+
+### 132.1 Fuera la pizarra
+
+- Sin botón ni panel en el café (`Cafe.jsx`), ni sus estilos (`cafe.css`; `.cf3-pizarra-btn` se queda: es la clase de los
+  botones del HUD). La nota del habitual y la reseña dorada del excéntrico se ven en su bocadillo al despedirse; Pilar ya no
+  la menciona.
+- El servidor sigue guardando las reseñas (`cafe_resenas`), pero `cafe_dia_json` ya no las manda. No se borra nada.
+
+### 132.2 El influencer de cada nivel (servidor)
+
+- **La subida espera**: con la barra llena, la reputación de más se aparta en `cafe_locales.reputacion_espera`
+  (`cafe_techo`, `cafe_apartar`, al principio de `cafe_progreso`): el nivel solo llega hasta donde lo deja el primer
+  influencer sin despedir. Al despedirle, lo apartado vuelve y el café sube. Nunca se pierde nada.
+- **`cafe_influencer_de`**: como mucho uno al día. El que ya se despidió ese día (`servido`); si no, el de la subida pendiente
+  (`sube`); si no, en las cuentas que ya pasaron niveles, el más antiguo sin despedir (sin frenar nada).
+- **`cafe_influencer_empezar(dia, nivel)`**: al ir a la barra, da la vuelta al reloj (`empezado = now()`; repetirlo no
+  castiga). **`cafe_influencer_entregar(dia, nivel, receta, libro, libro_ok)`**: como `cafe_entregar`, con su receta fija. A
+  tiempo si no pasan 150 + 10 segundos: paga como el excéntrico; si no, como un cliente normal. A tiempo y con 3★, viral. Le
+  despide y, si era el de la subida, el café sube. Sus números son 300 + nivel.
+- **Los virales**: el siguiente día que se abre después de uno viral, 3 clientes más (201 a 203) que piden de la carta y
+  pagan como un cliente (`virales`, `virales_de`). Una vez por influencer.
+- **El JSON**: `cafe_json` da `espera` y `fotos` (los niveles que se hicieron virales); `cafe_dia_json`, `virales`,
+  `virales_de` e `influencer`. `cafe_nueva_jornada` cuenta también a virales e influencer.
+
+### 132.3 Los siete personajes
+
+- `cafeInfluencers.js`: del 2 al 8, cada uno con nombre, accesorio, color, aspecto, receta fija (de la carta del nivel
+  anterior), libro (extensión y forma fijas; el género, de tu balda), saludo y lo que publica. Originales, sin parecerse a
+  influencers reales. Las recetas del 7 (café intenso sin nada) y el 8 (café con hielo, entera y vainilla) cambian respecto a
+  la tabla provisional del plan: el tueste de la casa gasta tazas y el chai y el brûlée se abren en el propio nivel 8.
+
+### 132.4 En el café (la app)
+
+- **Llega**: el primero de la fila, en su mesa con un aro redondo de píxeles en su color, un piloto «REC» rojo sobre la cabeza
+  mientras espera y lo suyo en la cabeza y en la mano (`adornoInfluencer` en `cafe3d.js`: gorra y palo de selfi; gorro y aro de
+  luz; boina y libreta roja; gorra plana y cámara; diadema de auriculares y micro; sombrerito y cuenco de cata; sombrero ancho y
+  libro). Su etiqueta lleva «REC» y su color; suena `directo` (un disparo de cámara y dos notas).
+- **El HUD**: con la barra llena o el influencer de la subida sin despedir, la placa dice «¡A punto de subir!» con la barra en
+  oro. Pilar: «Tienes N clientes esperando, y la Bloguera del Muelle viene a grabar tu café. Cuando le despidas, el café subirá
+  de nivel.»
+- **Pide**: su saludo, su comanda «en directo» con «REC», su nombre y su color, y el libro que quiere. Pilar no se ofrece
+  (`pilarPuede` con `excentrico`).
+- **El reloj de arena** (`RelojArena.jsx`, dibujo en `cafeArena.js`): «A la barra» llama a `cafe_influencer_empezar` y, al
+  confirmarlo, suena `arena` y el reloj de latón aparece arriba a la derecha (bajo el botón de los libros) con un giro. La arena
+  baja por un embudo hasta un montón, con un hilo de granos por el centro; sin números ni alarmas. Se ve en la barra, en la
+  librería, de camino y al servir; se va al despedirse. Para lectores de pantalla, `arenaTexto` (cinco frases sin cifras). Con
+  movimiento reducido, una barra quieta de latón que se vacía (se repinta cada 2 s). El servidor mide de verdad, con su margen.
+- **Al servir**: la despedida según cómo salió (viral, a tiempo o «¡Se me acabó el directo!»), una ficha de lo que publica
+  con «REC» y, si fue viral, «Mañana vendrán 3 clientes por su vídeo» y «Foto firmada para tu pared» (suena `viral`). El
+  cartel de la subida (`LogroCafe.jsx`) dice «La Bloguera del Muelle ha publicado «…», y se está haciendo viral.».
+- **Los virales**: saludan con «¡Hola! Vengo por el vídeo de la Bloguera del Muelle. ¿Me pones esto?» más su libro.
+- **Las fotos firmadas**: en la pared de la derecha, en el hueco del cartel viejo, 4 arriba y 3 abajo (una por nivel): marco de
+  nogal, paspartú, la foto en su color con su cara y su pelo, y una firma; donde falta una, solo el clavo (`setFotos`).
+
+### 132.5 Pruebas
+
+- `cafeInfluencers.test.js` (7): fichas únicas y válidas, recetas posibles con la carta anterior, pedido del libro, orden de
+  la fila, textos y el dibujo del reloj (la arena no se pierde y cae por el centro).
+- `cafe-influencer.rls.test.js` (10, PGlite) y las ayudas de las pruebas de servidor del café.
+- `e2e-community/cafeMock.js`: sin pizarra; con `clientes.influencer`, el tope, el influencer del día, el reloj, los virales y
+  las fotos con las reglas de la migración.
+- `e2e-community/v1132-cafe-influencer.spec.js`: la Bloguera viral (360 y 390), la arena acabada con movimiento reducido (360
+  y 390) y los virales del día siguiente (390). Capturas y vídeos en `qa-report/v1132/`.

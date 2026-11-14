@@ -3,7 +3,8 @@
 // del café y de casa contando el piso). Se engancha después de `mock.attach` (la última ruta manda). Sin `cafe`, el
 // servidor no tiene la migración (404 PGRST202), como antes de aplicarla.
 import { CAFE_MUEBLES, CAFE_NOMBRES, PLANO_INICIAL, asientosDe, cabe, cuenta, deCasa, maxCosas, medidas } from '../src/features/edificio/cafe/cafeCatalogo';
-import { BONO_TUESTE, TAZAS_MAX, TAZAS_SACO, TICKETS_NIVEL, cartaDe, granosHito, nivelDe, novedades, sacoListo, ticketsDelDia, tuesteAbierto, umbralHito } from '../src/features/edificio/cafe/cafeNiveles';
+import { BONO_TUESTE, TAZAS_MAX, TAZAS_SACO, TICKETS_NIVEL, cartaDe, desdeNivel, granosHito, nivelDe, novedades, sacoListo, ticketsDelDia, tuesteAbierto, umbralHito } from '../src/features/edificio/cafe/cafeNiveles';
+import { ARENA_MARGEN, ARENA_SEGUNDOS, INFLUENCERS, NIVELES_INFLUENCER, VIRALES } from '../src/features/edificio/cafe/cafeInfluencers';
 import { SUPABASE } from './mockSupabase';
 import {
   BIENVENIDA,
@@ -42,10 +43,29 @@ const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
  * (`estado.dominio`: lo que ya se trae servido, por ejemplo { cafe: 12 }); `clientes.vendidos`: lo vendido otro día, sin
  * reponer (las claves). Con `estado.sinEntregar`, el servidor aún no
  * tiene la migración (`cafe_entregar` da 404 y la app sirve con `cafe_servir`).
+ * 1.132 (`20261219120000_cafe_influencer.sql`), solo con `clientes.influencer` ({ segundos }: los que dice el servidor que
+ * pasaron desde la barra; sin ellos, los de verdad): con la barra llena, la reputación de más espera aparte (`estado.espera`) y
+ * llega el influencer de la subida (300 + nivel); `cafe_influencer_empezar` da la vuelta al reloj y `cafe_influencer_entregar`
+ * le sirve (a tiempo, como el excéntrico; viral con 3 estrellas) y sube el café. `estado.influencers`: { [nivel]: { despedido,
+ * dia, estrellas, a_tiempo, viral, viral_dia } } de antes. El siguiente día nuevo, 3 virales (201 a 203). La pizarra ya no va.
  */
 export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null } = {}) {
-  const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], tazas: 0, sacoDia: null, llamadas: [], ...estado } : null;
-  const vista = () => ({ nombre: c.nombre, nivel: c.nivel, reputacion: c.reputacion, granos: c.granos, plano: c.plano, inaugurado: c.inaugurado, inventario: c.inventario, escaparate: c.escaparate, tostadero: { tazas: c.tazas, saco_dia: c.sacoDia }, dominio: dominio() });
+  const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], tazas: 0, sacoDia: null, llamadas: [], espera: 0, influencers: {}, ...estado } : null;
+  if (c) c.influencers = structuredClone(c.influencers);
+  const conInf = Boolean(clientes?.influencer);
+  const vista = () => ({
+    nombre: c.nombre,
+    nivel: c.nivel,
+    reputacion: c.reputacion,
+    granos: c.granos,
+    plano: c.plano,
+    inaugurado: c.inaugurado,
+    inventario: c.inventario,
+    escaparate: c.escaparate,
+    tostadero: { tazas: c.tazas, saco_dia: c.sacoDia },
+    dominio: dominio(),
+    ...(conInf ? { espera: c.espera, fotos: NIVELES_INFLUENCER.filter((n) => c.influencers[n]?.viral) } : {}),
+  });
   // 1.130: las servidas de 2 estrellas o más por bebida (y lo de la carta con gesto), sobre lo que ya se traía
   const dominio = () => {
     const out = { ...(c.dominio ?? {}) };
@@ -180,7 +200,9 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     if (clientes?.jornada && rpc === 'cafe_jornada') return json(route, jornada);
     if (clientes?.jornada && rpc === 'cafe_nueva_jornada') {
       const d = dias[jornada];
-      if (d && Object.keys(d.servidos).length < d.clientes + d.habituales) return falla(route, 'cafe:pendientes');
+      const atendidos = d ? Object.keys(d.servidos).filter((n) => Number(n) < 300).length : 0;
+      const inf = d && conInf ? influencerDe(d.dia) : null;
+      if (d && (atendidos < d.clientes + d.habituales + (d.virales ?? 0) || (inf && !inf.servido))) return falla(route, 'cafe:pendientes');
       const sig = new Date(`${jornada}T12:00:00Z`);
       sig.setUTCDate(sig.getUTCDate() + 1);
       jornada = sig.toISOString().slice(0, 10);
@@ -199,6 +221,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     }
     if (clientes && rpc === 'cafe_entregar' && c.sinEntregar) return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
     if (clientes && ['cafe_dia', 'cafe_habitual', 'cafe_servir', 'cafe_entregar'].includes(rpc)) return diaDelCafe(route, rpc, body);
+    if (conInf && ['cafe_influencer_empezar', 'cafe_influencer_entregar'].includes(rpc)) return diaDelCafe(route, rpc, body);
     if (clientes && ['cafe_bienvenida', 'cafe_comprar_caja', 'cafe_colocar'].includes(rpc)) return libros(route, rpc, body);
     return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
   });
@@ -211,9 +234,37 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     c.orden = clientes.vendidos.length;
   }
   let jornada = clientes?.jornada ?? null;
-  const pizarra = [];
   const ayer = clientes ? new Date(new Date(`${clientes.hoy}T12:00:00Z`).getTime() - 864e5).toISOString().slice(0, 10) : null;
   const semilla = (k) => clientes.semillas?.[k] ?? 1000 + k * 7919;
+  // Los virales (201 a 203) tienen su propia semilla, aparte de la de los clientes del día
+  const semillaDe = (n) => (n >= 201 && n <= 203 ? semilla(30 + n - 201) : semilla(n - 1));
+  // ── 1.132: el influencer de cada subida (cafe_techo, cafe_apartar y cafe_influencer_de de la migración) ──
+  const despedido = (n) => Boolean(c.influencers[n]?.despedido);
+  // Hasta dónde llega la reputación: lo que falta, menos uno, para el primer nivel cuyo influencer no se ha despedido
+  const techo = () => {
+    for (let m = c.nivel + 1; m <= 8; m += 1) if (!despedido(m)) return desdeNivel(m) - 1;
+    return null;
+  };
+  // Lo que esperaba vuelve y lo que pase del techo se aparta otra vez (nunca se pierde nada)
+  const apartar = () => {
+    c.reputacion += c.espera;
+    c.espera = 0;
+    const t = techo();
+    if (t !== null && c.reputacion > t) {
+      c.espera = c.reputacion - t;
+      c.reputacion = t;
+    }
+  };
+  // El que ya despediste ese día; si no, el de la subida (la barra llena); si no, el más antiguo de los niveles que ya tenías
+  function influencerDe(dia) {
+    const hoy = Object.entries(c.influencers)
+      .filter(([, i]) => i.despedido && i.dia === dia)
+      .sort((a, b) => (a[1].orden ?? 0) - (b[1].orden ?? 0))[0];
+    if (hoy) return { nivel: Number(hoy[0]), servido: true, sube: false, estrellas: hoy[1].estrellas ?? null, a_tiempo: Boolean(hoy[1].a_tiempo), viral: Boolean(hoy[1].viral) };
+    if (c.nivel < 8 && c.reputacion + c.espera >= desdeNivel(c.nivel + 1) && !despedido(c.nivel + 1)) return { nivel: c.nivel + 1, servido: false, sube: true };
+    for (let k = 2; k <= c.nivel; k += 1) if (!despedido(k)) return { nivel: k, servido: false, sube: false };
+    return null;
+  }
   const diaJson = (d) => ({
     dia: d.dia,
     carta: d.carta,
@@ -236,7 +287,19 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       encaja: d.servidos[101 + i]?.encaja ?? null,
       estrellas: d.servidos[101 + i]?.estrellas ?? null,
     })),
-    pizarra: pizarra.slice(0, 6),
+    ...(conInf
+      ? {
+          virales: Array.from({ length: d.virales ?? 0 }, (_, i) => ({
+            n: 201 + i,
+            semilla: semillaDe(201 + i),
+            servido: Boolean(d.servidos[201 + i]),
+            encaja: d.servidos[201 + i]?.encaja ?? null,
+            estrellas: d.servidos[201 + i]?.estrellas ?? null,
+          })),
+          virales_de: d.virales_de ?? null,
+          influencer: influencerDe(d.dia),
+        }
+      : {}),
   });
   function diaDelCafe(route, rpc, body) {
     if (body.dia !== clientes.hoy && body.dia !== ayer && body.dia !== jornada) return falla(route, 'cafe:dia');
@@ -260,6 +323,16 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       for (const k of claves) lib.libros[k].caja += 1;
       c.granos -= claves.length * REPARTO.precio;
       d.reparto = claves.length || faltan ? { claves, granos: claves.length * REPARTO.precio, faltan } : null;
+      // 1.132: si un influencer se fue contento otro día anterior, hoy llegan 3 más por su vídeo (una vez por influencer)
+      if (conInf) {
+        const v = Object.entries(c.influencers)
+          .filter(([, i]) => i.viral && !i.viral_dia && i.dia && i.dia < d.dia)
+          .sort((a, b) => (a[1].orden ?? 0) - (b[1].orden ?? 0))[0];
+        if (v) {
+          v[1].viral_dia = d.dia;
+          Object.assign(d, { virales: VIRALES, virales_de: Number(v[0]) });
+        }
+      }
     }
     if (clientes.atendidosEn?.includes(d.dia) && !d.preparado) {
       d.preparado = true;
@@ -268,20 +341,29 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     let dado = null;
     let progreso = null;
     if (rpc === 'cafe_habitual') d.habituales = Math.min(MAX_HABITUALES, d.habituales + 1);
-    if (rpc === 'cafe_servir' || rpc === 'cafe_entregar') {
-      const entrega = rpc === 'cafe_entregar';
-      const n = body.cliente;
-      if (!((n >= 1 && n <= d.clientes) || (n >= 101 && n <= 100 + d.habituales))) return falla(route, 'cafe:cliente');
+    // 1.132: ir a la barra con el influencer da la vuelta al reloj de arena (cada vez; volver a empezar no castiga)
+    const hoyInf = conInf && rpc.startsWith('cafe_influencer_') ? influencerDe(d.dia) : null;
+    if (conInf && rpc.startsWith('cafe_influencer_') && (!hoyInf || hoyInf.servido || hoyInf.nivel !== body.nivel)) return falla(route, 'cafe:influencer');
+    if (rpc === 'cafe_influencer_empezar') {
+      (c.influencers[body.nivel] ??= {}).empezado = Date.now();
+      return json(route, { nivel: body.nivel, segundos: ARENA_SEGUNDOS });
+    }
+    if (rpc === 'cafe_servir' || rpc === 'cafe_entregar' || rpc === 'cafe_influencer_entregar') {
+      const inf = rpc === 'cafe_influencer_entregar' ? c.influencers[body.nivel] : null;
+      if (rpc === 'cafe_influencer_entregar' && !inf?.empezado) return falla(route, 'cafe:influencer');
+      const entrega = rpc !== 'cafe_servir';
+      const n = inf ? 300 + body.nivel : body.cliente;
+      if (!inf && !((n >= 1 && n <= d.clientes) || (n >= 101 && n <= 100 + d.habituales) || (conInf && n >= 201 && n <= 200 + (d.virales ?? 0)))) return falla(route, 'cafe:cliente');
       const r = body.receta;
       const carta = cartaDe(c.reputacion);
       if (!recetaValida(r, carta)) return falla(route, 'cafe:receta');
       // El tueste de la casa sale del saco: sin tazas, no hay
       if (r[1] === 'casa' && c.tazas < 1) return falla(route, 'cafe:tueste');
       if (d.servidos[n]) return falla(route, 'cafe:servido');
-      const habitual = n > 100;
+      const habitual = n >= 101 && n <= 199;
       const excentrico = !habitual && n === d.clientes;
-      const quien = habitual ? (clientes.quienes?.[n - 101] ?? (n - 101) * 5) : semilla(n - 1) % 6;
-      const pide = recetaPide(habitual ? { n, quien } : { n, semilla: semilla(n - 1) }, d.carta);
+      const quien = habitual ? (clientes.quienes?.[n - 101] ?? (n - 101) * 5) : semillaDe(n) % 6;
+      const pide = inf ? [...INFLUENCERS[body.nivel].pide] : recetaPide(habitual ? { n, quien } : { n, semilla: semillaDe(n) }, d.carta);
       const aciertos = aciertosDe(r, pide);
       // El libro solo cuenta si está en la balda; si encaja (con `cafe_entregar`, si el género es), se lo lleva y paga más
       const enLaBalda = Boolean(body.libro) && lib.libros[body.libro]?.balda > 0;
@@ -292,7 +374,11 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       const extra = lleva ? (entrega ? EXTRA_LIBRO : EXTRA_LLEVADO) : 0;
       if (lleva) lib.libros[body.libro].balda -= 1;
       const estrellas = entrega ? estrellasTotal(aciertos, la) : estrellasDe(aciertos, lleva);
-      const base = premio(habitual ? 'habitual' : excentrico ? 'excentrico' : 'cliente', estrellas);
+      // El influencer: a tiempo (con el margen del servidor), como el excéntrico y, con 3 estrellas, viral; si no, como un cliente
+      const segundos = inf ? (clientes.influencer.segundos ?? Math.max(0, Math.floor((Date.now() - inf.empezado) / 1000))) : null;
+      const aTiempo = inf ? segundos <= ARENA_SEGUNDOS + ARENA_MARGEN : false;
+      const viral = aTiempo && estrellas === 3;
+      const base = premio(inf ? (aTiempo ? 'excentrico' : 'cliente') : habitual ? 'habitual' : excentrico ? 'excentrico' : 'cliente', estrellas);
       // Bloque 6b: servir el tueste gasta una taza; a quien lo pidió, +3 granos y +4 de reputación
       const tueste = r[1] === 'casa' && pide[1] === 'casa';
       const bono = tueste ? BONO_TUESTE : { granos: 0, reputacion: 0 };
@@ -302,6 +388,9 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       c.granos = Math.min(100000, c.granos + p.granos + extra);
       const antes = c.reputacion;
       c.reputacion += p.reputacion;
+      // 1.132: despedirle quita el techo de su nivel; lo que esperaba entra y lo que pase del siguiente techo se aparta
+      if (inf) Object.assign(inf, { despedido: true, dia: d.dia, estrellas, segundos, a_tiempo: aTiempo, viral, orden: c.orden });
+      if (conInf) apartar();
       // El progreso (bloque 4a): niveles con sus tickets (el 1, con el primer servicio), hitos (el 3.º, 15 granos) y los del día
       const nov = novedades(antes, c.reputacion);
       const niveles = [...(c.cobrados?.includes(1) ? [] : [{ nivel: 1, tickets: TICKETS_NIVEL[1] }]), ...nov.niveles];
@@ -317,13 +406,10 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       progreso = { de, a: c.nivel, niveles, hitos: nov.hitos.map(({ nivel, hito }) => ({ nivel, hito })), granos: granosDeHitos, tickets_dia: ticketsDia, tickets: tk };
       dado = { ...p, granos: p.granos + extra, llevado: lleva, extra, estrellas, aciertos, pide, frase: null, dorada: false, tueste, bono_granos: bono.granos, bono_reputacion: bono.reputacion };
       if (entrega) Object.assign(dado, { libro_aciertos: la, libro_ok: ok, en_balda: enLaBalda });
-      if (habitual) {
-        dado.frase = clientes.frases?.[n - 101] ?? 2;
-        pizarra.unshift({ dia: d.dia, quien, frase: dado.frase, dorada: false });
-      } else if (excentrico && estrellas === 3) {
-        Object.assign(dado, { frase: quien, dorada: true });
-        pizarra.unshift({ dia: d.dia, quien, frase: quien, dorada: true });
-      }
+      if (inf) dado.influencer = { nivel: body.nivel, a_tiempo: aTiempo, viral, segundos, sube: Boolean(hoyInf.sube) };
+      // La nota del habitual y la reseña dorada se ven en su bocadillo (la pizarra ya no está, 1.132)
+      if (habitual) dado.frase = clientes.frases?.[n - 101] ?? 2;
+      else if (excentrico && estrellas === 3) Object.assign(dado, { frase: quien, dorada: true });
     }
     return json(route, { cafe: vista(), dia: diaJson(d), libros: librosJson(), dado, progreso });
   }

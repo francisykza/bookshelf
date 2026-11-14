@@ -614,24 +614,25 @@ Clientes al día: 3 en el nivel 1, hasta 10 en el 8. Atender a uno a mano, bebid
 - **Fijos y diseñados**: siete personajes propios, uno por subida, del 1 al 8. Son personajes originales, nunca parecidos a
   influencers reales, cada uno con su silueta, su accesorio, su forma de pedir y lo que publica:
 
-| Sube a | Personaje (provisional) | Accesorio | Qué pide (bebida fija + un libro de tu balda) |
-| --- | --- | --- | --- |
-| 2 · Café | La Bloguera del Muelle | móvil en un palo, gorro de lana | café con avena y canela, «algo corto para el tranvía» |
-| 3 · Librería | El Booktuber de las Gafas Redondas | anillo de luz, pila de libros | té negro con miel y un libro largo «para reseñar» |
-| 4 · Ala lateral | La Crítica de la Libreta Roja | libreta y lupa | chocolate con nata, para leer aquí |
-| 5 · Terraza | El Fotógrafo de Escaparates | cámara instantánea | café con vainilla y un libro para regalar |
-| 6 · Bodega | La del Directo de Medianoche | auriculares de gato, tira de luces | café con hielo y un libro largo para llevar |
-| 7 · Tostadero | El Catador de Cafés | delantal de cuero, cucharilla de cata | el tueste de la casa, intenso, sin leche |
-| 8 · Catas | La Autora de «Cafés con alma» | gabardina y guía de viajes | chai con brûlée y un libro para regalar |
+| Sube a | Personaje | Lo que lleva (en 3D) | Qué pide (receta fija) | Su libro (el género, de tu balda) |
+| --- | --- | --- | --- | --- |
+| 2 · Café | La Bloguera del Muelle | gorra y palo de selfi con el móvil | café suave con avena y canela | corto, para llevar |
+| 3 · Librería | El Booktuber de las Gafas Redondas | gorro de lana con pompón y aro de luz | té negro (intenso), sin leche, con miel | largo, para leerlo aquí |
+| 4 · Ala lateral | La Crítica de la Libreta Roja | boina, libreta roja y lápiz | chocolate intenso con leche entera y nata | corto, para leerlo aquí |
+| 5 · Terraza | El Fotógrafo de Escaparates | gorra plana y cámara con flash | café suave con leche entera y vainilla | corto, para regalar |
+| 6 · Bodega | La del Directo de Medianoche | diadema de auriculares y micro | café con hielo intenso, con avena, sin toque | largo, para llevar |
+| 7 · Tostadero | El Catador de Cafés | sombrerito y cuenco de cata con cucharilla | café intenso, sin leche ni toque | largo, para leerlo aquí |
+| 8 · Catas | La Autora de «Cafés con alma» | sombrero ancho y un libro con cinta dorada | café con hielo suave, con leche entera y vainilla | largo, para regalar |
 
   Siempre a mano (Pilar no lo prepara), y lo que pide ya está abierto en tu carta en ese nivel.
-  **Nota de la implementación (14-11-2026)**: esta tabla era provisional. Las recetas que valen son las de
-  `cafeInfluencers.js` y de la migración `20261219120000_cafe_influencer.sql`:
+  **Hecho en la 1.132.0** (SPEC §132): la tabla de arriba es la que vale (`cafeInfluencers.js` y la migración
+  `20261219120000_cafe_influencer.sql`). Respecto a la propuesta cambiaron dos recetas:
   - el 7 pide café intenso sin nada, porque el tueste de la casa gasta tazas del saco;
   - el 8, café con hielo, entera y vainilla, porque el chai y el brûlée se abren en el propio nivel 8.
 - **El límite de tiempo** (**decisión**: choca con «sin cuentas atrás» del café):
   - **Propuesta**: **un reloj de arena de latón en la barra**, nada de números ni alarmas. Lleva unos **2 min 30 s**, más o
-    menos el doble de lo que se tarda en atender a alguien. Empieza al tocar «Atender» y se para al darle la taza y el libro.
+    menos el doble de lo que se tarda en atender a alguien. Empieza al tocar «Atender» y se para al darle la taza y el libro. **Hecho (1.132)**: empieza al ir a la barra («A la barra»), para que pedir y leer la comanda no gasten arena; volver a
+    la barra le da la vuelta otra vez, sin castigo (interpretación por confirmar).
   - **Si se acaba la arena**, no pasa nada malo: él dice «¡Se me acabó el directo! Igual tiene una pinta buenísima», paga como
     un cliente normal y el café sube de nivel igual. Solo se pierde lo especial.
   - **Con movimiento reducido**, el reloj se ve igual pero sin arena cayendo, con una barra quieta que se vacía.

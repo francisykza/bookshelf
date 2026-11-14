@@ -20,7 +20,8 @@ import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCa
 import { GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, comprarCafe, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
+import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
+import { enFrase } from './cafeInfluencers';
 import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
 import { BIENVENIDA, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
@@ -433,11 +434,19 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         n: c.n,
         aspecto: c.aspecto,
         raro: c.raro ? { tocado: c.raro.tocado, tema: c.raro.tema } : null,
+        // 1.132: el influencer, con su accesorio y su color (la luz «REC» mientras espera y el aro del suelo)
+        influencer: c.influencer ? { accesorio: c.influencer.accesorio, tema: c.influencer.tema } : null,
         servido: c.servido,
         libro: c.servido ? (dados.current[c.n] ?? titulos[c.semilla % Math.max(1, titulos.length)] ?? null) : null,
       })),
     );
   }, [ready, clientesHoy, titulos, plano]);
+  // 1.132: las fotos firmadas de los influencers que se hicieron virales, en la pared de la derecha
+  const fotosClave = abierto ? (local?.fotos ?? []).join() : '';
+  useEffect(() => {
+    if (!ready) return;
+    api.current?.setFotos?.(fotosClave ? fotosClave.split(',').map(Number) : []);
+  }, [ready, fotosClave]);
   // Mientras preparas y sirves, la música baja un poco para que se oiga lo que haces
   useEffect(() => {
     musica.current?.atenuar(Boolean(clienteAtendido));
@@ -471,7 +480,13 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         sfx.play('toque');
         setAtendiendo(null);
         setHablando(null);
-        setAviso(c.habitual || c.raro ? `${c.nombre} está leyendo tan a gusto. Mejor no molestar.` : 'Está leyendo tan a gusto. Mejor no molestar.');
+        setAviso(
+          c.influencer
+            ? `${c.nombre} está montando su vídeo tan a gusto. Mejor no molestar.`
+            : c.habitual || c.raro
+              ? `${c.nombre} está leyendo tan a gusto. Mejor no molestar.`
+              : 'Está leyendo tan a gusto. Mejor no molestar.',
+        );
         return;
       }
       setAtendiendo(null);
@@ -592,16 +607,19 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     }
   };
   // 1.130: la receta, el ejemplar de la balda (o null, solo el café) y lo acertado del libro [género, extensión, forma]
+  // 1.132: al influencer, con su reloj de arena (`entregarInfluencer`); al despedirle, si era el de la subida, el café sube
   const servir = async ({ receta, libro, ok }) => {
     const c = clienteAtendido;
-    const r = await entregarCliente(diaJuego, c.n, receta, libro?.clave ?? null, ok);
+    const r = c.influencer ? await entregarInfluencer(diaJuego, c.influencer.nivel, receta, libro?.clave ?? null, ok) : await entregarCliente(diaJuego, c.n, receta, libro?.clave ?? null, ok);
     // Con el libro que se lleva (si vuelve a su sección, como cualquier otro cliente)
     dados.current[c.n] = r.dado?.llevado ? (libro?.title ?? null) : null;
     if (r.libros) setLibrosCafe(r.libros);
     if (r.cafe) setLocal(r.cafe);
     if (r.dia) setDia(r.dia);
     setGanado((r.dado?.granos ?? 0) + (r.progreso?.granos ?? 0));
-    if (hayLogro(r.progreso)) setLogro(r.progreso);
+    // El cartel de la subida dice de quién fue el vídeo (si la subida llegó con él)
+    const video = c.influencer && r.dado?.influencer ? { nombre: c.influencer.nombre, publica: c.influencer.publica, viral: Boolean(r.dado.influencer.viral) } : null;
+    if (hayLogro(r.progreso)) setLogro(video ? { ...r.progreso, video } : r.progreso);
     return r.dado;
   };
 
@@ -728,6 +746,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   };
 
   const prog = progresoNivel(local?.nivel ?? 1, local?.reputacion ?? 0);
+  // 1.132: con la barra llena, el café está «a punto de subir» hasta que despidas al influencer de la subida
+  const infHoy = clientesHoy.find((c) => c.influencer) ?? null;
+  const aPuntoDeSubir = abierto && ((local?.espera ?? 0) > 0 || Boolean(infHoy?.influencer.sube && !infHoy.servido));
+  const infEspera = pendientes.find((c) => c.influencer) ?? null;
   const titulo = abierto ? `${local.nombre}, tu café-librería.` : 'El café-librería del bajo: el local, vacío y en traspaso.';
   const ultima = hablando === frases.length - 1;
   // El cuadro de diálogo: quién habla (Pilar con su retrato o un aviso con la taza), qué dice y si hay más
@@ -739,7 +761,17 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       : aviso
       ? aviso
       : abierto && hablando == null && dia && pendientes.length
-        ? `«${pendientes.length === 1 ? 'Tienes un cliente esperando' : `Tienes ${pendientes.length} clientes esperando`}${pendientes.some((c) => c.raro) ? (pendientes.length === 1 ? ', y es muy peculiar' : ', y uno es muy peculiar') : ''}. ${pendientes.length === 1 ? 'Tócalo' : 'Toca uno'} en el local, o «Atender», para ver qué pide.»`
+        ? `«${pendientes.length === 1 ? 'Tienes un cliente esperando' : `Tienes ${pendientes.length} clientes esperando`}${
+            infEspera
+              ? pendientes.length === 1
+                ? `: ${enFrase(infEspera.nombre)}, que viene a grabar tu café`
+                : `, y ${enFrase(infEspera.nombre)} viene a grabar tu café`
+              : pendientes.some((c) => c.raro)
+                ? pendientes.length === 1
+                  ? ', y es muy peculiar'
+                  : ', y uno es muy peculiar'
+                : ''
+          }.${infEspera?.influencer.sube ? ' Cuando le despidas, el café subirá de nivel.' : ''} ${pendientes.length === 1 ? 'Tócalo' : 'Toca uno'} en el local, o «Atender», para ver qué pide.»`
         : abierto && hablando == null && dia && clientesHoy.length
           ? jornada
             ? '«Ya está todo el mundo atendido. Como estás probando el café, abro otra jornada cuando quieras.»'
@@ -789,21 +821,25 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
             <button
               key={c.n}
               type="button"
-              className={`cf3-tag cf3-tag--cliente${c.raro ? ' cf3-tag--raro' : ''}`}
+              className={`cf3-tag cf3-tag--cliente${c.raro ? ' cf3-tag--raro' : ''}${c.influencer ? ' cf3-tag--influencer' : ''}`}
               data-off="true"
-              style={c.raro ? { '--cf3-tema': `rgb(${c.raro.tema.join(' ')})` } : undefined}
-              aria-label={`Atender a ${c.habitual || c.raro ? c.nombre : 'un cliente'}`}
+              style={c.raro ? { '--cf3-tema': `rgb(${c.raro.tema.join(' ')})` } : c.influencer ? { '--cf3-tema': `rgb(${c.influencer.tema.join(' ')})` } : undefined}
+              aria-label={`Atender a ${c.habitual || c.raro || c.influencer ? c.nombre : 'un cliente'}`}
               ref={(el) => (tagEls.current[`cliente:${c.n}`] = el)}
               onClick={() => pick.current(`cliente:${c.n}`)}
             >
-              {c.habitual ? c.nombre : null}
+              {c.habitual ? c.nombre : c.influencer ? <span aria-hidden="true">REC</span> : null}
             </button>
           ))}
         </div>
       )}
       {abierto && (
         <div className="cf3-hud" data-decorar={decorando ? 'true' : undefined}>
-          <p className="cf3-placa" aria-label={`Tu café: ${local.nombre}, nivel ${local.nivel}, ${prog.nombre}. Reputación ${prog.lleva}${prog.meta ? ` de ${prog.meta}` : ''}.`}>
+          <p
+            className="cf3-placa"
+            data-sube={aPuntoDeSubir ? 'true' : undefined}
+            aria-label={`Tu café: ${local.nombre}, nivel ${local.nivel}, ${prog.nombre}. ${aPuntoDeSubir ? '¡A punto de subir de nivel!' : `Reputación ${prog.lleva}${prog.meta ? ` de ${prog.meta}` : ''}.`}`}
+          >
             <span className="cf3-placa__insignia" aria-hidden="true">
               <span className="cf3-placa__nv">NV</span>
               {local.nivel}
@@ -812,12 +848,12 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
               <span className="cf3-placa__nombre">{local.nombre}</span>
               <span className="cf3-placa__nivel">{prog.nombre}</span>
               <span className="cf3-xp">
-                <span className="cf3-xp__lleno" style={{ width: `${Math.round(prog.hecho * 100)}%` }} />
+                <span className="cf3-xp__lleno" style={{ width: `${aPuntoDeSubir ? 100 : Math.round(prog.hecho * 100)}%` }} />
                 {[1, 2, 3].map((k) => (
                   <span key={k} className="cf3-xp__hito" style={{ left: `${k * 25}%` }} data-hecho={(local.reputacion ?? 0) >= umbralHito(local.nivel, k) ? 'true' : undefined} />
                 ))}
               </span>
-              <span className="cf3-xp__cifra">{prog.meta ? `${prog.lleva} / ${prog.meta}` : `${prog.lleva}`}</span>
+              <span className="cf3-xp__cifra">{aPuntoDeSubir ? '¡A punto de subir!' : prog.meta ? `${prog.lleva} / ${prog.meta}` : `${prog.lleva}`}</span>
             </span>
           </p>
           <div className="cf3-hud__der">
@@ -1049,6 +1085,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
           onVisto={verNuevo}
           tazas={tazas}
           onServir={servir}
+          onEmpezar={(n) => empezarInfluencer(diaJuego, n)}
           onCerrar={() => setAtendiendo(null)}
         />
       ) : (

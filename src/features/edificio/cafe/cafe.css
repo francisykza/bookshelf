@@ -1148,82 +1148,6 @@
   font: 400 12px/14px var(--pp-title);
 }
 
-/* La pizarra: de tiza sobre verde, con marco de madera */
-.cf3-pizarra {
-  --cf3-px: 4px;
-  position: absolute;
-  top: calc(150px + env(safe-area-inset-top, 0px));
-  right: 16px;
-  left: 16px;
-  z-index: 4;
-  display: grid;
-  gap: 10px;
-  max-width: 460px;
-  margin: 0 auto;
-  padding: 16px 18px 16px;
-  background: radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.05), transparent 60%), #2f4a3a;
-  box-shadow:
-    inset 0 0 0 2px var(--cf3-ink),
-    inset 0 0 0 7px #8a5e3a,
-    inset 0 0 0 9px var(--cf3-ink);
-  color: #e8efe4;
-  clip-path: polygon(
-    0 var(--cf3-px),
-    var(--cf3-px) var(--cf3-px),
-    var(--cf3-px) 0,
-    calc(100% - var(--cf3-px)) 0,
-    calc(100% - var(--cf3-px)) var(--cf3-px),
-    100% var(--cf3-px),
-    100% calc(100% - var(--cf3-px)),
-    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
-    calc(100% - var(--cf3-px)) 100%,
-    var(--cf3-px) 100%,
-    var(--cf3-px) calc(100% - var(--cf3-px)),
-    0 calc(100% - var(--cf3-px))
-  );
-}
-.cf3-pizarra__titulo {
-  margin: 0;
-  font: 400 18px/20px var(--pp-title);
-  letter-spacing: 0.06em;
-  text-align: center;
-  text-transform: uppercase;
-}
-.cf3-pizarra__lista {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.cf3-pizarra__lista li {
-  display: grid;
-  gap: 2px;
-  padding-bottom: 6px;
-  border-bottom: 1px dashed rgb(232 239 228 / 0.3);
-}
-.cf3-pizarra__frase {
-  font:
-    italic 0.95rem/1.35 'Lora',
-    Georgia,
-    serif;
-}
-.cf3-pizarra__firma {
-  justify-self: end;
-  color: #f2d48a;
-  font: 400 14px/14px var(--pp-title);
-}
-.cf3-pizarra__vacia {
-  margin: 0;
-  font:
-    italic 0.88rem/1.4 'Lora',
-    Georgia,
-    serif;
-}
-.cf3-pizarra .cf3-btn {
-  justify-self: center;
-}
-
 /* Atender: la taza, lo ganado y el corazón */
 .cf3-franja--atender .cf3-caja {
   grid-template-areas:
@@ -1789,13 +1713,6 @@
   content: '';
 }
 
-/* La pizarra: las reseñas doradas */
-.cf3-pizarra__lista li[data-dorada='true'] .cf3-pizarra__frase {
-  color: #ffe08a;
-}
-.cf3-pizarra__lista li[data-dorada='true'] .cf3-pizarra__firma {
-  color: #ffd36a;
-}
 @media (max-width: 380px) {
   .cf3-fichas {
     gap: 5px;
@@ -3960,4 +3877,225 @@
   transform: translateX(-50%);
   pointer-events: none;
   opacity: 0.92;
+}
+
+/* ── 1.132 (§16.2): el influencer, su reloj de arena y su vídeo ── */
+/* «REC»: la lucecita roja de quien graba, con su letrero de píxel (parpadea despacio; quieta con movimiento reducido) */
+.cf3-rec {
+  display: inline-flex;
+  flex: none;
+  gap: 3px;
+  align-items: center;
+  margin-right: 6px;
+  padding: 2px 4px 2px 3px;
+  background: #2a1a10;
+  color: #ffe9e0;
+  font: 400 10px/10px var(--pp-title);
+  letter-spacing: 0.08em;
+  text-shadow: none;
+  text-transform: uppercase;
+}
+.cf3-rec::before {
+  width: 6px;
+  height: 6px;
+  background: #e5483c;
+  content: '';
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-rec::before {
+    animation: cf3-rec 1.6s steps(1, end) infinite;
+  }
+}
+@keyframes cf3-rec {
+  50% {
+    background: #7a2a24;
+  }
+}
+/* Su comanda: clara, en el papel de siempre con una franja de su color arriba y el marco de su color */
+.cf3-comanda--influencer {
+  padding-top: 14px;
+  background: linear-gradient(var(--cf3-tema) 0 6px, transparent 6px), repeating-linear-gradient(transparent 0 19px, rgb(120 90 60 / 0.16) 19px 20px), #f6ecd4;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 0 0 4px var(--cf3-tema),
+    inset 0 0 0 5px #2a1a10,
+    0 4px 0 rgb(0 0 0 / 0.35);
+}
+.cf3-comanda--influencer::before {
+  top: 6px;
+}
+.cf3-comanda--influencer .cf3-comanda__titulo {
+  display: flex;
+  align-items: center;
+  color: color-mix(in srgb, var(--cf3-tema) 62%, #2a1a10);
+}
+/* Su cuadro y su letrero: de su color, con la luz roja */
+.cf3-franja--influencer .cf3-quien {
+  background: var(--cf3-tema);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 color-mix(in srgb, var(--cf3-tema) 60%, #2a1a10);
+  color: #fff6ec;
+  text-shadow: 0 2px 0 #2a1a10;
+}
+.cf3-franja--influencer .cf3-quien::before {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  background: #e5483c;
+  box-shadow: 0 0 0 2px #2a1a10;
+  content: '';
+  vertical-align: 1px;
+}
+.cf3-franja--influencer:not(.cf3-franja--barra) .cf3-caja {
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px var(--cf3-tema),
+    inset 0 0 0 6px color-mix(in srgb, var(--cf3-tema) 55%, #2a1a10),
+    inset 0 0 0 8px var(--cf3-ink);
+}
+.cf3-retrato--influencer {
+  background: linear-gradient(color-mix(in srgb, var(--cf3-tema) 60%, white), var(--cf3-tema));
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px #f3e6c8,
+    inset 0 0 0 5px var(--cf3-ink);
+}
+.cf3-retrato--influencer::after {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 12px;
+  height: 12px;
+  background: #e5483c;
+  box-shadow: 0 0 0 2px #2a1a10;
+  content: '';
+}
+.cf3-tag--influencer {
+  gap: 4px;
+  padding: 4px 7px 5px 6px;
+  background: var(--cf3-tema);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 color-mix(in srgb, var(--cf3-tema) 60%, #2a1a10);
+  color: #fff6ec;
+  font: 400 11px/11px var(--pp-title);
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 0 #2a1a10;
+}
+.cf3-tag--influencer::before {
+  width: 7px;
+  height: 7px;
+  background: #e5483c;
+  box-shadow: 0 0 0 1px #2a1a10;
+}
+.cf3-tag--influencer:hover,
+.cf3-tag--influencer:focus-visible {
+  background: color-mix(in srgb, var(--cf3-tema) 80%, white);
+}
+/* El reloj de arena: de latón, arriba a la derecha de la escena, sin números; al empezar, se le da la vuelta */
+.cf3-arena {
+  --cf3-px: 3px;
+  position: absolute;
+  top: calc(140px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  z-index: 3;
+  width: 51px;
+  height: 78px;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 0 rgb(0 0 0 / 0.4));
+}
+.cf3-arena[data-quieto='true'] {
+  width: 72px;
+  height: 21px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-arena:not([data-quieto]) {
+    animation: cf3-arena-gira 0.5s steps(5, end) both;
+  }
+}
+@keyframes cf3-arena-gira {
+  from {
+    transform: rotate(180deg);
+  }
+  to {
+    transform: none;
+  }
+}
+/* Al despedirle: la ficha de lo que publica (y, si fue viral, lo que trae) */
+.cf3-publica {
+  --cf3-px: 2px;
+  display: grid;
+  gap: 5px;
+  padding: 11px 10px 8px;
+  background: linear-gradient(var(--cf3-tema) 0 5px, #fff8ea 5px);
+  box-shadow: inset 0 0 0 2px #2a1a10;
+  color: #2e1e14;
+}
+.cf3-publica[data-viral='true'] {
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 0 0 4px #ffe08a,
+    inset 0 0 0 5px #2a1a10;
+}
+.cf3-publica__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  font:
+    italic 700 0.86rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-publica__viral {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #6a3a10;
+  font:
+    700 0.78rem/1.25 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-publica__viral li::before {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 6px;
+  content: '';
+  vertical-align: -1px;
+}
+.cf3-publica__viral li[data-tipo='clientes']::before {
+  background: #e8a33a;
+  clip-path: polygon(50% 0, 62% 35%, 100% 37%, 70% 60%, 80% 100%, 50% 77%, 20% 100%, 30% 60%, 0 37%, 38% 35%);
+}
+.cf3-publica__viral li[data-tipo='foto']::before {
+  background:
+    linear-gradient(var(--cf3-tema) 0 0) 3px 3px / 5px 5px no-repeat,
+    #f3e6c8;
+  box-shadow: inset 0 0 0 2px #7a4a22;
+}
+/* En el cartel de la subida, de quién fue el vídeo */
+.cf3-logro__video {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font:
+    italic 0.86rem/1.35 'Lora',
+    Georgia,
+    serif;
+  text-align: center;
+}
+/* La placa del nivel, con la barra llena: «¡A punto de subir!» en dorado */
+.cf3-placa[data-sube='true'] .cf3-xp__lleno {
+  background: repeating-linear-gradient(90deg, #ffe08a 0 4px, #e8b84a 4px 6px);
+}
+.cf3-placa[data-sube='true'] .cf3-xp__cifra {
+  color: #ffe08a;
 }
