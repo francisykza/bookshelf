@@ -210,7 +210,29 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - **Café, lista de Francisco del 13-11-2026 (tras el tostadero)**: hecha y publicada en la 1.128.0 (§128).
   Queda por confirmar con los datos de su pareja que la causa de las fichas sin portada era la de Open Library (§128.6).
 
-- **Café-librería, traspaso a la otra cuenta (13-11-2026, tras el commit de la 1.126.0)**. Francisco seguirá con la otra
+- **Traspaso a la otra cuenta (14-11-2026, tras publicar la 1.130.0)**. Francisco sigue con la otra cuenta en este punto y
+  con el mismo método. Sustituye al traspaso del 13-11 (más abajo, solo como historia).
+  - **Dónde**: carpeta `C:\Users\zaely\OneDrive\Escritorio\Claude\BookShelf-piso-lab` (worktree del repositorio), rama
+    `1.90-escritorio-puerto`. **No usar `bookshelf/`**: es el checkout antiguo, con `main` local en la 1.86 y cambios sin
+    commit del 4-11-2026 que no son de este trabajo; no tocarlo ni «arreglarlo». Producción y `origin/main` están en la
+    1.130.0 (`cc290a2`, más la nota `858afc2`); la rama local lleva además el commit de este traspaso (solo documentos, sin
+    subir). Árbol limpio salvo `.claude/` (no tocarlo ni subirlo).
+  - **Lo último**: la 1.130.0 (§130), Pilar prepara lo que dominas y los libros; migración aplicada y publicada. Evidencias en
+    `qa-report/cafe-libreria/` (fuera de git, en este ordenador).
+  - **Pendiente de Francisco**: confirmar las interpretaciones de `cafe-libreria.md` §15.6 (1.130) y §14.9 (1.129), y lo que
+    note al jugar la 1.130 en su móvil. **Ningún bloque nuevo encargado**: el 8 es el último nivel (la segunda planta
+    necesita sus cifras, las aprueba él) y «Mejoras de la casa y del café» sigue sin decidir. Lo descartado de Pilar (pedidos
+    de grupo, días distintos, arte latte, habituales con ficha, pistas, maridaje, tertulia…) no se hace (`CLAUDE.md`).
+  - **Pruebas del café**: las e2e de la 1.120 a la 1.130 pasan por la librería cuando el cliente pide libro
+    (`hacerLibro` de `e2e-community/cafeLibro.js`); la de la 1.120 lleva dos «Seguir» por las frases de Pilar de la 1.126.
+    Nunca dos Playwright a la vez (con carga, alguna de Vitest falla una vez y pasa al repetirla).
+  - **Migraciones, cómo se pegan** (lo que funcionó el 13 y el 14-11): el portapapeles de Windows no llega al panel del
+    navegador, así que el texto va al editor con `monaco.editor.getEditors()[0].setValue(...)` desde el panel, y la SHA-256
+    se calcula dentro de la página (del texto y de `getValue()`) antes de que Francisco pulse «Run». La clave pública es la
+    `sb_publishable_…` del trozo `assets/cloud-*.js` del build de producción (va solo en la cabecera `apikey`); las funciones
+    y tablas nuevas deben dar 42501 y una inexistente PGRST202. El `/sw.js` de producción trae la versión como
+    `` `${PREFIX}v1.130.0` ``.
+- **Café-librería, traspaso a la otra cuenta (13-11-2026, tras el commit de la 1.126.0)**, ya cumplido. Francisco seguirá con la otra
   cuenta en este punto y con el mismo método.
   - **Dónde**: carpeta `BookShelf-piso-lab` (no `bookshelf/`), rama `1.90-escritorio-puerto`, último commit «1.126.0: el
     café-librería del bajo, su música, un sonido por acción, portadas reales y jornadas de prueba». **Sin subir**: producción
@@ -329,6 +351,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · Traspaso a la otra cuenta tras la 1.130.0 (Claude)
+
+- Francisco: «prepara lo que falte para continuar con la otra cuenta». Nuevo apartado de traspaso en «Pendiente» (dónde,
+  lo último, lo pendiente de Francisco, las pruebas del café y cómo se pegan las migraciones). `docs/TRASPASO.md` y el
+  `CLAUDE.md` de la carpeta `Claude` (fuera de git) apuntaban aún a `bookshelf/`, que se quedó en la 1.86 con cambios sin
+  commit: ahora mandan a `BookShelf-piso-lab`. `bookshelf/` no se ha tocado. Solo documentos; commit en la rama, sin subir.
 
 ### 2026-11-14 · 1.130.0 a producción (Claude)
 
