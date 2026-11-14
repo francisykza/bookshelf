@@ -6,8 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Con commit en la rama, sin publicar: 1.130.0** (2026-11-14, §130; «Vale lo de pilar», «Si, me parece bien»; «Migración y
-  commit»; `main` sigue en la 1.129.0). El café-librería del
+- **Publicada en producción: 1.130.0** (2026-11-14, §130; «Vale lo de pilar», «Si, me parece bien»; «Migración y commit»;
+  «Sí, publícala»; `main` avanzó sin forzar de `2faa90d` a `cc290a2` y `/sw.js` de producción ya sirve v1.130.0). El café-librería del
   bajo: **Pilar prepara lo que ya dominas** (12 servidas de 2 estrellas o más; tú eliges la receta y ella hace los gestos en
   3D; siempre a mano si quieres; el excéntrico y lo nuevo de la carta, a mano; paga lo mismo) y **los libros, igual de
   importantes que el café** (piden solo lo que hay en la balda, en tres partes: género, corto o largo y cómo se lo lleva; la
@@ -202,9 +202,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Café, Pilar y los libros (1.130.0, con commit en la rama y la migración aplicada)**: publicar solo cuando Francisco lo
-  pida (fusionar con `main` sin forzar y comprobar que `/sw.js` de producción sirve v1.130.0). Las interpretaciones de
-  `cafe-libreria.md` §15.6, por confirmar.
+- **Café, Pilar y los libros (1.130.0, publicada)**: las interpretaciones de `cafe-libreria.md` §15.6, por confirmar, y lo
+  que Francisco note al jugarla.
 
 - **Café, bloque 6c (1.129.0, publicada)**: las interpretaciones de `cafe-libreria.md` §14.9, por confirmar. El 8 es, por ahora, el último nivel: la segunda planta necesita sus cifras.
 
@@ -330,6 +329,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · 1.130.0 a producción (Claude)
+
+- Francisco: «Sí, publícala». `main` avanzó sin forzar de `2faa90d` a `cc290a2` (también la rama) y `/sw.js` de producción
+  ya sirve v1.130.0. Migración ya aplicada. Sin probar con cuentas reales ni en móviles reales.
 
 ### 2026-11-14 · Migración de la librería del café aplicada y commit de la 1.130.0 (Claude)
 
