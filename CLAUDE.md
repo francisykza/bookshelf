@@ -262,6 +262,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       cozy y cuidado posible asi como hiciste con la preparación del café pero hasta con más esmero». Cada paso del libro, su
       gesto, su objeto y su sonido, por encima del nivel de la barra. **Pilar y los libros, hechos juntos en la 1.130.0** (§130,
       migración `20261218120000_cafe_libreria.sql`; interpretaciones por confirmar en `cafe-libreria.md` §15.6).
+      **Más cerca, más cozy y Pilar a mano** (Francisco, 14-11-2026, «me gustan como están pero querría que la camara esté un
+      poco más cerca y que los sonidos sean más cozy»; «que cuando pilar prepara el café ella se haga más organico y no tan
+      robotico»; 1.131, §131): la cámara del libro, más cerca (sección y tabla); los sonidos de la librería, de madera y notas
+      suaves por una sala cálida propia (`calido` en `cafeSfx.js`), sin chasquidos brillantes; Pilar con el ritmo de una mano
+      (nunca dos tazas iguales, el sonido con el movimiento), **sus manos** en cada herramienta (puño y un palmo de manga
+      mostaza; no un brazo entero, que tapaba la barra) y la cámara siguiendo sus manos gesto a gesto, sin perder lo que hace.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la
@@ -539,3 +545,7 @@ Maquetas de referencia: `docs/design/references/`.
 - Desde la 1.58.2 la única prueba que falla es `e2e/v149` en WebKit (Windows no dibuja bien `matrix3d`, ver
   `docs/ESTADO.md`). Si aparece otra, investigar antes de tocarla: no ocultarlas cambiando
   la prueba sin investigar.
+- **Mientras corre una e2e, no tocar ningún archivo del proyecto**, tampoco los `.md`. El escáner de Tailwind v4 lee
+  también `SPEC.md`, `CLAUDE.md` o `docs/`, y al cambiar uno el servidor de Vite de la prueba recarga la página. El 14-11-2026
+  una prueba del café falló así a mitad de un cliente: al guardar `SPEC.md`, la página volvió a la habitación. Escribir los
+  documentos antes o después de la prueba, o en la carpeta temporal.

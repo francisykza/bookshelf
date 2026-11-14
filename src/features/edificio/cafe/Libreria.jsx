@@ -312,7 +312,7 @@ export function useLibreria({ activo, pedido, balda, escena, sfx, ayuda = false,
     );
   };
   const este = () => {
-    sfx.play('etapa');
+    sfx.play('libroEtapa');
     setFase('forma');
   };
   // ── 4. La forma y sus gestos ──
@@ -369,7 +369,7 @@ export function useLibreria({ activo, pedido, balda, escena, sfx, ayuda = false,
         rec.current = null;
         setG(null);
         if (sig < gestos.length) {
-          sfx.play('etapa');
+          sfx.play('libroEtapa');
           setGi(sig);
         } else terminar();
       };

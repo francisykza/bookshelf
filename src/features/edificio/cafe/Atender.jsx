@@ -24,7 +24,7 @@ import { crearSfxBarra } from './cafeSfx';
 import { PILAR, retratoDe } from './cafeIconos';
 import { errorCafe } from './cafeService';
 import { DOMINIO, comandaLibro, comandaLibroAcertijo, extensionDe, formaPorId, frasePedido, haciaDominio, pilarHaceEtapa, pilarPuede, preparaRecordado, recordarPrepara } from './cafeLibreria';
-import { BUCLE_PILAR, PILAR_MS, PILAR_RESPIRO_MS, poseAuto, sonidosEntre } from './cafePilar';
+import { BUCLE_PILAR, PILAR_MIRA_MS, duracionPilar, poseAuto, respiroPilar, sonidosEntre, tiempoPilar } from './cafePilar';
 import { useLibreria } from './Libreria';
 import { Pista } from './Pista';
 import { PixelArt } from './PixelArt';
@@ -243,8 +243,9 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
       lista: lista_,
       carta,
       tazas,
-      // Mientras prepara Pilar, la cámara se queda en la etapa entera (sin acercarse a cada gesto)
-      enfoque: lista_ ? 'lista' : eligiendo || pilarAhora ? etapa : (gesto ?? etapa),
+      // 1.131: mientras prepara Pilar, la cámara sigue sus manos, gesto a gesto, como a mano (en la etapa entera se quedaban
+      // fuera de plano el vapor, el vertido, la canela, la coctelera, el mortero o el soplete); ella espera a que llegue
+      enfoque: lista_ ? 'lista' : eligiendo ? etapa : (gesto ?? etapa),
       pilar: pilarAhora,
     });
   }, [enBarra, escena, receta, gesto, actual, hechos, vista, eligiendo, parte, lista_, etapa, carta, tazas, pilarAhora]);
@@ -414,11 +415,14 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     ofrecida.current = true;
     sfx.play('bordas');
   }, [ofrecePilar, sfx]);
-  // Los gestos que hace Pilar: la postura de cada momento, sus sonidos y el respiro (con movimiento reducido, de una vez)
+  // Los gestos que hace Pilar: la postura de cada momento, sus sonidos y el respiro (con movimiento reducido, de una vez).
+  // 1.131: con el ritmo de una mano y distinto en cada taza (`semilla`): ni la duración, ni el respiro, ni el movimiento se
+  // repiten igual (cafePilar.js)
   useEffect(() => {
     if (!pilarAhora || !clave) return undefined;
     const tipo = gesto;
     const [r, e, gIdx, antes] = [receta, ei, gi + 1, hechos];
+    const semilla = Math.random();
     let id = 0;
     let tAntes = 0;
     let vivo = true;
@@ -431,24 +435,25 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
         avanzar(r, e, gIdx);
       };
       if (reduced()) seguir();
-      else respiro.current = setTimeout(seguir, PILAR_RESPIRO_MS);
+      else respiro.current = setTimeout(seguir, respiroPilar(Math.random()));
     };
     if (reduced()) {
-      acabar(poseAuto(tipo, 1));
+      acabar(poseAuto(tipo, 1, { semilla }));
       return () => {
         vivo = false;
       };
     }
-    const ms = PILAR_MS[tipo] ?? 450;
-    const t0 = performance.now();
+    const ms = duracionPilar(tipo, Math.random());
+    let t0 = 0;
     const paso_ = (now) => {
       if (!vivo) return;
       const t = Math.min(1, Math.max(0, (now - t0) / ms));
-      const pose = poseAuto(tipo, t);
-      for (const ev of sonidosEntre(tipo, tAntes, t)) sfx.play(ev);
+      const pose = poseAuto(tipo, t, { semilla });
+      for (const ev of sonidosEntre(tipo, tAntes, t, semilla)) sfx.play(ev);
       tAntes = t;
       const bucle = BUCLE_PILAR[tipo];
-      if (bucle) sfx.bucle(tipo, t >= bucle[0] && t < bucle[1], tipo === 'vapor' ? (pose.espuma ?? 0) : 0);
+      const u = tiempoPilar(t, semilla);
+      if (bucle) sfx.bucle(tipo, u >= bucle[0] && u < bucle[1], tipo === 'vapor' ? (pose.espuma ?? 0) : 0);
       if (t >= 1) {
         acabar(pose);
         return;
@@ -456,7 +461,18 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
       setG({ clave, progreso: t, pose, pulsado: true, hecho: false, eventos: [] });
       id = requestAnimationFrame(paso_);
     };
-    id = requestAnimationFrame(paso_);
+    // Antes de empezar, la cámara va hasta lo que va a coger (más rato si está lejos; casi nada si sigue en el mismo sitio)
+    const desde = performance.now();
+    const mira = (now) => {
+      if (!vivo) return;
+      if (escena?.vistaCerca?.() !== false || now - desde > PILAR_MIRA_MS) {
+        t0 = now;
+        paso_(now);
+        return;
+      }
+      id = requestAnimationFrame(mira);
+    };
+    id = requestAnimationFrame(mira);
     return () => {
       vivo = false;
       cancelAnimationFrame(id);

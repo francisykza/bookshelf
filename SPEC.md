@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.130.0 · 2026-11-14 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.131.0 · 2026-11-14 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6893,3 +6893,79 @@ en la bandeja de la tabla) y el libro se hace en ella, paso a paso, siempre por 
   toques) con el ayudante `cafeLibro.js`, y los specs del café de la 1.121 a la 1.129 adaptados al paso de la librería (la
   1.121, rehecha con las cifras nuevas). `v1120` esperaba tres frases de Pilar antes de las llaves y son dos desde la 1.126:
   corregido. Solo emulación: sin probar en móviles reales.
+
+## 131. El café-librería del bajo: el libro, más cerca y más cozy, y Pilar, a mano (1.131.0)
+
+Encargo de Francisco del 14-11-2026, tras jugar la 1.130: «quiero seguír mejorando las mecanicas de preparación de libros, me
+gustan como están pero querría que la camara esté un poco más cerca y que los sonidos sean más cozy. Además quiero que cuando
+pilar prepara el café ella se haga más organico y no tan robotico». Sin cambios de economía, recetas ni servidor: ni
+migraciones ni cifras nuevas.
+
+### 131.1 La cámara del libro, más cerca
+
+- **La sección de la estantería** (`vistaLib` en `cafe3d.js`): la sección elegida ocupa el ancho de la pantalla con un margen
+  más pequeño (distancia mínima 0,6 en vez de 0,75) y mira más de frente, con los lomos más grandes y en el centro del hueco
+  que deja la franja de abajo.
+- **La tabla**: en los gestos (papel, cordel, abrir, marcapáginas, sello…), a 0,78 de la tabla en vez de unos 1,13 (todo se
+  ve alrededor de 1,5 veces más grande), desde un poco más arriba. Al elegir la forma y al abrir la bolsa, algo más lejos (1,0),
+  para que el papel, el tarro y las bolsas sigan cabiendo a 390 y a 360 px; al terminar (0,86), con la bandeja y la taza
+  enteras. **Meter el libro en la bolsa**: la bolsa abierta, de pie, es alta; la cámara sube con ella (0,3 más arriba) para que
+  el libro que baja siga en la pantalla.
+
+### 131.2 Los sonidos del libro, más cozy
+
+- **Una sala propia** (`calido` en `cafeSfx.js`): todo lo de la librería suena a través de un filtro cálido (paso bajo a
+  3 kHz, suave) y una sala de madera corta (eco de 0,9 s que se apaga deprisa y se oscurece), mezclada bajo el sonido seco.
+  Se calcula una vez por salida de audio. El resto del café no cambia.
+- **Madera y notas suaves** en lugar de chasquidos y ruido brillante: cada lomo al asomar, una nota de una escala pentatónica
+  (sol, la, do, re, mi, sol, la) con un roce de papel; el cordel sube nota a nota cada vuelta y el lazo resuelve en do-mi-sol;
+  el sello cae como un golpe de madera con dos notas (do y sol); la placa, la tabla, sacar y devolver el libro, el papel de
+  estraza, el rasgado, los pliegues, las páginas, el marcapáginas, la tapa, la bolsa y meterlo, rehechos con el mismo
+  carácter. El paso de la librería tiene su propio sonido de etapa (`libroEtapa`, dos golpes de madera).
+- **Medido** (`medirSonidos` y la secuencia del libro entera, renderizada sin conexión): el centro espectral baja de unos
+  840 Hz a unos 365 Hz y la energía por encima de 3 kHz, del 3,5 % al 0,1 %; los picos, iguales o más bajos (cada sonido
+  entre −21 y −38 dB). Ganancias retocadas para igualarlos: bolsa 0,85, placa 0,75, papel 0,7, lomo 1,15, cordel 1,3,
+  marcapáginas 1,3 y páginas 1,2. Muestras en `qa-report/v1131/sonidos-libro-antes-1130.wav` y `…-despues-1131.wav`.
+
+### 131.3 Pilar, a mano y no a máquina
+
+- **El ritmo de una mano** (`cafePilar.js`): el tiempo de cada gesto ya no avanza a velocidad constante. Empieza despacio, se
+  suelta y acaba con suavidad (`tiempoPilar`), con un pequeño pulso distinto en cada taza; siempre hacia delante.
+- **Nunca dos tazas iguales**: cada taza tiene su semilla; la duración de cada gesto varía entre −10 % y +12 %
+  (`duracionPilar`) y el respiro entre uno y otro, entre unos 105 y 225 ms (`respiroPilar`).
+- **Cada gesto, con su carácter**:
+  - el prensador baja, se pasa un poco y vuelve;
+  - la palanca se mantiene con un temblor de pulso y rebota al soltarla;
+  - el colador y la canela cambian de hondura y de fuerza en cada sacudida;
+  - el hilo de miel no traza un círculo perfecto;
+  - la vainilla, a trazos con su pausa;
+  - el mortero, arriba y golpe;
+  - el soplete, con su vaivén.
+  Al acabar, cada objeto queda en la misma postura que a mano (lo comprueba la prueba).
+- **El sonido va con la mano**: los clics de la manivela, los golpes del mortero, las sacudidas y los plops suenan cuando la
+  mano pasa por ese punto del movimiento, no a intervalos fijos; el bucle del vapor o de la tetera, solo mientras la mano
+  está en ello. Suenan los mismos, ni más ni menos que antes.
+- **Sus manos** (`manoPilar` en `cafe3d.js`): el puño de Pilar agarra el mango de lo que se mueve (molinillo, prensador,
+  palanca, cuchara, tetera, colador, jarra, canela, miel, cazo, molinillo del chocolate, varillas, cuchillo de la vainilla,
+  coctelera, maza y soplete), con la piel y el jersey mostaza de su figura (`PILAR_ASPECTO`). De la muñeca sale solo un palmo
+  de manga que apunta hacia su lado de la barra y se inclina con el movimiento. **Un brazo entero cruzaba la pantalla y tapaba
+  la barra**, con la cámara tan cerca, así que se descartó.
+- **La cámara sigue sus manos**: mientras prepara Pilar, la cámara va gesto a gesto como a mano, en vez de quedarse en el
+  enfoque de la etapa. En la etapa se quedaban fuera de plano:
+  - el vapor y el vertido (se veía la balda de las jarras);
+  - la canela sobre la taza, al borde;
+  - la coctelera, el mortero y el soplete, del todo.
+  Antes de cada gesto, **Pilar espera a que la cámara llegue** (`vistaCerca` de la escena, hasta 420 ms, `PILAR_MIRA_MS`),
+  como quien alarga la mano hasta la siguiente herramienta. Si sigue en el mismo sitio, no espera. Con movimiento reducido,
+  todo de una vez, como antes.
+
+### 131.4 Pruebas
+
+- `src/features/edificio/__tests__/cafe-pilar.test.js` (5): comprueba que el tiempo de la mano empieza en 0, acaba en 1 y
+  nunca va hacia atrás; que no es lineal y cada taza es distinta; que la postura final es la de hacerlo a mano; que suenan los
+  mismos sonidos que antes, sin repetirse; y que el golpe del mortero suena cuando cae la maza.
+- E2E `e2e-community/v1131-cafe-pilar-manos.spec.js` (Chromium 390, evidencias): Pilar prepara un café y un té, con cada
+  gesto fotografiado a media marcha, y después el libro de cada cliente, de cerca. Vídeo y capturas en `qa-report/v1131/`;
+  las de la 1.130, para comparar, en `qa-report/v1131/antes/`.
+- `e2e-community/v1130-cafe-libreria.spec.js`, de nuevo en Chromium 390 y 360 y en WebKit 390, con la cámara nueva. Solo
+  emulación: sin probar en móviles reales.

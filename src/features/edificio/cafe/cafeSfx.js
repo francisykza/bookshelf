@@ -48,6 +48,71 @@ function ruido(b, { f, q = 1, tipo = 'bandpass', pico = 0.4, ataque = 0.004, cai
   s.stop(t + ataque + caida + 0.03);
 }
 
+// ── 1.131 (Francisco, 14-11-2026: «que los sonidos sean más cozy»): lo que hace cálidos los sonidos del libro ──
+/** La escala de los lomos (sol, la, do, re, mi, sol, la: pentatónica, nunca chocan entre sí). */
+const ESCALA = [392, 440, 523.25, 587.33, 659.25, 784, 880];
+/** Las vueltas del cordel que van (para que cada una suene un poco más tensa); el lazo la vuelve a 0. */
+let vueltaCordel = 0;
+/** Madera: un toque blando y afinado, como una marimba pequeña (su parcial alto, breve) y el golpecito de aire. */
+function madera(b, { f, pico = 0.05, caida = 0.18, d = 0 }) {
+  tono(b, { f, a: f * 0.985, pico, ataque: 0.003, caida, d });
+  tono(b, { f: f * 3.9, pico: pico * 0.16, ataque: 0.002, caida: caida * 0.22, d });
+  ruido(b, { f: f * 2, q: 1.2, pico: pico * 0.45, ataque: 0.002, caida: 0.02, d });
+}
+/** Una nota cálida de cajita de música: el seno, su octava y su quinta, que se apagan antes. */
+function nota(b, { f, pico = 0.03, caida = 0.6, d = 0 }) {
+  tono(b, { f, pico, ataque: 0.006, caida, d });
+  tono(b, { f: f * 2, pico: pico * 0.3, ataque: 0.004, caida: caida * 0.45, d });
+  tono(b, { f: f * 3, pico: pico * 0.07, ataque: 0.003, caida: caida * 0.2, d });
+}
+/**
+ * La sala de la librería: una reverberación corta de habitación de madera (ruido que se apaga en unos 0,8 s y se oscurece al
+ * apagarse, como la madera y los libros que se tragan lo agudo), sintetizada aquí.
+ */
+function sala(ctx) {
+  const n = Math.floor(ctx.sampleRate * 0.9);
+  const ir = ctx.createBuffer(2, n, ctx.sampleRate);
+  for (let c = 0; c < 2; c += 1) {
+    const d = ir.getChannelData(c);
+    let lp = 0;
+    for (let i = 0; i < n; i += 1) {
+      const t = i / ctx.sampleRate;
+      const a = 0.55 - 0.45 * Math.min(1, t / 0.5);
+      lp += a * (Math.random() * 2 - 1 - lp);
+      d[i] = lp * Math.exp(-t * 8.6) * Math.min(1, t / 0.012);
+    }
+  }
+  return ir;
+}
+const CALIDOS = new WeakMap();
+/**
+ * El bus de los sonidos del libro: sin lo agudo (paso bajo a 3 kHz) y con un poco de sala; se monta una vez por bus y se
+ * queda (el resto de sonidos del café no pasan por aquí).
+ */
+function calido(b) {
+  let v = CALIDOS.get(b.out);
+  if (!v) {
+    const { ctx } = b;
+    const entrada = ctx.createGain();
+    const fl = ctx.createBiquadFilter();
+    fl.type = 'lowpass';
+    fl.frequency.value = 3000;
+    fl.Q.value = 0.5;
+    const seco = ctx.createGain();
+    seco.gain.value = 0.9;
+    const conv = ctx.createConvolver();
+    conv.buffer = sala(ctx);
+    const humedo = ctx.createGain();
+    humedo.gain.value = 0.32;
+    entrada.connect(fl);
+    fl.connect(seco).connect(b.out);
+    fl.connect(conv).connect(humedo).connect(b.out);
+    v = entrada;
+    CALIDOS.set(b.out, v);
+  }
+  return { ...b, out: v };
+}
+
 const SONIDOS = {
   /** Tocar la cafetera: un soplo de vapor y el cobre que suena. */
   cafetera: (b) => {
@@ -297,93 +362,115 @@ const SONIDOS = {
     tono(b, { f: 1568, tipo: 'triangle', pico: 0.035, caida: 0.6, d: 0.45 });
   },
   // ── 1.130, la librería («especial mimo de detalle, sonido…»): latón, lomos, papel de estraza, cordel, páginas y el sello ──
-  /** Tocar la placa de una sección: el latón, fino. */
+  // 1.131 (Francisco, 14-11-2026: «que los sonidos sean más cozy»): rehechos más cálidos. Fuera el siseo agudo del papel (antes,
+  // ruido entre 2,4 y 6 kHz con ataques secos): el papel, el cartón y el cordel suenan graves y blandos, la madera con su toque
+  // afinado, y cada lomo, cada vuelta del cordel, el lazo y el sello tienen una nota de una escala pentatónica (sin notas que
+  // choquen). Todos pasan por la sala de la librería (`calido`): sin agudos y con una reverberación corta de madera.
+  /** Tocar la placa de una sección: el latón, templado, y el toquecito del dedo en la balda. */
   placa: (b) => {
-    tono(b, { f: 1900, tipo: 'sine', pico: 0.04, caida: 0.18 });
-    tono(b, { f: 2850, tipo: 'sine', pico: 0.015, caida: 0.1, d: 0.01 });
-    ruido(b, { f: 6000, q: 4, pico: 0.02, caida: 0.02 });
+    nota(b, { f: 784, pico: 0.03, caida: 0.5 });
+    madera(b, { f: 262, pico: 0.04, caida: 0.12 });
   },
-  /** El dedo que pasa por un lomo: un roce de cartón, cada uno un poco distinto (`k`, el lomo). */
+  /** El dedo que pasa por los lomos: cada uno, una nota de la escala (como pasar el dedo por un arpa) y su roce de tela. */
   lomo: (b, { k = 0 } = {}) => {
-    ruido(b, { f: 1100 + (k % 5) * 90, q: 2.2, pico: 0.07, caida: 0.03 });
-    tono(b, { f: 230 + (k % 4) * 18, a: (230 + (k % 4) * 18) * 0.9, tipo: 'triangle', pico: 0.035, caida: 0.03 });
+    nota(b, { f: ESCALA[k % ESCALA.length], pico: 0.024, caida: 0.42 });
+    ruido(b, { f: 640 + (k % 3) * 70, q: 0.9, pico: 0.035, ataque: 0.008, caida: 0.05 });
   },
-  /** Sacar el libro de la balda: el papel que roza al salir y la madera. */
+  /** Sacar el libro de la balda: el papel que roza al salir, despacio, y la madera. */
   sacar: (b) => {
-    ruido(b, { f: 1300, q: 0.8, pico: 0.09, ataque: 0.03, caida: 0.16, barrido: 1.4 });
-    tono(b, { f: 190, a: 150, tipo: 'triangle', pico: 0.06, caida: 0.08, d: 0.14 });
+    ruido(b, { f: 820, q: 0.7, pico: 0.09, ataque: 0.06, caida: 0.2, barrido: 1.25 });
+    madera(b, { f: 196, pico: 0.05, d: 0.2 });
   },
-  /** La tabla extraíble que sale de la estantería, y el tope. */
+  /** La tabla extraíble que sale de la estantería: la madera que corre por sus guías, los roces de la guía y el tope. */
   tabla: (b) => {
-    ruido(b, { f: 420, q: 0.7, tipo: 'lowpass', pico: 0.18, ataque: 0.04, caida: 0.28, barrido: 0.8 });
-    tono(b, { f: 120, a: 95, tipo: 'triangle', pico: 0.07, caida: 0.12, d: 0.28 });
+    ruido(b, { f: 300, q: 0.6, tipo: 'lowpass', pico: 0.16, ataque: 0.07, caida: 0.3, barrido: 0.85 });
+    for (let k = 0; k < 3; k += 1) ruido(b, { f: 560 + Math.random() * 160, q: 2.2, pico: 0.024, caida: 0.025, d: 0.06 + k * 0.08 + Math.random() * 0.02 });
+    madera(b, { f: 131, pico: 0.07, caida: 0.22, d: 0.34 });
   },
-  /** El libro que se posa en la tabla. */
+  /** El libro que se posa en la tabla: un «pof» blando. */
   libroTabla: (b) => {
-    tono(b, { f: 200, a: 140, tipo: 'triangle', pico: 0.1, caida: 0.08 });
-    ruido(b, { f: 1600, q: 1, pico: 0.04, caida: 0.05 });
+    tono(b, { f: 165, a: 110, pico: 0.11, ataque: 0.004, caida: 0.1 });
+    ruido(b, { f: 520, q: 0.7, tipo: 'lowpass', pico: 0.06, ataque: 0.004, caida: 0.06 });
   },
-  /** Devolverlo a su sitio en la sección. */
+  /** Devolverlo a su sitio (o llevarlo a la bandeja): el roce y la madera. */
   devolver: (b) => {
-    ruido(b, { f: 1500, q: 1, pico: 0.08, ataque: 0.02, caida: 0.14, barrido: 0.65 });
-    tono(b, { f: 210, a: 160, tipo: 'triangle', pico: 0.08, caida: 0.07, d: 0.15 });
+    ruido(b, { f: 780, q: 0.7, pico: 0.08, ataque: 0.04, caida: 0.16, barrido: 0.7 });
+    madera(b, { f: 175, pico: 0.045, d: 0.16 });
   },
-  /** El papel de estraza que se desenrolla: un crujido. */
+  /** El papel de estraza que se desenrolla: crujidos graves y el rollo que gira en su soporte. */
   kraft: (b) => {
-    for (let k = 0; k < 4; k += 1) ruido(b, { f: 2400 + Math.random() * 1400, q: 1.6, pico: 0.05, caida: 0.03, d: k * 0.035 });
+    for (let k = 0; k < 3; k += 1) ruido(b, { f: 1050 + Math.random() * 500, q: 1.1, pico: 0.05, ataque: 0.006, caida: 0.045, d: k * 0.045 + Math.random() * 0.015 });
+    tono(b, { f: 98, a: 90, pico: 0.035, ataque: 0.02, caida: 0.12 });
   },
-  /** Se rasga el papel: un desgarro corto y sus fibras. */
+  /** Se rasga el papel: el desgarro, blando, sus fibras y el cuerpo del papel. */
   rasga: (b) => {
-    ruido(b, { f: 2600, q: 0.8, tipo: 'highpass', pico: 0.16, ataque: 0.005, caida: 0.16, barrido: 1.5 });
-    for (let k = 0; k < 5; k += 1) ruido(b, { f: 3500 + k * 300, q: 5, pico: 0.04, caida: 0.015, d: 0.02 + k * 0.025 });
+    ruido(b, { f: 1400, q: 0.7, pico: 0.09, ataque: 0.012, caida: 0.14, barrido: 1.35 });
+    for (let k = 0; k < 4; k += 1) ruido(b, { f: 1600 + k * 150, q: 3, pico: 0.022, caida: 0.016, d: 0.03 + k * 0.03 });
+    ruido(b, { f: 480, q: 0.7, tipo: 'lowpass', pico: 0.05, caida: 0.08 });
   },
-  /** Un pliegue de papel. */
+  /** Un pliegue de papel: el «fum» de la solapa y el dedo que marca la arista contra la madera. */
   pliegue: (b) => {
-    ruido(b, { f: 1700, q: 1.1, pico: 0.08, ataque: 0.01, caida: 0.08, barrido: 0.7 });
-    tono(b, { f: 520, a: 460, tipo: 'triangle', pico: 0.02, caida: 0.05, d: 0.06 });
+    ruido(b, { f: 900, q: 0.8, pico: 0.08, ataque: 0.014, caida: 0.09, barrido: 0.7 });
+    madera(b, { f: 294, pico: 0.03, caida: 0.12, d: 0.07 });
   },
-  /** El cordel que roza al dar la vuelta. */
-  cordel: (b) => ruido(b, { f: 3200, q: 5, pico: 0.05, ataque: 0.01, caida: 0.06, barrido: 0.9 }),
-  /** El lazo: dos tirones y dos notas, como un «listo». */
+  /**
+   * El cordel que roza al dar la vuelta, cada vez un poco más tenso (más agudo); cada media vuelta, una nota que sube. La
+   * cuenta vuelve a empezar con el lazo.
+   */
+  cordel: (b) => {
+    const n = vueltaCordel;
+    vueltaCordel += 1;
+    ruido(b, { f: 900 + 40 * Math.min(12, n), q: 1.8, pico: 0.045, ataque: 0.016, caida: 0.07, barrido: 1.15 });
+    if (n % 4 === 3) nota(b, { f: [392, 440, 523.25][Math.floor(n / 4) % 3], pico: 0.016, caida: 0.4 });
+  },
+  /** El lazo: dos tirones blandos y tres notas que suben, como un «listo». */
   lazo: (b) => {
-    ruido(b, { f: 2800, q: 3, pico: 0.05, caida: 0.04 });
-    ruido(b, { f: 2400, q: 3, pico: 0.05, caida: 0.05, d: 0.07 });
-    tono(b, { f: 659, tipo: 'triangle', pico: 0.04, caida: 0.25, d: 0.12 });
-    tono(b, { f: 988, tipo: 'triangle', pico: 0.035, caida: 0.35, d: 0.2 });
+    vueltaCordel = 0;
+    ruido(b, { f: 950, q: 1.4, pico: 0.05, ataque: 0.008, caida: 0.04 });
+    ruido(b, { f: 820, q: 1.4, pico: 0.05, ataque: 0.008, caida: 0.05, d: 0.07 });
+    [523.25, 659.25, 784].forEach((f, k) => nota(b, { f, pico: 0.024 - k * 0.002, caida: 0.6, d: 0.13 + k * 0.08 }));
   },
-  /** Las páginas que pasan al abrirlo. */
+  /** Las páginas que pasan al abrirlo: un abanico (más deprisa en medio) y el aire que mueven. */
   paginas: (b) => {
-    for (let k = 0; k < 7; k += 1) ruido(b, { f: 2600 + Math.random() * 1800, q: 1.3, pico: 0.05, ataque: 0.004, caida: 0.025, d: k * 0.03 });
+    [0, 0.032, 0.058, 0.078, 0.097, 0.12, 0.152].forEach((d) => ruido(b, { f: 850 + Math.random() * 450, q: 0.9, pico: 0.045, ataque: 0.005, caida: 0.032, d }));
+    ruido(b, { f: 650, q: 0.6, tipo: 'lowpass', pico: 0.05, ataque: 0.05, caida: 0.15 });
   },
-  /** El marcapáginas que se desliza entre las hojas. */
+  /** El marcapáginas de cinta que se desliza entre las hojas, y un brillo pequeño. */
   marca: (b) => {
-    ruido(b, { f: 1900, q: 2, pico: 0.06, ataque: 0.02, caida: 0.12, barrido: 0.75 });
-    tono(b, { f: 1250, tipo: 'sine', pico: 0.012, caida: 0.08, d: 0.12 });
+    ruido(b, { f: 1000, q: 1.4, pico: 0.06, ataque: 0.04, caida: 0.14, barrido: 0.8 });
+    nota(b, { f: 784, pico: 0.012, caida: 0.45, d: 0.14 });
   },
-  /** El libro que se cierra, blando. */
+  /** El libro que se cierra: un «tup» blando y el aire de las hojas. */
   cierra: (b) => {
-    tono(b, { f: 170, a: 120, tipo: 'triangle', pico: 0.09, caida: 0.07 });
-    ruido(b, { f: 900, q: 0.9, pico: 0.05, caida: 0.05 });
+    tono(b, { f: 150, a: 95, pico: 0.1, ataque: 0.004, caida: 0.09 });
+    ruido(b, { f: 480, q: 0.7, tipo: 'lowpass', pico: 0.06, ataque: 0.003, caida: 0.05 });
+    ruido(b, { f: 850, q: 0.6, pico: 0.025, ataque: 0.01, caida: 0.06 });
   },
-  /** La bolsa de papel que se abre de un soplido. */
+  /** La bolsa de papel que se abre de un soplido: se llena de aire («fuum») y cruje un poco. */
   bolsa: (b) => {
-    ruido(b, { f: 750, q: 0.7, pico: 0.22, ataque: 0.003, caida: 0.08, barrido: 0.6 });
-    tono(b, { f: 300, a: 170, tipo: 'triangle', pico: 0.06, caida: 0.06 });
-    ruido(b, { f: 2600, q: 1.2, pico: 0.04, caida: 0.06, d: 0.05 });
+    ruido(b, { f: 400, q: 0.7, tipo: 'lowpass', pico: 0.16, ataque: 0.016, caida: 0.12, barrido: 1.6 });
+    tono(b, { f: 130, a: 190, pico: 0.05, ataque: 0.02, caida: 0.1 });
+    ruido(b, { f: 1200, q: 1, pico: 0.03, ataque: 0.006, caida: 0.05, d: 0.06 });
   },
-  /** El libro que cae al fondo de la bolsa. */
+  /** El libro que se desliza al fondo de la bolsa y se asienta. */
   meter: (b) => {
-    ruido(b, { f: 650, q: 0.8, tipo: 'lowpass', pico: 0.14, ataque: 0.03, caida: 0.16 });
-    tono(b, { f: 165, a: 120, tipo: 'triangle', pico: 0.07, caida: 0.09, d: 0.14 });
+    ruido(b, { f: 650, q: 0.7, tipo: 'lowpass', pico: 0.12, ataque: 0.05, caida: 0.18, barrido: 0.7 });
+    tono(b, { f: 140, a: 95, pico: 0.07, caida: 0.1, d: 0.16 });
   },
-  /** El sello que toca el papel (al apretar). */
-  selloBaja: (b) => tono(b, { f: 300, a: 240, tipo: 'triangle', pico: 0.03, caida: 0.03 }),
-  /** El sello del café, marcado: el golpe, la tinta y una nota de la casa. */
+  /** El sello que toca el papel (al apretar): la madera del pomo. */
+  selloBaja: (b) => madera(b, { f: 330, pico: 0.028, caida: 0.08 }),
+  /** El sello del café, marcado: el golpe blando, la goma con tinta y dos notas de la casa (do y sol). */
   sello: (b) => {
-    tono(b, { f: 120, a: 70, tipo: 'sine', pico: 0.18, ataque: 0.003, caida: 0.13 });
-    ruido(b, { f: 480, q: 1, pico: 0.08, caida: 0.05 });
-    ruido(b, { f: 2300, q: 1.5, pico: 0.03, caida: 0.05, d: 0.03 });
-    tono(b, { f: 1047, tipo: 'triangle', pico: 0.03, caida: 0.3, d: 0.2 });
+    tono(b, { f: 110, a: 72, pico: 0.15, ataque: 0.003, caida: 0.12 });
+    ruido(b, { f: 380, q: 0.7, tipo: 'lowpass', pico: 0.07, caida: 0.05 });
+    ruido(b, { f: 780, q: 1, pico: 0.02, ataque: 0.01, caida: 0.05, d: 0.02 });
+    nota(b, { f: 523.25, pico: 0.022, caida: 0.7, d: 0.2 });
+    nota(b, { f: 784, pico: 0.018, caida: 0.8, d: 0.3 });
+  },
+  /** Un paso del libro terminado (entre un gesto y el siguiente): dos toques de madera afinados, que suben. */
+  libroEtapa: (b) => {
+    madera(b, { f: 392, pico: 0.04, caida: 0.22 });
+    madera(b, { f: 523.25, pico: 0.035, caida: 0.28, d: 0.1 });
   },
   /** El reparto de la mañana: dos golpes en la puerta, la caja que se deja y dos notas. */
   reparto: (b) => {
@@ -501,8 +588,16 @@ const GANANCIA = {
   cajaAbre: 0.8,
   // 1.130: la tabla, la bolsa y el sello, a la altura del resto
   tabla: 0.8,
-  bolsa: 0.7,
+  bolsa: 0.85,
   sello: 0.7,
+  // 1.131: los del libro, rehechos, con el mismo pico que tenían (o algo menos): la placa y el papel, un poco más bajos; la
+  // cinta del marcapáginas, las páginas y el cordel (que la sala apaga algo), un poco más altos
+  placa: 0.75,
+  kraft: 0.7,
+  lomo: 1.15,
+  cordel: 1.3,
+  marca: 1.3,
+  paginas: 1.2,
 };
 
 /** Lo que suena mientras se mantiene: el café que cae, el agua y el vapor (su color cambia con la leche). */
@@ -517,6 +612,11 @@ const BUCLES = {
   /** Bloque 6c: la llama del soplete, un soplido suave y continuo. */
   soplete: { tipo: 'bandpass', f: 1500, q: 0.6, pico: 0.07 },
 };
+
+/** 1.131: los sonidos del libro, que suenan en la sala de la librería (`calido`). */
+const DEL_LIBRO = new Set(['placa', 'lomo', 'sacar', 'tabla', 'libroTabla', 'devolver', 'kraft', 'rasga', 'pliegue', 'cordel', 'lazo', 'paginas', 'marca', 'cierra', 'bolsa', 'meter', 'selloBaja', 'sello', 'libroEtapa', 'reparto', 'secciones']);
+/** El bus de un sonido: el del libro, por su sala; y con su ganancia (la de `GANANCIA`, si la tiene). */
+const busDe = (b, nombre) => conGanancia(DEL_LIBRO.has(nombre) ? calido(b) : b, nombre);
 
 /** El bus de un sonido con su ganancia (la de `GANANCIA`, si la tiene). */
 function conGanancia(b, nombre) {
@@ -545,7 +645,7 @@ export function crearSfxBarra() {
       const b = bus();
       if (!b || !SONIDOS[nombre]) return;
       try {
-        SONIDOS[nombre](conGanancia(b, nombre), datos);
+        SONIDOS[nombre](busDe(b, nombre), datos);
       } catch {
         /* un fallo de audio nunca bloquea nada */
       }
@@ -608,10 +708,7 @@ export async function medirSonidos(nombres = Object.keys(SONIDOS), datos = {}) {
   const out = {};
   for (const nombre of nombres) {
     const ctx = new OfflineAudioContext(1, 44100 * 2, 44100);
-    const k = ctx.createGain();
-    k.gain.value = GANANCIA[nombre] ?? 1;
-    k.connect(ctx.destination);
-    SONIDOS[nombre]({ ctx, out: k }, datos[nombre]);
+    SONIDOS[nombre](busDe({ ctx, out: ctx.destination }, nombre), datos[nombre]);
     const d = (await ctx.startRendering()).getChannelData(0);
     let pico = 0;
     let suma = 0;

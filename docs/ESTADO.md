@@ -6,6 +6,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Con commit en la rama `1.90-escritorio-puerto`, sin publicar: 1.131.0** (2026-11-14, §131; commit pedido por
+  Francisco, «Confirma los cambios del árbol de trabajo»). Tras jugar la 1.130 («me gustan como
+  están pero querría que la camara esté un poco más cerca y que los sonidos sean más cozy»; «que cuando pilar prepara el café
+  ella se haga más organico y no tan robotico»): la cámara del libro más cerca (la sección y la tabla), los sonidos de la
+  librería de madera y notas suaves por una sala cálida, y Pilar con el ritmo de una mano, sus manos en cada herramienta y la
+  cámara siguiéndola gesto a gesto. Sin migración ni cambios de economía, recetas o servidor. Evidencias en `qa-report/v1131/`.
+  `main` sigue en la 1.130.0: se publica solo cuando él lo pida.
 - **Publicada en producción: 1.130.0** (2026-11-14, §130; «Vale lo de pilar», «Si, me parece bien»; «Migración y commit»;
   «Sí, publícala»; `main` avanzó sin forzar de `2faa90d` a `cc290a2` y `/sw.js` de producción ya sirve v1.130.0). El café-librería del
   bajo: **Pilar prepara lo que ya dominas** (12 servidas de 2 estrellas o más; tú eliges la receta y ella hace los gestos en
@@ -202,6 +209,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Café, el libro más cerca y Pilar a mano (1.131.0, con commit en la rama, sin publicar)**: publicar en `main` cuando
+  Francisco lo pida (sin migración) y lo que note al jugarla. Evidencias en `qa-report/v1131/`, enviadas al chat.
+
 - **Café, Pilar y los libros (1.130.0, publicada)**: las interpretaciones de `cafe-libreria.md` §15.6, por confirmar, y lo
   que Francisco note al jugarla.
 
@@ -351,6 +361,38 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · Café: el libro más cerca y más cozy, y Pilar a mano · 1.131.0 (§131), commit en la rama (Claude)
+
+- **Encargo** (Francisco, al retomar tras el traspaso): «quiero seguír mejorando las mecanicas de preparación de libros, me
+  gustan como están pero querría que la camara esté un poco más cerca y que los sonidos sean más cozy. Además quiero que cuando
+  pilar prepara el café ella se haga más organico y no tan robotico».
+- **Qué se hizo**:
+  - **Cámara** (`vistaLib` en `cafe3d.js`): la sección y la tabla, más cerca. Alrededor de 1,5 veces más grande en los
+    gestos; al elegir la forma y al terminar, algo más lejos para que quepan el tarro, las bolsas y la bandeja; con la bolsa
+    abierta, la cámara sube con ella.
+  - **Sonidos** (`cafeSfx.js`): la librería entera por una sala cálida propia (`calido`: paso bajo y una sala de madera
+    corta), con madera y notas pentatónicas suaves. Cada lomo es una nota, el cordel sube, el lazo resuelve y el sello cae con
+    dos notas. El paso de la librería suena con `libroEtapa` (`Libreria.jsx`).
+  - **Pilar** (`cafePilar.js`, `Atender.jsx`, `manoPilar` en `cafe3d.js`): el ritmo de una mano, distinto en cada taza, con
+    el sonido ligado al movimiento. Sus manos en cada herramienta: puño y un palmo de manga mostaza; un brazo entero cruzaba la
+    pantalla y se descartó. La cámara la sigue gesto a gesto: antes se quedaba en la etapa y dejaba fuera el vapor, el
+    vertido, la canela, la coctelera, el mortero y el soplete. Ella espera a que la cámara llegue (hasta 420 ms).
+  - Sin migración ni cambios de economía, recetas o servidor.
+- **Comprobado**:
+  - build y oxlint (sin avisos nuevos);
+  - Vitest de `src/features/edificio`: 56 de 57 archivos y 434 de 435 pruebas a la primera. La que falló es
+    `sala-parejas.rls.test.js`, por tiempo con todo en paralelo; sola pasa, 10 de 10. Incluye `cafe-pilar.test.js`, nueva
+    (5 pruebas);
+  - e2e `v1131-cafe-pilar-manos` (Chromium 390);
+  - e2e `v1130-cafe-libreria` en Chromium 390 y WebKit 390 (todas) y en Chromium 360 (en una segunda pasada).
+  - **Ojo**: la primera pasada a 360 falló porque guardé `SPEC.md` mientras corría. El escáner de Tailwind lee los `.md`, y
+    Vite recargó la página a mitad de un cliente. Anotado en `CLAUDE.md` §4.
+  - Solo emulación: sin móviles reales.
+- **Evidencias** en `qa-report/v1131/`, enviadas al chat: el vídeo de Pilar y el libro, capturas de cada gesto de Pilar, la
+  comparativa con la 1.130 (`antes/`) y la secuencia de sonidos del libro antes y después (WAV).
+- **Commit en la rama** a petición de Francisco («Confirma los cambios del árbol de trabajo»), tras ver las evidencias.
+  **Sin publicar**: `main` sigue en la 1.130.0 hasta que él lo pida.
 
 ### 2026-11-14 · Traspaso a la otra cuenta tras la 1.130.0 (Claude)
 

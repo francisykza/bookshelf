@@ -1441,8 +1441,43 @@ function jarrita(s, x, y, tipo, { xf = null, espuma = 0, g = 0.86 } = {}) {
 }
 
 /**
+ * 1.131 (Francisco, 14-11-2026: «que cuando pilar prepara el café ella se haga más orgánico y no tan robótico»): cuando prepara
+ * ella, la mano de Pilar agarra lo que se mueve. El puño en el mango (`punto`, que se mueve con `xf`) y la muñeca con el puño
+ * de su jersey mostaza, que apunta hacia su lado de la barra (detrás) y se inclina con el movimiento: el hombro se queda entre
+ * donde estaba el mango y donde está, así que la mano tira de la manga y no al revés. Su piel y su jersey son los de su figura
+ * (`PILAR_ASPECTO`).
+ */
+const PIEL_PILAR = [236, 192, 152];
+const MANGA_PILAR = [204, 158, 70];
+function manoPilar(s, [x, y, z], { xf = null, g = 0.86, hacia = [0.8, 0.22, 0.55], largo = 0.42, manga = 0.15 } = {}) {
+  const q = xf ? xf([x, z, y]) : [x, z, y];
+  const [hx, hy, hz] = [q[0], q[2], q[1]];
+  // El hombro: a medio camino entre el mango quieto y el que se mueve, hacia su lado de la barra (sobre todo detrás, que es
+  // donde está ella; un poco a la derecha de la pantalla y algo por encima). Si subiera mucho, el brazo vendría hacia la
+  // cámara y se vería como un tablón que cruza la pantalla.
+  const [bx, by, bz] = [(hx + x) / 2 + hacia[0] * largo, (hy + y) / 2 + hacia[1] * largo, (hz + z) / 2 + hacia[2] * largo];
+  const [dx, dy, dz] = [bx - hx, by - hy, bz - hz];
+  const L = Math.hypot(dx, dy, dz) || 1;
+  // La muñeca y un trozo de manga, de una pieza: una caja de pie sobre el puño, inclinada hacia el hombro (primero hacia atrás,
+  // luego de lado). Solo un palmo (`manga`): a lo largo, el brazo cruzaba la pantalla y tapaba la barra; así se lee como su
+  // mano, con el puño del jersey, y apunta hacia donde está ella.
+  const xfB = giro([hx, hy, hz], 'y', Math.acos(Math.max(-1, Math.min(1, dz / L))), giro([hx, hy, hz], 'z', Math.atan2(dy, dx)));
+  const o = { g, xf: xfB };
+  const fin = Math.min(L, manga);
+  pushBox(s, [hx - 0.013, hy - 0.013, hz + 0.012, hx + 0.013, hy + 0.013, hz + 0.05], PIEL_PILAR, o);
+  pushBox(s, [hx - 0.022, hy - 0.022, hz + 0.045, hx + 0.022, hy + 0.022, hz + 0.075], OSCURO_DE(MANGA_PILAR, 0.8), o);
+  pushBox(s, [hx - 0.02, hy - 0.02, hz + 0.075, hx + 0.02, hy + 0.02, hz + fin], MANGA_PILAR, o);
+  // El puño, cerrado sobre el mango, con la línea de los nudillos y el pulgar
+  const oh = { g };
+  pushBox(s, [hx - 0.02, hy - 0.022, hz - 0.016, hx + 0.02, hy + 0.022, hz + 0.02], PIEL_PILAR, oh);
+  pushBox(s, [hx - 0.023, hy - 0.02, hz + 0.006, hx - 0.018, hy + 0.02, hz + 0.016], OSCURO_DE(PIEL_PILAR, 0.84), oh);
+  pushBox(s, [hx - 0.025, hy - 0.024, hz - 0.01, hx - 0.014, hy - 0.012, hz + 0.004], CLARO_DE(PIEL_PILAR, 8), oh);
+}
+
+/**
  * Todo lo de la barra. `est`: { receta, gesto (el que se hace ahora), pose (su postura), pulsado, hechos ({ gesto: pose }),
- * vista (`vistaTaza`), elige (la parte que se elige ahora: sus cosas, con marco), lista (taza terminada) }.
+ * vista (`vistaTaza`), elige (la parte que se elige ahora: sus cosas, con marco), lista (taza terminada), pilar (lo prepara
+ * ella: se ven sus manos) }.
  */
 function barraKit(s, est = {}) {
   const { receta = {}, gesto = null, pose = {}, pulsado = false, hechos = {}, vista = {}, elige = null, lista = false, carta = [] } = est;
@@ -1453,6 +1488,10 @@ function barraKit(s, est = {}) {
   const T = tazaPos(est);
   const ahora = (k) => gesto === k;
   const p = (k) => (ahora(k) ? pose : hechos[k]) ?? {};
+  /** 1.131: la mano de Pilar en el mango de lo que mueve ahora, si lo prepara ella. */
+  const mano = (k, punto, op = {}) => {
+    if (est.pilar && ahora(k)) manoPilar(s, punto, { g, ...op });
+  };
 
   // ── La cafetera de palanca: cobre con aros de latón, cúpula, manómetro, el grupo hacia ti y la lanza de vapor ──
   pushBox(s, [7.6, 5.9, z, 7.93, 6.2, z + 0.06], [74, 50, 36], o);
@@ -1481,6 +1520,7 @@ function barraKit(s, est = {}) {
   const xfP = giro([7.64, 6.05, z + 0.42], 'y', -bajada * 1.75);
   pushBox(s, [7.625, 6.04, z + 0.42, 7.655, 6.06, z + 0.78], [58, 44, 36], { g, xf: xfP });
   pushBox(s, [7.615, 6.025, z + 0.78, 7.665, 6.075, z + 0.86], NOGAL, { g, xf: xfP });
+  mano('palanca', [7.64, 6.05, z + 0.83], { xf: xfP });
   // La lucecita: encendida si hoy toca café
   pushBox(s, [7.645, 6.09, z + 0.08, 7.65, 6.12, z + 0.11], ['cafe', 'frio'].includes(receta.bebida) ? [255, 120, 70] : [90, 40, 30], { glow: ['cafe', 'frio'].includes(receta.bebida) });
   if (extrayendo) {
@@ -1511,6 +1551,7 @@ function barraKit(s, est = {}) {
   pushBox(s, [mx - 0.012, my - 0.012, z + 0.2, mx + 0.012, my + 0.012, z + 0.27], ACERO_D, o);
   pushBox(s, [mx - 0.012, my - 0.012, z + 0.26, mx + 0.012, my + 0.13, z + 0.275], ACERO, { g, xf: xfM });
   pushBox(s, [mx - 0.016, my + 0.11, z + 0.275, mx + 0.016, my + 0.14, z + 0.33], NOGAL, { g, xf: xfM });
+  mano('manivela', [mx, my + 0.125, z + 0.31], { xf: xfM });
 
   // ── Bloque 6b: el saco de arpillera del tostadero, más o menos lleno según las tazas que te quedan ──
   if (carta.includes('casa')) {
@@ -1564,6 +1605,7 @@ function barraKit(s, est = {}) {
     pushBox(s, [x - 0.04, y - 0.04, z + 0.14, x + 0.04, y + 0.04, z + 0.16], ACERO, { g, xf: xfT });
     pushBox(s, [x - 0.015, y - 0.015, z + 0.16, x + 0.015, y + 0.015, z + 0.22], NOGAL, { g, xf: xfT });
     pushBox(s, [x - 0.028, y - 0.028, z + 0.22, x + 0.028, y + 0.028, z + 0.25], NOGAL, { g, xf: xfT });
+    mano('apisonar', [x, y, z + 0.265], { xf: xfT });
   }
 
   // ── La tetera de hierro: en su salvamanteles o, al levantarla, sobre la taza e inclinada ──
@@ -1583,6 +1625,7 @@ function barraKit(s, est = {}) {
     pushBox(s, [x - 0.01, y - 0.06, z + 0.24, x + 0.01, y - 0.04, z + 0.32], BRASS, ok);
     pushBox(s, [x - 0.01, y + 0.04, z + 0.24, x + 0.01, y + 0.06, z + 0.32], BRASS, ok);
     pushBox(s, [x - 0.01, y - 0.06, z + 0.32, x + 0.01, y + 0.06, z + 0.34], BRASS, ok);
+    mano('tetera', [x, y, z + 0.345], { xf: xfK });
     if (ahora('tetera') && pulsado && alzada >= 0.6) chorro(s, TAZA_EN.x + 0.01, TAZA_EN.y + 0.01, z + 0.1, z + 0.3, [214, 220, 214], 0.005);
   }
 
@@ -1593,6 +1636,7 @@ function barraKit(s, est = {}) {
     const { x, y } = TAZA_EN;
     pushBox(s, [x - 0.04, y - 0.04, z + 0.13, x + 0.04, y + 0.04, z + 0.15], BRASS, { g, xf: xfC });
     pushBox(s, [x - 0.008, y + 0.04, z + 0.14, x + 0.008, y + 0.12, z + 0.15], BRASS, { g, xf: xfC });
+    mano('colador', [x, y + 0.115, z + 0.16], { xf: xfC });
     if (vista.hojas) pushBox(s, [x - 0.03, y - 0.03, z + 0.15, x + 0.03, y + 0.03, z + 0.16], receta.bebida === 'chai' ? [124, 72, 40] : receta.grano === 'intenso' ? [60, 40, 28] : [110, 140, 70], { g, xf: xfC });
   }
   // La cuchara del té: del tarro elegido al colador, por encima
@@ -1606,6 +1650,7 @@ function barraKit(s, est = {}) {
     pushBox(s, [x - 0.025, y - 0.022, zz + 0.014, x + 0.025, y + 0.022, zz + 0.03], receta.grano === 'intenso' ? [60, 40, 28] : [110, 140, 70], o);
     pushBox(s, [x - 0.16, y - 0.009, zz + 0.012, x - 0.035, y + 0.009, zz + 0.022], BRASS, o);
     pushBox(s, [x - 0.18, y - 0.014, zz + 0.014, x - 0.15, y + 0.014, zz + 0.026], NOGAL, o);
+    mano('cuchara', [x - 0.15, y, zz + 0.03]);
   }
 
   // ── Las jarritas de leche: la elegida va bajo la lanza para cremarla y luego sobre la taza para servir ──
@@ -1615,6 +1660,7 @@ function barraKit(s, est = {}) {
       const inc = pose.inclina ?? 0;
       const xf = giro([JARRA_X, y, z], 'x', inc * 0.45, desplaza(VAPOR.x - JARRA_X, VAPOR.y - y, 0.01));
       jarrita(s, JARRA_X, y, tipo, { xf, espuma: pose.espuma ?? 0 });
+      mano('vapor', [JARRA_X + 0.085, y, z + 0.08], { xf });
       if (pulsado && Math.abs(inc) >= 0.5)
         for (const [dx, dz] of [
           [0.02, 0.24],
@@ -1625,6 +1671,7 @@ function barraKit(s, est = {}) {
     } else if (mia && ahora('verter')) {
       const xf = giro([JARRA_X, y, z], 'y', -(0.5 + (pose.vertido ?? 0) * 0.4), desplaza(T.x + 0.17 - JARRA_X, T.y + (pose.x ?? 0) * 0.025 - y, 0.1));
       jarrita(s, JARRA_X, y, tipo, { xf, espuma: 1, g: 0.72 });
+      mano('verter', [JARRA_X + 0.085, y, z + 0.08], { xf });
       if (pulsado) chorro(s, T.x + 0.035, T.y + (pose.x ?? 0) * 0.025, z + 0.1, z + 0.19, [236, 228, 212], 0.005);
     } else jarrita(s, JARRA_X, y, tipo, { espuma: mia && hechos.vapor && !hechos.verter ? 1 : 0 });
   }
@@ -1637,6 +1684,7 @@ function barraKit(s, est = {}) {
     const xf = giro([CANELA.x, CANELA.y, z + 0.075], 'x', Math.PI + vai * 0.25, desplaza(T.x - CANELA.x, T.y - CANELA.y + vai * 0.025, sobre - 0.075));
     pushBox(s, [CANELA.x - 0.05, CANELA.y - 0.05, z, CANELA.x + 0.05, CANELA.y + 0.05, z + 0.13], [150, 78, 48], { g, xf });
     pushBox(s, [CANELA.x - 0.055, CANELA.y - 0.055, z + 0.13, CANELA.x + 0.055, CANELA.y + 0.055, z + 0.15], BRASS, { g, xf });
+    mano('agitar', [CANELA.x, CANELA.y, z + 0.06], { xf });
     if (pulsado)
       for (let k = 0; k < 4; k += 1) {
         const dz = 0.12 + k * 0.012;
@@ -1657,6 +1705,7 @@ function barraKit(s, est = {}) {
     const xfD = ult ? giro([cx, cy, cz], 'y', -0.7) : null;
     pushBox(s, [cx - 0.006, cy - 0.006, cz, cx + 0.006, cy + 0.006, cz + 0.12], [150, 100, 60], { g, xf: xfD });
     pushBox(s, [cx - 0.016, cy - 0.016, cz - 0.02, cx + 0.016, cy + 0.016, cz + 0.01], [176, 118, 64], { g, xf: xfD });
+    if (ult) mano('hilo', [cx, cy, cz + 0.11], { xf: xfD });
     if (ult && pulsado) pushBox(s, [cx - 0.003, cy - 0.003, z + 0.11, cx + 0.003, cy + 0.003, cz - 0.02], [214, 146, 48], { g: 0.85 });
   }
 
@@ -1692,6 +1741,7 @@ function barraKit(s, est = {}) {
     pushBox(s, [x - 0.015, y - 0.09, zc + 0.09, x + 0.015, y - 0.07, zc + 0.11], COBRE_L, oz);
     pushBox(s, [x - 0.24, y - 0.012, zc + 0.08, x - 0.07, y + 0.012, zc + 0.1], NOGAL, oz);
     pushBox(s, [x - 0.26, y - 0.016, zc + 0.078, x - 0.22, y + 0.016, zc + 0.102], BRASS, oz);
+    mano('cazo', [x - 0.2, y, zc + 0.09], { xf: xfZ });
     // Dentro, el chocolate (en cuanto se elige el cacao), que se espesa al remover y baja al servir
     if (choco && receta.grano && servido < 1) {
       const c = colorBebida(receta);
@@ -1729,6 +1779,7 @@ function barraKit(s, est = {}) {
       pushBox(s, [mx - 0.022, my - 0.022, zc + 0.03, mx + 0.022, my + 0.022, zc + 0.05], WOOD_L, { g });
       pushBox(s, [mx - 0.016, my - 0.016, zc + 0.055, mx + 0.016, my + 0.016, zc + 0.07], NOGAL, { g });
       pushBox(s, [mx - 0.012, my - 0.012, zc + 0.28, mx + 0.012, my + 0.012, zc + 0.31], NOGAL, { g });
+      mano('molinillo', [mx, my, zc + 0.25]);
     } else if (!hechos.molinillo || !choco) {
       const yy = y + 0.13;
       pushBox(s, [x - 0.14, yy - 0.006, z, x + 0.1, yy + 0.006, z + 0.012], WOOD_L, o);
@@ -1778,6 +1829,7 @@ function barraKit(s, est = {}) {
     }
     pushBox(s, [vx - 0.02, vy - 0.02, z + 0.026, vx + 0.02, vy + 0.02, z + 0.032], ACERO, { g, xf: xfV });
     pushBox(s, [vx - 0.01, vy - 0.01, z + 0.14, vx + 0.01, vy + 0.01, z + 0.25], NOGAL, { g, xf: xfV });
+    mano('batir', [vx, vy, z + 0.21]);
   }
 
   // ── Bloque 4b: la tabla de la vainilla, con la vaina negra y el cuchillo pequeño; se rasca de arriba abajo ──
@@ -1799,6 +1851,7 @@ function barraKit(s, est = {}) {
     const kz = ahora('rascar') ? z + 0.034 : z + 0.018;
     pushBox(s, [kx - 0.006, ky - 0.004, kz, kx + 0.03, ky + 0.004, kz + 0.006], ACERO, o);
     pushBox(s, [kx + 0.03, ky - 0.007, kz, kx + 0.075, ky + 0.007, kz + 0.012], NOGAL, o);
+    mano('rascar', [kx + 0.06, ky, kz + 0.022]);
   }
   // ── Bloque 4b: la cubitera de latón con hielo y la coctelera de acero, que se agita de lado a lado ──
   {
@@ -1825,6 +1878,7 @@ function barraKit(s, est = {}) {
     pushBox(s, [x - 0.043, y - 0.043, z + 0.17, x + 0.043, y + 0.043, z + 0.185], ACERO_D, oc);
     pushBox(s, [x - 0.03, y - 0.03, z + 0.2, x + 0.03, y + 0.03, z + 0.25], ACERO, oc);
     pushBox(s, [x - 0.012, y - 0.012, z + 0.25, x + 0.012, y + 0.012, z + 0.275], ACERO_D, oc);
+    mano('coctelera', [x, y, z + 0.13], { xf: xfC });
     // La escarcha: se va cubriendo al agitar
     const frio = p('coctelera').agitado ?? 0;
     if (frio > 0) pushBox(s, [x - 0.041, y - 0.041, z + 0.02, x + 0.041, y + 0.041, z + 0.02 + frio * 0.14], [226, 236, 242], { g: 0.9, xf: xfC });
@@ -1854,6 +1908,7 @@ function barraKit(s, est = {}) {
       const zz = baja ? z + 0.07 : z + 0.13;
       pushBox(s, [x - 0.018, y - 0.018, zz, x + 0.018, y + 0.018, zz + 0.04], PIEDRA, o);
       pushBox(s, [x - 0.013, y - 0.013, zz + 0.04, x + 0.013, y + 0.013, zz + 0.15], [92, 58, 38], o);
+      mano('mortero', [x, y, zz + 0.13]);
       if (baja && !reduced()) for (const [dx, dy] of [
         [-0.05, 0.03],
         [0.045, -0.02],
@@ -1884,6 +1939,7 @@ function barraKit(s, est = {}) {
       pushBox(s, [sx - 0.02, sy - 0.02, sz + 0.03, sx + 0.02, sy + 0.02, sz + 0.13], ROJO, o);
       pushBox(s, [sx - 0.022, sy - 0.022, sz + 0.1, sx + 0.022, sy + 0.022, sz + 0.112], ACERO_D, o);
       pushBox(s, [sx - 0.008, sy - 0.008, sz - 0.01, sx + 0.008, sy + 0.008, sz + 0.03], BRASS, o);
+      mano('soplete', [sx, sy, sz + 0.09]);
       if (llama) {
         pushBox(s, [sx - 0.009, sy - 0.009, sz - 0.045, sx + 0.009, sy + 0.009, sz - 0.01], [120, 168, 255], { glow: true });
         pushBox(s, [sx - 0.004, sy - 0.004, sz - 0.06, sx + 0.004, sy + 0.004, sz - 0.045], [220, 236, 255], { glow: true });
@@ -3305,16 +3361,28 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       return { p: [F + d, yy, zz + d * 0.26], m: [F - 0.2, yy, zz - d * 0.32] };
     }
     if (fase === 'seccion') {
+      // 1.131 (Francisco, 14-11-2026: «la cámara un poco más cerca»): los lomos más grandes y en el centro del hueco libre
       const t = libTramo(e);
       const [yy, zz] = [(t.y0 + t.y1) / 2, t.z + 0.22];
-      const d = clamp(((t.y1 - t.y0) / 2 + 0.2) / tanAncho(), 0.75, 1.6);
-      return { p: [F + d, yy, zz + d * 0.3], m: [F - 0.1 * d, yy, zz - d * 0.38] };
+      const d = clamp(((t.y1 - t.y0) / 2 + 0.14) / tanAncho(), 0.6, 1.5);
+      return { p: [F + d, yy, zz + d * 0.3], m: [F - 0.1 * d, yy, zz - d * 0.16] };
     }
     // Al elegir cómo se lo lleva (y al abrir una bolsa), la cámara se corre hacia el tarro y las bolsas: en un móvil en vertical
-    // la tabla no cabe entera y se quedaban fuera; al terminar, hacia la bandeja
-    const dy = fase === 'listo' ? 0.22 : fase === 'forma' || (fase === 'gesto' && e.gesto === 'bolsa') ? -0.27 : 0;
-    const c = [F + 0.3, yc + dy, TABLA_Z];
-    return { p: [c[0] + 0.66, c[1], c[2] + 0.92], m: [c[0] - 0.12, c[1], c[2] - 0.62] };
+    // la tabla no cabe entera y se quedaban fuera; al terminar, hacia la bandeja (con la taza entera)
+    const dy = fase === 'listo' ? 0.45 : fase === 'forma' || (fase === 'gesto' && e.gesto === 'bolsa') ? -0.27 : 0;
+    // Con la bolsa ya abierta (meter el libro, doblar el borde y sellarla), más de lado y a media altura: la bolsa es alta y
+    // el libro baja desde arriba
+    const bolsaAlta = fase === 'gesto' && e.forma === 'llevar' && e.gesto !== 'bolsa';
+    const c = [F + 0.3, yc + dy, TABLA_Z + (bolsaAlta ? 0.3 : 0)];
+    // 1.131: más cerca. Al envolver, el libro llena el hueco libre (antes, media pantalla de suelo); al elegir y con las bolsas,
+    // solo lo justo para que quepan el papel, el tarro y las bolsas a 360 px. `d`, a qué distancia de `c`; `alto`, desde qué
+    // ángulo (rad, sobre la tabla); `baja`, cuánto queda `c` por debajo del centro de la pantalla (rad), donde no lo tapan el
+    // marcador ni el cuadro.
+    const ancha = fase === 'forma' || fase === 'listo' || (fase === 'gesto' && e.gesto === 'bolsa');
+    const [d, alto, baja] = bolsaAlta ? [0.8, 0.7, 0.02] : ancha ? [fase === 'listo' ? 0.86 : 1.0, 0.98, 0.03] : [0.78, 1.02, 0.055];
+    const [ca, sa, cb, sb] = [Math.cos(alto), Math.sin(alto), Math.cos(alto - baja), Math.sin(alto - baja)];
+    const p = [c[0] + d * ca, c[1], c[2] + d * sa];
+    return { p, m: [p[0] - d * cb, c[1], p[2] - d * sb] };
   }
   /** Lo que queda entre la cámara y la estantería (muebles y clientes) no se ve mientras estás en la librería. */
   function despejar() {
@@ -4082,6 +4150,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     portadasEscaparate: () => (estado.portadas ?? []).filter(Boolean).length,
     pose: () => ({ x: px, y: py, yaw }),
     settled: () => !walk && vistaQuieta() && (barra.activa || tost.activa || lib.activa ? barraT === 1 : barraT === 0),
+    /**
+     * 1.131: ¿la cámara de la barra ya casi ha llegado a lo que mira? (A `tol` del final; sin esperar a que se pare del todo.)
+     * Pilar espera a esto antes de empezar cada gesto, como quien alarga la mano hasta la siguiente herramienta.
+     */
+    vistaCerca: (tol = 0.05) =>
+      barraT === 1 && Math.max(...vista.p.map((v, k) => Math.abs(v - vistaMeta.p[k])), ...vista.m.map((v, k) => Math.abs(v - vistaMeta.m[k]))) < tol,
     /** Ir a un sitio ('pilar', 'cortina', 'escaparate' o 'entrada'). Promesa que acaba al llegar. */
     go(id) {
       if (id === 'entrada') return cambiarPlanta('calle').then(() => walkTo(INICIO.x, INICIO.y, { face: [INICIO.x + Math.sin(INICIO.yaw), INICIO.y + Math.cos(INICIO.yaw)] }));
