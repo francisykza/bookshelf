@@ -271,7 +271,7 @@ test('un día en el café: dos clientes, el excéntrico y un habitual, de la bar
   await page.screenshot({ path: join(DIR, `5-habitual-${tam(info)}.png`) });
   await despedir(page, cafe);
 
-  // Todo el mundo atendido; la pizarra con la reseña dorada y la de Marga
+  // Todo el mundo atendido
   await expect(cafe.locator('.cf3-dice')).toContainText('Hoy ya está todo el mundo atendido');
   await expect(cafe.locator('.cf3-tag--cliente')).toHaveCount(0);
   await expect(cafe.locator('.cf3-monedero')).toContainText(String(9 + 2 + 19 + 9));
@@ -291,13 +291,9 @@ test('un día en el café: dos clientes, el excéntrico y un habitual, de la bar
   expect(estado.reputacion).toBe(14 + 6 + 40 + 12);
   await quieto(page, 900);
   await page.screenshot({ path: join(DIR, `6-atendidos-${tam(info)}.png`) });
-  await cafe.getByRole('button', { name: /^La pizarra/ }).click();
-  const pizarra = cafe.getByRole('region', { name: 'La pizarra' });
-  await expect(pizarra).toContainText(RESENAS[10]);
-  await expect(pizarra).toContainText(NIEBLA.dorada);
-  await expect(pizarra.locator('li[data-dorada="true"]')).toHaveCount(1);
-  await page.screenshot({ path: join(DIR, `7-pizarra-${tam(info)}.png`) });
-  await pizarra.getByRole('button', { name: 'Cerrar' }).click();
+  // 1.132 (Francisco, 14-11-2026, «Quitarla del todo»): la pizarra ya no está; la nota y la reseña dorada se vieron al despedirse
+  await expect(cafe.getByRole('button', { name: /pizarra/i })).toHaveCount(0);
+  await expect(cafe.getByRole('region', { name: 'La pizarra' })).toHaveCount(0);
   // Tocar a quien ya lee: no se le molesta
   const p = await page.evaluate(() => window.__cafe3d.clienteEnPantalla(1));
   if (p?.front) {

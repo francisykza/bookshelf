@@ -33,6 +33,9 @@ function normalizar(data) {
     tostadero: tostaderoDe(data.tostadero),
     // 1.130: las servidas de 2 estrellas o más de cada bebida (y de lo de la carta con gesto), para Pilar
     dominio: dominioDe(data.dominio),
+    // 1.132: la reputación que espera a que despidas al influencer de la subida, y las fotos firmadas de la pared (niveles)
+    espera: Math.min(1000000, Math.max(0, Number.isInteger(data.espera) ? data.espera : 0)),
+    fotos: (Array.isArray(data.fotos) ? data.fotos : []).filter((n) => Number.isInteger(n) && n >= 2 && n <= 8),
   };
 }
 
@@ -110,9 +113,23 @@ function normalizarDia(d) {
       // Hasta 9 clientes desde el nivel 7 (el excéntrico es el último: con 8 en el nivel 6 ya hacía falta pasar del 7)
       .filter((c) => c.n >= 1 && c.n <= 10),
     habituales: (Array.isArray(d.habituales) ? d.habituales : []).map((h) => ({ ...cliente(h), quien: entero(h.quien) })).filter((h) => h.n >= 101 && h.n <= 102 && h.quien >= 0 && h.quien < 12),
-    pizarra: (Array.isArray(d.pizarra) ? d.pizarra : [])
-      .map((r) => ({ dia: String(r.dia ?? ''), quien: entero(r.quien), frase: entero(r.frase), dorada: Boolean(r.dorada) }))
-      .filter((r) => (r.dorada ? r.quien < 6 : r.quien < 12) && r.frase < 12),
+    // 1.132: los que vienen por el vídeo viral de un influencer (201 a 203) y de quién era el vídeo
+    virales: (Array.isArray(d.virales) ? d.virales : []).map(cliente).filter((v) => v.n >= 201 && v.n <= 203),
+    viralesDe: Number.isInteger(d.virales_de) && d.virales_de >= 2 && d.virales_de <= 8 ? d.virales_de : null,
+    // 1.132: el influencer del día ({ nivel, servido, sube, estrellas, aTiempo, viral }) o null
+    influencer: influencerDe(d.influencer),
+  };
+}
+/** El influencer que llega con el día: su nivel (2 a 8), si ya se fue, si es el de la subida y cómo salió. */
+function influencerDe(x) {
+  if (!x || typeof x !== 'object' || !Number.isInteger(x.nivel) || x.nivel < 2 || x.nivel > 8) return null;
+  return {
+    nivel: x.nivel,
+    servido: Boolean(x.servido),
+    sube: Boolean(x.sube),
+    estrellas: x.estrellas == null ? null : Math.min(3, Math.max(1, entero(x.estrellas))),
+    aTiempo: Boolean(x.a_tiempo),
+    viral: Boolean(x.viral),
   };
 }
 /** El reparto que llega con el día: como mucho 10 claves, los granos que costó y los que no llegaron. */
@@ -151,7 +168,7 @@ const conDia = (data) => ({
 });
 const conLibros = (data) => ({ cafe: normalizar(data?.cafe), libros: normalizarLibros(data?.libros), caja: Array.isArray(data?.caja) ? data.caja.filter((k) => typeof k === 'string') : [] });
 
-/** El día del café (`dia`, AAAA-MM-DD): los clientes, los habituales y la pizarra. null si falta la migración del bloque 3. */
+/** El día del café (`dia`, AAAA-MM-DD): los clientes, los habituales, los virales y el influencer. null si falta la migración del bloque 3. */
 export async function cargarDia(dia) {
   const sb = await client();
   const { data, error } = await sb.rpc('cafe_dia', { dia });
@@ -212,6 +229,26 @@ export async function entregarCliente(dia, cliente, receta, libro = null, libroO
   const ok = libro ? [0, 1, 2].map((k) => Boolean(libroOk?.[k])) : null;
   const { data, error } = await sb.rpc('cafe_entregar', { dia, cliente, receta, libro: libro ?? null, libro_ok: ok });
   if (sinMigracion(error)) return servirCliente(dia, cliente, receta, libro ? ok[0] : null, libro);
+  fail(error);
+  return conDia(data);
+}
+
+/**
+ * 1.132 (`20261219120000_cafe_influencer.sql`): ir a la barra con el influencer del día da la vuelta al reloj de arena (el
+ * servidor apunta la hora; volver a empezar no castiga).
+ */
+export async function empezarInfluencer(dia, nivel) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_influencer_empezar', { dia, nivel });
+  fail(error);
+  return data;
+}
+
+/** Llevarle al influencer lo preparado (como `entregarCliente`): el servidor mira si llegó a tiempo y, al despedirle, sube el café. */
+export async function entregarInfluencer(dia, nivel, receta, libro = null, libroOk = null) {
+  const sb = await client();
+  const ok = libro ? [0, 1, 2].map((k) => Boolean(libroOk?.[k])) : null;
+  const { data, error } = await sb.rpc('cafe_influencer_entregar', { dia, nivel, receta, libro: libro ?? null, libro_ok: ok });
   fail(error);
   return conDia(data);
 }
@@ -280,6 +317,7 @@ export function errorCafe(e) {
   if (/cafe:saco/.test(m)) return 'Hoy ya recogiste el saco: mañana habrá otro en el tambor.';
   if (/cafe:tazas/.test(m)) return 'Ya tienes 99 tazas guardadas: sirve unas cuantas y vuelve a por el saco.';
   if (/cafe:servido/.test(m)) return 'A este cliente ya lo has atendido hoy.';
+  if (/cafe:influencer/.test(m)) return 'Ese cliente ya se ha ido. Vuelve a entrar en el café.';
   if (/cafe:dia/.test(m)) return 'Ha cambiado el día: vuelve a entrar en el café.';
   if (/cafe:cliente|cafe:receta|cafe:libro/.test(m)) return 'No se ha podido atender. Vuelve a entrar en el café.';
   if (/cafe:granos/.test(m)) return 'Aún no tienes granos suficientes.';

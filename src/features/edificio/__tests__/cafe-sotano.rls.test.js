@@ -13,6 +13,8 @@ let db;
 let A;
 let hoy;
 const call = (u, sql, params) => as(db, u, (q) => q(sql, params)).then((r) => Object.values(r[0])[0]);
+// 1.132: el nivel sube con el influencer de esa subida ya despedido
+const despedido = (u, nivel) => db.query("insert into cafe_influencers (user_id, nivel, dia, despedido) values ($1, $2, '2000-01-01', now()) on conflict do nothing", [u, nivel]);
 const valido = (plano, nivel) => db.query('select cafe_plano_valido($1::jsonb, $2) v', [JSON.stringify(plano), nivel]).then((r) => r.rows[0].v);
 const abajo = (n) => Array.from({ length: n }, (_, k) => ({ uid: `b${k}`, id: 'cafe-silla', x: k % 5, y: SOTANO.y0 + Math.floor(k / 5), rot: 0 }));
 
@@ -83,6 +85,7 @@ describe('el café-librería del bajo, bloque 6a: la bodega', () => {
       await db.query('insert into cafe_niveles_cobrados (user_id, nivel, tickets) values ($1, $2, 0) on conflict do nothing', [A, n]);
       for (const k of [1, 2, 3]) await db.query('insert into cafe_hitos (user_id, nivel, hito) values ($1, $2, $3) on conflict do nothing', [A, n, k]);
     }
+    await despedido(A, 6);
     const t0 = (await db.query('select tickets from piso_cuentas where user_id = $1', [A])).rows[0].tickets;
     const d = await call(A, 'select cafe_dia($1::date)', [hoy]);
     // Hoy se abrió en el nivel 5: 7 como mucho

@@ -13,6 +13,7 @@
 // Aquí, solo reglas y cuentas (sin React ni Three): las mismas cifras que la migración `20261218120000_cafe_libreria.sql`.
 import { ESTANTERIA } from './cafeLayout';
 import { GENEROS, nombreGenero } from './cafeClientes';
+import { numeroInfluencer, pedidoInfluencer, semillaInfluencer } from './cafeInfluencers';
 
 /** Cómo se lo lleva: cada forma con su objeto en la tabla y sus gestos (el último, el sello del café). */
 export const FORMAS = [
@@ -84,6 +85,10 @@ export function pedidosLibro(dia, balda = []) {
   const out = {};
   for (const c of dia?.clientes ?? []) out[c.n] = elegir(c.semilla);
   for (const h of dia?.habituales ?? []) out[h.n] = elegir(h.semilla);
+  // 1.132: los virales piden como cualquiera; el influencer, con su extensión y su forma fijas
+  for (const v of dia?.virales ?? []) out[v.n] = elegir(v.semilla);
+  const inf = dia?.influencer;
+  if (inf) out[numeroInfluencer(inf.nivel)] = pedidoInfluencer(inf.nivel, posibles, semillaInfluencer(dia.dia, inf.nivel)) ?? SIN_LIBRO;
   return out;
 }
 /** Qué partes del libro aciertas: [género, extensión, forma]. */

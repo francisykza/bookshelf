@@ -7,6 +7,7 @@
 import { COMPLEMENTOS, JERSEYS, PANTALONES, PELOS, PIELES, COLORES_PELO, isPrenda } from '../actor';
 import { dayKey } from '../../../domain/dates';
 import { huecosDelNivel } from './cafeNiveles';
+import { influencerDe, numeroInfluencer, semillaInfluencer } from './cafeInfluencers';
 
 export { huecosDelNivel };
 
@@ -103,10 +104,12 @@ export function recetaDe(r, carta = []) {
   return out;
 }
 /**
- * Lo que pide un cliente del día con la carta de ese día (la fija el servidor al abrir el día). Los habituales, siempre lo
- * mismo («lo de siempre»), con la carta de siempre.
+ * Lo que pide un cliente del día con la carta de ese día (la fija el servidor al abrir el día). Los habituales (101 y 102),
+ * siempre lo mismo («lo de siempre»), con la carta de siempre. 1.132: los virales (201 a 203) piden como un cliente; el
+ * influencer trae su receta fija (`pide` de cafeInfluencers.js).
  */
-export const recetaPide = (c, carta = []) => (c.n > 100 ? recetaDe(c.quien * 29 + 7) : recetaDe(Math.floor(c.semilla / 1000), carta));
+export const esHabitual = (n) => n >= 101 && n <= 199;
+export const recetaPide = (c, carta = []) => (esHabitual(c.n) ? recetaDe(c.quien * 29 + 7) : recetaDe(Math.floor(c.semilla / 1000), carta));
 /** Cuántas partes de la bebida coinciden. */
 export const aciertosDe = (receta, pide) => pide.reduce((n, x, k) => n + (receta?.[k] === x ? 1 : 0), 0);
 /** Estrellas de `cafe_servir` (las apps de antes de la 1.130): cada parte acertada vale un punto y el libro que encaja, otro (de cinco). Ahora, `estrellasTotal`. */
@@ -231,7 +234,7 @@ export const HABITUALES = [
   { nombre: 'Bruno', avatar: { piel: 4, pelo: 'rapado', colorPelo: 4, jersey: 5, pantalon: 0, gafas: false, complemento: 'ninguno' } },
   { nombre: 'Inés', avatar: { piel: 2, pelo: 'largo', colorPelo: 1, jersey: 1, pantalon: 3, gafas: false, complemento: 'ninguno' } },
 ];
-/** Lo que dejan escrito en la pizarra (frases cerradas; el servidor elige cuál). */
+/** La nota que deja un habitual al despedirse (frases cerradas; el servidor elige cuál). La pizarra ya no está (1.132). */
 export const RESENAS = [
   'Volveré por ese café.',
   'Me llevé el que me dijiste y no pude parar.',
@@ -280,7 +283,10 @@ export function sesionesDeHoy(progress, hoy = dayKey()) {
   return Math.min(MAX_HABITUALES, pomodoros + registro);
 }
 
-/** Todos los clientes del día en orden: primero los nuevos, luego los habituales; con su aspecto, nombre y pedido. */
+/**
+ * Todos los clientes del día en orden: el influencer (1.132, si viene), los nuevos, los que vienen por un vídeo viral y los
+ * habituales; con su aspecto, nombre y pedido.
+ */
 export function clientesDelDia(dia, pedidos) {
   if (!dia) return [];
   const nuevos = (dia.clientes ?? []).map((c) => {
@@ -304,7 +310,36 @@ export function clientesDelDia(dia, pedidos) {
     pedido: pedidos?.[h.n] ?? SIN_PEDIDO,
     pide: recetaPide(h),
   }));
-  return [...nuevos, ...habituales];
+  // 1.132: los que vienen por el vídeo viral (piden de la carta, como cualquiera; su aspecto, de su semilla)
+  const virales = (dia.virales ?? []).map((v) => ({
+    ...v,
+    habitual: false,
+    viral: dia.viralesDe ?? 0,
+    nombre: 'Cliente',
+    aspecto: aspectoDe(v.semilla),
+    pedido: pedidos?.[v.n] ?? SIN_PEDIDO,
+    pide: recetaPide(v, dia.carta ?? []),
+  }));
+  // 1.132: el influencer del día (el de la subida o uno de un nivel que ya pasaste), con su receta fija
+  const i = dia.influencer;
+  const ficha = i ? influencerDe(i.nivel) : null;
+  const influencer = ficha
+    ? [
+        {
+          n: numeroInfluencer(i.nivel),
+          semilla: semillaInfluencer(dia.dia, i.nivel),
+          servido: i.servido,
+          estrellas: i.estrellas,
+          habitual: false,
+          influencer: { ...ficha, nivel: i.nivel, sube: i.sube, aTiempo: i.aTiempo, viral: i.viral },
+          nombre: ficha.nombre,
+          aspecto: ficha.avatar,
+          pedido: pedidos?.[numeroInfluencer(i.nivel)] ?? SIN_PEDIDO,
+          pide: [...ficha.pide],
+        },
+      ]
+    : [];
+  return [...influencer, ...nuevos, ...virales, ...habituales];
 }
 
 // ── Libros en cajas (§121.3, cifras aprobadas por Francisco el 12-11-2026, «Sí, esas cifras») ──

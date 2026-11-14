@@ -209,6 +209,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Café, influencer, taller de restauración y fuera la pizarra** (encargo del 14-11-2026, plan en `cafe-libreria.md` §16):
+  - decisiones de la 1.ª tanda tomadas;
+  - **bloque 1 (fuera la pizarra y el influencer), a medias, con commit en la rama (sin subir)**: hecho el servidor (migración nueva, sin
+    aplicar), las reglas, el servicio y quitar la pizarra; falta la parte visible del influencer. Lista exacta de lo que
+    falta en la bitácora, entrada «Traspaso a mitad del bloque 1 del influencer». **Es lo siguiente.**
+  - antes del bloque 2, sus cifras del taller (§16.3) y el encargo del amigo (§16.4).
+
 - **Café, el libro más cerca y Pilar a mano (1.131.0, publicada)**: lo que Francisco note al jugarla. Evidencias en
   `qa-report/v1131/`, enviadas al chat.
 
@@ -361,6 +368,126 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · Traspaso a mitad del bloque 1 del influencer, commit en la rama (Claude)
+
+Francisco dijo «Sí, empieza» al bloque 1 de §16 (fuera la pizarra y el influencer) y, a mitad, «prepara lo que puedas para
+que continue la otra cuenta ya que nos acercamos al limite diario». Después pidió «Confirma los cambios del árbol de
+trabajo»: **todo lo de abajo está en un commit en la rama `1.90-escritorio-puerto`, sin subir** (`main` y producción siguen
+en la 1.131.0; no fusionar hasta que el bloque esté terminado y aprobado). La versión sigue en 1.131.0: subirla a 1.132.0
+al cerrar el bloque.
+
+**Hecho** (comprobado: `npm run build` bien; `npx vitest run src/features/edificio`, 58 archivos y 445 pruebas en verde):
+- `supabase/migrations/20261219120000_cafe_influencer.sql` (nueva, **sin aplicar**; la aplica Francisco). Hace esto:
+  - **El tope**: con la barra llena, la reputación de más espera en `cafe_locales.reputacion_espera` (`cafe_techo`,
+    `cafe_apartar`, al principio de `cafe_progreso`). El nivel sube al despedir al influencer y no se pierde nada. Así,
+    toda la lógica de niveles, carta e hitos por reputación sigue igual.
+  - **La tabla** `cafe_influencers` (un registro por nivel, del 2 al 8).
+  - **El influencer del día** (`cafe_influencer_de`): uno como mucho. Viene el de la subida (`sube: true`) o, en las
+    cuentas que ya pasaron niveles, el más antiguo sin despedir (`sube: false`, sin frenar nada).
+  - **`cafe_influencer_empezar`**: da la vuelta al reloj (`empezado = now()`; repetirlo no castiga).
+  - **`cafe_influencer_entregar`**: recibe la receta y el libro, como `cafe_entregar`. Está a tiempo si no pasan de 150 + 10
+    segundos. A tiempo paga como el excéntrico; con la arena acabada, como un cliente normal (**corregido hoy**: antes
+    pagaba siempre como el excéntrico, contra §16.2). A tiempo y con 3★ es viral.
+  - **Los virales**: el siguiente día que se abre, 3 clientes más (números 201 a 203), que pagan como un cliente.
+  - **El JSON**: `cafe_json` da `espera` y `fotos` (los niveles virales), y `cafe_dia_json` da `virales`, `virales_de` e
+    `influencer`, **sin `pizarra`**.
+  - **Lo demás**: `cafe_nueva_jornada` cuenta a virales e influencer. Los números del influencer son 300 + nivel.
+- Pruebas: `cafe-influencer.rls.test.js` es nueva (10 pruebas). En `cafe-clientes`, `cafe-niveles`, `cafe-sotano` y
+  `cafe-catas` (`.rls.test.js`) hay dos ayudas: `despedido(u, nivel)`, porque ahora subir exige despedir al influencer, y
+  `resenas(u)`, porque la pizarra ya no sale en el JSON.
+- `src/features/edificio/cafe/cafeInfluencers.js` (nuevo, sin importar nada): reúne lo del influencer en la app.
+  - Los siete personajes (`INFLUENCERS`: nombre, accesorio, tema, avatar, receta fija `pide`, libro, saludo y `publica`).
+  - Las cifras del reloj y de los virales.
+  - Lo que dicen: `saludoViral`, que conjuga «del Booktuber…» / «de la Bloguera…», y `despedidaInfluencer`.
+  - Las ayudas: `semillaInfluencer`, `pedidoInfluencer(nivel, posibles, semilla)`, `arenaQueda(ms)` y `arenaTexto(queda)`
+    (el texto accesible, sin números).
+  - **Ojo**: la tabla de §16.2 de `cafe-libreria.md` era provisional. Las recetas buenas son las del código y la migración:
+    - el 7 pide café intenso sin nada (el tueste de la casa gasta tazas del saco);
+    - el 8, café con hielo, entera y vainilla (el chai y el brûlée se abren en el propio nivel 8).
+    Actualizar la tabla al cerrar el bloque.
+- `cafeService.js`: normaliza `espera`, `fotos`, `virales`, `viralesDe` e `influencer`. Funciones nuevas
+  `empezarInfluencer(dia, nivel)` y `entregarInfluencer(dia, nivel, receta, libro, libroOk)`, y el error `cafe:influencer`.
+- `cafeClientes.js`:
+  - `esHabitual(n)` (101–199), y `recetaPide` lo usa: antes trataba a los virales como habituales.
+  - `clientesDelDia` pone primero al influencer (objeto `influencer` con su ficha, `sube`, `aTiempo` y `viral`) y añade los
+    virales (`viral` = nivel del vídeo).
+- `cafeLibreria.js`: `pedidosLibro` también da libro a los virales y al influencer (su extensión y forma, fijas).
+- **La pizarra, fuera**:
+  - `Cafe.jsx`: sin estado, botón ni panel.
+  - `Atender.jsx`: las despedidas ya no dicen «en la pizarra».
+  - `v1121-cafe-clientes.spec.js`: comprueba que no está.
+  - Las clases `.cf3-pizarra-btn` se siguen usando en los botones del HUD (libros, subir): **no borrarlas**. Las del panel
+    (`.cf3-pizarra`, `__titulo`, `__lista`…) sí se pueden quitar de `cafe.css`.
+
+**Falta para cerrar el bloque 1** (en este orden):
+1. **`Atender.jsx`, el influencer** (`cliente.influencer`):
+   - al pedir: `«${inf.saludo}${yLibro}»`;
+   - comanda clara con su nombre, su tema y un «REC»;
+   - «A la barra» llama a un `onEmpezar` nuevo (en `Cafe.jsx`, `empezarInfluencer(diaJuego, nivel)`) y el reloj arranca
+     al confirmarlo;
+   - sin Pilar: `pilarPuede(..., { excentrico: Boolean(raro || inf) })`;
+   - al despedirse: `despedidaInfluencer(dado.influencer)`, una ficha con lo que publica (`inf.publica`) y, si fue viral,
+     «Mañana vendrán 3 clientes por su vídeo» y «Foto firmada para tu pared».
+   Los virales (`cliente.viral`) saludan con `saludoViral(cliente.viral)` más su libro.
+2. **El reloj de arena** (componente nuevo):
+   - de latón y en píxel, arriba a la derecha de la escena;
+   - visible en la barra, la librería, el camino y al servir (va contigo porque cambias de sitio);
+   - sin números ni alarmas, y con `aria-label` = `arenaTexto(...)`;
+   - con movimiento reducido, una barra quieta que se vacía (§16.2).
+3. **`Cafe.jsx`**:
+   - `servir`: con `c.influencer`, `entregarInfluencer(diaJuego, c.influencer.nivel, receta, libro?.clave ?? null, ok)`;
+   - en el HUD, «¡A punto de subir!» con `local.espera > 0` o un influencer `sube` sin servir;
+   - Pilar lo menciona en el texto de pendientes (hacia la línea 746);
+   - `setClientes` pasa `influencer: { accesorio, tema }`;
+   - `api.setFotos(local.fotos)`;
+   - la etiqueta del cliente lleva su tema.
+4. **`cafe3d.js`**:
+   - `adornoInfluencer`, junto a `adornoExcentrico` (hacia la línea 2338), con lo suyo en la cabeza y un objeto en la mano
+     (por el lado +x, para que se lea mire hacia donde mire);
+   - un piloto rojo de «REC» sobre la cabeza mientras espera, y un aro redondo de píxeles en el suelo (el del excéntrico
+     es cuadrado y con chispas);
+   - llamarlo en `montarClientes` (hacia la línea 3676);
+   - las fotos: grupo nuevo con `setFotos(niveles)` en el hueco del cartel viejo de la pared derecha (x = SW − 0,05;
+     y 8,4–10,2; z 2,4–3,9; 4 + 3 marcos de 0,36 × 0,46 y un clavo donde falta). Comprobar con una captura (`place(x, y,
+     yaw)`) que se ve y no lo tapa nada.
+5. **`cafeSfx.js`**: los sonidos `directo` (llega), `arena` (darle la vuelta) y `viral`.
+   **`LogroCafe.jsx`**: una línea con el vídeo del influencer cuando la subida viene de él.
+   **`cafe.css`**: el reloj, la comanda y la ficha viral.
+6. **Pruebas**:
+   - `cafeInfluencers.test.js`: recetas válidas con la carta de `desdeNivel(n) - 1`, nombres y accesorios únicos,
+     `pedidoInfluencer` y `saludoViral`;
+   - `e2e-community/cafeMock.js`: quitar `pizarra`, añadir `espera`, `fotos`, `influencer` y `virales`, y las rutas
+     `cafe_influencer_empezar` y `cafe_influencer_entregar`;
+   - una e2e nueva `v1132-cafe-influencer.spec.js`, a 390 y 360, con vídeo;
+   - la de `v1121`, con lo de la pizarra cambiado, ya pasa (3 de 3 en `chromium-390x844`, 14-11-2026). Volver a pasarla
+     al tocar `cafeMock.js`.
+7. Cerrar el bloque como siempre:
+   - evidencias al chat;
+   - la versión 1.132.0 (`diag.js`, `package.json`, `public/sw.js` y la cabecera de `SPEC.md`), y §132 en `SPEC.md`;
+   - actualizar este documento.
+
+**Cuidado al aplicar la migración**: con ella puesta, el café **deja de subir de nivel** hasta despedir al influencer (la
+reputación de más espera, sin perderse). Con la app de la 1.131, que no sabe atenderle, nadie subiría, y servirle con
+`cafe_entregar` falla (no acepta los números 302–308). Así que **la migración se aplica justo antes de publicar la
+1.132**, con el bloque terminado y aprobado por Francisco, nunca antes.
+
+### 2026-11-14 · Plan del influencer, el taller de restauración y fuera la pizarra, sin commit (Claude)
+
+- Francisco pidió tres cosas para el café:
+  - un influencer fijo por nivel antes de subir, con límite de tiempo;
+  - encargos de restauración de libros, uno al día más otro de un amigo, artesanales y con identidad propia;
+  - quitar la pizarra.
+- Plan escrito en `docs/qa/cafe-libreria.md` §16 y nota en `CLAUDE.md` (el café). Eligió las cuatro recomendadas:
+  - reloj de arena de latón (unos 2 min 30 s, sin números ni castigo);
+  - a tiempo y con 3★, «viral» (3 clientes más al día siguiente) y foto firmada;
+  - el taller, desde el nivel 3;
+  - la pizarra, fuera del todo, sin borrar datos.
+- **Sin commit**: solo documentos (`CLAUDE.md` y `cafe-libreria.md`); no hay código.
+- **Por aprobar antes del bloque 2**:
+  - las cifras del taller (§16.3: 6/9/12 granos y 15/22/30 de reputación; la mitad, el del amigo);
+  - la interpretación del encargo del amigo (§16.4).
+- Lo siguiente es el bloque 1 (fuera la pizarra y el influencer, con migración nueva), cuando él diga.
 
 ### 2026-11-14 · 1.131.0 a producción (Claude)
 

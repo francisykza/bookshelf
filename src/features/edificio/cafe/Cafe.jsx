@@ -17,13 +17,13 @@ import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
 import { renderShopRoom } from '../shopRoom';
 import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCasa, libresDelCafe, maxCosas, progresoNivel, uidNuevo } from './cafeCatalogo';
-import { GRANO, LIBROS, PILAR, PIZARRA, SUBIR, TAZA, iconoDe } from './cafeIconos';
+import { GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
 import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, comprarCafe, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
 import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
-import { BIENVENIDA, EXCENTRICOS, HABITUALES, RESENAS, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
+import { BIENVENIDA, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
 import { REPARTO, pedidosLibro } from './cafeLibreria';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
@@ -116,7 +116,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   // Lo que ve la escena: el nivel de antes mientras quede por enseñar el cartel de la subida (al cerrarlo, se abre lo nuevo
   // con un recorrido de cámara)
   const nivelEscena = logro && logro.a > logro.de ? logro.de : (local?.nivel ?? 1);
-  // Bloque 3: el día (undefined: cargando; null: sin la migración de clientes), a quién se atiende y la pizarra
+  // Bloque 3: el día (undefined: cargando; null: sin la migración de clientes) y a quién se atiende (la pizarra, fuera en la 1.132)
   const [hoy] = useState(() => dayKey());
   // Jornadas de prueba (solo las cuentas de `cafe_probadores`, la de Francisco): undefined, comprobando; null, se juega el día
   // de hoy; si no, el día de prueba, y al atender a todos se puede abrir otra jornada
@@ -126,7 +126,6 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const [atendiendo, setAtendiendo] = useState(null);
   // Bloque 6b: delante del tostador, recogiendo el saco del día (Tostadero.jsx)
   const [tostando, setTostando] = useState(false);
-  const [pizarra, setPizarra] = useState(false);
   const [ganado, setGanado] = useState(0);
   const dados = useRef({});
   // Libros en cajas: undefined, cargando; null, sin la migración; si no, { huecos, bienvenida, libros: [{ clave, titulo, genero, caja, balda }] }
@@ -173,7 +172,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   // La música propia del café (1.126): mientras estás aquí suena en vez de la de Sonido y sigue su volumen, «Sin música» y la
   // radio; nunca antes de un gesto (si aún no se puede, lo intenta en el siguiente toque)
   const musica = useRef(null);
-  // Los sonidos de cada acción (1.126): andar, Pilar, decorar, comprar, la pizarra… (los de la barra, en Atender)
+  // Los sonidos de cada acción (1.126): andar, Pilar, decorar, comprar… (los de la barra, en Atender)
   const [sfx] = useState(() => crearSfxBarra());
   useEffect(() => sfx.setActivo(soundOn), [sfx, soundOn]);
   useEffect(() => {
@@ -485,7 +484,6 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         setAviso('');
         setError('');
         setPanelLibros(null);
-        setPizarra(false);
         api.current?.go('tostador').then(() => setTostando(true));
         return;
       }
@@ -564,7 +562,6 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     setAviso('');
     setHablando(null);
     setError('');
-    setPizarra(false);
     setAtendiendo(n);
     // 1.128 (Francisco, 13-11-2026: «que cuando te salga el cliente al que vas a atender la cámara vaya a por él»): vas hasta él
     // mientras te dice lo que quiere (con movimiento reducido, sin paseo)
@@ -572,7 +569,6 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   }
   function abrirLibros(hoja, recien = []) {
     setAtendiendo(null);
-    setPizarra(false);
     setAviso('');
     setHablando(null);
     sfx.play('papel');
@@ -631,7 +627,6 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     sfx.play('papel');
     setAtendiendo(null);
     setPanelLibros(null);
-    setPizarra(false);
     setAviso('');
     setHablando(null);
     setError('');
@@ -856,46 +851,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                 <PixelArt icono={SUBIR} />
               </button>
             )}
-            {dia && !decorando && (
-              <button
-                type="button"
-                className="cf3-pizarra-btn"
-                aria-label={`La pizarra: ${dia.pizarra.length} reseña${dia.pizarra.length === 1 ? '' : 's'}`}
-                aria-expanded={pizarra}
-                onClick={() => {
-                  setPanelLibros(null);
-                  sfx.play(pizarra ? 'papel' : 'tiza');
-                  setPizarra((v) => !v);
-                }}
-              >
-                <PixelArt icono={PIZARRA} />
-                {dia.pizarra.length > 0 && <span className="cf3-pizarra-btn__n">{dia.pizarra.length}</span>}
-              </button>
-            )}
           </div>
         </div>
       )}
 
-      {pizarra && dia && !decorando && (
-        <section className="cf3-pizarra" aria-label="La pizarra">
-          <h3 className="cf3-pizarra__titulo">La pizarra</h3>
-          {dia.pizarra.length ? (
-            <ul className="cf3-pizarra__lista">
-              {dia.pizarra.map((r) => (
-                <li key={`${r.dia}-${r.dorada ? 'e' : 'h'}-${r.quien}`} data-dorada={r.dorada ? 'true' : undefined}>
-                  <span className="cf3-pizarra__frase">«{r.dorada ? EXCENTRICOS[r.quien]?.dorada : RESENAS[r.frase]}»</span>
-                  <span className="cf3-pizarra__firma">{r.dorada ? `★ ${EXCENTRICOS[r.quien]?.nombre}` : HABITUALES[r.quien]?.nombre}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="cf3-pizarra__vacia">Aún no hay reseñas. Los habituales llegan cuando lees y te dejan una nota al irse; el cliente peculiar del día, si lo bordas, una dorada.</p>
-          )}
-          <button type="button" className="cf3-btn cf3-btn--suave" onClick={() => setPizarra(false)}>
-            Cerrar
-          </button>
-        </section>
-      )}
       {logro && !clienteAtendido && !decorando && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
       {decorando && (local?.nivel ?? 1) >= BODEGA_NIVEL && (
         <div className="cf3-plantas" role="group" aria-label="Qué planta decoras">

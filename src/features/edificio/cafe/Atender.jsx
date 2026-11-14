@@ -841,12 +841,13 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     );
   } else {
     const e = dado?.estrellas ?? 1;
-    const resena = cliente.habitual && dado?.frase != null ? ` Te dejo una nota en la pizarra: “${RESENAS[dado.frase] ?? ''}”` : '';
+    // 1.132: sin pizarra; la nota del habitual y la reseña dorada se ven aquí, en su bocadillo
+    const resena = cliente.habitual && dado?.frase != null ? ` Te dejo una nota: “${RESENAS[dado.frase] ?? ''}”` : '';
     const arte = hechos.verter?.arte;
     const piropo = arte === 'hoja' ? ' ¡Y qué hoja tan bonita!' : arte === 'corazon' ? ' ¡Un corazón en la espuma!' : '';
     texto =
       raro && dado?.dorada
-        ? `«${raro.dorada}» Te ha dejado una reseña dorada en la pizarra.`
+        ? `«${raro.dorada}» Te ha dejado una reseña dorada.`
         : e === 3
           ? `«¡Perfecto! Justo lo que quería.${piropo}${resena}»`
           : e === 2

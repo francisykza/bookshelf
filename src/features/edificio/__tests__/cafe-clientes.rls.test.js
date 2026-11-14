@@ -32,6 +32,8 @@ let A, B, C;
 let LIBRO;
 let hoy, ayer, antier, manana;
 const call = (u, sql, params) => as(db, u, (q) => q(sql, params)).then((r) => Object.values(r[0])[0]);
+// Las reseñas guardadas (1.132: ya no van en el día; la pizarra salió de la app), de la más nueva a la más antigua
+const resenas = async (u) => (await db.query('select dia::text as dia, quien, frase, excentrico as dorada from cafe_resenas where user_id = $1 order by creado desc', [u])).rows;
 const dia = (u, d) => call(u, 'select cafe_dia($1::date)', [d]);
 const habitual = (u, d) => call(u, 'select cafe_habitual($1::date)', [d]);
 const servir = (u, d, cliente, receta, encaja, libro = null) => call(u, 'select cafe_servir($1::date, $2, $3::text[], $4, $5)', [d, cliente, receta, encaja, libro]);
@@ -91,7 +93,10 @@ describe('el café-librería del bajo: clientes, recetas, estrellas y el excént
 
   it('los clientes del día los fija el nivel; el último es el excéntrico; son siempre los mismos al volver', async () => {
     const r = await dia(A, hoy);
-    expect(r.dia).toMatchObject({ dia: hoy, habituales: [], pizarra: [] });
+    expect(r.dia).toMatchObject({ dia: hoy, habituales: [] });
+    // 1.132: la pizarra ya no viene con el día (las reseñas se siguen guardando)
+    expect(r.dia).not.toHaveProperty('pizarra');
+    expect(await resenas(A)).toEqual([]);
     expect(r.dia.clientes.map((c) => [c.n, c.excentrico])).toEqual([
       [1, false],
       [2, false],
@@ -135,16 +140,16 @@ describe('el café-librería del bajo: clientes, recetas, estrellas y el excént
     const libro = Object.keys(enBalda(await dia(A, hoy)))[0];
     const r = await servir(A, hoy, 3, recetaPide(ex), true, libro);
     expect(r.dado).toMatchObject({ granos: 15 + EXTRA_LLEVADO, reputacion: 40, estrellas: 3, frase: ex.quien, dorada: true });
-    expect(r.dia.pizarra[0]).toEqual({ dia: hoy, quien: ex.quien, frase: ex.quien, dorada: true });
+    expect((await resenas(A))[0]).toEqual({ dia: hoy, quien: ex.quien, frase: ex.quien, dorada: true });
     // Un excéntrico a medias (ayer): paga más que un cliente, pero sin reseña dorada
     const exAyer = (await dia(A, ayer)).dia.clientes[2];
     const pide = recetaPide(exAyer);
     const r2 = await servir(A, ayer, 3, [pide[0], pide[1], pide[2], pide[3] === 'nada' ? 'miel' : 'nada'], false);
     expect(r2.dado).toMatchObject({ estrellas: 2, granos: 10, reputacion: 26, dorada: false });
-    expect(r2.dia.pizarra.filter((p) => p.dorada)).toHaveLength(1);
+    expect((await resenas(A)).filter((p) => p.dorada)).toHaveLength(1);
   });
 
-  it('los habituales: como mucho 2 al día, distintos, piden «lo de siempre» y dejan su reseña en la pizarra', async () => {
+  it('los habituales: como mucho 2 al día, distintos, piden «lo de siempre» y dejan su reseña (se guarda, aunque la pizarra ya no esté en la app)', async () => {
     let r = await habitual(A, hoy);
     r = await habitual(A, hoy);
     r = await habitual(A, hoy);
@@ -157,7 +162,7 @@ describe('el café-librería del bajo: clientes, recetas, estrellas y el excént
     expect(s.dado).toMatchObject({ granos: 5, reputacion: 12, estrellas: 2, dorada: false });
     expect(s.dado.frase).toBeGreaterThanOrEqual(0);
     expect(s.dado.frase).toBeLessThan(12);
-    expect(s.dia.pizarra[0]).toEqual({ dia: hoy, quien: h1.quien, frase: s.dado.frase, dorada: false });
+    expect((await resenas(A))[0]).toEqual({ dia: hoy, quien: h1.quien, frase: s.dado.frase, dorada: false });
     expect(await rejects(servir(A, hoy, 103, recetaPide(h1), false))).toMatch(/cafe:cliente/);
   });
 
@@ -230,6 +235,6 @@ describe('el café-librería del bajo: clientes, recetas, estrellas y el excént
     await call(B, 'select cafe_inaugurar($1)', ['El Farolillo']);
     const rb = await dia(B, hoy);
     expect(rb.cafe).toMatchObject({ granos: 0, reputacion: 0 });
-    expect(rb.dia.pizarra).toEqual([]);
+    expect(await resenas(B)).toEqual([]);
   });
 });

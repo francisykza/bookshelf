@@ -13,6 +13,8 @@ let db;
 let A, B, C, D;
 let hoy;
 const call = (u, sql, params) => as(db, u, (q) => q(sql, params)).then((r) => Object.values(r[0])[0]);
+// 1.132: el nivel sube con el influencer de esa subida ya despedido
+const despedido = (u, nivel) => db.query("insert into cafe_influencers (user_id, nivel, dia, despedido) values ($1, $2, '2000-01-01', now()) on conflict do nothing", [u, nivel]);
 const valido = (plano, nivel) => db.query('select cafe_plano_valido($1::jsonb, $2) v', [JSON.stringify(plano), nivel]).then((r) => r.rows[0].v);
 const dia = (u, d) => call(u, 'select cafe_dia($1::date)', [d]);
 const servir = (u, d, cliente, receta) => call(u, 'select cafe_servir($1::date, $2, $3::text[], $4, null)', [d, cliente, receta, false]);
@@ -133,6 +135,7 @@ describe('el café-librería del bajo, bloque 6c: la sala de catas', () => {
 
   it('subir al nivel 8 en un servicio: 100 tickets una vez y sus hitos', async () => {
     await alNivel(A, 7, 20990);
+    await despedido(A, 8);
     const t0 = (await db.query('select tickets from piso_cuentas where user_id = $1', [A])).rows[0].tickets;
     const d = await dia(A, hoy);
     const c = d.dia.clientes[0];

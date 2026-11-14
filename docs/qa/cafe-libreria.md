@@ -571,3 +571,154 @@ sin preguntar:
 - **El reparto**: lo vendido antes de esta versión no guardaba el título y no se repone. El aviso de Pilar sale una vez por
   día en cada dispositivo. La caja se coloca empujándola hacia arriba; arrastrar de uno en uno y «Colocarlos todos» siguen.
 - **Sin la migración**, la app sirve con `cafe_servir` como en la 1.129: las estrellas y el +2 de antes, sin reparto ni Pilar.
+
+## 16. Influencers, el taller de restauración y fuera la pizarra (propuesta, 14-11-2026)
+
+Encargo de Francisco tras la 1.131: «Para darle más impacto a cada nivel, añadiría que aparezca un influencer antes de subir
+de nivel un "cliente extra" y que ese cliente sea fijo en cada nivel […] tendrías un limite de tiempo para hacer todo y si lo
+haces bien algo pasaría»; «a partir de cierto nivel […] clientes que te traen libros en mal estado que necesitan que lo
+restaures, al día pondría como maximo uno, más otro de un amigo […] lo más artesanales y placenteras posibles […] darían
+experiencia adicional y monedas adicionales […] que tuviese su propia identidad»; «eliminaria el apartado de la pizarra».
+
+Todo lo de abajo es **propuesta**: las cifras y lo marcado como decisión, con su visto bueno. Toca la economía (granos y
+reputación) y el servidor (migraciones nuevas, las aplica él).
+
+**Decisiones de Francisco (14-11-2026, las cuatro recomendadas)**:
+- el límite del influencer, con **el reloj de arena** (§16.2);
+- a tiempo y con 3★, **«el vídeo se hace viral» y la foto firmada**, la opción a) (§16.2);
+- el taller, **desde el nivel 3** (§16.3);
+- la pizarra, **fuera del todo**, sin cuadritos dorados (§16.5).
+
+Siguen **por aprobar**, antes del bloque 2:
+- las cifras de pago del taller (§16.3);
+- la interpretación del encargo del amigo (§16.4).
+
+### 16.1 Para comparar: lo que paga hoy un cliente
+
+| Quién | 1★ | 2★ | 3★ |
+| --- | --- | --- | --- |
+| Cliente | 2 granos · 6 rep. | 4 · 10 | 5 · 14 |
+| Habitual | 3 · 8 | 5 · 12 | 6 · 15 |
+| Excéntrico (uno al día) | 5 · 14 | 10 · 26 | 15 · 40 |
+
+Clientes al día: 3 en el nivel 1, hasta 10 en el 8. Atender a uno a mano, bebida y libro, lleva más o menos un minuto.
+
+### 16.2 El influencer de cada nivel
+
+- **Cuándo**: al llenar la barra del nivel, el café **está a punto de subir** y ese día llega, además de los clientes del
+  día, **el influencer de ese nivel**. **El nivel sube al despedirle**, salga como salga, con su ceremonia: él graba, publica
+  y el café sube. La reputación que se gane mientras no se le atiende sigue contando (no se pierde). Si no entras ese día, te
+  espera al siguiente.
+- **Cuentas que ya pasaron niveles**: los influencers de esos niveles vienen igual, uno al día y del más antiguo al más nuevo,
+  sin frenar nada, para que nadie se los pierda.
+- **Fijos y diseñados**: siete personajes propios, uno por subida, del 1 al 8. Son personajes originales, nunca parecidos a
+  influencers reales, cada uno con su silueta, su accesorio, su forma de pedir y lo que publica:
+
+| Sube a | Personaje (provisional) | Accesorio | Qué pide (bebida fija + un libro de tu balda) |
+| --- | --- | --- | --- |
+| 2 · Café | La Bloguera del Muelle | móvil en un palo, gorro de lana | café con avena y canela, «algo corto para el tranvía» |
+| 3 · Librería | El Booktuber de las Gafas Redondas | anillo de luz, pila de libros | té negro con miel y un libro largo «para reseñar» |
+| 4 · Ala lateral | La Crítica de la Libreta Roja | libreta y lupa | chocolate con nata, para leer aquí |
+| 5 · Terraza | El Fotógrafo de Escaparates | cámara instantánea | café con vainilla y un libro para regalar |
+| 6 · Bodega | La del Directo de Medianoche | auriculares de gato, tira de luces | café con hielo y un libro largo para llevar |
+| 7 · Tostadero | El Catador de Cafés | delantal de cuero, cucharilla de cata | el tueste de la casa, intenso, sin leche |
+| 8 · Catas | La Autora de «Cafés con alma» | gabardina y guía de viajes | chai con brûlée y un libro para regalar |
+
+  Siempre a mano (Pilar no lo prepara), y lo que pide ya está abierto en tu carta en ese nivel.
+  **Nota de la implementación (14-11-2026)**: esta tabla era provisional. Las recetas que valen son las de
+  `cafeInfluencers.js` y de la migración `20261219120000_cafe_influencer.sql`:
+  - el 7 pide café intenso sin nada, porque el tueste de la casa gasta tazas del saco;
+  - el 8, café con hielo, entera y vainilla, porque el chai y el brûlée se abren en el propio nivel 8.
+- **El límite de tiempo** (**decisión**: choca con «sin cuentas atrás» del café):
+  - **Propuesta**: **un reloj de arena de latón en la barra**, nada de números ni alarmas. Lleva unos **2 min 30 s**, más o
+    menos el doble de lo que se tarda en atender a alguien. Empieza al tocar «Atender» y se para al darle la taza y el libro.
+  - **Si se acaba la arena**, no pasa nada malo: él dice «¡Se me acabó el directo! Igual tiene una pinta buenísima», paga como
+    un cliente normal y el café sube de nivel igual. Solo se pierde lo especial.
+  - **Con movimiento reducido**, el reloj se ve igual pero sin arena cayendo, con una barra quieta que se vacía.
+  - Lo mide el servidor (hora de empezar y de entregar), con unos segundos de margen por la conexión.
+- **Si lo haces bien** (a tiempo y con 3★) pasa algo especial (**decisión**). Opciones:
+  - a) **«El vídeo se hace viral»**: al día siguiente llegan **3 clientes más** de los normales, que vienen por su vídeo
+    (lo dicen al pedir). Además deja **su recuerdo**: una foto enmarcada y firmada que se cuelga en el café (solo adorno, uno
+    por influencer: una colección de siete).
+  - b) **Su recuerdo y granos**: la foto enmarcada y un premio de **30 granos y 60 de reputación**, una vez.
+  - c) **Solo su recuerdo**: la foto enmarcada, sin nada más.
+  - Recomiendo la **a)**: se nota en el juego del día siguiente, no solo en un número. En todos los casos, el influencer
+    paga como el excéntrico según sus estrellas (§16.1).
+
+### 16.3 El taller de restauración
+
+- **Desde qué nivel** (**decisión**): recomiendo el **nivel 3, la Librería**, cuando el café se hace librería (1.000 de
+  reputación, unas dos o tres semanas de juego). Alternativas: nivel 4, o nivel 6 en el sótano (demasiado tarde: meses).
+- **Identidad propia: «El taller de la trastienda»**. Una puerta detrás de la barra que se abre en ese nivel y lleva a un
+  cuartito propio en 3D, con su cámara y su ambiente:
+  - el banco de trabajo con tapete verde, la prensa de husillo, la lámpara de brazo con lupa;
+  - hilos de colores, botes de cola y engrudo, papeles marmoleados colgados;
+  - un ventanuco con lluvia;
+  - su paleta (verde botella, cuero y latón), su música (más lenta, de cuerda pulsada) y sus sonidos, todo sintetizado y
+    propio.
+  Un encuadernador jubilado del barrio, **don Celestino**, te deja su banco y te enseña el primer encargo con un par de
+  frases (luego, solo comenta).
+- **Los encargos**:
+  - **Como mucho uno al día de un cliente**, y **otro de un amigo** (§16.4). No caducan: el del día espera en el banco
+    hasta que lo hagas, sin prisas ni reloj.
+  - El cliente trae su libro con una historia corta («era de mi abuela; se le despegó el lomo con la humedad del puerto»).
+  - Son títulos clásicos de dominio público (lista cerrada) con su cubierta dibujada y gastada.
+  - Cada libro llega con **2 a 4 daños** al principio y **hasta 5 o 6** en niveles altos, y cada daño se arregla con
+    **su propio gesto, objeto y sonido**:
+
+| Daño | Objeto | Gesto | Lo que se ve y se oye |
+| --- | --- | --- | --- |
+| Polvo y moho | brocha de pelo suave | pasadas largas y suaves | nube de polvo dorado a contraluz; roce de cerdas |
+| Manchas y lápiz | goma de miga | frotar en círculos pequeños | la mancha se aclara y caen migas que barres con el canto de la mano |
+| Página arrugada | plegadera de hueso | apretar y deslizar a lo largo del pliegue | la página se alisa; papel que se tensa |
+| Desgarro | papel japonés y engrudo | colocar la tira, pincelar y asentar con el dedo | la rotura desaparece; pincel húmedo |
+| Cuadernillo suelto | aguja curva e hilo de lino | coser siguiendo los agujeros en orden y tirar del hilo | la puntada se tensa; hilo que corre |
+| Lomo despegado | cola caliente y prensa | pincelar el lomo y girar el husillo hasta el tope | la prensa baja y la madera cruje |
+| Esquinas rotas | piel nueva | doblar la esquina en diagonal | esquina de piel limpia |
+| Título borrado | pan de oro y hierro caliente | apretar y mantener sobre cada letra | las letras se encienden en oro; tintineo suave |
+
+  - Al terminar, el **ex libris del taller** sellado en la guarda y la **ficha «antes / después»** del libro.
+  - **Estrellas de 1 a 3** según el mimo: alisar sin pasarse, que el pan de oro quede centrado, las puntadas parejas… Como en
+    la barra, nunca cero y se ve qué se podía mejorar.
+- **Hallazgos**: a veces, entre las páginas, aparece algo del dueño anterior: una flor prensada, un billete de tranvía, una
+  postal del puerto, una carta sin abrir… Se guardan en **la caja de los hallazgos** del taller, una colección solo de adorno.
+- **El libro del taller**: un registro con cada restauración (fecha, título, de quién era, estrellas, hallazgo), para
+  hojearlo.
+- **Lo que paga** (**cifras por aprobar**):
+  - **Encargo de un cliente**: **6 / 9 / 12 granos** y **15 / 22 / 30 de reputación** (1★ / 2★ / 3★). Es más o menos lo de
+    dos clientes, porque lleva su rato (3 a 5 minutos).
+  - **Encargo de un amigo**: la mitad (**3 / 5 / 6 granos** y **8 / 11 / 15 de reputación**).
+  - Va **aparte del tope diario de reputación**, porque es una cantidad fija y como mucho dos al día.
+  - **Sin tickets**.
+  - Con los dos encargos a 3★, como mucho **18 granos y 45 de reputación más al día**.
+- **Pilar no restaura**: el taller es siempre a mano (es el sitio de hacerlo despacio).
+
+### 16.4 El encargo de un amigo
+
+- **Interpretación (por confirmar)**: un amigo (os seguís los dos) te manda **uno de sus libros leídos** para que se lo
+  restaures. Se elige desde su taller: «Mandar un libro a…».
+- Cada uno recibe **como mucho uno al día** de amigos y manda **como mucho uno al día**.
+- Te llega como un paquete al banco del taller. Al terminarlo, **vuelve a su dueño restaurado**:
+  - su buzón del edificio le avisa, con la ficha «antes / después» y tu nombre;
+  - en la balda de su café, ese lomo lleva una franja dorada «restaurado por …».
+- **Quien lo manda no gana granos ni reputación**, solo su libro restaurado, para que no se mande por interés (como las
+  visitas de §8).
+- Sin texto libre.
+
+### 16.5 Fuera la pizarra
+
+- **Se quitan** el botón y el panel de la pizarra.
+- La nota del habitual y la reseña dorada del excéntrico se siguen viendo **en su bocadillo al despedirle**.
+- Pilar ya no dice «en la pizarra».
+- **No se borra nada del servidor**: las reseñas siguen guardadas por si algún día se quieren enseñar en otro sitio.
+- ~~Si las doradas tienen que dejar huella, colgarlas como cuadritos dorados en la pared del café~~: **descartado** por
+  Francisco (14-11-2026, «Quitarla del todo»).
+
+### 16.6 Bloques (con capturas y vídeo al terminar cada uno)
+
+1. **Fuera la pizarra y el influencer**: los siete personajes, el reloj de arena, la subida al despedirle y lo especial.
+   Migración nueva (influencers y la subida de nivel).
+2. **El taller, primera tanda**: la trastienda en 3D, don Celestino, el encargo del cliente con cinco daños (polvo, manchas,
+   arrugas, lomo y prensa, y dorado), el ex libris y la ficha «antes / después». Migración nueva (encargos y pagos).
+3. **El taller, segunda tanda**: coser, desgarro y esquinas, los hallazgos, el libro del taller y el encargo del amigo.
+   Migración nueva (envíos entre amigos).

@@ -13,6 +13,8 @@ let db;
 let A, B;
 let hoy, ayer;
 const call = (u, sql, params) => as(db, u, (q) => q(sql, params)).then((r) => Object.values(r[0])[0]);
+// 1.132: el nivel sube con el influencer de esa subida ya despedido
+const despedido = (u, nivel) => db.query("insert into cafe_influencers (user_id, nivel, dia, despedido) values ($1, $2, '2000-01-01', now()) on conflict do nothing", [u, nivel]);
 const dia = (u, d) => call(u, 'select cafe_dia($1::date)', [d]);
 const servir = (u, d, cliente, receta) => call(u, 'select cafe_servir($1::date, $2, $3::text[], $4, $5)', [d, cliente, receta, null, null]);
 const tickets = async (u) => (await db.query('select tickets from piso_cuentas where user_id = $1', [u])).rows[0].tickets;
@@ -81,6 +83,7 @@ describe('el café-librería del bajo, bloque 4a: niveles, tickets, hitos y cart
     expect(h1 < h2 && h2 < h3 && h3 < 300).toBe(true);
     // Al día siguiente (ayer, que sigue abierto) sube al 2: 20 tickets, una vez
     await ponReputacion(A, 299);
+    await despedido(A, 2);
     const a = (await dia(A, ayer)).dia.clientes;
     const r2 = await servir(A, ayer, 2, recetaPide(a[1], []));
     expect(r2.progreso).toMatchObject({ de: 1, a: 2, niveles: [{ nivel: 2, tickets: 20 }], tickets_dia: 0 });

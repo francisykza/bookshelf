@@ -268,6 +268,23 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       suaves por una sala cálida propia (`calido` en `cafeSfx.js`), sin chasquidos brillantes; Pilar con el ritmo de una mano
       (nunca dos tazas iguales, el sonido con el movimiento), **sus manos** en cada herramienta (puño y un palmo de manga
       mostaza; no un brazo entero, que tapaba la barra) y la cámara siguiendo sus manos gesto a gesto, sin perder lo que hace.
+    **Encargo del 14-11-2026, tras la 1.131** (plan en `cafe-libreria.md` §16; por bloques con capturas: 1) fuera la pizarra
+    y el influencer, 2) taller, primera tanda, 3) taller, segunda tanda y encargo del amigo). Decisiones de Francisco del
+    mismo día (las cuatro recomendadas):
+    - **Un influencer antes de subir de nivel**: un «cliente extra», **fijo y diseñado para cada nivel** (siete personajes
+      originales, nunca parecidos a influencers reales), que llega al llenar la barra; **el nivel sube al despedirle, salga como
+      salga**. Siempre a mano (no lo prepara Pilar) y paga como el excéntrico. **El límite de tiempo es un reloj de arena de
+      latón en la barra** (unos 2 min 30 s, sin números ni alarmas; con movimiento reducido, quieto; lo mide el servidor con
+      margen). Si se acaba, paga como un cliente normal y el nivel sube igual: solo se pierde lo especial. **A tiempo y con 3★,
+      «el vídeo se hace viral»**: al día siguiente, **3 clientes más** que vienen por su vídeo, y **una foto enmarcada y
+      firmada** en la pared del café (una por influencer, colección de siete).
+    - **El taller de restauración, desde el nivel 3 (Librería)**: «el taller de la trastienda», cuarto propio en 3D con don
+      Celestino. Clientes que traen libros en mal estado; como mucho **uno al día, más otro de un amigo**, sin caducar ni reloj.
+      Mecánicas **lo más artesanales y placenteras posible**, cada daño con su gesto, su objeto y su sonido. Dan **reputación y
+      granos extra** (cifras de §16.3, **pendientes de su visto bueno**, igual que la interpretación del encargo del amigo de
+      §16.4), sin tickets, y tienen **identidad propia**. Pilar no restaura.
+    - **La pizarra se quita del todo** («no me termina de convencer»): sin botón ni panel; la nota del habitual y la reseña
+      dorada se ven en su bocadillo al despedirse, y Pilar no la menciona. Sin borrar datos del servidor.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la
