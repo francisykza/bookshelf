@@ -6,13 +6,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Con commit en la rama `1.90-escritorio-puerto`, sin publicar: 1.131.0** (2026-11-14, §131; commit pedido por
-  Francisco, «Confirma los cambios del árbol de trabajo»). Tras jugar la 1.130 («me gustan como
+- **Publicada en producción: 1.131.0** (2026-11-14, §131; «Confirma los cambios del árbol de trabajo»; «Sí, publícala»;
+  `main` avanzó sin forzar de `858afc2` a `14b4a83` (también la rama) y `/sw.js` de producción ya sirve v1.131.0). Tras jugar la 1.130 («me gustan como
   están pero querría que la camara esté un poco más cerca y que los sonidos sean más cozy»; «que cuando pilar prepara el café
   ella se haga más organico y no tan robotico»): la cámara del libro más cerca (la sección y la tabla), los sonidos de la
   librería de madera y notas suaves por una sala cálida, y Pilar con el ritmo de una mano, sus manos en cada herramienta y la
   cámara siguiéndola gesto a gesto. Sin migración ni cambios de economía, recetas o servidor. Evidencias en `qa-report/v1131/`.
-  `main` sigue en la 1.130.0: se publica solo cuando él lo pida.
+  Sin probar en móviles reales.
 - **Publicada en producción: 1.130.0** (2026-11-14, §130; «Vale lo de pilar», «Si, me parece bien»; «Migración y commit»;
   «Sí, publícala»; `main` avanzó sin forzar de `2faa90d` a `cc290a2` y `/sw.js` de producción ya sirve v1.130.0). El café-librería del
   bajo: **Pilar prepara lo que ya dominas** (12 servidas de 2 estrellas o más; tú eliges la receta y ella hace los gestos en
@@ -209,8 +209,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Café, el libro más cerca y Pilar a mano (1.131.0, con commit en la rama, sin publicar)**: publicar en `main` cuando
-  Francisco lo pida (sin migración) y lo que note al jugarla. Evidencias en `qa-report/v1131/`, enviadas al chat.
+- **Café, el libro más cerca y Pilar a mano (1.131.0, publicada)**: lo que Francisco note al jugarla. Evidencias en
+  `qa-report/v1131/`, enviadas al chat.
 
 - **Café, Pilar y los libros (1.130.0, publicada)**: las interpretaciones de `cafe-libreria.md` §15.6, por confirmar, y lo
   que Francisco note al jugarla.
@@ -361,6 +361,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · 1.131.0 a producción (Claude)
+
+- Francisco: «Sí, publícala». `main` avanzó sin forzar de `858afc2` a `14b4a83` (también la rama) y `/sw.js` de producción
+  ya sirve v1.131.0. Sin migración. Sin probar con cuentas reales ni en móviles reales.
 
 ### 2026-11-14 · Café: el libro más cerca y más cozy, y Pilar a mano · 1.131.0 (§131), commit en la rama (Claude)
 
