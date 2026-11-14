@@ -6,15 +6,16 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Aprobada por Francisco («Me convence»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.133.0**
-  (2026-11-14, §133; «Continua por donde se quedo la otra cuenta»). `main` y producción siguen en la 1.132.0. El café-librería
+- **Publicada en producción: 1.133.0** (2026-11-14, §133; «Continua por donde se quedo la otra cuenta»; «Me convence»;
+  «Migración y publicar»; `main` avanzó sin forzar de `a20705d` a `41dc6ce` (también la rama) y `/sw.js` de producción ya
+  sirve v1.133.0). El café-librería
   del bajo, **bloque 2 de §16**: el taller de la trastienda, primera tanda (desde el nivel 3, una puerta tras la barra; don
   Celestino; un encargo de un cliente al día que no caduca; polvo, manchas, arrugas, lomo y prensa, y dorado, cada uno con su
   gesto, objeto y sonido; el ex libris y la ficha «antes / después»; 6 / 9 / 12 granos y 15 / 22 / 30 de reputación).
-  **Migración nueva sin aplicar**: `20261220120000_cafe_taller.sql`, que se aplica **justo antes de publicar** (la aplica
-  Francisco). Evidencias en `qa-report/v1133/`, enviadas al chat. **Encima, tras verlo Francisco** («me gusta pero…»,
-  §133.5): gestos más cortos, don Celestino hecho a mano, el menú del taller como un libro encuadernado, y sonidos y música
-  propios del taller. Las evidencias van con sonido.
+  **Migración aplicada** (14-11-2026): `20261220120000_cafe_taller.sql`. Evidencias en `qa-report/v1133/`, enviadas al chat.
+  **Encima, tras verlo Francisco** («me gusta pero…», §133.5): gestos más cortos, don Celestino hecho a mano, el menú del
+  taller como un libro encuadernado, y sonidos y música propios del taller. Las evidencias van con sonido. Sin probar con
+  cuentas reales ni en móviles reales.
 - **Publicada en producción: 1.132.0** (2026-11-14, §132; «Continua por donde se quedo la otra cuenta», que había dejado el
   bloque a medias en un commit de la rama; «Sí, haz el commit»; «Migración y publicar»; `main` avanzó sin forzar de `bc5ee48`
   a `cafd2d0` (también la rama) y `/sw.js` de producción ya sirve v1.132.0). El café-librería del bajo, **bloque 1 de §16**:
@@ -229,11 +230,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   - decisiones de la 1.ª tanda tomadas;
   - **bloque 1 (fuera la pizarra y el influencer), publicado como 1.132.0** (migración aplicada): lo que Francisco note al
     jugarlo;
-  - **bloque 2 (el taller, primera tanda), terminado y aprobado como 1.133.0 («Me convence»), con commit en la rama**: falta
-    publicarlo cuando Francisco lo pida. Orden: la migración `20261220120000_cafe_taller.sql` en el SQL Editor (SHA-256
-    comprobado, él pulsa «Run») **justo antes**, después `main` y comprobar `/sw.js`. **Es lo siguiente.** Las
-    interpretaciones de §16.7 siguen sin confirmar expresamente.
-  - antes del bloque 3 (segunda tanda y el encargo del amigo), que apruebe la interpretación de §16.4.
+  - **bloque 2 (el taller, primera tanda), publicado como 1.133.0** (migración aplicada): lo que Francisco note al jugarlo.
+    Las interpretaciones de §16.7 siguen sin confirmar expresamente.
+  - antes del bloque 3 (segunda tanda y el encargo del amigo), que apruebe la interpretación de §16.4. **Es lo siguiente.**
 
 - **Café, el libro más cerca y Pilar a mano (1.131.0, publicada)**: lo que Francisco note al jugarla. Evidencias en
   `qa-report/v1131/`, enviadas al chat.
@@ -387,6 +386,20 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · Migración del taller aplicada y 1.133.0 a producción (Claude)
+
+- Francisco: «Migración y publicar». `20261220120000_cafe_taller.sql` pegada en el SQL Editor del proyecto `bookshelf` con
+  `setValue` de Monaco (11.581 B y 241 líneas, SHA-256 `eedef353…0217c9b5e`, comprobado en el texto y en el editor, igual al
+  archivo del commit, también después de ejecutarla) y ejecutada por él («Success. No rows returned»).
+- Con la clave pública (la `sb_publishable_` del build de producción), dan 42501 al anónimo:
+  - las funciones `cafe_taller`, `cafe_restaurar`, `cafe_taller_de`, `cafe_taller_nivel`, `cafe_danos_taller`,
+    `cafe_libros_taller`, `cafe_clientes_taller`, `cafe_taller_cuantos`, `cafe_premio_taller` y `cafe_estrellas_taller`;
+  - la tabla nueva `cafe_encargos`.
+
+  Una función inexistente da PGRST202: PostgREST ya ve las nuevas.
+- `main` avanzó sin forzar de `a20705d` a `41dc6ce` (también la rama) y `/sw.js` de producción ya sirve v1.133.0. Sin probar
+  con cuentas reales ni en móviles reales.
 
 ### 2026-11-14 · Café: el taller, aprobado · 1.133.0, commit en la rama (Claude)
 
