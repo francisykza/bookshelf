@@ -6,6 +6,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Con commit en la rama, sin publicar: 1.130.0** (2026-11-14, §130; «Vale lo de pilar», «Si, me parece bien»; «Migración y
+  commit»; `main` sigue en la 1.129.0). El café-librería del
+  bajo: **Pilar prepara lo que ya dominas** (12 servidas de 2 estrellas o más; tú eliges la receta y ella hace los gestos en
+  3D; siempre a mano si quieres; el excéntrico y lo nuevo de la carta, a mano; paga lo mismo) y **los libros, igual de
+  importantes que el café** (piden solo lo que hay en la balda, en tres partes: género, corto o largo y cómo se lo lleva; la
+  librería de la pared por secciones con placas, pasar el dedo por los lomos, tirar del que quieras, la tabla con la portada
+  real, papel y cordel / marcapáginas / bolsa y el sello; estrellas de siete; +4 por el ejemplar; el reparto de cada mañana,
+  colocado empujando la caja). **Migración aplicada** (14-11-2026): `20261218120000_cafe_libreria.sql`. Evidencias en
+  `qa-report/cafe-libreria/`. Interpretaciones por confirmar en `cafe-libreria.md` §15.6.
 - **Publicada en producción: 1.129.0** (2026-11-13, §129; «Vale, ahora sigue con la sala de catas»; «Migración y commit»; «Sí, publícala»; `main` avanzó sin forzar de `d5808a9` a `1d6f2c4` y `/sw.js` de producción ya sirve v1.129.0). El café-librería del bajo,
   **bloque 6c, la sala de catas** (cifras aprobadas, «Sí, esas cifras»): nivel 8 desde 21.000 (hitos hasta 27.000), 100
   tickets, 10 clientes, 60 huecos, el sótano de 9 × 6 con la escalera corrida a la pared nueva y el mostrador de catas, tres
@@ -193,6 +202,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Café, Pilar y los libros (1.130.0, con commit en la rama y la migración aplicada)**: publicar solo cuando Francisco lo
+  pida (fusionar con `main` sin forzar y comprobar que `/sw.js` de producción sirve v1.130.0). Las interpretaciones de
+  `cafe-libreria.md` §15.6, por confirmar.
+
 - **Café, bloque 6c (1.129.0, publicada)**: las interpretaciones de `cafe-libreria.md` §14.9, por confirmar. El 8 es, por ahora, el último nivel: la segunda planta necesita sus cifras.
 
 - **Café, lista de Francisco del 13-11-2026 (tras el tostadero)**: hecha y publicada en la 1.128.0 (§128).
@@ -317,6 +330,37 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · Migración de la librería del café aplicada y commit de la 1.130.0 (Claude)
+
+- Francisco: «Migración y commit», tras ver las evidencias. `20261218120000_cafe_libreria.sql` pegada en el SQL Editor del
+  proyecto `bookshelf` con `setValue` de Monaco (14.668 B, SHA-256 `0c0bf042…bd04c6f6`, comprobado en el texto y en el
+  editor, igual al archivo) y ejecutada por él («Success. No rows returned»). Con la clave pública (la `sb_publishable_` del
+  build de producción) dan 42501 al anónimo `cafe_entregar`, `cafe_reparto`, `cafe_abrir_dia`, `cafe_dia_json`,
+  `cafe_json`, `cafe_estrellas_total` y las tablas `cafe_servicios`, `cafe_dias` y `cafe_libros`; una función inexistente
+  da PGRST202, como control. Commit en la rama; **sin publicar** (`main` sigue en la 1.129.0).
+
+### 2026-11-14 · Café: Pilar prepara lo que dominas y los libros · 1.130.0 (§130) (Claude)
+
+- **Qué se hizo** («Vale lo de pilar», «Si, me parece bien», con el encargo de «especial mimo» para el libro; plan en
+  `cafe-libreria.md` §15): Pilar (`cafePilar.js`, el bocadillo y el cambio «Prepara Pilar» / «A mano» en `Atender.jsx`, sus
+  gestos en 3D en `cafe3d.js`); los libros por la balda (`cafeLibreria.js`: pedidos, extensión, formas, estrellas de siete,
+  la estantería por secciones y lo de Pilar), la librería en la escena (`Libreria.jsx`: secciones con placa, pasar el dedo por
+  los lomos, tirar, la tabla con la portada, el papel y el cordel, el marcapáginas, la bolsa y el sello, con pistas propias en
+  `Pista.jsx`, sonidos en `cafeSfx.js` y estilos en `cafe.css`), el reparto (`Cafe.jsx` y la caja que se empuja en
+  `LibrosCafe.jsx`) y `cafe_entregar` en `cafeService.js` (sin la migración, `cafe_servir`). Migración nueva
+  `20261218120000_cafe_libreria.sql`, **sin aplicar** (la aplica Francisco; va después de la de catas).
+- **Arreglado en las pruebas**: a 390 px el tarro y las bolsas quedaban fuera de la pantalla (la cámara se corre hacia ellos
+  al elegir la forma y al abrir la bolsa), y con muchas secciones de pocos libros las placas se pisaban (ahora, hasta tres
+  secciones por balda, cada una en su hueco, y la cámara de la estantería mide el ancho real de un móvil en vertical). La
+  ficha de la tabla no usaba la portada de Google Books cuando faltaba la propia (ahora la busca por ISBN, como las fichas).
+  Las e2e del café de la 1.120 a la 1.129 se pusieron al día con el paso nuevo de la librería (y la de la 1.120, con las dos
+  frases de Pilar de la 1.126, que ya fallaba antes de este bloque).
+- **Comprobado**: build; Vitest del café, 13 archivos y 98 pruebas en verde; e2e de la 1.130 en Chromium 390 (3 de 3),
+  Chromium 360 y WebKit 390, y las del café de la 1.120 a la 1.129 en Chromium 390, todas en verde; oxlint sin errores (solo
+  avisos, los de `Cafe.jsx` ya estaban). Evidencias en `qa-report/cafe-libreria/` (vídeos y capturas), enviadas al chat. Solo
+  emulación: nada en móviles reales ni con cuentas reales en el servidor.
+- Interpretaciones por confirmar en `cafe-libreria.md` §15.6.
 
 ### 2026-11-13 · 1.129.0 a producción (Claude)
 

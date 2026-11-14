@@ -242,9 +242,9 @@ test('nivel 8: la sala de catas abajo, su escalera nueva y Decorar en 9 × 6; en
   await foto('lista');
   expect(await sonidos(page)).toEqual(expect.arrayContaining(['mortero', 'machaca', 'azucarero', 'chispa']));
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 20000 });
+  await expect(caja).toHaveAttribute('data-paso', /^(libro|libreria)$/, { timeout: 20000 });
   await cafe.getByRole('button', { name: 'Solo el café' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'gracias');
+  await expect(caja).toHaveAttribute('data-paso', 'gracias', { timeout: 20000 });
   await page.waitForTimeout(900);
   const logro = page.locator('.cf3-logro');
   if (await logro.isVisible()) await logro.locator('.cf3-logro__ok').click();
@@ -272,7 +272,7 @@ test('subir al nivel 8: el cartel de la sala de catas y su recorrido', async ({ 
   await page.waitForFunction(() => window.__cafe3d.enBarra());
   await preparar(page, cafe, { bebida: receta[0], grano: receta[1], leche: receta[2], toque: receta[3] });
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 20000 });
+  await expect(caja).toHaveAttribute('data-paso', /^(libro|libreria)$/, { timeout: 20000 });
   await cafe.getByRole('button', { name: 'Solo el café' }).click();
   await cafe.getByRole('button', { name: 'Hasta luego' }).click();
   // El cartel: nivel 8, la sala de catas, 100 tickets y lo que se abre

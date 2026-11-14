@@ -3374,3 +3374,590 @@
     animation: cf3-ayuda-salta 1.3s steps(2, jump-none) infinite;
   }
 }
+
+/* ── 1.130 (Francisco, 14-11-2026: «especial mimo de detalle, sonido, atractivo visual…»): la librería y Pilar ──
+   La estantería de la pared por secciones, con placas de latón que se tocan; la etiqueta de papel del lomo que miras; la ficha
+   del libro sacado a la tabla; las etiquetas de estraza de los tres objetos (papel, tarro y bolsas); los pasos del paquete; el
+   bocadillo de Pilar cuando ya bordas una bebida; y la caja de libros que se empuja hacia arriba para colocarlos todos. */
+
+/* La capa de la librería: deja pasar los toques salvo en lo que se toca (placas, objetos) o mientras hay gesto */
+.cf3-gesto.cf3-lib .cf3-seccion,
+.cf3-gesto.cf3-lib .cf3-objeto {
+  pointer-events: auto;
+}
+.cf3-gesto.cf3-lib[data-fase='seccion'] {
+  cursor: ew-resize;
+}
+
+/* Las placas de las secciones: latón con dos tornillos y el nombre grabado, sobre la placa de la balda en la escena */
+.cf3-seccion {
+  --cf3-px: 2px;
+  position: absolute;
+  width: max-content;
+  min-width: 52px;
+  /* Lo que mide su hueco en la balda (si el nombre no cabe en una línea, en dos), para no pisar la placa de al lado */
+  max-width: max(64px, var(--cf3-hueco, 160px));
+  min-height: 30px;
+  padding: 7px 10px 8px;
+  border: 0;
+  background: linear-gradient(#ecd08a 0 18%, #d2ac5c 18% 72%, #b08a42 72%);
+  box-shadow:
+    inset 0 0 0 2px #3a2410,
+    inset 0 -3px 0 #8a6228,
+    0 3px 0 rgb(0 0 0 / 0.45);
+  color: #3a2410;
+  font: 400 12px/12px var(--pp-title);
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 0 rgb(255 240 200 / 0.6);
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  clip-path: polygon(
+    0 var(--cf3-px),
+    var(--cf3-px) var(--cf3-px),
+    var(--cf3-px) 0,
+    calc(100% - var(--cf3-px)) 0,
+    calc(100% - var(--cf3-px)) var(--cf3-px),
+    100% var(--cf3-px),
+    100% calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) calc(100% - var(--cf3-px)),
+    calc(100% - var(--cf3-px)) 100%,
+    var(--cf3-px) 100%,
+    var(--cf3-px) calc(100% - var(--cf3-px)),
+    0 calc(100% - var(--cf3-px))
+  );
+}
+/* Los tornillos: dos puntos de píxel a los lados */
+.cf3-seccion::before,
+.cf3-seccion::after {
+  position: absolute;
+  top: calc(50% - 2px);
+  width: 4px;
+  height: 4px;
+  background: #6a4a20;
+  box-shadow: inset 1px 1px 0 #f2dc9c;
+  content: '';
+}
+.cf3-seccion::before {
+  left: 4px;
+}
+.cf3-seccion::after {
+  right: 4px;
+}
+.cf3-seccion:hover,
+.cf3-seccion:focus-visible {
+  background: linear-gradient(#f6e0a0 0 18%, #e0bc6a 18% 72%, #bf9a4e 72%);
+  transform: translate(-50%, calc(-50% - 2px));
+}
+.cf3-seccion:focus-visible {
+  outline: 3px solid #fff6dc;
+  outline-offset: 2px;
+}
+.cf3-seccion:active {
+  transform: translate(-50%, calc(-50% + 1px));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-seccion {
+    animation: cf3-seccion-entra 0.36s steps(4, end) both;
+  }
+  .cf3-seccion:nth-child(2) {
+    animation-delay: 60ms;
+  }
+  .cf3-seccion:nth-child(3) {
+    animation-delay: 120ms;
+  }
+  .cf3-seccion:nth-child(4) {
+    animation-delay: 180ms;
+  }
+  .cf3-seccion:nth-child(n + 5) {
+    animation-delay: 240ms;
+  }
+}
+@keyframes cf3-seccion-entra {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* La etiqueta del lomo que miras: un papelito atado con hilo, al lado del lomo (nunca encima) */
+.cf3-lomo-etiqueta {
+  --cf3-px: 2px;
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  gap: 2px;
+  width: max-content;
+  max-width: 150px;
+  padding: 6px 9px 7px 14px;
+  background: linear-gradient(90deg, #e9dcbc 0 4px, #f6ecd4 4px);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #d8c49c,
+    0 3px 0 rgb(0 0 0 / 0.35);
+  color: #2e1e14;
+  pointer-events: none;
+  transform: translate(26px, -50%) rotate(-2deg);
+  animation: cf3-nota-entra 0.25s ease-out both;
+}
+/* El agujerito del hilo */
+.cf3-lomo-etiqueta::before {
+  position: absolute;
+  top: calc(50% - 3px);
+  left: 5px;
+  width: 6px;
+  height: 6px;
+  background: #2a1a10;
+  box-shadow: 0 0 0 2px #b08a42;
+  content: '';
+}
+.cf3-lomo-etiqueta[data-lado='izq'] {
+  transform: translate(calc(-100% - 26px), -50%) rotate(2deg);
+}
+.cf3-lomo-etiqueta[data-lado='abajo'] {
+  transform: translate(-50%, 34px) rotate(-1deg);
+}
+.cf3-lomo-etiqueta b {
+  overflow: hidden;
+  font:
+    700 0.78rem/1.2 'Lora',
+    Georgia,
+    serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cf3-lomo-etiqueta span {
+  color: #6a4a32;
+  font: 400 11px/12px var(--pp-title);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-lomo-etiqueta {
+    animation: none;
+  }
+}
+
+/* Los tres objetos de la tabla (papel y cordel, el tarro, las bolsas): etiquetas de estraza colgadas, que se tocan */
+.cf3-objeto {
+  --cf3-px: 2px;
+  position: absolute;
+  min-height: 36px;
+  padding: 8px 11px 9px;
+  border: 0;
+  background: linear-gradient(#d2a676, #c4966a 60%, #b0845a);
+  box-shadow:
+    inset 0 0 0 2px #2a170e,
+    inset 0 -3px 0 #8a5e38,
+    inset 0 2px 0 #e6c294,
+    0 3px 0 rgb(0 0 0 / 0.4);
+  color: #2a170e;
+  font: 400 13px/13px var(--pp-title);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translate(-50%, calc(-100% - 10px)) rotate(-1.5deg);
+}
+/* El cordel del que cuelga la etiqueta, hasta el objeto */
+.cf3-objeto::after {
+  position: absolute;
+  top: 100%;
+  left: calc(50% - 1px);
+  width: 2px;
+  height: 10px;
+  background: repeating-linear-gradient(#c4423c 0 2px, #8a2a26 2px 4px);
+  content: '';
+}
+.cf3-objeto[data-forma='aqui'] {
+  transform: translate(-50%, calc(-100% - 10px)) rotate(1.5deg);
+}
+.cf3-objeto:hover,
+.cf3-objeto:focus-visible {
+  background: linear-gradient(#e0b688, #d2a676 60%, #bf9266);
+}
+.cf3-objeto:focus-visible {
+  outline: 3px solid #fff6dc;
+  outline-offset: 2px;
+}
+.cf3-objeto:active {
+  box-shadow:
+    inset 0 0 0 2px #2a170e,
+    inset 0 -1px 0 #8a5e38,
+    inset 0 3px 0 #a07045;
+}
+.cf3-objeto .cf3-ayuda {
+  top: -6px;
+  left: 50%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-objeto {
+    animation: cf3-objeto-cuelga 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  }
+  .cf3-objeto:nth-of-type(2) {
+    animation-delay: 70ms;
+  }
+  .cf3-objeto:nth-of-type(3) {
+    animation-delay: 140ms;
+  }
+}
+@keyframes cf3-objeto-cuelga {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 22px)) rotate(-6deg);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* La ficha del libro sacado a la tabla: la tapa (o la portada real) y sus datos */
+.cf3-libro {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 7px;
+  background: linear-gradient(rgb(255 255 255 / 0.04), transparent), #2e1e22;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px #7a5232;
+}
+.cf3-libro .cf3-ficha__tapa {
+  height: 100px;
+}
+.cf3-libro .cf3-ficha__tapa--portada {
+  padding: 3px;
+}
+.cf3-libro__datos {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.cf3-libro__titulo {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #fff6e0;
+  font:
+    700 0.92rem/1.2 'Lora',
+    Georgia,
+    serif;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.cf3-libro__autor {
+  overflow: hidden;
+  color: rgb(243 230 200 / 0.72);
+  font:
+    italic 0.76rem/1.2 'Lora',
+    Georgia,
+    serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cf3-libro__pistas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cf3-libro__pistas span {
+  padding: 3px 5px 4px;
+  background: #4a3020;
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.25);
+  color: #ffe08a;
+  font: 400 11px/11px var(--pp-title);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-libro {
+    animation: cf3-nota-entra 0.3s ease-out both;
+  }
+}
+
+/* Los lomos de la sección, en lista (sin 3D): una tira con el color de cada libro */
+.cf3-opciones--lomos {
+  grid-auto-flow: row;
+  grid-template-columns: minmax(0, 1fr);
+  max-height: 136px;
+  overflow-y: auto;
+}
+.cf3-opciones--lomos .cf3-opcion {
+  min-height: 40px;
+  padding-left: 16px;
+  background: linear-gradient(90deg, var(--cf3-tapa, #6b4630) 0 8px, #3a2629 8px);
+  text-align: left;
+}
+.cf3-opciones--lomos .cf3-opcion[aria-pressed='true'] {
+  background: linear-gradient(90deg, var(--cf3-tapa, #6b4630) 0 8px, #5a3e26 8px);
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px #ffe08a;
+}
+
+/* En la librería, la comanda enseña solo lo del libro (la bebida ya está hecha) */
+.cf3-comanda[data-solo-libro='true'] .cf3-comanda__linea:not(.cf3-comanda__linea--libro),
+.cf3-comanda[data-solo-libro='true']:not([data-un-acertijo]) .cf3-comanda__acertijos li:not([data-libro]) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* La línea del libro: con su librito de píxel delante */
+.cf3-comanda__linea--libro {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin-top: 3px;
+  padding-top: 4px;
+  border-top: 2px dotted rgb(42 26 16 / 0.3);
+}
+.cf3-comanda__linea--libro::before {
+  flex: none;
+  width: 10px;
+  height: 12px;
+  background: linear-gradient(90deg, #6a2a24 0 3px, #a8433a 3px 9px, #f6ecd4 9px);
+  box-shadow: inset 0 0 0 1px #2a1a10;
+  content: '';
+}
+.cf3-comanda__linea--libro[data-ahora='true'] {
+  color: #8a3a2a;
+}
+.cf3-comanda[data-solo-libro='true'] .cf3-comanda__linea--libro {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.cf3-comanda__acertijos li[data-libro='true']::before {
+  content: '❦';
+}
+
+/* Los pasos del paquete: tres o cuatro fichitas de estraza */
+.cf3-etapas--libro {
+  grid-template-columns: none;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+}
+.cf3-etapas--libro li[data-estado='ahora'] {
+  background: #5a3e26;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px #d2a676;
+}
+.cf3-etapas--libro li[data-estado='hecha'] {
+  background: #3a2a1a;
+  color: #e6c294;
+}
+
+/* El cuadro, en la librería: el mismo de la barra, con un ribete de estraza */
+.cf3-franja--libreria .cf3-caja {
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px rgb(210 166 118 / 0.7);
+}
+
+/* Pilar: «Esto ya lo bordas; si quieres, te lo preparo yo» */
+.cf3-pilar {
+  --cf3-px: 2px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 6px 9px;
+  align-items: center;
+  margin: 0 0 6px;
+  padding: 7px 9px 8px;
+  background: #f6ecd4;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #d8c49c,
+    0 3px 0 rgb(0 0 0 / 0.35);
+  color: #2e1e14;
+}
+.cf3-pilar__retrato {
+  display: block;
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+  background: linear-gradient(#8aae5e, #6a9a3e);
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 0 0 3px #d4ac6a;
+}
+.cf3-pilar__dice {
+  margin: 0;
+  font:
+    italic 0.82rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-pilar__botones {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cf3-pilar__botones .cf3-btn {
+  flex: 1 1 auto;
+}
+/* Al despedir al cliente con el que ya la dominas: el aviso, con un brillo */
+.cf3-pilar--nota {
+  position: relative;
+  margin: 0;
+}
+.cf3-pilar--nota::after {
+  position: absolute;
+  top: -7px;
+  right: 8px;
+  color: #e7b765;
+  content: '✦';
+  font: 400 16px/16px var(--pp-title);
+  text-shadow: 0 2px 0 #2a1a10;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-pilar {
+    animation: cf3-pilar-entra 0.4s steps(4, end) both;
+  }
+  .cf3-pilar--nota::after {
+    animation: cf3-pilar-brillo 1.4s steps(4, end) 0.6s both;
+  }
+}
+@keyframes cf3-pilar-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cf3-pilar-brillo {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+.cf3-btn--pilar {
+  font-size: 12px;
+}
+/* Mientras prepara ella, la escena no recoge toques y el cuadro lo dice con su verde */
+.cf3-franja[data-pilar-ahora='true'] .cf3-caja {
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px rgb(160 204 104 / 0.75);
+}
+.cf3-franja[data-pilar-ahora='true'] .cf3-medidor__lleno {
+  background: repeating-linear-gradient(90deg, #a0cc68 0 6px, #78aa48 6px 8px);
+}
+
+/* Las pistas nuevas: pasar la tapa a la izquierda, un toque, apretar y mantener, doblar a la derecha y empujar arriba */
+.cf3-pista[data-pista='izquierda'] {
+  --cf3-pista-camino: path('M 78 44 L 12 44');
+}
+.cf3-pista[data-pista='toque'] {
+  --cf3-pista-camino: path('M 44 44 L 44 45');
+}
+.cf3-pista[data-pista='toque'] .cf3-pista__dedo {
+  animation: cf3-pista-toque 1.1s steps(3, end) infinite;
+}
+.cf3-pista[data-pista='mantener'] {
+  --cf3-pista-camino: path('M 44 26 L 44 46');
+}
+.cf3-pista[data-pista='derecha-recta'] {
+  --cf3-pista-camino: path('M 10 44 L 76 44');
+}
+.cf3-pista[data-pista='tirar-lomo'] {
+  --cf3-pista-camino: path('M 44 16 L 44 66');
+}
+.cf3-pista[data-pista='desenrollar'] {
+  --cf3-pista-camino: path('M 44 6 L 44 78');
+}
+.cf3-pista[data-pista='solapas'] {
+  --cf3-pista-camino: path('M 10 54 Q 26 22 42 40 M 78 54 Q 62 22 46 40');
+}
+.cf3-pista[data-pista='lazo'] {
+  --cf3-pista-camino: path('M 14 44 A 30 20 0 1 1 74 44 A 30 20 0 1 1 14 44 A 30 20 0 0 1 74 44');
+}
+.cf3-pista[data-pista='marcapaginas'] {
+  --cf3-pista-camino: path('M 44 8 L 44 64');
+}
+.cf3-pista[data-pista='meter'] {
+  --cf3-pista-camino: path('M 44 6 L 44 56');
+}
+.cf3-pista[data-pista='arriba'] {
+  --cf3-pista-camino: path('M 44 76 L 44 14');
+}
+@keyframes cf3-pista-toque {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 0.7;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-pista[data-pista='toque'] .cf3-pista__dedo {
+    animation: none;
+  }
+}
+
+/* La balda del cuadro de libros, por secciones: un separador de latón donde empieza otro género */
+.cf3-libros__hueco[data-seccion='true'] {
+  box-shadow:
+    inset 3px 0 0 #c9a050,
+    inset 4px 0 0 #6a4a20,
+    inset 0 -1px 0 #c89058;
+}
+/* Colocados de un gesto: cada lomo vuela desde la caja, uno detrás de otro */
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-libros__hueco[data-vuela='true'] .cf3-lomo {
+    animation: cf3-lomo-vuela 0.46s cubic-bezier(0.3, 1.3, 0.5, 1) both;
+    animation-delay: var(--cf3-vuela, 0ms);
+  }
+}
+@keyframes cf3-lomo-vuela {
+  from {
+    opacity: 0;
+    transform: translateY(150px) rotate(-8deg) scale(0.85);
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    transform: none;
+  }
+}
+/* La caja se empuja hacia arriba: los libros asoman con el dedo */
+.cf3-libros__caja[data-colocar='true'] {
+  cursor: grab;
+  touch-action: pan-x;
+}
+.cf3-libros__caja[data-empuja='true'] {
+  cursor: grabbing;
+}
+.cf3-libros__caja[data-empuja='true'] .cf3-carton__dentro {
+  transform: translateY(calc(var(--cf3-empuje, 0) * -16px));
+  transition: none;
+}
+.cf3-libros__pista {
+  position: absolute;
+  z-index: 3;
+  bottom: 18px;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0.92;
+}

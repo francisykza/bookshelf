@@ -9,6 +9,9 @@
 // Libros en cajas (§121.3): lo leído llega a la distribuidora; las cajas se compran con granos, llegan al café (una caja de
 // reparto en el suelo, junto al mostrador) y sus lomos se colocan en la balda (`LibrosCafe.jsx`). Las estanterías enseñan
 // lo que hay en la balda y solo eso se recomienda. Al abrir el café, una caja de bienvenida de 8, gratis.
+// 1.130 (Francisco, 14-11-2026; `cafe-libreria.md` §15): los clientes piden de lo que hay en la balda (género, extensión y
+// cómo se lo lleva; `pedidosLibro`), la estantería de la pared va por secciones (`Libreria.jsx`), Pilar prepara lo que
+// dominas y, cada mañana, el reparto repone lo vendido (una caja junto al mostrador, con su aviso).
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
@@ -17,10 +20,11 @@ import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCa
 import { GRANO, LIBROS, PILAR, PIZARRA, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, comprarCafe, errorCafe, guardarCafe, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate, servirCliente } from './cafeService';
+import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, comprarCafe, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
 import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
-import { BIENVENIDA, EXCENTRICOS, HABITUALES, RESENAS, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, pedidosDelDia, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
+import { BIENVENIDA, EXCENTRICOS, HABITUALES, RESENAS, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
+import { REPARTO, pedidosLibro } from './cafeLibreria';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
@@ -148,7 +152,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const deLaBalda = useMemo(() => librosDeLaBalda(librosCafe, libros), [librosCafe, libros]);
   const porColocar = enCajas(librosCafe);
   const sesiones = sesionesDeHoy(state?.progress, hoy);
-  const { pedidos, ctx } = useMemo(() => pedidosDelDia(dia, libros, hoy), [dia, libros, hoy]);
+  // 1.130: cada cliente pide de lo que hay en la balda ahora (con la balda vacía, solo el café)
+  const pedidos = useMemo(() => pedidosLibro(dia, deLaBalda), [dia, deLaBalda]);
+  // En las baldas de los muebles, tus leídos (los de la balda del café ya van en la estantería de la pared, por secciones)
+  const decorLeidos = useMemo(() => leidosEscaparate.map((b) => b.titulo), [leidosEscaparate]);
   const clientesHoy = useMemo(() => clientesDelDia(dia, pedidos), [dia, pedidos]);
   const pendientes = clientesHoy.filter((c) => !c.servido);
   const clienteAtendido = clientesHoy.find((c) => c.n === atendiendo) ?? null;
@@ -359,6 +366,31 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     avisadoAsientos.current = hoy;
     setAviso(textoAsientos);
   }, [dia, faltanAsientos, hoy, textoAsientos]);
+  // 1.130: el reparto de la mañana. Pilar lo cuenta una vez al día (en este dispositivo), con su sonido; la caja espera junto
+  // al mostrador y sus lomos saltan al abrirla
+  const recienReparto = useRef([]);
+  useEffect(() => {
+    const r = dia?.reparto;
+    if (!r || !librosCafe) return;
+    const marca = `cafe-reparto:${dia.dia}`;
+    try {
+      if (localStorage.getItem(marca)) return;
+      localStorage.setItem(marca, '1');
+    } catch {
+      /* sin almacenamiento, se avisa cada vez que se entra */
+    }
+    recienReparto.current = r.claves;
+    if (r.claves.length) {
+      sfx.play('reparto');
+      mirarCaja.current = true;
+    }
+    const n = r.claves.length;
+    const llega = n
+      ? `«Ha pasado el reparto de la mañana: ${n === 1 ? 'un libro' : `${n} libros`} para reponer lo que se llevaron, a ${REPARTO.precio} granos cada uno (${r.granos} en total). Te he dejado la caja junto al mostrador.`
+      : '«Ha pasado el reparto de la mañana, pero hoy no llegaban los granos para reponer.';
+    const faltan = r.faltan > 0 ? ` ${r.faltan === 1 ? 'Otro se queda' : `Otros ${r.faltan} se quedan`} para otro día: no se queda nada a deber.»` : '»';
+    setAviso(llega + faltan);
+  }, [dia, librosCafe, sfx]);
   // Bloque 6b: Pilar avisa una vez al día de que hay saco en el tambor
   const avisadoSaco = useRef(null);
   useEffect(() => {
@@ -384,13 +416,16 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       nivel: nivelEscena,
       escaparate: escaparateTitulos,
       portadas: portadasEsc,
+      // 1.130: la estantería de la pared, por secciones (sin la migración de los libros, como antes)
+      balda: librosCafe != null ? deLaBalda : null,
+      decor: decorLeidos,
     });
     api.current?.decorar(decorando, { sel, mal: false, planta: plantaDecor });
     if (mirarCaja.current && porColocar > 0 && !decorando) {
       mirarCaja.current = false;
       api.current?.go('libros');
     }
-  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena, escaparateTitulos, portadasEsc, plantaDecor]);
+  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena, escaparateTitulos, portadasEsc, plantaDecor, deLaBalda, decorLeidos]);
   // Los clientes, sentados: los atendidos, con el libro que les diste (o uno de tu estantería si fue en otra visita)
   useEffect(() => {
     if (!ready) return;
@@ -443,7 +478,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       setAtendiendo(null);
       if (SITIOS_NUEVOS[id]) verNuevo(`sitio:${id}`);
       if (id === 'pilar') return hablar();
-      if (id === 'libros') return abrirLibros('caja');
+      if (id === 'libros') return abrirLibros('caja', recienReparto.current);
       // Bloque 6b: el tostador, delante de su trampilla
       if (id === 'tostador') {
         setHablando(null);
@@ -560,10 +595,12 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       setOcupado(false);
     }
   };
-  const servir = async ({ receta, encaja, libro }) => {
+  // 1.130: la receta, el ejemplar de la balda (o null, solo el café) y lo acertado del libro [género, extensión, forma]
+  const servir = async ({ receta, libro, ok }) => {
     const c = clienteAtendido;
-    const r = await servirCliente(diaJuego, c.n, receta, encaja, libro?.clave ?? null);
-    dados.current[c.n] = libro?.title ?? null;
+    const r = await entregarCliente(diaJuego, c.n, receta, libro?.clave ?? null, ok);
+    // Con el libro que se lleva (si vuelve a su sección, como cualquier otro cliente)
+    dados.current[c.n] = r.dado?.llevado ? (libro?.title ?? null) : null;
     if (r.libros) setLibrosCafe(r.libros);
     if (r.cafe) setLocal(r.cafe);
     if (r.dia) setDia(r.dia);
@@ -1041,8 +1078,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         <Atender
           key={clienteAtendido.n}
           cliente={clienteAtendido}
-          ctx={ctx}
-          libros={deLaBalda}
+          balda={deLaBalda}
+          dominio={local?.dominio}
           escena={ready && !sin3d ? api.current : null}
           registrarToque={registrarToque}
           soundOn={soundOn}

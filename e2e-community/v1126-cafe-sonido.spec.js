@@ -8,6 +8,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { simularCafe } from './cafeMock';
 import { hacerGesto, quieto } from './cafeBarra';
+import { hacerLibro } from './cafeLibro';
 import { createMockSupabase } from './mockSupabase';
 import { ANA } from './sobreShop';
 import { PLANO_INICIAL, cuenta } from '../src/features/edificio/cafe/cafeCatalogo';
@@ -202,17 +203,22 @@ test('el café suena: su música propia, los pasos, Pilar y cada momento del cli
   await quieto(page, 300);
   await foto('3-barra-lista');
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 20000 });
-  // La taza: al cogerla y al dejarla en la mesa
-  await expect.poll(async () => (await sonidos(page)).includes('tazaMesa')).toBe(true);
+  // 1.130: pide libro y hay en la balda, así que de la barra a la librería (la taza, en la bandeja de la tabla)
+  await expect(caja).toHaveAttribute('data-paso', 'libreria', { timeout: 20000 });
   expect(await sonidos(page)).toContain('bandeja');
-  // Las fichas con su portada real (la que no tiene, con su tapa de color)
-  await expect(cafe.locator('.cf3-ficha__portada').first()).toBeVisible();
-  await page.waitForFunction(() => [...document.querySelectorAll('.cf3-ficha__portada')].every((i) => i.complete && i.naturalWidth > 0));
-  await quieto(page, 300);
-  await foto('3b-fichas-portada');
-  await cafe.locator('.cf3-ficha').first().click();
-  await expect(caja).toHaveAttribute('data-paso', 'gracias');
+  // El libro sacado a la tabla, con su portada real en la ficha (desde la 1.130, en la librería)
+  await hacerLibro(page, cafe, {
+    foto: async (n) => {
+      if (n !== 'mirar') return;
+      const img = cafe.locator('.cf3-libro .cf3-ficha__portada');
+      if (!(await img.count())) return;
+      await page.waitForFunction(() => [...document.querySelectorAll('.cf3-libro .cf3-ficha__portada')].every((i) => i.complete && i.naturalWidth > 0));
+      await foto('3b-libro-portada');
+    },
+  });
+  // La taza (y el libro): al dejarlos en la mesa
+  await expect(caja).toHaveAttribute('data-paso', 'gracias', { timeout: 20000 });
+  await expect.poll(async () => (await sonidos(page)).includes('tazaMesa')).toBe(true);
   // Las estrellas, una a una, y los granos al tarro
   await expect.poll(async () => (await sonidos(page)).includes('granos'), { timeout: 5000 }).toBe(true);
   expect(await sonidos(page)).toContain('libroDesliza');

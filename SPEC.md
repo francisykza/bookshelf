@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.129.0 · 2026-11-13 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.130.0 · 2026-11-14 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -6784,3 +6784,112 @@ y sus hitos no cambian.
   no da el 7 por último nivel. E2E `e2e-community/v1129-cafe-catas.spec.js` (la sala, la escalera nueva, Decorar en 9 × 6,
   la tienda y un chai con brûlée en la barra, en 390, 360, 430, 1440 y WebKit 390; la subida al 8, en 390 y WebKit 390),
   con la regresión de v1125, v1127 y v1128 en 390. Solo emulación: sin probar en móviles reales.
+
+## 130. El café-librería del bajo: Pilar prepara lo que dominas y los libros, igual de importantes que el café (1.130.0)
+
+Encargo de Francisco del 14-11-2026, tras usar más el café («que añadirias para que no se haga repetitivo el tema de preparar
+todo el rato los cafés, y como integrarías mejor el tema de los libros»). Aprobado por partes: «Vale lo de pilar», «Si pero
+cambia tambien como piden los clientes los libros y las categorias» y «Si, me parece bien», con un encargo expreso para el
+libro: «que quiero que le pongas especial mimo de detalle, sonido, atractivo visual y mecanicas para que sea lo más divertido,
+cozy y cuidado posible asi como hiciste con la preparación del café pero hasta con más esmero». Se hace todo junto («lo hacemos
+en conjunto cuando este todo»). Plan, cifras e interpretaciones en `docs/qa/cafe-libreria.md` §15. Descartado (no hacer):
+pedidos de grupo, «lo de siempre», clientes sin bebida, días distintos, arte latte, habituales con ficha, pistas, maridaje,
+la lectura actual y la tertulia.
+
+### 130.1 Pilar prepara lo que ya dominas
+
+- **Dominar una bebida**: 12 servidas de 2 estrellas o más de esa bebida (café, té, chocolate, café con hielo o chai; y, para
+  lo de la carta con gesto propio, el tueste de la casa, la nata, la vainilla y el brûlée). Lo cuenta el servidor (`dominio`
+  en `cafe_json`); la app solo lo lee (`domina`, `pilarPuede` y `DOMINIO = 12` en `cafeLibreria.js`).
+- **Tú lees la comanda y eliges la receta**, parte por parte, como siempre. Con la bebida dominada, en la barra, el bocadillo de
+  Pilar (su retrato: «Esto ya lo bordas; si quieres, te lo preparo yo») con **«Que lo prepare Pilar»** y **«Lo hago yo»**. Con
+  Pilar, cada gesto de la etapa lo hace ella en 3D, con los objetos de siempre moviéndose solos y sus sonidos (`cafePilar.js`:
+  la postura de cada objeto en cada momento del gesto y lo que suena; la taza de café con leche y canela, unos 3 s). Con
+  movimiento reducido, de una vez.
+- **Siempre se puede hacer a mano**: un botón de la franja cambia entre «Prepara Pilar» y «A mano» (también a mitad, y se
+  sigue a mano desde donde va). El dispositivo recuerda lo último elegido por bebida (`cafe-pilar-prepara`). **A mano
+  siempre**: el excéntrico y lo recién desbloqueado de la carta, hasta dominarlo (si la taza lo lleva, Pilar hace el resto y
+  esa etapa es tuya; `pilarHaceEtapa`).
+- **Paga lo mismo**: lo que prepara Pilar cuenta como hecho a mano (con la receta bien, los cuatro aciertos de la bebida).
+  Mientras Pilar trabaja, la barra no recoge toques.
+- Al servir la que hace que domines una bebida, en el agradecimiento, la nota de Pilar («Esto ya lo bordas. La próxima vez, si
+  quieres, te lo preparo yo.») con su destello y su sonido.
+
+### 130.2 Los libros: lo que piden
+
+- **Una sola lista de categorías**: los diez géneros de la distribuidora. **Los clientes solo piden lo que hay en la balda en
+  ese momento** (`pedidosLibro(dia, balda)` en `cafeLibreria.js`): el **género** de una sección con ejemplares, una
+  **extensión** que exista en ella (**corto**, hasta 300 páginas, o **largo**; un libro sin páginas vale para las dos) y **cómo
+  se lo lleva** (para regalar, para leerlo aquí o para llevar). Fuera «tu favorito», «el autor que más lees», «el último que
+  terminaste» y «clásico» por año. Con la balda vacía, nadie pide libro: «Solo el café», como antes.
+- El pedido se fija al empezar a atender (aunque la balda cambie mientras). La comanda lleva la línea del libro con su librito
+  de píxel («Misterio · corto · para regalar»); la del excéntrico, siete acertijos (cuatro de la bebida y tres del libro) y, en
+  la librería, solo el del paso.
+
+### 130.3 Los libros: buscarlo y prepararlo (la librería)
+
+Si pide libro y hay en la balda, al terminar la taza («Llevársela») la vista va **a la estantería de la pared** (la taza espera
+en la bandeja de la tabla) y el libro se hace en ella, paso a paso, siempre por el jugador (`Libreria.jsx`, `useLibreria`):
+
+1. **La estantería por secciones**: un bloque centrado en la pared, con hasta tres secciones por balda, cada una en su hueco,
+   entre dos sujetalibros y con su **placa de latón** con el nombre grabado (`estanteLibreria`). Encima, la placa que se toca,
+   con dos tornillos y su entrada escalonada; solo las secciones con ejemplares. Si no cabe todo en las cuatro baldas, el bloque
+   se ensancha.
+2. **La sección**: la cámara se acerca. **Pasar el dedo por los lomos sin soltar**: cada uno asoma bajo el dedo, suena a madera
+   y dice su título y sus páginas en una etiqueta de papel («320 págs. · largo»). **Tirar hacia abajo** del que quieras: sale de
+   la balda.
+3. **La tabla**: sale de la estantería una tabla con su tirador de latón y la lamparita; el libro se posa en ella con su
+   **portada real** (pixelada en la escena; la ficha, con la imagen, el título, el autor, las páginas y la extensión; si la
+   portada no carga, la de su ISBN en Google Books, como las fichas de la 1.128, y si tampoco, la tapa de color). «Este» u
+   «Devolverlo» (vuelve a su sitio).
+4. **Cómo se lo lleva**: tres objetos de la tabla con su etiqueta de estraza colgada: **el papel y el cordel** (para regalar),
+   **el tarro de los marcapáginas** (para leerlo aquí) y **las bolsas** (para llevar). La cámara se corre hacia el tarro y las
+   bolsas para que, en un móvil en vertical, se vean los tres.
+5. **Sus gestos**, cada uno con su objeto, su pista propia, su sonido y su paso en la escena: para regalar, **desenrollar el
+   papel** (y se rasga), **doblar las dos solapas** sin soltar, **el cordel, vuelta y media** alrededor del libro (y el lazo);
+   para leerlo aquí, **abrir la tapa** hacia la izquierda y **meter el marcapáginas** entre las hojas; para llevar, **abrir una
+   bolsa** de un toque, **meter el libro** y **doblar el borde**. Y siempre, **el sello del café**: apretar y mantener hasta que
+   queda marcado. Ninguno falla ni tiene tiempo; con movimiento reducido o con el teclado, un toque por paso.
+6. **A la bandeja**, con la taza («Llevárselo»): la camarera lleva las dos cosas a su mesa. «Solo el café» está en todos los
+   pasos.
+
+### 130.4 Las estrellas, el ejemplar y el agradecimiento
+
+- **Estrellas de siete**: hasta 4 aciertos de la bebida y 3 del libro (el género, la extensión y la forma); **3 estrellas con
+  los 7, 2 con 4 a 6, 1 con menos** (nunca cero; `estrellasTotal`). Los premios por estrellas no cambian. Sin libro, cuando lo
+  pedía, solo cuentan los de la bebida; si no pedía libro (balda vacía), también.
+- **El ejemplar**: si aciertas el género, se lo lleva y paga **+4 granos** (antes, 2); si no, vuelve a su sección.
+- **El repaso** del agradecimiento, por partes: el género («✓ Fantasía» o «✗ Amor · pidió misterio»), la extensión («✓ Corto
+  (120 págs.)»), la forma («✓ Para regalar») y el ejemplar («✓ Se lleva «…»» o «· «…» vuelve a su sección»); sin libro, «· Sin
+  libro» o «· Hoy, solo el café».
+
+### 130.5 El reparto de la mañana
+
+- Al abrir un día nuevo llega sola una caja que **repone lo vendido** desde el último reparto: los mismos títulos, **hasta 10
+  ejemplares, a 2 granos** cada uno, solo lo que se pueda pagar (**nunca a deber**; lo que no llega no se acumula). Lo vendido
+  antes de esta versión no guardaba el título: no se repone.
+- El aviso de Pilar, una vez por día y dispositivo («Ha pasado el reparto de la mañana: N libros para reponer lo que se
+  llevaron, a 2 granos cada uno (X en total). Te he dejado la caja junto al mostrador.»), con su sonido; la vista se vuelve a la
+  caja y su etiqueta la abre.
+- **Colocar, un solo gesto**: **empujar la caja hacia arriba** y cada lomo vuela a su sección de la balda (separadas con un
+  filete de latón), con un sonido por sección y el de la balda llena. Arrastrar de uno en uno y «Colocarlos todos» siguen.
+
+### 130.6 Servidor y app
+
+- **Migración** `20261218120000_cafe_libreria.sql` (la aplica Francisco; va después de la de la sala de catas): el libro, sus
+  aciertos y si se repuso en `cafe_servicios`; el reparto en `cafe_dias`; `cafe_estrellas_total`, `cafe_reparto` (en
+  `cafe_abrir_dia`), `cafe_dia_json` con el reparto y `cafe_json` con el dominio; y **`cafe_entregar(dia, cliente, receta,
+  libro, libro_ok)`** (las estrellas de siete y el ejemplar, +4). `cafe_servir` no cambia, para las apps sin actualizar. Todo
+  por funciones `security definer`, sin permisos directos; el anónimo no puede entregar.
+- **Sin la migración**, la app sirve con `cafe_servir` como en la 1.129 (y sin reparto ni Pilar).
+- **Sonidos nuevos** (sintetizados, con las reglas de siempre): la placa, cada lomo al asomar, sacarlo, la tabla, el libro en
+  la tabla, devolverlo, el papel de estraza, el rasgado, cada pliegue, el cordel y el lazo, las páginas, el marcapáginas, la
+  tapa al cerrarse, la bolsa, meterlo, el sello (bajar y marcar), el reparto, los lomos al ir a sus secciones y «lo bordas».
+- **Pruebas**: `cafeLibreria.test.js` (7: la balda como libros, la extensión, pedidos solo de la balda, los aciertos y las
+  estrellas de siete, la estantería por secciones sin salirse ni pisarse, cada placa en su hueco y Pilar), `cafe-libreria.rls.test.js` (7: paridad de
+  cifras, entregar con el libro, un libro fuera de la balda, el reparto una vez y nunca a deber, el dominio y los permisos) y
+  pistas únicas para los gestos nuevos en `cafeGestos.test.js`. E2E `e2e-community/v1130-cafe-libreria.spec.js` (Pilar y los
+  tres clientes con las tres formas, el reparto empujando la caja y, con movimiento reducido, Pilar de una vez y el libro con
+  toques) con el ayudante `cafeLibro.js`, y los specs del café de la 1.121 a la 1.129 adaptados al paso de la librería (la
+  1.121, rehecha con las cifras nuevas). `v1120` esperaba tres frases de Pilar antes de las llaves y son dos desde la 1.126:
+  corregido. Solo emulación: sin probar en móviles reales.

@@ -296,6 +296,120 @@ const SONIDOS = {
     tono(b, { f: 1047, tipo: 'triangle', pico: 0.04, caida: 0.5, d: 0.35 });
     tono(b, { f: 1568, tipo: 'triangle', pico: 0.035, caida: 0.6, d: 0.45 });
   },
+  // ── 1.130, la librería («especial mimo de detalle, sonido…»): latón, lomos, papel de estraza, cordel, páginas y el sello ──
+  /** Tocar la placa de una sección: el latón, fino. */
+  placa: (b) => {
+    tono(b, { f: 1900, tipo: 'sine', pico: 0.04, caida: 0.18 });
+    tono(b, { f: 2850, tipo: 'sine', pico: 0.015, caida: 0.1, d: 0.01 });
+    ruido(b, { f: 6000, q: 4, pico: 0.02, caida: 0.02 });
+  },
+  /** El dedo que pasa por un lomo: un roce de cartón, cada uno un poco distinto (`k`, el lomo). */
+  lomo: (b, { k = 0 } = {}) => {
+    ruido(b, { f: 1100 + (k % 5) * 90, q: 2.2, pico: 0.07, caida: 0.03 });
+    tono(b, { f: 230 + (k % 4) * 18, a: (230 + (k % 4) * 18) * 0.9, tipo: 'triangle', pico: 0.035, caida: 0.03 });
+  },
+  /** Sacar el libro de la balda: el papel que roza al salir y la madera. */
+  sacar: (b) => {
+    ruido(b, { f: 1300, q: 0.8, pico: 0.09, ataque: 0.03, caida: 0.16, barrido: 1.4 });
+    tono(b, { f: 190, a: 150, tipo: 'triangle', pico: 0.06, caida: 0.08, d: 0.14 });
+  },
+  /** La tabla extraíble que sale de la estantería, y el tope. */
+  tabla: (b) => {
+    ruido(b, { f: 420, q: 0.7, tipo: 'lowpass', pico: 0.18, ataque: 0.04, caida: 0.28, barrido: 0.8 });
+    tono(b, { f: 120, a: 95, tipo: 'triangle', pico: 0.07, caida: 0.12, d: 0.28 });
+  },
+  /** El libro que se posa en la tabla. */
+  libroTabla: (b) => {
+    tono(b, { f: 200, a: 140, tipo: 'triangle', pico: 0.1, caida: 0.08 });
+    ruido(b, { f: 1600, q: 1, pico: 0.04, caida: 0.05 });
+  },
+  /** Devolverlo a su sitio en la sección. */
+  devolver: (b) => {
+    ruido(b, { f: 1500, q: 1, pico: 0.08, ataque: 0.02, caida: 0.14, barrido: 0.65 });
+    tono(b, { f: 210, a: 160, tipo: 'triangle', pico: 0.08, caida: 0.07, d: 0.15 });
+  },
+  /** El papel de estraza que se desenrolla: un crujido. */
+  kraft: (b) => {
+    for (let k = 0; k < 4; k += 1) ruido(b, { f: 2400 + Math.random() * 1400, q: 1.6, pico: 0.05, caida: 0.03, d: k * 0.035 });
+  },
+  /** Se rasga el papel: un desgarro corto y sus fibras. */
+  rasga: (b) => {
+    ruido(b, { f: 2600, q: 0.8, tipo: 'highpass', pico: 0.16, ataque: 0.005, caida: 0.16, barrido: 1.5 });
+    for (let k = 0; k < 5; k += 1) ruido(b, { f: 3500 + k * 300, q: 5, pico: 0.04, caida: 0.015, d: 0.02 + k * 0.025 });
+  },
+  /** Un pliegue de papel. */
+  pliegue: (b) => {
+    ruido(b, { f: 1700, q: 1.1, pico: 0.08, ataque: 0.01, caida: 0.08, barrido: 0.7 });
+    tono(b, { f: 520, a: 460, tipo: 'triangle', pico: 0.02, caida: 0.05, d: 0.06 });
+  },
+  /** El cordel que roza al dar la vuelta. */
+  cordel: (b) => ruido(b, { f: 3200, q: 5, pico: 0.05, ataque: 0.01, caida: 0.06, barrido: 0.9 }),
+  /** El lazo: dos tirones y dos notas, como un «listo». */
+  lazo: (b) => {
+    ruido(b, { f: 2800, q: 3, pico: 0.05, caida: 0.04 });
+    ruido(b, { f: 2400, q: 3, pico: 0.05, caida: 0.05, d: 0.07 });
+    tono(b, { f: 659, tipo: 'triangle', pico: 0.04, caida: 0.25, d: 0.12 });
+    tono(b, { f: 988, tipo: 'triangle', pico: 0.035, caida: 0.35, d: 0.2 });
+  },
+  /** Las páginas que pasan al abrirlo. */
+  paginas: (b) => {
+    for (let k = 0; k < 7; k += 1) ruido(b, { f: 2600 + Math.random() * 1800, q: 1.3, pico: 0.05, ataque: 0.004, caida: 0.025, d: k * 0.03 });
+  },
+  /** El marcapáginas que se desliza entre las hojas. */
+  marca: (b) => {
+    ruido(b, { f: 1900, q: 2, pico: 0.06, ataque: 0.02, caida: 0.12, barrido: 0.75 });
+    tono(b, { f: 1250, tipo: 'sine', pico: 0.012, caida: 0.08, d: 0.12 });
+  },
+  /** El libro que se cierra, blando. */
+  cierra: (b) => {
+    tono(b, { f: 170, a: 120, tipo: 'triangle', pico: 0.09, caida: 0.07 });
+    ruido(b, { f: 900, q: 0.9, pico: 0.05, caida: 0.05 });
+  },
+  /** La bolsa de papel que se abre de un soplido. */
+  bolsa: (b) => {
+    ruido(b, { f: 750, q: 0.7, pico: 0.22, ataque: 0.003, caida: 0.08, barrido: 0.6 });
+    tono(b, { f: 300, a: 170, tipo: 'triangle', pico: 0.06, caida: 0.06 });
+    ruido(b, { f: 2600, q: 1.2, pico: 0.04, caida: 0.06, d: 0.05 });
+  },
+  /** El libro que cae al fondo de la bolsa. */
+  meter: (b) => {
+    ruido(b, { f: 650, q: 0.8, tipo: 'lowpass', pico: 0.14, ataque: 0.03, caida: 0.16 });
+    tono(b, { f: 165, a: 120, tipo: 'triangle', pico: 0.07, caida: 0.09, d: 0.14 });
+  },
+  /** El sello que toca el papel (al apretar). */
+  selloBaja: (b) => tono(b, { f: 300, a: 240, tipo: 'triangle', pico: 0.03, caida: 0.03 }),
+  /** El sello del café, marcado: el golpe, la tinta y una nota de la casa. */
+  sello: (b) => {
+    tono(b, { f: 120, a: 70, tipo: 'sine', pico: 0.18, ataque: 0.003, caida: 0.13 });
+    ruido(b, { f: 480, q: 1, pico: 0.08, caida: 0.05 });
+    ruido(b, { f: 2300, q: 1.5, pico: 0.03, caida: 0.05, d: 0.03 });
+    tono(b, { f: 1047, tipo: 'triangle', pico: 0.03, caida: 0.3, d: 0.2 });
+  },
+  /** El reparto de la mañana: dos golpes en la puerta, la caja que se deja y dos notas. */
+  reparto: (b) => {
+    tono(b, { f: 180, a: 150, tipo: 'triangle', pico: 0.08, caida: 0.05 });
+    tono(b, { f: 180, a: 150, tipo: 'triangle', pico: 0.08, caida: 0.05, d: 0.16 });
+    ruido(b, { f: 520, q: 0.8, tipo: 'lowpass', pico: 0.15, ataque: 0.02, caida: 0.2, d: 0.35 });
+    tono(b, { f: 659, tipo: 'triangle', pico: 0.04, caida: 0.3, d: 0.62 });
+    tono(b, { f: 880, tipo: 'triangle', pico: 0.035, caida: 0.4, d: 0.74 });
+  },
+  /** Colocarlos todos: los lomos que van llegando a sus secciones, uno detrás de otro. */
+  secciones: (b, { n = 8 } = {}) => {
+    for (let k = 0; k < Math.min(12, Math.max(3, n)); k += 1) {
+      const f0 = 200 + Math.random() * 40;
+      tono(b, { f: f0, a: f0 * 0.75, tipo: 'triangle', pico: 0.06, caida: 0.06, d: k * 0.06 });
+      ruido(b, { f: 1800, q: 0.8, pico: 0.03, caida: 0.04, d: k * 0.06 });
+    }
+  },
+  /** Pilar: «esto ya lo bordas» (su murmullo y un brillo). */
+  bordas: (b) => {
+    [0, 0.09, 0.2].forEach((d, k) => {
+      const f = [392, 440, 494][k];
+      tono(b, { f, a: f * 0.97, tipo: 'triangle', pico: 0.035, ataque: 0.015, caida: 0.06, d });
+    });
+    tono(b, { f: 1568, tipo: 'sine', pico: 0.02, caida: 0.5, d: 0.32 });
+    tono(b, { f: 2093, tipo: 'sine', pico: 0.015, caida: 0.5, d: 0.4 });
+  },
   // Decorar: coger, soltar, girar, quitar, comprar y guardar
   /** Coger un mueble: se levanta (la madera que roza, hacia arriba). */
   coger: (b) => {
@@ -385,6 +499,10 @@ const GANANCIA = {
   hojas: 0.65,
   subeNivel: 0.8,
   cajaAbre: 0.8,
+  // 1.130: la tabla, la bolsa y el sello, a la altura del resto
+  tabla: 0.8,
+  bolsa: 0.7,
+  sello: 0.7,
 };
 
 /** Lo que suena mientras se mantiene: el café que cae, el agua y el vapor (su color cambia con la leche). */

@@ -271,9 +271,9 @@ test('nivel 7: el tostadero, recoger el saco del día, el saco en la barra y ser
   await expect(caja).toHaveAttribute('data-etapa', 'lista');
   await quieto(page, 400);
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 20000 });
+  await expect(caja).toHaveAttribute('data-paso', /^(libro|libreria)$/, { timeout: 20000 });
   await cafe.getByRole('button', { name: 'Solo el café' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'gracias');
+  await expect(caja).toHaveAttribute('data-paso', 'gracias', { timeout: 20000 });
   await expect(caja.locator('.cf3-dado__ficha--tueste')).toHaveText('+3 y +4 por el tueste');
   expect(c.tazas).toBe(4);
   await page.waitForTimeout(900);
@@ -321,7 +321,7 @@ test('subir al nivel 7: el cartel del tostadero y su recorrido; el tostador, fr�
     for (const tipo of gestosDe(etapa, r)) await hacerGesto(page, cafe, tipo, { ayuda: false });
   }
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 20000 });
+  await expect(caja).toHaveAttribute('data-paso', /^(libro|libreria)$/, { timeout: 20000 });
   await cafe.getByRole('button', { name: 'Solo el café' }).click();
   await cafe.getByRole('button', { name: 'Hasta luego' }).click();
   // El cartel: nivel 7, el tostadero, 90 tickets y lo que se abre

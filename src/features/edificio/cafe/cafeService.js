@@ -31,7 +31,17 @@ function normalizar(data) {
     escaparate: escaparateDe(data.escaparate),
     // Bloque 6b (1.127): las tazas de tueste de la casa que te quedan y el día del último saco recogido
     tostadero: tostaderoDe(data.tostadero),
+    // 1.130: las servidas de 2 estrellas o más de cada bebida (y de lo de la carta con gesto), para Pilar
+    dominio: dominioDe(data.dominio),
   };
+}
+
+/** El dominio que llega: { clave: servidas } con claves cortas y enteros entre 0 y 99999. */
+function dominioDe(x) {
+  const out = {};
+  if (x && typeof x === 'object' && !Array.isArray(x))
+    for (const [k, v] of Object.entries(x)) if (/^[a-z:]{1,24}$/.test(k) && Number.isInteger(v)) out[k] = Math.min(99999, Math.max(0, v));
+  return out;
 }
 
 /** Lo del tostadero que llega: tazas entre 0 y 99 y el día del último saco (AAAA-MM-DD) o null. */
@@ -93,6 +103,8 @@ function normalizarDia(d) {
     // La carta de ese día (bloque 4a) y los tickets del día que ya dio
     carta: Array.isArray(d.carta) ? d.carta.filter((x) => ['chocolate', 'nata', 'vainilla', 'hielo', 'casa', 'chai', 'brulee'].includes(x)) : [],
     tickets: entero(d.tickets ?? 0),
+    // 1.130: la caja del reparto de la mañana ({ claves, granos, faltan }) o null
+    reparto: repartoDe(d.reparto),
     clientes: (Array.isArray(d.clientes) ? d.clientes : [])
       .map((c) => ({ ...cliente(c), excentrico: Boolean(c.excentrico), quien: c.excentrico ? entero(c.quien) % 6 : null }))
       // Hasta 9 clientes desde el nivel 7 (el excéntrico es el último: con 8 en el nivel 6 ya hacía falta pasar del 7)
@@ -102,6 +114,14 @@ function normalizarDia(d) {
       .map((r) => ({ dia: String(r.dia ?? ''), quien: entero(r.quien), frase: entero(r.frase), dorada: Boolean(r.dorada) }))
       .filter((r) => (r.dorada ? r.quien < 6 : r.quien < 12) && r.frase < 12),
   };
+}
+/** El reparto que llega con el día: como mucho 10 claves, los granos que costó y los que no llegaron. */
+function repartoDe(r) {
+  if (!r || typeof r !== 'object') return null;
+  const claves = (Array.isArray(r.claves) ? r.claves : []).filter((k) => typeof k === 'string' && k).slice(0, 10);
+  const faltan = Math.min(99, Math.max(0, entero(r.faltan)));
+  if (!claves.length && !faltan) return null;
+  return { claves, granos: Math.min(20, Math.max(0, entero(r.granos))), faltan };
 }
 /** Tus libros del café (§121.3): los huecos de la balda, si ya llegó la bienvenida y cada título con su caja y su balda. */
 function normalizarLibros(l) {
@@ -183,6 +203,20 @@ export async function servirCliente(dia, cliente, receta, encaja, libro = null) 
 }
 
 /**
+ * 1.130 (`20261218120000_cafe_libreria.sql`): llevarle lo preparado con el libro en tres partes: la receta, la clave del
+ * ejemplar de la balda (null, solo el café) y lo acertado del libro [género, extensión, forma]. Si el servidor aún no tiene
+ * la migración, se sirve como antes (`cafe_servir`: el libro encaja si aciertas el género).
+ */
+export async function entregarCliente(dia, cliente, receta, libro = null, libroOk = null) {
+  const sb = await client();
+  const ok = libro ? [0, 1, 2].map((k) => Boolean(libroOk?.[k])) : null;
+  const { data, error } = await sb.rpc('cafe_entregar', { dia, cliente, receta, libro: libro ?? null, libro_ok: ok });
+  if (sinMigracion(error)) return servirCliente(dia, cliente, receta, libro ? ok[0] : null, libro);
+  fail(error);
+  return conDia(data);
+}
+
+/**
  * Bloque 6b (1.127, `20261216120000_cafe_tostadero.sql`): recoger el saco del día del tambor del tostadero (`dia`, el de la
  * app). Devuelve { cafe, tazas } con las tazas que ha dado.
  */
@@ -247,7 +281,7 @@ export function errorCafe(e) {
   if (/cafe:tazas/.test(m)) return 'Ya tienes 99 tazas guardadas: sirve unas cuantas y vuelve a por el saco.';
   if (/cafe:servido/.test(m)) return 'A este cliente ya lo has atendido hoy.';
   if (/cafe:dia/.test(m)) return 'Ha cambiado el día: vuelve a entrar en el café.';
-  if (/cafe:cliente|cafe:receta/.test(m)) return 'No se ha podido atender. Vuelve a entrar en el café.';
+  if (/cafe:cliente|cafe:receta|cafe:libro/.test(m)) return 'No se ha podido atender. Vuelve a entrar en el café.';
   if (/cafe:granos/.test(m)) return 'Aún no tienes granos suficientes.';
   if (/cafe:bienvenida/.test(m)) return 'La caja de bienvenida ya te llegó.';
   if (/cafe:titulos|cafe:titulo|cafe:genero/.test(m)) return 'La distribuidora no tiene ese libro. Vuelve a entrar en el café.';

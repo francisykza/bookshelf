@@ -9,9 +9,13 @@
 // Más cozy (Francisco, 12-11-2026: «quiero un toque más cozy y acogedor con los libros»): cada lomo es distinto (tela, piel o
 // rústica con su etiqueta; alto y grosor propios), la balda tiene luz de lámpara y una guirnalda, la caja trae papel de seda
 // y la etiqueta de la distribuidora, Pilar comenta lo que pasa y suenan cartón, papel y madera, bajitos. Las reglas no cambian.
+// 1.130 (§15): la balda va por secciones (los lomos, juntos por género) y colocar es un solo gesto: empujar la caja hacia
+// arriba y cada lomo vuela a su sección, uno detrás de otro (el botón sigue ahí). Lo que trae el reparto de la mañana salta
+// al abrir la caja, como una compra.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { colorDe } from './cafeMuebles';
-import { CAJA_GENERO, CAJA_TITULO, enBalda, enCajas, generosDisponibles } from './cafeClientes';
+import { CAJA_GENERO, CAJA_TITULO, GENEROS, enBalda, enCajas, generosDisponibles, nombreGenero } from './cafeClientes';
+import { Pista } from './Pista';
 import { colocarLibros, comprarCaja, errorCafe } from './cafeService';
 import { crearSfxBarra } from './cafeSfx';
 import { GRANO } from './cafeIconos';
@@ -21,6 +25,12 @@ const rgb = (c) => `rgb(${c[0]} ${c[1]} ${c[2]})`;
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** Cuánto hay que mover el dedo para que un toque pase a ser un arrastre. */
 const UMBRAL = 7;
+/** Cuánto se empuja la caja hacia arriba para colocarlos todos (px a 390 de ancho). */
+const EMPUJE = 72;
+const ORDEN_GENERO = new Map(GENEROS.map((g, k) => [g.id, k]));
+/** Los de la balda, por secciones: en el orden de los géneros y, dentro, por título. */
+const porSecciones = (xs) =>
+  xs.sort((a, b) => (ORDEN_GENERO.get(a.genero) ?? 99) - (ORDEN_GENERO.get(b.genero) ?? 99) || String(a.titulo).localeCompare(String(b.titulo), 'es') || String(a.clave).localeCompare(String(b.clave)) || a.k - b.k);
 
 /** El aire de cada libro, siempre el mismo para un título: encuadernación, alto y grosor. */
 function aireDe(titulo = '') {
@@ -30,11 +40,11 @@ function aireDe(titulo = '') {
 }
 /** Lo que dice Pilar mientras colocas (frases cerradas). */
 function pilarDice({ enCaja, enBalda, libres, recien }) {
-  if (enCaja && recien) return '«¡Huele a libro nuevo! Arrástralos a la balda, o tócalos, y los verán los clientes.»';
+  if (enCaja && recien) return '«¡Huele a libro nuevo! Empuja la caja hacia arriba y cada uno irá a su sección; o arrástralos de uno en uno.»';
   if (enCaja && libres <= 0) return '«La balda está a rebosar. Si quieres cambiar alguno, toca uno de la balda y vuelve a la caja.»';
-  if (enCaja) return '«Arrástralos a la balda, o tócalos. Solo recomendamos lo que está a la vista.»';
+  if (enCaja) return '«Empuja la caja hacia arriba y van solos a su sección, o arrástralos. Solo recomendamos lo que está a la vista.»';
   if (enBalda && libres <= 0) return '«¡Qué bonita ha quedado la balda! Da gusto verla.»';
-  if (enBalda) return '«Todo en su sitio. Si quieres devolver alguno a la caja, tócalo.»';
+  if (enBalda) return '«Todo en su sitio, cada uno en su sección. Si quieres devolver alguno a la caja, tócalo.»';
   return '«La balda está esperando sus libros. En la distribuidora tienes lo que has leído.»';
 }
 /** El título que cabe en el lomo: palabras enteras hasta donde quepan (según el alto del libro), sin cortar a medias.
@@ -160,11 +170,21 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
   const [provisional, setProvisional] = useState(null);
   const vista = provisional?.de === estado ? provisional.vista : estado;
   const huecos = vista?.huecos ?? 12;
-  const enLaBalda = ejemplares(vista, 'balda');
+  const enLaBalda = porSecciones(ejemplares(vista, 'balda'));
   const enLaCaja = ejemplares(vista, 'caja');
   const libres = huecos - enBalda(vista);
   const generos = useMemo(() => generosDisponibles(titulos), [titulos]);
   const elegido = generos.find((g) => g.id === genero) ?? generos[0] ?? null;
+  // Colocarlos todos de un gesto: lo que había de cada título antes (los de después vuelan a su sitio) y cuánto se empuja
+  const [llegan, setLlegan] = useState(null);
+  const [empuje, setEmpuje] = useState(0);
+  const empujeRef = useRef(null);
+  const puedeColocar = hoja === 'caja' && abierta && !ocupado && enLaCaja.length > 0 && libres > 0;
+  useEffect(() => {
+    if (!llegan) return undefined;
+    const t = setTimeout(() => setLlegan(null), 1600);
+    return () => clearTimeout(t);
+  }, [llegan]);
 
   // La caja que acaba de llegar se abre sola, con un respiro para ver cómo saltan las solapas
   useEffect(() => {
@@ -212,12 +232,48 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
     setError('');
     setOcupado(true);
     setAsentado(null);
-    sfx.play(poner.length >= libres ? 'baldaLlena' : 'libroPon');
+    // Lo que ya estaba de cada título (los nuevos son los de después) y, mientras contesta el servidor, la balda ya cambiada
+    const antes = {};
+    for (const b of vista?.libros ?? []) antes[b.clave] = b.balda;
+    const cuantos = {};
+    for (const c of poner) cuantos[c] = (cuantos[c] ?? 0) + 1;
+    setLlegan({ antes, orden: poner });
+    setProvisional((p) => {
+      const v = p?.de === estado ? p.vista : estado;
+      return { de: estado, vista: { ...v, libros: v.libros.map((b) => (cuantos[b.clave] ? { ...b, caja: b.caja - cuantos[b.clave], balda: b.balda + cuantos[b.clave] } : b)) } };
+    });
+    sfx.play('secciones', { n: poner.length });
+    if (poner.length >= libres) setTimeout(() => sfx.play('baldaLlena'), reduced() ? 0 : Math.min(12, poner.length) * 60 + 120);
     cola.current = cola.current
       .then(() => colocarLibros(poner, []))
       .then((r) => onCambio(r))
-      .catch((e) => setError(errorCafe(e)))
+      .catch((e) => {
+        setError(errorCafe(e));
+        setProvisional(null);
+        setLlegan(null);
+      })
       .finally(() => setOcupado(false));
+  };
+  // El gesto: empujar la caja hacia arriba (desde la caja, no desde un lomo: ese se arrastra solo)
+  const empujeAbajo = (e) => {
+    if (!puedeColocar || e.button > 0 || e.target.closest?.('.cf3-lomo')) return;
+    empujeRef.current = { id: e.pointerId, y0: e.clientY, escala: Math.min(window.innerWidth || 390, 600) / 390 };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const empujeMueve = (e) => {
+    const d = empujeRef.current;
+    if (!d || d.id !== e.pointerId) return;
+    const p = Math.max(0, Math.min(1, (d.y0 - e.clientY) / (EMPUJE * d.escala)));
+    setEmpuje(p);
+    if (p >= 1) {
+      empujeRef.current = null;
+      setEmpuje(0);
+      colocarTodo();
+    }
+  };
+  const empujeSuelta = () => {
+    empujeRef.current = null;
+    setEmpuje(0);
   };
   const comprar = async (pedido) => {
     if (ocupado) return;
@@ -280,8 +336,21 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
                 const x = enLaBalda[k];
                 // El último ejemplar de ese título es el que acaba de llegar
                 const ultimo = x && x.clave === asentado && enLaBalda[k + 1]?.clave !== x.clave;
+                // Donde empieza otra sección, su separador de latón
+                const seccion = x && x.genero !== enLaBalda[k - 1]?.genero ? nombreGenero(x.genero) : null;
+                // Colocados de un gesto: vuelan desde la caja, uno detrás de otro, en el orden en que salieron
+                const desde = x && llegan ? (llegan.antes[x.clave] ?? 0) : 0;
+                const vuela = x && llegan && x.k >= desde ? llegan.orden.indexOf(x.clave) + (x.k - desde) : -1;
                 return (
-                  <li key={x ? `${x.clave}-${x.k}` : `hueco-${k}`} className="cf3-libros__hueco" data-lleno={x ? 'true' : undefined}>
+                  <li
+                    key={x ? `${x.clave}-${x.k}` : `hueco-${k}`}
+                    className="cf3-libros__hueco"
+                    data-lleno={x ? 'true' : undefined}
+                    data-seccion={seccion ? 'true' : undefined}
+                    data-vuela={vuela >= 0 ? 'true' : undefined}
+                    style={vuela >= 0 ? { '--cf3-vuela': `${Math.min(11, vuela) * 60}ms` } : undefined}
+                    title={seccion ?? undefined}
+                  >
                     {x && <Lomo libro={x} donde="balda" onSoltar={aLaCaja} onTocar={aLaCaja} disabled={ocupado} asienta={ultimo} />}
                   </li>
                 );
@@ -291,7 +360,19 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
           {/* La caja de cartón en 3D (Francisco, 12-11-2026: «La quiero más 3d»): una caja expositora con el frente recortado, de
               caras en perspectiva (fondo, suelo, laterales y la solapa trasera de pie); los libros dentro, la cara delantera con
               su cinta, el papel de seda y la etiqueta, y su sombra en el suelo. Cerrada, las solapas tapan la boca y se abren girando. */}
-          <section className="cf3-libros__caja" data-zona="caja" data-abierta={abierta ? 'true' : undefined} aria-label={`La caja de reparto: ${enLaCaja.length} ejemplares`}>
+          <section
+            className="cf3-libros__caja"
+            data-zona="caja"
+            data-abierta={abierta ? 'true' : undefined}
+            data-empuja={empuje > 0 ? 'true' : undefined}
+            data-colocar={puedeColocar ? 'true' : undefined}
+            style={{ '--cf3-empuje': empuje.toFixed(3) }}
+            aria-label={`La caja de reparto: ${enLaCaja.length} ejemplares`}
+            onPointerDown={empujeAbajo}
+            onPointerMove={empujeMueve}
+            onPointerUp={empujeSuelta}
+            onPointerCancel={empujeSuelta}
+          >
             <span className="cf3-carton__solido" aria-hidden="true">
               <span className="cf3-carton__cuerpo">
                 <span className="cf3-carton__cara cf3-carton__cara--fondo" />
@@ -317,6 +398,11 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
                 </p>
               )}
             </div>
+            {puedeColocar && !(empuje > 0) && !reduced() && (
+              <span className="cf3-libros__pista" aria-hidden="true">
+                <Pista trazo="arriba" />
+              </span>
+            )}
             <span className="cf3-carton__frente" aria-hidden="true">
               <span className="cf3-libros__etiqueta">
                 <span>Distribuidora del Puerto</span>

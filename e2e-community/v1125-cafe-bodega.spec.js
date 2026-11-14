@@ -132,15 +132,18 @@ async function prepararYLlevar(page, cafe, receta, { foto = null } = {}) {
   expect(await caja.getAttribute('data-receta')).toBe(receta.join());
   await quieto(page, 400);
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
+  // 1.130: si pide libro y hay en la balda, antes la librería (aquí, solo el café); después, abajo con la bandeja
+  await expect(caja).toHaveAttribute('data-paso', /^(yendo|libreria)$/, { timeout: 15000 });
+  if ((await caja.getAttribute('data-paso')) === 'libreria') await cafe.getByRole('button', { name: 'Solo el café' }).click();
   // Bajando con la taza en la mano
   await page.waitForFunction(() => window.__cafe3d.enRecorrido(), null, { timeout: 15000 });
   await page.waitForTimeout(1500);
   await foto?.('bajando-con-la-taza');
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 20000 });
+  await expect(caja).toHaveAttribute('data-paso', /^(libro|gracias)$/, { timeout: 20000 });
   await quieto(page, 300);
   await foto?.('llevada');
-  await cafe.getByRole('button', { name: 'Solo el café' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'gracias');
+  if ((await caja.getAttribute('data-paso')) === 'libro') await cafe.getByRole('button', { name: 'Solo el café' }).click();
+  await expect(caja).toHaveAttribute('data-paso', 'gracias', { timeout: 20000 });
   // El cartel del primer cliente del día puede salir a la vez y tapar el botón
   await page.waitForTimeout(900);
   const logro = page.locator('.cf3-logro');
@@ -278,7 +281,7 @@ test('subir al nivel 6: el cartel de la subida y el recorrido por la trampilla y
     for (const tipo of gestosDe(etapa, r)) await hacerGesto(page, cafe, tipo, { ayuda: false });
   }
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 15000 });
+  await expect(caja).toHaveAttribute('data-paso', /^(libro|libreria)$/, { timeout: 15000 });
   await cafe.getByRole('button', { name: 'Solo el café' }).click();
   await cafe.getByRole('button', { name: 'Hasta luego' }).click();
   // El cartel: nivel 6, la bodega, 80 tickets y lo que se abre

@@ -474,3 +474,100 @@ sala de catas, el chai y el café brûlée (nivel 8). Migración nueva en cada b
 - **Siguen cabiendo 40 cosas** (no se aprobó un tope nuevo). La butaca de cuero es un asiento; el mapa de cafés, el mueble del
   1.er hito.
 - **El mostrador de catas** del fondo es decorado fijo de la sala (no se compra ni se mueve), como el botellero.
+
+## 15. Que no se haga repetitivo y los libros (14-11-2026)
+
+Francisco, tras usarlo más: «que añadirias para que no se haga repetitivo el tema de preparar todo el rato los cafés, y como
+integrarías mejor el tema de los libros porque no termino de verlo bien implementado».
+
+### 15.1 Pilar prepara lo que ya dominas (aprobado: «Vale lo de pilar»)
+
+- Cada bebida (café, té, chocolate, café con hielo y chai) se **domina con 12 servidas de 2 estrellas o más**; Pilar lo dice
+  («Esto ya lo bordas; si quieres, te lo preparo yo»).
+- Tú lees la comanda y eliges la receta (bebida, grano, leche, toque). Con la bebida dominada aparece **«Que lo prepare
+  Pilar»**: va a la barra y hace los gestos en 3D en unos 3 s, con sus sonidos; con movimiento reducido, directo.
+- **Siempre se puede hacer a mano**; el dispositivo recuerda lo último elegido por bebida. **A mano siempre**: lo recién
+  desbloqueado (hasta dominarlo) y **el excéntrico**.
+- **Paga lo mismo** (granos y reputación); con la receta bien, 3 estrellas. Sin cambios de economía.
+- Servidor: un contador de servidas por bebida en el local (migración pequeña, la aplica Francisco).
+
+### 15.2 Descartado
+
+Pedidos de grupo, «lo de siempre», clientes sin bebida, días distintos, arte latte, habituales con ficha y opinión, pistas
+desde la biblioteca, maridaje, la lectura actual en el café y la tertulia: **no le convencieron** («el resto no me termina de
+convencer»).
+
+### 15.3 Los libros: por preparar
+
+Francisco: «vamos a preparar antes lo demás y lo hacemos en conjunto cuando este todo». Falta concretar con él qué no le
+encaja hoy de los libros antes de proponer otra dirección. Lo de Pilar no se hace por separado.
+
+Sus respuestas (14-11-2026): no le encaja que **elegir una de tres fichas no tiene gracia**, que **las cajas y la balda son un
+trámite** y que **los libros pesan poco en la partida**. Quiere que recomendar un libro sea **igual de importante que el café**,
+con su propio gesto.
+
+### 15.4 Por qué hoy lía (revisado en el código)
+
+- Los pedidos salen de **toda tu biblioteca**, no de la balda (`pedidosDelDia(dia, libros)` en `Cafe.jsx`): un cliente puede
+  pedir un género, tu favorito o el último que terminaste aunque no quede ningún ejemplar en la balda.
+- Los pedidos y los géneros **no son la misma lista**: los pedidos son fantasía, misterio, amor, ciencia ficción, corto, tocho,
+  clásico (por año), tu favorito, el autor que más lees y el último que terminaste; la distribuidora y la balda usan diez
+  géneros (novela, fantasía, misterio, amor, clásico, ciencia ficción, poesía, historia, biografía y juvenil).
+
+### 15.5 Propuesta de los libros (Francisco: «Si pero cambia tambien como piden los clientes los libros y las categorias»)
+
+- **Una sola lista de categorías**: los diez géneros de la distribuidora. Cada uno es una **sección de la estantería con su
+  placa**, y en el café **solo aparecen las secciones que tienen ejemplares** (nunca un género que no tienes).
+- **Los clientes solo piden lo que hay en la balda en ese momento**: género de una sección con ejemplares y una extensión que
+  exista en ella. **Fuera** «el que más te gusta», «el autor que más lees», «el último que terminaste» y «clásico» por año
+  (Clásico queda como género, por las categorías del libro). Con la balda vacía, «Solo el café», como hoy.
+- **El pedido del libro, en tres partes** (como las cuatro de la bebida): el **género** (la sección), la **extensión**
+  (**corto**, hasta 300 páginas, o **largo**, más de 300; un libro sin páginas vale para las dos) y **cómo se lo lleva**
+  (para regalar, para leerlo aquí o para llevar).
+- **Los gestos**: pasar el dedo por los lomos de la sección; tirar del lomo y verlo (portada real y páginas); envolver con
+  papel de estraza y cordel / meter el marcapáginas / meterlo en la bolsa; y el sello del café (apretar y mantener). Se lleva
+  en la bandeja con la taza.
+- **Estrellas, mitad y mitad**: hasta 4 aciertos de la bebida y 3 del libro (7). **3 estrellas con los 7**, 2 con 4 a 6, 1 con
+  menos (nunca cero). Los premios por estrellas no cambian.
+- **El ejemplar**: se lo lleva si aciertas el género y paga **+4 granos** (hoy +2); si no, vuelve a su sección.
+- **El reparto**: cada mañana, al abrir el día, llega solo una caja que **repone lo vendido el día anterior** (los mismos
+  títulos, hasta 10 ejemplares) a **2 granos el ejemplar** (lo mismo que hoy en la caja de género); si no llegan los granos,
+  llega lo que se pueda pagar (nunca a deber). Abrirla, como hoy; **colocar, un solo gesto** que manda cada lomo a su sección.
+  La distribuidora se queda para pedir un título o un género concreto.
+- **Pilar** (§15.1) prepara las bebidas dominadas; **el libro siempre lo eliges tú**.
+- **Servidor**: el reparto al abrir el día, el pago del ejemplar, las estrellas con las partes del libro y el contador de
+  Pilar (migración nueva, la aplica Francisco). Los pedidos se siguen decidiendo en la app (tu biblioteca no está en el
+  servidor), ahora con la balda.
+
+### 15.6 Hecho (1.130.0, 14-11-2026), con interpretaciones por confirmar
+
+Pilar y los libros, juntos (SPEC §130; migración `20261218120000_cafe_libreria.sql`, la aplica Francisco). Lo que se decidió
+sin preguntar:
+
+- **Lo que prepara Pilar cuenta como hecho a mano**: sus gestos siempre salen bien, así que con la receta bien son los cuatro
+  aciertos de la bebida. Las estrellas dependen de lo que eliges tú.
+- **«Lo recién desbloqueado», por cosa de la carta**: cada bebida y lo de la carta con gesto propio (el tueste de la casa, la
+  nata, la vainilla y el brûlée) se domina por separado (12 servidas de 2 estrellas o más con eso). Si la receta lleva algo
+  así sin dominar, Pilar hace el resto y **esa etapa la haces tú** (su gesto).
+- **Sin libro, como mucho 2 estrellas**: si pedía libro y das «Solo el café», solo cuentan los 4 de la bebida (2 estrellas con
+  todo bien). Es lo que sale de las cifras aprobadas (3 con los 7). Con la balda vacía nadie pide libro y la bebida bien da 2.
+- **Si fallas el género, lo demás cuenta**: la extensión y la forma acertadas suman igual, pero el ejemplar vuelve a su sección
+  (solo se lo lleva con el género bien).
+- **El pedido se fija al empezar a atender**: si mientras tanto se va un ejemplar de la balda, ese cliente sigue pidiendo lo
+  mismo (lo que había cuando llegó).
+- **La estantería de la pared es la balda**, por secciones; **las estanterías del café que compras enseñan tus leídos de
+  adorno** (no son ejemplares de la balda ni se venden). Antes enseñaban la balda.
+- **Hasta tres secciones por balda**, cada una en su hueco con su placa, en un bloque centrado en la pared (con todas seguidas,
+  en un móvil las placas se pisaban). Si no cabe todo en las cuatro baldas, el bloque se ensancha. Las baldas, de la del pecho
+  a la de abajo, la de arriba y el suelo.
+- **La tabla sale de la estantería** a la altura de la sección, con la bandeja y la taza a un lado; al elegir cómo se lo lleva,
+  la cámara se corre hacia el tarro y las bolsas para que se vean los tres objetos en un móvil en vertical.
+- **La extensión se ve en la etiqueta del lomo** al pasar el dedo («320 págs. · largo»; sin páginas, «corto o largo»), no
+  pintada en los lomos.
+- **El sello**: para regalar, en el papel del paquete; para leerlo aquí, en la primera página del libro abierto; para llevar,
+  en el borde doblado de la bolsa.
+- **La «!»** (niveles 1 y 2): sobre las placas de las secciones, no (diría qué sección pide); sobre el lomo que asoma, para
+  tirar de él; en los tres objetos de la tabla, en los tres a la vez (nunca delata cuál); y sobre el objeto de cada gesto.
+- **El reparto**: lo vendido antes de esta versión no guardaba el título y no se repone. El aviso de Pilar sale una vez por
+  día en cada dispositivo. La caja se coloca empujándola hacia arriba; arrastrar de uno en uno y «Colocarlos todos» siguen.
+- **Sin la migración**, la app sirve con `cafe_servir` como en la 1.129: las estrellas y el +2 de antes, sin reparto ni Pilar.

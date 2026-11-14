@@ -10,15 +10,19 @@
 // Libros en cajas (§121.3): solo se recomienda lo que está en la balda y, si encaja, el cliente se lo lleva (+2 granos); la
 // caja de bienvenida (8 gratis) se abre y sus lomos se arrastran a la balda; en la distribuidora se compran cajas de un
 // género (5 por 10) y de un título (3 por 9); sin ejemplares, solo el café.
+// 1.130 (SPEC §130): el libro ya no se elige entre fichas: se busca en la librería (la sección, el lomo, la tabla, cómo se lo
+// lleva y sus gestos; `hacerLibro`), las estrellas salen de siete aciertos (4 de la bebida y 3 del libro), el ejemplar que se
+// lleva paga +4 y se entrega con `cafe_entregar`.
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { simularCafe } from './cafeMock';
 import { despedir, hacerGesto, quieto } from './cafeBarra';
+import { hacerLibro } from './cafeLibro';
 import { createMockSupabase } from './mockSupabase';
 import { ANA } from './sobreShop';
 import { PLANO_INICIAL, cuenta } from '../src/features/edificio/cafe/cafeCatalogo';
-import { EXCENTRICOS, RESENAS, contextoPedidos, generoDe, nombreOpcion, pedidoPorId, recetaPide } from '../src/features/edificio/cafe/cafeClientes';
+import { EXCENTRICOS, RESENAS, generoDe, nombreOpcion, recetaPide } from '../src/features/edificio/cafe/cafeClientes';
 import { ELIGE, ETAPAS, GESTOS, gestosDe } from '../src/features/edificio/cafe/cafeGestos';
 import { dayKey } from '../src/domain/dates';
 
@@ -55,7 +59,6 @@ const LIBROS = [
   libro('e2', 'Faro de verano', { author: 'Elena Faro' }),
   libro('n', 'Un libro sin más'),
 ];
-const CTX = contextoPedidos(LIBROS);
 // Las semillas del servidor simulado (1000 + k · 7919): el tercero, el excéntrico, es Madame Niebla (16838 % 6 = 2)
 const SEMILLAS = [1000, 8919, 16838];
 const PIDE = { 1: recetaPide({ n: 1, semilla: SEMILLAS[0] }), 2: recetaPide({ n: 2, semilla: SEMILLAS[1] }), 3: recetaPide({ n: 3, semilla: SEMILLAS[2] }), 101: recetaPide({ n: 101, quien: 3 }) };
@@ -110,8 +113,9 @@ const PARTE_DE = { bebida: 'bebida', grano: 'grano', leche: 'leche', toque: 'toq
 
 /**
  * Atiende al siguiente cliente con «Atender». `receta`: lo que se prepara (por defecto, lo que pidió); `en3d`: elegir tocando
- * las cosas de la barra (si no, con los botones); `libro`: 'encaja', 'no' o null (solo el café); `capturas`: el prefijo de
- * las fotos de cada paso; `arte`: el dibujo de la leche ('hoja' ondulando o 'corazon' recto).
+ * las cosas de la barra (si no, con los botones); `libro`: 'encaja' (el que pide, en la librería), null («Solo el café» en la
+ * librería) o 'vacia' (sin ejemplares: solo el café en su mesa); `capturas`: el prefijo de las fotos de cada paso; `arte`: el
+ * dibujo de la leche ('hoja' ondulando o 'corazon' recto).
  */
 async function atenderUno(page, cafe, n, { receta = PIDE[n], en3d = false, libro: conLibro = 'encaja', capturas = null, info = null, reducido = false, arte = 'hoja' } = {}) {
   const foto = capturas ? async (nombre) => page.screenshot({ path: join(DIR, `${capturas}-${nombre}-${tam(info)}.png`) }) : null;
@@ -159,39 +163,36 @@ async function atenderUno(page, cafe, n, { receta = PIDE[n], en3d = false, libro
   expect(await caja.getAttribute('data-receta')).toBe(receta.join());
   await quieto(page, 400);
   await foto?.('lista');
-  // Llevársela: la taza en la mano, andando hasta su mesa
+  // Llevársela
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
-  if (!reducido) {
-    // Con movimiento reducido se llega sin andar
+  // Con movimiento reducido se llega sin andar
+  const andando = async () => {
+    if (reducido) return;
     await expect(caja).toHaveAttribute('data-paso', 'yendo');
     await page.waitForTimeout(500);
     await foto?.('llevar');
-  }
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 15000 });
-  await quieto(page, 300);
-  await foto?.('libro');
-  // El libro, de extra: tres fichas
-  const fichas = cafe.locator('.cf3-ficha');
+  };
   if (conLibro === 'vacia') {
-    await expect(fichas).toHaveCount(0);
+    // Sin ejemplares en la balda no pide libro: la taza, a su mesa, y solo el café
+    await andando();
+    await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 15000 });
+    await quieto(page, 300);
+    await expect(cafe.locator('.cf3-ficha')).toHaveCount(0);
     await expect(cafe.locator('.cf3-fichas__vacia')).toContainText('No te quedan libros en la balda');
     await foto?.('balda-vacia');
-  } else await expect(fichas).toHaveCount(3);
-  if (conLibro && conLibro !== 'vacia') {
-    const titulos = await fichas.locator('.cf3-ficha__titulo').allTextContents();
-    const p = pedidoPorId(pedido);
-    const elegido = titulos.find(
-      (t) =>
-        (conLibro === 'encaja') ===
-        p.encaja(
-          LIBROS.find((b) => b.title === t),
-          CTX,
-        ),
-    );
-    expect(elegido, `una ficha que ${conLibro === 'encaja' ? 'encaje' : 'no encaje'} con «${pedido}»`).toBeTruthy();
-    await cafe.getByRole('button', { name: `Recomendar «${elegido}»` }).click();
-  } else await cafe.getByRole('button', { name: 'Solo el café' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'gracias');
+    await cafe.getByRole('button', { name: 'Solo el café' }).click();
+  } else {
+    // 1.130: pide libro y hay en la balda: de la barra a la librería (la taza espera en la bandeja de la tabla)
+    await expect(caja).toHaveAttribute('data-paso', 'libreria');
+    if (conLibro === 'encaja') await hacerLibro(page, cafe, { reducido, foto: foto ? (x) => foto(`libro-${x}`) : null });
+    else {
+      await expect(caja).toHaveAttribute('data-lib', 'estanteria');
+      await cafe.getByRole('button', { name: 'Solo el café' }).click();
+    }
+    // Y la bandeja, con la taza (y el libro), hasta su mesa
+    await andando();
+  }
+  await expect(caja).toHaveAttribute('data-paso', 'gracias', { timeout: 20000 });
   await expect(cafe.getByRole('button', { name: 'Hasta luego' })).toBeVisible();
   return pedido;
 }
@@ -218,12 +219,12 @@ test('un día en el café: dos clientes, el excéntrico y un habitual, de la bar
   await expect(cafe.locator('.cf3-comanda')).toHaveCount(0);
   await atenderUno(page, cafe, 1, { en3d: true, capturas: '2', info });
   await expect(cafe.getByRole('img', { name: '3 de 3 estrellas' })).toBeVisible();
-  await expect(cafe.locator('.cf3-dado')).toContainText('+7 granos');
-  await expect(cafe.locator('.cf3-dado')).toContainText('2 por el libro');
+  await expect(cafe.locator('.cf3-dado')).toContainText('+9 granos');
+  await expect(cafe.locator('.cf3-dado')).toContainText('4 por el libro');
   await expect(cafe.locator('.cf3-dado')).toContainText('+14 reputación');
   await expect(cafe.locator('.cf3-repaso li[data-ok="false"]')).toHaveCount(0);
   await expect(cafe.locator('.cf3-repaso li').last()).toContainText('✓ Se lleva «');
-  await expect(cafe.locator('.cf3-monedero')).toContainText('7');
+  await expect(cafe.locator('.cf3-monedero')).toContainText('9');
   await page.screenshot({ path: join(DIR, `3-servido-${tam(info)}.png`) });
   // 1.122: con el primer cliente, el cartel del primer día (los 10 tickets del nivel 1 y el del día)
   const logro = await despedir(page, cafe);
@@ -231,59 +232,63 @@ test('un día en el café: dos clientes, el excéntrico y un habitual, de la bar
   expect(logro).toContain('+10 tickets por abrir el café');
   await expect(cafe.locator('.cf3-tag--cliente')).toHaveCount(3);
 
-  // El segundo: se equivoca la leche y sin libro: 2 estrellas, y el repaso dice qué pidió
+  // El segundo: se equivoca la leche y, aunque pedía libro, solo el café: 3 aciertos de 7, 1 estrella (nunca cero), y el
+  // repaso dice qué pidió
   const mal = [...PIDE[2]];
   mal[2] = PIDE[2][2] === 'entera' ? 'avena' : 'entera';
   await atenderUno(page, cafe, 2, { receta: mal, libro: null });
-  await expect(cafe.getByRole('img', { name: '2 de 3 estrellas' })).toBeVisible();
-  await expect(cafe.locator('.cf3-dado')).toContainText('+4 granos');
+  await expect(cafe.getByRole('img', { name: '1 de 3 estrellas' })).toBeVisible();
+  await expect(cafe.locator('.cf3-dado')).toContainText('+2 granos');
   await expect(cafe.locator('.cf3-repaso li[data-ok="false"]')).toHaveText(`✗ ${nombreOpcion('leche', mal[2])} · pidió ${nombreOpcion('leche', PIDE[2][2]).toLowerCase()}`);
   await expect(cafe.locator('.cf3-repaso li[data-ok="nada"]')).toHaveText('· Sin libro');
-  await page.screenshot({ path: join(DIR, `3-dos-estrellas-${tam(info)}.png`) });
+  await page.screenshot({ path: join(DIR, `3-una-estrella-${tam(info)}.png`) });
   await despedir(page, cafe);
 
   // El excéntrico: primero «Luego» (no pasa nada); su comanda en acertijos; bordado, el triple y la reseña dorada
   await cafe.getByRole('button', { name: 'Atender', exact: true }).click();
   await expect(cafe.locator('.cf3-comanda--raro')).toBeVisible();
-  await expect(cafe.locator('.cf3-comanda__acertijos li')).toHaveCount(4);
+  // Cuatro acertijos de la bebida y tres del libro
+  await expect(cafe.locator('.cf3-comanda__acertijos li')).toHaveCount(7);
   await expect(cafe.locator('.cf3-quien')).toHaveText(`★ ${NIEBLA.nombre}`);
   await cafe.getByRole('button', { name: 'Luego' }).click();
   await atenderUno(page, cafe, 3, { capturas: '4-excentrico', info });
   await expect(cafe.getByRole('img', { name: '3 de 3 estrellas' })).toBeVisible();
-  await expect(cafe.locator('.cf3-dado')).toContainText('+17 granos');
+  await expect(cafe.locator('.cf3-dado')).toContainText('+19 granos');
   await expect(cafe.locator('.cf3-dado')).toContainText('+40 reputación');
   await expect(cafe.locator('.cf3-franja--atender .cf3-dice')).toContainText(NIEBLA.dorada);
   await page.screenshot({ path: join(DIR, `4-excentrico-gracias-${tam(info)}.png`) });
   await despedir(page, cafe);
 
-  // El habitual: «lo de siempre», pero con miel en vez de canela (el hilo de miel), y un libro que encaja: 2 estrellas y su reseña
+  // El habitual: «lo de siempre», pero con miel en vez de canela (el hilo de miel), y su libro bien: 6 de 7, 2 estrellas y su reseña
   const conMiel = [...PIDE[101]];
   conMiel[3] = 'miel';
   await atenderUno(page, cafe, 101, { receta: conMiel, capturas: '5-habitual', info, arte: 'corazon' });
   await expect(cafe.locator('.cf3-repaso li[data-ok="false"]')).toHaveText(`✗ Miel · pidió ${nombreOpcion('toque', PIDE[101][3]).toLowerCase()}`);
   await expect(cafe.locator('.cf3-franja--atender .cf3-dice')).toContainText(RESENAS[10]);
   await expect(cafe.locator('.cf3-quien')).toHaveText('Marga');
-  await expect(cafe.locator('.cf3-dado')).toContainText('+7 granos');
+  await expect(cafe.getByRole('img', { name: '2 de 3 estrellas' })).toBeVisible();
+  await expect(cafe.locator('.cf3-dado')).toContainText('+9 granos');
   await page.screenshot({ path: join(DIR, `5-habitual-${tam(info)}.png`) });
   await despedir(page, cafe);
 
   // Todo el mundo atendido; la pizarra con la reseña dorada y la de Marga
   await expect(cafe.locator('.cf3-dice')).toContainText('Hoy ya está todo el mundo atendido');
   await expect(cafe.locator('.cf3-tag--cliente')).toHaveCount(0);
-  await expect(cafe.locator('.cf3-monedero')).toContainText(String(7 + 4 + 17 + 7));
-  // Los tres libros que encajaban se los han llevado: quedan 9 en la balda
+  await expect(cafe.locator('.cf3-monedero')).toContainText(String(9 + 2 + 19 + 9));
+  // Los tres libros del género que pedían se los han llevado: quedan 9 en la balda
   expect(Object.values(estado.lib.libros).reduce((s, b) => s + b.balda, 0)).toBe(9);
   await expect(cafe.getByRole('button', { name: /^Tus libros: 9 en la balda/ })).toBeVisible();
-  const servidos = estado.llamadas.filter((l) => l.rpc === 'cafe_servir').map((l) => l.body);
-  expect(servidos.filter((b) => b.encaja).every((b) => LIBROS.some((x) => x.id === b.libro))).toBe(true);
-  expect(servidos.map((b) => [b.cliente, b.receta.join(), b.encaja])).toEqual([
+  const servidos = estado.llamadas.filter((l) => l.rpc === 'cafe_entregar').map((l) => l.body);
+  expect(servidos.filter((b) => b.libro).every((b) => LIBROS.some((x) => x.id === b.libro))).toBe(true);
+  expect(servidos.map((b) => [b.cliente, b.receta.join(), b.libro_ok ? b.libro_ok.every(Boolean) : null])).toEqual([
     [1, PIDE[1].join(), true],
     [2, mal.join(), null],
     [3, PIDE[3].join(), true],
     [101, conMiel.join(), true],
   ]);
   expect(servidos.every((b) => b.dia === HOY)).toBe(true);
-  expect(estado.reputacion).toBe(14 + 10 + 40 + 12);
+  expect(estado.llamadas.filter((l) => l.rpc === 'cafe_servir')).toHaveLength(0);
+  expect(estado.reputacion).toBe(14 + 6 + 40 + 12);
   await quieto(page, 900);
   await page.screenshot({ path: join(DIR, `6-atendidos-${tam(info)}.png`) });
   await cafe.getByRole('button', { name: /^La pizarra/ }).click();
@@ -307,7 +312,7 @@ test('un día en el café: dos clientes, el excéntrico y un habitual, de la bar
   await expect.poll(() => page.evaluate(() => window.__cafe3d.clientes())).toBe(4);
   await quieto(page, 900);
   await page.screenshot({ path: join(DIR, `8-otra-vez-${tam(info)}.png`) });
-  expect(estado.llamadas.filter((l) => l.rpc === 'cafe_servir')).toHaveLength(4);
+  expect(estado.llamadas.filter((l) => l.rpc === 'cafe_entregar')).toHaveLength(4);
   expect(errors).toEqual([]);
   const video = page.video();
   await page.close();
@@ -340,9 +345,9 @@ test('con movimiento reducido: se sirve con un toque y se llega sin andar', asyn
   await expect(caja).toHaveAttribute('data-receta', ',,,');
   await cafe.getByRole('button', { name: 'Luego', exact: true }).click();
   await atenderUno(page, cafe, 1, { reducido: true, capturas: '9-reducido', info, libro: 'vacia' });
-  // Sin fichas, «Solo el café»: cobra el café (2 estrellas, el libro no cuenta)
+  // Sin libros en la balda no pide libro: cobra el café (los 4 aciertos de la bebida, 2 estrellas)
   await expect(cafe.locator('.cf3-dado')).toContainText('+4 granos');
-  await expect(cafe.locator('.cf3-repaso li[data-ok="nada"]')).toHaveText('· Sin libro');
+  await expect(cafe.locator('.cf3-repaso li[data-ok="nada"]')).toHaveText('· Hoy, solo el café');
   await page.screenshot({ path: join(DIR, `9-reducido-${tam(info)}.png`) });
   const video = page.video();
   await page.close();

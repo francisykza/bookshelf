@@ -21,6 +21,11 @@
 // - Chai con especias (nivel 8): las especias en el mortero, cuatro golpes secos (cada toque es un golpe); después, la tetera
 //   y el colador, como el té.
 // - Café brûlée (nivel 8, un toque): el soplete en zigzag sobre el azúcar sin soltar hasta que se dora (seis pasadas).
+// 1.130, el libro (Francisco, 14-11-2026: «especial mimo de detalle, sonido, atractivo visual y mecanicas»), en la tabla
+// extraíble de la estantería: sacar el lomo (tirar hacia ti); para regalar, cortar el papel de estraza (deslizar hacia abajo,
+// se rasga), doblarlo (dos pasadas de lado) y atarlo con el cordel (una vuelta y media: sale el lazo); para leerlo aquí,
+// abrirlo (la tapa a la izquierda) y meter el marcapáginas (hacia abajo); para llevar, abrir la bolsa (un toque), meterlo
+// (hacia abajo) y doblar el borde (a la derecha); y siempre, el sello del café (apretar y mantener).
 // Reglas: ningún gesto falla ni tiene tiempo límite; lo hecho no se pierde al soltar; los gestos no cambian las estrellas
 // (solo cuenta la receta); con movimiento reducido o con el teclado, cada gesto se hace de una vez (`completar`).
 // Aquí, solo cuentas (sin React ni Three): los reconocedores reciben puntos en píxeles y dan el progreso y la postura.
@@ -78,12 +83,23 @@ export const GESTOS = {
   // Bloque 6c (1.129): el chai y el brûlée
   mortero: { orden: 'Machaca las especias en el mortero', ayuda: 'Cuatro golpes secos: toca el mortero cada vez.', atajo: 'Machacar', pista: 'golpes' },
   soplete: { orden: 'Dora el azúcar con el soplete', ayuda: 'En zigzag, de lado a lado, sin soltar hasta que se dore.', atajo: 'Dorar el azúcar', pista: 'zigzag' },
+  // 1.130: el libro, en la estantería y en su tabla
+  sacar: { orden: 'Tira del lomo hacia ti', ayuda: 'Desliza hacia abajo y sale de la balda.', atajo: 'Sacarlo', pista: 'tirar-lomo' },
+  papel: { orden: 'Corta un trozo de papel de estraza', ayuda: 'Desliza hacia abajo para desenrollarlo; al final, se rasga.', atajo: 'Cortar el papel', pista: 'desenrollar' },
+  doblar: { orden: 'Dobla el papel sobre el libro', ayuda: 'Un lado y luego el otro: dos pasadas de lado a lado.', atajo: 'Doblar el papel', pista: 'solapas' },
+  cordel: { orden: 'Átalo con el cordel', ayuda: 'Una vuelta y media alrededor del libro, y sale el lazo.', atajo: 'Atar el cordel', pista: 'lazo' },
+  abrir: { orden: 'Ábrelo por la primera página', ayuda: 'Pasa la tapa hacia la izquierda.', atajo: 'Abrirlo', pista: 'izquierda' },
+  marca: { orden: 'Mete el marcapáginas', ayuda: 'Desliza hacia abajo, entre las páginas.', atajo: 'Poner el marcapáginas', pista: 'marcapaginas' },
+  bolsa: { orden: 'Abre una bolsa de papel', ayuda: 'Un toque en la bolsa: se abre de un soplido.', atajo: 'Abrir la bolsa', pista: 'toque' },
+  meter: { orden: 'Mete el libro en la bolsa', ayuda: 'Desliza hacia abajo, despacio.', atajo: 'Meterlo', pista: 'meter' },
+  pliegue: { orden: 'Dobla el borde de la bolsa', ayuda: 'Desliza hacia la derecha.', atajo: 'Doblar el borde', pista: 'derecha-recta' },
+  sello: { orden: 'Pon el sello del café', ayuda: 'Aprieta y mantén hasta que quede marcado.', atajo: 'Sellar', pista: 'mantener' },
   // Bloque 6b (1.127): en el tostador del sótano, no en la barra
   tambor: { orden: 'Tira del asa de la trampilla y mantén', ayuda: 'Hacia ti (hacia abajo) y sin soltar, mientras caen los granos al enfriador.', atajo: 'Abrir la trampilla', pista: 'tirar' },
 };
 
 /** Tiempos de los gestos que se mantienen (lo mantenido se suma: soltar no pierde nada). */
-export const MANTENER_MS = { palanca: 1400, tetera: 1500, vapor: 1500, cazo: 1500, tambor: 1600 };
+export const MANTENER_MS = { palanca: 1400, tetera: 1500, vapor: 1500, cazo: 1500, tambor: 1600, sello: 900 };
 /** Vueltas de la manivela, vaivenes y trazos (en píxeles a 390 px de ancho; se escalan con la pantalla). */
 export const MEDIDAS = {
   vueltas: 2,
@@ -121,6 +137,17 @@ export const MEDIDAS = {
   vecesSoplete: 6,
   /** El asa de la trampilla del tambor: tanto hacia abajo para abrirla del todo. */
   tambor: 90,
+  // 1.130, el libro: los recorridos (a 390 px de ancho), las solapas y las vueltas del cordel
+  sacar: 70,
+  papel: 130,
+  doblar: 60,
+  pliegues: 2,
+  vueltasCordel: 1.5,
+  radioCordel: 24,
+  abrir: 80,
+  marca: 70,
+  meter: 80,
+  pliegue: 60,
 };
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
@@ -147,10 +174,20 @@ function poseInicial(tipo) {
     tambor: { abierta: 0, caido: 0 },
     mortero: { maza: 0, golpes: 0 },
     soplete: { x: 0, dorado: 0, llama: false },
+    sacar: { fuera: 0 },
+    papel: { papel: 0, rasgado: false },
+    doblar: { pliegues: 0 },
+    cordel: { angulo: 0, atado: 0 },
+    abrir: { abierto: 0 },
+    marca: { dentro: 0 },
+    bolsa: { abierta: 0 },
+    meter: { dentro: 0 },
+    pliegue: { doblado: 0 },
+    sello: { baja: 0, presion: 0, sellado: false },
   }[tipo];
 }
 /** Los gestos que giran alrededor de un centro: cuántas vueltas y desde qué distancia cuenta. */
-const GIROS = { manivela: ['vueltas', 'radioMin', 'molido'], molinillo: ['vueltasMolinillo', 'radioMolinillo', 'espeso'], batir: ['vueltasBatir', 'radioBatir', 'montada'] };
+const GIROS = { manivela: ['vueltas', 'radioMin', 'molido'], molinillo: ['vueltasMolinillo', 'radioMolinillo', 'espeso'], batir: ['vueltasBatir', 'radioBatir', 'montada'], cordel: ['vueltasCordel', 'radioCordel', 'atado'] };
 
 /** Cuenta vaivenes en un eje: un cambio de sentido cuenta si el recorrido desde el último extremo pasa de `amplitud`. */
 function vaiven(amplitud) {
@@ -260,6 +297,16 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
         eventos.push('chispa');
       }
       if (tipo === 'hilo') pose = { puntos: [...pose.puntos, [clamp((x - c.x) / (110 * e), -1, 1), clamp((y - c.y) / (110 * e), -1, 1)]].slice(-48) };
+      // 1.130: la bolsa se abre de un toque; el sello baja al apretar
+      if (tipo === 'bolsa') {
+        pose = { abierta: 1 };
+        eventos.push('bolsa');
+        acabar(eventos);
+      }
+      if (tipo === 'sello') {
+        pose = { ...pose, baja: 1 };
+        eventos.push('selloBaja');
+      }
       return estado(eventos);
     },
     mover(x, y, t = 0) {
@@ -281,9 +328,12 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
           const n = Math.floor(total / paso);
           if (n > clics) {
             clics = n;
-            eventos.push({ manivela: 'clic', molinillo: 'remueve', batir: 'bate' }[tipo]);
+            eventos.push({ manivela: 'clic', molinillo: 'remueve', batir: 'bate', cordel: 'cordel' }[tipo]);
           }
-          if (progreso >= 1) acabar(eventos);
+          if (progreso >= 1) {
+            if (tipo === 'cordel') eventos.push('lazo');
+            acabar(eventos);
+          }
         } else ang = Math.atan2(y - c.y, x - c.x);
       } else if (tipo === 'apisonar') {
         const b = clamp(dy / (M.apisonar * e));
@@ -377,6 +427,54 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
           if (progreso >= 1) acabar(eventos);
         }
         pose = { x: clamp(dx / (40 * e), -1, 1), dorado: progreso, llama: !hecho };
+      } else if (tipo === 'sacar' || tipo === 'marca' || tipo === 'meter') {
+        // Tirar del lomo, meter el marcapáginas o el libro en la bolsa: hacia abajo; al llegar, hecho
+        const k = { sacar: 'fuera', marca: 'dentro', meter: 'dentro' }[tipo];
+        const b = clamp(dy / (M[tipo] * e));
+        progreso = Math.max(progreso, b);
+        pose = { [k]: b };
+        if (b >= 1) {
+          eventos.push(tipo);
+          acabar(eventos);
+        }
+      } else if (tipo === 'papel') {
+        // El papel se desenrolla y lo desenrollado se queda (como la leche); al final, se rasga
+        const antes = Math.floor(progreso * 4);
+        progreso = Math.max(progreso, clamp(base + Math.max(0, dy) / (M.papel * e)));
+        if (Math.floor(progreso * 4) > antes && progreso < 1) eventos.push('kraft');
+        pose = { papel: progreso, rasgado: false };
+        if (progreso >= 1) {
+          pose = { papel: 1, rasgado: true };
+          eventos.push('rasga');
+          acabar(eventos);
+        }
+      } else if (tipo === 'doblar') {
+        // Cada pasada de lado (de este largo, hacia donde sea) dobla una solapa; seguir sin soltar cuenta la siguiente
+        const hechos = Math.floor(pose.pliegues);
+        const t = clamp(Math.abs(x - x0) / (M.doblar * e));
+        if (t >= 1) {
+          x0 = x;
+          eventos.push('pliegue');
+          pose = { pliegues: hechos + 1 };
+          progreso = clamp((hechos + 1) / M.pliegues);
+          if (hechos + 1 >= M.pliegues) acabar(eventos);
+        } else pose = { pliegues: hechos + t * 0.9 };
+      } else if (tipo === 'abrir') {
+        const b = clamp(-dx / (M.abrir * e));
+        progreso = Math.max(progreso, b);
+        pose = { abierto: b };
+        if (b >= 1) {
+          eventos.push('paginas');
+          acabar(eventos);
+        }
+      } else if (tipo === 'pliegue') {
+        const b = clamp(dx / (M.pliegue * e));
+        progreso = Math.max(progreso, b);
+        pose = { doblado: b };
+        if (b >= 1) {
+          eventos.push('pliegue');
+          acabar(eventos);
+        }
       } else if (tipo === 'hilo') {
         const d = Math.hypot(x - ultimo.x, y - ultimo.y);
         if (d >= 4 * e) {
@@ -398,12 +496,18 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
       tAntes = t;
       if (!pulsado || hecho || !MANTENER_MS[tipo]) return estado();
       const eventos = [];
-      const listo = tipo === 'palanca' ? pose.bajada >= 0.85 : tipo === 'tambor' ? pose.abierta >= 0.85 : tipo === 'tetera' ? pose.alzada >= 0.6 : tipo === 'cazo' ? pose.inclina >= 0.6 : Math.abs(pose.inclina) >= 0.5;
+      const listo = tipo === 'sello' ? true : tipo === 'palanca' ? pose.bajada >= 0.85 : tipo === 'tambor' ? pose.abierta >= 0.85 : tipo === 'tetera' ? pose.alzada >= 0.6 : tipo === 'cazo' ? pose.inclina >= 0.6 : Math.abs(pose.inclina) >= 0.5;
       if (listo) {
         progreso = clamp(progreso + dt / MANTENER_MS[tipo]);
-        const k = { palanca: 'extraido', tetera: 'lleno', vapor: 'espuma', cazo: 'servido', tambor: 'caido' }[tipo];
+        const k = { palanca: 'extraido', tetera: 'lleno', vapor: 'espuma', cazo: 'servido', tambor: 'caido', sello: 'presion' }[tipo];
         pose = { ...pose, [k]: progreso };
-        if (progreso >= 1) acabar(eventos);
+        if (progreso >= 1) {
+          if (tipo === 'sello') {
+            pose = { ...pose, sellado: true };
+            eventos.push('sello');
+          }
+          acabar(eventos);
+        }
       }
       return estado(eventos);
     },
@@ -422,6 +526,13 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
       else if (tipo === 'rascar') pose = { ...pose, t: hecho ? 1 : 0 };
       else if (tipo === 'mortero') pose = { ...pose, maza: 0 };
       else if (tipo === 'soplete') pose = { ...pose, x: 0, llama: false };
+      // 1.130: lo que se mueve con el dedo vuelve si no se terminó; el papel desenrollado y las solapas dobladas, no
+      else if (tipo === 'sacar' && !hecho) pose = { fuera: 0 };
+      else if ((tipo === 'marca' || tipo === 'meter') && !hecho) pose = { dentro: 0 };
+      else if (tipo === 'abrir' && !hecho) pose = { abierto: 0 };
+      else if (tipo === 'pliegue' && !hecho) pose = { doblado: 0 };
+      else if (tipo === 'doblar' && !hecho) pose = { pliegues: Math.floor(pose.pliegues) };
+      else if (tipo === 'sello') pose = { ...pose, baja: 0 };
       return estado();
     },
     /** De una vez (movimiento reducido, teclado): el gesto acabado, con su resultado más sencillo. */
@@ -447,6 +558,16 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
         tambor: { abierta: 0, caido: 1 },
         mortero: { maza: 0, golpes: M.golpesMortero },
         soplete: { x: 0, dorado: 1, llama: false },
+        sacar: { fuera: 1 },
+        papel: { papel: 1, rasgado: true },
+        doblar: { pliegues: M.pliegues },
+        cordel: { angulo: Math.PI * 3, atado: 1 },
+        abrir: { abierto: 1 },
+        marca: { dentro: 1 },
+        bolsa: { abierta: 1 },
+        meter: { dentro: 1 },
+        pliegue: { doblado: 1 },
+        sello: { baja: 0, presion: 1, sellado: true },
       }[tipo];
       acabar(eventos);
       return estado(eventos);

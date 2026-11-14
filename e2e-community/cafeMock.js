@@ -20,6 +20,7 @@ import {
   premio,
   recetaPide,
 } from '../src/features/edificio/cafe/cafeClientes';
+import { EXTRA_LIBRO, REPARTO, estrellasTotal } from '../src/features/edificio/cafe/cafeLibreria';
 
 const json = (route, data, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
 const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
@@ -36,10 +37,24 @@ const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
  * (AAAA-MM-DD) que empiezan con todo el mundo ya atendido (2 estrellas, sin libro).
  * El tostadero (1.127, `20261216120000_cafe_tostadero.sql`): `estado.tazas` y `estado.sacoDia` (AAAA-MM-DD o null);
  * `cafe_recoger_saco` da 5 tazas una vez al día, y servir el tueste gasta una y, a quien lo pidió, paga el bono.
+ * 1.130 (`20261218120000_cafe_libreria.sql`): `cafe_entregar` (el libro en tres partes, estrellas de siete, +4 si aciertas el
+ * género), el reparto al abrir un día nuevo (lo vendido sin reponer, hasta 10, a 2 granos) y el dominio de Pilar en el café
+ * (`estado.dominio`: lo que ya se trae servido, por ejemplo { cafe: 12 }); `clientes.vendidos`: lo vendido otro día, sin
+ * reponer (las claves). Con `estado.sinEntregar`, el servidor aún no
+ * tiene la migración (`cafe_entregar` da 404 y la app sirve con `cafe_servir`).
  */
 export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null } = {}) {
   const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], tazas: 0, sacoDia: null, llamadas: [], ...estado } : null;
-  const vista = () => ({ nombre: c.nombre, nivel: c.nivel, reputacion: c.reputacion, granos: c.granos, plano: c.plano, inaugurado: c.inaugurado, inventario: c.inventario, escaparate: c.escaparate, tostadero: { tazas: c.tazas, saco_dia: c.sacoDia } });
+  const vista = () => ({ nombre: c.nombre, nivel: c.nivel, reputacion: c.reputacion, granos: c.granos, plano: c.plano, inaugurado: c.inaugurado, inventario: c.inventario, escaparate: c.escaparate, tostadero: { tazas: c.tazas, saco_dia: c.sacoDia }, dominio: dominio() });
+  // 1.130: las servidas de 2 estrellas o más por bebida (y lo de la carta con gesto), sobre lo que ya se traía
+  const dominio = () => {
+    const out = { ...(c.dominio ?? {}) };
+    for (const d of Object.values(dias))
+      for (const sv of Object.values(d.servidos))
+        if (sv.receta && sv.estrellas >= 2)
+          for (const k of [sv.receta[0], sv.receta[1] === 'casa' ? 'grano:casa' : null, ['nata', 'vainilla', 'brulee'].includes(sv.receta[3]) ? `toque:${sv.receta[3]}` : null]) if (k) out[k] = (out[k] ?? 0) + 1;
+    return out;
+  };
   // ── Libros en cajas ──
   const lib = { bienvenida: Boolean(estado?.libros?.bienvenida), libros: Object.fromEntries((estado?.libros?.libros ?? []).map((b) => [b.clave, { ...b }])) };
   if (c) c.lib = lib;
@@ -182,12 +197,19 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       c.sacoDia = body.dia;
       return json(route, { cafe: vista(), tazas: TAZAS_SACO });
     }
-    if (clientes && ['cafe_dia', 'cafe_habitual', 'cafe_servir'].includes(rpc)) return diaDelCafe(route, rpc, body);
+    if (clientes && rpc === 'cafe_entregar' && c.sinEntregar) return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
+    if (clientes && ['cafe_dia', 'cafe_habitual', 'cafe_servir', 'cafe_entregar'].includes(rpc)) return diaDelCafe(route, rpc, body);
     if (clientes && ['cafe_bienvenida', 'cafe_comprar_caja', 'cafe_colocar'].includes(rpc)) return libros(route, rpc, body);
     return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
   });
   // ── Los clientes del día (bloque 3) ──
   const dias = {};
+  // 1.130: lo que se vendió otro día y aún no se ha repuesto (las claves de los ejemplares): el reparto lo trae al abrir el día
+  if (clientes?.vendidos?.length) {
+    const servidos = Object.fromEntries(clientes.vendidos.map((libro, i) => [i + 1, { encaja: true, receta: null, estrellas: 3, libro, repuesto: false, orden: i + 1 }]));
+    dias['2000-01-01'] = { dia: '2000-01-01', clientes: clientes.vendidos.length, habituales: 0, servidos, carta: [], tickets: 0 };
+    c.orden = clientes.vendidos.length;
+  }
   let jornada = clientes?.jornada ?? null;
   const pizarra = [];
   const ayer = clientes ? new Date(new Date(`${clientes.hoy}T12:00:00Z`).getTime() - 864e5).toISOString().slice(0, 10) : null;
@@ -196,6 +218,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     dia: d.dia,
     carta: d.carta,
     tickets: d.tickets,
+    reparto: d.reparto ?? null,
     clientes: Array.from({ length: d.clientes }, (_, i) => ({
       n: i + 1,
       semilla: semilla(i),
@@ -218,7 +241,26 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
   function diaDelCafe(route, rpc, body) {
     if (body.dia !== clientes.hoy && body.dia !== ayer && body.dia !== jornada) return falla(route, 'cafe:dia');
     if (!c.inaugurado) return falla(route, 'cafe:cerrado');
+    const nuevo = !dias[body.dia];
     const d = (dias[body.dia] ??= { dia: body.dia, clientes: clientesDelNivel(c.nivel, asientosDe(c.plano)), habituales: 0, servidos: {}, carta: cartaDe(c.reputacion), tickets: 0 });
+    // 1.130: el día nuevo trae el reparto de lo vendido (de los otros días, del más antiguo al más nuevo)
+    if (nuevo) {
+      const vendidos = Object.values(dias)
+        .filter((x) => x !== d)
+        .flatMap((x) => Object.values(x.servidos))
+        .filter((sv) => sv.encaja && sv.libro && !sv.repuesto)
+        .sort((a, b) => a.orden - b.orden);
+      const claves = [];
+      let faltan = 0;
+      for (const sv of vendidos) {
+        if (claves.length < REPARTO.max && c.granos - (claves.length + 1) * REPARTO.precio >= 0 && lib.libros[sv.libro]) claves.push(sv.libro);
+        else faltan += 1;
+        sv.repuesto = true;
+      }
+      for (const k of claves) lib.libros[k].caja += 1;
+      c.granos -= claves.length * REPARTO.precio;
+      d.reparto = claves.length || faltan ? { claves, granos: claves.length * REPARTO.precio, faltan } : null;
+    }
     if (clientes.atendidosEn?.includes(d.dia) && !d.preparado) {
       d.preparado = true;
       for (let k = 1; k <= d.clientes; k += 1) d.servidos[k] = { encaja: false, receta: null, estrellas: 2, libro: null };
@@ -226,7 +268,8 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     let dado = null;
     let progreso = null;
     if (rpc === 'cafe_habitual') d.habituales = Math.min(MAX_HABITUALES, d.habituales + 1);
-    if (rpc === 'cafe_servir') {
+    if (rpc === 'cafe_servir' || rpc === 'cafe_entregar') {
+      const entrega = rpc === 'cafe_entregar';
       const n = body.cliente;
       if (!((n >= 1 && n <= d.clientes) || (n >= 101 && n <= 100 + d.habituales))) return falla(route, 'cafe:cliente');
       const r = body.receta;
@@ -240,18 +283,22 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       const quien = habitual ? (clientes.quienes?.[n - 101] ?? (n - 101) * 5) : semilla(n - 1) % 6;
       const pide = recetaPide(habitual ? { n, quien } : { n, semilla: semilla(n - 1) }, d.carta);
       const aciertos = aciertosDe(r, pide);
-      // El libro solo cuenta si está en la balda; si encaja, se lo lleva y paga 2 granos más
-      const lleva = Boolean(body.encaja) && Boolean(body.libro) && lib.libros[body.libro]?.balda > 0;
-      const extra = lleva ? EXTRA_LLEVADO : 0;
+      // El libro solo cuenta si está en la balda; si encaja (con `cafe_entregar`, si el género es), se lo lleva y paga más
+      const enLaBalda = Boolean(body.libro) && lib.libros[body.libro]?.balda > 0;
+      if (entrega && body.libro && (!Array.isArray(body.libro_ok) || body.libro_ok.length !== 3)) return falla(route, 'cafe:libro');
+      const ok = entrega && enLaBalda ? body.libro_ok.map(Boolean) : [false, false, false];
+      const la = ok.filter(Boolean).length;
+      const lleva = entrega ? ok[0] : Boolean(body.encaja) && enLaBalda;
+      const extra = lleva ? (entrega ? EXTRA_LIBRO : EXTRA_LLEVADO) : 0;
       if (lleva) lib.libros[body.libro].balda -= 1;
-      const estrellas = estrellasDe(aciertos, lleva);
+      const estrellas = entrega ? estrellasTotal(aciertos, la) : estrellasDe(aciertos, lleva);
       const base = premio(habitual ? 'habitual' : excentrico ? 'excentrico' : 'cliente', estrellas);
       // Bloque 6b: servir el tueste gasta una taza; a quien lo pidió, +3 granos y +4 de reputación
       const tueste = r[1] === 'casa' && pide[1] === 'casa';
       const bono = tueste ? BONO_TUESTE : { granos: 0, reputacion: 0 };
       const p = { granos: base.granos + bono.granos, reputacion: base.reputacion + bono.reputacion };
       if (r[1] === 'casa') c.tazas -= 1;
-      d.servidos[n] = { encaja: lleva, receta: r, estrellas, libro: body.libro ?? null };
+      d.servidos[n] = { encaja: lleva, receta: r, estrellas, libro: enLaBalda ? body.libro : null, repuesto: false, orden: (c.orden = (c.orden ?? 0) + 1) };
       c.granos = Math.min(100000, c.granos + p.granos + extra);
       const antes = c.reputacion;
       c.reputacion += p.reputacion;
@@ -269,6 +316,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       c.tickets = (c.tickets ?? 0) + tk;
       progreso = { de, a: c.nivel, niveles, hitos: nov.hitos.map(({ nivel, hito }) => ({ nivel, hito })), granos: granosDeHitos, tickets_dia: ticketsDia, tickets: tk };
       dado = { ...p, granos: p.granos + extra, llevado: lleva, extra, estrellas, aciertos, pide, frase: null, dorada: false, tueste, bono_granos: bono.granos, bono_reputacion: bono.reputacion };
+      if (entrega) Object.assign(dado, { libro_aciertos: la, libro_ok: ok, en_balda: enLaBalda });
       if (habitual) {
         dado.frase = clientes.frases?.[n - 101] ?? 2;
         pizarra.unshift({ dia: d.dia, quien, frase: dado.frase, dorada: false });

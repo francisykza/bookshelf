@@ -244,6 +244,24 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       clientes nuevos; lo ganado (granos, reputación, niveles y sus tickets) cuenta igual y no se borra nada. Para el resto no
       cambia nada. No se extiende a nadie más sin que lo pida. **Ampliado a la cuenta de su pareja** (Francisco, 13-11-2026,
       al aplicar la migración: las dos cuentas, añadidas en el SQL Editor; los correos nunca van a git).
+    - **Pilar prepara lo que ya dominas** (Francisco, 14-11-2026, «Vale lo de pilar»; para que preparar no se haga
+      repetitivo; detalle en `cafe-libreria.md` §15): cada bebida se domina con 12 servidas de 2 estrellas o más; entonces, tras
+      elegir tú la receta, «Que lo prepare Pilar» hace los gestos en 3D (unos 3 s; con movimiento reducido, directo). Siempre se
+      puede hacer a mano; el excéntrico y lo recién desbloqueado, a mano; paga lo mismo; el contador, en el servidor. Del resto
+      de ideas (pedidos de grupo, días distintos, arte latte, habituales con ficha, pistas, maridaje, tertulia) **no le
+      convencieron**: no hacerlas. **Se implementa junto con lo de los libros**, cuando esté preparado («vamos a preparar antes
+      lo demás y lo hacemos en conjunto»).
+    - **Los libros, igual de importantes que el café** (Francisco, 14-11-2026, «Si, me parece bien»; cifras en
+      `cafe-libreria.md` §15.5): los clientes **solo piden lo que hay en la balda**, en tres partes (género, corto o largo, y
+      para regalar / leer aquí / llevar), sin «tu favorito», «el autor que más lees» ni «el último que terminaste»; **una sola
+      lista de categorías** (los diez géneros de la distribuidora, una sección de la estantería con placa por género, solo las
+      que tienen ejemplares); estrellas con 4 aciertos de la bebida y 3 del libro (3★ con los 7, 2★ con 4–6); el ejemplar que
+      se lleva paga **+4 granos**; **el reparto** repone cada mañana lo vendido ayer (hasta 10, a 2 granos, nunca a deber).
+      Con las recetas en manos de Pilar, **el libro lo hace siempre el jugador**, así que Francisco pide **especial mimo**:
+      «que quiero que le pongas especial mimo de detalle, sonido, atractivo visual y mecanicas para que sea lo más divertido,
+      cozy y cuidado posible asi como hiciste con la preparación del café pero hasta con más esmero». Cada paso del libro, su
+      gesto, su objeto y su sonido, por encima del nivel de la barra. **Pilar y los libros, hechos juntos en la 1.130.0** (§130,
+      migración `20261218120000_cafe_libreria.sql`; interpretaciones por confirmar en `cafe-libreria.md` §15.6).
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la

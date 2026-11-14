@@ -8,6 +8,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { simularCafe } from './cafeMock';
 import { hacerGesto, quieto } from './cafeBarra';
+import { hacerLibro } from './cafeLibro';
 import { createMockSupabase } from './mockSupabase';
 import { ANA } from './sobreShop';
 import { PLANO_INICIAL, cuenta } from '../src/features/edificio/cafe/cafeCatalogo';
@@ -162,7 +163,7 @@ async function prepararMidiendo(page, cafe, receta, { foto = null, fallos }) {
     }
   }
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 20000 });
+  await expect(caja).toHaveAttribute('data-paso', /^(libro|libreria)$/, { timeout: 20000 });
 }
 
 test('la barra: la comanda se pliega en el gesto, el excéntrico enseña un acertijo y nada tapa la palanca', async ({ page }, info) => {
@@ -183,11 +184,12 @@ test('la barra: la comanda se pliega en el gesto, el excéntrico enseña un acer
   await foto('libro');
   await cafe.getByRole('button', { name: 'Solo el café' }).click();
   await cafe.getByRole('button', { name: 'Hasta luego' }).click();
-  // El excéntrico (el 3.º): en «pide», sus cuatro acertijos; en la barra, solo el del paso
+  // El excéntrico (el 3.º): en «pide», sus acertijos (desde la 1.130, cuatro de la bebida y tres del libro); en la barra, solo
+  // el del paso
   await page.evaluate(() => document.querySelector('.cf3-tag--raro').click());
   const caja = cafe.locator('.cf3-franja--atender');
   await expect(caja).toHaveAttribute('data-paso', 'pide', { timeout: 20000 });
-  await expect(cafe.locator('.cf3-comanda__acertijos li')).toHaveCount(4);
+  await expect(cafe.locator('.cf3-comanda__acertijos li')).toHaveCount(7);
   await expect(cafe.locator('.cf3-comanda')).not.toHaveAttribute('data-un-acertijo', 'true');
   await foto('raro-pide');
   await cafe.getByRole('button', { name: 'A la barra' }).click();
@@ -296,12 +298,18 @@ test('portadas por ISBN, la cámara hacia el cliente y la «!» roja de lo nuevo
   await expect(cafe.locator('.cf3-opcion[data-nuevo="true"]')).toHaveCount(0);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:cafe-visto')).cafe.includes('carta:chocolate'))).toBe(true);
   await cafe.getByRole('button', { name: 'Luego' }).click();
-  // Las fichas: la portada de Google Books de ese ISBN (Open Library no la tiene)
+  // La portada de Google Books de ese ISBN (Open Library no la tiene), en la ficha del libro sacado a la tabla (1.130)
   await cafe.getByRole('button', { name: 'Atender', exact: true }).click();
   await expect(caja).toHaveAttribute('data-paso', 'pide', { timeout: 20000 });
   await prepararMidiendo(page, cafe, receta, { fallos: [] });
-  await expect(cafe.locator('.cf3-ficha__portada[src*="books.google.com"]').first()).toBeVisible({ timeout: 15000 });
-  expect(pedidasGoogle.some((u) => decodeURIComponent(u).includes(`isbn:${ISBN_SIN}`))).toBe(true);
-  await foto('fichas-portada');
+  await hacerLibro(page, cafe, {
+    foto: async (n) => {
+      if (n !== 'mirar') return;
+      await expect(cafe.locator('.cf3-libro .cf3-ficha__portada[src*="books.google.com"]')).toBeVisible({ timeout: 15000 });
+      expect(pedidasGoogle.some((u) => decodeURIComponent(u).includes(`isbn:${ISBN_SIN}`))).toBe(true);
+      await foto('libro-portada');
+    },
+  });
+  await expect(caja).toHaveAttribute('data-paso', 'gracias', { timeout: 20000 });
   expect(errors).toEqual([]);
 });

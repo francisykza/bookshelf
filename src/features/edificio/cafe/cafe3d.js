@@ -93,6 +93,7 @@ import {
 import { ASIENTOS, CUADRICULA, SOTANO, casillaValida, columnasDe, filasDe, medidas, sotanoDe } from './cafeCatalogo';
 import { cajasDe, colorDe } from './cafeMuebles';
 import { footprint } from '../room';
+import { estanteLibreria } from './cafeLibreria';
 
 const ART_W = 320;
 const PX = 16; // píxeles de textura por unidad en suelo, paredes y techo
@@ -770,7 +771,6 @@ function estanteria(s) {
   pushBox(s, [0, y0, 0, 0.04, y1, alto], [86, 56, 36]);
   for (let z = 0.08; z < alto; z += 0.58) pushBox(s, [0, y0, z, fondo, y1, z + 0.05], WOOD);
   pushBox(s, [0, y0, alto - 0.05, fondo + 0.04, y1, alto], WOOD_D);
-  pushBox(s, [0.08, y0 + 1.6, 1.32, 0.3, y0 + 1.72, 1.66], [46, 40, 52]);
 }
 
 /** De las coordenadas del mueble a las de su casilla, girado a cuartos de vuelta (como `turned` en el piso). */
@@ -1904,11 +1904,376 @@ function barraKit(s, est = {}) {
     for (const cosa of Object.values(BARRA_COSAS))
       if (cosa.parte === elige && (!cosa.carta || carta.includes(cosa.carta)) && (!cosa.solo || cosa.solo.includes(receta.bebida))) marcoBarra(s, cosa.box, receta[elige] === cosa.valor ? [255, 226, 160] : [214, 150, 70]);
 }
-/** La taza que llevas en la mano (en el sitio de la cámara: x a la derecha, z arriba, y hacia ti), con lo que lleve. */
-function tazaEnMano({ receta = {}, vista = {} } = {}) {
+/**
+ * La taza que llevas en la mano (en el sitio de la cámara: x a la derecha, z arriba, y hacia ti), con lo que lleve. 1.130: con
+ * `paquete` (el libro ya preparado), en una bandeja, con el paquete de papel, el libro con su marcapáginas o la bolsa al lado.
+ */
+function tazaEnMano({ receta = {}, vista = {}, paquete = null } = {}) {
   const s = kit();
   taza(s, 0, 0, 0, receta, { ...vista, lleno: 1 }, { humo: true, g: 0.62 });
+  if (paquete) {
+    const o = { g: 0.62 };
+    pushBox(s, [-0.36, -0.13, -0.022, 0.12, 0.13, -0.002], WOOD_L, o);
+    pushBox(s, [-0.36, -0.13, -0.002, 0.12, -0.115, 0.018], WOOD, o);
+    pushBox(s, [-0.36, 0.115, -0.002, 0.12, 0.13, 0.018], WOOD, o);
+    const c = colorDe(paquete.titulo ?? '');
+    if (paquete.forma === 'regalar') {
+      pushBox(s, [-0.3, -0.1, 0, -0.12, 0.1, 0.05], KRAFT, o);
+      pushBox(s, [-0.3, -0.008, 0.05, -0.12, 0.008, 0.054], CORDEL, o);
+      pushBox(s, [-0.218, -0.1, 0.05, -0.202, 0.1, 0.054], CORDEL, o);
+      pushBox(s, [-0.24, -0.03, 0.054, -0.18, 0.03, 0.07], CORDEL, o);
+    } else if (paquete.forma === 'aqui') {
+      pushBox(s, [-0.3, -0.1, 0, -0.14, 0.1, 0.035], c, o);
+      pushBox(s, [-0.296, -0.096, 0.004, -0.144, 0.094, 0.031], PAPER, o);
+      pushBox(s, [-0.24, 0.1, 0.012, -0.226, 0.15, 0.016], MARCA_COLOR, o);
+    } else {
+      pushBox(s, [-0.3, -0.07, 0, -0.12, 0.07, 0.26], KRAFT_L, o);
+      pushBox(s, [-0.302, -0.072, 0.2, -0.118, 0.072, 0.26], KRAFT_D, o);
+      pushBox(s, [-0.24, 0.072, 0.21, -0.18, 0.075, 0.25], TINTA, o);
+    }
+  }
   return s;
+}
+
+// ── 1.130: la librería (Francisco, 14-11-2026: «que quiero que le pongas especial mimo de detalle, sonido, atractivo visual y
+// mecanicas»). La estantería de la pared, por secciones: una por género con ejemplares, con sus sujetalibros de hierro y su
+// placa de latón, y un lomo por ejemplar (grueso según sus páginas, con sus bandas y su tejuelo). Al atender, la tabla
+// extraíble que sale de la estantería con la bandeja y la taza, el rollo de papel de estraza y el cordel, el tarro de los
+// marcapáginas, las bolsas de papel y el sello del café con su tampón; y el libro, envuelto, abierto o en su bolsa. ──
+const KRAFT = [196, 150, 98];
+const KRAFT_D = [166, 122, 76];
+const KRAFT_L = [214, 176, 122];
+const CORDEL = [196, 66, 60];
+const CORDEL_B = [236, 222, 200];
+const TINTA = [132, 50, 44];
+const HIERRO = [62, 58, 66];
+const MARCA_COLOR = [170, 58, 70];
+const GUARDA = [222, 206, 176];
+/** La altura de la tabla extraíble (entre la fila de abajo y la del pecho), cuánto sale y su ancho a cada lado. */
+const TABLA_Z = 0.95;
+const TABLA_SALE = 0.55;
+const TABLA_MEDIA = 0.72;
+const CLARO_DE = (c, d = 56) => c.map((v) => Math.min(255, v + d));
+const OSCURO_DE = (c, k = 0.62) => c.map((v) => Math.round(v * k));
+const hashClave = (t) => {
+  let h = 2166136261;
+  for (const ch of String(t)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  return h;
+};
+/** Un lomo de pie, de cara al local (+x): el cuerpo, las bandas de la cabeza y el pie, el tejuelo o el título, y el canto. */
+function lomoKit(s, [x0, y0, z0, x1, y1, z1], c, v, o = {}) {
+  pushBox(s, [x0, y0, z0, x1, y1, z1], c, o);
+  const h = z1 - z0;
+  const e = 0.004;
+  const f = x1;
+  const oro = v % 3 === 0;
+  const banda = oro ? [226, 188, 108] : CLARO_DE(c, 64);
+  pushBox(s, [f, y0 + 0.004, z1 - h * 0.13, f + e, y1 - 0.004, z1 - h * 0.09], banda, o);
+  pushBox(s, [f, y0 + 0.004, z0 + h * 0.07, f + e, y1 - 0.004, z0 + h * 0.11], banda, o);
+  if (v % 4 === 1) {
+    // El tejuelo: una etiqueta clara con el título en dos rayas
+    pushBox(s, [f, y0 + 0.008, z0 + h * 0.46, f + e, y1 - 0.008, z0 + h * 0.7], [232, 220, 192], o);
+    pushBox(s, [f + e, y0 + 0.014, z0 + h * 0.62, f + e * 1.5, y1 - 0.014, z0 + h * 0.65], OSCURO_DE(c, 0.5), o);
+    pushBox(s, [f + e, y0 + 0.014, z0 + h * 0.52, f + e * 1.5, y1 - 0.014, z0 + h * 0.55], OSCURO_DE(c, 0.5), o);
+  } else {
+    // El título, de arriba abajo, en una columna de rayitas claras
+    const n = 3 + (v % 4);
+    for (let k = 0; k < n; k += 1) {
+      const z = z0 + h * (0.68 - k * 0.075);
+      pushBox(s, [f, y0 + 0.012, z, f + e, y1 - 0.012, z + h * 0.035], v % 2 ? banda : CLARO_DE(c, 90), o);
+    }
+  }
+  // El canto de las páginas, arriba, entre las tapas
+  pushBox(s, [x0 + 0.03, y0 + 0.004, z1, x1 - 0.012, y1 - 0.004, z1 + 0.003], PAPER, o);
+}
+/** Un sujetalibros de hierro con su remate de latón. */
+function sujetaKit(s, dx, y, z) {
+  const { fondo } = ESTANTERIA;
+  pushBox(s, [dx + 0.1, y, z, dx + fondo - 0.07, y + 0.012, z + 0.2], HIERRO);
+  pushBox(s, [dx + 0.12, y - 0.004, z + 0.19, dx + fondo - 0.09, y + 0.016, z + 0.215], BRASS);
+}
+/**
+ * Los lomos de la balda en la estantería de la pared, por secciones (`estanteLibreria`), con los sujetalibros; `sin`: la sección
+ * que se está mirando al atender (esa se dibuja aparte, para que el lomo elegido pueda salir). Devuelve las placas.
+ */
+function lomosLibreria(s, tramos, dx = 0, { sin = null } = {}) {
+  const { fondo } = ESTANTERIA;
+  const placas = [];
+  for (const t of tramos) {
+    const z = t.z + 0.05;
+    // Cada sección, en su hueco, entre dos sujetalibros
+    sujetaKit(s, dx, t.y0 + 0.014, z);
+    sujetaKit(s, dx, t.y1 + 0.006, z);
+    if (t.placa) {
+      const { y, ancho } = t.placa;
+      // La placa de latón, atornillada al canto de la balda, con un filete más oscuro
+      pushBox(s, [dx + fondo, y - ancho / 2 - 0.006, t.z - 0.016, dx + fondo + 0.007, y + ancho / 2 + 0.006, t.z + 0.062], [120, 86, 44]);
+      placas.push({ genero: t.genero, nombre: t.nombre, y, z: t.z + 0.023, ancho, x: dx + fondo + 0.0075 });
+    }
+    if (t.genero === sin) continue;
+    for (const l of t.lomos) lomoKit(s, [dx + 0.06, l.y0, z, dx + fondo - 0.04, l.y1, z + l.alto], colorDe(l.titulo), hashClave(l.clave));
+  }
+  return placas;
+}
+/** La placa de latón de una sección: el nombre grabado, en oscuro y sin medias tintas (si no cabe entero, rayas grabadas). */
+function paintPlaca(nombre, ancho) {
+  const h = 16;
+  const w = Math.max(24, Math.round((ancho / 0.066) * h));
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d');
+  const laton = [206, 164, 90];
+  const brillo = [236, 204, 136];
+  const sombra = [150, 110, 56];
+  const grabado = [74, 48, 26];
+  ctx.fillStyle = `rgb(${laton.join(',')})`;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = `rgb(${brillo.join(',')})`;
+  ctx.fillRect(1, 1, w - 2, 1);
+  ctx.fillStyle = `rgb(${sombra.join(',')})`;
+  ctx.fillRect(1, h - 2, w - 2, 1);
+  ctx.fillRect(0, 0, 1, h);
+  ctx.fillRect(w - 1, 0, 1, h);
+  // Los dos tornillos
+  ctx.fillStyle = `rgb(${grabado.join(',')})`;
+  ctx.fillRect(2, 7, 2, 2);
+  ctx.fillRect(w - 4, 7, 2, 2);
+  ctx.font = 'bold 9px Georgia, serif';
+  const cabe = ctx.measureText(nombre).width <= w - 12;
+  if (cabe) {
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(nombre, w / 2, h / 2 + 1);
+    const img = ctx.getImageData(6, 2, w - 12, h - 4);
+    for (let i = 0; i < img.data.length; i += 4) {
+      if (img.data[i] > 110) continue;
+      img.data[i] = grabado[0];
+      img.data[i + 1] = grabado[1];
+      img.data[i + 2] = grabado[2];
+      img.data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 6, 2);
+  } else {
+    ctx.fillStyle = `rgb(${grabado.join(',')})`;
+    ctx.fillRect(7, 6, w - 14, 1);
+    ctx.fillRect(9, 9, w - 18, 1);
+  }
+  return c;
+}
+/** La tabla extraíble, ya fuera (`D`, cuánto ha salido), con su canto, el tirador de latón y la lamparita de pinza. */
+function tablaKit(s, F, yc, D, o) {
+  const [y0, y1] = [yc - TABLA_MEDIA, yc + TABLA_MEDIA];
+  pushBox(s, [F - 0.04, y0, TABLA_Z - 0.035, F + D, y1, TABLA_Z], WOOD_L, o);
+  pushBox(s, [F + D - 0.03, y0, TABLA_Z - 0.06, F + D, y1, TABLA_Z + 0.008], WOOD_D, o);
+  pushBox(s, [F + D, yc - 0.08, TABLA_Z - 0.04, F + D + 0.02, yc + 0.08, TABLA_Z - 0.02], BRASS, o);
+  // Las guías de debajo
+  for (const y of [y0 + 0.06, y1 - 0.08]) pushBox(s, [F - 0.04, y, TABLA_Z - 0.07, F + D - 0.04, y + 0.02, TABLA_Z - 0.035], WOOD_D, o);
+  // Las vetas
+  for (let k = 0; k < 4; k += 1) pushBox(s, [F, y0 + 0.2 + k * 0.33, TABLA_Z, F + D - 0.05, y0 + 0.205 + k * 0.33, TABLA_Z + 0.001], WOOD, o);
+}
+/** Lo de envolver, en la tabla (a su altura, a la derecha de la pantalla): el rollo y el cordel, el tarro, las bolsas y el tampón. */
+function utilesKit(s, ox, yc, { bolsas = 6, sello = null, rollo = 1 } = {}, o = {}) {
+  const z = TABLA_Z;
+  // El rollo de papel de estraza, detrás del libro, en su soporte de madera (sale hacia ti)
+  for (const y of [yc - 0.25, yc + 0.23]) pushBox(s, [ox + 0.0, y, z, ox + 0.1, y + 0.02, z + 0.12], WOOD_D, o);
+  const r = 0.04 + 0.01 * rollo;
+  pushBox(s, [ox + 0.05 - r, yc - 0.23, z + 0.075 - r, ox + 0.05 + r, yc + 0.23, z + 0.075 + r], KRAFT, o);
+  pushBox(s, [ox + 0.05 - r * 0.8, yc - 0.231, z + 0.075 - r * 0.8, ox + 0.05 + r * 0.8, yc + 0.231, z + 0.075 + r * 0.8], KRAFT_D, o);
+  pushBox(s, [ox + 0.045, yc - 0.27, z + 0.07, ox + 0.055, yc + 0.27, z + 0.08], WOOD, o);
+  // La bobina del cordel, a rayas rojas y blancas
+  for (let k = 0; k < 4; k += 1) pushBox(s, [ox + 0.13, yc - 0.33 + k * 0.012, z, ox + 0.19, yc - 0.33 + (k + 1) * 0.012, z + 0.06], k % 2 ? CORDEL_B : CORDEL, o);
+  pushBox(s, [ox + 0.125, yc - 0.334, z + 0.06, ox + 0.195, yc - 0.28, z + 0.066], WOOD_D, o);
+  // El tarro de cristal con los marcapáginas asomando
+  const [tx, ty] = [ox + 0.27, yc - 0.52];
+  pushBox(s, [tx - 0.05, ty - 0.05, z, tx + 0.05, ty + 0.05, z + 0.12], [150, 176, 182], o);
+  pushBox(s, [tx - 0.046, ty - 0.046, z + 0.004, tx + 0.046, ty + 0.046, z + 0.1], [120, 150, 160], o);
+  pushBox(s, [tx - 0.052, ty - 0.052, z + 0.115, tx + 0.052, ty + 0.052, z + 0.128], BRASS, o);
+  [MARCA_COLOR, [70, 110, 86], [214, 170, 80], [86, 96, 150]].forEach((c, k) =>
+    pushBox(s, [tx - 0.03 + k * 0.018, ty - 0.012 + (k % 2) * 0.01, z + 0.04, tx - 0.02 + k * 0.018, ty + 0.012 + (k % 2) * 0.01, z + 0.17 + (k % 3) * 0.015], c, o),
+  );
+  // Las bolsas de papel, plegadas y apiladas
+  for (let k = 0; k < Math.max(1, bolsas); k += 1) pushBox(s, [ox + 0.37, yc - 0.66, z + k * 0.006, ox + 0.52, yc - 0.42, z + (k + 1) * 0.006], k % 2 ? KRAFT_L : CLARO_DE(KRAFT_L, 10), o);
+  pushBox(s, [ox + 0.43, yc - 0.56, z + Math.max(1, bolsas) * 0.006, ox + 0.47, yc - 0.52, z + Math.max(1, bolsas) * 0.006 + 0.002], TINTA, o);
+  // El tampón y, si no está en la mano, el sello encima
+  pushBox(s, [ox + 0.39, yc - 0.37, z, ox + 0.51, yc - 0.25, z + 0.016], HIERRO, o);
+  pushBox(s, [ox + 0.4, yc - 0.36, z + 0.016, ox + 0.5, yc - 0.26, z + 0.019], [104, 40, 36], o);
+  if (!sello) selloKit(s, ox + 0.27, yc - 0.32, z, 0, o);
+}
+/** El sello del café: la goma de tinta, el taco y el pomo de madera. `presion`, cuánto se aplasta al apretar. */
+function selloKit(s, x, y, z, presion = 0, o = {}) {
+  const ap = 0.006 * presion;
+  pushBox(s, [x - 0.032, y - 0.032, z, x + 0.032, y + 0.032, z + 0.012 - ap], TINTA, o);
+  pushBox(s, [x - 0.03, y - 0.03, z + 0.012 - ap, x + 0.03, y + 0.03, z + 0.036 - ap], WOOD, o);
+  pushBox(s, [x - 0.012, y - 0.012, z + 0.036 - ap, x + 0.012, y + 0.012, z + 0.08 - ap], WOOD_L, o);
+  pushBox(s, [x - 0.02, y - 0.02, z + 0.08 - ap, x + 0.02, y + 0.02, z + 0.1 - ap], WOOD_L, o);
+}
+/** La marca del sello en una superficie horizontal: el cuadrado de tinta con su taza dentro. */
+function marcaSello(s, x, y, z, o = {}) {
+  pushBox(s, [x - 0.03, y - 0.03, z, x + 0.03, y + 0.03, z + 0.0015], TINTA, o);
+  pushBox(s, [x - 0.022, y - 0.022, z + 0.0015, x + 0.022, y + 0.022, z + 0.002], [212, 168, 120], o);
+  pushBox(s, [x - 0.008, y - 0.012, z + 0.002, x + 0.012, y + 0.01, z + 0.0025], TINTA, o);
+  pushBox(s, [x + 0.012, y - 0.004, z + 0.002, x + 0.018, y + 0.004, z + 0.0025], TINTA, o);
+}
+/** Un tramo de cordel a rayas (de `a` a `b` sobre el eje `eje`, en la otra coordenada `c` y a la altura `z`). */
+function cordelKit(s, eje, a, b, c, z, o = {}) {
+  const paso = 0.03;
+  for (let t = a, k = 0; t < b - 0.001; t += paso, k += 1) {
+    const u = Math.min(b, t + paso);
+    pushBox(s, eje === 'x' ? [t, c - 0.006, z, u, c + 0.006, z + 0.006] : [c - 0.006, t, z, c + 0.006, u, z + 0.006], k % 2 ? CORDEL_B : CORDEL, o);
+  }
+}
+const suaveT = (t) => 1 - (1 - clamp(t, 0, 1)) ** 3;
+/**
+ * El libro en la tabla y lo que se le hace según la forma (`e.forma`) y los gestos (`e.gesto` con `e.pose`, el que se hace
+ * ahora; `e.hechos`, los ya hechos). `B`: dónde está y cómo es ({ cx, cy, z, alto, ancho, g, c }); tumbado, la cabeza de la
+ * portada mira a la estantería (-x) y el lomo queda a la izquierda de la pantalla (+y). Devuelve dónde va la portada real
+ * ({ x, y, z, w, h, de: 'arriba' | 'frente' }, o null si no se ve) y dónde cae el sello (`objetivo`).
+ */
+function libroKit(s, B, e, o = {}) {
+  const v = (n) => (e.gesto === n ? e.pose : e.hechos?.[n]) ?? null;
+  const { cx, cy, alto, ancho, g, c } = B;
+  const z0 = B.z;
+  const [bx0, bx1, by0, by1] = [cx - alto / 2, cx + alto / 2, cy - ancho / 2, cy + ancho / 2];
+  const claro = CLARO_DE(c, 70);
+  const forma = e.forma;
+  const sellado = Boolean(v('sello')?.sellado);
+  // ── Para llevar: la bolsa abierta y el libro, de pie, que baja dentro ──
+  if (forma === 'llevar' && v('bolsa')?.abierta) {
+    const soplo = e.soplo ?? 1;
+    // De un soplido: crece con un rebote pequeño
+    const k = soplo >= 1 ? 1 : 1 + Math.sin(soplo * Math.PI) * 0.12 - (1 - soplo) * 0.7;
+    const H = (alto + 0.07) * Math.max(0.15, k);
+    const gx = g / 2 + 0.022;
+    const gy = ancho / 2 + 0.025;
+    const pl = v('pliegue')?.doblado ?? 0;
+    const zt = z0 + alto + 0.004;
+    const alta = pl > 0 ? Math.min(H, zt - z0) : H;
+    pushBox(s, [cx - gx, cy - gy, z0, cx + gx, cy + gy, z0 + 0.004], KRAFT_D, o);
+    pushBox(s, [cx + gx, cy - gy, z0, cx + gx + 0.004, cy + gy, z0 + alta], KRAFT_L, o);
+    pushBox(s, [cx - gx - 0.004, cy - gy, z0, cx - gx, cy + gy, z0 + alta], KRAFT_L, o);
+    pushBox(s, [cx - gx - 0.004, cy - gy - 0.004, z0, cx + gx + 0.004, cy - gy, z0 + alta], KRAFT, o);
+    pushBox(s, [cx - gx - 0.004, cy + gy, z0, cx + gx + 0.004, cy + gy + 0.004, z0 + alta], KRAFT, o);
+    // El pliegue del fuelle en la cara de delante y el borde dentado de arriba
+    pushBox(s, [cx + gx + 0.004, cy - gy, z0 + alta * 0.18, cx + gx + 0.0055, cy + gy, z0 + alta * 0.2], KRAFT_D, o);
+    if (pl <= 0) for (let y = cy - gy; y < cy + gy - 0.01; y += 0.024) pushBox(s, [cx + gx, y, z0 + alta, cx + gx + 0.0045, y + 0.012, z0 + alta + 0.006], KRAFT_L, o);
+    // El libro, de pie, de cara a ti, bajando a la bolsa
+    const dentro = v('meter')?.dentro ?? 0;
+    const zb = z0 + 0.004 + (1 - suaveT(dentro)) * (H + 0.05);
+    pushBox(s, [cx - g / 2, cy - ancho / 2, zb, cx + g / 2, cy + ancho / 2, zb + alto], c, o);
+    pushBox(s, [cx - g / 2 + 0.003, cy - ancho / 2 + 0.003, zb + alto, cx + g / 2 - 0.003, cy + ancho / 2 - 0.006, zb + alto + 0.002], PAPER, o);
+    let objetivo = [cx, cy, zt + 0.005];
+    if (pl > 0) {
+      // El borde de la bolsa, cerrado y doblado hacia ti
+      const t = 2 * gx + 0.008;
+      pushBox(s, [cx - gx - 0.004, cy - gy - 0.004, zt, cx + gx + 0.004, cy + gy + 0.004, zt + 0.004], KRAFT_D, o);
+      pushBox(s, [cx + gx + 0.004 - t, cy - gy - 0.004, zt, cx + gx + 0.004, cy + gy + 0.004, zt + 0.07], KRAFT_L, { ...o, xf: giro([cx + gx + 0.004, cy, zt], 'y', Math.PI * suaveT(pl)) });
+      objetivo = [cx + 0.01, cy, zt + 0.005];
+      if (sellado) {
+        // El precinto del sello: arriba y bajando por la solapa
+        marcaSello(s, cx + 0.005, cy, zt + 0.0045, o);
+        pushBox(s, [cx + gx + 0.004 + t, cy - 0.02, zt - 0.06, cx + gx + 0.0055 + t, cy + 0.02, zt - 0.005], TINTA, o);
+      }
+    }
+    const asoma = zb + alto > z0 + alta - 0.01;
+    return { portada: asoma || dentro < 0.98 ? { x: cx + g / 2 + 0.0008, y: cy, z: zb + alto / 2, w: ancho * 0.96, h: alto * 0.96, de: 'frente' } : null, objetivo };
+  }
+  // ── Para regalar: el papel de estraza debajo, las solapas que se doblan y el cordel ──
+  const papel = forma === 'regalar' ? v('papel') : null;
+  const dob = forma === 'regalar' ? v('doblar') : null;
+  const sobre = papel ? 0.002 : 0;
+  const zl = z0 + sobre;
+  const top = zl + g;
+  if (papel) {
+    const largo = papel.rasgado ? 1 : clamp(papel.papel, 0, 1);
+    const [sx0, sy0, sy1] = [cx - 0.21, cy - 0.23, cy + 0.23];
+    const sx1 = sx0 + 0.43 * largo;
+    const f1 = dob ? clamp(dob.pliegues, 0, 1) : 0;
+    const f2 = dob ? clamp(dob.pliegues - 1, 0, 1) : 0;
+    if (f2 >= 1) {
+      // Envuelto: el paquete, con su costura y los extremos remetidos
+      pushBox(s, [bx0 - 0.012, by0 - 0.004, z0, bx1 + 0.014, by1 + 0.004, top + 0.006], KRAFT, o);
+      pushBox(s, [bx0 - 0.012, cy + 0.02, top + 0.006, bx1 + 0.014, cy + 0.027, top + 0.0072], KRAFT_D, o);
+      for (const x of [bx0 - 0.014, bx1 + 0.014]) pushBox(s, [x, by0 + 0.01, z0 + g * 0.35, x + 0.002, by1 - 0.01, z0 + g * 0.65], KRAFT_D, o);
+    } else {
+      // El papel: lo que va bajo el libro y las dos solapas, que se doblan por encima (la de la derecha primero)
+      pushBox(s, [sx0, Math.max(sy0, by0), z0, sx1, Math.min(sy1, by1), z0 + 0.002], KRAFT, o);
+      // Cada solapa sube por el canto del libro (la primera mitad) y se tumba encima (la segunda); `lado`: -1, la de la derecha
+      // de la pantalla (-y); 1, la de la izquierda. `alza`: la segunda queda un poco por encima de la primera.
+      const solapa = (lado, f, alza) => {
+        const borde = lado < 0 ? by0 : by1;
+        const m = lado < 0 ? by0 - sy0 : sy1 - by1;
+        const tramo = (len, z) => (lado < 0 ? [sx0, borde - len, z, sx1, borde, z + 0.002] : [sx0, borde, z, sx1, borde + len, z + 0.002]);
+        if (f <= 0) return pushBox(s, tramo(m, z0), KRAFT_L, o);
+        if (f <= 0.5) return pushBox(s, tramo(m, z0), KRAFT_L, { ...o, xf: giro([cx, borde, z0], 'x', lado * (Math.PI / 2) * suaveT(f / 0.5)) });
+        pushBox(s, lado < 0 ? [sx0, by0 - 0.002, z0, sx1, by0, top] : [sx0, by1, z0, sx1, by1 + 0.002, top], KRAFT_L, o);
+        return pushBox(s, tramo(Math.max(0.02, m - g), top + alza), KRAFT_L, { ...o, xf: giro([cx, borde, top + alza], 'x', lado * (Math.PI / 2) * (1 + suaveT((f - 0.5) / 0.5))) });
+      };
+      solapa(-1, f1, 0.003);
+      solapa(1, f2, 0.006);
+      // El borde rasgado, con sus fibras
+      if (papel.rasgado) for (let y = sy0; y < sy1 - 0.01; y += 0.028) pushBox(s, [sx1 - 0.006, y, z0 + 0.0005, sx1 + 0.004 * ((Math.round(y * 100) % 3) - 1), y + 0.014, z0 + 0.0025], KRAFT_L, o);
+    }
+    if (f2 >= 1) {
+      const cor = v('cordel');
+      const a = cor ? clamp(cor.atado ?? 0, 0, 1) : 0;
+      const zt = top + 0.006;
+      if (a > 0) cordelKit(s, 'x', bx0 - 0.014, bx0 - 0.014 + (bx1 - bx0 + 0.03) * Math.min(1, a * 2), cy - 0.004, zt, o);
+      if (a > 0.5) cordelKit(s, 'y', by0 - 0.006, by0 - 0.006 + (by1 - by0 + 0.012) * Math.min(1, (a - 0.5) * 2), cx, zt + 0.001, o);
+      if (a >= 1) {
+        // El lazo: dos lazadas, el nudo y las dos puntas
+        pushBox(s, [cx - 0.012, cy - 0.058, zt + 0.007, cx + 0.012, cy - 0.01, zt + 0.026], CORDEL, o);
+        pushBox(s, [cx - 0.012, cy + 0.006, zt + 0.007, cx + 0.012, cy + 0.054, zt + 0.026], CORDEL, o);
+        pushBox(s, [cx - 0.006, cy - 0.044, zt + 0.011, cx + 0.006, cy - 0.024, zt + 0.027], CORDEL_B, o);
+        pushBox(s, [cx - 0.006, cy + 0.02, zt + 0.011, cx + 0.006, cy + 0.04, zt + 0.027], CORDEL_B, o);
+        pushBox(s, [cx - 0.011, cy - 0.011, zt + 0.006, cx + 0.011, cy + 0.009, zt + 0.024], CORDEL_B, o);
+        pushBox(s, [cx + 0.008, cy - 0.032, zt + 0.006, cx + 0.07, cy - 0.022, zt + 0.01], CORDEL, o);
+        pushBox(s, [cx + 0.008, cy + 0.016, zt + 0.006, cx + 0.062, cy + 0.026, zt + 0.01], CORDEL, o);
+      }
+      if (sellado) marcaSello(s, bx0 + 0.06, by0 + 0.055, zt + 0.0005, o);
+      return { portada: null, objetivo: [bx0 + 0.06, by0 + 0.055, zt + 0.001] };
+    }
+  }
+  // ── El libro tumbado: la contratapa, las páginas, el lomo y la tapa (que se abre para leerlo aquí) ──
+  const ab = forma === 'aqui' ? (v('abrir')?.abierto ?? 0) * (1 - (e.cerrar ?? 0)) : 0;
+  pushBox(s, [bx0, by0, zl, bx1, by1, zl + 0.005], c, o);
+  pushBox(s, [bx0 + 0.005, by0 + 0.003, zl + 0.005, bx1 - 0.005, by1 - 0.007, top - 0.005], PAPER, o);
+  // Las hojas, en el canto de delante
+  for (let k = 1; k < 4; k += 1) pushBox(s, [bx1 - 0.005, by0 + 0.006, zl + 0.005 + (g - 0.01) * (k / 4), bx1 - 0.004, by1 - 0.01, zl + 0.0056 + (g - 0.01) * (k / 4)], [200, 188, 164], o);
+  pushBox(s, [bx0, by1 - 0.008, zl, bx1, by1, top], OSCURO_DE(c, 0.82), o);
+  const ptop = top - 0.005;
+  if (ab > 0.02) {
+    // La primera página, con sus renglones
+    for (let x = bx0 + 0.05; x < bx1 - 0.04; x += 0.028) pushBox(s, [x, by0 + 0.03, ptop, x + 0.006, by1 - 0.035, ptop + 0.0006], [150, 138, 120], o);
+    if (sellado) marcaSello(s, bx0 + 0.055, by0 + 0.05, ptop + 0.0008, o);
+  }
+  const ang = -Math.PI * suaveT(ab);
+  const xfTapa = ab > 0 ? { ...o, xf: giro([cx, by1, top], 'x', ang, (p) => [p[0], p[1] - (g - 0.006) * suaveT(ab), p[2]]) } : o;
+  pushBox(s, [bx0, by0, top - 0.003, bx1, by1, top], c, xfTapa);
+  pushBox(s, [bx0 + 0.003, by0 + 0.003, top - 0.005, bx1 - 0.003, by1 - 0.003, top - 0.003], GUARDA, xfTapa);
+  if (!e.portada && ab <= 0.02) {
+    // Sin portada real, la tapa de color con su recuadro y el título en bandas (la cabeza, hacia la estantería)
+    pushBox(s, [bx0 + 0.018, by0 + 0.018, top, bx1 - 0.018, by1 - 0.018, top + 0.0008], claro, o);
+    pushBox(s, [bx0 + 0.026, by0 + 0.026, top + 0.0008, bx1 - 0.026, by1 - 0.026, top + 0.0012], c, o);
+    pushBox(s, [bx0 + 0.05, by0 + 0.04, top + 0.0012, bx0 + 0.085, by1 - 0.04, top + 0.0016], claro, o);
+    pushBox(s, [bx0 + 0.1, by0 + 0.06, top + 0.0012, bx0 + 0.118, by1 - 0.06, top + 0.0016], claro, o);
+  }
+  // El marcapáginas: baja desde el tarro y se queda entre las hojas, con la borla asomando por delante
+  const mk = forma === 'aqui' ? v('marca') : null;
+  if (mk) {
+    if ((e.cerrar ?? 0) > 0.5) {
+      pushBox(s, [bx1 - 0.01, by1 - 0.042, zl + g * 0.5, bx1 + 0.05, by1 - 0.018, zl + g * 0.5 + 0.002], MARCA_COLOR, o);
+      pushBox(s, [bx1 + 0.05, by1 - 0.036, zl + g * 0.5 - 0.004, bx1 + 0.068, by1 - 0.024, zl + g * 0.5 + 0.006], [226, 186, 100], o);
+    } else {
+      const d = suaveT(mk.dentro ?? 0);
+      const [dx, dz] = [-0.24 * (1 - d), 0.09 * (1 - d) ** 1.5];
+      pushBox(s, [bx0 + 0.012 + dx, by1 - 0.042, ptop + 0.001 + dz, bx1 + 0.05 + dx, by1 - 0.018, ptop + 0.0026 + dz], MARCA_COLOR, o);
+      pushBox(s, [bx1 + 0.05 + dx, by1 - 0.036, ptop - 0.002 + dz, bx1 + 0.068 + dx, by1 - 0.024, ptop + 0.008 + dz], [226, 186, 100], o);
+    }
+  }
+  const tapada = forma === 'regalar' && dob && dob.pliegues > 0.4;
+  return { portada: ab <= 0.02 && !tapada ? { x: cx, y: cy, z: top + 0.0006, w: ancho * 0.96, h: alto * 0.96, de: 'arriba' } : null, objetivo: forma === 'aqui' ? [bx0 + 0.055, by0 + 0.05, ptop + 0.001] : [cx, cy, top] };
 }
 /**
  * Lo que solo llevan los excéntricos (no es ninguna prenda): su tocado sobre la cabeza, un aura de su color en el suelo y
@@ -2733,6 +3098,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     sabanas(s);
     cajas(s);
     escalera(s);
+    // 1.130: la caja oscura olvidada en la estantería vieja se va con los trastos (ahí van las secciones)
+    pushBox(s, [0.08, ESTANTERIA.y0 + 1.6, 1.32, 0.3, ESTANTERIA.y0 + 1.72, 1.66], [46, 40, 52]);
     const m = new Mesh(own(geometryOf(s)), flat);
     scene.add(m);
     return m;
@@ -2853,7 +3220,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   const CABEN = { 'cafe-estanteria': LIBROS_POR_ESTANTERIA, 'cafe-estanteria-alta': 96, 'cafe-biombo': 24 };
   const planoGrupo = new Group();
   scene.add(planoGrupo);
-  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1, escaparate: [], portadas: [] };
+  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1, escaparate: [], portadas: [], balda: null, decor: [] };
   let modo = { decorar: false, sel: null, mal: false, planta: 'calle' };
   let piezas = [];
   let obstaculos = [];
@@ -2894,6 +3261,165 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       m.geometry.dispose();
     }
   }
+  // ── 1.130: la librería. `lib.est`, lo que se ve al atender (Libreria.jsx): { fase ('estanteria', 'seccion', 'tabla',
+  // 'mirar', 'forma', 'gesto' o 'listo'), genero, foco (el lomo que asoma), sale (cuánto ha salido), tabla (cuánto ha salido la
+  // tabla), posa (el libro que cae en ella), libro ({ k, clave, titulo, alto, g }), portada (su lienzo), forma, gesto, pose,
+  // hechos, soplo (la bolsa que se abre), cerrar (el libro que se cierra) y bandeja (el paquete que va con la taza) }. ──
+  const libGrupo = new Group();
+  scene.add(libGrupo);
+  let lib = { activa: false, est: {}, lleva: null };
+  let libTramos = [];
+  const placaMat = new Map();
+  function materialPlaca(genero, nombre, ancho) {
+    const k = `${genero}:${Math.round(ancho * 100)}`;
+    if (!placaMat.has(k)) placaMat.set(k, own(new MeshBasicMaterial({ map: own(texture(paintPlaca(nombre, ancho))), color: 0xd2c4ac })));
+    return placaMat.get(k);
+  }
+  /** El tramo de la sección que se mira (el del lomo elegido o el que asoma; si no, el primero). */
+  function libTramo(e = lib.est) {
+    const ts = libTramos.filter((t) => t.genero === e.genero);
+    const k = e.libro?.k ?? e.foco;
+    return (k != null && ts.find((t) => t.lomos.some((l) => l.k === k))) || ts[0] || null;
+  }
+  /** Dónde sale la tabla: a la altura de la sección, sin pasarse de los extremos de la estantería. */
+  function libMesa(e = lib.est) {
+    const t = libTramo(e);
+    const { y0, y1, fondo } = ESTANTERIA;
+    const X = paredIzquierda(estado.inaugurado ? estado.nivel : 1);
+    return { X, F: X + fondo, yc: clamp(t ? (t.y0 + t.y1) / 2 : (y0 + y1) / 2, y0 + TABLA_MEDIA + 0.03, y1 - TABLA_MEDIA - 0.03) };
+  }
+  const TAN_H = Math.tan((HFOV / 2) * (Math.PI / 180));
+  /** La tangente del medio ancho que se ve de verdad (en un móvil en vertical, menos que `HFOV`: manda el alto). */
+  const tanAncho = () => Math.min(TAN_H, Math.tan((camera.fov * Math.PI) / 360) * camera.aspect);
+  /** La cámara de la librería: toda la estantería, una sección de cerca o la tabla desde arriba (el cuadro va abajo). */
+  function vistaLib(e = lib.est) {
+    const { F, yc } = libMesa(e);
+    const fase = e.fase ?? 'estanteria';
+    if (fase === 'estanteria' || !e.genero) {
+      const ts = libTramos.length ? libTramos : [{ y0: ESTANTERIA.y0 + 0.2, y1: ESTANTERIA.y1 - 0.2, z: 0.66 }];
+      // Con el hueco de cada sección (donde va su placa), no solo sus lomos
+      const [ya, yb] = [Math.min(...ts.map((t) => Math.min(t.y0, (t.y0 + t.y1) / 2 - (t.hueco ?? 0) / 2))), Math.max(...ts.map((t) => Math.max(t.y1, (t.y0 + t.y1) / 2 + (t.hueco ?? 0) / 2)))];
+      const [za, zb] = [Math.min(...ts.map((t) => t.z)), Math.max(...ts.map((t) => t.z)) + 0.42];
+      const [yy, zz] = [(ya + yb) / 2, (za + zb) / 2];
+      const d = clamp(((yb - ya) / 2 + 0.12) / tanAncho(), 1.7, 3.3);
+      return { p: [F + d, yy, zz + d * 0.26], m: [F - 0.2, yy, zz - d * 0.32] };
+    }
+    if (fase === 'seccion') {
+      const t = libTramo(e);
+      const [yy, zz] = [(t.y0 + t.y1) / 2, t.z + 0.22];
+      const d = clamp(((t.y1 - t.y0) / 2 + 0.2) / tanAncho(), 0.75, 1.6);
+      return { p: [F + d, yy, zz + d * 0.3], m: [F - 0.1 * d, yy, zz - d * 0.38] };
+    }
+    // Al elegir cómo se lo lleva (y al abrir una bolsa), la cámara se corre hacia el tarro y las bolsas: en un móvil en vertical
+    // la tabla no cabe entera y se quedaban fuera; al terminar, hacia la bandeja
+    const dy = fase === 'listo' ? 0.22 : fase === 'forma' || (fase === 'gesto' && e.gesto === 'bolsa') ? -0.27 : 0;
+    const c = [F + 0.3, yc + dy, TABLA_Z];
+    return { p: [c[0] + 0.66, c[1], c[2] + 0.92], m: [c[0] - 0.12, c[1], c[2] - 0.62] };
+  }
+  /** Lo que queda entre la cámara y la estantería (muebles y clientes) no se ve mientras estás en la librería. */
+  function despejar() {
+    const { F } = libMesa();
+    const v = vistaLib();
+    const ts = lib.est.genero && lib.est.fase === 'seccion' ? [libTramo()].filter(Boolean) : libTramos;
+    const [ya, yb] = lib.est.fase && !['estanteria', 'seccion'].includes(lib.est.fase) ? [libMesa().yc - 1.1, libMesa().yc + 1.1] : [Math.min(ESTANTERIA.y1, ...ts.map((t) => t.y0)) - 0.6, Math.max(ESTANTERIA.y0, ...ts.map((t) => t.y1)) + 0.6];
+    const tapa = (x0, y0, x1, y1) => lib.activa && x1 > F && x0 < v.p[0] + 0.45 && y1 > ya && y0 < yb;
+    piezas.forEach((m, k) => {
+      const b = obstaculos[k];
+      m.visible = !(b && tapa(b[0] - 0.1, b[1] - 0.1, b[3] + 0.1, b[4] + 0.1));
+    });
+    for (const m of clientesGrupo.children) {
+      const xy = m.userData.xy;
+      m.visible = !(xy && tapa(xy[0] - 0.35, xy[1] - 0.35, xy[0] + 0.35, xy[1] + 0.35));
+    }
+    if (alaPilares) alaPilares.visible = !modo.decorar && !lib.activa;
+  }
+  /** Lo de la librería que se mueve: la sección que se mira, la tabla y lo que hay en ella. */
+  function montarLibreria() {
+    for (const m of libGrupo.children.slice()) {
+      libGrupo.remove(m);
+      m.geometry.dispose();
+    }
+    if (!lib.activa) {
+      invalidate();
+      return;
+    }
+    const e = lib.est;
+    const { X, F, yc } = libMesa(e);
+    const s = kit();
+    const D = TABLA_SALE * suaveT(e.tabla ?? 0);
+    // La sección que se mira: el lomo bajo el dedo asoma y, al tirar, sale de la balda; el que está en la tabla deja su hueco
+    if (e.genero)
+      for (const t of libTramos) {
+        if (t.genero !== e.genero) continue;
+        const z = t.z + 0.05;
+        for (const l of t.lomos) {
+          if (e.libro && e.libro.k === l.k && D > 0.002) continue;
+          const foco = e.foco === l.k;
+          const sale = foco ? suaveT(e.sale ?? 0) : 0;
+          const o = foco ? { xf: giro([F - 0.04, l.y0, z], 'y', 0.17 + sale * 0.3, (p) => [p[0] + sale * 0.36, p[1] + sale * 0.06, p[2]]) } : {};
+          lomoKit(s, [X + 0.06, l.y0, z, F - 0.04, l.y1, z + l.alto], colorDe(l.titulo), hashClave(l.clave), o);
+          // El que asoma, con un filo de luz en la cabeza (lo que tocas)
+          if (foco && sale < 0.05) pushBox(s, [F - 0.06, l.y0 + 0.004, z + l.alto, F - 0.035, l.y1 - 0.004, z + l.alto + 0.006], [255, 214, 150], { glow: true, xf: o.xf });
+        }
+      }
+    let portada = null;
+    if (D > 0.002) {
+      const o = { g: 0.6 };
+      tablaKit(s, F, yc, D, o);
+      const ox = F + D - TABLA_SALE;
+      const papel = e.forma === 'regalar' && (e.gesto === 'papel' || e.hechos?.papel);
+      const bolsa = e.forma === 'llevar' && (e.hechos?.bolsa || (e.gesto === 'bolsa' && e.pose?.abierta));
+      utilesKit(s, ox, yc, { bolsas: bolsa ? 5 : 6, sello: e.gesto === 'sello', rollo: papel ? 0.7 : 1 }, o);
+      // La bandeja, con la taza que has traído de la barra
+      pushBox(s, [ox + 0.06, yc + 0.26, TABLA_Z, ox + 0.52, yc + 0.7, TABLA_Z + 0.008], WOOD, o);
+      for (const b of [
+        [ox + 0.06, yc + 0.26, ox + 0.52, yc + 0.275],
+        [ox + 0.06, yc + 0.685, ox + 0.52, yc + 0.7],
+        [ox + 0.06, yc + 0.26, ox + 0.075, yc + 0.7],
+        [ox + 0.505, yc + 0.26, ox + 0.52, yc + 0.7],
+      ])
+        pushBox(s, [b[0], b[1], TABLA_Z + 0.008, b[2], b[3], TABLA_Z + 0.03], WOOD_D, o);
+      if (lib.lleva) taza(s, ox + 0.17, yc + 0.6, TABLA_Z + 0.008, lib.lleva.receta ?? {}, { ...(lib.lleva.vista ?? {}), lleno: 1 }, { humo: !reduced() && lib.lleva.receta?.bebida !== 'frio', g: 0.62 });
+      if (e.libro) {
+        const b = suaveT(e.bandeja ?? 0);
+        const alto = e.libro.alto ?? 0.3;
+        const B = { cx: ox + 0.3 + 0.04 * b, cy: yc + 0.4 * b, z: TABLA_Z + 0.008 * b + (1 - suaveT(e.posa ?? 1)) * 0.14, alto, ancho: alto * 0.68, g: e.libro.g ?? 0.05, c: colorDe(e.libro.titulo ?? '') };
+        const r = libroKit(s, B, e, o);
+        portada = r.portada;
+        // El sello del café, en la mano: sobre lo que se sella, baja al apretar y se aplasta un poco; luego sube
+        if (e.gesto === 'sello') {
+          const p = e.pose ?? {};
+          const [tx, ty, tz] = r.objetivo;
+          const alza = p.sellado ? 0.12 : p.baja ? 0.004 * (1 - (p.presion ?? 0)) : 0.13;
+          selloKit(s, tx, ty, tz + alza, p.baja && !p.sellado ? (p.presion ?? 0) : 0, o);
+        }
+      }
+    }
+    libGrupo.add(new Mesh(geometryOf(s), flat));
+    if (portada && e.portada) {
+      const m = new Mesh(new PlaneGeometry(portada.w, portada.h), portadaMaterial(e.portada));
+      if (portada.de === 'arriba') m.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
+      else m.rotation.set(0, Math.PI / 2, 0);
+      m.position.set(portada.x, portada.z, portada.y);
+      libGrupo.add(m);
+    }
+    despejar();
+    invalidate();
+  }
+  /** Al salir de la librería, de pie delante de la estantería (en un sitio libre) y mirándola. */
+  function dePieAnteEstanteria() {
+    const { F, yc } = libMesa();
+    const op = opcionesPaso();
+    for (const dx of [0.95, 1.25, 1.6, 2.0, 2.5])
+      for (const dy of [0, -0.5, 0.5, -1, 1]) {
+        if (dentro(F + dx, yc + dy, op)) {
+          px = F + dx;
+          py = yc + dy;
+          yaw = -Math.PI / 2;
+          return;
+        }
+      }
+  }
   function montarPlano() {
     vaciarGrupo();
     piezas = [];
@@ -2907,9 +3433,11 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       const f = footprint(med, it.rot);
       const o = enMundo(it.x, it.y);
       const cabe = CABEN[it.id] ?? 0;
-      const tramo = cabe ? estado.libros.slice(usados, usados + cabe) : [];
+      // 1.130: con la balda por secciones en la pared, los muebles enseñan tus leídos, de adorno (`decor`)
+      const fuente = estado.balda ? estado.decor : estado.libros;
+      const tramo = cabe ? fuente.slice(usados, usados + cabe) : [];
       // Con los libros en cajas, una estantería sin ejemplares se queda vacía (sin lomos de relleno)
-      const libros = estado.vacias && !tramo.length && cabe ? null : tramo;
+      const libros = (estado.vacias || estado.balda) && !tramo.length && cabe ? null : tramo;
       usados += cabe;
       const s = kit();
       for (const box of cajasDe(it.id, libros)) {
@@ -2924,7 +3452,18 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     }
     {
       const s = kit();
-      if (estado.inaugurado) lomosPared(s, estado.libros.slice(enCafe), paredIzquierda(estado.nivel));
+      // 1.130: la estantería de la pared, por secciones (una por género con ejemplares, con su placa); sin la migración de los
+      // libros, como antes
+      libTramos = estado.inaugurado && estado.balda ? estanteLibreria(estado.balda) : [];
+      if (estado.inaugurado && estado.balda) {
+        const X = paredIzquierda(estado.nivel);
+        for (const p of lomosLibreria(s, libTramos, X, { sin: lib.activa ? lib.est.genero : null })) {
+          const m = new Mesh(new PlaneGeometry(p.ancho, 0.066), materialPlaca(p.genero, p.nombre, p.ancho));
+          m.rotation.y = Math.PI / 2;
+          m.position.set(p.x, p.z, p.y);
+          planoGrupo.add(m);
+        }
+      } else if (estado.inaugurado) lomosPared(s, estado.libros.slice(enCafe), paredIzquierda(estado.nivel));
       // Bloque 4b: el escaparate con tus tres libros (nivel 5)
       if (estado.inaugurado && estado.nivel >= 5)
         for (const pt of escaparateKit(s, estado.escaparate, estado.portadas)) {
@@ -2966,7 +3505,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     altasM.visible = n >= 3;
     for (const m of [paredIzq, altasM, estanteriaVieja]) m.position.x = paredIzquierda(n);
     alaGrupo.visible = n >= 4;
-    alaPilares.visible = !modo.decorar;
+    alaPilares.visible = !modo.decorar && !lib.activa;
     const terraza = n >= 5;
     // En la terraza no llueve: la noche está despejada
     lluvia.visible = !terraza;
@@ -2999,6 +3538,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     );
     montarClientes();
     montarBarra();
+    despejar();
   }
   const opcionesPaso = () => ({ limpio: estado.inaugurado, muebles: [...obstaculos, ...obstaculosClientes], nivel: estado.inaugurado ? estado.nivel : 1, planta });
 
@@ -3066,11 +3606,14 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       const luz = glowAt(sx, sy, 1.2) + 0.04;
       for (const bx of boxes) pushBox(s, bx.b, bx.c, { g: luz });
       if (c.raro) adornoExcentrico(s, boxes, c.raro, sx, sy);
-      clientesGrupo.add(new Mesh(geometryOf(s), flat));
+      const figura = new Mesh(geometryOf(s), flat);
+      figura.userData.xy = [sx, sy];
+      clientesGrupo.add(figura);
       const alto = sentado ? sentado.h + 0.95 : 1.95;
       const m = new Mesh(new BoxGeometry(0.7, alto, 0.7), hidden);
       m.position.set(sx, alto / 2, sy);
       m.userData.id = `cliente:${c.n}`;
+      m.userData.xy = [sx, sy];
       clientesGrupo.add(m);
       pickersClientes.push(m);
       if (!sentado) obstaculosClientes.push([sx - 0.3, sy - 0.3, 0, sx + 0.3, sy + 0.3, 1.8]);
@@ -3193,7 +3736,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     const dt = lastT ? Math.min(0.05, (now - lastT) / 1000) : 0;
     lastT = now;
     let moving = advance(dt);
-    const meta = barra.activa || tost.activa ? 1 : 0;
+    const meta = barra.activa || tost.activa || lib.activa ? 1 : 0;
     if (barraT !== meta) {
       barraT = reduced() ? meta : Math.min(1, Math.max(0, barraT + (meta ? 1 : -1) * dt * 2.6));
       moving = moving || barraT !== meta;
@@ -3277,11 +3820,11 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         out[id] = { ...p, visible: false };
         continue;
       }
-      out[id] = { ...p, visible: hay && !walk && !modo.decorar && !barra.activa && !tost.activa && barraT === 0 && p.front };
+      out[id] = { ...p, visible: hay && !walk && !modo.decorar && !barra.activa && !tost.activa && !lib.activa && barraT === 0 && p.front };
     }
     for (const [n, c] of Object.entries(sitiosClientes)) {
       const p = project(c.x, c.y, c.z);
-      out[`cliente:${n}`] = { ...p, visible: !tour && !walk && !modo.decorar && !barra.activa && !tost.activa && barraT === 0 && c.espera && c.planta === planta && p.front };
+      out[`cliente:${n}`] = { ...p, visible: !tour && !walk && !modo.decorar && !barra.activa && !tost.activa && !lib.activa && barraT === 0 && c.espera && c.planta === planta && p.front };
     }
     return out;
   }
@@ -3333,7 +3876,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     if (tour) return null;
     const sitios = pickers.filter((m) => sitioActivo(m.userData.id));
     const suyos = pickersClientes.filter((m) => sitiosClientes[m.userData.id.slice(8)]?.planta === planta);
-    if (tost.activa) return null;
+    if (tost.activa || lib.activa) return null;
     return ray.intersectObjects(barra.activa ? pickersBarra : [...sitios, ...suyos], false)[0]?.object.userData.id ?? null;
   }
   /** La pieza del plano bajo un punto de la pantalla (su uid), o null. */
@@ -3467,7 +4010,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         }
         return;
       }
-      if (!press.moved || walk || barra.activa || tost.activa || tour) return;
+      if (!press.moved || walk || barra.activa || tost.activa || lib.activa || tour) return;
       yaw = press.yaw + (e.clientX - press.x) * DRAG;
       invalidate();
     },
@@ -3495,7 +4038,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       onPick(id);
       return;
     }
-    if (barra.activa || tost.activa || tour) return;
+    if (barra.activa || tost.activa || lib.activa || tour) return;
     rayAt(e.clientX, e.clientY);
     if (ray.ray.intersectPlane(floorPlane, hit) && dentro(hit.x, hit.z, opcionesPaso())) walkTo(hit.x, hit.z);
   };
@@ -3504,7 +4047,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   canvas.addEventListener(
     'keydown',
     (e) => {
-      if (modo.decorar || barra.activa || tost.activa || cambiando || tour) return;
+      if (modo.decorar || barra.activa || tost.activa || lib.activa || cambiando || tour) return;
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         yaw += e.key === 'ArrowLeft' ? KEY_STEP : -KEY_STEP;
@@ -3538,7 +4081,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     /** Cuántas portadas reales del escaparate tiene la escena (las pruebas lo miran). */
     portadasEscaparate: () => (estado.portadas ?? []).filter(Boolean).length,
     pose: () => ({ x: px, y: py, yaw }),
-    settled: () => !walk && vistaQuieta() && (barra.activa || tost.activa ? barraT === 1 : barraT === 0),
+    settled: () => !walk && vistaQuieta() && (barra.activa || tost.activa || lib.activa ? barraT === 1 : barraT === 0),
     /** Ir a un sitio ('pilar', 'cortina', 'escaparate' o 'entrada'). Promesa que acaba al llegar. */
     go(id) {
       if (id === 'entrada') return cambiarPlanta('calle').then(() => walkTo(INICIO.x, INICIO.y, { face: [INICIO.x + Math.sin(INICIO.yaw), INICIO.y + Math.cos(INICIO.yaw)] }));
@@ -3580,10 +4123,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     },
     invalidate,
     /** El estado del local: si está inaugurado, su nombre, el plano y tus libros (títulos) para las estanterías. */
-    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1, escaparate = [], portadas = [] } = {}) {
+    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1, escaparate = [], portadas = [], balda = null, decor = [] } = {}) {
       const nombreAntes = estado.nombre;
       const abre = inaugurado && !estado.inaugurado;
-      estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate, portadas };
+      // 1.130: `balda`, lo que hay en la balda ({ clave, title, genero, paginas, ejemplares }) para la estantería por secciones;
+      // `decor`, tus leídos (títulos), para las estanterías de los muebles
+      estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate, portadas, balda, decor };
       // Las luces del ala y de la terraza alumbran lo colocado solo desde su nivel
       const n = inaugurado ? nivel : 1;
       LUCES_NIVEL = [...(n >= 4 ? [LUZ_ALA] : []), ...(n >= 5 ? [LUZ_TERRAZA] : []), ...(n >= 8 ? LUZ_CATAS : n >= 7 ? LUZ_TOSTADERO : n >= 6 ? LUZ_BODEGA : [])];
@@ -3835,9 +4380,126 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
     },
     enTostador: () => tost.activa && barraT === 1,
+    /**
+     * 1.130: la librería (on): la cámara va de la barra (o de tus ojos) a la estantería de la pared; con `lleva` ({ receta, vista }),
+     * la taza espera en la bandeja de la tabla. Al salir quedas de pie delante de la estantería y, con `llevar` ({ receta, vista,
+     * paquete }), con la bandeja en la mano. Sin letreros ni toques en la escena mientras dura (los gestos los lleva Libreria.jsx).
+     */
+    libreria(on, { lleva = null, llevar = null } = {}) {
+      // Salir sin estar dentro (al cerrar el cuadro de atender) no toca nada: ni el paseo ni la taza en la mano
+      if (!on && !lib.activa) return;
+      walk = null;
+      if (on) {
+        if (planta === 'bodega') planta = 'calle';
+        lib = { activa: true, est: { fase: 'estanteria' }, lleva };
+        if (barraT === 0) vista = { p: [...vistaLib().p], m: [...vistaLib().m] };
+        vistaMeta = vistaLib();
+        ponerEnMano(null);
+      } else {
+        if (lib.activa) {
+          dePieAnteEstanteria();
+          onMove({ x: px, y: py, yaw });
+        }
+        lib = { activa: false, est: {}, lleva: null };
+        ponerEnMano(llevar);
+      }
+      montarPlano();
+      montarLibreria();
+    },
+    /** Lo que se ve en la librería (ver `lib.est`): la cámara sigue a la fase y a la sección. */
+    setLibreria(est = {}) {
+      if (!lib.activa) return;
+      const antes = lib.est.genero;
+      lib = { ...lib, est };
+      vistaMeta = vistaLib(est);
+      if (est.genero !== antes) montarPlano();
+      montarLibreria();
+    },
+    /**
+     * Dónde cae en la pantalla una marca de la librería (en px de la ventana): 'placa:<género>', 'lomo:<k>' (de la sección que se
+     * mira), 'libro', 'rollo', 'tarro', 'bolsas', 'sello', 'bandeja' o 'tabla'.
+     */
+    libreriaMarca(nombre) {
+      aim(performance.now());
+      const e = lib.est;
+      const { F, yc } = libMesa(e);
+      const ox = F + TABLA_SALE * suaveT(e.tabla ?? 0) - TABLA_SALE;
+      const [tipo, cual] = String(nombre).split(':');
+      let m = null;
+      if (tipo === 'placa') {
+        const t = libTramos.find((x) => x.genero === cual && x.placa);
+        if (t) m = [F + 0.01, t.placa.y, t.z + 0.023];
+      } else if (tipo === 'lomo') {
+        for (const t of libTramos) {
+          const l = t.genero === e.genero && t.lomos.find((x) => String(x.k) === cual);
+          if (l) m = [F - 0.04, (l.y0 + l.y1) / 2, t.z + 0.05 + l.alto * 0.55];
+        }
+      } else {
+        const g = e.libro?.g ?? 0.05;
+        const b = suaveT(e.bandeja ?? 0);
+        m = {
+          libro: [ox + 0.3 + 0.04 * b, yc + 0.4 * b, TABLA_Z + g + 0.01],
+          // Para llevar: el libro, de pie sobre la bolsa abierta, y el borde de la bolsa
+          libroAlto: [ox + 0.3, yc, TABLA_Z + (e.libro?.alto ?? 0.3) * 1.5 + 0.12],
+          bolsaBorde: [ox + 0.3, yc, TABLA_Z + (e.libro?.alto ?? 0.3) + 0.06],
+          rollo: [ox + 0.06, yc, TABLA_Z + 0.09],
+          tarro: [ox + 0.27, yc - 0.52, TABLA_Z + 0.15],
+          bolsas: [ox + 0.445, yc - 0.54, TABLA_Z + 0.05],
+          sello: [ox + 0.27, yc - 0.32, TABLA_Z + 0.1],
+          bandeja: [ox + 0.29, yc + 0.48, TABLA_Z + 0.05],
+          tabla: [ox + 0.3, yc, TABLA_Z],
+        }[tipo] ?? null;
+      }
+      if (!m) return null;
+      const p = project(...m);
+      const rect = canvas.getBoundingClientRect();
+      return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
+    },
+    /**
+     * Las secciones de la estantería en la pantalla: [{ genero, nombre, x, y, ancho, front }] (donde va cada placa; `ancho`, los
+     * px de su hueco, para que el nombre no pise al de al lado).
+     */
+    libreriaPlacas() {
+      aim(performance.now());
+      const { F } = libMesa();
+      const rect = canvas.getBoundingClientRect();
+      return libTramos
+        .filter((t) => t.placa)
+        .map((t) => {
+          const p = project(F + 0.01, t.placa.y, t.z + 0.023);
+          const h = (t.hueco ?? t.placa.ancho) / 2;
+          const ancho = Math.abs(project(F + 0.01, t.placa.y + h, t.z + 0.023).x - project(F + 0.01, t.placa.y - h, t.z + 0.023).x);
+          return { genero: t.genero, nombre: t.nombre, x: rect.left + p.x, y: rect.top + p.y, ancho, front: p.front };
+        });
+    },
+    /**
+     * Los lomos de la sección que se mira, en la pantalla (de izquierda a derecha): [{ k, clave, titulo, paginas, x, x0, x1,
+     * y, front }] (x0 y x1, sus bordes a media altura; y, su cabeza).
+     */
+    libreriaLomos() {
+      aim(performance.now());
+      const e = lib.est;
+      const { F } = libMesa(e);
+      const rect = canvas.getBoundingClientRect();
+      const out = [];
+      for (const t of libTramos) {
+        if (t.genero !== e.genero) continue;
+        const z = t.z + 0.05;
+        for (const l of t.lomos) {
+          const a = project(F - 0.04, l.y1, z + l.alto * 0.5);
+          const b = project(F - 0.04, l.y0, z + l.alto * 0.5);
+          const c = project(F - 0.04, (l.y0 + l.y1) / 2, z + l.alto);
+          out.push({ k: l.k, clave: l.clave, titulo: l.titulo, paginas: l.paginas, x: rect.left + (a.x + b.x) / 2, x0: rect.left + Math.min(a.x, b.x), x1: rect.left + Math.max(a.x, b.x), y: rect.top + c.y, front: a.front && b.front });
+        }
+      }
+      return out.sort((p, q) => p.x - q.x);
+    },
+    enLibreria: () => lib.activa && barraT === 1,
     destroy() {
       ponerEnMano(null);
       destroyed = true;
+      lib = { activa: false, est: {}, lleva: null };
+      montarLibreria();
       vaciarGrupo();
       clientes = [];
       montarClientes();

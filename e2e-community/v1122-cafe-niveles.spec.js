@@ -126,9 +126,9 @@ async function atender(page, cafe, receta, { foto = null, ayuda = true } = {}) {
   await quieto(page, 400);
   await foto?.('lista');
   await cafe.getByRole('button', { name: 'Llevársela' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'libro', { timeout: 15000 });
+  await expect(caja).toHaveAttribute('data-paso', /^(libro|libreria)$/, { timeout: 15000 });
   await cafe.getByRole('button', { name: 'Solo el café' }).click();
-  await expect(caja).toHaveAttribute('data-paso', 'gracias');
+  await expect(caja).toHaveAttribute('data-paso', 'gracias', { timeout: 20000 });
   await cafe.getByRole('button', { name: 'Hasta luego' }).click();
 }
 

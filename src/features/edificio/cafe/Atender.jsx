@@ -9,20 +9,27 @@
 //    (agitar la canela o dibujar un hilo de miel). La cámara se acerca a cada objeto. Nada falla ni corre prisa; lo hecho no
 //    se pierde al soltar; con movimiento reducido o con el teclado, cada gesto es un toque.
 // 3. «Llevársela»: la taza en la mano y vas andando hasta su mesa.
-// 4. El libro, de extra: tres fichas de lo que tienes en la balda (§121.3: los ejemplares comprados en cajas) con sus pistas
-//    (páginas, año, género), o «Solo el café». Si encaja, el cliente se lleva el ejemplar y paga 2 granos más; sin
-//    ejemplares en la balda, solo el café.
-// 5. Estrellas (de 1 a 3, según lo acertado; las pone el servidor con `cafe_servir`) y el repaso de qué acertaste. Los gestos
-//    no cambian las estrellas: solo cuenta la receta.
+// 4. El libro (1.130, tan importante como el café; Libreria.jsx): pide un género, corto o largo, y cómo se lo lleva; lo buscas
+//    en su sección de la estantería, lo sacas, lo miras en la tabla y lo envuelves, lo abres con su marcapáginas o lo metes en
+//    su bolsa, y el sello del café. O «Solo el café». Sin ejemplares en la balda, solo el café.
+// 5. Estrellas (de 1 a 3: 4 aciertos de la bebida y 3 del libro; las pone el servidor con `cafe_entregar`) y el repaso de qué
+//    acertaste. Los gestos no cambian las estrellas: solo cuenta lo elegido.
+// Pilar (1.130, §15.1): lo que ya dominas (12 servidas de 2 estrellas o más) te lo prepara ella si quieres: tú eliges cada
+// parte de la receta y los gestos los hace ella en la barra, con sus sonidos (con movimiento reducido, directos). Al
+// excéntrico y lo recién abierto de la carta, siempre a mano. Lo elegido se recuerda en el dispositivo, por bebida.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { colorDe } from './cafeMuebles';
-import { PARTES, PEDIDO_ACERTIJO, RESENAS, comandaAcertijo, comandaClara, librosParaRecomendar, nombreOpcion, opcionesDe } from './cafeClientes';
+import { PARTES, RESENAS, comandaAcertijo, comandaClara, nombreGenero, nombreOpcion, opcionesDe } from './cafeClientes';
 import { AYUDA_NIVELES, AYUDA_PARADO_MS, ELIGE, ladoNota, ETAPAS, GESTOS, crearGesto, gestosDe, nombreEtapa, verAyuda, vistaTaza } from './cafeGestos';
 import { crearSfxBarra } from './cafeSfx';
-import { retratoDe } from './cafeIconos';
+import { PILAR, retratoDe } from './cafeIconos';
 import { errorCafe } from './cafeService';
-import { portadaPorIsbn, portadaRecordada } from './cafePortadaIsbn';
+import { DOMINIO, comandaLibro, comandaLibroAcertijo, extensionDe, formaPorId, frasePedido, haciaDominio, pilarHaceEtapa, pilarPuede, preparaRecordado, recordarPrepara } from './cafeLibreria';
+import { BUCLE_PILAR, PILAR_MS, PILAR_RESPIRO_MS, poseAuto, sonidosEntre } from './cafePilar';
+import { useLibreria } from './Libreria';
+import { Pista } from './Pista';
 import { PixelArt } from './PixelArt';
+
+export { Pista };
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** La hora para los gestos que se mantienen (fuera del componente: solo se llama en los toques y en cada cuadro). */
@@ -31,32 +38,6 @@ const rgb = (c) => `rgb(${c[0]} ${c[1]} ${c[2]})`;
 const VACIA = { bebida: null, grano: null, leche: null, toque: null };
 /** Cuánto se queda el objeto en su postura final antes de pasar al siguiente (un respiro; directo con movimiento reducido). */
 const RESPIRO_MS = 420;
-const CATEGORIAS = [
-  [/science fiction|ciencia ficci/, 'Ciencia ficción'],
-  [/fantas/, 'Fantasía'],
-  [/myster|misterio|crime|crimen|thriller|polic|suspense|detective/, 'Misterio'],
-  [/romanc|amor|love/, 'Amor'],
-  [/classic|clásic/, 'Clásico'],
-  [/poetry|poesía/, 'Poesía'],
-  [/histor/, 'Historia'],
-  [/biograph|biograf/, 'Biografía'],
-  [/juvenile|young adult|juvenil/, 'Juvenil'],
-  [/fiction|ficci|novel/, 'Novela'],
-];
-/** Las pistas de una ficha: género, páginas, año y si es de tus favoritos o el último que terminaste. */
-function pistas(b, ctx) {
-  const out = [];
-  const cat = (b.categories ?? []).join(' ').toLowerCase();
-  const genero = CATEGORIAS.find(([re]) => re.test(cat))?.[1];
-  if (genero) out.push(genero);
-  if (b.pageCount > 0) out.push(`${b.pageCount} págs.`);
-  const anio = String(b.publishedDate ?? '').slice(0, 4);
-  if (/^\d{4}$/.test(anio)) out.push(anio);
-  if (b.favorite || b.rating >= 5) out.push('Favorito');
-  if (ctx?.ultimo === b.id) out.push('Lo último que leíste');
-  return out;
-}
-
 /** Lo que se pregunta al elegir cada parte. */
 const PREGUNTA = {
   bebida: (r, carta = []) =>
@@ -126,47 +107,40 @@ function Estrellas({ n }) {
   );
 }
 
-/** La pista del gesto, dibujada sobre el objeto: una flecha de píxel por gesto (quieta con movimiento reducido). */
-export function Pista({ tipo }) {
-  const p = GESTOS[tipo]?.pista;
-  const trazo = {
-    giro: 'M 44 12 A 32 32 0 1 1 12 44',
-    abajo: 'M 44 8 L 44 70',
-    'abajo-mantener': 'M 44 8 L 44 62',
-    // Bloque 6b: tirar del asa del tambor hacia ti (el asa arriba y el tirón hacia abajo)
-    tirar: 'M 28 12 L 60 12 M 44 12 L 44 64',
-    derecha: 'M 6 44 Q 44 10 82 44',
-    'arriba-mantener': 'M 44 76 L 44 18',
-    'vaiven-vertical': 'M 44 14 L 44 74',
-    'lado-mantener': 'M 14 44 L 74 44',
-    'izquierda-mantener': 'M 76 44 L 18 44',
-    remover: 'M 44 10 A 34 26 0 1 1 10 44 A 34 26 0 0 1 44 10',
-    batir: 'M 44 30 a 12 12 0 1 1 -1 0 m 1 10 a 12 12 0 1 1 -1 0 m 1 10 a 12 12 0 1 1 -1 0',
-    rascar: 'M 30 10 L 30 70 M 44 10 L 44 70 M 58 10 L 58 70',
-    coctelera: 'M 4 56 Q 44 16 84 56 M 84 56 L 74 50 M 4 56 L 14 50',
-    // Bloque 6c: cuatro golpes secos en el mortero, y el zigzag del soplete sin soltar
-    golpes: 'M 44 10 L 44 50 M 30 62 L 58 62 M 34 70 L 54 70',
-    zigzag: 'M 8 30 L 30 58 L 52 30 L 74 58 L 84 44',
-    trazo: 'M 44 6 Q 30 24 44 40 Q 58 56 44 78',
-    vaiven: 'M 8 44 L 80 44',
-    dibujo: 'M 44 44 m -6 0 a 6 6 0 1 1 12 0 a 12 12 0 1 1 -24 0 a 18 18 0 1 1 36 0',
-  }[p];
-  if (!trazo) return null;
-  return (
-    <svg className="cf3-pista" data-pista={p} viewBox="0 0 88 88" aria-hidden="true" shapeRendering="crispEdges">
-      <path d={trazo} className="cf3-pista__trazo" />
-      <circle className="cf3-pista__dedo" r="7" />
-      {p.endsWith('mantener') && <circle className="cf3-pista__mantener" r="13" />}
-    </svg>
-  );
-}
-
 const SIN_CARTA = [];
 const SIN_NUEVOS = new Set();
 /** La opción de la barra que abre cada cosa nueva de la carta (el café con hielo es la opción «frio»). */
 const OPCION_CARTA = { frio: 'hielo' };
 
-export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
+const SIN_BALDA = [];
+const SIN_DOMINIO = {};
+
+/** Las tres filas del libro en el repaso: género, extensión y forma, con lo que pidió si no acertaste. */
+function repasoLibro(libro, pedido, ok, forma) {
+  const ext = extensionDe(libro.paginas);
+  const nombreExt = (e) => (e === 'corto' ? 'Corto' : e === 'largo' ? 'Largo' : 'Sin páginas');
+  const pags = Number(libro.paginas) > 0 ? ` (${libro.paginas} págs.)` : '';
+  const nombreForma = (id) => formaPorId(id)?.nombre ?? 'Sin envolver';
+  return [
+    {
+      id: 'genero',
+      ok: Boolean(ok[0]),
+      texto: ok[0] ? `✓ ${nombreGenero(libro.genero)}` : `✗ ${nombreGenero(libro.genero)} · pidió ${nombreGenero(pedido.genero).toLowerCase()}`,
+    },
+    {
+      id: 'extension',
+      ok: Boolean(ok[1]),
+      texto: ok[1] ? `✓ ${nombreExt(ext)}${pags}` : `✗ ${nombreExt(ext)}${pags} · pidió ${pedido.extension === 'corto' ? 'corto' : 'largo'}`,
+    },
+    {
+      id: 'forma',
+      ok: Boolean(ok[2]),
+      texto: ok[2] ? `✓ ${nombreForma(forma ?? pedido.forma)}` : `✗ ${nombreForma(forma)} · pidió ${nombreForma(pedido.forma).toLowerCase()}`,
+    },
+  ];
+}
+
+export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, escena, registrarToque, onServir, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
   const [paso, setPaso] = useState('pide');
   const [receta, setReceta] = useState(VACIA);
   const [ei, setEi] = useState(0);
@@ -177,42 +151,29 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   const [marcas, setMarcas] = useState(null);
   const [paradoEn, setParadoEn] = useState(null);
   const [libro, setLibro] = useState(null);
+  // 1.130: lo que se entrega del libro ({ libro, forma, ok }) o null (solo el café)
+  const [entrega, setEntrega] = useState(null);
   const [dado, setDado] = useState(null);
   const [error, setError] = useState('');
-  // Las portadas que no cargan (sin red, o Open Library devuelve un píxel vacío): esas fichas vuelven a la tapa de color
-  const [sinPortada, setSinPortada] = useState({});
-  // 1.128: si la de Open Library no está, la de la misma edición en Google Books (por el ISBN), recordada en el dispositivo
-  const [alternas, setAlternas] = useState({});
+  // 1.130, Pilar: lo elegido en este servicio ('pilar' o 'mano'); si no, lo recordado para esa bebida
+  const [prepara, setPrepara] = useState(null);
   const [sfx] = useState(() => crearSfxBarra());
+  // Lo que dominabas al llegar el cliente (para el aviso de Pilar al despedirlo, aunque el café ya se haya actualizado)
+  const [dominioAntes] = useState(dominio);
   const rec = useRef(null);
   const raf = useRef(0);
   const respiro = useRef(0);
   const zona = useRef(null);
+  const llevaRef = useRef(null);
   const raro = cliente.raro;
   const quien = cliente.habitual || raro ? cliente.nombre : 'Cliente';
-  const fichas = useMemo(() => librosParaRecomendar(cliente.pedido, libros, ctx, cliente.semilla), [cliente.pedido, cliente.semilla, libros, ctx]);
-  /** La portada que se enseña: la del libro si carga; si no, la otra de su ISBN (si la hay); si no, ninguna. */
-  const portadaDe = (b) => {
-    if (b.cover && !sinPortada[b.cover]) return b.cover;
-    const otra = alternas[b.isbn] ?? portadaRecordada(b.isbn);
-    return otra && !sinPortada[otra] ? otra : null;
-  };
-  const faltan = fichas
-    .filter((b) => b.isbn && (!b.cover || sinPortada[b.cover]) && alternas[b.isbn] === undefined && portadaRecordada(b.isbn) === undefined)
-    .map((b) => b.isbn)
-    .join('|');
-  useEffect(() => {
-    if (!faltan) return undefined;
-    let vivo = true;
-    for (const isbn of faltan.split('|')) portadaPorIsbn(isbn).then((url) => vivo && setAlternas((m) => ({ ...m, [isbn]: url })));
-    return () => {
-      vivo = false;
-    };
-  }, [faltan]);
+  // Lo que pide del libro se fija al llegar (la balda cambia al servir y los pedidos del día se recalculan)
+  const [pedido] = useState(() => cliente.pedido);
+  const pideLibro = pedido?.id === 'libro';
   const lista = [receta.bebida, receta.grano, receta.leche, receta.toque];
-  const encaja = libro ? cliente.pedido.encaja(libro, ctx) : false;
   const enBarra = paso === 'barra';
   const lleva = paso === 'yendo' || paso === 'libro' || paso === 'sirviendo';
+  const hayLibreria = pideLibro && balda.length > 0;
 
   const etapa = ETAPAS[ei] ?? null;
   const parte = etapa ? ELIGE[etapa] : null;
@@ -222,6 +183,11 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   const lista_ = enBarra && ei >= ETAPAS.length;
   const actual = gesto && g?.clave === clave ? g : null;
   const pista = pistaEn?.clave === clave ? pistaEn : null;
+  // Pilar: si la bebida ya la dominas (nunca al excéntrico), lo elegido aquí o lo recordado; y si este gesto lo hace ella
+  const puedePilar = enBarra && pilarPuede(dominio, receta.bebida, { excentrico: Boolean(raro) });
+  const modoPilar = puedePilar ? (prepara ?? preparaRecordado(receta.bebida)) : null;
+  const pilarAhora = Boolean(gesto) && modoPilar === 'pilar' && pilarHaceEtapa(dominio, receta, etapa);
+  const ofrecePilar = puedePilar && modoPilar == null && !lista_;
   // La «!» de ayuda: en qué punto estás (elegir una parte, un gesto o la taza lista) y si toca enseñarla
   const puntoClave = enBarra ? (lista_ ? 'lista' : eligiendo ? `e:${ei}:${parte}` : (clave ?? 'nada')) : paso;
   const ayuda = verAyuda(ayudas, nivel, paradoEn === puntoClave);
@@ -245,7 +211,11 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     if (dado.dorada) ids.push(setTimeout(() => sfx.play('dorada'), 200 + n * pasos * 1000 + 700));
     // Bloque 6b: el tueste de la casa, cobrado a quien lo pidió
     if (dado.tueste) ids.push(setTimeout(() => sfx.play('tueste'), 200 + n * pasos * 1000 + 450));
+    // 1.130: la bebida ya la dominas (el aviso de Pilar, con su brillo)
+    if (!cliente.raro && n >= 2 && haciaDominio(dominioAntes, receta.bebida) === DOMINIO - 1) ids.push(setTimeout(() => sfx.play('bordas'), 200 + n * pasos * 1000 + 950));
     return () => ids.forEach(clearTimeout);
+    // Solo al llegar el resultado
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dado, sfx]);
   useEffect(
     () => () => {
@@ -273,9 +243,11 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       lista: lista_,
       carta,
       tazas,
-      enfoque: lista_ ? 'lista' : eligiendo ? etapa : (gesto ?? etapa),
+      // Mientras prepara Pilar, la cámara se queda en la etapa entera (sin acercarse a cada gesto)
+      enfoque: lista_ ? 'lista' : eligiendo || pilarAhora ? etapa : (gesto ?? etapa),
+      pilar: pilarAhora,
     });
-  }, [enBarra, escena, receta, gesto, actual, hechos, vista, eligiendo, parte, lista_, etapa, carta, tazas]);
+  }, [enBarra, escena, receta, gesto, actual, hechos, vista, eligiendo, parte, lista_, etapa, carta, tazas, pilarAhora]);
   // Dónde cae el objeto del gesto en la pantalla, cuando la cámara ya ha llegado (para la pista y el centro del gesto)
   useEffect(() => {
     if (!gesto) return undefined;
@@ -424,8 +396,77 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     if (!gesto || actual?.hecho) return;
     aplicar(reconocedor().completar());
   };
+  // ── 1.130, Pilar: «Esto ya lo bordas; si quieres, te lo preparo yo» ──
+  const elegirPrepara = (v) => {
+    // Si estaba preparando ella, el gesto vuelve a empezar, a mano
+    if (v === 'mano' && pilarAhora) {
+      clearTimeout(respiro.current);
+      rec.current = null;
+      setG(null);
+    }
+    setPrepara(v);
+    recordarPrepara(receta.bebida, v);
+    sfx.play(v === 'pilar' ? 'bordas' : 'etapa');
+  };
+  const ofrecida = useRef(false);
+  useEffect(() => {
+    if (!ofrecePilar || ofrecida.current) return;
+    ofrecida.current = true;
+    sfx.play('bordas');
+  }, [ofrecePilar, sfx]);
+  // Los gestos que hace Pilar: la postura de cada momento, sus sonidos y el respiro (con movimiento reducido, de una vez)
+  useEffect(() => {
+    if (!pilarAhora || !clave) return undefined;
+    const tipo = gesto;
+    const [r, e, gIdx, antes] = [receta, ei, gi + 1, hechos];
+    let id = 0;
+    let tAntes = 0;
+    let vivo = true;
+    const acabar = (pose) => {
+      sfx.bucle(tipo, false);
+      setG({ clave, progreso: 1, pose, pulsado: false, hecho: true, eventos: [] });
+      const seguir = () => {
+        if (!vivo) return;
+        setHechos({ ...antes, [tipo]: pose });
+        avanzar(r, e, gIdx);
+      };
+      if (reduced()) seguir();
+      else respiro.current = setTimeout(seguir, PILAR_RESPIRO_MS);
+    };
+    if (reduced()) {
+      acabar(poseAuto(tipo, 1));
+      return () => {
+        vivo = false;
+      };
+    }
+    const ms = PILAR_MS[tipo] ?? 450;
+    const t0 = performance.now();
+    const paso_ = (now) => {
+      if (!vivo) return;
+      const t = Math.min(1, Math.max(0, (now - t0) / ms));
+      const pose = poseAuto(tipo, t);
+      for (const ev of sonidosEntre(tipo, tAntes, t)) sfx.play(ev);
+      tAntes = t;
+      const bucle = BUCLE_PILAR[tipo];
+      if (bucle) sfx.bucle(tipo, t >= bucle[0] && t < bucle[1], tipo === 'vapor' ? (pose.espuma ?? 0) : 0);
+      if (t >= 1) {
+        acabar(pose);
+        return;
+      }
+      setG({ clave, progreso: t, pose, pulsado: true, hecho: false, eventos: [] });
+      id = requestAnimationFrame(paso_);
+    };
+    id = requestAnimationFrame(paso_);
+    return () => {
+      vivo = false;
+      cancelAnimationFrame(id);
+      sfx.bucle(tipo, false);
+    };
+    // Solo al empezar cada gesto de Pilar (lo demás no cambia mientras dura)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pilarAhora, clave]);
   const onDown = (e) => {
-    if (!gesto || actual?.hecho) return;
+    if (!gesto || actual?.hecho || pilarAhora) return;
     e.preventDefault();
     if (reduced()) return completar();
     e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -435,11 +476,13 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     raf.current = requestAnimationFrame(latido);
   };
   const onMove = (e) => {
+    if (pilarAhora) return;
     const r = rec.current?.clave === clave ? rec.current.g : null;
     if (!r || !r.estado.pulsado) return;
     aplicar(r.mover(e.clientX, e.clientY, reloj()));
   };
   const onUp = () => {
+    if (pilarAhora) return;
     const r = rec.current?.clave === clave ? rec.current.g : null;
     cancelAnimationFrame(raf.current);
     if (!r || !r.estado.pulsado) return;
@@ -449,6 +492,14 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   const llevar = async () => {
     sfx.play('bandeja');
     const lleva_ = { receta, vista: vistaTaza(receta, hechos) };
+    llevaRef.current = lleva_;
+    // 1.130: si pide libro y hay en la balda, de la barra a la estantería (la taza espera en la bandeja de la tabla)
+    if (hayLibreria) {
+      escena?.barra(false);
+      escena?.libreria?.(true, { lleva: lleva_ });
+      setPaso('libreria');
+      return;
+    }
     escena?.barra(false, { llevar: lleva_ });
     if (!escena) return setPaso('libro');
     setPaso('yendo');
@@ -456,6 +507,26 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     sfx.play('tazaMesa');
     setPaso('libro');
   };
+  /** Con el libro preparado (o «Solo el café»): la bandeja en la mano, hasta su mesa, y se le sirve. */
+  const entregarLibro = async (r) => {
+    const paquete = r?.paquete ?? null;
+    escena?.libreria?.(false, { llevar: { ...llevaRef.current, paquete } });
+    if (!escena) return servir(r);
+    setPaso('yendo');
+    await escena.irACliente(cliente.n);
+    sfx.play('tazaMesa');
+    servir(r);
+  };
+  const libreria = useLibreria({
+    activo: paso === 'libreria',
+    pedido,
+    balda,
+    escena,
+    sfx,
+    ayuda: verAyuda(ayudas, nivel, false),
+    onListo: entregarLibro,
+    onSolo: () => entregarLibro(null),
+  });
   const lista3d = useRef(null);
   useEffect(() => {
     lista3d.current = { elegir };
@@ -474,15 +545,18 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     return () => registrarToque?.(null);
   }, [registrarToque]);
 
-  const servir = async (b) => {
+  /** Servir: `r`, lo del libro ({ libro, forma, ok }) o null (solo el café). */
+  const servir = async (r) => {
+    const b = r?.libro ?? null;
     if (b) sfx.play('libroDesliza');
     setLibro(b);
+    setEntrega(r);
     setPaso('sirviendo');
     setError('');
     try {
-      const r = await onServir({ receta: lista, encaja: b ? cliente.pedido.encaja(b, ctx) : null, libro: b });
+      const res = await onServir({ receta: lista, libro: b, ok: b ? r.ok : null });
       escena?.llevar(null);
-      setDado(r);
+      setDado(res);
       setPaso('gracias');
     } catch (e) {
       setError(errorCafe(e));
@@ -490,17 +564,22 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     }
   };
 
-  const retrato = <PixelArt icono={retratoDe(cliente.aspecto)} />;
+  // Mientras Pilar prepara, el retrato del cuadro es el suyo
+  const retrato = <PixelArt icono={pilarAhora ? PILAR : retratoDe(cliente.aspecto)} />;
   const pide = dado?.pide ?? cliente.pide;
+  const enLibreria = paso === 'libreria';
   // 1.128 (Francisco, 13-11-2026: «la palanca se sigue tapando con las instrucciones» y, con el excéntrico, «tapan mucho más»):
   // en la barra, mientras haces un gesto, la comanda se pliega a su título; eligiendo, el excéntrico enseña solo el acertijo de
-  // ese paso. Lo plegado sigue ahí para los lectores de pantalla.
-  const plegada = enBarra && Boolean(gesto);
-  const acertijoAhora = enBarra && eligiendo ? PARTES.findIndex((p) => p.id === parte) : -1;
-  const comanda = !(paso === 'pide' || enBarra || paso === 'yendo') ? null : (
+  // ese paso. Lo plegado sigue ahí para los lectores de pantalla. 1.130: en la librería, igual (el acertijo del libro de cada paso).
+  const plegada = (enBarra && Boolean(gesto)) || (enLibreria && libreria.plegada);
+  const acertijoLibro = { estanteria: 4, seccion: 5, tabla: 5, mirar: 5, forma: 6 }[libreria.fase] ?? -1;
+  const acertijoAhora = enBarra && eligiendo ? PARTES.findIndex((p) => p.id === parte) : enLibreria ? acertijoLibro : -1;
+  const lineaLibro = comandaLibro(pedido);
+  const comanda = !(paso === 'pide' || enBarra || paso === 'yendo' || enLibreria) ? null : (
     <section
       className={`cf3-comanda${raro ? ' cf3-comanda--raro' : ''}`}
       data-plegada={plegada ? 'true' : undefined}
+      data-solo-libro={enLibreria ? 'true' : undefined}
       data-un-acertijo={raro && (plegada || acertijoAhora >= 0) ? 'true' : undefined}
       aria-label={raro ? `La comanda de ${quien}, en acertijos` : `La comanda de ${quien}`}
       style={raro ? { '--cf3-tema': rgb(raro.tema) } : undefined}
@@ -508,14 +587,22 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       <h3 className="cf3-comanda__titulo">{raro ? `★ ${quien}` : cliente.habitual ? `${quien}: lo de siempre` : 'Comanda'}</h3>
       {raro ? (
         <ul className="cf3-comanda__acertijos">
-          {comandaAcertijo(cliente.pide).map((t, k) => (
-            <li key={t} data-ahora={k === acertijoAhora ? 'true' : undefined}>
+          {[...comandaAcertijo(cliente.pide), ...comandaLibroAcertijo(pedido)].map((t, k) => (
+            <li key={`${k}:${t}`} data-ahora={k === acertijoAhora ? 'true' : undefined} data-libro={k >= 4 ? 'true' : undefined}>
               {t}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="cf3-comanda__linea">{comandaClara(cliente.pide)}</p>
+        <>
+          <p className="cf3-comanda__linea">{comandaClara(cliente.pide)}</p>
+          {lineaLibro && (
+            <p className="cf3-comanda__linea cf3-comanda__linea--libro" data-ahora={enLibreria ? 'true' : undefined}>
+              <span className="px-sr">Y un libro: </span>
+              {lineaLibro}
+            </p>
+          )}
+        </>
       )}
     </section>
   );
@@ -524,7 +611,9 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
   let botones;
   let extra = null;
   if (paso === 'pide') {
-    texto = raro ? raro.saludo : cliente.habitual ? '«¡Hola otra vez! Lo de siempre, por favor.»' : '«¡Buenas! ¿Me pones esto? Lo tienes apuntado.»';
+    // 1.130: y el libro, en tres partes (solo de lo que hay en la balda); el del excéntrico, en sus acertijos de la comanda
+    const yLibro = pideLibro ? ` ${frasePedido(pedido)}` : '';
+    texto = raro ? raro.saludo : cliente.habitual ? `«¡Hola otra vez! Lo de siempre, por favor.${yLibro}»` : `«¡Buenas! ¿Me pones esto? Lo tienes apuntado.${yLibro}»`;
     botones = (
       <>
         <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar}>
@@ -542,7 +631,15 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     const pregunta = eligiendo ? PREGUNTA[parte]({ ...receta, casa: opciones.some((o) => o.id === 'casa') }, carta) : '';
     const corte = pregunta.indexOf('? ');
     texto = lista_ ? (
-      '¡Lista! Huele de maravilla.'
+      hayLibreria ? (
+        '¡Lista! Huele de maravilla. Ahora, el libro.'
+      ) : (
+        '¡Lista! Huele de maravilla.'
+      )
+    ) : pilarAhora ? (
+      <>
+        <span className="px-sr">Pilar: </span>«Deja, que esto lo bordo yo.» <span className="cf3-dice__como">{nombreEtapa(etapa, receta)}…</span>
+      </>
     ) : eligiendo ? (
       corte > 0 ? (
         <>
@@ -582,6 +679,24 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
     );
     extra = (
       <>
+        {ofrecePilar && (
+          <div className="cf3-pilar" role="group" aria-label="Pilar te ofrece prepararla">
+            <span className="cf3-pilar__retrato" aria-hidden="true">
+              <PixelArt icono={PILAR} />
+            </span>
+            <p className="cf3-pilar__dice">
+              <span className="px-sr">Pilar: </span>«Esto ya lo bordas; si quieres, te lo preparo yo.»
+            </p>
+            <span className="cf3-pilar__botones">
+              <button type="button" className="cf3-btn cf3-btn--verde" onClick={() => elegirPrepara('pilar')}>
+                Que lo prepare Pilar
+              </button>
+              <button type="button" className="cf3-btn cf3-btn--suave" onClick={() => elegirPrepara('mano')}>
+                Lo hago yo
+              </button>
+            </span>
+          </div>
+        )}
         {etapas}
         {eligiendo && (
           <div className="cf3-opciones" role="group" aria-label={nombreEtapa(etapa, receta)}>
@@ -650,7 +765,19 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
             De nuevo
           </button>
         )}
-        {gesto && reduced() && (
+        {puedePilar && modoPilar && !lista_ && (
+          <button
+            key="pilar"
+            type="button"
+            className="cf3-btn cf3-btn--suave cf3-btn--pilar"
+            data-pilar={modoPilar}
+            onClick={() => elegirPrepara(modoPilar === 'pilar' ? 'mano' : 'pilar')}
+            aria-label={modoPilar === 'pilar' ? 'Prepara Pilar. Cambiar a hacerlo a mano' : 'A mano. Cambiar a que lo prepare Pilar'}
+          >
+            {modoPilar === 'pilar' ? 'Lo hago yo' : 'Que lo prepare Pilar'}
+          </button>
+        )}
+        {gesto && reduced() && !pilarAhora && (
           <button key={`atajo-${clave}`} type="button" className="cf3-btn cf3-btn--verde" onClick={completar}>
             {def.atajo}
           </button>
@@ -663,56 +790,34 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
       </>
     );
   } else if (paso === 'yendo') {
-    texto = `Con cuidado, que quema… Vas hacia ${raro || cliente.habitual ? quien : 'su mesa'}.`;
+    texto = entrega?.libro || libreria.fase === 'listo' ? `Con la bandeja, despacio… Vas hacia ${raro || cliente.habitual ? quien : 'su mesa'}.` : `Con cuidado, que quema… Vas hacia ${raro || cliente.habitual ? quien : 'su mesa'}.`;
     botones = null;
-  } else if (paso === 'libro' || paso === 'sirviendo') {
-    texto = `«¡Qué buena pinta! ${raro ? (PEDIDO_ACERTIJO[cliente.pedido.id] ?? PEDIDO_ACERTIJO.libre) : cliente.pedido.frase}»`;
-    extra = !fichas.length ? (
-      <p className="cf3-fichas__vacia">No te quedan libros en la balda. Compra una caja en la distribuidora para recomendar; hoy, solo el café.</p>
-    ) : (
-      <ul className="cf3-fichas" aria-label="Recomiéndale un libro (opcional)">
-        {fichas.map((b) => {
-          const portada = portadaDe(b);
-          return (
-          <li key={b.clave ?? b.id}>
-            <button
-              type="button"
-              className="cf3-ficha"
-              aria-label={`Recomendar «${b.title}»`}
-              disabled={paso === 'sirviendo'}
-              onClick={() => servir(b)}
-              style={{ '--cf3-tapa': rgb(colorDe(b.title)) }}
-            >
-              {/* 1.126 (Francisco, 13-11-2026): la portada real, si la tiene y carga; si no, la tapa de color con el título */}
-              <span className={`cf3-ficha__tapa${portada ? ' cf3-ficha__tapa--portada' : ''}`} aria-hidden="true">
-                {portada && (
-                  <img
-                    key={portada}
-                    className="cf3-ficha__portada"
-                    src={portada}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    decoding="async"
-                    draggable="false"
-                    onLoad={(e) => e.currentTarget.naturalWidth < 10 && setSinPortada((m) => ({ ...m, [portada]: true }))}
-                    onError={() => setSinPortada((m) => ({ ...m, [portada]: true }))}
-                  />
-                )}
-                {!portada && <span className="cf3-ficha__titulo">{b.title}</span>}
-              </span>
-              {portada && <span className="cf3-ficha__nombre">{b.title}</span>}
-              <span className="cf3-ficha__autor">{b.author}</span>
-              <span className="cf3-ficha__pistas">
-                {pistas(b, ctx).map((t) => (
-                  <span key={t}>{t}</span>
-                ))}
-              </span>
-            </button>
-          </li>
-          );
-        })}
-      </ul>
+  } else if (enLibreria) {
+    // 1.130: la librería (Libreria.jsx) dice y elige en este mismo cuadro
+    texto = libreria.texto;
+    extra = libreria.extra;
+    botones = libreria.botones;
+  } else if (paso === 'sirviendo' && hayLibreria) {
+    texto = '«¡Qué buena pinta!»';
+    botones = null;
+  } else if (paso === 'libro' && entrega) {
+    // No se pudo servir (sin red, p. ej.): se vuelve a intentar con lo mismo
+    texto = '«¡Qué buena pinta!»';
+    botones = (
+      <>
+        <button key="solo" type="button" className="cf3-btn cf3-btn--suave" onClick={() => servir(null)}>
+          Solo el café
+        </button>
+        <button key="otra-vez" type="button" className="cf3-btn cf3-btn--verde" onClick={() => servir(entrega)}>
+          Volver a intentarlo
+        </button>
+      </>
     );
+  } else if (paso === 'libro' || paso === 'sirviendo') {
+    texto = `«¡Qué buena pinta! ${frasePedido(pedido)}»`;
+    extra = !balda.length ? (
+      <p className="cf3-fichas__vacia">No te quedan libros en la balda. Compra una caja en la distribuidora para recomendar; hoy, solo el café.</p>
+    ) : null;
     botones = (
       <button key="solo" type="button" className="cf3-btn cf3-btn--suave" disabled={paso === 'sirviendo'} onClick={() => servir(null)}>
         Solo el café
@@ -731,9 +836,21 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
           : e === 2
             ? `«Muy rico, aunque no era del todo lo que pedí.${resena}»`
             : `«No era lo que pedí… pero gracias igualmente.${resena}»`;
+    // 1.130: con esta, la bebida ya la dominas (la 12.ª de 2 estrellas o más): Pilar lo dice al despedirlo
+    const yaLaBordas = !raro && e >= 2 && haciaDominio(dominioAntes, lista[0]) === DOMINIO - 1;
     extra = dado && (
       <div className="cf3-resultado">
         <Estrellas n={e} />
+        {yaLaBordas && (
+          <p className="cf3-pilar cf3-pilar--nota">
+            <span className="cf3-pilar__retrato" aria-hidden="true">
+              <PixelArt icono={PILAR} />
+            </span>
+            <span className="cf3-pilar__dice">
+              <span className="px-sr">Pilar: </span>«Esto ya lo bordas. La próxima vez, si quieres, te lo preparo yo.»
+            </span>
+          </p>
+        )}
         <ul className="cf3-repaso" aria-label="Lo que acertaste">
           {PARTES.map((p, k) => {
             const ok = lista[k] === pide[k];
@@ -743,9 +860,20 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
               </li>
             );
           })}
-          <li data-ok={libro ? (dado.llevado ? 'true' : 'false') : 'nada'}>
-            {libro ? (dado.llevado ? `✓ Se lleva «${libro.title}»` : encaja ? '✗ El libro no estaba en la balda' : '✗ El libro no era: vuelve a la balda') : '· Sin libro'}
-          </li>
+          {libro && pedido?.id === 'libro' ? (
+            repasoLibro(libro, pedido, dado.libro_ok ?? entrega?.ok ?? [], entrega?.forma).map((r) => (
+              <li key={r.id} data-ok={r.ok ? 'true' : 'false'} data-parte={r.id}>
+                {r.texto}
+              </li>
+            ))
+          ) : (
+            <li data-ok="nada">{pedido?.id === 'libro' ? '· Sin libro' : '· Hoy, solo el café'}</li>
+          )}
+          {libro && (
+            <li data-ok={dado.llevado ? 'true' : 'nada'} data-parte="ejemplar">
+              {dado.llevado ? `✓ Se lleva «${libro.title}»` : dado.en_balda === false ? '· El libro ya no estaba en la balda' : `· «${libro.title}» vuelve a su sección`}
+            </li>
+          )}
         </ul>
         <p className="cf3-dado" aria-label={`Has ganado ${dado.granos} granos y ${dado.reputacion} de reputación`}>
           <span className="cf3-dado__ficha">+{dado.granos} granos</span>
@@ -779,11 +907,12 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
         <div
           ref={zona}
           className="cf3-gesto"
-          data-activo={gesto ? 'true' : undefined}
+          data-activo={gesto && !pilarAhora ? 'true' : undefined}
           data-gesto={gesto ?? undefined}
-          role={gesto ? 'button' : undefined}
-          tabIndex={gesto ? 0 : -1}
-          aria-hidden={gesto ? undefined : 'true'}
+          data-pilar={pilarAhora ? 'true' : undefined}
+          role={gesto && !pilarAhora ? 'button' : undefined}
+          tabIndex={gesto && !pilarAhora ? 0 : -1}
+          aria-hidden={gesto && !pilarAhora ? undefined : 'true'}
           aria-label={gesto ? `${def.orden}. Con el teclado, Intro lo hace de una vez.` : undefined}
           onPointerDown={onDown}
           onPointerMove={onMove}
@@ -791,20 +920,20 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
           onPointerCancel={onUp}
           onLostPointerCapture={onUp}
           onKeyDown={(e) => {
-            if (gesto && (e.key === 'Enter' || e.key === ' ') && !e.repeat) {
+            if (gesto && !pilarAhora && (e.key === 'Enter' || e.key === ' ') && !e.repeat) {
               e.preventDefault();
               completar();
             }
           }}
         >
           {ayuda && eligiendo && marcasAhora.map((m) => <span key={m.id} className="cf3-ayuda" data-para={m.id} style={{ left: `${m.x}px`, top: `${m.y}px` }} aria-hidden="true" />)}
-          {ayuda && gesto && pista && !(actual?.progreso > 0) && <span className="cf3-ayuda cf3-ayuda--gesto" style={{ left: `${pista.x}px`, top: `${pista.y}px` }} aria-hidden="true" />}
-          {gesto && pista && !(actual?.progreso > 0) && (
+          {ayuda && gesto && !pilarAhora && pista && !(actual?.progreso > 0) && <span className="cf3-ayuda cf3-ayuda--gesto" style={{ left: `${pista.x}px`, top: `${pista.y}px` }} aria-hidden="true" />}
+          {gesto && !pilarAhora && pista && !(actual?.progreso > 0) && (
             <span className="cf3-gesto__pista" style={{ left: `${pista.x}px`, top: `${pista.y}px` }}>
               <Pista tipo={gesto} />
             </span>
           )}
-          {gesto && pista && !(actual?.progreso > 0) && !reduced() && (
+          {gesto && !pilarAhora && pista && !(actual?.progreso > 0) && !reduced() && (
             <span
               className="cf3-gesto__nota"
               data-lado={ladoNota(pista.x, zona.current?.clientWidth ?? 390)}
@@ -821,18 +950,23 @@ export function Atender({ cliente, ctx, libros, escena, registrarToque, onServir
           )}
         </div>
       )}
+      {enLibreria && libreria.capa}
       {lleva && <span className="px-sr">Llevas {comandaClara(lista).toLowerCase()}</span>}
       <div
-        className={`cf3-franja cf3-franja--atender${raro ? ' cf3-franja--raro' : ''}${enBarra ? ' cf3-franja--barra' : ''}`}
+        className={`cf3-franja cf3-franja--atender${raro ? ' cf3-franja--raro' : ''}${enBarra || enLibreria ? ' cf3-franja--barra' : ''}${enLibreria ? ' cf3-franja--libreria' : ''}`}
         role="region"
         aria-label={`Atender a ${quien}`}
         data-paso={paso}
-        data-pedido={cliente.pedido.id}
+        data-pedido={pedido.id}
+        data-pide-libro={pideLibro ? `${pedido.genero}:${pedido.extension}:${pedido.forma}` : undefined}
         data-receta={lista.map((x) => x ?? '').join()}
         data-etapa={enBarra ? (lista_ ? 'lista' : etapa) : undefined}
-        data-gesto={gesto ?? undefined}
+        data-gesto={enLibreria ? (libreria.gesto ?? undefined) : (gesto ?? undefined)}
+        data-lib={enLibreria ? libreria.fase : undefined}
+        data-pilar={enBarra && modoPilar ? modoPilar : undefined}
+        data-pilar-ahora={pilarAhora ? 'true' : undefined}
         data-ayuda={ayuda ? 'true' : undefined}
-        data-progreso={gesto ? Math.round((actual?.progreso ?? 0) * 100) : undefined}
+        data-progreso={enLibreria ? libreria.progreso : gesto ? Math.round((actual?.progreso ?? 0) * 100) : undefined}
         style={raro ? { '--cf3-tema': rgb(raro.tema) } : undefined}
       >
         <span className="cf3-quien" aria-hidden="true">

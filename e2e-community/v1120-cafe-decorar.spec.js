@@ -85,7 +85,8 @@ test('las llaves, el nombre, Decorar y volver a entrar', async ({ page }, info) 
 
   // Pilar cuenta lo suyo y, al final, ofrece las llaves
   await cafe.getByRole('button', { name: 'Hablar con Pilar' }).click();
-  for (let k = 0; k < 3; k += 1) await cafe.getByRole('button', { name: 'Seguir' }).click();
+  // Desde la 1.126 (Pilar ya no habla de lo de antes) son dos frases antes de las llaves, no tres
+  for (let k = 0; k < 2; k += 1) await cafe.getByRole('button', { name: 'Seguir' }).click();
   await expect(cafe.locator('.cf3-dice')).toContainText('aquí tienes las llaves');
   await cafe.getByRole('button', { name: 'Quedarme con las llaves' }).click();
   // El nombre, de la lista cerrada (sin texto libre)

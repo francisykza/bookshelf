@@ -3,6 +3,7 @@
 // El servidor (`20261211120000_cafe_clientes.sql`) fija cuántos clientes vienen, qué habituales, las cifras y las reseñas;
 // la app decide qué pide cada cliente según tu biblioteca (que no está en el servidor) y si el libro encaja. Las cifras y
 // las listas son las mismas que en la migración (una prueba lo comprueba). Personajes y frases, propios.
+// 1.130: lo que se pide de libro sale de la balda (no de toda tu biblioteca), en tres partes: `cafeLibreria.js`.
 import { COMPLEMENTOS, JERSEYS, PANTALONES, PELOS, PIELES, COLORES_PELO, isPrenda } from '../actor';
 import { dayKey } from '../../../domain/dates';
 import { huecosDelNivel } from './cafeNiveles';
@@ -108,7 +109,7 @@ export function recetaDe(r, carta = []) {
 export const recetaPide = (c, carta = []) => (c.n > 100 ? recetaDe(c.quien * 29 + 7) : recetaDe(Math.floor(c.semilla / 1000), carta));
 /** Cuántas partes de la bebida coinciden. */
 export const aciertosDe = (receta, pide) => pide.reduce((n, x, k) => n + (receta?.[k] === x ? 1 : 0), 0);
-/** Estrellas: cada parte acertada vale un punto y el libro que encaja, otro (de cinco). */
+/** Estrellas de `cafe_servir` (las apps de antes de la 1.130): cada parte acertada vale un punto y el libro que encaja, otro (de cinco). Ahora, `estrellasTotal`. */
 export const estrellasDe = (aciertos, encaja) => {
   const p = aciertos + (encaja ? 1 : 0);
   return p >= 5 ? 3 : p >= 3 ? 2 : 1;
@@ -215,21 +216,6 @@ export const EXCENTRICOS = [
   },
 ];
 
-/** El pedido de libro del excéntrico, en acertijo. */
-export const PEDIDO_ACERTIJO = {
-  fantasia: 'Y para leer, algo donde la magia sea lo normal.',
-  misterio: 'Y para leer, un secreto que no me deje dormir.',
-  amor: 'Y para leer, dos corazones y muchos obstáculos.',
-  futuro: 'Y para leer, un mañana que aún no ha llegado.',
-  corto: 'Y para leer, algo que quepa entre dos estaciones.',
-  tocho: 'Y para leer, algo que pese como un ancla.',
-  clasico: 'Y para leer, algo que ya leían mis abuelos.',
-  favorito: 'Y para leer, el que a ti te robó el corazón.',
-  autor: 'Y para leer, a quien más visitas en tu estantería.',
-  ultimo: 'Y para leer, el último viaje que terminaste.',
-  libre: 'Y para leer, sorpréndeme.',
-};
-
 /** Los habituales: doce personajes propios que vuelven, con nombre y aspecto fijos (el orden es el del servidor). */
 export const HABITUALES = [
   { nombre: 'Tomás', avatar: { piel: 2, pelo: 'corto', colorPelo: 5, jersey: 7, pantalon: 1, gafas: true, complemento: 'ninguno' } },
@@ -261,71 +247,9 @@ export const RESENAS = [
   'Se oye la lluvia y se está de maravilla.',
 ];
 
-const anio = (b) => Number(String(b.publishedDate ?? '').slice(0, 4)) || null;
 const categorias = (b) => (b.categories ?? []).join(' ').toLowerCase();
-const tiene = (re) => (b) => re.test(categorias(b));
-
-/**
- * Lo que puede pedir un cliente (frases cerradas). `encaja(libro, ctx)`: si un libro le va bien; ctx = { autor, ultimo }
- * (el autor que más tienes en la estantería y el último que terminaste). Solo se piden los que tu estantería puede cumplir.
- */
-export const PEDIDOS = [
-  { id: 'fantasia', frase: '¿Tienes algo de fantasía que enganche?', encaja: tiene(/fantas/) },
-  { id: 'misterio', frase: 'Me apetece un misterio, de los de no dormir.', encaja: tiene(/myster|misterio|crime|crimen|thriller|polic|suspense|detective/) },
-  { id: 'amor', frase: 'Quiero una historia de amor bonita.', encaja: tiene(/romanc|amor|love/) },
-  { id: 'futuro', frase: '¿Algo de ciencia ficción? Naves, futuros raros…', encaja: tiene(/science fiction|ciencia ficci|ficción científica|dystop|distop/) },
-  { id: 'corto', frase: 'Uno cortito, para leer en el tren.', encaja: (b) => b.pageCount > 0 && b.pageCount <= 250 },
-  { id: 'tocho', frase: 'Busco un buen tocho para todo el invierno.', encaja: (b) => b.pageCount >= 500 },
-  { id: 'clasico', frase: 'Dame un clásico, de los de antes.', encaja: (b) => (anio(b) ?? 9999) < 1950 },
-  { id: 'favorito', frase: '¿Cuál es el que más te ha gustado?', encaja: (b) => b.favorite || b.rating >= 5 },
-  { id: 'autor', frase: 'Algo del autor que más lees, que dicen que sabes mucho.', encaja: (b, ctx) => Boolean(ctx.autor) && b.author === ctx.autor },
-  { id: 'ultimo', frase: '¿Qué es lo último que has terminado?', encaja: (b, ctx) => Boolean(ctx.ultimo) && b.id === ctx.ultimo },
-];
-/** Si tu estantería no puede cumplir ningún pedido (pocos libros o sin datos), se pide esto: siempre encaja. */
-export const PEDIDO_LIBRE = { id: 'libre', frase: 'Lo que tú me recomiendes, me fío.', encaja: () => true };
-export const pedidoPorId = (id) => PEDIDOS.find((p) => p.id === id) ?? PEDIDO_LIBRE;
-
-/** El contexto de los pedidos: el autor que más se repite (al menos 2 libros) y el último que terminaste. */
-export function contextoPedidos(libros = []) {
-  const n = {};
-  for (const b of libros) if (b.author && b.author !== 'Autor desconocido') n[b.author] = (n[b.author] ?? 0) + 1;
-  const [autor, veces] = Object.entries(n).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0] ?? [null, 0];
-  const leidos = libros.filter((b) => b.status === 'read' && b.finishedAt);
-  const ultimo = leidos.sort((a, b) => String(b.finishedAt).localeCompare(String(a.finishedAt)))[0]?.id ?? null;
-  return { autor: veces >= 2 ? autor : null, ultimo };
-}
-/** Los pedidos que tu estantería puede cumplir (alguno de sus libros encaja). */
-export function pedidosPosibles(libros = [], ctx = contextoPedidos(libros)) {
-  return PEDIDOS.filter((p) => libros.some((b) => p.encaja(b, ctx)));
-}
-/**
- * Qué pide cada cliente del día: de los posibles, por su semilla, sin repetir mientras se pueda. Un habitual que vuelve el
- * día después de que terminaras un libro pregunta justo por él («el último que terminaste»).
- */
-export function pedidosDelDia(dia, libros = [], hoy = dayKey()) {
-  const ctx = contextoPedidos(libros);
-  const posibles = pedidosPosibles(libros, ctx);
-  const usados = new Set();
-  const elegir = (semilla) => {
-    if (!posibles.length) return PEDIDO_LIBRE;
-    const libres = posibles.filter((p) => !usados.has(p.id));
-    const lista = libres.length ? libres : posibles;
-    const p = lista[semilla % lista.length];
-    usados.add(p.id);
-    return p;
-  };
-  const out = {};
-  for (const c of dia?.clientes ?? []) out[c.n] = elegir(c.semilla);
-  const ultimoLibro = libros.find((b) => b.id === ctx.ultimo);
-  const reciente = ultimoLibro && String(ultimoLibro.finishedAt).slice(0, 10) >= ayerDe(hoy);
-  for (const h of dia?.habituales ?? []) out[h.n] = reciente && posibles.some((p) => p.id === 'ultimo') && !usados.has('ultimo') ? (usados.add('ultimo'), pedidoPorId('ultimo')) : elegir(h.semilla);
-  return { pedidos: out, ctx };
-}
-function ayerDe(hoy) {
-  const d = new Date(`${hoy}T12:00:00`);
-  d.setDate(d.getDate() - 1);
-  return dayKey(d);
-}
+/** 1.130: sin ejemplares en la balda, nadie pide libro (el mismo que `SIN_LIBRO` de cafeLibreria.js). */
+const SIN_PEDIDO = Object.freeze({ id: 'nada', genero: null, extension: null, forma: null });
 
 // El aspecto de un cliente nuevo, sacado de su semilla, con ropa de la corriente (nunca prendas que se ganan)
 const basicos = (lista, key) => lista.filter((x) => !isPrenda(key, x.id));
@@ -344,25 +268,6 @@ export function aspectoDe(semilla = 0) {
     gafas: Math.floor(semilla / 17947) % 4 === 0,
     complemento: pick(COMPLEMENTOS_BASE, semilla, 7).id,
   };
-}
-
-/**
- * Los libros que ofreces al recomendar: tres fichas de la estantería, sacadas de la semilla del cliente; una encaja si
- * alguno puede (el reto es elegir bien entre pocas, no buscar en toda la estantería) y las demás, mejor que no.
- */
-export function librosParaRecomendar(pedido, libros = [], ctx = contextoPedidos(libros), semilla = 0, n = 3) {
-  const si = libros.filter((b) => pedido.encaja(b, ctx));
-  const no = libros.filter((b) => !pedido.encaja(b, ctx));
-  const out = [];
-  if (si.length) out.push(si[semilla % si.length]);
-  for (let k = 0; out.length < n && k < no.length; k += 1) {
-    const b = no[(semilla + k * 7) % no.length];
-    if (!out.includes(b)) out.push(b);
-  }
-  for (const b of [...no, ...si]) if (out.length < n && !out.includes(b)) out.push(b);
-  // El orden también sale de la semilla: la que encaja no va siempre primera
-  const giro = Math.floor(semilla / 3) % Math.max(1, out.length);
-  return [...out.slice(giro), ...out.slice(0, giro)];
 }
 
 /**
@@ -387,7 +292,7 @@ export function clientesDelDia(dia, pedidos) {
       raro: ex,
       nombre: ex?.nombre ?? 'Cliente',
       aspecto: ex?.avatar ?? aspectoDe(c.semilla),
-      pedido: pedidos[c.n] ?? PEDIDO_LIBRE,
+      pedido: pedidos?.[c.n] ?? SIN_PEDIDO,
       pide: recetaPide(c, dia.carta ?? []),
     };
   });
@@ -396,7 +301,7 @@ export function clientesDelDia(dia, pedidos) {
     habitual: true,
     nombre: HABITUALES[h.quien]?.nombre ?? 'Habitual',
     aspecto: HABITUALES[h.quien]?.avatar ?? aspectoDe(h.semilla),
-    pedido: pedidos[h.n] ?? PEDIDO_LIBRE,
+    pedido: pedidos?.[h.n] ?? SIN_PEDIDO,
     pide: recetaPide(h),
   }));
   return [...nuevos, ...habituales];
@@ -440,7 +345,7 @@ export const CAJA_GENERO = { ejemplares: 5, precio: 10 };
 export const CAJA_TITULO = { ejemplares: 3, precio: 9 };
 /** La caja de bienvenida, gratis y una vez. */
 export const BIENVENIDA = 8;
-/** Granos de más cuando el cliente se lleva el libro (solo si encaja). */
+/** Granos de más cuando el cliente se lleva el libro (solo si encaja), con `cafe_servir` (las apps de antes de la 1.130; ahora, `EXTRA_LIBRO`). */
 export const EXTRA_LLEVADO = 2;
 
 /** Los títulos que la distribuidora tiene para ti (los de `librosDelCafe`), como los espera el servidor. */
@@ -456,7 +361,11 @@ export function librosDeLaBalda(estado, libros = []) {
   const porId = new Map(libros.map((b) => [String(b.id), b]));
   return (estado?.libros ?? [])
     .filter((x) => x.balda > 0)
-    .map((x) => ({ ...(porId.get(x.clave) ?? { id: x.clave, title: x.titulo, author: '', categories: [GENEROS.find((g) => g.id === x.genero)?.nombre ?? ''] }), clave: x.clave, ejemplares: x.balda }));
+    .map((x) => {
+      const b = porId.get(x.clave) ?? { id: x.clave, title: x.titulo, author: '', categories: [GENEROS.find((g) => g.id === x.genero)?.nombre ?? ''] };
+      // 1.130: la sección es la del ejemplar (su género, el que guardó el servidor al comprarlo) y la extensión, por sus páginas
+      return { ...b, clave: x.clave, genero: x.genero, paginas: b.pageCount > 0 ? b.pageCount : null, ejemplares: x.balda };
+    });
 }
 /** Cuántos ejemplares hay en la balda y cuántos esperan en las cajas. */
 export const enBalda = (estado) => (estado?.libros ?? []).reduce((s, x) => s + x.balda, 0);
