@@ -6,12 +6,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Aprobada por Francisco («Sí, haz el commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.132.0**
-  (2026-11-14, §132; «Continua por donde se quedo la otra cuenta», que había dejado el bloque a medias en un commit de la rama). El café-librería del bajo, **bloque 1 de §16**: fuera la pizarra y **el
-  influencer de cada nivel** (siete personajes; llega con la barra llena; reloj de arena de latón sin números; siempre a mano;
-  a tiempo y con 3★, viral: 3 clientes al día siguiente y su foto firmada en la pared; el nivel sube al despedirle). **Migración
-  nueva sin aplicar**: `20261219120000_cafe_influencer.sql`, que se aplica **justo antes de publicar**, con la entrega
-  aprobada (ver la bitácora). Evidencias en `qa-report/v1132/`, enviadas al chat. `main` y producción siguen en la 1.131.0.
+- **Publicada en producción: 1.132.0** (2026-11-14, §132; «Continua por donde se quedo la otra cuenta», que había dejado el
+  bloque a medias en un commit de la rama; «Sí, haz el commit»; «Migración y publicar»; `main` avanzó sin forzar de `bc5ee48`
+  a `cafd2d0` (también la rama) y `/sw.js` de producción ya sirve v1.132.0). El café-librería del bajo, **bloque 1 de §16**:
+  fuera la pizarra y **el influencer de cada nivel** (siete personajes; llega con la barra llena; reloj de arena de latón sin
+  números; siempre a mano; a tiempo y con 3★, viral: 3 clientes al día siguiente y su foto firmada en la pared; el nivel sube
+  al despedirle). **Migración aplicada** (14-11-2026): `20261219120000_cafe_influencer.sql`. Evidencias en `qa-report/v1132/`,
+  enviadas al chat. Sin probar con cuentas reales ni en móviles reales.
 - **Publicada en producción: 1.131.0** (2026-11-14, §131; «Confirma los cambios del árbol de trabajo»; «Sí, publícala»;
   `main` avanzó sin forzar de `858afc2` a `14b4a83` (también la rama) y `/sw.js` de producción ya sirve v1.131.0). Tras jugar la 1.130 («me gustan como
   están pero querría que la camara esté un poco más cerca y que los sonidos sean más cozy»; «que cuando pilar prepara el café
@@ -217,10 +218,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 - **Café, influencer, taller de restauración y fuera la pizarra** (encargo del 14-11-2026, plan en `cafe-libreria.md` §16):
   - decisiones de la 1.ª tanda tomadas;
-  - **bloque 1 (fuera la pizarra y el influencer), terminado y aprobado como 1.132.0, con commit en la rama**: falta
-    publicarlo cuando Francisco lo pida. Orden: la migración `20261219120000_cafe_influencer.sql` en el SQL Editor (SHA-256
-    comprobado, él pulsa «Run») **justo antes**, después `main` y comprobar `/sw.js`. **Es lo siguiente.**
-  - antes del bloque 2, sus cifras del taller (§16.3) y el encargo del amigo (§16.4).
+  - **bloque 1 (fuera la pizarra y el influencer), publicado como 1.132.0** (migración aplicada): lo que Francisco note al
+    jugarlo;
+  - antes del bloque 2 (el taller, primera tanda), que Francisco apruebe sus cifras (§16.3) y la interpretación del encargo
+    del amigo (§16.4). **Es lo siguiente.**
 
 - **Café, el libro más cerca y Pilar a mano (1.131.0, publicada)**: lo que Francisco note al jugarla. Evidencias en
   `qa-report/v1131/`, enviadas al chat.
@@ -374,6 +375,18 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-14 · Migración del influencer aplicada y 1.132.0 a producción (Claude)
+
+- Francisco: «Migración y publicar». `20261219120000_cafe_influencer.sql` pegada en el SQL Editor del proyecto `bookshelf`
+  con `setValue` de Monaco (32.117 B y 656 líneas, SHA-256 `4bb35466…66a22523`, comprobado en el texto y en el editor, igual
+  al archivo del commit) y ejecutada por él («Success»).
+- Con la clave pública (la `sb_publishable_` del build de producción) dan 42501 al anónimo `cafe_influencer_empezar`,
+  `cafe_influencer_entregar`, `cafe_influencer_de`, `cafe_influencer_pide`, `cafe_arena_segundos`, `cafe_arena_margen`,
+  `cafe_techo`, `cafe_apartar`, `cafe_progreso`, `cafe_entregar`, `cafe_nueva_jornada`, `cafe_dia_json` y `cafe_json`, y
+  también la tabla nueva `cafe_influencers`. Una función inexistente da PGRST202, así que PostgREST ya ve las nuevas.
+- `main` avanzó sin forzar de `bc5ee48` a `cafd2d0` (también la rama) y `/sw.js` de producción ya sirve v1.132.0. Sin probar
+  con cuentas reales ni en móviles reales.
 
 ### 2026-11-14 · Café: fuera la pizarra y el influencer de cada nivel · 1.132.0 (§132), commit en la rama (Claude)
 
