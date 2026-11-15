@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **1.133.1, subida a `main`** (2026-11-15, §133.6; «lo que ya hay hecho subelo»). Arreglos del café tras jugar la 1.133:
+- **Publicada en producción: 1.133.1** (2026-11-15, §133.6; «lo que ya hay hecho subelo»; `main` avanzó sin forzar de
+  `35f7d1e` a `5e6d766` (también la rama) y `/sw.js` de producción ya sirve v1.133.1). Arreglos del café tras jugar la 1.133:
   la música del taller sin ruido de fondo, la del café más ligera (contra el petardeo) y tocar un sitio del café para ir
   andando, rodeando lo que haya en medio. Sin migración. Evidencias en `qa-report/v1133-1/`, enviadas al chat. El petardeo, sin
   comprobar en un móvil real.
