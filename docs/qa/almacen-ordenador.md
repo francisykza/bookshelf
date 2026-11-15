@@ -7,7 +7,8 @@ almacen y al mueble en cuestión».
 **Estado**: plan propuesto el 15-11-2026 y **aprobado por Francisco el mismo día con las cuatro opciones recomendadas** («Sí,
 las recomendadas»). Bloque 1 hecho como 1.134.0 (SPEC §134), aprobado («Sí, sigue al bloque 2»). Bloque 2 hecho como
 1.135.0 (SPEC §135), aprobado («vale»); los dos salen juntos como 1.137.0 (§137), con Libotown. La migración
-`20261221120000_almacen_deseados.sql`, aplicada en producción el 15-11-2026 («Hazlo tú»).
+`20261221120000_almacen_deseados.sql`, aplicada en producción el 15-11-2026 («Hazlo tú»). **Publicado** el 15-11-2026, junto
+con la 1.138.0.
 
 ## 1. Lo que ya hay y se reutiliza
 

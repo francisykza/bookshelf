@@ -6,20 +6,22 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En la rama, con commit: 1.138.0** (2026-11-15, §138; encargo de Francisco del mismo día; aprobada: «Sí, publícalas»).
+- **Publicadas en producción: 1.138.0 y 1.137.0** (2026-11-15; «Espera a la 1.138»; «Sí, publícalas»; `main` avanzó sin
+  forzar de `36cb4e7` a `aefa1fa` desde `1.90-escritorio-puerto`, y libotown.es sirve v1.138.0).
+- **1.138.0** (2026-11-15, §138; encargo de Francisco del mismo día; aprobada: «Sí, publícalas»).
   Todas las pantallas de carga son la escena de Libotown (logo sobre `#351c0e`, como al abrir la app) y solo cambia el
   mensaje, que dice adónde vas (`src/ui/PantallaCarga.jsx`): tu piso, el edificio, el café, la recepción, el casino, la sala de
   lectura, el almacén y las visitas. Regla en `CLAUDE.md`. Evidencias en `qa-report/v1138/` (antes y ahora, vídeos), enviadas
-  al chat. Se publica junto con la 1.137.0.
-- **En la rama, con commit: 1.137.0** (2026-11-15, §134, §135 y §137; «Sí, las recomendadas»; «Sí, sigue al bloque 2»;
+  al chat. Sin probar en móviles reales.
+- **1.137.0** (2026-11-15, §134, §135 y §137; «Sí, las recomendadas»; «Sí, sigue al bloque 2»;
   «vale» al bloque 2). El almacén en el ordenador, **los dos bloques aprobados**, juntado con `main` (Libotown, 1.136.1) y
   numerado 1.137.0 para publicarlo por encima:
   - **bloque 1 (§134)**: la tarjeta «En el almacén» del escritorio, la pantalla «Almacén» (ofertas de hoy, nuevo y todo el
     almacén), la «!» de lo nuevo y, al tocar un mueble, el almacén delante de él con su ficha y «Al ordenador»;
   - **bloque 2 (§135)**: seguir el precio de un mueble con un marcapáginas (en la pantalla, en la ficha y el directorio del
     almacén), «Lo que sigues», la «!» de lo que sigues rebajado (una vez por oferta) y la «!» sobre el monitor del piso.
-  **Migración aplicada** (15-11-2026, «Hazlo tú»): `20261221120000_almacen_deseados.sql`, ver la bitácora. Se publica junto
-  con la 1.138.0.
+  **Migración aplicada** (15-11-2026, «Hazlo tú»): `20261221120000_almacen_deseados.sql`, ver la bitácora. Publicada con
+  la 1.138.0.
   Evidencias en `qa-report/v1134/`, `qa-report/v1135/` y, de la versión juntada, `qa-report/v1137/`. Sin probar con cuentas
   reales ni en móviles reales.
 - **Publicada en producción: 1.136.1** (2026-11-15, §136.7; «Hazlo ya»; «Sí, publícala»; `main` avanzó sin forzar de
@@ -268,15 +270,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Las pantallas de carga con la escena de Libotown** (encargo del 15-11-2026, §138): hechas como 1.138.0, aprobadas
-  («Sí, publícalas») y con commit. Falta publicarlas junto con la 1.137.0 y comprobar el despliegue.
 - **`v188-habitacion-real` falla en dos casos, ya desde antes de la 1.138** (comprobado en la 1.137.0, 15-11-2026): el número
   de muebles del dibujo 2D del piso no coincide con lo guardado, y el ordenador ya no tiene el botón «Cuenta y copias». Hay que
   mirar si es la prueba la que se quedó atrás o la app; sin investigar todavía.
-- **El almacén en el ordenador** (encargo del 15-11-2026; plan en `docs/qa/almacen-ordenador.md`): **los dos bloques
-  aprobados** («vale», 15-11-2026), con commit y juntados con `main` como **1.137.0** (§137). **Migración aplicada y
-  comprobada** (15-11-2026). **Se publica junto con la 1.138.0** (Francisco, 15-11-2026: «Espera a la 1.138»; aprobada con
-  «Sí, publícalas»; `main` avanza sin forzar desde esta rama).
+- **El almacén en el ordenador y las pantallas de carga** (1.137.0 y 1.138.0): **publicados** (15-11-2026). Queda lo que
+  Francisco note al usarlos en sus móviles (seguir un mueble con su cuenta real y la «!» del monitor al día siguiente de una
+  oferta).
 - **Libotown** (§136): **publicada** (1.136.0 y 1.136.1, 15-11-2026; Vercel, IONOS y Supabase Auth conectados). Queda que
   Francisco y su pareja instalen la app desde libotown.es, entren con «Usar estos» y vuelvan a vincular los EPUB.
 
@@ -440,6 +439,16 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-15 · 1.137.0 y 1.138.0 a producción (Claude)
+
+- Francisco: «Sí, publícalas» (y antes, «Espera a la 1.138»). `main` avanzó sin forzar de `36cb4e7` a `aefa1fa` desde
+  `1.90-escritorio-puerto` (el almacén en el ordenador y las pantallas de carga, juntos) y Vercel lo desplegó.
+- Comprobado con `curl`: `libotown.es/sw.js` da 200, `no-cache` y v1.138.0; la página da 200, su bundle lleva 1.138.0 y su CSS
+  `.pantalla-carga`; la dirección de antes da 308 a libotown.es con la ruta y la consulta, y su `/sw.js` (la despedida) también
+  va en v1.138.0; `www.libotown.es` da 308 a `libotown.es`.
+- La rama remota `1.90-escritorio-puerto` sigue donde estaba (`edab274`): solo se subió `main`.
+- Sin probar en un móvil real.
 
 ### 2026-11-15 · Pantallas de carga aprobadas · 1.138.0 (§138), commit en la rama (Claude)
 
