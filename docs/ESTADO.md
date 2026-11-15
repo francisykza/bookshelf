@@ -6,15 +6,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Aprobada por Francisco («Nada más, commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.133.2**
-  (2026-11-15, §133.7; «continua por donde se ha quedado la otra cuenta»; `main` y producción siguen en la 1.133.1). El taller,
-  lo que no se entendía y lo que se glitcheaba:
+- **Publicada en producción: 1.133.2** (2026-11-15, §133.7; «continua por donde se ha quedado la otra cuenta»; «Nada más,
+  commit»; «Súbela»; `main` avanzó sin forzar de `4d0897c` a `219638d` (también la rama) y `/sw.js` de producción ya sirve
+  v1.133.2). El taller, lo que no se entendía y lo que se glitcheaba:
   - la página que parpadeaba al pasar del polvo al pliegue (el bloque de hojas, a la misma altura que la página);
   - el pliegue que se ve levantado y baja por tramos, sin perder nada al soltar;
   - el ex libris con el nombre del café y un golpe: sonido, sacudida, polvillo y el sello en grande.
 
   Sin migración. Evidencias en `qa-report/v1133-2/`, enviadas al chat. Va por delante del almacén (1.134.0), como la 1.133.1.
-  Sin probar en un móvil real. **Queda**: publicarla, cuando Francisco lo pida.
+  Sin probar en un móvil real.
 - **Publicada en producción: 1.133.1** (2026-11-15, §133.6; «lo que ya hay hecho subelo»; `main` avanzó sin forzar de
   `35f7d1e` a `5e6d766` (también la rama) y `/sw.js` de producción ya sirve v1.133.1). Arreglos del café tras jugar la 1.133:
   la música del taller sin ruido de fondo, la del café más ligera (contra el petardeo) y tocar un sitio del café para ir
@@ -432,7 +432,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - Al preguntarle si había algo más que no se entendiera o se glitcheara, Francisco: «Nada más, commit».
 - **Aprobada y con commit en la rama, sin subir**. El commit sale de `4d0897c` con solo lo del taller, con la versión, el SPEC y
   esta entrada. En el árbol de trabajo, los archivos de versión siguen en la 1.134.0 del almacén.
-- Sin probar en un móvil real. **Queda**: publicarla, cuando Francisco lo pida.
+- Sin probar en un móvil real. Publicada en producción después, con «Súbela» (ver «Estado actual»).
 
 ### 2026-11-15 · Café: música sin ruido ni petardeo y tocar para andar · 1.133.1 (§133.6) (Claude)
 
