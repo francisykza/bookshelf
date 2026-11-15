@@ -1,6 +1,7 @@
-// Las direcciones de Libotown (1.136, SPEC §136.6). Mientras dura el traslado hay dos de producción: el dominio propio y
-// la de Vercel de siempre, que avisa de la mudanza y más adelante redirigirá (bloque 4). Lo guardado en el navegador es de
-// cada dirección: en la nueva hay que entrar con la cuenta y quedarse con los datos de la cuenta.
+// Las direcciones de Libotown (1.136, SPEC §136.6). Hay dos de producción: el dominio propio y la de Vercel de siempre, que
+// desde la 1.136.1 (§136.7) redirige a libotown.es (`vercel.json`); el aviso de la mudanza solo se vería si la de antes
+// llegara a abrirse sin conexión. Lo guardado en el navegador es de cada dirección: en la nueva hay que entrar con la cuenta y
+// quedarse con los datos de la cuenta.
 export const DOMINIO = 'libotown.es';
 export const DIRECCION = `https://${DOMINIO}/`;
 export const HOST_ANTIGUO = 'bookshelf-wine-iota.vercel.app';

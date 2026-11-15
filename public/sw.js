@@ -6,7 +6,7 @@
 // - Portadas de Open Library / Google Books: caché limitada, sin red si ya está y revalidada de vez en cuando (Fase 2).
 // - Nada de Supabase ni de otros orígenes; nunca se guardan respuestas fallidas.
 const PREFIX = 'bookshelf-';
-const VERSION = `${PREFIX}v1.136.0`;
+const VERSION = `${PREFIX}v1.136.1`;
 // Sin la versión de la app en el nombre: actualizar no vacía las portadas. Solo cambia si cambia el esquema de lo guardado
 const COVERS = `${PREFIX}portadas-v1`;
 // Fase 1 (1.21.0): las dos ilustraciones nuevas del panorama. `/cozy-book-room.jpg` sigue publicado para una
@@ -16,12 +16,34 @@ const CORE = ['/', '/index.html', '/manifest.webmanifest', '/images/cozy-book-ro
 const COVER_HOSTS = ['covers.openlibrary.org', 'books.google.com', 'books.googleusercontent.com'];
 const STABLE_IMAGES = /^\/(cozy-book-room\.jpg|images\/.+\.(png|jpe?g|webp)$|favicon\.svg|icons\/|figures\/.+\.(png|jpe?g|webp|svg)$|art\/library-refresh\/.+\.webp$|assets\/(profile|memories|ui|library)\/.+\.webp$)/;
 
+// 1.136.1 (SPEC §136.7): la dirección de antes redirige a libotown.es (`vercel.json`; todo menos este archivo, para que llegue
+// esta versión). Allí este service worker ya no guarda nada: entra sin esperar, borra sus cachés, recarga las pestañas abiertas
+// (que acaban en libotown.es) y se da de baja. No toca localStorage ni IndexedDB: los EPUB y lo demás se quedan en el móvil.
+const DIRECCION_ANTIGUA = self.location.hostname === 'bookshelf-wine-iota.vercel.app';
+
+async function despedirse() {
+  await self.clients.claim();
+  const claves = await caches.keys();
+  await Promise.all(claves.filter((k) => k.startsWith(PREFIX)).map((k) => caches.delete(k)));
+  const ventanas = await self.clients.matchAll({ type: 'window' });
+  await Promise.all(ventanas.map((v) => v.navigate(v.url).catch(() => null)));
+  await self.registration.unregister();
+}
+
 self.addEventListener('install', (event) => {
+  if (DIRECCION_ANTIGUA) {
+    self.skipWaiting();
+    return;
+  }
   // Sin skipWaiting(): la versión nueva espera a que la app pase a segundo plano (ver 'message')
   event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(CORE)));
 });
 
 self.addEventListener('activate', (event) => {
+  if (DIRECCION_ANTIGUA) {
+    event.waitUntil(despedirse().catch(() => {}));
+    return;
+  }
   // Solo se borran cachés antiguas de BookShelf; el resto del origen no se toca
   event.waitUntil(
     caches
@@ -300,6 +322,8 @@ async function catalogFirstNetwork(request) {
 }
 
 self.addEventListener('fetch', (event) => {
+  // En la dirección de antes, todo a la red (y la red redirige a libotown.es)
+  if (DIRECCION_ANTIGUA) return;
   const { request } = event;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);

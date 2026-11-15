@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.136.0 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.136.1 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7252,7 +7252,7 @@ polvo a arrugar las paginas se glitchea la pagina». Sin migración ni cambios d
     - el ex libris pintado con varios nombres;
     - el volumen de los sonidos nuevos (`medirSonidos`).
 
-## 136. Libotown, el nombre de verdad (1.136.0)
+## 136. Libotown, el nombre de verdad (1.136.0 y 1.136.1)
 
 Encargo del 15-11-2026: «BookShelf» era un nombre provisional y el definitivo es **Libotown**, con dominio propio y un logo
 que pasa Francisco. Cambia la identidad visible sin perder datos de nadie. Decisiones de Francisco (15-11-2026): se escribe
@@ -7397,3 +7397,25 @@ va en minúsculas: «Libotown» (las minúsculas son del dominio y del logo; los
   - Vitest: `direcciones.test.js` y la prueba de `seedPilotLibrary` con las tres direcciones.
   - 25 pasan y 1 se salta a propósito. `npm run build` bien; lint sin avisos en lo nuevo.
 - Sin probar en un móvil real ni con el dominio de verdad, que aún no apunta a Vercel.
+
+### 136.7 La dirección de antes redirige a libotown.es (bloque 4, 1.136.1)
+
+Francisco, 15-11-2026, con la 1.136.0 ya publicada y el dominio conectado en Vercel, IONOS y Supabase: «Hazlo ya» (sin esperar
+a que él y su pareja se pasen; se le había dicho que, a partir de ahí, el icono instalado de la dirección de antes deja de servir).
+
+- **`vercel.json`**: una redirección permanente (308) de `bookshelf-wine-iota.vercel.app` a `https://libotown.es/` con la misma
+  ruta, solo para esa dirección (`has` con su host: las previews y libotown.es no cambian). Todo menos `/sw.js`, para que el
+  service worker instalado allí pueda actualizarse.
+- **El service worker en la dirección de antes** (`public/sw.js`, `DIRECCION_ANTIGUA`): entra sin esperar y sin guardar nada, se
+  hace con las pestañas abiertas, borra sus cachés (`bookshelf-…`), las recarga (que acaban en libotown.es) y se da de baja. No
+  responde a ninguna petición: todo va a la red, que redirige. **No toca localStorage ni IndexedDB**: los EPUB y lo demás se
+  quedan guardados en el móvil, en esa dirección, aunque la app ya no los abra. En libotown.es el service worker es el de siempre.
+- Aun antes de actualizarse, el service worker de la 1.136.0 ya deja pasar la redirección: la navegación va primero a la red.
+  Sin conexión, la dirección de antes enseña lo último guardado (con el aviso de la mudanza) hasta que se actualiza.
+- El icono instalado desde la dirección de antes abre libotown.es (en Android, dentro de esa ventana con la barra de la dirección).
+  Para la app de Libotown con su icono, se instala desde libotown.es.
+- Pruebas: `src/domain/__tests__/redireccion.test.js` (6): la regla de `vercel.json` (solo esa dirección, permanente, todas las
+  rutas menos `/sw.js`, la ruta pasa entera) y el service worker cargado en un entorno simulado en cada dirección (en la de antes:
+  sin esperar, borra solo sus cachés, recarga las pestañas y se da de baja, sin responder a nada; en libotown.es, igual que
+  antes). `direcciones.test.js` sigue en verde, `npm run build` bien. La redirección de verdad solo se puede comprobar en Vercel,
+  después de publicar.
