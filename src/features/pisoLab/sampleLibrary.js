@@ -1,8 +1,12 @@
 // Bibliotecas de prueba del piloto: siempre las mismas para el mismo tamaño, sin azar ni libros reales. Se piden con
 // `/?piloto=piso&biblioteca=N`. Cada navegador guarda la suya, y nunca se siembra en el host de producción. La biblioteca
 // que hubiera se copia aparte la primera vez y vuelve con `&biblioteca=propia`.
+import { HOSTS_PRODUCCION, esProduccion } from '../../domain/direcciones';
+
 export const SAMPLE_SIZES = [0, 50, 1000, 5000];
-export const PRODUCTION_HOST = 'bookshelf-wine-iota.vercel.app';
+// 1.136: mientras dura el traslado a libotown.es hay varias direcciones de producción (src/domain/direcciones.js)
+export const PRODUCTION_HOST = HOSTS_PRODUCCION[0];
+export { esProduccion };
 const STORAGE_KEY = 'bookshelf:v1';
 export const MARK_KEY = 'bookshelf:lab:biblioteca';
 export const COPY_KEY = 'bookshelf:lab:biblioteca-propia';
@@ -81,7 +85,7 @@ export function sampleState(n) {
 export function seedPilotLibrary(place, store) {
   const params = new URLSearchParams(place.search);
   const asked = params.get('biblioteca');
-  if (params.get('piloto') !== 'piso' || asked == null || place.hostname === PRODUCTION_HOST) return false;
+  if (params.get('piloto') !== 'piso' || asked == null || esProduccion(place.hostname)) return false;
   if (asked === 'propia') {
     const copy = store.getItem(COPY_KEY);
     if (store.getItem(MARK_KEY) == null) return false;

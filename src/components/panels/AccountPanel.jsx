@@ -125,7 +125,7 @@ function Backups() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bookshelf-copia-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `libotown-copia-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setMsg('Copia descargada.');
@@ -141,7 +141,7 @@ function Backups() {
       actions.replaceState(next);
       setMsg('Copia importada.');
     } catch {
-      setMsg('Ese archivo no es una copia de BookShelf.');
+      setMsg('Ese archivo no es una copia de Libotown.');
     } finally {
       fileRef.current.value = '';
     }

@@ -46,6 +46,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
 - **Commits y subidas, solo cuando se pidan** («haz el commit», «súbelo»). Subir `main` **despliega en producción**
   (Vercel). Nunca forzar el push ni reescribir historia publicada.
 - **Sin líneas `Co-Authored-By`** ni firmas de IA en commits ni PR.
+- **El nombre es Libotown** (Francisco, 15-11-2026; «BookShelf» era provisional). Se escribe «Libotown», sin subtítulo (confirmado el mismo día: las minúsculas son solo del dominio, `libotown.es`, y del logo). El
+  icono lo da él: no inventarlo (los iconos salen de su material con `scripts/libotown-iconos.mjs`, §136.5). Lo interno sigue con «bookshelf» (`bookshelf:v1` y demás claves, `bookshelf:auth`, el
+  IndexedDB, las cachés `bookshelf-`, `assets/bookshelf/`, `package.json`, el repositorio, Vercel y Supabase) y no se renombra
+  sin una migración pensada y aprobada por él. Dominio: **libotown.es** (registrado en IONOS; Francisco, 15-11-2026); las dos
+  direcciones a la vez y, cuando él y su pareja se hayan pasado, la antigua redirige (SPEC §136.6). Las direcciones de
+  producción están en `src/domain/direcciones.js`.
 - **Supabase**: nunca exponer claves de servicio ni secretas; no desactivar RLS. Las migraciones nuevas van en
   `supabase/migrations/` y **las aplica Francisco** en el SQL Editor. Desde el 1-11-2026, si él lo pide («hazlo tú»):
   abrir el SQL Editor del proyecto en el panel del navegador (él inicia sesión), pegar la migración comprobando su
@@ -506,7 +512,8 @@ npx oxlint src                             # lint
   `chromium-390x844-reduced`. Levantan su propio servidor (no hace falta tener `npm run dev` abierto).
 - Comunidad con Supabase simulado: `playwright.community.config.js` + `e2e-community/`.
 - La config del panel del navegador de Claude está en `../.claude/launch.json` (entrada «bookshelf», puerto 5190).
-- Producción: https://bookshelf-wine-iota.vercel.app · repo: https://github.com/francisykza/bookshelf (rama `main`).
+- Producción: https://bookshelf-wine-iota.vercel.app y, cuando Francisco conecte el dominio, https://libotown.es (§136.6)
+  · repo: https://github.com/francisykza/bookshelf (rama `main`).
   Tras subir, comprobar que `https://bookshelf-wine-iota.vercel.app/sw.js` ya trae la versión nueva.
 
 ## 3. Mapa del código

@@ -97,6 +97,11 @@ describe('las bibliotecas de prueba', () => {
     const store = memoryStore({ 'bookshelf:v1': 'míos' });
     expect(seedPilotLibrary(place('?piloto=piso&biblioteca=50', PRODUCTION_HOST), store)).toBe(false);
     expect(store.getItem('bookshelf:v1')).toBe('míos');
+    // 1.136: tampoco en las otras direcciones de producción mientras dura el traslado a libotown.es
+    for (const host of ['libotown.es', 'www.libotown.es', 'bookshelf-wine-iota.vercel.app']) {
+      expect(seedPilotLibrary(place('?piloto=piso&biblioteca=50', host), store)).toBe(false);
+    }
+    expect(store.getItem('bookshelf:v1')).toBe('míos');
   });
 
   it('sin pedirlo no hacen nada', () => {

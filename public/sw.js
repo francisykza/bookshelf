@@ -6,12 +6,13 @@
 // - Portadas de Open Library / Google Books: caché limitada, sin red si ya está y revalidada de vez en cuando (Fase 2).
 // - Nada de Supabase ni de otros orígenes; nunca se guardan respuestas fallidas.
 const PREFIX = 'bookshelf-';
-const VERSION = `${PREFIX}v1.133.2`;
+const VERSION = `${PREFIX}v1.136.0`;
 // Sin la versión de la app en el nombre: actualizar no vacía las portadas. Solo cambia si cambia el esquema de lo guardado
 const COVERS = `${PREFIX}portadas-v1`;
 // Fase 1 (1.21.0): las dos ilustraciones nuevas del panorama. `/cozy-book-room.jpg` sigue publicado para una
-// sesión abierta con la versión anterior, pero ya no se precarga.
-const CORE = ['/', '/index.html', '/manifest.webmanifest', '/images/cozy-book-room.jpg', '/images/cozy-social-room.jpg', '/images/laptop-foreground.png', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/figures/catalog.json'];
+// sesión abierta con la versión anterior, pero ya no se precarga. 1.136: los iconos y el logo de Libotown (la pantalla de
+// carga lo enseña también sin conexión).
+const CORE = ['/', '/index.html', '/manifest.webmanifest', '/images/cozy-book-room.jpg', '/images/cozy-social-room.jpg', '/images/laptop-foreground.png', '/icons/libotown.svg', '/icons/libotown-192.png', '/icons/libotown-512.png', '/icons/libotown-logo.webp', '/figures/catalog.json'];
 const COVER_HOSTS = ['covers.openlibrary.org', 'books.google.com', 'books.googleusercontent.com'];
 const STABLE_IMAGES = /^\/(cozy-book-room\.jpg|images\/.+\.(png|jpe?g|webp)$|favicon\.svg|icons\/|figures\/.+\.(png|jpe?g|webp|svg)$|art\/library-refresh\/.+\.webp$|assets\/(profile|memories|ui|library)\/.+\.webp$)/;
 

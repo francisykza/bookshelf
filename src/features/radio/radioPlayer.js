@@ -180,7 +180,7 @@ function mediaSession(track) {
   const ms = typeof navigator !== 'undefined' ? navigator.mediaSession : null;
   if (!ms || typeof window.MediaMetadata !== 'function') return;
   try {
-    ms.metadata = new window.MediaMetadata({ title: track.title, artist: track.artist, album: 'La radio del rincón · BookShelf' });
+    ms.metadata = new window.MediaMetadata({ title: track.title, artist: track.artist, album: 'La radio del rincón · Libotown' });
     ms.setActionHandler('play', play);
     ms.setActionHandler('pause', pause);
     const many = (currentStation()?.tracks.length ?? 0) > 1;

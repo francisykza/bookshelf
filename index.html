@@ -2,22 +2,38 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- 1.136: el gato de Libotown (scripts/libotown-iconos.mjs, a partir del material de Francisco) -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/svg+xml" href="/icons/libotown.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#2a1d14" />
+    <meta name="theme-color" content="#351c0e" />
     <!-- PWA: instalable y a pantalla completa en el móvil -->
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/icons/libotown-apple-180.png" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="BookShelf" />
+    <meta name="apple-mobile-web-app-title" content="Libotown" />
     <meta name="format-detection" content="telephone=no" />
     <meta
       name="description"
-      content="BookShelf: tu santuario de lectura mediterráneo. Estantería viva, diario de citas, reto anual y temporizador cozy."
+      content="Libotown: tu santuario de lectura mediterráneo. Estantería viva, diario de citas, reto anual y temporizador cozy."
     />
-    <title>BookShelf · Santuario de lectura</title>
+    <title>Libotown</title>
+    <!-- Al compartir el enlace (1.136, SPEC §136.6): la dirección de verdad es libotown.es, también desde la de antes -->
+    <link rel="canonical" href="https://libotown.es/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Libotown" />
+    <meta property="og:title" content="Libotown" />
+    <meta property="og:description" content="Tu santuario de lectura mediterráneo: estantería viva, diario de citas, reto anual y temporizador cozy." />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:url" content="https://libotown.es/" />
+    <meta property="og:image" content="https://libotown.es/icons/libotown-compartir.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="El gato de Libotown leyendo sobre las letras de libotown" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="preload" as="image" href="/images/cozy-book-room.jpg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,9 +42,24 @@
       href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;600&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap"
       rel="stylesheet"
     />
+    <style>
+      /* 1.136: pantalla de carga de Libotown desde el primer instante, antes de que llegue la app. Al arrancar, React
+         sustituye lo que hay en #root; «Abriendo tu piso…» (.home-boot) pone el logo en el mismo sitio. */
+      .arranque {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: #351c0e;
+      }
+      .arranque img {
+        width: min(80vw, 420px);
+        height: auto;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="arranque"><img src="/icons/libotown-logo.webp" alt="Libotown" width="840" height="560" fetchpriority="high" /></div></div>
     <!-- Modales por encima de toda la habitación (SPEC §11.2): hermano de #root, sin ancestros transformados -->
     <div id="modal-root"></div>
     <script type="module" src="/src/main.jsx"></script>

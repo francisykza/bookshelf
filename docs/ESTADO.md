@@ -6,6 +6,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada, con commit en la rama `libotown` y sin publicar: 1.136.0** (2026-11-15, §136; Francisco: «Sí, me valen»).
+  Worktree aparte, `BookShelf-libotown`, que sale de `edab274` (`origin/main`). **Libotown**, el nombre de verdad, bloques 1 a 3 de 4: la pestaña, el manifest y los textos de la app; el logo, los
+  iconos y la pantalla de carga, a partir del material de Francisco (§136.5); y el dominio **libotown.es** (IONOS), con el aviso
+  de la mudanza en la dirección de antes (§136.6). Lo interno sigue con «bookshelf». Evidencias en `qa-report/v1136/` del
+  worktree, enviadas al chat. Grafía confirmada: «Libotown» en los textos. **Se publica cuando libotown.es apunte a Vercel**:
+  antes, el aviso de la dirección de antes llevaría a la página de aparcamiento de IONOS. Falta que Francisco conecte el
+  dominio en Vercel e IONOS y lo añada en Supabase (pasos en §136.6). Sin probar en un móvil real.
 - **Publicada en producción: 1.133.2** (2026-11-15, §133.7; «continua por donde se ha quedado la otra cuenta»; «Nada más,
   commit»; «Súbela»; `main` avanzó sin forzar de `4d0897c` a `219638d` (también la rama) y `/sw.js` de producción ya sirve
   v1.133.2). El taller, lo que no se entendía y lo que se glitcheaba:
@@ -240,6 +247,18 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Libotown** (encargo del 15-11-2026, §136): bloques 1 (nombre y textos), 2 (logo, iconos y pantalla de carga) y 3 (el
+  dominio libotown.es y el aviso de la mudanza) hechos como 1.136.0 y **aprobados** («Sí, me valen», 15-11-2026), con commit
+  en la rama `libotown` (worktree `BookShelf-libotown`). Sin publicar. Después:
+  - **Francisco**: conectar libotown.es en Vercel e IONOS y añadirlo en Supabase Auth (§136.6, pasos 1 a 4). Comprobar desde
+    aquí que `https://libotown.es/sw.js` responde antes de publicar.
+  - **Publicar**: con el dominio ya en Vercel, fusionar `libotown` en `main` (sale de `origin/main`, `edab274`) y comprobar
+    `/sw.js` en las dos direcciones. Si el almacén sale antes, juntar primero las dos ramas y ajustar la versión.
+  - **bloque 4, la redirección** de la dirección antigua, cuando él y su pareja se hayan pasado (§136.3: entrar y elegir «Usar
+    estos»; volver a vincular los EPUB).
+  - **Al juntar con el almacén** chocan la línea de versión (`package.json`, `sw.js`, `diag.js` y la cabecera de SPEC) y, muy
+    cerca, la marca de la barra de `LaptopPanel.jsx`. Avisar a Francisco antes de juntar.
+
 - **Café, influencer, taller de restauración y fuera la pizarra** (encargo del 14-11-2026, plan en `cafe-libreria.md` §16):
   - decisiones de la 1.ª tanda tomadas;
   - **bloque 1 (fuera la pizarra y el influencer), publicado como 1.132.0** (migración aplicada): lo que Francisco note al
@@ -400,6 +419,59 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-15 · Libotown, bloque 3: el dominio libotown.es · 1.136.0 (§136.6), aprobada, commit en la rama `libotown` (Claude)
+
+- Francisco, por la conversación de la tostadora: «El dominio es libotown.es, en minúsculas. Lo he registrado en IONOS».
+- Las direcciones de producción, en `src/domain/direcciones.js`: libotown.es, su www y la de antes. En ninguna se cargan datos de
+  demostración con `?piloto=piso`.
+- Al compartir el enlace, la dirección y la imagen son las de libotown.es (`canonical`, `og:url`, `og:image` de 1200 × 630,
+  `summary_large_image`).
+- En la dirección de antes, una etiqueta pequeña «Nos mudamos a libotown.es» en la habitación (piso 3D e ilustrada) con los pasos
+  para pasarse sin perder nada; «Ahora no» la esconde tres días.
+- Los pasos para Francisco en Vercel, IONOS y Supabase, en §136.6. No se ha tocado ninguno de los tres desde aquí.
+- Comprobado: `e2e/v1136-libotown.spec.js` a 360 y 390 (25 pasan, 1 se salta a propósito), sirviendo la app local como cada
+  dirección sin salir a internet; Vitest de direcciones y del piloto (79 pasan); `npm run build` bien; lint sin avisos en lo
+  nuevo. Evidencias enviadas al chat. Sin probar en un móvil real ni con el dominio de verdad.
+- **Grafía confirmada** (Francisco, 15-11-2026, al preguntarle si el nombre iba en minúsculas como el dominio): «Libotown». Los
+  textos no cambian; las minúsculas son del dominio y del logo.
+- **Aprobada** (Francisco, 15-11-2026, «Sí, me valen», los bloques 1 a 3, con estas evidencias) y con commit en la rama
+  `libotown`, que lleva los tres bloques. **Sin publicar**: hasta que libotown.es apunte a Vercel, el aviso llevaría a la
+  página de aparcamiento de IONOS (hoy su A es 217.160.0.132, no hay AAAA y `www` no existe). Falta que Francisco conecte el
+  dominio (§136.6).
+
+### 2026-11-15 · Libotown, bloque 2: el logo y los iconos · 1.136.0 (§136.5), sin commit, rama `libotown` (Claude)
+
+- Material de Francisco, pasado en la conversación de la tostadora: la cabeza del gato con su libro, el logo con el nombre y la
+  mascota. Originales en `libotown-marca/` (fuera de git). No se ha dibujado nada nuevo.
+- `scripts/libotown-iconos.mjs` saca de ahí los iconos «any» y «maskable», el de iPhone, el favicon (SVG e ICO), el logo de la
+  pantalla de carga y la imagen para compartir. El marrón del logo, `#351c0e`, pasa a ser el color de la marca (manifest,
+  `theme-color`, la pantalla de carga).
+- **La pantalla de carga** enseña el logo desde el primer instante (dentro de `#root` en `index.html`) y «Abriendo tu piso…» lo
+  deja en el mismo sitio, con el aviso debajo.
+- Fuera el rayo de Vite y los iconos de antes. En el iPhone, quien ya la tiene instalada tiene que volver a añadirla para ver el
+  icono nuevo.
+- Comprobado: `e2e/v1136-libotown.spec.js` a 360 y 390 (17 pasan, 1 se salta a propósito), con simulaciones rotuladas del icono
+  instalado y de la pestaña; `npm run build` bien; lint sin errores nuevos. Evidencias en `qa-report/v1136/` del worktree,
+  enviadas al chat. Sin probar en un móvil real.
+- **Sin commit.** Falta: el visto bueno de Francisco a los bloques 1 y 2, y el dominio exacto con dónde lo registró (bloque 3).
+
+### 2026-11-15 · Libotown, bloque 1: el nombre y los textos · 1.136.0 (§136), sin commit, rama `libotown` (Claude)
+
+- Encargo, desde otra sesión: «BookShelf» era un nombre provisional; el de verdad es **Libotown**, con dominio propio y logo.
+  Sin perder datos; lo interno no se renombra sin una migración pensada y aprobada.
+- Decisiones de Francisco (15-11-2026): «Libotown», así escrito y **sin subtítulo**; **las dos direcciones a la vez y luego
+  redirigir** la antigua; **1.136.0** (la 1.134 y la 1.135 son del almacén; si sale antes, el número se ajusta al publicar).
+  Sobre el logo: «el icono te lo voy a pasar yo».
+- Se trabaja en un worktree aparte (`BookShelf-libotown`, rama `libotown`, desde `edab274`), porque la sesión del almacén trabaja
+  a la vez en `BookShelf-piso-lab`. No se ha tocado nada de esa carpeta.
+- Inventario (§136.1 y §136.2): 14 archivos con el nombre visible; lo interno, intacto. El favicon de hoy es el rayo de Vite y
+  no hay icono maskable.
+- **Lo delicado del dominio** (§136.3): lo guardado en el navegador es de cada dirección. En la nueva, hay que entrar y elegir
+  «Usar estos»; los EPUB se quedan en la antigua. `PRODUCTION_HOST` necesita el dominio nuevo antes de publicar en él.
+- Comprobado: `e2e/v1136-libotown.spec.js` a 360 y 390 (9 pasan, 1 se salta a propósito), `npm run build` bien y el lint sin
+  errores nuevos. Evidencias en `qa-report/v1136/` del worktree, enviadas al chat.
+- **Sin commit.** Falta: el visto bueno de Francisco, el icono, el dominio exacto y dónde lo registró.
 
 ### 2026-11-15 · Taller: lo que no se entendía y lo que se glitcheaba · 1.133.2 (§133.7), commit en la rama (Claude)
 

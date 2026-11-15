@@ -97,7 +97,7 @@ export function SoundPanel({ onClose }) {
             </label>
           ) : (
             <div className="port-sound__start">
-              <p>BookShelf está en silencio. Nada suena hasta que tú lo actives.</p>
+              <p>Libotown está en silencio. Nada suena hasta que tú lo actives.</p>
               <button type="button" className="pp-btn pp-btn--primary" onClick={activateSound}>
                 <PortIcon name="altavoz" />
                 Activar sonido

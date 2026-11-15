@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "BookShelf · Santuario de lectura",
-  "short_name": "BookShelf",
+  "name": "Libotown",
+  "short_name": "Libotown",
   "description": "Tu santuario de lectura mediterráneo: estantería viva, diario de citas, atlas de sagas y temporizador cozy.",
   "lang": "es",
   "start_url": "/",
@@ -12,8 +12,8 @@
     "standalone"
   ],
   "orientation": "portrait",
-  "background_color": "#2a1d14",
-  "theme_color": "#2a1d14",
+  "background_color": "#351c0e",
+  "theme_color": "#351c0e",
   "categories": [
     "books",
     "lifestyle",
@@ -21,22 +21,28 @@
   ],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/libotown-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/libotown-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "src": "/icons/libotown-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/libotown-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

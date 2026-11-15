@@ -329,7 +329,7 @@ function cierre(g, nombre, ramita, c, p) {
     g.drawImage(ramita, c.x + c.w - h * 0.64, c.fin - h + 6, h * 0.64, h);
   }
   if (nombre) escribir(g, `— ${nombre}`, c.x + c.w - 136, c.fin - 34, `600 68px ${MANO}`, p.tinta, 'right');
-  escribir(g, 'BookShelf', c.x, c.fin - 8, `italic 600 30px ${SERIF}`, p.suave);
+  escribir(g, 'Libotown', c.x, c.fin - 8, `italic 600 30px ${SERIF}`, p.suave);
 }
 
 function bloqueCita(g, cita, c, y, p) {

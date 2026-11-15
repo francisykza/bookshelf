@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.133.2 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.136.0 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7251,3 +7251,149 @@ polvo a arrugar las paginas se glitchea la pagina». Sin migración ni cambios d
     - el sello encima, apretando, el golpe, al levantarse y la marca fresca;
     - el ex libris pintado con varios nombres;
     - el volumen de los sonidos nuevos (`medirSonidos`).
+
+## 136. Libotown, el nombre de verdad (1.136.0)
+
+Encargo del 15-11-2026: «BookShelf» era un nombre provisional y el definitivo es **Libotown**, con dominio propio y un logo
+que pasa Francisco. Cambia la identidad visible sin perder datos de nadie. Decisiones de Francisco (15-11-2026): se escribe
+«Libotown», **sin subtítulo**; la dirección actual y el dominio nuevo funcionan **a la vez** y la antigua **redirige** cuando él
+y su pareja se hayan pasado; versión **1.136.0** (la 1.134 y la 1.135 son del almacén). Por bloques con capturas: 1) nombre y
+textos, 2) logo e iconos, 3) dominio, 4) redirección.
+
+### 136.1 Lo que se ve (bloque 1)
+
+- Pestaña y app instalada (`index.html`): `<title>Libotown</title>`, `apple-mobile-web-app-title` y la descripción
+  («Libotown: tu santuario de lectura mediterráneo…»). En el manifest, `name` y `short_name` son «Libotown».
+- Al compartir el enlace: `og:type`, `og:site_name`, `og:title`, `og:description`, `og:locale` y `twitter:card` (`summary`).
+  La imagen ya está (`libotown-compartir.jpg`, §136.5); `og:image` y `og:url` se enlazan con el dominio (bloque 3), porque
+  necesitan la dirección completa.
+- Textos de la app:
+  - la barra del ordenador (`LaptopPanel.jsx`);
+  - «Libotown está en silencio…» (`SoundPanel.jsx`);
+  - la copia en archivo: se descarga como `libotown-copia-AAAA-MM-DD.json` y, si el archivo no vale, «Ese archivo no es una
+    copia de Libotown.». Las copias de antes (`bookshelf-copia-…`) se siguen importando: cuenta el contenido, no el nombre;
+  - «Una cita de Libotown» al compartir una cita, y el aviso de instalar (`RoomCorner.jsx`);
+  - la firma de las imágenes del mes (`monthCard.js`) y de la reseña (`reviewCard.js`);
+  - la radio en la pantalla de bloqueo (`radioPlayer.js`) y el autor de su música (`catalogo-radio.json`);
+  - las insignias Creadora y Equipo (`huellas.js`), el error al importar un estado (`useLibrary.jsx`) y el título para
+    lectores de pantalla (`App.jsx`).
+- No cambian los comentarios, las páginas de `dev/` ni los documentos.
+
+### 136.2 Lo interno se queda como está
+
+Renombrarlo perdería datos o la sesión: no se toca sin una migración pensada y aprobada por Francisco.
+
+- `bookshelf:v1` (la biblioteca), el resto de claves `bookshelf:*` y `bookshelf_onboarding_done`.
+- `bookshelf:auth`, la sesión de Supabase: cambiarla cerraría la sesión de todos.
+- El IndexedDB `bookshelf-files` (los EPUB) y `bookshelf-portadas`, y las cachés `bookshelf-` del service worker.
+- La clave `bookshelf` del historial, el tipo `application/x-bookshelf` al arrastrar libros y las rutas `assets/bookshelf/`.
+- `package.json`, el repositorio y los proyectos de Vercel y de Supabase.
+
+### 136.3 El dominio (bloques 3 y 4)
+
+- Lo guardado en el navegador es de cada dirección: en el dominio nuevo la app arranca como en un móvil estrenado.
+  - Hay que entrar con la cuenta. En «Hay dos versiones distintas», elegir **«Usar estos» (En tu cuenta)**: «Subir estos»
+    pisaría la biblioteca de la nube con la del móvil nuevo.
+  - Vuelve lo del servidor: biblioteca, piso, café, inventario y comunidad.
+  - Se quedan en la dirección antigua los EPUB (se vuelven a vincular) y su posición, los ajustes de sonido, radio y lector, los
+    borradores y las portadas guardadas.
+- `PRODUCTION_HOST` (`sampleLibrary.js`) solo conocía `bookshelf-wine-iota.vercel.app`. Desde el bloque 3 (§136.6) cuentan las
+  tres direcciones de producción, para que `?piloto=piso` nunca cargue datos de demostración en ellas.
+- `signUp` manda el correo de confirmación a `window.location.origin`: el dominio nuevo tiene que estar en las Redirect URLs de
+  Supabase.
+
+### 136.4 Pruebas
+
+- `e2e/v1136-libotown.spec.js`, a 360 y 390:
+  - la pestaña, las meta y el manifest;
+  - que no aparezca ninguna clave nueva en localStorage ni «BookShelf» en la página;
+  - la barra del ordenador;
+  - el aviso del sonido, solo el texto (sin cuenta, el aviso del piso para iniciar sesión queda por encima);
+  - la copia: se descarga con el nombre nuevo, la de antes se importa y un archivo que no vale da el mensaje nuevo;
+  - la imagen de la reseña, a 390.
+- `npm run build` bien; lint sin errores nuevos (los de `src/vendor/pixelfx` ya estaban).
+- Sin probar en un móvil real.
+
+### 136.5 El logo y los iconos (bloque 2)
+
+Material de Francisco (15-11-2026, en la conversación de la tostadora; los originales están en `libotown-marca/`, fuera de git):
+la cabeza del gato con su libro (fondo transparente), el logo con el nombre y la mascota de cuerpo entero (sin usar todavía).
+No se dibuja nada nuevo: `scripts/libotown-iconos.mjs` lo deriva todo (`node scripts/libotown-iconos.mjs ../libotown-marca`).
+
+- **El marrón de la marca, `#351c0e`**, el fondo del logo con nombre. Lo usan los iconos, `theme-color`, `background_color` y
+  `theme_color` del manifest, la pantalla de carga y el fondo de `.sanctuary[data-home-3d]`.
+- **El gato limpio**: la cabeza del original con el alfa en dos valores (umbral 110, para que no salgan halos al reducir) y
+  recortada (665 × 593).
+- Iconos (`public/icons/`), en PNG de paleta (el de 512 pesa 40 KB):
+  - `libotown-192.png` y `libotown-512.png` («any»): el gato al 70 % sobre el marrón, a sangre;
+  - `libotown-maskable-192.png` y `libotown-maskable-512.png`: al 58 %, dentro de la zona segura del recorte de Android;
+  - `libotown-apple-180.png`: al 72 %, opaco (las esquinas las pone iOS);
+  - `libotown.svg` (64 × 64, con el PNG de 128 dentro) y `public/favicon.ico` (16, 32 y 48), transparentes, para la pestaña.
+- **La pantalla de carga**:
+  - desde el primer instante, antes de que llegue la app: `index.html` trae dentro de `#root` el logo con nombre
+    (`libotown-logo.webp`, 840 px, 20 KB) centrado sobre el marrón, a `min(80vw, 420px)`. React lo sustituye al arrancar;
+  - «Abriendo tu piso…» (`.home-boot`, `index.css`) pone el mismo logo en el mismo sitio, con el aviso debajo de las letras:
+    no hay salto entre una pantalla y otra;
+  - el service worker precarga el logo y los iconos (`CORE`).
+- **La imagen para compartir**: `libotown-compartir.jpg`, 1200 × 630, el logo a toda la altura sobre el marrón. Se enlaza en el
+  bloque 3, porque `og:image` necesita la dirección completa.
+- Fuera: `favicon.svg` (el rayo de Vite), `icon-192.png`, `icon-512.png` y `apple-touch-icon.png`. Nada más los usaba.
+- **Quien ya la tiene instalada**: en el iPhone el icono no cambia solo (hay que quitar la app de la pantalla de inicio y volver a
+  añadirla; los datos siguen, son de la dirección). En Android, Chrome revisa el manifest de vez en cuando y puede tardar o
+  preguntar antes de cambiarlo.
+- Pruebas, en el mismo `e2e/v1136-libotown.spec.js`, a 360 y 390:
+  - los iconos: tamaño, «maskable», esquina opaca del marrón, el favicon y el ICO con sus tres tamaños (medidos desde Node con
+    sharp: un `fetch` desde la página se cortaba al arrancar la app);
+  - la pantalla de carga sin la app (se corta `src/main.jsx`): el logo centrado y del ancho previsto;
+  - «Abriendo tu piso…» con el piso retenido: el aviso justo debajo de las letras del logo;
+  - simulaciones rotuladas del icono instalado (Android con el recorte circular, iPhone con sus esquinas) y de la pestaña, clara
+    y oscura, con el favicon real. Son dibujos de la prueba con los iconos de verdad, no capturas de un móvil.
+  - 17 pasan y 1 se salta a propósito (la imagen de la reseña va solo a 390). `npm run build` bien; lint sin errores nuevos.
+- Sin probar en un móvil real.
+
+### 136.6 El dominio, libotown.es (bloque 3)
+
+Francisco, 15-11-2026: «El dominio es libotown.es, en minúsculas. Lo he registrado en IONOS». Preguntado si el nombre también
+va en minúsculas: «Libotown» (las minúsculas son del dominio y del logo; los textos no cambian). La dirección principal es
+`libotown.es`; `www.libotown.es` redirige a ella (lo hace Vercel). La de antes sigue funcionando hasta el bloque 4.
+
+- **Las direcciones, en un solo sitio**: `src/domain/direcciones.js` (`DOMINIO`, `HOST_ANTIGUO`, `HOSTS_PRODUCCION`,
+  `esProduccion` y `esDireccionAntigua`). `PRODUCTION_HOST` (`sampleLibrary.js`) pasa a ser `libotown.es`, y
+  `seedPilotLibrary` y el piloto de `App.jsx` usan `esProduccion`: en ninguna de las tres direcciones de producción se
+  cargan datos de demostración con `?piloto=piso`.
+- **Al compartir el enlace** (`index.html`): `<link rel="canonical">` y `og:url` a `https://libotown.es/`; `og:image`
+  absoluta (`https://libotown.es/icons/libotown-compartir.jpg`, 1200 × 630, con su tipo, tamaño y texto alternativo) y
+  `twitter:card` `summary_large_image`. Desde la dirección de antes, la vista previa también lleva a libotown.es.
+- **El aviso de la mudanza** (`src/features/direccion/AvisoDireccion.jsx`), solo en `bookshelf-wine-iota.vercel.app` y solo en
+  la habitación:
+  - una etiqueta pequeña, «Nos mudamos a libotown.es», con el marco de papel en píxel del piso: arriba a la derecha en el piso
+    3D (a la altura de «Al edificio»), y en la habitación ilustrada debajo de Cuenta, Ambiente y Guías, sin taparlos;
+  - al tocarla, una nota con los pasos: abrir libotown.es (y, con la app instalada, añadirla a la pantalla de inicio desde
+    allí, para que el icono nuevo tenga sus propios datos), entrar con la misma cuenta, elegir **«Usar estos»** en «En tu
+    cuenta» (no «Subir estos») y volver a vincular los EPUB;
+  - «Ir a libotown.es» la abre en el navegador; «Ahora no» la esconde tres días en este dispositivo
+    (`bookshelf:aviso-direccion`).
+- **Lo que hace Francisco** (no se puede desde aquí; nada de contraseñas):
+  1. **Vercel**, proyecto de producción: Settings → Domains → añadir `libotown.es` y, cuando lo proponga, también
+     `www.libotown.es` con redirección a `libotown.es`. Vercel enseña los registros DNS que necesita.
+  2. **IONOS**: Dominios y SSL → `libotown.es` → DNS. Para el host `@`, el registro A con el valor que dé Vercel (cambiando
+     el que trae IONOS) y fuera el AAAA de `@` si lo hay (Vercel no usa IPv6). Para `www`, un CNAME con el valor que dé
+     Vercel. Los MX y TXT del correo, si los usa, no se tocan. Si hubiera un registro CAA, tiene que permitir
+     `letsencrypt.org`.
+  3. Esperar a que Vercel marque los dos dominios como válidos (suele tardar minutos; hasta 48 h). Vercel pone el
+     certificado solo.
+  4. **Supabase**, Authentication → URL Configuration: en Redirect URLs, añadir `https://libotown.es/**` y
+     `https://www.libotown.es/**` sin quitar `https://bookshelf-wine-iota.vercel.app/**`; la Site URL, `https://libotown.es`.
+     Si alguna plantilla de correo lleva la dirección de antes escrita, cambiarla.
+  5. Después de publicar la 1.136, pasarse los dos con los pasos del aviso. Antes de publicarla, libotown.es sirve la versión
+     de producción que haya, que aún no la conoce como producción: no abrir `?piloto=` en ella.
+- Pruebas, en `e2e/v1136-libotown.spec.js` a 360 y 390. Playwright sirve la app local como si fuera cada dirección, sin salir a
+  internet ni tocar la dirección de verdad:
+  - la dirección de antes: la etiqueta y la nota, sin salirse de la pantalla ni tapar ningún botón; el enlace; y que «Ahora
+    no» la esconde también al recargar;
+  - el piso 3D: la etiqueta a la altura del botón de arriba;
+  - libotown.es: sin aviso y sin sembrar `?piloto=piso&biblioteca=50` (en el ordenador, la misma dirección sí siembra);
+  - las etiquetas para compartir y la imagen de 1200 × 630;
+  - Vitest: `direcciones.test.js` y la prueba de `seedPilotLibrary` con las tres direcciones.
+  - 25 pasan y 1 se salta a propósito. `npm run build` bien; lint sin avisos en lo nuevo.
+- Sin probar en un móvil real ni con el dominio de verdad, que aún no apunta a Vercel.

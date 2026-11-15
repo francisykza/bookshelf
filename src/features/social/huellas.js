@@ -44,8 +44,8 @@ export const DISTINCTIONS = {
   semanal: { name: 'Lectura de la semana', mark: 'star-ribbon', art: '/assets/bookshelf/profile/badges/badge-weekly-star.webp', meaning: 'Una reseña elegida por el equipo esa semana.' },
   mensual: { name: 'Lectura del mes', mark: 'book-moon', art: '/assets/bookshelf/profile/badges/badge-monthly-book-moon.webp', meaning: 'Una reseña elegida por el equipo ese mes.' },
   moderacion: { name: 'Moderación', mark: 'sage-lantern', art: '/assets/bookshelf/profile/badges/badge-moderator-lantern.webp', meaning: 'Cuida la convivencia: revisa denuncias y puede retirar contenido.', role: true },
-  creadora: { name: 'Creadora', mark: 'old-key', art: '/assets/bookshelf/profile/badges/badge-creator-key.webp', meaning: 'Persona creadora de BookShelf.', role: true },
-  equipo: { name: 'Equipo', mark: 'house-nib', art: '/assets/bookshelf/profile/badges/badge-team-house-nib.webp', meaning: 'Forma parte del equipo de BookShelf.', role: true },
+  creadora: { name: 'Creadora', mark: 'old-key', art: '/assets/bookshelf/profile/badges/badge-creator-key.webp', meaning: 'Persona creadora de Libotown.', role: true },
+  equipo: { name: 'Equipo', mark: 'house-nib', art: '/assets/bookshelf/profile/badges/badge-team-house-nib.webp', meaning: 'Forma parte del equipo de Libotown.', role: true },
   fundadora: { name: 'Comunidad fundadora', mark: 'sealed-letter', art: '/assets/bookshelf/profile/badges/badge-founder-letter.webp', meaning: 'Estuvo en la comunidad desde sus primeros días.' },
 };
 
