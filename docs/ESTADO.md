@@ -11,7 +11,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   dirección de antes). **Libotown**, el nombre de verdad, bloques 1 a 3 de 4: la pestaña, el manifest y los textos de la app;
   el logo, los iconos y la pantalla de carga (§136.5); y el dominio **libotown.es** (IONOS, apuntado a Vercel; `www` redirige),
   con el aviso de la mudanza en la dirección de antes (§136.6). Lo interno sigue con «bookshelf». Evidencias en
-  `qa-report/v1136/` del worktree. **Falta Supabase** (paso 4 de §136.6, Francisco). Sin probar en un móvil real.
+  `qa-report/v1136/` del worktree. Supabase Auth, también hecho (Site URL `https://libotown.es` y sus dos Redirect URLs).
+  Sin probar en un móvil real.
 - **Publicada en producción: 1.133.2** (2026-11-15, §133.7; «continua por donde se ha quedado la otra cuenta»; «Nada más,
   commit»; «Súbela»; `main` avanzó sin forzar de `4d0897c` a `219638d` (también la rama) y `/sw.js` de producción ya sirve
   v1.133.2). El taller, lo que no se entendía y lo que se glitcheaba:
@@ -249,9 +250,6 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - **Libotown** (encargo del 15-11-2026, §136): bloques 1 (nombre y textos), 2 (logo, iconos y pantalla de carga) y 3 (el
   dominio libotown.es y el aviso de la mudanza) hechos como 1.136.0 y **aprobados** («Sí, me valen», 15-11-2026), con commit
   en la rama `libotown` (worktree `BookShelf-libotown`). **Publicada** (15-11-2026; Vercel e IONOS conectados). Después:
-  - **Francisco, Supabase Auth** (§136.6, paso 4): en Redirect URLs, añadir `https://libotown.es/**` y
-    `https://www.libotown.es/**` sin quitar la de antes, y la Site URL, `https://libotown.es`. Sin ello, entrar con contraseña
-    funciona; solo los enlaces de los correos llevan a la dirección de antes.
   - **El almacén** (1.134 y 1.135, sin commit en `BookShelf-piso-lab`, rama `1.90-escritorio-puerto`, que ya va por detrás de
     `main`): al publicarlo, trae `main`, resuelve los choques (versión, documentos, `App.jsx` y `LaptopPanel.jsx`) y sube su
     versión por encima de la 1.136.
@@ -440,6 +438,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   («ESTADO: 1.136.0 a producción»), también a `main`.
 - **La rama del almacén** (`1.90-escritorio-puerto`, con 1.134 y 1.135 sin commit en `BookShelf-piso-lab`) queda por detrás de
   `main`: no se ha tocado, para no mezclar sus cambios sin commit.
+- **Supabase Auth** (paso 4 de §136.6; Francisco: «añade tu lo que falta», con su sesión iniciada en el panel): Site URL de
+  `https://bookshelf-wine-iota.vercel.app` a `https://libotown.es`; añadidas a Redirect URLs `https://libotown.es/**` y
+  `https://www.libotown.es/**`, sin quitar `https://bookshelf-wine-iota.vercel.app/**` ni `http://localhost:5190/**`.
+  Comprobado al recargar. Las plantillas de correo son las de Supabase por defecto (sin SMTP propio, no se pueden editar) y
+  enlazan con la Site URL: no llevan la dirección de antes escrita. Cookies del panel: «Opt out».
+- Lo que queda del dominio: que Francisco y su pareja se pasen (entrar en libotown.es y elegir **«Usar estos»**; volver a
+  vincular los EPUB) y, después, el bloque 4 (la redirección de la dirección de antes).
 
 ### 2026-11-15 · Libotown, bloque 3: el dominio libotown.es · 1.136.0 (§136.6), aprobada, commit en la rama `libotown` (Claude)
 
