@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { currentBook, formatPercent, percentRead, progressLabel, trackUnit } from '../../domain/books';
 import { dailyQuoteReady } from '../../components/panels/DailyQuote';
 import { Cover } from '../../components/shelf/BookItem';
+import { AlmacenNota, AlmacenTarjeta } from '../edificio/hotel/AlmacenOrdenador';
 import { useLibrary } from '../../state/useLibrary';
 import { PixelIcon } from '../../ui/PixelIcon';
 import { PortIcon } from '../../ui/PortIcon';
@@ -41,6 +42,11 @@ const GROUPS = (open, tool) => [
       { name: 'Pedir recomendación', icon: 'busqueda', run: () => tool('librarian') },
       { name: 'Mapa de sagas', icon: 'estanteria', run: () => tool('atlas') },
     ],
+  },
+  // 1.134 · El almacén de muebles del Gran Hotel: sus ofertas de hoy y lo nuevo (docs/qa/almacen-ordenador.md)
+  {
+    title: 'El edificio',
+    items: [{ name: 'Almacén', icon: 'etiqueta', run: () => open('almacen'), nota: 'almacen' }],
   },
   {
     title: 'Radio y cuenta',
@@ -153,6 +159,7 @@ export function PisoDesktop({ open, tool, go }) {
               </div>
             </section>
           )}
+          {go.almacen && <AlmacenTarjeta onGo={(id) => choose({ name: `almacen:${id}`, run: () => go.almacen(id) })} onOpen={() => choose({ name: 'Ver el almacén', run: () => open('almacen') })} />}
         </div>
       </div>
       <div ref={appsRef} className="pp-apps" hidden={!drawer} data-escape-local={drawer ? 'open' : undefined}>
@@ -173,6 +180,7 @@ export function PisoDesktop({ open, tool, go }) {
                     <PortIcon name={item.icon} />
                     <span>{item.name}</span>
                     {item.badge === 'quote' && dailyQuoteReady(state) && <small>Sobre por abrir</small>}
+                    {item.nota === 'almacen' && <AlmacenNota />}
                     <PortIcon name="flecha" className="port-rows__go" />
                   </button>
                 </li>

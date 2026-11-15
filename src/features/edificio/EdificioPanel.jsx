@@ -177,7 +177,11 @@ function PisoView({ room, editable, label, soundOn, inside, decorate = false, in
   return <div ref={ref} className="ed-piso" />;
 }
 
-export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions: _onOpenMissions = null, timer: reloj = null, askPages = false, onPagesDone, onOpenCalendar }) {
+/**
+ * 1.134 · `sala`, `mueble` y `desde`: llegar desde el ordenador del piso directamente a una sala del hotel (hoy, 'lonja': el
+ * almacén, delante de `mueble`), sin el viaje; con `desde` 'ordenador', la barra dice «Al ordenador» y vuelve allí.
+ */
+export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions: _onOpenMissions = null, timer: reloj = null, askPages = false, onPagesDone, onOpenCalendar }) {
   const community = useCommunity({ autoload: true });
   // El edificio no pone música propia (Fase 1, decisión de Francisco): sigue la que tengas elegida en Sonido
   const ready = community.status === 'ready' && community.member;
@@ -196,7 +200,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   const [toPlace, setToPlace] = useState(null);
   const [toPlaceAcabado] = useState(null);
   // Dentro del hotel, la sala en la que estás (1.75): null es la fachada; el «Volver» de la barra sale a la calle
-  const [hotelRoom, setHotelRoom] = useState(null);
+  const [hotelRoom, setHotelRoom] = useState(() => (pisoId === HOTEL_ID && sala === 'lonja' ? 'lonja' : null));
+  // Desde el ordenador (1.134): el almacén con ese mueble delante, y la barra vuelve al ordenador
+  const delOrdenador = desde === 'ordenador' && pisoId === HOTEL_ID && sala === 'lonja';
   const [hotelDir, setHotelDir] = useState(false);
   // El armario de tu piso abierto (1.77): la barra dice «← Al piso» y «Armario»
   const [dressing, setDressing] = useState(false);
@@ -525,7 +531,7 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
   } else if (!data) {
     body = <p className="ed-note">Buscando tu puerta…</p>;
   } else if (inHotel) {
-    body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} timer={reloj} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} onInventory={setInventory} />;
+    body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} timer={reloj} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} onInventory={setInventory} destino={delOrdenador ? mueble : null} />;
   } else if (inShop) {
     // 1.119 (docs/qa/cafe-libreria.md, bloque 1): el bajo en traspaso, que será tu café-librería. Sobres, muebles y
     // reciclar ya no se ven aquí (Tienda.jsx se conserva sin montar; el servidor y tus datos no cambian)
@@ -602,9 +608,9 @@ export function EdificioPanel({ pisoId = null, soundOn = false, onOpenPiso, onCl
     <PanelShell onClose={onClose} label={inHotel ? 'El Gran Hotel del Puerto' : inShop ? 'El café-librería del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
       <div className="ed-bar">
         {pisoId ? (
-          <button type="button" className="ed-bar__back" onClick={dressing ? () => setCloseDressing((n) => n + 1) : inHotel && hotelRoom ? () => setHotelRoom(null) : onClose}>
+          <button type="button" className="ed-bar__back" onClick={dressing ? () => setCloseDressing((n) => n + 1) : delOrdenador && hotelRoom === 'lonja' ? onClose : inHotel && hotelRoom ? () => setHotelRoom(null) : onClose}>
             <ArrowLeft aria-hidden="true" />
-            {dressing ? 'Al piso' : inHotel ? (hotelRoom ? 'A la calle' : 'Al puerto') : 'Volver al portal'}
+            {dressing ? 'Al piso' : delOrdenador && hotelRoom === 'lonja' ? 'Al ordenador' : inHotel ? (hotelRoom ? 'A la calle' : 'Al puerto') : 'Volver al portal'}
           </button>
         ) : (
           <button type="button" className="ed-bar__close" onClick={onClose} aria-label="Cerrar el edificio">

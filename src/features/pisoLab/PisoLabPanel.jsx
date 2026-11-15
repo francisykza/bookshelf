@@ -29,6 +29,7 @@ import { HOME_PISO } from './inicio';
 import { rememberMyPiso, saveMyPiso } from '../edificio/myPiso';
 import { salaPersonajes } from '../edificio/service';
 import { marcarSalida } from '../edificio/salida';
+import { useMonitorAlmacen } from '../edificio/hotel/almacenHoy';
 import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
 import { expuestosDe, publicarExpuestos } from './expuestos';
 import '../tablon/tablon.css';
@@ -136,7 +137,7 @@ function Tool({ icon, name, short, onClick }) {
   );
 }
 
-export function Interior({ piso, room, hora, reading, balda, covered, leaning, listing, yawMemory, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor, onBoard, onReady }) {
+export function Interior({ piso, room, hora, reading, balda, covered, leaning, listing, yawMemory, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor, onBoard, onReady, aviso = false }) {
   const [picked, setPicked] = useState(null);
   const [pointed, setPointed] = useState(null);
   const host = useRef(null);
@@ -255,6 +256,24 @@ export function Interior({ piso, room, hora, reading, balda, covered, leaning, l
     return () => api.current?.onFrame(null);
   }, [ready, hint]);
 
+  // 1.135 · La «!» del almacén sobre el monitor (algo nuevo sin ver o algo que sigues rebajado): sigue al monitor al girar, sin
+  // pasar por React, y no sale con algo encima ni con el ordenador abierto
+  const avisoRef = useRef(null);
+  const conAviso = Boolean(aviso && !covered && !leaning);
+  useEffect(() => {
+    const el = avisoRef.current;
+    if (!ready || !el || !conAviso) return undefined;
+    const place = () => {
+      const at = api.current?.deskAnchor();
+      if (!at) return;
+      el.hidden = !at.shown;
+      el.style.transform = `translate(${Math.round(at.x)}px, ${Math.round(at.y)}px) translate(-50%, -50%)`;
+    };
+    place();
+    api.current.onFrame(place, 'aviso');
+    return () => api.current?.onFrame(null, 'aviso');
+  }, [ready, conAviso]);
+
   useEffect(() => {
     if (!ready) return undefined;
     let stale = false;
@@ -284,6 +303,11 @@ export function Interior({ piso, room, hora, reading, balda, covered, leaning, l
         <span ref={hintRef} className="plab-hint" aria-hidden="true" hidden>
           {hint}
         </span>
+      )}
+      {ready && conAviso && (
+        <i ref={avisoRef} className="plab-aviso" data-name="aviso-almacen" hidden>
+          <span className="plab-aviso__sr">Hay algo para ti en el almacén: míralo en el ordenador</span>
+        </i>
       )}
       {slots && shelfBooks && slots.map((slot) => {
         const book = slot.id === shelfBooks.cover.id ? shelfBooks.cover : shelfBooks.rows.flat().find((i) => i.id === slot.id).book;
@@ -357,6 +381,8 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   const [roomRev, setRoomRev] = useState(0);
   const isoView = useRef(null);
   const editable = canEdit(piso);
+  // 1.135 · La «!» del almacén sobre el monitor: solo en tu piso, con cuenta
+  const monitor = useMonitorAlmacen(Boolean(real) && editable);
   // Un visitante nunca llega al editor, aunque el historial lo pida
   const listing = select === 'toda' && editable;
   // Tu piso abre la biblioteca actual; la de siempre queda solo para quien no tiene piso que mostrar
@@ -609,6 +635,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
             onOpenBook={onOpenBook}
             onDesk={editable ? openDesk : null}
             onBoard={editable ? openBoard : null}
+            aviso={monitor}
             onReady={() => setBoardReady((n) => n + 1)}
             onDoor={home ? goOut : onBack}
             onLost={() => setNoGpu(true)}

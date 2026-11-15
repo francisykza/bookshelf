@@ -474,6 +474,12 @@ function Sanctuary() {
         // El ordenador del piso: 'ordenador' es su escritorio y 'ordenador:app:vista', una pantalla concreta
         const [, tab = null, view = 'today'] = panel.select.split(':');
         const here = (select) => switchPanel({ type: 'pisoLab', id: panel.id, select });
+        // 1.134 · Un mueble del almacén: el Gran Hotel ('hotel') directamente en el almacén, delante de él; Atrás o «Al ordenador»
+        // vuelven a donde se tocó (la pantalla «Almacén» o el escritorio)
+        const alAlmacen = (desde) => (mueble) => {
+          here(desde);
+          openPanel({ type: 'edificio', id: 'hotel', section: 'lonja', select: mueble, from: 'ordenador' });
+        };
         return (
           <Suspense fallback={null}>
             <LaptopPanel
@@ -494,7 +500,8 @@ function Sanctuary() {
                 openPanel({ type: 'pisoLab', id: panel.id, select: `ficha:${pagina ? `2-${pagina}` : '2'}:${id}` });
               }}
               onOpenVault={null}
-              desktop={(open) => <PisoDesktop open={open} tool={(name) => openPanel({ type: 'pisoLab', id: panel.id, select: `abrir:${name}` })} go={{ library: () => here('toda'), community: () => openPanel({ type: 'social' }), register: () => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' }) }} />}
+              onAlmacen={alAlmacen('ordenador:almacen')}
+              desktop={(open) => <PisoDesktop open={open} tool={(name) => openPanel({ type: 'pisoLab', id: panel.id, select: `abrir:${name}` })} go={{ library: () => here('toda'), community: () => openPanel({ type: 'social' }), register: () => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' }), almacen: alAlmacen('ordenador') }} />}
             />
           </Suspense>
         );
@@ -541,6 +548,9 @@ function Sanctuary() {
         <Suspense fallback={null}>
           <EdificioPanel
             pisoId={panel.id ?? null}
+            sala={panel.section ?? null}
+            mueble={panel.select ?? null}
+            desde={panel.from ?? null}
             soundOn={settings.sound}
             onOpenPiso={(id) => openPanel({ type: 'edificio', id })}
             onClose={close}

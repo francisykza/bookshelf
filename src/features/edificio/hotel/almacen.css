@@ -553,3 +553,8 @@ li[data-m='false'] .alb__mini { filter: grayscale(1); opacity: 0.5; }
 .alm-cesta__pago > p:first-child b { font: 700 1.1rem 'Lora', Georgia, serif; }
 .alm-cesta__pago .alm-btn:disabled { opacity: 0.55; cursor: default; }
 .alm-cesta__pagado { margin: 0 0 8px; padding: 7px 9px; background: #e3efe2; box-shadow: inset 0 0 0 2px var(--alm-teal); color: var(--alm-teal-d); font-size: 0.82rem; }
+
+/* 1.135 · Seguir el precio de un mueble: el botón de la ficha y la marca del directorio */
+.alm-btn--seguir { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.alm-btn--seguir .marcapaginas { flex: none; }
+.alm-dir__item span small.alm-dir__sigues { display: flex; align-items: center; gap: 4px; color: var(--alm-ink); }

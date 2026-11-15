@@ -213,8 +213,9 @@ function HotelFacade({ onEnter, directory, onDirectory, arrive = false }) {
  * el Directorio abierto (lo abre la barra del panel); `onDirectory(abierto)`. `soundOn`: el sonido de la app (el casino lo usa).
  * `timer`, `askPages`, `onPagesDone` y `onOpenCalendar`: el temporizador de la app, para la sala de lectura.
  * `onInventory`: la Lonja avisa al edificio de que tu inventario ha cambiado.
+ * `destino` (1.134): el mueble del almacén delante del que se aparece (al llegar desde el ordenador del piso).
  */
-export function GranHotel({ room = null, onRoom = () => {}, directory = false, onDirectory = () => {}, soundOn = false, timer = null, askPages = false, onPagesDone, onOpenCalendar, onInventory = () => {} }) {
+export function GranHotel({ room = null, onRoom = () => {}, directory = false, onDirectory = () => {}, soundOn = false, timer = null, askPages = false, onPagesDone, onOpenCalendar, onInventory = () => {}, destino = null }) {
   // Si se llega ya a una sala (el aviso de la mesa para dos), sin el viaje
   // Con el hotel en 3D no hay viaje: bajas de la limusina en la plaza (la primera vez que se ve la fachada)
   const [riding, setRiding] = useState(() => !reducedMotion() && !room && !hotel3d());
@@ -237,7 +238,7 @@ export function GranHotel({ room = null, onRoom = () => {}, directory = false, o
       ) : room === 'casino' ? (
         <Casino onStreet={() => onRoom(null)} soundOn={soundOn} />
       ) : room === 'lonja' ? (
-        <Almacen onStreet={() => onRoom(null)} onInventory={onInventory} soundOn={soundOn} />
+        <Almacen onStreet={() => onRoom(null)} onInventory={onInventory} soundOn={soundOn} destino={destino} />
       ) : room === 'cafe' && timer ? (
         <SalaLectura onStreet={() => onRoom(null)} timer={timer} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} />
       ) : (

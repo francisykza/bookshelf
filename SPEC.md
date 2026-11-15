@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.133.2 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.135.0 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7251,3 +7251,153 @@ polvo a arrugar las paginas se glitchea la pagina». Sin migración ni cambios d
     - el sello encima, apretando, el golpe, al levantarse y la marca fresca;
     - el ex libris pintado con varios nombres;
     - el volumen de los sonidos nuevos (`medirSonidos`).
+
+## 134. El almacén en el ordenador, bloque 1: ofertas, lo nuevo y al almacén delante del mueble (1.134.0)
+
+Encargo de Francisco del 15-11-2026 (plan en `docs/qa/almacen-ordenador.md`; «Sí, las recomendadas»): «querría añadir al
+ordenador un apartado del almacen de muebles que avise si hay descuentos, los muebles nuevos, y que permita seguir descuentos en
+muebles deseados y que de darle te lleve directamente al almacen y al mueble en cuestión». **Bloque 1 de 2, sin migración**: usa
+lo que el servidor del almacén ya dice (las ofertas de `piso_almacen_estado`). Seguir muebles deseados y su descuento, «Lo que
+sigues» y la «!» sobre el monitor del piso van en el bloque 2 (1.135.0), con su migración.
+
+### 134.1 Qué es nuevo y qué avisa (`almacenAvisos.js`, reglas puras)
+
+- Cada artículo del almacén es «de siempre» (`DE_SIEMPRE`, los 14 de la casa) o tiene fecha de llegada (`LLEGADAS`: los seis de
+  «Capa y Antifaz», el 10-11-2026). Una prueba exige que ninguno se quede sin una de las dos: un mueble que entre en el almacén
+  necesita su fecha.
+- **Nuevo** = llegó hace 30 días o menos (`DIAS_NUEVO`), contando con el día que dice el servidor, nunca con el reloj del móvil.
+  El más reciente, primero.
+- Lo visto se recuerda en el dispositivo (`bookshelf:almacen-visto`), como la «!» del café (§128.1). La primera vez, lo que ya era
+  nuevo cuenta como visto: nadie se estrena con un montón de avisos.
+- **Las ofertas**, las de hoy del servidor (4 del día con −20 % y 1 de la semana con −50 %), la de la semana primero. Nunca las de
+  mañana. Los de las habitaciones especiales no se rebajan nunca y no salen como oferta.
+- `resumenAlmacen(estado, vistos)`: las ofertas, lo nuevo (con lo que está sin ver), todo con su precio de hoy y lo de la
+  tarjeta: primero lo nuevo sin ver y después las ofertas, como mucho tres.
+
+### 134.2 La tarjeta «En el almacén» del escritorio
+
+- En el escritorio del ordenador del piso, bajo la lectura: «En el almacén», con la «!» roja si hay algo nuevo sin ver, y hasta
+  tres muebles con su miniatura, su nombre, el motivo («Nuevo», «De la semana», «Del día») y su etiqueta de precio (roja, con el
+  de siempre tachado; la de la semana, con borde de latón; sin oferta, de estraza). Debajo, «Ver el almacén».
+- Sin nada nuevo ni ofertas, sin la migración del almacén o sin conexión, no sale: el escritorio se queda como antes y sin
+  errores.
+- En «Aplicaciones», un grupo «El edificio» con «Almacén» (icono de etiqueta con su cordel, `etiqueta` en `PortIcon.jsx`) y, si
+  hay, «N muebles nuevos».
+- Sin sonidos de aviso, notificaciones ni cuentas atrás.
+
+### 134.3 La pantalla «Almacén» (`AlmacenOrdenador.jsx`, `almacenOrdenador.css`)
+
+- Una ventana más del ordenador del piso (`almacen`; el dock de la experiencia anterior no cambia), que se carga aparte.
+- Cabecera con el poste del directorio del almacén: «El Almacén del Puerto» y los tickets que tienes.
+- **Ofertas de hoy** («Oferta de la semana · −50 % · hasta el domingo», «Oferta del día · −20 % · hasta medianoche»), **Nuevo en
+  el almacén** («Nuevo · llegó el 10 de noviembre», con la «!» en lo que no habías visto) y **Todo el almacén**, por las
+  secciones del directorio (cada mueble en la de su expositor principal; «No se rebaja nunca» en los de habitación especial).
+  Vacíos: «Hoy no hay ofertas.» y «Nada nuevo en el último mes.».
+- Al abrirla, lo nuevo pasa a visto: la «!» se ve esa vez y ya no vuelve, tampoco en la tarjeta.
+- Chapas de sección dibujadas en píxel («%», estrella y etiqueta), Puerto Pixel, marcos duros, sin redondeos ni brillos. El
+  número y su «%» van con un espacio sin corte (a 360 px se partía), también en el almacén: la ficha, la etiqueta del expositor,
+  el directorio y el carrito.
+- Mientras carga, «Mirando el almacén…»; si falla, «Reintentar». El estado del almacén se guarda 5 minutos y se vuelve a pedir
+  al pasar la medianoche del servidor (`vuelve`).
+
+### 134.4 Al almacén, delante del mueble
+
+- Tocar un mueble (en la tarjeta o en la pantalla) abre el Gran Hotel directamente en el almacén, sin limusina, fachada ni
+  paseo: la escena 3D aparece delante de su expositor, mirándolo, con su ficha abierta (`destino` en `GranHotel` y `Almacen`;
+  sin 3D, la ficha directamente).
+- El botón de volver dice «Al ordenador» y vuelve a donde se estaba (el escritorio o la pantalla «Almacén»), con la History API
+  (`section: 'lonja'`, `select`, `from: 'ordenador'`).
+- Dentro, el almacén es el de siempre: se compra, se pasea o se va a otro expositor.
+
+### 134.5 Pruebas
+
+- `almacenAvisos.test.js` (11): la fecha de cada artículo, la ventana de 30 días, las fechas cortas, el «hasta…», el orden y el
+  precio de las ofertas (sin especiales ni desconocidos), la tarjeta, la base de lo visto y sin `localStorage`.
+- `e2e-community/mockSupabase.js`: `db.almacen.hoy` fija el día del servidor.
+- `e2e-community/v1134-almacen-ordenador.spec.js` (390 y 360, con vídeo):
+  - el recorrido: la tarjeta y su «!», «Aplicaciones», la pantalla y sus tres secciones, el almacén delante del Reloj (oferta de
+    la semana) y del Sillón de la capa, «Al ordenador», la «!» que se va y la Mesa desde la tarjeta;
+  - la primera vez, sin avisos;
+  - sin la migración, ni tarjeta ni errores.
+  Capturas y vídeos en `qa-report/v1134/`.
+- Regresión: `e2e-community/v199-almacen.spec.js` a 390 (el almacén de siempre, llegando por el hotel), en verde.
+- Limitaciones: emulación de Chromium con Supabase simulado; sin probar con la cuenta real ni en móviles reales.
+
+## 135. El almacén en el ordenador, bloque 2: seguir el precio de un mueble y la «!» del monitor (1.135.0)
+
+Segunda y última parte del encargo de §134 («Sí, sigue al bloque 2», 15-11-2026): «que permita seguir descuentos en muebles
+deseados». **Con migración** (`20261221120000_almacen_deseados.sql`, **la aplica Francisco**). Sin ella, todo funciona como en
+la 1.134 (más la «!» del monitor por lo nuevo) y no se puede seguir nada: no salen el marcapáginas, «Lo que sigues» ni «Seguir
+su precio».
+
+### 135.1 El servidor (`20261221120000_almacen_deseados.sql`)
+
+- Tabla `piso_almacen_deseados` (cuenta, mueble y cuándo), **privada**: con RLS y sin permisos para `anon` ni `authenticated`;
+  solo se toca con las funciones. Nadie ve lo que sigue otra cuenta. Aparte de «Se busca» (pública, de tres y para el
+  mercadillo): no la cambia.
+- `piso_almacen_desear(mueble, quiere)`: seguir (`true`) o dejar de seguir (`false`) y devuelve la lista entera, la más antigua
+  primero. Seguir dos veces no duplica. Solo se sigue lo que se vende en el almacén: está en el catálogo, no es de saga, tiene
+  precio, no está retirado y **no es de una habitación especial** (nunca se rebajan). Si no, `almacen:deseo`. **Como mucho
+  40** (`almacen:deseos`), con la fila de la cuenta bloqueada para que dos toques a la vez no se pasen.
+- `piso_almacen_estado()` devuelve además `deseados` (el resto, igual que en la 1.125).
+
+### 135.2 Las reglas (`almacenAvisos.js`, `almacenHoy.js`)
+
+- `sePuedeSeguir(id)`, igual que el servidor (una prueba compara los dos con todo el catálogo), y `TOPE_DESEADOS = 40`.
+- El resumen añade lo que sigues: primero lo rebajado hoy y después el resto, y cada fila sabe si la sigues.
+- **La «!» de lo que sigues rebajado avisa una vez por oferta**: la clave es el mueble y su periodo (el día, o el lunes de la
+  semana para la de −50 %). Vista esa oferta, no vuelve; si al día siguiente (o la semana que viene) lo rebajan otra vez, vuelve
+  a avisar. Lo visto sigue en el dispositivo (`bookshelf:almacen-visto`, que ahora guarda lo nuevo, las ofertas y lo que ya avisó
+  el monitor; lee también lo de la 1.134).
+- La tarjeta del escritorio enseña primero lo que sigues rebajado («Lo sigues»), después lo nuevo sin ver y después las ofertas,
+  como mucho tres. En «Aplicaciones»: «1 que sigues, rebajado» / «N que sigues, rebajados».
+- El estado del almacén es uno para todo (`almacenHoy.js`): la tarjeta, la pantalla, la ficha del almacén y el monitor se
+  enteran a la vez de lo que se ve o se sigue. Seguir se ve al momento y, si el servidor dice que no, vuelve como estaba con su
+  mensaje.
+
+### 135.3 Seguir: el marcapáginas
+
+- Un marcapáginas de píxel (`Marcapaginas.jsx`): vacío, sin seguir; rojo, lo sigues. En la pantalla «Almacén», a la derecha de
+  cada mueble (44 px de ancho, separado con una raya discontinua del resto de la fila, que lleva al almacén). Lo de las
+  habitaciones especiales no lleva marcapáginas.
+- Sección **«Lo que sigues»**, la primera: lo rebajado con su oferta y su «!»; lo demás, «Sin oferta hoy». Vacía, explica qué
+  hacer: «Toca el marcapáginas de un mueble para seguir su precio: cuando lo rebajen, te avisará aquí y en el escritorio.».
+- Al tocarlo, una nota pegada abajo: «Sigues el precio de X: si lo rebajan, te avisará.» / «Ya no sigues X.» o el error («Ya
+  sigues 40 muebles: deja de seguir alguno para seguir este.», «Este mueble no se puede seguir.», «No se ha podido guardar.
+  Inténtalo otra vez.»).
+- **En el almacén**: la ficha del mueble lleva «Seguir su precio» / «Sigues su precio» junto a «Añadir al carrito», y el
+  directorio marca lo que sigues con el marcapáginas y «Lo sigues» (en las ofertas, « · lo sigues»). Al abrir la ficha de algo
+  que sigues rebajado, su «!» se da por vista.
+
+### 135.4 La «!» sobre el monitor del piso
+
+- En tu piso (con cuenta; nunca en el de un vecino ni sin cuenta), una «!» roja de píxel pequeña sobre la esquina de arriba del
+  monitor (`deskAnchor` en `interior3d.js`, que proyecta esa esquina en cada fotograma: se mueve con la cámara y con el
+  escritorio). Solo por lo tuyo: algo nuevo sin ver o algo que sigues rebajado.
+- Se va al abrir el ordenador y no vuelve hasta que haya algo distinto (otra oferta de lo que sigues u otro mueble nuevo). No sale
+  con el ordenador u otro panel abiertos ni con la cámara de cerca. Sin sonidos, notificaciones ni cuentas atrás; con movimiento
+  reducido, quieta (sin la onda).
+- Para lectores de pantalla: «Hay algo para ti en el almacén: míralo en el ordenador».
+
+### 135.5 Pruebas
+
+- `almacenDeseados.rls.test.js` (6, PGlite con todas las migraciones): sin permisos sobre la tabla ni las funciones internas;
+  `sePuedeSeguir` igual en el servidor y en la app con todo el catálogo; seguir, dejar de seguir, orden y sin duplicados; lo
+  especial, de saga, retirado, inexistente o nulo, rechazado; cada cuenta ve solo lo suyo; el tope de 40. Las del almacén de
+  antes siguen en verde.
+- `almacenAvisos.test.js` (19): además de las de §134.5, lo de la 1.134 se sigue leyendo, marcar sin haber abierto el ordenador,
+  el tope y lo especial, el lunes de la semana, sin la migración, la «!» una vez por oferta y la semana siguiente, el orden de
+  la tarjeta y el monitor.
+- `e2e-community/mockSupabase.js`: `db.almacen.deseados` (`{ [cuenta]: [ids] }`) y `piso_almacen_desear` como la migración; sin
+  `deseados`, responde como sin la migración.
+- `e2e-community/v1135-almacen-deseados.spec.js`:
+  - el recorrido (390 y 360, con vídeo): la «!» del monitor, la tarjeta con lo que sigues, «Aplicaciones», «Lo que sigues»,
+    seguir el espejo, dejar de seguir el mapa, lo especial sin marcapáginas, «Seguir su precio» en la ficha del reloj, la marca
+    del directorio, «Al ordenador» sin «!» y el piso sin la «!»;
+  - una oferta avisa una vez y al día siguiente vuelve a avisar (390);
+  - el tope de 40 y sin la migración de los deseados (390).
+  Capturas y vídeos en `qa-report/v1135/`.
+- Regresión: `v1134-almacen-ordenador.spec.js` (390 y 360) y `v199-almacen.spec.js` (390).
+- Limitaciones: emulación de Chromium con Supabase simulado; sin la migración aplicada en el proyecto real; sin probar con la
+  cuenta real ni en móviles reales. A 360 px, los nombres largos de «Lo que sigues» se cortan con puntos suspensivos («Mapa del
+  p…»), como los de las ofertas a 390 desde la 1.134; enteros en la etiqueta accesible.

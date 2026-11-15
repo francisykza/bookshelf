@@ -415,6 +415,15 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     del bajo, y **nunca se rebajan**: ni ofertas del día o de la semana ni descuento del albarán. **Las habitaciones cerradas**
     (10-11-2026): nada industrial (no persianas metálicas), con cortina de terciopelo y caballete; la sala no es un pasillo plano
     (placita con bancos y arco del «ala nueva») y **las habitaciones con muebles van antes** que las cerradas.
+    **El almacén en el ordenador** (encargo de Francisco del 15-11-2026; plan en `docs/qa/almacen-ordenador.md`, por bloques con
+    capturas; aprobado «Sí, las recomendadas»): en el ordenador del piso, una tarjeta «En el almacén» en el escritorio y la
+    pantalla «Almacén» (lo que sigues, ofertas de hoy, nuevo y todo el almacén). **Avisa** en esa tarjeta y con una «!» roja
+    pequeña **sobre el monitor del piso**, solo para lo tuyo (un mueble que sigues rebajado hoy, un mueble nuevo sin ver); se va
+    al verlo; sin sonidos de aviso, notificaciones, cuentas atrás ni las ofertas de mañana. **Nuevo** = lo que entra a la venta
+    en el almacén (nuevo o un retirado que vuelve rehecho), 30 días desde que llega, con la «!» hasta verlo; lo que ya había
+    cuenta como visto. **Los deseados**, lista propia y privada **en el servidor** (migración nueva, la aplica él), aparte de
+    «Se busca»; los de las habitaciones especiales no se siguen (nunca se rebajan). **Tocar un mueble** abre el almacén
+    **directamente** (sin limusina ni paseo), delante de él con su ficha abierta, y «Al ordenador» vuelve.
   - **Identidad de los muebles** (4-11-2026, aprobado por Francisco; por bloques con capturas). Motivo: nadie compraría en la
     Lonja un sofá que la tienda vende igual.
     - **Acabados**: algunas copias salen con un acabado propio (cambio de colores y efecto discreto sobre el mismo dibujo;

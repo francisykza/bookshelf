@@ -6,6 +6,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobado, con commit en la rama: 1.135.0** (2026-11-15, §134 y §135; «Sí, las recomendadas»; «Sí, sigue al bloque 2»;
+  «vale» al bloque 2). Se junta con `main` (Libotown, 1.136.1) y sale como **1.137.0**. El almacén
+  en el ordenador, **los dos bloques**:
+  - **bloque 1 (§134, aprobado)**: la tarjeta «En el almacén» del escritorio, la pantalla «Almacén» (ofertas de hoy, nuevo y todo
+    el almacén), la «!» de lo nuevo y, al tocar un mueble, el almacén delante de él con su ficha y «Al ordenador»;
+  - **bloque 2 (§135)**: seguir el precio de un mueble con un marcapáginas (en la pantalla, en la ficha y el directorio del
+    almacén), «Lo que sigues», la «!» de lo que sigues rebajado (una vez por oferta) y la «!» sobre el monitor del piso.
+  **Migración pendiente, la aplica Francisco**: `20261221120000_almacen_deseados.sql` (sin ella, todo va como en el bloque 1).
+  Evidencias en `qa-report/v1134/` y `qa-report/v1135/`, enviadas al chat. Sin probar con cuentas reales ni en móviles reales.
 - **Publicada en producción: 1.133.2** (2026-11-15, §133.7; «continua por donde se ha quedado la otra cuenta»; «Nada más,
   commit»; «Súbela»; `main` avanzó sin forzar de `4d0897c` a `219638d` (también la rama) y `/sw.js` de producción ya sirve
   v1.133.2). El taller, lo que no se entendía y lo que se glitcheaba:
@@ -240,6 +249,16 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **El almacén en el ordenador** (encargo del 15-11-2026; plan en `docs/qa/almacen-ordenador.md`; decidido «Sí, las
+  recomendadas»): **los dos bloques hechos, sin commit** (1.134.0 aprobado con «Sí, sigue al bloque 2»; 1.135.0 esperando su
+  visto bueno). Al aprobarlo: commit (solo los archivos del almacén y los documentos), que aplique la migración
+  `20261221120000_almacen_deseados.sql`, comprobarla con la clave pública (`piso_almacen_deseados` debe dar «permission
+  denied» al anónimo) y, si lo pide, publicar. **Ojo**: Libotown (1.136.0, rama `libotown` en `BookShelf-libotown`) **ya está
+  publicada**, con la redirección de la dirección de antes (1.136.1; 15-11-2026, `main` en `36cb4e7`; esta rama va por
+  detrás): al publicar el almacén, traer `main`, resolver los choques (versión, documentos —el ESTADO de `main` lleva las
+  entradas de Libotown—, `App.jsx`, `LaptopPanel.jsx` y `public/sw.js`, que lleva la despedida de la dirección de antes) y
+  subir el almacén por encima de la 1.136.1.
+
 - **Café, influencer, taller de restauración y fuera la pizarra** (encargo del 14-11-2026, plan en `cafe-libreria.md` §16):
   - decisiones de la 1.ª tanda tomadas;
   - **bloque 1 (fuera la pizarra y el influencer), publicado como 1.132.0** (migración aplicada): lo que Francisco note al
@@ -401,6 +420,28 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Bitácora
 
+### 2026-11-15 · El almacén en el ordenador, bloque 2 · 1.135.0 (§135), sin commit (Claude)
+
+- Francisco aprobó el bloque 1 (1.134.0): «Sí, sigue al bloque 2».
+- Hecho el bloque 2 (§135):
+  - migración `supabase/migrations/20261221120000_almacen_deseados.sql`, **sin aplicar (la aplica Francisco)**: tabla privada
+    `piso_almacen_deseados`, `piso_almacen_desear(mueble, quiere)` (solo lo que se vende en el almacén, nunca lo de las
+    habitaciones especiales; tope de 40) y `deseados` en `piso_almacen_estado`;
+  - reglas en `hotel/almacenAvisos.js` (lo que sigues; la «!» una vez por oferta, con clave mueble@día o mueble@lunes; el
+    monitor) y estado compartido en `hotel/almacenHoy.js` (nuevo; la caché del almacén sale de `AlmacenOrdenador.jsx`);
+  - el marcapáginas (`hotel/Marcapaginas.jsx`) en la pantalla «Almacén», con «Lo que sigues» la primera; «Seguir su precio» en
+    la ficha y la marca en el directorio del almacén (`Almacen.jsx`, `almacen.css`); `almacenDesear` en `service.js`;
+  - la «!» sobre el monitor del piso (`PisoLabPanel.jsx`, `pisoLab.css`; `deskAnchor` y los ganchos por fotograma con clave en
+    `interior3d.js`).
+- Comprobado: `almacenDeseados.rls.test.js` (6) y las RLS del almacén de antes, `almacenAvisos.test.js` (19),
+  `e2e-community/v1135-almacen-deseados.spec.js` a 390 (3) y 360 (el recorrido; los otros dos solo van a 390), y la regresión
+  de `v1134-almacen-ordenador.spec.js` y `v199-almacen.spec.js`. Evidencias en `qa-report/v1135/`.
+- **Aprobado** (Francisco, 15-11-2026, «vale», tras publicar Libotown) y con commit en la rama, junto con el bloque 1. Sin la
+  migración aplicada en el proyecto real; sin probar con cuentas
+  reales ni en móviles reales. A 360 px, los nombres largos de «Lo que sigues» se cortan con puntos suspensivos.
+- Lo del café salió antes, como 1.133.1 y 1.133.2 (commits de la otra sesión con un índice aparte): `git diff` ya solo trae lo
+  del almacén.
+
 ### 2026-11-15 · Taller: lo que no se entendía y lo que se glitcheaba · 1.133.2 (§133.7), commit en la rama (Claude)
 
 - Lo pedido: el punto de «Pendiente» que la otra cuenta dejó para esta. Francisco: «por ejemplo la de arrugar las paginas, el
@@ -479,6 +520,38 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
   Es decir, +40 tickets (los del nivel 3) y +15 granos (el 3.er hito del nivel 2) en cada una.
 - Es una excepción puntual (anotada en `CLAUDE.md`, en las jornadas de prueba): no se repite ni se amplía sin que lo pida.
+
+### 2026-11-15 · El almacén en el ordenador, bloque 1 · 1.134.0 (§134), sin commit (Claude)
+
+- Francisco aprobó el plan con las cuatro opciones recomendadas: «Sí, las recomendadas» (anotado en `CLAUDE.md`, en el almacén
+  del Gran Hotel, y en `docs/qa/almacen-ordenador.md`).
+- Hecho el bloque 1, sin migración (§134):
+  - reglas puras en `hotel/almacenAvisos.js` (qué es nuevo, las ofertas de hoy, la tarjeta y lo visto en el dispositivo);
+  - la tarjeta «En el almacén» del escritorio (`PisoDesktop.jsx`) y «Almacén» en «Aplicaciones», con su icono `etiqueta`;
+  - la pantalla «Almacén» (`hotel/AlmacenOrdenador.jsx` y `almacenOrdenador.css`, ventana `almacen` de `LaptopPanel.jsx`);
+  - el salto al almacén delante del mueble (`App.jsx`, `EdificioPanel.jsx`, `GranHotel.jsx` y `Almacen.jsx` con `destino`) y
+    «Al ordenador».
+- Comprobado: `almacenAvisos.test.js` (11) y `e2e-community/v1134-almacen-ordenador.spec.js` a 390 y 360 (4 pasan; 2 se saltan
+  a propósito, solo van a 390), `npm run build` y la regresión `e2e-community/v199-almacen.spec.js` a 390 (8 pasan; 1 se salta,
+  va en otros tamaños). Lint sin errores (solo avisos del tipo de los que ya había). Evidencias en `qa-report/v1134/`.
+- **Sin commit**, esperando el visto bueno de Francisco a esta entrega. No se ha probado con cuentas reales ni en móviles reales.
+- **Ojo, a la vez**: la sesión del café estaba cambiando `cafe3d.js`, `cafeLayout.js`, `cafeMusica.js`, `cafeTallerMusica.js`,
+  `ambientAudio.js` y `__tests__/cafeRuta.test.js` (sin commit). No son de este bloque y no se han tocado. Este bloque ocupa la
+  **1.134.0** (`diag.js`, `package.json`, `sw.js` y la cabecera de `SPEC.md`). (Corrección: lo del café no fue con el número
+  siguiente; salió antes, como 1.133.1 y 1.133.2.)
+
+### 2026-11-15 · El almacén en el ordenador: plan propuesto, sin implementar (Claude)
+
+- Encargo de Francisco, literal: «querría añadir al ordenador un apartado del almacen de muebles que avise si hay descuentos,
+  los muebles nuevos, y que permita seguir descuentos en muebles deseados y que de darle te lleve directamente al almacen y al
+  mueble en cuestión».
+- Plan en `docs/qa/almacen-ordenador.md` (nuevo, **sin commit**): tarjeta «En el almacén» en el escritorio del ordenador del
+  piso y pantalla «Almacén» (lo que sigues, ofertas de hoy, nuevo, todo el almacén); «nuevo» = lo que entra a la venta en el
+  almacén, 30 días; deseados en una lista propia y privada en el servidor (no «Se busca», que es pública y de tres); la «!»
+  roja solo para lo tuyo, sin sonidos ni cuentas atrás; tocar un mueble abre el almacén delante de él con su ficha y «Al
+  ordenador» para volver. Dos bloques: 1.134.0 sin migración y 1.135.0 con la migración de los deseados.
+- **Pendiente de Francisco**: las cuatro decisiones de §3 del plan. No se programa nada hasta su visto bueno.
+- `supabase/scripts/cafe_subir_nivel3.sql`, sin commit, es de otra sesión (subir de nivel las cuentas de prueba): no tocarlo.
 
 ### 2026-11-14 · Migración del taller aplicada y 1.133.0 a producción (Claude)
 

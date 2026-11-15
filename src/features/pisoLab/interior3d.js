@@ -377,7 +377,8 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
   let veiled = [];
   let zoom = null; // { pos, target }: mirando una balda de cerca
   let pullRaf = 0;
-  let frameHook = null;
+  // Lo que hay en HTML pegado a la escena (la indicación del libro, la «!» del monitor…): uno por clave
+  const frameHooks = new Map();
   let stale = false;
   let mustDraw = false;
   let lost = false;
@@ -1610,7 +1611,7 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
     renderMs += performance.now() - t0;
     if (renders === 0) performance.mark('piso-lab:primer-dibujo');
     renders += 1;
-    frameHook?.();
+    for (const f of frameHooks.values()) f();
   }
   function invalidate() {
     if (raf || destroyed) return;
@@ -2114,8 +2115,23 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       return { shown: !zoom && q.z < 1 && x > 0 && x < rect.width && y > 0 && y < rect.height, x, y, width: rect.width };
     },
     /** Avisa después de cada dibujo: lo que hay en HTML pegado a la escena se recoloca solo si la escena se ha movido. */
-    onFrame(fn) {
-      frameHook = fn;
+    onFrame(fn, clave = 'principal') {
+      if (fn) frameHooks.set(clave, fn);
+      else frameHooks.delete(clave);
+    },
+    /** 1.135 · Dónde cae la esquina de arriba a la derecha del monitor (px dentro del contenedor): ahí va la «!» del almacén. */
+    deskAnchor() {
+      const pc = room.items.find((i) => i.id === 'ordenador');
+      if (!pc || !meshes.some(({ userData: u }) => u.id === 'ordenador')) return { shown: false, x: 0, y: 0 };
+      aim();
+      camera.updateMatrixWorld();
+      // La esquina de arriba a la derecha de la cara del monitor (pixelComputer: x 0,1–0,9, delante en 0,44, arriba a 0,72), girada
+      // como la pieza
+      const [a, b] = [(u, v) => [u, v], (u, v) => [1 - v, u], (u, v) => [1 - u, 1 - v], (u, v) => [v, 1 - u]][pc.rot ?? 0](0.9, 0.44);
+      const q = new Vector3(pc.x + a, heightOf(room, pc) + 0.72, pc.y + b).project(camera);
+      const rect = container.getBoundingClientRect();
+      const [x, y, z] = [((q.x + 1) / 2) * rect.width, ((1 - q.y) / 2) * rect.height, q.z];
+      return { shown: !zoom && z < 1 && x > 0 && x < rect.width && y > 0 && y < rect.height, x, y };
     },
     /**
      * El libro elegido sale de la balda y gira hasta enseñarte su portada; el anterior vuelve antes a su sitio (primero se

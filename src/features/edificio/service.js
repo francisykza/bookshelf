@@ -603,6 +603,16 @@ export async function loadAlmacen() {
   fail(error);
   return data;
 }
+/**
+ * 1.135 · Seguir (`quiere` true) o dejar de seguir el precio de un mueble del almacén. Devuelve la lista entera de lo que sigues.
+ * Errores: 'almacen:deseo' (no se puede seguir) y 'almacen:deseos' (ya sigues 40).
+ */
+export async function almacenDesear(mueble, quiere) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('piso_almacen_desear', { mueble, quiere });
+  fail(error);
+  return Array.isArray(data) ? data : [];
+}
 /** Empezar el albarán de hoy ('rapido' o 'sinprisa'): gasta el intento. */
 export async function almacenEmpezar(modo) {
   const sb = await client();

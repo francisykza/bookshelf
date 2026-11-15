@@ -3,7 +3,7 @@
 // al escritorio con el dock; «Salir» vuelve a la habitación. Las apps abiertas se conservan ocultas al cambiar de una
 // a otra: un formulario a medias no se pierde, y salir con uno escrito pide confirmación.
 import { LogOut, X } from 'lucide-react';
-import { useRef, useState, useLayoutEffect } from 'react';
+import { lazy, Suspense, useRef, useState, useLayoutEffect } from 'react';
 import { playUiSound } from '../../audio/uiSounds';
 import { dayKey } from '../../domain/dates';
 import { FIGURES_ENABLED } from '../../domain/figures';
@@ -19,6 +19,9 @@ import { SessionsApp } from './ReadingCalendar';
 import { ComputerShell } from '../computer/ComputerShell';
 import { PortCalendar } from '../computer/PortCalendar';
 
+// 1.134 · La pantalla «Almacén» del ordenador del piso, solo cuando se abre (lleva el catálogo y las miniaturas del almacén)
+const AlmacenApp = lazy(() => import('../../features/edificio/hotel/AlmacenOrdenador').then((m) => ({ default: m.AlmacenApp })));
+
 // `id` se conserva (rutas y paneles guardados); `short` es el rótulo del dock y `icon` su imagen ilustrada
 const TABS = [
   { id: 'calendar', label: 'Mi diario', short: 'Diario', icon: 'diario' },
@@ -28,15 +31,18 @@ const TABS = [
   { id: 'missions', label: FIGURES_ENABLED ? 'Misiones y Guardián' : 'Misiones de la semana', short: 'Misiones', icon: 'misiones' },
   { id: 'quote', label: 'Citas', short: 'Citas', icon: 'citas' },
 ];
+// 1.134 · Solo en el ordenador del piso (la experiencia anterior y su dock no cambian): el almacén de muebles del Gran Hotel
+const PISO_TABS = [...TABS, { id: 'almacen', label: 'Almacén' }];
 
 // `desktop(open)`: lo que enseña el escritorio en vez del saludo (el piloto del piso pone ahí sus accesos); con `initialTab` null
 // se empieza en él. `diaryView`: con qué vista de Mi diario se abre.
 /** Punto de la pantalla al salir a registrar: al volver, se sigue donde estabas. */
 let alturaAlVolver = 0;
 
-export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook, desktop = null, diaryView = 'calendar', onRegister }) {
+export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook, desktop = null, diaryView = 'calendar', onRegister, onAlmacen = null }) {
   const { state } = useLibrary();
-  const start = TABS.some((t) => t.id === initialTab) ? initialTab : desktop ? null : 'calendar';
+  const tabs = desktop && onAlmacen ? PISO_TABS : TABS;
+  const start = tabs.some((t) => t.id === initialTab) ? initialTab : desktop ? null : 'calendar';
   const [app, setApp] = useState(start);
   // «Tu mes en libros» se abre dentro del calendario: la cabecera lo nombra y su flecha es la única para volver
   const [resumenMes, setResumenMes] = useState(false);
@@ -98,7 +104,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
   // 1.90: en el piso, un solo marco con una sola pantalla; la experiencia anterior sigue con sus ventanas y su dock
   if (desktop) {
     const titleOf = (t) => (t.id === 'calendar' ? { calendar: 'Calendario', today: 'Mi diario', notes: 'Mi diario' }[diary] : t.label);
-    const current = TABS.find((t) => t.id === app);
+    const current = tabs.find((t) => t.id === app);
     return (
       <PanelShell onClose={requestExit} label="Ordenador: Mi escritorio" variant="port-computer">
         <div className="pc pc--port" data-app={app ?? 'desktop'}>
@@ -129,7 +135,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
                   if (view) setDiary(view);
                   open(id);
                 })}
-              {TABS.filter((t) => alive.includes(t.id)).map((t) => (
+              {tabs.filter((t) => alive.includes(t.id)).map((t) => (
                 <section key={t.id} className="pc-win" data-pc-app={t.id} id={`pc-app-${t.id}`} hidden={app !== t.id} aria-label={titleOf(t)}>
                   <div className="pc-win__body">
                     {t.id === 'calendar' && (diary === 'calendar' ? <PortCalendar key="cal" selectDay={selectDay} onRegister={registrar} onSubview={setResumenMes} /> : <DiaryNotebook key={diary} initialView={diary} onComplete={onComplete} onOpenLibrary={onOpenLibrary} onOpenBook={(id, pagina) => onOpenBook(id, pagina, diary)} />)}
@@ -138,6 +144,11 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
                     {t.id === 'goal' && <GoalApp />}
                     {t.id === 'missions' && <MissionsApp onOpenVault={onOpenVault} />}
                     {t.id === 'quote' && <DailyQuote />}
+                    {t.id === 'almacen' && (
+                      <Suspense fallback={null}>
+                        <AlmacenApp onGo={onAlmacen} />
+                      </Suspense>
+                    )}
                   </div>
                 </section>
               ))}

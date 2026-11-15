@@ -17,13 +17,16 @@ import { todayKey } from '../dailyMissions';
 import { almacenAmigos, almacenComprar, almacenRopaComprar, almacenEmpezar, almacenInvitar, almacenPulso, almacenSalir, almacenSellar, almacenUnirse, loadAlmacen, loadArmario, loadInventario, loadMiPersonaje, savePersonaje } from '../service';
 import { Caja, SellaAlbaran } from './AlmacenCaja';
 import { ALBARAN, duracion } from './albaran';
-import { ARTICULOS, BAJO, DE_PASO, EXPOSITORES, SECCIONES, medidasDe, nombreTono, plantaDe } from './almacenLayout';
+import { ARTICULOS, BAJO, DE_PASO, EXPOSITORES, SECCIONES, medidasDe, nombreTono, onNet, plantaDe } from './almacenLayout';
 import { Lonja } from './Lonja';
 import { Probador } from './Probador';
 import { CestaRopa, ZonaRopa } from './RopaPapeles';
 import { CESTA_MAX, ZONAS_ROPA, cestaSana, zonaRopa } from './plantaRopa';
 import { mismoLook } from './ropa';
 import { ROTULO_OFERTA, mapaOfertas, precioOferta } from './ofertas';
+import { claveOferta, nuevosDelAlmacen, sePuedeSeguir } from './almacenAvisos';
+import { desear, mensajeDeseo, verAvisos } from './almacenHoy';
+import { Marcapaginas } from './Marcapaginas';
 import './almacen.css';
 
 const CARRITO_KEY = 'bookshelf:almacen-carrito';
@@ -245,7 +248,8 @@ const SITIO_TEXTO = {
   ...Object.fromEntries(ZONAS_ROPA.map((z) => [`ropa:${z.id}`, z.nombre])),
 };
 
-export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
+/** `destino` (1.134): el mueble delante del que se aparece al llegar desde el ordenador del piso, con su ficha abierta. */
+export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, destino = null }) {
   const wrap = useRef(null);
   const host = useRef(null);
   const api = useRef(null);
@@ -514,6 +518,27 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
       else if (id.startsWith('ropa:')) irAZona(id.slice(5));
     };
   });
+  // 1.134 · Desde el ordenador del piso: de golpe delante del mueble (sin paseo) y con su ficha abierta. Sin 3D, la ficha
+  const llegado = useRef(false);
+  useEffect(() => {
+    if (llegado.current || !destino) return;
+    const a = articulo(destino);
+    if (!a || a.expositor == null) {
+      llegado.current = true;
+      return;
+    }
+    if (sin3d) {
+      llegado.current = true;
+      abrirFicha(a.expositor);
+      return;
+    }
+    if (!ready || !api.current) return;
+    llegado.current = true;
+    const e = EXPOSITORES[a.expositor];
+    const p = onNet(e.x + e.n[0] * 3, e.y + e.n[1] * 3);
+    api.current.place(p.x, p.y, Math.atan2(e.x - p.x, e.y - p.y));
+    abrirFicha(a.expositor);
+  }, [destino, ready, sin3d, abrirFicha]);
   // De cerca: el mueble queda en el hueco que deja el papel
   useEffect(() => {
     if (!ready || papel !== 'ficha' || !ficha) return;
@@ -639,6 +664,31 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
   // ── Las ofertas de hoy (las elige el servidor; sin su migración no hay) ──
   const ofertas = useMemo(() => mapaOfertas(estado?.ofertas), [estado?.ofertas]);
   const precioHoy = (a) => (a ? precioOferta(a.precio, ofertas.get(a.id)?.pct) : null);
+
+  // ── 1.135 · Lo que sigues (sin su migración, `deseados` no llega y no se ve el marcapáginas) ──
+  const deseables = Array.isArray(estado?.deseados);
+  const deseados = useMemo(() => new Set(Array.isArray(estado?.deseados) ? estado.deseados : []), [estado?.deseados]);
+  const seguir = async (id) => {
+    const antes = estado?.deseados;
+    if (!Array.isArray(antes)) return;
+    const quiere = !antes.includes(id);
+    setEstado((s) => (s ? { ...s, deseados: quiere ? [...antes, id] : antes.filter((x) => x !== id) } : s));
+    try {
+      const lista = await desear(id, quiere);
+      setEstado((s) => (s ? { ...s, deseados: lista } : s));
+      setAviso(quiere ? 'Sigues su precio: si lo rebajan, te avisará el ordenador de tu piso.' : 'Ya no sigues su precio.');
+    } catch (e) {
+      setEstado((s) => (s ? { ...s, deseados: antes } : s));
+      setAviso(mensajeDeseo(e));
+    }
+  };
+  // Ver la ficha de un mueble nuevo, o de uno que sigues y está rebajado, es verlo: su «!» del ordenador se apaga
+  const fichaId = ficha ? (EXPOSITORES[ficha.i]?.id ?? null) : null;
+  useEffect(() => {
+    if (!fichaId || !estado?.dia) return;
+    const o = ofertas.get(fichaId);
+    verAvisos(nuevosDelAlmacen(estado.dia).some((n) => n.id === fichaId) ? [fichaId] : [], estado.dia, o && deseados.has(fichaId) ? [claveOferta(fichaId, o.tipo, estado.dia)] : []);
+  }, [fichaId, estado?.dia, ofertas, deseados]);
 
   // ── El carrito ──
   const lineas = useMemo(
@@ -925,7 +975,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
                 tabIndex={-1}
                 onClick={() => abrirFicha(e.i)}
               >
-                {o && <i className="alm-tag__oferta">−{o.pct} %</i>}
+                {o && <i className="alm-tag__oferta">−{o.pct}&nbsp;%</i>}
                 <span>{a?.nombre}</span>
                 {o && <s>{a?.precio}</s>}
                 <b>{precioHoy(a)}</b>
@@ -1038,7 +1088,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
                       <>
                         <s>{ticketsText(fichaA.precio)}</s> {ticketsText(precioHoy(fichaA))}{' '}
                         <em className="alm-oferta" data-tipo={ofertas.get(fichaA.id).tipo}>
-                          {ROTULO_OFERTA[ofertas.get(fichaA.id).tipo]} · −{ofertas.get(fichaA.id).pct} %
+                          {ROTULO_OFERTA[ofertas.get(fichaA.id).tipo]} · −{ofertas.get(fichaA.id).pct}&nbsp;%
                         </em>
                       </>
                     ) : isDeHabitacionEspecial(fichaA.id) ? (
@@ -1082,6 +1132,12 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
               <button type="button" className="alm-btn alm-btn--primario" onClick={() => cambiar(fichaE.id, enCarrito(fichaE.id) + 1)} disabled={enCarrito(fichaE.id) >= MAX_N}>
                 {enCarrito(fichaE.id) ? `Añadir otro (llevas ${enCarrito(fichaE.id)})` : 'Añadir al carrito'}
               </button>
+              {deseables && sePuedeSeguir(fichaE.id) && (
+                <button type="button" className="alm-btn alm-btn--seguir" aria-pressed={deseados.has(fichaE.id)} onClick={() => seguir(fichaE.id)}>
+                  <Marcapaginas lleno={deseados.has(fichaE.id)} />
+                  {deseados.has(fichaE.id) ? 'Sigues su precio' : 'Seguir su precio'}
+                </button>
+              )}
               {amigoAqui && (
                 <button type="button" className="alm-btn" onClick={() => miraEsto(fichaE.id)}>
                   Mira esto
@@ -1135,10 +1191,13 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
                               <img src={thumbOf(a.id, 0, 48)} alt="" width="40" height="40" />
                               <span>
                                 {a.nombre}
-                                <small>{ROTULO_OFERTA[o.tipo]}</small>
+                                <small>
+                                  {ROTULO_OFERTA[o.tipo]}
+                                  {deseados.has(a.id) && ' · lo sigues'}
+                                </small>
                               </span>
                               <b>
-                                <s>{a.precio}</s> {ticketsText(precioHoy(a))} · −{o.pct} %
+                                <s>{a.precio}</s> {ticketsText(precioHoy(a))} · −{o.pct}&nbsp;%
                               </b>
                             </button>
                           </li>
@@ -1167,7 +1226,15 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
                             }}
                           >
                             <img src={thumbOf(a.id, 0, 48)} alt="" width="40" height="40" />
-                            <span>{a.nombre}</span>
+                            <span>
+                              {a.nombre}
+                              {deseados.has(a.id) && (
+                                <small className="alm-dir__sigues">
+                                  <Marcapaginas lleno escala={1} />
+                                  Lo sigues
+                                </small>
+                              )}
+                            </span>
                             <b data-oferta={ofertas.get(a.id)?.tipo}>{ticketsText(precioHoy(a))}</b>
                           </button>
                         </li>
@@ -1200,7 +1267,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false }) {
                         <span className="alm-carro__nombre">
                           {l.nombre}
                           <small>
-                            {l.oferta && <s>{l.base}</s>} {ticketsText(l.precio)} cada uno{l.oferta ? ` · −${l.oferta.pct} %` : ''}
+                            {l.oferta && <s>{l.base}</s>} {ticketsText(l.precio)} cada uno{l.oferta ? ` · −${l.oferta.pct}\u00a0%` : ''}
                           </small>
                         </span>
                         <span className="alm-carro__n">

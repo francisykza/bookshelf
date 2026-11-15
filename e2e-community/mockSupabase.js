@@ -18,7 +18,7 @@ import { isRetirado } from '../src/features/edificio/retirados.js';
 export const SUPABASE = 'http://supabase.test';
 
 // 1.99 · El Almacén del Puerto
-const ALMACEN_RPC = ['estado', 'empezar', 'sellar', 'comprar', 'ropa_comprar', 'amigos', 'invitar', 'unirse', 'salir', 'pulso'].map((x) => `rpc/piso_almacen_${x}`);
+const ALMACEN_RPC = ['estado', 'empezar', 'sellar', 'comprar', 'ropa_comprar', 'amigos', 'invitar', 'unirse', 'salir', 'pulso', 'desear'].map((x) => `rpc/piso_almacen_${x}`);
 const madrid = (t = Date.now()) => new Date(t).toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
 /** La próxima medianoche de Madrid, en ms (busca el primer minuto en que cambia el día). */
 function vuelveMadrid() {
@@ -841,18 +841,35 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
         const estado = () => {
           const d = al.dias[`${userId}:${hoy}`];
           return {
-            dia: hoy,
+            // 1.134: `db.almacen.hoy` fija el día que dice el servidor (lo nuevo del almacén depende de él)
+            dia: al.hoy ?? hoy,
             ahora: Date.now(),
             vuelve: vuelveMadrid(),
             semana_hasta: vuelveMadrid() + 3 * 86400000,
             ofertas: al.ofertas ?? [],
             tickets: cuenta.tickets,
             descuento: d ? descuentoDe(d) : { estado: 'libre' },
+            // 1.135: lo que sigues, solo con la migración de los deseados (`db.almacen.deseados`: { [usuario]: [ids] })
+            ...(al.deseados ? { deseados: al.deseados[userId] ?? [] } : {}),
           };
         };
         const amigo = (otro) => otro && otro !== userId && db.follows.some((x) => x.follower === userId && x.followed === otro) && db.follows.some((x) => x.follower === otro && x.followed === userId) && !blockedWith(otro);
         const perfil = (uid) => db.profiles.find((p) => p.user_id === uid) ?? {};
         if (table === 'rpc/piso_almacen_estado') return json(estado());
+        // 1.135 (SPEC §135): seguir el precio de un mueble, como 20261221120000_almacen_deseados.sql
+        if (table === 'rpc/piso_almacen_desear') {
+          if (!al.deseados) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function in the schema cache' }) });
+          const lista = al.deseados[userId] ?? [];
+          const { mueble, quiere } = body;
+          if (typeof mueble !== 'string' || typeof quiere !== 'boolean') return fail('almacen:deseo');
+          if (!quiere) al.deseados[userId] = lista.filter((x) => x !== mueble);
+          else if (!lista.includes(mueble)) {
+            if (!cat(mueble) || precio(mueble) == null || isRetirado(mueble) || isDeHabitacionEspecial(mueble)) return fail('almacen:deseo');
+            if (lista.length >= 40) return fail('almacen:deseos');
+            al.deseados[userId] = [...lista, mueble];
+          }
+          return json(al.deseados[userId] ?? []);
+        }
         if (table === 'rpc/piso_almacen_empezar') {
           if (!['rapido', 'sinprisa'].includes(body.modo)) return fail('almacen:modo');
           al.dias[`${userId}:${hoy}`] ??= { modo: body.modo, empezado: Date.now(), marcas: [null, null, null], usado: false };
