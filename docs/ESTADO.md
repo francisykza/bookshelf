@@ -6,10 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En la rama `libotown`, sin commit: 1.136.1** (2026-11-15, §136.7; Francisco: «Hazlo ya»). Bloque 4 de Libotown: la
-  dirección de antes redirige a libotown.es (`vercel.json`, todo menos `/sw.js`) y su service worker se despide (borra sus
-  cachés, recarga y se da de baja, sin tocar localStorage ni IndexedDB). Pruebas en `redireccion.test.js`; la redirección de
-  verdad se comprueba en Vercel al publicar. **Esperando su visto bueno para publicarla.**
+- **Publicada en producción: 1.136.1** (2026-11-15, §136.7; «Hazlo ya»; «Sí, publícala»; `main` avanzó sin forzar de
+  `e251834` a `8e2dc97` desde la rama `libotown`). Bloque 4 de Libotown, el último: la dirección de antes redirige a
+  libotown.es (308 con la ruta y la consulta; `/sw.js` no, y allí ya sirve v1.136.1) y su service worker se despide (borra sus
+  cachés, recarga y se da de baja, sin tocar localStorage ni IndexedDB). libotown.es sirve v1.136.1 y `www` redirige a
+  libotown.es. Pruebas en `redireccion.test.js`. Sin probar en un móvil real.
 - **Publicada en producción: 1.136.0** (2026-11-15, §136; «Sí, me valen»; «Sí, sin esperar»; «Sí, publícala»; `main` avanzó
   sin forzar de `edab274` a `8c1035e` desde la rama `libotown`, y `/sw.js` ya sirve v1.136.0 en **libotown.es** y en la
   dirección de antes). **Libotown**, el nombre de verdad, bloques 1 a 3 de 4: la pestaña, el manifest y los textos de la app;
@@ -257,9 +258,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   - **El almacén** (1.134 y 1.135, sin commit en `BookShelf-piso-lab`, rama `1.90-escritorio-puerto`, que ya va por detrás de
     `main`): al publicarlo, trae `main`, resuelve los choques (versión, documentos, `App.jsx` y `LaptopPanel.jsx`) y sube su
     versión por encima de la 1.136.
-  - **bloque 4, la redirección** de la dirección antigua: **hecho como 1.136.1, sin commit** (Francisco, «Hazlo ya», sin
-    esperar a que se pasen). Al aprobarlo: commit, `main` sin forzar, y comprobar en las dos direcciones (308 a libotown.es con
-    la ruta y la consulta, `/sw.js` de la de antes sin redirigir y v1.136.1 en libotown.es).
+  - **bloque 4, la redirección** de la dirección antigua: **publicado como 1.136.1** (15-11-2026). Queda que Francisco y su
+    pareja instalen la app desde libotown.es, entren con «Usar estos» y vuelvan a vincular los EPUB.
   - **Al juntar con el almacén** chocan la línea de versión (`package.json`, `sw.js`, `diag.js` y la cabecera de SPEC) y, muy
     cerca, la marca de la barra de `LaptopPanel.jsx`. Avisar a Francisco antes de juntar.
 
@@ -424,7 +424,17 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Bitácora
 
-### 2026-11-15 · Libotown, bloque 4: la dirección de antes redirige · 1.136.1 (§136.7), sin commit, rama `libotown` (Claude)
+### 2026-11-15 · 1.136.1 a producción (Claude)
+
+- Francisco: «Sí, publícala». Commit `8e2dc97` en la rama `libotown`; `main` avanzó sin forzar de `e251834` a `8e2dc97` y Vercel
+  lo desplegó sin errores.
+- Comprobado con `curl`: `bookshelf-wine-iota.vercel.app/` da 308 a `https://libotown.es/`; una ruta con consulta
+  (`/club/abc?invita=xyz&inicio=habitacion`) llega entera; el manifest también redirige; `/sw.js` de la dirección de antes da
+  200, `no-cache`, v1.136.1 y lleva la despedida; libotown.es da 200 y v1.136.1; `www.libotown.es` da 308 a `libotown.es`.
+- Sin probar en un móvil real: lo que haga el icono antiguo instalado (abrir libotown.es y que su service worker se dé de baja)
+  se verá al abrirlo.
+
+### 2026-11-15 · Libotown, bloque 4: la dirección de antes redirige · 1.136.1 (§136.7), commit en la rama `libotown` (Claude)
 
 - Francisco, tras comprobar libotown.es en su móvil (le salió `ERR_SSL_PROTOCOL_ERROR` por la IP antigua guardada en el móvil;
   se arregló al borrar la caché DNS), y preguntado si hacer la redirección cuando se hubieran pasado los dos: «Hazlo ya».
@@ -435,7 +445,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - Comprobado: `redireccion.test.js` (6) y `direcciones.test.js` (3); `npm run build` (el `dist/sw.js` lleva el cambio);
   lint sin avisos en lo nuevo. Sin e2e: lo cambiado no se ejecuta en el servidor de desarrollo (el service worker solo va en la
   versión compilada y las redirecciones solo en Vercel). **La redirección de verdad se comprueba al publicar.**
-- **Sin commit**, esperando su visto bueno. Aviso dado: con la redirección, el icono antiguo abre libotown.es y lo guardado solo
+- Aprobado con «Sí, publícala» (entrada de arriba). Aviso dado antes: con la redirección, el icono antiguo abre libotown.es y lo guardado solo
   en esa dirección (EPUB, ajustes de lector y sonido) deja de verse, aunque sigue en el móvil.
 
 ### 2026-11-15 · Libotown: el DNS de libotown.es, apuntado a Vercel (Claude, desde la sesión del almacén)
