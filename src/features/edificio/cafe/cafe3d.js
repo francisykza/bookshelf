@@ -103,8 +103,8 @@ import { ASIENTOS, CUADRICULA, SOTANO, casillaValida, columnasDe, filasDe, medid
 import { cajasDe, colorDe } from './cafeMuebles';
 import { footprint } from '../room';
 import { estanteLibreria } from './cafeLibreria';
-import { LIBRO_TALLER, PLIEGUE, letrasTapa, manchasDe, semillaEncargo } from './cafeTallerGestos';
-import { PLIEGO_PX, TAPA_PX, lienzo, pintarPliego, pintarTapa } from './cafeTallerPintura';
+import { LIBRO_TALLER, PLIEGUE, alturaPliegue, letrasTapa, manchasDe, semillaEncargo } from './cafeTallerGestos';
+import { EXLIBRIS_PX, PLIEGO_PX, TAPA_PX, altoExlibris, lienzo, pintarPliego, pintarTapa } from './cafeTallerPintura';
 
 const ART_W = 320;
 const PX = 16; // píxeles de textura por unidad en suelo, paredes y techo
@@ -2176,6 +2176,89 @@ function selloKit(s, x, y, z, presion = 0, o = {}) {
   pushBox(s, [x - 0.012, y - 0.012, z + 0.036 - ap, x + 0.012, y + 0.012, z + 0.08 - ap], WOOD_L, o);
   pushBox(s, [x - 0.02, y - 0.02, z + 0.08 - ap, x + 0.02, y + 0.02, z + 0.1 - ap], WOOD_L, o);
 }
+/**
+ * El sello del ex libris del taller (1.133.2, Francisco: «el sello necesito que sea mas impactante»): la goma del tamaño de la
+ * marca (`w` × `h`, m), la plancha de nogal con su cerco de latón y sus cantoneras, y el pomo torneado. `presion` lo aplasta;
+ * `levanta` (de 0 a 1) lo despega ladeándolo, primero por el lado del lomo, y lo aparta hacia el fondo.
+ */
+function selloTallerKit(s, x, y, z, { w, h, presion = 0, levanta = 0 } = {}) {
+  const ap = 0.006 * clamp(presion, 0, 1);
+  const lv = suaveT(levanta);
+  const [x0, x1, y0, y1] = [x - w / 2, x + w / 2, y - h / 2, y + h / 2];
+  // Al despegarlo se ladea sobre el canto de fuera y se aparta hacia el fondo del banco, sin echarse encima de la vista
+  const xf = lv > 0 ? giro([x0, y, z], 'y', -lv * 0.38, desplaza(-lv * 0.02, -lv * 0.17, lv * 0.045)) : null;
+  const o = { g: 0.95, xf };
+  const OSCURO = [70, 44, 30];
+  const CLARO = [116, 76, 50];
+  // La cara de arriba de la plancha
+  const zt = z + 0.018 - ap;
+  // La goma, entintada; la plancha de nogal y su cerco de latón, que asoma por todo el borde
+  pushBox(s, [x0, y0, z, x1, y1, z + 0.004 - ap * 0.3], TINTA, o);
+  pushBox(s, [x0 - 0.004, y0 - 0.004, z + 0.004 - ap * 0.3, x1 + 0.004, y1 + 0.004, zt], OSCURO, o);
+  pushBox(s, [x0 - 0.007, y0 - 0.007, z + 0.008 - ap * 0.5, x1 + 0.007, y1 + 0.007, z + 0.013 - ap * 0.6], LATON_T, o);
+  // Arriba, un bisel claro y un rebaje oscuro, con las cantoneras de latón
+  pushBox(s, [x0 + 0.004, y0 + 0.004, zt, x1 - 0.004, y1 - 0.004, zt + 0.003], CLARO, o);
+  pushBox(s, [x0 + 0.014, y0 + 0.014, zt + 0.003, x1 - 0.014, y1 - 0.014, zt + 0.0036], OSCURO, o);
+  for (const [cx, cy] of [
+    [x0, y0],
+    [x1, y0],
+    [x0, y1],
+    [x1, y1],
+  ]) {
+    const [ax, ay] = [cx < x ? cx - 0.004 : cx - 0.014, cy < y ? cy - 0.004 : cy - 0.014];
+    pushBox(s, [ax, ay, zt - 0.002, ax + 0.018, ay + 0.018, zt + 0.004], LATON_T, o);
+  }
+  // El pomo torneado: la peana, el cuello con su anillo de latón y la bola (en cruz, que desde arriba se ve redonda)
+  const cruz = (r, za, zb, c) => {
+    pushBox(s, [x - r, y - r * 0.6, za, x + r, y + r * 0.6, zb], c, o);
+    pushBox(s, [x - r * 0.6, y - r, za, x + r * 0.6, y + r, zb], c, o);
+  };
+  cruz(0.032, zt + 0.003, zt + 0.011, CLARO);
+  cruz(0.013, zt + 0.011, zt + 0.04, OSCURO);
+  cruz(0.017, zt + 0.022, zt + 0.027, LATON_T);
+  cruz(0.026, zt + 0.04, zt + 0.06, CLARO);
+  cruz(0.018, zt + 0.06, zt + 0.066, [134, 92, 62]);
+}
+/**
+ * El golpe del sello (1.133.2): el polvillo que salta de debajo de la plancha hacia fuera y se posa, y un cerco claro que sale
+ * del borde y se apaga. `edad`, en segundos desde el golpe.
+ */
+function golpeSelloKit(s, x, y, z, { w, h }, edad) {
+  const n = 48;
+  const per = 2 * (w + h);
+  for (let k = 0; k < n; k += 1) {
+    const [h1, h2, h3] = [hash(k, 21), hash(k, 22), hash(k, 23)];
+    if (edad > 0.3 + h2 * 0.6) continue;
+    // Un punto del borde de la plancha y hacia fuera
+    let d = ((k + h1 * 0.8) / n) * per;
+    let p;
+    if (d < w) p = [x - w / 2 + d, y - h / 2 - 0.006, 0, -1];
+    else if ((d -= w) < h) p = [x + w / 2 + 0.006, y - h / 2 + d, 1, 0];
+    else if ((d -= h) < w) p = [x + w / 2 - d, y + h / 2 + 0.006, 0, 1];
+    else p = [x - w / 2 - 0.006, y + h / 2 - (d - w), -1, 0];
+    const lejos = (0.05 + h2 * 0.09) * (1 - Math.exp(-edad * 7));
+    const ladea = (h1 - 0.5) * 0.04 * (1 - Math.exp(-edad * 7));
+    const sube = (0.012 + h3 * 0.03) * Math.sin(Math.min(1, edad / (0.3 + h2 * 0.6)) * Math.PI);
+    const t = 0.0013 + h3 * 0.0012;
+    const [cx, cy] = [p[0] + p[2] * lejos + p[3] * ladea, p[1] + p[3] * lejos + p[2] * ladea];
+    pushBox(s, [cx - t, cy - t, z + 0.002 + sube, cx + t, cy + t, z + 0.002 + sube + t * 2], [255, 240, 214], { glow: true });
+  }
+  // Corto y pegado a la plancha (más lejos, sus líneas finas parecían un fallo de la imagen)
+  if (edad < 0.24) {
+    const r = 0.006 + edad * 0.11;
+    const g = 0.0035;
+    const c = [255, 238, 206];
+    const zz = z + 0.0012;
+    const [x0, x1, y0, y1] = [x - w / 2 - r, x + w / 2 + r, y - h / 2 - r, y + h / 2 + r];
+    for (const b of [
+      [x0, y0, x1, y0 + g],
+      [x0, y1 - g, x1, y1],
+      [x0, y0, x0 + g, y1],
+      [x1 - g, y0, x1, y1],
+    ])
+      pushBox(s, [b[0], b[1], zz, b[2], b[3], zz + 0.0006], c, { glow: true });
+  }
+}
 /** La marca del sello en una superficie horizontal: el cuadrado de tinta con su taza dentro. */
 function marcaSello(s, x, y, z, o = {}) {
   pushBox(s, [x - 0.03, y - 0.03, z, x + 0.03, y + 0.03, z + 0.0015], TINTA, o);
@@ -3471,8 +3554,11 @@ function prensaVivaKit(s, p = {}) {
   pushBox(s, [x - 0.03, y - 0.03, tope - 0.03, x + 0.03, y + 0.03, tope + 0.006], LATON_TD);
 }
 
-/** Las herramientas del banco, en su sitio (menos la que tienes en la mano): brocha, goma, plegadera, sello, hierro y pan de oro. */
-function utilesTaller(s, mano) {
+/**
+ * Las herramientas del banco, en su sitio (menos la que tienes en la mano): brocha, goma, plegadera, sello, hierro y pan de oro.
+ * `sello`, lo que mide el del ex libris (`tamExlibris`).
+ */
+function utilesTaller(s, mano, sello = tamExlibris(null)) {
   const z = BANCO.z;
   if (mano !== 'brocha') {
     pushBox(s, [62.38, 0.845, z, 62.56, 0.87, z + 0.02], ROBLE_TD);
@@ -3481,7 +3567,7 @@ function utilesTaller(s, mano) {
   }
   if (mano !== 'goma') pushBox(s, [62.7, 0.8, z, 62.75, 0.84, z + 0.026], MIGA_T);
   if (mano !== 'plegadera') pushBox(s, [62.36, 0.71, z, 62.56, 0.735, z + 0.006], HUESO);
-  if (mano !== 'sello') selloKit(s, 62.79, 0.62, z);
+  if (mano !== 'sello') selloTallerKit(s, 62.8, 0.62, z, sello);
   // El hierro de dorar, sobre su hornillo con las brasas, y el librillo de pan de oro
   pushBox(s, [62.56, 0.22, z, 62.72, 0.36, z + 0.05], HIERRO_TL);
   pushBox(s, [62.58, 0.36, z + 0.015, 62.7, 0.362, z + 0.03], [255, 140, 70], { glow: true });
@@ -3495,6 +3581,13 @@ function utilesTaller(s, mano) {
   // El pincel de la cola, apoyado en el cazo
   if (mano !== 'pincel') paloKit(s, [60.61, 0.6, z + 0.15], [60.67, 0.66, z + 0.32], 0.014, ROBLE_TD);
 }
+
+/** El pliegue de la página, en el mundo: su ángulo sobre el banco y un paso de 3,5 cm a lo largo de él (en `u` y `v` del pliego). */
+const PLIEGUE_M = [(PLIEGUE.b[0] - PLIEGUE.a[0]) * LIBRO_TALLER.ancho * 2, (PLIEGUE.b[1] - PLIEGUE.a[1]) * LIBRO_TALLER.hondo];
+const ANGULO_PLIEGUE = Math.atan2(PLIEGUE_M[1], PLIEGUE_M[0]);
+const PASO_PLIEGUE = [(0.035 * Math.cos(ANGULO_PLIEGUE)) / (LIBRO_TALLER.ancho * 2), (0.035 * Math.sin(ANGULO_PLIEGUE)) / LIBRO_TALLER.hondo];
+/** Lo que mide la marca del ex libris en la guarda (m), según el nombre del café (el sello es de su tamaño). */
+const tamExlibris = (nombre) => ({ w: (EXLIBRIS_PX.w * LIBRO_TALLER.ancho * 2) / PLIEGO_PX.w, h: (altoExlibris(nombre) * LIBRO_TALLER.hondo) / PLIEGO_PX.h });
 
 /**
  * La herramienta en la mano, apoyada en `c` (el punto del libro donde está el dedo): la brocha, la goma de miga, el canto de la
@@ -3519,7 +3612,11 @@ function herramientaKit(s, nombre, [x, y, z], { baja = 0 } = {}) {
     pushBox(s, [x - 0.004, y - 0.045, z0 + 0.035, x + 0.05, y + 0.045, z0 + 0.05], PIEL_T, o);
     paloKit(s, [x + 0.045, y + 0.02, z0 + 0.06], [x + 0.09, y + 0.08, z0 + 0.11], 0.04, [150, 140, 72], o);
   } else if (nombre === 'plegadera') {
-    paloKit(s, [x, y, z0 + 0.004], [x + 0.03, y + 0.09, z0 + 0.04], 0.012, HUESO, o);
+    // 1.133.2: la hoja de hueso, plana y tumbada a lo largo del pliegue, con las puntas redondeadas: se ve aplastar la cresta
+    const oo = { ...o, xf: giro([x, y, z0], 'z', ANGULO_PLIEGUE) };
+    pushBox(s, [x - 0.036, y - 0.009, z0, x + 0.036, y + 0.009, z0 + 0.0035], HUESO, oo);
+    for (const d of [-1, 1]) pushBox(s, [x + d * 0.036 - (d < 0 ? 0.007 : 0), y - 0.006, z0, x + d * 0.036 + (d > 0 ? 0.007 : 0), y + 0.006, z0 + 0.003], HUESO, oo);
+    pushBox(s, [x - 0.032, y + 0.0055, z0 + 0.0035, x + 0.032, y + 0.009, z0 + 0.004], [204, 192, 162], oo);
   } else if (nombre === 'pincel') {
     pushBox(s, [x - 0.008, y - 0.008, z0, x + 0.008, y + 0.008, z0 + 0.02], COLA_T, o);
     pushBox(s, [x - 0.007, y - 0.007, z0 + 0.02, x + 0.007, y + 0.007, z0 + 0.034], LATON_T, o);
@@ -3555,7 +3652,9 @@ function libroTallerKit(s, tela) {
   const o = { g: 0.86 };
   const osc = tela.map((v) => Math.round(v * 0.72));
   pushBox(s, [0, -0.002, 0, A + 0.002, H + 0.002, 0.004], tela, o);
-  pushBox(s, [0.004, 0.004, 0.004, A - 0.004, H - 0.004, LIBRO_Z.pagina], PAPEL_T, o);
+  // 1.133.2: el bloque acaba 3 mm por debajo de la primera página. A la misma altura, con el libro abierto, la página y el bloque
+  // se tapaban a trozos y la hoja parpadeaba (Francisco: «al pasar de quitar al polvo a arrugar las paginas se glitchea la pagina»)
+  pushBox(s, [0.004, 0.004, 0.004, A - 0.004, H - 0.004, LIBRO_Z.pagina - 0.003], PAPEL_T, o);
   for (const zz of [0.012, 0.021, 0.03]) pushBox(s, [0.004, H - 0.0045, zz, A - 0.004, H - 0.0035, zz + 0.0015], [206, 192, 160], o);
   pushBox(s, [-0.008, -0.002, 0, 0.004, H + 0.002, LIBRO_Z.grueso], osc, o);
   for (const yy of [0.06, 0.14, 0.22, 0.3]) pushBox(s, [-0.01, yy, 0.006, -0.007, yy + 0.012, LIBRO_Z.grueso - 0.006], osc.map((v) => Math.round(v * 0.85)), o);
@@ -4114,10 +4213,39 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   const libroT = new Group();
   libroT.visible = false;
   tallerGrupo.add(libroT);
-  const paginaM = hoja(paginaTex);
+  // 1.133.2: la primera página, con relieve (Francisco: que alisar las arrugas se entienda sin explicarlo). El pliego sin alisar
+  // levanta una cresta (`alturaPliegue`) con su luz y su sombra (la lámpara está a la izquierda) y baja bajo la plegadera
+  const RELIEVE_T = { cols: 60, filas: 84 };
+  const paginaGeo = own(new PlaneGeometry(LIBRO_TALLER.ancho, LIBRO_TALLER.hondo, RELIEVE_T.cols, RELIEVE_T.filas));
+  const paginaXY = Float32Array.from(paginaGeo.attributes.position.array);
+  paginaGeo.setAttribute('color', new Float32BufferAttribute(new Float32Array(paginaGeo.attributes.position.count * 3).fill(1), 3));
+  const paginaM = new Mesh(paginaGeo, own(new MeshBasicMaterial({ map: paginaTex, color: 0xeee2d0, vertexColors: true })));
   paginaM.rotation.x = -Math.PI / 2;
   paginaM.position.set(LIBRO_TALLER.ancho / 2, LIBRO_Z.pagina, LIBRO_TALLER.hondo / 2);
   libroT.add(paginaM);
+  let relieveDe = '';
+  /** El relieve de la página con estos `tramos` del pliegue, levantado `k` (de 0, con el libro cerrado, a 1). */
+  function relievePagina(tramos, k) {
+    const firma = tramos && k > 0 ? `${k.toFixed(3)}:${tramos.map((t) => t.toFixed(3)).join(',')}` : '';
+    if (firma === relieveDe) return;
+    relieveDe = firma;
+    const { ancho: A, hondo: H } = LIBRO_TALLER;
+    const pos = paginaGeo.attributes.position;
+    const col = paginaGeo.attributes.color;
+    const du = 0.003 / (2 * A);
+    for (let i = 0; i < pos.count; i += 1) {
+      const u = 0.5 + (paginaXY[i * 3] + A / 2) / (2 * A);
+      const v = (H / 2 - paginaXY[i * 3 + 1]) / H;
+      const z = firma ? alturaPliegue(tramos, u, v) * k : 0;
+      const cuesta = firma && z > 0 ? ((alturaPliegue(tramos, u + du, v) - alturaPliegue(tramos, u - du, v)) * k) / 0.006 : 0;
+      const luz = clamp(1 + cuesta * 1.4, 0.5, 1.45);
+      pos.setZ(i, z);
+      col.setXYZ(i, luz, luz, luz * (luz < 1 ? 0.94 : 1));
+    }
+    pos.needsUpdate = true;
+    col.needsUpdate = true;
+    paginaGeo.computeBoundingSphere();
+  }
   const tapaG = new Group();
   tapaG.position.set(0, LIBRO_Z.bisagra, LIBRO_TALLER.hondo / 2);
   libroT.add(tapaG);
@@ -4133,13 +4261,17 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   let cuerpoM = null;
   let placaM = null;
   let libroDe = null;
-  // Lo último pintado en los lienzos (al cambiar de libro, nada)
-  const SIN_PINTAR = {};
+  // Lo último pintado en los lienzos (al cambiar de libro, nada). 1.133.2: por lo que se pinta y no por el objeto, que es nuevo
+  // en cada cuadro (al abrir la tapa o al levantar el sello se repintaba todo sin que nada cambiase)
+  const SIN_PINTAR = '';
   let vistasPintadas = SIN_PINTAR;
+  const firmaVistas = (v) => (v ? JSON.stringify({ ...v, prensa: null, polvo: v.polvo ? { polvo: v.polvo.polvo, moho: v.polvo.moho } : null }) : 'nada');
   // Lo que se mueve (la prensa, las herramientas y el polvo), que se vuelve a montar con cada cambio
   const tallerVivo = new Group();
   tallerGrupo.add(tallerVivo);
   let tall = { activa: false, est: {} };
+  // El golpe del sello que sacude la vista ({ t0, f }, ver `tallerGolpe`)
+  let golpeVista = null;
   // El polvo que flota en la luz de la lámpara de brazo y el vaho del cazo de la cola
   const MOTAS_T = 30;
   const VAHO = 10;
@@ -4249,32 +4381,47 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         libroDe = clave;
         vistasPintadas = SIN_PINTAR;
       }
-      if (e.vistas !== vistasPintadas) {
+      const firma = firmaVistas(e.vistas);
+      if (firma !== vistasPintadas) {
         pintarTapa(tapaLienzo, enc, e.vistas ?? undefined);
         pintarPliego(pliegoLienzo, enc, e.vistas ?? undefined);
         tapaTex.needsUpdate = true;
         guardaTex.needsUpdate = true;
         paginaTex.needsUpdate = true;
-        vistasPintadas = e.vistas;
+        vistasPintadas = firma;
       }
       libroT.position.set(L.x, L.z, L.y);
       tapaG.rotation.z = Math.PI * suaveT(e.abre ?? 0);
     }
+    // La cresta del pliegue se levanta al abrir la tapa (cerrada, la aplasta) y no se ve en la prensa
+    const kRelieve = enc && !(e.enPrensa > 0) ? suaveT(clamp(((e.abre ?? 0) - 0.4) / 0.6, 0, 1)) : 0;
+    const tramos = e.vistas?.arrugas?.tramos ?? null;
+    relievePagina(tramos, kRelieve);
     if (tallerGrupo.visible) {
       const s = kit();
       conLuces(LUZ_TALLER, () => {
         prensaVivaKit(s, e.vistas?.prensa ?? {});
         const mano = enc ? e.herramienta : null;
-        utilesTaller(s, mano);
+        const sello = tamExlibris(e.vistas?.nombre);
+        utilesTaller(s, mano, sello);
         const pose = e.pose ?? {};
         if (mano === 'sello') {
+          // 1.133.2: el sello grande, del tamaño de la marca. Al sellar se queda un instante apretado (el golpe, con su polvillo)
+          // y luego se despega ladeándose (`e.levanta`)
           const x = e.vistas?.exlibris?.exlibris ?? {};
-          const [tx, ty, tz] = enPliego(L, x.u ?? 0.25, x.v ?? 0.62);
-          const alza = x.sellado ? 0.06 : x.baja ? 0.004 * (1 - (x.presion ?? 0)) : 0.04;
-          selloKit(s, tx, ty, tz + alza, x.baja && !x.sellado ? (x.presion ?? 0) : 0, { g: 0.9 });
+          const [tx, ty, tz] = enPliego(L, x.u ?? 0.25, x.v ?? 0.5);
+          const edad = e.golpe ? Math.max(0, (e.ahora ?? 0) - e.golpe) / 1000 : Infinity;
+          const alza = x.sellado ? 0 : x.baja ? 0.003 * (1 - (x.presion ?? 0)) : 0.032;
+          const presion = x.sellado ? clamp(1 - edad / 0.24, 0, 1) : x.baja ? (x.presion ?? 0) : 0;
+          selloTallerKit(s, tx, ty, tz + alza, { ...sello, presion, levanta: x.sellado ? (e.levanta ?? 0) : 0 });
+          if (x.sellado && edad < 0.95 && !reduced()) golpeSelloKit(s, tx, ty, tz, sello, edad);
         } else if (mano && pose.u != null) {
           const punto = (e.superficie ?? 'tapa') === 'pliego' ? enPliego : enTapa;
-          herramientaKit(s, mano, punto(L, pose.u, pose.v), pose);
+          const c = punto(L, pose.u, pose.v);
+          // La plegadera va por encima de la cresta (lo más alto bajo su hoja)
+          if (mano === 'plegadera' && kRelieve > 0)
+            c[2] += kRelieve * Math.max(...[-1, -0.5, 0, 0.5, 1].map((t) => alturaPliegue(tramos, pose.u + t * PASO_PLIEGUE[0], pose.v + t * PASO_PLIEGUE[1])));
+          herramientaKit(s, mano, c, pose);
         }
         if (enc && e.nube?.length && !reduced()) nubeKit(s, e.nube, e.ahora ?? 0, (u, v) => enTapa(L, u, v));
       });
@@ -4951,8 +5098,19 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     } else {
       const k = barraT * barraT * (3 - 2 * barraT);
       const mezcla = (a, b) => a + (b - a) * k;
-      camera.position.set(mezcla(px, vista.p[0]), mezcla(EYE, vista.p[2]), mezcla(py, vista.p[1]));
-      camera.lookAt(mezcla(px + Math.sin(yaw) * 6, vista.m[0]), mezcla(EYE + Math.tan(PITCH) * 6, vista.m[2]), mezcla(py + Math.cos(yaw) * 6, vista.m[1]));
+      // 1.133.2: el golpe del sello sacude la vista un instante (hacia el libro, un rebote y quieta)
+      let [sx, sz] = [0, 0];
+      if (golpeVista) {
+        const t = Math.max(0, (now - golpeVista.t0) / 1000);
+        if (t < 0.45) {
+          const caida = golpeVista.f * Math.exp(-t * 9);
+          sz = -0.013 * caida * Math.sin(t * 46);
+          sx = 0.004 * caida * Math.sin(t * 61 + 1.1);
+          moving = true;
+        } else golpeVista = null;
+      }
+      camera.position.set(mezcla(px, vista.p[0]) + sx, mezcla(EYE, vista.p[2]) + sz, mezcla(py, vista.p[1]));
+      camera.lookAt(mezcla(px + Math.sin(yaw) * 6, vista.m[0]) + sx, mezcla(EYE + Math.tan(PITCH) * 6, vista.m[2]) + sz, mezcla(py + Math.cos(yaw) * 6, vista.m[1]));
     }
     camera.updateMatrixWorld();
     return moving;
@@ -5881,7 +6039,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
             husillo: [PRENSA_TALLER.x, PRENSA_TALLER.y, husilloZ(e.vistas?.prensa?.prensa ?? 0) - 0.012],
             lomo: enTapa(L, 0.08, 0.5),
             libro: enTapa(L, 0.5, 0.5),
-            guarda: enPliego(L, 0.25, 0.62),
+            guarda: enPliego(L, 0.25, 0.5),
             prensa: [PRENSA_TALLER.x, PRENSA_TALLER.y, 1.0],
             celestino: [CELESTINO.x, CELESTINO.y, 1.95],
           }[tipo] ?? null;
@@ -5889,6 +6047,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       const p = project(...m);
       const rect = canvas.getBoundingClientRect();
       return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
+    },
+    /** El golpe del sello en el banco (1.133.2): la vista se sacude un instante. Nada con movimiento reducido. */
+    tallerGolpe(fuerza = 1) {
+      if (!tall.activa || reduced()) return;
+      golpeVista = { t0: performance.now(), f: fuerza };
+      invalidate();
     },
     /** ¿Estás en el taller, con la cámara ya en su sitio? */
     enTaller: () => tall.activa && barraT === 1 && !tour,

@@ -4,7 +4,8 @@
 // pantalla), así que los gestos no dependen del tamaño de la pantalla.
 // - Polvo y moho: la brocha, pasadas largas y suaves por la tapa (limpia por donde pasa; el moho pide más pasadas).
 // - Manchas y lápiz: la goma de miga, círculos pequeños sobre cada mancha; después, barrer las migas con el canto de la mano.
-// - Página arrugada: la plegadera de hueso, apretar y deslizar a lo largo del pliegue, de punta a punta, ida y vuelta.
+// - Página arrugada: la plegadera de hueso, deslizarla por encima del pliegue. 1.133.2: el pliegue va en ocho tramos y cada
+//   pasada (ida o vuelta, aunque levantes el dedo) baja a la mitad la cresta de los tramos que toca; con dos, queda plano.
 // - Lomo despegado: la cola caliente, pincelar el lomo de la cabeza al pie; y la prensa, girar el husillo hasta el tope.
 // - Título borrado: el hierro caliente sobre el pan de oro, apretar y mantener sobre cada letra.
 // - El ex libris: apretar y mantener el sello en la guarda.
@@ -33,8 +34,12 @@ export const MEDIDAS_TALLER = {
   borra: 0.024,
   /** Barrer las migas: una pasada de este ancho (en `u` de las dos páginas). */
   barrido: 0.36,
-  /** Pliegue: de punta a punta es al menos esta fracción; a esta distancia (m), aún se está sobre él; centrado, a menos de esta. */
-  pasada: 0.82,
+  /**
+   * Pliegue (1.133.2, Francisco: «la de arrugar las paginas» no se entendía): el pliegue va en tramos y cada tramo baja a la
+   * mitad con cada pasada de la plegadera por encima; dar la vuelta cuenta como otra pasada cuando se retrocede al menos `vuelta`
+   * (fracción del pliegue). A esta distancia (m), aún se está sobre él; centrado, a menos de `centrado`.
+   */
+  vuelta: 0.08,
   sobrePliegue: 0.03,
   centrado: 0.011,
   /** Cola: lo que deja cada paso en su tramo del lomo; con más de esto, sobra. */
@@ -103,6 +108,47 @@ export function manchasDe(semilla = 1) {
 
 /** El pliegue de la página de la derecha, de punta a punta (en `u` y `v` de las dos páginas). */
 export const PLIEGUE = { a: [0.63, 0.16], b: [0.86, 0.84] };
+/** Los tramos del pliegue: cada uno, de 1 (arrugado) a 0 (liso), baja a la mitad con cada pasada de la plegadera. */
+export const TRAMOS_PLIEGUE = 8;
+/** Lo que levanta el pliegue sin alisar (m): una cresta que se ve y que la plegadera va dejando plana. */
+export const ALTO_PLIEGUE = 0.0065;
+
+/** Lo arrugado del pliegue en `s` (de 0, en la punta de arriba, a 1, en la de abajo), entre tramo y tramo. */
+export function arrugaEn(tramos, s) {
+  if (!tramos?.length) return 0;
+  const n = tramos.length;
+  const x = clamp(s) * n - 0.5;
+  const i = Math.floor(x);
+  const f = x - i;
+  const a = tramos[Math.max(0, Math.min(n - 1, i))];
+  const b = tramos[Math.max(0, Math.min(n - 1, i + 1))];
+  return a + (b - a) * f;
+}
+
+/** Dónde cae un punto de las dos páginas (`u`, `v`) respecto al pliegue: `s`, a lo largo (0 a 1), y `d`, de lado (m). */
+export function sobrePliegue(u, v) {
+  const W = LIBRO_TALLER.ancho * 2;
+  const D = LIBRO_TALLER.hondo;
+  const [ax, ay, bx, by] = [PLIEGUE.a[0] * W, PLIEGUE.a[1] * D, PLIEGUE.b[0] * W, PLIEGUE.b[1] * D];
+  const L = Math.hypot(bx - ax, by - ay);
+  const [x, y] = [u * W, v * D];
+  return { s: ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / (L * L), d: ((x - ax) * -(by - ay) + (y - ay) * (bx - ax)) / L };
+}
+
+/**
+ * El relieve del pliegue (m, hacia arriba) en un punto de las dos páginas: una cresta afilada a lo largo del pliegue y otra
+ * más baja a su lado, que se apagan hacia las puntas y bajan a medida que la plegadera alisa cada tramo (`tramos`).
+ */
+export function alturaPliegue(tramos, u, v) {
+  if (!tramos) return 0;
+  const { s, d } = sobrePliegue(u, v);
+  if (s < -0.08 || s > 1.08) return 0;
+  // A la mitad, la cresta baja a un tercio (que se note la primera pasada)
+  const k = arrugaEn(tramos, s) ** 1.6 * Math.sin(Math.PI * clamp((s + 0.08) / 1.16)) ** 0.6;
+  if (k <= 0) return 0;
+  const cresta = (dd, ancho) => Math.max(0, 1 - Math.abs(dd) / ancho) ** 1.4;
+  return ALTO_PLIEGUE * k * (cresta(d, 0.016) + 0.45 * cresta(d - 0.022, 0.011));
+}
 
 /** Las casillas de la tapa con moho (tres, según la semilla). */
 export function mohoDe(semilla = 1) {
@@ -166,9 +212,15 @@ export function crearGestoTaller(tipo, { tapa = '', semilla = 1, centro = null, 
   let fuera = 0;
   let barrido = 0;
   let barridoDesde = null;
-  let arruga = 1;
-  let sMin = null;
-  let sMax = null;
+  // El pliegue: cada tramo, lo que le queda; en qué pasada se alisó por última vez; hacia dónde va la plegadera y lo que lleva
+  // retrocedido (para saber cuándo da la vuelta)
+  const tramos = tipo === 'arrugas' ? new Array(TRAMOS_PLIEGUE).fill(1) : null;
+  const paseDe = tramos ? new Array(TRAMOS_PLIEGUE).fill(-1) : null;
+  let pase = 0;
+  let sentido = 0;
+  let atras = 0;
+  let sAnt = null;
+  let lisos = 0;
   let desvio = 0;
   let sobre = 0;
   let lejos = 0;
@@ -181,13 +233,13 @@ export function crearGestoTaller(tipo, { tapa = '', semilla = 1, centro = null, 
   const centradas = letras ? letras.map(() => null) : null;
   let letra = -1;
   let tPulsa = 0;
-  let exlibris = { baja: 0, presion: 0, sellado: false, u: 0.25, v: 0.62 };
+  let exlibris = { baja: 0, presion: 0, sellado: false, u: 0.25, v: 0.5 };
   const r = azar(semilla * 17 + 3);
 
   const vista = () => {
     if (tipo === 'polvo') return { polvo, moho, nube };
     if (tipo === 'manchas') return { manchas, migas, barrido: clamp(barrido) };
-    if (tipo === 'arrugas') return { arruga, desde: sMin, hasta: sMax };
+    if (tipo === 'arrugas') return { arruga: tramos.reduce((s, x) => s + x, 0) / tramos.length, tramos: [...tramos] };
     if (tipo === 'cola') return { cola };
     if (tipo === 'prensa') return { prensa: clamp(girado / (M.vueltas * Math.PI * 2)), angulo };
     if (tipo === 'dorado') return { oro, letra };
@@ -305,41 +357,56 @@ export function crearGestoTaller(tipo, { tapa = '', semilla = 1, centro = null, 
       return;
     }
     if (tipo === 'arrugas') {
-      const [ax, ay] = [PLIEGUE.a[0] * W, PLIEGUE.a[1] * D];
-      const [bx, by] = [PLIEGUE.b[0] * W, PLIEGUE.b[1] * D];
-      const L = Math.hypot(bx - ax, by - ay);
+      // Sin moverse no alisa (un toque quieto no es una pasada)
+      if (len < 0.0005) return;
       const pasos = Math.max(1, Math.ceil(len / 0.004));
       let alisa = false;
       for (let i = 1; i <= pasos; i += 1) {
-        const x = (a.u + ((b.u - a.u) * i) / pasos) * W;
-        const y = (a.v + ((b.v - a.v) * i) / pasos) * D;
-        const s = ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / (L * L);
-        const px = ax + (bx - ax) * clamp(s);
-        const py = ay + (by - ay) * clamp(s);
-        const d = Math.hypot(x - px, y - py);
-        if (d <= M.sobrePliegue && s >= -0.05 && s <= 1.05) {
-          sobre += 1;
-          desvio += d;
-          const sc = clamp(s);
-          sMin = sMin == null ? sc : Math.min(sMin, sc);
-          sMax = sMax == null ? sc : Math.max(sMax, sc);
-          alisa = true;
-          if (sMax - sMin >= M.pasada) {
-            arruga = Math.max(0, arruga - 0.5);
-            eventos.push('alisado');
-            // La vuelta empieza donde acaba la ida
-            sMin = sc;
-            sMax = sc;
-            if (arruga <= 0) {
-              const medio = sobre ? desvio / sobre : 0;
-              return terminar(eventos, medio > M.centrado || lejos > sobre * 0.4 ? 1 : 2);
+        const { s, d: lado } = sobrePliegue(a.u + ((b.u - a.u) * i) / pasos, a.v + ((b.v - a.v) * i) / pasos);
+        // Fuera de las puntas, la distancia es a la punta más cercana
+        const fuera = s < 0 ? -s : s > 1 ? s - 1 : 0;
+        const d = Math.hypot(lado, fuera * Math.hypot((PLIEGUE.b[0] - PLIEGUE.a[0]) * W, (PLIEGUE.b[1] - PLIEGUE.a[1]) * D));
+        if (d > M.sobrePliegue || s < -0.05 || s > 1.05) {
+          lejos += 1;
+          continue;
+        }
+        sobre += 1;
+        desvio += d;
+        const sc = clamp(s);
+        // Dar la vuelta: retroceder un trecho cuenta como otra pasada (los tramos se pueden alisar otra vez)
+        if (sAnt != null && sc !== sAnt) {
+          const va = Math.sign(sc - sAnt);
+          if (!sentido) sentido = va;
+          else if (va !== sentido) {
+            atras += Math.abs(sc - sAnt);
+            if (atras >= M.vuelta) {
+              sentido = va;
+              atras = 0;
+              pase += 1;
             }
-          }
-        } else lejos += 1;
+          } else atras = 0;
+        }
+        sAnt = sc;
+        alisa = true;
+        const k = Math.min(TRAMOS_PLIEGUE - 1, Math.floor(sc * TRAMOS_PLIEGUE));
+        if (paseDe[k] !== pase && tramos[k] > 0) {
+          paseDe[k] = pase;
+          tramos[k] = Math.max(0, tramos[k] - 0.5);
+          // Cada tramo que queda liso, una nota que sube (el último, el «ya está» de la página); a medias, el papel que cede
+          if (tramos[k] === 0) {
+            lisos += 1;
+            eventos.push(`liso:${lisos}`);
+          } else eventos.push(`aplana:${k}`);
+        }
       }
-      frota = alisa && len > 0.0005;
-      const pas = sMin == null ? 0 : (sMax - sMin) / M.pasada;
-      progreso = clamp((1 - arruga) + pas * 0.5) * 0.98;
+      frota = alisa;
+      const queda = tramos.reduce((s, x) => s + x, 0) / tramos.length;
+      progreso = clamp(1 - queda) * 0.98;
+      if (queda <= 0) {
+        eventos.push('alisado');
+        const medio = sobre ? desvio / sobre : 0;
+        terminar(eventos, medio > M.centrado || lejos > sobre * 0.4 ? 1 : 2);
+      }
       return;
     }
     if (tipo === 'cola') {
@@ -378,6 +445,13 @@ export function crearGestoTaller(tipo, { tapa = '', semilla = 1, centro = null, 
       ultimo = { u, v, t };
       pose = { u, v, baja: 1, presion: 0 };
       barridoDesde = fase === 'barrer' ? u : null;
+      // Cada vez que se apoya la plegadera es una pasada nueva
+      if (tipo === 'arrugas') {
+        pase += 1;
+        sentido = 0;
+        atras = 0;
+        sAnt = null;
+      }
       if (tipo === 'dorado') {
         // La letra más cercana bajo el hierro (con un poco de holgura alrededor)
         let mejor = -1;
@@ -401,7 +475,7 @@ export function crearGestoTaller(tipo, { tapa = '', semilla = 1, centro = null, 
       }
       if (tipo === 'exlibris') {
         tPulsa = t;
-        exlibris = { ...exlibris, baja: 1, u: clamp(u, 0.08, 0.42), v: clamp(v, 0.2, 0.82) };
+        exlibris = { ...exlibris, baja: 1, u: clamp(u, 0.2, 0.275), v: clamp(v, 0.3, 0.68) };
       }
       return estado(eventos);
     },
@@ -437,7 +511,7 @@ export function crearGestoTaller(tipo, { tapa = '', semilla = 1, centro = null, 
       const a = ultimo ?? { u, v };
       pose = { ...pose, u, v };
       if (tipo === 'dorado' || tipo === 'exlibris') {
-        if (tipo === 'exlibris') exlibris = { ...exlibris, u: clamp(u, 0.08, 0.42), v: clamp(v, 0.2, 0.82) };
+        if (tipo === 'exlibris') exlibris = { ...exlibris, u: clamp(u, 0.2, 0.275), v: clamp(v, 0.3, 0.68) };
         ultimo = { u, v, t };
         return estado();
       }
@@ -489,11 +563,8 @@ export function crearGestoTaller(tipo, { tapa = '', semilla = 1, centro = null, 
       if (tipo === 'dorado') letra = -1;
       if (tipo === 'exlibris') exlibris = { ...exlibris, baja: 0 };
       pose = { ...pose, baja: 0 };
-      // El pliegue: soltar no pierde la pasada hecha, pero la siguiente empieza de nuevo
-      if (tipo === 'arrugas') {
-        sMin = null;
-        sMax = null;
-      }
+      // El pliegue: soltar no pierde nada de lo alisado
+      if (tipo === 'arrugas') sAnt = null;
       return estado(['arriba']);
     },
     /** De una vez (movimiento reducido o teclado): queda hecho y bien. */
@@ -509,7 +580,7 @@ export function crearGestoTaller(tipo, { tapa = '', semilla = 1, centro = null, 
         migas.length = 0;
         barrido = 1;
       }
-      arruga = 0;
+      if (tramos) tramos.fill(0);
       if (cola) cola.fill(1.2);
       if (tipo === 'prensa') {
         girado = M.vueltas * Math.PI * 2;

@@ -53,7 +53,8 @@ export const DANO = {
     nombre: 'Página arrugada',
     objeto: 'la plegadera de hueso',
     orden: 'Alisa el pliegue con la plegadera',
-    ayuda: 'Aprieta y desliza a lo largo del pliegue, de punta a punta: ida y vuelta.',
+    // 1.133.2 (Francisco: que se entienda sin explicarlo): se ve la cresta, y baja por tramos bajo la plegadera
+    ayuda: 'Desliza la plegadera por encima del pliegue hasta que quede plano.',
     atajo: 'Alisar la página',
     bien: '«Lisa como el primer día. Pegada al pliegue, así se hace.»',
     mejor: 'Pegada al pliegue, la plegadera alisa sin marcar el papel de alrededor.',
@@ -85,6 +86,8 @@ export const EXLIBRIS = {
   orden: 'Pon el ex libris del taller en la guarda',
   ayuda: 'Aprieta y mantén el sello hasta que quede marcado.',
   atajo: 'Poner el ex libris',
+  /** 1.133.2: lo que dice don Celestino nada más sellar. */
+  sellado: '«¡Eso es! Ya lleva la marca de la casa.»',
 };
 
 /**

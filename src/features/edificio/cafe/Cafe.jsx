@@ -1102,6 +1102,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
           escena={ready && !sin3d ? api.current : null}
           estado={taller}
           dia={diaJuego}
+          nombre={local?.nombre ?? null}
           soundOn={soundOn}
           ayudas={state.settings.ayudasCafe ?? 'auto'}
           nivel={nivelLocal}

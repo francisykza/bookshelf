@@ -4529,6 +4529,83 @@
   text-transform: uppercase;
   transform: rotate(-8deg);
 }
+/* 1.133.2 (Francisco: «el sello necesito que sea mas impactante»): al sellar, el ex libris en grande sobre la escena, que cae de
+   golpe con su onda; tinta roja sobre papel crema y doble filete de píxel, como el de la guarda */
+.cf3-gesto__sellado {
+  position: absolute;
+  /* Debajo del libro, para que se vea la marca de verdad al levantar el sello */
+  top: 70%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  max-width: min(260px, calc(100% - 48px));
+  padding: 13px 22px 14px;
+  background: #efe2c4;
+  box-shadow:
+    inset 0 0 0 3px #8a2a24,
+    inset 0 0 0 6px #efe2c4,
+    inset 0 0 0 8px #8a2a24,
+    0 4px 0 rgb(0 0 0 / 0.35);
+  color: #8a2a24;
+  pointer-events: none;
+  text-align: center;
+  text-transform: uppercase;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  animation: cf3-sellado 0.46s steps(9, jump-end) both;
+}
+.cf3-gesto__sellado::before {
+  position: absolute;
+  inset: -4px;
+  box-shadow: 0 0 0 3px #fff3dc;
+  content: '';
+  animation: cf3-sellado-onda 0.42s 0.2s steps(5, jump-end) both;
+}
+.cf3-gesto__sellado-ex {
+  font: 400 26px/26px var(--pp-title);
+  letter-spacing: 0.14em;
+}
+.cf3-gesto__sellado-de {
+  font: 400 13px/15px var(--pp-title);
+  letter-spacing: 0.06em;
+}
+@keyframes cf3-sellado {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-14deg) scale(2.4);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-6deg) scale(0.9);
+  }
+  70% {
+    transform: translate(-50%, -50%) rotate(-6deg) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-6deg) scale(1);
+  }
+}
+@keyframes cf3-sellado-onda {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-gesto__sellado,
+  .cf3-gesto__sellado::before {
+    animation: none;
+  }
+  .cf3-gesto__sellado::before {
+    opacity: 0;
+  }
+}
 /* Las pistas del taller: pasadas largas de brocha, círculos pequeños con la goma y barrer de lado a lado */
 .cf3-pista[data-pista='pasadas'] {
   --cf3-pista-camino: path('M 6 30 L 82 30 Q 88 41 82 52 L 6 52');

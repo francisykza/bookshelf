@@ -3,7 +3,9 @@
 // 1 se podía mejorar) da las estrellas.
 import { describe, expect, it } from 'vitest';
 import { CLIENTES_TALLER, DANO, DANOS, LIBROS_TALLER, PRIMER_ENCARGO, cuantosDanos, encargoDe, estrellasTaller, premioTaller } from '../cafe/cafeTaller';
-import { LIBRO_TALLER, PLIEGUE, crearGestoTaller, gestosDano, letrasTapa, manchasDe, mohoDe, polvoInicial, superficieDe } from '../cafe/cafeTallerGestos';
+import { LIBRO_TALLER, PLIEGUE, TRAMOS_PLIEGUE, alturaPliegue, crearGestoTaller, gestosDano, letrasTapa, manchasDe, mohoDe, polvoInicial, superficieDe } from '../cafe/cafeTallerGestos';
+import { EMBLEMA_EXLIBRIS, EXLIBRIS_PX, LETRAS_SELLO, altoExlibris, anchoSello, renglonesExlibris } from '../cafe/cafeTallerPintura';
+import { CAFE_NOMBRES } from '../cafe/cafeCatalogo';
 
 /** Una pasada de lado a lado de la superficie a la altura `v`; `paso` en `u` cada 10 ms. */
 function pasada(g, v, t0, { paso = 0.02, dir = 1 } = {}) {
@@ -182,6 +184,50 @@ describe('los gestos del taller', () => {
     expect(lejos.hecho).toBe(false);
     expect(lejos.vista.arruga).toBe(1);
   });
+  it('1.133.2: el pliegue va por tramos; cada pasada baja a la mitad los que toca y soltar no pierde nada', () => {
+    const g = crearGestoTaller('arrugas');
+    // Una ida de punta a punta y se suelta: cada tramo, a la mitad (y suena cómo cede cada uno)
+    let t = 0;
+    let s = g.abajo({ ...sobreElPliegue(0), t });
+    const ida = [];
+    for (let k = 1; k <= 20; k += 1) {
+      s = g.mover({ ...sobreElPliegue(k / 20), t: (t += 20) });
+      ida.push(...s.eventos);
+    }
+    g.arriba();
+    expect(g.estado.vista.tramos).toEqual(new Array(TRAMOS_PLIEGUE).fill(0.5));
+    expect(g.estado.progreso).toBeCloseTo(0.49, 2);
+    expect(ida.filter((e) => e.startsWith('aplana:'))).toHaveLength(TRAMOS_PLIEGUE);
+    expect(ida.some((e) => e.startsWith('liso:'))).toBe(false);
+    // Después de soltar, otra pasada desde la otra punta: queda plano, con una nota por tramo
+    s = g.abajo({ ...sobreElPliegue(1), t: (t += 300) });
+    const vuelta = [];
+    for (let k = 19; k >= 0 && !s.hecho; k -= 1) {
+      s = g.mover({ ...sobreElPliegue(k / 20), t: (t += 20) });
+      vuelta.push(...s.eventos);
+    }
+    expect(s.hecho).toBe(true);
+    expect(s.mimo).toBe(2);
+    expect(vuelta.filter((e) => e.startsWith('liso:'))).toEqual(Array.from({ length: TRAMOS_PLIEGUE }, (_, i) => `liso:${i + 1}`));
+    // Solo la mitad de arriba, ida y vuelta: esos tramos, lisos; los de abajo, sin tocar
+    const medio = crearGestoTaller('arrugas');
+    t = 0;
+    s = medio.abajo({ ...sobreElPliegue(0), t });
+    for (const f of [0.1, 0.2, 0.3, 0.4, 0.45, 0.4, 0.3, 0.2, 0.1, 0]) s = medio.mover({ ...sobreElPliegue(f), t: (t += 20) });
+    expect(s.vista.tramos.slice(0, 3)).toEqual([0, 0, 0]);
+    expect(s.vista.tramos.slice(4)).toEqual([1, 1, 1, 1]);
+    expect(s.hecho).toBe(false);
+  });
+  it('1.133.2: el relieve del pliegue, una cresta sobre la línea que baja con los tramos (a la mitad, a un tercio)', () => {
+    const [u, v] = [(PLIEGUE.a[0] + PLIEGUE.b[0]) / 2, (PLIEGUE.a[1] + PLIEGUE.b[1]) / 2];
+    const llenos = new Array(TRAMOS_PLIEGUE).fill(1);
+    const alto = alturaPliegue(llenos, u, v);
+    expect(alto).toBeGreaterThan(0.004);
+    expect(alturaPliegue(new Array(TRAMOS_PLIEGUE).fill(0.5), u, v)).toBeLessThan(alto * 0.4);
+    expect(alturaPliegue(new Array(TRAMOS_PLIEGUE).fill(0), u, v)).toBe(0);
+    expect(alturaPliegue(llenos, 0.25, 0.5)).toBe(0);
+    expect(alturaPliegue(null, u, v)).toBe(0);
+  });
   it('la cola: dos pasadas del pie a la cabeza bastan; cargar un tramo, sobra cola', () => {
     const g = crearGestoTaller('cola');
     let t = 0;
@@ -284,5 +330,38 @@ describe('los gestos del taller', () => {
       expect(s.mimo, tipo).toBe(2);
       expect(s.progreso, tipo).toBe(1);
     }
+  });
+});
+
+describe('1.133.2: el ex libris con el nombre del café', () => {
+  it('la letra, el emblema y el nombre en renglones que caben (hasta tres), con sus tildes', () => {
+    for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') expect(LETRAS_SELLO).toContain(ch);
+    expect(EMBLEMA_EXLIBRIS).toHaveLength(14);
+    for (const fila of EMBLEMA_EXLIBRIS) expect(fila).toHaveLength(24);
+    const letras = (r) =>
+      r
+        .flat()
+        .filter((l) => l.ch !== ' ')
+        .map((l) => l.ch)
+        .join('');
+    for (const nombre of CAFE_NOMBRES) {
+      const r = renglonesExlibris(nombre);
+      expect(r.length, nombre).toBeGreaterThan(0);
+      expect(r.length, nombre).toBeLessThanOrEqual(3);
+      for (const ls of r) expect(anchoSello(ls), nombre).toBeLessThanOrEqual(EXLIBRIS_PX.dentro);
+      // Ninguna letra se pierde
+      expect(letras(r)).toBe(nombre.normalize('NFD').replace(/[^A-Za-z]/g, '').toUpperCase());
+    }
+    expect(renglonesExlibris('Taza y Lomo')).toHaveLength(1);
+    expect(renglonesExlibris('La Biblioteca de Pilar')).toHaveLength(2);
+    expect(letras(renglonesExlibris(null))).toBe('ELTALLER');
+    expect(
+      renglonesExlibris('Té y Página')
+        .flat()
+        .filter((l) => l.tilde === 'aguda')
+        .map((l) => l.ch),
+    ).toEqual(['E', 'A']);
+    expect(renglonesExlibris('Año').flat()[1]).toEqual({ ch: 'N', tilde: 'virgulilla' });
+    expect([altoExlibris('Taza y Lomo'), altoExlibris('La Biblioteca de Pilar')]).toEqual([43, 51]);
   });
 });

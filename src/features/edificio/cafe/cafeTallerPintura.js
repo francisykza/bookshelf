@@ -3,7 +3,7 @@
 // cada gesto (`vista` de `crearGestoTaller`): el polvo y el moho que se van, las manchas que se borran, el pliego que se alisa,
 // la cola que brilla en el lomo y el oro que se enciende letra a letra. Las cubiertas son nuestras (tela, filete y un adorno
 // dibujado), nunca la de una edición real. Solo lienzos: sin React ni Three (lo usan la escena y el cuadro del taller).
-import { LIBRO_TALLER, MEDIDAS_TALLER, PLIEGUE, TAPA_PX, letrasTapa, manchasDe, polvoInicial, semillaEncargo } from './cafeTallerGestos';
+import { LIBRO_TALLER, MEDIDAS_TALLER, PLIEGUE, TAPA_PX, TRAMOS_PLIEGUE, arrugaEn, letrasTapa, manchasDe, polvoInicial, semillaEncargo } from './cafeTallerGestos';
 
 export { TAPA_PX };
 /** Los píxeles de las dos páginas, con el libro abierto. */
@@ -255,17 +255,17 @@ export function vistasIniciales(encargo) {
   return {
     polvo: d.has('polvo') ? { polvo: ini.polvo, moho: ini.moho, nube: [] } : null,
     manchas: d.has('manchas') ? { manchas: manchasDe(semilla).map((m) => ({ ...m, alfa: 1 })), migas: [], barrido: 0 } : null,
-    arrugas: d.has('arrugas') ? { arruga: 1, desde: null, hasta: null } : null,
+    arrugas: d.has('arrugas') ? { arruga: 1, tramos: new Array(TRAMOS_PLIEGUE).fill(1) } : null,
     cola: d.has('lomo') ? { cola: new Array(10).fill(0) } : null,
     prensa: d.has('lomo') ? { prensa: 0, angulo: 0 } : null,
     dorado: d.has('dorado') ? { oro: letrasTapa(encargo?.tapa ?? '').map(() => 0), letra: -1 } : null,
-    exlibris: { exlibris: { baja: 0, presion: 0, sellado: false, u: 0.25, v: 0.62 } },
+    exlibris: { exlibris: { baja: 0, presion: 0, sellado: false, u: 0.25, v: 0.5 } },
     pegado: !d.has('lomo'),
   };
 }
 /** Todo hecho (la ficha de «después»). */
 export function vistasHechas(encargo, exlibris = null) {
-  return { polvo: null, manchas: null, arrugas: null, cola: null, prensa: null, dorado: null, exlibris: { exlibris: exlibris ?? { baja: 0, presion: 1, sellado: true, u: 0.25, v: 0.62 } }, pegado: true };
+  return { polvo: null, manchas: null, arrugas: null, cola: null, prensa: null, dorado: null, exlibris: { exlibris: exlibris ?? { baja: 0, presion: 1, sellado: true, u: 0.25, v: 0.5 } }, pegado: true };
 }
 /**
  * Las vistas de ahora: las iniciales, con lo que ya ha hecho cada gesto encima (`hechas`: { polvo, manchas, …, la vista de
@@ -414,26 +414,174 @@ export function pintarTapa(canvas, encargo, vistas = vistasIniciales(encargo)) {
   return volcar(lienzo(w, h, canvas), b);
 }
 
-/** Las letras de 3 × 5 del sello (EX LIBRIS y poco más). */
+/**
+ * La letra del sello (1.133.2): de 5 de alto y casi siempre 3 de ancho (la I, de uno; la N, de cuatro; la M y la W, de cinco),
+ * para que quepa el nombre del café. Las tildes van una fila por encima.
+ */
 const LETRA_SELLO = {
-  E: ['###', '#..', '##.', '#..', '###'],
-  X: ['#.#', '#.#', '.#.', '#.#', '#.#'],
-  L: ['#..', '#..', '#..', '#..', '###'],
-  I: ['###', '.#.', '.#.', '.#.', '###'],
+  A: ['.#.', '#.#', '###', '#.#', '#.#'],
   B: ['##.', '#.#', '##.', '#.#', '##.'],
+  C: ['.##', '#..', '#..', '#..', '.##'],
+  D: ['##.', '#.#', '#.#', '#.#', '##.'],
+  E: ['###', '#..', '##.', '#..', '###'],
+  F: ['###', '#..', '##.', '#..', '#..'],
+  G: ['.##', '#..', '#.#', '#.#', '.##'],
+  H: ['#.#', '#.#', '###', '#.#', '#.#'],
+  I: ['#', '#', '#', '#', '#'],
+  J: ['..#', '..#', '..#', '#.#', '.#.'],
+  K: ['#.#', '#.#', '##.', '#.#', '#.#'],
+  L: ['#..', '#..', '#..', '#..', '###'],
+  M: ['#...#', '##.##', '#.#.#', '#...#', '#...#'],
+  N: ['#..#', '##.#', '#.##', '#..#', '#..#'],
+  O: ['.#.', '#.#', '#.#', '#.#', '.#.'],
+  P: ['##.', '#.#', '##.', '#..', '#..'],
+  Q: ['.#.', '#.#', '#.#', '##.', '.##'],
   R: ['##.', '#.#', '##.', '#.#', '#.#'],
-  S: ['###', '#..', '###', '..#', '###'],
+  S: ['.##', '#..', '.#.', '..#', '##.'],
+  T: ['###', '.#.', '.#.', '.#.', '.#.'],
+  U: ['#.#', '#.#', '#.#', '#.#', '###'],
+  V: ['#.#', '#.#', '#.#', '#.#', '.#.'],
+  W: ['#...#', '#...#', '#.#.#', '##.##', '#...#'],
+  X: ['#.#', '#.#', '.#.', '#.#', '#.#'],
+  Y: ['#.#', '#.#', '.#.', '.#.', '.#.'],
+  Z: ['###', '..#', '.#.', '#..', '###'],
 };
-function textoSello(b, txt, x0, y0, c, a = 1) {
-  let x = x0;
-  for (const ch of txt) {
-    if (ch === ' ') {
-      x += 2;
-      continue;
-    }
-    (LETRA_SELLO[ch] ?? []).forEach((row, dy) => [...row].forEach((q, dx) => q === '#' && b.put(x + dx, y0 + dy, c, a)));
-    x += 4;
+export const LETRAS_SELLO = Object.keys(LETRA_SELLO);
+const AGUDA = String.fromCharCode(0x301);
+const VIRGULILLA_S = String.fromCharCode(0x303);
+const anchoLetra = (ch) => (ch === ' ' ? 1 : (LETRA_SELLO[ch]?.[0].length ?? 0));
+/** Las letras de un texto del sello, en mayúsculas y con su tilde aparte: [{ ch, tilde: null | 'aguda' | 'virgulilla' }]. */
+function letrasSello(txt) {
+  const out = [];
+  for (const c of String(txt ?? '').toUpperCase().normalize('NFD')) {
+    if (c === AGUDA && out.length) out[out.length - 1].tilde = 'aguda';
+    else if (c === VIRGULILLA_S && out.length) out[out.length - 1].tilde = 'virgulilla';
+    else if (c === ' ' || LETRA_SELLO[c]) out.push({ ch: c, tilde: null });
   }
+  return out;
+}
+/** Lo que ocupa un texto del sello, en píxeles (un píxel entre letra y letra). */
+export const anchoSello = (ls) => ls.reduce((s, l, i) => s + anchoLetra(l.ch) + (i ? 1 : 0), 0);
+function textoSello(b, ls, x0, y0, put) {
+  let x = x0;
+  for (const l of ls) {
+    const w = anchoLetra(l.ch);
+    (LETRA_SELLO[l.ch] ?? []).forEach((row, dy) => [...row].forEach((q, dx) => q === '#' && put(x + dx, y0 + dy)));
+    if (l.tilde === 'aguda') put(x + Math.min(w - 1, Math.floor(w / 2) + 1), y0 - 2);
+    if (l.tilde === 'virgulilla') for (let dx = 1; dx < w - 1; dx += 1) put(x + dx, y0 - 2);
+    x += w + 1;
+  }
+}
+
+/** El ex libris del taller: su ancho (px del pliego) y lo de dentro que no cambia. */
+export const EXLIBRIS_PX = { w: 58, dentro: 50 };
+/**
+ * El nombre del café, partido en renglones que quepan en el ex libris (hasta tres, por palabras): [[letras], …]. Sin nombre,
+ * «El taller».
+ */
+export function renglonesExlibris(nombre) {
+  const palabras = String(nombre || 'El taller')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(letrasSello);
+  const out = [];
+  let linea = [];
+  for (const p of palabras) {
+    const prueba = linea.length ? [...linea, { ch: ' ', tilde: null }, ...p] : p;
+    if (linea.length && anchoSello(prueba) > EXLIBRIS_PX.dentro) {
+      out.push(linea);
+      linea = p;
+    } else linea = prueba;
+  }
+  if (linea.length) out.push(linea);
+  return out.slice(0, 3);
+}
+/** El alto del ex libris (px del pliego): crece un renglón por cada línea del nombre. */
+export const altoExlibris = (nombre) => 43 + 8 * (renglonesExlibris(nombre).length - 1);
+/** El emblema del ex libris: una taza humeante sobre un libro abierto (24 × 14). */
+export const EMBLEMA_EXLIBRIS = [
+  '..........#..#..........',
+  '.........#..#...........',
+  '..........#..#..........',
+  '........########........',
+  '........#......###......',
+  '........#......#.#......',
+  '........#......###......',
+  '.........######.........',
+  '......############......',
+  '........................',
+  '.#######........#######.',
+  '#.......###..###.......#',
+  '#..........##..........#',
+  '###########..###########',
+];
+const EX_LIBRIS = letrasSello('EX LIBRIS');
+
+/**
+ * El ex libris en la guarda (1.133.2, Francisco: «el sello necesito que sea mas impactante»): un recuadro de doble filete con
+ * «EX LIBRIS», la taza sobre el libro y el nombre del café; la tinta entra según se aprieta (`presion`) y, recién puesto, un
+ * brillo de tinta fresca la cruza (`brillo`, de 0 a 1).
+ */
+function pintarExlibris(b, ex, nombre) {
+  const { w: PW, h: PH } = PLIEGO_PX;
+  const a = ex.sellado ? 1 : clamp(ex.presion * 1.1);
+  if (a <= 0) return;
+  const renglones = renglonesExlibris(nombre);
+  const W = EXLIBRIS_PX.w;
+  const H = altoExlibris(nombre);
+  const cx = clamp(Math.round(ex.u * PW), 32, 44);
+  const cy = clamp(Math.round(ex.v * PH), Math.ceil(H / 2) + 3, PH - 4 - Math.ceil(H / 2));
+  const x0 = cx - Math.floor(W / 2);
+  const y0 = cy - Math.floor(H / 2);
+  const [x1, y1] = [x0 + W - 1, y0 + H - 1];
+  const brillo = ex.brillo > 0 && ex.brillo < 1 ? ex.brillo * (W + H) : null;
+  const fresco = (x, y) => brillo != null && Math.abs(x - x0 + (y - y0) - brillo) < 2.5;
+  const tinta = (x, y) => b.put(x, y, fresco(x, y) ? [206, 108, 94] : SELLO, a * (hash(x, y, 8) < 0.12 ? 0.5 : 1));
+  // El papel del recuadro (las esquinas, escalonadas)
+  for (let y = y0; y <= y1; y += 1)
+    for (let x = x0; x <= x1; x += 1) {
+      const esquina = (x === x0 || x === x1) && (y === y0 || y === y1);
+      if (!esquina) b.put(x, y, fresco(x, y) ? [255, 248, 232] : [238, 228, 206], a * 0.94);
+    }
+  // El doble filete
+  for (let x = x0 + 1; x < x1; x += 1) {
+    tinta(x, y0);
+    tinta(x, y1);
+    if (x > x0 + 2 && x < x1 - 2) {
+      tinta(x, y0 + 2);
+      tinta(x, y1 - 2);
+    }
+  }
+  for (let y = y0 + 1; y < y1; y += 1) {
+    tinta(x0, y);
+    tinta(x1, y);
+    if (y > y0 + 2 && y < y1 - 2) {
+      tinta(x0 + 2, y);
+      tinta(x1 - 2, y);
+    }
+  }
+  for (const [x, y] of [
+    [x0 + 1, y0 + 1],
+    [x1 - 1, y0 + 1],
+    [x0 + 1, y1 - 1],
+    [x1 - 1, y1 - 1],
+  ])
+    tinta(x, y);
+  // «EX LIBRIS», un filete de puntos con su rombo, el emblema y el nombre del café
+  const centrado = (ls) => cx - Math.floor(anchoSello(ls) / 2);
+  textoSello(b, EX_LIBRIS, centrado(EX_LIBRIS), y0 + 5, tinta);
+  for (let x = x0 + 8; x <= x1 - 8; x += 2) if (Math.abs(x - cx) > 2) tinta(x, y0 + 12);
+  for (const [dx, dy] of [
+    [0, -1],
+    [-1, 0],
+    [1, 0],
+    [0, 1],
+  ])
+    tinta(cx + dx, y0 + 12 + dy);
+  const ex0 = cx - 12;
+  EMBLEMA_EXLIBRIS.forEach((row, dy) => [...row].forEach((q, dx) => q === '#' && tinta(ex0 + dx, y0 + 15 + dy)));
+  renglones.forEach((ls, i) => textoSello(b, ls, centrado(ls), y0 + 32 + i * 8, tinta));
+  for (const dx of [-3, 0, 3]) tinta(cx + dx, y1 - 5);
 }
 
 /** La portadilla (título y autor impresos, sin medias tintas), por libro. */
@@ -528,9 +676,8 @@ export function pintarPliego(canvas, encargo, vistas = vistasIniciales(encargo))
         const s = ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / (L * L);
         if (s < -0.06 || s > 1.06) continue;
         const d = (x - ax) * nx + (y - ay) * ny;
-        // Lo que ya ha pasado la plegadera en esta pasada, más liso
-        const alisado = ar.desde != null && s >= ar.desde && s <= ar.hasta ? 0.5 : 0;
-        const k = clamp(ar.arruga - alisado) * (1 - Math.abs(s - 0.5) * 0.6);
+        // Cada tramo, lo que le queda por alisar (1.133.2); el relieve lo pone la escena
+        const k = clamp(ar.tramos ? arrugaEn(ar.tramos, s) : (ar.arruga ?? 1)) * (1 - Math.abs(s - 0.5) * 0.6);
         if (k <= 0) continue;
         // Arrugas finas que salen del pliegue, en abanico
         const onda = Math.sin(s * 34 + d * 0.9) * 0.5 + 0.5;
@@ -562,29 +709,9 @@ export function pintarPliego(canvas, encargo, vistas = vistasIniciales(encargo))
     }
     for (const g of mv.migas) b.put(Math.round(g.u * w), Math.round(g.v * h), g.g > 0.5 ? MIGA : oscuro(MIGA, 0.88));
   }
-  // El ex libris del taller, en la guarda: el recuadro, una prensa pequeña y «EX LIBRIS»
+  // El ex libris del taller, en la guarda, con el nombre del café (`vistas.nombre`)
   const ex = vistas?.exlibris?.exlibris ?? null;
-  if (ex && (ex.presion > 0 || ex.sellado)) {
-    const a = ex.sellado ? 1 : clamp(ex.presion * 1.1);
-    const [cx, cy] = [Math.round(ex.u * w), Math.round(ex.v * h)];
-    const [x0, y0, x1, y1] = [cx - 15, cy - 17, cx + 15, cy + 17];
-    for (let y = y0; y <= y1; y += 1)
-      for (let x = x0; x <= x1; x += 1) {
-        const marco = x === x0 || x === x1 || y === y0 || y === y1 || x === x0 + 2 || x === x1 - 2 || y === y0 + 2 || y === y1 - 2;
-        b.put(x, y, marco ? SELLO : [232, 220, 196], a * (marco ? (hash(x, y, 8) < 0.15 ? 0.6 : 1) : 0.9));
-      }
-    // La prensa: dos tablas, el husillo y su barra
-    for (let x = cx - 7; x <= cx + 7; x += 1) {
-      b.put(x, cy - 6, SELLO, a);
-      b.put(x, cy + 1, SELLO, a);
-      b.put(x, cy + 2, SELLO, a);
-    }
-    for (let y = cy - 12; y < cy - 6; y += 1) b.put(cx, y, SELLO, a);
-    for (let x = cx - 5; x <= cx + 5; x += 1) b.put(x, cy - 12, SELLO, a);
-    for (let y = cy - 5; y <= cy; y += 1) for (let x = cx - 5; x <= cx + 5; x += 1) if ((x + y) % 3 === 0) b.put(x, y, SELLO, a * 0.7);
-    textoSello(b, 'EX', cx - 3, cy + 5, SELLO, a);
-    textoSello(b, 'LIBRIS', cx - 11, cy + 11, SELLO, a);
-  }
+  if (ex && (ex.presion > 0 || ex.sellado)) pintarExlibris(b, ex, vistas?.nombre);
   return volcar(lienzo(w, h, canvas), b);
 }
 

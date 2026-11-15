@@ -127,9 +127,10 @@ function Estrellas({ n }) {
 
 /**
  * `estado`: el taller del día ({ encargo, hechos, hoy }, de `cargarTaller`); `dia`, el día que juegas; `onHecho(r)`, con lo que
- * devuelve el servidor al terminar un encargo (el café, el día, los libros, el taller y el progreso).
+ * devuelve el servidor al terminar un encargo (el café, el día, los libros, el taller y el progreso). `nombre`, el del café (va
+ * en el ex libris).
  */
-export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', nivel = 3, onHecho, onCerrar }) {
+export function Taller({ escena, estado, dia, nombre = null, soundOn = false, ayudas = 'auto', nivel = 3, onHecho, onCerrar }) {
   // El encargo de cuando entraste (al terminarlo, el servidor ya no lo tiene pendiente, pero la ficha sigue siendo suya)
   const [encargo] = useState(() => estado?.encargo ?? null);
   const [primera] = useState(() => Boolean(estado?.encargo?.primero && !estado?.hechos));
@@ -149,6 +150,8 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
   const [comenta, setComenta] = useState(null);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState('');
+  // 1.133.2: el ex libris recién puesto (el sello en grande sobre la pantalla y lo que dice don Celestino)
+  const [sellado, setSellado] = useState(false);
   const [sfx] = useState(() => crearSfxBarra());
   const zona = useRef(null);
   const rec = useRef(null);
@@ -166,7 +169,7 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
   const hechas = useRef(medias?.hechas ? { ...medias.hechas } : {});
   const mimo = useRef(medias?.mimo ? { ...medias.mimo } : {});
   const colaMimo = useRef(medias?.colaMimo ?? null);
-  const sc = useRef({ vista: 'entrada', abre: 0, enPrensa: 0, herramienta: null, superficie: null, pose: null, nube: [] });
+  const sc = useRef({ vista: 'entrada', abre: 0, enPrensa: 0, herramienta: null, superficie: null, pose: null, nube: [], golpe: 0, levanta: 0, brillo: null });
 
   const paso = fase === 'gesto' ? (pasos[pi] ?? null) : null;
   const def = paso ? GESTO_T[paso.tipo] : null;
@@ -180,16 +183,21 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
     const vivas = { ...hechas.current };
     const r = rec.current?.estado;
     if (r && !r.hecho) vivas[r.tipo] = r.vista;
+    const vistas = encargo ? { ...vistasDe(encargo, vivas), nombre } : null;
+    // El brillo de la tinta fresca, que cruza el ex libris al levantar el sello
+    if (vistas?.exlibris?.exlibris && s.brillo != null) vistas.exlibris = { exlibris: { ...vistas.exlibris.exlibris, brillo: s.brillo } };
     return {
       vista: s.vista,
       encargo,
-      vistas: encargo ? vistasDe(encargo, vivas) : null,
+      vistas,
       abre: s.abre,
       enPrensa: s.enPrensa,
       herramienta: s.herramienta,
       superficie: s.superficie,
       pose: s.pose,
       nube: s.nube,
+      golpe: s.golpe,
+      levanta: s.levanta,
       ahora: reloj(),
     };
   };
@@ -245,7 +253,7 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
     };
     if (!escena) dentro();
     else {
-      entrando.current = escena.taller(true, { vista: 'entrada', encargo, vistas: encargo ? vistasDe(encargo, hechas.current) : null });
+      entrando.current = escena.taller(true, { vista: 'entrada', encargo, vistas: encargo ? { ...vistasDe(encargo, hechas.current), nombre } : null });
       entrando.current.then(dentro);
     }
     return () => {
@@ -301,8 +309,10 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
     setPistaEn(null);
     setComenta(null);
     setListo(false);
+    setSellado(false);
     setFase('gesto');
-    sc.current = { ...sc.current, vista: t.vista, herramienta: t.herramienta, superficie: superficieDe(p.tipo), pose: poseInicial(p.tipo, encargo), nube: [] };
+    // 1.133.2: la herramienta se coge al terminar de abrir (o cerrar) el libro, no mientras gira la tapa
+    sc.current = { ...sc.current, vista: t.vista, herramienta: null, superficie: superficieDe(p.tipo), pose: poseInicial(p.tipo, encargo), nube: [], golpe: 0, levanta: 0, brillo: null };
     const abre = t.abre;
     const prensa = t.enPrensa ?? 0;
     const lista = [];
@@ -331,8 +341,14 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
           sc.current.enPrensa = k;
         },
       ]);
-    if (t.herramienta) sfx.play('herramienta', { f: t.tono });
-    encadenar(lista, () => setListo(true));
+    encadenar(lista, () => {
+      if (t.herramienta) {
+        sc.current.herramienta = t.herramienta;
+        sfx.play('herramienta', { f: t.tono });
+        pintarYa();
+      }
+      setListo(true);
+    });
   };
   const empezar = () => irAPaso(medias?.i ?? 0);
 
@@ -344,7 +360,33 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
     hechas.current[p.tipo] = s.vista;
     sc.current.nube = [];
     if (p.tipo === 'exlibris') {
-      espera.current = setTimeout(guardar, reduced() ? 0 : 500);
+      // 1.133.2 (Francisco: «el sello necesito que sea mas impactante»): el golpe (el sonido, la vista que se sacude y el
+      // polvillo), el sello que se queda un instante apretado, se despega ladeándose y deja la tinta fresca brillando
+      sc.current = { ...sc.current, golpe: reloj(), levanta: 0, brillo: 0 };
+      encadenar(
+        [
+          [300, () => {}],
+          [
+            650,
+            (k) => {
+              sc.current.levanta = k;
+              sc.current.brillo = k * 0.55;
+            },
+            () => sfx.play('selloLevanta'),
+          ],
+          [
+            550,
+            (k) => {
+              sc.current.brillo = 0.55 + k * 0.45;
+            },
+          ],
+        ],
+        () => {
+          sc.current = { ...sc.current, herramienta: null, levanta: 0, brillo: null };
+          pintarYa();
+          espera.current = setTimeout(guardar, reduced() ? 1100 : 900);
+        },
+      );
       return;
     }
     if (p.tipo === 'cola') {
@@ -381,6 +423,8 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
         sfx.play('herramienta', { f: 247 });
         sc.current.herramienta = 'mano';
       } else if (ev === 'migas') sfx.play('migas');
+      else if (ev.startsWith('aplana:')) sfx.play('aplana', { k: Number(ev.slice(7)) });
+      else if (ev.startsWith('liso:')) sfx.play('liso', { k: Number(ev.slice(5)) });
       else if (ev === 'alisado') sfx.play('alisado', { ultima: s.hecho });
       else if (ev === 'husillo') {
         sfx.play('husillo', { k: cuartos.current });
@@ -388,7 +432,12 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
       } else if (ev === 'tope') sfx.play('tope');
       else if (ev === 'hierro') sfx.play('hierro');
       else if (ev.startsWith('oro:')) sfx.play('oro', { k: Number(ev.slice(4)) });
-      else if (ev === 'sellado') sfx.play('exlibris');
+      else if (ev === 'sellado') {
+        sfx.play('exlibris');
+        escena?.tallerGolpe?.(1);
+        setSellado(true);
+        espera.current = setTimeout(() => sfx.play('celestino'), reduced() ? 300 : 650);
+      }
     }
     const bucle = s.fase === 'barrer' ? 'plegadera' : GESTO_T[p.tipo].bucle;
     for (const b of BUCLES_T) sfx.bucle(b, b === bucle && s.frota && !s.hecho);
@@ -449,6 +498,7 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
       return;
     }
     e.currentTarget.setPointerCapture?.(e.pointerId);
+    if (pasos[piRef.current]?.tipo === 'exlibris') sfx.play('selloApoya');
     aplicar(reconocedor().abajo(punto(e)));
     cancelAnimationFrame(raf.current);
     raf.current = requestAnimationFrame(latido);
@@ -595,7 +645,9 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
                   ? CELESTINO_FIN[resultado.estrellas]
                   : fase === 'error'
                     ? '«Vaya, no he podido apuntarlo. ¿Lo intentamos otra vez?»'
-                    : que.orden
+                    : trabajando && sellado
+                      ? EXLIBRIS.sellado
+                      : que.orden
                       ? `${que.orden}.`
                       : '';
   const hoy = estado?.hoy && fase === 'sin' ? estado.hoy : null;
@@ -642,6 +694,12 @@ export function Taller({ escena, estado, dia, soundOn = false, ayudas = 'auto', 
             aria-hidden="true"
           >
             {que.ayuda}
+          </span>
+        )}
+        {trabajando && sellado && (
+          <span className="cf3-gesto__sellado" aria-hidden="true">
+            <span className="cf3-gesto__sellado-ex">Ex libris</span>
+            <span className="cf3-gesto__sellado-de">{nombre || 'El taller'}</span>
           </span>
         )}
         {fase === 'respiro' && comenta && (

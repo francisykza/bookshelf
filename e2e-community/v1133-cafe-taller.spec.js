@@ -583,3 +583,134 @@ test('por debajo del nivel 3 no hay letrero del taller', async ({ page }, info) 
   await quieto(page);
   await expect(cafe.locator('.cf3-tags button', { hasText: 'El taller' })).toHaveCount(0);
 });
+
+// ── 1.133.2 (Francisco, tras ver la 1.133.1: «la de arrugar las paginas, el sello necesito que sea mas impactante y al pasar de
+// quitar al polvo a arrugar las paginas se glitchea la pagina») · La página ya no parpadea al abrir el libro (el bloque de hojas
+// estaba a la misma altura que la primera página y la tapaba a trozos); el pliegue se ve levantado y baja por tramos bajo la
+// plegadera, sin perder nada al soltar; y el ex libris, del tamaño de la marca y con el nombre del café, cae de golpe (suena
+// hondo, la vista se sacude, salta el polvillo y sale en grande). Capturas y vídeo en qa-report/v1133-2/.
+const DIR2 = join('qa-report', 'v1133-2');
+/** El ex libris pintado tal cual en la guarda (sin el render de la escena), ampliado, con varios nombres de café, uno al lado del otro. */
+async function exlibrisPintados(page, nombres) {
+  const url = await page.evaluate(async (lista) => {
+    const T = await import('/src/features/edificio/cafe/cafeTaller.js');
+    const P = await import('/src/features/edificio/cafe/cafeTallerPintura.js');
+    const enc = T.encargoDe({ n: 1, libro: 0, quien: 0, danos: ['polvo', 'arrugas', 'dorado'] });
+    const X = 4;
+    const out = document.createElement('canvas');
+    out.width = lista.length * 80 * X + (lista.length - 1) * 12;
+    out.height = 110 * X;
+    const g = out.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = '#1c1410';
+    g.fillRect(0, 0, out.width, out.height);
+    lista.forEach((nombre, i) => {
+      const c = P.pintarPliego(document.createElement('canvas'), enc, { ...P.vistasHechas(enc), nombre });
+      g.drawImage(c, 0, 0, 80, 110, i * (80 * X + 12), 0, 80 * X, 110 * X);
+    });
+    return out.toDataURL('image/png');
+  }, nombres);
+  return Buffer.from(url.split(',')[1], 'base64');
+}
+
+test('1.133.2: la página no parpadea al abrir el libro, el pliegue se ve y baja por tramos, y el ex libris da un golpe', async ({ page }, info) => {
+  test.skip(!/chromium-(360x800|390x844)$/.test(info.project.name), 'a 360 y 390');
+  test.setTimeout(300000);
+  const t0 = Date.now();
+  const conSonido = /390x844/.test(info.project.name);
+  if (conSonido) await grabarSonido(page);
+  mkdirSync(DIR2, { recursive: true });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  let n = 0;
+  const foto = async (nombre) => {
+    n += 1;
+    await page.screenshot({ path: join(DIR2, `arreglos-${String(n).padStart(2, '0')}-${nombre}-${tam(info)}.png`) });
+  };
+  const { cafe, c } = await alCafe(page, {}, { encargos: [], siguientes: [] });
+  const franja = await entrar(page, cafe, 'El taller · un encargo');
+  for (let k = 0; k < 2; k += 1) await cafe.getByRole('button', { name: 'Seguir', exact: true }).click();
+  await expect(franja).toHaveAttribute('data-fase', 'encargo');
+  await cafe.getByRole('button', { name: 'Empezar', exact: true }).click();
+  await alPaso(page, franja, 'polvo');
+  await quitarPolvo(page, franja);
+  await expect(franja).toHaveAttribute('data-fase', 'respiro', { timeout: 15000 });
+  // Del polvo al pliegue: la tapa se abre, cuadro a cuadro, y la página sale entera (la plegadera, en el banco hasta que acaba)
+  await cafe.getByRole('button', { name: 'Seguir', exact: true }).click();
+  for (let k = 0; k < 4; k += 1) {
+    await page.waitForTimeout(160);
+    await foto(`abre-${k + 1}`);
+  }
+  await alPaso(page, franja, 'arrugas');
+  await expect(cafe.locator('.cf3-taller .cf3-gesto__nota')).toContainText('Desliza la plegadera por encima del pliegue');
+  await foto('pliegue-cresta');
+  // Una pasada de punta a punta, con la foto a mitad (el dedo apretado); al soltar, cada tramo se queda a la mitad
+  const a = await marca(page, 'pliegue:a');
+  const b = await marca(page, 'pliegue:b');
+  const m = page.mouse;
+  await m.move(a.x, a.y);
+  await m.down();
+  const N = 48;
+  for (let i = 1; i <= N; i += 1) {
+    await m.move(a.x + ((b.x - a.x) * i) / N, a.y + ((b.y - a.y) * i) / N);
+    await page.waitForTimeout(16);
+    if (i === N / 2) await foto('plegadera-apretando');
+  }
+  await m.up();
+  await expect(franja).toHaveAttribute('data-paso', 'arrugas');
+  const medio = Number(await franja.getAttribute('data-progreso'));
+  expect(medio).toBeGreaterThan(35);
+  expect(medio).toBeLessThan(65);
+  await quieto(page, 300);
+  await foto('pliegue-a-medias');
+  // Se suelta y no se pierde nada: la vuelta lo deja plano, con una nota que sube por cada tramo
+  await trazo(page, [b, a], { dedo: 6 });
+  await expect(franja).toHaveAttribute('data-fase', 'respiro', { timeout: 15000 });
+  await quieto(page, 300);
+  await foto('pliegue-liso');
+  const son1 = await sonidos(page);
+  expect(son1.filter((s) => s === 'aplana').length).toBeGreaterThanOrEqual(8);
+  expect(son1.filter((s) => s === 'liso').length).toBeGreaterThanOrEqual(8);
+  await cafe.getByRole('button', { name: 'Seguir', exact: true }).click();
+  await alPaso(page, franja, 'dorado');
+  await dorar(page, franja, 'QUIJOTE');
+  await seguir(page, cafe, franja);
+  // El ex libris: el sello grande sobre la guarda; al apretar, baja; al sellar, el golpe, el ex libris en grande y lo que dice
+  await alPaso(page, franja, 'exlibris');
+  await foto('sello-encima');
+  const g = await marca(page, 'guarda');
+  await m.move(g.x, g.y);
+  await m.down();
+  await page.waitForTimeout(350);
+  await foto('sello-apretando');
+  await expect(cafe.locator('.cf3-gesto__sellado')).toBeVisible({ timeout: 3000 });
+  await m.up();
+  await expect(cafe.locator('.cf3-gesto__sellado')).toContainText('Ex libris');
+  await expect(cafe.locator('.cf3-gesto__sellado')).toContainText('Taza y Lomo');
+  await foto('golpe');
+  await expect(franja).toContainText('¡Eso es! Ya lleva la marca de la casa.');
+  await page.waitForTimeout(450);
+  await foto('sello-se-levanta');
+  await page.waitForTimeout(650);
+  await foto('marca-fresca');
+  await expect(franja).toHaveAttribute('data-fase', 'ficha', { timeout: 15000 });
+  await quieto(page, 900);
+  await foto('ficha');
+  expect(c.taller.encargos[0].hecho).toBe(true);
+  expect(await sonidos(page)).toEqual(expect.arrayContaining(['selloApoya', 'exlibris', 'selloLevanta', 'celestino', 'ficha']));
+  // El ex libris tal cual, con nombres largos, con tildes y sin nombre
+  writeFileSync(join(DIR2, `exlibris-nombres-${tam(info)}.png`), await exlibrisPintados(page, ['Taza y Lomo', 'La Biblioteca de Pilar', 'Té y Página', null]));
+  // El golpe suena hondo pero no más fuerte que el resto (Francisco, 1.128: «algunos sonidos suenan muy fuerte»)
+  const nivel = await page.evaluate(async () => {
+    const S = await import('/src/features/edificio/cafe/cafeSfx.js');
+    return S.medirSonidos(['exlibris', 'selloApoya', 'selloLevanta', 'aplana', 'liso', 'alisado', 'sello', 'herramienta', 'danoHecho']);
+  });
+  writeFileSync(join(DIR2, `sonidos-${tam(info)}.json`), JSON.stringify(nivel, null, 2));
+  for (const [nombre, v] of Object.entries(nivel)) expect(v.rms, nombre).toBeLessThan(-30);
+  expect(errors).toEqual([]);
+  const sonido = conSonido ? await sonidoGrabado(page) : null;
+  if (conSonido) expect(sonido?.b64?.length ?? 0).toBeGreaterThan(1000);
+  const video = page.video();
+  await page.close();
+  if (video && conSonido) await guardarConSonido(video, join(DIR2, `taller-arreglos-${tam(info)}.webm`), sonido, t0);
+});

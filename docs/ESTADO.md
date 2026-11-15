@@ -6,6 +6,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada por Francisco («Nada más, commit»), con commit en la rama `1.90-escritorio-puerto` y sin publicar: 1.133.2**
+  (2026-11-15, §133.7; «continua por donde se ha quedado la otra cuenta»; `main` y producción siguen en la 1.133.1). El taller,
+  lo que no se entendía y lo que se glitcheaba:
+  - la página que parpadeaba al pasar del polvo al pliegue (el bloque de hojas, a la misma altura que la página);
+  - el pliegue que se ve levantado y baja por tramos, sin perder nada al soltar;
+  - el ex libris con el nombre del café y un golpe: sonido, sacudida, polvillo y el sello en grande.
+
+  Sin migración. Evidencias en `qa-report/v1133-2/`, enviadas al chat. Va por delante del almacén (1.134.0), como la 1.133.1.
+  Sin probar en un móvil real. **Queda**: publicarla, cuando Francisco lo pida.
 - **Publicada en producción: 1.133.1** (2026-11-15, §133.6; «lo que ya hay hecho subelo»; `main` avanzó sin forzar de
   `35f7d1e` a `5e6d766` (también la rama) y `/sw.js` de producción ya sirve v1.133.1). Arreglos del café tras jugar la 1.133:
   la música del taller sin ruido de fondo, la del café más ligera (contra el petardeo) y tocar un sitio del café para ir
@@ -231,15 +240,6 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Taller de la trastienda, lo que no se entiende y se glitchea: para la otra cuenta** (Francisco, 15-11-2026, tras jugar
-  la 1.133: «Las mecanicas de algunas cosas no terminan de estar claras y algunas cosas se glitchean»; y, al preguntarle cuáles:
-  «por ejemplo la de arrugar las paginas, el sello necesito que sea mas impactante y al pasar de quitar al polvo a arrugar las
-  paginas se glitchea la pagina, pero esto quiero que lo dejes para que lo haga la otra cuenta»). Lo que hay que hacer:
-  - que **alisar las arrugas** se entienda sin explicarlo;
-  - que **el sello del ex libris** sea mucho más impactante;
-  - **reproducir e investigar** el fallo de la página al pasar del polvo a las arrugas, y arreglarlo.
-  Dijo «por ejemplo»: preguntarle si hay más. Se trabaja por bloques, con capturas y vídeo con sonido.
-
 - **Café, influencer, taller de restauración y fuera la pizarra** (encargo del 14-11-2026, plan en `cafe-libreria.md` §16):
   - decisiones de la 1.ª tanda tomadas;
   - **bloque 1 (fuera la pizarra y el influencer), publicado como 1.132.0** (migración aplicada): lo que Francisco note al
@@ -400,6 +400,39 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-15 · Taller: lo que no se entendía y lo que se glitcheaba · 1.133.2 (§133.7), commit en la rama (Claude)
+
+- Lo pedido: el punto de «Pendiente» que la otra cuenta dejó para esta. Francisco: «por ejemplo la de arrugar las paginas, el
+  sello necesito que sea mas impactante y al pasar de quitar al polvo a arrugar las paginas se glitchea la pagina».
+- **El parpadeo**:
+  - Se ve en la captura de la 1.133 `qa-report/v1133/taller-08-plegadera`: el tercio de abajo de la página sale de un color liso.
+  - Era una pelea de profundidad entre la cara de arriba del bloque de hojas y la primera página, a la misma altura
+    (`LIBRO_Z.pagina`). Con la tapa cerrada no se nota; al abrirla, sí.
+  - El bloque baja 3 mm.
+  - De paso, la herramienta se coge al acabar de abrir el libro, y los lienzos solo se repintan si cambia lo pintado.
+- **El pliegue**:
+  - relieve de verdad: la página es una malla con la cresta, su luz y su sombra;
+  - ocho tramos que se alisan en dos pasadas cada uno, aunque se suelte el dedo;
+  - la plegadera, plana sobre la cresta;
+  - un sonido por tramo y una nota más clara.
+- **El sello**:
+  - Del tamaño de la marca, de nogal y latón.
+  - Al sellar: un golpe hondo con acorde, la vista que se sacude, polvillo con su cerco, el ex libris en grande (debajo del
+    libro) con el nombre del café y la frase de don Celestino.
+  - Después se despega ladeándose y deja la tinta fresca brillando.
+  - El ex libris lleva el nombre del café, con todo el alfabeto, tildes y eñe.
+- El golpe, medido con `medirSonidos`, queda en −36,6 dB de volumen medio (el resto del taller, de −41 a −51; el apisonador que
+  molestaba en la 1.128 estaba en −24,5).
+- **Comprobado en una copia fuera de la carpeta** (la sesión del almacén trabajaba a la vez aquí):
+  - `cafeTaller.test.js`: 17 casos, 3 nuevos;
+  - `v1133-cafe-taller.spec.js` entero a 360 y 390: 8 pasan y 4 se saltan a propósito; el caso nuevo, con vídeo y sonido a 390;
+  - `npm run build` bien; el lint, sin errores nuevos (los de `src/vendor/pixelfx` ya estaban).
+- Copiados aquí solo los archivos del café y sus pruebas. No se ha tocado nada del almacén.
+- Al preguntarle si había algo más que no se entendiera o se glitcheara, Francisco: «Nada más, commit».
+- **Aprobada y con commit en la rama, sin subir**. El commit sale de `4d0897c` con solo lo del taller, con la versión, el SPEC y
+  esta entrada. En el árbol de trabajo, los archivos de versión siguen en la 1.134.0 del almacén.
+- Sin probar en un móvil real. **Queda**: publicarla, cuando Francisco lo pida.
 
 ### 2026-11-15 · Café: música sin ruido ni petardeo y tocar para andar · 1.133.1 (§133.6) (Claude)
 

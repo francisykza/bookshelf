@@ -703,7 +703,19 @@ const SONIDOS = {
     ruido(b, { f: 3200, q: 0.7, pico: 0.08, ataque: 0.03, caida: 0.35, barrido: 0.5 });
     for (let k = 0; k < 5; k += 1) ruido(b, { f: 4200 + k * 300, q: 4, pico: 0.03, caida: 0.02, d: 0.12 + k * 0.04 });
   },
-  /** Una pasada de plegadera completa: el papel que se tensa y queda liso. */
+  /** 1.133.2: un tramo del pliegue, a medias: el papel que cede bajo la plegadera (un crujido suave y un toque grave). */
+  aplana: (b, datos = {}) => {
+    const k = datos.k ?? 0;
+    ruido(b, { f: 1500 + k * 60, q: 1.6, pico: 0.03, ataque: 0.006, caida: 0.06, barrido: 0.8 });
+    madera(b, { f: ESCALA[k % 3] / 2, pico: 0.018, caida: 0.1 });
+  },
+  /** 1.133.2: un tramo del pliegue, ya liso: un toque de madera que sube con cada tramo, como si el papel se afinara. */
+  liso: (b, datos = {}) => {
+    const k = Math.max(1, datos.k ?? 1);
+    madera(b, { f: ESCALA[(k - 1) % ESCALA.length] * (k > ESCALA.length ? 2 : 1), pico: 0.032, caida: 0.22 });
+    ruido(b, { f: 2200, q: 1.2, pico: 0.025, ataque: 0.01, caida: 0.06, barrido: 1.3 });
+  },
+  /** El pliegue entero, liso: el papel que se tensa y queda plano. */
   alisado: (b, datos = {}) => {
     ruido(b, { f: 1800, q: 1.4, pico: 0.06, ataque: 0.02, caida: 0.18, barrido: 1.4 });
     madera(b, { f: datos.ultima ? 523.25 : 392, pico: 0.035, caida: 0.3, d: 0.08 });
@@ -732,11 +744,28 @@ const SONIDOS = {
     nota(b, { f: f * 2, pico: 0.022, caida: 0.7 });
     tono(b, { f: f * 5.04, pico: 0.006, caida: 0.25, d: 0.01 });
   },
-  /** El ex libris: el sello que baja hasta el papel y la tinta que queda. */
+  /**
+   * El ex libris (1.133.2, Francisco: «el sello necesito que sea mas impactante»): el golpe hondo del sello de nogal sobre el
+   * libro (un bombo grave que cae, la madera y el papel que se aplasta) y, detrás, un acorde que se abre, como la casa que lo
+   * celebra.
+   */
   exlibris: (b) => {
-    madera(b, { f: 196, pico: 0.07, caida: 0.18 });
-    ruido(b, { f: 900, q: 1, pico: 0.05, caida: 0.07, d: 0.01 });
-    nota(b, { f: 659.25, pico: 0.02, caida: 0.7, d: 0.12 });
+    tono(b, { f: 96, a: 50, pico: 0.24, ataque: 0.002, caida: 0.28 });
+    tono(b, { f: 190, a: 118, tipo: 'triangle', pico: 0.05, ataque: 0.002, caida: 0.1 });
+    madera(b, { f: 147, pico: 0.08, caida: 0.24 });
+    ruido(b, { f: 420, q: 0.7, tipo: 'lowpass', pico: 0.15, ataque: 0.002, caida: 0.13 });
+    ruido(b, { f: 2600, q: 0.9, pico: 0.045, ataque: 0.004, caida: 0.1, barrido: 0.6, d: 0.012 });
+    [392, 493.88, 587.33, 783.99].forEach((f, i) => nota(b, { f, pico: 0.024, caida: 1.15, d: 0.26 + i * 0.075 }));
+  },
+  /** El sello se apoya en la guarda: la goma que toca el papel, blandita. */
+  selloApoya: (b) => {
+    madera(b, { f: 220, pico: 0.03, caida: 0.08 });
+    ruido(b, { f: 900, q: 0.8, pico: 0.03, ataque: 0.004, caida: 0.05 });
+  },
+  /** El sello se despega: la goma que suelta el papel con la tinta aún húmeda. */
+  selloLevanta: (b) => {
+    ruido(b, { f: 1400, q: 2.2, pico: 0.04, ataque: 0.03, caida: 0.13, barrido: 1.6 });
+    tono(b, { f: 300, a: 520, pico: 0.012, ataque: 0.04, caida: 0.1 });
   },
   /** Abrir o cerrar el libro en el banco: las hojas que respiran y la tapa sobre el tapete. */
   libroAbre: (b) => {
@@ -792,6 +821,8 @@ const GANANCIA = {
   cordel: 1.3,
   marca: 1.3,
   paginas: 1.2,
+  // 1.133.2: el golpe del ex libris, que tiene que notarse, pero sin sobresalir tanto como el apisonador de antes
+  exlibris: 0.6,
 };
 
 /** Lo que suena mientras se mantiene: el café que cae, el agua y el vapor (su color cambia con la leche). */
@@ -827,12 +858,16 @@ const DEL_TALLER = new Set([
   'moho',
   'manchaFuera',
   'migas',
+  'aplana',
+  'liso',
   'alisado',
   'husillo',
   'tope',
   'hierro',
   'oro',
   'exlibris',
+  'selloApoya',
+  'selloLevanta',
   'libroAbre',
   'danoHecho',
   'ficha',

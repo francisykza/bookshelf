@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.133.1 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.133.2 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7205,3 +7205,49 @@ esa función». Sin migración ni cambios de economía, recetas o servidor.
   - Ganchos de prueba nuevos, solo en desarrollo: `pasos()`, `toqueEn()` y `punto()`.
 - **Pendiente**: preguntar a Francisco qué mecánicas no están claras y qué se glitchea («Las mecanicas de algunas cosas no
   terminan de estar claras y algunas cosas se glitchean»).
+
+### 133.7 El taller, lo que no se entendía y lo que se glitcheaba (1.133.2, 15-11-2026)
+
+Francisco, 15-11-2026: «por ejemplo la de arrugar las paginas, el sello necesito que sea mas impactante y al pasar de quitar al
+polvo a arrugar las paginas se glitchea la pagina». Sin migración ni cambios de economía o de servidor.
+
+- **La página que parpadeaba al abrir el libro** (`cafe3d.js`, `libroTallerKit`). El bloque de hojas acababa justo a la altura
+  de la primera página (`LIBRO_Z.pagina`). Con la tapa cerrada no se ve; al abrirla para el pliegue, la página y la cara de
+  arriba del bloque se tapaban a trozos y, con la cámara moviéndose, la hoja parpadeaba (en la captura de la 1.133,
+  `taller-08-plegadera`, el tercio de abajo de la página salía en un color liso). El bloque acaba ahora 3 mm por debajo.
+  - La herramienta se coge al terminar de abrir (o cerrar) el libro, no mientras gira la tapa (`Taller.jsx`, `irAPaso`).
+  - Los lienzos del libro se repintan solo cuando cambia lo que se pinta (`firmaVistas`), no en cada cuadro de una animación.
+- **Alisar el pliegue, sin explicarlo** (`cafeTallerGestos.js`, `cafe3d.js`, `cafeTallerPintura.js`):
+  - El pliegue se ve: la primera página es una malla de 60 × 84 con relieve. Sin alisar, el pliegue levanta una cresta de
+    6,5 mm (y otra más baja a su lado) con su luz y su sombra, porque la lámpara está a la izquierda (`alturaPliegue`). La cresta
+    se levanta al abrir la tapa; cerrada, la aplasta.
+  - La plegadera es una hoja plana de hueso, tumbada a lo largo del pliegue, que va por encima de la cresta.
+  - El pliegue va en ocho tramos. Cada pasada, de ida o de vuelta y aunque se levante el dedo, baja a la mitad los tramos que
+    toca; con dos, quedan planos. Antes contaba la ida y vuelta entera de punta a punta y, al soltar, se empezaba otra vez.
+  - Cada tramo que cede suena (`aplana`, un crujido suave) y cada tramo que queda liso da una nota que sube (`liso`).
+  - La nota dice ahora «Desliza la plegadera por encima del pliegue hasta que quede plano».
+  - El mimo no cambia: pegada al pliegue, bien; si se aparta, «se podía mejorar».
+- **El ex libris, con golpe**:
+  - Lleva el nombre del café (`cafeTallerPintura.js`, `pintarExlibris`). Es un recuadro de doble filete, con «EX LIBRIS», un
+    filete de puntos con su rombo, una taza humeante sobre un libro abierto y el nombre del café, en uno a tres renglones. Sin
+    nombre, «El taller». La letra de 5 px de alto tiene ya todo el alfabeto, con tildes y eñe. Mide 58 px de ancho y de 43 a 59
+    de alto (antes, 31 × 35 con una prensa pequeña).
+  - El sello es del tamaño de la marca (`selloTallerKit`): la goma entintada, la plancha de nogal con su cerco de latón, el taco
+    y el pomo. Al apretar se aplasta.
+  - Al sellar:
+    - suena un golpe hondo (un bombo grave que cae, la madera y el papel) y, detrás, un acorde que se abre (`exlibris`);
+    - la vista se sacude un instante (`tallerGolpe`);
+    - salta un polvillo de debajo de la plancha, con un cerco claro que sale del borde;
+    - el ex libris sale en grande sobre la escena, con el nombre del café, y cae con su onda (`.cf3-gesto__sellado`);
+    - don Celestino dice «¡Eso es! Ya lleva la marca de la casa.».
+  - El sello se queda un instante apretado, se despega ladeándose (`selloLevanta`) y deja la tinta fresca brillando un momento.
+  - Al apoyarlo suena la goma sobre el papel (`selloApoya`).
+  - Con movimiento reducido no hay sacudida, polvillo ni animación; el ex libris en grande sale igual.
+- **Pruebas**:
+  - `cafeTaller.test.js`: los tramos del pliegue, soltar sin perder nada, el relieve, el emblema y los renglones del nombre.
+  - `e2e-community/v1133-cafe-taller.spec.js`, un caso nuevo a 360 y 390, con vídeo y sonido a 390:
+    - la tapa al abrirse, cuadro a cuadro;
+    - el pliegue con su cresta, a medias y liso;
+    - el sello encima, apretando, el golpe, al levantarse y la marca fresca;
+    - el ex libris pintado con varios nombres;
+    - el volumen de los sonidos nuevos (`medirSonidos`).
