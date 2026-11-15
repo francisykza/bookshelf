@@ -1,0 +1,121 @@
+/* 1.136 (SPEC §136.6): el aviso de la mudanza a libotown.es, solo en la dirección de antes. Arriba a la derecha, a la altura
+   del botón «Al portal» del piso, con su mismo marco de papel en píxel (pixelUi.js). Por encima del panel del piso, como el
+   aviso de «Deshacer». */
+.aviso-dir {
+  position: fixed;
+  z-index: 1001;
+  top: calc(6px + env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  max-width: calc(100vw - 16px);
+  color: #3b2618;
+  font-family: 'Lora', Georgia, serif;
+}
+
+/* En la habitación ilustrada, arriba a la derecha están Cuenta y Ambiente: el aviso, debajo */
+.aviso-dir--sala {
+  top: calc(max(16px, env(safe-area-inset-top)) + 52px);
+  right: max(12px, env(safe-area-inset-right));
+}
+
+.aviso-dir__etiqueta {
+  display: grid;
+  justify-items: start;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 6px solid transparent;
+  border-image: var(--px-tag) 6 fill / 6px stretch;
+  background: none;
+  color: inherit;
+  font:
+    500 0.72rem/1.15 'Lora',
+    Georgia,
+    serif;
+  text-align: left;
+  image-rendering: pixelated;
+  cursor: pointer;
+}
+
+.aviso-dir__etiqueta b {
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.aviso-dir__etiqueta[aria-expanded='true'] {
+  border-image-source: var(--px-pressed);
+}
+
+.aviso-dir__nota {
+  width: min(320px, calc(100vw - 16px));
+  box-sizing: border-box;
+  padding: 6px 8px 4px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  font-size: 0.84rem;
+  line-height: 1.38;
+  image-rendering: pixelated;
+}
+
+.aviso-dir__nota h2 {
+  margin: 0 0 4px;
+  font:
+    700 1rem/1.2 'Lora',
+    Georgia,
+    serif;
+}
+
+.aviso-dir__nota p {
+  margin: 0 0 4px;
+}
+
+.aviso-dir__nota ol {
+  margin: 0 0 8px;
+  list-style: decimal;
+  padding-left: 1.2em;
+}
+
+.aviso-dir__nota li + li {
+  margin-top: 3px;
+}
+
+.aviso-dir__botones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.aviso-dir__ir {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 6px solid transparent;
+  border-image: var(--px-sage) 6 fill / 6px stretch;
+  color: #fbf3df;
+  font:
+    600 0.9rem/1 'Lora',
+    Georgia,
+    serif;
+  text-decoration: none;
+  image-rendering: pixelated;
+}
+
+.aviso-dir__luego {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: #5e4a36;
+  font:
+    0.86rem 'Lora',
+    Georgia,
+    serif;
+  text-decoration: underline;
+  cursor: pointer;
+}

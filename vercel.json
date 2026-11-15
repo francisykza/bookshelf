@@ -3,6 +3,14 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/((?!sw\\.js).*)",
+      "has": [{ "type": "host", "value": "bookshelf-wine-iota.vercel.app" }],
+      "destination": "https://libotown.es/$1",
+      "permanent": true
+    }
+  ],
   "headers": [
     { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
     { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },

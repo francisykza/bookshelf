@@ -183,20 +183,23 @@ select {
 
 /* 1.89.1: si se arranca en la habitación 3D, nunca asoma la ilustrada mientras llega el piso */
 .sanctuary[data-home-3d] {
-  background: #2a2432;
+  background: #351c0e;
 }
 
 .sanctuary[data-home-3d] .panorama-viewport {
   visibility: hidden;
 }
 
+/* 1.136: el logo de Libotown en el mismo sitio que la pantalla de carga de index.html (.arranque), y el aviso debajo,
+   pegado a las letras (el logo es 3:2 y las letras acaban al 81 % de su alto) */
 .home-boot {
   position: fixed;
   inset: 0;
   display: grid;
   place-items: center;
   margin: 0;
-  background: #2a2432;
+  padding-top: calc(min(80vw, 420px) * 0.41 + 3rem);
+  background: #351c0e url('/icons/libotown-logo.webp') center / min(80vw, 420px) auto no-repeat;
   color: #f3e7cc;
   font: italic 1rem 'Lora', Georgia, serif;
 }

@@ -30,7 +30,8 @@ import { RoomCorner } from './components/room/RoomCorner';
 import { SocialRoom } from './components/room/SocialRoom';
 import { RadioPanel } from './features/radio/RadioPanel';
 import { HOME_PISO, choose as chooseStart, newRoomAvailable, startsInRoom } from './features/pisoLab/inicio';
-import { PRODUCTION_HOST } from './features/pisoLab/sampleLibrary';
+import { esProduccion } from './domain/direcciones';
+import { AvisoDireccion } from './features/direccion/AvisoDireccion';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { PerfProfiler } from './perf/PerfProfiler';
@@ -97,7 +98,7 @@ function Sanctuary() {
   );
   // Piloto: /?piloto=piso entra directo en el portal de prueba
   // En producción no: su portal de prueba lleva una vecina inventada, y allí no se cargan datos de demostración
-  const pilot = useMemo(() => new URLSearchParams(window.location.search).get('piloto') === 'piso' && window.location.hostname !== PRODUCTION_HOST, []);
+  const pilot = useMemo(() => new URLSearchParams(window.location.search).get('piloto') === 'piso' && !esProduccion(window.location.hostname), []);
   useEffect(() => {
     if (pilot && !locRef.current.panel) openPanel({ type: 'pisoLab' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -237,7 +238,7 @@ function Sanctuary() {
 
   return (
     <main className="sanctuary" data-view={view} data-phase={phase} data-home-3d={home || undefined} inert={panel ? true : undefined}>
-      <h1 className="sr-only-focus">BookShelf, tu santuario de lectura junto al mar</h1>
+      <h1 className="sr-only-focus">Libotown, tu santuario de lectura junto al mar</h1>
       {/* 1.89.1: con la habitación 3D como destino, la ilustrada sigue montada pero no se ve; hasta que llega el piso, solo este aviso */}
       {home && (
         <p className="home-boot" role="status">
@@ -394,6 +395,8 @@ function Sanctuary() {
         />
       )}
       {!panel && <LogUndoToast item={undoLog} onUndo={undoLastLog} />}
+      {/* 1.136 (SPEC §136.6): en la dirección de antes, el aviso de la mudanza a libotown.es, solo en la habitación */}
+      <AvisoDireccion lugar={panel ? (panel.type === 'pisoLab' && panel.id === HOME_PISO && !panel.select ? 'piso' : null) : view === ROOM_VIEW ? 'sala' : null} />
       {/* Piloto: al volver a la habitación tras registrar, el mismo aviso, por encima del panel del piso */}
       {panel?.type === 'pisoLab' && panel.id && (!panel.select || panel.select.startsWith('ordenador')) && createPortal(<LogUndoToast item={undoLog} onUndo={undoLastLog} />, modalRoot())}
       {panel?.type === 'review' &&<ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel(panel.tab === 'piso' ? { type: 'pisoLab', id: panel.select } : panel.tab === 'book' ? { type: 'book', id: panel.id } : { type: 'laptop', tab: 'calendar', select: panel.select })} />}

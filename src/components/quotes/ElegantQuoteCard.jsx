@@ -111,7 +111,7 @@ export function ElegantQuoteCard({ text, author, work, onSave, saved = false, sa
     const body = `“${text}” — ${author}${work ? `, ${work}` : ''}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Una cita de BookShelf', text: body });
+        await navigator.share({ title: 'Una cita de Libotown', text: body });
         setShared('Compartida');
       } else {
         await navigator.clipboard.writeText(body);

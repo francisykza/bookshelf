@@ -46,6 +46,18 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
 - **Commits y subidas, solo cuando se pidan** («haz el commit», «súbelo»). Subir `main` **despliega en producción**
   (Vercel). Nunca forzar el push ni reescribir historia publicada.
 - **Sin líneas `Co-Authored-By`** ni firmas de IA en commits ni PR.
+- **El nombre es Libotown** (Francisco, 15-11-2026; «BookShelf» era provisional). Se escribe «Libotown», sin subtítulo (confirmado el mismo día: las minúsculas son solo del dominio, `libotown.es`, y del logo). El
+  icono lo da él: no inventarlo (los iconos salen de su material con `scripts/libotown-iconos.mjs`, §136.5). Lo interno sigue con «bookshelf» (`bookshelf:v1` y demás claves, `bookshelf:auth`, el
+  IndexedDB, las cachés `bookshelf-`, `assets/bookshelf/`, `package.json`, el repositorio, Vercel y Supabase) y no se renombra
+  sin una migración pensada y aprobada por él. Dominio: **libotown.es** (registrado en IONOS; Francisco, 15-11-2026). **Desde la
+  1.136.1** (Francisco, «Hazlo ya») la dirección de antes redirige a libotown.es (308, todo menos `/sw.js`, que allí se despide;
+  SPEC §136.7). Las direcciones de producción están en `src/domain/direcciones.js`.
+- **Pantallas de carga, siempre la escena de Libotown** (Francisco, 15-11-2026: «cambia las pantallas de carga de la app para
+  que utilicen la nueva escena de libotown y que como mucho cambie el mensaje de adonde te redirijen»): toda pantalla de carga
+  de la app (al abrirla, al entrar en el piso, el edificio, el hotel y sus salas, el café…) es la misma escena que la del
+  arranque (§136.5): el logo de Libotown sobre el marrón `#351c0e`, en el mismo sitio y tamaño. **Lo único que cambia es el
+  mensaje**, que dice adónde vas. No volver a pantallas de carga propias de cada sitio (fondos, dibujos, barras o colores
+  distintos).
 - **Supabase**: nunca exponer claves de servicio ni secretas; no desactivar RLS. Las migraciones nuevas van en
   `supabase/migrations/` y **las aplica Francisco** en el SQL Editor. Desde el 1-11-2026, si él lo pide («hazlo tú»):
   abrir el SQL Editor del proyecto en el panel del navegador (él inicia sesión), pegar la migración comprobando su
@@ -515,8 +527,9 @@ npx oxlint src                             # lint
   `chromium-390x844-reduced`. Levantan su propio servidor (no hace falta tener `npm run dev` abierto).
 - Comunidad con Supabase simulado: `playwright.community.config.js` + `e2e-community/`.
 - La config del panel del navegador de Claude está en `../.claude/launch.json` (entrada «bookshelf», puerto 5190).
-- Producción: https://bookshelf-wine-iota.vercel.app · repo: https://github.com/francisykza/bookshelf (rama `main`).
-  Tras subir, comprobar que `https://bookshelf-wine-iota.vercel.app/sw.js` ya trae la versión nueva.
+- Producción: https://libotown.es (la dirección de antes, https://bookshelf-wine-iota.vercel.app, redirige a ella desde la
+  1.136.1) · repo: https://github.com/francisykza/bookshelf (rama `main`).
+  Tras subir, comprobar que `https://libotown.es/sw.js` ya trae la versión nueva (y que la dirección de antes sigue con su 308).
 
 ## 3. Mapa del código
 

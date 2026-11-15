@@ -84,7 +84,7 @@ function load() {
 
 /** Pasa un estado guardado (local, de la nube o de una copia) por todas las migraciones; lanza si no lo es. */
 export function hydrate(saved) {
-  if (!saved || typeof saved !== 'object' || (saved.books != null && !Array.isArray(saved.books))) throw new Error('No es un estado de BookShelf');
+  if (!saved || typeof saved !== 'object' || (saved.books != null && !Array.isArray(saved.books))) throw new Error('No es un estado de Libotown');
   const base = initialState();
   const v = saved.version ?? 1;
   let books = (saved.books ?? base.books).map((b) => createBook(b));

@@ -348,7 +348,7 @@ function cabecera(ctx, piezas, etiqueta, enCurso, n, total) {
 }
 
 function marca(ctx) {
-  escribir(ctx, 'BookShelf', W / 2, H - 80, { font: `700 28px ${TEXTO}`, color: C.suave, align: 'center' });
+  escribir(ctx, 'Libotown', W / 2, H - 80, { font: `700 28px ${TEXTO}`, color: C.suave, align: 'center' });
 }
 
 /** Tres cifras iguales: acompañan al podio, no compiten con él. */

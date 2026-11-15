@@ -84,7 +84,7 @@ export function RoomCorner({ onOpenAccount, onStartGuide, onToggleSound, onOpenR
   }, [fsHint]);
   const toggleFullscreen = () => {
     if (!fullscreenApi) {
-      setFsHint('Este navegador no deja abrir la página a pantalla completa. Instala BookShelf («Añadir a pantalla de inicio») y se abrirá sin barras.');
+      setFsHint('Este navegador no deja abrir la página a pantalla completa. Instala Libotown («Añadir a pantalla de inicio») y se abrirá sin barras.');
       return;
     }
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});

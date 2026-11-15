@@ -167,7 +167,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
             <LogOut aria-hidden="true" />
             <span>Salir</span>
           </button>
-          <span className="pc__brand">BookShelf</span>
+          <span className="pc__brand">Libotown</span>
           <time className="pc__time" dateTime={new Date(now).toISOString()}>
             {new Date(now).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
           </time>
