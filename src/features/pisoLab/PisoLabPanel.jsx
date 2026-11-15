@@ -33,6 +33,7 @@ import { useMonitorAlmacen } from '../edificio/hotel/almacenHoy';
 import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
 import { expuestosDe, publicarExpuestos } from './expuestos';
 import '../tablon/tablon.css';
+import { PantallaCarga } from '../../ui/PantallaCarga';
 
 const SAVE_MS = 400;
 const NO_NEWS = { added: [], moved: 0, stored: 0 };
@@ -137,7 +138,7 @@ function Tool({ icon, name, short, onClick }) {
   );
 }
 
-export function Interior({ piso, room, hora, reading, balda, covered, leaning, listing, yawMemory, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor, onBoard, onReady, aviso = false }) {
+export function Interior({ piso, room, hora, reading, balda, covered, leaning, listing, yawMemory, hint, shelfBooks, onBook, onShelf, onOpenBook, onLost, onApi, onDesk, onDoor, onBoard, onReady, aviso = false, cargando = null }) {
   const [picked, setPicked] = useState(null);
   const [pointed, setPointed] = useState(null);
   const host = useRef(null);
@@ -297,7 +298,7 @@ export function Interior({ piso, room, hora, reading, balda, covered, leaning, l
           {pointed.name}
         </span>
       )}
-      {!ready && <p className="plab-loading">Entrando…</p>}
+      {!ready && <PantallaCarga mensaje={cargando ?? (piso.propio ? 'Abriendo tu piso…' : 'Entrando en el piso…')} />}
       {/* El acceso de verdad es el botón de abajo: esto solo lo señala */}
       {ready && hint && (
         <span ref={hintRef} className="plab-hint" aria-hidden="true" hidden>
@@ -734,8 +735,9 @@ function HomePiso({ onOpenLibrary, onEdificio, onAnterior, onOpenAccount, onOpen
   const mine = useMyPiso();
   useEffect(() => installPixelVars(), []);
   if (mine.state === 'ready') return <PisoView key={mine.piso.id} piso={mine.piso} real={{ userId: mine.userId, room: mine.room, inventory: mine.inventory }} onOpenLibrary={onOpenLibrary} onEdificio={onEdificio} onAnterior={onAnterior} {...rest} />;
+  // 1.138 (SPEC §138): mientras llega tu piso, la pantalla de carga de Libotown, la misma que al abrir la app
+  if (mine.state === 'loading') return <PantallaCarga mensaje="Abriendo tu piso…" />;
   const text = {
-    loading: 'Abriendo tu piso…',
     'signed-out': 'Tu habitación es tu piso del edificio del puerto: inicia sesión en «Tu cuenta» para entrar.',
     'no-member': 'Tu habitación es tu piso del edificio del puerto, que es para quien tiene la comunidad activada: tus vecinos verán tu piso y tu alias.',
     unavailable: mine.error || 'Tu piso no está disponible ahora mismo.',
@@ -749,7 +751,7 @@ function HomePiso({ onOpenLibrary, onEdificio, onAnterior, onOpenAccount, onOpen
         </button>
         <h2 className="plab-title plab-title--quiet">Tu piso</h2>
       </div>
-      <div className="plab-fallback plab-gate" role={mine.state === 'loading' ? 'status' : 'alert'}>
+      <div className="plab-fallback plab-gate" role="alert">
         <p>{text}</p>
         {mine.state === 'signed-out' && onOpenAccount && (
           <button type="button" className="px-btn px-btn--sage" onClick={onOpenAccount}>
@@ -766,17 +768,13 @@ function HomePiso({ onOpenLibrary, onEdificio, onAnterior, onOpenAccount, onOpen
             Reintentar
           </button>
         )}
-        {mine.state !== 'loading' && (
-          <>
-            <button type="button" className="px-btn" onClick={onOpenLibrary}>
-              Abrir Mi biblioteca
-            </button>
-            {onAnterior && (
-              <button type="button" className="px-btn" onClick={onAnterior}>
-                Volver a la experiencia anterior
-              </button>
-            )}
-          </>
+        <button type="button" className="px-btn" onClick={onOpenLibrary}>
+          Abrir Mi biblioteca
+        </button>
+        {onAnterior && (
+          <button type="button" className="px-btn" onClick={onAnterior}>
+            Volver a la experiencia anterior
+          </button>
         )}
       </div>
     </div>

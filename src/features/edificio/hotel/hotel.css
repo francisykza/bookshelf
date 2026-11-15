@@ -4172,15 +4172,6 @@
   outline-offset: -3px;
 }
 
-.rcp-loading {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  margin: 0;
-  font: italic 1.05rem 'Cormorant Garamond', Georgia, serif;
-  color: var(--rcp-gold);
-}
 
 /* Letreros de latón sobre lo que se toca: siguen a la vista; de cerca, fuera */
 .rcp-tags {

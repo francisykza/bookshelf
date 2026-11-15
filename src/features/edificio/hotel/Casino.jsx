@@ -29,6 +29,7 @@ import { CASILLA_RARA, premioNombre } from './ruleta';
 import { CHISTERAS_JUEGO, PREMIOS_CHISTERAS, SITIO, SITIO_CORTO, cambioDicho } from './chisteras';
 import { catalogItem } from '../catalog';
 import './casino3d.css';
+import { PantallaCarga } from '../../../ui/PantallaCarga';
 
 /** 1.107 · Lo que aún no se juega en la sala (los bloques siguientes), dicho tal cual. Desde la 1.111, todo se juega. */
 const PRONTO = {};
@@ -604,7 +605,7 @@ export function Casino({ onStreet, soundOn = false }) {
       {!sin3d && (
         <div className={abierta ? 'cs3' : 'cs3 is-off'}>
           <div className="cs3-stage" ref={host}>
-            {!ready && <p className="cs3-loading">Bajando la escalera del sótano…</p>}
+            {!ready && <PantallaCarga mensaje="Bajando la escalera del sótano…" />}
           </div>
           <div className="cs3-tags">
             {Object.entries(SITIOS).map(([id, s]) => (

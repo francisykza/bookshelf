@@ -13,7 +13,6 @@
 .cs3-canvas:active { cursor: grabbing; }
 .cs3-canvas:focus-visible { outline: 2px solid var(--c21-gold); outline-offset: -4px; }
 .cs3.is-off .cs3-canvas { filter: brightness(0.55) saturate(0.7); }
-.cs3-loading { position: absolute; inset: 0; display: grid; place-content: center; margin: 0; padding: 24px; text-align: center; font: italic 1.05rem 'Cormorant Garamond', Georgia, serif; color: var(--c21-gold); }
 
 .cs3-tags { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .cs3-tag,

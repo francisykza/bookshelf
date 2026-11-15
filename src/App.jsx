@@ -32,6 +32,8 @@ import { RadioPanel } from './features/radio/RadioPanel';
 import { HOME_PISO, choose as chooseStart, newRoomAvailable, startsInRoom } from './features/pisoLab/inicio';
 import { esProduccion } from './domain/direcciones';
 import { AvisoDireccion } from './features/direccion/AvisoDireccion';
+import { PantallaCarga, useHayPantallaCarga } from './ui/PantallaCarga';
+import { mensajeLlegada } from './features/edificio/llegada';
 import { AddBookCard } from './components/shelf/AddBookCard';
 import { ShelfView } from './components/shelf/ShelfView';
 import { PerfProfiler } from './perf/PerfProfiler';
@@ -106,6 +108,8 @@ function Sanctuary() {
   // Versión privada (src/features/pisoLab/inicio.js): la habitación es la pantalla de inicio y su puerta lleva al
   // edificio. Sin panel encima, se vuelve a ella; «Volver a la experiencia anterior» lo desactiva en este dispositivo
   const [home, setHome] = useState(() => !pilot && startsInRoom());
+  // 1.138: con una pantalla de carga delante (la misma escena), el fondo de arranque no repite su mensaje
+  const cargando = useHayPantallaCarga();
   useEffect(() => {
     if (home && !location.panel && location.view === 'room') nav.replace({ view: 'room', panel: { type: 'pisoLab', id: HOME_PISO } });
   }, [home, location.panel, location.view, nav]);
@@ -240,7 +244,7 @@ function Sanctuary() {
     <main className="sanctuary" data-view={view} data-phase={phase} data-home-3d={home || undefined} inert={panel ? true : undefined}>
       <h1 className="sr-only-focus">Libotown, tu santuario de lectura junto al mar</h1>
       {/* 1.89.1: con la habitación 3D como destino, la ilustrada sigue montada pero no se ve; hasta que llega el piso, solo este aviso */}
-      {home && (
+      {home && !cargando && (
         <p className="home-boot" role="status">
           Abriendo tu piso…
         </p>
@@ -432,7 +436,7 @@ function Sanctuary() {
       {panel?.type === 'atlas' && <SagaMapModal onClose={close} onOpenBook={openBook} />}
       {panel?.type === 'account' && <AccountPanel onClose={close} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
       {panel?.type === 'visit' && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PantallaCarga mensaje="Abriendo su piso…" />}>
           <VisitaLector key={panel.id} userId={panel.id} from={panel.from ?? null} onBack={close} onProfile={() => openPanel({ type: 'reader', id: panel.id })} />
         </Suspense>
       )}
@@ -442,7 +446,7 @@ function Sanctuary() {
         </Suspense>
       )}
       {panel?.type === 'pisoLab' && (pilot || panel.id === HOME_PISO) && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PantallaCarga mensaje={panel.id === HOME_PISO ? 'Abriendo tu piso…' : 'Abriendo el portal…'} />}>
           <PisoLabPanel
             pisoId={panel.id ?? null}
             select={panel.select ?? null}
@@ -548,7 +552,7 @@ function Sanctuary() {
         );
       })()}
       {panel?.type === 'edificio' && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PantallaCarga mensaje={mensajeLlegada(panel.id ?? null, panel.section ?? null)} />}>
           <EdificioPanel
             pisoId={panel.id ?? null}
             sala={panel.section ?? null}

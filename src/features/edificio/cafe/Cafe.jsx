@@ -42,6 +42,7 @@ import { crearSfxBarra } from './cafeSfx';
 import { portadaPixel } from './cafePortadas';
 import { sceneMusicOut, setMusicBlocked } from '../../../audio/audioController';
 import './cafe.css';
+import { PantallaCarga } from '../../../ui/PantallaCarga';
 
 /** Lo que cuenta Pilar en el traspaso, por orden (frases cerradas). */
 const PILAR_DICE = [
@@ -835,7 +836,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         </div>
       ) : (
         <div className="cf3-stage" ref={host}>
-          {!ready && <p className="cf3-loading">Abriendo el bajo…</p>}
+          {!ready && <PantallaCarga mensaje="Abriendo el bajo…" />}
         </div>
       )}
       {!sin3d && (

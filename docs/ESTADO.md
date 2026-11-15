@@ -6,6 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **En la rama, con commit: 1.138.0** (2026-11-15, §138; encargo de Francisco del mismo día; aprobada: «Sí, publícalas»).
+  Todas las pantallas de carga son la escena de Libotown (logo sobre `#351c0e`, como al abrir la app) y solo cambia el
+  mensaje, que dice adónde vas (`src/ui/PantallaCarga.jsx`): tu piso, el edificio, el café, la recepción, el casino, la sala de
+  lectura, el almacén y las visitas. Regla en `CLAUDE.md`. Evidencias en `qa-report/v1138/` (antes y ahora, vídeos), enviadas
+  al chat. Se publica junto con la 1.137.0.
 - **En la rama, con commit: 1.137.0** (2026-11-15, §134, §135 y §137; «Sí, las recomendadas»; «Sí, sigue al bloque 2»;
   «vale» al bloque 2). El almacén en el ordenador, **los dos bloques aprobados**, juntado con `main` (Libotown, 1.136.1) y
   numerado 1.137.0 para publicarlo por encima:
@@ -13,7 +18,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
     almacén), la «!» de lo nuevo y, al tocar un mueble, el almacén delante de él con su ficha y «Al ordenador»;
   - **bloque 2 (§135)**: seguir el precio de un mueble con un marcapáginas (en la pantalla, en la ficha y el directorio del
     almacén), «Lo que sigues», la «!» de lo que sigues rebajado (una vez por oferta) y la «!» sobre el monitor del piso.
-  **Migración pendiente, la aplica Francisco**: `20261221120000_almacen_deseados.sql` (sin ella, todo va como en el bloque 1).
+  **Migración aplicada** (15-11-2026, «Hazlo tú»): `20261221120000_almacen_deseados.sql`, ver la bitácora. Se publica junto
+  con la 1.138.0.
   Evidencias en `qa-report/v1134/`, `qa-report/v1135/` y, de la versión juntada, `qa-report/v1137/`. Sin probar con cuentas
   reales ni en móviles reales.
 - **Publicada en producción: 1.136.1** (2026-11-15, §136.7; «Hazlo ya»; «Sí, publícala»; `main` avanzó sin forzar de
@@ -262,10 +268,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Las pantallas de carga con la escena de Libotown** (encargo del 15-11-2026, §138): hechas como 1.138.0, aprobadas
+  («Sí, publícalas») y con commit. Falta publicarlas junto con la 1.137.0 y comprobar el despliegue.
+- **`v188-habitacion-real` falla en dos casos, ya desde antes de la 1.138** (comprobado en la 1.137.0, 15-11-2026): el número
+  de muebles del dibujo 2D del piso no coincide con lo guardado, y el ordenador ya no tiene el botón «Cuenta y copias». Hay que
+  mirar si es la prueba la que se quedó atrás o la app; sin investigar todavía.
 - **El almacén en el ordenador** (encargo del 15-11-2026; plan en `docs/qa/almacen-ordenador.md`): **los dos bloques
-  aprobados** («vale», 15-11-2026), con commit y juntados con `main` como **1.137.0** (§137). Queda: que Francisco aplique la
-  migración `20261221120000_almacen_deseados.sql`, comprobarla con la clave pública (`piso_almacen_deseados` debe dar
-  «permission denied» al anónimo) y publicar (`main` avanza sin forzar desde esta rama).
+  aprobados** («vale», 15-11-2026), con commit y juntados con `main` como **1.137.0** (§137). **Migración aplicada y
+  comprobada** (15-11-2026). **Se publica junto con la 1.138.0** (Francisco, 15-11-2026: «Espera a la 1.138»; aprobada con
+  «Sí, publícalas»; `main` avanza sin forzar desde esta rama).
 - **Libotown** (§136): **publicada** (1.136.0 y 1.136.1, 15-11-2026; Vercel, IONOS y Supabase Auth conectados). Queda que
   Francisco y su pareja instalen la app desde libotown.es, entren con «Usar estos» y vuelvan a vincular los EPUB.
 
@@ -429,6 +440,40 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-15 · Pantallas de carga aprobadas · 1.138.0 (§138), commit en la rama (Claude)
+
+- Francisco vio las evidencias de la 1.138.0 (comparativas de antes y ahora a 390 y 360, y los seis vídeos) y la aprobó:
+  «Sí, publícalas». Commit de la 1.138.0 en `1.90-escritorio-puerto`, encima de la 1.137.0 (el almacén).
+- Lo siguiente: publicar las dos juntas (`main` avanza sin forzar de `36cb4e7`) y comprobar `libotown.es/sw.js`.
+
+### 2026-11-15 · Migración de los muebles que sigues en el almacén, aplicada (Claude)
+
+- Francisco: «Hazlo tú». SQL Editor del proyecto en el panel del navegador (con su sesión), `20261221120000_almacen_deseados.sql`
+  pegada con su SHA-256 comprobado contra el archivo (`3f3b412f…71a8`, 5026 bytes) y, tras ejecutarla, otra vez igual. Él pulsó
+  «Run»: «Success. No rows returned».
+- **Antes de ejecutarla, la tabla y las tres funciones ya existían en producción** (todas daban «permission denied» al anónimo,
+  no «not found»): la aplicó antes alguien (no consta en la bitácora). Volver a ejecutarla es inocuo: la tabla solo se crea si
+  falta (no se toca ningún dato) y las funciones y sus permisos quedan exactamente como en el archivo.
+- Comprobado después con la clave pública (la de la app publicada, sin guardarla): `piso_almacen_deseados` da «permission
+  denied» al leer y al escribir; `piso_almacen_desear`, `piso_almacen_deseados_de` y `piso_almacen_estado`, «permission denied».
+- **Sin publicar** la 1.137.0: Francisco prefiere sacarla junto con la 1.138.0 («Espera a la 1.138»), que sigue sin commit
+  esperando su visto bueno.
+
+### 2026-11-15 · Las pantallas de carga, con la escena de Libotown · 1.138.0 (§138), sin commit (Claude)
+
+- Encargo de Francisco: «cambia las pantallas de carga de la app para que utilicen la nueva escena de libotown y que como mucho
+  cambie el mensaje de adonde te redirijen». Regla nueva en `CLAUDE.md` §1.
+- `src/ui/PantallaCarga.jsx`: la escena del arranque (logo sobre `#351c0e`, mismo sitio y tamaño, mensaje debajo), a pantalla
+  completa y por encima de todo. Sustituye las cargas de: tu piso (y su 3D), el edificio (panel, comunidad y portal), el café, la
+  recepción, el casino, la sala de lectura, el almacén y las visitas al piso de un vecino (desde el portal y desde Comunidad).
+  Mensajes por destino en `src/features/edificio/llegada.js`. Fuera los estilos de las cargas de antes.
+- No se tocan (no son viajes): el ascensor, la entrada al taller, los «Cargando…» de listas, el probador y el EPUB.
+- Pruebas: `v1138-pantallas-carga.spec.js` (6 recorridos, 390 y 360) en verde; regresiones `visita-directa`, `v198`, `v1134`
+  (390) y `e2e/v1136` (390, ajustada: mide la pantalla común o `.home-boot`) en verde; build bien. `v188-habitacion-real` falla
+  en dos casos, **igual en la 1.137.0** (sin este cambio): ver «Pendiente». Capturas de antes y ahora, y
+  vídeos, en `qa-report/v1138/`. Sin probar en móviles reales.
+- **Sin commit**, esperando el visto bueno de Francisco. Va encima de la 1.137.0 (el almacén), que espera su migración.
 
 ### 2026-11-15 · El almacén, juntado con Libotown · 1.137.0 (§137), commit en la rama (Claude)
 

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.137.0 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.138.0 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7580,8 +7580,45 @@ por encima de la 1.136.1.
   redirección de la dirección de antes y la despedida de su service worker siguen igual (`public/sw.js` solo cambia su versión).
 - Lo único que se junta a mano es la versión (`package.json`, `src/diag.js`, `public/sw.js` y la cabecera de este documento) y
   los documentos. `App.jsx` y `LaptopPanel.jsx` se juntan solos: la tarjeta y la pantalla del almacén van con el nombre nuevo.
-- La migración de los deseados (`20261221120000_almacen_deseados.sql`) sigue pendiente y la aplica Francisco. Sin ella, todo va
-  como en la 1.134 (más la «!» del monitor para lo nuevo).
+- La migración de los deseados (`20261221120000_almacen_deseados.sql`) está aplicada en producción (15-11-2026). Sin ella, todo
+  iría como en la 1.134 (más la «!» del monitor para lo nuevo).
 - Pruebas, otra vez sobre la versión juntada: `almacenAvisos.test.js`, `almacenDeseados.rls.test.js`, `redireccion.test.js` y
   `direcciones.test.js`; `v1134-almacen-ordenador.spec.js` y `v1135-almacen-deseados.spec.js` a 390 y 360, y
   `v199-almacen.spec.js` a 390. Capturas y vídeos en `qa-report/v1137/`.
+
+## 138. Las pantallas de carga, todas con la escena de Libotown (1.138.0)
+
+Francisco, 15-11-2026: «cambia las pantallas de carga de la app para que utilicen la nueva escena de libotown y que como mucho
+cambie el mensaje de adonde te redirijen». Regla nueva en `CLAUDE.md` (§1, «Pantallas de carga, siempre la escena de Libotown»).
+
+- **Una sola pantalla de carga** (`src/ui/PantallaCarga.jsx`, estilos con `.home-boot` en `src/index.css`): la de §136.5, el
+  logo de Libotown sobre el marrón `#351c0e`, centrado a `min(80vw, 420px)` como en `index.html`, y el mensaje en Lora cursiva
+  debajo de las letras. Va a `document.body` y por encima de todo (`z-index: 10000`): toda la pantalla, también las barras de la
+  sala que se está cargando. Lo único que cambia es el mensaje, que dice adónde vas.
+- **Dónde**, con su mensaje (los de antes, salvo los que no decían adónde):
+  - al abrir la app y mientras llega tu piso (el panel, tus datos y el piso 3D): «Abriendo tu piso…» (antes, el piso 3D decía
+    «Entrando…» sobre fondo oscuro);
+  - el edificio (el panel, la comunidad y el portal): «Abriendo el portal…» (antes, «Abriendo el portal…» y «Buscando tu
+    puerta…» en una nota); si vas directo al café, «Abriendo el bajo…», y al almacén, «Abriendo el portón del almacén…»
+    (`src/features/edificio/llegada.js`); al hotel, «Llegando al Gran Hotel…»;
+  - el café: «Abriendo el bajo…»; la recepción del hotel: «Abriendo la puerta giratoria…»; el casino: «Bajando la escalera
+    del sótano…»; la sala de lectura: «Entrando en la sala de lectura…»; el almacén: «Abriendo el portón del almacén…» (antes,
+    texto dorado sobre la sala a oscuras, con sus barras encima);
+  - el piso de un vecino, desde el portal o desde Comunidad: «Entrando en el piso de Bruno…» (con su nombre), y mientras no se
+    sabe de quién es, «Abriendo su piso…» (antes, «Entrando…» o una nota en la hoja).
+- **El fondo de arranque** (`.home-boot`, detrás de los paneles cuando la app empieza en tu piso) no repite su mensaje mientras
+  hay una pantalla de carga delante (`useHayPantallaCarga`): una sola voz para los lectores de pantalla.
+- **No cambian** (no son un viaje, sino algo dentro de la misma pantalla): el ascensor del hotel («Subiendo al casino…», es su
+  animación), la entrada al taller (un paseo de cámara), los «Cargando…» de listas, la radio o la comunidad, el probador y
+  «Abriendo el libro…» del lector EPUB.
+- Se quitan los estilos de las cargas de antes (`.cf3-loading`, `.cs3-loading`, `.alm-loading`, `.sl3-loading`,
+  `.rcp-loading` y `.plab-loading`).
+- **Pruebas**: `e2e-community/v1138-pantallas-carga.spec.js`, seis recorridos a 390 y 360 que retienen lo que se carga (el
+  módulo 3D de cada sala, el panel de la visita o los datos del portal) y miden la pantalla: una sola, el marrón, el logo, su
+  tamaño y su sitio, la letra, toda la pantalla, por encima de todo (en el centro, en las esquinas y donde van las barras) y el
+  mensaje debajo de las letras sin salirse. Con `ANTES=1`, las mismas fotos de la versión anterior (1.137.0) para comparar.
+  `e2e/v1136-libotown.spec.js` mide «Abriendo tu piso…» en `.home-boot` o en la pantalla común; `visita-directa`, `v198` y
+  `v1134` siguen en verde. `v188-habitacion-real` falla en dos casos, igual en la 1.137.0. Capturas y vídeos en
+  `qa-report/v1138/`.
+- Limitaciones: emulación de Chromium con Supabase simulado; sin probar en móviles reales. Si una sala no llegara a cargar
+  nunca, la pantalla de carga taparía su botón de volver (como la del arranque); en Android, el botón «atrás» sigue sirviendo.

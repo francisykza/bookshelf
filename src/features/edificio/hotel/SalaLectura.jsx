@@ -31,6 +31,7 @@ import { gestoDe, tiempoJuntos } from './gestos';
 import { useCitaSala } from './useCitaSala';
 import { SalaLibreria } from './SalaLibreria';
 import './sala3d.css';
+import { PantallaCarga } from '../../../ui/PantallaCarga';
 
 const mmss = (ms) => {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -741,7 +742,7 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
       {en3d ? (
         <div className="sl3">
           <div className="sl3-stage" ref={host}>
-            {!ready && <p className="sl3-loading">Entrando en la sala de lectura…</p>}
+            {!ready && <PantallaCarga mensaje="Entrando en la sala de lectura…" />}
           </div>
           <div className="sl3-tags">
             <button type="button" className="sl3-tag" ref={(el) => (tagEls.current.sillon = el)} data-off="true" onClick={() => pick.current('sillon')}>

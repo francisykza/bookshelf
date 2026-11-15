@@ -77,20 +77,6 @@
   outline: 2px solid var(--cf3-amber);
   outline-offset: -4px;
 }
-.cf3-loading {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  margin: 0;
-  padding: 24px;
-  color: var(--cf3-amber);
-  font:
-    italic 1.05rem 'Cormorant Garamond',
-    Georgia,
-    serif;
-  text-align: center;
-}
 
 .cf3-tags {
   position: absolute;

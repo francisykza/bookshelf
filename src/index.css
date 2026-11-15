@@ -192,7 +192,9 @@ select {
 
 /* 1.136: el logo de Libotown en el mismo sitio que la pantalla de carga de index.html (.arranque), y el aviso debajo,
    pegado a las letras (el logo es 3:2 y las letras acaban al 81 % de su alto) */
-.home-boot {
+/* 1.138 (SPEC §138): las demás pantallas de carga son esta misma (`PantallaCarga`), por encima de todo; solo cambia el mensaje */
+.home-boot,
+.pantalla-carga {
   position: fixed;
   inset: 0;
   display: grid;
@@ -202,4 +204,10 @@ select {
   background: #351c0e url('/icons/libotown-logo.webp') center / min(80vw, 420px) auto no-repeat;
   color: #f3e7cc;
   font: italic 1rem 'Lora', Georgia, serif;
+}
+
+.pantalla-carga {
+  z-index: 10000;
+  padding-inline: 16px;
+  text-align: center;
 }

@@ -10,6 +10,7 @@
 // Lo que dice cada papel (encargos, botonera, «Abre pronto») lo pone quien la usa, con `paper(spot)`: es el mismo que el del
 // plano isométrico.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { PantallaCarga } from '../../../ui/PantallaCarga';
 
 const RCP_NAMES = {
   recepcion: "Recepción",
@@ -228,7 +229,7 @@ export function Recepcion3D({ onStreet, onPlano, onFail, paper }) {
         El vestíbulo
       </h3>
       <div className="rcp-stage" ref={host}>
-        {!ready && <p className="rcp-loading">Abriendo la puerta giratoria…</p>}
+        {!ready && <PantallaCarga mensaje="Abriendo la puerta giratoria…" />}
         <div className="rcp-tags">
           {Object.keys(RCP_NAMES).map((id) => (
             <button

@@ -25,6 +25,8 @@ import { mesasQueEsperan } from './hotel/veintiuna';
 import { StarterPicker } from './StarterPicker';
 import { Cafe } from './cafe/Cafe';
 import { cargarFachada } from './cafe/cafeService';
+import { PantallaCarga } from '../../ui/PantallaCarga';
+import { mensajeLlegada } from './llegada';
 // La visita en primera persona trae Three.js: solo se descarga si se entra
 const VisitaPiso = lazy(() => import('../pisoLab/VisitaPiso'));
 
@@ -509,7 +511,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
   } else if (community.status === 'unavailable' || community.status === 'error') {
     body = <p className="ed-note">{community.error || 'La comunidad no está disponible ahora mismo.'}</p>;
   } else if (community.status !== 'ready') {
-    body = <p className="ed-note">Abriendo el portal…</p>;
+    body = <PantallaCarga mensaje={mensajeLlegada(pisoId, sala)} />;
   } else if (!community.member) {
     body = (
       <div className="ed-note">
@@ -529,7 +531,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
       </div>
     );
   } else if (!data) {
-    body = <p className="ed-note">Buscando tu puerta…</p>;
+    body = <PantallaCarga mensaje={mensajeLlegada(pisoId, sala)} />;
   } else if (inHotel) {
     body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} timer={reloj} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} onInventory={setInventory} destino={delOrdenador ? mueble : null} />;
   } else if (inShop) {
@@ -560,7 +562,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
           </button>
         )}
         {!mine && open.room && visita3d === open.user_id ? (
-          <Suspense fallback={<p className="ed-note">Entrando…</p>}>
+          <Suspense fallback={<PantallaCarga mensaje={`Entrando en el piso de ${open.alias ?? 'tu vecino'}…`} />}>
             <VisitaPiso key={open.user_id} vecino={open} edificio={data.edificio} onVolver={onClose} onIso={() => setVisita3d(null)} />
           </Suspense>
         ) : open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} decorate={mine && justPicked} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} placeAcabado={mine ? toPlaceAcabado : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}

@@ -28,6 +28,7 @@ import { claveOferta, nuevosDelAlmacen, sePuedeSeguir } from './almacenAvisos';
 import { desear, mensajeDeseo, verAvisos } from './almacenHoy';
 import { Marcapaginas } from './Marcapaginas';
 import './almacen.css';
+import { PantallaCarga } from '../../../ui/PantallaCarga';
 
 const CARRITO_KEY = 'bookshelf:almacen-carrito';
 const COMPRA_KEY = 'bookshelf:almacen-compra';
@@ -934,7 +935,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
         El Almacén del Puerto
       </h3>
       <div className="alm-stage" ref={host}>
-        {!ready && !sin3d && <p className="alm-loading">Abriendo el portón del almacén…</p>}
+        {!ready && !sin3d && <PantallaCarga mensaje="Abriendo el portón del almacén…" />}
         {sin3d && (
           <div className="alm-sin3d">
             <p>Este dispositivo no puede enseñar el almacén en 3D. Puedes comprar igual desde el directorio.</p>

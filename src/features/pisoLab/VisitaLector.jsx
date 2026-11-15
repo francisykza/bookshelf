@@ -8,6 +8,7 @@ import { PanelShell } from '../../components/panels/PanelShell';
 import { loadPisoVisita } from '../edificio/service';
 import '../edificio/edificio.css';
 import { useCommunity } from '../social/hooks/useCommunity';
+import { PantallaCarga } from '../../ui/PantallaCarga';
 
 // Trae Three.js: solo se descarga si de verdad hay un piso que enseñar
 const VisitaPiso = lazy(() => import('./VisitaPiso'));
@@ -32,6 +33,7 @@ export default function VisitaLector({ userId, from = null, onBack, onProfile })
   useEffect(() => cargar(), [cargar]);
   const { estado, vecino } = carga;
   const alias = vecino?.alias ?? '';
+  const cargando = alias ? `Entrando en el piso de ${alias}…` : 'Abriendo su piso…';
 
   return (
     <PanelShell onClose={onBack} label={alias ? `Piso de ${alias}` : 'Visita a un piso'} variant="visit">
@@ -50,11 +52,11 @@ export default function VisitaLector({ userId, from = null, onBack, onProfile })
           )}
         </header>
         {estado === 'listo' && !perdido && (
-          <Suspense fallback={<p className="visita-lector__aviso" role="status">Abriendo su piso…</p>}>
+          <Suspense fallback={<PantallaCarga mensaje={cargando} />}>
             <VisitaPiso key={vecino.user_id} vecino={vecino} edificio={null} onVolver={onBack} onIso={() => setPerdido(true)} />
           </Suspense>
         )}
-        {estado === 'cargando' && <p className="visita-lector__aviso" role="status">Abriendo su piso…</p>}
+        {estado === 'cargando' && <PantallaCarga mensaje={cargando} />}
         {estado === 'error' && (
           <div className="visita-lector__aviso" role="alert">
             <p>No se ha podido abrir este piso ahora mismo.</p>

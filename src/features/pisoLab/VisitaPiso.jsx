@@ -118,7 +118,7 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
 
   return (
     <div className="ed-visita3d" data-visita={vecino.user_id}>
-      <Interior onBoard={() => visitaTablon && setTablon(true)} onReady={() => setListo3d(true)} piso={piso} room={room} hora={hora} reading={lectura} balda={null} covered={false} leaning={false} listing={false} yawMemory={yawMemory} hint={null} shelfBooks={shelf} onBook={nada} onShelf={nada} onOpenBook={nada} onLost={onIso} onApi={onApi} onDesk={nada} onDoor={onVolver} />
+      <Interior onBoard={() => visitaTablon && setTablon(true)} onReady={() => setListo3d(true)} piso={piso} room={room} hora={hora} reading={lectura} balda={null} covered={false} leaning={false} listing={false} yawMemory={yawMemory} hint={null} shelfBooks={shelf} onBook={nada} onShelf={nada} onOpenBook={nada} onLost={onIso} onApi={onApi} onDesk={nada} onDoor={onVolver} cargando={`Entrando en el piso de ${nombre}…`} />
       {visitaTablon && (visitaTablon.publico || visitaTablon.acepta) && !tablon && (
         <button type="button" className="ed-visita3d__tablon" onClick={() => setTablon(true)}>
           Tablón de {nombre}

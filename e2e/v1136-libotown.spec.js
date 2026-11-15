@@ -202,7 +202,8 @@ test('«Abriendo tu piso…»: el mismo logo en el mismo sitio y el aviso debajo
     await route.continue();
   });
   await page.goto('/?inicio=habitacion');
-  const aviso = page.locator('.home-boot');
+  // 1.138: la del arranque (.home-boot) o, ya con el piso descargándose, la pantalla de carga común: son la misma escena
+  const aviso = page.locator('.home-boot, .pantalla-carga');
   await expect(aviso).toHaveText('Abriendo tu piso…');
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(600);

@@ -33,20 +33,6 @@
   outline: 2px solid var(--c21-gold);
   outline-offset: -4px;
 }
-.sl3-loading {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  margin: 0;
-  padding: 24px;
-  color: var(--c21-gold);
-  font:
-    italic 1.05rem 'Cormorant Garamond',
-    Georgia,
-    serif;
-  text-align: center;
-}
 
 .sl3-tags {
   position: absolute;
