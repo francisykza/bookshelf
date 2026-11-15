@@ -6,9 +6,11 @@
 // misma salida que la del café (`sceneMusicOut`), con su volumen, «Sin música», el silencio y la radio.
 // Tras ver la 1.133 (Francisco, 14-11-2026: «además de tener su propia musica como la cafeteria»), con más alma y más suya:
 // desde la segunda vuelta entra un violonchelo con arco, notas largas que van de un acorde a otro por el camino más corto (dos
-// vueltas de cada tres; la tercera, descansa); debajo de todo, la lluvia que cae en el cristal (un rumor, con su respiración
-// lenta) y, de vez en cuando, las brasas del hornillo del hierro que crepitan y la cola caliente que hace «blup» en su cazo.
-import { azar, crearMusicaViva, nota, ruidoDe, sala } from './cafeMusica';
+// vueltas de cada tres; la tercera, descansa) y, de vez en cuando, la cola caliente que hace «blup» en su cazo.
+// 1.133.1 (Francisco, 15-11-2026: «La musica de la sala de don celestino se escucha con mucho ruido de fondo»): fuera el rumor
+// de la lluvia y las brasas, que eran ruido (un siseo continuo y chasquidos); las gotas, solo su nota de agua, sin soplo.
+// Ahora todo lo que suena tiene tono.
+import { azar, crearMusicaViva, nota, sala } from './cafeMusica';
 
 const PULSO = 60 / 56;
 const COMPAS = PULSO * 4;
@@ -76,28 +78,6 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
   hornillo.gain.value = 0.5;
   hornillo.connect(salida);
 
-  // El rumor de la lluvia en el cristal: ruido entre 700 Hz y 4 kHz, muy bajito, que respira despacio
-  const rumor = ctx.createBufferSource();
-  rumor.buffer = ruidoDe(ctx);
-  rumor.loop = true;
-  const rumorAlto = ctx.createBiquadFilter();
-  rumorAlto.type = 'highpass';
-  rumorAlto.frequency.value = 700;
-  const rumorBajo = ctx.createBiquadFilter();
-  rumorBajo.type = 'lowpass';
-  rumorBajo.frequency.value = 4000;
-  const rumorG = ctx.createGain();
-  rumorG.gain.setValueAtTime(0.0001, inicio);
-  rumorG.gain.exponentialRampToValueAtTime(0.012, inicio + 4);
-  const respira = ctx.createOscillator();
-  respira.frequency.value = 0.07;
-  const respiraG = ctx.createGain();
-  respiraG.gain.value = 0.004;
-  respira.connect(respiraG).connect(rumorG.gain);
-  rumor.connect(rumorAlto).connect(rumorBajo).connect(rumorG).connect(lluvia);
-  rumor.start(inicio);
-  respira.start(inicio);
-
   const tarde = (t) => !offline && t < ctx.currentTime + 0.02;
   /**
    * Una cuerda pulsada: un triángulo y un diente de sierra suave por un filtro que se cierra deprisa (el brillo del ataque que
@@ -136,7 +116,7 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
       g2.disconnect();
     };
   }
-  /** Una gota en el cristal: un «tic» de agua muy breve, agudo y bajito, con su caída de tono. */
+  /** Una gota en el cristal: una nota de agua muy breve, bajita, con su caída de tono (sin ruido). */
   function gota(t) {
     if (tarde(t)) return;
     const f = 1800 + Math.random() * 1600;
@@ -145,27 +125,12 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
     o.frequency.exponentialRampToValueAtTime(f * 0.6, t + 0.05);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.012 + Math.random() * 0.01, t + 0.002);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    g.gain.exponentialRampToValueAtTime(0.008 + Math.random() * 0.006, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
     o.connect(g).connect(lluvia);
     o.start(t);
-    o.stop(t + 0.1);
+    o.stop(t + 0.15);
     o.onended = () => g.disconnect();
-    // Y el agua que resbala, un soplo apenas
-    const s = ctx.createBufferSource();
-    s.buffer = ruidoDe(ctx);
-    const fl = ctx.createBiquadFilter();
-    fl.type = 'bandpass';
-    fl.frequency.value = 5200;
-    fl.Q.value = 2;
-    const gs = ctx.createGain();
-    gs.gain.setValueAtTime(0.0001, t);
-    gs.gain.exponentialRampToValueAtTime(0.004, t + 0.01);
-    gs.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    s.connect(fl).connect(gs).connect(lluvia);
-    s.start(t, Math.random() * 1.5);
-    s.stop(t + 0.2);
-    s.onended = () => gs.disconnect();
   }
 
   /**
@@ -176,7 +141,7 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
     if (tarde(t)) return;
     const fl = ctx.createBiquadFilter();
     fl.type = 'lowpass';
-    fl.frequency.value = Math.min(1400, f * 5);
+    fl.frequency.value = Math.min(1100, f * 4); // 1.133.1: menos raspado de arco (sonaba a ruido)
     fl.Q.value = 0.9;
     const cuerpo = ctx.createBiquadFilter();
     cuerpo.type = 'peaking';
@@ -215,28 +180,6 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
       vibG.disconnect();
     };
   }
-  /** Las brasas del hornillo: dos o tres chasquidos secos, pequeños, a ratos. */
-  function brasa(t) {
-    if (tarde(t)) return;
-    const n = 1 + Math.floor(Math.random() * 3);
-    for (let k = 0; k < n; k += 1) {
-      const tt = t + k * (0.04 + Math.random() * 0.09);
-      const s = ctx.createBufferSource();
-      s.buffer = ruidoDe(ctx);
-      const fl = ctx.createBiquadFilter();
-      fl.type = 'bandpass';
-      fl.frequency.value = 2400 + Math.random() * 2600;
-      fl.Q.value = 2.5;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, tt);
-      g.gain.exponentialRampToValueAtTime(0.01 + Math.random() * 0.012, tt + 0.002);
-      g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.012 + Math.random() * 0.02);
-      s.connect(fl).connect(g).connect(hornillo);
-      s.start(tt, Math.random() * 1.5);
-      s.stop(tt + 0.05);
-      s.onended = () => g.disconnect();
-    }
-  }
   /** La cola caliente en su cazo: una burbuja que sube y revienta, grave y blanda. */
   function burbuja(t) {
     if (tarde(t)) return;
@@ -258,7 +201,6 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
   const corchea = (c, k, r) => inicio + c * COMPAS + k * (PULSO / 2) + (r() - 0.5) * 0.02;
   let hecho = -1;
   let proximaGota = inicio + 3 + Math.random() * 4;
-  let proximaBrasa = inicio + 5 + Math.random() * 4;
   let proximaBurbuja = inicio + 9 + Math.random() * 8;
   let ultimaChelo = 57;
 
@@ -312,13 +254,9 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
       while (proximaGota < hasta) {
         gota(proximaGota);
         if (Math.random() < 0.3) gota(proximaGota + 0.12 + Math.random() * 0.2);
-        proximaGota += 1.5 + Math.random() * 5;
+        proximaGota += 3 + Math.random() * 7;
       }
-      // Las brasas, a ratos, y la cola que hace «blup» de tarde en tarde
-      while (proximaBrasa < hasta) {
-        brasa(proximaBrasa);
-        proximaBrasa += 2.5 + Math.random() * 6;
-      }
+      // La cola que hace «blup» de tarde en tarde
       while (proximaBurbuja < hasta) {
         burbuja(proximaBurbuja);
         if (Math.random() < 0.35) burbuja(proximaBurbuja + 0.25 + Math.random() * 0.3);
@@ -326,12 +264,7 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
       }
     },
     parar() {
-      try {
-        rumor.stop();
-        respira.stop();
-      } catch {
-        /* ya parados */
-      }
+      /* las notas se acaban solas */
     },
   };
 }

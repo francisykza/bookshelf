@@ -6,6 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **1.133.1, subida a `main`** (2026-11-15, §133.6; «lo que ya hay hecho subelo»). Arreglos del café tras jugar la 1.133:
+  la música del taller sin ruido de fondo, la del café más ligera (contra el petardeo) y tocar un sitio del café para ir
+  andando, rodeando lo que haya en medio. Sin migración. Evidencias en `qa-report/v1133-1/`, enviadas al chat. El petardeo, sin
+  comprobar en un móvil real.
 - **Publicada en producción: 1.133.0** (2026-11-14, §133; «Continua por donde se quedo la otra cuenta»; «Me convence»;
   «Migración y publicar»; `main` avanzó sin forzar de `a20705d` a `41dc6ce` (también la rama) y `/sw.js` de producción ya
   sirve v1.133.0). El café-librería
@@ -226,6 +230,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Taller de la trastienda, lo que no se entiende y se glitchea: para la otra cuenta** (Francisco, 15-11-2026, tras jugar
+  la 1.133: «Las mecanicas de algunas cosas no terminan de estar claras y algunas cosas se glitchean»; y, al preguntarle cuáles:
+  «por ejemplo la de arrugar las paginas, el sello necesito que sea mas impactante y al pasar de quitar al polvo a arrugar las
+  paginas se glitchea la pagina, pero esto quiero que lo dejes para que lo haga la otra cuenta»). Lo que hay que hacer:
+  - que **alisar las arrugas** se entienda sin explicarlo;
+  - que **el sello del ex libris** sea mucho más impactante;
+  - **reproducir e investigar** el fallo de la página al pasar del polvo a las arrugas, y arreglarlo.
+  Dijo «por ejemplo»: preguntarle si hay más. Se trabaja por bloques, con capturas y vídeo con sonido.
+
 - **Café, influencer, taller de restauración y fuera la pizarra** (encargo del 14-11-2026, plan en `cafe-libreria.md` §16):
   - decisiones de la 1.ª tanda tomadas;
   - **bloque 1 (fuera la pizarra y el influencer), publicado como 1.132.0** (migración aplicada): lo que Francisco note al
@@ -386,6 +399,52 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-15 · Café: música sin ruido ni petardeo y tocar para andar · 1.133.1 (§133.6) (Claude)
+
+- Francisco, tras jugar la 1.133: «La musica de la sala de don celestino se escucha con mucho ruido de fondo y en la sala
+  principal la musica todavia petardea. Las mecanicas de algunas cosas no terminan de estar claras y algunas cosas se
+  glitchean. Tambien me gustaría que si pulsas un sitio de la sala puedas ir a el, ahora mismo no siempre hace esa función».
+- Hecho (§133.6), sin migración ni cambios de economía o servidor:
+  - la música del taller, sin el rumor de la lluvia ni las brasas (eran ruido);
+  - la música del café, más ligera: menos voces, sala más corta y oscura y el charles más suave;
+  - el contexto de audio de la app, con `latencyHint: 'balanced'`;
+  - tocar un sitio del café lleva andando hasta él, rodeando mesas y mostrador (`ruta` en `cafeLayout.js`). Si se toca un mueble
+    o la pared, se llega a su lado; si está cerrado, lo más cerca posible.
+- Comprobado en una **copia fuera de la carpeta** (la sesión del almacén trabajaba a la vez aquí):
+  - `cafeRuta.test.js` (7);
+  - `e2e-community/v1133-1-cafe-andar.spec.js` a 390 y 360;
+  - la regresión del café v1119, v1121, v1125 y v1133 a 390 y 360 (21 pasan, 9 se saltan a propósito);
+  - `npm run build` y lint sin errores.
+- Evidencias en `qa-report/v1133-1/`: capturas, vídeos y la música renderizada antes y ahora (WAV). El petardeo en un móvil real
+  no se puede medir aquí: la mejora se ve en el render (11–14 saltos bruscos a 0, 15–20 % menos de cálculo), no en el móvil.
+- Francisco, tras ver las evidencias: «lo que ya hay hecho subelo». Va como **1.133.1**, por delante del almacén. El commit
+  lleva solo lo del café, el script del nivel 3 y estos documentos. El almacén (1.134.0) se queda **sin commit** en el árbol de
+  trabajo, esperando su visto bueno: sus archivos de versión siguen diciendo 1.134.0 y van después de esta.
+- **Lo que no se entiende y se glitchea del taller, para la otra cuenta** (Francisco: «esto quiero que lo dejes para que lo haga
+  la otra cuenta»): anotado arriba, en «Pendiente».
+
+### 2026-11-15 · Café: las dos cuentas de prueba, al nivel 3 (Claude)
+
+- Francisco: «Podemos para probar los cambios rapido poner a mi cuenta y la de mi pareja subirlas a nivel 3?». Script a mano
+  `supabase/scripts/cafe_subir_nivel3.sql` (nuevo, en el commit de la 1.133.1, sin correos): solo las cuentas de `cafe_probadores` (la suya
+  y la de su pareja), con el café abierto y por debajo del 3. Pone la reputación en 1.000 y el nivel en 3, y llama a
+  `cafe_progreso` con un día sin jornada (1-1-1900) para no tocar los tickets del día. Paga como al subir jugando: los niveles
+  sin cobrar y los hitos que alcanza esa reputación. Los influencers de los niveles que falten vendrán después, uno al día.
+- Probado antes en PGlite con todas las migraciones, con una prueba temporal ya borrada: solo suben las cuentas que tocan, se
+  recupera la reputación que esperaba y repetirlo no cambia nada.
+- Pegado en el SQL Editor con `setValue` de Monaco (2.826 B, SHA-256 `f10d104a…fe53c4a`, igual en el texto y en el editor) y
+  ejecutado por él con «Run without RLS». El aviso de Supabase era por la tabla temporal `antes_nivel3` del propio script;
+  ninguna tabla de la app pierde RLS.
+- Resultado:
+
+  | Cuenta | Nivel | Reputación | Granos | Tickets | Hitos |
+  | --- | --- | --- | --- | --- | --- |
+  | `54d85d5f` | 2 → 3 | 414 → 1.000 | 56 → 71 | 6.276 → 6.316 | 1.1 a 2.3 |
+  | `bbf13490` | 2 → 3 | 463 → 1.000 | 84 → 99 | 144 → 184 | 1.1 a 2.3 |
+
+  Es decir, +40 tickets (los del nivel 3) y +15 granos (el 3.er hito del nivel 2) en cada una.
+- Es una excepción puntual (anotada en `CLAUDE.md`, en las jornadas de prueba): no se repite ni se amplía sin que lo pida.
 
 ### 2026-11-14 · Migración del taller aplicada y 1.133.0 a producción (Claude)
 

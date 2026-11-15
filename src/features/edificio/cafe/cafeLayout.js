@@ -270,5 +270,117 @@ export function hastaDonde(fx, fy, x, y, opciones = {}) {
   return ok;
 }
 
+/** Si se puede andar en línea recta de un punto a otro (el de salida puede estar algo pegado a un mueble). */
+export function libreEntre(fx, fy, x, y, opciones = {}) {
+  const pasos = Math.max(1, Math.ceil(Math.hypot(x - fx, y - fy) / 0.08));
+  for (let k = 1; k <= pasos; k += 1) if (!dentro(fx + ((x - fx) * k) / pasos, fy + ((y - fy) * k) / pasos, opciones)) return false;
+  return true;
+}
+
+/**
+ * El sitio libre más cercano a (x, y), hasta `radio` de distancia, o null. De los que están igual de cerca, el que queda del
+ * lado de quien anda (fx, fy): así, al tocar una mesa, se llega por delante y no por detrás.
+ */
+export function cercaLibre(x, y, fx, fy, opciones = {}, radio = 3) {
+  if (dentro(x, y, opciones)) return { x, y };
+  for (let r = 0.15; r <= radio; r += 0.15) {
+    let mejor = null;
+    for (let k = 0; k < 24; k += 1) {
+      const a = (k / 24) * Math.PI * 2;
+      const p = { x: x + Math.sin(a) * r, y: y + Math.cos(a) * r };
+      if (!dentro(p.x, p.y, opciones)) continue;
+      const d = Math.hypot(p.x - fx, p.y - fy);
+      if (!mejor || d < mejor.d) mejor = { ...p, d };
+    }
+    if (mejor) return { x: mejor.x, y: mejor.y };
+  }
+  return null;
+}
+
+/**
+ * 1.133.1 (Francisco, 15-11-2026: «si pulsas un sitio de la sala puedas ir a el, ahora mismo no siempre hace esa función»): el
+ * camino andando de (fx, fy) a (x, y), rodeando mesas, el mostrador y lo colocado. Si en (x, y) no se puede estar (un mueble,
+ * la pared), se va al sitio libre más cercano; si está cerrado (p. ej., entre mesas y sillas sin hueco), lo más cerca que se
+ * pueda llegar. Devuelve los puntos por los que pasar (el último, la llegada) o null si no hay adónde ir. Busca en una rejilla de `paso` (A*) y después tensa el camino: de cada punto, al más lejano que se ve en
+ * línea recta.
+ */
+export function ruta(fx, fy, x, y, opciones = {}, { paso = 0.25, max = 8000 } = {}) {
+  const meta = cercaLibre(x, y, fx, fy, opciones);
+  if (!meta) return null;
+  if (libreEntre(fx, fy, meta.x, meta.y, opciones)) return [meta];
+  const clave = (i, j) => `${i},${j}`;
+  const punto = (i, j) => ({ x: fx + i * paso, y: fy + j * paso });
+  const libre = new Map();
+  const esLibre = (i, j) => {
+    const k = clave(i, j);
+    if (!libre.has(k)) {
+      const p = punto(i, j);
+      libre.set(k, (i === 0 && j === 0) || dentro(p.x, p.y, opciones));
+    }
+    return libre.get(k);
+  };
+  const h = (i, j) => Math.hypot(fx + i * paso - meta.x, fy + j * paso - meta.y);
+  const abiertos = [{ i: 0, j: 0, g: 0, f: h(0, 0) }];
+  const coste = new Map([[clave(0, 0), 0]]);
+  const de = new Map();
+  const VECINOS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  let final = null;
+  let mejor = abiertos[0];
+  for (let n = 0; abiertos.length && n < max; n += 1) {
+    // El de menor coste estimado (la lista es pequeña: basta con buscarlo)
+    let m = 0;
+    for (let k = 1; k < abiertos.length; k += 1) if (abiertos[k].f < abiertos[m].f) m = k;
+    const c = abiertos.splice(m, 1)[0];
+    if (c.g > coste.get(clave(c.i, c.j))) continue;
+    if (c.f - c.g < mejor.f - mejor.g) mejor = c;
+    const p = punto(c.i, c.j);
+    if (Math.hypot(p.x - meta.x, p.y - meta.y) < paso * 1.5 && libreEntre(p.x, p.y, meta.x, meta.y, opciones)) {
+      final = c;
+      break;
+    }
+    for (const [di, dj] of VECINOS) {
+      const i = c.i + di;
+      const j = c.j + dj;
+      // En diagonal, solo si no se corta una esquina
+      if (!esLibre(i, j) || (di && dj && (!esLibre(c.i + di, c.j) || !esLibre(c.i, c.j + dj)))) continue;
+      const g = c.g + (di && dj ? Math.SQRT2 : 1) * paso;
+      const k = clave(i, j);
+      if (g >= (coste.get(k) ?? Infinity)) continue;
+      coste.set(k, g);
+      de.set(k, clave(c.i, c.j));
+      abiertos.push({ i, j, g, f: g + h(i, j) });
+    }
+  }
+  // Sin manera de llegar: hasta lo más cerca que se ha podido (si eso es quedarse donde se está, a ninguna parte)
+  const cerrado = !final;
+  if (cerrado) {
+    if (!mejor.i && !mejor.j) return null;
+    final = mejor;
+  }
+  const celdas = [];
+  for (let k = clave(final.i, final.j); k; k = de.get(k)) {
+    const [i, j] = k.split(',').map(Number);
+    celdas.unshift(punto(i, j));
+  }
+  const puntos = cerrado ? celdas : [...celdas, meta];
+  if (puntos.length < 2) return puntos.slice(-1);
+  // Tensar: desde donde se está, al punto más lejano que se alcanza en línea recta
+  const camino = [];
+  let desde = { x: fx, y: fy };
+  let k = 0;
+  while (k < puntos.length - 1) {
+    let lejos = k + 1;
+    for (let q = puntos.length - 1; q > k + 1; q -= 1)
+      if (libreEntre(desde.x, desde.y, puntos[q].x, puntos[q].y, opciones)) {
+        lejos = q;
+        break;
+      }
+    camino.push(puntos[lejos]);
+    desde = puntos[lejos];
+    k = lejos;
+  }
+  return camino;
+}
+
 /** Pilar (la dependienta del antiguo videoclub): el mismo aire que en la tienda (melena, gafas, jersey mostaza, delantal). */
 export const PILAR_ASPECTO = { piel: 1, pelo: 'melena', colorPelo: 1, jersey: 2, pantalon: 4, gafas: true, complemento: 'ninguno' };

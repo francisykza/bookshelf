@@ -70,6 +70,7 @@ import {
   enCasilla,
   enMundo,
   hastaDonde,
+  ruta,
   ALTAS,
   CHIMENEA,
   VENTANAL,
@@ -114,7 +115,7 @@ const PITCH = -0.06;
 const DRAG = 0.005;
 const KEY_STEP = 0.1;
 const WALK = 2.6; // unidades por segundo
-const TAP_SLOP = 8;
+const TAP_SLOP = 12;
 /** Cada cuánto se mueven la lluvia y el polvo (unos 12 cuadros por segundo). */
 const VIVO_MS = 84;
 
@@ -4864,7 +4865,14 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   }
   function advance(dt) {
     if (!walk) return false;
-    const { tx, ty, face } = walk;
+    // 1.133.1: al llegar a un recodo del camino, sin pararse, hacia el siguiente
+    if (walk.siguientes?.length && Math.hypot(walk.tx - px, walk.ty - py) < 0.12) {
+      const p = walk.siguientes.shift();
+      walk.tx = p.x;
+      walk.ty = p.y;
+    }
+    const { tx, ty } = walk;
+    const face = walk.siguientes?.length ? null : walk.face;
     const dx = tx - px;
     const dy = ty - py;
     const d = Math.hypot(dx, dy);
@@ -5045,10 +5053,14 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     return casillaValida(c.x, c.y, estado.nivel) ? c : null;
   }
 
-  /** Ir andando en línea recta hasta (x, y), parando antes de chocar; `face`, adónde mirar al llegar. */
+  /**
+   * Ir andando hasta (x, y); `face`, adónde mirar al llegar. 1.133.1: rodeando lo que haya en medio (`ruta`) y, si allí no se
+   * puede estar, hasta el sitio libre más cercano. Sin camino, como antes: en línea recta, parando antes de chocar.
+   */
   function walkTo(x, y, { face = null } = {}) {
     return new Promise((done) => {
-      const to = hastaDonde(px, py, x, y, opcionesPaso());
+      const camino = ruta(px, py, x, y, opcionesPaso()) ?? [hastaDonde(px, py, x, y, opcionesPaso())];
+      const to = camino[camino.length - 1];
       if (reduced()) {
         px = to.x;
         py = to.y;
@@ -5059,7 +5071,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         done();
         return;
       }
-      walk = { tx: to.x, ty: to.y, face, done };
+      walk = { tx: camino[0].x, ty: camino[0].y, siguientes: camino.slice(1), face, done };
       invalidate();
     });
   }
@@ -5300,9 +5312,31 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       return;
     }
     if (barra.activa || tost.activa || lib.activa || tall.activa || yendoTaller || tour) return;
-    rayAt(e.clientX, e.clientY);
-    if (ray.ray.intersectPlane(floorPlane, hit) && dentro(hit.x, hit.z, opcionesPaso())) walkTo(hit.x, hit.z);
+    const p = sueloBajo(e.clientX, e.clientY);
+    if (p) walkTo(p.x, p.y, p.mueble ? { face: [p.x, p.y] } : {});
   };
+  /**
+   * 1.133.1: adónde lleva un toque. Lo primero que se ve bajo el dedo (el suelo, un mueble, una mesa o la pared), bajado al
+   * suelo; `walkTo` llega hasta allí o hasta el sitio libre más cercano. `mueble`: no era suelo libre (al llegar, se mira hacia allí).
+   */
+  function sueloBajo(clientX, clientY) {
+    rayAt(clientX, clientY);
+    // Solo lo que se ve: ni las cajas invisibles de lo que se toca (sitios, clientes, la barra) ni lo oculto
+    const visible = (o) => {
+      const mats = [o.material].flat();
+      if (!mats.some((m) => m && m.visible !== false && !(m.transparent && m.depthWrite === false))) return false;
+      for (let q = o; q; q = q.parent) if (!q.visible) return false;
+      return true;
+    };
+    const golpe = ray.intersectObjects(scene.children, true).find((h) => h.object.isMesh && visible(h.object));
+    // El techo (o lo alto, mirando hacia arriba) no lleva a ninguna parte
+    if (golpe && ray.ray.direction.y > 0 && golpe.point.y > 2.8) return null;
+    // Un mueble o la pared: el pie de lo tocado. Sin nada debajo, el suelo (como antes)
+    let p = golpe ? { x: golpe.point.x, y: golpe.point.z } : null;
+    if (!p && ray.ray.intersectPlane(floorPlane, hit)) p = { x: hit.x, y: hit.z };
+    if (!p) return null;
+    return { ...p, mueble: !dentro(p.x, p.y, opcionesPaso()) };
+  }
   canvas.addEventListener('pointerup', release, on);
   canvas.addEventListener('pointercancel', release, on);
   canvas.addEventListener(
@@ -5379,6 +5413,20 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       aim(performance.now());
       const b = sitioDe(id, estado.nivel).box;
       const p = project((b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2);
+      const rect = canvas.getBoundingClientRect();
+      return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
+    },
+    /** Lo que se ve en el camino al andar: los bultos de lo colocado y de los clientes (para las pruebas). */
+    pasos: () => opcionesPaso(),
+    /** Adónde llevaría un toque en ese punto de la pantalla (para las pruebas). */
+    toqueEn(clientX, clientY) {
+      aim(performance.now());
+      return sueloBajo(clientX, clientY);
+    },
+    /** Dónde cae en la pantalla un punto del mundo (para las pruebas). */
+    punto(x, y, z = 0) {
+      aim(performance.now());
+      const p = project(x, y, z);
       const rect = canvas.getBoundingClientRect();
       return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
     },

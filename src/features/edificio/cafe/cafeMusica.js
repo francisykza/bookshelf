@@ -53,13 +53,29 @@ export function ruidoDe(ctx) {
   return b;
 }
 
-/** Una sala pequeña: un eco que se apaga en algo más de un segundo y medio. */
+const salas = new WeakMap();
+/**
+ * Una sala pequeña: un eco que se apaga en algo más de un segundo. 1.133.1 (Francisco, 15-11-2026: «la musica todavia
+ * petardea»; y en el taller, «mucho ruido de fondo»): más corta (1,1 s en vez de 1,7: la mitad de cuentas por segundo para
+ * el móvil, que además mueve el 3D) y oscura, como la madera que se traga lo agudo (antes era ruido blanco, y la cola
+ * siseaba). La respuesta se calcula una vez por contexto y la comparten la música del café y la del taller.
+ */
 export function sala(ctx) {
-  const n = Math.floor(ctx.sampleRate * 1.7);
-  const ir = ctx.createBuffer(2, n, ctx.sampleRate);
-  for (let c = 0; c < 2; c += 1) {
-    const d = ir.getChannelData(c);
-    for (let i = 0; i < n; i += 1) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 3.2 * (i < 300 ? i / 300 : 1);
+  let ir = salas.get(ctx);
+  if (!ir) {
+    const n = Math.floor(ctx.sampleRate * 1.1);
+    ir = ctx.createBuffer(2, n, ctx.sampleRate);
+    for (let c = 0; c < 2; c += 1) {
+      const d = ir.getChannelData(c);
+      let lp = 0;
+      for (let i = 0; i < n; i += 1) {
+        const s = i / ctx.sampleRate;
+        // Cada vez más oscura al apagarse
+        lp += (0.5 - 0.38 * Math.min(1, s / 0.7)) * (Math.random() * 2 - 1 - lp);
+        d[i] = lp * 1.6 * Math.exp(-s * 5.2) * Math.min(1, s / 0.008);
+      }
+    }
+    salas.set(ctx, ir);
   }
   const cv = ctx.createConvolver();
   cv.buffer = ir;
@@ -180,12 +196,14 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
     s.onended = () => g.disconnect();
   }
 
-  /** Una nota del piano eléctrico: la fundamental, un brillo de campana al pulsar y un gemelo un pelín desafinado. */
+  /**
+   * Una nota del piano eléctrico: la fundamental y un gemelo un pelín desafinado. 1.133.1: sin el brillo de campana de
+   * 2 ms (un tercio menos de voces a la vez y un ataque que, en el altavoz del móvil, sonaba a chasquido).
+   */
   function tecla(t, n, dur, vel) {
     const f = nota(n);
-    voz(t, f, { dur, pico: 0.05 * vel, ataque: 0.008, destino: piano, detune: true });
-    voz(t, f * 1.0035, { dur: dur * 0.9, pico: 0.025 * vel, ataque: 0.01, destino: piano, detune: true });
-    voz(t, f * 4, { dur: 0.25, pico: 0.008 * vel, ataque: 0.002, destino: piano });
+    voz(t, f, { dur, pico: 0.054 * vel, ataque: 0.01, destino: piano, detune: true });
+    voz(t, f * 1.0035, { dur: dur * 0.9, pico: 0.025 * vel, ataque: 0.012, destino: piano, detune: true });
   }
   function acorde(t, voces, dur, vel) {
     voces.forEach((n, k) => tecla(t + k * 0.014, n, dur, vel * (k === voces.length - 1 ? 1.1 : 1)));
@@ -194,7 +212,7 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
     const f = nota(n);
     voz(t, f, { dur, pico: 0.22 * vel, tipo: 'triangle', ataque: 0.012, destino: bajo });
     voz(t, f, { dur: dur * 0.7, pico: 0.12 * vel, ataque: 0.015, destino: bajo });
-    soplo(t, { f: 900, q: 2, dur: 0.04, pico: 0.03 * vel, d: bajo });
+    soplo(t, { f: 900, q: 2, dur: 0.04, pico: 0.016 * vel, ataque: 0.008, d: bajo });
   }
   function bombo(t, vel = 1) {
     voz(t, 95, { dur: 0.28, pico: 0.22 * vel, a: 45, ataque: 0.004, destino: bateria });
@@ -202,8 +220,9 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
   function escobilla(t, vel = 1, largo = 0.2) {
     soplo(t, { f: 2400, q: 1.1, dur: largo * 0.6, pico: 0.03 * vel, ataque: 0.02, d: bateria });
   }
+  /** 1.133.1: un roce, no un «tic»: banda en vez de todo lo agudo, más bajito y con ataque más blando. */
   function charles(t, vel = 1) {
-    soplo(t, { f: 7000, tipo: 'highpass', q: 0.7, dur: 0.05, pico: 0.018 * vel, d: bateria });
+    soplo(t, { f: 6500, q: 1.2, dur: 0.045, pico: 0.01 * vel, ataque: 0.007, d: bateria });
   }
   function campanita(t, n, vel = 1) {
     const f = nota(n);
@@ -245,7 +264,7 @@ function montar(ctx, destino, inicio, { offline = false } = {}) {
       if (r() < 0.5) bombo(corchea(c, 5), 0.5);
       escobilla(t0 + PULSO, 1);
       escobilla(t0 + PULSO * 3, 0.9, 0.25);
-      for (let k = 0; k < 8; k += 1) if (k % 2 === 1 || r() < 0.4) charles(corchea(c, k), k % 2 ? 0.8 : 0.5);
+      for (let k = 0; k < 8; k += 1) if (k % 2 === 1 || r() < 0.2) charles(corchea(c, k), k % 2 ? 0.8 : 0.5);
     }
     // La celesta: en la segunda mitad de vueltas alternas, unas pocas notas que caen en el acorde
     if (vuelta % 2 === 1 && i >= 4) {

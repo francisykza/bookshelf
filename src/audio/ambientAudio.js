@@ -32,7 +32,14 @@ function audio() {
   if (!ctx) {
     const Ctor = window.AudioContext || window.webkitAudioContext;
     if (!Ctor) return null;
-    ctx = new Ctor();
+    // 1.133.1 (Francisco, 15-11-2026: la música del café «todavia petardea»): un poco más de colchón para el audio. Con el
+    // mínimo («interactive»), el móvil se quedaba sin tiempo mientras dibuja el 3D y el sonido daba saltos. Unas
+    // centésimas más de retraso no se notan al tocar.
+    try {
+      ctx = new Ctor({ latencyHint: 'balanced' });
+    } catch {
+      ctx = new Ctor();
+    }
     master = ctx.createGain();
     master.gain.value = 0.9;
     master.connect(ctx.destination);

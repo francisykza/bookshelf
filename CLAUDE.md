@@ -243,7 +243,10 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       `supabase/scripts/cafe_probador.sql`, a mano) juegan un día de prueba propio y, con todos atendidos, «Otra jornada» trae
       clientes nuevos; lo ganado (granos, reputación, niveles y sus tickets) cuenta igual y no se borra nada. Para el resto no
       cambia nada. No se extiende a nadie más sin que lo pida. **Ampliado a la cuenta de su pareja** (Francisco, 13-11-2026,
-      al aplicar la migración: las dos cuentas, añadidas en el SQL Editor; los correos nunca van a git).
+      al aplicar la migración: las dos cuentas, añadidas en el SQL Editor; los correos nunca van a git). **Subidas al nivel 3**
+      (Francisco, 15-11-2026, «para probar los cambios rapido»): las dos cuentas de prueba, una vez, con
+      `supabase/scripts/cafe_subir_nivel3.sql`, cobrando como al subir jugando (+40 tickets y +15 granos cada una). Es una
+      excepción puntual: no se repite, no se sube a otros niveles ni se amplía a nadie más sin que lo pida.
     - **Pilar prepara lo que ya dominas** (Francisco, 14-11-2026, «Vale lo de pilar»; para que preparar no se haga
       repetitivo; detalle en `cafe-libreria.md` §15): cada bebida se domina con 12 servidas de 2 estrellas o más; entonces, tras
       elegir tú la receta, «Que lo prepare Pilar» hace los gestos en 3D (unos 3 s; con movimiento reducido, directo). Siempre se

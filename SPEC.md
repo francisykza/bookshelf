@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.133.0 · 2026-11-14 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.133.1 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7163,3 +7163,45 @@ servidor, la migración, las cifras ni la economía.
 - **Evidencias con sonido**: las pruebas con vídeo graban lo que suena en la página y lo mezclan con el vídeo usando el ffmpeg
   de Playwright. Una grabadora escucha la salida de audio sin cambiar nada. La música del taller, además, se guarda aparte
   (`musica-taller.wav`, 48 s).
+
+### 133.6 Arreglos tras jugar la 1.133 (1.133.1, 15-11-2026; «lo que ya hay hecho subelo»)
+
+Francisco, 15-11-2026: «La musica de la sala de don celestino se escucha con mucho ruido de fondo y en la sala principal la
+musica todavia petardea. […] Tambien me gustaría que si pulsas un sitio de la sala puedas ir a el, ahora mismo no siempre hace
+esa función». Sin migración ni cambios de economía, recetas o servidor.
+
+- **La música del taller, sin ruido** (`cafeTallerMusica.js`). Fuera el rumor de la lluvia (ruido continuo entre 700 Hz y
+  4 kHz, con su vaivén) y las brasas del hornillo (chasquidos de ruido). Las gotas son solo su nota de agua, sin soplo, más
+  suaves y más de tarde en tarde. El arco del violonchelo, con el filtro algo más cerrado (raspaba). Ahora todo lo que suena
+  tiene tono.
+- **La música del café, más ligera** (`cafeMusica.js`, `ambientAudio.js`):
+  - cada nota del piano, dos voces en vez de tres (fuera el brillo de campana de 2 ms);
+  - el charles es un roce más bajito y aparece menos a contratiempo;
+  - el pulso del contrabajo, más blando;
+  - la sala dura 1,1 s en vez de 1,7, es oscura (madera, no ruido blanco), se calcula una vez por contexto y la comparte con la
+    del taller;
+  - el contexto de audio de la app se crea con `latencyHint: 'balanced'`, que da más colchón cuando el 3D va cargado, y con el
+    de siempre si el navegador no lo admite.
+
+  Medido en 40 s renderizados sin conexión: los saltos bruscos entre muestras pasan de 11–14 a 0. El cálculo cuesta un 15 % menos
+  en el café y un 20 % menos en el taller. El pico y el volumen se quedan igual. El petardeo en un móvil de verdad no se puede
+  medir aquí.
+- **Tocar un sitio de la sala y llegar andando** (`cafeLayout.js`: `ruta`, `cercaLibre`, `libreEntre`; `cafe3d.js`: `walkTo`,
+  `sueloBajo`):
+  - El toque va a lo primero que se ve bajo el dedo: el suelo, un mueble, una mesa o la pared. No cuentan las cajas invisibles de
+    lo que se toca ni los brillos. El techo no lleva a ninguna parte.
+  - El camino rodea las mesas, las sillas, el mostrador y lo colocado. Es una búsqueda A* en una rejilla de 25 cm, tensada para
+    ir en línea recta donde se puede.
+  - Si en el sitio tocado no se puede estar, se llega al hueco libre más cercano por el lado de quien anda, y se mira hacia allí.
+  - Si está cerrado (mesas y sillas sin hueco), se llega lo más cerca posible.
+  - Antes se andaba en línea recta y se paraba en lo primero que había.
+  - El margen para que un toque no cuente como arrastre pasa de 8 a 12 px.
+  - Los paseos de la escena hasta la trampilla, el taller o la caja también usan el camino.
+- **Pruebas**:
+  - `src/features/edificio/__tests__/cafeRuta.test.js`: 7 casos (línea recta, rodear, mueble, sitio cerrado, fuera del local,
+    tiempo de cálculo).
+  - `e2e-community/v1133-1-cafe-andar.spec.js` a 360 y 390. Rodea un mueble real del plano inicial hasta el suelo de detrás, llega
+    junto a una mesa tocada encima y no se mueve al tocar el techo.
+  - Ganchos de prueba nuevos, solo en desarrollo: `pasos()`, `toqueEn()` y `punto()`.
+- **Pendiente**: preguntar a Francisco qué mecánicas no están claras y qué se glitchea («Las mecanicas de algunas cosas no
+  terminan de estar claras y algunas cosas se glitchean»).
