@@ -382,3 +382,59 @@ export function errorCafe(e) {
   if (/cafe:probador/.test(m)) return 'Las jornadas de prueba solo están en la cuenta de pruebas.';
   return 'No se ha podido guardar. Vuelve a intentarlo.';
 }
+
+// ── 1.141: los cafés de los demás (`20261223120000_cafe_social.sql`) ──
+const textoDe = (v, max = 80) => (typeof v === 'string' ? v.slice(0, max) : null);
+const cifra = (v, max = 2000000000) => Math.min(max, Math.max(0, Number.isInteger(v) ? v : 0));
+
+/**
+ * El ranking de cafés: 'edificio' (tus vecinos) o 'seguidos' (quien sigues); tú siempre sales. Devuelve [{ userId, alias,
+ * avatarId, cafe, nivel, reputacion, ganados, semana, yo }], o null sin la migración.
+ */
+export async function cargarRanking(ambito) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_ranking', { ambito });
+  if (sinMigracion(error)) return null;
+  fail(error);
+  return (Array.isArray(data) ? data : [])
+    .filter((x) => x && typeof x.user_id === 'string')
+    .map((x) => ({
+      userId: x.user_id,
+      alias: textoDe(x.alias) ?? 'Alguien',
+      avatarId: textoDe(x.avatar_id),
+      cafe: textoDe(x.cafe) ?? 'Su café',
+      nivel: cifra(x.nivel, 99) || 1,
+      reputacion: cifra(x.reputacion),
+      ganados: cifra(x.ganados),
+      semana: cifra(x.semana),
+      yo: x.yo === true,
+    }));
+}
+
+/**
+ * El café de otro lector, para pasear y mirar: { userId, alias, avatarId, nombre, nivel, reputacion, plano, escaparate, fotos,
+ * libros: [{ clave?, titulo?, genero, balda }] } (de sus leídos, solo el género), o null si no se puede ver.
+ */
+export async function cargarVisitaCafe(lector) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_visita', { lector });
+  if (sinMigracion(error)) return null;
+  fail(error);
+  if (!data || typeof data.user_id !== 'string') return null;
+  const nivel = cifra(data.nivel, 99) || 1;
+  return {
+    userId: data.user_id,
+    alias: textoDe(data.alias) ?? 'Alguien',
+    avatarId: textoDe(data.avatar_id),
+    nombre: textoDe(data.nombre) ?? 'Su café',
+    nivel,
+    reputacion: cifra(data.reputacion),
+    plano: limpio(data.plano, nivel),
+    escaparate: escaparateDe(data.escaparate),
+    fotos: (Array.isArray(data.fotos) ? data.fotos : []).filter((n) => Number.isInteger(n) && n >= 2 && n <= 8),
+    libros: (Array.isArray(data.libros) ? data.libros : [])
+      .filter((b) => b && typeof b.genero === 'string')
+      .slice(0, 200)
+      .map((b) => ({ clave: textoDe(b.clave), titulo: textoDe(b.titulo, 200), genero: b.genero, balda: cifra(b.balda, 99) })),
+  };
+}

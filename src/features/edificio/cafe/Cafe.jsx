@@ -19,7 +19,7 @@ import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
 import { renderShopRoom } from '../shopRoom';
 import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCasa, libresDelCafe, maxCosas, progresoNivel, uidNuevo } from './cafeCatalogo';
-import { GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
+import { COPA, GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
 import { bienvenidaLibros, cargarCafe, misTitulos, cargarDia, cargarJornada, cargarTaller, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
@@ -28,6 +28,8 @@ import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeN
 import { LogroCafe } from './LogroCafe';
 import { BIENVENIDA, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, sesionesDeHoy, titulosDelCafe, titulosDistribuidora } from './cafeClientes';
 import { pedidosLibro } from './cafeLibreria';
+import { usePortadasBalda } from './usePortadasBalda';
+import { RankingCafes } from './RankingCafes';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
@@ -86,7 +88,9 @@ function librosDelCafe(books = []) {
 const PLANO_VACIO = { v: 1, items: [] };
 const nombreDe = (id) => CAFE_MUEBLES.find((m) => m.id === id)?.nombre ?? catalogItem(id)?.nombre ?? id;
 
-export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) {
+export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, onVisitar = null }) {
+  // 1.141: el ranking de los cafés (tu edificio y a quien sigues), en la franja de abajo
+  const [panelRanking, setPanelRanking] = useState(false);
   const { state } = useLibrary();
   const host = useRef(null);
   const api = useRef(null);
@@ -392,6 +396,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       vivo = false;
     };
   }, [clavePortadas]);
+  // 1.140: las portadas de los libros de cara de la estantería (uno por sección), en píxeles; los que no cargan, con su tapa
+  const portadasBalda = usePortadasBalda(deLaBalda);
   // Bloque 4b: con menos asientos que clientes posibles en el nivel 4 o 5, vienen menos (nunca menos de 5). Pilar lo dice sin
   // agobiar: una vez al día al entrar y, después, cuando no hay nadie esperando.
   const nivelAhora = local?.nivel ?? 1;
@@ -462,13 +468,14 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       // 1.130: la estantería de la pared, por secciones (sin la migración de los libros, como antes)
       balda: librosCafe != null ? deLaBalda : null,
       decor: decorLeidos,
+      portadasBalda,
     });
     api.current?.decorar(decorando, { sel, mal: false, planta: plantaDecor });
     if (mirarCaja.current && porColocar > 0 && !decorando) {
       mirarCaja.current = false;
       api.current?.go('libros');
     }
-  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena, escaparateTitulos, portadasEsc, plantaDecor, deLaBalda, decorLeidos]);
+  }, [ready, abierto, local?.nombre, plano, titulos, porColocar, librosCafe, decorando, sel, nivelEscena, escaparateTitulos, portadasEsc, plantaDecor, deLaBalda, decorLeidos, portadasBalda]);
   // Los clientes, sentados: los atendidos, con el libro que les diste (o uno de tu estantería si fue en otra visita)
   useEffect(() => {
     if (!ready) return;
@@ -627,6 +634,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
 
   // Atender a un cliente: el cuadro de abajo pasa a ser su conversación (Atender.jsx)
   function atender(n) {
+    setPanelRanking(false);
     setAviso('');
     setHablando(null);
     setError('');
@@ -636,6 +644,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
     if (ready && !sin3d) api.current?.irACliente?.(n);
   }
   function abrirLibros(hoja, recien = []) {
+    setPanelRanking(false);
     setAtendiendo(null);
     setAviso('');
     setHablando(null);
@@ -937,6 +946,21 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
                 {porColocar > 0 && <span className="cf3-pizarra-btn__n">{porColocar}</span>}
               </button>
             )}
+            {onVisitar && !decorando && !enTaller && (
+              <button
+                type="button"
+                className="cf3-pizarra-btn cf3-ranking-btn"
+                aria-label="Los cafés del barrio: ranking y visitas"
+                aria-expanded={panelRanking}
+                onClick={() => {
+                  sfx.play('papel');
+                  setPanelLibros(null);
+                  setPanelRanking((v) => !v);
+                }}
+              >
+                <PixelArt icono={COPA} />
+              </button>
+            )}
             {plantaEscena === 'bodega' && !decorando && (
               <button type="button" className="cf3-pizarra-btn cf3-subir-btn" aria-label="Subir al café" onClick={() => pick.current('subir')}>
                 <PixelArt icono={SUBIR} />
@@ -1114,6 +1138,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
           }}
           onCerrar={() => setPanelLibros(null)}
         />
+      ) : panelRanking && onVisitar && !enTaller ? (
+        <RankingCafes sfx={sfx} onVisitar={onVisitar} onCerrar={() => setPanelRanking(false)} />
       ) : enTaller && taller ? (
         <Taller
           escena={ready && !sin3d ? api.current : null}

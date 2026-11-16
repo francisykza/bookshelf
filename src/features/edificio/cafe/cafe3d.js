@@ -102,7 +102,7 @@ import {
 import { ASIENTOS, CUADRICULA, SOTANO, casillaValida, columnasDe, filasDe, medidas, sotanoDe } from './cafeCatalogo';
 import { cajasDe, colorDe } from './cafeMuebles';
 import { footprint } from '../room';
-import { estanteLibreria } from './cafeLibreria';
+import { atrezzoEstante, estanteLibreria } from './cafeLibreria';
 import { LIBRO_TALLER, PLIEGUE, alturaPliegue, letrasTapa, manchasDe, semillaEncargo } from './cafeTallerGestos';
 import { EXLIBRIS_PX, PLIEGO_PX, TAPA_PX, altoExlibris, lienzo, pintarPliego, pintarTapa } from './cafeTallerPintura';
 
@@ -2090,6 +2090,115 @@ function lomosLibreria(s, tramos, dx = 0, { sin = null } = {}) {
     }
   }
   return placas;
+}
+/**
+ * 1.140: lo que viste la estantería (`atrezzoEstante`): el libro de cara de cada sección sobre su atril, las cajas que esperan
+ * en la fila del suelo, pilas tumbadas, plantas (las de arriba, colgando por el canto), tarros y marcos. Devuelve dónde va la
+ * portada de cada libro de cara ({ clave, x, y, z, ancho, alto }, en el mundo de la app) para pintarla encima.
+ */
+function atrezzoKit(s, cosas, dx = 0) {
+  const { fondo } = ESTANTERIA;
+  const F = dx + fondo;
+  const portadas = [];
+  const TIERRA = [168, 92, 60];
+  const HOJA = [[78, 128, 70], [96, 150, 82], [62, 108, 62]];
+  for (const c of cosas) {
+    const z = c.z + 0.05;
+    const { y0, y1 } = c;
+    const yc = (y0 + y1) / 2;
+    if (c.tipo === 'cara') {
+      // El atril de madera y el libro de pie, de cara al local, un poco hacia atrás
+      const color = colorDe(c.titulo);
+      pushBox(s, [F - 0.16, y0 + 0.02, z, F - 0.04, y1 - 0.02, z + 0.025], WOOD_D);
+      pushBox(s, [F - 0.2, yc - 0.03, z, F - 0.15, yc + 0.03, z + 0.2], WOOD_D);
+      pushBox(s, [F - 0.15, y0, z + 0.02, F - 0.11, y1, z + 0.38], color.map((v) => Math.max(0, v - 40)));
+      pushBox(s, [F - 0.11, y0 + 0.004, z + 0.024, F - 0.1, y1 - 0.004, z + 0.376], color);
+      // Sin portada: el recuadro y el título en bandas claras (con portada, se pinta encima)
+      const claro = color.map((v) => Math.min(255, v + 80));
+      pushBox(s, [F - 0.1, y0 + 0.03, z + 0.06, F - 0.098, y1 - 0.03, z + 0.34], claro);
+      pushBox(s, [F - 0.098, y0 + 0.045, z + 0.075, F - 0.097, y1 - 0.045, z + 0.325], color);
+      pushBox(s, [F - 0.097, y0 + 0.06, z + 0.25, F - 0.096, y1 - 0.06, z + 0.28], claro);
+      pushBox(s, [F - 0.097, y0 + 0.08, z + 0.22, F - 0.096, y1 - 0.08, z + 0.235], claro);
+      portadas.push({ clave: c.clave, titulo: c.titulo, x: F - 0.094, y: yc, z: z + 0.2, ancho: y1 - y0 - 0.02, alto: 0.34 });
+    } else if (c.tipo === 'caja') {
+      // La caja de la distribuidora, con la cinta y dos lomos asomando
+      const carton = [178, 134, 86];
+      pushBox(s, [dx + 0.06, y0, z, F - 0.02, y1, z + 0.3], carton);
+      pushBox(s, [F - 0.021, y0 + 0.03, z + 0.03, F - 0.018, y1 - 0.03, z + 0.27], [150, 108, 66]);
+      pushBox(s, [dx + 0.06, yc - 0.04, z + 0.29, F - 0.02, yc + 0.04, z + 0.305], [214, 190, 140]);
+      pushBox(s, [F - 0.02, yc - 0.04, z + 0.1, F - 0.015, yc + 0.04, z + 0.305], [214, 190, 140]);
+      pushBox(s, [dx + 0.12, y0 + 0.08, z + 0.3, dx + 0.2, y0 + 0.14, z + 0.38], [176, 72, 62]);
+      pushBox(s, [dx + 0.14, y1 - 0.15, z + 0.3, dx + 0.24, y1 - 0.08, z + 0.35], [74, 116, 82]);
+    } else if (c.tipo === 'pila') {
+      // Tres o cuatro libros tumbados, cada uno de un tamaño y un poco torcidos
+      const n = 3 + (c.variante % 2);
+      let zz = z;
+      for (let k = 0; k < n; k += 1) {
+        const h = 0.035 + hash(k, Math.round(y0 * 100)) * 0.025;
+        const m = 0.02 + hash(Math.round(y0 * 100), k) * 0.03;
+        const color = colorDe(`pila${Math.round(y0 * 1000)}:${k}`);
+        pushBox(s, [dx + 0.08 + m * 0.5, y0 + m, zz, F - 0.03 - m * 0.5, y1 - m * (k % 2 ? 0.4 : 1.2), zz + h], color);
+        // El canto de las páginas, claro
+        pushBox(s, [F - 0.031 - m * 0.5, y0 + m + 0.01, zz + 0.006, F - 0.028 - m * 0.5, y1 - m * (k % 2 ? 0.4 : 1.2) - 0.01, zz + h - 0.006], [226, 214, 190]);
+        zz += h;
+      }
+      // Encima, a veces, una taza o un reloj de arena pequeño
+      if (c.variante === 2) {
+        pushBox(s, [F - 0.16, yc - 0.04, zz, F - 0.08, yc + 0.04, zz + 0.07], [232, 226, 212]);
+        pushBox(s, [F - 0.15, yc - 0.03, zz + 0.069, F - 0.09, yc + 0.03, zz + 0.072], [92, 60, 40]);
+      } else if (c.variante === 3) {
+        pushBox(s, [F - 0.17, yc - 0.035, zz, F - 0.09, yc + 0.035, zz + 0.012], BRASS);
+        pushBox(s, [F - 0.155, yc - 0.022, zz + 0.012, F - 0.105, yc + 0.022, zz + 0.1], [214, 226, 228]);
+        pushBox(s, [F - 0.15, yc - 0.012, zz + 0.014, F - 0.11, yc + 0.012, zz + 0.04], [222, 196, 140]);
+        pushBox(s, [F - 0.17, yc - 0.035, zz + 0.1, F - 0.09, yc + 0.035, zz + 0.112], BRASS);
+      }
+    } else if (c.tipo === 'planta') {
+      // La maceta de barro con su borde y las hojas; en las filas de arriba, un potos que cuelga por el canto
+      const m = 0.035;
+      pushBox(s, [F - 0.2, y0 + m, z, F - 0.04, y1 - m, z + 0.14], TIERRA);
+      pushBox(s, [F - 0.215, y0 + m - 0.012, z + 0.12, F - 0.028, y1 - m + 0.012, z + 0.16], [186, 108, 72]);
+      pushBox(s, [F - 0.2, y0 + m + 0.01, z + 0.15, F - 0.04, y1 - m - 0.01, z + 0.155], [70, 48, 34]);
+      if (c.fila >= 2) {
+        for (let k = 0; k < 5; k += 1) {
+          const yy = y0 + 0.03 + k * 0.035;
+          const caida = 0.12 + hash(k, c.fila) * 0.2;
+          pushBox(s, [F - 0.03, yy, z + 0.14 - caida, F + 0.015, yy + 0.035, z + 0.17], HOJA[k % 3]);
+          pushBox(s, [F + 0.005, yy - 0.01, z + 0.12 - caida, F + 0.03, yy + 0.045, z + 0.15 - caida], HOJA[(k + 1) % 3]);
+        }
+      } else if (c.variante >= 2) {
+        // Una mata redonda con florecillas (rosas o amarillas)
+        const flor = c.variante === 2 ? [226, 132, 150] : [236, 200, 90];
+        pushBox(s, [F - 0.19, y0 + 0.03, z + 0.15, F - 0.05, y1 - 0.03, z + 0.27], HOJA[0]);
+        pushBox(s, [F - 0.17, y0 + 0.05, z + 0.26, F - 0.07, y1 - 0.05, z + 0.33], HOJA[1]);
+        pushBox(s, [F - 0.06, y0 + 0.05, z + 0.17, F - 0.035, y1 - 0.06, z + 0.25], HOJA[2]);
+        for (let k = 0; k < 4; k += 1) {
+          const yy = y0 + 0.05 + k * 0.03;
+          const zz = z + 0.22 + (k % 2) * 0.08;
+          pushBox(s, [F - 0.06, yy, zz, F - 0.03, yy + 0.025, zz + 0.025], flor);
+        }
+      } else {
+        for (let k = 0; k < 6; k += 1) {
+          const yy = y0 + 0.04 + (k % 3) * 0.05;
+          const alto = 0.1 + hash(k, Math.round(y0 * 50)) * 0.14;
+          pushBox(s, [F - 0.17 + (k > 2 ? 0.05 : 0), yy, z + 0.15, F - 0.1 + (k > 2 ? 0.05 : 0), yy + 0.05, z + 0.15 + alto], HOJA[k % 3]);
+        }
+      }
+    } else if (c.tipo === 'tarro') {
+      // El tarro de cristal con granos de café (o lápices) y la tapa de latón
+      const lleno = c.variante % 2 ? [96, 60, 38] : [214, 184, 120];
+      pushBox(s, [F - 0.16, y0 + 0.01, z, F - 0.04, y1 - 0.01, z + 0.17], [178, 196, 200]);
+      pushBox(s, [F - 0.155, y0 + 0.015, z + 0.005, F - 0.045, y1 - 0.015, z + 0.11], lleno);
+      pushBox(s, [F - 0.165, y0 + 0.005, z + 0.17, F - 0.035, y1 - 0.005, z + 0.2], BRASS);
+    } else if (c.tipo === 'marco') {
+      // Un marco pequeño apoyado, con una lámina de un paisaje del puerto
+      const cielo = [[164, 196, 214], [214, 176, 140], [190, 200, 170], [200, 170, 190]][c.variante];
+      pushBox(s, [F - 0.13, y0, z, F - 0.1, y1, z + 0.24], WOOD_D);
+      pushBox(s, [F - 0.1, y0 + 0.025, z + 0.025, F - 0.097, y1 - 0.025, z + 0.215], cielo);
+      pushBox(s, [F - 0.097, y0 + 0.025, z + 0.025, F - 0.094, y1 - 0.025, z + 0.09], [80, 112, 136]);
+      pushBox(s, [F - 0.094, y0 + 0.05, z + 0.09, F - 0.091, y0 + 0.09, z + 0.15], [236, 230, 216]);
+    }
+  }
+  return portadas;
 }
 /** La placa de latón de una sección: el nombre grabado, en oscuro y sin medias tintas (si no cabe entero, rayas grabadas). */
 function paintPlaca(nombre, ancho) {
@@ -4494,7 +4603,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   const CABEN = { 'cafe-estanteria': LIBROS_POR_ESTANTERIA, 'cafe-estanteria-alta': 96, 'cafe-biombo': 24 };
   const planoGrupo = new Group();
   scene.add(planoGrupo);
-  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1, escaparate: [], portadas: [], balda: null, decor: [] };
+  let estado = { inaugurado: false, nombre: null, plano: { v: 1, items: [] }, libros: [], cajas: 0, vacias: false, nivel: 1, escaparate: [], portadas: [], balda: null, decor: [], portadasBalda: {} };
   let modo = { decorar: false, sel: null, mal: false, planta: 'calle' };
   let piezas = [];
   let obstaculos = [];
@@ -4750,6 +4859,16 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         const X = paredIzquierda(estado.nivel);
         for (const p of lomosLibreria(s, libTramos, X, { sin: lib.activa ? lib.est.genero : null })) {
           const m = new Mesh(new PlaneGeometry(p.ancho, 0.066), materialPlaca(p.genero, p.nombre, p.ancho));
+          m.rotation.y = Math.PI / 2;
+          m.position.set(p.x, p.z, p.y);
+          planoGrupo.add(m);
+        }
+        // 1.140: lo que viste la estantería, y la portada de cada libro de cara (la real, en píxeles, si ha cargado)
+        const cosas = atrezzoEstante(libTramos, estado.balda, { cajas: estado.cajas });
+        for (const p of atrezzoKit(s, cosas, X)) {
+          const lienzo = estado.portadasBalda?.[p.clave];
+          if (!lienzo) continue;
+          const m = new Mesh(new PlaneGeometry(p.ancho, p.alto), portadaMaterial(lienzo));
           m.rotation.y = Math.PI / 2;
           m.position.set(p.x, p.z, p.y);
           planoGrupo.add(m);
@@ -5610,13 +5729,13 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     },
     invalidate,
     /** El estado del local: si está inaugurado, su nombre, el plano y tus libros (títulos) para las estanterías. */
-    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1, escaparate = [], portadas = [], balda = null, decor = [] } = {}) {
+    setLocal({ inaugurado = false, nombre = null, plano = { v: 1, items: [] }, libros = [], cajas = 0, vacias = false, nivel = 1, escaparate = [], portadas = [], balda = null, decor = [], portadasBalda = {} } = {}) {
       const nombreAntes = estado.nombre;
       const abre = inaugurado && !estado.inaugurado;
       const cambiaAbierto = inaugurado !== estado.inaugurado;
       // 1.130: `balda`, lo que hay en la balda ({ clave, title, genero, paginas, ejemplares }) para la estantería por secciones;
       // `decor`, tus leídos (títulos), para las estanterías de los muebles
-      estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate, portadas, balda, decor };
+      estado = { inaugurado, nombre, plano, libros, cajas, vacias, nivel, escaparate, portadas, balda, decor, portadasBalda };
       // Las luces del ala y de la terraza alumbran lo colocado solo desde su nivel
       const n = inaugurado ? nivel : 1;
       LUCES_NIVEL = [...(n >= 4 ? [LUZ_ALA] : []), ...(n >= 5 ? [LUZ_TERRAZA] : []), ...(n >= 8 ? LUZ_CATAS : n >= 7 ? LUZ_TOSTADERO : n >= 6 ? LUZ_BODEGA : [])];

@@ -876,3 +876,9 @@ export const DON_CELESTINO = {
     '.ssaabaaaabaass.',
   ],
 };
+
+/** 1.141: la copa de latón del ranking de los cafés, sobre su peana de madera. */
+export const COPA = {
+  paleta: { k: '#2a1a10', A: '#ffe0a0', a: '#e7b765', m: '#7a5232', M: '#a8774a' },
+  filas: ['..kkkkkkkk..', 'kkkAAAAAakkk', 'kAkAaaaaakAk', 'kAkAaaaaakAk', '.kkAaaaaakk.', '...kaaaak...', '....kaak....', '.....kk.....', '....kaak....', '...kMMMMk...', '..kmmmmmmk..'],
+};

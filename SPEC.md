@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.139.0 · 2026-11-16 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.141.0 · 2026-11-16 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7690,3 +7690,67 @@ cifras de `docs/qa/cafe-libreria.md` §17, «Sí, esas cifras». Lo de sacar y p
 - E2E: `e2e-community/v1139-cafe-catalogo.spec.js` (sin leídos y con leídos) y `v1130` adaptada (el reparto gratis, +6).
   El Supabase simulado imita la migración (sin azar: el catálogo en orden); solo con `clientes.reparto` trae reparto.
 - Limitaciones: emulación de Chromium y WebKit con Supabase simulado; sin probar en móviles reales ni con la migración aplicada.
+
+## 140. El café: la estantería, llena y apetecible (1.140, publicada con la 1.141.0)
+
+Francisco, 16-11-2026, con una captura del móvil: «mira asi se ve en movil la estanteria, sigue viendose algo vacía. Algun
+cambio le haría para que sea divertido ir a la estanteria ver todos los libros, y sacarlos para prepararlos». Decisión del
+mismo día: «Repartir y vestir».
+
+- **El fallo**: la estantería de la pared mide 3,6 m y tiene 4 baldas, pero las secciones iban en un bloque recogido en el
+  centro (§130); con 12 libros, dos montoncitos en medio de un mueble enorme.
+- **Repartir**: la pared es una cuadrícula de 4 filas × 3 casillas. Cada sección (un género) va en su casilla, de la columna
+  del centro hacia fuera y de la fila del pecho a las de arriba y abajo (la del suelo, la última); una sección más ancha que una
+  casilla toma las de al lado. Si alguna no cabe así, como antes (`colocarSecciones`). `estanteLibreria` en `cafeLibreria.js`.
+- **Vestir** (`atrezzoEstante`, siempre igual para la misma balda; `atrezzoKit` en `cafe3d.js`):
+  - junto a cada sección, **su libro de cara** sobre un atril, con **la portada real** en píxeles (`destacadosDe`: el primero
+    con portada; se cargan con `usePortadasBalda`, como el escaparate; sin portada, su tapa de color con el título en bandas);
+  - en la fila del suelo, **las cajas que esperan** (una por cada 5 ejemplares, hasta 3);
+  - en el resto, **pilas tumbadas** (a veces con una taza o un reloj de arena encima), **plantas** (de hojas altas, matas con
+    flores y, en las filas de arriba, potos que cuelgan por el canto), **tarros** con granos o lápices y **marcos** con
+    láminas del puerto; nunca dos iguales seguidos y con aire entre una cosa y otra.
+- Al atender no cambia nada: la estantería, la sección y el libro se eligen igual; la cámara encuadra las secciones.
+- **Pruebas**: `cafeLibreria.test.js` (el orden de las casillas; nada se pisa ni se sale de la pared; de cara, junto a su
+  sección; cajas abajo). E2E `e2e-community/v1140-cafe-estanteria.spec.js` (pocos libros, como el café de Francisco, y
+  atender; muchos libros en el nivel 5). Capturas en `qa-report/cafe-estanteria/`.
+
+## 141. Los cafés de los demás: visitas y ranking (1.141.0)
+
+Francisco, 16-11-2026: «me gustaría que nos pusiseramos ahora con poder ver las cafeterias de los demás y poder tener un
+ranking de las cafeterias que más nivel tienen y más monedas acumulan según el edificio, y más cosas que se te ocurran».
+Decisiones del mismo día: «Edificio y a quien sigues», «Nivel, granos ganados y semana» y «Pasear y mirar».
+
+### 141.1 El ranking
+
+- **La copa** del café (debajo de los libros, a la derecha) abre «Los cafés del barrio» en la franja de abajo: dos pestañas,
+  **Tu edificio** y **A quien sigues** (tú siempre sales, marcado y sin «Visitar»), y tres tablas: **Nivel** (y reputación),
+  **Granos ganados** (en total, sin restar lo gastado) y **Esta semana** (la reputación desde el lunes, UTC). Los empates
+  comparten puesto; los tres primeros, en latón, plata y cobre. Sin vecinos con café, lo dice.
+- Solo cafés inaugurados, con la comunidad activa y sin bloqueo (como las visitas a los pisos). Los granos siguen sin pasar
+  de una cuenta a otra: aquí solo se cuentan.
+
+### 141.2 La visita
+
+- **«Visitar»** abre el café de esa persona en 3D (`VisitaCafe.jsx`, la misma escena en solo lectura): su decoración, su nivel
+  y sus plantas, el escaparate (nivel 5), las fotos de sus influencers y su estantería. Se pasea tocando el suelo y se baja a
+  la bodega; nada se toca, compra ni atiende. La placa dice el café, el nivel y de quién es; «A tu café» vuelve al tuyo.
+- **Privacidad**: de sus leídos en la balda solo llega el género y cuántos (lomos sin título, con la cinta); los del catálogo
+  del café, enteros (con su portada de cara). El escaparate sí se ve con sus títulos: lo elige el dueño para que se vea
+  desde la calle.
+
+### 141.3 Servidor
+
+- Migración nueva **`20261223120000_cafe_social.sql`** (la aplica Francisco): columnas `granos_ganados`, `rep_semana` y
+  `semana` en `cafe_locales`, con un disparador que suma cada subida de granos o reputación (la cuente quien la cuente) y
+  empieza la semana de cero cada lunes; `cafe_puedo_ver` (interna), `cafe_ranking(ambito)` y `cafe_visita(lector)`.
+  **Los granos ganados cuentan desde que se aplica**: lo de antes no está guardado. Las jornadas de prueba de las cuentas de
+  `cafe_probadores` también suman (no hay forma de distinguirlas sin tocar cada función).
+- **Sin ella**, el ranking dice «llegará muy pronto» y el café sigue igual.
+
+### 141.4 Pruebas y limitaciones
+
+- Vitest: `cafe-social.rls.test.js` (el ranking de cada ámbito, ganados y semana, bloqueo y comunidad; la visita sin los
+  títulos de los leídos; permisos) y `cafeSocial.test.js` (el orden y los empates; la balda de una visita).
+- E2E: `e2e-community/v1141-cafe-social.spec.js` (ranking, tablas, la visita y volver; sin la migración). Capturas y vídeo en
+  `qa-report/cafe-social/`.
+- Limitaciones: Supabase simulado en las e2e; sin probar con cuentas reales, con la migración aplicada ni en móviles reales.

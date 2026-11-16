@@ -56,7 +56,7 @@ const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
  * tuyo que se lleva el cliente paga 6. Aquí sin azar: el catálogo, en orden. Solo con `clientes.reparto` el día nuevo
  * trae reparto (las pruebas de antes no lo esperan).
  */
-export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null, taller = null } = {}) {
+export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null, taller = null, social = null } = {}) {
   const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], tazas: 0, sacoDia: null, llamadas: [], espera: 0, influencers: {}, ...estado } : null;
   if (c) c.influencers = structuredClone(c.influencers);
   const conInf = Boolean(clientes?.influencer);
@@ -163,6 +163,12 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     const body = route.request().postDataJSON() ?? {};
     c.llamadas.push({ rpc, body });
     if (rpc === 'cafe_mio') return json(route, vista());
+    // 1.141: los cafés de los demás (`social`: { ranking: { edificio, seguidos }, visitas: { [user_id]: café } }); sin `social`, sin la migración
+    if (rpc === 'cafe_ranking' || rpc === 'cafe_visita') {
+      if (!social) return json(route, { code: 'PGRST202', message: 'Could not find the function' }, 404);
+      if (rpc === 'cafe_ranking') return json(route, social.ranking?.[body.ambito] ?? []);
+      return json(route, social.visitas?.[body.lector] ?? null);
+    }
     if (rpc === 'cafe_inaugurar') {
       if (!CAFE_NOMBRES.includes(body.nombre)) return falla(route, 'cafe:nombre');
       if (c.inaugurado) return falla(route, 'cafe:ya');

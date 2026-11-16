@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Publicada en producción: 1.141.0** (2026-11-16, §140 y §141; «Commit y publicar»; `main` avanza sin forzar de `5a9beb8`
+  desde `1.90-escritorio-puerto`): la estantería del café vestida y los cafés de los demás (ranking y visitas). **Migración
+  aplicada** (16-11-2026): `20261223120000_cafe_social.sql`. Sin probar en un móvil real. Ver la bitácora.
 - **Publicada en producción: 1.139.0** (2026-11-16, §139; «Commit y publicar»; `main` avanza sin forzar de `6560b5a` desde
   `1.90-escritorio-puerto`): la manivela bajo el dedo y de dónde salen los libros del café
   (catálogo + tus leídos, reparto gratis). **Migración aplicada** (16-11-2026): `20261222120000_cafe_catalogo.sql`. Ver la bitácora.
@@ -442,6 +445,33 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-16 · Migración del ranking y las visitas de cafés, aplicada (Claude)
+
+- Francisco: «Sí, hazlo tú». SQL Editor del proyecto `bookshelf` en el panel del navegador (ya tenía la sesión iniciada).
+  `20261223120000_cafe_social.sql` pegada con `setValue` de Monaco en dos trozos: 6.962 B y 139 líneas, SHA-256
+  `f52784b3…00bec4ac`, igual en el texto, en el editor y en el archivo. Él pulsó «Run»: «Success».
+- Comprobado con la clave pública: `cafe_ranking`, `cafe_visita` y `cafe_puedo_ver` dan 42501 al anónimo, y la tabla
+  `cafe_locales` también; una función inexistente, PGRST202. Los granos ganados y la reputación de la semana cuentan desde hoy.
+- Después, Francisco: «Commit y publicar». Commit de la 1.141.0 en `1.90-escritorio-puerto` y `main` avanza sin forzar desde
+  `5a9beb8`; comprobar que `libotown.es/sw.js` trae v1.141.0.
+
+### 2026-11-16 · Café: la estantería vestida y los cafés de los demás · 1.141.0 (§140 y §141), sin commit (Claude)
+
+- Francisco, con una captura del móvil: la estantería «sigue viendose algo vacía»; y «ponernos ahora» con ver los cafés de los
+  demás y un ranking por nivel y monedas según el edificio. Decisiones: «Repartir y vestir», «Edificio y a quien sigues»,
+  «Nivel, granos ganados y semana», «Pasear y mirar» (anotadas en `CLAUDE.md`).
+- **§140**: las secciones, por la pared entera (4 × 3 casillas, del centro hacia fuera) y en los huecos el libro de cara con su
+  portada, pilas, plantas, tarros, marcos y las cajas que esperan, abajo. Sin migración.
+- **§141**: la copa del café abre el ranking (Tu edificio / A quien sigues; Nivel / Granos ganados / Esta semana) y «Visitar»
+  abre su café en 3D en solo lectura (`VisitaCafe.jsx`); «A tu café» vuelve. De los leídos de otro, solo el género.
+  **Migración nueva sin aplicar**: `20261223120000_cafe_social.sql` (la aplica Francisco). Los granos ganados cuentan desde
+  que se aplique.
+- Pruebas: Vitest del edificio en verde salvo `casino.rls.test.js` «el tope de la semana» (fichas, sin relación con el café;
+  ya falló con la 1.139 y no se ha tocado). E2E `v1140`, `v1141`, `v1139` y `v1130` (ver abajo los tamaños). Evidencias en
+  `qa-report/cafe-estanteria/` y `qa-report/cafe-social/`, enviadas al chat.
+- Queda: su visto bueno a la entrega; aplicar la migración; commit y publicar cuando lo pida. Sin probar con cuentas reales
+  ni en móviles reales.
 
 ### 2026-11-16 · Migración del catálogo del café, aplicada (Claude)
 

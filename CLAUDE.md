@@ -311,6 +311,14 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       **catálogo propio del café** (libros reales por género, igual para todos) **más tus leídos**, que se distinguen y pagan
       algo más; y **reparto diario gratis** cada mañana para que la balda nunca se quede vacía, con la compra de cajas con
       granos solo como extra (elegir género o título). Cifras en `cafe-libreria.md` §17, las aprueba él.
+    - **La estantería, llena y apetecible; visitas y ranking de cafés** (Francisco, 16-11-2026, tras ver la 1.139 en el móvil:
+      «sigue viendose algo vacía»). Decisiones del mismo día: **repartir y vestir la estantería** (cada género, su tramo a lo
+      ancho de la pared; en los huecos, libros de cara con portada, pilas tumbadas, plantas y tarros; lo que está en cajas, a la
+      vista abajo). **Visitar cafés** de los vecinos del edificio y de quien sigues (como los pisos: comunidad activa, sin
+      bloqueo), **solo pasear y mirar** en 3D, en solo lectura. **Ranking** del edificio, con otra pestaña para quien sigues,
+      en tres tablas: **nivel y reputación**, **granos ganados en total** (desde la migración, sin restar lo gastado) y
+      **reputación de la semana**. Sin sellos de visita, placas de ranking ni guardar libros ajenos de momento. Los granos
+      siguen sin pasar entre cuentas.
     - **La pizarra se quita del todo** («no me termina de convencer»): sin botón ni panel; la nota del habitual y la reseña
       dorada se ven en su bocadillo al despedirse, y Pilar no la menciona. Sin borrar datos del servidor.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,

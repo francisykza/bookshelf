@@ -29,6 +29,7 @@ import { PantallaCarga } from '../../ui/PantallaCarga';
 import { mensajeLlegada } from './llegada';
 // La visita en primera persona trae Three.js: solo se descarga si se entra
 const VisitaPiso = lazy(() => import('../pisoLab/VisitaPiso'));
+const VisitaCafe = lazy(() => import('./cafe/VisitaCafe'));
 
 /** La tienda del bajo se abre como un «piso» más del portal (1.67, §67). */
 const TIENDA_ID = 'tienda';
@@ -262,6 +263,11 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
   );
 
   const inShop = pisoId === TIENDA_ID;
+  // 1.141: el café de otro lector que visitas desde el ranking ({ userId, alias, cafe }); al volver, a tu café
+  const [cafeVisita, setCafeVisita] = useState(null);
+  useEffect(() => {
+    if (!inShop) setCafeVisita(null);
+  }, [inShop]);
   // 1.123 (bloque 4b): tu café visto desde la calle; se vuelve a pedir al salir del café (puede haber subido de nivel o
   // cambiado el escaparate). Sin la migración o sin café, null: la fachada de siempre
   const [fachadaCafe, setFachadaCafe] = useState(null);
@@ -537,7 +543,13 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
   } else if (inShop) {
     // 1.119 (docs/qa/cafe-libreria.md, bloque 1): el bajo en traspaso, que será tu café-librería. Sobres, muebles y
     // reciclar ya no se ven aquí (Tienda.jsx se conserva sin montar; el servidor y tus datos no cambian)
-    body = <Cafe inventario={inventory} layoutPiso={me?.room ?? null} soundOn={soundOn} />;
+    body = cafeVisita ? (
+      <Suspense fallback={<PantallaCarga mensaje={`Entrando en ${cafeVisita.cafe}…`} />}>
+        <VisitaCafe key={cafeVisita.userId} visita={cafeVisita} soundOn={soundOn} />
+      </Suspense>
+    ) : (
+      <Cafe inventario={inventory} layoutPiso={me?.room ?? null} soundOn={soundOn} onVisitar={setCafeVisita} />
+    );
   } else if (pisoId && !open) {
     body = <p className="ed-note">Este piso ya no está en tu edificio.</p>;
   } else if (open && mine && choosing) {
@@ -607,12 +619,12 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
   }
 
   return (
-    <PanelShell onClose={onClose} label={inHotel ? 'El Gran Hotel del Puerto' : inShop ? 'El café-librería del bajo' : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
+    <PanelShell onClose={onClose} label={inHotel ? 'El Gran Hotel del Puerto' : inShop ? (cafeVisita ? `${cafeVisita.cafe}, el café de ${cafeVisita.alias}` : 'El café-librería del bajo') : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
       <div className="ed-bar">
         {pisoId ? (
-          <button type="button" className="ed-bar__back" onClick={dressing ? () => setCloseDressing((n) => n + 1) : delOrdenador && hotelRoom === 'lonja' ? onClose : inHotel && hotelRoom ? () => setHotelRoom(null) : onClose}>
+          <button type="button" className="ed-bar__back" onClick={dressing ? () => setCloseDressing((n) => n + 1) : delOrdenador && hotelRoom === 'lonja' ? onClose : inHotel && hotelRoom ? () => setHotelRoom(null) : inShop && cafeVisita ? () => setCafeVisita(null) : onClose}>
             <ArrowLeft aria-hidden="true" />
-            {dressing ? 'Al piso' : delOrdenador && hotelRoom === 'lonja' ? 'Al ordenador' : inHotel ? (hotelRoom ? 'A la calle' : 'Al puerto') : 'Volver al portal'}
+            {dressing ? 'Al piso' : delOrdenador && hotelRoom === 'lonja' ? 'Al ordenador' : inHotel ? (hotelRoom ? 'A la calle' : 'Al puerto') : inShop && cafeVisita ? 'A tu café' : 'Volver al portal'}
           </button>
         ) : (
           <button type="button" className="ed-bar__close" onClick={onClose} aria-label="Cerrar el edificio">
