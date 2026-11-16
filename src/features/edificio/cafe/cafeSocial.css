@@ -130,6 +130,16 @@
   font: 400 15px/16px var(--pp-title);
   text-align: right;
 }
+/* 1.142: la reputación (o de qué es la cifra), en su línea, clara y sin cortarse */
+.cf3-ranking__sub {
+  margin-top: 3px;
+  color: var(--cf3-cream);
+  font:
+    600 0.78rem/1.1 'Lora',
+    Georgia,
+    serif;
+  white-space: nowrap;
+}
 .cf3-ranking__visitar {
   min-height: 36px;
   padding: 6px 10px 9px;

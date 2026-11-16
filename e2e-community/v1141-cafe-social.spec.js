@@ -104,9 +104,10 @@ test('el ranking del edificio y de quien sigues, y la visita al café de una vec
   await expect(filas).toHaveCount(3);
   await expect(filas.locator('.cf3-ranking__cafe')).toHaveText(['El Rincón del Faro', 'Taza y Lomo', 'La Última Página']);
   await expect(filas.nth(1)).toHaveAttribute('data-yo', 'true');
-  await expect(filas.nth(1).locator('.cf3-ranking__alias')).toHaveText('Tú · 2400 de reputación');
+  await expect(filas.nth(1).locator('.cf3-ranking__alias')).toHaveText('Tú');
+  await expect(filas.nth(1).locator('.cf3-ranking__sub')).toHaveText('2.400 rep.');
   await expect(filas.nth(1).getByRole('button')).toHaveCount(0);
-  await expect(filas.first().locator('.cf3-ranking__cifra')).toHaveAccessibleName('Nv 4, 6200 de reputación');
+  await expect(filas.first().locator('.cf3-ranking__cifra')).toHaveAccessibleName('Nv 4, 6.200 de reputación');
   await quieto(page, 400);
   await page.screenshot({ path: join(DIR, `1-ranking-nivel-${tam(info)}.png`) });
   // Por granos ganados y por esta semana (empate: comparten puesto)

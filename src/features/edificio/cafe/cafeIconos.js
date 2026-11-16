@@ -196,7 +196,7 @@ const LAMPARA_PIE = {
     '................',
   ],
 };
-const CAJA = {
+export const CAJA = {
   paleta: { c: '#b88e5c', C: '#d4aa74', d: '#7e5a36', t: '#ecdcb0' },
   filas: [
     '................',
@@ -878,6 +878,16 @@ export const DON_CELESTINO = {
 };
 
 /** 1.141: la copa de latón del ranking de los cafés, sobre su peana de madera. */
+/** 1.142: el cuaderno de Pilar, de tapas de cuero, con sus renglones y la cinta. */
+export const CUADERNO = {
+  paleta: { k: '#2a1a10', C: '#a8774a', p: '#f2e6c8', l: '#a89878', r: '#b8574a' },
+  filas: ['..kkkkkkkk..', '.kCCCCCCCCk.', '.kCppppppCk.', '.kCpllllpCk.', '.kCppppppCk.', '.kCpllllpCk.', '.kCppppppCk.', '.kCpllllpCk.', '.kCCCCCCCCk.', '.kkkkkrrkkk.', '......rr....'],
+};
+/** 1.142: la hucha de propinas del mostrador, una lata de latón con su ranura y un grano que cae. */
+export const HUCHA = {
+  paleta: { k: '#2a1a10', b: '#c99a2e', B: '#e7c46a', d: '#8a6a1e', g: '#f2d27a' },
+  filas: ['....kggk....', '.kkkkkkkkkk.', 'kBBBBkkBBBBk', 'kBbbbbbbbbBk', 'kbbbbbbbbbbk', 'kbbdddddbbbk', 'kbbdBBBdbbbk', 'kbbdddddbbbk', 'kbbbbbbbbbbk', 'kbbbbbbbbbbk', '.kkkkkkkkkk.'],
+};
 export const COPA = {
   paleta: { k: '#2a1a10', A: '#ffe0a0', a: '#e7b765', m: '#7a5232', M: '#a8774a' },
   filas: ['..kkkkkkkk..', 'kkkAAAAAakkk', 'kAkAaaaaakAk', 'kAkAaaaaakAk', '.kkAaaaaakk.', '...kaaaak...', '....kaak....', '.....kk.....', '....kaak....', '...kMMMMk...', '..kmmmmmmk..'],

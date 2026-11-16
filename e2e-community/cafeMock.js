@@ -2,6 +2,7 @@
 // reglas que el servidor (nombre de la lista, una sola inauguración, plano dentro de la cuadrícula y sin solapes, copias
 // del café y de casa contando el piso). Se engancha después de `mock.attach` (la última ruta manda). Sin `cafe`, el
 // servidor no tiene la migración (404 PGRST202), como antes de aplicarla.
+import { TAREAS, gradoDe } from '../src/features/edificio/cafe/cafeCuaderno';
 import { CAFE_MUEBLES, CAFE_NOMBRES, PLANO_INICIAL, asientosDe, cabe, cuenta, deCasa, maxCosas, medidas } from '../src/features/edificio/cafe/cafeCatalogo';
 import { BONO_TUESTE, TAZAS_MAX, TAZAS_SACO, TICKETS_NIVEL, cartaDe, desdeNivel, granosHito, nivelDe, novedades, sacoListo, ticketsDelDia, tuesteAbierto, umbralHito } from '../src/features/edificio/cafe/cafeNiveles';
 import { ARENA_MARGEN, ARENA_SEGUNDOS, INFLUENCERS, NIVELES_INFLUENCER, VIRALES } from '../src/features/edificio/cafe/cafeInfluencers';
@@ -56,10 +57,14 @@ const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
  * tuyo que se lleva el cliente paga 6. Aquí sin azar: el catálogo, en orden. Solo con `clientes.reparto` el día nuevo
  * trae reparto (las pruebas de antes no lo esperan).
  */
-export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null, taller = null, social = null } = {}) {
+export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null, taller = null, social = null, pilar = null } = {}) {
   const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], tazas: 0, sacoDia: null, llamadas: [], espera: 0, influencers: {}, ...estado } : null;
   if (c) c.influencers = structuredClone(c.influencers);
   const conInf = Boolean(clientes?.influencer);
+  // 1.142: el cuaderno de Pilar (`pilar`: { caja, hucha, pizarra, guardado }); sin `pilar`, sin la migración
+  const pil = pilar ? { caja: 0, hucha: 0, pizarra: 0, guardado: 0, dado: { hucha: 0, colocados: 0, clientes: 0, pedidos: 0 }, ...pilar } : null;
+  if (c && pil) c.pilar = pil;
+  const HUCHA_DIA = [0, 8, 15, 25];
   const vista = () => ({
     nombre: c.nombre,
     nivel: c.nivel,
@@ -72,6 +77,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     tostadero: { tazas: c.tazas, saco_dia: c.sacoDia },
     dominio: dominio(),
     ...(conInf ? { espera: c.espera, fotos: NIVELES_INFLUENCER.filter((n) => c.influencers[n]?.viral) } : {}),
+    ...(pil ? { pilar: { caja: pil.caja, hucha: pil.hucha, pizarra: pil.pizarra, hucha_dia: HUCHA_DIA[pil.hucha], hucha_lista: pil.guardado, dado: pil.dado } } : {}),
   });
   // 1.130: las servidas de 2 estrellas o más por bebida (y lo de la carta con gesto), sobre lo que ya se traía
   const dominio = () => {
@@ -101,6 +107,18 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     b.caja += n;
   };
   let giro = 0;
+  /** 1.142: Pilar sube lo que espera en las cajas a la balda, por título, hasta llenar los huecos. */
+  function colocaPilar() {
+    if (!(pil?.caja >= 1)) return;
+    let libres = huecosDelNivel(c.nivel) - Object.values(lib.libros).reduce((n, b) => n + b.balda, 0);
+    for (const b of Object.values(lib.libros).sort((x, y) => x.titulo.localeCompare(y.titulo) || x.clave.localeCompare(y.clave))) {
+      if (libres <= 0) break;
+      const n = Math.min(b.caja, libres);
+      Object.assign(b, { caja: b.caja - n, balda: b.balda + n });
+      pil.dado.colocados += n;
+      libres -= n;
+    }
+  }
   function libros(route, rpc, body) {
     if (!c.inaugurado) return falla(route, 'cafe:cerrado');
     const caja = [];
@@ -242,6 +260,27 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       return json(route, tuyos.length);
     }
     if (clientes && rpc === 'cafe_entregar' && c.sinEntregar) return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
+    if (rpc === 'cafe_pilar_mejorar' || rpc === 'cafe_hucha') {
+      if (!pil) return json(route, { code: 'PGRST202', message: 'Could not find the function' }, 404);
+      if (!c.inaugurado) return falla(route, 'cafe:cerrado');
+      if (rpc === 'cafe_hucha') {
+        const n = pil.guardado;
+        c.granos = Math.min(100000, c.granos + n);
+        pil.dado.hucha += n;
+        pil.guardado = 0;
+        return json(route, { recogido: n, cafe: vista() });
+      }
+      const t = TAREAS.find((x) => x.id === body.mejora);
+      const g = t ? gradoDe(pil, t.id) : 0;
+      const sig = t?.grados[g];
+      if (!sig) return falla(route, 'cafe:cuaderno');
+      if (c.nivel < sig.nivel) return falla(route, 'cafe:cuaderno_nivel');
+      if (c.granos < sig.precio) return falla(route, 'cafe:granos');
+      c.granos -= sig.precio;
+      pil[t.id] = g + 1;
+      if (t.id === 'caja') colocaPilar();
+      return json(route, { cafe: vista(), libros: librosJson(), caja: [] });
+    }
     if (clientes && ['cafe_dia', 'cafe_habitual', 'cafe_servir', 'cafe_entregar'].includes(rpc)) return diaDelCafe(route, rpc, body);
     if (conInf && ['cafe_influencer_empezar', 'cafe_influencer_entregar'].includes(rpc)) return diaDelCafe(route, rpc, body);
     if (clientes && ['cafe_bienvenida', 'cafe_comprar_caja', 'cafe_colocar'].includes(rpc)) return libros(route, rpc, body);
@@ -293,6 +332,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
   }
   // ── Los clientes del día (bloque 3) ──
   const dias = {};
+  if (c) c.dias = dias;
   // 1.130: lo que se vendió otro día y aún no se ha repuesto (las claves de los ejemplares): el reparto lo trae al abrir el día
   if (clientes?.vendidos?.length) {
     const servidos = Object.fromEntries(clientes.vendidos.map((libro, i) => [i + 1, { encaja: true, receta: null, estrellas: 3, libro, repuesto: false, orden: i + 1 }]));
@@ -371,7 +411,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     if (body.dia !== clientes.hoy && body.dia !== ayer && body.dia !== jornada) return falla(route, 'cafe:dia');
     if (!c.inaugurado) return falla(route, 'cafe:cerrado');
     const nuevo = !dias[body.dia];
-    const d = (dias[body.dia] ??= { dia: body.dia, clientes: clientesDelNivel(c.nivel, asientosDe(c.plano)), habituales: 0, servidos: {}, carta: cartaDe(c.reputacion), tickets: 0 });
+    const d = (dias[body.dia] ??= { dia: body.dia, clientes: Math.min(13, clientesDelNivel(c.nivel, asientosDe(c.plano)) + (pil?.pizarra ?? 0)), habituales: 0, servidos: {}, carta: cartaDe(c.reputacion), tickets: 0 });
     // 1.130: el día nuevo trae el reparto de lo vendido (de los otros días, del más antiguo al más nuevo)
     if (nuevo) {
       const vendidos = Object.values(dias)
@@ -381,7 +421,10 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
         .sort((a, b) => a.orden - b.orden);
       // 1.139: gratis, con cupo del nivel y sin pasar de los huecos libres
       const ocupados = Object.values(lib.libros).reduce((s, b) => s + b.balda + b.caja, 0);
-      const cupo = !clientes.reparto ? 0 : Math.max(0, Math.min(repartoDelNivel(c.nivel), huecosDelNivel(c.nivel) - ocupados));
+      if (pil) pil.dado.clientes += d.clientes - clientesDelNivel(c.nivel, asientosDe(c.plano));
+      // 1.142: con el 2.º grado de «Colocar la caja», Pilar pide 3 más
+      const base = repartoDelNivel(c.nivel);
+      const cupo = !clientes.reparto ? 0 : Math.max(0, Math.min(base + (pil?.caja >= 2 ? 3 : 0), huecosDelNivel(c.nivel) - ocupados));
       const claves = [];
       let repuestos = 0;
       for (const sv of vendidos) {
@@ -406,7 +449,10 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
         aLaCaja(x, 1);
         claves.push(x.clave);
       }
-      d.reparto = claves.length ? { claves, granos: 0, gratis: true, repuestos, faltan: 0 } : null;
+      const pedidos = Math.max(0, claves.length - base);
+      if (pil) pil.dado.pedidos += pedidos;
+      d.reparto = claves.length ? { claves, granos: 0, gratis: true, repuestos, faltan: 0, pilar: pedidos } : null;
+      colocaPilar();
       // 1.132: si un influencer se fue contento otro día anterior, hoy llegan 3 más por su vídeo (una vez por influencer)
       if (conInf) {
         const v = Object.entries(c.influencers)

@@ -3,6 +3,7 @@
 import { client, fail } from '../../social/services/community';
 import { CAFE_MUEBLES, cabe, deCasa, medidas } from './cafeCatalogo';
 import { encargoDe } from './cafeTaller';
+import { pilarDe } from './cafeCuaderno';
 
 const sinMigracion = (error) => error && (error.code === 'PGRST202' || error.code === '42883');
 
@@ -37,6 +38,8 @@ function normalizar(data) {
     // 1.132: la reputación que espera a que despidas al influencer de la subida, y las fotos firmadas de la pared (niveles)
     espera: Math.min(1000000, Math.max(0, Number.isInteger(data.espera) ? data.espera : 0)),
     fotos: (Array.isArray(data.fotos) ? data.fotos : []).filter((n) => Number.isInteger(n) && n >= 2 && n <= 8),
+    // 1.142: el cuaderno de Pilar (null sin la migración)
+    pilar: pilarDe(data.pilar),
   };
 }
 
@@ -111,8 +114,8 @@ function normalizarDia(d) {
     reparto: repartoDe(d.reparto),
     clientes: (Array.isArray(d.clientes) ? d.clientes : [])
       .map((c) => ({ ...cliente(c), excentrico: Boolean(c.excentrico), quien: c.excentrico ? entero(c.quien) % 6 : null }))
-      // Hasta 9 clientes desde el nivel 7 (el excéntrico es el último: con 8 en el nivel 6 ya hacía falta pasar del 7)
-      .filter((c) => c.n >= 1 && c.n <= 10),
+      // Hasta 10 clientes en el nivel 8 y, con la pizarra de la acera (1.142), 3 más: 13 (el excéntrico es el último)
+      .filter((c) => c.n >= 1 && c.n <= 13),
     habituales: (Array.isArray(d.habituales) ? d.habituales : []).map((h) => ({ ...cliente(h), quien: entero(h.quien) })).filter((h) => h.n >= 101 && h.n <= 102 && h.quien >= 0 && h.quien < 12),
     // 1.132: los que vienen por el vídeo viral de un influencer (201 a 203) y de quién era el vídeo
     virales: (Array.isArray(d.virales) ? d.virales : []).map(cliente).filter((v) => v.n >= 201 && v.n <= 203),
@@ -139,10 +142,10 @@ function influencerDe(x) {
  */
 function repartoDe(r) {
   if (!r || typeof r !== 'object') return null;
-  const claves = (Array.isArray(r.claves) ? r.claves : []).filter((k) => typeof k === 'string' && k).slice(0, 10);
+  const claves = (Array.isArray(r.claves) ? r.claves : []).filter((k) => typeof k === 'string' && k).slice(0, 13);
   const faltan = Math.min(99, Math.max(0, entero(r.faltan)));
   if (!claves.length && !faltan) return null;
-  return { claves, granos: Math.min(20, Math.max(0, entero(r.granos))), faltan, gratis: r.gratis === true, repuestos: Math.min(claves.length, Math.max(0, entero(r.repuestos))) };
+  return { claves, granos: Math.min(20, Math.max(0, entero(r.granos))), faltan, gratis: r.gratis === true, repuestos: Math.min(claves.length, Math.max(0, entero(r.repuestos))), pilar: Math.min(claves.length, Math.max(0, entero(r.pilar ?? 0))) };
 }
 /** Tus libros del café (§121.3): los huecos de la balda, si ya llegó la bienvenida y cada título con su caja y su balda. */
 function normalizarLibros(l) {
@@ -357,9 +360,29 @@ export async function colocarLibros(poner = [], quitar = []) {
   return conLibros(data);
 }
 
+// ── 1.142: el cuaderno de Pilar (`20261224120000_cafe_pilar.sql`) ──
+/** Encargar a Pilar el grado siguiente de una tarea ('caja', 'hucha' o 'pizarra'). Devuelve { cafe, libros }. */
+export async function mejorarPilar(mejora) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_pilar_mejorar', { mejora });
+  fail(error);
+  return conLibros(data);
+}
+
+/** Recoger la hucha de propinas. Devuelve { recogido, cafe }, o null sin la migración. */
+export async function recogerHucha() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_hucha');
+  if (sinMigracion(error)) return null;
+  fail(error);
+  return { recogido: Math.min(10000, Math.max(0, Number.isInteger(data?.recogido) ? data.recogido : 0)), cafe: normalizar(data?.cafe) };
+}
+
 /** Lo que dice cada error del servidor, en palabras de la app. */
 export function errorCafe(e) {
   const m = String(e?.message ?? e ?? '');
+  if (/cafe:cuaderno_nivel/.test(m)) return 'Esa tarea se abre en un nivel más alto del café.';
+  if (/cafe:cuaderno/.test(m)) return 'Esa tarea ya la tiene Pilar en su mejor grado.';
   if (/cafe:tueste/.test(m)) return 'No te queda tueste de la casa: baja al tostadero a por el saco.';
   if (/cafe:saco/.test(m)) return 'Hoy ya recogiste el saco: mañana habrá otro en el tambor.';
   if (/cafe:tazas/.test(m)) return 'Ya tienes 99 tazas guardadas: sirve unas cuantas y vuelve a por el saco.';

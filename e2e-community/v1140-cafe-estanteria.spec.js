@@ -1,7 +1,7 @@
 // 1.140 (SPEC §140; Francisco, 16-11-2026: «sigue viendose algo vacía», «Repartir y vestir») · La estantería de la pared:
 // - Cada género, en su casilla de la pared entera, de la columna del centro hacia fuera (antes, un bloque pequeño en el centro).
-// - En los huecos: el libro de cara de cada sección sobre su atril, pilas tumbadas, plantas, tarros y marcos; lo que espera en
-//   cajas, abajo, en la fila del suelo.
+// - En los huecos: plantas, tarros, marcos, tazas, velas, un globo y un molinillo (1.142: ningún libro de adorno); lo que
+//   espera en cajas, abajo, en la fila del suelo. El libro de cara, dentro de su sección y pulsable como un lomo (1.142).
 // - Al atender, la estantería y la sección se siguen viendo y eligiendo igual.
 // Capturas y vídeos en qa-report/cafe-estanteria/.
 import { expect, test } from '@playwright/test';
@@ -121,6 +121,7 @@ test('pocos libros (como el café de Francisco): la pared entera vestida y, al a
   await expect(franja).toHaveAttribute('data-paso', 'libreria');
   await hacerLibro(page, cafe, {
     foto: async (paso) => {
+      if (paso === 'seccion') expect((await page.evaluate(() => window.__cafe3d.libreriaLomos())).filter((l) => l.cara && l.front)).toHaveLength(1);
       if (paso === 'estanteria' || paso === 'seccion') await page.screenshot({ path: join(DIR, `${paso === 'estanteria' ? 3 : 4}-atender-${paso}-${tam(info)}.png`) });
     },
   });

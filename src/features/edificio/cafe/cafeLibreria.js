@@ -187,7 +187,7 @@ export function estanteLibreria(balda = []) {
   if (!secciones.length) return [];
   // 1.140 (Francisco, 16-11-2026: «sigue viendose algo vacía»): cada sección en su casilla de la pared entera, de la columna
   // del centro hacia fuera; si alguna no cabe en sus casillas, como antes (seguidas, y la que no cabe sigue en otra fila)
-  const enCasillas = casillasSecciones(secciones);
+  const enCasillas = casillasSecciones(secciones, balda);
   if (enCasillas) return enCasillas;
   for (const W of ANCHOS_BLOQUE) {
     const r = colocarSecciones(secciones, W);
@@ -212,14 +212,19 @@ const ORDEN_CASILLAS = [
 ];
 /** Lo útil de la pared (sin los costados del mueble). */
 export const paredEstante = () => ({ desde: ESTANTERIA.y0 + 0.1, hasta: ESTANTERIA.y1 - 0.1 });
-function casillasSecciones(secciones) {
+function casillasSecciones(secciones, balda) {
   const { desde, hasta } = paredEstante();
   const hueco = (hasta - desde) / POR_FILA;
   const libre = new Map(FILAS.map((f) => [f, [true, true, true]]));
   const out = [];
+  // 1.142: el libro de cara de cada sección va dentro de ella, el último (un ejemplar suyo, de pie y con la portada al local)
+  const cara = new Map(destacadosDe(balda).map((d) => [d.genero, d.clave]));
   for (const s of secciones) {
     const ejemplares = s.libros.flatMap((b) => Array.from({ length: Math.min(99, b.ejemplares) }, () => b));
-    const ancho = SUJETA + ejemplares.reduce((n, b) => n + grosorDe(b.paginas) + HUELGO, 0);
+    const iCara = ejemplares.findIndex((b) => b.clave === cara.get(s.genero));
+    if (iCara >= 0) ejemplares.push(...ejemplares.splice(iCara, 1));
+    const gruesoDe = (b, j) => (j === ejemplares.length - 1 && iCara >= 0 ? ANCHO_ATREZZO.cara : grosorDe(b.paginas));
+    const ancho = SUJETA + ejemplares.reduce((n, b, j) => n + gruesoDe(b, j) + HUELGO, 0);
     const k = Math.ceil((ancho + 2 * MARGEN) / hueco - 1e-9);
     if (k > POR_FILA) return null;
     // Las casillas por orden; una sección más ancha que una casilla toma las de al lado (siempre con la del centro)
@@ -233,8 +238,9 @@ function casillasSecciones(secciones) {
     const tramo = { genero: s.genero, nombre: s.nombre, fila: f, z: filaZ(f), y0: inicio, y1: inicio, hueco: span, casilla: [c, k], lomos: [] };
     let yy = inicio + SUJETA;
     ejemplares.forEach((b, j) => {
-      const g = grosorDe(b.paginas);
-      tramo.lomos.push({ clave: b.clave, titulo: b.title, k: j, y0: yy, y1: yy + g, alto: altoDe(b.clave), paginas: b.paginas ?? null });
+      const g = gruesoDe(b, j);
+      const deCara = iCara >= 0 && j === ejemplares.length - 1;
+      tramo.lomos.push({ clave: b.clave, titulo: b.title, k: j, y0: yy, y1: yy + g, alto: deCara ? ALTO_CARA : altoDe(b.clave), paginas: b.paginas ?? null, ...(deCara ? { cara: true } : {}) });
       yy += g + HUELGO;
     });
     tramo.y1 = yy;
@@ -250,7 +256,11 @@ function casillasSecciones(secciones) {
 export const DE_CARA_MAX = 6;
 const CAJAS_MAX = 3;
 /** Ancho de cada cosa en la balda (m, a lo largo de la pared). */
-export const ANCHO_ATREZZO = { cara: 0.26, pila: 0.3, planta: 0.22, tarro: 0.13, marco: 0.18, caja: 0.44 };
+export const ANCHO_ATREZZO = { cara: 0.26, planta: 0.22, tarro: 0.13, marco: 0.18, taza: 0.12, vela: 0.1, globo: 0.2, molinillo: 0.14, caja: 0.44 };
+/** El alto del libro de cara, de pie en su atril. */
+export const ALTO_CARA = 0.38;
+/** 1.142 (Francisco, 16-11-2026: «libros que no se pueden pulsar y pueden confundir»): el adorno, sin un solo libro. */
+export const ADORNOS = ['planta', 'tarro', 'marco', 'taza', 'planta', 'vela', 'globo', 'molinillo'];
 /** El libro de cada sección que se pone de cara, con su portada: el primero que tenga portada (si ninguno, el primero). */
 export function destacadosDe(balda = []) {
   return seccionesDe(balda)
@@ -261,11 +271,12 @@ export function destacadosDe(balda = []) {
     });
 }
 /**
- * Lo que llena los huecos de la estantería: junto a cada sección, su libro de cara (`destacadosDe`); en la fila del suelo, las
- * cajas que esperan (una por cada 5 ejemplares, hasta 3); y en el resto, pilas tumbadas, plantas, tarros y marcos, con su aire
- * entre una cosa y otra. Siempre igual para la misma balda. Devuelve [{ tipo, fila, z, y0, y1, ...(cara: clave, titulo, genero) }].
+ * Lo que llena los huecos de la estantería: en la fila del suelo, las cajas que esperan (una por cada 5 ejemplares, hasta 3); y
+ * en el resto, adornos que no son libros (`ADORNOS`: plantas, tarros, marcos, tazas, velas, un globo, un molinillo), con su aire
+ * entre una cosa y otra. Los libros de cara van en su sección (`estanteLibreria`, `cara`). Siempre igual para la misma balda.
+ * Devuelve [{ tipo, fila, z, y0, y1, variante }].
  */
-export function atrezzoEstante(tramos = [], balda = [], { cajas = 0 } = {}) {
+export function atrezzoEstante(tramos = [], { cajas = 0 } = {}) {
   const { desde, hasta } = paredEstante();
   const out = [];
   const ocupado = new Map(FILAS.map((f) => [f, []]));
@@ -286,17 +297,6 @@ export function atrezzoEstante(tramos = [], balda = [], { cajas = 0 } = {}) {
     out.push({ tipo, fila: f, z: filaZ(f), y0, y1, ...extra });
     ocupado.get(f).push([y0 - 0.03, y1 + 0.03]);
   };
-  // Los de cara, pegados a su sección (a la derecha si hay sitio; si no, a la izquierda)
-  for (const d of destacadosDe(balda)) {
-    const t = tramos.find((x) => x.genero === d.genero && x.placa);
-    if (!t) continue;
-    const w = ANCHO_ATREZZO.cara;
-    const hueco = libres(t.fila);
-    const der = hueco.find(([a, b]) => Math.abs(a - (t.y1 + 0.04)) < 0.02 && b - a >= w + 0.1);
-    const izq = hueco.find(([a, b]) => Math.abs(b - (t.y0 - 0.04)) < 0.02 && b - a >= w + 0.1);
-    if (der) poner('cara', t.fila, der[0] + 0.06, d);
-    else if (izq) poner('cara', t.fila, izq[1] - 0.06 - w, d);
-  }
   // Las cajas que esperan, en la fila del suelo, desde la puerta del mueble
   let n = Math.min(CAJAS_MAX, Math.ceil(Math.max(0, cajas) / 5));
   for (const [a, b] of libres(0)) {
@@ -308,7 +308,7 @@ export function atrezzoEstante(tramos = [], balda = [], { cajas = 0 } = {}) {
     }
   }
   // El resto, de adorno, con aire entre una cosa y otra (y algún hueco de verdad)
-  const tipos = ['pila', 'planta', 'tarro', 'marco', 'pila', 'planta'];
+  const tipos = ADORNOS;
   for (const f of FILAS) {
     libres(f).forEach(([a, b], j) => {
       let y = a + 0.08;

@@ -1,0 +1,300 @@
+/* 1.142 (§142): el cuaderno de Pilar, en la franja de abajo (el marco es el de `.cf3-balda`). Cabecera con Pilar y la barra de
+   lo encargado; cada tarea, una hoja de libreta con renglones, su dibujo en un sello, la escalera de grados en chapitas, lo que
+   te ha dado y el precio en granos. Al encargar, el sello de «¡Apuntado!». Píxel duro: sin degradados brillantes ni sombras
+   blandas. */
+
+.cf3-cuaderno {
+  max-height: min(68vh, 580px);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+.cf3-cuaderno__cabeza {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.cf3-cuaderno__pilar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: #e9cf98;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 #c9a868;
+}
+.cf3-cuaderno__pilar .cf3-px {
+  width: 36px;
+  height: 36px;
+}
+.cf3-cuaderno__titulos {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.cf3-cuaderno__titulo {
+  margin: 0;
+  color: var(--cf3-cream);
+  font: 400 16px/1.15 var(--pp-title);
+}
+.cf3-cuaderno__marcador {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: #f2d27a;
+  font: 400 12px/1 var(--pp-title);
+}
+.cf3-cuaderno__barra {
+  flex: 1;
+  max-width: 160px;
+  height: 10px;
+  background: #24160f;
+  box-shadow: inset 0 0 0 2px #0f0906;
+}
+.cf3-cuaderno__barra > span {
+  display: block;
+  height: 100%;
+  background: #6a8c62;
+  box-shadow:
+    inset 0 2px 0 #9cc08e,
+    inset 0 0 0 2px #0f0906;
+}
+.cf3-cuaderno__nota {
+  margin: 0;
+  color: rgb(243 230 200 / 0.88);
+  font:
+    italic 500 0.84rem/1.35 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-cuaderno__lista {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+/* La hoja: papel con renglones, el margen rojo y el dibujo de la tarea en un sello */
+.cf3-cuaderno__tarea {
+  position: relative;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 12px 10px 12px 18px;
+  background: linear-gradient(90deg, transparent 9px, #c86a5a 9px, #c86a5a 11px, transparent 11px), repeating-linear-gradient(transparent 0 19px, #d9c9a4 19px 20px), #f2e6c8;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 #d8c69c;
+  color: #2a1a10;
+}
+.cf3-cuaderno__tarea[data-cerrada='true'] {
+  filter: saturate(0.45);
+}
+.cf3-cuaderno__tarea[data-completa='true'] {
+  background: linear-gradient(90deg, transparent 9px, #6a8c62 9px, #6a8c62 11px, transparent 11px), repeating-linear-gradient(transparent 0 19px, #cfd8b4 19px 20px), #eef0d6;
+}
+.cf3-cuaderno__icono {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  background: #fff6de;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 #e2cf9e;
+}
+.cf3-cuaderno__icono .cf3-px {
+  width: 34px;
+  height: 32px;
+}
+.cf3-cuaderno__texto {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.cf3-cuaderno__texto p {
+  margin: 0;
+}
+.cf3-cuaderno__nombre {
+  font: 400 15px/1.2 var(--pp-title);
+}
+
+/* La escalera de grados: chapitas, la hecha en verde, la siguiente en latón y las de luego en papel */
+.cf3-cuaderno__escalera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cf3-cuaderno__escalera > li {
+  padding: 3px 6px 4px;
+  background: #e6d6ae;
+  box-shadow: inset 0 0 0 2px #8a7458;
+  color: #5a4632;
+  font: 400 11px/1 var(--pp-title);
+}
+.cf3-cuaderno__escalera > li[data-estado='hecho'] {
+  background: #4f7a54;
+  box-shadow:
+    inset 0 0 0 2px #1c2a1a,
+    inset 0 2px 0 #7ea676;
+  color: #f6eed8;
+}
+.cf3-cuaderno__escalera > li[data-estado='siguiente'] {
+  background: #e7b765;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 2px 0 #ffe0a0;
+  color: #2a1a10;
+}
+.cf3-cuaderno__escalera > li[data-estado='cerrado'] {
+  background: #d8c9a6;
+  box-shadow: inset 0 0 0 2px #2a1a10;
+  color: #2a1a10;
+}
+.cf3-cuaderno__escalera small {
+  font-size: 10px;
+}
+
+.cf3-cuaderno__efecto,
+.cf3-cuaderno__detalle,
+.cf3-cuaderno__hecho,
+.cf3-cuaderno__paga,
+.cf3-cuaderno__dado {
+  font:
+    500 0.8rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-cuaderno__efecto strong {
+  color: #3e5a3a;
+  font-weight: 700;
+}
+.cf3-cuaderno__detalle {
+  color: #5a4632;
+}
+.cf3-cuaderno__paga {
+  color: #7a4a12;
+  font-weight: 700;
+}
+/* Lo que te ha dado: una etiqueta de estraza grapada a la hoja */
+.cf3-cuaderno__dado {
+  justify-self: start;
+  padding: 3px 8px;
+  background: #d9b98a;
+  box-shadow: inset 0 0 0 2px #7a5232;
+  color: #2a1a10;
+  font-weight: 700;
+}
+.cf3-cuaderno__dado > span {
+  color: #6b4630;
+  font-weight: 500;
+}
+.cf3-cuaderno__hecho {
+  color: #3e5a3a;
+  font-style: italic;
+  font-weight: 700;
+}
+.cf3-cuaderno__btn {
+  display: grid;
+  justify-items: center;
+  align-self: center;
+  gap: 2px;
+  min-width: 86px;
+}
+.cf3-cuaderno__btn:disabled {
+  background: #bcae92;
+  box-shadow: inset 0 0 0 2px #7a6a52;
+  color: #3a2a1c;
+  cursor: default;
+}
+.cf3-cuaderno__precio {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.cf3-cuaderno__precio .cf3-px {
+  width: 14px;
+  height: 14px;
+}
+.cf3-cuaderno__precio[data-falta='true'] {
+  color: #8a1e14;
+}
+.cf3-cuaderno__listo {
+  align-self: center;
+  padding: 6px 10px;
+  background: #4f7a54;
+  box-shadow: inset 0 0 0 2px #1c2a1a;
+  color: #f6eed8;
+  font: 400 13px/1 var(--pp-title);
+}
+
+/* El sello de «¡Apuntado!», que cae sobre la hoja y se queda un poco torcido */
+.cf3-cuaderno__sello {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 4px 8px;
+  box-shadow: inset 0 0 0 3px #b8574a;
+  color: #b8574a;
+  font: 400 14px/1 var(--pp-title);
+  transform: rotate(-8deg);
+  pointer-events: none;
+  animation: cf3-sello 420ms steps(4, end) both;
+}
+@keyframes cf3-sello {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) scale(1.8);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+.cf3-cuaderno__tarea[data-recien='true'] .cf3-cuaderno__escalera > li[data-estado='hecho']:last-of-type {
+  animation: cf3-chapa 360ms steps(3, end);
+}
+@keyframes cf3-chapa {
+  from {
+    transform: translateY(-4px);
+  }
+  to {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf3-cuaderno__sello,
+  .cf3-cuaderno__tarea[data-recien='true'] .cf3-cuaderno__escalera > li {
+    animation: none;
+  }
+}
+
+/* El cuaderno del HUD, con el tamaño de los libros de al lado */
+.cf3-cuaderno-btn .cf3-px {
+  width: 30px;
+  height: 28px;
+}
+
+@container cf3 (max-width: 370px) {
+  .cf3-cuaderno__tarea {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+  .cf3-cuaderno__icono {
+    width: 40px;
+    height: 40px;
+  }
+  .cf3-cuaderno__btn,
+  .cf3-cuaderno__listo {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}

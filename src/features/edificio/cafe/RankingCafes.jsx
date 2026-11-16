@@ -98,13 +98,13 @@ export function RankingCafes({ onVisitar, onCerrar, sfx = null }) {
                 <ReaderAvatar avatarId={f.avatarId} alias={f.alias} size="list" decorative />
                 <span className="cf3-ranking__quien">
                   <span className="cf3-ranking__cafe">{f.cafe}</span>
-                  <span className="cf3-ranking__alias">
-                    {f.yo ? 'Tú' : f.alias}
-                    {tabla === 'nivel' ? ` · ${f.reputacion} de reputación` : ''}
-                  </span>
+                  <span className="cf3-ranking__alias">{f.yo ? 'Tú' : f.alias}</span>
                 </span>
                 <span className="cf3-ranking__cifra" aria-label={`${t.cifra(f)}, ${t.detalle(f)}`}>
                   <span aria-hidden="true">{t.cifra(f)}</span>
+                  <span className="cf3-ranking__sub" aria-hidden="true">
+                    {t.sub(f)}
+                  </span>
                 </span>
                 {!f.yo && (
                   <button type="button" className="cf3-btn cf3-ranking__visitar" aria-label={`Visitar ${f.cafe}, el café de ${f.alias}`} onClick={() => onVisitar(f)}>

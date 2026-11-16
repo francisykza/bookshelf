@@ -12,6 +12,8 @@ import {
   comandaLibro,
   comandaLibroAcertijo,
   encajaExtension,
+  ADORNOS,
+  ANCHO_ATREZZO,
   atrezzoEstante,
   destacadosDe,
   estanteLibreria,
@@ -138,7 +140,7 @@ describe('los libros del café (1.130)', () => {
     expect(tramos.some((t) => t.fila === 0)).toBe(false);
   });
 
-  it('1.140: la estantería vestida, sin pisar ningún lomo: de cara junto a su sección, cajas abajo y adorno en los huecos', () => {
+  it('1.142: la estantería vestida, sin pisar ningún lomo: de cara dentro de su sección, cajas abajo y adorno sin libros', () => {
     const balda = librosDeLaBalda(
       { libros: [enBalda('a', 'misterio', 3), enBalda('b', 'poesia', 2)] },
       [
@@ -147,11 +149,20 @@ describe('los libros del café (1.130)', () => {
       ],
     );
     const tramos = estanteLibreria(balda);
-    const cosas = atrezzoEstante(tramos, balda, { cajas: 7 });
-    const caras = cosas.filter((c) => c.tipo === 'cara');
-    expect(caras.map((c) => c.clave).sort()).toEqual(['a', 'b']);
+    const cosas = atrezzoEstante(tramos, { cajas: 7 });
     expect(destacadosDe(balda).find((d) => d.genero === 'misterio').cover).toBe('https://x/a.jpg');
-    for (const c of caras) expect(tramos.find((t) => t.genero === c.genero).fila).toBe(c.fila);
+    // El de cara es un ejemplar más de su sección (se toca como un lomo), el último y más ancho; los demás, de lomo
+    for (const t of tramos) {
+      const caras = t.lomos.filter((l) => l.cara);
+      expect(caras).toHaveLength(1);
+      expect(t.lomos.at(-1).cara).toBe(true);
+      expect(caras[0].y1 - caras[0].y0).toBeCloseTo(ANCHO_ATREZZO.cara);
+    }
+    expect(tramos.find((t) => t.genero === 'misterio').lomos).toHaveLength(3);
+    expect(tramos.find((t) => t.genero === 'misterio').lomos.map((l) => l.k)).toEqual([0, 1, 2]);
+    // Ni pilas ni libros de adorno
+    expect(cosas.every((c) => ADORNOS.includes(c.tipo) || c.tipo === 'caja')).toBe(true);
+    expect(cosas.some((c) => ['pila', 'cara'].includes(c.tipo))).toBe(false);
     expect(cosas.filter((c) => c.tipo === 'caja')).toHaveLength(2);
     expect(cosas.filter((c) => c.tipo === 'caja').every((c) => c.fila === 0)).toBe(true);
     // Hay de todo y las cuatro filas tienen algo
@@ -168,8 +179,8 @@ describe('los libros del café (1.130)', () => {
       expect(xs.at(-1)[1]).toBeLessThanOrEqual(ESTANTERIA.y1);
     }
     // Siempre igual para la misma balda; sin cajas, ninguna
-    expect(atrezzoEstante(tramos, balda, { cajas: 7 })).toEqual(cosas);
-    expect(atrezzoEstante(tramos, balda).some((c) => c.tipo === 'caja')).toBe(false);
+    expect(atrezzoEstante(tramos, { cajas: 7 })).toEqual(cosas);
+    expect(atrezzoEstante(tramos).some((c) => c.tipo === 'caja')).toBe(false);
   });
 
   it('Pilar: solo lo que dominas (12), nunca al excéntrico, y lo nuevo de la carta, a mano hasta dominarlo', () => {

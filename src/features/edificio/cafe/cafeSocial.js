@@ -8,11 +8,16 @@ export const AMBITOS = [
   { id: 'edificio', nombre: 'Tu edificio' },
   { id: 'seguidos', nombre: 'A quien sigues' },
 ];
-/** Las tres tablas: nivel (y reputación), granos ganados en total y la reputación de esta semana. */
+/** Un número con el punto de los miles (2.400), también con cuatro cifras. */
+export const miles = (n) => String(Math.trunc(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+/**
+ * Las tres tablas: nivel (y reputación), granos ganados en total y la reputación de esta semana. `cifra`, lo grande; `sub`, la
+ * línea de debajo (1.142, Francisco: «en los ranking no se ve bien la reputación»); `detalle`, lo que se lee en voz alta.
+ */
 export const TABLAS = [
-  { id: 'nivel', nombre: 'Nivel', cifra: (f) => `Nv ${f.nivel}`, detalle: (f) => `${f.reputacion} de reputación` },
-  { id: 'ganados', nombre: 'Granos ganados', cifra: (f) => `${f.ganados}`, detalle: () => 'granos en total' },
-  { id: 'semana', nombre: 'Esta semana', cifra: (f) => `+${f.semana}`, detalle: () => 'de reputación desde el lunes' },
+  { id: 'nivel', nombre: 'Nivel', cifra: (f) => `Nv ${f.nivel}`, sub: (f) => `${miles(f.reputacion)} rep.`, detalle: (f) => `${miles(f.reputacion)} de reputación` },
+  { id: 'ganados', nombre: 'Granos ganados', cifra: (f) => miles(f.ganados), sub: () => 'granos', detalle: () => 'granos en total' },
+  { id: 'semana', nombre: 'Esta semana', cifra: (f) => `+${miles(f.semana)}`, sub: () => 'de rep.', detalle: () => 'de reputación desde el lunes' },
 ];
 const CLAVES = {
   nivel: (f) => [f.nivel, f.reputacion],

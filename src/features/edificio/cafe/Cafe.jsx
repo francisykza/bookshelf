@@ -19,10 +19,10 @@ import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
 import { renderShopRoom } from '../shopRoom';
 import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCasa, libresDelCafe, maxCosas, progresoNivel, uidNuevo } from './cafeCatalogo';
-import { COPA, GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
+import { COPA, CUADERNO, GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { bienvenidaLibros, cargarCafe, misTitulos, cargarDia, cargarJornada, cargarTaller, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
+import { bienvenidaLibros, cargarCafe, misTitulos, cargarDia, cargarJornada, cargarTaller, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate, recogerHucha } from './cafeService';
 import { enFrase } from './cafeInfluencers';
 import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
@@ -30,6 +30,7 @@ import { BIENVENIDA, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, e
 import { pedidosLibro } from './cafeLibreria';
 import { usePortadasBalda } from './usePortadasBalda';
 import { RankingCafes } from './RankingCafes';
+import { CuadernoPilar } from './CuadernoPilar';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
@@ -91,6 +92,8 @@ const nombreDe = (id) => CAFE_MUEBLES.find((m) => m.id === id)?.nombre ?? catalo
 export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, onVisitar = null }) {
   // 1.141: el ranking de los cafés (tu edificio y a quien sigues), en la franja de abajo
   const [panelRanking, setPanelRanking] = useState(false);
+  // 1.142: el cuaderno de Pilar (las tareas que se le encargan)
+  const [panelCuaderno, setPanelCuaderno] = useState(false);
   const { state } = useLibrary();
   const host = useRef(null);
   const api = useRef(null);
@@ -177,6 +180,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   const pendientes = clientesHoy.filter((c) => !c.servido);
   const clienteAtendido = clientesHoy.find((c) => c.n === atendiendo) ?? null;
   const abierto = Boolean(local?.inaugurado);
+  const pilarCaja = local?.pilar?.caja ?? false;
   const decorando = borrador != null;
   // La carta abierta (bloque 4a): el chocolate y la nata, según la reputación
   const reputacion = local?.reputacion ?? 0;
@@ -425,21 +429,45 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
       /* sin almacenamiento, se avisa cada vez que se entra */
     }
     recienReparto.current = r.claves;
+    // 1.142: con «Colocar la caja» encargada, Pilar ya lo ha subido a la balda (lo que no cabía sigue en la caja)
+    const coloca = Boolean(pilarCaja);
+    const quedan = enCajas(librosCafe);
     if (r.claves.length) {
       sfx.play('reparto');
-      mirarCaja.current = true;
+      if (!coloca || quedan > 0) mirarCaja.current = true;
     }
     const n = r.claves.length;
     // 1.139: el reparto es gratis (de antes quedaba el que cobraba 2 granos por ejemplar: se cuenta igual, sin precio)
     const tuyos = r.claves.filter((c) => !String(c).startsWith('cat:')).length;
     const repuso = r.repuestos > 0 ? ` ${r.repuestos === 1 ? 'Uno repone' : `${r.repuestos} reponen`} lo que se llevaron ayer.` : '';
     const deTi = tuyos > 0 ? ` ${tuyos === 1 ? 'Hay uno' : `Hay ${tuyos}`} de los que has leído.` : '';
+    // 1.142: los que pidió Pilar a la distribuidora (2.º grado de «Colocar la caja»)
+    const pidio = r.pilar > 0 ? ` ${r.pilar === 1 ? 'Uno lo pedí yo' : `${r.pilar} los pedí yo`} a la distribuidora.` : '';
     setAviso(
       n
-        ? `«Ha pasado el reparto de la mañana: ${n === 1 ? 'un libro' : `${n} libros`}${r.granos > 0 ? ` por ${r.granos} granos` : ' de regalo de la distribuidora'}.${repuso}${deTi} Te he dejado la caja junto al mostrador.»`
+        ? `«Ha pasado el reparto de la mañana: ${n === 1 ? 'un libro' : `${n} libros`}${r.granos > 0 ? ` por ${r.granos} granos` : ' de regalo de la distribuidora'}.${repuso}${deTi}${pidio} ${coloca ? (quedan > 0 ? 'He colocado lo que cabía en la balda; el resto sigue en la caja.' : 'Ya lo he colocado todo en la balda.') : 'Te he dejado la caja junto al mostrador.'}»`
         : '«Ha pasado el reparto de la mañana, pero la balda está llena: hoy no traía nada.»',
     );
-  }, [dia, librosCafe, sfx]);
+  }, [dia, librosCafe, sfx, pilarCaja]);
+  // 1.142: la hucha de propinas se recoge al entrar (una vez por visita), con Pilar contándolo
+  const huchaRecogida = useRef(false);
+  const huchaLista = local?.pilar?.huchaLista ?? 0;
+  useEffect(() => {
+    if (!abierto || huchaLista <= 0 || huchaRecogida.current) return;
+    huchaRecogida.current = true;
+    recogerHucha().then(
+      (r) => {
+        if (!r?.cafe || r.recogido <= 0) return;
+        setLocal(r.cafe);
+        setGanado(r.recogido);
+        sfx.play('campanilla');
+        setAviso(`«He vaciado la hucha de propinas mientras no estabas: ${r.recogido} granos para ti.»`);
+      },
+      () => {
+        huchaRecogida.current = false;
+      },
+    );
+  }, [abierto, huchaLista, sfx]);
   // Bloque 6b: Pilar avisa una vez al día de que hay saco en el tambor
   const avisadoSaco = useRef(null);
   useEffect(() => {
@@ -635,6 +663,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   // Atender a un cliente: el cuadro de abajo pasa a ser su conversación (Atender.jsx)
   function atender(n) {
     setPanelRanking(false);
+    setPanelCuaderno(false);
     setAviso('');
     setHablando(null);
     setError('');
@@ -645,6 +674,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   }
   function abrirLibros(hoja, recien = []) {
     setPanelRanking(false);
+    setPanelCuaderno(false);
     setAtendiendo(null);
     setAviso('');
     setHablando(null);
@@ -955,10 +985,27 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
                 onClick={() => {
                   sfx.play('papel');
                   setPanelLibros(null);
+                  setPanelCuaderno(false);
                   setPanelRanking((v) => !v);
                 }}
               >
                 <PixelArt icono={COPA} />
+              </button>
+            )}
+            {abierto && local.pilar && !decorando && !enTaller && (
+              <button
+                type="button"
+                className="cf3-pizarra-btn cf3-cuaderno-btn"
+                aria-label="El cuaderno de Pilar: tareas a cambio de granos"
+                aria-expanded={panelCuaderno}
+                onClick={() => {
+                  sfx.play('papel');
+                  setPanelLibros(null);
+                  setPanelRanking(false);
+                  setPanelCuaderno((v) => !v);
+                }}
+              >
+                <PixelArt icono={CUADERNO} />
               </button>
             )}
             {plantaEscena === 'bodega' && !decorando && (
@@ -1140,6 +1187,16 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
         />
       ) : panelRanking && onVisitar && !enTaller ? (
         <RankingCafes sfx={sfx} onVisitar={onVisitar} onCerrar={() => setPanelRanking(false)} />
+      ) : panelCuaderno && local?.pilar && !enTaller ? (
+        <CuadernoPilar
+          local={local}
+          sfx={sfx}
+          onCambio={(r) => {
+            if (r.libros) setLibrosCafe(r.libros);
+            if (r.cafe) setLocal(r.cafe);
+          }}
+          onCerrar={() => setPanelCuaderno(false)}
+        />
       ) : enTaller && taller ? (
         <Taller
           escena={ready && !sin3d ? api.current : null}

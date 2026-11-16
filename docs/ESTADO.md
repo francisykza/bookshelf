@@ -6,6 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Con commit en la rama `1.90-escritorio-puerto`, sin publicar: 1.142.0** (2026-11-16, §142; «Sí, haz el commit»): solo libros de verdad en la estantería, la reputación del ranking
+  legible y el cuaderno de Pilar. **Migración `20261224120000_cafe_pilar.sql`, aplicada** el 16-11-2026. Ver la bitácora.
 - **Publicada en producción: 1.141.0** (2026-11-16, §140 y §141; «Commit y publicar»; `main` avanza sin forzar de `5a9beb8`
   desde `1.90-escritorio-puerto`): la estantería del café vestida y los cafés de los demás (ranking y visitas). **Migración
   aplicada** (16-11-2026): `20261223120000_cafe_social.sql`. Sin probar en un móvil real. Ver la bitácora.
@@ -445,6 +447,29 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-16 · Café: solo libros de verdad, la reputación legible y el cuaderno de Pilar · 1.142.0 (§142), con commit y sin publicar (Claude)
+
+- Francisco, tras ver la 1.141: a los lados de la estantería «libros que no se pueden pulsar y pueden confundir»; «en los
+  ranking no se ve bien la reputación»; y tareas para Pilar a cambio de granos. Decisiones: «Solo libros de verdad», «Mejoras
+  para siempre», las tres tareas y «Sí, esas cifras» (anotadas en `CLAUDE.md`).
+- **§142.1**: fuera las pilas; el libro de cara, dentro de su sección y pulsable como un lomo; los huecos, con plantas, tarros,
+  marcos, tazas, velas, un globo y un molinillo. **§142.2**: la reputación del ranking, en su propia línea («2.400 rep.»).
+- **§142.3**: el cuaderno de Pilar. Tras verlo, Francisco pidió beneficios «mucho más atractivos» y una interfaz más bonita
+  (cifras «Generosos»): colocar la caja, 60, y «Pilar pide a la distribuidora» (nivel 4, 300: 3 libros más en cada reparto); la
+  hucha, 120 / 250 / 450 para 8 / 15 / 25 al día hasta 7 días; la pizarra, 150 / 350 / 700 (el 3.º desde el nivel 5) para
+  1 / 2 / 3 clientes más. El cuaderno, con Pilar y la barra de encargos, la escalera de grados, «Te ha dado…», en cuántos días
+  se paga la hucha y el sello de «¡Apuntado!». **Migración `20261224120000_cafe_pilar.sql`, aplicada** el
+  16-11-2026: Claude la pegó en el SQL Editor con la SHA-256 comprobada (`f3e571f7…350b`) y Francisco pulsó Run. Con la clave
+  pública, `cafe_hucha`, `cafe_pilar_mejorar` y `cafe_pilar_json` dan «permission denied» (existen; una inexistente da
+  PGRST202). Sin ella, el cuaderno no sale.
+- Al empezar se pisó por error `cafePilar.js` (los gestos de Pilar) con lo del cuaderno; se recuperó de git en el acto y lo nuevo
+  está en `cafeCuaderno.js`.
+- Pruebas: Vitest del edificio en verde salvo `casino.rls.test.js` «el tope de la semana» (fichas, sin relación; ya fallaba).
+  E2E `v1140`, `v1141` y `v1142` a 360, 390, 430, 1440 y WebKit 390: 23 pasan. Evidencias en `qa-report/cafe-estanteria/`, `qa-report/cafe-social/`
+  y `qa-report/cafe-cuaderno/`, enviadas al chat.
+- Queda: su visto bueno a la entrega; aplicar la migración; commit y publicar cuando lo pida. Sin probar con cuentas reales
+  ni en móviles reales.
 
 ### 2026-11-16 · Migración del ranking y las visitas de cafés, aplicada (Claude)
 

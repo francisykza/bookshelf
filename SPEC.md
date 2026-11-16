@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.141.0 · 2026-11-16 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.142.0 · 2026-11-16 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7754,3 +7754,67 @@ Decisiones del mismo día: «Edificio y a quien sigues», «Nivel, granos ganado
 - E2E: `e2e-community/v1141-cafe-social.spec.js` (ranking, tablas, la visita y volver; sin la migración). Capturas y vídeo en
   `qa-report/cafe-social/`.
 - Limitaciones: Supabase simulado en las e2e; sin probar con cuentas reales, con la migración aplicada ni en móviles reales.
+
+## 142. El café: solo libros de verdad, la reputación legible y el cuaderno de Pilar (1.142.0)
+
+Francisco, 16-11-2026, tras ver la 1.141: «la estanteria solo muestra tres secciones con libros en el medio y luego a los lados
+libros que no se pueden pulsar y pueden confundir. Además en los ranking no se ve bien la reputación. Tambien me gustaría añadir
+la posibilidad de añadirle tareas a pilar a cambio de monedas para que pueda facilitar tareas o añadir funciones que recompensen
+al jugador a la larga». Decisiones del mismo día: «Solo libros de verdad», «Mejoras para siempre», las tareas «Colocar la caja,
+La hucha de propinas, La pizarra de la acera» y «Sí, esas cifras». Tras verlo, el mismo día: «que los beneficios de los encargos sean mucho más
+atractivos para que la gente se sienta mucho más motivados para tenerlo como objetivos a la larga y que su interfaz sea un poco
+más atractiva»; cifras «Generosos».
+
+### 142.1 La estantería, solo con libros de verdad
+
+- **Fuera las pilas** de libros tumbados del adorno (§140): parecían libros y no se podían tocar.
+- **El libro de cara**, con su portada, va **dentro de su sección**: es un ejemplar más (el último, de pie en su atril y con la
+  portada al local) y **se toca y se saca como un lomo**. Ocupa su sitio en la casilla (`estanteLibreria`, `cara: true`). Solo
+  en el reparto por casillas; si no caben y se vuelve a `colocarSecciones`, todos de lomo.
+- **Los huecos**, con cosas que no son libros (`ADORNOS`): plantas, tarros, marcos, **tazas en su plato, velas encendidas, un
+  globo terráqueo y un molinillo de manivela**. Las cajas que esperan, abajo, como antes.
+
+### 142.2 El ranking: la reputación, en su línea
+
+- En cada fila, la cifra grande y debajo, en claro, de qué es: **«Nv 3» y «2.400 rep.»**; «granos»; «de rep.». Los miles con
+  punto (`miles`, también con cuatro cifras). La línea del alias ya no lleva la reputación (se cortaba).
+
+### 142.3 El cuaderno de Pilar
+
+- **El cuaderno** del HUD (debajo de la copa) abre «El cuaderno de Pilar» en la franja de abajo: tres tareas que se le
+  encargan con granos, **para siempre** (se pagan una vez, con grados, nunca caducan; 8 grados en total).
+- **Cómo se ve**: Pilar en la cabecera con la barra de lo encargado («4 / 8»). Cada tarea, una hoja de libreta con su dibujo
+  (la caja, la hucha de latón, la pizarra), **la escalera de grados en chapitas** (hechos en verde, el siguiente en latón y los
+  de luego con el nivel que piden), lo que hace ahora y lo del grado siguiente, **«Te ha dado…»** (granos de propinas, libros
+  colocados y pedidos, clientes de más) y, en la hucha, **en cuántos días se paga sola**. Al encargar, un sello de
+  «¡Apuntado!» cae sobre la hoja (sin animación con movimiento reducido). Las hojas completas, con margen verde; con todo
+  encargado, Pilar lo celebra.
+- **Colocar la caja** (nivel 1; 60 granos): al encargarla, Pilar sube a la balda lo que espera en las cajas; y cada mañana, tras
+  el reparto, también (hasta llenar los huecos; lo que no cabe se queda en la caja). 2.º grado, **«Pilar pide a la
+  distribuidora»** (nivel 4; 300 granos): **3 libros más en cada reparto** (sin pasar de los huecos libres). Pilar lo cuenta en
+  el aviso del reparto.
+- **La hucha de propinas** (desde el nivel 2; 120 / 250 / 450 granos): **8 / 15 / 25 granos por cada día entero**, guardando
+  como mucho 7 días. **Se recoge al entrar** en el café y Pilar lo dice. Al subir de grado, lo guardado se cobra al precio de
+  antes.
+- **La pizarra de la acera** (150 / 350 granos desde el nivel 3; 700 desde el nivel 5): **1 / 2 / 3 clientes más al día**,
+  **desde el día siguiente** (el excéntrico sigue siendo el último). La reputación del día no tiene otro tope que los clientes,
+  así que sube en proporción. Con ella, hasta 13 clientes al día.
+- Lo cuenta y lo cobra el servidor; **nada toca los tickets**. Sin la migración, el cuaderno no sale.
+
+### 142.4 Servidor
+
+- Migración nueva **`20261224120000_cafe_pilar.sql`** (la aplica Francisco): columnas `pilar_caja`, `hucha`, `hucha_desde`,
+  `pizarra` y lo que ha dado cada tarea (`hucha_total`, `pilar_colocados`, `pizarra_clientes`, `pilar_pedidos`) en
+  `cafe_locales`; los límites de clientes, a 13; `cafe_pilar_mejorar(mejora)` y `cafe_hucha()` (para la app) y
+  `cafe_pilar_coloca`, `cafe_hucha_cobrar` y las cifras (internas). Se redefinen `cafe_abrir_dia` (los clientes de la pizarra y
+  Pilar colocando tras el reparto), `cafe_reparto` (lo que pide Pilar, `pilar` en el reparto) y `cafe_json` (con `pilar`). Errores nuevos: `cafe:cuaderno` y `cafe:cuaderno_nivel`.
+
+### 142.5 Pruebas y limitaciones
+
+- Vitest: `cafeLibreria.test.js` (el de cara, dentro de su sección y el último; ningún libro de adorno) y
+  `cafe-pilar.rls.test.js` (precios, niveles y grados; la caja colocada al encargarla y al abrir el día, y los 3 libros que
+  pide; la hucha, por días enteros y con su tope; la pizarra desde el día siguiente; lo que ha dado cada una; permisos).
+- E2E: `v1140-cafe-estanteria.spec.js` (el de cara, entre los lomos que se tocan), `v1141-cafe-social.spec.js` (la reputación
+  en su línea) y `v1142-cafe-cuaderno.spec.js` (la hucha al entrar, encargar y mejorar, la escalera de grados y lo que ha dado; la
+  pizarra y el reparto pedido y colocado; todo encargado; sin la migración). Capturas en `qa-report/cafe-estanteria/`, `qa-report/cafe-social/` y `qa-report/cafe-cuaderno/`.
+- Limitaciones: Supabase simulado en las e2e; sin probar con la migración aplicada, con cuentas reales ni en móviles reales.

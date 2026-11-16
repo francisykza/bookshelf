@@ -2065,7 +2065,32 @@ function sujetaKit(s, dx, y, z) {
  * Los lomos de la balda en la estantería de la pared, por secciones (`estanteLibreria`), con los sujetalibros; `sin`: la sección
  * que se está mirando al atender (esa se dibuja aparte, para que el lomo elegido pueda salir). Devuelve las placas.
  */
-function lomosLibreria(s, tramos, dx = 0, { sin = null } = {}) {
+/**
+ * 1.142: el libro de cara de una sección (`l.cara`), de pie en su atril y con la portada al local; `sale`, cuánto asoma al
+ * tocarlo. Sin portada, su tapa de color con el título en bandas (con portada, se pinta encima). Devuelve dónde va la portada.
+ */
+function caraKit(s, F, l, z, { sale = 0, foco = false } = {}) {
+  const { y0, y1 } = l;
+  const yc = (y0 + y1) / 2;
+  const color = colorDe(l.titulo);
+  const a = sale * 0.3;
+  pushBox(s, [F - 0.16, y0 + 0.02, z, F - 0.04, y1 - 0.02, z + 0.025], WOOD_D);
+  pushBox(s, [F - 0.2, yc - 0.03, z, F - 0.15, yc + 0.03, z + 0.2], WOOD_D);
+  const zz = z + a * 0.2;
+  pushBox(s, [F - 0.15 + a, y0, zz + 0.02, F - 0.11 + a, y1, zz + 0.38], color.map((v) => Math.max(0, v - 40)));
+  pushBox(s, [F - 0.11 + a, y0 + 0.004, zz + 0.024, F - 0.1 + a, y1 - 0.004, zz + 0.376], color);
+  const claro = color.map((v) => Math.min(255, v + 80));
+  pushBox(s, [F - 0.1 + a, y0 + 0.03, zz + 0.06, F - 0.098 + a, y1 - 0.03, zz + 0.34], claro);
+  pushBox(s, [F - 0.098 + a, y0 + 0.045, zz + 0.075, F - 0.097 + a, y1 - 0.045, zz + 0.325], color);
+  pushBox(s, [F - 0.097 + a, y0 + 0.06, zz + 0.25, F - 0.096 + a, y1 - 0.06, zz + 0.28], claro);
+  pushBox(s, [F - 0.097 + a, y0 + 0.08, zz + 0.22, F - 0.096 + a, y1 - 0.08, zz + 0.235], claro);
+  // 1.139: los tuyos, con la cinta de «Leído por ti» colgando por delante
+  if (!String(l.clave ?? '').startsWith('cat:')) pushBox(s, [F - 0.093 + a, y1 - 0.05, zz, F - 0.088 + a, y1 - 0.034, zz + 0.12], CINTA_LEIDO);
+  // El que asoma, con un filo de luz en la cabeza (lo que tocas)
+  if (foco && sale < 0.05) pushBox(s, [F - 0.15, y0 + 0.004, zz + 0.38, F - 0.1, y1 - 0.004, zz + 0.386], [255, 214, 150], { glow: true });
+  return { clave: l.clave, x: F - 0.094 + a, y: yc, z: zz + 0.2, ancho: y1 - y0 - 0.02, alto: 0.34 };
+}
+function lomosLibreria(s, tramos, dx = 0, { sin = null, portadas = [] } = {}) {
   const { fondo } = ESTANTERIA;
   const placas = [];
   for (const t of tramos) {
@@ -2081,6 +2106,10 @@ function lomosLibreria(s, tramos, dx = 0, { sin = null } = {}) {
     }
     if (t.genero === sin) continue;
     for (const l of t.lomos) {
+      if (l.cara) {
+        portadas.push(caraKit(s, dx + fondo, l, z));
+        continue;
+      }
       lomoKit(s, [dx + 0.06, l.y0, z, dx + fondo - 0.04, l.y1, z + l.alto], colorDe(l.titulo), hashClave(l.clave));
       // 1.139: los tuyos (no los del catálogo del café), con la cinta granate de «Leído por ti» colgando del lomo
       if (!String(l.clave ?? '').startsWith('cat:')) {
@@ -2099,28 +2128,13 @@ function lomosLibreria(s, tramos, dx = 0, { sin = null } = {}) {
 function atrezzoKit(s, cosas, dx = 0) {
   const { fondo } = ESTANTERIA;
   const F = dx + fondo;
-  const portadas = [];
   const TIERRA = [168, 92, 60];
   const HOJA = [[78, 128, 70], [96, 150, 82], [62, 108, 62]];
   for (const c of cosas) {
     const z = c.z + 0.05;
     const { y0, y1 } = c;
     const yc = (y0 + y1) / 2;
-    if (c.tipo === 'cara') {
-      // El atril de madera y el libro de pie, de cara al local, un poco hacia atrás
-      const color = colorDe(c.titulo);
-      pushBox(s, [F - 0.16, y0 + 0.02, z, F - 0.04, y1 - 0.02, z + 0.025], WOOD_D);
-      pushBox(s, [F - 0.2, yc - 0.03, z, F - 0.15, yc + 0.03, z + 0.2], WOOD_D);
-      pushBox(s, [F - 0.15, y0, z + 0.02, F - 0.11, y1, z + 0.38], color.map((v) => Math.max(0, v - 40)));
-      pushBox(s, [F - 0.11, y0 + 0.004, z + 0.024, F - 0.1, y1 - 0.004, z + 0.376], color);
-      // Sin portada: el recuadro y el título en bandas claras (con portada, se pinta encima)
-      const claro = color.map((v) => Math.min(255, v + 80));
-      pushBox(s, [F - 0.1, y0 + 0.03, z + 0.06, F - 0.098, y1 - 0.03, z + 0.34], claro);
-      pushBox(s, [F - 0.098, y0 + 0.045, z + 0.075, F - 0.097, y1 - 0.045, z + 0.325], color);
-      pushBox(s, [F - 0.097, y0 + 0.06, z + 0.25, F - 0.096, y1 - 0.06, z + 0.28], claro);
-      pushBox(s, [F - 0.097, y0 + 0.08, z + 0.22, F - 0.096, y1 - 0.08, z + 0.235], claro);
-      portadas.push({ clave: c.clave, titulo: c.titulo, x: F - 0.094, y: yc, z: z + 0.2, ancho: y1 - y0 - 0.02, alto: 0.34 });
-    } else if (c.tipo === 'caja') {
+    if (c.tipo === 'caja') {
       // La caja de la distribuidora, con la cinta y dos lomos asomando
       const carton = [178, 134, 86];
       pushBox(s, [dx + 0.06, y0, z, F - 0.02, y1, z + 0.3], carton);
@@ -2129,29 +2143,6 @@ function atrezzoKit(s, cosas, dx = 0) {
       pushBox(s, [F - 0.02, yc - 0.04, z + 0.1, F - 0.015, yc + 0.04, z + 0.305], [214, 190, 140]);
       pushBox(s, [dx + 0.12, y0 + 0.08, z + 0.3, dx + 0.2, y0 + 0.14, z + 0.38], [176, 72, 62]);
       pushBox(s, [dx + 0.14, y1 - 0.15, z + 0.3, dx + 0.24, y1 - 0.08, z + 0.35], [74, 116, 82]);
-    } else if (c.tipo === 'pila') {
-      // Tres o cuatro libros tumbados, cada uno de un tamaño y un poco torcidos
-      const n = 3 + (c.variante % 2);
-      let zz = z;
-      for (let k = 0; k < n; k += 1) {
-        const h = 0.035 + hash(k, Math.round(y0 * 100)) * 0.025;
-        const m = 0.02 + hash(Math.round(y0 * 100), k) * 0.03;
-        const color = colorDe(`pila${Math.round(y0 * 1000)}:${k}`);
-        pushBox(s, [dx + 0.08 + m * 0.5, y0 + m, zz, F - 0.03 - m * 0.5, y1 - m * (k % 2 ? 0.4 : 1.2), zz + h], color);
-        // El canto de las páginas, claro
-        pushBox(s, [F - 0.031 - m * 0.5, y0 + m + 0.01, zz + 0.006, F - 0.028 - m * 0.5, y1 - m * (k % 2 ? 0.4 : 1.2) - 0.01, zz + h - 0.006], [226, 214, 190]);
-        zz += h;
-      }
-      // Encima, a veces, una taza o un reloj de arena pequeño
-      if (c.variante === 2) {
-        pushBox(s, [F - 0.16, yc - 0.04, zz, F - 0.08, yc + 0.04, zz + 0.07], [232, 226, 212]);
-        pushBox(s, [F - 0.15, yc - 0.03, zz + 0.069, F - 0.09, yc + 0.03, zz + 0.072], [92, 60, 40]);
-      } else if (c.variante === 3) {
-        pushBox(s, [F - 0.17, yc - 0.035, zz, F - 0.09, yc + 0.035, zz + 0.012], BRASS);
-        pushBox(s, [F - 0.155, yc - 0.022, zz + 0.012, F - 0.105, yc + 0.022, zz + 0.1], [214, 226, 228]);
-        pushBox(s, [F - 0.15, yc - 0.012, zz + 0.014, F - 0.11, yc + 0.012, zz + 0.04], [222, 196, 140]);
-        pushBox(s, [F - 0.17, yc - 0.035, zz + 0.1, F - 0.09, yc + 0.035, zz + 0.112], BRASS);
-      }
     } else if (c.tipo === 'planta') {
       // La maceta de barro con su borde y las hojas; en las filas de arriba, un potos que cuelga por el canto
       const m = 0.035;
@@ -2196,9 +2187,46 @@ function atrezzoKit(s, cosas, dx = 0) {
       pushBox(s, [F - 0.1, y0 + 0.025, z + 0.025, F - 0.097, y1 - 0.025, z + 0.215], cielo);
       pushBox(s, [F - 0.097, y0 + 0.025, z + 0.025, F - 0.094, y1 - 0.025, z + 0.09], [80, 112, 136]);
       pushBox(s, [F - 0.094, y0 + 0.05, z + 0.09, F - 0.091, y0 + 0.09, z + 0.15], [236, 230, 216]);
+    } else if (c.tipo === 'taza') {
+      // 1.142: una taza del café en su plato (blanca o de barro), con su asa
+      const loza = c.variante % 2 ? [232, 226, 212] : [176, 104, 72];
+      pushBox(s, [F - 0.15, y0 + 0.005, z, F - 0.03, y1 - 0.005, z + 0.012], [222, 214, 198]);
+      pushBox(s, [F - 0.13, y0 + 0.02, z + 0.012, F - 0.05, y1 - 0.035, z + 0.09], loza);
+      pushBox(s, [F - 0.12, y0 + 0.03, z + 0.088, F - 0.06, y1 - 0.045, z + 0.091], [92, 60, 40]);
+      pushBox(s, [F - 0.1, y1 - 0.035, z + 0.03, F - 0.08, y1 - 0.012, z + 0.07], loza);
+    } else if (c.tipo === 'vela') {
+      // Una vela gruesa en su platillo de latón, con la llama encendida
+      const cera = [[240, 230, 206], [214, 164, 120], [196, 210, 196], [236, 214, 160]][c.variante];
+      const zt = z + 0.12 + c.variante * 0.02;
+      pushBox(s, [F - 0.14, y0 + 0.005, z, F - 0.04, y1 - 0.005, z + 0.012], BRASS);
+      pushBox(s, [F - 0.125, y0 + 0.02, z + 0.012, F - 0.055, y1 - 0.02, zt], cera);
+      pushBox(s, [F - 0.093, yc - 0.003, zt, F - 0.087, yc + 0.003, zt + 0.012], [40, 30, 24]);
+      pushBox(s, [F - 0.097, yc - 0.008, zt + 0.012, F - 0.083, yc + 0.008, zt + 0.045], [255, 206, 120], { glow: true });
+    } else if (c.tipo === 'globo') {
+      // Un globo terráqueo en su pie de madera, con el meridiano de latón
+      const mar = [86, 132, 166];
+      const tierra = [[150, 168, 98], [196, 170, 110]];
+      pushBox(s, [F - 0.15, yc - 0.06, z, F - 0.05, yc + 0.06, z + 0.02], WOOD_D);
+      pushBox(s, [F - 0.105, yc - 0.012, z + 0.02, F - 0.095, yc + 0.012, z + 0.07], BRASS);
+      for (let k = 0; k < 6; k += 1) {
+        const h = 0.025;
+        const zk = z + 0.07 + k * h;
+        const r = 0.085 * Math.sin(((k + 0.5) / 6) * Math.PI);
+        pushBox(s, [F - 0.1 - r * 0.8, yc - r, zk, F - 0.1 + r * 0.8, yc + r, zk + h], mar);
+        if ((k + c.variante) % 2) pushBox(s, [F - 0.1 + r * 0.8 - 0.004, yc - r * 0.6, zk + 0.004, F - 0.1 + r * 0.8 + 0.002, yc + r * 0.1, zk + h - 0.002], tierra[k % 2]);
+      }
+      pushBox(s, [F - 0.104, yc - 0.1, z + 0.065, F - 0.096, yc - 0.09, z + 0.23], BRASS);
+    } else if (c.tipo === 'molinillo') {
+      // El molinillo de café de manivela: la caja de madera, el cajoncito, la tolva de latón y la manivela
+      pushBox(s, [F - 0.16, y0 + 0.01, z, F - 0.04, y1 - 0.01, z + 0.12], WOOD);
+      pushBox(s, [F - 0.042, y0 + 0.035, z + 0.02, F - 0.036, y1 - 0.035, z + 0.06], WOOD_D);
+      pushBox(s, [F - 0.036, yc - 0.008, z + 0.035, F - 0.03, yc + 0.008, z + 0.045], BRASS);
+      pushBox(s, [F - 0.14, y0 + 0.03, z + 0.12, F - 0.06, y1 - 0.03, z + 0.17], BRASS);
+      pushBox(s, [F - 0.105, yc - 0.006, z + 0.17, F - 0.095, yc + 0.006, z + 0.2], HIERRO);
+      pushBox(s, [F - 0.105, yc - 0.006, z + 0.195, F - 0.095, yc + 0.07, z + 0.205], HIERRO);
+      pushBox(s, [F - 0.11, yc + 0.06, z + 0.205, F - 0.09, yc + 0.08, z + 0.24], WOOD_D);
     }
   }
-  return portadas;
 }
 /** La placa de latón de una sección: el nombre grabado, en oscuro y sin medias tintas (si no cabe entero, rayas grabadas). */
 function paintPlaca(nombre, ancho) {
@@ -4751,6 +4779,18 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
           if (e.libro && e.libro.k === l.k && D > 0.002) continue;
           const foco = e.foco === l.k;
           const sale = foco ? suaveT(e.sale ?? 0) : 0;
+          if (l.cara) {
+            // 1.142: el de cara asoma hacia ti, con su portada
+            const pt = caraKit(s, F, l, z, { sale, foco });
+            const lienzo = estado.portadasBalda?.[pt.clave];
+            if (lienzo) {
+              const m = new Mesh(new PlaneGeometry(pt.ancho, pt.alto), portadaMaterial(lienzo));
+              m.rotation.y = Math.PI / 2;
+              m.position.set(pt.x, pt.z, pt.y);
+              libGrupo.add(m);
+            }
+            continue;
+          }
           const o = foco ? { xf: giro([F - 0.04, l.y0, z], 'y', 0.17 + sale * 0.3, (p) => [p[0] + sale * 0.36, p[1] + sale * 0.06, p[2]]) } : {};
           lomoKit(s, [X + 0.06, l.y0, z, F - 0.04, l.y1, z + l.alto], colorDe(l.titulo), hashClave(l.clave), o);
           // 1.139: la cinta de «Leído por ti», que sale con el lomo
@@ -4857,15 +4897,16 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       libTramos = estado.inaugurado && estado.balda ? estanteLibreria(estado.balda) : [];
       if (estado.inaugurado && estado.balda) {
         const X = paredIzquierda(estado.nivel);
-        for (const p of lomosLibreria(s, libTramos, X, { sin: lib.activa ? lib.est.genero : null })) {
+        const deCara = [];
+        for (const p of lomosLibreria(s, libTramos, X, { sin: lib.activa ? lib.est.genero : null, portadas: deCara })) {
           const m = new Mesh(new PlaneGeometry(p.ancho, 0.066), materialPlaca(p.genero, p.nombre, p.ancho));
           m.rotation.y = Math.PI / 2;
           m.position.set(p.x, p.z, p.y);
           planoGrupo.add(m);
         }
         // 1.140: lo que viste la estantería, y la portada de cada libro de cara (la real, en píxeles, si ha cargado)
-        const cosas = atrezzoEstante(libTramos, estado.balda, { cajas: estado.cajas });
-        for (const p of atrezzoKit(s, cosas, X)) {
+        atrezzoKit(s, atrezzoEstante(libTramos, { cajas: estado.cajas }), X);
+        for (const p of deCara) {
           const lienzo = estado.portadasBalda?.[p.clave];
           if (!lienzo) continue;
           const m = new Mesh(new PlaneGeometry(p.ancho, p.alto), portadaMaterial(lienzo));
@@ -6118,10 +6159,12 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         if (t.genero !== e.genero) continue;
         const z = t.z + 0.05;
         for (const l of t.lomos) {
-          const a = project(F - 0.04, l.y1, z + l.alto * 0.5);
-          const b = project(F - 0.04, l.y0, z + l.alto * 0.5);
-          const c = project(F - 0.04, (l.y0 + l.y1) / 2, z + l.alto);
-          out.push({ k: l.k, clave: l.clave, titulo: l.titulo, paginas: l.paginas, x: rect.left + (a.x + b.x) / 2, x0: rect.left + Math.min(a.x, b.x), x1: rect.left + Math.max(a.x, b.x), y: rect.top + c.y, front: a.front && b.front });
+          // 1.142: el de cara se toca por su portada
+          const xf = l.cara ? F - 0.094 : F - 0.04;
+          const a = project(xf, l.y1, z + l.alto * 0.5);
+          const b = project(xf, l.y0, z + l.alto * 0.5);
+          const c = project(xf, (l.y0 + l.y1) / 2, z + l.alto);
+          out.push({ k: l.k, clave: l.clave, titulo: l.titulo, paginas: l.paginas, cara: Boolean(l.cara), x: rect.left + (a.x + b.x) / 2, x0: rect.left + Math.min(a.x, b.x), x1: rect.left + Math.max(a.x, b.x), y: rect.top + c.y, front: a.front && b.front });
         }
       }
       return out.sort((p, q) => p.x - q.x);

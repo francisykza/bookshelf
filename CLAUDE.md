@@ -319,6 +319,20 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       en tres tablas: **nivel y reputación**, **granos ganados en total** (desde la migración, sin restar lo gastado) y
       **reputación de la semana**. Sin sellos de visita, placas de ranking ni guardar libros ajenos de momento. Los granos
       siguen sin pasar entre cuentas.
+      **Tras ver la 1.141** (Francisco, 16-11-2026: «a los lados libros que no se pueden pulsar y pueden confundir»; «en los
+      ranking no se ve bien la reputación»): **en la estantería, solo libros de verdad** (sin pilas de adorno; el libro de cara,
+      dentro de su sección y pulsable como un lomo; los huecos, con objetos que no son libros) y la reputación del ranking, bien
+      legible. **El cuaderno de Pilar**: tareas a cambio de granos como **mejoras para siempre** (se pagan una vez, con grados,
+      nunca caducan): **colocar la caja** del reparto ella sola, **la hucha de propinas** (unos granos al día mientras no estás,
+      con tope, sin perder nada) y **la pizarra de la acera** (un cliente más al día). **Cifras aprobadas** («Sí, esas cifras»):
+      colocar la caja, 60 granos (nivel 1, de una vez); la hucha, desde el nivel 2, 120 / 250 / 450 granos para 3 / 6 / 10
+      granos al día, guardando hasta 7 días; la pizarra, desde el nivel 3, 150 / 350 granos para 1 / 2 clientes más al día (y
+      el tope diario de reputación sube en proporción). Lo cuenta el servidor; nada toca los tickets.
+      **Tras ver la 1.142** (Francisco, 16-11-2026: «que los beneficios de los encargos sean mucho más atractivos [...] como
+      objetivos a la larga y que su interfaz sea un poco más atractiva»; cifras «Generosos»): la hucha da **8 / 15 / 25** granos
+      al día (mismos precios, guarda 7 días); la pizarra, **3 grados**: +1 / +2 / +3 clientes por 150 / 350 / **700** (el 3.º
+      desde el nivel 5); la caja, un **2.º grado «Pilar pide a la distribuidora»**: +3 libros en cada reparto de la mañana
+      (**300** granos, desde el nivel 4). El cuaderno, más vistoso y con lo que te ha dado cada tarea.
     - **La pizarra se quita del todo** («no me termina de convencer»): sin botón ni panel; la nota del habitual y la reseña
       dorada se ven en su bocadillo al despedirse, y Pilar no la menciona. Sin borrar datos del servidor.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
