@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Publicada en producción: 1.139.0** (2026-11-16, §139; «Commit y publicar»; `main` avanza sin forzar de `6560b5a` desde
+  `1.90-escritorio-puerto`): la manivela bajo el dedo y de dónde salen los libros del café
+  (catálogo + tus leídos, reparto gratis). **Migración aplicada** (16-11-2026): `20261222120000_cafe_catalogo.sql`. Ver la bitácora.
 - **Publicadas en producción: 1.138.0 y 1.137.0** (2026-11-15; «Espera a la 1.138»; «Sí, publícalas»; `main` avanzó sin
   forzar de `36cb4e7` a `aefa1fa` desde `1.90-escritorio-puerto`, y libotown.es sirve v1.138.0).
 - **1.138.0** (2026-11-15, §138; encargo de Francisco del mismo día; aprobada: «Sí, publícalas»).
@@ -439,6 +442,38 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-16 · Migración del catálogo del café, aplicada (Claude)
+
+- Francisco: «Sí, hazlo tú». SQL Editor del proyecto `bookshelf` en el panel del navegador (él inició sesión).
+  `20261222120000_cafe_catalogo.sql` pegada con `setValue` de Monaco en cuatro trozos (la página no puede leer un servidor
+  local): 28.023 B y 551 líneas, SHA-256 `dfc0668a…7eab7055b`, igual en el texto, en el editor y en el archivo. Él pulsó «Run»:
+  «Success».
+- Comprobado con la clave pública: `cafe_mis_titulos`, `cafe_catalogo`, `cafe_titulos_y_catalogo`, `cafe_reparto_cupo`,
+  `cafe_reparto` y la tabla `cafe_tuyos` dan 42501 al anónimo; una función inexistente, PGRST202.
+- Después, Francisco: «Commit y publicar». Commit de la 1.139.0 en `1.90-escritorio-puerto` y `main` avanza sin forzar
+  desde `6560b5a`; comprobar que `libotown.es/sw.js` trae v1.139.0.
+
+### 2026-11-16 · Café: la manivela bajo el dedo y de dónde salen los libros · 1.139.0 (§139), sin commit (Claude)
+
+- Francisco: rework de dónde salen los libros («lo que no me convence es el tema de comprar libros y que dependan
+  exclusivamente de tu biblioteca…») y la manivela («gira y no avanza; se mueve mal»). Decisiones: «Catálogo del café + los
+  tuyos», «Reparto diario gratis» y las cifras de `cafe-libreria.md` §17, «Sí, esas cifras». Regla en `CLAUDE.md`.
+- **La manivela**: se medía alrededor de un punto de la pantalla guardado al tocar (de la pista), equivocado si tocabas antes de
+  que llegase la cámara; ahora sobre la propia pieza 3D (`manivelaBajo` en `cafe3d.js`, `bajoDedo` en `cafeGestos.js`).
+- **Los libros**: catálogo de 80 libros reales (8 por género, `cafeCatalogoLibros.js`, datos de Open Library); tus leídos se suman
+  con el sello «Leído por ti» (cinta granate en el lomo, también en la estantería 3D, y etiqueta en la distribuidora) y pagan +6
+  (el del catálogo, +4; también con el influencer); ya no se prestan «Leyendo» ni «Quiero leer»; el reparto de la mañana es
+  gratis (6 / 8 / 10 según el nivel, sin pasar de los huecos, lo vendido primero y uno de cada tres tuyo); la bienvenida y las
+  cajas, del catálogo y de tus leídos.
+- **Migración nueva: `20261222120000_cafe_catalogo.sql`** (aplicada el mismo día, ver la entrada de arriba; redefine `cafe_reparto`,
+  `cafe_comprar_caja`, `cafe_bienvenida`, `cafe_entregar` y `cafe_influencer_entregar`). Sin ella la app no pide la bienvenida
+  si no tienes leídos (llegaría vacía y se gastaría) y cuenta el reparto antiguo con su precio.
+- Pruebas: Vitest del café en verde (nueva `cafe-catalogo.rls.test.js`; adaptadas `cafe-libreria`, `cafe-clientes` y
+  `cafe-influencer`). E2E: las 46 del café a 390 en verde; `v1139-cafe-catalogo` (nueva) y `v1130` en 360, 430, escritorio y
+  WebKit 390, en verde; `v1121` adaptada (+6). Evidencias en `qa-report/cafe-catalogo/`. Build y oxlint (sin errores nuevos).
+  En la tanda grande de Vitest falló una vez `casino` «el tope de la semana» (no se tocó el casino; sin investigar).
+- Commit y publicada el mismo día (ver la entrada de arriba). Sin probar en móviles reales.
 
 ### 2026-11-15 · 1.137.0 y 1.138.0 a producción (Claude)
 

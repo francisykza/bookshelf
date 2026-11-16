@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.138.0 · 2026-11-15 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.139.0 · 2026-11-16 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7622,3 +7622,71 @@ cambie el mensaje de adonde te redirijen». Regla nueva en `CLAUDE.md` (§1, «P
   `qa-report/v1138/`.
 - Limitaciones: emulación de Chromium con Supabase simulado; sin probar en móviles reales. Si una sala no llegara a cargar
   nunca, la pantalla de carga taparía su botón de volver (como la del arranque); en Android, el botón «atrás» sigue sirviendo.
+
+## 139. El café: la manivela bajo el dedo y de dónde salen los libros (1.139.0)
+
+Francisco, 16-11-2026: «La parte de mecanicas de libros me gusta bastante, como sacas los libros y prepararlos es divertido, lo
+que no me convence es el tema de comprar libros y que dependan exclusivamente de tu biblioteca, porque la gente que lea poco no
+tendrá muchas opciones y si no tienes dinero pierdes esa parte del juego. Además la mecanica del café de mover la manivela está
+dando algunos fallos ahora». Decisiones del mismo día: «Catálogo del café + los tuyos», «Reparto diario gratis» y, con las
+cifras de `docs/qa/cafe-libreria.md` §17, «Sí, esas cifras». Lo de sacar y preparar el libro no cambia.
+
+### 139.1 La manivela del molinillo, bajo el dedo
+
+- **El fallo** («giro y no avanza», «se mueve mal»): el ángulo del giro se medía alrededor de un centro en la pantalla que
+  salía de la pista de la «!», y la pista no está (o está en el sitio de antes) si tocas antes de que la cámara termine de
+  acercarse. Con el centro equivocado, el giro no sumaba vueltas o el puño iba a saltos.
+- **Ahora** el ángulo se mide sobre la propia pieza 3D: `manivelaBajo(x, y)` de `cafe3d.js` lanza el rayo del dedo contra el
+  plano del puño, con la cámara de ese momento, y da el ángulo y la distancia al eje. `crearGesto` lo recibe como `bajoDedo`
+  (solo la manivela): el puño salta bajo el dedo al tocar y sigue al dedo; tocar muy cerca del eje no cuenta. El resto de giros
+  (molinillo del chocolate, batir, cordel) no cambian.
+- **Pruebas**: tres nuevas en `cafeGestos.test.js` (con un centro equivocado avanza; sin `bajoDedo`, el fallo de antes; el puño
+  bajo el dedo y el eje). `v1121` a 390 en verde y la captura del excéntrico, con el puño hacia el dedo.
+
+### 139.2 El catálogo del café
+
+- **80 libros reales**, 8 por cada uno de los 10 géneros, iguales para todos (`CATALOGO_LIBROS` en
+  `src/features/edificio/cafe/cafeCatalogoLibros.js`, con clave `cat:…`, título, autoría, páginas, año, ISBN y portada de Open
+  Library cuando la hay). Solo título, autoría y género de obras ajenas: nada de su texto ni de sus portadas en el código (la
+  portada se pide a Open Library, como las de tu biblioteca).
+- En el servidor, el mismo catálogo (`cafe_catalogo()`); la prueba de paridad lo vigila libro a libro.
+
+### 139.3 Tus leídos, con el sello «Leído por ti»
+
+- El café ya **no presta** los de «Leyendo» ni «Quiero leer»: tus libros son solo los leídos.
+- La app manda tus leídos al entrar (`cafe_mis_titulos`, hasta 200; antes de abrir el día) para que el reparto pueda traer
+  alguno; quedan en `cafe_tuyos`. Una clave `cat:` nunca pasa por tuya.
+- **El sello**: en la balda y la caja del cuadro de libros, una cinta granate en la cabeza del lomo (con «leído por ti» en su
+  etiqueta accesible); en la estantería 3D, la misma cinta en el lomo; en la distribuidora, la etiqueta de papel «Leído por ti»;
+  y en la ficha del libro al atender.
+- **Paga más**: el ejemplar tuyo que se lleva el cliente, +6 granos; el del catálogo, +4 (también con el influencer). El
+  repaso dice «Se lleva «…», que lo recomiendas tú» y «6 por tu libro».
+
+### 139.4 El reparto de la mañana, gratis
+
+- Cada día nuevo: **6 libros en los niveles 1 y 2, 8 del 3 al 5 y 10 del 6 en adelante**, nunca más que los huecos libres
+  (balda más cajas); sin hueco, no llega nada y no se acumula.
+- Primero repone lo vendido desde el último reparto (lo que no cabe queda repuesto igual); después, del catálogo, procurando al
+  menos 3 géneros entre la balda y la caja; si tienes leídos, **uno de cada tres** es tuyo.
+- Sustituye al de la 1.130 (2 granos por ejemplar, hasta 10). Pilar lo cuenta: «Ha pasado el reparto de la mañana: N libros de
+  regalo de la distribuidora. …reponen lo que se llevaron ayer. Hay … de los que has leído.»
+- **La bienvenida y las cajas con granos** (de un género, 5 por 10; de un título, 3 por 9) traen del catálogo y de tus leídos;
+  la bienvenida llega aunque no hayas leído nada. La distribuidora enseña los diez géneros con sus títulos (los tuyos primero).
+- Lo que ya hay en la balda y en las cajas se queda.
+
+### 139.5 Servidor
+
+- Migración nueva **`20261222120000_cafe_catalogo.sql`** (la aplica Francisco): `cafe_catalogo`, `cafe_tuyos` (RLS, sin
+  acceso directo), `cafe_mis_titulos`, `cafe_titulos_y_catalogo`, `cafe_reparto_cupo` y las redefiniciones de `cafe_reparto`,
+  `cafe_comprar_caja`, `cafe_bienvenida`, `cafe_entregar` y `cafe_influencer_entregar` (copiadas de sus migraciones, solo con
+  esos cambios). **Sin ella**, la app sigue como en la 1.138 salvo que ya no presta «Leyendo» ni «Quiero leer» (el reparto
+  antiguo, si llega, se cuenta con su precio) y, si no tienes leídos, no pide la caja de bienvenida (llegaría vacía y se gastaría: la pide cuando la migración esté).
+
+### 139.6 Pruebas y limitaciones
+
+- Vitest: `cafe-catalogo.rls.test.js` (nuevo: el catálogo de la app, la paridad, sin leídos, tus leídos, +4 / +6 y permisos),
+  y adaptadas `cafe-libreria`, `cafe-clientes` y `cafe-influencer` (la bienvenida mezcla el catálogo; el tuyo paga 6). Todo el
+  café en verde.
+- E2E: `e2e-community/v1139-cafe-catalogo.spec.js` (sin leídos y con leídos) y `v1130` adaptada (el reparto gratis, +6).
+  El Supabase simulado imita la migración (sin azar: el catálogo en orden); solo con `clientes.reparto` trae reparto.
+- Limitaciones: emulación de Chromium y WebKit con Supabase simulado; sin probar en móviles reales ni con la migración aplicada.

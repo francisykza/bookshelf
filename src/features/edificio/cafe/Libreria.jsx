@@ -649,6 +649,7 @@ export function useLibreria({ activo, pedido, balda, escena, sfx, ayuda = false,
         <span className="cf3-libro__datos">
           <b className="cf3-libro__titulo">{elegido.titulo}</b>
           {b.author && <span className="cf3-libro__autor">{b.author}</span>}
+          {b.tuyo && <span className="cf3-sello-leido cf3-libro__sello">Leído por ti</span>}
           <span className="cf3-libro__pistas">
             <span>{nombreGenero(b.genero ?? genero)}</span>
             <span>{paginasDe(elegido.paginas)}</span>

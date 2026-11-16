@@ -37,8 +37,17 @@ export const encajaExtension = (paginas, extension) => {
 
 /** Granos de más cuando el cliente se lleva el ejemplar (si aciertas el género). `EXTRA_LLEVADO` (2) es el de antes. */
 export const EXTRA_LIBRO = 4;
-/** La caja del reparto: hasta 10 ejemplares, a 2 granos el ejemplar. */
-export const REPARTO = { max: 10, precio: 2 };
+/** 1.139: si el ejemplar es uno de tus leídos («lo recomiendas tú»), 6. */
+export const EXTRA_LIBRO_TUYO = 6;
+/** Lo que paga el ejemplar que se lleva el cliente: de tus leídos o del catálogo (claves «cat:…»). */
+export const extraLibro = (clave) => (String(clave ?? '').startsWith('cat:') ? EXTRA_LIBRO : EXTRA_LIBRO_TUYO);
+/**
+ * 1.139: el reparto de la mañana es gratis (Francisco, 16-11-2026, «Sí, esas cifras»): 6 libros en los niveles 1 y 2, 8 del 3
+ * al 5 y 10 del 6 en adelante, nunca más que los huecos libres. Igual que `cafe_reparto_cupo` en el servidor.
+ */
+export const repartoDelNivel = (nivel) => (nivel >= 6 ? 10 : nivel >= 3 ? 8 : 6);
+/** Del reparto, uno de cada tres es de tus leídos (si tienes). */
+export const REPARTO_TUYOS_CADA = 3;
 /** Servidas de 2 estrellas o más para dominar una bebida (entonces Pilar puede prepararla). */
 export const DOMINIO = 12;
 

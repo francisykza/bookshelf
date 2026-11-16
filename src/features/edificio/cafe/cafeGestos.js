@@ -186,6 +186,8 @@ function poseInicial(tipo) {
     sello: { baja: 0, presion: 0, sellado: false },
   }[tipo];
 }
+/** Con `bajoDedo`, desde qué distancia al eje (en metros de la escena) cuenta el giro (el puño está a 0,125). */
+const RADIO_ESCENA = 0.035;
 /** Los gestos que giran alrededor de un centro: cuántas vueltas y desde qué distancia cuenta. */
 const GIROS = { manivela: ['vueltas', 'radioMin', 'molido'], molinillo: ['vueltasMolinillo', 'radioMolinillo', 'espeso'], batir: ['vueltasBatir', 'radioBatir', 'montada'], cordel: ['vueltasCordel', 'radioCordel', 'atado'] };
 
@@ -231,8 +233,11 @@ function vaiven(amplitud) {
  * Un gesto de la barra. `escala`: ancho de la pantalla / 390 (las distancias crecen con ella); `centro`: dónde está el
  * objeto en la pantalla (la manivela gira a su alrededor; la miel se dibuja sobre la taza). Cada llamada devuelve el
  * estado nuevo: { progreso (0 a 1), hecho, pose, pulsado, eventos (para los sonidos) }.
+ * 1.139, `bajoDedo(x, y)`: si se da, un giro se mide sobre la propia pieza 3D ({ angulo, radio } en la escena, o null) en vez
+ * de alrededor de `centro` en la pantalla, y la pieza queda bajo el dedo. Lo usa la manivela: alrededor de un punto de la
+ * pantalla, si el dedo tocaba antes de que la cámara llegase, se medía alrededor de un sitio equivocado y casi no avanzaba.
  */
-export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
+export function crearGesto(tipo, { escala = 1, centro = null, bajoDedo = null } = {}) {
   const e = Math.max(0.6, escala);
   const M = MEDIDAS;
   let progreso = 0;
@@ -278,6 +283,14 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
       base = progreso;
       tAntes = t;
       ang = Math.atan2(y - c.y, x - c.x);
+      if (bajoDedo && GIROS[tipo]) {
+        const b = bajoDedo(x, y);
+        if (b) {
+          ang = b.angulo;
+          // La pieza salta bajo el dedo (girarla así no cuenta vueltas)
+          if (b.radio >= RADIO_ESCENA) pose = { ...pose, angulo: pose.angulo + wrap(b.angulo - pose.angulo) };
+        }
+      }
       vv.empezar(tipo === 'colador' ? y : x);
       armado = true;
       yTrazo = y;
@@ -314,10 +327,11 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
       const eventos = [];
       const dx = x - x0;
       const dy = y - y0;
+      const b = GIROS[tipo] && bajoDedo ? bajoDedo(x, y) : null;
       if (GIROS[tipo]) {
         const [kV, kR, kP] = GIROS[tipo];
-        if (Math.hypot(x - c.x, y - c.y) >= M[kR] * e) {
-          const a = Math.atan2(y - c.y, x - c.x);
+        if (b ? b.radio >= RADIO_ESCENA : !bajoDedo && Math.hypot(x - c.x, y - c.y) >= M[kR] * e) {
+          const a = b ? b.angulo : Math.atan2(y - c.y, x - c.x);
           const d = wrap(a - ang);
           ang = a;
           total += Math.abs(d);
@@ -334,7 +348,8 @@ export function crearGesto(tipo, { escala = 1, centro = null } = {}) {
             if (tipo === 'cordel') eventos.push('lazo');
             acabar(eventos);
           }
-        } else ang = Math.atan2(y - c.y, x - c.x);
+        } else if (b) ang = b.angulo;
+        else if (!bajoDedo) ang = Math.atan2(y - c.y, x - c.x);
       } else if (tipo === 'apisonar') {
         const b = clamp(dy / (M.apisonar * e));
         progreso = Math.max(progreso, b);

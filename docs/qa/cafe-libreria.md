@@ -757,3 +757,40 @@ El menú del taller, un libro en media piel con puntas: tejuelo rojo, lomo con n
 cinta de registro. El taller suena en su propia sala, la trastienda (la voz de don Celestino y un soplo por cada cuarto de
 polvo), y su música lleva violonchelo con arco, lluvia en el cristal y brasas. Las evidencias van con sonido. Sin cambios de
 servidor, cifras ni economía.
+
+## 17. De dónde salen los libros (aprobada el 16-11-2026, «Sí, esas cifras»; hecha en la 1.139.0, SPEC §139)
+
+Francisco, 16-11-2026: la mecánica de sacar y preparar el libro le gusta; lo que no le convence es **comprar los libros** y que
+**dependan solo de tu biblioteca** («la gente que lea poco no tendrá muchas opciones y si no tienes dinero pierdes esa parte del
+juego»). Eligió el **catálogo del café más tus leídos** y el **reparto diario gratis**. La librería (estantería por secciones,
+tirar del lomo, la tabla y los gestos de envolver) **no cambia**.
+
+### 17.1 El catálogo del café
+
+- **80 libros reales**, 8 por cada uno de los 10 géneros, conocidos y variados (clásicos y actuales; cortos y largos), con
+  título, autoría, páginas, año e ISBN para la portada (la misma vía que hoy: la portada por ISBN y, si no, la tapa de color).
+  Igual para todos y fijo en la app y en el servidor (prueba de paridad). Solo datos del libro: ni sinopsis ni textos de nadie.
+- **Tus leídos se suman**: cada uno lleva en la balda y en la tabla un **sello «Leído por ti»** (una cinta de tela en el lomo y
+  el sello en la ficha). Se quita el préstamo de «Leyendo» y «Quiero leer»: ya no hace falta.
+
+### 17.2 El reparto de la mañana, gratis
+
+- Cada día llega **gratis** una caja con libros: **6 en los niveles 1 y 2, 8 del 3 al 5 y 10 del 6 en adelante**, nunca más de
+  los huecos libres de la balda (sin hueco no llega nada; no se acumula).
+- **Qué trae** (lo sortea el servidor): primero, lo que se vendió desde el último reparto (el mismo título); después, del
+  catálogo, procurando que la balda tenga **al menos 3 géneros**. Si tienes leídos, **uno de cada tres** de la caja es tuyo.
+- Sustituye al reparto de 2 granos por ejemplar de la 1.130: **ya no cuesta nada**. El aviso de Pilar y empujar la caja para
+  colocar, igual.
+- **Las cajas con granos siguen**, como extra: de un género, 5 por 10 granos, y de un título concreto, 3 por 9, ahora del
+  catálogo y de tus leídos.
+
+### 17.3 Lo que paga
+
+- El ejemplar que se lleva el cliente: **+4 granos** como hoy; **+6 si es uno de tus leídos** («lo recomiendas tú»).
+- Estrellas, reputación y tope diario, sin cambios.
+
+### 17.4 Para las cuentas que ya juegan
+
+- Lo que ya hay en tu balda y en tus cajas se queda. Los títulos del catálogo se añaden; nada se borra.
+- Migración nueva (la aplica Francisco): el catálogo en el servidor, el reparto gratis y el +6 de tus leídos. Sin ella, el café
+  sigue como en la 1.138.

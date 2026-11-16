@@ -7,6 +7,7 @@
 // servidor, 12 huecos en la balda, solo cuenta el libro que está en la balda y, si encaja, el cliente se lo lleva (+2 granos).
 import { beforeAll, describe, expect, it } from 'vitest';
 import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { CATALOGO_LIBROS } from '../cafe/cafeCatalogoLibros';
 import {
   BEBIDAS,
   BIENVENIDA,
@@ -175,22 +176,22 @@ describe('el café-librería del bajo: clientes, recetas, estrellas y el excént
     // Títulos mal formados: fuera
     for (const mal of [[{ clave: 'x', titulo: 'X', genero: 'cocina' }], [{ clave: '', titulo: 'X', genero: 'novela' }], [{ clave: 'x', titulo: '', genero: 'novela' }]])
       expect(await rejects(bienvenida(C, mal))).toMatch(/cafe:titulos/);
-    // La bienvenida: 8 ejemplares, de todos los géneros que hay, una sola vez y gratis
+    // La bienvenida: 8 ejemplares, uno de cada género (1.139: con el catálogo del café, ocho géneros distintos), una sola vez y gratis
     const b = await bienvenida(C);
     expect(b.caja).toHaveLength(BIENVENIDA);
-    expect(new Set(b.caja.map((k) => TITULOS.find((x) => x.clave === k).genero))).toEqual(new Set(['fantasia', 'misterio', 'clasico']));
+    const generoDe = (k) => TITULOS.find((x) => x.clave === k)?.genero ?? CATALOGO_LIBROS.find((x) => x.clave === k)?.genero;
+    expect(new Set(b.caja.map(generoDe)).size).toBe(BIENVENIDA);
     expect(b.libros).toMatchObject({ huecos: 12, bienvenida: true });
     expect(b.cafe.granos).toBe(0);
     expect(await rejects(bienvenida(C))).toMatch(/cafe:bienvenida/);
     // Sin granos no se compra
     expect(await rejects(comprarCaja(C, 'fantasia', null))).toMatch(/cafe:granos/);
     await db.query('update cafe_locales set granos = 30 where user_id = $1', [C]);
-    // Caja de género: 5 ejemplares de ese género, 10 granos; uno que no tienes, no
-    expect(await rejects(comprarCaja(C, 'poesia', null))).toMatch(/cafe:genero/);
+    // Caja de género: 5 ejemplares de ese género (tuyos o del catálogo), 10 granos; uno que no existe, no
     expect(await rejects(comprarCaja(C, 'cocina', null))).toMatch(/cafe:genero/);
     const g = await comprarCaja(C, 'fantasia', null);
     expect(g.caja).toHaveLength(CAJA_GENERO.ejemplares);
-    expect(g.caja.every((k) => k === 'b1' || k === 'b2')).toBe(true);
+    expect(g.caja.every((k) => generoDe(k) === 'fantasia')).toBe(true);
     expect(g.cafe.granos).toBe(30 - CAJA_GENERO.precio);
     // Caja de un título: 3 ejemplares, 9 granos; uno que no está en tus títulos, no
     expect(await rejects(comprarCaja(C, null, 'zz'))).toMatch(/cafe:titulo/);

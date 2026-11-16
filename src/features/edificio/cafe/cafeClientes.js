@@ -8,6 +8,7 @@ import { COMPLEMENTOS, JERSEYS, PANTALONES, PELOS, PIELES, COLORES_PELO, isPrend
 import { dayKey } from '../../../domain/dates';
 import { huecosDelNivel } from './cafeNiveles';
 import { influencerDe, numeroInfluencer, semillaInfluencer } from './cafeInfluencers';
+import { CATALOGO_LIBROS, delCatalogo, libroDelCatalogo } from './cafeCatalogoLibros';
 
 export { huecosDelNivel };
 
@@ -391,17 +392,23 @@ export function generosDisponibles(titulos = []) {
   for (const t of titulos) n[t.genero] = (n[t.genero] ?? 0) + 1;
   return GENEROS.filter((g) => n[g.id]).map((g) => ({ ...g, titulos: n[g.id] }));
 }
-/** Lo que hay en la balda, como libros para recomendar: el de tu biblioteca si sigue ahí; si no, uno mínimo con su título. */
+/**
+ * Lo que hay en la balda, como libros para recomendar: el del catálogo del café (1.139), el de tu biblioteca si sigue ahí, o
+ * uno mínimo con su título. `tuyo`: es uno de tus leídos (lleva el sello «Leído por ti» y paga más al llevárselo).
+ */
 export function librosDeLaBalda(estado, libros = []) {
   const porId = new Map(libros.map((b) => [String(b.id), b]));
   return (estado?.libros ?? [])
     .filter((x) => x.balda > 0)
     .map((x) => {
-      const b = porId.get(x.clave) ?? { id: x.clave, title: x.titulo, author: '', categories: [GENEROS.find((g) => g.id === x.genero)?.nombre ?? ''] };
+      const cat = delCatalogo(x.clave);
+      const b = (cat ? libroDelCatalogo(x.clave) : porId.get(x.clave)) ?? { id: x.clave, title: x.titulo, author: '', categories: [GENEROS.find((g) => g.id === x.genero)?.nombre ?? ''] };
       // 1.130: la sección es la del ejemplar (su género, el que guardó el servidor al comprarlo) y la extensión, por sus páginas
-      return { ...b, clave: x.clave, genero: x.genero, paginas: b.pageCount > 0 ? b.pageCount : null, ejemplares: x.balda };
+      return { ...b, clave: x.clave, genero: x.genero, paginas: b.pageCount > 0 ? b.pageCount : null, ejemplares: x.balda, tuyo: !cat };
     });
 }
+/** 1.139: los títulos de la distribuidora: tus leídos (`tuyo`) y el catálogo del café, sin repetir clave. */
+export const titulosDistribuidora = (tuyos = []) => [...tuyos.map((t) => ({ ...t, tuyo: true })), ...CATALOGO_LIBROS.map((c) => ({ clave: c.clave, titulo: c.titulo, genero: c.genero, tuyo: false }))];
 /** Cuántos ejemplares hay en la balda y cuántos esperan en las cajas. */
 export const enBalda = (estado) => (estado?.libros ?? []).reduce((s, x) => s + x.balda, 0);
 export const enCajas = (estado) => (estado?.libros ?? []).reduce((s, x) => s + x.caja, 0);

@@ -133,13 +133,16 @@ function influencerDe(x) {
     viral: Boolean(x.viral),
   };
 }
-/** El reparto que llega con el día: como mucho 10 claves, los granos que costó y los que no llegaron. */
+/**
+ * El reparto que llega con el día: como mucho 10 claves, los granos que costó y los que no llegaron. Desde la 1.139, gratis
+ * (`gratis`) y cuántos reponen lo vendido (`repuestos`).
+ */
 function repartoDe(r) {
   if (!r || typeof r !== 'object') return null;
   const claves = (Array.isArray(r.claves) ? r.claves : []).filter((k) => typeof k === 'string' && k).slice(0, 10);
   const faltan = Math.min(99, Math.max(0, entero(r.faltan)));
   if (!claves.length && !faltan) return null;
-  return { claves, granos: Math.min(20, Math.max(0, entero(r.granos))), faltan };
+  return { claves, granos: Math.min(20, Math.max(0, entero(r.granos))), faltan, gratis: r.gratis === true, repuestos: Math.min(claves.length, Math.max(0, entero(r.repuestos))) };
 }
 /** Tus libros del café (§121.3): los huecos de la balda, si ya llegó la bienvenida y cada título con su caja y su balda. */
 function normalizarLibros(l) {
@@ -316,7 +319,21 @@ export async function cargarFachada() {
 }
 
 // ── Libros en cajas (§121.3) ──
-/** La caja de bienvenida (8 ejemplares, gratis y una vez) con tus títulos (`titulosDelCafe`). */
+/**
+ * 1.139: tus leídos (`titulosDelCafe`, hasta 200), para que el reparto de la mañana traiga alguno tuyo. El servidor no tiene tu
+ * biblioteca; sin la migración del catálogo o sin sesión, no pasa nada.
+ */
+export async function misTitulos(titulos) {
+  try {
+    const sb = await client();
+    const { error } = await sb.rpc('cafe_mis_titulos', { titulos });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** La caja de bienvenida (8 ejemplares, gratis y una vez), del catálogo del café y de tus leídos (`titulosDelCafe`). */
 export async function bienvenidaLibros(titulos) {
   const sb = await client();
   const { data, error } = await sb.rpc('cafe_bienvenida', { titulos });
@@ -324,7 +341,7 @@ export async function bienvenidaLibros(titulos) {
   return conLibros(data);
 }
 
-/** Comprar una caja en la distribuidora: de un género (`genero`) o de un título (`clave`). */
+/** Comprar una caja en la distribuidora: de un género (`genero`) o de un título (`clave`, tuyo o del catálogo). `titulos`, solo tus leídos. */
 export async function comprarCaja({ genero = null, clave = null }, titulos) {
   const sb = await client();
   const { data, error } = await sb.rpc('cafe_comprar_caja', { genero, clave, titulos });

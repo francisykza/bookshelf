@@ -22,12 +22,12 @@ import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCa
 import { GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { bienvenidaLibros, cargarCafe, cargarDia, cargarJornada, cargarTaller, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
+import { bienvenidaLibros, cargarCafe, misTitulos, cargarDia, cargarJornada, cargarTaller, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate } from './cafeService';
 import { enFrase } from './cafeInfluencers';
 import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
-import { BIENVENIDA, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, sesionesDeHoy, titulosDelCafe } from './cafeClientes';
-import { REPARTO, pedidosLibro } from './cafeLibreria';
+import { BIENVENIDA, TOPE_CLIENTES, clientesDelDia, clientesDelNivel, enBalda, enCajas, librosDeLaBalda, sesionesDeHoy, titulosDelCafe, titulosDistribuidora } from './cafeClientes';
+import { pedidosLibro } from './cafeLibreria';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
@@ -78,11 +78,9 @@ const BODEGA_NIVEL = 6;
 const ESCAPARATE_NIVEL = 5;
 const ESCAPARATE_MAX = 3;
 
-/** Tus libros para las estanterías: los leídos; con menos de 3, el café presta los de «Leyendo» y «Quiero leer». */
+/** Tus libros para el café: solo los leídos (1.139: ya no se prestan «Leyendo» ni «Quiero leer»; el resto lo pone el catálogo). */
 function librosDelCafe(books = []) {
-  const leidos = books.filter((b) => b.status === 'read');
-  const lista = leidos.length >= 3 ? leidos : [...leidos, ...books.filter((b) => b.status === 'reading'), ...books.filter((b) => b.status === 'want')];
-  return lista.filter((b) => b.title).slice(0, 200);
+  return books.filter((b) => b.status === 'read' && b.title).slice(0, 200);
 }
 
 const PLANO_VACIO = { v: 1, items: [] };
@@ -153,8 +151,14 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   const pidiendoHabitual = useRef(false);
   const vacio = sin3d ? renderShopRoom({ vacio: true }) : null;
   const libros = useMemo(() => librosDelCafe(state?.books), [state?.books]);
-  const titulosDistri = useMemo(() => titulosDelCafe(libros), [libros]);
-  // Para el escaparate, solo tus leídos (nunca los prestados de «Leyendo» o «Quiero leer»)
+  // 1.139: al servidor van solo tus leídos (hasta 200); la distribuidora enseña además el catálogo del café
+  const titulosTuyos = useMemo(() => titulosDelCafe(libros), [libros]);
+  const titulosDistri = useMemo(() => titulosDistribuidora(titulosTuyos), [titulosTuyos]);
+  const tuyosRef = useRef(titulosTuyos);
+  tuyosRef.current = titulosTuyos;
+  // Si el servidor ya tiene el catálogo (la migración de la 1.139): sin ella, la bienvenida sin leídos llegaría vacía y se gastaría
+  const conCatalogo = useRef(false);
+  // Para el escaparate, solo tus leídos
   const leidosEscaparate = useMemo(() => titulosDelCafe((state?.books ?? []).filter((b) => b.status === 'read' && b.title)).slice(0, 24), [state?.books]);
   // Las estanterías enseñan lo que hay en la balda, un lomo por ejemplar (sin la migración de los libros, tus leídos, como en la 1.120)
   const titulos = useMemo(() => (librosCafe === null ? libros.map((b) => b.title) : (librosCafe?.libros ?? []).flatMap((b) => Array(b.balda).fill(b.titulo))), [librosCafe, libros]);
@@ -280,7 +284,13 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
   useEffect(() => {
     if (!abierto || jornada === undefined) return undefined;
     let alive = true;
-    cargarDia(diaJuego).then(
+    // 1.139: antes de abrir el día, tus leídos, para que el reparto de la mañana traiga alguno tuyo (sin la migración, nada)
+    misTitulos(tuyosRef.current)
+      .then((ok) => {
+        conCatalogo.current = ok;
+        return cargarDia(diaJuego);
+      })
+      .then(
       (r) => {
         if (!alive) return;
         setDia(r?.dia ?? null);
@@ -330,26 +340,27 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       });
   }, [dia, sesiones, diaJuego]);
 
-  // La caja de bienvenida: la primera vez que entras con el café abierto y algún título que ofrecer (una sola vez; el servidor
-  // lo comprueba)
+  // La caja de bienvenida: la primera vez que entras con el café abierto (una sola vez; el servidor lo comprueba). Desde la
+  // 1.139 llega aunque no hayas leído nada: el catálogo del café pone el resto
   useEffect(() => {
-    if (!librosCafe || librosCafe.bienvenida || !titulosDistri.length || pidiendoBienvenida.current) return;
+    if (!librosCafe || librosCafe.bienvenida || pidiendoBienvenida.current) return;
+    if (!tuyosRef.current.length && !conCatalogo.current) return;
     pidiendoBienvenida.current = true;
-    bienvenidaLibros(titulosDistri)
+    bienvenidaLibros(tuyosRef.current)
       .then((r) => {
         if (r.libros) setLibrosCafe(r.libros);
         if (r.cafe) setLocal(r.cafe);
         setHablando(null);
         if (r.caja.length) mirarCaja.current = true;
         setAviso(
-          `¡Ha llegado una caja de la distribuidora! ${r.caja.length || BIENVENIDA} libros de los que has leído, de regalo. Tócala y colócalos en la balda: solo se recomienda lo que está a la vista.`,
+          `¡Ha llegado una caja de la distribuidora! ${r.caja.length || BIENVENIDA} libros de regalo${titulosTuyos.length ? ', y entre ellos alguno de los que has leído' : ''}. Tócala y colócalos en la balda: solo se recomienda lo que está a la vista.`,
         );
       })
       .catch(() => {})
       .finally(() => {
         pidiendoBienvenida.current = false;
       });
-  }, [librosCafe, titulosDistri]);
+  }, [librosCafe, titulosTuyos.length]);
 
   // La escena sigue al estado: el local, el plano (o el borrador de Decorar) y tus libros
   const plano = useMemo(() => borrador ?? local?.plano ?? PLANO_VACIO, [borrador, local?.plano]);
@@ -413,11 +424,15 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
       mirarCaja.current = true;
     }
     const n = r.claves.length;
-    const llega = n
-      ? `«Ha pasado el reparto de la mañana: ${n === 1 ? 'un libro' : `${n} libros`} para reponer lo que se llevaron, a ${REPARTO.precio} granos cada uno (${r.granos} en total). Te he dejado la caja junto al mostrador.`
-      : '«Ha pasado el reparto de la mañana, pero hoy no llegaban los granos para reponer.';
-    const faltan = r.faltan > 0 ? ` ${r.faltan === 1 ? 'Otro se queda' : `Otros ${r.faltan} se quedan`} para otro día: no se queda nada a deber.»` : '»';
-    setAviso(llega + faltan);
+    // 1.139: el reparto es gratis (de antes quedaba el que cobraba 2 granos por ejemplar: se cuenta igual, sin precio)
+    const tuyos = r.claves.filter((c) => !String(c).startsWith('cat:')).length;
+    const repuso = r.repuestos > 0 ? ` ${r.repuestos === 1 ? 'Uno repone' : `${r.repuestos} reponen`} lo que se llevaron ayer.` : '';
+    const deTi = tuyos > 0 ? ` ${tuyos === 1 ? 'Hay uno' : `Hay ${tuyos}`} de los que has leído.` : '';
+    setAviso(
+      n
+        ? `«Ha pasado el reparto de la mañana: ${n === 1 ? 'un libro' : `${n} libros`}${r.granos > 0 ? ` por ${r.granos} granos` : ' de regalo de la distribuidora'}.${repuso}${deTi} Te he dejado la caja junto al mostrador.»`
+        : '«Ha pasado el reparto de la mañana, pero la balda está llena: hoy no traía nada.»',
+    );
   }, [dia, librosCafe, sfx]);
   // Bloque 6b: Pilar avisa una vez al día de que hay saco en el tambor
   const avisadoSaco = useRef(null);
@@ -1088,6 +1103,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false }) 
         <LibrosCafe
           estado={librosCafe}
           titulos={titulosDistri}
+          tuyos={titulosTuyos}
           granos={local?.granos ?? 0}
           hoja={panelLibros.hoja}
           recien={panelLibros.recien}

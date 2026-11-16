@@ -364,3 +364,23 @@ describe('el chai (mortero) y el brûlée (soplete)', () => {
     expect(vistaTaza(CHAI, hechos).lleno).toBeGreaterThan(0);
   });
 });
+
+// 1.139: la manivela se mide sobre la pieza 3D (bajoDedo), no alrededor de un centro de la pantalla guardado al tocar
+describe('la manivela, bajo el dedo', () => {
+  // Una escena de mentira: el eje en (200, 300) de la pantalla, 1 px = 1 mm
+  const bajoDedo = (x, y) => ({ angulo: Math.atan2(-(x - 200), -(y - 300)), radio: Math.hypot(x - 200, y - 300) / 1000 });
+  it('avanza aunque el centro de la pantalla esté mal (tocar antes de que llegue la cámara)', () => {
+    const g = crearGesto('manivela', { centro: { x: 0, y: 0 }, bajoDedo });
+    const s = girar(g, 2);
+    expect(s.hecho).toBe(true);
+  });
+  it('sin bajoDedo y con el centro mal, casi no avanzaba (el fallo de antes)', () => {
+    const g = crearGesto('manivela', { centro: { x: 0, y: 0 } });
+    expect(girar(g, 2).progreso).toBeLessThan(0.2);
+  });
+  it('el puño salta bajo el dedo al tocar, y tocar cerca del eje no cuenta', () => {
+    const g = crearGesto('manivela', { bajoDedo });
+    expect(g.abajo(200, 240, 0).pose.angulo).toBeCloseTo(0);
+    expect(g.mover(201, 300, 0).progreso).toBe(0);
+  });
+});

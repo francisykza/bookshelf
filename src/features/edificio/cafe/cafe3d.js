@@ -139,6 +139,8 @@ const TILE_R = [150, 64, 56];
 const TILE_C = [222, 206, 176];
 const VELVET = [124, 36, 50];
 const BRASS = [214, 170, 92];
+// 1.139: la cinta de «Leído por ti» en los lomos de tus leídos (la misma que en la balda del cuadro de libros)
+const CINTA_LEIDO = [150, 40, 54];
 const GREEN = [76, 110, 80];
 const CARTON = [184, 142, 92];
 const CARTON_D = [164, 122, 80];
@@ -2078,7 +2080,14 @@ function lomosLibreria(s, tramos, dx = 0, { sin = null } = {}) {
       placas.push({ genero: t.genero, nombre: t.nombre, y, z: t.z + 0.023, ancho, x: dx + fondo + 0.0075 });
     }
     if (t.genero === sin) continue;
-    for (const l of t.lomos) lomoKit(s, [dx + 0.06, l.y0, z, dx + fondo - 0.04, l.y1, z + l.alto], colorDe(l.titulo), hashClave(l.clave));
+    for (const l of t.lomos) {
+      lomoKit(s, [dx + 0.06, l.y0, z, dx + fondo - 0.04, l.y1, z + l.alto], colorDe(l.titulo), hashClave(l.clave));
+      // 1.139: los tuyos (no los del catálogo del café), con la cinta granate de «Leído por ti» colgando del lomo
+      if (!String(l.clave ?? '').startsWith('cat:')) {
+        const yc = (l.y0 + l.y1) / 2;
+        pushBox(s, [dx + fondo - 0.04, yc - 0.008, z + l.alto - 0.085, dx + fondo - 0.032, yc + 0.008, z + l.alto + 0.012], CINTA_LEIDO);
+      }
+    }
   }
   return placas;
 }
@@ -4635,6 +4644,11 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
           const sale = foco ? suaveT(e.sale ?? 0) : 0;
           const o = foco ? { xf: giro([F - 0.04, l.y0, z], 'y', 0.17 + sale * 0.3, (p) => [p[0] + sale * 0.36, p[1] + sale * 0.06, p[2]]) } : {};
           lomoKit(s, [X + 0.06, l.y0, z, F - 0.04, l.y1, z + l.alto], colorDe(l.titulo), hashClave(l.clave), o);
+          // 1.139: la cinta de «Leído por ti», que sale con el lomo
+          if (!String(l.clave ?? '').startsWith('cat:')) {
+            const ym = (l.y0 + l.y1) / 2;
+            pushBox(s, [F - 0.04, ym - 0.008, z + l.alto - 0.085, F - 0.032, ym + 0.008, z + l.alto + 0.012], CINTA_LEIDO, o);
+          }
           // El que asoma, con un filo de luz en la cabeza (lo que tocas)
           if (foco && sale < 0.05) pushBox(s, [F - 0.06, l.y0 + 0.004, z + l.alto, F - 0.035, l.y1 - 0.004, z + l.alto + 0.006], [255, 214, 150], { glow: true, xf: o.xf });
         }
@@ -5825,6 +5839,24 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       const p = project(...m);
       const rect = canvas.getBoundingClientRect();
       return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
+    },
+    /**
+     * 1.139: el ángulo de la manivela del molinillo que queda bajo el dedo (en px de la ventana), en la misma clave que su
+     * postura (`angulo`), y lo lejos que está el dedo del eje (en metros de la escena). Se mira en el plano del puño de la
+     * manivela con la cámara de ese momento, así que vale aunque la cámara aún se esté acercando y respeta la perspectiva.
+     */
+    manivelaBajo(clientX, clientY) {
+      aim(performance.now());
+      rayAt(clientX, clientY);
+      const alto = BARRA_Z + 0.3;
+      const { origin: o, direction: d } = ray.ray;
+      if (Math.abs(d.y) < 1e-4) return null;
+      const t = (alto - o.y) / d.y;
+      if (!(t > 0)) return null;
+      const dx = o.x + d.x * t - MOLINILLO.x;
+      const dy = o.z + d.z * t - MOLINILLO.y;
+      // El puño, con el ángulo 0, apunta hacia +y; girar `a` lo lleva a (−sen a, cos a)
+      return { angulo: Math.atan2(-dx, dy), radio: Math.hypot(dx, dy) };
     },
     enBarra: () => barra.activa && barraT === 1,
     /**

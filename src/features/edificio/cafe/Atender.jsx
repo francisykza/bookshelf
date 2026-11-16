@@ -145,6 +145,9 @@ function repasoLibro(libro, pedido, ok, forma) {
   ];
 }
 
+/** 1.139: el libro es uno de tus leídos (no del catálogo del café): paga más al llevárselo y el repaso lo dice. */
+const esTuyo = (libro) => Boolean(libro) && (libro.tuyo ?? !String(libro.id ?? '').startsWith('cat:'));
+
 export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, escena, registrarToque, onServir, onEmpezar, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
   const [paso, setPaso] = useState('pide');
   const [receta, setReceta] = useState(VACIA);
@@ -375,7 +378,9 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     if (rec.current?.clave !== clave) {
       const ancho = zona.current?.getBoundingClientRect().width || 390;
       const centro = pista ? { x: pista.cx, y: pista.cy } : null;
-      rec.current = { clave, g: crearGesto(gesto, { escala: Math.min(ancho, 600) / 390, centro }) };
+      // 1.139: la manivela se mide sobre la propia pieza 3D, con la cámara de cada momento (no con un centro guardado)
+      const bajoDedo = gesto === 'manivela' && escena?.manivelaBajo ? (x, y) => escena.manivelaBajo(x, y) : null;
+      rec.current = { clave, g: crearGesto(gesto, { escala: Math.min(ancho, 600) / 390, centro, bajoDedo }) };
     }
     return rec.current.g;
   };
@@ -954,13 +959,13 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
           )}
           {libro && (
             <li data-ok={dado.llevado ? 'true' : 'nada'} data-parte="ejemplar">
-              {dado.llevado ? `✓ Se lleva «${libro.title}»` : dado.en_balda === false ? '· El libro ya no estaba en la balda' : `· «${libro.title}» vuelve a su sección`}
+              {dado.llevado ? `✓ Se lleva «${libro.title}»${esTuyo(libro) ? ', que lo recomiendas tú' : ''}` : dado.en_balda === false ? '· El libro ya no estaba en la balda' : `· «${libro.title}» vuelve a su sección`}
             </li>
           )}
         </ul>
         <p className="cf3-dado" aria-label={`Has ganado ${dado.granos} granos y ${dado.reputacion} de reputación`}>
           <span className="cf3-dado__ficha">+{dado.granos} granos</span>
-          {dado.extra > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--libro">{`${dado.extra} por el libro`}</span>}
+          {dado.extra > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--libro">{dado.llevado && esTuyo(libro) ? `${dado.extra} por tu libro` : `${dado.extra} por el libro`}</span>}
           {dado.tueste && dado.bono_granos > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--tueste">{`+${dado.bono_granos} y +${dado.bono_reputacion} por el tueste`}</span>}
           <span className="cf3-dado__ficha cf3-dado__ficha--rep">+{dado.reputacion} reputación</span>
         </p>

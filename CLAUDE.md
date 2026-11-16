@@ -305,6 +305,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       Celestino, mucho más único** (no una figura de cliente con mandil); y **el menú del taller con más alma** que el del café
       (identidad propia de banco de encuadernador, no la franja del café con otro color). Los vídeos de Playwright no graban
       sonido: para enseñarle sonidos y música, mandarlos aparte o mezclados en el vídeo.
+    - **Rework de dónde salen los libros** (Francisco, 16-11-2026: «lo que no me convence es el tema de comprar libros y que
+      dependan exclusivamente de tu biblioteca, porque la gente que lea poco no tendrá muchas opciones y si no tienes dinero
+      pierdes esa parte del juego»; la mecánica de sacar y preparar el libro le gusta y no se toca). Decisiones del mismo día:
+      **catálogo propio del café** (libros reales por género, igual para todos) **más tus leídos**, que se distinguen y pagan
+      algo más; y **reparto diario gratis** cada mañana para que la balda nunca se quede vacía, con la compra de cajas con
+      granos solo como extra (elegir género o título). Cifras en `cafe-libreria.md` §17, las aprueba él.
     - **La pizarra se quita del todo** («no me termina de convencer»): sin botón ni panel; la nota del habitual y la reseña
       dorada se ven en su bocadillo al despedirse, y Pilar no la menciona. Sin borrar datos del servidor.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,

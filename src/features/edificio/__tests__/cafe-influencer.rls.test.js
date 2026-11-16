@@ -9,7 +9,8 @@ import { as, createDatabase, createUsers, rejects } from '../../social/__tests__
 import { premio, recetaPide, recetaValida } from '../cafe/cafeClientes';
 import { cartaDe, desdeNivel } from '../cafe/cafeNiveles';
 import { ARENA_MARGEN, ARENA_SEGUNDOS, INFLUENCERS, NIVELES_INFLUENCER, VIRALES } from '../cafe/cafeInfluencers';
-import { EXTRA_LIBRO } from '../cafe/cafeLibreria';
+// 1.139: b1 es uno de tus leídos (no del catálogo): paga 6
+import { EXTRA_LIBRO_TUYO as EXTRA_LIBRO } from '../cafe/cafeLibreria';
 
 let db;
 let A, B, C, D;
@@ -28,8 +29,10 @@ const TITULOS = [
 const abrir = async (u) => {
   await call(u, 'select cafe_mio()');
   await call(u, 'select cafe_inaugurar($1)', ['Taza y Lomo']);
-  const b = await call(u, 'select cafe_bienvenida($1::jsonb)', [JSON.stringify(TITULOS)]);
-  return call(u, 'select cafe_colocar($1::text[], $2::text[])', [b.caja, []]);
+  await call(u, 'select cafe_bienvenida($1::jsonb)', [JSON.stringify(TITULOS)]);
+  // 1.139: la bienvenida mezcla el catálogo al azar; para estas pruebas, la balda de antes (cuatro de cada uno de tus títulos)
+  await db.query('delete from cafe_libros where user_id = $1', [u]);
+  for (const t of TITULOS) await db.query('insert into cafe_libros (user_id, clave, titulo, genero, caja, balda) values ($1, $2, $3, $4, 0, 4)', [u, t.clave, t.titulo, t.genero]);
 };
 const PIDE = (n) => INFLUENCERS[n].pide;
 

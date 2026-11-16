@@ -21,7 +21,8 @@ import {
   premio,
   recetaPide,
 } from '../src/features/edificio/cafe/cafeClientes';
-import { EXTRA_LIBRO, REPARTO, estrellasTotal } from '../src/features/edificio/cafe/cafeLibreria';
+import { estrellasTotal, extraLibro, repartoDelNivel, REPARTO_TUYOS_CADA } from '../src/features/edificio/cafe/cafeLibreria';
+import { CATALOGO_LIBROS } from '../src/features/edificio/cafe/cafeCatalogoLibros';
 import { PRIMER_ENCARGO, TALLER_NIVEL, estrellasTaller, premioTaller } from '../src/features/edificio/cafe/cafeTaller';
 
 const json = (route, data, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
@@ -49,6 +50,11 @@ const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
  * llega el influencer de la subida (300 + nivel); `cafe_influencer_empezar` da la vuelta al reloj y `cafe_influencer_entregar`
  * le sirve (a tiempo, como el excéntrico; viral con 3 estrellas) y sube el café. `estado.influencers`: { [nivel]: { despedido,
  * dia, estrellas, a_tiempo, viral, viral_dia } } de antes. El siguiente día nuevo, 3 virales (201 a 203). La pizarra ya no va.
+ * 1.139 (`20261222120000_cafe_catalogo.sql`): el catálogo del café (CATALOGO_LIBROS) entra en las cajas y en la bienvenida,
+ * `cafe_mis_titulos` guarda tus leídos, el reparto del día nuevo es gratis (6 / 8 / 10 según el nivel, nunca más que los huecos
+ * libres: primero lo vendido, después uno de cada tres tuyo y el resto del catálogo, con al menos 3 géneros) y el ejemplar
+ * tuyo que se lleva el cliente paga 6. Aquí sin azar: el catálogo, en orden. Solo con `clientes.reparto` el día nuevo
+ * trae reparto (las pruebas de antes no lo esperan).
  */
 export async function simularCafe(page, estado, { piso = () => ({ copias: {}, layout: { items: [] } }), clientes = null, taller = null } = {}) {
   const c = estado ? { inaugurado: false, nombre: null, nivel: 1, reputacion: 0, granos: 0, plano: { v: 1, items: [] }, inventario: {}, escaparate: [], tazas: 0, sacoDia: null, llamadas: [], espera: 0, influencers: {}, ...estado } : null;
@@ -86,6 +92,9 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       .filter((b) => b.caja > 0 || b.balda > 0)
       .sort((a, b) => a.titulo.localeCompare(b.titulo) || a.clave.localeCompare(b.clave)),
   });
+  // 1.139: tus leídos (los guarda cafe_mis_titulos) y los títulos de una compra: los tuyos que manda la app y el catálogo
+  let tuyos = [];
+  const conCatalogo = (ts) => [...ts.filter((x) => !String(x.clave).startsWith('cat:')), ...CATALOGO_LIBROS.map(({ clave, titulo, genero }) => ({ clave, titulo, genero }))];
   const titulosValidos = (ts) => Array.isArray(ts) && ts.length <= 200 && ts.every((x) => x?.clave && x.titulo && GENEROS.some((g) => g.id === x.genero));
   const aLaCaja = (x, n) => {
     const b = (lib.libros[x.clave] ??= { clave: x.clave, titulo: x.titulo, genero: x.genero, caja: 0, balda: 0 });
@@ -98,11 +107,12 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     if (rpc === 'cafe_bienvenida') {
       if (lib.bienvenida) return falla(route, 'cafe:bienvenida');
       if (!titulosValidos(body.titulos)) return falla(route, 'cafe:titulos');
-      // Repartidos por género: uno de cada género por vuelta
+      // Repartidos por género: uno de cada género por vuelta (los tuyos, primero en su género)
+      const todos = conCatalogo(body.titulos);
       const porGenero = {};
-      for (const x of body.titulos) (porGenero[x.genero] ??= []).push(x);
+      for (const x of todos) (porGenero[x.genero] ??= []).push(x);
       const filas = [];
-      for (let k = 0; filas.length < body.titulos.length; k += 1) for (const g of Object.values(porGenero)) if (g[k]) filas.push(g[k]);
+      for (let k = 0; filas.length < todos.length; k += 1) for (const g of Object.values(porGenero)) if (g[k]) filas.push(g[k]);
       for (let k = 0; filas.length && caja.length < BIENVENIDA; k += 1) {
         const x = filas[k % filas.length];
         aLaCaja(x, 1);
@@ -113,14 +123,14 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     if (rpc === 'cafe_comprar_caja') {
       if (!titulosValidos(body.titulos)) return falla(route, 'cafe:titulos');
       if (body.clave) {
-        const x = body.titulos.find((y) => y.clave === body.clave);
+        const x = conCatalogo(body.titulos).find((y) => y.clave === body.clave);
         if (!x) return falla(route, 'cafe:titulo');
         if (c.granos < CAJA_TITULO.precio) return falla(route, 'cafe:granos');
         aLaCaja(x, CAJA_TITULO.ejemplares);
         caja.push(...Array(CAJA_TITULO.ejemplares).fill(x.clave));
         c.granos -= CAJA_TITULO.precio;
       } else {
-        const del = body.titulos.filter((y) => y.genero === body.genero);
+        const del = conCatalogo(body.titulos).filter((y) => y.genero === body.genero);
         if (!del.length) return falla(route, 'cafe:genero');
         if (c.granos < CAJA_GENERO.precio) return falla(route, 'cafe:granos');
         for (let k = 0; k < CAJA_GENERO.ejemplares; k += 1) {
@@ -219,6 +229,11 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       c.tazas += TAZAS_SACO;
       c.sacoDia = body.dia;
       return json(route, { cafe: vista(), tazas: TAZAS_SACO });
+    }
+    if (clientes && rpc === 'cafe_mis_titulos') {
+      if (!titulosValidos(body.titulos)) return falla(route, 'cafe:titulos');
+      tuyos = body.titulos.filter((x) => !String(x.clave).startsWith('cat:')).map(({ clave, titulo, genero }) => ({ clave, titulo, genero }));
+      return json(route, tuyos.length);
     }
     if (clientes && rpc === 'cafe_entregar' && c.sinEntregar) return json(route, { code: 'PGRST202', message: 'no existe' }, 404);
     if (clientes && ['cafe_dia', 'cafe_habitual', 'cafe_servir', 'cafe_entregar'].includes(rpc)) return diaDelCafe(route, rpc, body);
@@ -358,16 +373,34 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
         .flatMap((x) => Object.values(x.servidos))
         .filter((sv) => sv.encaja && sv.libro && !sv.repuesto)
         .sort((a, b) => a.orden - b.orden);
+      // 1.139: gratis, con cupo del nivel y sin pasar de los huecos libres
+      const ocupados = Object.values(lib.libros).reduce((s, b) => s + b.balda + b.caja, 0);
+      const cupo = !clientes.reparto ? 0 : Math.max(0, Math.min(repartoDelNivel(c.nivel), huecosDelNivel(c.nivel) - ocupados));
       const claves = [];
-      let faltan = 0;
+      let repuestos = 0;
       for (const sv of vendidos) {
-        if (claves.length < REPARTO.max && c.granos - (claves.length + 1) * REPARTO.precio >= 0 && lib.libros[sv.libro]) claves.push(sv.libro);
-        else faltan += 1;
+        if (claves.length < cupo && lib.libros[sv.libro]) {
+          lib.libros[sv.libro].caja += 1;
+          claves.push(sv.libro);
+          repuestos += 1;
+        }
         sv.repuesto = true;
       }
-      for (const k of claves) lib.libros[k].caja += 1;
-      c.granos -= claves.length * REPARTO.precio;
-      d.reparto = claves.length || faltan ? { claves, granos: claves.length * REPARTO.precio, faltan } : null;
+      let k = 0;
+      let kt = 0;
+      while (claves.length < cupo) {
+        let x;
+        if (tuyos.length && claves.length % REPARTO_TUYOS_CADA === 0) x = tuyos[kt++ % tuyos.length];
+        else {
+          const presentes = new Set(Object.values(lib.libros).filter((b) => b.balda + b.caja > 0).map((b) => b.genero));
+          const vale = (y) => presentes.size >= 3 || !presentes.has(y.genero);
+          const lista = CATALOGO_LIBROS.filter(vale);
+          x = lista[k++ % lista.length];
+        }
+        aLaCaja(x, 1);
+        claves.push(x.clave);
+      }
+      d.reparto = claves.length ? { claves, granos: 0, gratis: true, repuestos, faltan: 0 } : null;
       // 1.132: si un influencer se fue contento otro día anterior, hoy llegan 3 más por su vídeo (una vez por influencer)
       if (conInf) {
         const v = Object.entries(c.influencers)
@@ -416,7 +449,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       const ok = entrega && enLaBalda ? body.libro_ok.map(Boolean) : [false, false, false];
       const la = ok.filter(Boolean).length;
       const lleva = entrega ? ok[0] : Boolean(body.encaja) && enLaBalda;
-      const extra = lleva ? (entrega ? EXTRA_LIBRO : EXTRA_LLEVADO) : 0;
+      const extra = lleva ? (entrega ? extraLibro(body.libro) : EXTRA_LLEVADO) : 0;
       if (lleva) lib.libros[body.libro].balda -= 1;
       const estrellas = entrega ? estrellasTotal(aciertos, la) : estrellasDe(aciertos, lleva);
       // El influencer: a tiempo (con el margen del servidor), como el excéntrico y, con 3 estrellas, viral; si no, como un cliente

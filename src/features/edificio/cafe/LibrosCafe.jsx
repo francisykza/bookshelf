@@ -19,6 +19,7 @@ import { Pista } from './Pista';
 import { colocarLibros, comprarCaja, errorCafe } from './cafeService';
 import { crearSfxBarra } from './cafeSfx';
 import { GRANO } from './cafeIconos';
+import { delCatalogo } from './cafeCatalogoLibros';
 import { PixelArt } from './PixelArt';
 
 const rgb = (c) => `rgb(${c[0]} ${c[1]} ${c[2]})`;
@@ -45,7 +46,7 @@ function pilarDice({ enCaja, enBalda, libres, recien }) {
   if (enCaja) return '«Empuja la caja hacia arriba y van solos a su sección, o arrástralos. Solo recomendamos lo que está a la vista.»';
   if (enBalda && libres <= 0) return '«¡Qué bonita ha quedado la balda! Da gusto verla.»';
   if (enBalda) return '«Todo en su sitio, cada uno en su sección. Si quieres devolver alguno a la caja, tócalo.»';
-  return '«La balda está esperando sus libros. En la distribuidora tienes lo que has leído.»';
+  return '«La balda está esperando sus libros. Mañana temprano pasa el reparto; si no quieres esperar, en la distribuidora hay cajas.»';
 }
 /** El título que cabe en el lomo: palabras enteras hasta donde quepan (según el alto del libro), sin cortar a medias.
     Si no cabe, se prueba sin el artículo del principio; si ni la primera palabra cabe, se acorta con «…». */
@@ -110,6 +111,8 @@ function Lomo({ libro, donde, onSoltar, onTocar, disabled, nuevo, asienta = fals
   const aire = aireDe(libro.titulo);
   const estilo = { '--cf3-lomo': color, '--cf3-alto': `${aire.alto}px`, '--cf3-ancho': `${aire.ancho}px` };
   const corto = tituloLomo(libro.titulo, aire.alto);
+  // 1.139: los tuyos (no los del catálogo del café) llevan el sello «Leído por ti»: una cinta en la cabeza del lomo
+  const tuyo = !delCatalogo(libro.clave);
   return (
     <>
       <button
@@ -120,9 +123,10 @@ function Lomo({ libro, donde, onSoltar, onTocar, disabled, nuevo, asienta = fals
         data-asienta={asienta ? 'true' : undefined}
         data-forma={aire.forma}
         data-clave={libro.clave}
+        data-tuyo={tuyo ? 'true' : undefined}
         style={{ ...estilo, '--cf3-retraso': `${retraso}ms` }}
         disabled={disabled}
-        aria-label={donde === 'balda' ? `«${libro.titulo}», en la balda: devolverlo a la caja` : `«${libro.titulo}», en la caja: ponerlo en la balda`}
+        aria-label={`«${libro.titulo}»${tuyo ? ', leído por ti' : ''}, ${donde === 'balda' ? 'en la balda: devolverlo a la caja' : 'en la caja: ponerlo en la balda'}`}
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={up}
@@ -142,6 +146,7 @@ function Lomo({ libro, donde, onSoltar, onTocar, disabled, nuevo, asienta = fals
         <span className="cf3-lomo__titulo" aria-hidden="true">
           {corto}
         </span>
+        {tuyo && <span className="cf3-lomo__sello" aria-hidden="true" />}
       </button>
       {fantasma && (
         <span className="cf3-lomo cf3-lomo--fantasma" data-forma={aire.forma} aria-hidden="true" style={{ ...estilo, left: fantasma.x, top: fantasma.y }}>
@@ -152,7 +157,7 @@ function Lomo({ libro, donde, onSoltar, onTocar, disabled, nuevo, asienta = fals
   );
 }
 
-export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja', recien = [], soundOn = false, onCambio, onCerrar }) {
+export function LibrosCafe({ estado, titulos, tuyos = [], granos, hoja: hojaInicial = 'caja', recien = [], soundOn = false, onCambio, onCerrar }) {
   const [hoja, setHoja] = useState(hojaInicial);
   // Con libros esperando, la caja se abre delante de ti (sus lomos saltan); con movimiento reducido, ya abierta
   const [abierta, setAbierta] = useState(() => reduced() || !(recien.length || enCajas(estado)));
@@ -281,7 +286,8 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
     setError('');
     try {
       await cola.current;
-      const r = await comprarCaja(pedido, titulos);
+      // Al servidor, solo tus leídos: el catálogo ya lo tiene él
+      const r = await comprarCaja(pedido, tuyos);
       onCambio(r);
       sfx.play('campanilla');
       setNuevos(r.caja);
@@ -394,7 +400,7 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
                 </ul>
               ) : (
                 <p className="cf3-balda__vacio">
-                  {enLaBalda.length ? 'La caja está vacía. En la distribuidora hay más.' : 'Aún no tienes libros que recomendar. Compra una caja en la distribuidora.'}
+                  {enLaBalda.length ? 'La caja está vacía. En la distribuidora hay más.' : 'Aún no tienes libros que recomendar. El reparto de la mañana trae unos cuantos de regalo.'}
                 </p>
               )}
             </div>
@@ -427,7 +433,9 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
           <p className="cf3-distri__granos" aria-label={`Tienes ${granos} granos`}>
             <PixelArt icono={GRANO} />
             <span aria-hidden="true">{granos}</span>
-            <span className="cf3-distri__nota">Lo que lees llega aquí: {titulos.length === 1 ? '1 título' : `${titulos.length} títulos`}.</span>
+            <span className="cf3-distri__nota">
+              {tuyos.length ? `El catálogo del café y ${tuyos.length === 1 ? 'uno de tus leídos' : `${tuyos.length} de tus leídos`}.` : 'El catálogo del café. Lo que leas llegará también aquí.'}
+            </span>
           </p>
           {elegido ? (
             <>
@@ -440,7 +448,7 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
               </div>
               <div className="cf3-distri__oferta">
                 <p className="cf3-distri__que">
-                  Caja de {elegido.nombre.toLowerCase()}: {CAJA_GENERO.ejemplares} ejemplares al azar entre {elegido.titulos === 1 ? 'tu título' : `tus ${elegido.titulos} títulos`}.
+                  Caja de {elegido.nombre.toLowerCase()}: {CAJA_GENERO.ejemplares} ejemplares al azar entre {elegido.titulos === 1 ? 'su título' : `sus ${elegido.titulos} títulos`}. Cada mañana el reparto trae libros gratis: esto es un extra.
                 </p>
                 <button type="button" className="cf3-btn cf3-btn--verde cf3-distri__comprar" disabled={ocupado || granos < CAJA_GENERO.precio} onClick={() => comprar({ genero: elegido.id })}>
                   {`${CAJA_GENERO.ejemplares} por ${CAJA_GENERO.precio}`}
@@ -451,9 +459,12 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
                 {titulos
                   .filter((t) => t.genero === elegido.id)
                   .map((t) => (
-                    <li key={t.clave}>
+                    <li key={t.clave} data-tuyo={t.tuyo ? 'true' : undefined}>
                       <span className="cf3-distri__lomo" style={{ '--cf3-lomo': rgb(colorDe(t.titulo)) }} aria-hidden="true" />
-                      <span className="cf3-distri__titulo">{t.titulo}</span>
+                      <span className="cf3-distri__titulo">
+                        {t.titulo}
+                        {t.tuyo && <span className="cf3-sello-leido">Leído por ti</span>}
+                      </span>
                       <button
                         type="button"
                         className="cf3-btn cf3-btn--suave cf3-distri__uno"
@@ -468,7 +479,7 @@ export function LibrosCafe({ estado, titulos, granos, hoja: hojaInicial = 'caja'
               </ul>
             </>
           ) : (
-            <p className="cf3-balda__vacio">Cuando leas un libro, la distribuidora te lo traerá para el café.</p>
+            <p className="cf3-balda__vacio">La distribuidora está cerrando el pedido. Vuelve en un rato.</p>
           )}
         </section>
       )}

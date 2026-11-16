@@ -5,7 +5,8 @@
 //   estantería de la pared va por secciones con placas de latón, se pasa el dedo por los lomos y se tira del que encaja, la
 //   tabla sale de la estantería, se mira su ficha y se envuelve (papel, solapas y cordel; la tapa y el marcapáginas; la bolsa,
 //   meterlo y el borde) con el sello del café. Estrellas de 7 aciertos; si aciertas el género se lo lleva (+4 granos).
-// - El reparto de la mañana repone lo vendido (hasta 10, a 2 granos, nunca a deber) y colocar es un gesto: empujar la caja.
+// - El reparto de la mañana repone lo vendido y colocar es un gesto: empujar la caja. Desde la 1.139 el reparto es gratis (6 en
+//   el nivel 1, sin pasar de los huecos libres; uno de cada tres, tuyo, y el resto del catálogo del café).
 // Capturas y vídeos en qa-report/cafe-libreria/.
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -17,6 +18,7 @@ import { createMockSupabase } from './mockSupabase';
 import { ANA } from './sobreShop';
 import { PLANO_INICIAL, cuenta } from '../src/features/edificio/cafe/cafeCatalogo';
 import { EXCENTRICOS, generoDe, nombreGenero, nombreOpcion, recetaPide } from '../src/features/edificio/cafe/cafeClientes';
+import { CATALOGO_LIBROS } from '../src/features/edificio/cafe/cafeCatalogoLibros';
 import { ELIGE, ETAPAS, gestosDe } from '../src/features/edificio/cafe/cafeGestos';
 import { dayKey } from '../src/domain/dates';
 
@@ -59,7 +61,8 @@ const RARO = EXCENTRICOS[3];
 
 test.use({ video: { mode: 'on', size: { width: 390, height: 844 } } });
 
-async function alCafe(page, { libros = BALDA, granos = 0, dominio = {}, vendidos = [] } = {}) {
+// `reparto`: si el día nuevo trae el reparto de la mañana (1.139; fuera de su prueba, no, para que no cambie lo demás)
+async function alCafe(page, { libros = BALDA, granos = 0, dominio = {}, vendidos = [], reparto = false } = {}) {
   const mock = createMockSupabase({
     edificio_vecinos: [],
     piso_cuentas: { [ANA.id]: { inicio_elegido: true, tickets: 120, sin_raro: 3 } },
@@ -75,7 +78,7 @@ async function alCafe(page, { libros = BALDA, granos = 0, dominio = {}, vendidos
   const estado = await simularCafe(
     page,
     { inaugurado: true, nombre: 'Taza y Lomo', granos, plano: structuredClone(PLANO_INICIAL), inventario: cuenta(PLANO_INICIAL), libros, dominio },
-    { clientes: { hoy: HOY, semillas: SEMILLAS, quienes: [3], frases: [10], vendidos } },
+    { clientes: { hoy: HOY, semillas: SEMILLAS, quienes: [3], frases: [10], vendidos, reparto } },
   );
   await page.goto('/');
   await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
@@ -173,12 +176,13 @@ test('Pilar prepara lo que dominas y el libro, a mano: la estantería por seccio
   await capturar('2')('bandeja');
   await expect(caja).toHaveAttribute('data-paso', 'gracias', { timeout: 20000 });
   await expect(cafe.getByRole('img', { name: '3 de 3 estrellas' })).toBeVisible();
-  await expect(cafe.locator('.cf3-dado')).toContainText('+9 granos');
-  await expect(cafe.locator('.cf3-dado')).toContainText('4 por el libro');
+  // 1.139: es uno de tus leídos: paga 6 («lo recomiendas tú»)
+  await expect(cafe.locator('.cf3-dado')).toContainText('+11 granos');
+  await expect(cafe.locator('.cf3-dado')).toContainText('6 por tu libro');
   await expect(cafe.locator('.cf3-repaso li[data-ok="false"]')).toHaveCount(0);
   await expect(cafe.locator('.cf3-repaso li[data-parte="genero"]')).toHaveText(`✓ ${nombreGenero(p1.genero)}`);
   await expect(cafe.locator('.cf3-repaso li[data-parte="forma"]')).toHaveText('✓ Para regalar');
-  await expect(cafe.locator('.cf3-repaso li[data-parte="ejemplar"]')).toHaveText(`✓ Se lleva «${l1.titulo}»`);
+  await expect(cafe.locator('.cf3-repaso li[data-parte="ejemplar"]')).toHaveText(`✓ Se lleva «${l1.titulo}», que lo recomiendas tú`);
   await quieto(page, 300);
   await capturar('2')('gracias');
   await despedir(page, cafe);
@@ -218,7 +222,7 @@ test('Pilar prepara lo que dominas y el libro, a mano: la estantería por seccio
   await hacerLibro(page, cafe, { foto: capturar('4') });
   await expect(caja).toHaveAttribute('data-paso', 'gracias', { timeout: 20000 });
   await expect(cafe.getByRole('img', { name: '3 de 3 estrellas' })).toBeVisible();
-  await expect(cafe.locator('.cf3-dado')).toContainText('+19 granos');
+  await expect(cafe.locator('.cf3-dado')).toContainText('+21 granos');
   await expect(cafe.locator('.cf3-franja--atender .cf3-dice')).toContainText(RARO.dorada);
   await quieto(page, 300);
   await capturar('4')('gracias');
@@ -247,15 +251,15 @@ test('el reparto de la mañana repone lo vendido y se coloca de un gesto, cada l
   mkdirSync(DIR, { recursive: true });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  // Ayer se vendieron tres; con 4 granos, el reparto trae dos (a 2 cada uno) y el otro se queda para otro día
+  // Ayer se vendieron tres; quedan 5 huecos: el reparto, gratis, repone los tres, trae uno más de tus leídos (uno de cada
+  // tres) y otro del catálogo del café
   const vendidas = ['f', 'm', 'a'];
   const libros = { bienvenida: true, libros: BALDA.libros.map((b) => (vendidas.includes(b.clave) ? { ...b, balda: 0 } : b)) };
-  const { cafe, estado } = await alCafe(page, { libros, granos: 4, vendidos: vendidas });
-  await expect(cafe.locator('.cf3-dice')).toContainText('Ha pasado el reparto de la mañana: 2 libros para reponer lo que se llevaron, a 2 granos cada uno (4 en total).');
-  await expect(cafe.locator('.cf3-dice')).toContainText('Otro se queda para otro día: no se queda nada a deber.');
-  expect(estado.granos).toBe(0);
+  const { cafe, estado } = await alCafe(page, { libros, granos: 4, vendidos: vendidas, reparto: true });
+  await expect(cafe.locator('.cf3-dice')).toContainText('Ha pasado el reparto de la mañana: 5 libros de regalo de la distribuidora. 3 reponen lo que se llevaron ayer. Hay 4 de los que has leído.');
+  expect(estado.granos).toBe(4);
   const tag = cafe.locator('.cf3-tag--libros');
-  await expect(tag).toHaveText('Caja de libros · 2');
+  await expect(tag).toHaveText('Caja de libros · 5');
   await quieto(page, 900);
   await page.screenshot({ path: join(DIR, `5-reparto-${tam(info)}.png`) });
   // El aviso, una vez al día en el dispositivo
@@ -266,7 +270,9 @@ test('el reparto de la mañana repone lo vendido y se coloca de un gesto, cada l
   const panel = cafe.getByRole('region', { name: 'Tus libros del café' });
   const caja = panel.locator('.cf3-libros__caja');
   await expect(caja).toHaveAttribute('data-abierta', 'true');
-  await expect(caja.locator('.cf3-lomo')).toHaveCount(2);
+  await expect(caja.locator('.cf3-lomo')).toHaveCount(5);
+  // El del catálogo, sin la cinta de «Leído por ti»; los tuyos, con ella
+  await expect(caja.locator('.cf3-lomo[data-tuyo="true"]')).toHaveCount(4);
   await expect(caja).toHaveAttribute('data-colocar', 'true');
   await expect(caja.locator('.cf3-libros__pista .cf3-pista[data-pista="arriba"]')).toBeVisible();
   await expect(panel.locator('.cf3-libros__cuenta')).toHaveText('7 / 12');
@@ -284,14 +290,14 @@ test('el reparto de la mañana repone lo vendido y se coloca de un gesto, cada l
   await page.screenshot({ path: join(DIR, `7-empujar-${tam(info)}.png`) });
   await m.move(x, y - 110, { steps: 6 });
   await m.up();
-  await expect(panel.locator('.cf3-libros__cuenta')).toHaveText('9 / 12');
-  await expect(panel.locator('.cf3-libros__hueco[data-vuela="true"]')).toHaveCount(2);
+  await expect(panel.locator('.cf3-libros__cuenta')).toHaveText('12 / 12');
+  await expect(panel.locator('.cf3-libros__hueco[data-vuela="true"]')).toHaveCount(5);
   await page.waitForTimeout(260);
   await page.screenshot({ path: join(DIR, `8-vuelan-${tam(info)}.png`) });
-  await expect.poll(() => estado.llamadas.filter((l) => l.rpc === 'cafe_colocar').map((l) => ({ ...l.body, poner: [...l.body.poner].sort() }))).toEqual([{ poner: ['f', 'm'], quitar: [] }]);
+  await expect.poll(() => estado.llamadas.filter((l) => l.rpc === 'cafe_colocar').map((l) => ({ ...l.body, poner: [...l.body.poner].sort() }))).toEqual([{ poner: ['a', CATALOGO_LIBROS[0].clave, 'f', 'f', 'm'].sort(), quitar: [] }]);
   // La balda, por secciones: los de cada género, juntos, con su separador de latón
   const generos = await panel.locator('.cf3-libros__balda .cf3-lomo').evaluateAll((ls) => ls.map((l) => l.dataset.clave));
-  const deGenero = (k) => generoDe(LIBROS.find((x) => x.id === k));
+  const deGenero = (k) => CATALOGO_LIBROS.find((x) => x.clave === k)?.genero ?? generoDe(LIBROS.find((x) => x.id === k));
   const vistos = [];
   for (const k of generos) if (vistos.at(-1) !== deGenero(k)) vistos.push(deGenero(k));
   expect(new Set(vistos).size).toBe(vistos.length);

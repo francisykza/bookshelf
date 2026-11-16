@@ -219,12 +219,14 @@ test('un día en el café: dos clientes, el excéntrico y un habitual, de la bar
   await expect(cafe.locator('.cf3-comanda')).toHaveCount(0);
   await atenderUno(page, cafe, 1, { en3d: true, capturas: '2', info });
   await expect(cafe.getByRole('img', { name: '3 de 3 estrellas' })).toBeVisible();
-  await expect(cafe.locator('.cf3-dado')).toContainText('+9 granos');
-  await expect(cafe.locator('.cf3-dado')).toContainText('4 por el libro');
+  // 1.139: el libro es uno de tus leídos: paga 6 («lo recomiendas tú»)
+  await expect(cafe.locator('.cf3-dado')).toContainText('+11 granos');
+  await expect(cafe.locator('.cf3-dado')).toContainText('6 por tu libro');
   await expect(cafe.locator('.cf3-dado')).toContainText('+14 reputación');
   await expect(cafe.locator('.cf3-repaso li[data-ok="false"]')).toHaveCount(0);
   await expect(cafe.locator('.cf3-repaso li').last()).toContainText('✓ Se lleva «');
-  await expect(cafe.locator('.cf3-monedero')).toContainText('9');
+  await expect(cafe.locator('.cf3-repaso li').last()).toContainText('que lo recomiendas tú');
+  await expect(cafe.locator('.cf3-monedero')).toContainText('11');
   await page.screenshot({ path: join(DIR, `3-servido-${tam(info)}.png`) });
   // 1.122: con el primer cliente, el cartel del primer día (los 10 tickets del nivel 1 y el del día)
   const logro = await despedir(page, cafe);
@@ -253,7 +255,7 @@ test('un día en el café: dos clientes, el excéntrico y un habitual, de la bar
   await cafe.getByRole('button', { name: 'Luego' }).click();
   await atenderUno(page, cafe, 3, { capturas: '4-excentrico', info });
   await expect(cafe.getByRole('img', { name: '3 de 3 estrellas' })).toBeVisible();
-  await expect(cafe.locator('.cf3-dado')).toContainText('+19 granos');
+  await expect(cafe.locator('.cf3-dado')).toContainText('+21 granos');
   await expect(cafe.locator('.cf3-dado')).toContainText('+40 reputación');
   await expect(cafe.locator('.cf3-franja--atender .cf3-dice')).toContainText(NIEBLA.dorada);
   await page.screenshot({ path: join(DIR, `4-excentrico-gracias-${tam(info)}.png`) });
@@ -267,14 +269,14 @@ test('un día en el café: dos clientes, el excéntrico y un habitual, de la bar
   await expect(cafe.locator('.cf3-franja--atender .cf3-dice')).toContainText(RESENAS[10]);
   await expect(cafe.locator('.cf3-quien')).toHaveText('Marga');
   await expect(cafe.getByRole('img', { name: '2 de 3 estrellas' })).toBeVisible();
-  await expect(cafe.locator('.cf3-dado')).toContainText('+9 granos');
+  await expect(cafe.locator('.cf3-dado')).toContainText('+11 granos');
   await page.screenshot({ path: join(DIR, `5-habitual-${tam(info)}.png`) });
   await despedir(page, cafe);
 
   // Todo el mundo atendido
   await expect(cafe.locator('.cf3-dice')).toContainText('Hoy ya está todo el mundo atendido');
   await expect(cafe.locator('.cf3-tag--cliente')).toHaveCount(0);
-  await expect(cafe.locator('.cf3-monedero')).toContainText(String(9 + 2 + 19 + 9));
+  await expect(cafe.locator('.cf3-monedero')).toContainText(String(11 + 2 + 21 + 11));
   // Los tres libros del género que pedían se los han llevado: quedan 9 en la balda
   expect(Object.values(estado.lib.libros).reduce((s, b) => s + b.balda, 0)).toBe(9);
   await expect(cafe.getByRole('button', { name: /^Tus libros: 9 en la balda/ })).toBeVisible();
@@ -370,7 +372,7 @@ test('libros en cajas: la bienvenida, arrastrar a la balda, la distribuidora y r
   page.on('pageerror', (e) => errors.push(e.message));
   const { portal, estado } = await alCafe(page, { pomodoros: 0, libros: { bienvenida: false, libros: [] }, granos: 30 });
   const cafe = await entrar(page, portal);
-  // Llega la caja de bienvenida: 8 ejemplares de tus leídos, repartidos por géneros, gratis
+  // Llega la caja de bienvenida: 8 ejemplares (del catálogo del café y de tus leídos, desde la 1.139), por géneros, gratis
   await expect(cafe.locator('.cf3-dice')).toContainText('¡Ha llegado una caja de la distribuidora! 8 libros');
   const bienvenida = estado.llamadas.find((l) => l.rpc === 'cafe_bienvenida');
   // Tus títulos (los 12 leídos y lo que traiga la biblioteca de la cuenta)
@@ -423,9 +425,9 @@ test('libros en cajas: la bienvenida, arrastrar a la balda, la distribuidora y r
   // La distribuidora: tus títulos por género; la caja de un género (5 por 10) y la de un título (3 por 9)
   await panel.getByRole('tab', { name: 'Distribuidora' }).click();
   await expect(panel.locator('.cf3-distri__granos')).toContainText('30');
-  await expect(panel.locator('.cf3-distri__nota')).toContainText(`${bienvenida.body.titulos.length} títulos`);
+  await expect(panel.locator('.cf3-distri__nota')).toContainText(`El catálogo del café y ${bienvenida.body.titulos.length} de tus leídos.`);
   await panel.getByRole('radio', { name: 'Novela' }).click();
-  await expect(panel.locator('.cf3-distri__que')).toContainText('5 ejemplares al azar entre tus');
+  await expect(panel.locator('.cf3-distri__que')).toContainText('5 ejemplares al azar entre sus');
   await page.screenshot({ path: join(DIR, `14-distribuidora-${tam(info)}.png`) });
   await panel.getByRole('button', { name: '5 por 10' }).click();
   // Vuelve a la caja, con los cinco recién llegados (y el devuelto)
