@@ -6,7 +6,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Con commit en la rama `1.90-escritorio-puerto`, sin publicar: 1.142.0** (2026-11-16, §142; «Sí, haz el commit»): solo libros de verdad en la estantería, la reputación del ranking
+- **Publicada en producción: 1.142.0** (2026-11-16, §142; «Sí, haz el commit» y «Sí, publícala»; `main` avanzó sin forzar de `09c773f` a `dfdddfa` y `/sw.js` de producción ya sirve v1.142.0; la dirección de antes sigue con su 308): solo libros de verdad en la estantería, la reputación del ranking
   legible y el cuaderno de Pilar. **Migración `20261224120000_cafe_pilar.sql`, aplicada** el 16-11-2026. Ver la bitácora.
 - **Publicada en producción: 1.141.0** (2026-11-16, §140 y §141; «Commit y publicar»; `main` avanza sin forzar de `5a9beb8`
   desde `1.90-escritorio-puerto`): la estantería del café vestida y los cafés de los demás (ranking y visitas). **Migración
@@ -448,7 +448,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Bitácora
 
-### 2026-11-16 · Café: solo libros de verdad, la reputación legible y el cuaderno de Pilar · 1.142.0 (§142), con commit y sin publicar (Claude)
+### 2026-11-16 · Café: solo libros de verdad, la reputación legible y el cuaderno de Pilar · 1.142.0 (§142), publicada en producción (Claude)
 
 - Francisco, tras ver la 1.141: a los lados de la estantería «libros que no se pueden pulsar y pueden confundir»; «en los
   ranking no se ve bien la reputación»; y tareas para Pilar a cambio de granos. Decisiones: «Solo libros de verdad», «Mejoras
