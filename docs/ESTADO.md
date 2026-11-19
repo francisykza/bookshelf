@@ -6,6 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Publicada en producción: 1.143.0** (2026-11-19, §143; bloque 1 de 3 del obrador, `cafe-libreria.md` §18.12; Francisco: «Sí,
+  aplicar y publicar»): desde el nivel 4, el obrador tras la pared del ala (el horno de la tahona, el recetario, magdalenas y
+  empanada con sus cuatro gestos, la pala, la campanilla y la vitrina de la barra) y **máximo dos cosas por cliente**: uno de
+  cada tres viene a por café y algo de comer, sin libro, y la pieza va con las pinzas en el mismo viaje que la taza. **Migración
+  `20261225120000_cafe_obrador.sql`, aplicada** el 19-11-2026. Evidencias en `qa-report/v1143/`. Lo siguiente es el bloque 2
+  (1.144.0), cuando Francisco lo pida. Ver la bitácora.
 - **Publicada en producción: 1.142.0** (2026-11-16, §142; «Sí, haz el commit» y «Sí, publícala»; `main` avanzó sin forzar de `09c773f` a `dfdddfa` y `/sw.js` de producción ya sirve v1.142.0; la dirección de antes sigue con su 308): solo libros de verdad en la estantería, la reputación del ranking
   legible y el cuaderno de Pilar. **Migración `20261224120000_cafe_pilar.sql`, aplicada** el 16-11-2026. Ver la bitácora.
 - **Publicada en producción: 1.141.0** (2026-11-16, §140 y §141; «Commit y publicar»; `main` avanza sin forzar de `5a9beb8`
@@ -278,6 +284,55 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Traspaso a la otra cuenta (19-11-2026): el obrador (vender comida), a mitad.** Francisco: «Lo que quede lo va a hacer la
+  otra cuenta, apunta lo que reste». Sustituye al traspaso del 14-11 (más abajo, solo como historia y por cómo se pegan las
+  migraciones). Plan aprobado en `cafe-libreria.md` §18, con las decisiones de Francisco en §18.13 y en `CLAUDE.md`.
+  - **Dónde**:
+    - carpeta `BookShelf-piso-lab`, rama `1.90-escritorio-puerto`;
+    - HEAD `a144bea` (1.142.0), igual que `origin/main` y producción.
+  - **La 1.143.0 entera está sin commit en el árbol de trabajo.** La dejó así la cuenta anterior, no es de otra sesión: no
+    deshacerla. Son estos archivos:
+    - **modificados**: `CLAUDE.md`, `SPEC.md`, `docs/ESTADO.md`, `docs/qa/cafe-libreria.md`, `e2e-community/cafeMock.js`,
+      `package.json`, `public/sw.js`, `src/diag.js` y, en `src/features/edificio/cafe/`, `Atender.jsx`, `Cafe.jsx`, `cafe3d.js`,
+      `cafeLayout.js`, `cafeNiveles.js`, `cafeNuevo.js`, `cafeService.js` y `cafeSfx.js`;
+    - **nuevos**: `e2e-community/cafeSonido.js` y `e2e-community/v1143-cafe-obrador.spec.js`;
+      `src/features/edificio/__tests__/cafe-obrador.rls.test.js` y `cafeObrador.test.js`; en `src/features/edificio/cafe/`,
+      `Obrador.jsx`, `Vitrina.jsx`, `cafeObrador.css`, `cafeObrador.js` y `cafeObradorGestos.js`; y
+      `supabase/migrations/20261225120000_cafe_obrador.sql`.
+
+    `.claude/` no se toca ni se sube.
+  - **Lo que queda, por orden**:
+    1. ~~El visto bueno de Francisco a la 1.143.0~~: **hecho** el 19-11 («Sí, aplicar y publicar»).
+    2. ~~La migración `20261225120000_cafe_obrador.sql`~~: **aplicada** el 19-11 (27.086 B, SHA-256 `422d3084…49db` comprobada
+       en el editor; las funciones y tablas nuevas dan 42501 con la clave pública).
+       - Truco para pegarla: el portapapeles de Windows no llega al panel y el navegador bloquea pedir a `127.0.0.1`. Lo que
+         funciona es comprimirla con `gzip -9 | base64` (unos 9 KB en vez de 36), pegar ese texto en `javascript_tool`,
+         descomprimirlo con `DecompressionStream('gzip')` y llamar a `monaco.editor.getEditors()[0].setValue(...)`.
+    3. ~~Commit y publicar~~: **hecho** el 19-11 (commit «1.143.0: …», `main` sin forzar).
+    4. **Bloque 2, 1.144.0** (§18.12), con la migración 2:
+       - los grados del horno y de la vitrina;
+       - las vitrinas de tartas que suman;
+       - la venta del mostrador con la caja de latón;
+       - la especialidad del día;
+       - la maestría y «Que lo hornee Pilar».
+    5. **Bloque 3, 1.145.0**, con la migración 3 (o 3a y 3b si pesa mucho):
+       - las galletas (nivel 5), el pan de la bodega (6), el bizcocho del tostadero (7) y la tortilla en el fogón (8);
+       - los hitos;
+       - la comida del excéntrico;
+       - el favorito de los habituales;
+       - lo que ven las visitas.
+
+    Cada bloque se entrega con capturas a 360 y 390 y un vídeo con sonido. No se pasa al siguiente sin su visto bueno.
+  - **Pruebas**:
+    - Vitest: `cafeObrador.test.js` y `cafe-obrador.rls.test.js`.
+    - E2E: `v1143-cafe-obrador.spec.js` a 360 y 390.
+    - Regresión del café a 390: las que pasan por atender (lista en la bitácora del 17-11).
+    - `cafe-libreria.rls.test.js` › «el reparto (1.139)» falla desde la 1.142 (punto siguiente).
+  - Sin probar con la migración aplicada, con cuentas reales ni en móviles reales.
+- **`cafe-libreria.rls.test.js` › «el reparto (1.139): gratis, primero lo vendido…» falla desde la 1.142** (visto el 17-11-2026):
+  `cafe_reparto` devuelve también `pilar` (los libros que pidió Pilar, 20261224120000_cafe_pilar.sql) y la prueba espera el objeto
+  sin ese campo. Es la prueba la que se quedó atrás; ajuste de una línea, sin tocar todavía.
+
 - **`v188-habitacion-real` falla en dos casos, ya desde antes de la 1.138** (comprobado en la 1.137.0, 15-11-2026): el número
   de muebles del dibujo 2D del piso no coincide con lo guardado, y el ordenador ya no tiene el botón «Cuenta y copias». Hay que
   mirar si es la prueba la que se quedó atrás o la app; sin investigar todavía.
@@ -306,8 +361,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - **Café, lista de Francisco del 13-11-2026 (tras el tostadero)**: hecha y publicada en la 1.128.0 (§128).
   Queda por confirmar con los datos de su pareja que la causa de las fichas sin portada era la de Open Library (§128.6).
 
-- **Traspaso a la otra cuenta (14-11-2026, tras publicar la 1.130.0)**. Francisco sigue con la otra cuenta en este punto y
-  con el mismo método. Sustituye al traspaso del 13-11 (más abajo, solo como historia).
+- **Traspaso a la otra cuenta (14-11-2026, tras publicar la 1.130.0)**, ya cumplido; sigue valiendo «Migraciones, cómo se
+  pegan». Francisco siguió con la otra cuenta en ese punto y con el mismo método. Sustituye al traspaso del 13-11 (más abajo, solo como historia).
   - **Dónde**: carpeta `C:\Users\zaely\OneDrive\Escritorio\Claude\BookShelf-piso-lab` (worktree del repositorio), rama
     `1.90-escritorio-puerto`. **No usar `bookshelf/`**: es el checkout antiguo, con `main` local en la 1.86 y cambios sin
     commit del 4-11-2026 que no son de este trabajo; no tocarlo ni «arreglarlo». Producción y `origin/main` están en la
@@ -447,6 +502,106 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-19 · El obrador, a producción · 1.143.0 (Claude)
+
+- Francisco vio las evidencias de nuevo y dijo «Sí, aplicar y publicar».
+- **Migración** `20261225120000_cafe_obrador.sql`:
+  - Se pegó en el SQL Editor (él inició sesión y pulsó «Run»: «Success»). Los bytes (27.086) y la SHA-256 se comprobaron en la
+    página, sobre el texto y sobre lo que había en el editor.
+  - Con la clave pública, `cafe_obrador`, `cafe_obrador_abrir`, `cafe_hornear`, `cafe_sacar_hornada`, `cafe_servir_comida` y
+    `cafe_entregar` (con sus parámetros) dan 42501, y las cinco tablas `cafe_obrador*` también. Una función que no existe da
+    PGRST202.
+- **Commit** de la 1.143.0 con las rutas del traspaso (sin `.claude/`). Se sube la rama y `main` sin forzar desde `a144bea`.
+- Queda: el bloque 2 (1.144.0), cuando Francisco lo pida.
+
+### 2026-11-19 · La otra cuenta retoma el obrador, sin commit (Claude)
+
+- Francisco: «continua por donde se quedó la otra cuenta». La 1.143.0 seguía sin commit, tal y como la describe el traspaso. La
+  migración sigue igual: 27.086 B y la misma SHA-256. `cafeObrador.test.js` y `cafe-obrador.rls.test.js` pasan (19/19) y
+  `npm run build` funciona.
+- Se le han vuelto a mandar al chat el vídeo y las capturas principales de `qa-report/v1143/` para que dé el visto bueno (punto 1
+  del traspaso). No se ha tocado código.
+
+### 2026-11-19 · Traspaso del obrador a la otra cuenta, sin commit (Claude)
+
+- Francisco: «Lo que quede lo va a hacer la otra cuenta, apunta lo que reste». Todavía no ha dado el visto bueno a la 1.143.0.
+- La 1.143.0 sigue sin commit en el árbol de trabajo, como la dejó la sesión del obrador el 17-11. El 19-11 se comprobó que la
+  migración en disco sigue con 27.086 bytes y la misma SHA-256.
+- Hoy solo cambia este documento; no se ha tocado código.
+- Lo que queda, en orden y con los archivos, está en «Pendiente» › «Traspaso a la otra cuenta (19-11-2026)».
+
+### 2026-11-17 · Café: máximo dos cosas por cliente · 1.143.0 (§143.4), sin commit (Claude)
+
+- Francisco, tras ver la 1.143: «lo unico que no se si apruebo es que a partir de ese nivel los clientes te pidan las tres
+  cosas, cafe, libro y comida porque se volvería muy pesado el proceso, el maximo lo pondría en dos». A que Pilar sirviera la
+  comida: «perderia la gracia de incluir la nueva mecanica». Eligió **«Dos máx., 1 de cada 3»**. Anotado en `CLAUDE.md` y en
+  `cafe-libreria.md` §18.
+- Con el obrador abierto, **uno de cada tres** clientes viene a por café y algo dulce o salado, **sin libro** (lo decide el
+  servidor, `cafe_pide_comida`; nunca el excéntrico ni el influencer); los demás, a por café y un libro. Sus estrellas, **solo
+  de la bebida** (`cafe_estrellas_bebida`: 4 aciertos, 3★; 2 o 3, 2★; si no, 1★). La comanda lleva su línea con una magdalena
+  de píxel. Con la taza lista, **«A la vitrina»**: las pinzas (siempre del jugador; Pilar no sirve la comida) y **la taza y el
+  plato en la bandeja**, a su mesa en un solo viaje. En las gracias, lo que dice de la pieza, su línea del repaso y su ficha
+  de granos. `Acompanar.jsx` (la vitrina después de despedirle) se sustituye por `Vitrina.jsx`, dentro de Atender.
+- **Arreglado el punto abierto del plato**: la mesita va ahora del lado de quien sirve (al otro, el cuerpo del cliente la
+  tapaba) y, en las gracias de quien comió, la mirada gira y baja hasta ella para que se vea por encima del cuadro
+  (`mirarPlato` en `cafe3d.js`); al despedirle, vuelve a la de siempre.
+- **La migración del obrador cambió** (sigue sin aplicar): redefine `cafe_entregar` (la de la 1.139, salvo para quien pide
+  comida: estrellas de la bebida, un libro que llegara no cuenta ni sale de la balda, y `dado.comida`) y añade
+  `cafe_estrellas_bebida`. Ahora 27.086 bytes, SHA-256 `422d3084e30303990584c3b087e3773d0f550f919cb5b18405a03c42618649db`.
+- Pruebas: Vitest `cafeObrador.test.js` (9/9) y `cafe-obrador.rls.test.js` (10/10, tres veces seguidas; el caso nuevo de
+  «máximo dos» usa una cuenta elegida para que no dependa del azar del identificador) y el resto de Vitest del café en verde
+  salvo `cafe-libreria.rls.test.js` › «el reparto (1.139)», que falla desde la 1.142 (ver «Pendiente»). E2E `v1143` a 390 (4/4,
+  con el recorrido nuevo con comida y un caso nuevo: quien viene a por un libro no pasa por la vitrina) y a 360 (1/1; las otras
+  tres son solo de 390). Regresión a 390: `v1121`, `v1123`, `v1132`, `v1142`, `v1130` y `v1139` (18/18; las dos últimas, tras
+  el arreglo de abajo). `npm run build` correcto. Evidencias en `qa-report/v1143/`, enviadas al chat.
+- **Cazado en la regresión**: la variable nueva de la mirada se llamaba `giro` y tapaba la función `giro` de la escena (la que
+  hace girar las piezas): al sacar un libro de la balda saltaba «giro is not a function» y fallaban `v1130` y `v1139`. Se
+  comprobó que con la 1.142 sin cambios pasaban (en una copia aparte, fuera del proyecto) y se renombró a `ladeo`.
+- Queda: su visto bueno a la entrega; aplicar la migración (la versión nueva); commit y publicar cuando lo pida; después, los
+  bloques 2 (1.144) y 3 (1.145). Sin probar con la migración aplicada, con cuentas reales ni en móviles reales.
+
+### 2026-11-17 · Café: el obrador abre · 1.143.0 (§143), bloque 1 de 3, sin commit (Claude)
+
+- El bloque 1 del obrador (`cafe-libreria.md` §18.12), con las decisiones de Francisco del mismo día. **Desde el nivel 4**, al
+  fondo del ala lateral, el tabique «¿Y esta pared?»; Pilar lo abre y aparece el horno de la tahona de doña Amparo con su mesa
+  de mármol, la pala, la campanilla y el recetario, y la primera hornada de la casa (6 magdalenas) en la vitrina.
+- **El recetario** (cuaderno de hule a cuadros, seis fichas de papel que se pasan de lado; dos abiertas, las otras dicen su nivel).
+  **Magdalenas** (rallar el limón y colmar los moldes) y **empanada** (el rodillo y el repulgo), cada gesto con su objeto, su
+  cámara, su pista, su nota, la «!» y su sonido; nunca falla. **La pala** mete y saca; el horno, sin números ni cuenta atrás,
+  nunca quema; **la campanilla** avisa también desde fuera (sonido y letrero «El obrador · ¡listo!»); lo que no cabe en la
+  vitrina espera en la bandeja.
+- **La vitrina** (campana de cristal en la punta de la barra) y **«¿Y para acompañar?»**: al despedir a un cliente con su
+  bebida, si lo pide el servidor, las pinzas bajan la pieza al plato y se la llevas a la mesa (solo granos).
+- **Migración nueva sin aplicar**: `20261225120000_cafe_obrador.sql` (la aplica Francisco; va después de la de Pilar). Sin
+  ella, no sale el letrero y el café va como en la 1.142.
+- Pruebas: Vitest `cafeObrador.test.js` y `cafe-obrador.rls.test.js` (PGlite) en verde (una vez cayó el wasm de PGlite y al
+  repetir pasó: intermitente, sin relación). E2E `v1143-cafe-obrador.spec.js` a 360 y 390 (y reducida a 390). Evidencias en
+  `qa-report/v1143/`, enviadas al chat. `e2e-community/cafeSonido.js` saca la grabadora de sonido de la prueba del taller para
+  reutilizarla. Regresión a 390: `v1123` (3/3) y las del café que pasan por el nivel 3 (`v1122`, `v1133`, `v1133-1`, `v1140`,
+  `v1141` y `v1142`: 17/17); `npm run build` correcto.
+- **Arreglado en la regresión**: la pista del nivel 3 («Detrás de esa pared huele a pan…») salía nada más entrar y pisaba el
+  aviso del reparto de la mañana (fallaba `v1142`, «la pizarra… y Pilar pide y coloca el reparto»). Ahora espera a que Pilar no
+  tenga nada que decir y a unos segundos de calma (§143.1); lo comprueba un caso nuevo de `v1143` a 390.
+- **Punto abierto para su revisión**: al dar las gracias, la cámara queda tan cerca del cliente que su cuerpo tapa el plato con
+  la magdalena (captura 31); se ve al alejarse (captura 32). Si quiere, la cámara se aparta un paso al servir comida.
+- Queda: su visto bueno a la entrega; aplicar la migración; commit y publicar cuando lo pida; después, los bloques 2 (1.144) y 3
+  (1.145). Sin probar con la migración aplicada, con cuentas reales ni en móviles reales.
+
+### 2026-11-17 · Café: el obrador (vender comida), propuesta aprobada, sin commit (Claude)
+
+- Encargo de Francisco: «una nueva mecanica que se desbloquearía a un nivel que tu consideres necesario. Vender comida, algo como
+  starbucks pero super cozy que de pie a mejora y tenga mecanicas adictivas y que inciten a seguir jugando». De la cadena del
+  ejemplo, solo el género.
+- Propuesta escrita en `docs/qa/cafe-libreria.md` §18 (sin programar): el horno de la antigua tahona tras la pared del ala lateral,
+  el recetario, seis recetas con dos gestos propios cada una, la vitrina de la barra, las pinzas, la venta del mostrador, mejoras
+  del horno y de la vitrina, maestría por receta, especialidad del día, hitos del obrador y el reparto en tres bloques (1.143,
+  1.144 y 1.145), con una migración en cada uno.
+- **Decisiones de Francisco** (las cuatro recomendadas, anotadas en `CLAUDE.md`): nivel 4; las cifras de la tabla (la comida solo da
+  granos, nunca reputación ni tickets); Pilar vende en el mostrador como la hucha (7 días); solo el favorito de los habituales, sin
+  maridajes.
+- Queda: el bloque 1 (1.143.0), con capturas a 360 y 390 y un vídeo con sonido. Sin commit: `CLAUDE.md`, este ESTADO y
+  `cafe-libreria.md`.
 
 ### 2026-11-16 · Café: solo libros de verdad, la reputación legible y el cuaderno de Pilar · 1.142.0 (§142), publicada en producción (Claude)
 

@@ -1,0 +1,655 @@
+// El café-librería del bajo, 1.143 (encargo de Francisco del 17-11-2026; plan en docs/qa/cafe-libreria.md §18, aprobado el mismo
+// día): el obrador del ala lateral. La primera vez (desde el nivel 4) se abre el tabique y Pilar enseña el horno de la tahona de
+// doña Amparo y su recetario; la primera hornada de la casa ya está en la vitrina de la barra. Después, cada vez:
+// 1. El recetario: seis páginas (dos se hornean ya; las demás dicen en qué nivel se abren). Se elige una.
+// 2. Sus dos gestos sobre la mesa de mármol (`cafeObradorGestos.js`), cada uno con su objeto y su sonido. Cómo quedan da las
+//    estrellas (las del taller) y las estrellas, las piezas.
+// 3. La pala al horno (empujar hacia el fondo) y `cafe_hornear`. Sin números: la hornada se dora poco a poco y la campanilla
+//    avisa. Se puede salir mientras tanto; nunca se quema.
+// 4. La pala fuera (tirar hacia ti) y `cafe_sacar_hornada`: Pilar lo lleva a la vitrina; lo que no cabe espera en la bandeja.
+// Con movimiento reducido o con el teclado, cada gesto se hace de una vez y queda bien. La «!» de ayuda, como en la barra.
+import { useEffect, useRef, useState } from 'react';
+import { AYUDA_NIVELES, AYUDA_PARADO_MS, ladoNota, verAyuda } from './cafeGestos';
+import {
+  GESTO_OBRADOR,
+  HORNABLES,
+  PALA,
+  PILAR_OBRADOR,
+  RECETAS_OBRADOR,
+  TOPE_HORNADAS,
+  bandejaLibre,
+  enVitrina,
+  estadoHorno,
+  fraseHorno,
+  nombrePiezas,
+  piezasDe,
+  recetaAbierta,
+  recetaObrador,
+} from './cafeObrador';
+import { GESTOS_RECETA, crearGestoObrador } from './cafeObradorGestos';
+import { crearSfxBarra } from './cafeSfx';
+import { abrirObrador, errorCafe, hornear, sacarHornada } from './cafeService';
+import { PILAR } from './cafeIconos';
+import { PixelArt } from './PixelArt';
+import { Pista } from './Pista';
+import './cafeObrador.css';
+
+const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** El trazo de la pista y la marca de la escena sobre la que va, por gesto. */
+const PISTA = { rallar: 'abajo', colmar: 'vaiven', rodillo: 'vaiven-vertical', repulgo: 'giro', meter: 'arriba', sacar: 'abajo' };
+const MARCA = { rallar: 'rallador', colmar: 'moldes', rodillo: 'masa', repulgo: 'fuente', meter: 'pala', sacar: 'boca' };
+/** El sonido de cada cosa que pasa en un gesto. */
+const SONIDO = { raspa: 'rallar', masa: 'masa', colmado: 'colmado', rebosa: 'rebosa', rueda: 'rodillo', vuelta: 'vueltaRodillo' };
+/** Lo que tarda en pasar al gesto siguiente, para que se lea lo que dice Pilar. */
+const PAUSA_MS = 1300;
+const HORNO = { 60: 'Al horno, un ratito', 90: 'Al horno, un rato largo' };
+
+function Estrellas({ n }) {
+  return (
+    <span className="cf3-estrellas" role="img" aria-label={`${n} de 3 estrellas`}>
+      {[1, 2, 3].map((k) => (
+        <span key={k} className="cf3-estrella" data-llena={k <= n ? 'true' : undefined} aria-hidden="true" />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * `obrador`: el del servidor (`obradorDe` en cafeService.js), o null si aún no se ha abierto; `onObrador(obrador)`, con cada
+ * estado nuevo que devuelve el servidor (la vitrina y el horno de fuera lo usan).
+ */
+export function Obrador({ escena, obrador, nivel = 4, soundOn = false, ayudas = 'auto', onObrador, onCerrar }) {
+  const [ahora, setAhora] = useState(() => Date.now());
+  const horneando = obrador?.horneando ?? [];
+  const listaDe = (o, t) => (o?.horneando ?? []).find((h) => estadoHorno(h, t).listo) ?? null;
+  // 'abriendo' (el servidor abre el obrador), 'descubre' (Pilar lo enseña), 'recetario', 'gesto' (los dos de la receta),
+  // 'meter' (la pala al horno), 'horneando', 'sacar' (la pala fuera) y 'hecho' (a la vitrina)
+  const [fase, setFase] = useState(() => (!obrador ? 'abriendo' : listaDe(obrador, Date.now()) ? 'sacar' : 'recetario'));
+  const [linea, setLinea] = useState(0);
+  const [receta, setReceta] = useState(null);
+  const [paso, setPaso] = useState(0);
+  const [comentario, setComentario] = useState(null);
+  const [bandeja, setBandeja] = useState(() => listaDe(obrador, Date.now())?.bandeja ?? null);
+  const [dado, setDado] = useState(null);
+  const [sacado, setSacado] = useState(null);
+  const [pagina, setPagina] = useState(0);
+  const [g, setG] = useState(null);
+  const [pista, setPista] = useState(null);
+  const [parado, setParado] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState('');
+  const [sfx] = useState(() => crearSfxBarra());
+  const zona = useRef(null);
+  const hojas = useRef(null);
+  const rec = useRef(null);
+  const medida = useRef({});
+  const fin = useRef(false);
+  const mimo = useRef([]);
+  const timers = useRef([]);
+  const despues = (fn, ms) => timers.current.push(setTimeout(fn, ms));
+
+  const tipo = fase === 'gesto' && receta ? GESTOS_RECETA[receta]?.[paso] : fase === 'meter' || fase === 'sacar' ? fase : null;
+  // Al descubrirlo, el horno entero; en cada gesto, su objeto; con la pala, la boca del horno; y si no, la mesa
+  const vista = fase === 'abriendo' || fase === 'descubre' ? 'todo' : fase === 'gesto' ? tipo : fase === 'meter' || fase === 'horneando' || fase === 'sacar' ? 'horno' : 'mesa';
+
+  useEffect(() => sfx.setActivo(soundOn), [sfx, soundOn]);
+  // Entrar y salir de la vista del obrador
+  useEffect(() => {
+    escena?.obrador(true);
+    const pendientes = timers.current;
+    return () => {
+      for (const t of pendientes) clearTimeout(t);
+      sfx.apagar();
+      escena?.obrador(false);
+    };
+    // Solo al abrir y cerrar
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escena]);
+  // La primera vez: el servidor abre el obrador (y deja la primera hornada en la vitrina); se cae el tabique
+  // (Una sola llamada aunque el efecto se repita, como en el modo estricto de desarrollo: la segunda ya lo vería abierto)
+  const abriendo = useRef(null);
+  useEffect(() => {
+    if (fase !== 'abriendo') return undefined;
+    let vivo = true;
+    abriendo.current ??= abrirObrador();
+    abriendo.current.then(
+      (r) => {
+        if (!vivo) return;
+        onObrador?.(r.obrador);
+        if (r.nuevo) {
+          sfx.play('tabique');
+          setFase('descubre');
+        } else setFase('recetario');
+      },
+      (e) => {
+        if (!vivo) return;
+        setError(errorCafe(e));
+      },
+    );
+    return () => {
+      vivo = false;
+    };
+    // Solo al empezar
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // El reloj del horno, mientras hay algo dentro (sin números: solo para dorarlo y para la campanilla)
+  useEffect(() => {
+    if (!horneando.length) return undefined;
+    const id = setInterval(() => setAhora(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [horneando.length]);
+  // Mirando el horno, al sonar la campanilla: a sacarla
+  useEffect(() => {
+    if (fase !== 'horneando') return;
+    const h = horneando.find((x) => x.bandeja === bandeja) ?? horneando[0];
+    if (h && estadoHorno(h, ahora).listo) {
+      sfx.play('campanillaHorno');
+      setBandeja(h.bandeja);
+      reiniciar();
+      setFase('sacar');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fase, ahora]);
+
+  // Lo que se ve del obrador. La bandeja con la que se trabaja va la primera (es la que se dibuja en la boca del horno)
+  const pose = g?.pose ?? {};
+  const enHorno = [...horneando].sort((a, b) => (a.bandeja === bandeja ? -1 : b.bandeja === bandeja ? 1 : a.bandeja - b.bandeja));
+  const listo = horneando.some((h) => estadoHorno(h, ahora).listo);
+  const faseEscena = fase === 'gesto' ? tipo : fase === 'meter' || fase === 'sacar' ? fase : 'recetario';
+  useEffect(() => {
+    escena?.setObrador({
+      abierto: Boolean(obrador),
+      vista,
+      fase: faseEscena,
+      receta: fase === 'sacar' ? (enHorno[0]?.receta ?? receta) : receta,
+      pose,
+      horneando: enHorno.map((h) => ({ receta: h.receta, t: estadoHorno(h, ahora).t })),
+      listo,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escena, obrador, vista, faseEscena, receta, g, ahora, bandeja, listo]);
+
+  // Dónde cae el objeto del gesto en la pantalla, cuando la cámara ya ha llegado (la pista, la nota, la «!» y las medidas)
+  useEffect(() => {
+    setPista(null);
+    if (!tipo) return undefined;
+    let vivo = true;
+    let id = 0;
+    const mira = () => {
+      if (!vivo) return;
+      if (escena && !escena.settled()) {
+        id = requestAnimationFrame(mira);
+        return;
+      }
+      const r = zona.current?.getBoundingClientRect();
+      const m = escena?.obradorMarca(MARCA[tipo]);
+      if (m && r) {
+        setPista({ x: m.x - r.left, y: m.y - r.top });
+        const med = { centro: { x: m.x, y: m.y } };
+        if (tipo === 'colmar') {
+          const a = escena.obradorMarca('moldeIzq');
+          const b = escena.obradorMarca('moldeDer');
+          if (a && b) med.ancho = Math.abs(b.x - a.x);
+        }
+        // El borde de la fuente se ve algo achatado desde arriba: el radio, un poco por dentro
+        if (tipo === 'repulgo') {
+          const b = escena.obradorMarca('fuenteBorde');
+          if (b) med.radio = Math.abs(b.x - m.x) * 0.92;
+        }
+        medida.current = med;
+      } else if (r) {
+        setPista({ x: r.width / 2, y: r.height * 0.42 });
+        medida.current = { centro: { x: r.left + r.width / 2, y: r.top + r.height * 0.42 } };
+      }
+    };
+    id = requestAnimationFrame(mira);
+    return () => {
+      vivo = false;
+      cancelAnimationFrame(id);
+    };
+  }, [tipo, escena]);
+  // Pasado un rato sin hacer nada (en los niveles altos), la «!» aparece igualmente
+  useEffect(() => {
+    setParado(false);
+    if (!tipo || ayudas !== 'auto' || (nivel ?? 1) <= AYUDA_NIVELES) return undefined;
+    const id = setTimeout(() => setParado(true), AYUDA_PARADO_MS);
+    return () => clearTimeout(id);
+  }, [tipo, ayudas, nivel]);
+  const ayuda = Boolean(tipo) && verAyuda(ayudas, nivel, parado);
+
+  function reiniciar() {
+    rec.current = null;
+    fin.current = false;
+    setG(null);
+  }
+
+  /** La pala ya dentro: el servidor apunta la hornada (con las estrellas de los dos gestos). */
+  const alHorno = () => {
+    setOcupado(true);
+    sfx.play('horno');
+    hornear(receta, mimo.current)
+      .then(
+        (r) => {
+          onObrador?.(r.obrador);
+          setDado(r.dado);
+          setBandeja(r.dado.bandeja);
+          setAhora(Date.now());
+          reiniciar();
+          setFase('horneando');
+        },
+        (e) => {
+          setError(errorCafe(e));
+          reiniciar();
+          setFase('recetario');
+        },
+      )
+      .finally(() => setOcupado(false));
+  };
+  /** La pala ya fuera: Pilar la lleva a la vitrina (lo que no cabe, espera en la bandeja). */
+  const fuera = () => {
+    setOcupado(true);
+    sacarHornada(bandeja)
+      .then(
+        (r) => {
+          onObrador?.(r.obrador);
+          setSacado(r.dado);
+          if (r.dado.sacadas > 0) sfx.play('vitrina');
+          reiniciar();
+          setFase('hecho');
+        },
+        (e) => {
+          setError(errorCafe(e));
+          reiniciar();
+          setFase('recetario');
+        },
+      )
+      .finally(() => setOcupado(false));
+  };
+  const aplicar = (s) => {
+    setG(s);
+    if (fin.current) return;
+    for (const ev of s.eventos) {
+      if (SONIDO[ev]) sfx.play(SONIDO[ev]);
+      else if (ev === 'pellizco') sfx.play('pellizco', s.pose?.hechos?.filter(Boolean).length ?? 0);
+      else if (ev === 'toca' && (s.tipo === 'meter' || s.tipo === 'sacar')) sfx.play('pala');
+    }
+    if (!s.hecho) return;
+    fin.current = true;
+    if (s.tipo === 'meter') return alHorno();
+    if (s.tipo === 'sacar') {
+      sfx.play('pala');
+      return fuera();
+    }
+    // Un gesto de la receta: cómo ha quedado, y al siguiente
+    sfx.play('obradorHecho');
+    const m = s.mimo ?? 2;
+    mimo.current = [...mimo.current, m];
+    const def = GESTO_OBRADOR[s.tipo];
+    setComentario({ bien: m === 2, texto: m === 2 ? def.bien : def.mejor });
+    despues(
+      () => {
+        reiniciar();
+        setComentario(null);
+        if (paso === 0) setPaso(1);
+        else setFase('meter');
+      },
+      reduced() ? 400 : PAUSA_MS,
+    );
+  };
+  const reconocedor = () => {
+    if (!rec.current && tipo) {
+      const ancho = zona.current?.getBoundingClientRect().width || 390;
+      rec.current = crearGestoObrador(tipo, { escala: Math.min(ancho, 600) / 390, ...medida.current });
+    }
+    return rec.current;
+  };
+  const completar = () => {
+    if (!tipo || fin.current || ocupado) return;
+    const r = reconocedor();
+    if (r) aplicar(r.completar());
+  };
+  const onDown = (e) => {
+    if (!tipo || fin.current || ocupado) return;
+    e.preventDefault();
+    if (reduced()) return completar();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    const r = reconocedor();
+    if (r) aplicar(r.abajo(e.clientX, e.clientY));
+  };
+  const onMove = (e) => {
+    const r = rec.current;
+    if (!r || !r.estado.pulsado) return;
+    aplicar(r.mover(e.clientX, e.clientY));
+  };
+  const onUp = () => {
+    const r = rec.current;
+    if (!r || !r.estado.pulsado) return;
+    aplicar(r.arriba());
+  };
+
+  // El recetario
+  const libre = bandejaLibre(obrador);
+  const tope = (obrador?.hornadasHoy ?? 0) >= TOPE_HORNADAS;
+  const elegir = (id) => {
+    if (!recetaAbierta(id, nivel) || !libre || tope) return;
+    sfx.play('fichaReceta');
+    setError('');
+    setReceta(id);
+    setPaso(0);
+    mimo.current = [];
+    setComentario(null);
+    setDado(null);
+    setSacado(null);
+    reiniciar();
+    setFase('gesto');
+  };
+  const abrirRecetario = () => {
+    sfx.play('recetario');
+    setError('');
+    reiniciar();
+    setFase('recetario');
+  };
+  const hojear = (k) => {
+    const el = hojas.current;
+    const n = Math.max(0, Math.min(RECETAS_OBRADOR.length - 1, k));
+    if (!el) return;
+    el.scrollTo({ left: n * el.clientWidth, behavior: reduced() ? 'auto' : 'smooth' });
+  };
+  const alHojear = () => {
+    const el = hojas.current;
+    if (!el || !el.clientWidth) return;
+    const k = Math.round(el.scrollLeft / el.clientWidth);
+    if (k !== pagina) {
+      setPagina(k);
+      sfx.play('fichaReceta');
+    }
+  };
+  // Al abrir el recetario, por la primera página que se puede hornear
+  useEffect(() => {
+    if (fase !== 'recetario') return;
+    const k = Math.max(0, RECETAS_OBRADOR.findIndex((r) => HORNABLES.includes(r.id)));
+    const el = hojas.current;
+    if (el) el.scrollLeft = k * el.clientWidth;
+    setPagina(k);
+  }, [fase]);
+
+  const enElHorno = horneando.find((h) => h.bandeja === bandeja) ?? horneando[0] ?? null;
+  const hornoAhora = enElHorno ? estadoHorno(enElHorno, ahora) : null;
+  const vitrina = enVitrina(obrador);
+
+  if (fase === 'recetario') {
+    const cabecera = tope
+      ? PILAR_OBRADOR.tope
+      : listo
+        ? PILAR_OBRADOR.listo
+        : enElHorno
+          ? `En el horno, ${recetaObrador(enElHorno.receta)?.nombre.toLowerCase()}: ${fraseHorno(hornoAhora.t).replace(/[«»]/g, '')}`
+          : 'El horno está encendido y la mesa, recogida.';
+    return (
+      <div className="cf3-balda cf3-recetario" role="region" aria-label="El recetario de doña Amparo">
+        <div className="cf3-recetario__cabeza">
+          <span className="cf3-recetario__tapa" aria-hidden="true" />
+          <div className="cf3-recetario__titulos">
+            <h2 className="cf3-recetario__titulo">El recetario de doña Amparo</h2>
+            <p className="cf3-recetario__estado" aria-live="polite">
+              {cabecera}
+            </p>
+            <p className="cf3-recetario__vitrina">
+              En la vitrina: {vitrina} de {obrador?.cabe ?? 12}
+            </p>
+          </div>
+        </div>
+        <ol className="cf3-recetario__hojas" ref={hojas} onScroll={alHojear} aria-label="Las recetas">
+          {RECETAS_OBRADOR.map((r, k) => {
+            const abierta = recetaAbierta(r.id, nivel);
+            const pronto = !abierta && nivel >= r.nivel;
+            return (
+              <li key={r.id} className="cf3-papeleta" data-abierta={abierta ? 'true' : undefined} data-tipo={r.tipo} aria-label={`Página ${k + 1} de ${RECETAS_OBRADOR.length}: ${r.nombre}`}>
+                <span className="cf3-papeleta__pinza" aria-hidden="true" />
+                <p className="cf3-papeleta__tipo">{r.tipo === 'dulce' ? 'Dulce' : 'Salado'}</p>
+                <h3 className="cf3-papeleta__nombre">{r.nombre}</h3>
+                {abierta ? (
+                  <>
+                    <p className="cf3-papeleta__nota">«{r.nota}»</p>
+                    <ul className="cf3-papeleta__datos">
+                      <li>
+                        Salen de {r.piezas[0]} a {nombrePiezas(r.id, r.piezas[2])}
+                      </li>
+                      <li>{r.precio} granos cada una</li>
+                      <li>{(r.gestos ?? []).map((x, k) => (k ? GESTO_OBRADOR[x]?.atajo.toLowerCase() : GESTO_OBRADOR[x]?.atajo)).join(' y ')}</li>
+                      <li>{HORNO[r.segundos] ?? 'Al horno'}</li>
+                    </ul>
+                    <button type="button" className="cf3-btn cf3-btn--verde cf3-papeleta__hornear" disabled={!libre || tope || ocupado} onClick={() => elegir(r.id)}>
+                      {tope ? 'Mañana, más' : !libre ? 'El horno está ocupado' : 'Hornear'}
+                    </button>
+                  </>
+                ) : (
+                  <p className="cf3-papeleta__cerrada">{pronto ? 'Doña Amparo la dejó a medio escribir.' : `Se abre en el nivel ${r.nivel}.`}</p>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+        <div className="cf3-recetario__pie">
+          <button type="button" className="cf3-btn cf3-btn--suave cf3-recetario__flecha" onClick={() => hojear(pagina - 1)} disabled={pagina <= 0} aria-label="Página anterior">
+            ‹
+          </button>
+          <span className="cf3-recetario__pagina" aria-hidden="true">
+            {pagina + 1} / {RECETAS_OBRADOR.length}
+          </span>
+          <button type="button" className="cf3-btn cf3-btn--suave cf3-recetario__flecha" onClick={() => hojear(pagina + 1)} disabled={pagina >= RECETAS_OBRADOR.length - 1} aria-label="Página siguiente">
+            ›
+          </button>
+          <span className="cf3-recetario__hueco" />
+          {listo && (
+            <button
+              type="button"
+              className="cf3-btn cf3-btn--verde"
+              onClick={() => {
+                const h = horneando.find((x) => estadoHorno(x, Date.now()).listo);
+                if (!h) return;
+                setBandeja(h.bandeja);
+                reiniciar();
+                setFase('sacar');
+              }}
+            >
+              Sacar la hornada
+            </button>
+          )}
+          {!listo && enElHorno && (
+            <button
+              type="button"
+              className="cf3-btn cf3-btn--suave"
+              onClick={() => {
+                setBandeja(enElHorno.bandeja);
+                setFase('horneando');
+              }}
+            >
+              Mirar el horno
+            </button>
+          )}
+          <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar}>
+            Volver
+          </button>
+        </div>
+        {error && (
+          <p className="cf3-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  const def = tipo === 'meter' || tipo === 'sacar' ? PALA[tipo] : tipo ? GESTO_OBRADOR[tipo] : null;
+  const progreso = Math.round((g?.progreso ?? 0) * 100);
+  const r = recetaObrador(fase === 'sacar' || fase === 'horneando' ? (enElHorno?.receta ?? receta) : receta);
+  const conGesto = Boolean(tipo) && !comentario;
+  let texto;
+  if (fase === 'abriendo') texto = error || '«Espera, que esta pared suena a hueco…»';
+  else if (fase === 'descubre') texto = PILAR_OBRADOR.descubre[linea];
+  else if (comentario) texto = comentario.texto;
+  else if (fase === 'horneando') texto = hornoAhora ? fraseHorno(hornoAhora.t) : '';
+  else if (fase === 'hecho')
+    texto = sacado
+      ? sacado.quedan > 0
+        ? `${sacado.sacadas ? PILAR_OBRADOR.alVitrina(sacado.sacadas) + ' ' : ''}${PILAR_OBRADOR.vitrinaLlena}`
+        : PILAR_OBRADOR.alVitrina(sacado.sacadas)
+      : '';
+  else if (fase === 'sacar' && !g?.progreso) texto = `${PILAR_OBRADOR.listo} ${def.orden}.`;
+  else if (def) texto = reduced() ? `${def.orden}. Un toque basta.` : `${def.orden}.`;
+  const quien = fase === 'gesto' ? r?.nombre : fase === 'meter' || fase === 'horneando' || fase === 'sacar' ? 'El horno' : 'Pilar';
+  const dicePilar = !conGesto;
+
+  return (
+    <>
+      <div
+        ref={zona}
+        className="cf3-gesto"
+        data-activo={conGesto ? 'true' : undefined}
+        data-gesto={conGesto ? tipo : undefined}
+        role={conGesto ? 'button' : undefined}
+        tabIndex={conGesto ? 0 : -1}
+        aria-hidden={conGesto ? undefined : 'true'}
+        aria-label={conGesto ? `${def.orden}. Con el teclado, Intro lo hace de una vez.` : undefined}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerCancel={onUp}
+        onLostPointerCapture={onUp}
+        onKeyDown={(e) => {
+          if (conGesto && (e.key === 'Enter' || e.key === ' ') && !e.repeat) {
+            e.preventDefault();
+            completar();
+          }
+        }}
+      >
+        {ayuda && conGesto && pista && !(g?.progreso > 0) && <span className="cf3-ayuda cf3-ayuda--gesto" data-para={MARCA[tipo]} style={{ left: `${pista.x}px`, top: `${pista.y}px` }} aria-hidden="true" />}
+        {conGesto && pista && !(g?.progreso > 0) && (
+          <span className="cf3-gesto__pista" style={{ left: `${pista.x}px`, top: `${pista.y}px` }}>
+            <Pista trazo={PISTA[tipo]} />
+          </span>
+        )}
+        {conGesto && pista && !(g?.progreso > 0) && !reduced() && (
+          <span className="cf3-gesto__nota" data-lado={ladoNota(pista.x, zona.current?.clientWidth ?? 390)} style={{ left: `${pista.x}px`, top: `${pista.y}px` }} aria-hidden="true">
+            {def.ayuda}
+          </span>
+        )}
+        {comentario && (
+          <span className="cf3-gesto__hecho" data-mimo={comentario.bien ? 'bien' : 'mejor'} aria-hidden="true">
+            {comentario.bien ? '¡Bien!' : 'Hecho'}
+          </span>
+        )}
+        {fase === 'hecho' && sacado?.sacadas > 0 && (
+          <span className="cf3-gesto__hecho" aria-hidden="true">
+            +{sacado.sacadas} a la vitrina
+          </span>
+        )}
+      </div>
+      <div
+        className="cf3-franja cf3-franja--atender cf3-franja--barra cf3-franja--obrador"
+        role="region"
+        aria-label="El obrador"
+        data-fase={fase}
+        data-gesto={tipo ?? undefined}
+        data-progreso={conGesto ? progreso : undefined}
+        data-ayuda={ayuda ? 'true' : undefined}
+      >
+        <span className="cf3-quien" aria-hidden="true">
+          {quien}
+        </span>
+        <div className="cf3-caja">
+          <span className="cf3-retrato">
+            <PixelArt icono={PILAR} />
+          </span>
+          <p className="cf3-dice" aria-live="polite">
+            {dicePilar && <span className="px-sr">Pilar: </span>}
+            {texto}
+            {conGesto && <span className="px-sr"> {def.ayuda}</span>}
+          </p>
+          {fase === 'gesto' && r && (
+            <p className="cf3-obrador__paso" aria-hidden="true">
+              {r.nombre} · {paso + 1} de 2
+            </p>
+          )}
+          {(fase === 'horneando' || fase === 'hecho') && (dado || sacado) && (
+            <div className="cf3-obrador__hornada">
+              <Estrellas n={(fase === 'hecho' ? sacado?.estrellas : dado?.estrellas) ?? 1} />
+              <span>
+                {fase === 'hecho' && sacado
+                  ? sacado.quedan > 0
+                    ? `${nombrePiezas(sacado.receta, sacado.quedan)} esperan en la bandeja`
+                    : `${nombrePiezas(sacado.receta, sacado.sacadas)}, a la vitrina`
+                  : `Saldrán ${nombrePiezas(receta, dado?.piezas ?? piezasDe(receta, dado?.estrellas ?? 1))}`}
+              </span>
+            </div>
+          )}
+          {conGesto && (
+            <div className="cf3-extra">
+              <div className="cf3-medidor" role="progressbar" aria-label={def.orden} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progreso}>
+                <span className="cf3-medidor__lleno" style={{ width: `${progreso}%` }} />
+              </div>
+            </div>
+          )}
+          {error && fase !== 'abriendo' && (
+            <p className="cf3-error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="cf3-botones">
+            {fase === 'abriendo' && error && (
+              <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar}>
+                Volver
+              </button>
+            )}
+            {fase === 'descubre' && linea === 0 && (
+              <button type="button" className="cf3-btn cf3-btn--verde" onClick={() => setLinea(1)}>
+                Seguir
+              </button>
+            )}
+            {fase === 'descubre' && linea === 1 && (
+              <button type="button" className="cf3-btn cf3-btn--verde" onClick={abrirRecetario}>
+                Abrir el recetario
+              </button>
+            )}
+            {(fase === 'gesto' || fase === 'meter') && !comentario && !ocupado && (
+              <button type="button" className="cf3-btn cf3-btn--suave" onClick={abrirRecetario}>
+                Otra receta
+              </button>
+            )}
+            {fase === 'horneando' && (
+              <>
+                <button type="button" className="cf3-btn cf3-btn--suave" onClick={abrirRecetario}>
+                  Al recetario
+                </button>
+                <button type="button" className="cf3-btn cf3-btn--verde" onClick={onCerrar}>
+                  Volver al café
+                </button>
+              </>
+            )}
+            {fase === 'sacar' && !ocupado && (
+              <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar}>
+                Luego
+              </button>
+            )}
+            {fase === 'hecho' && (
+              <>
+                <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar}>
+                  Volver
+                </button>
+                <button type="button" className="cf3-btn cf3-btn--verde" onClick={abrirRecetario}>
+                  Otra hornada
+                </button>
+              </>
+            )}
+            {conGesto && reduced() && (
+              <button type="button" className="cf3-btn cf3-btn--verde" onClick={completar} disabled={ocupado}>
+                {def.atajo}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

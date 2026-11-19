@@ -20,6 +20,10 @@
 // El influencer (1.132, §16.2): su comanda es clara y en directo («REC»); al ir a la barra se da la vuelta al reloj de arena
 // (`onEmpezar`, el servidor apunta la hora) y la arena cae hasta que le sirves. Siempre a mano. Al despedirle, lo que publica
 // y, si fue viral, lo que trae. Los que vienen por su vídeo saludan diciendo de quién era.
+// La comida (1.143; Francisco, 17-11-2026: «Dos máx., 1 de cada 3»): máximo dos cosas por cliente. Con el obrador abierto, uno
+// de cada tres pide la bebida y algo dulce o salado, sin libro (`pedido.id === 'comida'`, lo dice el servidor). Con la taza lista,
+// a la vitrina (Vitrina.jsx: las pinzas, de la vitrina al plato) y, con la taza y el plato en la bandeja, a su mesa. Sus estrellas,
+// solo de la bebida; la pieza paga su precio en granos aparte. Sin pieza de lo que pide, solo el café.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PARTES, RESENAS, comandaAcertijo, comandaClara, nombreGenero, nombreOpcion, opcionesDe } from './cafeClientes';
 import { AYUDA_NIVELES, AYUDA_PARADO_MS, ELIGE, ladoNota, ETAPAS, GESTOS, crearGesto, gestosDe, nombreEtapa, verAyuda, vistaTaza } from './cafeGestos';
@@ -29,7 +33,9 @@ import { errorCafe } from './cafeService';
 import { DOMINIO, comandaLibro, comandaLibroAcertijo, extensionDe, formaPorId, frasePedido, haciaDominio, pilarHaceEtapa, pilarPuede, preparaRecordado, recordarPrepara } from './cafeLibreria';
 import { BUCLE_PILAR, PILAR_MIRA_MS, duracionPilar, poseAuto, respiroPilar, sonidosEntre, tiempoPilar } from './cafePilar';
 import { despedidaInfluencer, saludoViral } from './cafeInfluencers';
+import { GRACIAS_COMIDA, comandaComida, fraseComida, laPieza, recetaObrador, sinPieza } from './cafeObrador';
 import { useLibreria } from './Libreria';
+import { useVitrina } from './Vitrina';
 import { Pista } from './Pista';
 import { PixelArt } from './PixelArt';
 import { RelojArena } from './RelojArena';
@@ -148,7 +154,7 @@ function repasoLibro(libro, pedido, ok, forma) {
 /** 1.139: el libro es uno de tus leídos (no del catálogo del café): paga más al llevárselo y el repaso lo dice. */
 const esTuyo = (libro) => Boolean(libro) && (libro.tuyo ?? !String(libro.id ?? '').startsWith('cat:'));
 
-export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, escena, registrarToque, onServir, onEmpezar, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
+export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obrador = null, escena, registrarToque, onServir, onEmpezar, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
   const [paso, setPaso] = useState('pide');
   const [receta, setReceta] = useState(VACIA);
   const [ei, setEi] = useState(0);
@@ -184,6 +190,8 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
   // Lo que pide del libro se fija al llegar (la balda cambia al servir y los pedidos del día se recalculan)
   const [pedido] = useState(() => cliente.pedido);
   const pideLibro = pedido?.id === 'libro';
+  // 1.143: máximo dos cosas por cliente: quien pide comida (lo dice el servidor) no pide libro
+  const pideComida = pedido?.id === 'comida';
   const lista = [receta.bebida, receta.grano, receta.leche, receta.toque];
   const enBarra = paso === 'barra';
   const lleva = paso === 'yendo' || paso === 'libro' || paso === 'sirviendo';
@@ -552,6 +560,14 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
       setPaso('libreria');
       return;
     }
+    // 1.143: si pide comida y hay de lo que pide, de la barra a la vitrina (la taza espera en la bandeja)
+    if (hayVitrina) {
+      escena?.barra(false);
+      escena?.vitrina?.(true);
+      sfx.play('vitrina');
+      setPaso('vitrina');
+      return;
+    }
     escena?.barra(false, { llevar: lleva_ });
     if (!escena) return setPaso('libro');
     setPaso('yendo');
@@ -579,6 +595,29 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     onListo: entregarLibro,
     onSolo: () => entregarLibro(null),
   });
+  /** 1.143: con la pieza en el plato (o «Solo el café»): la taza y el plato en la bandeja, hasta su mesa, y se le sirve. */
+  const entregarComida = async (comida) => {
+    escena?.vitrina?.(false, { llevar: comida ? { ...llevaRef.current, plato: comida } : llevaRef.current });
+    const r = comida ? { comida } : null;
+    if (!escena) return servir(r);
+    setPaso('yendo');
+    await escena.irACliente(cliente.n);
+    sfx.play('tazaMesa');
+    if (comida) sfx.play('plato');
+    servir(r);
+  };
+  const vitrina = useVitrina({
+    activo: paso === 'vitrina',
+    tipo: pideComida ? pedido.tipo : null,
+    obrador,
+    escena,
+    sfx,
+    ayudas,
+    nivel,
+    onListo: entregarComida,
+    onSolo: () => entregarComida(null),
+  });
+  const hayVitrina = pideComida && vitrina.opciones.length > 0;
   const lista3d = useRef(null);
   useEffect(() => {
     lista3d.current = { elegir };
@@ -597,7 +636,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     return () => registrarToque?.(null);
   }, [registrarToque]);
 
-  /** Servir: `r`, lo del libro ({ libro, forma, ok }) o null (solo el café). */
+  /** Servir: `r`, lo del libro ({ libro, forma, ok }), la comida ({ comida: receta }) o null (solo el café). */
   const servir = async (r) => {
     const b = r?.libro ?? null;
     if (b) sfx.play('libroDesliza');
@@ -606,7 +645,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     setPaso('sirviendo');
     setError('');
     try {
-      const res = await onServir({ receta: lista, libro: b, ok: b ? r.ok : null });
+      const res = await onServir({ receta: lista, libro: b, ok: b ? r.ok : null, comida: r?.comida ?? null });
       escena?.llevar(null);
       setDado(res);
       setPaso('gracias');
@@ -616,22 +655,32 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     }
   };
 
+  // 1.143 (máximo dos): al darte las gracias quien comió, la mirada baja hasta su plato (que no lo tape el cuadro); al irte, vuelve
+  const platoServido = paso === 'gracias' && Boolean(dado?.comida_receta);
+  useEffect(() => {
+    if (!platoServido || !escena?.mirarPlato) return undefined;
+    escena.mirarPlato(cliente.n);
+    return () => escena.mirarPlato(null);
+  }, [platoServido, escena, cliente.n]);
+
   // Mientras Pilar prepara, el retrato del cuadro es el suyo
-  const retrato = <PixelArt icono={pilarAhora ? PILAR : retratoDe(cliente.aspecto)} />;
+  const retrato =<PixelArt icono={pilarAhora ? PILAR : retratoDe(cliente.aspecto)} />;
   const pide = dado?.pide ?? cliente.pide;
   const enLibreria = paso === 'libreria';
   // 1.128 (Francisco, 13-11-2026: «la palanca se sigue tapando con las instrucciones» y, con el excéntrico, «tapan mucho más»):
   // en la barra, mientras haces un gesto, la comanda se pliega a su título; eligiendo, el excéntrico enseña solo el acertijo de
   // ese paso. Lo plegado sigue ahí para los lectores de pantalla. 1.130: en la librería, igual (el acertijo del libro de cada paso).
-  const plegada = (enBarra && Boolean(gesto)) || (enLibreria && libreria.plegada);
+  const enVitrina = paso === 'vitrina';
+  const plegada = (enBarra && Boolean(gesto)) || (enLibreria && libreria.plegada) || (enVitrina && Boolean(vitrina.gesto));
   const acertijoLibro = { estanteria: 4, seccion: 5, tabla: 5, mirar: 5, forma: 6 }[libreria.fase] ?? -1;
   const acertijoAhora = enBarra && eligiendo ? PARTES.findIndex((p) => p.id === parte) : enLibreria ? acertijoLibro : -1;
   const lineaLibro = comandaLibro(pedido);
-  const comanda = !(paso === 'pide' || enBarra || paso === 'yendo' || enLibreria) ? null : (
+  const comanda = !(paso === 'pide' || enBarra || paso === 'yendo' || enLibreria || enVitrina) ? null : (
     <section
       className={`cf3-comanda${raro ? ' cf3-comanda--raro' : ''}${inf ? ' cf3-comanda--influencer' : ''}`}
       data-plegada={plegada ? 'true' : undefined}
       data-solo-libro={enLibreria ? 'true' : undefined}
+      data-solo-comida={enVitrina ? 'true' : undefined}
       data-un-acertijo={raro && (plegada || acertijoAhora >= 0) ? 'true' : undefined}
       aria-label={raro ? `La comanda de ${quien}, en acertijos` : inf ? `La comanda de ${quien}, en directo` : `La comanda de ${quien}`}
       style={raro ? { '--cf3-tema': rgb(raro.tema) } : inf ? { '--cf3-tema': rgb(inf.tema) } : undefined}
@@ -661,6 +710,12 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
               {lineaLibro}
             </p>
           )}
+          {pideComida && (
+            <p className="cf3-comanda__linea cf3-comanda__linea--comida" data-tipo={pedido.tipo} data-ahora={enVitrina ? 'true' : undefined}>
+              <span className="px-sr">Y para acompañar: </span>
+              {comandaComida(pedido.tipo)}
+            </p>
+          )}
         </>
       )}
     </section>
@@ -671,7 +726,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
   let extra = null;
   if (paso === 'pide') {
     // 1.130: y el libro, en tres partes (solo de lo que hay en la balda); el del excéntrico, en sus acertijos de la comanda
-    const yLibro = pideLibro ? ` ${frasePedido(pedido)}` : '';
+    const yLibro = pideLibro ? ` ${frasePedido(pedido)}` : pideComida ? ` ${fraseComida(pedido.tipo, cliente.n)}` : '';
     texto = raro
       ? raro.saludo
       : inf
@@ -700,6 +755,8 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     texto = lista_ ? (
       hayLibreria ? (
         '¡Lista! Huele de maravilla. Ahora, el libro.'
+      ) : hayVitrina ? (
+        `¡Lista! Huele de maravilla. Ahora, ${pedido.tipo === 'salado' ? 'algo salado' : 'algo dulce'} de la vitrina.`
       ) : (
         '¡Lista! Huele de maravilla.'
       )
@@ -851,21 +908,26 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
         )}
         {lista_ && (
           <button key="llevar" type="button" className="cf3-btn cf3-btn--verde" onClick={llevar}>
-            Llevársela
+            {hayVitrina ? 'A la vitrina' : 'Llevársela'}
           </button>
         )}
       </>
     );
   } else if (paso === 'yendo') {
     const hacia = raro || inf || cliente.habitual ? quien : 'su mesa';
-    texto = entrega?.libro || libreria.fase === 'listo' ? `Con la bandeja, despacio… Vas hacia ${hacia}.` : `Con cuidado, que quema… Vas hacia ${hacia}.`;
+    texto = entrega?.libro || libreria.fase === 'listo' || vitrina.fase === 'listo' ? `Con la bandeja, despacio… Vas hacia ${hacia}.` : `Con cuidado, que quema… Vas hacia ${hacia}.`;
     botones = null;
   } else if (enLibreria) {
     // 1.130: la librería (Libreria.jsx) dice y elige en este mismo cuadro
     texto = libreria.texto;
     extra = libreria.extra;
     botones = libreria.botones;
-  } else if (paso === 'sirviendo' && hayLibreria) {
+  } else if (enVitrina) {
+    // 1.143: la vitrina (Vitrina.jsx), igual
+    texto = vitrina.texto;
+    extra = vitrina.extra;
+    botones = vitrina.botones;
+  } else if (paso === 'sirviendo' && (hayLibreria || hayVitrina)) {
     texto = '«¡Qué buena pinta!»';
     botones = null;
   } else if (paso === 'libro' && entrega) {
@@ -882,8 +944,8 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
       </>
     );
   } else if (paso === 'libro' || paso === 'sirviendo') {
-    texto = `«¡Qué buena pinta! ${frasePedido(pedido)}»`;
-    extra = !balda.length ? (
+    texto = pideComida ? sinPieza(pedido.tipo) : `«¡Qué buena pinta! ${frasePedido(pedido)}»`;
+    extra = !pideComida && !balda.length ? (
       <p className="cf3-fichas__vacia">No te quedan libros en la balda. Compra una caja en la distribuidora para recomendar; hoy, solo el café.</p>
     ) : null;
     botones = (
@@ -898,15 +960,18 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
     const arte = hechos.verter?.arte;
     const piropo = arte === 'hoja' ? ' ¡Y qué hoja tan bonita!' : arte === 'corazon' ? ' ¡Un corazón en la espuma!' : '';
     const fueInf = inf && dado?.influencer ? dado.influencer : null;
+    // 1.143: lo que dice de la pieza que le has llevado (sin sus comillas: va dentro de su frase)
+    const comio = dado?.comida_receta ?? null;
+    const yComida = comio ? ` ${(GRACIAS_COMIDA[comio] ?? '«¡Y qué buena pinta!»').replace(/[«»]/g, '')}` : '';
     texto = fueInf
       ? despedidaInfluencer(fueInf)
       : raro && dado?.dorada
         ? `«${raro.dorada}» Te ha dejado una reseña dorada.`
         : e === 3
-          ? `«¡Perfecto! Justo lo que quería.${piropo}${resena}»`
+          ? `«¡Perfecto! Justo lo que quería.${piropo}${yComida}${resena}»`
           : e === 2
-            ? `«Muy rico, aunque no era del todo lo que pedí.${resena}»`
-            : `«No era lo que pedí… pero gracias igualmente.${resena}»`;
+            ? `«Muy rico, aunque no era del todo lo que pedí.${yComida}${resena}»`
+            : `«No era lo que pedí… pero gracias igualmente.${yComida}${resena}»`;
     // 1.130: con esta, la bebida ya la dominas (la 12.ª de 2 estrellas o más): Pilar lo dice al despedirlo
     const yaLaBordas = !raro && e >= 2 && haciaDominio(dominioAntes, lista[0]) === DOMINIO - 1;
     extra = dado && (
@@ -948,7 +1013,11 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
               </li>
             );
           })}
-          {libro && pedido?.id === 'libro' ? (
+          {pideComida ? (
+            <li data-ok={comio ? 'true' : 'nada'} data-parte="comida">
+              {comio ? `✓ ${recetaObrador(comio)?.nombre ?? 'Algo para acompañar'}` : dado.comida_falla ? '· La pieza no llegó a servirse' : '· Hoy, sin nada para acompañar'}
+            </li>
+          ) : libro && pedido?.id === 'libro' ? (
             repasoLibro(libro, pedido, dado.libro_ok ?? entrega?.ok ?? [], entrega?.forma).map((r) => (
               <li key={r.id} data-ok={r.ok ? 'true' : 'false'} data-parte={r.id}>
                 {r.texto}
@@ -966,6 +1035,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
         <p className="cf3-dado" aria-label={`Has ganado ${dado.granos} granos y ${dado.reputacion} de reputación`}>
           <span className="cf3-dado__ficha">+{dado.granos} granos</span>
           {dado.extra > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--libro">{dado.llevado && esTuyo(libro) ? `${dado.extra} por tu libro` : `${dado.extra} por el libro`}</span>}
+          {comio && dado.comida_granos > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--comida">{`${dado.comida_granos} por ${laPieza(comio)}`}</span>}
           {dado.tueste && dado.bono_granos > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--tueste">{`+${dado.bono_granos} y +${dado.bono_reputacion} por el tueste`}</span>}
           <span className="cf3-dado__ficha cf3-dado__ficha--rep">+{dado.reputacion} reputación</span>
         </p>
@@ -1043,22 +1113,25 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, esc
         </div>
       )}
       {enLibreria && libreria.capa}
+      {enVitrina && vitrina.capa}
       {lleva && <span className="px-sr">Llevas {comandaClara(lista).toLowerCase()}</span>}
       <div
-        className={`cf3-franja cf3-franja--atender${raro ? ' cf3-franja--raro' : ''}${inf ? ' cf3-franja--influencer' : ''}${enBarra || enLibreria ? ' cf3-franja--barra' : ''}${enLibreria ? ' cf3-franja--libreria' : ''}`}
+        className={`cf3-franja cf3-franja--atender${raro ? ' cf3-franja--raro' : ''}${inf ? ' cf3-franja--influencer' : ''}${enBarra || enLibreria || enVitrina ? ' cf3-franja--barra' : ''}${enLibreria ? ' cf3-franja--libreria' : ''}${enVitrina ? ' cf3-franja--vitrina' : ''}`}
         role="region"
         aria-label={`Atender a ${quien}`}
         data-paso={paso}
         data-pedido={pedido.id}
         data-pide-libro={pideLibro ? `${pedido.genero}:${pedido.extension}:${pedido.forma}` : undefined}
+        data-pide-comida={pideComida ? pedido.tipo : undefined}
         data-receta={lista.map((x) => x ?? '').join()}
         data-etapa={enBarra ? (lista_ ? 'lista' : etapa) : undefined}
-        data-gesto={enLibreria ? (libreria.gesto ?? undefined) : (gesto ?? undefined)}
+        data-gesto={enLibreria ? (libreria.gesto ?? undefined) : enVitrina ? (vitrina.gesto ?? undefined) : (gesto ?? undefined)}
         data-lib={enLibreria ? libreria.fase : undefined}
+        data-vitrina={enVitrina ? vitrina.fase : undefined}
         data-pilar={enBarra && modoPilar ? modoPilar : undefined}
         data-pilar-ahora={pilarAhora ? 'true' : undefined}
         data-ayuda={ayuda ? 'true' : undefined}
-        data-progreso={enLibreria ? libreria.progreso : gesto ? Math.round((actual?.progreso ?? 0) * 100) : undefined}
+        data-progreso={enLibreria ? libreria.progreso : enVitrina ? vitrina.progreso : gesto ? Math.round((actual?.progreso ?? 0) * 100) : undefined}
         data-influencer={inf ? inf.nivel : undefined}
         data-viral={esViral ? 'true' : undefined}
         data-arena={verArena ? 'true' : undefined}

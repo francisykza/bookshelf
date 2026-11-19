@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.142.0 · 2026-11-16 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.143.0 · 2026-11-17 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7818,3 +7818,105 @@ más atractiva»; cifras «Generosos».
   en su línea) y `v1142-cafe-cuaderno.spec.js` (la hucha al entrar, encargar y mejorar, la escalera de grados y lo que ha dado; la
   pizarra y el reparto pedido y colocado; todo encargado; sin la migración). Capturas en `qa-report/cafe-estanteria/`, `qa-report/cafe-social/` y `qa-report/cafe-cuaderno/`.
 - Limitaciones: Supabase simulado en las e2e; sin probar con la migración aplicada, con cuentas reales ni en móviles reales.
+
+## 143. El obrador: el horno de la tahona, el recetario y la vitrina (1.143.0)
+
+Francisco, 17-11-2026: «una nueva mecanica que se desbloquearía a un nivel que tu consideres necesario. Vender comida, algo como
+starbucks pero super cozy que de pie a mejora y tenga mecanicas adictivas y que inciten a seguir jugando». De la cadena del
+ejemplo, solo el género. Plan en `docs/qa/cafe-libreria.md` §18, aprobado el mismo día (las cuatro recomendadas: nivel 4, las
+cifras de la tabla, el mostrador como la hucha y solo el favorito). Esta versión es el bloque 1 de 3 (§18.12). Tras ver la
+primera entrega, el mismo día, **máximo dos cosas por cliente** (§143.4).
+
+### 143.1 El obrador del ala
+
+- **Desde el nivel 4**, al fondo del ala lateral, un tabique de yeso con su arco de ladrillo y el letrero **«¿Y esta pared?»**.
+  Al tocarlo vas hasta él y Pilar lo abre (`cafe_obrador_abrir`, una sola vez): el horno de leña de la tahona de doña Amparo
+  (bóveda y dovelas de ladrillo, boca con hollín, umbral de piedra, placa de latón, campana de yeso con su chimenea), la mesa de
+  mármol con su balda, el saco de harina y la leña, la pala, la campanilla y el recetario. Pilar lo cuenta en dos frases y **la
+  primera hornada de la casa** (6 magdalenas) ya está en la vitrina.
+- En el nivel 3, una vez en el dispositivo, Pilar lo anticipa: «Detrás de esa pared huele a pan de otro tiempo…». Solo cuando no
+  tiene otra cosa que decir y tras unos segundos de calma (sin cliente, panel ni cartel abiertos): nunca pisa el reparto de la
+  mañana, la hucha, el saco ni la subida. El cartel de
+  la subida al 4 lo dice («El obrador: el horno de la antigua tahona y su recetario») y el letrero lleva la «!» roja de lo nuevo.
+- El obrador queda fuera de la cuadrícula: no se pisa ni se decora encima.
+
+### 143.2 El recetario
+
+- En la franja de abajo, **un cuaderno con tapas de hule a cuadros**: una etiqueta de papel con cómo va el horno (en palabras,
+  sin números) y lo que hay en la vitrina («En la vitrina: 6 de 12»), y **seis fichas de papel** con renglones, manchas de harina
+  y su pinza de madera, que **se pasan de lado** (con su sonido de papel) o con las flechas.
+- Cada ficha: dulce o salado, el nombre, la nota de doña Amparo, cuántas salen, el precio, sus dos gestos y si es «un ratito» o
+  «un rato largo» de horno. **Se hornean ya**: magdalenas de limón (dulce; 4 a 6; 2 granos) y empanada de bonito (salada; 4 a 6
+  raciones; 3 granos). Las otras cuatro dicen **en qué nivel se abren** (galletas 5, pan 6, bizcocho 7, tortilla 8; llegan en la
+  1.145).
+
+### 143.3 Los gestos, la pala y el horno
+
+- **Magdalenas**: **rallar** el limón por el rallador de latón, en pasadas largas de arriba abajo (bien con 8 pasadas o menos), y
+  **colmar** los seis moldes de papel rizado con la cuchara, una pasada de ida y otra de vuelta (bien si ninguno rebosa).
+- **Empanada**: **el rodillo**, arriba y abajo de punta a punta de la masa (bien con 5 pasadas o menos), y **el repulgo**, una
+  vuelta al borde de la fuente de barro con el dedo (bien con el 70 % del recorrido pegado al borde; por el centro no cuenta).
+- Cada gesto, con su objeto en 3D y su cámara de cerca, su pista, su nota y la «!» como en la barra, y su sonido (el raspado, la
+  masa que cae, el molde colmado o rebosado, el rodillo y su vuelta, los pellizcos que suben de tono). **Nunca falla**: Pilar dice
+  cómo ha quedado («¡Bien!» o «Hecho» con el consejo). Las estrellas, las del taller (3 con los dos bien, 2 con uno, 1 si no), y
+  las piezas, 6 / 5 / 4.
+- **La pala**: empujarla hacia el fondo la mete en el horno (`cafe_hornear`). **Sin números ni cuenta atrás**: la hornada se
+  dora poco a poco y Pilar lo dice («Ya huele…», «Se está dorando.», «Sube despacio.»). Se puede salir; **nunca se quema**. **La
+  campanilla** avisa, también desde fuera (su sonido y el letrero «El obrador · ¡listo!»), y al entrar con la hornada lista se va
+  directo a sacarla. **Tirar de la pala hacia ti** la saca (`cafe_sacar_hornada`) y Pilar lo lleva a la vitrina; **lo que no cabe
+  espera en la bandeja**, calentito, hasta que haya sitio.
+- Con movimiento reducido o con el teclado, cada gesto de un toque, y queda bien.
+
+### 143.4 La vitrina y quien viene a por algo de comer
+
+- En la punta de la barra, **una campana de cristal** sobre su pie de madera con un expositor de latón de dos pisos y las piezas
+  (12 a la vista), en su propio material transparente.
+- **Máximo dos cosas por cliente** (Francisco, 17-11-2026, tras ver la primera entrega: «se volvería muy pesado el proceso, el
+  maximo lo pondría en dos»; eligió «Dos máx., 1 de cada 3»). Con el obrador abierto, **uno de cada tres** clientes viene a por
+  **café y algo dulce o salado, sin libro**; los demás, a por café y un libro, como hasta ahora. Lo decide el servidor con la
+  semilla del día (`cafe_pide_comida`); nunca el excéntrico ni el influencer. Lo dice al pedir («Y algo dulce para acompañar, si
+  tienes.») y la comanda lleva su línea, con una magdalena de píxel: «Algo dulce para acompañar».
+- **En el mismo viaje que la taza**: con la taza lista, **«A la vitrina»** en lugar de «Llevársela»; si hay más de una receta de
+  lo que pide, cuál; **las pinzas de latón** cogen la pieza y la bajan al plato; y con **la taza y el plato en la bandeja**, a su
+  mesa. Las pinzas son siempre del jugador: **Pilar no sirve la comida** (Francisco: «perdería la gracia»). Al servirle, la
+  bebida con `cafe_entregar` y la pieza con `cafe_servir_comida` (su precio en granos). El plato se queda junto a él, en una
+  mesita de pie de hierro del lado de quien sirve, y al darte las gracias la mirada gira y baja hasta él para que se vea por
+  encima del cuadro (`mirarPlato`). «Solo el café» sale de la vitrina con la taza sola; sin pieza de lo que pide, la taza va directa y
+  dice «¡Qué buena pinta! ¿No te queda nada dulce? No te preocupes, otro día será.»; **no pasa nada**.
+- **Sus estrellas salen solo de la bebida**: 4 aciertos, 3★; 2 o 3, 2★; si no, 1★ (`cafe_estrellas_bebida`; la comida no suma
+  ni resta). En las gracias, lo que dice de la pieza («Como las de mi abuela.»), su línea en el repaso («✓ Magdalenas de
+  limón») y su ficha de granos («2 por la magdalena»).
+- **La comida solo da granos**: nunca reputación ni tickets.
+
+### 143.5 Servidor
+
+- Migración nueva **`20261225120000_cafe_obrador.sql`** (la aplica Francisco): tablas `cafe_obrador`, `cafe_obrador_horno`,
+  `cafe_obrador_vitrina`, `cafe_obrador_hornadas` y `cafe_obrador_ventas` (RLS, sin acceso directo). Para la app:
+  `cafe_obrador(dia)` (el obrador y quién pide algo ese día), `cafe_obrador_abrir()`, `cafe_hornear(receta, mimo)`,
+  `cafe_sacar_hornada(bandeja)` y `cafe_servir_comida(dia, cliente, receta)`. Internas: las cifras (`cafe_obrador_nivel`,
+  `cafe_obrador_receta`, `cafe_obrador_bandejas`, `cafe_obrador_cabe`, `cafe_obrador_tope`), `cafe_estrellas_bebida`,
+  `cafe_pide_comida` (uno de cada tres) y `cafe_obrador_json`. **Redefine `cafe_entregar`**, igual que en la 1.139 salvo para
+  quien pide comida: sus estrellas salen de `cafe_estrellas_bebida`, un libro que llegara no cuenta ni sale de la balda, y el
+  resultado dice qué pidió (`dado.comida`). `cafe_json` no cambia. Hasta 30 hornadas al día. Sacar, con 5 s de margen sobre el
+  tiempo de la receta. Errores nuevos: `cafe:obrador`, `cafe:receta`, `cafe:mimo`, `cafe:hornadas`,
+  `cafe:horno`, `cafe:bandeja`, `cafe:pronto`, `cafe:vitrina`, `cafe:agotado`, `cafe:comida` y `cafe:servido`.
+- Sin la migración, no sale el letrero y el café va como en la 1.142.
+
+### 143.6 Pruebas y limitaciones
+
+- Vitest: `cafeObrador.test.js` (las cifras, el horno sin números, las piezas y lo que cabe en la vitrina, y los gestos: rallar,
+  colmar, rodillo, repulgo, la pala y las pinzas; y quien pide comida: sus estrellas, su pedido y sus frases) y
+  `cafe-obrador.rls.test.js` (PGlite: abrir una vez, hornear con una bandeja libre y hasta 30 al día, sacar con su margen, lo que
+  no cabe se queda en la bandeja, servir comida solo a quien la pidió y una vez, **máximo dos** (sus estrellas, solo de la
+  bebida; un libro que llegara no cuenta ni toca la balda; quien no pide comida sigue con su libro) y nada de acceso directo a
+  las tablas).
+- E2E con Supabase simulado: `e2e-community/v1143-cafe-obrador.spec.js` a 360 y 390 (el tabique, el recetario, la empanada y las
+  magdalenas de principio a fin, la campanilla desde fuera, quien pide café y algo dulce: la barra, la vitrina, las pinzas y la
+  bandeja con la taza y el plato hasta su mesa, y lo que no cabe en la bandeja); a 390, quien viene a por un libro no pasa por la
+  vitrina, y con movimiento reducido, cada gesto de un toque. El vídeo de 390 lleva el sonido de la página
+  (`e2e-community/cafeSonido.js`, la grabadora de la 1.133 sacada a un archivo para usarla en las demás pruebas).
+- Regresión a 390 de lo que pasa por atender (`v1121`, `v1123`, `v1130`, `v1132`, `v1139` y `v1142`) y `npm run build`.
+  `cafe-libreria.rls.test.js` › «el reparto (1.139)» falla desde la 1.142, sin relación con el obrador: `cafe_reparto` devuelve
+  también `pilar` y la prueba no lo espera.
+- Evidencias en `qa-report/v1143/`.
+- **Sin probar** con la migración aplicada (el servidor, solo con PGlite y el simulado), con cuentas reales ni en móviles reales.

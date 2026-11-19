@@ -335,6 +335,22 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       (**300** granos, desde el nivel 4). El cuaderno, más vistoso y con lo que te ha dado cada tarea.
     - **La pizarra se quita del todo** («no me termina de convencer»): sin botón ni panel; la nota del habitual y la reseña
       dorada se ven en su bocadillo al despedirse, y Pilar no la menciona. Sin borrar datos del servidor.
+    - **El obrador: vender comida** (encargo de Francisco del 17-11-2026: «una nueva mecanica que se desbloquearía a un nivel que
+      tu consideres necesario. Vender comida, algo como starbucks pero super cozy que de pie a mejora y tenga mecanicas adictivas y
+      que inciten a seguir jugando»; plan en `cafe-libreria.md` §18, por bloques con capturas a 360 y 390 y vídeo con sonido). De
+      la cadena del ejemplo, solo el género: ni su nombre, marca, tamaños, nombres de vasos ni logos. **Aprobado** (17-11-2026, las
+      cuatro recomendadas): se abre en el **nivel 4** (tras la pared del ala lateral aparece el horno de la antigua tahona con su
+      recetario); **las cifras de §18.6 y §18.9** (piezas de 2 a 5 granos; horno 250 / 600; vitrina 150 / 350 / 700; maestría por
+      receta con 3 / 10 / 25 hornadas de 2★); **la comida solo da granos, nunca reputación ni tickets**; ingredientes gratis; lo
+      horneado nunca se estropea ni se quema y el horno no tiene números; **Pilar vende en el mostrador mientras no estás, como la
+      hucha** (hasta 7 días); **cada habitual pide su favorito** (+2); **los maridajes, descartados**. Cada receta con dos gestos,
+      sus objetos y su sonido. Bloques: 1.143 el obrador abre, 1.144 mejoras y mostrador, 1.145 el recetario crece; una migración
+      por bloque (la aplica él).
+      **Máximo dos cosas por cliente** (Francisco, 17-11-2026, tras ver la 1.143: «se volvería muy pesado el proceso, el maximo lo
+      pondría en dos»; eligió «Dos máx., 1 de cada 3»): desde el nivel 4, cada cliente pide **bebida y libro** o **bebida y comida**,
+      nunca las tres. **Uno de cada tres** pide comida (lo decide el servidor) y ese no pide libro; sus estrellas salen solo de la
+      bebida (4 aciertos, 3★; 2 o 3, 2★; si no, 1★). Las pinzas siguen siendo del jugador, en el mismo viaje que la taza (barra,
+      vitrina y mesa). **Pilar no sirve la comida** (Francisco: «perdería la gracia de incluir la nueva mecánica»).
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la

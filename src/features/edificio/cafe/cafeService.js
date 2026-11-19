@@ -378,9 +378,83 @@ export async function recogerHucha() {
   return { recogido: Math.min(10000, Math.max(0, Number.isInteger(data?.recogido) ? data.recogido : 0)), cafe: normalizar(data?.cafe) };
 }
 
+// ── 1.143: el obrador (`20261225120000_cafe_obrador.sql`) ──
+const RECETA_ID = /^[a-z]{1,20}$/;
+/** El obrador que llega, comprobado: null si aún no se ha abierto. */
+export function obradorDe(o) {
+  if (!o || typeof o !== 'object') return null;
+  const ent = (v, max) => Math.min(max, Math.max(0, Number.isInteger(v) ? v : 0));
+  const piezas = {};
+  if (o.piezas && typeof o.piezas === 'object') for (const [k, v] of Object.entries(o.piezas)) if (RECETA_ID.test(k) && ent(v, 100) > 0) piezas[k] = ent(v, 100);
+  return {
+    horno: ent(o.horno, 3) || 1,
+    vitrina: ent(o.vitrina, 4) || 1,
+    bandejas: ent(o.bandejas, 3) || 1,
+    cabe: ent(o.cabe, 100) || 12,
+    horneando: (Array.isArray(o.horneando) ? o.horneando : [])
+      .filter((h) => h && Number.isInteger(h.bandeja) && RECETA_ID.test(h.receta ?? ''))
+      .slice(0, 3)
+      .map((h) => ({ bandeja: ent(h.bandeja, 3), receta: h.receta, piezas: ent(h.piezas, 20), estrellas: ent(h.estrellas, 3) || 1, falta: ent(h.falta, 600), desde: Date.now() })),
+    piezas,
+    hornadasHoy: ent(o.hornadas_hoy, 1000),
+    vendidas: ent(o.vendidas, 1000000),
+  };
+}
+/** Quién pide algo para acompañar ese día: [{ n, tipo, servido, receta }]. */
+const pidenDe = (l) =>
+  (Array.isArray(l) ? l : [])
+    .filter((p) => p && Number.isInteger(p.n) && (p.tipo === 'dulce' || p.tipo === 'salado'))
+    .map((p) => ({ n: p.n, tipo: p.tipo, servido: p.servido === true, receta: RECETA_ID.test(p.receta ?? '') ? p.receta : null }));
+/** El obrador y quién pide comida ese día: { obrador (null si no se ha abierto), piden }, o null sin la migración. */
+export async function cargarObrador(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_obrador', { dia });
+  if (sinMigracion(error)) return null;
+  fail(error);
+  return { obrador: obradorDe(data?.obrador), piden: pidenDe(data?.piden) };
+}
+/** Abrir el obrador (una vez, desde el nivel 4). Devuelve { obrador, nuevo }. */
+export async function abrirObrador() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_obrador_abrir');
+  fail(error);
+  return { obrador: obradorDe(data?.obrador), nuevo: data?.nuevo === true };
+}
+/** Hornear: la receta y cómo quedaron sus dos gestos (2, bien; 1, se podía mejorar). Devuelve { obrador, dado: { bandeja, estrellas, piezas } }. */
+export async function hornear(receta, mimo) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_hornear', { receta, mimo: mimo.map((m) => (m === 2 ? 2 : 1)) });
+  fail(error);
+  const d = data?.dado ?? {};
+  return { obrador: obradorDe(data?.obrador), dado: { bandeja: d.bandeja ?? 1, estrellas: d.estrellas ?? 1, piezas: d.piezas ?? 0 } };
+}
+/** Sacar la hornada de una bandeja. Devuelve { obrador, dado: { receta, sacadas, quedan } }. */
+export async function sacarHornada(bandeja) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_sacar_hornada', { bandeja });
+  fail(error);
+  const d = data?.dado ?? {};
+  return { obrador: obradorDe(data?.obrador), dado: { receta: d.receta ?? null, sacadas: d.sacadas ?? 0, quedan: d.quedan ?? 0, estrellas: d.estrellas ?? 1 } };
+}
+/** Servir algo para acompañar al cliente ya servido. Devuelve { cafe, obrador, dado: { granos, receta } }. */
+export async function servirComida(dia, cliente, receta) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_servir_comida', { dia, cliente, receta });
+  fail(error);
+  return { cafe: normalizar(data?.cafe), obrador: obradorDe(data?.obrador), dado: { granos: data?.dado?.granos ?? 0, receta: data?.dado?.receta ?? receta } };
+}
+
 /** Lo que dice cada error del servidor, en palabras de la app. */
 export function errorCafe(e) {
   const m = String(e?.message ?? e ?? '');
+  if (/cafe:obrador/.test(m)) return 'El obrador se abre en el nivel 4, con el ala lateral.';
+  if (/cafe:hornadas/.test(m)) return 'Por hoy ya se ha horneado bastante. Mañana, más.';
+  if (/cafe:horno/.test(m)) return 'El horno está lleno: saca antes lo que hay dentro.';
+  if (/cafe:bandeja/.test(m)) return 'Esa bandeja ya no está en el horno. Vuelve a entrar en el obrador.';
+  if (/cafe:pronto/.test(m)) return 'Aún no está: espera a la campanilla.';
+  if (/cafe:vitrina/.test(m)) return 'La vitrina está llena: lo que no cabe espera en la bandeja.';
+  if (/cafe:agotado/.test(m)) return 'Ya no queda de eso en la vitrina.';
+  if (/cafe:comida/.test(m)) return 'Eso no es lo que pidió. Vuelve a entrar en el café.';
   if (/cafe:cuaderno_nivel/.test(m)) return 'Esa tarea se abre en un nivel más alto del café.';
   if (/cafe:cuaderno/.test(m)) return 'Esa tarea ya la tiene Pilar en su mejor grado.';
   if (/cafe:tueste/.test(m)) return 'No te queda tueste de la casa: baja al tostadero a por el saco.';

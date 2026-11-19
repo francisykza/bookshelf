@@ -794,3 +794,269 @@ tirar del lomo, la tabla y los gestos de envolver) **no cambia**.
 - Lo que ya hay en tu balda y en tus cajas se queda. Los títulos del catálogo se añaden; nada se borra.
 - Migración nueva (la aplica Francisco): el catálogo en el servidor, el reparto gratis y el +6 de tus leídos. Sin ella, el café
   sigue como en la 1.138.
+
+## 18. El obrador: vender comida (aprobada el 17-11-2026, las cuatro recomendadas)
+
+Encargo de Francisco (17-11-2026), literal: «una nueva mecanica que se desbloquearía a un nivel que tu consideres necesario.
+Vender comida, algo como starbucks pero super cozy que de pie a mejora y tenga mecanicas adictivas y que inciten a seguir
+jugando».
+
+De la cadena del ejemplo **solo se toma el género** (una cafetería con mostrador de comida): ni su nombre, ni su marca, ni sus
+tamaños, nombres de vasos o logos, ni escribir el nombre del cliente en el vaso. **Aprobado por Francisco** (17-11-2026, las
+cuatro recomendadas de §18.13): **nivel 4**, **las cifras de la tabla**, **la venta del mostrador como la hucha** (7 días) y **solo
+el favorito de los habituales**, sin maridajes. Toca la economía (granos) y el servidor (una migración por bloque, las aplica él).
+**No toca los tickets ni la reputación.**
+
+### 18.1 La idea en una frase
+
+Al abrir la pared del ala lateral aparece **el horno de leña de la antigua tahona** que hubo en el bajo, con **el recetario de su
+panadera** encima. Horneas por tandas con gestos de obrador; lo horneado espera en **la vitrina de la barra**, sin estropearse
+nunca; se lo pones a los clientes que piden «algo para acompañar»; y **mientras no estás, Pilar vende en el mostrador** lo que
+dejaste. Solo da **granos**: la lectura sigue moviendo los tickets y la reputación sigue al ritmo de siempre.
+
+### 18.2 En qué nivel se abre: el 4, el ala lateral (recomendado)
+
+Con el ritmo de §14.1 (unos 4 días en el nivel 1, 9 en el 2, 16 en el 3 y 23 en el 4), el nivel 4 (2.500 de reputación) llega
+**hacia el día 30**, el primer mes de juego (algo antes con la pizarra de la acera y los virales).
+
+- **Es cuando la barra se vuelve rutina**: a ese ritmo ya se han servido unas 150 tazas, Pilar domina el café, el té y el
+  chocolate (12 de 2★ o más cada uno, §15.1) y las manos piden algo nuevo. El obrador devuelve los gestos a mano.
+- **Tiene una razón en el local**: el 4 es el nivel que abre la pared de la izquierda (§13). Detrás aparece el horno: el espacio
+  sirve para jugar, no solo para decorar (§12.1).
+- **No se amontona**: el 3 ya trae el taller (hacia el día 13); juntar las dos cosas abruma. El 5 (hacia el día 50) sería tarde
+  para un bucle principal.
+- **Rellena el tramo largo del 5 al 6** (más de 40 días): las mejoras del horno y de la vitrina y las recetas de los niveles 5 a 8
+  dan objetivos mientras tanto.
+- Alternativas: **nivel 3** (junto al taller, hacia la 2.ª semana) o **nivel 5** (con la terraza, hacia la 7.ª u 8.ª semana).
+
+### 18.3 Dónde está y cómo se ve
+
+- **El obrador**, en el fondo del ala lateral, empotrado en la pared y fuera de la cuadrícula (como el tostador, §14.8): el arco de
+  ladrillo con la boca del horno encendida, la mesa de amasar de mármol con harina, la pala de madera colgada y, desde la tortilla
+  (nivel 8), el fogón de hierro. Al tocarlo, la cámara se acerca como a la barra.
+- **La vitrina, en la barra**: lo horneado se ve pieza a pieza en 3D (magdalenas en su papel rizado, porciones de empanada,
+  galletas con forma de ancla…), con la etiqueta de tiza de la especialidad del día. Así, servir comida no añade paseos: las pinzas
+  se usan en la barra, después de la taza. **Crece con sus grados**: una campana de cristal en la punta de la barra (1), una
+  vitrina de madera y cristal (2), el mostrador delante de la barra (3) y la vitrina de dos alturas (4).
+- **El horno también se ve mejorar**: restaurado, con sus grietas y una bandeja (1); con puerta de hierro nueva y dos bandejas (2);
+  con azulejos y tres bandejas (3).
+- **En la mesa del cliente**, junto a la taza y el libro: en plato si lee aquí, en una bolsita de papel si se lo lleva y en una
+  cajita atada con cordel si es para regalar (lo mismo que eligió para el libro, sin gesto de más).
+- **El recetario**, la interfaz del obrador, con **identidad propia** (como el libro del taller, §16.7): un cuaderno de cocina con
+  tapas de hule a cuadros, manchas de harina, recetas escritas a mano y fichas sujetas con una pinza de la ropa. Una página por
+  receta: su dibujo, sus estrellas de maestría, sus gestos, lo que paga y cuándo se abre. Las cerradas dicen en qué nivel se abren
+  (sin misterio ni sorteos). La última página es la del obrador: sus mejoras y lo que te ha dado cada una.
+- El estilo de siempre: píxel y vóxel de Libotown, luz cálida pintada, sin luces en tiempo real.
+
+### 18.4 El bucle: hornear, la vitrina y servir
+
+1. **Elegir en el recetario** qué hornear.
+2. **Preparar** en la mesa de mármol con los dos gestos de la receta (§18.5), unos 30 a 40 s.
+3. **Al horno con la pala** (gesto común: empujar la pala hacia el fondo). El horno hornea **mientras haces otra cosa**, de 1 min a
+   1 min 30 s (lo que se tarda en atender a un cliente), **sin números**: por la boca del horno se ve cómo sube y se dora, con el
+   chisporroteo de la leña, y al estar suena una campanilla suave. **Nunca se quema ni se pasa**: si te vas, al volver está hecho.
+4. **Sacar con la pala** (tirar hacia ti): la bandeja sale humeando y Pilar la lleva a la vitrina. Lo que no cabe espera en el
+   horno, sin perderse; mientras tanto no se puede hornear otra (es la señal de vender primero, no un castigo).
+5. **Servir** (cambiado el 17-11-2026, ver §18.13, punto 5: **máximo dos cosas por cliente**; lo de abajo era la propuesta): muchos clientes piden, además de la taza y el libro, **«y para acompañar…»**: algo dulce, algo salado o la
+   especialidad del día. Tras la taza, en la barra, **las pinzas**: tocar la pieza en la vitrina y llevarla al plato (un gesto
+   corto, con su clic de metal). Si das un dulce a quien pedía salado, lo dice («Uy, mejor algo salado») y la pieza vuelve a la
+   vitrina: se elige otra, sin castigo. Si no te queda, «Hoy no me queda»: paga la taza y el libro como siempre.
+6. **La comida no cambia las estrellas ni la reputación** del cliente: solo suma los granos de la pieza (§18.9).
+7. **La venta del mostrador**: por cada día entero que pasa, Pilar vende a la gente de la calle unas pocas piezas de la vitrina
+   (según su grado), guardando como mucho 7 días, como la hucha (§142). Al entrar, la caja de latón del mostrador: «Mientras no
+   estabas se llevaron cuatro magdalenas y dos porciones de empanada». Se abre tirando del cajón (gesto y sonido de caja
+   registradora) y caen los granos.
+
+**Las estrellas de la hornada**: cada gesto tiene su **mimo**, «bien» o «se podía mejorar», como en el taller (§16.7); 3★ con
+todo bien, 2★ con la mitad y 1★ si no. **Las estrellas dan piezas**: la bandeja llena con 3★, una pieza menos con 2★ y dos menos
+con 1★. Nunca cero. Con movimiento reducido o con el teclado, un toque hace cada gesto de una vez y sale bien.
+
+**Lo que lleva al día**: una o dos hornadas y dos o tres segundos de pinzas por cliente. Con el horno mejorado, una hornada da para
+el día; con la receta dominada, la hornea Pilar (§18.6). La lectura no pierde su sitio.
+
+### 18.5 Las recetas, cada una con su gesto, su objeto y su sonido
+
+Seis recetas, tres dulces y tres saladas, una por nivel desde el 4 (dos al abrir). Cada una con **dos gestos propios** que no
+están en la barra, la librería ni el taller; la pala y las pinzas son comunes a todas. Sonidos propios sintetizados, en la sala
+cálida del café (`calido` en `cafeSfx.js`), con el crepitar de la leña de fondo junto al horno.
+
+| Receta | Nivel | Gesto 1 | Gesto 2 | Objetos | Lo que se ve y se oye | El mimo |
+| --- | --- | --- | --- | --- | --- | --- |
+| Magdalenas de limón (dulce) | 4 | **Rallar el limón**: deslizarlo hacia abajo por el rallador, varias veces | **Colmar los moldes**: un barrido con la cuchara de masa por encima de los seis | rallador de latón, bandeja de moldes de papel rizado | raspado cítrico y lluvia amarilla de ralladura; plop blando de la masa | no pasarse a lo blanco; llegar a los seis |
+| Empanada de bonito (salada) | 4 | **Estirar con el rodillo**: tres pasadas largas de arriba abajo | **El repulgo**: seguir con el dedo el borde redondo, que se pellizca a su paso | rodillo de madera, fuente redonda de barro | el rodillo rueda en el mármol; pellizcos de masa | pasadas parejas; no salirse del borde |
+| Galletas del puerto (dulce) | 5 | **Los cortapastas**: tocar la masa donde quieras cortar (ancla, barco, estrella de mar y faro) | **La glasa**: seguir con la manga el contorno punteado | cortapastas de hojalata, manga de glasa | clic de hojalata; hilillo de glasa | que no se pisen las formas; seguir la línea |
+| Pan de la bodega (salado) | 6 | **Amasar**: empujar con la palma hacia arriba y recogerla, cuatro veces (la masa se estira y vuelve) | **Greñar**, al día siguiente: un solo tajo curvo y decidido con la cuchilla | masa madre en su tarro, cesto de mimbre con un paño, cuchilla | masa elástica; la corteza que cruje al salir | ritmo parejo; un tajo sin dudar |
+| Bizcocho del tostadero (dulce) | 7 | **Envolver con la espátula**: tres trazos en jota, por el centro hacia abajo y subiendo por el lado | **La plantilla**: pasar el dedo sobre el tamiz de azúcar glas y levantarla (aparece el ancla del café) | bol de loza, espátula, molde de cobre, tamiz; lleva el tueste de la casa | masa que se pliega; azúcar que cae como nieve | trazos enteros; cubrir toda la plantilla |
+| Tortilla de patatas (salada) | 8 | **Cascar los huevos**: un toque seco en el borde del bol y abrir hacia los lados, tres | **Darle la vuelta con el plato**: medio giro decidido | bol, sartén de hierro en el fogón, plato de loza | chisporroteo del aceite; el golpe suave de la tortilla al caer | cascar sin cáscaras; un giro sin dudar |
+
+La pala (meter: empujar hacia el fondo; sacar: tirar hacia ti), las pinzas (tocar y arrastrar al plato) y el cajón de la caja
+(tirar hacia ti) tienen también su sonido: madera sobre ladrillo, clic de metal y el timbre de la caja.
+
+### 18.6 Las mejoras y la maestría
+
+Como el cuaderno de Pilar: se pagan una vez con granos, tienen grados y **nunca caducan**. Están en la última página del recetario,
+con lo que te ha dado cada una.
+
+| Mejora | Grado 1 | Grado 2 | Grado 3 | Grado 4 |
+| --- | --- | --- | --- | --- |
+| **El horno de leña**: bandejas por hornada, con los mismos gestos | 1 · al abrir, gratis | 2 · 250 granos · desde el nivel 4 | 3 · 600 · desde el 6 | — |
+| **La vitrina**: piezas que caben · las que vende Pilar al día | 12 · 4 · gratis | 20 · 6 · 150 · nivel 4 | 30 · 9 · 350 · nivel 5 | 40 · 12 · 700 · nivel 7 |
+
+- **Las vitrinas de tartas** (el mueble del nivel 2, 90 granos) **que tengas colocadas** suman **6 huecos** cada una a la vitrina,
+  hasta dos. El mueble que ya se compró, ahora sirve.
+- **La maestría** no se compra: se gana horneando. Por receta, con hornadas de 2★ o más: **★ con 3** (+1 pieza por bandeja), **★★
+  con 10** (+1 grano por pieza) y **★★★ con 25** (la página se dora y aparece «Que lo hornee Pilar»: hace los gestos en 3D, como
+  con las bebidas, §15.1; siempre se puede hacer a mano).
+- **No hay mejoras que acorten el horno**: la espera es corta y no se vende.
+
+### 18.7 Lo que engancha, sin trampas
+
+- **La colección del recetario**: seis páginas que se abren con los niveles y se doran al dominarlas.
+- **La maestría**: cada receta, sus tres estrellas, con un premio que se nota en la bandeja y en la caja.
+- **La especialidad del día**: cada día el servidor elige una de tus recetas abiertas; se ve en la etiqueta de tiza de la vitrina,
+  más clientes la piden y paga **+1 grano por pieza**, también en el mostrador. Si no la horneas, no pasa nada.
+- **Listo al volver**: lo que dejaste en el horno está hecho; la caja del mostrador guarda lo que vendió Pilar; y **el pan de la
+  bodega** (nivel 6) se amasa un día y reposa toda la noche en la bodega fresca: al día siguiente la masa ha subido bajo su paño y
+  se greña y se hornea. Una masa al día y sin plazo: si no vuelves, sigue esperando (como el saco del tostadero).
+- **Los hitos del obrador**, por piezas vendidas en total (mesa y mostrador): **25 / 100 / 250 / 500 / 1.000**. Cada uno deja **un
+  adorno fijo en el obrador** (cazos de cobre, una ristra de moldes, el letrero pintado «Obrador» sobre el arco, la campanilla de
+  latón del mostrador, que suena al vender, y el retrato de la panadera del recetario) y **20 granos**.
+- **El favorito de cada habitual** (aprobado): los doce habituales, los que trae tu lectura, tienen su receta favorita. Si está
+  en tu recetario, la piden por su nombre («¿Te quedan magdalenas?») y pagan **+2**. Tu lectura alimenta también el obrador.
+- ~~Los maridajes~~: **descartados** (Francisco, 17-11-2026, «Solo el favorito»), como el 14-11.
+- **El excéntrico** pide la comida con un acertijo («Algo con el mar dentro y masa por fuera») y paga el doble de la pieza. El
+  influencer no pide comida: su pedido es fijo.
+- **Cuando visitan tu café** (solo mirar, §141), se ven la vitrina con lo que tengas, el horno con su grado y los adornos de los
+  hitos.
+
+### 18.8 Lo que no se hace
+
+- **No se castiga no entrar**: los clientes siguen sin irse, la venta del mostrador guarda 7 días y la masa de la noche espera.
+- Lo horneado **no se estropea, no caduca y no se quema**. Lo que no cabe espera en el horno.
+- **Sin cuentas atrás**: el horno no tiene números ni alarmas; sin rachas, energía ni «vuelve en tantos minutos»; ningún aviso fuera
+  del café.
+- **Sin cajas sorpresa**: las recetas se abren por nivel, a la vista; sin sorteos de piezas ni de recetas.
+- **Los ingredientes son gratis** (la despensa no se acaba): quedarse sin granos nunca deja sin hornear. Es lo que no gustó de
+  comprar libros (§17).
+- **Nada de dinero real**: los granos no se compran, no pasan a tickets ni entre cuentas.
+- **No toca los tickets** (tope de 5 al día, sin cambios) **ni la reputación** (los niveles, y sus tickets, llegan al mismo ritmo).
+- Nada de pagar granos para esperar menos.
+
+### 18.9 Economía: las cifras
+
+**Las recetas** (cifras recomendadas):
+
+| Receta | Abre en | Tipo | Piezas por bandeja (3★ / 2★ / 1★) | Granos por pieza | En el horno |
+| --- | --- | --- | --- | --- | --- |
+| Magdalenas de limón | nivel 4 | dulce | 6 / 5 / 4 | 2 | 1 min |
+| Empanada de bonito | nivel 4 | salada | 6 / 5 / 4 porciones | 3 | 1 min 30 s |
+| Galletas del puerto | nivel 5 | dulce | 8 / 7 / 6 | 2 | 1 min |
+| Pan de la bodega | nivel 6 | salado | 8 / 7 / 6 rebanadas | 4 | reposa una noche; luego, 1 min |
+| Bizcocho del tostadero | nivel 7 | dulce | 8 / 7 / 6 porciones | 4 | 1 min 30 s |
+| Tortilla de patatas | nivel 8 | salada | 8 / 7 / 6 pinchos | 5 | 1 min en el fogón |
+
+**Lo que se suma a la pieza**: la especialidad del día +1; la maestría ★★ +1; el excéntrico, el doble; y el favorito del habitual
++2. En el mostrador, Pilar vende a precio base (con la especialidad).
+
+**Quién pide** (desde el 17-11-2026, §18.13, punto 5): **uno de cada tres** clientes del día (lo decide el servidor con la semilla
+del día), y **ese no pide libro**. Ni el excéntrico ni el influencer. Los habituales, en el mismo sorteo (en la 1.145, su favorito).
+
+**Comparado con lo que paga hoy un cliente (§16.1)**: un cliente a 3★ deja 5 granos y 14 de reputación, más 4 o 6 por el ejemplar
+que se lleva. La pieza suma de 2 a 5 granos (hasta 7 con los extras): **acompañar la taza vale como medio cliente en granos y
+nada en reputación ni en tickets**.
+
+| Un día jugado entero | Nivel 4, recién abierto | Nivel 5, horno 2 y vitrina 3 | Nivel 8, todo mejorado y dominado |
+| --- | --- | --- | --- |
+| Lo de hoy, sin comida (clientes, libros, habituales, taller y hucha) | unos 105 granos | unos 120 | unos 190 |
+| Piezas servidas en la mesa | ~5, unos 13 granos | ~6, unos 18 | ~9, unos 45 |
+| Venta del mostrador | 4 piezas, unos 10 | 9, unos 23 | 12, unos 42 |
+| **Lo que suma la comida** | **unos 23 (+22 %)** | **unos 41 (+34 %)** | **unos 87 (+46 %)** |
+| Reputación y tickets | sin cambios | sin cambios | sin cambios |
+
+Los niveles 6 a 8 suman más porque llevan unos 2.000 granos invertidos en el obrador (horno 250 + 600 y vitrina 150 + 350 + 700) y
+las recetas dominadas. Los tickets siguen atados a la lectura: el tope de 5 al día del café no sube y la comida no da ninguno.
+
+### 18.10 Las cuentas que ya están por encima (y las de debajo)
+
+- **Por debajo del nivel 4**, nada cambia. El cartel de la subida al 4 añade «El obrador: el horno de la antigua tahona y su
+  recetario». En el 3, Pilar comenta una vez que «detrás de esa pared huele a pan de otro tiempo», sin aviso ni prisa.
+- **En el 4 o más, la primera vez que se entra** tras la versión: la cámara va al fondo del ala, donde Pilar ha descubierto el
+  horno al mover la estantería («Mira lo que había detrás: el horno de la tahona de doña Amparo, la que tenía el bajo cuando yo era
+  niña»), con su recetario. Un cartel como el de subir de nivel: «Se abre el obrador», con lo que trae.
+  - **Las recetas de tu nivel, abiertas a la vez** (en el 6, las cuatro primeras), con la «!» roja de lo nuevo en cada página
+    hasta verla (`cafeNuevo.js`).
+  - **La primera hornada, de la casa**: la vitrina ya trae seis magdalenas, para servir desde el primer cliente.
+  - El horno y la vitrina, en el grado 1; los grados siguientes, a la venta si tu nivel llega.
+  - **Nada atrasado**: ni granos ni hitos por los niveles ya pasados; los hitos del obrador cuentan desde ese día. Así nadie recibe
+    de golpe lo que a otros les cuesta jugar.
+  - La «!» que guía la primera hornada y la primera pieza servida sale aunque estés por encima del nivel 2 (es nuevo para todos);
+    después, solo si te quedas parado.
+- **Las dos cuentas de prueba** (Francisco y su pareja) estaban en el nivel 3 desde el 15-11: con «Otra jornada» se llega al 4
+  jugando. Para probarlo antes haría falta otro script como el del nivel 3, y solo si él lo pide.
+
+### 18.11 Servidor: qué se guarda, qué se comprueba y por qué no se puede explotar
+
+Migraciones nuevas (las aplica Francisco con el flujo del SQL Editor), aditivas y re-ejecutables, con RLS activada, `revoke all`
+a `anon` y `authenticated` en las tablas y todo el acceso por funciones `security definer`, `set search_path = ''` y `volatile`
+(§6). Pruebas con PGlite y de paridad entre las cifras de la app y las del servidor. Nombres provisionales:
+
+| Bloque | Migración | Qué trae |
+| --- | --- | --- |
+| 1 | `20261225120000_cafe_obrador.sql` | **Hecha en la 1.143** (§143.5 del SPEC). Tablas `cafe_obrador` (por cuenta: abierto, vendidas y granos dados), `cafe_obrador_horno` (cuenta + bandeja: receta, piezas, estrellas y desde cuándo), `cafe_obrador_vitrina` (cuenta + receta: piezas), `cafe_obrador_hornadas` (lo horneado cada día, para el tope de 30) y `cafe_obrador_ventas` (cuenta + día + cliente: receta y granos). Las cifras, en funciones internas (`cafe_obrador_nivel`, `cafe_obrador_receta`, `cafe_obrador_bandejas`, `cafe_obrador_cabe`, `cafe_obrador_tope`). Para la app: `cafe_obrador(dia)` (el estado y quién pide comida ese día, **aparte de `cafe_json`**, que no se toca), `cafe_obrador_abrir()`, `cafe_hornear(receta, mimo)` (el mimo de los dos gestos, **2 bien o 1 se podía mejorar**, como el taller), `cafe_sacar_hornada(bandeja)` y `cafe_servir_comida(dia, cliente, receta)`. `cafe_entregar` no se toca. |
+| 2 | `20261226120000_cafe_obrador_mejoras.sql` | Los grados del horno y de la vitrina (`cafe_obrador_mejorar`), las vitrinas de tartas del plano, la venta del mostrador (`cafe_mostrador_cobrar`), la especialidad del día y la maestría (`cafe_obrador_recetas`: hornadas buenas por receta). |
+| 3 | `20261227120000_cafe_obrador_recetario.sql` | Las recetas de los niveles 5 a 8, la masa del pan (`cafe_masa_reposar`, una al día), los hitos del obrador, la comida del excéntrico, el favorito de los habituales y lo que ven las visitas. |
+
+**Reglas que no se pueden saltar**:
+- **El nivel es el del servidor**: el obrador y cada receta, solo desde su nivel; cada grado, desde el suyo.
+- **Hornear**: con el horno libre y una receta abierta. El mimo llega como una lista del largo de esa receta con valores 0 o 1
+  (como en el taller); las estrellas y las piezas las cuenta el servidor (la base por estrellas, más la maestría, por las
+  bandejas). Hasta 30 hornadas al día, para no llenar tablas (nadie llega jugando).
+- **Sacar**: solo si ha pasado el tiempo de la receta, medido por el servidor con 5 s de margen por la conexión. A la vitrina
+  hasta su capacidad (grado más las vitrinas de tartas colocadas en el plano, hasta dos); lo demás sigue en el horno.
+- **Servir comida**: solo a un cliente ya servido hoy (o ayer, como siempre), que **pidió comida** según `cafe_pide_comida` (lo
+  decide el servidor con la semilla del día, nunca la app); la pieza tiene que encajar (dulce, salada o la receta pedida); con
+  existencias, leídas con `for update`; **una vez por cliente y día** (clave primaria); granos fijos del servidor, nunca cifras de
+  la app; `least(100000, granos + n)`.
+- **El mostrador**: los días enteros desde la última vez, como mucho 7; vende lo que haya en la vitrina, como mucho el cupo diario
+  de su grado por día, a precio base.
+- **Mejorar**: el grado siguiente, con su precio y su nivel; saldo con `for update`, nunca por debajo de 0 (como
+  `cafe_pilar_mejorar`).
+- **El pan de la noche**: una masa al día; lista desde el día siguiente (Madrid), sin plazo.
+- **Nada da reputación ni tickets** y nada pasa entre cuentas. Lo ganado cuenta en «granos ganados en total» del ranking (§141),
+  como cualquier grano ganado jugando.
+- **Las jornadas de prueba** (`cafe_probadores`, solo las dos cuentas): «Otra jornada» cuenta como un día para el mostrador y para
+  la masa, como el saco del tostadero (`PRUEBA_DESDE`). Para el resto, nada cambia.
+- **Sin la migración**, el café va como en la 1.142: sin obrador.
+
+**Por qué no se puede explotar**: lo único que dice la app es el mimo de los gestos (como en el taller), y mentir da, como mucho, lo
+mismo que una hornada perfecta. Lo que se gana con la comida tiene techo diario: las piezas que piden los clientes del día (los fija
+el servidor) y el cupo del mostrador, a precios fijos. Hornear de más no da más: lo que sobra se queda en la vitrina. La reputación
+y los tickets no se mueven.
+
+### 18.12 Bloques (cada uno con capturas a 360 y 390 y un vídeo con sonido)
+
+1. **1.143.0, el obrador abre**: la escena del horno en el ala lateral; el recetario con sus seis páginas (dos abiertas); las
+   magdalenas y la empanada con sus cuatro gestos y sus sonidos; la pala; el horno con su campanilla; la vitrina de la barra (grado
+   1); la primera hornada de la casa; los clientes que piden algo dulce o salado; las pinzas y la pieza en la mesa. Migración 1.
+2. **1.144.0, las mejoras y el mostrador**: los grados del horno y de la vitrina, y cómo se ven; las vitrinas de tartas que suman;
+   la venta del mostrador con la caja de latón; la especialidad del día; la maestría y «Que lo hornee Pilar». Migración 2.
+3. **1.145.0, el recetario crece**: las galletas (5), el pan de la bodega con su noche (6), el bizcocho del tostadero (7) y la
+   tortilla en el fogón (8); los hitos con sus adornos; la comida del excéntrico; el favorito de los habituales; lo que ven las
+   visitas. Migración 3. Si pesa mucho, 3a (niveles 5 y 6) y 3b (7 y 8).
+
+Al cerrar cada bloque: versión, SPEC y ESTADO. Commit, migraciones y `main`, solo cuando Francisco lo pida. Sin probar en móviles
+reales: se dirá en cada entrega.
+
+### 18.13 Decisiones de Francisco (17-11-2026, las cuatro recomendadas)
+
+1. **El nivel**: **el 4, el ala lateral** (elegido). Se descartan el 3 (con el taller) y el 5 (con la terraza).
+2. **Las cifras**: **las de §18.6 y §18.9** (elegidas). Se descartan las más generosas y las más contenidas.
+3. **La venta del mostrador mientras no estás**: **como la hucha, guardando 7 días** (elegida). Se descartan «una vez al día» y «solo
+   a los clientes».
+4. **El favorito de los habituales y los maridajes**: **solo el favorito de cada habitual** (elegido; une la comida con la lectura).
+   Los maridajes siguen descartados, como el 14-11.
+5. **Máximo dos cosas por cliente** (tras ver la 1.143, el mismo día: «se volvería muy pesado el proceso, el maximo lo pondría en
+   dos»; eligió «Dos máx., 1 de cada 3»). Cada cliente pide bebida y libro, o bebida y comida, nunca las tres. Uno de cada tres pide
+   comida y no libro; sus estrellas, solo de la bebida (4 aciertos, 3★; 2 o 3, 2★; si no, 1★); la comida, aparte, solo granos.
+   La taza y la pieza van en el mismo viaje: de la barra a la vitrina (las pinzas, tuyas) y a la mesa, como el libro. Se descartó
+   que Pilar sirviera la comida: «perdería la gracia de incluir la nueva mecánica».

@@ -788,6 +788,94 @@ const SONIDOS = {
     nota(b, { f: 1318.5, pico: 0.025, caida: 0.8, d: 0.12 });
     for (let k = 0; k < 6; k += 1) ruido(b, { f: 3000 + k * 250, q: 4, pico: 0.03, caida: 0.025, d: 0.3 + k * 0.035 });
   },
+  // ── 1.143: el obrador (por la sala cálida, como el libro) ──
+  /** El tabique que cae y deja ver el horno: un golpe sordo, el yeso que se desmorona y, al final, un acorde cálido. */
+  tabique: (b) => {
+    tono(b, { f: 90, a: 60, pico: 0.14, ataque: 0.005, caida: 0.35 });
+    ruido(b, { f: 700, q: 0.6, tipo: 'lowpass', pico: 0.2, ataque: 0.01, caida: 0.6, barrido: 0.5 });
+    ruido(b, { f: 2400, q: 1.5, pico: 0.05, ataque: 0.02, caida: 0.4, d: 0.12 });
+    [392, 523.25, 659.25].forEach((f, k) => nota(b, { f, pico: 0.03, caida: 0.9, d: 0.45 + k * 0.08 }));
+  },
+  /** Abrir el recetario: el hule que cruje y una página. */
+  recetario: (b) => {
+    ruido(b, { f: 1800, q: 0.8, pico: 0.06, ataque: 0.01, caida: 0.12 });
+    ruido(b, { f: 3200, q: 1.2, pico: 0.04, ataque: 0.02, caida: 0.18, barrido: 0.7, d: 0.08 });
+  },
+  /** Pasar una ficha del recetario (la pinza de la ropa que se suelta y la cartulina). */
+  fichaReceta: (b) => {
+    madera(b, { f: 880, pico: 0.03, caida: 0.06 });
+    ruido(b, { f: 2600, q: 1.1, pico: 0.035, ataque: 0.01, caida: 0.1, barrido: 0.8, d: 0.03 });
+  },
+  /** Rallar el limón: el roce áspero del latón, y un poquito de aroma (una notita aguda). */
+  rallar: (b) => {
+    ruido(b, { f: 5200, q: 2.2, pico: 0.07, ataque: 0.003, caida: 0.05, barrido: 0.8 });
+    ruido(b, { f: 2900, q: 3, pico: 0.03, ataque: 0.002, caida: 0.03 });
+  },
+  /** La masa que cae de la cuchara al molde: un «plof» blando. */
+  masa: (b) => {
+    tono(b, { f: 220, a: 150, pico: 0.07, ataque: 0.006, caida: 0.1 });
+    ruido(b, { f: 500, q: 1.4, tipo: 'lowpass', pico: 0.06, ataque: 0.005, caida: 0.07 });
+  },
+  /** Un molde colmado justo: una notita de madera. */
+  colmado: (b) => madera(b, { f: 659.25, pico: 0.035, caida: 0.14 }),
+  /** El molde que rebosa: un chof más grave. */
+  rebosa: (b) => {
+    tono(b, { f: 150, a: 90, pico: 0.06, ataque: 0.01, caida: 0.16 });
+    ruido(b, { f: 380, q: 1, tipo: 'lowpass', pico: 0.06, ataque: 0.01, caida: 0.12 });
+  },
+  /** El rodillo de madera que rueda sobre la masa y el mármol. */
+  rodillo: (b) => {
+    ruido(b, { f: 260, q: 1.6, tipo: 'bandpass', pico: 0.08, ataque: 0.01, caida: 0.1 });
+    madera(b, { f: 196, pico: 0.02, caida: 0.08 });
+  },
+  /** El rodillo da la vuelta: un toquecito de madera en el mármol. */
+  vueltaRodillo: (b) => madera(b, { f: 330, pico: 0.03, caida: 0.07 }),
+  /** Un pellizco del repulgo: la masa blandita entre los dedos, un poco más aguda en cada tramo. */
+  pellizco: (b, k = 0) => {
+    tono(b, { f: 520 + (k % 8) * 22, a: 380, pico: 0.03, ataque: 0.004, caida: 0.06 });
+    ruido(b, { f: 1500, q: 1.3, pico: 0.025, ataque: 0.003, caida: 0.03 });
+  },
+  /** El gesto hecho: dos notas cálidas que suben. */
+  obradorHecho: (b) => {
+    nota(b, { f: 523.25, pico: 0.035, caida: 0.5 });
+    nota(b, { f: 783.99, pico: 0.03, caida: 0.7, d: 0.1 });
+  },
+  /** La pala de madera sobre la solera de ladrillo (al meterla y al sacarla). */
+  pala: (b) => {
+    ruido(b, { f: 900, q: 0.9, pico: 0.09, ataque: 0.02, caida: 0.32, barrido: 0.6 });
+    madera(b, { f: 147, pico: 0.05, caida: 0.2, d: 0.28 });
+  },
+  /** Dentro del horno: el soplo del calor y unas brasas que crepitan. */
+  horno: (b) => {
+    ruido(b, { f: 400, q: 0.5, tipo: 'lowpass', pico: 0.1, ataque: 0.06, caida: 0.5 });
+    for (let k = 0; k < 5; k += 1) ruido(b, { f: 3000 + k * 400, q: 4, pico: 0.03, ataque: 0.001, caida: 0.012, d: 0.1 + Math.random() * 0.5 });
+  },
+  /** La campanilla de latón del horno: la hornada está lista. */
+  campanillaHorno: (b) => {
+    for (const [d, f] of [
+      [0, 1318.5],
+      [0.16, 1318.5],
+      [0.32, 1568],
+    ]) {
+      tono(b, { f, tipo: 'sine', pico: 0.045, caida: 0.55, d });
+      tono(b, { f: f * 2.76, tipo: 'sine', pico: 0.012, caida: 0.18, d });
+    }
+  },
+  /** Las pinzas de latón que se cierran sobre la pieza: un clic de metal. */
+  pinza: (b) => {
+    tono(b, { f: 2900, tipo: 'triangle', pico: 0.04, ataque: 0.001, caida: 0.04 });
+    tono(b, { f: 4100, tipo: 'sine', pico: 0.02, ataque: 0.001, caida: 0.06, d: 0.02 });
+  },
+  /** La pieza en el plato de loza. */
+  plato: (b) => {
+    tono(b, { f: 1760, tipo: 'sine', pico: 0.035, ataque: 0.002, caida: 0.25 });
+    ruido(b, { f: 2200, q: 2, pico: 0.03, ataque: 0.002, caida: 0.03 });
+  },
+  /** La vitrina: la campana de cristal que se levanta. */
+  vitrina: (b) => {
+    tono(b, { f: 2349, tipo: 'sine', pico: 0.025, caida: 0.5 });
+    tono(b, { f: 3136, tipo: 'sine', pico: 0.015, caida: 0.4, d: 0.05 });
+  },
 };
 
 /**
@@ -848,7 +936,7 @@ const BUCLES = {
 };
 
 /** 1.131: los sonidos del libro, que suenan en la sala de la librería (`calido`). */
-const DEL_LIBRO = new Set(['placa', 'lomo', 'sacar', 'tabla', 'libroTabla', 'devolver', 'kraft', 'rasga', 'pliegue', 'cordel', 'lazo', 'paginas', 'marca', 'cierra', 'bolsa', 'meter', 'selloBaja', 'sello', 'libroEtapa', 'reparto', 'secciones']);
+const DEL_LIBRO = new Set(['tabique', 'recetario', 'fichaReceta', 'rallar', 'masa', 'colmado', 'rebosa', 'rodillo', 'vueltaRodillo', 'pellizco', 'obradorHecho', 'pala', 'horno', 'campanillaHorno', 'pinza', 'plato', 'vitrina', 'placa', 'lomo', 'sacar', 'tabla', 'libroTabla', 'devolver', 'kraft', 'rasga', 'pliegue', 'cordel', 'lazo', 'paginas', 'marca', 'cierra', 'bolsa', 'meter', 'selloBaja', 'sello', 'libroEtapa', 'reparto', 'secciones']);
 /** 1.133: los del taller de la trastienda, por la misma sala cálida. */
 const DEL_TALLER = new Set([
   'tallerPuerta',

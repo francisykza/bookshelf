@@ -87,7 +87,7 @@ export function siguienteHito(reputacion = 0) {
 export const ABRE = {
   2: ['4 clientes al día', '18 huecos en la balda', 'Muebles nuevos: banco corrido, vitrina de tartas y planta grande', 'Se recogen las cortinas: todo el bajo, con el ventanal al puerto'],
   3: ['5 clientes al día', '30 huecos en la balda', 'Muebles nuevos: estantería alta, sillón orejero y mesita con quinqué', 'Estanterías hasta el techo y la chimenea encendida'],
-  4: ['Hasta 6 clientes al día, si tienen dónde sentarse', '36 huecos en la balda', 'Muebles nuevos: mesa larga, biombo de librería y lámpara de bankers', 'Se abre la pared: el ala lateral, con su cuadrícula'],
+  4: ['Hasta 6 clientes al día, si tienen dónde sentarse', '36 huecos en la balda', 'Muebles nuevos: mesa larga, biombo de librería y lámpara de bankers', 'Se abre la pared: el ala lateral, con su cuadrícula', 'El obrador: el horno de la antigua tahona y su recetario'],
   5: ['Hasta 7 clientes al día, si tienen dónde sentarse', '42 huecos en la balda', 'Muebles nuevos: mesa de hierro, silla de terraza y macetero largo', 'La terraza en la acera y tu escaparate, que se ve desde la calle'],
   6: [
     'Hasta 8 clientes al día, si tienen dónde sentarse (también abajo)',

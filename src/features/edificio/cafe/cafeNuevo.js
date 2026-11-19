@@ -8,7 +8,7 @@ import { cartaDe, nivelDe, umbralHito } from './cafeNiveles';
 
 const CLAVE = 'bookshelf:cafe-visto';
 /** Desde qué nivel está cada sitio nuevo del local. */
-export const SITIOS_NUEVOS = { taller: 3, escaparate: 5, trampilla: 6, tostador: 7 };
+export const SITIOS_NUEVOS = { taller: 3, obrador: 4, escaparate: 5, trampilla: 6, tostador: 7 };
 
 /** Todo lo desbloqueado con esta reputación, como claves: 'mueble:cafe-saco', 'carta:casa', 'sitio:tostador'. */
 export function desbloqueados(reputacion = 0) {

@@ -1,0 +1,300 @@
+/* 1.143 (§143): el obrador. El recetario de doña Amparo, en la franja de abajo (el marco es el de `.cf3-balda`): tapas de hule
+   a cuadros, una etiqueta de papel con el título y cómo va el horno, y las seis recetas como fichas de papel con renglones,
+   manchas de harina y su pinza de madera, que se pasan de lado. Píxel duro: sin degradados brillantes ni sombras blandas. */
+
+.cf3-balda.cf3-recetario {
+  max-height: min(58vh, 470px);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 8px;
+  padding: 10px 10px 10px;
+  background:
+    repeating-linear-gradient(0deg, rgb(170 46 40 / 0.5) 0 8px, transparent 8px 16px),
+    repeating-linear-gradient(90deg, rgb(170 46 40 / 0.5) 0 8px, transparent 8px 16px),
+    #efe4d2;
+  box-shadow:
+    inset 0 0 0 2px #2a1410,
+    inset 0 0 0 4px #8c2a22,
+    inset 0 -6px 0 rgb(60 20 16 / 0.35);
+  color: #2a1a10;
+}
+
+/* La etiqueta de la tapa: el título, cómo va el horno y lo que hay en la vitrina */
+.cf3-recetario__cabeza {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  background: #f6ecd2;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #dccaa0;
+}
+.cf3-recetario__tapa {
+  width: 34px;
+  height: 40px;
+  background:
+    linear-gradient(90deg, transparent 4px, #2a1a10 4px 6px, transparent 6px),
+    repeating-linear-gradient(0deg, #b8332b 0 5px, #f2e6d2 5px 10px),
+    #b8332b;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset -3px 0 0 rgb(0 0 0 / 0.2);
+}
+.cf3-recetario__titulos {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.cf3-recetario__titulo {
+  margin: 0;
+  font: 400 15px/1.15 var(--pp-title);
+}
+.cf3-recetario__estado,
+.cf3-recetario__vitrina {
+  margin: 0;
+  font:
+    500 0.8rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-recetario__estado {
+  font-style: italic;
+}
+.cf3-recetario__vitrina {
+  color: #6b4630;
+  font-weight: 700;
+}
+
+/* Las fichas: una por página, que se pasan de lado */
+.cf3-recetario__hojas {
+  display: grid;
+  grid-auto-columns: 100%;
+  grid-auto-flow: column;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  list-style: none;
+  overscroll-behavior: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.cf3-recetario__hojas::-webkit-scrollbar {
+  display: none;
+}
+.cf3-papeleta {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-height: 0;
+  margin: 12px 4px 2px;
+  padding: 16px 12px 10px 20px;
+  overflow-y: auto;
+  scroll-snap-align: start;
+  background:
+    radial-gradient(circle at 84% 20%, rgb(255 255 255 / 0.3) 0 9px, transparent 10px),
+    radial-gradient(circle at 89% 27%, rgb(255 255 255 / 0.22) 0 5px, transparent 6px),
+    radial-gradient(circle at 10% 88%, rgb(255 255 255 / 0.24) 0 8px, transparent 9px),
+    linear-gradient(90deg, transparent 9px, #c86a5a 9px, #c86a5a 11px, transparent 11px),
+    repeating-linear-gradient(transparent 0 19px, #d9c9a4 19px 20px),
+    #f4e9cc;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 #d8c69c;
+}
+.cf3-papeleta:not([data-abierta='true']) {
+  filter: saturate(0.4);
+}
+.cf3-papeleta:not([data-abierta='true']) .cf3-papeleta__nombre {
+  color: #6b5a48;
+}
+/* La pinza de madera que la sujeta */
+.cf3-papeleta__pinza {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 16px;
+  height: 26px;
+  background:
+    linear-gradient(90deg, transparent 7px, #5a3a22 7px 9px, transparent 9px),
+    linear-gradient(transparent 11px, #8a8a8a 11px 14px, transparent 14px),
+    #c89a62;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset -2px 0 0 rgb(0 0 0 / 0.18);
+  transform: translateX(-50%);
+}
+.cf3-papeleta__tipo {
+  justify-self: start;
+  margin: 0;
+  padding: 3px 7px 4px;
+  font: 400 11px/1 var(--pp-title);
+}
+.cf3-papeleta[data-tipo='dulce'] .cf3-papeleta__tipo {
+  background: #f0c9b8;
+  box-shadow: inset 0 0 0 2px #8a4a3a;
+  color: #5a2a1e;
+}
+.cf3-papeleta[data-tipo='salado'] .cf3-papeleta__tipo {
+  background: #cfdcb4;
+  box-shadow: inset 0 0 0 2px #4f6a3a;
+  color: #2e4220;
+}
+.cf3-papeleta__nombre {
+  margin: 0;
+  font: 400 16px/1.15 var(--pp-title);
+}
+.cf3-papeleta__nota,
+.cf3-papeleta__cerrada {
+  margin: 0;
+  font:
+    italic 500 0.84rem/1.35 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-papeleta__cerrada {
+  color: #5a4632;
+}
+.cf3-papeleta__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cf3-papeleta__datos > li {
+  padding: 3px 7px 4px;
+  background: #e6d6ae;
+  box-shadow: inset 0 0 0 2px #8a7458;
+  color: #3e2a1a;
+  font:
+    600 0.74rem/1.1 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-papeleta__hornear {
+  justify-self: end;
+  margin-top: 2px;
+}
+
+/* El pie: pasar las hojas y lo que se puede hacer */
+.cf3-recetario__pie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.cf3-recetario__flecha {
+  min-width: 40px;
+  font: 400 18px/1 var(--pp-title);
+}
+.cf3-recetario__pagina {
+  min-width: 36px;
+  padding: 4px 6px;
+  background: #f6ecd2;
+  box-shadow: inset 0 0 0 2px #2a1a10;
+  font: 400 12px/1 var(--pp-title);
+  text-align: center;
+}
+.cf3-recetario__hueco {
+  flex: 1;
+}
+.cf3-recetario .cf3-error {
+  margin: 0;
+}
+
+/* La franja del obrador: el paso de la receta arriba y, al hornear, las estrellas con lo que saldrá */
+.cf3-franja--barra.cf3-franja--obrador .cf3-caja {
+  grid-template-areas:
+    'paso'
+    'dice'
+    'hornada'
+    'extra'
+    'error'
+    'botones';
+}
+@container cf3 (min-width: 700px) {
+  .cf3-franja--barra.cf3-franja--obrador .cf3-caja {
+    grid-template-areas:
+      'paso botones'
+      'dice botones'
+      'hornada hornada'
+      'extra extra'
+      'error error';
+  }
+}
+.cf3-franja--barra.cf3-franja--obrador .cf3-caja > .cf3-dice {
+  grid-area: dice;
+}
+.cf3-obrador__paso {
+  grid-area: paso;
+  margin: 0;
+  color: #f2d27a;
+  font: 400 12px/1 var(--pp-title);
+}
+.cf3-obrador__hornada {
+  display: flex;
+  grid-area: hornada;
+  gap: 8px;
+  align-items: center;
+  color: var(--cf3-cream);
+  font:
+    600 0.84rem/1.3 'Lora',
+    Georgia,
+    serif;
+}
+.cf3-gesto__hecho[data-mimo='mejor'] {
+  background: #7a5a2e;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 -3px 0 #5a4020,
+    0 3px 0 rgb(0 0 0 / 0.4);
+}
+
+/* ── 1.143, máximo dos cosas por cliente: quien pide comida, en la comanda (con su magdalena de píxel delante, como el librito
+   del libro), y en la vitrina, la comanda enseña solo eso (la bebida ya está hecha) ── */
+.cf3-comanda .cf3-comanda__linea--comida {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin-top: 3px;
+  padding-top: 4px;
+  border-top: 2px dotted rgb(42 26 16 / 0.3);
+}
+.cf3-comanda .cf3-comanda__linea--comida::before {
+  flex: none;
+  width: 10px;
+  height: 11px;
+  background: linear-gradient(#f2c46a 0 4px, #c98a3a 4px 5px, #e8dcc4 5px 7px, #d8c8a8 7px 9px, #b8a888 9px);
+  box-shadow: inset 0 0 0 1px #2a1a10;
+  content: '';
+}
+.cf3-comanda .cf3-comanda__linea--comida[data-tipo='salado']::before {
+  background: linear-gradient(#e0a24e 0 3px, #8a4a24 3px 4px, #d8903e 4px 8px, #b8742e 8px);
+}
+.cf3-comanda .cf3-comanda__linea--comida[data-ahora='true'] {
+  color: #8a3a2a;
+}
+.cf3-comanda[data-solo-comida='true'] .cf3-comanda__linea:not(.cf3-comanda__linea--comida) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.cf3-comanda[data-solo-comida='true'] .cf3-comanda__linea--comida {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.cf3-dado .cf3-dado__ficha--comida {
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 3px #e2b25a;
+  color: #ffe1a0;
+}

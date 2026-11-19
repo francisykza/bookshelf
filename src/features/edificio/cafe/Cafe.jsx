@@ -22,7 +22,7 @@ import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCa
 import { COPA, CUADERNO, GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { bienvenidaLibros, cargarCafe, misTitulos, cargarDia, cargarJornada, cargarTaller, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate, recogerHucha } from './cafeService';
+import { bienvenidaLibros, cargarCafe, misTitulos, cargarDia, cargarJornada, cargarObrador, cargarTaller, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate, recogerHucha, servirComida } from './cafeService';
 import { enFrase } from './cafeInfluencers';
 import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
@@ -34,6 +34,8 @@ import { CuadernoPilar } from './CuadernoPilar';
 import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
+import { Obrador } from './Obrador';
+import { OBRADOR_NIVEL, PILAR_OBRADOR, estadoHorno, pedidoComida } from './cafeObrador';
 import { Taller } from './Taller';
 import { TALLER_NIVEL } from './cafeTaller';
 import { crearTallerMusica } from './cafeTallerMusica';
@@ -141,6 +143,10 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   // 1.133: el taller del día (undefined: cargando o por debajo del nivel 3; null: sin la migración) y si estás dentro
   const [taller, setTaller] = useState(undefined);
   const [enTaller, setEnTaller] = useState(false);
+  // 1.143: el obrador del día (undefined: cargando o por debajo del nivel 4; null: sin la migración; si no, { obrador (null si aún
+  // no se ha abierto), piden }), si estás dentro y a quién le llevas algo de la vitrina al acabar de servir ({ cliente, tipo })
+  const [obradorDia, setObradorDia] = useState(undefined);
+  const [enObrador, setEnObrador] = useState(false);
   const [ganado, setGanado] = useState(0);
   const dados = useRef({});
   // Libros en cajas: undefined, cargando; null, sin la migración; si no, { huecos, bienvenida, libros: [{ clave, titulo, genero, caja, balda }] }
@@ -173,12 +179,23 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   const porColocar = enCajas(librosCafe);
   const sesiones = sesionesDeHoy(state?.progress, hoy);
   // 1.130: cada cliente pide de lo que hay en la balda ahora (con la balda vacía, solo el café)
-  const pedidos = useMemo(() => pedidosLibro(dia, deLaBalda), [dia, deLaBalda]);
+  // 1.143: máximo dos cosas por cliente (Francisco, 17-11-2026, «Dos máx., 1 de cada 3»): quien pide comida (lo dice el servidor,
+  // `cafe_obrador`) no pide libro; los libros se reparten entre los demás
+  const comen = useMemo(() => new Map((obradorDia?.piden ?? []).map((p) => [p.n, p.tipo])), [obradorDia?.piden]);
+  const pedidos = useMemo(() => {
+    if (!comen.size || !dia) return pedidosLibro(dia, deLaBalda);
+    const sin = (l) => (l ?? []).filter((c) => !comen.has(c.n));
+    const out = pedidosLibro({ ...dia, clientes: sin(dia.clientes), habituales: sin(dia.habituales), virales: sin(dia.virales) }, deLaBalda);
+    for (const [n, tipo] of comen) out[n] = pedidoComida(tipo);
+    return out;
+  }, [dia, deLaBalda, comen]);
   // En las baldas de los muebles, tus leídos (los de la balda del café ya van en la estantería de la pared, por secciones)
   const decorLeidos = useMemo(() => leidosEscaparate.map((b) => b.titulo), [leidosEscaparate]);
   const clientesHoy = useMemo(() => clientesDelDia(dia, pedidos), [dia, pedidos]);
   const pendientes = clientesHoy.filter((c) => !c.servido);
   const clienteAtendido = clientesHoy.find((c) => c.n === atendiendo) ?? null;
+  // Mientras atiendes, la vitrina la lleva Atender (Vitrina.jsx): la de fuera no se toca hasta despedirle
+  const atiende = Boolean(clienteAtendido);
   const abierto = Boolean(local?.inaugurado);
   const pilarCaja = local?.pilar?.caja ?? false;
   const decorando = borrador != null;
@@ -190,6 +207,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   const hayTostador = abierto && (local?.nivel ?? 1) >= 7;
   const saco = hayTostador && jornada !== undefined && sacoListo(reputacion, local?.tostadero?.sacoDia ?? null, diaJuego);
   const hayTaller = abierto && (local?.nivel ?? 1) >= TALLER_NIVEL;
+  const hayObrador = abierto && (local?.nivel ?? 1) >= OBRADOR_NIVEL;
   const frases = [...PILAR_DICE, local ? PILAR_FIN_CON : PILAR_FIN_SIN];
 
   // La música propia del café (1.126): mientras estás aquí suena en vez de la de Sonido y sigue su volumen, «Sin música» y la
@@ -327,6 +345,22 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
       vivo = false;
     };
   }, [hayTaller, jornada, diaJuego]);
+  // 1.143: el obrador (el horno, la vitrina y quién pide algo para acompañar hoy); sin la migración, no se ofrece. Se vuelve a
+  // pedir cuando cambian los clientes del día (llega un habitual u otra jornada) y al abrirlo (antes nadie pide comida)
+  const nClientes = dia?.clientes?.length ?? 0;
+  const nHabituales = dia?.habituales?.length ?? 0;
+  const obradorAbierto = Boolean(obradorDia?.obrador);
+  useEffect(() => {
+    if (!hayObrador || jornada === undefined) return undefined;
+    let vivo = true;
+    cargarObrador(diaJuego).then(
+      (o) => vivo && setObradorDia(o),
+      () => vivo && setObradorDia(null),
+    );
+    return () => {
+      vivo = false;
+    };
+  }, [hayObrador, jornada, diaJuego, nClientes, nHabituales, obradorAbierto]);
   // El letrero del taller aparece (o cambia de texto) cuando llega el encargo: un fotograma para colocarlo, porque con la
   // escena quieta (movimiento reducido) no se vuelve a dibujar sola y se quedaría escondido
   const letreroTaller = taller ? (taller.encargo ? 'encargo' : 'taller') : null;
@@ -480,6 +514,51 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
     if (!ready || tostando || !hayTostador) return;
     api.current?.setTostador?.({ encendido: tuesteAbierto(reputacion), listo: saco });
   }, [ready, tostando, hayTostador, reputacion, saco]);
+  // 1.143: el horno y la vitrina vistos desde fuera: la hornada se dora poco a poco y, cuando está lista, suena la campanilla y
+  // el letrero lo dice. Dentro del obrador (o en la vitrina, sirviendo) lo llevan Obrador.jsx y Vitrina.jsx
+  const obradorHoy = obradorDia?.obrador ?? null;
+  const [relojHorno, setRelojHorno] = useState(() => Date.now());
+  const nHorneando = obradorHoy?.horneando.length ?? 0;
+  useEffect(() => {
+    if (!nHorneando || enObrador) return undefined;
+    const id = setInterval(() => setRelojHorno(Date.now()), 2000);
+    return () => clearInterval(id);
+  }, [nHorneando, enObrador]);
+  const hornadaLista = Boolean(obradorHoy?.horneando.some((h) => estadoHorno(h, relojHorno).listo));
+  useEffect(() => {
+    if (!ready || enObrador || !hayObrador) return;
+    api.current?.setObrador?.({
+      abierto: Boolean(obradorHoy),
+      horneando: (obradorHoy?.horneando ?? []).map((h) => ({ receta: h.receta, t: estadoHorno(h, relojHorno).t })),
+      listo: hornadaLista,
+    });
+  }, [ready, enObrador, hayObrador, obradorHoy, relojHorno, hornadaLista]);
+  useEffect(() => {
+    if (!ready || atiende || !hayObrador) return;
+    api.current?.setVitrina?.({ piezas: obradorHoy?.piezas ?? {} });
+  }, [ready, atiende, hayObrador, obradorHoy]);
+  const hornadaAntes = useRef(false);
+  useEffect(() => {
+    if (hornadaLista && !hornadaAntes.current && !enObrador && ready) sfx.play('campanillaHorno');
+    hornadaAntes.current = hornadaLista;
+  }, [hornadaLista, enObrador, ready, sfx]);
+  // En el nivel 3, una vez (en este dispositivo): Pilar huele algo detrás de la pared. Solo cuando no tiene otra cosa que
+  // decir y tras un rato de calma: nunca pisa el reparto de la mañana, la hucha, el saco, la subida ni lo que estés haciendo
+  const pilarCalla =
+    !aviso && hablando == null && !clienteAtendido && !logro && !decorando && !eligiendo && escaparate == null && !tostando && !enTaller && !enObrador && !panelLibros && !panelCuaderno && !panelRanking;
+  useEffect(() => {
+    if (!abierto || nivelLocal !== 3 || !dia || !pilarCalla) return undefined;
+    const t = setTimeout(() => {
+      try {
+        if (localStorage.getItem('bookshelf:cafe-obrador-pista')) return;
+        localStorage.setItem('bookshelf:cafe-obrador-pista', '1');
+      } catch {
+        return;
+      }
+      setAviso(PILAR_OBRADOR.pista);
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [abierto, nivelLocal, dia, pilarCalla]);
   const selItem = borrador?.items.find((i) => i.uid === sel) ?? null;
   useEffect(() => {
     if (!ready) return;
@@ -516,9 +595,11 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
         influencer: c.influencer ? { accesorio: c.influencer.accesorio, tema: c.influencer.tema } : null,
         servido: c.servido,
         libro: c.servido ? (dados.current[c.n] ?? titulos[c.semilla % Math.max(1, titulos.length)] ?? null) : null,
+        // 1.143: lo que se le sirvió de la vitrina, en su plato junto a la mesa
+        comida: obradorDia?.piden?.find((p) => p.n === c.n && p.servido)?.receta ?? null,
       })),
     );
-  }, [ready, clientesHoy, titulos, plano]);
+  }, [ready, clientesHoy, titulos, plano, obradorDia]);
   // 1.132: las fotos firmadas de los influencers que se hicieron virales, en la pared de la derecha
   const fotosClave = abierto ? (local?.fotos ?? []).join() : '';
   useEffect(() => {
@@ -549,7 +630,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   };
   useEffect(() => {
     pick.current = (id) => {
-      if (decorando || tostando || enTaller) return;
+      if (decorando || tostando || enTaller || enObrador) return;
       if (atenderToque.current?.(id)) return;
       if (id.startsWith('cliente:')) {
         const c = clientesHoy.find((x) => x.n === Number(id.slice(8)));
@@ -578,6 +659,19 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
         setError('');
         setPanelLibros(null);
         api.current?.go('tostador').then(() => setTostando(true));
+        return;
+      }
+      // 1.143: el obrador, delante de su mesa (la primera vez, Pilar abre el tabique)
+      if (id === 'obrador') {
+        if (!obradorDia) return;
+        setHablando(null);
+        setAviso('');
+        setError('');
+        setPanelLibros(null);
+        setPanelRanking(false);
+        setPanelCuaderno(false);
+        sfx.play('toque');
+        api.current?.go('obrador').then(() => setEnObrador(true));
         return;
       }
       // 1.133: el taller, por la puerta de detrás de la barra (la escena anda hasta ella y entra)
@@ -700,19 +794,32 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   };
   // 1.130: la receta, el ejemplar de la balda (o null, solo el café) y lo acertado del libro [género, extensión, forma]
   // 1.132: al influencer, con su reloj de arena (`entregarInfluencer`); al despedirle, si era el de la subida, el café sube
-  const servir = async ({ receta, libro, ok }) => {
+  // 1.143: a quien pide comida, tras la bebida, la pieza (`comida`, la receta que le llevas): sus granos se suman a lo ganado
+  const servir = async ({ receta, libro, ok, comida = null }) => {
     const c = clienteAtendido;
     const r = c.influencer ? await entregarInfluencer(diaJuego, c.influencer.nivel, receta, libro?.clave ?? null, ok) : await entregarCliente(diaJuego, c.n, receta, libro?.clave ?? null, ok);
+    let dado = r.dado;
+    if (comida && !c.influencer) {
+      try {
+        const rc = await servirComida(diaJuego, c.n, comida);
+        if (rc.cafe) r.cafe = rc.cafe;
+        const receta_ = rc.dado?.receta ?? comida;
+        setObradorDia((d) => (d ? { ...d, obrador: rc.obrador ?? d.obrador, piden: d.piden.map((p) => (p.n === c.n ? { ...p, servido: true, receta: receta_ } : p)) } : d));
+        dado = { ...dado, granos: (dado?.granos ?? 0) + (rc.dado?.granos ?? 0), comida_granos: rc.dado?.granos ?? 0, comida_receta: receta_ };
+      } catch {
+        dado = { ...dado, comida_falla: true };
+      }
+    }
     // Con el libro que se lleva (si vuelve a su sección, como cualquier otro cliente)
     dados.current[c.n] = r.dado?.llevado ? (libro?.title ?? null) : null;
     if (r.libros) setLibrosCafe(r.libros);
     if (r.cafe) setLocal(r.cafe);
     if (r.dia) setDia(r.dia);
-    setGanado((r.dado?.granos ?? 0) + (r.progreso?.granos ?? 0));
+    setGanado((dado?.granos ?? 0) + (r.progreso?.granos ?? 0));
     // El cartel de la subida dice de quién fue el vídeo (si la subida llegó con él)
     const video = c.influencer && r.dado?.influencer ? { nombre: c.influencer.nombre, publica: c.influencer.publica, viral: Boolean(r.dado.influencer.viral) } : null;
     if (hayLogro(r.progreso)) setLogro(video ? { ...r.progreso, video } : r.progreso);
-    return r.dado;
+    return dado;
   };
 
   const nuevos = useMemo(() => (vistos ? nuevosDe(local?.reputacion ?? 0, vistos) : new Set()), [local?.reputacion, vistos]);
@@ -896,7 +1003,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
       {!sin3d && (
         <div className="cf3-tags" hidden={decorando}>
           {Object.entries(SITIOS)
-            .filter(([id]) => id !== 'taller' || taller)
+            .filter(([id]) => (id !== 'taller' || taller) && (id !== 'obrador' || obradorDia))
             .map(([id, s]) => (
             <button
               key={id}
@@ -907,7 +1014,17 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
               ref={(el) => (tagEls.current[id] = el)}
               onClick={() => pick.current(id)}
             >
-              {id === 'libros' ? `${s.nombre} · ${porColocar}` : id === 'tostador' && saco ? `${s.nombre} · saco listo` : id === 'taller' && taller?.encargo ? `${s.nombre} · un encargo` : s.nombre}
+              {id === 'libros'
+                ? `${s.nombre} · ${porColocar}`
+                : id === 'tostador' && saco
+                  ? `${s.nombre} · saco listo`
+                  : id === 'taller' && taller?.encargo
+                    ? `${s.nombre} · un encargo`
+                    : id === 'obrador' && !obradorHoy
+                      ? '¿Y esta pared?'
+                      : id === 'obrador' && hornadaLista
+                        ? `${s.nombre} · ¡listo!`
+                        : s.nombre}
               {nuevos.has(`sitio:${id}`) && <Nuevo />}
             </button>
           ))}
@@ -1017,7 +1134,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
         </div>
       )}
 
-      {logro && !clienteAtendido && !decorando && !enTaller && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
+      {logro && !clienteAtendido && !enObrador && !decorando && !enTaller && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
       {decorando && (local?.nivel ?? 1) >= BODEGA_NIVEL && (
         <div className="cf3-plantas" role="group" aria-label="Qué planta decoras">
           {[
@@ -1216,6 +1333,16 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
           }}
           onCerrar={() => setEnTaller(false)}
         />
+      ) : enObrador && obradorDia ? (
+        <Obrador
+          escena={ready && !sin3d ? api.current : null}
+          obrador={obradorDia.obrador}
+          nivel={nivelLocal}
+          soundOn={soundOn}
+          ayudas={state.settings.ayudasCafe ?? 'auto'}
+          onObrador={(o) => setObradorDia((d) => ({ piden: [], ...d, obrador: o }))}
+          onCerrar={() => setEnObrador(false)}
+        />
       ) : tostando && local ? (
         <Tostadero
           escena={ready && !sin3d ? api.current : null}
@@ -1233,6 +1360,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
           cliente={clienteAtendido}
           balda={deLaBalda}
           dominio={local?.dominio}
+          obrador={obradorHoy}
           escena={ready && !sin3d ? api.current : null}
           registrarToque={registrarToque}
           soundOn={soundOn}

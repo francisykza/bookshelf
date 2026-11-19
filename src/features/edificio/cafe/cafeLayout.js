@@ -89,6 +89,15 @@ export const ANTE_TOSTADOR = { x: 39.15, y: 1.75, yaw: Math.atan2(37.1 - 39.15, 
 export const PUERTA_TALLER = { y0: 6.35, y1: 7.15, alto: 1.82 };
 /** Delante de la barra, frente a la puerta del taller. */
 export const ANTE_TALLER = { x: 6.55, y: 6.75, yaw: Math.PI / 2 };
+
+// ── 1.143: el obrador (nivel 4; docs/qa/cafe-libreria.md §18): al fondo del ala lateral, tras un tabique, el horno de la antigua
+// tahona (contra la pared del fondo, y = 0, pasadas las estanterías altas) y su mesa de mármol, en la franja que deja la cuadrícula.
+export const HORNO = { x0: -2.9, x1: -1.45, hondo: 0.95, base: 0.8, boca: { x0: -2.46, x1: -1.9, z0: 0.84, z1: 1.18 } };
+export const MESA_OBRADOR = { x0: -1.3, x1: -0.45, y0: 0.1, y1: 0.8, alto: 0.88 };
+/** Lo que no se puede pisar del obrador (el horno y la mesa). */
+export const OBRADOR = { x0: HORNO.x0, x1: MESA_OBRADOR.x1, y1: HORNO.hondo };
+/** Dónde te pones: delante de la mesa, de cara a la pared del fondo. */
+export const ANTE_OBRADOR = { x: -1.3, y: 1.85, yaw: Math.PI };
 /** El cuarto: estrecho y bajo, con el banco contra la pared del fondo (y = 0). */
 export const TALLER = { x0: 60, x1: 64.4, y0: 0, y1: 3.6, alto: 2.8 };
 /** El banco de trabajo con su tapete verde (z: la altura del tapete). */
@@ -163,6 +172,16 @@ export const SITIOS = {
     tag: [TAMBOR.x, TAMBOR.y + 0.3, 2.15],
     ir: ANTE_TOSTADOR,
     mira: [TAMBOR.x, TAMBOR.y + 0.1],
+  },
+  // 1.143: el obrador, al fondo del ala lateral (desde el nivel 4)
+  obrador: {
+    nombre: 'El obrador',
+    planta: 'calle',
+    nivel: 4,
+    box: [HORNO.x0, 0, 0, MESA_OBRADOR.x1, HORNO.hondo, 1.9],
+    tag: [(HORNO.x0 + HORNO.x1) / 2 + 0.3, HORNO.hondo, 2.05],
+    ir: ANTE_OBRADOR,
+    mira: [-1.4, 0.3],
   },
   // 1.133: la puerta del taller de la trastienda (desde el nivel 3)
   taller: {
@@ -251,6 +270,8 @@ export function dentro(x, y, { limpio = false, muebles = [], nivel = 1, planta =
   if (nivel >= 3 && x < pared + ALTAS.fondo + HOLGURA && y < ALTAS.y1 + HOLGURA) return false;
   if (x > MOSTRADOR.x0 - HOLGURA && y > MOSTRADOR.y0 - HOLGURA && y < MOSTRADOR.y1 + HOLGURA) return false;
   if (x < pared + ESTANTERIA.fondo + HOLGURA && y > ESTANTERIA.y0 && y < ESTANTERIA.y1) return false;
+  // 1.143: el horno y la mesa del obrador, al fondo del ala
+  if (nivel >= 4 && x > OBRADOR.x0 - HOLGURA && x < OBRADOR.x1 + HOLGURA && y < OBRADOR.y1 + HOLGURA) return false;
   if (muebles.some((b) => choca(x, y, b, 0.22))) return false;
   return limpio || ![...SABANAS, ...CAJAS, ESCALERA_CAJA].some((b) => choca(x, y, b));
 }
