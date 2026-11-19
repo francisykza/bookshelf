@@ -245,3 +245,53 @@ export function crearGestoObrador(tipo, { escala = 1, centro = null, ancho = nul
     },
   };
 }
+
+/**
+ * 1.144: «Que lo hornee Pilar» (con la receta dominada, maestría ★★★). El trazo con el que sus manos hacen un gesto bien hecho, en
+ * px de la pantalla, con las mismas medidas que el reconocedor: { puntos: [{ x, y }], ms }. Se le da al reconocedor como si fuera un
+ * dedo (abajo en el primero, mover en los demás), así suenan y se ven igual que a mano. El pulso, con `azar`: nunca dos iguales.
+ */
+export function trazoPilar(tipo, { escala = 1, centro = null, ancho = null, radio = null, azar = Math.random } = {}) {
+  const e = Math.max(0.6, escala);
+  const c = centro ?? { x: 195 * e, y: 400 };
+  const pulso = () => (azar() - 0.5) * 4 * e;
+  const ritmo = 0.9 + azar() * 0.2;
+  const puntos = [];
+  if (tipo === 'rallar') {
+    const largo = M.rallar * e * 1.12;
+    for (let k = 0; k < M.pasadasRallar; k += 1) {
+      for (let i = 0; i <= 8; i += 1) puntos.push({ x: c.x + pulso(), y: c.y - largo / 2 + (largo * i) / 8 });
+      for (let i = 1; i <= 3; i += 1) puntos.push({ x: c.x + pulso(), y: c.y + largo / 2 - (largo * i) / 3 });
+    }
+    return { puntos, ms: 1100 * ritmo };
+  }
+  if (tipo === 'colmar') {
+    const fila = ancho > 40 ? ancho : M.filaMoldes * e;
+    const a = c.x - fila / 2 - 8 * e;
+    const b = c.x + fila / 2 + 8 * e;
+    const y = c.y + pulso();
+    for (let i = 0; i <= 72; i += 1) puntos.push({ x: a + ((b - a) * i) / 72, y });
+    for (let i = 1; i <= 72; i += 1) puntos.push({ x: b - ((b - a) * i) / 72, y: y + 2 * e });
+    return { puntos, ms: 900 * ritmo };
+  }
+  if (tipo === 'rodillo') {
+    const largo = 112 * e;
+    const x = c.x + pulso();
+    for (let k = 0; k < 4; k += 1) for (let i = k ? 1 : 0; i <= 10; i += 1) puntos.push({ x, y: c.y + (k % 2 ? 1 : -1) * (largo / 2 - (largo * i) / 10) });
+    return { puntos, ms: 850 * ritmo };
+  }
+  if (tipo === 'repulgo') {
+    const R = radio > 20 ? radio : M.radioRepulgo * e;
+    const desde = -Math.PI / 2 + (azar() - 0.5) * 0.6;
+    for (let i = 0; i <= 52; i += 1) {
+      const a = desde + ((2 * Math.PI + 0.4) * i) / 52;
+      puntos.push({ x: c.x + Math.cos(a) * R, y: c.y + Math.sin(a) * R });
+    }
+    return { puntos, ms: 950 * ritmo };
+  }
+  if (tipo === 'meter') {
+    for (let i = 0; i <= 9; i += 1) puntos.push({ x: c.x + pulso() / 2, y: c.y - (M.pala * e * 1.12 * i) / 9 });
+    return { puntos, ms: 480 * ritmo };
+  }
+  return { puntos, ms: 0 };
+}

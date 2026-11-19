@@ -6,6 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Publicada en producción: 1.144.0** (2026-11-19, §144; bloque 2 de 3 del obrador, `cafe-libreria.md` §18.12; Francisco: «Sí,
+  aplicar y publicar»): la caja del mostrador (Pilar vende de la vitrina mientras no estás, hasta 7 días, y al volver se tira del
+  cajón de la caja de latón), las mejoras del horno (2 y 3 bandejas) y de la vitrina (cuatro grados), las vitrinas de tartas que
+  suman, la especialidad del día y la maestría con «Que lo hornee Pilar». **Migración
+  `20261226120000_cafe_obrador_mejoras.sql`, aplicada** el 19-11-2026 (30.985 B, SHA-256 `409b4569…7ecc9`). Evidencias en
+  `qa-report/v1144/`. Lo siguiente es el bloque 3 (1.145.0), cuando Francisco lo pida. Ver la bitácora.
 - **Publicada en producción: 1.143.0** (2026-11-19, §143; bloque 1 de 3 del obrador, `cafe-libreria.md` §18.12; Francisco: «Sí,
   aplicar y publicar»): desde el nivel 4, el obrador tras la pared del ala (el horno de la tahona, el recetario, magdalenas y
   empanada con sus cuatro gestos, la pala, la campanilla y la vitrina de la barra) y **máximo dos cosas por cliente**: uno de
@@ -309,12 +315,16 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
          funciona es comprimirla con `gzip -9 | base64` (unos 9 KB en vez de 36), pegar ese texto en `javascript_tool`,
          descomprimirlo con `DecompressionStream('gzip')` y llamar a `monaco.editor.getEditors()[0].setValue(...)`.
     3. ~~Commit y publicar~~: **hecho** el 19-11 (commit «1.143.0: …», `main` sin forzar).
-    4. **Bloque 2, 1.144.0** (§18.12), con la migración 2:
-       - los grados del horno y de la vitrina;
-       - las vitrinas de tartas que suman;
-       - la venta del mostrador con la caja de latón;
-       - la especialidad del día;
-       - la maestría y «Que lo hornee Pilar».
+    4. ~~**Bloque 2, 1.144.0**~~ (§18.12, SPEC §144): **hecho y publicado** el 19-11 («Sí, aplicar y publicar»). La migración
+       `20261226120000_cafe_obrador_mejoras.sql` está **aplicada** (30.985 B, SHA-256 `409b4569…7ecc9`, pegada con el mismo
+       truco de arriba). Con la clave pública, `cafe_obrador_mejorar`, `cafe_mostrador`, `cafe_hornear_pilar`, `cafe_obrador`,
+       `cafe_obrador_especialidad` y `cafe_mostrador_cobrar` dan 42501. Los archivos van en el commit «1.144.0: …»:
+       - **nuevos**: `src/features/edificio/cafe/CajaMostrador.jsx`, `e2e-community/v1144-cafe-obrador-mejoras.spec.js`,
+         `src/features/edificio/__tests__/cafe-obrador-mejoras.rls.test.js` y la migración;
+       - **modificados**: `SPEC.md`, `docs/ESTADO.md`, `docs/qa/cafe-libreria.md`, `package.json`, `public/sw.js`, `src/diag.js`,
+         `e2e-community/cafeMock.js`, `e2e-community/v1143-cafe-obrador.spec.js`, `cafe-obrador.rls.test.js`,
+         `cafeObrador.test.js` y, en `src/features/edificio/cafe/`, `Atender.jsx`, `Cafe.jsx`, `Obrador.jsx`, `Vitrina.jsx`,
+         `cafe3d.js`, `cafeObrador.css`, `cafeObrador.js`, `cafeObradorGestos.js`, `cafeService.js` y `cafeSfx.js`.
     5. **Bloque 3, 1.145.0**, con la migración 3 (o 3a y 3b si pesa mucho):
        - las galletas (nivel 5), el pan de la bodega (6), el bizcocho del tostadero (7) y la tortilla en el fogón (8);
        - los hitos;
@@ -324,8 +334,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
     Cada bloque se entrega con capturas a 360 y 390 y un vídeo con sonido. No se pasa al siguiente sin su visto bueno.
   - **Pruebas**:
-    - Vitest: `cafeObrador.test.js` y `cafe-obrador.rls.test.js`.
-    - E2E: `v1143-cafe-obrador.spec.js` a 360 y 390.
+    - Vitest: `cafeObrador.test.js`, `cafe-obrador.rls.test.js` y `cafe-obrador-mejoras.rls.test.js`.
+    - E2E: `v1143-cafe-obrador.spec.js` y `v1144-cafe-obrador-mejoras.spec.js` a 360 y 390.
     - Regresión del café a 390: las que pasan por atender (lista en la bitácora del 17-11).
     - `cafe-libreria.rls.test.js` › «el reparto (1.139)» falla desde la 1.142 (punto siguiente).
   - Sin probar con la migración aplicada, con cuentas reales ni en móviles reales.
@@ -502,6 +512,46 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-19 · El obrador crece, a producción · 1.144.0 (Claude)
+
+- Francisco vio las evidencias y dijo «Sí, aplicar y publicar».
+- **Migración** `20261226120000_cafe_obrador_mejoras.sql`:
+  - Se pegó en el SQL Editor y él pulsó «Run» («Success»). Los bytes (30.985) y la SHA-256 se comprobaron en la página, sobre el
+    texto y sobre lo que había en el editor.
+  - Con la clave pública dan 42501 `cafe_obrador_mejorar`, `cafe_mostrador`, `cafe_hornear_pilar`, `cafe_obrador`,
+    `cafe_obrador_especialidad` y `cafe_mostrador_cobrar`. Una función que no existe da PGRST202.
+- **Commit** de la 1.144.0 (sin `.claude/`). Se suben la rama y `main` sin forzar desde `d92dea0`.
+- Queda: el bloque 3 (1.145.0), cuando Francisco lo pida.
+
+### 2026-11-19 · Café: el obrador crece · 1.144.0 (§144), bloque 2 de 3, sin commit (Claude)
+
+- Francisco: «Sigue con el bloque 2». Hecho todo lo de `cafe-libreria.md` §18.12.2 con las cifras de §18.6 y §18.9:
+  - **la caja del mostrador**: Pilar vende de la vitrina mientras no estás (cupo 4 / 6 / 9 / 12 al día según la vitrina, primero
+    la especialidad, hasta 7 días). Al volver se tira del cajón de la caja de latón, con su trinquete y los granos tintineando, y
+    Pilar dice en letra lo que se llevaron. Con la vitrina vacía, los días se apuntan sin decir nada;
+  - **las mejoras**, en una última página del recetario: el horno (puerta de hierro, 2 bandejas; azulejos, 3) y la vitrina
+    (madera, mostrador escalonado y la de dos alturas), cada grado con su dibujo en 3D; las vitrinas de tartas colocadas suman 6
+    huecos, hasta 2;
+  - **la especialidad del día**: pizarrita junto a la vitrina, ficha dorada, +1 grano y la piden más;
+  - **la maestría** (3 / 10 / 25 hornadas buenas) y **«Que lo hornee Pilar»**: sus manos hacen los gestos en 3D con el mismo
+    reconocedor (`trazoPilar`).
+- **Migración** `20261226120000_cafe_obrador_mejoras.sql`, **sin aplicar** (30.985 B, SHA-256 `409b4569…7ecc9`). Sin ella, el
+  obrador va como en la 1.143 (la página de mejoras no sale).
+- **Archivos** (sin commit): la lista está en «Pendiente» › traspaso › punto 4.
+- **Pruebas**:
+  - Vitest: `cafeObrador.test.js` (18), `cafe-obrador.rls.test.js` (10) y `cafe-obrador-mejoras.rls.test.js` (9) pasan.
+  - E2E: `v1143` y `v1144` pasan a 360 y 390; `v1144` también con movimiento reducido.
+  - Lint sin errores; el build funciona.
+  - Siguen fallando, sin relación con este bloque: `cafe-libreria.rls.test.js` › «el reparto (1.139)» (desde la 1.142). Dos de
+    `sala-parejas` se pasan de tiempo con todas las pruebas a la vez y pasan solas.
+- **Decisiones de diseño que hay que enseñarle**:
+  - las vitrinas van todas sobre la barra (el mostrador escalonado también);
+  - a la vista caben menos piezas que las que cuenta el servidor (12 / 20 / 18 / 28 frente a 12 / 20 / 30 / 40);
+  - el cajón sale de la caja registradora que ya estaba en la barra;
+  - la caja se abre sola al entrar si hay días por cobrar y piezas en la vitrina, y «Luego» la deja para otro rato.
+- Evidencias en `qa-report/v1144/`, enviadas al chat. Sin probar con la migración aplicada, con cuentas reales ni en móviles reales.
+- Queda: el visto bueno de Francisco, la migración, el commit y el bloque 3 (1.145.0).
 
 ### 2026-11-19 · El obrador, a producción · 1.143.0 (Claude)
 

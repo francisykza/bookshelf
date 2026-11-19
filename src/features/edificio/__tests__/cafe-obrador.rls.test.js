@@ -66,6 +66,7 @@ describe('el obrador', () => {
 
   it('por debajo del nivel 4 no se abre ni se hornea, y nadie pide comida', async () => {
     const o = await obrador(A);
+    // Sin el obrador abierto, tampoco va la especialidad (1.144)
     expect(o).toEqual({ obrador: null, piden: [] });
     await expect(abrir(A)).rejects.toThrow(/cafe:obrador/);
     await expect(hornear(A, 'magdalenas', [2, 2])).rejects.toThrow(/cafe:obrador/);
@@ -142,10 +143,12 @@ describe('el obrador', () => {
     const antes = await local(A);
     const tk = await tickets(A);
     const r = await servir(A, pide.n, receta);
-    expect(r.dado).toEqual({ granos: recetaObrador(receta).precio, receta });
+    // 1.144: la especialidad del día paga un grano más (cafe-obrador-mejoras.rls.test.js)
+    const precio = recetaObrador(receta).precio + (o.especialidad === receta ? 1 : 0);
+    expect(r.dado).toMatchObject({ granos: precio, receta });
     const despues = await local(A);
-    expect(despues.granos - antes.granos).toBe(recetaObrador(receta).precio);
-    expect(despues.granos_ganados - antes.granos_ganados).toBe(recetaObrador(receta).precio);
+    expect(despues.granos - antes.granos).toBe(precio);
+    expect(despues.granos_ganados - antes.granos_ganados).toBe(precio);
     expect(despues.reputacion).toBe(antes.reputacion);
     expect(await tickets(A)).toBe(tk);
     expect(r.obrador.vendidas).toBe(1);
@@ -184,7 +187,7 @@ describe('el obrador', () => {
     // Con la comida, ya servida la bebida, se le sirve su pieza
     const pieza = pide.tipo === 'dulce' ? 'magdalenas' : 'empanada';
     await db.query('insert into cafe_obrador_vitrina (user_id, receta, piezas) values ($1, $2, 2) on conflict (user_id, receta) do update set piezas = 2', [D, pieza]);
-    expect((await servir(D, pide.n, pieza)).dado).toEqual({ granos: recetaObrador(pieza).precio, receta: pieza });
+    expect((await servir(D, pide.n, pieza)).dado).toMatchObject({ granos: recetaObrador(pieza).precio + (o.especialidad === pieza ? 1 : 0), receta: pieza });
     // 2 o 3 aciertos de la bebida, 2★; menos, 1★ (sin libro que los suba)
     const otros = deLaCarta.slice(1, 3);
     expect(otros).toHaveLength(2);

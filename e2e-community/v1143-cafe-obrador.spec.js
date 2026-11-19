@@ -266,8 +266,8 @@ test('nivel 4: se abre el obrador, se hornea la empanada y las magdalenas y se s
   const recetario = cafe.locator('.cf3-recetario');
   await expect(recetario).toBeVisible();
   await expect(recetario.locator('.cf3-recetario__vitrina')).toHaveText('En la vitrina: 6 de 12');
-  await expect(recetario.locator('.cf3-papeleta')).toHaveCount(6);
-  await expect(recetario.locator('.cf3-papeleta[data-abierta="true"]')).toHaveCount(2);
+  await expect(recetario.locator('.cf3-papeleta[data-tipo]')).toHaveCount(6);
+  await expect(recetario.locator('.cf3-papeleta[data-tipo][data-abierta="true"]')).toHaveCount(2);
   await quieto(page, 300);
   await foto('recetario');
   await expect(recetario.locator('.cf3-papeleta', { hasText: 'Galletas del puerto' })).toContainText('Se abre en el nivel 5');

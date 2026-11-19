@@ -3258,13 +3258,7 @@ function obradorKit(s) {
   pushBox(s, [boca.x0 - 0.12, H, boca.z0 - 0.05, boca.x1 + 0.12, H + 0.14, boca.z0], [150, 140, 128]);
   pushBox(s, [boca.x0 - 0.12, H + 0.13, boca.z0 - 0.07, boca.x1 + 0.12, H + 0.15, boca.z0 - 0.04], [128, 118, 108]);
   pushBox(s, [cx - 0.1, H + 0.02, 1.4, cx + 0.1, H + 0.03, 1.47], BRASS, { g: 0.85 });
-  // Las grietas del grado 1 (el horno lleva años sin encenderse)
-  for (const [gx, gz, n] of [
-    [x0 + 0.14, 0.52, 4],
-    [boca.x1 + 0.1, 1.3, 3],
-    [x1 - 0.2, 0.25, 3],
-  ])
-    for (let k = 0; k < n; k += 1) pushBox(s, [gx + k * 0.035, H + 0.012, gz - k * 0.03 + (k % 2) * 0.012, gx + k * 0.035 + 0.04, H + 0.016, gz - k * 0.03 + (k % 2) * 0.012 + 0.008], [60, 36, 30]);
+  // (Las grietas del grado 1, la puerta de hierro del 2 y los azulejos del 3 van con lo que cambia: hornoGradoKit)
   // La cornisa de piedra y, encima, la campana de humos de yeso con su viga y la chimenea hasta el techo
   pushBox(s, [x0 - 0.03, 0, 1.55, x1 + 0.03, H + 0.04, 1.6], [168, 156, 140]);
   pushBox(s, [x0 + 0.08, 0, 1.6, x1 - 0.08, 0.66, 1.98], YESO);
@@ -3383,6 +3377,64 @@ function palaKit(s, x, y, z, receta, hecha) {
   pushBox(s, [x - 0.036, y + 1.15, z - 0.004, x + 0.036, y + 1.27, z + 0.034], WOOD_D);
   if (receta) bandejaKit(s, receta, x, y, z + 0.012, hecha);
 }
+const AZULEJO = [58, 92, 156];
+const AZULEJO_B = [206, 196, 174];
+const HIERRO_N = [46, 44, 46];
+/**
+ * 1.144: el horno según su grado. 1, restaurado, con sus grietas (lleva años sin encenderse); 2, la puerta de hierro nueva,
+ * abierta a un lado, con su marco y las guías de dos bandejas; 3, además, la franja de azulejos azules y blancos bajo la boca y
+ * una tercera guía.
+ */
+function hornoGradoKit(s, grado = 1) {
+  const { x0, x1, hondo: H, boca } = HORNO;
+  if (grado <= 1) {
+    for (const [gx, gz, n] of [
+      [x0 + 0.14, 0.52, 4],
+      [boca.x1 + 0.1, 1.3, 3],
+      [x1 - 0.2, 0.25, 3],
+    ])
+      for (let k = 0; k < n; k += 1) pushBox(s, [gx + k * 0.035, H + 0.012, gz - k * 0.03 + (k % 2) * 0.012, gx + k * 0.035 + 0.04, H + 0.016, gz - k * 0.03 + (k % 2) * 0.012 + 0.008], [60, 36, 30]);
+    return;
+  }
+  // El marco de hierro alrededor de la boca, con sus remaches
+  pushBox(s, [boca.x0 - 0.035, H, boca.z0 - 0.01, boca.x0 - 0.005, H + 0.03, boca.z1 + 0.035], HIERRO_N);
+  pushBox(s, [boca.x1 + 0.005, H, boca.z0 - 0.01, boca.x1 + 0.035, H + 0.03, boca.z1 + 0.035], HIERRO_N);
+  pushBox(s, [boca.x0 - 0.035, H, boca.z1 + 0.005, boca.x1 + 0.035, H + 0.03, boca.z1 + 0.035], HIERRO_N);
+  for (const rz of [boca.z0 + 0.04, (boca.z0 + boca.z1) / 2, boca.z1 - 0.02]) for (const rx of [boca.x0 - 0.02, boca.x1 + 0.02]) pushBox(s, [rx - 0.006, H + 0.03, rz - 0.006, rx + 0.006, H + 0.036, rz + 0.006], [110, 104, 100]);
+  // La hoja de la puerta, abierta contra la pared a la izquierda: chapa negra con su cruz de pletinas, el ventanuco y el tirador de latón
+  const [dx0, dx1] = [boca.x0 - 0.37, boca.x0 - 0.05];
+  pushBox(s, [dx0, H, boca.z0, dx1, H + 0.022, boca.z1 + 0.02], [38, 36, 38]);
+  pushBox(s, [dx0, H + 0.022, (boca.z0 + boca.z1) / 2 - 0.012, dx1, H + 0.03, (boca.z0 + boca.z1) / 2 + 0.012], [70, 66, 66]);
+  pushBox(s, [(dx0 + dx1) / 2 - 0.012, H + 0.022, boca.z0, (dx0 + dx1) / 2 + 0.012, H + 0.03, boca.z1 + 0.02], [70, 66, 66]);
+  pushBox(s, [dx0 + 0.05, H + 0.022, boca.z1 - 0.1, dx0 + 0.12, H + 0.026, boca.z1 - 0.04], [120, 70, 40], { glow: true });
+  pushBox(s, [dx0 + 0.02, H + 0.03, (boca.z0 + boca.z1) / 2 - 0.04, dx0 + 0.035, H + 0.06, (boca.z0 + boca.z1) / 2 + 0.04], BRASS, { g: 0.9 });
+  // Las guías de las bandejas, dentro de la boca
+  for (let k = 0; k < Math.min(3, grado); k += 1) {
+    const z = boca.z0 + 0.004 + k * 0.105;
+    pushBox(s, [boca.x0 + 0.02, 0.2, z, boca.x0 + 0.04, H - 0.03, z + 0.008], [90, 86, 84]);
+    pushBox(s, [boca.x1 - 0.04, 0.2, z, boca.x1 - 0.02, H - 0.03, z + 0.008], [90, 86, 84]);
+  }
+  if (grado < 3) return;
+  // Los azulejos: una franja bajo la solera, de punta a punta, con su cenefa
+  const yf = H + 0.013;
+  for (let z = 0.12, f = 0; z < 0.7; z += 0.1, f += 1)
+    for (let x = x0 + 0.03, c = 0; x < x1 - 0.06; x += 0.1, c += 1) {
+      pushBox(s, [x, yf, z, x + 0.092, yf + 0.008, z + 0.092], AZULEJO_B, { g: 0.7 });
+      // El dibujo de cada azulejo: una flor de cuatro pétalos azules, o una estrella en los de la cenefa
+      const cx = x + 0.046;
+      const cz = z + 0.046;
+      if (f === 0 || f === 5) pushBox(s, [x + 0.008, yf + 0.008, z + 0.008, x + 0.084, yf + 0.011, z + 0.084], (c + f) % 2 ? AZULEJO : [86, 120, 182]);
+      else {
+        pushBox(s, [cx - 0.03, yf + 0.008, cz - 0.008, cx + 0.03, yf + 0.011, cz + 0.008], AZULEJO);
+        pushBox(s, [cx - 0.008, yf + 0.008, cz - 0.03, cx + 0.008, yf + 0.011, cz + 0.03], AZULEJO);
+        pushBox(s, [cx - 0.006, yf + 0.011, cz - 0.006, cx + 0.006, yf + 0.013, cz + 0.006], [214, 170, 60]);
+      }
+    }
+}
+/** Las manos de Pilar en el obrador: vienen de la sala (delante de la mesa y del horno), con un palmo de manga mostaza. */
+function manosObrador(s, puntos) {
+  for (const p of puntos) manoPilar(s, p, { hacia: [0.15, 1, 0.55], largo: 0.4, manga: 0.14 });
+}
 /**
  * Lo que se mueve o cambia en el obrador (est, de setObrador): { fase, receta, pose, horneando: [{ receta, t }], listo }.
  * Las brasas (más vivas horneando), lo que hay en el horno (de crudo a dorado con t), la pala (al meter y al sacar; si no,
@@ -3392,19 +3444,32 @@ function obradorVivoKit(s, est = {}) {
   const { x1, hondo: H, boca } = HORNO;
   const { alto } = MESA_OBRADOR;
   const cx = (boca.x0 + boca.x1) / 2;
-  const { fase = null, receta = null, pose = {}, horneando = [], listo = false } = est;
+  const { fase = null, receta = null, pose = {}, horneando = [], listo = false, horno = 1, pilar = false } = est;
   const dentro = horneando[0] ?? null;
+  hornoGradoKit(s, horno);
   for (let k = 0; k < 5; k += 1) {
     const bx = boca.x0 + 0.05 + k * 0.1;
     pushBox(s, [bx, 0.12, boca.z0, bx + 0.07, 0.24, boca.z0 + 0.025 + hash(k, 5) * 0.035], dentro ? [255, 150 + k * 12, 60] : [176, 66, 38], { glow: true });
   }
   if (dentro) pushBox(s, [boca.x0 + 0.03, 0.26, boca.z0 + 0.001, boca.x1 - 0.03, H - 0.06, boca.z0 + 0.004], [120, 56, 34], { glow: true });
-  // Lo que hay en el horno
+  // Lo que hay en el horno: una bandeja por guía (1.144: hasta tres, una encima de otra); la que sale con la pala va la primera
   const fuera = H + 0.32;
-  if (dentro && fase !== 'sacar') bandejaKit(s, dentro.receta, cx, 0.45, boca.z0 + 0.005, Math.min(1, dentro.t ?? 1));
-  if (fase === 'meter') palaKit(s, cx, fuera - (pose.dentro ?? 0) * (fuera - 0.45), boca.z0 + 0.006, receta, 0);
-  else if (fase === 'sacar') palaKit(s, cx, 0.45 + (pose.fuera ?? 0) * (fuera - 0.45), boca.z0 + 0.006, dentro?.receta ?? receta, 1);
-  else {
+  horneando.slice(0, 3).forEach((h, k) => {
+    if (k === 0 && fase === 'sacar') return;
+    bandejaKit(s, h.receta, cx, 0.45, boca.z0 + 0.005 + k * 0.105, Math.min(1, h.t ?? 1));
+  });
+  // La pala, con la bandeja en la guía que le toca (la de abajo si el horno está vacío)
+  const zPala = boca.z0 + 0.006 + (fase === 'meter' ? Math.min(2, horneando.length) * 0.105 : 0);
+  const mango = (y) => [cx, y + 1.0, zPala + 0.045];
+  if (fase === 'meter') {
+    const y = fuera - (pose.dentro ?? 0) * (fuera - 0.45);
+    palaKit(s, cx, y, zPala, receta, 0);
+    if (pilar) manosObrador(s, [mango(y)]);
+  } else if (fase === 'sacar') {
+    const y = 0.45 + (pose.fuera ?? 0) * (fuera - 0.45);
+    palaKit(s, cx, y, zPala, dentro?.receta ?? receta, 1);
+    if (pilar) manosObrador(s, [mango(y)]);
+  } else {
     // Apoyada entre el horno y la mesa
     pushBox(s, [x1 + 0.03, 0.06, 0.32, x1 + 0.07, 0.1, 1.72], WOOD);
     pushBox(s, [x1 + 0.02, 0.0, 0.0, x1 + 0.08, 0.3, 0.34], WOOD_L);
@@ -3457,6 +3522,7 @@ function obradorVivoKit(s, est = {}) {
       pushBox(s, [rx - 0.05, ry + 0.02, lz - 0.025, rx + 0.05, ry + 0.07, lz + 0.025], [232, 196, 44]);
       const n = Math.round((pose.rallado ?? 0) * 10);
       for (let k = 0; k < n; k += 1) pushBox(s, [rx - 0.04 + hash(k, 12) * 0.07, ry + 0.01 + hash(k, 13) * 0.04, alto + 0.008, rx - 0.03 + hash(k, 12) * 0.07, ry + 0.02 + hash(k, 13) * 0.04, alto + 0.014 + (k % 3) * 0.003], [250, 220, 70]);
+      if (pilar) manosObrador(s, [[rx, ry + 0.1, lz + 0.01]]);
       // El bol de la masa, esperando
       pushBox(s, [tx - 0.3, ty - 0.22, alto, tx - 0.14, ty - 0.08, alto + 0.07], [222, 214, 200]);
       pushBox(s, [tx - 0.28, ty - 0.2, alto + 0.07, tx - 0.16, ty - 0.1, alto + 0.075], [242, 222, 150]);
@@ -3466,6 +3532,7 @@ function obradorVivoKit(s, est = {}) {
       pushBox(s, [sx - 0.025, ty - 0.02, alto + 0.07, sx + 0.025, ty + 0.02, alto + 0.085], ACERO);
       pushBox(s, [sx - 0.018, ty - 0.014, alto + 0.062, sx + 0.018, ty + 0.014, alto + 0.07], [242, 222, 150]);
       pushBox(s, [sx - 0.008, ty + 0.02, alto + 0.08, sx + 0.008, ty + 0.2, alto + 0.12], WOOD_L);
+      if (pilar) manosObrador(s, [[sx, ty + 0.19, alto + 0.12]]);
     }
   } else if (receta === 'empanada') {
     if (fase === 'rodillo') {
@@ -3475,6 +3542,11 @@ function obradorVivoKit(s, est = {}) {
       const ry = ty + clamp(pose.y ?? 0, -1, 1) * 0.1;
       pushBox(s, [tx - 0.17, ry - 0.022, alto + 0.012, tx + 0.17, ry + 0.022, alto + 0.05], WOOD_L);
       for (const k of [-1, 1]) pushBox(s, [tx + k * 0.17 - (k > 0 ? 0 : 0.08), ry - 0.012, alto + 0.022, tx + k * 0.17 + (k > 0 ? 0.08 : 0), ry + 0.012, alto + 0.04], WOOD);
+      if (pilar)
+        manosObrador(s, [
+          [tx - 0.21, ry, alto + 0.045],
+          [tx + 0.21, ry, alto + 0.045],
+        ]);
     } else {
       // La fuente de barro con la empanada; el borde, cerrado a pellizcos donde ya ha pasado el dedo
       disco(s, tx, ty, 0.16, alto, alto + 0.03, (k) => (k % 2 ? BARRO : [160, 84, 52]));
@@ -3488,6 +3560,7 @@ function obradorVivoKit(s, est = {}) {
       if (fase === 'repulgo' && pose.angulo != null) {
         const [fx, fy] = [tx + Math.cos(pose.angulo) * 0.128, ty + Math.sin(pose.angulo) * 0.128];
         pushBox(s, [fx - 0.016, fy - 0.016, alto + 0.06, fx + 0.016, fy + 0.016, alto + 0.07], pose.dentro === false ? [214, 170, 150] : [236, 196, 168]);
+        if (pilar) manosObrador(s, [[fx, fy, alto + 0.09]]);
       }
     }
   }
@@ -3526,11 +3599,126 @@ const HUECOS_VITRINA = [
   [0, 0, 0.2],
   ...Array.from({ length: 4 }, (_, k) => [Math.cos((k / 4) * 2 * Math.PI + 0.78) * 0.055, Math.sin((k / 4) * 2 * Math.PI + 0.78) * 0.055, 0.2]),
 ];
-/** Las piezas de la vitrina en fila, en el orden del recetario (hasta 12 a la vista). */
-function filaVitrina(piezas = {}) {
+/**
+ * 1.144: la vitrina crece con su grado (sobre la punta de la barra, sin quitar paso). 1, la campana de cristal; 2, la vitrina de
+ * madera y cristal, con dos baldas; 3, el mostrador: la vitrina de frente, escalonada en tres alturas y asomada al lado de los
+ * clientes, con el cristal inclinado; 4, la de dos alturas: el mostrador con un segundo cuerpo encima.
+ */
+const CAJA_VITRINA = { x0: 7.28, x1: 7.72, y0: 3.92, y1: 4.42 };
+const VITRINA_C = { x: (CAJA_VITRINA.x0 + CAJA_VITRINA.x1) / 2, y: (CAJA_VITRINA.y0 + CAJA_VITRINA.y1) / 2 };
+/** Las alturas del mostrador escalonado (grados 3 y 4): [x de delante, x de detrás, altura de la balda]. */
+const ESCALONES = [
+  [7.28, 7.44, 0.04],
+  [7.44, 7.58, 0.11],
+  [7.58, 7.72, 0.18],
+];
+const enFila = (n, a, b) => Array.from({ length: n }, (_, k) => a + ((b - a) * k) / Math.max(1, n - 1));
+/** Dónde se ve cada pieza de la vitrina según su grado: [x, y, z sobre la barra], en el mundo (12, 20, 18 y 28 a la vista). */
+function huecosVitrina(grado = 1) {
+  if (grado <= 1) return HUECOS_VITRINA.map(([dx, dy, dz]) => [VITRINA_EN.x + dx, VITRINA_EN.y + dy, dz]);
   const out = [];
-  for (const id of ['magdalenas', 'empanada', 'galletas', 'pan', 'bizcocho', 'tortilla']) for (let k = 0; k < (piezas[id] ?? 0) && out.length < HUECOS_VITRINA.length; k += 1) out.push(id);
+  if (grado === 2) {
+    for (const z of [0.045, 0.205]) for (const x of [VITRINA_C.x - 0.085, VITRINA_C.x + 0.085]) for (const y of enFila(5, CAJA_VITRINA.y0 + 0.07, CAJA_VITRINA.y1 - 0.07)) out.push([x, y, z]);
+    return out;
+  }
+  // Seis por balda, que se distinga cada pieza (lo que no se ve también está: la vitrina cuenta lo del servidor)
+  for (const [a, b, z] of ESCALONES) for (const y of enFila(6, CAJA_VITRINA.y0 + 0.06, CAJA_VITRINA.y1 - 0.06)) out.push([(a + b) / 2, y, z]);
+  if (grado >= 4) for (const x of [7.53, 7.65]) for (const y of enFila(5, CAJA_VITRINA.y0 + 0.08, CAJA_VITRINA.y1 - 0.08)) out.push([x, y, 0.385]);
   return out;
+}
+/** Las piezas de la vitrina en fila, en el orden del recetario (hasta las que se ven en su grado). */
+function filaVitrina(piezas = {}, grado = 1) {
+  const max = huecosVitrina(grado).length;
+  const out = [];
+  for (const id of ['magdalenas', 'empanada', 'galletas', 'pan', 'bizcocho', 'tortilla']) for (let k = 0; k < (piezas[id] ?? 0) && out.length < max; k += 1) out.push(id);
+  return out;
+}
+/** El mueble de la vitrina de los grados 2 a 4 (lo de madera y latón; el cristal va aparte, en cristalKit). */
+function cajaVitrinaKit(s, grado) {
+  const { x0, x1, y0, y1 } = CAJA_VITRINA;
+  const z = BARRA_Z;
+  // El zócalo de nogal con su moldura de latón, y el suelo de la vitrina, de mantel claro
+  pushBox(s, [x0, y0, z, x1, y1, z + 0.035], NOGAL);
+  pushBox(s, [x0 - 0.004, y0 - 0.004, z + 0.026, x1 + 0.004, y1 + 0.004, z + 0.034], BRASS, { g: 0.8 });
+  pushBox(s, [x0 + 0.015, y0 + 0.015, z + 0.035, x1 - 0.015, y1 - 0.015, z + 0.04], [240, 234, 220]);
+  const postes = (alto, xs = [x0, x1 - 0.02]) => {
+    for (const px of xs) for (const py of [y0, y1 - 0.02]) pushBox(s, [px, py, z + 0.035, px + 0.02, py + 0.02, z + alto], ROBLE_D);
+  };
+  if (grado === 2) {
+    // Cuatro postes, la balda de en medio (cristal con canto de latón) y el techo de madera con su copete
+    postes(0.37);
+    pushBox(s, [x0 + 0.02, y0 + 0.02, z + 0.192, x1 - 0.02, y1 - 0.02, z + 0.2], [214, 226, 226], { g: 0.9 });
+    pushBox(s, [x0 + 0.02, y0 + 0.02, z + 0.198, x1 - 0.02, y0 + 0.028, z + 0.204], BRASS, { g: 0.85 });
+    pushBox(s, [x0 - 0.01, y0 - 0.01, z + 0.37, x1 + 0.01, y1 + 0.01, z + 0.395], NOGAL);
+    pushBox(s, [x0 + 0.1, (y0 + y1) / 2 - 0.08, z + 0.395, x1 - 0.1, (y0 + y1) / 2 + 0.08, z + 0.42], ROBLE_D);
+    return;
+  }
+  // El mostrador escalonado: los peldaños de madera, cada uno con su canto de latón
+  for (const [a, b, h] of ESCALONES.slice(1)) {
+    pushBox(s, [a, y0 + 0.015, z + 0.035, x1 - 0.015, y1 - 0.015, z + h], WOOD_D);
+    pushBox(s, [a, y0 + 0.015, z + h - 0.006, b, y1 - 0.015, z + h], [236, 230, 214]);
+    pushBox(s, [a - 0.004, y0 + 0.015, z + h - 0.01, a + 0.004, y1 - 0.015, z + h], BRASS, { g: 0.85 });
+  }
+  // La trasera de madera (del lado de Pilar), los costados y el techo
+  pushBox(s, [x1 - 0.02, y0, z + 0.035, x1, y1, z + 0.34], NOGAL);
+  postes(0.34, [x0]);
+  pushBox(s, [7.52, y0 - 0.01, z + 0.33, x1 + 0.01, y1 + 0.01, z + 0.355], NOGAL);
+  if (grado < 4) return;
+  // El segundo cuerpo, encima: su suelo, sus postes, su techo con copete y la cenefa de latón
+  pushBox(s, [7.48, y0 + 0.02, z + 0.355, x1, y1 - 0.02, z + 0.375], [240, 234, 220]);
+  for (const py of [y0 + 0.02, y1 - 0.04]) pushBox(s, [7.48, py, z + 0.375, 7.5, py + 0.02, z + 0.53], ROBLE_D);
+  pushBox(s, [x1 - 0.02, y0 + 0.02, z + 0.375, x1, y1 - 0.02, z + 0.53], NOGAL);
+  pushBox(s, [7.47, y0 + 0.01, z + 0.53, x1 + 0.01, y1 - 0.01, z + 0.555], NOGAL);
+  pushBox(s, [7.47, y0 + 0.01, z + 0.548, 7.49, y1 - 0.01, z + 0.556], BRASS, { g: 0.85 });
+  pushBox(s, [7.55, (y0 + y1) / 2 - 0.07, z + 0.555, x1 - 0.04, (y0 + y1) / 2 + 0.07, z + 0.58], ROBLE_D);
+}
+/**
+ * 1.144: el cajón de la caja registradora de latón del mostrador (la de siempre, en la barra): se abre hacia ti (`abierto`, de 0 a
+ * 1) con los granos de lo que vendió Pilar dentro, en montoncitos (más cuantos más granos).
+ */
+const CAJON_EN = { x: 7.45, y0: 4.88, y1: 5.32 };
+function cajonKit(s, abierto = 0, granos = 0) {
+  const a = clamp(abierto, 0, 1);
+  const z = BARRA_Z;
+  const { x, y0, y1 } = CAJON_EN;
+  const fuera = 0.17 * a;
+  // A media altura de la caja: debajo están las teclas y, delante, las jarras de la leche
+  const zc = z + 0.205;
+  // El hueco oscuro del cajón y el cajón: el frente de latón con su tirador, los costados y el fondo de nogal
+  pushBox(s, [x - 0.006, y0, zc, x, y1, zc + 0.09], [52, 38, 26]);
+  pushBox(s, [x - 0.012 - fuera, y0, zc, x - fuera, y1, zc + 0.09], BRASS, { g: 0.82 });
+  pushBox(s, [x - 0.024 - fuera, (y0 + y1) / 2 - 0.05, zc + 0.035, x - 0.012 - fuera, (y0 + y1) / 2 + 0.05, zc + 0.055], [176, 132, 62], { g: 0.9 });
+  if (a <= 0.02) return;
+  pushBox(s, [x - fuera, y0 + 0.005, zc, x, y0 + 0.015, zc + 0.08], NOGAL);
+  pushBox(s, [x - fuera, y1 - 0.015, zc, x, y1 - 0.005, zc + 0.08], NOGAL);
+  pushBox(s, [x - fuera, y0 + 0.015, zc, x, y1 - 0.015, zc + 0.01], [74, 50, 34]);
+  // Los compartimentos y los granos: hasta cinco montoncitos, del primero al último según lo que hay
+  const n = Math.min(5, Math.ceil((Number(granos) || 0) / 6));
+  for (let k = 0; k < 5; k += 1) {
+    const yy = lerp(y0 + 0.05, y1 - 0.05, k / 4);
+    pushBox(s, [x - fuera, yy + 0.04, zc + 0.01, x - fuera + Math.min(fuera, 0.19), yy + 0.046, zc + 0.055], [96, 66, 44]);
+    if (k < n && fuera > 0.05) {
+      const cx = x - fuera / 2;
+      pushBox(s, [cx - 0.045, yy - 0.03, zc + 0.01, cx + 0.045, yy + 0.03, zc + 0.03], GRANO_T);
+      pushBox(s, [cx - 0.03, yy - 0.02, zc + 0.03, cx + 0.03, yy + 0.02, zc + 0.044], [128, 80, 46]);
+      pushBox(s, [cx - 0.012, yy - 0.008, zc + 0.044, cx + 0.012, yy + 0.008, zc + 0.052], [146, 94, 54]);
+    }
+  }
+}
+const ENFOQUE_CAJA = { p: [6.55, 5.1, 1.82], m: [7.45, 5.1, 1.12] };
+/** La pizarrita de la especialidad del día, junto a la vitrina: tiza blanca y un dibujito del color de la pieza. */
+const PIZARRA_ESP = { x: 7.33, y: 4.74 };
+function pizarraEspecialidad(s, receta) {
+  const { x, y } = PIZARRA_ESP;
+  const z = BARRA_Z;
+  pushBox(s, [x - 0.03, y - 0.05, z, x + 0.03, y + 0.05, z + 0.012], WOOD_D);
+  pushBox(s, [x + 0.004, y - 0.06, z + 0.012, x + 0.016, y + 0.06, z + 0.13], WOOD);
+  pushBox(s, [x - 0.002, y - 0.052, z + 0.02, x + 0.004, y + 0.052, z + 0.122], [40, 46, 42]);
+  // La raya de tiza de arriba (sin letras) y el dibujo de la pieza
+  pushBox(s, [x - 0.004, y - 0.038, z + 0.104, x - 0.002, y + 0.038, z + 0.109], [236, 234, 226]);
+  const c = receta === 'empanada' ? DORADO_O : LIMON;
+  pushBox(s, [x - 0.005, y - 0.022, z + 0.05, x - 0.002, y + 0.022, z + 0.088], [236, 234, 226]);
+  pushBox(s, [x - 0.006, y - 0.016, z + 0.056, x - 0.004, y + 0.016, z + 0.082], c);
 }
 /**
  * La vitrina (est, de setVitrina): { piezas: { receta: n }, elegida (la que se coge con las pinzas), baja (0 a 1), plato }. El
@@ -3540,19 +3728,25 @@ function filaVitrina(piezas = {}) {
 function vitrinaKit(s, est = {}) {
   const { x, y } = VITRINA_EN;
   const z = BARRA_Z;
-  disco(s, x, y, 0.18, z, z + 0.025, (k) => (k % 2 ? WOOD_D : ROBLE_D));
-  disco(s, x, y, 0.186, z + 0.018, z + 0.026, BRASS, { g: 0.75 });
-  pushBox(s, [x - 0.01, y - 0.01, z + 0.025, x + 0.01, y + 0.01, z + 0.32], BRASS, { g: 0.8 });
-  disco(s, x, y, 0.085, z + 0.215, z + 0.225, [240, 236, 228]);
-  disco(s, x, y, 0.15, z + 0.025, z + 0.03, [240, 236, 228]);
-  pushBox(s, [x - 0.02, y - 0.02, z + 0.32, x + 0.02, y + 0.02, z + 0.35], BRASS, { g: 0.85 });
-  const fila = filaVitrina(est.piezas);
+  const grado = Math.max(1, Math.min(4, est.grado ?? 1));
+  if (grado === 1) {
+    disco(s, x, y, 0.18, z, z + 0.025, (k) => (k % 2 ? WOOD_D : ROBLE_D));
+    disco(s, x, y, 0.186, z + 0.018, z + 0.026, BRASS, { g: 0.75 });
+    pushBox(s, [x - 0.01, y - 0.01, z + 0.025, x + 0.01, y + 0.01, z + 0.32], BRASS, { g: 0.8 });
+    disco(s, x, y, 0.085, z + 0.215, z + 0.225, [240, 236, 228]);
+    disco(s, x, y, 0.15, z + 0.025, z + 0.03, [240, 236, 228]);
+    pushBox(s, [x - 0.02, y - 0.02, z + 0.32, x + 0.02, y + 0.02, z + 0.35], BRASS, { g: 0.85 });
+  } else cajaVitrinaKit(s, grado);
+  if (est.especialidad) pizarraEspecialidad(s, est.especialidad);
+  cajonKit(s, est.cajon ?? 0, est.cajonGranos ?? 0);
+  const huecos = huecosVitrina(grado);
+  const fila = filaVitrina(est.piezas, grado);
   let cogida = -1;
   if (est.elegida) cogida = fila.lastIndexOf(est.elegida);
   fila.forEach((id, k) => {
     if (k === cogida) return;
-    const [dx, dy, dz] = HUECOS_VITRINA[k];
-    piezaKit(s, id, x + dx, y + dy, z + dz, 1);
+    const [hx, hy, hz] = huecos[k];
+    piezaKit(s, id, hx, hy, z + hz, 1);
   });
   if (est.plato) {
     disco(s, PLATO_EN.x, PLATO_EN.y, 0.075, z, z + 0.01, [246, 244, 238]);
@@ -3560,10 +3754,10 @@ function vitrinaKit(s, est = {}) {
   }
   if (cogida >= 0) {
     const t = clamp(est.baja ?? 0, 0, 1);
-    const [dx, dy, dz] = HUECOS_VITRINA[cogida];
-    const px = lerp(x + dx, PLATO_EN.x, t);
-    const py = lerp(y + dy, PLATO_EN.y, t);
-    const pz = lerp(z + dz, z + 0.012, t) + Math.sin(Math.PI * t) * 0.16;
+    const [hx, hy, hz] = huecos[cogida];
+    const px = lerp(hx, PLATO_EN.x, t);
+    const py = lerp(hy, PLATO_EN.y, t);
+    const pz = lerp(z + hz, z + 0.012, t) + Math.sin(Math.PI * t) * 0.16;
     piezaKit(s, est.elegida, px, py, pz, 1);
     if (t < 1) {
       // Las pinzas de latón, cogiéndola
@@ -3576,7 +3770,8 @@ function vitrinaKit(s, est = {}) {
  * La campana de cristal (en su propio material, transparente): solo la piel, una corona de vidrio por tramo, y la tapa de arriba.
  * Con discos macizos, cada tramo sumaba su capa y el cristal se volvía lechoso: no se veían las piezas.
  */
-function cristalKit(s) {
+function cristalKit(s, grado = 1) {
+  if (grado > 1) return cristalCajaKit(s, grado);
   const { x, y } = VITRINA_EN;
   const z0 = BARRA_Z + 0.026;
   const N = 8;
@@ -3597,8 +3792,63 @@ function cristalKit(s) {
     }
   }
 }
-const VITRINA_MARCAS = { pieza: [VITRINA_EN.x, VITRINA_EN.y, BARRA_Z + 0.1], plato: [PLATO_EN.x, PLATO_EN.y, BARRA_Z + 0.02] };
+/** El cristal de la vitrina de los grados 2 a 4: paños finos (de frente, a los lados y, en el mostrador, el frente inclinado). */
+function cristalCajaKit(s, grado) {
+  const { x0, x1, y0, y1 } = CAJA_VITRINA;
+  const z = BARRA_Z + 0.035;
+  const V = [238, 236, 228];
+  const e = 0.004;
+  if (grado === 2) {
+    const h = 0.335;
+    pushBox(s, [x0, y0 + 0.02, z, x0 + e, y1 - 0.02, z + h], V, { glow: true });
+    pushBox(s, [x1 - e, y0 + 0.02, z, x1, y1 - 0.02, z + h], V, { glow: true });
+    pushBox(s, [x0 + 0.02, y0, z, x1 - 0.02, y0 + e, z + h], V, { glow: true });
+    pushBox(s, [x0 + 0.02, y1 - e, z, x1 - 0.02, y1, z + h], V, { glow: true });
+    return;
+  }
+  // El frente inclinado del mostrador: de la punta de abajo (x0) al techo (7.52), en tiras
+  const N = 9;
+  for (let k = 0; k < N; k += 1) {
+    const t0 = k / N;
+    const t1 = (k + 1) / N;
+    const xa = lerp(x0 + 0.01, 7.51, t0);
+    const xb = lerp(x0 + 0.01, 7.51, t1);
+    // Una lámina fina por tira (no un bloque: las caras de los bloques se sumaban y el cristal se volvía lechoso)
+    const zt = z + 0.03 + 0.27 * t1;
+    pushBox(s, [Math.min(xa, xb), y0 + 0.01, zt - 0.003, Math.max(xa, xb), y1 - 0.01, zt], V, { glow: true });
+  }
+  pushBox(s, [x0 + 0.01, y0 + 0.01, z, x0 + 0.01 + e, y1 - 0.01, z + 0.03], V, { glow: true });
+  // Los costados, en escalera bajo el frente (de tres en tres tiras)
+  for (let k = 0; k < N; k += 3) {
+    const xa = lerp(x0 + 0.01, 7.51, k / N);
+    const zt = z + 0.03 + 0.27 * ((k + 3) / N);
+    for (const yy of [y0, y1 - e]) pushBox(s, [xa, yy, z, xa + ((7.51 - x0) * 3) / N, yy + e, zt], V, { glow: true });
+  }
+  for (const yy of [y0, y1 - e]) pushBox(s, [7.51, yy, z, x1 - 0.02, yy + e, z + 0.3], V, { glow: true });
+  if (grado < 4) return;
+  // El cuerpo de arriba: el frente recto y los costados
+  const zs = BARRA_Z + 0.375;
+  pushBox(s, [7.48, y0 + 0.04, zs, 7.48 + e, y1 - 0.04, zs + 0.155], V, { glow: true });
+  for (const yy of [y0 + 0.02, y1 - 0.02 - e]) pushBox(s, [7.5, yy, zs, x1 - 0.02, yy + e, zs + 0.155], V, { glow: true });
+}
+const VITRINA_MARCAS = {
+  pieza: [VITRINA_EN.x, VITRINA_EN.y, BARRA_Z + 0.1],
+  plato: [PLATO_EN.x, PLATO_EN.y, BARRA_Z + 0.02],
+  cajon: [CAJON_EN.x - 0.03, (CAJON_EN.y0 + CAJON_EN.y1) / 2, BARRA_Z + 0.25],
+};
+/** 1.144: dónde está la pieza que se cogería (la última de la elegida, en el hueco de su grado; si no, el centro de la vitrina). */
+function marcaPieza(est = {}) {
+  const grado = Math.max(1, Math.min(4, est.grado ?? 1));
+  const fila = filaVitrina(est.piezas, grado);
+  const k = est.elegida ? fila.lastIndexOf(est.elegida) : -1;
+  if (k < 0) return grado === 1 ? VITRINA_MARCAS.pieza : [VITRINA_C.x, VITRINA_C.y, BARRA_Z + 0.12];
+  const [hx, hy, hz] = huecosVitrina(grado)[k];
+  return [hx, hy, BARRA_Z + hz + 0.03];
+}
 const ENFOQUE_VITRINA = { p: [6.86, 4.4, 1.6], m: [7.55, 4.36, 1.0] };
+/** 1.144: la de las vitrinas grandes (grados 2 a 4), de más atrás, con la vitrina entera y el plato. */
+const ENFOQUE_VITRINA_G = { p: [6.62, 4.27, 1.78], m: [7.5, 4.25, 1.0] };
+const enfoqueVitrina = (grado = 1) => (grado > 1 ? ENFOQUE_VITRINA_G : ENFOQUE_VITRINA);
 /** El plato con su pieza en la mano, de camino a la mesa. */
 function platoEnMano(receta) {
   const s = kit();
@@ -4589,14 +4839,24 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   const vitrinaGrupo = new Group();
   vitrinaGrupo.visible = false;
   scene.add(vitrinaGrupo);
-  const cristalM = (() => {
+  // El cristal, aparte y transparente; se rehace al cambiar de grado (1.144)
+  const cristalMat = own(new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.11, depthWrite: false }));
+  let cristalM = null;
+  let cristalGrado = 0;
+  function montarCristal(grado) {
+    if (grado === cristalGrado) return;
+    if (cristalM) {
+      vitrinaGrupo.remove(cristalM);
+      cristalM.geometry.dispose();
+    }
     const s = kit();
-    cristalKit(s);
-    const m = new Mesh(own(geometryOf(s)), own(new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.11, depthWrite: false })));
-    m.renderOrder = 2;
-    return m;
-  })();
-  vitrinaGrupo.add(cristalM);
+    cristalKit(s, grado);
+    cristalM = new Mesh(geometryOf(s), cristalMat);
+    cristalM.renderOrder = 2;
+    vitrinaGrupo.add(cristalM);
+    cristalGrado = grado;
+  }
+  montarCristal(1);
   const vitrinaVivo = new Group();
   vitrinaGrupo.add(vitrinaVivo);
   let vit = { activa: false, est: {} };
@@ -4605,6 +4865,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       vitrinaVivo.remove(m);
       m.geometry.dispose();
     }
+    montarCristal(Math.max(1, Math.min(4, vit.est.grado ?? 1)));
     const s = kit();
     vitrinaKit(s, vit.est);
     vitrinaVivo.add(new Mesh(geometryOf(s), flat));
@@ -6686,8 +6947,9 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         px = ANTE_PILAR.x;
         py = 4.4;
         yaw = Math.PI / 2;
-        if (barraT === 0) vista = { p: [...ENFOQUE_VITRINA.p], m: [...ENFOQUE_VITRINA.m] };
-        vistaMeta = ENFOQUE_VITRINA;
+        const ev = enfoqueVitrina(vit.est.grado);
+        if (barraT === 0) vista = { p: [...ev.p], m: [...ev.m] };
+        vistaMeta = ev;
       } else if (vit.activa) {
         onMove({ x: px, y: py, yaw });
       }
@@ -6695,21 +6957,45 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       if (!on && llevar !== undefined) ponerEnMano(llevar);
       montarVitrina();
     },
-    /** Lo que se ve en la vitrina: { piezas: { receta: n }, elegida, baja, plato } (ver vitrinaKit). */
+    /**
+     * Lo que se ve en la vitrina: { piezas: { receta: n }, elegida, baja, plato, grado, especialidad } (ver vitrinaKit). El grado y
+     * la especialidad se quedan hasta que llegue otro valor.
+     */
     setVitrina(est = {}) {
-      vit = { ...vit, est };
+      vit = { ...vit, est: { grado: vit.est.grado, especialidad: vit.est.especialidad, ...est } };
+      // Mirando la vitrina, la cámara se ajusta a su grado (no en la caja, que tiene la suya)
+      if (vit.activa && vistaMeta !== ENFOQUE_CAJA) vistaMeta = enfoqueVitrina(vit.est.grado);
       montarVitrina();
     },
     /** Dónde cae en la pantalla una marca de la vitrina ('pieza' o 'plato'). */
     vitrinaMarca(nombre) {
       aim(performance.now());
-      const m = VITRINA_MARCAS[nombre];
+      const m = nombre === 'pieza' ? marcaPieza(vit.est) : VITRINA_MARCAS[nombre];
       if (!m) return null;
       const p = project(...m);
       const rect = canvas.getBoundingClientRect();
       return { x: rect.left + p.x, y: rect.top + p.y, front: p.front };
     },
     enVitrina: () => vit.activa && barraT === 1,
+    /**
+     * 1.144: delante de la caja registradora del mostrador (on), para tirar del cajón; al salir, donde estabas. Lo que se ve del
+     * cajón va en setVitrina ({ cajon: 0 a 1, cajonGranos }).
+     */
+    caja(on) {
+      walk = null;
+      if (on) {
+        planta = 'calle';
+        px = ANTE_PILAR.x;
+        py = 5.1;
+        yaw = Math.PI / 2;
+        if (barraT === 0) vista = { p: [...ENFOQUE_CAJA.p], m: [...ENFOQUE_CAJA.m] };
+        vistaMeta = ENFOQUE_CAJA;
+      } else if (vit.activa) {
+        onMove({ x: px, y: py, yaw });
+      }
+      vit = { ...vit, activa: Boolean(on) };
+      montarVitrina();
+    },
     /**
      * 1.130: la librería (on): la cámara va de la barra (o de tus ojos) a la estantería de la pared; con `lleva` ({ receta, vista }),
      * la taza espera en la bandeja de la tabla. Al salir quedas de pie delante de la estantería y, con `llevar` ({ receta, vista,

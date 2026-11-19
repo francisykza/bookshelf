@@ -4,6 +4,7 @@
 // que pide, cuál; con las pinzas, de la vitrina al plato (un gesto corto, con su clic de metal); y con la taza y el plato en la
 // bandeja, a su mesa. «Solo el café» sale de la vitrina con la taza sola. Con movimiento reducido o con el teclado, las pinzas, de
 // una vez. La «!» de ayuda, como en la barra. Lo que paga (su precio en granos) lo apunta el servidor al servir (`cafe_servir_comida`).
+// 1.144: la especialidad del día va la primera entre lo que hay y lleva su marca (paga un grano más).
 import { useEffect, useRef, useState } from 'react';
 import { AYUDA_NIVELES, AYUDA_PARADO_MS, ladoNota, verAyuda } from './cafeGestos';
 import { PINZAS, paraAcompanar, recetaObrador } from './cafeObrador';
@@ -17,9 +18,9 @@ const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-r
  * cliente). `onListo(receta)`, con la pieza en el plato; `onSolo()`, solo el café. Devuelve lo que pinta Atender en su cuadro:
  * { capa, texto, extra, botones, fase, gesto, progreso, opciones }.
  */
-export function useVitrina({ activo, tipo, obrador, escena, sfx, ayudas = 'auto', nivel = 4, onListo, onSolo }) {
-  // Lo que hay para lo que pide, al llegar el cliente (lo de la vitrina no cambia mientras tanto)
-  const [opciones] = useState(() => (tipo ? paraAcompanar(obrador, tipo) : []));
+export function useVitrina({ activo, tipo, obrador, especialidad = null, escena, sfx, ayudas = 'auto', nivel = 4, onListo, onSolo }) {
+  // Lo que hay para lo que pide, al llegar el cliente (lo de la vitrina no cambia mientras tanto); la especialidad, la primera
+  const [opciones] = useState(() => (tipo ? paraAcompanar(obrador, tipo).sort((x, y) => (y.receta === especialidad) - (x.receta === especialidad)) : []));
   // 'elegir' (si hay más de una receta de lo que pide), 'pinzas' y 'listo' (en el plato)
   const [fase, setFase] = useState(() => (opciones.length > 1 ? 'elegir' : 'pinzas'));
   const [elegida, setElegida] = useState(() => (opciones.length === 1 ? opciones[0].receta : null));
@@ -205,6 +206,7 @@ export function useVitrina({ activo, tipo, obrador, escena, sfx, ayudas = 'auto'
               }}
             >
               {recetaObrador(o.receta)?.nombre} ({o.piezas})
+              {o.receta === especialidad && <span className="cf3-btn__especial"> · de hoy</span>}
             </button>
           ))}
         {conGesto && reduced() && (

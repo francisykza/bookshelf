@@ -12,16 +12,67 @@
 //   pide la bebida y algo dulce o salado para acompañar, sin libro (lo decide el servidor), y sus estrellas salen solo de la
 //   bebida. La taza y la pieza van en el mismo viaje: de la barra a la vitrina (las pinzas, de la vitrina al plato) y a su mesa.
 //   La comida solo da granos, su precio: nunca reputación, tickets ni estrellas. Sin pieza del tipo que pide, solo el café.
-// Las cifras son las de la migración `20261225120000_cafe_obrador.sql` (una prueba lo comprueba). Solo reglas: sin React ni Three.
+// 1.144 (bloque 2): las mejoras del horno y de la vitrina, las vitrinas de tartas que suman, la venta del mostrador con la caja de
+// latón, la especialidad del día y la maestría de cada receta, con «Que lo hornee Pilar».
+// Las cifras son las de las migraciones `20261225120000_cafe_obrador.sql` y `20261226120000_cafe_obrador_mejoras.sql` (unas
+// pruebas lo comprueban). Solo reglas: sin React ni Three.
 import { estrellasTaller } from './cafeTaller';
 
 /** El nivel desde el que se abre el obrador (la Sala de lectura grande, con el ala lateral). */
 export const OBRADOR_NIVEL = 4;
 /** Hornadas al día, como mucho (un tope que nadie debería notar). */
 export const TOPE_HORNADAS = 30;
-/** Bandejas del horno y piezas que caben en la vitrina, por grado (las mejoras llegan en la 1.144). */
+/** Bandejas del horno y piezas que caben en la vitrina, por grado. */
 export const BANDEJAS = { 1: 1, 2: 2, 3: 3 };
 export const CABE_VITRINA = { 1: 12, 2: 20, 3: 30, 4: 40 };
+/** 1.144: las piezas que vende Pilar en el mostrador por cada día entero, según el grado de la vitrina; guarda como mucho 7 días. */
+export const CUPO_MOSTRADOR = { 1: 4, 2: 6, 3: 9, 4: 12 };
+export const MOSTRADOR_DIAS = 7;
+/** 1.144: las vitrinas de tartas (el mueble del nivel 2) colocadas en el café suman 6 huecos cada una, hasta dos. */
+export const TARTAS = Object.freeze({ mueble: 'cafe-vitrina', huecos: 6, max: 2 });
+/**
+ * 1.144: las mejoras del obrador, como el cuaderno de Pilar (se pagan una vez con granos y nunca caducan). Por grado: su precio (el
+ * 1, de serie), el nivel del café desde el que se compra y cómo se ve.
+ */
+export const MEJORAS_OBRADOR = Object.freeze({
+  horno: [
+    { grado: 1, precio: 0, nivel: 4, nombre: 'Restaurado', se: 'Con sus grietas y una bandeja' },
+    { grado: 2, precio: 250, nivel: 4, nombre: 'La puerta de hierro', se: 'Puerta de hierro nueva y dos bandejas: dos hornadas a la vez' },
+    { grado: 3, precio: 600, nivel: 6, nombre: 'Los azulejos', se: 'Azulejos y tres bandejas: tres hornadas a la vez' },
+  ],
+  vitrina: [
+    { grado: 1, precio: 0, nivel: 4, nombre: 'La campana de cristal', se: '12 piezas · Pilar vende 4 al día' },
+    { grado: 2, precio: 150, nivel: 4, nombre: 'La vitrina de madera', se: '20 piezas · Pilar vende 6 al día' },
+    { grado: 3, precio: 350, nivel: 5, nombre: 'El mostrador', se: '30 piezas · Pilar vende 9 al día' },
+    { grado: 4, precio: 700, nivel: 7, nombre: 'La vitrina de dos alturas', se: '40 piezas · Pilar vende 12 al día' },
+  ],
+});
+/** El grado siguiente de una mejora ('horno' o 'vitrina') a partir del que tienes, o null si ya está en el mejor. */
+export const siguienteMejora = (mejora, grado = 1) => MEJORAS_OBRADOR[mejora]?.find((m) => m.grado === grado + 1) ?? null;
+/**
+ * 1.144: la maestría de cada receta, con las hornadas de 2 o 3 estrellas: ★ con 3 (+1 pieza por bandeja), ★★ con 10 (+1 grano por
+ * pieza servida en la mesa) y ★★★ con 25 («Que lo hornee Pilar»).
+ */
+export const MAESTRIA = Object.freeze([3, 10, 25]);
+export const maestriaDe = (buenas = 0) => MAESTRIA.filter((n) => (Number(buenas) || 0) >= n).length;
+/** Las hornadas buenas que faltan para la estrella siguiente (null con las tres). */
+export const faltanMaestria = (buenas = 0) => {
+  const n = MAESTRIA.find((m) => (Number(buenas) || 0) < m);
+  return n == null ? null : n - (Number(buenas) || 0);
+};
+/** Lo que trae cada estrella de maestría. */
+export const PREMIO_MAESTRIA = ['Una pieza más en cada bandeja', 'Un grano más por pieza servida en la mesa', 'Que lo hornee Pilar'];
+/** 1.144: la especialidad del día paga +1 grano por pieza (en la mesa y en el mostrador). */
+export const EXTRA_ESPECIALIDAD = 1;
+/** La maestría ★★ paga +1 grano por pieza servida en la mesa. */
+export const EXTRA_MAESTRIA = 1;
+/** De quienes piden comida, cuántos de cada tres quieren el tipo de la especialidad (sin especialidad, la mitad). */
+export const PIDEN_ESPECIALIDAD = 2;
+/** Las vitrinas de tartas que cuentan en un plano ({ items: [{ id }] }). */
+export const tartasEn = (plano) => Math.min(TARTAS.max, (Array.isArray(plano?.items) ? plano.items : []).filter((e) => e?.id === TARTAS.mueble).length);
+/** Lo que paga una pieza servida en la mesa: su precio, +1 si es la especialidad y +1 con la maestría ★★. */
+export const precioMesa = (id, { especialidad = null, buenas = 0 } = {}) =>
+  (recetaObrador(id)?.precio ?? 0) + (id === especialidad ? EXTRA_ESPECIALIDAD : 0) + (maestriaDe(buenas) >= 2 ? EXTRA_MAESTRIA : 0);
 /** Uno de cada tres clientes pide comida (y ese no pide libro: máximo dos cosas por cliente). */
 export const PIDE_COMIDA_CADA = 3;
 /** Las estrellas de quien pide comida: solo los 4 aciertos de la bebida. 3 con los 4; 2 con 2 o 3; si no, 1 (nunca 0). */
@@ -78,8 +129,11 @@ export const recetaAbierta = (id, nivel) => {
 };
 /** Las estrellas de una hornada: las del taller (3 con los dos gestos bien, 2 con uno, 1 si no; nunca cero). */
 export const estrellasHornada = (mimo = []) => estrellasTaller(mimo);
-/** Las piezas que salen de una receta con esas estrellas. */
-export const piezasDe = (id, estrellas) => recetaObrador(id)?.piezas[Math.min(3, Math.max(1, estrellas)) - 1] ?? 0;
+/** Las piezas que salen de una receta con esas estrellas (con la maestría ★, `buenas` ≥ 3, una más). */
+export const piezasDe = (id, estrellas, buenas = 0) => {
+  const base = recetaObrador(id)?.piezas[Math.min(3, Math.max(1, estrellas)) - 1] ?? 0;
+  return base ? base + (maestriaDe(buenas) >= 1 ? 1 : 0) : 0;
+};
 /** Las piezas que hay ahora en la vitrina (de todas las recetas). */
 export const enVitrina = (obrador) => Object.values(obrador?.piezas ?? {}).reduce((n, p) => n + (Number.isInteger(p) ? p : 0), 0);
 /** Lo que queda libre en la vitrina. */
@@ -175,6 +229,33 @@ export const PILAR_OBRADOR = {
   alVitrina: (n) => (n === 1 ? '«Una más para la vitrina.»' : `«${n} más para la vitrina. Las llevo yo.»`),
   tope: '«Por hoy ya hemos horneado bastante. Mañana, más.»',
 };
+/** 1.144: lo de las mejoras, la especialidad, Pilar en el horno y el mostrador. */
+export const PILAR_MEJORAS = {
+  especialidad: (id) => `«Hoy la especialidad es ${(recetaObrador(id)?.nombre ?? 'la de la casa').toLowerCase()}: la piden más y paga un grano más.»`,
+  hornea: '«Déjamelo a mí, que esta me la sé de memoria.»',
+  horneaHecho: '«Al horno. Te aviso con la campanilla.»',
+  horno: '«¡Qué bien suena la puerta nueva! Ahora caben más bandejas.»',
+  vitrina: '«Mira cuánto sitio: ya no se nos amontona nada.»',
+  caja: '«Mientras no estabas he ido vendiendo en el mostrador. Tira del cajón de la caja.»',
+  cajaVacia: '«La vitrina se quedó vacía y no pude vender nada. Mañana será.»',
+};
+const LETRA = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce'];
+/** «cuatro magdalenas», «una ración de empanada»… (con cifras desde 13). */
+export const piezasEnLetra = (id, n) => {
+  const [una, varias] = PIEZA[id] ?? ['pieza', 'piezas'];
+  if (n === 1) return `${/^pincho/.test(una) ? 'un' : 'una'} ${una}`;
+  return `${n <= 12 ? LETRA[n] : n} ${varias}`;
+};
+/** Lo que vendió Pilar en el mostrador ({ receta: n }), en una frase. */
+export function fraseMostrador(vendidas = {}) {
+  const partes = RECETAS_OBRADOR.filter((r) => (vendidas[r.id] ?? 0) > 0).map((r) => piezasEnLetra(r.id, vendidas[r.id]));
+  if (!partes.length) return PILAR_MEJORAS.cajaVacia;
+  const lista = partes.length === 1 ? partes[0] : `${partes.slice(0, -1).join(', ')} y ${partes.at(-1)}`;
+  return `«Mientras no estabas se llevaron ${lista}.»`;
+}
+/** El cajón de la caja de latón: tirar hacia ti. */
+export const CAJON = { orden: 'Tira del cajón de la caja', ayuda: 'Tira del cajón hacia abajo.', atajo: 'Abrir el cajón' };
+
 /** El horno, sin números: lo que se ve según lo que le queda (de 0, recién metida, a 1, lista). */
 export const fraseHorno = (t) => (t >= 1 ? PILAR_OBRADOR.listo : PILAR_OBRADOR.horneando[t < 0.34 ? 0 : t < 0.67 ? 1 : 2]);
 

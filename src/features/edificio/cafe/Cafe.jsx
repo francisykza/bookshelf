@@ -22,7 +22,7 @@ import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCa
 import { COPA, CUADERNO, GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
-import { bienvenidaLibros, cargarCafe, misTitulos, cargarDia, cargarJornada, cargarObrador, cargarTaller, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate, recogerHucha, servirComida } from './cafeService';
+import { bienvenidaLibros, cargarCafe, misTitulos, cargarDia, cargarJornada, cargarObrador, cargarTaller, cobrarMostrador, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate, recogerHucha, servirComida } from './cafeService';
 import { enFrase } from './cafeInfluencers';
 import { cartaDe, hayLogro, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { LogroCafe } from './LogroCafe';
@@ -35,7 +35,8 @@ import { Atender } from './Atender';
 import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
 import { Obrador } from './Obrador';
-import { OBRADOR_NIVEL, PILAR_OBRADOR, estadoHorno, pedidoComida } from './cafeObrador';
+import { CajaMostrador } from './CajaMostrador';
+import { OBRADOR_NIVEL, PILAR_OBRADOR, enVitrina, estadoHorno, fraseMostrador, pedidoComida } from './cafeObrador';
 import { Taller } from './Taller';
 import { TALLER_NIVEL } from './cafeTaller';
 import { crearTallerMusica } from './cafeTallerMusica';
@@ -147,6 +148,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   // no se ha abierto), piden }), si estás dentro y a quién le llevas algo de la vitrina al acabar de servir ({ cliente, tipo })
   const [obradorDia, setObradorDia] = useState(undefined);
   const [enObrador, setEnObrador] = useState(false);
+  // 1.144: delante de la caja del mostrador, cobrando lo que vendió Pilar mientras no estabas
+  const [enCaja, setEnCaja] = useState(false);
   const [ganado, setGanado] = useState(0);
   const dados = useRef({});
   // Libros en cajas: undefined, cargando; null, sin la migración; si no, { huecos, bienvenida, libros: [{ clave, titulo, genero, caja, balda }] }
@@ -531,12 +534,20 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
       abierto: Boolean(obradorHoy),
       horneando: (obradorHoy?.horneando ?? []).map((h) => ({ receta: h.receta, t: estadoHorno(h, relojHorno).t })),
       listo: hornadaLista,
+      horno: obradorHoy?.horno ?? 1,
     });
   }, [ready, enObrador, hayObrador, obradorHoy, relojHorno, hornadaLista]);
+  // 1.144: la vitrina, con su grado y la pizarrita de la especialidad del día
+  const especialidad = obradorDia?.especialidad ?? null;
   useEffect(() => {
-    if (!ready || atiende || !hayObrador) return;
-    api.current?.setVitrina?.({ piezas: obradorHoy?.piezas ?? {} });
-  }, [ready, atiende, hayObrador, obradorHoy]);
+    if (!ready || atiende || enCaja || !hayObrador) return;
+    api.current?.setVitrina?.({ piezas: obradorHoy?.piezas ?? {}, grado: obradorHoy?.vitrina ?? 1, especialidad: obradorHoy ? especialidad : null });
+  }, [ready, atiende, enCaja, hayObrador, obradorHoy, especialidad]);
+  // 1.144: lo que vendió Pilar en el mostrador mientras no estabas. Con piezas en la vitrina, a la caja a tirar del cajón (una vez
+  // por visita, cuando no haya otra cosa); con la vitrina vacía no pudo vender nada: se apuntan los días sin decir nada
+  const cajaVista = useRef(false);
+  const diasMostrador = obradorHoy?.mostrador?.dias ?? 0;
+  const conPiezas = enVitrina(obradorHoy) > 0;
   const hornadaAntes = useRef(false);
   useEffect(() => {
     if (hornadaLista && !hornadaAntes.current && !enObrador && ready) sfx.play('campanillaHorno');
@@ -545,7 +556,32 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   // En el nivel 3, una vez (en este dispositivo): Pilar huele algo detrás de la pared. Solo cuando no tiene otra cosa que
   // decir y tras un rato de calma: nunca pisa el reparto de la mañana, la hucha, el saco, la subida ni lo que estés haciendo
   const pilarCalla =
-    !aviso && hablando == null && !clienteAtendido && !logro && !decorando && !eligiendo && escaparate == null && !tostando && !enTaller && !enObrador && !panelLibros && !panelCuaderno && !panelRanking;
+    !aviso && hablando == null && !clienteAtendido && !logro && !decorando && !eligiendo && escaparate == null && !tostando && !enTaller && !enObrador && !enCaja && !panelLibros && !panelCuaderno && !panelRanking;
+  useEffect(() => {
+    if ((!ready && !sin3d) || diasMostrador <= 0 || cajaVista.current || !pilarCalla) return undefined;
+    // Sin la escena en 3D (no hay caja que abrir), Pilar lo cobra y lo cuenta
+    if (!conPiezas || sin3d) {
+      cajaVista.current = true;
+      cobrarMostrador(diaJuego).then(
+        (r) => {
+          if (!r) return;
+          if (r.obrador) setObradorDia((d) => ({ piden: [], ...d, obrador: r.obrador }));
+          if (r.cafe) setLocal(r.cafe);
+          if (sin3d && r.cobrado?.granos > 0) {
+            setGanado(r.cobrado.granos);
+            setAviso(fraseMostrador(r.cobrado.vendidas));
+          }
+        },
+        () => {},
+      );
+      return undefined;
+    }
+    const t = setTimeout(() => {
+      cajaVista.current = true;
+      setEnCaja(true);
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [ready, sin3d, diasMostrador, conPiezas, pilarCalla, diaJuego]);
   useEffect(() => {
     if (!abierto || nivelLocal !== 3 || !dia || !pilarCalla) return undefined;
     const t = setTimeout(() => {
@@ -630,7 +666,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   };
   useEffect(() => {
     pick.current = (id) => {
-      if (decorando || tostando || enTaller || enObrador) return;
+      if (decorando || tostando || enTaller || enObrador || enCaja) return;
       if (atenderToque.current?.(id)) return;
       if (id.startsWith('cliente:')) {
         const c = clientesHoy.find((x) => x.n === Number(id.slice(8)));
@@ -1134,7 +1170,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
         </div>
       )}
 
-      {logro && !clienteAtendido && !enObrador && !decorando && !enTaller && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
+      {logro && !clienteAtendido && !enObrador && !enCaja && !decorando && !enTaller && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
       {decorando && (local?.nivel ?? 1) >= BODEGA_NIVEL && (
         <div className="cf3-plantas" role="group" aria-label="Qué planta decoras">
           {[
@@ -1333,6 +1369,21 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
           }}
           onCerrar={() => setEnTaller(false)}
         />
+      ) : enCaja && obradorHoy ? (
+        <CajaMostrador
+          escena={ready && !sin3d ? api.current : null}
+          obrador={obradorHoy}
+          dia={diaJuego}
+          nivel={nivelLocal}
+          soundOn={soundOn}
+          ayudas={state.settings.ayudasCafe ?? 'auto'}
+          onCobrado={(r) => {
+            if (r.cafe) setLocal(r.cafe);
+            if (r.obrador) setObradorDia((d) => ({ piden: [], ...d, obrador: r.obrador }));
+            if (r.cobrado?.granos > 0) setGanado(r.cobrado.granos);
+          }}
+          onCerrar={() => setEnCaja(false)}
+        />
       ) : enObrador && obradorDia ? (
         <Obrador
           escena={ready && !sin3d ? api.current : null}
@@ -1340,7 +1391,14 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
           nivel={nivelLocal}
           soundOn={soundOn}
           ayudas={state.settings.ayudasCafe ?? 'auto'}
+          especialidad={especialidad}
+          granos={local?.granos ?? 0}
+          dia={diaJuego}
           onObrador={(o) => setObradorDia((d) => ({ piden: [], ...d, obrador: o }))}
+          onCafe={(cafe, cobrado) => {
+            if (cafe) setLocal(cafe);
+            if (cobrado?.granos > 0) setGanado(cobrado.granos);
+          }}
           onCerrar={() => setEnObrador(false)}
         />
       ) : tostando && local ? (
@@ -1361,6 +1419,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
           balda={deLaBalda}
           dominio={local?.dominio}
           obrador={obradorHoy}
+          especialidad={especialidad}
           escena={ready && !sin3d ? api.current : null}
           registrarToque={registrarToque}
           soundOn={soundOn}

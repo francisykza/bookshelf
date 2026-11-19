@@ -876,6 +876,32 @@ const SONIDOS = {
     tono(b, { f: 2349, tipo: 'sine', pico: 0.025, caida: 0.5 });
     tono(b, { f: 3136, tipo: 'sine', pico: 0.015, caida: 0.4, d: 0.05 });
   },
+  // 1.144: la caja de latón del mostrador y las mejoras del obrador
+  /** El cajón de la caja registradora que se suelta: el trinquete, el muelle y la campanita de latón. */
+  cajonCaja: (b) => {
+    for (let k = 0; k < 3; k += 1) tono(b, { f: 1900 + k * 140, tipo: 'triangle', pico: 0.025, ataque: 0.001, caida: 0.025, d: k * 0.035 });
+    ruido(b, { f: 700, q: 0.8, pico: 0.05, ataque: 0.01, caida: 0.16, barrido: 0.7, d: 0.1 });
+    madera(b, { f: 196, pico: 0.04, caida: 0.14, d: 0.22 });
+    tono(b, { f: 2093, tipo: 'sine', pico: 0.04, caida: 0.8, d: 0.26 });
+    tono(b, { f: 2093 * 2.76, tipo: 'sine', pico: 0.01, caida: 0.25, d: 0.26 });
+  },
+  /** Los granos de lo vendido, que tintinean en los compartimentos del cajón (un puñadito, cada uno a su aire). */
+  granosCajon: (b, n = 1) => {
+    const m = Math.min(9, 3 + Math.round(n / 6));
+    for (let k = 0; k < m; k += 1) ruido(b, { f: 2600 + Math.random() * 1600, q: 3, pico: 0.03, ataque: 0.001, caida: 0.018, d: 0.03 + k * (0.045 + Math.random() * 0.03) });
+  },
+  /** Una mejora del obrador: dos golpecitos de madera y un acorde cálido que sube (sin fanfarria). */
+  mejora: (b) => {
+    madera(b, { f: 220, pico: 0.045, caida: 0.12 });
+    madera(b, { f: 262, pico: 0.04, caida: 0.12, d: 0.09 });
+    for (const [d, f] of [
+      [0.2, 392],
+      [0.27, 493.9],
+      [0.34, 587.3],
+      [0.41, 784],
+    ])
+      nota(b, { f, pico: 0.022, caida: 0.9, d });
+  },
 };
 
 /**
@@ -936,7 +962,7 @@ const BUCLES = {
 };
 
 /** 1.131: los sonidos del libro, que suenan en la sala de la librería (`calido`). */
-const DEL_LIBRO = new Set(['tabique', 'recetario', 'fichaReceta', 'rallar', 'masa', 'colmado', 'rebosa', 'rodillo', 'vueltaRodillo', 'pellizco', 'obradorHecho', 'pala', 'horno', 'campanillaHorno', 'pinza', 'plato', 'vitrina', 'placa', 'lomo', 'sacar', 'tabla', 'libroTabla', 'devolver', 'kraft', 'rasga', 'pliegue', 'cordel', 'lazo', 'paginas', 'marca', 'cierra', 'bolsa', 'meter', 'selloBaja', 'sello', 'libroEtapa', 'reparto', 'secciones']);
+const DEL_LIBRO = new Set(['tabique', 'recetario', 'fichaReceta', 'rallar', 'masa', 'colmado', 'rebosa', 'rodillo', 'vueltaRodillo', 'pellizco', 'obradorHecho', 'pala', 'horno', 'campanillaHorno', 'pinza', 'plato', 'vitrina', 'placa', 'lomo', 'sacar', 'tabla', 'libroTabla', 'devolver', 'kraft', 'rasga', 'pliegue', 'cordel', 'lazo', 'paginas', 'marca', 'cierra', 'bolsa', 'meter', 'selloBaja', 'sello', 'libroEtapa', 'reparto', 'secciones', 'cajonCaja', 'granosCajon', 'mejora']);
 /** 1.133: los del taller de la trastienda, por la misma sala cálida. */
 const DEL_TALLER = new Set([
   'tallerPuerta',

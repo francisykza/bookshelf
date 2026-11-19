@@ -1040,6 +1040,8 @@ y los tickets no se mueven.
    1); la primera hornada de la casa; los clientes que piden algo dulce o salado; las pinzas y la pieza en la mesa. Migración 1.
 2. **1.144.0, las mejoras y el mostrador**: los grados del horno y de la vitrina, y cómo se ven; las vitrinas de tartas que suman;
    la venta del mostrador con la caja de latón; la especialidad del día; la maestría y «Que lo hornee Pilar». Migración 2.
+   **Hecho en la 1.144.0** (19-11-2026, SPEC §144; publicada con la migración `20261226120000_cafe_obrador_mejoras.sql`
+   aplicada, «Sí, aplicar y publicar»).
 3. **1.145.0, el recetario crece**: las galletas (5), el pan de la bodega con su noche (6), el bizcocho del tostadero (7) y la
    tortilla en el fogón (8); los hitos con sus adornos; la comida del excéntrico; el favorito de los habituales; lo que ven las
    visitas. Migración 3. Si pesa mucho, 3a (niveles 5 y 6) y 3b (7 y 8).

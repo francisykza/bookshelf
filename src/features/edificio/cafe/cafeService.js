@@ -386,11 +386,23 @@ export function obradorDe(o) {
   const ent = (v, max) => Math.min(max, Math.max(0, Number.isInteger(v) ? v : 0));
   const piezas = {};
   if (o.piezas && typeof o.piezas === 'object') for (const [k, v] of Object.entries(o.piezas)) if (RECETA_ID.test(k) && ent(v, 100) > 0) piezas[k] = ent(v, 100);
+  // 1.144: la maestría de cada receta ({ buenas, maestria })
+  const recetas = {};
+  if (o.recetas && typeof o.recetas === 'object')
+    for (const [k, v] of Object.entries(o.recetas)) if (RECETA_ID.test(k) && v && typeof v === 'object') recetas[k] = { buenas: ent(v.buenas, 1000000), maestria: ent(v.maestria, 3) };
+  const m = o.mostrador && typeof o.mostrador === 'object' ? o.mostrador : {};
   return {
+    // 1.144: si el servidor ya tiene la migración 2 (las mejoras, el mostrador y Pilar en el horno)
+    conMejoras: Number.isInteger(o.cupo),
     horno: ent(o.horno, 3) || 1,
     vitrina: ent(o.vitrina, 4) || 1,
     bandejas: ent(o.bandejas, 3) || 1,
     cabe: ent(o.cabe, 100) || 12,
+    tartas: ent(o.tartas, 2),
+    cupo: ent(o.cupo, 100) || 4,
+    mostrador: { dias: ent(m.dias, 7), piezas: ent(m.piezas, 1000000000), granos: ent(m.granos, 1000000000) },
+    recetas,
+    dado: { horno: ent(o.dado?.horno, 1000000), pilar: ent(o.dado?.pilar, 1000000) },
     horneando: (Array.isArray(o.horneando) ? o.horneando : [])
       .filter((h) => h && Number.isInteger(h.bandeja) && RECETA_ID.test(h.receta ?? ''))
       .slice(0, 3)
@@ -411,7 +423,8 @@ export async function cargarObrador(dia) {
   const { data, error } = await sb.rpc('cafe_obrador', { dia });
   if (sinMigracion(error)) return null;
   fail(error);
-  return { obrador: obradorDe(data?.obrador), piden: pidenDe(data?.piden) };
+  // 1.144: la especialidad del día (sin la migración 2, null)
+  return { obrador: obradorDe(data?.obrador), piden: pidenDe(data?.piden), especialidad: RECETA_ID.test(data?.especialidad ?? '') ? data.especialidad : null };
 }
 /** Abrir el obrador (una vez, desde el nivel 4). Devuelve { obrador, nuevo }. */
 export async function abrirObrador() {
@@ -441,12 +454,49 @@ export async function servirComida(dia, cliente, receta) {
   const sb = await client();
   const { data, error } = await sb.rpc('cafe_servir_comida', { dia, cliente, receta });
   fail(error);
-  return { cafe: normalizar(data?.cafe), obrador: obradorDe(data?.obrador), dado: { granos: data?.dado?.granos ?? 0, receta: data?.dado?.receta ?? receta } };
+  const d = data?.dado ?? {};
+  return { cafe: normalizar(data?.cafe), obrador: obradorDe(data?.obrador), dado: { granos: d.granos ?? 0, receta: d.receta ?? receta, especialidad: d.especialidad === true, maestria: d.maestria === true } };
+}
+
+// ── 1.144: las mejoras del obrador, el mostrador y Pilar en el horno (`20261226120000_cafe_obrador_mejoras.sql`) ──
+/** Lo que vendió Pilar en el mostrador, comprobado: { dias, piezas, granos, vendidas: { receta: n } }. */
+const cobradoDe = (c) => {
+  if (!c || typeof c !== 'object') return null;
+  const ent = (v, max) => Math.min(max, Math.max(0, Number.isInteger(v) ? v : 0));
+  const vendidas = {};
+  if (c.vendidas && typeof c.vendidas === 'object') for (const [k, v] of Object.entries(c.vendidas)) if (RECETA_ID.test(k) && ent(v, 1000) > 0) vendidas[k] = ent(v, 1000);
+  return { dias: ent(c.dias, 7), piezas: ent(c.piezas, 1000), granos: ent(c.granos, 100000), vendidas };
+};
+/** El grado siguiente del horno o de la vitrina. Devuelve { cafe, obrador, cobrado } (lo que vendió Pilar antes, si era la vitrina). */
+export async function mejorarObrador(mejora, dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_obrador_mejorar', { mejora, dia });
+  fail(error);
+  return { cafe: normalizar(data?.cafe), obrador: obradorDe(data?.obrador), cobrado: cobradoDe(data?.cobrado) };
+}
+/** Tirar del cajón: lo que vendió Pilar en el mostrador. Devuelve { cobrado, cafe, obrador }, o null sin la migración. */
+export async function cobrarMostrador(dia) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_mostrador', { dia });
+  if (sinMigracion(error)) return null;
+  fail(error);
+  return { cobrado: cobradoDe(data?.cobrado), cafe: normalizar(data?.cafe), obrador: obradorDe(data?.obrador) };
+}
+/** «Que lo hornee Pilar» (con la receta dominada). Devuelve { obrador, dado: { bandeja, estrellas, piezas } }. */
+export async function hornearPilar(receta) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_hornear_pilar', { receta });
+  fail(error);
+  const d = data?.dado ?? {};
+  return { obrador: obradorDe(data?.obrador), dado: { bandeja: d.bandeja ?? 1, estrellas: d.estrellas ?? 3, piezas: d.piezas ?? 0 } };
 }
 
 /** Lo que dice cada error del servidor, en palabras de la app. */
 export function errorCafe(e) {
   const m = String(e?.message ?? e ?? '');
+  if (/cafe:obrador_nivel/.test(m)) return 'Esa mejora se abre en un nivel más alto del café.';
+  if (/cafe:obrador_mejora/.test(m)) return 'Ya está en su mejor grado.';
+  if (/cafe:maestria/.test(m)) return 'Pilar aún no domina esa receta.';
   if (/cafe:obrador/.test(m)) return 'El obrador se abre en el nivel 4, con el ala lateral.';
   if (/cafe:hornadas/.test(m)) return 'Por hoy ya se ha horneado bastante. Mañana, más.';
   if (/cafe:horno/.test(m)) return 'El horno está lleno: saca antes lo que hay dentro.';

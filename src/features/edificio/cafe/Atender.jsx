@@ -154,7 +154,7 @@ function repasoLibro(libro, pedido, ok, forma) {
 /** 1.139: el libro es uno de tus leídos (no del catálogo del café): paga más al llevárselo y el repaso lo dice. */
 const esTuyo = (libro) => Boolean(libro) && (libro.tuyo ?? !String(libro.id ?? '').startsWith('cat:'));
 
-export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obrador = null, escena, registrarToque, onServir, onEmpezar, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
+export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obrador = null, especialidad = null, escena, registrarToque, onServir, onEmpezar, onCerrar, soundOn = false, ayudas = 'auto', nivel = 1, carta = SIN_CARTA, tazas = 0, nuevos = SIN_NUEVOS, onVisto }) {
   const [paso, setPaso] = useState('pide');
   const [receta, setReceta] = useState(VACIA);
   const [ei, setEi] = useState(0);
@@ -610,6 +610,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
     activo: paso === 'vitrina',
     tipo: pideComida ? pedido.tipo : null,
     obrador,
+    especialidad,
     escena,
     sfx,
     ayudas,

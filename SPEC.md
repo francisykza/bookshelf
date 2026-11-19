@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.143.0 · 2026-11-17 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.144.0 · 2026-11-19 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -7920,3 +7920,94 @@ primera entrega, el mismo día, **máximo dos cosas por cliente** (§143.4).
   también `pilar` y la prueba no lo espera.
 - Evidencias en `qa-report/v1143/`.
 - **Sin probar** con la migración aplicada (el servidor, solo con PGlite y el simulado), con cuentas reales ni en móviles reales.
+
+## 144. El obrador crece: las mejoras, el mostrador, la especialidad y la maestría (1.144.0)
+
+Francisco, 19-11-2026: «Sigue con el bloque 2». Es el bloque 2 de 3 del obrador (`docs/qa/cafe-libreria.md` §18.12), con las
+cifras de §18.6 y §18.9 aprobadas el 17-11-2026 y la venta del mostrador «como la hucha, guardando 7 días».
+
+### 144.1 La caja del mostrador
+
+- Mientras no estás, **Pilar vende de la vitrina** a la gente de la calle: por cada día entero, como mucho su cupo según el grado
+  de la vitrina (4 / 6 / 9 / 12), **primero la especialidad del día** y después lo que más haya, a precio base (+1 la
+  especialidad). Guarda **como mucho 7 días**, como la hucha. Las jornadas de prueba cuentan como un día más cada una.
+- Al volver al café, cuando no hay otra cosa que decir, vas **delante de la caja registradora de latón** de la barra: «Mientras
+  no estabas he ido vendiendo en el mostrador. Tira del cajón de la caja.» **Se tira del cajón hacia ti** (con su pista, su «!»
+  y su medidor). Suenan el trinquete, el muelle y una campanita, y después **los granos tintinean** en los compartimentos. Dentro
+  se ven en montoncitos. Pilar dice lo que se llevaron, en letra: «Mientras no estabas se llevaron tres magdalenas y cinco
+  raciones de empanada.», y debajo, «8 piezas en 2 días: +26 granos». La vitrina queda con lo que no se vendió.
+- «Luego» lo deja para otro rato, sin perder nada. Con movimiento reducido o con el teclado, un toque («Abrir el cajón»).
+- Con la vitrina vacía, Pilar no pudo vender nada: se apuntan los días sin decir nada. Sin la escena en 3D, Pilar lo cobra y lo
+  cuenta en su bocadillo.
+- Antes de cambiar el grado de la vitrina, el servidor cobra lo que ya vendió con el grado de antes.
+
+### 144.2 Las mejoras del obrador
+
+- **La última página del recetario, «El obrador»**: «Mejoras de la tahona», con tus granos arriba. Una fila por mejora, con su
+  dibujito (la bóveda de ladrillo con la boca encendida; la vitrina de madera y cristal), el grado que tienes con sus cuadritos,
+  lo que da y el siguiente. El botón dice lo que pasa: «Mejorar · 250 granos», «Faltan 40 granos» o «En el nivel 6». Se pagan
+  **una vez**, con granos, y **nunca caducan** (`cafe_obrador_mejorar`). Al comprar, un sonido de madera y un acorde cálido, y
+  Pilar lo comenta («¡Qué bien suena la puerta nueva! Ahora caben más bandejas.», «Mira cuánto sitio…»).
+- **El horno**: 1, restaurado (con sus grietas y una bandeja); 2, **la puerta de hierro** (250 granos, desde el nivel 4: marco
+  remachado, la hoja abierta contra la pared con su ventanuco y su tirador de latón, y **dos bandejas**: dos hornadas a la vez);
+  3, **los azulejos** (600, desde el 6: una franja de azulejos de flor azul bajo la boca y **tres bandejas**). Las bandejas se ven
+  apiladas en la boca y la pala sube a la que toca.
+- **La vitrina**, sobre la punta de la barra (sin quitar paso a nadie): 1, la campana de cristal (12 piezas); 2, **la vitrina de
+  madera** (150, nivel 4: nogal, cuatro postes, balda de cristal y copete; 20 piezas); 3, **el mostrador** (350, nivel 5:
+  escalonado en tres alturas con cantos de latón, de cara a los clientes y con el cristal inclinado; 30 piezas); 4, **la de dos
+  alturas** (700, nivel 7: el mostrador con un segundo cuerpo encima; 40 piezas). El cristal va en su material transparente, en
+  láminas finas para que no se vuelva lechoso. A la vista caben 12, 20, 18 y 28: en el mostrador, seis por balda, para que se
+  distinga cada pieza; lo que no se ve también está. La cámara de las pinzas se aleja un poco con las vitrinas grandes.
+- **Las vitrinas de tartas** (el mueble del nivel 2) que tengas colocadas en el café suman **6 huecos** cada una, hasta dos. La
+  página lo dice («Cada vitrina de tartas que pongas en el café (en Decorar) suma 6 huecos, hasta 2.»).
+- **Lo que te ha dado**, en etiquetas: cuánto cabe en la vitrina, cuánto vende Pilar al día, lo que ha vendido en el mostrador y
+  por cuántos granos, las hornadas a la vez gracias al horno y las hornadas de Pilar.
+- Sin la migración 2 en el servidor, la página no sale y el recetario sigue con sus seis fichas.
+
+### 144.3 La especialidad del día
+
+- Cada día el servidor elige **una de tus recetas abiertas** (con su semilla). Paga **+1 grano por pieza**, en la mesa y en el
+  mostrador, y **más clientes la piden**: de quienes piden comida, dos de cada tres quieren su tipo (dulce o salado).
+- Se ve en **una pizarrita de tiza junto a la vitrina**, con el dibujito del color de la pieza. En el recetario, su ficha lleva el
+  canto dorado y la tablilla «Especialidad de hoy». Al servir, va la primera entre lo que hay y su botón dice «· de hoy».
+
+### 144.4 La maestría y «Que lo hornee Pilar»
+
+- Cada receta, con sus hornadas de 2★ o más: **★ con 3** (una pieza más por bandeja), **★★ con 10** (un grano más por pieza
+  servida en la mesa) y **★★★ con 25** («Que lo hornee Pilar»). En la ficha, tres estrellas de horno y lo que falta: «6 hornadas
+  buenas más: un grano más por pieza servida en la mesa.». Con ★★★, «Pilar la hace de memoria.» y **la ficha se dora**. Lo que
+  sale y lo que paga en la ficha ya cuenta la maestría y la especialidad.
+- **«Que lo hornee Pilar»** (con ★★★, junto a «Hornear»): Pilar dice «Déjamelo a mí, que esta me la sé de memoria.» y **sus manos
+  hacen los gestos en 3D** (`cafe_hornear_pilar`): el mismo reconocedor que a mano, con un trazo de mano (`trazoPilar`), así que
+  suenan y se ven igual; nunca dos iguales. Rallar, colmar (o el rodillo y el repulgo) y la pala, en unos 3 s, con la cámara
+  siguiendo cada objeto. La hornada sale como una de 3★. Sacarla sigue siendo tuyo. Con movimiento reducido, de una vez. Siempre
+  se puede hornear a mano.
+
+### 144.5 Servidor
+
+- Migración nueva **`20261226120000_cafe_obrador_mejoras.sql`** (la aplica Francisco). Columnas nuevas en `cafe_obrador` (desde
+  cuándo cuenta el mostrador, la jornada de prueba y lo que ha dado) y en `cafe_obrador_hornadas` (la bandeja y si la horneó
+  Pilar). Para la app: `cafe_obrador_mejorar(mejora, dia)`, `cafe_mostrador(dia)` y `cafe_hornear_pilar(receta)`. Internas: las
+  cifras (`cafe_obrador_precio`, `cafe_obrador_mejora_nivel`, `cafe_obrador_cupo`, `cafe_obrador_tartas`,
+  `cafe_obrador_tarta_huecos`, `cafe_obrador_maestria`, `cafe_obrador_recetario`), y además `cafe_obrador_buenas`,
+  `cafe_obrador_capacidad`, `cafe_obrador_especialidad`, `cafe_mostrador_dias`, `cafe_mostrador_cobrar` y `cafe_hornear_de`.
+  **Redefine** `cafe_pide_comida` (el sesgo de la especialidad), `cafe_obrador_json` (cabe con las tartas, cupo, mostrador,
+  recetas con su maestría y lo que ha dado), `cafe_obrador` (la especialidad), `cafe_hornear` (la pieza de más con ★),
+  `cafe_sacar_hornada` (lo que cabe con las tartas) y `cafe_servir_comida` (+1 especialidad, +1 con ★★). Errores nuevos:
+  `cafe:obrador_mejora`, `cafe:obrador_nivel` y `cafe:maestria`. La comida sigue dando **solo granos**.
+- Sin la migración, el obrador va como en la 1.143.
+
+### 144.6 Pruebas y limitaciones
+
+- Vitest: `cafeObrador.test.js` (las mejoras, las tartas, la maestría, la especialidad, la frase del mostrador y **el trazo de
+  Pilar**, que acaba cada gesto bien hecho a 360, 390 y 430 y con las medidas de la escena) y `cafe-obrador-mejoras.rls.test.js`
+  (PGlite: cifras iguales que en la app, el horno, la vitrina, las tartas, el mostrador con su orden y su tope de 7 días, las
+  jornadas de prueba, la especialidad y su sesgo, la maestría y los permisos). `cafe-obrador.rls.test.js`, al día con la
+  especialidad.
+- E2E con Supabase simulado: `e2e-community/v1144-cafe-obrador-mejoras.spec.js` a 360 y 390 (la caja y el cajón, las fichas con la
+  maestría y la especialidad, las dos mejoras compradas, Pilar rallando y colmando y la vitrina de madera; la vitrina y el horno
+  grado a grado) y, a 390, con movimiento reducido (el cajón y Pilar de un toque). El vídeo de 390 lleva el sonido de la página.
+  `v1143-cafe-obrador.spec.js` sigue pasando a 360 y 390 (cuenta solo las fichas de receta).
+- `cafe-libreria.rls.test.js` › «el reparto (1.139)» sigue fallando desde la 1.142, sin relación.
+- Evidencias en `qa-report/v1144/`.
+- **Sin probar** con la migración aplicada (solo PGlite y el simulado), con cuentas reales ni en móviles reales.

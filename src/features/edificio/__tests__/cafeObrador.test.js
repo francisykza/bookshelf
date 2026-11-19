@@ -155,3 +155,87 @@ describe('los gestos del obrador', () => {
     for (const t of ['rallar', 'colmar', 'rodillo', 'repulgo']) expect(crearGestoObrador(t).completar()).toMatchObject({ hecho: true, mimo: 2, progreso: 1 });
   });
 });
+
+// 1.144 · Bloque 2: las mejoras, la maestría, la especialidad, el mostrador y las manos de Pilar
+import { CUPO_MOSTRADOR, MEJORAS_OBRADOR, PREMIO_MAESTRIA, TARTAS, faltanMaestria, fraseMostrador, maestriaDe, piezasEnLetra, precioMesa, siguienteMejora, tartasEn } from '../cafe/cafeObrador';
+import { trazoPilar } from '../cafe/cafeObradorGestos';
+
+describe('1.144 · las mejoras del obrador', () => {
+  it('el horno y la vitrina suben de grado en grado, con su precio y su nivel, y se acaban', () => {
+    expect(siguienteMejora('horno', 1)).toMatchObject({ grado: 2, precio: 250, nivel: 4 });
+    expect(siguienteMejora('horno', 2)).toMatchObject({ grado: 3, precio: 600, nivel: 6 });
+    expect(siguienteMejora('horno', 3)).toBeNull();
+    expect(siguienteMejora('vitrina', 1)).toMatchObject({ grado: 2, precio: 150 });
+    expect(siguienteMejora('vitrina', 3)).toMatchObject({ grado: 4, precio: 700, nivel: 7 });
+    expect(siguienteMejora('vitrina', 4)).toBeNull();
+    expect(siguienteMejora('otra', 1)).toBeNull();
+    // Cada grado dice cuánto cabe y cuánto vende Pilar: lo mismo que las cifras
+    for (const m of MEJORAS_OBRADOR.vitrina) expect(m.se).toContain(`Pilar vende ${CUPO_MOSTRADOR[m.grado]} al día`);
+  });
+  it('las vitrinas de tartas cuentan hasta dos', () => {
+    expect(tartasEn(null)).toBe(0);
+    expect(tartasEn({ items: [{ id: TARTAS.mueble }, { id: 'otra' }] })).toBe(1);
+    expect(tartasEn({ items: [{ id: TARTAS.mueble }, { id: TARTAS.mueble }, { id: TARTAS.mueble }] })).toBe(2);
+  });
+});
+
+describe('1.144 · la maestría y la especialidad', () => {
+  it('★ con 3 hornadas buenas, ★★ con 10 y ★★★ con 25; lo que falta para la siguiente', () => {
+    expect([0, 2, 3, 9, 10, 24, 25, 99].map(maestriaDe)).toEqual([0, 0, 1, 1, 2, 2, 3, 3]);
+    expect(faltanMaestria(0)).toBe(3);
+    expect(faltanMaestria(4)).toBe(6);
+    expect(faltanMaestria(25)).toBeNull();
+    expect(PREMIO_MAESTRIA).toHaveLength(3);
+  });
+  it('★ da una pieza más por bandeja; ★★ y la especialidad, un grano más cada una en la mesa', () => {
+    expect(piezasDe('magdalenas', 3, 2)).toBe(6);
+    expect(piezasDe('magdalenas', 3, 3)).toBe(7);
+    expect(precioMesa('magdalenas')).toBe(2);
+    expect(precioMesa('magdalenas', { especialidad: 'magdalenas' })).toBe(3);
+    expect(precioMesa('magdalenas', { especialidad: 'empanada', buenas: 10 })).toBe(3);
+    expect(precioMesa('empanada', { especialidad: 'empanada', buenas: 25 })).toBe(5);
+  });
+});
+
+describe('1.144 · el mostrador', () => {
+  it('Pilar dice lo que se llevaron, en letra y con su «y»', () => {
+    expect(fraseMostrador({ magdalenas: 4 })).toBe('«Mientras no estabas se llevaron cuatro magdalenas.»');
+    expect(fraseMostrador({ empanada: 1, magdalenas: 2 })).toBe('«Mientras no estabas se llevaron dos magdalenas y una ración de empanada.»');
+    expect(fraseMostrador({})).toMatch(/vacía/);
+    expect(piezasEnLetra('tortilla', 1)).toBe('un pincho de tortilla');
+    expect(piezasEnLetra('magdalenas', 20)).toBe('20 magdalenas');
+  });
+});
+
+describe('1.144 · «Que lo hornee Pilar»: sus manos hacen cada gesto bien hecho', () => {
+  for (const escala of [360 / 390, 1, 430 / 390]) {
+    it(`a ${Math.round(escala * 390)} px, con el reconocedor de siempre`, () => {
+      let semilla = 7;
+      const azar = () => ((semilla = (semilla * 16807) % 2147483647) / 2147483647);
+      const centro = { x: 195 * escala, y: 380 };
+      for (const tipo of ['rallar', 'colmar', 'rodillo', 'repulgo', 'meter']) {
+        const g = crearGestoObrador(tipo, { escala, centro });
+        const { puntos, ms } = trazoPilar(tipo, { escala, centro, azar });
+        expect(ms).toBeGreaterThan(300);
+        expect(ms).toBeLessThan(1300);
+        let s = g.abajo(puntos[0].x, puntos[0].y);
+        for (const p of puntos.slice(1)) if (!s.hecho) s = g.mover(p.x, p.y);
+        expect(s.hecho, tipo).toBe(true);
+        if (tipo !== 'meter') expect(s.mimo, tipo).toBe(2);
+      }
+    });
+  }
+  it('con la fila de moldes y el borde de la fuente medidos en la escena', () => {
+    const centro = { x: 200, y: 400 };
+    for (const [tipo, med] of [
+      ['colmar', { ancho: 240 }],
+      ['repulgo', { radio: 70 }],
+    ]) {
+      const g = crearGestoObrador(tipo, { centro, ...med });
+      const { puntos } = trazoPilar(tipo, { centro, ...med });
+      let s = g.abajo(puntos[0].x, puntos[0].y);
+      for (const p of puntos.slice(1)) if (!s.hecho) s = g.mover(p.x, p.y);
+      expect(s).toMatchObject({ hecho: true, mimo: 2 });
+    }
+  });
+});
