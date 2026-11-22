@@ -231,7 +231,7 @@ export function CajaMostrador({ escena, obrador, dia, soundOn = false, ayudas = 
           )}
           <div className="cf3-botones">
             {conGesto && (
-              <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar}>
+              <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar} data-atras>
                 Luego
               </button>
             )}
@@ -241,7 +241,7 @@ export function CajaMostrador({ escena, obrador, dia, soundOn = false, ayudas = 
               </button>
             )}
             {fase === 'hecho' && (
-              <button type="button" className="cf3-btn cf3-btn--verde" onClick={onCerrar}>
+              <button type="button" className="cf3-btn cf3-btn--verde" onClick={onCerrar} data-atras>
                 Volver
               </button>
             )}

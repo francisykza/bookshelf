@@ -15,6 +15,7 @@ import { ReviewCard } from '../../reviews/ReadersPanel';
 import { fetchProfiles, reportContent, searchProfiles } from '../services/community';
 import { fetchActivity, fetchMoreActivity } from '../services/connections';
 import { AddToPending } from './AddToPending';
+import { LECTOR_ANONIMO } from '../../../domain/legal';
 
 /** Referencia pública de la obra de una opinión (título y autoría de la comunidad; la portada, la de tu ejemplar). */
 const workRef = (r, books) => {
@@ -42,7 +43,9 @@ function PublicBookSheet({ review, author, books, onClose, onOpenReader }) {
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [onClose]);
-  const alias = author?.alias ?? 'Lector';
+  // De una cuenta borrada: «Lector anónimo», sin perfil que abrir
+  const alias = review.user_id ? (author?.alias ?? 'Lector') : LECTOR_ANONIMO;
+  if (!review.user_id) onOpenReader = null;
   return (
     <section
       className="public-book"
@@ -84,7 +87,9 @@ function PublicBookSheet({ review, author, books, onClose, onOpenReader }) {
 function SharedReview({ review: r, author, books, onRead, onOpenReader }) {
   const [confirming, setConfirming] = useState(false);
   const [notice, setNotice] = useState('');
-  const alias = author?.alias ?? 'Lector';
+  // De una cuenta borrada: «Lector anónimo», sin perfil que abrir
+  const alias = r.user_id ? (author?.alias ?? 'Lector') : LECTOR_ANONIMO;
+  if (!r.user_id) onOpenReader = null;
   const ref = workRef(r, books);
   const report = async () => {
     setConfirming(false);

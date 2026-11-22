@@ -410,13 +410,25 @@ export function obradorDe(o) {
     piezas,
     hornadasHoy: ent(o.hornadas_hoy, 1000),
     vendidas: ent(o.vendidas, 1000000),
+    // 1.145: las piezas vendidas en total (mesa y mostrador), los hitos dados (0 a 5) y la masa del pan ({ lista } o null)
+    vendidasTotal: ent(o.vendidas_total, 1000000000),
+    hitos: ent(o.hitos, 5),
+    masa: o.masa && typeof o.masa === 'object' ? { lista: o.masa.lista === true } : null,
   };
 }
-/** Quién pide algo para acompañar ese día: [{ n, tipo, servido, receta }]. */
+/** 1.145: los hitos nuevos que devuelve el servidor al vender ([3, 4]…). */
+const hitosNuevos = (l) => (Array.isArray(l) ? l.filter((k) => Number.isInteger(k) && k >= 1 && k <= 5) : []);
+/** Quién pide algo para acompañar ese día: [{ n, tipo, quiere, servido, receta }] (1.145: `quiere`, la receta concreta o null). */
 const pidenDe = (l) =>
   (Array.isArray(l) ? l : [])
     .filter((p) => p && Number.isInteger(p.n) && (p.tipo === 'dulce' || p.tipo === 'salado'))
-    .map((p) => ({ n: p.n, tipo: p.tipo, servido: p.servido === true, receta: RECETA_ID.test(p.receta ?? '') ? p.receta : null }));
+    .map((p) => ({
+      n: p.n,
+      tipo: p.tipo,
+      quiere: RECETA_ID.test(p.quiere ?? '') ? p.quiere : null,
+      servido: p.servido === true,
+      receta: RECETA_ID.test(p.receta ?? '') ? p.receta : null,
+    }));
 /** El obrador y quién pide comida ese día: { obrador (null si no se ha abierto), piden }, o null sin la migración. */
 export async function cargarObrador(dia) {
   const sb = await client();
@@ -455,7 +467,27 @@ export async function servirComida(dia, cliente, receta) {
   const { data, error } = await sb.rpc('cafe_servir_comida', { dia, cliente, receta });
   fail(error);
   const d = data?.dado ?? {};
-  return { cafe: normalizar(data?.cafe), obrador: obradorDe(data?.obrador), dado: { granos: d.granos ?? 0, receta: d.receta ?? receta, especialidad: d.especialidad === true, maestria: d.maestria === true } };
+  return {
+    cafe: normalizar(data?.cafe),
+    obrador: obradorDe(data?.obrador),
+    dado: {
+      granos: d.granos ?? 0,
+      receta: d.receta ?? receta,
+      especialidad: d.especialidad === true,
+      maestria: d.maestria === true,
+      // 1.145
+      excentrico: d.excentrico === true,
+      favorito: d.favorito === true,
+      hitos: hitosNuevos(d.hitos),
+    },
+  };
+}
+/** 1.145: dejar la masa del pan reposando en la bodega (con cómo quedó el amasado). Devuelve { obrador }. */
+export async function reposarMasa(amasado) {
+  const sb = await client();
+  const { data, error } = await sb.rpc('cafe_masa_reposar', { amasado: amasado === 2 ? 2 : 1 });
+  fail(error);
+  return { obrador: obradorDe(data?.obrador) };
 }
 
 // ── 1.144: las mejoras del obrador, el mostrador y Pilar en el horno (`20261226120000_cafe_obrador_mejoras.sql`) ──
@@ -465,7 +497,7 @@ const cobradoDe = (c) => {
   const ent = (v, max) => Math.min(max, Math.max(0, Number.isInteger(v) ? v : 0));
   const vendidas = {};
   if (c.vendidas && typeof c.vendidas === 'object') for (const [k, v] of Object.entries(c.vendidas)) if (RECETA_ID.test(k) && ent(v, 1000) > 0) vendidas[k] = ent(v, 1000);
-  return { dias: ent(c.dias, 7), piezas: ent(c.piezas, 1000), granos: ent(c.granos, 100000), vendidas };
+  return { dias: ent(c.dias, 7), piezas: ent(c.piezas, 1000), granos: ent(c.granos, 100000), vendidas, hitos: hitosNuevos(c.hitos) };
 };
 /** El grado siguiente del horno o de la vitrina. Devuelve { cafe, obrador, cobrado } (lo que vendió Pilar antes, si era la vitrina). */
 export async function mejorarObrador(mejora, dia) {
@@ -514,6 +546,7 @@ export function errorCafe(e) {
   if (/cafe:influencer/.test(m)) return 'Ese cliente ya se ha ido. Vuelve a entrar en el café.';
   if (/cafe:taller/.test(m)) return 'El taller se abre en el nivel 3, con la librería.';
   if (/cafe:encargo/.test(m)) return 'Ese encargo ya está terminado. Vuelve a entrar en el taller.';
+  if (/cafe:masa/.test(m)) return 'La masa del pan aún está en la bodega: mañana se greña.';
   if (/cafe:mimo/.test(m)) return 'No se ha podido guardar el encargo. Vuelve a intentarlo.';
   if (/cafe:dia/.test(m)) return 'Ha cambiado el día: vuelve a entrar en el café.';
   if (/cafe:cliente|cafe:receta|cafe:libro/.test(m)) return 'No se ha podido atender. Vuelve a entrar en el café.';
@@ -583,5 +616,15 @@ export async function cargarVisitaCafe(lector) {
       .filter((b) => b && typeof b.genero === 'string')
       .slice(0, 200)
       .map((b) => ({ clave: textoDe(b.clave), titulo: textoDe(b.titulo, 200), genero: b.genero, balda: cifra(b.balda, 99) })),
+    // 1.145: su obrador, para mirarlo (el horno, la vitrina con lo que haya y los adornos de los hitos), o null
+    obrador: obradorVisita(data.obrador),
   };
+}
+/** El obrador de una visita, comprobado: { horno, vitrina, hitos, piezas } o null. */
+function obradorVisita(o) {
+  if (!o || typeof o !== 'object') return null;
+  const piezas = {};
+  if (o.piezas && typeof o.piezas === 'object') for (const [k, v] of Object.entries(o.piezas)) if (RECETA_ID.test(k) && Number.isInteger(v) && v > 0) piezas[k] = Math.min(100, v);
+  const ent = (v, max) => Math.min(max, Math.max(0, Number.isInteger(v) ? v : 0));
+  return { horno: ent(o.horno, 3) || 1, vitrina: ent(o.vitrina, 4) || 1, hitos: ent(o.hitos, 5), piezas };
 }

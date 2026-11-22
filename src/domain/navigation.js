@@ -37,6 +37,13 @@ export function safeParent(loc) {
 }
 
 const readEntry = (state) => (state && state[KEY]?.loc ? state[KEY] : null);
+// Libo, bloque 4 (hooks/useAtras.js): las capas abiertas dentro de una escena apilan entradas encima de la del panel; volver al
+// panel anterior las salta todas de una vez
+const atras = (history) => {
+  const capas = Array.isArray(history.state?.capas) ? history.state.capas.length : 0;
+  if (capas) history.go(-1 - capas);
+  else history.back();
+};
 const entry = (loc, depth, parent) => ({ [KEY]: { loc: normalizeLocation(loc), depth, parent: parent ? normalizeLocation(parent) : null } });
 
 /**
@@ -59,7 +66,7 @@ export function createNavigator(history, onChange = () => {}) {
       const loc = normalizeLocation(to);
       if (sameLocation(loc, cur.loc)) return;
       if (!replace && cur.depth > 0 && cur.parent && sameLocation(loc, cur.parent)) {
-        history.back();
+        atras(history);
         return;
       }
       const next = replace ? entry(loc, cur.depth, cur.parent) : entry(loc, cur.depth + 1, cur.loc);
@@ -71,7 +78,7 @@ export function createNavigator(history, onChange = () => {}) {
     /** Volver: por el historial si hay una entrada interna anterior; si no, reemplazando por el destino seguro. */
     back() {
       if (cur.depth > 0) {
-        history.back();
+        atras(history);
         return;
       }
       const parent = safeParent(cur.loc);
@@ -83,8 +90,10 @@ export function createNavigator(history, onChange = () => {}) {
     },
     /** `popstate`: restaura el destino de la entrada sin apilar nada. */
     pop(state) {
+      const antes = cur.loc;
       cur = readEntry(state) ?? entry(ROOT, 0, null)[KEY];
-      onChange(cur.loc);
+      // Atrás sobre una capa de la escena (hooks/useAtras.js) no cambia de sitio: no hace falta repintar la app
+      if (!sameLocation(antes, cur.loc)) onChange(cur.loc);
     },
   };
 }

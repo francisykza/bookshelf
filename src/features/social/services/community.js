@@ -54,7 +54,8 @@ export async function saveMyProfile(userId, { alias, avatar_id, community_enable
 
 /** Alias y avatar de varios autores en una sola consulta (con caché por usuario). */
 export async function fetchProfiles(ids) {
-  const missing = [...new Set(ids)].filter((id) => !cache.profiles.has(id));
+  // Sin id (lo que dejó una cuenta borrada, «Lector anónimo»): no hay perfil que pedir
+  const missing = [...new Set(ids)].filter((id) => id && !cache.profiles.has(id));
   if (missing.length) {
     const sb = await client();
     const { data, error } = await sb.from('profiles').select('user_id, alias, avatar_id').in('user_id', missing);

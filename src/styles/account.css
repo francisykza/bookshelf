@@ -346,3 +346,108 @@
   padding: 0;
   list-style: none;
 }
+
+/* Play Store (docs/qa/play-store.md §2): normas al crear la cuenta, borrar la cuenta y páginas legales */
+.account-check--legal {
+  align-items: flex-start;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.account-check--legal a,
+.account-legal__links a {
+  color: var(--color-bay);
+}
+
+.account-legal__links {
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.account-link--danger {
+  margin-top: 12px;
+  color: #8a2c1d;
+}
+
+.account-delete {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgb(138 44 29 / 0.45);
+  border-radius: 10px;
+  background: rgb(138 44 29 / 0.05);
+}
+
+.account-delete h4 {
+  margin: 0;
+  color: #8a2c1d;
+}
+
+.account-delete ul {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.account-delete li + li {
+  margin-top: 4px;
+}
+
+.account-delete li {
+  display: list-item;
+}
+
+.account-delete label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.account-delete input {
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid rgb(60 30 10 / 0.35);
+  border-radius: 8px;
+  font: inherit;
+  letter-spacing: 0.08em;
+}
+
+.account-btn--danger {
+  border-color: #6e2316;
+  background: #8a2c1d;
+  color: #fff8ef;
+  font-weight: 600;
+}
+
+/* Libo, el gato guía (docs/qa/libo.md): cómo se porta */
+.account-libo h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-libo h3 img {
+  width: auto;
+  height: 40px;
+}
+
+.account-libo__modos {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.account-libo__modos legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

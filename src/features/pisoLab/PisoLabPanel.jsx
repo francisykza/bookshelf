@@ -30,10 +30,12 @@ import { rememberMyPiso, saveMyPiso } from '../edificio/myPiso';
 import { salaPersonajes } from '../edificio/service';
 import { marcarSalida } from '../edificio/salida';
 import { useMonitorAlmacen } from '../edificio/hotel/almacenHoy';
+import { useAvisosLibo } from '../libo/useAvisosLibo';
 import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
 import { expuestosDe, publicarExpuestos } from './expuestos';
 import '../tablon/tablon.css';
 import { PantallaCarga } from '../../ui/PantallaCarga';
+import { Libo } from '../libo/LiboRincon';
 
 const SAVE_MS = 400;
 const NO_NEWS = { added: [], moved: 0, stored: 0 };
@@ -370,7 +372,7 @@ function EssentialsBar({ room, onPick, onReset }) {
   );
 }
 
-function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenBook, onRegister, onOpenLibrary, onAddBook, home = false, onEdificio, onAnterior }) {
+function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenBook, onRegister, onOpenLibrary, onAddBook, home = false, onEdificio, onAnterior, onLibo = null }) {
   const { state, actions } = useLibrary();
   const { books, settings } = state;
   // `real`: tu piso del edificio (useMyPiso), tal como está guardado. Sin él, un piso del piloto (solo con ?piloto=piso)
@@ -384,6 +386,8 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   const editable = canEdit(piso);
   // 1.135 · La «!» del almacén sobre el monitor: solo en tu piso, con cuenta
   const monitor = useMonitorAlmacen(Boolean(real) && editable);
+  // Libo (bloque 3): en tu piso de inicio reúne los avisos del almacén, el café y el buzón
+  const avisosLibo = useAvisosLibo(Boolean(home && real && editable), real?.userId ?? null);
   // Un visitante nunca llega al editor, aunque el historial lo pida
   const listing = select === 'toda' && editable;
   // Tu piso abre la biblioteca actual; la de siempre queda solo para quien no tiene piso que mostrar
@@ -404,6 +408,8 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   const [noGpu, setNoGpu] = useState(false);
   const [boardReady, setBoardReady] = useState(0);
   const apiRef = useRef(null);
+  // Libo (docs/qa/libo.md): la guía se dibuja sobre toda la habitación
+  const raiz = useRef(null);
   // Salir a pie (Exteriores en 3D, bloque 2): vas andando hasta la puerta y el portal sigue desde el umbral
   const goingOut = useRef(false);
   const goOut = () => {
@@ -558,7 +564,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
 
   const title = piso.propio ? `Tu piso · ${doorLabel(piso)}` : `Piso de ${piso.nombre} · ${doorLabel(piso)}`;
   return (
-    <div className="ed-room ed-inside plab-room">
+    <div ref={raiz} className="ed-room ed-inside plab-room">
       <div className="ed-bar plab-bar" inert={listing}>
         <button type="button" className="px-btn" onClick={leave}>
           <ArrowLeft aria-hidden="true" /> {view === 'decorar' || view === 'balda' ? (editable ? 'Volver al sillón' : 'Volver a la sala') : view === 'actual' ? 'Volver' : home ? 'Al edificio' : 'Al portal'}
@@ -654,6 +660,12 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
                 <span>Registrar lectura</span>
                 <small>{reading.title}</small>
               </button>
+            ) : editable && !books.length && onAddBook ? (
+              // Libo, bloque 4 (§3.5): sin libros, «Elegir una lectura» llevaba a una biblioteca vacía; el primer paso es añadir uno
+              <button type="button" className="plab-primary" onClick={onAddBook}>
+                <span>Añade tu primer libro</span>
+                <small>Por título, autor o ISBN</small>
+              </button>
             ) : editable ? (
               <button type="button" className="plab-primary" onClick={() => (shelfBooks ? onSelect(`balda:${TOP_ROW}`) : abrirBiblioteca())}>
                 <span>Elegir una lectura</span>
@@ -702,6 +714,8 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
               />
             </div>
             {!editable && <p className="plab-note">Puedes mirar y salir por la puerta; lo demás no se toca.</p>}
+            {/* Libo vive en la esquina de tu piso de inicio; la primera vez, la bienvenida */}
+            {home && real && editable && !select && <Libo lugar="piso" capitulo="bienvenida" contexto={{ leyendo: Boolean(reading) }} listo={boardReady > 0} raiz={raiz} onAjustes={() => onSelect('abrir:libo')} hub avisos={avisosLibo} onIr={onLibo} />}
             {/* Biblioteca de demostración en este navegador: se dice, y se puede volver a la tuya (la nube está apagada mientras tanto) */}
             {editable && demoLibraryActive() && (
               <p className="plab-note">
@@ -720,7 +734,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
               </p>
             )}
           </div>
-          {listing && <PisoLibrary books={books} settings={settings} placed={shelfBooks?.placed ?? new Set()} memory={libraryMemory} notice={notice} onBack={onBack} onOpen={(book) => onOpenBook(book, TOP_ROW)} onToggle={exhibit} onAdd={onAddBook} />}
+          {listing && <PisoLibrary books={books} settings={settings} placed={shelfBooks?.placed ?? new Set()} memory={libraryMemory} notice={notice} onBack={onBack} onOpen={(book) => onOpenBook(book, TOP_ROW)} onToggle={exhibit} onAdd={onAddBook} onImport={() => onSelect('abrir:import')} />}
         </>
       )}
     </div>
@@ -731,10 +745,11 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
  * La habitación de inicio: tu piso del edificio (1.88). Hasta que se sabe quién eres y llega tu piso, solo un aviso; sin
  * cuenta o sin la comunidad, lo que falta y los caminos de siempre. Nunca un piso de prueba.
  */
-function HomePiso({ onOpenLibrary, onEdificio, onAnterior, onOpenAccount, onOpenProfile, ...rest }) {
+function HomePiso({ onOpenLibrary, onEdificio, onAnterior, onOpenAccount, onOpenProfile, onLibo, ...rest }) {
   const mine = useMyPiso();
+  const raiz = useRef(null);
   useEffect(() => installPixelVars(), []);
-  if (mine.state === 'ready') return <PisoView key={mine.piso.id} piso={mine.piso} real={{ userId: mine.userId, room: mine.room, inventory: mine.inventory }} onOpenLibrary={onOpenLibrary} onEdificio={onEdificio} onAnterior={onAnterior} {...rest} />;
+  if (mine.state === 'ready') return <PisoView key={mine.piso.id} piso={mine.piso} real={{ userId: mine.userId, room: mine.room, inventory: mine.inventory }} onOpenLibrary={onOpenLibrary} onEdificio={onEdificio} onAnterior={onAnterior} onLibo={onLibo} {...rest} />;
   // 1.138 (SPEC §138): mientras llega tu piso, la pantalla de carga de Libotown, la misma que al abrir la app
   if (mine.state === 'loading') return <PantallaCarga mensaje="Abriendo tu piso…" />;
   const text = {
@@ -744,7 +759,7 @@ function HomePiso({ onOpenLibrary, onEdificio, onAnterior, onOpenAccount, onOpen
     error: mine.error || 'No se ha podido abrir tu piso.',
   }[mine.state];
   return (
-    <div className="ed-room ed-inside plab-room plab-home" data-estado={mine.state}>
+    <div ref={raiz} className="ed-room ed-inside plab-room plab-home" data-estado={mine.state}>
       <div className="ed-bar plab-bar">
         <button type="button" className="px-btn" onClick={onEdificio}>
           <ArrowLeft aria-hidden="true" /> Al edificio
@@ -777,11 +792,12 @@ function HomePiso({ onOpenLibrary, onEdificio, onAnterior, onOpenAccount, onOpen
           </button>
         )}
       </div>
+      <Libo lugar={mine.state} variante="esquina" raiz={raiz} onAjustes={onOpenAccount} />
     </div>
   );
 }
 
-export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose, onExit, onOpenBook, onRegister, onOpenLibrary, onAddBook, home = false, onEdificio, onAnterior, onOpenAccount, onOpenProfile }) {
+export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose, onExit, onOpenBook, onRegister, onOpenLibrary, onAddBook, home = false, onEdificio, onAnterior, onOpenAccount, onOpenProfile, onLibo = null }) {
   const isHome = pisoId === HOME_PISO;
   const piso = isHome ? null : pisoById(pisoId);
   const { state } = useLibrary();
@@ -801,7 +817,7 @@ export function PisoLabPanel({ pisoId, select, onOpen, onSelect, onBack, onClose
     // Con el registro encima, Escape es suyo; en la habitación de inicio, Escape no la cierra (es la pantalla de inicio)
     <PanelShell onClose={/^registro/.test(select ?? '') || /^(ficha:|ordenador|tablon|abrir:)/.test(select ?? '') || (home && !select) ? () => {} : select === 'toda' ? onBack : onClose} label={piso || isHome ? 'Interior del piso' : 'El edificio del puerto · piloto'} variant="edificio">
       {isHome ? (
-        <HomePiso select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} onAddBook={onAddBook} home={home} onEdificio={onEdificio} onAnterior={onAnterior} onOpenAccount={onOpenAccount} onOpenProfile={onOpenProfile} />
+        <HomePiso select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} onAddBook={onAddBook} home={home} onEdificio={onEdificio} onAnterior={onAnterior} onOpenAccount={onOpenAccount} onOpenProfile={onOpenProfile} onLibo={onLibo} />
       ) : piso ? (
         <PisoView key={piso.id} piso={piso} select={select} onSelect={onSelect} onBack={onBack} onExit={onExit} onOpenBook={onOpenBook} onRegister={onRegister} onOpenLibrary={onOpenLibrary} onAddBook={onAddBook} home={home} onEdificio={onEdificio} onAnterior={onAnterior} />
       ) : (

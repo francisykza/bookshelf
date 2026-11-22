@@ -1,11 +1,13 @@
 // «Tu cuenta» (SPEC §9ter, 1.16.0): entrar con correo y contraseña, estado de la sincronización, elección
 // cuando hay dos versiones y copias en archivo (exportar / importar). Ficha de papel algodón como los menús.
 import { playUiSound } from '../../audio/uiSounds';
-import { CloudCheck, CloudOff, Download, KeyRound, LogOut, RefreshCw, Upload, UserPlus } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { signIn, signUp } from '../../services/cloud';
+import { CloudCheck, CloudOff, Download, KeyRound, LogOut, RefreshCw, Trash2, Upload, UserPlus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { deleteAccount, signIn, signUp } from '../../services/cloud';
+import { EDAD_MINIMA, LEGAL, PALABRA_BORRAR } from '../../domain/legal';
 import { useCloud } from '../../state/cloudSync';
 import { hydrate, useLibrary } from '../../state/useLibrary';
+import { MODOS, cambiarModo, liboDe } from '../../features/libo/libo';
 import { PanelShell } from './PanelShell';
 
 const STATUS_TEXT = {
@@ -57,6 +59,7 @@ function SignIn() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [info, setInfo] = useState('');
+  const [acepto, setAcepto] = useState(false);
   const signup = mode === 'signup';
 
   const submit = async (event) => {
@@ -96,7 +99,23 @@ function SignIn() {
         onChange={(e) => setPassword(e.target.value)}
         placeholder={signup ? 'Mínimo 8 caracteres' : ''}
       />
-      <button type="submit" className="account-btn account-btn--primary" disabled={busy || !email.includes('@') || password.length < 8}>
+      {signup && (
+        <label className="account-check account-check--legal">
+          <input type="checkbox" checked={acepto} onChange={(e) => setAcepto(e.target.checked)} />
+          <span>
+            Tengo {EDAD_MINIMA} años o más y acepto las{' '}
+            <a href={LEGAL.normas} target="_blank" rel="noopener">
+              normas de la comunidad
+            </a>{' '}
+            y la{' '}
+            <a href={LEGAL.privacidad} target="_blank" rel="noopener">
+              política de privacidad
+            </a>
+            .
+          </span>
+        </label>
+      )}
+      <button type="submit" className="account-btn account-btn--primary" disabled={busy || !email.includes('@') || password.length < 8 || (signup && !acepto)}>
         {signup ? <UserPlus aria-hidden="true" /> : <KeyRound aria-hidden="true" />} {signup ? 'Crear mi cuenta' : 'Entrar'}
       </button>
       <button
@@ -165,6 +184,91 @@ function Backups() {
 }
 
 /**
+ * Borrar la cuenta (Play Store, docs/qa/play-store.md §2.1). Hay que escribir BORRAR: no se puede deshacer. Lo que dejaste a
+ * otros queda como «Lector anónimo» (Francisco, 20-11-2026) y lo de este dispositivo se queda aquí.
+ */
+function BorrarCuenta({ onBorrada }) {
+  const [abierto, setAbierto] = useState(false);
+  const [texto, setTexto] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const listo = texto.trim().toUpperCase() === PALABRA_BORRAR;
+
+  const borrar = async (event) => {
+    event.preventDefault();
+    if (!listo) return;
+    setBusy(true);
+    setMsg('');
+    try {
+      await deleteAccount();
+      await onBorrada();
+    } catch (err) {
+      setMsg(/fetch|network/i.test(String(err?.message ?? err)) ? 'No hay conexión: tu cuenta sigue como estaba. Prueba otra vez con red.' : 'No se ha podido borrar la cuenta y no se ha borrado nada. Prueba otra vez.');
+      setBusy(false);
+    }
+  };
+
+  const cerrar = () => {
+    setAbierto(false);
+    setTexto('');
+    setMsg('');
+  };
+
+  if (!abierto)
+    return (
+      <button type="button" className="account-link account-link--danger" onClick={() => setAbierto(true)}>
+        Borrar mi cuenta
+      </button>
+    );
+  return (
+    <form className="account-delete" onSubmit={borrar} aria-labelledby="account-delete-title">
+      <h4 id="account-delete-title">Borrar mi cuenta</h4>
+      <ul>
+        <li>Se borran tu cuenta, tu copia en la nube, tu perfil, tu piso, tu café y tus partidas. No se puede deshacer.</li>
+        <li>Tus reseñas, tus mensajes en clubes, los post-its y dibujos que enviaste y los lomos que dejaste se quedan, pero como «Lector anónimo».</li>
+        <li>Tus clubes pasan al miembro más antiguo.</li>
+        <li>Lo que hay en este dispositivo se queda aquí hasta que lo borres o desinstales la app. Si quieres conservarlo, exporta una copia antes.</li>
+      </ul>
+      <label htmlFor="account-delete-word">Escribe {PALABRA_BORRAR} para confirmar</label>
+      <input id="account-delete-word" value={texto} onChange={(e) => setTexto(e.target.value)} autoComplete="off" autoCapitalize="characters" spellCheck={false} />
+      <div className="account-row">
+        <button type="submit" className="account-btn account-btn--danger" disabled={!listo || busy}>
+          <Trash2 aria-hidden="true" /> {busy ? 'Borrando…' : 'Borrar mi cuenta para siempre'}
+        </button>
+        <button type="button" className="account-btn" disabled={busy} onClick={cerrar}>
+          No, volver
+        </button>
+      </div>
+      {msg && (
+        <p className="account-error" role="alert">
+          {msg}
+        </p>
+      )}
+    </form>
+  );
+}
+
+/** Privacidad, normas y aviso legal: páginas públicas de libotown.es (las enlaza también la ficha de la Play Store) */
+function Legal() {
+  return (
+    <section className="account-section account-legal">
+      <h3>Privacidad y normas</h3>
+      <p className="account-row account-legal__links">
+        <a href={LEGAL.privacidad} target="_blank" rel="noopener">
+          Política de privacidad
+        </a>
+        <a href={LEGAL.normas} target="_blank" rel="noopener">
+          Normas de la comunidad
+        </a>
+        <a href={LEGAL.avisoLegal} target="_blank" rel="noopener">
+          Aviso legal
+        </a>
+      </p>
+    </section>
+  );
+}
+
+/**
  * Sonido de la interfaz (SPEC §17.5): efectos activados y su volumen propio (preferencias de este dispositivo).
  * Arrastrar el volumen no suena; solo «Probar» reproduce una muestra.
  */
@@ -207,8 +311,47 @@ function UiSound() {
   );
 }
 
-export function AccountPanel({ onClose, onOpenProfile }) {
+/**
+ * Libo, el gato guía (docs/qa/libo.md): cómo se porta. Viaja con tus ajustes. `foco`: se abre desde su bocadillo y la
+ * sección se pone a la vista.
+ */
+function LiboAjustes({ foco = false }) {
+  const { state, actions } = useLibrary();
+  const { modo } = liboDe(state.settings);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!foco) return;
+    ref.current?.scrollIntoView({ block: 'start' });
+    ref.current?.querySelector('input:checked')?.focus({ preventScroll: true });
+  }, [foco]);
+  return (
+    <section ref={ref} className="account-section account-libo" aria-labelledby="account-libo-t">
+      <h3 id="account-libo-t">
+        <img src="/assets/libo/libo-320.webp" alt="" aria-hidden="true" width="27" height="40" /> Libo, el gato guía
+      </h3>
+      <fieldset className="account-libo__modos">
+        <legend>Cómo se porta Libo</legend>
+        {Object.entries(MODOS).map(([id, nombre]) => (
+          <label key={id} className="account-check">
+            <input type="radio" name="libo-modo" value={id} checked={modo === id} onChange={() => actions.setSettings(cambiarModo(state.settings, id))} />
+            {nombre}
+          </label>
+        ))}
+      </fieldset>
+      <p className="account-hint">
+        {modo === 'sugiere'
+          ? 'Te enseña cada sitio la primera vez y te recuerda alguna cosa, como mucho una al día.'
+          : modo === 'llamar'
+            ? 'Se queda en su esquina y solo habla cuando le tocas.'
+            : 'No sale en las esquinas. Puedes despertarle desde aquí cuando quieras.'}
+      </p>
+    </section>
+  );
+}
+
+export function AccountPanel({ onClose, onOpenProfile, foco = null }) {
   const cloud = useCloud();
+  const [borrada, setBorrada] = useState(false);
 
   return (
     <PanelShell onClose={onClose} label="Tu cuenta" variant="account">
@@ -231,6 +374,11 @@ export function AccountPanel({ onClose, onOpenProfile }) {
               {STATUS_TEXT[cloud.status] ?? ''}
             </p>
             {cloud.error && <p className="account-error" role="alert">{cloud.error}</p>}
+            {borrada && !cloud.user && (
+              <p className="account-hint" role="status">
+                Tu cuenta se ha borrado. Lo de este dispositivo sigue aquí: puedes seguir usando Libotown sin cuenta.
+              </p>
+            )}
 
             {cloud.user ? (
               <>
@@ -261,6 +409,12 @@ export function AccountPanel({ onClose, onOpenProfile }) {
                     <LogOut aria-hidden="true" /> Cerrar sesión
                   </button>
                 </div>
+                <BorrarCuenta
+                  onBorrada={async () => {
+                    await cloud.signOut();
+                    setBorrada(true);
+                  }}
+                />
               </>
             ) : (
               cloud.status !== 'loading' && <SignIn />
@@ -280,6 +434,8 @@ export function AccountPanel({ onClose, onOpenProfile }) {
         )}
         <Backups />
         <UiSound />
+        <LiboAjustes foco={foco === 'libo'} />
+        <Legal />
       </div>
     </PanelShell>
   );

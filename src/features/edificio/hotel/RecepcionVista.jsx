@@ -11,6 +11,7 @@
 // plano isométrico.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PantallaCarga } from '../../../ui/PantallaCarga';
+import { useAtras } from '../../../hooks/useAtras';
 
 const RCP_NAMES = {
   recepcion: "Recepción",
@@ -214,6 +215,12 @@ export function Recepcion3D({ onStreet, onPlano, onFail, paper }) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onStreet]);
+
+  // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil cierra el papel abierto o saca del ascensor, como Escape
+  useAtras(Boolean(spot), () => {
+    setCabina(false);
+    setSpot(null);
+  });
 
   const pick = (id) => choose.current(id);
   return (

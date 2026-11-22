@@ -1,5 +1,5 @@
 // Onboarding diegético (SPEC §16, Anexo B): máquina de estados explícita y almacenamiento seguro. Sin React.
-// idle → welcome → reading → habits → social → gift → completed; «Saltar guía» desde cualquier parada.
+// idle → welcome → reading → habits → puerto → social → gift → completed; «Saltar guía» desde cualquier parada.
 // Las paradas se habilitan por fase: en la Fase 1 solo bienvenida, lectura y rituales (social y regalo quedan
 // registradas como pendientes y no se mencionan). La clave de finalización es local a este navegador.
 
@@ -7,22 +7,23 @@ export const ONBOARDING_KEY = 'bookshelf_onboarding_done';
 /** Fase del producto desplegada: decide qué paradas existen. */
 export const CURRENT_PHASE = 1;
 
-export const STATES = ['idle', 'welcome', 'reading', 'habits', 'social', 'gift', 'completed'];
+export const STATES = ['idle', 'welcome', 'reading', 'habits', 'puerto', 'social', 'gift', 'completed'];
 
 export const STOPS = {
   welcome: {
     phase: 1,
     anchor: 'book',
     secondary: [],
-    title: 'Bienvenido a tu refugio de lectura',
-    text: 'Aquí tus libros, tus pequeños rituales y las historias compartidas encuentran su lugar.',
+    // Desde la guía de Libo (docs/qa/libo.md): se presenta el gato del logo
+    title: 'Hola, soy Libo',
+    text: 'El gato de Libotown. Esta es tu habitación junto al mar: aquí tus libros, tus pequeños rituales y las historias compartidas encuentran su lugar.',
   },
   reading: {
     phase: 1,
     anchor: 'book',
-    secondary: ['shelf', 'figures'],
-    title: 'Lectura y colección',
-    text: 'Registra tu lectura desde el libro abierto. En las baldas encontrarás tu biblioteca y tus figuras.',
+    secondary: ['shelf'],
+    title: 'Tu lectura',
+    text: 'Registra tu lectura desde el libro abierto. En las baldas encontrarás tu biblioteca.',
   },
   habits: {
     phase: 1,
@@ -31,6 +32,14 @@ export const STOPS = {
     title: 'Rituales',
     text: 'Consulta tu calendario y tu racha en el portátil. Toca el té para dedicar un rato tranquilo a leer.',
   },
+  // Libo (docs/qa/libo.md): la puerta-ventana baja al edificio del puerto
+  puerto: {
+    phase: 1,
+    anchor: 'puerto',
+    secondary: [],
+    title: 'El edificio del puerto',
+    text: 'Por la puerta-ventana bajas al edificio: tus vecinos, el café-librería del bajo y el Gran Hotel.',
+  },
   // Fase 2 (pendiente): «Tu refugio continúa al otro lado. Vamos al Salón Social.»
   social: { phase: 2, anchor: 'tablet', secondary: [], title: 'Salón Social', text: 'Tu refugio continúa al otro lado. Vamos al Salón Social.' },
   // Fase 3 (pendiente): «Tu primera sorpresa te espera en el Ático.»
@@ -38,7 +47,7 @@ export const STOPS = {
 };
 
 /** Paradas disponibles en una fase, en orden. */
-export const route = (phase = CURRENT_PHASE) => ['welcome', 'reading', 'habits', 'social', 'gift'].filter((s) => STOPS[s].phase <= phase);
+export const route = (phase = CURRENT_PHASE) => ['welcome', 'reading', 'habits', 'puerto', 'social', 'gift'].filter((s) => STOPS[s].phase <= phase);
 
 /** ¿Es una parada visible? */
 export const isStop = (state, phase = CURRENT_PHASE) => route(phase).includes(state);

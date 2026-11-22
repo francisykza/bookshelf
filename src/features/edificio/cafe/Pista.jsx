@@ -42,6 +42,13 @@ const TRAZOS = {
   pasadas: 'M 6 30 L 82 30 Q 88 41 82 52 L 6 52',
   circulos: 'M 44 30 a 14 14 0 1 1 -0.1 0 m 0.1 6 a 8 8 0 1 1 -0.1 0',
   barrer: 'M 6 44 L 82 44 M 82 44 L 72 36 M 82 44 L 72 52',
+  // 1.145, el obrador: la ola de la glasa, el empujón de la palma, el tajo, la jota de la espátula, abrir el huevo y media vuelta
+  ola: 'M 6 44 Q 20 22 34 44 T 62 44 T 84 44',
+  empujar: 'M 44 72 L 44 16 M 34 28 L 44 16 L 54 28',
+  tajo: 'M 30 8 Q 60 44 34 80',
+  jota: 'M 40 8 L 40 58 Q 40 78 58 70 L 64 50',
+  cascar: 'M 28 34 L 36 42 M 40 46 L 78 46 M 78 46 L 68 38 M 78 46 L 68 54',
+  'media-vuelta': 'M 44 76 A 32 32 0 0 1 44 12 M 44 12 L 56 8 M 44 12 L 52 24',
 };
 
 /** La pista del gesto `tipo` (o la de `trazo`, una de `TRAZOS`), dibujada sobre el objeto. */

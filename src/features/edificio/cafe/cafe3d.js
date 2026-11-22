@@ -3348,6 +3348,40 @@ function tabiqueKit(s) {
 /** Una pieza (cruda o hecha, de 0 a 1), en (x, y) sobre z. */
 function piezaKit(s, receta, x, y, z, hecha = 1, o = {}) {
   const tono = (a, b) => a.map((v, i) => Math.round(v + (b[i] - v) * hecha));
+  // 1.145: la galleta del puerto (una estrellita con su hilillo de glasa), la pieza de pan (redonda, con su greña y harina), la
+  // porción de bizcocho (con el azúcar glas por encima) y el pincho de tortilla (con su palillo)
+  if (receta === 'galletas') {
+    const d = tono([240, 222, 176], [222, 168, 92]);
+    pushBox(s, [x - 0.026, y - 0.012, z, x + 0.026, y + 0.012, z + 0.01], d, o);
+    pushBox(s, [x - 0.012, y - 0.026, z, x + 0.012, y + 0.026, z + 0.01], d, o);
+    pushBox(s, [x - 0.019, y - 0.019, z, x + 0.019, y + 0.019, z + 0.011], tono([236, 216, 168], [210, 150, 78]), o);
+    if (hecha > 0.9) {
+      pushBox(s, [x - 0.02, y - 0.003, z + 0.011, x + 0.02, y + 0.003, z + 0.014], [250, 248, 244], o);
+      pushBox(s, [x - 0.003, y - 0.02, z + 0.011, x + 0.003, y + 0.02, z + 0.014], [250, 248, 244], o);
+    }
+    return;
+  }
+  if (receta === 'pan') {
+    const d = tono([236, 220, 186], [184, 118, 58]);
+    pushBox(s, [x - 0.03, y - 0.026, z, x + 0.03, y + 0.026, z + 0.022], d, o);
+    pushBox(s, [x - 0.022, y - 0.018, z + 0.022, x + 0.022, y + 0.018, z + 0.036], tono([240, 226, 194], [200, 136, 66]), o);
+    pushBox(s, [x - 0.004, y - 0.02, z + 0.036, x + 0.006, y + 0.02, z + 0.039], tono([226, 206, 170], [236, 196, 128]), o);
+    if (hecha > 0.9) for (const [a, b] of [[-0.014, -0.01], [0.012, 0.008], [-0.008, 0.012]]) pushBox(s, [x + a, y + b, z + 0.036, x + a + 0.004, y + b + 0.004, z + 0.038], [246, 240, 228], o);
+    return;
+  }
+  if (receta === 'bizcocho') {
+    pushBox(s, [x - 0.028, y - 0.022, z, x + 0.028, y + 0.022, z + 0.03], tono([242, 222, 164], [196, 132, 70]), o);
+    pushBox(s, [x - 0.024, y - 0.018, z + 0.008, x + 0.024, y + 0.018, z + 0.026], tono([246, 230, 176], [236, 206, 140]), o);
+    pushBox(s, [x - 0.028, y - 0.022, z + 0.03, x + 0.028, y + 0.022, z + 0.034], hecha > 0.9 ? [250, 248, 246] : tono([242, 222, 164], [170, 104, 52]), o);
+    return;
+  }
+  if (receta === 'tortilla') {
+    pushBox(s, [x - 0.026, y - 0.022, z, x + 0.026, y + 0.022, z + 0.026], tono([246, 226, 150], [236, 196, 92]), o);
+    pushBox(s, [x - 0.028, y - 0.024, z + 0.022, x + 0.028, y + 0.024, z + 0.028], tono([240, 214, 130], [196, 136, 52]), o);
+    for (const [a, b] of [[-0.012, -0.008], [0.01, 0.006]]) pushBox(s, [x + a, y - 0.0225, z + 0.006 + b * 0.5, x + a + 0.008, y - 0.021, z + 0.014 + b * 0.5], [252, 240, 196], o);
+    pushBox(s, [x - 0.002, y - 0.002, z + 0.028, x + 0.002, y + 0.002, z + 0.07], [214, 186, 140], o);
+    return;
+  }
   if (receta === 'empanada') {
     const d = tono(MASA_C, DORADO_O);
     pushBox(s, [x - 0.032, y - 0.022, z, x + 0.032, y + 0.022, z + 0.022], d, o);
@@ -3444,9 +3478,18 @@ function obradorVivoKit(s, est = {}) {
   const { x1, hondo: H, boca } = HORNO;
   const { alto } = MESA_OBRADOR;
   const cx = (boca.x0 + boca.x1) / 2;
-  const { fase = null, receta = null, pose = {}, horneando = [], listo = false, horno = 1, pilar = false } = est;
-  const dentro = horneando[0] ?? null;
+  const { fase = null, receta = null, pose = {}, horneando = [], listo = false, horno = 1, pilar = false, fogon = false, hitos = 0, masa = null } = est;
+  // 1.145: la tortilla se hace en el fogón, no en el horno; las demás, al horno
+  const alFogon = horneando.filter((h) => h.receta === 'tortilla');
+  const alHorno = horneando.filter((h) => h.receta !== 'tortilla');
+  const dentro = alHorno[0] ?? null;
+  const conTortilla = (receta ?? horneando[0]?.receta) === 'tortilla';
   hornoGradoKit(s, horno);
+  adornosHitos(s, hitos);
+  if (fogon || alFogon.length) fogonKit(s, { fase, receta, pose, alFogon, pilar, conTortilla });
+  // La masa del pan: recién amasada, al cesto (camino de la bodega); a la mañana siguiente, subida bajo su paño, en la mesa
+  if (fase === 'reposa') cestoMasa(s, TRABAJO.x, TRABAJO.y, MESA_OBRADOR.alto, false);
+  else if (masa === 'lista' && !(receta === 'pan' && fase === 'grenar')) cestoMasa(s, MESA_OBRADOR.x1 - 0.16, MESA_OBRADOR.y0 + 0.15, MESA_OBRADOR.alto, true);
   for (let k = 0; k < 5; k += 1) {
     const bx = boca.x0 + 0.05 + k * 0.1;
     pushBox(s, [bx, 0.12, boca.z0, bx + 0.07, 0.24, boca.z0 + 0.025 + hash(k, 5) * 0.035], dentro ? [255, 150 + k * 12, 60] : [176, 66, 38], { glow: true });
@@ -3454,14 +3497,18 @@ function obradorVivoKit(s, est = {}) {
   if (dentro) pushBox(s, [boca.x0 + 0.03, 0.26, boca.z0 + 0.001, boca.x1 - 0.03, H - 0.06, boca.z0 + 0.004], [120, 56, 34], { glow: true });
   // Lo que hay en el horno: una bandeja por guía (1.144: hasta tres, una encima de otra); la que sale con la pala va la primera
   const fuera = H + 0.32;
-  horneando.slice(0, 3).forEach((h, k) => {
-    if (k === 0 && fase === 'sacar') return;
+  alHorno.slice(0, 3).forEach((h, k) => {
+    if (k === 0 && fase === 'sacar' && !conTortilla) return;
     bandejaKit(s, h.receta, cx, 0.45, boca.z0 + 0.005 + k * 0.105, Math.min(1, h.t ?? 1));
   });
   // La pala, con la bandeja en la guía que le toca (la de abajo si el horno está vacío)
-  const zPala = boca.z0 + 0.006 + (fase === 'meter' ? Math.min(2, horneando.length) * 0.105 : 0);
+  const zPala = boca.z0 + 0.006 + (fase === 'meter' ? Math.min(2, alHorno.length) * 0.105 : 0);
   const mango = (y) => [cx, y + 1.0, zPala + 0.045];
-  if (fase === 'meter') {
+  if ((fase === 'meter' || fase === 'sacar') && conTortilla) {
+    // La tortilla, al fogón: la pala se queda apoyada (lo lleva fogonKit)
+    pushBox(s, [x1 + 0.03, 0.06, 0.32, x1 + 0.07, 0.1, 1.72], WOOD);
+    pushBox(s, [x1 + 0.02, 0.0, 0.0, x1 + 0.08, 0.3, 0.34], WOOD_L);
+  } else if (fase === 'meter') {
     const y = fuera - (pose.dentro ?? 0) * (fuera - 0.45);
     palaKit(s, cx, y, zPala, receta, 0);
     if (pilar) manosObrador(s, [mango(y)]);
@@ -3486,7 +3533,11 @@ function obradorVivoKit(s, est = {}) {
   // La mesa, según la receta y el gesto
   const { x: tx, y: ty } = TRABAJO;
   // Con la pala en marcha, la hornada va en la pala: la mesa, recogida
-  if (fase === 'recetario' || fase === 'meter' || fase === 'sacar' || !receta) return;
+  if (fase === 'recetario' || fase === 'meter' || fase === 'sacar' || fase === 'reposa' || !receta) return;
+  if (receta === 'galletas' || receta === 'pan' || receta === 'bizcocho' || receta === 'tortilla') {
+    mesaRecetario(s, { fase, receta, pose, pilar });
+    return;
+  }
   if (receta === 'magdalenas') {
     // Los seis moldes de papel rizado en su bandeja, con la masa (lo de más, rebosa)
     const llenos = fase === 'colmar' ? (pose.llenos ?? []) : fase === 'rallar' ? [] : [1, 1, 1, 1, 1, 1];
@@ -3565,6 +3616,361 @@ function obradorVivoKit(s, est = {}) {
     }
   }
 }
+// ── 1.145: el recetario crece. El fogón de hierro (a la izquierda del horno, desde el nivel 8), la masa del pan en su cesto, los
+// adornos de los hitos y, en la mesa, los objetos de los ocho gestos nuevos ──
+const FOGON = { x0: -3.36, x1: -2.94, y0: 0.06, y1: 0.52, alto: 0.78 };
+/** La sartén del fogón: en el fuego de delante. */
+const SARTEN = { x: (FOGON.x0 + FOGON.x1) / 2, y: FOGON.y1 - 0.15, r: 0.11 };
+const HIERRO_F = [40, 38, 42];
+const HOJALATA = [200, 204, 210];
+const MIMBRE = [178, 132, 72];
+const MIMBRE_O = [146, 102, 52];
+const TORTILLA_C = [246, 222, 140];
+const TORTILLA_D = [214, 158, 66];
+/** Las formas de los cortapastas (5 × 5, de fondo a delante): el ancla, el barco, la estrella de mar y el faro. */
+const FORMAS = {
+  ancla: ['..#..', '.###.', '..#..', '#.#.#', '.###.'],
+  barco: ['..#..', '..##.', '..#..', '#####', '.###.'],
+  estrella: ['..#..', '#####', '.###.', '.#.#.', '#...#'],
+  faro: ['.###.', '..#..', '.###.', '.###.', '#####'],
+};
+/** Una forma de píxel en (x, y) sobre z, con su lado de casilla. */
+function formaKit(s, forma, x, y, z, c, color, alto = 0.006, o = {}) {
+  const f = FORMAS[forma] ?? FORMAS.estrella;
+  f.forEach((fila, j) =>
+    [...fila].forEach((ch, i) => {
+      if (ch !== '#') return;
+      const ax = x + (i - 2.5) * c;
+      const ay = y + (j - 2.5) * c;
+      pushBox(s, [ax, ay, z, ax + c, ay + c, z + alto], color, o);
+    }),
+  );
+}
+/** El fogón de hierro: la cocina económica de una boca, con su barra de latón, la puerta de la leña y el tubo hasta el techo. */
+function fogonKit(s, { fase, receta, pose = {}, alFogon = [], pilar, conTortilla }) {
+  const { x0, x1, y0, y1, alto } = FOGON;
+  pushBox(s, [x0, y0, 0.06, x1, y1, alto - 0.04], HIERRO_F);
+  for (const [lx, ly] of [
+    [x0 + 0.01, y1 - 0.05],
+    [x1 - 0.05, y1 - 0.05],
+  ])
+    pushBox(s, [lx, ly, 0, lx + 0.04, ly + 0.04, 0.06], HIERRO_F);
+  // La plancha, con sus dos fuegos de aros
+  pushBox(s, [x0 - 0.01, y0 - 0.01, alto - 0.04, x1 + 0.01, y1 + 0.02, alto], [62, 60, 62]);
+  for (const fy of [SARTEN.y, y0 + 0.13]) {
+    disco(s, SARTEN.x, fy, 0.09, alto, alto + 0.004, [74, 70, 72]);
+    disco(s, SARTEN.x, fy, 0.05, alto + 0.002, alto + 0.006, [86, 82, 84]);
+  }
+  // La puerta de la leña con su ventanuco de brasas, el cajón de la ceniza y la barra de latón de delante
+  pushBox(s, [x0 + 0.05, y1, 0.32, x1 - 0.05, y1 + 0.012, 0.6], [30, 28, 32]);
+  pushBox(s, [x0 + 0.12, y1 + 0.012, 0.42, x1 - 0.12, y1 + 0.016, 0.5], [255, 136, 54], { glow: true });
+  pushBox(s, [x0 + 0.05, y1, 0.12, x1 - 0.05, y1 + 0.012, 0.26], [36, 34, 38]);
+  pushBox(s, [(x0 + x1) / 2 - 0.04, y1 + 0.012, 0.18, (x0 + x1) / 2 + 0.04, y1 + 0.02, 0.2], BRASS, { g: 0.85 });
+  pushBox(s, [x0 - 0.02, y1 + 0.04, alto - 0.1, x1 + 0.02, y1 + 0.06, alto - 0.08], BRASS, { g: 0.9 });
+  for (const bx of [x0, x1 - 0.02]) pushBox(s, [bx, y1, alto - 0.1, bx + 0.02, y1 + 0.06, alto - 0.08], BRASS, { g: 0.9 });
+  // El tubo de la chimenea, hasta el techo, con su codo
+  pushBox(s, [SARTEN.x - 0.045, y0 + 0.01, alto, SARTEN.x + 0.045, y0 + 0.1, alto + 0.6], [52, 50, 54]);
+  pushBox(s, [SARTEN.x - 0.05, y0 + 0.005, alto + 0.6, SARTEN.x + 0.05, y0 + 0.105, alto + 0.64], [70, 66, 70]);
+  pushBox(s, [SARTEN.x - 0.045, y0 + 0.01, alto + 0.64, SARTEN.x + 0.045, y0 + 0.1, SH], [52, 50, 54]);
+  // Un trapo de cuadros colgado de la barra
+  for (let k = 0; k < 4; k += 1) pushBox(s, [x0 + 0.06 + k * 0.025, y1 + 0.05, alto - 0.26, x0 + 0.085 + k * 0.025, y1 + 0.06, alto - 0.08], k % 2 ? [236, 230, 220] : [70, 110, 170]);
+  const zs = alto + 0.006;
+  // Lo que se cuaja en el fuego (las tortillas que están haciéndose; con la vuelta o al sacarla, lo lleva el gesto)
+  const enGesto = receta === 'tortilla' && (fase === 'vuelta' || fase === 'meter' || (fase === 'sacar' && conTortilla));
+  if (!enGesto && alFogon.length) {
+    sartenKit(s, SARTEN.x, SARTEN.y, zs, { tortilla: Math.min(1, alFogon[0].t ?? 1) });
+    if (alFogon[1]) sartenKit(s, SARTEN.x, y0 + 0.13, zs, { tortilla: Math.min(1, alFogon[1].t ?? 1), chica: true });
+  } else if (!enGesto) sartenKit(s, SARTEN.x, SARTEN.y, zs, {});
+  if (receta !== 'tortilla') return;
+  if (fase === 'vuelta') {
+    // La sartén con el plato encima, que dan media vuelta juntos alrededor de su eje (de delante a atrás)
+    const g = clamp(pose.giro ?? 0, 0, 1);
+    const xf = giro([SARTEN.x, SARTEN.y, zs + 0.04], 'x', -Math.PI * g);
+    sartenKit(s, SARTEN.x, SARTEN.y, zs, { tortilla: 0.55, xf });
+    disco(s, SARTEN.x, SARTEN.y, SARTEN.r + 0.012, zs + 0.06, zs + 0.068, LOZA, { xf });
+    disco(s, SARTEN.x, SARTEN.y, SARTEN.r - 0.02, zs + 0.068, zs + 0.071, [232, 226, 214], { xf });
+    if (pilar) manosObrador(s, [[SARTEN.x, SARTEN.y + 0.16, zs + 0.06]]);
+  } else if (fase === 'meter') {
+    // De vuelta a la sartén: el plato con la tortilla, que se desliza hacia el fuego
+    const t = clamp(pose.dentro ?? 0, 0, 1);
+    sartenKit(s, SARTEN.x, SARTEN.y, zs, t >= 0.98 ? { tortilla: 0.6 } : {});
+    const py = SARTEN.y + 0.24 * (1 - t);
+    disco(s, SARTEN.x, py, SARTEN.r + 0.012, zs + 0.03, zs + 0.038, LOZA);
+    if (t < 0.98) disco(s, SARTEN.x, py - 0.02 * t, SARTEN.r - 0.02, zs + 0.038, zs + 0.06, (k) => (k % 2 ? TORTILLA_D : [222, 170, 80]));
+    if (pilar) manosObrador(s, [[SARTEN.x, py + 0.16, zs + 0.05]]);
+  } else if (fase === 'sacar' && conTortilla) {
+    const t = clamp(pose.fuera ?? 0, 0, 1);
+    sartenKit(s, SARTEN.x, SARTEN.y + 0.26 * t, zs + 0.06 * Math.sin(Math.PI * t), { tortilla: 1 });
+  }
+}
+/** La sartén de hierro, con su mango hacia la sala y, si la lleva, la tortilla (de 0, cruda, a 1, cuajada). */
+function sartenKit(s, x, y, z, { tortilla = null, chica = false, xf = null } = {}) {
+  const r = chica ? SARTEN.r * 0.8 : SARTEN.r;
+  const o = xf ? { xf } : {};
+  disco(s, x, y, r, z, z + 0.012, [36, 34, 36], o);
+  disco(s, x, y, r + 0.006, z + 0.012, z + 0.045, [46, 44, 48], o);
+  disco(s, x, y, r - 0.012, z + 0.012, z + 0.046, [30, 28, 30], o);
+  pushBox(s, [x - 0.012, y + r, z + 0.03, x + 0.012, y + r + 0.2, z + 0.045], [46, 44, 48], o);
+  pushBox(s, [x - 0.016, y + r + 0.14, z + 0.028, x + 0.016, y + r + 0.22, z + 0.048], WOOD_D, o);
+  if (tortilla == null) return;
+  const t = clamp(tortilla, 0, 1);
+  const c = TORTILLA_C.map((v, i) => Math.round(v + (TORTILLA_D[i] - v) * t));
+  disco(s, x, y, r - 0.016, z + 0.014, z + 0.04, (k) => (k % 2 ? c : TORTILLA_C), o);
+  for (let k = 0; k < 5; k += 1) pushBox(s, [x - 0.06 + hash(k, 31) * 0.1, y - 0.05 + hash(k, 32) * 0.09, z + 0.04, x - 0.05 + hash(k, 31) * 0.1, y - 0.04 + hash(k, 32) * 0.09, z + 0.043], [250, 236, 176], o);
+}
+/** El cesto de mimbre de la masa, con su paño de cuadros (abombado cuando la masa ha subido). */
+function cestoMasa(s, x, y, z, subida) {
+  disco(s, x, y, 0.1, z, z + 0.06, (k) => (k % 2 ? MIMBRE : MIMBRE_O));
+  disco(s, x, y, 0.085, z + 0.01, z + 0.062, [232, 214, 178]);
+  const h = subida ? 0.05 : 0.012;
+  for (let i = -3; i <= 3; i += 1)
+    for (let j = -3; j <= 3; j += 1) {
+      const d = Math.hypot(i, j) / 3.6;
+      if (d > 1) continue;
+      const zz = z + 0.062 + h * Math.cos((d * Math.PI) / 2);
+      pushBox(s, [x + i * 0.026 - 0.013, y + j * 0.026 - 0.013, z + 0.058, x + i * 0.026 + 0.013, y + j * 0.026 + 0.013, zz], (i + j) & 1 ? [236, 232, 224] : [86, 124, 176]);
+    }
+}
+/** Los adornos de los hitos del obrador (uno por hito, de 1 a 5). */
+function adornosHitos(s, hitos = 0) {
+  const { x0: mx0, x1: mx1 } = MESA_OBRADOR;
+  if (hitos >= 1) {
+    // Los cazos de cobre, colgados de una barra de hierro sobre la mesa
+    pushBox(s, [mx0 + 0.05, 0.01, 2.02, mx1 - 0.05, 0.04, 2.04], HIERRO_B);
+    for (const [cx, r] of [
+      [mx0 + 0.17, 0.07],
+      [mx0 + 0.4, 0.085],
+      [mx0 + 0.64, 0.06],
+    ]) {
+      const cz = 1.9 - r;
+      pushBox(s, [cx - 0.008, 0.02, cz + r, cx + 0.008, 0.035, 2.02], COBRE, { g: 0.8 });
+      for (let k = -4; k <= 4; k += 1) {
+        const dz = (k / 4.5) * r;
+        const half = Math.sqrt(Math.max(0, r * r - dz * dz));
+        pushBox(s, [cx - half, 0.03, cz + dz - r / 9, cx + half, 0.05, cz + dz + r / 9], k % 2 ? COBRE : [214, 132, 82], { g: 0.8 });
+      }
+      pushBox(s, [cx - r * 0.4, 0.05, cz - r * 0.1, cx - r * 0.1, 0.052, cz + r * 0.5], [240, 176, 120], { g: 0.95 });
+    }
+  }
+  const { x0, hondo: H, boca } = HORNO;
+  if (hitos >= 2) {
+    // La ristra de moldes de doña Amparo, colgada de un cordel en la cara del horno, a la izquierda de la boca
+    const rx = (x0 + boca.x0) / 2;
+    pushBox(s, [rx - 0.004, H + 0.01, 0.92, rx + 0.004, H + 0.018, 1.52], CORDEL_B);
+    for (let k = 0; k < 5; k += 1) {
+      const z = 1.44 - k * 0.11;
+      pushBox(s, [rx - 0.04, H + 0.012, z - 0.035, rx + 0.04, H + 0.03, z + 0.035], HOJALATA, { g: 0.85 });
+      for (let i = -2; i <= 2; i += 1) pushBox(s, [rx + i * 0.016 - 0.003, H + 0.03, z - 0.035, rx + i * 0.016 + 0.003, H + 0.034, z + 0.035], [160, 166, 174]);
+      pushBox(s, [rx - 0.018, H + 0.03, z - 0.018, rx + 0.018, H + 0.036, z + 0.018], [176, 182, 190]);
+    }
+  }
+  if (hitos >= 3) {
+    // El letrero pintado del obrador, en la cara de la campana: «OBRADOR» en crema sobre madera
+    const cx = (boca.x0 + boca.x1) / 2;
+    pushBox(s, [cx - 0.33, 0.66, 1.71, cx + 0.33, 0.69, 1.91], [126, 74, 40]);
+    pushBox(s, [cx - 0.31, 0.69, 1.73, cx + 0.31, 0.695, 1.89], [150, 92, 52]);
+    const letras = { O: ['###', '#.#', '#.#', '#.#', '###'], B: ['##.', '#.#', '##.', '#.#', '##.'], R: ['##.', '#.#', '##.', '#.#', '#.#'], A: ['.#.', '#.#', '###', '#.#', '#.#'], D: ['##.', '#.#', '#.#', '#.#', '##.'] };
+    const p = 0.02;
+    let lx = cx - (7 * 4 - 1) * p * 0.5;
+    for (const ch of 'OBRADOR') {
+      letras[ch].forEach((fila, j) => [...fila].forEach((c, i) => c === '#' && pushBox(s, [lx + i * p, 0.695, 1.86 - j * p, lx + (i + 1) * p, 0.7, 1.86 - (j - 1) * p], [244, 230, 196])));
+      lx += 4 * p;
+    }
+  }
+  if (hitos >= 5) {
+    // El retrato de doña Amparo, sobre la mesa: marco dorado, fondo verde, su moño blanco y el delantal
+    const [fx0, fx1, fz0, fz1] = [mx1 - 0.3, mx1 - 0.06, 2.1, 2.42];
+    pushBox(s, [fx0, 0.01, fz0, fx1, 0.035, fz1], [196, 152, 70], { g: 0.85 });
+    pushBox(s, [fx0 + 0.025, 0.035, fz0 + 0.025, fx1 - 0.025, 0.04, fz1 - 0.025], [58, 86, 66]);
+    const cx = (fx0 + fx1) / 2;
+    pushBox(s, [cx - 0.06, 0.04, fz0 + 0.025, cx + 0.06, 0.044, fz0 + 0.12], [92, 70, 120]);
+    pushBox(s, [cx - 0.045, 0.044, fz0 + 0.025, cx + 0.045, 0.047, fz0 + 0.11], [240, 236, 226]);
+    pushBox(s, [cx - 0.035, 0.04, fz0 + 0.12, cx + 0.035, 0.044, fz0 + 0.21], [232, 190, 160]);
+    pushBox(s, [cx - 0.04, 0.04, fz0 + 0.19, cx + 0.04, 0.045, fz0 + 0.235], [236, 234, 230]);
+    pushBox(s, [cx - 0.02, 0.04, fz0 + 0.235, cx + 0.02, 0.046, fz0 + 0.26], [236, 234, 230]);
+    pushBox(s, [cx - 0.02, 0.044, fz0 + 0.155, cx - 0.01, 0.046, fz0 + 0.165], [60, 40, 30]);
+    pushBox(s, [cx + 0.01, 0.044, fz0 + 0.155, cx + 0.02, 0.046, fz0 + 0.165], [60, 40, 30]);
+    pushBox(s, [cx - 0.012, 0.044, fz0 + 0.135, cx + 0.012, 0.046, fz0 + 0.14], [180, 90, 80]);
+  }
+}
+/** La campanilla de latón del mostrador (el cuarto hito), junto al platito de la vitrina. */
+function campanillaMostrador(s) {
+  const [x, y, z] = [PLATO_EN.x + 0.24, PLATO_EN.y + 0.06, BARRA_Z];
+  disco(s, x, y, 0.04, z, z + 0.012, WOOD_D);
+  disco(s, x, y, 0.034, z + 0.012, z + 0.03, BRASS, { g: 0.9 });
+  disco(s, x, y, 0.024, z + 0.03, z + 0.045, BRASS, { g: 0.95 });
+  pushBox(s, [x - 0.005, y - 0.005, z + 0.045, x + 0.005, y + 0.005, z + 0.058], [176, 128, 52], { g: 0.9 });
+}
+/** En la mesa: lo de las cuatro recetas nuevas según el gesto (y las manos de Pilar si lo hace ella). */
+function mesaRecetario(s, { fase, receta, pose = {}, pilar }) {
+  const { alto } = MESA_OBRADOR;
+  const { x: tx, y: ty } = TRABAJO;
+  const z = alto;
+  if (receta === 'galletas') {
+    if (fase === 'cortapastas') {
+      // La tabla enharinada, la masa estirada y, donde se ha tocado, cada forma recortada; los cortapastas que faltan, a un lado
+      pushBox(s, [tx - 0.24, ty - 0.15, z, tx + 0.24, ty + 0.15, z + 0.012], WOOD_L);
+      pushBox(s, [tx - 0.2, ty - 0.12, z + 0.012, tx + 0.2, ty + 0.12, z + 0.02], MASA_C);
+      for (let k = 0; k < 9; k += 1) pushBox(s, [tx - 0.19 + hash(k, 3) * 0.37, ty - 0.11 + hash(k, 4) * 0.21, z + 0.02, tx - 0.186 + hash(k, 3) * 0.37, ty - 0.106 + hash(k, 4) * 0.21, z + 0.021], [250, 246, 238]);
+      const cortes = pose.cortes ?? [];
+      for (const c of cortes) {
+        const [cx, cy] = [tx + c.u * 0.2, ty + c.v * 0.12];
+        formaKit(s, c.forma, cx, cy, z + 0.019, 0.013, [214, 186, 132], 0.003);
+        formaKit(s, c.forma, cx, cy, z + 0.022, 0.011, c.pisa ? [226, 196, 150] : [244, 226, 186], 0.004);
+      }
+      const faltan = ['ancla', 'barco', 'estrella', 'faro'].slice(cortes.length);
+      faltan.forEach((forma, k) => {
+        const [cx, cy] = [tx + 0.3, ty - 0.1 + k * 0.07];
+        formaKit(s, forma, cx, cy, z, 0.011, HOJALATA, 0.03, { g: 0.85 });
+      });
+      if (pilar && cortes.length) {
+        const c = cortes[cortes.length - 1];
+        manosObrador(s, [[tx + c.u * 0.2, ty + c.v * 0.12 + 0.04, z + 0.08]]);
+      }
+    } else {
+      // La bandeja con las cuatro galletas ya horneadas y la raya de puntos de la glasa por encima; lo hecho, glasa de verdad
+      pushBox(s, [tx - 0.2, ty - 0.11, z, tx + 0.2, ty + 0.11, z + 0.01], [52, 48, 46]);
+      ['ancla', 'barco', 'estrella', 'faro'].forEach((forma, k) => formaKit(s, forma, tx - 0.15 + k * 0.1, ty, z + 0.01, 0.016, [222, 168, 92], 0.012));
+      const hechos = pose.hechos ?? [];
+      const n = 24;
+      for (let i = 0; i < n * 2; i += 1) {
+        const u = (i + 0.5) / (n * 2);
+        const gx = tx - 0.15 + u * 0.3;
+        const gy = ty + Math.sin(u * Math.PI * 3) * 0.035;
+        const hecho = hechos[Math.floor(u * n)];
+        if (hecho) pushBox(s, [gx - 0.0045, gy - 0.004, z + 0.022, gx + 0.0045, gy + 0.004, z + 0.028], [252, 250, 246]);
+        else if (i % 2 === 0) pushBox(s, [gx - 0.002, gy - 0.002, z + 0.022, gx + 0.002, gy + 0.002, z + 0.024], [150, 120, 96]);
+      }
+      if (pose.u != null) {
+        // La manga de glasa: un cono de tela con su boquilla, sobre la raya
+        const u = clamp(pose.u, 0, 1);
+        const gx = tx - 0.15 + u * 0.3;
+        const gy = ty + Math.sin(u * Math.PI * 3) * 0.035;
+        pushBox(s, [gx - 0.004, gy - 0.004, z + 0.03, gx + 0.004, gy + 0.004, z + 0.05], [214, 216, 222]);
+        for (let k = 0; k < 5; k += 1) pushBox(s, [gx - 0.01 - k * 0.006, gy - 0.01 - k * 0.006 + k * 0.01, z + 0.05 + k * 0.02, gx + 0.01 + k * 0.006, gy + 0.01 + k * 0.006 + k * 0.01, z + 0.07 + k * 0.02], [244, 240, 232]);
+        if (pilar) manosObrador(s, [[gx, gy + 0.06, z + 0.14]]);
+      }
+    }
+  } else if (receta === 'pan') {
+    if (fase === 'amasar') {
+      // El mármol enharinado, la masa madre que se estira hacia el fondo con cada empujón, su tarro y el cesto esperando
+      for (let k = 0; k < 16; k += 1) pushBox(s, [tx - 0.16 + hash(k, 7) * 0.3, ty - 0.14 + hash(k, 8) * 0.26, z, tx - 0.15 + hash(k, 7) * 0.3, ty - 0.13 + hash(k, 8) * 0.26, z + 0.002], [250, 248, 242]);
+      const e = clamp(pose.estira ?? 0, 0, 1);
+      const largo = 0.07 + e * 0.14;
+      const ancho = 0.075 - e * 0.025;
+      for (let k = 0; k <= 6; k += 1) {
+        const t = k / 6;
+        const w = ancho * Math.sin(Math.PI * (0.15 + 0.7 * t));
+        const yy = ty + 0.06 - t * largo;
+        pushBox(s, [tx - w, yy - largo / 12, z, tx + w, yy + largo / 12, z + 0.04 * Math.sin(Math.PI * (0.2 + 0.6 * t)) * (1 - e * 0.4) + 0.008], k % 2 ? MASA_C : [244, 230, 196]);
+      }
+      // El tarro de la masa madre, con su tela atada
+      pushBox(s, [tx + 0.2, ty - 0.16, z, tx + 0.28, ty - 0.08, z + 0.1], [206, 220, 220], { g: 0.7 });
+      pushBox(s, [tx + 0.205, ty - 0.155, z, tx + 0.275, ty - 0.085, z + 0.07], [236, 222, 190], { g: 0.7 });
+      pushBox(s, [tx + 0.195, ty - 0.165, z + 0.1, tx + 0.285, ty - 0.075, z + 0.12], [196, 70, 60]);
+      cestoMasa(s, tx - 0.27, ty - 0.08, z, false);
+      if (pilar) manosObrador(s, [[tx, ty + 0.06 - largo + 0.03, z + 0.06]]);
+    } else {
+      // La hogaza subida en la tabla y, por donde pasa la cuchilla, la greña
+      pushBox(s, [tx - 0.17, ty - 0.13, z, tx + 0.17, ty + 0.13, z + 0.012], WOOD_L);
+      for (let j = -5; j <= 5; j += 1) {
+        const w = 0.11 * Math.sqrt(1 - (j / 5.6) ** 2);
+        pushBox(s, [tx - w, ty + j * 0.016 - 0.008, z + 0.012, tx + w, ty + j * 0.016 + 0.008, z + 0.012 + 0.07 * Math.sqrt(1 - (j / 5.6) ** 2)], j % 2 ? [238, 222, 188] : [232, 214, 178]);
+      }
+      for (let k = 0; k < 8; k += 1) pushBox(s, [tx - 0.07 + hash(k, 21) * 0.13, ty - 0.06 + hash(k, 22) * 0.11, z + 0.08, tx - 0.065 + hash(k, 21) * 0.13, ty - 0.055 + hash(k, 22) * 0.11, z + 0.084], [252, 250, 246]);
+      const corte = clamp(pose.corte ?? 0, 0, 1);
+      const punto = (t) => [tx - 0.02 + Math.sin(Math.PI * t) * 0.025, ty - 0.08 + t * 0.16];
+      for (let k = 0; k < Math.round(corte * 16); k += 1) {
+        const [gx, gy] = punto((k + 0.5) / 16);
+        const h = 0.07 * Math.sqrt(Math.max(0, 1 - ((gy - ty) / 0.09) ** 2));
+        pushBox(s, [gx - 0.007, gy - 0.006, z + 0.012 + h - 0.006, gx + 0.007, gy + 0.006, z + 0.016 + h], [196, 168, 120]);
+      }
+      // La cuchilla: un mango de madera fino y la hoja, en el punto del tajo
+      const [cx, cy] = punto(corte);
+      const h = 0.07 * Math.sqrt(Math.max(0, 1 - ((cy - ty) / 0.09) ** 2));
+      pushBox(s, [cx - 0.004, cy - 0.012, z + 0.02 + h, cx + 0.004, cy + 0.012, z + 0.03 + h], ACERO);
+      pushBox(s, [cx - 0.005, cy + 0.012, z + 0.026 + h, cx + 0.005, cy + 0.14, z + 0.04 + h], WOOD_D);
+      if (pilar) manosObrador(s, [[cx, cy + 0.12, z + 0.06 + h]]);
+    }
+  } else if (receta === 'bizcocho') {
+    if (fase === 'envolver') {
+      // El bol de loza con la masa y las vetas del tueste de la casa (se van envolviendo); la espátula sigue su jota
+      disco(s, tx, ty, 0.14, z, z + 0.02, LOZA);
+      disco(s, tx, ty, 0.15, z + 0.02, z + 0.09, (k) => (k % 2 ? LOZA : [226, 220, 210]));
+      disco(s, tx, ty, 0.13, z + 0.02, z + 0.08, [246, 228, 172]);
+      const pliegues = pose.pliegues ?? 0;
+      for (let k = 0; k < 3 - pliegues; k += 1) for (let i = 0; i < 6; i += 1) pushBox(s, [tx - 0.08 + k * 0.06 + Math.sin(i + k) * 0.01, ty - 0.08 + i * 0.03, z + 0.08, tx - 0.07 + k * 0.06 + Math.sin(i + k) * 0.01, ty - 0.07 + i * 0.03, z + 0.083], [122, 76, 44]);
+      const t = clamp(pose.t ?? 0, 0, 1);
+      const ex = t < 0.6 ? tx : tx + ((t - 0.6) / 0.4) * 0.07;
+      const ey = t < 0.6 ? ty - 0.07 + (t / 0.6) * 0.13 : ty + 0.06 - ((t - 0.6) / 0.4) * 0.09;
+      pushBox(s, [ex - 0.03, ey - 0.008, z + 0.075, ex + 0.03, ey + 0.012, z + 0.1], [214, 120, 80]);
+      pushBox(s, [ex - 0.008, ey + 0.012, z + 0.09, ex + 0.008, ey + 0.2, z + 0.16], WOOD_L);
+      // El molde de cobre, esperando, y el tarro del tueste de la casa
+      disco(s, tx + 0.29, ty - 0.08, 0.08, z, z + 0.05, (k) => (k % 2 ? COBRE : [214, 132, 82]), { g: 0.8 });
+      pushBox(s, [tx - 0.31, ty - 0.14, z, tx - 0.23, ty - 0.06, z + 0.09], [110, 74, 50]);
+      pushBox(s, [tx - 0.305, ty - 0.135, z + 0.09, tx - 0.235, ty - 0.065, z + 0.1], BRASS, { g: 0.8 });
+      if (pilar) manosObrador(s, [[ex, ey + 0.18, z + 0.16]]);
+    } else {
+      // El bizcocho en su molde de cobre, la plantilla del ancla encima y el azúcar que va cubriéndola; al acabar, el ancla blanca
+      disco(s, tx, ty, 0.15, z, z + 0.06, (k) => (k % 2 ? COBRE : [214, 132, 82]), { g: 0.8 });
+      disco(s, tx, ty, 0.135, z + 0.01, z + 0.062, [176, 108, 56]);
+      const cub = pose.cubiertas ?? [];
+      if (pose.levantada) {
+        formaKit(s, 'ancla', tx, ty, z + 0.062, 0.03, [250, 248, 244], 0.003);
+        // La plantilla, ya fuera, apoyada a un lado
+        pushBox(s, [tx + 0.2, ty - 0.1, z, tx + 0.36, ty, z + 0.004], [236, 222, 196]);
+      } else {
+        pushBox(s, [tx - 0.15, ty - 0.09, z + 0.064, tx + 0.15, ty + 0.09, z + 0.067], [236, 222, 196]);
+        formaKit(s, 'ancla', tx, ty, z + 0.066, 0.03, [176, 108, 56], 0.002);
+        for (let i = 0; i < 12; i += 1) {
+          if (!cub[i]) continue;
+          const [ci, fi] = [i % 4, Math.floor(i / 4)];
+          for (let k = 0; k < 6; k += 1) {
+            const sx = tx - 0.15 + (ci + hash(i, k) * 0.9) * 0.075;
+            const sy = ty - 0.09 + (fi + hash(k, i + 3) * 0.9) * 0.06;
+            pushBox(s, [sx, sy, z + 0.067, sx + 0.01, sy + 0.01, z + 0.07], [252, 252, 250]);
+          }
+        }
+        if (pose.u != null) {
+          // El tamiz: un aro de latón con su tela metálica, sobre el dedo
+          const [sx, sy] = [tx + clamp(pose.u, -1.3, 1.3) * 0.15, ty + clamp(pose.v ?? 0, -1.3, 1.3) * 0.09];
+          disco(s, sx, sy, 0.055, z + 0.14, z + 0.165, BRASS, { g: 0.85 });
+          disco(s, sx, sy, 0.048, z + 0.145, z + 0.15, [200, 200, 204]);
+          pushBox(s, [sx - 0.008, sy + 0.05, z + 0.15, sx + 0.008, sy + 0.16, z + 0.165], WOOD_D);
+          if (pilar) manosObrador(s, [[sx, sy + 0.14, z + 0.18]]);
+        }
+      }
+    }
+  } else if (receta === 'tortilla') {
+    // El bol con las patatas pochadas y, con cada huevo, su yema; el que se casca, en dos mitades encima del borde
+    disco(s, tx, ty, 0.13, z, z + 0.02, [222, 214, 200]);
+    disco(s, tx, ty, 0.145, z + 0.02, z + 0.1, (k) => (k % 2 ? [236, 230, 220] : [222, 214, 200]));
+    disco(s, tx, ty, 0.125, z + 0.02, z + 0.085, [240, 222, 160]);
+    for (let k = 0; k < 10; k += 1) pushBox(s, [tx - 0.09 + hash(k, 41) * 0.17, ty - 0.08 + hash(k, 42) * 0.15, z + 0.085, tx - 0.07 + hash(k, 41) * 0.17, ty - 0.06 + hash(k, 42) * 0.15, z + 0.097], [246, 230, 168]);
+    const huevos = pose.huevos ?? 0;
+    for (let k = 0; k < huevos; k += 1) {
+      const [hx, hy] = [tx - 0.05 + k * 0.05, ty - 0.02 + (k % 2) * 0.04];
+      disco(s, hx, hy, 0.03, z + 0.086, z + 0.09, [250, 248, 238], {}, 3);
+      disco(s, hx, hy, 0.014, z + 0.09, z + 0.097, [250, 170, 40], {}, 3);
+    }
+    for (let k = 0; k < (pose.cascaras ?? 0); k += 1) pushBox(s, [tx + 0.04 + k * 0.02, ty + 0.03, z + 0.09, tx + 0.052 + k * 0.02, ty + 0.04, z + 0.095], [236, 222, 200]);
+    if (huevos < 3 && fase === 'cascar') {
+      const a = clamp(pose.abre ?? 0, 0, 1);
+      const l = pose.lado ?? 1;
+      const [hx, hy, hz] = [tx, ty - 0.13, z + 0.13];
+      for (const k of [-1, 1]) {
+        const d = k * a * 0.035 + l * a * 0.015;
+        pushBox(s, [hx + d - 0.022, hy - 0.024, hz - 0.02, hx + d + 0.022, hy + 0.024, hz + 0.02], [236, 222, 200]);
+        pushBox(s, [hx + d - 0.016, hy - 0.018, hz + 0.02, hx + d + 0.016, hy + 0.018, hz + 0.03], [240, 228, 208]);
+      }
+      if (a > 0.3) pushBox(s, [hx - 0.008, hy - 0.006, z + 0.1, hx + 0.008, hy + 0.006, hz - 0.02], [250, 196, 70]);
+      if (pilar) manosObrador(s, [[hx - 0.07 - a * 0.035, hy + 0.04, hz], [hx + 0.07 + a * 0.035, hy + 0.04, hz]]);
+    }
+    // Los huevos que quedan, en su cestita
+    for (let k = 0; k < Math.max(0, 2 - huevos); k += 1) pushBox(s, [tx + 0.24 + k * 0.05, ty - 0.12, z, tx + 0.28 + k * 0.05, ty - 0.08, z + 0.05], [236, 222, 200]);
+    pushBox(s, [tx + 0.22, ty - 0.14, z, tx + 0.36, ty - 0.06, z + 0.02], MIMBRE);
+  }
+}
 /** Las marcas del obrador (para los gestos, la ayuda «!» y las pruebas). */
 const OBRADOR_MARCAS = {
   rallador: [TRABAJO.x + 0.08, TRABAJO.y - 0.12, MESA_OBRADOR.alto + 0.14],
@@ -3578,6 +3984,28 @@ const OBRADOR_MARCAS = {
   pala: [(HORNO.boca.x0 + HORNO.boca.x1) / 2, HORNO.hondo + 0.5, HORNO.boca.z0],
   campanilla: [HORNO.x1 - 0.12, HORNO.hondo + 0.13, 1.28],
   recetario: [MESA_OBRADOR.x0 + 0.14, MESA_OBRADOR.y1 - 0.17, MESA_OBRADOR.alto + 0.03],
+  // 1.145
+  hojaGalletas: [TRABAJO.x, TRABAJO.y, MESA_OBRADOR.alto + 0.02],
+  hojaIzq: [TRABAJO.x - 0.2, TRABAJO.y, MESA_OBRADOR.alto + 0.02],
+  hojaDer: [TRABAJO.x + 0.2, TRABAJO.y, MESA_OBRADOR.alto + 0.02],
+  hojaArr: [TRABAJO.x, TRABAJO.y - 0.12, MESA_OBRADOR.alto + 0.02],
+  hojaAbj: [TRABAJO.x, TRABAJO.y + 0.12, MESA_OBRADOR.alto + 0.02],
+  raya: [TRABAJO.x, TRABAJO.y, MESA_OBRADOR.alto + 0.024],
+  rayaIzq: [TRABAJO.x - 0.15, TRABAJO.y, MESA_OBRADOR.alto + 0.024],
+  rayaDer: [TRABAJO.x + 0.15, TRABAJO.y, MESA_OBRADOR.alto + 0.024],
+  rayaCresta: [TRABAJO.x - 0.1, TRABAJO.y + 0.035, MESA_OBRADOR.alto + 0.024],
+  masaMadre: [TRABAJO.x, TRABAJO.y + 0.04, MESA_OBRADOR.alto + 0.04],
+  hogaza: [TRABAJO.x, TRABAJO.y, MESA_OBRADOR.alto + 0.08],
+  bol: [TRABAJO.x, TRABAJO.y, MESA_OBRADOR.alto + 0.08],
+  plantilla: [TRABAJO.x, TRABAJO.y, MESA_OBRADOR.alto + 0.066],
+  plantillaIzq: [TRABAJO.x - 0.15, TRABAJO.y, MESA_OBRADOR.alto + 0.066],
+  plantillaDer: [TRABAJO.x + 0.15, TRABAJO.y, MESA_OBRADOR.alto + 0.066],
+  plantillaArr: [TRABAJO.x, TRABAJO.y - 0.09, MESA_OBRADOR.alto + 0.066],
+  plantillaAbj: [TRABAJO.x, TRABAJO.y + 0.09, MESA_OBRADOR.alto + 0.066],
+  bolHuevos: [TRABAJO.x, TRABAJO.y - 0.1, MESA_OBRADOR.alto + 0.12],
+  sarten: [SARTEN.x, SARTEN.y, FOGON.alto + 0.05],
+  sartenBorde: [SARTEN.x + SARTEN.r, SARTEN.y, FOGON.alto + 0.05],
+  fogon: [SARTEN.x, SARTEN.y + 0.1, FOGON.alto + 0.05],
 };
 /** La cámara del obrador: el horno entero (al descubrirlo), la mesa, cada gesto de cerca y la boca del horno. */
 const ENFOQUES_OBRADOR = {
@@ -3588,6 +4016,16 @@ const ENFOQUES_OBRADOR = {
   rodillo: { p: [-0.8, 0.94, 1.44], m: [-0.8, 0.43, 0.86] },
   repulgo: { p: [-0.8, 0.84, 1.42], m: [-0.8, 0.43, 0.86] },
   horno: { p: [-2.18, 1.42, 1.3], m: [-2.18, 0.3, 0.84] },
+  // 1.145: los gestos nuevos de la mesa y el fogón (a la izquierda del horno)
+  cortapastas: { p: [-0.8, 0.98, 1.44], m: [-0.8, 0.42, 0.86] },
+  glasa: { p: [-0.8, 0.9, 1.38], m: [-0.8, 0.42, 0.86] },
+  amasar: { p: [-0.8, 0.98, 1.44], m: [-0.8, 0.4, 0.86] },
+  grenar: { p: [-0.8, 0.9, 1.4], m: [-0.8, 0.42, 0.88] },
+  envolver: { p: [-0.8, 0.92, 1.44], m: [-0.8, 0.42, 0.9] },
+  tamiz: { p: [-0.8, 0.9, 1.42], m: [-0.8, 0.42, 0.9] },
+  cascar: { p: [-0.8, 0.94, 1.4], m: [-0.8, 0.36, 0.92] },
+  vuelta: { p: [-3.15, 0.92, 1.36], m: [-3.15, 0.3, 0.8] },
+  fogon: { p: [-3.05, 1.18, 1.46], m: [-3.15, 0.3, 0.76] },
 };
 
 // La vitrina de la barra: en la punta, antes del mortero; el platito, delante
@@ -3738,6 +4176,8 @@ function vitrinaKit(s, est = {}) {
     pushBox(s, [x - 0.02, y - 0.02, z + 0.32, x + 0.02, y + 0.02, z + 0.35], BRASS, { g: 0.85 });
   } else cajaVitrinaKit(s, grado);
   if (est.especialidad) pizarraEspecialidad(s, est.especialidad);
+  // 1.145: con el cuarto hito del obrador, la campanilla de latón del mostrador
+  if ((est.hitos ?? 0) >= 4) campanillaMostrador(s);
   cajonKit(s, est.cajon ?? 0, est.cajonGranos ?? 0);
   const huecos = huecosVitrina(grado);
   const fila = filaVitrina(est.piezas, grado);
@@ -6962,7 +7402,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
      * la especialidad se quedan hasta que llegue otro valor.
      */
     setVitrina(est = {}) {
-      vit = { ...vit, est: { grado: vit.est.grado, especialidad: vit.est.especialidad, ...est } };
+      vit = { ...vit, est: { grado: vit.est.grado, especialidad: vit.est.especialidad, hitos: vit.est.hitos, ...est } };
       // Mirando la vitrina, la cámara se ajusta a su grado (no en la caja, que tiene la suya)
       if (vit.activa && vistaMeta !== ENFOQUE_CAJA) vistaMeta = enfoqueVitrina(vit.est.grado);
       montarVitrina();

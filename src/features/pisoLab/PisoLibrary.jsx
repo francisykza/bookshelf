@@ -133,7 +133,7 @@ const Row = memo(function Row({ book, index, total, placed, chosen, onOpen, onTo
 });
 
 /** `visit`: la biblioteca de otra persona, solo para mirar ({ title, backLabel, searchLabel, empty, after }); sin estados, exponer ni añadir. */
-export function PisoLibrary({ books, settings, placed, memory, notice, onBack, onOpen, onToggle, onAdd, visit = null }) {
+export function PisoLibrary({ books, settings, placed, memory, notice, onBack, onOpen, onToggle, onAdd, onImport = null, visit = null }) {
   const [query, setQuery] = useState(memory.query);
   const [status, setStatus] = useState(memory.status === 'chosen' ? 'all' : memory.status);
   const [count, setCount] = useState(memory.count);
@@ -363,6 +363,26 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
       </header>
       <div ref={list} className="plab-library__list">
         <ul style={{ height: totalRows * rowH }}>{rows}</ul>
+        {/* Libo, bloque 4 (docs/qa/libo.md §3.5): la biblioteca vacía dice qué hacer, con Libo y un botón claro */}
+        {!visit && !sorted.length && (onAdd || onImport) && (
+          <div className="lit-vacia">
+            <img src="/assets/libo/libo-320.webp" alt="" width="96" height="96" />
+            <p className="lit-vacia__titulo">Tu estantería espera su primera historia</p>
+            <p className="lit-vacia__texto">Busca un libro por su título, su autor o su ISBN{onImport ? ', o trae tu biblioteca de Goodreads' : ''}.</p>
+            <div className="lit-vacia__botones">
+              {onAdd && (
+                <button type="button" className="lit-boton lit-boton--verde" onClick={onAdd}>
+                  Añadir un libro
+                </button>
+              )}
+              {onImport && (
+                <button type="button" className="lit-boton" onClick={onImport}>
+                  Importar de Goodreads
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         {!visit && covers && found.length > 0 && shown >= found.length && (
           <p className="lit-pie">
             <img src="/assets/puerto/acabado/book.svg" alt="" />

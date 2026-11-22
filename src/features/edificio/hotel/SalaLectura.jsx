@@ -32,6 +32,7 @@ import { useCitaSala } from './useCitaSala';
 import { SalaLibreria } from './SalaLibreria';
 import './sala3d.css';
 import { PantallaCarga } from '../../../ui/PantallaCarga';
+import { pulsarAtras, useAtras } from '../../../hooks/useAtras';
 
 const mmss = (ms) => {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -689,7 +690,7 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
       {eligiendo ? (
         <div className="gh-lect__paper">
           <SeatChoice onSit={sentarse} busy={busy} titleId="gh-lect-elige" />
-          <button type="button" className="gh-21link" onClick={() => setEligiendo(false)}>
+          <button type="button" className="gh-21link" onClick={() => setEligiendo(false)} data-atras>
             Ahora no
           </button>
         </div>
@@ -732,6 +733,9 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
     </>
   );
   const arriba = en3d && sentado3d != null;
+  // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil te levanta del sillón o del sofá, te saca de la librería o deja de elegir
+  // asiento, como su botón (la sesión de lectura sigue como esté)
+  useAtras(Boolean(arriba || enLibreria || eligiendo), () => pulsarAtras(root.current));
   const sofaNota = !cita.disponible ? <i>pronto</i> : citaViva ? <i>con {nombreCita(miCita)}</i> : null;
 
   return (
@@ -792,7 +796,7 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
           )}
           {arriba && (
             <div className="sl3-sit">
-              <button type="button" className="sl3-levantarse" disabled={busy} onClick={levantarCamara}>
+              <button type="button" className="sl3-levantarse" data-atras disabled={busy} onClick={levantarCamara}>
                 {enSofa ? 'Levantarte del sofá' : 'Levantarte del sillón'}
               </button>
               <div className="sl3-sit__panel gh-21">
@@ -809,14 +813,14 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
           )}
           {enLibreria && (
             <div className="sl3-sit sl3-lib">
-              <button type="button" className="sl3-levantarse" onClick={dejarLibreria}>
+              <button type="button" className="sl3-levantarse" data-atras onClick={dejarLibreria}>
                 Volver
               </button>
               <div className="sl3-lib__nota" role="status">
                 {lomoElegido ? (
                   <>
                     <p>
-                      <em>{lomoElegido.titulo}</em>, {lomoElegido.mio ? 'lo dejaste tú' : `lo dejó ${lomoElegido.alias ?? 'alguien'}`}.
+                      <em>{lomoElegido.titulo}</em>, {lomoElegido.mio ? 'lo dejaste tú' : `lo dejó ${lomoElegido.alias ?? 'un lector anónimo'}`}.
                     </p>
                     {lomoElegido.mio && (
                       <button

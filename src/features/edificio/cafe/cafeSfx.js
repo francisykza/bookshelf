@@ -902,6 +902,105 @@ const SONIDOS = {
     ])
       nota(b, { f, pico: 0.022, caida: 0.9, d });
   },
+  // ── 1.145: las cuatro recetas nuevas, el fogón, la masa de la noche, los hitos y los encargos ──
+  /** El cortapastas de hojalata que se hunde en la masa: un clic fino de chapa y un «puf» blando. */
+  cortapastas: (b, k = 0) => {
+    tono(b, { f: 2400 + (k % 4) * 180, tipo: 'triangle', pico: 0.03, ataque: 0.001, caida: 0.035 });
+    tono(b, { f: 3600 + (k % 4) * 240, tipo: 'sine', pico: 0.012, ataque: 0.001, caida: 0.08, d: 0.01 });
+    tono(b, { f: 200, a: 140, pico: 0.04, ataque: 0.004, caida: 0.07, d: 0.02 });
+  },
+  /** El hilillo de glasa que sale de la manga: un siseo fino y húmedo, cada tramo un pelín más agudo. */
+  glasa: (b, k = 0) => {
+    ruido(b, { f: 2100 + (k % 12) * 40, q: 3.5, pico: 0.03, ataque: 0.004, caida: 0.06 });
+    tono(b, { f: 880 + (k % 12) * 18, a: 860 + (k % 12) * 18, tipo: 'sine', pico: 0.008, ataque: 0.004, caida: 0.05 });
+  },
+  /** La palma sobre la masa madre: un apoyo sordo en el mármol enharinado. */
+  masaToca: (b) => {
+    tono(b, { f: 130, a: 100, pico: 0.05, ataque: 0.004, caida: 0.08 });
+    ruido(b, { f: 1800, q: 0.7, pico: 0.02, ataque: 0.004, caida: 0.06 });
+  },
+  /** El empujón: la masa elástica que se estira (un tono que se alarga hacia arriba y un roce de harina). */
+  empuja: (b) => {
+    tono(b, { f: 150, a: 210, pico: 0.05, ataque: 0.02, caida: 0.18 });
+    ruido(b, { f: 900, q: 0.8, tipo: 'lowpass', pico: 0.04, ataque: 0.02, caida: 0.16, barrido: 1.3 });
+  },
+  /** La masa que vuelve al recogerla. */
+  recoge: (b) => tono(b, { f: 210, a: 160, pico: 0.035, ataque: 0.01, caida: 0.1 }),
+  /** El tajo de la cuchilla en la masa: un rasgado limpio y corto. */
+  tajo: (b) => {
+    ruido(b, { f: 3600, q: 2.4, pico: 0.04, ataque: 0.002, caida: 0.04, barrido: 0.75 });
+    ruido(b, { f: 1200, q: 1.4, pico: 0.02, ataque: 0.002, caida: 0.03 });
+  },
+  /** La espátula que roza el bol de loza. */
+  espatula: (b) => {
+    ruido(b, { f: 1500, q: 1.6, pico: 0.035, ataque: 0.006, caida: 0.06 });
+    tono(b, { f: 1320, tipo: 'sine', pico: 0.006, ataque: 0.002, caida: 0.05 });
+  },
+  /** La masa que se pliega sobre sí misma: un «flop» suave y aireado. */
+  pliega: (b) => {
+    tono(b, { f: 180, a: 120, pico: 0.05, ataque: 0.01, caida: 0.14 });
+    ruido(b, { f: 650, q: 0.8, tipo: 'lowpass', pico: 0.05, ataque: 0.01, caida: 0.14 });
+  },
+  /** El azúcar glas que cae del tamiz, como nieve fina. */
+  azucar: (b) => {
+    for (let k = 0; k < 4; k += 1) ruido(b, { f: 6000 + Math.random() * 1500, q: 2, pico: 0.012, ataque: 0.004, caida: 0.04, d: k * 0.025 });
+  },
+  /** Una parte de la plantilla, cubierta: una notita de cristal muy bajita. */
+  cubre: (b, k = 0) => tono(b, { f: 1568 + (k % 12) * 60, tipo: 'sine', pico: 0.012, ataque: 0.003, caida: 0.22 }),
+  /** El huevo contra el borde del bol: un toc seco. */
+  golpeHuevo: (b) => {
+    tono(b, { f: 1250, tipo: 'triangle', pico: 0.04, ataque: 0.001, caida: 0.03 });
+    ruido(b, { f: 2800, q: 2, pico: 0.03, ataque: 0.001, caida: 0.02 });
+  },
+  /** El huevo que se abre y cae al bol: un crujido y un «blop». */
+  abre: (b) => {
+    ruido(b, { f: 3200, q: 1.8, pico: 0.03, ataque: 0.002, caida: 0.04 });
+    tono(b, { f: 320, a: 170, pico: 0.05, ataque: 0.006, caida: 0.12, d: 0.06 });
+  },
+  /** Una cáscara que cae al bol: un tic agudito. */
+  cascara: (b) => tono(b, { f: 3800, tipo: 'sine', pico: 0.015, ataque: 0.001, caida: 0.05, d: 0.12 }),
+  /** El aceite que chisporrotea en la sartén de hierro (al empezar la vuelta y en el fogón). */
+  chisporroteo: (b) => {
+    for (let k = 0; k < 9; k += 1) ruido(b, { f: 3800 + Math.random() * 2400, q: 3, pico: 0.018, ataque: 0.001, caida: 0.014, d: Math.random() * 0.45 });
+    ruido(b, { f: 2600, q: 0.6, pico: 0.015, ataque: 0.05, caida: 0.35 });
+  },
+  /** La tortilla que cae, entera, en el plato: un golpe suave de loza y algo blando. */
+  plof: (b) => {
+    tono(b, { f: 140, a: 90, pico: 0.07, ataque: 0.004, caida: 0.16 });
+    tono(b, { f: 1480, tipo: 'sine', pico: 0.02, ataque: 0.002, caida: 0.2, d: 0.01 });
+  },
+  /** La sartén de hierro sobre la plancha del fogón (al ponerla y al quitarla). */
+  sarten: (b) => {
+    tono(b, { f: 480, tipo: 'triangle', pico: 0.035, ataque: 0.002, caida: 0.18 });
+    ruido(b, { f: 1200, q: 0.9, pico: 0.04, ataque: 0.01, caida: 0.16, barrido: 0.7 });
+  },
+  /** La masa al cesto de mimbre, con su paño, rumbo a la bodega. */
+  cesto: (b) => {
+    ruido(b, { f: 1100, q: 0.9, pico: 0.05, ataque: 0.01, caida: 0.14 });
+    for (let k = 0; k < 3; k += 1) madera(b, { f: 300 + k * 40, pico: 0.02, caida: 0.06, d: 0.1 + k * 0.05 });
+    nota(b, { f: 392, pico: 0.02, caida: 0.6, d: 0.3 });
+  },
+  /** Un hito del obrador: la campanilla de latón y tres notas cálidas (sin fanfarria). */
+  hitoObrador: (b) => {
+    tono(b, { f: 1760, tipo: 'sine', pico: 0.03, caida: 0.7 });
+    tono(b, { f: 1760 * 2.76, tipo: 'sine', pico: 0.008, caida: 0.2 });
+    [523.25, 659.25, 783.99].forEach((f, k) => nota(b, { f, pico: 0.025, caida: 0.9, d: 0.2 + k * 0.09 }));
+  },
+  /** La campanilla del mostrador (con el cuarto hito), al vender: un tilín corto. */
+  campanillaMostrador: (b) => {
+    tono(b, { f: 2093, tipo: 'sine', pico: 0.03, caida: 0.45 });
+    tono(b, { f: 2093 * 2.76, tipo: 'sine', pico: 0.008, caida: 0.15 });
+  },
+  /** El acertijo resuelto: dos notas que se responden. */
+  acertijo: (b) => {
+    nota(b, { f: 587.33, pico: 0.03, caida: 0.5 });
+    nota(b, { f: 880, pico: 0.03, caida: 0.7, d: 0.14 });
+  },
+  /** La pieza equivocada para el excéntrico: un «mm-mm» grave y amable. */
+  noEs: (b) => {
+    tono(b, { f: 220, a: 200, tipo: 'sine', pico: 0.03, ataque: 0.02, caida: 0.12 });
+    tono(b, { f: 196, a: 180, tipo: 'sine', pico: 0.03, ataque: 0.02, caida: 0.14, d: 0.16 });
+  },
 };
 
 /**
@@ -962,7 +1061,7 @@ const BUCLES = {
 };
 
 /** 1.131: los sonidos del libro, que suenan en la sala de la librería (`calido`). */
-const DEL_LIBRO = new Set(['tabique', 'recetario', 'fichaReceta', 'rallar', 'masa', 'colmado', 'rebosa', 'rodillo', 'vueltaRodillo', 'pellizco', 'obradorHecho', 'pala', 'horno', 'campanillaHorno', 'pinza', 'plato', 'vitrina', 'placa', 'lomo', 'sacar', 'tabla', 'libroTabla', 'devolver', 'kraft', 'rasga', 'pliegue', 'cordel', 'lazo', 'paginas', 'marca', 'cierra', 'bolsa', 'meter', 'selloBaja', 'sello', 'libroEtapa', 'reparto', 'secciones', 'cajonCaja', 'granosCajon', 'mejora']);
+const DEL_LIBRO = new Set(['tabique', 'recetario', 'fichaReceta', 'rallar', 'masa', 'colmado', 'rebosa', 'rodillo', 'vueltaRodillo', 'pellizco', 'obradorHecho', 'pala', 'horno', 'campanillaHorno', 'pinza', 'plato', 'vitrina', 'placa', 'lomo', 'sacar', 'tabla', 'libroTabla', 'devolver', 'kraft', 'rasga', 'pliegue', 'cordel', 'lazo', 'paginas', 'marca', 'cierra', 'bolsa', 'meter', 'selloBaja', 'sello', 'libroEtapa', 'reparto', 'secciones', 'cajonCaja', 'granosCajon', 'mejora', 'cortapastas', 'glasa', 'masaToca', 'empuja', 'recoge', 'tajo', 'espatula', 'pliega', 'azucar', 'cubre', 'golpeHuevo', 'abre', 'cascara', 'chisporroteo', 'plof', 'sarten', 'cesto', 'hitoObrador', 'campanillaMostrador', 'acertijo', 'noEs']);
 /** 1.133: los del taller de la trastienda, por la misma sala cálida. */
 const DEL_TALLER = new Set([
   'tallerPuerta',

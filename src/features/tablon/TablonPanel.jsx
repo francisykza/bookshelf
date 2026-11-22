@@ -13,6 +13,7 @@ import { Dibujar, DibujoPieza, ElegirForma } from './Dibujar';
 import * as api from './service';
 import { addEdge, boundsOf, bottomZ, emptyDoc, itemSummary, KIND_NAMES, MAX_LABEL, MAX_NOTE, MAX_TITLE, newItem, normalizeAngle, PAPERS, patchEdge, patchItem, PINS, removeEdge, removeItem, resized, safeCover, sortedItems, STICKERS, THREAD_NAMES, THREADS, topZ, uid } from './model';
 import './tablon.css';
+import { useAtras } from '../../hooks/useAtras';
 
 const STATUS = { saved: 'Guardado', saving: 'Guardando…', error: 'Error al guardar', conflict: 'Conflicto', local: 'Guardado aquí' };
 const HISTORY = 50;
@@ -155,7 +156,7 @@ function Received({ board, onOpen, onPlace, onArchive, onBlock, onReport, onClos
             <div className="tb-received__do">
               {!n.withdrawn_at && <button type="button" className="tb-btn" onClick={() => onPlace(n)}>Colocar en mapa</button>}
               <button type="button" className="tb-btn" onClick={() => onArchive(n)}>Archivar</button>
-              <button type="button" className="tb-btn" onClick={() => onBlock(n)}>Bloquear</button>
+              {n.sender_id && <button type="button" className="tb-btn" onClick={() => onBlock(n)}>Bloquear</button>}
               <button type="button" className="tb-btn" onClick={() => onReport(n)}>Denunciar</button>
             </div>
           </li>
@@ -251,6 +252,13 @@ export default function TablonPanel({ designing, routeEditing, onDesign, onRoute
   const [notice, setNotice] = useState('');
   const [hist, setHist] = useState({ past: 0, future: 0 });
   const [publishing, setPublishing] = useState(null);
+  // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil cierra la hoja abierta (o vuelve a la de la que salió, como su botón) y la
+  // de publicar, salvo mientras se publica. El editor de una nota ya tiene su propia ruta
+  useAtras(Boolean(sheet) && !editor, () => {
+    const vuelta = { draw: 'add', block: 'received', report: 'received' }[sheet?.type] ?? (sheet?.type === 'detail' ? sheet.back : null);
+    setSheet(vuelta ? { type: vuelta } : null);
+  });
+  useAtras(Boolean(publishing), () => (publishing?.busy ? false : setPublishing(null)));
   const map = useRef(null);
   const meta = useRef({ id: null, revision: 0, local: false });
   const docRef = useRef(doc);

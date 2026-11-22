@@ -33,6 +33,16 @@ export async function signIn(email, password) {
   if (error) throw error;
 }
 
+/**
+ * Borra la cuenta en el servidor (`cuenta_borrar`, docs/qa/play-store.md §2.1): todo lo suyo se va y lo que dejó a otros
+ * (reseñas, mensajes de club, post-its y lomos) queda como «Lector anónimo». Lo de este dispositivo no se toca.
+ */
+export async function deleteAccount() {
+  const sb = await getClient();
+  const { error } = await sb.rpc('cuenta_borrar', { confirmacion: 'BORRAR' });
+  if (error) throw error;
+}
+
 export async function signOut() {
   const sb = await getClient();
   await sb?.auth.signOut({ scope: 'local' });

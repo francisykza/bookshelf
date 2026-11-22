@@ -215,6 +215,13 @@ export const HOTSPOTS = {
     label: { x: 75, y: 465 },
     badge: { x: 110, y: 540 },
   },
+  // Libo (docs/qa/libo.md; Francisco, 20-11-2026): la puerta-ventana baja al edificio del puerto. Solo el cristal de abajo y el
+  // balcón: el cielo de arriba es del astro (TimeDial), que sigue abriendo el atlas
+  puerto: {
+    shape: [[658, 600], [941, 600], [941, 962], [658, 962]],
+    label: { x: 800, y: 590 },
+    badge: { x: 900, y: 780 },
+  },
   // Vela de la mesita (id histórico «lantern» para no romper consumidores)
   lantern: {
     shape: [[780, 1158], [816, 1158], [822, 1176], [834, 1214], [834, 1242], [762, 1242], [762, 1214], [774, 1176]],

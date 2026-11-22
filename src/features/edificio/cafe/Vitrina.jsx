@@ -5,25 +5,40 @@
 // bandeja, a su mesa. «Solo el café» sale de la vitrina con la taza sola. Con movimiento reducido o con el teclado, las pinzas, de
 // una vez. La «!» de ayuda, como en la barra. Lo que paga (su precio en granos) lo apunta el servidor al servir (`cafe_servir_comida`).
 // 1.144: la especialidad del día va la primera entre lo que hay y lleva su marca (paga un grano más).
+// 1.145: el excéntrico pide con un acertijo (`pedido.quiere`, `pedido.excentrico`): se ve todo lo que hay en la vitrina y solo vale
+// lo suyo; si eliges otra cosa, te da una pista y eliges de nuevo (no se sirve nada equivocado). Un habitual pide su favorito por su
+// nombre: va el primero, con su marca, y paga +2 (otra pieza del mismo tipo también le vale, a su precio).
 import { useEffect, useRef, useState } from 'react';
 import { AYUDA_NIVELES, AYUDA_PARADO_MS, ladoNota, verAyuda } from './cafeGestos';
-import { PINZAS, paraAcompanar, recetaObrador } from './cafeObrador';
+import { ACERTIJOS, PILAR_ENCARGOS, PINZAS, PISTA_ACERTIJO, paraElPedido, recetaObrador } from './cafeObrador';
 import { crearGestoObrador } from './cafeObradorGestos';
 import { Pista } from './Pista';
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
- * `activo`: en la vitrina; `tipo`, lo que pide ('dulce' o 'salado'); `obrador`, el del servidor (lo de la vitrina, al llegar el
+ * `activo`: en la vitrina; `pedido`, lo que pide (`pedidoComida`: su tipo y, si quiere algo concreto, `quiere`); `obrador`, el del servidor (lo de la vitrina, al llegar el
  * cliente). `onListo(receta)`, con la pieza en el plato; `onSolo()`, solo el café. Devuelve lo que pinta Atender en su cuadro:
  * { capa, texto, extra, botones, fase, gesto, progreso, opciones }.
  */
-export function useVitrina({ activo, tipo, obrador, especialidad = null, escena, sfx, ayudas = 'auto', nivel = 4, onListo, onSolo }) {
-  // Lo que hay para lo que pide, al llegar el cliente (lo de la vitrina no cambia mientras tanto); la especialidad, la primera
-  const [opciones] = useState(() => (tipo ? paraAcompanar(obrador, tipo).sort((x, y) => (y.receta === especialidad) - (x.receta === especialidad)) : []));
-  // 'elegir' (si hay más de una receta de lo que pide), 'pinzas' y 'listo' (en el plato)
-  const [fase, setFase] = useState(() => (opciones.length > 1 ? 'elegir' : 'pinzas'));
-  const [elegida, setElegida] = useState(() => (opciones.length === 1 ? opciones[0].receta : null));
+export function useVitrina({ activo, pedido = null, obrador, especialidad = null, escena, sfx, ayudas = 'auto', nivel = 4, onListo, onSolo }) {
+  const tipo = pedido?.tipo ?? null;
+  const quiere = pedido?.quiere ?? null;
+  const acertijo = Boolean(pedido?.excentrico && quiere);
+  // Lo que hay para lo que pide, al llegar el cliente (lo de la vitrina no cambia mientras tanto): su favorito y la especialidad,
+  // los primeros. Para el acertijo, todo lo que haya, pero solo si está lo suyo (si no, solo el café)
+  const [opciones] = useState(() => {
+    if (!tipo) return [];
+    const l = paraElPedido(obrador, pedido);
+    if (acertijo && !l.some((o) => o.receta === quiere)) return [];
+    return acertijo ? l : l.sort((x, y) => (y.receta === quiere) - (x.receta === quiere) || (y.receta === especialidad) - (x.receta === especialidad));
+  });
+  // 'elegir' (si hay más de una receta de lo que pide, y siempre con el acertijo), 'pinzas' y 'listo' (en el plato)
+  const [fase, setFase] = useState(() => (opciones.length > 1 || (acertijo && opciones.length) ? 'elegir' : 'pinzas'));
+  const [elegida, setElegida] = useState(() => (opciones.length === 1 && !acertijo ? opciones[0].receta : null));
+  // El acertijo: la pista tras una pieza equivocada (y cuáles ya se han probado)
+  const [fallo, setFallo] = useState(null);
+  const [probadas, setProbadas] = useState(() => new Set());
   const [g, setG] = useState(null);
   const [pista, setPista] = useState(null);
   const [parado, setParado] = useState(false);
@@ -171,7 +186,17 @@ export function useVitrina({ activo, tipo, obrador, especialidad = null, escena,
   const nombre = recetaObrador(elegida)?.nombre.toLowerCase();
   const texto =
     fase === 'elegir' ? (
-      `«${tipo === 'salado' ? 'Algo salado' : 'Algo dulce'}…» ¿Cuál le pones?`
+      acertijo ? (
+        fallo ? (
+          `${fallo} ¿Cuál le pones?`
+        ) : (
+          `«${ACERTIJOS[quiere]}» ¿Cuál le pones?`
+        )
+      ) : quiere ? (
+        `«¿Te queda ${recetaObrador(quiere)?.nombre.toLowerCase()}?» Es su favorito. ¿Cuál le pones?`
+      ) : (
+        `«${tipo === 'salado' ? 'Algo salado' : 'Algo dulce'}…» ¿Cuál le pones?`
+      )
     ) : fase === 'pinzas' ? (
       reduced() ? (
         `${PINZAS.orden}. Un toque basta.`
@@ -180,6 +205,8 @@ export function useVitrina({ activo, tipo, obrador, especialidad = null, escena,
           {PINZAS.orden}.<span className="px-sr"> {PINZAS.ayuda}</span>
         </>
       )
+    ) : acertijo ? (
+      `${PILAR_ENCARGOS.acertijo} La taza y ${nombre}, a su mesa.`
     ) : (
       `¡En el plato! ${nombre ? `La taza y ${nombre}, ` : ''}a su mesa.`
     );
@@ -200,13 +227,24 @@ export function useVitrina({ activo, tipo, obrador, especialidad = null, escena,
               key={o.receta}
               type="button"
               className="cf3-btn cf3-btn--verde"
+              disabled={probadas.has(o.receta)}
+              data-receta={o.receta}
               onClick={() => {
+                // El acertijo: si no es lo suyo, una pista y a elegir otra vez (no se le sirve nada equivocado)
+                if (acertijo && o.receta !== quiere) {
+                  sfx?.play('noEs');
+                  setFallo(PISTA_ACERTIJO[quiere]);
+                  setProbadas((p) => new Set([...p, o.receta]));
+                  return;
+                }
+                if (acertijo) sfx?.play('acertijo');
                 setElegida(o.receta);
                 setFase('pinzas');
               }}
             >
               {recetaObrador(o.receta)?.nombre} ({o.piezas})
-              {o.receta === especialidad && <span className="cf3-btn__especial"> · de hoy</span>}
+              {!acertijo && o.receta === quiere && <span className="cf3-btn__especial"> · su favorito</span>}
+              {!acertijo && o.receta !== quiere && o.receta === especialidad && <span className="cf3-btn__especial"> · de hoy</span>}
             </button>
           ))}
         {conGesto && reduced() && (

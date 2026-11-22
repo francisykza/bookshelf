@@ -25,7 +25,7 @@ import {
 import { estrellasTotal, extraLibro, repartoDelNivel, REPARTO_TUYOS_CADA } from '../src/features/edificio/cafe/cafeLibreria';
 import { CATALOGO_LIBROS } from '../src/features/edificio/cafe/cafeCatalogoLibros';
 import { PRIMER_ENCARGO, TALLER_NIVEL, estrellasTaller, premioTaller } from '../src/features/edificio/cafe/cafeTaller';
-import { bandejaLibre, BANDEJAS, CABE_VITRINA, CUPO_MOSTRADOR, enVitrina, estrellasBebida, estrellasHornada, HORNABLES, maestriaDe, MEJORAS_OBRADOR, OBRADOR_NIVEL, PIDE_COMIDA_CADA, piezasDe, precioMesa, PRIMERA_HORNADA, recetaObrador, siguienteMejora, TARTAS, tartasEn, TOPE_HORNADAS } from '../src/features/edificio/cafe/cafeObrador';
+import { FAVORITOS, HITOS_OBRADOR, bandejaLibre, BANDEJAS, CABE_VITRINA, CUPO_MOSTRADOR, enVitrina, estrellasBebida, estrellasHornada, HORNABLES, maestriaDe, MEJORAS_OBRADOR, OBRADOR_NIVEL, PIDE_COMIDA_CADA, piezasDe, precioMesa, PRIMERA_HORNADA, recetaObrador, siguienteMejora, TARTAS, tartasEn, TOPE_HORNADAS } from '../src/features/edificio/cafe/cafeObrador';
 
 const json = (route, data, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
 const falla = (route, message) => json(route, { code: 'P0001', message }, 400);
@@ -283,7 +283,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       return json(route, { cafe: vista(), libros: librosJson(), caja: [] });
     }
     // 1.143: el obrador (`obrador`: { abierto, horno, vitrina, piezas, horneando, piden, segundos }); sin `obrador`, sin la migración
-    if (['cafe_obrador', 'cafe_obrador_abrir', 'cafe_hornear', 'cafe_sacar_hornada', 'cafe_servir_comida', 'cafe_hornear_pilar', 'cafe_obrador_mejorar', 'cafe_mostrador'].includes(rpc)) {
+    if (['cafe_obrador', 'cafe_obrador_abrir', 'cafe_hornear', 'cafe_sacar_hornada', 'cafe_servir_comida', 'cafe_hornear_pilar', 'cafe_obrador_mejorar', 'cafe_mostrador', 'cafe_masa_reposar'].includes(rpc)) {
       if (!obr) return json(route, { code: 'PGRST202', message: 'Could not find the function' }, 404);
       return obradorDelCafe(route, rpc, body);
     }
@@ -559,12 +559,39 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
   // `obrador.buenas` ({ [receta]: n }, las hornadas buenas de antes, para la maestría), `obrador.mostrador` ({ dias }: los que
   // esperan) y `obrador.sinMejoras` (el servidor aún sin la migración 2: sin especialidad, mostrador, mejoras ni Pilar).
   const obr = obrador
-    ? { abierto: false, horno: 1, vitrina: 1, piezas: {}, horneando: [], hornadas: 0, vendidas: 0, ventas: {}, piden: null, segundos: {}, buenas: {}, dadoHorno: 0, dadoPilar: 0, ...structuredClone(obrador) }
+    ? { abierto: false, horno: 1, vitrina: 1, piezas: {}, horneando: [], hornadas: 0, vendidas: 0, ventas: {}, piden: null, segundos: {}, buenas: {}, dadoHorno: 0, dadoPilar: 0, hitos: 0, masa: null, quiere: null, ...structuredClone(obrador) }
     : null;
   if (obr) obr.mostrador = { dias: 0, piezas: 0, granos: 0, ...obr.mostrador };
   const especialidadHoy = () => (obr.sinMejoras ? null : (obr.especialidad ?? HORNABLES.find((id) => recetaObrador(id).nivel <= c.nivel) ?? null));
   const capacidad = () => CABE_VITRINA[obr.vitrina] + (obr.sinMejoras ? 0 : TARTAS.huecos * tartasEn(c.plano));
   if (c && obr) c.obrador = obr;
+  // 1.145 (`20261227120000_cafe_obrador_recetario.sql`): `obrador.quiere` ({ [n]: receta }, para fijarlo en las pruebas); sin él, el
+  // excéntrico la mitad de los días y el habitual su favorito, como el servidor. `obrador.masa`: { lista, amasado } o null.
+  const abiertas = () => HORNABLES.filter((id) => recetaObrador(id).nivel <= c.nivel);
+  const quiereComida = (dia, n) => {
+    const d = dias[dia];
+    if (!obr.abierto || !d) return null;
+    if (obr.quiere) return obr.quiere[n] ?? null;
+    if (obr.piden) return null;
+    const ab = abiertas();
+    if (!ab.length) return null;
+    if (n === d.clientes) return semilla(50) % 2 ? null : ab[semilla(51) % ab.length];
+    if (n >= 101 && n <= 102) {
+      if (semilla(10 + n - 101) % PIDE_COMIDA_CADA) return null;
+      const fav = FAVORITOS[(clientes.quienes?.[n - 101] ?? (n - 101) * 5) % FAVORITOS.length];
+      return ab.includes(fav) ? fav : null;
+    }
+    return null;
+  };
+  const vendidasTotal = () => obr.vendidas + obr.mostrador.piezas;
+  const darHitos = () => {
+    const ahora = HITOS_OBRADOR.cifras.filter((x) => x <= vendidasTotal()).length;
+    const nuevos = [];
+    for (let k = obr.hitos + 1; k <= ahora; k += 1) nuevos.push(k);
+    obr.hitos = Math.max(obr.hitos, ahora);
+    c.granos = Math.min(100000, c.granos + nuevos.length * HITOS_OBRADOR.granos);
+    return nuevos;
+  };
   const segundosDe = (id) => obr.segundos?.[id] ?? recetaObrador(id)?.segundos ?? 60;
   const obradorJson = () =>
     !obr.abierto
@@ -583,11 +610,17 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
           piezas: Object.fromEntries(Object.entries(obr.piezas).filter(([, n]) => n > 0)),
           hornadas_hoy: obr.hornadas,
           vendidas: obr.vendidas,
+          vendidas_total: vendidasTotal(),
+          hitos: obr.hitos,
+          masa: obr.masa ? { lista: Boolean(obr.masa.lista), puesta: obr.masa.puesta ?? null } : null,
         };
   const pideComida = (dia, n) => {
     const d = dias[dia];
     if (!obr.abierto || !d) return null;
+    const q = quiereComida(dia, n);
+    if (q) return recetaObrador(q).tipo;
     if (obr.piden) return obr.piden[n] ?? null;
+    if (n === d.clientes) return null;
     if (!((n >= 1 && n < d.clientes) || (n >= 101 && n <= 100 + d.habituales) || (n >= 201 && n <= 200 + (d.virales ?? 0)))) return null;
     const s = n >= 101 && n <= 199 ? semilla(10 + n - 101) : semillaDe(n);
     // Uno de cada tres (máximo dos cosas por cliente: quien pide comida no pide libro)
@@ -615,6 +648,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     }
     obr.mostrador = { dias: 0, piezas: obr.mostrador.piezas + out.piezas, granos: obr.mostrador.granos + out.granos };
     c.granos = Math.min(100000, c.granos + out.granos);
+    out.hitos = out.piezas > 0 ? darHitos() : [];
     return out;
   }
   function obradorDelCafe(route, rpc, body) {
@@ -626,7 +660,7 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       const piden = todos
         .map((n) => ({ n, tipo: pideComida(body.dia, n) }))
         .filter((p) => p.tipo)
-        .map((p) => ({ ...p, servido: Boolean(obr.ventas[`${body.dia}:${p.n}`]), receta: obr.ventas[`${body.dia}:${p.n}`] ?? null }));
+        .map((p) => ({ ...p, quiere: quiereComida(body.dia, p.n), servido: Boolean(obr.ventas[`${body.dia}:${p.n}`]), receta: obr.ventas[`${body.dia}:${p.n}`] ?? null }));
       return json(route, obr.sinMejoras || !obr.abierto ? { obrador: obradorJson(), piden } : { obrador: obradorJson(), piden, especialidad: especialidadHoy() });
     }
     if (rpc === 'cafe_obrador_abrir') {
@@ -655,6 +689,14 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       const cobrado = cobrar();
       return json(route, { cobrado, cafe: vista(), obrador: obradorJson() });
     }
+    if (rpc === 'cafe_masa_reposar') {
+      if (recetaObrador('pan').nivel > c.nivel) return falla(route, 'cafe:receta');
+      if (body.amasado !== 1 && body.amasado !== 2) return falla(route, 'cafe:mimo');
+      if (obr.masa) return falla(route, 'cafe:masa');
+      // En las jornadas de prueba, lista en la jornada siguiente; aquí, con `masaLista`, ya lista (para no esperar a mañana)
+      obr.masa = { amasado: body.amasado, lista: Boolean(obr.masaLista), puesta: clientes?.hoy ?? null };
+      return json(route, { obrador: obradorJson() });
+    }
     if (rpc === 'cafe_hornear' || rpc === 'cafe_hornear_pilar') {
       const pilar = rpc === 'cafe_hornear_pilar';
       if (pilar && maestriaDe(obr.buenas[body.receta] ?? 0) < 3) return falla(route, 'cafe:maestria');
@@ -663,10 +705,15 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
       if (!r || !HORNABLES.includes(r.id) || r.nivel > c.nivel) return falla(route, 'cafe:receta');
       if (!Array.isArray(body.mimo) || body.mimo.length !== 2 || body.mimo.some((m) => m !== 1 && m !== 2)) return falla(route, 'cafe:mimo');
       if (obr.hornadas >= TOPE_HORNADAS) return falla(route, 'cafe:hornadas');
+      if (r.id === 'pan') {
+        if (!obr.masa?.lista) return falla(route, 'cafe:masa');
+        body.mimo = [obr.masa.amasado, body.mimo[1]];
+      }
       const b = bandejaLibre(obradorJson());
       if (!b) return falla(route, 'cafe:horno');
       const estrellas = estrellasHornada(body.mimo);
       const piezas = piezasDe(r.id, estrellas, obr.sinMejoras ? 0 : (obr.buenas[r.id] ?? 0));
+      if (r.id === 'pan') obr.masa = null;
       obr.horneando.push({ bandeja: b, receta: r.id, piezas, estrellas, metida: Date.now() });
       obr.hornadas += 1;
       if (estrellas >= 2) obr.buenas[r.id] = (obr.buenas[r.id] ?? 0) + 1;
@@ -691,7 +738,10 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     if (!dias[body.dia]?.servidos[body.cliente]) return falla(route, 'cafe:cliente');
     const t = pideComida(body.dia, body.cliente);
     const r = recetaObrador(body.receta);
-    if (!t || !r || !HORNABLES.includes(r.id) || r.tipo !== t) return falla(route, 'cafe:comida');
+    const q = quiereComida(body.dia, body.cliente);
+    const exc = body.cliente === dias[body.dia].clientes;
+    if (!t || !r || !abiertas().includes(r.id) || r.tipo !== t || (exc && r.id !== q)) return falla(route, 'cafe:comida');
+    const fav = !exc && q != null && r.id === q;
     if (!(obr.piezas[r.id] > 0)) return falla(route, 'cafe:agotado');
     const k = `${body.dia}:${body.cliente}`;
     if (obr.ventas[k]) return falla(route, 'cafe:servido');
@@ -699,9 +749,10 @@ export async function simularCafe(page, estado, { piso = () => ({ copias: {}, la
     obr.piezas[r.id] -= 1;
     obr.vendidas += 1;
     const esp = especialidadHoy();
-    const precio = obr.sinMejoras ? r.precio : precioMesa(r.id, { especialidad: esp, buenas: obr.buenas[r.id] ?? 0 });
+    const precio = obr.sinMejoras ? r.precio : precioMesa(r.id, { especialidad: esp, buenas: obr.buenas[r.id] ?? 0, excentrico: exc, favorito: fav ? r.id : null });
+    const hitos = obr.sinMejoras ? [] : darHitos();
     c.granos = Math.min(100000, c.granos + precio);
-    return json(route, { cafe: vista(), obrador: obradorJson(), dado: { granos: precio, receta: r.id, especialidad: r.id === esp, maestria: maestriaDe(obr.buenas[r.id] ?? 0) >= 2 } });
+    return json(route, { cafe: vista(), obrador: obradorJson(), dado: { granos: precio, receta: r.id, especialidad: r.id === esp, maestria: maestriaDe(obr.buenas[r.id] ?? 0) >= 2, excentrico: exc, favorito: fav, hitos } });
   }
   return c;
 }

@@ -30,6 +30,7 @@ import { CHISTERAS_JUEGO, PREMIOS_CHISTERAS, SITIO, SITIO_CORTO, cambioDicho } f
 import { catalogItem } from '../catalog';
 import './casino3d.css';
 import { PantallaCarga } from '../../../ui/PantallaCarga';
+import { pulsarAtras, useAtras } from '../../../hooks/useAtras';
 
 /** 1.107 · Lo que aún no se juega en la sala (los bloques siguientes), dicho tal cual. Desde la 1.111, todo se juega. */
 const PRONTO = {};
@@ -237,6 +238,9 @@ export function Casino({ onStreet, soundOn = false }) {
   else if (member && data) status = 'ready';
 
   const abierta = status === 'ready';
+  // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil te levanta de la mesa o te devuelve a la sala desde la ruleta, la vitrina o
+  // las chisteras, como su botón; con la ruleta girando o una ronda en juego (el botón, desactivado), no hace nada
+  useAtras(Boolean(abierta && (sentado || enRuleta || enVitrina || enChisteras)), () => pulsarAtras(root.current));
   const room = sin3d ? renderCasino({ apagada: !abierta }) : null;
   // A solas: la última mano que no es de una mesa para dos
   const solo = (d) => d?.manos.filter((m) => !m.mesa).at(-1) ?? null;
@@ -640,7 +644,7 @@ export function Casino({ onStreet, soundOn = false }) {
           )}
           {sentado && abierta && (
             <div className="cs3-sit">
-              <button type="button" className="cs3-levantarse" onClick={levantarse}>
+              <button type="button" className="cs3-levantarse" data-atras onClick={levantarse}>
                 Levantarse
               </button>
               {modo === 'pareja' ? (
@@ -710,7 +714,7 @@ export function Casino({ onStreet, soundOn = false }) {
           )}
           {enRuleta && abierta && (
             <div className="cs3-sit cs3-rul">
-              <button type="button" className="cs3-levantarse" disabled={girando} onClick={dejarRuleta}>
+              <button type="button" className="cs3-levantarse" data-atras disabled={girando} onClick={dejarRuleta}>
                 Volver a la sala
               </button>
               {ruleta && (
@@ -771,7 +775,7 @@ export function Casino({ onStreet, soundOn = false }) {
             const quien = deAmigo ? deAmigo.alias ?? 'Tu amigo' : null;
             return (
               <div className="cs3-sit cs3-vit">
-                <button type="button" className="cs3-levantarse" onClick={dejarVitrina}>
+                <button type="button" className="cs3-levantarse" data-atras onClick={dejarVitrina}>
                   Volver a la sala
                 </button>
                 <p className="cs3-vit__cuenta">
@@ -827,7 +831,7 @@ export function Casino({ onStreet, soundOn = false }) {
                   {vitrinaMia && (data.amigos?.length > 0 || deAmigo) && (
                     <div className="cs3-vit__amigos" role="group" aria-label="Ver la vitrina de un amigo">
                       {deAmigo ? (
-                        <button type="button" onClick={() => verAmigo(null)}>
+                        <button type="button" onClick={() => verAmigo(null)} data-atras>
                           Volver a la mía
                         </button>
                       ) : (
@@ -846,7 +850,7 @@ export function Casino({ onStreet, soundOn = false }) {
           })()}
           {enChisteras && abierta && (
             <div className="cs3-sit cs3-chis">
-              <button type="button" className="cs3-levantarse" disabled={fase === 'mirando' || fase === 'enseñando'} onClick={dejarChisteras}>
+              <button type="button" className="cs3-levantarse" data-atras disabled={fase === 'mirando' || fase === 'enseñando'} onClick={dejarChisteras}>
                 Volver a la sala
               </button>
               {chis && (
@@ -961,7 +965,7 @@ export function Casino({ onStreet, soundOn = false }) {
                     })}
                   </ul>
                   {sellosMsg && <p className="cs3-chis__sellosmsg" role="status">{sellosMsg}</p>}
-                  <button type="button" className="cs3-chis__cerrar" onClick={() => { setSellosAbiertos(false); setSellosMsg(''); }}>
+                  <button type="button" className="cs3-chis__cerrar" data-atras onClick={() => { setSellosAbiertos(false); setSellosMsg(''); }}>
                     Cerrar
                   </button>
                 </section>

@@ -11,6 +11,7 @@ import { PanelShell } from '../../../components/panels/PanelShell';
 import { ALIAS_MAX, aliasError } from '../../reviews/opinion';
 import { useCommunity } from '../hooks/useCommunity';
 import { fetchMyBlocks, unblockUser } from '../services/community';
+import { Libo } from '../../libo/LiboRincon';
 import { ClubTab } from './ClubTab';
 import { CornerTab, ReadersTab, RoomTab } from './SocialTabs';
 
@@ -295,6 +296,9 @@ export function SocialHub({ onClose, initialTab = 'lectores', timer = null, open
   const current = [...TABS, ...OWN].find((t) => t.id === tab);
   const own = OWN.some((o) => o.id === tab);
   const Current = current.Panel;
+  // Libo (docs/qa/libo.md, bloque 2): con la comunidad activada, en la cabecera del cuaderno; la primera vez enseña sus hojas
+  const community = useCommunity({ autoload: true });
+  const socio = community.status === 'ready' && community.member;
   const openClub = (id) => {
     setClubId(id);
     go('club');
@@ -305,6 +309,7 @@ export function SocialHub({ onClose, initialTab = 'lectores', timer = null, open
         <div className="social-hub__head">
           <OwnMenu onOpen={(id) => go(id, true)} />
           <h2>{current.title}</h2>
+          {socio && <Libo lugar="comunidad" capitulo="comunidad" espera=".social-hub__tabs" variante="cabecera" />}
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar">
             ×
           </button>

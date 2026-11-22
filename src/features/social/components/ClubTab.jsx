@@ -10,6 +10,7 @@ import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
 import { OptionsMenu } from '../../../components/book/Annotations';
 import { CLUB_MESSAGE_MAX, inviteLink } from '../connections';
 import { useCommunity } from '../hooks/useCommunity';
+import { LECTOR_ANONIMO } from '../../../domain/legal';
 import { PAGE_SIZE, blockUser, fetchProfiles, reportContent } from '../services/community';
 import { createClub, createInvite, editMessage, fetchInvites, fetchMembers, fetchMessages, fetchMyClubs, hideMessage, postMessage, removeMember, revokeInvite, updateClub } from '../services/connections';
 
@@ -49,7 +50,8 @@ function Message({ msg, author, mine, owner, active, onChanged, onRemoved }) {
   const [spoilers, setSpoilers] = useState(msg.has_spoilers);
   const [confirm, setConfirm] = useState(null);
   const [failure, setFailure] = useState('');
-  const alias = author?.alias ?? 'Lector';
+  // De una cuenta borrada: «Lector anónimo», sin nadie a quien bloquear
+  const alias = msg.user_id ? (author?.alias ?? 'Lector') : LECTOR_ANONIMO;
   const run = async (fn) => {
     setFailure('');
     try {
@@ -63,7 +65,7 @@ function Message({ msg, author, mine, owner, active, onChanged, onRemoved }) {
     ...(mine ? [{ label: 'Borrar', icon: <Trash2 aria-hidden="true" />, danger: true, onSelect: () => setConfirm('delete') }] : []),
     ...(!mine && owner ? [{ label: 'Retirar del club', icon: <Trash2 aria-hidden="true" />, danger: true, onSelect: () => setConfirm('remove') }] : []),
     ...(!mine ? [{ label: 'Denunciar', icon: <Flag aria-hidden="true" />, onSelect: () => setConfirm('report') }] : []),
-    ...(!mine ? [{ label: `Bloquear a ${alias}`, icon: <Ban aria-hidden="true" />, danger: true, onSelect: () => setConfirm('block') }] : []),
+    ...(!mine && msg.user_id ? [{ label: `Bloquear a ${alias}`, icon: <Ban aria-hidden="true" />, danger: true, onSelect: () => setConfirm('block') }] : []),
   ];
   const question = { delete: '¿Borrar tu mensaje?', remove: '¿Retirar este mensaje del club?', block: `¿Bloquear a ${alias}? Dejaréis de ver vuestras aportaciones.`, report: '¿Denunciar este mensaje? Solo lo verá moderación.' }[confirm];
   return (

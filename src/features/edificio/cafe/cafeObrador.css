@@ -483,3 +483,90 @@
   font-size: 12px;
   letter-spacing: 0;
 }
+
+/* 1.145: las pistas de los gestos nuevos del obrador (el camino del dedo) */
+.cf3-pista[data-pista='ola'] {
+  --cf3-pista-camino: path('M 6 44 Q 20 22 34 44 T 62 44 T 84 44');
+}
+.cf3-pista[data-pista='empujar'] {
+  --cf3-pista-camino: path('M 44 72 L 44 16');
+}
+.cf3-pista[data-pista='tajo'] {
+  --cf3-pista-camino: path('M 30 8 Q 60 44 34 80');
+}
+.cf3-pista[data-pista='jota'] {
+  --cf3-pista-camino: path('M 40 8 L 40 58 Q 40 78 58 70 L 64 50');
+}
+.cf3-pista[data-pista='cascar'] {
+  --cf3-pista-camino: path('M 40 46 L 78 46');
+}
+.cf3-pista[data-pista='media-vuelta'] {
+  --cf3-pista-camino: path('M 44 76 A 32 32 0 0 1 44 12');
+}
+
+/* 1.145: la masa del pan en su ficha y los hitos del obrador en «El obrador» */
+.cf3-papeleta__masa {
+  margin: 4px 0 0;
+  padding: 3px 8px;
+  border: 2px dashed #b89a6a;
+  background: #f6ecd6;
+  color: #5a3e24;
+  font-size: 12px;
+}
+.cf3-papeleta__masa[data-lista='true'] {
+  border-style: solid;
+  border-color: #7a9a5a;
+  background: #eef3df;
+}
+.cf3-hitos {
+  margin: 8px 0 4px;
+  padding: 6px 8px 4px;
+  border-top: 2px dotted #c8ad84;
+}
+.cf3-hitos__titulo {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #5a3e24;
+}
+.cf3-hitos__lista {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cf3-hito {
+  display: grid;
+  grid-template-columns: 12px 42px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #8a7458;
+}
+.cf3-hito[data-hecho='true'] {
+  color: #3e2a18;
+}
+.cf3-hito__marca {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #b89a6a;
+  background: transparent;
+}
+.cf3-hito[data-hecho='true'] .cf3-hito__marca {
+  border-color: #8a5a20;
+  background: #d6a54a;
+  box-shadow: inset -2px -2px 0 #a8742a;
+}
+.cf3-hito__cifra {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.cf3-hito__adorno {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cf3-hito__granos {
+  color: #7a6040;
+}

@@ -58,8 +58,8 @@ describe('el obrador', () => {
       const s = (await db.query('select cafe_obrador_receta($1) as r', [id])).rows[0].r;
       expect(s).toEqual({ tipo: r.tipo, nivel: r.nivel, piezas: r.piezas, precio: r.precio, segundos: r.segundos });
     }
-    // Las de la 1.145, aún no
-    expect((await db.query("select cafe_obrador_receta('galletas') as r")).rows[0].r).toBeNull();
+    // 1.145: ya están las seis (las cifras, en cafe-obrador-recetario.rls.test.js)
+    expect((await db.query("select cafe_obrador_receta('pizza') as r")).rows[0].r).toBeNull();
     for (const mimo of [[2, 2], [2, 1], [1, 2], [1, 1]]) expect((await db.query('select cafe_estrellas_taller($1::smallint[]) as e', [mimo])).rows[0].e).toBe(estrellasHornada(mimo));
     for (const a of [0, 1, 2, 3, 4]) expect((await db.query('select cafe_estrellas_bebida($1) as e', [a])).rows[0].e).toBe(estrellasBebida(a));
   });
@@ -124,13 +124,13 @@ describe('el obrador', () => {
     await db.query('update cafe_dias set clientes = 13 where user_id = $1 and dia = $2::date', [A, hoy]);
     const o = await obrador(A);
     const d = (await db.query('select clientes, habituales from cafe_dias where user_id = $1 and dia = $2::date', [A, hoy])).rows[0];
-    // Ni el excéntrico (el último de la carta) ni el influencer
-    expect(o.piden.every((p) => p.n !== d.clientes && p.n < 300)).toBe(true);
+    // Ni el influencer; el excéntrico (el último de la carta), solo los días que pide algo concreto (1.145)
+    expect(o.piden.every((p) => (p.n !== d.clientes || p.quiere) && p.n < 300)).toBe(true);
     expect(o.piden.every((p) => p.tipo === 'dulce' || p.tipo === 'salado')).toBe(true);
     // El mismo día, siempre los mismos
     expect((await obrador(A)).piden).toEqual(o.piden);
     // Buscamos uno que pida y otro que no entre los clientes de la carta (con más días si hace falta)
-    const pide = o.piden.find((p) => p.n < 100);
+    const pide = o.piden.find((p) => p.n < d.clientes);
     const noPide = Array.from({ length: d.clientes - 1 }, (_, k) => k + 1).find((n) => !o.piden.some((p) => p.n === n));
     expect(pide).toBeTruthy();
     const receta = pide.tipo === 'dulce' ? 'magdalenas' : 'empanada';

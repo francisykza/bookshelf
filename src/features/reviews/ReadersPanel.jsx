@@ -13,6 +13,7 @@ import { fromQuarters, statsView } from './opinion';
 import { useWorkIdentity } from './useWorkIdentity';
 import { tropeView } from '../social/connections';
 import { fetchTropeStats } from '../social/services/connections';
+import { LECTOR_ANONIMO } from '../../domain/legal';
 
 /**
  * Tropos votados por quienes respondieron al apartado (SPEC §25.12): plegado, siempre con el denominador y con
@@ -67,7 +68,13 @@ export function ReviewCard({ review, author, mine, onBlock, onReport, onOpenAuth
   // Acción pendiente de confirmar: 'block' | 'report' | null
   const [confirming, setConfirming] = useState(null);
   const rating = fromQuarters(review.rating_quarters);
-  const alias = author?.alias ?? 'Lector';
+  // De una cuenta borrada: sin autor, ni perfil que abrir ni a quién bloquear
+  const anonima = !review.user_id;
+  const alias = anonima ? LECTOR_ANONIMO : (author?.alias ?? 'Lector');
+  if (anonima) {
+    onOpenAuthor = null;
+    onBlock = null;
+  }
   return (
     <article className="review-card">
       {/* Clip que sujeta la hoja (decoración) */}

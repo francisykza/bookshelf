@@ -8,6 +8,7 @@ import { AlmacenNota, AlmacenTarjeta } from '../edificio/hotel/AlmacenOrdenador'
 import { useLibrary } from '../../state/useLibrary';
 import { PixelIcon } from '../../ui/PixelIcon';
 import { PortIcon } from '../../ui/PortIcon';
+import { useAtras } from '../../hooks/useAtras';
 
 const MAIN = (open, go) => [
   { name: 'Calendario', icon: 'calendario', run: () => open('calendar', 'calendar') },
@@ -92,6 +93,8 @@ export function PisoDesktop({ open, tool, go }) {
     place.apps = 0;
     appsButton.current?.focus({ preventScroll: true });
   };
+  // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil cierra el cajón de aplicaciones, como su «Volver al escritorio»
+  useAtras(drawer, closeDrawer);
   const openDrawer = () => {
     setDrawer(true);
     place.drawer = true;

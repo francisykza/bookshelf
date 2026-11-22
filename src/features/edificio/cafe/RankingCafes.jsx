@@ -53,7 +53,7 @@ export function RankingCafes({ onVisitar, onCerrar, sfx = null }) {
           ))}
         </div>
         <div className="cf3-balda__herr">
-          <button type="button" className="cf3-btn" onClick={onCerrar}>
+          <button type="button" className="cf3-btn" onClick={onCerrar} data-atras>
             Cerrar
           </button>
         </div>

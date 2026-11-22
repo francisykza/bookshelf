@@ -6,23 +6,24 @@ import { placeCard } from '../../scene/guidePlacement';
 
 describe('máquina de estados', () => {
   it('declara todos los estados en orden', () => {
-    expect(STATES).toEqual(['idle', 'welcome', 'reading', 'habits', 'social', 'gift', 'completed']);
+    expect(STATES).toEqual(['idle', 'welcome', 'reading', 'habits', 'puerto', 'social', 'gift', 'completed']);
   });
 
-  it('Fase 1: bienvenida, lectura y rituales; luego termina', () => {
-    expect(route(1)).toEqual(['welcome', 'reading', 'habits']);
+  it('Fase 1: bienvenida, lectura, rituales y la puerta al edificio; luego termina', () => {
+    expect(route(1)).toEqual(['welcome', 'reading', 'habits', 'puerto']);
     expect(next('idle', 1)).toBe('welcome');
     expect(next('welcome', 1)).toBe('reading');
     expect(next('reading', 1)).toBe('habits');
-    expect(next('habits', 1)).toBe('completed');
-    expect(isLast('habits', 1)).toBe(true);
+    expect(next('habits', 1)).toBe('puerto');
+    expect(next('puerto', 1)).toBe('completed');
+    expect(isLast('puerto', 1)).toBe(true);
     expect(isStop('social', 1)).toBe(false);
   });
 
   it('Fases 2 y 3 añaden la parada social y la del regalo sin cambiar el inicio', () => {
-    expect(route(2)).toEqual(['welcome', 'reading', 'habits', 'social']);
-    expect(route(3)).toEqual(['welcome', 'reading', 'habits', 'social', 'gift']);
-    expect(next('habits', 2)).toBe('social');
+    expect(route(2)).toEqual(['welcome', 'reading', 'habits', 'puerto', 'social']);
+    expect(route(3)).toEqual(['welcome', 'reading', 'habits', 'puerto', 'social', 'gift']);
+    expect(next('puerto', 2)).toBe('social');
     expect(next('gift', 3)).toBe('completed');
   });
 

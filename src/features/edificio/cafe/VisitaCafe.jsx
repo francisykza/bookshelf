@@ -2,6 +2,7 @@
 // el tuyo, en solo lectura: su decoración, su nivel, su escaparate, la estantería con sus secciones (de sus leídos, solo lomos sin
 // título) y las fotos de sus influencers. Se anda tocando el suelo y se baja a la bodega; nada se puede tocar ni comprar.
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { FOGON_NIVEL } from './cafeObrador';
 import { cargarVisitaCafe } from './cafeService';
 import { baldaDeVisita } from './cafeSocial';
 import { usePortadasBalda } from './usePortadasBalda';
@@ -100,6 +101,11 @@ export default function VisitaCafe({ visita, soundOn = false }) {
       portadasBalda,
     });
     api.current?.setFotos(cafe.fotos);
+    // 1.145: su obrador, para mirarlo (solo mirar): el horno con su grado, la vitrina con lo que haya y los adornos de los hitos
+    if (cafe.obrador) {
+      api.current?.setObrador?.({ abierto: true, horneando: [], listo: false, horno: cafe.obrador.horno, hitos: cafe.obrador.hitos, fogon: cafe.nivel >= FOGON_NIVEL });
+      api.current?.setVitrina?.({ piezas: cafe.obrador.piezas, grado: cafe.obrador.vitrina, hitos: cafe.obrador.hitos });
+    }
   }, [ready, cafe, balda, portadasBalda]);
 
   if (cafe === null)

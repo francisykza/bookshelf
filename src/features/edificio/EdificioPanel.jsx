@@ -8,7 +8,7 @@ import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../components/panels/PanelShell';
 import { dayKey } from '../../domain/dates';
 import { useCommunity } from '../social/hooks/useCommunity';
-import { FIRMAS, catalogItem } from './catalog';
+import { correoLeido, lineasCorreo, marcarCorreo } from './correo';
 import { adoptMyPiso, rememberMyPiso, saveMyPiso } from './myPiso';
 import './edificio.css';
 import { mountCalleView } from './calleView';
@@ -27,6 +27,8 @@ import { Cafe } from './cafe/Cafe';
 import { cargarFachada } from './cafe/cafeService';
 import { PantallaCarga } from '../../ui/PantallaCarga';
 import { mensajeLlegada } from './llegada';
+import { Libo } from '../libo/LiboRincon';
+import { useAtras } from '../../hooks/useAtras';
 // La visita en primera persona trae Three.js: solo se descarga si se entra
 const VisitaPiso = lazy(() => import('../pisoLab/VisitaPiso'));
 const VisitaCafe = lazy(() => import('./cafe/VisitaCafe'));
@@ -59,23 +61,9 @@ const saveView = (v) => {
     // Sin almacenamiento, la vista vale solo mientras está abierto
   }
 };
-const firmaText = (id) => FIRMAS.find((x) => x.id === id)?.texto ?? '';
-// Lo del buzón que ya has leído (1.78): la carta y su número solo cuentan lo nuevo; se guarda por usuario en este aparato
-const readKey = (uid) => `bookshelf:edificio:correo-leido:${uid}`;
-const readMail = (uid) => {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(readKey(uid)) ?? '[]'));
-  } catch {
-    return new Set();
-  }
-};
-const markMail = (uid, lines) => {
-  try {
-    localStorage.setItem(readKey(uid), JSON.stringify(lines.slice(0, 40)));
-  } catch {
-    // Sin almacenamiento, lo leído vale mientras la fachada está abierta
-  }
-};
+// Lo del buzón que ya has leído (1.78): en correo.js, que también usa Libo
+const readMail = correoLeido;
+const markMail = marcarCorreo;
 
 /** La calle del edificio en 3D (calleView.js, fuera de React; sin WebGL, la fachada 2D); cada piso ocupado es un botón. */
 function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '', cafe = null }) {
@@ -284,6 +272,15 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
     };
   }, [inShop]);
   const inHotel = pisoId === HOTEL_ID;
+  // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil cierra lo último abierto dentro del edificio (el armario, una sala del
+  // hotel, el café de otro lector, el directorio del hotel) igual que el botón de volver de la barra, antes de salir de la escena.
+  // Desde el ordenador, la Lonja vuelve al ordenador con el Atrás de siempre
+  useAtras(Boolean(dressing || (inHotel && hotelRoom && !(delOrdenador && hotelRoom === 'lonja')) || (inShop && cafeVisita)), () => {
+    if (dressing) setCloseDressing((n) => n + 1);
+    else if (inHotel && hotelRoom) setHotelRoom(null);
+    else if (inShop && cafeVisita) setCafeVisita(null);
+  });
+  useAtras(inHotel && hotelDir, () => setHotelDir(false));
   const open = pisoId && !inShop && !inHotel ? (data?.vecinos.find((v) => v.user_id === pisoId) ?? null) : null;
   const me = data?.vecinos.find((v) => v.yo) ?? null;
   const mine = open?.yo;
@@ -548,7 +545,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
         <VisitaCafe key={cafeVisita.userId} visita={cafeVisita} soundOn={soundOn} />
       </Suspense>
     ) : (
-      <Cafe inventario={inventory} layoutPiso={me?.room ?? null} soundOn={soundOn} onVisitar={setCafeVisita} />
+      <Cafe inventario={inventory} layoutPiso={me?.room ?? null} soundOn={soundOn} onVisitar={setCafeVisita} userId={community.userId} />
     );
   } else if (pisoId && !open) {
     body = <p className="ed-note">Este piso ya no está en tu edificio.</p>;
@@ -594,8 +591,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
   } else {
     // El correo del buzón dibujado en la fachada (1.73: sin la tarjeta «Tu buzón» ni el título, a petición de Francisco)
     const mail = [
-      ...(social?.regalos.slice(0, 5).map((r) => `${r.alias ?? 'Un vecino'} te regaló: ${catalogItem(r.mueble).nombre.toLowerCase()}.`) ?? []),
-      ...(social?.visitas.slice(0, 5).map((v) => `${v.alias ?? 'Un vecino'} firmó en tu libro de visitas: «${firmaText(v.frase)}».`) ?? []),
+      ...lineasCorreo(social),
       // Con su fecha: el buzón recuerda lo leído por su texto, y mañana puede ser otra mesa con la misma persona
       ...mesasQueEsperan(mesas).map((m) => `${avisoMesa(m)} (${fechaCorta(m.dia)})`),
       ...mesas.filter((m) => m.estado === 'cerrada').map((m) => `Ha terminado la mesa para dos con ${nombreMesa(m)}: mira el resultado en el casino. (${fechaCorta(m.dia)})`),
@@ -616,6 +612,19 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
         />
       </div>
     );
+  }
+
+  // Libo (docs/qa/libo.md, bloque 2): en su esquina de cada escena y, la primera vez, la guía de ese sitio. Se aparta de lo
+  // que tiene sus propios controles: las salas del hotel, la ficha o la visita de un piso, el armario y, en el café, todo lo
+  // que no sea la sala con Pilar (eso lo resuelve libo.css)
+  let libo = null;
+  if (community.status === 'signed-out' || community.status === 'off') libo = { lugar: 'signed-out' };
+  else if (community.status === 'ready' && !community.member) libo = { lugar: 'no-member' };
+  else if (ready && data && !error) {
+    if (inHotel) libo = hotelRoom ? null : { lugar: 'hotel', capitulo: 'hotel', espera: '.gh-zone', respiro: 1500 };
+    else if (inShop) libo = cafeVisita ? { lugar: 'otro', variante: 'arriba' } : { lugar: 'cafe', capitulo: 'cafe', espera: '.cf3[data-ready="true"] .cf3-franja', respiro: 1200, variante: 'arriba' };
+    else if (open) libo = mine && inside && !choosing && !dressing ? { lugar: 'tu-piso', capitulo: 'tu-piso', espera: '.ep-corner--right' } : null;
+    else if (!pisoId) libo = { lugar: 'edificio', capitulo: 'edificio', espera: '.ed-facade:not(.is-arriving) .ed-window--mine', respiro: 900 };
   }
 
   return (
@@ -672,6 +681,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
         </div>
       )}
       {body}
+      {libo && <Libo key={libo.lugar} variante="esquina" {...libo} />}
     </PanelShell>
   );
 }

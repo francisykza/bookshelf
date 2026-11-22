@@ -296,6 +296,8 @@ function Sanctuary() {
             }}
             onToggleSound={toggleSound}
             onOpenAtlas={() => openPanel({ type: 'atlas' })}
+            // Libo (docs/qa/libo.md): la puerta-ventana baja al edificio del puerto; la tablet del salón sigue igual
+            onOpenEdificio={() => openPanel({ type: 'edificio' })}
             onOpenVault={(id) => {
               playUiSound('atticOpen');
               openPanel({ type: 'vault', id });
@@ -464,6 +466,19 @@ function Sanctuary() {
             onOpenProfile={() => openPanel({ type: 'social', tab: 'perfil' })}
             // La música del edificio empieza en este mismo toque (en iOS, fuera de un toque no suena)
             onEdificio={() => openPanel({ type: 'edificio' })}
+            // Libo (docs/qa/libo.md, bloque 3): adónde llevan los botones de sus avisos y su sugerencia del día; Atrás vuelve aquí
+            onLibo={(ir, libro) => {
+              const aqui = (select) => openPanel({ type: 'pisoLab', id: panel.id, select });
+              if (ir === 'almacen') aqui('ordenador:almacen');
+              else if (ir === 'registrar') aqui('registro');
+              else if (ir === 'biblioteca') aqui('toda');
+              else if (ir === 'anadir') aqui('abrir:add');
+              else if (ir === 'cafe') openPanel({ type: 'edificio', id: 'tienda' });
+              else if (ir === 'hotel') openPanel({ type: 'edificio', id: 'hotel' });
+              else if (ir === 'edificio') openPanel({ type: 'edificio' });
+              else if (ir === 'resena' && libro) openPanel({ type: 'review', id: libro, tab: 'piso', select: panel.id });
+              else if (ir === 'ficha' && libro) openPanel({ type: 'book', id: libro });
+            }}
             onAnterior={() => {
               chooseStart('anterior');
               setHome(false);
@@ -532,7 +547,7 @@ function Sanctuary() {
             {tool === 'atlas' && <SagaMapModal onClose={close} onOpenBook={toBook} />}
             {tool === 'sonido' && <SoundPanel onClose={close} />}
             {tool === 'radio' && <RadioPanel onClose={close} soundOn={settings.sound} onToggleSound={toggleSound} />}
-            {tool === 'account' && <AccountPanel onClose={close} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
+            {(tool === 'account' || tool === 'libo') && <AccountPanel onClose={close} foco={tool === 'libo' ? 'libo' : null} onOpenProfile={() => switchPanel({ type: 'social', tab: 'perfil' })} />}
             {tool === 'tray' && (
               <PomodoroTray
                 onClose={() => {

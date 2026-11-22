@@ -6,6 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **En la rama, sin versión ni publicar (commit del 22-11-2026, «Haz el commit»)**: Libo, el gato guía (bloques 1 a 4, con Atrás
+  dentro de las salas del hotel; `docs/qa/libo.md` §6), el bloque 2 de la Play Store (borrar la cuenta, 16 años y páginas
+  legales en borrador; `docs/qa/play-store.md`) y **el obrador 1.145 a medias** (sin terminar ni probar; ver su entrada de la
+  bitácora del 19-11). Van juntos porque comparten archivos del café. Producción sigue en la 1.144.0. **Migraciones sin aplicar**:
+  `20261227120000_cafe_obrador_recetario.sql` y `20261228120000_cuenta_borrar.sql`. **No fusionar con `main` así**: antes,
+  terminar y probar la 1.145 (o apagarla), poner el correo de contacto en `public/legal/` y el visto bueno de Francisco.
 - **Publicada en producción: 1.144.0** (2026-11-19, §144; bloque 2 de 3 del obrador, `cafe-libreria.md` §18.12; Francisco: «Sí,
   aplicar y publicar»): la caja del mostrador (Pilar vende de la vitrina mientras no estás, hasta 7 días, y al volver se tira del
   cajón de la caja de latón), las mejoras del horno (2 y 3 bandejas) y de la vitrina (cuatro grados), las vitrinas de tartas que
@@ -290,6 +296,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Desde el commit del 22-11-2026** (Libo, Play Store bloque 2 y la 1.145 a medias en la rama, sin versión): terminar el obrador
+  1.145 (lo que falta, en su entrada del 19-11), el visto bueno de Francisco a Libo y a la Play Store, el correo de contacto de
+  las páginas legales, aplicar las dos migraciones y numerar la versión antes de fusionar con `main`.
 - **Traspaso a la otra cuenta (19-11-2026): el obrador (vender comida), a mitad.** Francisco: «Lo que quede lo va a hacer la
   otra cuenta, apunta lo que reste». Sustituye al traspaso del 14-11 (más abajo, solo como historia y por cómo se pegan las
   migraciones). Plan aprobado en `cafe-libreria.md` §18, con las decisiones de Francisco en §18.13 y en `CLAUDE.md`.
@@ -512,6 +521,159 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-22 · Commit de Libo (bloques 1 a 4), Play Store bloque 2 y el obrador 1.145 a medias, sin versión (Claude)
+
+- Francisco: «Haz el commit». Entra todo lo que había en el árbol, descrito en las entradas de abajo (del 19 al 22-11): no se
+  podía separar sin riesgo, porque Libo y el obrador tocan los mismos archivos del café (`Cafe.jsx`, `Atender.jsx`,
+  `Obrador.jsx`, `cafe.css`…), y la parte de Libo no se ha probado sin el obrador.
+- **Sin versión** (sigue 1.144.0 en `package.json`, `diag.js`, `sw.js` y SPEC): la 1.145.0 era el bloque 3 del obrador, que
+  sigue a medias; la versión se decide al publicar. Nada se ha subido ni publicado.
+- Fuera del commit: `.claude/launch.json` del worktree (configuración local) y `qa-report/` (ignorado).
+- Queda: lo de «Pendiente» de arriba.
+
+### 2026-11-22 · Libo, bloque 4: Atrás también dentro de las salas del hotel, sin commit (Claude)
+
+- Francisco: «Atrás en las salas» (amplía la capa de Atrás del bloque 4). Detalle en `docs/qa/libo.md` §6.
+- Capas con `useAtras` y `data-atras` en `hotel/RecepcionVista.jsx` y `hotel/Vestibulo.jsx` (papel del mostrador y ascensor),
+  `hotel/Casino.jsx` (mesa, ruleta, chisteras, vitrina, mesa del amigo y sellos; desactivado mientras gira o juega),
+  `hotel/Almacen.jsx` (el papel abierto y el mercadillo; la ficha de llegada desde el ordenador, no) y `hotel/SalaLectura.jsx`
+  (sillón o sofá, librería y «Ahora no» de qué compartir). Con todo cerrado, Atrás vuelve a la plaza del hotel.
+- Pruebas: e2e nueva `libo-atras-salas.spec.js` (4) y `libo-atras.spec.js` (4), en Chromium 360/390 y WebKit 390. Build y
+  oxlint sin errores nuevos. Evidencias en `qa-report/libo/` (`resumen-salas-atras.png` y `video-salas-*`).
+- Sin commit, sin versión: sigue todo lo de Libo (bloques 1 a 4), el obrador 1.145 y el bloque 2 de la Play Store en el árbol.
+
+### 2026-11-22 · Libo, bloque 4: Atrás de Android, estados vacíos y toques de 44 px, sin commit (Claude)
+
+- Francisco: «Vale, sigue al 4» (aprueba el bloque 3) y eligió **estados vacíos, Atrás de Android y legibilidad y toques**;
+  **no** la habitación ilustrada (agrupar sus píldoras ni su acabado). Detalle en `docs/qa/libo.md` §5 y §6; regla nueva en
+  `CLAUDE.md` (Libo, bloque 4).
+- **Atrás**: `src/hooks/useAtras.js` (capas en `history.state.capas`; Atrás pulsa el botón de volver visible, `data-atras`);
+  `domain/navigation.js` salta las capas al cerrar un panel y no repinta si la ubicación no cambia. Capas en `Cafe.jsx` (todas
+  sus pantallas; Decorar con cambios, no), `EdificioPanel.jsx` (armario, planta del hotel, directorio, café ajeno),
+  `LiboRincon.jsx` (bocadillo y guía), `LaptopPanel.jsx` y `PisoDesktop.jsx` (app y cajón del ordenador), `TablonPanel.jsx`
+  (hojas y publicar). Sin capa aún: lo de dentro de las salas del hotel (casino, almacén, sala de lectura).
+- **Vacíos**: `PisoLabPanel.jsx` («Añade tu primer libro» sin libros) y `PisoLibrary.jsx` (Libo, «Añadir un libro», «Importar de
+  Goodreads»; estilos `.lit-vacia` en `theme/literario.css`).
+- **Toques y letra**: `pisoLab.css` (etiquetas de la barra a 12 px), `cafe.css` (franja y botones del lado a 44 px; letreros de
+  los clientes de 44 × 44 con el dibujo en `::after`, `.cf3-tag--solo`; `Cafe.jsx` los apila por el dibujo) y `room-151.css`
+  (la cuenta y el sol de la habitación ilustrada se tocan en 44).
+- Pruebas: Vitest de navegación y Libo (46 pasan). E2e nuevas `libo-atras.spec.js` (4) y `libo-interfaz.spec.js` (2), más
+  las de Libo, el café (v1120, v1121, v1132, v1142), el hotel (v1115), el ordenador (v1134) y el tablón: **todas pasan** en
+  Chromium 360/390 y WebKit 390, tras repetir tres que fallaron por tiempos con varias a la vez (`libo-edificio`: una recarga
+  abortada; v1121 «un día en el café» tarda 4,2 min sola, al borde de su límite de 4). Build correcto. Evidencias en
+  `qa-report/libo/` (`resumen-b4-*.png`, `b4-cafe-letreros-antes-despues.png`, `video-b4-*.webm`). Emulación: sin probar
+  el Atrás de un Android real.
+- **Sin versión**: el árbol sigue compartido con la 1.145 a medias y el bloque 2 de la Play Store.
+
+### 2026-11-22 · Libo, bloque 3: reúne los avisos y da una sugerencia al día en tu piso, sin commit (Claude)
+
+- Francisco: «Vale, sigue al 3» (aprueba el bloque 2). Detalle en `docs/qa/libo.md` §6. Reglas en
+  `src/features/libo/sugerencias.js` (avisos, sugerencia del día, una vez al día, callar 30 días) y `useAvisosLibo.js`; el
+  bocadillo de `LiboRincon.jsx` con `hub` solo en tu piso de inicio (`PisoLabPanel.jsx`); adónde lleva cada botón, `onLibo`
+  en `App.jsx`. El texto del buzón pasa a `src/features/edificio/correo.js` (el mismo que antes, así lo leído sigue leído).
+  `Cafe.jsx` recibe `userId` y apunta en el aparato lo que queda hoy y la hucha (`bookshelf:libo-cafe:<cuenta>`).
+- `settings.libo` gana `dia` y `callados` (`liboDe` los conserva). **Para las e2e**: el simulador pone además
+  `bookshelf:libo-asomo` a `9999-12-31` para que el bocadillo del día no salga en las demás pruebas.
+- Pruebas: Vitest de Libo, 29 pasan. E2e nueva `e2e-community/libo-avisos.spec.js` (4) y las de los bloques 1 y 2: 25 pasan en
+  Chromium 360/390 y WebKit 390 (2 omitidas por tamaño). `libo.spec.js` cambia una línea (al tocar a Libo ahora sale la
+  sugerencia de ir al edificio). v1135 (la «!» del almacén) y v1121 (clientes del café) pasan; v171 y v163 fallan como antes,
+  igual sin Libo. Build correcto. Evidencias: `qa-report/libo/` (`b3-*.png`, `resumen-b3-*.png`, `video-b3-*.webm`). Sin
+  probar en un móvil real.
+- Por decidir con Francisco (§6): la hucha resume el cuaderno de Pilar; sin aviso del mostrador ni de la sala de lectura; los
+  avisos solo en tu piso. **Sin versión**: el árbol sigue compartido con la 1.145 a medias y el bloque 2 de la Play Store.
+
+### 2026-11-21 · Libo, bloque 2: te enseña el portal, tu piso, el café, el hotel y la comunidad, sin commit (Claude)
+
+- Francisco: «Sí, bloque 2». Detalle en `docs/qa/libo.md` §6. Capítulos nuevos en `src/features/libo/libo.js` (`CAPITULOS`);
+  `LiboRincon.jsx` ya vale para cualquier escena (`capitulo`, `espera` a que la escena esté lista, la guía dentro del panel
+  aunque se desplace y solo señala lo que se ve; con la tarjeta debajo, el gato asoma por el lado contrario a la flecha).
+  Montado en `EdificioPanel.jsx` (portal, tu piso, café, hotel; sin cuenta o sin comunidad, el saludo) y en `SocialHub.jsx`
+  (cabecera del cuaderno). `PisoLabPanel.jsx` pasa a `capitulo="bienvenida"`.
+- **La marca del dispositivo `bookshelf:libo` es ahora una lista** de capítulos (el «presentado» de antes = saludo y
+  bienvenida). El simulador de las e2e (`mockSupabase.js`) la llena con todos.
+- Pruebas: Vitest de Libo (12 pasan); e2e nueva `e2e-community/libo-edificio.spec.js` (6 pasan en Chromium 360/390 y WebKit
+  390) y `libo.spec.js` del bloque 1 sigue pasando (7). Build correcto. Revisión de lo que ya había, en Chromium 390: de 44
+  pruebas del edificio, café, hotel y comunidad, **12 fallan y ninguna por Libo**: v161 y v162 (7) buscan «Visitar el rincón
+  de…», botones del rincón retirado que ya no están en el código; v163 (1, la pestaña «Plantas» de la balda) y v171 (3, el
+  «me gusta» tocando un mueble) **fallan igual con Libo apagado** (lo comprobé y lo volví a encender). Sin investigar.
+- Evidencias en `qa-report/libo/` (`b2-*.png` por paso a 360 y 390 y WebKit; vídeos `video-b2-edificio-*` y
+  `video-b2-comunidad-*`). Sin probar en un móvil real.
+- **Sin versión**: el árbol sigue compartido con la 1.145 a medias y el bloque 2 de la Play Store.
+
+### 2026-11-20 · Libo, bloque 1: aparece en tu piso, da la bienvenida y la ventana baja al puerto, sin commit (Claude)
+
+- Detalle en `docs/qa/libo.md` §6. Código nuevo en `src/features/libo/` (reglas, componente `LiboRincon.jsx`, maullido) y la
+  mascota en `public/assets/libo/`. Montado en `PisoLabPanel.jsx` (tu piso de inicio y la pantalla sin piso), sus ajustes en
+  `AccountPanel.jsx` (`abrir:libo` los abre a la vista), y en la habitación ilustrada la guía antigua con Libo, sin figuras y
+  con la parada de la puerta-ventana (hotspot `puerto` en `sceneMap.js`, abre el edificio).
+- **Ojo para las e2e**: Libo abre la bienvenida al entrar en el piso con cuenta y tapa la pantalla. `sessionScript` del
+  simulador (`e2e-community/mockSupabase.js`) pone `bookshelf:libo = presentado` para que no salga; `libo.spec.js` la quita.
+- **Windows no distingue mayúsculas**: `Libo.jsx` junto a `libo.js` hacía que Vite importara el segundo. El componente se
+  llama `LiboRincon.jsx`.
+- Pruebas: Vitest de Libo y de la guía (16 + las de `pisoLab`: 98 pasan); e2e `e2e-community/libo.spec.js` en Chromium
+  360/390 y WebKit 390 (7 pasan; el maullido se graba a WAV aparte porque los vídeos no llevan sonido), `e2e/libo-ventana.spec.js`
+  (3 pasan), `e2e/anexos.spec.js` (pasa, con la parada nueva), `e2e/piso-inicio.spec.js` y `fase1-visitas` pasan.
+  **`v188-habitacion-real` falla en 2 pruebas también sin Libo** (lo comprobé apagándolo): el número de muebles en Decorar
+  (11 frente a 5) y «Cuenta y copias» sin verse en el ordenador. Sin investigar; no son de este bloque. Build correcto.
+- Evidencias en `qa-report/libo/` (capturas por paso a 360 y 390, vídeos y `maullido-libo.wav`).
+- **Sin versión**: el árbol sigue compartido con la 1.145 a medias y el bloque 2 de la Play Store.
+
+### 2026-11-20 · Libo, el gato guía: plan y decisiones; empieza el bloque 1, sin commit (Claude)
+
+- Encargo de Francisco: mejoras de la interfaz y **Libo**, el gato del logo, que guía poco a poco por la app y sugiere cosas.
+  Plan en `docs/qa/libo.md` (lo que hay hoy, Libo, mejoras y bloques) y reglas en `CLAUDE.md`. Decisiones: mascota actual
+  recortada para empezar; en una esquina, siempre; una sugerencia al día como mucho; acceso al edificio desde la habitación.
+- La migración del borrado de cuenta (`20261228120000_cuenta_borrar.sql`) **se aplica más adelante** (Francisco). El correo de
+  contacto será uno de `libotown.es` que creará él.
+
+### 2026-11-20 · Play Store, bloque 2: borrar la cuenta, alta con 16 años y páginas legales, sin commit (Claude)
+
+- Decisiones de Francisco (plan `docs/qa/play-store.md` §7): responsable él; edad mínima 16; lo que deja una cuenta borrada,
+  «Lector anónimo»; modera él; cuenta de desarrollador personal; paquete `es.libotown.app`; planes de pago, por confirmar.
+- **Migración `supabase/migrations/20261228120000_cuenta_borrar.sql` (sin aplicar; la aplica Francisco)**: `cuenta_borrar('BORRAR')`
+  borra la cuenta de quien llama (cascadas); reseñas públicas, mensajes de club, post-its/dibujos enviados y lomos de la sala
+  quedan sin dueño (`set null`) y siguen viéndose y contando; sus clubes pasan al miembro más antiguo (o se borran si no queda
+  nadie; `clubs_guard` lo permite solo dentro del borrado); `enforce_rate_limit` no cuenta las cascadas del borrado; se borran
+  sus `rate_events` (única tabla sin clave ajena). Independiente de la migración del obrador (20261227), se puede aplicar antes.
+  **Al aplicarla, probar con una cuenta de prueba** que `delete from auth.users` funciona desde la función en Supabase.
+- App: «Borrar mi cuenta» en «Tu cuenta» (escribir BORRAR; lo de este dispositivo se queda), casilla de 16 años y normas al
+  crear la cuenta, enlaces legales (`src/domain/legal.js`), «Lector anónimo» en reseñas, clubes, tablón y sala (sin perfil ni
+  «Bloquear»). Páginas en `public/legal/` (privacidad, normas, aviso legal y borrar la cuenta): **borradores con el correo de
+  contacto pendiente**, no publicar así. El service worker ya no trata `/legal/` como la app (si no, la guardaba como `/index.html`).
+- Pruebas: `src/features/social/__tests__/cuenta-borrar.rls.test.js` (PGlite; comprueba que el id no queda en ninguna tabla) y
+  las RLS de comunidad, tablón y sala: 125 pasan. e2e `e2e-community/play-cuenta.spec.js` en Chromium 360/390 y WebKit 390: 12
+  pasan. `entrega2` pasa; **`entrega3` «sentarse a leer» falla** esperando las figuras en `localStorage` (no toca nada de esto;
+  sin comprobar si ya fallaba antes). Build correcto, lint sin errores. Evidencias en `qa-report/play-store/`.
+- **Sin versión todavía**: comparte árbol con la 1.145 a medias (obrador); la versión se decide al hacer commit.
+
+### 2026-11-20 · Plan para la Play Store, sin commit (Claude)
+
+- Francisco quiere ir preparando la app para publicarla en la Play Store («para asegurar la estabilidad y exito de la app») y
+  aprobó escribir el plan («Sí, el plan»): `docs/qa/play-store.md` (empaquetado TWA, bloqueantes de Google, estabilidad,
+  derechos, ficha y orden por bloques). No se ha cambiado código.
+- **Pendiente de Francisco**: las 7 decisiones de §7 del plan (responsable y contacto legal, edad mínima, qué pasa con lo que
+  deja una cuenta borrada, quién modera, tipo de cuenta de desarrollador, planes de pago, nombre del paquete).
+- El bloque 3 del obrador (1.145) sigue a medias y sin commit (entrada de abajo).
+
+### 2026-11-19 · Café: el recetario crece · 1.145 (bloque 3 de 3), a medias y sin commit (Claude)
+
+- **Hecho, sin commit** (se cortó por el límite de uso): la migración `supabase/migrations/20261227120000_cafe_obrador_recetario.sql`
+  (sin aplicar), las reglas en `cafeObrador.js` (galletas, pan con su noche en la bodega, bizcocho y tortilla en el fogón, hitos,
+  acertijo del excéntrico, favoritos de los habituales), los gestos (`cafeObradorGestos.js`, los ocho nuevos alcanzan «hecho» con
+  mimo 2 a escala 0,92, 1 y 1,54), sonidos (`cafeSfx.js`), escena (`cafe3d.js`: fogón, sartén, cesto de la masa, adornos de hitos,
+  campanilla), interfaz (`Obrador.jsx`, `Vitrina.jsx`, `Atender.jsx`, `Cafe.jsx`, `VisitaCafe.jsx`, `Pista.jsx`, `cafeObrador.css`),
+  el servicio (`cafeService.js`), las pruebas RLS de los bloques 1 y 2 ajustadas y el simulador e2e (`e2e-community/cafeMock.js`:
+  `quiere`, `cafe_masa_reposar`, pan con masa, hitos, excéntrico al doble, favorito +2; `obrador.quiere` y `obrador.masaLista`
+  para fijarlo en las pruebas). Lint sin errores.
+- **Falta**: la prueba PGlite nueva `cafe-obrador-recetario.rls.test.js` (paridad de recetas y favoritos, masa con jornada de
+  prueba, hitos, acertijo, favorito, visita, anónimo 42501); ampliar `cafeObrador.test.js`; pasar Vitest; `npm run build`; e2e
+  `v1145` a 360 y 390 con vídeo y movimiento reducido, y repetir v1143/v1144; capturas y sonido para Francisco; versión 1.145.0,
+  SPEC §145 y la nota del plan §18.12.3.
+- **Interpretaciones por confirmar con Francisco**: el excéntrico pide comida la mitad de los días, con acertijo (si fallas, pista
+  y eliges otra vez; paga el doble); la lista de favoritos; el pan se amasa un día y se greña al siguiente (Pilar lo hace con
+  maestría ★★★); la tortilla en un fogón a la izquierda del horno (ocupa una bandeja); dónde cuelgan los adornos de los hitos;
+  la campanilla del hito 4 suena al vender; el bizcocho no gasta tueste.
 
 ### 2026-11-19 · El obrador crece, a producción · 1.144.0 (Claude)
 

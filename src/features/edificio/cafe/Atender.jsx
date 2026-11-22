@@ -608,7 +608,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
   };
   const vitrina = useVitrina({
     activo: paso === 'vitrina',
-    tipo: pideComida ? pedido.tipo : null,
+    pedido: pideComida ? pedido : null,
     obrador,
     especialidad,
     escena,
@@ -714,7 +714,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
           {pideComida && (
             <p className="cf3-comanda__linea cf3-comanda__linea--comida" data-tipo={pedido.tipo} data-ahora={enVitrina ? 'true' : undefined}>
               <span className="px-sr">Y para acompañar: </span>
-              {comandaComida(pedido.tipo)}
+              {comandaComida(pedido.tipo, pedido)}
             </p>
           )}
         </>
@@ -727,7 +727,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
   let extra = null;
   if (paso === 'pide') {
     // 1.130: y el libro, en tres partes (solo de lo que hay en la balda); el del excéntrico, en sus acertijos de la comanda
-    const yLibro = pideLibro ? ` ${frasePedido(pedido)}` : pideComida ? ` ${fraseComida(pedido.tipo, cliente.n)}` : '';
+    const yLibro = pideLibro ? ` ${frasePedido(pedido)}` : pideComida ? ` ${fraseComida(pedido.tipo, cliente.n, pedido)}` : '';
     texto = raro
       ? raro.saludo
       : inf
@@ -739,7 +739,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
             : `«¡Buenas! ¿Me pones esto? Lo tienes apuntado.${yLibro}»`;
     botones = (
       <>
-        <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar}>
+        <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar} data-atras>
           Luego
         </button>
         <button type="button" className="cf3-btn cf3-btn--verde" onClick={aLaBarra} disabled={empezando} aria-label={inf ? 'A la barra: se da la vuelta al reloj de arena' : undefined}>
@@ -757,7 +757,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
       hayLibreria ? (
         '¡Lista! Huele de maravilla. Ahora, el libro.'
       ) : hayVitrina ? (
-        `¡Lista! Huele de maravilla. Ahora, ${pedido.tipo === 'salado' ? 'algo salado' : 'algo dulce'} de la vitrina.`
+        `¡Lista! Huele de maravilla. Ahora, ${pedido.excentrico ? 'lo de su acertijo' : pedido.quiere ? recetaObrador(pedido.quiere)?.nombre.toLowerCase() : pedido.tipo === 'salado' ? 'algo salado' : 'algo dulce'} de la vitrina.`
       ) : (
         '¡Lista! Huele de maravilla.'
       )
@@ -945,7 +945,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
       </>
     );
   } else if (paso === 'libro' || paso === 'sirviendo') {
-    texto = pideComida ? sinPieza(pedido.tipo) : `«¡Qué buena pinta! ${frasePedido(pedido)}»`;
+    texto = pideComida ? sinPieza(pedido.tipo, pedido) : `«¡Qué buena pinta! ${frasePedido(pedido)}»`;
     extra = !pideComida && !balda.length ? (
       <p className="cf3-fichas__vacia">No te quedan libros en la balda. Compra una caja en la distribuidora para recomendar; hoy, solo el café.</p>
     ) : null;
@@ -1036,7 +1036,11 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
         <p className="cf3-dado" aria-label={`Has ganado ${dado.granos} granos y ${dado.reputacion} de reputación`}>
           <span className="cf3-dado__ficha">+{dado.granos} granos</span>
           {dado.extra > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--libro">{dado.llevado && esTuyo(libro) ? `${dado.extra} por tu libro` : `${dado.extra} por el libro`}</span>}
-          {comio && dado.comida_granos > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--comida">{`${dado.comida_granos} por ${laPieza(comio)}`}</span>}
+          {comio && dado.comida_granos > 0 && (
+            <span className="cf3-dado__ficha cf3-dado__ficha--comida">
+              {dado.comida_excentrico ? `${dado.comida_granos} por ${laPieza(comio)}, el doble` : dado.comida_favorito ? `${dado.comida_granos} por su favorito` : `${dado.comida_granos} por ${laPieza(comio)}`}
+            </span>
+          )}
           {dado.tueste && dado.bono_granos > 0 && <span className="cf3-dado__ficha cf3-dado__ficha--tueste">{`+${dado.bono_granos} y +${dado.bono_reputacion} por el tueste`}</span>}
           <span className="cf3-dado__ficha cf3-dado__ficha--rep">+{dado.reputacion} reputación</span>
         </p>

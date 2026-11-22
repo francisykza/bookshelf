@@ -880,7 +880,7 @@ export function Taller({ escena, estado, dia, nombre = null, soundOn = false, ay
                   </button>
                 </>
               ) : fase === 'guardando' ? null : (
-                <button type="button" className="cf3-btn" onClick={onCerrar}>
+                <button type="button" className="cf3-btn" onClick={onCerrar} data-atras>
                   Volver al café
                 </button>
               )}

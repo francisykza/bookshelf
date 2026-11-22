@@ -33,6 +33,10 @@ function fakeHistory() {
       h.index -= 1;
       h.onpop?.(h.stack[h.index]);
     },
+    go(n) {
+      h.index = Math.max(0, h.index + n);
+      h.onpop?.(h.stack[h.index]);
+    },
   };
   return h;
 }
@@ -46,6 +50,17 @@ function setup() {
 }
 
 describe('historial', () => {
+  it('cerrar un panel salta de una vez las capas abiertas dentro de su escena (Atrás del móvil, Libo bloque 4)', () => {
+    const { history, nav } = setup();
+    nav.go({ view: 'room', panel: { type: 'edificio', id: 'hotel' } });
+    // Dos capas dentro del hotel (una sala y su directorio): entradas con el mismo panel y la lista de capas
+    history.pushState({ ...history.state, capas: ['a'] });
+    history.pushState({ ...history.state, capas: ['a', 'b'] });
+    nav.back();
+    expect(history.index).toBe(0);
+    expect(nav.current()).toEqual(ROOT);
+  });
+
   it('registra la ubicación inicial sin añadir entradas', () => {
     const { history, nav } = setup();
     expect(history.length).toBe(1);

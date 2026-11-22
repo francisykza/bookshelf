@@ -1,0 +1,508 @@
+/* Libo, el gato guía (docs/qa/libo.md). Papel y madera, como los carteles de la fachada: borde de un trazo, sombra dura
+   pequeña, sin degradados ni resplandores. Colores del puerto (siguen al tema de día o de noche del piso). */
+
+.plab-controls {
+  position: relative;
+}
+
+.libo-rincon {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* Durante la guía, un solo Libo: el de la tarjeta (en el último paso se señala el de la esquina) */
+.libo-rincon[data-oculto] {
+  visibility: hidden;
+}
+
+/* En la barra del piso: sentado sobre su borde, a la derecha */
+.libo-rincon[data-variante='barra'] {
+  right: max(10px, env(safe-area-inset-right));
+  bottom: calc(100% - 3px);
+}
+
+/* Sin barra (sin cuenta o sin comunidad): en la esquina de abajo */
+.libo-rincon[data-variante='esquina'] {
+  right: max(12px, env(safe-area-inset-right));
+  bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+/* Arriba, a la derecha de la barra del panel (el café: abajo manda Pilar y en medio está la sala) */
+.libo-rincon[data-variante='arriba'] {
+  /* En la franja de la barra del panel: el marcador del café empieza 46 px por debajo */
+  top: calc(1px + env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 8;
+}
+
+/* En la cabecera del cuaderno de la comunidad, junto a cerrar */
+.libo-rincon[data-variante='cabecera'] {
+  position: relative;
+  flex: none;
+}
+
+.libo-rincon[data-variante='arriba'] .libo-rincon__gato,
+.libo-rincon[data-variante='cabecera'] .libo-rincon__gato {
+  width: 44px;
+  height: 44px;
+}
+
+/* Con Libo arriba, el bocadillo sale hacia abajo */
+.libo-rincon[data-variante='arriba'] .libo-bocadillo,
+.libo-rincon[data-variante='cabecera'] .libo-bocadillo {
+  top: calc(100% + 10px);
+  bottom: auto;
+  z-index: 2;
+}
+
+/* En la cabecera del cuaderno, el bocadillo se alarga hacia la derecha (por encima de cerrar): por la izquierda lo cortaría
+   el borde del cuaderno */
+.libo-rincon[data-variante='cabecera'] .libo-bocadillo {
+  right: -56px;
+  width: min(270px, calc(100vw - 110px));
+}
+
+.libo-rincon[data-variante='cabecera'] .libo-bocadillo::after {
+  right: 70px;
+}
+
+.libo-rincon[data-variante='arriba'] .libo-bocadillo::after,
+.libo-rincon[data-variante='cabecera'] .libo-bocadillo::after {
+  top: -10px;
+  bottom: auto;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* Libo se aparta de lo que tiene sus propios controles: en el café, todo lo que no sea la sala con Pilar (la barra, el
+   obrador, el taller, Decorar, los libros…); en el hotel, el directorio abierto y la cartela de una planta elegida */
+.panel--edificio:has(.cf3[data-decorar]) .libo-rincon[data-lugar='cafe'],
+.panel--edificio:has(.cf3):not(:has(.cf3-franja)) .libo-rincon[data-lugar='cafe'],
+.panel--edificio:has(.gh-dir) .libo-rincon[data-lugar='hotel'],
+.panel--edificio:has(.gh-plaque:not(.gh-plaque--small)) .libo-rincon[data-lugar='hotel'] {
+  display: none;
+}
+
+.libo-rincon__gato {
+  display: block;
+  width: 48px;
+  height: 66px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.libo-rincon__gato img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 0 rgb(48 37 31 / 0.35));
+  animation: libo-respira 4.2s ease-in-out infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
+.libo-rincon__gato:focus-visible {
+  outline: 3px solid #f2c46d;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.libo-rincon__gato:active img {
+  transform: translateY(1px) scale(0.97);
+  animation: none;
+}
+
+@keyframes libo-respira {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.025);
+  }
+}
+
+/* El corazón del bocadillo del logo */
+.libo-corazon {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 12px;
+  margin-right: 6px;
+  fill: #c4533d;
+  vertical-align: -1px;
+}
+
+/* El bocadillo de la esquina */
+.libo-bocadillo {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: min(290px, calc(100vw - 32px));
+  padding: 12px 12px 10px;
+  border: 2px solid var(--port-frame, #49372b);
+  border-radius: 3px;
+  background: var(--port-surface, #f7f0df);
+  color: var(--port-ink, #302a24);
+  box-shadow: 3px 3px 0 rgb(48 37 31 / 0.3);
+  font: 15px/21px var(--port-sans, system-ui, sans-serif);
+  animation: libo-asoma 160ms ease-out;
+}
+
+.libo-bocadillo::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  bottom: -10px;
+  width: 14px;
+  height: 10px;
+  background: var(--port-frame, #49372b);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.libo-bocadillo p {
+  margin: 0;
+}
+
+.libo-bocadillo__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.libo-bocadillo__acciones:empty {
+  display: none;
+}
+
+@keyframes libo-asoma {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* Botones de Libo: madera y papel, 44 px de alto */
+.libo-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid var(--port-frame, #49372b);
+  border-radius: 3px;
+  background: #fffaf0;
+  color: #302a24;
+  box-shadow: 0 2px 0 var(--port-frame, #49372b);
+  font: 600 15px/1.2 var(--port-sans, system-ui, sans-serif);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.libo-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.libo-btn:focus-visible {
+  outline: 3px solid #f2c46d;
+  outline-offset: 2px;
+}
+
+.libo-btn--principal {
+  background: #4a5e40;
+  color: #fff8ea;
+}
+
+.libo-btn--leve {
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
+  color: var(--port-ink-muted, #665c4e);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* La guía: un velo suave con un hueco sobre el control del paso */
+.libo-guia {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+}
+
+.libo-guia__velo {
+  position: absolute;
+  inset: 0;
+  background: rgb(32 20 10 / 0.32);
+}
+
+.libo-guia__hueco {
+  position: absolute;
+  border: 3px solid #f2c46d;
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 3px rgb(48 37 31 / 0.55),
+    0 0 0 9999px rgb(32 20 10 / 0.32);
+  transition:
+    left 220ms ease,
+    top 220ms ease,
+    width 220ms ease,
+    height 220ms ease;
+  animation: libo-late 1.8s ease-in-out infinite;
+}
+
+@keyframes libo-late {
+  50% {
+    border-color: #ffe0a3;
+  }
+}
+
+.libo-tarjeta {
+  position: absolute;
+  max-width: 340px;
+  padding: 14px 14px 12px;
+  border: 2px solid var(--port-frame, #49372b);
+  border-radius: 3px;
+  background: var(--port-surface, #f7f0df);
+  color: var(--port-ink, #302a24);
+  box-shadow: 4px 4px 0 rgb(48 37 31 / 0.35);
+  transition:
+    left 220ms ease,
+    top 220ms ease;
+}
+
+/* La flecha hacia el control señalado */
+.libo-tarjeta::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--flecha, -100px) - 8px);
+  width: 16px;
+  height: 11px;
+  background: var(--port-frame, #49372b);
+}
+
+.libo-tarjeta[data-lado='arriba']::after {
+  bottom: -11px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.libo-tarjeta[data-lado='abajo']::after {
+  top: -11px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* Libo asoma por encima de la tarjeta, a la izquierda */
+.libo-tarjeta__gato {
+  position: absolute;
+  left: 8px;
+  bottom: calc(100% - 6px);
+  width: auto;
+  height: 74px;
+  filter: drop-shadow(0 2px 0 rgb(48 37 31 / 0.35));
+  pointer-events: none;
+  user-select: none;
+}
+
+.libo-tarjeta[data-paso='hola'] {
+  margin-top: 70px;
+}
+
+.libo-tarjeta[data-paso='hola'] .libo-tarjeta__gato {
+  left: 50%;
+  height: 150px;
+  transform: translateX(-50%);
+}
+
+/* Con la tarjeta debajo del control, Libo se aparta de la flecha (y del contador de pasos) */
+.libo-tarjeta[data-lado='abajo']:not([data-paso='hola']) .libo-tarjeta__gato {
+  left: auto;
+  right: 64px;
+}
+
+/* …y si lo señalado queda a la derecha, asoma por la izquierda */
+.libo-tarjeta[data-lado='abajo'][data-gato='izquierda']:not([data-paso='hola']) .libo-tarjeta__gato {
+  left: 8px;
+  right: auto;
+}
+
+.libo-tarjeta h2 {
+  display: flex;
+  padding-right: 44px;
+  align-items: center;
+  margin: 0 0 6px;
+  font: 700 18px/1.25 'Lora', Georgia, serif;
+}
+
+.libo-tarjeta p {
+  margin: 0;
+  font: 15px/21px var(--port-sans, system-ui, sans-serif);
+}
+
+.libo-tarjeta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.libo-tarjeta .libo-tarjeta__cuenta {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: var(--port-ink-muted, #665c4e);
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* Bloque 3 · Tiene algo que contarte: el corazón del logo junto a su oreja, quieto (sin latir ni parpadear: nada de presión) */
+.libo-rincon__gato {
+  position: relative;
+}
+
+.libo-rincon__nota {
+  position: absolute;
+  top: 2px;
+  right: -6px;
+  display: grid;
+  width: 22px;
+  height: 20px;
+  place-items: center;
+  border: 2px solid var(--port-frame, #49372b);
+  border-radius: 3px;
+  background: #fffaf0;
+  box-shadow: 1px 1px 0 rgb(48 37 31 / 0.3);
+  pointer-events: none;
+}
+
+.libo-rincon__nota .libo-corazon {
+  width: 11px;
+  height: 10px;
+  margin: 0;
+}
+
+.libo-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Los avisos y la sugerencia del día: tiras de papel dentro del bocadillo, cada una con su botón para ir */
+.libo-bocadillo[data-hub] {
+  width: min(300px, calc(100vw - 24px));
+}
+
+.libo-avisos {
+  display: grid;
+  gap: 8px;
+  max-height: min(52vh, 420px);
+  margin: 10px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+
+.libo-aviso {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px 9px;
+  border: 1px solid rgb(73 55 43 / 0.28);
+  border-left: 4px solid #c99a4a;
+  border-radius: 2px;
+  background: #fffaf0;
+  font-size: 14px;
+  line-height: 19px;
+}
+
+/* Un aviso es una tira de papel que se toca entera (44 px como poco) */
+.libo-aviso:has(> .libo-aviso__ir) {
+  padding: 0;
+}
+
+.libo-aviso__ir {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px 9px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.libo-aviso__ir strong {
+  color: #4a5e40;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.libo-aviso__ir:active {
+  background: #f3e8d2;
+}
+
+.libo-aviso__ir:focus-visible {
+  outline: 3px solid #f2c46d;
+  outline-offset: -3px;
+}
+
+.libo-bocadillo[data-hub] .libo-bocadillo__acciones {
+  gap: 0 4px;
+  margin-top: 6px;
+}
+
+.libo-bocadillo[data-hub] .libo-btn--leve {
+  padding: 0 8px;
+  font-size: 14px;
+}
+
+.libo-aviso--sugerencia {
+  border-left-color: #4a5e40;
+}
+
+.libo-aviso em {
+  font-style: italic;
+  font-weight: 600;
+}
+
+.libo-aviso > .libo-btn,
+.libo-aviso__acciones {
+  justify-self: start;
+}
+
+.libo-aviso__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.libo-btn--mini {
+  padding: 0 11px;
+  font-size: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .libo-rincon__gato img,
+  .libo-bocadillo,
+  .libo-guia__hueco {
+    animation: none;
+  }
+
+  .libo-guia__hueco,
+  .libo-tarjeta {
+    transition: none;
+  }
+}

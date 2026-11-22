@@ -447,7 +447,7 @@
 
 /* Botones de píxel: contorno oscuro, luz arriba y sombra abajo; al pulsar se hunden */
 .cf3-btn {
-  min-height: 42px;
+  min-height: 44px;
   padding: 9px 14px 12px;
   background: var(--cf3-amber);
   box-shadow:
@@ -1088,7 +1088,8 @@
   --cf3-px: 3px;
   position: relative;
   width: 46px;
-  height: 42px;
+  /* Libo, bloque 4: 44 px de alto, lo mínimo para tocar con el dedo */
+  height: 44px;
   padding: 7px;
   border: 0;
   background: rgb(26 16 20 / 0.88);
@@ -4637,4 +4638,66 @@
   box-shadow:
     inset 0 0 0 2px var(--cf3-ink),
     inset -4px 0 0 #a8323f;
+}
+
+/* Libo, bloque 4 (toques): los letreros de los clientes se ven igual y en el mismo sitio, pero se tocan en 44 px de alto (y de
+   ancho, el de la «!» sola). El dibujo pasa a ::after, porque el recorte de las esquinas de píxel (clip-path) también recortaría
+   el toque; el botón, transparente, baja 10 px para que el letrero quede donde estaba */
+.cf3-tag--cliente {
+  --cf3-tag-fondo: var(--cf3-amber);
+  --cf3-tag-sombra: inset 0 0 0 2px #2a1a10, inset 0 -3px 0 #b37a32;
+  top: 10px;
+  min-height: 44px;
+  isolation: isolate;
+  clip-path: none;
+  background: none !important;
+  box-shadow: none !important;
+}
+.cf3-tag--cliente:hover,
+.cf3-tag--cliente:focus-visible {
+  --cf3-tag-fondo: #f4c97a;
+}
+.cf3-tag--raro {
+  --cf3-tag-fondo: var(--cf3-tema);
+  --cf3-tag-sombra: inset 0 0 0 2px #2a1a10, inset 0 0 0 3px #ffe08a, 0 0 10px var(--cf3-tema);
+}
+.cf3-tag--raro:hover,
+.cf3-tag--raro:focus-visible {
+  --cf3-tag-fondo: color-mix(in srgb, var(--cf3-tema) 80%, white);
+}
+.cf3-tag--influencer {
+  --cf3-tag-fondo: var(--cf3-tema);
+  --cf3-tag-sombra: inset 0 0 0 2px #2a1a10, inset 0 -3px 0 color-mix(in srgb, var(--cf3-tema) 60%, #2a1a10);
+}
+.cf3-tag--influencer:hover,
+.cf3-tag--influencer:focus-visible {
+  --cf3-tag-fondo: color-mix(in srgb, var(--cf3-tema) 80%, white);
+}
+.cf3-tag--cliente::after {
+  position: absolute;
+  z-index: -1;
+  inset: 10px 0;
+  background: var(--cf3-tag-fondo);
+  box-shadow: var(--cf3-tag-sombra);
+  content: '';
+  clip-path: polygon(
+    0 2px,
+    2px 2px,
+    2px 0,
+    calc(100% - 2px) 0,
+    calc(100% - 2px) 2px,
+    100% 2px,
+    100% calc(100% - 2px),
+    calc(100% - 2px) calc(100% - 2px),
+    calc(100% - 2px) 100%,
+    2px 100%,
+    2px calc(100% - 2px),
+    0 calc(100% - 2px)
+  );
+}
+.cf3-tag--solo {
+  min-width: 44px;
+}
+.cf3-tag--solo::after {
+  inset: 10px;
 }

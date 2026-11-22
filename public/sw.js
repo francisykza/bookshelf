@@ -327,6 +327,8 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
+  // Las páginas legales (Play Store) son páginas aparte: a la red, sin guardarlas como la app
+  if (url.pathname.startsWith('/legal/')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(

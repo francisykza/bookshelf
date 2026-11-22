@@ -57,10 +57,10 @@ export function OnboardingGuide({ guide, fit, reducedMotion }) {
         aria-labelledby={titleId}
         aria-describedby={textId}
       >
-        {welcome && <span className="onboarding-card__seal" aria-hidden="true">B</span>}
+        {/* Libo, el gato guía (docs/qa/libo.md), asoma por encima de la carta */}
+        <img className="onboarding-card__libo" src="/assets/libo/libo-320.webp" alt="" aria-hidden="true" draggable="false" />
         <h2 id={titleId}>{stop.title}</h2>
         <p id={textId}>{stop.text}</p>
-        {welcome && <p className="onboarding-card__hand">con cariño, desde la habitación junto al mar</p>}
         <div className="onboarding-card__actions">
           <button ref={primaryRef} type="button" className="onboarding-card__primary" onClick={guide.advance}>
             {welcome ? 'Descubrir mi habitación' : last ? 'Terminar' : 'Continuar'}

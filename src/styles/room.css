@@ -2958,6 +2958,22 @@ html[data-motion='reduced'] .tod__glow::after {
   box-shadow: 0 3px 6px rgb(44 30 20 / 0.35);
 }
 
+/* Libo, el gato guía (docs/qa/libo.md): asoma por encima de la tarjeta, en la esquina derecha */
+.onboarding-card__libo {
+  position: absolute;
+  right: 14px;
+  bottom: calc(100% - 6px);
+  width: auto;
+  height: 64px;
+  filter: drop-shadow(0 2px 0 rgb(44 30 20 / 0.35));
+  pointer-events: none;
+  user-select: none;
+}
+
+.onboarding-card--letter .onboarding-card__libo {
+  height: 92px;
+}
+
 .onboarding-card__hand {
   font-family: 'Caveat', var(--font-hand);
   font-size: 1.15rem !important;

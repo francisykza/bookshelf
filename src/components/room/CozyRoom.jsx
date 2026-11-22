@@ -61,7 +61,7 @@ function OffscreenReporter({ fit, actionsRef, onChange }) {
   return null;
 }
 
-export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenBalda, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenFigure, showFigures = true, onLogReading, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
+export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpenBook, onOpenBalda, onOpenLaptop, onOpenTray, onToggleSound, onOpenAtlas, onOpenVault, onOpenFigure, showFigures = true, onLogReading, onOpenEdificio = null, modalOpen = false, timer, guide = null, onReady, onOffscreen }) {
   const { state, actions } = useLibrary();
   const { settings, books, progress } = state;
   const reducedMotion = useReducedMotion();
@@ -158,6 +158,7 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
     shelf: { title: 'Mi librería', onActivate: onOpenShelf },
     lamp: { title: settings.lampOn ? 'Lámpara: apagar' : 'Lámpara: encender', onActivate: toggleLamp },
     lantern: { title: settings.candleOn ? 'Vela: soplar' : 'Vela: encender', onActivate: toggleCandle },
+    ...(onOpenEdificio ? { puerto: { title: 'Puerta-ventana: bajar al edificio del puerto', onActivate: onOpenEdificio } } : null),
   };
   const actionsRef = useRef(ACTIONS);
   useEffect(() => {
@@ -295,6 +296,8 @@ export function CozyRoom({ active = true, interactive = true, onOpenShelf, onOpe
           {/* Libros de la estantería: por encima del hotspot general de la librería */}
           {newShelf && <BookcaseHits layout={bookcase} scale={fit.scale} onOpenBook={onOpenBook} onOpenBalda={onOpenBalda} onHover={onHover} />}
           {showFigures && <RoomFigureShelves figures={progress.figures} onOpenFigure={onOpenFigure ?? ((id) => onOpenVault(id))} onHover={onHover} />}
+          {/* La puerta-ventana baja al edificio del puerto (Libo, docs/qa/libo.md); el astro, encima, sigue abriendo el atlas */}
+          {onOpenEdificio && <Hotspot id="puerto" spot={lit('puerto')} guides={guides} hint={17} onHover={onHover} onActivate={onOpenEdificio} label={{ title: 'Bajar al puerto', text: 'El edificio: tus vecinos, el café-librería y el hotel', aria: 'Puerta-ventana: bajar al edificio del puerto, con tus vecinos, el café-librería y el hotel' }} />}
           <TimeDial timeOfDay={settings.timeOfDay} onOpen={onOpenAtlas} onHover={onHover} spot={lit('sun')} />
           {/* Señales físicas permanentes (SPEC §28.9): decorativas; el toque llega al objeto de debajo. Con un panel
               encima (o fuera de la habitación) no se montan: no se ven y no cuestan fotogramas */}

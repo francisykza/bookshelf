@@ -18,6 +18,7 @@ import { PanelShell } from './PanelShell';
 import { SessionsApp } from './ReadingCalendar';
 import { ComputerShell } from '../computer/ComputerShell';
 import { PortCalendar } from '../computer/PortCalendar';
+import { useAtras } from '../../hooks/useAtras';
 
 // 1.134 · La pantalla «Almacén» del ordenador del piso, solo cuando se abre (lleva el catálogo y las miniaturas del almacén)
 const AlmacenApp = lazy(() => import('../../features/edificio/hotel/AlmacenOrdenador').then((m) => ({ default: m.AlmacenApp })));
@@ -51,6 +52,9 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
   // Apps montadas (la activa y las que guardan algo a medias)
   const [alive, setAlive] = useState(start ? [start] : []);
   const [confirmExit, setConfirmExit] = useState(false);
+  // Libo, bloque 4 (hooks/useAtras.js): una app abierta desde el escritorio del piso se cierra con Atrás del móvil, como con su
+  // flecha, y se vuelve al escritorio; si el ordenador se abrió ya en esa app, Atrás sale del ordenador como siempre
+  const [desdeEscritorio, setDesdeEscritorio] = useState(false);
   const screenRef = useRef(null);
   // Apps con algo escrito en un formulario aún abierto
   const touched = useRef(new Set());
@@ -63,12 +67,14 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
     if (id !== app) playUiSound(desktop ? 'panel-open' : 'appSwitch');
     setConfirmExit(false);
     setApp(id);
+    setDesdeEscritorio(true);
     setAlive((list) => (list.includes(id) ? list : [...list, id]));
   };
   const closeApp = () => {
     if (desktop) playUiSound('panel-close');
     const id = app;
     setApp(null);
+    setDesdeEscritorio(false);
     if (!pending(id)) {
       touched.current.delete(id);
       setAlive((list) => list.filter((x) => x !== id));
@@ -81,6 +87,7 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
       onClose();
     }
   };
+  useAtras(Boolean(desktop && app && desdeEscritorio), closeApp);
   // Registrar sale del ordenador: la ruta guarda antes qué pantalla estaba abierta, y aquí se recupera su altura
   const registrar = desktop
     ? (date) => {

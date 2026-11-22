@@ -1048,6 +1048,47 @@
   width: 24px;
 }
 
+/* Libo, bloque 4: la biblioteca vacía, con Libo y el siguiente paso */
+.lit-vacia {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 0 auto;
+  max-width: 340px;
+  padding: 28px 18px 24px;
+  text-align: center;
+}
+
+.lit-vacia img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.lit-vacia__titulo {
+  margin: 0;
+  color: var(--ink);
+  font: 600 18px/24px Georgia, Lora, serif;
+}
+
+.lit-vacia__texto {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font: 15px/21px var(--port-sans, sans-serif);
+}
+
+.lit-vacia__botones {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.bs-literary .lit-vacia__botones .lit-boton {
+  min-height: 48px;
+  padding: 0 16px;
+}
+
 :root[data-ui-theme='noche'] .bs-literary .lit-segmento .lit-boton[aria-pressed='true'] {
   background: #4d5c3e !important;
 }

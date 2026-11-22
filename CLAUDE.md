@@ -536,6 +536,33 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     motor que la habitación en primera persona y botones con el diseño de la recepción. Se planea primero y se hace por
     bloques, con capturas entre uno y otro.
   - **Publicado en la 1.87.0** (7-11-2026). La experiencia anterior va como en la 1.86: **Rincón 01 está apagado** (`RINCON_01` en `bookcaseLayout.js`) hasta que Francisco lo apruebe.
+- **Hacia la Play Store** (Francisco, 20-11-2026): se prepara la app para publicarla en Google Play; plan y decisiones
+  pendientes en `docs/qa/play-store.md` (empaquetado como TWA de `libotown.es`, borrar la cuenta, páginas legales,
+  moderación, errores, Android). Por bloques con evidencias; las páginas legales no se redactan con datos inventados.
+  Decisiones del mismo día (plan §7): responsable, él; **edad mínima 16** (casilla al crear la cuenta, sin fecha de
+  nacimiento); al borrar una cuenta, **lo que dejó a otros queda como «Lector anónimo»** (no se borra); **modera él**;
+  cuenta de desarrollador **personal** (prueba cerrada obligatoria); paquete `es.libotown.app`; planes de pago, por confirmar.
+  El correo de contacto será uno de `libotown.es` que creará él. La migración del borrado se aplica más adelante.
+- **Libo, el gato guía** (Francisco, 20-11-2026; plan en `docs/qa/libo.md`): el gato del logo, con su nombre, es el puente
+  entre la app y el nombre; te guía poco a poco por todo (por capítulos, cuando tiene sentido, siempre saltable) y te da
+  sugerencias. Decisiones del mismo día: **empezar con la mascota actual** (`libotown-marca/libotown-mascota.webp`, recortada,
+  con poca animación; las poses vendrán después, de su material: no inventarlas); **vive en una esquina, siempre**, con el
+  bocadillo del corazón cuando tiene algo que decir; **sugerencias, una al día como mucho y sin presión**, solo de cosas
+  reales y apagables en Ajustes; y **acceso al edificio desde la habitación** (la tablet sigue igual). No es un chat con IA;
+  dentro del café y del taller hablan Pilar y don Celestino. **Bloques 1 a 4 hechos sin commit** (`docs/qa/libo.md` §6): en las
+  e2e con cuenta simulada, el simulador da por vistos todos sus capítulos (`bookshelf:libo`, una lista) y por asomado el
+  bocadillo del día (`bookshelf:libo-asomo` = `9999-12-31`) para que no tapen la pantalla; las pruebas de Libo lo cambian.
+  **Sus avisos y sugerencias solo dicen cosas de verdad** (bloque 3): si un dato no se puede saber sin preguntar al servidor
+  o sin adivinar, Libo no lo dice; una sugerencia al día como mucho, el bocadillo asoma solo una vez al día y sin sonido, y
+  nunca rachas, cuentas atrás, prisas ni nada de pago. **Libo se aparta de lo que tiene controles propios** (la barra, el obrador,
+  el taller y Decorar del café, las salas del hotel, el armario): ahí no sale, para no tapar a Pilar ni la barra.
+  **Bloque 4** (Francisco, 22-11-2026: estados vacíos, Atrás de Android y legibilidad; **la habitación ilustrada se queda como
+  está**). **Atrás del móvil cierra lo último abierto** dentro de una escena, igual que su botón de volver: toda pantalla, hoja o
+  capa nueva dentro de una escena se apunta con `useAtras` (`src/hooks/useAtras.js`); en el café, su botón de volver lleva
+  `data-atras` y `Cafe.jsx` añade su condición a `capaAbierta`. Sin botón de volver a la vista (a mitad de un gesto) o con
+  cambios sin guardar, Atrás no hace nada. **Toques de 44 px**: un control que se dibuja más pequeño se toca en 44 sin cambiar
+  su aspecto; ojo, un `clip-path` (las esquinas de píxel del café) recorta también el toque, y un pseudo-elemento se mide desde
+  dentro del borde.
 - Las herramientas de prueba (p. ej. simular sellos) van solo con `import.meta.env.DEV`, botón y acción.
 - **Biblioteca grande** (1.59, §59): la biblioteca cerrada no monta libros; el escaparate y los lomos solo montan lo
   cercano a la vista (no medir ni buscar libros en el DOM: puede no estar montado). Las portadas se piden una vez por URL
@@ -643,6 +670,8 @@ Maquetas de referencia: `docs/design/references/`.
   Arreglo sin tocar nada en disco: cargar `scripts/onedrive-dirent.cjs` con
   `NODE_OPTIONS="--require ./scripts/onedrive-dirent.cjs"` delante de `npx playwright test` y de `npm run build`. Vitest
   con la ruta del archivo funciona sin él.
+- **Windows no distingue mayúsculas en los nombres**: un componente `Libo.jsx` junto a un módulo `libo.js` hace que
+  `import … from './Libo'` cargue el `.js`. No dar a dos archivos de la misma carpeta nombres que solo cambien en mayúsculas.
 - **Mientras corre una e2e, no tocar ningún archivo del proyecto**, tampoco los `.md`. El escáner de Tailwind v4 lee
   también `SPEC.md`, `CLAUDE.md` o `docs/`, y al cambiar uno el servidor de Vite de la prueba recarga la página. El 14-11-2026
   una prueba del café falló así a mitad de un cliente: al guardar `SPEC.md`, la página volvió a la habitación. Escribir los

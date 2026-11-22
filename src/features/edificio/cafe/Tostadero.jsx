@@ -282,7 +282,7 @@ export function Tostadero({ escena, local, dia, soundOn = false, ayudas = 'auto'
           )}
           <div className="cf3-botones">
             {fase !== 'enfriar' && (
-              <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar}>
+              <button type="button" className="cf3-btn cf3-btn--suave" onClick={onCerrar} data-atras>
                 {fase === 'tirar' ? 'Luego' : 'Volver'}
               </button>
             )}

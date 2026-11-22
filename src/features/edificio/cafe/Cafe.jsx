@@ -36,7 +36,7 @@ import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
 import { Obrador } from './Obrador';
 import { CajaMostrador } from './CajaMostrador';
-import { OBRADOR_NIVEL, PILAR_OBRADOR, enVitrina, estadoHorno, fraseMostrador, pedidoComida } from './cafeObrador';
+import { FOGON_NIVEL, HITO_CAMPANILLA, HITOS_OBRADOR, OBRADOR_NIVEL, PILAR_OBRADOR, enVitrina, estadoHorno, fraseMostrador, pedidoComida } from './cafeObrador';
 import { Taller } from './Taller';
 import { TALLER_NIVEL } from './cafeTaller';
 import { crearTallerMusica } from './cafeTallerMusica';
@@ -49,6 +49,8 @@ import { portadaPixel } from './cafePortadas';
 import { sceneMusicOut, setMusicBlocked } from '../../../audio/audioController';
 import './cafe.css';
 import { PantallaCarga } from '../../../ui/PantallaCarga';
+import { guardarCafeLibo } from '../../libo/sugerencias';
+import { pulsarAtras, useAtras } from '../../../hooks/useAtras';
 
 /** Lo que cuenta Pilar en el traspaso, por orden (frases cerradas). */
 const PILAR_DICE = [
@@ -92,7 +94,7 @@ function librosDelCafe(books = []) {
 const PLANO_VACIO = { v: 1, items: [] };
 const nombreDe = (id) => CAFE_MUEBLES.find((m) => m.id === id)?.nombre ?? catalogItem(id)?.nombre ?? id;
 
-export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, onVisitar = null }) {
+export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, onVisitar = null, userId = null }) {
   // 1.141: el ranking de los cafés (tu edificio y a quien sigues), en la franja de abajo
   const [panelRanking, setPanelRanking] = useState(false);
   // 1.142: el cuaderno de Pilar (las tareas que se le encargan)
@@ -184,12 +186,14 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   // 1.130: cada cliente pide de lo que hay en la balda ahora (con la balda vacía, solo el café)
   // 1.143: máximo dos cosas por cliente (Francisco, 17-11-2026, «Dos máx., 1 de cada 3»): quien pide comida (lo dice el servidor,
   // `cafe_obrador`) no pide libro; los libros se reparten entre los demás
-  const comen = useMemo(() => new Map((obradorDia?.piden ?? []).map((p) => [p.n, p.tipo])), [obradorDia?.piden]);
+  // 1.145: el excéntrico (los días que pide algo con un acertijo) y los habituales con su favorito traen `quiere`
+  const comen = useMemo(() => new Map((obradorDia?.piden ?? []).map((p) => [p.n, p])), [obradorDia?.piden]);
   const pedidos = useMemo(() => {
     if (!comen.size || !dia) return pedidosLibro(dia, deLaBalda);
     const sin = (l) => (l ?? []).filter((c) => !comen.has(c.n));
     const out = pedidosLibro({ ...dia, clientes: sin(dia.clientes), habituales: sin(dia.habituales), virales: sin(dia.virales) }, deLaBalda);
-    for (const [n, tipo] of comen) out[n] = pedidoComida(tipo);
+    const excentrico = (dia.clientes ?? []).find((c) => c.excentrico)?.n ?? null;
+    for (const [n, p] of comen) out[n] = pedidoComida(p.tipo, p.quiere ?? null, n === excentrico);
     return out;
   }, [dia, deLaBalda, comen]);
   // En las baldas de los muebles, tus leídos (los de la balda del café ya van en la estantería de la pared, por secciones)
@@ -202,6 +206,12 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   const abierto = Boolean(local?.inaugurado);
   const pilarCaja = local?.pilar?.caja ?? false;
   const decorando = borrador != null;
+  // Libo (docs/qa/libo.md, bloque 3): lo que queda hoy y la hucha, apuntado en este aparato para que en tu piso te avise del
+  // café solo si es verdad. Sin el día cargado (o sin la migración de clientes), nada
+  const hucha = local?.pilar?.hucha ?? 0;
+  useEffect(() => {
+    if (abierto && dia && userId) guardarCafeLibo(userId, { pendientes: pendientes.length, hucha });
+  }, [abierto, dia, userId, pendientes.length, hucha]);
   // La carta abierta (bloque 4a): el chocolate y la nata, según la reputación
   const reputacion = local?.reputacion ?? 0;
   const carta = useMemo(() => cartaDe(reputacion), [reputacion]);
@@ -268,11 +278,14 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
               for (const [id, t] of Object.entries(tags)) {
                 const el = tagEls.current[id];
                 if (!el) continue;
-                const half = t.visible ? el.offsetWidth / 2 : 0;
+                // Libo, bloque 4: los letreros de los clientes se tocan en 44 px, pero el dibujo es 20 px más bajo (y más estrecho, el
+                // de la «!» sola): se apilan y se ciñen al borde por el dibujo
+                const margen = el.classList.contains('cf3-tag--cliente') ? 20 : 0;
+                const half = t.visible ? (el.offsetWidth - (el.classList.contains('cf3-tag--solo') ? margen : 0)) / 2 : 0;
                 const x = w ? Math.min(Math.max(t.x, half + 6), w - half - 6) : t.x;
                 let y = t.y;
                 if (t.visible && id.startsWith('cliente:')) {
-                  const alto = el.offsetHeight + 4;
+                  const alto = el.offsetHeight - margen + 4;
                   for (let choca = true; choca;) {
                     choca = puestos.some((q) => Math.abs(q.x - x) < q.half + half + 2 && Math.abs(q.y - y) < alto);
                     if (choca) y -= alto;
@@ -520,6 +533,27 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   // 1.143: el horno y la vitrina vistos desde fuera: la hornada se dora poco a poco y, cuando está lista, suena la campanilla y
   // el letrero lo dice. Dentro del obrador (o en la vitrina, sirviendo) lo llevan Obrador.jsx y Vitrina.jsx
   const obradorHoy = obradorDia?.obrador ?? null;
+  // Libo, bloque 4 (hooks/useAtras.js): con una pantalla del café abierta (la barra, el obrador, el taller, los libros, Decorar…),
+  // Atrás del móvil hace lo mismo que su botón de volver; a mitad de una taza, sin botón de volver, no hace nada. En Decorar con
+  // cambios sin guardar tampoco, para no perderlos
+  const raizCafe = useRef(null);
+  const capaAbierta = Boolean(
+    (panelLibros && librosCafe) ||
+      (panelRanking && onVisitar && !enTaller) ||
+      (panelCuaderno && local?.pilar && !enTaller) ||
+      (enTaller && taller) ||
+      (enCaja && obradorHoy) ||
+      (enObrador && obradorDia) ||
+      (tostando && local) ||
+      clienteAtendido ||
+      decorando ||
+      eligiendo ||
+      escaparate != null,
+  );
+  useAtras(capaAbierta, () => {
+    if (decorando && JSON.stringify(borrador.items) !== JSON.stringify(local?.plano?.items)) return false;
+    return pulsarAtras(raizCafe.current);
+  });
   const [relojHorno, setRelojHorno] = useState(() => Date.now());
   const nHorneando = obradorHoy?.horneando.length ?? 0;
   useEffect(() => {
@@ -535,13 +569,17 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
       horneando: (obradorHoy?.horneando ?? []).map((h) => ({ receta: h.receta, t: estadoHorno(h, relojHorno).t })),
       listo: hornadaLista,
       horno: obradorHoy?.horno ?? 1,
+      // 1.145: el fogón, los adornos de los hitos y la masa del pan
+      fogon: (local?.nivel ?? 1) >= FOGON_NIVEL,
+      hitos: obradorHoy?.hitos ?? 0,
+      masa: obradorHoy?.masa ? (obradorHoy.masa.lista ? 'lista' : 'reposa') : null,
     });
-  }, [ready, enObrador, hayObrador, obradorHoy, relojHorno, hornadaLista]);
+  }, [ready, enObrador, hayObrador, obradorHoy, relojHorno, hornadaLista, local?.nivel]);
   // 1.144: la vitrina, con su grado y la pizarrita de la especialidad del día
   const especialidad = obradorDia?.especialidad ?? null;
   useEffect(() => {
     if (!ready || atiende || enCaja || !hayObrador) return;
-    api.current?.setVitrina?.({ piezas: obradorHoy?.piezas ?? {}, grado: obradorHoy?.vitrina ?? 1, especialidad: obradorHoy ? especialidad : null });
+    api.current?.setVitrina?.({ piezas: obradorHoy?.piezas ?? {}, grado: obradorHoy?.vitrina ?? 1, especialidad: obradorHoy ? especialidad : null, hitos: obradorHoy?.hitos ?? 0 });
   }, [ready, atiende, enCaja, hayObrador, obradorHoy, especialidad]);
   // 1.144: lo que vendió Pilar en el mostrador mientras no estabas. Con piezas en la vitrina, a la caja a tirar del cajón (una vez
   // por visita, cuando no haya otra cosa); con la vitrina vacía no pudo vender nada: se apuntan los días sin decir nada
@@ -571,6 +609,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
             setGanado(r.cobrado.granos);
             setAviso(fraseMostrador(r.cobrado.vendidas));
           }
+          darHitos(r.cobrado?.hitos);
         },
         () => {},
       );
@@ -828,6 +867,12 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
       setOcupado(false);
     }
   };
+  /** 1.145: los hitos nuevos del obrador (al vender en la mesa o en el mostrador): la campanilla y lo que dice Pilar del adorno. */
+  const darHitos = (l) => {
+    if (!Array.isArray(l) || !l.length) return;
+    sfx.play('hitoObrador');
+    setAviso(HITOS_OBRADOR.frases[Math.max(...l) - 1] ?? '');
+  };
   // 1.130: la receta, el ejemplar de la balda (o null, solo el café) y lo acertado del libro [género, extensión, forma]
   // 1.132: al influencer, con su reloj de arena (`entregarInfluencer`); al despedirle, si era el de la subida, el café sube
   // 1.143: a quien pide comida, tras la bebida, la pieza (`comida`, la receta que le llevas): sus granos se suman a lo ganado
@@ -841,7 +886,17 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
         if (rc.cafe) r.cafe = rc.cafe;
         const receta_ = rc.dado?.receta ?? comida;
         setObradorDia((d) => (d ? { ...d, obrador: rc.obrador ?? d.obrador, piden: d.piden.map((p) => (p.n === c.n ? { ...p, servido: true, receta: receta_ } : p)) } : d));
-        dado = { ...dado, granos: (dado?.granos ?? 0) + (rc.dado?.granos ?? 0), comida_granos: rc.dado?.granos ?? 0, comida_receta: receta_ };
+        dado = {
+          ...dado,
+          granos: (dado?.granos ?? 0) + (rc.dado?.granos ?? 0),
+          comida_granos: rc.dado?.granos ?? 0,
+          comida_receta: receta_,
+          comida_excentrico: rc.dado?.excentrico === true,
+          comida_favorito: rc.dado?.favorito === true,
+        };
+        // 1.145: con la campanilla del mostrador (el cuarto hito), suena al vender; y los hitos nuevos, con su adorno
+        if ((rc.obrador?.hitos ?? 0) >= HITO_CAMPANILLA) sfx.play('campanillaMostrador');
+        darHitos(rc.dado?.hitos);
       } catch {
         dado = { ...dado, comida_falla: true };
       }
@@ -1023,7 +1078,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   const sigue = !eligiendo && !abierto && !aviso && hablando != null && !ultima;
 
   return (
-    <div className="cf3" data-ready={(ready || sin3d) && local !== undefined ? 'true' : undefined} data-abierto={abierto ? 'true' : undefined} data-decorar={decorando ? 'true' : undefined}>
+    <div ref={raizCafe} className="cf3" data-ready={(ready || sin3d) && local !== undefined ? 'true' : undefined} data-abierto={abierto ? 'true' : undefined} data-decorar={decorando ? 'true' : undefined}>
       <h2 className="px-sr" id="ed-title">
         {titulo}
       </h2>
@@ -1068,7 +1123,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
             <button
               key={c.n}
               type="button"
-              className={`cf3-tag cf3-tag--cliente${c.raro ? ' cf3-tag--raro' : ''}${c.influencer ? ' cf3-tag--influencer' : ''}`}
+              className={`cf3-tag cf3-tag--cliente${c.raro ? ' cf3-tag--raro' : ''}${c.influencer ? ' cf3-tag--influencer' : ''}${c.habitual || c.influencer || c.raro ? '' : ' cf3-tag--solo'}`}
               data-off="true"
               style={c.raro ? { '--cf3-tema': `rgb(${c.raro.tema.join(' ')})` } : c.influencer ? { '--cf3-tema': `rgb(${c.influencer.tema.join(' ')})` } : undefined}
               aria-label={`Atender a ${c.habitual || c.raro || c.influencer ? c.nombre : 'un cliente'}`}
@@ -1218,7 +1273,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
               </div>
             ) : (
               <div className="cf3-balda__herr">
-                <button type="button" className="cf3-btn cf3-btn--suave" onClick={cancelarDecorar} disabled={ocupado}>
+                <button type="button" className="cf3-btn cf3-btn--suave" onClick={cancelarDecorar} disabled={ocupado} data-atras>
                   Cancelar
                 </button>
                 <button type="button" className="cf3-btn cf3-btn--verde" onClick={guardar} disabled={ocupado}>
@@ -1381,6 +1436,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
             if (r.cafe) setLocal(r.cafe);
             if (r.obrador) setObradorDia((d) => ({ piden: [], ...d, obrador: r.obrador }));
             if (r.cobrado?.granos > 0) setGanado(r.cobrado.granos);
+            darHitos(r.cobrado?.hitos);
           }}
           onCerrar={() => setEnCaja(false)}
         />
@@ -1398,6 +1454,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
           onCafe={(cafe, cobrado) => {
             if (cafe) setLocal(cafe);
             if (cobrado?.granos > 0) setGanado(cobrado.granos);
+            darHitos(cobrado?.hitos);
           }}
           onCerrar={() => setEnObrador(false)}
         />
@@ -1479,7 +1536,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
                   </p>
                 )}
                 <div className="cf3-botones cf3-botones--fila">
-                  <button type="button" className="cf3-btn cf3-btn--suave" onClick={() => setEscaparate(null)} disabled={ocupado}>
+                  <button type="button" className="cf3-btn cf3-btn--suave" onClick={() => setEscaparate(null)} disabled={ocupado} data-atras>
                     Ahora no
                   </button>
                   <button type="button" className="cf3-btn cf3-btn--verde" onClick={guardarEscaparate} disabled={ocupado}>
@@ -1502,7 +1559,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
                   </p>
                 )}
                 <div className="cf3-botones cf3-botones--fila">
-                  <button type="button" className="cf3-btn cf3-btn--suave" onClick={() => setEligiendo(false)} disabled={ocupado}>
+                  <button type="button" className="cf3-btn cf3-btn--suave" onClick={() => setEligiendo(false)} disabled={ocupado} data-atras>
                     Ahora no
                   </button>
                   <button type="button" className="cf3-btn cf3-btn--verde" onClick={inaugurar} disabled={!nombre || ocupado}>

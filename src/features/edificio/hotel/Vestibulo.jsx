@@ -18,6 +18,7 @@ import { MISION_TICKETS } from '../economy';
 import { useMissionTickets } from '../useMissionTickets';
 import { LOBBY_H, LOBBY_W, renderLobby } from './lobbyArt';
 import { Recepcion3D } from './RecepcionVista';
+import { useAtras } from '../../../hooks/useAtras';
 
 const VISTA_KEY = 'bookshelf:vestibulo-vista';
 const readVista = () => {
@@ -316,6 +317,8 @@ function PlanoVestibulo({ onStreet, onFloor, on3d }) {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onStreet]);
+  // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil cierra el papel abierto, como Escape
+  useAtras(Boolean(spot), () => setSpot(null));
   // Tocar lo que ya está abierto lo cierra
   const choose = (id) => setSpot((cur) => (cur === id ? null : id));
   useEffect(() => {

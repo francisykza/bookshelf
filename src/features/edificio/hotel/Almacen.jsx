@@ -29,6 +29,7 @@ import { desear, mensajeDeseo, verAvisos } from './almacenHoy';
 import { Marcapaginas } from './Marcapaginas';
 import './almacen.css';
 import { PantallaCarga } from '../../../ui/PantallaCarga';
+import { pulsarAtras, useAtras } from '../../../hooks/useAtras';
 
 const CARRITO_KEY = 'bookshelf:almacen-carrito';
 const COMPRA_KEY = 'bookshelf:almacen-compra';
@@ -907,6 +908,12 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
     return () => clearTimeout(t);
   }, [aviso]);
 
+  // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil cierra la ficha o el papel abierto (su «Volver») y saca del mercadillo al
+  // almacén; si su «Volver» no está a la vista (sellando el albarán), no hace nada
+  // La ficha con la que se llega desde el ordenador del piso no: Atrás vuelve al ordenador, como antes
+  const fichaDeLlegada = Boolean(destino) && papel === 'ficha' && ficha != null && EXPOSITORES[ficha.i]?.id === destino;
+  useAtras(Boolean((papel && !fichaDeLlegada) || mercadillo), () => (mercadillo ? setMercadillo(false) : pulsarAtras(wrap.current)));
+
   if (mercadillo) {
     return (
       <div className="alm-mercadillo">
@@ -1067,7 +1074,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
               <small>{seccionDe(fichaE) ? `${seccionDe(fichaE).donde} · ${seccionDe(fichaE).nombre}` : 'Expositor'}</small>
               <h4 id="alm-card-title">{fichaA.nombre}</h4>
             </div>
-            <button type="button" className="alm-card__back" onClick={cerrar}>
+            <button type="button" className="alm-card__back" onClick={cerrar} data-atras>
               Volver
             </button>
           </header>
@@ -1159,7 +1166,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
               <small>{ANTETITULOS[papel]}</small>
               <h4 id="alm-card-title">{papel === 'ropa' ? (zonaRopa(zonaId)?.nombre ?? TITULOS.ropa) : TITULOS[papel]}</h4>
             </div>
-            <button type="button" className="alm-card__back" onClick={cerrar}>
+            <button type="button" className="alm-card__back" onClick={cerrar} data-atras>
               Volver
             </button>
           </header>

@@ -161,7 +161,7 @@ test('B · primera visita: carta, dos paradas, final y visita posterior sin guí
   expect(c.inside).toBe(true);
   expect(c.focus).toBe('Descubrir mi habitación');
   for (const b of c.buttons) expect(b.h).toBeGreaterThanOrEqual(44);
-  await expect(page.locator('.onboarding-card')).toContainText('Bienvenido a tu refugio de lectura');
+  await expect(page.locator('.onboarding-card')).toContainText('Hola, soy Libo');
   await page.waitForTimeout(400);
   await shot(page, info, 'guia-bienvenida');
   // La guía bloquea el panorama
@@ -189,6 +189,13 @@ test('B · primera visita: carta, dos paradas, final y visita posterior sin guí
   await page.getByRole('button', { name: 'Atrás' }).click();
   await expect(page.locator('.onboarding')).toHaveAttribute('data-state', 'reading');
   await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.locator('.onboarding')).toHaveAttribute('data-state', 'habits');
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  // Libo: la puerta-ventana baja al edificio del puerto
+  await expect(page.locator('.onboarding')).toHaveAttribute('data-state', 'puerto');
+  await expect(page.locator('.hotspot[data-id="puerto"]')).toHaveAttribute('data-active', 'true');
+  await page.waitForTimeout(reduced(info) ? 100 : 800);
+  await shot(page, info, 'guia-puerto');
   // Fase 1: no hay parada social ni regalo; «Terminar» cierra
   await page.getByRole('button', { name: 'Terminar' }).click();
   await expect(page.locator('.onboarding-card')).toHaveCount(0);

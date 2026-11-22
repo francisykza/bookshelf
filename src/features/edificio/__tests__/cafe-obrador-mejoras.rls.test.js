@@ -184,7 +184,8 @@ describe('las mejoras del obrador', () => {
       "select count(*) filter (where k < 4) as esp, count(*) as n from (select ((cafe_semilla($1::uuid, $2::date, 'f' || g) / 3) % 6) as k from generate_series(1, 12) g where cafe_semilla($1::uuid, $2::date, 'f' || g) % 3 = 0) t",
       [A, hoy],
     );
-    const deLaCarta = piden.filter((p) => p.n < 100);
+    // (Sin el excéntrico, el 13: desde la 1.145 pide algo concreto la mitad de los días)
+    const deLaCarta = piden.filter((p) => p.n < 13);
     expect(deLaCarta.filter((p) => p.tipo === tipoEsp)).toHaveLength(Number(sem.rows[0].esp));
     expect(deLaCarta).toHaveLength(Number(sem.rows[0].n));
     // Servir la especialidad: precio + 1

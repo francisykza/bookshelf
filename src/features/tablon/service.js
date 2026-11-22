@@ -2,6 +2,7 @@
 // (supabase/migrations/20261120120000_tablon.sql). Sin la migración o sin cuenta, el tablón funciona solo en este dispositivo.
 import { client, fail } from '../social/services/community';
 import { emptyDoc, uid } from './model';
+import { LECTOR_ANONIMO } from '../../domain/legal';
 
 const draftKey = (userId) => `bookshelf:tablon:borrador:${userId ?? 'local'}`;
 const localKey = (userId) => `bookshelf:tablon:local:${userId ?? 'local'}`;
@@ -32,7 +33,8 @@ const normalize = (d) => ({
   tablero: d.tablero,
   composiciones: d.composiciones ?? [],
   actual: { ...d.actual, doc: { items: (d.actual.items ?? []).map(cleanItem), edges: d.actual.edges ?? [] } },
-  recibidas: d.recibidas ?? [],
+  // De una cuenta borrada: sin remitente (Play Store, «Lector anónimo»)
+  recibidas: (d.recibidas ?? []).map((n) => (n.sender_id ? n : { ...n, alias: LECTOR_ANONIMO })),
   sinLeer: d.sin_leer ?? 0,
   avisos: d.avisos ?? [],
 });

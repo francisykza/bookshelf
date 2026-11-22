@@ -142,7 +142,8 @@
   border-radius: var(--port-radius-control);
   background: none;
   color: var(--port-ink);
-  font: 600 11px/14px var(--port-sans);
+  /* Libo, bloque 4 (legibilidad): 12 px, la letra más pequeña que se lee bien en el móvil */
+  font: 600 12px/14px var(--port-sans);
 }
 
 /* El aviso de «Deshacer», al volver a la habitación: por encima del panel del piso */

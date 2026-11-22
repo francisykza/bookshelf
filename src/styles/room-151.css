@@ -64,3 +64,16 @@
   top: -7px;
   right: -7px;
 }
+
+/* Libo, bloque 4 (legibilidad y toques): los controles pequeños de la habitación se ven igual, pero se tocan en 44 px */
+.room-corner[data-146] .corner-account::before {
+  /* Medido desde dentro del borde de papel (7 px): 44 × 44 */
+  inset: -14px -13px;
+}
+
+/* El sol va dentro de la cámara escalada (--k): 44 px en pantalla */
+.time-dial::before {
+  position: absolute;
+  inset: min(0px, calc((100% - 44px / var(--k, 1)) / 2));
+  content: '';
+}
