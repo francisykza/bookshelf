@@ -258,6 +258,14 @@ export function Obrador({ escena, obrador, nivel = 4, soundOn = false, ayudas = 
   const pose = g?.pose ?? {};
   const enHorno = [...horneando].sort((a, b) => (a.bandeja === bandeja ? -1 : b.bandeja === bandeja ? 1 : a.bandeja - b.bandeja));
   const listo = horneando.some((h) => estadoHorno(h, ahora).listo);
+  // 1.145.1: con otra receta entre manos (o en el recetario) también suena la campanilla al terminar; la nota de papel la pone
+  // Cafe.jsx. Mirando el horno ya la toca el efecto de arriba
+  const listoAntes = useRef(listo);
+  useEffect(() => {
+    if (listo && !listoAntes.current && fase !== 'horneando') sfx.play('campanillaHorno');
+    listoAntes.current = listo;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listo]);
   const faseEscena = fase === 'gesto' ? tipo : fase === 'meter' || fase === 'sacar' || fase === 'reposa' ? fase : 'recetario';
   useEffect(() => {
     escena?.setObrador({

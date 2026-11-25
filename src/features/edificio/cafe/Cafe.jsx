@@ -14,12 +14,12 @@
 // dominas y, cada mañana, el reparto repone lo vendido (una caja junto al mostrador, con su aviso).
 // 1.133 (§16.3): desde el nivel 3, la puerta de detrás de la barra lleva al taller de la trastienda (`Taller.jsx`), con su
 // música; un encargo al día como mucho, que espera en el banco hasta que lo hagas.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
 import { renderShopRoom } from '../shopRoom';
 import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCasa, libresDelCafe, maxCosas, progresoNivel, uidNuevo } from './cafeCatalogo';
-import { COPA, CUADERNO, GRANO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
+import { COPA, CUADERNO, GRANO, HORNO, LIBROS, PILAR, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { SITIOS } from './cafeLayout';
 import { bienvenidaLibros, cargarCafe, misTitulos, cargarDia, cargarJornada, cargarObrador, cargarTaller, cobrarMostrador, comprarCafe, empezarInfluencer, entregarInfluencer, errorCafe, guardarCafe, entregarCliente, inaugurarCafe, llegaHabitual, nuevaJornada, ponerEscaparate, recogerHucha, servirComida } from './cafeService';
@@ -36,7 +36,7 @@ import { LibrosCafe } from './LibrosCafe';
 import { Tostadero } from './Tostadero';
 import { Obrador } from './Obrador';
 import { CajaMostrador } from './CajaMostrador';
-import { FOGON_NIVEL, HITO_CAMPANILLA, HITOS_OBRADOR, OBRADOR_NIVEL, PILAR_OBRADOR, enVitrina, estadoHorno, fraseMostrador, pedidoComida } from './cafeObrador';
+import { FOGON_NIVEL, HITO_CAMPANILLA, HITOS_OBRADOR, OBRADOR_NIVEL, PILAR_OBRADOR, enElHornoTexto, enVitrina, estadoHorno, fraseMostrador, pedidoComida, yaEsta } from './cafeObrador';
 import { Taller } from './Taller';
 import { TALLER_NIVEL } from './cafeTaller';
 import { crearTallerMusica } from './cafeTallerMusica';
@@ -556,12 +556,15 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   });
   const [relojHorno, setRelojHorno] = useState(() => Date.now());
   const nHorneando = obradorHoy?.horneando.length ?? 0;
+  // 1.145.1: el reloj sigue también dentro del obrador, para la nota de la campanilla (cada segundo: la nota llega a tiempo)
   useEffect(() => {
-    if (!nHorneando || enObrador) return undefined;
-    const id = setInterval(() => setRelojHorno(Date.now()), 2000);
+    if (!nHorneando) return undefined;
+    const id = setInterval(() => setRelojHorno(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [nHorneando, enObrador]);
+  }, [nHorneando]);
   const hornadaLista = Boolean(obradorHoy?.horneando.some((h) => estadoHorno(h, relojHorno).listo));
+  const listasHorno = (obradorHoy?.horneando ?? []).filter((h) => estadoHorno(h, relojHorno).listo);
+  const claveListas = listasHorno.map((h) => `${h.bandeja}:${h.receta}`).join(',');
   useEffect(() => {
     if (!ready || enObrador || !hayObrador) return;
     api.current?.setObrador?.({
@@ -589,11 +592,37 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   const hitosCaja = useRef(null);
   const diasMostrador = obradorHoy?.mostrador?.dias ?? 0;
   const conPiezas = enVitrina(obradorHoy) > 0;
-  const hornadaAntes = useRef(false);
+  // 1.145.1 (Francisco, 25-11-2026: «cuando tengas cosas haciéndose en el horno te salga una notificación cuando se terminen, o
+  // un indicador visual claro»): al terminar una hornada, estés donde estés del café (la sala, la barra, la librería, el taller,
+  // el obrador…), suena la campanilla y baja una nota de papel bajo la placa, «¡Ding! Ya están las magdalenas.», que se va sola
+  // y no se toca (nunca tapa las herramientas). Lo que terminó mientras no estabas, al entrar. Además, el horno del HUD (abajo).
+  const listasAntes = useRef(new Set());
+  const [notaHorno, setNotaHorno] = useState(null);
   useEffect(() => {
-    if (hornadaLista && !hornadaAntes.current && !enObrador && ready) sfx.play('campanillaHorno');
-    hornadaAntes.current = hornadaLista;
-  }, [hornadaLista, enObrador, ready, sfx]);
+    if (!ready) return;
+    const nuevas = listasHorno.filter((h) => !listasAntes.current.has(`${h.bandeja}:${h.receta}`));
+    listasAntes.current = new Set(listasHorno.map((h) => `${h.bandeja}:${h.receta}`));
+    if (!nuevas.length) return;
+    // Dentro del obrador, la campanilla la toca Obrador.jsx (mirando el horno o con otra receta entre manos)
+    if (!enObrador) sfx.play('campanillaHorno');
+    setNotaHorno({ texto: yaEsta(nuevas.map((h) => h.receta)), n: Date.now(), ding: true });
+    // claveListas resume listasHorno
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claveListas, ready]);
+  useEffect(() => {
+    if (!notaHorno) return undefined;
+    const t = setTimeout(() => setNotaHorno(null), 5500);
+    return () => clearTimeout(t);
+  }, [notaHorno]);
+  // Con un cliente delante, su comanda ocupa ese sitio: la nota baja justo debajo de ella (nunca la tapa)
+  const notaHornoEl = useRef(null);
+  useLayoutEffect(() => {
+    const el = notaHornoEl.current;
+    const raiz = raizCafe.current;
+    if (!el || !raiz) return;
+    const comanda = raiz.querySelector('.cf3-comanda');
+    el.style.top = comanda ? `${Math.round(comanda.getBoundingClientRect().bottom - raiz.getBoundingClientRect().top + 8)}px` : '';
+  }, [notaHorno, clienteAtendido]);
   // En el nivel 3, una vez (en este dispositivo): Pilar huele algo detrás de la pared. Solo cuando no tiene otra cosa que
   // decir y tras un rato de calma: nunca pisa el reparto de la mañana, la hucha, el saco, la subida ni lo que estés haciendo
   const pilarCalla =
@@ -1105,6 +1134,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
               className={`cf3-tag${id === 'libros' ? ' cf3-tag--libros' : ''}`}
               data-off="true"
               data-nuevo={nuevos.has(`sitio:${id}`) ? 'true' : undefined}
+              data-listo={id === 'obrador' && obradorHoy && hornadaLista ? 'true' : undefined}
               ref={(el) => (tagEls.current[id] = el)}
               onClick={() => pick.current(id)}
             >
@@ -1171,6 +1201,53 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
                 </span>
               )}
             </p>
+            {/* 1.145.1: el horno, mientras hay algo dentro, en todo el café menos en el obrador y Decorar. Horneando, la lumbre
+                respira y sube un poco de vaho; con algo listo, la campanilla con su «!» y «¡Listo!» al lado. Se toca para ir al
+                horno; con otra cosa entre manos (un cliente, el taller…), Pilar te lo guarda para cuando acabes */}
+            {obradorHoy && nHorneando > 0 && !decorando && !enObrador && (
+              <div className="cf3-horno" data-listo={hornadaLista ? 'true' : undefined}>
+                {hornadaLista && !capaAbierta && (
+                  <span className="cf3-horno__listo" aria-hidden="true">
+                    ¡Listo!
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="cf3-pizarra-btn cf3-horno-btn"
+                  data-listo={hornadaLista ? 'true' : undefined}
+                  aria-label={
+                    hornadaLista
+                      ? `El horno: ${yaEsta(listasHorno.map((h) => h.receta)).toLowerCase().replace(/.$/, '')}. Toca para ir a sacarlo.`
+                      : `El horno: dentro, ${enElHornoTexto(obradorHoy.horneando.map((h) => h.receta))}. Aún no está.`
+                  }
+                  onClick={() => {
+                    if (capaAbierta || tostando || enTaller || enCaja) {
+                      sfx.play('papel');
+                      setNotaHorno({
+                        texto: hornadaLista ? `${yaEsta(listasHorno.map((h) => h.receta))} Te espera en el horno cuando acabes.` : 'Aún se está haciendo. Ya sonará la campanilla.',
+                        n: Date.now(),
+                      });
+                      return;
+                    }
+                    if (!hornadaLista) {
+                      sfx.play('papel');
+                      setNotaHorno({ texto: `Dentro: ${enElHornoTexto(obradorHoy.horneando.map((h) => h.receta))}. Aún se está haciendo; ya sonará la campanilla.`, n: Date.now() });
+                      return;
+                    }
+                    pick.current('obrador');
+                  }}
+                >
+                  <PixelArt icono={HORNO} />
+                  {!hornadaLista && (
+                    <span className="cf3-horno-btn__vaho" aria-hidden="true">
+                      <i />
+                      <i />
+                    </span>
+                  )}
+                  {hornadaLista && <span className="cf3-horno-btn__campana" aria-hidden="true" />}
+                </button>
+              </div>
+            )}
             {librosCafe && !decorando && !enTaller && (
               <button
                 type="button"
@@ -1228,6 +1305,16 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
         </div>
       )}
 
+      {notaHorno && abierto && !decorando && (
+        <p key={notaHorno.n} ref={notaHornoEl} className="cf3-nota-horno" role="status">
+          {notaHorno.ding && (
+            <span className="cf3-nota-horno__ding" aria-hidden="true">
+              ¡Ding!
+            </span>
+          )}
+          {notaHorno.texto}
+        </p>
+      )}
       {logro && !clienteAtendido && !enObrador && !enCaja && !decorando && !enTaller && <LogroCafe logro={logro} soundOn={soundOn} onCerrar={cerrarLogro} />}
       {decorando && (local?.nivel ?? 1) >= BODEGA_NIVEL && (
         <div className="cf3-plantas" role="group" aria-label="Qué planta decoras">

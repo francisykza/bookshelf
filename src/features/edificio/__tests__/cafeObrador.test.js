@@ -477,3 +477,27 @@ describe('1.145 · los ocho gestos nuevos', () => {
     });
   }
 });
+
+// 1.145.1: la nota de la campanilla y el horno del HUD
+import { enElHornoTexto, yaEsta } from '../cafe/cafeObrador';
+describe('1.145.1 · lo que dice el horno al terminar', () => {
+  it('una receta, con su artículo y su verbo', () => {
+    expect(yaEsta(['magdalenas'])).toBe('Ya están las magdalenas.');
+    expect(yaEsta(['empanada'])).toBe('Ya está la empanada.');
+    expect(yaEsta(['pan'])).toBe('Ya está el pan.');
+    expect(yaEsta(['tortilla'])).toBe('Ya ha cuajado la tortilla.');
+  });
+  it('cada receta del recetario tiene su frase', () => {
+    for (const r of RECETAS_OBRADOR) expect(yaEsta([r.id])).toMatch(/^Ya .+\.$/);
+  });
+  it('varias a la vez, en una frase y sin repetir', () => {
+    expect(yaEsta(['galletas', 'pan'])).toBe('Ya están las galletas y el pan.');
+    expect(yaEsta(['magdalenas', 'magdalenas', 'empanada', 'bizcocho'])).toBe('Ya están las magdalenas, la empanada y el bizcocho.');
+    expect(yaEsta([])).toBe('');
+    expect(yaEsta(['otra'])).toBe('');
+  });
+  it('lo que hay dentro, para el horno del HUD', () => {
+    expect(enElHornoTexto(['empanada'])).toBe('la empanada');
+    expect(enElHornoTexto(['magdalenas', 'galletas'])).toBe('las magdalenas y las galletas');
+  });
+});

@@ -888,6 +888,23 @@ export const HUCHA = {
   paleta: { k: '#2a1a10', b: '#c99a2e', B: '#e7c46a', d: '#8a6a1e', g: '#f2d27a' },
   filas: ['....kggk....', '.kkkkkkkkkk.', 'kBBBBkkBBBBk', 'kBbbbbbbbbBk', 'kbbbbbbbbbbk', 'kbbdddddbbbk', 'kbbdBBBdbbbk', 'kbbdddddbbbk', 'kbbbbbbbbbbk', 'kbbbbbbbbbbk', '.kkkkkkkkkk.'],
 };
+/** 1.145.1: el horno de ladrillo del obrador, con su boca y la lumbre (el indicador del HUD). */
+export const HORNO = {
+  paleta: { k: '#2a1a10', R: '#d27a58', r: '#a8493a', d: '#1a0e0a', f: '#e8862e', F: '#ffd27a' },
+  filas: [
+    '....kkkk....',
+    '..kkRRRRkk..',
+    '.kRRrrrrRRk.',
+    'kRrrrkkrrrRk',
+    'kRrrkddkrrRk',
+    'kRrkddddkrRk',
+    'kRrkdffdkrRk',
+    'kRrkfFFfkrRk',
+    'kRrrkkkkrrRk',
+    'kkkkkkkkkkkk',
+    '.kk......kk.',
+  ],
+};
 export const COPA = {
   paleta: { k: '#2a1a10', A: '#ffe0a0', a: '#e7b765', m: '#7a5232', M: '#a8774a' },
   filas: ['..kkkkkkkk..', 'kkkAAAAAakkk', 'kAkAaaaaakAk', 'kAkAaaaaakAk', '.kkAaaaaakk.', '...kaaaak...', '....kaak....', '.....kk.....', '....kaak....', '...kMMMMk...', '..kmmmmmmk..'],

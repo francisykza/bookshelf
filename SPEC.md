@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.145.0 · 2026-11-22 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.145.1 · 2026-11-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8103,3 +8103,29 @@ prueba y se le pone versión. La 1.145.0 lleva también, porque comparten el ár
 **Por qué no se puede explotar**: igual que en la 1.143 y la 1.144, la app solo dice el mimo de los gestos; el pan no se puede
 amasar dos veces (una masa por cuenta) ni greñar sin que haya pasado la noche (lo dice el servidor); el favorito y el acertijo los
 fija el servidor para cada cliente del día; los hitos se cuentan una vez cada uno. La reputación y los tickets no se mueven.
+
+### 145.7 El aviso del horno (1.145.1)
+
+Francisco, 25-11-2026, al dar el visto bueno a la 1.145 («Si, pero un cambio antes»): «quiero que cuando tengas cosas haciéndose
+en el horno te salga una notificación cuando se terminen, o un indicador visual claro». Antes solo sonaba la campanilla, cambiaba
+el letrero del obrador (que no se ve si no miras al ala) y la puerta del horno se entreabría. Se hacen las dos cosas:
+
+- **El horno del HUD**: mientras hay algo dentro, un botón de píxel con el horno de ladrillo en la columna de la derecha (encima de
+  los libros), en todo el café menos en el obrador y en Decorar. **Horneando**, la lumbre respira y sube un poco de vaho, sin
+  números ni cuentas atrás (el horno sigue sin números). **Listo**, se enciende en ámbar con la campanilla y su «!» saltando en la
+  esquina y, en la sala, «¡Listo!» a su lado. Se toca para ir al horno (directo a sacar la hornada con la pala). Con otra cosa
+  entre manos (un cliente en la barra, el taller, la caja, los libros…) no te saca de ahí: la nota dice «Te espera en el horno
+  cuando acabes.»; horneando, dice lo que hay dentro («Aún se está haciendo; ya sonará la campanilla.»).
+- **La nota de la campanilla**: al terminar una hornada, estés donde estés del café, suena `campanillaHorno` una vez y baja una
+  nota de papel bajo la placa, «¡Ding! Ya están las magdalenas.» («Ya ha cuajado la tortilla.», o «Ya están las galletas y el
+  pan.» con varias a la vez; `yaEsta` en `cafeObrador.js`). Se va sola a los 5,5 s, no se toca y, con un cliente delante, va
+  justo debajo de su comanda (nunca la tapa ni tapa la franja). Lo que terminó mientras no estabas, al entrar en el café. Dentro
+  del obrador, con otra receta entre manos, también suena la campanilla.
+- **El letrero del obrador**, en ámbar mientras hay algo listo.
+- Movimiento reducido: todo quieto (la nota aparece sin deslizarse). Lectores de pantalla: la nota es `role="status"` y el botón
+  dice lo que hay dentro o que ya está.
+- Fuera del café (el piso, el edificio) no hay aviso: el estado del horno solo se carga en el café. Sin notificaciones del
+  sistema.
+- Pruebas: `cafeObrador.test.js` (las frases) y la e2e `e2e-community/v1145-1-cafe-horno-aviso.spec.js` a 360 y 390 (en la
+  sala, en la barra con un cliente y, a 390, con movimiento reducido y una hornada terminada mientras no estabas). Evidencias en
+  `qa-report/v1145-1/`. Sin servidor nuevo ni migración.

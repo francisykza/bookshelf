@@ -222,6 +222,32 @@ export function estadoHorno(h, ahora = Date.now()) {
   const queda = Math.max(0, (h?.falta ?? 0) - (ahora - (h?.desde ?? ahora)) / 1000);
   return { queda, t: Math.min(1, Math.max(0, 1 - queda / seg)), listo: queda <= 0 };
 }
+/**
+ * 1.145.1 (Francisco, 25-11-2026: «cuando tengas cosas haciéndose en el horno te salga una notificación cuando se terminen, o
+ * un indicador visual claro»): lo que dice la nota de la campanilla. «Ya están las magdalenas.», «Ya ha cuajado la tortilla.»,
+ * y con varias a la vez, «Ya están las galletas y el pan.».
+ */
+const YA_ESTA = {
+  magdalenas: 'Ya están las magdalenas',
+  empanada: 'Ya está la empanada',
+  galletas: 'Ya están las galletas',
+  pan: 'Ya está el pan',
+  bizcocho: 'Ya está el bizcocho',
+  tortilla: 'Ya ha cuajado la tortilla',
+};
+const LA_RECETA = { magdalenas: 'las magdalenas', empanada: 'la empanada', galletas: 'las galletas', pan: 'el pan', bizcocho: 'el bizcocho', tortilla: 'la tortilla' };
+export function yaEsta(recetas) {
+  const ids = [...new Set(recetas ?? [])].filter((id) => YA_ESTA[id]);
+  if (!ids.length) return '';
+  if (ids.length === 1) return `${YA_ESTA[ids[0]]}.`;
+  const l = ids.map((id) => LA_RECETA[id]);
+  return `Ya están ${l.slice(0, -1).join(', ')} y ${l[l.length - 1]}.`;
+}
+/** Lo que hay en el horno, para el indicador del HUD: «las magdalenas» o «las galletas y el pan». */
+export function enElHornoTexto(recetas) {
+  const l = [...new Set(recetas ?? [])].map((id) => LA_RECETA[id]).filter(Boolean);
+  return l.length <= 1 ? (l[0] ?? '') : `${l.slice(0, -1).join(', ')} y ${l[l.length - 1]}`;
+}
 /** Cómo se llaman las piezas de cada receta (una y varias). */
 const PIEZA = {
   magdalenas: ['magdalena', 'magdalenas'],

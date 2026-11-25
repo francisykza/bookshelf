@@ -351,6 +351,9 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       nunca las tres. **Uno de cada tres** pide comida (lo decide el servidor) y ese no pide libro; sus estrellas salen solo de la
       bebida (4 aciertos, 3★; 2 o 3, 2★; si no, 1★). Las pinzas siguen siendo del jugador, en el mismo viaje que la taza (barra,
       vitrina y mesa). **Pilar no sirve la comida** (Francisco: «perdería la gracia de incluir la nueva mecánica»).
+      **El horno avisa al terminar** (Francisco, 25-11-2026: «una notificación cuando se terminen, o un indicador visual claro»;
+      1.145.1, §145.7): mientras hay algo dentro, el horno del HUD (sin números) y, al terminar, la campanilla y una nota de papel
+      estés donde estés del café, que nunca tapa la comanda ni las herramientas. No quitarlo.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la

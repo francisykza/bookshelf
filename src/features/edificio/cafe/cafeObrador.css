@@ -571,3 +571,195 @@
 .cf3-hito__granos {
   color: #7a6040;
 }
+
+/* ── 1.145.1 (Francisco, 25-11-2026: «una notificación cuando se terminen, o un indicador visual claro»): el horno del HUD,
+   el «¡Listo!» a su lado, el letrero del obrador encendido y la nota de papel de la campanilla bajo la placa ── */
+.cf3-horno {
+  position: relative;
+  pointer-events: auto;
+}
+.cf3-horno-btn {
+  overflow: hidden;
+}
+.cf3-horno-btn .cf3-px {
+  position: relative;
+  z-index: 1;
+  width: 30px;
+  height: 28px;
+}
+/* Horneando: la lumbre respira detrás del dibujo y sube un poco de vaho */
+.cf3-horno-btn::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  background: radial-gradient(circle at 50% 72%, rgb(232 134 46 / 0.45), transparent 62%);
+  pointer-events: none;
+}
+.cf3-horno-btn__vaho {
+  position: absolute;
+  z-index: 2;
+  top: 5px;
+  left: 50%;
+  width: 14px;
+  height: 10px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.cf3-horno-btn__vaho i {
+  position: absolute;
+  bottom: 0;
+  width: 3px;
+  height: 3px;
+  background: rgb(243 230 200 / 0.75);
+}
+.cf3-horno-btn__vaho i:first-child {
+  left: 2px;
+}
+.cf3-horno-btn__vaho i:last-child {
+  right: 2px;
+  bottom: 3px;
+}
+/* Listo: el botón se enciende en ámbar y la campanilla con su «!» salta en la esquina */
+.cf3-horno-btn[data-listo='true'] {
+  background: #5a3418;
+  box-shadow:
+    inset 0 0 0 2px var(--cf3-ink),
+    inset 0 0 0 4px #ffd27a,
+    inset 0 0 0 5px var(--cf3-ink);
+}
+.cf3-horno-btn[data-listo='true']::after {
+  background: radial-gradient(circle at 50% 72%, rgb(255 210 122 / 0.7), transparent 66%);
+}
+.cf3-horno-btn__campana {
+  position: absolute;
+  z-index: 2;
+  top: 3px;
+  right: 3px;
+  width: 13px;
+  height: 16px;
+  background: #ffd27a;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #c98a2e,
+    0 2px 0 rgb(0 0 0 / 0.45);
+  pointer-events: none;
+}
+.cf3-horno-btn__campana::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 3px;
+  height: 9px;
+  transform: translateX(-50%);
+  background: linear-gradient(#2a1a10 0 60%, transparent 60% 75%, #2a1a10 75%);
+}
+.cf3-horno__listo {
+  --cf3-px: 2px;
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 6px);
+  padding: 5px 7px 6px;
+  background: #ffd27a;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #c98a2e,
+    0 2px 0 rgb(0 0 0 / 0.45);
+  color: #2a1a10;
+  font: 400 14px/14px var(--pp-title);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  transform: translateY(-38%);
+  pointer-events: none;
+  clip-path: polygon(0 2px, 2px 2px, 2px 0, calc(100% - 2px) 0, calc(100% - 2px) 2px, 100% 2px, 100% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 100%, 2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px));
+}
+/* El letrero del obrador en la sala, encendido mientras hay algo listo */
+.cf3-tag[data-listo='true'] {
+  background: #ffd27a;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #c98a2e;
+  color: #2a1a10;
+  text-shadow: none;
+  opacity: 1;
+}
+.cf3-tag[data-listo='true']::before {
+  background: #a8493a;
+}
+/* La nota de la campanilla: papel bajo la placa, a la izquierda de los botones del HUD; no se toca ni tapa herramientas */
+.cf3-nota-horno {
+  --cf3-px: 2px;
+  position: absolute;
+  z-index: 4;
+  top: calc(112px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  width: max-content;
+  max-width: min(250px, calc(100% - 86px));
+  margin: 0;
+  padding: 7px 10px 8px;
+  background: #f6ecd4;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 #d8c49c,
+    0 3px 0 rgb(0 0 0 / 0.35);
+  color: #2e1e14;
+  font:
+    italic 0.82rem/1.3 'Lora',
+    Georgia,
+    serif;
+  transform: rotate(-1deg);
+  pointer-events: none;
+}
+.cf3-nota-horno__ding {
+  display: block;
+  margin-bottom: 2px;
+  color: #a8493a;
+  font: 400 14px/14px var(--pp-title);
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cf3-horno-btn::after {
+    animation: cf3-lumbre 1.6s steps(3, jump-none) infinite alternate;
+  }
+  .cf3-horno-btn__vaho i {
+    animation: cf3-vaho 1.8s steps(4, end) infinite;
+  }
+  .cf3-horno-btn__vaho i:last-child {
+    animation-delay: 0.9s;
+  }
+  .cf3-horno-btn__campana {
+    animation: cf3-ayuda-salta 1.1s steps(2, jump-none) infinite;
+  }
+  .cf3-nota-horno {
+    animation: cf3-nota-horno 0.3s steps(3, end) both;
+  }
+}
+@keyframes cf3-lumbre {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes cf3-vaho {
+  from {
+    opacity: 0.9;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes cf3-nota-horno {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}

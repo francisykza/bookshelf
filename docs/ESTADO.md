@@ -6,13 +6,17 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **En la rama, con commit y sin publicar: 1.145.1** (25-11-2026, §145.7; commit el mismo día, «Sí, haz el commit»): el aviso del horno (el horno del HUD y la nota de la
+  campanilla), el cambio que pidió Francisco al dar el visto bueno a la 1.145 («Si, pero un cambio antes»). Evidencias en
+  `qa-report/v1145-1/`. Encima de la 1.145.0, que sigue así:
 - **En la rama, con commit y sin publicar: 1.145.0** (22-11-2026, §145; Francisco: «Termina el obrador 1.145»; commit el 25-11, «Haz el commit»): el bloque 3 de 3 del obrador
   terminado y probado (galletas, pan con su noche en la bodega, bizcocho y tortilla al fogón; hitos con sus adornos; favorito de los
   habituales y acertijo del excéntrico), con Libo, el gato guía (bloques 1 a 4; `docs/qa/libo.md` §6) y el bloque 2 de la Play
   Store (`docs/qa/play-store.md`), que comparten el árbol. Producción sigue en
   la 1.144.0. **Migraciones sin aplicar**: `20261227120000_cafe_obrador_recetario.sql` y `20261228120000_cuenta_borrar.sql`.
-  **Antes de fusionar con `main`**: el visto bueno de Francisco a la 1.145 (evidencias en `qa-report/v1145/`), a Libo y a la Play
-  Store, aplicar las dos migraciones y poner el correo de contacto en `public/legal/`.
+  **Visto bueno de Francisco a la 1.145 y a sus siete interpretaciones** (25-11-2026, «Si»), con el cambio de la 1.145.1.
+  **Antes de fusionar con `main`**: el visto bueno de Francisco a Libo y a la Play Store (la 1.145.1, aprobada), aplicar las dos migraciones y poner el
+  correo de contacto en `public/legal/`.
 - **Publicada en producción: 1.144.0** (2026-11-19, §144; bloque 2 de 3 del obrador, `cafe-libreria.md` §18.12; Francisco: «Sí,
   aplicar y publicar»): la caja del mostrador (Pilar vende de la vitrina mientras no estás, hasta 7 días, y al volver se tira del
   cajón de la caja de latón), las mejoras del horno (2 y 3 bandejas) y de la vitrina (cuatro grados), las vitrinas de tartas que
@@ -297,9 +301,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **1.145.0 en la rama, con commit (25-11-2026)**: el visto bueno de Francisco a la 1.145 (y a sus interpretaciones, en `cafe-libreria.md`
-  §18.12.3), a Libo y a la Play Store; aplicar las dos migraciones; el correo de contacto de las
-  páginas legales; después, fusionar con `main` y comprobar producción.
+- **1.145.1 en la rama, con commit (25-11-2026)**: el aviso del horno, aprobado («Sí, haz el commit»); falta el visto bueno de
+  Francisco a Libo y a la Play Store; aplicar las dos migraciones; el correo de contacto de las páginas legales;
+  después, fusionar con `main` y comprobar producción.
 - **Traspaso a la otra cuenta (19-11-2026): el obrador (vender comida), a mitad.** Francisco: «Lo que quede lo va a hacer la
   otra cuenta, apunta lo que reste». Sustituye al traspaso del 14-11 (más abajo, solo como historia y por cómo se pegan las
   migraciones). Plan aprobado en `cafe-libreria.md` §18, con las decisiones de Francisco en §18.13 y en `CLAUDE.md`.
@@ -522,6 +526,20 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-25 · El aviso del horno · 1.145.1 (Claude)
+
+- Francisco da el visto bueno a la 1.145 y a sus siete interpretaciones («Si, pero un cambio antes») y pide: «quiero que cuando
+  tengas cosas haciéndose en el horno te salga una notificación cuando se terminen, o un indicador visual claro». Hechas las dos
+  (§145.7): el horno del HUD (lumbre y vaho horneando; ámbar con la campanilla y su «!» y «¡Listo!» al terminar; se toca para ir
+  a sacarla) y la nota de papel de la campanilla («¡Ding! Ya están las magdalenas.»), estés donde estés del café. Con un cliente
+  en la barra, la nota va debajo de la comanda y el horno no te saca de ahí. `Cafe.jsx`, `Obrador.jsx`, `cafeObrador.js`
+  (`yaEsta`, `enElHornoTexto`), `cafeIconos.js` (`HORNO`) y `cafeObrador.css`.
+- Pruebas: `cafeObrador.test.js` (39) y la e2e nueva `v1145-1-cafe-horno-aviso.spec.js`, 5 de 5 (360 y 390, y reducido a 390);
+  build bien; `v1143` y `v1145` siguen pasando (8 de 8 a 390). La primera pasada encontró que la nota tapaba la comanda en la barra y que «¡Listo!» rozaba su esquina: corregido
+  (la nota baja bajo la comanda y «¡Listo!» solo sale en la sala).
+- Francisco lo aprueba con las evidencias: «Sí, haz el commit». **Con commit y sin publicar**. Sin servidor nuevo ni migración. Fuera del café no hay aviso (el horno solo se
+  carga en el café); sin notificaciones del sistema.
 
 ### 2026-11-25 · Commit de la 1.145.0 (Claude)
 
