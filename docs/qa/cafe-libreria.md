@@ -1045,6 +1045,11 @@ y los tickets no se mueven.
 3. **1.145.0, el recetario crece**: las galletas (5), el pan de la bodega con su noche (6), el bizcocho del tostadero (7) y la
    tortilla en el fogón (8); los hitos con sus adornos; la comida del excéntrico; el favorito de los habituales; lo que ven las
    visitas. Migración 3. Si pesa mucho, 3a (niveles 5 y 6) y 3b (7 y 8).
+   **Hecho en la 1.145.0** (22-11-2026, SPEC §145; Francisco: «Termina el obrador 1.145»), de una vez, sin partir. Sin publicar:
+   la migración `20261227120000_cafe_obrador_recetario.sql` está **sin aplicar**. Interpretaciones por confirmar con Francisco:
+   el excéntrico pide comida la mitad de los días, con acertijo (pista al fallar, el doble al acertar); la lista de favoritos; el
+   pan se amasa un día y se greña al siguiente; la tortilla en un fogón en el rincón a la izquierda del horno (ocupa una bandeja);
+   dónde cuelgan los adornos de los hitos; la campanilla del cuarto hito suena al vender; el bizcocho no gasta tueste.
 
 Al cerrar cada bloque: versión, SPEC y ESTADO. Commit, migraciones y `main`, solo cuando Francisco lo pida. Sin probar en móviles
 reales: se dirá en cada entrega.

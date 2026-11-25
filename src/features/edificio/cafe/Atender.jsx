@@ -695,13 +695,22 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
         {raro ? `★ ${quien}` : inf ? quien : cliente.habitual ? `${quien}: lo de siempre` : 'Comanda'}
       </h3>
       {raro ? (
-        <ul className="cf3-comanda__acertijos">
-          {[...comandaAcertijo(cliente.pide), ...comandaLibroAcertijo(pedido)].map((t, k) => (
-            <li key={`${k}:${t}`} data-ahora={k === acertijoAhora ? 'true' : undefined} data-libro={k >= 4 ? 'true' : undefined}>
-              {t}
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="cf3-comanda__acertijos">
+            {[...comandaAcertijo(cliente.pide), ...comandaLibroAcertijo(pedido)].map((t, k) => (
+              <li key={`${k}:${t}`} data-ahora={k === acertijoAhora ? 'true' : undefined} data-libro={k >= 4 ? 'true' : undefined}>
+                {t}
+              </li>
+            ))}
+          </ul>
+          {/* 1.145: lo que pide de comer, también en acertijo (en la vitrina, solo esto) */}
+          {pideComida && (
+            <p className="cf3-comanda__linea cf3-comanda__linea--comida" data-tipo={pedido.tipo} data-ahora={enVitrina ? 'true' : undefined}>
+              <span className="px-sr">Y de comer: </span>
+              {comandaComida(pedido.tipo, pedido)}
+            </p>
+          )}
+        </>
       ) : (
         <>
           <p className="cf3-comanda__linea">{comandaClara(cliente.pide)}</p>

@@ -584,6 +584,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   // 1.144: lo que vendió Pilar en el mostrador mientras no estabas. Con piezas en la vitrina, a la caja a tirar del cajón (una vez
   // por visita, cuando no haya otra cosa); con la vitrina vacía no pudo vender nada: se apuntan los días sin decir nada
   const cajaVista = useRef(false);
+  // 1.145: los hitos que llegan al cobrar la caja: la campanilla suena al momento y Pilar lo dice al cerrarla (con la caja abierta
+  // su bocadillo no se ve y el aviso se iría solo)
+  const hitosCaja = useRef(null);
   const diasMostrador = obradorHoy?.mostrador?.dias ?? 0;
   const conPiezas = enVitrina(obradorHoy) > 0;
   const hornadaAntes = useRef(false);
@@ -1436,9 +1439,17 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
             if (r.cafe) setLocal(r.cafe);
             if (r.obrador) setObradorDia((d) => ({ piden: [], ...d, obrador: r.obrador }));
             if (r.cobrado?.granos > 0) setGanado(r.cobrado.granos);
-            darHitos(r.cobrado?.hitos);
+            if (r.cobrado?.hitos?.length) {
+              sfx.play('hitoObrador');
+              hitosCaja.current = r.cobrado.hitos;
+            }
           }}
-          onCerrar={() => setEnCaja(false)}
+          onCerrar={() => {
+            setEnCaja(false);
+            const l = hitosCaja.current;
+            hitosCaja.current = null;
+            if (l) setAviso(HITOS_OBRADOR.frases[Math.max(...l) - 1] ?? '');
+          }}
         />
       ) : enObrador && obradorDia ? (
         <Obrador

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.144.0 · 2026-11-19 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.145.0 · 2026-11-22 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8011,3 +8011,95 @@ cifras de §18.6 y §18.9 aprobadas el 17-11-2026 y la venta del mostrador «com
 - `cafe-libreria.rls.test.js` › «el reparto (1.139)» sigue fallando desde la 1.142, sin relación.
 - Evidencias en `qa-report/v1144/`.
 - **Sin probar** con la migración aplicada (solo PGlite y el simulado), con cuentas reales ni en móviles reales.
+
+## 145. El recetario crece: galletas, pan, bizcocho y tortilla, los hitos, el favorito y el acertijo (1.145.0)
+
+Francisco, 22-11-2026: «Termina el obrador 1.145». Es el bloque 3 de 3 del obrador (`docs/qa/cafe-libreria.md` §18.12), con
+las cifras de §18.6 y §18.9 aprobadas el 17-11-2026. Lo empezó la otra cuenta el 19-11 (ver la bitácora); aquí se termina, se
+prueba y se le pone versión. La 1.145.0 lleva también, porque comparten el árbol y los archivos del café, Libo, el gato guía
+(bloques 1 a 4; `docs/qa/libo.md`) y el bloque 2 de la Play Store (borrar la cuenta, 16 años y páginas legales en borrador;
+`docs/qa/play-store.md`), con sus propios documentos y pendientes del visto bueno de Francisco.
+
+### 145.1 Las cuatro recetas nuevas
+
+- Las seis páginas del recetario ya se hornean, cada una desde su nivel: **las galletas del puerto** (nivel 5; dulce, 2 granos,
+  de 6 a 8 por hornada, un ratito), **el pan de la bodega** (6; salado, 4 granos, de 6 a 8), **el bizcocho del tostadero** (7;
+  dulce, 4 granos, un rato largo) y **la tortilla de patatas** (8; salada, 5 granos, al fogón). Cada una con **dos gestos
+  propios**, su objeto en la mesa y sus sonidos sintetizados (`cafeSfx.js`, con las reglas de efectos de siempre):
+  - galletas: **los cortapastas de hojalata** (cuatro cortes en la hoja de masa: un ancla, un barco, una estrella de mar y el faro)
+    y **la manga de glasa** (seguir la raya de puntos en ola, sin despegarse);
+  - pan: **amasar** sobre el mármol enharinado (cuatro empujones con la palma, todos iguales) y **greñar** con la cuchilla (un solo
+    tajo curvo, de punta a punta);
+  - bizcocho: **envolver la masa** con la espátula en el bol de loza (tres trazos en jota) y **espolvorear el azúcar** con el tamiz
+    sobre la plantilla del ancla (de lado a lado, hasta cubrirla);
+  - tortilla: **cascar los tres huevos** (un toque en el borde del bol y abrirlo hacia un lado) y **darle la vuelta** con el plato
+    (media vuelta alrededor de la sartén de hierro, decidida y sin parar).
+- **El pan duerme una noche en la bodega**: «Amasar» (no hace falta horno libre) deja la masa en su cesto de mimbre con su paño
+  («Al cesto de mimbre, con su paño, y a la bodega fresca. Mañana habrá subido.»). Su ficha dice «La masa duerme en la bodega.
+  Mañana se greña.» y el botón, apagado, «Durmiendo en la bodega». Al día siguiente (o en la jornada de prueba siguiente), «La masa
+  ha subido bajo su paño: ya se greña.» y «Greñar y hornear»: el greñado y la pala. Las estrellas del pan cuentan el amasado de
+  ayer y el greñado de hoy. Con ★★★, «Que lo amase Pilar» y después «Que lo hornee Pilar».
+- **La tortilla, al fogón** de hierro (desde el nivel 8), en el rincón entre la pared y el horno: se desliza del plato a la sartén
+  («A la sartén», empujando el plato), cuaja con su chisporroteo y se saca tirando de la sartén. Ocupa una bandeja como cualquier
+  hornada. La cámara mira el fogón desde arriba (por delante lo tapa el costado de las estanterías altas).
+
+### 145.2 Los hitos del obrador
+
+- Por **piezas vendidas en total** (en la mesa y en el mostrador): **25, 100, 250, 500 y 1000**. Cada hito da **20 granos** (nunca
+  reputación ni tickets) y **un adorno fijo** en el obrador: los cazos de cobre sobre la mesa, la ristra de moldes en la cara del
+  horno, el letrero pintado en la campana, **la campanilla del mostrador** (desde ahí suena al vender) y el retrato de doña Amparo.
+- Al llegar, suena `hitoObrador` y Pilar lo dice en su bocadillo («Veinticinco vendidas: he colgado los cazos de cobre de la
+  tahona…»). En la última página del recetario, la lista de los cinco con su adorno, sus granos, los hechos marcados y «Vendidas:
+  N · faltan X para el siguiente».
+- Las visitas ven el obrador del café que visitan con su horno, su vitrina y sus adornos (solo mirar).
+
+### 145.3 El favorito de los habituales y el acertijo del excéntrico
+
+- **Cada habitual tiene su favorito** (una receta; `FAVORITOS`, igual en la app y en el servidor). Cuando pide comida y está abierta,
+  pide esa: «Y… ¿te queda empanada?»; en la comanda, «Empanada de bonito (su favorito)»; en la vitrina va la primera, con «· su
+  favorito». Servírsela paga **+2 granos** («5 por su favorito»); otra del mismo tipo, a precio normal.
+- **El excéntrico pide de comer la mitad de los días**, con **un acertijo** («Algo con un ancla, un barco y una estrella, que
+  cruja.»), en su comanda debajo de los acertijos de la bebida. En la vitrina se ve todo lo que hay; si eliges otra cosa, suena
+  `noEs`, esa se apaga y Pilar da **una pista**, y eliges otra vez (nunca se le sirve algo equivocado). Lo suyo paga **el doble**
+  («4 por las galletas, el doble»). Sin lo suyo en la vitrina, solo el café.
+
+### 145.4 Servidor
+
+- Migración nueva **`20261227120000_cafe_obrador_recetario.sql`** (la aplica Francisco). Tabla `cafe_obrador_masa` (la masa de cada
+  uno: amasado, cuándo se puso y si fue en una jornada de prueba) y columna `cafe_obrador.hitos`. Las cuatro recetas en
+  `cafe_obrador_receta`; `cafe_obrador_favorito`, `cafe_obrador_hitos_cifras`, `cafe_obrador_hito_granos`; para la app,
+  `cafe_masa_reposar(amasado)`. **Redefine** `cafe_pide_comida`, `cafe_obrador_json` (hitos, vendidas en total y la masa),
+  `cafe_obrador` (lo que quiere cada uno), `cafe_hornear_de` (el pan necesita la masa subida y cuenta su amasado),
+  `cafe_servir_comida` (el excéntrico solo con lo suyo y al doble; el favorito +2; los hitos), `cafe_mostrador_cobrar` (los
+  hitos) y `cafe_visita` (el obrador, desde el nivel 4). Errores nuevos: `cafe:masa`.
+- Sin la migración, el obrador va como en la 1.144 (las cuatro recetas nuevas, sin abrir).
+
+### 145.5 Correcciones al probar
+
+- **El fogón no se veía**: estaba metido en parte en el costado de las estanterías altas y su cámara caía dentro de ellas (la vuelta,
+  «A la sartén» y sacarla salían sobre un fondo liso). El fogón se ajusta a su rincón, su chimenea pasa a la esquina de atrás y la
+  cámara lo mira desde arriba.
+- **La comanda del excéntrico no decía qué quería comer**: solo listaba los acertijos de la bebida. Ahora lleva también el de la
+  comida y, en la vitrina, se queda solo ese.
+- **La frase del hito al cobrar la caja se podía perder**: el aviso de Pilar se borra solo a los 6 s y, con la caja abierta, no se
+  ve. Ahora la campanilla del hito suena al cobrar y Pilar lo dice al cerrar la caja.
+
+### 145.6 Pruebas y limitaciones
+
+- Vitest: `cafeObrador.test.js` (las cifras de las cuatro, los hitos, los favoritos, el excéntrico, los ocho gestos nuevos bien y
+  mejor hechos, y el trazo de Pilar a 360, 390, 430 y 600) y `cafe-obrador-recetario.rls.test.js` (PGlite: paridad de recetas,
+  favoritos e hitos con la app; niveles; el pan con su masa de un día para otro y en la jornada de prueba; Pilar; los hitos por el
+  mostrador; el excéntrico solo con lo suyo y al doble; el favorito +2; la visita; el anónimo, 42501).
+- E2E con Supabase simulado: `e2e-community/v1145-cafe-obrador-recetario.spec.js` a 360 y 390 (las cuatro recetas con sus ocho
+  gestos hechos con el ratón como el dedo, el fogón, la masa a la bodega, la página de los hitos; al día siguiente, la caja que da
+  el primer hito y el pan greñado; el favorito y el acertijo en la vitrina) y, a 390, con movimiento reducido (cada gesto nuevo de
+  un toque). Los vídeos de 390 llevan el sonido de la página. `v1143` y `v1144` siguen pasando; con las dos resoluciones a la vez,
+  un recorrido de cada una falló una vez por tiempos (el «¡Bien!» de Pilar dura 1,3 s y la prueba llegó tarde; Pilar pasó de
+  gesto antes de que la prueba mirara) y, repetidos solos, pasan.
+- `cafe-libreria.rls.test.js` › «el reparto (1.139)» sigue fallando desde la 1.142, sin relación.
+- Evidencias en `qa-report/v1145/`.
+- **Sin probar** con la migración aplicada (solo PGlite y el simulado), con cuentas reales ni en móviles reales.
+
+**Por qué no se puede explotar**: igual que en la 1.143 y la 1.144, la app solo dice el mimo de los gestos; el pan no se puede
+amasar dos veces (una masa por cuenta) ni greñar sin que haya pasado la noche (lo dice el servidor); el favorito y el acertijo los
+fija el servidor para cada cliente del día; los hitos se cuentan una vez cada uno. La reputación y los tickets no se mueven.

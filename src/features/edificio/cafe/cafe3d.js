@@ -3618,7 +3618,9 @@ function obradorVivoKit(s, est = {}) {
 }
 // ── 1.145: el recetario crece. El fogón de hierro (a la izquierda del horno, desde el nivel 8), la masa del pan en su cesto, los
 // adornos de los hitos y, en la mesa, los objetos de los ocho gestos nuevos ──
-const FOGON = { x0: -3.36, x1: -2.94, y0: 0.06, y1: 0.52, alto: 0.78 };
+// En el rincón entre la pared, el costado del horno (x = -2,9) y el de las estanterías altas (desde y = 0,45): solo se ve desde
+// arriba, y ahí va su cámara (`vuelta` y `fogon` en ENFOQUES_OBRADOR)
+const FOGON = { x0: -3.36, x1: -2.94, y0: 0, y1: 0.45, alto: 0.78 };
 /** La sartén del fogón: en el fuego de delante. */
 const SARTEN = { x: (FOGON.x0 + FOGON.x1) / 2, y: FOGON.y1 - 0.15, r: 0.11 };
 const HIERRO_F = [40, 38, 42];
@@ -3668,10 +3670,11 @@ function fogonKit(s, { fase, receta, pose = {}, alFogon = [], pilar, conTortilla
   pushBox(s, [(x0 + x1) / 2 - 0.04, y1 + 0.012, 0.18, (x0 + x1) / 2 + 0.04, y1 + 0.02, 0.2], BRASS, { g: 0.85 });
   pushBox(s, [x0 - 0.02, y1 + 0.04, alto - 0.1, x1 + 0.02, y1 + 0.06, alto - 0.08], BRASS, { g: 0.9 });
   for (const bx of [x0, x1 - 0.02]) pushBox(s, [bx, y1, alto - 0.1, bx + 0.02, y1 + 0.06, alto - 0.08], BRASS, { g: 0.9 });
-  // El tubo de la chimenea, hasta el techo, con su codo
-  pushBox(s, [SARTEN.x - 0.045, y0 + 0.01, alto, SARTEN.x + 0.045, y0 + 0.1, alto + 0.6], [52, 50, 54]);
-  pushBox(s, [SARTEN.x - 0.05, y0 + 0.005, alto + 0.6, SARTEN.x + 0.05, y0 + 0.105, alto + 0.64], [70, 66, 70]);
-  pushBox(s, [SARTEN.x - 0.045, y0 + 0.01, alto + 0.64, SARTEN.x + 0.045, y0 + 0.1, SH], [52, 50, 54]);
+  // El tubo de la chimenea, hasta el techo, con su codo: en la esquina de atrás (el fogón se mira desde arriba y no tapa la sartén)
+  const tx = x0 + 0.06;
+  pushBox(s, [tx - 0.045, y0 + 0.01, alto, tx + 0.045, y0 + 0.1, alto + 0.6], [52, 50, 54]);
+  pushBox(s, [tx - 0.05, y0 + 0.005, alto + 0.6, tx + 0.05, y0 + 0.105, alto + 0.64], [70, 66, 70]);
+  pushBox(s, [tx - 0.045, y0 + 0.01, alto + 0.64, tx + 0.045, y0 + 0.1, SH], [52, 50, 54]);
   // Un trapo de cuadros colgado de la barra
   for (let k = 0; k < 4; k += 1) pushBox(s, [x0 + 0.06 + k * 0.025, y1 + 0.05, alto - 0.26, x0 + 0.085 + k * 0.025, y1 + 0.06, alto - 0.08], k % 2 ? [236, 230, 220] : [70, 110, 170]);
   const zs = alto + 0.006;
@@ -4024,8 +4027,9 @@ const ENFOQUES_OBRADOR = {
   envolver: { p: [-0.8, 0.92, 1.44], m: [-0.8, 0.42, 0.9] },
   tamiz: { p: [-0.8, 0.9, 1.42], m: [-0.8, 0.42, 0.9] },
   cascar: { p: [-0.8, 0.94, 1.4], m: [-0.8, 0.36, 0.92] },
-  vuelta: { p: [-3.15, 0.92, 1.36], m: [-3.15, 0.3, 0.8] },
-  fogon: { p: [-3.05, 1.18, 1.46], m: [-3.15, 0.3, 0.76] },
+  // El fogón, desde arriba (por delante, el costado de las estanterías altas tapa el rincón)
+  vuelta: { p: [-3.14, 0.43, 1.72], m: [-3.15, 0.12, 0.8] },
+  fogon: { p: [-3.14, 0.43, 1.82], m: [-3.15, 0.1, 0.78] },
 };
 
 // La vitrina de la barra: en la punta, antes del mortero; el platito, delante

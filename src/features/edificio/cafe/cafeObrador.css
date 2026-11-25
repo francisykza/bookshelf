@@ -279,7 +279,8 @@
 .cf3-comanda .cf3-comanda__linea--comida[data-ahora='true'] {
   color: #8a3a2a;
 }
-.cf3-comanda[data-solo-comida='true'] .cf3-comanda__linea:not(.cf3-comanda__linea--comida) {
+.cf3-comanda[data-solo-comida='true'] .cf3-comanda__linea:not(.cf3-comanda__linea--comida),
+.cf3-comanda[data-solo-comida='true'] .cf3-comanda__acertijos {
   position: absolute;
   width: 1px;
   height: 1px;

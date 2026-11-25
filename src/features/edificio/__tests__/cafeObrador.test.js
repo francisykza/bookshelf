@@ -18,13 +18,17 @@ function trazo(g, puntos) {
 const linea = (a, b, n = 20) => Array.from({ length: n + 1 }, (_, k) => [a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n]);
 
 describe('las reglas del obrador', () => {
-  it('seis recetas, dos que se hornean en esta tanda y en el nivel 4; cada una con sus dos gestos', () => {
+  it('seis recetas, cada una desde su nivel (1.145: todas se hornean); cada una con sus dos gestos', () => {
     expect(RECETAS_OBRADOR.map((r) => r.id)).toEqual(['magdalenas', 'empanada', 'galletas', 'pan', 'bizcocho', 'tortilla']);
-    expect(HORNABLES).toEqual(['magdalenas', 'empanada']);
+    expect(HORNABLES).toEqual(RECETAS_OBRADOR.map((r) => r.id));
     expect(OBRADOR_NIVEL).toBe(4);
     expect(recetaAbierta('magdalenas', 3)).toBe(false);
     expect(recetaAbierta('magdalenas', 4)).toBe(true);
-    expect(recetaAbierta('galletas', 8)).toBe(false);
+    expect(RECETAS_OBRADOR.map((r) => r.nivel)).toEqual([4, 4, 5, 6, 7, 8]);
+    for (const r of RECETAS_OBRADOR) {
+      expect(recetaAbierta(r.id, r.nivel - 1), r.id).toBe(false);
+      expect(recetaAbierta(r.id, r.nivel), r.id).toBe(true);
+    }
     for (const id of HORNABLES) {
       expect(GESTOS_RECETA[id]).toEqual(RECETAS_OBRADOR.find((r) => r.id === id).gestos);
       for (const g of GESTOS_RECETA[id]) expect(GESTO_OBRADOR[g]).toMatchObject({ orden: expect.any(String), ayuda: expect.any(String), bien: expect.any(String), mejor: expect.any(String) });
@@ -49,7 +53,7 @@ describe('las reglas del obrador', () => {
     expect([0, 1, 2, 3, 4].map((a) => estrellasBebida(a))).toEqual([1, 1, 2, 2, 3]);
     expect(estrellasBebida()).toBe(1);
     // El pedido, como el de un libro pero sin libro: solo lo que le apetece
-    expect(pedidoComida('salado')).toEqual({ id: 'comida', tipo: 'salado', genero: null, extension: null, forma: null });
+    expect(pedidoComida('salado')).toEqual({ id: 'comida', tipo: 'salado', quiere: null, excentrico: false, genero: null, extension: null, forma: null });
     expect(pedidoComida('otra cosa').tipo).toBe('dulce');
     expect(Object.isFrozen(pedidoComida('dulce'))).toBe(true);
     // Lo que dice, sin comillas (va detrás de la bebida) y siempre la misma para el mismo cliente
@@ -238,4 +242,238 @@ describe('1.144 · «Que lo hornee Pilar»: sus manos hacen cada gesto bien hech
       expect(s).toMatchObject({ hecho: true, mimo: 2 });
     }
   });
+});
+
+// 1.145 · Bloque 3: el recetario crece (galletas, pan, bizcocho y tortilla), los hitos, el excéntrico y el favorito
+import { ACERTIJOS, FAVORITOS, FOGON, HITOS_OBRADOR, PALA, PISTA_ACERTIJO, faltanHito, hitosDe, palaDe, paraElPedido } from '../cafe/cafeObrador';
+import { HABITUALES } from '../cafe/cafeClientes';
+
+describe('1.145 · el recetario crece', () => {
+  it('las cifras de las cuatro nuevas: 6, 7 u 8 piezas; el pan, de un día para otro; la tortilla, al fogón', () => {
+    expect(['galletas', 'pan', 'bizcocho', 'tortilla'].map((id) => [1, 2, 3].map((e) => piezasDe(id, e)))).toEqual([
+      [6, 7, 8],
+      [6, 7, 8],
+      [6, 7, 8],
+      [6, 7, 8],
+    ]);
+    expect(RECETAS_OBRADOR.map((r) => r.precio)).toEqual([2, 3, 2, 4, 4, 5]);
+    expect(RECETAS_OBRADOR.filter((r) => r.noche).map((r) => r.id)).toEqual(['pan']);
+    expect(RECETAS_OBRADOR.filter((r) => r.fogon).map((r) => r.id)).toEqual(['tortilla']);
+    expect(palaDe('tortilla')).toBe(FOGON);
+    expect(palaDe('pan')).toBe(PALA);
+    for (const r of RECETAS_OBRADOR) {
+      expect(GESTOS_RECETA[r.id]).toEqual(r.gestos);
+      for (const g of r.gestos) expect(GESTO_OBRADOR[g], g).toMatchObject({ orden: expect.any(String), ayuda: expect.any(String), bien: expect.any(String), mejor: expect.any(String) });
+      expect(laPieza(r.id)).not.toBe('la pieza');
+    }
+    // Ocho gestos nuevos, todos distintos de los de la primera tanda
+    expect(new Set(RECETAS_OBRADOR.flatMap((r) => r.gestos)).size).toBe(12);
+  });
+
+  it('los hitos: 25, 100, 250, 500 y 1.000 piezas; un adorno y 20 granos cada uno', () => {
+    expect(HITOS_OBRADOR.cifras).toEqual([25, 100, 250, 500, 1000]);
+    expect(HITOS_OBRADOR.granos).toBe(20);
+    expect(HITOS_OBRADOR.adornos).toHaveLength(5);
+    expect(HITOS_OBRADOR.frases).toHaveLength(5);
+    expect([0, 24, 25, 99, 100, 999, 1000, 5000].map(hitosDe)).toEqual([0, 0, 1, 1, 2, 4, 5, 5]);
+    expect([0, 24, 25, 600].map(faltanHito)).toEqual([25, 1, 75, 400]);
+    expect(faltanHito(1000)).toBeNull();
+  });
+
+  it('el favorito de cada habitual, uno por cada uno de los doce; pagan +2, solo por su favorito', () => {
+    expect(FAVORITOS).toHaveLength(HABITUALES.length);
+    expect(HABITUALES).toHaveLength(12);
+    // Cada receta es el favorito de dos
+    for (const r of RECETAS_OBRADOR) expect(FAVORITOS.filter((f) => f === r.id), r.id).toHaveLength(2);
+    expect(precioMesa('galletas', { favorito: 'galletas' })).toBe(4);
+    expect(precioMesa('magdalenas', { favorito: 'galletas' })).toBe(2);
+    const p = pedidoComida('salado', 'pan');
+    expect(p).toMatchObject({ tipo: 'salado', quiere: 'pan', excentrico: false });
+    expect(fraseComida('salado', 0, p)).toMatch(/pan de la bodega/);
+    expect(comandaComida('salado', p)).toBe('Pan de la bodega (su favorito)');
+    // Su favorito, el primero de lo que le vale
+    const o = { piezas: { empanada: 3, pan: 2, magdalenas: 4 } };
+    expect(paraElPedido(o, p).map((x) => x.receta)).toEqual(['pan', 'empanada']);
+  });
+
+  it('el excéntrico: un acertijo por receta, sin nombrarla; paga el doble; mira toda la vitrina', () => {
+    for (const r of RECETAS_OBRADOR) {
+      expect(ACERTIJOS[r.id]).toBeTruthy();
+      expect(ACERTIJOS[r.id].toLowerCase()).not.toContain(r.nombre.toLowerCase());
+      expect(PISTA_ACERTIJO[r.id]).toBeTruthy();
+    }
+    expect(precioMesa('tortilla', { excentrico: true })).toBe(10);
+    // El doble y la especialidad; nunca el +2 del favorito
+    expect(precioMesa('empanada', { excentrico: true, especialidad: 'empanada', favorito: 'empanada' })).toBe(7);
+    const p = pedidoComida('dulce', 'bizcocho', true);
+    expect(p).toMatchObject({ quiere: 'bizcocho', excentrico: true });
+    expect(fraseComida('dulce', 0, p)).toContain(ACERTIJOS.bizcocho);
+    expect(comandaComida('dulce', p)).toBe(`«${ACERTIJOS.bizcocho}»`);
+    expect(sinPieza('dulce', p)).toMatch(/Otro día/);
+    // Mira toda la vitrina, dulce o salado
+    expect(paraElPedido({ piezas: { empanada: 1, galletas: 2, pan: 0 } }, p).map((x) => x.receta)).toEqual(['empanada', 'galletas']);
+    // Sin receta que exista, no es un excéntrico con acertijo
+    expect(pedidoComida('dulce', 'paella', true)).toMatchObject({ quiere: null, excentrico: false });
+  });
+});
+
+describe('1.145 · los ocho gestos nuevos', () => {
+  const c = { x: 195, y: 400 };
+  const tocar = (g, x, y) => {
+    const s = g.abajo(x, y);
+    g.arriba();
+    return s;
+  };
+
+  it('los cortapastas: cuatro formas separadas, bien; pisándose, se podía mejorar', () => {
+    let g = crearGestoObrador('cortapastas', { centro: c });
+    let s;
+    for (const [x, y] of [
+      [-100, -50],
+      [100, -50],
+      [-100, 50],
+      [100, 50],
+    ])
+      s = tocar(g, c.x + x, c.y + y);
+    expect(s).toMatchObject({ hecho: true, mimo: 2 });
+    expect(s.pose.cortes.map((k) => k.forma)).toEqual(['ancla', 'barco', 'estrella', 'faro']);
+    g = crearGestoObrador('cortapastas', { centro: c });
+    for (const [x, y] of [
+      [-100, -50],
+      [-95, -45],
+      [-100, 50],
+      [100, 50],
+    ])
+      s = tocar(g, c.x + x, c.y + y);
+    expect(s).toMatchObject({ hecho: true, mimo: 1 });
+    // Fuera de la masa no corta
+    g = crearGestoObrador('cortapastas', { centro: c });
+    expect(tocar(g, c.x + 400, c.y).pose.cortes).toHaveLength(0);
+  });
+
+  it('la glasa: por la raya de puntos, bien; lejos de ella, se podía mejorar', () => {
+    const W = M.glasa;
+    const ola = (k, n) => [c.x - W / 2 + (W * k) / n, c.y + Math.sin((k / n) * Math.PI * 3) * M.olaGlasa];
+    let s = trazo(crearGestoObrador('glasa', { centro: c }), Array.from({ length: 121 }, (_, k) => ola(k, 120)));
+    expect(s).toMatchObject({ hecho: true, mimo: 2 });
+    s = trazo(crearGestoObrador('glasa', { centro: c }), linea([c.x - W / 2, c.y + 50], [c.x + W / 2, c.y + 50], 120));
+    expect(s).toMatchObject({ hecho: true, mimo: 1 });
+  });
+
+  it('amasar: cuatro empujones parejos, bien; uno corto y otro larguísimo, se podía mejorar', () => {
+    let g = crearGestoObrador('amasar', { centro: c });
+    let s;
+    for (let k = 0; k < 4; k += 1) {
+      s = trazo(g, linea([195, 420], [195, 420 - M.amasar - 10], 10));
+      g.arriba();
+    }
+    expect(s).toMatchObject({ hecho: true, mimo: 2 });
+    g = crearGestoObrador('amasar', { centro: c });
+    for (const largo of [M.amasar + 2, M.amasar * 3, M.amasar + 2, M.amasar + 2]) {
+      s = trazo(g, linea([195, 500], [195, 500 - largo], 16));
+      g.arriba();
+    }
+    expect(s).toMatchObject({ hecho: true, mimo: 1 });
+  });
+
+  it('greñar: un tajo sin dudar, bien; volviendo atrás, se podía mejorar', () => {
+    let s = trazo(crearGestoObrador('grenar', { centro: c }), linea([100, 400], [100 + M.grenar + 10, 360], 30));
+    expect(s).toMatchObject({ hecho: true, mimo: 2 });
+    s = trazo(crearGestoObrador('grenar', { centro: c }), [...linea([100, 400], [180, 390], 10), ...linea([180, 390], [160, 392], 4), ...linea([160, 392], [100 + M.grenar + 40, 360], 30)]);
+    expect(s).toMatchObject({ hecho: true, mimo: 1 });
+  });
+
+  it('envolver: tres jotas enteras, bien; una a medias, se podía mejorar', () => {
+    const jota = (x) => [...linea([x, 340], [x, 340 + M.bajaJota + 8], 10), ...linea([x, 340 + M.bajaJota + 8], [x + 30, 340 + M.bajaJota + 8 - M.subeJota - 6], 8)];
+    let g = crearGestoObrador('envolver', { centro: c });
+    let s;
+    for (let k = 0; k < 3; k += 1) {
+      s = trazo(g, jota(160 + k * 10));
+      g.arriba();
+    }
+    expect(s).toMatchObject({ hecho: true, mimo: 2 });
+    g = crearGestoObrador('envolver', { centro: c });
+    trazo(g, linea([160, 340], [160, 340 + M.bajaJota * 0.7], 8));
+    g.arriba();
+    for (let k = 0; k < 3; k += 1) {
+      s = trazo(g, jota(160 + k * 10));
+      g.arriba();
+    }
+    expect(s).toMatchObject({ hecho: true, mimo: 1 });
+  });
+
+  it('el tamiz: cubrir la plantilla, bien; espolvoreando por toda la mesa, se podía mejorar', () => {
+    const W = M.plantilla;
+    const H = W * 0.6;
+    const filas = (ancho) => [-H / 3, 0, H / 3].flatMap((dy, k) => linea([c.x + (k % 2 ? 1 : -1) * ancho, c.y + dy], [c.x + (k % 2 ? -1 : 1) * ancho, c.y + dy], 40));
+    let s = trazo(crearGestoObrador('tamiz', { centro: c }), filas(W / 2 - 4));
+    expect(s).toMatchObject({ hecho: true, mimo: 2 });
+    expect(s.pose.levantada).toBe(true);
+    s = trazo(crearGestoObrador('tamiz', { centro: c }), filas(W * 2));
+    expect(s).toMatchObject({ hecho: true, mimo: 1 });
+  });
+
+  it('cascar: tres huevos abiertos de lado, bien; abriéndolos hacia abajo caen cáscaras', () => {
+    let g = crearGestoObrador('cascar', { centro: c });
+    let s;
+    for (let k = 0; k < 3; k += 1) {
+      s = trazo(g, linea([195, 400], [195 + M.abrirHuevo + 6, 402], 8));
+      g.arriba();
+    }
+    expect(s).toMatchObject({ hecho: true, mimo: 2 });
+    expect(s.eventos).toContain('abre');
+    g = crearGestoObrador('cascar', { centro: c });
+    s = trazo(g, linea([195, 400], [195 + M.abrirHuevo + 6, 400 + M.abrirHuevo + 6], 8));
+    expect(s.eventos).toContain('cascara');
+    g.arriba();
+    for (let k = 0; k < 2; k += 1) {
+      s = trazo(g, linea([195, 400], [195 + M.abrirHuevo + 6, 402], 8));
+      g.arriba();
+    }
+    expect(s).toMatchObject({ hecho: true, mimo: 1 });
+  });
+
+  it('la vuelta con el plato: media vuelta sin parar, bien; soltando a medias, se podía mejorar', () => {
+    const r = M.radioSarten * 0.8;
+    const arco = (a0, a1, n = 30) => Array.from({ length: n + 1 }, (_, k) => [c.x + Math.cos(a0 + ((a1 - a0) * k) / n) * r, c.y + Math.sin(a0 + ((a1 - a0) * k) / n) * r]);
+    let s = trazo(crearGestoObrador('vuelta', { centro: c }), arco(0, Math.PI + 0.1));
+    expect(s).toMatchObject({ hecho: true, mimo: 2 });
+    expect(s.eventos).toContain('plof');
+    const g = crearGestoObrador('vuelta', { centro: c });
+    trazo(g, arco(0, 1));
+    g.arriba();
+    s = trazo(g, arco(1, Math.PI + 0.2));
+    expect(s).toMatchObject({ hecho: true, mimo: 1 });
+  });
+
+  it('de una vez (movimiento reducido o teclado), cada uno queda hecho y bien', () => {
+    for (const t of ['cortapastas', 'glasa', 'amasar', 'grenar', 'envolver', 'tamiz', 'cascar', 'vuelta']) expect(crearGestoObrador(t).completar(), t).toMatchObject({ hecho: true, mimo: 2, progreso: 1 });
+  });
+
+  for (const escala of [360 / 390, 1, 430 / 390, 600 / 390]) {
+    it(`las manos de Pilar los hacen bien a ${Math.round(escala * 390)} px`, () => {
+      let semilla = 11;
+      const azar = () => ((semilla = (semilla * 16807) % 2147483647) / 2147483647);
+      const centro = { x: 195 * escala, y: 380 };
+      for (const tipo of ['cortapastas', 'glasa', 'amasar', 'grenar', 'envolver', 'tamiz', 'cascar', 'vuelta']) {
+        for (let vez = 0; vez < 5; vez += 1) {
+          const g = crearGestoObrador(tipo, { escala, centro });
+          const { puntos, ms } = trazoPilar(tipo, { escala, centro, azar });
+          expect(ms, tipo).toBeGreaterThan(300);
+          expect(ms, tipo).toBeLessThan(2500);
+          // Con `alza`, la mano se levanta antes de ese punto (un toque o un empujón nuevo)
+          let s = g.abajo(puntos[0].x, puntos[0].y);
+          for (const p of puntos.slice(1)) {
+            if (s.hecho) break;
+            if (p.alza) {
+              g.arriba();
+              s = g.abajo(p.x, p.y);
+            } else s = g.mover(p.x, p.y);
+          }
+          expect(s.hecho, `${tipo} (${vez})`).toBe(true);
+          expect(s.mimo, `${tipo} (${vez})`).toBe(2);
+        }
+      }
+    });
+  }
 });

@@ -6,12 +6,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En la rama, sin versión ni publicar (commit del 22-11-2026, «Haz el commit»)**: Libo, el gato guía (bloques 1 a 4, con Atrás
-  dentro de las salas del hotel; `docs/qa/libo.md` §6), el bloque 2 de la Play Store (borrar la cuenta, 16 años y páginas
-  legales en borrador; `docs/qa/play-store.md`) y **el obrador 1.145 a medias** (sin terminar ni probar; ver su entrada de la
-  bitácora del 19-11). Van juntos porque comparten archivos del café. Producción sigue en la 1.144.0. **Migraciones sin aplicar**:
-  `20261227120000_cafe_obrador_recetario.sql` y `20261228120000_cuenta_borrar.sql`. **No fusionar con `main` así**: antes,
-  terminar y probar la 1.145 (o apagarla), poner el correo de contacto en `public/legal/` y el visto bueno de Francisco.
+- **En la rama, con commit y sin publicar: 1.145.0** (22-11-2026, §145; Francisco: «Termina el obrador 1.145»; commit el 25-11, «Haz el commit»): el bloque 3 de 3 del obrador
+  terminado y probado (galletas, pan con su noche en la bodega, bizcocho y tortilla al fogón; hitos con sus adornos; favorito de los
+  habituales y acertijo del excéntrico), con Libo, el gato guía (bloques 1 a 4; `docs/qa/libo.md` §6) y el bloque 2 de la Play
+  Store (`docs/qa/play-store.md`), que comparten el árbol. Producción sigue en
+  la 1.144.0. **Migraciones sin aplicar**: `20261227120000_cafe_obrador_recetario.sql` y `20261228120000_cuenta_borrar.sql`.
+  **Antes de fusionar con `main`**: el visto bueno de Francisco a la 1.145 (evidencias en `qa-report/v1145/`), a Libo y a la Play
+  Store, aplicar las dos migraciones y poner el correo de contacto en `public/legal/`.
 - **Publicada en producción: 1.144.0** (2026-11-19, §144; bloque 2 de 3 del obrador, `cafe-libreria.md` §18.12; Francisco: «Sí,
   aplicar y publicar»): la caja del mostrador (Pilar vende de la vitrina mientras no estás, hasta 7 días, y al volver se tira del
   cajón de la caja de latón), las mejoras del horno (2 y 3 bandejas) y de la vitrina (cuatro grados), las vitrinas de tartas que
@@ -296,9 +297,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Desde el commit del 22-11-2026** (Libo, Play Store bloque 2 y la 1.145 a medias en la rama, sin versión): terminar el obrador
-  1.145 (lo que falta, en su entrada del 19-11), el visto bueno de Francisco a Libo y a la Play Store, el correo de contacto de
-  las páginas legales, aplicar las dos migraciones y numerar la versión antes de fusionar con `main`.
+- **1.145.0 en la rama, con commit (25-11-2026)**: el visto bueno de Francisco a la 1.145 (y a sus interpretaciones, en `cafe-libreria.md`
+  §18.12.3), a Libo y a la Play Store; aplicar las dos migraciones; el correo de contacto de las
+  páginas legales; después, fusionar con `main` y comprobar producción.
 - **Traspaso a la otra cuenta (19-11-2026): el obrador (vender comida), a mitad.** Francisco: «Lo que quede lo va a hacer la
   otra cuenta, apunta lo que reste». Sustituye al traspaso del 14-11 (más abajo, solo como historia y por cómo se pegan las
   migraciones). Plan aprobado en `cafe-libreria.md` §18, con las decisiones de Francisco en §18.13 y en `CLAUDE.md`.
@@ -521,6 +522,33 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-25 · Commit de la 1.145.0 (Claude)
+
+- Francisco: «Haz el commit». Entra lo de la entrada de abajo (el obrador terminado, la versión, las pruebas nuevas y las tres
+  correcciones). Sin subir ni publicar: producción sigue en la 1.144.0. Sin cambios de código desde el 22-11.
+- Sigue pendiente: el visto bueno de Francisco a la 1.145 y a sus siete interpretaciones, a Libo y a la Play Store; las dos
+  migraciones (`20261227120000_cafe_obrador_recetario.sql` y `20261228120000_cuenta_borrar.sql`, sin aplicar); el correo de
+  contacto de las páginas legales; y, después, fusionar con `main`.
+
+### 2026-11-22 · El recetario crece, terminado · 1.145.0 (Claude)
+
+- Francisco: «Termina el obrador 1.145». Se termina lo que dejó la entrada del 19-11 y se numera la versión: `diag.js`,
+  `package.json`, `sw.js` y la cabecera de `SPEC.md`, con la sección §145; la nota de `cafe-libreria.md` §18.12.3.
+- Pruebas nuevas: `cafeObrador.test.js` ampliado (35) y `cafe-obrador-recetario.rls.test.js` (PGlite, 10). E2E nueva
+  `e2e-community/v1145-cafe-obrador-recetario.spec.js`: los ocho gestos nuevos con el ratón (con el trazo de las manos de Pilar),
+  el fogón, la masa a la bodega, los hitos, el pan greñado al día siguiente, el favorito y el acertijo, y movimiento reducido;
+  7 de 7 a 360 y 390. `v1143` y `v1144` pasan; con las dos resoluciones a la vez, un recorrido de cada una falló por tiempos
+  (el «¡Bien!» de Pilar dura 1,3 s; Pilar pasó de gesto antes de mirar) y, repetidos solos, pasan. La v1145 espera ese comentario
+  con un observador de la página para no tener esa carrera.
+- **Corregido al probar** (§145.5): el fogón quedaba dentro del costado de las estanterías altas y su cámara también (la vuelta y la
+  sartén salían sobre un fondo liso): ahora se mira desde arriba, en su rincón, y la chimenea va a la esquina (`cafe3d.js`); la
+  comanda del excéntrico no decía qué quería comer (`Atender.jsx`, `cafeObrador.css`); y la frase del hito al cobrar la caja se
+  perdía si te entretenías en el cajón: ahora Pilar la dice al cerrarla (`Cafe.jsx`).
+- Evidencias en `qa-report/v1145/` (capturas a 360 y 390; vídeos con sonido a 390: `recetario-`, `masa-` y `vitrina-`).
+- **Sin commit** (no se ha pedido) y **sin publicar**. Migración `20261227120000_cafe_obrador_recetario.sql` **sin aplicar**. Sin
+  probar con la migración aplicada, con cuentas reales ni en móviles reales.
+- **Interpretaciones por confirmar con Francisco**: las siete de la entrada del 19-11 (también en `cafe-libreria.md` §18.12.3).
 
 ### 2026-11-22 · Commit de Libo (bloques 1 a 4), Play Store bloque 2 y el obrador 1.145 a medias, sin versión (Claude)
 
