@@ -13,9 +13,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   terminado y probado (galletas, pan con su noche en la bodega, bizcocho y tortilla al fogón; hitos con sus adornos; favorito de los
   habituales y acertijo del excéntrico), con Libo, el gato guía (bloques 1 a 4; `docs/qa/libo.md` §6) y el bloque 2 de la Play
   Store (`docs/qa/play-store.md`), que comparten el árbol. Producción sigue en
-  la 1.144.0. **Migraciones sin aplicar**: `20261227120000_cafe_obrador_recetario.sql` y `20261228120000_cuenta_borrar.sql`.
+  la 1.144.0. **Migraciones aplicadas** (25-11-2026, «Aplica las migraciones»): `20261227120000_cafe_obrador_recetario.sql`
+  (29.959 B, SHA-256 `7ece9427…15a501562`) y `20261228120000_cuenta_borrar.sql` (9.229 B, `89731295…8c8474fb`).
   **Visto bueno de Francisco a la 1.145 y a sus siete interpretaciones** (25-11-2026, «Si»), con el cambio de la 1.145.1.
-  **Antes de fusionar con `main`**: el visto bueno de Francisco a Libo y a la Play Store (la 1.145.1, aprobada), aplicar las dos migraciones y poner el
+  **Antes de fusionar con `main`**: el visto bueno de Francisco a Libo y a la Play Store (la 1.145.1, aprobada) y poner el
   correo de contacto en `public/legal/`.
 - **Publicada en producción: 1.144.0** (2026-11-19, §144; bloque 2 de 3 del obrador, `cafe-libreria.md` §18.12; Francisco: «Sí,
   aplicar y publicar»): la caja del mostrador (Pilar vende de la vitrina mientras no estás, hasta 7 días, y al volver se tira del
@@ -302,7 +303,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 ### Pendiente (por orden de prioridad aproximada)
 
 - **1.145.1 en la rama, con commit (25-11-2026)**: el aviso del horno, aprobado («Sí, haz el commit»); falta el visto bueno de
-  Francisco a Libo y a la Play Store; aplicar las dos migraciones; el correo de contacto de las páginas legales;
+  Francisco a Libo y a la Play Store; el correo de contacto de las páginas legales (las dos migraciones, aplicadas el 25-11);
   después, fusionar con `main` y comprobar producción.
 - **Traspaso a la otra cuenta (19-11-2026): el obrador (vender comida), a mitad.** Francisco: «Lo que quede lo va a hacer la
   otra cuenta, apunta lo que reste». Sustituye al traspaso del 14-11 (más abajo, solo como historia y por cómo se pegan las
@@ -526,6 +527,22 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-25 · Migraciones de la 1.145 y del borrado de cuenta, aplicadas; sin publicar (Claude)
+
+- Francisco: «Aplica las migraciones y publícala». Al avisarle de que publicar también saca Libo y la Play Store, con las páginas
+  legales en borrador («[correo de contacto pendiente]»), decide: «solo las migraciones por ahora, deja pendiente lo otro cuando lo
+  tenga». **No se publica**: `main` y producción siguen en la 1.144.0.
+- Aplicadas en el SQL Editor del proyecto `bookshelf` (él inició sesión y pulsó «Run»: «Success» en las dos), pegadas con el truco
+  de `gzip` + `monaco.editor.getEditors()[0].setValue`, con bytes y SHA-256 iguales a git en la página:
+  `20261227120000_cafe_obrador_recetario.sql` (29.959 B, `7ece9427…15a501562`) y `20261228120000_cuenta_borrar.sql` (9.229 B,
+  `89731295…8c8474fb`). Con la clave pública: `cafe_masa_reposar`, `cuenta_borrar`, `cafe_obrador` y la tabla
+  `cafe_obrador_masa` dan 42501; una función inexistente, PGRST202.
+- **Mientras no se publique**, la 1.144 de producción convive con el servidor de la 1.145: algunos días el excéntrico pide de comer
+  algo que la 1.144 no sabe servir; el servidor lo rechaza y la 1.144 cobra solo el café (`comida_falla`), sin romperse. El
+  borrado de cuenta no tiene botón en la 1.144.
+- Pendiente para publicar: el correo de contacto de `libotown.es` en `public/legal/` y el visto bueno de Francisco a Libo y a la
+  Play Store. Esta entrada y la de CLAUDE.md van en su propio commit («Sí, haz el commit»).
 
 ### 2026-11-25 · El aviso del horno · 1.145.1 (Claude)
 

@@ -545,7 +545,7 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   Decisiones del mismo día (plan §7): responsable, él; **edad mínima 16** (casilla al crear la cuenta, sin fecha de
   nacimiento); al borrar una cuenta, **lo que dejó a otros queda como «Lector anónimo»** (no se borra); **modera él**;
   cuenta de desarrollador **personal** (prueba cerrada obligatoria); paquete `es.libotown.app`; planes de pago, por confirmar.
-  El correo de contacto será uno de `libotown.es` que creará él. La migración del borrado se aplica más adelante.
+  El correo de contacto será uno de `libotown.es` que creará él. La migración del borrado, **aplicada** el 25-11-2026 (sin publicar la app todavía).
 - **Libo, el gato guía** (Francisco, 20-11-2026; plan en `docs/qa/libo.md`): el gato del logo, con su nombre, es el puente
   entre la app y el nombre; te guía poco a poco por todo (por capítulos, cuando tiene sentido, siempre saltable) y te da
   sugerencias. Decisiones del mismo día: **empezar con la mascota actual** (`libotown-marca/libotown-mascota.webp`, recortada,
