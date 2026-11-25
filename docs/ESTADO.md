@@ -6,18 +6,17 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En la rama, con commit y sin publicar: 1.145.1** (25-11-2026, §145.7; commit el mismo día, «Sí, haz el commit»): el aviso del horno (el horno del HUD y la nota de la
-  campanilla), el cambio que pidió Francisco al dar el visto bueno a la 1.145 («Si, pero un cambio antes»). Evidencias en
-  `qa-report/v1145-1/`. Encima de la 1.145.0, que sigue así:
-- **En la rama, con commit y sin publicar: 1.145.0** (22-11-2026, §145; Francisco: «Termina el obrador 1.145»; commit el 25-11, «Haz el commit»): el bloque 3 de 3 del obrador
+- **Publicada en producción: 1.145.1** (25-11-2026, §145 y §145.7; Francisco: «haz el paso uno sin el correo de contacto, eso lo
+  dejamos para más tarde, apruebo los bloques del 1 al 4»; `main` avanzó sin forzar de `d1cdd8e` a `e6876f1` y libotown.es sirve
+  v1.145.1; la dirección de antes sigue con su 308). El aviso del horno (§145.7), encima de la 1.145.0. **Las páginas legales salen
+  con «[correo de contacto pendiente]»** (decisión de Francisco: el correo, más tarde). Libo (bloques 1 a 4), aprobado.
+- **Lo que lleva la 1.145.0** (22-11-2026, §145; Francisco: «Termina el obrador 1.145»; commit el 25-11, «Haz el commit»): el bloque 3 de 3 del obrador
   terminado y probado (galletas, pan con su noche en la bodega, bizcocho y tortilla al fogón; hitos con sus adornos; favorito de los
   habituales y acertijo del excéntrico), con Libo, el gato guía (bloques 1 a 4; `docs/qa/libo.md` §6) y el bloque 2 de la Play
-  Store (`docs/qa/play-store.md`), que comparten el árbol. Producción sigue en
-  la 1.144.0. **Migraciones aplicadas** (25-11-2026, «Aplica las migraciones»): `20261227120000_cafe_obrador_recetario.sql`
+  Store (`docs/qa/play-store.md`), que comparten el árbol. **Migraciones aplicadas** (25-11-2026, «Aplica las migraciones»): `20261227120000_cafe_obrador_recetario.sql`
   (29.959 B, SHA-256 `7ece9427…15a501562`) y `20261228120000_cuenta_borrar.sql` (9.229 B, `89731295…8c8474fb`).
   **Visto bueno de Francisco a la 1.145 y a sus siete interpretaciones** (25-11-2026, «Si»), con el cambio de la 1.145.1.
-  **Antes de fusionar con `main`**: el visto bueno de Francisco a Libo y a la Play Store (la 1.145.1, aprobada) y poner el
-  correo de contacto en `public/legal/`.
+  Publicada con la 1.145.1 (arriba).
 - **Publicada en producción: 1.144.0** (2026-11-19, §144; bloque 2 de 3 del obrador, `cafe-libreria.md` §18.12; Francisco: «Sí,
   aplicar y publicar»): la caja del mostrador (Pilar vende de la vitrina mientras no estás, hasta 7 días, y al volver se tira del
   cajón de la caja de latón), las mejoras del horno (2 y 3 bandejas) y de la vitrina (cuatro grados), las vitrinas de tartas que
@@ -302,9 +301,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **1.145.1 en la rama, con commit (25-11-2026)**: el aviso del horno, aprobado («Sí, haz el commit»); falta el visto bueno de
-  Francisco a Libo y a la Play Store; el correo de contacto de las páginas legales (las dos migraciones, aplicadas el 25-11);
-  después, fusionar con `main` y comprobar producción.
+- **El correo de contacto de las páginas legales** (la 1.145.1 ya está publicada, 25-11-2026): cuando Francisco diga cuál (uno de
+  `libotown.es`), sustituir `[correo de contacto pendiente]` en las cuatro páginas de `public/legal/` (y quitar su comentario de
+  BORRADOR) y publicar. Después, el bloque 3 de la Play Store (moderación), cuando lo pida.
 - **Traspaso a la otra cuenta (19-11-2026): el obrador (vender comida), a mitad.** Francisco: «Lo que quede lo va a hacer la
   otra cuenta, apunta lo que reste». Sustituye al traspaso del 14-11 (más abajo, solo como historia y por cómo se pegan las
   migraciones). Plan aprobado en `cafe-libreria.md` §18, con las decisiones de Francisco en §18.13 y en `CLAUDE.md`.
@@ -527,6 +526,17 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-25 · La 1.145.1 a producción (Claude)
+
+- Francisco: «haz el paso uno sin el correo de contacto, eso lo dejamos para más tarde, apruebo los bloques del 1 al 4» (los de
+  Libo). Build bien; `main` avanzó sin forzar de `d1cdd8e` a `e6876f1` (`git push origin 1.90-escritorio-puerto:main`; el
+  primer intento se cortó por la red y el segundo entró). `https://libotown.es/sw.js` sirve v1.145.1 al minuto y la dirección de
+  antes sigue con su 308.
+- Salen a la vez: la 1.145.0 (el recetario del obrador), el aviso del horno (1.145.1), Libo (bloques 1 a 4) y el bloque 2 de la
+  Play Store (borrar la cuenta, 16 años y páginas legales). **Las páginas legales llevan «[correo de contacto pendiente]»**, por
+  decisión de Francisco. Las migraciones ya estaban aplicadas (entrada de abajo).
+- Sin probar en móviles reales ni con sus cuentas.
 
 ### 2026-11-25 · Migraciones de la 1.145 y del borrado de cuenta, aplicadas; sin publicar (Claude)
 
