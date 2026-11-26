@@ -6,8 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **1.147.0, aprobada para publicar** (26-11-2026, §147; Francisco: «Sí, commit y publicar»): las poses de Libo que dibujó él,
-  por toda la app (su esquina, las guías, la biblioteca vacía y «Tu cuenta»).
+- **Publicada en producción: 1.147.0** (26-11-2026, §147; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de
+  `fa504da` a `b85ea09` y libotown.es sirve v1.147.0): las poses de Libo que dibujó él, por toda la app (su esquina, las guías, la
+  biblioteca vacía y «Tu cuenta»).
 - **Publicada en producción: 1.146.0** (26-11-2026, §146; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de `2c0bcdb`
   a `b629f90` y libotown.es sirve v1.146.0): la web de Libotown (`public/web/`) y el reparto en la raíz (script en el `<head>` de
   `index.html`: en libotown.es, quien llega nuevo va a la web y quien ya usa la app entra directo), con el service worker dejando
@@ -534,6 +535,14 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.147.0 a producción, las poses de Libo (Claude)
+
+- Francisco: «Sí, commit y publicar». Commit de la 1.147.0 y `main` avanzó sin forzar (de `fa504da` a `b85ea09`); `/sw.js` de
+  producción sirve v1.147.0 y las poses se sirven (`/assets/libo/poses/*.webp`, 200).
+- Comprobado en producción con un navegador de Playwright sin datos (390 px): en la app sin cuenta, Libo saluda con su pose nueva
+  en la esquina y sin errores de consola (`qa-report/libo-poses/produccion-390.png`). La web (`/web/`) sigue respondiendo y la
+  dirección de antes sigue con su 308. Sin probar en móviles reales.
 
 ### 2026-11-26 · 1.147.0, las poses de Libo (Claude)
 
