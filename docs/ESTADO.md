@@ -6,9 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Hecha y sin commit: 1.146.0** (26-11-2026, §146): la web de Libotown (`public/web/`, aprobada por Francisco: «Me gusta, sigue»)
-  y el reparto en la raíz (script en el `<head>` de `index.html`: en libotown.es, quien llega nuevo va a la web y quien ya usa la
-  app entra directo) con el service worker dejando `/web/` a la red. Sin publicar: esperar a que Francisco lo pida.
+- **Publicada en producción: 1.146.0** (26-11-2026, §146; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de `2c0bcdb`
+  a `b629f90` y libotown.es sirve v1.146.0): la web de Libotown (`public/web/`) y el reparto en la raíz (script en el `<head>` de
+  `index.html`: en libotown.es, quien llega nuevo va a la web y quien ya usa la app entra directo), con el service worker dejando
+  `/web/` a la red.
 - **Publicada en producción: 1.145.1** (25-11-2026, §145 y §145.7; Francisco: «haz el paso uno sin el correo de contacto, eso lo
   dejamos para más tarde, apruebo los bloques del 1 al 4»; `main` avanzó sin forzar de `d1cdd8e` a `e6876f1` y libotown.es sirve
   v1.145.1; la dirección de antes sigue con su 308). El aviso del horno (§145.7), encima de la 1.145.0. **Las páginas legales salen
@@ -304,9 +305,6 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **La web de Libotown, 1.146.0** (26-11-2026, §146; **sin commit**; regla en CLAUDE.md): web aprobada («Me gusta, sigue») y
-  bloque 2 hecho (el reparto en la raíz y el service worker). Falta el bloque 3, **publicar**, cuando Francisco lo pida (commit,
-  `main` y comprobar en libotown.es: nuevo → web, con cuenta → app, `/sw.js` con v1.146.0).
 - **El correo de contacto de las páginas legales** (la 1.145.1 ya está publicada, 25-11-2026): cuando Francisco diga cuál (uno de
   `libotown.es`), sustituir `[correo de contacto pendiente]` en las cuatro páginas de `public/legal/` (y quitar su comentario de
   BORRADOR) y publicar. Después, el bloque 3 de la Play Store (moderación), cuando lo pida.
@@ -532,6 +530,17 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.146.0 a producción, la web en la raíz (Claude)
+
+- Francisco: «Sí, commit y publicar». Commit de la 1.146.0 y `main` avanzó sin forzar (de `2c0bcdb` a `b629f90`); `/sw.js` de
+  producción sirve v1.146.0.
+- Comprobado en producción con un navegador de Playwright sin datos: `https://libotown.es/` enseña la web y la dirección se queda
+  en la raíz; «Entrar en Libotown» abre la app (sin `?entrar` en la dirección) y al recargar sigue la app; `/web/` a mano abre la
+  web; sin errores de consola. `www.libotown.es` y la dirección de antes siguen con su 308 a libotown.es. Capturas en
+  `qa-report/web/produccion-*.png`.
+- Sin probar en móviles reales: quien ya tenga la app (Francisco y su pareja) debería seguir entrando directo; si alguna vez ven la
+  web en libotown.es, «Entrar» les devuelve a la app y su biblioteca sigue ahí (no se borra nada).
 
 ### 2026-11-26 · 1.146.0, la web en la raíz (bloque 2) · sin commit (Claude)
 
