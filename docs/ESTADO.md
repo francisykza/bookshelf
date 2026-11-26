@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Aprobada y en commit, publicándose: 1.150.1** (26-11-2026, §150; Francisco: «Sí, commit y publicar»): Olmo, el búho librero que sustituye a Pilar con la
+- **Publicada en producción: 1.150.1** (26-11-2026, §150; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de
+  `0a64772` a `d6fd931` y libotown.es sirve v1.150.1): Olmo, el búho librero que sustituye a Pilar con la
   suscripción (bloque 1, aprobado por Francisco: «Sí, sigue con la guía»), y la guía del café en menús y botones, con Olmo o
   con Pilar (bloque 2, §150.6, aprobado con «Sí, commit y publicar»). Las cuentas de `cafe_probadores` lo ven en vista previa. Sin
   migración. Ver la bitácora.
@@ -546,6 +547,14 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.150.1 a producción (Claude)
+
+- Francisco: «Sí, commit y publicar». `main` avanzó sin forzar (de `0a64772` a `d6fd931`); `/sw.js` de producción sirve v1.150.1,
+  el trozo del edificio trae la guía del café («Los botones de la casa», «Gracias, Olmo») y la dirección de antes sigue con su 308.
+  Sin migración.
+- **No se ha recorrido el café en producción** (hace falta una cuenta y aquí no se inicia sesión). Sin probar en móviles reales.
+  Con las cuentas de `cafe_probadores`, Olmo sale en cuanto el café carga su jornada.
 
 ### 2026-11-26 · 1.150.1, la guía del café en sus menús y botones: bloque 2 de Olmo (Claude)
 
