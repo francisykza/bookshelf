@@ -41,7 +41,7 @@ function Corazon() {
 }
 
 /** Dónde poner la tarjeta de un paso: junto a su control (arriba si cabe, si no debajo), siempre dentro del contenedor. */
-function colocar(caja, objetivo, tarjeta) {
+export function colocar(caja, objetivo, tarjeta) {
   const ancho = Math.min(tarjeta.w, caja.w - MARGEN * 2);
   if (!objetivo) return { x: (caja.w - ancho) / 2, y: Math.max(MARGEN, (caja.h - tarjeta.h) / 2 - 40), ancho, arriba: true };
   const cx = objetivo.x + objetivo.w / 2;
@@ -93,13 +93,13 @@ function ListaLibo({ avisos, sugerencia, onAviso, onSugerencia }) {
   );
 }
 
-function rectEn(caja, el) {
+export function rectEn(caja, el) {
   const r = el.getBoundingClientRect();
   return { x: r.left - caja.left, y: r.top - caja.top, w: r.width, h: r.height };
 }
 
 /** La parte visible del contenedor (sin su borde): la guía se dibuja ahí, aunque el panel tenga desplazamiento. */
-function cajaDe(cont) {
+export function cajaDe(cont) {
   const cr = cont.getBoundingClientRect();
   return { left: cr.left + cont.clientLeft, top: cr.top + cont.clientTop, w: cont.clientWidth || cr.width, h: cont.clientHeight || cr.height };
 }
@@ -108,7 +108,7 @@ function cajaDe(cont) {
  * El control de un paso, solo si se ve (la calle se puede girar y un botón puede quedar fuera de la pantalla). `ancla` puede
  * ser una lista: vale el primero que se vea (p. ej. la ventana de un vecino y, si no hay, una puerta libre).
  */
-function anclaVisible(cont, ancla) {
+export function anclaVisible(cont, ancla) {
   const caja = cajaDe(cont);
   for (const sel of [ancla].flat()) {
     const el = cont.querySelector(sel);

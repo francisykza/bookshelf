@@ -8,8 +8,9 @@ import { GESTOS, AYUDA_NIVELES, AYUDA_PARADO_MS, crearGesto, ladoNota, verAyuda 
 import { TAZAS_MAX, TAZAS_SACO, sacoListo, tuesteAbierto, umbralHito } from './cafeNiveles';
 import { crearSfxBarra } from './cafeSfx';
 import { errorCafe, recogerSaco } from './cafeService';
-import { PILAR } from './cafeIconos';
+
 import { PixelArt } from './PixelArt';
+import { anfitrion } from './cafePersonaje';
 import { Pista } from './Atender';
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -249,11 +250,11 @@ export function Tostadero({ escena, local, dia, soundOn = false, ayudas = 'auto'
         data-ayuda={ayuda ? 'true' : undefined}
       >
         <span className="cf3-quien" aria-hidden="true">
-          {fase === 'tirar' ? 'El tostador' : 'Pilar'}
+          {fase === 'tirar' ? 'El tostador' : anfitrion().nombre}
         </span>
         <div className="cf3-caja">
           <span className="cf3-retrato">
-            <PixelArt icono={PILAR} />
+            <PixelArt icono={anfitrion().retrato()} />
           </span>
           <p className="cf3-dice" aria-live="polite">
             {fase === 'tirar' ? (
@@ -263,7 +264,7 @@ export function Tostadero({ escena, local, dia, soundOn = false, ayudas = 'auto'
               </>
             ) : (
               <>
-                <span className="px-sr">Pilar: </span>
+                <span className="px-sr">{anfitrion().nombre}: </span>
                 {texto}
               </>
             )}

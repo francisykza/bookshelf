@@ -45,7 +45,7 @@ export function sessionScript(user) {
   const exp = Math.floor(Date.now() / 1000) + 3600 * 24;
   const token = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: user.id, email: user.email, role: 'authenticated', aud: 'authenticated', exp })}.firma-de-prueba`;
   const session = { access_token: token, refresh_token: 'refresco-de-prueba', token_type: 'bearer', expires_in: 86400, expires_at: exp, user: { id: user.id, aud: 'authenticated', role: 'authenticated', email: user.email, app_metadata: {}, user_metadata: {} } };
-  return `localStorage.setItem('bookshelf:auth', ${JSON.stringify(JSON.stringify(session))}); localStorage.setItem('bookshelf_onboarding_done', 'true'); localStorage.setItem('bookshelf:libo', '["hola","bienvenida","edificio","tu-piso","cafe","hotel","comunidad"]'); localStorage.setItem('bookshelf:libo-asomo', '9999-12-31');`;
+  return `localStorage.setItem('bookshelf:auth', ${JSON.stringify(JSON.stringify(session))}); localStorage.setItem('bookshelf_onboarding_done', 'true'); localStorage.setItem('bookshelf:libo', '["hola","bienvenida","edificio","tu-piso","cafe","hotel","comunidad"]'); localStorage.setItem('bookshelf:libo-asomo', '9999-12-31'); localStorage.setItem('bookshelf:guia-cafe', '["local:*","decorar:*","libros:*","ranking:*","cuaderno:*"]');`;
 }
 
 const DEFAULTS = {

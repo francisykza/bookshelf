@@ -1,6 +1,7 @@
 // Libo, el gato guía (docs/qa/libo.md). Reglas puras, sin React: su modo y los capítulos que ya has visto. Se guardan en
 // los ajustes de la biblioteca (`settings.libo`), así viajan con tu cuenta sin migración nueva.
 // Libo no es un chat ni una IA: todo lo que dice está escrito aquí, a mano.
+import { conOlmo } from '../../domain/suscripcion';
 
 /** Cómo se porta Libo (se elige en «Tu cuenta»). */
 export const MODOS = Object.freeze({
@@ -151,7 +152,7 @@ export const EDIFICIO = Object.freeze([
     id: 'cafe',
     ancla: '.ed-shop',
     titulo: 'El café-librería',
-    texto: () => 'El bajo es tuyo: un café-librería que abres, decoras y haces crecer con Pilar, la camarera. Allí sirves cafés y recomiendas libros.',
+    texto: () => `El bajo es tuyo: un café-librería que abres, decoras y haces crecer con ${conOlmo() ? 'Olmo, el búho librero' : 'Pilar, la camarera'}. Allí sirves cafés y recomiendas libros.`,
   },
   {
     id: 'limusina',
@@ -233,8 +234,14 @@ export const CAFE = Object.freeze([
   {
     id: 'pilar',
     ancla: '.cf3-franja',
-    titulo: 'Pilar',
-    texto: () => 'Pilar es la camarera y quien más sabe de esto. A partir de aquí te lo explica ella, paso a paso.',
+    // 1.150: con la suscripción (o en vista previa), quien atiende es Olmo, el búho librero
+    get titulo() {
+      return conOlmo() ? 'Olmo' : 'Pilar';
+    },
+    texto: () =>
+      conOlmo()
+        ? 'Olmo es el búho librero y quien más sabe de esto. A partir de aquí te lo explica él, paso a paso y sin prisa.'
+        : 'Pilar es la camarera y quien más sabe de esto. A partir de aquí te lo explica ella, paso a paso.',
   },
   {
     id: 'fin',
@@ -321,7 +328,9 @@ export const SALUDOS = Object.freeze({
   piso: 'Miau. ¿Repasamos tu habitación?',
   edificio: 'Miau. ¿Te recuerdo dónde está cada cosa del edificio?',
   'tu-piso': 'Miau. Tu piso, tal como lo ven tus vecinos. ¿Lo repasamos?',
-  cafe: 'Aquí manda Pilar: ella te explica la barra y los libros. ¿Repasamos lo básico del café?',
+  get cafe() {
+    return conOlmo() ? 'Aquí manda Olmo: él te explica la barra y los libros. ¿Repasamos lo básico del café?' : 'Aquí manda Pilar: ella te explica la barra y los libros. ¿Repasamos lo básico del café?';
+  },
   hotel: 'Miau. ¿Te recuerdo qué hay en el hotel?',
   comunidad: 'Miau. ¿Repasamos el cuaderno de la comunidad?',
   'comunidad-off': 'Hola, soy Libo. Cuando actives la comunidad, te enseño este cuaderno. Tu biblioteca funciona igual sin ella.',

@@ -21,6 +21,7 @@ import { crearSfxBarra } from './cafeSfx';
 import { GRANO } from './cafeIconos';
 import { delCatalogo } from './cafeCatalogoLibros';
 import { PixelArt } from './PixelArt';
+import { anfitrion } from './cafePersonaje';
 
 const rgb = (c) => `rgb(${c[0]} ${c[1]} ${c[2]})`;
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -417,7 +418,7 @@ export function LibrosCafe({ estado, titulos, tuyos = [], granos, hoja: hojaInic
             </span>
           </section>
           <p className="cf3-balda__ayuda cf3-libros__pilar">
-            <span className="cf3-libros__quien">Pilar</span>
+            <span className="cf3-libros__quien">{anfitrion().nombre}</span>
             {pilarDice({ enCaja: enLaCaja.length, enBalda: enLaBalda.length, libres, recien: enLaCaja.some((x) => nuevos.includes(x.clave)) && !enLaBalda.length })}
           </p>
           {enLaCaja.length > 0 && libres > 0 && (

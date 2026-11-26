@@ -18,3 +18,17 @@ export const esSuscriptor = () => estado.suscriptor === true;
 export function fijarSuscripcion(suscriptor) {
   estado = { suscriptor: suscriptor === true };
 }
+
+// 1.150 · Olmo, el búho librero (decisión de Francisco, 26-11-2026): con la suscripción, Olmo atiende el café en lugar de Pilar.
+// Mientras la suscripción no existe, las cuentas de `cafe_probadores` (Francisco y su pareja) lo ven en vista previa: el
+// servidor ya dice quién es probador (`cafe_jornada()` devuelve su jornada de prueba), así que no hace falta otra migración.
+// La vista previa solo cambia lo que se ve: los precios de suscriptor siguen dependiendo de `esSuscriptor()`.
+let previa = false;
+
+/** Apunta si quien usa la app ve a Olmo en vista previa (lo llama el café al saber si es una cuenta de pruebas). */
+export function fijarVistaPrevia(si) {
+  previa = si === true;
+}
+
+/** ¿Atiende Olmo el café? Con la suscripción o en vista previa; si no, Pilar. */
+export const conOlmo = () => esSuscriptor() || previa;

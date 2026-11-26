@@ -48,8 +48,9 @@ import {
 import { GESTOS_RECETA, crearGestoObrador, trazoPilar } from './cafeObradorGestos';
 import { crearSfxBarra } from './cafeSfx';
 import { abrirObrador, errorCafe, hornear, hornearPilar, mejorarObrador, reposarMasa, sacarHornada } from './cafeService';
-import { PILAR } from './cafeIconos';
+
 import { PixelArt } from './PixelArt';
+import { anfitrion, conQuien } from './cafePersonaje';
 import { Pista } from './Pista';
 import './cafeObrador.css';
 
@@ -693,12 +694,12 @@ export function Obrador({ escena, obrador, nivel = 4, soundOn = false, ayudas = 
                     )}
                     <div className="cf3-papeleta__maestria">
                       <Maestria n={maestria} />
-                      <span>{faltan == null ? 'Pilar la hace de memoria.' : `${faltan === 1 ? 'Una hornada buena más' : `${faltan} hornadas buenas más`}: ${PREMIO_MAESTRIA[maestria].toLowerCase()}.`}</span>
+                      <span>{faltan == null ? `${anfitrion().nombre} la hace de memoria.` : `${faltan === 1 ? 'Una hornada buena más' : `${faltan} hornadas buenas más`}: ${conQuien(PREMIO_MAESTRIA[maestria]).toLowerCase()}.`}</span>
                     </div>
                     <div className="cf3-papeleta__botones">
                       {maestria >= 3 && !(r.noche && fasePan === 'reposa') && (
                         <button type="button" className="cf3-btn cf3-btn--suave cf3-papeleta__pilar" disabled={!puedeElegir(r.id)} onClick={() => elegir(r.id, true)}>
-                          {r.noche && fasePan === 'amasar' ? 'Que lo amase Pilar' : 'Que lo hornee Pilar'}
+                          {r.noche && fasePan === 'amasar' ? `Que lo amase ${anfitrion().nombre}` : `Que lo hornee ${anfitrion().nombre}`}
                         </button>
                       )}
                       <button type="button" className="cf3-btn cf3-btn--verde cf3-papeleta__hornear" disabled={!puedeElegir(r.id)} onClick={() => elegir(r.id)}>
@@ -749,10 +750,10 @@ export function Obrador({ escena, obrador, nivel = 4, soundOn = false, ayudas = 
                         ))}
                       </span>
                     </p>
-                    <p className="cf3-mejora__se">{ahoraM.se}</p>
+                    <p className="cf3-mejora__se">{conQuien(ahoraM.se)}</p>
                     {sig ? (
                       <p className="cf3-mejora__sig">
-                        Después, <b>{sig.nombre.toLowerCase()}</b>: {sig.se.charAt(0).toLowerCase() + sig.se.slice(1)}.
+                        Después, <b>{sig.nombre.toLowerCase()}</b>: {conQuien(sig.se).charAt(0).toLowerCase() + conQuien(sig.se).slice(1)}.
                       </p>
                     ) : (
                       <p className="cf3-mejora__sig">Ya no se puede mejorar más.</p>
@@ -791,14 +792,14 @@ export function Obrador({ escena, obrador, nivel = 4, soundOn = false, ayudas = 
             </div>
             <ul className="cf3-papeleta__datos cf3-papeleta__dado" aria-label="Lo que te ha dado">
               <li>En la vitrina caben {obrador?.cabe ?? 12}</li>
-              <li>Pilar vende {obrador?.cupo ?? 4} al día en el mostrador</li>
+              <li>{anfitrion().nombre} vende {obrador?.cupo ?? 4} al día en el mostrador</li>
               {(obrador?.mostrador?.piezas ?? 0) > 0 && (
                 <li>
                   Ha vendido {obrador.mostrador.piezas} por {obrador.mostrador.granos} granos
                 </li>
               )}
               {(obrador?.dado?.horno ?? 0) > 0 && <li>{obrador.dado.horno} hornadas a la vez gracias al horno</li>}
-              {(obrador?.dado?.pilar ?? 0) > 0 && <li>{obrador.dado.pilar} hornadas de Pilar</li>}
+              {(obrador?.dado?.pilar ?? 0) > 0 && <li>{obrador.dado.pilar} hornadas de {anfitrion().nombre}</li>}
             </ul>
           </li>
           )}
@@ -875,14 +876,14 @@ export function Obrador({ escena, obrador, nivel = 4, soundOn = false, ayudas = 
   else if (def) texto = reduced() ? `${def.orden}. Un toque basta.` : `${def.orden}.`;
   const quien =
     pilarHace && (fase === 'gesto' || fase === 'meter')
-      ? 'Pilar'
+      ? anfitrion().nombre
       : fase === 'gesto'
         ? r?.nombre
         : fase === 'meter' || fase === 'horneando' || fase === 'sacar'
           ? alFogon
             ? 'El fogón'
             : 'El horno'
-          : 'Pilar';
+          : anfitrion().nombre;
   const dicePilar = !conGesto;
 
   return (
@@ -944,10 +945,10 @@ export function Obrador({ escena, obrador, nivel = 4, soundOn = false, ayudas = 
         </span>
         <div className="cf3-caja">
           <span className="cf3-retrato">
-            <PixelArt icono={PILAR} />
+            <PixelArt icono={anfitrion().retrato()} />
           </span>
           <p className="cf3-dice" aria-live="polite">
-            {dicePilar && <span className="px-sr">Pilar: </span>}
+            {dicePilar && <span className="px-sr">{anfitrion().nombre}: </span>}
             {texto}
             {conGesto && <span className="px-sr"> {def.ayuda}</span>}
           </p>

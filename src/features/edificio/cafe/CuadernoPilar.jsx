@@ -5,7 +5,8 @@
 // hucha, en cuántos días se paga sola. Al encargar, el sello de «¡Apuntado!».
 import { useState } from 'react';
 import { PixelArt } from './PixelArt';
-import { CAJA, GRANO, HUCHA, PILAR, PIZARRA } from './cafeIconos';
+import { anfitrion, conQuien } from './cafePersonaje';
+import { CAJA, GRANO, HUCHA, PIZARRA } from './cafeIconos';
 import { GRADOS_TOTAL, TAREAS, estadoTarea, gradosHechos } from './cafeCuaderno';
 import { errorCafe, mejorarPilar } from './cafeService';
 import './cafeCuaderno.css';
@@ -36,13 +37,13 @@ export function CuadernoPilar({ local, onCambio, onCerrar, sfx = null }) {
   };
 
   return (
-    <div className="cf3-balda cf3-cuaderno" role="region" aria-label="El cuaderno de Pilar">
+    <div className="cf3-balda cf3-cuaderno" role="region" aria-label={`El cuaderno de ${anfitrion().nombre}`}>
       <div className="cf3-cuaderno__cabeza">
         <span className="cf3-cuaderno__pilar" aria-hidden="true">
-          <PixelArt icono={PILAR} />
+          <PixelArt icono={anfitrion().retrato('lee')} />
         </span>
         <div className="cf3-cuaderno__titulos">
-          <h2 className="cf3-cuaderno__titulo">El cuaderno de Pilar</h2>
+          <h2 className="cf3-cuaderno__titulo">El cuaderno de {anfitrion().nombre}</h2>
           {pilar && (
             <p className="cf3-cuaderno__marcador" aria-label={`Llevas ${hechos} de ${GRADOS_TOTAL} encargos`}>
               <span className="cf3-cuaderno__barra" aria-hidden="true">
@@ -95,11 +96,11 @@ export function CuadernoPilar({ local, onCambio, onCerrar, sfx = null }) {
                       ))}
                     </ol>
                     <p className="cf3-cuaderno__efecto">
-                      {e.actual ? <strong>Ahora: {e.actual.efecto}.</strong> : null}
-                      {e.siguiente ? ` ${e.actual ? 'Siguiente' : 'Con ella'}: ${e.siguiente.efecto}.` : ''}
+                      {e.actual ? <strong>Ahora: {conQuien(e.actual.efecto)}.</strong> : null}
+                      {e.siguiente ? ` ${e.actual ? 'Siguiente' : 'Con ella'}: ${conQuien(e.siguiente.efecto)}.` : ''}
                     </p>
                     {e.seaPagaEn && e.falta !== 'hecho' && <p className="cf3-cuaderno__paga">Se paga sola en {e.seaPagaEn} días; luego, todo es ganancia.</p>}
-                    <p className="cf3-cuaderno__detalle">{t.nota}</p>
+                    <p className="cf3-cuaderno__detalle">{conQuien(t.nota)}</p>
                     {t.id === 'hucha' && e.grado > 0 && <p className="cf3-cuaderno__detalle">Ahora guarda {pilar.huchaLista} granos.</p>}
                     {dado && (
                       <p className="cf3-cuaderno__dado">

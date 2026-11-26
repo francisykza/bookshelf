@@ -433,6 +433,13 @@ const SONIDOS = {
       tono(b, { f, a: f * 0.96, tipo: 'triangle', pico: 0.035, ataque: 0.015, caida: 0.06, d });
     });
   },
+  /** 1.150 · Hablar con Olmo: un «hu-húu» de búho, bajo y redondo (dos notas que caen un poco, la segunda más larga). */
+  olmo: (b) => {
+    const k = 0.98 + Math.random() * 0.04;
+    tono(b, { f: 392 * k, a: 370 * k, tipo: 'sine', pico: 0.05, ataque: 0.03, caida: 0.14 });
+    tono(b, { f: 440 * k, a: 392 * k, tipo: 'sine', pico: 0.055, ataque: 0.05, caida: 0.34, d: 0.2 });
+    tono(b, { f: 880 * k, a: 784 * k, tipo: 'triangle', pico: 0.008, ataque: 0.05, caida: 0.3, d: 0.2 });
+  },
   /** Abrir la pizarra: la tiza que raya un poco. */
   tiza: (b) => {
     for (let k = 0; k < 3; k += 1) ruido(b, { f: 4600 + k * 400, q: 3, pico: 0.035, ataque: 0.01, caida: 0.05, d: k * 0.07 });

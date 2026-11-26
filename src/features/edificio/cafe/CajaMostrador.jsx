@@ -9,8 +9,9 @@ import { CAJON, CUPO_MOSTRADOR, PILAR_MEJORAS, enVitrina, fraseMostrador } from 
 import { crearGestoObrador } from './cafeObradorGestos';
 import { crearSfxBarra } from './cafeSfx';
 import { cobrarMostrador, errorCafe } from './cafeService';
-import { PILAR } from './cafeIconos';
+
 import { PixelArt } from './PixelArt';
+import { anfitrion } from './cafePersonaje';
 import { Pista } from './Pista';
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -210,10 +211,10 @@ export function CajaMostrador({ escena, obrador, dia, soundOn = false, ayudas = 
         </span>
         <div className="cf3-caja">
           <span className="cf3-retrato">
-            <PixelArt icono={PILAR} />
+            <PixelArt icono={anfitrion().retrato()} />
           </span>
           <p className="cf3-dice" aria-live="polite">
-            <span className="px-sr">Pilar: </span>
+            <span className="px-sr">{anfitrion().nombre}: </span>
             {texto}
             {conGesto && <span className="px-sr"> {CAJON.ayuda}</span>}
           </p>

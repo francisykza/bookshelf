@@ -354,6 +354,21 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       **El horno avisa al terminar** (Francisco, 25-11-2026: «una notificación cuando se terminen, o un indicador visual claro»;
       1.145.1, §145.7): mientras hay algo dentro, el horno del HUD (sin números) y, al terminar, la campanilla y una nota de papel
       estés donde estés del café, que nunca tapa la comanda ni las herramientas. No quitarlo.
+    - **Olmo, el personaje de suscriptor** (Francisco, 26-11-2026: «Empieza con el personaje de suscriptor que sustituye a
+      Pilar, y más allá de las funciones, haz mucho hincapié en que sea muy característico y atractivo para el público, y que en
+      la cafetería también tenga una especie de guía como libo en los menús y botones»). Decisiones del mismo día (las cuatro
+      recomendadas):
+      - **Olmo**, un búho librero, grande y redondo, con gafas de alambre, chaleco de punto mostaza y bufanda de cuadros; sabio
+        y tranquilo. Con la suscripción ocupa el sitio de Pilar en el café (hace lo que hace ella).
+      - **Guía del café en menús y botones para todos**, cada uno con la suya: con la suscripción guía Olmo y sin ella, Pilar
+        con su retrato.
+      - **Vista previa** para las cuentas de `cafe_probadores` (Francisco y su pareja): ven a Olmo y su guía como si fueran
+        suscriptoras, sin precios de suscriptor. La da el servidor (migración nueva, la aplica él).
+      - **Lo diseña Claude en 3D**, original, con el motor de la casa (como el mapache del casino); sus retratos y poses de la
+        guía salen del mismo modelo. Nunca parecido a búhos de otras obras.
+      - Por bloques con evidencias: 1) Olmo en el café; 2) la guía en menús y botones (1.150.1, SPEC §150.6). En las e2e con
+        cuenta simulada, el simulador da la guía del café por vista (`bookshelf:guia-cafe`), como a Libo; las pruebas de la
+        guía quitan esa marca.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la

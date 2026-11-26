@@ -40,6 +40,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { createRaster, hash, noise, rgb } from '../../minigames/libreria-puerto/raster';
 import { COLORES_PELO, DEFAULT_AVATAR, PIELES, actorBoxes } from '../actor';
+import { OLMO, poseOlmo } from './olmo3d';
 import { INFLUENCERS, NIVELES_INFLUENCER } from './cafeInfluencers';
 import {
   ANTE_PILAR,
@@ -1465,7 +1466,14 @@ function jarrita(s, x, y, tipo, { xf = null, espuma = 0, g = 0.86 } = {}) {
  */
 const PIEL_PILAR = [236, 192, 152];
 const MANGA_PILAR = [204, 158, 70];
+/**
+ * 1.150: ¿atiende Olmo? Entonces lo que agarra los mangos es la punta de su ala: plumas claras en el puño, el ala parda en vez
+ * de la manga (su chaleco no tiene mangas) y dos primarias oscuras que asoman. Lo fija `setAnfitrion`.
+ */
+let manoOlmo = false;
 function manoPilar(s, [x, y, z], { xf = null, g = 0.86, hacia = [0.8, 0.22, 0.55], largo = 0.42, manga = 0.15 } = {}) {
+  const PIEL = manoOlmo ? OLMO.colores.plumaC : PIEL_PILAR;
+  const MANGA = manoOlmo ? OLMO.colores.pluma : MANGA_PILAR;
   const q = xf ? xf([x, z, y]) : [x, z, y];
   const [hx, hy, hz] = [q[0], q[2], q[1]];
   // El hombro: a medio camino entre el mango quieto y el que se mueve, hacia su lado de la barra (sobre todo detrás, que es
@@ -1480,14 +1488,18 @@ function manoPilar(s, [x, y, z], { xf = null, g = 0.86, hacia = [0.8, 0.22, 0.55
   const xfB = giro([hx, hy, hz], 'y', Math.acos(Math.max(-1, Math.min(1, dz / L))), giro([hx, hy, hz], 'z', Math.atan2(dy, dx)));
   const o = { g, xf: xfB };
   const fin = Math.min(L, manga);
-  pushBox(s, [hx - 0.013, hy - 0.013, hz + 0.012, hx + 0.013, hy + 0.013, hz + 0.05], PIEL_PILAR, o);
-  pushBox(s, [hx - 0.022, hy - 0.022, hz + 0.045, hx + 0.022, hy + 0.022, hz + 0.075], OSCURO_DE(MANGA_PILAR, 0.8), o);
-  pushBox(s, [hx - 0.02, hy - 0.02, hz + 0.075, hx + 0.02, hy + 0.02, hz + fin], MANGA_PILAR, o);
+  pushBox(s, [hx - 0.013, hy - 0.013, hz + 0.012, hx + 0.013, hy + 0.013, hz + 0.05], PIEL, o);
+  pushBox(s, [hx - 0.022, hy - 0.022, hz + 0.045, hx + 0.022, hy + 0.022, hz + 0.075], manoOlmo ? OLMO.colores.plumaO : OSCURO_DE(MANGA_PILAR, 0.8), o);
+  pushBox(s, [hx - 0.02, hy - 0.02, hz + 0.075, hx + 0.02, hy + 0.02, hz + fin], MANGA, o);
   // El puño, cerrado sobre el mango, con la línea de los nudillos y el pulgar
   const oh = { g };
-  pushBox(s, [hx - 0.02, hy - 0.022, hz - 0.016, hx + 0.02, hy + 0.022, hz + 0.02], PIEL_PILAR, oh);
-  pushBox(s, [hx - 0.023, hy - 0.02, hz + 0.006, hx - 0.018, hy + 0.02, hz + 0.016], OSCURO_DE(PIEL_PILAR, 0.84), oh);
-  pushBox(s, [hx - 0.025, hy - 0.024, hz - 0.01, hx - 0.014, hy - 0.012, hz + 0.004], CLARO_DE(PIEL_PILAR, 8), oh);
+  pushBox(s, [hx - 0.02, hy - 0.022, hz - 0.016, hx + 0.02, hy + 0.022, hz + 0.02], PIEL, oh);
+  pushBox(s, [hx - 0.023, hy - 0.02, hz + 0.006, hx - 0.018, hy + 0.02, hz + 0.016], OSCURO_DE(PIEL, 0.84), oh);
+  pushBox(s, [hx - 0.025, hy - 0.024, hz - 0.01, hx - 0.014, hy - 0.012, hz + 0.004], CLARO_DE(PIEL, 8), oh);
+  if (manoOlmo) {
+    pushBox(s, [hx - 0.026, hy - 0.02, hz - 0.034, hx - 0.012, hy - 0.004, hz - 0.012], OLMO.colores.plumaO, oh);
+    pushBox(s, [hx - 0.026, hy + 0.004, hz - 0.03, hx - 0.012, hy + 0.02, hz - 0.012], OLMO.colores.plumaO, oh);
+  }
 }
 
 /**
@@ -5463,12 +5475,68 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     return m;
   })();
   // Pilar, detrás del mostrador, mirando al local (−x)
-  {
+  const figuraPilar = (() => {
     const m = new Mesh(own(geometryOf(figuraKit(PILAR_ASPECTO, glowAt(PILAR.x, PILAR.y, 1.5) + 0.08))), flat);
     m.position.set(PILAR.x, 0, PILAR.y);
     m.rotation.y = -Math.PI / 2;
     scene.add(m);
-  }
+    return m;
+  })();
+  // 1.150: Olmo, el búho librero, en el mismo sitio (con la suscripción o en vista previa; `setAnfitrion`). Hecho de piezas que
+  // se mueven: la cabeza (gira y se ladea desde el cuello, con sus párpados), las dos alas (desde el hombro) y el cuerpo (que
+  // respira y se ahueca). Cada pieza, con su pivote en el origen.
+  const olmo = (() => {
+    const luz = glowAt(PILAR.x, PILAR.y, 1.5) + 0.1;
+    const malla = (cajas, [ox, oy, oz] = [0, 0, 0]) => {
+      const k = kit();
+      for (const { b, c } of cajas) pushBox(k, [b[0] - ox, b[1] - oy, b[2] - oz, b[3] - ox, b[4] - oy, b[5] - oz], c, { g: luz });
+      return new Mesh(own(geometryOf(k)), flat);
+    };
+    // Del mundo de la app (x, y, z arriba) a Three (x, z, y)
+    const enThree = (obj, [x, y, z]) => obj.position.set(x, z, y);
+    const raiz = new Group();
+    // De pie en su taburete bajo, para que asome el chaleco por encima de la barra
+    raiz.position.set(PILAR.x, OLMO.taburete, PILAR.y);
+    raiz.rotation.y = -Math.PI / 2;
+    raiz.visible = false;
+    const cuerpo = malla(OLMO.cuerpo);
+    raiz.add(cuerpo);
+    const cabeza = new Group();
+    enThree(cabeza, OLMO.pivoteCabeza);
+    cabeza.add(malla(OLMO.cabeza, OLMO.pivoteCabeza));
+    const parpados = OLMO.parpados.map((p) => {
+      const m = malla(p, OLMO.pivoteCabeza);
+      m.visible = false;
+      cabeza.add(m);
+      return m;
+    });
+    raiz.add(cabeza);
+    const [px, py, pz] = OLMO.pivoteAla;
+    const alas = OLMO.alas.map((ala, i) => {
+      const g = new Group();
+      const piv = [i === 0 ? px : -px, py, pz];
+      enThree(g, piv);
+      g.add(malla(ala, piv));
+      raiz.add(g);
+      return g;
+    });
+    scene.add(raiz);
+    return { raiz, cuerpo, cabeza, parpados, alas, prepara: false };
+  })();
+  /** Mueve a Olmo (si se ve) al instante `t` (s): respira, parpadea, gira la cabeza, se ahueca y mueve las alas al preparar. */
+  const moverOlmo = (t, quieto) => {
+    if (!olmo.raiz.visible) return;
+    const p = poseOlmo(t, { quieto, prepara: olmo.prepara });
+    // La cabeza gira sobre la vertical (y de Three) y se ladea sobre lo que mira (+y de la app, z de Three)
+    olmo.cabeza.rotation.set(0, p.giro, p.ladeo, 'YXZ');
+    olmo.cabeza.position.y = OLMO.pivoteCabeza[2] + p.respira * 0.006;
+    olmo.parpados.forEach((m, i) => (m.visible = p.parpados[i]));
+    // Las alas se abren hacia fuera (la derecha, hacia +x; la izquierda, hacia −x)
+    olmo.alas[0].rotation.z = p.alas[0];
+    olmo.alas[1].rotation.z = -p.alas[1];
+    const hueco = 1 + p.esponja * 0.035 + p.respira * 0.006;
+    olmo.cuerpo.scale.set(hueco, 1 + p.respira * 0.004, hueco);
+  };
 
   // ── 1.133: el taller de la trastienda (nivel 3): la puerta baja de detrás de la barra y, aparte en el mundo, el cuarto de don
   // Celestino. `tall.est`, lo que se ve al trabajar (Taller.jsx): { vista ('entrada', 'tapa', 'titulo', 'lomo', 'pliego',
@@ -5826,6 +5894,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
   };
   const pintaVivo = (t) => {
     const quieto = reduced();
+    moverOlmo(t, quieto);
     paintLluvia(lluviaCanvas, t, quieto);
     lluvia.material.map.needsUpdate = true;
     moverMotas(quieto ? 0 : t);
@@ -6203,7 +6272,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
         : estado.inaugurado
         ? planta === 'bodega'
           ? `La bodega de ${estado.nombre ?? 'tu café'}, en el sótano. Arrastra o usa las flechas para mirar; toca el suelo para andar y la escalera para subir al café.`
-          : `${estado.nombre ?? 'Tu café'}, tu café-librería. Arrastra o usa las flechas para mirar; toca el suelo para andar y a Pilar, en el mostrador, para hablar con ella.${n >= 3 ? ' Detrás de la barra, una puerta baja lleva al taller de la trastienda.' : ''}${n >= 6 ? ' Detrás de la barra, la trampilla baja a la bodega.' : ''}`
+          : `${estado.nombre ?? 'Tu café'}, tu café-librería. Arrastra o usa las flechas para mirar; toca el suelo para andar y a ${manoOlmo ? 'Olmo' : 'Pilar'}, en el mostrador, para hablar con ${manoOlmo ? 'él' : 'ella'}.${n >= 3 ? ' Detrás de la barra, una puerta baja lleva al taller de la trastienda.' : ''}${n >= 6 ? ' Detrás de la barra, la trampilla baja a la bodega.' : ''}`
         : 'El bajo, vacío y en traspaso. Arrastra o usa las flechas para mirar; toca el suelo para andar y a Pilar, en el mostrador, para hablar con ella.',
     );
     montarClientes();
@@ -6987,6 +7056,21 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
      */
     vistaCerca: (tol = 0.05) =>
       barraT === 1 && Math.max(...vista.p.map((v, k) => Math.abs(v - vistaMeta.p[k])), ...vista.m.map((v, k) => Math.abs(v - vistaMeta.m[k]))) < tol,
+    /**
+     * 1.150: quién atiende detrás de la barra, 'pilar' u 'olmo' (con la suscripción o en vista previa). Cambia la figura y las
+     * manos que preparan, hornean y tuestan; lo demás es igual.
+     */
+    setAnfitrion(id = 'pilar') {
+      const conOlmo = id === 'olmo';
+      if (manoOlmo === conOlmo && olmo.raiz.visible === conOlmo) return;
+      manoOlmo = conOlmo;
+      olmo.raiz.visible = conOlmo;
+      figuraPilar.visible = !conOlmo;
+      moverOlmo((performance.now() - t0) / 1000, reduced());
+      invalidate();
+    },
+    /** Quién atiende ahora (para las pruebas). */
+    anfitrion: () => (olmo.raiz.visible ? 'olmo' : 'pilar'),
     /** Ir a un sitio ('pilar', 'cortina', 'escaparate' o 'entrada'). Promesa que acaba al llegar. */
     go(id) {
       if (id === 'entrada') return cambiarPlanta('calle').then(() => walkTo(INICIO.x, INICIO.y, { face: [INICIO.x + Math.sin(INICIO.yaw), INICIO.y + Math.cos(INICIO.yaw)] }));
@@ -7223,6 +7307,7 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
      */
     setBarra(est = {}) {
       barra = { ...barra, est };
+      olmo.prepara = Boolean(est.pilar);
       const e = ENFOQUES[est.enfoque] ?? ENFOQUES.general;
       vistaMeta = typeof e === 'function' ? e(est) : e;
       montarBarra();

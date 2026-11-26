@@ -1,6 +1,7 @@
 // El café-librería del bajo (1.120, SPEC §120): las llamadas al servidor (`20261210120000_cafe_local.sql`). Sin la
 // migración aplicada, `cargarCafe` devuelve null y el bajo sigue como en la 1.119 (el local en traspaso, sin Decorar).
 import { client, fail } from '../../social/services/community';
+import { anfitrion } from './cafePersonaje';
 import { CAFE_MUEBLES, cabe, deCasa, medidas } from './cafeCatalogo';
 import { encargoDe } from './cafeTaller';
 import { pilarDe } from './cafeCuaderno';
@@ -528,7 +529,7 @@ export function errorCafe(e) {
   const m = String(e?.message ?? e ?? '');
   if (/cafe:obrador_nivel/.test(m)) return 'Esa mejora se abre en un nivel más alto del café.';
   if (/cafe:obrador_mejora/.test(m)) return 'Ya está en su mejor grado.';
-  if (/cafe:maestria/.test(m)) return 'Pilar aún no domina esa receta.';
+  if (/cafe:maestria/.test(m)) return `${anfitrion().nombre} aún no domina esa receta.`;
   if (/cafe:obrador/.test(m)) return 'El obrador se abre en el nivel 4, con el ala lateral.';
   if (/cafe:hornadas/.test(m)) return 'Por hoy ya se ha horneado bastante. Mañana, más.';
   if (/cafe:horno/.test(m)) return 'El horno está lleno: saca antes lo que hay dentro.';
@@ -538,7 +539,7 @@ export function errorCafe(e) {
   if (/cafe:agotado/.test(m)) return 'Ya no queda de eso en la vitrina.';
   if (/cafe:comida/.test(m)) return 'Eso no es lo que pidió. Vuelve a entrar en el café.';
   if (/cafe:cuaderno_nivel/.test(m)) return 'Esa tarea se abre en un nivel más alto del café.';
-  if (/cafe:cuaderno/.test(m)) return 'Esa tarea ya la tiene Pilar en su mejor grado.';
+  if (/cafe:cuaderno/.test(m)) return `Esa tarea ya la tiene ${anfitrion().nombre} en su mejor grado.`;
   if (/cafe:tueste/.test(m)) return 'No te queda tueste de la casa: baja al tostadero a por el saco.';
   if (/cafe:saco/.test(m)) return 'Hoy ya recogiste el saco: mañana habrá otro en el tambor.';
   if (/cafe:tazas/.test(m)) return 'Ya tienes 99 tazas guardadas: sirve unas cuantas y vuelve a por el saco.';

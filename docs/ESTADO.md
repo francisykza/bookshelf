@@ -6,6 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Aprobada y en commit, publicándose: 1.150.1** (26-11-2026, §150; Francisco: «Sí, commit y publicar»): Olmo, el búho librero que sustituye a Pilar con la
+  suscripción (bloque 1, aprobado por Francisco: «Sí, sigue con la guía»), y la guía del café en menús y botones, con Olmo o
+  con Pilar (bloque 2, §150.6, aprobado con «Sí, commit y publicar»). Las cuentas de `cafe_probadores` lo ven en vista previa. Sin
+  migración. Ver la bitácora.
 - **Publicada en producción: 1.149.0** (26-11-2026, §149; Francisco: «Commit y publicar»; `main` avanzó sin forzar de
   `213f4c2` a `5f636b3` y libotown.es sirve v1.149.0): las colecciones del ala nueva del almacén y la colección premium, con
   el punto único de la suscripción. Migración `20261229120000_almacen_colecciones.sql` **aplicada** (26-11-2026). Cifras premium aprobadas
@@ -542,6 +546,47 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.150.1, la guía del café en sus menús y botones: bloque 2 de Olmo (Claude)
+
+- Francisco aprobó el bloque 1 («Sí, sigue con la guía»). Detalle en SPEC §150.6.
+- Hecho: la guía del café, para todo el mundo, la da quien atiende (Olmo con la suscripción o la vista previa, Pilar sin ella),
+  con su retrato, su pose y sus frases escritas a mano.
+  - Reglas en `cafe/cafeGuia.js` y la tarjeta en `cafe/GuiaCafe.jsx`, con las piezas de la guía de Libo (`anclaVisible`,
+    `cajaDe`, `rectEn` y `colocar`, ahora exportadas de `LiboRincon.jsx`).
+  - Capítulos: el local, Decorar, la balda de libros, el ranking y el cuaderno. Solo enseña lo que se ve, y lo nuevo, solo.
+  - Se abre sola después de que Libo presente el café y solo con Libo en «sugiere cosas». El retrato de la franja, con una
+    «?», la repasa.
+  - Lo visto va en `settings.guiaCafe` y en `bookshelf:guia-cafe` del dispositivo.
+- **Pruebas con cuenta simulada**: `mockSupabase.js` da ahora también la guía del café por vista (`bookshelf:guia-cafe`), como
+  hace con Libo. Una prueba nueva del café que quiera ver la guía tiene que quitar esa marca (como `v1150-cafe-guia`).
+- Pruebas: Vitest `cafe-guia` (6), `cafe-olmo` (10) y los de Libo (36); oxlint sin avisos nuevos; e2e `v1150-cafe-guia` a 360, 390 y 1440 (7 pasan) y su vídeo; repasadas a 390 `v1150-cafe-olmo`, `v1119`, `v1120`, `v1142`, `v1145-1`, `libo-edificio` y `libo-interfaz` (20 pasan; una de `libo-edificio`, «las hojas del cuaderno», falló una vez al recargar la página con `ERR_ABORTED` y pasó las dos veces al repetirla sola).
+- Sin probar en móviles reales ni en WebKit.
+- Francisco aprobó el bloque 2: «Sí, commit y publicar». Commit con los dos bloques; la publicación va en la entrada siguiente.
+
+### 2026-11-26 · 1.150.0, Olmo en el café: bloque 1 del personaje de suscriptor (Claude)
+
+- Encargo de Francisco: «el personaje de suscriptor que sustituye a Pilar… muy característico y atractivo para el público, y
+  que en la cafetería también tenga una especie de guía como Libo en los menús y botones». Decidió las cuatro opciones
+  recomendadas (están en CLAUDE.md). Detalle en SPEC §150.
+- Hecho (bloque 1): Olmo, un búho librero diseñado en 3D con las cajas de la casa (`cafe/olmo3d.js`).
+  - Lleva penachos, gafas de alambre, chaleco de punto mostaza, bufanda escocesa con un lápiz y alas en vez de manos.
+  - Está vivo en la barra: respira, parpadea, gira y ladea la cabeza y se ahueca.
+  - Su retrato de píxel sale del propio modelo, en cuatro poses.
+  - Tiene voz propia en los momentos de siempre, doce frases suyas al tocarle y un «hu-húu» de búho.
+  - Sustituye a Pilar en Atender, la caja, el cuaderno, los libros, el obrador, el tostadero, los avisos y los textos de Libo
+    (`cafe/cafePersonaje.js`).
+- La vista previa **no necesita migración**: `cafe_jornada()` ya solo responde a las cuentas de `cafe_probadores`. La app
+  llama a `fijarVistaPrevia` con eso. La vista previa no da precios de suscriptor (`esSuscriptor()` sigue en «no»).
+- El traspaso (antes de abrir el café) sigue siendo de Pilar. Libo nombra a Olmo solo después de haber entrado al café en esa
+  sesión, porque la vista previa se sabe al cargar el día.
+- Pruebas:
+  - Vitest `cafe-olmo` (10) y los de Libo (36);
+  - oxlint, solo con avisos que ya había;
+  - e2e `v1150-cafe-olmo` a 360, 390 y 1440 (7 pasan), con vídeo.
+- Evidencias en `qa-report/v1150/`: capturas `00` a `05` y `video/1150-olmo.webm`. Sin probar en móviles reales ni en
+  WebKit.
+- Aprobado por Francisco («Sí, sigue con la guía»); va en el mismo commit que el bloque 2.
 
 ### 2026-11-26 · 1.149.0 a producción (Claude)
 

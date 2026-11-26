@@ -4,6 +4,7 @@
 // solo una vez al día, al abrir la app o al volver a tu piso.
 import { dayKey, parseDay } from '../../domain/dates';
 import { liboDe } from './libo';
+import { conOlmo } from '../../domain/suscripcion';
 
 /** Días sin abrir un libro de «Leyendo» para preguntarte si sigues con él. */
 export const DIAS_PARADO = 21;
@@ -64,11 +65,11 @@ export function avisosDeLibo({ almacen = null, monitorVistos = [], cafe = null, 
     const hucha = cafe.hucha > 0 && ahora - cafe.t >= 86400000;
     const texto =
       clientes && hucha
-        ? 'Tu café tiene clientes esperando, y Pilar te ha guardado propinas en la hucha.'
+        ? `Tu café tiene clientes esperando, y ${conOlmo() ? 'Olmo' : 'Pilar'} te ha guardado propinas en la hucha.`
         : clientes
           ? 'Tu café tiene clientes esperando.'
           : hucha
-            ? 'Pilar te ha guardado propinas en la hucha del café.'
+            ? `${conOlmo() ? 'Olmo' : 'Pilar'} te ha guardado propinas en la hucha del café.`
             : null;
     if (texto) lista.push({ id: 'cafe', partes: [texto], ir: 'cafe', boton: 'Ir al café' });
   }

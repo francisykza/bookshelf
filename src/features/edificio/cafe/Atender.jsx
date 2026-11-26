@@ -28,7 +28,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { PARTES, RESENAS, comandaAcertijo, comandaClara, nombreGenero, nombreOpcion, opcionesDe } from './cafeClientes';
 import { AYUDA_NIVELES, AYUDA_PARADO_MS, ELIGE, ladoNota, ETAPAS, GESTOS, crearGesto, gestosDe, nombreEtapa, verAyuda, vistaTaza } from './cafeGestos';
 import { crearSfxBarra } from './cafeSfx';
-import { PILAR, retratoDe } from './cafeIconos';
+import { retratoDe } from './cafeIconos';
 import { errorCafe } from './cafeService';
 import { DOMINIO, comandaLibro, comandaLibroAcertijo, extensionDe, formaPorId, frasePedido, haciaDominio, pilarHaceEtapa, pilarPuede, preparaRecordado, recordarPrepara } from './cafeLibreria';
 import { BUCLE_PILAR, PILAR_MIRA_MS, duracionPilar, poseAuto, respiroPilar, sonidosEntre, tiempoPilar } from './cafePilar';
@@ -38,6 +38,7 @@ import { useLibreria } from './Libreria';
 import { useVitrina } from './Vitrina';
 import { Pista } from './Pista';
 import { PixelArt } from './PixelArt';
+import { anfitrion, conQuien } from './cafePersonaje';
 import { RelojArena } from './RelojArena';
 
 export { Pista };
@@ -665,7 +666,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
   }, [platoServido, escena, cliente.n]);
 
   // Mientras Pilar prepara, el retrato del cuadro es el suyo
-  const retrato =<PixelArt icono={pilarAhora ? PILAR : retratoDe(cliente.aspecto)} />;
+  const retrato =<PixelArt icono={pilarAhora ? anfitrion().retrato() : retratoDe(cliente.aspecto)} />;
   const pide = dado?.pide ?? cliente.pide;
   const enLibreria = paso === 'libreria';
   // 1.128 (Francisco, 13-11-2026: «la palanca se sigue tapando con las instrucciones» y, con el excéntrico, «tapan mucho más»):
@@ -772,7 +773,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
       )
     ) : pilarAhora ? (
       <>
-        <span className="px-sr">Pilar: </span>«Deja, que esto lo bordo yo.» <span className="cf3-dice__como">{nombreEtapa(etapa, receta)}…</span>
+        <span className="px-sr">{anfitrion().nombre}: </span>«{anfitrion().dice.bordo}» <span className="cf3-dice__como">{nombreEtapa(etapa, receta)}…</span>
       </>
     ) : eligiendo ? (
       corte > 0 ? (
@@ -814,16 +815,16 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
     extra = (
       <>
         {ofrecePilar && (
-          <div className="cf3-pilar" role="group" aria-label="Pilar te ofrece prepararla">
+          <div className="cf3-pilar" role="group" aria-label={`${anfitrion().nombre} te ofrece prepararla`}>
             <span className="cf3-pilar__retrato" aria-hidden="true">
-              <PixelArt icono={PILAR} />
+              <PixelArt icono={anfitrion().retrato('contento')} />
             </span>
             <p className="cf3-pilar__dice">
-              <span className="px-sr">Pilar: </span>«Esto ya lo bordas; si quieres, te lo preparo yo.»
+              <span className="px-sr">{anfitrion().nombre}: </span>«{anfitrion().dice.ofrece}»
             </p>
             <span className="cf3-pilar__botones">
               <button type="button" className="cf3-btn cf3-btn--verde" onClick={() => elegirPrepara('pilar')}>
-                Que lo prepare Pilar
+                Que lo prepare {anfitrion().nombre}
               </button>
               <button type="button" className="cf3-btn cf3-btn--suave" onClick={() => elegirPrepara('mano')}>
                 Lo hago yo
@@ -906,9 +907,9 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
             className="cf3-btn cf3-btn--suave cf3-btn--pilar"
             data-pilar={modoPilar}
             onClick={() => elegirPrepara(modoPilar === 'pilar' ? 'mano' : 'pilar')}
-            aria-label={modoPilar === 'pilar' ? 'Prepara Pilar. Cambiar a hacerlo a mano' : 'A mano. Cambiar a que lo prepare Pilar'}
+            aria-label={modoPilar === 'pilar' ? `Prepara ${anfitrion().nombre}. Cambiar a hacerlo a mano` : `A mano. Cambiar a que lo prepare ${anfitrion().nombre}`}
           >
-            {modoPilar === 'pilar' ? 'Lo hago yo' : 'Que lo prepare Pilar'}
+            {modoPilar === 'pilar' ? 'Lo hago yo' : `Que lo prepare ${anfitrion().nombre}`}
           </button>
         )}
         {gesto && reduced() && !pilarAhora && (
@@ -966,7 +967,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
   } else {
     const e = dado?.estrellas ?? 1;
     // 1.132: sin pizarra; la nota del habitual y la reseña dorada se ven aquí, en su bocadillo
-    const resena = cliente.habitual && dado?.frase != null ? ` Te dejo una nota: “${RESENAS[dado.frase] ?? ''}”` : '';
+    const resena = cliente.habitual && dado?.frase != null ? ` Te dejo una nota: “${conQuien(RESENAS[dado.frase] ?? '')}”` : '';
     const arte = hechos.verter?.arte;
     const piropo = arte === 'hoja' ? ' ¡Y qué hoja tan bonita!' : arte === 'corazon' ? ' ¡Un corazón en la espuma!' : '';
     const fueInf = inf && dado?.influencer ? dado.influencer : null;
@@ -1007,10 +1008,10 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
         {yaLaBordas && (
           <p className="cf3-pilar cf3-pilar--nota">
             <span className="cf3-pilar__retrato" aria-hidden="true">
-              <PixelArt icono={PILAR} />
+              <PixelArt icono={anfitrion().retrato('contento')} />
             </span>
             <span className="cf3-pilar__dice">
-              <span className="px-sr">Pilar: </span>«Esto ya lo bordas. La próxima vez, si quieres, te lo preparo yo.»
+              <span className="px-sr">{anfitrion().nombre}: </span>«{anfitrion().dice.ofreceProxima}»
             </span>
           </p>
         )}

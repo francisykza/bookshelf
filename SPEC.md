@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.149.0 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.150.1 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8356,3 +8356,152 @@ No borra ni cambia datos. Sin ella, el almacén enseña las habitaciones, pero e
   - `v1106` (el letrero del arco), `v1134` (40 en «Todo el almacén»), `v199` y `v1101`.
 
 Sin probar en móviles reales ni en WebKit.
+
+## 150. Olmo, el búho librero: el personaje de suscriptor del café (1.150.0)
+
+Encargo de Francisco del 26-11-2026: «Empieza con el personaje de suscriptor que sustituye a Pilar, y más allá de las funciones,
+haz mucho hincapié en que sea muy característico y atractivo para el público, y que en la cafetería también tenga una especie de
+guía como Libo en los menús y botones». Decisiones del mismo día (las cuatro recomendadas):
+
+- **Olmo**, un búho librero, sustituye a Pilar con la suscripción y hace todo lo que hace ella;
+- una **guía del café** en menús y botones para todo el mundo: Olmo con la suscripción y Pilar sin ella (bloque 2, aparte);
+- **vista previa** para las cuentas de `cafe_probadores`: ven a Olmo como si fueran suscriptoras, sin precios de suscriptor;
+- **lo diseña Claude en 3D**, con las cajas de la casa, como el mapache del casino; su retrato y sus poses salen del mismo
+  modelo, y no se parece a búhos de otras obras.
+
+Va por bloques con evidencias. Este es el bloque 1: Olmo en el café.
+
+### 150.1 Quién es Olmo
+
+- Un búho grande y redondo, con dos penachos de pluma y gafas redondas de alambre de bronce sobre unos ojos ámbar.
+- Lleva un chaleco de punto mostaza, con canalé y tres botones de madera, y una bufanda escocesa (roja, con franjas verdes y un
+  hilo amarillo) con un lápiz metido en el nudo. Tiene alas en vez de manos.
+- Es sabio y tranquilo: habla despacio, huele los libros, mide las cosas en páginas y suspira «hu-hum» cuando algo le gusta.
+- No lleva pajarita, ni birrete, ni monóculo: así no se parece a ningún búho de otra obra.
+- En la barra está de pie en un taburete bajo, para que el chaleco asome por encima del mostrador.
+
+### 150.2 El modelo y su retrato (`cafe/olmo3d.js`)
+
+- **Solo datos**, como `mapache3d.js`: cuerpo y cabeza redondos (rodajas de elipse), la cabeza con su pivote en el cuello, los
+  párpados, las dos alas con el pivote en el hombro, un ala levantada (para la guía) y un libro abierto.
+- **`poseOlmo(t)`**, cuando está quieto:
+  - respira;
+  - parpadea despacio, a veces dos veces;
+  - cada 15 s gira la cabeza a un lado y al otro, como los búhos, la ladea con curiosidad y se ahueca las plumas.
+- Cuando prepara un café, mueve las alas al trabajar. Con movimiento reducido no se mueve nada.
+- **`retratoOlmo(pose)`** saca el retrato de píxel (24 × 24, el formato de `PixelArt`) del propio modelo:
+  - se ve de frente;
+  - cada píxel toma la caja que está más delante, y las cajas finas ocupan al menos un píxel, así que las gafas se ven;
+  - lleva un contorno oscuro.
+- Las poses del retrato son `normal`, `contento` (ojos cerrados que sonríen), `apunta` (el ala levantada) y `lee` (con el
+  libro). Así el retrato y la figura de la barra son siempre el mismo Olmo.
+
+### 150.3 Quién atiende (`cafe/cafePersonaje.js` y `src/domain/suscripcion.js`)
+
+- **`conOlmo()`** devuelve `esSuscriptor() || vistaPrevia`, y **`anfitrion()`** da Olmo o Pilar con sus datos:
+  - el nombre, el pronombre y quién es;
+  - el sonido;
+  - el retrato;
+  - su voz en los momentos de siempre (`dice`) y, solo Olmo, sus frases sueltas.
+- **La vista previa no necesita migración.** El servidor ya dice quién es probador: `cafe_jornada()` devuelve la jornada de
+  prueba solo a las cuentas de `cafe_probadores`. Al cargarla, el café llama a `fijarVistaPrevia(Boolean(jornada))`.
+- La vista previa solo cambia quién atiende: `esSuscriptor()` sigue en «no» y los precios no cambian.
+- **`conQuien(texto)`** pasa a Olmo los textos de los datos que nombran a Pilar (el cuaderno, las mejoras del obrador, la
+  reseña de un habitual…). Cambia el nombre y pasa a masculino («ella sola» → «él solo»).
+
+### 150.4 Olmo en el café
+
+- **En 3D** (`cafe3d.js`, `setAnfitrion('olmo' | 'pilar')`):
+  - Olmo está en el sitio de Pilar y solo se ve uno de los dos;
+  - las piezas que se mueven se animan en el mismo bucle que la lluvia (`moverOlmo` dentro de `pintaVivo`);
+  - cuando prepara, hornea o tuesta, lo que agarra los mangos es la punta de su ala: plumas claras, el ala parda en vez de la
+    manga (el chaleco no tiene mangas) y dos primarias oscuras;
+  - el lienzo dice «toca… a Olmo… para hablar con él».
+- **En la franja**: su nombre, su retrato y «Olmo, en el mostrador». Si le tocas, se acerca y dice una de sus doce frases (una
+  distinta cada vez, en orden), con el retrato leyendo. Por ejemplo:
+  - «Este libro huele a lluvia… te va a gustar.» (la de Francisco);
+  - «Un café se enfría; un buen libro, nunca.»;
+  - «Mis gafas no son para leer. Son para leer despacio.».
+- **Su voz en los momentos de siempre:**
+
+  | Momento | Pilar | Olmo |
+  | --- | --- | --- |
+  | Al entrar | «¡Qué bien huele hoy…!» | «Hu-hum… hoy «…» huele a café y a papel viejo, mi olor favorito.» |
+  | Clientes esperando | «Tienes 3 clientes esperando…» | «Hu-hum. Tienes 3 clientes esperando…» |
+  | Todos atendidos | «El local es tuyo para decorar.» | «Este silencio de después es como cerrar un buen libro…» |
+  | Prepara él o ella | «Deja, que esto lo bordo yo.» | «Deja, deja: esto lo tengo bajo el ala.» |
+  | Se ofrece | «Esto ya lo bordas; si quieres, te lo preparo yo.» | «Esto ya lo dominas. Si quieres, lo preparo yo y tú charlas con el cliente.» |
+
+- **En el resto del café**, Olmo sustituye a Pilar en:
+  - Atender: el retrato, «Que lo prepare Olmo» y la nota de quien ya lo borda;
+  - la caja del mostrador;
+  - el cuaderno («El cuaderno de Olmo», con el retrato leyendo);
+  - los libros;
+  - el obrador («Que lo hornee Olmo», «Olmo vende 4 al día»…);
+  - el tostadero;
+  - los avisos del servidor.
+- **Libo** habla de Olmo cuando atiende él: en el capítulo del café, en el saludo del café y en las propinas de la hucha.
+- **Su sonido**: un «hu-húu» de búho, bajo y redondo (`olmo` en `cafeSfx.js`).
+- **El traspaso** (antes de abrir el café) sigue siendo de Pilar: es ella quien deja el local. La vista previa se sabe al
+  cargar el día del café abierto.
+
+### 150.5 Pruebas
+
+- **Vitest** `cafe-olmo.test.js` (10 pruebas):
+  - quién atiende con y sin suscripción, y con la vista previa (que no cambia el precio premium);
+  - `conQuien`;
+  - la voz completa, distinta de la de Pilar;
+  - las frases, sin repetirse;
+  - las cajas del modelo, su altura y su centro;
+  - los cuatro retratos;
+  - la pose: parpadea, gira, ladea, se ahueca, se queda quieto con movimiento reducido y mueve las alas al preparar.
+- **e2e** `v1150-cafe-olmo` a 360, 390 y 1440:
+  - la cuenta de pruebas ve a Olmo en 3D, con su letrero, la franja, su retrato y dos frases seguidas;
+  - prepara una taza con las alas («Que lo prepare Olmo»);
+  - una cuenta normal sigue con Pilar;
+  - con `OLMO_VIDEO=1`, el vídeo de un ciclo entero suyo.
+- Capturas en `qa-report/v1150/`.
+
+### 150.6 Bloque 2: la guía del café en sus menús y botones (1.150.1)
+
+La da quien atiende, con su retrato y su voz: **Olmo** con la suscripción (o en vista previa) y **Pilar** sin ella. Libo
+presenta el café y se aparta; esto es lo que viene después. Como la guía de Libo: un velo suave con un hueco sobre el botón
+del paso y una tarjeta al lado, aquí con el cuadro de diálogo del café, el nombre en su pestaña y el retrato de quien atiende.
+
+- **Las reglas** (`cafe/cafeGuia.js`, sin React). Cada sitio del café es un capítulo:
+  - **el local** (con el café abierto): el retrato, Atender, Charlar, Decorar, los libros, los cafés del barrio, el cuaderno, el
+    horno, Volver arriba y los letreros de los sitios en 3D (escaparate, trampilla, tostador, obrador y taller), con saludo y
+    despedida;
+  - **Decorar** (mover un mueble, las pestañas, las dos plantas y Listo);
+  - **la balda de libros**, **el ranking** y **el cuaderno**, un paso cada uno, la primera vez que se abren.
+- **Solo lo que se ve**: cada paso señala un control (`ancla`) y sale solo si está en pantalla. Lo que aún no se ha abierto en
+  tu café (el horno, la bodega, el obrador…) no sale hasta que aparece.
+- **Lo visto, paso a paso** (`capitulo:paso`), en los ajustes de la biblioteca (`settings.guiaCafe`, viaja con la cuenta sin
+  migración) y en este dispositivo (`bookshelf:guia-cafe`, por si los ajustes aún no han llegado). Cuando el café crece y aparece
+  un botón nuevo, la guía enseña **solo ese**, sin saludo ni despedida. El saludo y la despedida solo van con dos pasos o más y
+  la primera vez.
+- **Se abre sola** con el café quieto (la escena y los letreros asentados), sin Libo hablando, **después de que Libo haya
+  presentado el café** y **solo si Libo «sugiere cosas»** (Ajustes). Se marca todo al abrirla: si la cierras («Ahora no»,
+  «Saltar» o Escape), no vuelve sola.
+- **A petición**: el retrato de la franja es un botón con una «?» pequeña; tocarlo repasa todo lo que se ve, con su sonido.
+- **Se cierra** al cambiar de sitio (atender, abrir un menú, Decorar…). Escape cierra la guía, no el café.
+- **Las dos voces**, escritas a mano en cada paso; Olmo con las suyas («Hu-hum», los libros, el marcapáginas) y con la pose de su
+  retrato en cada paso (apunta con el ala, lee, contento). Botones: «Enséñame» / «Ahora no», «Siguiente», «Atrás», «Saltar» y
+  «Gracias, Olmo» (o «Gracias, Pilar»); un paso suelto, «Entendido». La cuenta «2 de 5» no cuenta el saludo ni la despedida.
+- **Accesible**: la tarjeta es un diálogo con título y descripción; el foco va al botón principal; nombre de quien habla para
+  lectores de pantalla; con movimiento reducido, sin el latido del recuadro.
+- **Las pruebas con cuenta simulada** dan la guía por vista (`bookshelf:guia-cafe` con `capitulo:*` en `mockSupabase.js`),
+  como a Libo, para que no tape las demás pruebas; las de la guía lo quitan.
+
+### 150.7 Pruebas del bloque 2
+
+- **Vitest** `cafe-guia.test.js` (6): cada paso con título, ancla única, pose y las dos voces (la mitad, al menos, distintas);
+  la primera vez con saludo y despedida; lo visto no vuelve y un botón nuevo sale solo; el repaso; nada que enseñar; ajustes
+  rotos.
+- **e2e** `v1150-cafe-guia`:
+  - a 360, 390 y 1440, Olmo la abre solo la primera vez, señala cada botón hasta la despedida (con Atrás por el camino), queda
+    apuntada y no vuelve; el retrato la repasa y Escape la cierra sin cerrar el café;
+  - a 390 y 1440, sin suscripción la da Pilar con su retrato y sus frases;
+  - a 360 y 390, Decorar y la balda de libros tienen su capítulo la primera vez;
+  - con `GUIA_VIDEO=1`, el vídeo.
+- Capturas `10` a `19` y `video/1150-guia.webm` en `qa-report/v1150/`.
