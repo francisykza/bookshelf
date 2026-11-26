@@ -6,7 +6,7 @@
 // - Portadas de Open Library / Google Books: caché limitada, sin red si ya está y revalidada de vez en cuando (Fase 2).
 // - Nada de Supabase ni de otros orígenes; nunca se guardan respuestas fallidas.
 const PREFIX = 'bookshelf-';
-const VERSION = `${PREFIX}v1.145.1`;
+const VERSION = `${PREFIX}v1.146.0`;
 // Sin la versión de la app en el nombre: actualizar no vacía las portadas. Solo cambia si cambia el esquema de lo guardado
 const COVERS = `${PREFIX}portadas-v1`;
 // Fase 1 (1.21.0): las dos ilustraciones nuevas del panorama. `/cozy-book-room.jpg` sigue publicado para una
@@ -329,6 +329,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   // Las páginas legales (Play Store) son páginas aparte: a la red, sin guardarlas como la app
   if (url.pathname.startsWith('/legal/')) return;
+  // 1.146 (SPEC §146): la web de Libotown tampoco es la app (si se guardara como /index.html, la app abriría la web sin conexión)
+  if (url.pathname.startsWith('/web/') || url.pathname === '/web') return;
 
   if (request.mode === 'navigate') {
     event.respondWith(

@@ -546,6 +546,18 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   nacimiento); al borrar una cuenta, **lo que dejó a otros queda como «Lector anónimo»** (no se borra); **modera él**;
   cuenta de desarrollador **personal** (prueba cerrada obligatoria); paquete `es.libotown.app`; planes de pago, por confirmar.
   El correo de contacto será uno de `libotown.es` que creará él. La migración del borrado, **aplicada** el 25-11-2026 (sin publicar la app todavía).
+- **La web de Libotown** (Francisco, 26-11-2026: «he pensado que podríamos hacer ya la pagina web de la app, y que podriamos
+  inspirarnos en la sección de libotown de mi portfolio»; eligió «En la raíz»): en `libotown.es`, **quien llega nuevo ve la web**
+  y **quien ya usa la app** (con cuenta en ese navegador o con la app instalada) **entra directo**, como hasta ahora. La app **no
+  se muda** a otra dirección (se perdería lo guardado en el dispositivo, como los EPUB, y la app instalada). Páginas estáticas en
+  `public/web/` (sin librerías, como las legales), con el estilo de la sección de Libotown del portfolio (`../portfolio-web/`) y
+  capturas de perfiles de prueba, nunca de sus cuentas. **Interactiva y espectacular** (Francisco, al ver la primera versión:
+  «quiero que sea mucho más interactiva y con más espectacularidad»): portada que se acerca al hotel, historias con el móvil fijo,
+  fachada con «!», minijuegos del café y las chisteras, y Libo acompañando; sonido solo tras activarlo. **Más cozy, con la portada tal cual** (Francisco, después: «quiero que se
+  sienta más cozy aun, el inicio eso si creo que es perfecto»): luz de lámpara, papel con cinta, letra a mano, guirnaldas, vela y
+  ambiente de lluvia y chimenea con el sonido; la portada no se cambia sin que lo pida. Para lectores: sin «versiones», agentes de IA ni numeración de
+  portfolio, y sin prometer nada que la app no haga. Por bloques con evidencias: 1) la web, 2) el reparto en la raíz y el
+  service worker, 3) publicar.
 - **Libo, el gato guía** (Francisco, 20-11-2026; plan en `docs/qa/libo.md`): el gato del logo, con su nombre, es el puente
   entre la app y el nombre; te guía poco a poco por todo (por capítulos, cuando tiene sentido, siempre saltable) y te da
   sugerencias. Decisiones del mismo día: **empezar con la mascota actual** (`libotown-marca/libotown-mascota.webp`, recortada,

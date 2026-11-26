@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.145.1 · 2026-11-25 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.146.0 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8129,3 +8129,55 @@ el letrero del obrador (que no se ve si no miras al ala) y la puerta del horno s
 - Pruebas: `cafeObrador.test.js` (las frases) y la e2e `e2e-community/v1145-1-cafe-horno-aviso.spec.js` a 360 y 390 (en la
   sala, en la barra con un cliente y, a 390, con movimiento reducido y una hornada terminada mientras no estabas). Evidencias en
   `qa-report/v1145-1/`. Sin servidor nuevo ni migración.
+
+## 146. La web de Libotown en la raíz (1.146.0)
+
+Francisco, 26-11-2026: «he pensado que podríamos hacer ya la pagina web de la app, y que podriamos inspirarnos en la sección de
+libotown de mi portfolio»; eligió «En la raíz». Después: «quiero que sea mucho más interactiva y con más espectacularidad» y «quiero
+que se sienta más cozy aun, el inicio eso si creo que es perfecto»; con «Me gusta, sigue», el visto bueno a la web y el paso al
+bloque 2. Regla en `CLAUDE.md` («La web de Libotown»).
+
+### 146.1 La web (`public/web/`)
+
+- Páginas estáticas sin librerías (`index.html`, `web.css`, `web.js`, `img/`), con rutas absolutas (`/web/…`): igual sirven en
+  `/web/` que en la raíz. Las capturas son de perfiles de prueba.
+- La portada se acerca a la puerta del Gran Hotel al bajar; las historias de tu piso y del café cambian la pantalla del móvil fijo
+  paso a paso; la fachada tiene seis «!» que se tocan; dos minijuegos (prepara un café: moler, apisonar y extraer, de 1 a 3
+  estrellas; las tres chisteras, sin apostar nada); una balda que se llena; las cartas del hotel en abanico con visor; y Libo en la
+  esquina, con un bocadillo por sección, que se echa la siesta si no pasa nada.
+- Cozy: títulos en Fraunces y notas a mano en Caveat (Google Fonts), luz de lámpara y grano de papel, motas en la luz, guirnaldas
+  que se apagan y encienden al tocarlas, hojas con cinta, juegos enmarcados en madera y latón, una vela y una maceta.
+- Sonido sintetizado y ambiente de lluvia y chimenea, **apagados hasta tocar el altavoz**; el ambiente se calla al cambiar de
+  pestaña. Movimiento reducido: sin zoom de la portada ni animaciones, con los juegos funcionando.
+- «Entrar» lleva a `/?entrar`.
+
+### 146.2 El reparto en la raíz (`index.html`)
+
+En Vercel, `/` es el `index.html` de la app (un archivo que existe gana a cualquier `rewrite`), y la app no se muda: su origen
+guarda la biblioteca sin cuenta, los EPUB y la app instalada. Por eso el reparto lo hace **un script en línea en el `<head>` de la
+app**, antes de cargar nada:
+
+- Solo en `libotown.es` y solo en `/` (o `/index.html`). En localhost, las previews de Vercel y las pruebas, nada cambia.
+- **Va a la app** si en este navegador hay algo de Libotown guardado (una clave de `localStorage` que empieza por `bookshelf`
+  o `sb-`), si la app está instalada (`display-mode` standalone, fullscreen o minimal-ui, `navigator.standalone` o la referencia
+  `android-app://` de la TWA), si la dirección trae parámetros (`?code=` del correo de Supabase, cualquier otro salvo los de
+  campaña `utm_*`, `fbclid` y `gclid`) o un `#` con `=` (`#access_token=`, `#error=`), o si no se puede leer el almacenamiento.
+- **`?entrar`** (el botón de la web) guarda `bookshelf:entrar` y quita el parámetro de la dirección: desde entonces, ese navegador
+  entra directo aunque no cree cuenta.
+- Si no, `location.replace('/web/?raiz' + hash)`, y la web devuelve la dirección a `/` (con su ancla) con `history.replaceState`.
+  Al recargar se repite el mismo camino. Entrando a `/web/` a mano, la dirección no cambia (así la ve también quien ya usa la app).
+
+### 146.3 El service worker
+
+`/web/` va siempre a la red, como `/legal/`: si la web pasara por la rama de navegación, se guardaría como `/index.html` y la app
+abriría la web sin conexión. Versión `bookshelf-v1.146.0`.
+
+### 146.4 Pruebas
+
+`qa-report/web/`: recorridos de la web a 390 y 1440 y páginas enteras con movimiento reducido a 360, 390, 430 y 1440 (sin errores
+ni desplazamiento lateral), y el reparto contra `dist/` servido como Vercel con `libotown.es` apuntando a local
+(`--host-resolver-rules`), 17 casos en `reparto-resultados.json`: nuevo → web en la raíz; «Entrar» → app sin `?entrar`; al
+volver, app; `/web/` a mano con la app usada; con `bookshelf:v1`, `bookshelf:auth` o `sb-…` → app; instalada y TWA (simuladas:
+Chromium no emula `display-mode` y descarta el Referer `android-app://`); `?code=`, `#access_token=`, `#error=` y `?libro=` → app;
+`#cafe` y `?utm_source=` → web; localhost → app; y el service worker no guarda nada de `/web/` y su `/index.html` sigue siendo la
+app. Sin probar en móviles reales ni en Safari.

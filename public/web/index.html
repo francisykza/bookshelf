@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<!-- La web de Libotown (Francisco, 26-11-2026): la ve quien llega nuevo a libotown.es; quien ya usa la app entra directo.
+     Página estática, sin librerías, con el estilo de la sección de Libotown de su portfolio. Rutas absolutas (/web/…):
+     así funciona igual servida en /web/ que en la raíz. Sin sonido hasta que se active a mano. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#351c0e">
+<title>Libotown</title>
+<meta name="description" content="Una ciudad cozy para lectores: apunta lo que lees y tu lectura da vida a tu piso, a un edificio de vecinos lectores, a tu propio café-librería y a un gran hotel junto al puerto.">
+<link rel="canonical" href="https://libotown.es/">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/svg+xml" href="/icons/libotown.svg">
+<link rel="apple-touch-icon" href="/icons/libotown-apple-180.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Libotown">
+<meta property="og:title" content="Libotown">
+<meta property="og:description" content="Una ciudad cozy para lectores: tu piso, tus vecinos, tu café-librería y el Gran Hotel del Puerto.">
+<meta property="og:locale" content="es_ES">
+<meta property="og:url" content="https://libotown.es/">
+<meta property="og:image" content="https://libotown.es/icons/libotown-compartir.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="El gato de Libotown leyendo sobre las letras de libotown">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Caveat:wght@500..700&family=Fraunces:ital,opsz,wght,SOFT@0,9..144,500..800,100;1,9..144,500..700,100&family=DM+Mono:wght@500&family=Lora:ital,wght@0,400;0,600;1,400&family=Silkscreen&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="/web/img/hotel.webp">
+<link rel="stylesheet" href="/web/web.css">
+</head>
+<body>
+<a class="saltar" href="#piso">Saltar al contenido</a>
+
+<header class="barra" id="barra">
+  <a class="barra__marca" href="#arriba" aria-label="Libotown, arriba del todo"><img src="/icons/libotown-192.png" alt="" width="36" height="36"><span>Libotown</span></a>
+  <nav class="barra__nav" aria-label="Secciones">
+    <a href="#piso" data-nav="piso">Tu piso</a><a href="#edificio" data-nav="edificio">El edificio</a><a href="#cafe" data-nav="cafe">El café</a><a href="#hotel" data-nav="hotel">El hotel</a>
+  </nav>
+  <button type="button" class="sonido" id="sonido" aria-pressed="false" aria-label="Sonido y ambiente: apagado">
+    <svg viewBox="0 0 12 10" aria-hidden="true" shape-rendering="crispEdges"><path d="M0 3h2l3-3h1v10H5L2 7H0z"/><path class="sonido__ondas" d="M8 3h1v4H8zM10 1h1v8h-1z"/><path class="sonido__no" d="M8 3h1v1H8zm1 1h1v1H9zm1 1h1v1h-1zm-2 1h1v1H8zm2-2h1v1h-1z"/></svg>
+  </button>
+  <a class="boton boton--chico" href="/?entrar" data-entrar>Entrar</a>
+</header>
+
+<main>
+  <!-- PORTADA: al bajar, la cámara se acerca a la puerta del hotel -->
+  <section class="portada" id="arriba" aria-labelledby="t-portada">
+    <div class="portada__fija">
+      <div class="portada__escena" id="escena">
+        <img class="portada__hotel" src="/web/img/hotel.webp" alt="" width="1440" height="900" fetchpriority="high">
+        <div class="estrellas" id="estrellas" aria-hidden="true"></div>
+        <div class="chispas" id="chispas" aria-hidden="true"></div>
+      </div>
+      <div class="portada__velo" id="velo" aria-hidden="true"></div>
+      <div class="ancho portada__cuerpo" id="portada-cuerpo">
+        <img class="portada__logo" src="/icons/libotown-logo.webp" alt="Libotown" width="840" height="560">
+        <h1 id="t-portada" class="portada__titulo"><span class="palabra" style="--i:0">Una</span> <span class="palabra" style="--i:1">ciudad</span> <span class="palabra" style="--i:2">cozy</span><br><span class="palabra" style="--i:3">para</span> <span class="palabra palabra--ambar" style="--i:4">lectores</span></h1>
+        <p class="portada__texto">Apunta lo que lees y tu lectura da vida a tu piso, a un edificio de vecinos lectores, a tu propio café-librería y a un gran hotel junto al puerto.</p>
+        <div class="portada__botones">
+          <a class="boton" href="/?entrar" data-entrar>Entrar en Libotown</a>
+          <a class="boton boton--claro" href="#piso">Ver cómo es</a>
+        </div>
+        <p class="portada__nota">En el navegador del móvil o del ordenador, y se instala como una app.</p>
+      </div>
+      <div class="portada__pista" id="pista" aria-hidden="true"><span>Baja</span><i></i></div>
+      <p class="portada__bienvenida" id="bienvenida" aria-hidden="true">Bienvenido al puerto</p>
+    </div>
+  </section>
+
+  <!-- TU PISO -->
+  <section class="seccion seccion--piso" id="piso" aria-labelledby="t-piso" data-libo="Aquí vives tú. Más abajo puedes llenar una balda.">
+    <button type="button" class="guirnalda" aria-pressed="true" aria-label="Luces de la guirnalda: encendidas"><svg class="guirnalda__cable" aria-hidden="true" preserveAspectRatio="none"><path/></svg></button>
+    <div class="motas" aria-hidden="true"></div>
+    <div class="ancho">
+      <div class="cabeza aparece">
+        <p class="etiqueta">Empieza en casa</p>
+        <h2 id="t-piso">Tu piso, <span>tu estantería</span></h2>
+        <p>Cada libro que lees llega a tu estantería, y tu lectura llena el resto de la ciudad.</p>
+      </div>
+
+      <div class="historia" data-historia>
+        <div class="historia__movil">
+          <button type="button" class="movil__marco historia__marco" aria-label="Ver la captura en grande">
+            <img class="historia__img activa" data-galeria data-pie="Tu piso" src="/web/img/piso.webp" alt="Tu piso en primera persona, con la ventana al puerto al atardecer" width="520" height="1125" draggable="false">
+            <img class="historia__img" data-galeria data-pie="El ordenador" src="/web/img/ordenador.webp" alt="El escritorio del ordenador con calendario, diario, estadísticas, biblioteca y sesiones" width="520" height="1125" loading="lazy" draggable="false">
+            <img class="historia__img" data-galeria data-pie="Tu calendario" src="/web/img/calendario.webp" alt="El calendario de lectura del mes con las páginas de cada día" width="520" height="1125" loading="lazy" draggable="false">
+            <img class="historia__img" data-galeria data-pie="Decorar" src="/web/img/decorar.webp" alt="La habitación vista desde arriba mientras se decora, con la balda de muebles" width="520" height="1125" loading="lazy" draggable="false">
+          </button>
+          <div class="historia__texto" aria-hidden="true"></div>
+          <div class="historia__puntos" aria-hidden="true"><i class="activo"></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="historia__pasos">
+          <article class="paso activo"><div class="paso__tarjeta"><p class="paso__n">01</p><h3>Tu habitación</h3><p>En primera persona, con la ventana al puerto. Aquí empieza todo: «Registrar lectura» y apuntas por qué página vas.</p></div></article>
+          <article class="paso"><div class="paso__tarjeta"><p class="paso__n">02</p><h3>El ordenador</h3><p>Tu calendario, tu diario, tus estadísticas, tus sesiones de lectura y toda tu biblioteca, en el escritorio del ordenador del piso.</p></div></article>
+          <article class="paso"><div class="paso__tarjeta"><p class="paso__n">03</p><h3>Cada día cuenta</h3><p>Las páginas de cada día llenan tu calendario, y al final del mes ves tu mes en libros.</p></div></article>
+          <article class="paso"><div class="paso__tarjeta"><p class="paso__n">04</p><h3>A tu manera</h3><p>Arrastra los muebles desde la balda y deja la habitación como quieras, del color de pared que elijas.</p></div></article>
+        </div>
+      </div>
+
+      <div class="piso-extra">
+        <div class="balda-demo aparece" aria-labelledby="t-balda">
+          <div class="balda-demo__cabeza">
+            <div>
+              <p class="etiqueta etiqueta--ambar">Pruébalo aquí</p>
+              <h3 id="t-balda">Llena la balda</h3>
+              <p>Así crece tu estantería. Pulsa el botón, toca un libro o saluda a Libo.</p>
+            </div>
+            <div class="contador"><b id="balda-n">3</b><span>libros</span></div>
+          </div>
+          <div class="balda" id="balda">
+            <button type="button" class="libo-demo" id="libo-demo" aria-label="Saludar a Libo"><img src="/assets/libo/libo-320.webp" alt="" width="216" height="320" draggable="false"><svg class="corazon" viewBox="0 0 7 6" aria-hidden="true" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg></button>
+            <span class="maceta" aria-hidden="true"><svg viewBox="0 0 14 18" shape-rendering="crispEdges"><path fill="#4e7a45" d="M6 0h2v3H6zM2 2h3v2h1v2H4V5H2zM9 2h3v3h-2v1H8V4h1zM5 4h4v5H5zM1 6h3v1h1v2H2V8H1zM10 6h3v2h-1v1H9V7h1z"/><path fill="#6f9a5f" d="M6 1h1v2H6zM3 3h1v1H3zM10 3h1v1h-1z"/><path fill="#b5502e" d="M2 9h10v2H2zM3 11h8v7H3z"/><path fill="#d4703f" d="M3 11h2v7H3z"/><path fill="#8a3a1f" d="M2 10h10v1H2z"/></svg></span><span class="vela" aria-hidden="true"><i class="vela__llama"></i><svg viewBox="0 0 8 16" shape-rendering="crispEdges"><path fill="#2a1a10" d="M3 0h1v3H3z"/><path fill="#fbf4e6" d="M1 3h6v11H1z"/><path fill="#e3cfb4" d="M5 3h2v11H5z"/><path fill="#fff" d="M2 4h1v5H2z"/><path fill="#7a4a1f" d="M0 14h8v2H0z"/></svg></span>
+            <div class="balda__libros" id="balda-libros"></div>
+            <div class="balda__tabla"></div>
+          </div>
+          <div class="balda-demo__pie"><button type="button" class="boton" id="balda-mas">Terminé un libro</button><span id="balda-msg" aria-live="polite"></span></div>
+        </div>
+
+        <div class="libo aparece">
+          <img src="/assets/libo/libo-640.webp" alt="Libo, el gato de Libotown, con un libro bajo el brazo" width="431" height="640" loading="lazy">
+          <div class="libo__texto">
+            <p class="etiqueta etiqueta--ambar"><svg class="corazon" viewBox="0 0 7 6" aria-hidden="true" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg>Tu guía</p>
+            <h3>Libo te enseña la ciudad</h3>
+            <p>El gato de Libotown vive en una esquina de la pantalla (aquí también: míralo abajo). Te enseña lo básico poco a poco y, como mucho una vez al día, te sugiere algo que de verdad puedes hacer. Si prefieres ir a tu aire, se apaga en Ajustes.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EL EDIFICIO: la fachada se toca -->
+  <section class="seccion seccion--edificio" id="edificio" aria-labelledby="t-edificio" data-libo="Toca las «!» de la fachada.">
+    <div class="corte" aria-hidden="true"></div>
+    <div class="ancho dos">
+      <div class="cabeza aparece">
+        <p class="etiqueta">Sales al rellano</p>
+        <h2 id="t-edificio">Un edificio de <span>vecinos lectores</span></h2>
+        <p>Tu piso está en un edificio del puerto con otros lectores. Visitas sus pisos, miras lo que tienen en la estantería, les regalas un mueble que tengas repetido y les dejas una nota o un dibujo en su tablón.</p>
+        <p class="pista-tocar"><span class="exclama" aria-hidden="true">!</span> <span class="a-mano">Toca la fachada para curiosear</span><svg class="flecha-mano" viewBox="0 0 64 40" aria-hidden="true"><path d="M4 8c14-6 30-4 40 8 5 6 8 13 9 20"/><path d="M46 30l7 7 5-9"/></svg></p>
+      </div>
+      <div class="fachada aparece" id="fachada">
+        <img src="/web/img/fachada.webp" alt="La fachada mostaza del edificio, con sus balcones, el cartel de la azotea, la librería del bajo, el café y la limusina" width="640" height="960" loading="lazy" draggable="false">
+        <button type="button" class="exclama exclama--boton" style="left:50%;top:9%" data-titulo="«Aquí no hay quien lea»" data-texto="El cartel de la azotea, con letra de píxeles propia. Un guiño, y una advertencia.">!</button>
+        <button type="button" class="exclama exclama--boton" style="left:19.5%;top:53%" data-titulo="Tu piso" data-texto="El 1.º A es el tuyo: por la ventana se ve tu habitación, y al tocarla te asomas y entras." data-zoom="0">!</button>
+        <button type="button" class="exclama exclama--boton" style="left:80%;top:39%" data-titulo="Los pisos de tus vecinos" data-texto="Se visitan cuando quieras: ves su habitación, su estantería y su tablón, y les dejas una nota o un dibujo (uno al día).">!</button>
+        <button type="button" class="exclama exclama--boton" style="left:38%;top:79%" data-titulo="El buzón" data-texto="Junto al portal: te llegan los regalos y el correo de los vecinos. Cuando hay algo, asoma una carta con el número.">!</button>
+        <button type="button" class="exclama exclama--boton" style="left:82%;top:85%" data-titulo="El café-librería" data-texto="En el bajo. Lo llevas tú: baja la página y prepara un café.">!</button>
+        <button type="button" class="exclama exclama--boton" style="left:20%;top:91%" data-titulo="Al Gran Hotel" data-texto="La limusina negra espera en el muelle con su chófer. Sube y te lleva al hotel.">!</button>
+      </div>
+      <div class="fachada__nota" id="fachada-nota" role="status" aria-live="polite">
+        <p class="fachada__titulo">Solo enseñas lo que tú decides</p>
+        <p class="fachada__texto">Lo demás es privado. Elige un sitio de la fachada.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- EL CAFÉ -->
+  <section class="seccion seccion--cafe" id="cafe" aria-labelledby="t-cafe" data-libo="¿Te atreves con un café? La barra está más abajo.">
+    <div class="corte" aria-hidden="true"></div>
+    <button type="button" class="guirnalda" aria-pressed="true" aria-label="Luces de la guirnalda: encendidas"><svg class="guirnalda__cable" aria-hidden="true" preserveAspectRatio="none"><path/></svg></button>
+    <div class="motas" aria-hidden="true"></div>
+    <div class="ancho">
+      <div class="cabeza aparece">
+        <p class="etiqueta">Bajas al bajo <svg class="tacita" viewBox="0 0 14 14" aria-hidden="true" shape-rendering="crispEdges"><g class="tacita__vapor" fill="#f4e6d2"><path d="M4 0h1v2H4zM5 2h1v1H5zM8 1h1v2H8zM7 3h1v1H7z"/></g><path fill="#fbf4e6" d="M1 5h9v6H1zM2 11h7v1H2z"/><path fill="#e3cfb4" d="M8 5h2v6H8z"/><path fill="#fbf4e6" d="M10 6h2v1h1v2h-1v1h-2V9h2V7h-2z"/><path fill="#6b3a1f" d="M2 5h7v1H2z"/><path fill="#7a4a1f" d="M0 12h12v2H0z"/></svg></p>
+        <h2 id="t-cafe">Un café-librería <span>que llevas tú</span></h2>
+        <p>Cada cliente pide una bebida y un libro, o algo del horno. Con los niveles, el local crece.</p>
+      </div>
+
+      <div class="historia historia--izq" data-historia>
+        <div class="historia__movil">
+          <button type="button" class="movil__marco historia__marco" aria-label="Ver la captura en grande">
+            <img class="historia__img activa" data-galeria data-pie="El café" src="/web/img/cafe.webp" alt="El café-librería con clientes en sus mesas y Pilar dando la bienvenida" width="520" height="1125" loading="lazy" draggable="false">
+            <img class="historia__img" data-galeria data-pie="La barra" src="/web/img/barra.webp" alt="La barra: apisonar el café deslizando el prensador hacia abajo" width="520" height="1125" loading="lazy" draggable="false">
+            <img class="historia__img" data-galeria data-pie="Envolver el libro" src="/web/img/libro.webp" alt="Atar con cordel el libro envuelto en papel" width="520" height="1125" loading="lazy" draggable="false">
+            <img class="historia__img" data-galeria data-pie="El obrador" src="/web/img/obrador.webp" alt="El obrador: estirar la masa de la empanada con el rodillo" width="520" height="1125" loading="lazy" draggable="false">
+            <img class="historia__img" data-galeria data-pie="El taller" src="/web/img/taller.webp" alt="El taller de restauración: frotar las manchas de un libro viejo" width="520" height="1125" loading="lazy" draggable="false">
+          </button>
+          <div class="historia__texto" aria-hidden="true"></div>
+          <div class="historia__puntos" aria-hidden="true"><i class="activo"></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="historia__pasos">
+          <article class="paso activo"><div class="paso__tarjeta"><p class="paso__n">01</p><h3>Tu propio café</h3><p>Los clientes llegan, se sientan y piden. Pilar, la camarera, te echa una mano y prepara las bebidas que ya dominas.</p></div></article>
+          <article class="paso"><div class="paso__tarjeta"><p class="paso__n">02</p><h3>Cada paso, su gesto</h3><p>Moler girando la manivela, apisonar, tirar de la palanca, cremar la leche: cada bebida se prepara a mano en la barra.</p></div></article>
+          <article class="paso"><div class="paso__tarjeta"><p class="paso__n">03</p><h3>Un libro para cada cliente</h3><p>Busca en la estantería el que encaja con lo que pide, envuélvelo con papel y cordel y llévaselo a su mesa.</p></div></article>
+          <article class="paso"><div class="paso__tarjeta"><p class="paso__n">04</p><h3>El obrador</h3><p>Con los niveles se abre el horno de la antigua tahona: magdalenas, empanadas, pan… y te avisa cuando está listo.</p></div></article>
+          <article class="paso"><div class="paso__tarjeta"><p class="paso__n">05</p><h3>El taller de la trastienda</h3><p>Don Celestino te enseña a restaurar libros viejos: quitar manchas, encolar y prensar.</p></div></article>
+        </div>
+      </div>
+
+      <!-- Minijuego: prepara un café -->
+      <div class="juego juego--cafe aparece" id="juego-cafe" aria-labelledby="t-juego-cafe">
+        <div class="juego__cabeza">
+          <div>
+            <p class="etiqueta etiqueta--ambar">Ponte detrás de la barra</p>
+            <h3 id="t-juego-cafe">Prepara un café</h3>
+            <p class="a-mano">con calma, aquí nadie tiene prisa</p>
+          </div>
+          <ol class="juego__pasos" id="cafe-chips">
+            <li class="activo">Moler</li><li>Apisonar</li><li>Extraer</li>
+          </ol>
+        </div>
+        <div class="cafe-escena" id="cafe-escena">
+          <svg id="cafe-svg" viewBox="0 0 200 128" role="img" aria-labelledby="cafe-paso" shape-rendering="crispEdges">
+            <rect x="0" y="0" width="200" height="128" fill="#2e180b"/>
+            <rect x="0" y="0" width="200" height="6" fill="#3d2213"/>
+            <!-- baldas al fondo -->
+            <rect x="6" y="14" width="52" height="3" fill="#5a3418"/>
+            <rect x="9" y="5" width="4" height="9" fill="#9c3b2e"/><rect x="14" y="7" width="3" height="7" fill="#2f5d84"/><rect x="18" y="6" width="4" height="8" fill="#c49a2a"/><rect x="23" y="8" width="3" height="6" fill="#4e7a45"/>
+            <rect x="40" y="9" width="7" height="5" fill="#e3cfb4"/><rect x="48" y="9" width="7" height="5" fill="#e3cfb4"/>
+            <rect x="142" y="14" width="52" height="3" fill="#5a3418"/>
+            <rect x="146" y="7" width="6" height="7" fill="#b5502e"/><rect x="154" y="8" width="6" height="6" fill="#3f5a3a"/><rect x="176" y="5" width="3" height="9" fill="#6d4a8a"/><rect x="180" y="7" width="4" height="7" fill="#9c3b2e"/><rect x="185" y="6" width="3" height="8" fill="#2a6b6b"/>
+            <!-- molinillo -->
+            <g id="molinillo">
+              <rect x="28" y="26" width="36" height="30" fill="#cfe0e6" opacity="0.55"/>
+              <rect x="28" y="26" width="36" height="2" fill="#ffffff" opacity="0.6"/>
+              <rect id="granos" x="30" y="34" width="32" height="22" fill="#5a3418"/>
+              <g fill="#7a4a24"><rect x="33" y="37" width="2" height="1"/><rect x="41" y="40" width="2" height="1"/><rect x="50" y="36" width="2" height="1"/><rect x="56" y="44" width="2" height="1"/><rect x="36" y="48" width="2" height="1"/><rect x="47" y="51" width="2" height="1"/></g>
+              <rect x="26" y="56" width="40" height="4" fill="#3b2a20"/>
+              <rect x="30" y="60" width="32" height="30" fill="#b5502e"/>
+              <rect x="30" y="60" width="3" height="30" fill="#d4703f"/>
+              <rect x="59" y="60" width="3" height="30" fill="#8a3a1f"/>
+              <rect x="34" y="90" width="24" height="16" fill="#2a1a10"/>
+              <rect id="molido" x="36" y="104" width="20" height="0" fill="#7a4a24"/>
+              <rect x="26" y="106" width="40" height="6" fill="#3b2a20"/>
+              <rect x="44" y="20" width="4" height="6" fill="#6b6b6b"/>
+              <g id="manivela">
+                <rect x="46" y="20" width="22" height="4" fill="#9a9a9a"/>
+                <rect x="46" y="20" width="22" height="1" fill="#c8c8c8"/>
+                <rect x="64" y="13" width="6" height="11" fill="#3b2a20"/>
+                <rect x="65" y="14" width="2" height="8" fill="#6b4a30"/>
+              </g>
+              <rect x="44" y="20" width="4" height="4" fill="#4a4a4a"/>
+            </g>
+            <!-- cafetera -->
+            <g id="cafetera">
+              <rect x="96" y="34" width="88" height="8" fill="#8c6a48"/>
+              <rect x="96" y="34" width="88" height="2" fill="#a8845c"/>
+              <rect x="100" y="42" width="80" height="70" fill="#e9d6b4"/>
+              <rect x="100" y="42" width="4" height="70" fill="#f6e8cc"/>
+              <rect x="176" y="42" width="4" height="70" fill="#c9b28a"/>
+              <rect x="152" y="50" width="18" height="18" fill="#3a2414"/>
+              <rect x="154" y="52" width="14" height="14" fill="#f4e6d2"/>
+              <rect id="aguja" x="160" y="53" width="2" height="7" fill="#c4533d"/>
+              <rect x="160" y="59" width="2" height="2" fill="#3a2414"/>
+              <rect x="114" y="64" width="32" height="8" fill="#7a7a7a"/>
+              <rect x="118" y="72" width="24" height="6" fill="#5a5a5a"/>
+              <rect x="116" y="78" width="28" height="6" fill="#9a9a9a"/>
+              <rect id="lecho" x="118" y="78" width="24" height="2" fill="#4a2614" opacity="0"/>
+              <rect x="144" y="79" width="30" height="4" fill="#2a1a10"/>
+              <rect x="170" y="78" width="6" height="6" fill="#2a1a10"/>
+              <rect x="100" y="104" width="80" height="8" fill="#6b6b6b"/>
+              <g fill="#4a4a4a"><rect x="104" y="106" width="72" height="1"/><rect x="104" y="109" width="72" height="1"/></g>
+            </g>
+            <!-- palanca -->
+            <g id="palanca">
+              <rect x="171" y="14" width="5" height="22" fill="#2a1a10"/>
+              <rect x="168" y="8" width="11" height="7" fill="#b5502e"/>
+              <rect x="168" y="8" width="11" height="2" fill="#d4703f"/>
+            </g>
+            <rect x="170" y="34" width="7" height="3" fill="#4a4a4a"/>
+            <!-- prensador -->
+            <g id="prensador">
+              <rect x="126" y="30" width="8" height="14" fill="#6b3a1f"/>
+              <rect x="127" y="30" width="2" height="14" fill="#8c5530"/>
+              <rect x="122" y="44" width="16" height="5" fill="#b0b0b0"/>
+              <rect x="122" y="44" width="16" height="1" fill="#e0e0e0"/>
+            </g>
+            <!-- chorro y taza -->
+            <rect id="chorro" x="129" y="84" width="2" height="14" fill="#4a2614" opacity="0"/>
+            <g id="taza">
+              <rect x="120" y="96" width="20" height="2" fill="#ffffff"/>
+              <rect x="120" y="98" width="20" height="8" fill="#f4e6d2"/>
+              <rect x="140" y="99" width="4" height="2" fill="#f4e6d2"/><rect x="143" y="101" width="2" height="3" fill="#f4e6d2"/><rect x="140" y="103" width="4" height="2" fill="#f4e6d2"/>
+              <rect id="cafe-nivel" x="122" y="104" width="16" height="0" fill="#4a2614"/>
+              <rect id="crema" x="122" y="104" width="16" height="1" fill="#c98a2a" opacity="0"/>
+              <rect x="118" y="104" width="24" height="2" fill="#e3cfb4"/>
+            </g>
+            <g id="vapor" fill="#f4e6d2" opacity="0">
+              <rect x="125" y="86" width="2" height="2"/><rect x="127" y="82" width="2" height="2"/><rect x="132" y="84" width="2" height="2"/><rect x="134" y="80" width="2" height="2"/><rect x="129" y="78" width="2" height="2"/>
+            </g>
+            <!-- mostrador -->
+            <rect x="0" y="112" width="200" height="16" fill="#7a4a1f"/>
+            <rect x="0" y="112" width="200" height="3" fill="#a8692f"/>
+            <!-- la «!» de lo siguiente -->
+            <g id="cafe-exclama" class="svg-exclama"><rect x="-4" y="-9" width="9" height="12" fill="#ffb547"/><rect x="-3" y="-10" width="7" height="1" fill="#ffb547"/><rect x="-1" y="-7" width="3" height="5" fill="#351c0e"/><rect x="-1" y="-1" width="3" height="2" fill="#351c0e"/></g>
+          </svg>
+          <div class="cafe-estrellas" id="cafe-estrellas" aria-hidden="true"></div>
+        </div>
+        <div class="medidor" id="medidor" aria-hidden="true"><div class="medidor__zona"></div><div class="medidor__nivel" id="medidor-nivel"></div></div>
+        <div class="juego__pie">
+          <p class="juego__texto" id="cafe-paso" aria-live="polite">Gira la manivela del molinillo: arrastra en círculos.</p>
+          <button type="button" class="boton boton--claro" id="cafe-accion">Girar la manivela</button>
+        </div>
+      </div>
+
+      <ul class="sellos aparece">
+        <li>Sin energía ni cuentas atrás</li>
+        <li>Si un día no juegas, no pierdes nada</li>
+        <li>Tus libros leídos llegan a sus baldas</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- EL HOTEL -->
+  <section class="seccion seccion--hotel" id="hotel" aria-labelledby="t-hotel" data-libo="En el casino nunca se apuesta dinero. ¿Encuentras al conejo?">
+    <div class="corte" aria-hidden="true"></div>
+    <div class="estrellas estrellas--fijas" id="estrellas-hotel" aria-hidden="true"></div>
+    <div class="ancho">
+      <div class="hotel-cabeza">
+        <div class="cabeza aparece">
+          <p class="etiqueta">Coges la limusina</p>
+          <h2 id="t-hotel">El Gran Hotel <span>del Puerto</span></h2>
+          <p>En el muelle te espera una limusina negra. Arriba, una sala de lectura de triple altura para leer a solas en tu sillón o quedar con un amigo; un casino donde nunca se apuesta dinero, con su partida diaria gratis; y un gran almacén de muebles para seguir decorando tu piso.</p>
+        </div>
+        <div class="abanico aparece" id="abanico">
+          <button type="button" class="movil__marco carta" aria-label="Ver en grande: la sala de lectura"><img data-galeria data-pie="La sala de lectura" src="/web/img/sala.webp" alt="La sala de lectura: una biblioteca de noche con una lectora en su sillón" width="520" height="1125" loading="lazy" draggable="false"></button>
+          <button type="button" class="movil__marco carta" aria-label="Ver en grande: el casino"><img data-galeria data-pie="El casino" src="/web/img/casino.webp" alt="El casino del sótano: la mesa verde con el crupier" width="520" height="1125" loading="lazy" draggable="false"></button>
+          <button type="button" class="movil__marco carta" aria-label="Ver en grande: el almacén"><img data-galeria data-pie="El almacén" src="/web/img/almacen.webp" alt="El gran almacén de muebles, con sus pasillos y la escalera mecánica" width="520" height="1125" loading="lazy" draggable="false"></button>
+        </div>
+      </div>
+
+      <!-- Minijuego: las tres chisteras -->
+      <div class="juego juego--chisteras aparece" id="juego-chisteras" aria-labelledby="t-chisteras">
+        <div class="juego__cabeza">
+          <div>
+            <p class="etiqueta etiqueta--ambar">Un juego del casino</p>
+            <h3 id="t-chisteras">Las tres chisteras</h3>
+            <p class="a-mano">¡no le quites ojo al conejo!</p>
+          </div>
+          <p class="marcador">Aciertos <b id="chist-aciertos">0</b></p>
+        </div>
+        <div class="chisteras" id="chisteras">
+          <button type="button" class="chistera" data-i="0" aria-label="Chistera de la izquierda" disabled>
+            <span class="conejo" aria-hidden="true"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#fbf4e6" d="M4 0h3v6H4zM9 0h3v6H9zM3 5h10v8H3zM5 13h6v2H5z"/><path fill="#e8a0a0" d="M5 1h1v4H5zM10 1h1v4h-1zM7 10h2v1H7z"/><path fill="#15121c" d="M5 8h1v1H5zM10 8h1v1h-1z"/></svg></span>
+            <svg class="sombrero" viewBox="0 0 24 22" aria-hidden="true" shape-rendering="crispEdges"><path fill="#1d1925" d="M5 1h14v17H5z"/><path fill="#3a3346" d="M7 3h2v9H7z"/><path fill="#c4533d" d="M5 13h14v3H5z"/><path fill="#15121c" d="M1 18h22v3H1z"/></svg>
+          </button>
+          <button type="button" class="chistera" data-i="1" aria-label="Chistera del centro" disabled>
+            <span class="conejo" aria-hidden="true"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#fbf4e6" d="M4 0h3v6H4zM9 0h3v6H9zM3 5h10v8H3zM5 13h6v2H5z"/><path fill="#e8a0a0" d="M5 1h1v4H5zM10 1h1v4h-1zM7 10h2v1H7z"/><path fill="#15121c" d="M5 8h1v1H5zM10 8h1v1h-1z"/></svg></span>
+            <svg class="sombrero" viewBox="0 0 24 22" aria-hidden="true" shape-rendering="crispEdges"><path fill="#1d1925" d="M5 1h14v17H5z"/><path fill="#3a3346" d="M7 3h2v9H7z"/><path fill="#c4533d" d="M5 13h14v3H5z"/><path fill="#15121c" d="M1 18h22v3H1z"/></svg>
+          </button>
+          <button type="button" class="chistera" data-i="2" aria-label="Chistera de la derecha" disabled>
+            <span class="conejo" aria-hidden="true"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><path fill="#fbf4e6" d="M4 0h3v6H4zM9 0h3v6H9zM3 5h10v8H3zM5 13h6v2H5z"/><path fill="#e8a0a0" d="M5 1h1v4H5zM10 1h1v4h-1zM7 10h2v1H7z"/><path fill="#15121c" d="M5 8h1v1H5zM10 8h1v1h-1z"/></svg></span>
+            <svg class="sombrero" viewBox="0 0 24 22" aria-hidden="true" shape-rendering="crispEdges"><path fill="#1d1925" d="M5 1h14v17H5z"/><path fill="#3a3346" d="M7 3h2v9H7z"/><path fill="#c4533d" d="M5 13h14v3H5z"/><path fill="#15121c" d="M1 18h22v3H1z"/></svg>
+          </button>
+          <div class="tapete" aria-hidden="true"></div>
+        </div>
+        <div class="juego__pie">
+          <p class="juego__texto" id="chist-texto" aria-live="polite">Mira bajo qué chistera está el conejo, síguela con la vista y tócala. Aquí no se apuesta nada.</p>
+          <button type="button" class="boton" id="chist-jugar">Barajar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LO QUE IMPORTA -->
+  <section class="seccion seccion--papel" aria-labelledby="t-valores" data-libo="Aquí nada se compra con dinero: se gana leyendo.">
+    <div class="corte" aria-hidden="true"></div>
+    <div class="ancho">
+      <div class="cabeza aparece">
+        <p class="etiqueta etiqueta--tinta">Cómo es por dentro</p>
+        <h2 id="t-valores">Leer es lo que <span>mueve la ciudad</span></h2>
+      </div>
+      <div class="fichas">
+        <article class="ficha aparece"><h3>Se gana leyendo</h3><p>Los tickets de los muebles se ganan leyendo y jugando. Nada de lo que se gana en Libotown se compra con dinero.</p></article>
+        <article class="ficha aparece"><h3>Sin prisas</h3><p>Sin rachas que se pierdan ni castigos por no entrar. Vuelves cuando te apetece y todo sigue donde lo dejaste.</p></article>
+        <article class="ficha aparece"><h3>Lo tuyo es tuyo</h3><p>Tu biblioteca es privada y tú decides qué enseñas. Puedes bloquear y denunciar, y borrar tu cuenta cuando quieras.</p></article>
+        <article class="ficha aparece"><h3>Tus libros, contigo</h3><p>Trae tu biblioteca de Goodreads y lee tus EPUB dentro de la app; el archivo se queda en tu dispositivo.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section class="final" aria-labelledby="t-final" data-libo="¿Subimos a tu piso?">
+    <div class="corte" aria-hidden="true"></div>
+    <button type="button" class="guirnalda" aria-pressed="true" aria-label="Luces de la guirnalda: encendidas"><svg class="guirnalda__cable" aria-hidden="true" preserveAspectRatio="none"><path/></svg></button>
+    <div class="ancho final__cuerpo aparece">
+      <div class="final__libo"><img src="/assets/libo/libo-320.webp" alt="" width="216" height="320" loading="lazy"><span class="vela" aria-hidden="true"><i class="vela__llama"></i><svg viewBox="0 0 8 16" shape-rendering="crispEdges"><path fill="#2a1a10" d="M3 0h1v3H3z"/><path fill="#fbf4e6" d="M1 3h6v11H1z"/><path fill="#e3cfb4" d="M5 3h2v11H5z"/><path fill="#fff" d="M2 4h1v5H2z"/><path fill="#7a4a1f" d="M0 14h8v2H0z"/></svg></span></div>
+      <div>
+        <h2 id="t-final">Tu piso <span>te espera</span></h2>
+        <p>Entra con tu cuenta o crea una nueva. Libotown es para mayores de 16 años.</p>
+        <a class="boton" href="/?entrar" data-entrar>Entrar en Libotown</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="luz-raton" id="luz-raton" aria-hidden="true"></div>
+
+<footer class="pie">
+  <div class="ancho pie__cuerpo">
+    <a class="barra__marca" href="#arriba"><img src="/icons/libotown-192.png" alt="" width="32" height="32"><span>Libotown</span></a>
+    <nav aria-label="Información legal">
+      <a href="/legal/privacidad.html">Privacidad</a>
+      <a href="/legal/aviso-legal.html">Aviso legal</a>
+      <a href="/legal/normas.html">Normas de la comunidad</a>
+      <a href="/legal/borrar-cuenta.html">Borrar la cuenta</a>
+    </nav>
+  </div>
+</footer>
+
+<!-- Libo te acompaña por la página -->
+<aside class="compa" id="compa" aria-label="Libo">
+  <div class="compa__bocadillo" id="compa-bocadillo" hidden>
+    <p id="compa-texto" aria-live="polite"></p>
+    <button type="button" class="compa__cerrar" id="compa-cerrar" aria-label="Cerrar el bocadillo de Libo">✕</button>
+  </div>
+  <button type="button" class="compa__libo" id="compa-libo" aria-label="Libo: ¿qué hay aquí?"><span class="compa__zzz" aria-hidden="true"><i style="--i:0">z</i><i style="--i:1">z</i><i style="--i:2">z</i></span><svg class="corazon" viewBox="0 0 7 6" aria-hidden="true" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg><img src="/assets/libo/libo-320.webp" alt="" width="216" height="320" draggable="false"></button>
+</aside>
+
+<div class="visor" id="visor" role="dialog" aria-modal="true" aria-label="Captura en grande" hidden>
+  <button type="button" class="visor__cerrar" aria-label="Cerrar">✕</button>
+  <button type="button" class="visor__ant" aria-label="Anterior">‹</button>
+  <figure><img alt="" draggable="false"><figcaption></figcaption></figure>
+  <button type="button" class="visor__sig" aria-label="Siguiente">›</button>
+</div>
+
+<script src="/web/web.js" defer></script>
+</body>
+</html>

@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Hecha y sin commit: 1.146.0** (26-11-2026, §146): la web de Libotown (`public/web/`, aprobada por Francisco: «Me gusta, sigue»)
+  y el reparto en la raíz (script en el `<head>` de `index.html`: en libotown.es, quien llega nuevo va a la web y quien ya usa la
+  app entra directo) con el service worker dejando `/web/` a la red. Sin publicar: esperar a que Francisco lo pida.
 - **Publicada en producción: 1.145.1** (25-11-2026, §145 y §145.7; Francisco: «haz el paso uno sin el correo de contacto, eso lo
   dejamos para más tarde, apruebo los bloques del 1 al 4»; `main` avanzó sin forzar de `d1cdd8e` a `e6876f1` y libotown.es sirve
   v1.145.1; la dirección de antes sigue con su 308). El aviso del horno (§145.7), encima de la 1.145.0. **Las páginas legales salen
@@ -301,6 +304,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **La web de Libotown, 1.146.0** (26-11-2026, §146; **sin commit**; regla en CLAUDE.md): web aprobada («Me gusta, sigue») y
+  bloque 2 hecho (el reparto en la raíz y el service worker). Falta el bloque 3, **publicar**, cuando Francisco lo pida (commit,
+  `main` y comprobar en libotown.es: nuevo → web, con cuenta → app, `/sw.js` con v1.146.0).
 - **El correo de contacto de las páginas legales** (la 1.145.1 ya está publicada, 25-11-2026): cuando Francisco diga cuál (uno de
   `libotown.es`), sustituir `[correo de contacto pendiente]` en las cuatro páginas de `public/legal/` (y quitar su comentario de
   BORRADOR) y publicar. Después, el bloque 3 de la Play Store (moderación), cuando lo pida.
@@ -526,6 +532,91 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.146.0, la web en la raíz (bloque 2) · sin commit (Claude)
+
+- Francisco, al ver la web cozy: «Me gusta, sigue». Bloque 2 hecho (SPEC §146):
+  - En Vercel, `/` es el `index.html` de la app (un archivo que existe gana a un `rewrite`) y la app no se muda, así que **el
+    reparto es un script en línea en el `<head>` de la app**. Solo en `libotown.es` y en `/`. Va a la app con algo de Libotown
+    en `localStorage` (`bookshelf…` o `sb-…`), con la app instalada (display-mode, `navigator.standalone` o `android-app://`),
+    con parámetros (`?code=` del correo de Supabase y cualquiera salvo `utm_*`, `fbclid`, `gclid`) o un `#` con `=`. Si no,
+    `/web/?raiz` y la web deja la dirección en `/`. **`?entrar`** guarda `bookshelf:entrar`: ese navegador ya entra directo.
+  - `public/sw.js`: `/web/` va a la red, como `/legal/` (si no, se guardaría como `/index.html` de la app).
+  - Versión 1.146.0 en `src/diag.js`, `package.json`, `public/sw.js` y SPEC.
+- Comprobado contra `dist/` servido como Vercel y `libotown.es` apuntando a local: 17 de 17 casos
+  (`qa-report/web/reparto-resultados.json`, vídeo `reparto-390x844.webm`). La app instalada y la TWA, simuladas (Chromium no
+  emula `display-mode` ni deja un Referer `android-app://`). Sin probar en móviles reales ni en Safari. Las e2e de la app no
+  cambian (el script no hace nada fuera de libotown.es).
+- **Sin commit** y **sin publicar**. Al publicar, comprobar en producción con un navegador sin datos (web) y con la app (directa).
+
+### 2026-11-26 · La web de Libotown, más cozy · sin commit (Claude)
+
+- Francisco, al ver la versión interactiva: «Va por buen camino, pero quiero que se sienta más cozy aun , el inicio eso si creo que
+  es perfecto». **La portada no se ha tocado** (ni su HTML, ni su CSS, ni su JS). En el resto de `public/web/`:
+  - **Letra cálida**: títulos en Fraunces (serifa suave, la segunda parte en cursiva) y etiquetas, números de los pasos y notas
+    escritas a mano en Caveat (las dos de Google Fonts, como las demás).
+  - **Luz de lámpara** en cada sección (focos cálidos, sin tapar nada), un grano de papel muy suave, **motas de polvo** flotando en
+    la luz (tu piso y el café) y una **luz cálida bajo el ratón** en escritorio, fuera de la portada.
+  - **Guirnaldas de luces** colgadas arriba de tu piso, del café y del final; al tocarlas se apagan o se encienden con un vaivén.
+  - **Papel con cinta**: los pasos de las historias son hojas rayadas con washi tape (en el móvil, la nota bajo el teléfono), la nota
+    de la fachada igual, las cuatro fichas de colores de papel distinto y los sellos como etiquetas de estraza. Los juegos, enmarcados
+    en madera (las chisteras, en latón), y la balda con una **vela** encendida y una maceta (la maceta, desde 600 px).
+  - **Detalles**: una tacita humeando junto a «Bajas al bajo», una flecha dibujada a mano hacia la fachada, notas a mano en los
+    juegos y una vela junto a Libo al final.
+  - **Ambiente sonoro**: al activar el altavoz («Sonido y ambiente»), lluvia suave y la chimenea con sus chasquidos, muy bajito; se
+    calla al cambiar de pestaña y al apagar el sonido. Nada suena antes de tocarlo.
+  - **Libo se echa la siesta**: tras 14 s sin moverte le salen «z» (la pose no cambia, no se inventan poses) y se despierta al bajar
+    o tocar.
+- Comprobado con Playwright en el servidor de desarrollo: recorridos en vídeo a 390 y 1440 (con la guirnalda apagándose y la siesta
+  de Libo), páginas enteras con movimiento reducido a 360, 390, 430 y 1440, sin errores de consola ni desplazamiento lateral, y las
+  dos fuentes cargadas. El ambiente se grabó aparte a WAV (20 s, con el mismo código de `web.js` en un OfflineAudioContext), porque
+  los vídeos no llevan sonido. Después de grabar los vídeos, las «z» de la siesta pasaron de crema a ámbar con contorno (sobre el
+  papel claro no se veían); comprobado con capturas aparte.
+- Sin probar en móviles reales ni en WebKit. **Sin commit** y **sin publicar** (sigue haciendo falta el bloque 2).
+
+### 2026-11-26 · La web de Libotown, más interactiva · sin commit (Claude)
+
+- Francisco, al ver la primera versión: «no, quiero que sea mucho más interactiva y con más espectacularidad». Rehecha en
+  `public/web/` (mismos textos de verdad, mismas capturas de perfiles de prueba y una nueva, `fachada.webp`, recortada de una
+  evidencia anterior):
+  - **Portada de cine**: al bajar, la cámara se acerca a la puerta del Gran Hotel y se funde en «Bienvenido al puerto»; con el
+    ratón, la escena se mueve un poco; el título cae palabra a palabra.
+  - **Historias con el móvil fijo** (tu piso, 4 pasos; el café, 5): la pantalla cambia con una persiana de píxel al leer cada
+    paso. En el móvil, el texto va pegado bajo el teléfono.
+  - **La fachada se toca**: «!» de píxel ámbar (como las del café) sobre el cartel, tu piso, los vecinos, el buzón, el café y la
+    limusina, cada una con su nota; con todas vistas, confeti.
+  - **Minijuego «Prepara un café»** (SVG de píxel propio): moler girando la manivela en círculos, apisonar arrastrando hacia abajo y
+    mantener la palanca hasta la zona dorada; de 1 a 3 estrellas, sin perder nada. Cada paso también con el botón (y teclado).
+  - **Minijuego «Las tres chisteras»**: seguir al conejo; cada acierto baraja un poco más. Aquí no se apuesta nada.
+  - Las cartas del hotel en abanico, la balda con confeti al llenarla, cortes de tejados de píxel entre secciones, la barra con la
+    sección en la que estás y **Libo en la esquina** con un bocadillo por sección (una vez cada una; se aparta de los juegos, de la
+    fachada y del pie).
+  - **Sonido sintetizado, apagado hasta tocar el altavoz** de la barra (molinillo, golpe, campanilla, maullido…). Los vídeos de
+    Playwright no graban sonido.
+- Comprobado con Playwright en el servidor de desarrollo (`/web/index.html`): recorrido completo en vídeo a 390 y 1440 (portada,
+  historias, balda, las seis «!», el café hasta 3 estrellas, el visor, las chisteras con acierto, Libo y el pie) sin errores de
+  consola; páginas enteras con movimiento reducido a 360, 390, 430 y 1440 sin desplazamiento lateral. Arreglado por el camino: un
+  `id="hotel"` repetido (la imagen de la portada) que mandaba «El hotel» arriba, las cartas del abanico que ensanchaban el móvil,
+  el móvil de las historias que salía en la columna equivocada en escritorio y Libo tapando «Borrar la cuenta».
+- Sin probar en móviles reales ni en WebKit. **Sin commit** y **sin publicar** (sigue haciendo falta el bloque 2: el reparto en la
+  raíz y el service worker).
+
+### 2026-11-26 · La web de Libotown, bloque 1 · sin commit (Claude)
+
+- Francisco: «he pensado que podríamos hacer ya la pagina web de la app, y que podriamos inspirarnos en la sección de libotown de
+  mi portfolio [...] como lo hariamos para aprovechar mi dominio?». Se le recomendó no mudar la app (lo guardado en el navegador es
+  de cada dirección: se perderían los EPUB y la app instalada) y enseñar la web a quien llega nuevo a `libotown.es`. Eligió
+  «En la raíz». Regla nueva en CLAUDE.md («La web de Libotown»).
+- Hecho el bloque 1: `public/web/index.html`, `web.css` y `web.js` (estáticas, sin librerías, rutas absolutas `/web/…`), con
+  la portada del Gran Hotel de noche (estrellas y chispas), tu piso, la balda de prueba con Libo, Libo, el edificio, el café, el
+  hotel, «Leer es lo que mueve la ciudad», el final y el pie con las cuatro páginas legales. Capturas en `public/web/img/` (600 KB),
+  sacadas de evidencias anteriores hechas con perfiles de prueba; el hotel de la portada es el del portfolio. Los botones «Entrar»
+  van a `/?entrar` (lo usará el bloque 2). Textos solo con lo que la app hace de verdad.
+- Comprobado con Playwright en el servidor de desarrollo (`/web/index.html`) a 360, 390, 430 y 1440: sin desplazamiento lateral
+  ni errores de consola; recorridos en vídeo a 390 y 1440 (balda, Libo, visor con anterior, siguiente y Escape). Evidencias en
+  `qa-report/web/`, enviadas al chat. Sin build ni pruebas de la app (no se tocó). Sin probar en móviles reales.
+- **Sin commit** (no se ha pedido). **No publicar sin el bloque 2**: el service worker de producción guardaría `/web/` como
+  `/index.html`.
 
 ### 2026-11-25 · La 1.145.1 a producción (Claude)
 

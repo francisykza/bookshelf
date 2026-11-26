@@ -20,6 +20,36 @@
       content="Libotown: tu santuario de lectura mediterráneo. Estantería viva, diario de citas, reto anual y temporizador cozy."
     />
     <title>Libotown</title>
+    <script>
+      // 1.146 (SPEC §146): en libotown.es, quien llega nuevo ve la web (/web/) y quien ya usa la app entra directo. «Ya la usa» es:
+      // algo de Libotown guardado en este navegador, la app instalada, o venir de «Entrar» (?entrar). Cualquier otra dirección
+      // (?code= o #access_token= del correo de Supabase, rutas, parámetros) va a la app como siempre. Solo en producción.
+      (function () {
+        try {
+          var l = location;
+          if (l.hostname !== 'libotown.es' || (l.pathname !== '/' && l.pathname !== '/index.html')) return;
+          var q = new URLSearchParams(l.search);
+          if (q.has('entrar')) {
+            localStorage.setItem('bookshelf:entrar', '1');
+            q.delete('entrar');
+            var resto = q.toString();
+            history.replaceState(history.state, '', '/' + (resto ? '?' + resto : '') + l.hash);
+            return;
+          }
+          var otros = Array.from(q.keys()).filter(function (k) { return !/^(utm_|fbclid$|gclid$)/.test(k); });
+          if (otros.length || l.hash.indexOf('=') >= 0) return;
+          var instalada = ['standalone', 'fullscreen', 'minimal-ui'].some(function (m) { return matchMedia('(display-mode: ' + m + ')').matches; });
+          if (instalada || navigator.standalone || document.referrer.indexOf('android-app://') === 0) return;
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i) || '';
+            if (k.indexOf('bookshelf') === 0 || k.indexOf('sb-') === 0) return;
+          }
+          l.replace('/web/?raiz' + l.hash);
+        } catch (e) {
+          // Sin acceso al almacenamiento: la app, como siempre
+        }
+      })();
+    </script>
     <!-- Al compartir el enlace (1.136, SPEC §136.6): la dirección de verdad es libotown.es, también desde la de antes -->
     <link rel="canonical" href="https://libotown.es/" />
     <meta property="og:type" content="website" />
