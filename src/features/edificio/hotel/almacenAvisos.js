@@ -20,6 +20,11 @@ export const LLEGADAS = {
   'maniqui-capa': '2026-11-10',
   'cartel-vinetas': '2026-11-10',
   'neon-rayo': '2026-11-10',
+  // 1.149 · Las colecciones del ala nueva (Lumbre y Lana, Cristal y Helecho, Buhardilla de Octubre y Medianoche). La fecha es la
+  // de la entrega; si se publica otro día, se cambia por la de la publicación
+  ...Object.fromEntries(
+    ['hogar-ladrillo', 'orejero', 'lenero', 'alfombra-escocesa', 'lamina-nevada', 'banco-forja', 'escalera-macetas', 'limonero', 'lampara-jaula', 'ventanal-invernadero', 'nido-lectura', 'escalera-mantas', 'calabazas', 'lampara-seta', 'guirnalda-hojas', 'chester-terciopelo', 'biblioteca-escalera', 'candelabro-pie', 'globo-celeste', 'vidriera-luna'].map((id) => [id, '2026-11-26']),
+  ),
 };
 
 /** Cuántos días se ve un mueble como nuevo desde que llega. */

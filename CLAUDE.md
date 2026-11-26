@@ -483,6 +483,15 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     cuenta como visto. **Los deseados**, lista propia y privada **en el servidor** (migración nueva, la aplica él), aparte de
     «Se busca»; los de las habitaciones especiales no se siguen (nunca se rebajan). **Tocar un mueble** abre el almacén
     **directamente** (sin limusina ni paseo), delante de él con su ficha abierta, y «Al ordenador» vuelve.
+    **Las colecciones del ala nueva y la colección premium** (encargo de Francisco del 26-11-2026; 1.149, SPEC §149): las cuatro
+    habitaciones del ala nueva, abiertas con sus sets (Lumbre y Lana, Cristal y Helecho, Buhardilla de Octubre, al doble como toda
+    habitación especial, y **Medianoche, la colección premium**). **Modelo premium, el menos agresivo**: la ve todo el mundo, se
+    compra con tickets a precios muy altos, **nunca se rebaja ni sale en sobres**, y con la futura suscripción será mucho más
+    barata; la ficha lo dice sin presión (sin botones, cuentas atrás ni avisos). **Cifras aprobadas** (26-11-2026, aceptó la tabla
+    propuesta): chéster 600, biblioteca 550, vidriera 400, globo 350 y candelabro 300 (2.200 en total), y con la suscripción el
+    40 % (880). **Un solo punto dice si alguien es suscriptor**: `esSuscriptor()` en `src/domain/suscripcion.js` y
+    `piso_es_suscriptor()` en el servidor; hoy siempre no. La suscripción se enchufa cambiando solo esos dos, nunca el catálogo.
+    Antes de enchufarla hay que decidir qué pasa con regalar o poner en la Lonja lo premium comprado barato.
   - **Identidad de los muebles** (4-11-2026, aprobado por Francisco; por bloques con capturas). Motivo: nadie compraría en la
     Lonja un sofá que la tienda vende igual.
     - **Acabados**: algunas copias salen con un acabado propio (cambio de colores y efecto discreto sobre el mismo dibujo;

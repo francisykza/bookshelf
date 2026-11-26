@@ -37,9 +37,9 @@ export const ZONAS = [
 ];
 export const ZONA_PAREDES = 'paredes';
 const ZONA_DE = {
-  lectura: ['sillon', 'sillon-capa', 'estanteria-comics', 'lampara-pie', 'estanteria', 'mecedora', 'puf', 'libros', 'cesto-mantas', 'tetera', 'taza', 'velas'],
-  dormitorio: ['cama', 'mesilla', 'comoda', 'baul', 'perchero', 'lampara-mesa'],
-  estudio: ['escritorio', 'silla', 'globo', 'telescopio', 'ordenador'],
+  lectura: ['sillon', 'sillon-capa', 'estanteria-comics', 'lampara-pie', 'estanteria', 'mecedora', 'puf', 'libros', 'cesto-mantas', 'tetera', 'taza', 'velas', 'orejero', 'nido-lectura', 'biblioteca-escalera', 'candelabro-pie'],
+  dormitorio: ['cama', 'mesilla', 'comoda', 'baul', 'perchero', 'lampara-mesa', 'escalera-mantas', 'lampara-seta'],
+  estudio: ['escritorio', 'silla', 'globo', 'telescopio', 'ordenador', 'globo-celeste'],
 };
 /** La zona de un mueble: la suya si la tiene; lo de pared y las alfombras, «Paredes y suelo»; lo demás, el salón. */
 export function zonaOf(cat) {
@@ -201,6 +201,10 @@ export const CATALOG = [
   { id: 'placa-almoneda', rareza: 'especial', nombre: 'Placa de Almoneda del Capitán', cat: 'pared', capa: 'pared', w: 1, tonos: [[70, 96, 132]], guino: 'Por completar Almoneda del Capitán' },
   { id: 'placa-menaje', rareza: 'especial', nombre: 'Placa de Menaje Las Dos Anclas', cat: 'pared', capa: 'pared', w: 1, tonos: [[122, 92, 140]], guino: 'Por completar Menaje Las Dos Anclas' },
   { id: 'placa-heroes', rareza: 'especial', nombre: 'Placa de Capa y Antifaz', cat: 'pared', capa: 'pared', w: 1, tonos: [[168, 44, 52]], guino: 'Por completar Capa y Antifaz' },
+  { id: 'placa-lumbre', rareza: 'especial', nombre: 'Placa de Lumbre y Lana', cat: 'pared', capa: 'pared', w: 1, tonos: [[150, 56, 46]], guino: 'Por completar Lumbre y Lana' },
+  { id: 'placa-invernadero', rareza: 'especial', nombre: 'Placa de Cristal y Helecho', cat: 'pared', capa: 'pared', w: 1, tonos: [[92, 134, 104]], guino: 'Por completar Cristal y Helecho' },
+  { id: 'placa-octubre', rareza: 'especial', nombre: 'Placa de la Buhardilla de Octubre', cat: 'pared', capa: 'pared', w: 1, tonos: [[206, 128, 52]], guino: 'Por completar la Buhardilla de Octubre' },
+  { id: 'placa-medianoche', rareza: 'especial', nombre: 'Placa de Medianoche', cat: 'pared', capa: 'pared', w: 1, tonos: [[96, 58, 120]], guino: 'Por completar la colección Medianoche' },
 
   // ── La colección de superhéroes (1.101, encargo de Francisco del 9-11-2026): la primera habitación temática del Almacén
   // del Puerto. Muebles originales del género (capas, antifaces, viñetas, focos y rayos), nunca personajes, emblemas ni logos.
@@ -211,6 +215,34 @@ export const CATALOG = [
   { id: 'maniqui-capa', coleccion: 'heroes', rareza: 'poco-comun', nombre: 'Maniquí con capa', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [AZUL, GRANATE, MUSGO] },
   { id: 'cartel-vinetas', coleccion: 'heroes', nombre: 'Lámina de viñetas', cat: 'pared', capa: 'pared', w: 2, tonos: [NEGRO, GRANATE, AZUL] },
   { id: 'neon-rayo', coleccion: 'heroes', rareza: 'poco-comun', nombre: 'Neón del rayo', cat: 'pared', capa: 'pared', w: 1, luz: [0.5, 0.3, 2.7], tonos: [[250, 206, 80], [110, 210, 240], [240, 110, 150]] },
+
+  // ── Las colecciones del ala nueva del almacén (1.149, encargo de Francisco del 26-11-2026: «sets de muebles nuevos, lo más
+  // acogedores y atractivos que puedas, y una colección extra premium»). Una habitación montada por colección, con su paleta y
+  // su luz; formas en furnitureColecciones.js. Como Capa y Antifaz, son habitaciones especiales: al doble y sin rebajas ──
+  // «Lumbre y Lana»: junto al fuego
+  { id: 'hogar-ladrillo', coleccion: 'lumbre', rareza: 'poco-comun', nombre: 'Chimenea de ladrillo', cat: 'luz', capa: 'suelo', w: 2, d: 1, luz: [1, 0.75, 0.5], tonos: [[156, 72, 54], [196, 180, 156], [92, 92, 100]] },
+  { id: 'orejero', coleccion: 'lumbre', rareza: 'poco-comun', nombre: 'Butacón orejero', cat: 'asientos', capa: 'suelo', w: 2, d: 2, tonos: [GRANATE, MUSGO, MOSTAZA] },
+  { id: 'lenero', coleccion: 'lumbre', nombre: 'Leñero de forja', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [HIERRO, BRONCE, NOGAL] },
+  { id: 'alfombra-escocesa', coleccion: 'lumbre', nombre: 'Alfombra de cuadros', cat: 'alfombras', capa: 'alfombra', w: 3, d: 2, tonos: [GRANATE, MUSGO, AZUL] },
+  { id: 'lamina-nevada', coleccion: 'lumbre', nombre: 'Lámina de la cabaña nevada', cat: 'pared', capa: 'pared', w: 2, tonos: [NOGAL, MADERA, CREMA] },
+  // «Cristal y Helecho»: el invernadero
+  { id: 'banco-forja', coleccion: 'invernadero', rareza: 'poco-comun', nombre: 'Banco de forja', cat: 'asientos', capa: 'suelo', w: 2, d: 1, tonos: [SALVIA, ROSA, MOSTAZA] },
+  { id: 'escalera-macetas', coleccion: 'invernadero', rareza: 'poco-comun', nombre: 'Escalera de macetas', cat: 'plantas', capa: 'suelo', w: 2, d: 1, tonos: [MADERA_CLARA, [228, 224, 212], SALVIA] },
+  { id: 'limonero', coleccion: 'invernadero', nombre: 'Limonero en maceta', cat: 'plantas', capa: 'suelo', w: 1, d: 1, tonos: [TERRACOTA, CREMA, AZUL] },
+  { id: 'lampara-jaula', coleccion: 'invernadero', nombre: 'Farol de jaula', cat: 'luz', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 1.4], tonos: [[228, 224, 212], ORO, HIERRO] },
+  { id: 'ventanal-invernadero', coleccion: 'invernadero', rareza: 'poco-comun', nombre: 'Ventanal del invernadero', cat: 'pared', capa: 'pared', w: 2, luz: [1, 0.3, 2.2], tonos: [[236, 232, 220], SALVIA, HIERRO] },
+  // «Buhardilla de Octubre»: el otoño bajo el tejado
+  { id: 'nido-lectura', coleccion: 'octubre', rareza: 'poco-comun', nombre: 'Nido de lectura', cat: 'asientos', capa: 'suelo', w: 2, d: 2, luz: [1, 0.3, 1.9], tonos: [MOSTAZA, TERRACOTA, SALVIA] },
+  { id: 'escalera-mantas', coleccion: 'octubre', nombre: 'Escalera de mantas', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [MADERA_CLARA, MADERA, NOGAL] },
+  { id: 'calabazas', coleccion: 'octubre', nombre: 'Caja de calabazas', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [[222, 128, 52], [204, 158, 70], [178, 70, 46]] },
+  { id: 'lampara-seta', coleccion: 'octubre', rareza: 'poco-comun', nombre: 'Lámpara de seta', cat: 'luz', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 1.0], tonos: [[190, 70, 52], CREMA, MOSTAZA] },
+  { id: 'guirnalda-hojas', coleccion: 'octubre', nombre: 'Guirnalda de hojas', cat: 'pared', capa: 'pared', w: 3, luz: [1.5, 0.3, 2.85], tonos: [[204, 158, 70], [178, 70, 46], [150, 104, 70]] },
+  // «Medianoche», la colección premium (`premium`): la ve todo el mundo; su precio, muy alto, está en economy.js (PREMIUM)
+  { id: 'chester-terciopelo', coleccion: 'medianoche', premium: true, rareza: 'raro', nombre: 'Chéster de terciopelo', cat: 'asientos', capa: 'suelo', w: 3, d: 2, tonos: [[96, 40, 70], [118, 30, 44], [34, 72, 58]] },
+  { id: 'biblioteca-escalera', coleccion: 'medianoche', premium: true, rareza: 'raro', nombre: 'Biblioteca con escalera', cat: 'mesas', capa: 'suelo', w: 2, d: 1, luz: [1, 0.95, 3.2], tonos: [[74, 46, 32], [42, 36, 44], [34, 72, 58]] },
+  { id: 'candelabro-pie', coleccion: 'medianoche', premium: true, rareza: 'raro', nombre: 'Candelabro de pie', cat: 'luz', capa: 'suelo', w: 1, d: 1, luz: [0.5, 0.5, 2.2], tonos: [[196, 156, 76], PLATA, [70, 64, 70]] },
+  { id: 'globo-celeste', coleccion: 'medianoche', premium: true, rareza: 'raro', nombre: 'Globo celeste', cat: 'detalles', capa: 'suelo', w: 1, d: 1, tonos: [[40, 48, 92], [96, 40, 70], [34, 72, 58]] },
+  { id: 'vidriera-luna', coleccion: 'medianoche', premium: true, rareza: 'raro', nombre: 'Vidriera de la luna', cat: 'pared', capa: 'pared', w: 2, luz: [1, 0.3, 2.3], tonos: [[176, 166, 150], NOGAL, PIZARRA] },
 
   // ── La lata de los garbanzos (1.82): premios humildes, con las mismas reglas que los de la caja ──
   { id: 'tarro-garbanzos', rareza: 'especial', casino: true, nombre: 'Tarro de garbanzos', cat: 'detalles', capa: 'encima', w: 1, d: 1, tonos: [[222, 186, 118]], guino: 'De la lata de los garbanzos del casino' },

@@ -47,7 +47,7 @@ describe('las reglas del servidor coinciden con economy.js', () => {
     // «Todo el catálogo» en el servidor es por rareza: los místicos se sortean aparte (solo en el de coleccionista) y
     // los premios (1.79) no salen nunca
     // las colecciones del almacén (1.101) tampoco: los sobres están cerrados por la reforma y, al reabrirlos, piso_abrir_sobre
-    // tendrá que dejarlas fuera como hace economy.js (anotado en SPEC §101)
+    // tendrá que dejarlas fuera como hace economy.js (anotado en SPEC §101); desde la 1.149, piso_al_azar ya las deja fuera
     const todos = CATALOG.filter((c) => !c.set && !isMistico(c) && !isEspecial(c) && !c.coleccion).map((c) => c.id);
     for (const s of SOBRES) {
       const { rows } = await db.query('select piso_sobre($1) as d', [s.id]);

@@ -23,8 +23,9 @@ describe('zonas de la casa', () => {
     expect(catalogItem('escritorio').cat).toBe('mesas');
   });
 
-  it('hoy, lo que queda a la venta se reparte entre lectura, salón, estudio y paredes', () => {
+  // 1.149: con el ala nueva del almacén, también el dormitorio (la escalera de mantas y la lámpara seta)
+  it('hoy, lo que queda a la venta se reparte entre lectura, salón, dormitorio, estudio y paredes', () => {
     const usadas = new Set(CATALOG.filter((c) => !isRetirado(c.id) && c.cat !== 'misticos' && !c.compania).map(zonaOf));
-    expect([...usadas].sort()).toEqual(['estudio', 'lectura', ZONA_PAREDES, 'salon'].sort());
+    expect([...usadas].sort()).toEqual(['dormitorio', 'estudio', 'lectura', ZONA_PAREDES, 'salon'].sort());
   });
 });

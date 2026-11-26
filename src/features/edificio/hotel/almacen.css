@@ -500,6 +500,15 @@ li[data-m='false'] .alb__mini { filter: grayscale(1); opacity: 0.5; }
 /* 1.106 · lo de las habitaciones especiales: precio doble, nunca rebajado */
 .alm-oferta[data-tipo='especial'] { background: #1c2040; color: #f3d27a; }
 .alm-ticket__especial { margin-left: 6px; color: #2c3266; font-size: 0.72rem; font-weight: 700; }
+/* 1.149 · La colección premium «Medianoche»: ciruela y oro; el precio de suscriptor, una línea discreta de la ficha */
+.alm-oferta[data-tipo='premium'] { background: #4a2448; color: #f3d27a; }
+.alm-dir__item b[data-premium] { background: #4a2448; color: #f3d27a; }
+.alm-precio[data-premium] { background: #4a2448; color: #f3d27a; }
+/* La palabra no cabe en la columna de las etiquetas: la fila va en dos líneas, la etiqueta encima */
+.alm-ficha__datos .alm-ficha__socio { grid-template-columns: 1fr; gap: 0; }
+.alm-ficha__socio dt { color: #6a3a66; line-height: 1.5; }
+.alm-ficha__socio dd { color: #4a2448; font-size: 0.84rem; }
+.alm-ficha__socio dd small { color: var(--alm-ink); opacity: 0.72; font-size: 0.72rem; }
 
 /* ── 1.102 · El probador: pestañas de papel, una fila de perchas que se desliza y el pie con «Listo» ── */
 .alm-card--probador { max-height: 48%; }

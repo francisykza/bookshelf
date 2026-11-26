@@ -89,6 +89,17 @@ const LUCES = [
   // 2.ª ampliación · La lámpara de araña de la placita y una campana sobre el ala nueva
   { at: [23.5, 17.1, 3.4], k: 0.85, reach: 5.0 },
   { at: [23.5, 22.6, 4.3], k: 0.6, reach: 5.0 },
+  // 1.149 · El ala nueva: la lámpara de cada habitación y lo que da luz cálida (el fuego, el ventanal, las lucecitas, las velas)
+  { at: [20.1, 20.25, 3.1], k: 0.42, reach: 3.2 },
+  { at: [19.1, 19.7, 0.6], k: 0.75, reach: 2.8 },
+  { at: [20.1, 23.55, 3.2], k: 0.5, reach: 3.4 },
+  { at: [18.5, 23.75, 2.2], k: 0.45, reach: 2.6 },
+  { at: [27.2, 20.25, 3.1], k: 0.4, reach: 3.2 },
+  { at: [28.6, 19.2, 1.1], k: 0.55, reach: 2.0 },
+  { at: [28.6, 20.3, 1.9], k: 0.4, reach: 2.2 },
+  { at: [27.15, 23.55, 3.0], k: 0.42, reach: 3.0 },
+  { at: [27.05, 22.46, 2.2], k: 0.6, reach: 2.4 },
+  { at: [29.0, 23.6, 2.3], k: 0.3, reach: 2.0 },
   // 2.ª ampliación · La planta de abajo: plafones en el techo, sobre los pasillos (solo alumbran su planta)
   ...[5, 11.5, 16.4].flatMap((x) => [3.6, 9, 15, 21].map((y) => ({ at: [x, y, BAJO.z + BAJO.alto - 0.1], k: x > 16 && y > 10 && y < 20 ? 0.35 : 0.72, reach: 5.4, bajo: true }))),
 ];
@@ -206,6 +217,7 @@ function paintFloor(X0 = 0, Y0 = 0, W = AW, D = AD) {
 function sueloHab(r, h, x, y, ix, iy) {
   const ramp = r.rampOf(h.suelo);
   const e = Math.min(x - h.x0, h.x1 - x, y - h.y0, h.y1 - y);
+  if (h.tema) return sueloTema(r, h, ramp, x, y, ix, iy);
   if (h.heroes) {
     if (e < 0.16) return r.rampOf(BRASS)[e < 0.06 ? 2 : 3];
     // Puntos de trama (como los de un cómic impreso), más grandes hacia el rincón del escenario
@@ -225,8 +237,104 @@ function sueloHab(r, h, x, y, ix, iy) {
   return ramp[seam ? 1 : clamp(Math.floor(2.5 + hash(Math.floor((x + (row % 3) * 0.7) / 2.1), row) * 1.4 + (r.bayerAt(ix, iy) - 0.5) * 0.3), 2, 4)];
 }
 
+const DORADO_ALA = [222, 180, 86];
+/**
+ * 1.149 · El suelo de las habitaciones del ala nueva: espiga de nogal junto al fuego, baldosa hidráulica en el invernadero, tablas
+ * anchas de pino en la buhardilla y, en Medianoche, parquet oscuro en damero con una alfombra de ciruela y oro bajo el chéster.
+ */
+function sueloTema(r, h, ramp, x, y, ix, iy) {
+  const k = r.bayerAt(ix, iy);
+  if (h.tema === 'lumbre') {
+    // Espiga: lamas de 0,15 de ancho que suben y bajan en zigzag, con sus juntas
+    const u = x / 0.15;
+    const col = Math.floor(u);
+    const v = y + (col % 2 ? 0.3 : 0) + (u - col) * (col % 2 ? -0.15 : 0.15);
+    const seam = u - col < 0.12 || v % 0.6 < 0.04;
+    return ramp[seam ? 1 : clamp(Math.floor(2.4 + hash(col, Math.floor(v / 0.6)) * 1.5 + (k - 0.5) * 0.3), 2, 4)];
+  }
+  if (h.tema === 'invernadero') {
+    // Baldosa hidráulica: damero de terracota y crema, con una flor de cuatro pétalos verdes en cada crema
+    const s = 0.5;
+    const gx = Math.floor(x / s);
+    const gy = Math.floor(y / s);
+    const fx = x / s - gx - 0.5;
+    const fy = y / s - gy - 0.5;
+    if (Math.abs(fx) > 0.46 || Math.abs(fy) > 0.46) return r.rampOf([150, 140, 126])[2];
+    if ((gx + gy) % 2) return ramp[clamp(Math.floor(2.6 + (k - 0.5) * 0.6), 2, 4)];
+    const petalo = Math.abs(fx) + Math.abs(fy) < 0.3 && Math.min(Math.abs(fx), Math.abs(fy)) < 0.07;
+    return petalo ? r.rampOf([92, 134, 104])[3] : Math.hypot(fx, fy) < 0.06 ? ramp[3] : r.rampOf([226, 214, 186])[3];
+  }
+  if (h.tema === 'octubre') {
+    // Tablas anchas de pino, a lo largo, con sus nudos; y alguna hoja que ha entrado por el tragaluz
+    const row = Math.floor(y / 0.42);
+    const seam = y % 0.42 < 0.035 || (x + (row % 2) * 1.3) % 2.6 < 0.03;
+    const knot = hash(Math.floor(x / 0.5), row) > 0.93 && Math.hypot((x % 0.5) - 0.25, (y % 0.42) - 0.21) < 0.06;
+    if (hash(Math.floor(x / 0.3), Math.floor(y / 0.3) + 77) > 0.985) return r.rampOf([178, 70, 46])[3];
+    return ramp[seam || knot ? 1 : clamp(Math.floor(2.6 + hash(Math.floor((x + (row % 2) * 1.3) / 2.6), row) * 1.2 + (k - 0.5) * 0.3), 2, 4)];
+  }
+  // Medianoche: la alfombra de ciruela con su cenefa dorada y sus rombos, y alrededor el parquet oscuro en damero
+  const ax0 = h.x0 + 1.25;
+  const ax1 = h.x1 - 0.15;
+  const ay0 = h.y0 + 0.4;
+  const ay1 = h.y1 - 0.4;
+  if (x > ax0 && x < ax1 && y > ay0 && y < ay1) {
+    const d = Math.min(x - ax0, ax1 - x, y - ay0, ay1 - y);
+    const ciruela = r.rampOf([96, 40, 70]);
+    if (d < 0.06 || (d > 0.2 && d < 0.24)) return r.rampOf(DORADO_ALA)[3];
+    if (d < 0.2) return ciruela[1];
+    const rombo = Math.abs(x - (ax0 + ax1) / 2) / 1.1 + Math.abs(y - (ay0 + ay1) / 2) / 0.9;
+    if (Math.abs(rombo - 0.7) < 0.05 || Math.abs(rombo - 0.35) < 0.04) return r.rampOf(DORADO_ALA)[2];
+    return ciruela[clamp(Math.floor(2.6 + (noise(x * 4, y * 4) - 0.5) * 0.8 + (k - 0.5) * 0.3), 2, 3)];
+  }
+  const cx = Math.floor(x / 0.4);
+  const cy = Math.floor(y / 0.4);
+  const along = (cx + cy) % 2 ? (x % 0.4) / 0.4 : (y % 0.4) / 0.4;
+  const seam = x % 0.4 < 0.03 || y % 0.4 < 0.03 || Math.abs(along - 0.5) < 0.04;
+  return ramp[seam ? 1 : clamp(Math.floor(2.4 + hash(cx, cy) * 1.4 + (k - 0.5) * 0.3), 2, 4)];
+}
+
+/**
+ * 1.149 · El papel del ala nueva: granate con flores de lis pequeñas junto al fuego, salvia con celosía blanca en el invernadero,
+ * mostaza con hojitas en la buhardilla y ciruela con estrellas doradas y su filete en Medianoche.
+ */
+function papelTema(r, h, a, b) {
+  if (b < 0.42) return r.rampOf(h.friso)[b > 0.36 ? 4 : 2];
+  const ramp = r.rampOf(h.papel);
+  const motivo = r.rampOf(h.raya);
+  if (h.tema === 'lumbre') {
+    const s = 0.34;
+    const u = a / s - Math.floor(a / s) - 0.5;
+    const v = b / s - Math.floor(b / s) - 0.5;
+    const flor = (Math.abs(u) < 0.05 && Math.abs(v) < 0.22) || (Math.abs(v + 0.04) < 0.05 && Math.abs(u) < 0.16);
+    return flor ? motivo[2] : ramp[(Math.floor(a / s) + Math.floor(b / s)) % 2 ? 2 : 3];
+  }
+  if (h.tema === 'invernadero') {
+    const d1 = ((a + b) / 0.4) % 1;
+    const d2 = ((a - b + 100) / 0.4) % 1;
+    return d1 < 0.07 || d2 < 0.07 ? motivo[3] : ramp[3];
+  }
+  if (h.tema === 'octubre') {
+    const s = 0.3;
+    const gx = Math.floor(a / s);
+    const gy = Math.floor(b / s);
+    const u = a / s - gx - 0.5;
+    const v = b / s - gy - 0.5;
+    const hoja = (gx + gy) % 3 === 0 && Math.abs(u) + Math.abs(v) * 0.6 < 0.14;
+    return hoja ? motivo[3] : ramp[(gx + gy) % 2 ? 2 : 3];
+  }
+  if (b > 1.02 && b < 1.08) return r.rampOf(DORADO_ALA)[3];
+  const s = 0.36;
+  const gx = Math.floor(a / s);
+  const gy = Math.floor(b / s);
+  const u = a / s - gx - 0.5;
+  const v = b / s - gy - 0.5;
+  const estrella = (gx + gy * 3) % 4 === 0 && ((Math.abs(u) < 0.04 && Math.abs(v) < 0.16) || (Math.abs(v) < 0.04 && Math.abs(u) < 0.16));
+  return estrella ? motivo[3] : ramp[(gx + gy) % 2 ? 2 : 3];
+}
+
 /** 1.101 · El papel de las paredes de cada habitación montada (a lo largo de la pared, alto), con su zócalo de roble. */
 function papelHab(r, h, a, b) {
+  if (h.tema) return papelTema(r, h, a, b);
   if (b < 0.42) return r.rampOf(OAK)[b > 0.36 ? 4 : 2];
   const ramp = r.rampOf(h.papel);
   if (h.heroes) {
@@ -638,9 +746,9 @@ function buildHabitaciones() {
   }
   for (const h of HABITACIONES) {
     const papel = h.papel;
-    const trim = h.heroes ? [176, 44, 48] : OAK;
+    const trim = h.trim ?? (h.heroes ? [176, 44, 48] : OAK);
     // Los tabiques: el del lado del paso (y0) en todas; el del fondo (y1) solo si no es la pared de la sala
-    const friso = h.heroes ? [28, 32, 62] : [150, 112, 74];
+    const friso = h.friso ?? (h.heroes ? [28, 32, 62] : [150, 112, 74]);
     const tabique = (y) => {
       pushBox(s, [h.x0, y - 0.1, 0, h.x1, y + 0.1, h.alto], papel);
       pushBox(s, [h.x0, y - 0.115, 0, h.x1, y + 0.115, 1.05], friso);
@@ -651,9 +759,32 @@ function buildHabitaciones() {
       pushBox(s, [h.x0, y - 0.13, h.alto, h.x1, y + 0.13, h.alto + 0.08], trim);
       if (h.heroes) pushBox(s, [h.x0, y - 0.105, 1.9, h.x1, y + 0.105, 2.02], [176, 44, 48]);
     };
+    // 1.149 · Las del ala nueva, pegadas de dos en dos: cada una pone su medio tabique, de su lado y con su papel (con la regla
+    // de abajo, entre dos contiguas no quedaba ninguno)
+    if (h.tema) {
+      for (const [y, lado] of [
+        [h.y0, 1],
+        [h.y1, -1],
+      ]) {
+        if (lado < 0 && h.y1 >= HAB.y1 - 0.2) continue;
+        const caja = (z0, z1, g) => {
+          const [a, b] = lado > 0 ? [y, y + g] : [y - g, y];
+          return [h.x0, a, z0, h.x1, b, z1];
+        };
+        pushBox(s, caja(0, h.alto, 0.1), papel);
+        pushBox(s, caja(0, 1.05, 0.115), friso);
+        pushBox(s, caja(1.05, 1.12, 0.13), OAK);
+        pushBox(s, caja(0, 0.14, 0.125), shade3(friso, 0.7));
+        for (let x = h.x0 + 0.3; x + 0.7 < h.x1; x += 0.95) {
+          const yy = y + lado * 0.12;
+          pushBox(s, [x, yy - 0.01, 0.3, x + 0.7, yy + 0.01, 0.9], shade3(friso, 1.12));
+        }
+        pushBox(s, caja(h.alto, h.alto + 0.08, 0.13), trim);
+      }
+    }
     // Si otra habitación empieza donde acaba esta, su tabique ya está: no se dibuja dos veces
-    if (!HABITACIONES.some((o) => o !== h && o.x0 === h.x0 && Math.abs(o.y1 - h.y0) < 0.01 && o.y0 < h.y0)) tabique(h.y0);
-    if (h.y1 < HAB.y1 - 0.2 && !HABITACIONES.some((o) => o !== h && o.x0 === h.x0 && Math.abs(o.y0 - h.y1) < 0.01)) tabique(h.y1);
+    else if (!HABITACIONES.some((o) => o !== h && o.x0 === h.x0 && Math.abs(o.y1 - h.y0) < 0.01 && o.y0 < h.y0)) tabique(h.y0);
+    if (!h.tema && h.y1 < HAB.y1 - 0.2 && !HABITACIONES.some((o) => o !== h && o.x0 === h.x0 && Math.abs(o.y0 - h.y1) < 0.01)) tabique(h.y1);
     // El frente, abierto al pasillo: dos postes y un dintel con su remate
     const xf = h.x0 === AW ? h.x1 : h.x0;
     for (const y of [h.y0, h.y1]) pushBox(s, [xf - 0.09, y - 0.09, 0, xf + 0.09, y + 0.09, h.alto], trim);
@@ -661,6 +792,11 @@ function buildHabitaciones() {
     pushBox(s, [xf - 0.12, h.y0, h.alto - 0.38, xf + 0.12, h.y1, h.alto - 0.34], h.heroes ? BRASS : [142, 106, 69]);
     if (h.cerrada) {
       cortina(s, h, xf);
+      continue;
+    }
+    // 1.149 · Las del ala nueva llevan su propia lámpara y su remate (alaNueva, más abajo)
+    if (h.tema) {
+      alaNueva(s, h, xf);
       continue;
     }
     // La lámpara de cada habitación: colgante en las normales; en la de superhéroes, un carril con dos focos
@@ -744,6 +880,161 @@ function cortina(s, h, xf) {
     pushBox(s, [ta, ey - w, z, tb, ey + w, z + 0.03], [196, 200, 186]);
   // Una estrellita de tiza en la esquina
   pushBox(s, [ta, ey + 0.17, 0.78, tb, ey + 0.23, 0.84], [236, 210, 120]);
+}
+
+/**
+ * 1.149 · Lo que hace distinta cada habitación del ala nueva, además de sus muebles: junto al fuego, un farol de forja colgado
+ * y una viga de madera en el dintel; en el invernadero, la armadura blanca de un tejado de cristal con su helecho colgante; en
+ * la buhardilla, el tejado inclinado de vigas con un tragaluz al cielo de noche; y en Medianoche, una araña de latón con velas
+ * y la cortina de terciopelo recogida a los lados con sus alzapaños dorados, como en un estreno.
+ */
+/** Si la vista hasta un mueble del ala nueva cruza un tabique: entra en su habitación por fuera de su frente. */
+const SALAS_TEMA = HABITACIONES.filter((h) => h.tema);
+function tapadoPorTabique(e, px, py) {
+  const h = SALAS_TEMA.find((r) => e.x >= r.x0 - 0.2 && e.x <= r.x1 + 0.2 && e.y > r.y0 && e.y < r.y1);
+  if (!h) return false;
+  const xf = h.x0 === AW ? h.x1 : h.x0;
+  if ((px - xf) * (e.x - xf) >= 0) return false;
+  const t = (xf - px) / (e.x - px);
+  const y = py + (e.y - py) * t;
+  return y < h.y0 + 0.05 || y > h.y1 - 0.05;
+}
+
+/** El farol de forja de «Lumbre y Lana», colgado de `techo` con su luz. */
+function alaFarol(s, cx, cy, techo) {
+  pushBox(s, [cx - 0.02, cy - 0.02, 2.55, cx + 0.02, cy + 0.02, techo], STEEL_D);
+  pushBox(s, [cx - 0.2, cy - 0.2, 2.5, cx + 0.2, cy + 0.2, 2.56], [52, 48, 54]);
+  for (const [a, b] of [
+    [-0.18, -0.18],
+    [0.14, -0.18],
+    [-0.18, 0.14],
+    [0.14, 0.14],
+  ])
+    pushBox(s, [cx + a, cy + b, 2.1, cx + a + 0.04, cy + b + 0.04, 2.5], [52, 48, 54]);
+  pushBox(s, [cx - 0.15, cy - 0.15, 2.14, cx + 0.15, cy + 0.15, 2.46], [255, 206, 128], { glow: true });
+  pushBox(s, [cx - 0.22, cy - 0.22, 2.04, cx + 0.22, cy + 0.22, 2.1], [52, 48, 54]);
+}
+
+function alaNueva(s, h, xf) {
+  const cx = (h.x0 + h.x1) / 2;
+  const cy = (h.y0 + h.y1) / 2;
+  const dx = h.x0 === AW ? 1 : -1;
+  const hacia = (a, d) => (dx > 0 ? [a, a + d] : [a - d, a]);
+  const top = h.alto;
+  if (h.tema === 'lumbre') {
+    // La viga del dintel, de madera vieja, otra de pared a pared y, colgado de ella junto al butacón, el farol de forja
+    pushBox(s, [xf - 0.16, h.y0, top - 0.5, xf + 0.16, h.y1, top - 0.32], [86, 54, 36]);
+    const fx = (dx > 0 ? h.x0 : h.x1) + dx * 1.85;
+    const fy = h.y0 + 0.62;
+    pushBox(s, [fx - 0.13, h.y0, top - 0.42, fx + 0.13, h.y1, top - 0.24], [86, 54, 36]);
+    alaFarol(s, fx, fy, top - 0.42);
+    return;
+  }
+  if (h.tema === 'invernadero') {
+    // El tejado de cristal: cerchas blancas a dos aguas y un helecho colgado en su cesta en medio
+    for (let y = h.y0 + 0.4; y < h.y1; y += 0.8) {
+      for (let k = 0; k < 8; k += 1) {
+        const t0 = k / 8;
+        const x0 = h.x0 + t0 * (h.x1 - h.x0);
+        const x1 = x0 + (h.x1 - h.x0) / 8;
+        const z = top + 0.1 + (1 - Math.abs(t0 + 1 / 16 - 0.5) * 2) * 0.9;
+        pushBox(s, [x0, y - 0.04, z, x1, y + 0.04, z + 0.08], [236, 232, 220]);
+      }
+    }
+    pushBox(s, [h.x0, h.y0, top + 0.06, h.x0 + 0.08, h.y1, top + 0.14], [236, 232, 220]);
+    pushBox(s, [h.x1 - 0.08, h.y0, top + 0.06, h.x1, h.y1, top + 0.14], [236, 232, 220]);
+    pushBox(s, [cx - 0.04, h.y0, top + 0.94, cx + 0.04, h.y1, top + 1.02], [236, 232, 220]);
+    // El helecho, colgado de una cercha en el rincón del fondo, sobre el farol de jaula (no en medio de la vista)
+    const hx = (dx > 0 ? h.x0 : h.x1) + dx * 1.55;
+    const hy = h.y1 - 0.6;
+    pushBox(s, [hx - 0.01, hy - 0.01, 2.6, hx + 0.01, hy + 0.01, top + 0.5], [150, 140, 120]);
+    pushBox(s, [hx - 0.22, hy - 0.22, 2.42, hx + 0.22, hy + 0.22, 2.62], [176, 140, 96]);
+    for (let k = 0; k < 16; k += 1) {
+      const a = (k / 16) * Math.PI * 2;
+      const r = 0.2 + hash(k, 141) * 0.16;
+      const x = hx + Math.cos(a) * r;
+      const y = hy + Math.sin(a) * r;
+      const z = 2.62 - hash(k, 142) * 0.7;
+      pushBox(s, [x - 0.07, y - 0.07, z, x + 0.07, y + 0.07, z + 0.12], k % 3 ? [86, 122, 78] : [128, 160, 96]);
+    }
+    return;
+  }
+  if (h.tema === 'octubre') {
+    // El tejado de la buhardilla: vigas que bajan hacia la pared del fondo y, entre dos, el tragaluz con el cielo de noche
+    const xa = h.x1;
+    const xb = h.x0 + 0.6;
+    const za = 3.05;
+    const zb = 3.75;
+    for (let y = h.y0 + 0.25; y < h.y1; y += 0.7) {
+      for (let k = 0; k < 10; k += 1) {
+        const t = k / 10;
+        const x0 = xa + (xb - xa) * t;
+        const x1 = xa + (xb - xa) * (t + 0.1);
+        const z = za + (zb - za) * t;
+        pushBox(s, [Math.min(x0, x1), y - 0.07, z, Math.max(x0, x1), y + 0.07, z + 0.14], [150, 104, 66]);
+      }
+    }
+    for (let k = 0; k < 10; k += 1) {
+      const t = k / 10;
+      const x0 = xa + (xb - xa) * t;
+      const x1 = xa + (xb - xa) * (t + 0.1);
+      pushBox(s, [Math.min(x0, x1), h.y0 + 0.05, za + (zb - za) * t - 0.05, Math.max(x0, x1), h.y1 - 0.05, za + (zb - za) * t], [176, 128, 84]);
+    }
+    // El tragaluz: su marco y el cristal azul de noche, encendido
+    const tx0 = xa + (xb - xa) * 0.35;
+    const tx1 = xa + (xb - xa) * 0.62;
+    const tz = (t) => za + (zb - za) * t - 0.06;
+    pushBox(s, [Math.min(tx0, tx1), cy - 0.5, tz(0.35), Math.max(tx0, tx1), cy + 0.5, tz(0.62) + 0.02], [56, 62, 108], { glow: true });
+    for (const y of [cy - 0.52, cy + 0.48]) pushBox(s, [Math.min(tx0, tx1), y, tz(0.35) - 0.02, Math.max(tx0, tx1), y + 0.04, tz(0.62) + 0.04], [120, 86, 56]);
+    for (const [x, y] of [
+      [tx0 - 0.15 * dx, cy - 0.2],
+      [tx0 - 0.4 * dx, cy + 0.25],
+      [tx0 - 0.25 * dx, cy + 0.05],
+    ])
+      pushBox(s, [x - 0.025, y - 0.025, tz(0.5) - 0.06, x + 0.025, y + 0.025, tz(0.5) - 0.04], [250, 240, 200], { glow: true });
+    return;
+  }
+  // Medianoche: la araña de latón con sus velas, de una viga de nogal sobre el chéster, y la cortina de terciopelo recogida a
+  // los dos lados del frente
+  const ax = (dx > 0 ? h.x0 : h.x1) + dx * 1.15;
+  pushBox(s, [ax - 0.14, h.y0, top - 0.3, ax + 0.14, h.y1, top - 0.1], [58, 36, 30]);
+  pushBox(s, [ax - 0.02, cy - 0.02, 2.75, ax + 0.02, cy + 0.02, top - 0.3], BRASS);
+  pushBox(s, [ax - 0.08, cy - 0.08, 2.4, ax + 0.08, cy + 0.08, 2.78], BRASS);
+  for (let k = 0; k < 6; k += 1) {
+    const a = (k / 6) * Math.PI * 2;
+    const x = ax + Math.cos(a) * 0.42;
+    const y = cy + Math.sin(a) * 0.42;
+    pushBox(s, [Math.min(ax, x) - 0.02, Math.min(cy, y) - 0.02, 2.44, Math.max(ax, x) + 0.02, Math.max(cy, y) + 0.02, 2.48], BRASS);
+    pushBox(s, [x - 0.05, y - 0.05, 2.44, x + 0.05, y + 0.05, 2.5], BRASS);
+    pushBox(s, [x - 0.025, y - 0.025, 2.5, x + 0.025, y + 0.025, 2.66], [244, 236, 214]);
+    pushBox(s, [x - 0.02, y - 0.02, 2.66, x + 0.02, y + 0.02, 2.76], [255, 206, 120], { glow: true });
+  }
+  const tela = h.tela;
+  const base = xf + dx * 0.06;
+  const ctop = top - 0.4;
+  for (const [ya, yb, lado] of [
+    [h.y0 + 0.08, h.y0 + 0.62, 1],
+    [h.y1 - 0.62, h.y1 - 0.08, -1],
+  ]) {
+    // Cada hoja: ancha arriba, recogida a media altura por el alzapaños y abierta otra vez hasta el suelo
+    for (let z = 0.06, k = 0; z < ctop; z += 0.1, k++) {
+      const recogida = Math.max(0, 1 - Math.abs(z - 1.25) / 1.1);
+      const ancho = (yb - ya) * (1 - recogida * 0.55);
+      const y0 = lado > 0 ? ya : yb - ancho;
+      const [a, b] = hacia(base, 0.12 + recogida * 0.06);
+      pushBox(s, [a, y0, z, b, y0 + ancho, Math.min(ctop, z + 0.1)], shade3(tela, k % 2 ? 0.86 : 1.04));
+    }
+    const yc = lado > 0 ? ya + 0.16 : yb - 0.16;
+    const [a, b] = hacia(base, 0.22);
+    pushBox(s, [a, yc - 0.18, 1.2, b, yc + 0.18, 1.3], BRASS);
+    pushBox(s, [a, yc - 0.05, 0.9, b, yc + 0.05, 1.2], shade3(BRASS, 0.82));
+  }
+  const [ba, bb] = hacia(base + dx * 0.02, 0.1);
+  pushBox(s, [ba, h.y0 + 0.02, ctop, bb, h.y1 - 0.02, ctop + 0.08], BRASS);
+  const [ga, gb] = hacia(xf, 0.2);
+  pushBox(s, [ga, h.y0 + 0.05, ctop + 0.08, gb, h.y1 - 0.05, ctop + 0.34], [60, 38, 32]);
+  const [fa, fb] = hacia(xf + dx * 0.2, 0.02);
+  pushBox(s, [fa, h.y0 + 0.05, ctop + 0.14, fb, h.y1 - 0.05, ctop + 0.18], BRASS);
 }
 
 /**
@@ -1482,6 +1773,8 @@ const ZONAS = {
   ambientes: [1.5, 12.7],
   fondo: [8, 1.2],
   habitaciones: [23.5, 10],
+  // 1.149 · El ala nueva
+  alanueva: [23.5, 21.9],
 };
 /** Lo que se toca y no es un mueble: la caja, el directorio y el muelle (mercadillo). */
 export const SITIOS = {
@@ -1513,6 +1806,11 @@ export const CARTELES = {
   'c:heroes': [24.8, 10.5, 4.1],
   // 2.ª ampliación · El arco del ala nueva, pasada la placita
   'c:pronto': [23.5, 18.6, 3.75],
+  // 1.149 · Sobre el frente de cada habitación del ala nueva
+  'c:lumbre': [22.2, 20.25, 3.85],
+  'c:invernadero': [22.2, 23.55, 3.85],
+  'c:octubre': [24.8, 20.25, 3.85],
+  'c:medianoche': [24.8, 23.55, 3.85],
   'c:moda': [11.5, 14.5, BAJO.z + 3.45],
 };
 
@@ -2446,6 +2744,8 @@ export function mountAlmacen(container, { onPick = () => {}, onFrame = () => {},
       if (!p.front) continue;
       // Que se vea el frente: si se mira el mueble por detrás (a través de la espina), sin etiqueta
       if ((px - e.x) * e.n[0] + (py - e.y) * e.n[1] < 0) continue;
+      // 1.149 · Lo de una habitación del ala nueva, solo si se ve por su frente (no a través del tabique de la de al lado)
+      if (tapadoPorTabique(e, px, py)) continue;
       out[`e:${e.i}`] = { ...p, visible: true };
       shown += 1;
     }

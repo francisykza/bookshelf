@@ -35,7 +35,8 @@ test('la sala de habitaciones, más grande: cuatro cerradas con su persiana y su
   for (const [name, x, y, yaw] of VISTAS) {
     await page.evaluate(([x, y, yaw]) => window.__almacen3d.place(x, y, yaw), [x, y, yaw]);
     await page.waitForTimeout(300);
-    if (name === '83-desde-el-fondo') await expect(alm.locator('.alm-cartel:not([data-off="true"])', { hasText: 'Próximamente' }).first()).toBeVisible();
+    // Desde la 1.149 el ala nueva ya tiene sus colecciones: el letrero del arco lo dice
+    if (name === '83-desde-el-fondo') await expect(alm.locator('.alm-cartel:not([data-off="true"])', { hasText: 'Ala nueva · colecciones' }).first()).toBeVisible();
     await shot(page, info, name);
   }
   // Se puede andar hasta el fondo del pasillo 4, pero no meterse en una cerrada

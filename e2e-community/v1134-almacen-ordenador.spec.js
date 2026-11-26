@@ -114,7 +114,8 @@ test('recorrido: el aviso en el escritorio, la pantalla «Almacén» y al almac�
   await nuevos.scrollIntoViewIfNeeded();
   await foto('4-almacen-nuevo');
   const todo = app.locator('section[aria-labelledby="pp-alm-todo"]');
-  await expect(todo.locator('.pp-alm__fila')).toHaveCount(20);
+  // 1.149: con las veinte del ala nueva, 40
+  await expect(todo.locator('.pp-alm__fila')).toHaveCount(40);
   await expect(todo.locator('.pp-alm__fila', { hasText: 'Sillón de la capa' })).toContainText('No se rebaja nunca');
   await todo.locator('h5').first().scrollIntoViewIfNeeded();
   await foto('5-almacen-todo');

@@ -2,7 +2,8 @@
 // migraciones: cuestan el doble en el almacén y en la tienda, no salen nunca en las ofertas y el albarán no les toca.
 import { beforeAll, describe, expect, it } from 'vitest';
 import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
-import { HABITACIONES_ESPECIALES, isDeHabitacionEspecial, precioDe } from '../economy';
+import { HABITACIONES_ESPECIALES, PREMIUM, isDeHabitacionEspecial, isPremium, precioDe } from '../economy';
+import { esSuscriptor } from '../../../domain/suscripcion';
 import { TALLERES } from '../talleres';
 import { mapaOfertas } from '../hotel/ofertas';
 
@@ -26,7 +27,7 @@ beforeAll(async () => {
 
 describe('los muebles de las habitaciones especiales', () => {
   it('son los mismos en el servidor y en economy.js, y cuestan el doble: común 40, poco común 80', async () => {
-    expect(ESPECIALES).toHaveLength(6);
+    expect(ESPECIALES).toHaveLength(26);
     const { rows } = await db.query('select id, rareza, piso_de_habitacion_especial(id) as esp, piso_precio_mueble(id) as precio from piso_catalogo where saga is null');
     for (const r of rows) {
       expect(r.esp, r.id).toBe(isDeHabitacionEspecial(r.id));
@@ -36,6 +37,22 @@ describe('los muebles de las habitaciones especiales', () => {
     expect(precioDe('sillon-capa')).toBe(80);
     expect(precioDe('placa-heroes')).toBeNull();
     expect(precioDe('sillon')).toBe(20);
+    expect(precioDe('hogar-ladrillo')).toBe(80);
+    expect(precioDe('lenero')).toBe(40);
+    expect(precioDe('placa-medianoche')).toBeNull();
+  });
+
+  it('la colección premium tiene sus precios en un solo sitio, igual en el servidor, y nadie es suscriptor todavía', async () => {
+    const servidor = (await db.query('select piso_premium() as p')).rows[0].p;
+    expect(Object.fromEntries(servidor.map((x) => [x.id, { precio: x.precio, socio: x.socio }]))).toEqual(PREMIUM);
+    expect(await call(A, 'select piso_es_suscriptor()')).toBe(false);
+    expect(esSuscriptor()).toBe(false);
+    for (const id of Object.keys(PREMIUM)) {
+      expect(isPremium(id)).toBe(true);
+      expect(precioDe(id)).toBe(PREMIUM[id].precio);
+      expect(PREMIUM[id].socio).toBeLessThan(PREMIUM[id].precio);
+    }
+    expect(TALLERES.find((t) => t.id === 'medianoche').muebles.sort()).toEqual(Object.keys(PREMIUM).sort());
   });
 
   it('nunca salen en las ofertas, ningún día', async () => {
@@ -53,6 +70,16 @@ describe('los muebles de las habitaciones especiales', () => {
     const antes = await tickets(A);
     await call(A, 'select piso_comprar($1)', ['neon-rayo']);
     expect(await tickets(A)).toBe(antes - 80);
+  });
+
+  it('la tienda del bajo cobra lo premium a su precio, con los tickets justos o sin compra', async () => {
+    await db.query('update piso_cuentas set tickets = 299 where user_id = $1', [A]);
+    expect(await rejects(call(A, 'select piso_comprar($1)', ['candelabro-pie']))).toBeTruthy();
+    expect(await tickets(A)).toBe(299);
+    await db.query('update piso_cuentas set tickets = 500 where user_id = $1', [A]);
+    await call(A, 'select piso_comprar($1)', ['candelabro-pie']);
+    expect(await tickets(A)).toBe(200);
+    await db.query('update piso_cuentas set tickets = 500 where user_id = $1', [A]);
   });
 
   it('en el almacén, sin oferta aunque la hubiera y fuera del albarán', async () => {

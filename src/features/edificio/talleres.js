@@ -55,6 +55,35 @@ export const TALLERES = [
     color: [168, 44, 52],
     muebles: ['sillon-capa', 'estanteria-comics', 'foco-heroe', 'maniqui-capa', 'cartel-vinetas', 'neon-rayo'],
   },
+  // 1.149 · Las colecciones del ala nueva del almacén, cada una con su habitación montada (la última, la premium)
+  {
+    id: 'lumbre',
+    nombre: 'Lumbre y Lana',
+    lema: 'Para leer con los pies calientes.',
+    color: [150, 56, 46],
+    muebles: ['hogar-ladrillo', 'orejero', 'lenero', 'alfombra-escocesa', 'lamina-nevada'],
+  },
+  {
+    id: 'invernadero',
+    nombre: 'Cristal y Helecho',
+    lema: 'Donde los libros huelen a tierra mojada.',
+    color: [92, 134, 104],
+    muebles: ['banco-forja', 'escalera-macetas', 'limonero', 'lampara-jaula', 'ventanal-invernadero'],
+  },
+  {
+    id: 'octubre',
+    nombre: 'Buhardilla de Octubre',
+    lema: 'Hojas fuera, mantas dentro.',
+    color: [206, 128, 52],
+    muebles: ['nido-lectura', 'escalera-mantas', 'calabazas', 'lampara-seta', 'guirnalda-hojas'],
+  },
+  {
+    id: 'medianoche',
+    nombre: 'Medianoche',
+    lema: 'Para quien lee cuando todo el puerto duerme.',
+    color: [96, 58, 120],
+    muebles: ['chester-terciopelo', 'biblioteca-escalera', 'candelabro-pie', 'globo-celeste', 'vidriera-luna'],
+  },
 ];
 
 export const tallerDe = (mueble) => TALLERES.find((t) => t.muebles.includes(mueble)) ?? null;

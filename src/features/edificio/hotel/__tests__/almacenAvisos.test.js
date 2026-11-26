@@ -1,6 +1,7 @@
 // 1.134 · El almacén en el ordenador: lo nuevo, las ofertas de hoy y lo ya visto; 1.135, lo que sigues (docs/qa/almacen-ordenador.md).
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ARTICULOS } from '../almacenLayout';
+import { TALLERES } from '../../talleres';
 import {
   DE_SIEMPRE,
   DIAS_NUEVO,
@@ -23,6 +24,8 @@ import {
 } from '../almacenAvisos';
 
 const HEROES = ['sillon-capa', 'estanteria-comics', 'foco-heroe', 'maniqui-capa', 'cartel-vinetas', 'neon-rayo'];
+// 1.149: las cuatro habitaciones del ala nueva, con sus veinte muebles (llegan el día que se publican)
+const ALA_NUEVA = TALLERES.filter((t) => ['lumbre', 'invernadero', 'octubre', 'medianoche'].includes(t.id)).flatMap((t) => t.muebles);
 const estado = (extra = {}) => ({ dia: '2026-11-15', vuelve: 1, semana_hasta: 2, tickets: 120, ofertas: [], ...extra });
 
 describe('almacenAvisos · llegadas', () => {
@@ -39,8 +42,13 @@ describe('almacenAvisos · llegadas', () => {
         .map((n) => n.id)
         .sort(),
     ).toEqual([...HEROES].sort());
-    expect(nuevosDelAlmacen('2026-12-09')).toHaveLength(6);
-    expect(nuevosDelAlmacen('2026-12-10')).toEqual([]);
+    expect(nuevosDelAlmacen('2026-12-09')).toHaveLength(6 + ALA_NUEVA.length);
+    expect(
+      nuevosDelAlmacen('2026-12-10')
+        .map((n) => n.id)
+        .sort(),
+    ).toEqual([...ALA_NUEVA].sort());
+    expect(nuevosDelAlmacen('2026-12-26')).toEqual([]);
     expect(nuevosDelAlmacen('mañana')).toEqual([]);
   });
   it('dice la fecha en corto', () => {
@@ -164,9 +172,9 @@ describe('almacenAvisos · lo que sigues (1.135)', () => {
     expect(TOPE_DESEADOS).toBe(40);
     expect(sePuedeSeguir('mesa')).toBe(true);
     expect(sePuedeSeguir('reloj')).toBe(true);
-    for (const id of HEROES) expect(sePuedeSeguir(id), id).toBe(false);
+    for (const id of [...HEROES, ...ALA_NUEVA]) expect(sePuedeSeguir(id), id).toBe(false);
     expect(sePuedeSeguir('sofa-volador')).toBe(false);
-    expect(ARTICULOS.filter((a) => sePuedeSeguir(a.id))).toHaveLength(ARTICULOS.length - HEROES.length);
+    expect(ARTICULOS.filter((a) => sePuedeSeguir(a.id))).toHaveLength(ARTICULOS.length - HEROES.length - ALA_NUEVA.length);
   });
 
   it('una oferta se reconoce por su día, o por el lunes de su semana', () => {

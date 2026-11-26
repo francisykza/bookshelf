@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **Con commit, publicándose: 1.149.0** (26-11-2026, §149; Francisco: «Commit y publicar»): las colecciones del ala nueva del almacén y la colección premium, con
+  el punto único de la suscripción. Migración `20261229120000_almacen_colecciones.sql` **aplicada** (26-11-2026). Cifras premium aprobadas
+  (aceptó la tabla propuesta). Ver la bitácora.
 - **Publicada en producción: 1.148.0** (26-11-2026, §148; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de
   `5f2af7f` a `4d22b80` y libotown.es sirve v1.148.0): Libo se mece y hace gestos pequeños
   en calma (app y web), sus poses en la web y las historias del teléfono de la web más claras (barra por paso con flechas y
@@ -538,6 +541,34 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.149.0, las colecciones del ala nueva y la colección premium (Claude)
+
+- Encargo de Francisco, que llega a través de su otra sesión: sets de muebles nuevos, lo más acogedores posible, y una colección
+  premium (la ve todo el mundo, cuesta muchos tickets y será mucho más barata con la futura suscripción). Detalle en SPEC §149.
+- Hecho: las cuatro habitaciones del ala nueva del almacén, abiertas, con 20 muebles nuevos en 3D y sus talleres y placas:
+  - «Lumbre y Lana», «Cristal y Helecho» y «Buhardilla de Octubre», especiales al doble;
+  - «Medianoche», la premium.
+- El punto único de la suscripción es `src/domain/suscripcion.js` en la app y `piso_es_suscriptor()` en el servidor; los dos
+  dicen siempre que no.
+- Commit y publicación pedidos por Francisco («Commit y publicar»). Cifras **aprobadas** por Francisco el mismo día (aceptó la tabla propuesta; SPEC §149.3): la colección premium a
+  2.200 tickets y 880 con la suscripción (−60 %), y los sets acogedores al doble de siempre (280, 320 y 280).
+- **Migración aplicada** el mismo día (Francisco: «hazlo tú»): `20261229120000_almacen_colecciones.sql` (9.740 B, SHA-256
+  `8927ba56…3616d3c2`, comprobado en la página antes de pegarla). Se pegó en el SQL Editor del proyecto y Francisco pulsó «Run»:
+  «Success. No rows returned». Con la clave pública, `piso_es_suscriptor`, `piso_premium`, `piso_precio_mueble` y
+  `piso_de_habitacion_especial` dan 42501 al anónimo, no «not found». Producción no enseña nada nuevo hasta publicar la 1.149.
+- `LLEGADAS` lleva 2026-11-26 para los veinte: si se publica otro día, cambiar la fecha.
+- Arreglado de paso, solo en el ala nueva: entre dos habitaciones contiguas no se dibujaba ningún tabique. **Pasa igual entre el
+  Estudio y la Salita** (de antes); no se ha tocado, porque es lo ya aprobado.
+- Riesgo para cuando exista la suscripción: lo premium es «raro» y se puede regalar y poner en la Lonja (hasta raro). Un
+  suscriptor podría comprarlo barato y pasarlo. Hoy no pasa (nadie es suscriptor); hay que decidirlo antes de enchufarla.
+- Pruebas:
+  - Vitest de los RLS del almacén, la tienda, los talleres, el edificio, el casino, los avisos y las zonas;
+  - build y oxlint (solo avisos ya existentes);
+  - e2e `v1149-colecciones` a 360, 390 y 1440, y `v1106`, `v1134`, `v1135`, `v199` y `v1101` a 390.
+- Evidencias en `qa-report/almacen/` (capturas `*-9x-*`) y `qa-report/almacen/video-1149/`. Sin probar en móviles reales ni en
+  WebKit.
+- La nota de traspaso de la 1.143 «sin commit» de la memoria estaba desfasada: la 1.143 ya estaba en git.
 
 ### 2026-11-26 · 1.148.0 a producción (Claude)
 

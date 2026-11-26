@@ -213,6 +213,9 @@ export const PUERTA = { x0: 14.1, x1: 16.9, alto: 3.1 };
  * 2.ª ampliación (10-11-2026): la sala llega hasta la pared de delante. Primero, las habitaciones con muebles; después, una
  * placita con bancos y macetas; y pasado su arco, el ala nueva: cuatro habitaciones cerradas con una cortina de terciopelo
  * hasta que lleguen muebles (`cerrada`). No enseñan nada ni se entra en ellas.
+ * 1.149 (encargo de Francisco del 26-11-2026): llegan los muebles y se abren las cuatro, cada una montada con su colección
+ * (`tema`: su suelo, su papel, su friso y su luz): Lumbre y Lana, Cristal y Helecho, Buhardilla de Octubre y, al fondo a la
+ * derecha, Medianoche, la colección premium (con la cortina recogida a los lados, como un estreno).
  */
 export const HAB = { x0: AW, x1: 29.5, y0: 0.85, y1: 25.2 };
 export const PASO = { y0: 3.0, y1: 5.4, alto: 3.4 };
@@ -220,14 +223,12 @@ export const HABITACIONES = [
   { id: 'hab-estudio', nombre: 'Estudio con vistas', x0: AW, x1: 22.2, y0: 5.4, y1: 10.2, alto: 2.8, suelo: [150, 98, 60], papel: [222, 206, 170], raya: [196, 172, 128] },
   { id: 'hab-salita', nombre: 'Salita de tarde', x0: AW, x1: 22.2, y0: 10.2, y1: 15.6, alto: 2.8, suelo: [86, 112, 142], papel: [200, 214, 196], raya: [140, 162, 128] },
   { id: 'hab-heroes', nombre: 'Capa y Antifaz', x0: 24.8, x1: 29.5, y0: 5.4, y1: 15.6, alto: 3.6, suelo: [44, 50, 92], papel: [40, 46, 86], raya: [62, 70, 120], heroes: true },
-  // El ala nueva, pasada la placita: el frente, una cortina de terciopelo corrida (cada una de su color) y un caballete con
-  // su pizarra; dentro no se ve nada
-  ...[
-    ['hab-pronto-1', AW, 22.2, 18.6, 21.9, [128, 40, 52]],
-    ['hab-pronto-2', AW, 22.2, 21.9, 25.2, [40, 92, 86]],
-    ['hab-pronto-3', 24.8, 29.5, 18.6, 21.9, [196, 146, 52]],
-    ['hab-pronto-4', 24.8, 29.5, 21.9, 25.2, [92, 58, 112]],
-  ].map(([id, x0, x1, y0, y1, tela]) => ({ id, nombre: 'Próximamente', x0, x1, y0, y1, alto: 2.8, suelo: [120, 116, 108], papel: [176, 172, 160], raya: [150, 146, 136], cerrada: true, tela })),
+  // El ala nueva, pasada la placita (1.149): las cuatro colecciones, cada una con su suelo, su papel y su friso. Medianoche
+  // conserva su cortina de terciopelo, recogida a los lados (`tela`)
+  { id: 'hab-lumbre', nombre: 'Lumbre y Lana', tema: 'lumbre', x0: AW, x1: 22.2, y0: 18.6, y1: 21.9, alto: 3.4, suelo: [118, 74, 48], papel: [116, 44, 42], raya: [168, 112, 84], friso: [86, 50, 38], trim: [96, 60, 40] },
+  { id: 'hab-invernadero', nombre: 'Cristal y Helecho', tema: 'invernadero', x0: AW, x1: 22.2, y0: 21.9, y1: 25.2, alto: 3.4, suelo: [184, 98, 70], papel: [190, 210, 184], raya: [236, 234, 222], friso: [228, 224, 212], trim: [228, 224, 212] },
+  { id: 'hab-octubre', nombre: 'Buhardilla de Octubre', tema: 'octubre', x0: 24.8, x1: 29.5, y0: 18.6, y1: 21.9, alto: 3.4, suelo: [196, 150, 102], papel: [212, 168, 90], raya: [176, 84, 52], friso: [168, 120, 78], trim: [176, 128, 84] },
+  { id: 'hab-medianoche', nombre: 'Medianoche', tema: 'medianoche', premium: true, x0: 24.8, x1: 29.5, y0: 21.9, y1: 25.2, alto: 3.4, suelo: [74, 46, 34], papel: [68, 38, 70], raya: [222, 180, 86], friso: [50, 32, 30], trim: [60, 38, 32], tela: [92, 40, 104] },
 ];
 /** La placita entre las habitaciones con muebles y el ala nueva: suelo de baldosa, bancos, macetas y una lámpara de araña. */
 export const PLAZA = { y0: 15.6, y1: 18.6, cx: 23.5, cy: 17.1 };
@@ -264,6 +265,11 @@ export const SECCIONES = [
   { id: 'ambientes', nombre: 'Ambientes montados', donde: 'Pasillo 1, contra la pared' },
   { id: 'heroes', nombre: 'Capa y Antifaz · superhéroes', donde: 'Pasillo 4, las habitaciones' },
   { id: 'habitaciones', nombre: 'Habitaciones montadas', donde: 'Pasillo 4, las habitaciones' },
+  // 1.149 · Las colecciones del ala nueva
+  { id: 'lumbre', nombre: 'Lumbre y Lana · junto al fuego', donde: 'Pasillo 4, el ala nueva' },
+  { id: 'invernadero', nombre: 'Cristal y Helecho · el invernadero', donde: 'Pasillo 4, el ala nueva' },
+  { id: 'octubre', nombre: 'Buhardilla de Octubre · el otoño', donde: 'Pasillo 4, el ala nueva' },
+  { id: 'medianoche', nombre: 'Medianoche · colección premium', donde: 'Pasillo 4, el ala nueva' },
 ];
 /** Las secciones que repiten muebles de otras, montados como en casa: no salen en el directorio ni son su expositor principal. */
 export const DE_PASO = new Set(['ambientes', 'habitaciones']);
@@ -327,6 +333,31 @@ const BASE = [
   E('lampara-pie', 0, 18.75, 14.7, ESTE, 'habitaciones', { seccion: 'habitaciones' }),
   E('cuadro', 2, AW, 12.4, ESTE, 'habitaciones', { seccion: 'habitaciones', pared: true }),
   E('ventana', 1, 20.2, 15.6, [0, -1], 'habitaciones', { seccion: 'habitaciones', pared: true }),
+  // 1.149 · El ala nueva, montada como en casa (sin tarimas: `sobre` es la altura del suelo o de la alfombra)
+  // Lumbre y Lana: la chimenea contra el fondo, la alfombra delante, el butacón junto al fuego y la lámina en el tabique
+  E('alfombra-escocesa', 0, 20.3, 20.4, ESTE, 'alanueva', { seccion: 'lumbre', sobre: 0.005 }),
+  E('hogar-ladrillo', 0, 18.56, 20.25, ESTE, 'alanueva', { seccion: 'lumbre', sobre: 0 }),
+  E('orejero', 0, 19.8, 19.35, [0.6, 0.8], 'alanueva', { seccion: 'lumbre', sobre: 0.05 }),
+  E('lenero', 0, 21.55, 21.3, [-0.6, -0.8], 'alanueva', { seccion: 'lumbre', sobre: 0 }),
+  E('lamina-nevada', 0, 19.9, 21.8, [0, -1], 'alanueva', { seccion: 'lumbre', pared: true }),
+  // Cristal y Helecho: el ventanal con el banco debajo, el limonero en la esquina, la escalera de macetas y el farol
+  E('ventanal-invernadero', 0, AW, 23.75, ESTE, 'alanueva', { seccion: 'invernadero', pared: true }),
+  E('banco-forja', 0, 18.68, 23.75, ESTE, 'alanueva', { seccion: 'invernadero', sobre: 0 }),
+  E('limonero', 0, 18.62, 22.42, ESTE, 'alanueva', { seccion: 'invernadero', sobre: 0 }),
+  E('escalera-macetas', 0, 20.55, 22.45, SUR, 'alanueva', { seccion: 'invernadero', sobre: 0 }),
+  E('lampara-jaula', 0, 21.0, 24.62, ESTE, 'alanueva', { seccion: 'invernadero', sobre: 0 }),
+  // Buhardilla de Octubre: el nido de lectura contra el fondo con la guirnalda encima, la seta, las mantas y las calabazas
+  E('nido-lectura', 0, 28.45, 20.3, OESTE, 'alanueva', { seccion: 'octubre', sobre: 0 }),
+  E('guirnalda-hojas', 0, HAB.x1, 20.3, OESTE, 'alanueva', { seccion: 'octubre', pared: true }),
+  E('lampara-seta', 0, 28.95, 18.98, OESTE, 'alanueva', { seccion: 'octubre', sobre: 0 }),
+  E('escalera-mantas', 0, 27.1, 19.12, SUR, 'alanueva', { seccion: 'octubre', sobre: 0 }),
+  E('calabazas', 0, 27.0, 21.36, OESTE, 'alanueva', { seccion: 'octubre', sobre: 0 }),
+  // Medianoche: el chéster bajo la vidriera, la biblioteca contra el tabique, el candelabro y el globo celeste
+  E('vidriera-luna', 0, HAB.x1, 23.6, OESTE, 'alanueva', { seccion: 'medianoche', pared: true }),
+  E('chester-terciopelo', 0, 28.45, 23.6, OESTE, 'alanueva', { seccion: 'medianoche', sobre: 0.02 }),
+  E('biblioteca-escalera', 0, 25.95, 22.5, SUR, 'alanueva', { seccion: 'medianoche', sobre: 0 }),
+  E('candelabro-pie', 0, 27.05, 22.46, OESTE, 'alanueva', { seccion: 'medianoche', sobre: 0.02 }),
+  E('globo-celeste', 0, 25.65, 24.6, OESTE, 'alanueva', { seccion: 'medianoche', sobre: 0.02 }),
 ];
 
 /** Lo que la tienda vende (los de la tienda del bajo, sin retirados): solo eso se expone. */

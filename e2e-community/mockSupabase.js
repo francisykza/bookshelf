@@ -5,7 +5,7 @@
 // límite, objeto único, upsert con conflicto y la vista de estadísticas.
 import { randomUUID } from 'node:crypto';
 import { CATALOG } from '../src/features/edificio/catalog.js';
-import { SOBRES, isDeHabitacionEspecial } from '../src/features/edificio/economy.js';
+import { PREMIUM, SOBRES, isDeHabitacionEspecial, isPremium } from '../src/features/edificio/economy.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
 import { PRENDAS, ROPA_TIENDA } from '../src/features/edificio/actor.js';
 import { missionsOf } from '../src/features/edificio/dailyMissions.js';
@@ -802,7 +802,9 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       const cat = (id) => CATALOG.find((c) => c.id === id && !c.set);
       const rareza = (id) => cat(id)?.rareza ?? 'comun';
       // 1.106: lo de las habitaciones especiales, al doble (20261129120000_almacen_especiales.sql)
+      // 1.149: lo premium, a su precio propio (el de suscriptor nunca: piso_es_suscriptor() dice que no)
       const precio = (id) => {
+        if (isPremium(id)) return PREMIUM[id].precio;
         const p = ({ comun: 20, 'poco-comun': 40 })[rareza(id)] ?? null;
         return p != null && isDeHabitacionEspecial(id) ? p * 2 : p;
       };

@@ -9,7 +9,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usesLocked, validateAvatar } from '../actor';
 import { catalogItem } from '../catalog';
-import { isDeHabitacionEspecial, ticketsText } from '../economy';
+import { PREMIUM, isDeHabitacionEspecial, isPremium, ticketsText } from '../economy';
+import { esSuscriptor } from '../../../domain/suscripcion';
 import { ownedCopies } from '../inventory';
 import { renderThumb } from '../render';
 import { ReaderAvatar } from '../../../components/avatars/ReaderAvatar';
@@ -235,7 +236,11 @@ const CARTEL_TEXTO = {
   'c:autoservicio': 'Autoservicio',
   'c:habitaciones': 'Pasillo 4 · Las habitaciones',
   'c:heroes': 'Capa y Antifaz',
-  'c:pronto': 'Ala nueva · próximamente',
+  'c:pronto': 'Ala nueva · colecciones',
+  'c:lumbre': 'Lumbre y Lana',
+  'c:invernadero': 'Cristal y Helecho',
+  'c:octubre': 'Buhardilla de Octubre',
+  'c:medianoche': 'Medianoche · premium',
   'c:moda': 'Planta −1 · Moda',
 };
 const SITIO_TEXTO = {
@@ -1082,7 +1087,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
             <div className="alm-ficha">
               <div className="alm-ficha__muestra">
                 <img className="alm-ficha__thumb" src={thumbOf(fichaE.id, ficha.tono, 64)} alt="" width="80" height="80" />
-                <span className="alm-precio" aria-hidden="true" data-oferta={ofertas.get(fichaA.id)?.tipo} data-especial={isDeHabitacionEspecial(fichaA.id) || undefined}>
+                <span className="alm-precio" aria-hidden="true" data-oferta={ofertas.get(fichaA.id)?.tipo} data-especial={isDeHabitacionEspecial(fichaA.id) || undefined} data-premium={isPremium(fichaA.id) || undefined}>
                   {ofertas.has(fichaA.id) && <s>{fichaA.precio}</s>}
                   <b>{precioHoy(fichaA)}</b>
                   <small>tickets</small>
@@ -1099,6 +1104,13 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
                           {ROTULO_OFERTA[ofertas.get(fichaA.id).tipo]} · −{ofertas.get(fichaA.id).pct}&nbsp;%
                         </em>
                       </>
+                    ) : isPremium(fichaA.id) ? (
+                      <>
+                        {ticketsText(fichaA.precio)}{' '}
+                        <em className="alm-oferta" data-tipo="premium">
+                          Colección premium · nunca se rebaja
+                        </em>
+                      </>
                     ) : isDeHabitacionEspecial(fichaA.id) ? (
                       <>
                         {ticketsText(fichaA.precio)}{' '}
@@ -1111,6 +1123,15 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
                     )}
                   </dd>
                 </div>
+                {/* 1.149 · El precio de suscriptor, como reclamo y sin agobiar: una línea más de la ficha, solo en lo premium */}
+                {isPremium(fichaA.id) && !esSuscriptor() && (
+                  <div className="alm-ficha__socio">
+                    <dt>Suscripción</dt>
+                    <dd>
+                      {ticketsText(PREMIUM[fichaA.id].socio)} <small>con la suscripción de Libotown, cuando llegue</small>
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt>Medidas</dt>
                   <dd>{medidasDe(fichaE.id)}</dd>
@@ -1243,7 +1264,9 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
                                 </small>
                               )}
                             </span>
-                            <b data-oferta={ofertas.get(a.id)?.tipo}>{ticketsText(precioHoy(a))}</b>
+                            <b data-oferta={ofertas.get(a.id)?.tipo} data-premium={isPremium(a.id) || undefined}>
+                              {ticketsText(precioHoy(a))}
+                            </b>
                           </button>
                         </li>
                       ))}

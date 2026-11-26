@@ -5,6 +5,7 @@
 import { isRetirado } from './retirados';
 import { CATALOG, isEspecial, isMistico } from './catalog';
 import { tallerDe } from './talleres';
+import { esSuscriptor } from '../../domain/suscripcion';
 
 export const RAREZAS = [
   { id: 'comun', nombre: 'Común', precio: 20, reciclar: 3 },
@@ -102,17 +103,35 @@ export const sobreOf = (id) => SOBRES.find((s) => s.id === id) ?? null;
 export const costeDe = (sobre, cuantos) => (cuantos === 5 ? sobre.coste5 : sobre.coste1);
 const probDe = (sobre, rareza) => (rareza === 'comun' ? 1 - sobre.prob.raro - sobre.prob['poco-comun'] - (sobre.prob.mistico ?? 0) : sobre.prob[rareza]);
 
-/** Lo que se vende en la tienda: todo lo que no es de sagas y tiene precio (lo raro solo sale en sobres). */
-export const TIENDA = sinSaga.filter((c) => rarezaInfo(rarezaOf(c)).precio != null && !isRetirado(c.id));
+/**
+ * La colección premium «Medianoche» (1.149, decisión de Francisco del 26-11-2026, el modelo menos agresivo): la ve todo el
+ * mundo y se compra con tickets a precios muy altos; quien pague la futura suscripción la tiene mucho más barata (`socio`).
+ * Cifras aprobadas por Francisco el 26-11-2026 (aceptó la tabla propuesta). Como las habitaciones especiales, nunca se rebajan. Los mismos números
+ * que `piso_premium()` en el servidor (20261229120000_almacen_colecciones.sql; una prueba lo comprueba).
+ */
+export const PREMIUM = {
+  'chester-terciopelo': { precio: 600, socio: 240 },
+  'biblioteca-escalera': { precio: 550, socio: 220 },
+  'candelabro-pie': { precio: 300, socio: 120 },
+  'globo-celeste': { precio: 350, socio: 140 },
+  'vidriera-luna': { precio: 400, socio: 160 },
+};
+export const isPremium = (id) => Object.hasOwn(PREMIUM, id);
+
+/** Lo que se vende en la tienda: todo lo que no es de sagas y tiene precio (lo raro solo sale en sobres; lo premium, sí). */
+export const TIENDA = sinSaga.filter((c) => (rarezaInfo(rarezaOf(c)).precio != null || isPremium(c.id)) && !isRetirado(c.id));
 /**
  * Las habitaciones especiales del almacén (decisión de Francisco del 10-11-2026): sus muebles cuestan el doble de su rareza
  * (común 40, poco común 80), en el almacén y en la tienda, y nunca se rebajan (ni ofertas ni albarán). Son talleres de
  * talleres.js; el servidor tiene la misma lista (piso_de_habitacion_especial, 20261129120000_almacen_especiales.sql).
  */
-export const HABITACIONES_ESPECIALES = ['heroes'];
+// 1.149: y las cuatro del ala nueva (la última, la premium)
+export const HABITACIONES_ESPECIALES = ['heroes', 'lumbre', 'invernadero', 'octubre', 'medianoche'];
 export const PRECIO_ESPECIAL = 2;
 export const isDeHabitacionEspecial = (id) => HABITACIONES_ESPECIALES.includes(tallerDe(id)?.id);
 export const precioDe = (id) => {
+  // Lo premium: su precio propio, el de suscriptor si lo es (`esSuscriptor`, src/domain/suscripcion.js: hoy, siempre no)
+  if (isPremium(id)) return esSuscriptor() ? PREMIUM[id].socio : PREMIUM[id].precio;
   const cat = CATALOG.find((c) => c.id === id);
   const precio = cat && !cat.set ? rarezaInfo(rarezaOf(cat)).precio : null;
   return precio != null && isDeHabitacionEspecial(id) ? precio * PRECIO_ESPECIAL : precio;

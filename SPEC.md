@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.148.0 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.149.0 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8278,3 +8278,81 @@ Las dos secciones en las que el teléfono se queda quieto y cambia de pantalla a
 `poses.test.js` (los gestos en calma) y `e2e-community/libo-poses.spec.js` (se mece y hace un gesto; con movimiento reducido,
 ninguno). La web, con un recorrido de Playwright a 360, 390 y 1440 (flechas y tramos, pasos, poses y sin desbordar). Sin probar en
 móviles reales ni en Safari.
+
+## 149. Las colecciones del ala nueva del almacén y la colección premium (1.149.0)
+
+Encargo del 26-11-2026, que llega a través de la otra sesión de Francisco: sets de muebles nuevos, lo más acogedores y atractivos
+posible, en 3D con el estilo de la casa, y una colección extra premium con el modelo menos agresivo. La ve todo el mundo, cuesta
+muchos tickets y saldrá mucho más barata con la futura suscripción, que aún no existe. Un solo punto dice si alguien es
+suscriptor: hoy siempre «no», y se podrá enchufar después sin tocar el catálogo. **Las cifras de §149.3 las aprobó Francisco el
+26-11-2026** (aceptó la tabla propuesta).
+
+### 149.1 Las cuatro habitaciones del ala nueva
+
+Las cuatro habitaciones cerradas del ala nueva (§106) se abren, cada una con su set de cinco muebles nuevos, su taller, su placa y su
+ambiente: suelo, papel con friso, luz cálida y un remate propio (`alaNueva` en `almacen3d.js`).
+
+| Habitación (taller) | Muebles | Ambiente |
+| --- | --- | --- |
+| **Lumbre y Lana** (`lumbre`) | Chimenea de ladrillo (fuego encendido, velas, guirnalda y calcetines), butacón orejero con manta escocesa, leñero de forja, alfombra de cuadros, lámina de la cabaña nevada | Espiga de roble, papel granate con flor de lis, viga y farol de forja |
+| **Cristal y Helecho** (`invernadero`) | Banco de forja con cojines y regadera, escalera de macetas, limonero, farol de jaula, ventanal del invernadero con hiedra | Baldosa hidráulica, papel de celosía, cerchas blancas de cristal y helecho colgado |
+| **Buhardilla de Octubre** (`octubre`) | Nido de lectura con dosel y lucecitas, escalera de mantas, caja de calabazas, lámpara de seta, guirnalda de hojas | Tarima de pino con hojas, papel de hojas, vigas inclinadas y tragaluz con estrellas |
+| **Medianoche** · premium (`medianoche`) | Chéster de terciopelo capitoné, biblioteca con escalera, candelabro de pie, globo celeste, vidriera de la luna | Parqué oscuro con alfombra ciruela y oro, papel de estrellas doradas, araña de latón y cortina recogida |
+
+- Los modelos están en `furnitureColecciones.js` (`SHAPES_COLECCIONES`) y valen en el piso isométrico, en el piso en primera
+  persona y en el almacén. Los cuatro asientos tienen su sitio para sentarse (`SEATS` en `actor.js`).
+- Las cuatro son **habitaciones especiales**, como «Capa y Antifaz»: lo común cuesta 40 y lo poco común 80 (en el almacén y en la
+  tienda) y nunca se rebajan.
+- Los muebles salen en el Directorio, en «Nuevo» del ordenador (llegan el día que se publique: `LLEGADAS` en `almacenAvisos.js`
+  lleva hoy 2026-11-26) y por zonas de la casa. La escalera de mantas y la lámpara de seta estrenan el dormitorio.
+- Cada habitación pone su medio tabique de su lado y con su papel (antes, entre dos contiguas no quedaba ninguno). Los precios de
+  lo que hay en la de al lado no se ven a través del tabique.
+- El letrero del arco dice «Ala nueva · colecciones» y cada habitación tiene el suyo.
+
+### 149.2 La suscripción: un solo punto
+
+- **En la app**: `src/domain/suscripcion.js` (`esSuscriptor()`, hoy siempre `false`; `fijarSuscripcion()` para cuando exista).
+- **En el servidor**: `public.piso_es_suscriptor()`, hoy `select false`. Cuando exista la suscripción, solo cambian estas dos
+  funciones. El catálogo, los precios y las compras no se tocan.
+
+### 149.3 La colección premium (cifras aprobadas)
+
+| Mueble | Precio | Con la suscripción |
+| --- | --- | --- |
+| Chéster de terciopelo | 600 | 240 |
+| Biblioteca con escalera | 550 | 220 |
+| Globo celeste | 350 | 140 |
+| Vidriera de la luna | 400 | 160 |
+| Candelabro de pie | 300 | 120 |
+| **Toda la colección** | **2.200** | **880 (−60 %)** |
+
+- Las cifras están en un solo sitio por lado: `PREMIUM` en `economy.js` y `piso_premium()` en el servidor. Una prueba comprueba
+  que coinciden.
+- Lo premium tiene rareza `raro`, se compra con tickets como cualquier mueble (almacén y tienda) y **nunca se rebaja** (ni
+  ofertas ni albarán). **No sale en sobres**: `piso_al_azar` deja fuera lo de las habitaciones especiales, como ya hacía la app.
+- En la ficha: «Colección premium · nunca se rebaja». Si no se es suscriptor, una fila tranquila: «Suscripción: 240 tickets con
+  la suscripción de Libotown, cuando llegue». Sin botones, cuentas atrás ni avisos.
+
+### 149.4 Migración
+
+`supabase/migrations/20261229120000_almacen_colecciones.sql` (la aplica Francisco, después de `20261228120000_cuenta_borrar.sql`).
+Hace lo siguiente:
+- añade los 20 muebles y 4 placas a `piso_catalogo`;
+- rehace `piso_talleres()` (once talleres) y `piso_de_habitacion_especial`, con las cinco habitaciones especiales;
+- crea `piso_es_suscriptor()` y `piso_premium()`;
+- hace que `piso_precio_mueble` cobre lo premium a su precio (el de suscriptor, si lo es);
+- deja fuera de los sobres lo de las habitaciones especiales.
+
+No borra ni cambia datos. Sin ella, el almacén enseña las habitaciones, pero el servidor no vende sus muebles.
+
+### 149.5 Pruebas
+
+- **Vitest**:
+  - `almacenEspeciales.rls` (26 especiales, precios premium iguales en los dos lados, nadie es suscriptor y la tienda cobra 300 por el candelabro);
+  - `tienda.rls`, `talleres.rls`, `edificio.rls`, `almacen.rls`, `casino*.rls`;
+  - `almacenAvisos` (los veinte nuevos, que no se siguen) y `zonas` (el dormitorio).
+- **E2E con Supabase simulado**:
+  - `v1149-colecciones.spec.js` (las cuatro habitaciones a 360, 390 y 1440; las fichas; la caja con 600 tickets; vídeos con `ALMACEN_VIDEO=1`);
+  - `v1106` (el letrero del arco), `v1134` (40 en «Todo el almacén»), `v199` y `v1101`.
+
+Sin probar en móviles reales ni en WebKit.

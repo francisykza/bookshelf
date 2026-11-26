@@ -5,6 +5,7 @@
 // la parte que se enciende de tarde (pantallas de lámpara, la ventanita de la estufa, las bombillas).
 // Geometría provisional, sin recursos de imagen (ver docs/qa/edificio-puerto.md).
 import { hash } from '../minigames/libreria-puerto/raster';
+import { SHAPES_COLECCIONES, TALLERES_COLECCIONES } from './furnitureColecciones';
 
 const WOOD = [150, 98, 60];
 const WOOD_DARK = [110, 70, 46];
@@ -1036,7 +1037,9 @@ const peana = (T) => [
   B(0.26, 0.26, 0.08, 0.74, 0.74, 0.18, T),
   B(0.24, 0.24, 0.18, 0.76, 0.76, 0.22, [204, 170, 90], { grain: 0 }),
 ];
-for (const id of ['ebanisteria', 'tapiceria', 'faro', 'vivero', 'almoneda', 'menaje', 'heroes']) SHAPES[`placa-${id}`] = SHAPES['placa-suite'];
+// 1.149 · Las colecciones del ala nueva del almacén (furnitureColecciones.js) y las placas de sus talleres
+Object.assign(SHAPES, SHAPES_COLECCIONES);
+for (const id of ['ebanisteria', 'tapiceria', 'faro', 'vivero', 'almoneda', 'menaje', 'heroes', ...TALLERES_COLECCIONES]) SHAPES[`placa-${id}`] = SHAPES['placa-suite'];
 for (const id of ['farol-azul', 'rosa-estrellas', 'buho-estrellas', 'dragoncillo', 'zorro-bruma', 'cinta-tormenta', 'conejo-chistera', 'gaviota-puerto', 'mapache-crupier']) SHAPES[id] = peana;
 
 /** Cajas de un mueble en coordenadas locales (sin girar). */

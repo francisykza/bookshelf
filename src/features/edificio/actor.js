@@ -597,6 +597,11 @@ const SEATS = {
   silla: { at: [0.5, 0.5], h: 0.82 },
   sillon: { at: [1, 1.05], h: 0.92 },
   'sillon-capa': { at: [1, 1.05], h: 0.92 },
+  // 1.149 · Los asientos de las colecciones del ala nueva del almacén
+  orejero: { at: [1, 1.15], h: 0.82 },
+  'banco-forja': { at: [1, 0.5], h: 0.7 },
+  'nido-lectura': { at: [1, 1.1], h: 0.44 },
+  'chester-terciopelo': { at: [1.5, 1.1], h: 0.82 },
   sofa: { at: [1.5, 1.05], h: 0.92 },
   banco: { at: [1, 0.5], h: 0.7 },
   puf: { at: [0.5, 0.5], h: 0.58 },
