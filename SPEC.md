@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.147.0 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.148.0 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8229,3 +8229,52 @@ Fuera de la esquina:
 (a 360 y 390 con vídeo y `page.clock` para el rato sin tocar nada: de pie y del mismo tamaño que antes, habla, lee, duerme, se
 despierta, enfado y cariño, celebra un registro; la guía, la biblioteca vacía, «Tu cuenta» y movimiento reducido). Las e2e de Libo
 de antes siguen pasando. Sin probar en móviles reales ni en WebKit.
+
+## 148. Libo, vivo también en calma, y la web con sus poses (1.148.0)
+
+Francisco, 26-11-2026, tras la 1.147: «Pon también las poses de Libo en la web y añade unos cuantos cambios. Quiero que libo tenga
+un ligero movimiento incluso cuando no estes tocandolo, y que en la web la sección que cuando bajas se mueven las imágenes para
+enseñarte más funciones sea más intuitiva».
+
+### 148.1 Libo, vivo aunque no le toques (app y web)
+
+- **Se mece** despacio sobre los pies (`libo-mece`, ±1,5–1,8°, 7,5 s), además de respirar.
+- **En calma** (de pie o leyendo, sin hablar ni reaccionar), cada 7 a 14 s hace **un gesto pequeño**: un saltito (de pie) o
+  **mirar un momento hacia el otro lado** (de pie o leyendo; la imagen se da la vuelta 2,4 s). Reglas en `gestoEnCalma`
+  (`src/features/libo/poses.js`); dormido, con el gatito o a mitad de otra pose, nada. Nunca suena ni pide nada.
+- En la app, el rato sin tocar nada lo cortan los toques, las teclas y la rueda del ratón, **ya no cualquier desplazamiento**
+  (una lista o la escena que se desplaza sola lo despertaba).
+- **Movimiento reducido**: ni se mece ni hace gestos.
+
+### 148.2 Libo en la web (`public/web/`)
+
+- Las mismas poses que en la app (`/assets/libo/poses/`), pedidas cuando el navegador está libre.
+- **El Libo de la esquina**: habla con la pose de cada sección (`data-libo-pose`: tu piso, saluda; el edificio, sorpresa; el café,
+  celebra; el hotel, duda; «nada se compra con dinero», abraza; el final, camina). Si no pasa nada, a los 6 s se sienta a **leer** y
+  a los 14 s se **duerme** (la pose trae sus «zZ»; las de antes se quitan). Al ganar algo (sale confeti: la balda llena, el café de 3
+  estrellas, el conejo…) lo **celebra**. Con muchos toques, **enfado** y **cariño**. Se mece y hace los gestos de §148.1.
+- **El de la balda** está sentado leyendo; con cada libro levanta la vista (**sorpresa**), al tocarle hace **cariño** y con la
+  balda llena lo **celebra**.
+- **El del final** lee junto a la vela.
+- La ilustración grande de «Libo te enseña la ciudad» se queda (es la mascota, no una pose).
+- Con movimiento reducido, Libo no cambia solo de pose ni se mueve.
+
+### 148.3 Las historias del teléfono, más claras
+
+Las dos secciones en las que el teléfono se queda quieto y cambia de pantalla al bajar (tu piso y el café):
+- El número de cada paso dice cuántos hay: **«02 / 04»**.
+- Cada paso termina con **«↓ Baja para ver: …»** y el nombre de la siguiente pantalla (en el último, «Después: Llena la balda» o
+  «Prepara un café»); la flecha se mueve un poco (quieta con movimiento reducido).
+- Bajo el teléfono, en lugar de los puntos, **una barra por paso que se llena al bajar** y **dos flechas**. Tocar una flecha o un
+  tramo baja (o sube) hasta ese paso; las flechas se apagan en los extremos. Todo de 44 px.
+- El paso activo se decide con la mitad de la pantalla al bajar (antes, una franja de 1 % que a veces se saltaba un paso al bajar
+  deprisa).
+- En el móvil, la nota bajo el teléfono mide siempre lo que la más larga, para que no empuje los pasos ni dé saltos; y los pasos
+  invisibles ya no tapan el teléfono (tocar la captura para verla en grande vuelve a funcionar en el móvil).
+- En el móvil, el último paso mide como los demás (antes era muy corto y, al llegar a él, el teléfono ya se había ido por arriba).
+
+### 148.4 Pruebas
+
+`poses.test.js` (los gestos en calma) y `e2e-community/libo-poses.spec.js` (se mece y hace un gesto; con movimiento reducido,
+ninguno). La web, con un recorrido de Playwright a 360, 390 y 1440 (flechas y tramos, pasos, poses y sin desbordar). Sin probar en
+móviles reales ni en Safari.

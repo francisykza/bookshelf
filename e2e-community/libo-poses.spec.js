@@ -68,8 +68,14 @@ test('Libo, vivo en su esquina', async ({ page }, info) => {
   await shot(page, info, '1-de-pie');
   await cerca(page, info, '1-de-pie-cerca');
   // Libo de pie mide lo mismo que antes (66 px en su botón)
-  const alto = await page.locator('.libo-rincon__gato img').evaluate((img) => (img.getBoundingClientRect().height * 365) / 400);
+  const alto = await page.locator('.libo-rincon__gato img').evaluate((img) => (img.offsetHeight * 365) / 400);
   expect(Math.abs(alto - 66)).toBeLessThan(2);
+  // En calma se mece y, de vez en cuando (7 a 14 s), hace un gesto pequeño: un saltito o mirar al otro lado
+  expect(await page.locator('.libo-rincon__gato img').evaluate((img) => getComputedStyle(img).animationName)).toContain('libo-mece');
+  await page.clock.fastForward(14500);
+  await expect.poll(() => gato.getAttribute('data-gesto'), { timeout: 3000 }).toMatch(/^(salta|mira)$/);
+  await page.waitForTimeout(250);
+  await cerca(page, info, `1b-gesto-${await gato.getAttribute('data-gesto')}`);
 
   // 2 · Al tocarle habla, con la pose de lo que cuenta (hoy, ir a ver el edificio: andando)
   await gato.click();
@@ -191,6 +197,7 @@ test('con movimiento reducido, Libo no cambia solo', async ({ page }, info) => {
   await page.clock.fastForward(100000);
   await page.waitForTimeout(1500);
   expect(await pose(page)).toBe('de-pie');
+  expect(await page.locator('.libo-rincon__gato').getAttribute('data-gesto')).toBe(null);
   // Sin animación de pose ni de respiración
   expect(await page.locator('.libo-rincon__gato img').evaluate((img) => getComputedStyle(img).animationName)).toBe('none');
 });

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { POSES, muchosToques, poseAlHablar, poseDelPaso, poseEnReposo, poseUrl, reaccionALectura } from '../poses';
+import { POSES, gestoEnCalma, muchosToques, poseAlHablar, poseDelPaso, poseEnReposo, poseUrl, reaccionALectura } from '../poses';
 
 describe('las poses de Libo', () => {
   it('cada pose tiene su imagen recortada', () => {
@@ -42,5 +42,12 @@ describe('las poses de Libo', () => {
     expect(muchosToques([0, 500, 900, 1400], 1500)).toBe(true);
     expect(muchosToques([0, 500, 900], 1500)).toBe(false);
     expect(muchosToques([0, 100, 200, 300], 5000)).toBe(false);
+  });
+
+  it('en calma hace gestos pequeños, pero no dormido ni a mitad de otra cosa', () => {
+    expect(gestoEnCalma('de-pie', 0.2)).toBe('salta');
+    expect(gestoEnCalma('de-pie', 0.8)).toBe('mira');
+    expect(gestoEnCalma('lee', 0.2)).toBe('mira');
+    for (const p of ['duerme', 'gatito', 'celebra', 'corre', 'saluda']) expect(gestoEnCalma(p, 0.2)).toBe(null);
   });
 });

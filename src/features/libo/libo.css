@@ -523,7 +523,47 @@
   translate: var(--libo-x) 0;
   animation:
     libo-pose 260ms ease-out,
-    libo-respira 4.2s ease-in-out 260ms infinite;
+    libo-respira 4.2s ease-in-out 260ms infinite,
+    libo-mece 7.5s ease-in-out infinite;
+}
+
+/* Vivo aunque no le toques (1.148): se mece despacio sobre los pies y, de vez en cuando, da un saltito o mira al otro lado */
+.libo-rincon__gato[data-gesto='salta'] img {
+  animation:
+    libo-salta 700ms cubic-bezier(0.3, 1.4, 0.5, 1),
+    libo-respira 4.2s ease-in-out infinite,
+    libo-mece 7.5s ease-in-out infinite;
+}
+
+.libo-rincon__gato[data-gesto='mira'] img {
+  scale: -1 1;
+}
+
+@keyframes libo-mece {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  30% {
+    rotate: -1.8deg;
+  }
+  70% {
+    rotate: 1.5deg;
+  }
+}
+
+@keyframes libo-salta {
+  0%,
+  60%,
+  100% {
+    translate: var(--libo-x) 0;
+  }
+  30% {
+    translate: var(--libo-x) -7px;
+  }
+  78% {
+    translate: var(--libo-x) -2px;
+  }
 }
 
 .libo-rincon__gato img[data-pose='duerme'] {
@@ -572,7 +612,12 @@
 @media (prefers-reduced-motion: reduce) {
   .libo-rincon__gato img,
   .libo-rincon__gato img[data-pose='duerme'],
+  .libo-rincon__gato[data-gesto] img,
   .libo-rincon[data-llega] .libo-rincon__gato img {
     animation: none;
+  }
+
+  .libo-rincon__gato[data-gesto='mira'] img {
+    scale: none;
   }
 }

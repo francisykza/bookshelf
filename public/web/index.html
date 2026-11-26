@@ -70,7 +70,7 @@
   </section>
 
   <!-- TU PISO -->
-  <section class="seccion seccion--piso" id="piso" aria-labelledby="t-piso" data-libo="Aquí vives tú. Más abajo puedes llenar una balda.">
+  <section class="seccion seccion--piso" id="piso" aria-labelledby="t-piso" data-libo-pose="saluda" data-libo="Aquí vives tú. Más abajo puedes llenar una balda.">
     <button type="button" class="guirnalda" aria-pressed="true" aria-label="Luces de la guirnalda: encendidas"><svg class="guirnalda__cable" aria-hidden="true" preserveAspectRatio="none"><path/></svg></button>
     <div class="motas" aria-hidden="true"></div>
     <div class="ancho">
@@ -80,7 +80,7 @@
         <p>Cada libro que lees llega a tu estantería, y tu lectura llena el resto de la ciudad.</p>
       </div>
 
-      <div class="historia" data-historia>
+      <div class="historia" data-historia data-despues="Llena la balda">
         <div class="historia__movil">
           <button type="button" class="movil__marco historia__marco" aria-label="Ver la captura en grande">
             <img class="historia__img activa" data-galeria data-pie="Tu piso" src="/web/img/piso.webp" alt="Tu piso en primera persona, con la ventana al puerto al atardecer" width="520" height="1125" draggable="false">
@@ -110,7 +110,7 @@
             <div class="contador"><b id="balda-n">3</b><span>libros</span></div>
           </div>
           <div class="balda" id="balda">
-            <button type="button" class="libo-demo" id="libo-demo" aria-label="Saludar a Libo"><img src="/assets/libo/libo-320.webp" alt="" width="216" height="320" draggable="false"><svg class="corazon" viewBox="0 0 7 6" aria-hidden="true" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg></button>
+            <button type="button" class="libo-demo" id="libo-demo" aria-label="Saludar a Libo"><img src="/assets/libo/poses/lee.webp" data-pose="lee" alt="" width="420" height="400" draggable="false"><svg class="corazon" viewBox="0 0 7 6" aria-hidden="true" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg></button>
             <span class="maceta" aria-hidden="true"><svg viewBox="0 0 14 18" shape-rendering="crispEdges"><path fill="#4e7a45" d="M6 0h2v3H6zM2 2h3v2h1v2H4V5H2zM9 2h3v3h-2v1H8V4h1zM5 4h4v5H5zM1 6h3v1h1v2H2V8H1zM10 6h3v2h-1v1H9V7h1z"/><path fill="#6f9a5f" d="M6 1h1v2H6zM3 3h1v1H3zM10 3h1v1h-1z"/><path fill="#b5502e" d="M2 9h10v2H2zM3 11h8v7H3z"/><path fill="#d4703f" d="M3 11h2v7H3z"/><path fill="#8a3a1f" d="M2 10h10v1H2z"/></svg></span><span class="vela" aria-hidden="true"><i class="vela__llama"></i><svg viewBox="0 0 8 16" shape-rendering="crispEdges"><path fill="#2a1a10" d="M3 0h1v3H3z"/><path fill="#fbf4e6" d="M1 3h6v11H1z"/><path fill="#e3cfb4" d="M5 3h2v11H5z"/><path fill="#fff" d="M2 4h1v5H2z"/><path fill="#7a4a1f" d="M0 14h8v2H0z"/></svg></span>
             <div class="balda__libros" id="balda-libros"></div>
             <div class="balda__tabla"></div>
@@ -131,7 +131,7 @@
   </section>
 
   <!-- EL EDIFICIO: la fachada se toca -->
-  <section class="seccion seccion--edificio" id="edificio" aria-labelledby="t-edificio" data-libo="Toca las «!» de la fachada.">
+  <section class="seccion seccion--edificio" id="edificio" aria-labelledby="t-edificio" data-libo-pose="sorpresa" data-libo="Toca las «!» de la fachada.">
     <div class="corte" aria-hidden="true"></div>
     <div class="ancho dos">
       <div class="cabeza aparece">
@@ -157,7 +157,7 @@
   </section>
 
   <!-- EL CAFÉ -->
-  <section class="seccion seccion--cafe" id="cafe" aria-labelledby="t-cafe" data-libo="¿Te atreves con un café? La barra está más abajo.">
+  <section class="seccion seccion--cafe" id="cafe" aria-labelledby="t-cafe" data-libo-pose="celebra" data-libo="¿Te atreves con un café? La barra está más abajo.">
     <div class="corte" aria-hidden="true"></div>
     <button type="button" class="guirnalda" aria-pressed="true" aria-label="Luces de la guirnalda: encendidas"><svg class="guirnalda__cable" aria-hidden="true" preserveAspectRatio="none"><path/></svg></button>
     <div class="motas" aria-hidden="true"></div>
@@ -168,7 +168,7 @@
         <p>Cada cliente pide una bebida y un libro, o algo del horno. Con los niveles, el local crece.</p>
       </div>
 
-      <div class="historia historia--izq" data-historia>
+      <div class="historia historia--izq" data-historia data-despues="Prepara un café">
         <div class="historia__movil">
           <button type="button" class="movil__marco historia__marco" aria-label="Ver la captura en grande">
             <img class="historia__img activa" data-galeria data-pie="El café" src="/web/img/cafe.webp" alt="El café-librería con clientes en sus mesas y Pilar dando la bienvenida" width="520" height="1125" loading="lazy" draggable="false">
@@ -304,7 +304,7 @@
   </section>
 
   <!-- EL HOTEL -->
-  <section class="seccion seccion--hotel" id="hotel" aria-labelledby="t-hotel" data-libo="En el casino nunca se apuesta dinero. ¿Encuentras al conejo?">
+  <section class="seccion seccion--hotel" id="hotel" aria-labelledby="t-hotel" data-libo-pose="duda" data-libo="En el casino nunca se apuesta dinero. ¿Encuentras al conejo?">
     <div class="corte" aria-hidden="true"></div>
     <div class="estrellas estrellas--fijas" id="estrellas-hotel" aria-hidden="true"></div>
     <div class="ancho">
@@ -355,7 +355,7 @@
   </section>
 
   <!-- LO QUE IMPORTA -->
-  <section class="seccion seccion--papel" aria-labelledby="t-valores" data-libo="Aquí nada se compra con dinero: se gana leyendo.">
+  <section class="seccion seccion--papel" aria-labelledby="t-valores" data-libo-pose="abraza" data-libo="Aquí nada se compra con dinero: se gana leyendo.">
     <div class="corte" aria-hidden="true"></div>
     <div class="ancho">
       <div class="cabeza aparece">
@@ -372,11 +372,11 @@
   </section>
 
   <!-- FINAL -->
-  <section class="final" aria-labelledby="t-final" data-libo="¿Subimos a tu piso?">
+  <section class="final" aria-labelledby="t-final" data-libo-pose="camina" data-libo="¿Subimos a tu piso?">
     <div class="corte" aria-hidden="true"></div>
     <button type="button" class="guirnalda" aria-pressed="true" aria-label="Luces de la guirnalda: encendidas"><svg class="guirnalda__cable" aria-hidden="true" preserveAspectRatio="none"><path/></svg></button>
     <div class="ancho final__cuerpo aparece">
-      <div class="final__libo"><img src="/assets/libo/libo-320.webp" alt="" width="216" height="320" loading="lazy"><span class="vela" aria-hidden="true"><i class="vela__llama"></i><svg viewBox="0 0 8 16" shape-rendering="crispEdges"><path fill="#2a1a10" d="M3 0h1v3H3z"/><path fill="#fbf4e6" d="M1 3h6v11H1z"/><path fill="#e3cfb4" d="M5 3h2v11H5z"/><path fill="#fff" d="M2 4h1v5H2z"/><path fill="#7a4a1f" d="M0 14h8v2H0z"/></svg></span></div>
+      <div class="final__libo"><img src="/assets/libo/poses/lee.webp" alt="" width="420" height="400" loading="lazy"><span class="vela" aria-hidden="true"><i class="vela__llama"></i><svg viewBox="0 0 8 16" shape-rendering="crispEdges"><path fill="#2a1a10" d="M3 0h1v3H3z"/><path fill="#fbf4e6" d="M1 3h6v11H1z"/><path fill="#e3cfb4" d="M5 3h2v11H5z"/><path fill="#fff" d="M2 4h1v5H2z"/><path fill="#7a4a1f" d="M0 14h8v2H0z"/></svg></span></div>
       <div>
         <h2 id="t-final">Tu piso <span>te espera</span></h2>
         <p>Entra con tu cuenta o crea una nueva. Libotown es para mayores de 16 años.</p>
@@ -406,7 +406,7 @@
     <p id="compa-texto" aria-live="polite"></p>
     <button type="button" class="compa__cerrar" id="compa-cerrar" aria-label="Cerrar el bocadillo de Libo">✕</button>
   </div>
-  <button type="button" class="compa__libo" id="compa-libo" aria-label="Libo: ¿qué hay aquí?"><span class="compa__zzz" aria-hidden="true"><i style="--i:0">z</i><i style="--i:1">z</i><i style="--i:2">z</i></span><svg class="corazon" viewBox="0 0 7 6" aria-hidden="true" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg><img src="/assets/libo/libo-320.webp" alt="" width="216" height="320" draggable="false"></button>
+  <button type="button" class="compa__libo" id="compa-libo" aria-label="Libo: ¿qué hay aquí?"><svg class="corazon" viewBox="0 0 7 6" aria-hidden="true" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg><img src="/assets/libo/poses/de-pie.webp" data-pose="de-pie" alt="" width="420" height="400" draggable="false"></button>
 </aside>
 
 <div class="visor" id="visor" role="dialog" aria-modal="true" aria-label="Captura en grande" hidden>

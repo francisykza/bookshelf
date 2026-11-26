@@ -8,7 +8,7 @@ import { useLibrary } from '../../state/useLibrary';
 import { dayKey } from '../../domain/dates';
 import { CAPITULOS, SALUDOS, abrePorSuCuenta, estaVisible, haVisto, liboDe, marcarPresentadoAqui, marcarVisto, presentadoAqui } from './libo';
 import { asomoAqui, callar, debeAsomar, fijarDia, ideaAhora, marcarAsomoAqui, sugerenciaDelDia, sugerencias } from './sugerencias';
-import { DURA, POSES, REPOSO, muchosToques, poseAlHablar, poseDelPaso, poseEnReposo, poseUrl, reaccionALectura } from './poses';
+import { DURA, DURA_GESTO, ESPERA_GESTO, POSES, REPOSO, gestoEnCalma, muchosToques, poseAlHablar, poseDelPaso, poseEnReposo, poseUrl, reaccionALectura } from './poses';
 import { maullar } from './maullido';
 import { useAtras } from '../../hooks/useAtras';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
@@ -461,7 +461,8 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
       setQuieto((q) => (q ? 0 : q));
     };
     const opciones = { capture: true, passive: true };
-    const eventos = ['pointerdown', 'keydown', 'wheel', 'scroll', 'touchstart'];
+    // Solo lo que hace la persona (un desplazamiento suelto puede venir de la propia escena)
+    const eventos = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
     eventos.forEach((ev) => window.addEventListener(ev, despierta, opciones));
     let antes = 0;
     const id = setInterval(() => {
@@ -487,6 +488,33 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
   }, [lectura, reaccionar]);
   const hablando = hub ? poseAlHablar({ avisos, sugerencia: idea ?? deHoy }) : 'saluda';
   const pose = abierto ? hablando : llega ? 'corre' : (reaccion ?? (reducido ? (modo === 'llamar' ? 'lee' : 'de-pie') : poseEnReposo({ modo, quieto, gatito })));
+
+  // En calma (de pie o leyendo, sin hablar ni reaccionar), de vez en cuando un gesto pequeño: un saltito o mirar al otro lado
+  const [gesto, setGesto] = useState(null);
+  const poseCalma = useRef(pose);
+  useEffect(() => {
+    poseCalma.current = pose;
+  }, [pose]);
+  const enCalma = visible && !reducido && !abierto && !reaccion && !llega && !pasos && Boolean(gestoEnCalma(pose, 0));
+  useEffect(() => {
+    if (!enCalma) return undefined;
+    let id = 0;
+    const siguiente = () => {
+      id = setTimeout(() => {
+        const g = gestoEnCalma(poseCalma.current, Math.random());
+        setGesto(g);
+        id = setTimeout(() => {
+          setGesto(null);
+          siguiente();
+        }, DURA_GESTO[g] ?? 1000);
+      }, ESPERA_GESTO[0] + Math.random() * (ESPERA_GESTO[1] - ESPERA_GESTO[0]));
+    };
+    siguiente();
+    return () => {
+      clearTimeout(id);
+      setGesto(null);
+    };
+  }, [enCalma]);
 
   if (!visible) return null;
   const cont = pasos ? contenedor() : null;
@@ -551,6 +579,7 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
           aria-expanded={abierto}
           aria-describedby={hayAlgo && !abierto ? 'libo-nota' : undefined}
           data-nota={(hayAlgo && !abierto) || undefined}
+          data-gesto={(enCalma && gesto) || undefined}
           onClick={() => {
             // Muchos toques seguidos: se enfada un momento y enseguida se le pasa (sin abrir ni cerrar nada más)
             const ahora = Date.now();

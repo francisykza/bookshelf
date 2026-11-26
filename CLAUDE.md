@@ -555,7 +555,7 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   «quiero que sea mucho más interactiva y con más espectacularidad»): portada que se acerca al hotel, historias con el móvil fijo,
   fachada con «!», minijuegos del café y las chisteras, y Libo acompañando; sonido solo tras activarlo. **Más cozy, con la portada tal cual** (Francisco, después: «quiero que se
   sienta más cozy aun, el inicio eso si creo que es perfecto»): luz de lámpara, papel con cinta, letra a mano, guirnaldas, vela y
-  ambiente de lluvia y chimenea con el sonido; la portada no se cambia sin que lo pida. Para lectores: sin «versiones», agentes de IA ni numeración de
+  ambiente de lluvia y chimenea con el sonido; la portada no se cambia sin que lo pida. **Las historias del teléfono, claras** (Francisco, 26-11-2026: «que la sección que cuando bajas se mueven las imágenes […] sea más intuitiva»; 1.148): «02 / 04», «Baja para ver: …» y una barra por paso con flechas, que se tocan. Para lectores: sin «versiones», agentes de IA ni numeración de
   portfolio, y sin prometer nada que la app no haga. Por bloques con evidencias: 1) la web, 2) el reparto en la raíz y el
   service worker, 3) publicar.
 - **Libo, el gato guía** (Francisco, 20-11-2026; plan en `docs/qa/libo.md`): el gato del logo, con su nombre, es el puente
@@ -564,7 +564,7 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   con poca animación; las poses vendrán después, de su material: no inventarlas); **vive en una esquina, siempre**, con el
   bocadillo del corazón cuando tiene algo que decir; **sugerencias, una al día como mucho y sin presión**, solo de cosas
   reales y apagables en Ajustes; y **acceso al edificio desde la habitación** (la tablet sigue igual). No es un chat con IA;
-  dentro del café y del taller hablan Pilar y don Celestino. **Sus poses** (Francisco, 26-11-2026, con su hoja de 15 poses: «añadelas a lo largo de la app, para que parezca que libo esta vivo y le de más alegría»; 1.147, SPEC §147): se recortan de su material con `scripts/libo-poses.mjs` (nunca inventarlas) y las elige `src/features/libo/poses.js`; con movimiento reducido no cambia solo. **Bloques 1 a 4 aprobados y publicados** (1.145.1, 25-11-2026; `docs/qa/libo.md` §6): en las
+  dentro del café y del taller hablan Pilar y don Celestino. **Sus poses** (Francisco, 26-11-2026, con su hoja de 15 poses: «añadelas a lo largo de la app, para que parezca que libo esta vivo y le de más alegría»; 1.147, SPEC §147): se recortan de su material con `scripts/libo-poses.mjs` (nunca inventarlas) y las elige `src/features/libo/poses.js`; con movimiento reducido no cambia solo. **Vivo aunque no le toques** (Francisco, 26-11-2026: «que libo tenga un ligero movimiento incluso cuando no estés tocándolo»; 1.148): se mece y, en calma, de vez en cuando un saltito o mira al otro lado, en la app y en la web; nunca suena ni pide nada. **Bloques 1 a 4 aprobados y publicados** (1.145.1, 25-11-2026; `docs/qa/libo.md` §6): en las
   e2e con cuenta simulada, el simulador da por vistos todos sus capítulos (`bookshelf:libo`, una lista) y por asomado el
   bocadillo del día (`bookshelf:libo-asomo` = `9999-12-31`) para que no tapen la pantalla; las pruebas de Libo lo cambian.
   **Sus avisos y sugerencias solo dicen cosas de verdad** (bloque 3): si un dato no se puede saber sin preguntar al servidor

@@ -59,3 +59,17 @@ export function reaccionALectura(antes, ahora) {
 export function muchosToques(instantes, ahora, { cuantos = 4, ventana = 2000 } = {}) {
   return instantes.filter((t) => ahora - t <= ventana).length >= cuantos;
 }
+
+// Vivo aunque no le toques (Francisco, 26-11-2026: «que libo tenga un ligero movimiento incluso cuando no estés tocándolo»): además
+// de respirar y mecerse (CSS), de vez en cuando hace un gesto pequeño. Nunca pide nada ni hace ruido.
+/** Cada cuánto, como poco y como mucho, hace un gesto (ms). */
+export const ESPERA_GESTO = Object.freeze([7000, 14000]);
+/** Cuánto dura cada gesto (ms): un saltito, o mirar un momento hacia el otro lado. */
+export const DURA_GESTO = Object.freeze({ salta: 700, mira: 2400 });
+
+/** El gesto que toca en calma (azar de 0 a 1): de pie, un saltito o mirar al otro lado; leyendo, solo mira; dormido o en otra pose, nada. */
+export function gestoEnCalma(pose, azar) {
+  if (pose === 'lee') return 'mira';
+  if (pose === 'de-pie') return azar < 0.5 ? 'salta' : 'mira';
+  return null;
+}

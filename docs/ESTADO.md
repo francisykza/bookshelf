@@ -6,6 +6,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **1.148.0, aprobada para publicar** (26-11-2026, §148; Francisco: «Sí, commit y publicar»): Libo se mece y hace gestos pequeños
+  en calma (app y web), sus poses en la web y las historias del teléfono de la web más claras (barra por paso con flechas y
+  «Baja para ver…»).
 - **Publicada en producción: 1.147.0** (26-11-2026, §147; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de
   `fa504da` a `b85ea09` y libotown.es sirve v1.147.0): las poses de Libo que dibujó él, por toda la app (su esquina, las guías, la
   biblioteca vacía y «Tu cuenta»).
@@ -308,8 +311,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
-- **Las poses de Libo, ideas sin hacer** (1.147.0 ya aprobada): las poses en la web (`public/web/`, el Libo que acompaña) y la
-  pose «asoma».
+- **Las poses de Libo, ideas sin hacer**: la pose «asoma» (las de la web, hechas en la 1.148).
 - **El correo de contacto de las páginas legales** (la 1.145.1 ya está publicada, 25-11-2026): cuando Francisco diga cuál (uno de
   `libotown.es`), sustituir `[correo de contacto pendiente]` en las cuatro páginas de `public/legal/` (y quitar su comentario de
   BORRADOR) y publicar. Después, el bloque 3 de la Play Store (moderación), cuando lo pida.
@@ -535,6 +537,22 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.148.0, Libo vivo en calma y la web con sus poses (Claude)
+
+- Francisco: «Pon también las poses de Libo en la web y añade unos cuantos cambios. Quiero que libo tenga un ligero movimiento
+  incluso cuando no estes tocandolo, y que en la web la sección que cuando bajas se mueven las imageneses para enseñarte más
+  funciones sea más intuitiva». Detalle en SPEC §148.
+- App: se mece y, en calma, cada 7–14 s un saltito o mira al otro lado (`gestoEnCalma` en `poses.js`). El rato sin tocar nada ya no
+  lo corta un desplazamiento suelto (en 360 px algo se desplazaba solo y Libo no llegaba a dormirse en la prueba).
+- Web: poses en el Libo de la esquina (por sección, lee y duerme, celebra con el confeti, enfado y cariño), en la balda y en el
+  final. Las historias: «02 / 04», «Baja para ver: …», barra por paso que se llena al bajar, flechas y tramos que llevan al paso.
+  Arreglados de paso: los pasos invisibles tapaban el teléfono en el móvil (no se podía tocar la captura) y el paso activo a veces
+  se saltaba al bajar deprisa.
+- Pruebas: Vitest de Libo, build, oxlint, las e2e de Libo y `libo-poses.spec.js` a 360 y 390; la web con un recorrido de
+  Playwright a 360, 390 y 1440. Evidencias en `qa-report/libo-poses/` y `qa-report/web/`. Sin probar en móviles reales ni en
+  WebKit.
+- Francisco: «Sí, commit y publicar».
 
 ### 2026-11-26 · 1.147.0 a producción, las poses de Libo (Claude)
 

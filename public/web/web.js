@@ -8,6 +8,7 @@
     if (/^\?raiz$/.test(location.search)) history.replaceState(null, '', '/' + location.hash);
   } catch (e) { /* se queda en /web/ */ }
   var reducido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var celebraLibo = function () {};
   var punteroFino = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
   document.documentElement.classList.add('js');
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -157,6 +158,7 @@
   // ---------- Confeti de píxeles ----------
   var COLORES = ['#ffb547', '#c4533d', '#f4e6d2', '#3f5a3a', '#2f5d84', '#c49a2a'];
   function confeti(caja, x, y, n) {
+    celebraLibo();
     if (reducido) return;
     for (var i = 0; i < n; i++) {
       var c = document.createElement('i');
@@ -275,7 +277,7 @@
     if (seccionActual === s) return;
     seccionActual = s;
     enlaces.forEach(function (a) { a.classList.toggle('aqui', a.getAttribute('data-nav') === s.id); });
-    liboDice(s.getAttribute('data-libo'), s.id || s.className);
+    liboDice(s.getAttribute('data-libo'), s.id || s.className, s.getAttribute('data-libo-pose'));
   }
 
   // ---------- Lo que aparece al bajar ----------
@@ -308,6 +310,7 @@
       puntos[i].classList.add('activo');
       marco.style.setProperty('--giro', (i % 2 ? 2 : -2) * (h.classList.contains('historia--izq') ? -1 : 1) + 'deg');
       suena('clic');
+      h.dispatchEvent(new Event('historia:paso'));
     }
     var rotulo = $('.historia__texto', h);
     function ponTexto(i, anima) {
@@ -316,10 +319,89 @@
     }
     ponTexto(0, false);
     var movil = window.matchMedia('(max-width: 860px)').matches;
-    var ioH = new IntersectionObserver(function (ents) {
-      ents.forEach(function (e) { if (e.isIntersecting) activa(pasos.indexOf(e.target)); });
-    }, { rootMargin: movil ? '-50% 0px -49% 0px' : '-48% 0px -48% 0px' });
-    pasos.forEach(function (p) { ioH.observe(p); });
+    // Para que se entienda que bajando cambia la pantalla: «01 / 04», «Baja para ver: …» con lo siguiente, y debajo del
+    // teléfono una barra por paso que se llena al bajar, con flechas; tocar un paso o una flecha baja (o sube) hasta él.
+    var total = pasos.length;
+    var dos = function (k) { return (k < 10 ? '0' : '') + k; };
+    pasos.forEach(function (p, i) {
+      var tarjeta = $('.paso__tarjeta', p);
+      $('.paso__n', tarjeta).textContent = dos(i + 1) + ' / ' + dos(total);
+      var sigue = document.createElement('p');
+      sigue.className = 'paso__sigue';
+      var luego = i < total - 1 ? imgs[i + 1].getAttribute('data-pie') : h.getAttribute('data-despues');
+      sigue.innerHTML = '<span class="paso__flecha" aria-hidden="true">↓</span> ' + (i < total - 1 ? 'Baja para ver: ' : 'Después: ') + '<b></b>';
+      $('b', sigue).textContent = luego;
+      tarjeta.appendChild(sigue);
+    });
+    ponTexto(0, false);
+    var nav = document.createElement('div');
+    nav.className = 'historia__nav';
+    nav.innerHTML = '<button type="button" class="historia__flecha" data-dir="-1" aria-label="Paso anterior">‹</button><ol class="historia__segs"></ol><button type="button" class="historia__flecha" data-dir="1" aria-label="Paso siguiente">›</button>';
+    var segs = imgs.map(function (img, i) {
+      var li = document.createElement('li');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'seg';
+      b.title = img.getAttribute('data-pie');
+      b.setAttribute('aria-label', 'Paso ' + (i + 1) + ' de ' + total + ': ' + img.getAttribute('data-pie'));
+      b.innerHTML = '<i class="seg__lleno"></i>';
+      b.addEventListener('click', function () { ir(i); });
+      li.appendChild(b);
+      $('.historia__segs', nav).appendChild(li);
+      return b;
+    });
+    var flechas = $$('.historia__flecha', nav);
+    flechas.forEach(function (f) { f.addEventListener('click', function () { ir(actual + Number(f.getAttribute('data-dir'))); }); });
+    var viejos = $('.historia__puntos', h);
+    viejos.parentNode.replaceChild(nav, viejos);
+    puntos = segs;
+    function ir(i) {
+      if (i < 0 || i >= total) return;
+      var r = pasos[i].getBoundingClientRect();
+      // La línea que cambia de paso está a media pantalla: el paso queda justo pasada esa línea
+      var y = r.top + window.scrollY - window.innerHeight * 0.5 + Math.min(40, r.height * 0.3);
+      window.scrollTo({ top: Math.max(0, y), behavior: reducido ? 'auto' : 'smooth' });
+    }
+    // El paso activo es el último cuyo borde de arriba ha pasado la mitad de la pantalla (también al bajar deprisa o al saltar)
+    function sincroniza() {
+      var mitad = window.innerHeight * 0.5, toca = 0;
+      pasos.forEach(function (p, k) { if (p.getBoundingClientRect().top <= mitad) toca = k; });
+      if (toca !== actual) activa(toca);
+      llena();
+    }
+    // En el móvil, la nota bajo el teléfono mide siempre lo que la más larga: así no empuja los pasos ni da saltos al cambiar
+    function igualaNota() {
+      rotulo.style.minHeight = '';
+      if (!window.matchMedia('(max-width: 860px)').matches) return;
+      var max = 0;
+      pasos.forEach(function (p, k) { ponTexto(k, false); max = Math.max(max, rotulo.offsetHeight); });
+      ponTexto(actual, false);
+      rotulo.style.minHeight = max + 'px';
+    }
+    function llena() {
+      segs.forEach(function (s, k) {
+        var p = 0;
+        if (k < actual) p = 1;
+        else if (k === actual) {
+          var r = pasos[k].getBoundingClientRect();
+          p = Math.min(1, Math.max(0.08, (window.innerHeight * 0.5 - r.top) / Math.max(1, r.height)));
+        }
+        s.style.setProperty('--p', p.toFixed(3));
+        if (k === actual) s.setAttribute('aria-current', 'step'); else s.removeAttribute('aria-current');
+      });
+      flechas[0].disabled = actual === 0;
+      flechas[1].disabled = actual === total - 1;
+    }
+    var llenaPendiente = null;
+    window.addEventListener('scroll', function () {
+      if (llenaPendiente) return;
+      llenaPendiente = requestAnimationFrame(function () { llenaPendiente = null; sincroniza(); });
+    }, { passive: true });
+    window.addEventListener('resize', function () { igualaNota(); sincroniza(); });
+    igualaNota();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(igualaNota);
+    sincroniza();
+    h.addEventListener('historia:paso', llena);
     marco.addEventListener('click', function () { abreVisor(galeria.indexOf(imgs[actual])); });
   });
 
@@ -363,12 +445,14 @@
     caja.appendChild(f);
     setTimeout(function () { f.remove(); }, 1200);
   }
-  function salta() {
+  var liboDemoImg = $('img', liboDemo);
+  function salta(pose) {
     liboDemo.classList.remove('salta');
     void liboDemo.offsetWidth;
     liboDemo.classList.add('salta', 'carino');
+    ponPose(liboDemoImg, pose || 'carino');
     clearTimeout(salta.t);
-    salta.t = setTimeout(function () { liboDemo.classList.remove('carino'); }, 1600);
+    salta.t = setTimeout(function () { liboDemo.classList.remove('carino'); ponPose(liboDemoImg, 'lee'); }, 1900);
   }
   function anade(callado) {
     if (n >= MAX) return;
@@ -391,12 +475,16 @@
     if (n === MAX) {
       msg.textContent = '¡Balda llena!';
       mas.textContent = 'Empezar otra balda';
-      salta();
+      salta('celebra');
       var r = balda.getBoundingClientRect();
       confeti(balda, r.width / 2, r.height / 2, 36);
       suena('estrella', 3);
     } else {
       msg.textContent = frases[Math.min(frases.length - 1, Math.floor(n / 3))];
+      // Cada libro nuevo, Libo levanta la vista un momento
+      ponPose(liboDemoImg, 'sorpresa');
+      clearTimeout(salta.t);
+      salta.t = setTimeout(function () { ponPose(liboDemoImg, 'lee'); }, 900);
       setTimeout(function () { notaFlota('+1', b, balda); }, 350);
     }
   }
@@ -666,26 +754,80 @@
   })();
 
   // ---------- Libo te acompaña ----------
+  // Con las poses que dibujó Francisco (las mismas de la app, `/assets/libo/poses/`): habla con la pose de cada sección, se
+  // sienta a leer y luego se duerme si no pasa nada, celebra cuando ganas algo y, en calma, se mece y de vez en cuando da un
+  // saltito o mira al otro lado. Con movimiento reducido no cambia solo.
+  var POSES = ['de-pie', 'saluda', 'lee', 'camina', 'celebra', 'duerme', 'duda', 'carino', 'enfado', 'sorpresa', 'abraza'];
+  function ponPose(img, pose) {
+    if (!img || img.getAttribute('data-pose') === pose) return;
+    img.src = '/assets/libo/poses/' + pose + '.webp';
+    img.setAttribute('data-pose', pose);
+    if (!reducido) { img.classList.remove('cambia'); void img.offsetWidth; img.classList.add('cambia'); }
+  }
+  var pidePoses = function () { POSES.forEach(function (p) { new Image().src = '/assets/libo/poses/' + p + '.webp'; }); };
+  if ('requestIdleCallback' in window) window.requestIdleCallback(pidePoses, { timeout: 4000 }); else setTimeout(pidePoses, 2000);
+  var compaImg = $('#compa-libo img');
   var bocadillo = $('#compa-bocadillo'), compaTexto = $('#compa-texto'), yaDicho = {}, cierraT = null, textoLibo = '';
+  var poseHabla = 'saluda', reaccion = null, reaccionT = null, reposo = 'de-pie';
+  function pintaCompa() {
+    var habla = !bocadillo.hidden;
+    ponPose(compaImg, reaccion || (habla ? poseHabla : reposo));
+    compa.classList.toggle('duerme', !reaccion && !habla && reposo === 'duerme');
+    calma();
+  }
+  function reacciona(poses, cada) {
+    clearTimeout(reaccionT);
+    var lista = [].concat(poses);
+    (function siguiente() {
+      reaccion = lista.shift() || null;
+      pintaCompa();
+      if (reaccion) reaccionT = setTimeout(siguiente, cada || 1800);
+    })();
+  }
   function abreBocadillo(t) {
     compaTexto.textContent = t;
     bocadillo.hidden = false;
     compa.classList.add('habla');
     clearTimeout(cierraT);
     cierraT = setTimeout(cierraBocadillo, 6000);
+    pintaCompa();
   }
-  function cierraBocadillo() { bocadillo.hidden = true; compa.classList.remove('habla'); }
-  function liboDice(t, clave) {
+  function cierraBocadillo() { bocadillo.hidden = true; compa.classList.remove('habla'); pintaCompa(); }
+  function liboDice(t, clave, pose) {
     textoLibo = t;
+    poseHabla = pose || 'saluda';
     if (yaDicho[clave] || !compa.classList.contains('visible') || compa.classList.contains('apartado')) return;
     yaDicho[clave] = true;
     abreBocadillo(t);
   }
+  var toques = [];
   $('#compa-libo').addEventListener('click', function () {
+    // Muchos toques seguidos: se enfada un momento y enseguida se le pasa
+    var ahora = Date.now();
+    toques = toques.filter(function (x) { return ahora - x < 2000; }).concat(ahora);
+    if (toques.length >= 4) { toques = []; cierraBocadillo(); reacciona(['enfado', 'carino'], 1600); return; }
     if (!bocadillo.hidden) { cierraBocadillo(); return; }
     abreBocadillo(textoLibo || '¡Miau! Baja y curiosea.');
     suena('miau');
   });
+  // Cuando ganas algo (sale confeti), Libo lo celebra
+  celebraLibo = function () {
+    if (!compa.classList.contains('visible') || compa.classList.contains('apartado')) return;
+    reacciona(['celebra'], 2600);
+  };
+  // En calma, de vez en cuando, un saltito o mirar al otro lado
+  var gestoT = null;
+  function calma() {
+    var p = compaImg.getAttribute('data-pose');
+    var quieto = !reducido && !reaccion && bocadillo.hidden && (p === 'de-pie' || p === 'lee');
+    if (!quieto) { clearTimeout(gestoT); gestoT = null; compa.removeAttribute('data-gesto'); return; }
+    if (gestoT) return;
+    gestoT = setTimeout(function () {
+      var g = p === 'lee' || Math.random() >= 0.5 ? 'mira' : 'salta';
+      compa.setAttribute('data-gesto', g);
+      gestoT = setTimeout(function () { compa.removeAttribute('data-gesto'); gestoT = null; calma(); }, g === 'mira' ? 2400 : 700);
+    }, 7000 + Math.random() * 7000);
+  }
   $('#compa-cerrar').addEventListener('click', cierraBocadillo);
   // Se aparta de los juegos y de la fachada, para no tapar nada
   if ('IntersectionObserver' in window) {
@@ -701,12 +843,15 @@
     new IntersectionObserver(alTapar, { rootMargin: '0px 0px -40px 0px' }).observe($('.pie'));
   }
 
-  // Si no pasa nada en un rato, Libo se echa una siesta (le salen «z»); al moverte, se despierta
-  var siesta = null;
+  // Si no pasa nada en un rato, Libo se sienta a leer y después se echa una siesta; al moverte, se despierta
+  var siesta = null, lectura = null;
   function despierta() {
-    compa.classList.remove('duerme');
     clearTimeout(siesta);
-    siesta = setTimeout(function () { if (bocadillo.hidden) compa.classList.add('duerme'); }, 14000);
+    clearTimeout(lectura);
+    if (reposo !== 'de-pie') { reposo = 'de-pie'; pintaCompa(); }
+    if (reducido) return;
+    lectura = setTimeout(function () { reposo = 'lee'; pintaCompa(); }, 6000);
+    siesta = setTimeout(function () { reposo = 'duerme'; pintaCompa(); }, 14000);
   }
   ['scroll', 'pointerdown', 'keydown', 'wheel'].forEach(function (ev) { window.addEventListener(ev, despierta, { passive: true }); });
   despierta();
