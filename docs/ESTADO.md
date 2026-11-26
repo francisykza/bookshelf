@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **1.148.0, aprobada para publicar** (26-11-2026, §148; Francisco: «Sí, commit y publicar»): Libo se mece y hace gestos pequeños
+- **Publicada en producción: 1.148.0** (26-11-2026, §148; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de
+  `5f2af7f` a `4d22b80` y libotown.es sirve v1.148.0): Libo se mece y hace gestos pequeños
   en calma (app y web), sus poses en la web y las historias del teléfono de la web más claras (barra por paso con flechas y
   «Baja para ver…»).
 - **Publicada en producción: 1.147.0** (26-11-2026, §147; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de
@@ -537,6 +538,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.148.0 a producción (Claude)
+
+- Francisco: «Sí, commit y publicar». `main` avanzó sin forzar (de `5f2af7f` a `4d22b80`); `/sw.js` de producción sirve v1.148.0.
+- Comprobado en producción con un navegador de Playwright sin datos (390 px): libotown.es enseña la web con las historias nuevas
+  (barra por paso y «Baja para ver…»; la flecha lleva al paso siguiente) y Libo con su pose; en la app, Libo se mece; sin errores.
+  La dirección de antes sigue con su 308. Captura en `qa-report/web/produccion-148-web.png`. Sin probar en móviles reales.
 
 ### 2026-11-26 · 1.148.0, Libo vivo en calma y la web con sus poses (Claude)
 
