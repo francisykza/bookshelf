@@ -6,7 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Con commit, publicándose: 1.149.0** (26-11-2026, §149; Francisco: «Commit y publicar»): las colecciones del ala nueva del almacén y la colección premium, con
+- **Publicada en producción: 1.149.0** (26-11-2026, §149; Francisco: «Commit y publicar»; `main` avanzó sin forzar de
+  `213f4c2` a `5f636b3` y libotown.es sirve v1.149.0): las colecciones del ala nueva del almacén y la colección premium, con
   el punto único de la suscripción. Migración `20261229120000_almacen_colecciones.sql` **aplicada** (26-11-2026). Cifras premium aprobadas
   (aceptó la tabla propuesta). Ver la bitácora.
 - **Publicada en producción: 1.148.0** (26-11-2026, §148; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de
@@ -541,6 +542,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.149.0 a producción (Claude)
+
+- Francisco: «Commit y publicar». `main` avanzó sin forzar (de `213f4c2` a `5f636b3`); `/sw.js` de producción sirve v1.149.0 y
+  la dirección de antes sigue con su 308. La migración ya estaba aplicada (ver la entrada siguiente).
+- Comprobado: producción sirve el catálogo nuevo (el trozo con «Lumbre y Lana»). **No se ha recorrido el almacén en
+  producción**, porque hace falta una cuenta y aquí no se inicia sesión. Sin probar en móviles reales.
 
 ### 2026-11-26 · 1.149.0, las colecciones del ala nueva y la colección premium (Claude)
 
