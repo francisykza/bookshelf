@@ -6,6 +6,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **1.147.0, aprobada para publicar** (26-11-2026, §147; Francisco: «Sí, commit y publicar»): las poses de Libo que dibujó él,
+  por toda la app (su esquina, las guías, la biblioteca vacía y «Tu cuenta»).
 - **Publicada en producción: 1.146.0** (26-11-2026, §146; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de `2c0bcdb`
   a `b629f90` y libotown.es sirve v1.146.0): la web de Libotown (`public/web/`) y el reparto en la raíz (script en el `<head>` de
   `index.html`: en libotown.es, quien llega nuevo va a la web y quien ya usa la app entra directo), con el service worker dejando
@@ -305,6 +307,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Las poses de Libo, ideas sin hacer** (1.147.0 ya aprobada): las poses en la web (`public/web/`, el Libo que acompaña) y la
+  pose «asoma».
 - **El correo de contacto de las páginas legales** (la 1.145.1 ya está publicada, 25-11-2026): cuando Francisco diga cuál (uno de
   `libotown.es`), sustituir `[correo de contacto pendiente]` en las cuatro páginas de `public/legal/` (y quitar su comentario de
   BORRADOR) y publicar. Después, el bloque 3 de la Play Store (moderación), cuando lo pida.
@@ -530,6 +534,24 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-26 · 1.147.0, las poses de Libo (Claude)
+
+- Francisco pasó una hoja con 15 poses de Libo: «añadelas a lo largo de la app, para que parezca que libo esta vivo y le de más
+  alegría». La hoja se guardó fuera del repositorio (`libotown-marca/libo-poses.webp`); `scripts/libo-poses.mjs` la recorta en
+  `public/assets/libo/poses/` (mismo lienzo y escala para todas).
+- Reglas en `src/features/libo/poses.js` (con pruebas) y vida en `LiboRincon.jsx`: llega corriendo, habla con la pose de lo que
+  cuenta, lee y se duerme si no tocas nada, se enfada y se le pasa con muchos toques, celebra los registros y abraza los libros
+  terminados, se da la vuelta con «Ahora no». También en la guía de Libo, la de la habitación ilustrada, la biblioteca vacía y
+  «Tu cuenta». Detalle en SPEC §147.
+- Dos errores encontrados con las pruebas y arreglados: Libo se quedaba «corriendo» para siempre si la escena se montaba dos veces
+  (ahora el sitio se apunta al terminar la carrera), y no celebraba el registro porque la hoja de lectura le desmonta (ahora
+  recuerda la lectura fuera del componente). Las poses anchas se cortaban en el borde derecho: 9 px hacia dentro.
+- Pruebas: Vitest de Libo (35), build, oxlint (sin avisos nuevos salvo un `setState` en un efecto, a propósito), las 19 e2e de
+  Libo a 390 y la nueva `libo-poses.spec.js` a 360 y 390 (7 pasan). Evidencias en `qa-report/libo-poses/` (vídeos en
+  `qa-report/test-results-community/libo-poses-*`), enviadas al chat. **La guía de la habitación ilustrada no se ha capturado**
+  (no sale en las e2e de ahora). Sin probar en móviles reales ni en WebKit.
+- Francisco: «Sí, commit y publicar». `.claude/` sigue sin seguimiento (no se sube).
 
 ### 2026-11-26 · 1.146.0 a producción, la web en la raíz (Claude)
 

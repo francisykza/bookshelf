@@ -8,6 +8,7 @@ import { EDAD_MINIMA, LEGAL, PALABRA_BORRAR } from '../../domain/legal';
 import { useCloud } from '../../state/cloudSync';
 import { hydrate, useLibrary } from '../../state/useLibrary';
 import { MODOS, cambiarModo, liboDe } from '../../features/libo/libo';
+import { poseUrl } from '../../features/libo/poses';
 import { PanelShell } from './PanelShell';
 
 const STATUS_TEXT = {
@@ -327,7 +328,7 @@ function LiboAjustes({ foco = false }) {
   return (
     <section ref={ref} className="account-section account-libo" aria-labelledby="account-libo-t">
       <h3 id="account-libo-t">
-        <img src="/assets/libo/libo-320.webp" alt="" aria-hidden="true" width="27" height="40" /> Libo, el gato guía
+        <img src={poseUrl(modo === 'llamar' ? 'lee' : modo === 'descansa' ? 'duerme' : 'saluda')} alt="" aria-hidden="true" width="46" height="44" /> Libo, el gato guía
       </h3>
       <fieldset className="account-libo__modos">
         <legend>Cómo se porta Libo</legend>

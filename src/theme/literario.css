@@ -1060,8 +1060,8 @@
 }
 
 .lit-vacia img {
-  width: 96px;
-  height: 96px;
+  width: auto;
+  height: 104px;
   object-fit: contain;
   image-rendering: pixelated;
 }

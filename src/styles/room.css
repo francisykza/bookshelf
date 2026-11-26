@@ -2964,14 +2964,14 @@ html[data-motion='reduced'] .tod__glow::after {
   right: 14px;
   bottom: calc(100% - 6px);
   width: auto;
-  height: 64px;
+  height: 70px;
   filter: drop-shadow(0 2px 0 rgb(44 30 20 / 0.35));
   pointer-events: none;
   user-select: none;
 }
 
 .onboarding-card--letter .onboarding-card__libo {
-  height: 92px;
+  height: 101px;
 }
 
 .onboarding-card__hand {

@@ -5,6 +5,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CURRENT_PHASE, isLast } from '../../domain/onboarding';
 import { anchorPoint, placeCard, safeAreas } from '../../scene/guidePlacement';
+import { poseUrl } from '../../features/libo/poses';
 
 export function OnboardingGuide({ guide, fit, reducedMotion }) {
   const cardRef = useRef(null);
@@ -57,8 +58,8 @@ export function OnboardingGuide({ guide, fit, reducedMotion }) {
         aria-labelledby={titleId}
         aria-describedby={textId}
       >
-        {/* Libo, el gato guía (docs/qa/libo.md), asoma por encima de la carta */}
-        <img className="onboarding-card__libo" src="/assets/libo/libo-320.webp" alt="" aria-hidden="true" draggable="false" />
+        {/* Libo, el gato guía (docs/qa/libo.md), asoma por encima de la carta: saluda al empezar, te acompaña y celebra el final */}
+        <img className="onboarding-card__libo" key={state} src={poseUrl(welcome ? 'saluda' : last ? 'celebra' : 'camina')} alt="" aria-hidden="true" draggable="false" />
         <h2 id={titleId}>{stop.title}</h2>
         <p id={textId}>{stop.text}</p>
         <div className="onboarding-card__actions">

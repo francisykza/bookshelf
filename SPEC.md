@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.146.0 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.147.0 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8181,3 +8181,51 @@ volver, app; `/web/` a mano con la app usada; con `bookshelf:v1`, `bookshelf:aut
 Chromium no emula `display-mode` y descarta el Referer `android-app://`); `?code=`, `#access_token=`, `#error=` y `?libro=` → app;
 `#cafe` y `?utm_source=` → web; localhost → app; y el service worker no guarda nada de `/web/` y su `/index.html` sigue siendo la
 app. Sin probar en móviles reales ni en Safari.
+
+## 147. Las poses de Libo (1.147.0)
+
+Francisco, 26-11-2026, con una hoja de 15 poses de Libo dibujadas por él: «Mira te paso a libo en diferentes poses, añadelas a lo
+largo de la app, para que parezca que libo esta vivo y le de más alegría». Cumple lo que `docs/qa/libo.md` §5 dejaba para más
+adelante («las poses vendrán después, de su material»).
+
+### 147.1 Las imágenes
+
+- La hoja original está fuera del repositorio (`libotown-marca/libo-poses.webp`, como la mascota). `scripts/libo-poses.mjs` la
+  recorta: quita el fondo negro unido a los bordes (el gatito negro y los ojos se quedan), junta cada pose con sus adornos («!»,
+  «?», corazones, «zZ», el polvo al correr) e iguala la escala de las filas (la 2.ª y la 3.ª están dibujadas más pequeñas).
+- Salen 15 WebP en `public/assets/libo/poses/` (unos 242 KB en total), **todas en el mismo lienzo de 420 × 400, apoyadas abajo**:
+  al cambiar de pose Libo no cambia de tamaño ni salta. De pie ocupa 365 de alto, así que en su esquina mide lo mismo que antes.
+- Poses: de pie, saluda, lee, camina, celebra, duerme, duda, cariño, enfado, sorpresa, abraza, corre, gatito (con un gatito negro),
+  asoma y de espaldas. «Asoma» queda sin usar de momento.
+
+### 147.2 Qué pose toca (`src/features/libo/poses.js`, reglas puras con pruebas)
+
+En su esquina (`LiboRincon.jsx`):
+- **Llega corriendo** la primera vez de la sesión en cada sitio (0,8 s) y se queda **de pie**.
+- **Al hablar**, la pose va con lo que cuenta: avisos de otros sitios, **sorpresa**; una reseña por escribir, **abraza**; un libro
+  parado o una idea que le pides, **duda**; ir a ver un sitio, **camina**; lo demás, **saluda**.
+- **Sin tocar nada**: a los 30 s se sienta a **leer** (a veces, uno de cada cinco, con **el gatito**) y a los 90 s se **duerme**.
+  Cualquier toque, tecla o desplazamiento le despierta. Con «Solo cuando le llamo» lee desde el principio.
+- **Lo que lees**: un registro nuevo lo **celebra** (3 s); un libro terminado, lo **abraza** (3,8 s). Solo si cambian uno o dos de
+  golpe (más es la nube trayendo tu biblioteca) y nunca en los 4 primeros segundos de la app. Lo recuerda fuera del componente: al
+  apuntar una lectura la hoja le tapa y se desmonta, y al volver lo celebra.
+- **Muchos toques seguidos** (4 en 2 s): se **enfada** un momento (1,5 s) y enseguida hace **cariño**; no abre ni cierra nada más.
+- **«Ahora no»** a una sugerencia: se da **la vuelta** un momento, sin insistir.
+- Al cambiar de pose da un saltito pequeño (`scale`, 260 ms); dormido respira más despacio. La imagen se dibuja un poco más alta
+  que su botón (para que de pie mida lo mismo) y 9 px hacia dentro, porque las poses anchas se cortaban en el borde derecho.
+- Las 15 imágenes se piden una vez, cuando el navegador está libre, para que cambiar de pose no deje un hueco.
+- **Movimiento reducido**: no llega corriendo, no se sienta ni se duerme solo, sin saltito ni respiración; solo responde a lo que
+  haces (al hablar, los toques, la lectura).
+
+Fuera de la esquina:
+- **La guía de Libo**: saluda en «Hola, soy Libo», te acompaña andando y de pie y celebra el último paso (`poseDelPaso`).
+- **La guía de la habitación ilustrada** (`OnboardingGuide.jsx`): saluda en la carta, camina en los pasos y celebra el final.
+- **La biblioteca vacía**: Libo abraza su libro.
+- **«Tu cuenta»**: el dibujo de su apartado dice cómo se porta (saluda / lee / duerme).
+
+### 147.3 Pruebas
+
+`src/features/libo/__tests__/poses.test.js` (las reglas y que cada pose tiene su imagen) y `e2e-community/libo-poses.spec.js`
+(a 360 y 390 con vídeo y `page.clock` para el rato sin tocar nada: de pie y del mismo tamaño que antes, habla, lee, duerme, se
+despierta, enfado y cariño, celebra un registro; la guía, la biblioteca vacía, «Tu cuenta» y movimiento reducido). Las e2e de Libo
+de antes siguen pasando. Sin probar en móviles reales ni en WebKit.

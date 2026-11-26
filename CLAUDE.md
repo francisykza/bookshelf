@@ -564,7 +564,7 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   con poca animación; las poses vendrán después, de su material: no inventarlas); **vive en una esquina, siempre**, con el
   bocadillo del corazón cuando tiene algo que decir; **sugerencias, una al día como mucho y sin presión**, solo de cosas
   reales y apagables en Ajustes; y **acceso al edificio desde la habitación** (la tablet sigue igual). No es un chat con IA;
-  dentro del café y del taller hablan Pilar y don Celestino. **Bloques 1 a 4 aprobados y publicados** (1.145.1, 25-11-2026; `docs/qa/libo.md` §6): en las
+  dentro del café y del taller hablan Pilar y don Celestino. **Sus poses** (Francisco, 26-11-2026, con su hoja de 15 poses: «añadelas a lo largo de la app, para que parezca que libo esta vivo y le de más alegría»; 1.147, SPEC §147): se recortan de su material con `scripts/libo-poses.mjs` (nunca inventarlas) y las elige `src/features/libo/poses.js`; con movimiento reducido no cambia solo. **Bloques 1 a 4 aprobados y publicados** (1.145.1, 25-11-2026; `docs/qa/libo.md` §6): en las
   e2e con cuenta simulada, el simulador da por vistos todos sus capítulos (`bookshelf:libo`, una lista) y por asomado el
   bocadillo del día (`bookshelf:libo-asomo` = `9999-12-31`) para que no tapen la pantalla; las pruebas de Libo lo cambian.
   **Sus avisos y sugerencias solo dicen cosas de verdad** (bloque 3): si un dato no se puede saber sin preguntar al servidor

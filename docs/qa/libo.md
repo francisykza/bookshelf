@@ -96,7 +96,8 @@ Por orden de impacto para la tienda:
 
 Tomadas el 20-11-2026:
 1. **Arte: empezar con la mascota actual**, recortada de su fondo y con poca animación (respirar, la cola); las poses
-   (saludar, señalar, leer, dormir) se añaden más adelante.
+   (saludar, señalar, leer, dormir) se añaden más adelante. **Hecho en la 1.147** (26-11-2026): Francisco pasó una hoja con 15
+   poses y pidió ponerlas «a lo largo de la app, para que parezca que libo esta vivo»; SPEC §147.
 2. **Libo vive en una esquina, siempre**, en todas las escenas; su bocadillo del corazón sale cuando tiene algo que decir.
 3. **Sugerencias: una al día como mucho, sin presión**, solo de cosas reales, y se pueden apagar en Ajustes.
 4. **Sí al acceso al edificio desde la habitación** (§3.2); la tablet del salón sigue igual.

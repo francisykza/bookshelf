@@ -6,15 +6,30 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import { useLibrary } from '../../state/useLibrary';
 import { dayKey } from '../../domain/dates';
-import { CAPITULOS, SALUDOS, abrePorSuCuenta, estaVisible, haVisto, marcarPresentadoAqui, marcarVisto, presentadoAqui } from './libo';
+import { CAPITULOS, SALUDOS, abrePorSuCuenta, estaVisible, haVisto, liboDe, marcarPresentadoAqui, marcarVisto, presentadoAqui } from './libo';
 import { asomoAqui, callar, debeAsomar, fijarDia, ideaAhora, marcarAsomoAqui, sugerenciaDelDia, sugerencias } from './sugerencias';
+import { DURA, POSES, REPOSO, muchosToques, poseAlHablar, poseDelPaso, poseEnReposo, poseUrl, reaccionALectura } from './poses';
 import { maullar } from './maullido';
 import { useAtras } from '../../hooks/useAtras';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import './libo.css';
 
-const ARTE = '/assets/libo/libo-320.webp';
-const ARTE_GRANDE = '/assets/libo/libo-640.webp';
 const MARGEN = 12;
+
+// Las poses se piden una vez por sesión, cuando el navegador está libre: al cambiar de pose no hay hueco mientras llega la imagen
+let posesPedidas = false;
+function pedirPoses() {
+  if (posesPedidas || typeof Image === 'undefined') return;
+  posesPedidas = true;
+  const pedir = () => POSES.forEach((p) => (new Image().src = poseUrl(p)));
+  if ('requestIdleCallback' in window) window.requestIdleCallback(pedir, { timeout: 4000 });
+  else setTimeout(pedir, 1500);
+}
+// En cada sitio, la primera vez de la sesión, Libo llega corriendo
+const llegadas = new Set();
+// Cómo estaba tu lectura la última vez que Libo la miró. Fuera del componente: al apuntar una lectura, la hoja tapa la esquina
+// y Libo se desmonta; al volver tiene que saber qué ha cambiado para celebrarlo
+const memoria = { lectura: null, desde: Date.now() };
 
 /** El corazón del bocadillo del logo, en píxeles. */
 function Corazon() {
@@ -169,6 +184,8 @@ function Guia({ pasos, contexto, cont, onFin, onPaso }) {
   const s = geo?.sitio;
   const m = geo?.marco;
   const id = `libo-paso-${paso.id}`;
+  // Saluda al empezar, te acompaña andando y celebra el último paso con él a la vista (en «fin» se señala el de la esquina)
+  const poseGato = paso.id === 'hola' ? 'saluda' : poseDelPaso(i, pasos.at(-1)?.id === 'fin' ? pasos.length - 1 : pasos.length);
   return (
     <div className="libo-guia" data-escape-local="open" data-no-room-swipe style={m ? { left: m.x, top: m.y, width: m.w, height: m.h, right: 'auto', bottom: 'auto' } : undefined}>
       {o ? (
@@ -190,7 +207,9 @@ function Guia({ pasos, contexto, cont, onFin, onPaso }) {
         aria-describedby={`${id}-d`}
       >
         {/* Libo asoma por encima de la tarjeta; si está pegada arriba y no cabe, no se corta: no sale */}
-        {paso.id !== 'fin' && !(s && paso.id !== 'hola' && s.y < 66) && <img className="libo-tarjeta__gato" src={paso.id === 'hola' ? ARTE_GRANDE : ARTE} alt="" aria-hidden="true" draggable="false" />}
+        {paso.id !== 'fin' && !(s && paso.id !== 'hola' && s.y < 66) && (
+          <img key={i} className="libo-tarjeta__gato" src={poseUrl(poseGato)} data-pose={poseGato} alt="" aria-hidden="true" draggable="false" />
+        )}
         <h2 id={`${id}-t`}>
           <Corazon />
           {paso.titulo}
@@ -254,6 +273,21 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
   const boton = useRef(null);
   const bocadillo = useRef(null);
   const visible = estaVisible(settings);
+  // Una reacción de Libo (o varias seguidas): cada pose dura lo suyo (DURA) y luego vuelve a lo de siempre
+  const [reaccion, setReaccion] = useState(null);
+  const tReaccion = useRef(0);
+  const reaccionar = useCallback((...poses) => {
+    clearTimeout(tReaccion.current);
+    let k = 0;
+    const siguiente = () => {
+      const p = poses[k] ?? null;
+      k += 1;
+      setReaccion(p);
+      if (p) tReaccion.current = setTimeout(siguiente, DURA[p] ?? 2000);
+    };
+    siguiente();
+  }, []);
+  useEffect(() => () => clearTimeout(tReaccion.current), []);
   const cap = capitulo ? (CAPITULOS[capitulo] ?? null) : null;
   const guia = cap?.pasos ?? null;
   const contenedor = useCallback(() => raiz?.current ?? rincon.current?.closest('.panel') ?? null, [raiz]);
@@ -358,6 +392,8 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
     setAbierto(false);
     setIdea(null);
     if (ac.ir !== 'callar') onIr?.(ac.ir, ac.libro);
+    // «Ahora no»: se da la vuelta un momento, sin insistir
+    else reaccionar('espaldas');
   };
 
   const terminar = useCallback(() => {
@@ -391,6 +427,67 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
     };
   }, [abierto]);
 
+  // ── Las poses: Libo está vivo ──
+  // Reacciona (un rato y vuelve a lo suyo), se sienta a leer o se duerme si no pasa nada, y habla con la pose de lo que cuenta.
+  // Con movimiento reducido no cambia solo (ni llega corriendo ni se duerme): solo responde a lo que tú haces.
+  const reducido = useReducedMotion();
+  const { modo } = liboDe(settings);
+  const [quieto, setQuieto] = useState(0);
+  const [gatito, setGatito] = useState(false);
+  const [llega, setLlega] = useState(false);
+  const toques = useRef([]);
+  useEffect(() => {
+    if (!visible) return undefined;
+    pedirPoses();
+    if (reducido || llegadas.has(lugar)) return undefined;
+    setLlega(true);
+    // Se apunta al terminar la carrera: si la escena se rehace a mitad (o React monta dos veces), vuelve a llegar y no se
+    // queda corriendo
+    const id = setTimeout(() => {
+      llegadas.add(lugar);
+      setLlega(false);
+    }, DURA.corre);
+    return () => {
+      clearTimeout(id);
+      setLlega(false);
+    };
+  }, [visible, reducido, lugar]);
+  // El rato sin tocar nada (cualquier toque, tecla o desplazamiento lo despierta)
+  useEffect(() => {
+    if (!visible || reducido) return undefined;
+    let ultimo = Date.now();
+    const despierta = () => {
+      ultimo = Date.now();
+      setQuieto((q) => (q ? 0 : q));
+    };
+    const opciones = { capture: true, passive: true };
+    const eventos = ['pointerdown', 'keydown', 'wheel', 'scroll', 'touchstart'];
+    eventos.forEach((ev) => window.addEventListener(ev, despierta, opciones));
+    let antes = 0;
+    const id = setInterval(() => {
+      const s = Math.floor((Date.now() - ultimo) / 1000);
+      const nivel = s >= REPOSO.duerme ? REPOSO.duerme : s >= REPOSO.lee ? REPOSO.lee : 0;
+      // Al sentarse, a veces viene a verle un gatito negro
+      if (nivel === REPOSO.lee && antes !== nivel) setGatito(Math.random() < 0.2);
+      antes = nivel;
+      setQuieto(nivel);
+    }, 3000);
+    return () => {
+      clearInterval(id);
+      eventos.forEach((ev) => window.removeEventListener(ev, despierta, opciones));
+    };
+  }, [visible, reducido]);
+  // Lo que acabas de leer: un registro nuevo lo celebra; un libro terminado, lo abraza
+  const lectura = useMemo(() => ({ registros: log?.length ?? 0, terminados: books.filter((b) => b.status === 'read').length }), [log, books]);
+  useEffect(() => {
+    const r = reaccionALectura(memoria.lectura, lectura);
+    memoria.lectura = lectura;
+    // Los primeros segundos de la app, lo que cambia es la biblioteca que llega de la nube, no algo que acabas de hacer
+    if (r && Date.now() - memoria.desde > 4000) reaccionar(r);
+  }, [lectura, reaccionar]);
+  const hablando = hub ? poseAlHablar({ avisos, sugerencia: idea ?? deHoy }) : 'saluda';
+  const pose = abierto ? hablando : llega ? 'corre' : (reaccion ?? (reducido ? (modo === 'llamar' ? 'lee' : 'de-pie') : poseEnReposo({ modo, quieto, gatito })));
+
   if (!visible) return null;
   const cont = pasos ? contenedor() : null;
   return (
@@ -400,6 +497,7 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
         className="libo-rincon"
         data-variante={variante}
         data-lugar={lugar}
+        data-llega={llega || undefined}
         data-oculto={(pasos && pasoVisto !== 'fin') || undefined}
         data-escape-local={abierto ? 'open' : undefined}
       >
@@ -454,6 +552,15 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
           aria-describedby={hayAlgo && !abierto ? 'libo-nota' : undefined}
           data-nota={(hayAlgo && !abierto) || undefined}
           onClick={() => {
+            // Muchos toques seguidos: se enfada un momento y enseguida se le pasa (sin abrir ni cerrar nada más)
+            const ahora = Date.now();
+            toques.current = [...toques.current.filter((t) => ahora - t < 2000), ahora];
+            if (muchosToques(toques.current, ahora)) {
+              toques.current = [];
+              setAbierto(false);
+              reaccionar('enfado', 'carino');
+              return;
+            }
             if (!abierto) {
               maullar();
               setIdea(null);
@@ -462,7 +569,7 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
             setAbierto((v) => !v);
           }}
         >
-          <img src={ARTE} alt="" draggable="false" />
+          <img key={pose} src={poseUrl(pose)} data-pose={pose} alt="" draggable="false" />
           {/* Tiene algo que contarte: el corazón del logo, quieto, junto a su oreja */}
           {hayAlgo && !abierto && (
             <span className="libo-rincon__nota" id="libo-nota">

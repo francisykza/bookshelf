@@ -9,6 +9,7 @@ import { normalize } from '../../domain/bookPicker';
 import { LIBRARY_STATUSES, filterLibrary } from '../../domain/library';
 import { uniqueBooks } from '../../domain/roomShelf';
 import { chosenIds } from './roomSelection';
+import { poseUrl } from '../libo/poses';
 
 export const ROW_H = 76;
 export const BLOCK = 40;
@@ -366,7 +367,7 @@ export function PisoLibrary({ books, settings, placed, memory, notice, onBack, o
         {/* Libo, bloque 4 (docs/qa/libo.md §3.5): la biblioteca vacía dice qué hacer, con Libo y un botón claro */}
         {!visit && !sorted.length && (onAdd || onImport) && (
           <div className="lit-vacia">
-            <img src="/assets/libo/libo-320.webp" alt="" width="96" height="96" />
+            <img src={poseUrl('abraza')} alt="" width="109" height="104" />
             <p className="lit-vacia__titulo">Tu estantería espera su primera historia</p>
             <p className="lit-vacia__texto">Busca un libro por su título, su autor o su ISBN{onImport ? ', o trae tu biblioteca de Goodreads' : ''}.</p>
             <div className="lit-vacia__botones">
