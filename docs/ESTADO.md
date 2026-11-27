@@ -619,7 +619,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   `libo-avisos.spec.js` (adaptada) en Chromium 360 y 390 y WebKit 390, y `libo`, `libo-atras`, `libo-poses` y
   `v1154-libo-amigos` en Chromium 390: 18/18 y 14/14 (una omitida, solo vídeo). Build limpio. Emulación, no un iPhone real.
 - Francisco vio las capturas y respondió «Continúa» a «¿Hago el commit y la publico?». Commit en `1.90-escritorio-puerto` y
-  `main` avanzado sin forzar desde `0e3c101` (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
+  `main` avanzó sin forzar de `0e3c101` a `4b28f83` (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
+- Desplegado: `https://libotown.es/sw.js` sirve v1.158.0 (17:02) y la dirección de antes sigue con su 308.
 - **Queda por mirar**: en WebKit las negritas del saludo y del título de la tarjeta salen normales; con muchas filas, los
   enlaces del pie quedan medio cortados hasta que bajas.
 
