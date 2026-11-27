@@ -402,7 +402,8 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       gusta» por mueble): esto sustituye a «los vecinos lo ven al visitar tu piso» y a que el legendario te siga en las
       visitas, hasta que la visita 3D los tenga. **Parte A hecha en la 1.155.0.**
     - **Ideas anotadas para más tarde** (Francisco, 27-11-2026; detalle en «Pendiente» de `docs/ESTADO.md`): el ordenador que
-      se queda en negro en el iPhone de una compañera; **los tickets como moneda con identidad** («libocoins o algo por el
+      se queda en negro en el iPhone de una compañera (**hecho y publicado en la 1.159.0**: la red de seguridad
+      `src/ui/RedDeSeguridad.jsx` envuelve la app; no quitarla, y un fallo nuevo no debe dejar la pantalla en negro); **los tickets como moneda con identidad** («libocoins o algo por el
       estilo», con la cara de Libo según la moneda que dibujó él, siempre a la vista y con una animación divertida de Libo al
       ganarlos; lo interno no se renombra sin migración aprobada y las reglas de ganarlos no cambian); la web en su dominio;
       y **el menú de Libo más gracioso y limpio, que te cuente qué puedes hacer hoy** (intentos del casino que quedan, muebles

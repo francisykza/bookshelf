@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.158.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.159.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8987,3 +8987,26 @@ detalle, en `docs/qa/libo-lo-de-hoy.md`. Sin migración: usa las RPC que ya exis
 
 - Unitarias: `src/features/libo/__tests__/loDeHoy.test.js`. e2e con Supabase simulado: `v1158-libo-lo-de-hoy.spec.js`
   (nueva) y `libo-avisos.spec.js` (adaptada); capturas en `qa-report/v1158-lo-de-hoy/`. Emulación: no equivale a un iPhone.
+
+## 159. La red de seguridad: el ordenador en negro en un iPhone (1.159.0)
+
+Aviso de Francisco (27-11-2026): a una compañera, en un iPhone, el ordenador del piso se le queda en negro. Detalle en
+`docs/qa/ordenador-negro.md`. Sin migración.
+
+### 159.1 La causa más probable
+
+- La app no tenía red de seguridad: un fallo al pintar desmontaba todo y quedaba el fondo `#351c0e`. Con la app abierta
+  días en el iPhone y una versión nueva publicada, el trozo de código del escritorio de la versión vieja da 404 al abrir el
+  ordenador («Importing a module script failed.»). Reproducido en WebKit; no confirmado en su iPhone.
+
+### 159.2 La red de seguridad
+
+- `src/ui/RedDeSeguridad.jsx` envuelve la app (`main.jsx`). Con un trozo perdido (`esTrozoPerdido`, `src/ui/recarga.js`)
+  recarga una vez («Poniendo Libotown al día…»; como mucho una cada 30 s, `bookshelf:recarga-version` en `sessionStorage`).
+  Si no, la escena de Libotown con un aviso de papel bajo las letras: «Algo no se ha abierto bien.», Recargar, Ir al inicio
+  (vacía el historial) y «Detalles del fallo». Estilos en `index.css`. `vite:preloadError` hace la misma recarga única.
+
+### 159.3 Comprobación
+
+- Unitarias: `src/ui/__tests__/redDeSeguridad.test.js`. e2e: `e2e-community/v1159-red-seguridad.spec.js` (Chromium y
+  WebKit a 390); capturas en `qa-report/v1159-red-seguridad/`. Emulación: no equivale a un iPhone.

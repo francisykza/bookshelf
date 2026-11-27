@@ -208,5 +208,87 @@ select {
   text-align: center;
 }
 
+/* 1.159 · La red de seguridad (src/ui/RedDeSeguridad.jsx): la misma escena, con un aviso de papel bajo las letras. Aquí y no en
+   otra hoja: se tiene que ver aunque lo que ha fallado sea un trozo de código o de estilos que no llegó */
+/* Bajo las letras del logo, como el mensaje de las pantallas de carga: el logo, centrado, mide min(80vw, 420px) × 2/3 y sus letras
+   acaban al 81 % de su alto (31 % por debajo del centro) */
+.red-seguridad {
+  align-items: start;
+  padding-top: calc(50vh + min(80vw, 420px) * 0.207 + 1rem);
+  padding-bottom: 16px;
+  overflow-y: auto;
+}
+
+.red-seguridad__caja {
+  box-sizing: border-box;
+  width: min(100%, 360px);
+  margin-top: 0.5rem;
+  padding: 14px 16px 12px;
+  background: #fbf3df;
+  color: #3b2618;
+  font-style: normal;
+  text-align: left;
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+}
+
+.red-seguridad__titulo {
+  margin: 0 0 6px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.red-seguridad__texto {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.red-seguridad__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.red-seguridad__btn {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid #3b2618;
+  border-radius: 0;
+  background: #e3cfa6;
+  color: #3b2618;
+  font: 600 0.95rem 'Lora', Georgia, serif;
+  cursor: pointer;
+}
+
+.red-seguridad__btn--si {
+  background: #5c6a48;
+  color: #fbf5e6;
+}
+
+.red-seguridad__btn:focus-visible {
+  outline: 3px solid #c98a1c;
+  outline-offset: 2px;
+}
+
+.red-seguridad__detalle {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #6b4329;
+}
+
+.red-seguridad__detalle summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.red-seguridad__detalle code {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+}
+
 /* 1.157: la habitación ilustrada archivada no entra en la app (Tailwind no lee sus clases) */
 @source not '../archivo';

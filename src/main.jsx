@@ -4,6 +4,8 @@ import './index.css'
 import App from './App.jsx'
 import { showDiagnostics } from './diag'
 import { seedPilotLibrary } from './features/pisoLab/sampleLibrary'
+import { RedDeSeguridad } from './ui/RedDeSeguridad'
+import { recargarUnaVez } from './ui/recarga'
 
 // Piloto: la biblioteca de prueba se prepara antes de que la app lea el almacenamiento
 if (location.search.includes('piloto=')) {
@@ -15,9 +17,17 @@ if (location.search.includes('piloto=')) {
   }
 }
 
+// 1.159: si un trozo de código de otra versión ya no está (la app llevaba días abierta), Vite avisa antes de fallar: se recarga
+// una vez y la página nueva trae los suyos. Si no, lo recoge la red de seguridad (src/ui/RedDeSeguridad.jsx)
+window.addEventListener('vite:preloadError', (event) => {
+  if (recargarUnaVez()) event.preventDefault()
+})
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <RedDeSeguridad>
+      <App />
+    </RedDeSeguridad>
   </StrictMode>,
 )
 

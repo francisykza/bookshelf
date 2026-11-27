@@ -6,7 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.158.0, «Lo de hoy», el menú de Libo** (27-11-2026; Francisco aprobó la segunda propuesta: «Sí,
+- **Publicada en producción: 1.159.0, la red de seguridad** (27-11-2026; Francisco: «publica lo que hay»; SPEC §159 y
+  `docs/qa/ordenador-negro.md`). El ordenador en negro del iPhone: la causa más probable (un trozo de código de la versión
+  vieja que da 404 con la app abierta días) se recarga sola, y cualquier otro fallo enseña un aviso en vez de la pantalla
+  negra. Sin migración. No confirmado en su iPhone: si le vuelve a pasar, pedir una captura del aviso.
+- **Anterior: 1.158.0, «Lo de hoy», el menú de Libo** (27-11-2026; Francisco aprobó la segunda propuesta: «Sí,
   constrúyelo» y, vistas las capturas, «Continúa» a publicarla; SPEC §158 y `docs/qa/libo-lo-de-hoy.md`). En tu piso, el bocadillo de Libo es una tarjeta de píxel con lo que
   puedes hacer hoy (avisos de siempre más el casino, la ruleta y las misiones, que pregunta al abrirla) e iconos propios.
   Sin migración. Sin probar en móviles reales; en WebKit las negritas de la tarjeta salen sin negrita (por mirar).
@@ -288,6 +292,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.159.0 | La red de seguridad: el ordenador en negro en un iPhone (publicada) | §159 |
 | 1.158.0 | «Lo de hoy»: el menú de Libo en tu piso (publicada) | §158 |
 | 1.157.0 | Fuera la habitación ilustrada, guardada en `archivo/` (publicada) | §157 |
 | 1.99.0 | El Almacén del Puerto: la Lonja en 3D (sin publicar) | §99 |
@@ -358,7 +363,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   `e2e/piso-inicio.spec.js`). Comprobado que, por ahora, fallan por eso `libo-atras` y `libo-atras-salas` (entran por la tablet
   del salón). Después, el bloque 3: publicar con su visto bueno.
 - **Anotado para más tarde** (Francisco, 27-11-2026, mientras se hacían las poses de Olmo; sin empezar):
-  - **El ordenador se queda en negro en un iPhone** (le pasa a una compañera de trabajo de Francisco). Investigar: el ordenador
+  - **El ordenador se queda en negro en un iPhone** (le pasa a una compañera de trabajo de Francisco). **Investigado y hecho en
+    la 1.159.0** (publicada; `docs/qa/ordenador-negro.md`): si le vuelve a pasar, pedir una captura del aviso. Investigar: el ordenador
     del piso en Safari de iPhone (aquí solo hay WebKit de Playwright: no afirmar que se ha probado en un iPhone real; pedirle a
     él, si hace falta, modelo, versión de iOS y si es la app instalada o Safari).
   - **Los tickets pasan a ser una moneda con identidad** («que los tickets se llamen libocoins o algo por el estilo…, y que sea
@@ -608,6 +614,21 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-27 · 1.159.0, la red de seguridad: el ordenador en negro en un iPhone, a producción (Claude)
+
+- Francisco: «Después de eso continúa con el siguiente bloque»; el siguiente pendiente era el ordenador en negro del iPhone.
+- Abrir el ordenador funciona en WebKit y Chromium. La app no tenía *error boundary*: con el trozo de código del escritorio en
+  404 (lo que pasa con la app abierta días tras publicar otra versión; `libotown.es/assets/<viejo>.js` da 404), WebKit lanza
+  «Importing a module script failed.», `#root` se vacía y queda el fondo `#351c0e`. Reproducido; no confirmado en su iPhone.
+- Hecho: `src/ui/RedDeSeguridad.jsx` alrededor de la app y `src/ui/recarga.js` (recarga única con un trozo perdido; si no, el
+  aviso en la escena de Libotown con Recargar, Ir al inicio y los detalles), `vite:preloadError` en `main.jsx` y sus estilos en
+  `index.css`. Versión 1.159.0.
+- Pruebas: unitarias 4/4 (`redDeSeguridad.test.js`); e2e `v1159-red-seguridad.spec.js` 4/4 en Chromium y WebKit a 390;
+  `libo-avisos` y `v1134-almacen-ordenador` en Chromium 390, 7/7. Build limpio. Emulación, no un iPhone real.
+- Visto sin tocar: al recargar con el ordenador abierto, «Abriendo tu piso…» se queda detrás del ordenador (no se ve; ya pasaba).
+- Francisco vio las capturas y los vídeos y respondió «publica lo que hay». Commit en `1.90-escritorio-puerto` y `main`
+  avanzado sin forzar desde `084c2be` (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
 
 ### 2026-11-27 · 1.158.0, «Lo de hoy»: el menú de Libo, a producción (Claude)
 
