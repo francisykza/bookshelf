@@ -603,9 +603,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### 2026-11-27 · 1.157.0 a producción (bloque 3) (Claude)
 
-- Francisco, tras ver el bloque 2: «Sí, publícalo». Commit de los bloques 1 y 2 en `1.90-escritorio-puerto` y `main` avanzado
-  sin forzar (`git push origin 1.90-escritorio-puerto:main`) desde `2948485`. Sin migraciones.
-- Comprobación del despliegue en la entrada siguiente (o en esta, si se añade al confirmar `libotown.es/sw.js`).
+- Francisco, tras ver el bloque 2: «Sí, publícalo». Commit de los bloques 1 y 2 en `1.90-escritorio-puerto` y `main` avanzó
+  sin forzar de `2948485` a `2d71630` (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
+- Desplegado: `https://libotown.es/sw.js` sirve v1.157.0 (12:28); el código publicado ya no trae «Volver a la experiencia
+  anterior», las imágenes archivadas dan 404 y la dirección de antes sigue con su 308. Sin probar en móviles reales.
 
 ### 2026-11-27 · 1.157.0, bloque 2: las pruebas sin la habitación (Claude)
 
