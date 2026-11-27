@@ -3,7 +3,7 @@
 // historial (`panel.id`: piso; `panel.select`: 'decorar', 'actual', 'registro', 'balda:N', 'toda', 'ficha:N:libro', 'ordenador…' o 'abrir:herramienta'), así que Atrás
 // funciona. La ficha y el registro se abren encima con el interior montado: al cerrarlos sigues con el mismo encuadre.
 import { ArrowLeft } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PanelShell } from '../../components/panels/PanelShell';
 import { currentBook } from '../../domain/books';
 import { essentialItems, essentialName } from './essentials';
@@ -30,7 +30,7 @@ import { rememberMyPiso, saveMyPiso } from '../edificio/myPiso';
 import { salaPersonajes } from '../edificio/service';
 import { marcarSalida } from '../edificio/salida';
 import { useMonitorAlmacen } from '../edificio/hotel/almacenHoy';
-import { useAmigosLibo, useAvisosLibo } from '../libo/useAvisosLibo';
+import { cargarHoyLibo, useAmigosLibo, useAvisosLibo } from '../libo/useAvisosLibo';
 import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
 import { expuestosDe, publicarExpuestos } from './expuestos';
 import '../tablon/tablon.css';
@@ -389,6 +389,10 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   // Libo (bloque 3): en tu piso de inicio reúne los avisos del almacén, el café y el buzón
   const avisosLibo = useAvisosLibo(Boolean(home && real && editable), real?.userId ?? null);
   const amigosLibo = useAmigosLibo(Boolean(home && real && editable), real?.userId ?? null);
+  // 1.158 · Lo de hoy: lo que Libo pregunta al servidor al abrir su tarjeta, y las misiones, en tu piso del edificio
+  const uidLibo = real?.userId ?? null;
+  const cargarHoy = useCallback(() => cargarHoyLibo(uidLibo), [uidLibo]);
+  const irLibo = useCallback((ir, libro) => onLibo?.(ir, ir === 'misiones' ? uidLibo : libro), [onLibo, uidLibo]);
   // Un visitante nunca llega al editor, aunque el historial lo pida
   const listing = select === 'toda' && editable;
   // Tu piso abre la biblioteca actual; la de siempre queda solo para quien no tiene piso que mostrar
@@ -716,7 +720,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
             </div>
             {!editable && <p className="plab-note">Puedes mirar y salir por la puerta; lo demás no se toca.</p>}
             {/* Libo vive en la esquina de tu piso de inicio; la primera vez, la bienvenida */}
-            {home && real && editable && !select && <Libo lugar="piso" capitulo="bienvenida" contexto={{ leyendo: Boolean(reading) }} listo={boardReady > 0} raiz={raiz} onAjustes={() => onSelect('abrir:libo')} hub avisos={avisosLibo} amigos={amigosLibo} onIr={onLibo} />}
+            {home && real && editable && !select && <Libo lugar="piso" capitulo="bienvenida" contexto={{ leyendo: Boolean(reading) }} listo={boardReady > 0} raiz={raiz} onAjustes={() => onSelect('abrir:libo')} hub avisos={avisosLibo} amigos={amigosLibo} onIr={irLibo} cargarHoy={cargarHoy} />}
             {/* Biblioteca de demostración en este navegador: se dice, y se puede volver a la tuya (la nube está apagada mientras tanto) */}
             {editable && demoLibraryActive() && (
               <p className="plab-note">

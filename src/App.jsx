@@ -377,6 +377,9 @@ function Sanctuary() {
               else if (ir === 'anadir') aqui('abrir:add');
               else if (ir === 'cafe') openPanel({ type: 'edificio', id: 'tienda' });
               else if (ir === 'hotel') openPanel({ type: 'edificio', id: 'hotel' });
+              // 1.158 · Lo de hoy: el casino del sótano del hotel y tu piso del edificio, donde están las misiones del día
+              else if (ir === 'casino') openPanel({ type: 'edificio', id: 'hotel', section: 'casino' });
+              else if (ir === 'misiones' && libro) openPanel({ type: 'edificio', id: libro });
               else if (ir === 'edificio') openPanel({ type: 'edificio' });
               else if (ir === 'resena' && libro) openPanel({ type: 'review', id: libro, tab: 'piso', select: panel.id });
               else if (ir === 'ficha' && libro) openPanel({ type: 'book', id: libro });

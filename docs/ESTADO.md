@@ -6,7 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.157.0, fuera la habitación ilustrada** (27-11-2026, los tres bloques de
+- **Publicada en producción: 1.158.0, «Lo de hoy», el menú de Libo** (27-11-2026; Francisco aprobó la segunda propuesta: «Sí,
+  constrúyelo» y, vistas las capturas, «Continúa» a publicarla; SPEC §158 y `docs/qa/libo-lo-de-hoy.md`). En tu piso, el bocadillo de Libo es una tarjeta de píxel con lo que
+  puedes hacer hoy (avisos de siempre más el casino, la ruleta y las misiones, que pregunta al abrirla) e iconos propios.
+  Sin migración. Sin probar en móviles reales; en WebKit las negritas de la tarjeta salen sin negrita (por mirar).
+- **Anterior: 1.157.0, fuera la habitación ilustrada** (27-11-2026, los tres bloques de
   `docs/qa/borrar-habitacion-ilustrada.md`; Francisco: «Sí, adelante» y, para publicar, «Sí, publícalo»; SPEC §157). El inicio es siempre tu piso; la habitación de la 1.86 y sus pruebas,
   estilos e imágenes están en `archivo/habitacion-ilustrada/` (fuera de la app, con su `LEEME.md`). De paso, arreglado en
   WebKit «Abrir Mi biblioteca» (se abría y se cerraba sola, §157.4). **Bloque 2 hecho** (las pruebas e2e, §157.6 a §157.9, y
@@ -284,7 +288,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.157.0 | Fuera la habitación ilustrada, guardada en `archivo/` (sin commit) | §157 |
+| 1.158.0 | «Lo de hoy»: el menú de Libo en tu piso (publicada) | §158 |
+| 1.157.0 | Fuera la habitación ilustrada, guardada en `archivo/` (publicada) | §157 |
 | 1.99.0 | El Almacén del Puerto: la Lonja en 3D (sin publicar) | §99 |
 | 1.89.3 | Coherencia de visitas, estantería, zona del libro y acceso 3D (publicada) | §89.8 |
 | 1.89.2 | Cámara del sillón y arquitectura del rincón (publicada) | §89.7 |
@@ -371,6 +376,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
     hacer en el dia». Sus ejemplos: si te quedan intentos del casino, si hay muebles en oferta de los que quieres, los muebles
     nuevos, si hay clientes nuevos (el café), si alguien te ha dado algo, etc. Primero repasar qué sabe ya Libo (sus avisos y
     la sugerencia del día, `docs/qa/libo.md`) y qué datos hay de cada cosa; proponerle el diseño (con capturas) antes de hacerlo.
+    **27-11-2026**: vista la primera propuesta («Lo de hoy»). Decidido: Libo **puede preguntar al servidor** por el casino y las
+    misiones («Sí, que pregunte»). Pide más identidad de píxel sin saturar e iconos propios más originales: segunda propuesta.
+    Vista la segunda (maqueta con la letra de píxel e iconos propios): «Sí, constrúyelo». **Hecho y publicado en la 1.158.0.**
 - **Vistas isométricas, parte B** (se quedan hasta que haya 3D; lista en `amigos-vecinos.md`, bloque 5): Decorar, tu piso desde
   la fachada, el respaldo de la habitación sin 3D y el mercadillo de la Lonja.
 
@@ -600,6 +608,20 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-27 · 1.158.0, «Lo de hoy»: el menú de Libo, a producción (Claude)
+
+- Segunda propuesta aprobada («Sí, constrúyelo»). Hecho: `iconos.js` (ocho iconos de 11 × 11), `hoyDeLibo` y `saludoDeHoy`
+  (`sugerencias.js`), `cargarHoyLibo` (`useAvisosLibo.js`), la tarjeta `LoDeHoy` (`LiboRincon.jsx`, estilos en `libo.css`,
+  sustituyen a los de las tiras), el casino directo desde Libo (`EdificioPanel.jsx`, Atrás vuelve a tu piso) y las misiones
+  (tu piso del edificio, `App.jsx` y `PisoLabPanel.jsx`). Versión 1.158.0 (`package.json`, `diag.js`, `sw.js`).
+- Pruebas: unitarias de Libo 49/49 (11 nuevas en `loDeHoy.test.js`); e2e `v1158-libo-lo-de-hoy.spec.js` (nueva) y
+  `libo-avisos.spec.js` (adaptada) en Chromium 360 y 390 y WebKit 390, y `libo`, `libo-atras`, `libo-poses` y
+  `v1154-libo-amigos` en Chromium 390: 18/18 y 14/14 (una omitida, solo vídeo). Build limpio. Emulación, no un iPhone real.
+- Francisco vio las capturas y respondió «Continúa» a «¿Hago el commit y la publico?». Commit en `1.90-escritorio-puerto` y
+  `main` avanzado sin forzar desde `0e3c101` (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
+- **Queda por mirar**: en WebKit las negritas del saludo y del título de la tarjeta salen normales; con muchas filas, los
+  enlaces del pie quedan medio cortados hasta que bajas.
 
 ### 2026-11-27 · 1.157.0 a producción (bloque 3) (Claude)
 

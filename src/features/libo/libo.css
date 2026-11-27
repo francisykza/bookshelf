@@ -397,44 +397,136 @@
   white-space: nowrap;
 }
 
-/* Los avisos y la sugerencia del día: tiras de papel dentro del bocadillo, cada una con su botón para ir */
+/* ── 1.158 · «Lo de hoy» (docs/qa/libo-lo-de-hoy.md): la tarjeta de Libo en tu piso ──
+   Papel con marco de madera de esquinas escalonadas (como los marcos de 7 × 7 de pixelUi) y una sombra dura pequeña. Los
+   títulos, en la letra de píxel del puerto; las frases con gracia, en la de siempre. Color contenido: papel, madera, salvia
+   para la pestaña y el botón principal, y latón solo en los números. */
 .libo-bocadillo[data-hub] {
-  width: min(300px, calc(100vw - 24px));
+  --hoy-papel: #fbf3df;
+  --hoy-baldosa: #f3e6c8;
+  --hoy-raya: #e3cfa6;
+  --hoy-tinta: #3b2618;
+  --hoy-suave: #7a5a40;
+  --hoy-madera: #3b2618;
+  --hoy-salvia: #5c6a48;
+  --hoy-salvia-osc: #46523a;
+  --hoy-salvia-clara: #eef0e4;
+  --hoy-hecho: #5c6a48;
+  --hoy-esquinas: polygon(0 6px, 3px 6px, 3px 3px, 6px 3px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px));
+  --hoy-esquinas-p: polygon(0 4px, 2px 4px, 2px 2px, 4px 2px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px));
+  width: min(340px, calc(100vw - 24px));
+  padding: 3px;
+  border: 0;
+  border-radius: 0;
+  background: var(--hoy-madera);
+  box-shadow: none;
+  color: var(--hoy-tinta);
+  clip-path: var(--hoy-esquinas);
+  filter: drop-shadow(4px 4px 0 rgb(42 26 16 / 0.45));
 }
 
-.libo-avisos {
-  display: grid;
-  gap: 8px;
-  max-height: min(52vh, 420px);
-  margin: 10px 0 0;
-  padding: 0;
+/* El pico del bocadillo no cabe con el marco recortado: Libo está justo debajo */
+.libo-bocadillo[data-hub]::after {
+  display: none;
+}
+
+.libo-hoy {
+  position: relative;
+  max-height: min(72svh, 600px);
+  padding: 12px 12px 6px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  background-color: var(--hoy-papel);
+  /* Una trama de papel muy suave */
+  background-image: radial-gradient(rgb(227 207 166 / 0.55) 1px, transparent 1.2px);
+  background-size: 6px 6px;
+  clip-path: var(--hoy-esquinas);
+}
+
+.libo-hoy__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 30px;
+  margin-right: -8px;
+}
+
+.libo-hoy__pestana {
+  padding: 5px 9px 4px;
+  background: var(--hoy-salvia);
+  box-shadow: inset 0 -3px 0 var(--hoy-salvia-osc);
+  color: #fffaf0;
+  font: 13px/1 var(--pp-title, PuertoPixel, ui-monospace, monospace);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  clip-path: var(--hoy-esquinas-p);
+}
+
+.libo-hoy__cerrar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -7px 0 -7px auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.libo-hoy__cerrar svg {
+  width: 26px;
+  height: 26px;
+  padding: 8px;
+  background: var(--hoy-raya);
+  fill: #6b4329;
+  clip-path: var(--hoy-esquinas-p);
+}
+
+.libo-hoy__cerrar:focus-visible {
+  outline: 3px solid #f2c46d;
+  outline-offset: -4px;
+}
+
+.libo-bocadillo[data-hub] .libo-hoy__saludo {
+  margin: 8px 0 2px;
+  font: 15px/1.35 var(--font-sans, Lora, Georgia, serif);
+}
+
+.libo-hoy__saludo b {
+  font-weight: 700;
+}
+
+.libo-hoy__lista {
+  display: block;
+  max-height: none;
+  margin: 6px 0 0;
+  padding: 0;
+  overflow: visible;
   list-style: none;
 }
 
-.libo-aviso {
-  display: grid;
-  gap: 8px;
-  padding: 8px 10px 9px;
-  border: 1px solid rgb(73 55 43 / 0.28);
-  border-left: 4px solid #c99a4a;
-  border-radius: 2px;
-  background: #fffaf0;
-  font-size: 14px;
-  line-height: 19px;
+.libo-hoy__fila {
+  border-top: 2px dashed var(--hoy-raya);
 }
 
-/* Un aviso es una tira de papel que se toca entera (44 px como poco) */
-.libo-aviso:has(> .libo-aviso__ir) {
-  padding: 0;
+.libo-hoy__fila:first-child {
+  border-top: 0;
 }
 
-.libo-aviso__ir {
-  display: block;
+.libo-hoy__ir,
+.libo-hoy__fila[data-hecha],
+.libo-hoy__fila--mirando {
+  display: flex;
+  align-items: center;
+  gap: 11px;
   width: 100%;
-  min-height: 44px;
-  padding: 8px 10px 9px;
+  min-height: 54px;
+  padding: 6px 2px;
+}
+
+.libo-hoy__ir {
   border: 0;
   background: none;
   color: inherit;
@@ -444,24 +536,168 @@
   touch-action: manipulation;
 }
 
-.libo-aviso__ir strong {
-  color: #4a5e40;
-  font-weight: 700;
-  white-space: nowrap;
+.libo-hoy__ir:active {
+  background: rgb(227 207 166 / 0.45);
 }
 
-.libo-aviso__ir:active {
-  background: #f3e8d2;
-}
-
-.libo-aviso__ir:focus-visible {
+.libo-hoy__ir:focus-visible {
   outline: 3px solid #f2c46d;
   outline-offset: -3px;
 }
 
+.libo-hoy__baldosa {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  background: var(--hoy-baldosa);
+  box-shadow: inset 0 -3px 0 var(--hoy-raya);
+  clip-path: var(--hoy-esquinas-p);
+}
+
+.libo-icono {
+  display: block;
+  flex: none;
+}
+
+.libo-hoy__texto {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.libo-hoy__texto strong {
+  color: var(--hoy-tinta);
+  font: 13px/1.25 var(--pp-title, PuertoPixel, ui-monospace, monospace);
+  font-weight: normal;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.libo-hoy__texto span {
+  color: var(--hoy-suave);
+  font: italic 13.5px/1.3 var(--font-sans, Lora, Georgia, serif);
+}
+
+.libo-hoy__flecha {
+  flex: none;
+  width: 12px;
+  height: 14px;
+  margin-right: 4px;
+  fill: #c8946a;
+}
+
+.libo-hoy__chip {
+  flex: none;
+  margin-right: 2px;
+  padding: 4px 6px 3px;
+  background: #f0c35a;
+  box-shadow: inset 0 -2px 0 #c98a1c;
+  color: var(--hoy-tinta);
+  font: 12px/1 var(--pp-title, PuertoPixel, ui-monospace, monospace);
+  clip-path: polygon(0 2px, 2px 2px, 2px 0, calc(100% - 2px) 0, calc(100% - 2px) 2px, 100% 2px, 100% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 100%, 2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px));
+}
+
+/* Lo ya hecho hoy: en verde, sin botón, con su marca de visto */
+.libo-hoy__fila[data-hecha] .libo-hoy__baldosa {
+  background: var(--hoy-salvia-clara);
+  box-shadow: inset 0 -3px 0 #dfe3cf;
+}
+
+.libo-hoy__fila[data-hecha] .libo-hoy__texto strong {
+  color: var(--hoy-hecho);
+}
+
+.libo-hoy__fila[data-hecha] > .libo-icono {
+  margin-right: 4px;
+}
+
+.libo-hoy__fila--mirando .libo-hoy__baldosa {
+  opacity: 0.6;
+}
+
+.libo-hoy__mas {
+  display: block;
+  min-height: 44px;
+  margin: 0 auto;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--hoy-suave);
+  font: 13.5px var(--font-sans, Lora, Georgia, serif);
+  cursor: pointer;
+}
+
+.libo-hoy__idea {
+  margin-top: 8px;
+  padding: 10px 12px 12px;
+  background: var(--hoy-salvia-clara);
+  clip-path: var(--hoy-esquinas-p);
+}
+
+.libo-hoy__etiqueta {
+  color: var(--hoy-salvia);
+  font: 11px/1 var(--pp-title, PuertoPixel, ui-monospace, monospace);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.libo-bocadillo[data-hub] .libo-hoy__idea p {
+  margin: 5px 0 0;
+  font: 14px/1.35 var(--font-sans, Lora, Georgia, serif);
+}
+
+.libo-hoy__idea em {
+  font-weight: 600;
+}
+
+.libo-hoy__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.libo-hoy__btn {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: var(--hoy-raya);
+  box-shadow: inset 0 -4px 0 #c8946a;
+  color: #6b4329;
+  font: 13px/1.1 var(--pp-title, PuertoPixel, ui-monospace, monospace);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  clip-path: var(--hoy-esquinas-p);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.libo-hoy__btn--si {
+  background: var(--hoy-salvia);
+  box-shadow:
+    inset 0 -4px 0 var(--hoy-salvia-osc),
+    inset 0 3px 0 #83946a;
+  color: #fffaf0;
+}
+
+.libo-hoy__btn:active {
+  box-shadow: inset 0 2px 0 rgb(0 0 0 / 0.15);
+}
+
+.libo-hoy__btn:focus-visible {
+  outline: 3px solid #f2c46d;
+  outline-offset: -4px;
+}
+
+/* Al pie, la guía y los ajustes: discretos */
 .libo-bocadillo[data-hub] .libo-bocadillo__acciones {
+  justify-content: center;
   gap: 0 4px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .libo-bocadillo[data-hub] .libo-btn--leve {
@@ -469,29 +705,8 @@
   font-size: 14px;
 }
 
-.libo-aviso--sugerencia {
-  border-left-color: #4a5e40;
-}
-
-.libo-aviso em {
-  font-style: italic;
-  font-weight: 600;
-}
-
-.libo-aviso > .libo-btn,
-.libo-aviso__acciones {
-  justify-self: start;
-}
-
-.libo-aviso__acciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.libo-btn--mini {
-  padding: 0 11px;
-  font-size: 14px;
+.libo-bocadillo[data-hub] .libo-btn--principal {
+  flex: 1 1 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {

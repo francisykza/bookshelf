@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.157.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.158.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8947,3 +8947,43 @@ anotadas en `docs/ESTADO.md`: en `e2e/`, `v123` (tres del calendario y los sonid
 (el registro, que espera los textos del formulario de antes de la 1.90); en `e2e-community/`, ocho del café (`v1121`,
 `v1122`, `v1123`, `v1125`, `v1126`, `v1130`, `v1131`, `v1140`), `v162` (dos), `v163`, `v170` (dos), `v171`, `v178` y
 `v186` (dos). Otras cuatro del café (`v1127`, `v1132`, `v1133`, `v1143`) solo fallan con muchas pruebas a la vez: solas pasan.
+
+## 158. «Lo de hoy»: el menú de Libo en tu piso (1.158.0)
+
+Francisco, 26-11-2026: «que el menú de libo sea mas gracioso y limpio, y que te diga de manera limpia y atractiva que cosas
+puedes hacer en el dia». Dos propuestas (27-11-2026): de la primera, «Sí, que pregunte» (Libo puede preguntar al servidor) y
+«darle más identidad pixel pero sin saturar y que los iconos sean más originales»; de la segunda, «Sí, constrúyelo». Todo el
+detalle, en `docs/qa/libo-lo-de-hoy.md`. Sin migración: usa las RPC que ya existen.
+
+### 158.1 La tarjeta
+
+- En tu piso de inicio, el bocadillo de Libo (`LiboRincon.jsx`, `LoDeHoy`) es una tarjeta de papel con marco de madera de
+  esquinas escalonadas, pestaña «Lo de hoy», botón de cerrar de 44 px, un saludo que cuenta lo que hay («Hoy tienes **seis
+  cosas** por aquí. Ninguna corre prisa.»), filas tocables enteras (icono, dato en letra de píxel, frase con gracia, flecha o
+  número) y, al pie, la sugerencia del día («Idea de Libo»). Como mucho cinco filas; «ver todo» enseña el resto. Lo hecho hoy
+  va al final, en verde y sin botón; con todo hecho, Libo se duerme en su esquina y dice «Mañana: vuelvo a asomarme».
+- Fuera de tu piso el bocadillo de Libo no cambia. Sustituye a la lista de tiras de §2.4 de `docs/qa/libo.md` (bloque 3): los
+  avisos y la sugerencia son los mismos, con el dato en corto (`icono`, `titulo`, `gracia` en `avisosDeLibo`).
+
+### 158.2 Lo que pregunta al servidor
+
+- Al **abrir** la tarjeta (no al llegar: el corazón y el asomo de una vez al día no cambian), `cargarHoyLibo`
+  (`useAvisosLibo.js`) pide `loadCasino`, `loadRuleta` y `loadArmario` del día, con caché de un minuto. `hoyDeLibo`
+  (`sugerencias.js`) saca las filas: las mesas para dos que te esperan, las manos del casino que quedan, las misiones del día
+  (de las tres de `missionsOf`) y la ruleta de la semana sin girar. Lo que falle llega como null y no se dice.
+
+### 158.3 Los iconos
+
+- `src/features/libo/iconos.js`: ocho iconos propios de 11 × 11 dibujados a mano con la tinta de `pixelUi.js` (casino,
+  buzón, rebaja, nuevo, café, misiones, ruleta, hecho), pintados como SVG nítido. Nunca de una librería.
+
+### 158.4 Adónde lleva cada fila
+
+- Las de siempre (buzón, almacén, café) y, nuevas: `casino` (`{ type: 'edificio', id: 'hotel', section: 'casino' }`: el hotel
+  abre directamente en el casino y Atrás o «A tu piso» vuelven a tu piso, como el almacén al ordenador) y `misiones` (tu piso
+  del edificio, con el botón «Hoy»).
+
+### 158.5 Comprobación
+
+- Unitarias: `src/features/libo/__tests__/loDeHoy.test.js`. e2e con Supabase simulado: `v1158-libo-lo-de-hoy.spec.js`
+  (nueva) y `libo-avisos.spec.js` (adaptada); capturas en `qa-report/v1158-lo-de-hoy/`. Emulación: no equivale a un iPhone.

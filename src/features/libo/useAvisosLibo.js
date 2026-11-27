@@ -4,7 +4,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAlmacenHoy } from '../edificio/hotel/almacenHoy';
 import { resumenAlmacen, vistosDelAlmacen } from '../edificio/hotel/almacenAvisos';
-import { loadSocial } from '../edificio/service';
+import { loadArmario, loadCasino, loadRuleta, loadSocial } from '../edificio/service';
+import { missionsOf, todayKey } from '../edificio/dailyMissions';
 import { correoLeido, correoSinLeer } from '../edificio/correo';
 import { avisosDeLibo, leerCafeLibo } from './sugerencias';
 import { loadAmigos } from '../social/services/amigos';
@@ -44,6 +45,27 @@ export function useAvisosLibo(activo, userId) {
     // `version` cambia con lo visto del almacén: hay que volver a leerlo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activo, userId, fase, estado, version, social]);
+}
+
+// 1.158 · Lo de hoy (docs/qa/libo-lo-de-hoy.md; Francisco, 27-11-2026: «Sí, que pregunte»): al abrir su tarjeta, Libo pregunta
+// al servidor por el casino, la ruleta de la semana y las misiones del día. Con caché de un minuto (abrir y cerrar la tarjeta
+// no repite las preguntas) y corta, para que al volver de jugar diga lo de verdad. Lo que falle (sin migración, sin red) llega
+// como null y Libo no habla de ello.
+const HOY_FRESCO_MS = 60000;
+let hoyCache = null; // { uid, dia, t, promesa }
+
+export function cargarHoyLibo(userId, dia = todayKey()) {
+  if (!userId) return Promise.resolve(null);
+  if (hoyCache?.uid === userId && hoyCache.dia === dia && Date.now() - hoyCache.t < HOY_FRESCO_MS) return hoyCache.promesa;
+  const nulo = (p) => p.then((x) => x ?? null, () => null);
+  const promesa = Promise.all([nulo(loadCasino(dia)), nulo(loadRuleta(dia)), nulo(loadArmario(dia))]).then(([casino, ruleta, armario]) => ({ casino, ruleta, armario, misiones: missionsOf(dia).map((m) => m.id) }));
+  hoyCache = { uid: userId, dia, t: Date.now(), promesa };
+  return promesa;
+}
+
+/** Olvida lo preguntado (las pruebas, o al volver de jugar si hiciera falta). */
+export function olvidarHoyLibo() {
+  hoyCache = null;
 }
 
 // 1.154 · Tu agenda de amigos, para las sugerencias de Libo (docs/qa/amigos-vecinos.md, bloque 4): la misma consulta que la app

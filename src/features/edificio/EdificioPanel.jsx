@@ -200,6 +200,7 @@ function PisoView({ room, editable, label, soundOn, inside, decorate = false, in
 /**
  * 1.134 · `sala`, `mueble` y `desde`: llegar desde el ordenador del piso directamente a una sala del hotel (hoy, 'lonja': el
  * almacén, delante de `mueble`), sin el viaje; con `desde` 'ordenador', la barra dice «Al ordenador» y vuelve allí.
+ * 1.158 · También 'casino' (desde «Lo de hoy» de Libo): directamente en el casino del sótano.
  */
 export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde = null, soundOn = false, onOpenPiso, onClose, onOpenProfile, onOpenMissions: _onOpenMissions = null, timer: reloj = null, askPages = false, onPagesDone, onOpenCalendar }) {
   const community = useCommunity({ autoload: true });
@@ -223,9 +224,12 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
   const [toPlace, setToPlace] = useState(null);
   const [toPlaceAcabado] = useState(null);
   // Dentro del hotel, la sala en la que estás (1.75): null es la fachada; el «Volver» de la barra sale a la calle
-  const [hotelRoom, setHotelRoom] = useState(() => (pisoId === HOTEL_ID && sala === 'lonja' ? 'lonja' : null));
+  const [hotelRoom, setHotelRoom] = useState(() => (pisoId === HOTEL_ID && (sala === 'lonja' || sala === 'casino') ? sala : null));
   // Desde el ordenador (1.134): el almacén con ese mueble delante, y la barra vuelve al ordenador
   const delOrdenador = desde === 'ordenador' && pisoId === HOTEL_ID && sala === 'lonja';
+  // 1.158 · Desde «Lo de hoy» de Libo, directamente en el casino: Atrás y la barra vuelven a tu piso, como el almacén al ordenador
+  const deLibo = pisoId === HOTEL_ID && sala === 'casino';
+  const directo = (delOrdenador && hotelRoom === 'lonja') || (deLibo && hotelRoom === 'casino');
   const [hotelDir, setHotelDir] = useState(false);
   // El armario de tu piso abierto (1.77): la barra dice «← Al piso» y «Armario»
   const [dressing, setDressing] = useState(false);
@@ -307,7 +311,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
   // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil cierra lo último abierto dentro del edificio (el armario, una sala del
   // hotel, el café de otro lector, el directorio del hotel) igual que el botón de volver de la barra, antes de salir de la escena.
   // Desde el ordenador, la Lonja vuelve al ordenador con el Atrás de siempre
-  useAtras(Boolean(dressing || (inHotel && hotelRoom && !(delOrdenador && hotelRoom === 'lonja')) || (inShop && cafeVisita)), () => {
+  useAtras(Boolean(dressing || (inHotel && hotelRoom && !directo) || (inShop && cafeVisita)), () => {
     if (dressing) setCloseDressing((n) => n + 1);
     else if (inHotel && hotelRoom) setHotelRoom(null);
     else if (inShop && cafeVisita) setCafeVisita(null);
@@ -692,9 +696,9 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
     <PanelShell onClose={onClose} label={inHotel ? 'El Gran Hotel del Puerto' : inShop ? (cafeVisita ? `${cafeVisita.cafe}, el café de ${cafeVisita.alias}` : 'El café-librería del bajo') : pisoId && open ? (mine ? 'Tu piso' : `Piso de ${open.alias}`) : 'El edificio del puerto'} variant="edificio">
       <div className="ed-bar">
         {pisoId ? (
-          <button type="button" className="ed-bar__back" onClick={dressing ? () => setCloseDressing((n) => n + 1) : delOrdenador && hotelRoom === 'lonja' ? onClose : inHotel && hotelRoom ? () => setHotelRoom(null) : inShop && cafeVisita ? () => setCafeVisita(null) : onClose}>
+          <button type="button" className="ed-bar__back" onClick={dressing ? () => setCloseDressing((n) => n + 1) : directo ? onClose : inHotel && hotelRoom ? () => setHotelRoom(null) : inShop && cafeVisita ? () => setCafeVisita(null) : onClose}>
             <ArrowLeft aria-hidden="true" />
-            {dressing ? 'Al piso' : delOrdenador && hotelRoom === 'lonja' ? 'Al ordenador' : inHotel ? (hotelRoom ? 'A la calle' : 'Al puerto') : inShop && cafeVisita ? 'A tu café' : 'Volver al portal'}
+            {dressing ? 'Al piso' : directo ? (deLibo ? 'A tu piso' : 'Al ordenador') : inHotel ? (hotelRoom ? 'A la calle' : 'Al puerto') : inShop && cafeVisita ? 'A tu café' : 'Volver al portal'}
           </button>
         ) : (
           <button type="button" className="ed-bar__close" onClick={onClose} aria-label="Cerrar el edificio">

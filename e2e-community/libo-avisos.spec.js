@@ -78,6 +78,7 @@ const shot = (page, info, name) => page.screenshot({ path: join(DIR, info.projec
 const libo = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1') ?? '{}').settings?.libo ?? null);
 const bocadillo = (page) => page.locator('.libo-bocadillo');
 const gato = (page) => page.locator('.libo-rincon__gato');
+const filas = (page) => page.locator('.libo-hoy__fila[data-aviso]');
 
 /** El bocadillo, dentro de la pantalla y con botones de 44 px; devuelve lo que dice cada aviso. */
 async function medir(page) {
@@ -87,7 +88,9 @@ async function medir(page) {
     return {
       dentro: r.left >= 0 && r.top >= 0 && r.right <= innerWidth + 0.5 && r.bottom <= innerHeight + 0.5,
       botones: [...b.querySelectorAll('button')].map((x) => x.getBoundingClientRect().height),
-      avisos: [...b.querySelectorAll('.libo-aviso')].map((li) => ({ id: li.dataset.aviso ?? li.dataset.sugerencia, texto: li.querySelector('p').textContent })),
+      // 1.158: las filas de «Lo de hoy» (su dato en corto) y, al pie, la sugerencia del día
+      avisos: [...b.querySelectorAll('.libo-hoy__fila[data-aviso]')].map((li) => ({ id: li.dataset.aviso, texto: li.querySelector('strong').textContent })),
+      sugerencia: b.querySelector('[data-sugerencia]')?.dataset.sugerencia ?? null,
     };
   });
 }
@@ -100,17 +103,18 @@ test('Libo reúne los avisos en tu piso, asoma una vez al día y cada botón lle
 
   // 1 · Al llegar, el bocadillo asoma solo, con los tres avisos y la sugerencia del día
   await expect(page.locator('.libo-bocadillo[data-hub]')).toBeVisible({ timeout: 12000 });
-  await expect(page.locator('.libo-aviso')).toHaveCount(4, { timeout: 8000 });
+  await expect(filas(page)).toHaveCount(3, { timeout: 8000 });
   await page.waitForTimeout(400);
   let m = await medir(page);
   expect(m.dentro).toBe(true);
   for (const h of m.botones) expect(h).toBeGreaterThanOrEqual(44);
   expect(m.avisos).toEqual([
-    { id: 'correo', texto: 'Tienes una carta de un vecino sin leer en el buzón del portal. Ir al buzón ›' },
-    { id: 'almacen', texto: 'Lo que sigues está de oferta hoy en el almacén: mesa. Ver el almacén ›' },
-    { id: 'cafe', texto: 'Tu café tiene clientes esperando, y Pilar te ha guardado propinas en la hucha. Ir al café ›' },
-    { id: 'resena:circe', texto: 'Terminaste Circe. ¿Le dejas una reseña?' },
+    { id: 'correo', texto: 'Una carta en tu buzón' },
+    { id: 'almacen', texto: 'Mesa, de oferta' },
+    { id: 'cafe', texto: 'Clientes y propinas en tu café' },
   ]);
+  expect(m.sugerencia).toBe('resena:circe');
+  await expect(page.locator('[data-sugerencia="resena:circe"]')).toContainText('Terminaste Circe. ¿Le dejas una reseña?');
   await shot(page, info, 'b3-1-asoma');
   await expect.poll(async () => (await libo(page))?.dia ?? null).toMatchObject({ sugerencia: 'resena:circe', asomo: true });
 
@@ -127,17 +131,18 @@ test('Libo reúne los avisos en tu piso, asoma una vez al día y cada botón lle
   await page.waitForTimeout(3500);
   await expect(bocadillo(page)).toHaveCount(0);
   await gato(page).click();
-  await expect(page.locator('.libo-aviso')).toHaveCount(4, { timeout: 8000 });
+  await expect(filas(page)).toHaveCount(3, { timeout: 8000 });
 
   // 4 · «Ver el almacén»: la pantalla del almacén en el ordenador; al volver, ese aviso ya no está (la «!» del monitor tampoco)
-  await page.getByRole('button', { name: 'Ver el almacén' }).click();
+  await page.locator('[data-aviso="almacen"] button').click();
   await expect(page.locator('section[aria-labelledby="pp-alm-ofertas"]')).toBeVisible({ timeout: 12000 });
   await shot(page, info, 'b3-3-almacen');
   await page.goBack();
   await expect(page.locator('.plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await gato(page).click();
-  await expect(page.locator('.libo-aviso')).toHaveCount(3, { timeout: 8000 });
-  expect((await medir(page)).avisos.map((a) => a.id)).toEqual(['correo', 'cafe', 'resena:circe']);
+  await expect(filas(page)).toHaveCount(2, { timeout: 8000 });
+  expect((await medir(page)).avisos.map((a) => a.id)).toEqual(['correo', 'cafe']);
+  expect((await medir(page)).sugerencia).toBe('resena:circe');
 
   // 5 · «Escribir la reseña»: la hoja de la reseña de Circe; al volver, la sugerencia ya no está y hoy no llega otra
   await page.getByRole('button', { name: 'Escribir la reseña' }).click();
@@ -146,13 +151,14 @@ test('Libo reúne los avisos en tu piso, asoma una vez al día y cada botón lle
   await page.goBack();
   await expect(page.locator('.plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await gato(page).click();
-  await expect(page.locator('.libo-aviso')).toHaveCount(2, { timeout: 8000 });
+  await expect(filas(page)).toHaveCount(2, { timeout: 8000 });
+  await expect(page.locator('[data-sugerencia]')).toHaveCount(0);
   await expect.poll(async () => Object.keys((await libo(page))?.callados ?? {})).toEqual(['resena:circe']);
   await page.waitForTimeout(400);
   await shot(page, info, 'b3-5-quedan');
 
   // 6 · «Ir al buzón»: el portal del edificio, con el buzón
-  await page.getByRole('button', { name: 'Ir al buzón' }).click();
+  await page.locator('[data-aviso="correo"] button').click();
   await expect(page.locator('.ed-facade')).toBeVisible({ timeout: 30000 });
   await expect(page.locator('.ed-mailbox')).toBeVisible({ timeout: 15000 });
   // El buzón cuenta la misma carta (el mismo texto que Libo) y, leída allí, Libo deja de avisar de ella
@@ -163,7 +169,7 @@ test('Libo reúne los avisos en tu piso, asoma una vez al día y cada botón lle
   await page.goBack();
   await expect(page.locator('.plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await gato(page).click();
-  await expect(page.locator('.libo-aviso')).toHaveCount(1, { timeout: 8000 });
+  await expect(filas(page)).toHaveCount(1, { timeout: 8000 });
   expect((await medir(page)).avisos.map((a) => a.id)).toEqual(['cafe']);
   expect(mock.db.piso_regalos).toHaveLength(1);
   expect(errores).toEqual([]);
@@ -184,7 +190,7 @@ test('sin nada pendiente, no asoma y ofrece «¿Qué hago ahora?»', async ({ pa
   await expect(page.getByRole('button', { name: '¿Qué hago ahora?' })).toBeVisible();
   await shot(page, info, 'b3-6-nada');
   await page.getByRole('button', { name: '¿Qué hago ahora?' }).click();
-  await expect(page.locator('.libo-aviso[data-sugerencia="idea:registrar"]')).toContainText('El nombre del viento');
+  await expect(page.locator('[data-sugerencia="idea:registrar"]')).toContainText('El nombre del viento');
   const m = await medir(page);
   expect(m.dentro).toBe(true);
   for (const h of m.botones) expect(h).toBeGreaterThanOrEqual(44);
@@ -203,7 +209,7 @@ test('con «Solo cuando le llamo», Libo no asoma aunque tenga algo que decir', 
   await page.waitForTimeout(3500);
   await expect(bocadillo(page)).toHaveCount(0);
   await gato(page).click();
-  await expect(page.locator('.libo-aviso[data-sugerencia="resena:circe"]')).toBeVisible();
+  await expect(page.locator('[data-sugerencia="resena:circe"]')).toBeVisible();
   // «Ahora no»: callada un mes, sin ir a ningún sitio
   await page.getByRole('button', { name: 'Ahora no' }).click();
   await expect(bocadillo(page)).toHaveCount(0);
@@ -237,8 +243,8 @@ test('el café apunta lo que queda hoy y, de vuelta en tu piso, Libo avisa de su
   await page.goBack();
   await expect(page.locator('.plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await expect(page.locator('.libo-bocadillo[data-hub]')).toBeVisible({ timeout: 12000 });
-  await expect(page.locator('.libo-aviso[data-aviso="cafe"]')).toContainText('Tu café tiene clientes esperando.');
+  await expect(page.locator('[data-aviso="cafe"]')).toContainText('Clientes en tu café');
   await shot(page, info, 'b3-9-cafe');
-  await page.getByRole('button', { name: 'Ir al café' }).click();
+  await page.locator('[data-aviso="cafe"] button').click();
   await expect(page.getByRole('dialog', { name: 'El café-librería del bajo' }).locator('.cf3[data-ready="true"]')).toBeVisible({ timeout: 30000 });
 });

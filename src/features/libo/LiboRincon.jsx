@@ -7,7 +7,8 @@ import { createPortal } from 'react-dom';
 import { useLibrary } from '../../state/useLibrary';
 import { dayKey } from '../../domain/dates';
 import { CAPITULOS, SALUDOS, abrePorSuCuenta, estaVisible, haVisto, liboDe, marcarPresentadoAqui, marcarVisto, presentadoAqui } from './libo';
-import { asomoAqui, callar, debeAsomar, fijarDia, ideaAhora, marcarAsomoAqui, sugerenciaDelDia, sugerencias } from './sugerencias';
+import { asomoAqui, callar, debeAsomar, fijarDia, hoyDeLibo, ideaAhora, marcarAsomoAqui, saludoDeHoy, sugerenciaDelDia, sugerencias } from './sugerencias';
+import { trazos } from './iconos';
 import { DURA, DURA_GESTO, ESPERA_GESTO, POSES, REPOSO, gestoEnCalma, muchosToques, poseAlHablar, poseDelPaso, poseEnReposo, poseUrl, reaccionALectura } from './poses';
 import { maullar } from './maullido';
 import { useAtras } from '../../hooks/useAtras';
@@ -56,40 +57,126 @@ function Partes({ partes }) {
   return partes.map((p, i) => (typeof p === 'string' ? p : <em key={i}>{p.titulo}</em>));
 }
 
-/** Lo que Libo tiene para ti en tu piso: los avisos de otros sitios y, debajo, la sugerencia del día (o la idea que le pides). */
-function ListaLibo({ avisos, sugerencia, onAviso, onSugerencia }) {
+// 1.158 · Los iconos de «Lo de hoy» (iconos.js), dibujados a mano en una rejilla de 11 × 11
+const trazosHechos = new Map();
+function IconoLibo({ nombre, tam = 33 }) {
+  if (!trazosHechos.has(nombre)) trazosHechos.set(nombre, trazos(nombre));
   return (
-    <ul className="libo-avisos">
-      {avisos.map((a) => (
-        <li key={a.id} className="libo-aviso" data-aviso={a.id}>
-          {/* Toda la tira lleva a su sitio: el texto y, al final, adónde */}
-          <button type="button" className="libo-aviso__ir" onClick={() => onAviso(a)}>
-            <p>
-              <Partes partes={a.partes} /> <strong>{a.boton} ›</strong>
-            </p>
-          </button>
-        </li>
+    <svg className="libo-icono" width={tam} height={tam} viewBox="0 0 11 11" shapeRendering="crispEdges" aria-hidden="true" data-icono={nombre}>
+      {trazosHechos.get(nombre).map((t) => (
+        <path key={t.color} fill={t.color} d={t.d} />
       ))}
-      {sugerencia && (
-        <li className="libo-aviso libo-aviso--sugerencia" data-sugerencia={sugerencia.id}>
+    </svg>
+  );
+}
+
+/** La flecha de «ir», en píxeles. */
+function Flecha() {
+  return (
+    <svg className="libo-hoy__flecha" viewBox="0 0 6 7" aria-hidden="true" shapeRendering="crispEdges">
+      <path d="M1 0h1v1h1v1h1v1h1v1H4v1H3v1H2v1H1V6h1V5h1V4h1V3H3V2H2V1H1z" />
+    </svg>
+  );
+}
+
+const MAX_FILAS = 5;
+
+/**
+ * 1.158 · «Lo de hoy» (docs/qa/libo-lo-de-hoy.md): lo que Libo tiene para ti en tu piso, en una tarjeta de papel con marco de
+ * píxel. Cada fila (los avisos de otros sitios y lo que el servidor dice del casino, la ruleta y las misiones) es un botón que
+ * lleva a su sitio; lo ya hecho hoy va al final, en verde y sin botón. Como mucho cinco filas a la vista («ver todo» enseña el
+ * resto) y, al pie, la sugerencia del día (o la idea que le pides).
+ */
+function LoDeHoy({ saludo, pendientes, hechas, cargando, sugerencia, onIr, onSugerencia, onCerrar, children }) {
+  const [todo, setTodo] = useState(false);
+  const filas = [...pendientes.map((f) => ({ ...f, hecha: false })), ...hechas.map((f) => ({ ...f, hecha: true }))];
+  const vistas = todo ? filas : filas.slice(0, MAX_FILAS);
+  const mas = filas.length - vistas.length;
+  const todoHecho = !pendientes.length && hechas.length > 0 && !cargando;
+  return (
+    <div className="libo-hoy">
+      <div className="libo-hoy__cab">
+        <span className="libo-hoy__pestana">Lo de hoy</span>
+        <button type="button" className="libo-hoy__cerrar" aria-label="Cerrar" onClick={onCerrar}>
+          <svg viewBox="0 0 5 5" aria-hidden="true" shapeRendering="crispEdges">
+            <path d="M0 0h1v1h1v1h1V1h1V0h1v1H4v1H3v1h1v1h1v1H4V4H3V3H2v1H1v1H0V4h1V3h1V2H1V1H0z" />
+          </svg>
+        </button>
+      </div>
+      <p className="libo-hoy__saludo">{saludo}</p>
+      {(vistas.length > 0 || cargando) && (
+        <ul className="libo-avisos libo-hoy__lista">
+          {vistas.map((f) =>
+            f.hecha ? (
+              <li key={`h:${f.id}`} className="libo-hoy__fila" data-aviso={f.id} data-hecha="">
+                <span className="libo-hoy__baldosa">
+                  <IconoLibo nombre={f.icono} />
+                </span>
+                <span className="libo-hoy__texto">
+                  <strong>{f.titulo}</strong>
+                  <span>{f.gracia}</span>
+                </span>
+                <IconoLibo nombre="hecho" tam={22} />
+              </li>
+            ) : (
+              <li key={f.id} className="libo-hoy__fila" data-aviso={f.id}>
+                <button type="button" className="libo-hoy__ir" onClick={() => onIr(f)}>
+                  <span className="libo-hoy__baldosa">
+                    <IconoLibo nombre={f.icono} />
+                  </span>
+                  <span className="libo-hoy__texto">
+                    <strong>{f.titulo}</strong>
+                    <span>{f.gracia}</span>
+                  </span>
+                  {f.chip ? <span className="libo-hoy__chip">{f.chip}</span> : <Flecha />}
+                </button>
+              </li>
+            ),
+          )}
+          {cargando && (
+            <li className="libo-hoy__fila libo-hoy__fila--mirando" aria-live="polite">
+              <span className="libo-hoy__baldosa" />
+              <span className="libo-hoy__texto">
+                <span>Miro el casino y tus misiones…</span>
+              </span>
+            </li>
+          )}
+        </ul>
+      )}
+      {mas > 0 && (
+        <button type="button" className="libo-hoy__mas" onClick={() => setTodo(true)}>
+          {mas === 1 ? 'y 1 cosa más' : `y ${mas} cosas más`} · <u>ver todo</u>
+        </button>
+      )}
+      {sugerencia ? (
+        <div className="libo-hoy__idea" data-sugerencia={sugerencia.id}>
+          <span className="libo-hoy__etiqueta">Idea de Libo</span>
           <p>
             <Partes partes={sugerencia.partes} />
           </p>
-          <div className="libo-aviso__acciones">
+          <div className="libo-hoy__botones">
             {sugerencia.acciones.map((ac, i) => (
-              <button key={ac.ir} type="button" className={`libo-btn libo-btn--mini${i === 0 ? ' libo-btn--principal' : ''}`} onClick={() => onSugerencia(sugerencia, ac)}>
+              <button key={ac.ir} type="button" className={`libo-hoy__btn${i === 0 ? ' libo-hoy__btn--si' : ''}`} onClick={() => onSugerencia(sugerencia, ac)}>
                 {ac.boton}
               </button>
             ))}
             {!sugerencia.id.startsWith('idea:') && !sugerencia.acciones.some((ac) => ac.ir === 'callar') && (
-              <button type="button" className="libo-btn libo-btn--leve libo-btn--mini" onClick={() => onSugerencia(sugerencia, { ir: 'callar' })}>
+              <button type="button" className="libo-hoy__btn" onClick={() => onSugerencia(sugerencia, { ir: 'callar' })}>
                 Ahora no
               </button>
             )}
           </div>
-        </li>
+        </div>
+      ) : (
+        todoHecho && (
+          <div className="libo-hoy__idea">
+            <span className="libo-hoy__etiqueta">Mañana</span>
+            <p>Vuelvo a asomarme. Si hay algo nuevo, te lo cuento.</p>
+          </div>
+        )
       )}
-    </ul>
+      {children}
+    </div>
   );
 }
 
@@ -260,8 +347,10 @@ const SITIOS = ['edificio', 'cafe', 'hotel'];
  * vez al día, al llegar, su bocadillo asoma solo (sin sonido) si tiene algo que decir. `onIr(ir, libro)`: adónde lleva cada
  * botón ('almacen', 'cafe', 'hotel', 'edificio', 'resena', 'ficha', 'registrar', 'biblioteca', 'anadir' y, desde la 1.154, 'amigos').
  * `amigos` (1.154): tu agenda de amigos (useAmigosLibo), para sus sugerencias.
+ * `cargarHoy` (1.158): pregunta al servidor lo del día (cargarHoyLibo) al abrir «Lo de hoy»; adónde llevan sus filas, además:
+ * 'casino' y 'misiones'.
  */
-export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = true, espera = null, respiro = 600, raiz = null, onAjustes, variante = 'barra', hub = false, avisos = SIN_AVISOS, amigos = null, onIr = null }) {
+export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = true, espera = null, respiro = 600, raiz = null, onAjustes, variante = 'barra', hub = false, avisos = SIN_AVISOS, amigos = null, onIr = null, cargarHoy = null }) {
   const { state, actions } = useLibrary();
   const { settings, books } = state;
   const log = state.progress?.readingLog;
@@ -383,6 +472,34 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
     return () => clearTimeout(id);
   }, [asoma, hoy, respiro]);
 
+  // 1.158 · Lo de hoy: al abrir la tarjeta, lo que dice el servidor del casino, la ruleta y las misiones (con caché de un minuto)
+  const [datosHoy, setDatosHoy] = useState(null);
+  const [mirando, setMirando] = useState(false);
+  const preguntar = hub && abierto && Boolean(cargarHoy);
+  useEffect(() => {
+    if (!preguntar) return undefined;
+    let vivo = true;
+    const p = cargarHoy();
+    // Lo que ya estaba en caché llega en el mismo instante: sin la fila de «Miro…»
+    const id = setTimeout(() => vivo && setMirando(true), 120);
+    p.then(
+      (d) => {
+        if (!vivo) return;
+        setDatosHoy(d ?? null);
+        setMirando(false);
+      },
+      () => vivo && setMirando(false),
+    ).finally(() => clearTimeout(id));
+    return () => {
+      vivo = false;
+      clearTimeout(id);
+    };
+  }, [preguntar, cargarHoy]);
+  const hoyServidor = useMemo(() => (datosHoy ? hoyDeLibo(datosHoy) : { pendientes: [], hechas: [] }), [datosHoy]);
+  const pendientesHoy = useMemo(() => [...avisos.filter((a) => a.icono), ...hoyServidor.pendientes], [avisos, hoyServidor]);
+  const hechasHoy = hoyServidor.hechas;
+  const todoHecho = hub && !mirando && !pendientesHoy.length && hechasHoy.length > 0;
+
   const alAviso = (a) => {
     setAbierto(false);
     onIr?.(a.ir);
@@ -487,7 +604,8 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
     // Los primeros segundos de la app, lo que cambia es la biblioteca que llega de la nube, no algo que acabas de hacer
     if (r && Date.now() - memoria.desde > 4000) reaccionar(r);
   }, [lectura, reaccionar]);
-  const hablando = hub ? poseAlHablar({ avisos, sugerencia: idea ?? deHoy }) : 'saluda';
+  // Con todo hecho, se echa la siesta mientras te lo cuenta
+  const hablando = todoHecho ? 'duerme' : hub ? poseAlHablar({ avisos, sugerencia: idea ?? deHoy }) : 'saluda';
   const pose = abierto ? hablando : llega ? 'corre' : (reaccion ?? (reducido ? (modo === 'llamar' ? 'lee' : 'de-pie') : poseEnReposo({ modo, quieto, gatito })));
 
   // En calma (de pie o leyendo, sin hablar ni reaccionar), de vez en cuando un gesto pequeño: un saltito o mirar al otro lado
@@ -531,45 +649,86 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
         data-escape-local={abierto ? 'open' : undefined}
       >
         {abierto && (
-          <div ref={bocadillo} className="libo-bocadillo" role="dialog" aria-label="Libo" data-hub={hub || undefined}>
-            {hub && (avisos.length > 0 || deHoy || idea) ? (
+          <div ref={bocadillo} className="libo-bocadillo" role="dialog" aria-label={hub ? 'Libo: lo de hoy' : 'Libo'} data-hub={hub || undefined} data-todo-hecho={todoHecho || undefined}>
+            {hub ? (
+              <LoDeHoy
+                saludo={(() => {
+                  const s = saludoDeHoy({ pendientes: pendientesHoy.length, hechas: mirando ? 0 : hechasHoy.length });
+                  if (s)
+                    return (
+                      <>
+                        {s.antes}
+                        <b>{s.fuerte}</b>
+                        {s.despues}
+                      </>
+                    );
+                  if (mirando) return 'Un momento, que miro lo de hoy.';
+                  if (idea ?? deHoy) return idea ? 'Se me ocurre esto:' : 'Hoy no hay nada pendiente. Solo una idea:';
+                  return SALUDOS[lugar] ?? SALUDOS.otro;
+                })()}
+                pendientes={pendientesHoy}
+                hechas={hechasHoy}
+                cargando={mirando && !datosHoy}
+                sugerencia={idea ?? deHoy}
+                onIr={alAviso}
+                onSugerencia={alSugerencia}
+                onCerrar={() => {
+                  setAbierto(false);
+                  boton.current?.focus({ preventScroll: true });
+                }}
+              >
+                <div className="libo-bocadillo__acciones">
+                  {!hayAlgo && !idea && !pendientesHoy.length && (
+                    <button type="button" className="libo-btn libo-btn--principal" onClick={() => setIdea(ideaAhora({ candidatas, deHoy, books }))}>
+                      ¿Qué hago ahora?
+                    </button>
+                  )}
+                  {guia && (
+                    <button type="button" className="libo-btn libo-btn--leve" onClick={() => empezarGuia()}>
+                      {cap.repaso}
+                    </button>
+                  )}
+                  {onAjustes && (
+                    <button
+                      type="button"
+                      className="libo-btn libo-btn--leve"
+                      onClick={() => {
+                        setAbierto(false);
+                        onAjustes();
+                      }}
+                    >
+                      Ajustes de Libo
+                    </button>
+                  )}
+                </div>
+              </LoDeHoy>
+            ) : (
               <>
                 <p>
                   <Corazon />
-                  {idea && !avisos.length ? 'Se me ocurre esto:' : 'Miau. Esto es lo que hay hoy:'}
+                  {SALUDOS[lugar] ?? SALUDOS.otro}
                 </p>
-                <ListaLibo avisos={avisos} sugerencia={idea ?? deHoy} onAviso={alAviso} onSugerencia={alSugerencia} />
+                <div className="libo-bocadillo__acciones">
+                  {guia && (
+                    <button type="button" className="libo-btn libo-btn--principal" onClick={() => empezarGuia()}>
+                      {cap.repaso}
+                    </button>
+                  )}
+                  {onAjustes && (
+                    <button
+                      type="button"
+                      className="libo-btn"
+                      onClick={() => {
+                        setAbierto(false);
+                        onAjustes();
+                      }}
+                    >
+                      Ajustes de Libo
+                    </button>
+                  )}
+                </div>
               </>
-            ) : (
-              <p>
-                <Corazon />
-                {SALUDOS[lugar] ?? SALUDOS.otro}
-              </p>
             )}
-            <div className="libo-bocadillo__acciones">
-              {hub && !hayAlgo && !idea && (
-                <button type="button" className="libo-btn libo-btn--principal" onClick={() => setIdea(ideaAhora({ candidatas, deHoy, books }))}>
-                  ¿Qué hago ahora?
-                </button>
-              )}
-              {guia && (
-                <button type="button" className={`libo-btn${!hub ? ' libo-btn--principal' : hayAlgo || idea ? ' libo-btn--leve' : ''}`} onClick={() => empezarGuia()}>
-                  {cap.repaso}
-                </button>
-              )}
-              {onAjustes && (
-                <button
-                  type="button"
-                  className={`libo-btn${hub && (hayAlgo || idea) ? ' libo-btn--leve' : ''}`}
-                  onClick={() => {
-                    setAbierto(false);
-                    onAjustes();
-                  }}
-                >
-                  Ajustes de Libo
-                </button>
-              )}
-            </div>
           </div>
         )}
         <button

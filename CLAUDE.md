@@ -407,6 +407,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       ganarlos; lo interno no se renombra sin migración aprobada y las reglas de ganarlos no cambian); la web en su dominio;
       y **el menú de Libo más gracioso y limpio, que te cuente qué puedes hacer hoy** (intentos del casino que quedan, muebles
       en oferta de los que quieres, muebles nuevos, clientes nuevos, si alguien te ha dado algo…): proponerle el diseño antes.
+      **Primera propuesta vista** (27-11-2026): la tarjeta «Lo de hoy» en tu piso (saludo con gracia, fichas tocables de lo que
+      queda hoy, lo hecho en etiquetas, la idea del día al pie). Francisco: «Sí, que pregunte» (**Libo puede preguntar al servidor**
+      por el casino y las misiones del día al abrir su tarjeta, con caché; excepción a «sin pedir nada nuevo al servidor» del
+      bloque 3) y «no está mal pero todavía puede mejorar, darle más identidad pixel pero sin saturar y que los iconos sean más
+      originales»: iconos de píxel propios, nunca de una librería. **Segunda propuesta aprobada** («Sí, constrúyelo»): hecha en
+      la 1.158.0 (SPEC §158, `docs/qa/libo-lo-de-hoy.md`). **Publicada** el 27-11-2026.
     - **Después, borrar la versión antigua de la app** (Francisco, 26-11-2026: «quiero que se borre la versión antigua de la
       aplicación porque sigue saliendo cuando la gente se mete en la web para instalar la app»). Antes de borrar nada,
       investigar qué sale exactamente y enseñarle qué se quitaría para que lo confirme; sin borrar datos de usuarios.

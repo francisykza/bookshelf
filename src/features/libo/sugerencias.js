@@ -6,6 +6,7 @@ import { dayKey, parseDay } from '../../domain/dates';
 import { liboDe } from './libo';
 import { conOlmo } from '../../domain/suscripcion';
 import { tituloClave } from '../social/amigosLectura';
+import { mesasQueEsperan } from '../edificio/hotel/veintiuna';
 
 /** Días sin abrir un libro de «Leyendo» para preguntarte si sigues con él. */
 export const DIAS_PARADO = 21;
@@ -24,6 +25,7 @@ const diaDe = (iso) => {
   return Number.isNaN(d.getTime()) ? null : dayKey(d);
 };
 const minuscula = (s) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : s);
+const mayuscula = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 /** El texto de una sugerencia o un aviso, sin marcas (los títulos van como { titulo }). */
 export const textoPlano = (partes) => partes.map((p) => (typeof p === 'string' ? p : p.titulo)).join('');
@@ -37,12 +39,16 @@ export const textoPlano = (partes) => partes.map((p) => (typeof p === 'string' ?
  */
 export function avisosDeLibo({ almacen = null, monitorVistos = [], cafe = null, correo = 0, hoy = dayKey(), ahora = Date.now() } = {}) {
   const lista = [];
+  // 1.158 · Cada aviso lleva también lo de «Lo de hoy»: su icono (iconos.js), el dato en corto (`titulo`) y una frase con gracia
   if (Number.isInteger(correo) && correo > 0) {
     lista.push({
       id: 'correo',
       partes: [correo === 1 ? 'Tienes una carta de un vecino sin leer en el buzón del portal.' : `Tienes ${correo} cartas de tus vecinos sin leer en el buzón del portal.`],
       ir: 'edificio',
       boton: 'Ir al buzón',
+      icono: 'buzon',
+      titulo: correo === 1 ? 'Una carta en tu buzón' : `${correo} cartas en tu buzón`,
+      gracia: correo === 1 ? 'No la he abierto. Casi.' : 'No las he abierto. Casi.',
     });
   }
   if (almacen) {
@@ -59,7 +65,15 @@ export function avisosDeLibo({ almacen = null, monitorVistos = [], cafe = null, 
             : nuevos.length > 1
               ? `Han llegado ${nuevos.length} muebles nuevos al almacén.`
               : null;
-    if (texto) lista.push({ id: 'almacen', partes: [texto], ir: 'almacen', boton: 'Ver el almacén' });
+    const corto =
+      rebajados.length === 1
+        ? { icono: 'rebaja', titulo: `${mayuscula(rebajados[0].nombre)}, de oferta`, gracia: 'Te lo he vigilado de reojo' }
+        : rebajados.length > 1
+          ? { icono: 'rebaja', titulo: `${rebajados.length} muebles que sigues, de oferta`, gracia: 'Los he vigilado de reojo' }
+          : nuevos.length === 1
+            ? { icono: 'nuevo', titulo: `Nuevo en el almacén: ${minuscula(nuevos[0].nombre)}`, gracia: 'Aún huele a barniz' }
+            : { icono: 'nuevo', titulo: `${nuevos.length} muebles nuevos en el almacén`, gracia: 'Aún huelen a barniz' };
+    if (texto) lista.push({ id: 'almacen', partes: [texto], ir: 'almacen', boton: 'Ver el almacén', ...corto });
   }
   if (cafe) {
     // Cada día llegan clientes nuevos; el mismo día, los que quedaron sin atender
@@ -74,9 +88,53 @@ export function avisosDeLibo({ almacen = null, monitorVistos = [], cafe = null, 
           : hucha
             ? `${conOlmo() ? 'Olmo' : 'Pilar'} te ha guardado propinas en la hucha del café.`
             : null;
-    if (texto) lista.push({ id: 'cafe', partes: [texto], ir: 'cafe', boton: 'Ir al café' });
+    const quien = conOlmo() ? 'Olmo' : 'Pilar';
+    const corto = clientes && hucha ? { titulo: 'Clientes y propinas en tu café', gracia: `${quien} te guarda la hucha` } : clientes ? { titulo: 'Clientes en tu café', gracia: 'Ya huele a café recién hecho' } : { titulo: 'Propinas en la hucha del café', gracia: 'Tintinea cuando pasas' };
+    if (texto) lista.push({ id: 'cafe', partes: [texto], ir: 'cafe', boton: 'Ir al café', icono: 'cafe', ...corto });
   }
   return lista;
+}
+
+// ── 1.158 · Lo de hoy (docs/qa/libo-lo-de-hoy.md): lo que Libo pregunta al servidor al abrir su tarjeta ──
+
+/**
+ * Lo del día que se juega fuera de tu piso, con lo que dice el servidor: las manos del casino que te quedan, las mesas para dos
+ * que te esperan, la ruleta de la semana sin girar y las tres misiones del día. `casino` (`loadCasino`), `ruleta` (`loadRuleta`)
+ * y `armario` (`loadArmario`): null si no se pudo preguntar (sin la migración, sin red), y entonces Libo no habla de eso.
+ * `misiones`: los ids de las tres de hoy (`missionsOf`). Devuelve { pendientes, hechas }, cada una
+ * { id, icono, titulo, gracia, ir, chip? }. Sin cuentas atrás ni prisas: solo cuánto queda hoy.
+ */
+export function hoyDeLibo({ casino = null, ruleta = null, armario = null, misiones = [] } = {}) {
+  const pendientes = [];
+  const mesas = casino ? mesasQueEsperan(casino.mesas ?? []) : [];
+  const hechas = [];
+  if (mesas.length) {
+    pendientes.push({ id: 'mesa', icono: 'casino', titulo: mesas.length === 1 ? 'Te esperan en una mesa para dos' : `Te esperan en ${mesas.length} mesas para dos`, gracia: 'El mapache ya ha puesto las sillas', ir: 'casino' });
+  }
+  if (casino && Number.isInteger(casino.quedan)) {
+    if (casino.quedan > 0) pendientes.push({ id: 'casino', icono: 'casino', titulo: `Casino · ${casino.quedan === 1 ? 'te queda 1 mano' : `te quedan ${casino.quedan} manos`}`, gracia: 'El mapache ya está barajando', ir: 'casino', chip: String(casino.quedan) });
+    else hechas.push({ id: 'casino', icono: 'casino', titulo: 'Casino · manos jugadas', gracia: 'El mapache te guarda el sitio' });
+  }
+  if (armario && misiones.length) {
+    const n = misiones.filter((m) => armario.hechas?.includes(m)).length;
+    const total = misiones.length;
+    if (n < total) pendientes.push({ id: 'misiones', icono: 'misiones', titulo: `Misiones · ${n} de ${total}`, gracia: n === 0 ? 'Tres cosas pequeñas en tu piso del edificio' : n === total - 1 ? 'La última te espera sentada' : 'Las otras te esperan sentadas', ir: 'misiones', chip: `${n}/${total}` });
+    else hechas.push({ id: 'misiones', icono: 'misiones', titulo: `Misiones · ${total} de ${total}`, gracia: 'Ni una se ha escapado' });
+  }
+  if (ruleta && !ruleta.giro) pendientes.push({ id: 'ruleta', icono: 'ruleta', titulo: 'La ruleta de la semana', gracia: 'Sigue sin girar. Una vuelta, cuando quieras', ir: 'casino' });
+  return { pendientes, hechas };
+}
+
+const NUMEROS = ['ninguna', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez'];
+
+/** Lo primero que dice Libo en «Lo de hoy», según lo que hay: { texto, fuerte } (lo fuerte va en negrita en medio). */
+export function saludoDeHoy({ pendientes = 0, hechas = 0 } = {}) {
+  if (pendientes > 0) {
+    const n = NUMEROS[pendientes] ?? String(pendientes);
+    return pendientes === 1 ? { antes: 'Hoy tienes ', fuerte: 'una cosa', despues: ' por aquí. No corre prisa.' } : { antes: 'Hoy tienes ', fuerte: `${n} cosas`, despues: ' por aquí. Ninguna corre prisa.' };
+  }
+  if (hechas > 0) return { antes: 'Hoy ya está ', fuerte: 'todo', despues: '. Me echo una siesta en tu piso.' };
+  return null;
 }
 
 // ── Lo que tu café deja apuntado para Libo (en este aparato, por cuenta) ──
