@@ -290,5 +290,13 @@ select {
   font-size: 0.78rem;
 }
 
+/* Libocoins: la moneda (src/ui/Libocoin.jsx), en línea con su cifra */
+.libocoin {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  object-fit: contain;
+}
+
 /* 1.157: la habitación ilustrada archivada no entra en la app (Tailwind no lee sus clases) */
 @source not '../archivo';

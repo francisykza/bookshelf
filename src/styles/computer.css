@@ -1779,6 +1779,11 @@
   color: #c98a1c;
 }
 
+/* Libocoins: la moneda de Libo en vez del icono de ticket (docs/qa/libocoins.md) */
+.pc-tickets > .libocoin {
+  flex: none;
+}
+
 .pc-tickets p {
   margin: 0;
 }

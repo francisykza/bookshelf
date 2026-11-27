@@ -88,7 +88,7 @@ function thumbOf(id, tono = 0, size = 44) {
 function motivo(e, total, tickets) {
   const m = String(e?.message ?? '');
   if (e?.code === 'unavailable' || /PGRST202|42883/.test(m)) return 'La caja aún no está abierta en este servidor. Tu carrito sigue aquí.';
-  if (m.includes('almacen:saldo')) return `No te llegan los tickets: el total es ${ticketsText(total)}${tickets != null ? ` y tienes ${ticketsText(tickets)}` : ''}. No se ha cobrado nada.`;
+  if (m.includes('almacen:saldo')) return `No te llegan los Libocoins: el total es ${ticketsText(total)}${tickets != null ? ` y tienes ${ticketsText(tickets)}` : ''}. No se ha cobrado nada.`;
   if (m.includes('almacen:precio')) return 'El total ha cambiado desde que lo viste. Revisa la cuenta y vuelve a confirmar; no se ha cobrado nada.';
   if (m.includes('almacen:descuento')) return 'El descuento de hoy ya no está disponible. Revisa la cuenta; no se ha cobrado nada.';
   if (m.includes('almacen:retirado') || m.includes('almacen:no_se_vende')) return 'Algo del carrito ya no se vende. Quítalo y vuelve a intentarlo; no se ha cobrado nada.';
@@ -1090,7 +1090,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
                 <span className="alm-precio" aria-hidden="true" data-oferta={ofertas.get(fichaA.id)?.tipo} data-especial={isDeHabitacionEspecial(fichaA.id) || undefined} data-premium={isPremium(fichaA.id) || undefined}>
                   {ofertas.has(fichaA.id) && <s>{fichaA.precio}</s>}
                   <b>{precioHoy(fichaA)}</b>
-                  <small>tickets</small>
+                  <small>Libocoins</small>
                 </span>
               </div>
               <dl className="alm-ficha__datos">
@@ -1397,7 +1397,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
                   <>
                     <p>
                       {amigoAqui ? `Estás con ${amigoAqui.alias ?? 'tu amigo'}.` : visita.anfitrion ? `Esperando a ${visita.alias ?? 'tu amigo'}…` : `Con ${visita.alias ?? 'tu amigo'}.`} Cada uno
-                      lleva su carrito y sus tickets; el otro solo ve dónde estás, lo que le señalas y tu albarán.
+                      lleva su carrito y sus Libocoins; el otro solo ve dónde estás, lo que le señalas y tu albarán.
                     </p>
                     <button type="button" className="alm-btn" onClick={dejar}>
                       Dejar la visita

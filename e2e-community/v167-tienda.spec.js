@@ -52,7 +52,7 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   // El escaparate de la planta baja es la puerta de la tienda, con el saldo en su placa
   const door = portal.getByRole('button', { name: 'Entrar en la tienda del bajo' });
   await expect(door).toBeVisible();
-  await expect(door).toContainText('75 tickets');
+  await expect(door).toContainText('75 Libocoins');
   await shot(page, info, 'v167-portal-tienda');
   await door.click();
   const shop = page.getByRole('dialog', { name: 'La tienda del bajo' });
@@ -74,7 +74,7 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   await shop.getByText('Probabilidades y garantías').click();
 
   // El de coleccionista, más caro y con más suerte: el dependiente lo explica
-  await wall.getByRole('button', { name: /^Edición coleccionista: 25 tickets el de 1, 110 el de 5/ }).click();
+  await wall.getByRole('button', { name: /^Edición coleccionista: 25 Libocoins el de 1, 110 el de 5/ }).click();
   await expect(shop.locator('.ts-card h3')).toHaveText('Edición coleccionista');
   await expect(shop.getByRole('button', { name: /^Abrir 5 · 110/ })).toBeDisabled();
   await page.waitForTimeout(900);
@@ -119,11 +119,11 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
 
   // Comprar: precio fijo y confirmación; si no llega, no se puede
   await shop.getByRole('tab', { name: 'Muebles' }).click();
-  await shop.getByRole('button', { name: /^Sofá, poco común, 40 tickets/ }).click();
-  await expect(shop.getByText('Te faltan 20 tickets.')).toBeVisible();
+  await shop.getByRole('button', { name: /^Sofá, poco común, 40 Libocoins/ }).click();
+  await expect(shop.getByText('Te faltan 20 Libocoins.')).toBeVisible();
   await expect(shop.getByRole('button', { name: 'Comprar' })).toBeDisabled();
   await shot(page, info, 'v167-tienda-muebles');
-  await shop.getByRole('button', { name: /^Silla, común, 20 tickets/ }).click();
+  await shop.getByRole('button', { name: /^Silla, común, 20 Libocoins/ }).click();
   await shop.getByRole('button', { name: 'Comprar' }).click();
   await expect(shop.locator('.ts-note')).toContainText('Silla: ya es tuyo.');
   await expect(wallet(shop)).toHaveText('0');
@@ -133,7 +133,7 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
   const scene = await shop.locator('.ts-scene').boundingBox();
   await shop.locator('.ts-scene').click({ position: { x: scene.width * 0.474, y: scene.height * 0.72 } });
   await expect(shop.getByRole('tab', { name: 'Reciclar' })).toHaveAttribute('aria-selected', 'true');
-  await shop.getByRole('button', { name: /^Gato dormido: 1 sin colocar; reciclar por 20 tickets/ }).click();
+  await shop.getByRole('button', { name: /^Gato dormido: 1 sin colocar; reciclar por 20 Libocoins/ }).click();
   await shot(page, info, 'v167-tienda-reciclar');
   await shop.getByRole('button', { name: 'Reciclar', exact: true }).click();
   await expect(wallet(shop)).toHaveText('20');
@@ -141,7 +141,7 @@ test('la tienda del bajo: sobre, paquete de cinco, comprar y reciclar', async ({
 
   // Volver al portal: la placa del escaparate trae el saldo nuevo
   await page.getByRole('button', { name: 'Volver al portal' }).click();
-  await expect(portal.getByRole('button', { name: 'Entrar en la tienda del bajo' })).toContainText('20 tickets');
+  await expect(portal.getByRole('button', { name: 'Entrar en la tienda del bajo' })).toContainText('20 Libocoins');
   expect(errors).toEqual([]);
 });
 
@@ -195,7 +195,7 @@ test('sin tickets suficientes lo dice y lleva a las misiones; abajo, el nombre d
   await page.locator('.ed-bar__back').click();
   await expect(page.locator('.ed-bar__back')).toHaveText('Volver al portal');
   // Ahora quedan 5: lo dice y ofrece las misiones
-  await expect(shop.locator('.ts-note')).toContainText('Te faltan 5 tickets.');
+  await expect(shop.locator('.ts-note')).toContainText('Te faltan 5 Libocoins.');
   await expect(shop.getByRole('button', { name: /^Abrir 1 · 10/ })).toBeDisabled();
   await page.waitForTimeout(300);
   await shot(page, info, 'v168-tienda-sin-tickets');
@@ -228,7 +228,7 @@ test('las misiones del ordenador se cobran en tickets y las figuras no aparecen'
   await page.reload();
   const laptop = page.getByRole('dialog').first();
   await laptop.getByRole('tab', { name: /Misiones/ }).click();
-  await expect(laptop.getByText('tickets para el almacén del hotel')).toBeVisible({ timeout: 15000 });
+  await expect(laptop.getByText('Libocoins para el almacén del hotel')).toBeVisible({ timeout: 15000 });
   await expect(laptop.locator('.pc-tickets b')).toHaveText('30');
   await expect(laptop.getByText('Abrir el Ático')).toHaveCount(0);
   const row = laptop.locator('.pc-mission', { hasText: 'Completa 2 sesiones de lectura cozy' });

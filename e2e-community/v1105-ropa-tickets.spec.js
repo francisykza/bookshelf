@@ -40,7 +40,7 @@ test('la ropa de la planta: con su precio, se paga desde la cesta y ya es tuya',
   const zona = alm.locator('.alm-card--ropa');
   // Lo de la planta va primero, con su precio; lo de las misiones sigue sin precio
   await expect(zona.locator('.alm-prenda').first()).toHaveAttribute('data-origen', 'tienda');
-  await expect(zona.locator('[data-prenda="jersey:19"] .alm-prenda__precio')).toHaveText(/30\s*tickets/);
+  await expect(zona.locator('[data-prenda="jersey:19"] .alm-prenda__precio')).toHaveText(/30\s*Libocoins/);
   await expect(zona.locator('[data-prenda="jersey:13"] .alm-prenda__precio')).toHaveCount(0);
   await expect(zona).toContainText('4 de la planta, a la venta');
   await shot(page, info, '71-zona-con-precios');
@@ -58,11 +58,11 @@ test('la ropa de la planta: con su precio, se paga desde la cesta y ya es tuya',
   const cesta = alm.locator('.alm-card--cesta');
   const pago = cesta.locator('.alm-cesta__pago');
   await expect(pago).toContainText('2 prendas de la planta');
-  await expect(pago).toContainText('46 tickets');
+  await expect(pago).toContainText('46 Libocoins');
   await expect(pago).toContainText('Sin rebajas');
   await shot(page, info, '72-cesta-pagar');
-  await pago.getByRole('button', { name: 'Pagar 46 tickets' }).click();
-  await expect(cesta.locator('.alm-cesta__pagado')).toContainText('Pagado: Jersey cuadros de leñador, Gorro de pompón (46 tickets)');
+  await pago.getByRole('button', { name: 'Pagar 46 Libocoins' }).click();
+  await expect(cesta.locator('.alm-cesta__pagado')).toContainText('Pagado: Jersey cuadros de leñador, Gorro de pompón (46 Libocoins)');
   await expect(cesta.locator('.alm-cesta__pago')).toHaveCount(0);
   expect(mock.db.piso_cuentas[ANA.id].tickets).toBe(54);
   expect(mock.db.diarias[ANA.id].prendas).toEqual(['jersey:12', 'jersey:19', 'complemento:pompon']);
@@ -94,17 +94,17 @@ test('sin tickets suficientes no se paga, y un fallo de red no cobra dos veces',
   await zona.locator('[data-prenda="jersey:18"]').getByRole('button', { name: 'A la cesta' }).click();
   await alm.locator('.alm-bar').getByRole('button', { name: /^Cesta/ }).click();
   const pago = alm.locator('.alm-card--cesta .alm-cesta__pago');
-  await expect(pago.getByRole('button', { name: 'No te llegan los tickets' })).toBeDisabled();
-  await expect(pago).toContainText('tienes 20 tickets');
+  await expect(pago.getByRole('button', { name: 'No te llegan los Libocoins' })).toBeDisabled();
+  await expect(pago).toContainText('tienes 20 Libocoins');
   // Con saldo (la cesta lo vuelve a pedir al abrirse), y la primera respuesta se pierde: el reintento usa la misma clave y no cobra otra vez
   mock.db.piso_cuentas[ANA.id].tickets = 100;
   await alm.locator('.alm-card--cesta .alm-card__back').click();
   await alm.locator('.alm-bar').getByRole('button', { name: /^Cesta/ }).click();
   // Se cobra en el servidor, pero la respuesta no llega
   mock.db.almacen.cortar = 1;
-  await pago.getByRole('button', { name: 'Pagar 30 tickets' }).click();
+  await pago.getByRole('button', { name: 'Pagar 30 Libocoins' }).click();
   await expect(alm.locator('.alm-card--cesta .alm-aviso')).toContainText('no se cobrará dos veces');
-  await pago.getByRole('button', { name: 'Pagar 30 tickets' }).click();
+  await pago.getByRole('button', { name: 'Pagar 30 Libocoins' }).click();
   await expect(alm.locator('.alm-cesta__pagado')).toContainText('Pagado: Jersey punto de trenzas');
   expect(mock.db.piso_cuentas[ANA.id].tickets).toBe(70);
   await shot(page, info, '75-reintento');
@@ -163,9 +163,9 @@ test('vídeo: bajar, elegir ropa de la planta, pagarla en la cesta y ponérsela'
   // La cesta: pagar
   await alm.locator('.alm-bar').getByRole('button', { name: /^Cesta/ }).click();
   const cesta = alm.locator('.alm-card--cesta');
-  await expect(cesta.locator('.alm-cesta__pago')).toContainText('52 tickets');
+  await expect(cesta.locator('.alm-cesta__pago')).toContainText('52 Libocoins');
   await pausa(1800);
-  await cesta.getByRole('button', { name: 'Pagar 52 tickets' }).click();
+  await cesta.getByRole('button', { name: 'Pagar 52 Libocoins' }).click();
   await expect(cesta.locator('.alm-cesta__pagado')).toBeVisible();
   await pausa(2200);
   // Al probador: ya es tuyo

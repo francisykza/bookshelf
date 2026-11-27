@@ -54,7 +54,7 @@ test('lo de la habitación especial: al doble, sin oferta y fuera del albarán',
   // La ficha: 80 tickets (poco común al doble), sin la oferta que mandaba el servidor
   await alCarrito(page, alm, 'Sillón de la capa');
   const ficha = alm.locator('.alm-card--ficha');
-  await expect(ficha).toContainText('80 tickets');
+  await expect(ficha).toContainText('80 Libocoins');
   await expect(ficha).toContainText('De habitación especial · nunca se rebaja');
   await expect(ficha.locator('.alm-precio s')).toHaveCount(0);
   await shot(page, info, '84-ficha-especial');
@@ -75,9 +75,9 @@ test('lo de la habitación especial: al doble, sin oferta y fuera del albarán',
   await expect(caja).toContainText('Lo de las habitaciones especiales no se rebaja');
   const cuenta = caja.locator('.alm-ticket--cuenta');
   await expect(cuenta).toContainText('112');
-  await expect(cuenta).toContainText('−3 tickets');
+  await expect(cuenta).toContainText('−3 Libocoins');
   const pagar = alm.getByRole('button', { name: /Confirmar compra/ });
-  await expect(pagar).toContainText('109 tickets');
+  await expect(pagar).toContainText('109 Libocoins');
   await cuenta.scrollIntoViewIfNeeded();
   await shot(page, info, '85-caja-sin-rebaja');
   await pagar.click();

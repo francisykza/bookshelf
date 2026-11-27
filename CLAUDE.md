@@ -405,7 +405,7 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       se queda en negro en el iPhone de una compañera (**hecho y publicado en la 1.159.0**: la red de seguridad
       `src/ui/RedDeSeguridad.jsx` envuelve la app; no quitarla, y un fallo nuevo no debe dejar la pantalla en negro); **los tickets como moneda con identidad** («libocoins o algo por el
       estilo», con la cara de Libo según la moneda que dibujó él, siempre a la vista y con una animación divertida de Libo al
-      ganarlos; lo interno no se renombra sin migración aprobada y las reglas de ganarlos no cambian); la web en su dominio;
+      ganarlos; lo interno no se renombra sin migración aprobada y las reglas de ganarlos no cambian; **plan aprobado** el 27-11-2026, «Sí, así», en `docs/qa/libocoins.md`: se llaman **Libocoins** en todo lo visible, también la web; el saldo, siempre junto a Libo en su esquina; al ganarlos, Libo celebra; por dentro siguen siendo `tickets`, sin migración; la moneda se recorta de su dibujo en `../libotown-marca/`, nunca redibujada; **bloque 1, nombre y moneda, publicado en la 1.160.0**); la web en su dominio;
       y **el menú de Libo más gracioso y limpio, que te cuente qué puedes hacer hoy** (intentos del casino que quedan, muebles
       en oferta de los que quieres, muebles nuevos, clientes nuevos, si alguien te ha dado algo…): proponerle el diseño antes.
       **Primera propuesta vista** (27-11-2026): la tarjeta «Lo de hoy» en tu piso (saludo con gracia, fichas tocables de lo que
@@ -676,6 +676,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
   contenido dinámico y controles reales.
 - **Efectos**: solo respuestas discretas (presión, sonido breve por acción); respetar silencio, volumen y movimiento
   reducido; nada de sonido antes de una interacción.
+- **Sonidos de lumina-sfx** (https://github.com/LuminaBench/lumina-sfx; Francisco, 27-11-2026, tras escuchar las muestras de
+  `qa-report/lumina-muestras/`: «Ponlos todos menos el de la lluvia, pero vamos a dejar anotado este tema para más adelante»):
+  **aprobados los 14 del vídeo** (lista en «Pendiente» de `docs/ESTADO.md`); la lluvia sigue siendo la de hoy. Es una excepción
+  a «sonidos propios y sintetizados» solo para esos; para otros, enseñarle muestras antes. **Se hace más adelante**, no ahora.
+  Al hacerlo: renderizar solo lo elegido a archivos pequeños (nunca meter su motor ni su catálogo en la app), con su `LICENSE`
+  y los créditos al lado; sus sonidos no se reparten como paquete. Mismas reglas de efectos de siempre.
 - **Al terminar un bloque**: subir la versión en `src/diag.js`, `package.json`, `public/sw.js` (constante `VERSION`)
   y la cabecera de `SPEC.md`; añadir su sección a `SPEC.md`; y anotarlo en `docs/ESTADO.md` (apartado 0).
 

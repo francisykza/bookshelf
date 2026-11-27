@@ -51,14 +51,14 @@ test('las fichas: lo acogedor, al doble y sin rebajas; lo premium, su precio y e
   const { alm } = await alAlmacen(page, mockAlmacen({ tickets: 700 }));
   const ficha = alm.locator('.alm-card--ficha');
   await aLaFicha(page, alm, 'Chimenea de ladrillo');
-  await expect(ficha).toContainText('80 tickets');
+  await expect(ficha).toContainText('80 Libocoins');
   await expect(ficha).toContainText('De habitación especial · nunca se rebaja');
   await shot(page, info, '98-ficha-lumbre');
   await alm.locator('.alm-card__back').click();
   await aLaFicha(page, alm, 'Chéster de terciopelo');
-  await expect(ficha).toContainText('600 tickets');
+  await expect(ficha).toContainText('600 Libocoins');
   await expect(ficha).toContainText('Colección premium · nunca se rebaja');
-  await expect(ficha.locator('.alm-ficha__socio')).toContainText('240 tickets');
+  await expect(ficha.locator('.alm-ficha__socio')).toContainText('240 Libocoins');
   await expect(ficha.locator('.alm-ficha__socio')).toContainText('con la suscripción de Libotown, cuando llegue');
   await shot(page, info, '99-ficha-premium');
   // Se compra con tickets como cualquier otro mueble
@@ -67,7 +67,7 @@ test('las fichas: lo acogedor, al doble y sin rebajas; lo premium, su precio y e
   await alm.getByRole('button', { name: /^Carrito: / }).click();
   await alm.locator('.alm-card--carrito').getByRole('button', { name: 'Ir a caja' }).click();
   await settled(page);
-  await expect(alm.getByRole('button', { name: /Confirmar compra/ })).toContainText('600 tickets');
+  await expect(alm.getByRole('button', { name: /Confirmar compra/ })).toContainText('600 Libocoins');
   await shot(page, info, '99b-caja-premium');
   expect(errors).toEqual([]);
 });

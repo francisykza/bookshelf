@@ -100,7 +100,7 @@ test('recorrido: el aviso en el escritorio, la pantalla «Almacén» y al almac�
   await expect(page.getByRole('heading', { name: 'Almacén', exact: true })).toBeVisible();
   const app = page.locator('.pp-alm');
   await expect(app.getByRole('heading', { name: 'El Almacén del Puerto' })).toBeVisible({ timeout: 15000 });
-  await expect(app).toContainText('Tienes 120 tickets');
+  await expect(app).toContainText('Tienes 120 Libocoins');
   const ofertas = app.locator('section[aria-labelledby="pp-alm-ofertas"] .pp-alm__fila');
   await expect(ofertas).toHaveCount(5);
   await expect(ofertas.first()).toContainText('Reloj');

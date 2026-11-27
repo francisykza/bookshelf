@@ -1,7 +1,7 @@
 // Apps del ordenador (SPEC §34): Estadísticas, Reto anual y Misiones y Guardián, recompuestas según la maqueta
 // `docs/design/references/ordenador-seis-apps-maqueta.png`. Las fórmulas, la torre de leídos y las misiones son las
 // de siempre (antes en LaptopPanel); aquí cambia solo la composición.
-import { BookOpen, Check, Flame, Gift, Star, Ticket } from 'lucide-react';
+import { BookOpen, Check, Flame, Gift, Star } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { daysLeftInYear, lastDays, parseDay } from '../../domain/dates';
 import { EDITIONS, formatRating, hash, isDevice, spineColor, visualEdition } from '../../domain/books';
@@ -10,6 +10,7 @@ import { missionStatus } from '../../domain/missions';
 import { isActive, readingStreak, summarize } from '../../domain/reading';
 import { MISION_TICKETS } from '../../features/edificio/economy';
 import { useMissionTickets } from '../../features/edificio/useMissionTickets';
+import { Libocoin } from '../../ui/Libocoin';
 import { useLibrary } from '../../state/useLibrary';
 import { FigureArt, RANK_STARS } from '../figures/FigureArt';
 import { useFigureCatalog } from '../figures/figureCatalog';
@@ -366,10 +367,10 @@ export function MissionsApp(props) {
 }
 
 const TICKET_NOTE = {
-  loading: 'Comprobando tus tickets…',
-  'signed-out': 'Inicia sesión en «Tu cuenta» y activa la comunidad para cobrar tus misiones en tickets.',
-  'no-community': 'Activa la comunidad en tu perfil para cobrar tus misiones en tickets.',
-  soon: 'Los tickets llegan muy pronto: entonces podrás cobrar aquí tus misiones.',
+  loading: 'Comprobando tus Libocoins…',
+  'signed-out': 'Inicia sesión en «Tu cuenta» y activa la comunidad para cobrar tus misiones en Libocoins.',
+  'no-community': 'Activa la comunidad en tu perfil para cobrar tus misiones en Libocoins.',
+  soon: 'Los Libocoins llegan muy pronto: entonces podrás cobrar aquí tus misiones.',
 };
 
 /** 1.67: cada misión cumplida se cobra en tickets (una vez por semana; lo decide el servidor). */
@@ -386,7 +387,7 @@ function TicketMissionsApp() {
       await t.cobrar(m.id);
       // La misión queda también apuntada en tu biblioteca, como siempre
       if (!m.claimed) actions.claimMission(m.id);
-      setMsg(`+${MISION_TICKETS} tickets por «${m.title}». Gástalos en el almacén del Gran Hotel.`);
+      setMsg(`+${MISION_TICKETS} Libocoins por «${m.title}». Gástalos en el almacén del Gran Hotel.`);
     } catch (e) {
       setMsg(`No se ha podido cobrar: ${e.message}`);
     } finally {
@@ -396,10 +397,10 @@ function TicketMissionsApp() {
   return (
     <div className="pc-missions">
       <section className="pc-tickets">
-        <Ticket aria-hidden="true" />
+        <Libocoin size={28} />
         {t.status === 'ready' ? (
           <p>
-            <b>{t.tickets}</b> tickets para el almacén del hotel
+            <b>{t.tickets}</b> Libocoins para el almacén del hotel
           </p>
         ) : (
           <p className="pc-muted">{TICKET_NOTE[t.status]}</p>
@@ -408,7 +409,7 @@ function TicketMissionsApp() {
 
       <section>
         <h3 className="pc-section-title">Misiones de esta semana</h3>
-        <p className="pc-muted pc-missions__hint">Se reinician cada lunes. Cada misión cumplida vale {MISION_TICKETS} tickets para muebles y sobres del edificio del puerto.</p>
+        <p className="pc-muted pc-missions__hint">Se reinician cada lunes. Cada misión cumplida vale {MISION_TICKETS} Libocoins para muebles y sobres del edificio del puerto.</p>
         <ul className="pc-mission-list">
           {missions.map((m) => {
             const cobrada = t.cobrada(m.id);
@@ -429,7 +430,7 @@ function TicketMissionsApp() {
                   </span>
                 ) : t.status === 'ready' ? (
                   <button type="button" className="pc-btn pc-btn--primary pc-btn--small" disabled={!m.done || Boolean(busy)} onClick={() => cobrar(m)}>
-                    <Ticket aria-hidden="true" /> {busy === m.id ? 'Cobrando…' : `Cobrar ${MISION_TICKETS}`}
+                    <Libocoin size={18} /> {busy === m.id ? 'Cobrando…' : `Cobrar ${MISION_TICKETS}`}
                   </button>
                 ) : m.done ? (
                   <span className="pc-mission__ok">

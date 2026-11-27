@@ -8,7 +8,7 @@ import { acabadoOf } from '../acabados';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_AVATAR } from '../actor';
 import { CATALOG, catalogItem, isEspecial, isMistico } from '../catalog';
-import { rarezaOf } from '../economy';
+import { rarezaOf, ticketsText } from '../economy';
 import { isRetirado } from '../retirados';
 import { renderActorThumb, renderThumb } from '../render';
 import { aceptarLonja, buscarLonja, canjearLonja, cargarLonja, loadInventario, ponerLonja, recogerTaller, retirarLonja, toldoLonja, zarparEstiba } from '../service';
@@ -50,7 +50,7 @@ const rarezaDe = (clave) => rarezaOf(catalogItem(partes(clave)[0]));
 const vecinas = (r) => RAREZAS.filter((x) => Math.abs(nivel(x) - nivel(r)) <= 1);
 const pedibles = (r) =>
   CATALOG.filter((c) => !c.set && !c.mascota && !isMistico(c) && !isEspecial(c) && vecinas(r).includes(rarezaOf(c))).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-const busca = (o) => (o.busca_mueble ? nombre(o.busca_mueble) : o.busca_rareza ? `cualquier mueble ${RAREZA_NOMBRE[o.busca_rareza]}` : `${o.busca_tickets} tickets`);
+const busca = (o) => (o.busca_mueble ? nombre(o.busca_mueble) : o.busca_rareza ? `cualquier mueble ${RAREZA_NOMBRE[o.busca_rareza]}` : ticketsText(o.busca_tickets));
 let cara = null;
 const retrato = () => (cara ??= renderActorThumb(REMEDIOS, { frame: 'head', size: 44 }).toDataURL());
 
@@ -125,7 +125,7 @@ function Formulario({ lonja, busy, inicial = null, onPoner, onCancelar }) {
         <legend>Busco</legend>
         <div className="gh-lonja__modo">
           <button type="button" aria-pressed={modo === 'tickets'} disabled={topeCobro} onClick={() => setModo('tickets')}>
-            Tickets
+            Libocoins
           </button>
           <button type="button" aria-pressed={modo === 'mueble'} onClick={() => setModo('mueble')}>
             Un mueble
@@ -137,11 +137,11 @@ function Formulario({ lonja, busy, inicial = null, onPoner, onCancelar }) {
         {modo === 'tickets' && (
           <>
             <div className="gh-lonja__precio">
-              <button type="button" aria-label="Menos tickets" disabled={valor <= minimo} onClick={() => setPrecio(Math.max(minimo, valor - PASO))}>
+              <button type="button" aria-label="Menos Libocoins" disabled={valor <= minimo} onClick={() => setPrecio(Math.max(minimo, valor - PASO))}>
                 −
               </button>
-              <output aria-live="polite">{valor} tickets</output>
-              <button type="button" aria-label="Más tickets" disabled={valor >= maximo} onClick={() => setPrecio(Math.min(maximo, valor + PASO))}>
+              <output aria-live="polite">{valor} Libocoins</output>
+              <button type="button" aria-label="Más Libocoins" disabled={valor >= maximo} onClick={() => setPrecio(Math.min(maximo, valor + PASO))}>
                 +
               </button>
             </div>
@@ -197,8 +197,8 @@ function Reglas({ lonja }) {
     <details className="lj-plegable">
       <summary>Cómo funciona la Lonja</summary>
       <ul className="gh-lonja__reglas">
-        <li>El precio lo pones tú, dentro de lo que vale su rareza: común 5-20, poco común 10-40 y raro 20-60 tickets.</li>
-        <li>El 10 % de cada venta se queda en la Lonja. Puedes cobrar hasta {lonja.cobro.tope} tickets a la semana.</li>
+        <li>El precio lo pones tú, dentro de lo que vale su rareza: común 5-20, poco común 10-40 y raro 20-60 Libocoins.</li>
+        <li>El 10 % de cada venta se queda en la Lonja. Puedes cobrar hasta {lonja.cobro.tope} Libocoins a la semana.</li>
         <li>Un mueble se cambia por otro de su rareza o de la de al lado.</li>
         <li>Lo que te llega aquí no se puede volver a ofrecer en 3 días: en tu piso, úsalo cuando quieras.</li>
         <li>Con la misma persona, un cambio por semana. Tú, hasta 3 cambios al día.</li>
@@ -292,7 +292,7 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
     if (lonja.nueva) return 'Aún solo miras';
     if (o.pareja) return 'Ya cambiasteis esta semana';
     if (lonja.cambios.hechos >= lonja.cambios.tope) return 'Hoy ya no';
-    if (o.busca_tickets) return lonja.tickets >= o.busca_tickets ? null : 'Te faltan tickets';
+    if (o.busca_tickets) return lonja.tickets >= o.busca_tickets ? null : 'Te faltan Libocoins';
     if (o.busca_rareza) return pagables(o).length ? null : 'No tienes con qué';
     return lonja.libres[o.busca_mueble] > 0 ? null : 'No lo tienes libre';
   };
@@ -408,8 +408,8 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
 
             <div className="lj-pizarra">
               <p>
-                <PixelNum value={ticketsVistos} label={`${lonja.tickets} tickets`} />
-                <span aria-hidden="true">tickets</span>
+                <PixelNum value={ticketsVistos} label={ticketsText(lonja.tickets)} />
+                <span aria-hidden="true">Libocoins</span>
               </p>
               <p>
                 <PixelNum value={sellosVistos} label={`${lonja.sellos} sellos`} />
@@ -419,7 +419,7 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
                 <p>
                   Esta semana {Math.min(lonja.cobro.hecho, lonja.cobro.tope)} de {lonja.cobro.tope}
                 </p>
-                <span className="lj-pizarra__raya" role="progressbar" aria-label="Tickets cobrados esta semana" aria-valuemin={0} aria-valuemax={lonja.cobro.tope} aria-valuenow={Math.min(lonja.cobro.hecho, lonja.cobro.tope)}>
+                <span className="lj-pizarra__raya" role="progressbar" aria-label="Libocoins cobrados esta semana" aria-valuemin={0} aria-valuemax={lonja.cobro.tope} aria-valuenow={Math.min(lonja.cobro.hecho, lonja.cobro.tope)}>
                   <span style={{ width: `${Math.min(100, (lonja.cobro.hecho / lonja.cobro.tope) * 100)}%` }} />
                 </span>
                 <ol className="lj-pizarra__palotes" aria-label={`Cambios de hoy: ${lonja.cambios.hechos} de ${lonja.cambios.tope}`}>
@@ -558,7 +558,7 @@ export function Lonja({ onStreet, onInventory = () => {}, soundOn = false }) {
                     <ul className="gh-lonja__reglas" aria-label="Cambios recientes de tu puesto">
                       {lonja.cerradas.map((o) => (
                         <li key={o.id}>
-                          {nombre(daDe(o))} por {o.pagado ? nombre(o.pagado) : `${o.neto ?? o.busca_tickets} tickets`}.
+                          {nombre(daDe(o))} por {o.pagado ? nombre(o.pagado) : ticketsText(o.neto ?? o.busca_tickets)}.
                         </li>
                       ))}
                     </ul>

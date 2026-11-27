@@ -3,11 +3,12 @@
 // tiene un tope a la semana en cada sentido. Las cantidades son fijas y se pide confirmación antes de cambiar. Lo cobra
 // y lo da el servidor (20261112120000_hotel_casino_garbanzos.sql).
 import { useState } from 'react';
+import { ticketsText } from '../economy';
 import { isRetirado } from '../retirados';
 import { canjearLata, cambiarGarbanzos } from '../service';
 import { CASINO, garbanzosDe, LATA } from './veintiuna';
 
-const ticketsDe = (n) => `${n} ${n === 1 ? 'ticket' : 'tickets'}`;
+const ticketsDe = ticketsText;
 
 export function LataGarbanzos({ data, dia, onData, sfx, arte }) {
   const [pide, setPide] = useState(null);
@@ -89,13 +90,13 @@ export function LataGarbanzos({ data, dia, onData, sfx, arte }) {
         ))}
       </ul>
       <p className="gh-lata__title">Cambio</p>
-      <ul aria-label="Cambio de garbanzos y tickets">
+      <ul aria-label="Cambio de garbanzos y Libocoins">
         <li className="is-text">
           <p>
             <b>
               {cambioGarbanzos} garbanzos por {ticketsDe(cambioTickets)}
             </b>
-            Esta semana, {data.cambio.aTickets} de {topeCambio} tickets.
+            Esta semana, {data.cambio.aTickets} de {topeCambio} Libocoins.
           </p>
           {boton('a-tickets', 'Cambiar', queda(data.cambio.aTickets) && data.garbanzos >= cambioGarbanzos, `¿Cambias ${cambioGarbanzos} garbanzos por ${ticketsDe(cambioTickets)}?`, () =>
             hacer(() => cambiarGarbanzos(dia, 'a-tickets'), `Hecho: ${ticketsDe(cambioTickets)} más.`),
@@ -106,7 +107,7 @@ export function LataGarbanzos({ data, dia, onData, sfx, arte }) {
             <b>
               {ticketsDe(cambioTickets)} por {vueltaGarbanzos} garbanzos
             </b>
-            Esta semana, {data.cambio.aGarbanzos} de {topeCambio} tickets.
+            Esta semana, {data.cambio.aGarbanzos} de {topeCambio} Libocoins.
           </p>
           {boton('a-garbanzos', 'Cambiar', queda(data.cambio.aGarbanzos) && data.tickets >= cambioTickets, `¿Cambias ${ticketsDe(cambioTickets)} por ${vueltaGarbanzos} garbanzos?`, () =>
             hacer(() => cambiarGarbanzos(dia, 'a-garbanzos'), `Hecho: ${garbanzosDe(vueltaGarbanzos)} más.`),

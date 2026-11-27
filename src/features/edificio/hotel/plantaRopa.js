@@ -112,7 +112,7 @@ export const ORIGEN_TEXTO = {
   estiba: 'Se cambia por sellos en la pared de la Lonja',
   ruleta: 'Puede tocar en la ruleta del casino',
   chisteras: 'Se cambia por sellos de las chisteras del casino',
-  tienda: 'De la planta: se compra con tickets',
+  tienda: 'De la planta: se compra con Libocoins',
 };
 /** ¿Es tuya? Lo de serie, siempre; lo que se gana, si está en `prendas`. */
 export const esTuya = (p, prendas) => !seGana(p) || (prendas ?? []).includes(p);

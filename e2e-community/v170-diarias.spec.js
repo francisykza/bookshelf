@@ -157,14 +157,14 @@ test('misiones del día con toda la ropa: 5 tickets', async ({ page }, info) => 
   const hoy = mine.getByRole('button', { name: /^Hoy en tu piso \(0 de 3\)/ });
   await hoy.click();
   const card = mine.getByRole('region', { name: 'Hoy en tu piso' });
-  await expect(card.getByText('5 tickets')).toBeVisible();
+  await expect(card.getByText('5 Libocoins')).toBeVisible();
   await shot(page, info, 'v179-hoja-tickets');
   await hoy.click();
   for (const [k, m] of today.entries()) {
     await doMission(page, mine, m.id);
     await expect(mine.getByRole('button', { name: new RegExp(`^Hoy en tu piso \\(${k + 1} de 3\\)`) })).toBeAttached({ timeout: 8000 });
   }
-  await expect(card.getByText(/Hecho: \+5 tickets/)).toBeVisible();
+  await expect(card.getByText(/Hecho: \+5 Libocoins/)).toBeVisible();
   expect(mock.db.diarias_tickets).toBe(5);
   await shot(page, info, 'v179-hecho-tickets');
   expect(errors).toEqual([]);

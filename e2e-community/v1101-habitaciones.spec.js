@@ -59,7 +59,7 @@ test('la colección de superhéroes: en el directorio, su ficha (va andando al p
   await alm.locator('.alm-card--carrito').getByRole('button', { name: 'Ir a caja' }).click();
   const pagar = alm.getByRole('button', { name: /Confirmar compra/ });
   await expect(pagar).toBeEnabled();
-  await expect(pagar).toContainText('80 tickets');
+  await expect(pagar).toContainText('80 Libocoins');
   await pagar.click();
   await expect(alm.locator('.alm-caja')).toContainText('Ya lo tienes todo en tu inventario');
   expect(mock.db.piso_cuentas[ANA].tickets).toBe(20);

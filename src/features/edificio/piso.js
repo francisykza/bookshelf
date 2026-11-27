@@ -688,7 +688,7 @@ export function mountPiso(container, { room: initial, editable = false, evening 
     const foot = today.proxima
       ? el('p', { class: 'ep-today__prize' }, el('span', { text: done === today.items.length ? 'Hecho. Mañana, más.' : 'Premio:' }), done === today.items.length ? null : el('b', { text: prendaNombre(today.proxima) }))
       : // Con todo el armario, las tres dan tickets (1.79)
-        el('p', { class: 'ep-today__prize' }, el('span', { text: done === today.items.length ? `Hecho: +${DIARIA_TICKETS} tickets. Mañana, más.` : 'Premio:' }), done === today.items.length ? null : el('b', { text: `${DIARIA_TICKETS} tickets` }));
+        el('p', { class: 'ep-today__prize' }, el('span', { text: done === today.items.length ? `Hecho: +${DIARIA_TICKETS} Libocoins. Mañana, más.` : 'Premio:' }), done === today.items.length ? null : el('b', { text: `${DIARIA_TICKETS} Libocoins` }));
     // Recién ganada: la prenda, bien a la vista (y la hoja se abre sola)
     const won = today.ganada ? el('p', { class: 'ep-today__won' }, el('img', { class: 'ep-today__won-img', alt: '', width: 33, height: 33, src: actorThumb(wearing(today.ganada), 'head') }), el('span', { text: `Nueva: ${prendaNombre(today.ganada)}` })) : null;
     todayCard.replaceChildren(

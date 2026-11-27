@@ -106,7 +106,7 @@ test('recorrido: mirar, añadir, cambiar, quitar, pagar y tenerlo en casa', asyn
   await carro.getByRole('button', { name: 'Ir a caja' }).click();
   const pagar = alm.getByRole('button', { name: /Confirmar compra/ });
   await expect(pagar).toBeEnabled();
-  const precio = Number((await pagar.textContent()).match(/(\d+) tickets/)[1]);
+  const precio = Number((await pagar.textContent()).match(/(\d+) Libocoins/)[1]);
   await pagar.click();
   await expect(alm.locator('.alm-caja')).toContainText('Ya lo tienes todo en tu inventario');
   await settled(page);
@@ -136,7 +136,7 @@ test('sin saldo no se puede pagar; el doble toque cobra una vez', async ({ page 
   await aCaja(alm);
   const pagar = alm.getByRole('button', { name: /Confirmar compra/ });
   await expect(pagar).toBeEnabled();
-  const precio = Number((await pagar.textContent()).match(/(\d+) tickets/)[1]);
+  const precio = Number((await pagar.textContent()).match(/(\d+) Libocoins/)[1]);
   await pagar.dblclick();
   await expect(alm.locator('.alm-caja')).toContainText('Ya lo tienes todo');
   expect(mock.db.almacen.cobros).toBe(1);
@@ -151,7 +151,7 @@ test('fallo de red: el carrito se queda y el reintento no cobra dos veces', asyn
   await alm.getByRole('button', { name: 'Añadir al carrito' }).click();
   await aCaja(alm);
   const pagar = alm.getByRole('button', { name: /Confirmar compra/ });
-  const precio = Number((await pagar.textContent()).match(/(\d+) tickets/)[1]);
+  const precio = Number((await pagar.textContent()).match(/(\d+) Libocoins/)[1]);
   // 1) La petición no llega al servidor: no se cobra y el carrito sigue
   mock.db.almacen.caida = 1;
   await pagar.click();
@@ -181,7 +181,7 @@ test('el albarán: uno al día, recargar no lo repone y su descuento va en una c
   await alm.getByRole('button', { name: 'Añadir al carrito' }).click();
   await alm.getByRole('button', { name: /Añadir otro/ }).click();
   await aCaja(alm);
-  const subtotal = Number((await alm.getByRole('button', { name: /Confirmar compra/ }).textContent()).match(/(\d+) tickets/)[1]);
+  const subtotal = Number((await alm.getByRole('button', { name: /Confirmar compra/ }).textContent()).match(/(\d+) Libocoins/)[1]);
   await alm.getByRole('button', { name: 'Jugar el albarán' }).click();
   const boton = alm.getByRole('button', { name: '¡Sellar!' });
   await expect(boton).toBeVisible();
@@ -225,7 +225,7 @@ test('el albarán: uno al día, recargar no lo repone y su descuento va en una c
   await expect(otra.getByRole('button', { name: 'Jugar el albarán' })).toHaveCount(0);
   await expect(otra.locator('.alm-albaran')).toContainText(`${pct} %`);
   const total = subtotal - Math.floor((subtotal * pct) / 100);
-  const pagar = otra.getByRole('button', { name: `Confirmar compra · ${total} tickets` });
+  const pagar = otra.getByRole('button', { name: `Confirmar compra · ${total} Libocoins` });
   await expect(pagar).toBeEnabled();
   await pagar.click();
   await expect(otra.locator('.alm-caja')).toContainText('Ya lo tienes todo');
@@ -250,7 +250,7 @@ test('ofertas: se ven en el directorio, la ficha, la etiqueta y la caja, y se co
   await alm.locator('.alm-bar').getByRole('button', { name: 'Directorio' }).click();
   const tablon = alm.getByRole('region', { name: 'Ofertas de hoy' });
   await expect(tablon).toContainText('Oferta de la semana');
-  await expect(tablon.locator('.alm-dir__item', { hasText: 'Mesa' })).toContainText('16 tickets · −20 %');
+  await expect(tablon.locator('.alm-dir__item', { hasText: 'Mesa' })).toContainText('16 Libocoins · −20 %');
   await page.waitForTimeout(250);
   await shot(page, info, '20-ofertas-directorio');
   await tablon.locator('.alm-dir__item', { hasText: 'Mesa' }).click();
@@ -268,12 +268,12 @@ test('ofertas: se ven en el directorio, la ficha, la etiqueta y la caja, y se co
   await aCaja(alm);
   await expect(alm.locator('.alm-ticket').first()).toContainText('oferta −20 %');
   const pagar = alm.getByRole('button', { name: /Confirmar compra/ });
-  await expect(pagar).toHaveText('Confirmar compra · 32 tickets');
+  await expect(pagar).toHaveText('Confirmar compra · 32 Libocoins');
   await settled(page);
   await shot(page, info, '22-oferta-caja');
   await pagar.click();
   await expect(alm.locator('.alm-caja')).toContainText('Ya lo tienes todo');
-  await expect(alm.locator('.alm-caja')).toContainText('ahorras 8 tickets');
+  await expect(alm.locator('.alm-caja')).toContainText('ahorras 8 Libocoins');
   expect(mock.db.piso_cuentas[ANA.id].tickets).toBe(968);
   await shot(page, info, '23-oferta-recibo');
 });
@@ -317,7 +317,7 @@ test('visita con un amigo: os veis, «Mira esto», carritos y compras de cada un
   await expect(b.getByRole('button', { name: 'Carrito: 0 artículos' })).toBeVisible();
   await aCaja(a);
   const pagar = a.getByRole('button', { name: /Confirmar compra/ });
-  const precio = Number((await pagar.textContent()).match(/(\d+) tickets/)[1]);
+  const precio = Number((await pagar.textContent()).match(/(\d+) Libocoins/)[1]);
   await pagar.click();
   await expect(a.locator('.alm-caja')).toContainText('Ya lo tienes todo');
   expect(mock.db.piso_cuentas[ANA.id].tickets).toBe(100 - precio);

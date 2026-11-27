@@ -3,6 +3,7 @@
 // lotes y paginadas; los agregados los calcula el servidor. La caché es por usuario y se vacía al cambiar de
 // cuenta o cerrar sesión (`clearSocialCache`).
 import { getClient } from '../../../services/cloud';
+import { conLibocoins } from '../../../domain/libocoins';
 
 export const PAGE_SIZE = 20;
 
@@ -24,7 +25,8 @@ export async function client() {
 export const fail = (error) => {
   // Tabla o función inexistente: la migración social aún no está aplicada en este proyecto
   if (error && ['42P01', 'PGRST205', 'PGRST202', '42883'].includes(error.code)) throw Object.assign(new Error('La comunidad aún no está disponible en este servidor.'), { code: 'unavailable' });
-  if (error) throw Object.assign(new Error(error.message), { code: error.code });
+  // Libocoins: el servidor aún dice «tickets» en sus mensajes (docs/qa/libocoins.md)
+  if (error) throw Object.assign(new Error(conLibocoins(error.message)), { code: error.code });
 };
 
 /** ¿Está aplicada la migración social? (una consulta mínima a `profiles`) */

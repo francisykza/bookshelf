@@ -59,13 +59,13 @@ function Etiqueta({ m }) {
     <span className="pp-alm-precio" data-oferta={m.oferta?.tipo} aria-hidden="true">
       {m.oferta && <s>{m.precio}</s>}
       <b>{m.hoy}</b>
-      <small>tickets</small>
+      <small>Libocoins</small>
     </span>
   );
 }
 
 /** Lo que se dice de un mueble para los lectores de pantalla. */
-const etiquetaDe = (m, extra = '') => `${m.nombre}${extra ? `, ${extra}` : ''}: ${m.hoy} tickets${m.oferta ? `, antes ${m.precio}` : ''}. Verlo en el almacén`;
+const etiquetaDe = (m, extra = '') => `${m.nombre}${extra ? `, ${extra}` : ''}: ${m.hoy} Libocoins${m.oferta ? `, antes ${m.precio}` : ''}. Verlo en el almacén`;
 
 /** Una línea bajo el nombre. */
 function detalle(m, estado, cual) {
@@ -308,7 +308,7 @@ export function AlmacenApp({ onGo }) {
         <Poste />
         <div>
           <h3>El Almacén del Puerto</h3>
-          <p>{r.tickets != null ? `Tienes ${r.tickets} tickets. Toca un mueble para verlo allí.` : 'Toca un mueble para verlo allí.'}</p>
+          <p>{r.tickets != null ? `Tienes ${r.tickets} Libocoins. Toca un mueble para verlo allí.` : 'Toca un mueble para verlo allí.'}</p>
         </div>
       </header>
 

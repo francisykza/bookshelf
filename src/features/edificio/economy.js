@@ -6,6 +6,7 @@ import { isRetirado } from './retirados';
 import { CATALOG, isEspecial, isMistico } from './catalog';
 import { tallerDe } from './talleres';
 import { esSuscriptor } from '../../domain/suscripcion';
+import { libocoinsText } from '../../domain/libocoins';
 
 export const RAREZAS = [
   { id: 'comun', nombre: 'Común', precio: 20, reciclar: 3 },
@@ -160,4 +161,5 @@ export function oddsTable(sobre) {
 /** Cuántos muebles faltan, como mucho, para algo raro seguro. */
 export const sobresHastaRaro = (sinRaro) => Math.max(1, PITY - (sinRaro ?? 0));
 
-export const ticketsText = (n) => `${n} ${n === 1 ? 'ticket' : 'tickets'}`;
+// Libocoins: el texto de un saldo o un precio (src/domain/libocoins.js)
+export const ticketsText = libocoinsText;

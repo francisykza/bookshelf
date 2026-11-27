@@ -157,7 +157,7 @@ export const prendaOrigen = (key, value) => {
   if (ROPA_CASINO.includes(prendaKey(key, value))) return 'se cambia por fichas en la caja del casino';
   if (ROPA_RULETA.includes(prendaKey(key, value))) return 'puede tocar en la ruleta del casino';
   if (ROPA_CHISTERAS.includes(prendaKey(key, value))) return 'se cambia por sellos de las chisteras del casino';
-  if (ROPA_TIENDA[prendaKey(key, value)]) return 'se compra con tickets en la planta de ropa del almacén';
+  if (ROPA_TIENDA[prendaKey(key, value)]) return 'se compra con Libocoins en la planta de ropa del almacén';
   return ROPA_ESTIBA.includes(prendaKey(key, value)) ? 'se cambia por sellos en la pared de la Lonja' : 'se gana con las misiones del día';
 };
 /** El nombre de una prenda que se gana (para los avisos). */

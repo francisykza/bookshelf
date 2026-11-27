@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import { missionStatus } from '../../../domain/missions';
 import { useLibrary } from '../../../state/useLibrary';
 import { MISION_TICKETS } from '../economy';
+import { Libocoin } from '../../../ui/Libocoin';
 import { useMissionTickets } from '../useMissionTickets';
 import { SinTresD } from '../SinTresD';
 import { Recepcion3D } from './RecepcionVista';
@@ -52,8 +53,8 @@ const INFO = {
 
 const TICKET_NOTE = {
   loading: 'Un momento, que miro tu casillero…',
-  'signed-out': 'Inicia sesión y activa la comunidad para cobrar tus encargos en tickets.',
-  'no-community': 'Activa la comunidad en tu perfil para cobrar tus encargos en tickets.',
+  'signed-out': 'Inicia sesión y activa la comunidad para cobrar tus encargos en Libocoins.',
+  'no-community': 'Activa la comunidad en tu perfil para cobrar tus encargos en Libocoins.',
   soon: 'La caja aún está cerrada: pronto podrás cobrar aquí tus encargos.',
 };
 
@@ -70,7 +71,7 @@ function Encargos() {
     try {
       await t.cobrar(m.id);
       if (!m.claimed) actions.claimMission(m.id);
-      setMsg(`Aquí tienes: ${MISION_TICKETS} tickets por «${m.title}».`);
+      setMsg(`Aquí tienes: ${MISION_TICKETS} Libocoins por «${m.title}».`);
     } catch (e) {
       setMsg(`No se ha podido cobrar: ${e.message}`);
     } finally {
@@ -81,12 +82,12 @@ function Encargos() {
   return (
     <>
       <p className="gh-say">
-        Buenas noches. {done === missions.length ? 'Esta semana lo has hecho todo: ¡enhorabuena!' : 'Tus encargos de esta semana; cada uno vale ' + MISION_TICKETS + ' tickets.'}
+        Buenas noches. {done === missions.length ? 'Esta semana lo has hecho todo: ¡enhorabuena!' : 'Tus encargos de esta semana; cada uno vale ' + MISION_TICKETS + ' Libocoins.'}
       </p>
       <p className="gh-wallet">
         {t.status === 'ready' ? (
           <>
-            En tu casillero: <b>{t.tickets}</b> tickets
+            <Libocoin size={20} /> En tu casillero: <b>{t.tickets}</b> Libocoins
           </>
         ) : (
           TICKET_NOTE[t.status]

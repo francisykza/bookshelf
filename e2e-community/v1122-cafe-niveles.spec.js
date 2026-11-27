@@ -143,10 +143,10 @@ test('sube al nivel 2: el cartel, el recorrido hasta el ventanal, la tienda del 
   // El cartel de la subida: el nivel, sus tickets y lo que se abre
   const cartel = page.getByRole('dialog', { name: /Nivel 2 · Café/ });
   await expect(cartel).toBeVisible();
-  await expect(cartel).toContainText('+20 tickets');
+  await expect(cartel).toContainText('+20 Libocoins');
   await expect(cartel).toContainText('18 huecos en la balda');
   await expect(cartel).toContainText('el ventanal al puerto');
-  await expect(cartel).toContainText('+2 tickets del café de hoy');
+  await expect(cartel).toContainText('+2 Libocoins del café de hoy');
   expect(c.nivel).toBe(2);
   await page.waitForTimeout(700);
   await foto('cartel');
@@ -213,7 +213,7 @@ test('nivel 3: la chimenea y las estanterías altas, y un chocolate con nata hec
   await atender(page, cafe, pide, { foto: /chromium-390x844$|webkit-390x844$/.test(info.project.name) ? foto : null, ayuda: false });
   // Los tickets del día (3, en el nivel 3)
   const cartel = page.getByRole('dialog', { name: /Primer cliente del día/ });
-  await expect(cartel).toContainText('+3 tickets del café de hoy');
+  await expect(cartel).toContainText('+3 Libocoins del café de hoy');
   await cartel.getByRole('button', { name: 'Seguir' }).click();
   const video = page.video();
   await page.close();

@@ -481,7 +481,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
           setWonTickets(a.tickets);
           setInventory((inv) => inv && { ...inv, tickets: inv.tickets + a.tickets });
         }
-        setNotice({ text: a.nueva ? `¡Las tres misiones de hoy! Prenda nueva en tu armario: ${prendaNombre(a.nueva)}.` : a.tickets ? `¡Las tres misiones de hoy! Ya tienes toda la ropa: +${a.tickets} tickets.` : `Misión del día hecha: ${m.texto.toLowerCase()}.` });
+        setNotice({ text: a.nueva ? `¡Las tres misiones de hoy! Prenda nueva en tu armario: ${prendaNombre(a.nueva)}.` : a.tickets ? `¡Las tres misiones de hoy! Ya tienes toda la ropa: +${a.tickets} Libocoins.` : `Misión del día hecha: ${m.texto.toLowerCase()}.` });
       })
       .catch(() => {})
       .finally(() => counting.current.delete(tipo));

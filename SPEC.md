@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.159.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.160.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -9010,3 +9010,29 @@ Aviso de Francisco (27-11-2026): a una compañera, en un iPhone, el ordenador de
 
 - Unitarias: `src/ui/__tests__/redDeSeguridad.test.js`. e2e: `e2e-community/v1159-red-seguridad.spec.js` (Chromium y
   WebKit a 390); capturas en `qa-report/v1159-red-seguridad/`. Emulación: no equivale a un iPhone.
+
+## 160. Los Libocoins, bloque 1: el nombre y la moneda (1.160.0)
+
+Encargo de Francisco (27-11-2026): los tickets, una moneda con identidad, «libocoins o algo por el estilo», con la cara de Libo.
+Plan aprobado («Sí, así») en `docs/qa/libocoins.md`: tres bloques; este es el primero. Sin migración.
+
+### 160.1 El nombre
+
+- Todo lo visible dice **Libocoins** (singular «Libocoin»), también la web: precios, saldos, la caja, la ropa, la Lonja, la lata
+  del casino, las misiones del ordenador y del vestíbulo, las diarias del piso y los logros del café. `MONEDA`, `libocoinsText`
+  y `conLibocoins` en `src/domain/libocoins.js` (sin dependencias); `ticketsText` de `economy.js` es `libocoinsText`.
+- **Por dentro siguen siendo `tickets`** (servidor, Supabase, código y claves). Los mensajes del servidor que dicen «tickets» se
+  leen con el nombre nuevo en `fail()` (`src/features/social/services/community.js`, `conLibocoins`).
+
+### 160.2 La moneda
+
+- El dibujo de Francisco (`../libotown-marca/libocoin.webp`, fuera de git) se recorta al borde de la moneda con
+  `scripts/libocoin.mjs` en `public/assets/libo/libocoin-{24,48,96,192}.webp`; nunca se redibuja. `src/ui/Libocoin.jsx` la
+  pinta con su `srcSet` (solo adorno: la cifra y la palabra van en texto).
+- Sustituye a la tira roja de ticket en el cartel del café (`.cf3-logro__ticket`) y al icono de ticket en las misiones del
+  ordenador (saldo y «Cobrar»); en el casillero del vestíbulo va delante del saldo.
+
+### 160.3 Comprobación
+
+- Unitaria `src/domain/__tests__/libocoins.test.js`. Las e2e que esperaban «tickets» esperan «Libocoins» (las comprobaciones,
+  no los selectores ni los datos internos). Emulación: no equivale a un móvil real.

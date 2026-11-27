@@ -228,7 +228,7 @@ test('un día en el café: dos clientes, el excéntrico y un habitual, de la bar
   // 1.122: con el primer cliente, el cartel del primer día (los 10 tickets del nivel 1 y el del día)
   const logro = await despedir(page, cafe);
   expect(logro).toContain('Primer día con clientes');
-  expect(logro).toContain('+10 tickets por abrir el café');
+  expect(logro).toContain('+10 Libocoins por abrir el café');
   await expect(cafe.locator('.cf3-tag--cliente')).toHaveCount(3);
 
   // El segundo: se equivoca la leche y, aunque pedía libro, solo el café: 3 aciertos de 7, 1 estrella (nunca cero), y el

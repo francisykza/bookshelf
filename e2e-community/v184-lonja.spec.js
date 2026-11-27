@@ -64,9 +64,9 @@ test('pones una oferta por tickets y la retiras', async ({ page }, info) => {
   await shot(page, info, 'v184-lonja');
   await lonja.getByRole('button', { name: 'Tu puesto', exact: true }).click();
   await lonja.getByRole('button', { name: 'Ofrecer un mueble' }).first().click();
-  await lonja.getByRole('button', { name: 'Más tickets' }).click();
+  await lonja.getByRole('button', { name: 'Más Libocoins' }).click();
   await expect(lonja.getByText(/Recibirás 9: el 10 %/)).toBeVisible();
-  await lonja.getByRole('button', { name: 'Más tickets' }).scrollIntoViewIfNeeded();
+  await lonja.getByRole('button', { name: 'Más Libocoins' }).scrollIntoViewIfNeeded();
   await shot(page, info, 'v184-lonja-oferta');
   await lonja.getByRole('button', { name: 'Poner en el puesto' }).click();
   await expect(lonja.getByText('Ya está en tu puesto.')).toBeVisible();
@@ -80,7 +80,7 @@ test('cambiar pide confirmación, y lo que no puedes pagar se dice', async ({ pa
   test.skip(!/chromium-390x844$/.test(info.project.name), 'una vez basta');
   const { lonja, mock } = await toLonja(page);
   const ofertas = lonja.getByRole('list', { name: 'Ofertas' });
-  await expect(ofertas.getByText('Te faltan tickets')).toBeVisible();
+  await expect(ofertas.getByText('Te faltan Libocoins')).toBeVisible();
   await expect(ofertas.getByText('No lo tienes libre')).toBeVisible();
   await lonja.getByRole('button', { name: 'Lo que puedo pagar' }).click();
   await expect(ofertas.getByRole('listitem')).toHaveCount(2);

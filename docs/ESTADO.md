@@ -6,7 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.159.0, la red de seguridad** (27-11-2026; Francisco: «publica lo que hay»; SPEC §159 y
+- **Publicada en producción: 1.160.0, los Libocoins, bloque 1: el nombre y la moneda** (27-11-2026; Francisco: «Sí,
+  publícala»; SPEC §160 y `docs/qa/libocoins.md`). Los tickets se llaman Libocoins en todo lo visible y en la web, con la
+  moneda de Libo que dibujó Francisco; por dentro siguen siendo `tickets`, sin migración. Siguen el bloque 2 (el saldo junto
+  a Libo) y el 3 (Libo lo celebra al ganarlos).
+- **Anterior: 1.159.0, la red de seguridad** (27-11-2026; Francisco: «publica lo que hay»; SPEC §159 y
   `docs/qa/ordenador-negro.md`). El ordenador en negro del iPhone: la causa más probable (un trozo de código de la versión
   vieja que da 404 con la app abierta días) se recarga sola, y cualquier otro fallo enseña un aviso en vez de la pantalla
   negra. Sin migración. No confirmado en su iPhone: si le vuelve a pasar, pedir una captura del aviso.
@@ -292,7 +296,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.159.0 | La red de seguridad: el ordenador en negro en un iPhone (publicada) | §159 |
+| 1.160.0 | Los Libocoins, bloque 1: el nombre y la moneda (publicada) | §160 |
+| 1.159.0 | La red de seguridad: el ordenador en negro en un iPhone | §159 |
 | 1.158.0 | «Lo de hoy»: el menú de Libo en tu piso (publicada) | §158 |
 | 1.157.0 | Fuera la habitación ilustrada, guardada en `archivo/` (publicada) | §157 |
 | 1.99.0 | El Almacén del Puerto: la Lonja en 3D (sin publicar) | §99 |
@@ -362,6 +367,19 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   habitación (76 de `e2e-community/`, con una entrada común desde tu piso; las 25 de `e2e/`, archivadas o adaptadas; reescribir
   `e2e/piso-inicio.spec.js`). Comprobado que, por ahora, fallan por eso `libo-atras` y `libo-atras-salas` (entran por la tablet
   del salón). Después, el bloque 3: publicar con su visto bueno.
+- **Sonidos con lumina-sfx, aprobados para más adelante** (Francisco, 27-11-2026: «hazme algunas muestras de cómo sonarían algunas cosas de la
+  aplicación con este motor»; https://github.com/LuminaBench/lumina-sfx). Licencia: el código es MIT; los sonidos se pueden
+  usar en la app gratis y sin créditos, pero no repartirlos como paquete; las 443 grabaciones de base son CC0. **Choca con
+  «sonidos propios y sintetizados»** del café: son grabaciones reales retocadas, así que usarlos lo decide él. Muestras (15
+  acciones, lo de hoy frente a Lumina con el volumen igualado) en `qa-report/lumina-muestras/` (fuera de git), hechas con
+  `muestras.cjs`; el motor, descargado en la carpeta temporal, nunca en el repositorio. Nada cambiado en la app. Si dice que sí:
+  renderizar solo lo elegido a archivos pequeños (sin meter el motor), guardar su `LICENSE` y los créditos al lado, y probarlo
+  primero en la barra del café y la estantería.
+  **Decidido** (Francisco, al escuchar el vídeo: «Ponlos todos menos el de la lluvia, pero vamos a dejar anotado este tema para
+  más adelante, vamos a seguir primero por donde íbamos»): entran los 14 de Lumina del vídeo (página, cerrar el libro, taza,
+  cucharilla, molinillo, tetera, cobrar, la bolsita, cajón, pasos, tocar algo del local, Libo, cartas del casino y chimenea;
+  lista e ids en `qa-report/lumina-muestras/rotulos.json`) y **la lluvia se queda la de hoy**. Sin empezar: se hace más
+  adelante, cuando él lo diga.
 - **Anotado para más tarde** (Francisco, 27-11-2026, mientras se hacían las poses de Olmo; sin empezar):
   - **El ordenador se queda en negro en un iPhone** (le pasa a una compañera de trabajo de Francisco). **Investigado y hecho en
     la 1.159.0** (publicada; `docs/qa/ordenador-negro.md`): si le vuelve a pasar, pedir una captura del aviso. Investigar: el ordenador
@@ -373,7 +391,9 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
     **pedirle que la guarde en `../libotown-marca/`** para recortarla de su material (nunca redibujarla). Además, «que aparezcan
     en todo momento de manera orgánica e intuitiva con una animación divertida, brindado por Libo»: el saldo siempre a mano y,
     al ganar, una animación con Libo. Lo interno (`tickets` en el servidor y en el código) no se renombra sin una migración
-    pensada y aprobada por él; las reglas de cuándo se ganan no cambian. Proponerle el plan antes de hacerlo.
+    pensada y aprobada por él; las reglas de cuándo se ganan no cambian. Proponerle el plan antes de hacerlo. **Plan aprobado**
+    (27-11-2026, «Sí, así»; `docs/qa/libocoins.md`): Libocoins en todo lo visible y en la web, el saldo junto a Libo, Libo celebra
+    al ganarlos. **Bloque 1 publicado en la 1.160.0**; siguen el 2 y el 3.
   - **La web en su dominio**: «subir el diseño que hicimos al dominio que compré y ver si necesito un hosting». La web ya está
     publicada en `libotown.es` desde la 1.146.0 (Vercel, en la raíz: quien llega nuevo ve la web); no hace falta otro hosting.
     Repasar con él qué quiere exactamente (¿otra dirección, como un subdominio? ¿las versiones «más interactiva» y «más cozy»?).
@@ -614,6 +634,34 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-27 · 1.160.0, los Libocoins, bloque 1: el nombre y la moneda, a producción (Claude)
+
+- Francisco aprobó el plan de `docs/qa/libocoins.md` («Sí, así») y pasó la moneda por el chat («¿esta?»); guardada en
+  `../libotown-marca/libocoin.webp` (fuera de git) y recortada con `scripts/libocoin.mjs`.
+- Hecho: «tickets» pasa a «Libocoins» en todo lo visible (unos 45 textos en 18 archivos y la web; `src/domain/libocoins.js`);
+  los mensajes del servidor se traducen en `fail()`, sin migración. La moneda (`src/ui/Libocoin.jsx`) sustituye a la tira
+  de ticket del café y al icono de ticket de las misiones del ordenador, y va delante del saldo del vestíbulo. Versión 1.160.0.
+- Pruebas: unitaria `libocoins.test.js` 3/3. e2e en Chromium 390 (ropa, almacén y su ordenador, casino y lata, Lonja,
+  colecciones, habitaciones, café y sus niveles): 44 pasan y 6 omitidas, tras arreglar la lectura del precio en `v199`; con la
+  moneda, `v1122` (subida de nivel), `v167` (misiones del ordenador) y `libo-atras-salas`, 6/6. Build limpio. Emulación.
+- Sin ver: el saldo con la moneda en el casillero del vestíbulo (la prueba lo tiene con la caja cerrada). Sin WebKit.
+- Francisco vio las capturas de la moneda (cartel del café y misiones del ordenador) y respondió «Sí, publícala». Commit en
+  `1.90-escritorio-puerto` y `main` avanzado sin forzar desde `727999d` (`git push origin 1.90-escritorio-puerto:main`).
+  Sin migraciones. Entra también lo de las muestras de lumina-sfx (solo documentos; nada de la app).
+
+### 2026-11-27 · Muestras de sonido con lumina-sfx (Claude)
+
+- Francisco: «publica lo que hay y luego hazme algunas muestras de cómo sonarían algunas cosas de la aplicación con este motor».
+- Vídeo de 84 s con rótulos (`qa-report/lumina-muestras/muestras-lumina.webm`, y el mismo audio en WAV): 15 acciones; en 12,
+  el sonido de hoy (renderizado con `medirSonidos` de `cafeSfx.js`, el maullido de Libo y `lluvia.mp3`) y luego el de Lumina
+  tal cual sale del catálogo, sin retocar, con el volumen igualado; en 3 (la bolsita al cobrar, las cartas del casino y la
+  chimenea), solo Lumina. Los sueltos, en `sueltos/`. Nada cambiado en la app.
+- Francisco: «Ponlos todos menos el de la lluvia, pero vamos a dejar anotado este tema para más adelante, vamos a seguir primero
+  por donde íbamos». Anotado en «Pendiente» y en CLAUDE.md; sin empezar.
+- Siguiente pendiente, los libocoins: propuesta en `docs/qa/libocoins.md` (tres bloques: nombre y moneda, el saldo junto a
+  Libo, y Libo que celebra al ganarlas; lo interno sigue siendo `tickets`, sin migración). Falta que la apruebe y que guarde la
+  imagen de la moneda en `../libotown-marca/` (no está). Francisco: «Sí, así». Se empieza por los textos; la moneda, cuando esté la imagen.
 
 ### 2026-11-27 · 1.159.0, la red de seguridad: el ordenador en negro en un iPhone, a producción (Claude)
 

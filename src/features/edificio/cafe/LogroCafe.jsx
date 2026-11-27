@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import { CAFE_NIVELES, cafeMueble } from './cafeCatalogo';
 import { ABRE, textoHito } from './cafeNiveles';
 import { crearSfxBarra } from './cafeSfx';
+import { ticketsText } from '../economy';
 
 const nombreNivel = (n) => CAFE_NIVELES.find((x) => x.nivel === n)?.nombre ?? '';
 
@@ -49,7 +50,7 @@ export function LogroCafe({ logro, soundOn = false, onCerrar }) {
               </p>
             )}
             <p className="cf3-logro__tickets">
-              <span className="cf3-logro__ticket" aria-hidden="true" />+{subida.tickets} tickets
+              <span className="cf3-logro__ticket" aria-hidden="true" />+{subida.tickets} Libocoins
             </p>
             <ul className="cf3-logro__abre">
               {(ABRE[subida.nivel] ?? []).map((t) => (
@@ -66,7 +67,7 @@ export function LogroCafe({ logro, soundOn = false, onCerrar }) {
           <ul className="cf3-logro__hitos">
             {inaugura && (
               <li data-tipo="tickets">
-                <span className="cf3-logro__ticket" aria-hidden="true" />+{inaugura.tickets} tickets por abrir el café
+                <span className="cf3-logro__ticket" aria-hidden="true" />+{inaugura.tickets} Libocoins por abrir el café
               </li>
             )}
             {hitos.map((h) => (
@@ -77,7 +78,7 @@ export function LogroCafe({ logro, soundOn = false, onCerrar }) {
             ))}
             {logro.ticketsDia > 0 && (
               <li data-tipo="tickets">
-                <span className="cf3-logro__ticket" aria-hidden="true" />+{logro.ticketsDia} {logro.ticketsDia === 1 ? 'ticket' : 'tickets'} del café de hoy
+                <span className="cf3-logro__ticket" aria-hidden="true" />+{ticketsText(logro.ticketsDia)} del café de hoy
               </li>
             )}
           </ul>

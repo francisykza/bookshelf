@@ -917,7 +917,7 @@ export function Casino({ onStreet, soundOn = false }) {
               {chis?.tienda && sellosAbiertos && (
                 <section className="cs3-chis__sellos" aria-label="Premios de las chisteras">
                   <h4>{`Tus sellos: ${chis.tienda.sellos}`}</h4>
-                  <p>Cada partida perfecta (tres de tres) es un sello. Se cambian aquí, cada premio una vez. Nunca con dinero ni tickets.</p>
+                  <p>Cada partida perfecta (tres de tres) es un sello. Se cambian aquí, cada premio una vez. Nunca con dinero ni Libocoins.</p>
                   <ul>
                     {PREMIOS_CHISTERAS.map((p) => {
                       const tienes = chis.tienda.premios.find((x) => x.id === p.id)?.tienes;

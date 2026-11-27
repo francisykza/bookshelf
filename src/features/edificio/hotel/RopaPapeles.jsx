@@ -34,7 +34,7 @@ function Prenda({ p, prendas, base, enCesta, llena, onCesta }) {
       {precio != null && !tuya && (
         <span className="alm-prenda__precio">
           <b>{precio}</b>
-          <small>tickets</small>
+          <small>Libocoins</small>
         </span>
       )}
       <button type="button" className="alm-btn alm-prenda__cesta" aria-pressed={enCesta} disabled={!enCesta && llena} onClick={() => onCesta(p)}>
@@ -110,7 +110,7 @@ export function CestaRopa({ cesta, prendas, base, tickets = null, cobro = { fase
             </p>
           )}
           <button type="button" className="alm-btn alm-btn--primario" disabled={cobro.fase === 'pagando' || falta} onClick={() => onPagar(pagar, total)}>
-            {cobro.fase === 'pagando' ? 'Pagando…' : falta ? 'No te llegan los tickets' : `Pagar ${ticketsText(total)}`}
+            {cobro.fase === 'pagando' ? 'Pagando…' : falta ? 'No te llegan los Libocoins' : `Pagar ${ticketsText(total)}`}
           </button>
         </div>
       )}

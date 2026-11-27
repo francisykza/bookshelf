@@ -424,14 +424,14 @@ test('la lata: plegada al pie de la caja, sus premios y el cambio con tope', asy
   await shot(page, info, 'v182-lata');
   // Los tres premios de la lata están en reforma (9-11-2026)
   await expect(lata.getByRole('list', { name: 'Premios de la lata' }).getByText('En reforma')).toHaveCount(3);
-  await expect(lata.getByRole('button', { name: '¿Cambias 5 tickets por 25 garbanzos?' })).toBeDisabled();
+  await expect(lata.getByRole('button', { name: '¿Cambias 5 Libocoins por 25 garbanzos?' })).toBeDisabled();
   for (const veces of [5, 10]) {
-    await lata.getByRole('button', { name: '¿Cambias 50 garbanzos por 5 tickets?' }).click();
+    await lata.getByRole('button', { name: '¿Cambias 50 garbanzos por 5 Libocoins?' }).click();
     await lata.getByRole('button', { name: 'Sí, cambiar' }).click();
-    await expect(lata.getByText(`Esta semana, ${veces} de 10 tickets.`).first()).toBeVisible();
+    await expect(lata.getByText(`Esta semana, ${veces} de 10 Libocoins.`).first()).toBeVisible();
   }
-  await expect(lata.getByRole('button', { name: '¿Cambias 50 garbanzos por 5 tickets?' })).toBeDisabled();
+  await expect(lata.getByRole('button', { name: '¿Cambias 50 garbanzos por 5 Libocoins?' })).toBeDisabled();
   expect(mock.db.casino).toMatchObject({ garbanzos: 300, tickets: 13 });
   // Con 13 tickets ya se puede volver
-  await expect(lata.getByRole('button', { name: '¿Cambias 5 tickets por 25 garbanzos?' })).toBeEnabled();
+  await expect(lata.getByRole('button', { name: '¿Cambias 5 Libocoins por 25 garbanzos?' })).toBeEnabled();
 });
