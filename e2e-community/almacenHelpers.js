@@ -4,6 +4,7 @@ import { expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
+import { alEdificio } from './entrada';
 
 export const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 export const BEA = { id: '22222222-2222-4222-8222-222222222222', email: 'bea@ejemplo.test' };
@@ -30,17 +31,13 @@ export function mockAlmacen({ tickets = 100, ofertas = [] } = {}) {
   return mock;
 }
 
-/** Del Salón al almacén: tablet, edificio, limusina y el Directorio del hotel. */
+/** Al almacén: desde tu piso al edificio (1.157), la limusina y el Directorio del hotel. */
 export async function alAlmacen(page, mock, user = ANA, { reduced = true } = {}) {
   await mock.attach(page, user);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Coger la limusina al Gran Hotel' }).click({ timeout: 15000 });
   const hotel = page.getByRole('dialog', { name: 'El Gran Hotel del Puerto' });

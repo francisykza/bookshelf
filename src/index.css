@@ -19,7 +19,6 @@
 @import './styles/library-depth.css';
 @import './styles/library-module.css';
 @import './styles/library-137.css';
-@import './styles/room-signs-137.css';
 @import './styles/notebook-137.css';
 @import './styles/notebook.css';
 @import './styles/notebook-frame.css';
@@ -36,8 +35,6 @@
 @import './styles/room-147.css';
 @import './styles/ui-148.css';
 @import './styles/room-149.css';
-@import './styles/room-151.css';
-@import './styles/room-152.css';
 @import './styles/diary-153.css';
 @import './styles/imports-154.css';
 @import './styles/epub-155.css';
@@ -45,7 +42,6 @@
 @import './styles/hotfix-1581.css';
 @import './styles/perf-159.css';
 @import './styles/social-160.css';
-@import './styles/room-160.css';
 @import './styles/social-161.css';
 @import './styles/social-162.css';
 @import './styles/radio-162.css';
@@ -211,3 +207,6 @@ select {
   padding-inline: 16px;
   text-align: center;
 }
+
+/* 1.157: la habitación ilustrada archivada no entra en la app (Tailwind no lee sus clases) */
+@source not '../archivo';

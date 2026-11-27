@@ -6,6 +6,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
 import { ANA } from './sobreShop';
+import { alEdificio } from './entrada';
 
 const DIR = join('qa-report', 'calle3d');
 
@@ -26,12 +27,8 @@ test('el portal de la app', async ({ page }, info) => {
   await mock.attach(page, ANA);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
   const openPortal = async () => {
-    await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-    await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+    await alEdificio(page);
   };
   await openPortal();
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });

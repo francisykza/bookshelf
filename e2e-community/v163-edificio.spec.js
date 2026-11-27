@@ -1,5 +1,5 @@
-// 1.63 (SPEC §63) · «El edificio del puerto» en la app, con Supabase simulado: la tablet del Salón pregunta entre la
-// comunidad y el edificio; el servidor te da puerta; tu piso se decora y se guarda solo; el de un vecino se mira (los
+// 1.63 (SPEC §63) · «El edificio del puerto» en la app, con Supabase simulado (1.157: se baja desde tu piso, ya no por la
+// tablet del Salón); el servidor te da puerta; tu piso se decora y se guarda solo; el de un vecino se mira (los
 // sellos se quitaron en la 1.78). Quien bloquea o no participa no aparece. La autorización real está en
 // src/features/edificio/__tests__/edificio.rls.test.js (Postgres con la migración).
 import { expect, test } from '@playwright/test';
@@ -7,6 +7,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { NEIGHBOURS } from '../src/features/edificio/demo.js';
 import { createMockSupabase } from './mockSupabase';
+import { alEdificio } from './entrada';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 const BRUNO = { id: '22222222-2222-4222-8222-222222222222' };
@@ -46,25 +47,16 @@ async function toSalon(page, mock) {
   await mock.attach(page, ANA);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.waitForFunction(() => document.querySelector('[data-panel="SOCIAL_ROOM"] .scene-base')?.naturalWidth > 0);
 }
 
-test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita', async ({ page }, info) => {
+test('el portal, tu piso guardado en el servidor y la visita', async ({ page }, info) => {
   test.skip(!/390x844|1440x900/.test(info.project.name), '390 (Chromium y WebKit) y escritorio');
   const mock = seed();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await toSalon(page, mock);
 
-  const tablet = page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' });
-  await expect(tablet).toBeVisible({ timeout: 15000 });
-  await tablet.click();
-  await expect(page.getByRole('button', { name: 'Comunidad', exact: true })).toBeVisible();
-  await shot(page, info, 'v163-tablet-pregunta');
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
 
   // Portal: el servidor le da a Ana la primera puerta libre (2.º B); Dani (bloqueo) y Elena (sin comunidad) no salen
   const panel = page.getByRole('dialog', { name: 'El edificio del puerto' });
@@ -137,11 +129,11 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   // 1.155: la visita es en 3D
   await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await shot(page, info, 'v163-visita');
-  // Atrás del sistema vuelve al portal, y otra vez, al salón
+  // Atrás del sistema vuelve al portal, y otra vez, a tu piso (1.157)
   await page.goBack();
   await expect(panel.getByRole('button', { name: 'Entrar en tu piso, 2.º B' })).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(panel).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

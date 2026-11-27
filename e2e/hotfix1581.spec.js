@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 import { FIGURES_ENABLED } from '../src/domain/figures.js';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { esperarInicio } from './entrada';
 
 const RETIRED = /Viajero del Asteroide|Bardo del Viento|Hechicera de Eea/;
 const figuresOf = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).progress.figures);
@@ -42,7 +43,7 @@ async function loadOldAccount(page, patch) {
     }
   }, seeded);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   return errors;
 }
 
@@ -63,9 +64,8 @@ test('cuenta antigua con figuras retiradas: carga, conserva el inventario y no l
     shelf: [{ id: 'viajero_asteroide', display: 'box' }, null, null, null],
     unbox: { id: 'viejo', reward: { type: 'figure', id: 'bardo_viento' }, at: t, seen: false },
   });
-  // La habitación cuenta solo las figuras vigentes y no expone ninguna retirada
+  // Solo cuenta las figuras vigentes (1.157: sin la habitación ilustrada, ya no hay figuras en sus baldas que mirar)
   await expect(page.getByRole('button', { name: /Vitrina de figuras. 2 figuras/ })).toBeVisible();
-  await expect(page.locator('.room-figure img[src*="viajero"], .room-figure img[src*="bardo"]')).toHaveCount(0);
   // Ático: solo figuras definitivas
   await page.getByRole('button', { name: /Vitrina de figuras/ }).first().click();
   const vault = page.getByRole('dialog', { name: /Ático|Coleccionista/ });

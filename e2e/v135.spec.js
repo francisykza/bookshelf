@@ -4,6 +4,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { abrirBiblioteca, abrirLibroActual, abrirOrdenador, esperarInicio } from './entrada';
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -25,20 +26,19 @@ const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('bo
 
 async function load(page) {
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForFunction(() => localStorage.getItem('bookshelf:v1'));
   await page.waitForTimeout(300);
 }
 
 async function openLibrary(page) {
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await abrirBiblioteca(page);
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
   await page.waitForTimeout(500);
 }
 
 async function openBookDiary(page, section) {
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
-  await page.keyboard.press('Enter');
+  await abrirLibroActual(page);
   await expect(page.locator('.book-sheet')).toBeVisible();
   await page.getByRole('tab', { name: 'Diario' }).click();
   // 1.53: el diario abre en «Reseña»; las anotaciones están en «Notas»
@@ -46,8 +46,7 @@ async function openBookDiary(page, section) {
 }
 
 async function openDiary(page, view) {
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="laptop"]').focus();
-  await page.keyboard.press('Enter');
+  await abrirOrdenador(page);
   await expect(page.locator('.pc-diary')).toBeVisible();
   if (view) await page.locator('.diary__tabs').getByRole('tab', { name: view }).click();
 }
@@ -108,7 +107,7 @@ test('librería (1.43.0): libros completos de tres en tres sobre su balda, sin e
     await board.getByRole('button', { name: 'Plegar' }).click();
     await expect(board.locator('.keepsake-note')).toHaveCount(0);
     await page.reload();
-    await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+    await esperarInicio(page);
     await openLibrary(page);
     await expect(page.locator('.keepsake-board')).toHaveAttribute('data-folded', 'true');
     await page.locator('.keepsake-board').getByRole('button', { name: 'Mostrar' }).click();
@@ -238,57 +237,3 @@ test('mi diario: Hoy registra una sola vez y la nota no suma páginas; Notas fil
   }
 });
 
-test('nombres de la habitación: solo con «Guías», decorativos, y el toque llega a su objeto', async ({ page }, info) => {
-  await load(page);
-  // 1.39.0 (SPEC §31.2): sin guías la escena queda limpia; la ayuda inicial se muestra y se descarta
-  await expect(page.locator('.room-signs')).toHaveCount(0);
-  const hint = page.locator('.room-signs-hint');
-  await expect(hint).toBeVisible();
-  await hint.getByRole('button', { name: 'Entendido' }).click();
-  await expect(hint).toHaveCount(0);
-  expect(await page.evaluate(() => localStorage.getItem('bookshelf:signs-hint-done'))).toBe('true');
-  // Con guías: icono + nombre por objeto, sin placas
-  // (antes de cargar: al recargar, la app vuelca su estado en «pagehide» y pisaría un cambio hecho a mano)
-  await page.addInitScript(() => {
-    const st = JSON.parse(localStorage.getItem('bookshelf:v1'));
-    if (st) {
-      st.settings.showGuides = true;
-      localStorage.setItem('bookshelf:v1', JSON.stringify(st));
-    }
-  });
-  await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  const signs = page.locator('.room-signs .room-sign');
-  await expect(signs).toHaveCount(7);
-  await expect(page.locator('.room-signs')).toHaveAttribute('aria-hidden', 'true');
-  const meta = await signs.evaluateAll((els) => els.map((el) => ({ pe: getComputedStyle(el).pointerEvents, focusable: el.matches('button, a, [tabindex]'), text: el.textContent, icon: Boolean(el.querySelector('svg')), plate: Boolean(el.querySelector('.room-sign__plate')) })));
-  expect(meta.map((s) => s.text)).toEqual(['Colección', 'Mi biblioteca', 'Mi lectura', 'Mi diario', 'Tiempo de lectura', 'Ambiente', 'Mis sagas']);
-  meta.forEach((s) => {
-    expect(s.pe).toBe('none');
-    expect(s.focusable).toBe(false);
-    expect(s.icon).toBe(true);
-    expect(s.plate).toBe(false);
-  });
-  await shot(page, info, 'v139-nombres');
-  // Ningún nombre visible recibe el toque: lo recibe el objeto de debajo
-  const hits = await page.evaluate(() =>
-    [...document.querySelectorAll('.room-sign')]
-      .map((el) => {
-        const r = el.getBoundingClientRect();
-        const x = r.left + r.width / 2;
-        const y = r.top + r.height / 2;
-        if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return null;
-        return { onSign: Boolean(document.elementFromPoint(x, y)?.closest('.room-sign')) };
-      })
-      .filter(Boolean),
-  );
-  expect(hits.length).toBeGreaterThan(0);
-  expect(hits.filter((h) => h.onSign)).toEqual([]);
-});
-
-test('movimiento reducido: las señales no se animan', async ({ page }, info) => {
-  test.skip(!info.project.name.includes('reduced'), 'solo en el perfil de movimiento reducido');
-  await load(page);
-  const anims = await page.locator('.room-sign').evaluateAll((els) => els.map((el) => getComputedStyle(el).animationName));
-  expect(anims.every((a) => a === 'none')).toBe(true);
-});

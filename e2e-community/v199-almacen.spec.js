@@ -5,6 +5,7 @@
 import { expect, test } from '@playwright/test';
 import { ANA, BEA, alAlmacen, mockAlmacen, shot } from './almacenHelpers';
 import { join } from 'node:path';
+import { alEdificio } from './entrada';
 
 const settled = (page) => page.waitForFunction(() => window.__almacen3d.settled());
 
@@ -66,13 +67,9 @@ async function aCaja(alm) {
 async function volverAlAlmacen(page) {
   // La app recuerda dónde estabas: al recargar vuelve sola al hotel (si no, se va por el camino de siempre)
   const hotel = page.getByRole('dialog', { name: 'El Gran Hotel del Puerto' });
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2500);
   if (!(await hotel.isVisible())) {
-    await page.locator('.panorama-nav__btn--next').click();
-    await page.waitForTimeout(950);
-    await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-    await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+    await alEdificio(page);
     await page.getByRole('dialog', { name: 'El edificio del puerto' }).getByRole('button', { name: 'Coger la limusina al Gran Hotel' }).click({ timeout: 15000 });
   }
   await hotel.getByRole('button', { name: 'Directorio' }).click({ timeout: 15000 });
@@ -348,11 +345,7 @@ test('la invitación llega estés donde estés del edificio y «Ir al almacén»
   await pb.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   await pb.emulateMedia({ reducedMotion: 'reduce' });
   await pb.goto('/');
-  await pb.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await pb.locator('.panorama-nav__btn--next').click();
-  await pb.waitForTimeout(950);
-  await pb.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await pb.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(pb);
   await expect(pb.getByRole('dialog', { name: 'El edificio del puerto' })).toBeVisible();
   // Ana la invita desde el almacén
   const { alm: a } = await alAlmacen(pa, mock, ANA);

@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
+import { abrirBiblioteca, abrirCuenta, abrirLibroActual, enInicio, esperarInicio } from './entrada';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 const BRUNO = { id: '22222222-2222-4222-8222-222222222222', email: 'bruno@ejemplo.test' };
@@ -16,7 +17,7 @@ async function shot(page, info, name) {
 
 async function ready(page) {
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
 }
 
 async function openProfile(page) {
@@ -29,7 +30,7 @@ async function openProfile(page) {
     .catch(() => false);
   if (restored) return;
   // 1.46: el acceso se llama «Tu cuenta y copias» (con el estado de la copia detrás si lo hay)
-  await page.getByRole('button', { name: /^Tu cuenta y copias/ }).click();
+  await abrirCuenta(page);
   await page.getByRole('button', { name: 'Abrir mi perfil' }).click();
   // 1.62: el perfil ya no es una pestaña; se abre desde el avatar propio (aquí, desde «Tu cuenta»)
   await expect(page.getByRole('heading', { name: 'Tu perfil lector' })).toBeVisible();
@@ -45,8 +46,7 @@ async function saveProfile(page, alias, avatarLabel) {
 
 /** Abre la ficha del libro actual desde la habitación. */
 async function openCurrentBook(page) {
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
-  await page.keyboard.press('Enter');
+  await abrirLibroActual(page);
   await expect(page.locator('.book-sheet')).toBeVisible();
 }
 
@@ -63,7 +63,7 @@ test('perfil: alias elegido y avatar; nunca el correo; persiste al recargar', as
   await shot(page, info, 'perfil');
   // Recargar: el perfil viene del servidor
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await openProfile(page);
   await expect(page.getByLabel('Alias público')).toHaveValue('Ana lectora');
   await expect(page.getByRole('radio', { name: 'Gato lector' })).toHaveAttribute('aria-checked', 'true');
@@ -142,7 +142,7 @@ test('cambiar el avatar actualiza las reseñas sin tocar libros ni opiniones', a
   await page.addInitScript(`(() => { try { const st = JSON.parse(localStorage.getItem('bookshelf:v1')); if (!st) return; const b = st.books.find((x) => x.id === st.settings.currentBookId) ?? st.books.find((x) => x.status === 'reading'); b.workId = '${work.id}'; localStorage.setItem('bookshelf:v1', JSON.stringify(st)); } catch (e) {} })()`);
   await ready(page);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await openCurrentBook(page);
   await page.getByRole('tab', { name: 'Lectores' }).click();
   const card = page.getByLabel('Voces de lectores').locator('.review-card');
@@ -155,7 +155,7 @@ test('cambiar el avatar actualiza las reseñas sin tocar libros ni opiniones', a
   mock.db.profiles.find((p) => p.user_id === BRUNO.id).avatar_id = 'vidente-estrellas';
   await page.keyboard.press('Escape');
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await openCurrentBook(page);
   await page.getByRole('tab', { name: 'Lectores' }).click();
   await expect(page.getByLabel('Voces de lectores').locator('.review-card .reader-avatar img')).toHaveAttribute('src', /vidente-estrellas\.webp$/);
@@ -173,7 +173,7 @@ test('sin la migración social en el servidor: aviso claro y la biblioteca sigue
   await expect(page.locator('.social-hub')).toContainText('La comunidad aún no está disponible en este servidor');
   await page.keyboard.press('Escape');
   // La biblioteca sigue funcionando
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await abrirBiblioteca(page);
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
   expect(await page.locator('.library [data-book-id]').count()).toBeGreaterThan(0);
 });
@@ -190,7 +190,7 @@ test('cambiar de cuenta no deja ver el perfil ni la caché social de la anterior
   await page.unroute('http://supabase.test/**');
   await createMockSupabase(mock.db).attach(page, BRUNO);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await openProfile(page);
   await expect(page.getByLabel('Alias público')).toHaveValue('');
   await expect(page.locator('.social-hub')).not.toContainText('Ana lectora');
@@ -201,7 +201,7 @@ test('dos cuentas con el mismo libro (mismo ISBN, añadido distinto) ven la mism
   const mock = createMockSupabase(undefined, { isbnWorks: { 9780316556347: CIRCE_WORK } });
   mock.db.profiles.push({ user_id: ANA.id, alias: 'Ana lectora', avatar_id: 'gato-lector', community_enabled: true }, { user_id: BRUNO.id, alias: 'Bruno', avatar_id: 'lector-farol', community_enabled: true });
   const openCirce = async (page) => {
-    await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+    await abrirBiblioteca(page);
     await expect(page.locator('.library[data-open="true"]')).toBeVisible();
     await page.locator('.library [data-book-id="circe"]').first().evaluate((el) => (el.querySelector('button') ?? el).click());
     await expect(page.locator('.book-sheet')).toBeVisible();
@@ -243,8 +243,8 @@ test('una opinión publicada antes en una obra local se mueve a la obra comparti
   await page.addInitScript(`(() => { try { const st = JSON.parse(localStorage.getItem('bookshelf:v1')); if (!st) return; const b = st.books.find((x) => x.id === 'circe'); b.review = 'Muy fiel'; b.rating = 4; b.workId = '${local.id}'; b.publicReview = { status: 'published', userId: '${ANA.id}', workId: '${local.id}', copy: { rating_quarters: 16, body: 'Muy fiel', has_spoilers: false, pace: null, emotion: null, surprise: null, romance: null }, impressions: {} }; localStorage.setItem('bookshelf:v1', JSON.stringify(st)); } catch (e) {} })()`);
   await ready(page);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await esperarInicio(page);
+  await abrirBiblioteca(page);
   await page.locator('.library [data-book-id="circe"]').first().evaluate((el) => (el.querySelector('button') ?? el).click());
   const diary = page.getByRole('tab', { name: 'Diario' });
   if (await diary.isVisible()) await diary.click();
@@ -267,7 +267,7 @@ test('bloquear pide confirmación y se puede deshacer desde «Personas bloqueada
   await page.addInitScript(`(() => { try { const st = JSON.parse(localStorage.getItem('bookshelf:v1')); if (!st) return; const b = st.books.find((x) => x.id === st.settings.currentBookId) ?? st.books.find((x) => x.status === 'reading'); b.workId = '${work.id}'; b.isbn = ''; localStorage.setItem('bookshelf:v1', JSON.stringify(st)); } catch (e) {} })()`);
   await ready(page);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await openCurrentBook(page);
   await page.getByRole('tab', { name: 'Lectores' }).click();
   const readers = page.getByLabel('Voces de lectores');
@@ -284,7 +284,7 @@ test('bloquear pide confirmación y se puede deshacer desde «Personas bloqueada
   expect(mock.db.blocks).toEqual([expect.objectContaining({ blocker: ANA.id, blocked: BRUNO.id })]);
   // Desbloquear desde el perfil, también con confirmación
   await page.keyboard.press('Escape');
-  await expect(page.locator('.panel-veil')).toHaveCount(0);
+  await enInicio(page);
   await openProfile(page);
   const blocked = page.getByLabel('Personas bloqueadas');
   await expect(blocked).toContainText('Bruno');

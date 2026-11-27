@@ -1,7 +1,8 @@
 // Libo, bloque 4 (docs/qa/libo.md §3.5 y §3.7): estados vacíos con un siguiente paso y zonas táctiles de 44 px.
 // - Sin libros, el botón grande de casa dice «Añade tu primer libro» y la biblioteca vacía enseña a Libo con «Añadir un libro» e
 //   «Importar de Goodreads».
-// - Los controles pequeños (la habitación ilustrada, las etiquetas y la franja del café) se tocan en 44 px aunque se vean igual.
+// - Los controles pequeños (las etiquetas y la franja del café) se tocan en 44 px aunque se vean igual (1.157: los de la
+//   habitación ilustrada se fueron con ella).
 // Supabase simulado y datos sintéticos (ninguna cuenta real). Emulación: no equivale a un móvil real. Capturas en qa-report/libo/.
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -12,6 +13,7 @@ import { ANA } from './sobreShop';
 import { NEIGHBOURS } from '../src/features/edificio/demo.js';
 import { PLANO_INICIAL, cuenta } from '../src/features/edificio/cafe/cafeCatalogo';
 import { dayKey } from '../src/domain/dates';
+import { alEdificio } from './entrada';
 
 const DIR = join('qa-report', 'libo');
 const VACIA = { version: 8, books: [], settings: { sound: false, sfx: false, onboardingDone: true }, progress: { readingLog: [], pomodoros: [], claimed: {} } };
@@ -24,24 +26,6 @@ test.beforeEach(async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
 });
 const shot = (page, info, name) => page.screenshot({ path: join(DIR, info.project.name, `${name}.png`) });
-
-/** Lo que hay bajo el dedo `dy` px por encima (o por debajo) del borde del control: ¿sigue siendo el control? */
-const tocaA = (page, selector, { dx = 0, dy = 0 } = {}) =>
-  page.evaluate(
-    ([sel, x, y]) => {
-      const el = [...document.querySelectorAll(sel)].find((e) => e.getClientRects().length && e.getBoundingClientRect().width > 0);
-      if (!el) return 'no está';
-      const r = el.getBoundingClientRect();
-      const px = r.left + r.width / 2 + x;
-      const py = (y < 0 ? r.top : y > 0 ? r.bottom : r.top + r.height / 2) + y;
-      const bajo = document.elementFromPoint(px, py);
-      if (bajo && (bajo === el || el.contains(bajo))) return 'sí';
-      // Encima de la placa está el propio mueble, que abre lo mismo (la estantería abre «Mi biblioteca»)
-      const nombre = (bajo?.closest('[aria-label]')?.getAttribute('aria-label') ?? '').toLowerCase();
-      return nombre && nombre.includes((el.getAttribute('aria-label') || el.textContent || '').trim().toLowerCase().replace(/›/g, '').trim()) ? 'sí' : `no (${bajo?.className || bajo?.tagName}: ${nombre})`;
-    },
-    [selector, dx, dy],
-  );
 
 test('biblioteca vacía: el primer paso es añadir un libro, con Libo', async ({ page }, info) => {
   test.setTimeout(90000);
@@ -101,25 +85,11 @@ test('zonas táctiles: lo pequeño se toca en 44 px', async ({ page }, info) => 
     { clientes: { hoy: dayKey(), semillas: [2100, 1000, 8919], quienes: [3], frases: [10] }, pilar: { hucha: 1 } },
   );
 
-  // La habitación ilustrada: la cuenta, «Guías» y el sol, 7 px por encima y por debajo (44 px en total)
+  // 1.157: sin la habitación ilustrada (su cuenta, «Guías» y el sol se fueron con ella), se baja al edificio desde el inicio
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.waitForTimeout(900);
-  // («Mi biblioteca» está sobre la propia estantería: un toque a su lado la acerca)
-  for (const sel of ['.corner-account', '.guides-toggle']) {
-    expect(await tocaA(page, sel, { dy: -6 }), `${sel} por encima`).toBe('sí');
-    expect(await tocaA(page, sel, { dy: 6 }), `${sel} por debajo`).toBe('sí');
-  }
-  // El sol, 20 px a su izquierda (se dibuja de 30 px): dentro de sus 44
-  expect(await tocaA(page, '.time-dial', { dx: -20 }), 'el sol').toBe('sí');
-  // La cuenta mide 32 px de ancho: se toca en 44
-  expect(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.corner-account'), '::before').width))).toBeGreaterThanOrEqual(44);
 
   // El café: la franja de Pilar y los botones del lado, de 44 px; las etiquetas de los clientes se tocan alrededor
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Entrar en el café-librería del bajo' }).click({ timeout: 15000 });
   const cafe = page.getByRole('dialog', { name: 'El café-librería del bajo' });

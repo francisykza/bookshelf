@@ -7,6 +7,7 @@ import { expect, test } from '@playwright/test';
 import JSZip from 'jszip';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { abrirLibroActual, esperarInicio } from './entrada';
 
 async function shot(page, info, name) {
   const dir = join('qa-report', 'screenshots', info.project.name);
@@ -54,10 +55,9 @@ async function openReader(page, { prefs } = {}) {
     if (p) localStorage.setItem('bookshelf:epub-prefs', JSON.stringify(p));
   }, prefs ?? null);
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForTimeout(300);
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
-  await page.keyboard.press('Enter');
+  await abrirLibroActual(page);
   await page.locator('.epub-box input[type=file]').setInputFiles({ name: 'circe.epub', mimeType: 'application/epub+zip', buffer: await makeEpub() });
   await page.getByRole('dialog', { name: 'Vincular EPUB' }).getByRole('button', { name: /Vincular/ }).click();
   await expect(frame(page).getByRole('heading', { name: /Capítulo primero/ })).toBeVisible();
@@ -330,9 +330,8 @@ test('subrayados: cruzan cursivas y líneas, persisten, cambian de color, se qui
     }
   }, seeded);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
-  await page.keyboard.press('Enter');
+  await esperarInicio(page);
+  await abrirLibroActual(page);
   await page.locator('.epub-box').getByRole('button', { name: 'Continuar lectura' }).click();
   await expect(frame(page).getByRole('heading', { name: /Capítulo primero/ })).toBeVisible();
   await page.waitForTimeout(800);

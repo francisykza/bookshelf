@@ -44,6 +44,14 @@ const atras = (history) => {
   if (capas) history.go(-1 - capas);
   else history.back();
 };
+// 1.157 · Capas que salen del historial (hooks/useAtras.js): su `history.go(-n)` es asíncrono. Si mientras tanto la app navega
+// (en WebKit, tocar un botón cierra el bocadillo de Libo en el pointerdown y el click abre la biblioteca), lo navegado caería en
+// la entrada que está a punto de quitarse y el popstate lo desharía. Hasta que llega ese popstate, la navegación espera.
+const enVuelo = new Set();
+/** Lo llama useAtras justo antes de su `history.go(-n)`: los navegadores esperan a su popstate para seguir navegando. */
+export function retirandoCapas() {
+  for (const avisar of enVuelo) avisar();
+}
 const entry = (loc, depth, parent) => ({ [KEY]: { loc: normalizeLocation(loc), depth, parent: parent ? normalizeLocation(parent) : null } });
 
 /**
@@ -52,17 +60,38 @@ const entry = (loc, depth, parent) => ({ [KEY]: { loc: normalizeLocation(loc), d
  */
 export function createNavigator(history, onChange = () => {}) {
   let cur = readEntry(history.state);
+  // Retiradas de capas en vuelo y lo que se pidió mientras tanto (se aplica, en orden, al llegar su popstate)
+  let retirando = 0;
+  let espera = [];
+  let reloj = null;
+  const soltar = () => {
+    retirando = 0;
+    clearTimeout(reloj);
+    const cola = espera;
+    espera = [];
+    for (const [k, args] of cola) api[k](...args);
+  };
+  enVuelo.add(() => {
+    retirando += 1;
+    // Por si el popstate no llega nunca: no se queda nada esperando
+    clearTimeout(reloj);
+    reloj = setTimeout(soltar, 600);
+  });
   if (!cur) {
     const initial = entry(ROOT, 0, null);
     // Conserva lo que hubiera en el estado de la entrada (otras librerías) y registra la ubicación inicial
     history.replaceState({ ...(history.state ?? {}), ...initial }, '');
     cur = initial[KEY];
   }
-  return {
+  const api = {
     current: () => cur.loc,
     depth: () => cur.depth,
     /** Ir a un destino interno. Si ya es el padre de la entrada actual, equivale a Atrás. */
     go(to, { replace = false } = {}) {
+      if (retirando) {
+        espera.push(['go', [to, { replace }]]);
+        return;
+      }
       const loc = normalizeLocation(to);
       if (sameLocation(loc, cur.loc)) return;
       if (!replace && cur.depth > 0 && cur.parent && sameLocation(loc, cur.parent)) {
@@ -77,6 +106,10 @@ export function createNavigator(history, onChange = () => {}) {
     },
     /** Volver: por el historial si hay una entrada interna anterior; si no, reemplazando por el destino seguro. */
     back() {
+      if (retirando) {
+        espera.push(['back', []]);
+        return;
+      }
       if (cur.depth > 0) {
         atras(history);
         return;
@@ -94,6 +127,8 @@ export function createNavigator(history, onChange = () => {}) {
       cur = readEntry(state) ?? entry(ROOT, 0, null)[KEY];
       // Atrás sobre una capa de la escena (hooks/useAtras.js) no cambia de sitio: no hace falta repintar la app
       if (!sameLocation(antes, cur.loc)) onChange(cur.loc);
+      if (retirando && --retirando === 0) soltar();
     },
   };
+  return api;
 }

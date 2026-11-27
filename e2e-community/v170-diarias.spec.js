@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { missionsOf, todayKey } from '../src/features/edificio/dailyMissions.js';
 import { PRENDAS } from '../src/features/edificio/actor.js';
 import { createMockSupabase } from './mockSupabase';
+import { alEdificio } from './entrada';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 
@@ -21,11 +22,7 @@ async function openMyFlat(page, mock) {
   await mock.attach(page, ANA);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const panel = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await panel.getByRole('button', { name: /^Entrar en tu piso/ }).click({ timeout: 15000 });
   return page.getByRole('dialog', { name: 'Tu piso' });

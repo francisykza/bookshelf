@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
+import { abrirBiblioteca, esperarInicio } from './entrada';
 
 const OUT = 'qa-report/v1136';
 
@@ -109,9 +110,9 @@ test('la imagen de la reseña firma como Libotown', async ({ page }, info) => {
     }
   }, sembrado);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForTimeout(400);
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await abrirBiblioteca(page);
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
   await page.waitForTimeout(500);
   await page.getByRole('searchbox', { name: 'Buscar en mi biblioteca' }).fill('faros apagados');
@@ -317,8 +318,6 @@ test('la dirección de antes avisa de la mudanza a libotown.es, con los pasos, y
   // No tapa el botón de arriba del piso
   const atras = page.locator('.plab-bar .px-btn').first();
   if (await atras.count()) expect(cortan(caja, await atras.boundingBox())).toBe(false);
-  // Ni los de arriba de la habitación ilustrada (Cuenta y Ambiente)
-  for (const b of await page.locator('.room-corner button').all()) if (await b.isVisible()) expect(cortan(caja, await b.boundingBox())).toBe(false);
 
   await etiqueta.click();
   const nota = page.locator('.aviso-dir__nota');

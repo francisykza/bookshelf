@@ -25,6 +25,7 @@ import { PLANO_INICIAL, cuenta } from '../src/features/edificio/cafe/cafeCatalog
 import { EXCENTRICOS, RESENAS, generoDe, nombreOpcion, recetaPide } from '../src/features/edificio/cafe/cafeClientes';
 import { ELIGE, ETAPAS, GESTOS, gestosDe } from '../src/features/edificio/cafe/cafeGestos';
 import { dayKey } from '../src/domain/dates';
+import { alEdificio } from './entrada';
 
 const DIR = join('qa-report', 'cafe-clientes');
 const tam = (info) => info.project.name.replace(/^(chromium|webkit)-/, '$1-');
@@ -91,11 +92,7 @@ async function alCafe(page, { pomodoros = 1, libros = BALDA_LLENA, granos = 0 } 
     { clientes: { hoy: HOY, semillas: SEMILLAS, quienes: [3], frases: [10] } },
   );
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   return { portal, estado };
 }

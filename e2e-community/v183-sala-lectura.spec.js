@@ -5,6 +5,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { DEFAULT_AVATAR } from '../src/features/edificio/actor';
 import { createMockSupabase } from './mockSupabase';
+import { alEdificio } from './entrada';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 const BEA = '22222222-2222-4222-8222-222222222222';
@@ -37,11 +38,7 @@ async function toSala(page) {
   });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Coger la limusina al Gran Hotel' }).click({ timeout: 15000 });
   const hotel = page.getByRole('dialog', { name: 'El Gran Hotel del Puerto' });

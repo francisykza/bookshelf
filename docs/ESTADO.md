@@ -6,7 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.156.0** (27-11-2026, §151 a §156; Francisco: «Sí, a la vuelta», «Sí, inclúyela» y «Sí,
+- **Publicada en producción: 1.157.0, fuera la habitación ilustrada** (27-11-2026, los tres bloques de
+  `docs/qa/borrar-habitacion-ilustrada.md`; Francisco: «Sí, adelante» y, para publicar, «Sí, publícalo»; SPEC §157). El inicio es siempre tu piso; la habitación de la 1.86 y sus pruebas,
+  estilos e imágenes están en `archivo/habitacion-ilustrada/` (fuera de la app, con su `LEEME.md`). De paso, arreglado en
+  WebKit «Abrir Mi biblioteca» (se abría y se cerraba sola, §157.4). **Bloque 2 hecho** (las pruebas e2e, §157.6 a §157.9, y
+  dos arreglos que destaparon). Bloque 3: publicada (ver la bitácora).
+- **Antes en producción: 1.156.0** (27-11-2026, §151 a §156; Francisco: «Sí, a la vuelta», «Sí, inclúyela» y «Sí,
   empezamos»; commit `0b5288b`, `main` avanzó sin forzar de `57602d9` a `0b5288b` y libotown.es sirve v1.156.0): las poses de
   Olmo y el Olmo 3D de su hoja (1.156) y el edificio de tus amigos (los 5 bloques de `docs/qa/amigos-vecinos.md`): cada cuenta
   su edificio, la llave, el telefonillo, el enlace `#llave=`, el edificio que crece de 3 a 5 plantas, la app «Amigos» del
@@ -279,6 +284,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.157.0 | Fuera la habitación ilustrada, guardada en `archivo/` (sin commit) | §157 |
 | 1.99.0 | El Almacén del Puerto: la Lonja en 3D (sin publicar) | §99 |
 | 1.89.3 | Coherencia de visitas, estantería, zona del libro y acceso 3D (publicada) | §89.8 |
 | 1.89.2 | Cámara del sillón y arquitectura del rincón (publicada) | §89.7 |
@@ -335,6 +341,17 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   sigue saliendo cuando la gente se mete en la web para instalar la app»). Para después del commit y la publicación de la 1.151 a
   la 1.155. **Antes de borrar nada**: investigar qué es exactamente lo que sale (en libotown.es, al instalar) y enseñarle qué se
   quitaría, para que lo confirme.
+  **Investigado el 27-11-2026** (móvil limpio en libotown.es, capturas en `qa-report/version-antigua/`): alguien nuevo pasa de
+  la web a «Entrar en Libotown» y, sin cuenta, ve una pantalla lisa con «Abrir «Tu cuenta»», «Abrir Mi biblioteca» y **«Volver a
+  la experiencia anterior»** (`HomePiso`, `PisoLabPanel.jsx`). Ese botón (también en el Menú del piso) abre la habitación
+  ilustrada de la 1.86 con su guía de Libo «Descubrir mi habitación», y la elección se queda en el dispositivo
+  (`bookshelf:inicio = anterior`, `src/features/pisoLab/inicio.js`): al volver a abrir la app, sale la antigua. Los dominios
+  están bien (www y la dirección de Vercel redirigen con 308). **Decidido**: borrarla entera y guardarla en
+  `archivo/habitacion-ilustrada/` (regla en CLAUDE.md). Lista exacta y plan en `docs/qa/borrar-habitacion-ilustrada.md`,
+  confirmada («Sí, adelante»). **Bloque 1 hecho en la 1.157.0** (sin commit). **Falta el bloque 2**: las e2e que entraban por la
+  habitación (76 de `e2e-community/`, con una entrada común desde tu piso; las 25 de `e2e/`, archivadas o adaptadas; reescribir
+  `e2e/piso-inicio.spec.js`). Comprobado que, por ahora, fallan por eso `libo-atras` y `libo-atras-salas` (entran por la tablet
+  del salón). Después, el bloque 3: publicar con su visto bueno.
 - **Anotado para más tarde** (Francisco, 27-11-2026, mientras se hacían las poses de Olmo; sin empezar):
   - **El ordenador se queda en negro en un iPhone** (le pasa a una compañera de trabajo de Francisco). Investigar: el ordenador
     del piso en Safari de iPhone (aquí solo hay WebKit de Playwright: no afirmar que se ha probado en un iPhone real; pedirle a
@@ -349,6 +366,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   - **La web en su dominio**: «subir el diseño que hicimos al dominio que compré y ver si necesito un hosting». La web ya está
     publicada en `libotown.es` desde la 1.146.0 (Vercel, en la raíz: quien llega nuevo ve la web); no hace falta otro hosting.
     Repasar con él qué quiere exactamente (¿otra dirección, como un subdominio? ¿las versiones «más interactiva» y «más cozy»?).
+  - **El menú de Libo, más gracioso y limpio, con lo que puedes hacer hoy** (27-11-2026, mientras se borraba la habitación
+    ilustrada): «que el menú de libo sea mas gracioso y limpio, y que te diga de manera limpia y atractiva que cosas puedes
+    hacer en el dia». Sus ejemplos: si te quedan intentos del casino, si hay muebles en oferta de los que quieres, los muebles
+    nuevos, si hay clientes nuevos (el café), si alguien te ha dado algo, etc. Primero repasar qué sabe ya Libo (sus avisos y
+    la sugerencia del día, `docs/qa/libo.md`) y qué datos hay de cada cosa; proponerle el diseño (con capturas) antes de hacerlo.
 - **Vistas isométricas, parte B** (se quedan hasta que haya 3D; lista en `amigos-vecinos.md`, bloque 5): Decorar, tu piso desde
   la fachada, el respaldo de la habitación sin 3D y el mercadillo de la Lonja.
 
@@ -578,6 +600,54 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-27 · 1.157.0 a producción (bloque 3) (Claude)
+
+- Francisco, tras ver el bloque 2: «Sí, publícalo». Commit de los bloques 1 y 2 en `1.90-escritorio-puerto` y `main` avanzado
+  sin forzar (`git push origin 1.90-escritorio-puerto:main`) desde `2948485`. Sin migraciones.
+- Comprobación del despliegue en la entrada siguiente (o en esta, si se añade al confirmar `libotown.es/sw.js`).
+
+### 2026-11-27 · 1.157.0, bloque 2: las pruebas sin la habitación (Claude)
+
+- Hecho (SPEC §157.6): `e2e-community/entrada.js` (y `e2e/entrada.js`, que la reexporta) con la entrada común: «Al edificio»
+  en vez de la tablet, y lo que se tocaba en la habitación (cuenta, biblioteca, libro actual, registro, ordenador, bandeja)
+  por la navegación de la app. `esperarInicio` vale también si la prueba arranca con un panel o la biblioteca abiertos; `enInicio`
+  sustituye a «ningún panel abierto» (tu piso también es un panel). Unas 80 pruebas adaptadas; `piso-inicio.spec.js` reescrita.
+  Archivadas en `archivo/habitacion-ilustrada/e2e*/` las que solo probaban la habitación: 9 archivos enteros y partes de 10.
+- **Dos arreglos de la app que destaparon**: la nota de la llave (`#llave=`) y la de la invitación a un club (`#club=`) se
+  veían sobre tu piso pero no se podían tocar (estaban dentro de `<main inert>`; ahora en `modalRoot`, §157.7); y «Abrir Mi
+  biblioteca» desde tu piso reemplazaba la entrada del historial, así que Atrás del móvil salía de la app (ahora se abre encima,
+  §157.8).
+- Pruebas, en Chromium 390 (las cambiadas, una vez): `e2e/` 66 de 87 a la primera y `e2e-community/` 202 de 265 (1,2 h; hay
+  que repartirlas en tandas más pequeñas). Repetidas solo las que fallaron, tras los arreglos: pasan todas menos 23, que **fallan
+  igual en la 1.156.0** (comprobado en una copia de `2948485` fuera del proyecto; lista en SPEC §157.9). Cuatro del café
+  (`v1127`, `v1132`, `v1133`, `v1143`) solo fallan con carga: solas pasan. `v1157-sin-habitacion` 24/24 (Chromium y WebKit 390,
+  tres veces), `piso-inicio` 8/8, `v1151`, `v1152`, `entrega3` y `v162:149` en Chromium y WebKit 390. Build y oxlint correctos.
+- Sin subir de versión: sigue siendo la 1.157.0, sin publicar. **Queda**: el bloque 3 (publicar con su visto bueno) y, aparte,
+  las 23 pruebas antiguas que ya fallaban (casi todas del café y del registro de antes de la 1.90).
+
+### 2026-11-27 · 1.157.0, fuera la habitación ilustrada (bloque 1 de 3) (Claude)
+
+- Encargo: borrar la versión antigua de la app y guardarla aparte («Bórrala, pero déjala aparte en otra carpeta aquí por si acaso
+  la necesitamos en el futuro»), con la lista de `docs/qa/borrar-habitacion-ilustrada.md` confirmada («Sí, adelante»).
+- Hecho (SPEC §157): 40 módulos, `sceneMap.js` completo, 4 pruebas unitarias y medias `v128` y `seats162`, 9 hojas de estilo
+  completas y unos 7 MB de imágenes, con `git mv` a `archivo/habitacion-ilustrada/` (misma ruta y `LEEME.md`). `App.jsx` sin
+  el panorama, la guía antigua ni la balda; el inicio es siempre tu piso (`inicio.js` solo con `HOME_PISO`; fuera
+  `__PISO_INICIO__` de `vite.config.js`); fuera «Volver a la experiencia anterior» de la pantalla sin cuenta y del Menú del
+  piso. Estilos: fuera 4 hojas y las otras 5 podadas por selector en su sitio (`room.css` de 94 a 5 KB); `@source not
+  '../archivo'`. `sw.js` sin precargar las imágenes archivadas. `bookshelf:inicio = anterior` se ignora y no se borra.
+- **Arreglo de paso** (§157.4, ya pasaba antes): en WebKit «Abrir Mi biblioteca» se abría y se cerraba sola, porque el
+  `pointerdown` cierra el bocadillo de Libo y su `history.go(-1)` (`useAtras.js`) llegaba después del click. La navegación
+  (`navigation.js`, `retirandoCapas()`) espera ahora a ese `popstate`. Podría tener que ver con el iPhone de la compañera, sin
+  probar en un iPhone real.
+- Pruebas: build y oxlint (solo los errores de siempre en `src/vendor/pixelfx`); Vitest 364/364 en dominio, social, piso y
+  estado, y en el total solo fallan los ya anotados (`goodreads.test.js` en este ordenador y «el reparto (1.139)» de
+  `cafe-libreria.rls`); `navigation.test.js` con la carrera (18/18). E2E nueva `v1157-sin-habitacion` (390 Chromium y WebKit,
+  1440): 12/12. `libo-avisos` y `v1134-almacen-ordenador` en todos los tamaños: 16/16. `libo-atras` y `libo-atras-salas`
+  fallan porque entran por la tablet del salón: bloque 2.
+- Capturas en `qa-report/v1157/` (390 Chromium y WebKit, 1440), comparadas con las de antes del cambio: la entrada sin cuenta
+  igual pero sin el tercer botón, Mi biblioteca igual, tu piso y su menú iguales.
+- **Anotado para más tarde** (Francisco, en «Pendiente»): el menú de Libo más gracioso y limpio, con lo que puedes hacer hoy.
 
 ### 2026-11-27 · 1.156.0, las poses de Olmo y el Olmo 3D de su hoja (sin commit) (Claude)
 

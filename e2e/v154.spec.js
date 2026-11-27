@@ -2,9 +2,9 @@
 // libro importado), baldas de la habitación con toda la biblioteca y libros con la edición ebook retirada dibujados
 // como bolsillo. Perfiles de prueba de Playwright (su propio localStorage) con fixtures sintéticos.
 import { expect, test } from '@playwright/test';
-import { FIGURES_ENABLED } from '../src/domain/figures.js';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { abrirBiblioteca, esperarInicio } from './entrada';
 
 const FIXTURE = join('src', 'features', 'imports', '__tests__', 'fixtures', 'goodreads-basico.csv');
 
@@ -38,12 +38,12 @@ async function load(page, mutate) {
     }, seeded);
     await page.reload();
   }
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForTimeout(400);
 }
 
 async function openLibrary(page) {
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await abrirBiblioteca(page);
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
   await page.waitForTimeout(400);
 }
@@ -115,36 +115,12 @@ test('deshacer la importación quita los libros intactos del lote (lo cambiado l
   await expect.poll(async () => (await stored(page)).books.filter((b) => b.source === 'goodreads').length).toBe(0);
 });
 
-test('baldas de la habitación: toda la biblioteca, figuras en su sitio y toque a «Todos»', async ({ page }, info) => {
-  test.skip(!/390x844|1440x900/.test(info.project.name), '390 y escritorio');
-  // Biblioteca sin ninguna lectura activa: solo pendientes y leídos
-  await load(page, (st) => {
-    st.books.forEach((b, i) => {
-      b.status = i % 2 ? 'want' : 'read';
-    });
-  });
-  const statuses = await page.evaluate(() => [...document.querySelectorAll('[data-panel="MAIN_ROOM"] .room-spine')].map((el) => el.dataset.status));
-  expect(statuses.length).toBeGreaterThan(3);
-  expect(new Set(statuses)).toEqual(new Set(['want', 'read']));
-  // Las figuras siguen en las baldas de arriba
-  const figs = await page.locator('[data-panel="MAIN_ROOM"] .room-figures, [data-panel="MAIN_ROOM"] [data-shelf="top"], [data-panel="MAIN_ROOM"] [data-shelf="middle"]').count();
-  // 1.67: con las figuras ocultas, las baldas no llevan ninguna
-  if (FIGURES_ENABLED) expect(figs).toBeGreaterThan(0);
-  else expect(await page.locator('[data-panel="MAIN_ROOM"] .room-figures').count()).toBe(0);
-  await shot(page, info, 'v154-baldas');
-  // Tocar un lomo abre la librería en «Todos»
-  await page.locator('[data-panel="MAIN_ROOM"] .room-spine').first().evaluate((el) => el.click());
-  await expect(page.locator('.library[data-open="true"]')).toBeVisible();
-  await expect(page.getByRole('radio', { name: /Todos/ })).toHaveAttribute('aria-checked', 'true');
-});
-
-test('ebook antiguo: se ve como bolsillo en Escaparate, Lomos y habitación, y conserva su porcentaje', async ({ page }, info) => {
+test('ebook antiguo: se ve como bolsillo en Escaparate y Lomos, y conserva su porcentaje', async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), 'solo 390');
   await load(page, (st) => {
     const b = st.books.find((x) => x.id === 'hail-mary');
     Object.assign(b, { editionType: 'kindle', trackBy: 'percent', currentPercent: 37.5, status: 'reading' });
   });
-  await expect(page.locator('[data-panel="MAIN_ROOM"] .room-spine[data-edition="kindle"]')).toHaveCount(0);
   await openLibrary(page);
   const cover = page.locator('.library [data-book-id="hail-mary"]').first();
   await expect(cover).toHaveAttribute('data-edition', 'paperback');

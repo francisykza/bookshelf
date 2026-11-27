@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { DEFAULT_AVATAR } from '../src/features/edificio/actor.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
 import { createMockSupabase } from './mockSupabase';
+import { alEdificio } from './entrada';
 
 test.skip(true, 'Fase 1: Francisco retiró «Dos balcones» de la selección automática del edificio; el módulo y el archivo se conservan');
 
@@ -28,8 +29,7 @@ function seed() {
 const music = (page) => page.evaluate(() => window.__edificioMusic?.() ?? null);
 
 async function openEdificio(page) {
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   return page.getByRole('dialog', { name: 'El edificio del puerto' });
 }
 
@@ -44,9 +44,6 @@ test('la melodía del edificio: una sola, sigue en los pisos (más baja) y se va
   await mock.attach(page, ANA);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
 
   const panel = await openEdificio(page);
   await expect.poll(() => music(page).then((m) => m?.playing), { timeout: 10000 }).toBe(true);
@@ -104,9 +101,6 @@ test('con el sonido de la app quitado, el edificio no suena', async ({ page }, i
     if (!localStorage.getItem('bookshelf:v1')) localStorage.setItem('bookshelf:v1', JSON.stringify({ version: 6, books: [], settings: { sound: false } }));
   });
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
   await openEdificio(page);
   await page.waitForTimeout(2000);
   const m = await music(page);

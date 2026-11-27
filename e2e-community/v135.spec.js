@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
+import { abrirLibroActual, esperarInicio } from './entrada';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 const BRUNO = { id: '22222222-2222-4222-8222-222222222222', email: 'bruno@ejemplo.test' };
@@ -50,11 +51,10 @@ async function openBrunoProfile(page, mock) {
   await mock.attach(page, ANA);
   await page.addInitScript(`(() => { try { const st = JSON.parse(localStorage.getItem('bookshelf:v1')); if (!st) return; const b = st.books.find((x) => x.id === st.settings.currentBookId) ?? st.books.find((x) => x.status === 'reading'); b.workId = '${WORK.id}'; b.isbn = ''; localStorage.setItem('bookshelf:v1', JSON.stringify(st)); } catch (e) {} })()`);
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
-  await page.keyboard.press('Enter');
+  await esperarInicio(page);
+  await abrirLibroActual(page);
   await page.getByRole('tab', { name: 'Lectores' }).click();
   await page.getByLabel('Voces de lectores').getByRole('button', { name: 'Bruno', exact: true }).click();
   await expect(page.locator('.reader-profile')).toBeVisible();

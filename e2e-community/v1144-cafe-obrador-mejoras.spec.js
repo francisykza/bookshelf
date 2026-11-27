@@ -16,6 +16,7 @@ import { PLANO_INICIAL, cuenta } from '../src/features/edificio/cafe/cafeCatalog
 import { generoDe } from '../src/features/edificio/cafe/cafeClientes';
 import { umbralHito } from '../src/features/edificio/cafe/cafeNiveles';
 import { dayKey } from '../src/domain/dates';
+import { alEdificio } from './entrada';
 
 const DIR = join('qa-report', 'v1144');
 const tam = (info) => info.project.name.replace(/^(chromium|webkit)-/, '$1-');
@@ -79,11 +80,7 @@ async function alCafe(page, estado, obrador, { reducido = false } = {}) {
     { clientes: { hoy: HOY, semillas: semillas(4100, 6), quienes: [3], frases: [10] }, obrador },
   );
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Entrar en el café-librería del bajo' }).click({ timeout: 15000 });
   const cafe = page.getByRole('dialog', { name: 'El café-librería del bajo' });

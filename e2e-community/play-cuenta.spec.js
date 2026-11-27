@@ -5,6 +5,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
 import { SUPABASE } from './mockSupabase';
+import { abrirCuenta, esperarInicio } from './entrada';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 
@@ -18,7 +19,7 @@ async function shot(page, info, name) {
 
 async function ready(page) {
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
 }
 
 test('borrar la cuenta: hay que escribir BORRAR; después, sin sesión y con lo del dispositivo', async ({ page }, info) => {
@@ -31,7 +32,7 @@ test('borrar la cuenta: hay que escribir BORRAR; después, sin sesión y con lo 
     return route.fulfill({ status: 204, body: '' });
   });
   await ready(page);
-  await page.getByRole('button', { name: /^Tu cuenta y copias/ }).click();
+  await abrirCuenta(page);
   await expect(page.getByText('Has entrado como')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Política de privacidad' })).toHaveAttribute('href', '/legal/privacidad.html');
 
@@ -67,7 +68,7 @@ test('si falla el borrado, lo dice y no cierra la sesión', async ({ page }) => 
   await mock.attach(page, ANA);
   await page.route(`${SUPABASE}/rest/v1/rpc/cuenta_borrar`, (route) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message: 'cuenta:sesion' }) }));
   await ready(page);
-  await page.getByRole('button', { name: /^Tu cuenta y copias/ }).click();
+  await abrirCuenta(page);
   await page.getByRole('button', { name: 'Borrar mi cuenta' }).click();
   await page.getByLabel('Escribe BORRAR para confirmar').fill('BORRAR');
   await page.getByRole('button', { name: 'Borrar mi cuenta para siempre' }).click();
@@ -79,7 +80,7 @@ test('crear la cuenta pide 16 años y aceptar las normas', async ({ page }, info
   await page.addInitScript(() => localStorage.setItem('bookshelf_onboarding_done', 'true'));
   await page.route(`${SUPABASE}/**`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
   await ready(page);
-  await page.getByRole('button', { name: /^Tu cuenta y copias/ }).click();
+  await abrirCuenta(page);
   await page.getByRole('button', { name: '¿Primera vez? Crea tu cuenta' }).click();
   await page.getByLabel('Correo').fill('nueva@ejemplo.test');
   await page.getByLabel('Contraseña').fill('una-clave-larga');

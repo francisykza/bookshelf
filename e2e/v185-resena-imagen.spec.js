@@ -2,6 +2,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { abrirBiblioteca, esperarInicio } from './entrada';
 
 const SALTO = String.fromCharCode(10);
 const CORTA = 'Me ha sorprendido cómo una historia tan tranquila consigue quedarse contigo durante días. Los personajes respiran, el ritmo es pausado y el final me dejó mirando la pared un buen rato.';
@@ -46,9 +47,9 @@ async function load(page, texto) {
     }
   }, seeded);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForTimeout(400);
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await abrirBiblioteca(page);
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
   await page.waitForTimeout(500);
   await page.getByRole('searchbox', { name: 'Buscar en mi biblioteca' }).fill('faros apagados');

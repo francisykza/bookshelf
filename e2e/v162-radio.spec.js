@@ -6,6 +6,8 @@ import { expect, test } from '@playwright/test';
 import JSZip from 'jszip';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { abrirLibroActual, esperarInicio } from './entrada';
+import { abrir, inicio } from './entrada';
 
 async function shot(page, info, name) {
   const dir = join('qa-report', 'screenshots', info.project.name);
@@ -30,81 +32,17 @@ async function watchAudio(page) {
   });
 }
 
+// 1.157: sin el salón ilustrado (su radio de la mesa), se entra en el inicio y la radio se abre como desde el piso
 async function toSalon(page) {
-  await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.waitForFunction(() => document.querySelector('[data-panel="SOCIAL_ROOM"] .scene-base')?.naturalWidth > 0);
+  await inicio(page);
 }
 
-const radioButton = (page) => page.getByRole('button', { name: /^Radio del rincón/ });
 const panel = (page) => page.getByRole('dialog', { name: 'La radio del rincón' });
-/** La radio de la mesa si está a la vista; si el encuadre la deja fuera (escritorio), desde «Ambiente». */
 async function openRadio(page) {
-  const box = await radioButton(page).boundingBox();
-  const vp = page.viewportSize();
-  if (box && box.y + box.height <= vp.height && box.y >= 0) await radioButton(page).click();
-  else {
-    await page.getByRole('button', { name: 'Ambiente', exact: true }).click();
-    await page.getByRole('button', { name: 'Música: la radio del rincón' }).click();
-  }
+  await abrir(page, { type: 'radio' });
 }
 
 const audios = (page) => page.evaluate(() => window.__audios.map((a) => ({ paused: a.paused, src: a.getAttribute('src') })));
-
-test('salón: la radio sobre la mesa, un solo reproductor, sigue al cerrar y recarga en pausa', async ({ page }, info) => {
-  test.skip(/844x390|412|reduced/.test(info.project.name), 'tamaños del bloque');
-  const log = [];
-  page.on('request', (r) => log.push(r.url()));
-  await watchAudio(page);
-  await toSalon(page);
-  // En la mesa, sin tapar la tableta pintada
-  const radio = await radioButton(page).boundingBox();
-  const tablet = await page.locator('[data-panel="SOCIAL_ROOM"] .social-spot[data-id="tablet"]').boundingBox();
-  expect(radio).not.toBeNull();
-  expect(radio.y).toBeGreaterThanOrEqual(tablet.y + tablet.height * 0.85);
-  // Nada de audio antes de pulsar
-  expect(log.filter((u) => u.includes(MP3))).toEqual([]);
-  expect(await audios(page)).toEqual([]);
-  await openRadio(page);
-  await expect(panel(page)).toBeVisible();
-  await expect(panel(page).getByRole('radio', { name: /Sintonía de prueba/ })).toBeChecked();
-  await expect(panel(page).getByRole('radio', { name: /Sintonía de prueba/ })).toHaveCount(1);
-  await expect(panel(page)).toContainText('Pista de demostración');
-  await expect(panel(page)).toContainText('Brisa de papel · demo');
-  await expect(panel(page).getByRole('button', { name: /Pista (anterior|siguiente)/ })).toHaveCount(0);
-  await expect(panel(page).getByRole('status')).toHaveText('Pulsa reproducir para empezar.');
-  await page.waitForTimeout(400);
-  await shot(page, info, 'v162-radio-panel');
-  // Reproducir: la interfaz espera a que suene de verdad
-  await panel(page).getByRole('button', { name: 'Reproducir la música' }).click();
-  await expect(panel(page).getByRole('status')).toHaveText('Sonando', { timeout: 15000 });
-  await expect(panel(page).getByRole('button', { name: 'Pausar la música' })).toBeVisible();
-  // Cerrar el panel no para la música; reabrirlo no crea otro reproductor
-  await page.keyboard.press('Escape');
-  await expect(panel(page)).toHaveCount(0);
-  await page.waitForTimeout(300);
-  expect(await audios(page)).toEqual([{ paused: false, src: MP3 }]);
-  await expect(radioButton(page)).toHaveAccessibleName(/sonando/);
-  await openRadio(page);
-  await expect(panel(page).getByRole('button', { name: 'Pausar la música' })).toBeVisible();
-  await panel(page).getByRole('button', { name: 'Pausar la música' }).click();
-  await expect(panel(page).getByRole('status')).toHaveText('En pausa');
-  await panel(page).getByRole('button', { name: 'Reproducir la música' }).click();
-  await expect(panel(page).getByRole('status')).toHaveText('Sonando', { timeout: 15000 });
-  expect((await audios(page)).length).toBe(1);
-  // Volúmenes por separado y recordados
-  await panel(page).getByRole('slider', { name: 'Música' }).fill('30');
-  await panel(page).getByRole('slider', { name: 'Ambiente' }).fill('80');
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:radio')))).toEqual({ stationId: 'piloto', musicVolume: 0.3, ambienceVolume: 0.8 });
-  // Recargar (el panel sigue abierto: es su sitio en el historial): en pausa hasta que se pulse, nada automático
-  await page.reload();
-  await expect(panel(page)).toBeVisible();
-  await expect(panel(page).getByRole('status')).toHaveText('Pulsa reproducir para empezar.');
-  await expect(panel(page).getByRole('slider', { name: 'Música' })).toHaveValue('30');
-  expect(await audios(page)).toEqual([]);
-});
 
 test('temporizador por hora límite: pausa la música, también al volver del segundo plano; y el error se dice', async ({ page }, info) => {
   test.skip(!/390x844$/.test(info.project.name) || info.project.name.startsWith('webkit'), 'una vez, en Chromium');
@@ -174,10 +112,9 @@ test('lector EPUB: la música es opcional, el control compacto va en el pie y ab
   test.skip(/844x390|412|reduced/.test(info.project.name), 'tamaños del bloque');
   await watchAudio(page);
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForTimeout(300);
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
-  await page.keyboard.press('Enter');
+  await abrirLibroActual(page);
   await page.locator('.epub-box input[type=file]').setInputFiles({ name: 'circe.epub', mimeType: 'application/epub+zip', buffer: await makeEpub() });
   await page.getByRole('dialog', { name: 'Vincular EPUB' }).getByRole('button', { name: /Vincular/ }).click();
   const reader = page.getByRole('dialog', { name: /^Leer / });

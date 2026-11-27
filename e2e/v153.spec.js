@@ -6,6 +6,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { abrirBiblioteca, abrirLibroActual, abrirOrdenador, esperarInicio } from './entrada';
 
 async function shot(page, info, name) {
   const dir = join('qa-report', 'screenshots', info.project.name);
@@ -38,13 +39,12 @@ async function load(page, mutate = () => {}) {
     }
   }, seeded);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForTimeout(400);
 }
 
 async function openDiary(page) {
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
-  await page.keyboard.press('Enter');
+  await abrirLibroActual(page);
   await expect(page.locator('.book-sheet')).toBeVisible();
   await page.getByRole('tab', { name: 'Diario' }).click();
   await page.waitForTimeout(250);
@@ -186,7 +186,7 @@ test('borrador: sobrevive a cambiar de sección, cerrar y recargar; es de cada l
   await expect(field(page)).toHaveValue('Lo guardado, y algo más que aún no he guardado');
   // Recargar
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await openDiary(page);
   await expect(field(page)).toHaveValue('Lo guardado, y algo más que aún no he guardado');
   // Lo guardado no se ha tocado
@@ -194,7 +194,7 @@ test('borrador: sobrevive a cambiar de sección, cerrar y recargar; es de cada l
   // Otro libro: su propia reseña (vacía), sin el borrador del primero
   expect(await page.evaluate((k) => sessionStorage.getItem(`bookshelf:review-draft:${k}`), otherId)).toBeNull();
   await page.getByRole('button', { name: 'Cerrar', exact: true }).click();
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await abrirBiblioteca(page);
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
   await page.waitForTimeout(400);
   await page.locator(`.library [data-book-id="${otherId}"]`).first().evaluate((el) => (el.querySelector('button') ?? el).click());
@@ -268,8 +268,7 @@ test('accesos directos: una nota del ordenador abre «Notas» y la ficha conserv
   await load(page, (st, book) => {
     book.quotes = [{ id: 'q153', text: 'Una frase para volver a ella', page: 12, color: 'yellow', createdAt: '2026-10-20T10:00:00.000Z' }];
   });
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="laptop"]').focus();
-  await page.keyboard.press('Enter');
+  await abrirOrdenador(page);
   await expect(page.locator('.pc-diary')).toBeVisible();
   await page.locator('.diary__tabs').getByRole('tab', { name: 'Notas' }).click();
   await page.locator('.pcd-notes .annotation-card', { hasText: 'Una frase para volver a ella' }).locator('.pcd-notes__book').click();

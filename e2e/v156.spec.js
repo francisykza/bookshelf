@@ -7,6 +7,7 @@ import { expect, test } from '@playwright/test';
 import JSZip from 'jszip';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { abrirLibroActual, esperarInicio } from './entrada';
 
 async function shot(page, info, name) {
   const dir = join('qa-report', 'screenshots', info.project.name);
@@ -71,13 +72,12 @@ async function load(page) {
     }
   }, seeded);
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForTimeout(400);
 }
 
 async function openFicha(page) {
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="book"]').focus();
-  await page.keyboard.press('Enter');
+  await abrirLibroActual(page);
   await expect(page.locator('.book-sheet')).toBeVisible();
 }
 

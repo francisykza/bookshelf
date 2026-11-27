@@ -16,6 +16,7 @@ import { ELIGE, ETAPAS, gestosDe } from '../src/features/edificio/cafe/cafeGesto
 import { FRASES_OLMO } from '../src/features/edificio/cafe/cafePersonaje';
 import { MOMENTO_OLMO, poseOlmoAlHablar } from '../src/features/edificio/cafe/olmoPoses';
 import { dayKey } from '../src/domain/dates';
+import { alEdificio } from './entrada';
 
 const DIR = join('qa-report', 'v1150');
 const DIR156 = join('qa-report', 'v1156');
@@ -69,11 +70,7 @@ async function alCafe(page, { previa = true, reduced = true } = {}) {
     { clientes: { hoy: dayKey(), semillas: [2100, 1000, 8919], quienes: [3], frases: [10], vendidos: [], ...(previa ? { jornada: JORNADA } : {}) } },
   );
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Entrar en el café-librería del bajo' }).click({ timeout: 15000 });
   const cafe = page.getByRole('dialog', { name: 'El café-librería del bajo' });

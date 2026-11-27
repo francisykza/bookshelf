@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.156.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.157.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8842,3 +8842,108 @@ de la hoja. Sin migración ni cambios en el servidor; solo se ve con la suscripc
 - `e2e-community/v1150-cafe-olmo.spec.js` (360, 390 y escritorio): la franja con sus poses (habla, mareo), el reposo con el reloj
   acelerado (lee, duerme y despierta), nada solo con movimiento reducido, y la oferta y la preparación con su pose; capturas del 3D
   de frente y de lado en `qa-report/v1156/`. `v1150-cafe-guia.spec.js`: saluda al empezar, camina por el camino y celebra al final.
+
+## 157. Fuera la habitación ilustrada, guardada en el archivo (1.157.0)
+
+Francisco, 26-11-2026: «quiero que se borre la versión antigua de la aplicación porque sigue saliendo cuando la gente se mete en
+la web para instalar la app». Investigado el 27-11-2026 (era la habitación ilustrada de la 1.86, a la que se llegaba con «Volver
+a la experiencia anterior»), decidió «Bórrala, pero déjala aparte en otra carpeta aquí por si acaso la necesitamos en el futuro» y
+confirmó la lista de `docs/qa/borrar-habitacion-ilustrada.md` («Sí, adelante»). Sin migración ni cambios en el servidor; **ningún
+dato de nadie se borra**. Esto sustituye a todo lo que en este SPEC describe la habitación ilustrada como parte de la app (§1 a
+§86 y sus retoques posteriores): desde aquí es historia, guardada en `archivo/habitacion-ilustrada/`.
+
+### 157.1 El inicio es siempre tu piso
+
+- `src/features/pisoLab/inicio.js` queda solo con `HOME_PISO`. Ya no hay `__PISO_INICIO__` (`vite.config.js`), ni `?inicio=`,
+  ni «Volver a la experiencia anterior» (ni en la pantalla sin cuenta ni en el Menú del piso, `PisoLabPanel.jsx`).
+- `App.jsx` ya no monta el panorama (`PanoramicRoom` con `CozyRoom` y `SocialRoom`), ni `RoomCorner`, ni la guía
+  `useOnboarding`, ni el panel `balda`. Sin panel delante, la app abre tu piso (`{ type: 'pisoLab', id: 'mio' }`); en el piloto
+  (`?piloto=piso`, fuera de producción), su portal de prueba. Mi biblioteca, la ficha, el registro, el ordenador, el edificio y
+  todos los paneles no cambian.
+- **Sin cuenta**: la pantalla de entrada con «Abrir «Tu cuenta»» y «Abrir Mi biblioteca»; Mi biblioteca sigue funcionando en el
+  dispositivo y Atrás vuelve a la entrada. **Con cuenta**: tu piso.
+- Quien tenía elegida la experiencia anterior en su móvil (`bookshelf:inicio = anterior`) entra en su piso; esa preferencia se
+  ignora y **no se borra**. El aviso de la mudanza a libotown.es (`AvisoDireccion`) sale solo en tu piso.
+- Lo que solo estaba en la habitación y ya tiene sitio en el piso: el registro (el libro de la cama), el temporizador (la
+  bandeja), la radio, el atlas, la cuenta y el ordenador. **Se pierden** el salón social ilustrado con sus sillones (la comunidad
+  sigue en el ordenador) y la guía «Descubrir mi habitación» (Libo sigue guiando en el piso).
+
+### 157.2 Qué se guarda en `archivo/habitacion-ilustrada/` (fuera de la app)
+
+- Con su misma ruta y un `LEEME.md` que explica qué es y cómo volver a enchufarla: 40 módulos (`src/components/room/` entero, la
+  guía antigua, `src/scene/` salvo `sceneMap.js` y `renderMode.js`, `useSceneArt`, `useSvgIds`, `useToday`, `spineArt`, los
+  sillones `SocialSeats` y `SeatCard`), `sceneMap.js` completo, sus pruebas unitarias (`onboarding`, `sea`, `stageFit`, `v127` y
+  las partes de `v128` y `seats162` que eran suyas) y sus imágenes (unos 7 MB).
+- Vite no la compila (nada de `src/` la importa), Vitest y Playwright no la ejecutan y Tailwind no lee sus clases
+  (`@source not '../archivo'`, al final de `src/index.css`).
+- `src/scene/sceneMap.js` queda con `asset` y la medida del fondo de Mi biblioteca (`SCENE_SRC`, 941 × 1672).
+
+### 157.3 Estilos e imágenes
+
+- `room-151.css`, `room-152.css`, `room-160.css` y `room-signs-137.css`, enteras al archivo (y fuera de `src/index.css`).
+- `room.css` (de 94 a 5 KB), `room-146.css`, `room-147.css`, `room-149.css` y `rincon-01.css`: la hoja completa al archivo y en
+  la app solo las reglas que aún pinta algo vivo (el registro de lectura, el aviso de deshacer, la cabecera de la biblioteca, el
+  modo ligero de móvil…), **en su mismo sitio**, para no cambiar el orden de la cascada. La poda es por selector: se queda el que
+  solo usa clases que aparecen en el código vivo, y las `@keyframes` que alguien sigue usando.
+- Imágenes al archivo: `cozy-social-room.jpg`, `laptop-foreground.png`, la copia antigua `/cozy-book-room.jpg`, `room-refresh/`
+  (salvo `pantalla-bahia.webp`, del lector EPUB), `assets/room/libro-abierto.webp` y `placa-papel-ramita.webp` y tres placas de
+  `assets/ui/`. Se quedan `images/cozy-book-room.jpg` (fondo de Mi biblioteca, precargado) y `boton-terracota-cosido.webp`.
+- `public/sw.js`: la precarga (`CORE`) ya no pide la ilustración del salón ni el portátil.
+
+### 157.4 Atrás con una capa cerrándose (WebKit)
+
+- Visto al comprobar este bloque, y ya pasaba antes: en WebKit, «Abrir Mi biblioteca» abría la biblioteca y la volvía a cerrar.
+  Al tocar el botón, el `pointerdown` cierra el bocadillo de Libo; su capa sale del historial con `history.go(-1)`
+  (`hooks/useAtras.js`), que es asíncrono, y el click navegaba antes de que llegara su `popstate`: la biblioteca caía en la
+  entrada que se estaba quitando y el `popstate` la deshacía.
+- `domain/navigation.js`: `retirandoCapas()`, que `useAtras` llama justo antes de su `go(-n)`. Hasta que llega ese `popstate`, el
+  navegador guarda lo que se le pide (ir, reemplazar, volver) y lo aplica después, en orden; si no llegara en 600 ms, lo aplica
+  igual. Afecta a cualquier botón que cierre una capa al tocarlo y navegue a la vez, no solo a este.
+
+### 157.5 Pruebas
+
+- `e2e-community/v1157-sin-habitacion.spec.js` (390 en Chromium y WebKit, y 1440): sin cuenta desde la web (la entrada, Mi
+  biblioteca y Atrás); con cuenta (tu piso y su menú, sin la experiencia anterior); con `bookshelf:inicio = anterior` y
+  `?inicio=anterior`, tu piso y la preferencia intacta; y sin cuenta con esa preferencia, la entrada. En ninguna, nada de la
+  habitación. Capturas en `qa-report/v1157/`, comparadas con las de antes del cambio.
+- `navigation.test.js`: la carrera de la capa con un `go` asíncrono.
+- Las de `e2e/` y `e2e-community/` que entraban por la habitación, en el bloque 2 (§157.6).
+
+### 157.6 Las pruebas, sin la habitación (bloque 2)
+
+- **Entrada común** (`e2e-community/entrada.js`, y `e2e/entrada.js` la reexporta): al edificio se baja con «Al edificio»
+  (`alEdificio`), no por la tablet del salón. Lo que se abría tocando la habitación se abre con la navegación de la app,
+  con el mismo panel de siempre: la cuenta, Mi biblioteca, la ficha y el registro del libro que lees, el ordenador y la
+  bandeja (`abrir`, `abrirCuenta`, `abrirBiblioteca`, `abrirLibroActual`, `abrirRegistro`, `abrirOrdenador`,
+  `abrirBandeja`). `esperarInicio` espera a tu piso (o a la entrada), o al panel o la biblioteca con que arranca la prueba;
+  `enInicio` sustituye a «ningún panel abierto», porque tu piso también es un panel.
+- **Adaptadas**: unas 80 pruebas de `e2e/` y `e2e-community/` (las del registro ya no dependen de la pantalla vertical).
+  `e2e/piso-inicio.spec.js`, reescrita: el inicio es siempre tu piso, sin botón a la experiencia anterior; la elección
+  antigua del dispositivo y `?inicio=` llevan a tu piso sin borrar nada; y una entrada antigua del historial abre tu piso.
+- **Archivadas** en `archivo/habitacion-ilustrada/e2e/` y `e2e-community/` las que solo probaban la habitación: nueve
+  archivos enteros (anexos, diegetic, gouache, panorama, rincon-01-estanteria y -capturas, v149, v152, libo-ventana) y
+  partes de otros (`*-habitacion.spec.js`: ia1, v128, v135, v146, v147, v148, v154, v162-radio, entrega3, v162), con una
+  nota de dónde está cada original (`git show 2948485:…`).
+- **Un fallo de la app que destaparon** (§157.7).
+
+### 157.7 La nota de la llave y la de la invitación, otra vez tocables
+
+`<main>` es `inert` con un panel abierto, y tu piso, el inicio, siempre lo es: la nota de una llave de edificio
+(`#llave=…`) y la de una invitación a un club (`#club=…`) se veían encima de tu piso pero no se podían tocar. En local
+no se notaba porque se empezaba en la habitación ilustrada, sin panel. Desde la 1.157 las dos notas (`LlaveHandler`,
+`InviteHandler`) se pintan en la capa de los paneles (`modalRoot`), como el aviso de «Deshacer».
+
+### 157.8 Mi biblioteca, encima de tu piso
+
+Desde tu piso (y desde la pantalla de entrada sin cuenta), «Abrir Mi biblioteca» sustituía la entrada del historial en vez de
+añadir una: Atrás del móvil salía de la app en vez de volver a tu piso (las pruebas de WebKit lo pillaban cuando a la vez se
+cerraba un bocadillo de Libo). Ahora se abre encima (`nav.go`) y Atrás vuelve a tu piso; desde el ordenador sigue sustituyendo
+al ordenador, como antes.
+
+### 157.9 Lo que no se arregla aquí
+
+Fallan igual en la 1.156.0 (comprobado pasándolas en una copia de `2948485`), así que no son de este cambio y se quedan
+anotadas en `docs/ESTADO.md`: en `e2e/`, `v123` (tres del calendario y los sonidos), `v128` (el calendario), `v147` y `v148`
+(el registro, que espera los textos del formulario de antes de la 1.90); en `e2e-community/`, ocho del café (`v1121`,
+`v1122`, `v1123`, `v1125`, `v1126`, `v1130`, `v1131`, `v1140`), `v162` (dos), `v163`, `v170` (dos), `v171`, `v178` y
+`v186` (dos). Otras cuatro del café (`v1127`, `v1132`, `v1133`, `v1143`) solo fallan con muchas pruebas a la vez: solas pasan.

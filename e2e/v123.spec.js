@@ -3,6 +3,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { abrirBandeja, abrirOrdenador, enInicio, esperarInicio } from './entrada';
 
 const run = { project: '', tests: {}, pageErrors: [], data: {}, screenshots: [] };
 
@@ -127,7 +128,7 @@ test('selector: sin lecturas activas lo dice, deshabilita el registro y ofrece l
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.map((b) => [b.id, b.status]));
   await form.getByRole('button', { name: 'Elegir un libro de mi biblioteca' }).click();
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
-  await expect(page.locator('.panel-veil')).toHaveCount(0);
+  await enInicio(page);
   const after = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).books.map((b) => [b.id, b.status]));
   expect(after).toEqual(before);
 });
@@ -135,14 +136,12 @@ test('selector: sin lecturas activas lo dice, deshabilita el registro y ofrece l
 test('formulario: una sola zona de scroll, acciones sticky y borrador estable con el temporizador en marcha', async ({ page }, info) => {
   // Temporizador en marcha (su reloj re-renderiza la app cada medio segundo)
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.hotspot[data-id="tray"]').focus();
-  await page.keyboard.press('Enter');
+  await esperarInicio(page);
+  await abrirBandeja(page);
   await page.getByRole('button', { name: /Empezar/ }).click();
   await page.keyboard.press('Escape');
-  await expect(page.locator('.panel-veil')).toHaveCount(0);
-  await page.locator('.hotspot[data-id="laptop"]').focus();
-  await page.keyboard.press('Enter');
+  await enInicio(page);
+  await abrirOrdenador(page);
   const form = await openTodayForm(page);
   await tap(form.getByRole('radio', { name: 'Voy por la página' }));
   const input = form.locator('input[inputmode="numeric"]');

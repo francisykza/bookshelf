@@ -2,7 +2,7 @@
 // restauración de vista y panel, intento de unboxing idempotente con consumo único y transiciones interrumpidas.
 import { describe, expect, it } from 'vitest';
 import { EMPTY_FIGURES, markUnboxSeen, openBoxAttempt } from '../figures';
-import { ROOT, createNavigator, safeParent } from '../navigation';
+import { ROOT, createNavigator, retirandoCapas, safeParent } from '../navigation';
 import { ENTERING, LEAVING, ROOM, SHELF, request, settle } from '../../hooks/useShelfTransition';
 
 /** Historial de navegador en memoria: pila de entradas y `back()` que dispara `popstate`. */
@@ -193,5 +193,32 @@ describe('origen de la visita (1.62)', () => {
   it('la habitación conserva de dónde se vino y, sin padre, se vuelve allí', () => {
     expect(safeParent({ view: 'room', panel: { type: 'visit', id: 'u', from: 'salon' } }).panel).toBeNull();
     expect(safeParent({ view: 'room', panel: { type: 'visit', id: 'u', from: 'lectores' } }).panel).toEqual({ type: 'social', tab: 'lectores' });
+  });
+});
+
+describe('1.157 · una capa que sale del historial mientras se navega (WebKit)', () => {
+  it('lo navegado espera al popstate de la capa y no se pierde', () => {
+    const history = fakeHistory();
+    const nav = createNavigator(history);
+    history.onpop = (state) => nav.pop(state);
+    nav.go({ view: 'room', panel: { type: 'pisoLab', id: 'mio' } }, { replace: true });
+    // El bocadillo de Libo apila su capa sobre la entrada del piso
+    history.pushState({ ...history.state, capas: ['c1'] });
+    // Se cierra en el pointerdown: su go(-1) es asíncrono, como en el navegador
+    let pendiente = null;
+    const go = history.go;
+    history.go = (n) => {
+      pendiente = () => go(n);
+    };
+    retirandoCapas();
+    history.go(-1);
+    // El click abre la biblioteca antes de que llegue el popstate
+    nav.go({ view: 'shelf', panel: null }, { replace: true });
+    expect(nav.current().view).toBe('room');
+    pendiente();
+    expect(nav.current()).toEqual({ view: 'shelf', panel: null });
+    expect(history.state.bookshelf.loc.view).toBe('shelf');
+    expect(history.state.capas).toBeUndefined();
+    expect(history.length).toBe(2);
   });
 });

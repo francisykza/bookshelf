@@ -404,10 +404,22 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
     - **Ideas anotadas para más tarde** (Francisco, 27-11-2026; detalle en «Pendiente» de `docs/ESTADO.md`): el ordenador que
       se queda en negro en el iPhone de una compañera; **los tickets como moneda con identidad** («libocoins o algo por el
       estilo», con la cara de Libo según la moneda que dibujó él, siempre a la vista y con una animación divertida de Libo al
-      ganarlos; lo interno no se renombra sin migración aprobada y las reglas de ganarlos no cambian); y la web en su dominio.
+      ganarlos; lo interno no se renombra sin migración aprobada y las reglas de ganarlos no cambian); la web en su dominio;
+      y **el menú de Libo más gracioso y limpio, que te cuente qué puedes hacer hoy** (intentos del casino que quedan, muebles
+      en oferta de los que quieres, muebles nuevos, clientes nuevos, si alguien te ha dado algo…): proponerle el diseño antes.
     - **Después, borrar la versión antigua de la app** (Francisco, 26-11-2026: «quiero que se borre la versión antigua de la
       aplicación porque sigue saliendo cuando la gente se mete en la web para instalar la app»). Antes de borrar nada,
       investigar qué sale exactamente y enseñarle qué se quitaría para que lo confirme; sin borrar datos de usuarios.
+      **Investigado y decidido** (27-11-2026): la versión antigua es la habitación ilustrada de la 1.86, a la que se llega con
+      «Volver a la experiencia anterior» (pantalla sin cuenta y Menú del piso) y que se queda elegida en el dispositivo. Francisco:
+      «Bórrala, pero déjala aparte en otra carpeta aquí por si acaso la necesitamos en el futuro para algo». Se borra de la app
+      entera (código, dibujos y guía antigua) y **se guarda una copia fuera del build** en una carpeta aparte del repositorio,
+      sin que se cargue ni se publique. Antes de borrar, enseñarle la lista exacta de archivos y lo que sustituye a cada cosa. Esto
+      sustituye a «la habitación ilustrada se queda como está» (bloque 4 de Libo) y a «se conserva una opción para volver a la
+      experiencia anterior» (7-11-2026). Sin borrar datos de usuarios (libros, lecturas, diario y decoración siguen igual).
+      **Bloque 1 hecho en la 1.157.0** (lista confirmada: «Sí, adelante»): guardada en `archivo/habitacion-ilustrada/` (con
+      `LEEME.md`; nada del archivo se importa desde `src/`). **Bloque 2 hecho** (las e2e entran por `e2e-community/entrada.js`:
+      «Al edificio» y la navegación de la app, nunca la habitación). **Publicado** el 27-11-2026 («Sí, publícalo»).
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la

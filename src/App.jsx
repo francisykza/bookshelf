@@ -1,6 +1,6 @@
-// BookShelf — "Mediterranean Cozy Reading Sanctuary" (SPEC.md). Interfaz diegética: la habitación es
-// el menú. Este componente coordina el panorama de habitaciones, la librería, los paneles, el sonido y el
-// temporizador. Cambiar de habitación es estado de interfaz: no recrea proveedores ni toca la biblioteca.
+// BookShelf — "Mediterranean Cozy Reading Sanctuary" (SPEC.md). Interfaz diegética: tu piso del edificio del puerto es
+// el menú. Este componente coordina tu piso, la librería, los paneles, el sonido y el temporizador. Desde la 1.157 la
+// habitación ilustrada de antes está archivada (archivo/habitacion-ilustrada/), fuera de la app.
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { modalRoot } from './components/panels/modalRoot';
@@ -23,13 +23,8 @@ import { SagaMapModal } from './components/panels/SagaMapModal';
 import { FigureDetail } from './components/figures/FigureDetail';
 import { FIGURES_ENABLED } from './domain/figures';
 import { FiguresVaultModal } from './components/figures/FiguresVaultModal';
-import { CozyRoom, ROOM_VIEW, SHELF_VIEW } from './components/room/CozyRoom';
-import { PanoramicRoom } from './components/room/PanoramicRoom';
-import { BaldaPanel } from './components/room/BaldaPanel';
-import { RoomCorner } from './components/room/RoomCorner';
-import { SocialRoom } from './components/room/SocialRoom';
 import { RadioPanel } from './features/radio/RadioPanel';
-import { HOME_PISO, choose as chooseStart, newRoomAvailable, startsInRoom } from './features/pisoLab/inicio';
+import { HOME_PISO } from './features/pisoLab/inicio';
 import { esProduccion } from './domain/direcciones';
 import { AvisoDireccion } from './features/direccion/AvisoDireccion';
 import { PantallaCarga, useHayPantallaCarga } from './ui/PantallaCarga';
@@ -39,9 +34,8 @@ import { ShelfView } from './components/shelf/ShelfView';
 import { PerfProfiler } from './perf/PerfProfiler';
 import { useReadingTimer } from './hooks/useReadingTimer';
 import { useAppNavigation } from './hooks/useAppNavigation';
-import { useOnboarding } from './hooks/useOnboarding';
 import { useReducedMotion } from './hooks/useReducedMotion';
-import { ENTERING, ROOM, SHELF, useShelfTransition } from './hooks/useShelfTransition';
+import { ENTERING, SHELF, useShelfTransition } from './hooks/useShelfTransition';
 import { CloudProvider } from './state/cloudSync';
 import { CommunityProvider } from './features/social/hooks/useCommunity';
 import { GuardianCard } from './features/social/components/GuardianCard';
@@ -66,6 +60,9 @@ const ReaderProfile = lazy(() => import('./features/social/components/ReaderProf
 
 /** Un día local `YYYY-MM-DD` (el `select` de la navegación del calendario). */
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** Lo que hay delante (data-view del <main>): tu piso u otro panel, o la librería entrando o ya encima. */
+const ROOM_VIEW = 'ROOM_VIEW';
+const SHELF_VIEW = 'SHELF_VIEW';
 
 function Sanctuary() {
   const { state, actions } = useLibrary();
@@ -103,25 +100,22 @@ function Sanctuary() {
   // Piloto: /?piloto=piso entra directo en el portal de prueba
   // En producción no: su portal de prueba lleva una vecina inventada, y allí no se cargan datos de demostración
   const pilot = useMemo(() => new URLSearchParams(window.location.search).get('piloto') === 'piso' && !esProduccion(window.location.hostname), []);
-  useEffect(() => {
-    if (pilot && !locRef.current.panel) openPanel({ type: 'pisoLab' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // Versión privada (src/features/pisoLab/inicio.js): la habitación es la pantalla de inicio y su puerta lleva al
-  // edificio. Sin panel encima, se vuelve a ella; «Volver a la experiencia anterior» lo desactiva en este dispositivo
-  const [home, setHome] = useState(() => !pilot && startsInRoom());
+  // 1.157 (src/features/pisoLab/inicio.js): tu piso es siempre la pantalla de inicio y su puerta lleva al edificio. Sin
+  // panel encima, se vuelve a él. La habitación ilustrada de antes está archivada, fuera de la app
+  const home = !pilot;
   // 1.138: con una pantalla de carga delante (la misma escena), el fondo de arranque no repite su mensaje
   const cargando = useHayPantallaCarga();
+  // Debajo ya no hay nada que ver: sin panel, tu piso (o, en el piloto, su portal de prueba)
   useEffect(() => {
-    if (home && !location.panel && location.view === 'room') nav.replace({ view: 'room', panel: { type: 'pisoLab', id: HOME_PISO } });
-  }, [home, location.panel, location.view, nav]);
+    if (!location.panel && location.view === 'room') nav.replace({ view: 'room', panel: pilot ? { type: 'pisoLab' } : { type: 'pisoLab', id: HOME_PISO } });
+  }, [pilot, location.panel, location.view, nav]);
   // Los pisos del piloto (lab-1A, lab-2B y su portal) solo se abren con ?piloto=piso. Una entrada del historial de la 1.87,
-  // que sobrevive a recargar, lleva a tu piso (o se cierra con la experiencia anterior): nunca un piso de prueba como tuyo
+  // que sobrevive a recargar, lleva a tu piso: nunca un piso de prueba como tuyo
   useEffect(() => {
     const p = location.panel;
     if (pilot || p?.type !== 'pisoLab' || p.id === HOME_PISO) return;
-    nav.replace({ view: location.view, panel: home ? { ...p, id: HOME_PISO } : null });
-  }, [pilot, home, location.panel, location.view, nav]);
+    nav.replace({ view: location.view, panel: { ...p, id: HOME_PISO } });
+  }, [pilot, location.panel, location.view, nav]);
   // El edificio, a mano antes de tocar la puerta: sin esto, mientras llega se vería la habitación de antes debajo
   useEffect(() => {
     if (!home) return undefined;
@@ -170,13 +164,6 @@ function Sanctuary() {
     setTimeout(() => actions.persistNow(), 0);
     setUndoLog(null);
   };
-  // Guía diegética (Anexo B): arranca con MAIN_ROOM decodificada y medida, quieta y sin nada prioritario abierto
-  const [mainReady, setMainReady] = useState(false);
-  // Objetos que el encuadre deja fuera: se ofrecen en el menú de «Guías» (SPEC §19.5)
-  const [offscreen, setOffscreen] = useState([]);
-  const [settledRoom, setSettledRoom] = useState(null);
-  const guide = useOnboarding({ ready: mainReady, blocked: Boolean(panel) || phase !== ROOM || settledRoom !== 'MAIN_ROOM' });
-
   // La vista sigue a la ubicación: la máquina de transición hace el resto
   useEffect(() => {
     if (location.view === 'shelf') toShelf();
@@ -237,114 +224,25 @@ function Sanctuary() {
   // Cerrar y Volver usan la misma navegación que el gesto Atrás
   const close = nav.back;
   const openBook = (book) => openPanel({ type: 'book', id: book.id });
-  const openShelf = () => {
-    playUiSound('libraryOpen');
-    nav.go({ view: 'shelf', panel: null });
-  };
 
   return (
     <main className="sanctuary" data-view={view} data-phase={phase} data-home-3d={home || undefined} inert={panel ? true : undefined}>
       <h1 className="sr-only-focus">Libotown, tu santuario de lectura junto al mar</h1>
-      {/* 1.89.1: con la habitación 3D como destino, la ilustrada sigue montada pero no se ve; hasta que llega el piso, solo este aviso */}
+      {/* Hasta que llega tu piso, solo este aviso (1.89.1; desde la 1.157 no hay nada debajo) */}
       {home && !cargando && (
         <p className="home-boot" role="status">
           Abriendo tu piso…
         </p>
       )}
-      {/* Con un panel abierto o la librería delante, el panorama no cambia de habitación */}
-      <PanoramicRoom
-        locked={Boolean(panel) || phase !== ROOM || guide.active}
-        reducedMotion={reducedMotion}
-        forceMain={guide.active}
-        onSettled={setSettledRoom}
-        controls={
-          phase === ROOM ? (
-            <RoomCorner
-              onOpenAccount={() => openPanel({ type: 'account' })}
-              onStartGuide={guide.start}
-              onToggleSound={toggleSound}
-              onOpenRadio={() => openPanel({ type: 'radio' })}
-              guideActive={guide.active}
-              offscreen={offscreen}
-              // Mientras dure la prueba: de la experiencia anterior se puede volver a la habitación nueva
-              onOpenNewRoom={
-                !pilot && newRoomAvailable()
-                  ? () => {
-                      chooseStart('habitacion');
-                      setHome(true);
-                    }
-                  : null
-              }
-            />
-          ) : null
-        }
-        renderMain={(active) => (
-          <CozyRoom
-            active={active}
-            interactive={phase === ROOM}
-            timer={timer}
-            onOpenShelf={openShelf}
-            onOpenBook={openBook}
-            onOpenBalda={(id, group) => openPanel({ type: 'balda', id, select: String(group) })}
-            onOpenLaptop={() => {
-              playUiSound('computerOn');
-              openPanel({ type: 'laptop', select: 'today' });
-            }}
-            onOpenTray={() => openPanel({ type: 'tray' })}
-            onLogReading={(book) => {
-              playUiSound('monthTurn');
-              setUndoLog(null);
-              openPanel({ type: 'log', id: book.id });
-            }}
-            onToggleSound={toggleSound}
-            onOpenAtlas={() => openPanel({ type: 'atlas' })}
-            // Libo (docs/qa/libo.md): la puerta-ventana baja al edificio del puerto; la tablet del salón sigue igual
-            onOpenEdificio={() => openPanel({ type: 'edificio' })}
-            onOpenVault={(id) => {
-              playUiSound('atticOpen');
-              openPanel({ type: 'vault', id });
-            }}
-            onOpenFigure={(id) => {
-              playUiSound('figureSelect');
-              openPanel({ type: 'figure', id });
-            }}
-            showFigures={FIGURES_ENABLED}
-            modalOpen={Boolean(panel)}
-            guide={guide}
-            onReady={setMainReady}
-            onOffscreen={setOffscreen}
-          />
-        )}
-        renderSocial={(active, social) => (
-          <SocialRoom
-            status={social.status}
-            attempt={social.attempt}
-            onRetry={social.retry}
-            active={active && !panel && phase === ROOM}
-            reducedMotion={reducedMotion}
-            timer={timer}
-            onOpenHub={(tab) => {
-              playUiSound('visit');
-              openPanel({ type: 'social', tab });
-            }}
-            onOpenReader={(id) => {
-              playUiSound('visit');
-              openPanel({ type: 'reader', id });
-            }}
-            // 1.62 (SPEC §62.2): la visita sabe que viene del salón para volver allí
-            onVisit={(id) => {
-              playUiSound('visit');
-              openPanel({ type: 'visit', id, from: 'salon' });
-            }}
-            onOpenRadio={() => openPanel({ type: 'radio' })}
-            onOpenGuardian={FIGURES_ENABLED ? (id) => openPanel({ type: 'guardian', id }) : null}
-            // La música del edificio empieza en este mismo toque (en iOS, fuera de un toque no suena)
-            onOpenEdificio={() => openPanel({ type: 'edificio' })}
-          />
-        )}
-      />
-      <InviteHandler onJoined={(clubId) => openPanel({ type: 'social', tab: 'club', id: clubId })} />
-      <LlaveHandler onIrAlEdificio={() => openPanel({ type: 'edificio' })} />
+      {/* 1.157: fuera de <main>, que es `inert` con un panel abierto (y tu piso, el inicio, siempre lo es): dentro, la nota
+          de la llave y la de la invitación se veían pero no se podían tocar */}
+      {createPortal(
+        <>
+          <InviteHandler onJoined={(clubId) => openPanel({ type: 'social', tab: 'club', id: clubId })} />
+          <LlaveHandler onIrAlEdificio={() => openPanel({ type: 'edificio' })} />
+        </>,
+        modalRoot(),
+      )}
       <AmigosSync />
       <PerfProfiler id="library">
       <ShelfView
@@ -405,8 +303,8 @@ function Sanctuary() {
         />
       )}
       {!panel && <LogUndoToast item={undoLog} onUndo={undoLastLog} />}
-      {/* 1.136 (SPEC §136.6): en la dirección de antes, el aviso de la mudanza a libotown.es, solo en la habitación */}
-      <AvisoDireccion lugar={panel ? (panel.type === 'pisoLab' && panel.id === HOME_PISO && !panel.select ? 'piso' : null) : view === ROOM_VIEW ? 'sala' : null} />
+      {/* 1.136 (SPEC §136.6): en la dirección de antes, el aviso de la mudanza a libotown.es, solo en tu piso */}
+      <AvisoDireccion lugar={panel?.type === 'pisoLab' && panel.id === HOME_PISO && !panel.select ? 'piso' : null} />
       {/* Piloto: al volver a la habitación tras registrar, el mismo aviso, por encima del panel del piso */}
       {panel?.type === 'pisoLab' && panel.id && (!panel.select || panel.select.startsWith('ordenador')) && createPortal(<LogUndoToast item={undoLog} onUndo={undoLastLog} />, modalRoot())}
       {panel?.type === 'review' &&<ReviewSheet key={panel.id} bookId={panel.id} onClose={() => switchPanel(panel.tab === 'piso' ? { type: 'pisoLab', id: panel.select } : panel.tab === 'book' ? { type: 'book', id: panel.id } : { type: 'laptop', tab: 'calendar', select: panel.select })} />}
@@ -420,8 +318,6 @@ function Sanctuary() {
           onShowInRoom={(id) => switchPanel({ type: 'figure', id })}
         />
       )}
-      {/* Rincón 01: una balda de cerca para elegir el ejemplar; elegirlo abre su ficha y Atrás vuelve a la habitación */}
-      {panel?.type === 'balda' && <BaldaPanel key={`${panel.id}-${panel.select}`} shelfId={panel.id} group={panel.select ?? 0} onClose={close} onOpenBook={(book) => switchPanel({ type: 'book', id: book.id })} />}
       {panel?.type === 'figure' && <FigureDetail key={panel.id} id={panel.id} onClose={close} />}
       {panel?.type === 'tray' && (
         <PomodoroTray
@@ -463,7 +359,8 @@ function Sanctuary() {
             onOpenBook={(book, row) => openPanel({ type: 'pisoLab', id: panel.id, select: `ficha:${row}:${book.id}` })}
             onRegister={() => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' })}
             onExit={() => switchPanel({ type: 'pisoLab' })}
-            onOpenLibrary={() => nav.replace({ view: 'shelf', panel: null })}
+            // 1.157: encima de tu piso (Atrás vuelve a él), no en su lugar: reemplazado, Atrás del móvil salía de la app
+            onOpenLibrary={() => nav.go({ view: 'shelf', panel: null })}
             onAddBook={() => openPanel({ type: 'pisoLab', id: panel.id, select: 'abrir:add' })}
             home={home && panel.id === HOME_PISO}
             onOpenAccount={() => openPanel({ type: 'account' })}
@@ -483,11 +380,6 @@ function Sanctuary() {
               else if (ir === 'edificio') openPanel({ type: 'edificio' });
               else if (ir === 'resena' && libro) openPanel({ type: 'review', id: libro, tab: 'piso', select: panel.id });
               else if (ir === 'ficha' && libro) openPanel({ type: 'book', id: libro });
-            }}
-            onAnterior={() => {
-              chooseStart('anterior');
-              setHome(false);
-              nav.replace({ view: 'room', panel: null });
             }}
           />
         </Suspense>

@@ -5,6 +5,7 @@
 // taza, guardando…), Atrás no hace nada y la entrada vuelve a su sitio. La navegación de paneles (domain/navigation.js) salta
 // estas entradas al cerrar un panel con su botón.
 import { useEffect, useRef } from 'react';
+import { retirandoCapas } from '../domain/navigation';
 
 const capas = []; // { id, cerrar: ref, empujada, base }
 let instalado = false;
@@ -26,6 +27,7 @@ function sincronizar() {
   }
   if (quitar) {
     // Lo cerrado con su propio botón: fuera del historial (al llegar `popstate`, se vuelve a mirar)
+    retirandoCapas();
     window.history.go(-quitar);
     return;
   }

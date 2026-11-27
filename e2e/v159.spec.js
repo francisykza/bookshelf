@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { auditState } from './audit159';
+import { abrirBiblioteca, abrirOrdenador, abrirRegistro, enInicio, esperarInicio } from './entrada';
 
 const run = { project: '', tests: {}, pageErrors: [], consoleErrors: [], data: {}, screenshots: [], states: [] };
 
@@ -84,13 +85,13 @@ async function seed(page, n) {
     [JSON.stringify({ version: 6, books: syntheticBooks(n), settings: { sound: false, viewMode: 'cover', owner: 'Prueba' } })],
   );
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0, null, { timeout: 30_000 });
+  await esperarInicio(page);
   await page.waitForTimeout(600);
   return hits;
 }
 
 async function openLibrary(page) {
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await abrirBiblioteca(page);
   await expect(page.locator('.library[data-phase="shelf"]')).toBeVisible();
   await page.waitForTimeout(300);
 }
@@ -173,7 +174,7 @@ test('portadas: la misma geometría cargando, cargada, sin portada y con la URL 
     [JSON.stringify({ version: 6, books: syntheticBooks(60), settings: { sound: false, viewMode: 'cover', owner: 'Prueba' } })],
   );
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0, null, { timeout: 30_000 });
+  await esperarInicio(page);
   await openLibrary(page);
   const measure = () =>
     page.evaluate(() =>
@@ -250,7 +251,7 @@ async function loadSample(page) {
     localStorage.setItem('bookshelf:signs-hint-done', 'true');
   });
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForFunction(() => localStorage.getItem('bookshelf:v1'));
   await page.waitForTimeout(300);
 }
@@ -259,7 +260,7 @@ test('aviso «Lectura registrada»: caduca 8 s después del registro aunque un p
   test.skip(!/390x844$/.test(info.project.name), 'el registro se abre desde el libro grande de la cama (390 × 844)');
   await loadSample(page);
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1')).progress.readingLog.length);
-  await page.getByRole('button', { name: /^Registrar lectura de / }).click();
+  await abrirRegistro(page);
   await page.getByRole('radio', { name: 'He leído' }).click();
   await page.locator('.panel--log input[inputmode]').fill('12');
   await page.getByRole('button', { name: 'Guardar lectura' }).click();
@@ -270,13 +271,12 @@ test('aviso «Lectura registrada»: caduca 8 s después del registro aunque un p
   await page.waitForTimeout(400);
   await shot(page, info, 'v159-aviso-lectura');
   // Se abre otro panel (el aviso queda oculto) y se cierra cuando ya han pasado los 8 s del registro
-  await page.getByRole('button', { name: 'Ambiente' }).click();
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="laptop"]').evaluate((el) => el.click());
+  await abrirOrdenador(page);
   await expect(page.locator('.panel-veil')).toBeVisible();
   await expect(toast).toHaveCount(0);
   await page.waitForTimeout(8500);
   await page.keyboard.press('Escape');
-  await expect(page.locator('.panel-veil')).toHaveCount(0);
+  await enInicio(page);
   await page.waitForTimeout(400);
   await expect(toast).toHaveCount(0);
   // Un solo registro guardado (ni eventos ni guardados duplicados)
@@ -298,7 +298,7 @@ test('registrar lectura con el teclado abierto: el panel cabe en la parte visibl
     };
   });
   await loadSample(page);
-  await page.getByRole('button', { name: /^Registrar lectura de / }).click();
+  await abrirRegistro(page);
   await page.getByRole('radio', { name: 'Porcentaje' }).click();
   await page.locator('.panel--log input[inputmode]').focus();
   await page.evaluate(() => window.__keyboard(true));

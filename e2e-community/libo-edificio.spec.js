@@ -207,7 +207,7 @@ test('con la comunidad activada, Libo enseña las hojas del cuaderno una vez', a
     sessionStorage.setItem('libo-e2e', '1');
     history.replaceState({ bookshelf: { loc: { view: 'room', panel: { type: 'social', tab: 'lectores' } }, depth: 0, parent: null } }, '');
   });
-  await page.goto('/?inicio=anterior');
+  await page.goto('/');
   const cuaderno = page.getByRole('dialog', { name: 'Comunidad' });
   await expect(cuaderno.locator('.social-hub__tabs')).toBeVisible({ timeout: 30000 });
   const pasos = await recorrer(page, info, 'comunidad', 'b2-comunidad');

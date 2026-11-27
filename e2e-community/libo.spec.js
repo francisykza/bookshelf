@@ -148,7 +148,7 @@ test('la primera vez, la bienvenida de Libo; luego vive en su esquina y se ajust
 
 test('el maullido, grabado aparte (los vídeos no llevan sonido)', async ({ page }, info) => {
   test.skip(info.project.name !== 'chromium-390x844', 'una vez basta');
-  await page.goto('/?inicio=anterior');
+  await page.goto('/');
   // La misma síntesis que suena en la app, en un contexto sin conexión, con el volumen por defecto de los efectos (25 %)
   const wav = await page.evaluate(async () => {
     const { dibujarMaullido } = await import('/src/features/libo/maullido.js');

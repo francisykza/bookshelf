@@ -127,17 +127,3 @@ test('el panel de recomendaciones es usable en móvil y con teclado', async ({ p
   await expect(page.locator('.librarian__books')).toHaveCount(0);
 });
 
-test('el ambiente sigue al libro actual y se puede desactivar', async ({ page }) => {
-  await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  // Circe (Fantasía, Mitología) es la lectura actual de la biblioteca de ejemplo
-  await expect(page.locator('.tod')).toHaveAttribute('data-vibe', 'fantasy');
-  expect(await page.locator('.tod').evaluate((el) => el.style.getPropertyValue('--vibe-light'))).toBe('#E7BD79');
-  // Preferencia manual: desactivado, sin tono
-  // 1.47: la cuenta tiene su propio acceso en la esquina
-  await page.getByRole('button', { name: 'Tu cuenta y copias' }).click();
-  await page.getByLabel(/Teñir la luz de la habitación/).uncheck();
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.tod')).not.toHaveAttribute('data-vibe', /.+/);
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('bookshelf:v1') ?? '{}').settings?.bookVibe)).toBe(false);
-});

@@ -8,6 +8,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
 import { SOBRES_CERRADOS } from '../src/features/edificio/economy.js';
+import { alEdificio } from './entrada';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 
@@ -31,11 +32,7 @@ async function openPortal(page, mock) {
   await mock.attach(page, ANA);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await expect(portal.locator('.ed-facade')).not.toHaveClass(/is-arriving/, { timeout: 5000 });
   return portal;
@@ -212,9 +209,7 @@ test('las misiones del ordenador se cobran en tickets y las figuras no aparecen'
   await mock.attach(page, ANA);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  // Ni la vitrina ni su recorrido
-  await expect(page.locator('.hotspot[data-id="figures"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Al edificio', exact: true })).toBeVisible({ timeout: 30000 });
   // Dos sesiones de lectura esta semana (antes de que arranque la app): la misión de las sesiones queda cumplida
   await page.waitForFunction(() => localStorage.getItem('bookshelf:v1'));
   await page.addInitScript(() => {
@@ -228,10 +223,9 @@ test('las misiones del ordenador se cobran en tickets y las figuras no aparecen'
       // Sin estado guardado, la prueba fallará más abajo con un mensaje claro
     }
   });
+  // 1.157: sin la habitación ilustrada, el ordenador con sus misiones se abre desde la ubicación (como desde el edificio)
+  await page.evaluate(() => history.replaceState({ bookshelf: { loc: { view: 'room', panel: { type: 'laptop', tab: 'missions' } }, depth: 0, parent: null } }, ''));
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.hotspot[data-id="laptop"]').focus();
-  await page.keyboard.press('Enter');
   const laptop = page.getByRole('dialog').first();
   await laptop.getByRole('tab', { name: /Misiones/ }).click();
   await expect(laptop.getByText('tickets para el almacén del hotel')).toBeVisible({ timeout: 15000 });

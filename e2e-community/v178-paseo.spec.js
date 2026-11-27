@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { PRENDAS } from '../src/features/edificio/actor.js';
 import { starterRoom } from '../src/features/edificio/demo.js';
 import { createMockSupabase } from './mockSupabase';
+import { alEdificio } from './entrada';
 
 // Desde «Exteriores en 3D» (11-11-2026) el portal es la calle en 3D (calleView.js) y este paseo, dibujado sobre la
 // fachada 2D, ya no está: volverá con el bloque 2 (salir a pie). Mientras, sus pruebas se saltan; la de movimiento
@@ -38,11 +39,7 @@ async function toPortal(page, { companero = null } = {}) {
   await mock.attach(page, ANA);
   await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const panel = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await expect(panel.locator('.ed-facade')).not.toHaveClass(/is-arriving/, { timeout: 15000 });
   return panel;

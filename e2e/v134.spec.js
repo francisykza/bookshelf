@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 import { FIGURES_ENABLED } from '../src/domain/figures.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { abrirBiblioteca, enInicio, esperarInicio } from './entrada';
 
 const run = { project: '', tests: {}, pageErrors: [], data: {}, screenshots: [] };
 
@@ -53,12 +54,12 @@ async function load(page, { mutate, panel } = {}) {
     await page.waitForFunction(() => localStorage.getItem('bookshelf:v1'));
     await page.reload();
   }
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await page.waitForTimeout(300);
 }
 
 async function openLibrary(page) {
-  await page.locator('[data-panel="MAIN_ROOM"] .hotspot[data-id="shelf"]').evaluate((el) => el.click());
+  await abrirBiblioteca(page);
   await expect(page.locator('.library[data-open="true"]')).toBeVisible();
   await page.waitForTimeout(500);
 }
@@ -174,7 +175,7 @@ test('recuerdos: uno destacado con fecha fiable; sin terminados ni cita, nada', 
     }),
   );
   await page.reload();
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
+  await esperarInicio(page);
   await openLibrary(page);
   await expect(page.locator('.keepsake-board')).toHaveCount(0);
 });
@@ -191,8 +192,6 @@ test('ficha: orden, detalles plegados, valoración con teclado y cierre «Cerrar
   await load(page, { panel: { type: 'book', id: 'principito' } });
   const sheet = page.locator('.book-sheet');
   await expect(sheet).toBeVisible();
-  // Sin flechas de habitación con un panel abierto
-  await expect(page.locator('.panorama-nav')).toHaveCount(0);
   const order = await page.evaluate(() => {
     const page = document.querySelector('.sheet-page--ficha');
     const sel = ['.ex-libris', '.sheet-head', '.sheet-status', '.sheet-progress', '.sheet-log', '.sheet-rating', '.sheet-details'];
@@ -236,7 +235,7 @@ test('ficha: orden, detalles plegados, valoración con teclado y cierre «Cerrar
   expect(overflow).toBeLessThanOrEqual(1);
   await shot(page, info, 'v134-ficha');
   await close.click();
-  await expect(page.locator('.panel-veil')).toHaveCount(0);
+  await enInicio(page);
 });
 
 test('diario: entradas fechadas y vacío con «Escribir mi primera anotación»', async ({ page }, info) => {

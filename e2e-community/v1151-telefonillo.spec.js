@@ -8,6 +8,7 @@ import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
 import { ANA } from './sobreShop';
+import { alEdificio } from './entrada';
 
 const BRUNO = { id: '22222222-2222-4222-8222-222222222222' };
 const CARLA = { id: '33333333-3333-4333-8333-333333333333' };
@@ -50,11 +51,7 @@ async function preparar(page, mock) {
 
 async function alPortal(page) {
   await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
+  await alEdificio(page);
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await expect(portal.getByRole('button', { name: /El telefonillo del portal/ })).toBeAttached({ timeout: 20000 });
   await page.waitForTimeout(600);
