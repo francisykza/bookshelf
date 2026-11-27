@@ -649,6 +649,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - Francisco vio las capturas de la moneda (cartel del café y misiones del ordenador) y respondió «Sí, publícala». Commit en
   `1.90-escritorio-puerto` y `main` avanzado sin forzar desde `727999d` (`git push origin 1.90-escritorio-puerto:main`).
   Sin migraciones. Entra también lo de las muestras de lumina-sfx (solo documentos; nada de la app).
+- Desplegado: `https://libotown.es/sw.js` sirve v1.160.0 (23:21) y la dirección de antes sigue con su 308.
 
 ### 2026-11-27 · Muestras de sonido con lumina-sfx (Claude)
 
