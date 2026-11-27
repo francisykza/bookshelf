@@ -6,13 +6,16 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **En curso, sin commit: 1.151.0 a 1.156.0** (26/27-11-2026, §151 a §156): las poses de Olmo y el Olmo 3D de su hoja (1.156) y
-  el edificio de tus amigos (los 5 bloques de
-  `docs/qa/amigos-vecinos.md`): cada cuenta su edificio, la llave, el telefonillo, el enlace `#llave=`, el edificio que crece de 3
-  a 5 plantas, la app «Amigos» del ordenador, Libo con los amigos y fuera las vistas isométricas de la parte A (la visita a un
-  vecino, siempre en 3D; la parte B se queda). Migraciones `20261230120000_edificio_amigos.sql`,
-  `20261231120000_edificio_plantas.sql` y `20270101120000_amigos.sql` **sin aplicar** (en ese orden). Francisco pidió seguir y
-  hacer commit y migraciones a la vuelta. Ver la bitácora.
+- **Publicada en producción: 1.156.0** (27-11-2026, §151 a §156; Francisco: «Sí, a la vuelta», «Sí, inclúyela» y «Sí,
+  empezamos»; commit `0b5288b`, `main` avanzó sin forzar de `57602d9` a `0b5288b` y libotown.es sirve v1.156.0): las poses de
+  Olmo y el Olmo 3D de su hoja (1.156) y el edificio de tus amigos (los 5 bloques de `docs/qa/amigos-vecinos.md`): cada cuenta
+  su edificio, la llave, el telefonillo, el enlace `#llave=`, el edificio que crece de 3 a 5 plantas, la app «Amigos» del
+  ordenador, Libo con los amigos y fuera las vistas isométricas de la parte A (la visita a un vecino, siempre en 3D; la parte B
+  se queda). **Migraciones aplicadas** el 27-11-2026 en el SQL Editor del proyecto `bookshelf`, en orden, con bytes y SHA-256
+  iguales a git y Francisco pulsando «Run» en cada una («Success. No rows returned»): `20261230120000_edificio_amigos.sql`
+  (20.546 B, `70216afe…c3adf0`), `20261231120000_edificio_plantas.sql` (6.592 B, `332ee2b3…083576`) y
+  `20270101120000_amigos.sql` (27.986 B, `6ae27797…dfeb`). Con la clave pública, las 6 tablas nuevas y las 22 funciones
+  probadas dan 42501 al anónimo (una inexistente, PGRST202). Sin probar entre cuentas reales ni en móviles reales. Ver la bitácora.
 - **Publicada en producción: 1.150.1** (26-11-2026, §150; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de
   `0a64772` a `d6fd931` y libotown.es sirve v1.150.1): Olmo, el búho librero que sustituye a Pilar con la
   suscripción (bloque 1, aprobado por Francisco: «Sí, sigue con la guía»), y la guía del café en menús y botones, con Olmo o
