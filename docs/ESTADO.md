@@ -628,7 +628,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   `libo-avisos` y `v1134-almacen-ordenador` en Chromium 390, 7/7. Build limpio. Emulación, no un iPhone real.
 - Visto sin tocar: al recargar con el ordenador abierto, «Abriendo tu piso…» se queda detrás del ordenador (no se ve; ya pasaba).
 - Francisco vio las capturas y los vídeos y respondió «publica lo que hay». Commit en `1.90-escritorio-puerto` y `main`
-  avanzado sin forzar desde `084c2be` (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
+  avanzó sin forzar de `084c2be` a `56017b0` (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
+- Desplegado: `https://libotown.es/sw.js` sirve v1.159.0 (22:10) y la dirección de antes sigue con su 308.
 
 ### 2026-11-27 · 1.158.0, «Lo de hoy»: el menú de Libo, a producción (Claude)
 
