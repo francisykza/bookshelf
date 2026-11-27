@@ -1,6 +1,7 @@
 // Dibujos de la tienda del bajo (1.67, SPEC §67), en el mismo pixel art que el piso. Desde la 1.76 (maquetas de
 // Francisco, §76) hay **una sola definición del sobre por colección**, que se usa en los tres sitios: el expositor de
-// la tienda (shopRoom.js la muestrea píxel a píxel sobre la cara del sobre), el selector y el mostrador de la apertura.
+// la tienda, el selector y el mostrador de la apertura (la tienda isométrica se retiró en la 1.155; hoy lo usa la caja del
+// casino).
 // Sus rasgos: el cuerpo verde de la casa, una faja crema ancha con el mueble de portada en grande (de la colección,
 // tomado del catálogo real), la tira de arriba del color de la colección con su línea perforada, la pestaña roja que se
 // agarra para rasgarla y la casita del edificio abajo. En el primer plano (`detail`) se añaden los pliegues y la costura.

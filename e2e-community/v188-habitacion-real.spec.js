@@ -103,9 +103,9 @@ test('tu piso en las tres vistas: entrada, Decorar, edificio, regreso y recarga;
   // De visita en el piso de Bruno: se mira, no se decora, y su piso no cambia
   await page.goBack();
   await portal.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click();
-  await expect(page.locator('.ep-canvas')).toBeVisible({ timeout: 15000 });
-  expect((await isoRoom(page)).pared).toBe('salvia');
-  await expect(page.locator('.ep-room-wrap, .ed-room').getByRole('button', { name: 'Decorar' })).toHaveCount(0);
+  // 1.155: directamente en 3D
+  await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.ed-visita3d').getByRole('button', { name: 'Decorar' })).toHaveCount(0);
   const bruno = layoutOf(mock, BRUNO);
   await page.goBack();
   await page.goBack();

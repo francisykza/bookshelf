@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { liboDe, marcarVisto } from '../libo';
-import { asomoAqui, avisosDeLibo, callar, debeAsomar, fijarDia, guardarCafeLibo, ideaAhora, leerCafeLibo, marcarAsomoAqui, sugerenciaDelDia, sugerencias, textoPlano } from '../sugerencias';
+import { asomoAqui, avisosDeLibo, callar, debeAsomar, fijarDia, guardarCafeLibo, ideaAhora, leerCafeLibo, marcarAsomoAqui, sugerenciaDelDia, sugerencias, sugerenciasDeAmigos, textoPlano } from '../sugerencias';
 
 const HOY = '2026-11-22';
 const memoria = () => {
@@ -172,5 +172,47 @@ describe('Libo · el bocadillo asoma una vez al día', () => {
     settings = { ...settings, ...marcarVisto(settings, 'cafe') };
     expect(liboDe(settings)).toEqual({ modo: 'llamar', vistos: ['hola', 'cafe'], dia: { fecha: HOY, sugerencia: 'ver:cafe', asomo: false }, callados: { 'ver:cafe': HOY } });
     expect(fijarDia(settings, HOY, 'otra', false)).toBe(null);
+  });
+});
+
+// 1.154 · Libo y los amigos (docs/qa/amigos-vecinos.md, bloque 4)
+describe('Libo · lo de tus amigos', () => {
+  const AGENDA = {
+    llaves: [{ codigo: 'ABCDEFGH', alias: 'Bruno' }],
+    recomendaciones: [
+      { id: 'r1', alias: 'Carla', titulo: 'Orgullo y prejuicio', vista: false },
+      { id: 'r0', alias: 'Carla', titulo: 'Visto ya', vista: true },
+    ],
+    amigos: [
+      { user_id: 'u-bruno', alias: 'Bruno', terminados: [{ titulo: 'REBECA', fecha: '2026-11-20' }, { titulo: 'Drácula', fecha: '2026-11-20' }] },
+      { user_id: 'u-dani', alias: 'Dani', terminados: [{ titulo: 'Rebeca', fecha: '2026-10-01' }] },
+      { user_id: 'u-eva', alias: 'Eva', terminados: null },
+    ],
+  };
+  const BOOKS = [libro('rebeca', { title: 'Rebeca' }), libro('dracula', { title: 'Drácula', status: 'read' })];
+
+  it('una llave, una recomendación sin ver y un amigo que terminó hace poco algo que quieres leer', () => {
+    const lista = sugerenciasDeAmigos(AGENDA, BOOKS, HOY);
+    expect(lista.map((s) => s.id)).toEqual(['amigo-llave:ABCDEFGH', 'amigo-recomienda:r1', 'amigo-termino:u-bruno:rebeca']);
+    expect(textoPlano(lista[0].partes)).toBe('Bruno te ha dado la llave de su edificio. Si os apetece ser vecinos, la tienes en tu agenda de Amigos.');
+    expect(textoPlano(lista[1].partes)).toBe('Carla te ha recomendado Orgullo y prejuicio. ¿Le echas un vistazo?');
+    expect(textoPlano(lista[2].partes)).toBe('Bruno ha terminado Rebeca, que tienes en «Quiero leer». Por si te anima a empezarlo.');
+    expect(lista[2].acciones).toEqual([
+      { ir: 'ficha', libro: 'rebeca', boton: 'Ver su ficha' },
+      { ir: 'amigos', boton: 'Abrir Amigos' },
+    ]);
+    for (const s of lista) expect(textoPlano(s.partes)).not.toMatch(PROHIBIDO);
+    expect(sugerenciasDeAmigos(null, BOOKS, HOY)).toEqual([]);
+  });
+
+  it('entran en la sugerencia del día (una al día) después de las reseñas, y contestadas se callan un mes', () => {
+    const resena = libro('fin', { status: 'read', finishedAt: '2026-11-20T10:00:00.000Z' });
+    const todas = sugerencias({ books: [...BOOKS, resena], amigos: AGENDA, edificio: false, hoy: HOY });
+    expect(todas[0].id).toBe('resena:fin');
+    expect(todas[1].id).toBe('amigo-llave:ABCDEFGH');
+    const callado = callar({}, 'amigo-llave:ABCDEFGH', HOY);
+    const despues = sugerencias({ books: BOOKS, amigos: AGENDA, settings: callado, edificio: false, hoy: HOY });
+    expect(despues.map((s) => s.id)).not.toContain('amigo-llave:ABCDEFGH');
+    expect(sugerenciaDelDia(despues, callado, HOY).id).toBe('amigo-recomienda:r1');
   });
 });

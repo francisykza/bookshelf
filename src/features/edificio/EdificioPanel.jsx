@@ -26,9 +26,11 @@ import { StarterPicker } from './StarterPicker';
 import { Cafe } from './cafe/Cafe';
 import { cargarFachada } from './cafe/cafeService';
 import { PantallaCarga } from '../../ui/PantallaCarga';
+import { SinTresD } from './SinTresD';
 import { mensajeLlegada } from './llegada';
 import { Libo } from '../libo/LiboRincon';
 import { useAtras } from '../../hooks/useAtras';
+import { Telefonillo } from './Telefonillo';
 // La visita en primera persona trae Three.js: solo se descarga si se entra
 const VisitaPiso = lazy(() => import('../pisoLab/VisitaPiso'));
 const VisitaCafe = lazy(() => import('./cafe/VisitaCafe'));
@@ -65,16 +67,37 @@ const saveView = (v) => {
 const readMail = correoLeido;
 const markMail = marcarCorreo;
 
+// 1.151: el telefonillo lleva un brillo hasta que lo abres por primera vez en este dispositivo
+const TELEFONILLO_KEY = 'bookshelf:telefonillo';
+const telefonilloVisto = () => {
+  try {
+    return localStorage.getItem(TELEFONILLO_KEY) === '1';
+  } catch {
+    return true;
+  }
+};
+const verTelefonillo = () => {
+  try {
+    localStorage.setItem(TELEFONILLO_KEY, '1');
+  } catch {
+    // Sin almacenamiento, el brillo vuelve la próxima vez
+  }
+};
+
 /** La calle del edificio en 3D (calleView.js, fuera de React; sin WebGL, la fachada 2D); cada piso ocupado es un botón. */
-function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '', cafe = null }) {
+function Facade({ vecinos, plantas = 3, onOpenPiso, onTelefonillo = null, shopBadge, mail = null, userId = '', cafe = null }) {
   const ref = useRef(null);
   const open = useRef(onOpenPiso);
+  const tel = useRef(onTelefonillo);
   useEffect(() => {
     open.current = onOpenPiso;
-  }, [onOpenPiso]);
+    tel.current = onTelefonillo;
+  }, [onOpenPiso, onTelefonillo]);
   useEffect(() => {
     const me = vecinos.find((v) => v.yo);
     const view = mountCalleView(ref.current, {
+      // 1.152: el edificio, de 3 a 5 plantas
+      plantas,
       flats: vecinos.map((v) => ({
         puerta: v.puerta,
         room: v.room,
@@ -88,6 +111,12 @@ function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '', cafe
       shopBadge: shopBadge ?? '',
       mail: mail && { lines: mail, read: readMail(userId), onRead: (lines) => markMail(userId, lines) },
       onOpenLimo: () => open.current(HOTEL_ID),
+      // 1.151: el telefonillo del portal (Telefonillo.jsx)
+      onOpenTelefonillo: () => {
+        verTelefonillo();
+        tel.current?.();
+      },
+      telefonilloNuevo: !telefonilloVisto(),
       // Tu personaje (y el legendario que te sigue), que van andando hasta la tienda o la limusina (1.78)
       walker: me ? { avatar: me.personaje ?? localAvatar(userId), companion: me.companero ?? null } : null,
       // 1.123: tu café visto desde la calle (la terraza y el escaparate, desde el nivel 5)
@@ -96,7 +125,7 @@ function Facade({ vecinos, onOpenPiso, shopBadge, mail = null, userId = '', cafe
     return () => view.destroy();
     // El correo llega como lista nueva en cada render: se compara por su texto
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vecinos, shopBadge, mail?.join('|'), userId, cafe]);
+  }, [vecinos, plantas, shopBadge, mail?.join('|'), userId, cafe]);
   return <div ref={ref} className="ed-facade-mount" />;
 }
 
@@ -179,6 +208,9 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  // 1.151: el telefonillo abierto, y lo que dice al mudarte (con la llave o al irte)
+  const [telefonillo, setTelefonillo] = useState(false);
+  const [mudanza, setMudanza] = useState('');
   const [saving, setSaving] = useState('');
   const [view, setView] = useState(readView);
   // Mis copias de cada mueble (1.66, §66); null: sin la migración del inventario, todo libre como antes
@@ -197,8 +229,8 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
   const [hotelDir, setHotelDir] = useState(false);
   // El armario de tu piso abierto (1.77): la barra dice «← Al piso» y «Armario»
   const [dressing, setDressing] = useState(false);
-  // De quién es el piso que se está visitando en primera persona (null: la vista isométrica de siempre)
-  const [visita3d, setVisita3d] = useState(null);
+  // 1.155: la visita a un vecino es siempre en 3D; true si este móvil no ha podido dibujarla
+  const [visitaSin3d, setVisitaSin3d] = useState(false);
   const [closeDressing, setCloseDressing] = useState(0);
   const [wasHotel, setWasHotel] = useState(false);
   const inside = view === 'dentro';
@@ -281,6 +313,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
     else if (inShop && cafeVisita) setCafeVisita(null);
   });
   useAtras(inHotel && hotelDir, () => setHotelDir(false));
+  useAtras(telefonillo, () => setTelefonillo(false));
   const open = pisoId && !inShop && !inHotel ? (data?.vecinos.find((v) => v.user_id === pisoId) ?? null) : null;
   const me = data?.vecinos.find((v) => v.yo) ?? null;
   const mine = open?.yo;
@@ -539,7 +572,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
     body = <GranHotel room={hotelRoom} onRoom={setHotelRoom} directory={hotelDir} onDirectory={setHotelDir} soundOn={soundOn} timer={reloj} askPages={askPages} onPagesDone={onPagesDone} onOpenCalendar={onOpenCalendar} onInventory={setInventory} destino={delOrdenador ? mueble : null} />;
   } else if (inShop) {
     // 1.119 (docs/qa/cafe-libreria.md, bloque 1): el bajo en traspaso, que será tu café-librería. Sobres, muebles y
-    // reciclar ya no se ven aquí (Tienda.jsx se conserva sin montar; el servidor y tus datos no cambian)
+    // reciclar ya no se ven aquí (la tienda isométrica, Tienda.jsx, se retiró en la 1.155; el servidor y tus datos no cambian)
     body = cafeVisita ? (
       <Suspense fallback={<PantallaCarga mensaje={`Entrando en ${cafeVisita.cafe}…`} />}>
         <VisitaCafe key={cafeVisita.userId} visita={cafeVisita} soundOn={soundOn} />
@@ -562,23 +595,22 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
               {mine ? 'Tu piso' : `Piso de ${open.alias}`} · {doorLabel(open.puerta)}
             </h2>
             {/* Dentro de tu piso, solo el nombre: la habitación manda */}
-            {!(mine && inside) && <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : likes ? 'Toca un mueble para darle un «me gusta».' : 'Puedes mirar, pero no tocar nada.'}</p>}
+            {!(mine && inside) && <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : 'Puedes mirar, pero no tocar nada.'}</p>}
           </div>
         </div>
-        {!mine && open.room && visita3d !== open.user_id && (
-          <button type="button" className="ed-visita-toggle" onClick={() => setVisita3d(open.user_id)}>
-            Entrar en 3D
-          </button>
-        )}
-        {!mine && open.room && visita3d === open.user_id ? (
-          <Suspense fallback={<PantallaCarga mensaje={`Entrando en el piso de ${open.alias ?? 'tu vecino'}…`} />}>
-            <VisitaPiso key={open.user_id} vecino={open} edificio={data.edificio} onVolver={onClose} onIso={() => setVisita3d(null)} />
-          </Suspense>
-        ) : open.room ? <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} decorate={mine && justPicked} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} placeAcabado={mine ? toPlaceAcabado : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} /> : <p className="ed-note">Aún no ha decorado su piso.</p>}
-        {!mine && open.room && visita3d === open.user_id && (
-          <button type="button" className="ed-visita-toggle is-dentro" onClick={() => setVisita3d(null)}>
-            Ver en isométrica
-          </button>
+        {/* 1.155 (Francisco: «borra las vistas isométricas»): a un vecino se le visita en 3D, sin la vista isométrica */}
+        {!mine && open.room ? (
+          visitaSin3d ? (
+            <SinTresD sala={`el piso de ${open.alias ?? 'tu vecino'}`} />
+          ) : (
+            <Suspense fallback={<PantallaCarga mensaje={`Entrando en el piso de ${open.alias ?? 'tu vecino'}…`} />}>
+              <VisitaPiso key={open.user_id} vecino={open} edificio={data.edificio} onVolver={onClose} onSin3d={() => setVisitaSin3d(true)} />
+            </Suspense>
+          )
+        ) : open.room ? (
+          <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} decorate={mine && justPicked} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} placeAcabado={mine ? toPlaceAcabado : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} />
+        ) : (
+          <p className="ed-note">Aún no ha decorado su piso.</p>
         )}
         {mine && (
           <p className="ed-saving" role="status" aria-live="polite">
@@ -604,12 +636,39 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
         </h2>
         <Facade
           vecinos={data.vecinos}
+          plantas={data.plantas}
           onOpenPiso={onOpenPiso}
+          onTelefonillo={() => setTelefonillo(true)}
           shopBadge={fachadaCafe?.inaugurado && fachadaCafe.nombre ? fachadaCafe.nombre : 'Se traspasa'}
           mail={mail}
           userId={community.userId}
           cafe={fachadaCafe}
         />
+        {telefonillo && (
+          <Telefonillo
+            vecinos={data.vecinos}
+            plantas={data.plantas}
+            libres={data.libres}
+            onClose={() => setTelefonillo(false)}
+            onLlamar={(uid) => {
+              setTelefonillo(false);
+              onOpenPiso(uid);
+            }}
+            onMudado={(texto) => {
+              setTelefonillo(false);
+              setMudanza(texto);
+              setAttempt((n) => n + 1);
+            }}
+          />
+        )}
+        {mudanza && (
+          <div className="ed-tel-hecho" role="status">
+            <p>{mudanza}</p>
+            <button type="button" className="ed-tel__mini" onClick={() => setMudanza('')}>
+              Entendido
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -624,6 +683,8 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
     if (inHotel) libo = hotelRoom ? null : { lugar: 'hotel', capitulo: 'hotel', espera: '.gh-zone', respiro: 1500 };
     else if (inShop) libo = cafeVisita ? { lugar: 'otro', variante: 'arriba' } : { lugar: 'cafe', capitulo: 'cafe', espera: '.cf3[data-ready="true"] .cf3-franja', respiro: 1200, variante: 'arriba' };
     else if (open) libo = mine && inside && !choosing && !dressing ? { lugar: 'tu-piso', capitulo: 'tu-piso', espera: '.ep-corner--right' } : null;
+    // 1.154: con el telefonillo abierto, su capítulo (arriba, por encima de su velo)
+    else if (!pisoId && telefonillo) libo = { lugar: 'telefonillo', capitulo: 'telefonillo', espera: '.ed-tel__placa[data-vista="inicio"] .ed-tel__botones', respiro: 500, variante: 'arriba' };
     else if (!pisoId) libo = { lugar: 'edificio', capitulo: 'edificio', espera: '.ed-facade:not(.is-arriving) .ed-window--mine', respiro: 900 };
   }
 

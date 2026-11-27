@@ -2,7 +2,7 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { createRoom } from '../room';
 
 const DIR = join(import.meta.dirname, '..', '..', '..', '..', 'supabase', 'migrations');
@@ -26,6 +26,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('select asignar_edificio()'));
     await as(db, u, (q) => q('insert into pisos (layout) values ($1::jsonb)', [JSON.stringify(createRoom())]));
   }
+  await juntarComoAntes(db, [A, B, C]);
   await db.query('with nuevo as (insert into edificios default values returning id) update edificio_vecinos set edificio = (select id from nuevo) where user_id = $1', [C]);
 }, 60000);
 

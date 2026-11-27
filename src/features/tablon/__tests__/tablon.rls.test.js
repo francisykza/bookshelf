@@ -1,6 +1,6 @@
 // Tablón libre: privacidad entre cuentas, publicación, revocación y cuota diaria, sobre Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { starterRoom } from '../../edificio/demo';
 
 let db;
@@ -23,6 +23,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('insert into pisos (layout) values ($1::jsonb)', [JSON.stringify(starterRoom())]));
     await call(u, 'select piso_mi_inventario()');
   }
+  await juntarComoAntes(db, [A, B, C, Z]);
   await as(db, C, (q) => q('insert into blocks (blocked) values ($1)', [A]));
   const { rows } = await db.query('select edificio from edificio_vecinos where user_id = $1', [A]);
   await db.query('insert into edificios default values');

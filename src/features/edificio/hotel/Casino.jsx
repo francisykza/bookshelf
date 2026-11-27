@@ -21,7 +21,7 @@ import { createShopSfx } from '../shopAudio';
 import { Carta, Huecos, PixelNum, Total } from './cartas21';
 import { useCountUp } from './useCountUp';
 import { CASINO, carta, fichasDe, FINAL, mesasQueEsperan } from './veintiuna';
-import { CASINO_H, CASINO_W, renderCasino } from './casinoArt';
+import { SinTresD } from '../SinTresD';
 import { CajaCasino } from './CajaCasino';
 import { MesaParaDos } from './MesaParaDos';
 import { SITIOS } from './casinoLayout';
@@ -241,7 +241,6 @@ export function Casino({ onStreet, soundOn = false }) {
   // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil te levanta de la mesa o te devuelve a la sala desde la ruleta, la vitrina o
   // las chisteras, como su botón; con la ruleta girando o una ronda en juego (el botón, desactivado), no hace nada
   useAtras(Boolean(abierta && (sentado || enRuleta || enVitrina || enChisteras)), () => pulsarAtras(root.current));
-  const room = sin3d ? renderCasino({ apagada: !abierta }) : null;
   // A solas: la última mano que no es de una mesa para dos
   const solo = (d) => d?.manos.filter((m) => !m.mesa).at(-1) ?? null;
   const mano = solo(data);
@@ -477,7 +476,6 @@ export function Casino({ onStreet, soundOn = false }) {
     else if (data.quedan === 0) dice = DICE.hecho;
     else dice = data.manos.length ? DICE.sigue : DICE.nueva;
   }
-  const place = (p) => ({ left: `${p.left * 100}%`, top: `${p.top * 100}%` });
   const semana = data ? Math.min(data.semana, data.tope) : 0;
   // 1.108 · La mano, sobre el paño de la mesa 3D: a solas, la tuya; en la mesa para dos, la que tienes abierta, con tu
   // amigo sentado al lado (sus cartas, boca abajo hasta que se resuelve). Las fichas de hoy, apiladas a tu lado.
@@ -994,31 +992,16 @@ export function Casino({ onStreet, soundOn = false }) {
           </div>
         </div>
       )}
+      {/* 1.155 · Sin 3D, la sala no se dibuja (fuera el dibujo isométrico); la mesa y la caja siguen debajo */}
       {sin3d && (
-      <div className={abierta ? 'gh-casino__scene' : 'gh-casino__scene is-off'} style={{ aspectRatio: `${CASINO_W} / ${CASINO_H}` }}>
-        <img
-          className="gh-casino__art"
-          src={room.scene}
-          alt={
-            abierta
-              ? 'El casino del sótano, de noche: moqueta roja con rombos dorados, papel pintado verde, una lámpara de flecos sobre la mesa de tapete verde, el crupier con chaleco, pajarita y visera, un rótulo de neón «21» y la ventanilla de la caja con su reja.'
-              : 'El casino del sótano, en penumbra: la mesa de tapete verde y el crupier, con las luces apagadas.'
-          }
-          draggable="false"
-        />
-        {modo === 'caja' && <img className="gh-casino__outline" src={room.outlines.caja} alt="" aria-hidden="true" draggable="false" />}
-        {dice && (
-          <p className="gh-casino__say" style={place(room.at.cabeza)} key={dice}>
-            <span className="px-sr">El crupier dice: </span>
-            {dice}
-          </p>
-        )}
-        {status === 'ready' && (
-          <button type="button" className="gh-spot is-caja" style={place(room.at.caja)} aria-pressed={modo === 'caja'} onClick={() => cambiar(modo === 'caja' ? 'solo' : 'caja')}>
-            Caja
-          </button>
-        )}
-      </div>
+        <SinTresD sala="el casino">
+          {dice && (
+            <p className="ed-sin3d__dice">
+              <span className="px-sr">El crupier dice: </span>
+              {dice}
+            </p>
+          )}
+        </SinTresD>
       )}
 
       {/* La mesa de juego, de cerca */}

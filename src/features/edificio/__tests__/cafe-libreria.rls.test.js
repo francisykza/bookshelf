@@ -5,7 +5,7 @@
 // cada tres de tus leídos; el ejemplar tuyo paga 6). El dominio:
 // servidas de 2 estrellas o más por bebida. El anónimo no puede nada y nadie toca las tablas a mano.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { premio, recetaPide } from '../cafe/cafeClientes';
 import { DOMINIO, EXTRA_LIBRO, EXTRA_LIBRO_TUYO, estrellasTotal, repartoDelNivel } from '../cafe/cafeLibreria';
 import { CATALOGO_LIBROS } from '../cafe/cafeCatalogoLibros';
@@ -43,6 +43,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Lectora ${i}`]));
     await as(db, u, (q) => q('select asignar_edificio()'));
   }
+  await juntarComoAntes(db, [A, B, C, D]);
   const f = (await db.query('select cafe_hoy()::text as h, (cafe_hoy() - 1)::text as a')).rows[0];
   [hoy, ayer] = [f.h, f.a];
   for (const u of [A, B, C, D]) await abrir(u);

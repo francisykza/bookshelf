@@ -271,6 +271,25 @@
   pointer-events: none;
 }
 
+/* 1.155 · Sin 3D, la recepción sin dibujo: un botón por cosa, en dos columnas */
+.gh-lobby__spots--sin3d {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100% - 24px, 420px);
+  margin: 0 auto 12px;
+  pointer-events: auto;
+}
+/* En el hotel no hay --ep-ink: sin esto, el texto heredaba el color claro de la plaza y no se leía */
+.gh-lobby__spots--sin3d .px-btn {
+  color: #3b2618;
+}
+.gh-lobby__spots--sin3d .px-btn[aria-selected='true'] {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* El letrero de cada cosa: una tablilla de papel colgada encima, con una muesca que la señala (como en la tienda) */
 .gh-spot {
   position: absolute;
@@ -4217,36 +4236,11 @@
 }
 
 .rcp-tag:focus-visible,
-.rcp-plano:focus-visible,
 .rcp-primary:focus-visible,
 .rcp-tool:focus-visible,
 .rcp-card__back:focus-visible {
   outline: 3px solid var(--rcp-cream);
   outline-offset: 2px;
-}
-
-/* «Plano»: una placa de latón pequeña, arriba a la derecha */
-.rcp-plano {
-  position: absolute;
-  z-index: 3;
-  top: 10px;
-  right: 12px;
-  min-height: 40px;
-  padding: 0 14px;
-  border: 2px solid #5a3a1c;
-  border-radius: 0;
-  background: linear-gradient(#f3d27e, #d9a648 55%, #b9822f);
-  box-shadow:
-    inset 0 0 0 2px #f8e2a2,
-    0 3px 0 rgb(10 8 20 / 0.55);
-  color: #3a2418;
-  font: 700 0.86rem/1 'Lora', Georgia, serif;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-}
-
-.rcp[data-spot] .rcp-plano {
-  visibility: hidden;
 }
 
 /* La barra de abajo: nogal con filete dorado doble, como el zócalo de la recepción */

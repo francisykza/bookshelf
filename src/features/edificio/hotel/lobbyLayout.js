@@ -1,5 +1,5 @@
-// Las medidas y los colores del vestíbulo del Gran Hotel, compartidos por el dibujo isométrico (lobbyArt.js) y la recepción
-// en 3D (recepcion3d.js): lo que se mueva aquí se mueve en las dos vistas. Mundo de la app: x a lo largo de la pared del
+// Las medidas y los colores del vestíbulo del Gran Hotel, de la recepción en 3D
+// (recepcion3d.js); las compartía con el dibujo isométrico, retirado en la 1.155. Mundo de la app: x a lo largo de la pared del
 // fondo, y hacia dentro (de la pared del fondo a la entrada), z hacia arriba, en celdas.
 
 /** Ancho (pared del fondo), hondo (pared izquierda), alto de las paredes y grueso del muro. */

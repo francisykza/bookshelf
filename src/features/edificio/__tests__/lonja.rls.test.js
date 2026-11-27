@@ -1,7 +1,7 @@
 // 1.84 · La Lonja: lo ofrecido queda apartado, el cambio es de una vez y no se puede abusar de la economía; y el canje de
 // sellos, que nunca da tickets (la estiba, en estiba.rls.test.js). Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { CATALOG } from '../catalog';
 import { starterRoom } from '../demo';
 
@@ -30,6 +30,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('insert into pisos (layout) values ($1::jsonb)', [JSON.stringify({ ...starterRoom(), items: [] })]));
     await lonja(u);
   }
+  await juntarComoAntes(db, [A, B, C, D, E, F]);
   await db.query("update profiles set created_at = now() - interval '30 days'");
   [COMUN, COMUN2] = await uno("rareza = 'comun' and saga is null");
   [POCO] = await uno("rareza = 'poco-comun' and saga is null");

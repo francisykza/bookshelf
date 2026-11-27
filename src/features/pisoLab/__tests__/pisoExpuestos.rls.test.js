@@ -1,6 +1,6 @@
 // Lo expuesto en la estantería: quién lo puede leer y qué se guarda, sobre Postgres real (PGlite) con todas las migraciones
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 
 let db;
 let A, B, C, Z;
@@ -15,6 +15,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q("insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Lector ${i}`]));
     await as(db, u, (q) => q('select asignar_edificio()'));
   }
+  await juntarComoAntes(db, [A, B, C, Z]);
   await as(db, C, (q) => q('insert into blocks (blocked) values ($1)', [A]));
   const { rows } = await db.query('select edificio from edificio_vecinos where user_id = $1', [A]);
   await db.query('insert into edificios default values');

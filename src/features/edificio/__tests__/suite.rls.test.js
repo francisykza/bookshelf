@@ -2,7 +2,7 @@
 // vacía, cada huésped lleva un mueble suyo (sin perderlo) que tiene que caber como en un piso, se ve quién trajo cada
 // cosa y con cuatro semanas aportando llega la placa, una vez. Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { starterRoom } from '../demo';
 
 // La sala ya no está en la app (1.81), pero sus funciones siguen en la base de datos, con lo que ya se ganó
@@ -25,6 +25,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('insert into pisos (layout) values ($1::jsonb)', [JSON.stringify(starterRoom())]));
     await call(u, 'select piso_mi_inventario()');
   }
+  await juntarComoAntes(db, [A, B, C]);
 }, 60000);
 
 describe('la suite de la semana', () => {

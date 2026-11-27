@@ -4,7 +4,7 @@
 // la tienda, la vista se acerca (te asomas) y entras; al volver, se aleja desde allí. Arrastrar, también encima de los
 // botones, gira la vista. Si no hay WebGL (o se pierde), se monta la fachada 2D de siempre.
 import { EYE, SPOTS, mountCalle } from './calle3d';
-import { FACADE_PARTS, FLATS } from './facade';
+import { FACADE_PARTS, FLATS, puertasDe } from './facade';
 import { mountFacade } from './facadeView';
 import { olvidarSalida, vienesDeSalir } from './salida';
 import { cartelDelBajo, placaHotel, placaVivienda } from './placas';
@@ -30,10 +30,12 @@ const SHOP = { x0: 5.15, x1: 7.8, z0: 0.95, z1: 2.15, y: BD + 0.3 };
 // 1.123: a la izquierda del portal (con el chófer, que espera delante, del lado del muelle)
 const LIMO = { x0: -0.05, x1: 3.45, z0: 0, z1: 0.95, y: BD + 1.5 };
 const MAILBOX = { x0: 2.7, x1: 3.46, z0: 0.6, z1: 1.55, y: BD + 0.25 };
+// 1.151: el telefonillo, a la derecha del portal (más grande que la placa, para el dedo)
+const TELEFONILLO = { x0: 4.38, x1: 5.05, z0: 0.75, z1: 1.65, y: BD + 0.2 };
 
 /** Mismas opciones que mountFacade (facadeView.js). Devuelve { destroy }. */
 export function mountCalleView(container, opts) {
-  const { flats, onOpenShop = null, shopBadge = '', mail = null, onOpenLimo = null } = opts;
+  const { flats, plantas = 3, onOpenShop = null, shopBadge = '', mail = null, onOpenLimo = null, onOpenTelefonillo = null, telefonilloNuevo = false } = opts;
   const root = document.createElement('div');
   root.className = 'ed-facade ed-calle';
   const stage = document.createElement('div');
@@ -101,6 +103,7 @@ export function mountCalleView(container, opts) {
   try {
     calle = mountCalle(view, {
       flats: byDoor,
+      plantas,
       cafe: opts.cafe ?? null,
       dragArea: stage,
       // Llegas por el muelle: con la vista algo baja, que sube hasta el cartel (si vuelves de dentro, ya está arriba)
@@ -143,8 +146,8 @@ export function mountCalleView(container, opts) {
 
   const list = document.createElement('ul');
   list.className = 'ed-facade__flats';
-  // De arriba abajo, como se lee un edificio (y como se recorren con el tabulador)
-  for (const puerta of ['3A', '3B', '2A', '2B', '1A', '1B']) {
+  // De arriba abajo, como se lee un edificio (y como se recorren con el tabulador); 1.152: de 3 a 5 plantas
+  for (const puerta of puertasDe(plantas)) {
     const f = FLATS.find((x) => x.puerta === puerta);
     const flat = flats.find((x) => x.puerta === puerta);
     const li = document.createElement('li');
@@ -206,6 +209,22 @@ export function mountCalleView(container, opts) {
     li.append(el);
     list.append(li);
     spots.push({ el, r: LIMO, key: 'limo' });
+  }
+  // 1.151 · El telefonillo del portal (Telefonillo.jsx): llamar a los vecinos, dar una llave de tu edificio o usar una
+  if (onOpenTelefonillo) {
+    const li = document.createElement('li');
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = `ed-window ed-telefonillo${telefonilloNuevo ? ' is-nuevo' : ''}`;
+    el.setAttribute('aria-label', 'El telefonillo del portal: llamar a tus vecinos y dar o usar una llave de tu edificio');
+    el.addEventListener('click', () => {
+      if (busy) return;
+      el.classList.remove('is-nuevo');
+      onOpenTelefonillo();
+    });
+    li.append(el);
+    list.append(li);
+    spots.push({ el, r: TELEFONILLO, key: 'telefonillo' });
   }
   stage.append(list);
   for (const { el, r } of spots.filter((x) => x.key !== 'mail')) {

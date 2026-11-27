@@ -134,7 +134,8 @@ test('la tablet pregunta; el portal, tu piso guardado en el servidor y la visita
   await expect(bruno.getByRole('heading', { name: 'Piso de Bruno · 1.º A' })).toBeVisible();
   await expect(bruno.getByRole('button', { name: 'Decorar' })).toHaveCount(0);
   await expect(bruno.getByRole('button', { name: 'Menuda estantería' })).toHaveCount(0);
-  await expect(bruno.locator('canvas.ep-canvas')).toBeVisible();
+  // 1.155: la visita es en 3D
+  await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await shot(page, info, 'v163-visita');
   // Atrás del sistema vuelve al portal, y otra vez, al salón
   await page.goBack();

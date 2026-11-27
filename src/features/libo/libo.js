@@ -144,9 +144,16 @@ export const EDIFICIO = Object.freeze([
   {
     id: 'vecinos',
     // La ventana de un vecino; si aún no hay ninguno, una puerta libre
-    ancla: ['.ed-facade__flats .ed-window:not(.ed-window--mine):not(.ed-window--free):not(.ed-shop):not(.ed-limo)', '.ed-facade__flats .ed-window--free'],
+    ancla: ['.ed-facade__flats .ed-window:not(.ed-window--mine):not(.ed-window--free):not(.ed-shop):not(.ed-limo):not(.ed-telefonillo)', '.ed-facade__flats .ed-window--free'],
     titulo: 'Tus vecinos',
     texto: () => 'Las demás ventanas son de tus vecinos: toca una para visitar su piso. Las que dicen «Libre» esperan a alguien nuevo.',
+  },
+  // 1.154 · El telefonillo del portal (docs/qa/amigos-vecinos.md, bloque 4)
+  {
+    id: 'telefonillo',
+    ancla: '.ed-telefonillo',
+    titulo: 'El telefonillo',
+    texto: () => 'Junto al portal, el telefonillo: llamas a tus vecinos y das la llave de tu edificio a tus amigos.',
   },
   {
     id: 'cafe',
@@ -313,6 +320,80 @@ export const COMUNIDAD = Object.freeze([
   },
 ]);
 
+/**
+ * 1.154 · Capítulo 8, el telefonillo del portal (docs/qa/amigos-vecinos.md, bloque 4): la primera vez que lo abres. Solo la
+ * vista de inicio, con sus botones de verdad.
+ */
+export const TELEFONILLO = Object.freeze([
+  {
+    id: 'hola',
+    ancla: null,
+    titulo: 'El telefonillo',
+    texto: () => 'Tu edificio es solo para tus amigos: nadie entra sin llave. Desde aquí llamas a tus vecinos y das llaves. ¿Te lo enseño?',
+  },
+  {
+    id: 'botones',
+    ancla: '.ed-tel__botones',
+    titulo: 'Un botón por puerta',
+    texto: () => 'El tuyo, en verde. Con el de un vecino llamas y entras en su piso; los apagados son puertas libres.',
+  },
+  {
+    id: 'dar',
+    ancla: '.ed-tel__acciones .ed-tel__accion--llave',
+    titulo: 'Dar una llave',
+    texto: () => 'Haces una llave para quien quieras de vecino: abre una sola vez y dura 7 días. Quien la usa se muda con su piso y sus muebles.',
+  },
+  {
+    id: 'usar',
+    ancla: '.ed-tel__acciones .ed-tel__accion:not(.ed-tel__accion--llave):not(.ed-tel__accion--suave)',
+    titulo: 'Tengo una llave',
+    texto: () => 'Si un amigo te da la suya, escribe aquí el código y te dice de quién es antes de mudarte.',
+  },
+  {
+    id: 'crece',
+    ancla: '.ed-tel__sub',
+    titulo: 'Un edificio que crece',
+    texto: () => 'Empieza con 3 plantas y, cuando se llenan, gana otra, hasta 5: diez amigos bajo el mismo tejado.',
+  },
+]);
+
+/**
+ * 1.154 · Capítulo 9, la agenda de Amigos del ordenador (bloque 4): la primera vez que la abres con la comunidad. Señala sus
+ * cuatro pestañas.
+ */
+export const AMIGOS = Object.freeze([
+  {
+    id: 'hola',
+    ancla: null,
+    titulo: 'Tu agenda de amigos',
+    texto: () => 'Amigos son quienes os seguís los dos. Aquí ves qué leen, os recomendáis libros y leéis a la vez. ¿Te enseño las pestañas?',
+  },
+  {
+    id: 'amigos',
+    ancla: '.am-pestana--amigos',
+    titulo: 'Tus amigos',
+    texto: () => 'Una ficha por amigo: qué lee y qué terminó, si lo comparte. Desde ella visitas su piso, le recomiendas un libro o le das tu llave.',
+  },
+  {
+    id: 'buscar',
+    ancla: '.am-pestana--buscar',
+    titulo: 'Buscar',
+    texto: () => 'Busca por alias o con un código de amigo, y pásale el tuyo a quien quieras. Aquí ves también quién te sigue.',
+  },
+  {
+    id: 'buzon',
+    ancla: '.am-pestana--buzon',
+    titulo: 'El buzón',
+    texto: () => 'Lo que te mandan: libros recomendados, propuestas para leer a la vez y llaves de otros edificios.',
+  },
+  {
+    id: 'ajustes',
+    ancla: '.am-pestana--ajustes',
+    titulo: 'Lo que ven',
+    texto: () => 'Tú eliges qué ven tus amigos de tu lectura. Nunca tus notas, tus reseñas privadas ni tus páginas por día.',
+  },
+]);
+
 /** Cada capítulo con sus pasos y lo que dice el botón para repasarlo. */
 export const CAPITULOS = Object.freeze({
   bienvenida: { pasos: BIENVENIDA, repaso: 'Repasar la bienvenida' },
@@ -321,6 +402,8 @@ export const CAPITULOS = Object.freeze({
   cafe: { pasos: CAFE, repaso: 'Repasar el café' },
   hotel: { pasos: HOTEL, repaso: 'Repasar el hotel' },
   comunidad: { pasos: COMUNIDAD, repaso: 'Repasar la comunidad' },
+  telefonillo: { pasos: TELEFONILLO, repaso: 'Repasar el telefonillo' },
+  amigos: { pasos: AMIGOS, repaso: 'Repasar la agenda' },
 });
 
 /** Lo que dice Libo al tocarle, según dónde estés (sin cuenta, con tu piso…). Frases cerradas. */
@@ -333,6 +416,8 @@ export const SALUDOS = Object.freeze({
   },
   hotel: 'Miau. ¿Te recuerdo qué hay en el hotel?',
   comunidad: 'Miau. ¿Repasamos el cuaderno de la comunidad?',
+  telefonillo: 'Miau. ¿Te recuerdo para qué sirve cada botón del telefonillo?',
+  amigos: 'Miau. ¿Repasamos tu agenda de amigos?',
   'comunidad-off': 'Hola, soy Libo. Cuando actives la comunidad, te enseño este cuaderno. Tu biblioteca funciona igual sin ella.',
   'signed-out': 'Hola, soy Libo, el gato de Libotown. Cuando entres con tu cuenta, te enseño tu piso. Mientras, tu biblioteca funciona en este dispositivo.',
   'no-member': 'Hola, soy Libo. Tu piso está en el edificio del puerto, que es para quien activa la comunidad. Tu biblioteca funciona igual sin ella.',

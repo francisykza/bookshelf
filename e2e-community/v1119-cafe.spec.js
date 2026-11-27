@@ -148,14 +148,14 @@ test('con movimiento reducido, sin paseo de cámara', async ({ page }, info) => 
   expect(await page.evaluate(() => window.__cafe3d.settled())).toBe(true);
 });
 
-test('sin WebGL, el dibujo del local vacío y Pilar igual', async ({ page }, info) => {
+// 1.155: sin el dibujo isométrico del local vacío; el café lo dice y Pilar sigue
+test('sin WebGL, el café sin dibujar y Pilar igual', async ({ page }, info) => {
   test.skip(!/chromium-390x844$/.test(info.project.name), 'Chromium 390');
   mkdirSync(DIR, { recursive: true });
   const { portal } = await alPortal(page, { sinWebgl: true });
   const cafe = await entrar(page, portal);
-  const img = cafe.locator('.cf3-iso img');
-  await expect(img).toBeVisible();
-  await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0)).toBe(true);
+  await expect(cafe.locator('.cf3-iso .ed-sin3d')).toContainText('No puede dibujar el café');
+  await expect(cafe.locator('.cf3-iso img')).toHaveCount(0);
   await expect(cafe.getByRole('button', { name: 'Hablar con Pilar' })).toBeVisible();
   await page.screenshot({ path: join(DIR, `5-sin-webgl-${tam(info)}.png`) });
 });

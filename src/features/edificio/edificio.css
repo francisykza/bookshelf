@@ -2662,38 +2662,6 @@
   touch-action: manipulation;
 }
 
-/* 1.89: la visita en primera persona a otro piso */
-.ed-visita-toggle {
-  display: block;
-  min-height: 48px;
-  margin: 8px auto;
-  padding: 0 22px;
-  border: 3px solid #3b2618;
-  background: #5c7a52;
-  box-shadow: 0 3px 0 #3b2618;
-  color: #fff7e3;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-/* 1.89.3: dentro del piso la etiqueta va superpuesta arriba: el botón, justo debajo de ella y siempre a la vista */
-.ed-inside .ed-visita-toggle:not(.is-dentro) {
-  position: absolute;
-  top: 76px;
-  left: 50%;
-  z-index: 4;
-  margin: 0;
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-
-.ed-visita-toggle.is-dentro {
-  background: #fbf3df;
-  color: #3b2618;
-}
-
 .ep-book-note {
   display: flex;
   align-items: center;
@@ -2997,4 +2965,382 @@
   transition:
     opacity 0.3s,
     visibility 0.3s;
+}
+
+/* ── 1.151 · El telefonillo del portal (Telefonillo.jsx; docs/qa/amigos-vecinos.md, bloque 1): una placa de latón con su
+   rejilla, un pulsador por puerta y, debajo, la llave de tu edificio como un llavero de cartón. Sin degradados brillantes ni
+   resplandores, como las placas de la fachada. ── */
+.ed-telefonillo {
+  z-index: 3;
+  border-radius: 3px;
+}
+.ed-telefonillo.is-nuevo::after {
+  content: '';
+  position: absolute;
+  inset: 18% 22%;
+  border: 2px solid #ffe0a3;
+  border-radius: 2px;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ed-telefonillo.is-nuevo::after {
+    animation: ed-tel-llama 1.6s steps(2, end) infinite;
+  }
+}
+@keyframes ed-tel-llama {
+  50% {
+    opacity: 0.15;
+  }
+}
+.ed-tel {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: end center;
+  padding: 12px 12px max(14px, env(safe-area-inset-bottom));
+}
+.ed-tel__fondo {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(22 14 10 / 0.5);
+  cursor: default;
+}
+.ed-tel__placa {
+  position: relative;
+  width: min(100%, 380px);
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: 16px 16px 12px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 6px),
+    #b58a45;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 0 0 4px #e3c27a,
+    inset 0 0 0 6px #8a6230,
+    inset 0 -10px 0 6px rgb(0 0 0 / 0.08),
+    4px 4px 0 rgb(15 9 11 / 0.5);
+  color: #2a1a10;
+  font: 400 0.86rem/1.4 'Lora', Georgia, serif;
+  image-rendering: pixelated;
+}
+/* Los tornillos de la placa */
+.ed-tel__placa::before,
+.ed-tel__placa::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  background: #6d4b22;
+  box-shadow: inset 1px 1px 0 #e3c27a;
+}
+.ed-tel__placa::before {
+  left: 10px;
+}
+.ed-tel__placa::after {
+  right: 10px;
+}
+.ed-tel__rejilla {
+  width: 96px;
+  height: 22px;
+  margin: 0 auto 10px;
+  background: repeating-linear-gradient(0deg, #2a1a10 0 2px, #8a6230 2px 5px);
+  box-shadow:
+    0 0 0 2px #2a1a10,
+    0 0 0 4px #e3c27a;
+}
+.ed-tel__titulo {
+  margin: 0;
+  text-align: center;
+  font: 400 15px/18px var(--pp-title);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  outline: none;
+}
+.ed-tel__sub {
+  margin: 6px 0 10px;
+  text-align: center;
+}
+.ed-tel__botones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 8px;
+  list-style: none;
+  background: #8a6230;
+  box-shadow: inset 0 0 0 2px #2a1a10;
+}
+.ed-tel__boton {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 0;
+  background: #d9b56c;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 2px #a07a3a;
+  color: #2a1a10;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.ed-tel__boton:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 0 0 2px #2a1a10;
+}
+.ed-tel__boton:disabled {
+  background: #a98348;
+  color: #4a3420;
+  cursor: default;
+}
+.ed-tel__boton.is-mio {
+  background: #b9cf9a;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -3px 0 2px #7f9a62;
+}
+.ed-tel__pulsador {
+  grid-row: span 2;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #3a2a1c;
+  box-shadow:
+    0 0 0 2px #e3c27a,
+    inset 2px 2px 0 #6d5036;
+}
+.ed-tel__boton:not(:disabled) .ed-tel__pulsador {
+  background: #f1d48a;
+  box-shadow:
+    0 0 0 2px #2a1a10,
+    inset -2px -2px 0 #b58a45;
+}
+.ed-tel__puerta {
+  font: 700 12px/14px 'Lora', var(--font-sans);
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
+.ed-tel__nombre {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ed-tel__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.ed-tel__accion,
+.ed-tel__volver,
+.ed-tel__mini {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 0;
+  background: #f4e6c4;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 2px #d6bf8c;
+  color: #2a1a10;
+  font: 400 12px/14px var(--pp-title);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.ed-tel__accion--llave {
+  background: #7fae5c;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 2px #5d8a40;
+  color: #fff8e4;
+}
+.ed-tel__accion--suave {
+  background: #c9a467;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 2px #a07a3a;
+}
+.ed-tel__accion:disabled,
+.ed-tel__mini:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.ed-tel__accion:active:not(:disabled),
+.ed-tel__mini:active:not(:disabled),
+.ed-tel__volver:active {
+  transform: translateY(1px);
+}
+.ed-tel__volver {
+  display: block;
+  margin: 12px auto 0;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ed-tel__mini {
+  min-height: 40px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+/* La llave: un llavero de cartón con el código escrito a mano, colgado de su anilla */
+.ed-tel__llavero {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 18px 0 10px;
+  padding: 18px 12px 12px;
+  background: #f4e6c4;
+  box-shadow:
+    inset 0 0 0 2px #2a1a10,
+    inset 0 -4px 0 2px #e0cc9e,
+    3px 3px 0 rgb(15 9 11 / 0.35);
+  text-align: center;
+}
+.ed-tel__llavero::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3px #6d4b22,
+    inset 0 0 0 2px #e3c27a;
+  transform: translateX(-50%);
+}
+.ed-tel__llavero p {
+  margin: 0;
+}
+.ed-tel__codigo {
+  font: 400 26px/30px var(--pp-title);
+  letter-spacing: 0.12em;
+  user-select: all;
+}
+.ed-tel__codigo--peq {
+  font-size: 14px;
+  line-height: 16px;
+}
+.ed-tel__caduca {
+  font-size: 0.78rem;
+  font-style: italic;
+}
+.ed-tel__llaves h3 {
+  margin: 8px 0 6px;
+  font: 400 11px/12px var(--pp-title);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ed-tel__llaves ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ed-tel__llaves li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgb(244 230 196 / 0.55);
+  box-shadow: inset 0 0 0 2px #8a6230;
+}
+.ed-tel__usar {
+  display: grid;
+  gap: 8px;
+}
+.ed-tel__usar label {
+  font-weight: 600;
+}
+.ed-tel__input {
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 0;
+  background: #fbf3df;
+  box-shadow: inset 0 0 0 2px #2a1a10;
+  color: #2a1a10;
+  font: 400 20px/24px var(--pp-title);
+  letter-spacing: 0.14em;
+  text-align: center;
+}
+.ed-tel__input:focus-visible {
+  outline: 3px solid #fff1c9;
+  outline-offset: 2px;
+}
+.ed-tel__aviso {
+  margin: 8px 0;
+  padding: 8px 10px;
+  background: #f4e6c4;
+  box-shadow: inset 0 0 0 2px #a14a32;
+}
+.ed-tel__nota {
+  margin: 8px 0;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+.ed-tel-hecho {
+  position: absolute;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 21;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: min(calc(100% - 24px), 380px);
+  padding: 10px 12px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  color: #2c1e14;
+  font: 400 0.86rem/1.4 'Lora', Georgia, serif;
+  transform: translateX(-50%);
+}
+.ed-tel-hecho p {
+  flex: 1;
+  margin: 0;
+}
+
+/* 1.155 · Sin 3D en este móvil (SinTresD.jsx): un papel de píxel en lugar del dibujo isométrico de la sala */
+.ed-sin3d {
+  box-sizing: border-box;
+  width: min(100% - 24px, 420px);
+  margin: 12px auto;
+  padding: 10px 12px;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  color: var(--ep-ink, #3b2618);
+  font: 400 0.92rem/1.4 'Lora', Georgia, serif;
+  image-rendering: pixelated;
+}
+.ed-sin3d p {
+  margin: 0;
+}
+/* En la visita, la etiqueta del piso flota arriba (.ed-inside .ed-head): la escena 3D (con su tarjeta «Está leyendo») y el
+   aviso sin 3D van debajo, sin que la tapen */
+.ed-inside > .ed-visita3d,
+.ed-inside > .ed-sin3d {
+  margin-top: 84px;
+}
+.ed-sin3d__title {
+  margin-bottom: 4px !important;
+  font: 400 13px/16px var(--pp-title);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ed-sin3d__dice {
+  margin-top: 8px !important;
+  font-style: italic;
 }

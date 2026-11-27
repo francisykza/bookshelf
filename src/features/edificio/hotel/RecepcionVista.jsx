@@ -2,13 +2,12 @@
 // `recepcion3d.js` (Three.js, se carga al entrar); aquí, lo que se toca y los mandos, con el diseño de la recepción:
 // - letreros pequeños de latón sobre la recepción, el ascensor, el tablón y el guardarropa, que siguen a la vista;
 // - tocar una cosa (en la escena, en su letrero o en la barra) acerca la cámara a ella y abre su papel; «Volver», tocar
-//   fuera o Escape vuelve a la entrada (un segundo Escape sale a la plaza, como en el vestíbulo isométrico);
+//   fuera o Escape vuelve a la entrada (un segundo Escape sale a la plaza);
 // - la barra de abajo, de nogal con filete dorado: «Encargos de la semana» en terciopelo verde y tres iconos de píxel;
-// - «Plano», arriba, cambia a la vista isométrica de siempre (y se recuerda en el dispositivo).
 // - El ascensor no abre un papel: sus puertas se abren, se entra en la cabina y su botonera son los botones de la placa de
 //   latón de la pared (petición de Francisco del 9-11-2026); «Salir del ascensor» o Escape vuelven al vestíbulo.
-// Lo que dice cada papel (encargos, botonera, «Abre pronto») lo pone quien la usa, con `paper(spot)`: es el mismo que el del
-// plano isométrico.
+// Lo que dice cada papel (encargos, botonera, «Abre pronto») lo pone quien la usa, con `paper(spot)`: es el mismo que el de
+// la recepción sin 3D. 1.155: fuera el «Plano» isométrico (docs/qa/amigos-vecinos.md, bloque 5).
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PantallaCarga } from '../../../ui/PantallaCarga';
 import { useAtras } from '../../../hooks/useAtras';
@@ -82,7 +81,7 @@ function Icono({ id }) {
   );
 }
 
-export function Recepcion3D({ onStreet, onPlano, onFail, paper }) {
+export function Recepcion3D({ onStreet, onFail, paper }) {
   const wrap = useRef(null);
   const host = useRef(null);
   const api = useRef(null);
@@ -252,9 +251,6 @@ export function Recepcion3D({ onStreet, onPlano, onFail, paper }) {
             </button>
           ))}
         </div>
-        <button type="button" className="rcp-plano" onClick={onPlano}>
-          Plano
-        </button>
       </div>
       {spot === "ascensor" && cabina && (
         <>

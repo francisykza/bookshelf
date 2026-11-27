@@ -5,6 +5,7 @@ import { currentBook, formatPercent, percentRead, progressLabel, trackUnit } fro
 import { dailyQuoteReady } from '../../components/panels/DailyQuote';
 import { Cover } from '../../components/shelf/BookItem';
 import { AlmacenNota, AlmacenTarjeta } from '../edificio/hotel/AlmacenOrdenador';
+import { AmigosTarjeta } from '../social/amigos/AmigosTarjeta';
 import { useLibrary } from '../../state/useLibrary';
 import { PixelIcon } from '../../ui/PixelIcon';
 import { PortIcon } from '../../ui/PortIcon';
@@ -43,6 +44,11 @@ const GROUPS = (open, tool) => [
       { name: 'Pedir recomendación', icon: 'busqueda', run: () => tool('librarian') },
       { name: 'Mapa de sagas', icon: 'estanteria', run: () => tool('atlas') },
     ],
+  },
+  // 1.153 · La agenda de tus amigos (docs/qa/amigos-vecinos.md, bloque 3)
+  {
+    title: 'Amigos',
+    items: [{ name: 'Amigos', icon: 'amigos', run: () => open('amigos') }],
   },
   // 1.134 · El almacén de muebles del Gran Hotel: sus ofertas de hoy y lo nuevo (docs/qa/almacen-ordenador.md)
   {
@@ -162,6 +168,7 @@ export function PisoDesktop({ open, tool, go }) {
               </div>
             </section>
           )}
+          {go.amigos && <AmigosTarjeta onOpen={() => choose({ name: 'Abrir Amigos', run: () => open('amigos') })} />}
           {go.almacen && <AlmacenTarjeta onGo={(id) => choose({ name: `almacen:${id}`, run: () => go.almacen(id) })} onOpen={() => choose({ name: 'Ver el almacén', run: () => open('almacen') })} />}
         </div>
       </div>

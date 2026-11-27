@@ -170,8 +170,6 @@ test('de visita: el mapache de Bea está en su piso; en el tuyo, sin él, no hay
   await page.getByRole('button', { name: 'Al edificio' }).click();
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
-  await expect(page.locator('.ep-canvas')).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: 'Entrar en 3D' }).click();
   await expect(page.locator('.plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await expect.poll(() => enPiso(page).then((m) => m?.visible && m.front), { timeout: 10000 }).toBe(true);
   await page.waitForTimeout(300);

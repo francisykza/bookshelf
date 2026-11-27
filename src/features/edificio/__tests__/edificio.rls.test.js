@@ -1,8 +1,8 @@
-// 1.63 · «El edificio del puerto»: autorización en un Postgres real (PGlite) con la migración tal cual. Reparto al azar
+// 1.63 · «El edificio del puerto»: autorización en un Postgres real (PGlite) con la migración tal cual. Reparto (desde la 1.151, un edificio propio)
 // en edificios de seis, pisos que solo ven los vecinos (sin bloqueos y con la comunidad activada), validación del piso
 // en el servidor idéntica a la del cliente, sellos de frase cerrada solo entre vecinos y el portal en una consulta.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, juntarComoAntes, rejects } from '../../social/__tests__/supabaseHarness';
 import { CATALOG } from '../catalog';
 import { starterRoom } from '../demo';
 import { addItem, createRoom, validateRoom } from '../room';
@@ -106,15 +106,14 @@ describe('reparto en edificios', () => {
     expect(await rejects(as(db, null, (q) => q('select asignar_edificio()')))).toMatch(/permission denied/);
   });
 
-  it('se llenan primero los edificios con hueco: seis en el primero y la séptima en uno nuevo; cada puerta, una vez', async () => {
+  it('1.151: cada cuenta nueva estrena su propio edificio (los vecinos se juntan con llaves); pedirlo otra vez, lo mismo', async () => {
     const got = [];
     for (const u of [A, B, C, D, E, F, G]) got.push((await as(db, u, (q) => q('select asignar_edificio() as r')))[0].r);
-    const first = got[0].edificio;
-    expect(got.slice(0, 6).every((g) => g.edificio === first)).toBe(true);
-    expect(new Set(got.slice(0, 6).map((g) => g.puerta))).toEqual(new Set(['1A', '1B', '2A', '2B', '3A', '3B']));
-    expect(got[6].edificio).not.toBe(first);
-    // Pedirlo otra vez devuelve lo mismo
+    expect(new Set(got.map((g) => g.edificio)).size).toBe(7);
+    for (const g of got) expect(['1A', '1B', '2A', '2B', '3A', '3B']).toContain(g.puerta);
     expect((await as(db, A, (q) => q('select asignar_edificio() as r')))[0].r).toEqual(got[0]);
+    // Lo que sigue en este archivo se escribió con los seis primeros juntos
+    await juntarComoAntes(db, [A, B, C, D, E, F, G]);
   });
 
   it('las tablas del reparto no se leen ni se escriben directamente', async () => {

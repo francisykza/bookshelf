@@ -30,7 +30,7 @@ import { rememberMyPiso, saveMyPiso } from '../edificio/myPiso';
 import { salaPersonajes } from '../edificio/service';
 import { marcarSalida } from '../edificio/salida';
 import { useMonitorAlmacen } from '../edificio/hotel/almacenHoy';
-import { useAvisosLibo } from '../libo/useAvisosLibo';
+import { useAmigosLibo, useAvisosLibo } from '../libo/useAvisosLibo';
 import { savable, useMyPiso, withDoorAndComputer } from './useMyPiso';
 import { expuestosDe, publicarExpuestos } from './expuestos';
 import '../tablon/tablon.css';
@@ -388,6 +388,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
   const monitor = useMonitorAlmacen(Boolean(real) && editable);
   // Libo (bloque 3): en tu piso de inicio reúne los avisos del almacén, el café y el buzón
   const avisosLibo = useAvisosLibo(Boolean(home && real && editable), real?.userId ?? null);
+  const amigosLibo = useAmigosLibo(Boolean(home && real && editable), real?.userId ?? null);
   // Un visitante nunca llega al editor, aunque el historial lo pida
   const listing = select === 'toda' && editable;
   // Tu piso abre la biblioteca actual; la de siempre queda solo para quien no tiene piso que mostrar
@@ -715,7 +716,7 @@ function PisoView({ piso, real = null, select, onSelect, onBack, onExit, onOpenB
             </div>
             {!editable && <p className="plab-note">Puedes mirar y salir por la puerta; lo demás no se toca.</p>}
             {/* Libo vive en la esquina de tu piso de inicio; la primera vez, la bienvenida */}
-            {home && real && editable && !select && <Libo lugar="piso" capitulo="bienvenida" contexto={{ leyendo: Boolean(reading) }} listo={boardReady > 0} raiz={raiz} onAjustes={() => onSelect('abrir:libo')} hub avisos={avisosLibo} onIr={onLibo} />}
+            {home && real && editable && !select && <Libo lugar="piso" capitulo="bienvenida" contexto={{ leyendo: Boolean(reading) }} listo={boardReady > 0} raiz={raiz} onAjustes={() => onSelect('abrir:libo')} hub avisos={avisosLibo} amigos={amigosLibo} onIr={onLibo} />}
             {/* Biblioteca de demostración en este navegador: se dice, y se puede volver a la tuya (la nube está apagada mientras tanto) */}
             {editable && demoLibraryActive() && (
               <p className="plab-note">

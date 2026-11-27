@@ -156,7 +156,7 @@ test('la fachada no se queda recortada ni con placas fuera: desde la habitación
 
   // 3. El piso de otra persona y regresar
   await portal.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click();
-  await expect(page.locator('.ep-canvas')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await record(page);
   await page.goBack();
   await expect(portal.locator('.ed-facade')).toBeVisible({ timeout: 15000 });

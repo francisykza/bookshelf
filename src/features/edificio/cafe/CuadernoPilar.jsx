@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { PixelArt } from './PixelArt';
 import { anfitrion, conQuien } from './cafePersonaje';
+import { MOMENTO_OLMO } from './olmoPoses';
 import { CAJA, GRANO, HUCHA, PIZARRA } from './cafeIconos';
 import { GRADOS_TOTAL, TAREAS, estadoTarea, gradosHechos } from './cafeCuaderno';
 import { errorCafe, mejorarPilar } from './cafeService';
@@ -40,7 +41,7 @@ export function CuadernoPilar({ local, onCambio, onCerrar, sfx = null }) {
     <div className="cf3-balda cf3-cuaderno" role="region" aria-label={`El cuaderno de ${anfitrion().nombre}`}>
       <div className="cf3-cuaderno__cabeza">
         <span className="cf3-cuaderno__pilar" aria-hidden="true">
-          <PixelArt icono={anfitrion().retrato('lee')} />
+          <PixelArt icono={anfitrion().retrato(MOMENTO_OLMO.cuaderno)} />
         </span>
         <div className="cf3-cuaderno__titulos">
           <h2 className="cf3-cuaderno__titulo">El cuaderno de {anfitrion().nombre}</h2>

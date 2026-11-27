@@ -34,39 +34,26 @@ async function abre(page) {
 }
 
 for (const alto of [null, 640]) {
-  test(`el botón Entrar en 3D se ve sin desplazar${alto ? ' en pantalla baja' : ''}`, async ({ page, viewport }) => {
+  // 1.155: sin vista isométrica, ya no hay botón «Entrar en 3D» que medir; la visita entra directamente
+  test(`la visita entra en 3D: permisos y salida${alto ? ' en pantalla baja' : ''}`, async ({ page, viewport }) => {
     test.setTimeout(90000);
     if (alto) await page.setViewportSize({ width: 360, height: alto });
     const mock = await abre(page);
     await page.getByRole('button', { name: 'Al edificio' }).click();
     await page.getByRole('dialog', { name: 'El edificio del puerto' }).getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
-    await expect(page.locator('.ep-canvas')).toBeVisible({ timeout: 15000 });
-    const boton = page.getByRole('button', { name: 'Entrar en 3D' });
-    await expect(boton).toBeVisible();
-    const m = await boton.evaluate((el) => {
-      const r = el.getBoundingClientRect();
-      const h = document.querySelector('.ed-head').getBoundingClientRect();
-      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, alto: innerHeight, ancho: innerWidth, bajoEtiqueta: r.top >= h.bottom, scroll: el.closest('.ed-inside').parentElement.scrollTop };
-    });
-    expect(m.bajoEtiqueta).toBe(true);
-    expect(m.top).toBeGreaterThanOrEqual(0);
-    expect(m.bottom).toBeLessThanOrEqual(m.alto);
-    expect(m.left).toBeGreaterThanOrEqual(0);
-    expect(m.right).toBeLessThanOrEqual(m.ancho);
-    expect(m.bottom - m.top).toBeGreaterThanOrEqual(44);
-    await boton.click();
     await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
     // Permisos de visitante y salida
     const dentro = page.locator('.ed-visita3d');
     await expect(dentro.getByRole('button', { name: /Registrar/ })).toHaveCount(0);
     await expect(dentro.getByRole('button', { name: 'Decorar' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Volver al portal' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Ver en isométrica' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ver en isométrica' })).toHaveCount(0);
     const guardados = mock.db.pisos.find((p) => p.user_id === BEA.id).layout.items.length;
     expect(guardados).toBe(DE_BEA.length);
     const c = (await page.evaluate(() => window.__pisoLab().debug())).camera;
     expect(c.inside).toEqual([]);
-    expect(c.seatVisible).toBe(false);
+    // El asiento de quien lee no se ve (o el piso de Bea no tiene: sin sillón, `null`)
+    expect(c.seatVisible).not.toBe(true);
     await page.getByRole('button', { name: 'Volver al portal' }).click();
     await expect(page.getByRole('dialog', { name: 'El edificio del puerto' })).toBeVisible();
     void viewport;

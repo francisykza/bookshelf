@@ -1,6 +1,6 @@
 // Dibujos del tablón sobre Postgres real (PGlite) con todas las migraciones: límites, cupo compartido, permiso público y retirada.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 
 let db;
 let A, B, C;
@@ -20,6 +20,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('select asignar_edificio()'));
     await call(u, 'select tablon_ajustes($1)', [true]);
   }
+  await juntarComoAntes(db, [A, B, C]);
 }, 60000);
 
 describe('dibujos del tablón', () => {

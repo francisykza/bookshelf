@@ -68,7 +68,6 @@ test('desde el edificio abre el piso de la vecina y vuelve al portal', async ({ 
   await page.getByRole('button', { name: 'Al edificio' }).click();
   const puerta = page.getByRole('dialog', { name: 'El edificio del puerto' }).getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' });
   await puerta.click();
-  await page.getByRole('button', { name: 'Entrar en 3D' }).click({ timeout: 15000 });
   await expect(page.locator(`.ed-visita3d[data-visita="${BEA.id}"]`)).toBeVisible({ timeout: 20000 });
   await expect(page.locator('.ed-title')).toContainText('Piso de Bea');
   await page.locator('.ed-bar__back').click();

@@ -161,19 +161,8 @@ test('recorrido hasta el piso de otra persona', async ({ browser }, info) => {
   await page.getByRole('button', { name: 'Al edificio' }).click();
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
-  await expect(page.locator('.ep-canvas')).toBeVisible({ timeout: 15000 });
-  await page.waitForTimeout(1500);
-  await page.screenshot({ path: join(dir, 'visita-vista-previa.png') });
-  const boton = page.getByRole('button', { name: /Entrar en (primera persona|3D)/ });
-  const medida = await boton.evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    const tope = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, alto: innerHeight, cubierto: !(tope && (tope === el || el.contains(tope))), encima: tope?.className ?? null };
-  });
-  writeFileSync(join(dir, 'visita-boton.json'), JSON.stringify(medida, null, 1));
-  await boton.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(600);
-  await boton.click({ force: true });
+  // 1.155: sin vista previa isométrica; llamar a la puerta ya entra en 3D
+  await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await ready(page);
   await page.waitForTimeout(1500);
   await page.screenshot({ path: join(dir, 'visita-3d-entrada.png') });

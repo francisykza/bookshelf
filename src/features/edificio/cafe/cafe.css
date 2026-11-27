@@ -4844,3 +4844,13 @@ button.cf3-retrato--guia:focus-visible {
   font: 400 11px/16px var(--pp-title);
   text-align: center;
 }
+
+/* 1.156 · Las poses de Olmo (las dibujó Francisco; olmoPoses.js) en lugar de su retrato de píxel: el cuerpo entero, que llena
+   el marco de alto, centrado y sin deformar (lo que sobra a los lados son los adornos). Se reduce con suavidad: el dibujo ya
+   trae sus píxeles grandes, y al encogerlo «pixelated» los rompería. */
+.cf3-px--pose {
+  object-fit: cover;
+  object-position: 50% 100%;
+  image-rendering: auto;
+  user-select: none;
+}

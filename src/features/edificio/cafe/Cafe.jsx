@@ -17,11 +17,13 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLibrary } from '../../../state/useLibrary';
 import { catalogItem } from '../catalog';
-import { renderShopRoom } from '../shopRoom';
+import { SinTresD } from '../SinTresD';
 import { CAFE_MUEBLES, CAFE_NOMBRES, asientosDe, cabe, deCasa, hueco, libresDeCasa, libresDelCafe, maxCosas, progresoNivel, uidNuevo } from './cafeCatalogo';
 import { COPA, CUADERNO, GRANO, HORNO, LIBROS, SUBIR, TAZA, iconoDe } from './cafeIconos';
 import { PixelArt } from './PixelArt';
 import { anfitrion } from './cafePersonaje';
+import { MOMENTO_OLMO, poseOlmoAlHablar, poseOlmoEnReposo } from './olmoPoses';
+import { useReposoOlmo } from './useReposoOlmo';
 import { GuiaCafe } from './GuiaCafe';
 import { conLoDeAqui, marcarAqui, marcarVistos, pasosDe } from './cafeGuia';
 import { anclaVisible } from '../../libo/LiboRincon';
@@ -120,6 +122,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   // 1.150: quién atiende (Pilar u Olmo, con la suscripción o en vista previa) y cuál de sus frases dice Olmo si le tocas
   const quien = anfitrion();
   const [fraseOlmo, setFraseOlmo] = useState(-1);
+  // 1.156: Olmo vivo en la franja (sus poses, como Libo): lee o se duerme si no tocas nada y se marea si le tocas mucho
+  const reposoOlmo = useReposoOlmo(quien.id === 'olmo');
   const [aviso, setAviso] = useState('');
   const [eligiendo, setEligiendo] = useState(false);
   // El escaparate (nivel 5): null, cerrado; si no, las claves elegidas
@@ -176,7 +180,6 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
     atenderToque.current = fn;
   }).current;
   const pidiendoHabitual = useRef(false);
-  const vacio = sin3d ? renderShopRoom({ vacio: true }) : null;
   const libros = useMemo(() => librosDelCafe(state?.books), [state?.books]);
   // 1.139: al servidor van solo tus leídos (hasta 200); la distribuidora enseña además el catálogo del café
   const titulosTuyos = useMemo(() => titulosDelCafe(libros), [libros]);
@@ -745,6 +748,7 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
 
   const hablar = () => {
     sfx.play(quien.sonido);
+    reposoOlmo.tocado();
     setAviso('');
     setHablando(0);
     // Olmo, con el café abierto: una frase suya cada vez que le tocas
@@ -1096,6 +1100,8 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
   const ultima = hablando === frases.length - 1;
   // El cuadro de diálogo: quién habla (Pilar con su retrato o un aviso con la taza), qué dice y si hay más
   const quienHabla = eligiendo || escaparate != null || !aviso;
+  // El retrato de la franja: con su frase, su gesto; mareado tras muchos toques; si no, según el rato sin tocar nada
+  const poseFranja = reposoOlmo.mareado ? 'mareado' : fraseOlmo >= 0 && hablando != null ? poseOlmoAlHablar(fraseOlmo) : poseOlmoEnReposo(reposoOlmo.quieto);
   const texto = eligiendo
     ? '«¿Cómo se va a llamar? Lo verán todos los que pasen por el muelle.»'
     : escaparate != null
@@ -1193,8 +1199,9 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
         {titulo}
       </h2>
       {sin3d ? (
+        // 1.155 · Sin 3D, el café no se dibuja (fuera el bajo isométrico vacío)
         <div className="cf3-iso">
-          <img src={vacio.scene} alt="El bajo, vacío y en traspaso: cajas de mudanza, sábanas y el mostrador con Pilar." />
+          <SinTresD sala="el café" />
         </div>
       ) : (
         <div className="cf3-stage" ref={host}>
@@ -1694,14 +1701,14 @@ export function Cafe({ inventario = null, layoutPiso = null, soundOn = false, on
                   abrirGuia('local', { todos: true });
                 }}
               >
-                <PixelArt icono={quien.retrato(fraseOlmo >= 0 && hablando != null ? 'lee' : 'normal')} />
+                <PixelArt icono={quien.retrato(poseFranja)} />
                 <span className="cf3-retrato__ayuda" aria-hidden="true">
                   ?
                 </span>
               </button>
             ) : (
               <span className="cf3-retrato" data-aviso={quienHabla ? undefined : 'true'} data-quien={quienHabla ? quien.id : undefined}>
-                <PixelArt icono={quienHabla ? quien.retrato('normal') : TAZA} />
+                <PixelArt icono={quienHabla ? quien.retrato(MOMENTO_OLMO.habla) : TAZA} />
               </span>
             )}
             <p className="cf3-dice" aria-live="polite">

@@ -5,11 +5,14 @@
 import { dayKey, parseDay } from '../../domain/dates';
 import { liboDe } from './libo';
 import { conOlmo } from '../../domain/suscripcion';
+import { tituloClave } from '../social/amigosLectura';
 
 /** Días sin abrir un libro de «Leyendo» para preguntarte si sigues con él. */
 export const DIAS_PARADO = 21;
 /** Días desde que terminaste un libro en los que Libo te ofrece reseñarlo. */
 export const DIAS_RESENA = 30;
+/** 1.154 · Días desde que un amigo terminó un libro en los que Libo te lo cuenta (si lo tienes en «Quiero leer»). */
+export const DIAS_AMIGO = 14;
 /** Días que Libo calla una sugerencia que ya contestaste. */
 export const DIAS_CALLADO = 30;
 
@@ -101,6 +104,50 @@ export function leerCafeLibo(uid, storage = globalThis.localStorage) {
   }
 }
 
+// ── 1.154 · Lo de tus amigos (docs/qa/amigos-vecinos.md, bloque 4) ──
+
+/**
+ * Lo que Libo te puede contar de tus amigos, con lo que dice tu agenda (`amigos_panel`): una llave que te han dado, un libro que
+ * te han recomendado y aún no has visto, y un amigo que ha terminado hace poco un libro que tienes en «Quiero leer». Sin prisas:
+ * nada caduca «ya» y nada se repite (cada una se calla un mes al contestarla).
+ */
+export function sugerenciasDeAmigos(amigos, books = [], hoy = dayKey()) {
+  if (!amigos) return [];
+  const lista = [];
+  const alias = (x) => x?.alias || 'Un amigo';
+  for (const k of (amigos.llaves ?? []).slice(0, 1)) {
+    lista.push({
+      id: `amigo-llave:${k.codigo}`,
+      partes: [`${alias(k)} te ha dado la llave de su edificio. Si os apetece ser vecinos, la tienes en tu agenda de Amigos.`],
+      acciones: [
+        { ir: 'amigos', boton: 'Abrir Amigos' },
+        { ir: 'callar', boton: 'Ahora no' },
+      ],
+    });
+  }
+  for (const r of (amigos.recomendaciones ?? []).filter((x) => !x.vista).slice(0, 1)) {
+    lista.push({ id: `amigo-recomienda:${r.id}`, partes: [`${alias(r)} te ha recomendado `, { titulo: r.titulo }, '. ¿Le echas un vistazo?'], acciones: [{ ir: 'amigos', boton: 'Ver la recomendación' }] });
+  }
+  const quiero = new Map(books.filter((b) => b.status === 'want').map((b) => [tituloClave(b.title), b]));
+  for (const a of amigos.amigos ?? []) {
+    for (const t of a.terminados ?? []) {
+      const b = quiero.get(tituloClave(t.titulo));
+      if (!b || !FECHA.test(t.fecha ?? '')) continue;
+      const dias = diasEntre(t.fecha, hoy);
+      if (dias < 0 || dias > DIAS_AMIGO) continue;
+      lista.push({
+        id: `amigo-termino:${a.user_id}:${b.id}`,
+        partes: [`${alias(a)} ha terminado `, { titulo: b.title }, ', que tienes en «Quiero leer». Por si te anima a empezarlo.'],
+        acciones: [
+          { ir: 'ficha', libro: b.id, boton: 'Ver su ficha' },
+          { ir: 'amigos', boton: 'Abrir Amigos' },
+        ],
+      });
+    }
+  }
+  return lista;
+}
+
 // ── La sugerencia del día ──
 
 /** El último día en que has tocado un libro (registro de lectura, empezado o añadido). */
@@ -117,9 +164,10 @@ const callada = (libo, id, hoy) => {
 
 /**
  * Lo que Libo podría sugerirte hoy, por orden. `vistos`: los capítulos de la guía que ya has visto (en tus ajustes o en este
- * aparato). `edificio`: tienes piso en el edificio (sin la comunidad, no te manda allí). Cada una: { id, partes, acciones }.
+ * aparato). `edificio`: tienes piso en el edificio (sin la comunidad, no te manda allí). `amigos` (1.154): tu agenda de amigos
+ * (`loadAmigos`), o null. Cada una: { id, partes, acciones }.
  */
-export function sugerencias({ books = [], log = [], settings = {}, vistos = [], edificio = true, hoy = dayKey() } = {}) {
+export function sugerencias({ books = [], log = [], settings = {}, vistos = [], edificio = true, amigos = null, hoy = dayKey() } = {}) {
   const libo = liboDe(settings);
   const lista = [];
   if (!books.length) {
@@ -134,6 +182,8 @@ export function sugerencias({ books = [], log = [], settings = {}, vistos = [], 
   for (const { b } of sinResena) {
     lista.push({ id: `resena:${b.id}`, partes: ['Terminaste ', { titulo: b.title }, '. ¿Le dejas una reseña?'], acciones: [{ ir: 'resena', libro: b.id, boton: 'Escribir la reseña' }] });
   }
+  // 1.154 · Lo de tus amigos, después de las reseñas
+  lista.push(...sugerenciasDeAmigos(amigos, books, hoy));
   // Un libro de «Leyendo» que llevas tiempo sin abrir: el más olvidado
   const parados = books
     .filter((b) => b.status === 'reading')

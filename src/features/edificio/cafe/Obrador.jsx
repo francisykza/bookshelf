@@ -51,6 +51,7 @@ import { abrirObrador, errorCafe, hornear, hornearPilar, mejorarObrador, reposar
 
 import { PixelArt } from './PixelArt';
 import { anfitrion, conQuien } from './cafePersonaje';
+import { MOMENTO_OLMO } from './olmoPoses';
 import { Pista } from './Pista';
 import './cafeObrador.css';
 
@@ -945,7 +946,7 @@ export function Obrador({ escena, obrador, nivel = 4, soundOn = false, ayudas = 
         </span>
         <div className="cf3-caja">
           <span className="cf3-retrato">
-            <PixelArt icono={anfitrion().retrato()} />
+            <PixelArt icono={anfitrion().retrato(MOMENTO_OLMO.obrador)} />
           </span>
           <p className="cf3-dice" aria-live="polite">
             {dicePilar && <span className="px-sr">{anfitrion().nombre}: </span>}

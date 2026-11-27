@@ -11,6 +11,7 @@ import { errorCafe, recogerSaco } from './cafeService';
 
 import { PixelArt } from './PixelArt';
 import { anfitrion } from './cafePersonaje';
+import { MOMENTO_OLMO } from './olmoPoses';
 import { Pista } from './Atender';
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -254,7 +255,7 @@ export function Tostadero({ escena, local, dia, soundOn = false, ayudas = 'auto'
         </span>
         <div className="cf3-caja">
           <span className="cf3-retrato">
-            <PixelArt icono={anfitrion().retrato()} />
+            <PixelArt icono={anfitrion().retrato(MOMENTO_OLMO.tostadero)} />
           </span>
           <p className="cf3-dice" aria-live="polite">
             {fase === 'tirar' ? (

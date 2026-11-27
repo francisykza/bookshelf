@@ -258,9 +258,10 @@ const SITIOS = ['edificio', 'cafe', 'hotel'];
  * en la esquina de abajo o arriba, junto a la barra del panel).
  * Bloque 3, solo en tu piso de inicio (`hub`): reúne los `avisos` de otros sitios (useAvisosLibo) y la sugerencia del día; una
  * vez al día, al llegar, su bocadillo asoma solo (sin sonido) si tiene algo que decir. `onIr(ir, libro)`: adónde lleva cada
- * botón ('almacen', 'cafe', 'hotel', 'edificio', 'resena', 'ficha', 'registrar', 'biblioteca', 'anadir').
+ * botón ('almacen', 'cafe', 'hotel', 'edificio', 'resena', 'ficha', 'registrar', 'biblioteca', 'anadir' y, desde la 1.154, 'amigos').
+ * `amigos` (1.154): tu agenda de amigos (useAmigosLibo), para sus sugerencias.
  */
-export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = true, espera = null, respiro = 600, raiz = null, onAjustes, variante = 'barra', hub = false, avisos = SIN_AVISOS, onIr = null }) {
+export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = true, espera = null, respiro = 600, raiz = null, onAjustes, variante = 'barra', hub = false, avisos = SIN_AVISOS, amigos = null, onIr = null }) {
   const { state, actions } = useLibrary();
   const { settings, books } = state;
   const log = state.progress?.readingLog;
@@ -354,8 +355,8 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
   const [idea, setIdea] = useState(null);
   const sitiosVistos = hub ? SITIOS.filter((c) => haVisto(settings, c) || presentadoAqui(c)).join(',') : '';
   const candidatas = useMemo(
-    () => (hub ? sugerencias({ books, log: log ?? [], settings, vistos: sitiosVistos.split(','), hoy }) : []),
-    [hub, books, log, settings, sitiosVistos, hoy],
+    () => (hub ? sugerencias({ books, log: log ?? [], settings, vistos: sitiosVistos.split(','), amigos, hoy }) : []),
+    [hub, books, log, settings, sitiosVistos, amigos, hoy],
   );
   const deHoy = hub ? sugerenciaDelDia(candidatas, settings, hoy) : null;
   const hayAlgo = hub && (avisos.length > 0 || Boolean(deHoy));

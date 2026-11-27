@@ -39,6 +39,7 @@ import { useVitrina } from './Vitrina';
 import { Pista } from './Pista';
 import { PixelArt } from './PixelArt';
 import { anfitrion, conQuien } from './cafePersonaje';
+import { MOMENTO_OLMO } from './olmoPoses';
 import { RelojArena } from './RelojArena';
 
 export { Pista };
@@ -666,7 +667,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
   }, [platoServido, escena, cliente.n]);
 
   // Mientras Pilar prepara, el retrato del cuadro es el suyo
-  const retrato =<PixelArt icono={pilarAhora ? anfitrion().retrato() : retratoDe(cliente.aspecto)} />;
+  const retrato =<PixelArt icono={pilarAhora ? anfitrion().retrato(MOMENTO_OLMO.prepara) : retratoDe(cliente.aspecto)} />;
   const pide = dado?.pide ?? cliente.pide;
   const enLibreria = paso === 'libreria';
   // 1.128 (Francisco, 13-11-2026: «la palanca se sigue tapando con las instrucciones» y, con el excéntrico, «tapan mucho más»):
@@ -817,7 +818,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
         {ofrecePilar && (
           <div className="cf3-pilar" role="group" aria-label={`${anfitrion().nombre} te ofrece prepararla`}>
             <span className="cf3-pilar__retrato" aria-hidden="true">
-              <PixelArt icono={anfitrion().retrato('contento')} />
+              <PixelArt icono={anfitrion().retrato(MOMENTO_OLMO.ofrece)} />
             </span>
             <p className="cf3-pilar__dice">
               <span className="px-sr">{anfitrion().nombre}: </span>«{anfitrion().dice.ofrece}»
@@ -1008,7 +1009,7 @@ export function Atender({ cliente, balda = SIN_BALDA, dominio = SIN_DOMINIO, obr
         {yaLaBordas && (
           <p className="cf3-pilar cf3-pilar--nota">
             <span className="cf3-pilar__retrato" aria-hidden="true">
-              <PixelArt icono={anfitrion().retrato('contento')} />
+              <PixelArt icono={anfitrion().retrato(MOMENTO_OLMO.dominas)} />
             </span>
             <span className="cf3-pilar__dice">
               <span className="px-sr">{anfitrion().nombre}: </span>«{anfitrion().dice.ofreceProxima}»

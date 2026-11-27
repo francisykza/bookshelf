@@ -21,6 +21,8 @@ import { PortCalendar } from '../computer/PortCalendar';
 import { useAtras } from '../../hooks/useAtras';
 
 // 1.134 · La pantalla «Almacén» del ordenador del piso, solo cuando se abre (lleva el catálogo y las miniaturas del almacén)
+// 1.153 · La agenda «Amigos» (docs/qa/amigos-vecinos.md, bloque 3), también solo al abrirla
+const AmigosApp = lazy(() => import('../../features/social/amigos/AmigosApp'));
 const AlmacenApp = lazy(() => import('../../features/edificio/hotel/AlmacenOrdenador').then((m) => ({ default: m.AlmacenApp })));
 
 // `id` se conserva (rutas y paneles guardados); `short` es el rótulo del dock y `icon` su imagen ilustrada
@@ -33,14 +35,14 @@ const TABS = [
   { id: 'quote', label: 'Citas', short: 'Citas', icon: 'citas' },
 ];
 // 1.134 · Solo en el ordenador del piso (la experiencia anterior y su dock no cambian): el almacén de muebles del Gran Hotel
-const PISO_TABS = [...TABS, { id: 'almacen', label: 'Almacén' }];
+const PISO_TABS = [...TABS, { id: 'almacen', label: 'Almacén' }, { id: 'amigos', label: 'Amigos' }];
 
 // `desktop(open)`: lo que enseña el escritorio en vez del saludo (el piloto del piso pone ahí sus accesos); con `initialTab` null
 // se empieza en él. `diaryView`: con qué vista de Mi diario se abre.
 /** Punto de la pantalla al salir a registrar: al volver, se sigue donde estabas. */
 let alturaAlVolver = 0;
 
-export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook, desktop = null, diaryView = 'calendar', onRegister, onAlmacen = null }) {
+export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null, onComplete, onOpenLibrary, onOpenVault, onOpenBook, desktop = null, diaryView = 'calendar', onRegister, onAlmacen = null, amigos = null }) {
   const { state } = useLibrary();
   const tabs = desktop && onAlmacen ? PISO_TABS : TABS;
   const start = tabs.some((t) => t.id === initialTab) ? initialTab : desktop ? null : 'calendar';
@@ -151,6 +153,11 @@ export function LaptopPanel({ onClose, initialTab = 'calendar', selectDay = null
                     {t.id === 'goal' && <GoalApp />}
                     {t.id === 'missions' && <MissionsApp onOpenVault={onOpenVault} />}
                     {t.id === 'quote' && <DailyQuote />}
+                    {t.id === 'amigos' && (
+                      <Suspense fallback={null}>
+                        <AmigosApp onVisitar={amigos?.visitar} onSala={amigos?.sala} onComunidad={amigos?.comunidad} />
+                      </Suspense>
+                    )}
                     {t.id === 'almacen' && (
                       <Suspense fallback={null}>
                         <AlmacenApp onGo={onAlmacen} />

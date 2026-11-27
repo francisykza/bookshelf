@@ -1,6 +1,6 @@
 // 1.98 (SPEC §98) · La recepción del Gran Hotel en 3D, con Supabase simulado: se entra desde la fachada; cada cosa se toca
-// y acerca la vista; el ascensor se abre y su botonera está en la cabina; «Plano» es el vestíbulo isométrico; sin WebGL,
-// el plano directamente. Capturas en qa-report/recepcion3d/bloque4/.
+// y acerca la vista; el ascensor se abre y su botonera está en la cabina; sin WebGL, la recepción
+// sin dibujo (desde la 1.155 ya no hay «Plano» isométrico). Capturas en qa-report/recepcion3d/bloque4/.
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -94,7 +94,8 @@ test('desde la cabina, la «S» lleva al casino del sótano', async ({ page }, i
   await expect(hotel.getByRole('region', { name: 'El casino del sótano' })).toBeVisible();
 });
 
-test('sin WebGL, el vestíbulo se abre en el plano isométrico', async ({ page }, info) => {
+// 1.155: sin el plano isométrico; la recepción sin dibujo (más en v1155-sin-isometricas)
+test('sin WebGL, el vestíbulo se abre sin dibujo', async ({ page }, info) => {
   test.skip(info.project.name !== 'chromium-390x844', 'solo 390 px');
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -106,8 +107,8 @@ test('sin WebGL, el vestíbulo se abre en el plano isométrico', async ({ page }
   });
   const hotel = await alHotel(page);
   const lobby = hotel.getByRole('region', { name: 'El vestíbulo' });
-  await expect(lobby.locator('.gh-lobby__art')).toBeVisible();
-  await expect(lobby.getByRole('button', { name: 'Entrar en la recepción' })).toHaveCount(0);
+  await expect(lobby.locator('.ed-sin3d')).toContainText('No puede dibujar el vestíbulo');
+  await expect(lobby.getByRole('tab', { name: 'Recepción' })).toBeVisible();
   await expect(hotel.locator('section.rcp')).toHaveCount(0);
   await shot(page, info, '4-sin-webgl');
   expect(errors).toEqual([]);

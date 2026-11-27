@@ -242,7 +242,7 @@ test('sala de lectura: desde el directorio del hotel', async ({ page }, info) =>
   expect(errores).toEqual([]);
 });
 
-test('visita desde el portal: la puerta del vecino y «Entrar en 3D»', async ({ page }, info) => {
+test('visita desde el portal: la puerta del vecino entra en 3D', async ({ page }, info) => {
   test.setTimeout(180000);
   const errores = [];
   page.on('pageerror', (e) => errores.push(e.message));
@@ -250,9 +250,9 @@ test('visita desde el portal: la puerta del vecino y «Entrar en 3D»', async ({
   await enCasa(page);
   await page.getByRole('button', { name: 'Al edificio' }).click();
   const edificio = page.getByRole('dialog', { name: 'El edificio del puerto' });
-  await edificio.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click({ timeout: 20000 });
+  // 1.155: sin vista isométrica, llamar a la puerta ya entra en 3D
   const visita = await retener(page, '**/src/features/pisoLab/VisitaPiso.jsx*');
-  await page.getByRole('button', { name: 'Entrar en 3D' }).click({ timeout: 15000 });
+  await edificio.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click({ timeout: 20000 });
   await pantalla(page, info, 'Entrando en el piso de Bruno…', '8-visita-desde-el-portal');
   await visita();
   await expect(page.locator(`.ed-visita3d[data-visita="${BRUNO.id}"] .plab-stage[data-ready]`)).toBeVisible({ timeout: 20000 });

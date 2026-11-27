@@ -45,7 +45,7 @@ export function sessionScript(user) {
   const exp = Math.floor(Date.now() / 1000) + 3600 * 24;
   const token = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: user.id, email: user.email, role: 'authenticated', aud: 'authenticated', exp })}.firma-de-prueba`;
   const session = { access_token: token, refresh_token: 'refresco-de-prueba', token_type: 'bearer', expires_in: 86400, expires_at: exp, user: { id: user.id, aud: 'authenticated', role: 'authenticated', email: user.email, app_metadata: {}, user_metadata: {} } };
-  return `localStorage.setItem('bookshelf:auth', ${JSON.stringify(JSON.stringify(session))}); localStorage.setItem('bookshelf_onboarding_done', 'true'); localStorage.setItem('bookshelf:libo', '["hola","bienvenida","edificio","tu-piso","cafe","hotel","comunidad"]'); localStorage.setItem('bookshelf:libo-asomo', '9999-12-31'); localStorage.setItem('bookshelf:guia-cafe', '["local:*","decorar:*","libros:*","ranking:*","cuaderno:*"]');`;
+  return `localStorage.setItem('bookshelf:auth', ${JSON.stringify(JSON.stringify(session))}); localStorage.setItem('bookshelf_onboarding_done', 'true'); localStorage.setItem('bookshelf:libo', '["hola","bienvenida","edificio","tu-piso","cafe","hotel","comunidad","telefonillo","amigos"]'); localStorage.setItem('bookshelf:libo-asomo', '9999-12-31'); localStorage.setItem('bookshelf:guia-cafe', '["local:*","decorar:*","libros:*","ranking:*","cuaderno:*"]');`;
 }
 
 const DEFAULTS = {
@@ -164,6 +164,8 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST205', message: 'Could not find the table in the schema cache' }) });
     }
     const json = (body) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    // 1.152: las plantas de un edificio, 3 o hasta su vecino más alto (como `edificio_plantas`)
+    const plantasDe = (ed) => Math.max(3, ...db.edificio_vecinos.filter((v) => v.edificio === ed).map((v) => Number(v.puerta[0])));
     const blockedWith = (other) => db.blocks.some((b) => (b.blocker === userId && b.blocked === other) || (b.blocker === other && b.blocked === userId));
     // Como un servidor sin la migración del tablón; las pruebas del tablón ponen su propia ruta encima
     // El café del bajo (1.120): sin `simularCafe` (cafeMock.js), el servidor aún no tiene su migración
@@ -329,6 +331,186 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
       const puede = perfil?.community_enabled && !blockedWith(lector) && (suyo?.edificio === yo?.edificio || db.follows.some((f) => f.follower === userId && f.followed === lector));
       return json(puede && suyo && piso ? { user_id: lector, alias: perfil.alias, avatar_id: perfil.avatar_id, puerta: suyo.puerta, layout: piso.layout } : null);
     }
+    // 1.151 · La llave de tu edificio, como la migración 20261230120000_edificio_amigos.sql (las reglas de verdad, en
+    // edificioAmigos.rls.test.js). Solo si la prueba la simula con `db.edificio_llaves = []`; si no, como un servidor sin ella
+    // 1.153 · La app Amigos, como `supabase/migrations/20270101120000_amigos.sql` (las reglas de verdad, en
+    // src/features/social/__tests__/amigos.rls.test.js). Solo si la prueba la simula con `db.amigos = {}`; si no, como un
+    // servidor sin la migración
+    if (table.startsWith('rpc/amigos_')) {
+      if (!db.amigos) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
+      const am = db.amigos;
+      am.codigos ??= {};
+      am.lectura ??= {};
+      am.recomendaciones ??= [];
+      am.juntos ??= [];
+      const body = req.postDataJSON?.() ?? {};
+      (am.llamadas ??= []).push({ rpc: table.slice(4), body });
+      const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
+      const perfil = (id) => db.profiles.find((p) => p.user_id === id);
+      const miembro = (id) => Boolean(perfil(id)?.community_enabled);
+      const sigue = (a, b) => db.follows.some((f) => f.follower === a && f.followed === b);
+      const amigo = (otro) => otro !== userId && miembro(otro) && !blockedWith(otro) && sigue(userId, otro) && sigue(otro, userId);
+      const mini = (id) => ({ user_id: id, alias: perfil(id)?.alias ?? null, avatar_id: perfil(id)?.avatar_id ?? null });
+      const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const nuevo = () => Array.from({ length: 8 }, () => letras[Math.floor(Math.random() * 32)]).join('');
+      const codigoDe = (id) => (am.codigos[id] ??= nuevo());
+      const lect = (id) => (am.lectura[id] ??= { ver_leyendo: true, ver_terminados: true, ver_juntos: true, leyendo: null, terminados: null });
+      const limpio = (c) => String(c ?? '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const viva = (l) => !l.usada && !l.retirada && Date.parse(l.caduca) > Date.now();
+      const edificioDe = (id) => db.edificio_vecinos?.find((v) => v.user_id === id)?.edificio ?? null;
+      const mismo = (a, b) => (a ?? '').toLowerCase() === (b ?? '').toLowerCase();
+      if (!miembro(userId)) return fail('Activa la comunidad para ver a tus amigos.');
+      if (table === 'rpc/amigos_mi_codigo') return json(codigoDe(userId));
+      if (table === 'rpc/amigos_buscar_codigo') {
+        const cod = limpio(body.cod);
+        const id = Object.keys(am.codigos).find((k) => am.codigos[k] === cod);
+        return json(id && id !== userId && miembro(id) && !blockedWith(id) ? mini(id) : null);
+      }
+      if (table === 'rpc/amigos_ajustes') {
+        const l = lect(userId);
+        Object.assign(l, { ver_leyendo: body.leyendo !== false, ver_terminados: body.terminados !== false, ver_juntos: body.juntos !== false });
+        if (!l.ver_leyendo) l.leyendo = null;
+        if (!l.ver_terminados) l.terminados = null;
+        if (!l.ver_juntos) for (const j of am.juntos) j.avances && delete j.avances[userId];
+        return json({ leyendo: l.ver_leyendo, terminados: l.ver_terminados, juntos: l.ver_juntos });
+      }
+      if (table === 'rpc/amigos_publicar') {
+        const l = lect(userId);
+        l.leyendo = l.ver_leyendo ? (body.leyendo ?? []).slice(0, 3) : null;
+        l.terminados = l.ver_terminados ? (body.terminados ?? []).slice(0, 5) : null;
+        if (l.ver_juntos) {
+          for (const a of body.avances ?? []) {
+            const j = am.juntos.find((x) => x.id === a.id && x.estado === 'activa' && [x.de, x.para].includes(userId));
+            if (j) (j.avances ??= {})[userId] = Math.max(0, Math.min(100, Math.round(a.pct)));
+          }
+        }
+        return json(null);
+      }
+      if (table === 'rpc/amigos_recomendar') {
+        if (!amigo(body.para)) return fail('Solo se recomienda a amigos: os tenéis que seguir los dos.');
+        if (am.recomendaciones.some((r) => r.de === userId && r.para === body.para && mismo(r.titulo, body.titulo))) return fail('Ya le recomendaste este libro.');
+        const r = { id: randomUUID(), de: userId, para: body.para, titulo: body.titulo, autor: body.autor ?? '', frase: body.frase, creada: new Date().toISOString(), vista: false };
+        am.recomendaciones.unshift(r);
+        return json({ id: r.id, creada: r.creada });
+      }
+      if (table === 'rpc/amigos_recomendaciones_vistas') {
+        for (const r of am.recomendaciones) if (r.para === userId) r.vista = true;
+        return json(null);
+      }
+      if (table === 'rpc/amigos_juntos_proponer') {
+        if (!amigo(body.para)) return fail('Solo se lee a la vez con amigos: os tenéis que seguir los dos.');
+        const abiertas = am.juntos.filter((x) => x.estado !== 'retirada');
+        if (abiertas.some((x) => mismo(x.titulo, body.titulo) && [x.de, x.para].includes(userId) && [x.de, x.para].includes(body.para))) return fail('Ya estáis con este libro.');
+        if (abiertas.filter((x) => [x.de, x.para].includes(userId)).length >= 3) return fail('Ya tienes tres lecturas a la vez: deja una para empezar otra.');
+        const j = { id: randomUUID(), de: userId, para: body.para, titulo: body.titulo, autor: body.autor ?? '', estado: 'invitada', avances: {}, creada: new Date().toISOString() };
+        am.juntos.unshift(j);
+        return json({ id: j.id });
+      }
+      if (table === 'rpc/amigos_juntos_responder') {
+        const j = am.juntos.find((x) => x.id === body.juntos && x.para === userId && x.estado === 'invitada');
+        if (!j) return fail('Esta propuesta ya no está.');
+        j.estado = body.acepta ? 'activa' : 'retirada';
+        return json(null);
+      }
+      if (table === 'rpc/amigos_juntos_dejar') {
+        const j = am.juntos.find((x) => x.id === body.juntos && [x.de, x.para].includes(userId));
+        if (j) j.estado = 'retirada';
+        return json(null);
+      }
+      if (table === 'rpc/amigos_dar_llave') {
+        if (!amigo(body.para)) return fail('La llave, solo a amigos: os tenéis que seguir los dos.');
+        if (!db.edificio_llaves) return fail('Aún no tienes piso en el edificio.');
+        const ed = edificioDe(userId);
+        if (ed && edificioDe(body.para) === ed) return fail('Ya vivís en el mismo edificio.');
+        if (db.edificio_llaves.some((l) => l.de === userId && l.para === body.para && viva(l))) return fail('Ya le diste una llave: aún no la ha usado.');
+        const nueva = { codigo: db.siguienteLlave ?? nuevo(), edificio: ed, de: userId, para: body.para, caduca: new Date(Date.now() + 7 * 86400000).toISOString() };
+        delete db.siguienteLlave;
+        db.edificio_llaves.push(nueva);
+        return json({ codigo: nueva.codigo, caduca: nueva.caduca });
+      }
+      if (table === 'rpc/amigos_panel') {
+        codigoDe(userId);
+        const mi = lect(userId);
+        const ed = edificioDe(userId);
+        const amigos = db.follows
+          .filter((f) => f.follower === userId && amigo(f.followed))
+          .map((f) => {
+            const l = am.lectura[f.followed];
+            return { ...mini(f.followed), vecino: Boolean(ed && edificioDe(f.followed) === ed), leyendo: l && !l.ver_leyendo ? null : (l?.leyendo ?? []), terminados: l && !l.ver_terminados ? null : (l?.terminados ?? []) };
+          })
+          .sort((a, b) => String(a.alias).localeCompare(String(b.alias)));
+        const solicitudes = db.follows.filter((f) => f.followed === userId && miembro(f.follower) && !blockedWith(f.follower) && !sigue(userId, f.follower)).map((f) => ({ ...mini(f.follower), desde: f.created_at }));
+        const esperando = db.follows.filter((f) => f.follower === userId && miembro(f.followed) && !blockedWith(f.followed) && !sigue(f.followed, userId)).map((f) => mini(f.followed));
+        const recomendaciones = am.recomendaciones.filter((r) => r.para === userId && !blockedWith(r.de)).slice(0, 20).map((r) => ({ ...r, alias: perfil(r.de)?.alias ?? null, avatar_id: perfil(r.de)?.avatar_id ?? null }));
+        const juntos = am.juntos
+          .filter((j) => j.estado !== 'retirada' && [j.de, j.para].includes(userId))
+          .map((j) => {
+            const con = j.de === userId ? j.para : j.de;
+            const suya = am.lectura[con];
+            return { id: j.id, con, alias: perfil(con)?.alias ?? null, avatar_id: perfil(con)?.avatar_id ?? null, titulo: j.titulo, autor: j.autor, estado: j.estado, propuse: j.de === userId, avance_mio: j.avances?.[userId] ?? null, avance_suyo: suya && !suya.ver_juntos ? null : (j.avances?.[con] ?? null) };
+          });
+        const llaves = (db.edificio_llaves ?? []).filter((l) => l.para === userId && viva(l) && !blockedWith(l.de) && l.edificio !== ed).map((l) => ({ codigo: l.codigo, de: l.de, alias: perfil(l.de)?.alias ?? null, avatar_id: perfil(l.de)?.avatar_id ?? null, caduca: l.caduca }));
+        const llavesDadas = (db.edificio_llaves ?? []).filter((l) => l.de === userId && l.para && viva(l)).map((l) => l.para);
+        return json({ codigo: am.codigos[userId], ajustes: { leyendo: mi.ver_leyendo, terminados: mi.ver_terminados, juntos: mi.ver_juntos }, amigos, solicitudes, esperando, recomendaciones, juntos, llaves, llaves_dadas: llavesDadas });
+      }
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
+    }
+    if (['rpc/edificio_dar_llave', 'rpc/edificio_mis_llaves', 'rpc/edificio_retirar_llave', 'rpc/edificio_ver_llave', 'rpc/edificio_mudarse', 'rpc/edificio_irse'].includes(table)) {
+      if (!db.edificio_llaves) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
+      const body = req.postDataJSON?.() ?? {};
+      const fail = (message) => route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message }) });
+      const mine = db.edificio_vecinos.find((v) => v.user_id === userId);
+      const viva = (l) => !l.usada && !l.retirada && Date.parse(l.caduca) > Date.now();
+      const cod = String(body.cod ?? '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const llave = db.edificio_llaves.find((l) => l.codigo === cod);
+      const vecinosDe = (ed) => db.edificio_vecinos.filter((v) => v.edificio === ed).length;
+      // 1.152: primero en las plantas que hay; llenas, en la siguiente (hasta 5)
+      const puertaLibre = (ed) => {
+        const alto = plantasDe(ed);
+        const libres = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B'].filter((p) => Number(p[0]) <= alto + 1 && !db.edificio_vecinos.some((v) => v.edificio === ed && v.puerta === p));
+        return libres.find((p) => Number(p[0]) <= alto) ?? libres[0];
+      };
+      const miembro = db.profiles.find((p) => p.user_id === userId)?.community_enabled;
+      if (table === 'rpc/edificio_dar_llave') {
+        if (!miembro) return fail('Activa la comunidad para dar llaves.');
+        if (db.edificio_llaves.filter((l) => l.de === userId && viva(l)).length >= 3) return fail('Ya tienes tres llaves sin usar: retira una o espera a que la usen.');
+        const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const codigo = db.siguienteLlave ?? Array.from({ length: 8 }, () => letras[Math.floor(Math.random() * 32)]).join('');
+        delete db.siguienteLlave;
+        const nueva = { codigo, edificio: mine.edificio, de: userId, caduca: new Date(Date.now() + 7 * 86400000).toISOString() };
+        db.edificio_llaves.push(nueva);
+        return json({ codigo, caduca: nueva.caduca });
+      }
+      if (table === 'rpc/edificio_mis_llaves') return json(db.edificio_llaves.filter((l) => l.de === userId && viva(l)).reverse().map((l) => ({ codigo: l.codigo, caduca: l.caduca })));
+      if (table === 'rpc/edificio_retirar_llave') {
+        if (llave?.de !== userId || !viva(llave)) return json(null);
+        llave.retirada = true;
+        return json(true);
+      }
+      if (table === 'rpc/edificio_ver_llave') {
+        if (!llave || !viva(llave) || blockedWith(llave.de)) return json({ motivo: 'no_sirve' });
+        const n = vecinosDe(llave.edificio);
+        const motivo = !miembro ? 'comunidad' : mine?.edificio === llave.edificio ? 'ya_vives' : llave.de === userId ? 'tuya' : n >= 10 ? 'lleno' : null;
+        const de = db.profiles.find((p) => p.user_id === llave.de);
+        return json({ motivo, de: { alias: de?.alias ?? null, avatar_id: de?.avatar_id ?? null }, vecinos: n, plantas: plantasDe(llave.edificio), caduca: llave.caduca });
+      }
+      if (table === 'rpc/edificio_mudarse') {
+        if (!llave || !viva(llave)) return fail('Esta llave ya no abre ninguna puerta.');
+        if (mine?.edificio === llave.edificio) return fail('Ya vives en este edificio.');
+        const puerta = puertaLibre(llave.edificio);
+        if (!puerta) return fail('El edificio está lleno: no queda ninguna puerta libre.');
+        if (mine) Object.assign(mine, { edificio: llave.edificio, puerta });
+        else db.edificio_vecinos.push({ user_id: userId, edificio: llave.edificio, puerta });
+        Object.assign(llave, { usada: true, usada_por: userId });
+        return json({ edificio: llave.edificio, puerta });
+      }
+      if (table === 'rpc/edificio_irse') {
+        if (!mine || vecinosDe(mine.edificio) <= 1) return fail('Ya vives sola o solo en tu edificio.');
+        mine.edificio = `edificio-${userId.slice(0, 8)}`;
+        for (const l of db.edificio_llaves) if (l.de === userId && viva(l)) l.retirada = true;
+        return json({ edificio: mine.edificio, puerta: mine.puerta });
+      }
+    }
     if (table === 'rpc/edificio_portal') {
       const mine = db.edificio_vecinos.find((v) => v.user_id === userId);
       if (!mine) return json(null);
@@ -350,7 +532,8 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
           sello_dado: db.piso_sellos.find((x) => x.de === userId && x.para === v.user_id)?.sello ?? null,
           sello_recibido: db.piso_sellos.find((x) => x.de === v.user_id && x.para === userId)?.sello ?? null,
         }));
-      return json({ edificio: mine.edificio, puerta: mine.puerta, vecinos });
+      const n = db.edificio_vecinos.filter((v) => v.edificio === mine.edificio).length;
+      return json({ edificio: mine.edificio, puerta: mine.puerta, vecinos, plantas: plantasDe(mine.edificio), libres: Math.max(0, 10 - n) });
     }
     // 1.71 (SPEC §71): libro de visitas y «me gusta» por mueble (solo si la prueba lo pide con db.vecinosSocial)
     if (['rpc/piso_social', 'rpc/piso_firmar', 'rpc/piso_megusta'].includes(table)) {

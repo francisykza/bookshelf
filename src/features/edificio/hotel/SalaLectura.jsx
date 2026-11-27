@@ -21,11 +21,10 @@ import { sitDownNow, standUpNow, usePresence } from '../../social/hooks/usePrese
 import { fetchProfiles } from '../../social/services/community';
 import { preloadCover } from '../../pisoLab/coverPreload';
 import { DEFAULT_AVATAR } from '../actor';
-import { misticoOf, misticoSprite } from '../misticos';
 import { renderActorThumb } from '../render';
 import { dejarLomo, localAvatar, retirarLomo, salaGesto, salaGestosNuevos, salaLibreria, salaPersonajes, saludarEnSala } from '../service';
-import { renderSala, SALA_H, SALA_W, SILLONES } from './salaArt';
 import { PLAZA_SOFA, SILLONES as SILLONES_3D, repartoSillones } from './salaLayout';
+import { SinTresD } from '../SinTresD';
 import { CitaSala, FilaGestos, faseCita, nombreCita } from './CitaSala';
 import { gestoDe, tiempoJuntos } from './gestos';
 import { useCitaSala } from './useCitaSala';
@@ -43,8 +42,6 @@ const SALUDO_MS = 15000;
 const SALUDO_VISIBLE_MS = 10000;
 const lista = (nombres) => (nombres.length < 2 ? nombres.join('') : `${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}`);
 
-const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 // Tu sillón de la sala, recordado en este dispositivo (1.116): el primero en el que te sientas pasa a ser el tuyo
 const sillonKey = (uid) => `bookshelf:sala-sillon:${uid ?? 'local'}`;
 function leerSillon(uid) {
@@ -61,44 +58,6 @@ function guardarSillon(uid, k) {
   } catch {
     /* sin almacenamiento: se sienta igual */
   }
-}
-
-// Más pequeño que en el muelle: en la sala hay seis sillones y no debe tapar a quien lee
-const PAL = 0.7;
-
-/** El compañero de quien lee, vivo en el suelo junto a su sillón. Con movimiento reducido, quieto. */
-function Companero({ id, pie }) {
-  const host = useRef(null);
-  useEffect(() => {
-    const sprite = misticoSprite(id);
-    const { canvas, ax, ay } = sprite;
-    canvas.className = 'gh-lect__pal';
-    canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.left = `${((pie.x - ax * PAL) / SALA_W) * 100}%`;
-    canvas.style.top = `${((pie.y - ay * PAL) / SALA_H) * 100}%`;
-    canvas.style.width = `${((canvas.width * PAL) / SALA_W) * 100}%`;
-    host.current.append(canvas);
-    if (reducedMotion()) {
-      sprite.paint(1.3);
-      return () => canvas.remove();
-    }
-    let raf = 0;
-    let last = 0;
-    const t0 = performance.now();
-    const tick = (now) => {
-      if (now - last > 80) {
-        last = now;
-        sprite.paint((now - t0) / 1000);
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(raf);
-      canvas.remove();
-    };
-  }, [id, pie.x, pie.y]);
-  return <span ref={host} className="gh-lect__palhost" />;
 }
 
 /** La cara del personaje, para la lista de quien lee. */
@@ -131,7 +90,7 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
   const [busy, setBusy] = useState(false);
   const root = useRef(null);
   const book = currentBook(state.books, state.settings);
-  const { seated, extra } = seatParticipants(rows, community.userId, SILLONES.length);
+  const { seated, extra } = seatParticipants(rows, community.userId, SILLONES_3D.length);
   const ids = seated.map((r) => r.user_id).join(',');
   const aspecto = (r) => aspectos[r.user_id]?.personaje ?? (r.user_id === community.userId ? localAvatar(r.user_id) : null) ?? DEFAULT_AVATAR;
   const enSesion = timer.running || timer.remaining < timer.total;
@@ -181,7 +140,6 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
   };
   // El sillón que se ofrece: el tuyo si está libre; si no, el primero libre
   const ofrecido = mio != null && !ocupado(mio) ? mio : libreDesde(mio ?? 0);
-  const room = sin3d ? renderSala(seated.map(aspecto)) : null;
 
   useEffect(() => {
     root.current?.scrollIntoView({ block: 'start' });
@@ -850,23 +808,10 @@ export function SalaLectura({ onStreet, timer, askPages = false, onPagesDone = (
           )}
         </div>
       ) : (
-        <div className="gh-casino__scene" style={{ aspectRatio: `${SALA_W} / ${SALA_H}` }}>
-          <img
-            className="gh-casino__art"
-            src={room.scene}
-            alt={`La sala de lectura, de noche: parqué en espiga, librerías de nogal hasta el techo, una ventana al puerto, una alfombra azul y seis sillones de cuero con su lámpara. ${seated.length === 1 ? 'Hay una persona leyendo' : seated.length ? `Hay ${seated.length} personas leyendo` : 'Están vacíos'}.`}
-            draggable="false"
-          />
-          {seated.map((r, k) => {
-            const id = aspectos[r.user_id]?.companero;
-            return misticoOf(id)?.legendario ? <Companero key={r.user_id} id={id} pie={room.pies[k]} /> : null;
-          })}
-          {hola >= 0 && (
-            <span className="gh-lect__hola" aria-hidden="true" style={{ left: `${(room.cabezas[hola].x / SALA_W) * 100}%`, top: `${(room.cabezas[hola].y / SALA_H) * 100}%` }}>
-              {gestoVisto?.bocadillo ?? '¡Hola!'}
-            </span>
-          )}
-        </div>
+        // 1.155 · Sin 3D, la sala no se dibuja (fuera el dibujo isométrico); quién lee y tu sesión siguen debajo
+        <SinTresD sala="la sala de lectura">
+          {hola >= 0 && <p className="ed-sin3d__dice">{nombre(seated[hola])}: {gestoVisto?.bocadillo ?? '¡Hola!'}</p>}
+        </SinTresD>
       )}
 
       <div className="gh-21 gh-lect__panel">

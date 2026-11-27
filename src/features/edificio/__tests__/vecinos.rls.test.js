@@ -1,7 +1,7 @@
 // 1.71 · Vecinos (SPEC §71): regalar copias libres de muebles (1.78: una al día, hasta «raro» y teniendo más de una),
 // libro de visitas con frases cerradas y «me gusta» por mueble, solo entre vecinos visibles. Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { FIRMAS } from '../catalog';
 import { starterRoom } from '../demo';
 
@@ -21,6 +21,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('insert into pisos (layout) values ($1::jsonb)', [JSON.stringify(starterRoom())]));
     await call(u, 'select piso_mi_inventario()');
   }
+  await juntarComoAntes(db, [A, B, C, Z]);
   // C bloquea a A: no se ven
   await as(db, C, (q) => q('insert into blocks (blocked) values ($1)', [A]));
   // Z vive en otro edificio

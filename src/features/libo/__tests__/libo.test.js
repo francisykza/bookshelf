@@ -90,7 +90,7 @@ describe('la bienvenida', () => {
 
 describe('los capítulos de cada sitio', () => {
   it('cada sitio tiene su capítulo, empieza saludando sin señalar nada y cada paso tiene un control distinto', () => {
-    expect(Object.keys(CAPITULOS)).toEqual(['bienvenida', 'edificio', 'tu-piso', 'cafe', 'hotel', 'comunidad']);
+    expect(Object.keys(CAPITULOS)).toEqual(['bienvenida', 'edificio', 'tu-piso', 'cafe', 'hotel', 'comunidad', 'telefonillo', 'amigos']);
     for (const [id, { pasos, repaso }] of Object.entries(CAPITULOS)) {
       expect(pasos[0].id, id).toBe('hola');
       expect(pasos[0].ancla, id).toBeNull();

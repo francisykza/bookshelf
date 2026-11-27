@@ -209,11 +209,9 @@ test('objetos en primera persona: mover, girar, tono y guardar se ven en 3D, tra
   await bruno.getByRole('button', { name: 'Al edificio' }).click();
   const portal = bruno.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: /Llamar y entrar en el piso de Ana lectora/ }).click();
-  await expect(bruno.locator('.ep-canvas')).toBeVisible({ timeout: 15000 });
-  await expect.poll(() => bruno.evaluate(() => window.__edificioPiso?.room?.items?.length ?? 0), { timeout: 10000 }).toBeGreaterThan(0);
-  const visited = await bruno.evaluate(() => JSON.parse(JSON.stringify(window.__edificioPiso.room.items)));
-  const pick = (list) => list.map(({ uid, id, x, y, rot, tono, acabado, pared, a }) => JSON.stringify({ uid, id, x, y, rot, tono, acabado, pared, a })).sort();
-  expect(pick(visited)).toEqual(pick(saved.items));
+  // 1.155: la visita es en 3D (sin la isométrica, que daba la lista de muebles); su piso es el de Ana
+  await expect(bruno.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
+  await expect.poll(() => bruno.evaluate(() => window.__pisoLab?.()?.debug().piso ?? null), { timeout: 10000 }).toBe(`visita:${ANA.id}`);
   // Quien visita no puede decorar
   await expect(bruno.getByRole('button', { name: 'Decorar' })).toHaveCount(0);
   await bruno.waitForTimeout(400);

@@ -78,6 +78,8 @@ async function alCafe(page, { previa = true, reduced = true } = {}) {
 }
 
 const tarjeta = (cafe) => cafe.locator('.cf3-guia__tarjeta');
+// 1.156: el retrato de la tarjeta es una pose de la hoja de Olmo (saluda al empezar y celebra al final)
+const poseGuia = (cafe) => tarjeta(cafe).locator('img.cf3-px--pose');
 const esperaPaso = async (cafe, id) => {
   const page = cafe.page();
   await expect(tarjeta(cafe)).toHaveAttribute('data-paso', id, { timeout: 15000 });
@@ -99,6 +101,8 @@ test('Olmo enseña los botones del café la primera vez, y se repasa tocando su 
   await expect(cafe.locator('.cf3-guia')).toHaveAttribute('data-quien', 'olmo');
   await expect(tarjeta(cafe).locator('.cf3-guia__quien')).toHaveText('Olmo');
   await expect(tarjeta(cafe)).toContainText(textoDe(paso('local', 'hola'), 'olmo'));
+  await expect(poseGuia(cafe)).toHaveAttribute('data-pose', 'saluda');
+  await expect.poll(() => poseGuia(cafe).evaluate((img) => img.complete && img.naturalWidth)).toBe(311);
   await page.screenshot({ path: join(DIR, `10-guia-olmo-hola-${tam(info)}.png`) });
   await tarjeta(cafe).getByRole('button', { name: 'Enséñame' }).click();
   // El primer botón: su retrato, con el hueco en el velo encima
@@ -113,9 +117,11 @@ test('Olmo enseña los botones del café la primera vez, y se repasa tocando su 
   await tarjeta(cafe).getByRole('button', { name: 'Atrás' }).click();
   await esperaPaso(cafe, 'retrato');
   const vistos = [];
+  const poses = [];
   for (let i = 0; i < 20; i += 1) {
     const id = await tarjeta(cafe).getAttribute('data-paso');
     vistos.push(id);
+    poses.push(await poseGuia(cafe).getAttribute('data-pose'));
     if (id === 'fin') break;
     if (id === 'libros') await page.waitForTimeout(450);
     if (id === 'libros') await page.screenshot({ path: join(DIR, `13-guia-olmo-libros-${tam(info)}.png`) });
@@ -124,6 +130,8 @@ test('Olmo enseña los botones del café la primera vez, y se repasa tocando su 
   }
   expect(vistos).toContain('decorar');
   expect(vistos.at(-1)).toBe('fin');
+  expect(poses.at(-1)).toBe('celebra');
+  expect(poses).toContain('camina');
   await page.screenshot({ path: join(DIR, `14-guia-olmo-fin-${tam(info)}.png`) });
   await tarjeta(cafe).getByRole('button', { name: 'Gracias, Olmo' }).click();
   await expect(cafe.locator('.cf3-guia')).toHaveCount(0);

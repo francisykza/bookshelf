@@ -2,7 +2,7 @@
 // puerta y quién vive). Al tocar una ventana, la vista se acerca a ella (te asomas) y entras; al volver, se aleja
 // desde esa misma ventana. Con movimiento reducido, sin animación. Lo usan el panel de la app y la página de desarrollo.
 import { DEFAULT_AVATAR, facingOf, validateAvatar } from './actor';
-import { FACADE_H, FACADE_W, renderFacade } from './facade';
+import { FACADE_W, puertasDe, renderFacade } from './facade';
 import { misticoOf, misticoSprite } from './misticos';
 import { ROOM_SCALE, renderActorWalk } from './render';
 import { cartelDelBajo, placaHotel, placaVivienda } from './placas';
@@ -84,7 +84,7 @@ function ambientLayer(canvas, { panes, shore }) {
   for (const [k, s] of findStars(canvas).entries()) {
     const star = document.createElement('span');
     star.className = 'ed-star';
-    box(star, { left: s.x / FACADE_W, top: s.y / FACADE_H, width: 1 / FACADE_W, height: 1 / FACADE_H });
+    box(star, { left: s.x / FACADE_W, top: s.y / canvas.height, width: 1 / FACADE_W, height: 1 / canvas.height });
     star.style.animationDelay = `${-((k * 1.37) % 5).toFixed(2)}s`;
     star.style.animationDuration = `${3 + (k % 4) * 0.9}s`;
     layer.append(star);
@@ -195,7 +195,7 @@ function walkAlong(stage, walk, who, path, done) {
   stage.insertBefore(front, flats);
   if (palEl) stage.insertBefore(palEl, front);
   stage.insertBefore(el, front);
-  const at = (pt, sp) => ({ left: pct(pt.x - sp.ax / FACADE_W), top: pct(pt.y - sp.ay / FACADE_H) });
+  const at = (pt, sp) => ({ left: pct(pt.x - sp.ax / FACADE_W), top: pct(pt.y - sp.ay / walk.H) });
   const pts = [walk.door, ...path];
   runs.push(img.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-100%)' }], { duration: STEP_MS * 4, iterations: Infinity, easing: 'steps(4, jump-end)' }));
   const fade = (node, from, to) => {
@@ -212,7 +212,7 @@ function walkAlong(stage, walk, who, path, done) {
       const a = pts[i - 1];
       const b = pts[i];
       const dx = (b.x - a.x) * FACADE_W;
-      const dy = (b.y - a.y) * FACADE_H;
+      const dy = (b.y - a.y) * walk.H;
       const sp = turn(dx, dy);
       const run = node.animate([at(a, sp), at(b, sp)], { duration: (Math.hypot(dx, dy) / WALK_PX_S) * 1000, fill: 'forwards' });
       runs.push(run);
@@ -249,9 +249,9 @@ function walkAlong(stage, walk, who, path, done) {
  * `walker` (opcional, 1.78): { avatar, companion } de tu personaje (companion: el legendario que te sigue, o null); con él, antes de entrar en la tienda o de subir a la limusina,
  * sale del portal y va andando hasta allí (con movimiento reducido, directo).
  */
-export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '', mail = null, onOpenLimo = null, walker = null, cafe = null }) {
+export function mountFacade(container, { flats, plantas = 3, onOpenShop = null, shopBadge = '', mail = null, onOpenLimo = null, onOpenTelefonillo = null, telefonilloNuevo = false, walker = null, cafe = null }) {
   const byDoor = Object.fromEntries(flats.map((f) => [f.puerta, { room: f.room }]));
-  const { canvas, windows, panes, shore, shop, mailbox, limo, walk, sign } = renderFacade(byDoor, cafe);
+  const { canvas, H: FACADE_H, windows, panes, shore, shop, mailbox, telefonillo, limo, walk, sign } = renderFacade(byDoor, cafe, plantas);
   const root = document.createElement('div');
   root.className = 'ed-facade';
   root.style.aspectRatio = `${FACADE_W} / ${FACADE_H}`;
@@ -285,7 +285,7 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
   const list = document.createElement('ul');
   list.className = 'ed-facade__flats';
   // De arriba abajo, como se lee un edificio (y como se recorren con el tabulador)
-  const order = ['3A', '3B', '2A', '2B', '1A', '1B'];
+  const order = puertasDe(plantas);
   for (const puerta of order) {
     const w = windows.find((x) => x.puerta === puerta);
     const flat = flats.find((f) => f.puerta === puerta);
@@ -369,6 +369,23 @@ export function mountFacade(container, { flats, onOpenShop = null, shopBadge = '
       // Tu personaje va andando hasta la limusina y sube; luego, el viaje
       if (canWalk()) walkThen(walk.limo, onOpenLimo);
       else onOpenLimo();
+    });
+    li.append(el);
+    list.append(li);
+  }
+  // 1.151 · El telefonillo del portal (Telefonillo.jsx): llamar a los vecinos, dar una llave de tu edificio o usar una
+  if (onOpenTelefonillo) {
+    const li = document.createElement('li');
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = `ed-window ed-telefonillo${telefonilloNuevo ? ' is-nuevo' : ''}`;
+    el.setAttribute('aria-label', 'El telefonillo del portal: llamar a tus vecinos y dar o usar una llave de tu edificio');
+    // Más grande que la placa, para el dedo
+    box(el, { left: telefonillo.left - telefonillo.width * 0.6, top: telefonillo.top - telefonillo.height * 0.2, width: telefonillo.width * 2.2, height: telefonillo.height * 1.4 });
+    el.addEventListener('click', () => {
+      if (busy) return;
+      el.classList.remove('is-nuevo');
+      onOpenTelefonillo();
     });
     li.append(el);
     list.append(li);

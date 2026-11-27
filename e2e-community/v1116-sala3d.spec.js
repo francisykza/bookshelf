@@ -239,10 +239,12 @@ test('al volver con la sesión en marcha, la sala te sienta en tu sillón', asyn
   await shot(page, info, '08-de-vuelta');
 });
 
-test('sin WebGL, la sala de siempre', async ({ page }, info) => {
+// 1.155: sin el dibujo isométrico de respaldo; la sala lo dice y se lee igual
+test('sin WebGL, la sala sin dibujar y leer igual', async ({ page }, info) => {
   test.skip(!/chromium-390x844$/.test(info.project.name), 'una vez basta');
   const { sala } = await aLaSala(page, { sinWebgl: true });
-  await expect(sala.locator('.gh-casino__art')).toBeVisible({ timeout: 15000 });
+  await expect(sala.locator('.ed-sin3d')).toContainText('No puede dibujar la sala de lectura', { timeout: 15000 });
+  await expect(sala.locator('.gh-casino__art')).toHaveCount(0);
   await expect(sala.locator('.sl3')).toHaveCount(0);
   await expect(sala.getByRole('button', { name: 'Sentarte a leer' })).toBeVisible();
 });

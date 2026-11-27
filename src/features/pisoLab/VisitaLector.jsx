@@ -13,7 +13,7 @@ import { PantallaCarga } from '../../ui/PantallaCarga';
 // Trae Three.js: solo se descarga si de verdad hay un piso que enseñar
 const VisitaPiso = lazy(() => import('./VisitaPiso'));
 
-const TEXTO_VOLVER = { salon: 'Volver al salón', lectores: 'Volver a lectores' };
+const TEXTO_VOLVER = { salon: 'Volver al salón', lectores: 'Volver a lectores', amigos: 'Volver a Amigos' };
 
 export default function VisitaLector({ userId, from = null, onBack, onProfile }) {
   useCommunity({ autoload: true });
@@ -53,7 +53,7 @@ export default function VisitaLector({ userId, from = null, onBack, onProfile })
         </header>
         {estado === 'listo' && !perdido && (
           <Suspense fallback={<PantallaCarga mensaje={cargando} />}>
-            <VisitaPiso key={vecino.user_id} vecino={vecino} edificio={null} onVolver={onBack} onIso={() => setPerdido(true)} />
+            <VisitaPiso key={vecino.user_id} vecino={vecino} edificio={null} onVolver={onBack} onSin3d={() => setPerdido(true)} />
           </Suspense>
         )}
         {estado === 'cargando' && <PantallaCarga mensaje={cargando} />}

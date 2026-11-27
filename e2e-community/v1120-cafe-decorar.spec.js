@@ -199,7 +199,7 @@ test('arrastrar una pieza y no poder ponerla encima de otra', async ({ page }, i
   expect(estado.plano.items.find((i) => i.uid === 'a')).toMatchObject({ x: 1, y: 3 });
 });
 
-test('sin WebGL: inaugurado, el dibujo y sin Decorar', async ({ page }, info) => {
+test('sin WebGL: inaugurado, sin dibujo y sin Decorar', async ({ page }, info) => {
   test.skip(!/chromium-390x844$/.test(info.project.name), 'Chromium 390');
   await page.addInitScript(() => {
     const get = HTMLCanvasElement.prototype.getContext;
@@ -211,7 +211,7 @@ test('sin WebGL: inaugurado, el dibujo y sin Decorar', async ({ page }, info) =>
   await portal.getByRole('button', { name: 'Entrar en el café-librería del bajo' }).click({ timeout: 15000 });
   const cafe = page.getByRole('dialog', { name: 'El café-librería del bajo' });
   await expect(cafe.locator('.cf3[data-ready="true"]')).toBeVisible({ timeout: 20000 });
-  await expect(cafe.locator('.cf3-iso img')).toBeVisible();
+  await expect(cafe.locator('.cf3-iso .ed-sin3d')).toBeVisible();
   await expect(cafe.locator('.cf3-placa')).toContainText('Capítulo Uno');
   await expect(cafe.getByRole('button', { name: 'Decorar' })).toHaveCount(0);
 });

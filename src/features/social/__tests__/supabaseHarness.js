@@ -64,6 +64,22 @@ export async function as(db, userId, fn) {
   }
 }
 
+/**
+ * Desde la 1.151 cada cuenta estrena su propio edificio y los vecinos se juntan con llaves. Las pruebas escritas con el reparto
+ * de antes (los seis primeros juntos, la séptima en otro) lo recuperan con esto, como superusuario: de seis en seis, cada grupo
+ * en el edificio del primero, con las puertas en orden. Llamarlo después de `asignar_edificio` de todas.
+ */
+export async function juntarComoAntes(db, users) {
+  const puertas = ['1A', '1B', '2A', '2B', '3A', '3B'];
+  for (let g = 0; g < users.length; g += 6) {
+    const grupo = users.slice(g, g + 6);
+    const { rows } = await db.query('select edificio from edificio_vecinos where user_id = $1', [grupo[0]]);
+    if (!rows.length) continue;
+    for (const u of grupo) await db.query('delete from edificio_vecinos where user_id = $1', [u]);
+    for (const [i, u] of grupo.entries()) await db.query('insert into edificio_vecinos (user_id, edificio, puerta) values ($1, $2, $3)', [u, rows[0].edificio, puertas[i]]);
+  }
+}
+
 /** ¿Falla la operación? (devuelve el mensaje, o null si no ha fallado) */
 export async function rejects(promise) {
   try {

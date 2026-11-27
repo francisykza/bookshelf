@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { anclaVisible, cajaDe, colocar, rectEn } from '../../libo/LiboRincon';
 import { PixelArt } from './PixelArt';
 import { textoDe } from './cafeGuia';
+import { poseOlmoDelPaso } from './olmoPoses';
 
 /**
  * `pasos`: los que tocan (ya filtrados a los que se ven). `quien`: el anfitrión (`anfitrion()`). `onPaso(paso)`: cada paso que se
@@ -94,7 +95,7 @@ export function GuiaCafe({ raiz, pasos, quien, onPaso, onFin, repaso = false }) 
           {quien.nombre}
         </span>
         <span className="cf3-retrato cf3-guia__retrato" aria-hidden="true">
-          <PixelArt icono={quien.retrato(paso.pose)} />
+          <PixelArt icono={quien.retrato(poseOlmoDelPaso(i, pasos.length, paso.pose))} />
         </span>
         <h2 id={`${id}-t`} className="cf3-guia__titulo">
           {paso.titulo}

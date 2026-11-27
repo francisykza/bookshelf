@@ -12,6 +12,7 @@ import { cobrarMostrador, errorCafe } from './cafeService';
 
 import { PixelArt } from './PixelArt';
 import { anfitrion } from './cafePersonaje';
+import { MOMENTO_OLMO } from './olmoPoses';
 import { Pista } from './Pista';
 
 const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -211,7 +212,7 @@ export function CajaMostrador({ escena, obrador, dia, soundOn = false, ayudas = 
         </span>
         <div className="cf3-caja">
           <span className="cf3-retrato">
-            <PixelArt icono={anfitrion().retrato()} />
+            <PixelArt icono={anfitrion().retrato(fase === 'hecho' ? MOMENTO_OLMO.cajaHecha : MOMENTO_OLMO.caja)} />
           </span>
           <p className="cf3-dice" aria-live="polite">
             <span className="px-sr">{anfitrion().nombre}: </span>

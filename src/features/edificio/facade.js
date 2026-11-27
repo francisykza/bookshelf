@@ -37,6 +37,24 @@ const SIGN_Y = BD - 0.85;
 const SIGN_Z0 = TOP + 1.15;
 const SIGN_Z1 = TOP + 2.3;
 
+/** 1.152 (docs/qa/amigos-vecinos.md, bloque 2): el edificio estrena 3 plantas y, al llenarse, gana una cada vez, hasta 5. */
+export const PLANTAS_MIN = 3;
+export const PLANTAS_MAX = 5;
+export const plantasValidas = (n) => Math.max(PLANTAS_MIN, Math.min(PLANTAS_MAX, Math.round(Number(n)) || PLANTAS_MIN));
+/** Lo que sube con las plantas: la azotea (`TOP`) y el cartel de encima. */
+export function alturas(plantas = PLANTAS_MIN) {
+  const p = plantasValidas(plantas);
+  const top = GROUND_H + FLOOR_H * p;
+  return { plantas: p, TOP: top, SIGN_Z0: top + 1.15, SIGN_Z1: top + 2.3 };
+}
+/** Las puertas de un edificio de `plantas` plantas, de arriba abajo y de izquierda a derecha (como se lee y se tabula). */
+export const puertasDe = (plantas = PLANTAS_MIN) => {
+  const out = [];
+  for (let f = plantasValidas(plantas); f >= 1; f -= 1) out.push(`${f}A`, `${f}B`);
+  return out;
+};
+const enPlanta = (puerta, plantas) => Number(puerta[0]) <= plantas;
+
 // Letra de píxeles del cartel (propia): 4 × 5, la I y la Y de 3
 const GLYPHS = {
   A: ['.##.', '#..#', '####', '#..#', '#..#'],
@@ -79,8 +97,11 @@ const SURROUND_FREE = [150, 158, 172];
 
 const bayOf = (side) => (side === 'A' ? [0.35, 2.85] : [5.15, 7.65]);
 
-/** Plantas (1, 2, 3) y piso (A a la izquierda, B a la derecha): el cuerpo y sus dos ventanas. */
-export const FLATS = ['1A', '1B', '2A', '2B', '3A', '3B'].map((puerta) => {
+/**
+ * Plantas (1 a 5) y piso (A a la izquierda, B a la derecha): el cuerpo y sus dos ventanas. Están las diez; cada edificio dibuja
+ * las de sus plantas. El orden no cambia (el cristal de cada piso es `GLASS_ID` + su índice aquí).
+ */
+export const FLATS = ['1A', '1B', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B'].map((puerta) => {
   const floor = Number(puerta[0]);
   const z0 = GROUND_H + (floor - 1) * FLOOR_H;
   const [x0, x1] = bayOf(puerta[1]);
@@ -91,10 +112,11 @@ export const FLATS = ['1A', '1B', '2A', '2B', '3A', '3B'].map((puerta) => {
   return { puerta, z0, x0, x1, wins, gz0: z0 + 0.5, gz1: z0 + 1.9 };
 });
 
-function frame() {
+function frame(plantas = PLANTAS_MIN) {
   const probe = createRaster({ W: 1, H: 1, S, yaw: YAW, ox: 0, oy: 0 });
   const pts = [];
-  for (const x of [-0.3, BW + 0.3]) for (const y of [-0.3, BD + 0.7]) for (const z of [0, TOP + TOWER_H + 0.5]) pts.push(probe.project(x, y, z));
+  const alto = alturas(plantas).TOP;
+  for (const x of [-0.3, BW + 0.3]) for (const y of [-0.3, BD + 0.7]) for (const z of [0, alto + TOWER_H + 0.5]) pts.push(probe.project(x, y, z));
   const minX = Math.min(...pts.map((p) => p.sx));
   const maxX = Math.max(...pts.map((p) => p.sx));
   const minY = Math.min(...pts.map((p) => p.sy));
@@ -103,7 +125,14 @@ function frame() {
   return { ox: Math.round((W - (maxX - minX)) / 2 - minX), oy: Math.round(top - minY), H: Math.ceil(maxY - minY) + top + 28 };
 }
 
-const FRAME = frame();
+// El encuadre del dibujo 2D, uno por altura (con más plantas, más alto)
+const FRAMES = new Map();
+const frameDe = (plantas) => {
+  const p = plantasValidas(plantas);
+  if (!FRAMES.has(p)) FRAMES.set(p, frame(p));
+  return FRAMES.get(p);
+};
+const FRAME = frameDe(PLANTAS_MIN);
 /** Medidas, ids y colores que necesita la calle en 3D (calle3d.js) para montar este mismo edificio. */
 export const FACADE_PARTS = {
   BW, BD, GROUND_H, FLOOR_H, TOP, TOWER_H, SIGN_X0, SIGN_X1, SIGN_Y, SIGN_Z0, SIGN_Z1,
@@ -144,9 +173,9 @@ export function signGlyphs(boardW, put, { red = rgb(196, 52, 40), dark = rgb(92,
   });
 }
 
-function paintSign(r) {
-  const p0 = r.project(SIGN_X0, SIGN_Y, SIGN_Z1);
-  const p1 = r.project(SIGN_X1, SIGN_Y, SIGN_Z1);
+function paintSign(r, signZ1 = SIGN_Z1) {
+  const p0 = r.project(SIGN_X0, SIGN_Y, signZ1);
+  const p1 = r.project(SIGN_X1, SIGN_Y, signZ1);
   const slope = (p1.sy - p0.sy) / (p1.sx - p0.sx);
   signGlyphs(Math.round(p1.sx - p0.sx), (x, y, c) => {
     const sx = Math.round(p0.sx + x);
@@ -198,12 +227,14 @@ function balcony(r, x0, x1, z) {
 
 /**
  * Las cajas de la fachada (sin el suelo, las sombras ni los cristales por dentro): los vecinos, el edificio, la planta
- * baja, la limusina y los seis pisos con sus balcones. La comparten el dibujo 2D (renderFacade) y la calle en 3D
+ * baja, la limusina y los pisos con sus balcones (de 3 a 5 plantas, 1.152). La comparten el dibujo 2D (renderFacade) y la calle en 3D
  * (calle3d.js, que las graba en vez de pintarlas). Devuelve dónde cae la limusina. `cafe` (1.123, bloque 4b): tu café visto
  * desde la calle ({ inaugurado, nivel, escaparate }, de `cargarFachada`); desde el nivel 5, en el escaparate se ven tus tres
  * libros y en la acera, la terraza con sus farolillos.
  */
-export function drawFacadeBody(r, flats = {}, cafe = null) {
+export function drawFacadeBody(r, flats = {}, cafe = null, plantas = PLANTAS_MIN) {
+  // Con más plantas, la azotea y el cartel van más arriba
+  const { plantas: P, TOP, SIGN_Z0, SIGN_Z1 } = alturas(plantas);
   const terraza = Boolean(cafe?.inaugurado && cafe.nivel >= 5);
   const at = (x, y, z) => {
     const p = r.project(x, y, z);
@@ -237,9 +268,9 @@ export function drawFacadeBody(r, flats = {}, cafe = null) {
   });
   // Pilastras entre cuerpos e impostas entre plantas
   for (const x of [0, 3.05, 4.75, BW - 0.2]) r.box(x, BD, GROUND_H, x + 0.2, BD + 0.08, TOP, PILASTER, { grain: 0 });
-  for (let k = 0; k <= 3; k += 1) {
+  for (let k = 0; k < P; k += 1) {
     const z = GROUND_H + k * FLOOR_H - 0.06;
-    if (k < 3) r.box(-0.05, BD, z, BW + 0.05, BD + 0.12, z + 0.12, k === 0 ? WHITE : PILASTER, { grain: 0 });
+    r.box(-0.05, BD, z, BW + 0.05, BD + 0.12, z + 0.12, k === 0 ? WHITE : PILASTER, { grain: 0 });
   }
   // Cornisa con dentículos y antepecho de balaustres en la azotea
   r.box(-0.25, BD - 0.35, TOP - 0.12, BW + 0.25, BD + 0.32, TOP + 0.2, WHITE, { grain: 0 });
@@ -343,6 +374,19 @@ export function drawFacadeBody(r, flats = {}, cafe = null) {
   r.setId(GLOW_BIT);
   r.box(4.95, BD + 0.25, 1.18, 5.15, BD + 0.45, 1.42, LIT, { grain: 0 });
   r.setId(0);
+  // El telefonillo (1.151): una placa de latón a la derecha del portal, con la rejilla del altavoz arriba y los botones de
+  // los pisos en dos columnas. Se toca para llamar a los vecinos, dar llaves de tu edificio o usar una
+  r.box(4.56, BD, 0.9, 4.8, BD + 0.07, 1.44, BRASS, {
+    seed: 9,
+    face: (f, a, b) => {
+      if (f !== 'front') return undefined;
+      if (b > 1.3 && b < 1.4 && a > 4.6 && a < 4.76) return Math.round(b * 60) % 2 ? r.rampOf(BRASS)[0] : undefined;
+      const fila = b > 0.97 && b < 1.26 && (b - 0.97) % 0.1 < 0.06;
+      const col = (a > 4.6 && a < 4.66) || (a > 4.7 && a < 4.76);
+      return fila && col ? r.rampOf(IRON)[1] : undefined;
+    },
+  });
+  r.box(4.54, BD, 1.44, 4.82, BD + 0.09, 1.48, [128, 94, 44], { grain: 0 });
   // El buzón (1.73): rojo, con su ranura de latón, en la pared entre la librería y el portal. Se toca para ver el correo
   r.box(2.9, BD, 0.8, 3.26, BD + 0.2, 1.3, [168, 70, 52], { seed: 5, face: (f, a, b) => (f === 'front' && b > 1.12 && b < 1.17 && a > 2.96 && a < 3.2 ? r.rampOf(BRASS)[1] : undefined) });
   r.box(2.88, BD, 1.3, 3.28, BD + 0.24, 1.36, [120, 48, 40], { grain: 0 });
@@ -355,7 +399,7 @@ export function drawFacadeBody(r, flats = {}, cafe = null) {
   const limoAt = drawLimo(r, LIMO_X, BD + 0.95, { glowId: GLOW_BIT, bodyId: LIMO_ID, chauffeurAt: 'side' });
 
   // La escalera: dos ventanas pequeñas por planta en el cuerpo central, con cortinas amarillas encendidas
-  for (let k = 0; k < 3; k += 1) {
+  for (let k = 0; k < P; k += 1) {
     const z0 = GROUND_H + k * FLOOR_H + 0.75;
     for (const [a0, a1] of [
       [3.35, 3.8],
@@ -369,8 +413,9 @@ export function drawFacadeBody(r, flats = {}, cafe = null) {
     }
   }
 
-  // Los seis pisos
+  // Los pisos de sus plantas
   for (const [k, f] of FLATS.entries()) {
+    if (!enPlanta(f.puerta, P)) continue;
     const flat = flats[f.puerta] ?? null;
     const room = flat?.room ?? null;
     const surround = flat ? (SURROUND[room?.pared] ?? SURROUND.yeso) : SURROUND_FREE;
@@ -413,9 +458,11 @@ export function drawFacadeBody(r, flats = {}, cafe = null) {
  * las que no estén, libres. Devuelve { canvas, windows: [{ puerta, left, top, width, height }] (en fracciones del
  * dibujo), sign }.
  */
-export function renderFacade(flats = {}, cafe = null) {
-  const r = createRaster({ W, H: FRAME.H, S, yaw: YAW, ox: FRAME.ox, oy: FRAME.oy });
-  const H = FRAME.H;
+export function renderFacade(flats = {}, cafe = null, plantas = PLANTAS_MIN) {
+  const { plantas: P, SIGN_Z1: signZ1 } = alturas(plantas);
+  const fr = frameDe(P);
+  const r = createRaster({ W, H: fr.H, S, yaw: YAW, ox: fr.ox, oy: fr.oy });
+  const H = fr.H;
   r.clear(0);
 
   // Muelle de adoquines y, delante, el agua del puerto
@@ -436,14 +483,15 @@ export function renderFacade(flats = {}, cafe = null) {
     return cobble[Math.max(0, Math.min(4, Math.floor(3 + (hash(cx, cy) - 0.5) * 1.2 + d - (seam ? 1.3 : 0))))];
   });
 
-  const { limoAt } = drawFacadeBody(r, flats, cafe);
+  const { limoAt } = drawFacadeBody(r, flats, cafe, P);
 
-  // Los seis pisos: dónde cae cada uno (para los botones)
+  // Los pisos: dónde cae cada uno (para los botones)
   const windows = [];
   const lights = [];
   // Cristales de los pisos ocupados (en fracciones del dibujo): la vista les pone una luz que respira (facadeView.js)
   const panes = [];
   for (const f of FLATS) {
+    if (!enPlanta(f.puerta, P)) continue;
     const flat = flats[f.puerta] ?? null;
     const p0 = r.project(f.x0 - 0.05, BD + 0.45, f.z0 + 0.25);
     const p1 = r.project(f.x1 + 0.05, BD, f.gz1 + 0.36);
@@ -456,13 +504,13 @@ export function renderFacade(flats = {}, cafe = null) {
       }
     if (flat) for (const [w0, w1] of f.wins) lights.push(r.project((w0 + w1) / 2, BD + 0.3, (f.gz0 + f.gz1) / 2));
   }
-  for (let k = 0; k < 3; k += 1) lights.push(r.project(4, BD + 0.3, GROUND_H + k * FLOOR_H + 1.2));
+  for (let k = 0; k < P; k += 1) lights.push(r.project(4, BD + 0.3, GROUND_H + k * FLOOR_H + 1.2));
   lights.push(r.project(5.05, BD + 0.5, 1.3), r.project(1.6, BD + 0.3, 1.1), r.project(6.4, BD + 0.3, 1.1));
 
   r.applyShadows();
   r.bakeOcclusion();
   r.shadeEdges();
-  paintSign(r);
+  paintSign(r, signZ1);
 
   // Por las ventanas de cada piso, su interior visto de frente (windowView.js), con cortinas y travesaño. Si el piso
   // está libre, la persiana está bajada.
@@ -568,8 +616,12 @@ export function renderFacade(flats = {}, cafe = null) {
   const m0 = r.project(2.88, BD + 0.24, 0.8);
   const m1 = r.project(3.28, BD, 1.36);
   const mailbox = { left: Math.min(m0.sx, m1.sx) / W, top: Math.min(m0.sy, m1.sy) / H, width: Math.abs(m1.sx - m0.sx) / W, height: Math.abs(m1.sy - m0.sy) / H };
+  // El telefonillo (para su botón)
+  const t0 = r.project(4.56, BD + 0.07, 0.9);
+  const t1 = r.project(4.8, BD, 1.48);
+  const telefonillo = { left: Math.min(t0.sx, t1.sx) / W, top: Math.min(t0.sy, t1.sy) / H, width: Math.abs(t1.sx - t0.sx) / W, height: Math.abs(t1.sy - t0.sy) / H };
   // La limusina (para el botón)
-  const limo = { left: limoAt.x0 / W, top: limoAt.y0 / H, width: (limoAt.x1 - limoAt.x0) / W, height: (limoAt.y1 - limoAt.y0) / H };
+  const limo ={ left: limoAt.x0 / W, top: limoAt.y0 / H, width: (limoAt.x1 - limoAt.x0) / W, height: (limoAt.y1 - limoAt.y0) / H };
   // El camino de tu personaje por el muelle (1.78): sale del portal y va hasta la puerta de la tienda o hasta la trasera
   // de la limusina. Puntos del suelo en fracciones del dibujo, con la escala y el giro para dibujarlo encima
   const foot = (x, y) => {
@@ -597,5 +649,5 @@ export function renderFacade(flats = {}, cafe = null) {
     shop: [foot(4.0, BD + 0.55), foot(5.95, BD + 0.55), foot(5.95, BD + 0.32)],
     limo: [foot(4.0, BD + 0.6), foot(LIMO_X + 2.7, BD + 0.6), foot(LIMO_X + 2.7, BD + 0.8)],
   };
-  return { canvas, windows, panes, shore, shop, mailbox, limo, walk, sign: SIGN_LINES.join(' ') };
+  return { canvas, H, windows, panes, shore, shop, mailbox, telefonillo, limo, walk: { ...walk, H }, sign: SIGN_LINES.join(' ') };
 }

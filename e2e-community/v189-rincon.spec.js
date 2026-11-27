@@ -191,8 +191,6 @@ test('visita en primera persona: dos cuentas, su piso y sus libros, sin tocar na
   await page.getByRole('button', { name: 'Al edificio' }).click();
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
-  await expect(page.locator('.ep-canvas')).toBeVisible({ timeout: 15000 });
-  await page.getByRole('button', { name: 'Entrar en 3D' }).click();
   await ready3d(page);
   const visita = await debug(page);
   expect(visita.piso).toBe(`visita:${BEA.id}`);
@@ -204,13 +202,10 @@ test('visita en primera persona: dos cuentas, su piso y sus libros, sin tocar na
   await expect(portal.getByText(/Registrar lectura/)).toHaveCount(0);
   await expect(page.locator('.ed-room').getByRole('button', { name: 'Decorar' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Volver al portal/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Ver en isométrica' })).toBeVisible();
   mkdirSync('qa-report/v189/visita', { recursive: true });
   await page.screenshot({ path: `qa-report/v189/visita/${info.project.name}-primera-persona.png` });
-  // La isométrica sigue, y del mismo piso
-  await page.getByRole('button', { name: 'Ver en isométrica' }).click();
-  await expect(page.locator('.ep-canvas')).toBeVisible();
-  expect((await iso(page)).pared).toBe('salvia');
+  // 1.155: ya no hay vista isométrica de la visita
+  await expect(page.getByRole('button', { name: 'Ver en isométrica' })).toHaveCount(0);
   expect(mine(mock, BEA)).toEqual(beaAntes);
   // Al volver a mi piso, mi habitación y mis libros
   await page.goBack();

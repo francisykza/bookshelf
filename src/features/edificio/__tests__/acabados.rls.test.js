@@ -3,7 +3,7 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { ACABADOS, ACABADO_PROB } from '../acabados';
 import { createRoom } from '../room';
 
@@ -36,6 +36,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('insert into pisos (layout) values ($1::jsonb)', [JSON.stringify(createRoom())]));
     await inventario(u);
   }
+  await juntarComoAntes(db, [A, B]);
   // Cuentas con antigüedad, para que la Lonja las deje poner puesto
   await db.query("update profiles set created_at = now() - interval '30 days'");
 }, 60000);

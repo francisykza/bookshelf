@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.150.1 · 2026-11-26 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.156.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -8505,3 +8505,340 @@ del paso y una tarjeta al lado, aquí con el cuadro de diálogo del café, el no
   - a 360 y 390, Decorar y la balda de libros tienen su capítulo la primera vez;
   - con `GUIA_VIDEO=1`, el vídeo.
 - Capturas `10` a `19` y `video/1150-guia.webm` en `qa-report/v1150/`.
+
+## 151. El edificio de tus amigos: la llave y el telefonillo (1.151.0)
+
+Encargo de Francisco del 26-11-2026: «Cada edificio debería tener como vecinos únicamente a tus amigos, y que cada grupo de
+amigos tenga como su propia comunidad de vecinos, ahora mismo cada persona que entra en la app (he hecho la prueba con una
+compañera), se acopla al edificio disponible», y «que fuera del edificio tengas como un telefonillo con funciones así». Plan y
+decisiones (las cuatro recomendadas) en `docs/qa/amigos-vecinos.md` y en CLAUDE.md. Sustituye al reparto al azar de la 1.63.
+Este es el bloque 1 de 5: el servidor, el telefonillo y el enlace de la llave.
+
+### 151.1 El servidor (migración `20261230120000_edificio_amigos.sql`, la aplica Francisco)
+
+- **Cada cuenta, su edificio**: `asignar_edificio()` da a quien aún no tiene puerta un edificio nuevo solo para él, con una
+  puerta al azar de las seis. Nadie entra en un edificio ajeno sin llave.
+- **La llave** (`edificio_llaves`, cerrada a los clientes; todo va por funciones):
+  - código de 8 caracteres sin letras que se confundan (sin I, O, 0 ni 1), sacado de `gen_random_uuid()`;
+  - **un solo uso, 7 días**; como mucho **3 sin usar** por persona y 10 al día; la puede dar **cualquier vecino** con la
+    comunidad activada;
+  - `edificio_dar_llave()`, `edificio_mis_llaves()`, `edificio_retirar_llave(cod)`;
+  - `edificio_ver_llave(cod)`: de quién es, cuántos vecinos hay y, si no abre, por qué (`no_sirve`, `lleno`, `ya_vives`,
+    `tuya`, `comunidad`, `sesion`). Una llave caducada, usada, retirada, inexistente o de alguien con quien hay un bloqueo
+    dice lo mismo, «ya no abre», para no delatar nada;
+  - el código se escribe como se quiera (minúsculas, espacios, guiones): el servidor lo limpia.
+- **Mudarse** (`edificio_mudarse(cod)`): con la comunidad activada, sin bloqueo con **nadie** del edificio y con hueco. Tu fila
+  de vecino cambia de edificio con una puerta libre; **tu piso y tus muebles van contigo** (son tuyos, no del edificio). Gastar la
+  llave y mudarse van en la misma operación, con el candado del reparto. Si el edificio que dejas se queda vacío, se quita (solo
+  la fila del edificio: no hay nada más suyo).
+- **Irse** (`edificio_irse()`): a un edificio nuevo solo para ti, **con la misma puerta**; tus llaves sin usar dejan de abrir.
+  Si vives sola o solo, no hace nada.
+- **El portal** (`edificio_portal()`) dice además `plantas` (3 por ahora; crecerán en el bloque 2) y `libres`.
+- **El reparto de una vez, al aplicarla** (`edificio_repartir_por_amigos`, con su marca en `edificio_reparto_amigos` para no
+  repetirse): en cada edificio se agrupa a los vecinos por amistad (os seguís los dos, con la comunidad y sin bloqueo; también
+  amigos de amigos). **Se queda el grupo más grande** (en empate, el de quien llegó antes) y **cada uno de los demás grupos se
+  muda junto a un edificio nuevo**, cada cual con su puerta de antes. Quien no tiene ningún amigo dentro queda solo en el suyo.
+  **No se borra nada**: pisos, muebles, café y todo lo demás siguen siendo de cada cuenta. *Interpretación*: «se queda quien
+  tenga allí a algún amigo» se lee como «se queda el grupo de amigos más grande»; si en un edificio hay dos parejas de amigos que
+  no se conocen, la segunda se va junta a otro edificio en vez de quedarse.
+- **Ojo antes de aplicarla**: Francisco y su pareja siguen juntos solo si se siguen los dos. Si no, se vuelven a juntar con una
+  llave.
+
+### 151.2 El telefonillo del portal
+
+- **En la fachada**: una placa de latón a la derecha del portal, con la rejilla del altavoz arriba y dos columnas de botones,
+  en el mismo dibujo de píxeles (`facade.js`, compartido por la fachada 2D y la calle 3D). Se toca como las ventanas
+  (`calleView.js` y `facadeView.js`, con su caja de toque más grande que el dibujo) y **brilla** hasta que lo abres por primera
+  vez en el dispositivo (`bookshelf:telefonillo`; con movimiento reducido, sin parpadeo).
+- **El panel** (`Telefonillo.jsx`): la placa de latón grande, con la rejilla y el título en la letra del puerto.
+  - **Inicio**: un botón por puerta, como en la fachada (arriba la 3.ª planta, la A a la izquierda): el tuyo, en verde; el de un
+    vecino, **lo llama** (entras en su piso, como al tocar su ventana); el libre, apagado. Debajo, «Dar una llave», «Tengo una
+    llave» y, si vives con alguien, «Irme del edificio». Sola o solo: «Dale una llave a quien quieras de vecino».
+  - **Dar una llave**: «Hacer una llave» da un llavero de cartón con el código («ABCD-EFGH») y hasta cuándo abre; «Compartir la
+    llave» abre la hoja de compartir del móvil con el enlace (o lo copia, donde no la hay). Debajo, tus llaves sin usar, con
+    Compartir y Retirar. Con el edificio lleno, no se hacen llaves.
+  - **Tengo una llave**: se escribe el código, «Mirar la llave» dice de quién es y cuántos vecinos tiene, y «Mudarme» / «Ahora
+    no». Al mudarte, una nota («Ya vives en el edificio de Bruno.») y el portal ya con tus vecinos nuevos.
+  - **Irme**: lo que pasa, dicho antes («tu piso, tus muebles y la misma puerta»; tus llaves dejan de abrir) e «Irme» / «Me
+    quedo».
+  - Abajo, «Colgar» o «Atrás». Escape y Atrás del móvil (`useAtras`) cierran la vista abierta.
+- **Las reglas de la llave en el cliente** (`llave.js`, sin nada pesado: también la usa el arranque): `llaveBonita`,
+  `llaveLimpia`, `enlaceLlave`, `llaveDeHash`, los motivos dichos para quien tiene la llave en la mano y la llave guardada.
+
+### 151.3 El enlace de la llave
+
+- `https://libotown.es/#llave=ABCDEFGH`: el código va en el fragmento, que no llega al servidor (como `#club=`); el reparto de la
+  raíz (§146) ya manda a la app todo fragmento con «=».
+- `LlaveHandler.jsx`, en el arranque, junto a las invitaciones a clubes: lee el código, **lo quita de la barra de direcciones** y
+  lo guarda en el dispositivo 7 días (`bookshelf:llave`).
+  - Con cuenta y comunidad: una nota de papel abajo, «Te han dado una llave», de quién es y cuántos viven, con «Mudarme» /
+    «Ahora no». Al mudarte, «Ya vives en el edificio de X.» con «Ir al edificio».
+  - Sin cuenta o sin comunidad: dice qué falta y que **la llave se queda guardada**; cuando ya se puede, la nota sale sola al
+    abrir la app (quien llega sin cuenta, primero la crea).
+  - Si la llave ya no abre, ya vives allí, es tuya o el edificio está lleno, lo dice y la olvida. Sin la migración o sin red, no
+    dice nada y la guarda para otra vez.
+
+### 151.4 Pruebas
+
+- **Vitest**:
+  - `edificioAmigos.rls.test.js` (10, Postgres con todas las migraciones): las llaves (formato, 7 días, 3 vivas, retirar,
+    comunidad, tablas cerradas, limpiar el código), mudarse (piso intacto, llave gastada, edificio vacío fuera, portal con
+    `plantas` y `libres`), cualquiera da llaves, la tuya y donde ya vives no abren, bloqueo, lleno a seis, irse y el reparto de
+    una vez (amigos que se quedan, grupos que se van juntos, quien se queda solo, puertas de antes, nada borrado, su marca);
+  - `llave.test.js` (3): cómo se escribe, el enlace y la llave guardada 7 días;
+  - las pruebas de servidor que daban por hecho el reparto al azar se juntan como antes con `juntarComoAntes`
+    (`supabaseHarness.js`), y `edificio.rls.test.js` comprueba ahora que cada cuenta estrena su edificio.
+- **e2e** `v1151-telefonillo` (simulador con `db.edificio_llaves`): a 360, 390 y 1440, el telefonillo de principio a fin (dar
+  y compartir una llave, usar la de Bruno escrita a mano, mudarse, ver a los vecinos nuevos e irse) y el enlace (la nota, mudarse
+  e ir al edificio); a 390, el enlace sin comunidad. Con `TEL_VIDEO=1`, el vídeo.
+- Capturas `01` a `09` y `video/1151-telefonillo.webm` en `qa-report/v1151/`.
+
+## 152. El edificio crece por plantas (1.152.0)
+
+Bloque 2 de 5 de `docs/qa/amigos-vecinos.md`. Francisco eligió «Crece con plantas»: el edificio de un grupo de amigos empieza
+con 3 plantas (6 puertas) y, cuando se llenan, estrena otra, hasta **5 plantas y 10 vecinos**.
+
+### 152.1 El servidor (migración `20261231120000_edificio_plantas.sql`, la aplica Francisco **después** de la de §151)
+
+- **Las puertas** van de la `1A` a la `5B` (la regla `edificio_vecinos_puerta_check` pasa a `^[1-5][AB]$`).
+- **Las plantas no se guardan: se cuentan.** `edificio_plantas(ed)` = la planta ocupada más alta, y nunca menos de 3. Si se va
+  quien vivía arriba del todo y esa planta se queda vacía, el edificio vuelve a tener una planta menos.
+- **La puerta libre** (`edificio_puerta_libre`): primero una al azar de las plantas que ya hay y, solo si están llenas, una de la
+  planta siguiente (hasta la 5.ª). Lo usan mudarse con una llave y el reparto por amigos.
+- **Lleno a 10**: `edificio_ver_llave` dice `lleno` con 10 vecinos y da también `plantas`; `edificio_portal` da `plantas` y
+  `libres` (10 menos los vecinos).
+- **Orden**: aplicarla después de `20261230120000_edificio_amigos.sql`. Volver a ejecutar la de §151 después devolvería la
+  puerta libre de seis puertas.
+
+### 152.2 El dibujo
+
+- `facade.js`: `alturas(plantas)` da la azotea y el cartel de cada altura (suben lo mismo por planta); `puertasDe(plantas)`, las
+  puertas de arriba abajo y la A antes que la B; `FLATS` tiene las 10 (las seis de antes, en su sitio y con su cristal). La
+  fachada, las impostas y la escalera se dibujan hasta la planta de arriba, y el marco y el cartel suben con ella.
+- `calle3d.js`: la calle 3D se construye con las plantas que tenga el edificio (están en la clave de su caché). La vista de
+  inicio no sube más de lo necesario para que, con 5 plantas, se vean a la vez el cartel y la acera; con 3, la vista es la de
+  siempre (comparada píxel a píxel con la de antes).
+- `facadeView.js` y `calleView.js` (la fachada 2D y las placas de la calle) usan las mismas puertas y alturas.
+
+### 152.3 El telefonillo y el cliente
+
+- `service.js`: `plantasDe(vecinos, plantas)` (las del servidor y, sin ellas, las del vecino más alto; entre 3 y 5) y
+  `doorsOf(vecinos, plantas)`. `loadEdificio` devuelve `plantas`.
+- `Telefonillo.jsx`: un botón por puerta de cada planta (de 6 a 10); el subtítulo dice «7 vecinos en 4 plantas · 3 puertas
+  libres» o «· edificio lleno». Al dar una llave con las plantas llenas, avisa: «Tus 3 plantas están llenas: quien entre con
+  esta llave estrenará la 4.ª planta, y el edificio crecerá.»
+
+### 152.4 Pruebas
+
+- **Vitest**: `edificioPlantas.rls.test.js` (5, Postgres con todas las migraciones): empieza con 3, llena las 3 y luego la 4.ª y
+  la 5.ª, lleno a 10, encoge al vaciarse la de arriba y la regla de las puertas; `plantas.test.js` (3): plantas, orden de las
+  puertas y alturas. `edificioAmigos.rls.test.js` se ejecuta sin esta migración (prueba las reglas de seis puertas de §151).
+- **e2e** (Supabase simulado: `mockSupabase.js` hace crecer las plantas igual): `v1152-plantas.spec.js` a 360, 390 y 1440 (el
+  aviso de que crecerá, Ana se muda y estrena la 4.ª planta, un edificio de 5 plantas lleno) y `v1151-telefonillo` con el
+  subtítulo nuevo. Capturas en `qa-report/v1152/` y vídeo `qa-report/v1152/video/1152-plantas.webm` (con `PLANTAS_VIDEO=1`).
+- Sin probar en móviles reales ni en WebKit.
+
+## 153. La app «Amigos» del ordenador (1.153.0)
+
+Bloque 3 de 5 de `docs/qa/amigos-vecinos.md`. Encargo de Francisco del 26-11-2026: «que en el ordenador haya una sección social
+muy atractiva que deje buscar a amigos y tener funciones relacionadas con la lectura». Decisión 4: lo que ven tus amigos de tu
+lectura lo eliges tú (por defecto, qué lees ahora y lo que terminas; nunca notas, reseñas privadas ni páginas por día; solo
+amigos). Amigos son, como en el casino, la sala y el edificio, quienes os seguís los dos, con la comunidad y sin bloqueo.
+
+### 153.1 El servidor (migración `20270101120000_amigos.sql`, la aplica Francisco **después** de las de §151 y §152)
+
+- **Tu código de amigo** (`amigos_codigos`, `amigos_mi_codigo`, `amigos_buscar_codigo`): 8 caracteres sin I, O, 0 ni 1, el
+  mismo siempre. Con él te encuentran sin buscar tu alias; el tuyo, un código que no existe o el de alguien con quien hay un
+  bloqueo no encuentran a nadie.
+- **Lo que compartes** (`amigos_lectura`, `amigos_publicar`, `amigos_ajustes`): hasta 3 títulos que lees y los 5 últimos
+  terminados con su día, y tu avance en «Leemos el mismo». Solo título y autor (limpios y cortados a 300). Lo apagado no se
+  guarda y **se borra al apagarlo**.
+- **Recomendar un libro** (`amigos_recomendaciones`, `amigos_recomendar`, `amigos_recomendaciones_vistas`): solo a amigos, con
+  una de cuatro frases cerradas («Creo que te gustará», «Me acordé de ti al leerlo», «No pude soltarlo», «Para leerlo a la
+  vez»), una vez por libro y amigo, como mucho 5 al día.
+- **Leemos el mismo** (`amigos_juntos`, `_proponer`, `_responder`, `_dejar`): propones un libro a un amigo; si acepta, cada uno
+  ve el avance del otro en porcentaje (si lo comparte). Como mucho 3 abiertas por persona; rechazar o dejarla la retira.
+- **La llave, para un amigo** (`amigos_dar_llave`, columna nueva `edificio_llaves.para`): una llave del bloque 1 (mismas
+  reglas) que le llega a su agenda. No si ya vivís juntos ni si ya tiene una tuya sin usar.
+- `amigos_panel()` lo junta todo: código, ajustes, amigos (con lo que comparte cada uno y si vive en tu edificio), quién te
+  sigue y tú aún no, a quién sigues y aún no te sigue, recomendaciones, lecturas a la vez, llaves recibidas y a quién has dado
+  una. Las tablas están cerradas a los clientes; todo va por funciones.
+
+### 153.2 La app
+
+- **Dónde**: una tarjeta «Amigos» en el escritorio del ordenador del piso (quién lee qué, lo nuevo y «Abrir Amigos») y una
+  entrada «Amigos» en Aplicaciones. La pantalla (`social/amigos/AmigosApp.jsx`) se carga solo al abrirla.
+- **Aspecto**: una agenda de cuero cosido con cuatro pestañas de cartulina de colores (la cifra de lo nuevo en una esquina) y
+  una hoja de papel con renglones y margen rojo; cada amigo es una ficha con su foto sujeta por esquinas (`amigos.css`).
+- **Amigos**: «Leemos a la vez» con dos cintas de avance (tú y tu amigo) y las propuestas que esperan; las fichas con «Leyendo» y
+  «Terminó» (o «No lo comparte») y sus botones: Visitar su piso, Recomendar un libro, Leer el mismo, Leer juntos en la sala (la
+  cita de 25 minutos de §117, ahora, y te lleva a la sala) y Darle la llave. Sin amigos, cómo conseguirlos y tu código.
+- **Buscar**: tu código en un carné, con «Compartir mi código»; buscar por alias o por código (se escribe como se quiera);
+  «Te siguen», con «Seguir también», y «Esperando a que te sigan».
+- **Buzón**: llaves (con «Mudarme» y su confirmación), propuestas para leer a la vez (si no tienes el libro, «Añadirlo y leerlo
+  a la vez» lo pone en Quiero leer) y recomendaciones con su frase y «Añadir a Quiero leer». Al abrirlo, las recomendaciones
+  quedan vistas.
+- **Lo que ven**: tres interruptores (qué leo ahora, qué termino, mi avance cuando leemos a la vez). *Interpretación*: el plan
+  decía «en Ajustes»; están en la propia agenda, donde se ve lo que comparten los demás.
+- **Mandar tu lectura** (`AmigosSync.jsx`, en `App.jsx`, y `amigosLectura.js`): desde que abres Amigos por primera vez en un
+  aparato, cuando cambia tu biblioteca la app manda lo que lees, lo terminado y tu avance en cada lectura a la vez, unos
+  segundos después y solo si ha cambiado. Al abrir la agenda, siempre. Un «Leemos el mismo» se casa con tu libro por el título
+  (sin mayúsculas, tildes ni signos); terminado cuenta 100 %. *Interpretación*: antes de abrir Amigos no se manda nada.
+- «Visitar su piso» y «Leer juntos en la sala» dejan el ordenador en Amigos: Atrás vuelve a la agenda.
+
+### 153.3 Pruebas
+
+- **Vitest**: `amigos.rls.test.js` (7, Postgres con todas las migraciones): el código, el panel (amigos, solicitudes,
+  esperando; tablas cerradas), lo que compartes y lo apagado, recomendar, Leemos el mismo con su privacidad, la llave para un
+  amigo y un bloqueo que lo corta todo; `amigosLectura.test.js` (3).
+- **e2e** (Supabase simulado: `mockSupabase.js` simula las funciones solo con `db.amigos`; sin él, como un servidor sin la
+  migración): `v1153-amigos.spec.js` a 360, 390 y 1440 (la tarjeta y las fichas, recomendar y dar la llave, buscar por código
+  y seguir también, el buzón y la mudanza, lo que ven, sin la migración) y `v1134-almacen-ordenador` sin cambios. Capturas en
+  `qa-report/v1153/` y vídeo `qa-report/v1153/video/1153-amigos.webm` (con `AMIGOS_VIDEO=1`).
+- Sin probar en móviles reales ni en WebKit.
+
+## 154. Libo y los amigos (1.154.0)
+
+Bloque 4 de 5 de `docs/qa/amigos-vecinos.md`. Encargo de Francisco del 26-11-2026: «que fuera del edificio tengas como un
+telefonillo con funciones así, que Libo también esté relacionado». Sin migración nueva: Libo usa lo que ya da `amigos_panel()`
+(§153.1).
+
+### 154.1 Dos capítulos nuevos de la guía (`libo.js`)
+
+- **El telefonillo** (capítulo 8, `TELEFONILLO`): la primera vez que abres el telefonillo del portal. Cinco pasos: qué es (tu
+  edificio, solo para amigos: nadie entra sin llave), los botones de las puertas (el tuyo en verde, llamar a un vecino, las
+  libres apagadas), «Dar una llave» (una vez, 7 días, quien la usa se muda con su piso), «Tengo una llave» (te dice de quién es
+  antes de mudarte) y que el edificio crece por plantas hasta 5 (§152). Solo la vista de inicio, con sus botones de verdad.
+  Libo se sienta arriba a la izquierda, por encima del velo del telefonillo (a la derecha está la ✕ del edificio), y al tocarle
+  ofrece «Repasar el telefonillo».
+- **La agenda de Amigos** (capítulo 9, `AMIGOS`): la primera vez que abres Amigos en el ordenador. Cinco pasos: quiénes son tus
+  amigos (os seguís los dos) y las cuatro pestañas (Amigos, Buscar, Buzón y Lo que ven), cada una señalada. Libo se queda junto a
+  las pestañas, con «Repasar la agenda».
+- La guía del edificio gana un paso, **el telefonillo**, antes del café, y el paso de los vecinos ya no puede señalar el
+  telefonillo como si fuera una ventana.
+
+### 154.2 Sugerencias de tus amigos (`sugerencias.js`, `sugerenciasDeAmigos`)
+
+Con las reglas de siempre de Libo (§ Libo, bloque 3): solo cosas de verdad, una al día como mucho, sin rachas ni prisas, y cada
+una se calla un mes al contestarla. En tu piso, después de las reseñas y antes de los libros parados:
+
+- **Una llave que te han dado** y aún no has usado: «X te ha dado la llave de su edificio. Si os apetece ser vecinos, la tienes
+  en tu agenda de Amigos.» Con «Abrir Amigos» y «Ahora no».
+- **Un libro que te han recomendado** y aún no has visto: «X te ha recomendado *título*. ¿Le echas un vistazo?», con «Ver la
+  recomendación».
+- **Un amigo ha terminado un libro que tienes en «Quiero leer»** (en los últimos 14 días, casado por el título como en §153.2):
+  «X ha terminado *título*, que tienes en «Quiero leer». Por si te anima a empezarlo.», con «Ver su ficha» y «Abrir Amigos».
+
+Tu agenda la pide `useAmigosLibo` (`useAvisosLibo.js`) con la misma consulta que la app Amigos, como mucho cada cinco minutos y
+solo en tu piso; sin la migración o sin red, Libo no habla de amigos. «Abrir Amigos» lleva al ordenador, a la agenda
+(`ordenador:amigos`).
+
+### 154.3 Pruebas
+
+- **Vitest**: `sugerencias.test.js` («Libo · lo de tus amigos», 2: las tres sugerencias y sus límites) y `libo.test.js` con los
+  capítulos nuevos; 48 en total con las de amigos.
+- **e2e** (Supabase simulado): `v1154-libo-amigos.spec.js` a 360, 390 y 1440: el capítulo del telefonillo paso a paso (cada
+  tarjeta dentro de la pantalla, su hueco sobre el control y sin taparlo; Libo sin tapar la ✕ y su repaso), el de la agenda, y
+  la sugerencia del día con la llave de Bruno que lleva al buzón y se calla al contestarla. Sin cambios en `v1151`, `v1152`,
+  `v1153` ni en las siete de Libo (a 390). Capturas en `qa-report/v1154/` y vídeo `qa-report/v1154/video/1154-libo-amigos.webm`
+  (con `LIBO_AMIGOS_VIDEO=1`). El simulador da por vistos también `telefonillo` y `amigos` (`bookshelf:libo`).
+- Sin probar en móviles reales ni en WebKit.
+
+## 155. Fuera las vistas isométricas, parte A (1.155.0)
+
+Bloque 5 de 5 de `docs/qa/amigos-vecinos.md`. Francisco, 26-11-2026: «borra las vistas isometricas, ya no creo que las usemos
+más». Se le enseñó la lista antes de borrar y confirmó la parte A («Sí, borra la A»); **la parte B se queda** hasta que haya 3D:
+Decorar, tu piso desde la fachada (personaje, misiones, armario y el capítulo «tu-piso» de Libo), el respaldo de la habitación sin
+3D y el mercadillo de la Lonja. Sin migración. No se borra ningún dato de usuarios.
+
+### 155.1 La visita a un vecino, siempre en 3D
+
+- Al llamar a la puerta de un vecino se entra directamente en su piso en 3D (`VisitaPiso`), sin la vista isométrica previa ni
+  los botones «Entrar en 3D» y «Ver en isométrica». La etiqueta «Piso de X · puerta» queda arriba y la escena (con su tarjeta
+  «Está leyendo») empieza debajo, sin taparse.
+- Francisco eligió «Quitarla igualmente» sabiendo lo que se pierde, solo en la visita: **el personaje del vecino, su compañero
+  legendario y los «me gusta» por mueble** (solo existían en la isométrica). Lo que ya está guardado no se borra (`piso_megusta`
+  sigue ahí; en tu piso se siguen viendo los «me gusta» que te dieron). El libro de visitas y los regalos (`VecinoMesa`) siguen.
+- Sin 3D en el móvil, la visita no se dibuja: un papel de píxel «Sin 3D en este móvil · No puede dibujar el piso de X, pero todo
+  lo demás funciona igual» (`SinTresD.jsx`).
+
+### 155.2 Sin «Plano» en el vestíbulo, y sin dibujos de respaldo
+
+- El vestíbulo del hotel es siempre la recepción 3D; el botón «Plano» y su vista isométrica (`lobbyArt.js`) se van. Sin 3D, el
+  vestíbulo enseña el papel de `SinTresD` y cuatro botones (Recepción, Ascensor, Tablón y Guardarropa) que abren los mismos
+  papeles de siempre: los encargos, la botonera del ascensor (la «P» sale a la plaza), el tablón y el guardarropa. Escape cierra
+  primero el papel y luego sale a la plaza.
+- El casino (`casinoArt.js`), la sala de lectura (`salaArt.js`) y el café (el local vacío de `shopRoom.js`) ya no tienen dibujo de
+  respaldo: sin 3D, el mismo papel y el juego, los sillones o Pilar funcionan igual. El «Plano» del casino y de la sala es el
+  mapa 3D, no la isométrica: se queda.
+- `SinTresD` (`edificio.css`, `.ed-sin3d`): papel de píxel, título en la letra de píxel, tinta oscura (también en el hotel, donde
+  no hay `--ep-ink`).
+
+### 155.3 Archivos retirados
+
+`Tienda.jsx`, `tienda.css`, `GachaReveal.jsx` y `shopRoom.js` (la tienda isométrica del bajo, sustituida por el café 3D);
+`hotel/lobbyArt.js`, `hotel/casinoArt.js` y `hotel/salaArt.js`; las páginas de desarrollo `dev/edificio-puerto.html`,
+`dev/edificio-puerto-app.html`, `dev/tienda-dibujos.html`, `dev/vestibulo.html` y `devPage.js`; las pruebas `e2e/edificio-puerto` y
+`v175-vestibulo` (sustituida por `v1155`). Los ayudantes de luz `GLOW`, `LIT`, `evening`, `toDataURL` y `outlineOf` se mudan a
+`luzPixel.js` (los usa la Lonja). Se quedan `render.js`, `furniture.js`, `catalog.js`, `lobbyLayout.js`, `estibaArt.js` y
+`demo.js`, que usa también el 3D.
+
+### 155.4 Pruebas
+
+- **e2e** (Supabase simulado): `v1155-sin-isometricas.spec.js` a 360, 390 y 1440 (12): la visita entra en 3D sin la isométrica y
+  la etiqueta no tapa la tarjeta; sin 3D, el aviso de la visita debajo de la etiqueta; el vestíbulo sin 3D (botones legibles,
+  encargos, botonera, «P» y Escape); el casino sin 3D. Ajustadas a la visita en 3D: `fase1-visitas`, `tablon`, `v1109-mapache`,
+  `v1138`, `visita-directa`, `v189-rincon`, `v188`, `v163`, `v171`, `v1881`, `v1882-objetos`, `v1894-comprobaciones` y
+  `v1894-evidencias`; a los respaldos sin 3D: `v1116`, `v1119`, `v1120` y `v198`; sin «Plano»: `recepcion3d-capturas`. Retiradas,
+  con una nota: «en el piso de un vecino se ve su personaje» (`v169`) y «de visita: el compañero detrás» (`v172`).
+- Fallan igual que antes, ajenas a este bloque (anotadas en ESTADO): `v163` «la tablet pregunta» (el chip «Plantas»), `v171` «en
+  tu piso…» (`screenOfItem` nulo), `v188` (2: los muebles al abrir Decorar y «Cuenta y copias») y `v189` «un piso antiguo sin
+  esenciales» (dos botones «Decorar»).
+- Vitest de `edificio` y `pisoLab` en verde salvo lo ya anotado (`cafe-libreria.rls` › «el reparto», desde la 1.142; los de PGlite
+  que se pasan de tiempo con todo a la vez pasan solos). Build en verde.
+- Capturas en `qa-report/v1155/`. Sin probar en móviles reales ni en WebKit.
+
+## 156. Las poses de Olmo y el Olmo 3D de su hoja (1.156.0)
+
+Francisco, 26-11-2026: «Para después añade a olmo con las animaciones que te paso igual que a libo», con su hoja de poses
+(`../libotown-marca/olmo-poses.png`, fuera de git). Preguntado cómo encajarlas con el modelo 3D, eligió el 27-11-2026 «Igualar el 3D
+al dibujo»: las poses sustituyen al retrato de píxel en todos los sitios donde salía y el modelo 3D pasa a ser el mismo Olmo que el
+de la hoja. Sin migración ni cambios en el servidor; solo se ve con la suscripción o con la vista previa de `cafe_probadores`.
+
+### 156.1 Las 22 poses, recortadas de su hoja
+
+- `scripts/olmo-poses.mjs` (como `scripts/libo-poses.mjs`): la hoja ya trae el fondo transparente, así que cada pose es la pieza
+  opaca grande de su sitio (por filas de 6, 5, 5 y 6, de izquierda a derecha) y sus adornos sueltos («!», «?», corazones, «zZ», el
+  polvo, el gatito…) van con el cuerpo más cercano. La hoja tiene **22** poses (no 24).
+- Todas en un lienzo igual de **311 × 257**, apoyadas abajo y centradas, a la misma escala: al cambiar de pose Olmo no cambia de
+  tamaño ni salta. WebP con alfa en `public/assets/olmo/poses/` (476 KB las 22); se piden una vez, en cuanto Olmo atiende.
+- Nombres: libro, saluda, lee, camina, cafe, celebra, duerme, duda, carino, enfado, sorpresa, lee-feliz, corre, gatito, asoma,
+  espaldas, mareado, estudia, descansa, llora, resopla y estrella.
+
+### 156.2 Qué pose en cada momento (`cafe/olmoPoses.js`, reglas puras)
+
+- **La franja del café**: de pie con su libro. Al tocarle, cada frase de `FRASES_OLMO` con su gesto (lee contento, la taza, duda,
+  estudia, sorpresa, cariño, el gatito, descansa, la estrella…). **Cuatro toques en 2 s**: se marea 1,6 s y vuelve a lo suyo.
+  **Sin tocar nada**: a los 30 s se sienta a leer y a los 90 s se duerme; cualquier toque, tecla o desplazamiento le despierta
+  (`useReposoOlmo.js`, como Libo). Con movimiento reducido no cambia solo.
+- **El cuadro de diálogo**: con su libro. **La guía del café**: saluda en el primer paso, camina y lee por el camino (cariño en los
+  pasos contentos) y celebra el último.
+- **La barra**: se ofrece saludando; mientras prepara, con la taza; «esto ya lo dominas», la estrella. **La caja del mostrador**:
+  con la taza, y celebra al terminar. **El obrador**: caminando. **El tostadero**: resoplando el humo. **Su cuaderno**: estudiando.
+- `PixelArt` dibuja también estas imágenes (`{ src, pose }` → `<img class="cf3-px cf3-px--pose" data-pose>`), recortadas en el
+  marco del retrato desde abajo (`object-fit: cover`), sin pixelar. Pilar no cambia.
+
+### 156.3 El Olmo 3D, el de la hoja
+
+- `cafe/olmo3d.js`: plumaje pardo rojizo, cara y tripa crema, **gafas naranjas gruesas**, ojos claros con pupila oscura y
+  **bufanda a rayas roja y verde** (sin el hilo amarillo). **Sin el chaleco mostaza**, ni su escote ni sus botones: el pecho es del
+  mismo plumaje, con plumas más oscuras en uve. Los gestos del 3D (respirar, parpadear, mirar, preparar con las alas) no cambian.
+- El retrato de píxel sacado del 3D (`retratoOlmo`, 1.150) se quita: ya no lo usa nadie.
+
+### 156.4 Pruebas
+
+- `cafe-olmo.test.js`: el 3D sin mostaza y con los colores de la hoja; las 22 poses existen y miden 311 × 257; momentos, guía,
+  reposo y frases.
+- `e2e-community/v1150-cafe-olmo.spec.js` (360, 390 y escritorio): la franja con sus poses (habla, mareo), el reposo con el reloj
+  acelerado (lee, duerme y despierta), nada solo con movimiento reducido, y la oferta y la preparación con su pose; capturas del 3D
+  de frente y de lado en `qa-report/v1156/`. `v1150-cafe-guia.spec.js`: saluda al empezar, camina por el camino y celebra al final.

@@ -24,7 +24,7 @@ const SIGUE = { tarde: { hora: 'noche', label: 'Ver de noche' }, noche: { hora: 
 const nada = () => {};
 const SIN_COLOCAR = new Set();
 
-export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
+export default function VisitaPiso({ vecino, edificio, onVolver, onSin3d }) {
   const community = useCommunity();
   const corner = useReaderCorner(vecino.user_id, community);
   const [hora, setHora] = useState('tarde');
@@ -118,7 +118,7 @@ export default function VisitaPiso({ vecino, edificio, onVolver, onIso }) {
 
   return (
     <div className="ed-visita3d" data-visita={vecino.user_id}>
-      <Interior onBoard={() => visitaTablon && setTablon(true)} onReady={() => setListo3d(true)} piso={piso} room={room} hora={hora} reading={lectura} balda={null} covered={false} leaning={false} listing={false} yawMemory={yawMemory} hint={null} shelfBooks={shelf} onBook={nada} onShelf={nada} onOpenBook={nada} onLost={onIso} onApi={onApi} onDesk={nada} onDoor={onVolver} cargando={`Entrando en el piso de ${nombre}…`} />
+      <Interior onBoard={() => visitaTablon && setTablon(true)} onReady={() => setListo3d(true)} piso={piso} room={room} hora={hora} reading={lectura} balda={null} covered={false} leaning={false} listing={false} yawMemory={yawMemory} hint={null} shelfBooks={shelf} onBook={nada} onShelf={nada} onOpenBook={nada} onLost={onSin3d} onApi={onApi} onDesk={nada} onDoor={onVolver} cargando={`Entrando en el piso de ${nombre}…`} />
       {visitaTablon && (visitaTablon.publico || visitaTablon.acepta) && !tablon && (
         <button type="button" className="ed-visita3d__tablon" onClick={() => setTablon(true)}>
           Tablón de {nombre}

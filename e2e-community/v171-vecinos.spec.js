@@ -49,7 +49,7 @@ async function toPortal(page, mock, user) {
   return page.getByRole('dialog', { name: 'El edificio del puerto' });
 }
 
-test('en el piso de un vecino: me gusta, libro de visitas y regalo', async ({ page }, info) => {
+test('en el piso de un vecino: libro de visitas y regalo', async ({ page }, info) => {
   test.skip(!/320x640|390x844|1440x900/.test(info.project.name), '320, 390 (Chromium y WebKit) y escritorio');
   const mock = seed();
   const errors = [];
@@ -62,16 +62,9 @@ test('en el piso de un vecino: me gusta, libro de visitas y regalo', async ({ pa
   // 1.78: ya no hay sellos
   await expect(bruno.getByRole('button', { name: 'Menuda estantería' })).toHaveCount(0);
 
-  // «Me gusta» al sofá, tocándolo en la habitación
-  await expect(bruno.locator('canvas.ep-canvas')).toBeVisible();
-  const at = await page.evaluate(() => window.__edificioPiso.screenOfItem(1));
-  await page.mouse.click(at.x, at.y);
-  const like = bruno.getByRole('button', { name: /^Me gusta: sofá/ });
-  await expect(like).toHaveAttribute('aria-pressed', 'false');
-  await like.click();
-  await expect(bruno.getByRole('button', { name: 'Me gusta: sofá (1)' })).toHaveAttribute('aria-pressed', 'true');
-  expect(mock.db.piso_megusta).toEqual([expect.objectContaining({ piso: BRUNO.id, de: ANA.id, uid: 1, mueble: 'sofa' })]);
-  await shot(page, info, 'v171-megusta');
+  // 1.155: la visita es en 3D, sin los «me gusta» por mueble de la vista isométrica
+  await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
+  await expect(bruno.getByRole('button', { name: /^Me gusta/ })).toHaveCount(0);
 
   // Libro de visitas: una frase cerrada
   await tabs.getByRole('tab', { name: 'Libro de visitas' }).click();
@@ -146,12 +139,9 @@ test('sin la migración de vecinos: el piso del vecino solo se mira', async ({ p
   const panel = await toPortal(page, mock, ANA);
   await panel.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click({ timeout: 15000 });
   const bruno = page.getByRole('dialog', { name: 'Piso de Bruno' });
-  await expect(bruno.locator('canvas.ep-canvas')).toBeVisible();
+  await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await expect(bruno.locator('.ed-sellos')).toHaveCount(0);
-  await expect(bruno.getByRole('tablist')).toHaveCount(0);
-  const at = await page.evaluate(() => window.__edificioPiso.screenOfItem(1));
-  await page.mouse.click(at.x, at.y);
-  await expect(bruno.locator('.ep-status')).toHaveText('Sofá');
+  await expect(bruno.getByRole('tablist', { name: 'Qué hacer' })).toHaveCount(0);
   await expect(bruno.getByRole('button', { name: /^Me gusta/ })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

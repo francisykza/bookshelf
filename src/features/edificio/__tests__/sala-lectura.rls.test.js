@@ -1,7 +1,7 @@
 // 1.83 · La sala de lectura: el personaje y el compañero de quien lee, también de otro edificio y de nadie más; la
 // librería común y el saludo. Postgres real (PGlite) con todas las migraciones.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { DEFAULT_AVATAR } from '../actor';
 import { starterRoom } from '../demo';
 
@@ -20,6 +20,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('select asignar_edificio()'));
     await as(db, u, (q) => q('insert into pisos (layout, personaje) values ($1::jsonb, $2::jsonb)', [JSON.stringify(starterRoom()), JSON.stringify(DEFAULT_AVATAR)]));
   }
+  await juntarComoAntes(db, [...users]);
   await sentar(A);
   await sentar(B);
 });

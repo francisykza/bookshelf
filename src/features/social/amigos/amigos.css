@@ -1,0 +1,749 @@
+/* 1.153 · La app «Amigos» del ordenador del piso: una agenda de cuero con pestañas de colores y fichas de cartulina.
+   Letra Lora para leer; la del puerto solo en las pestañas. */
+.am {
+  --am-cuero: #6e3f22;
+  --am-cuero-osc: #4a2914;
+  --am-costura: #d8b07a;
+  --am-papel: #fbf4e4;
+  --am-linea: rgba(84, 118, 150, 0.18);
+  --am-tinta: #2f3a2a;
+  --am-tinta-clara: #5b5446;
+  --am-rojo: #a8432f;
+  --am-verde: #3f5a2c;
+  --am-ocre: #c2902f;
+  --am-azul: #3f6474;
+  --am-salvia: #7d8a63;
+  position: relative;
+  min-height: 100%;
+  padding: 14px 12px 16px;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 7px), radial-gradient(ellipse at 30% 0%, #845030, var(--am-cuero) 55%, var(--am-cuero-osc));
+  color: var(--am-tinta);
+  font:
+    400 15px/1.45 'Lora',
+    Georgia,
+    serif;
+  box-sizing: border-box;
+}
+.am::before {
+  /* La costura del cuero */
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 2px dashed var(--am-costura);
+  border-radius: 6px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Las pestañas: cartulinas de colores que asoman por encima de la hoja */
+.am-pestanas {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  padding: 0 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.am-pestana {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 4px 10px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--am-tab, #d9c9a8);
+  color: #fffaf0;
+  font: 400 12px/14px var(--pp-title, monospace);
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 -6px 6px -4px rgba(0, 0, 0, 0.25);
+  transform: translateY(4px);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.am-pestana--amigos {
+  --am-tab: var(--am-rojo);
+}
+.am-pestana--buscar {
+  --am-tab: var(--am-azul);
+}
+.am-pestana--buzon {
+  --am-tab: var(--am-ocre);
+}
+.am-pestana--ajustes {
+  --am-tab: var(--am-salvia);
+}
+.am-pestana[aria-selected='true'] {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.am-pestana:focus-visible {
+  outline: 3px solid #fff4c8;
+  outline-offset: -3px;
+}
+.am-cuenta {
+  position: absolute;
+  top: -7px;
+  right: -2px;
+  min-width: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: #fffaf0;
+  color: var(--am-rojo);
+  font:
+    700 12px/18px 'Lora',
+    serif;
+  text-shadow: none;
+}
+.am-cuenta--suave {
+  background: #f1e3c6;
+  color: #6b4a2c;
+}
+.am-pestanas {
+  padding-top: 8px;
+}
+/* Los avatares, siempre redondos: nunca estirados por la fila */
+.am .reader-avatar {
+  flex: none;
+}
+.am-carta > .reader-avatar,
+.am-lista .reader-avatar {
+  align-self: flex-start;
+}
+.am-lista .reader-avatar {
+  align-self: center;
+}
+
+/* La hoja de la agenda: papel con renglones y margen rojo */
+.am-hoja {
+  position: relative;
+  z-index: 1;
+  padding: 14px 14px 18px 30px;
+  border-radius: 2px 2px 6px 6px;
+  background: linear-gradient(90deg, transparent 20px, rgba(168, 67, 47, 0.45) 20px 22px, transparent 22px), repeating-linear-gradient(transparent 0 25px, var(--am-linea) 25px 26px), var(--am-papel);
+  box-shadow:
+    0 2px 0 #e6dac0,
+    0 4px 0 #d9caa9,
+    0 6px 10px rgba(0, 0, 0, 0.35);
+}
+.am-hoja--sola {
+  max-width: 520px;
+  margin: 20px auto 0;
+}
+.am--vacia .am-hoja p,
+.am-vacio p {
+  margin: 6px 0 12px;
+}
+.am-titulo {
+  margin: 14px 0 8px;
+  color: var(--am-rojo);
+  font:
+    700 17px/1.25 'Lora',
+    serif;
+  letter-spacing: 0.01em;
+}
+.am-titulo:first-child,
+.am-aviso:empty + .am-titulo,
+.am-aviso:empty + * > .am-titulo:first-child {
+  margin-top: 0;
+}
+.am-aviso {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--am-verde);
+  background: rgba(63, 90, 44, 0.1);
+  font-style: italic;
+}
+.am-aviso:empty {
+  display: none;
+}
+.am-nota {
+  margin: 4px 0 10px;
+  color: var(--am-tinta-clara);
+  font-size: 13.5px;
+}
+.am-nada {
+  color: var(--am-tinta-clara);
+  font-style: italic;
+}
+.am cite {
+  font-style: italic;
+  font-weight: 600;
+}
+.am-autor {
+  color: var(--am-tinta-clara);
+}
+.am-cargando {
+  margin: 40px 0;
+  color: var(--am-costura);
+  text-align: center;
+  font-style: italic;
+}
+
+/* Botones: etiquetas de papel; el principal, de tinta verde */
+.am-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 2px solid #8d7a5c;
+  border-radius: 4px;
+  background: #fffaf0;
+  color: var(--am-tinta);
+  font:
+    600 14px/1.2 'Lora',
+    serif;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #c9b791;
+}
+.am-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #c9b791;
+}
+.am-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.am-btn:focus-visible,
+.am input:focus-visible,
+.am-libros button:focus-visible {
+  outline: 3px solid var(--pp-focus, #154b50);
+  outline-offset: 2px;
+}
+.am-btn--tinta {
+  border-color: #2b3f1e;
+  background: var(--am-verde);
+  color: #fff6dc;
+  box-shadow: 0 2px 0 #24341a;
+}
+.am-btn--papel {
+  border-color: #b3a283;
+  background: transparent;
+  box-shadow: none;
+}
+.am-btn--llave {
+  border-color: #8a6420;
+  background: #f6e3b4;
+}
+
+/* Las fichas de tus amigos: cartulinas un poco torcidas, con foto sujeta por esquinas */
+.am-fichas {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.am-ficha {
+  padding: 12px 12px 12px;
+  border-radius: 3px;
+  background: linear-gradient(transparent 46px, rgba(168, 67, 47, 0.5) 46px 48px, transparent 48px), repeating-linear-gradient(transparent 0 23px, rgba(63, 100, 116, 0.16) 23px 24px), #fffdf6;
+  box-shadow:
+    1px 2px 0 rgba(0, 0, 0, 0.1),
+    0 4px 8px rgba(60, 40, 20, 0.18);
+}
+.am-ficha--0 {
+  transform: rotate(-0.4deg);
+}
+.am-ficha--1 {
+  transform: rotate(0.35deg);
+}
+.am-ficha__cabeza {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+}
+.am-ficha__cabeza h4 {
+  margin: 0;
+  font:
+    700 17px/1.2 'Lora',
+    serif;
+}
+.am-ficha__foto {
+  position: relative;
+  display: inline-flex;
+  padding: 2px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transform: rotate(-3deg);
+}
+.am-ficha__foto::before,
+.am-ficha__foto::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #3b2a1c;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.am-ficha__foto::before {
+  top: -2px;
+  left: -2px;
+}
+.am-ficha__foto::after {
+  right: -2px;
+  bottom: -2px;
+  transform: rotate(180deg);
+}
+.am-ficha__lectura {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  margin: 12px 0 10px;
+}
+.am-ficha__lectura dt {
+  color: var(--am-azul);
+  font:
+    700 11px/22px 'Lora',
+    serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.am-ficha__lectura dd {
+  margin: 0;
+  line-height: 22px;
+}
+.am-dia {
+  color: var(--am-tinta-clara);
+  white-space: nowrap;
+}
+.am-ficha__acciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.am-ficha__acciones .am-btn {
+  padding: 4px 6px;
+  font-size: 13px;
+}
+.am-sello {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 0 6px;
+  border: 2px solid var(--am-verde);
+  border-radius: 3px;
+  color: var(--am-verde);
+  font:
+    700 11px/18px 'Lora',
+    serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+.am-sello--llave {
+  border-color: #8a6420;
+  color: #8a6420;
+}
+.am-sello--gris {
+  border-color: #9c917c;
+  color: #6e6553;
+}
+
+/* Leemos a la vez: dos cintas de punto de libro */
+.am-juntos ul {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+.am-junto {
+  position: relative;
+  padding: 10px 12px;
+  border: 2px solid #d8c7a2;
+  border-radius: 4px;
+  background: #fffaf0;
+}
+.am-junto__cabeza {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.am-junto__cabeza p,
+.am-junto--espera p {
+  margin: 0;
+}
+.am-junto--espera {
+  display: grid;
+  gap: 8px;
+}
+.am-junto__dejar {
+  margin-top: 6px;
+}
+.am-barra {
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.am-barra__quien {
+  overflow: hidden;
+  font-weight: 700;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.am-barra__pista {
+  height: 10px;
+  border-radius: 5px;
+  background: #e8dbbd;
+  overflow: hidden;
+}
+.am-barra__pista i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--am-rojo), #c76a46);
+}
+.am-barra + .am-barra .am-barra__pista i {
+  background: linear-gradient(90deg, var(--am-azul), #5b8a9a);
+}
+.am-barra b {
+  font-size: 13px;
+}
+.am-barra__nada {
+  grid-column: 2 / 4;
+  color: var(--am-tinta-clara);
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Tu código: un carné */
+.am-carnet {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 2px solid var(--am-azul);
+  border-radius: 6px;
+  background: linear-gradient(#eaf1f0, #fffdf6);
+  text-align: center;
+}
+.am-carnet .am-titulo {
+  color: var(--am-azul);
+}
+.am-carnet__codigo {
+  margin: 4px 0;
+  font: 400 28px/1.2 var(--pp-title, monospace);
+  letter-spacing: 0.12em;
+  color: var(--am-tinta);
+}
+.am-busca {
+  margin: 6px 0 8px;
+}
+.am-busca label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+.am-busca > div {
+  display: flex;
+  gap: 6px;
+}
+.am input[type='search'] {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 2px solid #8d7a5c;
+  border-radius: 4px;
+  background: #fffdf6;
+  color: var(--am-tinta);
+  font:
+    400 15px 'Lora',
+    serif;
+  box-sizing: border-box;
+}
+.am-lista {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.am-lista li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+}
+.am-lista li > b {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El buzón: cartas */
+.am-cartas {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.am-carta {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #d9c9a8;
+  border-radius: 3px;
+  background: #fffdf6;
+  box-shadow: 0 2px 4px rgba(60, 40, 20, 0.12);
+}
+.am-carta > div {
+  flex: 1;
+  min-width: 0;
+}
+.am-carta p {
+  margin: 0 0 4px;
+}
+.am-carta blockquote {
+  margin: 4px 0 8px;
+  color: var(--am-rojo);
+  font-style: italic;
+}
+.am-carta--nueva {
+  border-left: 4px solid var(--am-ocre);
+}
+.am-carta--llave {
+  background: linear-gradient(#fff6dd, #fffdf6);
+  border-color: #d9b56a;
+}
+.am-carta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Lo que ven: interruptores de papel */
+.am-ajustes {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.am-ajustes label {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px;
+  border: 2px solid #d8c7a2;
+  border-radius: 4px;
+  background: #fffdf6;
+  cursor: pointer;
+}
+.am-ajustes input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 2px 0 0;
+  accent-color: var(--am-verde);
+}
+.am-ajustes span {
+  display: grid;
+}
+.am-ajustes small {
+  color: var(--am-tinta-clara);
+  font-size: 13px;
+}
+.am-codigo-mini b {
+  font-family: var(--pp-title, monospace);
+  letter-spacing: 0.08em;
+}
+
+/* Las hojas sueltas: recomendar, leer el mismo, mudarse */
+.am-velo {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(40, 24, 12, 0.55);
+}
+.am-hoja-flot {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100% - 12px);
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+  border-radius: 6px 6px 4px 4px;
+  background: var(--am-papel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.am-hoja-flot h3 {
+  margin: 0 0 4px;
+  color: var(--am-rojo);
+  font:
+    700 17px/1.25 'Lora',
+    serif;
+}
+.am-hoja-flot h3:focus {
+  outline: none;
+}
+.am-filtro {
+  display: flex;
+  margin: 6px 0 8px;
+}
+.am-libros {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.am-libros button {
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 2px solid #d8c7a2;
+  border-radius: 4px;
+  background: #fffdf6;
+  color: var(--am-tinta);
+  font:
+    400 14px/1.3 'Lora',
+    serif;
+  text-align: left;
+  cursor: pointer;
+}
+.am-libros button[aria-checked='true'] {
+  border-color: var(--am-verde);
+  background: #eef2e2;
+  box-shadow: inset 4px 0 0 var(--am-verde);
+}
+.am-libros small {
+  color: var(--am-tinta-clara);
+}
+.am-frases {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border: 2px solid #d8c7a2;
+  border-radius: 4px;
+}
+.am-frases legend {
+  padding: 0 4px;
+  font-weight: 700;
+}
+.am-frases label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  font-style: italic;
+  cursor: pointer;
+}
+.am-frases input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--am-verde);
+}
+.am-hoja-flot__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (min-width: 720px) {
+  .am {
+    padding: 20px 24px 24px;
+  }
+  .am-pestanas {
+    padding: 8px 18px 0;
+  }
+  .am-pestana {
+    flex: 0 0 auto;
+    min-width: 130px;
+    padding: 8px 14px 10px;
+    font-size: 14px;
+    line-height: 16px;
+  }
+  .am-hoja {
+    padding: 18px 24px 24px 44px;
+    background:
+      linear-gradient(90deg, transparent 30px, rgba(168, 67, 47, 0.45) 30px 32px, transparent 32px), repeating-linear-gradient(transparent 0 25px, var(--am-linea) 25px 26px), var(--am-papel);
+  }
+  .am-fichas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .am-velo {
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-pestana {
+    transition: none;
+  }
+}
+
+/* La tarjeta del escritorio (con las clases de la de «Leyendo ahora») */
+.pp-am-card h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pp-am-card__nuevo {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #a8432f;
+  color: #fff6e6;
+  font:
+    700 12px/18px 'Lora',
+    serif;
+}
+.pp-am-card__body {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px 10px;
+}
+.pp-am-card__body p {
+  margin: 0;
+  font:
+    400 14px/1.35 'Lora',
+    serif;
+}
+.pp-am-card__body .pp-btn {
+  justify-self: start;
+}
+.pp-am-card__caras {
+  display: flex;
+  margin: 0;
+  padding: 0 0 0 6px;
+  list-style: none;
+}
+.pp-am-card__caras li {
+  margin-left: -6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--pp-win, #efe8d7);
+}
+
+/* 1.154 · Libo, al final de la fila de pestañas: su bocadillo sale hacia abajo, por encima de la hoja */
+.am-pestanas {
+  z-index: 2;
+  overflow: visible;
+  align-items: flex-end;
+}
+.am-pestanas .libo-rincon {
+  align-self: center;
+  margin-left: 2px;
+}
+.am .libo-rincon[data-variante='cabecera'] .libo-bocadillo {
+  right: -4px;
+}
+.am .libo-rincon[data-variante='cabecera'] .libo-bocadillo::after {
+  right: 18px;
+}

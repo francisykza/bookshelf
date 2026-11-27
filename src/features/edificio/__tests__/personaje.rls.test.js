@@ -2,7 +2,7 @@
 // (la misma validación que validateAvatar) y el portal lo enseña a los vecinos. Postgres real (PGlite) con todas las
 // migraciones.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { COLORES_PELO, COMPLEMENTOS, DEFAULT_AVATAR, JERSEYS, PANTALONES, PELOS, PIELES, validateAvatar } from '../actor';
 import { starterRoom } from '../demo';
 
@@ -21,6 +21,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('select asignar_edificio()'));
     await as(db, u, (q) => q('insert into pisos (layout) values ($1::jsonb)', [JSON.stringify(starterRoom())]));
   }
+  await juntarComoAntes(db, [A, B]);
 }, 60000);
 
 describe('el personaje en el servidor', () => {

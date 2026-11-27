@@ -4,7 +4,7 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 
 const DIR = join(import.meta.dirname, '..', '..', '..', '..', 'supabase', 'migrations');
 const FILES = readdirSync(DIR)
@@ -30,6 +30,7 @@ beforeAll(async () => {
     await call(u, "insert into profiles (alias, avatar_id, community_enabled) values ($1, 'gato-lector', true)", [`Lector ${i}`]);
     await call(u, 'select asignar_edificio()');
   }
+  await juntarComoAntes(db, [A, B, C, D]);
   // C vive en otro edificio
   await db.query('with nuevo as (insert into edificios default values returning id) update edificio_vecinos set edificio = (select id from nuevo) where user_id = $1', [C]);
   // A, B y C abren su café; D no

@@ -6,6 +6,13 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
+- **En curso, sin commit: 1.151.0 a 1.156.0** (26/27-11-2026, §151 a §156): las poses de Olmo y el Olmo 3D de su hoja (1.156) y
+  el edificio de tus amigos (los 5 bloques de
+  `docs/qa/amigos-vecinos.md`): cada cuenta su edificio, la llave, el telefonillo, el enlace `#llave=`, el edificio que crece de 3
+  a 5 plantas, la app «Amigos» del ordenador, Libo con los amigos y fuera las vistas isométricas de la parte A (la visita a un
+  vecino, siempre en 3D; la parte B se queda). Migraciones `20261230120000_edificio_amigos.sql`,
+  `20261231120000_edificio_plantas.sql` y `20270101120000_amigos.sql` **sin aplicar** (en ese orden). Francisco pidió seguir y
+  hacer commit y migraciones a la vuelta. Ver la bitácora.
 - **Publicada en producción: 1.150.1** (26-11-2026, §150; Francisco: «Sí, commit y publicar»; `main` avanzó sin forzar de
   `0a64772` a `d6fd931` y libotown.es sirve v1.150.1): Olmo, el búho librero que sustituye a Pilar con la
   suscripción (bloque 1, aprobado por Francisco: «Sí, sigue con la guía»), y la guía del café en menús y botones, con Olmo o
@@ -321,6 +328,27 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ### Pendiente (por orden de prioridad aproximada)
 
+- **Borrar la versión antigua de la app** (Francisco, 26-11-2026: «quiero que se borre la versión antigua de la aplicación porque
+  sigue saliendo cuando la gente se mete en la web para instalar la app»). Para después del commit y la publicación de la 1.151 a
+  la 1.155. **Antes de borrar nada**: investigar qué es exactamente lo que sale (en libotown.es, al instalar) y enseñarle qué se
+  quitaría, para que lo confirme.
+- **Anotado para más tarde** (Francisco, 27-11-2026, mientras se hacían las poses de Olmo; sin empezar):
+  - **El ordenador se queda en negro en un iPhone** (le pasa a una compañera de trabajo de Francisco). Investigar: el ordenador
+    del piso en Safari de iPhone (aquí solo hay WebKit de Playwright: no afirmar que se ha probado en un iPhone real; pedirle a
+    él, si hace falta, modelo, versión de iOS y si es la app instalada o Safari).
+  - **Los tickets pasan a ser una moneda con identidad** («que los tickets se llamen libocoins o algo por el estilo…, y que sea
+    como una moneda con la cara de libo»): nombre por decidir con él («Libocoins» u otro); la moneda la dibujó él (moneda dorada
+    de píxel con Libo leyendo un libro verde, bufanda a rayas, estrellas y libritos alrededor). La imagen la pasó por el chat:
+    **pedirle que la guarde en `../libotown-marca/`** para recortarla de su material (nunca redibujarla). Además, «que aparezcan
+    en todo momento de manera orgánica e intuitiva con una animación divertida, brindado por Libo»: el saldo siempre a mano y,
+    al ganar, una animación con Libo. Lo interno (`tickets` en el servidor y en el código) no se renombra sin una migración
+    pensada y aprobada por él; las reglas de cuándo se ganan no cambian. Proponerle el plan antes de hacerlo.
+  - **La web en su dominio**: «subir el diseño que hicimos al dominio que compré y ver si necesito un hosting». La web ya está
+    publicada en `libotown.es` desde la 1.146.0 (Vercel, en la raíz: quien llega nuevo ve la web); no hace falta otro hosting.
+    Repasar con él qué quiere exactamente (¿otra dirección, como un subdominio? ¿las versiones «más interactiva» y «más cozy»?).
+- **Vistas isométricas, parte B** (se quedan hasta que haya 3D; lista en `amigos-vecinos.md`, bloque 5): Decorar, tu piso desde
+  la fachada, el respaldo de la habitación sin 3D y el mercadillo de la Lonja.
+
 - **Las poses de Libo, ideas sin hacer**: la pose «asoma» (las de la web, hechas en la 1.148).
 - **El correo de contacto de las páginas legales** (la 1.145.1 ya está publicada, 25-11-2026): cuando Francisco diga cuál (uno de
   `libotown.es`), sustituir `[correo de contacto pendiente]` en las cuatro páginas de `public/legal/` (y quitar su comentario de
@@ -547,6 +575,131 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-27 · 1.156.0, las poses de Olmo y el Olmo 3D de su hoja (sin commit) (Claude)
+
+- Encargo: «Sigue con las poses de Olmo» (Francisco, 26-11-2026: «Para después añade a olmo con las animaciones que te paso igual
+  que a libo»). Preguntado cómo encajarlas con el 3D, eligió **«Igualar el 3D al dibujo»** (27-11-2026; regla en CLAUDE.md).
+- Hecho (SPEC §156): las 22 poses de su hoja recortadas con `scripts/olmo-poses.mjs` (311 × 257, WebP con alfa en
+  `public/assets/olmo/poses/`); `cafe/olmoPoses.js` elige la pose de cada momento (franja, diálogo, guía, oferta, preparación,
+  caja, obrador, tostadero, cuaderno); `useReposoOlmo.js` le pone a leer a los 30 s y a dormir a los 90 s sin tocar nada, y le
+  marea con cuatro toques seguidos (con movimiento reducido no cambia solo); `PixelArt` dibuja imágenes; el 3D (`olmo3d.js`) con
+  los colores de la hoja, gafas naranjas gruesas, bufanda a rayas roja y verde y sin chaleco; fuera `retratoOlmo`.
+- Pruebas: `cafe-olmo.test.js` y `cafe-guia.test.js` en verde; build y oxlint (solo el aviso de siempre, `darHitos`); e2e
+  `v1150-cafe-olmo` y `v1150-cafe-guia` a 360, 390 y escritorio: 19 pasan (la de movimiento reducido falló la primera vez porque la prueba no lo emulaba; corregida, pasa). Evidencias en `qa-report/v1156/`.
+- Sin commit: se suma a la 1.151–1.155 pendiente («Sí, a la vuelta»). Sin migración nueva. Francisco vio las evidencias y
+  respondió «Sí, inclúyela» (27-11-2026): va en el mismo commit y la misma publicación que la 1.151–1.155, a su vuelta.
+- **Anotado para más tarde** (Francisco, 27-11-2026, en «Pendiente»): el ordenador en negro en el iPhone de una compañera, los
+  tickets como moneda con la cara de Libo («libocoins o algo por el estilo»; su imagen hay que pedirle que la guarde en
+  `../libotown-marca/`) y la web en su dominio (ya está en libotown.es desde la 1.146; no hace falta otro hosting).
+
+### 2026-11-26 · 1.155.0, fuera las vistas isométricas, parte A (bloque 5 de 5, sin commit) (Claude)
+
+- Francisco: «Sí, borra la A» (con la lista delante), «Quitarla igualmente» (la visita isométrica, aunque se pierdan el personaje,
+  el compañero y los «me gusta» del vecino en la visita) y «Vale, sigue». Detalle en SPEC §155. **Sin migración nueva.**
+- Hecho:
+  - **La visita a un vecino entra directamente en 3D**, sin «Entrar en 3D» ni «Ver en isométrica»; la etiqueta del piso ya no
+    tapa la tarjeta «Está leyendo» (pasaba también antes, en 3D). Sin 3D, el aviso `SinTresD`.
+  - **Sin «Plano» en el vestíbulo**; sin 3D, el aviso y cuatro botones con los papeles de siempre.
+  - **Sin dibujos de respaldo** del casino, la sala y el café: el aviso y lo demás igual.
+  - **Retirados**: la tienda isométrica (`Tienda.jsx`, `tienda.css`, `GachaReveal.jsx`, `shopRoom.js`), `lobbyArt.js`, `casinoArt.js`,
+    `salaArt.js`, cuatro páginas de `dev/` y `devPage.js`, y las pruebas `e2e/edificio-puerto` y `v175-vestibulo`. Los ayudantes de
+    luz, a `luzPixel.js`.
+  - **La parte B se queda** (Decorar, tu piso desde la fachada, el respaldo de la habitación y la Lonja).
+- Pruebas: `v1155-sin-isometricas` a 360, 390 y 1440 (12 pasan); 21 archivos e2e ajustados y repasados a 390 (dos pruebas de
+  visita retiradas con nota). Fallan como antes: `v163` (chip «Plantas»), `v171` «en tu piso» (`screenOfItem` nulo), `v188` (2) y
+  `v189` «un piso antiguo» (dos «Decorar»). Vitest de `edificio` y `pisoLab`: solo el «reparto» ya anotado. Build en verde.
+- Evidencias en `qa-report/v1155/` (`01` a `06`). Sin probar en móviles reales ni en WebKit.
+- **Sin commit** (ni los bloques 1 a 4). Francisco vio las capturas y respondió «Sí, a la vuelta» (27-11-2026) a hacer, cuando
+  vuelva al ordenador: commit, las tres migraciones en orden (`20261230120000`, `20261231120000`,
+  `20270101120000`) y publicar. Después: borrar la versión antigua de la app (antes, enseñarle qué se quitaría) y las poses de
+  Olmo.
+
+### 2026-11-26 · 1.154.0, Libo y los amigos (bloque 4 de 5, sin commit) (Claude)
+
+- Francisco: «Sigue con el 4». Detalle en SPEC §154. **Sin migración nueva.**
+- Hecho (bloque 4):
+  - **Dos capítulos de Libo** (`libo.js`): `telefonillo` (cinco pasos, la primera vez que abres el telefonillo; Libo arriba a la
+    izquierda, por encima del velo, para no tapar la ✕) y `amigos` (cinco pasos, la primera vez que abres la agenda; Libo junto a
+    las pestañas). La guía del edificio gana el paso del telefonillo antes del café.
+  - **Sugerencias de tus amigos** (`sugerenciasDeAmigos` en `sugerencias.js`): una llave sin usar, una recomendación sin ver y un
+    amigo que terminó hace 14 días o menos un libro que tienes en «Quiero leer». Con las reglas de siempre (una al día, se calla
+    un mes al contestarla). `useAmigosLibo` (en `useAvisosLibo.js`) pide la agenda como mucho cada 5 minutos, solo en tu piso;
+    «Abrir Amigos» lleva a `ordenador:amigos`.
+  - El simulador de las e2e da por vistos también `telefonillo` y `amigos`.
+- Pruebas: Vitest de Libo y de amigos (48) en verde; build sin errores. e2e `v1154-libo-amigos` a 360, 390 y 1440 (9 pasan) y su
+  vídeo; `v1151`, `v1152`, `v1153` y las siete de Libo a 390 (34 pasan).
+- Evidencias en `qa-report/v1154/` (capturas `01` a `06`) y `video/1154-libo-amigos.webm`. Sin probar en móviles reales ni en
+  WebKit.
+- **Sin commit** (ni los bloques 1 a 3). Lo de la vuelta no cambia: commit, las tres migraciones en orden y publicar. Después,
+  el bloque 5: **antes de borrar nada**, enseñarle a Francisco la lista exacta de vistas isométricas y archivos para que la
+  confirme. Luego, las poses de Olmo.
+
+### 2026-11-26 · 1.153.0, la app «Amigos» del ordenador (bloque 3 de 5, sin commit) (Claude)
+
+- Francisco: «Sigue con el bloque 3». Detalle en SPEC §153.
+- Hecho (bloque 3):
+  - **Migración nueva** `20270101120000_amigos.sql` (27.986 B, SHA-256 `6ae27797…ba733cdbdcd0dfeb`), **sin aplicar**: código de
+    amigo, lo que compartes (con lo apagado borrado), recomendaciones con frase cerrada, «Leemos el mismo», la llave para un
+    amigo (columna `edificio_llaves.para`) y `amigos_panel()`. **Va después** de las de los bloques 1 y 2.
+  - **La app** (`src/features/social/amigos/`): la agenda de cuero con cuatro pestañas (Amigos, Buscar, Buzón, Lo que ven), la
+    tarjeta del escritorio, la entrada en Aplicaciones y `AmigosSync` en `App.jsx`. Reglas ligeras en `social/amigosLectura.js`
+    y servicio en `social/services/amigos.js`.
+  - Interpretaciones (SPEC §153.2): la privacidad está en la propia agenda («Lo que ven») y no en Ajustes; tu lectura se manda
+    desde que abres Amigos por primera vez en el aparato; «Leer juntos en la sala» invita a 25 minutos, ahora.
+- Pruebas: Vitest `amigos.rls` (7), `amigosLectura` (3), `edificioAmigos` (10) y `edificioPlantas` (5) en verde. Build sin
+  errores (la agenda va en su trozo, 20 kB). e2e `v1153-amigos` a 360, 390 y 1440 (15 pasan), su vídeo, y `v1134-almacen-ordenador`
+  a 360 y 390 en verde.
+- Evidencias en `qa-report/v1153/`: capturas `01` a `07` y `video/1153-amigos.webm`. Sin probar en móviles reales ni en WebKit.
+- **Sin commit** (ni los bloques 1 y 2). Cuando vuelva Francisco: commit de los tres, aplicar las tres migraciones **en orden**
+  (`20261230120000`, `20261231120000` y `20270101120000`; él pulsa «Run» y antes comprueba que él y su pareja se siguen los
+  dos) y publicar. Después, el bloque 4 (Libo y los amigos).
+
+### 2026-11-26 · 1.152.0, el edificio crece por plantas (bloque 2 de 5, sin commit) (Claude)
+
+- Francisco, sin ordenador: «continua y luego hacemos commit y migraciones». Detalle en SPEC §152.
+- Hecho (bloque 2):
+  - **Migración nueva** `20261231120000_edificio_plantas.sql` (6.592 B, SHA-256 `332ee2b3…54b38a8083576`), **sin aplicar**:
+    puertas `1A` a `5B`, las plantas se cuentan (la ocupada más alta, mínimo 3), la puerta libre llena las plantas que hay antes
+    de estrenar otra, lleno a 10, el portal y la llave dan `plantas`. **Va después** de `20261230120000_edificio_amigos.sql`.
+  - **El dibujo** de 3 a 5 plantas (`facade.js`, `calle3d.js`, `calleView.js`, `facadeView.js`): con 3, igual que antes; con 5,
+    la vista de inicio cabe entera con la acera en el móvil y en el escritorio.
+  - **El telefonillo** con un botón por puerta de cada planta, el subtítulo con las plantas y el aviso «estrenará la 4.ª planta».
+- Pruebas: Vitest `edificioPlantas` (5), `plantas` (3), `edificioAmigos` (10, sin esta migración), `llave` (3) y `edificio.rls`
+  (11) en verde. Build sin errores. e2e `v1152-plantas` y `v1151-telefonillo` a 360, 390 y 1440 (16 pasan) y el vídeo; a 390,
+  `libo-edificio` (2) pasa y `v163-edificio` falla, como antes, en el chip «Plantas» que ya no existe.
+- Evidencias en `qa-report/v1152/`: capturas `01` a `06` y `video/1152-plantas.webm`. Sin probar en móviles reales ni en WebKit.
+- **Sin commit** (ni el bloque 1 ni este). Cuando vuelva Francisco: commit de los dos, aplicar las dos migraciones **en orden**
+  (`20261230120000` y luego `20261231120000`; él pulsa «Run» y antes comprueba que él y su pareja se siguen los dos) y publicar.
+- Pendiente después de los 5 bloques: Olmo con las poses de `../libotown-marca/olmo-poses.png`, como Libo (nota en CLAUDE.md).
+
+### 2026-11-26 · 1.151.0, el edificio de tus amigos: la llave y el telefonillo (bloque 1 de 5, sin commit) (Claude)
+
+- Encargo de Francisco: «Cada edificio debería tener como vecinos únicamente a tus amigos…» y «que fuera del edificio tengas
+  como un telefonillo», más la sección social del ordenador y Libo. Eligió las cuatro recomendadas (CLAUDE.md) y pidió, al
+  final y en otro bloque, borrar las vistas isométricas (antes, enseñarle la lista exacta). Plan en `docs/qa/amigos-vecinos.md`
+  (5 bloques). Detalle de este en SPEC §151.
+- Hecho (bloque 1):
+  - **Migración nueva** `20261230120000_edificio_amigos.sql` (20.546 B, SHA-256 `70216afe…bf38c3adf0`), **sin aplicar**: cada
+    cuenta estrena su edificio; llaves de un solo uso y 7 días; mudarse con el piso; irse; el portal con `plantas` y `libres`; y
+    el reparto de una vez por grupos de amigos (se queda el grupo más grande, los demás se van juntos; nada se borra).
+  - **El telefonillo** junto al portal (dibujo en `facade.js`, botón en la calle 3D y en la fachada 2D, panel
+    `Telefonillo.jsx`, estilos al final de `edificio.css`).
+  - **El enlace `#llave=`** (`LlaveHandler.jsx` en `App.jsx`, reglas en `llave.js`, nota en `social.css`).
+- **Pruebas con cuenta simulada**: `mockSupabase.js` simula las llaves solo con `db.edificio_llaves = []` (si no, como un
+  servidor sin la migración) y el portal da `plantas` y `libres`. Su `asignar_edificio` sigue metiendo a todo el mundo en
+  `edificio-1`, como antes, para no tocar las pruebas que siembran vecinos.
+- Pruebas: Vitest `edificioAmigos` (10), `llave` (3) y `edificio.rls` (11) en verde; los 14 archivos de servidor que daban por
+  hecho el reparto al azar, adaptados con `juntarComoAntes`. En la tanda completa de `src/features` quedan: `cafe-libreria` «el
+  reparto (1.139)» (espera un objeto sin la clave `pilar`, que añadió `20261224120000_cafe_pilar.sql`: **no es de este bloque**, cuya migración no toca el café) y `lonja` y
+  `sala-lectura`, que agotan el tiempo de sus `beforeAll` solo en la tanda en paralelo y pasan solas. Build y oxlint sin avisos
+  nuevos (los de `LlaveHandler` son del mismo tipo que los de `InviteHandler`). e2e `v1151-telefonillo` a 360, 390 y 1440 (7
+  pasan) y su vídeo; repasadas a 390 `libo-edificio` (2) y `v163-edificio` («sin comunidad» pasa; «la tablet pregunta» falla en
+  el chip «Plantas» que ya no existe, como antes: el portal pasa).
+- Evidencias en `qa-report/v1151/`: capturas `01` a `09` y `video/1151-telefonillo.webm`. Sin probar en móviles reales ni en
+  WebKit.
+- **Sin commit**, esperando el visto bueno de Francisco. Después: commit, aplicar la migración (él pulsa «Run»; que compruebe
+  antes que él y su pareja se siguen los dos) y publicar. Luego, bloque 2 (las plantas).
 
 ### 2026-11-26 · 1.150.1 a producción (Claude)
 

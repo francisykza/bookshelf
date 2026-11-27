@@ -36,10 +36,9 @@ async function aVisita(page) {
   await page.getByRole('button', { name: 'Al edificio' }).click();
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
-  await expect(page.locator('.ep-canvas')).toBeVisible({ timeout: 15000 });
 }
+// 1.155: a un vecino se le visita directamente en 3D (ya no hay vista isométrica ni «Entrar en 3D»)
 async function entrar3d(page) {
-  await page.getByRole('button', { name: 'Entrar en 3D' }).click();
   await ready(page);
   await expect(page.locator('.ed-visita3d__datos')).toContainText('Está leyendo', { timeout: 10000 });
 }
@@ -112,8 +111,6 @@ test('A visita a B: todo es de B, recorre sus libros, vuelve a A y B no cambia',
   await expect(page.getByRole('button', { name: 'Decorar' })).toHaveCount(0);
   // Tu habitación sigue montada debajo del edificio: lo que cuenta es lo que ofrece la visita
   await expect(page.getByRole('dialog', { name: 'El edificio del puerto' }).getByText(/Registrar lectura/)).toHaveCount(0);
-  await page.getByRole('button', { name: 'Ver en isométrica' }).click();
-  await page.waitForTimeout(800);
   // Recargar conserva dónde estabas (el piso visitado); al salir, otra vez A, sin rastro de B
   await page.reload();
   await expect(page.getByText('Piso de Bea · 1.º A').first()).toBeVisible({ timeout: 20000 });
@@ -169,8 +166,6 @@ test('la misma pared en cada vista y a la misma hora', async ({ browser }, info)
   await page.goBack();
   await ready(page);
   await aVisita(page);
-  await page.waitForTimeout(800);
-  await page.screenshot({ path: join(DIR, 'pared-visita-iso-tarde.png') });
   await entrar3d(page);
   await page.waitForTimeout(1200);
   await page.screenshot({ path: join(DIR, 'pared-visita-3d-tarde.png') });

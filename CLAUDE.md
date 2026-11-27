@@ -369,6 +369,45 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       - Por bloques con evidencias: 1) Olmo en el café; 2) la guía en menús y botones (1.150.1, SPEC §150.6). En las e2e con
         cuenta simulada, el simulador da la guía del café por vista (`bookshelf:guia-cafe`), como a Libo; las pruebas de la
         guía quitan esa marca.
+      - **Sus poses, como las de Libo** (Francisco, 26-11-2026, con su hoja de 24 poses: «Para después añade a olmo con las
+        animaciones que te paso igual que a libo»): **después** del encargo de los edificios de amigos. La hoja está en
+        `../libotown-marca/olmo-poses.png` (fuera de git). Se recortan de su material con un script como `scripts/libo-poses.mjs`
+        (nunca inventarlas) y se eligen según el momento, como `src/features/libo/poses.js`; con movimiento reducido no cambia
+        solo. Olmo es un modelo 3D en la barra (`cafe/olmo3d.js`): las poses de la hoja van donde hoy sale su retrato de píxel
+        (la guía del café, los avisos, el cuaderno…); cómo encajarlas con el 3D, preguntárselo antes de hacerlo.
+        **Decidido** (Francisco, 27-11-2026, «Igualar el 3D al dibujo»): las 22 poses sustituyen al retrato de píxel en todos
+        los sitios donde sale, y **el modelo 3D se retoca para ser el mismo Olmo que el de la hoja**: bufanda a rayas roja y
+        verde, sin chaleco mostaza y con gafas naranjas. Los gestos del 3D no cambian. Su dibujo manda sobre la descripción de la 1.150. **Hecho en la 1.156.0** (SPEC §156).
+  - **Edificios de amigos, sección social y telefonillo** (Francisco, 26-11-2026: «Cada edificio debería tener como vecinos
+    únicamente a tus amigos, y que cada grupo de amigos tenga como su propia comunidad de vecinos»; «que en el ordenador haya una
+    sección social muy atractiva que deje buscar a amigos y tener funciones relacionadas con la lectura, y que fuera del edificio
+    tengas como un telefonillo con funciones así, que Libo también esté relacionado»; plan en `docs/qa/amigos-vecinos.md`, por
+    bloques con evidencias). Decisiones del mismo día (las cuatro recomendadas). **Sustituyen al reparto al azar** de la 1.63:
+    - **La llave de tu edificio**: cada cuenta nueva estrena su propio edificio; para vivir con amigos, uno da una llave (enlace
+      o código, desde el telefonillo o el ordenador) y el otro decide mudarse, con su piso y sus muebles. Nadie entra sin llave.
+    - **Los edificios ya mezclados**: se queda quien tenga allí a algún amigo (os seguís los dos); quien no tenga ninguno se muda
+      a un edificio propio con su piso y sus muebles intactos (nada se borra). Si luego os hacéis amigos, vuelve con una llave.
+    - **El edificio crece por plantas**: al llenarse gana una planta (2 puertas más), hasta 5 plantas (10 vecinos); la fachada se
+      dibuja más alta.
+    - **Lo que ven tus amigos de tu lectura, lo eliges tú**: por defecto, qué lees ahora y los libros que terminas (nunca notas,
+      reseñas privadas ni páginas por día); en Ajustes se apaga todo o una parte. Solo amigos, nunca toda la comunidad.
+    - **Al final, en otro bloque, borrar las vistas isométricas** (Francisco, 26-11-2026: «borra las vistas isometricas, ya no
+      creo que las usemos más»): cuando esté hecho todo lo anterior. Antes de borrar, enseñarle la lista exacta de vistas y
+      archivos (y lo que las sustituye en cada sitio) para que la confirme; sin borrar datos de usuarios.
+      **Lista confirmada a medias** (Francisco, 26-11-2026, «Sí, borra la A»; lista en `amigos-vecinos.md`, bloque 5): se borra
+      la parte A (la tienda isométrica, el «Plano» del vestíbulo, los dibujos de respaldo sin 3D, las páginas de desarrollo y la
+      visita isométrica a un vecino) y **la parte B se queda** hasta que haya 3D (Decorar, tu piso desde la fachada con el
+      personaje y sus misiones, el respaldo de la habitación y el mercadillo de la Lonja). **La visita a un vecino es siempre
+      en 3D** (eligió «Quitarla igualmente» sabiendo que así ya no se ven su personaje, su compañero legendario ni los «me
+      gusta» por mueble): esto sustituye a «los vecinos lo ven al visitar tu piso» y a que el legendario te siga en las
+      visitas, hasta que la visita 3D los tenga. **Parte A hecha en la 1.155.0.**
+    - **Ideas anotadas para más tarde** (Francisco, 27-11-2026; detalle en «Pendiente» de `docs/ESTADO.md`): el ordenador que
+      se queda en negro en el iPhone de una compañera; **los tickets como moneda con identidad** («libocoins o algo por el
+      estilo», con la cara de Libo según la moneda que dibujó él, siempre a la vista y con una animación divertida de Libo al
+      ganarlos; lo interno no se renombra sin migración aprobada y las reglas de ganarlos no cambian); y la web en su dominio.
+    - **Después, borrar la versión antigua de la app** (Francisco, 26-11-2026: «quiero que se borre la versión antigua de la
+      aplicación porque sigue saliendo cuando la gente se mete en la web para instalar la app»). Antes de borrar nada,
+      investigar qué sale exactamente y enseñarle qué se quitaría para que lo confirme; sin borrar datos de usuarios.
   - **Carteles de la fachada** (Francisco, 12-11-2026, con maqueta; 1.124, `placas.js`): placas de madera de nogal,
     esmalte y latón mate con contorno de píxel (esquinas escalonadas) y sombra dura pequeña, **sin pastillas,
     degradados brillantes, resplandores ni desenfoque**, y legibles sin parecer que dan luz. Vivienda libre en marfil, la

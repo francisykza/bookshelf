@@ -7,7 +7,7 @@ import { DEFAULT_AVATAR, actorBoxes } from '../actor';
 import { catalogItem } from '../catalog';
 import { shapeOf } from '../furniture';
 import { createRaster, noise, rgb } from '../../minigames/libreria-puerto/raster';
-import { evening, outlineOf, toDataURL } from '../shopRoom';
+import { evening, outlineOf, toDataURL } from '../luzPixel';
 
 const YAW = Math.PI / 4;
 const LW = 13;

@@ -1,5 +1,5 @@
 // El vestíbulo del Gran Hotel por dentro (1.75, SPEC §75; paso A de docs/qa/gran-hotel.md §9). Se entra tocando el
-// vestíbulo en la fachada. Cada cosa del dibujo (lobbyArt.js) es una función de la app, sin menús nuevos:
+// vestíbulo en la fachada. Cada cosa del vestíbulo es una función de la app, sin menús nuevos:
 // - la recepción: el conserje da los encargos de la semana, que son las misiones de siempre (se cobran en tickets
 //   igual que en el ordenador, una vez por misión y semana, lo decide el servidor);
 // - el ascensor: la botonera de latón con una luz por planta es la navegación del hotel; las plantas que aún no abren
@@ -8,33 +8,17 @@
 // 1.78 (encargo del 3-11-2026: «que los menús no tengan tanto protagonismo»): al entrar no hay nada abierto, solo el
 // dibujo con letreros pequeños; lo de cada cosa sale en un papel más compacto al tocarla, y se cierra con «×», tocándola
 // otra vez o con Escape (un segundo Escape sale a la plaza).
-// 9-11-2026 (encargo de Francisco): se entra en la recepción en 3D (RecepcionVista.jsx), con los mismos papeles; este dibujo
-// isométrico queda como «Plano», que se elige con un botón y se recuerda en el dispositivo, y como respaldo si el móvil no
-// puede con el 3D.
+// 9-11-2026 (encargo de Francisco): se entra en la recepción en 3D (RecepcionVista.jsx), con los mismos papeles.
+// 1.155 (Francisco, 26-11-2026: «borra las vistas isométricas»): fuera el «Plano» isométrico (lobbyArt.js). Si el móvil no
+// puede con el 3D, la recepción sin dibujo: un botón por cosa y su papel debajo.
 import { useEffect, useRef, useState } from 'react';
 import { missionStatus } from '../../../domain/missions';
 import { useLibrary } from '../../../state/useLibrary';
 import { MISION_TICKETS } from '../economy';
 import { useMissionTickets } from '../useMissionTickets';
-import { LOBBY_H, LOBBY_W, renderLobby } from './lobbyArt';
+import { SinTresD } from '../SinTresD';
 import { Recepcion3D } from './RecepcionVista';
 import { useAtras } from '../../../hooks/useAtras';
-
-const VISTA_KEY = 'bookshelf:vestibulo-vista';
-const readVista = () => {
-  try {
-    return localStorage.getItem(VISTA_KEY) === 'plano' ? 'plano' : '3d';
-  } catch {
-    return '3d';
-  }
-};
-const saveVista = (v) => {
-  try {
-    localStorage.setItem(VISTA_KEY, v);
-  } catch {
-    // sin almacenamiento, se queda solo para esta visita
-  }
-};
 
 const SPOTS = [
   { id: 'recepcion', nombre: 'Recepción' },
@@ -266,7 +250,7 @@ function Ascensor({ onStreet, onFloor, viaje = false }) {
   );
 }
 
-/** Lo que dice cada cosa del vestíbulo: el mismo papel en la vista 3D y en el plano. */
+/** Lo que dice cada cosa del vestíbulo: el mismo papel con 3D y sin él. */
 function papel(spot, { onStreet, onFloor }) {
   if (spot === 'recepcion') return <Encargos />;
   if (spot === 'ascensor') return <Ascensor onStreet={onStreet} onFloor={onFloor} viaje />;
@@ -281,29 +265,20 @@ function papel(spot, { onStreet, onFloor }) {
 }
 
 export function Vestibulo({ onStreet, onFloor = () => {} }) {
-  const [vista, setVista] = useState(readVista);
-  // Sin 3D (el móvil no puede o pierde la GPU), el plano, sin recordarlo: la próxima vez se vuelve a intentar
+  // Sin 3D (el móvil no puede o pierde la GPU), la recepción sin dibujo; la próxima vez se vuelve a intentar
   const [sin3d, setSin3d] = useState(false);
-  const elegir = (v) => {
-    saveVista(v);
-    setVista(v);
-  };
-  if (vista === '3d' && !sin3d) {
-    return <Recepcion3D onStreet={onStreet} onPlano={() => elegir('plano')} onFail={() => setSin3d(true)} paper={(spot) => papel(spot, { onStreet, onFloor })} />;
-  }
-  return <PlanoVestibulo onStreet={onStreet} onFloor={onFloor} on3d={sin3d ? null : () => elegir('3d')} />;
+  if (!sin3d) return <Recepcion3D onStreet={onStreet} onFail={() => setSin3d(true)} paper={(spot) => papel(spot, { onStreet, onFloor })} />;
+  return <VestibuloSin3D onStreet={onStreet} onFloor={onFloor} />;
 }
 
-/** El vestíbulo isométrico de siempre (1.75), ahora el «Plano». `on3d`: vuelve a la vista 3D (null si no se puede). */
-function PlanoVestibulo({ onStreet, onFloor, on3d }) {
-  const lobby = renderLobby();
+/** El vestíbulo cuando el móvil no puede con el 3D: un botón por cosa y su papel debajo. */
+function VestibuloSin3D({ onStreet, onFloor }) {
   const root = useRef(null);
   const [spot, setSpot] = useState(null);
   const spotRef = useRef(null);
   useEffect(() => {
     spotRef.current = spot;
   }, [spot]);
-  const desk = useRef(null);
   useEffect(() => {
     root.current?.scrollIntoView({ block: 'start' });
   }, []);
@@ -319,57 +294,21 @@ function PlanoVestibulo({ onStreet, onFloor, on3d }) {
   }, [onStreet]);
   // Libo, bloque 4 (hooks/useAtras.js): Atrás del móvil cierra el papel abierto, como Escape
   useAtras(Boolean(spot), () => setSpot(null));
-  // Tocar lo que ya está abierto lo cierra
-  const choose = (id) => setSpot((cur) => (cur === id ? null : id));
-  useEffect(() => {
-    if (spot) desk.current?.scrollIntoView({ block: 'nearest' });
-  }, [spot]);
-  const onScene = (e) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const hit = lobby.hit((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
-    if (hit) choose(hit);
-  };
   const info = INFO[spot];
   return (
     <section className="gh-lobby" ref={root} aria-labelledby="gh-lobby-title" data-escape-local="open">
       <h3 className="px-sr" id="gh-lobby-title">
         El vestíbulo
       </h3>
-      <div className="gh-lobby__scene" style={{ aspectRatio: `${LOBBY_W} / ${LOBBY_H}` }} onClick={onScene}>
-        <img
-          className="gh-lobby__art"
-          src={lobby.scene}
-          alt="El vestíbulo del Gran Hotel de noche: suelo de mármol en damero, la recepción con el conserje y el casillero de llaves, el ascensor de latón con su esfera, el tablón de corcho, el guardarropa con los abrigos, un diván redondo con una palmera bajo la lámpara de araña y una huésped esperando el ascensor."
-          draggable="false"
-        />
-        {spot && <img className="gh-lobby__outline" src={lobby.outlines[spot]} alt="" aria-hidden="true" draggable="false" />}
-        <div className="gh-lobby__spots" role="tablist" aria-label="El vestíbulo">
-          {SPOTS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              role="tab"
-              id={`gh-tab-${s.id}`}
-              aria-controls="gh-lobby-panel"
-              aria-selected={spot === s.id}
-              className={`gh-spot is-${s.id}`}
-              style={{ left: `${lobby.tags[s.id].left * 100}%`, top: `${lobby.tags[s.id].top * 100}%` }}
-              onClick={(e) => (e.stopPropagation(), choose(s.id))}
-            >
-              {s.nombre}
-            </button>
-          ))}
-        </div>
-      </div>
-      {!spot && <p className="gh-lobby__hint">Toca la recepción, el ascensor, el tablón o el guardarropa.</p>}
-      {!spot && on3d && (
-        <p className="gh-lobby__vista">
-          <button type="button" className="gh-lobby__entrar" onClick={on3d}>
-            Entrar en la recepción
+      <SinTresD sala="el vestíbulo" />
+      <div className="gh-lobby__spots gh-lobby__spots--sin3d" role="tablist" aria-label="El vestíbulo">
+        {SPOTS.map((s) => (
+          <button key={s.id} type="button" role="tab" id={`gh-tab-${s.id}`} aria-controls="gh-lobby-panel" aria-selected={spot === s.id} className="px-btn" onClick={() => setSpot((cur) => (cur === s.id ? null : s.id))}>
+            {s.nombre}
           </button>
-        </p>
-      )}
-      <div ref={desk} className={spot === 'ascensor' ? 'gh-desk gh-desk--lift' : 'gh-desk'} role="tabpanel" id="gh-lobby-panel" aria-labelledby={spot ? `gh-tab-${spot}` : undefined} hidden={!spot}>
+        ))}
+      </div>
+      <div className={spot === 'ascensor' ? 'gh-desk gh-desk--lift' : 'gh-desk'} role="tabpanel" id="gh-lobby-panel" aria-labelledby={spot ? `gh-tab-${spot}` : undefined} hidden={!spot}>
         {spot && (
           <button type="button" className="gh-desk__close" aria-label="Cerrar" onClick={() => setSpot(null)}>
             ×

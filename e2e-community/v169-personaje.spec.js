@@ -105,39 +105,5 @@ test('sin la migración, el personaje se queda en el dispositivo', async ({ page
   expect(await page.evaluate((id) => JSON.parse(localStorage.getItem(`bookshelf:edificio:personaje:${id}`)).pelo, ANA.id)).toBe('mono');
 });
 
-test('en el piso de un vecino se ve su personaje, pero no se le manda', async ({ page }, info) => {
-  test.skip(!/390x844|1440x900/.test(info.project.name), '390 (Chromium y WebKit) y escritorio');
-  const BRUNO = { id: '22222222-2222-4222-8222-222222222222' };
-  const mock = createMockSupabase({ edificio_vecinos: [], piso_cuentas: {} });
-  mock.db.personajes = true;
-  mock.db.profiles.push({ user_id: ANA.id, alias: 'Ana lectora', avatar_id: 'gato-lector', community_enabled: true }, { user_id: BRUNO.id, alias: 'Bruno', avatar_id: 'lector-farol', community_enabled: true });
-  mock.db.edificio_vecinos.push({ user_id: BRUNO.id, edificio: 'edificio-1', puerta: '1A' });
-  mock.db.pisos.push({ user_id: BRUNO.id, layout: { v: 1, pared: 'salvia', suelo: 'damero', items: [{ uid: 1, id: 'sofa', x: 3, y: 1, rot: 0, tono: 1 }, { uid: 2, id: 'mesa-baja', x: 3, y: 4, rot: 0, tono: 0 }] }, personaje: { piel: 3, pelo: 'mono', colorPelo: 4, jersey: 2, pantalon: 3, gafas: false } });
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(String(e)));
-  await mock.attach(page, ANA);
-  await page.addInitScript(() => localStorage.setItem('bookshelf:signs-hint-done', 'true'));
-  await page.goto('/');
-  await page.waitForFunction(() => document.querySelector('[data-panel="MAIN_ROOM"] .scene-base')?.naturalWidth > 0);
-  await page.locator('.panorama-nav__btn--next').click();
-  await page.waitForTimeout(950);
-  await page.getByRole('button', { name: 'Tablet: la comunidad y El edificio del puerto' }).click({ timeout: 15000 });
-  await page.getByRole('button', { name: 'El edificio del puerto', exact: true }).click();
-  const panel = page.getByRole('dialog', { name: 'El edificio del puerto' });
-  await panel.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click({ timeout: 15000 });
-  const bruno = page.getByRole('dialog', { name: 'Piso de Bruno' });
-  const canvas = bruno.locator('canvas.ep-canvas');
-  await expect(canvas).toHaveAttribute('data-actor', 'stand');
-  await expect.poll(() => page.evaluate(() => window.__edificioPiso.avatar)).toMatchObject({ pelo: 'mono', jersey: 2 });
-  const before = await page.evaluate(() => window.__edificioPiso.actor);
-  await tapActor(page, canvas);
-  await expect(bruno.locator('.ep-status')).toHaveText('Vive aquí.');
-  await expect(bruno.locator('.ep-dress')).toHaveCount(0);
-  // Tocar el suelo no lo mueve
-  const floor = await page.evaluate(() => window.__edificioPiso.screenOf(7.5, 7.5, 0));
-  await page.mouse.click(floor.x, floor.y);
-  await page.waitForTimeout(400);
-  expect(await page.evaluate(() => window.__edificioPiso.actor)).toEqual(before);
-  await shot(page, info, 'v169-vecino');
-  expect(errors).toEqual([]);
-});
+// 1.155 (Francisco, 26-11-2026, «Quitarla igualmente»): la visita a un vecino es en 3D y en ella no sale su personaje; la prueba
+// «en el piso de un vecino se ve su personaje» se retiró con la vista isométrica.

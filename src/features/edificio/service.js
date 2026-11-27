@@ -9,8 +9,13 @@ import { FIRMAS, catalogItem } from './catalog';
 import { rarezaOf } from './economy';
 import { normalizeInventory } from './inventory';
 import { empaquetar, leerPiso } from './retirados';
+export { enlaceLlave, llaveBonita, llaveLimpia, mudarse, verLlave } from './llave';
 
-const DOORS = ['3B', '3A', '2B', '2A', '1B', '1A'];
+/**
+ * 1.152 (bloque 2): cuántas plantas tiene el edificio, de 3 a 5. Las dice el servidor; sin su migración, las que hagan falta
+ * para el vecino más alto.
+ */
+export const plantasDe = (vecinos, plantas = null) => Math.max(3, Math.min(5, plantas ?? Math.max(0, ...vecinos.map((v) => Number(v.puerta?.[0]) || 0))));
 export const doorLabel = (p) => `${p[0]}.º ${p[1]}`;
 
 let available = null;
@@ -42,7 +47,9 @@ export async function loadEdificio() {
   fail(error);
   if (!data) throw Object.assign(new Error('No se ha podido encontrar tu edificio.'), { code: 'edificio' });
   const vecinos = (data.vecinos ?? []).map((v) => ({ ...v, room: v.layout ? leerPiso(v.layout) : null, personaje: validateAvatar(v.personaje) }));
-  return { edificio: data.edificio, puerta: data.puerta, vecinos };
+  // 1.151: `libres`, las puertas que quedan (sin la migración del edificio de amigos, se cuentan aquí)
+  // 1.152: `plantas`, de 3 a 5 (el edificio crece al llenarse)
+  return { edificio: data.edificio, puerta: data.puerta, vecinos, plantas: plantasDe(vecinos, data.plantas), libres: data.libres ?? Math.max(0, 6 - vecinos.length) };
 }
 
 /**
@@ -64,9 +71,49 @@ export async function loadPisoVisita(userId) {
   return leer(data);
 }
 
-/** Las seis puertas en orden (de arriba abajo), con quien viva en cada una o null si está libre. */
-export function doorsOf(vecinos) {
-  return DOORS.map((puerta) => ({ puerta, vecino: vecinos.find((v) => v.puerta === puerta) ?? null }));
+// ── 1.151 · La llave de tu edificio (docs/qa/amigos-vecinos.md, migración 20261230120000_edificio_amigos.sql) ──────────────
+// Cada cuenta estrena su edificio; para vivir con amigos, uno da una llave y el otro decide mudarse con su piso.
+
+/** Una llave nueva de tu edificio: `{ codigo, caduca }` (un solo uso, 7 días; como mucho 3 sin usar). */
+export async function darLlave() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('edificio_dar_llave');
+  fail(error);
+  return data;
+}
+
+/** Tus llaves sin usar. Sin la migración, ninguna. */
+export async function misLlaves() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('edificio_mis_llaves');
+  try {
+    fail(error);
+  } catch (e) {
+    if (e.code === 'unavailable') return [];
+    throw e;
+  }
+  return data ?? [];
+}
+
+export async function retirarLlave(codigo) {
+  const sb = await client();
+  const { error } = await sb.rpc('edificio_retirar_llave', { cod: codigo });
+  fail(error);
+}
+
+/** Irte a un edificio propio, con la misma puerta. */
+export async function irseDelEdificio() {
+  const sb = await client();
+  const { data, error } = await sb.rpc('edificio_irse');
+  fail(error);
+  return data;
+}
+
+/** Las puertas del edificio en orden (de arriba abajo, la A antes que la B), con quien viva en cada una o null si está libre. */
+export function doorsOf(vecinos, plantas = 3) {
+  const out = [];
+  for (let f = plantasDe(vecinos, plantas); f >= 1; f -= 1) for (const l of ['A', 'B']) out.push(`${f}${l}`);
+  return out.map((puerta) => ({ puerta, vecino: vecinos.find((v) => v.puerta === puerta) ?? null }));
 }
 
 export async function savePiso(userId, room) {

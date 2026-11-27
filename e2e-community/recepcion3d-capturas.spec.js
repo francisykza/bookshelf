@@ -113,24 +113,7 @@ async function tocarVestibulo(page) {
   await page.mouse.click(at.x, at.y);
 }
 
-test('la fachada y el vestíbulo en plano isométrico', async ({ page }, info) => {
-  test.skip(info.project.name !== 'chromium-390x844', 'solo 390 px');
-  if (ETAPA !== 'antes') await page.addInitScript(() => localStorage.setItem('bookshelf:vestibulo-vista', 'plano'));
-  const hotel = await alHotel(page);
-  await page.waitForTimeout(600);
-  await shot(page, '02-fachada-hotel');
-  await tocarVestibulo(page);
-  const lobby = hotel.getByRole('region', { name: 'El vestíbulo' });
-  await expect(lobby.locator('.gh-lobby__art')).toBeVisible();
-  await page.waitForFunction(() => document.querySelector('.gh-lobby__art')?.complete);
-  await shot(page, '03-vestibulo-isometrico');
-  await lobby.getByRole('tab', { name: 'Recepción' }).click();
-  await expect(lobby.locator('.gh-task').first()).toBeVisible();
-  await shot(page, '04-recepcion-encargos');
-  await lobby.getByRole('button', { name: 'Cerrar' }).click();
-  await lobby.getByRole('tab', { name: 'Ascensor' }).click();
-  await shot(page, '05-ascensor');
-});
+// 1.155: el «Plano» isométrico del vestíbulo se retiró (y con él su captura).
 
 // Bloque 3: desde la fachada se entra en la recepción en 3D; tocar cada cosa acerca la vista y abre su papel
 test('la recepción en 3D dentro de la app: tocar cada cosa', async ({ page }, info) => {
@@ -184,15 +167,7 @@ test('la recepción en 3D dentro de la app: tocar cada cosa', async ({ page }, i
     await esperar();
     await expect(rcp.locator('.rcp-card')).toHaveCount(0);
   }
-  // «Plano» cambia a la vista isométrica y «Entrar en la recepción» vuelve al 3D
-  await rcp.getByRole('button', { name: 'Plano' }).click();
-  const lobby = hotel.getByRole('region', { name: 'El vestíbulo' });
-  await expect(lobby.locator('.gh-lobby__art')).toBeVisible();
-  await page.waitForFunction(() => document.querySelector('.gh-lobby__art')?.complete);
-  await shot(page, '25-app-plano');
-  await lobby.getByRole('button', { name: 'Entrar en la recepción' }).click();
-  await expect(hotel.locator('section.rcp')).toHaveAttribute('data-ready', 'true');
-  // Un Escape sin papel sale a la plaza
+  // 1.155: ya no hay «Plano» isométrico; un Escape sin papel sale a la plaza
   await page.keyboard.press('Escape');
   await expect(hotel.locator('canvas.hotel-canvas')).toBeVisible();
   expect(errors).toEqual([]);
@@ -241,10 +216,6 @@ test('vídeo: entrar y tocar la recepción y el ascensor', async ({ browser }, i
     await rcp.getByRole('button', { name: 'Volver' }).click();
     await esperar();
   }
-  await rcp.getByRole('button', { name: 'Plano' }).click();
-  await page.waitForTimeout(1500);
-  await hotel.getByRole('button', { name: 'Entrar en la recepción' }).click();
-  await page.waitForTimeout(1500);
   // Desde el bloque 4: subir al ascensor y bajar al casino con la «S»
   if (!/bloque3/.test(ETAPA)) {
     await expect(rcp).toHaveAttribute('data-ready', 'true');

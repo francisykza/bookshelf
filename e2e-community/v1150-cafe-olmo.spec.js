@@ -14,9 +14,11 @@ import { PLANO_INICIAL, cuenta } from '../src/features/edificio/cafe/cafeCatalog
 import { generoDe, nombreOpcion } from '../src/features/edificio/cafe/cafeClientes';
 import { ELIGE, ETAPAS, gestosDe } from '../src/features/edificio/cafe/cafeGestos';
 import { FRASES_OLMO } from '../src/features/edificio/cafe/cafePersonaje';
+import { MOMENTO_OLMO, poseOlmoAlHablar } from '../src/features/edificio/cafe/olmoPoses';
 import { dayKey } from '../src/domain/dates';
 
 const DIR = join('qa-report', 'v1150');
+const DIR156 = join('qa-report', 'v1156');
 const tam = (info) => info.project.name.replace(/^chromium-/, '');
 const libro = (id, title, extra = {}) => ({
   id,
@@ -142,6 +144,7 @@ test('Olmo prepara la taza con las alas, con su voz', async ({ page }, info) => 
         await expect(oferta).toBeVisible();
         await expect(oferta).toHaveAttribute('aria-label', 'Olmo te ofrece prepararla');
         await expect(oferta).toContainText('Esto ya lo dominas');
+        await expect(oferta.locator('img.cf3-px--pose')).toHaveAttribute('data-pose', MOMENTO_OLMO.ofrece);
         await page.screenshot({ path: join(DIR, `04-olmo-ofrece-${tam(info)}.png`) });
         await oferta.getByRole('button', { name: 'Que lo prepare Olmo' }).click();
         await expect(caja).toHaveAttribute('data-pilar', 'pilar');
@@ -162,6 +165,7 @@ test('Olmo prepara la taza con las alas, con su voz', async ({ page }, info) => 
         .catch(() => false);
       if (!visto || fotos >= 3) continue;
       await expect(caja).toContainText('esto lo tengo bajo el ala');
+      await expect(caja.locator('img.cf3-px--pose').first()).toHaveAttribute('data-pose', MOMENTO_OLMO.prepara);
       await page.screenshot({ path: join(DIR, `05-olmo-prepara-${tipo}-${tam(info)}.png`) });
       fotos += 1;
     }
@@ -210,4 +214,76 @@ test('vídeo: Olmo, vivo detrás de la barra', async ({ browser }, info) => {
   const video = page.video();
   await context.close();
   copyFileSync(await video.path(), join(dir, '1150-olmo.webm'));
+});
+
+// 1.156 · Las poses que dibujó Francisco (27-11-2026, «Igualar el 3D al dibujo»): en la franja, de pie con su libro; al tocarle,
+// la pose de cada frase; con muchos toques seguidos, mareado; sin tocar nada, primero lee y después se duerme. Y el 3D, el mismo
+// Olmo que el de la hoja (bufanda a rayas roja y verde, gafas naranjas, sin chaleco).
+const poseFranja = (cafe) => cafe.locator('.cf3-franja .cf3-retrato img.cf3-px--pose');
+
+test('1.156: Olmo en la franja con las poses de su hoja', async ({ page }, info) => {
+  test.skip(!/^chromium-(360x800|390x844|1440x900)$/.test(info.project.name), '360, 390 y escritorio');
+  test.setTimeout(150000);
+  mkdirSync(DIR156, { recursive: true });
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const cafe = await alCafe(page, { reduced: false });
+  await page.waitForFunction(() => window.__cafe3d.anfitrion() === 'olmo');
+  await expect(poseFranja(cafe)).toHaveAttribute('data-pose', 'libro');
+  await expect.poll(() => poseFranja(cafe).evaluate((img) => img.complete && img.naturalWidth)).toBe(311);
+  // El Olmo 3D, de frente y de lado, con los colores de la hoja
+  await ponerse(page, DE_FRENTE);
+  await page.screenshot({ path: join(DIR156, `01-olmo-3d-de-frente-${tam(info)}.png`) });
+  await ponerse(page, DE_LADO);
+  await page.screenshot({ path: join(DIR156, `02-olmo-3d-de-lado-${tam(info)}.png`) });
+  await ponerse(page, DE_FRENTE);
+  // Le tocas: cada frase, su pose
+  const tag = cafe.locator('.cf3-tag', { hasText: /^Olmo/ });
+  await tag.click();
+  await expect(cafe.locator('.cf3-franja .cf3-dice')).toContainText(FRASES_OLMO[0]);
+  await expect(poseFranja(cafe)).toHaveAttribute('data-pose', poseOlmoAlHablar(0));
+  await page.waitForFunction(() => window.__cafe3d.settled());
+  await page.screenshot({ path: join(DIR156, `03-franja-habla-${tam(info)}.png`) });
+  await page.waitForTimeout(1200);
+  await tag.click();
+  await expect(cafe.locator('.cf3-franja .cf3-dice')).toContainText(FRASES_OLMO[1]);
+  await expect(poseFranja(cafe)).toHaveAttribute('data-pose', poseOlmoAlHablar(1));
+  // Muchos toques seguidos: se marea un momento y vuelve a lo suyo
+  await page.waitForTimeout(2100);
+  for (let k = 0; k < 4; k += 1) await tag.click();
+  await expect(poseFranja(cafe)).toHaveAttribute('data-pose', 'mareado');
+  await page.screenshot({ path: join(DIR156, `04-franja-mareado-${tam(info)}.png`) });
+  await expect(poseFranja(cafe)).not.toHaveAttribute('data-pose', 'mareado', { timeout: 5000 });
+  expect(errors).toEqual([]);
+});
+
+test('1.156: sin tocar nada, Olmo se pone a leer y después se duerme; un toque le despierta', async ({ page }, info) => {
+  test.skip(!/^chromium-(390x844|1440x900)$/.test(info.project.name), '390 y escritorio');
+  test.setTimeout(150000);
+  mkdirSync(DIR156, { recursive: true });
+  const cafe = await alCafe(page, { reduced: false });
+  await page.waitForFunction(() => window.__cafe3d.anfitrion() === 'olmo');
+  await expect(poseFranja(cafe)).toHaveAttribute('data-pose', 'libro');
+  // El reloj de la página corre deprisa
+  await page.clock.install();
+  await page.clock.fastForward(33000);
+  await expect.poll(() => poseFranja(cafe).getAttribute('data-pose'), { timeout: 10000 }).toBe('lee');
+  await page.screenshot({ path: join(DIR156, `05-franja-lee-${tam(info)}.png`) });
+  await page.clock.fastForward(65000);
+  await expect.poll(() => poseFranja(cafe).getAttribute('data-pose'), { timeout: 10000 }).toBe('duerme');
+  await page.screenshot({ path: join(DIR156, `06-franja-duerme-${tam(info)}.png`) });
+  await page.keyboard.press('Shift');
+  await expect.poll(() => poseFranja(cafe).getAttribute('data-pose'), { timeout: 10000 }).toBe('libro');
+});
+
+test('1.156: con movimiento reducido, Olmo no cambia solo', async ({ page }, info) => {
+  test.skip(!/^chromium-390x844$/.test(info.project.name), 'Chromium 390');
+  test.setTimeout(120000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const cafe = await alCafe(page);
+  await page.waitForFunction(() => window.__cafe3d.anfitrion() === 'olmo');
+  await page.clock.install();
+  await page.clock.fastForward(100000);
+  await page.waitForTimeout(3500);
+  await expect(poseFranja(cafe)).toHaveAttribute('data-pose', 'libro');
 });

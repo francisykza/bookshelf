@@ -3,7 +3,7 @@
 // (solo el que tienes) y el portal lo enseña a los vecinos; no se compran, reciclan ni regalan; desde la 1.73 salen en
 // el sobre de coleccionista (bloque 3).
 import { beforeAll, describe, expect, it } from 'vitest';
-import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES } from '../../social/__tests__/supabaseHarness';
+import { as, createDatabase, createUsers, rejects, REFORMA_MUEBLES, juntarComoAntes } from '../../social/__tests__/supabaseHarness';
 import { CATALOG, COMPANEROS, isMistico } from '../catalog';
 import { starterRoom } from '../demo';
 import { addItem } from '../room';
@@ -26,6 +26,7 @@ beforeAll(async () => {
     await as(db, u, (q) => q('insert into pisos (layout) values ($1::jsonb)', [JSON.stringify(starterRoom())]));
     await call(u, 'select piso_mi_inventario()');
   }
+  await juntarComoAntes(db, [A, B]);
   // Tantas escrituras seguidas toparían con el límite de guardados por minuto
   await db.query('alter table pisos disable trigger pisos_rate');
 }, 60000);

@@ -621,3 +621,20 @@
     scale: none;
   }
 }
+
+/* 1.154 · Con el telefonillo abierto, Libo se sienta por encima de su velo, arriba a la izquierda (a la derecha está la ✕) */
+.libo-rincon[data-lugar='telefonillo'] {
+  z-index: 21;
+  right: auto;
+  left: max(8px, env(safe-area-inset-left));
+}
+
+.libo-rincon[data-lugar='telefonillo'] .libo-bocadillo {
+  right: auto;
+  left: 0;
+}
+
+.libo-rincon[data-lugar='telefonillo'] .libo-bocadillo::after {
+  right: auto;
+  left: 16px;
+}

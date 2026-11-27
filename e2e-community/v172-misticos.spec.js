@@ -82,20 +82,8 @@ test('en tu piso: colocar un místico y elegir quién te acompaña (se guarda)',
   expect(errors).toEqual([]);
 });
 
-test('de visita: el piso del vecino con su compañero detrás', async ({ page }, info) => {
-  test.skip(!/390x844/.test(info.project.name), '390 (Chromium y WebKit)');
-  const mock = seed();
-  mock.db.pisos.find((p) => p.user_id === ANA.id).companero = 'dragoncillo';
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(String(e)));
-  const panel = await toPortal(page, mock, BRUNO);
-  await panel.getByRole('button', { name: 'Llamar y entrar en el piso de Ana lectora, 2.º B' }).click({ timeout: 15000 });
-  const ana = page.getByRole('dialog', { name: 'Piso de Ana lectora' });
-  await expect(ana.locator('canvas.ep-canvas')).toBeVisible();
-  await page.waitForTimeout(1200);
-  await shot(page, info, 'v172-misticos-visita');
-  expect(errors).toEqual([]);
-});
+// 1.155 (Francisco, 26-11-2026, «Quitarla igualmente»): la visita a un vecino es en 3D y en ella no sale su compañero; la prueba
+// «de visita: el piso del vecino con su compañero detrás» se retiró con la vista isométrica.
 
 test('sin ningún místico: ni pestaña en la balda ni compañeros en el armario', async ({ page }, info) => {
   test.skip(!/390x844/.test(info.project.name), '390 (Chromium y WebKit)');

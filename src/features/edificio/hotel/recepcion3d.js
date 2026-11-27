@@ -1,7 +1,7 @@
 // La recepción del Gran Hotel en primera persona (encargo de Francisco del 9-11-2026). El mismo modo de hacer que el piso
 // (`pisoLab/interior3d.js`): Three.js a 320 px de ancho y ampliado sin suavizar, texturas de píxel pintadas una vez con las
 // rampas y el tramado del dibujo isométrico, y la luz ya pintada en ellas (de noche: apliques y lámpara de araña). Las
-// medidas salen de `lobbyLayout.js`, las mismas del vestíbulo isométrico (`lobbyArt.js`).
+// medidas salen de `lobbyLayout.js`, las mismas del vestíbulo isométrico (retirado en la 1.155).
 // Bloque 1: la sala (suelo de mármol, estuco con pilastras, zócalo, cornisa, techo artesonado, ventanales al puerto, la
 // entrada, los apliques y la lámpara de araña) y tu vista: de pie, recién entrado, en la esquina por la que mira el dibujo
 // isométrico. Solo se dibuja cuando algo cambia.
@@ -354,7 +354,7 @@ function buildBoxes() {
   return { solid, glow };
 }
 
-// ── Bloque 2: los muebles y las personas, los mismos del dibujo isométrico (lobbyArt.js) y en el mismo sitio ──
+// ── Bloque 2: los muebles y las personas, los mismos del dibujo isométrico de antes y en el mismo sitio ──
 // Las cajas llevan su color con la luz del sitio; lo que en el dibujo es un dibujo sobre una cara (las puertas del ascensor,
 // los casilleros, las notas del tablón, los abrigos, las caras) va en una calcomanía pegada a esa cara.
 // Cara de una calcomanía, por hacia dónde mira: '+y' (hacia la entrada), '+x' (desde la pared izquierda), '-x'.

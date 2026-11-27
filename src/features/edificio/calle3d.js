@@ -12,17 +12,20 @@
 import { Mesh, MeshBasicMaterial, PlaneGeometry, RepeatWrapping } from 'three';
 import { B, G, PX, R, buildMesh, canvasFrom, clamp, meshOf, mountExterior, probe, recorder, SKY_H, SKY_R, texture } from './exterior3d';
 import { hash, noise, rgb } from '../minigames/libreria-puerto/raster';
-import { FACADE_PARTS, FACADE_SKY, FLATS, drawFacadeBody, neighbour, signGlyphs } from './facade';
+import { FACADE_PARTS, FACADE_SKY, FLATS, PLANTAS_MIN, alturas, drawFacadeBody, neighbour, signGlyphs } from './facade';
 import { windowPictures } from './windowView';
 
-const { BW, BD, GROUND_H, FLOOR_H, TOP, TOWER_H, SIGN_X0, SIGN_X1, SIGN_Y, SIGN_Z0, SIGN_Z1, GLOW_BIT, GLASS_ID, colors: C } = FACADE_PARTS;
+const { BW, BD, GROUND_H, FLOOR_H, TOWER_H, SIGN_X0, SIGN_X1, SIGN_Y, GLOW_BIT, GLASS_ID, colors: C } = FACADE_PARTS;
 
 /** Dónde estás: en el muelle, frente al portal, un paso por delante de la limusina. Mundo de la app (x, y, z = altura). */
 export const EYE = { x: BW / 2, y: BD + 8.6, z: 1.6 };
 /** Cuánto más alto va el cartel que en el 2D (para que el antepecho no lo tape visto desde abajo). */
 const SIGN_LIFT = 0.8;
-/** Lo más alto del edificio (el cartel, o el remate de los torreones): la vista de siempre lo deja dentro, arriba. */
-const ROOF_TOP = Math.max(TOP + TOWER_H + 0.62, SIGN_Z1 + SIGN_LIFT);
+/** Lo más alto del edificio (el cartel, o el remate de los torreones): la vista de siempre lo deja dentro, arriba. 1.152: según sus plantas. */
+const roofTop = (plantas) => {
+  const { TOP, SIGN_Z1 } = alturas(plantas);
+  return Math.max(TOP + TOWER_H + 0.62, SIGN_Z1 + SIGN_LIFT);
+};
 /** Cuánto se gira a cada lado (radianes) y cuánto se baja la vista desde la de siempre. */
 const YAW_MAX = 0.5;
 /**
@@ -46,11 +49,12 @@ const WIN_W = 14;
 const WIN_H = 22;
 
 /** Graba la calle: el edificio de siempre y, como desde el muelle se ve más a los lados, dos vecinos más. */
-function recordStreet(flats, cafe = null) {
+function recordStreet(flats, cafe = null, plantas = PLANTAS_MIN) {
+  const { TOP, SIGN_Z0, SIGN_Z1 } = alturas(plantas);
   const rec = recorder();
   neighbour(rec, -11.5, -5.1, GROUND_H + FLOOR_H * 3 + 0.2, 3);
   neighbour(rec, 13.1, 19, GROUND_H + FLOOR_H + 0.5, 4);
-  drawFacadeBody(rec, flats, cafe);
+  drawFacadeBody(rec, flats, cafe, plantas);
   // Desde abajo, el antepecho de la azotea tapaba la mitad del cartel: aquí va más alto, con las patas más largas
   const near = (a, b) => Math.abs(a - b) < 1e-6;
   for (const box of rec.boxes) {
@@ -81,10 +85,10 @@ const LAMPS = [-0.7, BW + 0.7];
 const LAMP_Y = BD + 1.3;
 
 /** La luz de la tarde (la de la fachada 2D) con lo que alumbran las ventanas y los faroles cerca de `p`. */
-function lightsOf(flats) {
+function lightsOf(flats, plantas = PLANTAS_MIN) {
   const out = [];
   for (const f of FLATS) if (flats[f.puerta]) for (const [w0, w1] of f.wins) out.push([(w0 + w1) / 2, BD + 0.3, (f.gz0 + f.gz1) / 2]);
-  for (let k = 0; k < 3; k += 1) out.push([4, BD + 0.3, GROUND_H + k * FLOOR_H + 1.2]);
+  for (let k = 0; k < alturas(plantas).plantas; k += 1) out.push([4, BD + 0.3, GROUND_H + k * FLOOR_H + 1.2]);
   out.push([5.05, BD + 0.5, 1.3], [1.6, BD + 0.3, 1.1], [6.4, BD + 0.3, 1.1]);
   for (const x of LAMPS) out.push([x, LAMP_Y, 3.3], [x, LAMP_Y, 1.2]);
   return out;
@@ -174,12 +178,12 @@ function windowTexel(f, a, b, occupied, ctx, sheenHere) {
 }
 
 /** Las cajas grabadas, en una sola malla con su atlas (exterior3d.js), y el suelo. */
-function buildStreet(flats, cafe = null) {
-  const rec = recordStreet(flats, cafe);
+function buildStreet(flats, cafe = null, plantas = PLANTAS_MIN) {
+  const rec = recordStreet(flats, cafe, plantas);
   const r = probe();
   const ctx = {
     flats,
-    lights: lightsOf(flats),
+    lights: lightsOf(flats, plantas),
     lit: r.rampOf(C.LIT),
     curtain: r.rampOf(C.CURTAIN),
     frameWood: r.rampOf(C.FRAME_WOOD),
@@ -192,15 +196,16 @@ function buildStreet(flats, cafe = null) {
 // Lo pintado (lo que tarda) se guarda: si el portal se vuelve a montar con los mismos pisos (llega el correo, vuelves de
 // un piso), solo se suben las láminas a la tarjeta gráfica
 let cached = null;
-function streetOf(flats, cafe = null) {
+function streetOf(flats, cafe = null, plantas = PLANTAS_MIN) {
   const key = JSON.stringify([
+    alturas(plantas).plantas,
     Object.entries(flats)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([puerta, f]) => [puerta, f.room?.pared ?? '', (f.room?.items ?? []).map((i) => [i.id, i.x ?? i.a ?? 0])]),
     // Bloque 4b: lo que del café se ve desde la calle (la terraza y los libros del escaparate, desde el nivel 5)
     cafe?.inaugurado && cafe.nivel >= 5 ? (cafe.escaparate ?? []).map((b) => b.titulo) : null,
   ]);
-  if (cached?.key !== key) cached = { key, data: buildStreet(flats, cafe) };
+  if (cached?.key !== key) cached = { key, data: buildStreet(flats, cafe, plantas) };
   return cached.data;
 }
 let skyCanvas = null;
@@ -317,7 +322,8 @@ function paintSky() {
  * Monta la calle en `container`. `flats`: { [puerta]: { room } } de las puertas ocupadas (como renderFacade). Las demás
  * opciones, las de mountExterior (exterior3d.js). Devuelve el control de la vista (para la app y las pruebas).
  */
-export function mountCalle(container, { flats = {}, cafe = null, ...opts } = {}) {
+export function mountCalle(container, { flats = {}, cafe = null, plantas = PLANTAS_MIN, ...opts } = {}) {
+  const ROOF_TOP = roofTop(plantas);
   return mountExterior(
     container,
     {
@@ -330,9 +336,11 @@ export function mountCalle(container, { flats = {}, cafe = null, ...opts } = {})
       label: 'El edificio del puerto desde el muelle. Arrastra o usa las flechas para mirar.',
       sky: () => (skyCanvas ??= paintSky()),
       // La vista de siempre: lo más alto del edificio, justo dentro por arriba (si cabe, sin mirar hacia arriba de más)
-      homePitch: (fov) => clamp(Math.atan2(ROOF_TOP - EYE.z, EYE.y - BD) - fov / 2 + 0.06, 0, 0.7),
+      // 1.152: con 4 o 5 plantas, sin subir tanto que se salga por abajo la acera (la limusina, el portal y el café): el cartel
+      // se ve mirando hacia arriba
+      homePitch: (fov) => clamp(Math.min(Math.atan2(ROOF_TOP - EYE.z, EYE.y - BD) - fov / 2 + 0.06, Math.atan2(-EYE.z, EYE.y - BD - 2.2) + fov / 2), 0, 0.7),
       build(scene, own) {
-        const street = streetOf(flats, cafe);
+        const street = streetOf(flats, cafe, plantas);
         scene.add(meshOf(street, own));
         const ground = new Mesh(own(new PlaneGeometry(GROUND.x1 - GROUND.x0, GROUND.y1 - GROUND.y0)), own(new MeshBasicMaterial({ map: own(texture(street.groundCanvas)) })));
         // El plano mira hacia arriba; la fila de arriba de su lámina, hacia las casas (y pequeña)

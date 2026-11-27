@@ -1,20 +1,16 @@
 // Quién atiende el café (1.150): Pilar o, con la suscripción de Libotown, Olmo, el búho librero (decisión de Francisco del
 // 26-11-2026). Las cuentas de `cafe_probadores` lo ven en vista previa (`conOlmo`, src/domain/suscripcion.js). Aquí está todo
-// lo que cambia entre los dos: el nombre, cómo se habla de él o de ella, su retrato, su sonido y su voz en los momentos de
-// siempre. Lo que hace es lo mismo: Olmo prepara, hornea, coloca y vende igual que Pilar.
+// lo que cambia entre los dos: el nombre, cómo se habla de él o de ella, su retrato (las poses de Olmo, olmoPoses.js), su
+// sonido y su voz en los momentos de siempre. Lo que hace es lo mismo: Olmo prepara, hornea, coloca y vende igual que Pilar.
 //
 // La voz de Olmo: sabio y tranquilo, habla despacio, huele los libros, mide las cosas en páginas y suspira un «hu-hum» cuando
 // algo le gusta. Nunca tiene prisa y nunca mete prisa.
 import { conOlmo } from '../../../domain/suscripcion';
 import { PILAR } from './cafeIconos';
-import { retratoOlmo } from './olmo3d';
+import { poseDeOlmo, poseOlmoUrl } from './olmoPoses';
 
-const retratos = new Map();
-/** El retrato de Olmo en una pose ('normal', 'contento', 'apunta' o 'lee'), sacado de su modelo 3D (una vez por pose). */
-export function retratoDeOlmo(pose = 'normal') {
-  if (!retratos.has(pose)) retratos.set(pose, retratoOlmo(pose));
-  return retratos.get(pose);
-}
+/** El retrato de Olmo en una pose: una de las que dibujó Francisco (1.156), para `PixelArt`. */
+export const retratoDeOlmo = (pose) => ({ src: poseOlmoUrl(pose), pose: poseDeOlmo(pose) });
 
 const PILAR_P = {
   id: 'pilar',

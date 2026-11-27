@@ -1,13 +1,15 @@
 // Olmo, el búho librero (1.150; Francisco, 26-11-2026: «el personaje de suscriptor que sustituye a Pilar… que sea muy
 // característico y atractivo para el público»). Con la suscripción de Libotown, Olmo atiende la barra del café en lugar de
 // Pilar y hace todo lo que hace ella. Diseño propio, con las cajas de la casa (como el mapache del casino, `mapache3d.js`):
-// un búho grande y redondo, con penachos, gafas redondas de alambre, chaleco de punto mostaza con botones de madera, una
-// bufanda escocesa con un lápiz metido en el nudo y alas en vez de manos. Sabio y tranquilo. No se parece a ningún búho de
-// otra obra: nada de pajarita, ni de birrete, ni de monóculo.
+// un búho grande y redondo, con penachos, gafas grandes naranjas, una bufanda a rayas roja y verde con un lápiz metido en el
+// nudo y alas en vez de manos. Sabio y tranquilo. No se parece a ningún búho de otra obra: nada de pajarita, ni de birrete, ni
+// de monóculo. 1.156 (Francisco, 27-11-2026, «Igualar el 3D al dibujo»): es el mismo Olmo que el de su hoja de poses
+// (`public/assets/olmo/poses/`): plumaje pardo rojizo, cara crema, gafas naranjas gruesas, ojos oscuros y la bufanda roja y
+// verde; sin el chaleco mostaza de la 1.150.
 //
-// Solo datos y la pose de cada momento (sin Three.js): el motor 3D del café lo convierte en volúmenes con su luz, y el retrato
-// de la franja y las poses de la guía salen de aquí mismo (`retratoOlmo`), así que siempre es el mismo Olmo. Unidades del
-// piso (una casilla = 1); mira hacia +y, de pie sobre z = 0, centrado en x = 0. Mide unos 1,9 con los penachos, como Pilar.
+// Solo datos y la pose de cada momento (sin Three.js): el motor 3D del café lo convierte en volúmenes con su luz. Los retratos
+// de la franja y de la guía son las poses que dibujó Francisco (`olmoPoses.js`). Unidades del piso (una casilla = 1); mira
+// hacia +y, de pie sobre z = 0, centrado en x = 0. Mide unos 1,9 con los penachos, como Pilar.
 
 const B = (x0, y0, z0, x1, y1, z1, c) => ({ b: [x0, y0, z0, x1, y1, z1], c });
 /** La misma caja, en el lado izquierdo (x reflejada). */
@@ -19,25 +21,24 @@ const azar = (i, j) => {
   return x - Math.floor(x);
 };
 
-const PLUMA = [138, 100, 70];
-const PLUMA_O = [98, 68, 48];
-const PLUMA_C = [178, 140, 100];
-const CREMA = [238, 224, 194];
-const CREMA_O = [204, 182, 146];
-const DISCO = [226, 204, 164];
-const DISCO_O = [176, 140, 98];
-const OJO = [244, 176, 52];
-const OJO_O = [206, 128, 30];
+// Los colores de la hoja de Francisco (1.156)
+const PLUMA = [132, 72, 36];
+const PLUMA_O = [96, 48, 24];
+const PLUMA_C = [168, 104, 58];
+const CREMA = [238, 200, 158];
+const CREMA_O = [212, 170, 128];
+const DISCO = [240, 204, 164];
+const DISCO_O = [196, 146, 104];
+// Los ojos: el fondo claro tras el cristal y la pupila grande y oscura (en la hoja no son ámbar)
+const OJO = [246, 222, 188];
+const OJO_O = [222, 188, 150];
 const PUPILA = [28, 20, 18];
 const BRILLO = [255, 252, 238];
 const PICO = [118, 102, 84];
-const ALAMBRE = [116, 84, 40];
-const MOSTAZA = [206, 158, 50];
-const MOSTAZA_O = [170, 124, 34];
-const BOTON = [112, 72, 42];
-const TARTAN = [164, 44, 48];
-const TARTAN_V = [42, 94, 66];
-const TARTAN_L = [232, 200, 96];
+// Las gafas, naranjas
+const ALAMBRE = [228, 144, 48];
+const TARTAN = [156, 36, 36];
+const TARTAN_V = [48, 70, 40];
 const GARRA = [216, 166, 74];
 const LAPIZ = [240, 192, 58];
 const GOMA = [226, 142, 150];
@@ -65,7 +66,8 @@ const frente = (z) => radio(CUERPO_Z, CUERPO_R, z)[1];
 const frenteCabeza = (z) => radio(CABEZA_Z, CABEZA_R, z)[1];
 
 const PASO = 0.06;
-const CHALECO = [0.46, 1.16];
+/** Hasta dónde llega la tripa clara (por encima, el plumaje; sin chaleco desde la 1.156). */
+const TRIPA = 0.46;
 
 /** El cuerpo, quieto (la cabeza, las alas y los párpados se mueven aparte). */
 const CUERPO = (() => {
@@ -77,45 +79,29 @@ const CUERPO = (() => {
   out.push(B(-0.13, -0.36, 0.1, 0.13, -0.24, 0.2, PLUMA_O), B(-0.09, -0.4, 0.12, 0.09, -0.34, 0.18, PLUMA));
   // El cuerpo redondo, con el plumaje
   out.push(...rodajas(CUERPO_Z, CUERPO_R, 0.04, 1.36, PASO, PLUMA));
-  // El chaleco de punto: un poco más ancho que el cuerpo, con el elástico de abajo más oscuro
-  for (let z = CHALECO[0]; z < CHALECO[1] - 1e-6; z += PASO) {
+  // El pecho, del mismo plumaje con unas plumas más oscuras en uve (como en la hoja, sin chaleco)
+  for (let z = TRIPA + PASO; z < 1.1; z += PASO * 2) {
     const [w, d] = radio(CUERPO_Z, CUERPO_R, z + PASO / 2);
-    const c = z < CHALECO[0] + PASO ? MOSTAZA_O : MOSTAZA;
-    out.push(B(-w - 0.018, -d - 0.018, z, w + 0.018, d + 0.018, z + PASO, c));
-    // El punto: canalé vertical por delante (franjas más oscuras), menos en el escote
-    if (z >= CHALECO[0] + PASO) {
-      for (let x = -w + 0.05; x < w - 0.04; x += 0.065) {
-        const escote = z > 0.9 && Math.abs(x) < 0.03 + (z - 0.9) * 0.55;
-        if (!escote) out.push(B(x - 0.009, d + 0.014, z + 0.004, x + 0.009, d + 0.024, z + PASO - 0.004, MOSTAZA_O));
-      }
-    }
+    const fila = Math.round(z / PASO);
+    for (let x = -w * 0.5 + (fila % 4) * 0.025; x < w * 0.5; x += 0.12) out.push(B(x - 0.016, d - 0.004, z + 0.02, x + 0.016, d + 0.008, z + 0.036, PLUMA_O));
   }
-  // El escote en pico: la pechuga clara asoma por encima de los botones
-  for (let z = 0.9; z < 1.2; z += 0.03) {
-    const a = 0.018 + (z - 0.9) * 0.55;
-    out.push(B(-a, frente(z + 0.015) + 0.02, z, a, frente(z + 0.015) + 0.03, z + 0.03, CREMA));
-  }
-  // La tripa clara de debajo del chaleco, con sus manchas en uve
-  for (let z = 0.16; z < CHALECO[0]; z += PASO) {
+  // La tripa clara de abajo, con sus manchas en uve
+  for (let z = 0.16; z < TRIPA; z += PASO) {
     const [w, d] = radio(CUERPO_Z, CUERPO_R, z + PASO / 2);
     out.push(B(-w * 0.62, d - 0.004, z, w * 0.62, d + 0.01, z + PASO, CREMA));
     const fila = Math.round(z / PASO);
     for (let x = -w * 0.45 + (fila % 2) * 0.05; x < w * 0.5; x += 0.1) out.push(B(x - 0.015, d + 0.01, z + 0.02, x + 0.015, d + 0.016, z + 0.035, CREMA_O));
   }
-  // Los tres botones de madera del chaleco
-  for (const z of [0.6, 0.72, 0.84]) out.push(B(-0.024, frente(z) + 0.022, z - 0.022, 0.024, frente(z) + 0.04, z + 0.022, BOTON));
-  // La bufanda escocesa, gorda, entre el cuerpo y la cabeza: rojo con franjas verdes y un hilo amarillo
+  // La bufanda, gorda, entre el cuerpo y la cabeza: a rayas roja y verde
   const BZ = [1.16, 1.33];
   out.push(B(-0.27, -0.23, BZ[0], 0.27, 0.23, BZ[1], TARTAN));
   for (const x of [-0.2, -0.06, 0.08, 0.22]) out.push(B(x - 0.025, -0.235, BZ[0], x + 0.025, 0.235, BZ[1], TARTAN_V));
   out.push(B(-0.275, -0.235, 1.235, 0.275, 0.235, 1.25, TARTAN_V));
-  out.push(B(-0.276, -0.236, 1.28, 0.276, 0.236, 1.287, TARTAN_L));
   // El nudo, delante a la derecha, y la punta que cuelga con sus flecos
   out.push(B(0.06, 0.22, 1.13, 0.22, 0.29, 1.3, TARTAN), B(0.11, 0.285, 1.14, 0.14, 0.295, 1.29, TARTAN_V));
   const colgando = frente(0.9) + 0.045;
   out.push(B(0.08, colgando - 0.04, 0.78, 0.21, colgando, 1.16, TARTAN));
   for (const z of [0.86, 0.98, 1.08]) out.push(B(0.078, colgando - 0.042, z, 0.212, colgando + 0.003, z + 0.025, TARTAN_V));
-  out.push(B(0.078, colgando - 0.042, 0.93, 0.212, colgando + 0.003, 0.938, TARTAN_L));
   out.push(B(0.12, colgando - 0.042, 0.78, 0.14, colgando + 0.004, 1.16, TARTAN_V));
   for (let x = 0.09; x < 0.21; x += 0.03) out.push(B(x, colgando - 0.03, 0.73, x + 0.014, colgando - 0.01, 0.78, TARTAN));
   // El lápiz metido en el nudo, con su goma rosa
@@ -127,7 +113,7 @@ const CUERPO = (() => {
 const PIVOTE_CABEZA = [0, 0, 1.3];
 const OJOS = [0.128, 1.56];
 
-/** La cabeza: el disco de la cara, los ojos ámbar, las gafas de alambre, el pico, las cejas y los penachos. */
+/** La cabeza: el disco de la cara, los ojos, las gafas naranjas, el pico, las cejas y los penachos. */
 const CABEZA = (() => {
   const out = [];
   out.push(...rodajas(CABEZA_Z, CABEZA_R, 1.25, 1.81, 0.045, PLUMA));
@@ -148,7 +134,7 @@ const CABEZA = (() => {
     out.push(B(cx - 0.132, f - 0.01, ez - 0.085, cx + 0.132, f + 0.006, ez + 0.085, DISCO));
   }
   out.push(B(-0.04, f - 0.01, 1.42, 0.04, f + 0.008, 1.56, DISCO));
-  // Los ojos grandes, ámbar, con su pupila y el brillo
+  // Los ojos grandes: el fondo claro, la pupila oscura y el brillo
   for (const s of [1, -1]) {
     const cx = s * ex;
     out.push(B(cx - 0.062, f + 0.004, ez - 0.062, cx + 0.062, f + 0.014, ez + 0.062, OJO));
@@ -156,23 +142,23 @@ const CABEZA = (() => {
     out.push(B(cx - 0.036, f + 0.012, ez - 0.034, cx + 0.036, f + 0.02, ez + 0.038, PUPILA));
     out.push(B(cx + s * 0.004 - 0.016, f + 0.018, ez + 0.006, cx + s * 0.004 + 0.002, f + 0.024, ez + 0.03, BRILLO));
   }
-  // Las gafas redondas de alambre (un octógono por ojo), el puente y las patillas hasta detrás de la cabeza
+  // Las gafas grandes naranjas (un octógono grueso por ojo), el puente y las patillas hasta detrás de la cabeza
   const g = f + 0.03;
   for (const s of [1, -1]) {
     const cx = s * ex;
-    out.push(B(cx - 0.055, g, ez + 0.08, cx + 0.055, g + 0.012, ez + 0.096, ALAMBRE));
-    out.push(B(cx - 0.055, g, ez - 0.096, cx + 0.055, g + 0.012, ez - 0.08, ALAMBRE));
-    out.push(B(cx - 0.096, g, ez - 0.055, cx - 0.08, g + 0.012, ez + 0.055, ALAMBRE));
-    out.push(B(cx + 0.08, g, ez - 0.055, cx + 0.096, g + 0.012, ez + 0.055, ALAMBRE));
+    out.push(B(cx - 0.06, g, ez + 0.074, cx + 0.06, g + 0.014, ez + 0.104, ALAMBRE));
+    out.push(B(cx - 0.06, g, ez - 0.104, cx + 0.06, g + 0.014, ez - 0.074, ALAMBRE));
+    out.push(B(cx - 0.104, g, ez - 0.06, cx - 0.074, g + 0.014, ez + 0.06, ALAMBRE));
+    out.push(B(cx + 0.074, g, ez - 0.06, cx + 0.104, g + 0.014, ez + 0.06, ALAMBRE));
     for (const [dx, dz] of [
       [1, 1],
       [1, -1],
       [-1, 1],
       [-1, -1],
     ])
-      out.push(B(cx + dx * 0.068 - 0.014, g, ez + dz * 0.068 - 0.014, cx + dx * 0.068 + 0.014, g + 0.012, ez + dz * 0.068 + 0.014, ALAMBRE));
+      out.push(B(cx + dx * 0.07 - 0.02, g, ez + dz * 0.07 - 0.02, cx + dx * 0.07 + 0.02, g + 0.014, ez + dz * 0.07 + 0.02, ALAMBRE));
   }
-  out.push(B(-0.034, g, ez + 0.03, 0.034, g + 0.012, ez + 0.044, ALAMBRE));
+  out.push(B(-0.034, g, ez + 0.026, 0.034, g + 0.014, ez + 0.048, ALAMBRE));
   out.push(...PAR(B(0.222, g - 0.04, ez + 0.03, 0.236, g + 0.006, ez + 0.044, ALAMBRE)));
   for (const s of [1, -1]) {
     const lado = radio(CABEZA_Z, CABEZA_R, ez + 0.04)[0] + 0.006;
@@ -214,7 +200,7 @@ const PARPADOS = (() => {
   });
 })();
 
-/** Dónde arranca cada ala (el hombro, por la sisa del chaleco): el ala derecha; la izquierda es su reflejo. */
+/** Dónde arranca cada ala (el hombro): el ala derecha; la izquierda es su reflejo. */
 const PIVOTE_ALA = [0.33, 0, 1.08];
 /** El ala derecha, plegada contra el costado: plumas pardas con barras claras y las primarias más oscuras abajo. */
 const ALA = (() => {
@@ -287,7 +273,7 @@ export const OLMO = {
   alto: 1.94,
   taburete: TABURETE,
   /** Para la mano del café (`manoPilar`): los colores del ala que agarra los mangos. */
-  colores: { pluma: PLUMA, plumaO: PLUMA_O, plumaC: PLUMA_C, chaleco: MOSTAZA },
+  colores: { pluma: PLUMA, plumaO: PLUMA_O, plumaC: PLUMA_C },
 };
 
 const suave = (u) => {
@@ -324,83 +310,4 @@ export function poseOlmo(t, { quieto = false, prepara = false } = {}) {
   const esponja = campana(c, 6.5, 7.2, 0.2);
   const alas = [0.02 + esponja * 0.14, 0.02 + esponja * 0.14];
   return { giro, ladeo, parpados: [parpadeo, parpadeo], alas, esponja, respira };
-}
-
-// ── El retrato de píxel, sacado del modelo ──
-/** Las poses del retrato (la franja del café y la guía): ojos, alas y si lleva el libro. */
-const POSES_RETRATO = {
-  normal: {},
-  contento: { ojos: 'cerrados' },
-  apunta: { ala: 'arriba' },
-  lee: { libro: true },
-};
-const hex = ([r, g, b]) =>
-  `#${[r, g, b]
-    .map((v) =>
-      Math.max(0, Math.min(255, Math.round(v)))
-        .toString(16)
-        .padStart(2, '0'),
-    )
-    .join('')}`;
-const LETRAS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-
-/**
- * El retrato de Olmo como dibujo de píxel ({ filas, paleta }, el formato de `PixelArt`): el modelo visto de frente, en una
- * cuadrícula de `n × n`, encuadrando de la bufanda a los penachos (o el cuerpo entero con `entero`). Cada píxel toma la caja
- * que está más delante; las cajas más finas que un píxel ocupan al menos uno (así se ven las gafas). De frente de verdad: lo que
- * Olmo tiene a su derecha sale a la izquierda del dibujo, como cuando le miras en la barra. Con un contorno oscuro alrededor,
- * como los demás retratos del café.
- */
-export function retratoOlmo(pose = 'normal', { n = 24, entero = false } = {}) {
-  const op = POSES_RETRATO[pose] ?? POSES_RETRATO.normal;
-  const ojosCerrados = op.ojos === 'cerrados';
-  const alaDer = op.ala === 'arriba' ? ALA_ARRIBA : ALA;
-  const cajas = [...CUERPO, ...CABEZA, ...alaDer, ...ALA.map(ESPEJO), ...(ojosCerrados ? PARPADOS.flat() : []), ...(op.libro ? LIBRO : [])];
-  const [X0, X1, Z0, Z1] = entero ? [-0.62, 0.62, -0.05, 1.95] : op.ala === 'arriba' ? [-0.5, 0.62, 0.98, 1.97] : [-0.48, 0.48, 1.03, 1.97];
-  const lado = Math.max(X1 - X0, Z1 - Z0) / n;
-  const cx = (X0 + X1) / 2;
-  const x0 = cx - (lado * n) / 2;
-  const z1 = Z1;
-  const prof = Array.from({ length: n }, () => new Array(n).fill(-Infinity));
-  const color = Array.from({ length: n }, () => new Array(n).fill(null));
-  for (const { b, c } of cajas) {
-    let i0 = Math.round((b[0] - x0) / lado);
-    let i1 = Math.round((b[3] - x0) / lado) - 1;
-    let j0 = Math.round((z1 - b[5]) / lado);
-    let j1 = Math.round((z1 - b[2]) / lado) - 1;
-    if (i1 < i0) i1 = i0 = Math.floor(((b[0] + b[3]) / 2 - x0) / lado);
-    if (j1 < j0) j1 = j0 = Math.floor((z1 - (b[2] + b[5]) / 2) / lado);
-    for (let j = Math.max(0, j0); j <= Math.min(n - 1, j1); j += 1) {
-      for (let i = Math.max(0, i0); i <= Math.min(n - 1, i1); i += 1) {
-        if (b[4] >= prof[j][i]) {
-          prof[j][i] = b[4];
-          color[j][i] = c;
-        }
-      }
-    }
-  }
-  // El contorno: los huecos que tocan algo dibujado
-  const CONTORNO = [44, 28, 20];
-  const lleno = (i, j) => i >= 0 && j >= 0 && i < n && j < n && color[j][i] && color[j][i] !== CONTORNO;
-  const borde = [];
-  for (let j = 0; j < n; j += 1) for (let i = 0; i < n; i += 1) if (!color[j][i] && (lleno(i - 1, j) || lleno(i + 1, j) || lleno(i, j - 1) || lleno(i, j + 1))) borde.push([i, j]);
-  for (const [i, j] of borde) color[j][i] = CONTORNO;
-  const paleta = {};
-  const letraDe = new Map();
-  const filas = color.map((fila) =>
-    [...fila]
-      .reverse()
-      .map((c) => {
-        if (!c) return '.';
-        const k = c.join(',');
-        if (!letraDe.has(k)) {
-          const l = LETRAS[letraDe.size];
-          letraDe.set(k, l);
-          paleta[l] = hex(c);
-        }
-        return letraDe.get(k);
-      })
-      .join(''),
-  );
-  return { filas, paleta };
 }

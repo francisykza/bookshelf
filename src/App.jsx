@@ -46,6 +46,8 @@ import { CloudProvider } from './state/cloudSync';
 import { CommunityProvider } from './features/social/hooks/useCommunity';
 import { GuardianCard } from './features/social/components/GuardianCard';
 import { InviteHandler } from './features/social/components/InviteHandler';
+import { LlaveHandler } from './features/edificio/LlaveHandler';
+import { AmigosSync } from './features/social/amigos/AmigosSync';
 import { LibraryProvider, useLibrary } from './state/useLibrary';
 
 // La comunidad se descarga solo al abrirla (SPEC §25.13)
@@ -342,6 +344,8 @@ function Sanctuary() {
         )}
       />
       <InviteHandler onJoined={(clubId) => openPanel({ type: 'social', tab: 'club', id: clubId })} />
+      <LlaveHandler onIrAlEdificio={() => openPanel({ type: 'edificio' })} />
+      <AmigosSync />
       <PerfProfiler id="library">
       <ShelfView
         phase={phase}
@@ -470,6 +474,7 @@ function Sanctuary() {
             onLibo={(ir, libro) => {
               const aqui = (select) => openPanel({ type: 'pisoLab', id: panel.id, select });
               if (ir === 'almacen') aqui('ordenador:almacen');
+              else if (ir === 'amigos') aqui('ordenador:amigos');
               else if (ir === 'registrar') aqui('registro');
               else if (ir === 'biblioteca') aqui('toda');
               else if (ir === 'anadir') aqui('abrir:add');
@@ -523,7 +528,19 @@ function Sanctuary() {
               }}
               onOpenVault={null}
               onAlmacen={alAlmacen('ordenador:almacen')}
-              desktop={(open) => <PisoDesktop open={open} tool={(name) => openPanel({ type: 'pisoLab', id: panel.id, select: `abrir:${name}` })} go={{ library: () => here('toda'), community: () => openPanel({ type: 'social' }), register: () => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' }), almacen: alAlmacen('ordenador') }} />}
+              // 1.153 · Desde Amigos: el piso de un amigo, la sala del hotel o tu perfil; Atrás vuelve a la agenda
+              amigos={{
+                visitar: (id) => {
+                  here('ordenador:amigos');
+                  openPanel({ type: 'visit', id, from: 'amigos' });
+                },
+                sala: () => {
+                  here('ordenador:amigos');
+                  openPanel({ type: 'edificio', id: 'hotel', section: 'cafe' });
+                },
+                comunidad: () => openPanel({ type: 'social', tab: 'perfil' }),
+              }}
+              desktop={(open) => <PisoDesktop open={open} tool={(name) => openPanel({ type: 'pisoLab', id: panel.id, select: `abrir:${name}` })} go={{ library: () => here('toda'), community: () => openPanel({ type: 'social' }), register: () => openPanel({ type: 'pisoLab', id: panel.id, select: 'registro' }), almacen: alAlmacen('ordenador'), amigos: true }} />}
             />
           </Suspense>
         );

@@ -7,6 +7,7 @@ import { resumenAlmacen, vistosDelAlmacen } from '../edificio/hotel/almacenAviso
 import { loadSocial } from '../edificio/service';
 import { correoLeido, correoSinLeer } from '../edificio/correo';
 import { avisosDeLibo, leerCafeLibo } from './sugerencias';
+import { loadAmigos } from '../social/services/amigos';
 
 const FRESCO_MS = 5 * 60000;
 let correoCache = null; // { uid, t, social }
@@ -43,4 +44,30 @@ export function useAvisosLibo(activo, userId) {
     // `version` cambia con lo visto del almacén: hay que volver a leerlo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activo, userId, fase, estado, version, social]);
+}
+
+// 1.154 · Tu agenda de amigos, para las sugerencias de Libo (docs/qa/amigos-vecinos.md, bloque 4): la misma consulta que la app
+// Amigos, como mucho cada cinco minutos. Sin la migración o sin red, null: Libo no habla de amigos.
+let amigosCache = null; // { uid, t, amigos }
+
+export function useAmigosLibo(activo, userId) {
+  const [amigos, setAmigos] = useState(() => (amigosCache?.uid === userId ? amigosCache.amigos : null));
+  useEffect(() => {
+    if (!activo || !userId) return undefined;
+    if (amigosCache?.uid === userId && Date.now() - amigosCache.t < FRESCO_MS) return undefined;
+    let vivo = true;
+    loadAmigos().then(
+      (a) => {
+        amigosCache = { uid: userId, t: Date.now(), amigos: a };
+        if (vivo) setAmigos(a);
+      },
+      () => {
+        amigosCache = { uid: userId, t: Date.now(), amigos: null };
+      },
+    );
+    return () => {
+      vivo = false;
+    };
+  }, [activo, userId]);
+  return activo && amigosCache?.uid === userId ? amigos : null;
 }

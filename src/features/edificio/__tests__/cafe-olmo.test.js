@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { conOlmo, esSuscriptor, fijarSuscripcion, fijarVistaPrevia } from '../../../domain/suscripcion';
 import { precioDe } from '../economy';
 import { FRASES_OLMO, anfitrion, conQuien } from '../cafe/cafePersonaje';
-import { OLMO, poseOlmo, retratoOlmo } from '../cafe/olmo3d';
+import { OLMO, poseOlmo } from '../cafe/olmo3d';
+import { LIENZO_OLMO, MOMENTO_OLMO, POSES_OLMO, REPOSO_OLMO, poseDeOlmo, poseOlmoAlHablar, poseOlmoDelPaso, poseOlmoEnReposo, poseOlmoUrl } from '../cafe/olmoPoses';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 afterEach(() => {
   fijarSuscripcion(false);
@@ -86,18 +89,14 @@ describe('el modelo 3D y su retrato', () => {
     expect(Math.min(...OLMO.cabeza.map(({ b }) => b[2]))).toBeGreaterThan(1.05);
   });
 
-  it('el retrato sale del modelo: cuadrícula cuadrada, paleta completa y distinto en cada pose', () => {
-    const vistos = new Set();
-    for (const pose of ['normal', 'contento', 'apunta', 'lee']) {
-      const r = retratoOlmo(pose);
-      expect(r.filas).toHaveLength(24);
-      for (const f of r.filas) {
-        expect(f).toHaveLength(24);
-        for (const ch of f) if (ch !== '.') expect(r.paleta[ch]).toMatch(/^#[0-9a-f]{6}$/);
-      }
-      vistos.add(r.filas.join('\n'));
-    }
-    expect(vistos.size).toBe(4);
+  it('es el Olmo de la hoja de Francisco (1.156): sin chaleco mostaza, con la bufanda roja y verde y las gafas naranjas', () => {
+    const todas = [...OLMO.cuerpo, ...OLMO.cabeza];
+    const hay = (rgb) => todas.some(({ c }) => c.join() === rgb.join());
+    expect(hay([206, 158, 50])).toBe(false);
+    expect(hay([156, 36, 36])).toBe(true);
+    expect(hay([48, 70, 40])).toBe(true);
+    expect(hay([228, 144, 48])).toBe(true);
+    expect(OLMO.colores.chaleco).toBeUndefined();
   });
 
   it('se mueve: parpadea, gira la cabeza, se ahueca; con movimiento reducido, quieto', () => {
@@ -109,5 +108,45 @@ describe('el modelo 3D y su retrato', () => {
     expect(poseOlmo(7, { quieto: true })).toEqual({ giro: 0, ladeo: 0, parpados: [false, false], alas: [0, 0], esponja: 0, respira: 0 });
     // Preparando un café, las alas trabajan
     expect(poseOlmo(1, { prepara: true }).alas[0]).toBeGreaterThan(0.05);
+  });
+});
+
+describe('las poses de Olmo (1.156)', () => {
+  it('las 22 de su hoja, recortadas en lienzos iguales', () => {
+    expect(POSES_OLMO).toHaveLength(22);
+    expect(new Set(POSES_OLMO).size).toBe(22);
+    for (const p of POSES_OLMO) {
+      const archivo = join('public', poseOlmoUrl(p));
+      expect(existsSync(archivo)).toBe(true);
+      // Cabecera de WebP (VP8X: el ancho y el alto, menos uno, en 24 bits)
+      const b = readFileSync(archivo);
+      expect(b.toString('ascii', 0, 4)).toBe('RIFF');
+      expect(b.toString('ascii', 12, 16)).toBe('VP8X');
+      expect(b.readUIntLE(24, 3) + 1).toBe(LIENZO_OLMO.w);
+      expect(b.readUIntLE(27, 3) + 1).toBe(LIENZO_OLMO.h);
+    }
+  });
+
+  it('cada momento tiene una pose de verdad, y lo que no existe es la de siempre', () => {
+    for (const p of Object.values(MOMENTO_OLMO)) expect(POSES_OLMO).toContain(p);
+    expect(poseDeOlmo('no-existe')).toBe('libro');
+    expect(poseDeOlmo('normal')).toBe('libro');
+    expect(poseDeOlmo('contento')).toBe('cafe');
+    expect(poseDeOlmo('duerme')).toBe('duerme');
+    expect(anfitrion).toBeTypeOf('function');
+  });
+
+  it('la guía: saluda al empezar, acompaña y celebra al final', () => {
+    expect(poseOlmoDelPaso(0, 5)).toBe('saluda');
+    expect(poseOlmoDelPaso(4, 5)).toBe('celebra');
+    expect(['camina', 'libro']).toContain(poseOlmoDelPaso(2, 5));
+    expect(poseOlmoDelPaso(2, 5, 'contento')).toBe('carino');
+  });
+
+  it('en la franja: lee y se duerme sin tocar nada; con cada frase, su gesto', () => {
+    expect(poseOlmoEnReposo(0)).toBe('libro');
+    expect(poseOlmoEnReposo(REPOSO_OLMO.lee)).toBe('lee');
+    expect(poseOlmoEnReposo(REPOSO_OLMO.duerme)).toBe('duerme');
+    for (let k = 0; k < FRASES_OLMO.length; k += 1) expect(POSES_OLMO).toContain(poseOlmoAlHablar(k));
   });
 });
