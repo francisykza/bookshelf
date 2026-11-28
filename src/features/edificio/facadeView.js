@@ -5,7 +5,7 @@ import { DEFAULT_AVATAR, facingOf, validateAvatar } from './actor';
 import { FACADE_W, puertasDe, renderFacade } from './facade';
 import { misticoOf, misticoSprite } from './misticos';
 import { ROOM_SCALE, renderActorWalk } from './render';
-import { cartelDelBajo, placaHotel, placaVivienda } from './placas';
+import { adornarTelefonillo, cartelDelBajo, placaHotel, placaVivienda } from './placas';
 
 const pct = (v) => `${(v * 100).toFixed(3)}%`;
 const ZOOM = 3.4;
@@ -380,6 +380,8 @@ export function mountFacade(container, { flats, plantas = 3, onOpenShop = null, 
     el.type = 'button';
     el.className = `ed-window ed-telefonillo${telefonilloNuevo ? ' is-nuevo' : ''}`;
     el.setAttribute('aria-label', 'El telefonillo del portal: llamar a tus vecinos y dar o usar una llave de tu edificio');
+    // 1.163: su luz ámbar y su placa de latón, para que se vea que se toca (placas.js)
+    adornarTelefonillo(el);
     // Más grande que la placa, para el dedo
     box(el, { left: telefonillo.left - telefonillo.width * 0.6, top: telefonillo.top - telefonillo.height * 0.2, width: telefonillo.width * 2.2, height: telefonillo.height * 1.4 });
     el.addEventListener('click', () => {

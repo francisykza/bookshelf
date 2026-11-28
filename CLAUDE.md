@@ -420,6 +420,10 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       como está la app ahora mismo, incluido avatares»; **el piso de un vecino**, «hay demasiados menús que afean la experiencia.
       Querría que se viese su piso y que estuviesen las opciones bien integradas y orgánicas de dejar un regalo y un post it»; y
       **el telefonillo debería tener un indicador visual de que es clicable**. Plan y propuesta con capturas antes de rediseñar.
+      **Los dos fallos, arreglados y publicados en la 1.162.2** (§162.6). **Plan aprobado en el orden propuesto** (Francisco,
+      28-11-2026, «Sí, en ese orden»; `docs/qa/comunidad-visita.md`): 1) el telefonillo con su luz ámbar y su placa de latón,
+      2) la visita con la habitación protagonista y el regalo y el post-it en la escena, 3) Comunidad al día con el retrato de
+      píxel del personaje como avatar. Por bloques, con evidencias entre uno y otro.
     - **Después, borrar la versión antigua de la app** (Francisco, 26-11-2026: «quiero que se borre la versión antigua de la
       aplicación porque sigue saliendo cuando la gente se mete en la web para instalar la app»). Antes de borrar nada,
       investigar qué sale exactamente y enseñarle qué se quitaría para que lo confirme; sin borrar datos de usuarios.

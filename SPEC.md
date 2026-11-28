@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.162.2 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.163.0 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -9145,3 +9145,22 @@ pantalla marrón. Plan de lo demás del encargo en `docs/qa/comunidad-visita.md`
   recupera sin aviso y vuelve a dibujar; si no lo recupera, el aviso a los pocos segundos; Comunidad con la descarga retrasada
   enseña «Abriendo la comunidad…» y nunca «Abriendo tu piso…». Unitarias `src/ui/__tests__/versionNueva.test.js` (8).
   Emulación: no se ha probado en su iPhone.
+
+## 163. El telefonillo, que se vea que se toca (1.163.0)
+
+Francisco, 28-11-2026: «el telefonillo debería tener un indicador visual de que es clicable». Bloque 1 del plan de
+`docs/qa/comunidad-visita.md` (aprobado «Sí, en ese orden»). Hasta ahora era una plaquita de latón junto al portal, sin nada
+que dijera que se toca.
+
+- **Su luz**: un cuadrado de píxel ámbar con su filo oscuro, encendido sobre la rejilla del telefonillo. Respira despacio
+  (sin apagarse nunca) y, mientras no lo has abierto nunca en este dispositivo (`is-nuevo`, la marca de la 1.151), parpadea
+  como una llamada; sustituye al marco que parpadeaba alrededor. Con movimiento reducido, quieta. Sin «!»: esas son para
+  avisos de verdad.
+- **Su plaquita**: latón claro con el contorno de nogal de las placas de la fachada (§124) y solo el auricular de píxel, en la
+  pared al pie del telefonillo. Con «Telefonillo» escrito, en la acera, Francisco la vio y dijo que «ocupa demasiado»; el
+  nombre lo dice la etiqueta accesible del botón. Es parte del botón: tocarla abre el telefonillo. Se mueve con la vista.
+- Código: `adornarTelefonillo()` en `src/features/edificio/placas.js`, que usan la calle 3D (`calleView.js`) y la fachada 2D
+  (`facadeView.js`); estilos en `placas.css`.
+- Comprobación: e2e `e2e-community/v1163-telefonillo-se-toca.spec.js` (Chromium 360 y 390, WebKit 390): luz y plaquita visibles
+  (solo el auricular, menos de 40 px de ancho), entera en pantalla y sin tapar la del hotel, la luz llama la primera vez y respira después, y tocar la placa abre
+  el telefonillo. Siguen pasando `v1151-telefonillo` y `v1154-libo-amigos`. Emulación.

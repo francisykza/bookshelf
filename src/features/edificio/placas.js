@@ -100,6 +100,33 @@ export function cartelDelBajo(estado = '') {
   return rotuloCafe(estado);
 }
 
+// 1.163 · El auricular del telefonillo: la pieza del oído arriba a la izquierda, el mango en curva y la del habla abajo
+const AURICULAR = [
+  [2, 1, 5, 3],
+  [3, 1, 3, 1, 'luz'],
+  [1, 3, 3, 5],
+  [2, 8, 3, 2],
+  [3, 10, 4, 2],
+  [6, 11, 3, 2],
+  [9, 11, 5, 3],
+  [10, 11, 3, 1, 'luz'],
+];
+
+/**
+ * 1.163 · Lo que dice que el telefonillo se toca (Francisco, 28-11-2026: «debería tener un indicador visual de que es
+ * clicable»): su lucecita ámbar, encendida sobre la rejilla, que respira despacio (parpadea mientras no lo has abierto
+ * nunca en este dispositivo) y, debajo, en la pared, una plaquita de latón con el auricular (Francisco, al verla con
+ * «Telefonillo» escrito: «ocupa demasiado»; el nombre va en la etiqueta accesible del botón).
+ * Lo usan la calle 3D (calleView.js) y la fachada 2D (facadeView.js); los estilos, en placas.css.
+ */
+export function adornarTelefonillo(boton) {
+  const luz = span('ed-telefonillo__luz');
+  luz.setAttribute('aria-hidden', 'true');
+  const placa = span('ed-window__plate ed-placa ed-placa--telefonillo');
+  placa.append(icono('auricular', AURICULAR));
+  boton.append(luz, placa);
+}
+
 /** La placa direccional del Gran Hotel: esmalte azul noche, flecha a la izquierda y campanilla. */
 export function placaHotel(texto = 'Al Gran Hotel') {
   const placa = span('ed-window__plate ed-placa ed-placa--hotel');

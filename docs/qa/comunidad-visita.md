@@ -37,7 +37,8 @@ Encargo de Francisco del 28-11-2026, con dos capturas del iPhone de su compañer
 
 1. **El telefonillo, que se vea que se toca** (pequeño): su lucecita ámbar encendida que respira despacio y, al lado, una
    placa de latón «Telefonillo» con el mismo estilo de las placas de la fachada (1.124). Con movimiento reducido, la luz quieta.
-   Sin «!» (esas son para avisos de verdad).
+   Sin «!» (esas son para avisos de verdad). **Hecho en la 1.163.0** (SPEC §163): una plaquita de latón con solo el auricular, al pie
+   del telefonillo (con «Telefonillo» escrito «ocupa demasiado») y la luz parpadea mientras no lo has abierto nunca; después, respira.
 2. **La visita, la habitación protagonista**: fuera la tarjeta, «Grupo 1 de 3», «Ver de noche» (la hora la pone el reloj, como
    en tu piso) y el menú. Arriba, solo una franja fina: volver y el nombre con su avatar. Todo lo demás se toca en la escena:
    - **su estantería** → su biblioteca (lo que comparte);

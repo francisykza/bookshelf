@@ -7,7 +7,7 @@ import { EYE, SPOTS, mountCalle } from './calle3d';
 import { FACADE_PARTS, FLATS, puertasDe } from './facade';
 import { mountFacade } from './facadeView';
 import { olvidarSalida, vienesDeSalir } from './salida';
-import { cartelDelBajo, placaHotel, placaVivienda } from './placas';
+import { adornarTelefonillo, cartelDelBajo, placaHotel, placaVivienda } from './placas';
 
 const { BD } = FACADE_PARTS;
 const ZOOM = 3.2;
@@ -217,6 +217,8 @@ export function mountCalleView(container, opts) {
     el.type = 'button';
     el.className = `ed-window ed-telefonillo${telefonilloNuevo ? ' is-nuevo' : ''}`;
     el.setAttribute('aria-label', 'El telefonillo del portal: llamar a tus vecinos y dar o usar una llave de tu edificio');
+    // 1.163: su luz ámbar y su placa de latón, para que se vea que se toca (placas.js)
+    adornarTelefonillo(el);
     el.addEventListener('click', () => {
       if (busy) return;
       el.classList.remove('is-nuevo');

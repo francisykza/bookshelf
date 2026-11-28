@@ -253,6 +253,77 @@
   right: 5px;
 }
 
+/* ── 1.163 · El telefonillo, que se vea que se toca (placas.js, adornarTelefonillo): una plaquita de latón con el
+   auricular, en la pared al pie del telefonillo (con «Telefonillo» escrito, en la acera, «ocupa demasiado»: Francisco), y su
+   lucecita ámbar sobre la rejilla ── */
+.ed-facade .ed-window .ed-window__plate.ed-placa--telefonillo {
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: var(--pl-laton-luz);
+  box-shadow:
+    inset 0 0 0 1px var(--pl-laton),
+    var(--pl-marco);
+  transform: translateY(55%);
+}
+
+/* Sin remaches: en una plaquita tan pequeña tapaban el auricular */
+.ed-facade .ed-placa--telefonillo::before,
+.ed-facade .ed-placa--telefonillo::after {
+  content: none;
+}
+
+.ed-facade .ed-placa--telefonillo .ed-placa__icono--auricular {
+  fill: var(--pl-nogal);
+}
+
+.ed-facade .ed-placa--telefonillo .ed-placa__icono--auricular .luz {
+  fill: var(--pl-nogal-claro);
+}
+
+/* La luz: un cuadrado de píxel con su filo oscuro, encendido siempre; respira despacio (sin pasar nunca de apagada) y,
+   mientras no lo has abierto nunca en este dispositivo, parpadea como una llamada. Con movimiento reducido, quieta */
+.ed-facade .ed-telefonillo__luz {
+  position: absolute;
+  top: 17%;
+  left: calc(51% - 3px);
+  width: 6px;
+  height: 6px;
+  background: #ffc24a;
+  box-shadow:
+    0 0 0 1px #3a2412,
+    0 0 0 3px rgb(255 194 74 / 0.28);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ed-facade .ed-telefonillo__luz {
+    animation: ed-tel-respira 2.8s ease-in-out infinite;
+  }
+
+  .ed-facade .ed-telefonillo.is-nuevo .ed-telefonillo__luz {
+    animation: ed-tel-llama 1.2s steps(2, end) infinite;
+  }
+}
+
+@keyframes ed-tel-respira {
+  50% {
+    background: #c98a2c;
+    box-shadow:
+      0 0 0 1px #3a2412,
+      0 0 0 3px rgb(255 194 74 / 0);
+  }
+}
+
+@keyframes ed-tel-llama {
+  50% {
+    background: #7a5220;
+    box-shadow:
+      0 0 0 1px #3a2412,
+      0 0 0 3px rgb(255 194 74 / 0);
+  }
+}
+
 /* ── Pulsar: 1 px abajo y menos sombra, sin rebotes ── */
 .ed-facade .ed-window:active:not(.ed-window--free) .ed-window__plate.ed-placa {
   box-shadow:

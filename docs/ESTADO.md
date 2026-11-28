@@ -6,7 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.162.2, lo del iPhone de su compañera** (28-11-2026; Francisco: «Sí, publícala»; SPEC §162.6). La versión nueva se carga al
+- **Publicada en producción: 1.163.0, el telefonillo que se ve que se toca** (28-11-2026; Francisco: «Sí, publica y sigue»; SPEC §163; bloque 1 de
+  `docs/qa/comunidad-visita.md`, plan aprobado «Sí, en ese orden»). Luz ámbar sobre la rejilla (llama la primera vez y luego
+  respira; quieta con movimiento reducido) y una plaquita de latón con el auricular al pie del telefonillo (con «Telefonillo» escrito «ocupa demasiado», Francisco), que también lo abre. Sin migración.
+  Evidencias enviadas al chat. Siguiente: bloque 2, la visita a un vecino.
+- **Anterior: 1.162.2, lo del iPhone de su compañera** (28-11-2026; Francisco: «Sí, publícala»; SPEC §162.6). La versión nueva se carga al
   volver a la app (su iPhone seguía con una de antes de la 1.155: el café isométrico y la pantalla marrón en Comunidad), las
   escenas 3D esperan a que el móvil les devuelva el 3D y la comunidad tiene su pantalla de carga. Sin migración. Evidencias
   enviadas al chat. Su compañera tiene que cerrar del todo la app una vez para salir de la versión vieja. **Encargo nuevo con plan** en `docs/qa/comunidad-visita.md`
@@ -312,6 +316,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.163.0 | El telefonillo, que se vea que se toca (publicada) | §163 |
 | 1.162.2 | Lo del iPhone de su compañera: versión nueva al volver, el 3D que vuelve, carga de la comunidad (publicada) | §162.6 |
 | 1.162.1 | El pie de «Lo de hoy», siempre entero (publicada) | §162.5 |
 | 1.162.0 | Los Libocoins, bloque 3: Libo lo celebra | §162 |
@@ -655,6 +660,20 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-28 · 1.163.0, el telefonillo que se ve que se toca (Claude)
+
+- Francisco vio la plaquita pequeña y la aprobó: «Sí, publica y sigue». Commit, subida a la rama y a `main`.
+
+- Francisco aprobó el plan de `docs/qa/comunidad-visita.md` en el orden propuesto («Sí, en ese orden»): anotado en CLAUDE.md.
+- Bloque 1: `adornarTelefonillo()` en `placas.js` (calle 3D y fachada 2D). La luz ámbar sobre la rejilla parpadea mientras no
+  lo has abierto nunca y después respira; la placa de latón con el auricular y «Telefonillo», en la acera (encima de la puerta
+  parecía el rótulo del portal). Se quita el marco que parpadeaba de la 1.151.
+- Pruebas: nueva `v1163-telefonillo-se-toca` y, de nuevo, `v1151-telefonillo` y `v1154-libo-amigos` en Chromium 360 y 390 y
+  WebKit 390: 14 pasan (13 omitidas por tamaño). Build limpio; el lint, sin avisos en lo tocado. Emulación.
+- Francisco, al ver la placa con «Telefonillo» en la acera: «el cartel de telefonillo ocupa demasiado». Ahora es una plaquita
+  con solo el auricular, en la pared al pie del telefonillo (la prueba exige menos de 40 px de ancho y sin texto).
+- Lo siguiente, el bloque 2 (la visita a un vecino).
 
 ### 2026-11-28 · 1.162.2, lo del iPhone de su compañera (Claude)
 
