@@ -6,7 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.163.0, el telefonillo que se ve que se toca** (28-11-2026; Francisco: «Sí, publica y sigue»; SPEC §163; bloque 1 de
+- **Publicada en producción: 1.164.0, la visita a un vecino con la habitación protagonista** (28-11-2026; Francisco: «Sí, publica y sigue»; SPEC §164; bloque 2 de
+  `docs/qa/comunidad-visita.md`). Su piso de borde a borde con una franja fina (volver y su nombre); la estantería, el libro, el
+  tablón y la puerta se tocan en la escena; junto a la puerta, una caja de regalo y un post-it en blanco que abren una nota de
+  papel pequeña. Sin migración. Evidencias enviadas al chat. Siguiente: bloque 3, la Comunidad al día.
+- **Anterior: 1.163.0, el telefonillo que se ve que se toca** (28-11-2026; Francisco: «Sí, publica y sigue»; SPEC §163; bloque 1 de
   `docs/qa/comunidad-visita.md`, plan aprobado «Sí, en ese orden»). Luz ámbar sobre la rejilla (llama la primera vez y luego
   respira; quieta con movimiento reducido) y una plaquita de latón con el auricular al pie del telefonillo (con «Telefonillo» escrito «ocupa demasiado», Francisco), que también lo abre. Sin migración.
   Evidencias enviadas al chat. Siguiente: bloque 2, la visita a un vecino.
@@ -316,6 +320,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.164.0 | La visita a un vecino: la habitación protagonista, la caja de regalo y el post-it en la escena (publicada) | §164 |
 | 1.163.0 | El telefonillo, que se vea que se toca (publicada) | §163 |
 | 1.162.2 | Lo del iPhone de su compañera: versión nueva al volver, el 3D que vuelve, carga de la comunidad (publicada) | §162.6 |
 | 1.162.1 | El pie de «Lo de hoy», siempre entero (publicada) | §162.5 |
@@ -660,6 +665,24 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-28 · 1.164.0, la visita a un vecino, la habitación protagonista (Claude)
+
+- Francisco vio las evidencias y la aprobó: «Sí, publica y sigue». Commit, subida a la rama y a `main`.
+
+- Bloque 2 de `docs/qa/comunidad-visita.md`. `VisitaPiso.jsx` reescrito: fuera la tarjeta de datos, los grupos de baldas, «Ver
+  de noche», la cabecera y las pestañas; la estantería, el libro, el tablón y la puerta se tocan en la escena; caja de regalo y
+  post-it en blanco junto a la puerta (`doorAnchors()` en `interior3d.js`) que abren una nota de papel pequeña (Escape y Atrás
+  la cierran sin salir del piso). `EdificioPanel.jsx`, rama propia del piso de un vecino a pantalla completa con la ficha
+  `.ed-bar__quien`; `VecinoMesa.jsx` con `solo`; nuevo `regaloDiario.js`. Versión 1.164.0.
+- Pruebas: nueva `v1164-visita-vecino` (Chromium 360 y 390, WebKit 390) en verde; ajustadas `fase1-visitas`, `tablon`,
+  `visita-directa`, `v1155-sin-isometricas` y `v171-vecinos` (ayudante `visitaTocar.js`): a 390, visitas y tablón 20 en
+  verde. Fallan como antes (ya fallaban, ver más abajo): `v163-edificio` (chip «Plantas»), `v171` «en tu piso» y
+  `v188-habitacion-real` (3: el número de muebles en Decorar, «Cuenta y copias» y «Volver a la experiencia anterior», retirada
+  en la 1.157). Build limpio; lint sin avisos nuevos. Emulación, sin móviles reales.
+- **Por decidir con Francisco**: si su piso no tiene mesa, el libro que lee queda en el asiento del sillón (donde está la
+  cámara) y no se ve; antes lo contaba la tarjeta. Desde Comunidad sigue la cabecera de `VisitaLector` (bloque 3).
+- Lo siguiente, el bloque 3 (la Comunidad al día, con el retrato de píxel del personaje como avatar).
 
 ### 2026-11-28 · 1.163.0, el telefonillo que se ve que se toca (Claude)
 

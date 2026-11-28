@@ -13,24 +13,9 @@ import { loadVisit } from '../tablon/service';
 
 const firmaText = (id) => FIRMAS.find((f) => f.id === id)?.texto ?? '';
 const REGALABLES = new Set(['comun', 'poco-comun', 'raro']);
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS, lastGift, markGift } from './regaloDiario';
+
 const TODAY_GIFT = 'Ya has hecho tu regalo de hoy; mañana, otro.';
-// Cuándo regalaste por última vez desde este aparato (la cuenta de verdad la lleva el servidor)
-const giftKey = (uid) => `bookshelf:edificio:ultimo-regalo:${uid}`;
-const lastGift = (uid) => {
-  try {
-    return Number(localStorage.getItem(giftKey(uid))) || 0;
-  } catch {
-    return 0;
-  }
-};
-const markGift = (uid) => {
-  try {
-    localStorage.setItem(giftKey(uid), String(Date.now()));
-  } catch {
-    // Sin almacenamiento, el servidor sigue diciendo que no
-  }
-};
 
 /** Lo que puedes regalar: hasta «raro», sin sagas, y solo si tienes más de una copia y alguna sin colocar. */
 function giftable(inventory, room) {
@@ -43,9 +28,11 @@ function giftable(inventory, room) {
 /**
  * `vecino`: el del piso; `social`: su libro y sus «me gusta» (null sin la migración: entonces solo se mira);
  * `inventory` y `myRoom`: lo tuyo (para saber qué te sobra; sin inventario no hay pestaña de regalar). `myId`: tu usuario.
+ * `solo` (1.164): 'regalar' o 'libro' enseña solo eso, sin pestañas ni título (en la visita 3D, dentro de la nota de la caja de
+ * regalo o del post-it); `onHecho`, al regalar.
  */
-export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, onFirmar, onRegalar }) {
-  const [tab, setTab] = useState('libro');
+export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, onFirmar, onRegalar, solo = null, onHecho }) {
+  const [tab, setTab] = useState(solo ?? 'libro');
   const [gift, setGift] = useState(null);
   const [msg, setMsg] = useState('');
   const [givenAt, setGivenAt] = useState(() => lastGift(myId));
@@ -91,6 +78,7 @@ export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, onF
       remember();
       setGift(null);
       setMsg(`Le has regalado: ${c.nombre.toLowerCase()}. Le aparecerá en su balda. Mañana podrás regalar otro.`);
+      onHecho?.();
     } catch (e) {
       // El servidor dice que ya regalaste hoy (quizá desde otro aparato): se recuerda aquí también
       if (/regalo de hoy/.test(e.message)) remember();
@@ -156,8 +144,8 @@ export function VecinoMesa({ vecino, social, inventory, myRoom, myId, today, onF
   }
 
   return (
-    <section className="ed-sellos ed-desk" aria-label={`Para ${vecino.alias}`}>
-      {tabs.length > 1 ? (
+    <section className={`ed-sellos ed-desk${solo ? ' ed-desk--solo' : ''}`} aria-label={`Para ${vecino.alias}`}>
+      {solo ? null : tabs.length > 1 ? (
         <div className="ed-desk__tabs" role="tablist" aria-label="Qué hacer">
           {tabs.map((t) => (
             <button key={t.id} type="button" role="tab" className="ed-desk__tab" aria-selected={tab === t.id} onClick={() => go(t.id)}>

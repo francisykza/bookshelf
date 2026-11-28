@@ -53,7 +53,10 @@ test('desde Comunidad abre el piso de quien sigues y vuelve a Lectores', async (
   await page.getByRole('button', { name: 'Visitar el piso de Bruno' }).click();
   await expect(page.locator(`.ed-visita3d[data-visita="${BRUNO.id}"]`)).toBeVisible({ timeout: 20000 });
   await expect(page.locator('.visita-lector__quien')).toContainText('Piso de Bruno');
-  await expect(page.locator('.ed-visita3d__datos')).toContainText('Libro de Bruno', { timeout: 10000 });
+  // 1.164: sin la tarjeta de datos; lo que lee es el libro que deja en su sitio (en esta sala sin mesa, en el asiento del
+  // sillón, desde donde se mira: no se ve ni se toca). La nota de su mesa la prueban fase1-visitas y tablon.
+  await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
+  await expect.poll(() => page.evaluate(() => window.__pisoLab?.()?.debug().book?.id ?? null), { timeout: 10000 }).toBe(`visita-lectura:${BRUNO.id}`);
   await page.screenshot({ path: 'qa-report/visita-comunidad.png' });
   await page.getByRole('button', { name: 'Volver a lectores' }).click();
   await expect(page.getByRole('button', { name: 'Visitar el piso de Bruno' })).toBeVisible({ timeout: 8000 });
@@ -69,7 +72,9 @@ test('desde el edificio abre el piso de la vecina y vuelve al portal', async ({ 
   const puerta = page.getByRole('dialog', { name: 'El edificio del puerto' }).getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' });
   await puerta.click();
   await expect(page.locator(`.ed-visita3d[data-visita="${BEA.id}"]`)).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('.ed-title')).toContainText('Piso de Bea');
+  // 1.164: sin cabecera; arriba, su nombre y su puerta
+  await expect(page.locator('.ed-bar__quien')).toContainText('Bea');
+  await expect(page.locator('.ed-bar__quien')).toContainText('1.º A');
   await page.locator('.ed-bar__back').click();
   await expect(page.getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' })).toBeVisible({ timeout: 8000 });
   sinEscena(pedidas);

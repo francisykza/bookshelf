@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.163.0 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.164.0 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -9164,3 +9164,43 @@ que dijera que se toca.
 - Comprobación: e2e `e2e-community/v1163-telefonillo-se-toca.spec.js` (Chromium 360 y 390, WebKit 390): luz y plaquita visibles
   (solo el auricular, menos de 40 px de ancho), entera en pantalla y sin tapar la del hotel, la luz llama la primera vez y respira después, y tocar la placa abre
   el telefonillo. Siguen pasando `v1151-telefonillo` y `v1154-libo-amigos`. Emulación.
+
+## 164. La visita a un vecino, la habitación protagonista (1.164.0)
+
+Francisco, 28-11-2026: «hay demasiados menús que afean la experiencia. Querría que se viese su piso y que estuviesen las opciones
+bien integradas y organicas de dejar un regalo y un post it». Bloque 2 del plan de `docs/qa/comunidad-visita.md` (aprobado «Sí,
+en ese orden»).
+
+- **Su piso, de borde a borde**: al llamar a la puerta de un vecino desde el edificio, la habitación ocupa toda la pantalla (como
+  tu piso). Arriba, solo una franja fina sobre la escena: volver al portal y una ficha de papel con su retrato, su nombre y su
+  puerta (`.ed-bar__quien`). Fuera la cabecera con «Puedes mirar, pero no tocar nada», la tarjeta de datos («Está leyendo»,
+  «Biblioteca de…», «Grupo 1 de 3», «Ver toda la biblioteca»), el botón «Ver de noche», el cambio de vista y las pestañas
+  «Libro de visitas» / «Regalar».
+- **Todo se toca en la escena**: su **estantería** abre su biblioteca entera (lo que comparte; sin libros, una nota que lo dice);
+  el **libro que lee** abre una nota «En su mesa» con su título; el **tablón**, sus notas y dibujos clavados; la **puerta**, de
+  vuelta al portal. Sin grupos de baldas: la estantería enseña los primeros que caben y la biblioteca, todos.
+- **Junto a su puerta, una caja de regalo con lazo** (botón de 48 px con un dibujo de píxel propio): abre una nota de papel
+  pequeña con tus copias de sobra (mismas reglas: uno al día, hasta «raro», lo comprueba el servidor). Si ya le regalaste hoy,
+  la caja se ve cerrada con su etiqueta («Ya le has hecho tu regalo de hoy…; mañana, otro»). El día se guarda en
+  `src/features/edificio/regaloDiario.js`, que también usa `VecinoMesa`.
+- **En el marco de la puerta, un post-it en blanco**: la misma nota pequeña con el post-it de siempre y «O déjale un dibujo»
+  (mismo cupo diario). Sin la migración del tablón, el post-it abre su libro de visitas (las frases cerradas de antes).
+- Caja y post-it siguen a la puerta en 3D (`doorAnchors()` en `interior3d.js`, por `onFrame`), sin salirse de la pantalla ni
+  meterse bajo la franja; de cerca se esconden. Al llegar enseñan su nombre unos segundos y dan un saltito (quietos con
+  movimiento reducido).
+- **La nota**: papel con marco de píxel, abajo, como mucho el 58 % de la pantalla; la habitación se sigue viendo. Se cierra con
+  su X, con Escape o con Atrás del móvil (`useAtras`), sin sacarte del piso, y devuelve el foco al objeto que la abrió.
+- **La hora**: la de tu piso al entrar (`FACADE_HORA`, la tarde), no el reloj como decía el plan; ya no se cambia en la visita.
+- **Limitaciones**: si su piso no tiene mesa, el libro que lee se queda en el asiento del sillón, donde está la cámara, y no se ve
+  ni se toca (antes lo contaba la tarjeta de datos). Desde Comunidad («Visitar»), la cabecera sigue siendo la de `VisitaLector`
+  (la pone al día el bloque 3) y no hay caja de regalo (solo se regala a vecinos). El retrato de la franja es el de siempre
+  (`ReaderAvatar`) hasta el bloque 3.
+- Código: `VisitaPiso.jsx` (reescrito: objetos, nota, `CajaRegalo` y `PostItBlanco`), `EdificioPanel.jsx` (rama propia para
+  el piso de un vecino y la ficha de la franja), `VecinoMesa.jsx` (`solo="regalar"` o `"libro"`, sin pestañas), estilos al
+  final de `edificio.css`.
+- Comprobación: e2e `e2e-community/v1164-visita-vecino.spec.js` (Chromium 360 y 390, WebKit 390): sin menús, la escena por
+  encima del 90 % de la altura, caja y post-it en pantalla y de 44 px o más, regalar (el puf pasa de Ana a Bruno), la caja
+  cerrada con el foco, el post-it enviado, Escape cierra solo la nota, su estantería vacía lo dice y volver al portal.
+  Ajustadas a la visita nueva `fase1-visitas`, `tablon`, `visita-directa`, `v1155-sin-isometricas` y `v171-vecinos`, con
+  el ayudante `e2e-community/visitaTocar.js` (busca en pantalla un punto que dé en la estantería, el tablón o el libro). Siguen
+  fallando como antes `v163-edificio` (chip «Plantas»), `v171` «en tu piso» y `v188-habitacion-real` (3). Emulación.

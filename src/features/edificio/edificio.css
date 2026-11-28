@@ -3327,3 +3327,247 @@
   margin-top: 8px !important;
   font-style: italic;
 }
+
+/* ── 1.164 · La visita a un vecino, la habitación protagonista (Francisco, 28-11-2026: «hay demasiados menús que afean la
+   experiencia. Querría que se viese su piso…»; docs/qa/comunidad-visita.md, bloque 2). Su piso de borde a borde, como el café;
+   arriba, una franja fina con volver y su nombre; junto a la puerta, la caja de regalo y el post-it en blanco, que abren una
+   nota de papel pequeña. ── */
+.panel--edificio:has(.ed-visita) {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  height: min(94dvh, 980px);
+  overflow: hidden;
+  padding: 0;
+  background: #211a16;
+}
+@media (max-width: 699px) {
+  .panel--edificio:has(.ed-visita) {
+    height: 100dvh;
+  }
+}
+.panel--edificio:has(.ed-visita) .ed-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 6;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px 14px;
+  background: linear-gradient(rgb(33 26 22 / 0.72), rgb(33 26 22 / 0));
+  pointer-events: none;
+}
+.panel--edificio:has(.ed-visita) .ed-bar > * {
+  pointer-events: auto;
+}
+.panel--edificio:has(.ed-visita) .ed-bar__back {
+  flex: none;
+  color: #fbf3df;
+}
+/* Su nombre: una etiqueta de papel con su avatar y la puerta, sin acción */
+.ed-bar__quien {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0 0 0 auto;
+  padding: 0 8px 0 2px;
+  border: 5px solid transparent;
+  border-image: var(--px-paper) 6 fill / 5px stretch;
+  color: #2c1e14;
+  font: 600 0.92rem/1.2 'Lora', Georgia, serif;
+}
+.ed-bar__quien .reader-avatar,
+.ed-bar__quien > :first-child {
+  flex: none;
+  width: 30px;
+  height: 30px;
+}
+.ed-bar__quien b {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ed-bar__quien span {
+  flex: none;
+  color: #6b5440;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.ed-visita {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+.ed-visita > .ed-visita3d {
+  height: 100%;
+  min-height: 0;
+}
+.ed-visita > .ed-sin3d {
+  margin: 76px 12px 12px;
+}
+.ed-visita > .ed-sellos {
+  margin: 0 12px 12px;
+}
+
+/* La caja de regalo y el post-it: objetos de píxel pegados a la puerta (VisitaPiso.jsx los mueve con la escena) */
+.ed-visita3d__objetos {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ed-visita3d__obj {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.ed-visita3d__obj[hidden] {
+  display: none;
+}
+.ed-visita3d__obj svg {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  filter: drop-shadow(2px 2px 0 rgb(33 20 12 / 0.45));
+}
+.ed-visita3d__obj--postit svg {
+  width: 34px;
+  height: 34px;
+  transform: rotate(-5deg);
+}
+.ed-visita3d__obj:active svg {
+  translate: 0 1px;
+  filter: drop-shadow(1px 1px 0 rgb(33 20 12 / 0.45));
+}
+.ed-visita3d__obj:focus-visible {
+  outline: 3px solid #f3e4bd;
+  outline-offset: 0;
+}
+/* Su nombre asoma al llegar (y con el foco del teclado); después, solo el objeto */
+.ed-visita3d__etiqueta {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 50%;
+  padding: 2px 6px;
+  border: 4px solid transparent;
+  border-image: var(--px-paper) 6 fill / 4px stretch;
+  color: #2c1e14;
+  font: 600 0.74rem/1.1 'Lora', Georgia, serif;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+.is-llegando .ed-visita3d__etiqueta,
+.ed-visita3d__obj:focus-visible .ed-visita3d__etiqueta {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Al llegar, un saltito de cada uno para que se vean (una vez) */
+  .is-llegando .ed-visita3d__obj svg {
+    animation: ed-visita-salto 0.7s steps(4, end) 0.4s 2;
+  }
+}
+@keyframes ed-visita-salto {
+  50% {
+    translate: 0 -4px;
+  }
+}
+
+/* La nota de papel: abajo, pequeña, sobre la habitación (nunca la tapa entera) */
+.ed-visita3d__nota {
+  position: absolute;
+  right: 8px;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  left: 8px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  max-width: 460px;
+  max-height: 58%;
+  margin: 0 auto;
+  border: 6px solid transparent;
+  border-image: var(--px-paper) 6 fill / 6px stretch;
+  color: #2c1e14;
+  font: 400 0.92rem/1.4 'Lora', Georgia, serif;
+  image-rendering: pixelated;
+}
+.ed-visita3d__nota > header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 0 8px;
+}
+.ed-visita3d__nota h3 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: 400 13px/16px var(--pp-title, 'Lora', serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ed-visita3d__cerrar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #4a3222;
+  cursor: pointer;
+}
+.ed-visita3d__cerrar svg {
+  width: 16px;
+  height: 16px;
+}
+.ed-visita3d__cerrar:focus-visible,
+.ed-visita3d__cambiar:focus-visible {
+  outline: 3px solid #b98b2f;
+  outline-offset: -3px;
+}
+.ed-visita3d__notacuerpo {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 8px 8px;
+}
+.ed-visita3d__texto {
+  margin: 0 0 4px;
+}
+.ed-visita3d__cambiar {
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: #5c4026;
+  font: italic 600 0.9rem/1.2 'Lora', Georgia, serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+/* Dentro de la nota, la mesa del vecino sin su propio marco */
+.ed-visita3d__nota .ed-desk--solo {
+  padding: 0;
+  border: 0;
+  border-image: none;
+  background: none;
+}

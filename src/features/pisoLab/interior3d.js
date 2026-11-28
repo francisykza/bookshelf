@@ -2119,6 +2119,28 @@ export async function mountInterior(container, { room, piso, ventanas, book = nu
       if (fn) frameHooks.set(clave, fn);
       else frameHooks.delete(clave);
     },
+    /**
+     * 1.164 · En la visita a un vecino, dónde van el post-it en blanco (pegado en el marco de la puerta, junto al pomo) y la
+     * caja de regalo (en el suelo, al lado de la puerta), en px del contenedor. `delante`: si el punto está delante de la
+     * cámara (si no, la proyección no vale). Sin puerta en una pared, null.
+     */
+    doorAnchors() {
+      const door = room.items.find((i) => i.id === 'puerta-piso');
+      if (!door || (door.pared !== 'fondo' && door.pared !== 'izq')) return null;
+      const largo = door.pared === 'fondo' ? ROOM.w : ROOM.d;
+      aim();
+      camera.updateMatrixWorld();
+      const rect = container.getBoundingClientRect();
+      // `lx`: a lo largo de la pared desde el borde de la puerta (pixelDoor: hoja de 0,2 a 1,8, jamba hasta 1,92, pomo a 1,6)
+      const at = (lx, fondo, alto) => {
+        const p = door.pared === 'fondo' ? new Vector3(door.a + lx, alto, fondo) : new Vector3(fondo, alto, door.a + lx);
+        const q = p.project(camera);
+        return { x: ((q.x + 1) / 2) * rect.width, y: ((1 - q.y) / 2) * rect.height, delante: q.z < 1 };
+      };
+      // La caja, al lado del pomo si cabe; si la puerta está al final de la pared, al otro lado
+      const lado = door.a + 2.5 <= largo ? 2.45 : -0.45;
+      return { postit: at(1.86, 0.14, 1.95), regalo: at(lado, 0.55, 0.25), width: rect.width, height: rect.height, cerca: Boolean(zoom) };
+    },
     /** 1.135 · Dónde cae la esquina de arriba a la derecha del monitor (px dentro del contenedor): ahí va la «!» del almacén. */
     deskAnchor() {
       const pc = room.items.find((i) => i.id === 'ordenador');

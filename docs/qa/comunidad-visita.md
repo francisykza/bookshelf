@@ -48,7 +48,9 @@ Encargo de Francisco del 28-11-2026, con dos capturas del iPhone de su compañer
      las mismas reglas: uno al día, hasta «raro»);
    - **un post-it en blanco pegado en el marco de la puerta** → «Dejar un post-it» (o un dibujo; mismo cupo diario).
    Al tocarlos, una nota de papel pequeña, nunca una hoja que tape la habitación entera. Si ya regalaste hoy, la caja se ve
-   cerrada con su etiqueta «mañana, otro».
+   cerrada con su etiqueta «mañana, otro». **Hecho en la 1.164.0** (SPEC §164). La hora no la pone el reloj: es la de tu piso al
+   entrar (la tarde). Si su piso no tiene mesa, el libro que lee queda en el sillón, fuera de la vista; desde Comunidad sigue la
+   cabecera de antes hasta el bloque 3.
 3. **La Comunidad al día**: el mismo lenguaje que el resto de la app (papel y marcos de píxel como «Lo de hoy», la letra del
    puerto en los títulos, Libo de guía), las tres pestañas de siempre y sin perder ninguna función. **Avatares**: el retrato de
    píxel de su personaje (la cabeza del personaje que cada uno viste en su piso, con su ropa y colores), igual en Comunidad, en

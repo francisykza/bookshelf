@@ -2,6 +2,7 @@
 // Servidor simulado para la interfaz; los permisos reales están en tablon.rls.test.js sobre Postgres.
 import { expect, test } from '@playwright/test';
 import { createMockSupabase } from './mockSupabase';
+import { tocarEnVisita } from './visitaTocar';
 
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
 const BEA = { id: '22222222-2222-4222-8222-222222222222' };
@@ -367,7 +368,9 @@ test('D · de visita solo se mira la copia pública, el spoiler se revela y el p
   await page.getByRole('button', { name: 'Al edificio' }).click();
   await page.getByRole('dialog', { name: 'El edificio del puerto' }).getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
   await expect(page.locator(`.ed-visita3d[data-visita="${BEA.id}"]`)).toBeVisible({ timeout: 20000 });
-  await page.getByRole('button', { name: 'Tablón de Bea' }).click({ timeout: 15000 });
+  // 1.164: sin el botón «Tablón de Bea»: se toca su tablón en la habitación
+  await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
+  await tocarEnVisita(page, 'tablon');
   await expect(page.locator('.tb-map[data-mode="lectura"]')).toBeVisible();
   await expect(tarjeta(page, 2)).toContainText('Spoiler');
   await expect(tarjeta(page, 2)).not.toContainText('Final secreto');
@@ -408,7 +411,9 @@ test('E · quien visita ve un dibujo publicado y deja el suyo como forma, sin du
   await page.getByRole('button', { name: 'Al edificio' }).click();
   await page.getByRole('dialog', { name: 'El edificio del puerto' }).getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
   await expect(page.locator('.ed-visita3d[data-visita="' + BEA.id + '"]')).toBeVisible({ timeout: 20000 });
-  await page.getByRole('button', { name: 'Tablón de Bea' }).click({ timeout: 15000 });
+  // 1.164: sin el botón «Tablón de Bea»: se toca su tablón en la habitación
+  await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
+  await tocarEnVisita(page, 'tablon');
   await expect(tarjeta(page, 2).locator('.tb-card__dibujo')).toBeVisible();
   await page.waitForTimeout(700);
   await page.screenshot({ path: 'qa-report/tablon-dibujo-visita.png' });

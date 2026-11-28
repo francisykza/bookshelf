@@ -74,9 +74,9 @@ test('a un vecino se le visita directamente en 3D, sin la vista isométrica', as
   await expect(page.locator('.ep-canvas')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Entrar en 3D' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Ver en isométrica' })).toHaveCount(0);
-  // La etiqueta del piso no tapa la tarjeta de lo que está leyendo
-  const caja = (sel) => page.locator(sel).evaluate((el) => el.getBoundingClientRect().toJSON());
-  expect((await caja('.ed-visita3d__datos')).top).toBeGreaterThanOrEqual((await caja('.ed-inside .ed-head')).bottom);
+  // 1.164: sin tarjeta de datos ni cabecera; arriba, solo su nombre
+  await expect(page.locator('.ed-visita3d__datos')).toHaveCount(0);
+  await expect(page.locator('.ed-bar__quien')).toContainText('Bea');
   await page.waitForTimeout(600);
   await shot(page, info, '01-visita-3d');
   expect(errores).toEqual([]);
@@ -87,9 +87,9 @@ test('sin 3D, el piso de un vecino no se dibuja y lo dice', async ({ page }, inf
   await portal.getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
   await expect(page.locator('.ed-sin3d')).toContainText('No puede dibujar el piso de Bea', { timeout: 15000 });
   await expect(page.locator('.ep-canvas')).toHaveCount(0);
-  // La etiqueta del piso, que flota arriba, no tapa el aviso
+  // La franja de arriba (volver y su nombre; 1.164, sin cabecera) no tapa el aviso
   const caja = (sel) => page.locator(sel).evaluate((el) => el.getBoundingClientRect().toJSON());
-  const [cabeza, aviso] = [await caja('.ed-inside .ed-head'), await caja('.ed-sin3d')];
+  const [cabeza, aviso] = [await caja('.ed-bar'), await caja('.ed-sin3d')];
   expect(aviso.top).toBeGreaterThanOrEqual(cabeza.bottom);
   await shot(page, info, '02-visita-sin-3d');
 });

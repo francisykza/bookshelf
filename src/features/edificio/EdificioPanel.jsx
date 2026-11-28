@@ -588,6 +588,27 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
     body = <p className="ed-note">Este piso ya no está en tu edificio.</p>;
   } else if (open && mine && choosing) {
     body = <StarterPicker onPick={pickStart} onLater={() => setChoosing(false)} />;
+  } else if (open && !mine) {
+    // 1.164 (Francisco, 28-11-2026: «hay demasiados menús que afean la experiencia»; docs/qa/comunidad-visita.md, bloque 2): su
+    // piso a pantalla completa, sin cabecera ni mesa debajo. La franja de arriba lleva volver y su nombre (ed-bar); el regalo y
+    // el post-it están en la habitación, junto a la puerta (VisitaPiso.jsx). Sin 3D, el aviso y la mesa de siempre debajo
+    const regalo = { social: social ?? null, inventory, myRoom: me?.room ?? null, myId: community.userId, today: day, onFirmar, onRegalar };
+    body = (
+      <div className="ed-visita">
+        {!open.room ? (
+          <p className="ed-note">Aún no ha decorado su piso.</p>
+        ) : visitaSin3d ? (
+          <>
+            <SinTresD sala={`el piso de ${open.alias ?? 'tu vecino'}`} />
+            <VecinoMesa vecino={open} social={social ?? null} inventory={inventory} myRoom={me?.room ?? null} myId={community.userId} today={day} onFirmar={onFirmar} onRegalar={onRegalar} />
+          </>
+        ) : (
+          <Suspense fallback={<PantallaCarga mensaje={`Entrando en el piso de ${open.alias ?? 'tu vecino'}…`} />}>
+            <VisitaPiso key={open.user_id} vecino={open} edificio={data.edificio} onVolver={onClose} onSin3d={() => setVisitaSin3d(true)} regalo={regalo} />
+          </Suspense>
+        )}
+      </div>
+    );
   } else if (open) {
     const label = mine ? `Tu piso, ${doorLabel(open.puerta)}` : `Piso de ${open.alias}, ${doorLabel(open.puerta)}`;
     body = (
@@ -602,16 +623,8 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
             {!(mine && inside) && <p className="ed-sub">{mine ? 'Tus vecinos lo ven como lo dejes.' : 'Puedes mirar, pero no tocar nada.'}</p>}
           </div>
         </div>
-        {/* 1.155 (Francisco: «borra las vistas isométricas»): a un vecino se le visita en 3D, sin la vista isométrica */}
-        {!mine && open.room ? (
-          visitaSin3d ? (
-            <SinTresD sala={`el piso de ${open.alias ?? 'tu vecino'}`} />
-          ) : (
-            <Suspense fallback={<PantallaCarga mensaje={`Entrando en el piso de ${open.alias ?? 'tu vecino'}…`} />}>
-              <VisitaPiso key={open.user_id} vecino={open} edificio={data.edificio} onVolver={onClose} onSin3d={() => setVisitaSin3d(true)} />
-            </Suspense>
-          )
-        ) : open.room ? (
+        {/* Tu piso; a un vecino se le visita en 3D (1.155) y, desde la 1.164, en su propia rama de arriba */}
+        {open.room ? (
           <PisoView key={open.user_id} room={open.room} editable={mine} label={label} soundOn={soundOn} inside={inside} decorate={mine && justPicked} inventory={mine ? inventory : null} avatar={mine ? (open.personaje ?? localAvatar(community.userId)) : open.personaje} companion={open.companero ?? null} onCompanionChange={mine ? onMyCompanion : null} prendas={mine ? (armario?.prendas ?? null) : null} missions={mine ? missions : null} notice={mine ? notice : null} likes={likes} placeId={mine ? toPlace : null} placeAcabado={mine ? toPlaceAcabado : null} onPlaced={() => setToPlace(null)} onLike={mine ? null : onLike} onChange={mine ? onMyChange : null} onAvatarChange={mine ? onMyAvatar : null} onEvent={mine ? onMyEvent : null} onDressing={mine ? setDressing : null} closeDressing={closeDressing} />
         ) : (
           <p className="ed-note">Aún no ha decorado su piso.</p>
@@ -621,7 +634,6 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
             {saving}
           </p>
         )}
-        {!mine && <VecinoMesa vecino={open} social={social ?? null} inventory={inventory} myRoom={me?.room ?? null} myId={community.userId} today={day} onFirmar={onFirmar} onRegalar={onRegalar} />}
       </div>
     );
   } else {
@@ -717,7 +729,15 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
             Elige tus {START_PICKS} muebles
           </button>
         )}
-        {pisoId && open && !choosing && !dressing && (
+        {/* 1.164: en casa de un vecino, solo su nombre (su piso siempre se visita por dentro) */}
+        {pisoId && open && !mine && !inHotel && !inShop && (
+          <p className="ed-bar__quien">
+            <ReaderAvatar avatarId={open.avatar_id} alias={open.alias ?? ''} size="list" decorative />
+            <b>{open.alias ?? 'Tu vecino'}</b>
+            <span>{doorLabel(open.puerta)}</span>
+          </p>
+        )}
+        {pisoId && open && mine && !choosing && !dressing && (
           <button
             type="button"
             className="px-btn px-btn--icon ed-bar__view"

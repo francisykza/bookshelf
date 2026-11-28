@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMockSupabase } from './mockSupabase';
+import { tocarEnVisita } from './visitaTocar';
 
 const DIR = join('qa-report', 'fase1', 'visitas');
 const ANA = { id: '11111111-1111-4111-8111-111111111111', email: 'ana@ejemplo.test' };
@@ -37,10 +38,11 @@ async function aVisita(page) {
   const portal = page.getByRole('dialog', { name: 'El edificio del puerto' });
   await portal.getByRole('button', { name: 'Llamar y entrar en el piso de Bea, 1.º A' }).click();
 }
-// 1.155: a un vecino se le visita directamente en 3D (ya no hay vista isométrica ni «Entrar en 3D»)
+// 1.155: a un vecino se le visita directamente en 3D (ya no hay vista isométrica ni «Entrar en 3D»); 1.164: sin la tarjeta de
+// datos, arriba solo su nombre
 async function entrar3d(page) {
   await ready(page);
-  await expect(page.locator('.ed-visita3d__datos')).toContainText('Está leyendo', { timeout: 10000 });
+  await expect(page.locator('.ed-bar__quien')).toContainText('Bea', { timeout: 10000 });
 }
 async function contexto(browser, extra = {}) {
   const context = await browser.newContext({ baseURL: 'http://localhost:5196', locale: 'es-ES', timezoneId: 'Europe/Madrid', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, ...extra });
@@ -70,15 +72,12 @@ test('A visita a B: todo es de B, recorre sus libros, vuelve a A y B no cambia',
   const g1 = (await debug(page)).shelf.books;
   expect(g1.every((id) => String(id).startsWith(`${BEA.id}:`))).toBe(true);
   expect(g1.length).toBeLessThanOrEqual(31);
-  const datos = page.locator('.ed-visita3d__datos');
-  await expect(datos).toContainText('Lectura actual de Bea');
-  await expect(datos).toContainText('Biblioteca de Bea');
-  await expect(datos).toContainText('70 libros compartidos');
+  // 1.164: lo que lee, tocando el libro de su mesa; su biblioteca entera, tocando su estantería (sin grupos de baldas)
+  await tocarEnVisita(page, 'libro');
+  await expect(page.getByRole('dialog', { name: 'En su mesa' })).toContainText('Está leyendo «Lectura actual de Bea».');
   await page.screenshot({ path: join(DIR, `${info.project.name}-visita.png`) });
-  await page.getByRole('button', { name: 'Baldas siguientes' }).click();
-  await expect(datos).toContainText('Grupo 2 de 3');
-  await expect.poll(async () => (await debug(page)).shelf.books.some((id) => !g1.includes(id)), { timeout: 8000 }).toBe(true);
-  await page.getByRole('button', { name: 'Ver toda la biblioteca' }).click();
+  await page.getByRole('button', { name: 'Cerrar la nota' }).click();
+  await tocarEnVisita(page, 'estanteria');
   await expect(page.getByRole('heading', { name: 'Biblioteca de Bea' })).toBeVisible();
   // Solo lectura: lo que no se sabe de otra persona no se ofrece, y nada se puede cambiar
   await expect(page.locator('.plab-library')).toBeVisible();
@@ -113,7 +112,7 @@ test('A visita a B: todo es de B, recorre sus libros, vuelve a A y B no cambia',
   await expect(page.getByRole('dialog', { name: 'El edificio del puerto' }).getByText(/Registrar lectura/)).toHaveCount(0);
   // Recargar conserva dónde estabas (el piso visitado); al salir, otra vez A, sin rastro de B
   await page.reload();
-  await expect(page.getByText('Piso de Bea · 1.º A').first()).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('.ed-bar__quien')).toContainText('Bea', { timeout: 20000 });
   await page.getByRole('button', { name: 'Volver al portal' }).click();
   await page.getByRole('button', { name: 'Cerrar el edificio' }).click();
   await ready(page);
@@ -143,7 +142,6 @@ test('sin lectura compartida se dice; no se usa la de quien visita', async ({ br
   await ready(page);
   await aVisita(page);
   await entrar3d(page);
-  await expect(page.locator('.ed-visita3d__datos')).toContainText('No comparte su lectura actual.');
   expect((await debug(page)).book ?? null).toBeNull();
   await context.close();
 });
@@ -169,11 +167,6 @@ test('la misma pared en cada vista y a la misma hora', async ({ browser }, info)
   await entrar3d(page);
   await page.waitForTimeout(1200);
   await page.screenshot({ path: join(DIR, 'pared-visita-3d-tarde.png') });
-  await page.getByRole('button', { name: 'Ver de noche' }).click();
-  await page.waitForTimeout(1000);
-  await page.getByRole('button', { name: 'Ver de día' }).click();
-  await page.waitForTimeout(1200);
-  await page.screenshot({ path: join(DIR, 'pared-visita-3d-dia.png') });
   await context.close();
 });
 
@@ -190,7 +183,7 @@ test('recorrido grabado: la biblioteca de Bea en solo lectura', async ({ browser
   await aVisita(page);
   await entrar3d(page);
   await page.waitForTimeout(1200);
-  await page.getByRole('button', { name: 'Ver toda la biblioteca' }).click();
+  await tocarEnVisita(page, 'estanteria');
   await page.waitForTimeout(1400);
   await expect(page.locator('.plab-library')).toContainText('71 libros');
   await page.getByRole('button', { name: 'Ver lista' }).click();

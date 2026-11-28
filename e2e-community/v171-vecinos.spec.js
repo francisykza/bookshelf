@@ -54,17 +54,16 @@ test('en el piso de un vecino: libro de visitas y regalo', async ({ page }, info
   const panel = await toPortal(page, mock, ANA);
   await panel.getByRole('button', { name: 'Llamar y entrar en el piso de Bruno, 1.º A' }).click({ timeout: 15000 });
   const bruno = page.getByRole('dialog', { name: 'Piso de Bruno' });
-  const tabs = bruno.getByRole('tablist', { name: 'Qué hacer' });
-  await expect(tabs.getByRole('tab')).toHaveText(['Libro de visitas', 'Regalar']);
-  // 1.78: ya no hay sellos
-  await expect(bruno.getByRole('button', { name: 'Menuda estantería' })).toHaveCount(0);
-
   // 1.155: la visita es en 3D, sin los «me gusta» por mueble de la vista isométrica
   await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await expect(bruno.getByRole('button', { name: /^Me gusta/ })).toHaveCount(0);
+  // 1.164: sin pestañas; el libro de visitas (sin la migración del tablón) y el regalo están junto a la puerta
+  await expect(bruno.getByRole('tablist')).toHaveCount(0);
 
   // Libro de visitas: una frase cerrada
-  await tabs.getByRole('tab', { name: 'Libro de visitas' }).click();
+  await bruno.getByRole('button', { name: 'Firmar el libro de visitas de Bruno' }).click();
+  // 1.78: ya no hay sellos
+  await expect(bruno.getByRole('button', { name: 'Menuda estantería' })).toHaveCount(0);
   await bruno.getByRole('button', { name: 'Vuelvo pronto' }).click();
   await expect(bruno.getByText('Has firmado su libro: «Vuelvo pronto».')).toBeVisible();
   await expect(bruno.getByRole('button', { name: 'Vuelvo pronto' })).toHaveAttribute('aria-pressed', 'true');
@@ -72,7 +71,8 @@ test('en el piso de un vecino: libro de visitas y regalo', async ({ page }, info
   await shot(page, info, 'v171-libro');
 
   // Regalar: solo lo que te sobra (los pufs; del gato y del sillón tienes uno, y lo místico no se regala); se elige y se confirma
-  await tabs.getByRole('tab', { name: 'Regalar' }).click();
+  await bruno.getByRole('button', { name: 'Cerrar la nota' }).click();
+  await bruno.getByRole('button', { name: 'Dejarle un regalo a Bruno' }).click();
   await expect(bruno.getByRole('group', { name: 'Elige qué regalarle' }).getByRole('button')).toHaveText(['Puf×2']);
   await bruno.getByRole('button', { name: 'Puf (tienes 2 libres)' }).click();
   await shot(page, info, 'v171-regalar');
@@ -81,9 +81,9 @@ test('en el piso de un vecino: libro de visitas y regalo', async ({ page }, info
   await expect(bruno.getByRole('group', { name: 'Elige qué regalarle' })).toHaveCount(0);
   expect(mock.db.piso_inventario[BRUNO.id].puf).toBe(1);
   expect(mock.db.piso_inventario[ANA.id].puf).toBe(1);
-  // Uno al día: al volver a la pestaña lo dice, sin nada que elegir
-  await tabs.getByRole('tab', { name: 'Libro de visitas' }).click();
-  await tabs.getByRole('tab', { name: 'Regalar' }).click();
+  // Uno al día: la caja se cierra y, al volver a abrirla, lo dice, sin nada que elegir
+  await bruno.getByRole('button', { name: 'Cerrar la nota' }).click();
+  await bruno.getByRole('button', { name: /Ya le has hecho tu regalo de hoy a Bruno/ }).click();
   await expect(bruno.getByText('Ya has hecho tu regalo de hoy; mañana, otro.')).toBeVisible();
   await shot(page, info, 'v178-regalo-hecho');
   expect(errors).toEqual([]);
@@ -140,5 +140,7 @@ test('sin la migración de vecinos: el piso del vecino solo se mira', async ({ p
   await expect(bruno.locator('.ed-sellos')).toHaveCount(0);
   await expect(bruno.getByRole('tablist', { name: 'Qué hacer' })).toHaveCount(0);
   await expect(bruno.getByRole('button', { name: /^Me gusta/ })).toHaveCount(0);
+  // 1.164: ni caja de regalo ni post-it
+  await expect(bruno.locator('.ed-visita3d__obj')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
