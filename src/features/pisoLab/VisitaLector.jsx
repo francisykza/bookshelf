@@ -5,7 +5,8 @@ import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { ReaderAvatar } from '../../components/avatars/ReaderAvatar';
 import { PanelShell } from '../../components/panels/PanelShell';
-import { loadPisoVisita } from '../edificio/service';
+import { doorLabel, loadPisoVisita } from '../edificio/service';
+import { installPixelVars } from '../edificio/pixelUi';
 import '../edificio/edificio.css';
 import { useCommunity } from '../social/hooks/useCommunity';
 import { PantallaCarga } from '../../ui/PantallaCarga';
@@ -31,6 +32,8 @@ export default function VisitaLector({ userId, from = null, onBack, onProfile })
     };
   }, [userId]);
   useEffect(() => cargar(), [cargar]);
+  // El papel de píxel de la ficha (--px-paper), como en el edificio
+  useEffect(() => installPixelVars(), []);
   const { estado, vecino } = carga;
   const alias = vecino?.alias ?? '';
   const cargando = alias ? `Entrando en el piso de ${alias}…` : 'Abriendo su piso…';
@@ -38,15 +41,18 @@ export default function VisitaLector({ userId, from = null, onBack, onProfile })
   return (
     <PanelShell onClose={onBack} label={alias ? `Piso de ${alias}` : 'Visita a un piso'} variant="visit">
       <div className="visita-lector" data-estado={estado}>
+        {/* 1.165.1: la misma franja fina que en el edificio (1.164): volver y una ficha de papel con su retrato, su nombre y su
+            puerta; aquí la ficha lleva a su perfil */}
         <header className="visita-lector__bar">
-          <button type="button" onClick={onBack}>
+          <button type="button" className="ed-bar__back" onClick={onBack}>
             <ArrowLeft aria-hidden="true" />
             {TEXTO_VOLVER[from] ?? 'Volver'}
           </button>
           {vecino && (
-            <button type="button" className="visita-lector__quien" onClick={onProfile} aria-label={`Ver el perfil de ${alias}`}>
+            <button type="button" className="ed-bar__quien visita-lector__quien" onClick={onProfile} aria-label={`Ver el perfil de ${alias}`}>
               <ReaderAvatar userId={vecino.user_id} avatarId={vecino.avatar_id} alias={alias} size="list" decorative />
-              <b>Piso de {alias}</b>
+              <b>{alias}</b>
+              {vecino.puerta ? <span>{doorLabel(vecino.puerta)}</span> : null}
               <ChevronRight aria-hidden="true" />
             </button>
           )}

@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.165.0 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.165.1 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -9242,3 +9242,19 @@ incluido avatares». Bloque 3 de `docs/qa/comunidad-visita.md`. Vista la maqueta
   Carla y el tuyo, Libo para Dani, la tarjeta de opinión, el perfil de Bruno, Salón, Clubes y tu perfil sin selector; sin la
   migración, los de antes y el selector. `entrega2` en verde en los tres (el botón «Guardar perfil» a 44 px). Fallan como antes
   `v161` (5) y `v162` (2), que buscan la visita al rincón retirada en la 1.155. Emulación, sin móviles reales.
+
+### 165.1. La visita desde Comunidad, con la franja nueva (1.165.1)
+
+Francisco, 28-11-2026: «Pon la cabecera nueva en la visita desde Comunidad».
+
+- «Visitar» desde Comunidad (`VisitaLector.jsx`) lleva la misma franja fina que la visita desde el edificio (§164): encima de
+  la escena, con el mismo degradado, «Volver a lectores» (o al salón, o a Amigos) en letra clara sin caja y, a la derecha, la
+  ficha de papel (`.ed-bar__quien`) con el busto de su personaje, su nombre y su puerta. Aquí la ficha es un botón de 44 px con
+  una flecha pequeña que abre su perfil («Ver el perfil de …»), como antes. El piso empieza arriba del todo, como en el edificio.
+  Fuera la barra crema de antes con «Piso de …» en una caja.
+- Los avisos (sin piso, error) quedan por debajo de la franja, con sus botones crema de siempre.
+- De paso: el «Rincón de lector» (`ReaderProfile.jsx`) se encogía a su contenido (con poco texto, 236 px a 390); ahora tiene
+  el mismo ancho que el panel de la Comunidad.
+- Comprobación: `e2e-community/visita-directa.spec.js` (Chromium 360 y 390, WebKit 390; con vídeo): la ficha con «Bruno» y
+  «3.º A», el busto, 44 px, la franja de menos de 80 px sin caja en «Volver», la escena desde arriba, volver a Lectores y la
+  ficha abre su perfil. `v1165-comunidad` y `entrega2` siguen en verde (39 en total). Sin migración. Emulación.

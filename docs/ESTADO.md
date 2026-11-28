@@ -6,7 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.165.0, la Comunidad al día** (28-11-2026; Francisco: «Sí, así» a la maqueta y «Migración y publicar»; SPEC §165; bloque 3 de
+- **Publicada en producción: 1.165.1, la visita desde Comunidad con la franja nueva** (28-11-2026; Francisco: «Pon la cabecera
+  nueva en la visita desde Comunidad»; SPEC §165.1). Volver y la ficha de papel con su busto, su nombre y su puerta, encima de
+  la escena; la ficha abre su perfil. De paso, el rincón de lector ya no se encoge. Sin migración. Evidencias enviadas al chat; Francisco: «Sí, publícala».
+- **Anterior: 1.165.0, la Comunidad al día** (28-11-2026; Francisco: «Sí, así» a la maqueta y «Migración y publicar»; SPEC §165; bloque 3 de
   `docs/qa/comunidad-visita.md`). Sin el cuaderno de cuero: papel de píxel sobre madera, la letra del puerto y las tres
   pestañas de siempre; el avatar de cada lector es el busto de su personaje (Libo sin personaje). **Migración aplicada** el 28-11-2026:
   `20270102120000_comunidad_personajes.sql` (1.582 B, SHA-256 igual a git en el editor; Francisco pulsó «Run», «Success»; con la
@@ -325,6 +328,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.165.1 | La visita desde Comunidad con la franja fina del edificio (publicada) | §165.1 |
 | 1.165.0 | La Comunidad al día: papel de píxel, letra del puerto y el busto del personaje como avatar (publicada; migración aplicada) | §165 |
 | 1.164.0 | La visita a un vecino: la habitación protagonista, la caja de regalo y el post-it en la escena (publicada) | §164 |
 | 1.163.0 | El telefonillo, que se vea que se toca (publicada) | §163 |
@@ -671,6 +675,15 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-28 · 1.165.1, la visita desde Comunidad con la franja nueva (Claude)
+
+- Francisco: «Pon la cabecera nueva en la visita desde Comunidad». `VisitaLector.jsx` usa `.ed-bar__back` y `.ed-bar__quien`
+  (botón a su perfil, con su puerta si llega de `piso_visita`) sobre la escena; estilos en `edificio.css` (bloque
+  `.visita-lector__bar`). De paso, `comunidad-165.css` da al rincón de lector el ancho de la Comunidad (se encogía a 236 px).
+- Pruebas: `visita-directa` (ahora con vídeo y Bruno con personaje), `v1165-comunidad` y `entrega2` en Chromium 360 y 390 y
+  WebKit 390: 39 en verde; `v1164-visita-vecino` también en verde. Build limpio; lint sin avisos nuevos. Emulación.
+- Evidencias en `qa-report/v11651-visita/`. Francisco: «Sí, publícala». Commit, subida a la rama y a `main`.
 
 ### 2026-11-28 · 1.165.0, la Comunidad al día (Claude)
 

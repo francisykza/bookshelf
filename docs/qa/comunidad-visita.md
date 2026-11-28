@@ -57,7 +57,8 @@ Encargo de Francisco del 28-11-2026, con dos capturas del iPhone de su compañer
    Amigos, en la visita y en el telefonillo. Quien no tenga personaje, un retrato de Libo neutro. Los retratos ilustrados
    antiguos se retiran sin borrar nada (el `avatar_id` se queda en el servidor). **Hecho en la 1.165.0** (SPEC §165; Francisco,
    «Sí, así»): sin el cuaderno de cuero; el busto del personaje necesita la migración `20270102120000_comunidad_personajes.sql`
-   (sin ella, los retratos de antes). La lista de bloqueados sigue con los de antes.
+   (sin ella, los retratos de antes). La lista de bloqueados sigue con los de antes. **La visita desde Comunidad, con la
+   franja nueva, en la 1.165.1** (§165.1).
 
 ## 3. Lo que decide Francisco
 

@@ -301,6 +301,10 @@
   max-width: 560px;
   margin: 0 auto;
 }
+/* 1.165.1: el rincón de un lector (sin cuaderno) se encogía a su contenido; mismo ancho que la Comunidad */
+.social-hub.comunidad-px:not(.social-notebook) {
+  width: min(560px, 100vw);
+}
 
 /* Su perfil: el retrato ya no se sube sobre lo de arriba (era para el cuero) */
 .comunidad-px .huella-who {

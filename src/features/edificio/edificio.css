@@ -2796,21 +2796,54 @@
   color: #fbf3df;
 }
 
+/* 1.165.1: la misma franja fina que la visita desde el edificio (1.164), encima de la escena: volver y la ficha de papel */
 .visita-lector__bar {
-  z-index: 2;
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 6;
   display: flex;
-  flex: none;
   gap: 8px;
   align-items: center;
-  justify-content: space-between;
-  padding: calc(env(safe-area-inset-top, 0px) + 8px) 10px 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px 14px;
+  background: linear-gradient(rgb(33 26 22 / 0.72), rgb(33 26 22 / 0));
+  pointer-events: none;
 }
 
-.visita-lector button {
+.visita-lector__bar > * {
+  pointer-events: auto;
+}
+
+.visita-lector__bar .ed-bar__back {
+  flex: none;
+  color: #fbf3df;
+  white-space: nowrap;
+}
+
+/* La ficha lleva a su perfil: botón con el mismo papel, de 44 px, y una flecha pequeña */
+.visita-lector__quien {
+  min-height: 44px;
+  background: none;
+  cursor: pointer;
+}
+
+.visita-lector__quien > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-left: -2px;
+  color: #6b5440;
+}
+
+.visita-lector__quien:focus-visible {
+  outline: 3px solid #f2c14e;
+  outline-offset: 2px;
+}
+
+/* Los botones de los avisos (sin piso, error), en caja crema como antes */
+.visita-lector__aviso button {
   display: inline-flex;
   gap: 6px;
   align-items: center;
-  min-width: 0;
   min-height: 44px;
   padding: 0 12px;
   border: 2px solid #3b2618;
@@ -2818,28 +2851,6 @@
   color: #3b2618;
   font: inherit;
   cursor: pointer;
-}
-
-.visita-lector__bar > button:first-child {
-  flex: none;
-  padding: 0 8px;
-  white-space: nowrap;
-}
-
-.visita-lector__quien {
-  padding: 0 6px !important;
-}
-
-.visita-lector__bar svg {
-  flex: none;
-  width: 18px;
-  height: 18px;
-}
-
-.visita-lector__quien b {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .visita-lector .ed-visita3d {
@@ -2855,7 +2866,7 @@
   place-content: center;
   justify-items: center;
   margin: 0;
-  padding: 24px;
+  padding: 76px 24px 24px;
   text-align: center;
 }
 

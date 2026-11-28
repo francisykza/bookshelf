@@ -16,7 +16,9 @@ function simulador() {
     { user_id: BRUNO.id, alias: 'Bruno', avatar_id: 'lector-farol', community_enabled: true },
   );
   mock.db.edificio_vecinos.push({ user_id: ANA.id, edificio: 'e1', puerta: '2B' }, { user_id: BEA.id, edificio: 'e1', puerta: '1A' }, { user_id: BRUNO.id, edificio: 'e2', puerta: '3A' });
-  mock.db.pisos.push({ user_id: ANA.id, layout: sala('yeso') }, { user_id: BEA.id, layout: sala('yeso') }, { user_id: BRUNO.id, layout: sala('yeso') });
+  mock.db.pisos.push({ user_id: ANA.id, layout: sala('yeso') }, { user_id: BEA.id, layout: sala('yeso') }, { user_id: BRUNO.id, layout: sala('yeso'), personaje: { piel: 3, pelo: 'rizos', colorPelo: 4, jersey: 1, pantalon: 0, gafas: true, complemento: 'ninguno' } });
+  // 1.165: el retrato de la ficha es el busto de su personaje
+  mock.db.comunidadPersonajes = true;
   mock.db.follows.push({ follower: ANA.id, followed: BEA.id }, { follower: ANA.id, followed: BRUNO.id });
   for (const [dueno, titulo] of [[BEA.id, 'Libro de Bea'], [BRUNO.id, 'Libro de Bruno']]) mock.db.corners.push({ user_id: dueno, visible: true, featured_books: [{ id: `${dueno}-1`, title: titulo, author: 'Autoría', cover: '' }], figure_ids: [], guardian_id: null, show_current: true, current_title: titulo, memories: [] });
   mock.db.libraries.push({ user_id: ANA.id, data: DATOS, updated_at: new Date().toISOString(), version: 5 });
@@ -24,7 +26,7 @@ function simulador() {
 }
 
 async function abrir(browser, mock) {
-  const context = await browser.newContext({ baseURL: 'http://localhost:5196', locale: 'es-ES', timezoneId: 'Europe/Madrid', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  const context = await browser.newContext({ baseURL: 'http://localhost:5196', locale: 'es-ES', timezoneId: 'Europe/Madrid', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, recordVideo: { dir: 'qa-report/visita-directa-video', size: { width: 390, height: 844 } } });
   const page = await context.newPage();
   const pedidas = [];
   page.on('request', (r) => pedidas.push(r.url()));
@@ -52,15 +54,38 @@ test('desde Comunidad abre el piso de quien sigues y vuelve a Lectores', async (
   await comunidad(page);
   await page.getByRole('button', { name: 'Visitar el piso de Bruno' }).click();
   await expect(page.locator(`.ed-visita3d[data-visita="${BRUNO.id}"]`)).toBeVisible({ timeout: 20000 });
-  await expect(page.locator('.visita-lector__quien')).toContainText('Piso de Bruno');
+  // 1.165.1: la misma franja fina que desde el edificio: volver y la ficha de papel con su nombre y su puerta, encima de la
+  // escena (el piso empieza arriba del todo, como en el edificio)
+  const ficha = page.locator('.visita-lector__quien');
+  await expect(ficha).toContainText('Bruno');
+  await expect(ficha).toContainText('3.º A');
+  await expect(ficha).toHaveAccessibleName('Ver el perfil de Bruno');
+  await expect(ficha.locator('.reader-avatar')).toHaveAttribute('data-retrato', 'personaje', { timeout: 10000 });
+  const franja = await page.evaluate(() => {
+    const barra = document.querySelector('.visita-lector__bar').getBoundingClientRect();
+    const escena = document.querySelector('.ed-visita3d').getBoundingClientRect();
+    const back = document.querySelector('.visita-lector__bar .ed-bar__back');
+    return { escenaArriba: escena.top, alto: barra.height, fondoBack: getComputedStyle(back).backgroundColor, altoFicha: document.querySelector('.visita-lector__quien').getBoundingClientRect().height };
+  });
+  expect(franja.escenaArriba).toBeLessThanOrEqual(1);
+  expect(franja.alto).toBeLessThan(80);
+  expect(franja.fondoBack).toBe('rgba(0, 0, 0, 0)');
+  expect(franja.altoFicha).toBeGreaterThanOrEqual(44);
   // 1.164: sin la tarjeta de datos; lo que lee es el libro que deja en su sitio (en esta sala sin mesa, en el asiento del
   // sillón, desde donde se mira: no se ve ni se toca). La nota de su mesa la prueban fase1-visitas y tablon.
   await expect(page.locator('.ed-visita3d .plab-stage[data-ready]')).toBeVisible({ timeout: 30000 });
   await expect.poll(() => page.evaluate(() => window.__pisoLab?.()?.debug().book?.id ?? null), { timeout: 10000 }).toBe(`visita-lectura:${BRUNO.id}`);
+  await page.waitForTimeout(600);
   await page.screenshot({ path: 'qa-report/visita-comunidad.png' });
   await page.getByRole('button', { name: 'Volver a lectores' }).click();
   await expect(page.getByRole('button', { name: 'Visitar el piso de Bruno' })).toBeVisible({ timeout: 8000 });
   await expect(page.locator('.visita-lector')).toHaveCount(0);
+  // La ficha lleva a su perfil
+  await page.getByRole('button', { name: 'Visitar el piso de Bruno' }).click();
+  await page.getByRole('button', { name: 'Ver el perfil de Bruno' }).click();
+  await expect(page.locator('.social-hub.comunidad-px')).toContainText('Bruno', { timeout: 10000 });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'qa-report/visita-comunidad-perfil.png' });
   sinEscena(pedidas);
   await context.close();
 });
