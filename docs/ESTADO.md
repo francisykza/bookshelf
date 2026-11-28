@@ -6,7 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.161.0, los Libocoins, bloque 2: el saldo junto a Libo** (28-11-2026; Francisco: «Sí,
+- **Publicada en producción: 1.162.0, los Libocoins, bloque 3: Libo lo celebra** (28-11-2026; Francisco: «Sí, publícala»;
+  SPEC §162 y `docs/qa/libocoins.md`). Al ganarlos, las monedas saltan a la de Libo, él pone su pose «celebra», sale «+N», la
+  cifra sube y suena un tintineo; con movimiento reducido, solo la cifra. Si no se le ve, lo celebra al volver a verle. Sin
+  migración. Con esto, el plan de los Libocoins está completo.
+- **Anterior: 1.161.0, los Libocoins, bloque 2: el saldo junto a Libo** (28-11-2026; Francisco: «Sí,
   publícala»; SPEC §161 y `docs/qa/libocoins.md`). La moneda con tu saldo, pegada a la pata de Libo (cifra de píxel, sin
   caja) y, al tocarla, una nota de papel con cómo se ganan y dónde se gastan. Sin migración. Sigue el bloque 3 (Libo lo
   celebra al ganarlos).
@@ -300,7 +304,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.161.0 | Los Libocoins, bloque 2: el saldo junto a Libo (publicada) | §161 |
+| 1.162.0 | Los Libocoins, bloque 3: Libo lo celebra (publicada) | §162 |
+| 1.161.0 | Los Libocoins, bloque 2: el saldo junto a Libo | §161 |
 | 1.160.0 | Los Libocoins, bloque 1: el nombre y la moneda | §160 |
 | 1.159.0 | La red de seguridad: el ordenador en negro en un iPhone | §159 |
 | 1.158.0 | «Lo de hoy»: el menú de Libo en tu piso (publicada) | §158 |
@@ -398,7 +403,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
     al ganar, una animación con Libo. Lo interno (`tickets` en el servidor y en el código) no se renombra sin una migración
     pensada y aprobada por él; las reglas de cuándo se ganan no cambian. Proponerle el plan antes de hacerlo. **Plan aprobado**
     (27-11-2026, «Sí, así»; `docs/qa/libocoins.md`): Libocoins en todo lo visible y en la web, el saldo junto a Libo, Libo celebra
-    al ganarlos. **Bloque 1 publicado en la 1.160.0** y **bloque 2 publicado en la 1.161.0**; sigue el 3.
+    al ganarlos. **Bloque 1 publicado en la 1.160.0**, **bloque 2 publicado en la 1.161.0** y **bloque 3 publicado en la 1.162.0**: plan completo.
   - **La web en su dominio**: «subir el diseño que hicimos al dominio que compré y ver si necesito un hosting». La web ya está
     publicada en `libotown.es` desde la 1.146.0 (Vercel, en la raíz: quien llega nuevo ve la web); no hace falta otro hosting.
     Repasar con él qué quiere exactamente (¿otra dirección, como un subdominio? ¿las versiones «más interactiva» y «más cozy»?).
@@ -639,6 +644,23 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-28 · 1.162.0, los Libocoins, bloque 3: Libo lo celebra, a producción (Claude)
+
+- Francisco: «Sí, el bloque 3». Hecho: al subir el saldo, de 3 a 5 monedas saltan a la de Libo, él pone su pose «celebra»,
+  sale «+N», la cifra sube de lo de antes a lo nuevo y suena un tintineo sintetizado por moneda (`tintineo.js`, bus de
+  «Sonidos táctiles»). Con movimiento reducido, solo la cifra. Solo se celebra con la moneda a la vista; lo ganado donde Libo
+  no está (ordenador encima, casino, Lonja) se celebra al volver a verle. La primera cifra de la sesión nunca cuenta.
+- Pruebas: `v1162-libocoins-fiesta` en Chromium 360 y 390 y WebKit 390 (5 pasan, 1 omitida a propósito: el de movimiento
+  reducido solo a 390). `v1161` tuvo que esperar a la fiesta del portal y contar solo la moneda de Libo: 3/3. Las de Libo
+  (`libo-edificio`, `v1158`, `libo-interfaz`, `libo-avisos`, `libo-atras`, `libo-atras-salas`, `libo`, `libo-poses`,
+  `v1154`), `v167` y `v1122` en Chromium 390: 31 pasan y 4 omitidas. Unitarias de Libo y libocoins, 52/52. Build limpio;
+  el lint, los mismos 9 avisos que ya había. Emulación, no un móvil real. El sonido no sale en los vídeos de Playwright: se le
+  manda aparte.
+- Evidencias al chat: vídeo de la fiesta y del movimiento reducido (Chromium 390), fotogramas de cerca y el tintineo en
+  `qa-report/v1162-libocoins-fiesta/tintineo-libocoins.wav` (los vídeos de Playwright no graban sonido).
+- Francisco: «Sí, publícala». Commit en `1.90-escritorio-puerto` y `main` avanzado sin forzar desde `7c94add`
+  (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
 
 ### 2026-11-28 · 1.161.0, los Libocoins, bloque 2: el saldo junto a Libo, a producción (Claude)
 

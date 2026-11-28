@@ -40,7 +40,7 @@ async function sinTapar(page, sels) {
   expect(placa.y + placa.height).toBeLessThanOrEqual(vp.height + 1);
   expect((await moneda(page).boundingBox()).height).toBeGreaterThanOrEqual(44);
   // Pegada a su pata: la moneda toca a Libo por abajo a la izquierda, sin taparle más que el borde
-  const coin = await page.locator('.libo-saldo .libocoin').boundingBox();
+  const coin = await page.locator('.libo-saldo__placa .libocoin').boundingBox();
   const libo = await page.locator('.libo-rincon__gato').boundingBox();
   expect(coin.x + coin.width - libo.x, 'cuánto entra en Libo').toBeGreaterThanOrEqual(0);
   expect(coin.x + coin.width - libo.x, 'cuánto entra en Libo').toBeLessThanOrEqual(libo.width * 0.4);
@@ -109,6 +109,8 @@ test('el saldo junto a Libo en tu piso, el portal, tu piso del edificio y el caf
   await expect(portal.locator('.ed-facade')).toBeVisible({ timeout: 20000 });
   await expect(portal.locator('.ed-facade')).not.toHaveClass(/is-arriving/, { timeout: 8000 });
   await expect(moneda(page)).toHaveAttribute('data-saldo', '75', { timeout: 10000 });
+  // Desde la 1.162, Libo celebra los 15 ganados (v1162); se mide cuando acaba la fiesta
+  await expect(page.locator('.libo-saldo[data-fiesta]')).toHaveCount(0, { timeout: 8000 });
   await page.waitForTimeout(600);
   await sinTapar(page, ['.ed-bar button', '.ed-buzon', '.ed-limo']);
   await shot(page, info, '3-portal');

@@ -17,6 +17,8 @@ import { useCommunity } from '../social/hooks/useCommunity';
 import { libocoinsText } from '../../domain/libocoins';
 import { Libocoin } from '../../ui/Libocoin';
 import { useSaldoLibo } from './useSaldoLibo';
+import { tintinear } from './tintineo';
+import { leerSaldo, tomarGanado } from '../edificio/saldo';
 import './libo.css';
 
 const MARGEN = 12;
@@ -87,10 +89,92 @@ function Flecha() {
 // con el saldo, cómo se ganan y dónde se gastan; sin botones de compra ni nada que meta prisa
 const cifra = (n) => n.toLocaleString('es-ES');
 
-function Monedero({ tickets }) {
+// Bloque 3 (docs/qa/libocoins.md): al ganarlas, Libo lo celebra. Las monedas que saltan (3 a 5, según lo ganado) salen de
+// arriba a la izquierda (arriba, en el café, de abajo) y caen en la suya; la cifra sube cuando llega la primera. Con
+// movimiento reducido, solo cambia la cifra (y suena un tintineo). Solo se celebra con la moneda a la vista: si lo ganas
+// donde Libo no está (el casino, la Lonja, el ordenador encima), lo celebra al volver a verle.
+const SALTOS = [
+  [-64, -70],
+  [-34, -98],
+  [-88, -38],
+  [-16, -76],
+  [-58, -114],
+];
+const LLEGA_MS = 560;
+const PASO_MS = 110;
+const CUENTA_MS = 700;
+const monedasDe = (g) => Math.min(5, Math.max(3, Math.ceil(g / 10)));
+/** La moneda se ve de verdad: la página está delante y lo primero bajo su centro es ella (no la tapa una hoja ni la guía). */
+function aLaVista(el) {
+  if (!el || document.visibilityState !== 'visible') return false;
+  const r = el.getBoundingClientRect();
+  if (!r.width || !r.height) return false;
+  const x = r.left + Math.min(15, r.width / 2);
+  const y = r.bottom - 19;
+  if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return false;
+  return el.contains(document.elementFromPoint(x, y));
+}
+
+function Monedero({ tickets, ganado, reducido, onCelebra }) {
   const [abierta, setAbierta] = useState(false);
   const boton = useRef(null);
   const caja = useRef(null);
+  // La fiesta en marcha ({ desde, hasta, n, k }) y la cifra que se ve mientras sube
+  const [fiesta, setFiesta] = useState(null);
+  const [cuenta, setCuenta] = useState(null);
+  const celebrar = useRef(onCelebra);
+  useEffect(() => {
+    celebrar.current = onCelebra;
+  });
+  useEffect(() => {
+    if (!ganado || fiesta) return undefined;
+    const intentar = () => {
+      if (!aLaVista(boton.current)) return false;
+      const g = tomarGanado();
+      const hasta = leerSaldo().tickets;
+      if (!g || hasta === null) return true;
+      if (reducido) {
+        tintinear(1);
+        return true;
+      }
+      const n = monedasDe(g);
+      setFiesta({ desde: Math.max(0, hasta - g), hasta, g, n, k: Date.now() });
+      celebrar.current?.();
+      tintinear(n, { primero: LLEGA_MS / 1000, paso: PASO_MS / 1000 });
+      return true;
+    };
+    if (intentar()) return undefined;
+    const id = setInterval(() => intentar() && clearInterval(id), 700);
+    return () => clearInterval(id);
+  }, [ganado, fiesta, reducido]);
+  // La cifra sube desde lo de antes cuando cae la primera moneda; la fiesta acaba un poco después de la última
+  useEffect(() => {
+    if (!fiesta) return undefined;
+    let raf = 0;
+    const empieza = setTimeout(() => {
+      const t0 = performance.now();
+      const paso = (t) => {
+        const p = Math.min(1, (t - t0) / CUENTA_MS);
+        setCuenta(Math.round(fiesta.desde + (fiesta.hasta - fiesta.desde) * p));
+        if (p < 1) raf = requestAnimationFrame(paso);
+      };
+      raf = requestAnimationFrame(paso);
+    }, LLEGA_MS);
+    const acaba = setTimeout(
+      () => {
+        setFiesta(null);
+        setCuenta(null);
+      },
+      LLEGA_MS + fiesta.n * PASO_MS + 1700,
+    );
+    return () => {
+      clearTimeout(empieza);
+      clearTimeout(acaba);
+      cancelAnimationFrame(raf);
+    };
+  }, [fiesta]);
+  // Lo que se ve: mientras sube, la cuenta; con algo ganado aún sin celebrar, lo de antes (para verlo subir al volver)
+  const visto = cuenta ?? (fiesta ? fiesta.desde : Math.max(0, tickets - ganado));
   useAtras(abierta, () => setAbierta(false));
   useEffect(() => {
     if (!abierta) return undefined;
@@ -154,13 +238,29 @@ function Monedero({ tickets }) {
         aria-label={`Tus Libocoins: ${libocoinsText(tickets)}`}
         aria-expanded={abierta}
         data-saldo={tickets}
+        data-fiesta={fiesta ? fiesta.k : undefined}
         onClick={() => setAbierta((v) => !v)}
       >
-        <span className="libo-saldo__placa">
+        <span className="libo-saldo__placa" style={fiesta ? { animationIterationCount: fiesta.n } : undefined}>
           <Libocoin size={30} />
-          <span className="libo-saldo__cifra">{cifra(tickets)}</span>
+          <span className="libo-saldo__cifra">{cifra(visto)}</span>
         </span>
+        {fiesta && (
+          <span key={fiesta.k} className="libo-saldo__lluvia" aria-hidden="true">
+            {SALTOS.slice(0, fiesta.n).map(([dx, dy], i) => (
+              <span key={i} className="libo-saldo__salta" style={{ '--dx': `${dx}px`, '--dy': `${dy}px`, '--i': i }}>
+                <Libocoin size={22} />
+              </span>
+            ))}
+            <span className="libo-saldo__mas">+{cifra(fiesta.g)}</span>
+          </span>
+        )}
       </button>
+      {fiesta && (
+        <span key={fiesta.k} className="libo-sr" role="status">
+          Has ganado {libocoinsText(fiesta.g)}
+        </span>
+      )}
     </>
   );
 }
@@ -441,7 +541,7 @@ const SITIOS = ['edificio', 'cafe', 'hotel'];
 export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = true, espera = null, respiro = 600, raiz = null, onAjustes, variante = 'barra', hub = false, avisos = SIN_AVISOS, amigos = null, onIr = null, cargarHoy = null, saldo = true }) {
   const { state, actions } = useLibrary();
   const community = useCommunity();
-  const tickets = useSaldoLibo(saldo && variante !== 'cabecera' && lugar !== 'telefonillo' && community.status === 'ready' && community.member);
+  const { tickets, ganado } = useSaldoLibo(saldo && variante !== 'cabecera' && lugar !== 'telefonillo' && community.status === 'ready' && community.member);
   const { settings, books } = state;
   const log = state.progress?.readingLog;
   const [abierto, setAbierto] = useState(false);
@@ -858,7 +958,7 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
           )}
         </button>
         {/* Su moneda, pegada a su pata y por delante de él */}
-        {tickets !== null && <Monedero tickets={tickets} />}
+        {tickets !== null && <Monedero tickets={tickets} ganado={ganado} reducido={reducido} onCelebra={() => reaccionar('celebra')} />}
       </div>
       {pasos && cont && createPortal(<Guia pasos={pasos} contexto={contexto} cont={cont} onFin={terminar} onPaso={setPasoVisto} />, cont)}
     </>

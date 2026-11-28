@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.161.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.162.0 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -9072,3 +9072,42 @@ Segundo bloque del plan aprobado en `docs/qa/libocoins.md` («Sí, así»; Franc
 - e2e `e2e-community/v1161-libocoins-saldo.spec.js` (Chromium 360 y 390, WebKit 390): la moneda en tu piso, el portal, tu piso
   del edificio y el café, pegada a Libo y sin tapar los controles; la nota, dentro de la pantalla y con botones de 44 px;
   Atrás, la cruz y Libo la cierran; lo ganado en otro sitio llega al cambiar de escena; en el armario no está. Emulación.
+
+## 162. Los Libocoins, bloque 3: Libo lo celebra (1.162.0)
+
+Tercer y último bloque del plan aprobado en `docs/qa/libocoins.md` («Sí, así»; Francisco, «Sí, el bloque 3»). Sin migración.
+
+### 162.1 La fiesta
+
+- Cuando el saldo sube, **las monedas saltan a la de Libo**: de 3 a 5 (una por cada 10 ganados, como mínimo 3), una detrás de
+  otra, desde arriba a la izquierda (en el café, donde Libo está arriba, desde abajo). La suya da un botecito con cada una.
+- **Libo pone su pose «celebra»** (la de su hoja, `poses.js`), sale **«+N»** en la letra de píxel, en ámbar, sobre su moneda,
+  y **la cifra sube** de lo que tenías a lo nuevo cuando cae la primera. Dura unos 3 s y se acaba sola; no se repite.
+- **Un tintineo** por moneda, cada una un poco más aguda, al ritmo en que caen (`src/features/libo/tintineo.js`). Sintetizado,
+  corto y suave, por el bus de «Sonidos táctiles»: respeta el silencio y su volumen y solo suena si el audio ya existe (tras un
+  toque). Cuando se haga lo de los sonidos de lumina-sfx, su `coin-pickup-chime` puede sustituirlo.
+- **Con movimiento reducido**, solo cambia la cifra (y un tintineo); ni monedas, ni bote, ni pose.
+- Para los lectores de pantalla, «Has ganado N Libocoins» (`role="status"`).
+
+### 162.2 Cuándo se celebra
+
+- **Solo con la moneda a la vista**: la página delante y lo primero bajo la moneda es ella (no la tapa una hoja, el ordenador
+  ni la guía). Si lo ganas donde Libo no está (el ordenador encima, el casino, la Lonja, la barra del café), lo ganado espera y
+  Libo lo celebra **al volver a verle**, sumado.
+- Vale para todo lo que sube el saldo, porque sale del mismo dato (`saldo.js`): misiones, las tres del día con toda la ropa,
+  el café, la lata del casino, la Lonja… Lo que llega al cambiar de escena (la consulta del inventario de §161.3) también.
+- **La primera cifra de una sesión nunca cuenta como ganada** (es lo que ya tenías), ni al cambiar de cuenta. Si gastas antes de
+  verle, se celebra como mucho tu saldo. Las reglas de cuándo se ganan no cambian.
+
+### 162.3 Por dentro
+
+- `saldo.js` apunta lo ganado (`ganado`) cuando una cifra nueva es mayor que la anterior; `tomarGanado()` lo devuelve y lo deja
+  a cero. `useSaldoLibo` devuelve `{ tickets, ganado }`. La fiesta vive en `Monedero` (`LiboRincon.jsx`), que mira cada
+  700 ms si la moneda ya se ve; estilos al final de `libo.css`.
+
+### 162.4 Comprobación
+
+- e2e `e2e-community/v1162-libocoins-fiesta.spec.js` (Chromium 360 y 390, WebKit 390): cobras una misión en el ordenador
+  (60 → 72) y, con el ordenador encima, no hay fiesta; al volver a tu piso, 3 monedas, «+12», la pose «celebra», el aviso para
+  lectores de pantalla y la cifra que llega a 72; se acaba sola y no se repite. Con movimiento reducido (390), solo la cifra.
+- `v1161-libocoins-saldo` espera a que acabe la fiesta del portal (75) antes de medir. Emulación.

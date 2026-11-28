@@ -24,7 +24,7 @@ bufanda a rayas, estrellas y libritos alrededor). Propuesta del 27-11-2026, **ap
    tu saldo. Tocarla abre una nota de papel con el saldo, cómo se ganan y dónde se gastan (sin botones de compra ni
    presión). No sale donde Libo se aparta (la barra del café, el obrador, el taller, las salas del hotel, el armario).
    Saldo del servidor, con caché; sin sesión o sin comunidad, no sale.
-3. **Al ganarlas, Libo lo celebra.** Las monedas saltan hacia su contador, Libo pone la pose «celebra» de su hoja y la cifra
+3. **Al ganarlas, Libo lo celebra.** *Hecho en la 1.162.0 (SPEC §162): monedas que saltan a la suya, su pose «celebra», «+N», la cifra que sube y un tintineo sintetizado; si no se le ve, lo celebra al volver a verle.* Las monedas saltan hacia su contador, Libo pone la pose «celebra» de su hoja y la cifra
    sube; con movimiento reducido, solo la cifra. Un sonido breve de moneda con las reglas de efectos de siempre (el de
    Lumina, `coin-pickup-chime`, cuando se haga lo de los sonidos). En todos los sitios donde hoy se ganan.
 

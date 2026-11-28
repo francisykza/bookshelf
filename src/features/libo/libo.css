@@ -975,3 +975,119 @@
 .libo-saldo-nota__lista li + li {
   margin-top: 3px;
 }
+
+/* 1.162 · Libocoins, bloque 3 (docs/qa/libocoins.md): al ganarlas, las monedas saltan a la de Libo (de arriba a la izquierda;
+   arriba, en el café, de abajo), la moneda bota con cada una y «+N» sube y se va. Con movimiento reducido no hay nada de esto. */
+.libo-saldo__lluvia {
+  position: absolute;
+  left: 4px;
+  bottom: 8px;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+}
+
+.libo-saldo__salta {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: libo-saldo-salta 560ms cubic-bezier(0.45, 0, 0.85, 0.55) calc(var(--i) * 110ms) both;
+}
+
+.libo-saldo__salta .libocoin {
+  display: block;
+  filter: drop-shadow(0 2px 0 rgb(48 37 31 / 0.35));
+}
+
+.libo-rincon[data-variante='arriba'] .libo-saldo__salta {
+  --sy: -1;
+}
+
+@keyframes libo-saldo-salta {
+  0% {
+    opacity: 0;
+    transform: translate(var(--dx), calc(var(--dy) * var(--sy, 1))) scale(0.5);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(var(--dx), calc((var(--dy) - 16px) * var(--sy, 1))) scale(1);
+  }
+  92% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+}
+
+/* La moneda bota con cada una que cae (tantas veces como monedas: lo pone el componente) */
+.libo-saldo[data-fiesta] .libo-saldo__placa {
+  animation: libo-saldo-bote 110ms ease-out 560ms 1 both;
+}
+
+@keyframes libo-saldo-bote {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translateY(1px) scale(1.12, 0.9);
+  }
+}
+
+.libo-saldo__mas {
+  position: absolute;
+  left: -6px;
+  bottom: 34px;
+  color: #ffd66b;
+  font: 18px/1 var(--pp-title, PuertoPixel, ui-monospace, monospace);
+  white-space: nowrap;
+  text-shadow:
+    -1px 0 #2f1f16,
+    1px 0 #2f1f16,
+    0 -1px #2f1f16,
+    0 1px #2f1f16,
+    -1px -1px #2f1f16,
+    1px -1px #2f1f16,
+    -1px 1px #2f1f16,
+    1px 1px #2f1f16,
+    0 2px #2f1f16;
+  opacity: 0;
+  animation: libo-saldo-mas 1700ms ease-out 560ms both;
+}
+
+.libo-rincon[data-variante='arriba'] .libo-saldo__mas {
+  top: 30px;
+  bottom: auto;
+}
+
+@keyframes libo-saldo-mas {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  14% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(-12px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .libo-saldo__lluvia {
+    display: none;
+  }
+
+  .libo-saldo[data-fiesta] .libo-saldo__placa {
+    animation: none;
+  }
+}
