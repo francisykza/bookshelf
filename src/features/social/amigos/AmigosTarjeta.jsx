@@ -42,7 +42,7 @@ export function AmigosTarjeta({ onOpen }) {
             <ul className="pp-am-card__caras" aria-label={`${d.amigos.length} ${d.amigos.length === 1 ? 'amigo' : 'amigos'}`}>
               {d.amigos.slice(0, 5).map((a) => (
                 <li key={a.user_id}>
-                  <ReaderAvatar avatarId={a.avatar_id} alias={a.alias} size="list" />
+                  <ReaderAvatar userId={a.user_id} avatarId={a.avatar_id} alias={a.alias} size="list" />
                 </li>
               ))}
             </ul>

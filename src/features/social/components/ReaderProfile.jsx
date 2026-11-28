@@ -258,7 +258,7 @@ export function ReaderProfileContent({ data, userId, mine, following, onToggleFo
       {/* 2 · Avatar (con su adorno cuando exista el arte aprobado) junto al nombre, rol y seguir */}
       <div className="huella-who">
         <span className="huella-avatar" data-adornment={data.adornment ?? undefined}>
-          <ReaderAvatar avatarId={data.profile.avatar_id} alias={alias} size="profile" />
+          <ReaderAvatar userId={data.profile.user_id} avatarId={data.profile.avatar_id} alias={alias} size="profile" />
           {data.adornment && <ReaderAdornment id={data.adornment} />}
         </span>
         <div className="huella-who__text">
@@ -399,7 +399,7 @@ export function ReaderProfileContent({ data, userId, mine, following, onToggleFo
 export function ReaderProfile({ userId, onClose }) {
   return (
     <PanelShell onClose={onClose} label="Perfil de lector" variant="social">
-      <div className="social-hub">
+      <div className="social-hub comunidad-px">
         <div className="social-hub__head">
           <h2>Rincón de lector</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar">

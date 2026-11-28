@@ -95,7 +95,7 @@ export function RankingCafes({ onVisitar, onCerrar, sfx = null }) {
                 <span className="cf3-ranking__puesto" aria-label={`Puesto ${f.puesto}`}>
                   {f.puesto}
                 </span>
-                <ReaderAvatar avatarId={f.avatarId} alias={f.alias} size="list" decorative />
+                <ReaderAvatar userId={f.userId} avatarId={f.avatarId} alias={f.alias} size="list" decorative />
                 <span className="cf3-ranking__quien">
                   <span className="cf3-ranking__cafe">{f.cafe}</span>
                   <span className="cf3-ranking__alias">{f.yo ? 'Tú' : f.alias}</span>

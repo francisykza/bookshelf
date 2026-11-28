@@ -142,7 +142,7 @@ export function CitaSala({ cita, enSofa, onSofa, onGesto, conGestos = true }) {
   if (invitacion) {
     cuerpo = (
       <div className="gh-cita__fila" role="status">
-        <ReaderAvatar avatarId={invitacion.avatar_id} alias={nombreCita(invitacion)} size="list" decorative />
+        <ReaderAvatar userId={invitacion.uid} avatarId={invitacion.avatar_id} alias={nombreCita(invitacion)} size="list" decorative />
         <p>
           {nombreCita(invitacion)} te invita a leer juntos {cuando(invitacion, ahora)} ({invitacion.minutos} min) en el sofá para dos.
         </p>
@@ -159,7 +159,7 @@ export function CitaSala({ cita, enSofa, onSofa, onGesto, conGestos = true }) {
   } else if (enCurso?.estado === 'invitada') {
     cuerpo = (
       <div className="gh-cita__fila" role="status">
-        <ReaderAvatar avatarId={enCurso.avatar_id} alias={nombreCita(enCurso)} size="list" decorative />
+        <ReaderAvatar userId={enCurso.uid} avatarId={enCurso.avatar_id} alias={nombreCita(enCurso)} size="list" decorative />
         <p>
           Has invitado a {nombreCita(enCurso)} a leer {cuando(enCurso, ahora)} ({enCurso.minutos} min). Si acepta, os veréis en el sofá para dos.
         </p>
@@ -171,7 +171,7 @@ export function CitaSala({ cita, enSofa, onSofa, onGesto, conGestos = true }) {
   } else if (enCurso) {
     cuerpo = (
       <div className="gh-cita__fila" role="status">
-        <ReaderAvatar avatarId={enCurso.avatar_id} alias={nombreCita(enCurso)} size="list" decorative />
+        <ReaderAvatar userId={enCurso.uid} avatarId={enCurso.avatar_id} alias={nombreCita(enCurso)} size="list" decorative />
         <p>
           {fase === 'espera' ? (
             <>
@@ -201,7 +201,7 @@ export function CitaSala({ cita, enSofa, onSofa, onGesto, conGestos = true }) {
   } else if (resumen) {
     cuerpo = (
       <div className="gh-cita__fila" role="status">
-        <ReaderAvatar avatarId={resumen.avatar_id} alias={nombreCita(resumen)} size="list" decorative />
+        <ReaderAvatar userId={resumen.uid} avatarId={resumen.avatar_id} alias={nombreCita(resumen)} size="list" decorative />
         <p>{resumen.estado === 'no_vino' ? `${nombreCita(resumen)} no ha podido venir.` : `Habéis leído juntos ${minJuntos(resumen.juntos)}, ${nombreCita(resumen)} y tú.`}</p>
         <button type="button" className="gh-21link" onClick={() => visto(resumen.cita)}>
           Vale
@@ -216,7 +216,7 @@ export function CitaSala({ cita, enSofa, onSofa, onGesto, conGestos = true }) {
             <div className="gh-cita__amigos" role="group" aria-label="A quién invitas">
               {amigos.map((a) => (
                 <button type="button" key={a.uid} aria-pressed={amigo === a.uid} onClick={() => setAmigo(a.uid)}>
-                  <ReaderAvatar avatarId={a.avatar_id} alias={a.alias ?? 'Tu amigo'} size="list" decorative />
+                  <ReaderAvatar userId={a.uid} avatarId={a.avatar_id} alias={a.alias ?? 'Tu amigo'} size="list" decorative />
                   <span>{a.alias ?? 'Tu amigo'}</span>
                 </button>
               ))}

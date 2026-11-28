@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.164.0 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.165.0 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -9204,3 +9204,41 @@ en ese orden»).
   Ajustadas a la visita nueva `fase1-visitas`, `tablon`, `visita-directa`, `v1155-sin-isometricas` y `v171-vecinos`, con
   el ayudante `e2e-community/visitaTocar.js` (busca en pantalla un punto que dé en la estantería, el tablón o el libro). Siguen
   fallando como antes `v163-edificio` (chip «Plantas»), `v171` «en tu piso» y `v188-habitacion-real` (3). Emulación.
+
+## 165. La Comunidad al día: papel de píxel y el busto de tu personaje (1.165.0)
+
+Francisco, 28-11-2026: «el apartado de comunidad está desfasado necesita que lo adaptemos a como está la app ahora mismo,
+incluido avatares». Bloque 3 de `docs/qa/comunidad-visita.md`. Vista la maqueta de Lectores, «Sí, así».
+
+- **Sin el cuaderno de cuero** (sustituye a «Comunidad en el cuaderno de cuero» de la 1.60): el panel de la comunidad y el rincón
+  de un lector van en el papel de píxel sobre madera de «Lo de hoy» (clase `comunidad-px` sobre el mismo `NotebookShell`; sin
+  anillas, cantos ni `border-image` de cuero). La cabecera, sobre la madera, con el título en la letra del puerto
+  (`PuertoPixel`) y la X y tu avatar en baldosas de píxel. Las tres pestañas de siempre (Lectores, Salón, Clubes) son tres
+  baldosas en rejilla, la activa en salvia, sin desplazamiento a 360 px. Títulos de sección, botones, campos y tarjetas con marco
+  de píxel y esquinas escalonadas. No se quita ninguna función.
+- **El avatar de cada lector es el busto de su personaje** (`renderActorThumb(personaje, { frame: 'busto' })`, encuadre nuevo
+  en `src/features/edificio/render.js`: solo de los hombros arriba), con su ropa y colores, a 96 px y con un marco de píxel.
+  Sale donde sale `ReaderAvatar` con el id del lector: Comunidad (lectores, opiniones, perfil, salón y clubes), Amigos, la
+  visita (la ficha de la franja y `VisitaLector`), el telefonillo, el café, el casino y el almacén. **Sin personaje** (sin
+  piso), Libo asomándose (`/assets/libo/poses/asoma.webp`). El atributo `data-retrato` dice cuál es (`personaje`, `libo`,
+  `antiguo` o `cargando`, con la inicial mientras llega).
+- **De dónde sale**: `src/features/social/retratos.js` junta en una sola llamada las peticiones de 30 ms
+  (`pedirPersonaje`), guarda cada personaje y cada busto dibujado (por aspecto) y se vacía al cambiar de cuenta
+  (`clearSocialCache`). El dibujo se carga bajo demanda.
+- **Migración nueva `20270102120000_comunidad_personajes.sql`** (la aplica Francisco; 1.582 B, SHA-256 `967e65e7…76ae64`):
+  `comunidad_personajes(ids uuid[])`, `security definer`, da solo el aspecto del personaje (ni el piso, ni el compañero, ni la
+  puerta) de hasta 60 a la vez: el tuyo siempre y el de quien tiene la comunidad activada, si tú también, sin bloqueo en ningún
+  sentido. Solo para `authenticated`. **Sin la migración**, la app enseña los retratos ilustrados de antes y su selector.
+- **Tu perfil**: con la migración, ya no se elige un avatar ilustrado: «Tu retrato es tu personaje… Para cambiarlo, vístete en el
+  armario de tu piso» (sin piso todavía: «Tu retrato será tu personaje… mientras, te representa Libo»). El `avatar_id` de antes
+  se queda guardado en el servidor, sin borrar.
+- **Limitaciones**: la lista de bloqueados y el selector antiguo (sin migración) siguen con los retratos de antes. Desde Comunidad,
+  «Visitar» sigue con la cabecera de `VisitaLector` (con el busto nuevo). Las pruebas miran el busto en Comunidad, su perfil y
+  tu perfil; en Amigos, la visita y el telefonillo va por el mismo componente, sin e2e propia del retrato.
+- Código: `retratos.js`, `ReaderAvatar.jsx` (reescrito), `SocialHub.jsx`, `ReaderProfile.jsx`, `userId` en cada
+  `ReaderAvatar` con id, estilos en `src/styles/comunidad-165.css` (la última hoja de `index.css`).
+- Comprobación: Vitest `comunidad-personajes.rls.test.js` (PGlite, 5); e2e `e2e-community/v1165-comunidad.spec.js` (Chromium
+  360 y 390, WebKit 390): sin anillas ni cuero, tres pestañas en la letra del puerto y sin desplazamiento, el busto de Bruno,
+  Carla y el tuyo, Libo para Dani, la tarjeta de opinión, el perfil de Bruno, Salón, Clubes y tu perfil sin selector; sin la
+  migración, los de antes y el selector. `entrega2` en verde en los tres (el botón «Guardar perfil» a 44 px). Fallan como antes
+  `v161` (5) y `v162` (2), que buscan la visita al rincón retirada en la 1.155. Emulación, sin móviles reales.

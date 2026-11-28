@@ -71,7 +71,7 @@ function PublicBookSheet({ review, author, books, onClose, onOpenReader }) {
             <p className="public-book__title">{ref.title}</p>
             {ref.author && <p className="public-book__author">{ref.author}</p>}
             <button type="button" className="public-book__who" onClick={() => onOpenReader?.(review.user_id)} disabled={!onOpenReader}>
-              <ReaderAvatar avatarId={author?.avatar_id} alias={alias} size="review" decorative />
+              <ReaderAvatar userId={review.user_id} avatarId={author?.avatar_id} alias={alias} size="review" decorative />
               <span>Reseña de {alias}</span>
             </button>
           </div>
@@ -104,7 +104,7 @@ function SharedReview({ review: r, author, books, onRead, onOpenReader }) {
     <article className="share-card" aria-label={`Opinión de ${alias}${r.work ? ` sobre «${r.work.title}»` : ''}`}>
       <header className="share-card__head">
         <button type="button" className="share-card__avatar" onClick={() => onOpenReader?.(r.user_id)} aria-label={`Ver el perfil de ${alias}`} disabled={!onOpenReader}>
-          <ReaderAvatar avatarId={author?.avatar_id} alias={alias} size="review" decorative />
+          <ReaderAvatar userId={r.user_id} avatarId={author?.avatar_id} alias={alias} size="review" decorative />
         </button>
         <span className="share-card__who">
           <b>{alias}</b>
@@ -178,7 +178,7 @@ function Person({ id, profile, onOpenReader, onVisit }) {
   return (
     <li className="reader-person">
       <button type="button" className="reader-person__open" onClick={() => onOpenReader?.(id)} disabled={!onOpenReader || !alias} aria-label={alias ? `Ver el perfil de ${alias}` : 'Cargando su nombre…'}>
-        <ReaderAvatar avatarId={profile?.avatar_id} alias={alias ?? ''} size="profile" decorative />
+        <ReaderAvatar userId={id} avatarId={profile?.avatar_id} alias={alias ?? ''} size="profile" decorative />
         {alias ? <span className="reader-person__name">{alias}</span> : <span className="follow-row__name--loading" aria-hidden="true" />}
       </button>
       {onVisit && alias && (

@@ -6,7 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.164.0, la visita a un vecino con la habitación protagonista** (28-11-2026; Francisco: «Sí, publica y sigue»; SPEC §164; bloque 2 de
+- **Publicada en producción: 1.165.0, la Comunidad al día** (28-11-2026; Francisco: «Sí, así» a la maqueta y «Migración y publicar»; SPEC §165; bloque 3 de
+  `docs/qa/comunidad-visita.md`). Sin el cuaderno de cuero: papel de píxel sobre madera, la letra del puerto y las tres
+  pestañas de siempre; el avatar de cada lector es el busto de su personaje (Libo sin personaje). **Migración aplicada** el 28-11-2026:
+  `20270102120000_comunidad_personajes.sql` (1.582 B, SHA-256 igual a git en el editor; Francisco pulsó «Run», «Success»; con la
+  clave pública da 42501 al anónimo). Evidencias enviadas al chat. Con esto, el plan de `docs/qa/comunidad-visita.md` está completo.
+- **Anterior: 1.164.0, la visita a un vecino con la habitación protagonista** (28-11-2026; Francisco: «Sí, publica y sigue»; SPEC §164; bloque 2 de
   `docs/qa/comunidad-visita.md`). Su piso de borde a borde con una franja fina (volver y su nombre); la estantería, el libro, el
   tablón y la puerta se tocan en la escena; junto a la puerta, una caja de regalo y un post-it en blanco que abren una nota de
   papel pequeña. Sin migración. Evidencias enviadas al chat. Siguiente: bloque 3, la Comunidad al día.
@@ -320,6 +325,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.165.0 | La Comunidad al día: papel de píxel, letra del puerto y el busto del personaje como avatar (publicada; migración aplicada) | §165 |
 | 1.164.0 | La visita a un vecino: la habitación protagonista, la caja de regalo y el post-it en la escena (publicada) | §164 |
 | 1.163.0 | El telefonillo, que se vea que se toca (publicada) | §163 |
 | 1.162.2 | Lo del iPhone de su compañera: versión nueva al volver, el 3D que vuelve, carga de la comunidad (publicada) | §162.6 |
@@ -665,6 +671,27 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-28 · 1.165.0, la Comunidad al día (Claude)
+
+- Francisco vio las evidencias: «Migración y publicar». Migración `20270102120000_comunidad_personajes.sql` pegada en el SQL
+  Editor del proyecto `bookshelf` (1.582 B, SHA-256 `967e65e7…76ae64` igual a git en la página); Francisco pulsó «Run»
+  («Success»). Con la clave pública, `comunidad_personajes` da 42501 al anónimo (una inexistente, PGRST202). Commit, subida a la
+  rama y a `main`.
+
+- Francisco vio la maqueta de Lectores y la aprobó: «Sí, así» (anotado en CLAUDE.md). Bloque 3 de `docs/qa/comunidad-visita.md`.
+- Sin el cuaderno de cuero: `comunidad-px` en `SocialHub.jsx` y `ReaderProfile.jsx`, hoja nueva `src/styles/comunidad-165.css`
+  (la última). Avatares: `retratos.js` (lotes de 30 ms, caché, Libo sin personaje), `ReaderAvatar.jsx` reescrito con `userId`
+  y `data-retrato`, el encuadre `busto` en `render.js` y `userId` en cada `ReaderAvatar` con id. Tu perfil sin selector
+  de avatar con la migración. Borrada la maqueta temporal `zz-retratos.spec.js`.
+- **Migración nueva sin aplicar**: `20270102120000_comunidad_personajes.sql` (1.582 B, SHA-256 `967e65e7…76ae64`). Sin ella,
+  todo como antes (retratos ilustrados y su selector).
+- Pruebas: Vitest de `src/features/social` 77/77 (con `comunidad-personajes.rls.test.js`, 5); e2e `v1165-comunidad` y
+  `entrega2` en Chromium 360 y 390 y WebKit 390, 30 en verde (`entrega2` destapó dos cosas mías, ya arregladas: el selector
+  se quedaba oculto en una cuenta sin perfil y «Guardar perfil» medía 40 px). Regresión a 390 de la comunidad: fallan como antes
+  `v161` (5) y `v162` (2), que buscan la visita al rincón retirada. Build limpio; lint sin avisos nuevos. Emulación.
+- Limitaciones: la lista de bloqueados sigue con los retratos de antes; desde Comunidad, «Visitar» mantiene la cabecera de
+  `VisitaLector` (con el busto nuevo); el busto en Amigos, la visita y el telefonillo, sin e2e propia.
 
 ### 2026-11-28 · 1.164.0, la visita a un vecino, la habitación protagonista (Claude)
 

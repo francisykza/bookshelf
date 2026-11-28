@@ -70,7 +70,7 @@ function Message({ msg, author, mine, owner, active, onChanged, onRemoved }) {
   const question = { delete: '¿Borrar tu mensaje?', remove: '¿Retirar este mensaje del club?', block: `¿Bloquear a ${alias}? Dejaréis de ver vuestras aportaciones.`, report: '¿Denunciar este mensaje? Solo lo verá moderación.' }[confirm];
   return (
     <li className="club-msg" data-mine={mine || undefined}>
-      <ReaderAvatar avatarId={author?.avatar_id} alias={alias} size="review" />
+      <ReaderAvatar userId={author?.user_id} avatarId={author?.avatar_id} alias={alias} size="review" />
       <div className="club-msg__main">
         <p className="club-msg__who">
           <b>{alias}</b>
@@ -426,7 +426,7 @@ function ClubView({ club: initial, onBack, onLeft }) {
               <ul className="club-members">
                 {(members ?? []).map((m) => (
                   <li key={m.user_id} className="club-member">
-                    <ReaderAvatar avatarId={profiles[m.user_id]?.avatar_id} alias={aliasOf(m.user_id)} size="list" />
+                    <ReaderAvatar userId={m.user_id} avatarId={profiles[m.user_id]?.avatar_id} alias={aliasOf(m.user_id)} size="list" />
                     <span className="club-member__name">
                       <b>{aliasOf(m.user_id)}</b>
                       {m.role === 'owner' && <small>Propietario</small>}

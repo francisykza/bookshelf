@@ -28,7 +28,7 @@ const limpiarCodigo = (t) =>
     .toUpperCase();
 
 function Avatar({ p, size = 'list' }) {
-  return <ReaderAvatar avatarId={p?.avatar_id} alias={p?.alias ?? ''} size={size} decorative />;
+  return <ReaderAvatar userId={p?.user_id ?? p?.uid} avatarId={p?.avatar_id} alias={p?.alias ?? ''} size={size} decorative />;
 }
 
 /** Un libro con su autor, como se escribe en las fichas. */

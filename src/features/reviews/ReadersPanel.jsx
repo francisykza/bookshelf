@@ -82,7 +82,7 @@ export function ReviewCard({ review, author, mine, onBlock, onReport, onOpenAuth
         <path d="M9 40V9a5 5 0 0 1 10 0v26a3 3 0 0 1-6 0V12" />
       </svg>
       <div className="review-card__head">
-        <ReaderAvatar avatarId={author?.avatar_id} alias={alias} size="review" />
+        <ReaderAvatar userId={author?.user_id} avatarId={author?.avatar_id} alias={alias} size="review" />
         <div className="review-card__who">
           {onOpenAuthor ? (
             <button type="button" className="review-card__author" onClick={() => onOpenAuthor(review.user_id)}>

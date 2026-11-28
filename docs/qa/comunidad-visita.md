@@ -55,7 +55,9 @@ Encargo de Francisco del 28-11-2026, con dos capturas del iPhone de su compañer
    puerto en los títulos, Libo de guía), las tres pestañas de siempre y sin perder ninguna función. **Avatares**: el retrato de
    píxel de su personaje (la cabeza del personaje que cada uno viste en su piso, con su ropa y colores), igual en Comunidad, en
    Amigos, en la visita y en el telefonillo. Quien no tenga personaje, un retrato de Libo neutro. Los retratos ilustrados
-   antiguos se retiran sin borrar nada (el `avatar_id` se queda en el servidor).
+   antiguos se retiran sin borrar nada (el `avatar_id` se queda en el servidor). **Hecho en la 1.165.0** (SPEC §165; Francisco,
+   «Sí, así»): sin el cuaderno de cuero; el busto del personaje necesita la migración `20270102120000_comunidad_personajes.sql`
+   (sin ella, los retratos de antes). La lista de bloqueados sigue con los de antes.
 
 ## 3. Lo que decide Francisco
 

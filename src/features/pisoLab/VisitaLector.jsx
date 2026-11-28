@@ -45,7 +45,7 @@ export default function VisitaLector({ userId, from = null, onBack, onProfile })
           </button>
           {vecino && (
             <button type="button" className="visita-lector__quien" onClick={onProfile} aria-label={`Ver el perfil de ${alias}`}>
-              <ReaderAvatar avatarId={vecino.avatar_id} alias={alias} size="list" decorative />
+              <ReaderAvatar userId={vecino.user_id} avatarId={vecino.avatar_id} alias={alias} size="list" decorative />
               <b>Piso de {alias}</b>
               <ChevronRight aria-hidden="true" />
             </button>

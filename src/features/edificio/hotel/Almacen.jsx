@@ -1413,7 +1413,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
                       <ul className="alm-amigos__lista">
                         {amigos.invitaciones.map((inv) => (
                           <li key={inv.sala} className="alm-amigos__invita">
-                            <ReaderAvatar avatarId={inv.avatar_id} alias={inv.alias ?? 'Alguien'} size="list" decorative />
+                            <ReaderAvatar userId={inv.uid} avatarId={inv.avatar_id} alias={inv.alias ?? 'Alguien'} size="list" decorative />
                             <span>{inv.alias ?? 'Alguien'} te invita a recorrer el almacén.</span>
                             <button type="button" className="alm-btn alm-btn--primario" onClick={() => unirse(inv)}>
                               Entrar con {inv.alias ?? 'él'}
@@ -1427,7 +1427,7 @@ export function Almacen({ onStreet, onInventory = () => {}, soundOn = false, des
                       <ul className="alm-amigos__lista">
                         {amigos.amigos.map((a) => (
                           <li key={a.uid}>
-                            <ReaderAvatar avatarId={a.avatar_id} alias={a.alias ?? 'Tu amigo'} size="list" decorative />
+                            <ReaderAvatar userId={a.uid} avatarId={a.avatar_id} alias={a.alias ?? 'Tu amigo'} size="list" decorative />
                             <span>{a.alias ?? 'Tu amigo'}</span>
                             <button type="button" className="alm-btn" onClick={() => invitar(a)}>
                               Invitar

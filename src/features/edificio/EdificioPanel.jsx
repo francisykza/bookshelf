@@ -614,7 +614,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
     body = (
       <div className={`${inside ? 'ed-room ed-inside' : 'ed-room'}${dressing ? ' is-dressing' : ''}`}>
         <div className="ed-head">
-          <ReaderAvatar avatarId={open.avatar_id} alias={open.alias ?? ''} size="list" decorative />
+          <ReaderAvatar userId={open.user_id} avatarId={open.avatar_id} alias={open.alias ?? ''} size="list" decorative />
           <div>
             <h2 className="ed-title" id="ed-title">
               {mine ? 'Tu piso' : `Piso de ${open.alias}`} · {doorLabel(open.puerta)}
@@ -732,7 +732,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
         {/* 1.164: en casa de un vecino, solo su nombre (su piso siempre se visita por dentro) */}
         {pisoId && open && !mine && !inHotel && !inShop && (
           <p className="ed-bar__quien">
-            <ReaderAvatar avatarId={open.avatar_id} alias={open.alias ?? ''} size="list" decorative />
+            <ReaderAvatar userId={open.user_id} avatarId={open.avatar_id} alias={open.alias ?? ''} size="list" decorative />
             <b>{open.alias ?? 'Tu vecino'}</b>
             <span>{doorLabel(open.puerta)}</span>
           </p>
@@ -755,7 +755,7 @@ export function EdificioPanel({ pisoId = null, sala = null, mueble = null, desde
       </div>
       {aviso && (
         <div className="ed-aviso" role="status">
-          <ReaderAvatar avatarId={aviso.amigo?.avatar_id} alias={nombreMesa(aviso)} size="list" decorative />
+          <ReaderAvatar userId={aviso.amigo?.uid} avatarId={aviso.amigo?.avatar_id} alias={nombreMesa(aviso)} size="list" decorative />
           <p>{textoAviso(aviso)}</p>
           <button type="button" className="px-btn" onClick={aviso.almacen ? () => irAlAlmacen(aviso.sala) : aviso.lectura ? irALaSala : irAlCasino}>
             {aviso.almacen ? 'Ir al almacén' : aviso.lectura ? 'Ir a la sala' : 'Ir al casino'}

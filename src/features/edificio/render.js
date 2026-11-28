@@ -538,13 +538,16 @@ export function renderThumb(id, tonoIndex = 0, size = 44, acabado = null) {
  * Miniatura del personaje (§69) para el armario de la balda, encuadrada en una parte (`frame`: 'head', 'torso',
  * 'legs' o 'all'; lo demás queda fuera). Mira hacia delante, un poco girado, como en la habitación.
  */
-const THUMB_FRAMES = { head: (b) => b[2] >= 1.3, torso: (b) => b[2] >= 0.6 && b[5] <= 1.5, legs: (b) => b[5] <= 0.75, all: () => true };
+// 1.165: 'busto' (cabeza y hombros, con el jersey) es el retrato de quien lee en la Comunidad y en las visitas
+const THUMB_FRAMES = { head: (b) => b[2] >= 1.3, busto: (b) => b[5] >= 1.12, torso: (b) => b[2] >= 0.6 && b[5] <= 1.5, legs: (b) => b[5] <= 0.75, all: () => true };
 export function renderActorThumb(avatar, { frame = 'all', size = 33 } = {}) {
   const boxes = actorBoxes(avatar, { x: 0, y: 0, facing: 0, pose: 'stand' });
   const framed = boxes.filter((bx) => THUMB_FRAMES[frame](bx.b));
   const probe = createRaster({ W: 1, H: 1, S: 1, yaw: YAW, ox: 0, oy: 0 });
   const pts = [];
-  for (const { b } of framed) for (const x of [b[0], b[3]]) for (const y of [b[1], b[4]]) for (const z of [b[2], b[5]]) pts.push(probe.project(x, y, z));
+  // El busto se corta a la altura del pecho: lo de más abajo queda fuera del encuadre
+  const suelo = frame === 'busto' ? 1.12 : -Infinity;
+  for (const { b } of framed) for (const x of [b[0], b[3]]) for (const y of [b[1], b[4]]) for (const z of [b[2], b[5]]) pts.push(probe.project(x, y, Math.max(z, suelo)));
   const minX = Math.min(...pts.map((p) => p.sx));
   const maxX = Math.max(...pts.map((p) => p.sx));
   const minY = Math.min(...pts.map((p) => p.sy));

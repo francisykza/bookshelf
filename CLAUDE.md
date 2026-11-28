@@ -424,6 +424,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       28-11-2026, «Sí, en ese orden»; `docs/qa/comunidad-visita.md`): 1) el telefonillo con su luz ámbar y su placa de latón,
       2) la visita con la habitación protagonista y el regalo y el post-it en la escena, 3) Comunidad al día con el retrato de
       píxel del personaje como avatar. Por bloques, con evidencias entre uno y otro.
+      **Bloque 3, decidido** (Francisco, 28-11-2026, «Sí, así», tras ver la maqueta de Lectores): **la Comunidad deja el cuaderno de
+      cuero** (sustituye a «Comunidad en el cuaderno de cuero» de la 1.60) y pasa al papel de píxel sobre madera de «Lo de hoy», con
+      la letra del puerto en títulos y pestañas y las tres pestañas de siempre, sin perder funciones. **El avatar de cada lector es el
+      busto de su personaje** (`renderActorThumb(…, { frame: 'busto' })`), el mismo en Comunidad, Amigos, la visita y el
+      telefonillo; sin personaje, un retrato neutro de Libo. El aspecto del personaje lo puede ver cualquiera de la comunidad
+      (migración nueva, la aplica él); el `avatar_id` de antes se queda en el servidor sin borrar.
     - **Después, borrar la versión antigua de la app** (Francisco, 26-11-2026: «quiero que se borre la versión antigua de la
       aplicación porque sigue saliendo cuando la gente se mete en la web para instalar la app»). Antes de borrar nada,
       investigar qué sale exactamente y enseñarle qué se quitaría para que lo confirme; sin borrar datos de usuarios.

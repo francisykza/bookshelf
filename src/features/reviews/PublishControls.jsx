@@ -134,7 +134,7 @@ export function PublishControls({ book, onUpdate, onOpenProfile, unsaved = false
             <b>Esto es exactamente lo que verán otras personas.</b> Tus notas, citas, páginas e historial no se publican.
           </p>
           <div className="profile-form__me">
-            <ReaderAvatar avatarId={community.profile.avatar_id} alias={community.profile.alias} size="review" />
+            <ReaderAvatar userId={community.profile.user_id} avatarId={community.profile.avatar_id} alias={community.profile.alias} size="review" />
             <b>{community.profile.alias}</b>
           </div>
           <dl>

@@ -4,6 +4,7 @@
 // cuenta o cerrar sesión (`clearSocialCache`).
 import { getClient } from '../../../services/cloud';
 import { conLibocoins } from '../../../domain/libocoins';
+import { clearRetratos } from '../retratos';
 
 export const PAGE_SIZE = 20;
 
@@ -14,6 +15,7 @@ export function clearSocialCache(userId = null) {
   cache.userId = userId;
   cache.profiles.clear();
   cache.stats.clear();
+  clearRetratos();
 }
 
 export async function client() {

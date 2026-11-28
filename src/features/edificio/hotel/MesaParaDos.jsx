@@ -145,7 +145,7 @@ export function MesaParaDos({ data, dia, onData, sfx, onVista }) {
           </div>
 
           <div className="gh-21__friend">
-            <ReaderAvatar avatarId={mesa.amigo.avatar_id} alias={nombre(mesa)} size="list" decorative />
+            <ReaderAvatar userId={mesa.amigo.uid} avatarId={mesa.amigo.avatar_id} alias={nombre(mesa)} size="list" decorative />
             <p>
               <b>{nombre(mesa)}</b>
               <span>{juego ? (suya.estado === 'jugando' ? 'aún juega su mano' : 'ya ha terminado') : `${suya.tu}${suya.tu > 21 ? ', se pasa' : ''}`}</span>
@@ -223,7 +223,7 @@ export function MesaParaDos({ data, dia, onData, sfx, onVista }) {
           <ul className="gh-21__tables" aria-label="Tus mesas para dos">
             {recibidas.map((m) => (
               <li key={m.id} className="gh-21__table is-invite">
-                <ReaderAvatar avatarId={m.amigo.avatar_id} alias={nombre(m)} size="list" decorative />
+                <ReaderAvatar userId={m.amigo.uid} avatarId={m.amigo.avatar_id} alias={nombre(m)} size="list" decorative />
                 <p>
                   <b>
                     {nombre(m)} te invita a una mesa{m.solo_garbanzos ? ' de garbanzos' : ''}
@@ -242,7 +242,7 @@ export function MesaParaDos({ data, dia, onData, sfx, onVista }) {
             ))}
             {otras.map((m) => (
               <li key={m.id} className={`gh-21__table is-${m.estado}`}>
-                <ReaderAvatar avatarId={m.amigo.avatar_id} alias={nombre(m)} size="list" decorative />
+                <ReaderAvatar userId={m.amigo.uid} avatarId={m.amigo.avatar_id} alias={nombre(m)} size="list" decorative />
                 <p>
                   <b>
                     Mesa{m.solo_garbanzos ? ' de garbanzos' : ''} con {nombre(m)}
@@ -277,7 +277,7 @@ export function MesaParaDos({ data, dia, onData, sfx, onVista }) {
               <legend>Invitar a</legend>
               {libres.map((a) => (
                 <button key={a.uid} type="button" className="gh-21friend" aria-pressed={amigo === a.uid} onClick={() => setAmigo(a.uid)}>
-                  <ReaderAvatar avatarId={a.avatar_id} alias={a.alias} size="list" decorative />
+                  <ReaderAvatar userId={a.uid} avatarId={a.avatar_id} alias={a.alias} size="list" decorative />
                   <span>{a.alias}</span>
                 </button>
               ))}

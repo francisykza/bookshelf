@@ -90,7 +90,7 @@ export function RoomTab({ timer, onVisit = null }) {
         )}
         {me ? (
           <div className="room-tab__me">
-            <ReaderAvatar avatarId={profiles[me.user_id]?.avatar_id} alias={profiles[me.user_id]?.alias ?? ''} size="list" />
+            <ReaderAvatar userId={me.user_id} avatarId={profiles[me.user_id]?.avatar_id} alias={profiles[me.user_id]?.alias ?? ''} size="list" />
             <p>
               <b>Estás sentado/a</b>
               {me.share_book && me.book_title ? (
@@ -120,7 +120,7 @@ export function RoomTab({ timer, onVisit = null }) {
               const alias = profiles[r.user_id]?.alias ?? 'Lector';
               return (
                 <li key={r.user_id} className="room-tab__reader">
-                  <ReaderAvatar avatarId={profiles[r.user_id]?.avatar_id} alias={profiles[r.user_id]?.alias ?? ''} size="list" />
+                  <ReaderAvatar userId={r.user_id} avatarId={profiles[r.user_id]?.avatar_id} alias={profiles[r.user_id]?.alias ?? ''} size="list" />
                   <span className="room-tab__who">
                     <b>{alias}</b>
                     {r.share_book && r.book_title && (

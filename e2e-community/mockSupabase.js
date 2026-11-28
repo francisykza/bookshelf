@@ -172,6 +172,12 @@ export function createMockSupabase(db = {}, { isbnWorks = {} } = {}) {
     if (table.startsWith('rpc/cafe_')) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
     if (table.startsWith('rpc/tablon_') ||table.startsWith('rpc/piso_publicar_expuestos') || table.startsWith('rpc/piso_expuestos_de')) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
     if (table === 'rpc/sala_lectura_personajes') return json(db.sala_personajes ?? []);
+    // 1.165: el busto del personaje en la Comunidad. Sin `db.comunidadPersonajes`, como sin la migración (los retratos de antes)
+    if (table === 'rpc/comunidad_personajes') {
+      if (!db.comunidadPersonajes) return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
+      const ids = (req.postDataJSON?.()?.ids ?? []).slice(0, 60);
+      return json((db.pisos ?? []).filter((p) => ids.includes(p.user_id) && p.personaje).map((p) => ({ user_id: p.user_id, personaje: p.personaje })));
+    }
     // La Lonja: `db.lonja` es lo que devuelve `piso_lonja`; las reglas de verdad se prueban en lonja.rls.test.js
     if (table.startsWith('rpc/piso_lonja') || table === 'rpc/piso_estiba_zarpar' || table === 'rpc/piso_taller_recoger') {
       const l = db.lonja;

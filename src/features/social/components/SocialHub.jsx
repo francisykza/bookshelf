@@ -12,6 +12,7 @@ import { ALIAS_MAX, aliasError } from '../../reviews/opinion';
 import { useCommunity } from '../hooks/useCommunity';
 import { fetchMyBlocks, unblockUser } from '../services/community';
 import { Libo } from '../../libo/LiboRincon';
+import { pedirPersonaje, retratosAntiguos } from '../retratos';
 import { ClubTab } from './ClubTab';
 import { CornerTab, ReadersTab, RoomTab } from './SocialTabs';
 
@@ -42,6 +43,25 @@ function ProfileTab() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [failure, setFailure] = useState('');
+
+  // 1.165: con los personajes en el servidor, tu retrato es tu personaje y ya no se elige un avatar ilustrado (el de antes se
+  // queda guardado); sin la migración, el selector de siempre
+  // (con el id de la sesión: una cuenta nueva aún no tiene perfil y también tiene que poder elegir)
+  const yo = community.userId;
+  const [conPersonajes, setConPersonajes] = useState(() => !retratosAntiguos() && null);
+  const [tengoPersonaje, setTengoPersonaje] = useState(false);
+  useEffect(() => {
+    if (!yo) return undefined;
+    let vivo = true;
+    pedirPersonaje(yo).then((pj) => {
+      if (!vivo) return;
+      setConPersonajes(!retratosAntiguos());
+      setTengoPersonaje(Boolean(pj));
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [yo]);
 
   // Al llegar el perfil del servidor, el formulario parte de él (solo si aún no se ha tocado)
   useEffect(() => {
@@ -74,7 +94,7 @@ function ProfileTab() {
     <form className="profile-form profile-sheet" onSubmit={save} noValidate>
       {/* Así te verán: avatar grande, alias y la promesa de privacidad */}
       <div className="profile-hero">
-        <ReaderAvatar avatarId={avatarId} alias={alias} size="profile" />
+        <ReaderAvatar userId={yo} avatarId={avatarId} alias={alias} size="profile" />
         <b className="profile-hero__name">{alias.trim() || 'Tu alias'}</b>
         <p className="profile-hero__note">
           Solo compartes lo que tú eliges.
@@ -91,6 +111,21 @@ function ProfileTab() {
           {alias && error ? error : `Entre 2 y ${ALIAS_MAX} caracteres. Elígelo tú: no usamos tu nombre de cuenta.`}
         </small>
       </div>
+      {conPersonajes ? (
+        <p className="profile-retrato social-note">
+          {tengoPersonaje ? (
+            <>
+              <b>Tu retrato es tu personaje.</b> Lo ves así en la Comunidad, en Amigos y en las visitas. Para cambiarlo, vístete en el
+              armario de tu piso.
+            </>
+          ) : (
+            <>
+              <b>Tu retrato será tu personaje.</b> Cuando tengas tu piso en el edificio, se verá en la Comunidad, en Amigos y en las
+              visitas; mientras, te representa Libo.
+            </>
+          )}
+        </p>
+      ) : conPersonajes === false && (
       <fieldset className="avatar-picker" role="radiogroup" aria-label="Avatar">
         <legend className="profile-heading">Elige tu avatar</legend>
         <div className="avatar-picker__grid">
@@ -109,6 +144,7 @@ function ProfileTab() {
         ))}
         </div>
       </fieldset>
+      )}
       <label className="social-check profile-join">
         <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
         <span>
@@ -249,7 +285,7 @@ function OwnMenu({ onOpen }) {
           }
         }}
       >
-        <ReaderAvatar avatarId={profile?.avatar_id ?? null} alias={profile?.alias ?? ''} size="list" decorative />
+        <ReaderAvatar userId={profile?.user_id} avatarId={profile?.avatar_id ?? null} alias={profile?.alias ?? ''} size="list" decorative />
       </button>
       {open && (
         <div
@@ -305,7 +341,7 @@ export function SocialHub({ onClose, initialTab = 'lectores', timer = null, open
   };
   return (
     <PanelShell onClose={onClose} label="Comunidad" variant="social">
-      <NotebookShell className="social-hub social-notebook" data-tab={tab}>
+      <NotebookShell className="social-hub social-notebook comunidad-px" data-tab={tab}>
         <div className="social-hub__head">
           <OwnMenu onOpen={(id) => go(id, true)} />
           <h2>{current.title}</h2>
