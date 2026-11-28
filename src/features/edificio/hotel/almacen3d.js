@@ -10,6 +10,7 @@
 // - Se anda por los pasillos (tocar el suelo lleva hasta allí por la red de `almacenLayout.js`), se mira arrastrando y se
 //   toca un mueble para verlo de cerca: con más resolución, girándolo con el dedo y en el tono elegido.
 // - Quien te acompaña se ve con su personaje (`actorBoxes`) y su carretilla, sin lo que lleva dentro.
+import { vigilarContexto } from '../contexto3d';
 import { BoxGeometry, BufferGeometry, CanvasTexture, Color, Float32BufferAttribute, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, NearestFilter, PerspectiveCamera, Plane, PlaneGeometry, Raycaster, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
 // 1.99 (§99): «Sella el albarán» se juega en el propio mostrador de la caja (la cinta, el sello colgado de su carril, los
 // planos y la tinta), con la cámara encima; la página solo pone el botón y la marcha del albarán.
@@ -2941,14 +2942,8 @@ export function mountAlmacen(container, { onPick = () => {}, onFrame = () => {},
     },
     on,
   );
-  canvas.addEventListener(
-    'webglcontextlost',
-    (e) => {
-      e.preventDefault();
-      onLost();
-    },
-    on,
-  );
+  // 1.162.2: si el navegador quita el 3D (segundo plano, muchos abiertos), se espera a que lo devuelva (contexto3d.js)
+  vigilarContexto(canvas, { onLost, invalidate: () => invalidate(), on });
   document.addEventListener('visibilitychange', () => invalidate(), on);
   const observer = new ResizeObserver(resize);
   observer.observe(container);
@@ -3238,6 +3233,8 @@ export function mountAlmacen(container, { onPick = () => {}, onFrame = () => {},
       for (const p of peers.values()) p.mesh.geometry.dispose();
       for (const x of owned) x.dispose?.();
       renderer.dispose();
+      // Suelta el contexto ya (si no, sigue vivo hasta que el navegador lo recoja; en el iPhone hay pocos)
+      renderer.forceContextLoss();
       canvas.remove();
     },
   };

@@ -6,7 +6,12 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.162.1, el pie de «Lo de hoy», siempre entero** (28-11-2026; Francisco: «Sí, publícala»;
+- **Publicada en producción: 1.162.2, lo del iPhone de su compañera** (28-11-2026; Francisco: «Sí, publícala»; SPEC §162.6). La versión nueva se carga al
+  volver a la app (su iPhone seguía con una de antes de la 1.155: el café isométrico y la pantalla marrón en Comunidad), las
+  escenas 3D esperan a que el móvil les devuelva el 3D y la comunidad tiene su pantalla de carga. Sin migración. Evidencias
+  enviadas al chat. Su compañera tiene que cerrar del todo la app una vez para salir de la versión vieja. **Encargo nuevo con plan** en `docs/qa/comunidad-visita.md`
+  (Comunidad al día con avatares, la visita a un vecino sin menús y el telefonillo que se vea que se toca): espera su decisión.
+- **Anterior: 1.162.1, el pie de «Lo de hoy», siempre entero** (28-11-2026; Francisco: «Sí, publícala»;
   SPEC §162.5). Con muchas filas, la idea de Libo y los enlaces del pie ya no quedan cortados: solo se desplaza la lista.
   Sin migración.
 - **Anterior: 1.162.0, los Libocoins, bloque 3: Libo lo celebra** (28-11-2026; Francisco: «Sí, publícala»;
@@ -307,6 +312,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
+| 1.162.2 | Lo del iPhone de su compañera: versión nueva al volver, el 3D que vuelve, carga de la comunidad (publicada) | §162.6 |
 | 1.162.1 | El pie de «Lo de hoy», siempre entero (publicada) | §162.5 |
 | 1.162.0 | Los Libocoins, bloque 3: Libo lo celebra | §162 |
 | 1.161.0 | Los Libocoins, bloque 2: el saldo junto a Libo | §161 |
@@ -649,6 +655,28 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-28 · 1.162.2, lo del iPhone de su compañera (Claude)
+
+- Francisco vio las evidencias y la aprobó: «Sí, publícala». Commit, subida a la rama y a `main`.
+
+- Francisco, con dos capturas del iPhone de su compañera: el café «a veces» se ve así (el isométrico) y al tocar Comunidad en el
+  ordenador se queda marrón; además, Comunidad desfasada (avatares incluidos), la visita a un vecino con demasiados menús (quiere
+  ver su piso, con el regalo y el post-it integrados) y el telefonillo sin indicador de que se toca. Anotado en CLAUDE.md.
+- Diagnóstico: su café es el isométrico que se quitó en la 1.155 y lleva el cuaderno de Pilar (1.142): **su iPhone seguía con una
+  versión vieja en memoria**. La versión nueva se ponía al pasar a segundo plano sin recargar (§11.6). La pantalla marrón,
+  muy probablemente, esa versión pidiendo un trozo que ya no existe (antes de la red de seguridad de la 1.159). No se ha podido
+  reproducir en su iPhone; en emulación, la comunidad se abre bien.
+- Hecho: `src/ui/versionNueva.js` (al volver con versión nueva, recarga; nunca escribiendo; pregunta por otra cada vuelta, como
+  mucho cada 15 min), `src/features/edificio/contexto3d.js` (las seis escenas 3D del edificio y el hotel esperan 3 s a que vuelva
+  el contexto y lo sueltan al salir), y en `App.jsx` la pantalla de carga «Abriendo la comunidad…» y «Abriendo su perfil…»
+  (antes, nada) y el aviso «Abriendo tu piso…» solo bajo tu piso.
+- Pruebas: nueva `v11622-3d-vuelve` en Chromium 360 y 390 y WebKit 390, 6/6; `v1107-casino3d`, `v1115-hotel3d`,
+  `v1116-sala3d`, `v1134-almacen-ordenador`, `v1138-pantallas-carga`, `libo-atras-salas`, `v1161` y `v1122-cafe-niveles` en
+  Chromium 390: 24 pasan y 2 omitidas. Unitarias de `src/ui` y Libo, 61/61. Build limpio; el lint, sin avisos nuevos.
+  Emulación, no su iPhone.
+- **Para su compañera, una vez**: cerrar del todo la pestaña o la app de Libotown y abrirla de nuevo; desde ahí se actualiza sola.
+- Plan de lo demás en `docs/qa/comunidad-visita.md` (bloques: telefonillo, visita, Comunidad); espera su decisión.
 
 ### 2026-11-28 · 1.162.1, el pie de «Lo de hoy», siempre entero, a producción (Claude)
 

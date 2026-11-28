@@ -11,6 +11,7 @@
 // - Quien lee, sentado en su sillón con su personaje, un libro en las manos y su compañero al lado. Tu sillón tiene tu libro
 //   en la mesita; al sentarte, la cámara baja al sillón y tienes tu libro abierto delante.
 // Todo propio: ni arte, ni logos, ni decorados de bibliotecas, hoteles ni juegos reales.
+import { vigilarContexto } from '../contexto3d';
 import {
   AdditiveBlending,
   BoxGeometry,
@@ -2032,14 +2033,8 @@ export function mountSala(container, { onPick = () => {}, onLomo = () => {}, onF
     },
     on,
   );
-  canvas.addEventListener(
-    'webglcontextlost',
-    (e) => {
-      e.preventDefault();
-      onLost();
-    },
-    on,
-  );
+  // 1.162.2: si el navegador quita el 3D (segundo plano, muchos abiertos), se espera a que lo devuelva (contexto3d.js)
+  vigilarContexto(canvas, { onLost, invalidate: () => invalidate(), on });
   document.addEventListener('visibilitychange', () => invalidate(), on);
   const observer = new ResizeObserver(resize);
   observer.observe(container);
@@ -2162,6 +2157,8 @@ export function mountSala(container, { onPick = () => {}, onLomo = () => {}, onF
       }
       for (const x of owned) x.dispose?.();
       renderer.dispose();
+      // Suelta el contexto ya (si no, sigue vivo hasta que el navegador lo recoja; en el iPhone hay pocos)
+      renderer.forceContextLoss();
       canvas.remove();
     },
   };

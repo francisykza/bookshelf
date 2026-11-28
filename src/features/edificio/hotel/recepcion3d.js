@@ -5,6 +5,7 @@
 // Bloque 1: la sala (suelo de mármol, estuco con pilastras, zócalo, cornisa, techo artesonado, ventanales al puerto, la
 // entrada, los apliques y la lámpara de araña) y tu vista: de pie, recién entrado, en la esquina por la que mira el dibujo
 // isométrico. Solo se dibuja cuando algo cambia.
+import { vigilarContexto } from '../contexto3d';
 import { BoxGeometry, BufferGeometry, CanvasTexture, Color, Float32BufferAttribute, Mesh, MeshBasicMaterial, NearestFilter, PerspectiveCamera, PlaneGeometry, Raycaster, SRGBColorSpace, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
 import { createRaster, hash, noise, rgb } from '../../minigames/libreria-puerto/raster';
 import { APLIQUES, ASCENSOR, CARRITO, CORNISA, CREAM, DARK, DIVAN, FILETE, GOLD, GOLD_D, GUARDARROPA, HUESPED, LAMP, MARBLE, MARBLE_D, PILASTRA, PILASTRA_W, RECEPCION, RED, SD, SW, TABLON, VELVET, WALNUT, WALNUT_L, WH, ZOCALO } from './lobbyLayout';
@@ -1393,14 +1394,8 @@ export function mountRecepcion(container, { startYaw = 0, onPick = () => {}, onF
     },
     on,
   );
-  canvas.addEventListener(
-    'webglcontextlost',
-    (e) => {
-      e.preventDefault();
-      onLost();
-    },
-    on,
-  );
+  // 1.162.2: si el navegador quita el 3D (segundo plano, muchos abiertos), se espera a que lo devuelva (contexto3d.js)
+  vigilarContexto(canvas, { onLost, invalidate: () => invalidate(), on });
   document.addEventListener('visibilitychange', invalidate, on);
   const observer = new ResizeObserver(resize);
   observer.observe(container);
@@ -1481,6 +1476,8 @@ export function mountRecepcion(container, { startYaw = 0, onPick = () => {}, onF
       observer.disconnect();
       for (const x of owned) x.dispose?.();
       renderer.dispose();
+      // Suelta el contexto ya (si no, sigue vivo hasta que el navegador lo recoja; en el iPhone hay pocos)
+      renderer.forceContextLoss();
       canvas.remove();
     },
   };

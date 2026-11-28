@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.162.1 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.162.2 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -9122,3 +9122,26 @@ Tercer y último bloque del plan aprobado en `docs/qa/libocoins.md` («Sí, así
   llegar al final, el papel la tapa. Sin cambios en lo que dice ni en lo que hace.
 - e2e `v1158-libo-lo-de-hoy` (Chromium 360 y 390, WebKit 390): tras «ver todo», sin bajar, los botones de la idea están enteros
   dentro de la tarjeta, y la última fila queda por encima de la idea al llevarla a la vista. Emulación.
+
+### 162.6 Lo del iPhone de su compañera: la versión vieja, el 3D que vuelve y la carga de la comunidad (1.162.2)
+
+Francisco, 28-11-2026, con dos capturas: el café «a veces» con el dibujo isométrico y, al tocar Comunidad en el ordenador, la
+pantalla marrón. Plan de lo demás del encargo en `docs/qa/comunidad-visita.md`.
+
+- **La versión nueva llega de verdad** (`src/ui/versionNueva.js`, `main.jsx`). Su café era el isométrico que se quitó en la
+  1.155: el iPhone seguía días con el código de antes en memoria, porque la versión nueva se ponía al pasar a segundo plano
+  pero sin recargar (§11.6). Ahora, si mientras estabas fuera se ha puesto una versión nueva, al volver se recarga (vuelves a
+  donde estabas: la ubicación está en el historial). Nunca con un campo de texto con el foco (se espera a la vuelta siguiente)
+  ni en la primera instalación. Cada vuelta, como mucho cada 15 minutos, pregunta si hay otra (`reg.update()`). Sustituye al
+  «sin recargar» de §11.6.
+- **El 3D que se pierde y vuelve** (`src/features/edificio/contexto3d.js`): la fachada, el café, la recepción, el almacén, el
+  casino y la sala de lectura se rendían en cuanto el móvil les quitaba el WebGL (al ir a otra app) y salía «Sin 3D en este
+  móvil». Ahora, como tu piso, esperan con la página delante 3 s a que vuelva; en segundo plano no cuenta. Y al salir de cada
+  una se suelta su contexto (`forceContextLoss`): en el iPhone hay pocos.
+- **Abrir la comunidad**: mientras se descarga, la pantalla de carga de Libotown con «Abriendo la comunidad…» (antes, nada: el
+  fondo marrón) y, en el perfil de un lector, «Abriendo su perfil…». El aviso «Abriendo tu piso…» del fondo solo se escribe
+  bajo tu piso.
+- Comprobación: e2e `e2e-community/v11622-3d-vuelve.spec.js` (Chromium 360 y 390, WebKit 390): el café pierde el contexto y lo
+  recupera sin aviso y vuelve a dibujar; si no lo recupera, el aviso a los pocos segundos; Comunidad con la descarga retrasada
+  enseña «Abriendo la comunidad…» y nunca «Abriendo tu piso…». Unitarias `src/ui/__tests__/versionNueva.test.js` (8).
+  Emulación: no se ha probado en su iPhone.

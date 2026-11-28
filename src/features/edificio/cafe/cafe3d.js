@@ -9,6 +9,7 @@
 // - El mostrador viejo con su caja registradora y Pilar detrás; cajas de mudanza, sábanas, una escalera de pintor y la
 //   estantería vacía; al fondo, la cortina de terciopelo con su caballete, que tapa lo que se abrirá al crecer el café.
 // Todo propio: ni arte, ni logos, ni decorados de cafeterías, series ni juegos reales.
+import { vigilarContexto } from '../contexto3d';
 import {
   AdditiveBlending,
   BoxGeometry,
@@ -7029,14 +7030,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
     },
     on,
   );
-  canvas.addEventListener(
-    'webglcontextlost',
-    (e) => {
-      e.preventDefault();
-      onLost();
-    },
-    on,
-  );
+  // 1.162.2: si el navegador quita el 3D (segundo plano, muchos abiertos), se espera a que lo devuelva (contexto3d.js)
+  vigilarContexto(canvas, { onLost, invalidate: () => invalidate(), on });
   document.addEventListener('visibilitychange', () => invalidate(), on);
   const observer = new ResizeObserver(resize);
   observer.observe(container);
@@ -7749,6 +7744,8 @@ export function mountCafe(container, { onPick = () => {}, onFrame = () => {}, on
       for (const x of owned) x.dispose?.();
       composer.dispose?.();
       renderer.dispose();
+      // Suelta el contexto ya (si no, sigue vivo hasta que el navegador lo recoja; en el iPhone hay pocos)
+      renderer.forceContextLoss();
       canvas.remove();
     },
   };

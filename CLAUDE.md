@@ -414,6 +414,12 @@ Francisco antes de tocarlos (puede que la otra cuenta esté trabajando en ese mo
       bloque 3) y «no está mal pero todavía puede mejorar, darle más identidad pixel pero sin saturar y que los iconos sean más
       originales»: iconos de píxel propios, nunca de una librería. **Segunda propuesta aprobada** («Sí, constrúyelo»): hecha en
       la 1.158.0 (SPEC §158, `docs/qa/libo-lo-de-hoy.md`). **Publicada** el 27-11-2026.
+    - **Comunidad al día, la visita a un vecino y el telefonillo** (Francisco, 28-11-2026, con dos capturas del iPhone de su
+      compañera): «a veces» el café se le ve con la escena sola (sin el 3D) y, al tocar Comunidad en el ordenador, se queda la
+      pantalla marrón; **arreglar los dos antes de seguir**. Además: **la Comunidad está desfasada**, «necesita que lo adaptemos a
+      como está la app ahora mismo, incluido avatares»; **el piso de un vecino**, «hay demasiados menús que afean la experiencia.
+      Querría que se viese su piso y que estuviesen las opciones bien integradas y orgánicas de dejar un regalo y un post it»; y
+      **el telefonillo debería tener un indicador visual de que es clicable**. Plan y propuesta con capturas antes de rediseñar.
     - **Después, borrar la versión antigua de la app** (Francisco, 26-11-2026: «quiero que se borre la versión antigua de la
       aplicación porque sigue saliendo cuando la gente se mete en la web para instalar la app»). Antes de borrar nada,
       investigar qué sale exactamente y enseñarle qué se quitaría para que lo confirme; sin borrar datos de usuarios.

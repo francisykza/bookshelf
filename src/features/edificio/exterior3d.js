@@ -3,6 +3,7 @@
 // cada cara que se ve se pinta en una lámina de textura con las mismas rampas y el mismo tramado que en el 2D, y todas
 // van juntas en una sola malla. La vista es la de una persona de pie: se mira a los lados y arriba y abajo, y se anda
 // entre unos sitios fijos. Three.js a 320 px de ancho, ampliado sin suavizar, y solo se dibuja cuando algo cambia.
+import { vigilarContexto } from './contexto3d';
 import {
   BackSide,
   BufferGeometry,
@@ -489,14 +490,8 @@ export function mountExterior(container, world, { startYaw = 0, startPitch = nul
     },
     on,
   );
-  canvas.addEventListener(
-    'webglcontextlost',
-    (e) => {
-      e.preventDefault();
-      onLost();
-    },
-    on,
-  );
+  // 1.162.2: si el navegador quita el 3D (segundo plano, muchos abiertos), se espera a que lo devuelva (contexto3d.js)
+  vigilarContexto(canvas, { onLost, invalidate: () => invalidate(), on });
   document.addEventListener('visibilitychange', invalidate, on);
   const observer = new ResizeObserver(resize);
   observer.observe(container);
@@ -584,6 +579,8 @@ export function mountExterior(container, world, { startYaw = 0, startPitch = nul
       observer.disconnect();
       for (const x of owned) x.dispose?.();
       renderer.dispose();
+      // Suelta el contexto ya (si no, sigue vivo hasta que el navegador lo recoja; en el iPhone hay pocos)
+      renderer.forceContextLoss();
       canvas.remove();
     },
   };

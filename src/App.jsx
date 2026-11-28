@@ -229,9 +229,11 @@ function Sanctuary() {
     <main className="sanctuary" data-view={view} data-phase={phase} data-home-3d={home || undefined} inert={panel ? true : undefined}>
       <h1 className="sr-only-focus">Libotown, tu santuario de lectura junto al mar</h1>
       {/* Hasta que llega tu piso, solo este aviso (1.89.1; desde la 1.157 no hay nada debajo) */}
+      {/* 1.162.2: el fondo se queda detrás de todo, pero el aviso solo bajo tu piso: con otro panel encima (la comunidad, un
+          perfil) decía «Abriendo tu piso…» */}
       {home && !cargando && (
         <p className="home-boot" role="status">
-          Abriendo tu piso…
+          {!panel || (panel.type === 'pisoLab' && panel.id === HOME_PISO) ? 'Abriendo tu piso…' : ''}
         </p>
       )}
       {/* 1.157: fuera de <main>, que es `inert` con un panel abierto (y tu piso, el inicio, siempre lo es): dentro, la nota
@@ -343,7 +345,7 @@ function Sanctuary() {
         </Suspense>
       )}
       {panel?.type === 'reader' && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PantallaCarga mensaje="Abriendo su perfil…" />}>
           <ReaderProfile userId={panel.id} onClose={close} />
         </Suspense>
       )}
@@ -508,8 +510,9 @@ function Sanctuary() {
           <GoodreadsImportPanel onClose={close} />
         </Suspense>
       )}
+      {/* 1.162.2: mientras se descarga, la pantalla de carga (antes, nada: en un iPhone se quedaba el fondo marrón) */}
       {panel?.type === 'social' && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<PantallaCarga mensaje="Abriendo la comunidad…" />}>
           <SocialHub
             onClose={close}
             initialTab={panel.tab ?? 'lectores'}

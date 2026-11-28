@@ -6,6 +6,7 @@ import { showDiagnostics } from './diag'
 import { seedPilotLibrary } from './features/pisoLab/sampleLibrary'
 import { RedDeSeguridad } from './ui/RedDeSeguridad'
 import { recargarUnaVez } from './ui/recarga'
+import { vigilarVersion } from './ui/versionNueva'
 
 // Piloto: la biblioteca de prueba se prepara antes de que la app lea el almacenamiento
 if (location.search.includes('piloto=')) {
@@ -38,11 +39,9 @@ if ('serviceWorker' in navigator && import.meta.env.PROD && !location.search.inc
     navigator.serviceWorker
       .register('/sw.js')
       .then((reg) => {
-        // Una versión nueva espera; se activa cuando la app pasa a segundo plano, sin recargar (SPEC §11.6)
-        const activate = () => {
-          if (document.visibilityState === 'hidden' && reg.waiting) reg.waiting.postMessage('activar-version')
-        }
-        document.addEventListener('visibilitychange', activate)
+        // Una versión nueva espera y se pone cuando la app pasa a segundo plano; desde la 1.162.2, al volver se recarga con
+        // ella (antes, sin recargar: SPEC §11.6) y cada vuelta pregunta si hay otra (src/ui/versionNueva.js)
+        vigilarVersion(navigator.serviceWorker, reg)
       })
       .catch(() => {})
   })
