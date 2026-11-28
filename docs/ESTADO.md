@@ -661,6 +661,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   los mismos 9 avisos de antes. Emulación, no un móvil real.
 - Evidencias al chat: capturas a 360 (arriba y abajo) y WebKit 390, y el vídeo a 360 (`qa-report/v1158-lo-de-hoy/`).
 - Francisco: «Sí, publícala». Commit en `1.90-escritorio-puerto` y `main` avanzado sin forzar desde `c6761ff`. Sin migraciones.
+- Desplegado: `https://libotown.es/sw.js` sirve v1.162.1 (28-11-2026, 09:05) y la dirección de antes sigue con su 308.
 
 ### 2026-11-28 · La web en su dominio, dada por hecha (Claude)
 
