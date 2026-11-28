@@ -20,7 +20,7 @@ bufanda a rayas, estrellas y libritos alrededor). Propuesta del 27-11-2026, **ap
 1. **Nombre y moneda.** *Hecho en la 1.160.0 (SPEC §160).* Todo texto visible dice el nombre nuevo (singular y plural), también en la web. La moneda se recorta
    de su dibujo (`../libotown-marca/`, nunca redibujada) en los tamaños de la app, nítida en píxel; sustituye a la tira de
    ticket del café. **Lo interno no cambia** (`tickets` en el servidor, en el código y en Supabase): sin migración.
-2. **El saldo, siempre a mano, junto a Libo.** Libo vive en una esquina en todas partes: a su lado, una moneda pequeña con
+2. **El saldo, siempre a mano, junto a Libo.** *Hecho en la 1.161.0 (SPEC §161): la moneda pegada a su pata, con la cifra de píxel, por elección de Francisco.* Libo vive en una esquina en todas partes: a su lado, una moneda pequeña con
    tu saldo. Tocarla abre una nota de papel con el saldo, cómo se ganan y dónde se gastan (sin botones de compra ni
    presión). No sale donde Libo se aparta (la barra del café, el obrador, el taller, las salas del hotel, el armario).
    Saldo del servidor, con caché; sin sesión o sin comunidad, no sale.

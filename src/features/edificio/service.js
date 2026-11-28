@@ -8,6 +8,7 @@ import { DEFAULT_AVATAR, PRENDAS, ROPA_CASINO, ROPA_CHISTERAS, ROPA_ESTIBA, ROPA
 import { FIRMAS, catalogItem } from './catalog';
 import { rarezaOf } from './economy';
 import { normalizeInventory } from './inventory';
+import { publicarSaldo } from './saldo';
 import { empaquetar, leerPiso } from './retirados';
 export { enlaceLlave, llaveBonita, llaveLimpia, mudarse, verLlave } from './llave';
 
@@ -17,6 +18,13 @@ export { enlaceLlave, llaveBonita, llaveLimpia, mudarse, verLlave } from './llav
  */
 export const plantasDe = (vecinos, plantas = null) => Math.max(3, Math.min(5, plantas ?? Math.max(0, ...vecinos.map((v) => Number(v.puerta?.[0]) || 0))));
 export const doorLabel = (p) => `${p[0]}.º ${p[1]}`;
+
+// Libocoins, bloque 2: el inventario trae el saldo; se publica para el que se ve junto a Libo (solo si el servidor lo da)
+function inventario(data) {
+  const inv = normalizeInventory(data);
+  if (inv?.tienda) publicarSaldo(inv.tickets);
+  return inv;
+}
 
 let available = null;
 
@@ -152,7 +160,11 @@ export async function salaPersonajes(ids) {
 }
 
 // ── La Lonja del Gran Hotel (1.84, supabase/migrations/20261114120000_hotel_lonja.sql) ──
-const normalizeLonja = (d) => ({
+const normalizeLonja = (d) => {
+  publicarSaldo(d.tickets);
+  return lonjaDe(d);
+};
+const lonjaDe = (d) => ({
   personaje: validateAvatar(d.personaje),
   tickets: d.tickets ?? 0,
   sellos: d.sellos ?? 0,
@@ -242,7 +254,7 @@ export async function loadInventario() {
   // Función que no existe: la migración aún no está aplicada en este servidor
   if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
   fail(error);
-  return normalizeInventory(data);
+  return inventario(data);
 }
 
 // Armario del personaje y misiones del día (1.70, §70): { prendas: [«clave:valor»], hechas: [misiones del día], nueva,
@@ -287,7 +299,7 @@ export async function elegirInicio(ids) {
   const sb = await client();
   const { data, error } = await sb.rpc('piso_elegir_inicio', { muebles: ids });
   fail(error);
-  return normalizeInventory(data);
+  return inventario(data);
 }
 
 /** 1.67 (§67): cobra los tickets de una misión cumplida (una vez por semana; `semana`: el lunes, AAAA-MM-DD). */
@@ -295,7 +307,7 @@ export async function reclamarMision(mision, semana) {
   const sb = await client();
   const { data, error } = await sb.rpc('piso_reclamar_mision', { mision, semana });
   fail(error);
-  return normalizeInventory(data);
+  return inventario(data);
 }
 
 /** Compra un mueble en la tienda del bajo. Devuelve el inventario nuevo. */
@@ -303,7 +315,7 @@ export async function comprar(mueble) {
   const sb = await client();
   const { data, error } = await sb.rpc('piso_comprar', { mueble });
   fail(error);
-  return normalizeInventory(data);
+  return inventario(data);
 }
 
 /** Abre un sobre de la pared, de 1 o de 5 (sorteo en el servidor): { premios: [{ mueble, rareza, nuevo }], inventario }. */
@@ -314,7 +326,7 @@ export async function abrirSobre(sobre, cuantos) {
   const premios = (Array.isArray(data?.premios) ? data.premios : [])
     .filter((p) => catalogItem(p?.mueble))
     .map((p) => ({ mueble: p.mueble, rareza: rarezaOf(catalogItem(p.mueble)), nuevo: p.nuevo === true, acabado: acabadoOf(p.acabado)?.id ?? null }));
-  return { premios, inventario: normalizeInventory(data?.inventario) };
+  return { premios, inventario: inventario(data?.inventario) };
 }
 
 /** Recicla una copia libre (no colocada) a cambio de tickets. */
@@ -322,7 +334,7 @@ export async function reciclar(mueble) {
   const sb = await client();
   const { data, error } = await sb.rpc('piso_reciclar', { mueble });
   fail(error);
-  return normalizeInventory(data);
+  return inventario(data);
 }
 
 /** Deja (o cambia) mi sello en el buzón de un vecino; `sello` null lo quita. */
@@ -375,7 +387,7 @@ export async function regalar(para, mueble, acabado = null) {
   const sb = await client();
   const { data, error } = await sb.rpc('piso_regalar', acabado ? { para, mueble, acabado } : { para, mueble });
   fail(error);
-  return normalizeInventory(data);
+  return inventario(data);
 }
 
 // ── El casino del sótano del Gran Hotel (1.80, supabase/migrations/20261110120000_hotel_casino.sql) ──
@@ -648,6 +660,7 @@ export async function loadAlmacen() {
   const { data, error } = await sb.rpc('piso_almacen_estado');
   if (error && (error.code === 'PGRST202' || error.code === '42883')) return null;
   fail(error);
+  publicarSaldo(data?.tickets);
   return data;
 }
 /**
@@ -679,7 +692,7 @@ export async function almacenComprar(compra, articulos, esperado, usarDescuento)
   const sb = await client();
   const { data, error } = await sb.rpc('piso_almacen_comprar', { compra, articulos, esperado, usar_descuento: usarDescuento });
   fail(error);
-  return { ...data, inventario: normalizeInventory(data?.inventario) };
+  return { ...data, inventario: inventario(data?.inventario) };
 }
 /**
  * 1.105 · Paga la ropa de la planta de ropa (todo o nada, con la clave de compra: un reintento no cobra dos veces).

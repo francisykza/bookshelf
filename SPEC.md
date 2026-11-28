@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.160.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.161.0 · 2026-11-27 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -9036,3 +9036,39 @@ Plan aprobado («Sí, así») en `docs/qa/libocoins.md`: tres bloques; este es e
 
 - Unitaria `src/domain/__tests__/libocoins.test.js`. Las e2e que esperaban «tickets» esperan «Libocoins» (las comprobaciones,
   no los selectores ni los datos internos). Emulación: no equivale a un móvil real.
+
+## 161. Los Libocoins, bloque 2: el saldo junto a Libo (1.161.0)
+
+Segundo bloque del plan aprobado en `docs/qa/libocoins.md` («Sí, así»; Francisco, «Sí, el bloque 2»). Sin migración.
+
+### 161.1 La moneda a su pata
+
+- Donde está Libo (tu piso, el portal, tu piso del edificio, el café, el vestíbulo del hotel…), **su moneda con tu saldo**:
+  pegada a su pata y un poco por delante de él, como si la sujetara, con la cifra en la letra de píxel de la casa
+  (contorno de un píxel y sombra dura, sin caja). Francisco vio una primera versión en una placa de papel encima de su
+  cabeza y pidió algo «más natural»; eligió «Junto a su pata». Respira con Libo; con movimiento reducido, quieta.
+- Se toca en 44 px. **No sale** donde Libo se aparta (la barra y lo demás del café, las salas del hotel, el armario), en la
+  cabecera de los cuadernos (comunidad, amigos) ni en el telefonillo; tampoco sin sesión o sin la comunidad activa.
+- En tu piso del edificio, a su izquierda están Decorar y el armario: ahí la moneda entra un poco más en Libo (a 360 px el
+  hueco es justo).
+
+### 161.2 La nota de papel
+
+- Tocar la moneda abre una nota en el sitio del bocadillo de Libo: «Tienes N Libocoins», cómo se ganan (misiones de la
+  semana, las tres del día con toda la ropa, subir de nivel el café y su extra diario, la lata del casino y la Lonja) y dónde
+  se gastan (el almacén, con su planta de ropa, y la Lonja). Sin botones de compra ni nada que meta prisa.
+- Se cierra tocando fuera, con su cruz, con Escape o con Atrás del móvil (`useAtras`); nunca a la vez que el bocadillo de Libo.
+
+### 161.3 De dónde sale el saldo
+
+- Un solo dato para toda la app, `src/features/edificio/saldo.js` (sin React ni servidor). Lo publica cada respuesta del
+  servidor que ya trae el saldo: el inventario (`inventario()` en `service.js`: cargar, cobrar misiones, comprar, el carrito
+  del almacén…), la Lonja y la caja del almacén. Se olvida al cambiar de cuenta o cerrar sesión (`useCommunity`).
+- `useSaldoLibo` (`src/features/libo/`) lo lee y, al llegar a una escena, si lo último tiene más de 10 s, pregunta una vez por
+  el inventario (la misma consulta que tu piso). Si falla (sin red, sin la migración), la moneda no sale.
+
+### 161.4 Comprobación
+
+- e2e `e2e-community/v1161-libocoins-saldo.spec.js` (Chromium 360 y 390, WebKit 390): la moneda en tu piso, el portal, tu piso
+  del edificio y el café, pegada a Libo y sin tapar los controles; la nota, dentro de la pantalla y con botones de 44 px;
+  Atrás, la cruz y Libo la cierran; lo ganado en otro sitio llega al cambiar de escena; en el armario no está. Emulación.

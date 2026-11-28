@@ -6,7 +6,11 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.160.0, los Libocoins, bloque 1: el nombre y la moneda** (27-11-2026; Francisco: «Sí,
+- **Publicada en producción: 1.161.0, los Libocoins, bloque 2: el saldo junto a Libo** (28-11-2026; Francisco: «Sí,
+  publícala»; SPEC §161 y `docs/qa/libocoins.md`). La moneda con tu saldo, pegada a la pata de Libo (cifra de píxel, sin
+  caja) y, al tocarla, una nota de papel con cómo se ganan y dónde se gastan. Sin migración. Sigue el bloque 3 (Libo lo
+  celebra al ganarlos).
+- **Anterior: 1.160.0, los Libocoins, bloque 1: el nombre y la moneda** (27-11-2026; Francisco: «Sí,
   publícala»; SPEC §160 y `docs/qa/libocoins.md`). Los tickets se llaman Libocoins en todo lo visible y en la web, con la
   moneda de Libo que dibujó Francisco; por dentro siguen siendo `tickets`, sin migración. Siguen el bloque 2 (el saldo junto
   a Libo) y el 3 (Libo lo celebra al ganarlos).
@@ -296,7 +300,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.160.0 | Los Libocoins, bloque 1: el nombre y la moneda (publicada) | §160 |
+| 1.161.0 | Los Libocoins, bloque 2: el saldo junto a Libo (publicada) | §161 |
+| 1.160.0 | Los Libocoins, bloque 1: el nombre y la moneda | §160 |
 | 1.159.0 | La red de seguridad: el ordenador en negro en un iPhone | §159 |
 | 1.158.0 | «Lo de hoy»: el menú de Libo en tu piso (publicada) | §158 |
 | 1.157.0 | Fuera la habitación ilustrada, guardada en `archivo/` (publicada) | §157 |
@@ -393,7 +398,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
     al ganar, una animación con Libo. Lo interno (`tickets` en el servidor y en el código) no se renombra sin una migración
     pensada y aprobada por él; las reglas de cuándo se ganan no cambian. Proponerle el plan antes de hacerlo. **Plan aprobado**
     (27-11-2026, «Sí, así»; `docs/qa/libocoins.md`): Libocoins en todo lo visible y en la web, el saldo junto a Libo, Libo celebra
-    al ganarlos. **Bloque 1 publicado en la 1.160.0**; siguen el 2 y el 3.
+    al ganarlos. **Bloque 1 publicado en la 1.160.0** y **bloque 2 publicado en la 1.161.0**; sigue el 3.
   - **La web en su dominio**: «subir el diseño que hicimos al dominio que compré y ver si necesito un hosting». La web ya está
     publicada en `libotown.es` desde la 1.146.0 (Vercel, en la raíz: quien llega nuevo ve la web); no hace falta otro hosting.
     Repasar con él qué quiere exactamente (¿otra dirección, como un subdominio? ¿las versiones «más interactiva» y «más cozy»?).
@@ -634,6 +639,22 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-28 · 1.161.0, los Libocoins, bloque 2: el saldo junto a Libo, a producción (Claude)
+
+- Francisco: «Sí, el bloque 2». Hecho: la moneda con tu saldo junto a Libo donde está él, y una nota de papel al tocarla
+  (saldo, cómo se ganan, dónde se gastan). El saldo sale de las respuestas del servidor que ya lo traen
+  (`src/features/edificio/saldo.js`; `useSaldoLibo`), con una consulta al inventario si lo último tiene más de 10 s.
+- Primera versión: una placa de papel con letra normal, encima de su cabeza. Francisco, con las capturas: «No me termina de
+  convencer […] no está bien integrado en la pantalla la moneda con libo y su contador, quiero que sea más natural». Le
+  propuse tres formas y eligió **«Junto a su pata»**: la moneda pegada a su pata y la cifra en letra de píxel con contorno,
+  sin caja. Así queda.
+- Pruebas: `v1161-libocoins-saldo` en Chromium 360 y 390 y WebKit 390, 3/3. Las de Libo (`libo-edificio`, `v1158`,
+  `libo-interfaz`, `libo-avisos`, `libo-atras`, `libo-atras-salas`, `libo`, `libo-poses`, `v1154`), `v167` y `v1122` en
+  Chromium 390: 31 pasan y 4 omitidas. Unitarias de Libo y libocoins, 52/52. Build limpio. Emulación, no un móvil real.
+- No sale en la cabecera de los cuadernos (comunidad, amigos) ni en el telefonillo: ahí ya no cabe.
+- Francisco vio las capturas y el vídeo y respondió «Sí, publícala». Commit en `1.90-escritorio-puerto` y `main` avanzado sin
+  forzar desde `d06e4a5` (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
 
 ### 2026-11-27 · 1.160.0, los Libocoins, bloque 1: el nombre y la moneda, a producción (Claude)
 

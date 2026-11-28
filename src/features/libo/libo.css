@@ -853,3 +853,125 @@
   right: auto;
   left: 16px;
 }
+
+/* 1.161 · Libocoins, bloque 2 (docs/qa/libocoins.md; Francisco eligió «Junto a su pata»): tu saldo junto a Libo. Su moneda,
+   pegada a la pata de Libo y un poco por delante de él, como si la sujetara; la cifra en la letra de píxel de la casa, con
+   contorno y sin caja, en la esquina de la moneda (como el número de un objeto en un juego de píxel). Todo se toca en 44 px. */
+.libo-saldo {
+  position: absolute;
+  z-index: 1;
+  right: calc(100% - 20px);
+  bottom: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* En tu piso del edificio, a su izquierda están Decorar y el armario: la moneda, más metida en Libo (a 360 px el hueco es justo) */
+.libo-rincon[data-lugar='tu-piso'] .libo-saldo {
+  right: calc(100% - 30px);
+}
+
+/* Arriba (el café), Libo es más pequeño: la moneda a su pata, abajo a la izquierda */
+.libo-rincon[data-variante='arriba'] .libo-saldo {
+  right: calc(100% - 16px);
+}
+
+.libo-saldo__placa {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.libo-saldo .libocoin {
+  position: absolute;
+  left: 0;
+  bottom: 4px;
+  filter: drop-shadow(0 2px 0 rgb(48 37 31 / 0.35));
+  animation: libo-respira 4.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+.libo-saldo__cifra {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  color: #fff4d7;
+  font: 16px/1 var(--pp-title, PuertoPixel, ui-monospace, monospace);
+  letter-spacing: 0;
+  white-space: nowrap;
+  /* Contorno de un píxel y sombra dura, para leerse sobre cualquier suelo */
+  text-shadow:
+    -1px 0 #2f1f16,
+    1px 0 #2f1f16,
+    0 -1px #2f1f16,
+    0 1px #2f1f16,
+    -1px -1px #2f1f16,
+    1px -1px #2f1f16,
+    -1px 1px #2f1f16,
+    1px 1px #2f1f16,
+    0 2px #2f1f16;
+}
+
+.libo-saldo:active .libo-saldo__placa {
+  transform: translateY(1px);
+}
+
+.libo-saldo:focus-visible {
+  outline: 3px solid #f2c46d;
+  outline-offset: 0;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .libo-saldo .libocoin {
+    animation: none;
+  }
+}
+/* La nota de papel: en el sitio del bocadillo de Libo (que se cierra al abrirla) */
+.libo-saldo-nota {
+  width: min(300px, calc(100vw - 32px));
+}
+
+.libo-saldo-nota .libo-hoy__pestana {
+  --hoy-esquinas-p: polygon(0 4px, 2px 4px, 2px 2px, 4px 2px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px));
+  background: #8a5a2b;
+  box-shadow: inset 0 -3px 0 #6b4329;
+}
+
+.libo-saldo-nota .libo-hoy__cerrar svg {
+  --hoy-esquinas-p: polygon(0 4px, 2px 4px, 2px 2px, 4px 2px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px));
+  background: #e3cfa6;
+}
+
+.libo-saldo-nota__saldo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 4px !important;
+  font-size: 16px;
+}
+
+.libo-saldo-nota__titulo {
+  margin: 10px 0 2px !important;
+  color: #7a5a40;
+  font: 700 12px/1.2 var(--port-sans, system-ui, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.libo-saldo-nota__lista {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 19px;
+}
+
+.libo-saldo-nota__lista li + li {
+  margin-top: 3px;
+}

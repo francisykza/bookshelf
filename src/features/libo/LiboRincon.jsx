@@ -13,6 +13,10 @@ import { DURA, DURA_GESTO, ESPERA_GESTO, POSES, REPOSO, gestoEnCalma, muchosToqu
 import { maullar } from './maullido';
 import { useAtras } from '../../hooks/useAtras';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { useCommunity } from '../social/hooks/useCommunity';
+import { libocoinsText } from '../../domain/libocoins';
+import { Libocoin } from '../../ui/Libocoin';
+import { useSaldoLibo } from './useSaldoLibo';
 import './libo.css';
 
 const MARGEN = 12;
@@ -76,6 +80,88 @@ function Flecha() {
     <svg className="libo-hoy__flecha" viewBox="0 0 6 7" aria-hidden="true" shapeRendering="crispEdges">
       <path d="M1 0h1v1h1v1h1v1h1v1H4v1H3v1H2v1H1V6h1V5h1V4h1V3H3V2H2V1H1z" />
     </svg>
+  );
+}
+
+// Libocoins, bloque 2 (docs/qa/libocoins.md): tu saldo, siempre a mano junto a Libo. Tocar la moneda abre una nota de papel
+// con el saldo, cómo se ganan y dónde se gastan; sin botones de compra ni nada que meta prisa
+const cifra = (n) => n.toLocaleString('es-ES');
+
+function Monedero({ tickets }) {
+  const [abierta, setAbierta] = useState(false);
+  const boton = useRef(null);
+  const caja = useRef(null);
+  useAtras(abierta, () => setAbierta(false));
+  useEffect(() => {
+    if (!abierta) return undefined;
+    const fuera = (e) => {
+      if (!caja.current?.contains(e.target) && !boton.current?.contains(e.target)) setAbierta(false);
+    };
+    const tecla = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setAbierta(false);
+        boton.current?.focus({ preventScroll: true });
+      }
+    };
+    document.addEventListener('pointerdown', fuera, true);
+    window.addEventListener('keydown', tecla, true);
+    return () => {
+      document.removeEventListener('pointerdown', fuera, true);
+      window.removeEventListener('keydown', tecla, true);
+    };
+  }, [abierta]);
+  const cerrar = () => {
+    setAbierta(false);
+    boton.current?.focus({ preventScroll: true });
+  };
+  return (
+    <>
+      {abierta && (
+          <div ref={caja} className="libo-bocadillo libo-saldo-nota" role="dialog" aria-label="Tus Libocoins">
+            <div className="libo-hoy__cab">
+              <span className="libo-hoy__pestana">Tus Libocoins</span>
+              <button type="button" className="libo-hoy__cerrar" aria-label="Cerrar" onClick={cerrar}>
+                <svg viewBox="0 0 5 5" aria-hidden="true" shapeRendering="crispEdges">
+                  <path d="M0 0h1v1h1v1h1V1h1V0h1v1H4v1H3v1h1v1h1v1H4V4H3V3H2v1H1v1H0V4h1V3h1V2H1V1H0z" />
+                </svg>
+              </button>
+            </div>
+            <p className="libo-saldo-nota__saldo">
+              <Libocoin size={44} />
+              <span>
+                Tienes <b>{libocoinsText(tickets)}</b>
+              </span>
+            </p>
+            <p className="libo-saldo-nota__titulo">Se ganan</p>
+            <ul className="libo-saldo-nota__lista">
+              <li>Con las misiones de la semana, en el ordenador.</li>
+              <li>Con las tres misiones del día de tu piso, cuando ya tienes toda su ropa.</li>
+              <li>Subiendo de nivel tu café, y un poco cada día que atiendes en él.</li>
+              <li>En la lata de los garbanzos del casino y vendiendo en la Lonja.</li>
+            </ul>
+            <p className="libo-saldo-nota__titulo">Se gastan</p>
+            <ul className="libo-saldo-nota__lista">
+              <li>En el almacén del Gran Hotel: muebles y, en la planta de abajo, ropa.</li>
+              <li>En la Lonja, con lo que ponen otros vecinos.</li>
+            </ul>
+          </div>
+        )}
+      <button
+        ref={boton}
+        type="button"
+        className="libo-saldo"
+        aria-label={`Tus Libocoins: ${libocoinsText(tickets)}`}
+        aria-expanded={abierta}
+        data-saldo={tickets}
+        onClick={() => setAbierta((v) => !v)}
+      >
+        <span className="libo-saldo__placa">
+          <Libocoin size={30} />
+          <span className="libo-saldo__cifra">{cifra(tickets)}</span>
+        </span>
+      </button>
+    </>
   );
 }
 
@@ -349,9 +435,13 @@ const SITIOS = ['edificio', 'cafe', 'hotel'];
  * `amigos` (1.154): tu agenda de amigos (useAmigosLibo), para sus sugerencias.
  * `cargarHoy` (1.158): pregunta al servidor lo del día (cargarHoyLibo) al abrir «Lo de hoy»; adónde llevan sus filas, además:
  * 'casino' y 'misiones'.
+ * `saldo` (1.161, Libocoins bloque 2): la moneda con tu saldo a su lado, con la comunidad activa (no en la cabecera de los
+ * cuadernos ni en el telefonillo, que ya van llenos).
  */
-export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = true, espera = null, respiro = 600, raiz = null, onAjustes, variante = 'barra', hub = false, avisos = SIN_AVISOS, amigos = null, onIr = null, cargarHoy = null }) {
+export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = true, espera = null, respiro = 600, raiz = null, onAjustes, variante = 'barra', hub = false, avisos = SIN_AVISOS, amigos = null, onIr = null, cargarHoy = null, saldo = true }) {
   const { state, actions } = useLibrary();
+  const community = useCommunity();
+  const tickets = useSaldoLibo(saldo && variante !== 'cabecera' && lugar !== 'telefonillo' && community.status === 'ready' && community.member);
   const { settings, books } = state;
   const log = state.progress?.readingLog;
   const [abierto, setAbierto] = useState(false);
@@ -767,6 +857,8 @@ export function Libo({ lugar = 'piso', capitulo = null, contexto = {}, listo = t
             </span>
           )}
         </button>
+        {/* Su moneda, pegada a su pata y por delante de él */}
+        {tickets !== null && <Monedero tickets={tickets} />}
       </div>
       {pasos && cont && createPortal(<Guia pasos={pasos} contexto={contexto} cont={cont} onFin={terminar} onPaso={setPasoVisto} />, cont)}
     </>

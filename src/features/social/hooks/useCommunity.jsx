@@ -7,6 +7,7 @@ import { clearSocialCache, fetchMyProfile, probeCommunity, saveMyProfile } from 
 import { fetchFollowing, follow, unfollow } from '../services/connections';
 import { resetPresence } from './usePresence';
 import { forgetMyPiso } from '../../edificio/myPisoCache';
+import { olvidarSaldo } from '../../edificio/saldo';
 
 const CommunityContext = createContext(null);
 
@@ -27,6 +28,7 @@ export function CommunityProvider({ children }) {
   useEffect(() => {
     clearSocialCache(userId);
     forgetMyPiso();
+    olvidarSaldo();
     seq.current += 1;
     setState({ status: 'idle', profile: null, error: '' });
     setFollowing(null);
