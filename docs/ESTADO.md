@@ -655,6 +655,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 - No sale en la cabecera de los cuadernos (comunidad, amigos) ni en el telefonillo: ahí ya no cabe.
 - Francisco vio las capturas y el vídeo y respondió «Sí, publícala». Commit en `1.90-escritorio-puerto` y `main` avanzado sin
   forzar desde `d06e4a5` (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
+- Desplegado: `https://libotown.es/sw.js` sirve v1.161.0 (28-11-2026, 08:34) y la dirección de antes sigue con su 308.
 
 ### 2026-11-27 · 1.160.0, los Libocoins, bloque 1: el nombre y la moneda, a producción (Claude)
 
