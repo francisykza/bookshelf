@@ -661,6 +661,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   `qa-report/v1162-libocoins-fiesta/tintineo-libocoins.wav` (los vídeos de Playwright no graban sonido).
 - Francisco: «Sí, publícala». Commit en `1.90-escritorio-puerto` y `main` avanzado sin forzar desde `7c94add`
   (`git push origin 1.90-escritorio-puerto:main`). Sin migraciones.
+- Desplegado: `https://libotown.es/sw.js` sirve v1.162.0 (28-11-2026, 08:53) y la dirección de antes sigue con su 308.
 
 ### 2026-11-28 · 1.161.0, los Libocoins, bloque 2: el saldo junto a Libo, a producción (Claude)
 
