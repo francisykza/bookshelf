@@ -432,15 +432,37 @@
 
 .libo-hoy {
   position: relative;
+  display: flex;
+  flex-direction: column;
   max-height: min(72svh, 600px);
   padding: 12px 12px 6px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
   background-color: var(--hoy-papel);
   /* Una trama de papel muy suave */
   background-image: radial-gradient(rgb(227 207 166 / 0.55) 1px, transparent 1.2px);
   background-size: 6px 6px;
   clip-path: var(--hoy-esquinas);
+}
+
+/* 1.162.1 · Con muchas filas (a 360 px, con «ver todo»), los botones de la idea quedaban cortados al pie hasta que bajabas.
+   Ahora la cabecera, la idea y el pie no se encogen y solo se desplaza el medio (saludo, filas y «ver todo»). Si hay más
+   arriba o abajo, una raya de píxel con una sombra suave en ese borde; al llegar al final, el papel la tapa. */
+.libo-hoy > * {
+  flex: none;
+}
+
+.libo-hoy > .libo-hoy__cuerpo {
+  flex: 0 1 auto;
+  min-height: 0;
+  margin: 0 -12px;
+  padding: 0 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background:
+    linear-gradient(var(--hoy-papel), var(--hoy-papel)) center top / 100% 12px no-repeat local,
+    linear-gradient(var(--hoy-papel), var(--hoy-papel)) center bottom / 100% 12px no-repeat local,
+    linear-gradient(rgb(59 38 24 / 0.3) 0 2px, rgb(59 38 24 / 0.1) 2px, rgb(59 38 24 / 0) 10px) center top / 100% 10px no-repeat scroll,
+    linear-gradient(to top, rgb(59 38 24 / 0.3) 0 2px, rgb(59 38 24 / 0.1) 2px, rgb(59 38 24 / 0) 10px) center bottom / 100% 10px no-repeat scroll;
 }
 
 .libo-hoy__cab {

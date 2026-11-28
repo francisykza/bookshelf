@@ -289,6 +289,8 @@ function LoDeHoy({ saludo, pendientes, hechas, cargando, sugerencia, onIr, onSug
           </svg>
         </button>
       </div>
+      {/* 1.162.1: solo el medio se desplaza; la cabecera, la idea y el pie se ven siempre enteros */}
+      <div className="libo-hoy__cuerpo">
       <p className="libo-hoy__saludo">{saludo}</p>
       {(vistas.length > 0 || cargando) && (
         <ul className="libo-avisos libo-hoy__lista">
@@ -334,6 +336,7 @@ function LoDeHoy({ saludo, pendientes, hechas, cargando, sugerencia, onIr, onSug
           {mas === 1 ? 'y 1 cosa más' : `y ${mas} cosas más`} · <u>ver todo</u>
         </button>
       )}
+      </div>
       {sugerencia ? (
         <div className="libo-hoy__idea" data-sugerencia={sugerencia.id}>
           <span className="libo-hoy__etiqueta">Idea de Libo</span>

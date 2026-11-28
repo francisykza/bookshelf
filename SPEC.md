@@ -1,6 +1,6 @@
 # BookShelf — "Mediterranean Cozy Reading Sanctuary"
 
-> SPEC 1.162.0 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
+> SPEC 1.162.1 · 2026-11-28 · Aplicación hermana de GameShelf dedicada a libros y lectura.
 
 BookShelf es un gestor de lectura personal que vive **dentro de una ilustración**: una habitación
 costera mediterránea con estantería de roble, cama soleada, portátil, té helado y un gato dormido.
@@ -9111,3 +9111,14 @@ Tercer y último bloque del plan aprobado en `docs/qa/libocoins.md` («Sí, así
   (60 → 72) y, con el ordenador encima, no hay fiesta; al volver a tu piso, 3 monedas, «+12», la pose «celebra», el aviso para
   lectores de pantalla y la cifra que llega a 72; se acaba sola y no se repite. Con movimiento reducido (390), solo la cifra.
 - `v1161-libocoins-saldo` espera a que acabe la fiesta del portal (75) antes de medir. Emulación.
+
+### 162.5 El pie de «Lo de hoy», siempre entero (1.162.1)
+
+- Pendiente desde la 1.158: con muchas filas (a 360 px, tras «ver todo»), los botones de la idea de Libo y los enlaces del pie
+  («Repasar la bienvenida», «Ajustes de Libo») quedaban cortados o fuera de la tarjeta hasta que bajabas. Francisco eligió
+  arreglarlo («Pie de «Lo de hoy»»).
+- Ahora la cabecera, la idea y el pie no se encogen y **solo se desplaza el medio** (el saludo, las filas y «ver todo»,
+  `.libo-hoy__cuerpo`). Si queda algo por ver arriba o abajo, en ese borde sale una raya de píxel con una sombra suave; al
+  llegar al final, el papel la tapa. Sin cambios en lo que dice ni en lo que hace.
+- e2e `v1158-libo-lo-de-hoy` (Chromium 360 y 390, WebKit 390): tras «ver todo», sin bajar, los botones de la idea están enteros
+  dentro de la tarjeta, y la última fila queda por encima de la idea al llevarla a la vista. Emulación.

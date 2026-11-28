@@ -6,7 +6,10 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 ## Estado actual
 
-- **Publicada en producción: 1.162.0, los Libocoins, bloque 3: Libo lo celebra** (28-11-2026; Francisco: «Sí, publícala»;
+- **Publicada en producción: 1.162.1, el pie de «Lo de hoy», siempre entero** (28-11-2026; Francisco: «Sí, publícala»;
+  SPEC §162.5). Con muchas filas, la idea de Libo y los enlaces del pie ya no quedan cortados: solo se desplaza la lista.
+  Sin migración.
+- **Anterior: 1.162.0, los Libocoins, bloque 3: Libo lo celebra** (28-11-2026; Francisco: «Sí, publícala»;
   SPEC §162 y `docs/qa/libocoins.md`). Al ganarlos, las monedas saltan a la de Libo, él pone su pose «celebra», sale «+N», la
   cifra sube y suena un tintineo; con movimiento reducido, solo la cifra. Si no se le ve, lo celebra al volver a verle. Sin
   migración. Con esto, el plan de los Libocoins está completo.
@@ -304,7 +307,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
 
 | Versión | Qué | SPEC |
 | --- | --- | --- |
-| 1.162.0 | Los Libocoins, bloque 3: Libo lo celebra (publicada) | §162 |
+| 1.162.1 | El pie de «Lo de hoy», siempre entero (publicada) | §162.5 |
+| 1.162.0 | Los Libocoins, bloque 3: Libo lo celebra | §162 |
 | 1.161.0 | Los Libocoins, bloque 2: el saldo junto a Libo | §161 |
 | 1.160.0 | Los Libocoins, bloque 1: el nombre y la moneda | §160 |
 | 1.159.0 | La red de seguridad: el ordenador en negro en un iPhone | §159 |
@@ -406,7 +410,7 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
     al ganarlos. **Bloque 1 publicado en la 1.160.0**, **bloque 2 publicado en la 1.161.0** y **bloque 3 publicado en la 1.162.0**: plan completo.
   - **La web en su dominio**: «subir el diseño que hicimos al dominio que compré y ver si necesito un hosting». La web ya está
     publicada en `libotown.es` desde la 1.146.0 (Vercel, en la raíz: quien llega nuevo ve la web); no hace falta otro hosting.
-    Repasar con él qué quiere exactamente (¿otra dirección, como un subdominio? ¿las versiones «más interactiva» y «más cozy»?).
+    **Hecho** (28-11-2026): vista con él (capturas de libotown.es en el móvil y el ordenador), Francisco: «Dejarla así». Sin cambios.
   - **El menú de Libo, más gracioso y limpio, con lo que puedes hacer hoy** (27-11-2026, mientras se borraba la habitación
     ilustrada): «que el menú de libo sea mas gracioso y limpio, y que te diga de manera limpia y atractiva que cosas puedes
     hacer en el dia». Sus ejemplos: si te quedan intentos del casino, si hay muebles en oferta de los que quieres, los muebles
@@ -414,7 +418,8 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
     la sugerencia del día, `docs/qa/libo.md`) y qué datos hay de cada cosa; proponerle el diseño (con capturas) antes de hacerlo.
     **27-11-2026**: vista la primera propuesta («Lo de hoy»). Decidido: Libo **puede preguntar al servidor** por el casino y las
     misiones («Sí, que pregunte»). Pide más identidad de píxel sin saturar e iconos propios más originales: segunda propuesta.
-    Vista la segunda (maqueta con la letra de píxel e iconos propios): «Sí, constrúyelo». **Hecho y publicado en la 1.158.0.**
+    Vista la segunda (maqueta con la letra de píxel e iconos propios): «Sí, constrúyelo». **Hecho y publicado en la 1.158.0.** El pie cortado con muchas filas, arreglado en la
+    1.162.1; queda por mirar que en WebKit las negritas del saludo y del título salen normales.
 - **Vistas isométricas, parte B** (se quedan hasta que haya 3D; lista en `amigos-vecinos.md`, bloque 5): Decorar, tu piso desde
   la fachada, el respaldo de la habitación sin 3D y el mercadillo de la Lonja.
 
@@ -644,6 +649,24 @@ bitácora. Es lo que permite a la siguiente sesión retomar sin repetir trabajo 
   personajes planos no (§37).
 
 ## Bitácora
+
+### 2026-11-28 · 1.162.1, el pie de «Lo de hoy», siempre entero, a producción (Claude)
+
+- Francisco eligió «Pie de «Lo de hoy»» de lo pendiente. El fallo (anotado en la 1.158): a 360 px, tras «ver todo», los
+  botones de la idea de Libo quedaban cortados al pie de la tarjeta y los enlaces «Repasar la bienvenida» y «Ajustes de Libo»
+  no se veían hasta bajar. Arreglo: la tarjeta es una columna; la cabecera, la idea y el pie no se encogen y solo se desplaza
+  el medio (`.libo-hoy__cuerpo` en `LiboRincon.jsx`), con una raya de sombra en el borde por donde hay más (`libo.css`).
+- Pruebas: `v1158-libo-lo-de-hoy` con una comprobación nueva (los botones de la idea, enteros sin bajar) en Chromium 360 y 390
+  y WebKit 390, 6/6. Las de Libo, `v1154`, `v1161` y `v1162` en Chromium 390: 29 pasan y 1 omitida. Build limpio; el lint,
+  los mismos 9 avisos de antes. Emulación, no un móvil real.
+- Evidencias al chat: capturas a 360 (arriba y abajo) y WebKit 390, y el vídeo a 360 (`qa-report/v1158-lo-de-hoy/`).
+- Francisco: «Sí, publícala». Commit en `1.90-escritorio-puerto` y `main` avanzado sin forzar desde `c6761ff`. Sin migraciones.
+
+### 2026-11-28 · La web en su dominio, dada por hecha (Claude)
+
+- Comprobado: `https://libotown.es/` enseña la web a quien llega nuevo (Vercel, desde la 1.146.0); `www` y `http` redirigen con 308
+  a `https://libotown.es/`, igual que la dirección de antes. Se le mandaron capturas (`qa-report/web-dominio/`) y las opciones
+  (otra dirección, mejorar la web o darla por hecha). Francisco: «Dejarla así». Sin cambios en la app.
 
 ### 2026-11-28 · 1.162.0, los Libocoins, bloque 3: Libo lo celebra, a producción (Claude)
 

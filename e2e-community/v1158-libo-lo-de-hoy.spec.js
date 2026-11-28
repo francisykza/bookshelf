@@ -214,8 +214,25 @@ test('con cosas por hacer: los avisos, el casino, las misiones y la ruleta; cada
   // 2 · «ver todo»: la sexta, la ruleta de la semana
   await page.getByRole('button', { name: /y 1 cosa más/ }).click();
   await expect.poll(() => filas(page)).toEqual(['correo', 'almacen', 'cafe', 'casino', 'misiones', 'ruleta']);
+  // 1.162.1 · Sin bajar, la idea y sus botones se ven enteros dentro de la tarjeta (antes, a 360, quedaban cortados al pie)
+  const pie = await page.evaluate(() => {
+    const hoy = document.querySelector('.libo-hoy').getBoundingClientRect();
+    const cuerpo = document.querySelector('.libo-hoy__cuerpo');
+    const botones = [...document.querySelectorAll('.libo-hoy__idea button')].map((b) => b.getBoundingClientRect());
+    return {
+      enteros: botones.length > 0 && botones.every((r) => r.top >= hoy.top && r.bottom <= hoy.bottom - 3),
+      desplaza: cuerpo.scrollHeight > cuerpo.clientHeight + 1,
+    };
+  });
+  expect(pie.enteros, 'los botones de la idea, enteros').toBe(true);
+  await shot(page, info, '2-ver-todo-arriba');
   await page.locator('[data-aviso="ruleta"]').scrollIntoViewIfNeeded();
   await shot(page, info, '2-ver-todo');
+  if (pie.desplaza) {
+    const r = await page.locator('[data-aviso="ruleta"]').boundingBox();
+    const idea = await page.locator('.libo-hoy__idea').boundingBox();
+    expect(r.y + r.height, 'la última fila, por encima de la idea').toBeLessThanOrEqual(idea.y + 1);
+  }
 
   // 3 · El casino: directamente en el casino del sótano del hotel
   await page.locator('[data-aviso="casino"] button').click();
